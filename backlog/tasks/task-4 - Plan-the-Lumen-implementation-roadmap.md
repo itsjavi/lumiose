@@ -1,11 +1,11 @@
 ---
 id: TASK-4
 title: Plan the Lumen implementation roadmap
-status: To Do
+status: In Progress
 assignee:
   - '@Lux'
 created_date: '2026-10-08 09:59'
-updated_date: '2026-10-08 11:35'
+updated_date: '2026-10-08 12:19'
 labels: []
 milestone: m-0
 dependencies:
