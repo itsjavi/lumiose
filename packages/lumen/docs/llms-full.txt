@@ -613,11 +613,11 @@ See also: [Components](components.md), [Styles](styles.md), [reference: JSX type
 
 **Placement decides scope.**
 
-| Placement                                                                            | Scope                                                                                                                      |
-| ------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------- |
+| Placement                                                                            | Scope                                                                                                                                                                                                                                                                                                                         |
+| ------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Inside a component's JSX, as a child of an intrinsic element or fragment (any depth) | Its **enclosing element and everything written inside it** in that component, including `.map` callbacks and JSX passed as children there. A block directly under the component's root element therefore covers the whole component. Sibling subtrees are not affected, and it never reaches other components' own templates. |
-| File top level (conventionally at the end of the file)                               | Every template in the file.                                                                                                |
-| `<style global>` (anywhere a block is valid)                                         | The whole app, unscoped. Usually in the root `_layout.stsx`.                                                               |
+| File top level (conventionally at the end of the file)                               | Every template in the file.                                                                                                                                                                                                                                                                                                   |
+| `<style global>` (anywhere a block is valid)                                         | The whole app, unscoped. Usually in the root `_layout.stsx`.                                                                                                                                                                                                                                                                  |
 
 ```stsx
 export function Panel() {
