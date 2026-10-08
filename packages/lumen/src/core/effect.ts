@@ -450,6 +450,11 @@ export function pauseRun(run: Run): void {
   }
 }
 
+/** Whether `node` is the subscriber of an async run. */
+export function isRun(node: ReactiveNode | undefined): boolean {
+  return node !== undefined && (node as EffectNode).kind === RUN;
+}
+
 function runRun(run: Run): void {
   if (run.state & (DISPOSED | STALE) || !isDirty(run)) {
     return;

@@ -163,6 +163,8 @@ export interface ClientRuntime {
    * the run is paused synchronously when the body returns or throws.
    */
   $leave(): void;
+  /** Wraps an async component definition (emitted by the compiler) so `createComponent` takes the async path without bundling it otherwise. */
+  $async<C extends Component<any>>(component: C): C;
 }
 
 /** Minimal writable signal shape used by `bind:*` (matches `signal()` from `lumen`). */

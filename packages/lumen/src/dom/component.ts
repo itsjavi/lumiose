@@ -1,6 +1,8 @@
 // Components and reactive props utilities (contract doc-2 §1-2, spec §4.2).
 import type { Component, Renderable } from "../contract/client.ts";
 import { currentOwner, runWithLazyOwner, setActiveSub } from "../core/internal.ts";
+import { createAsync } from "./async.ts";
+import { childFrame, frame, setFrame } from "./frame.ts";
 
 const AsyncFunction = (async () => {}).constructor;
 
@@ -17,21 +19,28 @@ function runComponent(): void {
 /**
  * Runs a component once, untracked, under a new lazy owner (allocated only if the component
  * registers a cleanup, an effect, a binding or a provided value). The owner's parent may itself be
- * lazy, so components inside list rows stay allocation-free too.
+ * lazy, so components inside list rows stay allocation-free too. A native `async function` takes
+ * the async path (./async.ts) and renders into a range of its own.
  */
 export function createComponent<P>(component: Component<P>, props: P): Renderable {
   if (component instanceof AsyncFunction) {
-    throw new Error(
-      `lumen: async component ${component.name || "(anonymous)"} cannot render on the client yet (TASK-17).`,
-    );
+    return createAsync(component as (props: P) => Promise<Renderable>, props);
   }
   componentFn = component;
   componentProps = props;
   const prevSub = setActiveSub(undefined);
+  // Instance paths exist only while an island hydrates (./frame.ts).
+  const prevFrame = frame;
+  if (prevFrame !== undefined) {
+    setFrame(childFrame(prevFrame));
+  }
   try {
     runWithLazyOwner(currentOwner, runComponent);
   } finally {
     setActiveSub(prevSub);
+    if (prevFrame !== undefined) {
+      setFrame(prevFrame);
+    }
   }
   const result = componentResult;
   componentFn = componentProps = componentResult = undefined;
@@ -68,21 +77,4 @@ export function mergeProps<P extends object>(...sources: P[]): P {
     }
   }
   return out;
-}
-
-function notImplemented(name: string): Error {
-  return new Error(`lumen: ${name} is not implemented on the client yet (TASK-17).`);
-}
-
-/** Async component await (contract doc-2 §4). Implemented by TASK-17. */
-export function $await<T>(
-  _thunk: () => T | PromiseLike<T>,
-  _site: number,
-): Promise<() => Awaited<T>> {
-  throw notImplemented("$await");
-}
-
-/** Async component exit (contract doc-2 §4). Implemented by TASK-17. */
-export function $leave(): void {
-  throw notImplemented("$leave");
 }

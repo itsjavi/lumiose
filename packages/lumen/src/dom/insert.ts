@@ -88,23 +88,80 @@ function hasFunction(value: readonly Renderable[]): boolean {
   return false;
 }
 
+// ---- ranges ---------------------------------------------------------------------------------------
+// A range is a run of sibling nodes between two empty text nodes whose content changes on its own
+// (async component instances, boundaries). Parents hold only its start node, which points to its
+// end, and move or remove the whole run as a unit; content rendered into the range later goes
+// before its end marker, wherever the range is at that time.
+
+export interface RangeStart extends Text {
+  $$end: Text;
+}
+
+/** A new empty range inside a fragment of its own. Render into it with `end` as the marker. */
+export function createRange(): RangeStart {
+  const start = document.createTextNode("") as RangeStart;
+  const end = (start.$$end = document.createTextNode(""));
+  document.createDocumentFragment().append(start, end);
+  return start;
+}
+
+/** A plain text node, which text content may reuse (a range's start is not one). */
+function isText(node: Node | undefined): node is Text {
+  return (
+    node !== undefined && node.nodeType === 3 && (node as Partial<RangeStart>).$$end === undefined
+  );
+}
+
+/** The last node of `node`'s range, or `node` itself. */
+function lastOf(node: Node): Node {
+  return (node as Partial<RangeStart>).$$end ?? node;
+}
+
+/** Inserts `node` (with its whole range) before `ref`. */
+export function place(parent: Node, node: Node, ref: Node | null): void {
+  const end = (node as Partial<RangeStart>).$$end;
+  if (end === undefined) {
+    parent.insertBefore(node, ref);
+    return;
+  }
+  let next: Node | null = node;
+  while (next !== null) {
+    const current: Node = next;
+    next = current === end ? null : current.nextSibling;
+    parent.insertBefore(current, ref);
+  }
+}
+
+/** Removes `node`. A range moves into a fragment of its own, so it stays usable if kept alive. */
+function detach(parent: Node, node: Node): void {
+  if ((node as Partial<RangeStart>).$$end === undefined) {
+    parent.removeChild(node);
+  } else {
+    place(document.createDocumentFragment(), node, null);
+  }
+}
+
 /** Replaces the region's nodes with `next`, keeping nodes present in both by identity. */
 function reconcile(region: Region, next: Node[]): void {
   const current = region.nodes;
   const marker = region.marker;
   const parent = marker?.parentNode ?? region.parent;
   const last = current[current.length - 1];
-  const after = marker ?? (last !== undefined ? last.nextSibling : null);
+  const after = marker ?? (last !== undefined ? lastOf(last).nextSibling : null);
   region.nodes = next;
   if (current.length === 1 && next.length === 1) {
     const prev = current[0]!;
     const node = next[0]!;
     if (prev !== node) {
       if (prev.parentNode === parent) {
-        parent.replaceChild(node, prev);
-      } else {
-        parent.insertBefore(node, after);
+        if (lastOf(prev) === prev && lastOf(node) === node) {
+          parent.replaceChild(node, prev);
+          return;
+        }
+        detach(parent, prev);
       }
+      place(parent, node, after);
     }
     return;
   }
@@ -112,27 +169,33 @@ function reconcile(region: Region, next: Node[]): void {
     const keep = next.length === 0 ? undefined : new Set(next);
     for (const node of current) {
       if (keep?.has(node) !== true && node.parentNode === parent) {
-        parent.removeChild(node);
+        detach(parent, node);
       }
     }
   }
   let ref = after;
   for (let i = next.length - 1; i >= 0; i--) {
     const node = next[i]!;
-    if (node.nextSibling !== ref || node.parentNode !== parent) {
-      parent.insertBefore(node, ref);
+    if (lastOf(node).nextSibling !== ref || node.parentNode !== parent) {
+      place(parent, node, ref);
     }
     ref = node;
   }
 }
 
+/** Content that a nested effect renders (see `runResolve`); the outer effect writes nothing. */
+const NESTED = [] as Content;
+
 /** Writes resolved content into the region (a `bind` apply function). */
 function applyRegion(region: Region, content: Content): void {
+  if (content === NESTED) {
+    return;
+  }
   const current = region.nodes;
   if (typeof content === "string") {
     const first = current[0];
-    if (current.length === 1 && first!.nodeType === 3) {
-      (first as Text).data = content;
+    if (current.length === 1 && isText(first)) {
+      first.data = content;
       return;
     }
     content = document.createTextNode(content);
@@ -146,8 +209,8 @@ function applyRegion(region: Region, content: Content): void {
       const part = content[i]!;
       if (typeof part === "string") {
         const prev = current[i];
-        if (prev !== undefined && prev.nodeType === 3) {
-          (prev as Text).data = part;
+        if (isText(prev)) {
+          prev.data = part;
           nodes[i] = prev;
         } else {
           nodes[i] = document.createTextNode(part);
@@ -160,35 +223,64 @@ function applyRegion(region: Region, content: Content): void {
   }
 }
 
+/** Holds the owner of an effect's latest evaluation (the region itself for its top effect). */
+interface Scope {
+  owner: Owner | undefined;
+}
+
 // Arguments of `runResolve`, passed without a closure. Nested calls overwrite them only after the
 // outer call has read them, and the outer call writes `resolved` last.
 let resolving: Renderable;
+let resolvingRegion: Region | undefined;
 let resolved: Content;
 
+function isDynamic(value: Renderable): boolean {
+  return typeof value === "function" || (Array.isArray(value) && hasFunction(value));
+}
+
 function runResolve(): void {
-  resolved = resolve(resolving);
+  let value = resolving;
+  const region = resolvingRegion!;
+  if (typeof value === "function") {
+    value = value();
+    if (isDynamic(value)) {
+      // The function returned reactive content, such as a component's output from a `children`
+      // getter. It gets an effect of its own, so its updates never call this function again
+      // (which would create the component again).
+      renderNested(region, value);
+      resolved = NESTED;
+      return;
+    }
+  }
+  resolved = resolve(value);
 }
 
 /** Resolves a dynamic value under a fresh lazy owner, disposing the previous evaluation's owner. */
-function evaluate(region: Region, value: Renderable): Content {
-  const prev = region.owner;
+function evaluate(region: Region, scope: Scope, value: Renderable): Content {
+  const prev = scope.owner;
   if (prev !== undefined) {
-    region.owner = undefined;
+    scope.owner = undefined;
     disposeOwner(prev);
   }
   resolving = value;
+  resolvingRegion = region;
   // Inside a binding's compute, the current owner is the binding itself.
-  region.owner = runWithLazyOwner(getOwner(), runResolve);
+  scope.owner = runWithLazyOwner(getOwner(), runResolve);
   const content = resolved;
   resolved = null;
-  resolving = undefined;
+  resolving = resolvingRegion = undefined;
   return content;
+}
+
+function renderNested(region: Region, value: Renderable): void {
+  const scope: Scope = { owner: undefined };
+  renderEffect(region, () => evaluate(region, scope, value), applyRegion);
 }
 
 /** Renders `value` into `region`: tracked and reconciled when it is or contains a function. */
 export function renderInto(region: Region, value: Renderable): void {
-  if (typeof value === "function" || (Array.isArray(value) && hasFunction(value))) {
-    renderEffect(region, () => evaluate(region, value), applyRegion);
+  if (isDynamic(value)) {
+    renderEffect(region, () => evaluate(region, region, value), applyRegion);
   } else {
     applyRegion(region, resolve(value));
   }
@@ -205,9 +297,10 @@ export function insert(parent: Node, value: Renderable, marker: Node | null = nu
     typeof value !== "function" &&
     !(typeof value === "object" && value !== null && (Array.isArray(value) || isFragment(value)))
   ) {
-    // Static text or node: no region to keep.
+    // Static text, node or range: no region to keep.
     if (value != null && typeof value !== "boolean") {
-      parent.insertBefore(
+      place(
+        parent,
         typeof value === "object" ? (value as Node) : document.createTextNode(String(value)),
         marker,
       );
@@ -215,6 +308,17 @@ export function insert(parent: Node, value: Renderable, marker: Node | null = nu
     return;
   }
   renderInto(createRegion(parent, marker), value);
+}
+
+/**
+ * Renders `value` (tracked like `insert`) into a new range; returns its start. Parent regions see
+ * one static node, so changes inside never re-run them.
+ */
+export function renderRange(value: Renderable): RangeStart {
+  const start = createRange();
+  const end = start.$$end;
+  insert(end.parentNode!, value, end);
+  return start;
 }
 
 // ---- branch --------------------------------------------------------------------------------------

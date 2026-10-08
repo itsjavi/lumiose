@@ -15,7 +15,8 @@ export {
 export { branch, insert } from "./insert.ts";
 export { list } from "./list.ts";
 export { selector } from "./selector.ts";
-export { $await, $leave, createComponent, mergeProps, restProps } from "./component.ts";
+export { createComponent, mergeProps, restProps } from "./component.ts";
+export { $await, $leave } from "./async.ts";
 export { spread } from "./spread.ts";
 export { delegateEvents, listen } from "./events.ts";
 export { attach, bindChecked, bindValue, useRef } from "./element.ts";

@@ -4,6 +4,7 @@ import type { Renderable } from "../contract/client.ts";
 import { flushSync, onCleanup, signal } from "../core/index.ts";
 import { createOwner, disposeOwner, runWithOwner } from "../core/internal.ts";
 import { branch, createComponent, insert, template } from "./index.ts";
+import { createRange } from "./insert.ts";
 
 function root<T>(fn: () => T): [T, () => void] {
   const owner = createOwner(undefined);
@@ -116,6 +117,49 @@ describe("insert (dynamic)", () => {
     expect(log).toEqual(["cleanup A"]);
     dispose();
     expect(log).toEqual(["cleanup A", "cleanup B"]);
+  });
+});
+
+describe("insert (nested dynamic content and ranges)", () => {
+  it("gives reactive content returned by a function its own effect, so the function is not called again", () => {
+    const label = signal("a");
+    let created = 0;
+    const Reactive = (): Renderable => {
+      created++;
+      return () => label();
+    };
+    const props = {
+      get children() {
+        return createComponent(Reactive, {});
+      },
+    };
+    const [el] = withMarker();
+    const [, dispose] = root(() => insert(el, () => props.children, el.childNodes[1]!));
+    expect(el.textContent).toBe("aaz");
+    label.set("b");
+    flushSync();
+    expect(el.textContent).toBe("abz");
+    expect(created).toBe(1);
+    dispose();
+  });
+
+  it("moves and removes a range as a unit, keeping a removed range usable", () => {
+    const range = createRange();
+    const end = range.$$end;
+    insert(end.parentNode!, [document.createElement("b"), "x"], end);
+    const show = signal(true);
+    const [el, marker] = withMarker();
+    const [, dispose] = root(() => insert(el, () => (show() ? range : "none"), marker));
+    expect(el.innerHTML).toBe("a<b></b>x<!---->z");
+    show.set(false);
+    flushSync();
+    expect(el.innerHTML).toBe("anone<!---->z");
+    // Content rendered into the detached range lands inside it, and comes back with it.
+    insert(end.parentNode!, "y", end);
+    show.set(true);
+    flushSync();
+    expect(el.innerHTML).toBe("a<b></b>xy<!---->z");
+    dispose();
   });
 });
 

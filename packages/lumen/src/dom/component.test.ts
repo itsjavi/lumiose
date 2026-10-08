@@ -118,8 +118,10 @@ describe("createComponent", () => {
     expect(log).toEqual(["b"]);
   });
 
-  it("rejects async components until TASK-17", () => {
-    expect(() => createComponent(Async, {})).toThrow(/TASK-17/);
+  it("renders async components into a range of their own (./async.test.ts covers them)", () => {
+    const start = createComponent(Async, {}) as Text & { $$end: Text };
+    expect(start.nodeType).toBe(3);
+    expect(start.nextSibling).toBe(start.$$end);
   });
 });
 

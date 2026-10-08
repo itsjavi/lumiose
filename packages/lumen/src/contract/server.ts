@@ -74,4 +74,6 @@ export interface ServerRuntime {
   $await<T>(thunk: () => T | PromiseLike<T>, site: number): Promise<() => Awaited<T>>;
   /** `finally { $leave() }` around async component bodies; leaves the context frame. */
   $leave(): void;
+  /** Wraps an async component definition (emitted by the compiler) so `createComponent` takes the async path without bundling it otherwise. */
+  $async<C extends Component<any>>(component: C): C;
 }

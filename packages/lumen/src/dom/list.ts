@@ -19,7 +19,7 @@ import {
 } from "../core/internal.ts";
 import { signal, type Signal } from "../core/signal.ts";
 import { hydrator } from "./hydration.ts";
-import { insert } from "./insert.ts";
+import { insert, type RangeStart } from "./insert.ts";
 
 interface Row<T> {
   item: T;
@@ -61,8 +61,9 @@ function renderRow(): void {
       ? (state.render as (item: unknown) => Renderable)(rowItem)
       : state.render(rowItem, index);
   if (value instanceof Node && value.nodeType !== 11) {
+    // One node, or a range (an async component), which already has its own markers.
     rowNode = value;
-    rowEnd = undefined;
+    rowEnd = (value as Partial<RangeStart>).$$end;
   } else {
     // Several nodes, text or dynamic content: a range between two empty text nodes.
     const start = document.createTextNode("");

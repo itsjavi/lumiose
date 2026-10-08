@@ -1,5 +1,7 @@
 // Public client components and helpers re-exported from `lumen` (owner: Spark; spec §4.2-4.3).
-// TODO(TASK-17): Suspense and ErrorBoundary.
+// `lumen` exposes the same names in the browser and under `node` (../server/public.ts): server-only
+// render functions are stubs here that throw LUM4003.
+import { LUM_SERVER_ONLY, LumenError } from "../app/diagnostics.ts";
 import type { Component, Renderable } from "../contract/client.ts";
 import { onCleanup } from "../core/owner.ts";
 import { computed, signal } from "../core/signal.ts";
@@ -7,6 +9,12 @@ import type { JSX } from "../jsx/jsx-runtime.ts";
 import { createComponent, restProps } from "./component.ts";
 import { insert } from "./insert.ts";
 import { spread } from "./spread.ts";
+import type { RenderedShell, RenderToStreamOptions } from "../server/render.ts";
+
+export { ErrorBoundary, Suspense } from "./boundaries.ts";
+export type { ErrorBoundaryProps, SuspenseProps } from "./boundaries.ts";
+export { Head, Meta, Title } from "./head.ts";
+export type { RenderedShell, RenderToStreamOptions };
 
 /**
  * Creates a ref for the `ref` prop: the runtime calls it with the element, and code reads it like
@@ -64,4 +72,27 @@ export function Dynamic(props: DynamicProps): Renderable {
         ? createElement(component, others)
         : createComponent(component, others);
   };
+}
+
+function serverOnly(api: string): never {
+  throw new LumenError(
+    LUM_SERVER_ONLY,
+    `${api} is server-only and cannot run in the browser. Render on the server (the node condition of lumen), or mount on the client`,
+  );
+}
+
+/** Server-only: see the `node` variant of `lumen`. Throws LUM4003 in the browser. */
+export function renderToStream(
+  _root: () => unknown,
+  _options?: RenderToStreamOptions,
+): Promise<RenderedShell> {
+  return serverOnly("renderToStream()");
+}
+
+/** Server-only: see the `node` variant of `lumen`. Throws LUM4003 in the browser. */
+export function renderToString(
+  _root: () => unknown,
+  _options?: Omit<RenderToStreamOptions, "resolveAll">,
+): Promise<string> {
+  return serverOnly("renderToString()");
 }

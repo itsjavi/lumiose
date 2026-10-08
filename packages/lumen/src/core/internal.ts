@@ -1,10 +1,16 @@
 // Low-level hooks for the DOM runtime, `$await` and the server runtime. Not part of the public API.
 export {
+  addCleanup,
   createOwner,
+  DISPOSED,
   disposeOwner,
   getOwner,
   handleError,
+  lifetimeOf,
+  lookupContext,
+  onCleanup,
   onError,
+  provideContext,
   runWithLazyOwner,
   runWithOwner,
   type Cleanup,
@@ -30,3 +36,4 @@ export {
   type TriggerNode,
 } from "./reactive.ts";
 export { MUTABLE } from "./system.ts";
+export { beginBusy, PENDING, suspend, SUSPENSE, type Boundary } from "./async.ts";

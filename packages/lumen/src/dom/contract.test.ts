@@ -40,8 +40,10 @@ describe("lumen/dom contract", () => {
     }
   });
 
-  it("keeps the async helpers as explicit TASK-17 stubs", () => {
-    expect(() => runtime.$leave()).toThrow(/TASK-17/);
-    expect(() => runtime.$await(() => 1, 0)).toThrow(/TASK-17/);
+  it("$await never rejects: it resolves to a function that returns or throws", async () => {
+    expect((await runtime.$await(() => Promise.resolve(1), 0))()).toBe(1);
+    const resume = await runtime.$await(() => Promise.reject(new Error("no")), 1);
+    expect(resume).toThrow("no");
+    expect(() => runtime.$leave()).not.toThrow();
   });
 });

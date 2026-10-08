@@ -2,12 +2,14 @@
 // with no reactive graph. Signals are plain cells, computeds run once, effects never run.
 // Owners still scope context and cleanups; the server runtime creates one root owner per
 // request, and disposes (or aborts) it when the request ends.
+import type { Resource } from "./async.ts";
 import type { EffectFn } from "./effect.ts";
 import { getOwner, lifetimeOf, type Owner } from "./owner.ts";
 import type { Computed, Signal, SignalOptions } from "./signal.ts";
 
 export type { Computed, Signal, SignalOptions } from "./signal.ts";
 export type { EffectFn } from "./effect.ts";
+export type { Resource } from "./async.ts";
 export type { Context } from "./context.ts";
 export { createContext, provide, inject } from "./context.ts";
 export { onCleanup } from "./owner.ts";
@@ -74,6 +76,25 @@ export function batch<T>(fn: () => T): T {
 }
 
 export function flushSync(): void {}
+
+/** Nothing is in flight during a server render that the page could show. */
+export function busy(): boolean {
+  return false;
+}
+
+/** Async components render once per request on the server: no re-run is ever in flight. */
+export function pending(): boolean {
+  return false;
+}
+
+/** On the server a resource stays in its initial loading state; `fetcher` runs in the browser only. */
+export function resource<T>(_fetcher: (signal: AbortSignal) => T | PromiseLike<T>): Resource<T> {
+  const read = (() => undefined) as Resource<T>;
+  read.loading = () => true;
+  read.error = noop;
+  read.refetch = noop;
+  return read;
+}
 
 /** The request's signal: the lifetime of the request's root owner. */
 export function lifetime(): AbortSignal {

@@ -6,3 +6,4 @@ export { untrack } from "./reactive.ts";
 export { store } from "./store.ts";
 export { onCleanup, lifetime } from "./owner.ts";
 export { createContext, provide, inject, type Context } from "./context.ts";
+export { busy, pending, resource, type Resource } from "./async.ts";
