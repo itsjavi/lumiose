@@ -1,0 +1,12 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "playground",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["--filter", "@lumen/playground", "exec", "lumen", "dev", "--port", "5196"],
+      "port": 5196,
+      "url": "http://localhost:5196"
+    }
+  ]
+}
