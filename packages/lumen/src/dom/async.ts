@@ -282,3 +282,13 @@ export function $leave(): void {
     pause(currentRun);
   }
 }
+
+/**
+ * Compiler-emitted tag for async component definitions (contract doc-2 §4). Interim implementation:
+ * marks the function; `createComponent` still detects async functions directly. TASK-12 moves the
+ * dispatch to this tag so the async path tree-shakes.
+ */
+export function $async<C extends (props: never) => unknown>(component: C): C {
+  (component as C & { $$async?: true }).$$async = true;
+  return component;
+}

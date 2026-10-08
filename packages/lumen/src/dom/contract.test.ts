@@ -34,6 +34,7 @@ describe("lumen/dom contract", () => {
       "useRef",
       "$await",
       "$leave",
+      "$async",
     ];
     for (const name of members) {
       expect(typeof conforms[name], name).toBe("function");

@@ -23,6 +23,7 @@ const CONTRACT_KEYS: ReadonlyArray<keyof ServerRuntime> = [
   "island",
   "$await",
   "$leave",
+  "$async",
 ];
 
 describe("lumen/server contract", () => {

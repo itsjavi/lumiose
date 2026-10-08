@@ -359,3 +359,9 @@ export function resolveUnit(unit: Unit): Unit {
   while (unit.merged !== undefined) unit = unit.merged;
   return unit;
 }
+
+/** Compiler-emitted tag for async component definitions (contract doc-2 §4); the server path needs no dispatch change. */
+export function $async<C extends (props: never) => unknown>(component: C): C {
+  (component as C & { $$async?: true }).$$async = true;
+  return component;
+}
