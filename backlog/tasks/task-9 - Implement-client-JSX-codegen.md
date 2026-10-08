@@ -5,7 +5,7 @@ status: Done
 assignee:
   - '@Photon'
 created_date: '2026-10-08 12:20'
-updated_date: '2026-10-08 14:10'
+updated_date: '2026-10-08 14:11'
 labels: []
 milestone: m-1
 dependencies:
@@ -64,6 +64,13 @@ Hooks: TASK-10 → CompileOptions.scope_tokens {file, components} (every templat
 Validation: cargo test --workspace (lumen_compiler 33 unit, 20 client golden fixtures in tests/fixtures/client incl. doc-2 §5.1-5.4, 6 compile_api tests incl. source-map lookup, scanner goldens unchanged; lumen_wasm 2), clippy --workspace --all-targets -D warnings, fmt --check, vitest project compiler 16/16 (compile.test.ts API + execute.test.ts: 7 cases compiled by the native addon and run on the real lumen/dom in happy-dom; skips cases whose helpers lumen/dom lacks), tsc + oxlint + oxfmt clean for packages/compiler. Perf (release): 10.4k-line / 430 KB .stsx with 400 components in ~20 ms (parse 2 ms, semantic x2 ~2.5 ms, TS strip 0.5 ms, codegen ~7.5 ms, print ~3.5 ms); a 12-line component ~0.1 ms.
 
 Contract change requests (proposals for Lux, not applied): (1) doc-2 §5.2/§5.4 show setText/.data for row.label()/m.name; the compiler cannot prove those are text, so it uses insert (a node/array value would otherwise print as [object …]); suggest the goldens use insert or define a text-hint rule. (2) Direct sources only for identifier calls: passing row.label for row.label() loses this. (3) The data slot holds the row item (handler reads fields at event time, exact closure semantics) rather than row.id. (4) branch/list need a parent, so conditionals and .map() in component children, fragments and nested ternary arms fall back to tracked functions (re-created on change); suggest a parentless memo/branch returning a Renderable. (5) Registry: added LUM1001 Syntax error and LUM1002 Unsupported (server target until TASK-14) — spec §5.4 table needs them. (6) SSR (TASK-14) must emit the same implicit <tbody>. Known limitations: select value set before dynamic options are inserted; comments attached to a removed/first statement may move below hoisted declarations.
+
+Lux review: Photon's contract proposals are accepted.
+1. insert for values not proven to be text.
+2. Direct signal sources only for identifier calls.
+3. The data slot holds the row item.
+4. Parentless branch/list values: TASK-49 (Spark runtime) and TASK-50 (Photon codegen).
+5. LUM1001/1002 are registered; spec §5.4 updated.
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary
