@@ -5,7 +5,7 @@ status: In Progress
 assignee:
   - '@Spark'
 created_date: '2026-10-08 12:21'
-updated_date: '2026-10-08 16:54'
+updated_date: '2026-10-08 20:45'
 labels: []
 milestone: m-6
 dependencies:
@@ -54,4 +54,6 @@ In progress (written, never run): tests/app.spec.ts + playwright.config.ts (dev 
 Next steps: 1) run CHIPTUNE_SHOTS=$PWD/../../backlog/assets pnpm test:e2e (fix failures; check WAV download works with a detached <a>); 2) vite build + preview check; 3) README.md with run instructions, architecture and the perf note (numbers from the e2e frame stats; scratch run showed ~0.1 ms frame work, ~55-60 FPS headless); 4) visual polish seen in screenshots: vertical fader tracks, BPM field width (now 9ch, recheck), scope midline when silent; 5) check ACs, final summary, Done.
 Lumen notes (no tasks filed yet): (a) in Vitest's default node environment resolve.conditions ['browser'] alone still resolves lumen's node entry (computeds read untracked never update); needs environment happy-dom too - doc nuance for testing.md (Beacon). (b) store() has no toRaw/snapshot export and structuredClone(storeProxy) throws; app keeps the raw root to clone/post (possible runtime API gap, Spark). LUM3005/LUM2001 diagnostics were accurate and helpful.
 Files: examples/spa-chiptune/** only (package.json, tsconfig.json, vite.config.ts, playwright.config.ts, index.html, .gitignore, src/{main.tsx,state.ts,editor.ts,keys.ts,frame.ts,files.ts,lens.ts,tokens.ts}, src/model/{types,song,demo,history,library,mml}.ts + tests, src/audio/{synth,worklet,engine,protocol,wav}.ts + test, src/ui/*.stsx, tests/app.spec.ts); pnpm-lock.yaml gained the new importer (deps.lock taken/released). Not committed.
+
+Spark: resumed (session spark-20261008T203611Z), claimed. The user has uncommitted edits in src/ui/App.stsx, src/ui/Header.stsx, vite.config.ts and src/ui/prueba.md — preserved; my edits avoid those hunks.
 <!-- SECTION:NOTES:END -->
