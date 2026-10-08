@@ -5,7 +5,7 @@ status: To Do
 assignee:
   - '@Spark'
 created_date: '2026-10-08 12:20'
-updated_date: '2026-10-08 12:21'
+updated_date: '2026-10-08 13:40'
 labels: []
 milestone: m-1
 dependencies:
@@ -29,3 +29,9 @@ The performance goal must be measured, not asserted: CPU ≤1.12, memory ≤2.7 
 - [ ] #2 A reproducible local script runs the benchmark for Lumen, vanillajs, Solid and React (plus Svelte and Vue Vapor if feasible) and writes a results table
 - [ ] #3 Runtime size is measured (min+brotli) against the spec budgets; results and gaps are recorded in the task notes
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Lux: the user set the runtime size budget to a 10 kB hard cap (min+brotli, the whole client runtime). Smaller is better, but CPU wins over bytes. Soft target: ≤ 6 kB for typical imports; the js-framework-benchmark bundle ≤ 8 kB. The current 5.02 kB for the benchmark import set is within budget, so focus tuning on CPU and memory.
+<!-- SECTION:NOTES:END -->
