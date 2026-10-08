@@ -5,7 +5,7 @@ status: In Progress
 assignee:
   - '@Photon'
 created_date: '2026-10-08 12:20'
-updated_date: '2026-10-08 13:12'
+updated_date: '2026-10-08 13:25'
 labels: []
 milestone: m-1
 dependencies:
@@ -37,4 +37,6 @@ The client output is where Lumen's performance comes from: template cloning plus
 Lux (from TASK-42 and user decision-17 amendment): delegated event props are React-style camelCase (onKeyDown, onMouseEnter, onDblClick). Codegen lowercases the suffix after 'on' to get the DOM event name (onKeyDown → keydown, delegated if in the bubbling list). on:x keeps the exact name.
 
 Lux: event props come from packages/lumen/src/jsx/events.ts (delegatedEvents table, 104 camelCase names that lowercase to DOM names). onX for a bubbling event is delegated (el.$$name); onX for a non-bubbling event (mouseenter, mouseleave, focus, blur, scroll, load, error, …) compiles to listen(el, name, handler), a direct listener. No diagnostic either way (decision-17 clarification).
+
+Lux: please add a 6xxx range (tooling/config) to the diagnostics registry, with LUM6001 'tsconfig is missing options required by Lumen' (used by lumen check, TASK-27).
 <!-- SECTION:NOTES:END -->
