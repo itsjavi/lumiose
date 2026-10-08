@@ -5,7 +5,7 @@ status: Done
 assignee:
   - '@Spark'
 created_date: '2026-10-08 12:21'
-updated_date: '2026-10-08 14:01'
+updated_date: '2026-10-08 14:02'
 labels: []
 milestone: m-2
 dependencies:
@@ -62,6 +62,8 @@ Evidence: 596/596 tests (pnpm test), new: dom/async.test.ts 12, dom/boundaries.t
 Size (brotli, pnpm --filter lumen size): typical 5.75 -> 6.65 kB (+0.90), benchmark imports 5.02 -> 5.99 kB (+0.97), every export 7.28 -> 9.36. About 0.7 kB of it is the async path that createComponent always pulls in; the rest is ranges/nesting/frames.
 Not done: LUM2007 runtime warning (needs a dev flag; leave to the compiler). fetchJSON client side is Nova's (TASK-23, app/fetch-json.ts, in progress).
 Follow-ups for Lux: (1) proposal to make the async path tree-shakable (compiler tags async components so createComponent dispatches by reference instead of instanceof), (2) TASK-18/14: the server must emit markers for async instance, Suspense and ErrorBoundary ranges inside islands for hydration, (3) Nova: fetchJSON could default its signal to lifetime() so superseded runs abort their fetches; submit() can import beginBusy from core/internal.ts.
+
+Lux review: accepted. Contract amended with $async(component) tagging so the async path tree-shakes (doc-2 §4). Spark implements the runtime side in TASK-12 (size tuning) or with the first compiler integration, and Photon emits it in TASK-15. The size budget is now a 10 kB hard cap (user), so this is a nice-to-have, not urgent. The pkill of vitest at ~15:50 is noted; agents re-run their tests.
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary
