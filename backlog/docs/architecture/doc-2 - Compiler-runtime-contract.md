@@ -3,7 +3,7 @@ id: doc-2
 title: Compiler-runtime contract
 type: specification
 created_date: '2026-10-08 12:27'
-updated_date: '2026-10-08 12:27'
+updated_date: '2026-10-08 12:57'
 tags:
   - architecture
   - contract
@@ -53,7 +53,7 @@ tags:
 | `bindValue`, `bindChecked` | Effect writes the property, and the `input`/`change` listener sets the signal |
 | `attach(el, () => list)` | Each attachment runs in a tracked scope; its cleanup runs on re-run or disposal |
 | `useRef(el, ref)` | Calls `ref(el)` synchronously after the element is created |
-| `$await(thunk, site)` | §4 |
+| `$await(thunk, site)`, `$leave()` | §4 |
 
 **Components and helpers that compiled code reaches through `lumen` (public):**
 - `Suspense`, `ErrorBoundary`, `Portal`, `Dynamic`;
@@ -75,7 +75,7 @@ tags:
 | `selector(source)` | Evaluated once |
 | `createComponent(C, props)` | Runs in a context frame (owner-like: context, request scope, boundary, island flag). Async components return promises |
 | `island(ref, C, props, strategy, strategyValue?, slots?)` | Emits island markers, the serialized record, `<template data-l-slot>` slots, and the `modulepreload` hint for `load` |
-| `$await(thunk, site)` | Awaits. Inside an island it records `{ [instancePath:site:occurrence]: value }`, which must be plain data or it raises `LUM4007` |
+| `$await(thunk, site)`, `$leave()` | Same shape as the client (§4). Awaits. Inside an island it records `{ [instancePath:site:occurrence]: value }`, which must be plain data or it raises `LUM4007` |
 
 **Public server variants** come from `lumen` under the `node` condition, with the same names: `renderToStream`, `renderToString`, `Suspense`, `ErrorBoundary`, `Head`/`Title`/`Meta`, and request accessors.
 
@@ -83,8 +83,9 @@ tags:
 
 - The compiler wraps nothing. Instead, the runtime's `createComponent` detects `C instanceof AsyncFunction`.
 - **Rewrite.** Only awaits whose nearest enclosing function is the component are rewritten:
-  - `await e` becomes `await $await(() => e, N)`, where `N` is the 0-based static site index in source order.
-  - `for await (const x of it)` is lowered to a loop of `$await(() => iter.next(), N)`.
+  - `await e` becomes `(await $await(() => e, N))()`, where `N` is the 0-based static site index in source order. `$await` pauses the run synchronously and resolves to a resume function. Calling it in the component's own continuation restores the run and returns the value. Resuming inside the runtime's `.then` would be unsound, because another run's continuation can interleave (found by Spark in TASK-7).
+  - The whole body is wrapped as `try { … } finally { $leave(); }`, so the run is paused synchronously when the body returns or throws.
+  - `for await (const x of it)` is lowered to a loop of `(await $await(() => iter.next(), N))()`.
 - **Client semantics** (spec §4.4):
   - Each run gets a fresh run subscriber.
   - `$await` pauses it before awaiting and resumes it after, with the owner and context restored.
@@ -199,10 +200,14 @@ export async function Member({ id }: { id: string }) {
 
 ```js
 export async function Member(props) {
-  const m = await $await(() => fetchJSON(`/api/members/${props.id}`), 0);
-  const _el = _t2();
-  _el.firstChild.data = m.name;          // m is a plain value after await, so this is a one-time write
-  return _el;
+  try {
+    const m = (await $await(() => fetchJSON(`/api/members/${props.id}`), 0))();
+    const _el = _t2();
+    _el.firstChild.data = m.name;        // m is a plain value after await, so this is a one-time write
+    return _el;
+  } finally {
+    $leave();
+  }
 }
 ```
 
