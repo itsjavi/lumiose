@@ -50,8 +50,13 @@ async function Member(props: Props) {
 
 describe("escaping", () => {
   it("escapes text and attribute contexts", () => {
-    expect(escape(`<a href="x">&</a>`)).toBe(`&lt;a href="x"&gt;&amp;&lt;/a&gt;`);
-    expect(escape(`"a" & <b>`, true)).toBe("&quot;a&quot; &amp; &lt;b&gt;");
+    // Only what the HTML tokenizer acts on: `&` and `<` in text, `&` and `"` in attributes.
+    expect(escape(`<a href="x">&</a>`)).toBe(`&lt;a href="x">&amp;&lt;/a>`);
+    expect(escape(`"a" & <b>`, true)).toBe("&quot;a&quot; &amp; <b>");
+    expect(escape("&&<<", false)).toBe("&amp;&amp;&lt;&lt;");
+    expect(escape(`<&"&<`, true)).toBe("<&amp;&quot;&amp;<");
+    expect(escape("&x<y", false)).toBe("&amp;x&lt;y");
+    expect(escape("plain 'text' > here")).toBe("plain 'text' > here");
     expect(escape(null)).toBe("");
     expect(escape(false)).toBe("");
     expect(escape(42)).toBe("42");
@@ -61,7 +66,7 @@ describe("escaping", () => {
     const out = await render(() =>
       ssr(["<p>", "", "</p>"], insert("<script>x</script>"), insert(ssr(["<b>ok</b>"]))),
     );
-    expect(out).toBe("<p>&lt;script&gt;x&lt;/script&gt;<b>ok</b></p>");
+    expect(out).toBe("<p>&lt;script>x&lt;/script><b>ok</b></p>");
   });
 
   it("never treats user objects shaped like nodes as HTML", async () => {
@@ -73,15 +78,13 @@ describe("escaping", () => {
     const out = await render(() =>
       ssr(["<p>", "</p>"], insert([null, undefined, true, false, 0, 1n, ["a", () => "<b>"]])),
     );
-    expect(out).toBe("<p>01a&lt;b&gt;</p>");
+    expect(out).toBe("<p>01a&lt;b></p>");
   });
 });
 
 describe("attributes", () => {
   it("serializes single attributes", () => {
-    expect(attr("title", `a "quote" & <tag>`)).toBe(
-      ' title="a &quot;quote&quot; &amp; &lt;tag&gt;"',
-    );
+    expect(attr("title", `a "quote" & <tag>`)).toBe(' title="a &quot;quote&quot; &amp; <tag>"');
     expect(attr("disabled", true)).toBe(" disabled");
     expect(attr("disabled", false)).toBe("");
     expect(attr("title", null)).toBe("");
@@ -106,6 +109,19 @@ describe("attributes", () => {
     expect(classAttr(["a", { b: true, c: false }, ["d", null]])).toBe(' class="a b d"');
     expect(classAttr({ hot: false })).toBe("");
     expect(classAttr(undefined)).toBe("");
+  });
+
+  it("normalizes class strings outside the plain fast path", () => {
+    expect(classAttr("")).toBe("");
+    expect(classAttr("a")).toBe(' class="a"');
+    expect(classAttr("a b a")).toBe(' class="a b"');
+    expect(classAttr("ab b a ab")).toBe(' class="ab b a"');
+    expect(classAttr("a  b")).toBe(' class="a b"');
+    expect(classAttr(" a b ")).toBe(' class="a b"');
+    expect(classAttr("a\tb\nc")).toBe(' class="a b c"');
+    expect(classAttr("a b é")).toBe(' class="a b é"');
+    expect(classAttr("a b c d e f g h i j a")).toBe(' class="a b c d e f g h i j"');
+    expect(classAttr(`x"y a&b`)).toBe(' class="x&quot;y a&amp;b"');
   });
 
   it("serializes style strings and objects with custom properties", () => {
@@ -175,7 +191,7 @@ describe("golden examples (contract doc-2 §5)", () => {
     expect(await render(() => createComponent(Table, {}))).toBe(
       "<table><tbody>" +
         "<tr data-l-x><td data-l-x><a data-l-x>one</a></td></tr>" +
-        '<tr data-l-x class="danger"><td data-l-x><a data-l-x>two &lt;b&gt;</a></td></tr>' +
+        '<tr data-l-x class="danger"><td data-l-x><a data-l-x>two &lt;b></a></td></tr>' +
         "</tbody></table>",
     );
   });
@@ -200,7 +216,7 @@ describe("golden examples (contract doc-2 §5)", () => {
       ),
     );
     expect(out).toBe(
-      '<main><article class="featured" data-l-p1><h2>Hello</h2>&lt;i&gt;body&lt;/i&gt;</article></main>',
+      '<main><article class="featured" data-l-p1><h2>Hello</h2>&lt;i>body&lt;/i></article></main>',
     );
   });
 

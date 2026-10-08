@@ -1,7 +1,7 @@
 // Island markers, slots, records and await records (decision-9, spec §7.2, §7.4).
 import { describe, expect, it } from "vitest";
 import { signal } from "../core/server.ts";
-import { Suspense } from "./components.ts";
+import { ErrorBoundary, Suspense } from "./components.ts";
 import {
   $await,
   $leave,
@@ -121,6 +121,19 @@ function Panel() {
   );
 }
 
+function Card(props: Props) {
+  return props.open ? ssr(["<div>", "</div>"], insert(props.icon)) : ssr(["<div></div>"]);
+}
+
+async function Later(props: Props) {
+  try {
+    const label = (await $await(() => sleep(1).then(() => "ready"), 0))();
+    return ssr(["<p>", "", "</p>"], text(label), insert(props.children));
+  } finally {
+    $leave();
+  }
+}
+
 describe("island()", () => {
   it("wraps the island in markers, adds hydration markers and queues its record", async () => {
     const shell = await renderToStream(() =>
@@ -152,7 +165,7 @@ describe("island()", () => {
     expect(records(shell.body).map((record) => record.id)).toEqual([0, 1, 2]);
   });
 
-  it("renders slots into templates and inline (golden 5.5), with the strategy value", async () => {
+  it("renders slots inline where the island renders them (golden 5.5), with the strategy value", async () => {
     const shell = await renderToStream(() =>
       island(
         "/src/components/Team.stsx#TeamPanel",
@@ -166,8 +179,7 @@ describe("island()", () => {
       ),
     );
     expect(shell.body.split("<script")[0]).toBe(
-      '<!--l:0--><template data-l-slot="children"><p>footer</p></template>' +
-        "<section>1,2<!--[--><p>footer</p><!--]--></section><!--/l:0-->",
+      "<!--l:0--><section>1,2<!--[--><!--l:s:children--><p>footer</p><!--/l:s--><!--]--></section><!--/l:0-->",
     );
     expect(records(shell.body)).toEqual([
       {
@@ -179,6 +191,36 @@ describe("island()", () => {
         slots: ["children"],
       },
     ]);
+  });
+
+  it("sends slots the island did not render as templates, once", async () => {
+    const slots = { icon: () => ssr(["<svg></svg>"]), children: () => ssr(["<p>body</p>"]) };
+    const closed = await renderToStream(() =>
+      island("/src/Card.stsx#Card", Card, { open: false }, "idle", undefined, slots),
+    );
+    expect(closed.body.split("<script")[0]).toBe(
+      '<!--l:0--><template data-l-slot="icon"><svg></svg></template>' +
+        '<template data-l-slot="children"><p>body</p></template><div></div><!--/l:0-->',
+    );
+    const open = await renderToStream(() =>
+      island("/src/Card.stsx#Card", Card, { open: true }, "idle", undefined, slots),
+    );
+    expect(open.body.split("<script")[0]).toBe(
+      '<!--l:0--><template data-l-slot="children"><p>body</p></template>' +
+        "<div><!--[--><!--l:s:icon--><svg></svg><!--/l:s--><!--]--></div><!--/l:0-->",
+    );
+    expect(records(open.body)[0].slots).toEqual(["icon", "children"]);
+  });
+
+  it("knows the inline slots of async islands once they resolve", async () => {
+    const shell = await renderToStream(() =>
+      island("/src/Later.stsx#Later", Later, {}, "load", undefined, {
+        children: () => ssr(["<i>kid</i>"]),
+      }),
+    );
+    expect(shell.body.split("<script")[0]).toBe(
+      "<!--l:0--><!--[--><p>ready<!--[--><!--l:s:children--><i>kid</i><!--/l:s--><!--]--></p><!--]--><!--/l:0-->",
+    );
   });
 
   it("renders only the slots for client:only", async () => {
@@ -236,11 +278,85 @@ describe("island()", () => {
   });
 });
 
+function Fails(): unknown {
+  throw new Error("nope");
+}
+
+async function Rejects(): Promise<unknown> {
+  try {
+    (await $await(() => Promise.reject(new Error("later")), 0))();
+    return ssr(["never"]);
+  } finally {
+    $leave();
+  }
+}
+
+function boundaries() {
+  return ssr(
+    ["<div>", "", "", "", "</div>"],
+    createComponent(Suspense, {
+      get fallback() {
+        return ssr(["…"]);
+      },
+      get children() {
+        return ssr(["<b>sync</b>"]);
+      },
+    }),
+    createComponent(ErrorBoundary, {
+      fallback: ssr(["<i>fallback</i>"]),
+      get children() {
+        return ssr(["<b>fine</b>"]);
+      },
+    }),
+    createComponent(ErrorBoundary, {
+      fallback: (error: Error) => ssr(["<i>", "</i>"], text(error.message)),
+      get children() {
+        return createComponent(Fails, {});
+      },
+    }),
+    createComponent(ErrorBoundary, {
+      fallback: (error: Error) => ssr(["<i>", "</i>"], text(error.message)),
+      get children() {
+        return createComponent(Rejects, {});
+      },
+    }),
+  );
+}
+
+describe("boundary and async instance blocks", () => {
+  it("wraps Suspense and ErrorBoundary ranges inside islands; failed boundaries open with [!", async () => {
+    const shell = await renderToStream(() => island("/src/B.stsx#B", boundaries, {}, "idle"));
+    expect(shell.body.split("<script")[0]).toBe(
+      "<!--l:0--><div><!--[--><b>sync</b><!--]--><!--[--><b>fine</b><!--]-->" +
+        "<!--[!--><i>nope</i><!--]--><!--[!--><i>later</i><!--]--></div><!--/l:0-->",
+    );
+  });
+
+  it("wraps resolved boundaries and an async island root too (prerender)", async () => {
+    const shell = await renderToStream(() => island("/src/Panel.stsx#Panel", Panel, {}, "idle"), {
+      resolveAll: true,
+    });
+    expect(shell.body.split("<script")[0]).toBe(
+      "<!--l:0--><aside><!--[--><!--[--><p>inner</p><!--]--><!--]--></aside><!--/l:0-->",
+    );
+    const root = await renderToStream(() =>
+      island("/src/Late.stsx#Late", Late, { value: 1 }, "idle"),
+    );
+    expect(root.body.split("<script")[0]).toBe("<!--l:0--><!--[--><p>1</p><!--]--><!--/l:0-->");
+  });
+
+  it("adds no markers outside islands", async () => {
+    const shell = await renderToStream(boundaries);
+    expect(shell.body).toBe("<div><b>sync</b><b>fine</b><i>nope</i><i>later</i></div>");
+  });
+});
+
 describe("await records", () => {
   it("records awaited values under instancePath:site:occurrence", async () => {
     const shell = await renderToStream(() => island("/src/Team.stsx#Team", Team, {}, "idle"));
     expect(shell.body.split("<script")[0]).toBe(
-      "<!--l:0--><div><h3>ada<!--!-->#1#2</h3><h3>bob<!--!-->#1#2</h3></div><!--/l:0-->",
+      "<!--l:0--><div><!--[--><h3>ada<!--!-->#1#2</h3><!--]-->" +
+        "<!--[--><h3>bob<!--!-->#1#2</h3><!--]--></div><!--/l:0-->",
     );
     const [record] = records(shell.body);
     expect(Object.keys(record.awaits).toSorted()).toEqual([
@@ -286,10 +402,13 @@ describe("await records", () => {
     expect(records(shell.body)).toEqual([
       { id: 0, ref: "/src/Panel.stsx#Panel", strategy: "idle", props: {} },
     ]);
+    // The boundary's block wraps the placeholder; the streamed content replaces the placeholder.
+    expect(shell.body).toContain('<aside><!--[--><?start name="lb0">…<?end><!--]--></aside>');
     const streamed: string[] = [];
     for await (const chunk of shell.stream!) streamed.push(chunk);
     const html = streamed.join("");
-    expect(html).toContain('<template for="lb0"><p>inner</p></template>');
+    expect(html).toContain('<template for="lb0"><!--[--><p>inner</p><!--]--></template>');
+    expect(html).toContain('<template for="lb1"><!--l:1--><!--[--><p>late</p><!--]--><!--/l:1-->');
     expect(records(html)).toEqual([
       { id: 0, awaits: { "0.0.0:0:0": "inner" } },
       {

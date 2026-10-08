@@ -62,24 +62,41 @@ export function isThenable(value: unknown): value is PromiseLike<unknown> {
 
 // --- Escaping ----------------------------------------------------------------------------------
 
-const TEXT_TEST = /[&<>]/;
-const TEXT_ALL = /[&<>]/g;
-const ATTR_TEST = /[&<>"]/;
-const ATTR_ALL = /[&<>"]/g;
-const ENTITIES: Readonly<Record<string, string>> = {
-  "&": "&amp;",
-  "<": "&lt;",
-  ">": "&gt;",
-  '"': "&quot;",
-};
-const entity = (char: string): string => ENTITIES[char]!;
+// Only the characters the HTML tokenizer acts on are escaped (as Solid, Svelte and Marko do): `&`
+// (character references) and `<` (tags, and the end tag of `<title>`/`<textarea>`) in text, `&` and
+// `"` in double-quoted attribute values. `>` and `'` parse as themselves there, so the DOM is the
+// same as with the client's text and attribute writes (./parity.test.ts).
 
+/** Escapes text content: `&` and `<`. */
 export function escapeText(value: string): string {
-  return TEXT_TEST.test(value) ? value.replace(TEXT_ALL, entity) : value;
+  return escapeWith(value, "<", "&lt;");
 }
 
+/** Escapes a double-quoted attribute value: `&` and `"`. */
 export function escapeAttr(value: string): string {
-  return ATTR_TEST.test(value) ? value.replace(ATTR_ALL, entity) : value;
+  return escapeWith(value, '"', "&quot;");
+}
+
+// The hot path of server rendering: `indexOf` scans (vectorized by V8) find the next `&` and the
+// next `delimiter`; unchanged runs are sliced, and a string with neither is returned as is.
+function escapeWith(value: string, delimiter: string, entity: string): string {
+  let amp = value.indexOf("&");
+  let delim = value.indexOf(delimiter);
+  if (amp < 0 && delim < 0) return value;
+  let out = "";
+  let from = 0;
+  while (amp >= 0 || delim >= 0) {
+    if (delim < 0 || (amp >= 0 && amp < delim)) {
+      out += from === amp ? "&amp;" : value.slice(from, amp) + "&amp;";
+      from = amp + 1;
+      amp = value.indexOf("&", from);
+    } else {
+      out += from === delim ? entity : value.slice(from, delim) + entity;
+      from = delim + 1;
+      delim = value.indexOf(delimiter, from);
+    }
+  }
+  return from < value.length ? out + value.slice(from) : out;
 }
 
 /** Escapes a value for text (default) or double-quoted attribute context. Nullish and booleans render nothing. */

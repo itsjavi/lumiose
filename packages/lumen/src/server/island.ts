@@ -1,10 +1,14 @@
 // Island call sites on the server (decision-9, spec §7.2, §7.4):
 //
-//   <!--l:ID--><template data-l-slot="children">…</template>…island HTML…<!--/l:ID-->
+//   <!--l:ID--><template data-l-slot="icon">…</template>…<!--l:s:children-->…<!--/l:s-->…<!--/l:ID-->
 //
+// Slots (JSX-valued props and children) are static HTML rendered in the call site's frame. Where
+// the island renders a slot during SSR, it appears inline between `<!--l:s:name-->` and
+// `<!--/l:s-->`, and the client adopts those nodes; a slot the island did not render travels once,
+// as a `<template data-l-slot>` at the start of the range, for the client to insert later.
 // The record `{ id, ref, strategy, props, value?, slots?, awaits? }` is flushed with the chunk
-// (shell or boundary) the island renders in. `client:only` renders the slots but not the component.
-// An island inside another island's own render is rendered inline, with no record.
+// (shell or boundary) the island renders in. `client:only` renders no component, so all its slots
+// are templates. An island inside another island's own render is rendered inline, with no record.
 
 import { LUM_ISLAND_PROP, LumenError } from "../app/diagnostics.ts";
 import type { IslandStrategy } from "../contract/server.ts";
@@ -57,13 +61,9 @@ export function island<P>(
 
   // Slots are static server HTML from the call site's frame (not hydrated as part of the island).
   const rendered: Record<string, Html> = {};
-  const pieces: Html[] = [`<!--l:${id}-->`];
-  for (const name of names) {
-    rendered[name] = content(slots![name]!());
-    pieces.push(
-      wrap(`<template data-l-slot="${escapeAttr(name)}">`, rendered[name], "</template>"),
-    );
-  }
+  for (const name of names) rendered[name] = content(slots![name]!());
+  const inline = new Set<string>();
+  let out: Html = "";
   if (strategy !== "only") {
     const frame: Frame = {
       render,
@@ -74,15 +74,33 @@ export function island<P>(
       occurrences: undefined,
       streamed: parent.streamed,
     };
-    const out = runComponent(
+    const node = runComponent(
       component,
-      withSlots(props, names, (name) => html(rendered[name]!)),
+      withSlots(props, names, (name) => {
+        inline.add(name);
+        return html(wrap(`<!--l:s:${name}-->`, rendered[name]!, "<!--/l:s-->"));
+      }),
       frame,
     );
-    pieces.push(out instanceof SSRHtml ? out.t : out.then((node) => node.t));
+    out = node instanceof SSRHtml ? node.t : node.then((done) => done.t);
   }
-  pieces.push(`<!--/l:${id}-->`);
-  return html(join(pieces));
+  // Known once the island rendered: the slots it read are inline, the others become templates.
+  const templates = (): Html =>
+    join(
+      names
+        .filter((name) => !inline.has(name))
+        .map((name) =>
+          wrap(`<template data-l-slot="${escapeAttr(name)}">`, rendered[name]!, "</template>"),
+        ),
+    );
+  return html(
+    join([
+      `<!--l:${id}-->`,
+      typeof out === "string" ? templates() : out.then(templates),
+      out,
+      `<!--/l:${id}-->`,
+    ]),
+  );
 }
 
 function specifierOf(ref: string): string {

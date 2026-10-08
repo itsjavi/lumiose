@@ -10,7 +10,13 @@
 // the component calls in its own continuation, so concurrent requests never see each other's
 // frames or context.
 
-import { createOwner, getOwner, type Owner } from "../core/internal.ts";
+import {
+  createOwner,
+  currentOwner,
+  getOwner,
+  runWithLazyOwner,
+  type Owner,
+} from "../core/internal.ts";
 import { setCurrentOwner } from "../core/reactive.ts";
 import { LUM_AWAIT_VALUE, LumenError } from "../app/diagnostics.ts";
 import { encodeData } from "./serialize.ts";
@@ -208,19 +214,39 @@ export function runComponent<P>(
   props: P,
   frame: Frame | undefined,
 ): SSRHtml | Promise<SSRHtml> {
-  const owner = createOwner(getOwner());
-  if (component instanceof AsyncFunction) return runAsync(component, props, frame, owner);
-  // Inlined `withFrame`: this is the hot path of every sync component.
+  if (component instanceof AsyncFunction) {
+    return runAsync(component, props, frame, createOwner(getOwner()));
+  }
+  // The hot path of every sync component. Its owner is lazy (as for client list rows): it exists
+  // only once the component provides context, registers a cleanup, reads `lifetime()` or awaits,
+  // so most server components allocate no owner and the render's disposal has nothing to walk.
   const prevFrame = current;
-  const prevOwner = setCurrentOwner(owner);
   current = frame;
+  nextComponent = component as ServerComponent<unknown>;
+  nextProps = props;
   try {
-    const result = component(props);
-    return result instanceof SSRHtml ? result : html(content(result));
+    runWithLazyOwner(currentOwner, runNext);
   } finally {
     current = prevFrame;
-    setCurrentOwner(prevOwner);
   }
+  const out = lastOutput!;
+  lastOutput = undefined;
+  return out;
+}
+
+// `runNext`'s input and output, in module state so that the hot path allocates no closure. It reads
+// its input before the component runs (nested components reuse the slots) and writes its output
+// last, which `runComponent` takes right after.
+let nextComponent: ServerComponent<unknown> | undefined;
+let nextProps: unknown;
+let lastOutput: SSRHtml | Promise<SSRHtml> | undefined;
+
+function runNext(): void {
+  const component = nextComponent!;
+  const props = nextProps;
+  nextComponent = nextProps = undefined;
+  const result = component(props);
+  lastOutput = result instanceof SSRHtml ? result : html(content(result));
 }
 
 // --- Async runs --------------------------------------------------------------------------------
@@ -279,9 +305,25 @@ function runAsync<P>(
     // `$await` or `$leave` normally paused it already; hand-written async code may not call them.
     pause(run);
   }
-  return Promise.resolve(result).then((value) =>
-    value instanceof SSRHtml ? value : html(withFrame(frame, owner, () => content(value))),
+  const rendered = Promise.resolve(result).then((value) =>
+    value instanceof SSRHtml ? value.t : withFrame(frame, owner, () => content(value)),
   );
+  // Inside islands the instance's output is a block: the range the client's async instance
+  // claims (dom/async.ts), so instances hydrate independently once their awaits replay.
+  return rendered.then((out) => new SSRHtml(frame?.island === undefined ? out : block(out)));
+}
+
+/** A hydration block: `<!--[-->…<!--]-->` (contract doc-2 §3). */
+export function block(inner: string): string {
+  return `<!--[-->${inner}<!--]-->`;
+}
+
+/**
+ * Whether an async component run is executing (between a resume and a pause): `fetchJSON()`
+ * then defaults its signal to `lifetime()`.
+ */
+export function inAsyncRun(): boolean {
+  return currentRun?.active === true;
 }
 
 /**

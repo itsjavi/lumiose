@@ -29,15 +29,64 @@ export function attr(name: string, value: unknown): string {
 
 /** ` class="…"` from a string, an array or a `Record<string, boolean>` (combinable), as `setClass`. */
 export function classAttr(value: unknown): string {
+  if (typeof value !== "string") return classOf(value);
+  // Class strings repeat across rows and requests: their serialized attribute is memoized, in a
+  // map that starts over once full (bounded memory for unbounded distinct values).
+  let out = classCache.get(value);
+  if (out === undefined) {
+    out = classOf(value);
+    if (classCache.size === CLASS_CACHE_SIZE) classCache.clear();
+    classCache.set(value, out);
+  }
+  return out;
+}
+
+const CLASS_CACHE_SIZE = 512;
+const classCache = new Map<string, string>();
+
+function classOf(value: unknown): string {
   const classes = classString(value);
   return classes === "" ? "" : ` class="${escapeAttr(classes)}"`;
 }
 
 // The client's class tokens (setClass): whitespace-separated, each once, in first-seen order.
 function classString(value: unknown): string {
+  if (typeof value === "string" && isClassList(value)) return value;
   const tokens: string[] = [];
   addTokens(value, tokens);
   return tokens.join(" ");
+}
+
+/**
+ * Whether `value` is already a normalized class list (the common case: `"row active"`): ASCII
+ * tokens separated by single spaces, none repeated. Checked without allocating; anything else
+ * (other whitespace, non-ASCII, duplicates, many tokens) takes the general path.
+ */
+function isClassList(value: string): boolean {
+  const length = value.length;
+  if (length === 0) return true;
+  let start = 0;
+  let tokens = 0;
+  for (let i = 0; i <= length; i++) {
+    const code = i === length ? 32 : value.charCodeAt(i);
+    if (code > 32 && code < 127) continue;
+    if (code !== 32 || i === start || ++tokens > 8) return false;
+    // The token [start, i) against each earlier one.
+    for (let other = 0; other < start; ) {
+      const end = value.indexOf(" ", other);
+      if (end - other === i - start && sameChars(value, other, start, i - start)) return false;
+      other = end + 1;
+    }
+    start = i + 1;
+  }
+  return true;
+}
+
+function sameChars(value: string, a: number, b: number, length: number): boolean {
+  for (let k = 0; k < length; k++) {
+    if (value.charCodeAt(a + k) !== value.charCodeAt(b + k)) return false;
+  }
+  return true;
 }
 
 function addTokens(value: unknown, out: string[]): void {

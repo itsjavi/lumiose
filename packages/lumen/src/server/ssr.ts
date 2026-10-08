@@ -90,13 +90,18 @@ export function list<T>(
 ): unknown {
   const island = currentFrame()?.island !== undefined;
   const length = source == null ? 0 : source.length;
-  const rows: Html[] = [];
   const indexed = render.length > 1;
+  // Rows concatenate directly; from the first async row on, the rest are collected and joined.
+  let out = "";
+  let rows: Html[] | undefined;
   for (let i = 0; i < length; i++) {
-    rows.push(content(render(source![i]!, indexed ? () => i : (undefined as never))));
+    const row = content(render(source![i]!, indexed ? () => i : (undefined as never)));
+    if (rows !== undefined) rows.push(row);
+    else if (typeof row === "string") out += row;
+    else rows = [out, row];
   }
-  const out = join(rows);
-  return html(island ? wrap("<!--[-->", out, "<!--]-->") : out);
+  const all = rows === undefined ? out : join(rows);
+  return html(island ? wrap("<!--[-->", all, "<!--]-->") : all);
 }
 
 /** Server branch: renders one side once. */

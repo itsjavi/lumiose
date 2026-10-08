@@ -56,27 +56,39 @@ interface AdapterNode {
   }>;
 }
 
+export type PreviewServerOptions = Pick<PreviewCommandOptions, "root" | "port" | "host">;
+
 /**
- * Serves the build output with `@lumen/adapter-node` (installed in the project) until the process
- * is interrupted; resolves to the exit code. Requests see the `.env` files of the production mode
- * under the process environment, as the build's prerendering did.
+ * Serves the build output with `@lumen/adapter-node` (installed in the project). Requests see the
+ * `.env` files of the production mode under the process environment, as the build's prerendering
+ * did. Used by `lumen preview` (CLI, with `--format json`) and {@link previewCommand}.
+ */
+export async function startPreview(
+  options: PreviewServerOptions,
+): Promise<{ url: string; close(): Promise<void> }> {
+  const root = resolve(options.root);
+  const adapter = await importAdapter(root);
+  // The build's outDir and env, from the project's Vite config.
+  const config = await resolveConfig(
+    { root, configFile: findViteConfig(root), logLevel: "silent" },
+    "build",
+  );
+  return adapter.createServer({
+    dir: resolve(root, config.build.outDir),
+    port: options.port ?? 4173,
+    host: options.host ?? "localhost",
+    env: loadEnv(config.mode, config.envDir === false ? root : config.envDir, ""),
+  });
+}
+
+/**
+ * Serves the build output ({@link startPreview}) until the process is interrupted; resolves to the
+ * exit code.
  */
 export async function previewCommand(options: PreviewCommandOptions): Promise<number> {
-  const root = resolve(options.root);
   let server;
   try {
-    const adapter = await importAdapter(root);
-    // The build's outDir and env, from the project's Vite config.
-    const config = await resolveConfig(
-      { root, configFile: findViteConfig(root), logLevel: "silent" },
-      "build",
-    );
-    server = await adapter.createServer({
-      dir: resolve(root, config.build.outDir),
-      port: options.port ?? 4173,
-      host: options.host ?? "localhost",
-      env: loadEnv(config.mode, config.envDir === false ? root : config.envDir, ""),
-    });
+    server = await startPreview(options);
   } catch (error) {
     options.writeError(
       `lumen preview: ${error instanceof Error ? error.message : String(error)}\n`,

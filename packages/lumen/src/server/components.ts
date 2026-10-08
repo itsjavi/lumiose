@@ -15,6 +15,11 @@ import {
 import { html, SSRHtml, wrap, type Html } from "./node.ts";
 import { boundaryError, createUnit, foldUnit, streamBoundary } from "./render.ts";
 
+// Hydration block markers (contract doc-2 §3), emitted inside islands only.
+const OPEN = "<!--[-->";
+const OPEN_FAILED = "<!--[!-->";
+const CLOSE = "<!--]-->";
+
 export interface SuspenseProps {
   fallback?: unknown;
   children?: unknown;
@@ -30,7 +35,10 @@ export interface SuspenseProps {
 export function Suspense(props: SuspenseProps): unknown {
   const frame = renderFrame("<Suspense>");
   const render = frame.render;
-  if (render.resolveAll) return html(content(props.children));
+  // Inside islands the boundary is a block (the client's Suspense range), around the content or
+  // around the streamed placeholder, which the content replaces in place.
+  const range = (out: Html): Html => (frame.island === undefined ? out : wrap(OPEN, out, CLOSE));
+  if (render.resolveAll) return html(range(content(props.children)));
   const unit = createUnit(frame.unit);
   const inner: Frame = { ...frame, unit, streamed: true };
   let out: Html;
@@ -43,10 +51,10 @@ export function Suspense(props: SuspenseProps): unknown {
   frame.children = inner.children;
   if (typeof out === "string") {
     foldUnit(render, unit);
-    return new SSRHtml(out);
+    return new SSRHtml(range(out) as string);
   }
   const name = streamBoundary(render, unit, out);
-  return html(wrap(`<?start name="${name}">`, content(props.fallback), "<?end>"));
+  return html(range(wrap(`<?start name="${name}">`, content(props.fallback), "<?end>")));
 }
 
 export interface ErrorBoundaryProps {
@@ -65,23 +73,28 @@ const noop = (): void => {};
 export function ErrorBoundary(props: ErrorBoundaryProps): unknown {
   const frame = currentFrame();
   const owner = getOwner();
+  // Inside islands the boundary is a block (the client's ErrorBoundary range): `<!--[-->` around
+  // the children, `<!--[!-->` around a fallback, so the client renders that boundary afresh.
+  const island = frame?.island !== undefined;
   const fallback = (error: unknown): Html => {
     if (isRedirect(error) || isHttpError(error)) {
       if (frame === undefined || !frame.streamed) throw error;
       error = boundaryError(error);
     }
-    return withFrame(frame, owner, () => {
+    const out = withFrame(frame, owner, () => {
       const value = props.fallback;
       return content(typeof value === "function" ? value(error, noop) : value);
     });
+    return island ? wrap(OPEN_FAILED, out, CLOSE) : out;
   };
+  const children = (out: string): string => (island ? OPEN + out + CLOSE : out);
   let out: Html;
   try {
     out = content(props.children);
   } catch (error) {
     return html(fallback(error));
   }
-  return typeof out === "string" ? new SSRHtml(out) : html(out.then(undefined, fallback));
+  return typeof out === "string" ? new SSRHtml(children(out)) : html(out.then(children, fallback));
 }
 
 // --- Head --------------------------------------------------------------------------------------

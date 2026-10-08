@@ -33,8 +33,18 @@ const middleware: Middleware = (ctx, next) => {
 };
 export default middleware;
 `,
-  "src/routes/_layout.stsx": `export default function Layout(props: { children?: JSX.Element }) {
-  return <div class="layout"><nav><a href="/about">About</a></nav>{props.children}</div>;
+  "src/app.css": "body { margin: 0; }\n",
+  "src/routes/_layout.stsx": `import "../app.css";
+export default function Layout(props: { children?: JSX.Element }) {
+  return (
+    <div class="layout">
+      <nav><a href="/about">About</a></nav>
+      {props.children}
+      <style>
+        .layout { color: crimson; }
+      </style>
+    </div>
+  );
 }
 `,
   "src/routes/index.stsx": `import { Suspense, Title } from "lumen";
@@ -146,6 +156,15 @@ describe.skipIf(!binding)("lumen build", () => {
     expect(preload).not.toBeNull();
     expect(existsSync(join(result.clientDir, preload![1]!))).toBe(true);
 
+    // The stylesheets of the layout (an imported CSS file, then its style block), linked in the
+    // head of every page (TASK-19's CSS manifest).
+    const links = [...home.matchAll(/<link rel="stylesheet" href="\/(assets\/[\w.-]+\.css)">/g)];
+    expect(links.map((link) => link[1])).toHaveLength(2);
+    expect(read(root, links[0]![1]!)).toContain("margin:0");
+    expect(read(root, links[1]![1]!)).toMatch(/\.layout\[data-l-\w+\]\{color:#dc143c\}/);
+    expect(home.indexOf(links[1]![0])).toBeLessThan(home.indexOf("</head>"));
+    expect(read(root, "about/index.html")).toContain(links[0]![0] + links[1]![0]);
+
     expect(read(root, "blog/hola mundo/index.html")).toContain("<h1>Post hola mundo</h1>");
     expect(read(root, "docs/guide/intro/index.html")).toContain("<h1>Doc guide/intro</h1>");
     expect(read(root, "sitemap.xml")).toBe("<urlset><url>http://localhost/</url></urlset>");
@@ -162,7 +181,9 @@ describe.skipIf(!binding)("lumen build", () => {
     const live = await entry.default.fetch(
       new Request("http://app.test/live?q=1", { headers: { cookie: "a=b" } }),
     );
-    expect(await live.text()).toContain("<p>live b 1</p>");
+    const liveHtml = await live.text();
+    expect(liveHtml).toContain("<p>live b 1</p>");
+    expect(liveHtml).toContain(links[0]![0] + links[1]![0]);
     const posted = await entry.default.fetch(
       new Request("http://app.test/api/echo", { method: "POST" }),
     );
@@ -183,6 +204,7 @@ export default { base: "/sub/", build: { outDir: "out" }, plugins: [lumen()] };
     expect(files).toEqual(expect.arrayContaining(["index.html", "about.html", "blog/hello.html"]));
     const home = readFileSync(join(result.clientDir, "index.html"), "utf8");
     expect(home).toMatch(/<link rel="modulepreload" href="\/sub\/assets\/Counter-[\w-]+\.js">/);
+    expect(home).toMatch(/<link rel="stylesheet" href="\/sub\/assets\/[\w.-]+\.css">/);
 
     const entry = (await import(pathToFileURL(result.serverEntry).href)) as ServerEntryModule;
     expect(entry.config).toEqual({ base: "/sub/", trailingSlash: "never", assetsDir: "assets" });

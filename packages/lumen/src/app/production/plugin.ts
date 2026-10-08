@@ -6,11 +6,13 @@
 //   SPA entries once TASK-25 lands, assets and `public/`.
 // - ssr → `dist/server/entry.js` (`virtual:lumen/server-entry`): the route manifest, a lazy
 //   import per route module, the middleware and the document, the island URLs of the client
-//   build, and `export default { fetch }` from `createAppHandler()`.
+//   build, the stylesheets of each module (`virtual:lumen/css-manifest`, lumen/vite) and
+//   `export default { fetch }` from `createAppHandler()`.
 
 import { fileURLToPath } from "node:url";
 import { join, resolve } from "node:path";
 import { normalizePath, type Plugin, type ResolvedConfig } from "vite";
+import { CSS_MANIFEST } from "../../vite/css-manifest.ts";
 import { ISLANDS } from "../../vite/islands.ts";
 import type { RouteManifest } from "../routes/manifest.ts";
 import type { BuiltAppConfig } from "../server/app.ts";
@@ -125,7 +127,8 @@ export function serverEntryCode(state: BuildState, config: ResolvedConfig): stri
   };
   // The runtime is imported dynamically so it lands in a chunk: route chunks then never import
   // this entry, which can be loaded again under another URL (the build's prerender pass).
-  return `const { createAppHandler } = await import(${JSON.stringify(APP_RUNTIME)});
+  return `import { stylesheets } from ${JSON.stringify(CSS_MANIFEST)};
+const { createAppHandler } = await import(${JSON.stringify(APP_RUNTIME)});
 
 const modules = {
 ${modules.join("\n")}
@@ -137,6 +140,7 @@ export const config = ${JSON.stringify(appConfig)};
 export const app = {
   ...config,
   ...${JSON.stringify(data)},
+  stylesheets,
   loadModule(file) {
     const load = modules[file];
     return load === undefined

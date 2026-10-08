@@ -193,7 +193,7 @@ describe("Suspense streaming", () => {
       `<script>${SWAP_SCRIPT}</script>${chunkFor("lb1", "<p>b</p>")}`,
     );
     a.resolve("a <&>");
-    expect((await reader.read()).value).toBe(chunkFor("lb0", "<p>a &lt;&amp;&gt;</p>"));
+    expect((await reader.read()).value).toBe(chunkFor("lb0", "<p>a &lt;&amp;></p>"));
     expect((await reader.read()).done).toBe(true);
   });
 
@@ -327,7 +327,7 @@ describe("ErrorBoundary", () => {
       ),
     );
     expect(shell.body).toBe(
-      "<main><p role=alert>sync &lt;boom&gt;</p><p role=alert>async boom</p></main>",
+      "<main><p role=alert>sync &lt;boom></p><p role=alert>async boom</p></main>",
     );
   });
 
@@ -372,11 +372,11 @@ describe("head", () => {
       }),
     );
     expect(shell.head).toBe(
-      "<title>Post &lt;1&gt; | Site</title>" +
-        '<meta name="description" content="About Post &lt;1&gt;"><meta charset="utf-8">' +
+      "<title>Post &lt;1> | Site</title>" +
+        '<meta name="description" content="About Post <1>"><meta charset="utf-8">' +
         '<link rel="icon" href="/favicon.ico">',
     );
-    expect(shell.body).toBe("<div><h1>Post &lt;1&gt;</h1></div>");
+    expect(shell.body).toBe("<div><h1>Post &lt;1></h1></div>");
   });
 
   it("rejects head changes inside a streamed boundary (LUM5004), but not with resolveAll", async () => {

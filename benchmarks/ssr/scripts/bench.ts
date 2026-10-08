@@ -168,11 +168,16 @@ ${modes.join("\n")}
 - Output size differs with each framework's markers and escaping: Svelte adds \`<!--[-->\`
   block markers and whitespace, Vue fragment markers, React \`<!-- -->\` text separators, Solid
   (hydratable) \`data-hk\` keys. Lumen emits hydration markers only inside islands (none here)
-  and leaves attribute values unquoted when that is valid. Solid and Svelte escape only \`<\`
-  and \`&\` in text (and \`"\` and \`&\` in attributes), which is valid HTML and cheaper than
+  and leaves attribute values unquoted when that is valid. Lumen, Solid and Svelte escape only
+  \`<\` and \`&\` in text (and \`"\` and \`&\` in attributes), which is valid HTML and cheaper than
   also escaping \`>\` and quotes.
 - Lumen's \`renderToString\` is \`renderToStream\` with \`resolveAll\`: the same path as
-  prerendering and the streamed shell (owners, async frames and the head collector included).
+  prerendering and the streamed shell (lazy owners, async frames and the head collector
+  included).
+- Lumen went from 338 to about 540 renders/s with TASK-71 (escaping with \`indexOf\` scans and
+  only the characters HTML requires, plain class strings memoized, owners created only when a
+  component uses one). Most of the remaining gap to Solid is in the code compiled for component
+  calls (getter objects for props and static children, closures per branch): TASK-78.
 - Marko 6 is not included yet.
 - One machine, one Node version: compare ratios, not absolute numbers, and rerun before
   drawing conclusions from small differences.

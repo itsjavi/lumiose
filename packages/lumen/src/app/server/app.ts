@@ -13,6 +13,7 @@ import {
   type TrailingSlash,
 } from "./handler.ts";
 import { createServerRenderer } from "./render.ts";
+import { escapeAttr } from "../../server/node.ts";
 
 /** Options of the built app, for adapters serving `dist/client` next to the handler. */
 export interface BuiltAppConfig {
@@ -32,6 +33,11 @@ export interface BuiltApp extends BuiltAppConfig {
   csrf?: false | CsrfOptions;
   /** Island module specifier (`/src/components/Team.stsx`) → its client chunk URL. */
   islands: Readonly<Record<string, string>>;
+  /**
+   * The stylesheet URLs (with `base`) of project-relative modules, deduplicated in cascade order
+   * (`stylesheets` of `virtual:lumen/css-manifest`).
+   */
+  stylesheets?: (files: readonly string[]) => readonly string[];
 }
 
 export type AppHandlerOptions = Pick<
@@ -49,10 +55,22 @@ export function createAppHandler(app: BuiltApp, options: AppHandlerOptions = {})
     ...(app.middleware === undefined ? {} : { middleware: app.middleware }),
     ...(app.document === undefined ? {} : { document: app.document }),
     ...(app.csrf === undefined ? {} : { csrf: app.csrf }),
+    headAssets: (files) => stylesheetLinks(app, files),
     base: app.base,
     trailingSlash: app.trailingSlash,
     // Static routes that reach the server (a form post, params staticPaths() did not list) render
     // fully resolved, like their prerendered HTML.
     prerender: (route) => route.mode === "static",
   });
+}
+
+/** `<link rel="stylesheet">` for the document, the layouts and the route, in cascade order. */
+function stylesheetLinks(app: BuiltApp, files: readonly string[]): string {
+  if (app.stylesheets === undefined) return "";
+  const modules = app.document === undefined ? files : [app.document, ...files];
+  let html = "";
+  for (const href of app.stylesheets(modules)) {
+    html += `<link rel="stylesheet" href="${escapeAttr(href)}">`;
+  }
+  return html;
 }
