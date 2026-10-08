@@ -72,6 +72,9 @@ registry! {
     CssSyntaxError = "LUM3014", Error, "CSS syntax error";
     InvalidCssIgnored = "LUM3015", Warning, "Invalid CSS ignored";
     InvalidScopeSelector = "LUM3016", Error, "Invalid `:global()` or `:deep()` selector";
+    InvalidCssValue = "LUM3017", Warning, "Invalid CSS value";
+    UnitlessStyleRef = "LUM3018", Warning, "Unitless number from a `$` reference";
+    DetachedUnit = "LUM3019", Warning, "Unit separated from a `$` reference";
     // 4xxx islands and boundaries
     NonExportedIsland = "LUM4001", Error, "Island component is not exported";
     NonSerializableIslandProp = "LUM4002", Error, "Non-serializable island prop";
@@ -127,5 +130,28 @@ mod tests {
             );
         }
         assert!(REGISTRY.windows(2).all(|w| w[0].id < w[1].id));
+    }
+
+    /// `lumen_css` emits these (TASK-76, TASK-67); `css::convert()` drops unregistered ids.
+    #[test]
+    fn css_value_warnings_are_registered() {
+        for (id, code, title) in [
+            ("LUM3017", Code::InvalidCssValue, "Invalid CSS value"),
+            (
+                "LUM3018",
+                Code::UnitlessStyleRef,
+                "Unitless number from a `$` reference",
+            ),
+            (
+                "LUM3019",
+                Code::DetachedUnit,
+                "Unit separated from a `$` reference",
+            ),
+        ] {
+            let info = code.info();
+            assert_eq!(Code::from_id(id), Some(code));
+            assert_eq!(info.default_severity, Severity::Warning);
+            assert_eq!(info.title, title);
+        }
     }
 }

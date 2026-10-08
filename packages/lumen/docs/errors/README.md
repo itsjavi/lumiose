@@ -46,6 +46,9 @@ fix?, docs }`; `lumen check --format json` prints them.
 | [LUM3014](LUM3014.md) | error    | CSS syntax error                          |
 | [LUM3015](LUM3015.md) | warning  | Invalid CSS ignored                       |
 | [LUM3016](LUM3016.md) | error    | Invalid `:global()` or `:deep()` selector |
+| [LUM3017](LUM3017.md) | warning  | Invalid CSS value                         |
+| [LUM3018](LUM3018.md) | warning  | Unitless number from a `$` reference      |
+| [LUM3019](LUM3019.md) | warning  | Unit separated from a `$` reference       |
 
 ## Islands and boundaries (4xxx)
 

@@ -218,11 +218,20 @@ pnpm lumen fmt          # oxfmt for the TSX, plus each <style> block
 ## Editor
 
 Install the Lumen VS Code extension (`lumen-vscode`). It adds the `stsx` language and runs the
-Lumen language server, which proxies TypeScript 7 for `.ts`, `.tsx` and `.stsx` files and adds CSS
-features inside `<style>` blocks, class completion (including other files' `<style global>`
-classes) and the compiler's diagnostics. The extension bundles the server (it runs on VS Code's own
-Node.js) and uses the project's `typescript`; install `@lumen/language-server` as a dev dependency
-only to pin the server to your `lumen` version. See [Compiler and diagnostics](concepts/compiler.md).
+Lumen language server, which proxies TypeScript 7 for `.ts`, `.tsx` and `.stsx` files and adds:
+
+- CSS features inside `<style>` blocks;
+- class completion, definitions and rename that follow placement: the blocks enclosing the
+  cursor (never a sibling subtree's), the file's, and the project's global classes (`<style global>`
+  blocks and imported global `.css` files);
+- `var(--…)` completion of every custom property declared in the project, with its value;
+- descriptions of `<style global>` and of Lumen attributes (`client:*`, `bind:*`, `on:*`, `attach`,
+  `ref`, `key`), and the snippets `comp`, `acomp`, `route` and `island`;
+- the compiler's diagnostics.
+
+The extension bundles the server (it runs on VS Code's own Node.js) and uses the project's
+`typescript`; install `@lumen/language-server` as a dev dependency only to pin the server to your
+`lumen` version. See [Compiler and diagnostics](concepts/compiler.md).
 
 ## Next
 
@@ -639,6 +648,10 @@ a +0,1,0 specificity bump. Dynamic classes always work, because no element is pr
   `.cta { … }` in the parent styles `<Button class="cta" />` wherever `Button` applies
   `props.class`.
 - Within a file, file-level CSS comes first, then component blocks in source order.
+- **In the editor**, class completion follows the same scopes: in a `class` attribute it offers
+  the classes of the blocks that apply there (innermost first), then the project's global classes
+  (`<style global>` blocks and imported global `.css` files), never a sibling subtree's.
+  `var(--…)` offers every custom property declared in the project, with its value.
 
 **Blocks are plain CSS:** no Sass, no `lang`, `media` or other attributes (only `global`). CSS
 imports, CSS Modules, Tailwind v4 and `.scss` imports still work through Vite.
@@ -4269,6 +4282,168 @@ selector (`.list :deep(.item .icon)`). For app-wide CSS, prefer a `<style global
 
 - [Styles: how scoping works](../concepts/styles.md)
 
+<!-- source: errors/LUM3017.md -->
+
+<!-- Generated from crates/lumen_compiler/src/diagnostics/registry.rs by packages/lumen/scripts/gen-error-docs.ts. Edit the explanation below the end marker. -->
+
+# LUM3017: Invalid CSS value
+
+**Severity:** warning · **Category:** styles (3xxx)
+
+<!-- end of generated header -->
+
+> A declaration's value does not parse for its property, so browsers ignore the whole declaration.
+
+**Reported by:** the CSS compiler (`lumen_css`), in `lumen/vite`, `lumen check` and the language server. A warning; the CSS is emitted unchanged.
+
+## What it means
+
+Lightning CSS keeps a value it cannot parse for its property as written, and browsers then drop the
+declaration: `color: notacolor`, `width: 10 px` (a space before the unit), `display: flexbox`. The
+check runs after `$` references are substituted, so a constant that holds an invalid value is
+reported at the reference, with the substituted value in the message.
+
+It also covers grid track lists that browsers reject although each part is valid: with
+`repeat(auto-fill, …)` or `repeat(auto-fit, …)`, every other track must have a fixed size (a length
+or percentage, or a `minmax()` with one), so `2fr repeat(auto-fit, minmax(9rem, 1fr))` is invalid.
+
+The check is conservative: values Lightning CSS does not understand yet but browsers may (`var()`,
+`env()`, `attr()`, `anchor()`, `if()`, `color-mix()`, `subgrid`, newer keywords, vendor-prefixed
+values, CSS-wide keywords such as `inherit`) are never reported, and neither are custom properties,
+unknown properties or at-rule descriptors. A value it does not report can still be invalid.
+
+## Example
+
+```stsx
+const brand = "notacolor";
+
+<style>
+  .card {
+    color: notacolor;
+    background-color: $brand;
+    grid-template-columns: 2fr repeat(auto-fit, minmax(9rem, 1fr));
+  }
+</style>
+```
+
+## How to fix it
+
+Correct the value against the property's syntax (`color: navy`, `width: 10px`, `display: flex`).
+For an auto-repeat grid, give the other tracks a fixed size (`12rem repeat(auto-fit, minmax(9rem, 1fr))`)
+or move the flexible track into the `minmax()`. If the value is valid newer CSS that is still
+reported, check the configured browser targets.
+
+## Related
+
+- [LUM3015](LUM3015.md): invalid rules and selectors that Lightning CSS drops
+- [Styles](../concepts/styles.md)
+
+<!-- source: errors/LUM3018.md -->
+
+<!-- Generated from crates/lumen_compiler/src/diagnostics/registry.rs by packages/lumen/scripts/gen-error-docs.ts. Edit the explanation below the end marker. -->
+
+# LUM3018: Unitless number from a `$` reference
+
+**Severity:** warning · **Category:** styles (3xxx)
+
+<!-- end of generated header -->
+
+> A `$` reference resolves to a plain number where the property needs a length, angle or time.
+
+**Reported by:** the CSS compiler (`lumen_css`), in `lumen/vite`, `lumen check` and the language server. A warning; the CSS is emitted unchanged.
+
+## What it means
+
+Numbers are inserted without a unit: with `const gap = 8`, `gap: $gap` becomes `gap: 8`. CSS
+requires a unit on every non-zero length, angle and time.
+
+- **Lengths:** Lightning CSS happens to read the bare number as pixels and ships `gap: 8px`, but
+  that is not CSS, and the same constant stays a bare number where a number is allowed (custom
+  properties, `line-height`), so the output depends on where it is used.
+- **Angles and times:** there is no conversion; browsers ignore `rotate: 45` and
+  `transition: opacity 200`.
+- **Math functions:** `calc($gap + 1px)` and `min(100%, $max)` mix a number with a length, which is
+  invalid, so browsers ignore the declaration.
+
+Zero is fine (`margin: $none` with `const none = 0`), and so are properties that take numbers
+(`line-height`, `z-index`, `flex-grow`) or unitless SVG lengths (`stroke-width`).
+
+## Example
+
+```stsx
+const gap = 8;
+const angle = 45;
+const duration = 200;
+
+<style>
+  .card {
+    gap: $gap;
+    rotate: $angle;
+    transition: opacity $duration;
+    max-width: min(100%, $gap);
+  }
+</style>
+```
+
+## How to fix it
+
+Multiply the constant by the unit, which folds at build time: `gap: calc($gap * 1px)` ships as
+`gap: 8px`, and `rotate: calc($angle * 1deg)` as `rotate: 45deg`. Inside a math function, multiply
+in place: `min(100%, $max * 1px)`. For times, choose the unit: `calc($duration * 1ms)` or
+`calc($duration * 1s)`; the warning has no automatic fix for them.
+
+Or keep the unit in the constant: `const gap = "8px"`, or `` `${space}px` `` from a number.
+
+## Related
+
+- [LUM3019](LUM3019.md): a unit written after the reference with a space
+- [Styles](../concepts/styles.md)
+
+<!-- source: errors/LUM3019.md -->
+
+<!-- Generated from crates/lumen_compiler/src/diagnostics/registry.rs by packages/lumen/scripts/gen-error-docs.ts. Edit the explanation below the end marker. -->
+
+# LUM3019: Unit separated from a `$` reference
+
+**Severity:** warning · **Category:** styles (3xxx)
+
+<!-- end of generated header -->
+
+> A unit is written after a numeric `$` reference with whitespace in between, so it does not attach to the number.
+
+**Reported by:** the CSS compiler (`lumen_css`), in `lumen/vite`, `lumen check` and the language server. A warning; the CSS is emitted unchanged.
+
+## What it means
+
+A `$` reference ends at the end of its name, so the unit must be separated from it: with
+`const gap = 8`, `margin: $gap px` becomes `margin: 8 px`, a number followed by the keyword `px`.
+CSS units must follow their number without whitespace, so browsers ignore the declaration.
+(`$gappx` would read a constant named `gappx`.)
+
+## Example
+
+```stsx
+const gap = 8;
+
+<style>
+  .card {
+    margin: $gap px;
+    padding: calc($gap px + 1px);
+  }
+</style>
+```
+
+## How to fix it
+
+Multiply the constant by the unit: `margin: calc($gap * 1px)` ships as `margin: 8px`. Inside a math
+function, multiply in place: `calc($gap * 1px + 1px)`. Or keep the unit in the constant:
+`const gap = "8px"`.
+
+## Related
+
+- [LUM3018](LUM3018.md): a unitless number where a length, angle or time is required
+- [Styles](../concepts/styles.md)
+
 <!-- source: errors/LUM4001.md -->
 
 <!-- Generated from crates/lumen_compiler/src/diagnostics/registry.rs by packages/lumen/scripts/gen-error-docs.ts. Edit the explanation below the end marker. -->
@@ -4817,6 +4992,9 @@ fix?, docs }`; `lumen check --format json` prints them.
 | [LUM3014](LUM3014.md) | error    | CSS syntax error                          |
 | [LUM3015](LUM3015.md) | warning  | Invalid CSS ignored                       |
 | [LUM3016](LUM3016.md) | error    | Invalid `:global()` or `:deep()` selector |
+| [LUM3017](LUM3017.md) | warning  | Invalid CSS value                         |
+| [LUM3018](LUM3018.md) | warning  | Unitless number from a `$` reference      |
+| [LUM3019](LUM3019.md) | warning  | Unit separated from a `$` reference       |
 
 ## Islands and boundaries (4xxx)
 
