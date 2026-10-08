@@ -1,0 +1,24 @@
+{
+  "name": "js-framework-benchmark-remix-v3",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Remix 3 (remix/component) keyed demo",
+  "license": "Apache-2.0",
+  "type": "module",
+  "scripts": {
+    "dev": "esbuild src/main.jsx --bundle --format=esm --jsx=automatic --jsx-import-source=remix/component --outfile=dist/main.js --watch",
+    "build-prod": "esbuild src/main.jsx --bundle --minify --format=esm --jsx=automatic --jsx-import-source=remix/component --outfile=dist/main.js"
+  },
+  "dependencies": {
+    "remix": "3.0.0"
+  },
+  "devDependencies": {
+    "esbuild": "0.28.2"
+  },
+  "js-framework-benchmark": {
+    "frameworkVersionFromPackage": "remix",
+    "frameworkHomeURL": "https://remix.run/",
+    "language": "JavaScript",
+    "repoURL": "https://github.com/remix-run/remix"
+  }
+}

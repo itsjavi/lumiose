@@ -103,20 +103,23 @@ export function App() {
       </div>
       <table class="table table-hover table-striped test-data">
         <tbody>
-          {data().map((row) => (
-            <tr class={{ danger: selected() === row.id }}>
-              <td class="col-md-1">{row.id}</td>
-              <td class="col-md-4">
-                <a onClick={() => select(row.id)}>{row.label()}</a>
-              </td>
-              <td class="col-md-1">
-                <a onClick={() => remove(row.id)}>
-                  <span class="glyphicon glyphicon-remove" aria-hidden="true" />
-                </a>
-              </td>
-              <td class="col-md-6" />
-            </tr>
-          ))}
+          {data().map((row) => {
+            const id = row.id;
+            return (
+              <tr class={{ danger: selected() === id }}>
+                <td class="col-md-1">{id}</td>
+                <td class="col-md-4">
+                  <a onClick={() => select(id)}>{row.label()}</a>
+                </td>
+                <td class="col-md-1">
+                  <a onClick={() => remove(id)}>
+                    <span class="glyphicon glyphicon-remove" aria-hidden="true" />
+                  </a>
+                </td>
+                <td class="col-md-6" />
+              </tr>
+            );
+          })}
         </tbody>
       </table>
       <span class="preloadicon glyphicon glyphicon-remove" aria-hidden="true" />

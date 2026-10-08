@@ -3,11 +3,12 @@
 // reference frameworks, then writes RESULTS.md.
 //
 // Steps: check out a pinned krausest commit (sparse, shallow) into .krausest/, install its server
-// and runner, build the reference frameworks, build this package (Vite, production) into
+// and runner, build the reference frameworks and the local ones (frameworks/keyed/<name>: krausest
+// layout, copied into the checkout), build this package (Vite, production) into
 // .krausest/frameworks/keyed/lumen (and lumen-hand), start the krausest server, run the benchmarks, summarize.
 //
 // Options:
-//   --frameworks lumen,vanillajs,...  default: lumen, lumen-hand and every reference framework
+//   --frameworks lumen,vanillajs,...  default: lumen, lumen-hand, every reference and local framework
 //   --benchmarks 01_,22_,40_          krausest id prefixes; default: all (CPU, memory, size)
 //   --count N                         iterations per CPU benchmark (krausest default: 15)
 //   --mem-count N                     iterations per memory benchmark (krausest default: 1)
@@ -16,7 +17,15 @@
 //   --build                           only set up and build (for manual runs against the server)
 //   --port N                          krausest server port (default 8131; env JSFB_PORT)
 import { spawn, spawnSync } from "node:child_process";
-import { copyFileSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import {
+  copyFileSync,
+  cpSync,
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
 import { cpus, platform, release } from "node:os";
 import { join } from "node:path";
 import { createInterface } from "node:readline";
@@ -33,6 +42,11 @@ const REPO = "https://github.com/krausest/js-framework-benchmark";
 /** Pinned upstream commit (2026-10, Chrome 154 results); bump deliberately. */
 const COMMIT = "bf894b681fb56433ccb6efb4a3c93e35eda2b20d";
 const REFERENCE = ["vanillajs", "solid", "svelte", "vue-vapor", "react-hooks"];
+/**
+ * Keyed implementations kept in this package (frameworks/keyed/<name>, krausest's layout: package.json
+ * with `build-prod`, package-lock.json, index.html, src/) for frameworks krausest has no entry for.
+ */
+const LOCAL = ["remix-v3"];
 const CHROME = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
 
 /** krausest's CPU benchmarks, with their weights in the weighted geometric mean (webdriver-ts-results). */
@@ -70,7 +84,12 @@ const { values: options } = parseArgs({
     port: { type: "string", default: process.env.JSFB_PORT ?? "8131" },
   },
 });
-const frameworks = options.frameworks?.split(",") ?? ["lumen", "lumen-hand", ...REFERENCE];
+const frameworks = options.frameworks?.split(",") ?? [
+  "lumen",
+  "lumen-hand",
+  ...REFERENCE,
+  ...LOCAL,
+];
 const benchmarks = options.benchmarks?.split(",");
 const port = Number(options.port);
 
@@ -130,6 +149,10 @@ function install(): void {
   }
   for (const name of frameworks) {
     const dir = join(KRAUSEST, "frameworks/keyed", name);
+    if (LOCAL.includes(name)) {
+      installLocal(name, dir);
+      continue;
+    }
     if (name in LUMEN || !existsSync(dir)) {
       continue;
     }
@@ -140,6 +163,29 @@ function install(): void {
       sh("npm", ["run", "build-prod"], dir);
     }
   }
+}
+
+function lockfile(dir: string): string | undefined {
+  const path = join(dir, "package-lock.json");
+  return existsSync(path) ? readFileSync(path, "utf8") : undefined;
+}
+
+/**
+ * Copies a local implementation into the checkout, installs its dependencies when its lockfile
+ * changed, and runs its production build (every time, so source edits are always measured).
+ */
+function installLocal(name: string, dest: string): void {
+  const source = join(PKG, "frameworks/keyed", name);
+  const stale = !existsSync(join(dest, "node_modules")) || lockfile(source) !== lockfile(dest);
+  mkdirSync(dest, { recursive: true });
+  rmSync(join(dest, "src"), { recursive: true, force: true });
+  for (const entry of ["index.html", "package.json", "package-lock.json", "src"]) {
+    cpSync(join(source, entry), join(dest, entry), { recursive: true });
+  }
+  if (stale) {
+    sh("npm", ["ci", "--no-audit", "--no-fund"], dest);
+  }
+  sh("npm", ["run", "build-prod"], dest);
 }
 
 /** Lumen's krausest implementations: directory name → Vite build mode and output directory. */
@@ -338,8 +384,7 @@ const weighted = (factors: (number | undefined)[]): number | undefined => {
   return weights === 0 ? undefined : Math.exp(sum / weights);
 };
 
-function bundleSizes(outDir: string): { min: number; gzip: number; brotli: number } | undefined {
-  const path = join(PKG, outDir, "main.js");
+function bundleSizes(path: string): { min: number; gzip: number; brotli: number } | undefined {
   if (!existsSync(path)) {
     return undefined;
   }
@@ -360,6 +405,7 @@ function chromeVersion(): string {
 
 const fmt = (n: number | undefined, digits = 1): string =>
   n === undefined ? "–" : n.toFixed(digits);
+const kB = (bytes: number): string => (bytes / 1024).toFixed(2);
 
 function summarize(names: Map<string, string>): string {
   const columns = frameworks.filter((f) => names.has(f));
@@ -439,6 +485,13 @@ function summarize(names: Map<string, string>): string {
     `- Iterations: ${sample ?? "?"} per CPU benchmark, ${memorySample ?? "?"} per memory benchmark (medians shown)`,
     "- lumen: src/App.stsx compiled by lumen/vite; lumen-hand: the same app hand-compiled from the",
     "  compiler-runtime contract (src/hand-compiled.js), the target for the compiler's output",
+    ...(columns.includes("remix-v3")
+      ? [
+          "- remix-v3: frameworks/keyed/remix-v3, remix@3.0.0 (remix/component 1.0) bundled and minified",
+          "  by esbuild like the Remix team's own benchmark app; krausest has no Remix 3 entry, so it has",
+          "  no published factor",
+        ]
+      : []),
     "",
     "## CPU (median total ms, factor vs the fastest framework here)",
     "",
@@ -473,10 +526,18 @@ function summarize(names: Map<string, string>): string {
     "",
   );
   for (const [name, { outDir }] of Object.entries(LUMEN)) {
-    const bundle = bundleSizes(outDir);
+    const bundle = bundleSizes(join(PKG, outDir, "main.js"));
     if (bundle !== undefined) {
       lines.push(
-        `- ${name} bundle (${outDir}/main.js, runtime and app): min ${(bundle.min / 1024).toFixed(2)} kB, gzip ${(bundle.gzip / 1024).toFixed(2)} kB, brotli ${(bundle.brotli / 1024).toFixed(2)} kB (budget ≤ 8 kB)`,
+        `- ${name} bundle (${outDir}/main.js, runtime and app): min ${kB(bundle.min)} kB, gzip ${kB(bundle.gzip)} kB, brotli ${kB(bundle.brotli)} kB (budget ≤ 8 kB)`,
+      );
+    }
+  }
+  for (const name of LOCAL.filter((f) => columns.includes(f))) {
+    const bundle = bundleSizes(join(KRAUSEST, "frameworks/keyed", name, "dist/main.js"));
+    if (bundle !== undefined) {
+      lines.push(
+        `- ${name} bundle (frameworks/keyed/${name}, build-prod output): min ${kB(bundle.min)} kB, gzip ${kB(bundle.gzip)} kB, brotli ${kB(bundle.brotli)} kB`,
       );
     }
   }
