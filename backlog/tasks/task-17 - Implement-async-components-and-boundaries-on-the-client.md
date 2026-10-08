@@ -5,7 +5,7 @@ status: In Progress
 assignee:
   - '@Spark'
 created_date: '2026-10-08 12:21'
-updated_date: '2026-10-08 13:37'
+updated_date: '2026-10-08 13:47'
 labels: []
 milestone: m-2
 dependencies:
@@ -46,4 +46,6 @@ Async components re-run on tracked changes while keeping stale UI, with Suspense
 Lux (from TASK-16):
 - Client $await must match the server: it never rejects, and on rejection it resolves to a resume function that restores the run and then throws.
 - The browser lumen entry must export the same public names as the server: Suspense, ErrorBoundary, Head/Title/Meta (on the client Title/Meta update document.head for SPA navigations), renderToString/renderToStream (throw LUM4003-style errors in the browser).
+
+Lux (decision-20, user-approved): add busy(), an app-wide summary signal, to core, backed by an internal in-flight registry (e.g. beginBusy()/endBusy() or trackBusy(promise) in core/internal.ts). Register async component runs and Suspense fallbacks with it. pending() stays the async component's own re-run flag.
 <!-- SECTION:NOTES:END -->
