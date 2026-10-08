@@ -92,6 +92,9 @@ importers:
 
   examples/spa-chiptune:
     dependencies:
+      '@lumen/adapter-node':
+        specifier: workspace:*
+        version: link:../../packages/adapter-node
       lumen:
         specifier: workspace:*
         version: link:../../packages/lumen
