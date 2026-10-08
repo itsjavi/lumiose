@@ -208,7 +208,11 @@ work remains.
 - **Dependencies.**
   - Before editing dependencies in any `package.json` or `Cargo.toml`, or running `pnpm install` / `cargo add`, create `.local/coordination/deps.lock/` atomically (`mkdir`), and remove it afterwards.
   - Pin Rust dependencies exactly, in `[workspace.dependencies]`.
-- **Docs.** A task that changes user-facing API, syntax or behaviour also updates `packages/lumen/docs/`, written for both agents and humans. If it can't, the task records a follow-up for Beacon. Regenerate `llms.txt` with `pnpm --filter lumen docs:gen`.
+- **Docs.** Docs stay current with every change. A commit that changes user-facing API, syntax, behaviour, diagnostics or CLI output updates the affected pages in `packages/lumen/docs/` **in the same commit**, or at the latest in the next commit of the same task, before the task is marked Done.
+  - Write for both agents and humans.
+  - Any agent may edit the doc pages for the features it implements. Beacon owns the docs structure, the generators and doc-wide consistency.
+  - Regenerate with `pnpm --filter lumen docs:gen`, and keep `pnpm --filter lumen docs:check` and the docs tests green.
+  - A task is not Done while its docs are stale.
 - **Commits.** Commit early and often, so the user can follow progress between requests. Do not leave long lists of pending changes.
   - Workers whose `agents.json` entry has `canCommit: true` commit their own work in small, coherent Conventional Commits whenever a meaningful step is green, e.g. "feat(dom): claim cursor for lists". Mention the task id.
   - Commit only files in your area:
