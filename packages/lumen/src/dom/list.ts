@@ -122,6 +122,16 @@ function removeRow(parent: Node, row: Row<unknown>): void {
   removeNodes(parent, row);
 }
 
+/** Whether row `i` is in `parent` right after row `i - 1` (hydration: a row that claimed its node). */
+function inPlace(parent: Node, rows: Row<unknown>[], i: number): boolean {
+  const node = rows[i]!.node;
+  if (node.parentNode !== parent) {
+    return false;
+  }
+  const prev = rows[i - 1];
+  return prev === undefined || (prev.end ?? prev.node).nextSibling === node;
+}
+
 /** Whether the rows (and the marker, if any) are all of `parent`'s children. */
 function ownsParent(parent: Node, rows: Row<unknown>[], marker: Node | null): boolean {
   const last = rows[rows.length - 1]!;
@@ -216,8 +226,13 @@ function reconcile<T>(state: ListState<T>, items: readonly T[]): void {
   b.length = bLen;
   state.rows = b;
   if (aLen === 0) {
+    // Under hydration, rows that claimed their server nodes are already in place.
+    const hydrating = hydrator !== undefined;
     for (let i = 0; i < bLen; i++) {
-      insertRow(parent, (b[i] = createRow(state, items[i]!, keys[i], i)), marker);
+      const row = (b[i] = createRow(state, items[i]!, keys[i], i));
+      if (!hydrating || !inPlace(parent, b, i)) {
+        insertRow(parent, row, marker);
+      }
     }
     return;
   }
@@ -390,11 +405,13 @@ export function list<T>(
     indexed: render.length > 1,
     owner: undefined,
   };
-  const adopted = hydrator === undefined ? undefined : hydrator.region(parent, marker);
+  const h = hydrator;
+  const adopted = h === undefined ? undefined : h.region(parent, marker);
   // The copy tracks every index of store arrays and makes in-place mutations visible.
   renderEffect(state, () => copyItems(source()), reconcile);
   if (adopted !== undefined) {
     removeUnclaimed(adopted, state.rows);
+    h!.end(adopted);
   }
 }
 
@@ -409,7 +426,7 @@ export function listValue<T>(
   render: (item: T, index: () => number) => Renderable,
   key?: (item: T) => unknown,
 ): RangeStart {
-  const start = createRange();
+  const start = createRange(1);
   const end = start.$$end;
   list(end.parentNode!, end, source, render, key);
   return start;

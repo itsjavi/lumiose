@@ -16,6 +16,12 @@ function fakeHydrator(claims: Node[], regions: Map<Node | null, Node[]>): Hydrat
   return {
     template: () => claims.shift()!,
     region: (_parent, marker) => regions.get(marker) ?? [],
+    end: () => {},
+    branch: () => {},
+    range: () => {},
+    fork: () => {
+      throw new Error("not used");
+    },
   };
 }
 

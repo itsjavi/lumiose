@@ -1,0 +1,16 @@
+/**
+ * Renders the same markup on both sides, except in the browser on `/?mismatch`, where the client
+ * renders another element: hydration then falls back to a client render (LUM4006 in dev).
+ */
+export function Greeting(props: { name: string }) {
+  const mismatch = typeof location !== "undefined" && location.search.includes("mismatch");
+  return mismatch ? (
+    <em class="greeting" onClick={(e) => (e.currentTarget.textContent = "clicked")}>
+      Hello, {props.name}
+    </em>
+  ) : (
+    <span class="greeting" onClick={(e) => (e.currentTarget.textContent = "clicked")}>
+      Hello, {props.name}
+    </span>
+  );
+}

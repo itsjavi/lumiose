@@ -1,0 +1,40 @@
+import { signal, Suspense } from "lumen";
+import { getMember } from "./api.ts";
+
+export async function Member(props: { id: string }) {
+  const member = await getMember(props.id);
+  return <li class="member">{member.name}</li>;
+}
+
+export async function Profile(props: { id: string }) {
+  const member = await getMember(props.id);
+  return <p class="profile">Selected: {member.name}</p>;
+}
+
+/**
+ * An island with async components (await records), a `<Suspense>` boundary that streams after the
+ * shell, an inline slot (`children`) and a slot it renders only later (`extra`).
+ */
+export function Team(props: { ids: string[]; children?: unknown; extra?: unknown }) {
+  const selected = signal(props.ids[0]!);
+  const showExtra = signal(false);
+  return (
+    <section class="team" ref={(el: HTMLElement) => (el.dataset.hydrated = "")}>
+      <ul class="members">{props.ids.map((id) => <Member id={id} />)}</ul>
+      <Suspense fallback={<p class="loading">Loading the slow member…</p>}>
+        <ul class="slow">
+          <Member id="slow" />
+        </ul>
+      </Suspense>
+      <Profile id={selected()} />
+      <button class="select" onClick={() => selected.set(selected() === "ada" ? "bob" : "ada")}>
+        Select
+      </button>
+      <button class="toggle-extra" onClick={() => showExtra.set(!showExtra())}>
+        Extra
+      </button>
+      {showExtra() ? <div class="extra">{props.extra}</div> : null}
+      {props.children}
+    </section>
+  );
+}

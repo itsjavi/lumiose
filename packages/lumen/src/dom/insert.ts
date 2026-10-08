@@ -105,11 +105,20 @@ export interface RangeStart extends Text {
   $$end: Text;
 }
 
-/** A new empty range inside a fragment of its own. Render into it with `end` as the marker. */
-export function createRange(): RangeStart {
+/**
+ * A new empty range inside a fragment of its own. Render into it with `end` as the marker.
+ * Under hydration, `mode` makes it adopt server content (`Hydrator.range`): 1 claims the next
+ * server block (`branchValue`, `listValue`, `<Suspense>`), 2 too but renders a `<!--[!-->` block
+ * afresh (`<ErrorBoundary>`), 3 takes the rest of the enclosing region (boundary content). Without
+ * a mode, content rendered into the range is created afresh.
+ */
+export function createRange(mode?: number): RangeStart {
   const start = document.createTextNode("") as RangeStart;
   const end = (start.$$end = document.createTextNode(""));
   document.createDocumentFragment().append(start, end);
+  if (mode && hydrator !== undefined) {
+    hydrator.range(start, mode);
+  }
   return start;
 }
 
@@ -328,15 +337,20 @@ export function insert(parent: Node, value: Renderable, marker: Node | null = nu
     }
     return;
   }
-  renderInto(createRegion(parent, marker), value);
+  const h = hydrator;
+  const region = createRegion(parent, marker);
+  const adopted = region.nodes;
+  renderInto(region, value);
+  h?.end(adopted);
 }
 
 /**
  * Renders `value` (tracked like `insert`) into a new range; returns its start. Parent regions see
- * one static node, so changes inside never re-run them.
+ * one static node, so changes inside never re-run them. `mode` is the hydration mode of
+ * `createRange`.
  */
-export function renderRange(value: Renderable): RangeStart {
-  const start = createRange();
+export function renderRange(value: Renderable, mode?: number): RangeStart {
+  const start = createRange(mode);
   const end = start.$$end;
   insert(end.parentNode!, value, end);
   return start;
@@ -362,6 +376,8 @@ function runBranch(): void {
 }
 
 function applyBranch(state: BranchState, on: boolean): void {
+  // Under hydration, the server must have rendered the same side.
+  hydrator?.branch(state.nodes, on);
   const prev = state.view;
   if (prev !== undefined) {
     state.view = undefined;
@@ -382,11 +398,14 @@ export function branch(
   whenTrue: () => Renderable,
   whenFalse?: () => Renderable,
 ): void {
+  const h = hydrator;
   const state = createRegion(parent, marker) as BranchState;
+  const adopted = state.nodes;
   state.whenTrue = whenTrue;
   state.whenFalse = whenFalse;
   state.view = undefined;
   renderEffect(state, () => !!cond(), applyBranch);
+  h?.end(adopted);
 }
 
 /**
@@ -400,7 +419,7 @@ export function branchValue(
   whenTrue: () => Renderable,
   whenFalse?: () => Renderable,
 ): RangeStart {
-  const start = createRange();
+  const start = createRange(1);
   const end = start.$$end;
   branch(end.parentNode!, end, cond, whenTrue, whenFalse);
   return start;

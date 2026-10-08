@@ -435,6 +435,7 @@ describe("await replay keys", () => {
         keys.push(key);
         return key in recorded ? { value: recorded[key] } : undefined;
       },
+      undefined,
       () => render(() => createComponent(Team, {})),
     );
     await settled();
@@ -457,6 +458,7 @@ describe("await replay keys", () => {
         keys.push(key);
         return undefined;
       },
+      undefined,
       () =>
         render(() =>
           createComponent(ReplayOuter, {

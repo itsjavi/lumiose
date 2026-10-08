@@ -39,6 +39,7 @@ import {
 } from "../core/internal.ts";
 import { signal, type Signal } from "../core/signal.ts";
 import { childFrame, frame, setFrame, type Frame } from "./frame.ts";
+import { hydrator } from "./hydration.ts";
 import { createRange, renderInto, type RangeStart, type Region } from "./insert.ts";
 
 type AsyncComponent = (props: any) => Promise<Renderable>;
@@ -103,11 +104,20 @@ export function createAsync(component: AsyncComponent, props: unknown): RangeSta
   }
   const end = start.$$end;
   const flag = signal(false);
+  // Under hydration the range adopts the instance's server block, and the first run claims its
+  // content with a cursor of its own (carried by its frame), after its awaits replay.
+  const claimed = hydrator?.fork(start);
   const instance: Instance = {
     component,
     props,
     owner,
-    region: { parent: end.parentNode!, marker: end, nodes: [], owner: undefined, value: undefined },
+    region: {
+      parent: end.parentNode!,
+      marker: end,
+      nodes: claimed === undefined ? [] : claimed[0],
+      owner: undefined,
+      value: undefined,
+    },
     pending: flag,
     release: suspend(owner),
     shown: undefined,
@@ -116,7 +126,10 @@ export function createAsync(component: AsyncComponent, props: unknown): RangeSta
   (owner.context ??= {})[PENDING] = flag;
   addCleanup(owner, instance.release);
   const parentFrame = frame;
-  startRun(instance, parentFrame === undefined ? undefined : childFrame(parentFrame));
+  startRun(
+    instance,
+    parentFrame === undefined ? undefined : childFrame(parentFrame, claimed?.[1]),
+  );
   return start;
 }
 
@@ -206,7 +219,13 @@ function show(run: AsyncRun, value: Renderable): void {
       disposeOwner(prev);
     }
     instance.shown = run;
-    runWithOwner(run, () => renderInto(instance.region, value));
+    // A hydrating first run renders with its frame, so content created lazily still claims.
+    const prevFrame = setFrame(run.frame);
+    try {
+      runWithOwner(run, () => renderInto(instance.region, value));
+    } finally {
+      setFrame(prevFrame);
+    }
   } catch (error) {
     handleError(instance.owner, error);
   } finally {
@@ -245,7 +264,7 @@ export function $await<T>(
     const occurrences = (runFrame.occurrences ??= []);
     const occurrence = occurrences[site] ?? 0;
     occurrences[site] = occurrence + 1;
-    recorded = runFrame.replay(`${runFrame.path}:${site}:${occurrence}`);
+    recorded = runFrame.replay(`${runFrame.path}:${site}:${occurrence}`, thunk);
   }
   // A synchronous throw leaves the run active: it propagates in the body, whose `$leave` pauses it.
   const value = recorded === undefined ? thunk() : (recorded.value as T);

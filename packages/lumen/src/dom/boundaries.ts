@@ -14,6 +14,7 @@ import {
 } from "../core/internal.ts";
 import { untrack } from "../core/reactive.ts";
 import { signal } from "../core/signal.ts";
+import { hydrator } from "./hydration.ts";
 import { branch, createRange, renderRange } from "./insert.ts";
 
 export interface SuspenseProps {
@@ -31,19 +32,29 @@ export interface SuspenseProps {
 export function Suspense(props: SuspenseProps): Renderable {
   const count = signal(0);
   provideContext(SUSPENSE, count);
-  // Children are created first, so the fallback decision below already sees their first runs.
-  const content = renderRange(() => props.children);
-  const range = createRange();
+  // Under hydration the range claims the server block and the content adopts what is inside;
+  // the server content then stays while the first runs replay, instead of the fallback.
+  let hydrating = hydrator !== undefined;
+  const range = createRange(1);
   const end = range.$$end;
+  // Children are created first, so the fallback decision below already sees their first runs.
+  const content = renderRange(() => props.children, 3);
+  // The condition is "show the content", the side a server `<!--[-->` block shows.
   branch(
     end.parentNode!,
     end,
-    () => count() > 0,
+    () => {
+      const pending = count() > 0;
+      if (!pending) {
+        hydrating = false;
+      }
+      return !pending || hydrating;
+    },
+    () => content,
     () => {
       onCleanup(beginBusy());
       return props.fallback;
     },
-    () => content,
   );
   return range;
 }
@@ -78,7 +89,7 @@ export function ErrorBoundary(props: ErrorBoundaryProps): Renderable {
     try {
       return runWithOwner(owner, () => {
         onError(capture);
-        return renderRange(() => props.children);
+        return renderRange(() => props.children, 3);
       });
     } catch (error) {
       disposeOwner(owner);
@@ -86,8 +97,10 @@ export function ErrorBoundary(props: ErrorBoundaryProps): Renderable {
     }
   };
 
+  // Under hydration: the server block holds the children, or a fallback (`<!--[!-->`), in which
+  // case the children render afresh.
   return renderRange(() => {
     const current = failure();
     return untrack(() => (current === undefined ? attempt() : fallback(current.error)));
-  });
+  }, 2);
 }

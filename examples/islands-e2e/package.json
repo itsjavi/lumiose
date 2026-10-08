@@ -1,0 +1,19 @@
+{
+  "name": "@lumen-examples/islands-e2e",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Lumen fixture: server-rendered islands hydrating in Chromium, served by Vite in middleware mode (TASK-18 end-to-end test).",
+  "type": "module",
+  "scripts": {
+    "dev": "node server.ts",
+    "test:e2e": "playwright test"
+  },
+  "dependencies": {
+    "lumen": "workspace:*"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.63.0",
+    "@types/node": "^24.0.0",
+    "vite": "^8.3.4"
+  }
+}

@@ -1,0 +1,16 @@
+import { signal } from "lumen";
+
+/** A counter island; `data-hydrated` appears once the client claimed it. */
+export function Counter(props: { start: number; label: string }) {
+  const count = signal(props.start);
+  return (
+    <button
+      class="counter"
+      data-label={props.label}
+      ref={(el: HTMLElement) => (el.dataset.hydrated = "")}
+      onClick={() => count.set(count() + 1)}
+    >
+      {props.label}: {count()}
+    </button>
+  );
+}

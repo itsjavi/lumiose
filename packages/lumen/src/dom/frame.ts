@@ -7,12 +7,18 @@
 // instance then looks up `instancePath:site:occurrence` in the island's recorded awaits instead of
 // evaluating the awaited expression. Outside hydration no frame exists, and `createComponent`
 // pays a single `undefined` check.
+//
+// Frames also carry the hydration cursor (./hydration.ts): `lumen/dom/hydrate` hooks `setFrame` to
+// install it, so an async run's continuation claims nodes from its own server block after each
+// `await`. Without that import the hook stays unset and bundlers drop the claiming paths.
+import type { Hydrator } from "./hydration.ts";
 
 /**
  * The recorded value of an await, boxed, or `undefined` to evaluate the expression (a miss).
- * Installed per island by `lumen/dom/hydrate` (TASK-18), which also reports mismatches.
+ * Installed per island by `lumen/dom/hydrate`, which also reports misses in development. It runs
+ * while the async run is active, so it can evaluate `thunk` for the reads the run must track.
  */
-export type AwaitReplay = (key: string) => { value: unknown } | undefined;
+export type AwaitReplay = (key: string, thunk: () => unknown) => { value: unknown } | undefined;
 
 export interface Frame {
   readonly path: string;
@@ -21,37 +27,48 @@ export interface Frame {
   readonly replay: AwaitReplay;
   /** Per-site await counters of the instance's first run. */
   occurrences: number[] | undefined;
+  /** The claim cursor; undefined when the island renders afresh (a mismatch fallback). */
+  readonly h: Hydrator | undefined;
 }
 
 export let frame: Frame | undefined;
 
-/** Sets the current frame; returns the previous one. */
+let onFrame: ((next: Frame | undefined) => void) | undefined;
+
+/** Called by `lumen/dom/hydrate` with what to run whenever the current frame changes. */
+export function setFrameHook(hook: (next: Frame | undefined) => void): void {
+  onFrame = hook;
+}
+
+/** Sets the current frame (installing its cursor under hydration); returns the previous one. */
 export function setFrame(next: Frame | undefined): Frame | undefined {
   const prev = frame;
   frame = next;
+  onFrame?.(next);
   return prev;
 }
 
-/** The frame of the next component instance created under `parent`. */
-export function childFrame(parent: Frame): Frame {
+/** The frame of the next component instance created under `parent`; `h` overrides its cursor. */
+export function childFrame(parent: Frame, h: Hydrator | undefined = parent.h): Frame {
   const index = parent.children++;
   return {
     path: parent.path === "" ? `${index}` : `${parent.path}.${index}`,
     children: 0,
     replay: parent.replay,
     occurrences: undefined,
+    h,
   };
 }
 
 /**
- * Runs `fn`, which renders an island's root component, with instance paths and await replay on.
- * The first component created inside gets path `0`.
+ * Runs `fn`, which renders an island's root component, with instance paths, await replay and the
+ * claim cursor `h` on. The first component created inside gets path `0`.
  */
-export function withIsland<T>(replay: AwaitReplay, fn: () => T): T {
-  const prev = setFrame({ path: "", children: 0, replay, occurrences: undefined });
+export function withIsland<T>(replay: AwaitReplay, h: Hydrator | undefined, fn: () => T): T {
+  const prev = setFrame({ path: "", children: 0, replay, occurrences: undefined, h });
   try {
     return fn();
   } finally {
-    frame = prev;
+    setFrame(prev);
   }
 }
