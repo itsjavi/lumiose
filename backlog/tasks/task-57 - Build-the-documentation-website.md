@@ -1,11 +1,11 @@
 ---
 id: TASK-57
 title: 'Build the website: landing page at / and docs at /docs'
-status: To Do
+status: In Progress
 assignee:
   - '@Beacon'
 created_date: '2026-10-08 15:54'
-updated_date: '2026-10-08 15:58'
+updated_date: '2026-10-08 21:40'
 labels: []
 milestone: m-5
 dependencies:

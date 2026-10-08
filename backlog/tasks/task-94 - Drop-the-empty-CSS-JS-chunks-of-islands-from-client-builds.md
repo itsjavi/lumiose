@@ -1,10 +1,11 @@
 ---
 id: TASK-94
 title: Drop the empty-CSS JS chunks of islands from client builds
-status: To Do
+status: In Progress
 assignee:
   - '@Nova'
 created_date: '2026-10-08 21:32'
+updated_date: '2026-10-08 21:38'
 labels:
   - build
 dependencies: []
