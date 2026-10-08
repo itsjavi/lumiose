@@ -7,7 +7,7 @@ status: In Progress
 assignee:
   - '@Halo'
 created_date: '2026-10-08 12:20'
-updated_date: '2026-10-08 14:10'
+updated_date: '2026-10-08 14:13'
 labels: []
 milestone: m-1
 dependencies:
@@ -32,6 +32,17 @@ The CSS pipeline is split so it can proceed in parallel with client codegen. Thi
 - [ ] #4 Lightning CSS pinned exactly; nesting lowered per targets; minify; source maps back to the original .stsx offsets (whitespace-padding approach)
 - [ ] #5 Golden fixtures and cargo test/clippy/fmt pass
 <!-- AC:END -->
+
+## Implementation Plan
+
+<!-- SECTION:PLAN:BEGIN -->
+1. Pin lightningcss =1.0.0-alpha.72 (+ parcel_sourcemap =2.1.1) in [workspace.dependencies]; lumen_css feature `browserslist` (default) so wasm can opt out.
+2. Own input/output types (no lumen_compiler dependency): CssInput { filename, source, blocks { content span, scope Global|File|Component, svg }, refs { span -> String|Number }, inventories, style custom properties }, CssOptions { targets, minify, source_map } -> CssOutput { css, map, diagnostics, custom_properties_read }. scope_token() helper so templates and CSS share one hash.
+3. Text pre-pass per block (own CSS lexer): $ref sites (values + @media/@container/@supports preludes only) substituted from resolved values, LUM3009; selector preludes rewritten (token on last scoped compound before pseudo-elements, :global() stripped, :deep() joins left-scoped part), LUM3005 against inventories. Edits recorded in a position map.
+4. Lightning CSS per block (error recovery), AST pass: scoped @keyframes + animation/animation-name rewrite (same file scope), var() reads for LUM3012; merge rule lists (file blocks first, then component blocks in source order), minify per targets, print.
+5. Source maps composed: Lightning CSS map (block-text positions) remapped through the position map to .stsx line/UTF-16 column (padding rejected: $ref substitution changes lengths).
+6. Golden fixtures in tests/fixtures + unit tests; cargo test/clippy/fmt.
+<!-- SECTION:PLAN:END -->
 
 ## Implementation Notes
 
