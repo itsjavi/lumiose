@@ -1,10 +1,11 @@
 ---
 id: TASK-61
 title: Guard against negative calc folding in non-negative properties
-status: To Do
+status: In Progress
 assignee:
   - '@Halo'
 created_date: '2026-10-08 15:59'
+updated_date: '2026-10-08 15:59'
 labels: []
 milestone: m-1
 dependencies:
