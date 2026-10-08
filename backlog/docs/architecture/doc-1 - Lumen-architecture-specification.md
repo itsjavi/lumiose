@@ -3,7 +3,7 @@ id: doc-1
 title: Lumen architecture specification
 type: specification
 created_date: '2026-10-08 10:28'
-updated_date: '2026-10-08 13:47'
+updated_date: '2026-10-08 14:11'
 tags:
   - architecture
   - spec
@@ -532,10 +532,11 @@ export const MemberCard = $component(async function MemberCard(props) {
 
 | Range | Codes |
 |---|---|
-| 1xxx file format | 1003 scanner ambiguity · 1004 unclosed `<style>` · 1005 unknown `<style>` attribute · 1006 raw CSS in `.tsx` · 1007 `await using` in a component |
+| 1xxx file format | 1001 syntax error · 1002 unsupported construct/target · 1003 scanner ambiguity · 1004 unclosed `<style>` · 1005 unknown `<style>` attribute · 1006 raw CSS in `.tsx` · 1007 `await using` in a component |
 | 2xxx reactivity | 2001 stale derived value · 2002 write during render · 2003 reactive early return · 2004 component called as a function · 2005 children inserted twice · 2006 reactive index escapes · 2007 own signal read in an async body |
 | 3xxx styles | 3005 unused selector · 3008 non-constant `$ref` · 3009 hyphenated `$ref` · 3010 misplaced `<style>` · 3011 `<style>` as root or in an expression · 3012 custom property set but never read · 3013 `$ref` before its declaration |
 | 4xxx islands / boundaries | 4001 non-exported island · 4002 non-serializable island prop · 4003 server-only module in a client graph · 4004 browser API at module scope · 4006 hydration mismatch · 4007 non-serializable awaited value · 4008 module-scope signal written during SSR |
+| 6xxx tooling / config | 6001 tsconfig missing options required by Lumen |
 | 5xxx routing / server | 5001 request API used during prerender (use `mode = "server"`) · 5002 invalid route file · 5003 duplicate route · 5004 head or status change inside a streamed boundary |
 
 ### 5.5 Distribution
