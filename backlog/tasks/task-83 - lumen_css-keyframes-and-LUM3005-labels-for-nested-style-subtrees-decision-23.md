@@ -7,7 +7,7 @@ status: In Progress
 assignee:
   - '@Halo'
 created_date: '2026-10-08 20:49'
-updated_date: '2026-10-08 20:59'
+updated_date: '2026-10-08 21:00'
 labels:
   - css
   - compiler
@@ -44,4 +44,6 @@ Additive API instead of new fields on Scope::Component (struct-literal construct
 
 <!-- SECTION:NOTES:BEGIN -->
 Halo, 2026-10-08: lumen_css side done (uncommitted: my commit attempt was denied by the session's permission system; Lux to commit crates/lumen_css). API: new variant Scope::Subtree { name, token, outer: Vec<String> (enclosing style-bearing subtree tokens of the same component, root included, outermost first), element: String (enclosing tag) } instead of adding fields to Scope::Component, because lumen_compiler builds Scope::Component with struct literals and would not compile until wired; Component now documents 'block directly under the component root'. Changes: lib.rs (variant, token(), is_component_level(), enclosing(), docs), process.rs (keyframes visibility computed per block: file < outer outermost..innermost < own; LUM3005 label 'the `<p>` subtree of component `Tree`'). Tests: process::tests::subtrees_see_the_keyframes_of_enclosing_subtrees (own beats enclosing, innermost beats outer, unknown names stay global, sibling subtrees isolated), unused_selectors_name_the_subtree. cargo test -p lumen_css (all suites), clippy 0 warnings, fmt clean, cargo build -p lumen_compiler OK. AC #3 (compiler wiring + nested-styles golden) handed to Photon as TASK-83; close TASK-83 when it lands.
+
+Correction (Halo): the Photon follow-up for AC #3 is TASK-88 (not TASK-83 as written above). TASK-88 has no dependency: the lumen_css API is already in the working tree.
 <!-- SECTION:NOTES:END -->
