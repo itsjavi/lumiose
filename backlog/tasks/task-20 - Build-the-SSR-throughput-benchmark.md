@@ -3,8 +3,9 @@ id: TASK-20
 title: Build the SSR throughput benchmark
 status: To Do
 assignee:
-  - '@Spark'
+  - '@Nova'
 created_date: '2026-10-08 12:21'
+updated_date: '2026-10-08 12:54'
 labels: []
 milestone: m-2
 dependencies:
@@ -27,3 +28,9 @@ SSR performance claims need a reproducible suite; no reputable 2026 cross-framew
 - [ ] #1 A reproducible suite renders the same pages with Lumen and at least Solid, Vue, Svelte and React
 - [ ] #2 Results table and notes recorded
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Lux: reassigned to Nova together with TASK-16.
+<!-- SECTION:NOTES:END -->
