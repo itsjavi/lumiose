@@ -1,0 +1,6 @@
+kind: Stsx
+block 0: jsx Intrinsic <p> at 7:5 span=139..257 content=146..249
+  ref $ünï.cödé at 8:47 span=198..211 close=211
+  ref $arrow at 9:20 span=236..242 close=242
+block 1: top-level at 14:1 span=269..359 content=276..351
+  ref $arrow at 16:27 span=341..347 close=347

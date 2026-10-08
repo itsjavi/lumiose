@@ -1,0 +1,6 @@
+kind: Stsx
+block 0: jsx Intrinsic <svg> svg at 4:7 span=72..177 content=95..169
+  attribute type = string "text/css"
+block 1: jsx Intrinsic <g> svg at 9:9 span=196..232 content=203..224
+block 2: jsx Intrinsic <div> at 13:11 span=290..328 content=297..320
+  ref $color at 13:33 span=312..318 close=318

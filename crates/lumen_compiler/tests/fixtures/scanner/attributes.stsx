@@ -1,0 +1,12 @@
+export const A = () => (
+  <div>
+    <style lang="scss" media="print" /* a comment */ global>
+      .a { color: red }
+    </style>
+    <style global="true">.b {}</style>
+    <style global={true}>.c {}</style>
+    <style
+      global
+    >.d {}</style>
+  </div>
+);

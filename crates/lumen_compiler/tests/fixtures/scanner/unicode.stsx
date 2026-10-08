@@ -1,0 +1,17 @@
+const arrow = "→";
+const ünï = { cödé: "1px" };
+
+export const Note = () => (
+  <p class="note">
+    Grüße 🎉 it's “fine”
+    <style>
+      .note::before { content: "→ 😀"; margin: $ünï.cödé→ }
+      .note { gap: $arrow }
+    </style>
+  </p>
+);
+
+<style>
+  /* ✓ top-level with emoji 🎉 */
+  .note::after { content: $arrow; }
+</style>

@@ -1,0 +1,17 @@
+const arrow = "→";
+const ünï = { cödé: "1px" };
+
+export const Note = () => (
+  <p class="note">
+    Grüße 🎉 it's “fine”
+           
+                                                   {ünï.cödé}    
+                   {arrow} 
+            
+  </p>
+);
+
+       
+                                     
+                          ;arrow;  
+        

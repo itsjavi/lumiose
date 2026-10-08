@@ -12,6 +12,9 @@
     ".venv/",
     ".next-router/",
     ".vscode/",
-    "assets/"
+    "assets/",
+    "**/fixtures/**",
+    "**/__fixtures__/**",
+    "target/"
   ]
 }

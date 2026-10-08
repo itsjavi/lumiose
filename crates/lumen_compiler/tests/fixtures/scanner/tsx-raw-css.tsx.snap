@@ -1,0 +1,4 @@
+kind: Tsx
+block 0: jsx Intrinsic <div> at 8:5 span=178..224 content=185..216
+LUM1006 error at 8:5 "<style>": raw CSS in a `.tsx` file
+  help: Rename the file to `.stsx`: raw-CSS `<style>` blocks are only valid in `.stsx` files.

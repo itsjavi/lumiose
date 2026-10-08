@@ -1,0 +1,13 @@
+import { spacing } from "./tokens.ts";
+
+const before = "1px";
+
+       
+               ;before;          ;spacing.md;        ;after;         ;Late.size;        ;pair;  
+        
+
+const after = "2px";
+class Late {
+  static size = 1;
+}
+const [pair] = ["0"];

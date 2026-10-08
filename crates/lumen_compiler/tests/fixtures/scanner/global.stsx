@@ -1,0 +1,16 @@
+export function Layout(props: { children: unknown }) {
+  return (
+    <html>
+      <body>
+        {props.children}
+        <style global>
+          body { margin: 0; }
+        </style>
+      </body>
+    </html>
+  );
+}
+
+<style global>
+  :root { --brand: rebeccapurple; }
+</style>

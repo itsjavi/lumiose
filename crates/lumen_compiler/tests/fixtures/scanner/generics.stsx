@@ -1,0 +1,24 @@
+type Mapper = <T>(value: T) => T;
+interface Callable {
+  <T>(value: T): T;
+}
+const identity = <T,>(value: T) => value;
+const bounded = <T extends object>(value: T) => value;
+const mapper: Mapper = <U,>(value: U) => value;
+const list = new Map<string, Array<number>>();
+const lt = list.size < 2;
+
+export function Generic<T>(props: { items: T[] }) {
+  const typed: <V>(v: V) => V = identity;
+  return (
+    <ul>
+      <Select<T> items={props.items} />
+      <li>{typed(1) < 2 ? "a" : "b"}</li>
+      <style>ul { padding: 0 }</style>
+    </ul>
+  );
+}
+
+<style>
+  li { color: red }
+</style>

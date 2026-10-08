@@ -1,0 +1,16 @@
+export function Layout(props: { children: unknown }) {
+  return (
+    <html>
+      <body>
+        {props.children}
+                      
+                             
+                
+      </body>
+    </html>
+  );
+}
+
+              
+                                   
+        

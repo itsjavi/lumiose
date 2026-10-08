@@ -13,6 +13,21 @@ publish = false
 lumen_compiler = { path = "crates/lumen_compiler" }
 lumen_css = { path = "crates/lumen_css" }
 
+# OXC: every oxc_* crate on the same exact version.
+oxc_allocator = "=0.153.0"
+oxc_ast = "=0.153.0"
+oxc_parser = "=0.153.0"
+oxc_span = "=0.153.0"
+
+serde = { version = "=1.0.229", features = ["derive"] }
+
+# Bindings
+napi = { version = "=3.14.2", default-features = false, features = ["napi4", "dyn-symbols"] }
+napi-derive = "=3.6.12"
+napi-build = "=2.6.0"
+wasm-bindgen = "=0.2.129"
+serde-wasm-bindgen = "=0.6.5"
+
 [profile.release]
 lto = "fat"
 codegen-units = 1

@@ -1,0 +1,6 @@
+export const A = () => (
+  <div>
+    <style>
+      .a { color: red }
+  </div>
+);

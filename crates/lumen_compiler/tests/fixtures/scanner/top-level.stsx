@@ -1,0 +1,24 @@
+import { tokens } from "./tokens.ts";
+
+const radius = { lg: "12px", sm: "4px" } as const;
+const BREAKPOINT = 640;
+
+export function Card(props: { title: string }) {
+  return (
+    <article class="card">
+      <h3>{props.title}</h3>
+    </article>
+  );
+}
+
+<style>
+  .card {
+    border-radius: $radius.lg;
+    color: $tokens.color.primary;
+    padding: calc($BREAKPOINT * 0.01px);
+  }
+  @media (width < $BREAKPOINT) {
+    .card { border-radius: $radius.sm }
+  }
+  .card[data-kind$="x"] { content: "$notARef" }
+</style>

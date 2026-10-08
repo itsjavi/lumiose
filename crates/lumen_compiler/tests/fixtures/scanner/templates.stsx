@@ -1,0 +1,9 @@
+const sheet = `<style>.not { a: block }</style>`;
+const nested = `${`<style>`}`;
+
+export const T = () => (
+  <div title={`${sheet} <style>`}>
+    {`<style>`}
+    <style>.real { color: red }</style>
+  </div>
+);

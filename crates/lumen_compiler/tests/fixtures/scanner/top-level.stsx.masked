@@ -1,0 +1,24 @@
+import { tokens } from "./tokens.ts";
+
+const radius = { lg: "12px", sm: "4px" } as const;
+const BREAKPOINT = 640;
+
+export function Card(props: { title: string }) {
+  return (
+    <article class="card">
+      <h3>{props.title}</h3>
+    </article>
+  );
+}
+
+       
+         
+                   ;radius.lg;
+           ;tokens.color.primary;
+                  ;BREAKPOINT;          
+   
+                  ;BREAKPOINT;  
+                           ;radius.sm; 
+   
+                                               
+        

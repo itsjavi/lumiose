@@ -1,0 +1,5 @@
+kind: Stsx
+block 0: jsx Intrinsic <body> global at 6:9 span=123..184 content=137..176
+  attribute global
+block 1: top-level global at 14:1 span=219..278 content=233..270
+  attribute global

@@ -1,0 +1,30 @@
+kind: Stsx
+block 0: jsx Component <Suspense> at 6:7 span=99..131 content=106..123
+block 1: jsx Intrinsic <p> at 14:25 span=274..307 content=281..299
+block 2: jsx Intrinsic <li> at 18:11 span=388..422 content=395..414
+  ref $item at 18:30 span=407..412 close=412
+block 3: jsx Intrinsic <p> at 28:9 span=556..576 content=563..568
+block 4: expression at 34:10 span=639..671 content=646..663
+block 5: expression at 37:28 span=703..723 content=710..715
+block 6: jsx Fragment <> at 41:5 span=768..788 content=775..780
+block 7: expression at 46:3 span=833..853 content=840..845
+block 8: expression at 50:45 span=920..940 content=927..932
+LUM3010 error at 6:7 "<style>": a `<style>` block cannot be a child of the component element `<Suspense>`
+  label at 5:6 "Suspense": component element
+  help: Move it into an intrinsic element or fragment.
+LUM3010 error at 14:25 "<style>": a `<style>` block cannot be inside a `{…}` container, a conditional or a callback
+  help: CSS is static: keep the block in the component's static JSX and use classes for variation.
+LUM3010 error at 18:11 "<style>": a `<style>` block cannot be inside a `{…}` container, a conditional or a callback
+  help: CSS is static: keep the block in the component's static JSX and use classes for variation.
+LUM3010 error at 28:9 "<style>": a `<style>` block cannot be inside a `{…}` container, a conditional or a callback
+  help: CSS is static: keep the block in the component's static JSX and use classes for variation.
+LUM3011 error at 34:10 "<style>": a `<style>` block cannot be used as an expression
+  help: A block is not a value. Put it inside an intrinsic element or fragment of the component's JSX.
+LUM3011 error at 37:28 "<style>": a `<style>` block cannot be used as an expression
+  help: A block is not a value. Put it inside an intrinsic element or fragment of the component's JSX.
+LUM3011 error at 41:5 "<style>": a `<style>` block cannot be the only thing a component returns
+  help: Styles apply to the elements around them: put the block inside the element it styles.
+LUM3010 error at 46:3 "<style>": a `<style>` block cannot be a statement inside a function
+  help: Put it in the component's JSX, inside an intrinsic element or fragment, or at the module top level.
+LUM3011 error at 50:45 "<style>": a `<style>` block cannot be used as an expression
+  help: A block is not a value. Put it inside an intrinsic element or fragment of the component's JSX.

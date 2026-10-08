@@ -1,0 +1,4 @@
+kind: Stsx
+block 0: jsx Intrinsic <div> unclosed at 3:5 span=37..81 content=44..81
+LUM1004 error at 3:5 "<style>": unclosed `<style>` block
+  help: Add `</style>` after the CSS. Until then the block runs to the end of the file.

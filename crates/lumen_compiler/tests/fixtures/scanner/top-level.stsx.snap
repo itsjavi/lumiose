@@ -1,0 +1,7 @@
+kind: Stsx
+block 0: top-level at 14:1 span=254..515 content=261..507
+  ref $radius.lg at 16:20 span=291..301 close=301
+  ref $tokens.color.primary at 17:12 span=314..335 close=335
+  ref $BREAKPOINT at 18:19 span=355..366 close=366
+  ref $BREAKPOINT at 20:19 span=400..411 close=411
+  ref $radius.sm at 21:28 span=442..452 close=452

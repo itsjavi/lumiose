@@ -1,0 +1,21 @@
+kind: Stsx
+block 0: jsx Intrinsic <div> global at 3:5 span=37..130 content=93..122
+  attribute lang = string "scss"
+  attribute media = string "print"
+  attribute global
+block 1: jsx Intrinsic <div> at 6:5 span=135..169 content=156..161
+  attribute global = string "true"
+block 2: jsx Intrinsic <div> at 7:5 span=174..208 content=195..200
+  attribute global = expression "{true}"
+block 3: jsx Intrinsic <div> global at 8:5 span=213..251 content=238..243
+  attribute global
+LUM1005 error at 3:12 "lang=\"scss\"": unknown `<style>` attribute `lang`
+  help: Blocks are plain CSS. Import `.scss` files instead; `$` is reserved for constant references.
+  fix: Remove `lang` (" lang=\"scss\"" -> "")
+LUM1005 error at 3:24 "media=\"print\"": unknown `<style>` attribute `media`
+  help: Wrap the rules in an `@media` block inside the `<style>` instead.
+  fix: Remove `media` (" media=\"print\"" -> "")
+LUM1005 error at 6:12 "global=\"true\"": `global` takes no value
+  fix: Write `global` without a value ("global=\"true\"" -> "global")
+LUM1005 error at 7:12 "global={true}": `global` takes no value
+  fix: Write `global` without a value ("global={true}" -> "global")

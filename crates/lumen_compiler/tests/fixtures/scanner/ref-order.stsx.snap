@@ -1,0 +1,16 @@
+kind: Stsx
+block 0: top-level at 5:1 span=63..176 content=70..168
+  ref $before at 6:16 span=86..93 close=93
+  ref $spacing.md at 6:34 span=104..115 close=115
+  ref $after at 6:54 span=124..130 close=130
+  ref $Late.size at 6:70 span=140..150 close=150
+  ref $pair at 6:89 span=159..164 close=164
+LUM3013 error at 6:54 "$after": `$after` is used before its declaration
+  label at 9:7 "after": declared here
+  help: Move the `<style>` block below the declaration. Top-level blocks conventionally go at the end of the file.
+LUM3013 error at 6:70 "$Late.size": `$Late` is used before its declaration
+  label at 10:7 "Late": declared here
+  help: Move the `<style>` block below the declaration. Top-level blocks conventionally go at the end of the file.
+LUM3013 error at 6:89 "$pair": `$pair` is used before its declaration
+  label at 13:8 "pair": declared here
+  help: Move the `<style>` block below the declaration. Top-level blocks conventionally go at the end of the file.

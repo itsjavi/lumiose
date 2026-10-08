@@ -1,0 +1,12 @@
+const css = String.raw;
+
+export const Legit = () => <style>{css`.a { color: red; }`}</style>;
+export const Empty = () => <style></style>;
+
+export const Raw = () => (
+  <div>
+           
+                         
+            
+  </div>
+);

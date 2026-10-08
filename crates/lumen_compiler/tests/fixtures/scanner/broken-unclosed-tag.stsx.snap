@@ -1,0 +1,5 @@
+kind: Stsx
+block 0: top-level global unclosed at 3:1 span=21..35 content=35..35
+  attribute global
+LUM1004 error at 3:1 "<style global\n": unclosed `<style>` block
+  help: Add `</style>` after the CSS. Until then the block runs to the end of the file.
