@@ -5,7 +5,7 @@ status: In Progress
 assignee:
   - '@Halo'
 created_date: '2026-10-08 16:37'
-updated_date: '2026-10-08 16:53'
+updated_date: '2026-10-08 20:48'
 labels: []
 milestone: m-5
 dependencies: []
@@ -24,6 +24,12 @@ Found while building @lumen/site-kit (TASK-59): 'grid-template-columns: 2fr repe
 - [ ] #1 lumen_css reports a warning (LUM3015 or a new registered code) for a declaration of a known property whose value does not parse and contains no var()/env()/attr(), with the property and value in the message
 - [ ] #2 No warning for valid values, custom properties or vendor-prefixed properties Lightning CSS does not know; tests in crates/lumen_css
 <!-- AC:END -->
+
+## Implementation Plan
+
+<!-- SECTION:PLAN:BEGIN -->
+Per the RESUME design: (1) prepass: Context::Descriptors for non-group, non-keyframes at-rule blocks (Declaration.descriptor) and record declarations directly inside group rules nested in style rules; (2) new src/values.rs called from process::prepare() with the ref substitutions: LUM3019 detached unit, LUM3018 unitless numeric ref (px/deg/ms probes: invalid->valid, Lightning px conversion, number/dimension mix or number-only reduction in a math function), LUM3017 Unparsed values behind conservative filters + grid auto-repeat TrackList check; (3) CssCode InvalidCssValue/UnitlessStyleRef/DetachedUnit (warnings); (4) unit tests, corpus integration test (tests/values.rs + tests/values/{valid,invalid}.txt), golden fixture tests/fixtures/values.stsx; clippy; follow-up tasks for registry (Photon) and docs (Beacon).
+<!-- SECTION:PLAN:END -->
 
 ## Implementation Notes
 
