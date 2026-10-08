@@ -1,11 +1,11 @@
 ---
 id: TASK-22
 title: 'Implement request handling, middleware, endpoints and document'
-status: In Progress
+status: Done
 assignee:
   - '@Nova'
 created_date: '2026-10-08 12:21'
-updated_date: '2026-10-08 12:54'
+updated_date: '2026-10-08 13:26'
 labels: []
 milestone: m-3
 dependencies:
@@ -27,7 +27,7 @@ Server and static routes need a web-standard fetch handler that composes middlew
 <!-- AC:BEGIN -->
 - [x] #1 export default { fetch } entry; ctx { request, url, params, locals, cookies, env }; typed Locals; middleware chain; endpoints for every method
 - [x] #2 cookies with signedCookie(); redirect/notFound/error helpers; env() with PUBLIC_ client env; default and custom document.stsx; _404/_error pages with status
-- [ ] #3 Integration tests over the fetch handler
+- [x] #3 Integration tests over the fetch handler
 <!-- AC:END -->
 
 ## Implementation Plan
@@ -79,4 +79,17 @@ Lux review: Nova's choices are accepted.
 - The LUMEN_SECRET default; redirect 302 for GET/HEAD and 303 otherwise; middleware arrays; error pages retried without layouts.
 - The custom document is called through createComponent, so it behaves like any component (context, head).
 - Locals is declared in context.ts; the env.d.ts declaration stays as a harmless merge.
+
+Nova (session nova-task16-20261008T131130Z, took over this task's claim from my previous session): integrated TASK-16.
+- app/server/render.ts: createServerRenderer({ nonce?, strictStyles?, islandUrl? }): PageRenderer = renderToStream(composePageTree(tree, createComponent, rawHtml), { signal, resolveAll, onError }); it is the handler's default `render` (the option is now optional). PageRenderOptions gained onError (streamed boundary errors → handler onError).
+- Custom document through createComponent (Lux decision): PageTree.document is rendered as the root component around layouts + page, with `head` = a raw placeholder and `body` = [tree, end marker]. So the document can provide context to the page and set head defaults (<Title>/<Meta>; the page's deeper Title wins). document.ts: documentParts() replaces the head slot with head + headAssets and splits at the body marker so the Suspense stream lands before </body>; errors if {props.head} or {props.body} is not rendered exactly once. DocumentProps is now { head: Renderable; body: Renderable } so `{props.head}` type-checks in TSX.
+- End-to-end tests (app/server/server-renderer.test.ts, 7, real runtime + hand-compiled components): Suspense streaming inside the default document (head before, chunks before </body>, url() inside the boundary); custom document via createComponent (context to the page, head defaults overridden, head assets); streaming inside the custom document; ErrorBoundary inside a streamed boundary; LUM5004 for redirect(), <Title> and response().setStatus() inside a streamed boundary (200, fallback kept, onError once); redirect()/notFound() in the shell → 302/404 page; prerender fully resolved with island record + modulepreload.
+- The string-renderer fixture stays for the 30 handler tests (its document now resolves the body array).
+Validation: pnpm typecheck OK, pnpm lint clean in src/app and src/server, pnpm test 395/395.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Web-standard fetch handler (middleware, endpoints, cookies, redirects/errors, env, default and custom document, _404/_error) now renders through lumen/server by default: shell-first with sealed status/headers, Suspense streamed inside <body>, custom document rendered as the root component. 30 handler tests on the fixture + 7 end-to-end tests with the real runtime.
+<!-- SECTION:FINAL_SUMMARY:END -->
