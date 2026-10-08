@@ -23,7 +23,12 @@
     "./dom/hydrate": "./src/dom/hydrate.ts",
     "./dom/loader": "./src/dom/loader.ts",
     "./server": "./src/server/index.ts",
-    "./router": "./src/app/router/index.ts",
+    "./router": {
+      "types": "./src/app/router/index.ts",
+      "browser": "./src/app/router/index.ts",
+      "node": "./src/app/router/index.server.ts",
+      "default": "./src/app/router/index.ts"
+    },
     "./jsx-runtime": "./src/jsx/jsx-runtime.ts",
     "./jsx-dev-runtime": "./src/jsx/jsx-runtime.ts",
     "./env": {
