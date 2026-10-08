@@ -3,9 +3,9 @@ id: TASK-25
 title: Implement SPA mode and the client router
 status: To Do
 assignee:
-  - '@Nova'
+  - '@Spark'
 created_date: '2026-10-08 12:21'
-updated_date: '2026-10-08 15:52'
+updated_date: '2026-10-08 20:59'
 labels: []
 milestone: m-3
 dependencies:
@@ -40,4 +40,6 @@ Lux (decision-20): navigating() must register with the core busy registry.
 Nova (from TASK-24): spa routes with export const ssr = false are still server-rendered by the request handler and lumen dev. The client shell needs a handler option (dev: document + empty root + SPA client entry script in headAssets; build: static shell file) — include it here.
 
 Lux (from Nova): ssr = false SPA shells are still server-rendered by the dev server; fix as part of this task.
+
+Lux: reassigned from Nova (busy with TASK-36) to Spark, who now owns packages/lumen/src/app/router/**. TASK-18 is Done. Integrate with Nova's spa-mode manifest and dev/build (decision-21 lumen({ mode, ssr }), TASK-77 Photon) via notes; app/server and dev files remain Nova's.
 <!-- SECTION:NOTES:END -->
