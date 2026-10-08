@@ -3,7 +3,7 @@ id: doc-1
 title: Lumen architecture specification
 type: specification
 created_date: '2026-10-08 10:28'
-updated_date: '2026-10-08 12:18'
+updated_date: '2026-10-08 12:27'
 tags:
   - architecture
   - spec
@@ -281,7 +281,7 @@ The scanner produces both, so non-ASCII CSS (`content: "→"`) keeps both views 
 ### 4.4 Async components (decision-13)
 
 **Await rewrite.** The compiler rewrites `await` only where the nearest enclosing function is the component itself; awaits inside handlers and callbacks are untouched.
-- `await e` becomes `await $await(() => e)`.
+- `await e` becomes `await $await(() => e, site)`, where `site` is the static index of the await (contract doc-2 §4).
 - `for await (const x of it)` awaits each step through `$await`.
 - `await using` is `LUM1007` in v1.
 
@@ -493,7 +493,7 @@ const _t0 = /*#__PURE__*/ template(`<article class=card data-l-k3x9a2 data-l-f81
 const _a0 = (el, v) => (el.data = v);                          // hoisted apply fns (memory)
 
 export const MemberCard = $component(async function MemberCard(props) {
-  const member = await $await(() => fetchJSON(`/api/members/${props.id}`, { signal: lifetime() }));
+  const member = await $await(() => fetchJSON(`/api/members/${props.id}`, { signal: lifetime() }), 0);
   const kudos = signal(member.kudos);
   const _el = _t0(), _h3 = _el.firstChild, _btn = _h3.nextSibling;
   _h3.firstChild.data = member.name;                           // static after await → one-time write
@@ -504,7 +504,7 @@ export const MemberCard = $component(async function MemberCard(props) {
 delegateEvents(["click"]);
 ```
 
-- **Hydration** uses a separate generated walk, `_t0.h`, emitted only when the module is reachable from an island or SPA entry. The create path stays clone-only.
+- **Hydration** is pluggable: compiled code has a single walk. Importing `lumen/dom/hydrate` (done by the island loader and SPA hydrate entries) installs a claim cursor that `template()`, `insert`, `list` and `branch` honour, so bundles without hydration never contain that code (contract doc-2 §1).
 - **CSS** is emitted in order: the file scope first, then component scopes.
 
 ### 5.3 Server output (illustrative)
@@ -512,7 +512,7 @@ delegateEvents(["click"]);
 ```js
 import { ssr, escape, $await, $component, signal, lifetime } from "lumen/server";
 export const MemberCard = $component(async function MemberCard(props) {
-  const member = await $await(() => fetchJSON(`/api/members/${props.id}`, { signal: lifetime() }));
+  const member = await $await(() => fetchJSON(`/api/members/${props.id}`, { signal: lifetime() }), 0);
   const kudos = signal(member.kudos);
   return ssr(_s0, escape(member.name), escape(kudos()));   // _s0: hoisted static string parts
 });
@@ -634,7 +634,7 @@ export const MemberCard = $component(async function MemberCard(props) {
 
 ### 7.4 Hydration
 
-**Separate hydrate walk.** It uses positional claiming without per-element keys. Comment markers are used only for blocks (`<!--[-->…<!--]-->`), inactive branches (`<!--[!-->`), text separators (`<!--!-->`), and **each async instance's range**. Claiming happens inside each instance's own range, so a shared cursor never interleaves between instances.
+**Pluggable hydration (single compiled walk, contract doc-2).** It uses positional claiming without per-element keys. Comment markers are used only for blocks (`<!--[-->…<!--]-->`), inactive branches (`<!--[!-->`), text separators (`<!--!-->`), and **each async instance's range**. Claiming happens inside each instance's own range, so a shared cursor never interleaves between instances.
 
 **Islands.**
 - Each island sits between `<!--l:ID-->` and `<!--/l:ID-->`.
