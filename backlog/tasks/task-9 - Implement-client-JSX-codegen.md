@@ -5,7 +5,7 @@ status: In Progress
 assignee:
   - '@Photon'
 created_date: '2026-10-08 12:20'
-updated_date: '2026-10-08 14:09'
+updated_date: '2026-10-08 14:10'
 labels: []
 milestone: m-1
 dependencies:
@@ -65,3 +65,9 @@ Validation: cargo test --workspace (lumen_compiler 33 unit, 20 client golden fix
 
 Contract change requests (proposals for Lux, not applied): (1) doc-2 §5.2/§5.4 show setText/.data for row.label()/m.name; the compiler cannot prove those are text, so it uses insert (a node/array value would otherwise print as [object …]); suggest the goldens use insert or define a text-hint rule. (2) Direct sources only for identifier calls: passing row.label for row.label() loses this. (3) The data slot holds the row item (handler reads fields at event time, exact closure semantics) rather than row.id. (4) branch/list need a parent, so conditionals and .map() in component children, fragments and nested ternary arms fall back to tracked functions (re-created on change); suggest a parentless memo/branch returning a Renderable. (5) Registry: added LUM1001 Syntax error and LUM1002 Unsupported (server target until TASK-14) — spec §5.4 table needs them. (6) SSR (TASK-14) must emit the same implicit <tbody>. Known limitations: select value set before dynamic options are inserted; comments attached to a removed/first statement may move below hoisted declarations.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Implemented the client JSX codegen in lumen_compiler: compile() runs scan → oxc_parser on the masked text → oxc_semantic → $ref binding resolution and placeholder removal (TASK-10 hook) → TypeScript strip via oxc_transformer → analysis → a VisitMut client transform → oxc_codegen with source maps against the original source. Output follows contract doc-2: hoisted minified templates with firstChild/nextSibling walks, bind() with hoisted apply functions and direct signal sources, one-time writes, insert with minimal <!> markers, createComponent with getter props/children/mergeProps/$$scope, reactive props destructuring with defaults and restProps, keyed list from .map() with key/index accessor/selector hoisting, memoised branch, per-key class/style, delegated events with data-slot hoisting and listen for non-bubbling/on:x, bind:value/checked, attach, ref, innerHTML, spread, fragments as MultiRoot templates, SVG/MathML flags and delegateEvents at module end. Diagnostics LUM2001-LUM2006 and AST-level LUM3010 carry original spans; LUM1001/LUM1002 were added to the registry (proposal for spec §5.4). compile() is exposed through lumen_napi (UTF-16 spans, regenerated @lumen/compiler typings) and lumen_wasm; the server target reports LUM1002 until TASK-14. Verified by 20 golden fixtures (incl. doc-2 §5.1-5.4), compile API and source-map tests, clippy/fmt, and 16 vitest cases of which 7 compile real components and run them on lumen/dom in happy-dom. A 10k-line file compiles in ~20 ms. Contract change proposals (setText only for provable text, item as data slot, parentless branch/list) are in the notes.
+<!-- SECTION:FINAL_SUMMARY:END -->
