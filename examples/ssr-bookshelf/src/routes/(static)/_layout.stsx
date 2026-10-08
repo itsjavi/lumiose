@@ -1,0 +1,13 @@
+// Layout of the prerendered routes. They cannot know who is signed in; the account menu island
+// (TASK-36) fills that in on the client.
+import { Header } from "../../components/Header.stsx";
+import "../../styles.css";
+
+export default function StaticLayout(props: { children?: JSX.Element }) {
+  return (
+    <>
+      <Header />
+      {props.children}
+    </>
+  );
+}

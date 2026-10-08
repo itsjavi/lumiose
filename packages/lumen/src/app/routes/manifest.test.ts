@@ -124,6 +124,35 @@ describe("createRouteManifest", () => {
     );
   });
 
+  it("starts from the project default mode and ssr (decision-21), which files override", () => {
+    const manifest = createRouteManifest(
+      Object.entries({
+        "index.stsx": PAGE,
+        "about.stsx": `export const mode = "static";`,
+        "admin/_layout.stsx": `export const mode = "server";`,
+        "admin/users.stsx": PAGE,
+        "editor.stsx": `export const ssr = true;`,
+        "api/todos.ts": "",
+      }).map(([path, source]) => ({ path, source })),
+      { defaultMode: "spa", defaultSsr: false },
+    );
+    expect(manifest.diagnostics).toEqual([]);
+    expect(
+      Object.fromEntries(
+        manifest.routes.map((route) => [
+          route.pattern,
+          route.kind === "page" ? [route.mode, route.ssr] : [route.mode],
+        ]),
+      ),
+    ).toEqual({
+      "/": ["spa", false],
+      "/about": ["static", true],
+      "/admin/users": ["server", true],
+      "/editor": ["spa", true],
+      "/api/todos": ["server"],
+    });
+  });
+
   it("links each page to its nearest _error and _404 pages", () => {
     const manifest = manifestOf({
       "_404.stsx": PAGE,

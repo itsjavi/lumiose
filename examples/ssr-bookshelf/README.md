@@ -4,21 +4,23 @@ A multi-page book catalog with search, reviews, reading lists and accounts, back
 `node:sqlite`. It shows Lumen's `server` and `static` route modes, form actions, cookie sessions,
 islands and `<Suspense>` streaming.
 
-**Status.** The data layer is done (TASK-46): schema, seed, queries, auth and tests. The pages
-below are the plan for TASK-36, which needs the compiler and `lumen dev`.
+**Status.** The data layer is done (TASK-46). The first pages run on `lumen dev` (TASK-24): home
+(with the streamed recommendations), the book list and detail, sign-in/sign-out, about, the search
+endpoint and the 404 page. The rest of the planned site below is TASK-36.
 
 ## Run it
 
 Node 24 or later; `node:sqlite` is built in.
 
 ```sh
+pnpm --filter @lumen-examples/ssr-bookshelf dev        # seeds if empty, then lumen dev on :5173
 pnpm --filter @lumen-examples/ssr-bookshelf seed       # (re)creates data/bookshelf.db
 pnpm --filter @lumen-examples/ssr-bookshelf test       # Vitest, in-memory databases
 pnpm --filter @lumen-examples/ssr-bookshelf typecheck
 ```
 
-`node src/server/seed.server.ts --if-empty` keeps an already seeded database. The planned `dev`
-script runs that first and then `lumen dev`.
+`node src/server/seed.server.ts --if-empty` keeps an already seeded database; `dev` runs it first.
+In dev, `LUMEN_SECRET` comes from `.env.development` (a development-only value).
 
 Every seeded user has the password `bookshelf`. `reader@example.com` has reviews and a reading
 list, so it gets personal recommendations.

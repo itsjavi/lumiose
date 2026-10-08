@@ -38,7 +38,7 @@ interface RouteBase {
 
 export interface PageRoute extends RouteBase {
   kind: "page";
-  /** Own `export const mode`, else the nearest layout's, else `static`. */
+  /** Own `export const mode`, else the nearest layout's, else the project default (`static`). */
   mode: RouteMode;
   /** `false` only for `spa` routes rendered as a client shell (`export const ssr = false`). */
   ssr: boolean;
@@ -52,7 +52,7 @@ export interface PageRoute extends RouteBase {
 
 export interface EndpointRoute extends RouteBase {
   kind: "endpoint";
-  /** Own `export const mode`, else inherited from the nearest layout (`spa` serves endpoints live as `server`), else `static`. */
+  /** Own `export const mode`, else inherited from the nearest layout or the project default (`spa` serves endpoints live as `server`), else `static`. */
   mode: EndpointMode;
 }
 
@@ -98,6 +98,10 @@ export interface CreateRouteManifestOptions {
   routesDir?: string;
   /** Reads `mode`/`ssr` from a module; swappable for compiler-provided module meta. */
   readMeta?: ReadRouteModuleMeta;
+  /** Project default mode, `lumen({ mode })` (decision-21); layouts and routes override it. Default `static`. */
+  defaultMode?: RouteMode;
+  /** Project default `ssr` of `spa` routes, `lumen({ ssr })`. Default `true`. */
+  defaultSsr?: boolean;
 }
 
 export const DEFAULT_ROUTES_DIR = "src/routes";
@@ -125,6 +129,8 @@ export function createRouteManifest(
 ): RouteManifest {
   const routesDir = trimSlashes(options.routesDir ?? DEFAULT_ROUTES_DIR);
   const readMeta = options.readMeta ?? readRouteModuleMeta;
+  const defaultMode = options.defaultMode ?? "static";
+  const defaultSsr = options.defaultSsr ?? true;
   const diagnostics: AppDiagnostic[] = [];
   const report: Report = (code, severity, file, message, help) => {
     const diagnostic: AppDiagnostic = { code, severity, message, file };
@@ -213,14 +219,14 @@ export function createRouteManifest(
       );
     }
     if (mode !== "spa") return true;
-    return declared.ssr ?? inheritedSsr(dir) ?? true;
+    return declared.ssr ?? inheritedSsr(dir) ?? defaultSsr;
   };
 
   const layouts: LayoutEntry[] = [...layoutsByDir.values()]
     .toSorted((a, b) => compareStrings(a.route.dir, b.route.dir))
     .map((layout) => {
       // The chain starts at the layout itself, so its own declaration wins.
-      const mode = inheritedMode(layout.route.dir) ?? "static";
+      const mode = inheritedMode(layout.route.dir) ?? defaultMode;
       return {
         file: layout.file,
         dir: layout.route.dir,
@@ -244,13 +250,14 @@ export function createRouteManifest(
     };
     let entry: RouteEntry;
     if (route.kind === "endpoint") {
-      const inherited = inheritedMode(route.dir) ?? "static";
+      const inherited = inheritedMode(route.dir) ?? defaultMode;
       const mode =
         (declared.mode as EndpointMode | undefined) ??
         (inherited === "static" ? "static" : "server");
       entry = { ...base, kind: "endpoint", mode };
     } else {
-      const mode = (declared.mode as RouteMode | undefined) ?? inheritedMode(route.dir) ?? "static";
+      const mode =
+        (declared.mode as RouteMode | undefined) ?? inheritedMode(route.dir) ?? defaultMode;
       entry = {
         ...base,
         kind: "page",

@@ -29,13 +29,16 @@
       "types": "./src/jsx/env.d.ts"
     },
     "./vite": "./src/vite/index.ts",
+    "./dev": "./src/app/dev/index.ts",
     "./tooling": "./src/cli/tooling.ts",
     "./package.json": "./package.json"
   },
   "scripts": {
     "typecheck": "tsc -p tsconfig.json",
     "test": "vitest run",
-    "size": "node scripts/size.ts"
+    "size": "node scripts/size.ts",
+    "docs:gen": "node scripts/gen-error-docs.ts && node scripts/gen-llms.ts",
+    "docs:check": "node scripts/gen-error-docs.ts --check && node scripts/gen-llms.ts --check"
   },
   "dependencies": {
     "@lumen/compiler": "workspace:*"

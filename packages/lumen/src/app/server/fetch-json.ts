@@ -3,6 +3,8 @@
 // the request handler (no network), as part of the page request: same cookies, a copy of its
 // locals, aborted with it. Other URLs use the global fetch.
 
+import { lifetime } from "../../core/server.ts";
+import { inAsyncRun } from "../../server/frame.ts";
 import { jsonRequest, requestJSON } from "../fetch-json.ts";
 import { getRequestScope } from "./scope.ts";
 
@@ -12,7 +14,8 @@ const MAX_REDIRECTS = 20;
 /**
  * Fetches JSON: `const post = await fetchJSON<Post>("/api/posts/1")`. Throws a `FetchError` for
  * non-2xx responses. Returns plain data, so values awaited inside islands stay serializable.
- * During SSR, same-origin URLs are served in-process, with the page request's cookies.
+ * During SSR, same-origin URLs are served in-process, with the page request's cookies. Inside an
+ * async component, the signal defaults to `lifetime()` (the render's).
  */
 export async function fetchJSON<T = unknown>(input: string | URL, init?: RequestInit): Promise<T> {
   const scope = getRequestScope();
@@ -25,7 +28,11 @@ export async function fetchJSON<T = unknown>(input: string | URL, init?: Request
       `fetchJSON(${String(input)}): relative URLs need a current request to resolve against; pass an absolute URL.`,
     );
   }
-  const request = jsonRequest(target, init);
+  // Inside an async component, the render's lifetime: the fetch stops when the render is aborted.
+  const request = jsonRequest(
+    target,
+    init?.signal === undefined && inAsyncRun() ? { ...init, signal: lifetime() } : init,
+  );
   const inProcess = scope?.fetch;
   if (inProcess !== undefined && target.origin === base!.origin) {
     return requestJSON((first) => followInProcess(inProcess, first), request);

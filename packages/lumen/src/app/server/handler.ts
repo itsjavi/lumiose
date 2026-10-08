@@ -2,7 +2,7 @@
 // Matches the URL, builds the request context, runs the middleware chain, then serves an
 // endpoint or renders a page through its layouts, the document and the `_404`/`_error` pages.
 
-import type { RouteManifest, SpecialPage } from "../routes/manifest.ts";
+import type { PageRoute, RouteManifest, SpecialPage } from "../routes/manifest.ts";
 import { createRouteMatcher, type RouteMatch } from "../routes/match.ts";
 import type { Component } from "../../contract/client.ts";
 import type {
@@ -48,8 +48,11 @@ export interface RequestHandlerOptions {
   env?: ServerEnv;
   /** Dev mode: error pages get the real error, and cookies are not `secure` on http. */
   dev?: boolean;
-  /** Prerender/SSG: render every Suspense boundary into the shell (decision-19 §3). */
-  prerender?: boolean;
+  /**
+   * Prerender/SSG: render every Suspense boundary into the shell (decision-19 §3). A function
+   * decides per page route: the dev server renders `static` routes resolved, as the build does.
+   */
+  prerender?: boolean | ((route: PageRoute) => boolean);
   /** Called with unexpected errors (not redirects or `error()`/`notFound()`). Default: console.error. */
   onError?: (error: unknown, request: Request) => void;
   /**
@@ -257,6 +260,7 @@ export function createRequestHandler(options: RequestHandlerOptions): RequestHan
         scope,
         { layouts, page, props: { params: match.params }, params: match.params },
         [...route.layouts, route.file],
+        typeof prerender === "function" ? prerender(route) : prerender,
       );
     } catch (error) {
       scope.response = createResponseState(200, baseline);
@@ -318,6 +322,7 @@ export function createRequestHandler(options: RequestHandlerOptions): RequestHan
     scope: RequestScope,
     tree: PageTree,
     files: readonly string[],
+    resolveAll = prerender === true,
   ): Promise<Response> {
     const { request } = scope.ctx;
     const document =
@@ -329,7 +334,7 @@ export function createRequestHandler(options: RequestHandlerOptions): RequestHan
       {
         request,
         signal: request.signal,
-        resolveAll: prerender,
+        resolveAll,
         onError: (error) => onError(error, request),
       },
     );

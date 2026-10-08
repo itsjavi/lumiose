@@ -5,6 +5,7 @@ import { error, redirect } from "./control.ts";
 import { fetchJSON } from "./fetch-json.ts";
 import { cookies, locals } from "./scope.ts";
 import { app, page, type Modules } from "./__fixtures__/app.ts";
+import { $await, $leave, createComponent, renderToStream, ssr } from "../../server/index.ts";
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -167,5 +168,35 @@ describe("fetchJSON() during SSR", () => {
     const failure = await fetchJSON("https://api.example.com/x").catch((caught) => caught);
     expect(failure).toBeInstanceOf(FetchError);
     expect(failure).toMatchObject({ status: 500, message: "Internal Server Error", data: "nope" });
+  });
+});
+
+async function Slow() {
+  try {
+    (await $await(() => fetchJSON("https://api.example.com/slow"), 0))();
+    return ssr(["never"]);
+  } finally {
+    $leave();
+  }
+}
+
+describe("fetchJSON() signal during SSR", () => {
+  it("defaults to the render's lifetime inside async components, so an aborted render cancels it", async () => {
+    const requests: Request[] = [];
+    vi.stubGlobal("fetch", (request: Request) => {
+      requests.push(request);
+      return new Promise<Response>(() => {});
+    });
+    void fetchJSON("https://api.example.com/outside");
+    const controller = new AbortController();
+    const shell = renderToStream(() => createComponent(Slow, {}), { signal: controller.signal });
+    expect(requests.map((request) => request.url)).toEqual([
+      "https://api.example.com/outside",
+      "https://api.example.com/slow",
+    ]);
+    expect(requests[1]!.signal.aborted).toBe(false);
+    controller.abort(new Error("client gone"));
+    await expect(shell).rejects.toThrow("client gone");
+    expect(requests.map((request) => request.signal.aborted)).toEqual([false, true]);
   });
 });

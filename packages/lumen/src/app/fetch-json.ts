@@ -2,6 +2,7 @@
 // `FetchError` for non-2xx responses. This is the browser version; under the node condition,
 // ./server/fetch-json.ts serves same-origin URLs in-process through the request handler.
 
+import { activeSub, isRun, lifetimeOf, type Run } from "../core/internal.ts";
 import { HttpError, statusText } from "./server/control.ts";
 
 /**
@@ -77,11 +78,16 @@ export async function readBody(response: Response): Promise<unknown> {
  * Fetches JSON: `const post = await fetchJSON<Post>("/api/posts/1")`. Throws a `FetchError` for
  * non-2xx responses. Returns plain data, so values awaited inside islands stay serializable.
  * During SSR, same-origin URLs are served in-process, with the page request's cookies.
+ * Inside an async component, the signal defaults to `lifetime()`: a superseded run cancels its
+ * fetch (pass `signal` to choose another, or `null` for none).
  */
 export async function fetchJSON<T = unknown>(input: string | URL, init?: RequestInit): Promise<T> {
   const base = typeof document === "undefined" ? globalThis.location?.href : document.baseURI;
+  // Called by an async component's run (`await fetchJSON(…)`): a superseded run aborts its fetch.
+  const signal =
+    init?.signal === undefined && isRun(activeSub) ? lifetimeOf(activeSub as Run) : undefined;
   return requestJSON(
     (request) => globalThis.fetch(request),
-    jsonRequest(new URL(input, base), init),
+    jsonRequest(new URL(input, base), signal === undefined ? init : { ...init, signal }),
   );
 }

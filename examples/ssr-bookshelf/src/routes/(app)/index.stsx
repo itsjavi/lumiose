@@ -1,0 +1,34 @@
+import { lifetime, locals, Suspense, Title } from "lumen";
+import { BookGrid } from "../../components/BookCard.stsx";
+import { queries } from "../../server/queries.server.ts";
+
+/** Slow on purpose (BOOKSHELF_SLOW_MS): the shell is sent first and this streams in. */
+async function Recommendations(props: { userId: number | null }) {
+  const books = await queries().recommendationsFor(props.userId, { signal: lifetime() });
+  return <BookGrid books={books} />;
+}
+
+export default function Home() {
+  const user = locals().user ?? null;
+  const featured = queries().featuredBooks(6);
+  const trending = queries().trendingBooks({ limit: 6 });
+  return (
+    <main>
+      <Title>Bookshelf</Title>
+      <section>
+        <h2>{user === null ? "Recommended" : `Picked for ${user.name}`}</h2>
+        <Suspense fallback={<p class="loading">Finding books you might like…</p>}>
+          <Recommendations userId={user?.id ?? null} />
+        </Suspense>
+      </section>
+      <section>
+        <h2>Featured</h2>
+        <BookGrid books={featured} />
+      </section>
+      <section>
+        <h2>Trending this month</h2>
+        <BookGrid books={trending} />
+      </section>
+    </main>
+  );
+}

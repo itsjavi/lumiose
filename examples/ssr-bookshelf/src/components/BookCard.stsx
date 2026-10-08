@@ -1,0 +1,27 @@
+import type { BookSummary } from "../types.ts";
+import { Rating } from "./Rating.stsx";
+
+export function BookCard(props: { book: BookSummary }) {
+  return (
+    <article class="book-card">
+      <a href={`/books/${props.book.isbn}`}>
+        <div class="cover" style={`--hue: ${props.book.coverHue}`}>
+          <span>{props.book.title}</span>
+        </div>
+        <h3>{props.book.title}</h3>
+      </a>
+      <p class="byline">{props.book.authors.map((author) => author.name).join(", ")}</p>
+      <Rating rating={props.book.rating} />
+    </article>
+  );
+}
+
+export function BookGrid(props: { books: BookSummary[] }) {
+  return (
+    <div class="book-grid">
+      {props.books.map((book) => (
+        <BookCard book={book} />
+      ))}
+    </div>
+  );
+}

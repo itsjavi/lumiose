@@ -1,0 +1,56 @@
+import { Title, url } from "lumen";
+import { BookGrid } from "../../../components/BookCard.stsx";
+import { BOOK_SORTS, bookFiltersToParams, parseBookFilters } from "../../../lib/search-params.ts";
+import { queries } from "../../../server/queries.server.ts";
+import type { BookFilters } from "../../../types.ts";
+
+function pageHref(filters: BookFilters, page: number): string {
+  const search = bookFiltersToParams({ ...filters, page }).toString();
+  return search === "" ? "/books" : `/books?${search}`;
+}
+
+export default function Books() {
+  const filters = parseBookFilters(url().searchParams);
+  const result = queries().listBooks({ ...filters, pageSize: 24 });
+  const genres = queries().listGenres();
+  return (
+    <main>
+      <Title>Books · Bookshelf</Title>
+      <h1>Books</h1>
+      <form class="filters" method="get" action="/books">
+        <input
+          type="search"
+          name="q"
+          value={filters.q ?? ""}
+          placeholder="Title, author or topic"
+          aria-label="Search"
+        />
+        <select name="genre" aria-label="Genre">
+          <option value="">All genres</option>
+          {genres.map((genre) => (
+            <option value={genre.slug} selected={genre.slug === filters.genre}>
+              {genre.name}
+            </option>
+          ))}
+        </select>
+        <select name="sort" aria-label="Sort">
+          {BOOK_SORTS.map((sort) => (
+            <option value={sort} selected={sort === filters.sort}>
+              {sort}
+            </option>
+          ))}
+        </select>
+        <button>Filter</button>
+      </form>
+      <p class="byline">{result.total} books</p>
+      <BookGrid books={result.items} />
+      <nav class="pager">
+        {result.hasPrevious ? <a href={pageHref(filters, result.page - 1)}>← Previous</a> : null}
+        <span>
+          Page {result.page} of {result.pageCount}
+        </span>
+        {result.hasNext ? <a href={pageHref(filters, result.page + 1)}>Next →</a> : null}
+      </nav>
+    </main>
+  );
+}

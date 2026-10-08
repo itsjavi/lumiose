@@ -5,6 +5,7 @@
   "description": "Lumen sample: a multi-page, server-rendered bookshelf backed by node:sqlite.",
   "type": "module",
   "scripts": {
+    "dev": "node src/server/seed.server.ts --if-empty && lumen dev",
     "seed": "node src/server/seed.server.ts",
     "typecheck": "tsc -p tsconfig.json",
     "test": "vitest run"

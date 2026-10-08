@@ -2,13 +2,14 @@
 // server entry and adapters (TASK-26). Server-only.
 export { createRequestHandler } from "./handler.ts";
 export type { ModuleExports, RequestHandler, RequestHandlerOptions } from "./handler.ts";
-export { composePageTree } from "./render.ts";
+export { composePageTree, createServerRenderer } from "./render.ts";
 export type {
   CreateComponent,
   PageRenderer,
   PageRenderOptions,
   PageTree,
   RenderedShell,
+  ServerRendererOptions,
 } from "./render.ts";
 export type { DocumentComponent } from "./document.ts";
 export { createCookieJar, parseCookieHeader, serializeCookie } from "./cookies.ts";

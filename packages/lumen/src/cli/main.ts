@@ -1,28 +1,38 @@
-// `lumen` command dispatch. `check` (TASK-27), `lint` and `fmt` (TASK-31); the full CLI is TASK-28.
+// `lumen` command dispatch. `check` (TASK-27), `lint` and `fmt` (TASK-31), `docs` and `explain`
+// (TASK-32); the full CLI is TASK-28.
 
 import { parseArgs } from "node:util";
 import pkg from "../../package.json" with { type: "json" };
 import { checkCommand, EXIT_FAILURE, EXIT_OK } from "./check/index.ts";
+import { docsCommand, explainCommand } from "./docs/index.ts";
 import { fmtCommand } from "./fmt/index.ts";
 import { lintCommand } from "./lint/index.ts";
 
 const USAGE = `Usage: lumen <command> [options]
 
 Commands:
+  dev               Start the dev server (Vite, SSR with HMR)
   check             Type-check the project (typegen, shadow TSX, tsc) and report Lumen diagnostics
   lint              Lint the project with oxlint, .stsx included (and their CSS with stylelint,
                     if installed)
   fmt [paths...]    Format .stsx files with oxfmt: TSX and each style block (default path: src)
+  docs [topic]      Print a docs topic (concepts/signals, LUM1004, …), search the docs for any
+                    other text, or list the topics
+  explain <code>    Explain a diagnostic code, such as LUM2001
 
 Options:
   --root <dir>        Project root (default: current directory)
   -p, --project <f>   check: tsconfig path, relative to the root (default: tsconfig.json)
-  --format <f>        check, lint: human (default) or json
+  --format <f>        check, lint, docs, explain: human (default) or json
   --check             fmt: list unformatted files and exit 1 instead of writing
+  --port <n>          dev: port (default: 5173, or the next free one)
+  --host <addr>       dev: listen on this address (0.0.0.0: all addresses)
 
   -h, --help          Show this help
   -v, --version       Show the version
 `;
+
+const COMMANDS = new Set(["check", "lint", "fmt", "docs", "explain", "dev"]);
 
 export interface CliIO {
   cwd: string;
@@ -43,6 +53,8 @@ export async function main(argv: string[], io: CliIO = processIO()): Promise<num
         project: { type: "string", short: "p" },
         format: { type: "string" },
         check: { type: "boolean" },
+        port: { type: "string" },
+        host: { type: "string" },
         help: { type: "boolean", short: "h" },
         version: { type: "boolean", short: "v" },
       },
@@ -61,24 +73,59 @@ export async function main(argv: string[], io: CliIO = processIO()): Promise<num
     io.write(USAGE);
     return EXIT_OK;
   }
-  if (command !== "check" && command !== "lint" && command !== "fmt") {
+  if (!COMMANDS.has(command)) {
     return usageError(io, `Unknown command "${command}".`);
-  }
-  if (rest.length > 0 && command !== "fmt") {
-    return usageError(io, `Unexpected argument "${rest[0]}".`);
   }
   if (values.format !== undefined && values.format !== "human" && values.format !== "json") {
     return usageError(io, `--format must be "human" or "json", not "${values.format}".`);
+  }
+  const format = (values.format ?? "human") as "human" | "json";
+  if (command === "docs" || command === "explain") {
+    const { format: _format, ...others } = values;
+    if (Object.values(others).some((value) => value !== undefined)) {
+      return usageError(io, `${command} takes only --format.`);
+    }
+    if (command === "docs") {
+      return docsCommand({
+        query: rest.join(" "),
+        format,
+        write: io.write,
+        writeError: io.writeError,
+      });
+    }
+    if (rest.length !== 1)
+      return usageError(io, "explain takes one diagnostic code, such as LUM2001.");
+    return explainCommand({ code: rest[0]!, format, write: io.write, writeError: io.writeError });
+  }
+  if (rest.length > 0 && command !== "fmt") {
+    return usageError(io, `Unexpected argument "${rest[0]}".`);
   }
   if (values.check && command !== "fmt") return usageError(io, "--check applies to fmt only.");
   if (values.project !== undefined && command !== "check") {
     return usageError(io, "--project applies to check only.");
   }
   if (values.format !== undefined && command === "fmt") {
-    return usageError(io, "--format applies to check and lint only.");
+    return usageError(io, "--format does not apply to fmt.");
   }
 
+  if ((values.port !== undefined || values.host !== undefined) && command !== "dev") {
+    return usageError(io, "--port and --host apply to dev only.");
+  }
   const root = values.root ?? io.cwd;
+  if (command === "dev") {
+    const port = values.port === undefined ? undefined : Number(values.port);
+    if (port !== undefined && !(Number.isInteger(port) && port >= 0 && port <= 65535)) {
+      return usageError(io, `--port must be a port number, not "${values.port}".`);
+    }
+    // Loaded on demand: Vite is only needed by dev.
+    const { devCommand } = await import("../app/dev/command.ts");
+    return devCommand({
+      root,
+      ...(port === undefined ? {} : { port }),
+      ...(values.host === undefined ? {} : { host: values.host }),
+      writeError: io.writeError,
+    });
+  }
   if (command === "fmt") {
     return fmtCommand({
       root,
@@ -91,7 +138,7 @@ export async function main(argv: string[], io: CliIO = processIO()): Promise<num
   if (command === "lint") {
     return lintCommand({
       root,
-      format: values.format ?? "human",
+      format,
       color: io.color,
       write: io.write,
       writeError: io.writeError,
@@ -100,7 +147,7 @@ export async function main(argv: string[], io: CliIO = processIO()): Promise<num
   return checkCommand({
     root,
     ...(values.project === undefined ? {} : { project: values.project }),
-    format: values.format ?? "human",
+    format,
     color: io.color,
     write: io.write,
     writeError: io.writeError,

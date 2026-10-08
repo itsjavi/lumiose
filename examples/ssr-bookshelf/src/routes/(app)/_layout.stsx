@@ -1,0 +1,15 @@
+// Layout of the server-rendered routes: they show the signed-in user, so they render per request.
+import { locals } from "lumen";
+import { Header } from "../../components/Header.stsx";
+import "../../styles.css";
+
+export const mode = "server";
+
+export default function AppLayout(props: { children?: JSX.Element }) {
+  return (
+    <>
+      <Header user={locals().user ?? null} />
+      {props.children}
+    </>
+  );
+}

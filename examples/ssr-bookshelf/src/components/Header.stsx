@@ -1,0 +1,25 @@
+import type { User } from "../types.ts";
+
+/** Site header. `user` is `undefined` on static pages, which cannot know who is signed in. */
+export function Header(props: { user?: User | null }) {
+  return (
+    <header class="site-header">
+      <a class="brand" href="/">
+        Bookshelf
+      </a>
+      <nav>
+        <a href="/books">Books</a>
+        <a href="/about">About</a>
+      </nav>
+      {props.user === undefined ? null : props.user === null ? (
+        <a class="account" href="/login">
+          Sign in
+        </a>
+      ) : (
+        <form class="account" method="post" action="/logout">
+          Signed in as {props.user.name} <button>Sign out</button>
+        </form>
+      )}
+    </header>
+  );
+}

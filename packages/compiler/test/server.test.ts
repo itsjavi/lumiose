@@ -41,8 +41,9 @@ async function load(
   source: string,
   target: "client" | "server",
   options: Record<string, unknown> = {},
-): Promise<{ module: Module; code: string }> {
-  const result = binding!.compile(source, `/src/ssr${counter}.tsx`, {
+): Promise<{ module: Module; code: string; tokens: Record<string, string> }> {
+  const extension = source.includes("<style") ? "stsx" : "tsx";
+  const result = binding!.compile(source, `/src/ssr${counter}.${extension}`, {
     target,
     styleImport: false,
     ...options,
@@ -57,7 +58,11 @@ async function load(
   mkdirSync(outDir, { recursive: true });
   const file = resolve(outDir, `ssr${counter++}.${target}.js`);
   writeFileSync(file, code);
-  return { module: await import(/* @vite-ignore */ pathToFileURL(file).href), code: result.code };
+  return {
+    module: await import(/* @vite-ignore */ pathToFileURL(file).href),
+    code: result.code,
+    tokens: result.meta.scopeTokens.components,
+  };
 }
 
 async function renderServer(module: Module, name: string, props: Record<string, unknown> = {}) {
@@ -160,12 +165,11 @@ const CARD = `
   import { signal } from "lumen";
   const post = signal({ title: "One", body: "First <b>" });
   function Card(props: { title: string; class?: string; children?: unknown }) {
-    return <article class={props.class}><h2>{props.title}</h2>{props.children}</article>;
+    return <article class={props.class}><h2>{props.title}</h2>{props.children}<style>h2 { margin: 0 }</style></article>;
   }
   export function Page() {
-    return <main><Card title={post().title} class="featured">{post().body}</Card></main>;
+    return <main><Card title={post().title} class="featured">{post().body}</Card><style>.featured { color: teal }</style></main>;
   }`;
-const CARD_SCOPES = { scopeTokens: { components: { Page: "data-l-p1", Card: "data-l-c2" } } };
 
 const ATTRIBUTES = `
   import { signal } from "lumen";
@@ -247,10 +251,11 @@ describe.skipIf(!binding)("server target renders on lumen/server", () => {
   });
 
   it("component call with getter props, children and class passthrough (doc-2 §5.3)", async () => {
-    const { module } = await load(CARD, "server", CARD_SCOPES);
+    const { module, tokens } = await load(CARD, "server");
+    const { Page, Card } = tokens;
     expect(await renderServer(module, "Page")).toBe(
-      '<main data-l-p1><article data-l-c2 class="featured" data-l-p1>' +
-        "<h2 data-l-c2>One</h2>First &lt;b&gt;</article></main>",
+      `<main ${Page}><article ${Card} class="featured" ${Page}>` +
+        `<h2 ${Card}>One</h2>First &lt;b&gt;</article></main>`,
     );
   });
 
@@ -353,10 +358,11 @@ describe.skipIf(!binding)("async components and islands (server)", () => {
     const [body, records] = html.split('<script type="application/json" data-l-islands>');
     expect(body).toBe(
       "<main>" +
-        '<!--l:0--><template data-l-slot="footer"><i>foot</i></template>' +
-        '<template data-l-slot="children"><p>child</p></template>' +
-        "<div class=panel><!--[-->1+2<!--]--><!--[--><i>foot</i><!--]--><!--[--><p>child</p><!--]--></div><!--/l:0-->" +
-        "<!--l:1--><b><!--[-->42<!--]--></b><!--/l:1-->" +
+        // Slots the island renders are inline (`<!--l:s:name-->`); an async instance is a block.
+        "<!--l:0--><div class=panel><!--[-->1+2<!--]-->" +
+        "<!--[--><!--l:s:footer--><i>foot</i><!--/l:s--><!--]-->" +
+        "<!--[--><!--l:s:children--><p>child</p><!--/l:s--><!--]--></div><!--/l:0-->" +
+        "<!--l:1--><!--[--><b><!--[-->42<!--]--></b><!--]--><!--/l:1-->" +
         "</main>",
     );
     const recorded = JSON.parse(records!.slice(0, records!.indexOf("</script>")));
@@ -403,7 +409,7 @@ describe.skipIf(!binding)("client/server parity", () => {
       ["Counter", { start: 9 }],
     ]));
   it("keyed list", () => expectParity(TABLE, [["Table"]]));
-  it("components and scope tokens", () => expectParity(CARD, [["Page"]], CARD_SCOPES));
+  it("components and scope tokens", () => expectParity(CARD, [["Page"]]));
   it("attributes and properties", () => expectParity(ATTRIBUTES, [["Attributes", { size: 3 }]]));
   it("structure", () =>
     expectParity(STRUCTURE, [["Structure", { id: "s1", title: "T" }], ["Fragment"]]));

@@ -19,6 +19,7 @@ export {
 export {
   createRun,
   endBatch,
+  isRun,
   pauseRun,
   renderEffect,
   resumeRun,

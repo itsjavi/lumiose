@@ -1,0 +1,11 @@
+import type { RatingSummary } from "../types.ts";
+
+export function Rating(props: { rating: RatingSummary }) {
+  return (
+    <p class="rating">
+      {props.rating.average === null
+        ? "No reviews yet"
+        : `★ ${props.rating.average.toFixed(1)} · ${props.rating.count} reviews`}
+    </p>
+  );
+}

@@ -1,0 +1,47 @@
+import { notFound, Title } from "lumen";
+import { Rating } from "../../../components/Rating.stsx";
+import { queries } from "../../../server/queries.server.ts";
+
+const STARS = [5, 4, 3, 2, 1] as const;
+
+export default function BookPage(props: { params: { isbn: string } }) {
+  const book = queries().getBook(props.params.isbn) ?? notFound(`No book with ISBN ${props.params.isbn}.`);
+  const reviews = queries().listReviews(book.id, { pageSize: 5 });
+  const most = Math.max(1, ...book.ratingHistogram);
+  return (
+    <main class="book">
+      <Title>{book.title} · Bookshelf</Title>
+      <div class="cover" style={`--hue: ${book.coverHue}; max-width: 12rem`}>
+        <span>{book.title}</span>
+      </div>
+      <h1>{book.title}</h1>
+      {book.subtitle === null ? null : <p class="byline">{book.subtitle}</p>}
+      <p>
+        by {book.authors.map((author) => author.name).join(", ")} · {book.year} · {book.pages} pages
+        · <a href={`/books?genre=${book.genre.slug}`}>{book.genre.name}</a>
+      </p>
+      <Rating rating={book.rating} />
+      <p>{book.description}</p>
+      <h2>Ratings</h2>
+      <ul class="histogram">
+        {STARS.map((stars) => (
+          <li>
+            {stars}★ <meter min="0" max={most} value={book.ratingHistogram[stars - 1]} />{" "}
+            {book.ratingHistogram[stars - 1]}
+          </li>
+        ))}
+      </ul>
+      <h2>Reviews</h2>
+      {reviews.total === 0 ? <p class="byline">No reviews yet.</p> : null}
+      {reviews.items.map((review) => (
+        <article class="review">
+          <h3>{review.title ?? `${review.rating}★`}</h3>
+          <p class="byline">
+            {review.user.name} · {"★".repeat(review.rating)}
+          </p>
+          <p>{review.body}</p>
+        </article>
+      ))}
+    </main>
+  );
+}

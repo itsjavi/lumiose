@@ -1,0 +1,19 @@
+import { Title } from "lumen";
+import { Header } from "../components/Header.stsx";
+import "../styles.css";
+
+export default function NotFound(props: { error: Error }) {
+  return (
+    <>
+      <Header />
+      <main>
+        <Title>Not found · Bookshelf</Title>
+        <h1>Page not found</h1>
+        <p>{props.error.message}</p>
+        <p>
+          <a href="/books">Browse the books</a>
+        </p>
+      </main>
+    </>
+  );
+}

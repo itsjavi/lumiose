@@ -1,0 +1,14 @@
+import { Title } from "lumen";
+
+export default function About() {
+  return (
+    <main>
+      <Title>About · Bookshelf</Title>
+      <h1>About this sample</h1>
+      <p>
+        Bookshelf is a server-rendered Lumen app backed by <code>node:sqlite</code>. This page is a{" "}
+        <code>static</code> route: the build prerenders it, while the book pages render per request.
+      </p>
+    </main>
+  );
+}
