@@ -3,10 +3,11 @@ id: TASK-73
 title: >-
   lumen check: resolve .stsx imports that leave src/ and .stsx modules of
   workspace packages
-status: To Do
+status: In Progress
 assignee:
   - '@Beacon'
 created_date: '2026-10-08 16:37'
+updated_date: '2026-10-08 21:20'
 labels: []
 milestone: m-5
 dependencies: []

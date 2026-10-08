@@ -3,9 +3,9 @@ id: TASK-69
 title: Support .md and .html imports as components
 status: To Do
 assignee:
-  - '@Photon'
+  - '@Halo'
 created_date: '2026-10-08 16:20'
-updated_date: '2026-10-08 16:26'
+updated_date: '2026-10-08 21:34'
 labels: []
 milestone: m-3
 dependencies: []
@@ -34,4 +34,6 @@ The user approved optional support for importing Markdown and HTML files as Lume
 
 <!-- SECTION:NOTES:BEGIN -->
 Lux: user answers recorded in the decision-22 amendment. Plain Markdown; html <script> runs as a client module; file-scoped <style> with <template>/<svg> left verbatim; layouts by folder only; user-defined frontmatter schemas (mechanism pending confirmation).
+
+Lux: reassigned to Halo (owner of asset-import transforms, after TASK-70 SVG imports). Markdown in Rust (pulldown-cmark or comrak) exposed via napi; the Vite plugin integration is in src/vite (Photon's area), so coordinate via notes or a small new module.
 <!-- SECTION:NOTES:END -->

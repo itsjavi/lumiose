@@ -1,10 +1,11 @@
 ---
 id: TASK-72
 title: 'Chiptune app: adopt file routes and the client router'
-status: To Do
+status: In Progress
 assignee:
   - '@Spark'
 created_date: '2026-10-08 16:26'
+updated_date: '2026-10-08 21:31'
 labels: []
 milestone: m-6
 dependencies:

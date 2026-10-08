@@ -5,7 +5,7 @@ status: In Progress
 assignee:
   - '@Halo'
 created_date: '2026-10-08 16:20'
-updated_date: '2026-10-08 21:11'
+updated_date: '2026-10-08 21:21'
 labels:
   - needs-decision
 milestone: m-3
@@ -34,7 +34,7 @@ The user decided (2026-10-08) after Halo's study: SVG imports become inline comp
 ## Implementation Plan
 
 <!-- SECTION:PLAN:BEGIN -->
-Study only (AC #1); implementation (AC #2) waits for the user's decision. 1) Read how Lumen compiles JSX templates, SSR, islands and the CSS manifest to see where an SVG transform and a sprite collector would plug in. 2) Measure HTML weight on a realistic page (a real icon set, e.g. lucide/heroicons-sized paths, ~30 icon uses with repeats): inline per use vs per-document inline sprite vs external sprite, raw and gzip/brotli. 3) Compare caching, currentColor/CSS styling, SSR/islands/SPA navigation/streaming, a11y, HMR, CSP/cross-origin, browser quirks. 4) Propose API shape (import Icon from './x.svg', props, ?url/?raw variants, types) and a recommendation for the user. Scratch in .local/agents/Halo/halo-20261008T203613Z/.
+Implementation per the user's decision (inline only, ?inline/?url/?raw, no sprite mode). OXVG is usable as a Rust crate (oxvg_optimiser/oxvg_ast 0.0.9, MIT, same lightningcss 1.0.0-alpha.72 and cssparser 0.37 as ours), and decision-22 puts the .md/.html pipelines in the Rust compiler reusing the static-template codegen, so: (1) new crate crates/lumen_svg (Halo): parse + OXVG optimise (default preset; prefix_ids per file hash; scripts/event handlers always stripped) -> component source (root attributes static, {...rest} spread, title -> <title id> + role=img + aria-labelledby, aria-hidden when unlabelled), compiled by the existing lumen_compiler for both targets; (2) lumen_napi: compileSvg(source, filename, options) = lumen_svg + lumen_compiler::compile; (3) packages/lumen/src/vite/svg.ts: load hook for project .svg and .svg?inline (Vite keeps ?url/?raw), registered from index.ts, option lumen({ svg: { optimize } }) in options.ts; (4) lumen/env types for *.svg, *.svg?inline, ?url, ?raw; (5) docs: concept page + vite/jsx reference; tests at each layer (Rust unit/golden, napi/vite plugin, SSR+client render).
 <!-- SECTION:PLAN:END -->
 
 ## Implementation Notes
@@ -103,4 +103,6 @@ import logoRaw from "./logo.svg?raw";
 - Types in `lumen/env`: `declare module "*.svg" { const Svg: Component<SvgProps>; export default Svg }` plus `*.svg?inline` / `*.svg?sprite`.
 - Config: `lumen({ svg: { mode?: "inline" | "sprite", optimize?: boolean | options, include?, exclude? } })`; transform only project files by default (exclude node_modules, where a dependency importing `x.svg` expects Vite's URL).
 - Build: optimise (OXVG or SVGO), prefix internal ids with a content hash, warn when an inline icon with internal `url(#id)` references is used (suggest `?sprite`), compile to a static template (no runtime cost beyond a clone).
+
+COORDINATION (Halo, 2026-10-08, per Lux): TASK-70 touches other areas with small, additive edits: crates/lumen_napi/src/lib.rs + Cargo.toml (Photon: one new #[napi] fn compileSvg), packages/lumen/src/vite/{svg.ts (new), index.ts (register the sub-plugin), options.ts (svg option)} (Photon), packages/lumen/src/jsx/env.d.ts (Beacon: *.svg module types), root Cargo.toml [workspace.dependencies]/members (oxvg_*, under deps.lock), docs pages for the feature. Photon/Beacon: please avoid editing those exact spots until TASK-70 is committed; tell Lux if you need them.
 <!-- SECTION:NOTES:END -->

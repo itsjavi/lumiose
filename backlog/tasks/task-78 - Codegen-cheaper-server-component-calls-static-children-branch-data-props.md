@@ -1,11 +1,11 @@
 ---
 id: TASK-78
 title: 'Codegen: cheaper server component calls (static children, branch, data props)'
-status: To Do
+status: In Progress
 assignee:
   - '@Photon'
 created_date: '2026-10-08 16:45'
-updated_date: '2026-10-08 21:05'
+updated_date: '2026-10-08 21:29'
 labels: []
 milestone: m-3
 dependencies: []
@@ -34,6 +34,16 @@ Together 1-3 bring Lumen from ~545 to ~695 renders/s on this page (Solid ~700), 
 - [ ] #3 Decision recorded (Lux) on eager data props for non-JSX dynamic props on the server target; implemented if accepted, with contract doc-2 updated
 - [ ] #4 benchmarks/ssr rerun after the change, RESULTS.md updated
 <!-- AC:END -->
+
+## Implementation Plan
+
+<!-- SECTION:PLAN:BEGIN -->
+Per Lux's decision (notes, doc-2 §3.1):
+1. Children that compile to a literal (static text, numbers) become a data property 'children: "…"' on both targets (props_expression).
+2. Server: dynamic props whose visited expression is trivially safe (literal, template literal of safe parts, local identifier, single-level <props>.x) are data properties; JSX-valued props, children and everything else stay getters.
+3. Server branch without closures: 'cond ? branchArm(true, a) : branchArm(false, b)' with a new lumen/server helper branchArm(active, out?) sharing branch()'s markers (branch() reimplemented on it); falls back to branch(cond, () => …) when an arm needs setup statements. Touches lumen/server (ssr.ts, index.ts), contract/server.ts and contract.test.ts (Nova/Lux areas, clean in git; minimal additive change), noted for them.
+4. Goldens + packages/compiler server tests + parity tests; rebuild benchmarks/ssr and rerun several times, update RESULTS.md with variance.
+<!-- SECTION:PLAN:END -->
 
 ## Implementation Notes
 
