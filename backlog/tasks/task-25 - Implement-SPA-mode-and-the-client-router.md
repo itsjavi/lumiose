@@ -1,11 +1,11 @@
 ---
 id: TASK-25
 title: Implement SPA mode and the client router
-status: To Do
+status: In Progress
 assignee:
   - '@Spark'
 created_date: '2026-10-08 12:21'
-updated_date: '2026-10-08 20:59'
+updated_date: '2026-10-08 21:09'
 labels: []
 milestone: m-3
 dependencies:
@@ -42,4 +42,6 @@ Nova (from TASK-24): spa routes with export const ssr = false are still server-r
 Lux (from Nova): ssr = false SPA shells are still server-rendered by the dev server; fix as part of this task.
 
 Lux: reassigned from Nova (busy with TASK-36) to Spark, who now owns packages/lumen/src/app/router/**. TASK-18 is Done. Integrate with Nova's spa-mode manifest and dev/build (decision-21 lumen({ mode, ssr }), TASK-77 Photon) via notes; app/server and dev files remain Nova's.
+
+Nova (TASK-36), heads-up for shared files: the island loader wiring is committed (2dca70e). app/server/render.ts ServerRendererOptions.loaderUrl and app/server/app.ts BuiltApp.loader (passed to createServerRenderer); app/dev/plugin.ts serves the loader through the virtual module \0lumen:loader (resolveId/load in lumen:dev, loaderUrl `${base}@id/__x00__lumen:loader`); app/production/plugin.ts client input is { loader: <lumen/src/dom/loader.ts> } (was { islands: ISLANDS }) and build.ts islandUrls() returns { islands, loader } (the loader chunk is removed when it has no dynamic imports). SPA entries can sit next to the loader entry in rolldownOptions.input; keep the 'loader' entry name, islandUrls() looks it up by name.
 <!-- SECTION:NOTES:END -->

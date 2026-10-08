@@ -5,7 +5,7 @@ status: In Progress
 assignee:
   - '@Photon'
 created_date: '2026-10-08 16:10'
-updated_date: '2026-10-08 16:53'
+updated_date: '2026-10-08 21:05'
 labels: []
 milestone: m-1
 dependencies: []
@@ -21,9 +21,9 @@ The compiled js-framework-benchmark app (benchmarks/js-framework-benchmark, krau
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 In .map() callbacks, consts initialised from row data without calls (const id = row.id) count as row data: selector hoisting and data-slot event hoisting apply (doc-2 §5.2)
-- [ ] #2 Plain-value text children ({id}) compile to a one-time write into a template text placeholder (doc-2 §5.4) instead of a static insert
-- [ ] #3 Dynamic text children ({row.label()}) avoid a region and a created text node per row (template placeholder plus a text binding; Spark adds a runtime helper with an insert fallback for non-text values if the contract needs one)
+- [x] #1 In .map() callbacks, consts initialised from row data without calls (const id = row.id) count as row data: selector hoisting and data-slot event hoisting apply (doc-2 §5.2)
+- [x] #2 Plain-value text children ({id}) compile to a one-time write into a template text placeholder (doc-2 §5.4) instead of a static insert
+- [x] #3 Dynamic text children ({row.label()}) avoid a region and a created text node per row (template placeholder plus a text binding; Spark adds a runtime helper with an insert fallback for non-text values if the contract needs one)
 - [ ] #4 pnpm bench:jsfb: lumen run memory ≤ 2.7 MB and CPU within 2 % of lumen-hand
 <!-- AC:END -->
 
@@ -56,4 +56,14 @@ Done: AC#1 (row consts) + golden row-data.tsx; App.stsx uses const id = row.id; 
 Pending: AC#4 numbers — the full krausest run started 18:38 by another session (log: <Lux scratchpad>/full-run.log, writes benchmarks/js-framework-benchmark/RESULTS.md) already builds this codegen (bundle shows a.$$clickData=t). Next: read lumen vs lumen-hand run memory (22_) and CPU from that RESULTS.md; tick AC#4 if ≤ 2.7 MB and CPU within 2 %. The previous RESULTS.md is backed up at <Lux scratchpad>/RESULTS.orig.md.
 Blocked/decision: AC#2/#3 need the runtime text helper (option A, contract change, Spark + server text hole) or the runtime-only insert optimisation (option B) — see notes above; ask Lux to decide/split.
 Files: crates/lumen_compiler/src/codegen/client/{idioms,events}.rs, tests/fixtures/client/row-data.*, benchmarks/js-framework-benchmark/src/App.stsx.
+
+Photon (2026-10-08, resumed; Lux's call on AC #2/#3: implement for values that are provably text). Commit f34bebe.
+- children.rs/ssr.rs: the text-node path (template text placeholder + bind(setText) when reactive, one-time .data write otherwise; server text() hole) now applies to any dynamic child with no text or dynamic sibling next to it (is_isolated), not only sole children. Next to JSX text or another dynamic child it stays insert: a placeholder would merge with the neighbour text when the template (or the server HTML) is parsed.
+- 'Provably text' widened: a const initialised with a text-like expression (or another such const) counts (children::text_consts, shared by both targets), e.g. const label = row.name.toUpperCase(); <li>{label}</li> -> _text.data = label.
+- Soundness limit (why AC #2/#3 are ticked only in this scope): {id} with const id = row.id and {row.label()} are not provably text (could be null/boolean -> renders nothing, a Node/array, or a function/signal that insert tracks), so jsfb rows still compile to insert(_td, id) and insert(_a, () => row.label()). Closing that gap needs option A from the notes above (runtime text helper with an insert fallback + server hole: contract change for Lux/Spark).
+- Verified: goldens text-children (new) + bindings/implicit-tbody/lists updated; packages/compiler parity (Texts with 'A' and '') and execution tests; hydration of isolated text nodes checked with a throwaway hydrate test (incl. empty values, no mismatch warnings; Spark may add such a case to dom/hydrate.test.ts); lumen_wasm test updated. jsx.md compiled-idioms row documents it (docs:check green).
+- Contract doc-2 §3 'Template/server alignment' (Lux): a text-like child alone between nodes is now a client text node / server text() hole, not only a sole child.
+- AC #4 left unchecked: run pnpm bench:jsfb (lumen vs lumen-hand run memory + CPU) on a quiet machine; expected run memory ~2.67 MB from the AC #1 probe, and these text changes do not touch the jsfb rows.
+
+Lux: option A approved. Spark implements the runtime helper (new task), and you then emit it for maybe-text children in rows (AC #2/#3). AC #4 waits for a quiet-machine benchmark run.
 <!-- SECTION:NOTES:END -->

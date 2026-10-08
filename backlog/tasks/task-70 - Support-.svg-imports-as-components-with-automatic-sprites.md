@@ -1,11 +1,11 @@
 ---
 id: TASK-70
-title: Support .svg imports as components with automatic sprites
+title: Support .svg imports as components
 status: In Progress
 assignee:
   - '@Halo'
 created_date: '2026-10-08 16:20'
-updated_date: '2026-10-08 20:56'
+updated_date: '2026-10-08 21:11'
 labels:
   - needs-decision
 milestone: m-3
@@ -20,13 +20,15 @@ ordinal: 70000
 ## Description
 
 <!-- SECTION:DESCRIPTION:BEGIN -->
-The user wants SVG imports as components (almost every modern app needs icons), handled as a separate study: find a way to support SVG sprites automatically so the final HTML stays much leaner than inlining every icon.
+The user decided (2026-10-08) after Halo's study: SVG imports become inline components by default, with query switches, and there is no sprite mode. Halo's measurements showed per-page sprites save raw HTML but not compressed bytes, and <use> renders slower.
 <!-- SECTION:DESCRIPTION:END -->
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [x] #1 Study recorded in the task notes: inline SVG components vs external sprite sheets (<use href='sprite.svg#id'>) vs inline per-page sprite (<svg hidden><symbol>… once per document), with HTML weight, caching, CSS styling (currentColor), SSR/islands/SPA behaviour and a11y trade-offs; recommendation for Lux/user
-- [ ] #2 Implementation per the approved recommendation: import Icon from './x.svg' gives a component accepting standard SVG props; the build dedupes repeated icons into a sprite automatically; SVGO-style optimisation (Rust if available); types; tests; docs
+- [ ] #1 import Icon from "./x.svg" gives an inline SVG component accepting standard SVG props (class, style, width/height, aria-*) plus title (rendered as <title> with aria-labelledby; aria-hidden when no title); works on client and server (SSR) and in islands
+- [ ] #2 Query switches: ?inline (explicit default), ?url (asset URL via Vite), ?raw (string); no sprite mode
+- [ ] #3 Build-time SVG optimisation (OXVG crate if usable, else SVGO in the Vite plugin), configurable via lumen({ svg: { optimize } }); currentColor-friendly defaults
+- [ ] #4 Types for *.svg (and ?url/?raw) in lumen/env; tests; docs (concept page + reference) in the same commits
 <!-- AC:END -->
 
 ## Implementation Plan

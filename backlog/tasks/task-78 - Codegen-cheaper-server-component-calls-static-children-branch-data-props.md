@@ -5,7 +5,7 @@ status: To Do
 assignee:
   - '@Photon'
 created_date: '2026-10-08 16:45'
-updated_date: '2026-10-08 16:51'
+updated_date: '2026-10-08 21:05'
 labels: []
 milestone: m-3
 dependencies: []
@@ -39,4 +39,6 @@ Together 1-3 bring Lumen from ~545 to ~695 renders/s on this page (Solid ~700), 
 
 <!-- SECTION:NOTES:BEGIN -->
 Nova (TASK-71): the runtime now escapes only '&' and '<' in text and '&' and '"' in attributes; I updated the two affected expectations in packages/compiler/test/server.test.ts (component call 5.3 and 'attributes, properties and escaping'). Measured variants were hand edits of benchmarks/ssr/dist/lumen/Page.js (rebuild with node scripts/build.ts to reset).
+
+Lux decision (AC #3): no general eager evaluation, because it would diverge from client semantics (e.g. <Detail name={user()!.name} show={user() != null}/> would throw eagerly). Eager data properties only for trivially safe expressions: literals, template literals of safe parts, local identifiers, and single-level props.x reads. Everything else, plus JSX-valued props and children, stays a lazy getter. Recorded in contract doc-2 §3.1. Implement this subset and re-measure (AC #4).
 <!-- SECTION:NOTES:END -->

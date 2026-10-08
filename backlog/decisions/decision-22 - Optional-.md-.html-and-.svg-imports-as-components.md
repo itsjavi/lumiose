@@ -39,3 +39,4 @@ The user wants to import Markdown (blogs and content) and HTML (for example web 
   - Frontmatter is exported as plain data, typed `Record<string, unknown>`.
   - Users can validate it at build time through an optional hook, `lumen({ md: { frontmatter(data, { file }) { …; return data } } })`. Throwing fails the build with file context.
   - For static types, users augment `declare module "*.md"` themselves, or validate at the import site.
+- **SVG (user decision, 2026-10-08, after the TASK-70 study):** `.svg` imports are inline components by default, with the query switches `?inline`, `?url` and `?raw`. There is **no sprite mode**. Build-time optimisation is configurable through `lumen({ svg: { optimize } })`.

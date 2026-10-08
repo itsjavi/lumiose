@@ -3,7 +3,7 @@ id: doc-2
 title: Compiler-runtime contract
 type: specification
 created_date: '2026-10-08 12:27'
-updated_date: '2026-10-08 20:58'
+updated_date: '2026-10-08 21:05'
 tags:
   - architecture
   - contract
@@ -101,6 +101,8 @@ Inside `<!--l:ID-->…<!--/l:ID-->`, the server marks every range the client cla
 **Template/server alignment** (Photon, TASK-14):
 - The server never emits the client's `<!>` placeholders. Inside islands, each client `insert`/`list`/`branch` corresponds to exactly one marker region, in the same child order.
 - A `text()` hole whose value is `""` renders no text node, so the hydrator must create one.
+- **Isolated text children** (Photon, TASK-65): a dynamic child that is provably text compiles to a template text node on the client (`setText`/`.data`) and a `text()` hole on the server. That holds anywhere the child has no adjacent JSX text or dynamic sibling, not only for sole children. Provably text means string/number literals, template literals, string methods, or a `const` initialised from one of these. Next to text or another dynamic child it stays `insert`.
+- **Server props** (Lux, TASK-78): on the server target, dynamic props whose expression is trivially safe compile to plain data properties instead of getters. Trivially safe means a literal, a template literal of safe parts, a local identifier, or a single-level `props.x` read. Every other expression, plus all JSX-valued props and `children`, stays a lazy getter. This keeps evaluation semantics identical to the client: nothing can throw or run earlier than it would there.
 
 **Hydration entry points** (Spark, TASK-18):
 - `lumen/dom/hydrate` exports `hydrate(C, props, start, end, awaits?, slots?, fresh?)`. It hydrates an island's root region between its start and end markers, replays awaits by `instancePath:site:occurrence` (decoded with `decodeData`), adopts inline slots, and inserts `<template data-l-slot>` slots later. On a mismatch it disposes, clears the range and renders on the client, reporting LUM4006 in dev.

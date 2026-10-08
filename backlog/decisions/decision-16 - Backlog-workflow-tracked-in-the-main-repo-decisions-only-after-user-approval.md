@@ -33,3 +33,5 @@ The user also objected when a decision was recorded before they had approved it.
 - An auto-commit may include anything already staged, so agents avoid backlog mutations while the index holds entries they did not stage.
 - Recording decisions takes an extra confirmation round-trip, but the decision log reflects only choices the user owns.
 
+
+_Amended 2026-10-08: the user set `auto_commit: false`. Backlog changes are now committed explicitly, by agents together with their work and by the orchestrator regularly (AGENTS.md "Backlog in the repository")._

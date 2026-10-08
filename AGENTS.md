@@ -134,10 +134,12 @@ files. Do not delete another session's coordination state.
 
 ## Backlog in the repository
 
-backlog/ is tracked by the main repository. The Backlog CLI
-auto-commits its own changes there (`auto_commit: true`). An
-auto-commit may include anything already staged, so avoid backlog
-mutations while the index holds entries you did not stage.
+backlog/ is tracked by the main repository. The Backlog CLI does
+not auto-commit (`auto_commit: false`, set by the user on
+2026-10-08), so backlog changes stay in the working tree until
+someone commits them. Commit your task's backlog files together with
+the work they describe, with `git commit -- <paths>`. The
+orchestrator commits any remaining backlog changes regularly.
 
 Update backlog content through the Backlog CLI. One exception: the
 CLI cannot write decision bodies, so agents may edit the Context,

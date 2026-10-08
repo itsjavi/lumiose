@@ -5,7 +5,7 @@ status: Done
 assignee:
   - Photon
 created_date: '2026-10-08 16:38'
-updated_date: '2026-10-08 20:51'
+updated_date: '2026-10-08 21:04'
 labels:
   - compiler
   - app
@@ -50,6 +50,8 @@ Photon (2026-10-08): implemented.
 - Docs (for Beacon): packages/lumen/docs/reference/vite.md still shows LumenOptions with include/exclude only and its Status note says trailingSlash 'arrives with lumen dev/build'; update it with mode/ssr/trailingSlash/csrf (and regenerate llms-full.txt).
 
 Photon (2026-10-08, during TASK-54): packages/lumen/docs/reference/vite.md now documents mode/ssr/trailingSlash/csrf (LumenOptions block, validation, status note, example); llms-full.txt regenerated. The Beacon docs follow-up above is done.
+
+Photon: docs shipped — reference/vite.md in 97f06d9; concepts/rendering-modes.md (project default lumen({ mode, ssr }) + API row) was swept into bf8b072 (Nova's TASK-36 docs commit took the working-tree file).
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary
