@@ -5,7 +5,7 @@ status: To Do
 assignee:
   - '@Nova'
 created_date: '2026-10-08 12:21'
-updated_date: '2026-10-08 15:44'
+updated_date: '2026-10-08 15:52'
 labels: []
 milestone: m-3
 dependencies:
@@ -38,4 +38,6 @@ From TASK-23 (Nova): install the router's hooks with setClientNavigation({ navig
 Lux (decision-20): navigating() must register with the core busy registry.
 
 Nova (from TASK-24): spa routes with export const ssr = false are still server-rendered by the request handler and lumen dev. The client shell needs a handler option (dev: document + empty root + SPA client entry script in headAssets; build: static shell file) — include it here.
+
+Lux (from Nova): ssr = false SPA shells are still server-rendered by the dev server; fix as part of this task.
 <!-- SECTION:NOTES:END -->
