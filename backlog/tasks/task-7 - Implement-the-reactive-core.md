@@ -1,7 +1,7 @@
 ---
 id: TASK-7
 title: Implement the reactive core
-status: In Progress
+status: Done
 assignee:
   - '@Spark'
 created_date: '2026-10-08 12:20'
@@ -24,10 +24,10 @@ Signals are the foundation of every update path, and the core sets Lumen's perfo
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 signal, computed, effect, store, untrack, batch, flushSync, onMount, onCleanup, lifetime, createContext/provide/inject behave per spec §4.3 and §6.1-6.2
-- [ ] #2 The algorithm follows alien-signals (intrusive links, depsTail reuse, push-pull flags, no recursion), vendored with MIT attribution; unobserved computeds unlink
-- [ ] #3 Property-based tests compare it against a naive reference implementation; unit tests cover owners, cleanup, context and batching
-- [ ] #4 A run-scoped subscriber can be paused and resumed (needed for $await)
+- [x] #1 signal, computed, effect, store, untrack, batch, flushSync, onMount, onCleanup, lifetime, createContext/provide/inject behave per spec §4.3 and §6.1-6.2
+- [x] #2 The algorithm follows alien-signals (intrusive links, depsTail reuse, push-pull flags, no recursion), vendored with MIT attribution; unobserved computeds unlink
+- [x] #3 Property-based tests compare it against a naive reference implementation; unit tests cover owners, cleanup, context and batching
+- [x] #4 A run-scoped subscriber can be paused and resumed (needed for $await)
 <!-- AC:END -->
 
 ## Implementation Plan
@@ -59,3 +59,9 @@ Contract alignment (doc-2): renderEffect takes (target, compute, apply) and call
 
 Validation: pnpm typecheck OK; pnpm test OK (225 tests, 86 in core across 7 files); oxlint clean for core/ and server/public.ts (remaining repo warnings/errors are in other owners' files). Property tests: 400 random graphs x 80 steps vs a naive reference (values, glitch-free reads, effect run iff a read value changed, at-most-once per flush, exact link sets after each flush, cache hits for observed computeds, full unlink after disposal), 300 cascade graphs with effects writing signals during the flush (fixed point vs reference), 200 random store/array mutation sequences vs a plain array. Mutation check: no equality cut-off, unwatched not releasing links, PENDING treated as DIRTY, no purge of stale deps, reads not settling writes, RECURSED ignored in propagate and innerWrite disabled were each caught by the suite.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Implemented the reactive core in packages/lumen/src/core: the vendored alien-signals 3.2.1 graph (system.ts, MIT attribution), signals/computeds/triggers (reactive.ts), owners with lazy materialization, LIFO cleanup, context, lifetime and error handlers (owner.ts), the scheduler with depth-ordered render effects, user effects, batch/flushSync and pausable async run subscribers (effect.ts), a deep store proxy (store.ts), the public API (index.ts), runtime hooks (internal.ts) and a graph-free server variant (server.ts, re-exported by src/server/public.ts). renderEffect matches the contract's bind(target, compute, apply). Verified with 86 core tests (unit tests for every public API, owners, cleanup order, context, batching, flush order, unlinking, store, lifetime, runs, server parity) including property tests against a naive reference (400 graphs, 300 write-cascade graphs, 200 store sequences) that caught every injected mutation; pnpm typecheck, pnpm test (225) and lint on core pass. Open item for Lux: the contract's `await $await(() => e, N)` shape cannot restore the run without a microtask gap; see notes for a sound alternative.
+<!-- SECTION:FINAL_SUMMARY:END -->
