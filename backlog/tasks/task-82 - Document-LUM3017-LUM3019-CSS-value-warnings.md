@@ -1,0 +1,28 @@
+---
+id: TASK-82
+title: Document LUM3017-LUM3019 CSS value warnings
+status: To Do
+assignee:
+  - Beacon
+created_date: '2026-10-08 20:48'
+labels: []
+milestone: m-5
+dependencies:
+  - TASK-81
+references:
+  - crates/lumen_css/tests/fixtures/values.out
+priority: low
+ordinal: 82000
+---
+
+## Description
+
+<!-- SECTION:DESCRIPTION:BEGIN -->
+lumen_css warns about CSS values browsers would drop (TASK-76, TASK-67). Messages, help and fixes are shown in crates/lumen_css/tests/fixtures/values.out. LUM3017: a declaration value that does not parse for its property (Lightning CSS keeps it as written, the browser drops it), including grid track lists mixing repeat(auto-fill|auto-fit, ...) with non-fixed tracks; conservative: valid newer CSS Lightning CSS does not parse yet (var(), anchor(), if(), color-mix(), allow-discrete, subgrid, ...) is never reported. LUM3018: a numeric $ constant where a length/angle/time is required (gap: $gap; Lightning CSS turns unitless lengths into px but that is implicit/invalid CSS; angles and times are dropped) -> fix calc($gap * 1px), or $gap * 1px inside a math function; time gets help only (ms or s). LUM3019: '$gap px' (whitespace before the unit) -> fix calc($gap * 1px).
+<!-- SECTION:DESCRIPTION:END -->
+
+## Acceptance Criteria
+<!-- AC:BEGIN -->
+- [ ] #1 packages/lumen/docs/errors/LUM3017.md, LUM3018.md, LUM3019.md in the existing error-page format (what, why, fix, examples), linked from the errors README
+- [ ] #2 The styles docs ($ constants section) recommend unit-carrying constants or calc($x * 1px); llms.txt / llms-full.txt regenerated
+<!-- AC:END -->
