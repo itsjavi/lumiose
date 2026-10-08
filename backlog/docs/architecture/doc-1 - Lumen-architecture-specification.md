@@ -3,7 +3,7 @@ id: doc-1
 title: Lumen architecture specification
 type: specification
 created_date: '2026-10-08 10:28'
-updated_date: '2026-10-08 14:11'
+updated_date: '2026-10-08 15:30'
 tags:
   - architecture
   - spec
@@ -602,7 +602,7 @@ export const MemberCard = $component(async function MemberCard(props) {
 
 ### 7.1 Route modes
 
-- Routes export `mode = "static" | "server" | "spa"`, inherited from layouts. **The default is `static`.**
+- Routes export `mode = "static" | "server" | "spa"`, inherited from layouts. The project default comes from `lumen({ mode, ssr })` in `vite.config.ts` (decision-21); **when unset it is `static`** (server-first). For example, `lumen({ mode: "spa", ssr: false })` makes the whole project a client-rendered SPA.
 - Touching a request API while prerendering is `LUM5001`, and the fix sets `mode = "server"`.
 - `export const ssr = false` applies to `spa` routes: the build emits a static shell and renders on the client.
 
