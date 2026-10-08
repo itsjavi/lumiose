@@ -50,7 +50,8 @@
     "docs:check": "node scripts/gen-error-docs.ts --check && node scripts/gen-llms.ts --check"
   },
   "dependencies": {
-    "@lumen/compiler": "workspace:*"
+    "@lumen/compiler": "workspace:*",
+    "svgo": "^4.1.0"
   },
   "devDependencies": {
     "vite": "^8.3.4"

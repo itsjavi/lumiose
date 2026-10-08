@@ -5,6 +5,7 @@ export default function Svg({ title, children, ...rest }) {
     title == null || title === "" ? undefined : "lfhwg65-t-" + String(title).replace(/\s+/g, "_");
   return (
     <svg
+      version="1.1"
       viewBox="0 0 100 100"
       role={label() ? "img" : undefined}
       aria-labelledby={label()}
@@ -15,21 +16,29 @@ export default function Svg({ title, children, ...rest }) {
       <desc>
         {"An editor export"}
       </desc>
+      <metadata>
+        <rdf>
+          {"stuff"}
+        </rdf>
+      </metadata>
+      <style>.lfhwg65__cls-1 { fill: url(#lfhwg65__gradient); } .lfhwg65__cls-2 { opacity: .5 }</style>
       <defs>
-        <linearGradient id="lfhwg65__a" x1="0" x2="1">
-          <stop offset="0" stop-color="red" />
-          <stop offset="1" stop-color="#00f" />
+        <linearGradient id="lfhwg65__gradient" x1="0" x2="1">
+          <stop offset="0" stop-color="#ff0000" />
+          <stop offset="1" stop-color="#0000ff" />
         </linearGradient>
-        <clipPath id="lfhwg65__b">
-          <path d="M0 0h50v50H0Z" />
+        <clipPath id="lfhwg65__clip">
+          <rect width="50" height="50" />
         </clipPath>
       </defs>
-      <g clip-path="url(#lfhwg65__b)">
-        <path stroke="#000" stroke-width="2" d="M10 10h80v80H10Z" fill="url(#lfhwg65__a)" />
-        <use x="10" href="#lfhwg65__c" />
-        <circle id="lfhwg65__c" cx="20" cy="20" r="5" opacity=".5" />
+      <g clip-path="url(#lfhwg65__clip)">
+        <rect class="lfhwg65__cls-1" x="10" y="10" width="80" height="80" style="stroke:#000000;stroke-width:2px" />
+        <use href="#lfhwg65__dot" x="10" />
+        <circle id="lfhwg65__dot" class="lfhwg65__cls-2" cx="20" cy="20" r="5" />
       </g>
-      <circle cx="50" cy="50" r="5" />
+      <a>
+        <circle cx="50" cy="50" r="5" />
+      </a>
     </svg>
   );
 }

@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 24 24" class="spinner" aria-describedby="caption page-note">
+  <style>
+    .spinner { animation: spin 1s linear infinite; }
+    .dot, #core:hover { fill: url(#glow); stroke: url("#glow"); color: #fff; }
+    :is(.dot, .missing) > #core.dot { mask: url(#page-mask) }
+    @media (prefers-reduced-motion: reduce) { .spinner { animation: none } }
+    @keyframes spin { to { transform: rotate(360deg) } }
+  </style>
+  <defs>
+    <radialGradient id="glow"><stop offset=".5" stop-color="currentColor"/></radialGradient>
+    <path id="arc" d="M2 12a10 10 0 0 1 20 0"/>
+  </defs>
+  <desc id="caption">Loading</desc>
+  <circle id="core" class="dot" cx="12" cy="12" r="3" style="fill: URL( #glow )"/>
+  <use xlink:href="#arc" href="#arc"/>
+  <a xlink:href="#core" xlink:show="new" xlink:title="Core"><text><textPath href="#arc">Wait</textPath></text></a>
+  <animate id="pulse" attributeName="r" values="3;4;3" dur="1s" begin="0s; pulse.end + 1s"/>
+  <set attributeName="href" to="javascript:alert(1)" begin="core.click"/>
+  <a href=" java&#9;script:alert(1)"><path d="M0 0" data-x="url(#page)"/></a>
+</svg>

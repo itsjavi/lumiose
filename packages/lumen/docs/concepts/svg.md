@@ -5,8 +5,8 @@
 ## Concept
 
 With the Lumen Vite plugin, an `.svg` file in your project imports as a component. The build
-optimises the file (OXVG, a Rust port of SVGO's default preset) and compiles it into a static
-template, so rendering an icon clones markup, on the server and in the browser alike. The icon is
+optimises the file with [SVGO](https://svgo.dev) and compiles it into a static template, so
+rendering an icon clones markup, on the server and in the browser alike. The icon is
 **inline**: its paths are part of the page's HTML, CSS reaches them, and nothing is fetched.
 
 - **Props override the file.** The file's root attributes (`width`, `height`, `viewBox`, `fill`,
@@ -20,10 +20,14 @@ template, so rendering an icon clones markup, on the server and in the browser a
   `role="img"` and `aria-labelledby` pointing at it. The id comes from the file and the title
   text, so the server and the client agree without a counter. The file's own `<title>` is
   dropped: the prop is the label.
-- **What the build removes.** Scripts, event attributes (`onload`) and `javascript:` URLs always;
-  editor metadata, comments and redundant markup when optimising. Ids get a per-file prefix (and
-  class names too, when the file has a `<style>`), so icons never clash with each other or with
-  the page.
+- **What the build removes.** Scripts, event attributes (`onload`), `javascript:` URLs,
+  comments and editor metadata always, whatever the SVGO config; redundant markup when
+  optimising. Ids get a per-file prefix, and so do the references to them (`href="#id"`,
+  `url(#id)`, `<style>` selectors); class names get it too when the file has a `<style>`. Icons
+  never clash with each other or with the page.
+- **Optimisation.** By default SVGO runs its `preset-default` plus `convertStyleToAttrs` (fewer
+  `style` attributes, for strict CSPs). Pass your own SVGO config as `optimize` to choose the
+  plugins (`{ plugins: [...] }`, `multipass`, `floatPrecision`), or `false` to skip SVGO.
 - **Query switches.** `./icon.svg` and `./icon.svg?inline` are the component. `?url` is Vite's
   asset URL (or a `data:` URL for small files) and `?raw` the file's text.
 - **Dependencies.** `.svg` files under `node_modules` (the plugin's `exclude`) keep Vite's URL
@@ -42,13 +46,28 @@ inline icons render faster and can be styled and animated part by part.
 | `import Icon from "./icon.svg?inline"`   | The same component                                          |
 | `import url from "./icon.svg?url"`       | The asset URL (`string`, Vite)                              |
 | `import text from "./icon.svg?raw"`      | The file's text (`string`, Vite)                            |
-| `lumen({ svg: { optimize: false } })`    | Skip the optimiser (safety transforms still run)            |
+| `lumen({ svg: { optimize: config } })`   | Optimise with your SVGO config instead of Lumen's           |
+| `lumen({ svg: { optimize: false } })`    | Skip SVGO (sanitising and id prefixes still run)            |
 | `lumen({ svg: { currentColor: true } })` | Replace every colour with `currentColor`                    |
 | `lumen({ svg: false })`                  | `.svg` imports stay Vite's URLs                             |
 
 The types come with `lumen/env` (`"types": ["lumen/env"]` in `tsconfig.json`).
 
 ## Example
+
+```ts
+// vite.config.ts: your own SVGO plugins (optional)
+import { defineConfig } from "vite";
+import lumen from "lumen/vite";
+
+export default defineConfig({
+  plugins: [
+    lumen({
+      svg: { optimize: { multipass: true, plugins: ["preset-default", "removeDimensions"] } },
+    }),
+  ],
+});
+```
 
 ```tsx
 // src/components/Nav.stsx
@@ -96,7 +115,10 @@ receives the component's scope, so the scoped `.icon` rule applies.
 - **Labelling a decorative icon.** An icon next to visible text needs no `title`; a `title` there
   makes screen readers repeat the text.
 - **Hard-coded colours in an icon set.** If icons stay black whatever `color` says, the files
-  hard-code a colour: use `lumen({ svg: { currentColor: true } })` for monochrome sets.
+  hard-code a colour: use `lumen({ svg: { currentColor: true } })` for monochrome sets. It runs
+  SVGO's `convertColors` before your own plugins, so with a custom config it still applies.
+- **Removing `viewBox` in a custom SVGO config.** Without `viewBox` an icon no longer scales with
+  `width`/`height`; SVGO's `preset-default` keeps it, `removeViewBox` drops it.
 
 ## Related diagnostics
 

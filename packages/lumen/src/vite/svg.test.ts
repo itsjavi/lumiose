@@ -7,7 +7,7 @@ import { dirname, join, resolve } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { createLogger, createServer, type ViteDevServer } from "vite";
 import lumen from "./index.ts";
-import { svgOptionsOf } from "./svg.ts";
+import { svgOptionsOf, svgoConfigOf } from "./svg.ts";
 
 const binding = await import("@lumen/compiler").catch(() => undefined);
 
@@ -20,6 +20,8 @@ const HOME = `<?xml version="1.0"?>
 const FILES: Record<string, string> = {
   "icons/home.svg": HOME,
   "icons/broken.svg": `<svg><path></svg>`,
+  "icons/mono.svg": `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" onload="alert(1)">
+  <script>alert(2)</script><path fill="#000000" d="M8 0l0 16"/></svg>`,
   "node_modules/dep/logo.svg": HOME,
   "render.tsx": `import { renderToString } from "lumen";
 import Home from "./icons/home.svg";
@@ -38,6 +40,7 @@ const lumenRoot = resolve(import.meta.dirname, "../..");
 let root: string;
 let server: ViteDevServer;
 let plain: ViteDevServer;
+let custom: ViteDevServer;
 
 async function devServer(options: Parameters<typeof lumen>[0]): Promise<ViteDevServer> {
   return createServer({
@@ -60,11 +63,13 @@ beforeAll(async () => {
   symlinkSync(lumenRoot, join(root, "node_modules/lumen"), "dir");
   server = await devServer({});
   plain = await devServer({ svg: false });
+  custom = await devServer({ svg: { optimize: { plugins: [] }, currentColor: true } });
 });
 
 afterAll(async () => {
   await server?.close();
   await plain?.close();
+  await custom?.close();
   if (root) rmSync(dirname(root), { recursive: true, force: true });
 });
 
@@ -118,6 +123,17 @@ describe.skipIf(!binding)(".svg imports", () => {
     );
   });
 
+  it("sanitises with any SVGO config; currentColor runs before its plugins", async () => {
+    const mono = await custom.environments.client.transformRequest("/icons/mono.svg");
+    // No SVGO plugin: the path data is the file's; scripts and handlers are still removed.
+    expect(mono!.code).toContain("M8 0l0 16");
+    expect(mono!.code).toContain("currentColor");
+    expect(mono!.code).not.toMatch(/alert|onload/);
+    const optimized = await server.environments.client.transformRequest("/icons/mono.svg");
+    expect(optimized!.code).toContain("M8 0v16");
+    expect(optimized!.code).not.toMatch(/alert|onload|currentColor/);
+  });
+
   it("leaves every .svg import to Vite with svg: false", async () => {
     const result = await plain.environments.client.transformRequest("/icons/home.svg");
     expect(result!.code).toMatch(/^export default "(?:\/icons\/home\.svg|data:image\/svg\+xml,)/);
@@ -137,8 +153,53 @@ describe("lumen({ svg })", () => {
       "lumen({ svg.optimise }): unknown option. Known options: optimize, currentColor.",
     );
     expect(() => svgOptionsOf({ optimize: 1 })).toThrow(
-      "lumen({ svg.optimize }): expected true or false, got 1.",
+      "lumen({ svg.optimize }): expected true, false or an SVGO config, got 1.",
     );
+    expect(() => svgOptionsOf({ currentColor: "yes" })).toThrow(
+      'lumen({ svg.currentColor }): expected true or false, got "yes".',
+    );
+    const config = { multipass: true, plugins: ["removeDimensions" as const] };
+    expect(svgOptionsOf({ optimize: config })).toEqual({ optimize: config, currentColor: false });
     expect(() => lumen({ svg: { sprite: true } as never })).toThrow(/svg\.sprite/);
+  });
+});
+
+describe("svgoConfigOf", () => {
+  const path = "/app/icon.svg";
+  it("uses the default preset, with currentColor as its convertColors override", () => {
+    expect(svgoConfigOf({ optimize: true, currentColor: false }, path)).toEqual({
+      path,
+      plugins: ["convertStyleToAttrs", "preset-default", "convertStyleToAttrs"],
+    });
+    expect(svgoConfigOf({ optimize: true, currentColor: true }, path)!.plugins![1]).toEqual({
+      name: "preset-default",
+      params: { overrides: { convertColors: { currentColor: true } } },
+    });
+  });
+
+  it("runs only convertColors, or nothing, without optimisation", () => {
+    expect(svgoConfigOf({ optimize: false, currentColor: false }, path)).toBeNull();
+    expect(svgoConfigOf({ optimize: false, currentColor: true }, path)).toEqual({
+      path,
+      plugins: [{ name: "convertColors", params: { currentColor: true } }],
+    });
+  });
+
+  it("keeps a custom config, without datauri, and puts currentColor first", () => {
+    const own = {
+      multipass: true,
+      datauri: "base64" as const,
+      plugins: ["removeDimensions" as const],
+    };
+    expect(svgoConfigOf({ optimize: own, currentColor: false }, path)).toEqual({
+      path,
+      multipass: true,
+      plugins: ["removeDimensions"],
+    });
+    expect(svgoConfigOf({ optimize: { floatPrecision: 2 }, currentColor: true }, path)).toEqual({
+      path,
+      floatPrecision: 2,
+      plugins: [{ name: "convertColors", params: { currentColor: true } }, "preset-default"],
+    });
   });
 });

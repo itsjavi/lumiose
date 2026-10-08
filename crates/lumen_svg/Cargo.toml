@@ -6,8 +6,7 @@ license.workspace = true
 publish.workspace = true
 
 [dependencies]
-oxvg_ast.workspace = true
-oxvg_optimiser.workspace = true
+cssparser.workspace = true
 roxmltree.workspace = true
 
 [dev-dependencies]

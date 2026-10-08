@@ -4,6 +4,7 @@ use std::fmt::Write as _;
 
 use roxmltree::{Document, Node};
 
+use crate::prefix::Prefixer;
 use crate::{SvgError, parse_options, xml_error};
 
 const SVG: &str = "http://www.w3.org/2000/svg";
@@ -14,10 +15,11 @@ const XLINK: &str = "http://www.w3.org/1999/xlink";
 /// Elements whose text is content: their whitespace is kept.
 const TEXT_CONTENT: [&str; 4] = ["text", "tspan", "textPath", "a"];
 
-/// The `.stsx` module for `svg`; `prefix` makes the `<title>` id unique to the file.
+/// The `.stsx` module for `svg`; `prefix` makes its ids and the `<title>` id unique to the file.
 pub(crate) fn component(svg: &str, prefix: &str) -> Result<String, SvgError> {
     let document = Document::parse_with_options(svg, parse_options()).map_err(|e| xml_error(&e))?;
     let root = svg_root(&document)?;
+    let prefixer = Prefixer::new(&document, prefix);
 
     let mut out = String::new();
     out.push_str(
@@ -31,8 +33,8 @@ pub(crate) fn component(svg: &str, prefix: &str) -> Result<String, SvgError> {
         js_string(&format!("{prefix}-t-"))
     );
     out.push_str("  return (\n    <svg");
-    for (name, value) in attributes(root) {
-        let _ = write!(out, "\n      {}", attribute(&name, value));
+    for (name, value) in attributes(root, &prefixer) {
+        let _ = write!(out, "\n      {}", attribute(&name, &value));
     }
     out.push_str(
         "\n      role={label() ? \"img\" : undefined}\
@@ -43,7 +45,7 @@ pub(crate) fn component(svg: &str, prefix: &str) -> Result<String, SvgError> {
          \n      {label() ? <title id={label()}>{title}</title> : null}\n",
     );
     for child in root.children() {
-        node(&mut out, child, 3, false);
+        node(&mut out, &prefixer, child, 3, false);
     }
     out.push_str("    </svg>\n  );\n}\n");
     Ok(out)
@@ -66,29 +68,72 @@ pub(crate) fn svg_root<'a, 'input>(
     })
 }
 
-/// The attributes kept on an element, with their JSX names: no event handlers, no
-/// `javascript:` URLs, no attributes of foreign namespaces.
-fn attributes<'a>(element: Node<'a, '_>) -> impl Iterator<Item = (String, &'a str)> {
-    element.attributes().filter_map(|attribute| {
-        let local = attribute.name();
-        let name = match attribute.namespace() {
-            None => local.to_owned(),
-            Some(XML) => format!("xml:{local}"),
-            Some(XLINK) => format!("xlink:{local}"),
-            Some(_) => return None,
-        };
-        let value = attribute.value();
-        let event = local.len() > 2 && local[..2].eq_ignore_ascii_case("on");
-        let script_url = local.eq_ignore_ascii_case("href")
-            && value
-                .trim_start()
-                .get(..11)
-                .is_some_and(|scheme| scheme.eq_ignore_ascii_case("javascript:"));
-        (!event && !script_url).then_some((name, value))
+/// The attributes kept on an element, with their JSX names and prefixed ids: no event handlers,
+/// no `javascript:` URLs, no attributes of foreign namespaces; `xlink:href` becomes `href`
+/// and `xlink:show` `target`, other XLink attributes are dropped.
+fn attributes(element: Node, prefixer: &Prefixer) -> Vec<(String, String)> {
+    let has = |name: &str| {
+        element
+            .attributes()
+            .any(|a| a.namespace().is_none() && a.name() == name)
+    };
+    element
+        .attributes()
+        .filter_map(|attribute| {
+            let local = attribute.name();
+            let mut value = attribute.value().to_owned();
+            let name = match attribute.namespace() {
+                None => local.to_owned(),
+                Some(XML) => format!("xml:{local}"),
+                Some(XLINK) if local == "href" && !has("href") => "href".to_owned(),
+                Some(XLINK) if local == "show" && !has("target") => {
+                    value = match value.as_str() {
+                        "new" => "_blank",
+                        "replace" => "_self",
+                        _ => return None,
+                    }
+                    .to_owned();
+                    "target".to_owned()
+                }
+                Some(_) => return None,
+            };
+            let event = local.len() > 2 && local[..2].eq_ignore_ascii_case("on");
+            (!event && !is_script_url(&value)).then(|| {
+                let value = prefixer.attribute(&name, &value);
+                (name, value)
+            })
+        })
+        .collect()
+}
+
+/// Whether `value` is a `javascript:` URL, as a browser reads it: leading spaces and control
+/// characters, and tabs or newlines inside the scheme, are ignored.
+fn is_script_url(value: &str) -> bool {
+    let mut scheme = value
+        .trim_start_matches(|c: char| c <= ' ')
+        .chars()
+        .filter(|c| !matches!(c, '\t' | '\n' | '\r'));
+    "javascript:".chars().all(|expected| {
+        scheme
+            .next()
+            .is_some_and(|c| c.eq_ignore_ascii_case(&expected))
     })
 }
 
-fn node(out: &mut String, node: Node, depth: usize, text_content: bool) {
+/// Elements never emitted: scripts, the file's own `<title>` (`title` is a prop), and SMIL
+/// animations of a link target (`<set attributeName="href" to="javascript:…">`).
+fn dropped(element: Node) -> bool {
+    let name = element.tag_name().name();
+    if name.eq_ignore_ascii_case("script") || name == "title" {
+        return true;
+    }
+    matches!(name, "set" | "animate")
+        && element
+            .attribute("attributeName")
+            .is_some_and(|target| target.to_ascii_lowercase().ends_with("href"))
+}
+
+fn node(out: &mut String, prefixer: &Prefixer, node: Node, depth: usize, text_content: bool) {
     let indent = "  ".repeat(depth);
     if node.is_text() {
         let text = node.text().unwrap_or_default();
@@ -102,14 +147,12 @@ fn node(out: &mut String, node: Node, depth: usize, text_content: bool) {
     }
     let tag = node.tag_name();
     let name = tag.name();
-    if !matches!(tag.namespace(), None | Some(SVG) | Some(XHTML))
-        || name.eq_ignore_ascii_case("script")
-    {
+    if !matches!(tag.namespace(), None | Some(SVG) | Some(XHTML)) || dropped(node) {
         return;
     }
     let _ = write!(out, "{indent}<{name}");
-    for (attribute_name, value) in attributes(node) {
-        let _ = write!(out, " {}", self::attribute(&attribute_name, value));
+    for (attribute_name, value) in attributes(node, prefixer) {
+        let _ = write!(out, " {}", self::attribute(&attribute_name, &value));
     }
     if !node.has_children() {
         out.push_str(" />\n");
@@ -118,13 +161,14 @@ fn node(out: &mut String, node: Node, depth: usize, text_content: bool) {
     if name == "style" {
         // Native SVG CSS: raw text, which the `.stsx` scanner keeps verbatim.
         let css: String = node.children().filter_map(|child| child.text()).collect();
+        let css = prefixer.stylesheet(&css);
         let _ = writeln!(out, ">{}</style>", css.replace("</", "<\\/"));
         return;
     }
     out.push_str(">\n");
     let text_content = text_content || TEXT_CONTENT.contains(&name);
     for child in node.children() {
-        self::node(out, child, depth + 1, text_content);
+        self::node(out, prefixer, child, depth + 1, text_content);
     }
     let _ = writeln!(out, "{indent}</{name}>");
 }

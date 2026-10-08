@@ -625,17 +625,14 @@ pub fn compile(
 pub struct SvgCompileOptions {
     /// Default `"client"`.
     pub target: Option<CompileTarget>,
-    /// Optimise with OXVG's default preset (SVGO's, in Rust). Default `true`.
-    pub optimize: Option<bool>,
-    /// Replace every colour with `currentColor` (monochrome icons). Default `false`.
-    pub current_color: Option<bool>,
     /// The project root, as for [`compile`].
     pub root: Option<String>,
 }
 
 /// Compiles an `.svg` file to the module of an inline component (`lumen_svg`, TASK-70): the
-/// default export renders the (optimised) SVG, takes SVG props and `title`. Throws when the
-/// file is not a well-formed SVG document.
+/// default export renders the SVG, takes SVG props and `title`. Scripts, event handlers and
+/// `javascript:` URLs are removed and ids get a per-file prefix; optimising is the host's job
+/// (the Vite plugin runs SVGO first). Throws when the file is not a well-formed SVG document.
 #[napi]
 pub fn compile_svg(
     source: String,
@@ -644,17 +641,10 @@ pub fn compile_svg(
 ) -> napi::Result<CompileResult> {
     let options = options.unwrap_or(SvgCompileOptions {
         target: None,
-        optimize: None,
-        current_color: None,
         root: None,
     });
-    let defaults = lumen_svg::SvgOptions::default();
-    let svg_options = lumen_svg::SvgOptions {
-        optimize: options.optimize.unwrap_or(defaults.optimize),
-        current_color: options.current_color.unwrap_or(defaults.current_color),
-    };
     // A panic must not abort the host process (the dev server, the language server).
-    let component = std::panic::catch_unwind(|| lumen_svg::component_source(&source, &svg_options))
+    let component = std::panic::catch_unwind(|| lumen_svg::component_source(&source))
         .map_err(|_| {
             napi::Error::from_reason(format!("{filename}: the SVG could not be processed"))
         })?

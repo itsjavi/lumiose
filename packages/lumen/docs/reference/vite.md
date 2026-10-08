@@ -23,7 +23,7 @@ interface LumenOptions {
   /** The origin check of form posts (on by default); false turns it off. */
   csrf?: false | { allowedOrigins?: readonly string[] };
   /** `.svg` imports as inline components; false leaves them to Vite (URLs). */
-  svg?: boolean | { optimize?: boolean; currentColor?: boolean }; // default true
+  svg?: boolean | { optimize?: boolean | SvgoConfig; currentColor?: boolean }; // default true
   /** Cross-document View Transitions between MPA pages (not under reduced motion). */
   viewTransitions?: boolean; // default false
   /** Speculation rules that prefetch the same-origin links of MPA pages. */
@@ -62,9 +62,12 @@ What it does:
   `jsdom`) get the `browser` entry too (see [Testing](../concepts/testing.md)).
 - Turns compiler diagnostics into Vite warnings and errors with code frames (the dev overlay).
 - Loads project `.svg` files (`./icon.svg`, `./icon.svg?inline`) as inline components for the
-  environment's target, optimised with OXVG (`optimize`, default `true`); `currentColor: true`
-  replaces every colour with `currentColor`. `?url` and `?raw` stay Vite's, and `.svg` files in
-  `exclude` (node_modules) keep Vite's URL import. See [SVG imports](../concepts/svg.md).
+  environment's target, optimised with SVGO (`optimize`: `true` for Lumen's defaults,
+  `preset-default` plus `convertStyleToAttrs`; your SVGO config; or `false`). Scripts, event
+  handlers and `javascript:` URLs are always removed and ids prefixed per file. `currentColor:
+  true` replaces every colour with `currentColor` (SVGO's `convertColors`, before other
+  plugins). `?url` and `?raw` stay Vite's, and `.svg` files in `exclude` (node_modules) keep
+  Vite's URL import. See [SVG imports](../concepts/svg.md).
 - Hot updates: a client module that imports `mount` from `lumen/dom` (an app entry) accepts updates
   of every module it reaches and re-mounts the app into the same container. Component state resets;
   module-level signals of unchanged modules survive.

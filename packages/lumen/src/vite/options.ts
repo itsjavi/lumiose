@@ -42,7 +42,7 @@ export interface LumenOptions {
    */
   csrf?: false | CsrfOptions;
   /**
-   * `.svg` imports (`import Icon from "./icon.svg"`) as inline components, optimised with OXVG;
+   * `.svg` imports (`import Icon from "./icon.svg"`) as inline components, optimised with SVGO;
    * `?url` and `?raw` keep Vite's behaviour. `false` leaves `.svg` imports to Vite (a URL).
    * Default: `true` (`{ optimize: true, currentColor: false }`).
    */

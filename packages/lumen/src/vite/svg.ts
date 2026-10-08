@@ -1,57 +1,104 @@
-// `.svg` imports as inline components (decision-22, TASK-70; owner: Halo, in Photon's plugin).
+// `.svg` imports as inline components (decision-22, TASK-70, TASK-96; owner: Halo, in Photon's
+// plugin).
 //
 // `import Icon from "./icon.svg"` (or `./icon.svg?inline`) loads a module whose default export
-// renders the file inline: `lumen_svg` optimises it with OXVG (SVGO's preset in Rust) and the
-// Lumen compiler turns it into a static template for the environment's target, so the component
-// is the same on the client, on the server and in islands. Vite's own `?url` and `?raw` keep
-// working, and files in `exclude` (node_modules by default) keep Vite's URL import, since a
-// dependency importing an `.svg` expects a URL.
+// renders the file inline: SVGO optimises it, then `compileSvg` (lumen_svg) removes scripts,
+// event handlers and `javascript:` URLs, prefixes its ids per file and has the Lumen compiler
+// turn it into a static template for the environment's target, so the component is the same on
+// the client, on the server and in islands. Vite's own `?url` and `?raw` keep working, and files
+// in `exclude` (node_modules by default) keep Vite's URL import, since a dependency importing an
+// `.svg` expects a URL.
 
 import { readFile } from "node:fs/promises";
 import { compileSvg } from "@lumen/compiler";
+import type { Config as SvgoConfig, PluginConfig } from "svgo";
 import type { Plugin } from "vite";
+
+export type { SvgoConfig };
 
 /** `lumen({ svg })`: how `.svg` imports become components; `false` leaves them to Vite. */
 export interface SvgOptions {
-  /** Optimise with OXVG's default preset (SVGO's, in Rust). Default: `true`. */
-  optimize?: boolean;
+  /**
+   * Optimise with SVGO: `true` uses Lumen's defaults (`preset-default`, plus
+   * `convertStyleToAttrs` for strict CSPs), an object is your own SVGO config (`plugins`,
+   * `multipass`, `floatPrecision`…), `false` skips SVGO. Sanitisation and id prefixing always
+   * run. Default: `true`.
+   */
+  optimize?: boolean | SvgoConfig;
   /**
    * Replace every colour with `currentColor`, for monochrome icons drawn with a hard-coded colour,
-   * so that they follow the text colour. Default: `false` (colours are kept).
+   * so that they follow the text colour (SVGO's `convertColors`, before any other plugin).
+   * Default: `false` (colours are kept).
    */
   currentColor?: boolean;
+}
+
+/** Validated `lumen({ svg })`. */
+export interface ResolvedSvgOptions {
+  optimize: boolean | SvgoConfig;
+  currentColor: boolean;
 }
 
 const SVG_COMPONENT = /\.svg(?:\?inline)?$/;
 
 /** Validates `lumen({ svg })`; `false` when `.svg` imports are left to Vite. */
-export function svgOptionsOf(svg: unknown): false | Required<SvgOptions> {
-  const defaults = { optimize: true, currentColor: false };
-  if (svg === undefined || svg === true) return defaults;
+export function svgOptionsOf(svg: unknown): false | ResolvedSvgOptions {
+  const options: ResolvedSvgOptions = { optimize: true, currentColor: false };
+  if (svg === undefined || svg === true) return options;
   if (svg === false) return false;
-  if (typeof svg !== "object" || svg === null || Array.isArray(svg)) {
+  if (!isObject(svg)) {
     throw new TypeError(
       `lumen({ svg }): expected true, false or { optimize, currentColor }, got ${describe(svg)}.`,
     );
   }
-  const options = { ...defaults };
   for (const [key, value] of Object.entries(svg)) {
-    if (key !== "optimize" && key !== "currentColor") {
+    if (key === "optimize") {
+      if (typeof value !== "boolean" && !isObject(value)) {
+        throw new TypeError(
+          `lumen({ svg.optimize }): expected true, false or an SVGO config, got ${describe(value)}.`,
+        );
+      }
+      options.optimize = value as boolean | SvgoConfig;
+    } else if (key === "currentColor") {
+      if (typeof value !== "boolean") {
+        throw new TypeError(
+          `lumen({ svg.currentColor }): expected true or false, got ${describe(value)}.`,
+        );
+      }
+      options.currentColor = value;
+    } else {
       throw new TypeError(
         `lumen({ svg.${key} }): unknown option. Known options: optimize, currentColor.`,
       );
     }
-    if (typeof value !== "boolean") {
-      throw new TypeError(`lumen({ svg.${key} }): expected true or false, got ${describe(value)}.`);
-    }
-    options[key as keyof SvgOptions] = value;
   }
   return options;
 }
 
+/** The SVGO config for `options`, or `null` when SVGO does not run. */
+export function svgoConfigOf(options: ResolvedSvgOptions, path: string): SvgoConfig | null {
+  const { optimize, currentColor } = options;
+  const convertColors: PluginConfig = { name: "convertColors", params: { currentColor: true } };
+  if (optimize === false) return currentColor ? { path, plugins: [convertColors] } : null;
+  if (optimize === true) {
+    // `convertStyleToAttrs` first, so that the preset's colour and default-value passes see
+    // style declarations, and again after it, since `inlineStyles` moves `<style>` rules into
+    // `style` attributes.
+    const preset: PluginConfig = currentColor
+      ? { name: "preset-default", params: { overrides: { convertColors: { currentColor: true } } } }
+      : "preset-default";
+    return { path, plugins: ["convertStyleToAttrs", preset, "convertStyleToAttrs"] };
+  }
+  // `datauri` would turn the output into a URL.
+  const { datauri: _, plugins = ["preset-default"], ...config } = optimize;
+  return { ...config, path, plugins: currentColor ? [convertColors, ...plugins] : plugins };
+}
+
+let svgo: Promise<typeof import("svgo")> | undefined;
+
 /** The plugin that loads project `.svg` files as components. */
 export function svgPlugin(
-  options: Required<SvgOptions>,
+  options: ResolvedSvgOptions,
   exclude: RegExp,
   root: () => string,
 ): Plugin {
@@ -63,18 +110,43 @@ export function svgPlugin(
       async handler(id) {
         const file = id.replace(/\?inline$/, "");
         if (exclude.test(file)) return null;
-        const source = await readFile(file, "utf8");
+        let source = await readFile(file, "utf8");
+        const config = svgoConfigOf(options, file);
+        let unparsed: Error | undefined;
+        if (config) {
+          svgo ??= import("svgo");
+          try {
+            source = (await svgo).optimize(source, config).data;
+          } catch (error) {
+            // A file SVGO cannot parse goes to `compileSvg` as is, which reports the XML error
+            // with its position (or accepts what SVGO's parser did not).
+            if ((error as Error).name !== "SvgoParserError") {
+              return this.error({ message: `SVGO: ${(error as Error).message}`, id: file });
+            }
+            unparsed = error as Error;
+          }
+        }
         const target = this.environment.config.consumer === "server" ? "server" : "client";
         let code: string;
         try {
-          ({ code } = compileSvg(source, file, { ...options, target, root: root() }));
+          ({ code } = compileSvg(source, file, { target, root: root() }));
         } catch (error) {
           return this.error({ message: (error as Error).message, id: file });
+        }
+        if (unparsed) {
+          this.warn({
+            message: `not optimised, SVGO could not parse it: ${unparsed.message}`,
+            id: file,
+          });
         }
         return { code, map: null, moduleType: "js" };
       },
     },
   };
+}
+
+function isObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
 function describe(value: unknown): string {

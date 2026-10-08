@@ -34,10 +34,9 @@ serde = { version = "=1.0.229", features = ["derive"] }
 lightningcss = { version = "=1.0.0-alpha.72", default-features = false, features = ["sourcemap", "visitor"] }
 parcel_sourcemap = { version = "=2.1.1", features = ["json"] }
 
-# SVG imports (lumen_svg): the OXVG optimiser and AST on the same exact version, and the
-# roxmltree they parse with.
-oxvg_ast = { version = "=0.0.9", default-features = false, features = ["roxmltree", "serialize", "visitor"] }
-oxvg_optimiser = { version = "=0.0.9", default-features = false }
+# SVG imports (lumen_svg): the XML parser, and the CSS tokenizer Lightning CSS already ships
+# (same version) for prefixing ids in `<style>`.
+cssparser = "=0.37.0"
 roxmltree = "=0.21.1"
 
 # Bindings

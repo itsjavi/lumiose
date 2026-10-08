@@ -87,8 +87,9 @@ export interface CompileResult {
 
 /**
  * Compiles an `.svg` file to the module of an inline component (`lumen_svg`, TASK-70): the
- * default export renders the (optimised) SVG, takes SVG props and `title`. Throws when the
- * file is not a well-formed SVG document.
+ * default export renders the SVG, takes SVG props and `title`. Scripts, event handlers and
+ * `javascript:` URLs are removed and ids get a per-file prefix; optimising is the host's job
+ * (the Vite plugin runs SVGO first). Throws when the file is not a well-formed SVG document.
  */
 export declare function compileSvg(
   source: string,
@@ -291,10 +292,6 @@ export interface SubtreeScope {
 export interface SvgCompileOptions {
   /** Default `"client"`. */
   target?: CompileTarget;
-  /** Optimise with OXVG's default preset (SVGO's, in Rust). Default `true`. */
-  optimize?: boolean;
-  /** Replace every colour with `currentColor` (monochrome icons). Default `false`. */
-  currentColor?: boolean;
   /** The project root, as for [`compile`]. */
   root?: string;
 }

@@ -1,8 +1,0 @@
-<!-- @no-optimize -->
-<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 10 10">
-  <!-- kept shapes, prefixed ids -->
-  <title>Dropped</title>
-  <defs><radialGradient id="glow"><stop offset="0" stop-color="white"/></radialGradient></defs>
-  <circle cx="5.000" cy="5.000" r="4" fill="url(#glow)" onmouseover="alert(1)"/>
-  <use xlink:href="#glow"/>
-</svg>

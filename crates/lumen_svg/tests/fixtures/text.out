@@ -14,12 +14,12 @@ export default function Svg({ title, children, ...rest }) {
       {label() ? <title id={label()}>{title}</title> : null}
       <text x="10" y="20" font-family="serif">
         {"Price: "}
-        <tspan font-weight="700">
+        <tspan font-weight="bold">
           {"5 < 6 & \"7\""}
         </tspan>
         {" {braces}"}
       </text>
-      <foreignObject width="200" height="30" x="0" y="30">
+      <foreignObject x="0" y="30" width="200" height="30">
         <div>
           {"HTML "}
           <b>

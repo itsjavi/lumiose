@@ -2,13 +2,11 @@
 //! component source. Each source must also compile without diagnostics for both targets (the
 //! compiled code is not golden: it belongs to `lumen_compiler`). Run with `UPDATE_FIXTURES=1` to
 //! rewrite the expectations.
-//!
-//! Options come from comments in the fixture: `<!-- @no-optimize -->`, `<!-- @current-color -->`.
 
 use std::path::Path;
 
 use lumen_compiler::{CompileOptions, Target, compile};
-use lumen_svg::{SvgOptions, component_source};
+use lumen_svg::component_source;
 
 #[test]
 fn fixtures() {
@@ -26,11 +24,7 @@ fn fixtures() {
     let mut failures = Vec::new();
     for name in &names {
         let svg = std::fs::read_to_string(dir.join(format!("{name}.svg"))).unwrap();
-        let options = SvgOptions {
-            optimize: !svg.contains("<!-- @no-optimize -->"),
-            current_color: svg.contains("<!-- @current-color -->"),
-        };
-        let source = component_source(&svg, &options).unwrap_or_else(|e| panic!("{name}: {e}"));
+        let source = component_source(&svg).unwrap_or_else(|e| panic!("{name}: {e}"));
         for target in [Target::Client, Target::Server] {
             let result = compile(
                 &source,
