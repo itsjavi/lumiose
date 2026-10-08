@@ -39,6 +39,21 @@ export type Endpoint<Params = RouteParamValues> = (
   ctx: RequestContext<Params>,
 ) => Response | Promise<Response>;
 
+/** The context of a form action: the request context plus its parsed form body. */
+export interface ActionContext<Params = RouteParamValues> extends RequestContext<Params> {
+  /** The request body as `FormData`; parsed once, so it can be called again. 400 if not a form. */
+  formData(): Promise<FormData>;
+}
+
+/**
+ * A page's form action: `export const action: Action = (ctx) => …`, or one entry of
+ * `export const actions = { name: (ctx) => … }` (posted to `?/name`). Return a `Response` or
+ * `redirect()`, data for `actionData()`, or `fail(status, data)`.
+ */
+export type Action<Params = RouteParamValues, Result = unknown> = (
+  ctx: ActionContext<Params>,
+) => Result | Promise<Result>;
+
 /**
  * Response status and headers for the page being rendered. Writable until the SSR shell is sent
  * (decision-19); later writes throw LUM5004. Headers set by middleware before `next()` also apply

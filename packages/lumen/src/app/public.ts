@@ -1,6 +1,16 @@
 // Public app-layer API for the browser (owner: Nova): fetchJSON, submit, invalidate, actionData, …
 // Also the source of `lumen`'s types, so it mirrors ./public.server.ts: server-only request APIs
 // are exported as stubs that throw LUM4003 in the browser.
+export {
+  actionData,
+  invalidate,
+  submit,
+  submitting,
+  type SubmitOptions,
+  type SubmitTarget,
+} from "./actions/client.ts";
+export { fail, type ActionFailure, type ActionResult } from "./actions/protocol.ts";
+export { fetchJSON, isFetchError, type FetchError } from "./fetch-json.ts";
 export { href, type HrefArgs } from "./routes/href.ts";
 export type { RouteMap, RouteParams, RouteProps, Routes } from "./routes/registry.ts";
 export {
@@ -32,6 +42,8 @@ export type {
   SignedCookieOptions,
 } from "./server/cookies.ts";
 export type {
+  Action,
+  ActionContext,
   DocumentProps,
   Endpoint,
   ErrorPageProps,

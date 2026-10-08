@@ -32,6 +32,17 @@ export interface RequestScope {
   ctx: RequestContext;
   cookies: CookieJar;
   response: ResponseState;
+  /** Set when a form action ran and the page re-renders with its data. */
+  action?: ActionState;
+  /** Serves a same-origin request in-process, as part of this request (`fetchJSON()` in SSR). */
+  fetch?: (request: Request) => Promise<Response>;
+}
+
+export interface ActionState {
+  /** What the action returned, or the `fail()` data. */
+  data: unknown;
+  /** `data` encoded with `encodeData`, for the browser's `actionData()`. */
+  encoded: unknown;
 }
 
 const storage = new AsyncLocalStorage<RequestScope>();
@@ -120,6 +131,14 @@ export function cookies(): Cookies {
 /** Status and headers of the page response; writable until the shell is sent. */
 export function response(): ResponseContext {
   return currentScope("response()").response;
+}
+
+/**
+ * What this request's form action returned (the `fail()` data for failures), while the page
+ * re-renders after a form post; `undefined` otherwise, also outside a request.
+ */
+export function actionData<T = unknown>(): T | undefined {
+  return storage.getStore()?.action?.data as T | undefined;
 }
 
 /** A server env variable: the request's env when handling a request, else `process.env`. */

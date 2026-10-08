@@ -13,5 +13,6 @@ export type {
 export type { DocumentComponent } from "./document.ts";
 export { createCookieJar, parseCookieHeader, serializeCookie } from "./cookies.ts";
 export type { CookieJar } from "./cookies.ts";
+export type { CsrfOptions } from "./csrf.ts";
 export { getRequestScope, runInRequestScope } from "./scope.ts";
-export type { RequestScope, ResponseState } from "./scope.ts";
+export type { ActionState, RequestScope, ResponseState } from "./scope.ts";

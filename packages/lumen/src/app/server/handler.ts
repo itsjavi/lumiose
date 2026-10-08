@@ -13,8 +13,19 @@ import type {
   RequestContext,
   ServerEnv,
 } from "./context.ts";
+import { jsonForScript } from "../../server/node.ts";
+import { wantsActionResult } from "../actions/protocol.ts";
+import {
+  actionResultResponse,
+  encodeActionData,
+  hasActions,
+  outcomeBody,
+  resolveAction,
+  runAction,
+} from "./actions.ts";
 import { HttpError, isHttpError, isRedirect, statusText, type Redirect } from "./control.ts";
-import { createCookieJar } from "./cookies.ts";
+import { createCookieJar, type CookieJar } from "./cookies.ts";
+import { isSameOriginRequest, needsOriginCheck, type CsrfOptions } from "./csrf.ts";
 import { documentBody, documentParts, type DocumentComponent } from "./document.ts";
 import { createServerRenderer, type PageRenderer, type PageTree } from "./render.ts";
 import { createResponseState, processEnv, runInRequestScope, type RequestScope } from "./scope.ts";
@@ -41,6 +52,11 @@ export interface RequestHandlerOptions {
   prerender?: boolean;
   /** Called with unexpected errors (not redirects or `error()`/`notFound()`). Default: console.error. */
   onError?: (error: unknown, request: Request) => void;
+  /**
+   * The Origin check against cross-site form posts (decision-18), on by default: cross-site form
+   * actions and form-encoded endpoint requests get a 403. `false` turns it off.
+   */
+  csrf?: false | CsrfOptions;
 }
 
 export interface RequestHandler {
@@ -49,10 +65,21 @@ export interface RequestHandler {
 
 const METHODS: readonly HttpMethod[] = ["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"];
 const PAGE_METHODS = "GET, HEAD, OPTIONS";
+const ACTION_PAGE_METHODS = "GET, HEAD, POST, OPTIONS";
+/** Nesting limit for in-process requests (`fetchJSON()` during SSR), against fetch loops. */
+const MAX_IN_PROCESS_DEPTH = 8;
+const CROSS_SITE_MESSAGE = "Cross-site form submissions are forbidden.";
 
 interface ErrorPages {
   notFoundPage: string | undefined;
   errorPage: string | undefined;
+}
+
+/** What an in-process request shares with the request that made it. */
+interface ParentRequest {
+  cookies: CookieJar;
+  locals: Locals;
+  depth: number;
 }
 
 export function createRequestHandler(options: RequestHandlerOptions): RequestHandler {
@@ -66,25 +93,57 @@ export function createRequestHandler(options: RequestHandlerOptions): RequestHan
     [...manifest.notFoundPages, ...manifest.errorPages].map((page) => [page.file, page]),
   );
 
-  async function fetch(request: Request): Promise<Response> {
+  const allowedOrigins = new Set(options.csrf === false ? [] : options.csrf?.allowedOrigins);
+
+  function fetch(request: Request): Promise<Response> {
+    return handle(request, undefined);
+  }
+
+  async function handle(request: Request, parent: ParentRequest | undefined): Promise<Response> {
     const url = new URL(request.url);
     const match = matcher.match(url.pathname);
-    const cookies = createCookieJar(request, { secure: !dev || url.protocol === "https:" });
+    const actionResult = wantsActionResult(request);
+    if (
+      options.csrf !== false &&
+      needsOriginCheck(request, match?.route.kind !== "endpoint") &&
+      !isSameOriginRequest(request, url, allowedOrigins)
+    ) {
+      return actionResult
+        ? actionResultResponse({
+            type: "error",
+            status: 403,
+            error: { message: CROSS_SITE_MESSAGE },
+          })
+        : new Response(CROSS_SITE_MESSAGE, {
+            status: 403,
+            headers: { "content-type": "text/plain; charset=utf-8" },
+          });
+    }
+    // An in-process request is part of its parent: it reads and writes the parent's cookies.
+    const cookies =
+      parent?.cookies ?? createCookieJar(request, { secure: !dev || url.protocol === "https:" });
     const ctx: RequestContext = {
       request,
       url,
       params: match?.params ?? {},
-      // Middleware fills it in; `Locals` describes the result, not the empty start.
-      locals: {} as Locals,
+      // Middleware fills it in; `Locals` describes the result, not the empty start. In-process
+      // requests start from a copy of the parent's.
+      locals: (parent === undefined ? {} : { ...parent.locals }) as Locals,
       cookies,
       env: options.env ?? processEnv(),
     };
-    const scope: RequestScope = { ctx, cookies, response: createResponseState() };
+    const depth = parent === undefined ? 0 : parent.depth + 1;
+    const scope: RequestScope = {
+      ctx,
+      cookies,
+      response: createResponseState(),
+      fetch: (inner) => fetchInProcess(inner, { cookies, locals: ctx.locals, depth }, request),
+    };
 
     return runInRequestScope(scope, async () => {
       let response: Response;
       try {
-        response = await runMiddleware(ctx, () => dispatch(scope, match));
+        response = await runMiddleware(ctx, () => dispatch(scope, match, actionResult));
       } catch (error) {
         scope.response = createResponseState();
         response =
@@ -92,8 +151,37 @@ export function createRequestHandler(options: RequestHandlerOptions): RequestHan
             ? endpointError(error, request)
             : await renderError(error, scope, errorPagesFor(match, url.pathname));
       }
-      return finalize(response, scope);
+      if (actionResult) response = redirectAsActionResult(response);
+      return finalize(response, scope, parent === undefined);
     });
+  }
+
+  /**
+   * Serves a same-origin request made while handling `outer` (`fetchJSON()` during SSR) without
+   * the network. It runs middleware like any request, sees the outer `cookie` and `authorization`
+   * headers, shares the cookie jar (cookies it sets go out with the page) and starts from a copy
+   * of the outer `locals`. It is aborted with the outer request.
+   */
+  function fetchInProcess(
+    request: Request,
+    parent: ParentRequest,
+    outer: Request,
+  ): Promise<Response> {
+    if (parent.depth + 1 > MAX_IN_PROCESS_DEPTH) {
+      throw new Error(
+        `In-process fetch of ${request.url} nested more than ${MAX_IN_PROCESS_DEPTH} levels deep. Does a page or endpoint fetch itself?`,
+      );
+    }
+    const headers = new Headers(request.headers);
+    for (const name of ["cookie", "authorization"]) {
+      const value = outer.headers.get(name);
+      if (value !== null && !headers.has(name)) headers.set(name, value);
+    }
+    const inner = new Request(request, {
+      headers,
+      signal: AbortSignal.any([request.signal, outer.signal]),
+    });
+    return handle(inner, parent);
   }
 
   async function runMiddleware(ctx: RequestContext, last: () => Promise<Response>) {
@@ -128,7 +216,11 @@ export function createRequestHandler(options: RequestHandlerOptions): RequestHan
     return chain as Middleware[];
   }
 
-  async function dispatch(scope: RequestScope, match: RouteMatch | null): Promise<Response> {
+  async function dispatch(
+    scope: RequestScope,
+    match: RouteMatch | null,
+    actionResult: boolean,
+  ): Promise<Response> {
     const { request, url } = scope.ctx;
     if (match === null) {
       return renderError(new HttpError(404, "Not Found"), scope, errorPagesFor(null, url.pathname));
@@ -142,17 +234,20 @@ export function createRequestHandler(options: RequestHandlerOptions): RequestHan
       }
     }
 
-    if (request.method === "OPTIONS") return allowResponse(204, PAGE_METHODS);
-    // TASK-23 adds POST for pages that export form actions.
-    if (request.method !== "GET" && request.method !== "HEAD") {
-      return allowResponse(405, PAGE_METHODS);
-    }
     const baseline = new Headers(scope.response.headers);
     try {
       const [layouts, pageModule] = await Promise.all([
         Promise.all(route.layouts.map((file) => loadComponent(file))),
         loadModule(route.file),
       ]);
+      const allow = hasActions(pageModule) ? ACTION_PAGE_METHODS : PAGE_METHODS;
+      if (request.method === "OPTIONS") return allowResponse(204, allow);
+      if (request.method === "POST" && allow === ACTION_PAGE_METHODS) {
+        const response = await handleAction(scope, pageModule, actionResult);
+        if (response !== undefined) return response;
+      } else if (request.method !== "GET" && request.method !== "HEAD") {
+        return allowResponse(405, allow);
+      }
       const page = componentOf(pageModule, route.file);
       if (typeof pageModule.headers === "function") {
         const headers = new Headers(await pageModule.headers(scope.ctx));
@@ -166,6 +261,40 @@ export function createRequestHandler(options: RequestHandlerOptions): RequestHan
     } catch (error) {
       scope.response = createResponseState(200, baseline);
       return renderError(error, scope, route);
+    }
+  }
+
+  /**
+   * Runs the form action a page POST targets. Returns its response, or `undefined` to re-render
+   * the page with `actionData()` (status 200, or the `fail()` status). Enhanced submissions get a
+   * JSON result instead; thrown redirects still propagate and become redirect results in handle().
+   */
+  async function handleAction(
+    scope: RequestScope,
+    pageModule: ModuleExports,
+    actionResult: boolean,
+  ): Promise<Response | undefined> {
+    const { ctx } = scope;
+    if (!actionResult) {
+      const outcome = await runAction(resolveAction(pageModule, ctx.url), ctx);
+      if (outcome instanceof Response) return outcome;
+      scope.action = { data: outcome.data, encoded: encodeActionData(outcome.data) };
+      if (outcome.status !== 200) scope.response.setStatus(outcome.status);
+      return undefined;
+    }
+    try {
+      const outcome = await runAction(resolveAction(pageModule, ctx.url), ctx);
+      return outcome instanceof Response ? outcome : actionResultResponse(outcomeBody(outcome));
+    } catch (error) {
+      if (isRedirect(error)) throw error;
+      const status = isHttpError(error) ? error.status : 500;
+      if (!isHttpError(error)) onError(error, ctx.request);
+      const message = isHttpError(error)
+        ? error.message
+        : dev
+          ? toError(error).message
+          : statusText(500);
+      return actionResultResponse({ type: "error", status, error: { message } });
     }
   }
 
@@ -209,7 +338,12 @@ export function createRequestHandler(options: RequestHandlerOptions): RequestHan
     let body: string | ReadableStream<Uint8Array>;
     try {
       const assets = options.headAssets === undefined ? "" : await options.headAssets(files);
-      const parts = documentParts(shell.body, shell.head + assets, document !== undefined);
+      // Islands read the same actionData() while hydrating as during SSR.
+      const action =
+        scope.action === undefined || scope.action.data === undefined
+          ? ""
+          : `<script type="application/json" data-l-action>${jsonForScript(scope.action.encoded)}</script>`;
+      const parts = documentParts(shell.body, shell.head + assets + action, document !== undefined);
       body = documentBody(parts, shell.stream, (error) => onError(error, request));
     } catch (error) {
       await shell.stream?.cancel(error);
@@ -339,10 +473,13 @@ function componentOf<C = Component<any>>(module: ModuleExports, file: string): C
   return module.default as C;
 }
 
-/** Cookies and response-context headers apply to every response, then both are sealed. */
-function finalize(response: Response, scope: RequestScope): Response {
-  const cookies = scope.cookies.headers();
-  scope.cookies.seal();
+/**
+ * Cookies and response-context headers apply to every response, then both are sealed. The cookies
+ * of an in-process request belong to its parent's response (`ownsCookies` false).
+ */
+function finalize(response: Response, scope: RequestScope, ownsCookies: boolean): Response {
+  const cookies = ownsCookies ? scope.cookies.headers() : [];
+  if (ownsCookies) scope.cookies.seal();
   scope.response.seal();
   const extra = [...scope.response.headers].filter(([name]) => !response.headers.has(name));
   if (cookies.length === 0 && extra.length === 0) return response;
@@ -365,6 +502,17 @@ function redirectResponse(redirect: Redirect, request: Request): Response {
     ? encodeURI(redirect.location)
     : redirect.location;
   return new Response(null, { status, headers: { location } });
+}
+
+/** An enhanced submission ended in a redirect: answer with a redirect result `submit()` can follow. */
+function redirectAsActionResult(response: Response): Response {
+  const location = response.headers.get("location");
+  if (response.status < 300 || response.status > 399 || location === null) return response;
+  void response.body?.cancel();
+  return actionResultResponse(
+    { type: "redirect", status: response.status, location },
+    response.headers,
+  );
 }
 
 function allowResponse(status: 204 | 405, allow: string): Response {
