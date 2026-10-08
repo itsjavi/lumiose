@@ -1,10 +1,11 @@
 ---
 id: TASK-51
 title: Ship the language server with the VS Code extension
-status: To Do
+status: In Progress
 assignee:
   - '@Beacon'
 created_date: '2026-10-08 14:25'
+updated_date: '2026-10-08 15:41'
 labels: []
 milestone: m-4
 dependencies:
