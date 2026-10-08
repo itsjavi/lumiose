@@ -5,7 +5,7 @@ status: To Do
 assignee:
   - '@Spark'
 created_date: '2026-10-08 12:20'
-updated_date: '2026-10-08 12:49'
+updated_date: '2026-10-08 12:56'
 labels: []
 milestone: m-1
 dependencies:
@@ -38,4 +38,6 @@ Lux (from TASK-42 review):
 1. setAttr: for aria-* and enumerated attributes (spellcheck, draggable, contenteditable, translate, autocapitalize?), a boolean false must write "false" rather than remove the attribute. Plain boolean attributes keep the remove-on-false behaviour.
 2. bindValue with a number signal (input type=number|range) reads valueAsNumber and writes number values.
 3. Event names come from React-style camelCase props lowercased by the compiler (decision-17 amendment).
+
+Lux (from TASK-43): ref<T>() must return JSX.Ref<T> (defined in src/jsx/jsx-runtime.ts, a callable with a type-only marker). The ref prop type checks it.
 <!-- SECTION:NOTES:END -->
