@@ -5,7 +5,7 @@ status: In Progress
 assignee:
   - '@Nova'
 created_date: '2026-10-08 12:21'
-updated_date: '2026-10-08 12:53'
+updated_date: '2026-10-08 12:54'
 labels: []
 milestone: m-3
 dependencies:
@@ -73,4 +73,10 @@ Remaining for TASK-16 integration (task stays In Progress):
 3. End-to-end tests with real server-runtime components: Suspense streaming inside the document, <Title>/<Meta> in the default and custom document, ErrorBoundary in a boundary, and LUM5004 for redirect/head changes inside a boundary (Spark's check).
 4. Confirm the custom document call path: a direct call vs createComponent for a context frame.
 Follow-ups for other tasks: package export for createRequestHandler (TASK-24/26), Vite envPrefix PUBLIC_ (TASK-24), LUM5001 for request APIs while prerendering (TASK-26), spa/ssr=false shells (TASK-25), POST/actions on pages (TASK-23).
+
+Lux review: Nova's choices are accepted.
+- Request accessors live in the app layer; the server runtime reuses getRequestScope().
+- The LUMEN_SECRET default; redirect 302 for GET/HEAD and 303 otherwise; middleware arrays; error pages retried without layouts.
+- The custom document is called through createComponent, so it behaves like any component (context, head).
+- Locals is declared in context.ts; the env.d.ts declaration stays as a harmless merge.
 <!-- SECTION:NOTES:END -->
