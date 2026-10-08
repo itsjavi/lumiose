@@ -283,12 +283,18 @@ export function $leave(): void {
   }
 }
 
+/** A component tagged by `$async`: `$$async` is the async path that `createComponent` takes. */
+export interface AsyncTagged {
+  $$async?: (component: any, props: unknown) => Renderable;
+}
+
 /**
- * Compiler-emitted tag for async component definitions (contract doc-2 §4). Interim implementation:
- * marks the function; `createComponent` still detects async functions directly. TASK-12 moves the
- * dispatch to this tag so the async path tree-shakes.
+ * Compiler-emitted tag for async component definitions (contract doc-2 §4):
+ * `export const X = $async(async function X(props) { … })`. It stores the async path on the
+ * component, so `createComponent` reaches it only through the tag and bundles without async
+ * components never contain it.
  */
 export function $async<C extends (props: never) => unknown>(component: C): C {
-  (component as C & { $$async?: true }).$$async = true;
+  (component as C & AsyncTagged).$$async = createAsync;
   return component;
 }

@@ -1,10 +1,12 @@
 // Components and reactive props utilities (contract doc-2 §1-2, spec §4.2).
 import type { Component, Renderable } from "../contract/client.ts";
 import { currentOwner, runWithLazyOwner, setActiveSub } from "../core/internal.ts";
-import { createAsync } from "./async.ts";
+import { createAsync, type AsyncTagged } from "./async.ts";
 import { childFrame, frame, setFrame } from "./frame.ts";
+import { DEV } from "./dev.ts";
 
-const AsyncFunction = (async () => {}).constructor;
+/** Untagged async components already warned about (dev only). */
+let warned: WeakSet<object> | undefined;
 
 // Arguments and result of `runComponent`, passed without a closure. A nested component overwrites
 // them only after the outer call has read its arguments, and the outer call writes the result last.
@@ -19,11 +21,26 @@ function runComponent(): void {
 /**
  * Runs a component once, untracked, under a new lazy owner (allocated only if the component
  * registers a cleanup, an effect, a binding or a provided value). The owner's parent may itself be
- * lazy, so components inside list rows stay allocation-free too. A native `async function` takes
- * the async path (./async.ts) and renders into a range of its own.
+ * lazy, so components inside list rows stay allocation-free too.
+ *
+ * An async component takes the async path (./async.ts) and renders into a range of its own. The
+ * compiler tags async components with `$async`, which stores that path on the component, so it is
+ * bundled only when an app has async components (contract doc-2 §4). In development, an untagged
+ * native `async function` (for example from a library not compiled by Lumen) gets a warning and
+ * still works.
  */
 export function createComponent<P>(component: Component<P>, props: P): Renderable {
-  if (component instanceof AsyncFunction) {
+  const tagged = (component as AsyncTagged).$$async;
+  if (tagged !== undefined) {
+    return tagged(component, props);
+  }
+  if (DEV && component instanceof (async () => {}).constructor) {
+    if (!(warned ??= new WeakSet()).has(component)) {
+      warned.add(component);
+      console.warn(
+        `Lumen: the async component ${component.name || "(anonymous)"} is not wrapped in $async(), so production builds render it as a plain component. Compile it with Lumen or wrap it: $async(async function ${component.name || "C"}(props) { … }).`,
+      );
+    }
     return createAsync(component as (props: P) => Promise<Renderable>, props);
   }
   componentFn = component;

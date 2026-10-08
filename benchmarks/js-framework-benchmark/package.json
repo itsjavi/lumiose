@@ -1,0 +1,19 @@
+{
+  "name": "@lumen/bench-jsfb",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Lumen's keyed js-framework-benchmark implementation, plus a script that runs krausest's runner against reference frameworks.",
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "build": "vite build",
+    "bench:jsfb": "node scripts/jsfb.ts",
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "lumen": "workspace:*"
+  },
+  "devDependencies": {
+    "vite": "^8.3.4"
+  }
+}

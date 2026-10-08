@@ -14,7 +14,7 @@ import {
   signal,
 } from "../core/index.ts";
 import { getOwner, type Owner } from "../core/internal.ts";
-import { $await, $leave, branch, createComponent, insert, list, mount } from "./index.ts";
+import { $async, $await, $leave, branch, createComponent, insert, list, mount } from "./index.ts";
 import { withIsland } from "./frame.ts";
 
 interface Deferred<T> {
@@ -70,7 +70,7 @@ function loader<T>() {
   };
 }
 
-async function Row(props: { name: string }): Promise<Renderable> {
+const Row = $async(async function Row(props: { name: string }): Promise<Renderable> {
   try {
     const name = props.name;
     (await $await(() => Promise.resolve(), 0))();
@@ -78,9 +78,9 @@ async function Row(props: { name: string }): Promise<Renderable> {
   } finally {
     $leave();
   }
-}
+});
 
-async function Member(props: { name: string }): Promise<Renderable> {
+const Member = $async(async function Member(props: { name: string }): Promise<Renderable> {
   try {
     const name = (await $await(() => `fetched ${props.name}`, 0))();
     let out = "";
@@ -91,43 +91,43 @@ async function Member(props: { name: string }): Promise<Renderable> {
   } finally {
     $leave();
   }
-}
+});
 
 function Team(): Renderable {
   return [createComponent(Member, { name: "ada" }), createComponent(Member, { name: "bob" })];
 }
 
-async function ReplayLeaf(): Promise<Renderable> {
+const ReplayLeaf = $async(async function ReplayLeaf(): Promise<Renderable> {
   try {
     return p((await $await(() => "leaf", 0))());
   } finally {
     $leave();
   }
-}
+});
 function Middle(): Renderable {
   return createComponent(ReplayLeaf, {});
 }
 
-async function ReplayOuter(props: { id: number }): Promise<Renderable> {
+const ReplayOuter = $async(async function ReplayOuter(props: { id: number }): Promise<Renderable> {
   try {
     const n = (await $await(() => props.id, 0))();
     return [p(String(n)), createComponent(Middle, {})];
   } finally {
     $leave();
   }
-}
+});
 
 describe("async components", () => {
   it("render nothing until the first run resolves, then fill their range in place", async () => {
     const api = loader<string>();
-    async function Name(): Promise<Renderable> {
+    const Name = $async(async function Name(): Promise<Renderable> {
       try {
         const name = (await $await(() => api.load("ada"), 0))();
         return p(name);
       } finally {
         $leave();
       }
-    }
+    });
     const container = render(() => [p("before"), createComponent(Name, {}), p("after")]);
     expect(container.textContent).toBe("beforeafter");
     api.calls.get("ada")!.resolve("ada");
@@ -141,7 +141,7 @@ describe("async components", () => {
     const api = loader<string>();
     const log: string[] = [];
     let runs = 0;
-    async function User(props: { id: number }): Promise<Renderable> {
+    const User = $async(async function User(props: { id: number }): Promise<Renderable> {
       try {
         runs++;
         const n = props.id;
@@ -153,7 +153,7 @@ describe("async components", () => {
       } finally {
         $leave();
       }
-    }
+    });
     const container = render(() =>
       createComponent(User, {
         get id() {
@@ -194,7 +194,7 @@ describe("async components", () => {
     const id = signal(1);
     const api = loader<string>();
     const lifetimes: AbortSignal[] = [];
-    async function User(props: { id: number }): Promise<Renderable> {
+    const User = $async(async function User(props: { id: number }): Promise<Renderable> {
       try {
         lifetimes.push(lifetime());
         const n = props.id;
@@ -203,7 +203,7 @@ describe("async components", () => {
       } finally {
         $leave();
       }
-    }
+    });
     const container = render(() =>
       createComponent(User, {
         get id() {
@@ -231,7 +231,7 @@ describe("async components", () => {
     const id = signal(1);
     const api = loader<string>();
     const after: string[] = [];
-    async function User(props: { id: number }): Promise<Renderable> {
+    const User = $async(async function User(props: { id: number }): Promise<Renderable> {
       try {
         const n = props.id;
         const name = (await $await(() => api.load(n, lifetime()), 0))();
@@ -240,7 +240,7 @@ describe("async components", () => {
       } finally {
         $leave();
       }
-    }
+    });
     const show = signal(true);
     const container = render(() => {
       const anchor = document.createTextNode("");
@@ -270,7 +270,7 @@ describe("async components", () => {
     const Theme = createContext("none");
     const gates = [deferred<void>(), deferred<void>()];
     const owners: (Owner | undefined)[] = [];
-    async function Child(props: { gate: number }): Promise<Renderable> {
+    const Child = $async(async function Child(props: { gate: number }): Promise<Renderable> {
       try {
         const own = getOwner();
         (await $await(() => gates[props.gate]!.promise, 0))();
@@ -279,7 +279,7 @@ describe("async components", () => {
       } finally {
         $leave();
       }
-    }
+    });
     function Themed(props: { theme: string; gate: number }): Renderable {
       provide(Theme, props.theme);
       return createComponent(Child, { gate: props.gate });
@@ -299,7 +299,7 @@ describe("async components", () => {
 
   it("run catch blocks with the run restored: $await never rejects", async () => {
     const Ctx = createContext("none");
-    async function Safe(): Promise<Renderable> {
+    const Safe = $async(async function Safe(): Promise<Renderable> {
       try {
         try {
           (await $await(() => Promise.reject(new Error("offline")), 0))();
@@ -310,7 +310,7 @@ describe("async components", () => {
       } finally {
         $leave();
       }
-    }
+    });
     const container = render(() => {
       provide(Ctx, "app");
       return createComponent(Safe, {});
@@ -321,14 +321,14 @@ describe("async components", () => {
 
   it("render several concurrent instances, each into its own range", async () => {
     const api = loader<string>();
-    async function Item(props: { name: string }): Promise<Renderable> {
+    const Item = $async(async function Item(props: { name: string }): Promise<Renderable> {
       try {
         const name = props.name;
         return p((await $await(() => api.load(name), 0))());
       } finally {
         $leave();
       }
-    }
+    });
     const container = render(() => ["a", "b", "c"].map((name) => createComponent(Item, { name })));
     api.calls.get("c")!.resolve("C");
     await settled();
@@ -343,7 +343,7 @@ describe("async components", () => {
   it("dispose nested instances created after an await with their run", async () => {
     const id = signal(1);
     const log: string[] = [];
-    async function Leaf(props: { n: number }): Promise<Renderable> {
+    const Leaf = $async(async function Leaf(props: { n: number }): Promise<Renderable> {
       try {
         const n = props.n;
         onCleanup(() => log.push(`leaf ${n}`));
@@ -352,8 +352,8 @@ describe("async components", () => {
       } finally {
         $leave();
       }
-    }
-    async function Outer(props: { id: number }): Promise<Renderable> {
+    });
+    const Outer = $async(async function Outer(props: { id: number }): Promise<Renderable> {
       try {
         const n = props.id;
         (await $await(() => Promise.resolve(), 0))();
@@ -361,7 +361,7 @@ describe("async components", () => {
       } finally {
         $leave();
       }
-    }
+    });
     const container = render(() =>
       createComponent(Outer, {
         get id() {
@@ -381,7 +381,7 @@ describe("async components", () => {
   it("do not track pending() in the body, so reading it never re-runs the component", async () => {
     const id = signal(1);
     const seen: boolean[] = [];
-    async function Reader(props: { id: number }): Promise<Renderable> {
+    const Reader = $async(async function Reader(props: { id: number }): Promise<Renderable> {
       try {
         const n = props.id;
         seen.push(pending());
@@ -391,7 +391,7 @@ describe("async components", () => {
       } finally {
         $leave();
       }
-    }
+    });
     const container = render(() =>
       createComponent(Reader, {
         get id() {

@@ -83,9 +83,17 @@ export function setClass(el: Element, value: unknown): void {
   slots.$$class = next;
 }
 
-/** Toggles one class (a static class-object key compiled to its own binding). */
+/**
+ * Toggles one class (a static class-object key compiled to its own binding). Turning a class off on
+ * an element without a `class` attribute writes nothing: new list rows then never touch (nor
+ * allocate) their `classList`.
+ */
 export function toggleClass(el: Element, name: string, on: unknown): void {
-  el.classList.toggle(name, !!on);
+  if (on) {
+    el.classList.add(name);
+  } else if (el.hasAttribute("class")) {
+    el.classList.remove(name);
+  }
 }
 
 /** Sets one style property (kebab-case or `--custom`); nullish or `false` removes it. */

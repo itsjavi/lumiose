@@ -3,7 +3,7 @@
 import { afterEach, describe, expect, it } from "vitest";
 import type { Renderable } from "../contract/client.ts";
 import { busy, effect, flushSync, pending, resource, signal } from "../core/index.ts";
-import { $await, $leave, bind, branch, createComponent, insert, mount, setText } from "./index.ts";
+import { $async, $await, $leave, bind, branch, createComponent, insert, mount, setText } from "./index.ts";
 import { ErrorBoundary, Suspense } from "./boundaries.ts";
 
 interface Deferred<T> {
@@ -46,7 +46,7 @@ afterEach(() => {
 
 /** An async component that renders `name` once its gate (looked up per run) resolves. */
 function gated(gates: Map<string, Deferred<string>>) {
-  return async function Gated(props: { name: string }): Promise<Renderable> {
+  return $async(async function Gated(props: { name: string }): Promise<Renderable> {
     try {
       const name = props.name;
       const gate = deferred<string>();
@@ -58,7 +58,7 @@ function gated(gates: Map<string, Deferred<string>>) {
     } finally {
       $leave();
     }
-  };
+  });
 }
 
 function fallback(): Renderable {
@@ -69,14 +69,14 @@ describe("Suspense", () => {
   it("shows the fallback until every first run below resolves, including nested ones", async () => {
     const gates = new Map<string, Deferred<string>>();
     const Gated = gated(gates);
-    async function Parent(): Promise<Renderable> {
+    const Parent = $async(async function Parent(): Promise<Renderable> {
       try {
         (await $await(() => gates.get("a")!.promise, 0))();
         return [p("A"), createComponent(Gated, { name: "nested" })];
       } finally {
         $leave();
       }
-    }
+    });
     const container = render(() =>
       createComponent(Suspense, {
         get fallback() {
@@ -221,14 +221,14 @@ describe("Suspense", () => {
   });
 });
 
-async function Broken(): Promise<Renderable> {
+const Broken = $async(async function Broken(): Promise<Renderable> {
   try {
     (await $await(() => Promise.reject(new Error("boom")), 0))();
     return p("never");
   } finally {
     $leave();
   }
-}
+});
 function Watcher(): Renderable {
   effect(() => {
     throw new Error("watch");
@@ -257,7 +257,7 @@ describe("runs as boundaries of the content they create", () => {
     const gates = new Map<string, Deferred<string>>();
     const Gated = gated(gates);
     const id = signal("1");
-    async function Parent(props: { id: string }): Promise<Renderable> {
+    const Parent = $async(async function Parent(props: { id: string }): Promise<Renderable> {
       try {
         const n = props.id;
         (await $await(() => Promise.resolve(), 0))();
@@ -265,7 +265,7 @@ describe("runs as boundaries of the content they create", () => {
       } finally {
         $leave();
       }
-    }
+    });
     const container = render(() =>
       createComponent(Suspense, {
         get fallback() {
@@ -301,7 +301,7 @@ describe("runs as boundaries of the content they create", () => {
     const Gated = gated(gates);
     const id = signal("1");
     const more = signal(false);
-    async function Parent(props: { id: string }): Promise<Renderable> {
+    const Parent = $async(async function Parent(props: { id: string }): Promise<Renderable> {
       try {
         const n = props.id;
         (await $await(() => Promise.resolve(), 0))();
@@ -313,7 +313,7 @@ describe("runs as boundaries of the content they create", () => {
       } finally {
         $leave();
       }
-    }
+    });
     const container = render(() =>
       createComponent(Suspense, {
         get fallback() {
@@ -347,7 +347,7 @@ describe("runs as boundaries of the content they create", () => {
 describe("ErrorBoundary", () => {
   it("catches async rejections; retry mounts the children again", async () => {
     const attempts: Deferred<string>[] = [];
-    async function Flaky(): Promise<Renderable> {
+    const Flaky = $async(async function Flaky(): Promise<Renderable> {
       try {
         const gate = deferred<string>();
         attempts.push(gate);
@@ -355,7 +355,7 @@ describe("ErrorBoundary", () => {
       } finally {
         $leave();
       }
-    }
+    });
     let retry!: () => void;
     const container = render(() =>
       createComponent(ErrorBoundary, {
@@ -503,7 +503,7 @@ describe("busy", () => {
     const Gated = gated(gates);
     const name = signal("a");
     let runs = 0;
-    async function Reader(): Promise<Renderable> {
+    const Reader = $async(async function Reader(): Promise<Renderable> {
       try {
         runs++;
         busy();
@@ -513,7 +513,7 @@ describe("busy", () => {
       } finally {
         $leave();
       }
-    }
+    });
     const seen: boolean[] = [];
     const stop = effect(() => {
       seen.push(busy());

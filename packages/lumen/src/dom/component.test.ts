@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import type { Renderable } from "../contract/client.ts";
 import {
   createContext,
@@ -12,6 +12,7 @@ import {
 } from "../core/index.ts";
 import { createOwner, disposeOwner, getOwner, runWithOwner, type Owner } from "../core/internal.ts";
 import {
+  $async,
   bind,
   createComponent,
   insert,
@@ -25,7 +26,8 @@ import {
 import { applyScope } from "./attributes.ts";
 
 const Static = (): Renderable => template(`<li>`)();
-const Async = async (): Promise<Renderable> => null;
+const Async = $async(async (): Promise<Renderable> => null);
+const Untagged = async (): Promise<Renderable> => null;
 
 function root(fn: () => void): Owner {
   const owner = createOwner(undefined);
@@ -118,10 +120,24 @@ describe("createComponent", () => {
     expect(log).toEqual(["b"]);
   });
 
-  it("renders async components into a range of their own (./async.test.ts covers them)", () => {
+  it("renders $async-tagged components into a range of their own (./async.test.ts covers them)", () => {
     const start = createComponent(Async, {}) as Text & { $$end: Text };
     expect(start.nodeType).toBe(3);
     expect(start.nextSibling).toBe(start.$$end);
+  });
+
+  it("in development, renders an untagged async function as async and warns once", () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    try {
+      for (let i = 0; i < 2; i++) {
+        const start = createComponent(Untagged, {}) as Text & { $$end: Text };
+        expect(start.nextSibling).toBe(start.$$end);
+      }
+      expect(warn).toHaveBeenCalledTimes(1);
+      expect(String(warn.mock.calls[0]![0])).toContain("$async");
+    } finally {
+      warn.mockRestore();
+    }
   });
 });
 
