@@ -64,6 +64,16 @@ export interface RenderedShell {
   stream: ReadableStream<string> | null;
 }
 
+/** A rendered shell whose island records are kept apart from its HTML (see `renderShell`). */
+export interface ShellParts {
+  head: string;
+  /** The shell's HTML, without its island records. */
+  html: string;
+  /** The shell's island records script, or "". It must precede the stream, inside `<body>`. */
+  records: string;
+  stream: ReadableStream<string> | null;
+}
+
 // Minified; see the module comment. Removes the range between `<?start name=N>` and its `<?end>`
 // (counting nested ranges), inserts the template's content there and drops the markers.
 export const SWAP_SCRIPT =
@@ -77,6 +87,21 @@ export function renderToStream(
   root: () => unknown,
   options: RenderToStreamOptions = {},
 ): Promise<RenderedShell> {
+  return renderShell(root, options).then(({ head, html, records, stream }) => ({
+    head,
+    body: html + records,
+    stream,
+  }));
+}
+
+/**
+ * `renderToStream` for callers that place the records themselves: with a custom document the
+ * shell is the whole document, so the records go before its body ends, not after `</html>`.
+ */
+export function renderShell(
+  root: () => unknown,
+  options: RenderToStreamOptions = {},
+): Promise<ShellParts> {
   const { signal } = options;
   if (signal?.aborted) return Promise.reject(signal.reason);
   const render: RenderState = {
@@ -118,7 +143,7 @@ export function renderToStream(
     finish(render);
     return Promise.reject(error);
   }
-  return new Promise<RenderedShell>((resolve, reject) => {
+  return new Promise<ShellParts>((resolve, reject) => {
     const abort = () => {
       finish(render);
       reject(signal!.reason);
@@ -146,14 +171,14 @@ export async function renderToString(
   return (await renderToStream(root, { ...options, resolveAll: true })).body;
 }
 
-function completeShell(render: RenderState, html: string, signal?: AbortSignal): RenderedShell {
+function completeShell(render: RenderState, html: string, signal?: AbortSignal): ShellParts {
   render.shellDone = true;
   const shell = render.shell;
   const head = headHtml(render) + unitAssets(render, shell);
-  const body = html + islandRecords(shell);
+  const records = islandRecords(shell);
   if (render.pending === 0) {
     finish(render);
-    return { head, body, stream: null };
+    return { head, html, records, stream: null };
   }
   const stream = new ReadableStream<string>({
     start(controller) {
@@ -172,7 +197,7 @@ function completeShell(render: RenderState, html: string, signal?: AbortSignal):
   });
   // A disconnected client ends the stream quietly; `lifetime()` aborts pending work.
   signal?.addEventListener("abort", () => render.close?.(), { once: true });
-  return { head, body, stream };
+  return { head, html, records, stream };
 }
 
 /** Ends the render: disposes the root owner (cleanups run, `lifetime()` aborts). */

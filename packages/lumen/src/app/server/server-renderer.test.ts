@@ -8,6 +8,7 @@ import { SWAP_SCRIPT } from "../../server/render.ts";
 import { createRouteManifest } from "../routes/manifest.ts";
 import { notFound, redirect } from "./control.ts";
 import { createRequestHandler, type ModuleExports, type RequestHandlerOptions } from "./handler.ts";
+import { createServerRenderer } from "./render.ts";
 import { response, url } from "./scope.ts";
 
 type Props = any;
@@ -133,6 +134,34 @@ function Counter(props: Props) {
   return ssr(["<button>", "</button>"], insert(props.start));
 }
 
+const counter = (start: number) => island("/src/Counter.stsx#Counter", Counter, { start }, "load");
+
+/** Awaits, then renders a Counter island: its records stream with the boundary. */
+async function LateCounter() {
+  try {
+    (await $await(() => sleep(1), 0))();
+    return counter(5);
+  } finally {
+    $leave();
+  }
+}
+
+const RECORDS = (id: number, start: number) =>
+  `<script type="application/json" data-l-islands>[{"id":${id},"ref":"/src/Counter.stsx#Counter","strategy":"load","props":{"start":${start}}}]</script>`;
+const ISLAND = (id: number, start: number) =>
+  `<!--l:${id}--><button><!--[-->${start}<!--]--></button><!--/l:${id}-->`;
+
+/** Every script of the page sits in its head or body: nothing follows `</body></html>`. */
+function expectWellFormed(html: string) {
+  expect(html.match(/<\/html>/g)).toHaveLength(1);
+  expect(html.endsWith("</body></html>")).toBe(true);
+  const body = html.indexOf("<body");
+  for (const match of html.matchAll(/<script[^>]*>/g)) {
+    const inHead = match[0].includes("src=") && match.index < html.indexOf("</head>");
+    if (!inHead) expect(match.index).toBeGreaterThan(body);
+  }
+}
+
 describe("default server renderer", () => {
   it("streams Suspense boundaries inside the default document, after the head", async () => {
     const { fetch } = app({
@@ -188,6 +217,85 @@ describe("default server renderer", () => {
         '<template for="lb0"><p>x</p></template><script>$swap("lb0")</script></body></html>',
       ),
     ).toBe(true);
+  });
+
+  describe("island records and the loader stay inside the document (TASK-103)", () => {
+    const LOADER = '<script type="module" async src="/loader.js"></script>';
+    const documents = {
+      default: {},
+      custom: {
+        modules: { "src/document.stsx": { default: CustomDocument } },
+        options: { document: "src/document.stsx" },
+      },
+    } as const;
+    const render = createServerRenderer({ loaderUrl: "/loader.js" });
+
+    for (const [kind, document] of Object.entries(documents)) {
+      const fetchPage = (page: () => unknown, options: Partial<RequestHandlerOptions> = {}) =>
+        app(
+          {
+            ...("modules" in document ? document.modules : {}),
+            "src/routes/index.stsx": { default: page },
+          },
+          { render, ...("options" in document ? document.options : {}), ...options },
+        ).fetch("/");
+      const bodyStart = kind === "custom" ? '<body class="dark">' : "<body>";
+
+      it(`${kind} document: shell records end the body, before the streamed chunks`, async () => {
+        const res = await fetchPage(() =>
+          ssr(
+            ["", "", ""],
+            counter(3),
+            suspense(() => createComponent(Late, { text: "x" })),
+          ),
+        );
+        expect(res.body).toBeInstanceOf(ReadableStream);
+        const html = await res.text();
+        expectWellFormed(html);
+        expect(html).toContain(
+          `${LOADER}<link rel="modulepreload" href="/src/Counter.stsx"></head>`,
+        );
+        expect(html).toContain(
+          `${bodyStart}${ISLAND(0, 3)}<?start name="lb0"><p>loading</p><?end>${RECORDS(0, 3)}<script>${SWAP_SCRIPT}</script>` +
+            '<template for="lb0"><p>x</p></template><script>$swap("lb0")</script></body></html>',
+        );
+      });
+
+      it(`${kind} document: a streamed island brings the loader and its records inside the body`, async () => {
+        const html = await (
+          await fetchPage(() =>
+            ssr(
+              ["<h1>shell</h1>", ""],
+              suspense(() => createComponent(LateCounter, {})),
+            ),
+          )
+        ).text();
+        expectWellFormed(html);
+        expect(html).not.toContain(`${LOADER}</head>`);
+        expect(html).toContain(
+          `${bodyStart}<h1>shell</h1><?start name="lb0"><p>loading</p><?end><script>${SWAP_SCRIPT}</script>` +
+            `${LOADER}<link rel="modulepreload" href="/src/Counter.stsx">` +
+            `<template for="lb0">${ISLAND(0, 5)}</template><script>$swap("lb0")</script>${RECORDS(0, 5)}</body></html>`,
+        );
+      });
+
+      it(`${kind} document: prerendered records end the body`, async () => {
+        const res = await fetchPage(
+          () =>
+            ssr(
+              ["", ""],
+              suspense(() => createComponent(LateCounter, {})),
+            ),
+          { prerender: true },
+        );
+        const html = await res.text();
+        expectWellFormed(html);
+        expect(html).toContain(
+          `${LOADER}<link rel="modulepreload" href="/src/Counter.stsx"></head>`,
+        );
+        expect(html).toContain(`${bodyStart}${ISLAND(0, 5)}${RECORDS(0, 5)}</body></html>`);
+      });
+    }
   });
 
   it("renders an ErrorBoundary fallback inside a streamed boundary", async () => {

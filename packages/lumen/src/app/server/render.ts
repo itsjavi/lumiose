@@ -5,8 +5,9 @@
 // use the string renderer fixture.
 
 import type { Component } from "../../contract/client.ts";
-import { createComponent, renderToStream } from "../../server/index.ts";
+import { createComponent } from "../../server/index.ts";
 import { SSRHtml } from "../../server/node.ts";
+import { renderShell } from "../../server/render.ts";
 import type { DocumentProps, RouteParamValues } from "./context.ts";
 import { BODY_SLOT, HEAD_SLOT } from "./document.ts";
 
@@ -42,7 +43,11 @@ export interface PageRenderOptions {
 export interface RenderedShell {
   /** HTML collected from `<Head>`, `<Title>` and `<Meta>` while rendering the shell. */
   head: string;
-  /** Body HTML of the shell, with Suspense fallbacks in place (the whole custom document, if any). */
+  /**
+   * Body HTML of the shell, with Suspense fallbacks in place (the whole custom document, if any).
+   * Anything that must precede the stream, such as island records, ends the page body: before
+   * `BODY_SLOT` in a custom document.
+   */
   body: string;
   /**
    * Suspense boundary chunks (`<template for>` / `$swap`), streamed right after `body` inside
@@ -108,12 +113,29 @@ const rawHtml = (html: string) => new SSRHtml(html);
 
 /** The default `PageRenderer`: lumen/server's shell-first `renderToStream`. */
 export function createServerRenderer(options: ServerRendererOptions = {}): PageRenderer {
-  return (tree, { signal, resolveAll, onError, loaderUrl }) =>
-    renderToStream(composePageTree(tree, createComponent, rawHtml), {
-      ...options,
-      signal,
-      resolveAll,
-      onError,
-      ...(loaderUrl === undefined ? {} : { loaderUrl }),
-    });
+  return async (tree, { signal, resolveAll, onError, loaderUrl }) => {
+    const { head, html, records, stream } = await renderShell(
+      composePageTree(tree, createComponent, rawHtml),
+      {
+        ...options,
+        signal,
+        resolveAll,
+        onError,
+        ...(loaderUrl === undefined ? {} : { loaderUrl }),
+      },
+    );
+    return { head, body: placeRecords(html, records, tree.document !== undefined), stream };
+  };
+}
+
+/**
+ * The shell's island records end the page body, before the stream. A custom document's shell is
+ * the whole document, so they go before its body marker (where the stream is spliced in) rather
+ * than after `</html>`.
+ */
+function placeRecords(html: string, records: string, custom: boolean): string {
+  const at = custom ? html.indexOf(BODY_SLOT) : -1;
+  // Without the marker `documentParts` reports the document error.
+  if (at === -1) return html + records;
+  return html.slice(0, at) + records + html.slice(at);
 }

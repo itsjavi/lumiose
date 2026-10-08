@@ -21,6 +21,9 @@ they update `document.title` and `<head>` live, and are removed with their compo
 **Document.** By default Lumen renders the HTML document. `src/document.stsx` takes over
 `<html>`, `<head>` and `<body>`: it receives `{ head, body }` and must render each once. It renders
 like any component, so it can set defaults with `<Title>`/`<Meta>` and provide context to pages.
+`{props.head}` also carries the page's stylesheets, preload hints and island loader. `{props.body}`
+is followed by the page's island records and its streamed `<Suspense>` content, so the whole page
+stays inside `<body>` with either document.
 
 > **Status:** available on the server (`renderToStream`) and in the browser; the default and custom
 > documents are rendered by the request handler.
