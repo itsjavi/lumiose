@@ -1,11 +1,11 @@
 ---
 id: TASK-65
 title: 'Codegen: compile jsfb-style rows like the hand-compiled reference'
-status: To Do
+status: In Progress
 assignee:
   - '@Photon'
 created_date: '2026-10-08 16:10'
-updated_date: '2026-10-08 16:12'
+updated_date: '2026-10-08 16:25'
 labels: []
 milestone: m-1
 dependencies: []
