@@ -3,627 +3,815 @@ id: doc-1
 title: Lumen architecture specification
 type: specification
 created_date: '2026-10-08 10:28'
-updated_date: '2026-10-08 11:35'
+updated_date: '2026-10-08 11:46'
 tags:
   - architecture
   - spec
 ---
 # Lumen architecture specification
 
-> Status: **draft v0.1 for review**. Owner: Lux (architect). Milestone: m-0. Tracking task: TASK-3.
-> Product name: **Lumen**. Working package name: **`lumen-jsx`**, because the npm name `lumen` is taken (see §14).
-> Normative words: **must**, **should**, **may**. Code samples are normative for API shape, not for internals.
+> **Status:** draft v0.2 for review. Owner: Lux (architect). Milestone: m-0. Tracking task: TASK-3.
 >
-> ⚠️ **Revision pending (v0.2, TASK-3).** This version is out of date in several ways:
-> - decision-11 (`.stsx` + `.tsx` files) and decision-12 (raw CSS `<style>` blocks, `$name` build-time constants, no reactive CSS) supersede decisions 1–2.
-> - decision-13 adds async components on the client with Suspense.
-> - decision-14 scopes styles by placement (component, file, global).
-> - decision-15 renames the package to `lumen` (this version still says `lumen-jsx`).
+> **Naming:** the product is called Lumen and the working package name is `lumen` (decision-15). The npm name `lumen` is already taken, so the package will be renamed before it is published.
 >
-> Sections 0, 4.4, 4.5, 5, 7.3 and 9 still describe the old design. Decisions 5–10 are proposals pending user approval.
+> **Normative language:** the words **must**, **should** and **may** carry their usual specification meaning. Code samples are normative for the shape of the API, not for its internals.
+>
+> **How to read the labels:**
+> - Sections marked **[accepted: decision-N]** follow decisions the user has approved: 3, 4, 11, 12, 13, 14, 15 and 16.
+> - Sections marked **[proposal: decision-N]** follow decisions 5–10. These still need user review and may change.
+>
+> **Superseded decisions:** decision-1 (valid `.tsx` with `css` tagged templates) and decision-2 (reactive CSS interpolation) are superseded by decision-11 and decision-12.
 
 ## 0. Summary
 
-Lumen is a TypeScript 7-first web framework:
+Lumen is a TypeScript 7-first web framework.
 
-- **Authoring:** components are valid `.tsx`.
-- **Components:** each component's body runs once (setup). State is held in signals.
-- **Styles:** CSS is scoped by default and written in a `<style>{css`…`}</style>` element. `${}` values become reactive CSS custom properties, and `<style global>` emits unscoped CSS.
-- **Compiler:** written in Rust on OXC and Lightning CSS. It turns JSX into cloned HTML templates plus fine-grained DOM bindings for the client, and into string concatenation for the server.
-- **Rendering:** server-first. Pages ship zero JavaScript by default. Interactive parts are islands, marked at the usage site (`<Counter client:visible />`), and any route can opt into SPA mode.
-- **Platform:** web standards (`Request` / `Response`, `AbortSignal`, `FormData`), a Vite 8 plugin, and the normal npm, lint, format and test ecosystem.
-- **Agent-first:** a small, unambiguous API, plus documentation that ships with the package and matches its version, stable diagnostic codes, a CLI with JSON output, and an MCP server.
+- **Authoring: `.stsx` files** ("styled TSX"). These are TSX plus raw-CSS `<style>` blocks. Plain `.tsx` is also allowed.
+- **Styles are plain CSS.** A style block applies to what encloses it: a component, the whole file, or the whole app with `<style global>`.
+  - JS constants are available in CSS as `$name`, inlined at build time.
+  - CSS never contains JS expressions.
+- **Components run their body once (setup) and hold state in signals.** Any component may be `async`, on both server and client, coordinated by `<Suspense>`.
+- **A Rust compiler** turns JSX into cloned templates plus fine-grained DOM bindings for the client, and into string concatenation for the server.
+- **Rendering is server-first.**
+  - Pages ship zero JS by default.
+  - Interactivity comes from islands, chosen where the component is used: `<Counter client:visible />`.
+  - Each route can opt into SPA mode.
+- **Built on web standards** (`Request`/`Response`, `AbortSignal`, `FormData`), ships as a Vite plugin, and works with the npm, lint, format and test ecosystems.
+- **Agent-first.**
+  - A small API with one obvious way to do each thing.
+  - Docs that ship with each version.
+  - Stable diagnostic codes, JSON output from the CLI, and an MCP server.
 
 ```tsx
-// src/components/Counter.tsx
-import { signal, computed, css } from "lumen-jsx";
+// src/components/Team.stsx — two components, each with private styles, plus shared file styles
+import { signal, lifetime, Suspense } from "lumen";
+import { api } from "../api.ts";
+import { radius, BREAKPOINT } from "../design/tokens.ts";
 
-export function Counter({ start = 0, label }: { start?: number; label: string }) {
-  const count = signal(start);
-  const double = computed(() => count() * 2);
+export function TeamPanel({ ids }: { ids: string[] }) {
+  const selected = signal(ids[0]);
 
   return (
-    <button class={["counter", { hot: count() > 5 }]} onClick={() => count.update((c) => c + 1)}>
-      {label}: {count()} (×2 = {double()})
-      <style>{css`
-        .counter { padding: 0.5rem 1rem; border-radius: 0.5rem; }
-        .hot { background: ${count() > 10 ? "crimson" : "orange"}; }
-      `}</style>
-    </button>
+    <section class="panel">
+      <nav>
+        {ids.map((id) => (
+          <button class={{ active: selected() === id }} onClick={() => selected.set(id)}>
+            {id}
+          </button>
+        ))}
+      </nav>
+
+      <Suspense fallback={<p class="loading">Loading…</p>}>
+        <MemberCard id={selected()} />
+      </Suspense>
+
+      <style>
+        .panel { display: grid; gap: 1rem; }
+        nav { display: flex; gap: 0.5rem; }
+        .active { font-weight: 600; }
+        @media (width < $BREAKPOINT) { nav { flex-direction: column; } }
+      </style>
+    </section>
   );
 }
 
-// src/routes/index.tsx: a server component; ships no JS except the island
-import { Counter } from "../components/Counter.tsx";
+export async function MemberCard({ id }: { id: string }) {
+  const member = await api.members.get(id, { signal: lifetime() });
+  const kudos = signal(member.kudos);
 
-export default function Home() {
+  return (
+    <article class="card">
+      <h3>{member.name}</h3>
+      <button onClick={() => kudos.update((n) => n + 1)}>👏 {kudos()}</button>
+
+      <style>
+        .card { padding: 1rem; border-radius: $radius.lg; }
+      </style>
+    </article>
+  );
+}
+
+<style>
+  /* file scope: applies to every component in this file */
+  button { font: inherit; cursor: pointer; }
+</style>
+```
+
+```tsx
+// src/routes/index.stsx — server component; ships no JS except the island
+import { TeamPanel } from "../components/Team.stsx";
+import { db } from "../server/db.server.ts";
+
+export default async function Home() {
+  const ids = await db.team.featuredIds();
+
   return (
     <main>
-      <h1>Hello Lumen</h1>
-      <Counter client:visible label="Clicks" />
-      <style global>{css`
-        body { font-family: system-ui; margin: 0; }
-      `}</style>
+      <h1>Our team</h1>
+      <TeamPanel client:visible ids={ids} />
+
+      <style>
+        main { max-inline-size: 48rem; margin: 2rem auto; }
+      </style>
     </main>
   );
 }
+```
+
+```tsx
+// src/routes/_layout.stsx — app-wide styles
+export default function Layout({ children }: { children: JSX.Element }) {
+  return <body>{children}</body>;
+}
+
+<style global>
+  :root { color-scheme: light dark; font-family: system-ui, sans-serif; }
+  body { margin: 0; }
+</style>
 ```
 
 ## 1. Goals and non-goals
 
 **Goals**
 
-1. **TS 7 first.** Lumen code type-checks with stock TS 7 `tsc` and its language service, with no plugins.
-2. **Styles first-class.** Scoped CSS, reactive values in CSS, global styles without `:global` noise, and no CSS-in-JS runtime.
-3. **Performance.** On paper, Lumen should beat the latest React on js-framework-benchmark and land in the Solid / Svelte 5 / Vue Vapor class. SSR throughput should be in the same class as the fastest string-based renderers.
-4. **Rendering modes.** CSR, SSR (streaming), SSG, islands and SPA, all from one component model.
-5. **Ecosystem compatibility.** Vite 8 / Rolldown, Vitest, oxlint / ESLint, oxfmt / Prettier, Tailwind, CSS Modules, any npm package, and web components.
-6. **Agent-first.** The obvious code is the correct code. The rules are machine-checkable, diagnostics are machine-readable, and documentation is version-matched and available locally.
+1. **TypeScript 7 first.**
+   - Lumen code type-checks with stock TS 7 `tsc`. It uses no TypeScript plugins and needs no TypeScript API.
+   - `.stsx` files are covered through shadow TSX files (§9.1).
+2. **Styles first-class.**
+   - Plain CSS in components, with no CSS-in-JS and no template tags.
+   - Scope comes from where a block is placed.
+   - Design tokens and breakpoints can be shared between JS and CSS.
+   - No CSS runtime.
+3. **Performance.**
+   - Beat the latest React on js-framework-benchmark on paper, and land in the class of Solid, Svelte 5, Vue Vapor and Marko 6.
+   - SSR throughput in the class of the fastest string-based renderers.
+4. **Rendering modes.** Client-side rendering, streaming SSR, static generation, islands and SPA, all from one component model.
+5. **Ecosystem compatibility.** Vite 8 and Rolldown, Vitest, oxlint and ESLint, oxfmt and Prettier, Tailwind, CSS imports and CSS Modules, any npm package, and web components.
+6. **Agent-first.**
+   - The obvious code is the correct code.
+   - Rules are machine-checkable and diagnostics are machine-readable.
+   - Docs are local and match the installed version.
 
 **Non-goals for v1**
-
-- No compatibility layer for React components. A React island adapter may come later (§14).
-- No virtual DOM, no custom file extension, no CSS-in-JS runtime.
-- No resumability.
-- No RPC "server functions" magic. Lumen uses explicit endpoints and form actions instead.
-- No native mobile targets.
+- A React compatibility layer.
+- A virtual DOM.
+- CSS-in-JS, or JS expressions inside CSS.
+- Sass inside `<style>` blocks. `.scss` imports still work.
+- Resumability.
+- RPC-style "server functions" magic.
+- Native mobile targets.
 
 ### 1.1 Positioning (October 2026)
 
 | | Authoring | Reactivity / rendering | Styles | Server model | Gap Lumen fills |
 |---|---|---|---|---|---|
-| Solid 2 (RC) | TSX (TSRX frontend coming) | signals, compiled fine-grained | none built in | SolidStart: SSR + full hydration | scoped reactive styles; server-first islands |
-| Svelte 5 | `.svelte` | runes, compiled | scoped `<style>` | SvelteKit: SSR + full hydration | valid TSX, so no custom tooling |
-| Vue 3.6 Vapor (RC) | `.vue` SFC / JSX | alien-signals, compiled | scoped `<style>`, `v-bind()` | Nuxt: SSR + full hydration | valid TSX; zero-JS server parts |
-| Remix 3 (1.0, Oct 2026) | TSX | setup + `handle.update()`, virtual DOM | `css()` mixin | islands (`clientEntry`) + `<Frame>` | fine-grained performance; CSS that is CSS |
-| Astro 7 | `.astro` + any framework | depends on the framework | scoped `<style>` | islands, server islands | one component model across server and client; valid TSX |
+| Solid 2 (RC) | TSX (TSRX frontend coming) | signals, compiled fine-grained | none built in | SolidStart: SSR + full hydration | first-class scoped CSS; server-first islands |
+| Svelte 5 | `.svelte` | runes, compiled | scoped `<style>` (file = component) | SvelteKit: SSR + full hydration | TSX; TS 7 without Volar; several components per file, each with its own scope |
+| Vue 3.6 Vapor (RC) | `.vue` SFC / JSX | alien-signals, compiled | scoped `<style>`, `v-bind()` | Nuxt: SSR + full hydration | TSX; zero-JS server parts |
+| Remix 3 (1.0) | TSX | setup + `handle.update()`, virtual DOM | `css()` mixin | islands (`clientEntry`) + `<Frame>` | fine-grained performance; real CSS |
+| Astro 7 | `.astro` + any framework | depends on the framework | scoped `<style>` | islands, server islands | one component model on server and client; TSX |
 | Marko 6 | `.marko` | compiled graph, resumable | scoped styles | streaming, resumable | TSX familiarity |
-| TSRX / Ripple / Octane | TSX superset (`@if`, `<style>`) | various | sibling-scoped `<style>` | various | no new syntax; standard tooling and TS 7 work today |
+| TSRX / Ripple / Octane | TSX superset (`@if`, `@for`, `<style>`, …) | various | sibling-scoped `<style>` | various | Lumen adds a single construct to TSX (`<style>`), so stock TS 7, linters and agents keep working |
 
-Lumen's differentiator is the combination of four things:
-1. **Valid TSX with no new syntax.** Stock TS 7, linters, formatters and agents work on day one.
-2. **Reactive scoped CSS** with `<style global>`.
-3. **Server-first islands plus per-route SPA** from one component model.
-4. **An agent-first contract** (§10).
-
-A Rust compiler on its own is no longer distinctive: Solid 2 and Astro 7 have one too.
+**Lumen's differentiator is the combination of:**
+1. TSX plus real CSS with exactly one syntactic addition, so tooling stays cheap.
+2. Placement-scoped styles and `$name` constants.
+3. Server-first islands plus per-route SPA from one model.
+4. An agent-first contract (§10).
 
 ## 2. Design principles
 
-These rules settle tie-breaks during design and review.
-
-1. **Valid TSX, standard semantics.** Lumen-specific meaning is carried only by constructs TSX already parses: elements, attributes, namespaced attributes and the `css` tag. TypeScript must never see code it would reject.
+1. **TSX plus `<style>`, nothing else.**
+   - The only syntax Lumen adds to TSX is the raw-CSS `<style>` element in `.stsx` files.
+   - Everything else uses constructs TSX already parses: elements, attributes and namespaced attributes (`client:visible`, `bind:value`).
+   - The masking invariant (§4.1) must always hold.
 2. **One obvious way.** Each concept gets exactly one blessed API. Alternatives are lint errors, not documented options.
-3. **Write it like React, run it like Solid.** Familiar idioms compile to fine-grained code: `.map()`, ternaries, `&&`, destructured props and `onClick`. Where familiar idioms would silently break, the compiler reports an error with a fix.
-4. **Explicit boundaries.** Server/client (`client:*`), scoped/global (`<style global>`), tracked/untracked (`untrack`) are visible in the code.
-5. **Web platform first.** Prefer web standards and native features over framework inventions.
-6. **Zero-cost abstractions.** Anything decidable at build time is decided at build time: scoping, static CSS values, templates and event delegation.
-7. **Every rule is checkable.** Each rule in the docs maps to a type error, a compiler diagnostic (`LUMxxxx`) or a lint rule.
+3. **Write it like React, run it like Solid.**
+   - Familiar idioms compile to fine-grained code: `.map()`, ternaries, `&&`, destructured props, `onClick` and `async` components.
+   - Where an idiom would silently break, the compiler reports an error with a fix.
+4. **CSS is CSS, JS is JS.**
+   - CSS can read build-time JS constants (`$name`).
+   - Runtime values reach CSS only through the standard `style` prop and custom properties.
+5. **Explicit boundaries.** Server versus client (`client:*`), component versus file versus global scope (placement and `global`), and tracked versus untracked (`untrack`) are all visible in the code.
+6. **Web platform first.** Prefer native features and web standards over framework inventions.
+7. **Zero-cost abstractions.** Anything decidable at build time is decided at build time: scoping, constants, templates and event delegation.
+8. **Every rule is checkable.** Each documented rule maps to a type error, a compiler diagnostic (`LUMxxxx`) or a lint rule.
 
 ## 3. System overview
 
 ```
-             ┌──────────────── authoring (.tsx) ────────────────┐
-             │ components · routes · <style>{css`…`} · client:*  │
-             └──────────────┬──────────────────────┬───────────┘
-                            │ Vite 8 / Rolldown    │ TS 7 tsc + native LS (no plugins)
-                            ▼                      │ oxlint(+plugin) · oxfmt (formats css``)
-            ┌───────── @lumen-jsx/vite (JS plugin, enforce: pre, Rust-side hook filters) ─────────┐
-            │  calls  @lumen-jsx/compiler (napi-rs v3; wasm32-wasip1 fallback)                     │
-            │   lumen_jsx_compiler (Rust): OXC parse → semantic → analyze → codegen(client|server) │
-            │   lumen_jsx_css      (Rust): Lightning CSS scoping, vars, nesting, minify            │
-            └───────┬──────────────────────────────┬───────────────────────────┬─────────────────┘
-                    │ client env (islands/SPA)     │ ssr env                   │ css virtual modules
-                    ▼                              ▼                           ▼
-        lumen-jsx/dom runtime            lumen-jsx/server runtime        Vite CSS pipeline
-        (signals, templates,            (string SSR, streaming,          (HMR, PostCSS/Tailwind,
-         bindings, hydration)            islands, Suspense)               chunking, minify)
-                    └───────────── lumen-jsx app layer: routes, endpoints, actions, adapters ─────────┘
- Tooling: `lumen` CLI (dev/build/check/typegen/docs/explain/mcp) · VS Code ext (TextMate injection + LSP)
+       ┌──────────── authoring: .stsx (TSX + raw-CSS <style>) · .tsx · .ts ────────────┐
+       └───────┬──────────────────────────────┬──────────────────────────────┬─────────┘
+               │ Vite 8 / Rolldown            │ shadow TSX (masked, same     │ lumen fmt / lumen lint
+               ▼                              │ offsets) → stock TS 7 tsc    │ (oxfmt / oxlint on parts)
+   lumen/vite (JS plugin, enforce: pre)       │ + LSP proxy over TS 7 LSP    │
+     → @lumen/compiler (napi-rs; wasm fallback)
+       lumen_compiler (Rust): stsx scan/mask → OXC parse → semantic → analyze → codegen(client|server)
+       lumen_css (Rust): Lightning CSS — placement scopes, $name folding, nesting, minify
+               │                    │                         │
+     client env (islands/SPA)   ssr env                 CSS virtual modules
+     lumen/dom runtime          lumen/server runtime    Vite CSS pipeline (HMR, chunking, minify)
+               └──────── lumen app layer: file routes, endpoints, actions, adapters ────────┘
+ Tooling: `lumen` CLI (dev/build/check/lint/fmt/typegen/docs/explain/mcp) · VS Code extension · @lumen/language-server
 ```
 
-### 3.1 Repository layout (pnpm workspace + Cargo workspace)
+### 3.1 Repository layout [proposal: decision-5, decision-10]
 
 ```
 crates/
-  lumen_jsx_compiler/   pure transform core (no I/O): analysis, client/server codegen, diagnostics
-  lumen_jsx_css/        Lightning CSS-based scoping, interpolation → custom properties
-  lumen_jsx_napi/       napi-rs v3 bindings (+ wasm32-wasip1-threads fallback build)
-  lumen_jsx_wasm/       wasm-bindgen single-threaded build for the browser playground
+  lumen_compiler/   pure core (no I/O): stsx scanner + masking, analysis, client/server codegen, diagnostics
+  lumen_css/        Lightning CSS: placement scopes, $name substitution, keyframes, class passthrough data
+  lumen_napi/       napi-rs v3 bindings (+ wasm32-wasip1-threads fallback)
+  lumen_wasm/       wasm-bindgen single-threaded build for the playground
 packages/
-  lumen-jsx/            runtime + app layer + CLI + types (the one package users install)
-    src/core/           signals, owner tree, context, scheduling (isomorphic)
-    src/dom/            client renderer, delegation, lists, hydration
-    src/server/         SSR string runtime, streaming, islands, Suspense
-    src/app/            router (file routes, SPA router), endpoints, actions, adapters API
-    src/vite/           Vite plugin (re-exported as lumen-jsx/vite)
-    src/cli/            `lumen` binary
-    docs/               version-matched docs shipped in the npm package
-  language-server/      @lumen-jsx/language-server (Node LSP: CSS-in-css`` + compiler diagnostics)
-  vscode/               VS Code extension (TextMate injection grammar + LSP client + snippets)
-  eslint-plugin/        eslint-plugin-lumen-jsx (works under ESLint and oxlint JS plugins)
-  create/               create-lumen-jsx
-  testing/              @lumen-jsx/testing (render, queries; Vitest-first)
-  adapters/             @lumen-jsx/adapter-{node,bun,deno,cloudflare,vercel,netlify,static}
+  lumen/            runtime + app layer + CLI + types — the one package users install
+    src/core/       signals, owner tree, context, scheduling, async boundaries (isomorphic)
+    src/dom/        client renderer, delegation, lists, hydration
+    src/server/     string SSR, streaming, islands
+    src/app/        file routes, SPA router, endpoints, actions, adapter API
+    src/vite/       Vite plugin (lumen/vite)
+    src/cli/        `lumen` binary
+    docs/           version-matched docs shipped in the npm package
+  language-server/  @lumen/language-server (TS 7 LSP proxy + CSS language service + compiler diagnostics)
+  vscode/           VS Code extension (stsx language, grammar, LSP client, snippets)
+  eslint-plugin/    eslint-plugin-lumen (rules + .stsx processor)
+  prettier-plugin/  prettier-plugin-lumen (.stsx)
+  create/           create-lumen
+  testing/          @lumen/testing
+  adapters/         @lumen/adapter-{node,bun,deno,cloudflare,vercel,netlify,static}
 apps/
-  docs/                 docs site, built with Lumen (SSG); emits llms.txt / llms-full.txt
-  playground/           in-browser REPL on lumen_jsx_wasm
+  docs/             docs site built with Lumen (SSG); emits llms.txt / llms-full.txt
+  playground/       in-browser REPL on lumen_wasm
 benchmarks/
-  js-framework-benchmark/   keyed implementation (+ CI comparison vs solid/svelte/vue/react)
-  ssr/                      SSR throughput suite
-  agent-evals/              agent-task evaluation suite (§10.6)
+  js-framework-benchmark/  ·  ssr/  ·  agent-evals/
 examples/
 ```
 
-**Publishing.** Users install one package, `lumen-jsx`. It exports the runtime subpaths (`lumen-jsx`, `/dom`, `/server`, `/router`, `/jsx-runtime`, `/vite`, `/testing-internal`) and the `lumen` binary. Compiler binaries ship as optional platform dependencies (`@lumen-jsx/compiler-<platform>`) plus a wasm fallback, following the Rolldown / OXC / dom-expressions pattern. Tree-shaking and conditional exports (`browser` / `node` / `worker`) keep server code out of client bundles.
+Users install one package, `lumen`, which exposes the subpaths `lumen`, `lumen/dom`, `lumen/server`, `lumen/router`, `lumen/jsx-runtime` and `lumen/vite`, plus the `lumen` binary. Compiler binaries ship as optional platform dependencies, plus a wasm fallback.
 
 ## 4. Authoring model
 
-### 4.1 Components
+### 4.1 File types and the masking invariant [accepted: decision-11, decision-14]
 
-- A component is a **PascalCase function** that returns JSX. It can be a declaration or an arrow function, exported or not.
-- **Its body is the setup scope, and it runs exactly once per instance.** Reactivity lives in signals and in JSX bindings, never in re-running the function.
+| Extension | Contents | Use |
+|---|---|---|
+| `.stsx` | TSX module + raw-CSS `<style>` blocks | components with styles (the default) |
+| `.tsx` | plain TSX; `<style>` is a type error (§4.7) | style-less components, interop |
+| `.ts` | TypeScript | logic, tokens, server code, endpoints |
+
+**What a `<style>` element is in `.stsx`**
+- Every `<style …>` element in a `.stsx` file is a **raw-text element**, as in HTML. Its content runs up to the first `</style>` and is plain CSS.
+- A block may be placed in either of two positions:
+  - At the **module top level**.
+  - As a **static child inside a component's JSX**, at any depth of the static tree. It may not be inside `{…}` expression containers, conditionals or `.map()` callbacks (`LUM3010`), and it may not be the only thing a component returns (`LUM3011`).
+
+**How the scanner finds blocks**
+- The `.stsx` scanner is a pre-pass that understands JS lexing: strings, template literals, comments and regex literals.
+- It recognises `<style` only where a JSX element can start: at a top-level statement or in a JSX child position.
+
+**Masking invariant (must hold).** For tools, a `.stsx` file is masked as follows. The resulting **masked TSX** is valid TSX with identical offsets: same characters, same lines, same columns.
+- Every `<style>…</style>` block is replaced with spaces. Newlines are preserved.
+- `$name` constant references inside CSS (§4.6.4) stay at their exact positions:
+  - In a **top-level block**, `$` becomes `;`. So `$radius.lg` becomes the expression statement `;radius.lg`.
+  - In a **block inside JSX**, `$` becomes `{` and the character right after the reference becomes `}`. So `$radius.lg;` becomes the expression container `{radius.lg}`. A following character always exists, because the closing tag is masked too.
+
+Every tool integration (type checking, LSP, lint, format) relies on this invariant (§9).
+
+### 4.2 Components [accepted: decision-3; props destructuring is proposal: decision-7]
+
+- A component is a **PascalCase function** returning JSX. It may be a declaration or an arrow function, and may or may not be exported.
+- A file may export many components.
+- **The body is a setup scope that runs once per instance** (async components: §4.4).
 - Props are the single parameter.
-  - At call sites the compiler passes dynamic props as **getters**, so reading `props.x` is reactive.
-  - **Destructuring is supported and stays reactive.** The compiler rewrites references to destructured bindings into `props.x` reads, applying default values with `undefined` semantics.
-  - `...rest` compiles to a reactive rest proxy.
-  - This applies only to component parameters; destructuring elsewhere has normal JavaScript semantics.
-- `children` is a prop. The compiler passes JSX children lazily, and inserting `{children}` mounts them. Children should be inserted once. Inserting them twice triggers `LUM2005` with a fix (`children` is a value, not a factory; use a render-prop function for repeated rendering).
-- Named slots are just props: `<Card header={<h2>Title</h2>}>…</Card>`.
-- Render props are plain functions: `<List each={items} row={(item) => <li>{item.name}</li>} />`.
-- `ref`:
-  - `ref={(el) => …}` is a callback ref.
-  - `const input = ref<HTMLInputElement>()` creates a signal-like ref. Pass it as `ref={input}` and read it with `input()`.
-- **Early returns based on reactive values are an error** (`LUM2003`), because setup runs once. Conditional UI goes inside JSX (§4.3).
+  - At call sites, dynamic props are passed as getters, so reading `props.x` is reactive.
+  - **Destructuring stays reactive.** The compiler rewrites destructured bindings to `props.x` reads, applying defaults with `undefined` semantics. `...rest` becomes a reactive rest proxy.
+- `children` is a lazy prop.
+  - Inserting `{children}` mounts it.
+  - Inserting it twice triggers `LUM2005`. Use a render-prop function for repeated rendering.
+  - Named slots are ordinary props: `<Card header={<h2>Title</h2>}>`.
+- `ref={(el) => …}` sets a callback ref, or `const input = ref<HTMLInputElement>()` creates a signal-like ref.
+- An early return that depends on reactive values is an error in sync components (`LUM2003`). Conditional UI belongs inside JSX.
 
-### 4.2 Reactivity API (`lumen-jsx`)
+### 4.3 Reactivity API (`lumen`) [accepted shape: decision-3; algorithm proposal: decision-8]
 
 | API | Shape | Notes |
 |---|---|---|
-| `signal(v, opts?)` | read `s()`, write `s.set(v)` / `s.update(fn)`, `s.peek()` | `opts.equals` defaults to `Object.is`; `false` disables the check |
-| `computed(fn)` | read `c()` | Lazy, cached and glitch-free. `fn(prev)` receives the previous value |
-| `effect(fn)` | returns a disposer | Runs after DOM updates. `fn` may return a cleanup |
-| `store(obj)` | deep reactive proxy | Mutate directly (`todos.push(x)`, `todo.done = true`); tracking is per property |
-| `resource(fetcher, opts?)` | `r()`, `r.loading()`, `r.error()`, `r.refetch()` | Async data. Integrates with `<Suspense>`. See §6.5 |
-| `batch(fn)`, `untrack(fn)` | | Writes are batched automatically in handlers; `batch` is rarely needed |
-| `onMount(fn)`, `onCleanup(fn)` | owner-scoped | `onMount` runs after the first DOM insertion |
-| `lifetime()` | returns an `AbortSignal` | Aborted when the owner is disposed. Pass it to `fetch` and `addEventListener` (Remix 3 `handle.signal` idea) |
-| `createContext(default)`, `provide(ctx, v)`, `inject(ctx)` | setup-scope calls | Context flows through the owner tree, server and client |
+| `signal(v, opts?)` | read with `s()`; write with `s.set(v)` or `s.update(fn)`; `s.peek()` | `equals` defaults to `Object.is` |
+| `computed(fn)` | `c()` | lazy, cached, glitch-free |
+| `effect(fn)` | returns a disposer | runs after DOM updates; `fn` may return a cleanup |
+| `store(obj)` | deep reactive proxy | mutate directly; tracking is per property |
+| `untrack(fn)`, `batch(fn)`, `flushSync()` | | writes inside handlers are batched automatically |
+| `onMount(fn)`, `onCleanup(fn)` | owner-scoped | |
+| `lifetime()` | `AbortSignal` | aborted on disposal, or on re-run for async components |
+| `pending()` | `boolean` | inside an async component, whether a re-run is in flight |
+| `createContext(default)`, `provide(ctx, v)`, `inject(ctx)` | setup-scope calls | works across `await` (§4.4) |
+| `resource(fetcher)` | `r()`, `loading()`, `error()`, `refetch()` | low-level, for loading on demand. Async components are the default way to load data |
+| `<Suspense fallback>`, `<ErrorBoundary fallback={(err, retry) => …}>` | components | §4.4 |
+| `<Portal mount>`, `<Dynamic component>` | components | |
 
-**Rules enforced by the compiler.** Every rule has a diagnostic code, and the docs include a "Common mistakes" page generated from these rules.
+**Compiler rules for reactivity**
 
-- `LUM2001` **stale derived value.** A setup-scope `const` initialised from a signal or prop read, then used in JSX or an effect, will never update. The fix is `computed(() => …)`. Initialisers passed straight into `signal(…)` are allowed and are treated as initial values.
-- `LUM2002`: a signal is written during render or inside a `computed`.
-- `LUM2003`: an early return depends on a reactive value.
-- `LUM2004`: a component is called as a function (`Counter()`) instead of being used as JSX.
+| Code | Rule |
+|---|---|
+| `LUM2001` | A setup `const` derived from a signal or prop read is used in JSX or an effect. It is stale; use `computed`. |
+| `LUM2002` | A signal is written during render or inside a `computed`. |
+| `LUM2003` | An early return in a sync component depends on reactive values. |
+| `LUM2004` | A component is called as a function. |
 
-### 4.3 JSX semantics
+### 4.4 Async components [accepted: decision-13]
 
-**Bindings.** In children and attributes:
+Any component may be an `async function`, on both server and client:
 
+```tsx
+export async function MemberCard({ id }: { id: string }) {
+  const member = await api.members.get(id, { signal: lifetime() });
+  return <article>{member.name}</article>;
+}
+
+<Suspense fallback={<Spinner />}>
+  <MemberCard id={selected()} />
+</Suspense>
+```
+
+- **Context across `await`.** The compiler rewrites every `await` inside a component, so the owner and tracking context is restored when execution resumes. This is the Svelte 5 technique; browsers do not yet have AsyncContext. As a result, `inject`, `onCleanup` and tracking all keep working after an `await`.
+- **Re-running.** Props and signals read in the body, including after an `await`, are tracked. When one of them changes, the component re-runs:
+  - The previous run is aborted through `lifetime()`.
+  - **The old UI stays visible** until the new run resolves.
+  - `pending()` reports that a re-run is in flight.
+- **Bindings stay fine-grained.** JSX bindings update in place and never re-run the body. Reading a component's *own* signals in the body, outside JSX, triggers `LUM2007`, because every change would re-run the whole component.
+- **Fallbacks and errors.**
+  - `<Suspense fallback>` shows its fallback while descendants are pending, on first load only.
+  - `<ErrorBoundary fallback={(error, retry) => …}>` catches rejections.
+  - When there is no boundary:
+    - the server waits for the component (in-order streaming);
+    - the client renders nothing until it resolves;
+    - errors go to the route's `_error` page.
+- **On the server,** each `<Suspense>` is an out-of-order streaming point (§7.3).
+- **Hydration.**
+  - Awaited results inside islands are serialized as plain data into the island records, so hydration never fetches again (§7.4).
+  - A non-serializable awaited value triggers `LUM4007`.
+  - Everything awaited inside an island reaches the client. The docs must state this.
+- **Types.** `JSX.ElementType` allows components that return `Promise<JSX.Element>`. This was verified on TS 7.0.2.
+
+### 4.5 JSX semantics [proposal: decision-7]
+
+**Bindings**
 - Literals and plain identifiers are static.
-- Any expression containing a call or a member access becomes a **fine-grained binding**: a render effect bound to exactly that DOM node or attribute.
+- Expressions containing calls or member access become **fine-grained bindings**, implemented as `effect(compute, apply)` on exactly one node or attribute.
 - `untrack()` opts out.
 
-**Compiled idioms.** These are the blessed ways to write control flow.
+**Compiled idioms** (there is deliberately no `<For>` or `<Show>`)
 
-| You write | Compiles to | Notes |
-|---|---|---|
-| `{items().map((it, i) => <Row key={it.id} … />)}` | keyed list reconciliation (`list()`) | `key` is optional; without it, items are keyed by reference. Inside the callback, `i` becomes a reactive index (`LUM2006` if `i` escapes the JSX) |
-| `{cond() ? <A/> : <B/>}` / `{cond() && <A/>}` | memoised branch (`branch()`) | A branch is recreated only when the condition's truthiness changes |
-| `{fn()}` returning arrays, nodes or strings | dynamic insert | Fallback path, unkeyed |
-
-Runtime components remain for cases idioms can't express: `<Dynamic component={…}>`, `<Portal mount={…}>`, `<Suspense fallback>`, `<ErrorBoundary fallback>`. There is deliberately **no** `<For>` / `<Show>`, to keep one obvious way.
+| You write | Compiles to |
+|---|---|
+| `{items().map((it, i) => <Row key={it.id} />)}` | keyed reconciliation. `key` is optional; without it, items are keyed by reference. `i` becomes a reactive index |
+| `` `item.key === sig()` `` inside a `.map` | O(1) `selector()`: only two rows update on selection |
+| `{c() ? <A/> : <B/>}`, `{c() && <A/>}` | memoised branch; recreated only when the condition's truthiness changes |
+| `{fn()}` returning nodes, arrays or strings | dynamic insert (unkeyed fallback) |
 
 **Elements and attributes**
 
 | Feature | Rule |
 |---|---|
-| `class` | `string \| (string \| false \| null \| undefined)[] \| Record<string, boolean>`, combinable in arrays. Compiled to `className` or `classList.toggle` per key. `className` is a type error |
-| `style` | `string` or an object with **kebab-case** CSS property keys, including custom properties `"--x"`. Typed via csstype. Compiled to `setProperty` per key |
-| events | `onClick={fn}` is **delegated** for bubbling events (Solid's list). `on:scroll={fn}` attaches a native, non-delegated listener. Handlers receive the typed native event (`currentTarget` typed) |
-| `bind:value`, `bind:checked` | two-way binding to a **writable signal** (`bind:value={name}`). Typed per element |
-| `attach={[tooltip("Hi"), clickOutside(close)]}` | attachments: `(el) => cleanup?`, re-run when their reactive inputs change. Borrowed from Svelte 5 attachments and Remix 3 mixins |
-| `innerHTML={html}` | allowed. The lint rule `lumen-jsx/no-unsafe-html` warns unless the value comes from `trustedHTML()` |
-| `client:*` | island directives on component elements only (§7.2) |
-| `for`, `tabindex`, `aria-*`, `data-*` | standard HTML attribute names, not React aliases |
+| `class` | Accepts a string, an array of strings or falsy values, or a `Record<string, boolean>`. Values can be combined. `className` is a type error |
+| `style` | A string, or an object with kebab-case keys including custom properties (`{ "--accent": color() }`). Each key updates on its own. This is the only bridge from runtime values to CSS: `var(--accent)` |
+| events | `onClick={fn}` is delegated (rooted at the island or app root). `on:scroll={fn}` attaches a native listener. Events are typed native events |
+| `bind:value`, `bind:checked` | Two-way binding to a writable signal |
+| `attach={[tooltip("Hi")]}` | Attachments of the form `(el) => cleanup?` |
+| `innerHTML` | Allowed. The `no-unsafe-html` lint rule warns |
+| `client:*` | Island directives on component elements (§7.2) |
+| `for`, `tabindex`, `aria-*`, `data-*` | Standard HTML attribute names |
 
-### 4.4 Styles
+### 4.6 Styles [accepted: decision-12, decision-14]
 
-Accepted in decision-2. This section gives the mechanics.
+#### 4.6.1 Placement decides scope
 
-1. **Syntax.** One or more `<style>{css`…`}</style>` elements anywhere in a component's JSX, conventionally last.
-   - The child must be a `css` tagged template. The type is `Stylesheet`, so a string child is a type error. The tag is named `css` so that editors, oxfmt and Prettier format the embedded CSS.
-   - `css` used outside `<style>` is a compile error (`LUM3004`).
-   - The compiler removes `<style>` from the rendered output. Inside `<svg>`, `<style>` keeps native SVG semantics.
-2. **Scope unit: the module (file).** Every element in every template in the file gets a `data-l-<hash>` attribute, baked into the static template HTML, so it costs nothing at runtime.
-   - `<hash>` is a stable base36 hash of the root-relative path, which keeps diffs and snapshots stable.
-   - Children passed from another module carry *their* module's hash, so slot content is styled by its author.
-3. **Selector rewrite.** The last compound selector gets `[data-l-<hash>]` before any pseudo-element. This adds a specificity of (0,1,0), the same as Vue and Svelte, so scoped rules reliably beat global element rules regardless of the order code-split CSS loads in.
-   - `:global(sel)` leaves `sel` unscoped.
-   - `:deep(sel)` scopes only the left side (`.a :deep(.b)` → `.a[data-l-x] .b`), for styling child-component internals.
-   - `@keyframes` names are scoped, and `animation` / `animation-name` references are rewritten.
-   - Custom properties are never scoped, so design tokens flow through.
-4. **`<style global>`** emits the whole block unscoped, with no `:global` noise, for resets, tokens, fonts and app-wide rules.
-5. **Interpolations `${expr}`.**
-   - *Position.* Allowed only in declaration **value** positions. `${}` in selectors, property names, at-rule preludes, `url()` or keyframe names is an error (`LUM3001`).
-   - *Static.* Expressions the compiler can evaluate at build time (literals, module-level `const` literals, imported `const` tokens from `.ts` modules) are **inlined**.
-   - *Dynamic.* Anything else becomes `var(--l-<hash>-<n>)`. On the client, a binding sets `el.style.setProperty("--l-<hash>-<n>", value)` on the component instance's **root element(s)**: the top-level elements of the JSX returned by the component that contains the `<style>`. On SSR, the value is inlined into the root's `style` attribute. Custom properties inherit, so every descendant sees per-instance values. This is Vue's `v-bind()` in CSS, made fine-grained.
-   - *No element root.* A dynamic interpolation in a component whose root is a component or a text node is an error (`LUM3002`). The fix is to wrap in an element (`display: contents` works).
-   - *Global blocks.* Dynamic interpolations in `<style global>` are an error (`LUM3003`). Global CSS is static. Dynamic theming sets custom properties on an element.
-6. **Pipeline.**
-   - Extracted CSS becomes a virtual module (`File.tsx?lumen&type=style&lang.css`) imported by the compiled JS. Vite's CSS pipeline then handles HMR (CSS-only edits do not reload components), PostCSS / Tailwind, chunk-level extraction and minification (Lightning CSS).
-   - SSR emits `<link>` tags for every module's CSS that the page renders, including server-only components, from the Vite manifest. Critical-CSS inlining is optional.
-7. **Diagnostics.** `LUM3005` flags an unused scoped selector, i.e. one that can't match any element in the module's templates and has no dynamic `class` that could produce it. `lumen check` can also report static `class` names that no style defines, opt-in because utility-class users would find it noisy.
-8. **Interoperability.** `import "./x.css"`, CSS Modules (`*.module.css`) and Tailwind v4 work unchanged through Vite.
-9. **Later (v1.x):** typed design tokens (`defineTokens()` → global custom properties + a typed object usable in `css` interpolations, inlined statically) and an opt-in native `@scope` output mode.
+| Placement | Applies to |
+|---|---|
+| Inside a component's JSX | That component's own templates only, including JSX in closures inside it such as `.map` callbacks. It does not reach other components it renders |
+| Top level of the `.stsx` file | Every template in the file |
+| `<style global>` (either placement) | The whole app, unscoped |
 
-### 4.5 Types (`jsxImportSource: "lumen-jsx"`)
+```tsx
+export function Tabs() {
+  return (
+    <div class="tabs">…
+      <style> .tabs { display: flex; } </style>      {/* Tabs only */}
+    </div>
+  );
+}
 
-`tsconfig.json`: `"jsx": "preserve", "jsxImportSource": "lumen-jsx"`. TypeScript resolves JSX types from `lumen-jsx/jsx-runtime` (verified on TS 7.0.2, TASK-2).
+export function Tab() {
+  return (
+    <button class="tab">…
+      <style> .tab { padding: 0.5rem; } </style>     {/* Tab only */}
+    </button>
+  );
+}
 
-- `IntrinsicElements` derive from `HTMLElementTagNameMap` / `SVGElementTagNameMap` with Lumen props.
-  - `<style>` is `{ children: Stylesheet; global?: true }`.
-  - Events are typed as `on${Capitalize<keyof HTMLElementEventMap>}` and `on:${keyof HTMLElementEventMap}`.
-  - `bind:value` / `bind:checked` are typed per element.
-- `IntrinsicAttributes` add `key?` and the `client:*` directives (§7.2) to every component.
-- `className`, camelCase `style` keys and `htmlFor` are absent, so TypeScript reports them. The Lumen docs map each of these errors to its fix.
+<style> button { font: inherit; } </style>          /* Tabs and Tab */
+```
 
-## 5. Compiler (Rust)
+#### 4.6.2 Scoping mechanics
+
+- **Scope tokens.** Each scope has a token: `data-l-<hash>`, a stable base36 hash of the root-relative path plus the component name for component scopes.
+  - Tokens are baked into the static template HTML of the elements they cover, so scoping costs nothing at runtime.
+  - Only scopes that actually have styles emit tokens.
+- **Selector rewrite.** The last compound selector gets `[data-l-<hash>]`, placed before any pseudo-element. This gives a (0,1,0) specificity bump, so scoped rules reliably beat global element rules regardless of the load order of code-split CSS.
+- **Escape hatches.**
+  - `:global(sel)` leaves `sel` unscoped.
+  - `:deep(sel)` scopes only its left side, which lets you style child-component internals.
+- **Scoped names.** `@keyframes` names are scoped, and `animation` / `animation-name` references are rewritten. Custom properties are never scoped.
+- **Order within a file.** File-level CSS is emitted first, then component blocks in source order, so component rules win ties.
+- **Children** passed from another file or component keep their author's tokens, so slot content is styled by whoever wrote it.
+- **Class passthrough.** When a parent passes `class` to a component, the parent's tokens at that call site also land on the child's root element(s), as in Vue. This makes `.cta {}` in the parent work for `<Button class="cta" />`.
+
+#### 4.6.3 Global
+
+`<style global>` emits its block unscoped. Use it for resets, tokens, fonts and app-wide rules, usually in `_layout.stsx`.
+
+#### 4.6.4 `$name`: build-time constants in CSS
+
+```ts
+// src/design/tokens.ts
+export const BREAKPOINT = "48rem";
+export const radius = { sm: "0.25rem", lg: "0.75rem" } as const;
+```
+
+```css
+.card { border-radius: $radius.lg; }
+@media (width < $BREAKPOINT) { .card { border-radius: $radius.sm; } }
+```
+
+**Where `$` works**
+- `$name` (with dot notation) may appear in **property values** and **at-rule preludes** (`@media`, `@container`, `@supports`).
+- It may not appear in selectors (where `[attr$=…]` keeps its CSS meaning) or in property names.
+- It is never substituted inside CSS strings, comments or `url()`.
+
+**What can be referenced**
+- Top-level `const` bindings in the file.
+- `const` bindings inside the enclosing component, for component-level blocks.
+- `export const` values imported from `.ts`, `.tsx` or `.stsx` modules.
+- In every case the value must be **statically evaluable**: literals, template literals of constants, members of `as const` objects or arrays, and simple arithmetic or concatenation.
+- Anything else is `LUM3008`. Signals and props are always an error, and the fix suggests the `style` prop bridge.
+
+**How values are inserted**
+- Strings are inserted verbatim as CSS text, and numbers as-is. For units, use `calc($gap * 1px)` or store `"8px"`.
+- `$brand-primary` is `LUM3009`, because JS identifiers can't contain `-`. The suggestion is `$brand.primary` or `$brandPrimary`.
+
+**Tooling behaviour**
+- Thanks to masking (§4.1), TypeScript sees every reference: hover, go-to-definition, rename and unused-import checks all work.
+- Editing `tokens.ts` re-compiles only the dependent CSS during HMR.
+
+#### 4.6.5 Runtime values
+
+CSS contains no JS expressions. For the rare per-instance dynamic value, set a custom property with the `style` prop (`style={{ "--progress": pct() }}`) and read it in CSS (`width: calc(var(--progress) * 1%)`). The update is fine-grained (`setProperty`).
+
+#### 4.6.6 Pipeline and interop
+
+- **Extraction.** Extracted CSS becomes Vite virtual modules (`File.stsx?lumen&type=style&lang.css`). The Vite pipeline then handles:
+  - CSS-only HMR,
+  - PostCSS and Tailwind,
+  - chunk extraction,
+  - Lightning CSS minification and targets.
+- **SSR links.** SSR emits `<link>` tags for the CSS of every module it renders, including server-only ones.
+- **Interop.** `import "./x.css"`, CSS Modules, `.scss` imports and Tailwind v4 work unchanged.
+- **Diagnostics.**
+  - `LUM3005`: unused scoped selector.
+  - Unknown static class name: opt-in.
+  - `LUM3012`: a custom property is set via `style` but never read in the file's CSS.
+- **Later (v1.x).**
+  - Typed component theming via `@property` declarations.
+  - Opt-in native `@scope` output.
+
+### 4.7 Types (`jsxImportSource: "lumen"`)
+
+- `tsconfig.json` sets `"jsx": "preserve", "jsxImportSource": "lumen"`, and `rootDirs` includes `.lumen/shadow` (§9.1).
+- **`IntrinsicElements`** derive from the DOM tag maps with Lumen props:
+  - typed `on*` and `on:*` events,
+  - `class` and `style` types,
+  - `bind:*`.
+  - `style` is **omitted**. In `.stsx` files, `<style>` blocks are masked away before TypeScript sees them; in `.tsx` files, writing `<style>` is a type error pointing at `.stsx`. SVG `<style>` is handled by the compiler.
+- **`IntrinsicAttributes`** add `key?` and the `client:*` directives.
+- **`JSX.ElementType`** accepts sync and async function components.
+- `className`, camelCase `style` keys and `htmlFor` are absent, so TypeScript reports them, and the docs map each error to its fix.
+
+## 5. Compiler (Rust) [proposal: decision-5]
 
 ### 5.1 Pipeline
 
 ```
-source.tsx ─▶ oxc_parser (TS+JSX) ─▶ oxc_semantic (scopes/symbols/refs)
-   ─▶ analyze: components, props destructuring, setup-scope reads, compiled idioms,
-               <style> extraction, island sites, diagnostics
-   ─▶ lumen_jsx_css: Lightning CSS parse → visitor (scope selectors, :global/:deep,
-               keyframes, interpolation placeholders) → targets/nesting → css + var map
-   ─▶ codegen(target = client | server) via VisitMut + AstBuilder (keep original spans)
-   ─▶ oxc_codegen + oxc_sourcemap ─▶ { code (TS types intact), map, css, diagnostics, meta }
+file.stsx ─▶ stsx scanner: locate <style> blocks (placement, attrs, raw CSS, $refs) + masked TSX
+          ─▶ oxc_parser(masked TSX) ─▶ oxc_semantic
+          ─▶ analyze: components, scopes per <style> placement, props destructuring, compiled idioms,
+                      setup-scope reads, await sites, island sites, $ref resolution (incl. imported consts)
+          ─▶ lumen_css: substitute $refs → Lightning CSS parse → scope visitor (tokens, :global/:deep,
+                      keyframes) → targets/nesting → CSS + source map
+          ─▶ codegen(client | server) via VisitMut + AstBuilder (original spans kept)
+          ─▶ oxc_codegen + oxc_sourcemap ─▶ { code, map, css, diagnostics, meta }
 ```
 
-- **Inputs:** `{ filename, source, target: "client" | "server", dev, hmr, root, cssTargets }`.
-- **Outputs:**
-  - `code` with TS types still in place. Vite's OXC transform strips them afterwards for tsconfig parity; in-process stripping is a later optimisation.
-  - The source `map`.
-  - `css` and its own map. Lightning CSS has no input offset, so extracted CSS is whitespace-padded to its original offsets.
-  - Structured `diagnostics` (§5.5).
-  - `meta`: components, islands, routes, style hashes. The CLI, LSP and MCP all consume `meta`.
-- **Implementation rules** (TASK-2):
-  - Pin every `oxc_*` crate and `lightningcss` to exact versions and upgrade deliberately behind a golden-fixture suite.
-  - Use `oxc_ast_visit` `VisitMut` + `AstBuilder` + `oxc_semantic`, and avoid `oxc_traverse`.
-  - The core crate is pure (no I/O), so napi, wasm, LSP and tests share it.
-- **Prior art:**
-  - Reference design: `@dom-expressions/compiler` (Solid's official OXC compiler, MIT). Reuse its ideas, fixtures and code selectively with attribution; do not fork it.
-  - Structural reference: Vize (OXC + Lightning CSS + napi + wasm + LSP).
-  - Borrow from `solid-1x-compiler` the idea of an **execution-contract trace**: per expression, whether it is tracked, untracked, run once or deferred, exposed through LSP hovers and `lumen explain`.
+`.tsx` files skip the scanner. Everything else is identical.
+
+**Implementation rules** (from TASK-2):
+- Pin every `oxc_*` crate and `lightningcss` exactly, and upgrade behind golden fixtures.
+- Use `VisitMut` + `AstBuilder` + `oxc_semantic`, and avoid `oxc_traverse`.
+- Keep a pure core crate with no I/O.
+- Resolving imported constants needs the imported module's source. The core asks the host (napi or wasm) for it, and reports those modules as dependencies so HMR can invalidate.
+- `@dom-expressions/compiler` (Solid's OXC compiler, MIT) is the reference design. Reuse code and fixtures selectively with attribution; don't fork it.
+- Each expression gets an **execution-contract trace**: tracked, untracked, once, or deferred. It is exposed through LSP hovers and `lumen explain`.
 
 ### 5.2 Client output (illustrative)
 
 ```js
-import { signal, computed } from "lumen-jsx";
-import { template, insert, delegateEvents, setVar, className } from "lumen-jsx/dom";
-import "/src/components/Counter.tsx?lumen&type=style&lang.css";
+// compiled from MemberCard above (client target)
+import { signal, lifetime } from "lumen";
+import { template, insert, delegateEvents, $await } from "lumen/dom";
+import "/src/components/Team.stsx?lumen&type=style&lang.css";
 
-const _t0 = /*#__PURE__*/ template(`<button data-l-k3x9a2><!></button>`);
+const _t0 = /*#__PURE__*/ template(`<article class=card data-l-k3x9a2 data-l-f81c0q><h3> </h3><button data-l-f81c0q>👏 <!></button>`);
 
-export function Counter(props) {
-  const count = signal(props.start ?? 0);
-  const double = computed(() => count() * 2);
-  const _el = _t0();                                   // cloneNode(true), or claim during hydration
-  className(_el, () => ["counter", { hot: count() > 5 }]);
-  _el.$$click = () => count.update((c) => c + 1);       // delegated
-  insert(_el, () => [props.label, ": ", count(), " (×2 = ", double(), ")"], _el.firstChild);
-  setVar(_el, "--l-k3x9a2-0", () => (count() > 10 ? "crimson" : "orange"));
+export async function MemberCard(props) {
+  const member = await $await(0, () => api.members.get(props.id, { signal: lifetime() })); // context restore + hydration replay
+  const kudos = signal(member.kudos);
+  const _el = _t0();                                   // cloneNode, or claim during hydration
+  const _h3 = _el.firstChild, _btn = _h3.nextSibling;
+  _h3.firstChild.data = member.name;                   // static after await: one-time write
+  _btn.$$click = () => kudos.update((n) => n + 1);
+  insert(_btn, () => kudos(), _btn.lastChild);
   return _el;
 }
 delegateEvents(["click"]);
 ```
 
 ```css
-/* Counter.tsx?lumen&type=style&lang.css */
-.counter[data-l-k3x9a2] { padding: 0.5rem 1rem; border-radius: 0.5rem; }
-.hot[data-l-k3x9a2] { background: var(--l-k3x9a2-0); }
+/* Team.stsx?lumen&type=style&lang.css — file scope first, then component scopes */
+button[data-l-f81c0q] { font: inherit; cursor: pointer; }
+.panel[data-l-p02mz7] { display: grid; gap: 1rem; }
+@media (width < 48rem) { nav[data-l-p02mz7] { flex-direction: column; } }
+.card[data-l-k3x9a2] { padding: 1rem; border-radius: 0.75rem; }
 ```
-
-- Templates are hoisted and instantiated by cloning.
-- Elements are reached by `firstChild` / `nextSibling` walks.
-- Static text and attributes are baked into the template HTML.
-- Adjacent dynamic text is merged into one insert, to cut down on effects and DOM nodes.
 
 ### 5.3 Server output (illustrative)
 
 ```js
-import { ssr, escape, attrs, vars, signal, computed } from "lumen-jsx/server";
-export function Counter(props) {
-  const count = signal(props.start ?? 0);
-  const double = computed(() => count() * 2);
-  return ssr(["<button", "", ">", "</button>"],
-    attrs({ class: ["counter", { hot: count() > 5 }], "data-l-k3x9a2": "" },
-          vars({ "--l-k3x9a2-0": count() > 10 ? "crimson" : "orange" })),
-    escape([props.label, ": ", count(), " (×2 = ", double(), ")"]));
+import { ssr, escape, $await } from "lumen/server";
+export async function MemberCard(props) {
+  const member = await $await(0, () => api.members.get(props.id));   // value recorded for island hydration
+  const kudos = signal(member.kudos);
+  return ssr(["<article class=card data-l-k3x9a2 data-l-f81c0q><h3>", "</h3><button data-l-f81c0q>👏 <!--[-->", "<!--]--></button></article>"],
+    escape(member.name), escape(kudos()));
 }
 ```
 
-- On the server, signals are plain cells: no tracking, no effects, and `computed` is evaluated lazily once.
-- Templates become static string arrays.
-- Hydration markers are emitted **only inside island subtrees** (§7.4). Server-only components produce bare HTML.
+- On the server, signals are plain cells and `computed` runs once.
+- Templates are static string arrays.
+- Hydration markers are emitted only inside island subtrees (§7.4).
 
-### 5.4 Islands at compile time
+### 5.4 Islands, `await` rewrite and diagnostics
 
-- In the **server** build, `<X client:visible … />` compiles to `island(ref, X, props, strategy)`.
-  - `ref` is the resolved module specifier plus export name of `X`, which the compiler knows from the import or local export.
-  - A non-exported local component used as an island is an error (`LUM4001`).
-- The Vite plugin collects island refs into a manifest and emits one client entry per island module, code-split and shared-chunked by Rolldown.
-- In the **client** build, `client:*` attributes are type-only: they are stripped and never reach the DOM.
+- **Islands.** `<X client:visible …/>` compiles to `island(ref, X, props, strategy)` on the server. `ref` is X's module specifier plus its export name. Using a local, non-exported component as an island is an error (`LUM4001`). On the client, `client:*` is type-only.
+- **`await` rewrite.**
+  - Inside components, every `await e` becomes `await $await(n, () => e)`.
+  - This restores the owner and tracking context.
+  - On the server, it records the resolved value for islands.
+  - During hydration, it replays the recorded value instead of calling `e` again.
+- **Diagnostics** have the shape `{ code, severity, message, span, labels, help, fix?, docs }`.
+  - Code ranges: 1xxx syntax / file format, 2xxx reactivity, 3xxx styles, 4xxx islands and boundaries, 5xxx routing, 9xxx internal.
+  - Codes are stable forever.
+  - Output: human code frames, or `--format json`.
+  - Diagnostics surface everywhere: the Vite overlay, `lumen check`, the LSP and MCP.
 
-### 5.5 Diagnostics
+### 5.5 Distribution and the Vite plugin
 
-- **Shape:** `{ code: "LUM2001", severity, message, span, labels[], help, fix?: TextEdit[], docs: "https://…/errors/LUM2001" }`.
-- **Code ranges:**
-  - 1xxx syntax / unsupported
-  - 2xxx reactivity
-  - 3xxx styles
-  - 4xxx islands / server-client boundary
-  - 5xxx routing
-  - 9xxx internal
-- Codes are **stable forever**. A retired code stays documented.
-- Human output shows code frames, like rustc or Elm. `--format json` gives machine-readable output.
-- The same diagnostics surface through the Vite overlay, `lumen check`, the LSP and MCP.
+- **Packages.**
+  - napi-rs v3 platform packages (`@lumen/compiler-<platform>`) plus a `wasm32-wasip1-threads` fallback.
+  - A single-threaded wasm-bindgen build for the playground.
+- **`lumen/vite`.**
+  - Runs as `enforce: "pre"` with a Rust-side hook filter for `.stsx` and `.tsx`.
+  - Chooses the generator per Vite environment.
+  - Serves CSS virtual modules and builds the island manifest.
+  - Handles HMR by remounting component instances.
+  - Returns JS (`moduleType: "js"`) for `.stsx`, and TSX with types intact for `.tsx`.
+- **Accepted cost.** Running as a JS plugin (string in, string out) is somewhat slower than an in-core transform. Watch Rolldown's work on raw AST transfer.
 
-### 5.6 Distribution and the Vite plugin
+## 6. Runtime [proposal: decision-8]
 
-- **Compiler packages:**
-  - napi-rs v3 platform packages (`@lumen-jsx/compiler-darwin-arm64`, …).
-  - A `wasm32-wasip1-threads` fallback (StackBlitz, unusual platforms).
-  - A single-threaded `wasm-bindgen` build for the playground, which avoids needing COOP/COEP headers.
-- **`lumen-jsx/vite`:**
-  - Runs as `enforce: "pre"` with a Rust-side hook filter (`/\.[cm]?[jt]sx$/`), so non-matching modules never cross into JS.
-  - Picks the client or server generator per Vite environment.
-  - Serves the CSS virtual modules.
-  - Handles HMR: a component module is hot-swapped and its instances remount. State-preserving HMR is a later goal.
-  - Builds the island manifest.
-  - Works in plain Rolldown too.
-- **Known cost:** a JS-boundary plugin is somewhat slower than in-core Rolldown transforms (string in, string out). Accept this for v1 and track Rolldown's raw-AST-transfer work.
+**Budget:** core + DOM + lists + hydration + async boundaries ≤ **5.5 kB** min+brotli.
 
-## 6. Runtime
+### 6.1 Reactive core
 
-Budget: the client runtime for core + DOM + lists + hydration should be **≤ 5 kB min+brotli**, in the same class as Solid, ivi and Marko. Islands load only what they use.
-
-### 6.1 Reactive core (decision-8)
-
-- **Algorithm.** An alien-signals-style push-pull graph. Vue 3.6 builds on it, and it is the fastest core measured on js-framework-benchmark (1.06 versus vanilla's 1.05).
-  - Every node is `{ deps, depsTail, subs, subsTail, flags }`.
-  - Every edge is a single `Link` object sitting in two intrusive doubly-linked lists.
-  - **Push:** a write marks downstream nodes `Dirty` or `Pending` by setting flags.
-  - **Pull:** a read runs `checkDirty`, which recomputes only what is actually stale. The result is glitch-free.
-  - When a computation re-runs, it walks its existing links with a `depsTail` cursor. Stable dependencies therefore allocate nothing.
-  - No `Set` or `Map` per edge, and no recursion.
-- **Lifecycle.** A `computed` is lazy, and it **unlinks itself when nothing observes it**, so it can be garbage-collected. This idea comes from Svelte's CONNECTED flag and Preact.
-- **Source.** Vendor the algorithm from `alien-signals` (MIT, with attribution) behind Lumen's own API. Keep the API shape compatible with TC39 Signals naming, but take no dependency on that proposal (Stage 1, stalled).
-- **Owner tree.** Owners scope cleanup, context and error boundaries, as in Solid. Components, islands, list rows and branches each create an owner.
+- An alien-signals-style push-pull graph:
+  - nodes `{deps, depsTail, subs, subsTail, flags}`;
+  - intrusive doubly-linked `Link` edges;
+  - link reuse via a `depsTail` cursor;
+  - no `Set` or `Map`, no recursion.
+- Computeds are lazy, and they unlink when no longer observed.
+- The algorithm is vendored (MIT, with attribution). Naming follows TC39 Signals, but nothing depends on that proposal.
+- An owner tree scopes cleanup, context, boundaries and async runs.
 
 ### 6.2 Scheduling
 
-- **Reads are synchronous.** A read always sees the latest write. This avoids the read-after-write surprise of Solid 2's microtask-deferred writes.
-- **Effects are batched.**
-  - The delegated event dispatcher wraps each handler in a batch.
-  - Writes made outside a batch (timers, fetch callbacks) schedule a microtask flush.
-  - `flushSync()` is the escape hatch.
-- **Flush order:** pending computeds are pulled, then render effects (DOM bindings, in owner/tree order), then user `effect`s, which run after the DOM is updated.
+- Reads are synchronous.
+- Effects are batched:
+  - each delegated handler runs as a batch;
+  - stray writes trigger a microtask flush;
+  - `flushSync()` flushes immediately.
+- Flush order: computeds, then render bindings in tree order, then user effects.
 
 ### 6.3 DOM renderer
 
-- **Templates.**
-  - `template(html)` parses minified HTML (optional closing tags omitted) into a `<template>` once, then clones it.
-  - Elements are reached through precomputed `firstChild`/`nextSibling` paths.
-  - Text holes are positioned by construction order, in the ivi style, so no marker nodes are needed where the structure already disambiguates. A comment anchor is used only where it is required.
+- **Templates.** Minified `<template>` HTML is cloned, with optional closing tags omitted. Nodes are reached through precomputed `firstChild`/`nextSibling` paths, ivi-style, and comment anchors are added only where needed.
 - **Bindings.**
-  - The compiler emits `effect(compute, apply)` pairs, as Solid 2 does. Equality short-circuits before touching the DOM, and the split leaves room to hold commits for async transitions later.
-  - Expressions proven non-reactive (literals, imports of `const`, values that are not signals) become plain one-time writes with no effect.
-  - The compiler may merge several cheap bindings of one template that share sources into a single effect, as Svelte's `template_effect` does. This is a tuning knob validated against js-framework-benchmark, not a semantic change.
+  - Bindings are `effect(compute, apply)` with an equality check.
+  - Values proven static get one-time writes.
+  - The compiler may merge cheap bindings into one effect, as a tuning knob.
 - **Events.**
-  - Delegated handlers are stored on the node (`el.$$click`).
-  - A data slot (`el.$$clickData`) lets list rows avoid per-row closures. The compiler hoists `onClick={() => select(row.id)}` into a shared handler plus row data when the closure captures only the row.
-  - Delegation listens on the island or app root, not on `document`. An ancestor that calls `stopPropagation` outside Lumen therefore can't silently swallow events (a known Vue Vapor issue).
-  - `on:x` always attaches a native listener.
-- **Keyed lists (`list()`).** The algorithm, in order:
+  - Delegation is rooted at the island or app root, so a `stopPropagation` outside it is not a problem.
+  - Each node gets a `$$click` handler and a `$$clickData` slot, which avoids a closure per row.
+  - `on:x` is a native listener.
+- **Lists.**
   1. Trim the common prefix and suffix.
-  2. Take fast paths:
-     - Pure append and pure removal.
-     - When the list is the parent's only content, clear it with `textContent = ""`.
-     - Detect two-element swaps.
-  3. Use a longest increasing subsequence (LIS) for minimal moves in the general case.
+  2. Take fast paths: append, remove, clear via `textContent`, swap.
+  3. Otherwise use LIS for minimal moves.
 
-  The algorithm follows Vue Vapor's `createFor` and ivi. Each row gets its own owner. The index is a signal only if the callback uses it.
-- **Selector optimisation.** The compiler detects the pattern `item.key === sig()` (and `!==`) inside `.map` callbacks. A typical case is `class={{ selected: row.id === selected() }}`. It compiles the pattern to a `selector()` primitive, so a selection change updates only 2 rows (O(1)) instead of re-evaluating every row. Vue Vapor does the same; it is the main remaining gap in Svelte 5's js-framework-benchmark results.
-- **Branches.** `branch()` memoises the condition's truthiness and disposes the inactive owner.
+  Each row owns its own subtree.
+- **Selectors and branches.**
+  - The selector pattern gives O(1) select.
+  - Branches memoise truthiness.
+- **Async boundaries.** A boundary tracks pending descendants, shows its fallback on first load only, keeps stale UI on re-runs, and hands rejections to the nearest `ErrorBoundary`.
 
 ### 6.4 Server runtime
 
-- **Server components** are plain functions returning strings, built by concatenating template parts. Escaping is fused into the compiled code. There are no component instance objects or reactive graph on the server: signals are cells and `computed` runs at most once.
-- **Streaming** writes to a web `ReadableStream`. Chunks are flushed at `<Suspense>` boundaries and island ends.
-- **Serialization** of island props and streamed data uses **data-only formats**: JSON, or seroval in JSON mode, which never `eval`s. The server validates what it accepts. These are the lessons of CVE-2025-55182 (the React Flight remote code execution) and of SolidStart v2 defaulting to JSON.
+- Server components are functions that concatenate strings, with escaping fused into the output.
+- There are no instance objects and no reactive graph.
+- Output is a web `ReadableStream`, flushed at `<Suspense>` boundaries and at island ends.
+- Serialization is data-only: JSON, or seroval in JSON mode. Nothing is ever evaluated, which is the lesson of CVE-2025-55182.
 
-### 6.5 Async on the client
-
-- `resource(fetcher)` gives `r()`, `loading()`, `error()` and `refetch()`, plus an `AbortSignal` passed to the fetcher.
-- Reads while pending throw to the nearest `<Suspense>`, unless `r.latest()` is used to keep showing stale data.
-- Solid 2-style async inside the reactive graph (`computed(async …)`) is a v1.x candidate, once Solid 2's semantics settle.
-
-## 7. Rendering modes
+## 7. Rendering modes [accepted: decision-4; protocol details proposal: decision-9]
 
 ### 7.1 Route modes
 
-Each route module may export `export const mode = "static" | "server" | "spa"`, inherited from the nearest layout. The default is `"static"` when the route has no request-time dependencies, otherwise `"server"`. The resolved mode is shown by `lumen routes`.
+Each route sets `export const mode = "static" | "server" | "spa"`. The mode is inherited from layouts. The default is `static` unless the route needs request-time data. `lumen routes` shows the resolved modes.
 
-| Mode | When HTML is produced | JavaScript shipped | Navigation |
+| Mode | HTML | JS shipped | Navigation |
 |---|---|---|---|
-| `static` (SSG) | at build time; dynamic params via `export async function staticPaths()` | islands only | MPA (+ cross-document View Transitions) |
+| `static` (SSG) | at build time (`staticPaths()` for params) | islands only | MPA + cross-document View Transitions |
 | `server` (SSR) | per request, streamed | islands only | MPA |
-| `spa` | `ssr: true` (default): SSR + whole-tree hydration; `ssr: false`: client-rendered shell | whole SPA subtree | client router within the SPA subtree |
+| `spa` | `ssr: true`: SSR + whole-tree hydration; `ssr: false`: client shell | whole SPA subtree | client router inside the subtree |
 
-An SPA subtree is implemented as **one root island**: the SPA layout, implicitly `client:load`. So there is a single hydration mechanism, and SPA and MPA regions coexist in one app.
+An SPA subtree is a single root island, so there is one hydration mechanism for everything.
 
 ### 7.2 Islands
 
-- **Directives.** Islands are marked at the **usage site** with `client:*`, so the hydration strategy is a decision made where the component is used, and it is visible to reviewers and agents.
-
-  | Directive | Hydrates when |
-  |---|---|
-  | `client:load` | as soon as possible (module preloaded) |
-  | `client:idle` | `requestIdleCallback` (with timeout) |
-  | `client:visible` | `IntersectionObserver` (optional `rootMargin` via `client:visible="200px"`) |
-  | `client:media="(max-width: 600px)"` | the media query matches |
-  | `client:only` | client-render only; no SSR (for browser-only libraries) |
+| Directive | Hydrates when |
+|---|---|
+| `client:load` | as soon as possible (`modulepreload` hint) |
+| `client:idle` | the browser is idle (`requestIdleCallback`, with a timeout) |
+| `client:visible` | the island scrolls into view (`IntersectionObserver`; optional root margin `client:visible="200px"`) |
+| `client:media="(…)"` | the media query matches |
+| `client:only` | client-rendered, with no SSR |
 
 - **Props.**
-  - Island props must be serializable: JSON plus `Date`, `Map`, `Set`, `BigInt`, `URL`, `RegExp`, typed arrays, cyclic references, and `Promise` (streamed). Lumen uses a seroval-class serializer.
-  - Functions or class instances are an error: a dev-time runtime error plus a `lumen check` error (`LUM4002`). TS 7 has no API for type-aware checks until 7.1, so this is enforced at runtime and with best-effort static analysis.
-- **Children.** Children of an island are server-rendered, passed as static HTML and inserted where the island renders `{children}`. This follows Astro's slot model. They cannot be reactive inside the island unless they are themselves islands. Islands may nest.
-- **Boundaries.**
-  - Modules named `*.server.ts(x)` and anything under `src/server/` are forbidden in client module graphs. Importing one is a build error (`LUM4003`) that names the import chain.
-  - Client-only browser APIs used at module scope in server-rendered code produce a `LUM4004` warning.
-- **No wrapper element.** Islands are delimited by comment markers (§7.4). Astro's `<astro-island>` wrapper breaks child-combinator CSS (`ul > li`) and structural pseudo-classes, so Lumen avoids it.
+  - Island props must be serializable: JSON plus `Date`, `Map`, `Set`, `BigInt`, `URL`, `RegExp`, typed arrays and cycles.
+  - Anything else is `LUM4002`, reported at dev time and by `lumen check`.
+- **Children.** An island's children are server-rendered static HTML, inserted where `{children}` appears. They are reactive only if they are themselves islands.
+- **Server-only code.** `*.server.*` modules and `src/server/` are forbidden in client graphs (`LUM4003`). Browser APIs used at module scope in server-rendered code produce a warning (`LUM4004`).
+- **No wrapper element.** Islands are delimited by comment markers, so CSS child combinators and structural pseudo-classes are unaffected.
 
-### 7.3 Streaming SSR and async server components
+### 7.3 Streaming SSR
 
-- **Async server components.** Components that only run on the server may be `async function` and `await` data directly, which is the colocated data-fetching idiom agents already know from RSC and Astro frontmatter.
-  - An async component reachable from a client graph is an error (`LUM4005`). Client code uses `resource()`.
-- **Rendering API.** `renderToStream(app, { request })` returns a web `ReadableStream`.
-  - Without boundaries, rendering is in-order: HTML before the first unresolved `await` flushes immediately.
-  - `<Suspense fallback={…}>` enables **out-of-order streaming**. The fallback is sent first.
-  - When the content resolves, Lumen emits native declarative partial updates (`<template for>` + `<?marker>`, in the HTML standard and shipped in Chrome 150) where the browser supports them.
-  - Otherwise a `<template data-l-s=ID>` chunk plus a tiny shared swap function (~300 B) moves the content into place.
-  - Islands inside a streamed chunk boot after the swap.
-- **Head and CSS.** `<Head>`, `<Title>` and `<Meta>` collect into `<head>`. CSS `<link>` tags and island `modulepreload` hints are flushed in the first chunk, from the Vite manifest.
-- **Errors.** `<ErrorBoundary>` works on both server and client. Errors in the server stream after headers are sent render the boundary fallback in place.
+- `renderToStream(app, { request })` returns a web `ReadableStream`.
+- Without boundaries, streaming is in-order: everything before the first unresolved `await` flushes immediately.
+- **Out-of-order streaming** happens at `<Suspense>` boundaries:
+  - The fallback is sent first.
+  - Resolved content is then delivered via native declarative partial updates (`<template for>` + `<?marker>`, in Chrome 150+) where the browser supports them, or else via a `<template data-l-s>` chunk plus a shared swap function (~300 B).
+  - Islands inside a chunk boot after the swap.
+- `<Head>`, `<Title>` and `<Meta>` collect into `<head>`. CSS links and `modulepreload` hints flush in the first chunk.
+- `<ErrorBoundary>` works on both server and client.
 
-### 7.4 Hydration protocol (decision-9)
+### 7.4 Hydration protocol
 
-- **Positional claiming, no per-element keys.**
-  - The same compiled client code serves both create and hydrate. `template()` either clones the template, or, when a hydration cursor is active, claims the existing node at the current position and walks the same `firstChild`/`nextSibling` paths. This is Svelte 5's model.
-  - Solid's `_hk` / `data-hk` keys cost SSR bytes and time (Platformatic SSR benchmark), so Lumen doesn't use them.
-- **Comment markers only where structure is ambiguous.**
-  - Dynamic blocks (lists, branches, dynamic inserts) are wrapped as `<!--[-->…<!--]-->`.
-  - An inactive branch, so the client knows which branch the server rendered: `<!--[!-->`.
-  - A separator between adjacent dynamic text nodes: `<!--!-->`.
-  - Static content carries no markers.
-- **Island markers.**
-  - Each island is wrapped as `<!--l:ID-->…<!--/l:ID-->`.
-  - All island records for a flush, `{ id, ref, props, strategy }`, go into a single `<script type="application/json" data-l-islands>` per flushed chunk, following Remix 3's one-data-script approach.
-- **Loader.**
-  - A ~1 kB module script, external and CSP-friendly, is emitted once per page that has islands.
-  - It reads the island records, finds the comment ranges with one `TreeWalker` pass, and arms each island's trigger:
-    - `load`, `idle`, `media` and `only` need no element.
-    - `visible` observes the first element in the range.
-  - When a trigger fires, it calls `import(ref)` and then `hydrate(Component, props, range)`.
-  - `client:load` islands also get a `modulepreload` hint in `<head>`.
-- **Event capture and replay.** Until an island hydrates, the loader captures `click`, `input`, `submit` and `keydown` that target inside its range, and replays them after hydration, as Solid's `_$HY` queue does. A click on a not-yet-hydrated `client:visible` island is therefore not lost.
-- **Mismatches.** In development, a structural mismatch throws `LUM4006` with the expected and actual nodes. In production, the island falls back to client-rendering its range.
-- **SPA subtrees** use the same protocol, with a single root island.
-
-### 7.4.1 Content Security Policy
-
-- **Default mode.** Per-instance CSS custom properties and `style` props are emitted as inline `style="…"` attributes.
-- **`csp: "strict"` mode.** A strict `style-src` (no `'unsafe-inline'` / `style-src-attr`) blocks inline style attributes, so in this mode SSR instead emits:
-  - per-instance rules (`[data-l-v="17"]{--l-k3x9a2-0:crimson}`) in a nonce'd `<style>` element in the same chunk;
-  - nonces on the loader and swap scripts, with the nonce taken from the request context.
-- **Client-side** CSSOM writes (`setProperty`) are always CSP-safe.
+- **Positional claiming.** The same compiled walk creates or claims nodes. There are no per-element keys.
+- **Markers.** Comment markers appear only where structure is ambiguous:
+  - `<!--[-->…<!--]-->` around blocks,
+  - `<!--[!-->` for an inactive branch,
+  - `<!--!-->` between adjacent text nodes.
+- **Island records.**
+  - Each island sits between `<!--l:ID-->` and `<!--/l:ID-->`.
+  - Each flushed chunk carries one `<script type="application/json" data-l-islands>` with `{ id, ref, props, awaits, strategy }`.
+  - `awaits` holds the values recorded by `$await` (§5.4).
+- **Loader** (~1 kB, an external module script).
+  - It reads the records and finds island ranges in a single `TreeWalker` pass.
+  - It arms each island's triggers, then `import(ref)` and `hydrate()`.
+  - It captures `click`, `input`, `submit` and `keydown` events before hydration and replays them afterwards.
+- **Mismatches.** A mismatch is `LUM4006` in development. In production, the island falls back to client-rendering its range.
+- **CSP.**
+  - In the default mode, inline `style` attributes (from `style` props) are emitted.
+  - In `csp: "strict"` mode, they become per-instance rules inside a nonce'd `<style>`, and the loader and swap scripts carry the nonce.
+  - Client-side `setProperty` is always CSP-safe.
 
 ### 7.5 Navigation
 
-- **MPA by default.** Full page loads, enhanced with cross-document View Transitions (`@view-transition { navigation: auto; }` opt-in through config) and speculation rules for prefetch (`<script type="speculationrules">`, generated from route config). Both are zero-JS and web-native.
-- **SPA router (`lumen-jsx/router`).** Active only inside `spa` subtrees.
-  - Built on the Navigation API, with a History API fallback.
-  - Supports nested layouts, `<Link>` with hover/viewport prefetch, scroll restoration, and same-document View Transitions.
-  - Leaving the SPA subtree is a normal document navigation.
-- **Later: server fragments** (Remix 3 `<Frame>`-style). `<Frame src>` streams a server-rendered fragment and can be reloaded from an island (`frame.reload()`). This gives partial-page updates without a full SPA.
+- **MPA by default.** Cross-document View Transitions (opt-in) and speculation rules for prefetching give a fast MPA with zero JS.
+- **SPA router (`lumen/router`).**
+  - Active only inside `spa` subtrees.
+  - Built on the Navigation API.
+  - Supports nested layouts and `<Link>` prefetching.
+- **Server fragments (later).** Remix 3-style `<Frame src>` fragments that can be reloaded from islands, with island state preserved.
 
 ## 8. App layer
 
-- **File routes** under `src/routes/`:
-  - `index.tsx`, `about.tsx`, `blog/[slug].tsx`, `docs/[...path].tsx`, `(marketing)/pricing.tsx` (group), `_layout.tsx` (wraps siblings and children), `_404.tsx`, `_error.tsx`.
-  - Endpoints are `*.ts` files exporting `GET` / `POST` / … handlers.
-- **Page module exports:**
-  - `default` (component, may be async on server/static routes)
-  - `mode`
-  - `staticPaths`
-  - `action` (POST form handler, progressive enhancement: works without JS; islands may enhance with `submit()`)
-  - `headers`
-  - `meta`
-- **Context.** Pages and endpoints receive `{ request, url, params, locals, cookies }` — web standards plus small helpers.
-- **Middleware.** `src/middleware.ts` exports `(ctx, next) => Response | Promise<Response>`.
-- **Typegen.** `lumen typegen` runs automatically in dev and build, and emits `.lumen/types/` with typed route params, `RouteProps<"/blog/[slug]">` and a typed `href("/blog/[slug]", { slug })`. Agents get compile errors for broken links.
-- **Server.**
-  - The build produces `export default { fetch(request): Promise<Response> }`.
-  - Adapters (`node`, `bun`, `deno`, `cloudflare`, `vercel`, `netlify`, `static`) wrap it.
-  - Dev uses the Vite 8 Environment API (client + ssr environments).
-- **Configuration.** `vite.config.ts` with `plugins: [lumen({ adapter, css: { targets }, viewTransitions, prefetch })]`. There is one config file, and it is standard Vite. The `lumen` CLI wraps Vite for `dev` / `build` / `preview` and adds `check`, `typegen`, `routes`, `docs`, `explain` and `mcp`.
-- **Not in v1:** RPC server functions, a data-loader layer separate from async components, image optimisation (use the Vite ecosystem), i18n routing.
+- **File routes** live under `src/routes/`.
+  - Page files: `index.stsx`, `blog/[slug].stsx`, `docs/[...path].stsx`.
+  - Route groups: `(group)/`.
+  - Special files: `_layout.stsx`, `_404.stsx`, `_error.stsx`.
+  - Pages may also be `.tsx`.
+  - Endpoints are `*.ts` files exporting `GET`, `POST`, and so on.
+- **Page exports.**
+  - `default`: the component, which may be async.
+  - `mode`, `staticPaths`, `headers`, `meta`.
+  - `action`: a POST form handler. Forms work without JS; islands can enhance them with `submit()`.
+- **Context and middleware.**
+  - Pages and endpoints receive `{ request, url, params, locals, cookies }`.
+  - Middleware lives in `src/middleware.ts`.
+- **Typegen.** It runs automatically and emits `.lumen/types` with typed params, `RouteProps<"/blog/[slug]">` and a typed `href()`.
+- **Server and dev.**
+  - The build produces `export default { fetch }`.
+  - Adapters wrap it for node, bun, deno, cloudflare, vercel, netlify and static hosting.
+  - Development uses the Vite 8 Environment API.
+- **Config.** Everything goes in `vite.config.ts`, as `plugins: [lumen({ adapter, css: { targets }, csp, viewTransitions, prefetch })]`.
+- **Not in v1:** RPC server functions, a separate loader layer, image optimisation, i18n routing.
 
-## 9. Tooling
+## 9. Tooling [accepted: decision-11; TS policy proposal: decision-6]
+
+### 9.1 Type checking `.stsx` with stock TS 7
+
+- **Shadow files.** `lumen` writes masked shadow files to `.lumen/shadow/<path>.stsx.tsx`.
+  - Each shadow file is identical to its source at every offset (§4.1).
+  - The writers are the dev server, the language server, `lumen check` and `lumen typegen --watch`.
+- **Resolution.**
+  - `tsconfig` sets `rootDirs: ["src", ".lumen/shadow/src"]`.
+  - Imports of `./X.stsx` then resolve to the shadow `X.stsx.tsx`.
+- **`lumen check`** runs stock `tsc --noEmit`, rewrites shadow paths back to `.stsx` (same line and column), adds compiler and lint diagnostics, and supports `--format json`.
+- **No TypeScript API is needed.** When the TS 7.1 API ships (planned for November 2026), evaluate in-memory virtual files as an optimisation.
+
+### 9.2 Editor
+
+- **VS Code extension.**
+  - Registers the `stsx` language.
+  - Grammar: TSX with embedded CSS in `<style>` blocks; `$refs` are highlighted.
+  - Includes snippets and the commands "Show compiled output" and "Explain diagnostic".
+- **`@lumen/language-server`.**
+  - For the TSX parts, it **proxies TypeScript 7's own native LSP**: it sends masked text for open `.stsx` documents and maps URIs. Positions map one to one because offsets are identical.
+  - For `<style>` blocks, it runs `vscode-css-languageservice` with the TSX parts masked out.
+  - Cross-language features:
+    - completion of class names in JSX from the in-scope style blocks;
+    - go-to-definition and rename between JSX classes and CSS selectors;
+    - `$ref` hovers that show the folded value;
+    - unused and unknown class diagnostics;
+    - compiler diagnostics and execution-contract hovers.
+  - It works in any LSP editor (Neovim, Zed, Helix).
+- **GitHub.** Until Linguist supports `.stsx`, use `.gitattributes`: `*.stsx linguist-language=TSX`.
+
+### 9.3 Lint, format, test
 
 | Concern | Approach |
 |---|---|
-| Type checking | Stock TS 7 `tsc` and native language service. No TS plugins (they don't load under TS 7). `lumen check` runs `tsc --noEmit` plus compiler diagnostics plus lint in one pass |
-| Editor (VS Code) | Lumen extension: a TextMate **injection grammar** for `css` templates (re-entering TSX inside `${}`), an **LSP client** for `@lumen-jsx/language-server`, snippets, and a command palette (`Lumen: Explain diagnostic`, `Lumen: Show compiled output`) |
-| Language server | Node, `vscode-languageserver` + `vscode-css-languageservice`. Finds `css` regions using the compiler's napi parser and builds whitespace-masked virtual CSS (`${}` replaced by same-length placeholders). Provides completion, hover, colors and CSS diagnostics, plus compiler diagnostics and execution-contract hovers. Works with any LSP editor (Neovim, Zed, Helix). Reassess when the TS 7.1 APIs land; there is no dependency on them |
-| Lint | `eslint-plugin-lumen-jsx` (ESLint v9 API), loaded by oxlint `jsPlugins` (alpha) or ESLint. Rules cover what the compiler can't see cheaply: `no-unsafe-html`, `prefer-attach-over-ref-effects`, and so on. Disable React `className` rules |
-| Format | oxfmt (verified to format `css` templates in TSX) or Prettier. The tag must stay named `css` |
-| Test | Vitest, using the Vite plugin. `@lumen-jsx/testing` provides `render()` + Testing Library queries; Vitest browser mode for real-DOM tests; `renderToString` for SSR tests. Playwright only for a few e2e flows |
-| Dev tools | Later: a browser devtools panel (signal graph, islands, owner tree). The execution-contract data comes from compiler `meta` |
+| Lint | `lumen lint` runs oxlint on the shadow TSX and maps results back (same offsets); stylelint runs on CSS parts, optionally. `eslint-plugin-lumen` provides rules plus a `.stsx` processor for ESLint |
+| Format | `lumen fmt` formats the TSX with oxfmt, with each style block replaced by a placeholder. It formats each block's CSS with oxfmt's CSS formatter (or Prettier), keeping block indentation, then stitches the result back together. `prettier-plugin-lumen` serves Prettier users |
+| Test | Vitest via the Vite plugin. `@lumen/testing` provides `render()` and Testing Library queries. Vitest browser mode covers the real DOM. A few Playwright e2e tests |
+| Devtools | Later: a signal graph, island and owner-tree panel built on compiler `meta` |
 
-## 10. Agent-first DX
+## 10. Agent-first DX [proposal: decision-10]
 
-Agents are a primary user of Lumen. Agent DX is designed and tested like the API.
-
-1. **Small, familiar surface.** About 25 exports in `lumen-jsx` core. JSX that looks like React. CSS that is CSS. Names borrowed from the best-known APIs (Angular / Solid signals, Vue `provide` / `inject`, Astro `client:*`).
-2. **Docs inside the package.** `node_modules/lumen-jsx/docs/**/*.md` always matches the installed version. `create-lumen-jsx` writes an `AGENTS.md` (and a `CLAUDE.md` that references it) telling agents to read local docs first. `lumen docs <topic>` prints them. The website also publishes `llms.txt` and `llms-full.txt`.
-3. **Fixed doc pattern per concept:** concept → API → minimal example → "common mistakes", generated from the diagnostic catalogue → related diagnostics.
-4. **Machine-legible diagnostics.**
-   - Stable `LUMxxxx` codes with `help` and a fix.
-   - `lumen explain LUM2001` prints the long-form explanation.
-   - Every CLI command supports `--format json` and meaningful exit codes.
-5. **MCP server (`lumen mcp`).**
-   - Tools: `docs_search`, `docs_get`, `check` (diagnostics with fixes), `routes` (route table with modes), `components` (components, props, islands, styles from compiler `meta`), `compile` (show the compiled output for a file), `render` (SSR-render a route to HTML), `dev_logs`.
-   - Resources: docs pages and the project's route manifest.
-6. **Agent eval suite** (`benchmarks/agent-evals`).
-   - A fixed set of tasks: scaffold an app, add a styled component, add an island, add a route with an action, fix a reactivity bug, and so on. Coding agents run them in CI on release candidates.
-   - Metrics: first-attempt `lumen check` pass rate, task success, tokens used.
-   - Regressions block releases, in the same way performance regressions do.
-7. **Skill bundle.** `lumen-jsx/skills/lumen/SKILL.md` (agent-skill format), installed by `lumen agents init`, alongside the AGENTS.md snippet.
-8. **Deterministic outputs.** Stable hashes, stable codegen and no timestamps, so agent diffs and snapshots stay reviewable.
-9. **Codemods.** `lumen upgrade` applies version migrations, so breaking changes don't depend on agents relearning.
+1. **Small, familiar surface.**
+   - About 25 core exports.
+   - JSX that looks like React, CSS that is CSS, and `$tokens` that look like Sass.
+   - Names borrowed from the best-known APIs.
+2. **Docs inside the package.**
+   - `node_modules/lumen/docs/**/*.md` matches the installed version.
+   - `create-lumen` writes `AGENTS.md` and a `CLAUDE.md` that references it. These state that `.stsx` is TSX plus raw-CSS `<style>` blocks, and point agents at the local docs.
+   - `lumen docs <topic>` prints a topic.
+   - `llms.txt` and `llms-full.txt` are published on the site.
+3. **One doc pattern per concept:** concept, then API, minimal example, common mistakes (generated from the diagnostics), and related diagnostics.
+4. **Machine-legible diagnostics.** Every diagnostic has a stable `LUMxxxx` code, help text and fixes. `lumen explain <code>` gives details, and `--format json` works everywhere.
+5. **MCP (`lumen mcp`).** Tools: `docs_search`, `docs_get`, `check`, `routes`, `components` (props, islands, style scopes), `compile`, `render`, `dev_logs`.
+6. **Agent eval suite.**
+   - Real coding agents run a fixed set of tasks, including writing `.stsx` with scoped styles and `$tokens`.
+   - Metrics: first-attempt `lumen check` pass rate, success rate and tokens used.
+   - A regression blocks the release.
+7. **Skills.** A skill bundle and an AGENTS.md snippet, installed by `lumen agents init`.
+8. **Deterministic output.** Stable hashes and codegen.
+9. **Upgrades.** `lumen upgrade` runs codemods.
 
 ## 11. Performance model
 
 ### 11.1 The bar
 
-js-framework-benchmark, Chrome 154, keyed. Published 2026-10-04 on an M4 MacBook Pro. Figures are the weighted geometric mean of CPU time relative to the fastest; lower is better.
+Figures are from js-framework-benchmark, Chrome 154, keyed implementations, published 2026-10-04 on an M4. Lower is better.
 
-| Framework | CPU | Run memory | Size (compressed) | First paint |
+| Framework | CPU | Run memory | Size | First paint |
 |---|---|---|---|---|
 | vanillajs | 1.05 | 1.87 MB | 2.5 kB | 53.8 ms |
 | alien-signals (manual DOM) | 1.06 | 2.09 MB | 2.9 kB | 52.6 ms |
@@ -635,119 +823,118 @@ js-framework-benchmark, Chrome 154, keyed. Published 2026-10-04 on an M4 MacBook
 | React 19.2 hooks | 1.59 | 4.37 MB | 51.4 kB | 226.6 ms |
 | React Compiler 19.0 | 1.65 | 4.58 MB | 50.0 kB | 219.8 ms |
 
-**Targets for Lumen:**
-- CPU **≤ 1.12**, i.e. beat React by about 30% and match Solid, Vue Vapor and Marko.
-- Run memory **≤ 2.6 MB**.
-- Benchmark bundle **≤ 5 kB** compressed.
-- First paint **≤ 60 ms**.
-
-Beating React is the easy part: any compiled fine-grained renderer does it. The real competitors are Marko 6, Vue Vapor, Solid and ivi.
+**Lumen targets:** CPU ≤ 1.12, run memory ≤ 2.6 MB, benchmark bundle ≤ 5.5 kB compressed, first paint ≤ 60 ms. The real competitors are Marko 6, Vue Vapor, Solid and ivi, not React.
 
 ### 11.2 Why the design reaches it
 
-| Benchmark operation | Cost driver | Lumen technique |
-|---|---|---|
-| create 1k / 10k rows, append | node creation, binding setup | `<template>` cloning, path walks, plain writes for static parts, row-closure hoisting with delegation data slots, zero-allocation links |
-| replace all / clear | teardown + creation | owner disposal without per-node bookkeeping, `textContent = ""` fast path |
-| partial update (every 10th row) | update propagation | push-pull flags; only the affected text bindings run (`effect(compute, apply)` with an equality check) |
-| select row | per-row class updates | compiler-detected selector pattern turns this into `selector()`, so only 2 rows are touched (O(1)) |
-| swap rows | list moves | prefix/suffix trimming + swap detection + LIS. React's forward-only moves cost 89.7 ms, 8.2× vanilla |
-| remove row | list removal | fast path, owner disposal |
-| memory | graph and closures | intrusive links, unlinking of unobserved computeds, no per-row closures for delegated events |
-| startup and size | runtime bytes | ≤ 5 kB runtime; no VDOM, reconciler or synthetic event system |
-
-**Versus React 19:**
-- React re-runs component functions and diffs a virtual DOM.
-- Its synthetic event system and reconciler cost about 50 kB and 220 ms of first paint.
-- Its keyed moves are forward-only.
-
-Lumen removes all three by design.
+| Operation | Lumen technique |
+|---|---|
+| create / append rows | template cloning, path walks, one-time writes for static parts, delegation data slots instead of row closures, zero-allocation links |
+| replace / clear | owner disposal, `textContent` fast path |
+| partial update | push-pull flags; only affected bindings run, with an equality check |
+| select row | compiled `selector()` updates only 2 rows |
+| swap rows | prefix/suffix trimming, swap detection, LIS (React: 89.7 ms, 8.2× vanilla) |
+| memory | intrusive links; unobserved computeds unlinked; no per-row handler closures |
+| startup | ≤ 5.5 kB runtime; no virtual DOM, reconciler or synthetic event system; styles extracted statically (no CSS runtime) |
 
 ### 11.3 SSR and islands
 
-- **SSR throughput.** Templates compile to string concatenation, escaping is fused into the generated code, and server components create no component instances or reactive graph.
-  - This is the technique behind the fastest string renderers: Marko leads the eknkc ssr-benchmark, and Solid and Vue lead Platformatic's.
-  - Lumen also avoids per-element hydration keys and their bytes. Only island subtrees carry markers.
-- **Page weight.** Server-first islands make the default page JavaScript ≈ 0. Interactive pages pay for the loader (~1 kB), the runtime (≤ 5 kB) and island code.
-  - React apps pay for full hydration plus RSC's double payload (the same props in the HTML and in the Flight data).
-- **Measured, not just claimed.**
-  - `benchmarks/js-framework-benchmark` keeps a keyed Lumen implementation, with CI comparisons against Solid, Svelte, Vue Vapor, Marko and React.
-  - `benchmarks/ssr` runs a reproducible SSR throughput suite (2026 lacks a reputable cross-framework one), covering Lumen, Solid, Svelte, Vue, Marko and React.
-  - A performance regression of more than 3% blocks release.
+- **SSR.** String concatenation with escaping fused into the output, no instances or graph on the server, and markers only inside islands. This is the technique behind Marko's and Solid's SSR leads.
+- **Pages.** With no islands, a page ships ≈ 0 JS. With islands, it ships the ~1 kB loader, the runtime (≤ 5.5 kB) and the islands' own code. Awaited data is embedded once, never fetched twice.
+- **Measured in CI from M1.**
+  - The js-framework-benchmark keyed implementation is compared against Solid, Svelte, Vue Vapor, Marko and React.
+  - A reproducible SSR suite runs alongside it.
+  - A regression of more than 3% blocks the release.
 
 ## 12. Compatibility matrix
 
 | Tool | Status |
 |---|---|
-| TypeScript 7 (`tsc`, native LS) | ✅ no plugins; JSX via `jsxImportSource` |
-| TypeScript 6 | ✅ same types |
-| Vite 8 / Rolldown | ✅ `lumen-jsx/vite` (JS plugin calling napi) |
+| TypeScript 7 | ✅ stock `tsc` + native LS via shadow TSX; no plugins or API |
+| TypeScript 6 | ✅ same mechanism |
+| Vite 8 / Rolldown | ✅ `lumen/vite` |
 | Vitest | ✅ via the Vite plugin |
-| oxlint / ESLint | ✅ plain TSX; `eslint-plugin-lumen-jsx` for both |
-| oxfmt / Prettier | ✅ formats embedded `css` |
-| Tailwind v4, PostCSS, CSS Modules | ✅ via the Vite CSS pipeline |
-| Testing Library | ✅ via `@lumen-jsx/testing` |
-| Web components | ✅ rendered as elements; `on:` for custom events. Exporting Lumen components as custom elements is a later item |
-| npm packages | ✅ any ESM; browser-only libraries in `client:only` islands |
-| React / Vue / Svelte components | ❌ v1. A React island adapter is a candidate later |
-| Storybook / storylite | ⏳ later: needs a Lumen renderer |
-| Deploy targets | ✅ via adapters over a `fetch` handler |
+| oxlint | ✅ through `lumen lint` (shadow TSX); bare oxlint does not read `.stsx` |
+| ESLint | ✅ `eslint-plugin-lumen` processor |
+| oxfmt / Prettier | ✅ through `lumen fmt` / `prettier-plugin-lumen` |
+| stylelint | ✅ on extracted CSS parts (optional) |
+| Tailwind v4, PostCSS, CSS Modules, `.scss` imports | ✅ via the Vite CSS pipeline. No Sass inside `<style>` |
+| Testing Library | ✅ `@lumen/testing` |
+| Web components | ✅ rendered as elements; custom events via `on:` |
+| npm packages | ✅ any ESM; browser-only libraries go in `client:only` islands |
+| GitHub highlighting | ⚠️ `.gitattributes` mapping until Linguist supports `.stsx` |
+| React / Vue / Svelte components | ❌ v1 (a React island adapter is a candidate) |
+| Storybook / storylite | ⏳ later |
 
 ## 13. Risks
 
 | Risk | Impact | Mitigation |
 |---|---|---|
-| OXC pre-1.0 API churn | Upgrade cost | Exact pins, golden fixtures, pure core crate, the Vize / dom-expressions pinning playbook |
-| No in-core Rolldown plugin | Some transform overhead | Rust-side hook filters, one pass per file, track raw AST transfer |
-| TS 7.0 has no API | No type-aware checks (island prop serializability) | Runtime dev checks plus best-effort static checks; reassess after TS 7.1 (Nov 2026) |
-| Compiled idioms (`.map`, destructured props) differ from plain JS semantics | Surprises | Narrow, documented patterns; diagnostics when a pattern escapes; "show compiled output" in the LSP and MCP |
-| Signal-read footguns of the setup-once model | Silent staleness | `LUM2001`–`LUM2004` plus agent evals |
-| oxlint JS plugins are alpha | Lint gaps | ESLint stays supported |
-| Lightning CSS crate is still versioned "alpha" | Upgrade cost | Pin it (as Vize does) |
-| Name collisions (`lumen` taken on npm and crates; Laravel Lumen) | Discoverability and confusion | `lumen-jsx` everywhere; final naming is a user decision (§14) |
-| Crowded positioning: TSRX (adopted by Solid 2), Ripple and Octane offer "TSX + `<style>`" | Weak differentiation | Lead with "valid TSX, zero new tooling", reactive CSS, server-first islands and agent evals. A TSRX frontend could be added later if it wins adoption |
-| Strict CSP blocks SSR `style` attributes | Broken reactive CSS for CSP users | `csp: "strict"` mode (§7.4.1) |
-| Marko 6 / Vue Vapor already at about 1.10 CPU | "Faster" claim at risk | Benchmark in CI from milestone M1; selector and delegation optimisations; a ≤ 5 kB budget |
-| Islands mixed with SPA subtrees cause edge cases (cf. Vue's Vapor/VDOM interop) | Bugs at boundaries | SPA = one root island, so a single hydration protocol. Frames come later, keeping island state across swaps (Remix precedent) |
-| Scope of a full meta-framework | Schedule | Phase it: core + compiler first, then SSR/islands, then the app layer (TASK-4 roadmap) |
+| `.stsx` tooling (scanner, shadow files, LSP proxy) is bespoke | Editor bugs, stale types | The masking invariant keeps offsets identical, so there is no source-map layer. Golden tests for the scanner. Shadow files are regenerated by every tool. Re-evaluate on TS 7.1 |
+| Agents don't know `.stsx` yet | First-attempt errors | It is TSX plus `<style>` (Svelte/Vue-like), plus the AGENTS.md hint, `lumen check` diagnostics and agent evals |
+| Bare oxlint/oxfmt and GitHub don't read `.stsx` | Friction | `lumen lint` / `lumen fmt` wrappers, ESLint and Prettier plugins, `.gitattributes`. Upstream Linguist support later |
+| The scanner mistakes `<style` in exotic code (e.g. a lowercase `style` type in generics) | Parse errors | Lexer-aware scanner; documented limitation; diagnostic `LUM1003` |
+| OXC is pre-1.0 and its API churns | Upgrade cost | Exact pins, fixtures, a pure core |
+| No in-core Rolldown plugin | Transform overhead | Rust-side filters; track raw AST transfer |
+| TS 7.0 has no API | No type-aware checks (serializability) | Runtime dev checks plus best-effort static checks; revisit after 7.1 |
+| Compiled idioms and the `await` rewrite differ from plain JS | Surprises | Narrow documented patterns, diagnostics, "show compiled output" |
+| Async re-run semantics (tracked body reads) | Unexpected re-runs | `LUM2007`, a dedicated docs page, `pending()` |
+| Crowded positioning (TSRX, Ripple, Octane) | Weak differentiation | Lead with one syntax addition, placement-scoped CSS, `$tokens`, islands, agent evals |
+| Marko 6 and Vue Vapor already at about 1.10 CPU | "Faster" claim at risk | Benchmarks in CI from M1; ≤ 5.5 kB budget |
+| Package name `lumen` taken on npm | Cannot publish as-is | Pre-publish rename task (decision-15) |
 
 ## 14. Open questions for the user
 
-1. **Name and npm scope.** `lumen`, `create-lumen` and the `lumen-compiler` crate are taken. The proposal is to keep the brand "Lumen" with the packages `lumen-jsx`, `@lumen-jsx/*`, `create-lumen-jsx`, and the crates `lumen_jsx_*`. Alternatively, pick a new brand now, before any code exists.
-2. **Data layer.** The proposal is async server components plus endpoints plus form actions, with no separate `load()` loader in v1. Would you prefer a Remix-style route `loader` as the single data API across all modes?
-3. **Signal read syntax.** `count()`, as in Solid and Angular (proposed), or `count.value`, as in Vue and Preact?
-4. **Event naming.** `onClick` delegated plus `on:click` native (proposed, Solid-style), or a Remix 3-style `on()` mixin API?
-5. **React island adapter.** Should it be planned for v1.x, so that React component libraries can be used inside islands?
+1. **Review proposals 5–10:**
+   - 5: Rust compiler on OXC + Lightning CSS.
+   - 6: TS 7 policy.
+   - 7: compiled JSX idioms and reactive props destructuring.
+   - 8: alien-signals core.
+   - 9: island protocol.
+   - 10: agent-DX contract.
+2. **Data layer.** The proposal is async components (server and client), endpoints and form actions, with no separate route `loader`. Should there also be a Remix-style `loader`?
+3. **Signal read syntax.** `count()` (proposed, as in Solid and Angular), or `count.value` (as in Vue and Preact)?
+4. **Events.** `onClick` delegated plus `on:click` native (proposed), or Remix 3-style `on()` mixins?
+5. **React island adapter** in v1.x?
 
 ## 15. Decision index
 
 | Id | Title | Status |
 |---|---|---|
-| decision-1 | Author components as valid TSX files | accepted |
-| decision-2 | Scoped component styles via `<style>` with reactive CSS variables and a global attribute | accepted |
-| decision-3 | Setup-once components with fine-grained signals and no virtual DOM | accepted |
-| decision-4 | Server-first rendering with islands and per-route SPA mode | accepted |
-| decision-5 | Rust compiler on OXC + Lightning CSS, shipped as napi-rs + a Vite/Rolldown plugin | proposed |
-| decision-6 | TypeScript 7 policy: no TS plugins; editor features via TextMate injection + Lumen LSP | proposed |
+| decision-1 | Author components as valid TSX files | superseded by 11 |
+| decision-2 | Scoped styles via `<style>` with reactive CSS variables | superseded by 12 |
+| decision-3 | Setup-once components with fine-grained signals, no virtual DOM | accepted |
+| decision-4 | Server-first rendering with islands and per-route SPA | accepted |
+| decision-5 | Rust compiler on OXC + Lightning CSS, napi-rs + Vite/Rolldown plugin | proposed |
+| decision-6 | TS 7 policy: no TS plugins; editor via `.stsx` language server | proposed |
 | decision-7 | Compiler-recognised JSX idioms and reactive props destructuring | proposed |
-| decision-8 | Reactive core on the alien-signals algorithm: sync reads, batched effects | proposed |
-| decision-9 | Island protocol: `client:*` at the usage site, comment markers, data-only serialization | proposed |
+| decision-8 | Reactive core on the alien-signals algorithm | proposed |
+| decision-9 | Island protocol: `client:*`, comment markers, data-only serialization | proposed |
 | decision-10 | Agent-first DX contract | proposed |
+| decision-11 | `.stsx` files (TSX + raw CSS `<style>`) and plain `.tsx` | accepted |
+| decision-12 | Raw CSS, `$name` build-time constants, no reactive CSS | accepted |
+| decision-13 | Async components on server and client with Suspense / ErrorBoundary | accepted |
+| decision-14 | Style scope follows placement: component, file, global | accepted |
+| decision-15 | Working package name `lumen` until publishing | accepted |
+| decision-16 | Backlog workflow; decisions only after user approval | accepted |
 
 ## 16. Research references
 
-- **TASK-1:** framework runtimes, rendering models and benchmarks (Prism), in its implementation notes. Key sources:
-  - js-framework-benchmark, Chrome 154: https://krausest.github.io/js-framework-benchmark/2026/chrome154.html
+- **TASK-1** (Prism): framework runtimes and benchmarks.
+  - js-framework-benchmark Chrome 154: https://krausest.github.io/js-framework-benchmark/2026/chrome154.html
   - alien-signals: https://github.com/stackblitz/alien-signals
   - Solid 2 RC: https://github.com/solidjs/solid/discussions/2995
-  - Vue Vapor: https://github.com/vuejs/core/blob/minor/packages/runtime-vapor/src/apiCreateFor.ts
+  - Vue Vapor `createFor`: https://github.com/vuejs/core/blob/minor/packages/runtime-vapor/src/apiCreateFor.ts
   - Remix 3 hydration: https://github.com/remix-run/remix/blob/main/packages/component/docs/hydration.md
   - Declarative partial updates: https://developer.chrome.com/blog/declarative-partial-updates
   - TSRX: https://tsrx.dev/
-- **TASK-2:** Rust compiler toolchain and editor tooling (Photon), in its implementation notes. Key sources:
+- **TASK-2** (Photon): toolchain and editor.
   - dom-expressions compiler: https://github.com/ryansolid/dom-expressions/tree/next/packages/compiler
   - Vize: https://github.com/ubugeeei/vize
   - Rolldown hook filters: https://rolldown.rs/apis/plugin-api/hook-filters
   - TS 7.1 plan: https://github.com/microsoft/TypeScript/issues/63703
   - VS Code embedded languages: https://code.visualstudio.com/api/language-extensions/embedded-languages
   - oxfmt embedded formatting: https://oxc.rs/docs/guide/usage/formatter/embedded-formatting
+- **Verified locally on TS 7.0.2:**
+  - `jsxImportSource` resolution and `IntrinsicElements` typing (TASK-2).
+  - Async components via `JSX.ElementType` (this session).
