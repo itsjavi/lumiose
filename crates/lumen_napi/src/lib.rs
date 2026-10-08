@@ -291,13 +291,30 @@ pub struct ScopeTokens {
 
 #[napi(object)]
 pub struct CompileOptions {
-    /// Default `"client"`. `"server"` is not implemented yet (TASK-14) and reports `LUM1002`.
+    /// Default `"client"`: `lumen/dom` code; `"server"`: `lumen/server` code.
     pub target: Option<CompileTarget>,
     pub scope_tokens: Option<ScopeTokens>,
     /// Default `true`.
     pub source_map: Option<bool>,
     /// Import `<id>?lumen&type=style&lang.css` when the file has style blocks. Default `true`.
     pub style_import: Option<bool>,
+    /// The project root: island refs name modules inside it root-relatively (`/src/x.stsx#X`).
+    pub root: Option<String>,
+}
+
+/// An island call site (`<X client:* />`).
+#[napi(object)]
+pub struct IslandMeta {
+    /// `<module>#<export>`, as passed to the server's `island()`.
+    #[napi(js_name = "ref")]
+    pub reference: String,
+    /// The module that exports the component.
+    pub module: String,
+    /// The export name (`default` for default exports).
+    pub export: String,
+    /// `load`, `idle`, `visible`, `media` or `only`.
+    pub strategy: String,
+    pub span: Span,
 }
 
 #[napi(object)]
@@ -347,6 +364,8 @@ pub struct CompileMeta {
     pub runtime_helpers: Vec<String>,
     pub style_refs: Vec<ResolvedStyleRef>,
     pub has_styles: bool,
+    /// Island call sites, in source order.
+    pub islands: Vec<IslandMeta>,
 }
 
 #[napi(object)]
@@ -379,6 +398,7 @@ pub fn compile(source: String, filename: String, options: Option<CompileOptions>
                 .unwrap_or_default(),
             source_map: o.source_map.unwrap_or(defaults.source_map),
             style_import: o.style_import.unwrap_or(defaults.style_import),
+            root: o.root,
         }
     });
     let mut result = lumen_compiler::compile(&source, &filename, &options);
@@ -444,6 +464,17 @@ pub fn compile(source: String, filename: String, options: Option<CompileOptions>
                 })
                 .collect(),
             has_styles: meta.has_styles,
+            islands: meta
+                .islands
+                .into_iter()
+                .map(|island| IslandMeta {
+                    reference: island.reference,
+                    module: island.module,
+                    export: island.export,
+                    strategy: island.strategy,
+                    span: span(island.span),
+                })
+                .collect(),
         },
     }
 }

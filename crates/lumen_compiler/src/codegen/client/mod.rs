@@ -11,12 +11,14 @@
 //! Components, props objects and the list/branch/selector idioms are shared by both targets, so
 //! that the server output has the same dynamic regions as the client walk (hydration relies on it).
 
+mod asyncs;
 mod children;
 mod components;
 mod element;
 mod events;
 mod html;
 mod idioms;
+mod islands;
 mod props;
 mod ssr;
 mod template;
@@ -32,11 +34,11 @@ use oxc_span::{GetSpan, Span};
 use oxc_syntax::scope::{ScopeFlags, ScopeId};
 use oxc_syntax::symbol::SymbolId;
 
-use crate::Target;
 use crate::analyze::{Analysis, is_jsx_like};
 use crate::codegen::ast::Ast;
 use crate::diagnostics::Diagnostic;
 use crate::scanner::StyleBlock;
+use crate::{IslandMeta, Target};
 use html::Namespace;
 use idioms::MapCtx;
 use props::PropPath;
@@ -54,6 +56,8 @@ pub struct ScopeTokens {
 
 pub struct TransformOptions<'o> {
     pub target: Target,
+    /// The project root: island refs name modules inside it root-relatively (`/src/x.stsx`).
+    pub root: Option<&'o str>,
     /// The module id, used for the CSS module import.
     pub filename: &'o str,
     pub scope_tokens: &'o ScopeTokens,
@@ -68,6 +72,7 @@ pub struct TransformOutput {
     pub templates: usize,
     pub delegated_events: Vec<String>,
     pub runtime_helpers: Vec<String>,
+    pub islands: Vec<IslandMeta>,
 }
 
 /// Runtime helpers in `lumen/dom` contract order (also the import order).
@@ -96,6 +101,9 @@ const CLIENT_RUNTIME: &[&str] = &[
     "bindChecked",
     "attach",
     "useRef",
+    "$await",
+    "$leave",
+    "$async",
 ];
 
 /// Runtime helpers in `lumen/server` contract order (also the import order).
@@ -114,6 +122,10 @@ const SERVER_RUNTIME: &[&str] = &[
     "createComponent",
     "restProps",
     "mergeProps",
+    "island",
+    "$await",
+    "$leave",
+    "$async",
 ];
 
 /// Transforms `program` in place into client or server JS.
@@ -134,6 +146,8 @@ pub fn transform<'a>(
         blocks,
         options,
         names: Names::new(scoping),
+        bindings: islands::ModuleBindings::collect(program, scoping),
+        islands: Vec::new(),
         props_symbols: scoping
             .symbol_ids()
             .filter(|&symbol| scoping.symbol_name(symbol) == "props")
@@ -146,6 +160,7 @@ pub fn transform<'a>(
         runtime: BTreeMap::new(),
         delegated: BTreeSet::new(),
         functions: Vec::new(),
+        awaits: Vec::new(),
         row_callback: false,
         components: Vec::new(),
         maps: Vec::new(),
@@ -234,6 +249,9 @@ pub struct Codegen<'a, 's> {
     pub blocks: &'s [StyleBlock],
     pub options: &'s TransformOptions<'s>,
     pub names: Names,
+    /// Imports and exports, for island refs.
+    bindings: islands::ModuleBindings,
+    islands: Vec<IslandMeta>,
     /// Symbols named `props` (for the props parameter name choice).
     props_symbols: Vec<SymbolId>,
     /// Hoisted templates (client) or static part arrays (server) by content.
@@ -250,6 +268,8 @@ pub struct Codegen<'a, 's> {
     /// Per enclosing function: whether it renders once (a component or a `.map()` row callback),
     /// so that a returned reactive conditional must stay a tracked function.
     functions: Vec<bool>,
+    /// Per enclosing function: the await sites when it is an async component (asyncs.rs).
+    awaits: Vec<Option<Vec<u32>>>,
     /// Set by `compile_list` for the row callback it is about to visit.
     row_callback: bool,
     components: Vec<ComponentCtx<'a>>,
@@ -422,6 +442,7 @@ impl<'a> Codegen<'a, '_> {
             diagnostics: self.diagnostics,
             templates: self.templates.len(),
             delegated_events: self.delegated.into_iter().collect(),
+            islands: self.islands,
             runtime_helpers: self.runtime.keys().map(|&i| names[i].to_owned()).collect(),
         }
     }
@@ -682,6 +703,10 @@ impl<'a> VisitMut<'a> for Codegen<'a, '_> {
         let old = statements.take_in(self.ast);
         let mut out = self.ast.vec_from(Vec::with_capacity(old.len()));
         for mut statement in old {
+            if let Some(statements) = self.async_component_statement(&mut statement) {
+                out.extend(statements);
+                continue;
+            }
             match &mut statement {
                 Statement::ReturnStatement(ret)
                     if ret
@@ -721,6 +746,27 @@ impl<'a> VisitMut<'a> for Codegen<'a, '_> {
 
     fn visit_expression(&mut self, expr: &mut Expression<'a>) {
         match expr {
+            Expression::AwaitExpression(await_expr) => {
+                let site = self.await_site(await_expr.span.start);
+                walk_mut::walk_expression(self, expr);
+                if let Some(site) = site {
+                    self.rewrite_await(expr, site);
+                }
+            }
+            Expression::ArrowFunctionExpression(arrow)
+                if arrow.r#async && self.is_async_component(arrow.span.start) =>
+            {
+                walk_mut::walk_expression(self, expr);
+                let function = expr.take_in(self.ast);
+                *expr = self.tag_async(function);
+            }
+            Expression::FunctionExpression(function)
+                if function.r#async && self.is_async_component(function.span.start) =>
+            {
+                walk_mut::walk_expression(self, expr);
+                let function = expr.take_in(self.ast);
+                *expr = self.tag_async(function);
+            }
             Expression::JSXElement(_) | Expression::JSXFragment(_) => {
                 let span = expr.span();
                 let taken = expr.take_in(self.ast);
@@ -742,6 +788,10 @@ impl<'a> VisitMut<'a> for Codegen<'a, '_> {
         }
     }
 
+    fn visit_statement(&mut self, statement: &mut Statement<'a>) {
+        self.visit_statement_lowering(statement);
+    }
+
     fn visit_object_property(&mut self, property: &mut ObjectProperty<'a>) {
         if property.shorthand
             && let Expression::Identifier(ident) = &property.value
@@ -757,19 +807,27 @@ impl<'a> VisitMut<'a> for Codegen<'a, '_> {
         let Some(component) = component else {
             let row_callback = std::mem::take(&mut self.row_callback);
             self.functions.push(row_callback);
+            self.awaits.push(None);
             walk_mut::walk_function(self, func, flags);
+            self.awaits.pop();
             self.functions.pop();
             return;
         };
         self.enter_component(&component, &mut func.params);
         self.functions.push(true);
+        self.awaits.push(Self::await_frame(Some(&component)));
         if let Some(body) = &mut func.body {
             self.visit_function_body(body);
         }
+        self.awaits.pop();
         self.functions.pop();
         let hoists = self.leave_component();
         if let Some(body) = &mut func.body {
             prepend(self.ast, &mut body.statements, hoists);
+            if component.is_async {
+                let statements = body.statements.take_in(self.ast);
+                body.statements = self.wrap_async_body(body.span, statements);
+            }
         }
     }
 
@@ -782,6 +840,7 @@ impl<'a> VisitMut<'a> for Codegen<'a, '_> {
         }
         let row_callback = std::mem::take(&mut self.row_callback);
         self.functions.push(component.is_some() || row_callback);
+        self.awaits.push(Self::await_frame(component.as_ref()));
         let span = arrow.span;
         let body = arrow.body.take_in(self.ast);
         arrow.body = match body {
@@ -813,7 +872,28 @@ impl<'a> VisitMut<'a> for Codegen<'a, '_> {
                 }
             }
         };
+        self.awaits.pop();
         self.functions.pop();
+        if let Some(component) = &component
+            && component.is_async
+        {
+            // `async (p) => expr` becomes a block body so that it can be wrapped.
+            let body = arrow.body.take_in(self.ast);
+            arrow.body = match body {
+                ArrowFunctionBody::FunctionBody(mut body) => {
+                    let statements = body.statements.take_in(self.ast);
+                    body.statements = self.wrap_async_body(span, statements);
+                    ArrowFunctionBody::FunctionBody(body)
+                }
+                expression => {
+                    let statements = self
+                        .ast
+                        .vec_from([self.ast.ret(span, expression.into_expression())]);
+                    let statements = self.wrap_async_body(span, statements);
+                    ArrowFunctionBody::new_function_body(span, self.ast.vec(), statements, self.ast)
+                }
+            };
+        }
         if component.is_some() {
             let hoists = self.leave_component();
             if !hoists.is_empty() {

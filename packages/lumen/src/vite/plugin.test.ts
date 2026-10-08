@@ -2,9 +2,9 @@
 // written to a temp dir whose node_modules/lumen links to this package.
 import { mkdirSync, mkdtempSync, realpathSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join, resolve } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { createLogger, createServer, type ViteDevServer } from "vite";
+import { build, createLogger, createServer, type Rolldown, type ViteDevServer } from "vite";
 import lumen from "./index.ts";
 
 const binding = await import("@lumen/compiler").catch(() => undefined);
@@ -40,6 +40,15 @@ export const Broken = () => <div>;
 }
 `,
   "util.ts": `export const answer: number = 42;\n`,
+  "components/Team.tsx": `export function TeamPanel(props: { ids: number[] }) {
+  return <ul>{props.ids.map((id) => <li>{id}</li>)}</ul>;
+}
+`,
+  "routes/index.tsx": `import { TeamPanel } from "../components/Team.tsx";
+export default function Home() {
+  return <main><TeamPanel client:visible ids={[1, 2]} /></main>;
+}
+`,
 };
 
 const lumenRoot = resolve(import.meta.dirname, "../..");
@@ -50,7 +59,10 @@ const warnings: string[] = [];
 beforeAll(async () => {
   if (!binding) return;
   root = realpathSync(mkdtempSync(join(tmpdir(), "lumen-vite-")));
-  for (const [name, code] of Object.entries(FILES)) writeFileSync(join(root, name), code);
+  for (const [name, code] of Object.entries(FILES)) {
+    mkdirSync(dirname(join(root, name)), { recursive: true });
+    writeFileSync(join(root, name), code);
+  }
   mkdirSync(join(root, "node_modules"));
   symlinkSync(lumenRoot, join(root, "node_modules/lumen"), "dir");
   const logger = createLogger("silent");
@@ -119,6 +131,42 @@ describe.skipIf(!binding)("lumen/vite", () => {
   it("reports warnings", async () => {
     await server.environments.client.transformRequest("/Warning.tsx");
     expect(warnings.some((w) => w.includes("LUM2006") && w.includes("Warning.tsx"))).toBe(true);
+  });
+
+  it("compiles island call sites with root-relative refs and serves the island manifest", async () => {
+    const ssr = await server.environments.ssr.transformRequest("/routes/index.tsx");
+    expect(ssr!.code).toContain('island)("/components/Team.tsx#TeamPanel"');
+    const client = server.environments.client.pluginContainer;
+    const manifest = await client.resolveId("virtual:lumen/islands");
+    const loaded = await client.load(manifest!.id);
+    const code = typeof loaded === "string" ? loaded : loaded!.code;
+    expect(code).toContain(
+      `"/components/Team.tsx#TeamPanel": () => import("/components/Team.tsx").then((m) => m["TeamPanel"]),`,
+    );
+  });
+
+  it("builds every island into its own chunk from the manifest", async () => {
+    const output = (await build({
+      root,
+      configFile: false,
+      logLevel: "silent",
+      plugins: [lumen()],
+      build: {
+        write: false,
+        // App builds drop entry exports; the island loader is what imports the manifest.
+        rolldownOptions: {
+          input: { islands: "virtual:lumen/islands" },
+          preserveEntrySignatures: "strict",
+        },
+      },
+    })) as Rolldown.RolldownOutput;
+    const chunks = output.output.filter((item) => item.type === "chunk");
+    const manifest = chunks.find((chunk) => chunk.name === "islands")!;
+    const team = chunks.find((chunk) => chunk.facadeModuleId?.endsWith("components/Team.tsx"))!;
+    expect(team).toBeDefined();
+    expect(manifest.code).toContain(`import(\`./${team.fileName.split("/").pop()}\`)`);
+    expect(team.code).toContain("`<li>`");
+    expect(team.exports).toEqual(["TeamPanel"]);
   });
 
   it("makes app entries HMR boundaries that re-mount through the wrapper", async () => {

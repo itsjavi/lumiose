@@ -14,6 +14,8 @@
 //   can come later without changing this contract.
 // - Style blocks import `<id>?lumen&type=style&lang.css`; until the CSS pipeline lands (TASK-45)
 //   that module is empty.
+// - `virtual:lumen/islands` is the island manifest (./islands.ts). Island refs are root-relative
+//   (`/src/components/Team.stsx#TeamPanel`) for modules inside the Vite root.
 
 import { compile, type Diagnostic } from "@lumen/compiler";
 import {
@@ -21,7 +23,9 @@ import {
   defaultServerConditions,
   type EnvironmentOptions,
   type Plugin,
+  type ViteDevServer,
 } from "vite";
+import { ISLANDS, ISLANDS_ID, IslandRegistry } from "./islands.ts";
 
 export interface LumenOptions {
   /** Modules compiled by Lumen. Default: `.stsx` and `.tsx` files. */
@@ -53,6 +57,9 @@ export default function lumen(options: LumenOptions = {}): Plugin[] {
   const include = options.include ?? LUMEN_MODULE;
   const exclude = options.exclude ?? NODE_MODULES;
   let serve = false;
+  let root = process.cwd();
+  let devServer: ViteDevServer | undefined;
+  const islands = new IslandRegistry();
   return [
     {
       name: "lumen",
@@ -65,6 +72,14 @@ export default function lumen(options: LumenOptions = {}): Plugin[] {
         // user's call. Otherwise Lumen modules are added to Vite's default exclusion.
         if (oxc === false || oxc?.include !== undefined || oxc?.exclude !== undefined) return;
         return { oxc: { exclude: [VITE_OXC_EXCLUDE, include] } };
+      },
+
+      configResolved(config) {
+        root = config.root;
+      },
+
+      configureServer(server) {
+        devServer = server;
       },
 
       configEnvironment(name, config) {
@@ -83,14 +98,18 @@ export default function lumen(options: LumenOptions = {}): Plugin[] {
       },
 
       resolveId: {
-        filter: { id: /^virtual:lumen\/hmr-dom$/ },
-        handler: () => HMR_DOM_ID,
+        filter: { id: /^virtual:lumen\/(?:hmr-dom|islands)$/ },
+        handler: (id) => (id === ISLANDS ? ISLANDS_ID : HMR_DOM_ID),
       },
 
       load: {
-        filter: { id: [/^\0lumen:hmr-dom$/, STYLE_QUERY] },
+        filter: { id: [/^\0lumen:(?:hmr-dom|islands)$/, STYLE_QUERY] },
         handler(id) {
           if (id === HMR_DOM_ID) return HMR_DOM_CODE;
+          if (id === ISLANDS_ID) {
+            islands.scan(root, include, exclude);
+            return islands.code();
+          }
           // `<file>?lumen&type=style&lang.css`: Vite's CSS plugin takes it from here. The scoped
           // styles of the file are compiled by the CSS pipeline (TASK-45); empty until then.
           return "";
@@ -104,7 +123,14 @@ export default function lumen(options: LumenOptions = {}): Plugin[] {
           const result = compile(code, id, {
             target: server ? "server" : "client",
             sourceMap: true,
+            root,
           });
+          if (islands.add(result.meta.islands) && devServer) {
+            // A call site the manifest has not seen: the next import gets the new manifest.
+            const graph = devServer.environments.client.moduleGraph;
+            const manifest = graph.getModuleById(ISLANDS_ID);
+            if (manifest) graph.invalidateModule(manifest);
+          }
           for (const diagnostic of result.diagnostics) {
             if (diagnostic.severity !== "error") {
               this.warn(message(diagnostic), diagnostic.span.start);

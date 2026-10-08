@@ -48,6 +48,9 @@ pub struct CompileOptions {
     pub source_map: bool,
     /// Import the file's CSS module (`<id>?lumen&type=style&lang.css`) when it has style blocks.
     pub style_import: bool,
+    /// The project root (Vite's `root`). Island refs name modules inside it root-relatively
+    /// (`/src/components/Team.stsx#TeamPanel`); without it they use the module ids as given.
+    pub root: Option<String>,
 }
 
 impl Default for CompileOptions {
@@ -57,6 +60,7 @@ impl Default for CompileOptions {
             scope_tokens: ScopeTokens::default(),
             source_map: true,
             style_import: true,
+            root: None,
         }
     }
 }
@@ -77,6 +81,27 @@ pub struct ComponentMeta {
     pub await_sites: Vec<Span>,
 }
 
+/// An island call site (`<X client:* />`).
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize),
+    serde(rename_all = "camelCase")
+)]
+pub struct IslandMeta {
+    /// `<module>#<export>`, as passed to the server's `island()`.
+    #[cfg_attr(feature = "serde", serde(rename = "ref"))]
+    pub reference: String,
+    /// The module that exports the component (root-relative, an absolute id or a bare specifier).
+    pub module: String,
+    /// The export name (`default` for default exports).
+    pub export: String,
+    /// `load`, `idle`, `visible`, `media` or `only`.
+    pub strategy: String,
+    /// The component name in the JSX tag.
+    pub span: Span,
+}
+
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 #[cfg_attr(
     feature = "serde",
@@ -95,6 +120,8 @@ pub struct CompileMeta {
     pub style_refs: Vec<ResolvedStyleRef>,
     /// True when the module imports its CSS module.
     pub has_styles: bool,
+    /// Island call sites, in source order (both targets).
+    pub islands: Vec<IslandMeta>,
 }
 
 #[derive(Debug, Clone, Default)]
@@ -161,6 +188,7 @@ pub fn compile(source: &str, filename: &str, options: &CompileOptions) -> Compil
 
     let transform_options = TransformOptions {
         target: options.target,
+        root: options.root.as_deref(),
         filename,
         scope_tokens: &options.scope_tokens,
         style_import: options.style_import,
@@ -207,6 +235,7 @@ pub fn compile(source: &str, filename: &str, options: &CompileOptions) -> Compil
             runtime_helpers: output.runtime_helpers,
             style_refs,
             has_styles,
+            islands: output.islands,
         },
     }
 }
@@ -237,6 +266,9 @@ impl CompileResult {
             for site in &mut component.await_sites {
                 *site = site.map(f);
             }
+        }
+        for island in &mut self.meta.islands {
+            island.span = island.span.map(f);
         }
         for reference in &mut self.meta.style_refs {
             reference.span = reference.span.map(f);

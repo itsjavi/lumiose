@@ -10,7 +10,8 @@ pub mod scanner;
 pub mod span;
 
 pub use compile::{
-    CompileMeta, CompileOptions, CompileResult, ComponentMeta, ScopeTokens, Target, compile,
+    CompileMeta, CompileOptions, CompileResult, ComponentMeta, IslandMeta, ScopeTokens, Target,
+    compile,
 };
 pub use diagnostics::{Code, Diagnostic, Severity};
 pub use scanner::{ScanResult, scan};

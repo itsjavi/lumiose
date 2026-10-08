@@ -17,7 +17,10 @@ impl<'a> Codegen<'a, '_> {
     ) -> Compiled<'a> {
         let span = element.span;
         let element = element.unbox();
-        let opening = element.opening_element.unbox();
+        let mut opening = element.opening_element.unbox();
+        if let Some(directive) = self.take_island_directive(&mut opening.attributes) {
+            return self.compile_island(opening, element.children, directive, span);
+        }
         let component = self.component_reference(opening.name, span);
         let props = self.props_expression(opening.attributes, Some(element.children), span);
         let callee = self.runtime("createComponent", span);
@@ -26,7 +29,11 @@ impl<'a> Codegen<'a, '_> {
 
     /// The component expression of a JSX tag (`Card`, `ui.Card`, `this.Item`), visited so that a
     /// destructured prop used as a tag reads `props.x`.
-    fn component_reference(&mut self, name: JSXElementName<'a>, span: Span) -> Expression<'a> {
+    pub(super) fn component_reference(
+        &mut self,
+        name: JSXElementName<'a>,
+        span: Span,
+    ) -> Expression<'a> {
         let expr = match name {
             JSXElementName::IdentifierReference(ident) => Expression::Identifier(ident),
             JSXElementName::MemberExpression(member) => self.jsx_member(member.unbox()),

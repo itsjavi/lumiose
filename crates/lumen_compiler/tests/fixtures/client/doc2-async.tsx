@@ -1,5 +1,4 @@
-// Contract doc-2 §5.4 (partially): props destructuring and JSX in an async component.
-// The await rewrite and the try/finally `$leave()` wrapper belong to TASK-15.
+// Contract doc-2 §5.4: $async tagging, the await rewrite and the try/finally `$leave()` wrapper.
 import { fetchJSON } from "lumen";
 
 export async function Member({ id }: { id: string }) {

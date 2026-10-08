@@ -291,6 +291,83 @@ describe.skipIf(!binding)("server target renders on lumen/server", () => {
   });
 });
 
+const ASYNC = `
+  const wait = <T,>(value: T) => new Promise<T>((resolve) => setTimeout(() => resolve(value), 1));
+  async function* lines() {
+    yield "a";
+    yield "";
+    yield "b";
+  }
+  export async function Member({ id }: { id: string }) {
+    const member = await wait({ name: "Ada " + id });
+    let error = "";
+    try {
+      await Promise.reject(new Error("boom"));
+    } catch (e) {
+      error = (e as Error).message;
+    }
+    const seen: string[] = [];
+    for await (const line of lines()) {
+      if (line === "") continue;
+      seen.push(line);
+    }
+    return <h3 title={error}>{member.name} {seen.join(",")}</h3>;
+  }
+  export const Team = async () => <section><Member id="1" /><Member id="2" /></section>;`;
+
+const ISLANDS = `
+  export function Panel(props: { ids: number[]; children?: unknown; footer?: unknown }) {
+    return <div class="panel">{props.ids.join("+")}{props.footer}{props.children}</div>;
+  }
+  export async function Slow({ n }: { n: number }) {
+    const value = await Promise.resolve(n * 2);
+    return <b>{value}</b>;
+  }
+  export function Page() {
+    return (
+      <main>
+        <Panel client:load ids={[1, 2]} footer={<i>foot</i>}>
+          <p>child</p>
+        </Panel>
+        <Slow client:visible="100px" n={21} />
+      </main>
+    );
+  }`;
+
+describe.skipIf(!binding)("async components and islands (server)", () => {
+  it("async components await through $await and keep their frames", async () => {
+    const { module, code } = await load(ASYNC, "server");
+    expect(code).toContain("export const Member = /* @__PURE__ */ $async(async function Member");
+    expect(code).toContain("(await $await(() => wait(");
+    expect(await renderServer(module, "Team")).toBe(
+      '<section><h3 title="boom">Ada 1 a,b</h3><h3 title="boom">Ada 2 a,b</h3></section>',
+    );
+  });
+
+  it("island call sites render ranges, slots and records", async () => {
+    const { module, code } = await load(ISLANDS, "server");
+    expect(code).toMatch(
+      /island\("\/src\/ssr\d+\.tsx#Panel", Panel, \{ ids: \[1, 2\] \}, "load", void 0, \{/,
+    );
+    const html = await renderServer(module, "Page");
+    const [body, records] = html.split('<script type="application/json" data-l-islands>');
+    expect(body).toBe(
+      "<main>" +
+        '<!--l:0--><template data-l-slot="footer"><i>foot</i></template>' +
+        '<template data-l-slot="children"><p>child</p></template>' +
+        "<div class=panel><!--[-->1+2<!--]--><!--[--><i>foot</i><!--]--><!--[--><p>child</p><!--]--></div><!--/l:0-->" +
+        "<!--l:1--><b><!--[-->42<!--]--></b><!--/l:1-->" +
+        "</main>",
+    );
+    const recorded = JSON.parse(records!.slice(0, records!.indexOf("</script>")));
+    expect(recorded).toMatchObject([
+      { id: 0, strategy: "load", props: { ids: [1, 2] }, slots: ["footer", "children"] },
+      { id: 1, strategy: "visible", value: "100px", props: { n: 21 }, awaits: { "0:0:0": 42 } },
+    ]);
+    expect(recorded[0].ref).toMatch(/^\/src\/ssr\d+\.tsx#Panel$/);
+  });
+});
+
 describe.skipIf(!binding)("hydration markers are decided at runtime", () => {
   it("inside an island, every client insert/list/branch position is one region", async () => {
     const { module } = await load(STRUCTURE, "server");

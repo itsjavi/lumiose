@@ -31,7 +31,10 @@ fn server_target_imports_lumen_server() {
     assert!(result.code.contains(r#"from "lumen/server""#));
     assert!(!result.code.contains("lumen/dom"));
     assert!(!result.code.contains("onClick") && !result.code.contains("delegateEvents"));
-    assert_eq!(result.meta.runtime_helpers, ["ssr", "insert"]);
+    assert_eq!(
+        result.meta.runtime_helpers,
+        ["ssr", "insert", "$await", "$leave", "$async"]
+    );
     assert!(result.meta.delegated_events.is_empty());
     assert_eq!(result.meta.templates, 1);
 }
@@ -131,4 +134,34 @@ fn position(text: &str, needle: &str) -> (u32, u32) {
         .next()
         .map_or(0, |l| l.encode_utf16().count()) as u32;
     (line, column)
+}
+
+#[test]
+fn islands_are_reported_with_root_relative_refs() {
+    let source = r#"import { TeamPanel } from "../components/Team.stsx";
+export function Page() {
+  return <main><TeamPanel client:visible ids={[]} /></main>;
+}
+"#;
+    for target in [Target::Client, Target::Server] {
+        let options = CompileOptions {
+            target,
+            root: Some("/app/".into()),
+            ..CompileOptions::default()
+        };
+        let result = compile(source, "/app/src/routes/index.stsx", &options);
+        assert!(result.diagnostics.is_empty(), "{:?}", result.diagnostics);
+        let island = &result.meta.islands[0];
+        assert_eq!(island.reference, "/src/components/Team.stsx#TeamPanel");
+        assert_eq!(island.module, "/src/components/Team.stsx");
+        assert_eq!(island.export, "TeamPanel");
+        assert_eq!(island.strategy, "visible");
+        assert_eq!(island.span.source_text(source), "TeamPanel");
+        assert_eq!(
+            result
+                .code
+                .contains(r#"island("/src/components/Team.stsx#TeamPanel""#),
+            target == Target::Server
+        );
+    }
 }

@@ -28,16 +28,20 @@ export interface CompileMeta {
   runtimeHelpers: Array<string>;
   styleRefs: Array<ResolvedStyleRef>;
   hasStyles: boolean;
+  /** Island call sites, in source order. */
+  islands: Array<IslandMeta>;
 }
 
 export interface CompileOptions {
-  /** Default `"client"`. `"server"` is not implemented yet (TASK-14) and reports `LUM1002`. */
+  /** Default `"client"`: `lumen/dom` code; `"server"`: `lumen/server` code. */
   target?: CompileTarget;
   scopeTokens?: ScopeTokens;
   /** Default `true`. */
   sourceMap?: boolean;
   /** Import `<id>?lumen&type=style&lang.css` when the file has style blocks. Default `true`. */
   styleImport?: boolean;
+  /** The project root: island refs name modules inside it root-relatively (`/src/x.stsx#X`). */
+  root?: string;
 }
 
 export interface CompileResult {
@@ -78,6 +82,19 @@ export type FileKind = "stsx" | "tsx" | "script";
 export interface Fix {
   message: string;
   edits: Array<TextEdit>;
+}
+
+/** An island call site (`<X client:* />`). */
+export interface IslandMeta {
+  /** `<module>#<export>`, as passed to the server's `island()`. */
+  ref: string;
+  /** The module that exports the component. */
+  module: string;
+  /** The export name (`default` for default exports). */
+  export: string;
+  /** `load`, `idle`, `visible`, `media` or `only`. */
+  strategy: string;
+  span: Span;
 }
 
 export interface JsxParent {

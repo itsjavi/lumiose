@@ -624,6 +624,25 @@ impl<'a> Visit<'a> for Analyzer<'_> {
         walk::walk_await_expression(self, it);
     }
 
+    fn visit_variable_declaration(&mut self, it: &VariableDeclaration<'a>) {
+        if it.kind == VariableDeclarationKind::AwaitUsing
+            && self
+                .frames
+                .last()
+                .is_some_and(|frame| frame.component.is_some())
+        {
+            self.analysis.diagnostics.push(
+                Diagnostic::new(
+                    Code::AwaitUsingInComponent,
+                    it.span.into(),
+                    "`await using` cannot be used in a component: its disposal awaits after the body, outside the component's run",
+                )
+                .with_help("Move the resource into a helper `async function` and await that helper from the component."),
+            );
+        }
+        walk::walk_variable_declaration(self, it);
+    }
+
     fn visit_for_of_statement(&mut self, it: &ForOfStatement<'a>) {
         if it.r#await
             && let Some(frame) = self.frames.last()

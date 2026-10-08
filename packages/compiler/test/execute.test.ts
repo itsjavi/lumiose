@@ -261,3 +261,42 @@ describe.skipIf(!binding)("compiled output runs on lumen/dom", () => {
     expect(module.log).toEqual(["enter", "custom"]);
   });
 });
+
+describe.skipIf(!binding)("async components on lumen/dom", () => {
+  it("renders after the awaits resolve, with for await and try/catch", async (ctx) => {
+    const { module, missing, result } = await load(`
+      import { signal } from "lumen";
+      export const id = signal("1");
+      async function* parts() { yield "x"; yield "y"; }
+      export async function Member(props: { id: string }) {
+        const name = await Promise.resolve("Ada " + props.id);
+        let failed = "";
+        try { await Promise.reject(new Error("no")); } catch (e) { failed = (e as Error).message; }
+        const seen: string[] = [];
+        for await (const part of parts()) seen.push(part);
+        return <h3 title={failed}>{name} {seen.join("")}</h3>;
+      }
+      export function Page() {
+        return <main><Member id={id()} /></main>;
+      }`);
+    if (!module) return ctx.skip(`lumen/dom lacks ${missing.join(", ")}`);
+    expect(result.code).toContain("$async(async function Member");
+    const app = render(module.Page);
+    for (let i = 0; i < 20 && !app.querySelector("h3"); i++) {
+      await new Promise((done) => setTimeout(done, 1));
+      lumen.flushSync();
+    }
+    const heading = app.querySelector("h3")!;
+    expect(heading.textContent).toBe("Ada 1 xy");
+    expect(heading.title).toBe("no");
+    // A prop change re-runs the component; the new UI replaces the old one when it resolves.
+    module.id.set("2");
+    lumen.flushSync();
+    for (let i = 0; i < 20 && app.querySelector("h3")?.textContent !== "Ada 2 xy"; i++) {
+      await new Promise((done) => setTimeout(done, 1));
+      lumen.flushSync();
+    }
+    expect(app.querySelectorAll("h3")).toHaveLength(1);
+    expect(app.querySelector("h3")!.textContent).toBe("Ada 2 xy");
+  });
+});
