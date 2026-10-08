@@ -20,3 +20,5 @@ TASK-2 research found that the npm name `lumen`, the `create-lumen` package and 
 - The rename must be a mechanical, one-pass refactor. To keep it that way, avoid spreading the package name into generated identifiers, diagnostic codes or file names (the `LUM` diagnostic prefix and the `.stsx` extension are not tied to the package name).
 - Nothing can be published to npm or crates.io under these names.
 
+
+_User, 2026-10-08: keep a single `lumen` package (runtime, Vite plugin, app layer and CLI as subpaths) for now; splitting can be a later refactor._
