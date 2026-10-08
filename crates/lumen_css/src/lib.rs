@@ -22,7 +22,13 @@
 //! - **`@keyframes`** names in a scoped block get the suffix `-<token>`. `animation` and
 //!   `animation-name` references are rewritten when the name is defined in the same scope
 //!   (a component's own keyframes first, then the file's); other names are left alone.
-//! - **Custom properties** are never scoped or renamed.
+//! - **Custom properties** are never scoped or renamed. Lightning CSS keeps their values as
+//!   raw tokens, so lumen_css folds their math itself: a math function that reduces to a
+//!   single number, percentage, length, angle or time is replaced by it (`--x: calc(8 * 2px)`
+//!   is `16px`), kept in `calc()` when the bare value could behave differently at the use
+//!   site (negative values, fractional numbers). `var()`, `env()` and units that only resolve
+//!   at runtime (`calc(100% - 16px)`) leave the function untouched. Typed properties get the
+//!   same reduction from Lightning CSS (`tests/fixtures/math.stsx`).
 //! - **SVG blocks** ([`CssBlock::svg`]) are native SVG CSS that stays verbatim in the
 //!   template: they are never extracted, scoped or substituted, so `process` skips them.
 //! - **Order.** File-level blocks (file scope and top-level `<style global>`) come first,
@@ -52,6 +58,7 @@
 mod ast;
 mod diagnostics;
 mod edits;
+mod fold;
 mod lines;
 mod prepass;
 mod process;

@@ -1,5 +1,5 @@
-//! Passes over Lightning CSS stylesheets: scoped `@keyframes` names, `animation` references
-//! and the custom properties read through `var()`.
+//! Passes over Lightning CSS stylesheets: scoped `@keyframes` names, `animation` references,
+//! math folding in custom property values and the custom properties read through `var()`.
 
 use std::collections::{BTreeSet, HashMap};
 use std::convert::Infallible;
@@ -14,6 +14,8 @@ use lightningcss::values::ident::CustomIdent;
 use lightningcss::values::string::CSSString;
 use lightningcss::visit_types;
 use lightningcss::visitor::{Visit, VisitTypes, Visitor};
+
+use crate::fold;
 
 /// The names of the `@keyframes` rules in a stylesheet, at any depth.
 pub(crate) fn keyframes_names(sheet: &mut StyleSheet) -> Vec<String> {
@@ -45,7 +47,8 @@ pub(crate) struct Renames<'a> {
     pub references: &'a HashMap<String, String>,
 }
 
-/// Applies `renames` (scoped blocks) and records the custom properties read via `var()`.
+/// Applies `renames` (scoped blocks), folds math in custom property values and records the
+/// custom properties read via `var()`.
 pub(crate) fn rewrite(
     sheet: &mut StyleSheet,
     renames: Option<Renames>,
@@ -82,6 +85,9 @@ impl<'i> Visitor<'i> for Rewriter<'_> {
     }
 
     fn visit_property(&mut self, property: &mut Property<'i>) -> Result<(), Infallible> {
+        if let Property::Custom(custom) = property {
+            fold::custom_property(custom);
+        }
         if let Some(renames) = &self.renames {
             match property {
                 Property::Animation(animations, _) => {

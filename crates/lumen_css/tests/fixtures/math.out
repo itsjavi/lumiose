@@ -1,0 +1,67 @@
+=== css
+.regular[data-l-v0l7zw5c] {
+  opacity: .5;
+  width: calc(100% - 16px);
+  height: calc(1em + 2px);
+  z-index: calc(3 * 2);
+  max-width: calc(var(--w) + 8 * 2px);
+  margin: 10px 2rem 8px;
+  padding: 16px 16px 16px -5px;
+  transition-duration: .3s;
+  inset: -5px;
+  transform: rotate(90deg);
+}
+
+.custom[data-l-v0l7zw5c] {
+  --space: 16px;
+  --spaces: 8px 16px, 10px;
+  --size: 8px;
+  --abs: 100px;
+  --em: 2em;
+  --percent: 100%;
+  --angle: rotate(90deg) skew(.125turn);
+  --sine: calc(.5);
+  --time: .3s;
+  --count: 6;
+  --ratio: calc(.333333);
+  --negative: calc(-5px);
+  --zero: 0px;
+  --fallback: var(--missing, 24px);
+  --nested: 16px;
+  --adjacent: calc(4px)calc(1px);
+  --upper: 4px;
+}
+
+.functions[data-l-v0l7zw5c] {
+  --round: 3px;
+  --mod: 1px;
+  --rem: calc(-1px);
+  --abs: abs(-50%);
+  --sign-length: calc(-1);
+  --sign-percent: sign(50%);
+  --pow: 8;
+  --sqrt: 4;
+  --hypot: 5px;
+  --log: 3;
+  --exp: 1;
+  --atan2: 45deg;
+  --atan2-percent: 45deg;
+  --clamp-percent: 10%;
+  --pi: 3.14159deg;
+}
+
+.untouched[data-l-v0l7zw5c] {
+  --mixed: calc(100% - 8 * 2px);
+  --relative: calc(1em + 2px);
+  --viewport: min(10vw, 100px);
+  --var: calc(var(--gap) * 2);
+  --env: calc(env(safe-area-inset-top) + 4px);
+  --incompatible: calc(2 + 2px);
+  --divide-by-zero: calc(1px / 0);
+  --infinite: calc(infinity * 1px);
+  --partial: calc(100% - min(4px, 8px));
+  --not-math: translate(10px, 20px);
+  unknown-property: calc(8 * 2px);
+}
+=== var() reads
+--gap --missing --w
