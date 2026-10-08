@@ -5,7 +5,7 @@ status: Done
 assignee:
   - '@Beacon'
 created_date: '2026-10-08 12:21'
-updated_date: '2026-10-08 13:24'
+updated_date: '2026-10-08 13:25'
 labels: []
 milestone: m-4
 dependencies:
@@ -53,6 +53,11 @@ Beacon (session beacon-task27-20261008T131328Z), 2026-10-08T13:24Z:
 - Provisional code LUM6001 for tsconfig warnings (not in registry.rs) — needs Lux/Photon decision.
 - Deps: lumen now depends on @lumen/compiler (workspace:*), lockfile updated. packages/lumen/tsconfig.json excludes src/cli/check/__fixtures__. Rebuilt the napi binding (it was older than the committed crate sources).
 - Not done (follow-ups): `lumen typegen` CLI should also sync shadows (spec §9.1, TASK-28); scanning .tsx for LUM1006 in check; check tests skip when the native binding is not built (same as compiler tests).
+
+Lux review, Beacon's decisions accepted:
+- @lumen/compiler as a dependency of lumen; fixtures excluded in tsconfig.
+- Tests skip when the binding isn't built; the root `pnpm check` now builds the compiler first.
+- New diagnostics range 6xxx = tooling/config. LUM6001 (tsconfig missing required Lumen options) is to be registered by Photon.
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary
