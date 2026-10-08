@@ -5,7 +5,7 @@ status: In Progress
 assignee:
   - Beacon
 created_date: '2026-10-08 14:03'
-updated_date: '2026-10-08 15:48'
+updated_date: '2026-10-08 16:02'
 labels:
   - tooling
 dependencies:
@@ -25,6 +25,9 @@ Gaps found while implementing TASK-29 (packages/language-server). (1) Import syn
 - [x] #1 Language server imports the shadow API from a lumen package export
 - [ ] #2 Compiler diagnostics flow into .stsx diagnostics with a protocol test
 - [ ] #3 TS LSP crash recovery covered by a test
+- [ ] #4 <style global> classes of other workspace files are offered in class completion and resolved by go-to-definition, with a protocol test
+- [ ] #5 CSS document symbols for style blocks are merged into TypeScript's document symbols, with a protocol test
+- [ ] #6 Execution-contract hovers implemented, or the needed compile() meta shape proposed to Lux when meta lacks per-expression tracking
 <!-- AC:END -->
 
 ## Implementation Plan
