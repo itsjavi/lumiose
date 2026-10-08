@@ -31,20 +31,30 @@ input, submits and key presses that happen before hydration are replayed.
 `URL`, `Map` and `Set`. Functions, symbols, class instances (a `Response` too), promises and cycles
 are `LUM4002`.
 
-**Children and JSX props are slots.** They are rendered on the server into
-`<template data-l-slot="name">` inside the island and inserted when the island renders the slot.
-They stay server components: they never ship their own JS.
+**Children and JSX props are slots.** They are rendered on the server and stay server components:
+they never ship their own JS. A slot the island rendered on the server is adopted in place when it
+hydrates; one it did not render yet (behind a condition) is sent as `<template data-l-slot="name">`
+and inserted when the island renders it.
+
+**What hydration does.** The island's component runs again in the browser, with the props the
+server serialized, and its compiled code claims the server's nodes instead of creating new ones:
+the DOM, focus and text selections stay. Awaits replay the values recorded during SSR instead of
+fetching again, while still tracking what they read, so a later change re-runs the component and
+fetches. Everything outside islands stays server HTML that never hydrates. `client:only` renders on
+the client without server HTML. An island inside a streamed `<Suspense>` waits for its content
+before hydrating.
 
 **Nested directives.** A `client:*` inside an island's own render is just a component: it is
 already client-side.
 
 **Server-only boundaries.** `*.server.ts` files and everything under `src/server/` may not be
 imported from code that reaches the browser (`LUM4003`): keep database access, secrets and
-`env()` there.
+`env()` there. Server-only APIs (`request()`, `cookies()`, `env()`, …) throw `LUM4003` in the
+browser build; a build-time check of import graphs is planned.
 
 **Awaited data** inside an island is recorded during SSR and replayed during hydration, so the
 browser does not fetch it again; it must be plain data (`LUM4007`), and it is visible in the page
-source.
+source. The loader and `hydrate()` are described in [`lumen/dom`](../reference/dom.md).
 
 **The loader script.** `lumen dev` and `lumen build` add the loader to every page that renders an
 island, once, as `<script type="module" async>`: in the `<head>` when the shell has islands,

@@ -167,4 +167,4 @@ that references `@AGENTS.md`, the `lumen` skill (`.claude/skills/lumen/SKILL.md`
 
 ## Planned commands
 
-`lumen mcp` and `upgrade` are designed (spec §3, §10) and in progress.
+`lumen mcp` and `upgrade` are designed (spec §3, §10) but not available yet.

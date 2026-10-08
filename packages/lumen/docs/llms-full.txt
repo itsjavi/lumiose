@@ -51,11 +51,12 @@ mistakes** and **Related diagnostics**. Reference pages list every export with i
 - [`lumen`: components](reference/components.md): `Suspense`, `ErrorBoundary`, `Portal`, `Dynamic`, `ref`, `Head`, `Title`, `Meta`.
 - [`lumen`: app layer](reference/app.md): `fetchJSON`, `submit`, `submitting`, `actionData`, `invalidate`, `fail`, `redirect`, `notFound`, `error`, `href`, request APIs and types.
 - [`lumen`: server rendering](reference/server.md): `renderToStream`, `renderToString` and the `lumen/server` subpath.
-- [`lumen/dom`](reference/dom.md): `mount` and the compiler-runtime contract.
+- [`lumen/dom`](reference/dom.md): `mount`, the compiler-runtime contract, `hydrate` (`lumen/dom/hydrate`) and the island loader (`lumen/dom/loader`).
 - [`lumen/router`](reference/router.md): The SPA router: `Link`, `navigate`, `navigating` and reactive route state.
 - [`lumen/vite`](reference/vite.md): The Vite plugin and its options.
 - [JSX types and tsconfig](reference/jsx.md): `lumen/jsx-runtime`, `lumen/env` and the required `tsconfig.json`.
-- [CLI](reference/cli.md): `lumen dev`, `build`, `preview`, `check`, `typegen`, `routes`, `lint`, `fmt`, `docs` and `explain`; `--format json` and exit codes.
+- [CLI](reference/cli.md): `lumen dev`, `build`, `preview`, `check`, `typegen`, `routes`, `lint`, `fmt`, `docs`, `explain` and `agents init`; `--format json` and exit codes.
+- [`@lumen/adapter-node`](reference/adapter-node.md): `createServer`, `createHandler` and `createStaticHandler`: serve a build with Node.
 
 ## Diagnostics
 
@@ -689,9 +690,11 @@ object literal folds too, as written, but only `as const` keeps the JS read-only
 **How values are written.** Strings are inserted verbatim, without quotes (`"12px"` becomes
 `12px`; for a CSS string, put the quotes inside: `'"→"'`). Numbers are inserted as plain numbers
 (`const gap = 8` gives `8`), so give them a unit with `calc($gap * 1px)` (which ships as `8px`, see below) or keep the unit in the
-constant (`"8px"`, `` `${gap}px` ``). Lightning CSS happens to read a bare number in a length property
-as pixels (`gap: $gap` ships as `gap: 8px`), but in properties that take numbers (`line-height`,
-`flex`, `z-index`) and in custom properties it stays a number, so do not rely on it.
+constant (`"8px"`, `` `${gap}px` ``). A bare number where a length, angle or time is required
+(`gap: $gap`, `rotate: $angle`) is [LUM3018](../errors/LUM3018.md), with `calc($gap * 1px)` as the
+fix: Lightning CSS happens to read a bare length as pixels, but angles and times are dropped, and in
+custom properties or math functions the number stays unitless. A unit written after the reference
+(`$gap px`) does not attach to it ([LUM3019](../errors/LUM3019.md)).
 
 **What cannot be referenced.** The compiler reports it; the CSS keeps the `$` text, which browsers
 ignore.
@@ -941,8 +944,11 @@ in the file-level block styles every template in the file.
   such as `$space(2)`, is `LUM3008`. Pass runtime values with `style={{ "--count": count() }}` and
   `var(--count)`; replace calls with constant math (`calc($space * 2px)`).
 - **Array items.** `$sizes.0` is not JS (`LUM3008`). Use an `as const` object: `$sizes.sm`.
-- **A unit after a reference.** `margin: $gap px` ships as `8 px`, which browsers ignore, and no
-  diagnostic flags it. Write `calc($gap * 1px)` or keep the unit in the constant.
+- **A unit after a reference.** `margin: $gap px` ships as `8 px`, which browsers ignore
+  (`LUM3019`). Write `calc($gap * 1px)` or keep the unit in the constant.
+- **A unitless number in a length, angle or time.** `gap: $gap` with `const gap = 8` relies on
+  Lightning CSS reading `8` as pixels, and `rotate: $angle` is dropped (`LUM3018`). Multiply by the
+  unit (`calc($angle * 1deg)`) or keep the unit in the constant.
 - **`$` in selectors, strings or `url()`.** It is not substituted there (`[href$=".pdf"]` is CSS's
   "ends with"). Put the whole value in a constant, `url()` included.
 - **A top-level block before the `const`s it reads.** Move the block to the end of the file
@@ -963,6 +969,8 @@ in the file-level block styles every template in the file.
 - [LUM3010](../errors/LUM3010.md), [LUM3011](../errors/LUM3011.md): misplaced blocks.
 - [LUM3012](../errors/LUM3012.md): custom property set but never read.
 - [LUM3014](../errors/LUM3014.md), [LUM3015](../errors/LUM3015.md): CSS syntax error, invalid CSS dropped (such as `$` in a selector).
+- [LUM3017](../errors/LUM3017.md): a declaration value browsers would ignore.
+- [LUM3018](../errors/LUM3018.md), [LUM3019](../errors/LUM3019.md): a unitless `$` number, a unit separated from a reference.
 
 See also: [Components](components.md), [JSX `style` and `class`](jsx.md).
 
@@ -1013,8 +1021,8 @@ replayed during hydration, so the client does not fetch it again. Those values m
 (`LUM4007`), and **everything awaited inside an island is sent to the browser**.
 
 > **Status:** async components, the `await` rewrite, re-runs, `<Suspense>`, `<ErrorBoundary>`,
-> `pending()`, `busy()` and server streaming are available. Recording awaited values for island
-> hydration is part of the islands work in progress (see [Islands](islands.md)).
+> `pending()`, `busy()` and server streaming are available, and so is replaying awaited values when
+> an island hydrates (see [Islands](islands.md)).
 
 ## API
 
@@ -1141,20 +1149,30 @@ input, submits and key presses that happen before hydration are replayed.
 `URL`, `Map` and `Set`. Functions, symbols, class instances (a `Response` too), promises and cycles
 are `LUM4002`.
 
-**Children and JSX props are slots.** They are rendered on the server into
-`<template data-l-slot="name">` inside the island and inserted when the island renders the slot.
-They stay server components: they never ship their own JS.
+**Children and JSX props are slots.** They are rendered on the server and stay server components:
+they never ship their own JS. A slot the island rendered on the server is adopted in place when it
+hydrates; one it did not render yet (behind a condition) is sent as `<template data-l-slot="name">`
+and inserted when the island renders it.
+
+**What hydration does.** The island's component runs again in the browser, with the props the
+server serialized, and its compiled code claims the server's nodes instead of creating new ones:
+the DOM, focus and text selections stay. Awaits replay the values recorded during SSR instead of
+fetching again, while still tracking what they read, so a later change re-runs the component and
+fetches. Everything outside islands stays server HTML that never hydrates. `client:only` renders on
+the client without server HTML. An island inside a streamed `<Suspense>` waits for its content
+before hydrating.
 
 **Nested directives.** A `client:*` inside an island's own render is just a component: it is
 already client-side.
 
 **Server-only boundaries.** `*.server.ts` files and everything under `src/server/` may not be
 imported from code that reaches the browser (`LUM4003`): keep database access, secrets and
-`env()` there.
+`env()` there. Server-only APIs (`request()`, `cookies()`, `env()`, …) throw `LUM4003` in the
+browser build; a build-time check of import graphs is planned.
 
 **Awaited data** inside an island is recorded during SSR and replayed during hydration, so the
 browser does not fetch it again; it must be plain data (`LUM4007`), and it is visible in the page
-source.
+source. The loader and `hydrate()` are described in [`lumen/dom`](../reference/dom.md).
 
 **The loader script.** `lumen dev` and `lumen build` add the loader to every page that renders an
 island, once, as `<script type="module" async>`: in the `<head>` when the shell has islands,
@@ -1291,8 +1309,8 @@ layouts, scroll restoration and a client-side `_404`. A navigation holds the old
 page's async content is ready.
 
 > **Status:** file routes, the manifest, matching, typegen, `href()` and the request handler are
-> available; `lumen dev` (which serves them) is in progress. The SPA router (`lumen/router`) is
-> planned and currently exports nothing.
+> available, served by `lumen dev`, `lumen build` and `lumen preview`. The SPA router
+> (`lumen/router`) is in progress and currently exports nothing.
 
 ## API
 
@@ -1597,7 +1615,8 @@ subset.
 that reaches the browser is `LUM4003`.
 
 > **Status:** the request handler, middleware, endpoints, cookies, env and error pages are
-> available and tested; they are served by `lumen dev` and the build output, which are in progress.
+> available, served by `lumen dev` and by the build output (`lumen preview`,
+> [`@lumen/adapter-node`](../reference/adapter-node.md)).
 
 ## API
 
@@ -1740,9 +1759,10 @@ post to a prerendered page reaches its `action` on the server. Serve the build w
 `@lumen/adapter-node` (`createServer({ port })`: `dist/client` with caching headers, then the
 handler) or `lumen preview`; a site whose routes are all static deploys with `dist/client` alone.
 
-> **Status:** `lumen dev`, `lumen build`, prerendering, `@lumen/adapter-node`, CSS links in
-> built pages and the island loader (hydration) are available. SPA mode (`ssr = false` shells) is
-> in progress.
+> **Status:** `lumen dev`, `lumen build`, prerendering,
+> [`@lumen/adapter-node`](../reference/adapter-node.md), CSS links in built pages and the island
+> loader (hydration) are available. SPA mode (`spa` routes booting as one root island, and
+> `ssr = false` shells) and the SPA router are in progress.
 
 ## API
 
@@ -2841,9 +2861,60 @@ not an application API and may change between versions; write JSX instead.
 
 ## `lumen/dom/hydrate`
 
-Importing `lumen/dom/hydrate` installs the hydration cursor that makes the compiled walk claim
-server-rendered nodes. The island loader and SPA entries import it; bundles that never hydrate do
-not include it.
+```ts
+function hydrate<P extends object>(
+  component: Component<P>,
+  props: P,
+  start: Node,
+  end: Node,
+  awaits?: Record<string, unknown>,
+  slots?: readonly string[],
+  fresh?: boolean,
+): () => void;
+```
+
+Hydrates the server-rendered range between the comments `start` and `end` (an island's
+`<!--l:ID-->` and `<!--/l:ID-->`): it renders `component` with `props`, and the compiled code
+claims the server's nodes instead of creating new ones, so element identity, focus and text
+selections survive. Returns a disposer.
+
+- **Awaits are replayed.** `awaits` maps each first-run `await` of an async component to the value
+  the server recorded (`"instancePath:site:occurrence"` keys), so hydration does not fetch again.
+  The awaited expression still runs for tracking, with its fetch held off: when a signal it reads
+  changes later, the component re-runs and fetches as usual.
+- **Slots** (`slots`, the names of children and JSX props) become props holding the server's HTML:
+  the nodes rendered inline (`<!--l:s:NAME-->…<!--/l:s-->`) are adopted where the island renders
+  the slot; a slot the server did not render comes from its `<template data-l-slot="NAME">` when
+  the island renders it later.
+- **Mismatch.** When the client renders a different structure than the server's (another branch,
+  element or list length), the island is disposed, its range cleared and rendered on the client;
+  in dev, [LUM4006](../errors/LUM4006.md) is logged. A missing await record makes the client await
+  again (also LUM4006 in dev).
+- `fresh` (`client:only`) renders on the client without claiming.
+
+Importing `lumen/dom/hydrate` also installs the hydration cursor that the compiled walk uses. Only
+the island loader and hydrating entries import it; bundles that never hydrate do not include it.
+
+## `lumen/dom/loader`
+
+The island loader: a client entry, with no exports, that `lumen dev` and `lumen build` add to every
+page that renders an island (`<script type="module" async>`, see [Islands](../concepts/islands.md));
+with your own server, pass its URL as `renderToStream(root, { loaderUrl })`. It imports the app's
+island manifest (`virtual:lumen/islands`, from `lumen/vite`), and:
+
+- reads the island records (`<script type="application/json" data-l-islands>`) as each streamed
+  chunk arrives, and finds each island's range;
+- arms its trigger: `client:load` and `client:only` at once, `client:idle` on
+  `requestIdleCallback`, `client:visible` when the range's first element intersects the viewport
+  (the value is the `rootMargin`), `client:media` when the query matches;
+- waits for an island whose range still holds a streamed `<Suspense>` fallback until its content
+  (and the await records sent with it) arrives;
+- imports the island's module and calls `hydrate()`;
+- catches `click`, `input`, `submit` and `keydown` on an island that is not hydrated yet: it
+  hydrates that island at once and dispatches the events again on their targets afterwards (an
+  `input` restores the value typed meanwhile).
+
+Islands inside slots that an island inserts later are hydrated when they appear.
 
 ## Example
 
@@ -3238,7 +3309,100 @@ that references `@AGENTS.md`, the `lumen` skill (`.claude/skills/lumen/SKILL.md`
 
 ## Planned commands
 
-`lumen mcp` and `upgrade` are designed (spec §3, §10) and in progress.
+`lumen mcp` and `upgrade` are designed (spec §3, §10) but not available yet.
+
+<!-- source: reference/adapter-node.md -->
+
+# `@lumen/adapter-node`
+
+> Serves a `lumen build` output with Node: the static files of `dist/client` first, then the app's request handler from `dist/server/entry.js`, with streamed responses.
+
+`lumen preview` uses it, so a project that previews or deploys on Node depends on it. Concepts:
+[Rendering modes](../concepts/rendering-modes.md) (build output), [Server](../concepts/server.md).
+
+## createServer
+
+```ts
+function createServer(options?: ServerOptions): Promise<LumenServer>;
+
+interface ServerOptions extends HandlerOptions {
+  /** Default: the `PORT` env variable, else 3000. `0` picks a free port. */
+  port?: number;
+  /** Default: the `HOST` env variable, else every address. */
+  host?: string;
+}
+
+interface LumenServer {
+  readonly server: import("node:http").Server;
+  /** The URL it listens on, e.g. `http://localhost:3000/` (with the app's `base`). */
+  readonly url: string;
+  close(): Promise<void>;
+}
+```
+
+Loads the build and starts an HTTP server; resolves once it listens. A missing build fails with
+"No build in dist … Run `lumen build` first."
+
+## createHandler
+
+```ts
+function createHandler(options?: HandlerOptions): Promise<NodeHandler>;
+
+interface HandlerOptions {
+  /** The build output directory, holding `client/` and `server/entry.js`. Default: `dist`. */
+  dir?: string | URL;
+  /** The public origin (`https://example.com`) behind a proxy. Default: `ORIGIN`, else the request's. */
+  origin?: string;
+  /** `ctx.env` and `env()` of requests. Default: `process.env`. */
+  env?: Readonly<Record<string, string | undefined>>;
+}
+
+type NodeHandler = (
+  req: IncomingMessage,
+  res: ServerResponse,
+  next?: (error?: unknown) => void,
+) => void;
+```
+
+The same request handling as a Node request listener, for your own `http.createServer` or as
+connect/Express middleware (errors go to `next`). Set `origin` (or `ORIGIN`) when a proxy terminates
+TLS or rewrites the host: request URLs, and the cross-site check of form posts, use it.
+
+## createStaticHandler
+
+```ts
+function createStaticHandler(dir: string, config: BuiltAppConfig): StaticHandler;
+type StaticHandler = (req: IncomingMessage, res: ServerResponse) => Promise<boolean>;
+```
+
+Serves `GET` and `HEAD` requests below the app's `base` from `dir` (the build's `client/`), and
+resolves `false` when no file answers. Content-hashed files in the assets directory are cached for a
+year (`immutable`); everything else revalidates with `ETag` and `Last-Modified` (`304`). Page URLs
+follow the build's `trailingSlash`: `/about` serves `about/index.html` (`"ignore"`), redirects to
+`/about/` (`"always"`), or serves `about.html` (`"never"`, which redirects `/about/`). Paths with
+`..` or dot files (other than `.well-known`) are never served. `config` is the build entry's
+`config` export.
+
+## Example
+
+```ts
+// server.ts: run with `node server.ts` after `lumen build`
+import { createServer } from "@lumen/adapter-node";
+
+const app = await createServer({ port: 8080 });
+console.log(`Listening on ${app.url}`);
+```
+
+As middleware in an existing server:
+
+```ts
+import { createHandler } from "@lumen/adapter-node";
+import express from "express";
+
+const server = express();
+server.use(await createHandler({ dir: new URL("./dist", import.meta.url) }));
+server.listen(3000);
+```
 
 <!-- source: errors/LUM1001.md -->
 
@@ -4623,7 +4787,7 @@ export function ThemeToggle() {
 
 > The DOM the server rendered does not match what the client renders while hydrating.
 
-**Reported by:** planned with the island loader; in dev it will be reported, in production the range is client-rendered instead.
+**Reported by:** hydration (`lumen/dom/hydrate`, run by the island loader), as a console warning in dev, in two cases: the server HTML does not match the client render (the island is then rendered on the client instead), or an async component's await has no recorded value (the client awaits it again). In production there is no warning; the same fallbacks apply.
 
 ## What it means
 

@@ -47,8 +47,8 @@ layouts, scroll restoration and a client-side `_404`. A navigation holds the old
 page's async content is ready.
 
 > **Status:** file routes, the manifest, matching, typegen, `href()` and the request handler are
-> available; `lumen dev` (which serves them) is in progress. The SPA router (`lumen/router`) is
-> planned and currently exports nothing.
+> available, served by `lumen dev`, `lumen build` and `lumen preview`. The SPA router
+> (`lumen/router`) is in progress and currently exports nothing.
 
 ## API
 

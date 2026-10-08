@@ -43,7 +43,8 @@ subset.
 that reaches the browser is `LUM4003`.
 
 > **Status:** the request handler, middleware, endpoints, cookies, env and error pages are
-> available and tested; they are served by `lumen dev` and the build output, which are in progress.
+> available, served by `lumen dev` and by the build output (`lumen preview`,
+> [`@lumen/adapter-node`](../reference/adapter-node.md)).
 
 ## API
 

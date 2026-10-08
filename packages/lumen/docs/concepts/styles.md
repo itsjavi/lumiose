@@ -81,9 +81,11 @@ object literal folds too, as written, but only `as const` keeps the JS read-only
 **How values are written.** Strings are inserted verbatim, without quotes (`"12px"` becomes
 `12px`; for a CSS string, put the quotes inside: `'"→"'`). Numbers are inserted as plain numbers
 (`const gap = 8` gives `8`), so give them a unit with `calc($gap * 1px)` (which ships as `8px`, see below) or keep the unit in the
-constant (`"8px"`, `` `${gap}px` ``). Lightning CSS happens to read a bare number in a length property
-as pixels (`gap: $gap` ships as `gap: 8px`), but in properties that take numbers (`line-height`,
-`flex`, `z-index`) and in custom properties it stays a number, so do not rely on it.
+constant (`"8px"`, `` `${gap}px` ``). A bare number where a length, angle or time is required
+(`gap: $gap`, `rotate: $angle`) is [LUM3018](../errors/LUM3018.md), with `calc($gap * 1px)` as the
+fix: Lightning CSS happens to read a bare length as pixels, but angles and times are dropped, and in
+custom properties or math functions the number stays unitless. A unit written after the reference
+(`$gap px`) does not attach to it ([LUM3019](../errors/LUM3019.md)).
 
 **What cannot be referenced.** The compiler reports it; the CSS keeps the `$` text, which browsers
 ignore.
@@ -333,8 +335,11 @@ in the file-level block styles every template in the file.
   such as `$space(2)`, is `LUM3008`. Pass runtime values with `style={{ "--count": count() }}` and
   `var(--count)`; replace calls with constant math (`calc($space * 2px)`).
 - **Array items.** `$sizes.0` is not JS (`LUM3008`). Use an `as const` object: `$sizes.sm`.
-- **A unit after a reference.** `margin: $gap px` ships as `8 px`, which browsers ignore, and no
-  diagnostic flags it. Write `calc($gap * 1px)` or keep the unit in the constant.
+- **A unit after a reference.** `margin: $gap px` ships as `8 px`, which browsers ignore
+  (`LUM3019`). Write `calc($gap * 1px)` or keep the unit in the constant.
+- **A unitless number in a length, angle or time.** `gap: $gap` with `const gap = 8` relies on
+  Lightning CSS reading `8` as pixels, and `rotate: $angle` is dropped (`LUM3018`). Multiply by the
+  unit (`calc($angle * 1deg)`) or keep the unit in the constant.
 - **`$` in selectors, strings or `url()`.** It is not substituted there (`[href$=".pdf"]` is CSS's
   "ends with"). Put the whole value in a constant, `url()` included.
 - **A top-level block before the `const`s it reads.** Move the block to the end of the file
@@ -355,5 +360,7 @@ in the file-level block styles every template in the file.
 - [LUM3010](../errors/LUM3010.md), [LUM3011](../errors/LUM3011.md): misplaced blocks.
 - [LUM3012](../errors/LUM3012.md): custom property set but never read.
 - [LUM3014](../errors/LUM3014.md), [LUM3015](../errors/LUM3015.md): CSS syntax error, invalid CSS dropped (such as `$` in a selector).
+- [LUM3017](../errors/LUM3017.md): a declaration value browsers would ignore.
+- [LUM3018](../errors/LUM3018.md), [LUM3019](../errors/LUM3019.md): a unitless `$` number, a unit separated from a reference.
 
 See also: [Components](components.md), [JSX `style` and `class`](jsx.md).

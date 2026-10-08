@@ -31,11 +31,12 @@ These docs match lumen 0.0.0. Installed projects have them in `node_modules/lume
 - [`lumen`: components](reference/components.md): `Suspense`, `ErrorBoundary`, `Portal`, `Dynamic`, `ref`, `Head`, `Title`, `Meta`.
 - [`lumen`: app layer](reference/app.md): `fetchJSON`, `submit`, `submitting`, `actionData`, `invalidate`, `fail`, `redirect`, `notFound`, `error`, `href`, request APIs and types.
 - [`lumen`: server rendering](reference/server.md): `renderToStream`, `renderToString` and the `lumen/server` subpath.
-- [`lumen/dom`](reference/dom.md): `mount` and the compiler-runtime contract.
+- [`lumen/dom`](reference/dom.md): `mount`, the compiler-runtime contract, `hydrate` (`lumen/dom/hydrate`) and the island loader (`lumen/dom/loader`).
 - [`lumen/router`](reference/router.md): The SPA router: `Link`, `navigate`, `navigating` and reactive route state.
 - [`lumen/vite`](reference/vite.md): The Vite plugin and its options.
 - [JSX types and tsconfig](reference/jsx.md): `lumen/jsx-runtime`, `lumen/env` and the required `tsconfig.json`.
-- [CLI](reference/cli.md): `lumen dev`, `build`, `preview`, `check`, `typegen`, `routes`, `lint`, `fmt`, `docs` and `explain`; `--format json` and exit codes.
+- [CLI](reference/cli.md): `lumen dev`, `build`, `preview`, `check`, `typegen`, `routes`, `lint`, `fmt`, `docs`, `explain` and `agents init`; `--format json` and exit codes.
+- [`@lumen/adapter-node`](reference/adapter-node.md): `createServer`, `createHandler` and `createStaticHandler`: serve a build with Node.
 
 ## Diagnostics
 

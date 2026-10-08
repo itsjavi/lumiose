@@ -43,8 +43,8 @@ replayed during hydration, so the client does not fetch it again. Those values m
 (`LUM4007`), and **everything awaited inside an island is sent to the browser**.
 
 > **Status:** async components, the `await` rewrite, re-runs, `<Suspense>`, `<ErrorBoundary>`,
-> `pending()`, `busy()` and server streaming are available. Recording awaited values for island
-> hydration is part of the islands work in progress (see [Islands](islands.md)).
+> `pending()`, `busy()` and server streaming are available, and so is replaying awaited values when
+> an island hydrates (see [Islands](islands.md)).
 
 ## API
 

@@ -57,9 +57,10 @@ post to a prerendered page reaches its `action` on the server. Serve the build w
 `@lumen/adapter-node` (`createServer({ port })`: `dist/client` with caching headers, then the
 handler) or `lumen preview`; a site whose routes are all static deploys with `dist/client` alone.
 
-> **Status:** `lumen dev`, `lumen build`, prerendering, `@lumen/adapter-node`, CSS links in
-> built pages and the island loader (hydration) are available. SPA mode (`ssr = false` shells) is
-> in progress.
+> **Status:** `lumen dev`, `lumen build`, prerendering,
+> [`@lumen/adapter-node`](../reference/adapter-node.md), CSS links in built pages and the island
+> loader (hydration) are available. SPA mode (`spa` routes booting as one root island, and
+> `ssr = false` shells) and the SPA router are in progress.
 
 ## API
 
