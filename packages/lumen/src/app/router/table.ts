@@ -139,6 +139,18 @@ export function clientTable(
   };
 }
 
+/** Whether any SPA page or SPA error page is rendered on the server (and so hydrates). */
+export function spaHydrates(
+  manifest: Pick<RouteManifest, "routes" | "layouts" | "notFoundPages" | "errorPages">,
+): boolean {
+  return (
+    manifest.routes.some((route) => route.kind === "page" && route.mode === "spa" && route.ssr) ||
+    [...manifest.notFoundPages, ...manifest.errorPages].some(
+      (page) => spaErrorPart(manifest, layoutChain(manifest, page.dir), page.file)?.ssr === true,
+    )
+  );
+}
+
 /** Every file the client router may import: the levels of SPA pages and error pages. */
 export function clientFiles(table: ClientTable): string[] {
   const files = new Set<string>();

@@ -46,6 +46,7 @@
     "typecheck": "tsc -p tsconfig.json",
     "test": "vitest run",
     "size": "node scripts/size.ts",
+    "size:apps": "node scripts/size-apps.ts",
     "docs:gen": "node scripts/gen-error-docs.ts && node scripts/gen-llms.ts",
     "docs:check": "node scripts/gen-error-docs.ts --check && node scripts/gen-llms.ts --check"
   },

@@ -7,7 +7,7 @@ import { createRouteManifest, type RouteManifest } from "../routes/manifest.ts";
 import { createRequestHandler, type ModuleExports } from "../server/handler.ts";
 import { hasSpa, spaEntryCode } from "./entry.ts";
 import { Link } from "./index.server.ts";
-import { clientTable, spaErrorPart, spaPagePart } from "./table.ts";
+import { clientTable, spaErrorPart, spaHydrates, spaPagePart } from "./table.ts";
 
 type Props = any;
 
@@ -210,6 +210,21 @@ describe("the client table", () => {
     expect(code).toContain('"src/routes/app/[id].tsx": () => import("/src/routes/app/[id].tsx"),');
     expect(code).not.toContain('import("/src/routes/index.tsx")');
     expect(spaEntryCode(manifestOf({ "index.tsx": "" }), "/")).toBe("export {};\n");
+    // A build where nothing hydrates starts the SPA without the island loader (TASK-91).
+    const csr = spaEntryCode(manifest, "/", true);
+    expect(csr).toMatch(/^import \{ startCsr \} from ".*\/router\/csr\.ts";/);
+    expect(csr).not.toContain("virtual:lumen/islands");
+    expect(csr).toContain('"src/routes/app/[id].tsx": () => import("/src/routes/app/[id].tsx"),');
+  });
+
+  it("tells whether any SPA page renders on the server", () => {
+    expect(spaHydrates(manifest)).toBe(true);
+    const shells = { "_layout.tsx": "export const ssr = false;", "index.tsx": "", "_404.tsx": "" };
+    expect(spaHydrates(manifestOf(shells, "spa"))).toBe(false);
+    expect(
+      spaHydrates(manifestOf({ ...shells, "about.tsx": "export const ssr = true;" }, "spa")),
+    ).toBe(true);
+    expect(spaHydrates(manifestOf({ "index.tsx": "" }))).toBe(false);
   });
 
   it("makes the whole app one SPA with lumen({ mode: 'spa' })", () => {

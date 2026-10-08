@@ -60,7 +60,17 @@ source. The loader and `hydrate()` are described in [`lumen/dom`](../reference/d
 island, once, as `<script type="module" async>`: in the `<head>` when the shell has islands,
 otherwise with the first streamed chunk that does. In a build, pages without islands load no
 JavaScript; the loader is the client entry, and each island is a chunk it imports when the island's
-trigger fires. With your own server, pass its URL as `renderToStream(root, { loaderUrl })`.
+trigger fires. The loader's chunk also holds the Lumen runtime the islands share (signals, DOM,
+hydration), so a page loads one runtime file before its islands: about 9 to 10 kB min+brotli in
+the sample apps (`pnpm --filter lumen size:apps` measures them). With your own server, pass its URL as
+`renderToStream(root, { loaderUrl })`.
+
+**Build output.** `lumen build` puts the Lumen runtime in one chunk: the island loader's, the SPA
+entry's when the app has no islands, or a shared `lumen-[hash].js` when it has both. Dynamic
+imports go through a smaller preload helper than Vite's: it still adds the imported chunk's
+stylesheets (and waits for them), module preloads and the CSP nonce of
+`<meta property="csp-nonce">`, but dispatches no `vite:preloadError` event (the router loads the
+URL with a document navigation when a page's module does not load).
 
 **Islands from other packages.** Components of a linked workspace package (`"@acme/ui": "workspace:*"`)
 can be or render islands too. Island records name modules without build-machine paths:

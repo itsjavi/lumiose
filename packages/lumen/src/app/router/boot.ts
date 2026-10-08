@@ -5,20 +5,18 @@
 // first view's modules have loaded, the loader hydrates (or renders) the island with the router's
 // root component. Islands outside the SPA (in the layouts the server renders around it) hydrate as
 // usual.
+//
+// A build whose SPA pages are all client-rendered and that has no islands starts with ./csr.ts.
 import { loadIslands, type IslandManifest } from "../../dom/islands.ts";
 import { createRouter, prepareRoot, type SpaConfig } from "./router.ts";
+import { leavesOf } from "./csr.ts";
 import { CSR_REF, SPA_REF } from "./table.ts";
 
 export type { SpaConfig };
 
 export function startSpa(islands: IslandManifest, config: SpaConfig): void {
   const manifest: IslandManifest = { ...islands };
-  const leaves: Record<string, string> = {};
-  for (const route of config.routes) {
-    if (route.levels !== undefined) leaves[route.levels.at(-1)!] = route.app!;
-  }
-  for (const [file, page] of Object.entries(config.pages)) leaves[file] = page.app;
-  for (const [leaf, app] of Object.entries(leaves)) {
+  for (const [leaf, app] of Object.entries(leavesOf(config))) {
     const start = (csr: boolean) => () => {
       createRouter(config, app);
       return prepareRoot(leaf, csr);

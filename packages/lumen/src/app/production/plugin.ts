@@ -4,7 +4,8 @@
 //
 // - client → `dist/client`: the island loader (`lumen/dom/loader`, which imports the island
 //   manifest `virtual:lumen/islands`: one chunk per island), the SPA entry (`virtual:lumen/spa`:
-//   the client route table and a chunk per SPA layout and page), assets and `public/`.
+//   the client route table and a chunk per SPA layout and page), assets and `public/`. The
+//   runtime goes to one chunk, with a smaller preload helper (./client-runtime.ts).
 // - ssr → `dist/server/entry.js` (`virtual:lumen/server-entry`): the route manifest, a lazy
 //   import per route module, the middleware and the document, the island and loader URLs of the
 //   client build, the stylesheets of each module (`virtual:lumen/css-manifest`, lumen/vite) and
@@ -20,6 +21,7 @@ import type { CsrfOptions } from "../server/csrf.ts";
 import type { TrailingSlash } from "../server/handler.ts";
 import type { Prefetch } from "../server/navigation.ts";
 import { SPA_ENTRY, spaEntryPlugin } from "../router/entry.ts";
+import { clientRuntime } from "./client-runtime.ts";
 import { islandModules } from "../project.ts";
 import { ISLANDS_ID } from "../../vite/islands.ts";
 
@@ -61,7 +63,11 @@ export interface BuildState {
 }
 
 export function lumenBuild(state: BuildState): Plugin[] {
-  return [lumenBuildEnvironments(state), spaEntryPlugin(() => state.app?.manifest)];
+  return [
+    lumenBuildEnvironments(state),
+    spaEntryPlugin(() => state.app?.manifest),
+    clientRuntime(state),
+  ];
 }
 
 function lumenBuildEnvironments(state: BuildState): Plugin {
