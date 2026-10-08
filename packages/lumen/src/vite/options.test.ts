@@ -49,8 +49,25 @@ describe("lumen() project options", () => {
       'lumen({ include }): expected a RegExp, got "*.stsx".',
     );
     expect(create({ moed: "spa" })).toThrow(
-      "lumen({ moed }): unknown option. Known options: include, exclude, mode, ssr, trailingSlash, csrf, svg.",
+      "lumen({ moed }): unknown option. Known options: include, exclude, mode, ssr, trailingSlash, csrf, svg, viewTransitions, prefetch.",
     );
     expect(create(null)).toThrow("lumen(): expected an options object, got null.");
+  });
+
+  it("validates the MPA navigation options viewTransitions and prefetch (TASK-93)", () => {
+    expect(apiOf({ viewTransitions: true, prefetch: "viewport" })).toEqual({
+      viewTransitions: true,
+      prefetch: "viewport",
+    });
+    expect(apiOf({ prefetch: "none" })).toEqual({ prefetch: "none" });
+    expect(create({ viewTransitions: "auto" })).toThrow(
+      'lumen({ viewTransitions }): expected true or false, got "auto".',
+    );
+    expect(create({ prefetch: "eager" })).toThrow(
+      'lumen({ prefetch }): expected one of "hover", "viewport", "none", got "eager".',
+    );
+    expect(create({ prefetch: false })).toThrow(
+      'lumen({ prefetch }): expected one of "hover", "viewport", "none", got false.',
+    );
   });
 });

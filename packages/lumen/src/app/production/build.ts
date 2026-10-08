@@ -27,6 +27,7 @@ import {
   findAppFile,
   findViteConfig,
   MIDDLEWARE_FILES,
+  navigationOptions,
   projectOptions,
 } from "../project.ts";
 import { DEFAULT_ROUTES_DIR, type RouteMode } from "../routes/manifest.ts";
@@ -76,6 +77,8 @@ export async function build(options: BuildOptions = {}): Promise<BuildResult> {
     outDir: "",
     trailingSlash: "ignore",
     csrf: undefined,
+    viewTransitions: false,
+    prefetch: "hover",
     islands: {},
   };
   const config: InlineConfig = {
@@ -93,6 +96,7 @@ export async function build(options: BuildOptions = {}): Promise<BuildResult> {
   const project = projectOptions(resolved, "build");
   state.trailingSlash = options.trailingSlash ?? project.trailingSlash ?? "ignore";
   state.csrf = project.csrf;
+  Object.assign(state, navigationOptions(project));
   const defaultMode: RouteMode = project.mode ?? "static";
 
   const { manifest } = await typegen(root, {

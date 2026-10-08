@@ -47,6 +47,18 @@ export interface LumenOptions {
    * Default: `true` (`{ optimize: true, currentColor: false }`).
    */
   svg?: boolean | SvgOptions;
+  /**
+   * Cross-document View Transitions between MPA pages: page documents opt in with
+   * `@view-transition { navigation: auto }`, unless the reader prefers reduced motion. Name the
+   * elements that morph with the CSS `view-transition-name`. Default: `false`.
+   */
+  viewTransitions?: boolean;
+  /**
+   * Prefetch of same-origin links on MPA pages, with generated speculation rules: `"hover"`
+   * (when the pointer rests on a link), `"viewport"` (early, as the browser sees fit) or `"none"`.
+   * In `spa` routes, `<Link prefetch>` decides per link. Default: `"hover"`.
+   */
+  prefetch?: "hover" | "viewport" | "none";
 }
 
 /** The `api` of the `lumen` plugin, read by the app layer (app/project.ts `projectOptions`). */
@@ -57,7 +69,18 @@ export interface LumenPluginApi {
 
 const ROUTE_MODES: readonly RouteMode[] = ["static", "server", "spa"];
 const TRAILING_SLASHES: readonly TrailingSlash[] = ["ignore", "always", "never"];
-const KNOWN = ["include", "exclude", "mode", "ssr", "trailingSlash", "csrf", "svg"];
+const PREFETCH = ["hover", "viewport", "none"] as const;
+const KNOWN = [
+  "include",
+  "exclude",
+  "mode",
+  "ssr",
+  "trailingSlash",
+  "csrf",
+  "svg",
+  "viewTransitions",
+  "prefetch",
+];
 
 /** Validates `lumen({ … })` options and returns the project options; throws a `TypeError`. */
 export function projectOptionsOf(options: LumenOptions): ProjectOptions {
@@ -69,7 +92,7 @@ export function projectOptionsOf(options: LumenOptions): ProjectOptions {
       fail(key, `unknown option. Known options: ${KNOWN.join(", ")}`);
     }
   }
-  const { include, exclude, mode, ssr, trailingSlash, csrf } = options;
+  const { include, exclude, mode, ssr, trailingSlash, csrf, viewTransitions, prefetch } = options;
   if (include !== undefined && !(include instanceof RegExp)) {
     fail("include", `expected a RegExp, got ${describe(include)}`);
   }
@@ -86,6 +109,13 @@ export function projectOptionsOf(options: LumenOptions): ProjectOptions {
     project.trailingSlash = oneOf("trailingSlash", trailingSlash, TRAILING_SLASHES);
   }
   if (csrf !== undefined) project.csrf = csrfOptions(csrf);
+  if (viewTransitions !== undefined) {
+    if (typeof viewTransitions !== "boolean") {
+      fail("viewTransitions", `expected true or false, got ${describe(viewTransitions)}`);
+    }
+    project.viewTransitions = viewTransitions;
+  }
+  if (prefetch !== undefined) project.prefetch = oneOf("prefetch", prefetch, PREFETCH);
   return project;
 }
 

@@ -1321,11 +1321,28 @@ src/
 - `href("/blog/[slug]", { slug })` builds a URL and type-checks the pattern and params;
 - `params<"/blog/[slug]">()` and `RouteProps<"/blog/[slug]">` type the params.
 
-**Navigation.** Routes are MPA by default (full page loads). For smooth MPA navigation today, add
-the CSS opt-in `@view-transition { navigation: auto; }` to a global style block, and optionally a
-`<script type="speculationrules">` for prefetching; the travel-journal example does both. Built-in
-`lumen()` options for these are planned (TASK-93). Routes with `mode = "spa"` use the client router `lumen/router`
-([reference](../reference/router.md)):
+**Navigation.** Routes are MPA by default: links load the next document. Two `lumen()` options in
+`vite.config.ts` make these navigations smooth ([reference](../reference/vite.md#lumen)); both are
+progressive, so browsers without support navigate normally:
+
+- **Prefetch** (`prefetch`, default `"hover"`). Pages get `<script type="speculationrules">` that
+  prefetches same-origin links: when the pointer rests on a link (`"hover"`), early, as the browser
+  sees fit (`"viewport"`), or never (`"none"`). Links to endpoints are never prefetched, since a GET
+  endpoint may act (`/logout`). `spa` pages get no rules: there `<Link prefetch>` decides per link.
+- **View Transitions** (`viewTransitions: true`, off by default). Every page opts into
+  cross-document View Transitions (`@view-transition { navigation: auto }`), except for readers who
+  prefer reduced motion: the old page cross-fades into the new one. An element morphs into its
+  counterpart on the next page when both have the same CSS `view-transition-name`, unique on each
+  page: in a style block (`.site-header { view-transition-name: site-header; }`) or per item with
+  ``style={{ "view-transition-name": `cover-${post.slug}` }}``. Style the animation with the
+  `::view-transition-*` pseudo-elements in a global style block.
+
+```ts
+// vite.config.ts
+export default defineConfig({ plugins: [lumen({ viewTransitions: true })] });
+```
+
+Routes with `mode = "spa"` use the client router `lumen/router` ([reference](../reference/router.md)):
 
 - The SPA starts at the outermost `spa` layout (or the page itself) and covers every `spa` page
   below it; links between them navigate on the client, other links load the document.
@@ -1336,9 +1353,9 @@ the CSS opt-in `@view-transition { navigation: auto; }` to a global style block,
 - A navigation holds the old page until the new page's async content is ready, then swaps.
 - Scroll restoration, focus reset, `_404` for unknown URLs and `notFound()`, `_error` for errors.
 
-> **Status:** file routes, the manifest, matching, typegen, `href()`, the request handler and the
-> SPA router (`lumen/router`) are available, served by `lumen dev`, `lumen build` and
-> `lumen preview`.
+> **Status:** file routes, the manifest, matching, typegen, `href()`, the request handler, MPA
+> prefetch and View Transitions, and the SPA router (`lumen/router`) are available, served by
+> `lumen dev`, `lumen build` and `lumen preview`.
 
 ## API
 
@@ -1734,11 +1751,11 @@ See also: [Data and actions](data-and-actions.md), [Routing](routing.md), [refer
 
 ## Concept
 
-| Mode               | HTML                                                               | JS shipped        | Navigation                            |
-| ------------------ | ------------------------------------------------------------------ | ----------------- | ------------------------------------- |
-| `static` (default) | At build time, for each path from `staticPaths()`                  | Islands only      | MPA (View Transitions via CSS opt-in) |
-| `server`           | Per request: the shell, then streamed boundaries                   | Islands only      | MPA                                   |
-| `spa`              | Server-rendered and hydrated, or a client shell with `ssr = false` | The whole subtree | Client router                         |
+| Mode               | HTML                                                               | JS shipped        | Navigation                              |
+| ------------------ | ------------------------------------------------------------------ | ----------------- | --------------------------------------- |
+| `static` (default) | At build time, for each path from `staticPaths()`                  | Islands only      | MPA (prefetch, opt-in View Transitions) |
+| `server`           | Per request: the shell, then streamed boundaries                   | Islands only      | MPA (prefetch, opt-in View Transitions) |
+| `spa`              | Server-rendered and hydrated, or a client shell with `ssr = false` | The whole subtree | Client router (`<Link prefetch>`)       |
 
 A route sets `export const mode = "server"` (a string literal); pages inherit the mode of their
 nearest layout that sets one, else the project default set in `vite.config.ts` with
@@ -3136,7 +3153,9 @@ An `<a href>` with every attribute and event of `<a>`. The router navigates plai
 
 - **Prefetch.** It loads the target route's modules ahead of the click: when the pointer enters
   the link or it gets focus (`hover`), when it enters the viewport (`viewport`), or not (`none`).
-  Data still loads when the page renders.
+  Data still loads when the page renders. `spa` pages get no speculation rules, so this is the
+  prefetch of their links; MPA pages prefetch every link with `lumen({ prefetch })`
+  ([Routing](../concepts/routing.md)).
 - **`aria-current="page"`** while its path is the current URL's path (style it with
   `a[aria-current="page"]`).
 
@@ -3321,13 +3340,33 @@ interface LumenOptions {
   csrf?: false | { allowedOrigins?: readonly string[] };
   /** `.svg` imports as inline components; false leaves them to Vite (URLs). */
   svg?: boolean | { optimize?: boolean; currentColor?: boolean }; // default true
+  /** Cross-document View Transitions between MPA pages (not under reduced motion). */
+  viewTransitions?: boolean; // default false
+  /** Speculation rules that prefetch the same-origin links of MPA pages. */
+  prefetch?: "hover" | "viewport" | "none"; // default "hover"
 }
 ```
 
-The project options (`mode`, `ssr`, `trailingSlash`, `csrf`) are read by `lumen dev`, `lumen build`
-and `lumen routes`/`check` from the plugin's `api.options`. Invalid values and unknown option names
-throw when the config loads. `allowedOrigins` takes full origins such as
-`"https://app.example.com"`, without a path or trailing slash.
+The project options (`mode`, `ssr`, `trailingSlash`, `csrf`, `viewTransitions`, `prefetch`) are
+read by `lumen dev`, `lumen build` and `lumen routes`/`check` from the plugin's `api.options`.
+Invalid values and unknown option names throw when the config loads. `allowedOrigins` takes full
+origins such as `"https://app.example.com"`, without a path or trailing slash.
+
+MPA navigation ([Routing](../concepts/routing.md)): the page documents that `lumen dev` and
+`lumen build` render get, in `<head>`:
+
+- `viewTransitions: true`:
+  `<style>@media (prefers-reduced-motion:no-preference){@view-transition{navigation:auto}}</style>`,
+  on every page, `spa` pages included (their client navigations are not cross-document).
+- `prefetch`: a `<script type="speculationrules">` on every page except `spa` pages, whose
+  `<Link prefetch>` prefetches instead. It matches the links below Vite's `base` (`href_matches`),
+  except the URLs of endpoints, with `moderate` eagerness for `"hover"` (the pointer rests on the
+  link, or it is pressed) and `eager` for `"viewport"` (as soon as the browser sees fit); `"none"`
+  emits nothing.
+
+Both are inline elements: a Content-Security-Policy you set without `'unsafe-inline'` needs
+`'inline-speculation-rules'` in `script-src` for the rules, and the hash of the `<style>` in
+`style-src`.
 
 What it does:
 
@@ -3350,8 +3389,7 @@ What it does:
   A style-only edit, or an edit to such a constants module, hot-updates the CSS without remounting.
 
 > **Status:** compilation, environments, diagnostics, HMR, style-block CSS, `.svg` imports and the
-> project options above are available. The designed options `adapter`, `css`, `csp`, `viewTransitions` and
-> `prefetch` are not.
+> project options above are available. The designed options `adapter`, `css` and `csp` are not.
 
 ## Example
 

@@ -24,13 +24,33 @@ interface LumenOptions {
   csrf?: false | { allowedOrigins?: readonly string[] };
   /** `.svg` imports as inline components; false leaves them to Vite (URLs). */
   svg?: boolean | { optimize?: boolean; currentColor?: boolean }; // default true
+  /** Cross-document View Transitions between MPA pages (not under reduced motion). */
+  viewTransitions?: boolean; // default false
+  /** Speculation rules that prefetch the same-origin links of MPA pages. */
+  prefetch?: "hover" | "viewport" | "none"; // default "hover"
 }
 ```
 
-The project options (`mode`, `ssr`, `trailingSlash`, `csrf`) are read by `lumen dev`, `lumen build`
-and `lumen routes`/`check` from the plugin's `api.options`. Invalid values and unknown option names
-throw when the config loads. `allowedOrigins` takes full origins such as
-`"https://app.example.com"`, without a path or trailing slash.
+The project options (`mode`, `ssr`, `trailingSlash`, `csrf`, `viewTransitions`, `prefetch`) are
+read by `lumen dev`, `lumen build` and `lumen routes`/`check` from the plugin's `api.options`.
+Invalid values and unknown option names throw when the config loads. `allowedOrigins` takes full
+origins such as `"https://app.example.com"`, without a path or trailing slash.
+
+MPA navigation ([Routing](../concepts/routing.md)): the page documents that `lumen dev` and
+`lumen build` render get, in `<head>`:
+
+- `viewTransitions: true`:
+  `<style>@media (prefers-reduced-motion:no-preference){@view-transition{navigation:auto}}</style>`,
+  on every page, `spa` pages included (their client navigations are not cross-document).
+- `prefetch`: a `<script type="speculationrules">` on every page except `spa` pages, whose
+  `<Link prefetch>` prefetches instead. It matches the links below Vite's `base` (`href_matches`),
+  except the URLs of endpoints, with `moderate` eagerness for `"hover"` (the pointer rests on the
+  link, or it is pressed) and `eager` for `"viewport"` (as soon as the browser sees fit); `"none"`
+  emits nothing.
+
+Both are inline elements: a Content-Security-Policy you set without `'unsafe-inline'` needs
+`'inline-speculation-rules'` in `script-src` for the rules, and the hash of the `<style>` in
+`style-src`.
 
 What it does:
 
@@ -53,8 +73,7 @@ What it does:
   A style-only edit, or an edit to such a constants module, hot-updates the CSS without remounting.
 
 > **Status:** compilation, environments, diagnostics, HMR, style-block CSS, `.svg` imports and the
-> project options above are available. The designed options `adapter`, `css`, `csp`, `viewTransitions` and
-> `prefetch` are not.
+> project options above are available. The designed options `adapter`, `css` and `csp` are not.
 
 ## Example
 

@@ -12,6 +12,7 @@ import {
   type RequestHandlerOptions,
   type TrailingSlash,
 } from "./handler.ts";
+import type { Prefetch } from "./navigation.ts";
 import { createServerRenderer } from "./render.ts";
 import { escapeAttr } from "../../server/node.ts";
 
@@ -42,6 +43,10 @@ export interface BuiltApp extends BuiltAppConfig {
    * (`stylesheets` of `virtual:lumen/css-manifest`).
    */
   stylesheets?: (files: readonly string[]) => readonly string[];
+  /** `lumen({ viewTransitions })`; absent when off. */
+  viewTransitions?: boolean;
+  /** `lumen({ prefetch })`; absent for `"none"`. */
+  prefetch?: Prefetch;
 }
 
 export type AppHandlerOptions = Pick<
@@ -63,6 +68,8 @@ export function createAppHandler(app: BuiltApp, options: AppHandlerOptions = {})
     ...(app.document === undefined ? {} : { document: app.document }),
     ...(app.csrf === undefined ? {} : { csrf: app.csrf }),
     ...(app.spa === undefined ? {} : { spaEntry: app.spa }),
+    ...(app.viewTransitions === undefined ? {} : { viewTransitions: app.viewTransitions }),
+    ...(app.prefetch === undefined ? {} : { prefetch: app.prefetch }),
     headAssets: (files) => stylesheetLinks(app, files),
     base: app.base,
     trailingSlash: app.trailingSlash,

@@ -7,6 +7,7 @@ import type { ResolvedConfig } from "vite";
 import type { RouteMode } from "./routes/manifest.ts";
 import type { CsrfOptions } from "./server/csrf.ts";
 import type { TrailingSlash } from "./server/handler.ts";
+import type { Prefetch } from "./server/navigation.ts";
 
 export const MIDDLEWARE_FILES = ["src/middleware.ts", "src/middleware.js"];
 export const DOCUMENT_FILES = ["src/document.stsx", "src/document.tsx"];
@@ -42,6 +43,19 @@ export interface ProjectOptions {
   ssr?: boolean;
   trailingSlash?: TrailingSlash;
   csrf?: false | CsrfOptions;
+  viewTransitions?: boolean;
+  prefetch?: Prefetch;
+}
+
+/** MPA navigation of `lumen({ viewTransitions, prefetch })` with its defaults (decision-24). */
+export function navigationOptions(project: ProjectOptions): {
+  viewTransitions: boolean;
+  prefetch: Prefetch;
+} {
+  return {
+    viewTransitions: project.viewTransitions ?? false,
+    prefetch: project.prefetch ?? "hover",
+  };
 }
 
 /** Reads the project options from the resolved config; throws when `lumen()` is missing. */

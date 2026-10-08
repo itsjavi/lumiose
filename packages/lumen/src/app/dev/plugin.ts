@@ -28,6 +28,7 @@ import {
   DOCUMENT_FILES,
   findAppFile,
   MIDDLEWARE_FILES,
+  navigationOptions,
   projectOptions,
   type ProjectOptions,
 } from "../project.ts";
@@ -195,6 +196,7 @@ export function lumenDev(options: LumenDevOptions = {}): Plugin {
       base,
       ...(project.trailingSlash === undefined ? {} : { trailingSlash: project.trailingSlash }),
       ...(project.csrf === undefined ? {} : { csrf: project.csrf }),
+      ...navigationOptions(project),
       // Static routes render fully resolved, as the build prerenders them.
       prerender: (route) => route.mode === "static",
       onError: (error) => {

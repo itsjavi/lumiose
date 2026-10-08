@@ -259,6 +259,30 @@ export default function Home() { return <main><Toggle client:load /></main>; }
     }
   });
 
+  it("adds lumen({ viewTransitions, prefetch }) to the page documents (TASK-93)", async () => {
+    const root = project({
+      "vite.config.ts": `import lumen from "lumen/vite";
+export default { plugins: [lumen({ viewTransitions: true })] };
+`,
+      "src/routes/index.stsx": `export default function Home() { return <a href="/live">Live</a>; }
+`,
+      "src/routes/live.stsx": `export const mode = "server";
+export default function Live() { return <h1>Live</h1>; }
+`,
+      "src/routes/feed.xml.ts": 'export function GET() { return new Response("<feed/>"); }\n',
+    });
+    await build({ root, ...quiet() });
+
+    // View Transitions opted in; hover prefetch by default, endpoints excepted.
+    const head =
+      "<style>@media (prefers-reduced-motion:no-preference){@view-transition{navigation:auto}}</style>" +
+      '<script type="speculationrules">{"prefetch":[{"where":{"and":[{"href_matches":"/*"},{"not":{"href_matches":["/feed.xml{/}?"]}}]},"eagerness":"moderate"}]}</script>';
+    expect(read(root, "index.html")).toContain(head);
+    // Server routes render them through dist/server/entry.js.
+    const live = await (await entryOf(root)).default.fetch(new Request("http://app.test/live"));
+    expect(await live.text()).toContain(head);
+  });
+
   it("builds a site without islands or server routes to a self-contained dist/client", async () => {
     const root = project({
       "src/routes/index.stsx": "export default function Home() { return <h1>Static</h1>; }\n",

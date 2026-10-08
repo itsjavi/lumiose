@@ -71,7 +71,8 @@ test.describe("static output", () => {
     await islandsReady(page);
     expect(scripts.length).toBeGreaterThan(0);
     for (const script of scripts) expect(script).toMatch(/^\/assets\/[\w-]+\.js$/);
-    // Inline: the theme script of document.tsx, its speculation rules and the island records.
+    // Inline: the theme script of document.tsx, the speculation rules of lumen({ prefetch }) and
+    // the island records.
     const inline = await page
       .locator("script:not([src])")
       .evaluateAll((elements) => elements.map((element) => element.getAttribute("type")));
@@ -150,6 +151,28 @@ test.describe("navigation", () => {
       .getByRole("link", { name: /Newer/ })
       .click();
     await expect(page).toHaveURL(/\/posts\/dolomites-hut-to-hut$/);
+  });
+
+  test("navigations are view-transitioned, and a link prefetches its page on hover", async ({
+    page,
+  }) => {
+    const prefetched: string[] = [];
+    page.on("request", (request) => {
+      if (request.headers()["sec-purpose"]?.startsWith("prefetch")) {
+        prefetched.push(new URL(request.url()).pathname);
+      }
+    });
+    await page.goto("/");
+    // lumen({ viewTransitions: true }): the document opts in (without reduced motion).
+    const optedIn = await page.evaluate(() =>
+      [...document.styleSheets].some((sheet) =>
+        [...sheet.cssRules].some((rule) => rule.cssText.includes("@view-transition")),
+      ),
+    );
+    expect(optedIn).toBe(true);
+    // lumen({ prefetch: "hover" }), the default: speculation rules with moderate eagerness.
+    await page.locator(".card.featured h2 a").hover();
+    await expect.poll(() => prefetched).toEqual([`/posts/${NEWEST.slug}`]);
   });
 
   test("tags list their posts", async ({ page }) => {

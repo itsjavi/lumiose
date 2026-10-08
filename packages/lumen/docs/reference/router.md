@@ -29,7 +29,9 @@ An `<a href>` with every attribute and event of `<a>`. The router navigates plai
 
 - **Prefetch.** It loads the target route's modules ahead of the click: when the pointer enters
   the link or it gets focus (`hover`), when it enters the viewport (`viewport`), or not (`none`).
-  Data still loads when the page renders.
+  Data still loads when the page renders. `spa` pages get no speculation rules, so this is the
+  prefetch of their links; MPA pages prefetch every link with `lumen({ prefetch })`
+  ([Routing](../concepts/routing.md)).
 - **`aria-current="page"`** while its path is the current URL's path (style it with
   `a[aria-current="page"]`).
 

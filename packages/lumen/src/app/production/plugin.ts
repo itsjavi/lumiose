@@ -18,6 +18,7 @@ import type { RouteManifest } from "../routes/manifest.ts";
 import type { BuiltAppConfig } from "../server/app.ts";
 import type { CsrfOptions } from "../server/csrf.ts";
 import type { TrailingSlash } from "../server/handler.ts";
+import type { Prefetch } from "../server/navigation.ts";
 import { SPA_ENTRY, spaEntryPlugin } from "../router/entry.ts";
 
 export const SERVER_ENTRY = "virtual:lumen/server-entry";
@@ -36,6 +37,8 @@ export interface BuildState {
   outDir: string;
   trailingSlash: TrailingSlash;
   csrf: false | CsrfOptions | undefined;
+  viewTransitions: boolean;
+  prefetch: Prefetch;
   /** Scanned before the builds. */
   app?: {
     manifest: RouteManifest;
@@ -163,6 +166,8 @@ export function serverEntryCode(state: BuildState, config: ResolvedConfig): stri
     ...(middleware === undefined ? {} : { middleware }),
     ...(document === undefined ? {} : { document }),
     ...(state.csrf === undefined ? {} : { csrf: state.csrf }),
+    ...(state.viewTransitions ? { viewTransitions: true } : {}),
+    ...(state.prefetch === "none" ? {} : { prefetch: state.prefetch }),
     islands: state.islands,
     ...(state.loader === undefined ? {} : { loader: state.loader }),
     ...(state.spa === undefined ? {} : { spa: state.spa }),

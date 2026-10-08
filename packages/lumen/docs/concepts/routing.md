@@ -40,11 +40,28 @@ src/
 - `href("/blog/[slug]", { slug })` builds a URL and type-checks the pattern and params;
 - `params<"/blog/[slug]">()` and `RouteProps<"/blog/[slug]">` type the params.
 
-**Navigation.** Routes are MPA by default (full page loads). For smooth MPA navigation today, add
-the CSS opt-in `@view-transition { navigation: auto; }` to a global style block, and optionally a
-`<script type="speculationrules">` for prefetching; the travel-journal example does both. Built-in
-`lumen()` options for these are planned (TASK-93). Routes with `mode = "spa"` use the client router `lumen/router`
-([reference](../reference/router.md)):
+**Navigation.** Routes are MPA by default: links load the next document. Two `lumen()` options in
+`vite.config.ts` make these navigations smooth ([reference](../reference/vite.md#lumen)); both are
+progressive, so browsers without support navigate normally:
+
+- **Prefetch** (`prefetch`, default `"hover"`). Pages get `<script type="speculationrules">` that
+  prefetches same-origin links: when the pointer rests on a link (`"hover"`), early, as the browser
+  sees fit (`"viewport"`), or never (`"none"`). Links to endpoints are never prefetched, since a GET
+  endpoint may act (`/logout`). `spa` pages get no rules: there `<Link prefetch>` decides per link.
+- **View Transitions** (`viewTransitions: true`, off by default). Every page opts into
+  cross-document View Transitions (`@view-transition { navigation: auto }`), except for readers who
+  prefer reduced motion: the old page cross-fades into the new one. An element morphs into its
+  counterpart on the next page when both have the same CSS `view-transition-name`, unique on each
+  page: in a style block (`.site-header { view-transition-name: site-header; }`) or per item with
+  ``style={{ "view-transition-name": `cover-${post.slug}` }}``. Style the animation with the
+  `::view-transition-*` pseudo-elements in a global style block.
+
+```ts
+// vite.config.ts
+export default defineConfig({ plugins: [lumen({ viewTransitions: true })] });
+```
+
+Routes with `mode = "spa"` use the client router `lumen/router` ([reference](../reference/router.md)):
 
 - The SPA starts at the outermost `spa` layout (or the page itself) and covers every `spa` page
   below it; links between them navigate on the client, other links load the document.
@@ -55,9 +72,9 @@ the CSS opt-in `@view-transition { navigation: auto; }` to a global style block,
 - A navigation holds the old page until the new page's async content is ready, then swaps.
 - Scroll restoration, focus reset, `_404` for unknown URLs and `notFound()`, `_error` for errors.
 
-> **Status:** file routes, the manifest, matching, typegen, `href()`, the request handler and the
-> SPA router (`lumen/router`) are available, served by `lumen dev`, `lumen build` and
-> `lumen preview`.
+> **Status:** file routes, the manifest, matching, typegen, `href()`, the request handler, MPA
+> prefetch and View Transitions, and the SPA router (`lumen/router`) are available, served by
+> `lumen dev`, `lumen build` and `lumen preview`.
 
 ## API
 

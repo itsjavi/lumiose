@@ -165,6 +165,11 @@ describe.skipIf(!binding)("lumen dev", () => {
       "<div class=layout><main><h1>Home</h1><p class=slow>slow content</p></main></div>",
     );
     expect(html).not.toContain("<?start");
+    // lumen({ prefetch }) defaults to "hover" (endpoints excepted); viewTransitions to false.
+    expect(html).toContain(
+      '<script type="speculationrules">{"prefetch":[{"where":{"and":[{"href_matches":"/*"},{"not":{"href_matches":["/api/hello{/}?"]}}]},"eagerness":"moderate"}]}</script>',
+    );
+    expect(html).not.toContain("@view-transition");
   });
 
   it("streams Suspense boundaries of server routes after the shell", async () => {

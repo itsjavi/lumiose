@@ -32,7 +32,7 @@ public/covers/*.svg        cover illustrations (copied to dist/client as they ar
 src/
   content.ts               the content layer: loads, validates and renders the posts
   theme.ts                 design tokens, read by style blocks as $theme.*
-  document.tsx             <html>/<head>: RSS link, theme script, speculation rules
+  document.tsx             <html>/<head>: RSS link, theme script
   lib/                     site settings, pagination, formatting, the search matcher
   components/              header and footer, post cards, tags, pager, journal page
   islands/                 Search (client:idle) and ThemeToggle (client:load)
@@ -108,12 +108,12 @@ the current section.
 
 ## Navigation
 
-Pages are ordinary documents linked with `<a href>`. The global `@view-transition { navigation:
-auto; }` rule turns same-origin navigations into cross-document View Transitions in browsers that
-support them, and each post's cover has a `view-transition-name` shared by its card and its page,
-so it morphs into place. Lumen's designed `viewTransitions` and `prefetch` options of `lumen()` are
-not built yet, so the site opts in with that CSS rule and a speculation-rules script in
-`document.tsx` (prefetch on hover). Both are progressive: other browsers navigate normally.
+Pages are ordinary documents linked with `<a href>`. `lumen({ viewTransitions: true })` in
+`vite.config.ts` turns same-origin navigations into cross-document View Transitions in browsers
+that support them (not for readers who prefer reduced motion), and each post's cover has a
+`view-transition-name` shared by its card and its page, so it morphs into place. Links prefetch
+when the pointer rests on them: speculation rules from `lumen({ prefetch })`, `"hover"` by default.
+Both are progressive: other browsers navigate normally.
 
 ## Tests
 

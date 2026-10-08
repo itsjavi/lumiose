@@ -14,12 +14,9 @@ export default function RootLayout(props: { children?: JSX.Element }) {
       <SiteFooter />
 
       <style global>
-        /* Cross-document View Transitions: same-origin navigations cross-fade, and elements
-           with a shared view-transition-name (a post's cover) morph between pages. */
-        @view-transition {
-          navigation: auto;
-        }
-
+        /* Cross-document View Transitions (lumen({ viewTransitions: true })): same-origin
+           navigations cross-fade, and elements with a shared view-transition-name (a post's
+           cover) morph between pages. Lumen turns them off for prefers-reduced-motion. */
         :root {
           color-scheme: light dark;
           accent-color: $theme.color.accent;
@@ -120,13 +117,6 @@ export default function RootLayout(props: { children?: JSX.Element }) {
         ::view-transition-old(root),
         ::view-transition-new(root) {
           animation-duration: 200ms;
-        }
-        @media (prefers-reduced-motion: reduce) {
-          ::view-transition-group(*),
-          ::view-transition-old(*),
-          ::view-transition-new(*) {
-            animation: none !important;
-          }
         }
         @media (width < $theme.layout.narrow) {
           main {

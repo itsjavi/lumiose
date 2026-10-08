@@ -27,6 +27,7 @@ import { HttpError, isHttpError, isRedirect, statusText, type Redirect } from ".
 import { createCookieJar, type CookieJar } from "./cookies.ts";
 import { isSameOriginRequest, needsOriginCheck, type CsrfOptions } from "./csrf.ts";
 import { documentBody, documentParts, type DocumentComponent } from "./document.ts";
+import { navigationHead, type Prefetch } from "./navigation.ts";
 import { createServerRenderer, type PageRenderer, type PageTree } from "./render.ts";
 import { spaErrorPart, spaPagePart, spaPageTree } from "../router/server.ts";
 import {
@@ -87,6 +88,17 @@ export interface RequestHandlerOptions {
    * (LUM5001, reported through `onError`) and fully resolved. Middleware is not guarded.
    */
   prerendering?: boolean;
+  /**
+   * Cross-document View Transitions between pages (`lumen({ viewTransitions })`, decision-24):
+   * every page document opts in, unless the reader prefers reduced motion. Default `false`.
+   */
+  viewTransitions?: boolean;
+  /**
+   * Speculation rules that prefetch the same-origin links of MPA pages, endpoints excepted
+   * (`lumen({ prefetch })`, decision-24): on hover, early (`viewport`) or not. Default `"none"`
+   * here; `lumen dev` and `lumen build` default to `"hover"`.
+   */
+  prefetch?: Prefetch;
 }
 
 export type TrailingSlash = "ignore" | "always" | "never";
@@ -119,6 +131,7 @@ export function createRequestHandler(options: RequestHandlerOptions): RequestHan
   const prerender = prerendering || (options.prerender ?? false);
   const base = normalizeBase(options.base ?? "/");
   const trailingSlash = options.trailingSlash ?? "ignore";
+  const navigation = navigationHead(options, manifest.routes, base);
   const render = options.render ?? createServerRenderer();
   const onError = options.onError ?? ((error: unknown) => console.error(error));
   const matcher = createRouteMatcher(manifest);
@@ -425,7 +438,8 @@ export function createRequestHandler(options: RequestHandlerOptions): RequestHan
         scope.action === undefined || scope.action.data === undefined
           ? ""
           : `<script type="application/json" data-l-action>${jsonForScript(scope.action.encoded)}</script>`;
-      const parts = documentParts(shell.body, shell.head + assets + action, document !== undefined);
+      const head = shell.head + assets + navigation.pages + (spa ? "" : navigation.mpa) + action;
+      const parts = documentParts(shell.body, head, document !== undefined);
       body = documentBody(parts, shell.stream, (error) => onError(error, request));
     } catch (error) {
       await shell.stream?.cancel(error);
