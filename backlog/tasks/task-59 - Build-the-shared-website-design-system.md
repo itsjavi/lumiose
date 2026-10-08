@@ -1,7 +1,7 @@
 ---
 id: TASK-59
 title: Build the shared website design system
-status: In Progress
+status: Done
 assignee:
   - '@Halo'
 created_date: '2026-10-08 15:58'
