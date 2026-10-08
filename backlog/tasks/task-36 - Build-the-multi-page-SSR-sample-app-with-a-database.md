@@ -5,7 +5,7 @@ status: In Progress
 assignee:
   - '@Nova'
 created_date: '2026-10-08 12:21'
-updated_date: '2026-10-08 16:53'
+updated_date: '2026-10-08 20:38'
 labels: []
 milestone: m-6
 dependencies:
@@ -49,4 +49,6 @@ RESUME (Nova, session nova-task71-20261008T162824Z, checkpoint requested by Lux)
 - Exact next steps: follow the plan above. Design notes: src/theme.ts tokens (as const) read as $theme.* in scoped <style> blocks; trim src/styles.css to base. Pager.stsx (pageWindow), reviews pager on /books/[isbn] via ?page=, named actions createReview/updateReview/deleteReview (requireUser(ctx), validateReview, map forbidden->error(403), not-found->notFound(), conflict->fail(409)) then redirect to /books/:isbn#your-review. ReadingListToggle: form posts /reading-list?/toggle with hidden bookId + next (no-JS: redirect(safeRedirectPath(next))); the enhanced path calls submit({ bookId }, { action: '/reading-list?/toggle' }) without next and reads { onList }. AccountMenu fetches /api/me in onMount only (static pages render the Sign in link). Island loader: Spark's dom/loader.ts exists (untracked, TASK-18 WIP); wiring it into dev headAssets/build is Nova's job once TASK-18 settles.
 - Known failing tests (not mine): examples/vite-counter/src/__probe.test.ts (untracked probe); oxlint error in examples/vite-counter/__probe.config.ts.
 - Files touched this session (all TASK-71/TASK-26, uncommitted): packages/lumen/src/server/{node,attrs,frame,ssr}.ts, server/{ssr,render}.test.ts, contract/server.ts, app/production/{plugin,build.test}.ts, app/server/app.ts, packages/compiler/test/server.test.ts, benchmarks/ssr/{RESULTS.md,scripts/bench.ts}. examples/ssr-bookshelf/dist was rebuilt (build output).
+
+Nova (session nova-task36-20261008T203608Z): resumed; claim acquired. Building pages/islands per plan; also wiring the island loader into the renderer (dev + build).
 <!-- SECTION:NOTES:END -->
