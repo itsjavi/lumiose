@@ -5,7 +5,7 @@ status: In Progress
 assignee:
   - '@Nova'
 created_date: '2026-10-08 13:28'
-updated_date: '2026-10-08 13:50'
+updated_date: '2026-10-08 13:57'
 labels: []
 milestone: m-2
 dependencies:
@@ -39,3 +39,16 @@ The client DOM runtime (TASK-13) settled value-rendering rules that SSR output m
 5. submit(): register in-flight submissions with core busy registry when TASK-17 exposes it; otherwise leave AC #5 open with a note. Verify decision-20 result semantics (failure resolves, only unexpected errors reject) with tests.
 6. pnpm typecheck/test/lint.
 <!-- SECTION:PLAN:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Nova (TASK-44 implementation, packages/lumen/src/server + app/actions):
+- server/attrs.ts: attr() writes aria-* and enumerated (Booleanish) attributes as "true"/"false"; other booleans stay present/absent. BOOLEANISH is a copy of the client table in dom/attributes.ts (not edited: Spark's file); server/parity.test.ts asserts the client source contains the same regex, so either side changing fails the test. translate/autocapitalize are not in the table on either side (their keywords are yes/no, on/off…), so they behave as plain attributes. classAttr now uses the client token rules (whitespace split, each token once, first-seen order). spreadAttrs: namespaced attributes (xlink:href, xml:lang) are written like the client; only onX/on:/bind:/client: keys are skipped; indeterminate (property-only) is skipped.
+- server text()/escape() already rendered booleans and nullish as "": covered by the parity test.
+- server/elements.ts, exported from index.server.ts via server/public.ts: ref() reads undefined and ignores writes; Portal renders nothing and does not evaluate its children (DECISION: portal content is client-only; it renders when the enclosing island mounts or hydrates, never in static server output), documented in its JSDoc; Dynamic renders components through createComponent and intrinsic tags as elements (spreadAttrs, innerHTML/textContent then children, void tags without a closing tag, children inside island insert markers, invalid tag names throw). The browser and node entries of lumen now export the same names (Spark's dom/parity.test.ts entry check passes with its pending list removed).
+- server/parity.test.ts (happy-dom, 80 tests): the same inputs through the server helpers and the client writers, server HTML parsed and compared as serialized DOM (style normalized to cssText): setText/text/escape (12 values), setAttr/attr (39 names x 11 values), setClass/classAttr (10), setStyle/styleAttr (5), spread/spreadAttrs, DOM properties as initial-state attributes, ref, Portal, Dynamic (component, tag, void, textContent, innerHTML, nothing). Mutation check: dropping draggable from the server table fails 3 tests.
+- submit() (decision-20): registers each submission with core beginBusy() (core/internal.ts, landed by Spark in TASK-17) and ends it in finally. Verified result semantics: success/failure resolve, redirects followed, type error rejects with FetchError; FIXED network failures, which rejected with the raw TypeError: now FetchError with status 0 (cause = original error). Aborts via options.signal keep their AbortError (caller-initiated, not unexpected). Tests: busy() true while in flight and false after success and rejection; network/abort cases.
+For Spark (not applied): client spread writes innerText as an attribute while the compiler treats it as a property-only name. For TASK-18: the client Dynamic creates intrinsic tags with document.createElement, so the hydrator will not claim the server-rendered element.
+Validation: pnpm typecheck OK (3 projects); pnpm test 55 files / 594 tests green; pnpm lint 0 errors, 1 pre-existing warning (app/router/index.ts empty export stub).
+<!-- SECTION:NOTES:END -->
