@@ -5,7 +5,7 @@ status: In Progress
 assignee:
   - '@Photon'
 created_date: '2026-10-08 16:10'
-updated_date: '2026-10-08 16:40'
+updated_date: '2026-10-08 16:53'
 labels: []
 milestone: m-1
 dependencies: []
@@ -50,4 +50,10 @@ benchmarks/js-framework-benchmark/src/App.stsx now uses `const id = row.id` (the
 **Local probe** (scratch, Chrome 154 headless, performance.memory after gc(), 9 runs, identical medians): JS heap after run 1k — old App/old codegen 2.094 MB, new 1.890 MB, hand 1.724 MB. The old→hand gap (0.37) equals krausest's 2.87→2.50, so krausest run memory ≈ 2.67 MB expected. Remaining 0.17 MB = `insert(_a, () => row.label())` (region + closure) vs hand `bind(_a.firstChild, row.label, setText)`.
 
 **AC#2/#3 (needs a decision):** `{id}` / `{row.label()}` are not provably text (an identifier or call may hold a Node/array/JSX: `const icon = <Icon/>; … {icon}`), so a placeholder + setText/.data write is unsound without a fallback. Options: (A) contract change — Spark adds an apply helper `text(node: Text, value)` (primitive → data, nullish/boolean → "", otherwise render through a region kept before the node) usable for one-time writes and `bind(_t, () => row.label(), text)`; the server emits a text hole that falls back to a marked region for non-text values so islands still hydrate; I switch sole non-provable children to it. (B) runtime-only — insert() of a function whose value is text keeps a light text binding and upgrades to a region on the first non-text value (no codegen/contract/hydration change; keeps the closure). AC#2 alone saves ~0 memory (static insert already creates one text node, no region). The full run that started 18:38 (someone else's `jsfb.ts --count 10 --mem-count 3`) already builds this codegen; its numbers will close AC#4.
+
+Photon — RESUME (checkpoint, In Progress).
+Done: AC#1 (row consts) + golden row-data.tsx; App.stsx uses const id = row.id; napi rebuilt. Local probe: JS heap after run 1k 2.094 → 1.890 MB (hand 1.724).
+Pending: AC#4 numbers — the full krausest run started 18:38 by another session (log: <Lux scratchpad>/full-run.log, writes benchmarks/js-framework-benchmark/RESULTS.md) already builds this codegen (bundle shows a.$$clickData=t). Next: read lumen vs lumen-hand run memory (22_) and CPU from that RESULTS.md; tick AC#4 if ≤ 2.7 MB and CPU within 2 %. The previous RESULTS.md is backed up at <Lux scratchpad>/RESULTS.orig.md.
+Blocked/decision: AC#2/#3 need the runtime text helper (option A, contract change, Spark + server text hole) or the runtime-only insert optimisation (option B) — see notes above; ask Lux to decide/split.
+Files: crates/lumen_compiler/src/codegen/client/{idioms,events}.rs, tests/fixtures/client/row-data.*, benchmarks/js-framework-benchmark/src/App.stsx.
 <!-- SECTION:NOTES:END -->
