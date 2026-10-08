@@ -5,7 +5,7 @@ status: To Do
 assignee:
   - '@Photon'
 created_date: '2026-10-08 16:20'
-updated_date: '2026-10-08 16:23'
+updated_date: '2026-10-08 16:26'
 labels: []
 milestone: m-3
 dependencies: []
@@ -26,8 +26,8 @@ The user approved optional support for importing Markdown and HTML files as Lume
 - [ ] #1 Opt-in via lumen({ md: true | options, html: true }); import Post, { frontmatter } from "./post.md" gives a static component (plain CommonMark + GFM, no MDX, compiled in Rust, e.g. comrak or pulldown-cmark), with heading ids; frontmatter (YAML) exported
 - [ ] #2 import Card from "./card.html" gives a component; a full document contributes only its <body> inner content; fragments are used as-is; <script> elements run as client modules (bundled by Vite and loaded on the client wherever the component renders, like island modules), which web components need
 - [ ] #3 Top-level <style> in .html/.md files is scoped to that file content (like .stsx top-level blocks; <style global> opts out); <style> inside <template> or <svg> is left verbatim; no $refs
-- [ ] #4 Frontmatter is optionally typed via user-defined schemas (mechanism per the user confirmation recorded in decision-22); untyped frontmatter is Record<string, unknown>
-- [ ] #5 Type declarations for *.md and *.html (lumen/env); works in client and server builds and in dev with HMR; tests; docs concept page
+- [ ] #4 Type declarations for *.md and *.html (lumen/env); works in client and server builds and in dev with HMR; tests; docs concept page
+- [ ] #5 Frontmatter: exported as plain data typed Record<string, unknown>; optional build-time hook lumen({ md: { frontmatter(data, { file }) } }) for user validation/transformation (errors fail the build with file context); no built-in schema conventions; docs show validating with any library and augmenting declare module "*.md"
 <!-- AC:END -->
 
 ## Implementation Notes
