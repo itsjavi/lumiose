@@ -5,7 +5,7 @@ status: Done
 assignee:
   - '@Nova'
 created_date: '2026-10-08 12:21'
-updated_date: '2026-10-08 13:26'
+updated_date: '2026-10-08 15:30'
 labels: []
 milestone: m-3
 dependencies:
@@ -86,6 +86,8 @@ Nova (session nova-task16-20261008T131130Z, took over this task's claim from my 
 - End-to-end tests (app/server/server-renderer.test.ts, 7, real runtime + hand-compiled components): Suspense streaming inside the default document (head before, chunks before </body>, url() inside the boundary); custom document via createComponent (context to the page, head defaults overridden, head assets); streaming inside the custom document; ErrorBoundary inside a streamed boundary; LUM5004 for redirect(), <Title> and response().setStatus() inside a streamed boundary (200, fallback kept, onError once); redirect()/notFound() in the shell → 302/404 page; prerender fully resolved with island record + modulepreload.
 - The string-renderer fixture stays for the 30 handler tests (its document now resolves the body array).
 Validation: pnpm typecheck OK, pnpm lint clean in src/app and src/server, pnpm test 395/395.
+
+Lux (decision-21): the project-level default mode comes from lumen({ mode, ssr }). Route manifest mode resolution is project default → layouts → route (TASK-21 code); Nova applies this in TASK-24/26.
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary
