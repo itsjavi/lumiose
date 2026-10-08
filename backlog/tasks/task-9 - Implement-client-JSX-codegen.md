@@ -25,10 +25,10 @@ The client output is where Lumen's performance comes from: template cloning plus
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Hoisted minified templates with path walks; effect(compute, apply) bindings with hoisted apply functions; one-time writes for static values; signals passed directly as sources
-- [ ] #2 Components with getter props, reactive props destructuring and rest; children; ref; bind:value/checked; attach; class and style objects
-- [ ] #3 Compiled .map() keyed lists, selector patterns (both operand orders) and memoised branches; delegated onX with data-slot hoisting, native on:x
-- [ ] #4 Diagnostics LUM2001 to LUM2006; golden fixtures match the compiler-runtime contract; output is JS with types stripped
+- [x] #1 Hoisted minified templates with path walks; effect(compute, apply) bindings with hoisted apply functions; one-time writes for static values; signals passed directly as sources
+- [x] #2 Components with getter props, reactive props destructuring and rest; children; ref; bind:value/checked; attach; class and style objects
+- [x] #3 Compiled .map() keyed lists, selector patterns (both operand orders) and memoised branches; delegated onX with data-slot hoisting, native on:x
+- [x] #4 Diagnostics LUM2001 to LUM2006; golden fixtures match the compiler-runtime contract; output is JS with types stripped
 <!-- AC:END -->
 
 ## Implementation Plan
