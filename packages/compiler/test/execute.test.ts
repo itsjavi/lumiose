@@ -28,7 +28,8 @@ let counter = 0;
 
 /** Compiles `source`, points its runtime imports at the workspace sources and imports it. */
 async function load(source: string, options: Record<string, unknown> = {}) {
-  const result = binding!.compile(source, `/src/case${counter}.tsx`, {
+  const extension = source.includes("<style") ? "stsx" : "tsx";
+  const result = binding!.compile(source, `/src/case${counter}.${extension}`, {
     styleImport: false,
     ...options,
   });
@@ -121,28 +122,57 @@ describe.skipIf(!binding)("compiled output runs on lumen/dom", () => {
   });
 
   it("components: getter props, children and class passthrough (doc-2 §5.3)", async (ctx) => {
-    const { module, missing } = await load(
+    const { module, missing, result } = await load(
       `
       import { signal } from "lumen";
       export const post = signal({ title: "One", body: "First" });
       function Card(props: { title: string; class?: string; children?: unknown }) {
-        return <article class={props.class}><h2>{props.title}</h2>{props.children}</article>;
+        return <article class={props.class}><h2>{props.title}</h2>{props.children}<style>h2 { margin: 0 }</style></article>;
       }
       export function Page() {
-        return <main><Card title={post().title} class="featured">{post().body}</Card></main>;
+        return <main><Card title={post().title} class="featured">{post().body}</Card><style>.featured { color: teal }</style></main>;
       }`,
-      { scopeTokens: { components: { Page: "data-l-p1", Card: "data-l-c2" } } },
     );
     if (!module) return ctx.skip(`lumen/dom lacks ${missing.join(", ")}`);
+    const { Page, Card } = result.meta.scopeTokens.components;
     const app = render(module.Page);
     const article = app.querySelector("article")!;
     expect(article.className).toBe("featured");
-    expect(article.hasAttribute("data-l-p1")).toBe(true);
-    expect(article.hasAttribute("data-l-c2")).toBe(true);
+    // Its own token, and the caller's through class passthrough.
+    expect(article.hasAttribute(Card!)).toBe(true);
+    expect(article.hasAttribute(Page!)).toBe(true);
+    expect(app.querySelector("main")!.hasAttribute(Card!)).toBe(false);
     expect(article.textContent).toBe("OneFirst");
     module.post.set({ title: "Two", body: "Second" });
     lumen.flushSync();
     expect(article.textContent).toBe("TwoSecond");
+  });
+
+  it("table rows go in the implicit tbody; a select value is set once its options exist", async (ctx) => {
+    const { module, missing } = await load(`
+      import { signal } from "lumen";
+      // String values: happy-dom's select.value setter does not convert numbers.
+      export const items = signal([{ id: "1", label: "One" }, { id: "2", label: "Two" }]);
+      export const choice = signal("2");
+      export function Pick() {
+        return (
+          <form>
+            <table>{items().map((item) => <tr><td>{item.label}</td></tr>)}</table>
+            <select value={choice()}>{items().map((item) => <option value={item.id}>{item.label}</option>)}</select>
+          </form>
+        );
+      }`);
+    if (!module) return ctx.skip(`lumen/dom lacks ${missing.join(", ")}`);
+    const app = render(module.Pick);
+    expect(app.querySelectorAll("table > tbody > tr")).toHaveLength(2);
+    const select = app.querySelector("select")!;
+    expect(select.value).toBe("2");
+    module.choice.set("1");
+    lumen.flushSync();
+    expect(select.value).toBe("1");
+    module.items.set([...module.items(), { id: "3", label: "Three" }]);
+    lumen.flushSync();
+    expect(app.querySelectorAll("table > tbody > tr")).toHaveLength(3);
   });
 
   it("props destructuring with defaults and rest", async (ctx) => {
@@ -278,9 +308,15 @@ describe.skipIf(!binding)("async components on lumen/dom", () => {
       }
       export function Page() {
         return <main><Member id={id()} /></main>;
-      }`);
+      }
+      // Declarations stay hoisted: usable (and already tagged) before their position.
+      export const early = Late;
+      async function Late() { return <i />; }`);
     if (!module) return ctx.skip(`lumen/dom lacks ${missing.join(", ")}`);
-    expect(result.code).toContain("$async(async function Member");
+    expect(result.code).toContain("export async function Member(props)");
+    expect(result.code).toContain("$async(Member);");
+    expect(module.early).toBe(module.early);
+    expect((module.early as { $$async?: unknown }).$$async).toBeTypeOf("function");
     const app = render(module.Page);
     for (let i = 0; i < 20 && !app.querySelector("h3"); i++) {
       await new Promise((done) => setTimeout(done, 1));

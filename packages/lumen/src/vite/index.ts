@@ -12,20 +12,32 @@
 //   re-mounts the app into the same container after disposing the previous root. Component state
 //   is reset; module-level signals of unchanged modules survive. Per-component hot replacement
 //   can come later without changing this contract.
-// - Style blocks import `<id>?lumen&type=style&lang.css`; until the CSS pipeline lands (TASK-45)
-//   that module is empty.
+// - Style blocks: compiled code imports `<id>?lumen&type=style&lang.css`, served from the
+//   compiler's CSS through Vite's CSS pipeline, with imported `$name` constants loaded through
+//   Vite's resolver and CSS-only HMR for style edits (./styles.ts).
 // - `virtual:lumen/islands` is the island manifest (./islands.ts). Island refs are root-relative
 //   (`/src/components/Team.stsx#TeamPanel`) for modules inside the Vite root.
 
-import { compile, type Diagnostic } from "@lumen/compiler";
+import { readFile } from "node:fs/promises";
+import type { Diagnostic } from "@lumen/compiler";
 import {
   defaultClientConditions,
   defaultServerConditions,
+  type DevEnvironment,
   type EnvironmentOptions,
   type Plugin,
+  type Rollup,
   type ViteDevServer,
 } from "vite";
 import { ISLANDS, ISLANDS_ID, IslandRegistry } from "./islands.ts";
+import {
+  STYLE_QUERY,
+  StyleCache,
+  cleanId,
+  compileWithModules,
+  type Resolve,
+  type Target,
+} from "./styles.ts";
 
 export interface LumenOptions {
   /** Modules compiled by Lumen. Default: `.stsx` and `.tsx` files. */
@@ -47,7 +59,6 @@ const LUMEN_ENTRIES = [
   "lumen/router",
   "@lumen/compiler",
 ];
-const STYLE_QUERY = /\?lumen&type=style&lang\.css$/;
 const HMR_DOM = "virtual:lumen/hmr-dom";
 const HMR_DOM_ID = "\0lumen:hmr-dom";
 // The compiler prints user imports verbatim, normalized by the code printer.
@@ -60,6 +71,8 @@ export default function lumen(options: LumenOptions = {}): Plugin[] {
   let root = process.cwd();
   let devServer: ViteDevServer | undefined;
   const islands = new IslandRegistry();
+  const styles = new StyleCache();
+  const isLumenFile = (file: string): boolean => include.test(file) && !exclude.test(file);
   return [
     {
       name: "lumen",
@@ -104,27 +117,101 @@ export default function lumen(options: LumenOptions = {}): Plugin[] {
 
       load: {
         filter: { id: [/^\0lumen:(?:hmr-dom|islands)$/, STYLE_QUERY] },
-        handler(id) {
+        async handler(id) {
           if (id === HMR_DOM_ID) return HMR_DOM_CODE;
           if (id === ISLANDS_ID) {
             islands.scan(root, include, exclude);
             return islands.code();
           }
-          // `<file>?lumen&type=style&lang.css`: Vite's CSS plugin takes it from here. The scoped
-          // styles of the file are compiled by the CSS pipeline (TASK-45); empty until then.
-          return "";
+          // `<file>?lumen&type=style&lang.css`: the file's CSS; Vite's CSS plugin takes it from here.
+          const file = cleanId(id);
+          let source: string;
+          try {
+            source = await readFile(file, "utf8");
+          } catch {
+            return "";
+          }
+          let entry = styles.get(file);
+          if (entry === undefined || entry.source !== source) {
+            const result = await compileWithModules(
+              source,
+              file,
+              { target: "client", sourceMap: true, root },
+              pluginResolve(this),
+            );
+            entry = styles.record(file, source, result, false);
+          }
+          // Constants modules join the graph as imports of the CSS module (token edits update it).
+          for (const dep of entry.deps) this.addWatchFile(dep);
+          if (!entry.reported) {
+            // Compiled here (not by the module's transform): a style-only edit.
+            entry.reported = true;
+            reportFromLoad(this, file, source, entry.result.diagnostics);
+          }
+          return { code: entry.css ?? "", map: entry.cssMap };
+        },
+      },
+
+      watchChange(id) {
+        styles.invalidateDependents(cleanId(id));
+      },
+
+      hotUpdate: {
+        async handler({ file, modules, read }) {
+          const environment = this.environment;
+          if (!isLumenFile(file)) {
+            // A module that imported constants are read from: update the CSS of its dependents.
+            const extra = styles
+              .dependents(file)
+              .flatMap((dependent) => [
+                ...(environment.moduleGraph.getModulesByFile(dependent) ?? []),
+              ])
+              .filter((mod) => mod.id !== null && STYLE_QUERY.test(mod.id));
+            styles.invalidateDependents(file);
+            return extra.length === 0 ? undefined : [...new Set([...modules, ...extra])];
+          }
+          const styleModules = modules.filter((mod) => mod.id !== null && STYLE_QUERY.test(mod.id));
+          const target: Target = environment.config.consumer === "server" ? "server" : "client";
+          const previous = styles.code(file, target);
+          if (styleModules.length === 0 || previous === undefined) return;
+          const source = await read();
+          const result = await compileWithModules(
+            source,
+            file,
+            { target, sourceMap: true, root },
+            environmentResolve(environment),
+          );
+          styles.record(file, source, result, false);
+          // Same JS and no JS errors (the parser recovers from some, keeping the same code): only
+          // the style blocks changed, so only the CSS module is updated. Style diagnostics are
+          // reported by its load.
+          const jsErrors = result.diagnostics.some(
+            (d) => d.severity === "error" && !d.code.startsWith("LUM3"),
+          );
+          if (result.code === previous && !jsErrors) return styleModules;
+          // Code with errors never runs: the environment keeps the previous module.
+          if (!jsErrors) styles.setCode(file, target, result.code);
         },
       },
 
       transform: {
         filter: { id: { include, exclude } },
-        handler(code, id) {
-          const server = this.environment.config.consumer === "server";
-          const result = compile(code, id, {
-            target: server ? "server" : "client",
-            sourceMap: true,
-            root,
-          });
+        async handler(code, id) {
+          const target: Target =
+            this.environment.config.consumer === "server" ? "server" : "client";
+          const result = await compileWithModules(
+            code,
+            id,
+            { target, sourceMap: true, root },
+            pluginResolve(this),
+          );
+          const errors = result.diagnostics.filter((d) => d.severity === "error");
+          if (result.meta.hasStyles) {
+            const file = cleanId(id);
+            styles.record(file, code, result, true);
+            // The JS this environment runs (modules with errors never run).
+            if (errors.length === 0) styles.setCode(file, target, result.code);
+          }
           if (islands.add(result.meta.islands) && devServer) {
             // A call site the manifest has not seen: the next import gets the new manifest.
             const graph = devServer.environments.client.moduleGraph;
@@ -136,19 +223,68 @@ export default function lumen(options: LumenOptions = {}): Plugin[] {
               this.warn(message(diagnostic), diagnostic.span.start);
             }
           }
-          const errors = result.diagnostics.filter((d) => d.severity === "error");
           if (errors.length > 0) {
             const [first, ...rest] = errors;
             const more = rest.map((d) => `\n${message(d)}`).join("");
             this.error({ message: message(first!) + more, id }, first!.span.start);
           }
           let out = result.code;
-          if (serve && !server && IMPORTS_MOUNT.test(out)) out = hmrEntry(out);
+          if (serve && target === "client" && IMPORTS_MOUNT.test(out)) out = hmrEntry(out);
           return { code: out, map: result.map, moduleType: "js" };
         },
       },
     },
   ];
+}
+
+/** Resolution through the plugin pipeline (aliases, extensions, tsconfig paths). */
+function pluginResolve(context: Rollup.PluginContext): Resolve {
+  return async (specifier, importer) => {
+    const resolved = await context.resolve(specifier, importer, { skipSelf: true });
+    return resolved !== null && !resolved.external ? resolved.id : null;
+  };
+}
+
+function environmentResolve(environment: DevEnvironment): Resolve {
+  return async (specifier, importer) => {
+    const resolved = await environment.pluginContainer.resolveId(specifier, importer);
+    return resolved !== null && !resolved.external ? resolved.id : null;
+  };
+}
+
+/**
+ * Style diagnostics (`LUM3xxx`) of a compile done by the CSS module's `load` after a style-only
+ * edit; the others belong to the JS module's transform. (`load` has no `pos` argument.)
+ */
+function reportFromLoad(
+  context: Rollup.PluginContext,
+  file: string,
+  source: string,
+  all: readonly Diagnostic[],
+): void {
+  const diagnostics = all.filter((d) => d.code.startsWith("LUM3"));
+  const loc = (offset: number) => {
+    const before = source.slice(0, offset);
+    const line = before.split("\n").length;
+    return { file, line, column: offset - (before.lastIndexOf("\n") + 1) };
+  };
+  for (const diagnostic of diagnostics) {
+    if (diagnostic.severity !== "error") {
+      context.warn({ message: message(diagnostic), loc: loc(diagnostic.span.start) });
+    }
+  }
+  const errors = diagnostics.filter((d) => d.severity === "error");
+  if (errors.length > 0) {
+    const more = errors
+      .slice(1)
+      .map((d) => `\n${message(d)}`)
+      .join("");
+    context.error({
+      message: message(errors[0]!) + more,
+      id: file,
+      loc: loc(errors[0]!.span.start),
+    });
+  }
 }
 
 function message(diagnostic: Diagnostic): string {

@@ -1,4 +1,3 @@
-// @scope Field=data-l-f1
 // Server attribute order follows the client DOM: static and baked attributes, scope tokens, then
 // dynamic ones. Properties: innerHTML/textContent/textarea value become content on the server.
 import { signal } from "lumen";
@@ -16,6 +15,7 @@ export function Field(props: { class?: string; size: number; rest: Record<string
       <textarea value={name()} />
       <textarea value="literal" />
       <b {...props.rest} id="last" onClick={() => {}} />
+      <style>.on { color: green; }</style>
     </form>
   );
 }

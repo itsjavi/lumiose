@@ -1,15 +1,15 @@
-// @scope Page=data-l-p1
 // Island call sites (contract doc-2 §5.5): `island(ref, X, props, strategy, value?, slots?)` on the
 // server, with JSX-valued props and children as slots; a plain component call on the client.
 import { TeamPanel } from "./components/Team.stsx";
 import Chart from "../charts/Chart.tsx";
 import * as ui from "./ui.stsx";
 import { template, insert, createComponent } from "lumen/dom";
+import "/src/islands.stsx?lumen&type=style&lang.css";
 const _t0 = /* @__PURE__ */ template(`<b>`);
 const _t1 = /* @__PURE__ */ template(`<i>`);
-const _t2 = /* @__PURE__ */ template(`<p data-l-p1>footer`);
-const _t3 = /* @__PURE__ */ template(`<svg data-l-p1>`);
-const _t4 = /* @__PURE__ */ template(`<main data-l-p1><!><!><!><!><!><!>`);
+const _t2 = /* @__PURE__ */ template(`<p data-l-k3v7p5ya>footer`);
+const _t3 = /* @__PURE__ */ template(`<svg data-l-k3v7p5ya>`);
+const _t4 = /* @__PURE__ */ template(`<main data-l-k3v7p5ya><!><!><!><!><!><!>`);
 export function Local(props) {
 	const _el = _t0();
 	insert(_el, () => props.n);
@@ -35,7 +35,7 @@ export default function Page(props) {
 			return _t3();
 		},
 		class: "wide",
-		$$scope: "data-l-p1"
+		$$scope: "data-l-k3v7p5ya"
 	}), _marker3);
 	insert(_el2, createComponent(ui.Tabs, {}), _marker4);
 	insert(_el2, createComponent(Local, { n: 1 }), _marker5);
@@ -45,5 +45,5 @@ export default function Page(props) {
 }
 
 // --- diagnostics ---
-// LUM4001 error 24:8 the island component `Hidden` is not exported, so the browser cannot import it
-// LUM1002 error 25:18 unknown island directive `client:soon`
+// LUM4001 error 23:8 the island component `Hidden` is not exported, so the browser cannot import it
+// LUM1002 error 24:18 unknown island directive `client:soon`

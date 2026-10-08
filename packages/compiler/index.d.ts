@@ -12,8 +12,8 @@ export declare const __napiBindingTarget: "native" | "wasm32-wasi" | "wasm32-was
 export type AttributeValueKind = "string" | "expression";
 
 /**
- * Compiles a `.stsx` / `.tsx` module to JavaScript for the given target. Spans are UTF-16
- * offsets into `source`.
+ * Compiles a `.stsx` / `.tsx` module to JavaScript (and its style blocks to CSS) for the given
+ * target. Spans are UTF-16 offsets into `source`. Throws on invalid `cssTargets`.
  */
 export declare function compile(
   source: string,
@@ -28,6 +28,8 @@ export interface CompileMeta {
   runtimeHelpers: Array<string>;
   styleRefs: Array<ResolvedStyleRef>;
   hasStyles: boolean;
+  /** The `data-l-*` attributes stamped on the file's and its components' elements. */
+  scopeTokens: ScopeTokens;
   /** Island call sites, in source order. */
   islands: Array<IslandMeta>;
 }
@@ -35,13 +37,26 @@ export interface CompileMeta {
 export interface CompileOptions {
   /** Default `"client"`: `lumen/dom` code; `"server"`: `lumen/server` code. */
   target?: CompileTarget;
-  scopeTokens?: ScopeTokens;
-  /** Default `true`. */
+  /** Source maps for the JS and the CSS. Default `true`. */
   sourceMap?: boolean;
   /** Import `<id>?lumen&type=style&lang.css` when the file has style blocks. Default `true`. */
   styleImport?: boolean;
-  /** The project root: island refs name modules inside it root-relatively (`/src/x.stsx#X`). */
+  /** Compile the style blocks into `css`. Default `true`. */
+  emitCss?: boolean;
+  /**
+   * Browserslist queries for CSS nesting lowering and prefixes (`["chrome 100"]`). Default:
+   * modern syntax is kept.
+   */
+  cssTargets?: Array<string>;
+  /** Minify `css`. Default `false`. */
+  cssMinify?: boolean;
+  /**
+   * The project root: island refs name modules inside it root-relatively (`/src/x.stsx#X`),
+   * and scope tokens hash the root-relative path.
+   */
   root?: string;
+  /** Modules answering earlier `moduleRequests`. */
+  modules?: Array<HostModule>;
 }
 
 export interface CompileResult {
@@ -49,6 +64,17 @@ export interface CompileResult {
   code: string;
   /** Source map v3 JSON. */
   map?: string;
+  /**
+   * The file's stylesheet; `null` without style blocks, with `emitCss: false`, or while
+   * `moduleRequests` is not empty.
+   */
+  css?: string;
+  /** Source map v3 JSON from `css` to the source (UTF-16 columns). */
+  cssMap?: string;
+  /** Ids of the modules imported constants were folded from. */
+  cssDeps: Array<string>;
+  /** Modules needed to fold imported constants; compile again with them in `modules`. */
+  moduleRequests: Array<ModuleRequest>;
   diagnostics: Array<Diagnostic>;
   meta: CompileMeta;
 }
@@ -84,6 +110,16 @@ export interface Fix {
   edits: Array<TextEdit>;
 }
 
+/** A module loaded by the host for folding imported `$name` constants. */
+export interface HostModule {
+  /** The id of the importing module (the compiled file, or another host module). */
+  importer: string;
+  /** The import specifier as written. */
+  specifier: string;
+  /** Omitted when the module cannot be resolved or read (reported as `LUM3008`). */
+  resolved?: ResolvedModule;
+}
+
 /** An island call site (`<X client:* />`). */
 export interface IslandMeta {
   /** `<module>#<export>`, as passed to the server's `island()`. */
@@ -109,9 +145,24 @@ export interface Label {
   message: string;
 }
 
+/**
+ * A module the compiler needs to fold an imported constant: resolve `specifier` from
+ * `importer`, load it, and compile again with it in `modules`.
+ */
+export interface ModuleRequest {
+  importer: string;
+  specifier: string;
+}
+
 export type ParentKind = "intrinsic" | "fragment" | "component";
 
 export type PlacementKind = "top-level" | "jsx" | "expression";
+
+export interface ResolvedModule {
+  /** The resolved id (a file path): reported in `cssDeps`, and the importer of its imports. */
+  id: string;
+  source: string;
+}
 
 export interface ResolvedStyleRef {
   /** Index of the block in `scan().blocks`. */
@@ -119,6 +170,8 @@ export interface ResolvedStyleRef {
   path: Array<string>;
   span: Span;
   binding?: StyleRefBinding;
+  /** The folded constant, when it could be folded. */
+  value?: string | number;
 }
 
 /**
@@ -135,12 +188,12 @@ export interface ScanResult {
   diagnostics: Array<Diagnostic>;
 }
 
-/** `data-l-*` scope tokens computed by the CSS pipeline. */
+/** The `data-l-*` scope attributes of a file. */
 export interface ScopeTokens {
-  /** The file scope token (top-level `<style>` blocks). */
+  /** The file scope attribute (top-level `<style>` blocks). */
   file?: string;
-  /** Component scope tokens by component name. */
-  components?: Record<string, string>;
+  /** Component scope attributes by component name. */
+  components: Record<string, string>;
 }
 
 export type Severity = "error" | "warning" | "hint";

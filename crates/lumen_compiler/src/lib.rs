@@ -4,16 +4,20 @@
 pub mod analyze;
 pub mod codegen;
 mod compile;
+pub mod css;
 pub mod diagnostics;
 pub mod prepare;
 pub mod scanner;
 pub mod span;
 
+pub use codegen::client::ScopeTokens;
 pub use compile::{
-    CompileMeta, CompileOptions, CompileResult, ComponentMeta, IslandMeta, ScopeTokens, Target,
-    compile,
+    CompileMeta, CompileOptions, CompileResult, ComponentMeta, IslandMeta, Target, compile,
 };
+pub use css::CssOptions;
 pub use diagnostics::{Code, Diagnostic, Severity};
+pub use lumen_css::Targets as CssTargets;
+pub use prepare::{ConstValue, HostModule, ModuleRequest, ResolvedModule};
 pub use scanner::{ScanResult, scan};
 pub use span::{Span, Utf16Index};
 

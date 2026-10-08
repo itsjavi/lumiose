@@ -26,7 +26,7 @@ pub(super) fn char_at(source: &str, pos: usize) -> Option<char> {
 
 /// `<style` followed by whitespace or `>` (spec §4.1).
 pub(super) fn is_style_open(bytes: &[u8], pos: usize) -> bool {
-    bytes.get(pos..pos + 6) == Some(b"<style")
+    bytes.get(pos..pos + 6) == Some(b"<style".as_slice())
         && matches!(
             bytes.get(pos + 6),
             Some(b' ' | b'\t' | b'\n' | b'\r' | 0x0C | b'>')

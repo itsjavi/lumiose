@@ -1,9 +1,14 @@
 //! Steps between parsing and analysis: masked style artifacts and type stripping.
 
+pub mod constants;
 pub mod style;
 mod types;
 
-pub use style::{ResolvedStyleRef, StyleRefBinding, StyleRefBindingKind, prepare_style_artifacts};
+pub use constants::{ConstValue, HostModule, ModuleRequest, ResolvedModule};
+pub use style::{
+    ResolvedStyleRef, StyleArtifacts, StyleRefBinding, StyleRefBindingKind, resolve_style_refs,
+    strip_style_artifacts,
+};
 pub use types::strip_types;
 
 use oxc_diagnostics::OxcDiagnostic;

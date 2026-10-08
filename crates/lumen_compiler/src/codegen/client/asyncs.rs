@@ -1,6 +1,8 @@
 //! Async components (contract doc-2 §4), identical on both targets:
 //!
-//! - the definition is tagged: `const X = $async(async function X(props) { … })`;
+//! - the definition is tagged: a declaration stays a hoisted `async function X(props) { … }`
+//!   with a `$async(X);` statement at the start of its scope; function and arrow expressions
+//!   are wrapped in place (`$async(async (props) => { … })`);
 //! - the body runs inside `try { … } finally { $leave(); }`, so the run pauses when it ends;
 //! - each `await e` whose nearest function is the component becomes
 //!   `(await $await(() => e, N))()`, `N` being its static site index (source order, from the
@@ -78,95 +80,56 @@ impl<'a> Codegen<'a, '_> {
         self.ast.call_pure(span, callee, [function])
     }
 
-    /// An async component declaration as `const X = $async(async function X(…) { … })`.
-    pub(super) fn async_declaration(
-        &mut self,
-        mut function: ArenaBox<'a, Function<'a>>,
-    ) -> Statement<'a> {
-        let span = function.span;
-        function.r#type = FunctionType::FunctionExpression;
-        let name = function
-            .id
-            .as_ref()
-            .map(|id| id.name.to_string())
-            .unwrap_or_default();
-        let tagged = self.tag_async(Expression::FunctionExpression(function));
-        self.ast.const_decl(span, &name, tagged)
+    /// `$async(X);`: tags a hoisted async component declaration in place. Not pure: the call
+    /// mutates `X`, so it must survive tree shaking.
+    fn tag_statement(&mut self, span: Span, name: &str) -> Statement<'a> {
+        let callee = self.runtime("$async", span);
+        let call = self.ast.call(span, callee, [self.ast.ident(span, name)]);
+        self.ast.expr_stmt(span, call)
     }
 
-    /// An async component declaration (plain, `export` or `export default`), visited and
-    /// replaced by its tagged `const`; `None` for other statements.
+    /// An async component declaration (plain, `export` or `export default`), visited in place.
+    /// Returns the statements replacing it and, for a named declaration, its `$async(X);` tag,
+    /// which the caller puts at the start of the scope: the declaration stays a hoisted
+    /// `async function X`, and it is tagged before any code of the scope can use it. An anonymous
+    /// `export default async function` becomes `export default $async(async function …)`.
+    /// `None` for other statements.
     pub(super) fn async_component_statement(
         &mut self,
         statement: &mut Statement<'a>,
-    ) -> Option<Vec<Statement<'a>>> {
+    ) -> Option<(Statement<'a>, Option<Statement<'a>>)> {
         let tagged = |f: &Function<'a>| f.r#async && self.is_async_component(f.span.start);
-        let matched = match statement {
-            Statement::FunctionDeclaration(f) => tagged(f),
-            Statement::ExportDeclaration(export) => {
-                matches!(&export.declaration, Declaration::FunctionDeclaration(f) if tagged(f))
-            }
-            Statement::ExportDefaultDeclaration(export) => matches!(
-                &export.declaration,
-                ExportDefaultDeclarationKind::FunctionDeclaration(f) if tagged(f)
-            ),
-            _ => false,
+        let function = match statement {
+            Statement::FunctionDeclaration(f) if tagged(f) => f,
+            Statement::ExportDeclaration(export) => match &mut export.declaration {
+                Declaration::FunctionDeclaration(f) if tagged(f) => f,
+                _ => return None,
+            },
+            Statement::ExportDefaultDeclaration(export) => match &mut export.declaration {
+                ExportDefaultDeclarationKind::FunctionDeclaration(f) if tagged(f) => f,
+                _ => return None,
+            },
+            _ => return None,
         };
-        if !matched {
-            return None;
+        self.visit_function(function, ScopeFlags::Function);
+        let span = function.span;
+        if let Some(name) = function.id.as_ref().map(|id| id.name.to_string()) {
+            let tag = self.tag_statement(span, &name);
+            return Some((statement.take_in(self.ast), Some(tag)));
         }
-        Some(match statement.take_in(self.ast) {
-            Statement::FunctionDeclaration(mut function) => {
-                self.visit_function(&mut function, ScopeFlags::Function);
-                vec![self.async_declaration(function)]
-            }
-            Statement::ExportDeclaration(export) => {
-                let export = export.unbox();
-                let Declaration::FunctionDeclaration(mut function) = export.declaration else {
-                    unreachable!("matched above")
-                };
-                self.visit_function(&mut function, ScopeFlags::Function);
-                let Statement::VariableDeclaration(declaration) = self.async_declaration(function)
-                else {
-                    unreachable!("a const declaration")
-                };
-                vec![Statement::new_export_declaration(
-                    export.span,
-                    Declaration::VariableDeclaration(declaration),
-                    self.ast,
-                )]
-            }
-            Statement::ExportDefaultDeclaration(export) => {
-                let export = export.unbox();
-                let span = export.span;
-                let ExportDefaultDeclarationKind::FunctionDeclaration(mut function) =
-                    export.declaration
-                else {
-                    unreachable!("matched above")
-                };
-                self.visit_function(&mut function, ScopeFlags::Function);
-                match function.id.as_ref().map(|id| id.name.to_string()) {
-                    // `const X = $async(…); export default X;` keeps the local binding.
-                    Some(name) => {
-                        let declaration = self.async_declaration(function);
-                        let local = ExportDefaultDeclarationKind::from(self.ast.ident(span, &name));
-                        vec![
-                            declaration,
-                            Statement::new_export_default_declaration(span, local, self.ast),
-                        ]
-                    }
-                    None => {
-                        function.r#type = FunctionType::FunctionExpression;
-                        let tagged = self.tag_async(Expression::FunctionExpression(function));
-                        let kind = ExportDefaultDeclarationKind::from(tagged);
-                        vec![Statement::new_export_default_declaration(
-                            span, kind, self.ast,
-                        )]
-                    }
-                }
-            }
-            _ => unreachable!("matched above"),
-        })
+        let Statement::ExportDefaultDeclaration(export) = statement.take_in(self.ast) else {
+            unreachable!("only a default export declaration can be anonymous")
+        };
+        let export = export.unbox();
+        let ExportDefaultDeclarationKind::FunctionDeclaration(mut function) = export.declaration
+        else {
+            unreachable!("matched above")
+        };
+        function.r#type = FunctionType::FunctionExpression;
+        let tagged = self.tag_async(Expression::FunctionExpression(function));
+        let kind = ExportDefaultDeclarationKind::from(tagged);
+        let statement = Statement::new_export_default_declaration(export.span, kind, self.ast);
+        Some((statement, None))
     }
 
     /// Lowers `for await` loops of async components (and visits everything else).

@@ -173,7 +173,15 @@ impl<'a> Codegen<'a, '_> {
             },
             span,
         );
-        let has_inner_html = self.element_attributes(template, node, opening.attributes);
+        let mut attributes = opening.attributes;
+        // A `<select>`'s value can only select an option that exists: set it after the options
+        // are inserted.
+        let deferred = if tag == "select" {
+            self.select_value_attributes(&mut attributes)
+        } else {
+            self.ast.vec()
+        };
+        let has_inner_html = self.element_attributes(template, node, attributes);
         for token in self.scope_tokens() {
             template.element_attrs_mut(node).push((token, None));
         }
@@ -181,7 +189,36 @@ impl<'a> Codegen<'a, '_> {
             let child_namespace = html::child_namespace(namespace, &tag);
             self.build_children(template, Some(node), element.children, child_namespace);
         }
+        if !deferred.is_empty() {
+            self.element_attributes(template, node, deferred);
+        }
         node
+    }
+
+    /// Takes the `value` / `bind:value` attributes out of a `<select>`'s attributes (none when
+    /// there is a spread, which applies everything in order).
+    fn select_value_attributes(
+        &self,
+        attributes: &mut oxc_allocator::ArenaVec<'a, JSXAttributeItem<'a>>,
+    ) -> oxc_allocator::ArenaVec<'a, JSXAttributeItem<'a>> {
+        let mut deferred = self.ast.vec();
+        if attributes
+            .iter()
+            .any(|a| matches!(a, JSXAttributeItem::SpreadAttribute(_)))
+        {
+            return deferred;
+        }
+        let mut index = 0;
+        while index < attributes.len() {
+            let is_value = matches!(&attributes[index], JSXAttributeItem::Attribute(attribute)
+                if matches!(attribute_name(&attribute.name).as_str(), "value" | "bind:value"));
+            if is_value {
+                deferred.push(attributes.remove(index));
+            } else {
+                index += 1;
+            }
+        }
+        deferred
     }
 
     /// Processes the attributes of `node`. Returns true when `innerHTML` replaces the children.

@@ -1,9 +1,9 @@
-// @scope Field=data-l-f1
 // Server attribute order follows the client DOM: static and baked attributes, scope tokens, then
 // dynamic ones. Properties: innerHTML/textContent/textarea value become content on the server.
 import { signal } from "lumen";
 import { template, bind, setAttr, setProp, setClass, toggleClass, setStyleProperty, mergeProps, spread, applyScope, delegateEvents, bindValue, useRef } from "lumen/dom";
-const _t0 = /* @__PURE__ */ template(`<form method=post data-l-f1><input data-l-f1><input data-l-f1><p class=base style=color:red data-l-f1></p><div data-l-f1></div><span data-l-f1></span><textarea data-l-f1></textarea><textarea data-l-f1></textarea><b data-l-f1>`);
+import "/src/ssr-attributes.stsx?lumen&type=style&lang.css";
+const _t0 = /* @__PURE__ */ template(`<form method=post data-l-0caa055f><input data-l-0caa055f><input data-l-0caa055f><p class=base style=color:red data-l-0caa055f></p><div data-l-0caa055f></div><span data-l-0caa055f></span><textarea data-l-0caa055f></textarea><textarea data-l-0caa055f></textarea><b data-l-0caa055f>`);
 const _a0 = (el, v) => setAttr(el, "title", v);
 const _a1 = (el, v) => setAttr(el, "aria-busy", v);
 const _a2 = (el, v) => setAttr(el, "hidden", v);

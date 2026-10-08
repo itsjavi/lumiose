@@ -2,11 +2,12 @@
 import { fetchJSON } from "lumen";
 import { ssr, insert, $await, $leave, $async } from "lumen/server";
 const _s0 = ["<h3>", "</h3>"];
-export const Member = /* @__PURE__ */ $async(async function Member(props) {
+$async(Member);
+export async function Member(props) {
 	try {
 		const m = (await $await(() => fetchJSON(`/api/members/${props.id}`), 0))();
 		return ssr(_s0, insert(m.name));
 	} finally {
 		$leave();
 	}
-});
+}

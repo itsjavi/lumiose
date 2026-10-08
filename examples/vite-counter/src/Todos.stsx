@@ -1,4 +1,5 @@
 import { signal, type Signal } from "lumen";
+import { theme } from "./tokens.ts";
 
 interface Todo {
   id: number;
@@ -8,7 +9,7 @@ interface Todo {
 
 let nextId = 1;
 
-export function Todos() {
+export function Todos(props: { class?: string }) {
   const todos = signal<Todo[]>([]);
   const draft = signal("");
   const remaining = () => todos().filter((todo) => !todo.done()).length;
@@ -21,7 +22,7 @@ export function Todos() {
   };
   const remove = (id: number) => todos.update((list) => list.filter((todo) => todo.id !== id));
   return (
-    <section class="todos">
+    <section class={["todos", props.class]}>
       <h2>Todos</h2>
       <form onSubmit={add}>
         <input placeholder="What needs doing?" bind:value={draft} />
@@ -43,6 +44,12 @@ export function Todos() {
       <p class="remaining">
         {remaining()} of {todos().length} left
       </p>
+      <style>
+        ul { padding: 0; list-style: none; }
+        li { display: flex; gap: calc($theme.space * 2px); align-items: center; }
+        li.done label { text-decoration: line-through; opacity: 0.6; }
+        .remove { color: $theme.danger; }
+      </style>
     </section>
   );
 }

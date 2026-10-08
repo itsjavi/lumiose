@@ -1,0 +1,31 @@
+// $name constant folding: module and component consts, template literals, arithmetic, `as const`
+// objects, destructuring, imports (named, namespace, `export *`, re-exports), and LUM3008/3009/3005.
+import * as tokens from "./tokens.ts";
+import { shadow, unit } from "./tokens.ts";
+import { missing } from "./nowhere.ts";
+import { signal } from "lumen";
+
+const size = 3;
+const sizes = { sm: `${size * unit}px`, lg: size * 8 + "px" } as const;
+const { sm } = sizes;
+let mutable = 1;
+const runtime = signal(1);
+
+export function Panel(props: { wide: boolean }) {
+  const pad = 2;
+  const width = props.wide ? 10 : 5;
+  return (
+    <section class="panel">
+      <h2>Title</h2>
+      <style>
+        .panel { padding: calc($pad * 1rem); box-shadow: $shadow; border-radius: $tokens.radius.sm; }
+        .panel h2 { font-size: $sizes.lg; margin: $sm; }
+        @media (width < calc($tokens.unit * 100px)) { .panel { padding: 0; } }
+        .bad { width: $width; height: $mutable; color: $runtime; }
+        .hyphen { color: $brand-primary; }
+        .missing { color: $missing; top: $undeclared; left: $tokens.nothing; }
+        .unused { color: red; }
+      </style>
+    </section>
+  );
+}

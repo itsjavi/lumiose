@@ -34,6 +34,8 @@ use oxc_span::{GetSpan, Span};
 use oxc_syntax::scope::{ScopeFlags, ScopeId};
 use oxc_syntax::symbol::SymbolId;
 
+pub use element::{is_intrinsic, tag_name};
+
 use crate::analyze::{Analysis, is_jsx_like};
 use crate::codegen::ast::Ast;
 use crate::diagnostics::Diagnostic;
@@ -43,14 +45,15 @@ use html::Namespace;
 use idioms::MapCtx;
 use props::PropPath;
 
-/// `data-l-*` scope tokens per scope (computed by the CSS pipeline, TASK-10). Every element of a
-/// scope's templates carries its token(s); component call sites that pass `class` also pass the
-/// caller's tokens as `$$scope` (spec §4.6.2).
+/// `data-l-*` scope attributes per scope (computed from the style blocks, see `crate::css`).
+/// Every element of a scope's templates carries its attribute(s); component call sites that pass
+/// `class` also pass the caller's attributes as `$$scope` (spec §4.6.2).
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize))]
 pub struct ScopeTokens {
-    /// The file scope token (top-level blocks), applied to every template in the file.
+    /// The file scope attribute (top-level blocks), applied to every template in the file.
     pub file: Option<String>,
-    /// Component scope tokens by component name.
+    /// Component scope attributes by component name.
     pub components: BTreeMap<String, String>,
 }
 
@@ -165,6 +168,7 @@ pub fn transform<'a>(
         components: Vec::new(),
         maps: Vec::new(),
         namespaces: Vec::new(),
+        select_values: Vec::new(),
         diagnostics: Vec::new(),
     };
     codegen.visit_program(program);
@@ -276,6 +280,9 @@ pub struct Codegen<'a, 's> {
     maps: Vec<MapCtx<'a>>,
     /// The namespace of the element whose dynamic children are being compiled.
     namespaces: Vec<Namespace>,
+    /// Server: the local holding the value of each enclosing `<select value>`, which marks the
+    /// matching `<option>` selected (ssr.rs).
+    select_values: Vec<String>,
     pub diagnostics: Vec<Diagnostic>,
 }
 
@@ -702,9 +709,13 @@ impl<'a> VisitMut<'a> for Codegen<'a, '_> {
     fn visit_statements(&mut self, statements: &mut ArenaVec<'a, Statement<'a>>) {
         let old = statements.take_in(self.ast);
         let mut out = self.ast.vec_from(Vec::with_capacity(old.len()));
+        // `$async(X);` tags of hoisted async component declarations: at the start of the scope
+        // (after the imports), so they run before anything in it can render `X`.
+        let mut tags = Vec::new();
         for mut statement in old {
-            if let Some(statements) = self.async_component_statement(&mut statement) {
-                out.extend(statements);
+            if let Some((statement, tag)) = self.async_component_statement(&mut statement) {
+                out.push(statement);
+                tags.extend(tag);
                 continue;
             }
             match &mut statement {
@@ -740,6 +751,13 @@ impl<'a> VisitMut<'a> for Codegen<'a, '_> {
                     out.push(statement);
                 }
             }
+        }
+        if !tags.is_empty() {
+            let at = out
+                .iter()
+                .take_while(|s| matches!(s, Statement::ImportDeclaration(_)))
+                .count();
+            out.splice(at..at, tags);
         }
         *statements = out;
     }

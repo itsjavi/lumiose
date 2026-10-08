@@ -9,7 +9,7 @@
     "build": "vite build",
     "preview": "vite preview",
     "test:e2e": "playwright test",
-    "typecheck": "tsc -p tsconfig.json"
+    "typecheck": "lumen check"
   },
   "dependencies": {
     "lumen": "workspace:*"

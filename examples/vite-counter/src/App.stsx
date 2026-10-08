@@ -1,0 +1,39 @@
+import { Counter } from "./Counter.stsx";
+import { Todos } from "./Todos.stsx";
+import { theme } from "./tokens.ts";
+
+export function App() {
+  return (
+    <main>
+      <h1>Lumen + Vite</h1>
+      <Counter start={0} class="panel" />
+      <Todos class="panel" />
+      <style>
+        h1 { color: $theme.accent; }
+      </style>
+    </main>
+  );
+}
+
+<style>
+  main {
+    max-width: 40rem;
+    margin: 0 auto;
+    padding: calc($theme.space * 4px);
+  }
+
+  /* Class passthrough: lands on the element where Counter and Todos apply `props.class`. */
+  .panel {
+    border: 1px solid $theme.border;
+    border-radius: calc($theme.radius * 1px);
+    padding: calc($theme.space * 3px);
+    margin-block: calc($theme.space * 4px);
+  }
+</style>
+
+<style global>
+  body {
+    margin: 0;
+    font-family: system-ui, sans-serif;
+  }
+</style>

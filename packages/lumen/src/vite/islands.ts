@@ -50,7 +50,12 @@ export class IslandRegistry {
       } catch {
         continue;
       }
-      const result = compile(source, file, { root, sourceMap: false, styleImport: false });
+      const result = compile(source, file, {
+        root,
+        sourceMap: false,
+        styleImport: false,
+        emitCss: false,
+      });
       this.add(result.meta.islands);
     }
   }

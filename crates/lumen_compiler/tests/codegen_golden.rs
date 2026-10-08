@@ -1,15 +1,17 @@
 //! Codegen goldens: each `tests/fixtures/client/<name>.{stsx,tsx}` compiles to `<name>.js` (client
 //! target) and `<name>.server.js` (server target), each output followed by its diagnostics as
-//! comments. Regenerate with `UPDATE_GOLDEN=1 cargo test -p lumen_compiler --test codegen_golden`.
+//! comments, plus `<name>.css` when the file has styles (the same for both targets). Regenerate
+//! with `UPDATE_GOLDEN=1 cargo test -p lumen_compiler --test codegen_golden`.
 //!
-//! A fixture may start with `// @scope file=data-l-f1 Counter=data-l-c1` to provide the scope
-//! tokens the CSS pipeline would compute. Every output must parse as a JavaScript module.
+//! Fixtures are compiled as `/src/<name>` with the root `/`; imported constants are read from
+//! `tests/fixtures/client/modules` (`./tokens.ts` → `modules/tokens.ts`). Every output must parse
+//! as a JavaScript module.
 
 mod support;
 
 use std::fmt::Write as _;
 
-use lumen_compiler::{CompileOptions, ScopeTokens, Target, compile};
+use lumen_compiler::{CompileOptions, Target};
 use oxc_allocator::Allocator;
 use oxc_parser::Parser;
 use oxc_span::SourceType;
@@ -32,11 +34,11 @@ fn goldens(target: Target, extension: &str) {
         let source = std::fs::read_to_string(&path).unwrap();
         let options = CompileOptions {
             target,
-            scope_tokens: scope_tokens(&source),
+            root: Some("/".to_owned()),
             ..CompileOptions::default()
         };
         let id = format!("/src/{name}");
-        let result = compile(&source, &id, &options);
+        let result = support::compile_with_modules(&source, &id, options);
         assert!(!result.code.is_empty(), "{name}: no output");
         assert_parses_as_js(&name, &result.code);
         let mut output = result.code.clone();
@@ -58,27 +60,17 @@ fn goldens(target: Target, extension: &str) {
             .rsplit_once('.')
             .map_or(name.as_str(), |(stem, _)| stem);
         support::assert_golden(&path.with_file_name(format!("{stem}.{extension}")), &output);
-    }
-}
-
-fn scope_tokens(source: &str) -> ScopeTokens {
-    let mut tokens = ScopeTokens::default();
-    let Some(header) = source
-        .lines()
-        .next()
-        .and_then(|line| line.strip_prefix("// @scope "))
-    else {
-        return tokens;
-    };
-    for entry in header.split_whitespace() {
-        let (scope, token) = entry.split_once('=').expect("scope=token");
-        if scope == "file" {
-            tokens.file = Some(token.to_owned());
-        } else {
-            tokens.components.insert(scope.to_owned(), token.to_owned());
+        let css_path = path.with_file_name(format!("{stem}.css"));
+        match &result.css {
+            Some(css) if target == Target::Client => support::assert_golden(&css_path, css),
+            Some(css) => assert_eq!(
+                Some(css.as_str()),
+                std::fs::read_to_string(&css_path).ok().as_deref(),
+                "{name}: server CSS differs from client CSS"
+            ),
+            None => assert!(!css_path.exists(), "{name}: no CSS but {css_path:?} exists"),
         }
     }
-    tokens
 }
 
 fn assert_parses_as_js(name: &str, code: &str) {

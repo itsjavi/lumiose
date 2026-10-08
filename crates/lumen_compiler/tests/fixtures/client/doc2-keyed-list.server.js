@@ -1,13 +1,13 @@
-// @scope file=data-l-x
 // Contract doc-2 §5.2: keyed list, selector, data-slot event.
 import { signal } from "lumen";
 import { ssr, insert, classAttr, list, selector } from "lumen/server";
+import "/src/doc2-keyed-list.stsx?lumen&type=style&lang.css";
 const _s0 = [
-	"<tr data-l-x",
-	"><td data-l-x><a data-l-x>",
+	"<tr data-l-tavixavi",
+	"><td data-l-tavixavi><a data-l-tavixavi>",
 	"</a></td></tr>"
 ];
-const _s1 = ["<tbody data-l-x>", "</tbody>"];
+const _s1 = ["<tbody data-l-tavixavi>", "</tbody>"];
 const rows = signal([]);
 const selected = signal(0);
 const select = (id) => selected.set(id);

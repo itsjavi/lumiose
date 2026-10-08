@@ -6,10 +6,12 @@ const _t0 = /* @__PURE__ */ template(`<main><h1></h1><p></p><button>`);
 const _t1 = /* @__PURE__ */ template(`<pre> `);
 const _t2 = /* @__PURE__ */ template(`<p>`);
 const _t3 = /* @__PURE__ */ template(`<p> `);
+$async(Page);
+$async(Disposing);
 async function load(id) {
 	return await fetchJSON(`/api/${id}`);
 }
-const Page = /* @__PURE__ */ $async(async function Page(props) {
+export default async function Page(props) {
 	try {
 		const first = (await $await(() => load(props.ids[0]), 0))();
 		const later = async () => await load("later");
@@ -28,8 +30,7 @@ const Page = /* @__PURE__ */ $async(async function Page(props) {
 	} finally {
 		$leave();
 	}
-});
-export default Page;
+}
 export const Stream = /* @__PURE__ */ $async(async (props) => {
 	try {
 		const lines = [];
@@ -74,7 +75,7 @@ export const Anonymous = /* @__PURE__ */ $async(async function Anonymous() {
 		$leave();
 	}
 });
-export const Disposing = /* @__PURE__ */ $async(async function Disposing() {
+export async function Disposing() {
 	try {
 		await using handle = (await $await(() => fetchJSON("/api/handle"), 0))();
 		const _el4 = _t3(), _text2 = _el4.firstChild;
@@ -83,7 +84,7 @@ export const Disposing = /* @__PURE__ */ $async(async function Disposing() {
 	} finally {
 		$leave();
 	}
-});
+}
 delegateEvents(["click"]);
 
 // --- diagnostics ---

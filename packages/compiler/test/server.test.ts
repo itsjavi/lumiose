@@ -43,7 +43,8 @@ async function load(
   options: Record<string, unknown> = {},
 ): Promise<{ module: Module; code: string; tokens: Record<string, string> }> {
   const extension = source.includes("<style") ? "stsx" : "tsx";
-  const result = binding!.compile(source, `/src/ssr${counter}.${extension}`, {
+  // One module id for every case: scope tokens (hashes of the id) then match across targets.
+  const result = binding!.compile(source, `/src/ssr.${extension}`, {
     target,
     styleImport: false,
     ...options,
@@ -81,7 +82,7 @@ function mountClient(module: Module, name: string, props: Record<string, unknown
  * attributes (the client sets properties, the server writes attributes), styles as parsed and
  * attributes sorted (their order is not significant).
  */
-function normalized(root: Element): string {
+function normalized(root: Element, parsedHtml = false): string {
   const walker = document.createTreeWalker(root, 128 /* NodeFilter.SHOW_COMMENT */);
   const comments: Node[] = [];
   while (walker.nextNode()) comments.push(walker.currentNode);
@@ -94,6 +95,16 @@ function normalized(root: Element): string {
   }
   for (const textarea of root.querySelectorAll("textarea")) {
     textarea.textContent = textarea.value;
+  }
+  // The client selects options through select.value; parsed server HTML keeps its `selected`
+  // attributes (happy-dom's parser does not always apply them to select.value).
+  if (!parsedHtml) {
+    for (const select of root.querySelectorAll("select")) {
+      const { value } = select;
+      for (const option of select.querySelectorAll("option")) {
+        option.toggleAttribute("selected", option.value === value);
+      }
+    }
   }
   for (const el of root.querySelectorAll("*")) {
     if (el.hasAttribute("style")) el.setAttribute("style", (el as HTMLElement).style.cssText);
@@ -109,7 +120,7 @@ function normalized(root: Element): string {
 function parsed(html: string): string {
   const container = document.createElement("div");
   container.innerHTML = html;
-  return normalized(container);
+  return normalized(container, true);
 }
 
 /** Compiles `source` for both targets and expects the same DOM for each component. */
@@ -225,6 +236,25 @@ const STRUCTURE = `
     </>
   );`;
 
+const TABLE_SELECT = `
+  import { signal } from "lumen";
+  const items = signal([{ id: 1, label: "One" }, { id: 2, label: "Two" }]);
+  const open = signal(true);
+  export function Pick(props: { choice: number }) {
+    return (
+      <form>
+        <table>
+          {items().map((item) => <tr><td>{item.label}</td></tr>)}
+          {open() && <tr><td>open</td></tr>}
+        </table>
+        <select value={props.choice}>
+          {items().map((item) => <option value={item.id}>{item.label}</option>)}
+          <option>Three</option>
+        </select>
+      </form>
+    );
+  }`;
+
 describe.skipIf(!binding)("server target renders on lumen/server", () => {
   it("counter (doc-2 §5.1)", async () => {
     const { module, code } = await load(COUNTER, "server");
@@ -274,6 +304,17 @@ describe.skipIf(!binding)("server target renders on lumen/server", () => {
         '<label>Ada "the" &lt;first&gt;</label>' +
         "<b>&lt;3&gt;</b>" +
         "</form>",
+    );
+  });
+
+  it("rows of a table go in the implicit tbody; select values mark their option", async () => {
+    const { module } = await load(TABLE_SELECT, "server");
+    expect(await renderServer(module, "Pick", { choice: 2 })).toBe(
+      "<form><table><tbody><tr><td>One</td></tr><tr><td>Two</td></tr><tr><td>open</td></tr></tbody></table>" +
+        '<select><option value="1">One</option><option value="2" selected>Two</option><option>Three</option></select></form>',
+    );
+    expect(await renderServer(module, "Pick", { choice: "Three" })).toContain(
+      "<option selected>Three</option>",
     );
   });
 
@@ -342,7 +383,8 @@ const ISLANDS = `
 describe.skipIf(!binding)("async components and islands (server)", () => {
   it("async components await through $await and keep their frames", async () => {
     const { module, code } = await load(ASYNC, "server");
-    expect(code).toContain("export const Member = /* @__PURE__ */ $async(async function Member");
+    expect(code).toContain("$async(Member);");
+    expect(code).toContain("export async function Member(props)");
     expect(code).toContain("(await $await(() => wait(");
     expect(await renderServer(module, "Team")).toBe(
       '<section><h3 title="boom">Ada 1 a,b</h3><h3 title="boom">Ada 2 a,b</h3></section>',
@@ -352,7 +394,7 @@ describe.skipIf(!binding)("async components and islands (server)", () => {
   it("island call sites render ranges, slots and records", async () => {
     const { module, code } = await load(ISLANDS, "server");
     expect(code).toMatch(
-      /island\("\/src\/ssr\d+\.tsx#Panel", Panel, \{ ids: \[1, 2\] \}, "load", void 0, \{/,
+      /island\("\/src\/ssr\.tsx#Panel", Panel, \{ ids: \[1, 2\] \}, "load", void 0, \{/,
     );
     const html = await renderServer(module, "Page");
     const [body, records] = html.split('<script type="application/json" data-l-islands>');
@@ -370,7 +412,7 @@ describe.skipIf(!binding)("async components and islands (server)", () => {
       { id: 0, strategy: "load", props: { ids: [1, 2] }, slots: ["footer", "children"] },
       { id: 1, strategy: "visible", value: "100px", props: { n: 21 }, awaits: { "0:0:0": 42 } },
     ]);
-    expect(recorded[0].ref).toMatch(/^\/src\/ssr\d+\.tsx#Panel$/);
+    expect(recorded[0].ref).toMatch(/^\/src\/ssr\.tsx#Panel$/);
   });
 });
 
@@ -411,6 +453,12 @@ describe.skipIf(!binding)("client/server parity", () => {
   it("keyed list", () => expectParity(TABLE, [["Table"]]));
   it("components and scope tokens", () => expectParity(CARD, [["Page"]]));
   it("attributes and properties", () => expectParity(ATTRIBUTES, [["Attributes", { size: 3 }]]));
+  it("table rows and select values", () =>
+    // A string value: happy-dom's select.value setter does not convert numbers.
+    expectParity(TABLE_SELECT, [
+      ["Pick", { choice: "2" }],
+      ["Pick", { choice: "Three" }],
+    ]));
   it("structure", () =>
     expectParity(STRUCTURE, [["Structure", { id: "s1", title: "T" }], ["Fragment"]]));
 });

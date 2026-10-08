@@ -10,14 +10,14 @@ const _t3 = /* @__PURE__ */ template(`<tr>`);
 const _t4 = /* @__PURE__ */ template(`<b>`);
 const _t5 = /* @__PURE__ */ template(`<i>-`);
 const _t6 = /* @__PURE__ */ template(`<dt></dt><dd>`, 1);
-const _t7 = /* @__PURE__ */ template(`<div><ul></ul><ol></ol><ol></ol><table></table><p> </p><!><!>`);
+const _t7 = /* @__PURE__ */ template(`<div><ul></ul><ol></ol><ol></ol><table><tbody></tbody></table><p> </p><!><!>`);
 const _a0 = (el, v) => toggleClass(el, "active", v);
 const _a1 = (el, v) => toggleClass(el, "first", v);
 const _a2 = (el, v) => setAttr(el, "data-selected", v);
 export function Lists(props) {
 	const items = signal([]);
 	const active = signal(0);
-	const _el7 = _t7(), _ul = _el7.firstChild, _ol = _ul.nextSibling, _ol2 = _ol.nextSibling, _table = _ol2.nextSibling, _p = _table.nextSibling, _text2 = _p.firstChild, _marker = _p.nextSibling, _marker2 = _marker.nextSibling;
+	const _el7 = _t7(), _ul = _el7.firstChild, _ol = _ul.nextSibling, _ol2 = _ol.nextSibling, _table = _ol2.nextSibling, _tbody = _table.firstChild, _p = _table.nextSibling, _text2 = _p.firstChild, _marker = _p.nextSibling, _marker2 = _marker.nextSibling;
 	const _isSelected = selector(active);
 	list(_ul, null, items, (item, i) => {
 		const _el = _t0(), _text = _el.firstChild;
@@ -42,7 +42,7 @@ export function Lists(props) {
 		insert(_el3, label);
 		return _el3;
 	}, (item) => item.id);
-	list(_table, null, items, (row) => {
+	list(_tbody, null, items, (row) => {
 		const _el5 = _t3();
 		list(_el5, null, () => row.tags, (tag) => {
 			const _el4 = _t2();

@@ -10,10 +10,12 @@ const _s0 = [
 ];
 const _s1 = ["<pre>", "</pre>"];
 const _s2 = ["<p>", "</p>"];
+$async(Page);
+$async(Disposing);
 async function load(id) {
 	return await fetchJSON(`/api/${id}`);
 }
-const Page = /* @__PURE__ */ $async(async function Page(props) {
+export default async function Page(props) {
 	try {
 		const first = (await $await(() => load(props.ids[0]), 0))();
 		const later = async () => await load("later");
@@ -27,8 +29,7 @@ const Page = /* @__PURE__ */ $async(async function Page(props) {
 	} finally {
 		$leave();
 	}
-});
-export default Page;
+}
 export const Stream = /* @__PURE__ */ $async(async (props) => {
 	try {
 		const lines = [];
@@ -69,14 +70,14 @@ export const Anonymous = /* @__PURE__ */ $async(async function Anonymous() {
 		$leave();
 	}
 });
-export const Disposing = /* @__PURE__ */ $async(async function Disposing() {
+export async function Disposing() {
 	try {
 		await using handle = (await $await(() => fetchJSON("/api/handle"), 0))();
 		return ssr(_s2, text(String(handle)));
 	} finally {
 		$leave();
 	}
-});
+}
 
 // --- diagnostics ---
 // LUM1007 error 43:3 `await using` cannot be used in a component: its disposal awaits after the body, outside the component's run

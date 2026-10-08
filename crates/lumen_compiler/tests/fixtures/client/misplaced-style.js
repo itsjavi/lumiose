@@ -1,8 +1,8 @@
 import { template, insert } from "lumen/dom";
 import "/src/misplaced-style.stsx?lumen&type=style&lang.css";
-const _t0 = /* @__PURE__ */ template(`<li>`);
-const _t1 = /* @__PURE__ */ template(`<footer>`);
-const _t2 = /* @__PURE__ */ template(`<ul><!>`);
+const _t0 = /* @__PURE__ */ template(`<li data-l-3y536f6d>`);
+const _t1 = /* @__PURE__ */ template(`<footer data-l-3y536f6d>`);
+const _t2 = /* @__PURE__ */ template(`<ul data-l-3y536f6d><!>`);
 const _t3 = /* @__PURE__ */ template(`<p>`);
 // LUM3010 found on the AST: blocks inside .map() callbacks and nested functions (the scanner
 // cannot see these placements).

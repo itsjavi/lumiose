@@ -1,4 +1,3 @@
-// @scope file=data-l-x
 // Contract doc-2 §5.2: keyed list, selector, data-slot event.
 import { signal } from "lumen";
 
@@ -18,3 +17,7 @@ export function Rows() {
     </tbody>
   );
 }
+
+<style>
+  .danger td { color: crimson; }
+</style>

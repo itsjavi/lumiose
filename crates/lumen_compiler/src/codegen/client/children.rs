@@ -4,7 +4,9 @@
 
 use oxc_allocator::{ArenaBox, ArenaVec};
 use oxc_ast::ast::*;
+use oxc_ast_visit::{Visit, walk};
 use oxc_span::{GetSpan, Span};
+use oxc_syntax::scope::ScopeFlags;
 
 use super::element::{is_intrinsic, js_number, tag_name};
 use super::html::{self, Namespace};
@@ -21,6 +23,9 @@ pub enum Item<'a> {
     Element(ArenaBox<'a, JSXElement<'a>>),
     /// A component element or an expression.
     Dynamic(Expression<'a>),
+    /// Consecutive row children of a `<table>` (`<tr>`s and expressions rendering `<tr>`s), which
+    /// the HTML parser puts in an implicit `<tbody>`; see [`group_table_rows`].
+    Rows(Vec<Item<'a>>, Span),
 }
 
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -34,7 +39,7 @@ impl Item<'_> {
     fn kind(&self) -> Kind {
         match self {
             Item::Text(..) => Kind::Text,
-            Item::Raw(..) | Item::Element(_) => Kind::Static,
+            Item::Raw(..) | Item::Element(_) | Item::Rows(..) => Kind::Static,
             Item::Dynamic(_) => Kind::Dynamic,
         }
     }
@@ -151,19 +156,25 @@ impl<'a> Codegen<'a, '_> {
         namespace: Namespace,
     ) {
         let parent = parent.expect("element children");
-        let items = self.child_items(children);
+        let mut items = self.child_items(children);
+        if template.tag(parent) == Some("table") {
+            items = group_table_rows(items);
+        }
+        self.namespaces.push(namespace);
+        self.build_items(template, parent, items, namespace);
+        self.namespaces.pop();
+    }
+
+    fn build_items(
+        &mut self,
+        template: &mut Template<'a>,
+        parent: usize,
+        items: Vec<Item<'a>>,
+        namespace: Namespace,
+    ) {
         let kinds: Vec<Kind> = items.iter().map(Item::kind).collect();
         let count = items.len();
-        let in_table = template.tag(parent) == Some("table");
-        // The HTML parser wraps `<tr>` children of `<table>` in a `<tbody>`; the template spells it
-        // out so that walks match the parsed DOM.
-        let mut implicit_tbody: Option<usize> = None;
-        self.namespaces.push(namespace);
         for (i, item) in items.into_iter().enumerate() {
-            if !matches!(&item, Item::Element(e) if in_table && tag_name(&e.opening_element.name) == "tr")
-            {
-                implicit_tbody = None;
-            }
             match item {
                 Item::Text(text, span) => {
                     template.add_text(Some(parent), &text, span);
@@ -171,28 +182,16 @@ impl<'a> Codegen<'a, '_> {
                 Item::Raw(raw, span) => {
                     template.add(Some(parent), NodeKind::Raw(raw), span);
                 }
-                Item::Element(element)
-                    if in_table && tag_name(&element.opening_element.name) == "tr" =>
-                {
-                    let tbody = match implicit_tbody {
-                        Some(tbody) => tbody,
-                        None => {
-                            let attrs =
-                                self.scope_tokens().into_iter().map(|t| (t, None)).collect();
-                            let tag = "tbody".to_owned();
-                            let tbody = template.add(
-                                Some(parent),
-                                NodeKind::Element { tag, attrs },
-                                element.span,
-                            );
-                            implicit_tbody = Some(tbody);
-                            tbody
-                        }
-                    };
-                    self.build_element(template, element, Some(tbody), namespace);
-                }
                 Item::Element(element) => {
                     self.build_element(template, element, Some(parent), namespace);
+                }
+                Item::Rows(rows, span) => {
+                    // The template spells out the `<tbody>` the HTML parser inserts, so that walks
+                    // (and dynamic rows' parent) match the parsed DOM.
+                    let attrs = self.scope_tokens().into_iter().map(|t| (t, None)).collect();
+                    let tag = "tbody".to_owned();
+                    let tbody = template.add(Some(parent), NodeKind::Element { tag, attrs }, span);
+                    self.build_items(template, tbody, rows, namespace);
                 }
                 Item::Dynamic(expression) => {
                     let span = expression.span();
@@ -209,7 +208,6 @@ impl<'a> Codegen<'a, '_> {
                 }
             }
         }
-        self.namespaces.pop();
     }
 
     fn dynamic_child(
@@ -344,6 +342,7 @@ impl<'a> Codegen<'a, '_> {
                     }
                 }
                 Item::Dynamic(expression) => self.renderable(expression, !lazy),
+                Item::Rows(..) => unreachable!("rows are only grouped in <table> children"),
             });
         }
         let namespace = items
@@ -391,6 +390,7 @@ impl<'a> Codegen<'a, '_> {
                     setup.extend(compiled.setup);
                     slots.push(Slot::Value(compiled.value));
                 }
+                Item::Rows(..) => unreachable!("rows are only grouped in <table> children"),
             }
         }
         if template.roots.is_empty() {
@@ -557,5 +557,101 @@ pub fn is_text_like(expr: &Expression<'_>) -> bool {
             _ => false,
         },
         _ => false,
+    }
+}
+
+/// Groups consecutive row children of a `<table>` into [`Item::Rows`]: `<tr>` elements, and
+/// expressions that render `<tr>`s (`.map()` callbacks, conditionals). The HTML parser puts such
+/// rows in an implicit `<tbody>`, so both targets spell it out: the client walks and the server
+/// HTML then describe the same DOM. Anything else (`<thead>`, an explicit `<tbody>`, text, a
+/// component) ends a group.
+pub(super) fn group_table_rows(items: Vec<Item<'_>>) -> Vec<Item<'_>> {
+    let mut out = Vec::with_capacity(items.len());
+    for item in items {
+        let row = match &item {
+            Item::Element(element) => {
+                is_intrinsic(&element.opening_element.name)
+                    && tag_name(&element.opening_element.name) == "tr"
+            }
+            Item::Dynamic(expression) => renders_rows(expression),
+            _ => false,
+        };
+        if !row {
+            out.push(item);
+            continue;
+        }
+        let span = match &item {
+            Item::Element(element) => element.span,
+            Item::Dynamic(expression) => expression.span(),
+            _ => unreachable!("rows are elements or expressions"),
+        };
+        match out.last_mut() {
+            Some(Item::Rows(rows, group)) => {
+                group.end = span.end;
+                rows.push(item);
+            }
+            _ => out.push(Item::Rows(vec![item], span)),
+        }
+    }
+    out
+}
+
+/// True when the JSX an expression renders is `<tr>` rows: `<tr>`, a conditional or logical
+/// expression with a `<tr>` operand, or a `.map()` whose callback returns one.
+fn renders_rows(expression: &Expression<'_>) -> bool {
+    match expression.without_parentheses() {
+        Expression::JSXElement(element) => {
+            is_intrinsic(&element.opening_element.name)
+                && tag_name(&element.opening_element.name) == "tr"
+        }
+        Expression::ConditionalExpression(conditional) => {
+            renders_rows(&conditional.consequent) || renders_rows(&conditional.alternate)
+        }
+        Expression::LogicalExpression(logical) => renders_rows(&logical.right),
+        Expression::CallExpression(call) => mapped_rows(call),
+        Expression::ChainExpression(chain) => match &chain.expression {
+            ChainElement::CallExpression(call) => mapped_rows(call),
+            _ => false,
+        },
+        _ => false,
+    }
+}
+
+/// `items.map((item) => <tr>…</tr>)`
+fn mapped_rows(call: &CallExpression<'_>) -> bool {
+    let Expression::StaticMemberExpression(member) = &call.callee else {
+        return false;
+    };
+    if member.property.name != "map" || call.arguments.len() != 1 {
+        return false;
+    }
+    let body = match &call.arguments[0] {
+        Argument::ArrowFunctionExpression(arrow) => match &arrow.body {
+            ArrowFunctionBody::FunctionBody(body) => body,
+            body => return body.as_expression().is_some_and(renders_rows),
+        },
+        Argument::FunctionExpression(function) => match &function.body {
+            Some(body) => body,
+            None => return false,
+        },
+        _ => return false,
+    };
+    let mut finder = RowReturns(false);
+    finder.visit_function_body(body);
+    finder.0
+}
+
+/// Finds a `return <tr>` in a function body (not in nested functions).
+struct RowReturns(bool);
+
+impl<'a> Visit<'a> for RowReturns {
+    fn visit_function(&mut self, _: &Function<'a>, _: ScopeFlags) {}
+    fn visit_arrow_function_expression(&mut self, _: &ArrowFunctionExpression<'a>) {}
+
+    fn visit_return_statement(&mut self, it: &ReturnStatement<'a>) {
+        if it.argument.as_ref().is_some_and(renders_rows) {
+            self.0 = true;
+        }
+        walk::walk_return_statement(self, it);
     }
 }

@@ -1,0 +1,27 @@
+import { signal } from "lumen";
+import { theme } from "./tokens.ts";
+
+export function Counter({ start = 0, class: className }: { start?: number; class?: string }) {
+  const count = signal(start);
+  return (
+    <section class={["counter", className]}>
+      <h2>Counter</h2>
+      <button class={{ hot: count() > 5 }} onClick={() => count.update((c) => c + 1)}>
+        Clicked {count()} times
+      </button>
+      <button onClick={() => count.set(start)}>Reset</button>
+      <style>
+        h2 { color: $theme.accent; }
+        button {
+          background: $theme.accent;
+          color: white;
+          border: 0;
+          border-radius: calc($theme.radius * 1px);
+          padding: calc($theme.space * 1px) calc($theme.space * 3px);
+        }
+        button + button { margin-inline-start: calc($theme.space * 2px); }
+        .hot { background: $theme.danger; }
+      </style>
+    </section>
+  );
+}

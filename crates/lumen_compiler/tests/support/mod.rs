@@ -7,7 +7,9 @@ use std::fmt::Write as _;
 use std::path::{Path, PathBuf};
 
 use lumen_compiler::scanner::{AttributeValue, Placement, ScanResult};
-use lumen_compiler::{Span, Utf16Index};
+use lumen_compiler::{
+    CompileOptions, CompileResult, HostModule, ResolvedModule, Span, Utf16Index, compile,
+};
 use oxc_allocator::Allocator;
 use oxc_parser::Parser;
 use oxc_span::SourceType;
@@ -28,6 +30,52 @@ pub fn fixtures(dir: &str) -> Vec<PathBuf> {
         .collect();
     files.sort();
     files
+}
+
+/// Compiles `source` like a host would: module requests are answered from
+/// `tests/fixtures/client/modules` (ids `/src/<path>`), and the file is compiled again until
+/// nothing is missing.
+pub fn compile_with_modules(source: &str, id: &str, mut options: CompileOptions) -> CompileResult {
+    let modules_dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/client/modules");
+    for _ in 0..8 {
+        let result = compile(source, id, &options);
+        if result.module_requests.is_empty() {
+            return result;
+        }
+        for request in result.module_requests {
+            let resolved = resolve(&request.importer, &request.specifier).and_then(|path| {
+                let file = modules_dir.join(path.trim_start_matches("/src/"));
+                std::fs::read_to_string(file)
+                    .ok()
+                    .map(|source| ResolvedModule { id: path, source })
+            });
+            options.modules.push(HostModule {
+                importer: request.importer,
+                specifier: request.specifier,
+                resolved,
+            });
+        }
+    }
+    panic!("{id}: module requests did not settle");
+}
+
+/// Resolves a relative specifier against an importer id (`/src/a/b.ts` + `../c.ts`).
+fn resolve(importer: &str, specifier: &str) -> Option<String> {
+    if !specifier.starts_with('.') {
+        return None;
+    }
+    let mut segments: Vec<&str> = importer.split('/').collect();
+    segments.pop();
+    for segment in specifier.split('/') {
+        match segment {
+            "." => {}
+            ".." => {
+                segments.pop();
+            }
+            segment => segments.push(segment),
+        }
+    }
+    Some(segments.join("/"))
 }
 
 /// Parse errors of `text` as TSX, rendered for assertion messages.

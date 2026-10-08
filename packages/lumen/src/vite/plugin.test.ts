@@ -1,10 +1,25 @@
 // `lumen/vite` against a real Vite 8 dev server (client and ssr environments). The fixture app is
 // written to a temp dir whose node_modules/lumen links to this package.
-import { mkdirSync, mkdtempSync, realpathSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import {
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  realpathSync,
+  rmSync,
+  symlinkSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { build, createLogger, createServer, type Rolldown, type ViteDevServer } from "vite";
+import {
+  build,
+  createLogger,
+  createServer,
+  type HotPayload,
+  type Rolldown,
+  type ViteDevServer,
+} from "vite";
 import lumen from "./index.ts";
 
 const binding = await import("@lumen/compiler").catch(() => undefined);
@@ -40,6 +55,17 @@ export const Broken = () => <div>;
 }
 `,
   "util.ts": `export const answer: number = 42;\n`,
+  "tokens.ts": `export const theme = { accent: "rebeccapurple", gap: 4 } as const;\n`,
+  "Themed.stsx": `import { theme } from "~/tokens.ts";
+export function Themed() {
+  return (
+    <p class="themed">
+      Hi
+      <style>.themed { color: $theme.accent; padding: calc($theme.gap * 1px); }</style>
+    </p>
+  );
+}
+`,
   "components/Team.tsx": `export function TeamPanel(props: { ids: number[] }) {
   return <ul>{props.ids.map((id) => <li>{id}</li>)}</ul>;
 }
@@ -73,9 +99,34 @@ beforeAll(async () => {
     customLogger: logger,
     plugins: [lumen()],
     appType: "custom",
+    resolve: { alias: { "~": root } },
     server: { middlewareMode: true, ws: false, watch: null },
   });
 });
+
+/** The HMR payloads sent to the client while `edit` runs (the watcher is driven by hand). */
+async function hmrPayloads(file: string, edit: () => void): Promise<HotPayload[]> {
+  const payloads: HotPayload[] = [];
+  const hot = server.environments.client.hot;
+  const send = hot.send;
+  hot.send = ((payload: HotPayload) => void payloads.push(payload)) as typeof hot.send;
+  try {
+    edit();
+    server.watcher.emit("change", join(root, file));
+    await expect.poll(() => payloads.length).toBeGreaterThan(0);
+  } finally {
+    hot.send = send;
+  }
+  return payloads;
+}
+
+function updatedPaths(payloads: HotPayload[]): string[] {
+  return payloads.flatMap((payload) =>
+    payload.type === "update" ? payload.updates.map((update) => update.path) : [payload.type],
+  );
+}
+
+const STYLE = "?lumen&type=style&lang.css";
 
 afterAll(async () => {
   await server?.close();
@@ -167,6 +218,93 @@ describe.skipIf(!binding)("lumen/vite", () => {
     expect(manifest.code).toContain(`import(\`./${team.fileName.split("/").pop()}\`)`);
     expect(team.code).toContain("`<li>`");
     expect(team.exports).toEqual(["TeamPanel"]);
+  });
+
+  it("serves the scoped CSS of a file through Vite's CSS pipeline", async () => {
+    const js = await server.environments.client.transformRequest("/Counter.stsx");
+    const token = /data-l-[0-9a-z]{8}/.exec(js!.code)![0];
+    const css = await server.environments.client.transformRequest(`/Counter.stsx${STYLE}`);
+    // Vite's dev CSS module: the stylesheet injected by `updateStyle`, self-accepting.
+    expect(css!.code).toContain(`button[${token}] {`);
+    expect(css!.code).toContain("color: #dc143c;");
+    expect(css!.code).toContain("updateStyle");
+    // The ssr environment loads the same CSS module (for the dev server's stylesheet links).
+    const ssr = await server.environments.ssr.transformRequest(`/Counter.stsx${STYLE}`);
+    expect(ssr).toBeTruthy();
+  });
+
+  it("folds imported constants through Vite's resolver and tracks them as CSS dependencies", async () => {
+    const js = await server.environments.client.transformRequest("/Themed.stsx");
+    expect(js!.code).not.toContain("tokens.ts");
+    const css = await server.environments.client.transformRequest(`/Themed.stsx${STYLE}`);
+    expect(css!.code).toContain("color: #639;");
+    expect(css!.code).toContain("padding: 4px;");
+    const graph = server.environments.client.moduleGraph;
+    const cssModule = await graph.getModuleByUrl(`/Themed.stsx${STYLE}`);
+    const imported = [...cssModule!.importedModules].map((mod) => mod.file);
+    expect(imported).toContain(join(root, "tokens.ts"));
+  });
+
+  it("hot-updates only the CSS module when an edit only touches style blocks", async () => {
+    const file = join(root, "Themed.stsx");
+    const source = readFileSync(file, "utf8");
+    await server.environments.client.transformRequest("/Themed.stsx");
+    await server.environments.client.transformRequest(`/Themed.stsx${STYLE}`);
+    const styleOnly = await hmrPayloads("Themed.stsx", () =>
+      writeFileSync(file, source.replace("$theme.accent;", "$theme.accent; margin: 0;")),
+    );
+    expect(updatedPaths(styleOnly)).toEqual([`/Themed.stsx${STYLE}`]);
+    const css = await server.environments.client.transformRequest(`/Themed.stsx${STYLE}`);
+    expect(css!.code).toContain("margin: 0;");
+
+    // A JS edit updates the module itself (here a full reload: no HMR boundary imports it).
+    await server.environments.client.transformRequest("/Themed.stsx");
+    await server.environments.client.transformRequest(`/Themed.stsx${STYLE}`);
+    const jsEdit = await hmrPayloads("Themed.stsx", () =>
+      writeFileSync(file, source.replace("Hi", "Hello")),
+    );
+    expect(updatedPaths(jsEdit)).toEqual(["full-reload"]);
+
+    // A JS error the parser recovers from (same code): still a JS update, so the error shows.
+    await hmrPayloads("Themed.stsx", () => writeFileSync(file, source));
+    await server.environments.client.transformRequest(`/Themed.stsx${STYLE}`);
+    const jsError = await hmrPayloads("Themed.stsx", () =>
+      writeFileSync(file, source.replace("</p>", "</b>")),
+    );
+    expect(updatedPaths(jsError)).toEqual(["full-reload"]);
+    writeFileSync(file, source);
+  });
+
+  it("reports style errors of a style-only edit from the CSS module", async () => {
+    const file = join(root, "Themed.stsx");
+    const source = readFileSync(file, "utf8");
+    await server.environments.client.transformRequest("/Themed.stsx");
+    await server.environments.client.transformRequest(`/Themed.stsx${STYLE}`);
+    const payloads = await hmrPayloads("Themed.stsx", () =>
+      writeFileSync(file, source.replace("$theme.accent;", "$nope;")),
+    );
+    expect(updatedPaths(payloads)).toEqual([`/Themed.stsx${STYLE}`]);
+    const error = await server.environments.client.transformRequest(`/Themed.stsx${STYLE}`).then(
+      () => undefined,
+      (thrown: unknown) => thrown as Error & { loc?: object },
+    );
+    expect(error!.message).toContain("LUM3008");
+    expect(error!.loc).toMatchObject({ file, line: 6 });
+    writeFileSync(file, source);
+  });
+
+  it("hot-updates the CSS of the files that read an edited constants module", async () => {
+    const tokens = join(root, "tokens.ts");
+    const source = readFileSync(tokens, "utf8");
+    await server.environments.client.transformRequest("/Themed.stsx");
+    await server.environments.client.transformRequest(`/Themed.stsx${STYLE}`);
+    const payloads = await hmrPayloads("tokens.ts", () =>
+      writeFileSync(tokens, source.replace("rebeccapurple", "teal")),
+    );
+    expect(updatedPaths(payloads)).toEqual([`/Themed.stsx${STYLE}`]);
+    const css = await server.environments.client.transformRequest(`/Themed.stsx${STYLE}`);
+    expect(css!.code).toContain("color: teal;");
+    writeFileSync(tokens, source);
   });
 
   it("makes app entries HMR boundaries that re-mount through the wrapper", async () => {

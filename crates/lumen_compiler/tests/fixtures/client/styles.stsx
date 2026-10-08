@@ -1,7 +1,6 @@
-// @scope file=data-l-f1 Card=data-l-c1
 // Style blocks: masked ranges are deleted before whitespace normalisation, $ref placeholders
-// are dropped, imports used only by $refs are removed, and every element of a scope carries its
-// token.
+// are dropped, imports used only by $refs are removed, every element of a scope carries its
+// token, and the CSS has the file scope first, then component blocks in source order.
 import { radius, palette, used } from "./tokens.ts";
 const gap = 4;
 
@@ -9,13 +8,23 @@ export function Card(props: { title: string }) {
   return (
     <div class="card">
       <b>{props.title}</b><style>.card { border-radius: $radius.lg; padding: calc($gap * 1px); }</style><i>{used}</i>
-      {[1, 2].map((n) => <span>{n}</span>)}
+      {[1, 2].map((n) => <span class="item">{n}</span>)}
     </div>
   );
 }
 
-export const Footer = () => <footer>Footer</footer>;
+export const Footer = () => (
+  <footer>
+    Footer
+    <style global>
+      body { margin: 0; }
+    </style>
+  </footer>
+);
 
 <style>
   .card { color: $palette.text; }
+  .card :global(.external) { color: $palette.accent; }
+  footer { animation: fade 1s; }
+  @keyframes fade { from { opacity: 0; } }
 </style>

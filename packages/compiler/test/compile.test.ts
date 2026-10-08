@@ -48,15 +48,66 @@ describe.skipIf(!binding)("@lumen/compiler native compile", () => {
     );
   });
 
-  it("applies scope tokens and options", () => {
+  it("stamps scope tokens and applies options", () => {
     const result = compile(source, "/src/Counter.stsx", {
-      scopeTokens: { file: "data-l-f1", components: { Counter: "data-l-c1" } },
       sourceMap: false,
       styleImport: false,
     });
-    expect(result.code).toContain("template(`<button class=card data-l-f1 data-l-c1>`)");
+    const token = result.meta.scopeTokens.components.Counter!;
+    expect(token).toMatch(/^data-l-[0-9a-z]{8}$/);
+    expect(result.meta.scopeTokens.file).toBeUndefined();
+    expect(result.code).toContain(`template(\`<button class=card ${token}>\`)`);
     expect(result.code).not.toContain("lang.css");
     expect(result.map).toBeUndefined();
+    expect(result.cssMap).toBeUndefined();
+  });
+
+  it("compiles style blocks to scoped CSS with folded constants", () => {
+    const result = compile(source, "/src/Counter.stsx", { root: "/" });
+    const token = result.meta.scopeTokens.components.Counter!;
+    expect(result.css).toBe(`.card[${token}] {\n  border-radius: 12px;\n}\n`);
+    expect(JSON.parse(result.cssMap!)).toMatchObject({
+      version: 3,
+      sources: ["/src/Counter.stsx"],
+    });
+    expect(result.meta.styleRefs[0]!.value).toBe("12px");
+    expect(result.cssDeps).toEqual([]);
+    // Minified for Safari 15: nesting is lowered.
+    const nested =
+      'export const A = () => <p class="a"><style>.a { & b { color: red } }</style></p>;';
+    const minified = compile(nested, "/src/A.stsx", { cssMinify: true, cssTargets: ["safari 15"] });
+    expect(minified.css).not.toContain("&");
+    expect(minified.css).not.toContain("\n");
+    expect(() => compile(nested, "/src/A.stsx", { cssTargets: ["not a browser 1"] })).toThrow(
+      /cssTargets/,
+    );
+  });
+
+  it("requests imported constants from the host", () => {
+    const text = [
+      'import { space } from "./tokens.ts";',
+      'export const A = () => <p class="a"><style>.a { margin: $space.lg; }</style></p>;',
+    ].join("\n");
+    const first = compile(text, "/src/A.stsx");
+    expect(first.moduleRequests).toEqual([{ importer: "/src/A.stsx", specifier: "./tokens.ts" }]);
+    expect(first.css).toBeUndefined();
+    const second = compile(text, "/src/A.stsx", {
+      modules: [
+        {
+          importer: "/src/A.stsx",
+          specifier: "./tokens.ts",
+          resolved: { id: "/src/tokens.ts", source: "export const space = { lg: '2rem' };" },
+        },
+      ],
+    });
+    expect(second.moduleRequests).toEqual([]);
+    expect(second.cssDeps).toEqual(["/src/tokens.ts"]);
+    expect(second.css).toContain("margin: 2rem");
+    expect(second.code).not.toContain("tokens.ts");
+    const missing = compile(text, "/src/A.stsx", {
+      modules: [{ importer: "/src/A.stsx", specifier: "./tokens.ts" }],
+    });
+    expect(missing.diagnostics).toMatchObject([{ code: "LUM3008", severity: "error" }]);
   });
 
   it("reports diagnostics with UTF-16 spans", () => {

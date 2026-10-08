@@ -43,7 +43,7 @@ test("todos are added, checked and removed", async ({ page }, info) => {
 
 test("an edited component re-mounts the app without a reload", async ({ page }, info) => {
   test.skip(info.project.name !== "dev", "HMR only exists in dev");
-  const file = resolve(import.meta.dirname, "../src/Counter.tsx");
+  const file = resolve(import.meta.dirname, "../src/Counter.stsx");
   const source = readFileSync(file, "utf8");
   await page.goto("/");
   await page.evaluate(() => ((window as unknown as { marker: number }).marker = 1));
@@ -62,7 +62,7 @@ test("an edited component re-mounts the app without a reload", async ({ page }, 
 
 test("compiler errors show in the dev overlay with a code frame", async ({ page }, info) => {
   test.skip(info.project.name !== "dev", "the overlay only exists in dev");
-  const file = resolve(import.meta.dirname, "../src/Counter.tsx");
+  const file = resolve(import.meta.dirname, "../src/Counter.stsx");
   const source = readFileSync(file, "utf8");
   await page.goto("/");
   await expect(page.getByRole("button", { name: /Clicked/ })).toBeVisible();
@@ -80,4 +80,75 @@ test("compiler errors show in the dev overlay with a code frame", async ({ page 
   }
   await expect(page.locator("vite-error-overlay")).toHaveCount(0);
   await expect(page.getByRole("button", { name: /Clicked/ })).toHaveText("Clicked 0 times");
+});
+
+const ACCENT = "rgb(79, 70, 229)";
+const DANGER = "rgb(220, 38, 38)";
+
+test("scoped, file and global styles apply without leaking", async ({ page }) => {
+  await page.goto("/");
+  const css = (selector: string, property: string) =>
+    page
+      .locator(selector)
+      .first()
+      .evaluate((el, p) => getComputedStyle(el).getPropertyValue(p), property);
+  // Global: unscoped.
+  expect(await css("body", "margin-top")).toBe("0px");
+  // Component scope (App) with a $token.
+  expect(await css("h1", "color")).toBe(ACCENT);
+  // Counter's `h2` and `button` rules stay inside Counter.
+  expect(await css(".counter h2", "color")).toBe(ACCENT);
+  expect(await css(".todos h2", "color")).not.toBe(ACCENT);
+  expect(await css(".counter button", "background-color")).toBe(ACCENT);
+  expect(await css(".todos button", "background-color")).not.toBe(ACCENT);
+  // Todos' `ul` rule stays inside Todos.
+  expect(await css(".todos ul", "list-style-type")).toBe("none");
+  // File scope of App.stsx reaches the children's roots through class passthrough.
+  for (const panel of [".counter", ".todos"]) {
+    expect(await css(panel, "border-top-left-radius")).toBe("8px");
+    expect(await css(panel, "border-top-color")).toBe("rgb(212, 212, 216)");
+  }
+  // Dynamic classes are scoped too.
+  const counter = page.getByRole("button", { name: /Clicked/ });
+  for (let i = 0; i < 6; i++) await counter.click();
+  await expect(counter).toHaveCSS("background-color", DANGER);
+});
+
+test("style edits hot-update the CSS without re-running components", async ({ page }, info) => {
+  test.skip(info.project.name !== "dev", "HMR only exists in dev");
+  const file = resolve(import.meta.dirname, "../src/Counter.stsx");
+  const tokens = resolve(import.meta.dirname, "../src/tokens.ts");
+  const source = readFileSync(file, "utf8");
+  const tokensSource = readFileSync(tokens, "utf8");
+  await page.goto("/");
+  await page.evaluate(() => ((window as unknown as { marker: number }).marker = 1));
+  const counter = page.getByRole("button", { name: /Clicked/ });
+  for (let i = 0; i < 2; i++) await counter.click();
+  await expect(counter).toHaveText("Clicked 2 times");
+  const heading = page.locator(".counter h2");
+  try {
+    // A style block edit: only the CSS module updates, so the count survives.
+    writeFileSync(
+      file,
+      source.replace("h2 { color: $theme.accent; }", "h2 { color: rgb(1, 2, 3); }"),
+    );
+    await expect(heading).toHaveCSS("color", "rgb(1, 2, 3)");
+    await expect(counter).toHaveText("Clicked 2 times");
+    // A token edit: the CSS of every file reading it updates.
+    writeFileSync(tokens, tokensSource.replace('accent: "#4f46e5"', 'accent: "#059669"'));
+    await expect(page.locator("h1")).toHaveCSS("color", "rgb(5, 150, 105)");
+    await expect(counter).toHaveCSS("background-color", "rgb(5, 150, 105)");
+    await expect(counter).toHaveText("Clicked 2 times");
+    expect(await page.evaluate(() => (window as unknown as { marker: number }).marker)).toBe(1);
+    if (process.env.LUMEN_SCREENSHOTS) {
+      await page.screenshot({
+        path: `${process.env.LUMEN_SCREENSHOTS}/vite-counter-style-hmr.png`,
+      });
+    }
+  } finally {
+    writeFileSync(file, source);
+    writeFileSync(tokens, tokensSource);
+  }
+  await expect(heading).toHaveCSS("color", ACCENT);
+  await expect(counter).toHaveText("Clicked 2 times");
 });

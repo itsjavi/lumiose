@@ -1,4 +1,3 @@
-// @scope Counter=data-l-c1
 // Contract doc-2 §5.1: static and dynamic text, delegated event, class object, scoped style.
 import { signal } from "lumen";
 export function Counter({ start = 0 }: { start?: number }) {

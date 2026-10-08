@@ -1,4 +1,3 @@
-// @scope Page=data-l-p1 Card=data-l-c2
 // Contract doc-2 §5.3: component call with props, children and class passthrough.
 import type { JSX } from "lumen/jsx-runtime";
 

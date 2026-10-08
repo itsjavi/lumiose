@@ -1,0 +1,26 @@
+.card[data-l-ecz843t9] {
+  color: #222;
+}
+
+.card[data-l-ecz843t9] .external {
+  color: oklch(70% .1 120);
+}
+
+footer[data-l-ecz843t9] {
+  animation: 1s fade-ecz843t9;
+}
+
+@keyframes fade-ecz843t9 {
+  from {
+    opacity: 0;
+  }
+}
+
+.card[data-l-wjsvhj1q] {
+  border-radius: 8px;
+  padding: 4px;
+}
+
+body {
+  margin: 0;
+}

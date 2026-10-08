@@ -1,8 +1,10 @@
 //! `compile()`: the per-module pipeline (spec §5.1).
 //!
 //! ```text
-//! scan → oxc_parser(masked) → semantic → style artifacts ($ref bindings, placeholders)
-//!      → TypeScript strip → semantic → analyze → client | server codegen → oxc_codegen + source map
+//! scan → oxc_parser(masked) → semantic → $ref bindings + constant folding → strip placeholders
+//!      → TypeScript strip → semantic → analyze → scope tokens + inventories
+//!      → client | server codegen → oxc_codegen + source map
+//!      → lumen_css (blocks, folded refs, inventories) → css + map
 //! ```
 //!
 //! Spans everywhere are byte offsets into the original source: the masked text the parser sees
@@ -16,13 +18,12 @@ use oxc_span::SourceType;
 
 use crate::analyze;
 use crate::codegen::ast::Ast;
-use crate::codegen::client::{self, TransformOptions};
+use crate::codegen::client::{self, ScopeTokens, TransformOptions};
+use crate::css::{self, CssOptions, ScopePlan};
 use crate::diagnostics::{Code, Diagnostic};
-use crate::prepare::{self, ResolvedStyleRef};
+use crate::prepare::{self, HostModule, ModuleRequest, ResolvedStyleRef};
 use crate::scanner::{self, FileKind};
 use crate::span::Span;
-
-pub use crate::codegen::client::ScopeTokens;
 
 /// The output environment.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
@@ -42,25 +43,32 @@ pub enum Target {
 #[derive(Debug, Clone)]
 pub struct CompileOptions {
     pub target: Target,
-    /// Scope tokens from the CSS pipeline (TASK-10); empty means no scoped styles.
-    pub scope_tokens: ScopeTokens,
-    /// Produce a source map.
+    /// Produce source maps (for the JS and the CSS).
     pub source_map: bool,
     /// Import the file's CSS module (`<id>?lumen&type=style&lang.css`) when it has style blocks.
     pub style_import: bool,
+    /// Compile the style blocks into [`CompileResult::css`].
+    pub emit_css: bool,
+    pub css: CssOptions,
     /// The project root (Vite's `root`). Island refs name modules inside it root-relatively
-    /// (`/src/components/Team.stsx#TeamPanel`); without it they use the module ids as given.
+    /// (`/src/components/Team.stsx#TeamPanel`) and scope tokens hash the root-relative path;
+    /// without it both use the module id as given.
     pub root: Option<String>,
+    /// Modules the host loaded for folding imported `$name` constants, answering earlier
+    /// [`CompileResult::module_requests`].
+    pub modules: Vec<HostModule>,
 }
 
 impl Default for CompileOptions {
     fn default() -> Self {
         Self {
             target: Target::Client,
-            scope_tokens: ScopeTokens::default(),
             source_map: true,
             style_import: true,
+            emit_css: true,
+            css: CssOptions::default(),
             root: None,
+            modules: Vec::new(),
         }
     }
 }
@@ -102,7 +110,7 @@ pub struct IslandMeta {
     pub span: Span,
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Eq)]
+#[derive(Debug, Clone, Default, PartialEq)]
 #[cfg_attr(
     feature = "serde",
     derive(serde::Serialize),
@@ -116,21 +124,38 @@ pub struct CompileMeta {
     pub delegated_events: Vec<String>,
     /// `lumen/dom` (client) or `lumen/server` (server) helpers the module imports.
     pub runtime_helpers: Vec<String>,
-    /// Every `$name` style reference with its binding (input of the CSS pipeline).
+    /// Every `$name` style reference with its binding and folded value.
     pub style_refs: Vec<ResolvedStyleRef>,
     /// True when the module imports its CSS module.
     pub has_styles: bool,
+    /// The `data-l-*` attributes stamped on the file's and its components' elements.
+    pub scope_tokens: ScopeTokens,
     /// Island call sites, in source order (both targets).
     pub islands: Vec<IslandMeta>,
 }
 
 #[derive(Debug, Clone, Default)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize))]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize),
+    serde(rename_all = "camelCase")
+)]
 pub struct CompileResult {
     /// JavaScript (types stripped). Empty when the source could not be parsed.
     pub code: String,
     /// Source map v3 JSON.
     pub map: Option<String>,
+    /// The file's stylesheet: file-level blocks first, then component blocks in source order
+    /// (spec §4.6.2). `None` when the file has no style blocks, CSS is disabled, or
+    /// `module_requests` is not empty.
+    pub css: Option<String>,
+    /// Source map v3 JSON from `css` to the `.stsx` source.
+    pub css_map: Option<String>,
+    /// Ids of the modules imported constants were folded from: edits to them change `css`.
+    pub css_deps: Vec<String>,
+    /// Modules needed to fold imported `$name` constants. When not empty, `css` is withheld:
+    /// load each one and compile again with them in [`CompileOptions::modules`].
+    pub module_requests: Vec<ModuleRequest>,
     pub diagnostics: Vec<Diagnostic>,
     pub meta: CompileMeta,
 }
@@ -166,12 +191,24 @@ pub fn compile(source: &str, filename: &str, options: &CompileOptions) -> Compil
     }
     let mut program = parsed.program;
 
-    let scoping = SemanticBuilder::new()
+    // Nodes are only needed to fold `$name` references (declarator lookups).
+    let has_refs = scan.blocks.iter().any(|block| !block.refs.is_empty());
+    let semantic = SemanticBuilder::new()
         .with_enum_eval(true)
+        .with_build_nodes(has_refs)
         .build(&program)
-        .semantic
-        .into_scoping();
-    let style_refs = prepare::prepare_style_artifacts(&ast, &mut program, &scoping, &scan.blocks);
+        .semantic;
+    let style = prepare::resolve_style_refs(
+        &allocator,
+        &program,
+        &semantic,
+        filename,
+        &scan.blocks,
+        &options.modules,
+        &css::hyphenated_refs(source, &scan.blocks),
+    );
+    let scoping = semantic.into_scoping();
+    prepare::strip_style_artifacts(&ast, &mut program, &scan.blocks, &style);
     diagnostics.extend(prepare::strip_types(
         &allocator,
         &mut program,
@@ -186,11 +223,23 @@ pub fn compile(source: &str, filename: &str, options: &CompileOptions) -> Compil
     let analysis = analyze::analyze(&program, &scoping, &scan.blocks, &scan.diagnostics);
     diagnostics.extend(analysis.diagnostics.iter().cloned());
 
+    let scopes = ScopePlan::new(
+        &scan.blocks,
+        &analysis,
+        &root_relative(filename, options.root.as_deref()),
+    );
+    let emit_css = options.emit_css && scopes.has_css() && style.is_complete();
+    let inventories = if emit_css {
+        css::inventories(&program, &analysis, &scopes)
+    } else {
+        Vec::new()
+    };
+
     let transform_options = TransformOptions {
         target: options.target,
         root: options.root.as_deref(),
         filename,
-        scope_tokens: &options.scope_tokens,
+        scope_tokens: &scopes.tokens,
         style_import: options.style_import,
     };
     let output = client::transform(
@@ -212,11 +261,32 @@ pub fn compile(source: &str, filename: &str, options: &CompileOptions) -> Compil
         ..CodegenOptions::default()
     };
     let printed = Codegen::new().with_options(codegen_options).build(&program);
+
+    let (css, css_map) = if emit_css {
+        let (output, css_diagnostics) = css::process(
+            source,
+            filename,
+            &scopes,
+            &style.refs,
+            &inventories,
+            &options.css,
+            options.source_map,
+        );
+        diagnostics.extend(css_diagnostics);
+        (Some(output.css), output.map)
+    } else {
+        (None, None)
+    };
+    diagnostics.extend(style.diagnostics);
     sort(&mut diagnostics);
     let has_styles = options.style_import && scan.blocks.iter().any(|b| !b.svg);
     CompileResult {
         code: printed.code,
         map: printed.map.map(|map| map.to_json_string()),
+        css,
+        css_map,
+        css_deps: style.deps,
+        module_requests: style.requests,
         diagnostics,
         meta: CompileMeta {
             components: analysis
@@ -233,10 +303,29 @@ pub fn compile(source: &str, filename: &str, options: &CompileOptions) -> Compil
             templates: output.templates,
             delegated_events: output.delegated_events,
             runtime_helpers: output.runtime_helpers,
-            style_refs,
+            style_refs: style.refs,
             has_styles,
+            scope_tokens: scopes.tokens,
             islands: output.islands,
         },
+    }
+}
+
+/// The module path that scope tokens hash: relative to `root` (without a leading `/`) when the
+/// module is inside it, otherwise the id as given (without its query).
+fn root_relative(filename: &str, root: Option<&str>) -> String {
+    let id = filename
+        .split(['?', '#'])
+        .next()
+        .unwrap_or_default()
+        .replace('\\', "/");
+    let Some(root) = root else {
+        return id;
+    };
+    let root = root.replace('\\', "/");
+    match id.strip_prefix(root.trim_end_matches('/')) {
+        Some(rest) if rest.starts_with('/') => rest[1..].to_owned(),
+        _ => id,
     }
 }
 

@@ -1,4 +1,3 @@
-// @scope Page=data-l-p1
 // Island call sites (contract doc-2 §5.5): `island(ref, X, props, strategy, value?, slots?)` on the
 // server, with JSX-valued props and children as slots; a plain component call on the client.
 import { TeamPanel } from "./components/Team.stsx";
@@ -23,6 +22,7 @@ export default function Page(props: { ids: string[]; query: string }) {
       <Local client:load n={1} />
       <Hidden client:only />
       <TeamPanel client:soon ids={[]} />
+      <style>.wide { width: 100%; }</style>
     </main>
   );
 }

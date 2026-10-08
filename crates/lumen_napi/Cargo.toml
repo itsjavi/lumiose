@@ -10,7 +10,7 @@ crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 lumen_compiler.workspace = true
-lumen_css.workspace = true
+lumen_css = { workspace = true, features = ["browserslist"] }
 napi.workspace = true
 napi-derive.workspace = true
 

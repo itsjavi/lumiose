@@ -13,8 +13,9 @@
 use oxc_allocator::{ArenaBox, ArenaVec};
 use oxc_ast::ast::*;
 use oxc_span::{GetSpan, Span};
+use oxc_syntax::operator::BinaryOperator;
 
-use super::children::{Item, is_text_like};
+use super::children::{Item, group_table_rows, is_text_like};
 use super::element::{
     AttrValue, Literal, attr_value, attribute_name, literal, static_object_keys, static_strings,
     strip_parens, tag_name,
@@ -141,6 +142,7 @@ impl<'a> Codegen<'a, '_> {
                     setup.extend(compiled.setup);
                     values.push(compiled.value);
                 }
+                Item::Rows(..) => unreachable!("rows are only grouped in <table> children"),
             }
         }
         self.flush_run(&mut run, &mut values, &mut setup, span);
@@ -189,10 +191,21 @@ impl<'a> Codegen<'a, '_> {
     fn ssr_element(&mut self, out: &mut Ssr<'a>, element: ArenaBox<'a, JSXElement<'a>>) {
         let span = element.span;
         let element = element.unbox();
-        let opening = element.opening_element.unbox();
+        let mut opening = element.opening_element.unbox();
         let tag = tag_name(&opening.name);
+        let select = if tag == "select" {
+            self.ssr_select_value(out, &mut opening.attributes)
+        } else {
+            None
+        };
+        let selected = if tag == "option" {
+            self.ssr_option_selected(&opening.attributes, &element.children, span)
+        } else {
+            None
+        };
         let mut open = OpenTag::default();
         self.ssr_attributes(&tag, opening.attributes, &mut open, span);
+        open.tail.extend(selected.map(Piece::Hole));
         out.html(&format!("<{tag}"));
         for piece in open.head {
             out.piece(piece);
@@ -207,52 +220,159 @@ impl<'a> Codegen<'a, '_> {
         if html::is_void(&tag) {
             return;
         }
+        let has_select = select.is_some();
+        self.select_values.extend(select);
         match open.content {
             Some(content) => out.piece(content),
             None => self.ssr_children(out, &tag, element.children),
         }
+        if has_select {
+            self.select_values.pop();
+        }
         out.html(&format!("</{tag}>"));
+    }
+
+    /// `<select value={v}>` (or `bind:value`): a select has no `value` attribute, so the server
+    /// marks the matching option `selected` instead. The value goes into a local declared
+    /// before the template (`const _selected = v;`), which the options read; the attribute is
+    /// removed. `None` without a value or with a spread.
+    fn ssr_select_value(
+        &mut self,
+        out: &mut Ssr<'a>,
+        attributes: &mut ArenaVec<'a, JSXAttributeItem<'a>>,
+    ) -> Option<String> {
+        if attributes
+            .iter()
+            .any(|a| matches!(a, JSXAttributeItem::SpreadAttribute(_)))
+        {
+            return None;
+        }
+        let index = attributes.iter().position(|a| {
+            matches!(a, JSXAttributeItem::Attribute(attribute)
+                if matches!(attribute_name(&attribute.name).as_str(), "value" | "bind:value"))
+        })?;
+        let JSXAttributeItem::Attribute(attribute) = attributes.remove(index) else {
+            unreachable!("found above")
+        };
+        let attribute = attribute.unbox();
+        let span = attribute.span;
+        let binding = attribute_name(&attribute.name) == "bind:value";
+        let value = match attr_value(attribute.value) {
+            AttrValue::Str(text) => self.ast.string(span, &text),
+            AttrValue::Expr(expr) if binding => {
+                let signal = self.visited(expr);
+                self.ast.call(span, signal, [])
+            }
+            AttrValue::Expr(expr) => self.visited(expr),
+            AttrValue::True | AttrValue::Empty => return None,
+        };
+        let name = self.names.fresh("_selected");
+        out.setup.push(self.ast.const_decl(span, &name, value));
+        Some(name)
+    }
+
+    /// `attr("selected", String(_selected) === value)` for an `<option>` inside a
+    /// `<select value>`. The option's value is its `value` attribute, or its static text when it
+    /// has none; an option that sets `selected` itself, or whose value is not known, is left
+    /// alone.
+    fn ssr_option_selected(
+        &mut self,
+        attributes: &ArenaVec<'a, JSXAttributeItem<'a>>,
+        children: &ArenaVec<'a, JSXChild<'a>>,
+        span: Span,
+    ) -> Option<Expression<'a>> {
+        let select = self.select_values.last()?.clone();
+        let mut value = None;
+        for item in attributes {
+            let JSXAttributeItem::Attribute(attribute) = item else {
+                return None;
+            };
+            match attribute_name(&attribute.name).as_str() {
+                "selected" => return None,
+                "value" => {
+                    value = Some(match &attribute.value {
+                        Some(JSXAttributeValue::StringLiteral(literal)) => self
+                            .ast
+                            .string(span, &super::text::decode_entities(&literal.value)),
+                        Some(JSXAttributeValue::ExpressionContainer(container)) => {
+                            let expression = container.expression.as_expression()?;
+                            let copy = super::clone_expression(self.ast, expression);
+                            let copy = self.visited(copy);
+                            let string = self.ast.ident(span, "String");
+                            self.ast.call(span, string, [copy])
+                        }
+                        _ => return None,
+                    });
+                }
+                _ => {}
+            }
+        }
+        let value = match value {
+            Some(value) => value,
+            None => {
+                // The option's text, with ASCII whitespace stripped and collapsed.
+                let mut text = String::new();
+                for child in children {
+                    match child {
+                        JSXChild::Text(raw) => {
+                            text.push_str(&super::text::decode_entities(&raw.value))
+                        }
+                        JSXChild::ExpressionContainer(container) => match &container.expression {
+                            JSXExpression::StringLiteral(literal) => text.push_str(&literal.value),
+                            JSXExpression::EmptyExpression(_) => {}
+                            _ => return None,
+                        },
+                        _ => return None,
+                    }
+                }
+                let text = text.split_ascii_whitespace().collect::<Vec<_>>().join(" ");
+                self.ast.string(span, &text)
+            }
+        };
+        let string = self.ast.ident(span, "String");
+        let current = self.ast.call(span, string, [self.ast.ident(span, &select)]);
+        let matches = self
+            .ast
+            .binary(span, current, BinaryOperator::StrictEquality, value);
+        let name = self.ast.string(span, "selected");
+        Some(self.helper_call("attr", [name, matches], span))
     }
 
     fn ssr_children(&mut self, out: &mut Ssr<'a>, tag: &str, children: ArenaVec<'a, JSXChild<'a>>) {
         let items = self.child_items(children);
-        let count = items.len();
         // The parser drops a newline right after these start tags; keep the authored one.
         if matches!(tag, "pre" | "textarea" | "listing")
             && matches!(items.first(), Some(Item::Text(text, _)) if text.starts_with('\n'))
         {
             out.html("\n");
         }
-        // `<tr>` children of `<table>` get the `<tbody>` the HTML parser (and the client
-        // template) inserts.
-        let in_table = tag == "table";
-        let mut in_tbody = false;
+        // Rows of a `<table>` get the `<tbody>` the HTML parser (and the client template) inserts.
+        let items = if tag == "table" {
+            group_table_rows(items)
+        } else {
+            items
+        };
+        self.ssr_items(out, items);
+    }
+
+    fn ssr_items(&mut self, out: &mut Ssr<'a>, items: Vec<Item<'a>>) {
+        let count = items.len();
         for item in items {
-            let is_row = in_table
-                && matches!(&item, Item::Element(e) if tag_name(&e.opening_element.name) == "tr");
-            if in_tbody && !is_row {
-                out.html("</tbody>");
-                in_tbody = false;
-            }
             match item {
                 Item::Text(text, _) => out.text(&text),
                 Item::Raw(raw, _) => out.html(&raw),
-                Item::Element(element) => {
-                    if is_row && !in_tbody {
-                        out.html("<tbody");
-                        for token in self.scope_tokens() {
-                            out.attribute(&token, None);
-                        }
-                        out.html(">");
-                        in_tbody = true;
+                Item::Element(element) => self.ssr_element(out, element),
+                Item::Rows(rows, _) => {
+                    out.html("<tbody");
+                    for token in self.scope_tokens() {
+                        out.attribute(&token, None);
                     }
-                    self.ssr_element(out, element);
+                    out.html(">");
+                    self.ssr_items(out, rows);
+                    out.html("</tbody>");
                 }
                 Item::Dynamic(expression) => self.ssr_dynamic_child(out, expression, count == 1),
             }
-        }
-        if in_tbody {
-            out.html("</tbody>");
         }
     }
 

@@ -9,6 +9,7 @@ use std::collections::HashMap;
 use lumen_compiler::Utf16Index;
 use lumen_compiler::prepare::StyleRefBindingKind;
 use lumen_compiler::scanner::{self, AttributeValue, JsxParentKind, Placement};
+use napi::Either;
 use napi::bindgen_prelude::Utf16String;
 use napi_derive::napi;
 
@@ -280,26 +281,52 @@ pub enum CompileTarget {
     Server,
 }
 
-/// `data-l-*` scope tokens computed by the CSS pipeline.
+/// A module loaded by the host for folding imported `$name` constants.
 #[napi(object)]
-pub struct ScopeTokens {
-    /// The file scope token (top-level `<style>` blocks).
-    pub file: Option<String>,
-    /// Component scope tokens by component name.
-    pub components: Option<HashMap<String, String>>,
+pub struct HostModule {
+    /// The id of the importing module (the compiled file, or another host module).
+    pub importer: String,
+    /// The import specifier as written.
+    pub specifier: String,
+    /// Omitted when the module cannot be resolved or read (reported as `LUM3008`).
+    pub resolved: Option<ResolvedModule>,
+}
+
+#[napi(object)]
+pub struct ResolvedModule {
+    /// The resolved id (a file path): reported in `cssDeps`, and the importer of its imports.
+    pub id: String,
+    pub source: String,
+}
+
+/// A module the compiler needs to fold an imported constant: resolve `specifier` from
+/// `importer`, load it, and compile again with it in `modules`.
+#[napi(object)]
+pub struct ModuleRequest {
+    pub importer: String,
+    pub specifier: String,
 }
 
 #[napi(object)]
 pub struct CompileOptions {
     /// Default `"client"`: `lumen/dom` code; `"server"`: `lumen/server` code.
     pub target: Option<CompileTarget>,
-    pub scope_tokens: Option<ScopeTokens>,
-    /// Default `true`.
+    /// Source maps for the JS and the CSS. Default `true`.
     pub source_map: Option<bool>,
     /// Import `<id>?lumen&type=style&lang.css` when the file has style blocks. Default `true`.
     pub style_import: Option<bool>,
-    /// The project root: island refs name modules inside it root-relatively (`/src/x.stsx#X`).
+    /// Compile the style blocks into `css`. Default `true`.
+    pub emit_css: Option<bool>,
+    /// Browserslist queries for CSS nesting lowering and prefixes (`["chrome 100"]`). Default:
+    /// modern syntax is kept.
+    pub css_targets: Option<Vec<String>>,
+    /// Minify `css`. Default `false`.
+    pub css_minify: Option<bool>,
+    /// The project root: island refs name modules inside it root-relatively (`/src/x.stsx#X`),
+    /// and scope tokens hash the root-relative path.
     pub root: Option<String>,
+    /// Modules answering earlier `moduleRequests`.
+    pub modules: Option<Vec<HostModule>>,
 }
 
 /// An island call site (`<X client:* />`).
@@ -354,6 +381,17 @@ pub struct ResolvedStyleRef {
     pub path: Vec<String>,
     pub span: Span,
     pub binding: Option<StyleRefBinding>,
+    /// The folded constant, when it could be folded.
+    pub value: Option<Either<String, f64>>,
+}
+
+/// The `data-l-*` scope attributes of a file.
+#[napi(object)]
+pub struct ScopeTokens {
+    /// The file scope attribute (top-level `<style>` blocks).
+    pub file: Option<String>,
+    /// Component scope attributes by component name.
+    pub components: HashMap<String, String>,
 }
 
 #[napi(object)]
@@ -364,6 +402,8 @@ pub struct CompileMeta {
     pub runtime_helpers: Vec<String>,
     pub style_refs: Vec<ResolvedStyleRef>,
     pub has_styles: bool,
+    /// The `data-l-*` attributes stamped on the file's and its components' elements.
+    pub scope_tokens: ScopeTokens,
     /// Island call sites, in source order.
     pub islands: Vec<IslandMeta>,
 }
@@ -374,42 +414,89 @@ pub struct CompileResult {
     pub code: String,
     /// Source map v3 JSON.
     pub map: Option<String>,
+    /// The file's stylesheet; `null` without style blocks, with `emitCss: false`, or while
+    /// `moduleRequests` is not empty.
+    pub css: Option<String>,
+    /// Source map v3 JSON from `css` to the source (UTF-16 columns).
+    pub css_map: Option<String>,
+    /// Ids of the modules imported constants were folded from.
+    pub css_deps: Vec<String>,
+    /// Modules needed to fold imported constants; compile again with them in `modules`.
+    pub module_requests: Vec<ModuleRequest>,
     pub diagnostics: Vec<Diagnostic>,
     pub meta: CompileMeta,
 }
 
-/// Compiles a `.stsx` / `.tsx` module to JavaScript for the given target. Spans are UTF-16
-/// offsets into `source`.
+/// Compiles a `.stsx` / `.tsx` module to JavaScript (and its style blocks to CSS) for the given
+/// target. Spans are UTF-16 offsets into `source`. Throws on invalid `cssTargets`.
 #[napi]
-pub fn compile(source: String, filename: String, options: Option<CompileOptions>) -> CompileResult {
-    let options = options.map_or_else(lumen_compiler::CompileOptions::default, |o| {
-        let defaults = lumen_compiler::CompileOptions::default();
-        lumen_compiler::CompileOptions {
-            target: match o.target {
-                Some(CompileTarget::Server) => lumen_compiler::Target::Server,
-                _ => lumen_compiler::Target::Client,
-            },
-            scope_tokens: o
-                .scope_tokens
-                .map(|tokens| lumen_compiler::ScopeTokens {
-                    file: tokens.file,
-                    components: tokens.components.unwrap_or_default().into_iter().collect(),
-                })
-                .unwrap_or_default(),
-            source_map: o.source_map.unwrap_or(defaults.source_map),
-            style_import: o.style_import.unwrap_or(defaults.style_import),
-            root: o.root,
+pub fn compile(
+    source: String,
+    filename: String,
+    options: Option<CompileOptions>,
+) -> napi::Result<CompileResult> {
+    let options = match options {
+        None => lumen_compiler::CompileOptions::default(),
+        Some(o) => {
+            let defaults = lumen_compiler::CompileOptions::default();
+            let targets = match o.css_targets {
+                Some(queries) if !queries.is_empty() => lumen_css::browserslist_targets(&queries)
+                    .map_err(|error| {
+                    napi::Error::from_reason(format!("invalid cssTargets: {error}"))
+                })?,
+                _ => lumen_compiler::CssTargets::default(),
+            };
+            lumen_compiler::CompileOptions {
+                target: match o.target {
+                    Some(CompileTarget::Server) => lumen_compiler::Target::Server,
+                    _ => lumen_compiler::Target::Client,
+                },
+                source_map: o.source_map.unwrap_or(defaults.source_map),
+                style_import: o.style_import.unwrap_or(defaults.style_import),
+                emit_css: o.emit_css.unwrap_or(defaults.emit_css),
+                css: lumen_compiler::CssOptions {
+                    targets,
+                    minify: o.css_minify.unwrap_or(false),
+                },
+                root: o.root,
+                modules: o
+                    .modules
+                    .unwrap_or_default()
+                    .into_iter()
+                    .map(|module| lumen_compiler::HostModule {
+                        importer: module.importer,
+                        specifier: module.specifier,
+                        resolved: module
+                            .resolved
+                            .map(|resolved| lumen_compiler::ResolvedModule {
+                                id: resolved.id,
+                                source: resolved.source,
+                            }),
+                    })
+                    .collect(),
+            }
         }
-    });
+    };
     let mut result = lumen_compiler::compile(&source, &filename, &options);
     let index = Utf16Index::new(&source);
     if !index.is_identity() {
         result.map_spans(&|offset| index.to_utf16(offset));
     }
     let meta = result.meta;
-    CompileResult {
+    Ok(CompileResult {
         code: result.code,
         map: result.map,
+        css: result.css,
+        css_map: result.css_map,
+        css_deps: result.css_deps,
+        module_requests: result
+            .module_requests
+            .into_iter()
+            .map(|request| ModuleRequest {
+                importer: request.importer,
+                specifier: request.specifier,
+            })
+            .collect(),
         diagnostics: result
             .diagnostics
             .into_iter()
@@ -437,6 +524,10 @@ pub fn compile(source: String, filename: String, options: Option<CompileOptions>
                     block: r.block,
                     path: r.path,
                     span: span(r.span),
+                    value: r.value.map(|value| match value {
+                        lumen_compiler::ConstValue::String(text) => Either::A(text),
+                        lumen_compiler::ConstValue::Number(number) => Either::B(number),
+                    }),
                     binding: r.binding.map(|b| {
                         let (kind, constant, source, imported) = match b.kind {
                             StyleRefBindingKind::Module { constant } => {
@@ -464,6 +555,10 @@ pub fn compile(source: String, filename: String, options: Option<CompileOptions>
                 })
                 .collect(),
             has_styles: meta.has_styles,
+            scope_tokens: ScopeTokens {
+                file: meta.scope_tokens.file,
+                components: meta.scope_tokens.components.into_iter().collect(),
+            },
             islands: meta
                 .islands
                 .into_iter()
@@ -476,5 +571,5 @@ pub fn compile(source: String, filename: String, options: Option<CompileOptions>
                 })
                 .collect(),
         },
-    }
+    })
 }

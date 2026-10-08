@@ -69,6 +69,9 @@ registry! {
     StyleAsRootOrExpression = "LUM3011", Error, "`<style>` as the root or in an expression";
     CustomPropertyNeverRead = "LUM3012", Warning, "Custom property set but never read";
     StyleRefBeforeDeclaration = "LUM3013", Error, "`$` reference before its declaration";
+    CssSyntaxError = "LUM3014", Error, "CSS syntax error";
+    InvalidCssIgnored = "LUM3015", Warning, "Invalid CSS ignored";
+    InvalidScopeSelector = "LUM3016", Error, "Invalid `:global()` or `:deep()` selector";
     // 4xxx islands and boundaries
     NonExportedIsland = "LUM4001", Error, "Island component is not exported";
     NonSerializableIslandProp = "LUM4002", Error, "Non-serializable island prop";
@@ -82,6 +85,7 @@ registry! {
     InvalidRouteFile = "LUM5002", Error, "Invalid route file";
     DuplicateRoute = "LUM5003", Error, "Duplicate route";
     HeadChangeInStreamedBoundary = "LUM5004", Error, "Head or status change inside a streamed boundary";
+    StaticEndpointMethod = "LUM5005", Error, "Non-GET method in a static endpoint";
 }
 
 impl Code {

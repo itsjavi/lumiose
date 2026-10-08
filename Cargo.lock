@@ -777,6 +777,7 @@ checksum = "f9f8bd3e56ce4dfc153cf470fffbfa98c7620958b312ca5c3a4b8d5181fd13c6"
 name = "lumen_compiler"
 version = "0.0.0"
 dependencies = [
+ "lumen_css",
  "oxc_allocator",
  "oxc_ast",
  "oxc_ast_visit",

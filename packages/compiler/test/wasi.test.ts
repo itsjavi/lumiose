@@ -24,4 +24,16 @@ export function Counter() {
       expect(actual.diagnostics).toEqual(expected.diagnostics);
     }
   });
+
+  it("compiles style blocks like the native addon (Lightning CSS, browserslist)", () => {
+    const wasi = createRequire(import.meta.url)("../compiler.wasi.cjs") as typeof native;
+    const source = `const gap = 4;
+export const A = () => <p class="a">x<style>.a { margin: calc($gap * 2px); & b { color: red } }</style></p>;`;
+    const options = { cssTargets: ["safari 15"], cssMinify: true };
+    const expected = native!.compile(source, "/src/A.stsx", options);
+    const actual = wasi!.compile(source, "/src/A.stsx", options);
+    expect(expected.css).toContain("margin:8px");
+    expect(actual.css).toBe(expected.css);
+    expect(actual.cssMap).toBe(expected.cssMap);
+  });
 });
