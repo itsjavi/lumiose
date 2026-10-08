@@ -18,6 +18,7 @@ describe("lumen/dom contract", () => {
       "setStyle",
       "setStyleProperty",
       "insert",
+      "insertText",
       "list",
       "branch",
       "selector",

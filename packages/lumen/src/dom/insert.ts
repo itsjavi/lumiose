@@ -13,6 +13,7 @@ import {
   type Owner,
   type RenderEffect,
 } from "../core/internal.ts";
+import { setText } from "./attributes.ts";
 import { hydrator } from "./hydration.ts";
 
 type Part = Node | string;
@@ -342,6 +343,51 @@ export function insert(parent: Node, value: Renderable, marker: Node | null = nu
   const adopted = region.nodes;
   renderInto(region, value);
   h?.end(adopted);
+}
+
+// ---- insertText ----------------------------------------------------------------------------------
+// A child that is probably text but not provably (`{id}`, `{row.label()}`) gets a text node in the
+// template, like a provable one, and `insertText` writes it: strings and numbers set its data with
+// no region, and only another kind of value falls back to `insert` semantics.
+
+/** The `insert` region of a text node that fell back, and the owner of what it rendered. */
+interface TextFallback {
+  r: Region;
+  o: Owner | undefined;
+}
+
+/**
+ * Writes a maybe-text child into its template text node: a string or number sets its data,
+ * nullish or a boolean empties it, a function is bound once (each value applied the same way),
+ * and anything else (a node, an array, a nested function) renders like `insert` in a region before
+ * the text node, which stays empty from then on. Under hydration the template walk has claimed the
+ * text node; a fallback region claims the server's block instead.
+ */
+export function insertText(node: Text, value: Renderable): void {
+  if (typeof value === "function") {
+    renderEffect(node, value, applyText);
+  } else {
+    applyText(node, value);
+  }
+}
+
+function applyText(node: Text & { $$t?: TextFallback }, value: Renderable): void {
+  let fallback = node.$$t;
+  if (fallback === undefined) {
+    if (value == null || (typeof value !== "object" && typeof value !== "function")) {
+      setText(node, value);
+      return;
+    }
+    node.data = "";
+    fallback = node.$$t = { r: createRegion(node.parentNode!, node), o: undefined };
+  } else if (fallback.o !== undefined) {
+    disposeOwner(fallback.o);
+  }
+  // Under hydration, the server nodes the region adopted (as in `insert`).
+  const region = fallback.r;
+  const adopted = region.nodes;
+  fallback.o = runWithLazyOwner(getOwner(), () => renderInto(region, value));
+  hydrator?.end(adopted);
 }
 
 /**

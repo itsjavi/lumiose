@@ -77,6 +77,14 @@ export interface ClientRuntime {
    */
   insert(parent: Node, value: Renderable, marker?: Node | null): void;
   /**
+   * A child that may be text at a text node of the template (`{id}`, `{row.label()}`): strings and
+   * numbers set the node's data, nullish and booleans empty it, a function is bound once (each value
+   * applied the same way), and anything else (a node, an array, a nested function) renders like
+   * `insert()` in a region before the text node. Under hydration the template walk claims the text
+   * node (the server's `insertText()` text), and a fallback region claims the server's block.
+   */
+  insertText(node: Text, value: Renderable): void;
+  /**
    * Keyed list for compiled `.map()`. `render` receives the item and, only when declared
    * (render.length > 1), a reactive index accessor. Items are keyed by `key(item)` or by reference.
    * Reconciliation: prefix/suffix trim, append/remove/clear/swap fast paths, LIS for moves.
@@ -97,7 +105,11 @@ export interface ClientRuntime {
     whenFalse?: () => Renderable,
   ): void;
   /** Parentless `branch` (component children, fragments, nested ternaries): a range that `insert` places as one node; memoised on `!!cond()`. */
-  branchValue(cond: () => unknown, whenTrue: () => Renderable, whenFalse?: () => Renderable): Renderable;
+  branchValue(
+    cond: () => unknown,
+    whenTrue: () => Renderable,
+    whenFalse?: () => Renderable,
+  ): Renderable;
   /** Parentless `list` (component children, fragments, branches): a range that `insert` places as one node; same keyed reconciliation as `list` (clears remove rows one by one). */
   listValue<T>(
     source: () => readonly T[] | null | undefined,

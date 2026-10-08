@@ -26,6 +26,8 @@ export interface ServerRuntime {
   text(value: unknown): unknown;
   /** Dynamic content at a `<!>` placeholder position: renders value (text, nodes, arrays, components); wraps it in `<!--[-->…<!--]-->` only inside island subtrees. */
   insert(value: unknown): unknown;
+  /** A child that may be text, at a template text position (the client's `insertText`): text, nullish and booleans render like `text()`, anything else like `insert()`. */
+  insertText(value: unknown): unknown;
   /** One attribute: ` name="escaped"`, ` name` for true, "" for null/undefined/false. */
   attr(name: string, value: unknown): string;
   /** ` class="…"` from string | array | object. */

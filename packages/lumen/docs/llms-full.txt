@@ -3099,7 +3099,7 @@ hot updates.
 
 ## Compiler-runtime contract
 
-`template`, `bind`, `insert`, `branch`, `list`, `selector`, `createComponent`, `mergeProps`,
+`template`, `bind`, `insert`, `insertText`, `branch`, `list`, `selector`, `createComponent`, `mergeProps`,
 `restProps`, `spread`, `delegateEvents`, `listen`, `attach`, `bindValue`, `bindChecked`,
 `useRef`, `$async`, `$await`, `$leave` and friends are what the compiler emits calls to. They are
 not an application API and may change between versions; write JSX instead.

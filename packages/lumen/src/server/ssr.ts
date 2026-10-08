@@ -77,6 +77,16 @@ export function text(value: unknown): unknown {
   return currentFrame()?.island !== undefined ? new TextHole(out) : out;
 }
 
+/**
+ * A maybe-text child at a template text position (the client's `insertText`): text, nullish and
+ * booleans are a `text()` hole; anything else (nodes, arrays, promises) renders like `insert()`,
+ * whose island block the client's fallback region claims.
+ */
+export function insertText(value: unknown): unknown {
+  while (typeof value === "function") value = (value as () => unknown)();
+  return typeof value === "object" && value !== null ? insert(value) : text(value);
+}
+
 /** Dynamic content at a `<!>` position: text, nodes, arrays, getters, promises. */
 export function insert(value: unknown): unknown {
   const out = content(value);

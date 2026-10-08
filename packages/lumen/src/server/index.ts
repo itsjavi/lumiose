@@ -8,6 +8,7 @@ export {
   branch,
   branchArm,
   insert,
+  insertText,
   list,
   mergeProps,
   restProps,
