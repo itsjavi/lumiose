@@ -1,11 +1,11 @@
 ---
 id: TASK-13
 title: Implement the DOM runtime
-status: In Progress
+status: Done
 assignee:
   - '@Spark'
 created_date: '2026-10-08 12:20'
-updated_date: '2026-10-08 13:27'
+updated_date: '2026-10-08 13:28'
 labels: []
 milestone: m-1
 dependencies:
@@ -25,10 +25,10 @@ Compiled client code needs the runtime half of the contract: templates, inserts,
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 template/insert/attribute/class/style/bind/attach/ref helpers implement the contract
-- [ ] #2 Document-level event delegation per decision-17, with data slots and island/app boundary walking
-- [ ] #3 The keyed list implements prefix/suffix trim, append/remove/clear/swap fast paths and LIS; selector() is O(1); branches are memoised; Portal and Dynamic
-- [ ] #4 Unit tests in a DOM environment cover every contract function; the core+dom size budget is checked
+- [x] #1 template/insert/attribute/class/style/bind/attach/ref helpers implement the contract
+- [x] #2 Document-level event delegation per decision-17, with data slots and island/app boundary walking
+- [x] #3 The keyed list implements prefix/suffix trim, append/remove/clear/swap fast paths and LIS; selector() is O(1); branches are memoised; Portal and Dynamic
+- [x] #4 Unit tests in a DOM environment cover every contract function; the core+dom size budget is checked
 <!-- AC:END -->
 
 ## Implementation Plan
@@ -77,3 +77,9 @@ PROPOSALS FOR LUX (not applied to contract files):
 Size (pnpm --filter lumen size, Vite 8 app build, min+brotli q11): typical app imports (signal, computed, effect, batch, untrack, onCleanup, onMount + template, bind, setText, setAttr, setClass, toggleClass, setStyle, insert, list, branch, selector, createComponent, delegateEvents, listen, mount) 5.75 kB -> OVER the 4.5 kB budget by ~1.25 kB; benchmark imports 5.02 kB (6 kB app budget leaves ~1 kB for app code); every export 7.28 kB; core alone 3.47 kB; dom alone 3.97 kB. Main contributors: core effect/owner/reactive/system (~half), dom list.ts and insert.ts. Tuning candidate for TASK-12.
 Validation: pnpm typecheck OK; pnpm test OK (395 tests; dom 82 in 12 files, core 89); pnpm lint: 0 errors, no warnings in src/dom or src/core. List property test: 4 variants (no marker, marker+static siblings, multi-node ranges, indexed) x 400 random ops checked against expected order, node identity, live row owners and index values; mutations (never move, wrong swap, no index update, LIS off-by-one, no dispose on remove, no item replacement) are each caught.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Implemented lumen/dom (packages/lumen/src/dom): every ClientRuntime member (async $await/$leave as TASK-17 stubs; compile-time `satisfies ClientRuntime` in dom/contract.test.ts) plus a non-contract mount(); public ref<T>() (JSX.Ref), Portal and Dynamic re-exported from lumen. Templates (lazy parse, MultiRoot/SVG/MathML), pure writers (aria/enumerated booleans as "true"/"false", class/style diffing), identity-preserving regions for insert/branch (nested functions, arrays, in-place text), keyed list (trim, clear/append/remove/swap fast paths, LIS, lazy row owners, index only when declared, multi-node rows), O(1) selector with key-node cleanup, lazy-owner components, rest/merge/spread props, document-level delegation (data slots, $$root boundary, portal $$host, cancelBubble, batching), bind:value/checked (valueAsNumber), attach, refs. Hydration hook point (dom/hydration.ts) that tree-shakes to nothing without lumen/dom/hydrate. Core: nested lazy owner frames and a TriggerNode unwatched hook. Tests: 82 DOM tests (happy-dom) incl. a 4-variant list property test (mutation-checked) and hand-compiled doc-2 golden examples; full suite 395 green, typecheck and lint clean. Size: typical app imports 5.75 kB min+brotli vs 4.5 kB budget (over, recorded for TASK-12 tuning); benchmark imports 5.02 kB. Seven contract/parity proposals for Lux in the notes.
+<!-- SECTION:FINAL_SUMMARY:END -->
