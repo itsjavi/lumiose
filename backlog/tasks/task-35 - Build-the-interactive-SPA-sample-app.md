@@ -1,11 +1,11 @@
 ---
 id: TASK-35
 title: 'Build the interactive SPA sample app: chiptune composer and mixer'
-status: In Progress
+status: Done
 assignee:
   - '@Spark'
 created_date: '2026-10-08 12:21'
-updated_date: '2026-10-08 20:45'
+updated_date: '2026-10-08 20:58'
 labels: []
 milestone: m-6
 dependencies:
@@ -24,10 +24,10 @@ The user wants to play with a highly interactive SPA built with Lumen as soon as
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 examples/spa-chiptune: client-only Lumen app (lumen/vite, ssr:false style entry) with views (songs list, tracker editor, instrument editor, settings) switched via app state; NES-style 4-channel chip voices (2 pulse with duty 12.5/25/50/75%, triangle, noise) synthesized in an AudioWorklet, optional wavetable channel
-- [ ] #2 Tracker pattern editor (rows × channels: note, instrument, volume, effect columns) with full keyboard entry, cursor/selection, copy/paste; song arrangement (order list); effects at least arpeggio, vibrato, volume slide, duty change; instrument envelopes (volume/duty/pitch macros); transport (play song/pattern, loop, BPM/speed) with the playing row following
-- [ ] #3 Mixer: per-channel volume/pan/mute/solo, master, VU meters and per-channel oscilloscopes animated via requestAnimationFrame; state in store() with undo/redo; save/load song (localStorage + JSON file), export WAV via OfflineAudioContext; retro pixel UI with scoped styles and $tokens; a bundled demo song
-- [ ] #4 Runs in vite dev and builds; type-checks with lumen check; README; screenshots in backlog/assets; a performance note (frame times while playing with meters and scopes animating); framework bugs found are filed as tasks for their owners
+- [x] #1 examples/spa-chiptune: client-only Lumen app (lumen/vite, ssr:false style entry) with views (songs list, tracker editor, instrument editor, settings) switched via app state; NES-style 4-channel chip voices (2 pulse with duty 12.5/25/50/75%, triangle, noise) synthesized in an AudioWorklet, optional wavetable channel
+- [x] #2 Tracker pattern editor (rows × channels: note, instrument, volume, effect columns) with full keyboard entry, cursor/selection, copy/paste; song arrangement (order list); effects at least arpeggio, vibrato, volume slide, duty change; instrument envelopes (volume/duty/pitch macros); transport (play song/pattern, loop, BPM/speed) with the playing row following
+- [x] #3 Mixer: per-channel volume/pan/mute/solo, master, VU meters and per-channel oscilloscopes animated via requestAnimationFrame; state in store() with undo/redo; save/load song (localStorage + JSON file), export WAV via OfflineAudioContext; retro pixel UI with scoped styles and $tokens; a bundled demo song
+- [x] #4 Runs in vite dev and builds; type-checks with lumen check; README; screenshots in backlog/assets; a performance note (frame times while playing with meters and scopes animating); framework bugs found are filed as tasks for their owners
 <!-- AC:END -->
 
 ## Implementation Plan
@@ -56,4 +56,20 @@ Lumen notes (no tasks filed yet): (a) in Vitest's default node environment resol
 Files: examples/spa-chiptune/** only (package.json, tsconfig.json, vite.config.ts, playwright.config.ts, index.html, .gitignore, src/{main.tsx,state.ts,editor.ts,keys.ts,frame.ts,files.ts,lens.ts,tokens.ts}, src/model/{types,song,demo,history,library,mml}.ts + tests, src/audio/{synth,worklet,engine,protocol,wav}.ts + test, src/ui/*.stsx, tests/app.spec.ts); pnpm-lock.yaml gained the new importer (deps.lock taken/released). Not committed.
 
 Spark: resumed (session spark-20261008T203611Z), claimed. The user has uncommitted edits in src/ui/App.stsx, src/ui/Header.stsx, vite.config.ts and src/ui/prueba.md — preserved; my edits avoid those hunks.
+
+Spark (session spark-20261008T203611Z) — finish:
+- E2E: tests/app.spec.ts, 6 tests × 2 projects (vite dev on 5195; vite build + vite preview on 5196, so the build is checked too) — 12/12 green: playback with moving rows/meters/scopes + frame stats, keyboard entry/selection/transpose/undo/redo/copy/paste, mute/solo (post-fader meters read 0 when muted), WAV export (RIFF/WAVE, 52.7 s, 44.1 kHz stereo 16-bit, peak > 8000), macro drawing + MML, library save/load + reload reopens the song + DMG theme. Macro assertion made robust (drawn value 1 or 2 depending on borders). Ports moved off 5193 (islands-e2e uses it).
+- Screenshots: backlog/assets/task-35-{tracker-playing,editing,instruments,songs,settings-dmg,tracker-dmg}.png (CHIPTUNE_SHOTS).
+- Visual fixes from the screenshots: mixer faders were 18 px tall (inline-size in vertical-lr is the height) → vfader sized in its own writing mode, with the track; strip VU meters had width 0 (flex shrink) → flex: none; scopes now show a themed midline before audio starts and use a 96×28 canvas (the 112×32 one was displayed at ~105 px, so pixelated downscaling dropped 1 px lines).
+- Perf (README): 300 frames / 5 s at 60.0 FPS, frame work 0.10–0.13 ms avg, ≤ 0.26 ms p95, 0 slow frames (headless Chromium 153, M1 Max). Build: 82 kB JS (29 kB gzip), 9 kB worklet, 19 kB CSS.
+- Lint warnings in the app fixed; oxfmt applied. lumen check clean; vitest 10/10.
+- Framework findings filed: TASK-84 (store snapshot/unwrap API, Spark); TASK-54 note (Vitest needs a DOM environment, not only the browser condition). No other framework bugs found in this pass.
+- Commits: 38c99e9 (fixes), 5e2f173 (README, e2e, lint/format).
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Lumen Chip (examples/spa-chiptune) is complete: a client-only tracker/composer/mixer with an AudioWorklet NES synth (2 PolyBLEP pulses with duty, 4-bit triangle, LFSR noise; per-tick sequencer, effects, macros), a keyboard-first pattern editor with selection, clipboard, transpose and path-patch undo/redo, order list, instrument macro editor (drawing + MML), mixer with post-fader VU meters and canvas scopes, song library with autosave and reload restore, JSON import/export, WAV export via OfflineAudioContext, NES/DMG themes with $tokens and scoped styles.
+Evidence: Playwright 12/12 (dev and vite build + preview), vitest 10/10, lumen check clean, screenshots in backlog/assets/task-35-*.png, README with run instructions and the performance note (60 FPS, ~0.1 ms frame work while playing). Optional wavetable channel not built. Follow-ups: TASK-84 (store snapshot API), TASK-72 (file routes + client router, later).
+<!-- SECTION:FINAL_SUMMARY:END -->
