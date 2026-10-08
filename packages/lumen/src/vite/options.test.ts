@@ -49,7 +49,7 @@ describe("lumen() project options", () => {
       'lumen({ include }): expected a RegExp, got "*.stsx".',
     );
     expect(create({ moed: "spa" })).toThrow(
-      "lumen({ moed }): unknown option. Known options: include, exclude, mode, ssr, trailingSlash, csrf, svg, viewTransitions, prefetch.",
+      "lumen({ moed }): unknown option. Known options: include, exclude, mode, ssr, trailingSlash, csrf, svg, md, html, viewTransitions, prefetch.",
     );
     expect(create(null)).toThrow("lumen(): expected an options object, got null.");
   });

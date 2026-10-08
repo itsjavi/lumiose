@@ -7,9 +7,10 @@ import type { ProjectOptions } from "../app/project.ts";
 import type { RouteMode } from "../app/routes/manifest.ts";
 import type { CsrfOptions } from "../app/server/csrf.ts";
 import type { TrailingSlash } from "../app/server/handler.ts";
+import type { MarkdownOptions } from "./content.ts";
 import type { SvgOptions } from "./svg.ts";
 
-export type { CsrfOptions, ProjectOptions, RouteMode, SvgOptions, TrailingSlash };
+export type { CsrfOptions, MarkdownOptions, ProjectOptions, RouteMode, SvgOptions, TrailingSlash };
 
 export interface LumenOptions {
   /** Modules compiled by Lumen. Default: `.stsx` and `.tsx` files. */
@@ -48,6 +49,18 @@ export interface LumenOptions {
    */
   svg?: boolean | SvgOptions;
   /**
+   * `.md` imports as components (`import Post, { frontmatter } from "./post.md"`): CommonMark and
+   * GFM compiled at build time, with heading ids; the YAML frontmatter is exported as data, which
+   * `{ frontmatter(data, { file }) }` can validate or transform. Default: `false`.
+   */
+  md?: boolean | MarkdownOptions;
+  /**
+   * `.html` imports as components (`import Card from "./card.html"`): a full document contributes
+   * its `<body>` content; `<script>` elements run as client modules wherever the component
+   * renders, and top-level `<style>` elements are scoped to the file. Default: `false`.
+   */
+  html?: boolean;
+  /**
    * Cross-document View Transitions between MPA pages: page documents opt in with
    * `@view-transition { navigation: auto }`, unless the reader prefers reduced motion. Name the
    * elements that morph with the CSS `view-transition-name`. Default: `false`.
@@ -85,6 +98,8 @@ const KNOWN = [
   "trailingSlash",
   "csrf",
   "svg",
+  "md",
+  "html",
   "viewTransitions",
   "prefetch",
 ];
