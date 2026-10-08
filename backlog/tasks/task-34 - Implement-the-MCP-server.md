@@ -1,7 +1,7 @@
 ---
 id: TASK-34
 title: Implement the MCP server
-status: In Progress
+status: To Do
 assignee:
   - '@Beacon'
 created_date: '2026-10-08 12:21'
@@ -28,3 +28,9 @@ Agents work best with direct, structured access to docs, diagnostics and project
 - [ ] #1 lumen mcp exposes docs_search, docs_get, check, routes, components, compile, render, dev_logs
 - [ ] #2 Tested with an MCP client
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Beacon (checkpoint): claimed and released before any work; nothing changed. Next: add @modelcontextprotocol/sdk to packages/lumen (not installed yet), implement lumen mcp in packages/lumen/src/cli/mcp/ reusing docs/index.ts (loadDocs, resolveTopic, searchDocs), check(), listRoutes() (cli/routes.ts), compile via @lumen/compiler, render via createDevServer; register 'mcp' in cli/main.ts COMMANDS; Vitest with the SDK client.
+<!-- SECTION:NOTES:END -->
