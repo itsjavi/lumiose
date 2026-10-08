@@ -1,7 +1,7 @@
 ---
 id: TASK-45
 title: Integrate the CSS pipeline into the compiler
-status: In Progress
+status: Done
 assignee:
   - '@Photon'
 created_date: '2026-10-08 13:59'
@@ -78,3 +78,9 @@ Lux (from Nova, TASK-24): expose api: { options } (mode/ssr) on the lumen plugin
 
 **For others.** Beacon: docs/concepts/styles.md status note ("the Vite plugin does not emit the CSS yet") is outdated; LUM3014-3016 exist now. Lux: spec §5.4 registry table needs 3014/3015/3016; spec §5.1 option names changed (no scopeTokens). Nova/TASK-19: server-compiled modules import the same `?lumen&type=style&lang.css` module; its CSS is target-independent; `meta.hasStyles`/`cssDeps` are available for the manifest.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+The compiler now runs the CSS pipeline: $name references are resolved with oxc_semantic and folded to constants (literals, templates, arithmetic, as-const objects, destructuring, imports incl. namespace/re-exports/export */JSON/.stsx), imported modules come from the host through a request protocol (compile returns moduleRequests, the host compiles again with modules; transitive), with LUM3008 explaining why a value is not constant and LUM3009 left to lumen_css. Scope tokens are computed from the root-relative path (file + per component) and stamped by both codegens; element inventories feed LUM3005; LUM3014-3016 are registered. compile() returns css, cssMap, cssDeps, moduleRequests and meta.scopeTokens (napi + typings + WASI; options emitCss/cssTargets/cssMinify/modules). lumen/vite serves File.stsx?lumen&type=style&lang.css through Vite's CSS pipeline, resolves token imports with Vite's resolver, tracks them as CSS dependencies, and hot-updates only the CSS module on style-only and token edits. examples/vite-counter uses component, file and global styles with $theme tokens from tokens.ts and passes class through components; verified with goldens, Vitest (compiler + real Vite dev server HMR payloads) and Playwright in Chromium (computed styles, no leaking, style/token HMR without remount). Follow-up: TASK-62 (project-wide LUM3012).
+<!-- SECTION:FINAL_SUMMARY:END -->
