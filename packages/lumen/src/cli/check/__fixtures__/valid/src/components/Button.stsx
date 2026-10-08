@@ -1,0 +1,13 @@
+import { accent, radius } from "../tokens.ts";
+
+export function Button(props: { label: string; onClick?: () => void }) {
+  return (
+    <button class="button" onClick={props.onClick}>
+      {props.label}
+      <style>
+        .button { border-radius: $radius.lg; background: $accent; }
+        .button::after { content: "→ ✨"; }
+      </style>
+    </button>
+  );
+}

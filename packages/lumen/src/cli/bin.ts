@@ -1,5 +1,5 @@
 #!/usr/bin/env node
 // `lumen` CLI entry (owner: Beacon). Runs from source on Node ≥ 24 via native type stripping.
-import pkg from "../../package.json" with { type: "json" };
+import { main } from "./main.ts";
 
-console.log(`lumen ${pkg.version}`);
+process.exitCode = await main(process.argv.slice(2));

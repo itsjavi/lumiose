@@ -34,6 +34,10 @@ importers:
         version: 3.10.8(@emnapi/core@1.11.2)(@emnapi/runtime@1.11.2)(@types/node@24.19.1)
 
   packages/lumen:
+    dependencies:
+      '@lumen/compiler':
+        specifier: workspace:*
+        version: link:../compiler
     devDependencies:
       vite:
         specifier: ^8.3.4

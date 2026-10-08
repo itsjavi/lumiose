@@ -1,0 +1,17 @@
+import { radius } from "../tokens.ts";
+
+const accent = "#7c3aed";
+
+export function Theme() {
+  return (
+    <div class="theme">
+      <style>
+        .theme { border-radius: $radius.lgg; color: $acent; }
+      </style>
+    </div>
+  );
+}
+
+<style>
+  .theme { margin: $spacing; }
+</style>

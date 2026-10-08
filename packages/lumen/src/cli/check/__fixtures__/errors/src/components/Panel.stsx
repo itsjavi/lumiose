@@ -1,0 +1,12 @@
+import { Button } from "./Button.stsx";
+
+export function Panel() {
+  return (
+    <div class="panel">
+      <style lang="scss">
+        .panel { display: flex; }
+      </style>
+      <Button label={42} />
+    </div>
+  );
+}

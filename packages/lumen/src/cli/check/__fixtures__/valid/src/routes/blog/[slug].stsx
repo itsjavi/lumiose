@@ -1,0 +1,12 @@
+import type { RouteProps } from "lumen";
+
+export default function Post(props: RouteProps<"/blog/[slug]">) {
+  return (
+    <article>
+      <h1>{props.params.slug}</h1>
+      <style>
+        h1 { font-size: 2rem; }
+      </style>
+    </article>
+  );
+}

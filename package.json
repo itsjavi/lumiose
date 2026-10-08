@@ -11,7 +11,8 @@
     "fmt:check": "oxfmt --check .",
     "cargo:build": "cargo build --workspace",
     "cargo:test": "cargo test --workspace",
-    "check": "pnpm typecheck && pnpm lint && pnpm test && cargo test --workspace"
+    "check": "pnpm build:compiler && pnpm typecheck && pnpm lint && pnpm test && cargo test --workspace",
+    "build:compiler": "pnpm --filter @lumen/compiler build"
   },
   "devDependencies": {
     "@types/node": "^24.0.0",

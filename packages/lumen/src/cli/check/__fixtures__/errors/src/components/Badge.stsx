@@ -1,0 +1,11 @@
+export function Badge(props: { count: number }) {
+  return (
+    <span class="badge">
+      <style>
+        .badge { border-radius: 999px; }
+        .badge::before { content: "→ ✨"; }
+      </style>
+      <b title="🎉 → count">{props.count.toUpperCase()}</b>
+    </span>
+  );
+}

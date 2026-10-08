@@ -1,0 +1,17 @@
+import { Button } from "./Button.stsx";
+
+const gap = 8;
+
+export function Card(props: { title: string; children?: JSX.Element }) {
+  return (
+    <section class="card">
+      <h2>{props.title}</h2>
+      {props.children}
+      <Button label="More" />
+    </section>
+  );
+}
+
+<style>
+  .card { padding: calc($gap * 1px); }
+</style>
