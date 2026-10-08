@@ -1,11 +1,11 @@
 ---
 id: TASK-29
 title: Implement the language server
-status: In Progress
+status: Done
 assignee:
   - '@Beacon'
 created_date: '2026-10-08 12:21'
-updated_date: '2026-10-08 13:49'
+updated_date: '2026-10-08 14:03'
 labels: []
 milestone: m-4
 dependencies:
@@ -24,9 +24,9 @@ Editors need full TS 7 features in .stsx plus CSS features in style blocks, with
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Takeover proxy in front of one TS 7 native LSP for .ts/.tsx/.stsx: masked buffers, shadow URI rewriting in every request, response and workspace edit
-- [ ] #2 CSS language service on style blocks with $refs replaced by same-length identifiers
-- [ ] #3 Class completion from in-scope styles, go-to-definition and rename between classes and selectors, $ref hovers, compiler diagnostics; tests
+- [x] #1 Takeover proxy in front of one TS 7 native LSP for .ts/.tsx/.stsx: masked buffers, shadow URI rewriting in every request, response and workspace edit
+- [x] #2 CSS language service on style blocks with $refs replaced by same-length identifiers
+- [x] #3 Class completion from in-scope styles, go-to-definition and rename between classes and selectors, $ref hovers, compiler diagnostics; tests
 <!-- AC:END -->
 
 ## Implementation Plan
@@ -55,4 +55,12 @@ Evidence: src/server.test.ts (17 protocol tests over stdio vs real TS 7.0.2): ho
 Deps (deps.lock taken/released): vscode-languageserver ^10.1.2, vscode-languageserver-textdocument ^1.0.15, vscode-css-languageservice ^6.3.10, typescript ^7.0.2, @lumen/compiler workspace:*; pnpm-lock.yaml updated (additions only).
 
 Gaps: no TS auto-restart after a crash (error message shown); compiler compile() diagnostics only via ServerOptions.diagnosticProviders (no compile() binding yet); class features are per file (global classes from other files not offered); no CSS document symbols merged into TS symbols; execution-contract hovers not implemented; TS logMessage output is forwarded verbatim (verbose).
+
+Final validation (Beacon): pnpm typecheck OK (3 packages); pnpm test 55 files / 596 tests OK; pnpm lint: 0 errors, 1 pre-existing warning outside this package. A first full run hung in a lumen worker while other agents' in-progress tests were changing; a rerun passed and the language-server + compiler projects pass in isolation. Follow-ups recorded as TASK-48.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Implemented @lumen/language-server (packages/language-server): a stdio LSP that takes over .ts/.tsx/.stsx in front of one TypeScript 7 native LSP (`tsc --lsp --stdio`, binary resolved via typescript/lib/getExePath.js from the project, fallback to the package's own typescript@7). .stsx documents reach TS as their shadow URIs with masked text (offset-identical, so only URIs are mapped), on-disk shadows stay in sync via lumen's syncShadows, and every request/response/server request/notification/workspace edit is URI-rewritten so results land in .stsx sources. On top: CSS features in style blocks (vscode-css-languageservice on per-block virtual CSS with same-length $ref identifiers: completion, hover, colors, diagnostics, folding, highlights), cross-language class completion/definition/references/rename/highlights scoped by component, $ref completion/hover (folded literal value) via TS, Lumen scanner diagnostics + quick fixes and a diagnosticProviders hook for compiler diagnostics, TS diagnostics filtered inside blocks except on $refs, pull diagnostics with a push fallback. Evidence: 17 stdio protocol tests against real TS 7.0.2 + 15 unit tests; repo typecheck/test/lint green. Follow-ups in TASK-48 (lumen package export for the shadow API, compile() diagnostics wiring, TS crash restart, cross-file global classes).
+<!-- SECTION:FINAL_SUMMARY:END -->
