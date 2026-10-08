@@ -3,7 +3,7 @@ id: doc-1
 title: Lumen architecture specification
 type: specification
 created_date: '2026-10-08 10:28'
-updated_date: '2026-10-08 10:57'
+updated_date: '2026-10-08 11:35'
 tags:
   - architecture
   - spec
@@ -14,7 +14,13 @@ tags:
 > Product name: **Lumen**. Working package name: **`lumen-jsx`**, because the npm name `lumen` is taken (see §14).
 > Normative words: **must**, **should**, **may**. Code samples are normative for API shape, not for internals.
 >
-> ⚠️ **Revision pending.** decision-11 (`.stsx` + `.tsx` files) and decision-12 (raw CSS `<style>` blocks, build-time constants, no reactive CSS) supersede decisions 1–2. Sections 0, 4.4, 4.5, 5.1–5.3 and 9 still describe the old `css` tagged-template design and will be rewritten in v0.2.
+> ⚠️ **Revision pending (v0.2, TASK-3).** This version is out of date in several ways:
+> - decision-11 (`.stsx` + `.tsx` files) and decision-12 (raw CSS `<style>` blocks, `$name` build-time constants, no reactive CSS) supersede decisions 1–2.
+> - decision-13 adds async components on the client with Suspense.
+> - decision-14 scopes styles by placement (component, file, global).
+> - decision-15 renames the package to `lumen` (this version still says `lumen-jsx`).
+>
+> Sections 0, 4.4, 4.5, 5, 7.3 and 9 still describe the old design. Decisions 5–10 are proposals pending user approval.
 
 ## 0. Summary
 
