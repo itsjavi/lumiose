@@ -6,7 +6,8 @@
 // - Compiler diagnostics become Vite warnings and errors with code frames (the dev overlay).
 // - `lumen` resolves its `browser` export in client environments and its `node` export in server
 //   environments; Vite processes it in both (never externalized or pre-bundled), so compiled code
-//   and the runtime share one module instance.
+//   and the runtime share one module instance. Vitest's DOM environments (happy-dom, jsdom) are
+//   client environments with Node's conditions: they get the browser entry too (TASK-54).
 // - HMR (v1): a client module that imports `mount` from `lumen/dom` (an app entry) accepts
 //   updates of itself and of every module it reaches, so an edit re-runs the entry, which
 //   re-mounts the app into the same container after disposing the previous root. Component state
@@ -20,6 +21,8 @@
 // - `virtual:lumen/css-manifest` is the CSS manifest of builds (./css-manifest.ts): every
 //   stylesheet is built in the client environment, and the server build maps each route module to
 //   the stylesheets its static import graph reaches.
+// - Project options (`mode`, `ssr`, `trailingSlash`, `csrf`; decision-21) are validated here and
+//   exposed as the plugin's `api.options` for `lumen dev`/`build` and the CLI (./options.ts).
 
 import { readFileSync } from "node:fs";
 import { readFile } from "node:fs/promises";
@@ -38,6 +41,7 @@ import {
 } from "vite";
 import { CSS_MANIFEST_ID, CssManifest, cssManifestCode, fillManifest } from "./css-manifest.ts";
 import { ISLANDS_ID, IslandRegistry } from "./islands.ts";
+import { projectOptionsOf, type LumenOptions, type LumenPluginApi } from "./options.ts";
 import { scanProject, type ScannedModule } from "./scan.ts";
 import {
   STYLE_QUERY,
@@ -48,12 +52,14 @@ import {
   type Target,
 } from "./styles.ts";
 
-export interface LumenOptions {
-  /** Modules compiled by Lumen. Default: `.stsx` and `.tsx` files. */
-  include?: RegExp;
-  /** Modules left to Vite. Default: anything in node_modules. */
-  exclude?: RegExp;
-}
+export type {
+  CsrfOptions,
+  LumenOptions,
+  LumenPluginApi,
+  ProjectOptions,
+  RouteMode,
+  TrailingSlash,
+} from "./options.ts";
 
 const LUMEN_MODULE = /\.(?:stsx|tsx)$/;
 const NODE_MODULES = /[\\/]node_modules[\\/]/;
@@ -73,7 +79,8 @@ const HMR_DOM_ID = "\0lumen:hmr-dom";
 // The compiler prints user imports verbatim, normalized by the code printer.
 const IMPORTS_MOUNT = /import\s*\{[^}]*\bmount\b[^}]*\}\s*from\s*"lumen\/dom"/;
 
-export default function lumen(options: LumenOptions = {}): Plugin[] {
+export default function lumen(options: LumenOptions = {}): Plugin<LumenPluginApi>[] {
+  const api: LumenPluginApi = { options: Object.freeze(projectOptionsOf(options)) };
   const include = options.include ?? LUMEN_MODULE;
   const exclude = options.exclude ?? NODE_MODULES;
   let serve = false;
@@ -89,6 +96,8 @@ export default function lumen(options: LumenOptions = {}): Plugin[] {
     {
       name: "lumen",
       enforce: "pre",
+      // The project options (`mode`, `ssr`, …) the app layer reads (app/project.ts).
+      api,
       // One instance for every environment of a build: the server build reads the stylesheets
       // the client build recorded (./css-manifest.ts), also when a config file is resolved again
       // per environment.

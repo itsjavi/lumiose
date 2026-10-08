@@ -28,12 +28,8 @@ const FILES: Record<string, string> = {
   "package.json": JSON.stringify({ name: "cli-fixture", private: true, type: "module" }),
   "tsconfig.json": JSON.stringify(tsconfigTemplate(), null, 2),
   // The project default is `server`, so the endpoint may take POST (static endpoints may not).
-  // TODO(TASK-77): `lumen({ mode: "server" })` once the plugin takes it; until then its `api.options`
-  // (what the CLI and the app layer read) is set by hand.
   "vite.config.ts": `import lumen from "lumen/vite";
-const plugins = lumen();
-plugins[0].api = { options: { mode: "server" } };
-export default { plugins };
+export default { plugins: [lumen({ mode: "server" })] };
 `,
   "src/components/Card.stsx": `export function Card(props: { title: string }) {
   return (

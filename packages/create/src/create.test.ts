@@ -16,7 +16,6 @@ import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import lumen from "lumen/vite";
 import { afterAll, describe, expect, it } from "vitest";
 import { main, type CreateIO } from "./main.ts";
 import { isValidPackageName, packageName, TEMPLATES } from "./scaffold.ts";
@@ -29,11 +28,6 @@ const lumenBin = join(packagesDir, "lumen/src/cli/bin.ts");
 const binding = await import(
   createRequire(join(packagesDir, "lumen/package.json")).resolve("@lumen/compiler")
 ).catch(() => undefined);
-// TODO(TASK-77): drop once `lumen({ mode })` reaches the plugin's api.options.
-const pluginTakesMode =
-  (lumen({ mode: "server" } as never)[0] as { api?: { options?: { mode?: string } } }).api?.options
-    ?.mode === "server";
-
 const tmp = realpathSync(mkdtempSync(join(tmpdir(), "create-lumen-")));
 afterAll(() => rmSync(tmp, { recursive: true, force: true }));
 
@@ -170,10 +164,12 @@ describe.skipIf(!binding).each(TEMPLATES)("template $name", (template) => {
     expect(fmt.code, fmt.stdout).toBe(0);
     const build = await run(lumenBin, ["build", "--format", "json"], root);
     expect(build.code, build.stderr).toBe(0);
-    expect(JSON.parse(build.stdout).prerendered.length).toBeGreaterThan(0);
+    // Static pages are prerendered; server and spa routes render per request (spa shells: TASK-25).
+    const { prerendered } = JSON.parse(build.stdout);
+    if (template.mode === "static") expect(prerendered.length).toBeGreaterThan(0);
   });
 
-  it.skipIf(!pluginTakesMode)("routes use the template's default mode", async () => {
+  it("routes use the template's default mode", async () => {
     const routes = await run(lumenBin, ["routes", "--format", "json"], root);
     expect(JSON.parse(routes.stdout)).toMatchObject({ ok: true, defaultMode: template.mode });
   });
