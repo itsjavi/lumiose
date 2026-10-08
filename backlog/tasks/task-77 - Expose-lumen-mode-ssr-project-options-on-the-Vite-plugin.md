@@ -5,7 +5,7 @@ status: Done
 assignee:
   - Photon
 created_date: '2026-10-08 16:38'
-updated_date: '2026-10-08 20:39'
+updated_date: '2026-10-08 20:51'
 labels:
   - compiler
   - app
@@ -48,6 +48,8 @@ Photon (2026-10-08): implemented.
 - TODO(TASK-77) removed: cli.test.ts fixture now uses lumen({ mode: 'server' }) (covers AC #3: lumen routes prints/JSONs every route as server, defaultMode server); create.test.ts pluginTakesMode guard removed. Its 'builds' test asserted prerendered > 0 for every template, which only held because mode was ignored; now asserted for static templates only (server/spa render per request; spa shells come with TASK-25).
 - Tests: src/vite/options.test.ts (2 tests: api.options shape/freeze, every validation message). cli.test.ts + create.test.ts (20) pass; lumen and create tsc clean; oxlint/oxfmt clean.
 - Docs (for Beacon): packages/lumen/docs/reference/vite.md still shows LumenOptions with include/exclude only and its Status note says trailingSlash 'arrives with lumen dev/build'; update it with mode/ssr/trailingSlash/csrf (and regenerate llms-full.txt).
+
+Photon (2026-10-08, during TASK-54): packages/lumen/docs/reference/vite.md now documents mode/ssr/trailingSlash/csrf (LumenOptions block, validation, status note, example); llms-full.txt regenerated. The Beacon docs follow-up above is done.
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary
