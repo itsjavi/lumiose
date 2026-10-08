@@ -253,6 +253,25 @@ describe("createRouteManifest", () => {
     );
   });
 
+  it("reports LUM5005 for static endpoints exporting other methods than GET", () => {
+    const manifest = manifestOf({
+      "feed.xml.ts": "export const GET = () => new Response();",
+      "api/subscribe.ts": "export const GET = () => new Response();\nexport function POST() {}",
+      "api/live.ts": 'export const mode = "server";\nexport function POST() {}',
+    });
+    expect(manifest.diagnostics).toEqual([
+      {
+        code: "LUM5005",
+        severity: "error",
+        file: "src/routes/api/subscribe.ts",
+        message:
+          "This endpoint is static (prerendered to a file at build time), so it can only serve GET, but it exports POST.",
+        help: 'Serve it per request with export const mode = "server", or keep only GET.',
+      },
+    ]);
+    expect(manifest.routes.map((route) => route.pattern)).toContain("/api/subscribe");
+  });
+
   it("supports a custom routes directory", () => {
     const manifest = manifestOf({ "index.stsx": PAGE }, "./app/pages/");
     expect(manifest.routesDir).toBe("app/pages");

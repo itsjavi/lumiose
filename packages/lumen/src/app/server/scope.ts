@@ -5,7 +5,7 @@
 
 import { AsyncLocalStorage } from "node:async_hooks";
 import type { Routes, RouteParams } from "../routes/registry.ts";
-import { LUM_AFTER_SHELL, LumenError } from "../diagnostics.ts";
+import { LUM_AFTER_SHELL, LUM_PRERENDER_REQUEST, LumenError } from "../diagnostics.ts";
 import type {
   Locals,
   RequestContext,
@@ -49,6 +49,46 @@ const storage = new AsyncLocalStorage<RequestScope>();
 
 export function runInRequestScope<T>(scope: RequestScope, fn: () => T): T {
   return storage.run(scope, fn);
+}
+
+/**
+ * Build-time prerendering of a `static` route (spec §7.1): there is no request, so request APIs
+ * throw LUM5001 while the route renders. Middleware is not guarded (it runs for every mode).
+ */
+export interface PrerenderGuard {
+  /** Called with each violation, also when an `<ErrorBoundary>` later catches the error. */
+  report(error: LumenError): void;
+}
+
+const guards = new AsyncLocalStorage<PrerenderGuard | undefined>();
+
+/** Runs `fn` with request APIs guarded (`guard`) or allowed again (`undefined`). */
+export function runPrerenderGuarded<T>(guard: PrerenderGuard | undefined, fn: () => T): T {
+  return guards.run(guard, fn);
+}
+
+/** Throws LUM5001 when `api` is used while a static route is prerendered. */
+export function assertRequestApi(api: string): void {
+  const guard = guards.getStore();
+  if (guard === undefined) return;
+  const error = new LumenError(
+    LUM_PRERENDER_REQUEST,
+    `${api} reads the request, but this route is prerendered at build time (mode "static"), where there is no request. Render it per request with \`export const mode = "server"\`, or move this part into an island.`,
+  );
+  guard.report(error);
+  throw error;
+}
+
+/** `url` as seen while prerendering: its query string is a request API. */
+export function prerenderUrl(source: URL): URL {
+  if (guards.getStore() === undefined) return source;
+  return new Proxy(source, {
+    get(target, key) {
+      if (key === "search" || key === "searchParams") assertRequestApi(`url().${key}`);
+      const value: unknown = Reflect.get(target, key, target);
+      return typeof value === "function" ? value.bind(target) : value;
+    },
+  });
 }
 
 /** The current request scope, or `undefined` outside a request. For the server runtime. */
@@ -103,12 +143,14 @@ function currentScope(api: string): RequestScope {
 
 /** The current `Request`. */
 export function request(): Request {
-  return currentScope("request()").ctx.request;
+  const scope = currentScope("request()");
+  assertRequestApi("request()");
+  return scope.ctx.request;
 }
 
 /** The current request URL. */
 export function url(): URL {
-  return currentScope("url()").ctx.url;
+  return prerenderUrl(currentScope("url()").ctx.url);
 }
 
 /** Params of the matched route; pass the route pattern to type them: `params<"/blog/[slug]">()`. */
@@ -120,17 +162,23 @@ export function params<P extends Routes = never>(): [P] extends [never]
 
 /** The request's `locals`, set by middleware. */
 export function locals(): Locals {
-  return currentScope("locals()").ctx.locals;
+  const scope = currentScope("locals()");
+  assertRequestApi("locals()");
+  return scope.ctx.locals;
 }
 
 /** The request's cookies. */
 export function cookies(): Cookies {
-  return currentScope("cookies()").ctx.cookies;
+  const scope = currentScope("cookies()");
+  assertRequestApi("cookies()");
+  return scope.ctx.cookies;
 }
 
 /** Status and headers of the page response; writable until the shell is sent. */
 export function response(): ResponseContext {
-  return currentScope("response()").response;
+  const scope = currentScope("response()");
+  assertRequestApi("response()");
+  return scope.response;
 }
 
 /**

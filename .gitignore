@@ -38,3 +38,8 @@ target/
 test-results/
 playwright-report/
 .krausest/
+
+# Local databases
+*.db
+*.db-shm
+*.db-wal

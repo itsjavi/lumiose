@@ -1,0 +1,22 @@
+{
+  "name": "@lumen/adapter-node",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Serve a Lumen build with Node: dist/client statics with caching headers, then the app's fetch handler.",
+  "license": "MIT",
+  "files": [
+    "src"
+  ],
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./package.json": "./package.json"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "lumen": "workspace:*"
+  }
+}

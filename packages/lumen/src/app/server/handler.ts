@@ -28,7 +28,16 @@ import { createCookieJar, type CookieJar } from "./cookies.ts";
 import { isSameOriginRequest, needsOriginCheck, type CsrfOptions } from "./csrf.ts";
 import { documentBody, documentParts, type DocumentComponent } from "./document.ts";
 import { createServerRenderer, type PageRenderer, type PageTree } from "./render.ts";
-import { createResponseState, processEnv, runInRequestScope, type RequestScope } from "./scope.ts";
+import {
+  assertRequestApi,
+  createResponseState,
+  prerenderUrl,
+  processEnv,
+  runInRequestScope,
+  runPrerenderGuarded,
+  type PrerenderGuard,
+  type RequestScope,
+} from "./scope.ts";
 
 export type ModuleExports = Record<string, unknown>;
 
@@ -60,7 +69,21 @@ export interface RequestHandlerOptions {
    * actions and form-encoded endpoint requests get a 403. `false` turns it off.
    */
   csrf?: false | CsrfOptions;
+  /** Vite's `base` (`/docs/`): routes match the path below it; other paths are 404. Default `/`. */
+  base?: string;
+  /**
+   * Trailing slashes of page URLs (endpoints are left alone): `always` and `never` redirect GET
+   * and HEAD requests to that form (308). Default `ignore`: both forms render the page.
+   */
+  trailingSlash?: TrailingSlash;
+  /**
+   * Build-time prerendering (`lumen build`): pages and endpoints render with request APIs guarded
+   * (LUM5001, reported through `onError`) and fully resolved. Middleware is not guarded.
+   */
+  prerendering?: boolean;
 }
+
+export type TrailingSlash = "ignore" | "always" | "never";
 
 export interface RequestHandler {
   fetch(request: Request): Promise<Response>;
@@ -86,7 +109,10 @@ interface ParentRequest {
 }
 
 export function createRequestHandler(options: RequestHandlerOptions): RequestHandler {
-  const { manifest, loadModule, dev = false, prerender = false } = options;
+  const { manifest, loadModule, dev = false, prerendering = false } = options;
+  const prerender = prerendering || (options.prerender ?? false);
+  const base = normalizeBase(options.base ?? "/");
+  const trailingSlash = options.trailingSlash ?? "ignore";
   const render = options.render ?? createServerRenderer();
   const onError = options.onError ?? ((error: unknown) => console.error(error));
   const matcher = createRouteMatcher(manifest);
@@ -104,8 +130,16 @@ export function createRequestHandler(options: RequestHandlerOptions): RequestHan
 
   async function handle(request: Request, parent: ParentRequest | undefined): Promise<Response> {
     const url = new URL(request.url);
-    const match = matcher.match(url.pathname);
+    // The path below `base`; outside it nothing matches and the root error pages apply.
+    const pathname = routePath(url.pathname, base);
+    const match = pathname === undefined ? null : matcher.match(pathname);
     const actionResult = wantsActionResult(request);
+    if (match?.route.kind === "page" && pathname !== undefined) {
+      const location = trailingSlashRedirect(request, url, pathname, trailingSlash);
+      if (location !== undefined) {
+        return new Response(null, { status: 308, headers: { location } });
+      }
+    }
     if (
       options.csrf !== false &&
       needsOriginCheck(request, match?.route.kind !== "endpoint") &&
@@ -143,16 +177,28 @@ export function createRequestHandler(options: RequestHandlerOptions): RequestHan
       fetch: (inner) => fetchInProcess(inner, { cookies, locals: ctx.locals, depth }, request),
     };
 
+    // Prerendering guards request APIs in routes, not in middleware (nested in-process requests
+    // run their middleware unguarded too).
+    const guard: PrerenderGuard | undefined = prerendering
+      ? { report: (error) => onError(error, request) }
+      : undefined;
+    const notFoundPath = pathname ?? "/";
     return runInRequestScope(scope, async () => {
       let response: Response;
       try {
-        response = await runMiddleware(ctx, () => dispatch(scope, match, actionResult));
+        response = await runPrerenderGuarded(undefined, () =>
+          runMiddleware(ctx, () =>
+            runPrerenderGuarded(guard, () => dispatch(scope, match, actionResult, notFoundPath)),
+          ),
+        );
       } catch (error) {
         scope.response = createResponseState();
         response =
           match?.route.kind === "endpoint"
             ? endpointError(error, request)
-            : await renderError(error, scope, errorPagesFor(match, url.pathname));
+            : await runPrerenderGuarded(guard, () =>
+                renderError(error, scope, errorPagesFor(match, notFoundPath)),
+              );
       }
       if (actionResult) response = redirectAsActionResult(response);
       return finalize(response, scope, parent === undefined);
@@ -223,15 +269,18 @@ export function createRequestHandler(options: RequestHandlerOptions): RequestHan
     scope: RequestScope,
     match: RouteMatch | null,
     actionResult: boolean,
+    pathname: string,
   ): Promise<Response> {
-    const { request, url } = scope.ctx;
+    const { request } = scope.ctx;
     if (match === null) {
-      return renderError(new HttpError(404, "Not Found"), scope, errorPagesFor(null, url.pathname));
+      return renderError(new HttpError(404, "Not Found"), scope, errorPagesFor(null, pathname));
     }
     const { route } = match;
+    // What route code sees: while prerendering, its request APIs throw LUM5001.
+    const routeCtx = prerendering ? prerenderContext(scope.ctx) : scope.ctx;
     if (route.kind === "endpoint") {
       try {
-        return await serveEndpoint(scope.ctx, await loadModule(route.file));
+        return await serveEndpoint(routeCtx, request, await loadModule(route.file));
       } catch (error) {
         return endpointError(error, request);
       }
@@ -253,14 +302,14 @@ export function createRequestHandler(options: RequestHandlerOptions): RequestHan
       }
       const page = componentOf(pageModule, route.file);
       if (typeof pageModule.headers === "function") {
-        const headers = new Headers(await pageModule.headers(scope.ctx));
+        const headers = new Headers(await pageModule.headers(routeCtx));
         for (const [name, value] of headers) scope.response.setHeader(name, value);
       }
       return await renderPage(
         scope,
         { layouts, page, props: { params: match.params }, params: match.params },
         [...route.layouts, route.file],
-        typeof prerender === "function" ? prerender(route) : prerender,
+        prerendering || (typeof prerender === "function" ? prerender(route) : prerender),
       );
     } catch (error) {
       scope.response = createResponseState(200, baseline);
@@ -448,8 +497,12 @@ export function createRequestHandler(options: RequestHandlerOptions): RequestHan
   return { fetch };
 }
 
-async function serveEndpoint(ctx: RequestContext, module: ModuleExports): Promise<Response> {
-  const method = ctx.request.method as HttpMethod;
+async function serveEndpoint(
+  ctx: RequestContext,
+  request: Request,
+  module: ModuleExports,
+): Promise<Response> {
+  const method = request.method as HttpMethod;
   const exported = METHODS.filter((name) => typeof module[name] === "function");
   let handler = exported.includes(method) ? (module[method] as Endpoint) : undefined;
   if (handler === undefined && method === "HEAD" && exported.includes("GET")) {
@@ -466,9 +519,64 @@ async function serveEndpoint(ctx: RequestContext, module: ModuleExports): Promis
   }
   const response = await handler(ctx);
   if (!(response instanceof Response)) {
-    throw new TypeError(`Endpoint ${method} ${ctx.url.pathname} must return a Response.`);
+    throw new TypeError(
+      `Endpoint ${method} ${new URL(request.url).pathname} must return a Response.`,
+    );
   }
   return method === "HEAD" ? withoutBody(response) : response;
+}
+
+/** The request context of a route being prerendered: request, cookies, locals and the query throw LUM5001. */
+function prerenderContext(ctx: RequestContext): RequestContext {
+  return {
+    get request() {
+      assertRequestApi("ctx.request");
+      return ctx.request;
+    },
+    get url() {
+      return prerenderUrl(ctx.url);
+    },
+    params: ctx.params,
+    get locals() {
+      assertRequestApi("ctx.locals");
+      return ctx.locals;
+    },
+    get cookies() {
+      assertRequestApi("ctx.cookies");
+      return ctx.cookies;
+    },
+    env: ctx.env,
+  };
+}
+
+/** `base` with leading and trailing slashes (`/`, `/docs/`); a full URL keeps its path. */
+function normalizeBase(base: string): string {
+  let path = /^[a-z][a-z\d+.-]*:\/\//i.test(base) ? new URL(base).pathname : base;
+  if (path === "" || path === "./") return "/";
+  if (!path.startsWith("/")) path = `/${path}`;
+  return path.endsWith("/") ? path : `${path}/`;
+}
+
+/** The pathname below `base`, starting with "/"; `undefined` outside it. */
+function routePath(pathname: string, base: string): string | undefined {
+  if (base === "/") return pathname;
+  if (pathname === base.slice(0, -1)) return "/";
+  return pathname.startsWith(base) ? pathname.slice(base.length - 1) : undefined;
+}
+
+/** Where a GET/HEAD page request is redirected for the trailing-slash policy, if anywhere. */
+function trailingSlashRedirect(
+  request: Request,
+  url: URL,
+  pathname: string,
+  policy: TrailingSlash,
+): string | undefined {
+  if (policy === "ignore" || pathname === "/") return undefined;
+  if (request.method !== "GET" && request.method !== "HEAD") return undefined;
+  const slash = url.pathname.endsWith("/");
+  if (policy === "always" && !slash) return `${url.pathname}/${url.search}`;
+  if (policy === "never" && slash) return `${url.pathname.replace(/\/+$/, "")}${url.search}`;
+  return undefined;
 }
 
 function componentOf<C = Component<any>>(module: ModuleExports, file: string): C {

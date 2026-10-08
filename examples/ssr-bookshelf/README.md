@@ -4,8 +4,9 @@ A multi-page book catalog with search, reviews, reading lists and accounts, back
 `node:sqlite`. It shows Lumen's `server` and `static` route modes, form actions, cookie sessions,
 islands and `<Suspense>` streaming.
 
-**Status.** The data layer is done (TASK-46). The first pages run on `lumen dev` (TASK-24): home
-(with the streamed recommendations), the book list and detail, sign-in/sign-out, about, the search
+**Status.** The data layer is done (TASK-46). The first pages run on `lumen dev` (TASK-24) and
+in production with `lumen build` and `@lumen/adapter-node` (TASK-26): home (with the streamed
+recommendations), the book list and detail, sign-in/sign-out, about (prerendered), the search
 endpoint and the 404 page. The rest of the planned site below is TASK-36.
 
 ## Run it
@@ -17,7 +18,16 @@ pnpm --filter @lumen-examples/ssr-bookshelf dev        # seeds if empty, then lu
 pnpm --filter @lumen-examples/ssr-bookshelf seed       # (re)creates data/bookshelf.db
 pnpm --filter @lumen-examples/ssr-bookshelf test       # Vitest, in-memory databases
 pnpm --filter @lumen-examples/ssr-bookshelf typecheck
+pnpm --filter @lumen-examples/ssr-bookshelf build      # lumen build: dist/client + dist/server/entry.js
+pnpm --filter @lumen-examples/ssr-bookshelf preview    # lumen preview on :4173 (LUMEN_SECRET from the env)
+pnpm --filter @lumen-examples/ssr-bookshelf start      # node server.ts: @lumen/adapter-node on $PORT (3000)
+pnpm --filter @lumen-examples/ssr-bookshelf test:e2e   # Playwright smoke test of the production build
 ```
+
+`lumen build` prerenders the `static` routes (`/about`, `404.html`) into `dist/client`; the rest
+render per request through `dist/server/entry.js`. `server.ts` serves both: static files first,
+then the handler. In production, set `LUMEN_SECRET` (and `ORIGIN` behind a TLS proxy). The e2e
+test builds the app and runs `server.ts` on a database of its own (`data/e2e.db`).
 
 `node src/server/seed.server.ts --if-empty` keeps an already seeded database; `dev` runs it first.
 In dev, `LUMEN_SECRET` comes from `.env.development` (a development-only value).

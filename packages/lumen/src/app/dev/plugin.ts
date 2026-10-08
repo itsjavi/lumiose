@@ -18,7 +18,6 @@
 //   `_error`/fallback page; route manifest errors (LUM5002/5003) show on every page until fixed.
 
 import { AsyncLocalStorage } from "node:async_hooks";
-import { existsSync } from "node:fs";
 import { join, relative, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { Connect, EnvironmentModuleNode, Plugin, ViteDevServer } from "vite";
@@ -26,12 +25,19 @@ import { isCSSRequest, isRunnableDevEnvironment, loadEnv, normalizePath } from "
 import { escapeAttr } from "../../server/node.ts";
 import type { AppDiagnostic } from "../diagnostics.ts";
 import {
+  DOCUMENT_FILES,
+  findAppFile,
+  MIDDLEWARE_FILES,
+  projectOptions,
+  type ProjectOptions,
+} from "../project.ts";
+import {
   DEFAULT_ROUTES_DIR,
   type CreateRouteManifestOptions,
   type RouteManifest,
   type RouteMode,
 } from "../routes/manifest.ts";
-import type { RequestHandler } from "../server/handler.ts";
+import type { RequestHandler, TrailingSlash } from "../server/handler.ts";
 import { sendWebResponse, toWebRequest } from "../server/node-http.ts";
 import { typegen } from "../typegen/index.ts";
 import { formatError, overlayError, overlayScript, type OverlayError } from "./errors.ts";
@@ -46,11 +52,8 @@ export interface LumenDevOptions {
   mode?: RouteMode;
   /** Project default `ssr` of `spa` routes. Default: `lumen({ ssr })`, else `true`. */
   ssr?: boolean;
-}
-
-/** What the `lumen` compiler plugin (lumen/vite) exposes to the app layer. */
-interface LumenPluginApi {
-  options?: { mode?: RouteMode; ssr?: boolean };
+  /** Trailing slashes of page URLs. Default: `lumen({ trailingSlash })`, else `ignore`. */
+  trailingSlash?: TrailingSlash;
 }
 
 /** The handler and server runtime, imported through the ssr module runner. */
@@ -59,8 +62,6 @@ type AppServerModule = typeof import("../server/index.ts");
 const APP_SERVER_ENTRY = normalizePath(
   fileURLToPath(new URL("../server/index.ts", import.meta.url)),
 );
-const MIDDLEWARE_FILES = ["src/middleware.ts", "src/middleware.js"];
-const DOCUMENT_FILES = ["src/document.stsx", "src/document.tsx"];
 const NOT_A_STYLESHEET = /[?&](?:inline|url|raw)\b/;
 const JS_MODULE = /\.[cm]?[jt]sx?$/;
 
@@ -77,6 +78,7 @@ interface AppFiles {
 export function lumenDev(options: LumenDevOptions = {}): Plugin {
   const routesDir = options.routesDir ?? DEFAULT_ROUTES_DIR;
   const defaults: Pick<CreateRouteManifestOptions, "defaultMode" | "defaultSsr"> = {};
+  let project: ProjectOptions = {};
   let server: ViteDevServer;
   let root: string;
   let app: AppFiles;
@@ -88,8 +90,8 @@ export function lumenDev(options: LumenDevOptions = {}): Plugin {
 
   async function scan(): Promise<AppFiles> {
     const { manifest } = await typegen(root, { routesDir, ...defaults });
-    const middleware = MIDDLEWARE_FILES.find((file) => existsSync(join(root, file)));
-    const document = DOCUMENT_FILES.find((file) => existsSync(join(root, file)));
+    const middleware = findAppFile(root, MIDDLEWARE_FILES);
+    const document = findAppFile(root, DOCUMENT_FILES);
     const errors = manifest.diagnostics
       .filter((diagnostic) => diagnostic.severity === "error")
       .map((diagnostic) => diagnosticError(diagnostic, root));
@@ -173,6 +175,9 @@ export function lumenDev(options: LumenDevOptions = {}): Plugin {
       headAssets: (files) => headAssets(current, files),
       env: serverEnv(server),
       dev: true,
+      base,
+      ...(project.trailingSlash === undefined ? {} : { trailingSlash: project.trailingSlash }),
+      ...(project.csrf === undefined ? {} : { csrf: project.csrf }),
       // Static routes render fully resolved, as the build prerenders them.
       prerender: (route) => route.mode === "static",
       onError: (error) => {
@@ -258,15 +263,10 @@ export function lumenDev(options: LumenDevOptions = {}): Plugin {
     },
 
     configResolved(config) {
-      const compiler = config.plugins.find((plugin) => plugin.name === "lumen");
-      if (compiler === undefined) {
-        throw new Error(
-          'lumen dev needs the compiler plugin: add `lumen()` from "lumen/vite" to the plugins of your Vite config.',
-        );
-      }
-      const project = (compiler.api as LumenPluginApi | undefined)?.options;
-      const mode = options.mode ?? project?.mode;
-      const ssr = options.ssr ?? project?.ssr;
+      project = { ...projectOptions(config, "dev") };
+      if (options.trailingSlash !== undefined) project.trailingSlash = options.trailingSlash;
+      const mode = options.mode ?? project.mode;
+      const ssr = options.ssr ?? project.ssr;
       if (mode !== undefined) defaults.defaultMode = mode;
       if (ssr !== undefined) defaults.defaultSsr = ssr;
     },

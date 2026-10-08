@@ -1,7 +1,14 @@
 // Request handling (spec §8, decisions 18-19): entry for the dev server (TASK-24), the build's
 // server entry and adapters (TASK-26). Server-only.
 export { createRequestHandler } from "./handler.ts";
-export type { ModuleExports, RequestHandler, RequestHandlerOptions } from "./handler.ts";
+export type {
+  ModuleExports,
+  RequestHandler,
+  RequestHandlerOptions,
+  TrailingSlash,
+} from "./handler.ts";
+export { createAppHandler } from "./app.ts";
+export type { AppHandlerOptions, BuiltApp, BuiltAppConfig } from "./app.ts";
 export { composePageTree, createServerRenderer } from "./render.ts";
 export type {
   CreateComponent,

@@ -30,6 +30,8 @@
     },
     "./vite": "./src/vite/index.ts",
     "./dev": "./src/app/dev/index.ts",
+    "./build": "./src/app/production/index.ts",
+    "./node": "./src/app/server/node-http.ts",
     "./tooling": "./src/cli/tooling.ts",
     "./package.json": "./package.json"
   },

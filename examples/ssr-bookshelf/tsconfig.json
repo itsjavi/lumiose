@@ -1,5 +1,5 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": { "types": ["node", "lumen/env"] },
-  "include": ["src"]
+  "include": ["src", "e2e", "server.ts", "playwright.config.ts"]
 }

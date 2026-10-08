@@ -14,6 +14,8 @@ export interface AppDiagnostic {
   help?: string;
 }
 
+/** A request API was used while a static route was prerendered (spec §7.1). */
+export const LUM_PRERENDER_REQUEST = "LUM5001";
 export const LUM_INVALID_ROUTE_FILE = "LUM5002";
 export const LUM_DUPLICATE_ROUTE = "LUM5003";
 /** An island prop is not plain data (decision-9). */
@@ -24,6 +26,8 @@ export const LUM_SERVER_ONLY = "LUM4003";
 export const LUM_AWAIT_VALUE = "LUM4007";
 /** Status, headers, cookies or head changed after the SSR shell was sent (decision-19). */
 export const LUM_AFTER_SHELL = "LUM5004";
+/** A static endpoint exports a method other than GET (it is prerendered to a file). */
+export const LUM_STATIC_ENDPOINT_METHOD = "LUM5005";
 
 /** A runtime error carrying a Lumen code and its docs URL (contract doc-2 §6). */
 export class LumenError extends Error {

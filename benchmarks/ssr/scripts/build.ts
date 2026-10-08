@@ -1,0 +1,145 @@
+// Compiles the benchmark page of every framework with its own compiler, server target, into
+// `dist/<framework>/` (plain ESM importing the framework's server runtime), plus a
+// `dist/<framework>/render.js` exporting `render(data)`: string or Promise<string>.
+//
+//   node scripts/build.ts
+
+import { transformAsync } from "@babel/core";
+import { compile as compileLumen } from "@lumen/compiler";
+import { mkdir, readdir, readFile, rm, writeFile } from "node:fs/promises";
+import { basename, join } from "node:path";
+import { fileURLToPath } from "node:url";
+import { compile as compileSvelte } from "svelte/compiler";
+import { transformWithOxc } from "vite";
+import { compileTemplate, parse as parseSfc, rewriteDefault } from "vue/compiler-sfc";
+
+const root = fileURLToPath(new URL("..", import.meta.url));
+const src = join(root, "src");
+const dist = join(root, "dist");
+
+/** Relative imports of the sources, as they resolve from `dist/<framework>/`. */
+function rewriteImports(code: string): string {
+  return code
+    .replaceAll(/(["'])\.\.\/data\.ts\1/g, '"../../src/data.ts"')
+    .replaceAll(/(["'])(\.\/[\w-]+)\.(?:svelte|vue)\1/g, '"$2.js"');
+}
+
+async function emit(framework: string, files: Record<string, string>): Promise<void> {
+  const dir = join(dist, framework);
+  await mkdir(dir, { recursive: true });
+  for (const [name, code] of Object.entries(files)) await writeFile(join(dir, name), code);
+}
+
+async function buildLumen(): Promise<void> {
+  const file = join(src, "lumen/Page.stsx");
+  const result = compileLumen(await readFile(file, "utf8"), file, {
+    target: "server",
+    sourceMap: false,
+    styleImport: false,
+    emitCss: false,
+    root,
+  });
+  const errors = result.diagnostics.filter((diagnostic) => diagnostic.severity === "error");
+  if (errors.length > 0) throw new Error(errors.map((error) => error.message).join("\n"));
+  for (const warning of result.diagnostics)
+    console.warn(`lumen: ${warning.code} ${warning.message}`);
+  await emit("lumen", {
+    "Page.js": rewriteImports(result.code),
+    "render.js": `import { createComponent, renderToString } from "lumen/server";
+import { Page } from "./Page.js";
+export const render = (data) => renderToString(() => createComponent(Page, { data }));
+`,
+  });
+}
+
+async function buildSolid(framework: string, hydratable: boolean): Promise<void> {
+  const file = join(src, "solid/Page.jsx");
+  const result = await transformAsync(await readFile(file, "utf8"), {
+    filename: file,
+    babelrc: false,
+    configFile: false,
+    presets: [["babel-preset-solid", { generate: "ssr", hydratable }]],
+  });
+  await emit(framework, {
+    "Page.js": rewriteImports(result!.code!),
+    "render.js": `import { createComponent, renderToString } from "solid-js/web";
+import { Page } from "./Page.js";
+export const render = (data) => renderToString(() => createComponent(Page, { data }));
+`,
+  });
+}
+
+async function buildReact(): Promise<void> {
+  const file = join(src, "react/Page.jsx");
+  const result = await transformWithOxc(await readFile(file, "utf8"), file, {
+    lang: "jsx",
+    jsx: { runtime: "automatic", development: false },
+  });
+  await emit("react", {
+    "Page.js": rewriteImports(result.code),
+    "render.js": `import { createElement } from "react";
+import { renderToString } from "react-dom/server";
+import { Page } from "./Page.js";
+export const render = (data) => renderToString(createElement(Page, { data }));
+`,
+  });
+}
+
+/** Vue SFCs (options API) with their templates compiled for SSR, as @vitejs/plugin-vue does. */
+async function buildVue(): Promise<void> {
+  const files: Record<string, string> = {};
+  for (const name of (await readdir(join(src, "vue"))).filter((file) => file.endsWith(".vue"))) {
+    const filename = join(src, "vue", name);
+    const { descriptor, errors } = parseSfc(await readFile(filename, "utf8"), { filename });
+    if (errors.length > 0) throw errors[0];
+    const template = compileTemplate({
+      source: descriptor.template!.content,
+      filename,
+      id: name,
+      ssr: true,
+      ssrCssVars: [],
+    });
+    if (template.errors.length > 0) throw new Error(String(template.errors[0]));
+    const script = rewriteDefault(descriptor.script!.content, "__component");
+    files[name.replace(/\.vue$/, ".js")] = rewriteImports(
+      `${script}\n${template.code}\n__component.ssrRender = ssrRender;\nexport default __component;\n`,
+    );
+  }
+  files["render.js"] = `import { createSSRApp } from "vue";
+import { renderToString } from "vue/server-renderer";
+import Page from "./Page.js";
+export const render = (data) => renderToString(createSSRApp(Page, { data }));
+`;
+  await emit("vue", files);
+}
+
+async function buildSvelte(): Promise<void> {
+  const files: Record<string, string> = {};
+  for (const name of (await readdir(join(src, "svelte"))).filter((file) =>
+    file.endsWith(".svelte"),
+  )) {
+    const filename = join(src, "svelte", name);
+    const result = compileSvelte(await readFile(filename, "utf8"), {
+      filename,
+      generate: "server",
+      dev: false,
+    });
+    files[basename(name, ".svelte") + ".js"] = rewriteImports(result.js.code);
+  }
+  files["render.js"] = `import { render as renderPage } from "svelte/server";
+import Page from "./Page.js";
+export const render = (data) => renderPage(Page, { props: { data } }).body;
+`;
+  await emit("svelte", files);
+}
+
+await rm(dist, { recursive: true, force: true });
+await Promise.all([
+  buildLumen(),
+  buildSolid("solid", false),
+  buildSolid("solid-hydratable", true),
+  buildReact(),
+  buildVue(),
+  buildSvelte(),
+]);
+console.log(`Built ${(await readdir(dist)).join(", ")} into ${dist}`);

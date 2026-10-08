@@ -2,8 +2,7 @@
 // project's Vite config (which adds `lumen()` from lumen/vite) plus the app plugin; without a
 // config file, `lumen()` is added here.
 
-import { existsSync } from "node:fs";
-import { join, resolve } from "node:path";
+import { resolve } from "node:path";
 import {
   createServer,
   type InlineConfig,
@@ -13,6 +12,7 @@ import {
   type ViteDevServer,
 } from "vite";
 import lumen from "../../vite/index.ts";
+import { findViteConfig } from "../project.ts";
 import { lumenDev, type LumenDevOptions } from "./plugin.ts";
 
 export interface DevServerOptions extends Pick<LumenDevOptions, "routesDir"> {
@@ -37,23 +37,10 @@ export interface DevServer {
   close(): Promise<void>;
 }
 
-/** Vite's default config file names, in its lookup order. */
-const VITE_CONFIG_FILES = [
-  "vite.config.js",
-  "vite.config.mjs",
-  "vite.config.ts",
-  "vite.config.cjs",
-  "vite.config.mts",
-  "vite.config.cts",
-];
-
 /** Starts the dev server and resolves once it listens. */
 export async function createDevServer(options: DevServerOptions = {}): Promise<DevServer> {
   const root = resolve(options.root ?? process.cwd());
-  const configFile =
-    options.configFile ??
-    VITE_CONFIG_FILES.map((name) => join(root, name)).find((file) => existsSync(file)) ??
-    false;
+  const configFile = options.configFile ?? findViteConfig(root);
   const server: ServerOptions = {};
   if (options.port !== undefined) server.port = options.port;
   if (options.host !== undefined) server.host = options.host;

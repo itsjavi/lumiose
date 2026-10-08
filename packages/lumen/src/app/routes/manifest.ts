@@ -4,6 +4,7 @@
 import {
   LUM_DUPLICATE_ROUTE,
   LUM_INVALID_ROUTE_FILE,
+  LUM_STATIC_ENDPOINT_METHOD,
   type AppDiagnostic,
   type DiagnosticSeverity,
 } from "../diagnostics.ts";
@@ -121,6 +122,7 @@ interface Declared {
   route: RouteFile;
   mode: string | undefined;
   ssr: boolean | undefined;
+  methods: readonly string[];
 }
 
 export function createRouteManifest(
@@ -175,7 +177,12 @@ export function createRouteManifest(
     }
 
     const meta = readMeta(source);
-    const declared = { file, route, ...checkMeta(meta, route, file, report) };
+    const declared = {
+      file,
+      route,
+      ...checkMeta(meta, route, file, report),
+      methods: meta.methods ?? [],
+    };
     if (route.kind === "layout") {
       const existing = layoutsByDir.get(route.dir);
       if (existing !== undefined) {
@@ -255,6 +262,16 @@ export function createRouteManifest(
         (declared.mode as EndpointMode | undefined) ??
         (inherited === "static" ? "static" : "server");
       entry = { ...base, kind: "endpoint", mode };
+      const methods = declared.methods.filter((method) => method !== "GET");
+      if (mode === "static" && methods.length > 0) {
+        report(
+          LUM_STATIC_ENDPOINT_METHOD,
+          "error",
+          file,
+          `This endpoint is static (prerendered to a file at build time), so it can only serve GET, but it exports ${methods.join(", ")}.`,
+          'Serve it per request with export const mode = "server", or keep only GET.',
+        );
+      }
     } else {
       const mode =
         (declared.mode as RouteMode | undefined) ?? inheritedMode(route.dir) ?? defaultMode;

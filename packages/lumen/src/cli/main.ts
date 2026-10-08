@@ -12,6 +12,8 @@ const USAGE = `Usage: lumen <command> [options]
 
 Commands:
   dev               Start the dev server (Vite, SSR with HMR)
+  build             Build for production: client and server bundles, then prerender static routes
+  preview           Serve the build output locally with @lumen/adapter-node
   check             Type-check the project (typegen, shadow TSX, tsc) and report Lumen diagnostics
   lint              Lint the project with oxlint, .stsx included (and their CSS with stylelint,
                     if installed)
@@ -25,14 +27,14 @@ Options:
   -p, --project <f>   check: tsconfig path, relative to the root (default: tsconfig.json)
   --format <f>        check, lint, docs, explain: human (default) or json
   --check             fmt: list unformatted files and exit 1 instead of writing
-  --port <n>          dev: port (default: 5173, or the next free one)
-  --host <addr>       dev: listen on this address (0.0.0.0: all addresses)
+  --port <n>          dev, preview: port (default: dev 5173, or the next free one; preview 4173)
+  --host <addr>       dev, preview: listen on this address (0.0.0.0: all addresses)
 
   -h, --help          Show this help
   -v, --version       Show the version
 `;
 
-const COMMANDS = new Set(["check", "lint", "fmt", "docs", "explain", "dev"]);
+const COMMANDS = new Set(["check", "lint", "fmt", "docs", "explain", "dev", "build", "preview"]);
 
 export interface CliIO {
   cwd: string;
@@ -108,10 +110,33 @@ export async function main(argv: string[], io: CliIO = processIO()): Promise<num
     return usageError(io, "--format does not apply to fmt.");
   }
 
-  if ((values.port !== undefined || values.host !== undefined) && command !== "dev") {
-    return usageError(io, "--port and --host apply to dev only.");
+  if (
+    (values.port !== undefined || values.host !== undefined) &&
+    command !== "dev" &&
+    command !== "preview"
+  ) {
+    return usageError(io, "--port and --host apply to dev and preview only.");
   }
   const root = values.root ?? io.cwd;
+  if (command === "build") {
+    // Loaded on demand: Vite is only needed by dev, build and preview.
+    const { buildCommand } = await import("../app/production/command.ts");
+    return buildCommand({ root, writeError: io.writeError });
+  }
+  if (command === "preview") {
+    const port = values.port === undefined ? undefined : Number(values.port);
+    if (port !== undefined && !(Number.isInteger(port) && port >= 0 && port <= 65535)) {
+      return usageError(io, `--port must be a port number, not "${values.port}".`);
+    }
+    const { previewCommand } = await import("../app/production/command.ts");
+    return previewCommand({
+      root,
+      ...(port === undefined ? {} : { port }),
+      ...(values.host === undefined ? {} : { host: values.host }),
+      write: io.write,
+      writeError: io.writeError,
+    });
+  }
   if (command === "dev") {
     const port = values.port === undefined ? undefined : Number(values.port);
     if (port !== undefined && !(Number.isInteger(port) && port >= 0 && port <= 65535)) {

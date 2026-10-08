@@ -56,4 +56,18 @@ describe("readRouteModuleMeta", () => {
       `"export const ssr" must be the literal true or false.`,
     ]);
   });
+
+  it("finds HTTP method exports: declarations and export lists, not types or other names", () => {
+    const source = [
+      "export const GET: Endpoint = () => new Response();",
+      "export async function POST(ctx) { return new Response(); }",
+      "function remove() {}",
+      "export { remove as DELETE, helper };",
+      "export type { PUT } from './types';",
+      "export const Gets = 1;",
+      "// export function PATCH() {}",
+    ].join("\n");
+    expect(readRouteModuleMeta(source).methods).toEqual(["GET", "POST", "DELETE"]);
+    expect(readRouteModuleMeta("export default function Page() {}").methods).toBeUndefined();
+  });
 });

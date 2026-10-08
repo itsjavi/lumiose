@@ -1,0 +1,115 @@
+// The adapter on a real `lumen build` output: statics first, then the app's fetch handler.
+import { mkdirSync, mkdtempSync, realpathSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import { createRequire } from "node:module";
+import { tmpdir } from "node:os";
+import { dirname, join, resolve } from "node:path";
+import { pathToFileURL } from "node:url";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { build } from "lumen/build";
+import { createServer, type LumenServer } from "./server.ts";
+
+const lumenRoot = resolve(import.meta.dirname, "../../lumen");
+// The build needs the native compiler binding (a dependency of lumen, not of this package).
+const binding = await import(
+  pathToFileURL(createRequire(join(lumenRoot, "package.json")).resolve("@lumen/compiler")).href
+).catch(() => undefined);
+
+const FILES: Record<string, string> = {
+  "public/favicon.svg": "<svg/>",
+  "src/routes/index.stsx": `import { Counter } from "../components/Counter.stsx";
+export default function Home() { return <main><h1>Home</h1><Counter client:load start={1} /></main>; }
+`,
+  "src/components/Counter.stsx": `import { signal } from "lumen";
+export function Counter(props: { start: number }) {
+  const count = signal(props.start);
+  return <button onClick={() => count.update((n) => n + 1)}>{count()}</button>;
+}
+`,
+  "src/routes/contact.stsx": `import { actionData, type Action } from "lumen";
+// A static page with a form action: GET is prerendered, POST reaches the server.
+export const action: Action = async (ctx) => ({ name: String((await ctx.formData()).get("name")) });
+export default function Contact() {
+  const data = actionData<{ name: string }>();
+  return <p class="result">{data === undefined ? "form" : \`thanks \${data.name}\`}</p>;
+}
+`,
+  "src/routes/account.stsx": `import { cookies } from "lumen";
+export const mode = "server";
+export default function Account() { return <p>user {cookies().get("user") ?? "anonymous"}</p>; }
+`,
+  "src/routes/api/time.ts": `export const mode = "server";
+export const GET = () => Response.json({ ok: true });
+`,
+  "src/routes/_404.stsx": "export default function NotFound() { return <h1>Not here</h1>; }\n",
+};
+
+let root: string;
+let server: LumenServer;
+
+beforeAll(async () => {
+  if (!binding) return;
+  root = realpathSync(mkdtempSync(join(tmpdir(), "lumen-adapter-")));
+  for (const [name, code] of Object.entries(FILES)) {
+    mkdirSync(dirname(join(root, name)), { recursive: true });
+    writeFileSync(join(root, name), code);
+  }
+  mkdirSync(join(root, "node_modules"));
+  symlinkSync(lumenRoot, join(root, "node_modules/lumen"), "dir");
+  await build({ root, logLevel: "silent" });
+  server = await createServer({ dir: join(root, "dist"), port: 0, host: "127.0.0.1" });
+});
+
+afterAll(async () => {
+  await server?.close();
+  if (root) rmSync(root, { recursive: true, force: true });
+});
+
+const get = (path: string, init?: RequestInit) =>
+  fetch(new URL(path.slice(1), server.url), { redirect: "manual", ...init });
+
+describe.skipIf(!binding)("@lumen/adapter-node", () => {
+  it("listens on a URL with the app's base", () => {
+    expect(server.url).toMatch(/^http:\/\/127\.0\.0\.1:\d+\/$/);
+  });
+
+  it("serves prerendered pages and public files from dist/client", async () => {
+    const home = await get("/");
+    expect(home.status).toBe(200);
+    expect(home.headers.get("etag")).not.toBeNull();
+    expect(home.headers.get("cache-control")).toBe("public, max-age=0, must-revalidate");
+    const html = await home.text();
+    expect(html).toContain("<h1>Home</h1>");
+    expect(await (await get("/favicon.svg")).text()).toBe("<svg/>");
+
+    const island = /<link rel="modulepreload" href="(\/assets\/[^"]+\.js)">/.exec(html)![1]!;
+    const chunk = await get(island);
+    expect(chunk.status).toBe(200);
+    expect(chunk.headers.get("cache-control")).toBe("public, max-age=31536000, immutable");
+  });
+
+  it("falls back to the handler for server routes, endpoints and unknown paths", async () => {
+    const account = await get("/account", { headers: { cookie: "user=ada" } });
+    expect(await account.text()).toContain("<p>user ada</p>");
+    expect(await (await get("/api/time")).json()).toEqual({ ok: true });
+    const missing = await get("/missing");
+    expect(missing.status).toBe(404);
+    expect(await missing.text()).toContain("<h1>Not here</h1>");
+  });
+
+  it("routes form posts to a prerendered page to its action on the server", async () => {
+    expect(await (await get("/contact")).text()).toContain("<p class=result>form</p>");
+    const posted = await get("/contact", {
+      method: "POST",
+      body: new URLSearchParams({ name: "Ada" }),
+      headers: { origin: new URL(server.url).origin },
+    });
+    expect(posted.status).toBe(200);
+    expect(await posted.text()).toContain("<p class=result>thanks Ada</p>");
+    const crossSite = await get("/contact", {
+      method: "POST",
+      body: new URLSearchParams({ name: "Eve" }),
+      headers: { origin: "https://evil.test" },
+    });
+    expect(crossSite.status).toBe(403);
+  });
+});

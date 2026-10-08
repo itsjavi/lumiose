@@ -1,4 +1,5 @@
-// Static reading of route module exports (`export const mode`, `export const ssr`).
+// Static reading of route module exports (`export const mode`, `export const ssr`, endpoint
+// method exports).
 // A lightweight, comment-aware scan for now; the Rust compiler will provide module meta
 // later, so callers depend on the `ReadRouteModuleMeta` signature, not on this parser.
 
@@ -6,6 +7,8 @@ export interface RouteModuleMeta {
   /** The declared `mode` string, unvalidated. */
   mode?: string;
   ssr?: boolean;
+  /** HTTP method exports (`GET`, `POST`, …) found by name; re-exports from other modules are missed. */
+  methods?: string[];
   /** Exports that exist but cannot be read statically. */
   problems: string[];
 }
@@ -15,10 +18,31 @@ export type ReadRouteModuleMeta = (source: string) => RouteModuleMeta;
 const DECLARATION = /^[ \t]*export[ \t]+(const|let|var)[ \t]+(mode|ssr)\b[^=\n]*=[ \t]*([^;\n]*)/gm;
 const STRING_VALUE = /^(["'`])(\w*)\1(?:\s+(?:as\s+const|satisfies\s+[\w.]+))?\s*$/;
 const BOOLEAN_VALUE = /^(true|false)(?:\s+(?:as\s+const|satisfies\s+[\w.]+))?\s*$/;
+const HTTP_METHODS = new Set(["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"]);
+const METHOD_DECLARATION =
+  /^[ \t]*export[ \t]+(?:(?:async[ \t]+)?function\*?|const|let|var)[ \t]+([A-Z]+)\b/gm;
+const EXPORT_LIST = /\bexport[ \t]*(?:type[ \t]*)?\{([^}]*)\}/g;
 
 export const readRouteModuleMeta: ReadRouteModuleMeta = (source) => {
   const meta: RouteModuleMeta = { problems: [] };
-  for (const [, keyword, name, rawValue] of stripComments(source).matchAll(DECLARATION)) {
+  const code = stripComments(source);
+  const methods = new Set<string>();
+  for (const [, name] of code.matchAll(METHOD_DECLARATION)) {
+    if (HTTP_METHODS.has(name!)) methods.add(name!);
+  }
+  for (const [list, names] of code.matchAll(EXPORT_LIST)) {
+    if (/^export\s*type\b/.test(list)) continue;
+    for (const item of names!.split(",")) {
+      const exported = item
+        .trim()
+        .split(/\s+as\s+/)
+        .at(-1)!
+        .trim();
+      if (HTTP_METHODS.has(exported)) methods.add(exported);
+    }
+  }
+  if (methods.size > 0) meta.methods = [...methods];
+  for (const [, keyword, name, rawValue] of code.matchAll(DECLARATION)) {
     const value = (rawValue ?? "").trim();
     if (keyword !== "const") {
       meta.problems.push(`"export ${keyword} ${name}" must be declared with const.`);
