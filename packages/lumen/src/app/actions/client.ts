@@ -33,6 +33,11 @@ export interface SubmitOptions {
   method?: string;
   /** Aborts the request. */
   signal?: AbortSignal;
+  /**
+   * After a `success` result, refresh the current page's data with `invalidate()` before
+   * resolving (decision-20). Default `true`; `false` keeps the page as it is.
+   */
+  invalidate?: boolean;
 }
 
 export { setClientNavigation, type ClientNavigation } from "./navigation.ts";
@@ -68,10 +73,11 @@ export function submitting(name?: string): boolean {
 
 /**
  * Posts a form to its page action without a page load, and resolves with the action result:
- * `success` and `failure` (`fail()`) set `actionData()`, `redirect` navigates. Rejects only for
- * unexpected errors, with a `FetchError`: the action throws, the response is an error, or the
- * network fails (status 0). Pass it the submit event to enhance a form:
- * `<form method="post" action="?/create" onSubmit={submit}>`.
+ * `success` and `failure` (`fail()`) set `actionData()`, `redirect` navigates. After a `success`
+ * it runs `invalidate()` and resolves once the page's data is fresh (opt out with
+ * `{ invalidate: false }`). Rejects only for unexpected errors, with a `FetchError`: the action
+ * throws, the response is an error, or the network fails (status 0). Pass it the submit event to
+ * enhance a form: `<form method="post" action="?/create" onSubmit={submit}>`.
  */
 export async function submit<Data = unknown, Failure = unknown>(
   target: SubmitTarget,
@@ -97,6 +103,7 @@ export async function submit<Data = unknown, Failure = unknown>(
   inFlight.update((names) => [...names, name]);
   // Counts toward the app-wide busy() summary while in flight (decision-20).
   const endBusy = beginBusy();
+  let result: ActionResult<Data, Failure>;
   try {
     const response = await fetch(url, {
       method,
@@ -106,14 +113,16 @@ export async function submit<Data = unknown, Failure = unknown>(
     }).catch((error: unknown) => {
       throw networkError(error, url.href);
     });
-    const result = await readResult<Data, Failure>(response, url.href);
+    result = await readResult<Data, Failure>(response, url.href);
     if (result.type === "redirect") await navigation.navigate(result.location);
     else dataSignal().set(result.data);
-    return result;
   } finally {
     endBusy();
     inFlight.update((names) => names.toSpliced(names.indexOf(name), 1));
   }
+  // After the submission left busy(): the SPA's invalidate() resolves once nothing is in flight.
+  if (result.type === "success" && options.invalidate !== false) await invalidate();
+  return result;
 }
 
 /**

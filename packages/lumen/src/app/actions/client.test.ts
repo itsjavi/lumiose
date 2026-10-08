@@ -214,6 +214,47 @@ describe("submit()", () => {
   });
 });
 
+describe("submit() refreshes the page after a success (decision-20, TASK-105)", () => {
+  it("runs invalidate() once the submission left busy(), and resolves after it", async () => {
+    serve(() => actionResult({ type: "success", status: 200, data: "saved" }));
+    const { busy } = await import("../../core/async.ts");
+    const seen: string[] = [];
+    let refreshed!: () => void;
+    navigation.invalidate.mockImplementation(() => {
+      seen.push(`submitting=${client.submitting()} busy=${busy()} data=${client.actionData()}`);
+      return new Promise<void>((resolve) => {
+        refreshed = resolve;
+      });
+    });
+    let resolved = false;
+    const done = client.submit({ title: "milk" }).then((result) => {
+      resolved = true;
+      return result;
+    });
+    await vi.waitFor(() => expect(navigation.invalidate).toHaveBeenCalledTimes(1));
+    // The SPA's invalidate() waits for busy() to clear: the submission must not hold it.
+    expect(seen).toEqual(["submitting=false busy=false data=saved"]);
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(resolved).toBe(false);
+    refreshed();
+    expect(await done).toEqual({ type: "success", status: 200, data: "saved" });
+  });
+
+  it("leaves failures, redirects and errors alone, and opts out with { invalidate: false }", async () => {
+    serve(() => actionResult({ type: "failure", status: 422, data: {} }, 422));
+    await client.submit({});
+    serve(() => actionResult({ type: "redirect", status: 303, location: "/todos/1" }));
+    await client.submit({});
+    serve(() => actionResult({ type: "error", status: 500, error: { message: "boom" } }, 500));
+    await expect(client.submit({})).rejects.toMatchObject({ status: 500 });
+    serve(() => actionResult({ type: "success", status: 200 }));
+    await client.submit({}, { invalidate: false });
+    expect(navigation.invalidate).not.toHaveBeenCalled();
+    await client.submit({});
+    expect(navigation.invalidate).toHaveBeenCalledTimes(1);
+  });
+});
+
 describe("actionData()", () => {
   it("starts from the data the server embedded after a no-JS post", () => {
     document.head.innerHTML =

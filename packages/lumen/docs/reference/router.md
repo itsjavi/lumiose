@@ -137,7 +137,7 @@ the new page is on screen.
   navigates. Without such a page, a minimal built-in error page replaces the SPA.
 - **`invalidate()`** from `lumen` re-runs the SPA's async components and resources (they keep
   their UI meanwhile) and resolves once they settled. `submit()` redirects navigate through the
-  router.
+  router, and a successful `submit()` invalidates.
 - **Stale modules.** A page module that fails to load (an old chunk after a deploy) loads the URL
   as a document instead.
 

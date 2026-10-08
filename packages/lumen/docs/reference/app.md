@@ -59,6 +59,8 @@ interface SubmitOptions {
   /** Default POST. A form must say method="post". */
   method?: string;
   signal?: AbortSignal;
+  /** After a success, refresh the page's data with invalidate(). Default true. */
+  invalidate?: boolean;
 }
 
 type ActionResult<Data = unknown, Failure = unknown> =
@@ -68,8 +70,10 @@ type ActionResult<Data = unknown, Failure = unknown> =
 ```
 
 Posts without a page load. `success` and `failure` set `actionData()`; `redirect` navigates.
-Rejects only for unexpected errors (the action throws, an error response, a network failure) with
-a `FetchError`. Browser only: rejects on the server.
+After a `success`, `submit()` runs [`invalidate()`](#invalidate) and resolves once the page's data
+is fresh (decision-20); `{ invalidate: false }` skips it. Failures, redirects and errors do not
+invalidate. Rejects only for unexpected errors (the action throws, an error response, a network
+failure) with a `FetchError`. Browser only: rejects on the server.
 
 ### submitting
 
@@ -107,7 +111,8 @@ function invalidate(): Promise<void>;
 ```
 
 Refreshes the current page's server data after a mutation: re-runs the page's async components in
-SPA routes, reloads the page otherwise. Browser only.
+SPA routes (their UI stays until the new data arrives), reloads the page otherwise. A successful
+`submit()` calls it for you. Browser only.
 
 ## Routing
 

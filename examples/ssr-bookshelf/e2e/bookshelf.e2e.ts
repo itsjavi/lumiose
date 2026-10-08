@@ -255,8 +255,7 @@ test.describe("islands", () => {
     const off = enhancedPost(page, "/reading-list?/toggle");
     await page.getByRole("button", { name: "✓ On your list" }).click();
     await off;
-    await expect(page.getByRole("button", { name: "+ Reading list" })).toBeVisible();
-    await page.reload();
+    // A successful submit() refreshes the page's data itself (decision-20): no manual reload.
     await expect(page.locator(".entry")).toHaveCount(0);
   });
 

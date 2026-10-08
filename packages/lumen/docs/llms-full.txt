@@ -1522,8 +1522,11 @@ cross-site requests).
 follows a redirect, and sets `actionData()`. It rejects only for unexpected errors, with a
 `FetchError`. `submitting(name?)` is true while a submission is in flight.
 
-**Refreshing.** `invalidate()` re-runs the current page's async components (SPA), or reloads the
-page (MPA).
+**Refreshing.** `invalidate()` re-runs the current page's async components (SPA; the stale UI stays
+until the new data arrives), or reloads the page (MPA). A successful `submit()` runs it for you, so
+the page shows the mutation without extra code; pass `submit(form, { invalidate: false })` to keep
+the page as it is, for example when an island already shows the result. On MPA pages that reload
+also resets `actionData()`.
 
 ## API
 
@@ -1535,7 +1538,7 @@ page (MPA).
 | `ctx.formData()`                                             | The request body as `FormData` (400 if it is not a form).             |
 | `fail(status, data?)`                                        | A failed action result.                                               |
 | `actionData<T>()`                                            | The last action's data (or `fail` data). Reactive in the browser.     |
-| `submit(target, { action?, method?, signal? })`              | Post a form, submit event, `FormData`, `URLSearchParams` or a record. |
+| `submit(target, { action?, method?, signal?, invalidate? })` | Post a form, submit event, `FormData`, `URLSearchParams` or a record. |
 | `submitting(name?)`                                          | Whether a submission (to `?/name`) is in flight.                      |
 | `invalidate()`                                               | Refresh the current page's server data.                               |
 | `fetchJSON<T>(url, init?)`, `isFetchError(e)`                | JSON fetch with typed errors.                                         |
@@ -1626,6 +1629,8 @@ export async function BookSearch({ q }: { q: string }) {
   (`LUM4007`).
 - **Expecting `submit()` to reject on validation errors.** `fail()` resolves with
   `{ type: "failure" }`; only unexpected errors reject.
+- **Calling `invalidate()` after a successful `submit()`.** `submit()` already did; a second call
+  refreshes twice.
 - **Forms without `method="post"`.** Actions only run for POST; `submit()` refuses a form that does
   not say `method="post"`, as the no-JS form would not post either.
 - **Throwing for validation errors.** A thrown error renders `_error`. Return `fail(400, data)`.
@@ -2974,6 +2979,8 @@ interface SubmitOptions {
   /** Default POST. A form must say method="post". */
   method?: string;
   signal?: AbortSignal;
+  /** After a success, refresh the page's data with invalidate(). Default true. */
+  invalidate?: boolean;
 }
 
 type ActionResult<Data = unknown, Failure = unknown> =
@@ -2983,8 +2990,10 @@ type ActionResult<Data = unknown, Failure = unknown> =
 ```
 
 Posts without a page load. `success` and `failure` set `actionData()`; `redirect` navigates.
-Rejects only for unexpected errors (the action throws, an error response, a network failure) with
-a `FetchError`. Browser only: rejects on the server.
+After a `success`, `submit()` runs [`invalidate()`](#invalidate) and resolves once the page's data
+is fresh (decision-20); `{ invalidate: false }` skips it. Failures, redirects and errors do not
+invalidate. Rejects only for unexpected errors (the action throws, an error response, a network
+failure) with a `FetchError`. Browser only: rejects on the server.
 
 ### submitting
 
@@ -3022,7 +3031,8 @@ function invalidate(): Promise<void>;
 ```
 
 Refreshes the current page's server data after a mutation: re-runs the page's async components in
-SPA routes, reloads the page otherwise. Browser only.
+SPA routes (their UI stays until the new data arrives), reloads the page otherwise. A successful
+`submit()` calls it for you. Browser only.
 
 ## Routing
 
@@ -3526,7 +3536,7 @@ the new page is on screen.
   navigates. Without such a page, a minimal built-in error page replaces the SPA.
 - **`invalidate()`** from `lumen` re-runs the SPA's async components and resources (they keep
   their UI meanwhile) and resolves once they settled. `submit()` redirects navigate through the
-  router.
+  router, and a successful `submit()` invalidates.
 - **Stale modules.** A page module that fails to load (an old chunk after a deploy) loads the URL
   as a document instead.
 

@@ -1,6 +1,7 @@
 // Island (client:visible): adds a book to the reader's list or removes it. Without JavaScript it
 // is a plain form posting to the `toggle` action of /reading-list, which redirects back to `next`;
-// once hydrated, it posts with submit() and stays on the page.
+// once hydrated, it posts with submit(), shows the new state at once and lets submit() refresh the
+// page's data (on /reading-list, the entry goes away).
 import { signal, submit } from "lumen";
 import * as theme from "../theme.ts";
 
