@@ -68,4 +68,6 @@ Spark progress: cursor + hooks + hydrate() + loader implemented (dom/hydrate.ts,
 - Replay skipped the await expression, so its reactive reads (props.id in fetchJSON(`/api/${props.id}`)) were not tracked and hydrated async components never re-ran. Replay now evaluates the expression for tracking with fetch held off (pending promise) and drops its result.
 - The cursor install moved behind a frame hook set by lumen/dom/hydrate, so apps without hydration tree-shake every claiming path again (typical imports back to 6.02 kB).
 - Server side of TASK-50 (branch()/list() in value positions) noted on TASK-50 for Photon; until then parentless values in islands fall back (LUM4006).
+
+Nova (TASK-71) touched packages/lumen/src/server/frame.ts runComponent only (your runAsync/block/inAsyncRun hunks untouched): sync components now run under core's runWithLazyOwner (owner materialized on first getOwner/provide/onCleanup/lifetime), with component/props passed via module slots (runNext). Also server/node.ts escaping now emits only &amp; &lt; in text and &amp; &quot; in attributes (DOM-identical). Your hydrate tests pass with these changes.
 <!-- SECTION:NOTES:END -->
