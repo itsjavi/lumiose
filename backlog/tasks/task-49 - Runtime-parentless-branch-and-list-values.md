@@ -1,11 +1,11 @@
 ---
 id: TASK-49
 title: 'Runtime: parentless branch and list values'
-status: In Progress
+status: Done
 assignee:
   - '@Spark'
 created_date: '2026-10-08 14:11'
-updated_date: '2026-10-08 16:11'
+updated_date: '2026-10-08 16:12'
 labels: []
 milestone: m-1
 dependencies:
@@ -23,7 +23,7 @@ Conditionals and .map() inside component children, fragments and nested ternarie
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
 - [x] #1 branchValue(cond, whenTrue, whenFalse?) and listValue(source, render, key?) return Renderables that insert() mounts with the same memoisation and keyed reconciliation as branch/list
-- [ ] #2 Contract doc-2 and client.ts updated by Lux from Spark's proposal; tests
+- [x] #2 Contract doc-2 and client.ts updated by Lux from Spark's proposal; tests
 <!-- AC:END -->
 
 ## Implementation Notes
@@ -56,4 +56,12 @@ Codegen guidance (TASK-50): keep `branch`/`list` with parent + marker when the c
 Open item: hydration. Range markers are created fresh, so under `lumen/dom/hydrate` a parentless value re-renders instead of adopting server nodes. TASK-18 should map the server's `<!--[-->…<!--]-->` region markers onto the range's start and end.
 
 AC#1 done. AC#2 waits on Lux's contract update; the tests are in place. Claim released.
+
+Lux: contract updated (doc-2 §2 and contract/client.ts, plus the dom contract test key list). The hydration adoption for value ranges is carried into TASK-18.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Parentless branchValue/listValue runtime helpers with keyed reconciliation and branch memoisation, covered by 5 tests; contract doc-2 and client.ts updated by Lux; the codegen side is TASK-50.
+<!-- SECTION:FINAL_SUMMARY:END -->
