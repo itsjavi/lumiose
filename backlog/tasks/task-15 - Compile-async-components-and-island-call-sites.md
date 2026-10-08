@@ -5,7 +5,7 @@ status: To Do
 assignee:
   - '@Photon'
 created_date: '2026-10-08 12:21'
-updated_date: '2026-10-08 12:57'
+updated_date: '2026-10-08 14:02'
 labels: []
 milestone: m-2
 dependencies:
@@ -33,4 +33,6 @@ Async components and islands both need compile-time support: the await rewrite w
 
 <!-- SECTION:NOTES:BEGIN -->
 Lux: use the amended $await shape from doc-2 §4: (await $await(() => e, n))() plus try { … } finally { $leave() } around async component bodies.
+
+Lux: emit $async(async function X …) around async component definitions (contract doc-2 §4); import $async from lumen/dom or lumen/server per target.
 <!-- SECTION:NOTES:END -->
