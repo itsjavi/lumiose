@@ -219,7 +219,7 @@ work remains.
   - Workers whose `agents.json` entry has `canCommit: true` commit their own work in small, coherent Conventional Commits whenever a meaningful step is green, e.g. "feat(dom): claim cursor for lists". Mention the task id.
   - Commit only files in your area:
     1. Take `.local/coordination/git.lock/` (atomic `mkdir`).
-    2. Run `git commit -m "…" -- <your paths>`. The `--only` pathspec form leaves other agents' staged or unstaged changes alone.
+    2. Stage any **new** files you created (`git add <your new files>`): the pathspec form does not pick up untracked files. Then run `git commit -m "…" -- <your paths>`. The `--only` pathspec form leaves other agents' staged or unstaged changes alone.
     3. Release the lock.
   - Never `git add -A`, never commit other agents' files, and never amend, reset or rewrite history.
   - The orchestrator commits shared files, such as root configs, the lockfile and contracts, plus anything left over.
