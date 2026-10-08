@@ -25,9 +25,9 @@ Production needs client and server builds plus prerendering for static routes, p
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 lumen build runs the client build, the server build, then prerenders static routes (staticPaths) and static GET endpoints; LUM5001 when a request API is used while prerendering
-- [ ] #2 Output layout dist/client (path/index.html, trailingSlash option, base, 404.html) and dist/server/entry.js
-- [ ] #3 @lumen/adapter-node serves the build; lumen preview works; fully static sites deploy with dist/client only
+- [x] #1 lumen build runs the client build, the server build, then prerenders static routes (staticPaths) and static GET endpoints; LUM5001 when a request API is used while prerendering
+- [x] #2 Output layout dist/client (path/index.html, trailingSlash option, base, 404.html) and dist/server/entry.js
+- [x] #3 @lumen/adapter-node serves the build; lumen preview works; fully static sites deploy with dist/client only
 <!-- AC:END -->
 
 ## Implementation Plan
