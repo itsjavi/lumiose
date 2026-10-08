@@ -1,13 +1,9 @@
 {
-  "extends": "../../../tsconfig.base.json",
+  // The generated Lumen tsconfig pairs the kit's directory with `.lumen/shadow`, so the showcase's
+  // `.stsx` files may import `../../src/…` and the kit's `.stsx` modules type-check (`lumen check`).
+  "extends": ["../../../tsconfig.base.json", "./.lumen/tsconfig.generated.json"],
   "compilerOptions": {
-    "jsx": "preserve",
-    "jsxImportSource": "lumen",
-    "types": ["node", "lumen/env"],
-    // `.stsx` files are type-checked through their shadow TSX (`lumen check`). The last two entries
-    // let the kit's `.stsx` modules (imported from ../src) resolve to the kit's own shadows, which
-    // `lumen check` at the package root writes first.
-    "rootDirs": ["src", ".lumen/shadow/src", "../src", "../.lumen/shadow/src"]
+    "types": ["node", "lumen/env"]
   },
   "include": [
     "src",

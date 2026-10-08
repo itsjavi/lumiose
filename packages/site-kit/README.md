@@ -69,5 +69,6 @@ pnpm --filter @lumen/site-kit test:e2e     # Playwright, dev and production buil
 pnpm --filter @lumen/site-kit screenshots  # backlog/assets/task-59-*.png
 ```
 
-Consuming `.stsx` from another Lumen project currently needs the kit's source and shadow folders
-in that project's tsconfig `rootDirs` for `lumen check` (see `showcase/tsconfig.json`, TASK-73).
+A Lumen project that imports the kit (or, like the showcase, its `../../src` files) type-checks its
+`.stsx` modules when its tsconfig extends the generated `.lumen/tsconfig.generated.json` (see
+`showcase/tsconfig.json` and "Shadow TSX and tsconfig" in `lumen check`'s docs).

@@ -10,19 +10,21 @@ import {
   SiteHeader,
   Tabs,
   ThemeToggle,
+  highlight,
+  siteLinks,
+} from "../../src/index.ts";
+import {
   bp,
   color,
   gradient,
-  highlight,
   layout,
   leading,
   radius,
   shadow,
-  siteLinks,
   space,
   text,
   weight,
-} from "./kit.ts";
+} from "../../src/tokens.ts";
 import { counterSample, cssSample, installSamples } from "./samples.ts";
 
 const SWATCHES = [
