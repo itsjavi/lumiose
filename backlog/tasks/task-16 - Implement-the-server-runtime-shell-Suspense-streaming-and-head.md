@@ -59,6 +59,11 @@ Design
 Validation: pnpm typecheck OK; pnpm lint: no warnings/errors in src/server or src/app/server; pnpm test 395/395 (src/server: 61 tests — contract 2, ssr/helpers + golden 5.1-5.4 18, render/streaming/ErrorBoundary/head/context 21, islands/await records + golden 5.5 11, serialization 6, $swap in happy-dom 3).
 
 Open items for Lux/Spark/Photon (in the report): $await rejection shape on the client; text adjacent to static text inside islands; empty dynamic text; slot HTML duplication (template + inline); browser `lumen` entry lacks Suspense/ErrorBoundary/Head/Title/Meta/renderToStream/renderToString (TASK-17); LUM4008 belongs to the core server signals.
+
+Lux review: accepted.
+- $await never rejects (contract doc-2 §4 amended).
+- renderToStream options and the renderToString string result are internal/adapter-level API, decided by Lux.
+- The slot dedup proposal is accepted; see TASK-18.
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary
