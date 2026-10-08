@@ -226,7 +226,13 @@ pub fn compile(source: &str, filename: &str, options: &CompileOptions) -> Compil
         .build(&program)
         .semantic
         .into_scoping();
-    let analysis = analyze::analyze(&program, &scoping, &scan.blocks, &scan.diagnostics);
+    let analysis = analyze::analyze(
+        &program,
+        &scoping,
+        &scan.blocks,
+        &scan.diagnostics,
+        |specifier| module_id::is_server_only_import(specifier, filename, options.root.as_deref()),
+    );
     diagnostics.extend(analysis.diagnostics.iter().cloned());
 
     let scopes = ScopePlan::new(

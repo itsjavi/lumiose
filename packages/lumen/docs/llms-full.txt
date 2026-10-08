@@ -4158,6 +4158,23 @@ export async function Report() {
 A component's body runs once. `const doubled = count() * 2` reads the signal at setup time and
 stores a number, so JSX that uses `doubled` shows the first value forever.
 
+The compiler treats a zero-argument call of a local or imported binding (`count()`,
+`user.name()`) as a signal read, and so does a read of the component's props. Calls that can only
+run on the server are not reads, so server pages can store request data in constants:
+
+- `lumen`'s request APIs: `url()`, `params()`, `locals()`, `cookies()`, `request()`,
+  `response()` and `publicEnv()`. Inside SPA routes, `url()` and `params()` from `lumen/router`
+  are reactive and still count.
+- Anything imported from a server-only module (`*.server.ts`, `src/server/**`), such as
+  `queries().getBook(isbn)`.
+
+```tsx
+// src/routes/books/[isbn].stsx (a server page): no warning
+const user = locals().user ?? null;
+const next = url().searchParams.get("next");
+const featured = queries().featuredBooks(6);
+```
+
 ## Example
 
 ```tsx

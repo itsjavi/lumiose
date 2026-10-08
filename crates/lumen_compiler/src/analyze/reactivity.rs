@@ -3,7 +3,8 @@
 //! A read is reactive when it is, outside nested functions:
 //! - a zero-argument call of a local or imported binding (`count()`, `user.name()`), which is how
 //!   signals, computeds and ref accessors are read; calls of unresolved globals (`Date.now()`) are
-//!   not;
+//!   not, nor are calls of server-only bindings ([`server_only_imports`]: `lumen`'s request APIs
+//!   and imports of server-only modules), which are plain values wherever they can run;
 //! - a member read of the component's props object or its `...rest` (`props.title`);
 //! - a reference to a destructured prop (`title` from `({ title })`).
 
@@ -61,15 +62,58 @@ pub fn root_identifier<'b, 'a>(expr: &'b Expression<'a>) -> Option<&'b Identifie
     }
 }
 
-/// The span of the first reactive read in `expr`, if any.
+/// The request APIs of `lumen` (the app layer). They read the current request during a server
+/// render and throw LUM4003 in the browser; SPA routes read `url()` and `params()` from
+/// `lumen/router`, whose accessors are reactive.
+const SERVER_REQUEST_APIS: [&str; 7] = [
+    "cookies",
+    "locals",
+    "params",
+    "publicEnv",
+    "request",
+    "response",
+    "url",
+];
+
+/// Bindings whose calls never read a signal (TASK-86): `lumen`'s request APIs, and every import of
+/// a server-only module (`is_server_only(specifier)`), which cannot reach a client graph (LUM4003).
+pub fn server_only_imports(
+    program: &Program<'_>,
+    is_server_only: impl Fn(&str) -> bool,
+) -> HashSet<SymbolId> {
+    let mut symbols = HashSet::new();
+    for statement in &program.body {
+        let Statement::ImportDeclaration(import) = statement else {
+            continue;
+        };
+        let source = import.source.value.as_str();
+        let all = is_server_only(source);
+        for specifier in import.specifiers.iter().flatten() {
+            let request_api = source == "lumen"
+                && matches!(specifier, ImportDeclarationSpecifier::ImportSpecifier(s)
+                    if SERVER_REQUEST_APIS.contains(&s.imported.name().as_str()));
+            if (all || request_api)
+                && let Some(symbol) = specifier.local().symbol_id.get()
+            {
+                symbols.insert(symbol);
+            }
+        }
+    }
+    symbols
+}
+
+/// The span of the first reactive read in `expr`, if any. Calls rooted at `server_only` bindings
+/// are not reads.
 pub fn first_reactive_read(
     scoping: &Scoping,
     props: &PropsSymbols,
+    server_only: &HashSet<SymbolId>,
     expr: &Expression<'_>,
 ) -> Option<Span> {
     let mut finder = ReadFinder {
         scoping,
         props,
+        server_only,
         found: None,
     };
     finder.visit_expression(expr);
@@ -79,6 +123,7 @@ pub fn first_reactive_read(
 struct ReadFinder<'s> {
     scoping: &'s Scoping,
     props: &'s PropsSymbols,
+    server_only: &'s HashSet<SymbolId>,
     found: Option<Span>,
 }
 
@@ -99,7 +144,7 @@ impl<'a> Visit<'a> for ReadFinder<'_> {
         if call.arguments.is_empty()
             && root_identifier(&call.callee)
                 .and_then(|ident| symbol_of(self.scoping, ident))
-                .is_some()
+                .is_some_and(|symbol| !self.server_only.contains(&symbol))
         {
             self.hit(call.span);
         }

@@ -15,7 +15,7 @@ use oxc_syntax::scope::{ScopeFlags, ScopeId};
 use oxc_syntax::symbol::SymbolId;
 
 pub use components::{is_component_name, is_jsx_like, property_key_name};
-use reactivity::{PropsSymbols, first_reactive_read, symbol_of};
+use reactivity::{PropsSymbols, first_reactive_read, server_only_imports, symbol_of};
 
 use crate::diagnostics::{Code, Diagnostic};
 use crate::scanner::{Placement, StyleBlock};
@@ -51,12 +51,14 @@ impl Analysis {
     }
 }
 
-/// Analyses a type-stripped program. `scanner_diagnostics` avoids duplicate LUM3010 reports.
+/// Analyses a type-stripped program. `scanner_diagnostics` avoids duplicate LUM3010 reports;
+/// `is_server_only` tells whether an import specifier names a server-only module.
 pub fn analyze(
     program: &Program<'_>,
     scoping: &Scoping,
     blocks: &[StyleBlock],
     scanner_diagnostics: &[Diagnostic],
+    is_server_only: impl Fn(&str) -> bool,
 ) -> Analysis {
     let jsx_blocks = blocks
         .iter()
@@ -80,6 +82,7 @@ pub fn analyze(
         component_symbols: HashSet::new(),
         component_imports: HashSet::new(),
         signals: HashSet::new(),
+        server_only: server_only_imports(program, is_server_only),
         component_calls: Vec::new(),
     };
     analyzer.visit_program(program);
@@ -119,6 +122,8 @@ struct Analyzer<'s> {
     component_symbols: HashSet<SymbolId>,
     component_imports: HashSet<SymbolId>,
     signals: HashSet<SymbolId>,
+    /// Imports whose calls are never reactive reads (see [`server_only_imports`]).
+    server_only: HashSet<SymbolId>,
     component_calls: Vec<(Span, SymbolId, String)>,
 }
 
@@ -320,7 +325,7 @@ impl<'s> Analyzer<'s> {
                     | Expression::JSXElement(_)
                     | Expression::JSXFragment(_)
             )
-            && first_reactive_read(self.scoping, &props, init).is_some();
+            && first_reactive_read(self.scoping, &props, &self.server_only, init).is_some();
         if (destructures_props || derived)
             && let Some(frame) = self.frames.last_mut()
         {
@@ -341,7 +346,7 @@ impl<'s> Analyzer<'s> {
             return;
         }
         let props = self.props_of_current();
-        if let Some(read) = first_reactive_read(self.scoping, &props, &it.test) {
+        if let Some(read) = first_reactive_read(self.scoping, &props, &self.server_only, &it.test) {
             self.analysis.diagnostics.push(
                 Diagnostic::new(
                     Code::ReactiveEarlyReturn,
