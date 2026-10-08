@@ -76,6 +76,15 @@ PROPOSALS FOR LUX (not applied to contract files):
 7. Server parity gap (Nova): lumen now exports ref, Portal, Dynamic (dom/public.ts) but index.server.ts has no server variants.
 Size (pnpm --filter lumen size, Vite 8 app build, min+brotli q11): typical app imports (signal, computed, effect, batch, untrack, onCleanup, onMount + template, bind, setText, setAttr, setClass, toggleClass, setStyle, insert, list, branch, selector, createComponent, delegateEvents, listen, mount) 5.75 kB -> OVER the 4.5 kB budget by ~1.25 kB; benchmark imports 5.02 kB (6 kB app budget leaves ~1 kB for app code); every export 7.28 kB; core alone 3.47 kB; dom alone 3.97 kB. Main contributors: core effect/owner/reactive/system (~half), dom list.ts and insert.ts. Tuning candidate for TASK-12.
 Validation: pnpm typecheck OK; pnpm test OK (395 tests; dom 82 in 12 files, core 89); pnpm lint: 0 errors, no warnings in src/dom or src/core. List property test: 4 variants (no marker, marker+static siblings, multi-node ranges, indexed) x 400 random ops checked against expected order, node identity, live row owners and index values; mutations (never move, wrong swap, no index update, LIS off-by-one, no dispose on remove, no item replacement) are each caught.
+
+Lux review: Spark's proposals are accepted.
+- setText renders booleans as "".
+- aria-* and enumerated attributes write "true"/"false".
+- Keyed rows whose item changed re-render in place, with plain items (as in React); store proxies keep their identity, so this is rare.
+- restProps/mergeProps fix their key set at call time.
+- spread semantics as implemented.
+- mount() stays internal until TASK-18/25 decide the public entry API. A user-facing render/mount API is a DX decision for the user.
+- The size overrun (5.02 kB on the js-framework-benchmark import set against a 4.5 kB runtime budget) goes to TASK-12 for tuning.
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary
