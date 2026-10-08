@@ -14,8 +14,21 @@ interface LumenOptions {
   include?: RegExp;
   /** Modules left to Vite. Default: anything in node_modules. */
   exclude?: RegExp;
+  /** The project's default route mode; a layout's or route's `export const mode` overrides it. */
+  mode?: "static" | "server" | "spa"; // default "static"
+  /** Whether spa routes render their content on the server (false: the shell only). */
+  ssr?: boolean; // default true
+  /** Trailing slashes of page URLs: "always"/"never" redirect to the canonical form. */
+  trailingSlash?: "ignore" | "always" | "never"; // default "ignore"
+  /** The origin check of form posts (on by default); false turns it off. */
+  csrf?: false | { allowedOrigins?: readonly string[] };
 }
 ```
+
+The project options (`mode`, `ssr`, `trailingSlash`, `csrf`) are read by `lumen dev`, `lumen build`
+and `lumen routes`/`check` from the plugin's `api.options`. Invalid values and unknown option names
+throw when the config loads. `allowedOrigins` takes full origins such as
+`"https://app.example.com"`, without a path or trailing slash.
 
 What it does:
 
@@ -23,7 +36,8 @@ What it does:
   (SSR) get `lumen/server` code; everything else gets `lumen/dom` code.
 - Resolves `lumen` to its `browser` entry in client environments and its `node` entry in server
   environments, and keeps every `lumen` entry out of dependency pre-bundling, so compiled code and
-  the runtime share one module instance.
+  the runtime share one module instance. Under Vitest, tests in a DOM environment (`happy-dom`,
+  `jsdom`) get the `browser` entry too (see [Testing](../concepts/testing.md)).
 - Turns compiler diagnostics into Vite warnings and errors with code frames (the dev overlay).
 - Hot updates: a client module that imports `mount` from `lumen/dom` (an app entry) accepts updates
   of every module it reaches and re-mounts the app into the same container. Component state resets;
@@ -32,11 +46,9 @@ What it does:
   Modules that `$` references import constants from are tracked as dependencies of that CSS module.
   A style-only edit, or an edit to such a constants module, hot-updates the CSS without remounting.
 
-> **Status:** compilation, environments, diagnostics, HMR and style-block CSS are available. The
-> designed app-level options (`adapter`, `css`,
-> `csp`, `trailingSlash`, `viewTransitions`, `prefetch`) arrive with `lumen dev` and `lumen build`.
-> In Vitest, add `resolve.conditions: ["browser"]` for component tests (see
-> [Testing](../concepts/testing.md)).
+> **Status:** compilation, environments, diagnostics, HMR, style-block CSS and the project options
+> above are available. The designed options `adapter`, `css`, `csp`, `viewTransitions` and
+> `prefetch` are not.
 
 ## Example
 
@@ -46,6 +58,6 @@ import lumen from "lumen/vite";
 import { defineConfig } from "vite";
 
 export default defineConfig({
-  plugins: [lumen({ exclude: /[\\/](node_modules|legacy)[\\/]/ })],
+  plugins: [lumen({ mode: "server", exclude: /[\\/](node_modules|legacy)[\\/]/ })],
 });
 ```

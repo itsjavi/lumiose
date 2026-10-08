@@ -3,7 +3,16 @@
 // node environment keep the node entry (server rendering). Runs the Vitest CLI on a fixture in a
 // temp dir whose node_modules link to this package, Vitest and happy-dom.
 import { spawnSync } from "node:child_process";
-import { mkdirSync, mkdtempSync, realpathSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  realpathSync,
+  rmSync,
+  symlinkSync,
+  writeFileSync,
+} from "node:fs";
 import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
@@ -59,8 +68,7 @@ afterAll(() => {
 });
 
 describe.skipIf(!binding)("lumen/vite in Vitest", () => {
-  // TODO(TASK-54): the inner run prints no JSON yet (diagnose stderr); skipped at checkpoint.
-  it.skip("gives DOM tests the browser entry and node tests the server entry", () => {
+  it("gives DOM tests the browser entry and node tests the server entry", () => {
     root = realpathSync(mkdtempSync(join(tmpdir(), "lumen-vitest-")));
     for (const [name, code] of Object.entries(FILES)) writeFileSync(join(root, name), code);
     mkdirSync(join(root, "node_modules"));
@@ -71,13 +79,19 @@ describe.skipIf(!binding)("lumen/vite in Vitest", () => {
     const env = Object.fromEntries(
       Object.entries(process.env).filter(([name]) => !name.startsWith("VITEST")),
     );
+    // Vitest 5 writes the JSON report to a file, not to stdout.
+    const output = join(root, "report.json");
     const run = spawnSync(
       process.execPath,
-      [join(vitestRoot, "vitest.mjs"), "run", "--reporter=json"],
+      [join(vitestRoot, "vitest.mjs"), "run", "--reporter=json", `--outputFile=${output}`],
       { cwd: root, env: { ...env, NODE_ENV: "test" }, encoding: "utf8", timeout: 60_000 },
     );
-    const report = JSON.parse(run.stdout.slice(run.stdout.indexOf("{"))) as {
-      testResults: { name: string; assertionResults: { status: string; failureMessages: string[] }[] }[];
+    expect(existsSync(output), run.stderr).toBe(true);
+    const report = JSON.parse(readFileSync(output, "utf8")) as {
+      testResults: {
+        name: string;
+        assertionResults: { status: string; failureMessages: string[] }[];
+      }[];
     };
     const results = Object.fromEntries(
       report.testResults.map((file) => [
