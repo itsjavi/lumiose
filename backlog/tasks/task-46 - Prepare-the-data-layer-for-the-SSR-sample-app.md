@@ -38,3 +38,9 @@ The SSR sample (TASK-36) needs a realistic database and domain layer that doesn'
 6. src/types.ts + src/lib/{pagination,validation}.ts shared with pages/islands.
 7. Vitest tests (in-memory DB, full seed with cheap scrypt params) + README site map. Validate pnpm typecheck/test/lint.
 <!-- SECTION:PLAN:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Nova (session nova-task46-20261008T140040Z): claimed and started. node:sqlite in Node 26.8.1 bundles SQLite 3.53.4 with FTS5 available, so search uses an FTS5 table (bm25 relevance) instead of LIKE.
+<!-- SECTION:NOTES:END -->
