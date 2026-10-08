@@ -1,0 +1,5 @@
+import { SongsView } from "../../ui/SongsView.stsx";
+
+export default function Songs() {
+  return <SongsView />;
+}

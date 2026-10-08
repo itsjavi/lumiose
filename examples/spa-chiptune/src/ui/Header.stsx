@@ -1,11 +1,13 @@
 // The top bar (logo, views, history, files) and the transport bar.
+import { Link } from "lumen/router";
 import * as engine from "../audio/engine.ts";
 import { changeInstrument, changeOctave } from "../editor.ts";
 import { exportWav, exporting } from "../files.ts";
 import { liveBpm, liveSpeed, playOrder, playRow, playing } from "../frame.ts";
 import { togglePlay } from "../keys.ts";
 import { hex } from "../model/song.ts";
-import { cursor, doc, edit, history, prefs, redo, saved, set, undo, view, type View } from "../state.ts";
+import { currentView, viewHref, type View } from "../nav.ts";
+import { cursor, doc, edit, history, prefs, redo, saved, set, undo } from "../state.ts";
 import { tokens } from "../tokens.ts";
 import { PixelLogo } from "./PixelLogo.stsx";
 
@@ -55,14 +57,13 @@ export function Header() {
         <PixelLogo text="LUMEN CHIP" />
         <nav class="tabs" aria-label="Views">
           {TABS.map((tab) => (
-            <button
-              class={{ active: view() === tab.id }}
-              aria-current={view() === tab.id ? "page" : undefined}
+            <Link
+              href={viewHref(tab.id)}
+              class={["tab", { active: currentView() === tab.id }]}
               title={`${tab.label} (${tab.key})`}
-              onClick={() => view.set(tab.id)}
             >
               {tab.label}
-            </button>
+            </Link>
           ))}
         </nav>
         <div class="song" title={doc.song.author ? `by ${doc.song.author}` : undefined}>
@@ -150,6 +151,20 @@ export function Header() {
         }
         .top { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
         .tabs { display: flex; gap: 4px; }
+        /* View links look like the app's buttons. */
+        .tab {
+          font-size: 12px;
+          font-weight: 700;
+          text-transform: uppercase;
+          text-decoration: none;
+          color: var(--text);
+          background: var(--raised);
+          padding: 4px 10px;
+          box-shadow:
+            inset -2px -2px 0 0 rgb(0 0 0 / 0.45),
+            inset 2px 2px 0 0 var(--light);
+        }
+        .tab:hover { filter: brightness(1.15); }
         .tabs .active { background: var(--yellow); color: var(--bg); }
         .song { display: flex; align-items: baseline; gap: 10px; margin-inline-start: auto; min-inline-size: 0; }
         .title { font-weight: 700; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

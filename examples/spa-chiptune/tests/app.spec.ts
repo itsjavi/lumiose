@@ -26,9 +26,10 @@ test.beforeEach(async ({ page }) => {
   errors.length = 0;
   page.on("pageerror", (error) => errors.push(error.message));
   await page.goto("/");
-  // Start each test from the bundled demo song.
+  // Start each test from the bundled demo song: `/` opens the tracker on it (`/songs/<id>`).
   await page.evaluate(() => localStorage.clear());
-  await page.reload();
+  await page.goto("/");
+  await expect(page).toHaveURL(/\/songs\/\w+$/);
   await expect(page.locator(".row").first()).toBeVisible();
 });
 test.afterEach(() => expect(errors).toEqual([]));
@@ -210,4 +211,46 @@ test("saves to the library, switches theme and shows the other views", async ({ 
   await page.waitForTimeout(1500);
   await shot(page, "tracker-dmg", info.project.name);
   await page.getByRole("button", { name: "Stop" }).click();
+});
+
+test("views are routes: playback and the mixer persist, songs deep-link", async ({ page }) => {
+  // The mixer and the transport live in the root layout: they stay mounted across views.
+  await page.locator(".mixer").evaluate((el) => ((el as unknown as { kept: boolean }).kept = true));
+  await page.getByRole("button", { name: "Play song" }).click();
+  await expect.poll(() => level(page, 2)).toBeGreaterThan(0);
+  await page.getByRole("link", { name: "Instruments" }).click();
+  await expect(page).toHaveURL(/\/instruments$/);
+  await expect(page.getByRole("heading", { name: "Instrument 00" })).toBeVisible();
+  await page.getByRole("link", { name: "Songs" }).click();
+  await expect(page.locator(".library")).toBeVisible();
+  // Still playing, and the mixer's meters still move.
+  await expect(page.getByRole("button", { name: "Stop" })).toBeVisible();
+  const mixerLevel = () =>
+    page
+      .locator(".mixer .vu")
+      .nth(2)
+      .evaluate((el) => Number((el as HTMLElement).style.getPropertyValue("--level") || 0));
+  await expect.poll(mixerLevel).toBeGreaterThan(0);
+  expect(
+    await page.locator(".mixer").evaluate((el) => (el as unknown as { kept?: boolean }).kept),
+  ).toBe(true);
+  await page.goBack();
+  await expect(page).toHaveURL(/\/instruments$/);
+  await page.goBack();
+  await expect(page.locator(".row").first()).toBeVisible();
+  await page.getByRole("button", { name: "Stop" }).click();
+
+  // A song URL opens that song from the library.
+  const demo = page.url();
+  await page.getByRole("link", { name: "Songs" }).click();
+  await page.getByRole("button", { name: "New song" }).click();
+  await expect(page.locator(".library li")).toHaveCount(2);
+  await page.goto(demo);
+  await expect(page.locator(".header .title")).toHaveText("Lumen Quest");
+  await expect(page.locator(".row").first()).toBeVisible();
+  // One that is not in this browser's library is a 404 inside the app.
+  await page.goto("/songs/nope");
+  await expect(page.getByRole("heading", { name: "404 · Not here" })).toBeVisible();
+  await page.getByRole("link", { name: "Open the song library" }).click();
+  await expect(page.locator(".library li")).toHaveCount(2);
 });

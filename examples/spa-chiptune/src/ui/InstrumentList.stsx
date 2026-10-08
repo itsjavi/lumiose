@@ -1,7 +1,8 @@
 // The instrument list: selects the instrument used for note entry.
 import { clone, instrument, macro } from "../model/song.ts";
 import { hex } from "../model/song.ts";
-import { doc, edit, prefs, readSong, set, view } from "../state.ts";
+import { showView } from "../nav.ts";
+import { doc, edit, prefs, readSong, set } from "../state.ts";
 import { tokens } from "../tokens.ts";
 
 export function addInstrument(copy: boolean): void {
@@ -39,7 +40,7 @@ export function InstrumentList(props: { compact?: boolean }) {
       <header>
         <h2>Instruments</h2>
         {props.compact && (
-          <button class="edit" onClick={() => view.set("instruments")} title="Edit instruments (F2)">
+          <button class="edit" onClick={() => showView("instruments")} title="Edit instruments (F2)">
             EDIT
           </button>
         )}
@@ -53,7 +54,7 @@ export function InstrumentList(props: { compact?: boolean }) {
               onClick={() => (prefs.instrument = i)}
               onDblClick={() => {
                 prefs.instrument = i;
-                view.set("instruments");
+                showView("instruments");
               }}
             >
               <span class="index">{hex(i)}</span>

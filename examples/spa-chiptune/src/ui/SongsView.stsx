@@ -5,6 +5,7 @@ import { deleteSaved, library, loadSaved, newId, saveSong, type LibraryEntry } f
 import { emptyPattern, emptySong } from "../model/song.ts";
 import { exportJson, exportWav, exporting, importJson } from "../files.ts";
 import { lens } from "../lens.ts";
+import { showView } from "../nav.ts";
 import { doc, edit, openSong, readSong, saveNow, say, set, songId } from "../state.ts";
 import { SongNumber } from "./Header.stsx";
 
@@ -35,6 +36,7 @@ function open(entry: LibraryEntry) {
   saveNow();
   openSong(song, entry.id);
   say(`Opened ${song.title}`);
+  showView("tracker");
 }
 
 function duplicate(entry: LibraryEntry) {

@@ -1,6 +1,6 @@
 import { defineConfig, devices } from "@playwright/test";
 
-// The same tests run against `vite` (dev) and `vite build` + `vite preview`.
+// The same tests run against `lumen dev` and `lumen build` + `lumen preview`.
 const DEV = 5195;
 const PREVIEW = 5196;
 
@@ -18,8 +18,12 @@ export default defineConfig({
   reporter: "list",
   timeout: 60_000,
   webServer: [
-    { command: `vite --port ${DEV} --strictPort`, port: DEV },
-    { command: `vite build && vite preview --port ${PREVIEW} --strictPort`, port: PREVIEW },
+    { command: `pnpm exec lumen dev --port ${DEV}`, port: DEV },
+    {
+      command: `pnpm exec lumen build && pnpm exec lumen preview --port ${PREVIEW}`,
+      port: PREVIEW,
+      timeout: 120_000,
+    },
   ],
   projects: [
     { name: "dev", use: { ...chrome, baseURL: `http://localhost:${DEV}` } },

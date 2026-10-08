@@ -4,7 +4,8 @@ import * as engine from "./audio/engine.ts";
 import * as ed from "./editor.ts";
 import { playing } from "./frame.ts";
 import { NOTE_CUT, NOTE_OFF } from "./model/types.ts";
-import { cursor, doc, prefs, redo, undo, view } from "./state.ts";
+import { currentView, showView } from "./nav.ts";
+import { cursor, doc, prefs, redo, undo } from "./state.ts";
 import { exportWav } from "./files.ts";
 
 /** Physical key → semitone from the current octave (two rows, like a piano). */
@@ -109,7 +110,7 @@ function global(event: KeyboardEvent, mod: boolean): boolean {
   const views = { F1: "tracker", F2: "instruments", F3: "songs", F4: "settings" } as const;
   const next = views[event.code as keyof typeof views];
   if (next) {
-    view.set(next);
+    showView(next);
     return true;
   }
   return false;
@@ -247,7 +248,7 @@ export function onKeyDown(event: KeyboardEvent): void {
   if (onSlider && /^(Arrow|Page|Home|End)/.test(event.code)) return;
   let handled = global(event, mod);
   if (!handled) {
-    const current = view();
+    const current = currentView();
     if (current === "tracker") handled = tracker(event, mod);
     else if (current === "instruments" && !mod) handled = common(event, true);
   }

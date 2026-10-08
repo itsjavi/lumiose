@@ -1,0 +1,22 @@
+// The document around the client-rendered app (lumen({ mode: "spa", ssr: false }) sends it as the
+// shell of every page).
+import type { DocumentProps } from "lumen";
+
+const ICON =
+  "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8' shape-rendering='crispEdges'%3E%3Cpath fill='%23f8d878' d='M3 0h4v2H5v4H4V2H3z'/%3E%3Cpath fill='%233cbcfc' d='M1 5h3v3H1z'/%3E%3C/svg%3E";
+
+export default function Document(props: DocumentProps) {
+  return (
+    <html lang="en">
+      <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <meta name="color-scheme" content="dark" />
+        <title>Lumen Chip: chiptune tracker</title>
+        <link rel="icon" href={ICON} />
+        {props.head}
+      </head>
+      <body>{props.body}</body>
+    </html>
+  );
+}

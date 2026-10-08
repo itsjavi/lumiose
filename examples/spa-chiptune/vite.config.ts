@@ -2,18 +2,10 @@
 import lumen from "lumen/vite";
 import { defineConfig } from "vite";
 
-// Cross-origin isolation enables SharedArrayBuffer, which the audio engine uses to publish the
-// playing row, levels and scope samples to the UI without messages. Without it, it falls back to
-// postMessage.
-const isolation = {
-  "Cross-Origin-Opener-Policy": "same-origin",
-  "Cross-Origin-Embedder-Policy": "require-corp",
-};
-
+// A client-rendered SPA: every route renders in the browser, inside the persistent root layout,
+// and `lumen build` emits static shells. src/middleware.ts adds the COOP/COEP headers to pages.
 export default defineConfig(({ mode }) => ({
-  plugins: [lumen()],
-  server: { headers: isolation },
-  preview: { headers: isolation },
+  plugins: [lumen({ mode: "spa", ssr: false })],
   // The AudioWorklet module is loaded with `?worker&url`: an ES module bundle of its own.
   worker: { format: "es" },
   // Unit tests need the browser build of `lumen` (reactive computeds), which takes both the

@@ -1,0 +1,7 @@
+// `/` opens the tracker on the open song, whose URL names it.
+import { href, redirect } from "lumen";
+import { songId } from "../state.ts";
+
+export default function Home() {
+  redirect(href("/songs/[id]", { id: songId.peek() }));
+}

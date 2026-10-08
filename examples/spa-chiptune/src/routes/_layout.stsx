@@ -1,24 +1,23 @@
-// The application shell: header, the current view (app state, no router yet) and the status bar.
-import { Dynamic, effect, onMount, untrack } from "lumen";
-import { playOrder, playRow, playing, refreshScopeColors, startFrameLoop } from "../frame.ts";
+// The root layout: the application shell, mounted once for every view. The header (with the
+// transport), the mixer and the status bar stay mounted while the views (the routes below) change,
+// so playback, meters and scopes keep running across navigation.
+import { effect, onMount, untrack } from "lumen";
+import { frameStats, playOrder, playRow, playing, refreshScopeColors, resetFrameStats, startFrameLoop } from "../frame.ts";
 import { onKeyDown, onKeyUp } from "../keys.ts";
-import { cursor, prefs, view } from "../state.ts";
+import { cursor, prefs, readSong, restoreSession } from "../state.ts";
 import { tokens } from "../tokens.ts";
-import { Header } from "./Header.stsx";
-import { InstrumentView } from "./InstrumentView.stsx";
-import { SettingsView } from "./SettingsView.stsx";
-import { SongsView } from "./SongsView.stsx";
-import { StatusBar } from "./StatusBar.stsx";
-import { TrackerView } from "./TrackerView.stsx";
+import { Header } from "../ui/Header.stsx";
+import { Mixer } from "../ui/Mixer.stsx";
+import { StatusBar } from "../ui/StatusBar.stsx";
 
-const VIEWS = {
-  tracker: TrackerView,
-  instruments: InstrumentView,
-  songs: SongsView,
-  settings: SettingsView,
-};
+// A small handle for the e2e tests and the curious: frame timing and the open song.
+Object.assign(globalThis, { chiptune: { frameStats, resetFrameStats, song: readSong } });
 
-export function App() {
+export default function Layout(props: { children?: JSX.Element }) {
+  // Reopen the last song (or save the demo as the first one) before the first view renders; a
+  // song URL (/songs/[id]) then opens its own song.
+  restoreSession();
+
   onMount(() => {
     startFrameLoop();
     document.addEventListener("keydown", onKeyDown);
@@ -45,9 +44,10 @@ export function App() {
   return (
     <div class="app">
       <Header />
-      <main class="view">
-        <Dynamic component={VIEWS[view()]} />
-      </main>
+      <div class="body">
+        <main class="view">{props.children}</main>
+        <Mixer />
+      </div>
       <StatusBar />
     </div>
   );
@@ -59,10 +59,19 @@ export function App() {
     grid-template-rows: auto 1fr auto;
     block-size: 100dvh;
   }
-  .view {
+  .body {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(240px, 300px);
+    gap: 10px;
     min-block-size: 0;
     padding: 10px 12px;
+  }
+  .view {
+    min-block-size: 0;
     overflow: auto;
+  }
+  @media (width < 1100px) {
+    .body { grid-template-columns: minmax(0, 1fr); overflow: auto; }
   }
 </style>
 

@@ -9,8 +9,6 @@ import { lastOpened, loadSaved, markOpened, newId, saveSong } from "./model/libr
 import { clone, getAt, setAt } from "./model/song.ts";
 import type { Path, Song } from "./model/types.ts";
 
-export type View = "tracker" | "instruments" | "songs" | "settings";
-
 export interface CursorState {
   order: number;
   row: number;
@@ -26,7 +24,6 @@ export const doc = store(raw);
 
 export const songId = signal(newId());
 export const cursor = store<CursorState>({ order: 0, row: 0, channel: 0, column: 0 });
-export const view = signal<View>("tracker");
 
 export interface Prefs {
   octave: number;

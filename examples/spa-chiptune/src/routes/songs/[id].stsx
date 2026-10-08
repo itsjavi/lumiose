@@ -1,0 +1,17 @@
+// The tracker, editing a song of the library: a deep link to it opens it.
+import { notFound, type RouteProps } from "lumen";
+import { loadSaved } from "../../model/library.ts";
+import { openSong, saveNow, songId } from "../../state.ts";
+import { TrackerView } from "../../ui/TrackerView.stsx";
+
+export default function SongPage(props: RouteProps<"/songs/[id]">) {
+  // Another song is a new page (the router re-creates it), so the id is read once.
+  const id = props.params.id;
+  if (id !== songId.peek()) {
+    const song = loadSaved(id);
+    if (!song) notFound();
+    saveNow();
+    openSong(song, id);
+  }
+  return <TrackerView />;
+}

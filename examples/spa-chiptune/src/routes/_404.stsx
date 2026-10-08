@@ -1,0 +1,20 @@
+// Unknown URLs and songs that are not in the library (a deep link from another browser).
+import { href, type ErrorPageProps } from "lumen";
+import { Link } from "lumen/router";
+
+export default function NotFound(props: ErrorPageProps) {
+  return (
+    <section class="not-found panel">
+      <h2>{props.status} · Not here</h2>
+      <p>This song or page is not in this browser's library.</p>
+      <Link class="library" href={href("/songs")}>
+        Open the song library
+      </Link>
+      <style>
+        .not-found { max-inline-size: 60ch; }
+        p { color: var(--dim); }
+        .library { color: var(--cyan); }
+      </style>
+    </section>
+  );
+}
