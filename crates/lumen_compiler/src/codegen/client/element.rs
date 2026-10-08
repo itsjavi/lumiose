@@ -182,7 +182,7 @@ impl<'a> Codegen<'a, '_> {
             self.ast.vec()
         };
         let has_inner_html = self.element_attributes(template, node, attributes);
-        for token in self.scope_tokens() {
+        for token in self.scope_tokens(span) {
             template.element_attrs_mut(node).push((token, None));
         }
         if !has_inner_html {

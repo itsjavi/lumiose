@@ -46,15 +46,49 @@ use idioms::MapCtx;
 use props::PropPath;
 
 /// `data-l-*` scope attributes per scope (computed from the style blocks, see `crate::css`).
-/// Every element of a scope's templates carries its attribute(s); component call sites that pass
-/// `class` also pass the caller's attributes as `$$scope` (spec §4.6.2).
+/// Every element of a scope carries its attribute(s); component call sites that pass `class`
+/// also pass the caller's attributes there as `$$scope` (spec §4.6.2).
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize))]
 pub struct ScopeTokens {
     /// The file scope attribute (top-level blocks), applied to every template in the file.
     pub file: Option<String>,
-    /// Component scope attributes by component name.
-    pub components: BTreeMap<String, String>,
+    /// By component name, the subtree scopes of its style-bearing elements, by start offset.
+    pub components: BTreeMap<String, Vec<SubtreeScope>>,
+}
+
+/// The scope of the `<style>` blocks inside one element of a component (decision-23): the
+/// element and every element lexically inside it in that component carry `attribute`.
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize))]
+pub struct SubtreeScope {
+    pub attribute: String,
+    /// The enclosing element (or fragment) of the blocks.
+    pub span: crate::span::Span,
+}
+
+impl SubtreeScope {
+    /// Whether the JSX at `span` is inside the subtree (the enclosing element included).
+    pub fn covers(&self, span: Span) -> bool {
+        self.span.start <= span.start && span.end <= self.span.end
+    }
+}
+
+impl ScopeTokens {
+    /// The attributes of the JSX at `span` in `component` (`None` outside components): the file
+    /// attribute, then those of the component's subtrees around it, outermost first. `strict`
+    /// leaves out a subtree whose element is exactly `span`.
+    pub fn at(&self, component: Option<&str>, span: Span, strict: bool) -> Vec<String> {
+        let mut result: Vec<String> = self.file.iter().cloned().collect();
+        let subtrees = component.and_then(|name| self.components.get(name));
+        for subtree in subtrees.into_iter().flatten() {
+            let exact = subtree.span.start == span.start && subtree.span.end == span.end;
+            if subtree.covers(span) && !(strict && exact) {
+                result.push(subtree.attribute.clone());
+            }
+        }
+        result
+    }
 }
 
 pub struct TransformOptions<'o> {
@@ -462,16 +496,18 @@ impl<'a> Codegen<'a, '_> {
         self.components.last()
     }
 
-    /// The scope tokens of templates at this point: the file token, then the component's.
-    pub fn scope_tokens(&self) -> Vec<String> {
-        let tokens = self.options.scope_tokens;
-        let mut result: Vec<String> = tokens.file.iter().cloned().collect();
-        if let Some(component) = self.component()
-            && let Some(token) = tokens.components.get(&component.name)
-        {
-            result.push(token.clone());
-        }
-        result
+    /// The scope attributes of the JSX at `span`: the file's, then those of the current
+    /// component's style subtrees that lexically enclose it (decision-23).
+    pub fn scope_tokens(&self, span: Span) -> Vec<String> {
+        let component = self.component().map(|c| c.name.as_str());
+        self.options.scope_tokens.at(component, span, false)
+    }
+
+    /// The scope attributes of the `<tbody>` the parser inserts around `rows`: those of the
+    /// table, so a subtree that is exactly the rows (a lone styled `<tr>`) is not included.
+    pub fn tbody_scope_tokens(&self, rows: Span) -> Vec<String> {
+        let component = self.component().map(|c| c.name.as_str());
+        self.options.scope_tokens.at(component, rows, true)
     }
 
     pub fn namespace(&self) -> Namespace {

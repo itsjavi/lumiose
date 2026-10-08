@@ -134,7 +134,9 @@ describe.skipIf(!binding)("compiled output runs on lumen/dom", () => {
       }`,
     );
     if (!module) return ctx.skip(`lumen/dom lacks ${missing.join(", ")}`);
-    const { Page, Card } = result.meta.scopeTokens.components;
+    const [Page, Card] = ["Page", "Card"].map(
+      (name) => result.meta.scopeTokens.components[name]![0]!.attribute,
+    );
     const app = render(module.Page);
     const article = app.querySelector("article")!;
     expect(article.className).toBe("featured");

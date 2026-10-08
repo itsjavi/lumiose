@@ -214,7 +214,7 @@ impl<'a> Codegen<'a, '_> {
         for piece in open.head {
             out.piece(piece);
         }
-        for token in self.scope_tokens() {
+        for token in self.scope_tokens(span) {
             out.attribute(&token, None);
         }
         for piece in open.tail {
@@ -366,9 +366,9 @@ impl<'a> Codegen<'a, '_> {
                 Item::Text(text, _) => out.text(&text),
                 Item::Raw(raw, _) => out.html(&raw),
                 Item::Element(element) => self.ssr_element(out, element),
-                Item::Rows(rows, _) => {
+                Item::Rows(rows, span) => {
                     out.html("<tbody");
-                    for token in self.scope_tokens() {
+                    for token in self.tbody_scope_tokens(span) {
                         out.attribute(&token, None);
                     }
                     out.html(">");

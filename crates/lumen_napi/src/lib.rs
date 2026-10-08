@@ -390,8 +390,18 @@ pub struct ResolvedStyleRef {
 pub struct ScopeTokens {
     /// The file scope attribute (top-level `<style>` blocks).
     pub file: Option<String>,
-    /// Component scope attributes by component name.
-    pub components: HashMap<String, String>,
+    /// By component name, the scopes of its `<style>` blocks: one per element that contains
+    /// blocks, in source order (decision-23).
+    pub components: HashMap<String, Vec<SubtreeScope>>,
+}
+
+/// The scope of the `<style>` blocks inside one element of a component: the element and every
+/// element lexically inside it in that component carry `attribute`.
+#[napi(object)]
+pub struct SubtreeScope {
+    pub attribute: String,
+    /// The element (or fragment) that contains the blocks.
+    pub span: Span,
 }
 
 #[napi(object)]
@@ -557,7 +567,21 @@ pub fn compile(
             has_styles: meta.has_styles,
             scope_tokens: ScopeTokens {
                 file: meta.scope_tokens.file,
-                components: meta.scope_tokens.components.into_iter().collect(),
+                components: meta
+                    .scope_tokens
+                    .components
+                    .into_iter()
+                    .map(|(name, subtrees)| {
+                        let subtrees = subtrees
+                            .into_iter()
+                            .map(|subtree| SubtreeScope {
+                                attribute: subtree.attribute,
+                                span: span(subtree.span),
+                            })
+                            .collect();
+                        (name, subtrees)
+                    })
+                    .collect(),
             },
             islands: meta
                 .islands

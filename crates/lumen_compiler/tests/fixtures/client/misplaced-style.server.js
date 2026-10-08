@@ -1,9 +1,9 @@
 import { ssr, insert } from "lumen/server";
 import "/src/misplaced-style.stsx?lumen&type=style&lang.css";
 const _s0 = ["<li data-l-3y536f6d>", "</li>"];
-const _s1 = ["<footer data-l-3y536f6d></footer>"];
+const _s1 = ["<footer data-l-snjkckt6></footer>"];
 const _s2 = [
-	"<ul data-l-3y536f6d>",
+	"<ul>",
 	"",
 	"</ul>"
 ];

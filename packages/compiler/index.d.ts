@@ -192,8 +192,11 @@ export interface ScanResult {
 export interface ScopeTokens {
   /** The file scope attribute (top-level `<style>` blocks). */
   file?: string;
-  /** Component scope attributes by component name. */
-  components: Record<string, string>;
+  /**
+   * By component name, the scopes of its `<style>` blocks: one per element that contains
+   * blocks, in source order (decision-23).
+   */
+  components: Record<string, Array<SubtreeScope>>;
 }
 
 export type Severity = "error" | "warning" | "hint";
@@ -248,6 +251,16 @@ export interface StyleRefBinding {
 }
 
 export type StyleRefBindingType = "module" | "local" | "import";
+
+/**
+ * The scope of the `<style>` blocks inside one element of a component: the element and every
+ * element lexically inside it in that component carry `attribute`.
+ */
+export interface SubtreeScope {
+  attribute: string;
+  /** The element (or fragment) that contains the blocks. */
+  span: Span;
+}
 
 export interface TextEdit {
   span: Span;

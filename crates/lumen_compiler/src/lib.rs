@@ -10,7 +10,7 @@ pub mod prepare;
 pub mod scanner;
 pub mod span;
 
-pub use codegen::client::ScopeTokens;
+pub use codegen::client::{ScopeTokens, SubtreeScope};
 pub use compile::{
     CompileMeta, CompileOptions, CompileResult, ComponentMeta, IslandMeta, Target, compile,
 };

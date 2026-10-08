@@ -225,6 +225,7 @@ pub fn compile(source: &str, filename: &str, options: &CompileOptions) -> Compil
 
     let scopes = ScopePlan::new(
         &scan.blocks,
+        &program,
         &analysis,
         &root_relative(filename, options.root.as_deref()),
     );
@@ -358,6 +359,9 @@ impl CompileResult {
         }
         for island in &mut self.meta.islands {
             island.span = island.span.map(f);
+        }
+        for subtree in self.meta.scope_tokens.components.values_mut().flatten() {
+            subtree.span = subtree.span.map(f);
         }
         for reference in &mut self.meta.style_refs {
             reference.span = reference.span.map(f);

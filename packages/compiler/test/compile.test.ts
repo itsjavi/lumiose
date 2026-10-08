@@ -53,7 +53,7 @@ describe.skipIf(!binding)("@lumen/compiler native compile", () => {
       sourceMap: false,
       styleImport: false,
     });
-    const token = result.meta.scopeTokens.components.Counter!;
+    const token = result.meta.scopeTokens.components.Counter![0]!.attribute;
     expect(token).toMatch(/^data-l-[0-9a-z]{8}$/);
     expect(result.meta.scopeTokens.file).toBeUndefined();
     expect(result.code).toContain(`template(\`<button class=card ${token}>\`)`);
@@ -64,7 +64,7 @@ describe.skipIf(!binding)("@lumen/compiler native compile", () => {
 
   it("compiles style blocks to scoped CSS with folded constants", () => {
     const result = compile(source, "/src/Counter.stsx", { root: "/" });
-    const token = result.meta.scopeTokens.components.Counter!;
+    const token = result.meta.scopeTokens.components.Counter![0]!.attribute;
     expect(result.css).toBe(`.card[${token}] {\n  border-radius: 12px;\n}\n`);
     expect(JSON.parse(result.cssMap!)).toMatchObject({
       version: 3,

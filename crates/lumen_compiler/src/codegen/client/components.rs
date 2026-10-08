@@ -102,7 +102,7 @@ impl<'a> Codegen<'a, '_> {
             }
         }
         if is_component && passes_class {
-            let tokens = self.scope_tokens();
+            let tokens = self.scope_tokens(span);
             if !tokens.is_empty() {
                 current.push(self.ast.property(
                     span,

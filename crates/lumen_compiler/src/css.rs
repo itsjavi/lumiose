@@ -1,10 +1,14 @@
 //! The compiler side of the CSS pipeline (spec §4.6, decisions 12 and 14): scope tokens per
 //! placement, element inventories for the unused-selector check, and the `lumen_css` call.
 //!
-//! - **Tokens.** A top-level block gives the file the token `scope_token(path)`; a block in a
-//!   component's JSX gives that component `scope_token(path, name)`. `path` is the module id
-//!   relative to the project root, so tokens are stable across machines. The codegen stamps
-//!   `data-l-<token>` on every element of the scope's templates.
+//! - **Tokens.** A top-level block gives the file the token `scope_token(path)`. A block in a
+//!   component's JSX scopes to its enclosing element's subtree (decision-23): each element (or
+//!   fragment) that directly contains blocks gets a token, shared by its blocks, and the codegen
+//!   stamps it on that element and every element lexically inside it in the component. The
+//!   first such element of a component (by position) has `scope_token(path, name)`, so a
+//!   component styled under its root keeps its token; the k-th after it has
+//!   `scope_token(path, "name#k")`. `path` is the module id relative to the project root, so
+//!   tokens are stable across machines.
 //! - **Inventories.** Per token, the tags, static classes and ids of the scope's intrinsic
 //!   elements, plus the classes passed to components (class passthrough). Anything computed at
 //!   runtime (dynamic `class`/`id`, spreads, refs and attachments that may edit classes) marks
@@ -18,10 +22,11 @@ use lumen_css::{
 };
 use oxc_ast::ast::*;
 use oxc_ast_visit::{Visit, walk};
+use oxc_span::GetSpan;
 use oxc_syntax::scope::ScopeFlags;
 
 use crate::analyze::{Analysis, property_key_name};
-use crate::codegen::client::ScopeTokens;
+use crate::codegen::client::{ScopeTokens, SubtreeScope};
 use crate::diagnostics::{Code, Diagnostic, Fix, Label, Severity, TextEdit};
 use crate::prepare::{ConstValue, ResolvedStyleRef};
 use crate::scanner::{Placement, StyleBlock};
@@ -47,8 +52,17 @@ pub struct ScopePlan {
 }
 
 impl ScopePlan {
-    pub fn new(blocks: &[StyleBlock], analysis: &Analysis, path: &str) -> Self {
+    pub fn new(
+        blocks: &[StyleBlock],
+        program: &Program<'_>,
+        analysis: &Analysis,
+        path: &str,
+    ) -> Self {
         let mut plan = Self::default();
+        let elements = ElementSpans::collect(program, blocks);
+        // Scoped component blocks with their component and enclosing element; tokens are
+        // assigned once every style-bearing element of a component is known.
+        let mut scoped: Vec<(usize, String, Span)> = Vec::new();
         for block in blocks {
             if block.svg {
                 continue;
@@ -61,7 +75,7 @@ impl ScopePlan {
                     plan.tokens.file = Some(plan.register(&token));
                     Scope::File { token }
                 }
-                Placement::InJsx { .. } => {
+                Placement::InJsx { parent } => {
                     // The innermost component around the block; a block outside every component
                     // is misplaced (`LUM3010`) and produces no CSS.
                     let Some(component) = analysis
@@ -80,10 +94,14 @@ impl ScopePlan {
                             component: Some(name),
                         }
                     } else {
-                        let token = scope_token(path, Some(&name));
-                        let attribute = plan.register(&token);
-                        plan.tokens.components.insert(name.clone(), attribute);
-                        Scope::Component { name, token }
+                        // The parent's tag span is always an element of the parsed program;
+                        // the block itself stands in when it is not (it never is stamped).
+                        let element = elements.get(parent.span.start).unwrap_or(block.span);
+                        scoped.push((plan.blocks.len(), name.clone(), element));
+                        Scope::Component {
+                            name,
+                            token: String::new(),
+                        }
                     }
                 }
             };
@@ -93,7 +111,46 @@ impl ScopePlan {
                 svg: false,
             });
         }
+        plan.assign_subtree_tokens(&scoped, path);
         plan
+    }
+
+    /// One token per style-bearing element of each component, in element order (see the module
+    /// docs), given to the element's blocks and to the codegen as a subtree scope.
+    fn assign_subtree_tokens(&mut self, scoped: &[(usize, String, Span)], path: &str) {
+        let mut by_component: BTreeMap<&str, Vec<Span>> = BTreeMap::new();
+        for (_, name, element) in scoped {
+            let elements = by_component.entry(name).or_default();
+            if !elements.contains(element) {
+                elements.push(*element);
+            }
+        }
+        let mut tokens: HashMap<(&str, Span), String> = HashMap::new();
+        for (name, elements) in &mut by_component {
+            elements.sort_by_key(|span| (span.start, std::cmp::Reverse(span.end)));
+            for (k, element) in elements.iter().enumerate() {
+                let token = if k == 0 {
+                    scope_token(path, Some(name))
+                } else {
+                    scope_token(path, Some(&format!("{name}#{k}")))
+                };
+                let attribute = self.register(&token);
+                self.tokens
+                    .components
+                    .entry((*name).to_owned())
+                    .or_default()
+                    .push(SubtreeScope {
+                        attribute,
+                        span: *element,
+                    });
+                tokens.insert((name, *element), token);
+            }
+        }
+        for (index, name, element) in scoped {
+            if let Scope::Component { token, .. } = &mut self.blocks[*index].scope {
+                token.clone_from(&tokens[&(name.as_str(), *element)]);
+            }
+        }
     }
 
     fn register(&mut self, token: &str) -> String {
@@ -234,6 +291,54 @@ fn convert(diagnostic: &CssDiagnostic) -> Option<Diagnostic> {
     })
 }
 
+/// The spans of the JSX elements and fragments that directly contain style blocks, by the
+/// start of their tag name (fragments: of their `<>`), as the scanner reports parents.
+#[derive(Default)]
+struct ElementSpans {
+    wanted: HashSet<u32>,
+    spans: HashMap<u32, Span>,
+}
+
+impl ElementSpans {
+    fn collect(program: &Program<'_>, blocks: &[StyleBlock]) -> Self {
+        let mut collector = Self::default();
+        for block in blocks {
+            if let Placement::InJsx { parent } = &block.placement
+                && !block.global
+                && !block.svg
+            {
+                collector.wanted.insert(parent.span.start);
+            }
+        }
+        if !collector.wanted.is_empty() {
+            collector.visit_program(program);
+        }
+        collector
+    }
+
+    fn get(&self, tag_start: u32) -> Option<Span> {
+        self.spans.get(&tag_start).copied()
+    }
+
+    fn found(&mut self, key: u32, span: oxc_span::Span) {
+        if self.wanted.contains(&key) {
+            self.spans.insert(key, span.into());
+        }
+    }
+}
+
+impl<'a> Visit<'a> for ElementSpans {
+    fn visit_jsx_element(&mut self, it: &JSXElement<'a>) {
+        self.found(it.opening_element.name.span().start, it.span);
+        walk::walk_jsx_element(self, it);
+    }
+
+    fn visit_jsx_fragment(&mut self, it: &JSXFragment<'a>) {
+        self.found(it.opening_fragment.span.start, it.span);
+        walk::walk_jsx_fragment(self, it);
+    }
+}
+
 struct InventoryCollector<'o> {
     analysis: &'o Analysis,
     tokens: &'o ScopeTokens,
@@ -255,19 +360,10 @@ struct Contribution {
 }
 
 impl InventoryCollector<'_> {
-    fn scope_attributes(&self) -> Vec<&String> {
-        let mut attributes: Vec<&String> = self.tokens.file.iter().collect();
-        if let Some(name) = self.components.last()
-            && let Some(attribute) = self.tokens.components.get(name)
-        {
-            attributes.push(attribute);
-        }
-        attributes
-    }
-
-    fn record(&mut self, contribution: &Contribution) {
-        let attributes: Vec<String> = self.scope_attributes().into_iter().cloned().collect();
-        for attribute in attributes {
+    /// Records an element (its opening tag at `span`) in the inventories of its scopes.
+    fn record(&mut self, span: oxc_span::Span, contribution: &Contribution) {
+        let component = self.components.last().map(String::as_str);
+        for attribute in self.tokens.at(component, span, false) {
             let inventory = self.inventories.entry(attribute).or_default();
             if let Some(tag) = &contribution.tag {
                 inventory.tags.insert(tag.to_ascii_lowercase());
@@ -352,7 +448,7 @@ impl<'a> Visit<'a> for InventoryCollector<'_> {
                 }
             }
         }
-        self.record(&contribution);
+        self.record(it.span, &contribution);
         walk::walk_jsx_opening_element(self, it);
     }
 }

@@ -41,7 +41,12 @@ async function load(
   source: string,
   target: "client" | "server",
   options: Record<string, unknown> = {},
-): Promise<{ module: Module; code: string; tokens: Record<string, string> }> {
+): Promise<{
+  module: Module;
+  code: string;
+  tokens: Record<string, string>;
+  scopes: Record<string, Array<{ attribute: string }>>;
+}> {
   const extension = source.includes("<style") ? "stsx" : "tsx";
   // One module id for every case: scope tokens (hashes of the id) then match across targets.
   const result = binding!.compile(source, `/src/ssr.${extension}`, {
@@ -62,7 +67,14 @@ async function load(
   return {
     module: await import(/* @vite-ignore */ pathToFileURL(file).href),
     code: result.code,
-    tokens: result.meta.scopeTokens.components,
+    // Each component's first subtree scope (its only one in these cases).
+    tokens: Object.fromEntries(
+      Object.entries(result.meta.scopeTokens.components).map(([name, [first]]) => [
+        name,
+        first!.attribute,
+      ]),
+    ),
+    scopes: result.meta.scopeTokens.components,
   };
 }
 
@@ -182,6 +194,21 @@ const CARD = `
     return <main><Card title={post().title} class="featured">{post().body}</Card><style>.featured { color: teal }</style></main>;
   }`;
 
+// decision-23: the nested block's token is only on its enclosing element's subtree.
+const NESTED_STYLES = `
+  function Card(props: { class?: string }) {
+    return <b class={props.class}>card<style>b { margin: 0 }</style></b>;
+  }
+  export function Tree() {
+    return (
+      <section>
+        <p class="c1">one</p>
+        <div><p class="c2">two</p><Card class="pass" /><style>.c2, .pass { color: red }</style></div>
+        <style>section { display: grid }</style>
+      </section>
+    );
+  }`;
+
 const ATTRIBUTES = `
   import { signal } from "lumen";
   const name = signal('Ada "the" <first>');
@@ -286,6 +313,17 @@ describe.skipIf(!binding)("server target renders on lumen/server", () => {
     expect(await renderServer(module, "Page")).toBe(
       `<main ${Page}><article ${Card} class="featured" ${Page}>` +
         `<h2 ${Card}>One</h2>First &lt;b></article></main>`,
+    );
+  });
+
+  it("nested style blocks scope to their enclosing element's subtree (decision-23)", async () => {
+    const { module, scopes } = await load(NESTED_STYLES, "server");
+    const [root, nested] = scopes.Tree!.map((scope) => scope.attribute);
+    const card = scopes.Card![0]!.attribute;
+    expect(await renderServer(module, "Tree")).toBe(
+      `<section ${root}><p class=c1 ${root}>one</p><div ${root} ${nested}>` +
+        `<p class=c2 ${root} ${nested}>two</p><b ${card} class="pass" ${root} ${nested}>card</b>` +
+        `</div></section>`,
     );
   });
 
@@ -453,6 +491,7 @@ describe.skipIf(!binding)("client/server parity", () => {
     ]));
   it("keyed list", () => expectParity(TABLE, [["Table"]]));
   it("components and scope tokens", () => expectParity(CARD, [["Page"]]));
+  it("nested style subtrees (decision-23)", () => expectParity(NESTED_STYLES, [["Tree"]]));
   it("attributes and properties", () => expectParity(ATTRIBUTES, [["Attributes", { size: 3 }]]));
   it("table rows and select values", () =>
     // A string value: happy-dom's select.value setter does not convert numbers.

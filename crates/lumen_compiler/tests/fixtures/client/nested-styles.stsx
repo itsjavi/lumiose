@@ -1,0 +1,75 @@
+// Nested style blocks scope to their enclosing element's subtree (decision-23): one token per
+// style-bearing element, stamped on that element and the JSX lexically inside it (children
+// passed to components included); call sites passing `class` pass the enclosing chain.
+import { Card, Panel } from "./ui.stsx";
+
+// A → B1 → C1 and A → B2 → C2 → <style>: C1 is not styled by C2's blocks (and `.c1` there is
+// LUM3005). The root block covers the whole component; blocks under one element share a token.
+export function Tree() {
+  return (
+    <section class="a">
+      <div class="b1">
+        <p class="c1">one</p>
+      </div>
+      <div class="b2">
+        <p class="c2">
+          two
+          <style>.c2 { color: red; }</style>
+          <style>.c2 { font-weight: bold; } .c1 { color: blue; }</style>
+        </p>
+      </div>
+      <style>.a { display: grid; }</style>
+    </section>
+  );
+}
+
+// Sibling subtrees, class passthrough and children passed to a component inside a subtree.
+export function Siblings(props: { label: string }) {
+  return (
+    <main>
+      <header class="head">
+        <Card class="title">{props.label}</Card>
+        <style>.head { padding: 0; } .title { margin: 0; }</style>
+      </header>
+      <article class="body">
+        <Panel class="panel">
+          <p class="note">inside the subtree</p>
+        </Panel>
+        <style>.body .note { color: gray; } .panel { border: 0; }</style>
+      </article>
+      <Card class="outside">no subtree tokens</Card>
+    </main>
+  );
+}
+
+// An async component with a nested block, and rows from .map() in styled lists and tables.
+export async function Rows(props: { load: () => Promise<string[]> }) {
+  const items = await props.load();
+  return (
+    <>
+      <ul class="list">
+        {items.map((item) => <li class="item">{item}</li>)}
+        <style>.item { list-style: none; }</style>
+      </ul>
+      <table>
+        {items.map((item) => (
+          <tr>
+            <td>{item}</td>
+          </tr>
+        ))}
+        <style>td { padding: 2px; }</style>
+      </table>
+      <table>
+        <tr class="row">
+          <td>static</td>
+          <style>.row { color: blue; }</style>
+        </tr>
+      </table>
+      <style>table { width: 100%; }</style>
+    </>
+  );
+}
+
+<style>
+  main { margin: 0; }
+</style>

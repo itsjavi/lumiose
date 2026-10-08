@@ -290,6 +290,44 @@ fn scope_tokens_hash_the_root_relative_path() {
 }
 
 #[test]
+fn nested_blocks_scope_to_their_enclosing_element() {
+    // decision-23: one token per style-bearing element, reported with the element's span.
+    let source = r#"export function Card() {
+  return (
+    <article>
+      <p class="a">a</p>
+      <div class="b"><p class="c">c</p><style>.c { color: red; }</style></div>
+      <style>article { margin: 0; }</style>
+    </article>
+  );
+}
+"#;
+    let result = compile(source, "/src/Card.stsx", &CompileOptions::default());
+    assert!(result.diagnostics.is_empty(), "{:?}", result.diagnostics);
+    let subtrees = &result.meta.scope_tokens.components["Card"];
+    let card = lumen_css::scope_token("/src/Card.stsx", Some("Card"));
+    let nested = lumen_css::scope_token("/src/Card.stsx", Some("Card#1"));
+    let text = |span: lumen_compiler::Span| &source[span.start as usize..span.end as usize];
+    assert_eq!(subtrees.len(), 2);
+    assert_eq!(subtrees[0].attribute, format!("data-l-{card}"));
+    assert!(text(subtrees[0].span).starts_with("<article>"));
+    assert_eq!(subtrees[1].attribute, format!("data-l-{nested}"));
+    assert!(text(subtrees[1].span).starts_with(r#"<div class="b">"#));
+    assert!(text(subtrees[1].span).ends_with("</div>"));
+    let code = &result.code;
+    assert!(
+        code.contains(&format!("<p class=a data-l-{card}>")),
+        "{code}"
+    );
+    assert!(
+        code.contains(&format!("<p class=c data-l-{card} data-l-{nested}>")),
+        "{code}"
+    );
+    let css = result.css.expect("css");
+    assert!(css.contains(&format!(".c[data-l-{nested}]")), "{css}");
+}
+
+#[test]
 fn css_source_map_points_into_the_stsx() {
     let source = "export const A = () => <p class=\"x\">é<style>\n  .x {\n    color: red;\n  }\n</style></p>;\n";
     let result = compile(source, "/src/A.stsx", &CompileOptions::default());
