@@ -4,9 +4,9 @@
 
 use oxc_allocator::ArenaBox;
 use oxc_ast::ast::*;
-use oxc_ast_visit::{Visit, walk};
 use oxc_span::Span;
 
+use super::class_flow::ClassFlow;
 use super::html::{self, Namespace};
 use super::template::{NodeKind, Op, Template};
 use super::text::decode_entities;
@@ -506,15 +506,17 @@ impl<'a> Codegen<'a, '_> {
         }
     }
 
-    /// The props name when `expr` reads `props.class` (class passthrough, spec §4.6.2).
+    /// The props name when `expr` may carry `props.class` (class passthrough, class_flow.rs).
     pub(super) fn reads_props_class(&self, expr: &Expression<'a>) -> Option<String> {
-        let props_name = self.component()?.props_name.clone();
-        let mut finder = ClassReadFinder {
-            props_name: &props_name,
+        let component = self.component()?;
+        let flow = ClassFlow {
+            props_name: &component.props_name,
+            props: &component.props,
+            carriers: &component.class_carriers,
+            scoping: self.scoping,
             found: false,
         };
-        finder.visit_expression(expr);
-        finder.found.then_some(props_name)
+        flow.check(expr).then(|| component.props_name.clone())
     }
 
     fn style_attribute(
@@ -627,22 +629,6 @@ impl<'a> Codegen<'a, '_> {
             node,
             args: vec![thunk],
         });
-    }
-}
-
-struct ClassReadFinder<'p> {
-    props_name: &'p str,
-    found: bool,
-}
-
-impl<'a> Visit<'a> for ClassReadFinder<'_> {
-    fn visit_static_member_expression(&mut self, it: &StaticMemberExpression<'a>) {
-        if it.property.name == "class"
-            && matches!(&it.object, Expression::Identifier(ident) if ident.name == self.props_name)
-        {
-            self.found = true;
-        }
-        walk::walk_static_member_expression(self, it);
     }
 }
 

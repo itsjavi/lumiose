@@ -2,7 +2,7 @@
 //! becomes `function C(props)`; reads of `a` become `props.a`, reads of `b` become
 //! `(props.b === undefined ? 1 : props.b)` and `rest` becomes `restProps(props, ["a", "b"])`.
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use oxc_allocator::TakeIn;
 use oxc_ast::ast::*;
@@ -20,10 +20,18 @@ pub struct PropPath<'a> {
     segments: Vec<(String, Option<Expression<'a>>)>,
 }
 
+impl PropPath<'_> {
+    /// The prop it reads (`class` for `{ class: cls }`).
+    pub fn first_key(&self) -> Option<&str> {
+        self.segments.first().map(|(key, _)| key.as_str())
+    }
+}
+
 struct Collected<'a> {
     props: HashMap<SymbolId, PropPath<'a>>,
     keys: Vec<String>,
     rest: Option<String>,
+    rest_symbol: Option<SymbolId>,
 }
 
 impl<'a> Codegen<'a, '_> {
@@ -38,6 +46,7 @@ impl<'a> Codegen<'a, '_> {
             scope: component.scope,
             props_name: "props".to_owned(),
             props: HashMap::new(),
+            class_carriers: HashSet::new(),
             setup_hoists: Vec::new(),
         };
         let pattern = params.items.first().map(|p| &p.pattern);
@@ -50,6 +59,10 @@ impl<'a> Codegen<'a, '_> {
                     let span = params.span;
                     ctx.props_name = self.props_name(component.scope);
                     ctx.props = collected.props;
+                    // `...rest` carries `class` unless it is destructured on its own.
+                    if !collected.keys.iter().any(|key| key == "class") {
+                        ctx.class_carriers.extend(collected.rest_symbol);
+                    }
                     params.items = self.ast.vec_from([self.ast.param(span, &ctx.props_name)]);
                     if let Some(rest) = collected.rest {
                         let callee = self.runtime("restProps", span);
@@ -127,6 +140,7 @@ impl<'a> Codegen<'a, '_> {
             props: HashMap::new(),
             keys: Vec::new(),
             rest: None,
+            rest_symbol: None,
         };
         let pattern = pattern.unbox();
         for property in pattern.properties {
@@ -138,6 +152,7 @@ impl<'a> Codegen<'a, '_> {
             && let BindingPattern::BindingIdentifier(ident) = &rest.argument
         {
             collected.rest = Some(ident.name.to_string());
+            collected.rest_symbol = ident.symbol_id.get();
         }
         Some(collected)
     }

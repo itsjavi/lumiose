@@ -13,6 +13,7 @@
 
 mod asyncs;
 mod children;
+mod class_flow;
 mod components;
 mod element;
 mod events;
@@ -279,6 +280,8 @@ struct ComponentCtx<'a> {
     props_name: String,
     /// Destructured prop bindings → their access paths.
     props: HashMap<SymbolId, PropPath<'a>>,
+    /// Bindings of the component that may carry its `class` prop (class_flow.rs).
+    class_carriers: HashSet<SymbolId>,
     /// Statements hoisted to the start of the component body (delegated handlers).
     setup_hoists: Vec<Statement<'a>>,
 }
@@ -499,6 +502,20 @@ impl<'a> Codegen<'a, '_> {
 
     fn component(&self) -> Option<&ComponentCtx<'a>> {
         self.components.last()
+    }
+
+    /// Records the bindings of the current component's (untransformed) body that may carry its
+    /// `class` prop.
+    fn find_class_carriers(&mut self, body: &FunctionBody<'a>) {
+        let Some(ctx) = self.components.last() else {
+            return;
+        };
+        let initial = ctx.class_carriers.clone();
+        let carriers =
+            class_flow::carriers(body, &ctx.props_name, &ctx.props, self.scoping, initial);
+        if let Some(ctx) = self.components.last_mut() {
+            ctx.class_carriers = carriers;
+        }
     }
 
     /// The scope attributes of the JSX at `span`: the file's, then those of the current
@@ -870,6 +887,9 @@ impl<'a> VisitMut<'a> for Codegen<'a, '_> {
             return;
         };
         self.enter_component(&component, &mut func.params);
+        if let Some(body) = &func.body {
+            self.find_class_carriers(body);
+        }
         self.functions.push(true);
         self.awaits.push(Self::await_frame(Some(&component)));
         if let Some(body) = &mut func.body {
@@ -891,6 +911,9 @@ impl<'a> VisitMut<'a> for Codegen<'a, '_> {
         let component = self.analysis.component_at(arrow.span.start).cloned();
         if let Some(component) = &component {
             self.enter_component(component, &mut arrow.params);
+            if let ArrowFunctionBody::FunctionBody(body) = &arrow.body {
+                self.find_class_carriers(body);
+            }
         } else {
             self.visit_formal_parameters(&mut arrow.params);
         }
