@@ -6,7 +6,7 @@
   z-index: calc(3 * 2);
   max-width: calc(var(--w) + 8 * 2px);
   margin: 10px 2rem 8px;
-  padding: 16px 16px 16px -5px;
+  padding: 16px 16px 16px 0;
   transition-duration: .3s;
   inset: -5px;
   transform: rotate(90deg);

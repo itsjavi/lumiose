@@ -47,7 +47,7 @@ pub(crate) fn custom_property(property: &mut CustomProperty) {
 fn fold_list(list: &mut TokenList) {
     for index in 0..list.0.len() {
         let folded = match &mut list.0[index] {
-            TokenOrValue::Function(function) if is_math(&function.name) => fold(function),
+            TokenOrValue::Function(function) if is_math(&function.name.0) => fold(function),
             TokenOrValue::Function(function) => {
                 fold_list(&mut function.arguments);
                 None
@@ -83,10 +83,11 @@ fn fold_list(list: &mut TokenList) {
     }
 }
 
-fn is_math(name: &Ident) -> bool {
+/// Whether `name` is a math function Lightning CSS evaluates (ASCII case-insensitive).
+pub(crate) fn is_math(name: &str) -> bool {
     MATH_FUNCTIONS
         .iter()
-        .any(|math| name.0.eq_ignore_ascii_case(math))
+        .any(|math| name.eq_ignore_ascii_case(math))
 }
 
 /// The value a math function reduces to, if it reduces to a single finite one.
@@ -98,21 +99,27 @@ fn fold(function: &Function) -> Option<Folded> {
     })
     .value_to_css_string(PrinterOptions::default())
     .ok()?;
+    evaluate(&text)
+}
+
+/// The value the math function `text` (`calc(8 * 2px)`) reduces to, if it reduces to a single
+/// finite number, percentage, length, angle or time.
+pub(crate) fn evaluate(text: &str) -> Option<Folded> {
     // Each attempt fails unless every operand has that type (plain numbers aside), so the
     // first that parses decides: a reduced value, or an expression that does not reduce.
-    let folded = if let Some(calc) = reduce::<f32>(&text) {
+    let folded = if let Some(calc) = reduce::<f32>(text) {
         value(calc, |number| Some(Folded::Number(number)))
-    } else if let Some(calc) = reduce::<Length>(&text) {
+    } else if let Some(calc) = reduce::<Length>(text) {
         value(calc, |length| match length {
             Length::Value(length) => Some(Folded::Length(length)),
             Length::Calc(_) => None,
         })
-    } else if let Some(calc) = reduce::<Percentage>(&text) {
+    } else if let Some(calc) = reduce::<Percentage>(text) {
         value(calc, |percentage| Some(Folded::Percentage(percentage.0)))
-    } else if let Some(calc) = reduce::<Angle>(&text) {
+    } else if let Some(calc) = reduce::<Angle>(text) {
         value(calc, |angle| Some(Folded::Angle(angle)))
     } else {
-        reduce::<Time>(&text).and_then(|calc| value(calc, |time| Some(Folded::Time(time))))
+        reduce::<Time>(text).and_then(|calc| value(calc, |time| Some(Folded::Time(time))))
     }?;
     let number = folded.number();
     if !number.is_finite() {
@@ -145,7 +152,7 @@ fn value<V>(calc: Calc<V>, typed: impl FnOnce(V) -> Option<Folded>) -> Option<Fo
     }
 }
 
-enum Folded {
+pub(crate) enum Folded {
     Number(f32),
     Percentage(f32),
     Length(LengthValue),
@@ -155,13 +162,37 @@ enum Folded {
 
 impl Folded {
     /// The numeric part, in the value's own unit (a fraction for percentages).
-    fn number(&self) -> f32 {
+    pub fn number(&self) -> f32 {
         match self {
             Self::Number(number) | Self::Percentage(number) => *number,
             Self::Length(length) => length.to_unit_value().0,
             Self::Angle(Angle::Deg(n) | Angle::Rad(n) | Angle::Grad(n) | Angle::Turn(n))
             | Self::Time(Time::Seconds(n) | Time::Milliseconds(n)) => *n,
         }
+    }
+
+    pub fn is_number(&self) -> bool {
+        matches!(self, Self::Number(_))
+    }
+
+    /// Zero in the same unit (`0rem`, `0%`, `0`), so that it compares with the value.
+    pub fn zero(&self) -> String {
+        let unit = match self {
+            Self::Number(_) => "",
+            Self::Percentage(_) => "%",
+            Self::Length(length) => length.to_unit_value().1,
+            Self::Angle(angle) => match angle {
+                Angle::Deg(_) => "deg",
+                Angle::Rad(_) => "rad",
+                Angle::Grad(_) => "grad",
+                Angle::Turn(_) => "turn",
+            },
+            Self::Time(time) => match time {
+                Time::Seconds(_) => "s",
+                Time::Milliseconds(_) => "ms",
+            },
+        };
+        format!("0{unit}")
     }
 
     fn negated(self) -> Self {
@@ -177,7 +208,7 @@ impl Folded {
     /// Whether the bare value means the same as `calc(value)` wherever its type is accepted.
     fn is_safe_bare(&self) -> bool {
         let number = self.number();
-        number >= 0.0 && !(matches!(self, Self::Number(_)) && number.fract() != 0.0)
+        number >= 0.0 && !(self.is_number() && number.fract() != 0.0)
     }
 
     fn token(&self) -> TokenOrValue<'static> {

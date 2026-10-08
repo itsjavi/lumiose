@@ -9,6 +9,7 @@ use lightningcss::stylesheet::{MinifyOptions, ParserOptions, PrinterOptions, Sty
 use parcel_sourcemap::SourceMap;
 
 use crate::ast::{self, Renames};
+use crate::clamp;
 use crate::diagnostics::{CssCode, CssDiagnostic, Fix, TextEdit};
 use crate::edits::{Edit, Rewritten};
 use crate::lines::{LineIndex, Newlines};
@@ -176,6 +177,8 @@ fn prepare<'a>(
             edits.push(Edit::replace(site.range.clone(), value_text(value)));
         }
     }
+    let clamps = clamp::guard(content, &scan.declarations, &edits);
+    edits.extend(clamps);
 
     let attribute = block
         .scope

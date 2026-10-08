@@ -29,6 +29,10 @@
 //!   site (negative values, fractional numbers). `var()`, `env()` and units that only resolve
 //!   at runtime (`calc(100% - 16px)`) leave the function untouched. Typed properties get the
 //!   same reduction from Lightning CSS (`tests/fixtures/math.stsx`).
+//! - **Negative math in non-negative properties** (`padding-left: calc($a - $b)` with `$b > $a`)
+//!   is wrapped in `max(0px, …)`, so it folds to `0px` as the browser would clamp it. The
+//!   pinned Lightning CSS folds it to a negative literal, which browsers drop
+//!   (lightningcss#1000, fixed by #1329 but unreleased); the guard goes away after upgrading.
 //! - **SVG blocks** ([`CssBlock::svg`]) are native SVG CSS that stays verbatim in the
 //!   template: they are never extracted, scoped or substituted, so `process` skips them.
 //! - **Order.** File-level blocks (file scope and top-level `<style global>`) come first,
@@ -56,6 +60,7 @@
 //! Spans are UTF-8 byte offsets into [`CssInput::source`]. Codes are listed on [`CssCode`].
 
 mod ast;
+mod clamp;
 mod diagnostics;
 mod edits;
 mod fold;

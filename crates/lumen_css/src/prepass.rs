@@ -10,6 +10,8 @@
 //!
 //! Selector preludes are the preludes of style rules, including nested ones; keyframe
 //! selectors and the bodies of other at-rules (`@font-face`, `@page`, …) are skipped.
+//!
+//! Declarations are those of style rules, keyframes and other declaration blocks.
 
 use std::ops::Range;
 
@@ -39,10 +41,20 @@ pub(crate) struct Prelude {
     pub nested: bool,
 }
 
+/// A `name: value` declaration.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) struct Declaration {
+    /// The property name, trimmed.
+    pub name: Range<usize>,
+    /// Everything after the colon, up to the `;`, `}` or end of the text.
+    pub value: Range<usize>,
+}
+
 #[derive(Debug, Default)]
 pub(crate) struct Scan {
     pub refs: Vec<RefSite>,
     pub preludes: Vec<Prelude>,
+    pub declarations: Vec<Declaration>,
 }
 
 /// What the current `{…}` block contains.
@@ -73,6 +85,8 @@ struct Item {
     at_rule: Option<String>,
     /// A `:` was seen at parenthesis depth 0 (a declaration's value follows).
     colon: bool,
+    /// Where the first such `:` is.
+    colon_at: Option<usize>,
     parens: usize,
     /// Candidate references and whether each came after the colon.
     candidates: Vec<(RefSite, bool)>,
@@ -116,7 +130,8 @@ pub(crate) fn scan(css: &str) -> Scan {
                 pos += 1;
             }
             b';' | b'}' => {
-                flush_statement(std::mem::take(&mut item), &mut out.refs);
+                let context = *stack.last().expect("the root context is never popped");
+                flush_statement(css, std::mem::take(&mut item), pos, context, &mut out);
                 if byte == b'}' && stack.len() > 1 {
                     stack.pop();
                 }
@@ -134,7 +149,10 @@ pub(crate) fn scan(css: &str) -> Scan {
             }
             b':' => {
                 item.begin(pos);
-                item.colon |= item.parens == 0;
+                if item.parens == 0 && !item.colon {
+                    item.colon = true;
+                    item.colon_at = Some(pos);
+                }
                 pos += 1;
             }
             b'@' if item.start.is_none() => {
@@ -168,20 +186,30 @@ pub(crate) fn scan(css: &str) -> Scan {
             }
         }
     }
-    flush_statement(item, &mut out.refs);
+    let context = *stack.last().expect("the root context is never popped");
+    flush_statement(css, item, end, context, &mut out);
     out
 }
 
-/// An item ended with `;`, `}` or the end of the text: a declaration or statement.
-fn flush_statement(item: Item, refs: &mut Vec<RefSite>) {
-    if item.at_rule.is_none() {
-        refs.extend(
-            item.candidates
-                .into_iter()
-                .filter(|(_, value)| *value)
-                .map(|(site, _)| site),
-        );
+/// An item ended at `end` (`;`, `}` or the end of the text): a declaration or statement.
+fn flush_statement(css: &str, item: Item, end: usize, context: Context, out: &mut Scan) {
+    if item.at_rule.is_some() {
+        return;
     }
+    if let (Some(start), Some(colon), Context::Style | Context::Declarations) =
+        (item.start, item.colon_at, context)
+    {
+        out.declarations.push(Declaration {
+            name: start..start + css[start..colon].trim_end().len(),
+            value: colon + 1..end,
+        });
+    }
+    out.refs.extend(
+        item.candidates
+            .into_iter()
+            .filter(|(_, value)| *value)
+            .map(|(site, _)| site),
+    );
 }
 
 /// An item ended with `{`: a rule or at-rule prelude. Returns the context of the new block.
