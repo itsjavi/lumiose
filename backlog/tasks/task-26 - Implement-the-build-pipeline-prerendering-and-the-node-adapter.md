@@ -5,7 +5,7 @@ status: In Progress
 assignee:
   - '@Nova'
 created_date: '2026-10-08 12:21'
-updated_date: '2026-10-08 15:53'
+updated_date: '2026-10-08 16:03'
 labels: []
 milestone: m-3
 dependencies:
@@ -38,4 +38,6 @@ From TASK-23 (Nova): the request handler ignores route modes, so pages exporting
 Lux (from Nova): reuse app/server/node-http.ts for adapter-node; apply Vite base to route matching; the dev server/build should write shadows (or leave that to lumen check), decide in this task.
 
 Lux: may start before TASK-19 (CSS manifest, Photon): build the client→server→prerender pipeline, output layout, staticPaths, 404.html, static GET endpoints, LUM5001/LUM5005, adapter-node and preview. Integrate stylesheet links from the CSS manifest once TASK-19 is Done (the dependency stays for completion).
+
+Lux (from Beacon, TASK-48): docs/reference/app.md example 2 now trips LUM5005 under your static-endpoint rule. Fix the rule or ask Beacon to adjust the example; whichever is right per decision-21/spec §8.
 <!-- SECTION:NOTES:END -->
