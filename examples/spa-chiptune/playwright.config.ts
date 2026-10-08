@@ -1,8 +1,8 @@
 import { defineConfig, devices } from "@playwright/test";
 
 // The same tests run against `vite` (dev) and `vite build` + `vite preview`.
-const DEV = 5193;
-const PREVIEW = 5194;
+const DEV = 5195;
+const PREVIEW = 5196;
 
 const chrome = {
   ...devices["Desktop Chrome"],

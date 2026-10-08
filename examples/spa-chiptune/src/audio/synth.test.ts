@@ -27,7 +27,7 @@ describe("Synth", () => {
     // 1 s at 150 BPM, speed 6 = 10 rows.
     expect(synth.telemetry.header[HEADER.row]).toBe(10);
     expect(synth.telemetry.levels.some((level) => level > 0)).toBe(true);
-    expect(synth.telemetry.header[HEADER.scopePos]).toBe((SR / 128) * 128 % SCOPE_SIZE);
+    expect(synth.telemetry.header[HEADER.scopePos]).toBe(((SR / 128) * 128) % SCOPE_SIZE);
   });
 
   it("is silent when stopped and when every channel is muted", () => {

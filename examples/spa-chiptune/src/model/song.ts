@@ -31,7 +31,10 @@ export const macro = (values: number[] = [], loop = -1, release = -1): Macro => 
   release,
 });
 
-export function instrument(name: string, parts: Partial<Omit<Instrument, "name">> = {}): Instrument {
+export function instrument(
+  name: string,
+  parts: Partial<Omit<Instrument, "name">> = {},
+): Instrument {
   return {
     name,
     volume: parts.volume ?? macro(),

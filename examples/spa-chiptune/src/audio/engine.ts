@@ -66,6 +66,7 @@ async function boot(): Promise<void> {
   if (memory) {
     telemetry = createTelemetry(memory);
   } else {
+    // oxlint-disable-next-line unicorn/prefer-add-event-listener -- `onmessage` also starts the port
     worklet.port.onmessage = (event: MessageEvent<FromEngine>) => {
       telemetry = createTelemetry(event.data.buffer);
     };
@@ -84,6 +85,7 @@ async function boot(): Promise<void> {
 
 /** Sends a message if the engine runs; the full song is sent when it starts anyway. */
 export function send(message: ToEngine): void {
+  // oxlint-disable-next-line unicorn/require-post-message-target-origin -- a MessagePort
   node?.port.postMessage(message);
 }
 

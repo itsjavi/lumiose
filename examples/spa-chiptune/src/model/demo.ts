@@ -53,7 +53,9 @@ function bass(p: Pattern, half = false) {
     const root = parseNote(`${bar.root}${octave}`);
     const steps = half ? [0, 12, 0, 7] : [0, 12, 0, 12, 0, 12, 7, 12];
     const every = half ? 4 : 2;
-    steps.forEach((offset, i) => put(p, b * 16 + i * every, TRI, { note: root + offset, inst: BASS }));
+    steps.forEach((offset, i) =>
+      put(p, b * 16 + i * every, TRI, { note: root + offset, inst: BASS }),
+    );
   });
 }
 
@@ -109,10 +111,19 @@ export function demoSong(): Song {
   put(verse, 0, P1, { fx: "V", param: 1 });
   put(verse, 1, P1, { fx: "4", param: 0x34 });
   melody(verse, P1, LEAD, [
-    [0, "E-5", 5], [6, "D-5", 5], [12, "C-5", 4],
-    [16, "C-5", 5], [22, "A-4", 5], [28, "C-5", 2], [30, "D-5", 2],
-    [32, "E-5", 5], [38, "G-5", 5], [44, "E-5", 4],
-    [48, "D-5", 7], [56, "B-4", 4], [60, "D-5", 4],
+    [0, "E-5", 5],
+    [6, "D-5", 5],
+    [12, "C-5", 4],
+    [16, "C-5", 5],
+    [22, "A-4", 5],
+    [28, "C-5", 2],
+    [30, "D-5", 2],
+    [32, "E-5", 5],
+    [38, "G-5", 5],
+    [44, "E-5", 4],
+    [48, "D-5", 7],
+    [56, "B-4", 4],
+    [60, "D-5", 4],
   ]);
   chords(verse, [0, 3, 6, 8, 11, 14], 8);
   bass(verse);
@@ -120,10 +131,18 @@ export function demoSong(): Song {
 
   // 02 Answer: the theme climbs, thinner 12.5% duty, with an echo on pulse 2 (3 rows late).
   const answerNotes: [number, string, number][] = [
-    [0, "A-5", 5], [6, "G-5", 5], [12, "E-5", 4],
-    [16, "F-5", 5], [22, "E-5", 5], [28, "C-5", 4],
-    [32, "E-5", 3], [36, "G-5", 3], [40, "C-6", 8],
-    [48, "B-5", 5], [54, "G-5", 5], [60, "D-5", 4],
+    [0, "A-5", 5],
+    [6, "G-5", 5],
+    [12, "E-5", 4],
+    [16, "F-5", 5],
+    [22, "E-5", 5],
+    [28, "C-5", 4],
+    [32, "E-5", 3],
+    [36, "G-5", 3],
+    [40, "C-6", 8],
+    [48, "B-5", 5],
+    [54, "G-5", 5],
+    [60, "D-5", 4],
   ];
   put(answer, 0, P1, { fx: "V", param: 0 });
   put(answer, 40, P1, { fx: "V", param: 2 });
@@ -142,7 +161,10 @@ export function demoSong(): Song {
 
   // 03 Bridge: half-time bass, long notes with slides and a snare roll back into the verse.
   melody(bridge, P1, LEAD, [
-    [0, "A-5", 15], [16, "F-5", 15], [32, "G-5", 12], [44, "E-5", 4],
+    [0, "A-5", 15],
+    [16, "F-5", 15],
+    [32, "G-5", 12],
+    [44, "E-5", 4],
     [48, "B-5", 14],
   ]);
   put(bridge, 0, P1, { fx: "4", param: 0x46 });
@@ -185,7 +207,9 @@ export function demoSong(): Song {
         duty: macro([1]),
       }),
       instrument("Crash", {
-        volume: macro([15, 14, 13, 12, 11, 10, 9, 9, 8, 8, 7, 7, 6, 6, 5, 5, 4, 4, 3, 3, 2, 2, 1, 1, 0]),
+        volume: macro([
+          15, 14, 13, 12, 11, 10, 9, 9, 8, 8, 7, 7, 6, 6, 5, 5, 4, 4, 3, 3, 2, 2, 1, 1, 0,
+        ]),
         duty: macro([0]),
       }),
     ],

@@ -12,7 +12,17 @@ import {
   NOTE_OFF,
   type Cell,
 } from "./model/types.ts";
-import { clampCursor, cursor, doc, edit, patternIndex, prefs, readSong, say, set } from "./state.ts";
+import {
+  clampCursor,
+  cursor,
+  doc,
+  edit,
+  patternIndex,
+  prefs,
+  readSong,
+  say,
+  set,
+} from "./state.ts";
 
 /** Character offset and width of each cursor column inside a 14ch cell. */
 export const COLUMNS = [
@@ -247,7 +257,9 @@ export function deleteRow(): void {
 
 function shiftRows(direction: 1 | -1, label: string): void {
   const sel = selection();
-  const { left, right } = sel ? selectionBounds(sel) : { left: cursor.channel, right: cursor.channel };
+  const { left, right } = sel
+    ? selectionBounds(sel)
+    : { left: cursor.channel, right: cursor.channel };
   const top = cursor.row;
   const length = rows();
   const cells = readSong().patterns[patternIndex()]!.rows;
@@ -263,8 +275,9 @@ function shiftRows(direction: 1 | -1, label: string): void {
   });
 }
 
+const isNoise = (ch: number) => CHANNELS[ch]!.kind === "noise";
+
 export function transpose(semitones: number): void {
-  const isNoise = (ch: number) => CHANNELS[ch]!.kind === "noise";
   edit(
     semitones > 0 ? "Transpose up" : "Transpose down",
     () =>
@@ -355,7 +368,12 @@ export function removeOrder(): void {
   const song = readSong();
   if (song.order.length <= 1) return say("A song needs at least one order");
   const at = cursor.order;
-  edit("Remove order", () => set(["order"], song.order.filter((_, i) => i !== at)));
+  edit("Remove order", () =>
+    set(
+      ["order"],
+      song.order.filter((_, i) => i !== at),
+    ),
+  );
   setOrder(Math.min(at, song.order.length - 1));
 }
 

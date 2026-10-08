@@ -165,10 +165,12 @@ test("edits instrument macros by drawing and by text", async ({ page }, info) =>
   const box = (await bars.boundingBox())!;
   await page.mouse.move(box.x + 2, box.y + box.height * 0.9);
   await page.mouse.down();
-  for (let x = 2; x < box.width * 0.2; x += 6) await page.mouse.move(box.x + x, box.y + box.height * 0.9);
+  for (let x = 2; x < box.width * 0.2; x += 6)
+    await page.mouse.move(box.x + x, box.y + box.height * 0.9);
   await page.mouse.up();
   await expect(text).not.toHaveValue("15 14 13 12 11 11 10 10 9 9 / 7 5 3 2 1 0");
-  await expect(text).toHaveValue(/^2 2 2/);
+  // A flat low line over the first steps (1 or 2 of 15, depending on the bars' borders).
+  await expect(text).toHaveValue(/^([12]) \1 \1 /);
   // Typed MML with a loop and a release point.
   const arp = page.getByRole("region", { name: "Arpeggio macro" }).getByRole("textbox");
   await arp.fill("0 | 4 7 / 12");
@@ -191,7 +193,10 @@ test("saves to the library, switches theme and shows the other views", async ({ 
   await page.getByRole("button", { name: "New song" }).click();
   await expect(page.locator(".library li")).toHaveCount(2);
   await shot(page, "songs", info.project.name);
-  await page.locator(".library li", { hasText: "Night Shift" }).getByRole("button", { name: "Load" }).click();
+  await page
+    .locator(".library li", { hasText: "Night Shift" })
+    .getByRole("button", { name: "Load" })
+    .click();
   await expect(page.locator(".header .title")).toHaveText("Night Shift");
   // The library survives a reload.
   await page.reload();

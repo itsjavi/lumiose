@@ -205,7 +205,8 @@ export class Voice {
     if (this.volSlide !== 0) this.volume = clamp(this.volume + this.volSlide / 8, 0, 15);
     if (this.portaTarget >= 0) {
       const d = this.portaTarget - this.pitch;
-      this.pitch = Math.abs(d) <= this.porta ? this.portaTarget : this.pitch + Math.sign(d) * this.porta;
+      this.pitch =
+        Math.abs(d) <= this.porta ? this.portaTarget : this.pitch + Math.sign(d) * this.porta;
     } else if (this.slideUp || this.slideDown) {
       this.pitch = clamp(this.pitch + this.slideUp - this.slideDown, 0, NOTE_MAX * 16);
     }
@@ -393,7 +394,9 @@ export function telemetryBytes(): number {
   return HEADER_INTS * 4 + LEVELS * 4 + LEVELS * SCOPE_SIZE * 4;
 }
 
-export function createTelemetry(buffer: ArrayBufferLike = new ArrayBuffer(telemetryBytes())): Telemetry {
+export function createTelemetry(
+  buffer: ArrayBufferLike = new ArrayBuffer(telemetryBytes()),
+): Telemetry {
   return {
     header: new Int32Array(buffer, 0, HEADER_INTS),
     levels: new Float32Array(buffer, HEADER_INTS * 4, LEVELS),

@@ -77,7 +77,7 @@ export function createHistory<M = unknown>(options: HistoryOptions) {
     },
 
     /** Runs `fn` as one undoable step. Nested calls join the outer step. */
-    transact(label: string, fn: () => void, options: { key?: string; meta?: M } = {}): void {
+    transact(label: string, fn: () => void, step: { key?: string; meta?: M } = {}): void {
       if (open) {
         fn();
         return;
@@ -87,7 +87,7 @@ export function createHistory<M = unknown>(options: HistoryOptions) {
         batch(fn);
       } finally {
         open = null;
-        commit(label, patches, options.key, options.meta);
+        commit(label, patches, step.key, step.meta);
       }
     },
 

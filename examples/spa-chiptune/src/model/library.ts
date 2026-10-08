@@ -1,6 +1,13 @@
 // Save files and the song library in localStorage.
 import { signal } from "lumen";
-import { defaultMixer, emptyCell, emptyPattern, emptySong, instrument, isEmptyCell } from "./song.ts";
+import {
+  defaultMixer,
+  emptyCell,
+  emptyPattern,
+  emptySong,
+  instrument,
+  isEmptyCell,
+} from "./song.ts";
 import { CHANNEL_COUNT, type Cell, type Instrument, type Macro, type Song } from "./types.ts";
 
 export const FORMAT = "lumen-chiptune";
@@ -24,7 +31,8 @@ export function serialize(song: Song): string {
         const cells: SparseCell[] = [];
         pattern.rows.forEach((row, r) =>
           row.forEach((cell, c) => {
-            if (!isEmptyCell(cell)) cells.push([r, c, cell.note, cell.inst, cell.vol, cell.fx, cell.param]);
+            if (!isEmptyCell(cell))
+              cells.push([r, c, cell.note, cell.inst, cell.vol, cell.fx, cell.param]);
           }),
         );
         return cells;
@@ -72,7 +80,9 @@ export function deserialize(text: string): Song {
     }
     return pattern;
   });
-  const instruments: Instrument[] = (Array.isArray(s.instruments) ? s.instruments : base.instruments)
+  const instruments: Instrument[] = (
+    Array.isArray(s.instruments) ? s.instruments : base.instruments
+  )
     .slice(0, 64)
     .map((ins) => ({
       ...instrument(typeof ins?.name === "string" ? ins.name.slice(0, 32) : "Instrument"),

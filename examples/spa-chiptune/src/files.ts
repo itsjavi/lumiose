@@ -8,7 +8,10 @@ import { openSong, readSong, say } from "./state.ts";
 export const exporting = signal(false);
 
 const slug = (title: string) =>
-  title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "song";
+  title
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "") || "song";
 
 function download(blob: Blob, name: string): void {
   const url = URL.createObjectURL(blob);
@@ -39,7 +42,10 @@ export async function exportWav(): Promise<void> {
 
 export function exportJson(): void {
   const song = readSong();
-  download(new Blob([serialize(song)], { type: "application/json" }), `${slug(song.title)}.chip.json`);
+  download(
+    new Blob([serialize(song)], { type: "application/json" }),
+    `${slug(song.title)}.chip.json`,
+  );
   say("Song file saved");
 }
 

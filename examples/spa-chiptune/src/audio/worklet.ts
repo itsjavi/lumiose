@@ -31,6 +31,7 @@ class ChipProcessor extends AudioWorkletProcessor {
     // About 60 Hz: one post every ~16 ms of 128-frame blocks (never while exporting offline).
     this.postEvery = opts.render ? Infinity : Math.max(1, Math.round(sampleRate / 128 / 60));
     if (opts.render) this.synth.play("once", 0, 0);
+    // oxlint-disable-next-line unicorn/prefer-add-event-listener -- `onmessage` also starts the port
     this.port.onmessage = (event: MessageEvent<ToEngine>) => this.receive(event.data);
   }
 
