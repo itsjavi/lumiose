@@ -209,7 +209,14 @@ work remains.
   - Before editing dependencies in any `package.json` or `Cargo.toml`, or running `pnpm install` / `cargo add`, create `.local/coordination/deps.lock/` atomically (`mkdir`), and remove it afterwards.
   - Pin Rust dependencies exactly, in `[workspace.dependencies]`.
 - **Docs.** A task that changes user-facing API, syntax or behaviour also updates `packages/lumen/docs/`, written for both agents and humans. If it can't, the task records a follow-up for Beacon. Regenerate `llms.txt` with `pnpm --filter lumen docs:gen`.
-- **Commits.** Workers do not commit. The orchestrator commits integrated work.
+- **Commits.** Commit early and often, so the user can follow progress between requests. Do not leave long lists of pending changes.
+  - Workers whose `agents.json` entry has `canCommit: true` commit their own work in small, coherent Conventional Commits whenever a meaningful step is green, e.g. "feat(dom): claim cursor for lists". Mention the task id.
+  - Commit only files in your area:
+    1. Take `.local/coordination/git.lock/` (atomic `mkdir`).
+    2. Run `git commit -m "…" -- <your paths>`. The `--only` pathspec form leaves other agents' staged or unstaged changes alone.
+    3. Release the lock.
+  - Never `git add -A`, never commit other agents' files, and never amend, reset or rewrite history.
+  - The orchestrator commits shared files, such as root configs, the lockfile and contracts, plus anything left over.
 
 ## Scratch space
 

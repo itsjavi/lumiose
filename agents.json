@@ -14,27 +14,27 @@
     "Photon": {
       "role": "Compiler engineer (Rust). Owns the .stsx/.tsx parser and masking, the OXC-based JSX transform, the CSS pipeline (Lightning CSS scoping by placement, $name constant folding), SSR codegen, napi-rs/wasm bindings, and the Vite/Rolldown plugin.",
       "canWrite": true,
-      "canCommit": false
+      "canCommit": true
     },
     "Halo": {
       "role": "CSS compiler engineer (Rust). Owns the lumen_css crate: Lightning CSS processing, placement scope tokens and selector rewriting, :global/:deep, scoped keyframes, $ref substitution of resolved constants, targets/minification and CSS diagnostics. Also owns the shared website design system (@lumen/site-kit).",
       "canWrite": true,
-      "canCommit": false
+      "canCommit": true
     },
     "Spark": {
       "role": "Runtime engineer (TypeScript). Owns signals, the DOM renderer, SSR streaming, islands hydration, router, and data primitives, plus their benchmarks.",
       "canWrite": true,
-      "canCommit": false
+      "canCommit": true
     },
     "Nova": {
       "role": "App-layer engineer (TypeScript). Owns file routes and typegen, the request handler (middleware, endpoints, cookies, redirects), document/head, form actions and fetchJSON, the SPA router, the build/prerender pipeline, the dev server integration, and adapters.",
       "canWrite": true,
-      "canCommit": false
+      "canCommit": true
     },
     "Beacon": {
       "role": "Tooling and DX engineer. Owns the CLI and `lumen check`, shadow-TSX type checking, the .stsx language server (TS 7 LSP proxy + CSS) and VS Code extension, lint/format wrappers, TS 7 typings, docs site, and agent-facing surfaces (AGENTS.md, llms.txt, skills, MCP server).",
       "canWrite": true,
-      "canCommit": false
+      "canCommit": true
     }
   }
 }
