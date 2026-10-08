@@ -4,6 +4,16 @@ export { attr, classAttr, spreadAttrs, styleAttr } from "./attrs.ts";
 export { $async, $await, $leave, createComponent } from "./frame.ts";
 export { island } from "./island.ts";
 export { escape } from "./node.ts";
-export { branch, insert, list, mergeProps, restProps, selector, ssr, text } from "./ssr.ts";
+export {
+  branch,
+  branchArm,
+  insert,
+  list,
+  mergeProps,
+  restProps,
+  selector,
+  ssr,
+  text,
+} from "./ssr.ts";
 export { renderToStream, renderToString } from "./render.ts";
 export type { RenderedShell, RenderToStreamOptions } from "./render.ts";

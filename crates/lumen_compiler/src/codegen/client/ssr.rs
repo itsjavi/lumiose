@@ -393,10 +393,7 @@ impl<'a> Codegen<'a, '_> {
             let callee = self.runtime("list", span);
             self.ast.call(span, callee, [list.source, list.render])
         } else if self.is_branch(&expression) {
-            let (cond, when_true, when_false) = self.compile_branch(expression);
-            let callee = self.runtime("branch", span);
-            let args = [cond, when_true].into_iter().chain(when_false);
-            self.ast.call(span, callee, args)
+            self.server_branch(expression)
         } else {
             let compiled_jsx = matches!(
                 expression.without_parentheses(),

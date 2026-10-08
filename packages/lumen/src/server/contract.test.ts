@@ -16,6 +16,7 @@ const CONTRACT_KEYS: ReadonlyArray<keyof ServerRuntime> = [
   "escape",
   "list",
   "branch",
+  "branchArm",
   "selector",
   "createComponent",
   "restProps",

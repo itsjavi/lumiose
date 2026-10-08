@@ -44,6 +44,8 @@ export interface ServerRuntime {
   ): unknown;
   /** Server branch; emits `<!--[-->` / `<!--[!-->` markers only inside islands. */
   branch(cond: unknown, whenTrue: () => unknown, whenFalse?: () => unknown): unknown;
+  /** The side of a branch that compiled code already chose and rendered, `cond ? branchArm(true, a) : branchArm(false, b)`: no closures; the same markers as `branch`. */
+  branchArm(active: boolean, out?: unknown): unknown;
   /** Same semantics as the client helper, evaluated once. */
   selector<T>(source: () => T): (key: T) => boolean;
 

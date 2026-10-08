@@ -116,6 +116,16 @@ export function branch(cond: unknown, whenTrue: () => unknown, whenFalse?: () =>
   return html(island ? wrap("<!--[!-->", out, "<!--]-->") : out);
 }
 
+/**
+ * A branch side the compiled code already chose and rendered, without closures (TASK-78):
+ * `cond ? branchArm(true, a) : branchArm(false, b)`. Same markers as `branch`.
+ */
+export function branchArm(active: boolean, out?: unknown): unknown {
+  const value = content(out);
+  if (currentFrame()?.island === undefined) return html(value);
+  return html(wrap(active ? "<!--[-->" : "<!--[!-->", value, "<!--]-->"));
+}
+
 /** Same semantics as the client helper, evaluated once. */
 export function selector<T>(source: () => T): (key: T) => boolean {
   const selected = source();

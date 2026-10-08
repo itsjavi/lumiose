@@ -33,9 +33,7 @@ export function App(props) {
 	insert(_el, createComponent(Card, { get children() {
 		return user().name;
 	} }), _marker3);
-	insert(_el, createComponent(Card, { get children() {
-		return "Text only";
-	} }), _marker4);
+	insert(_el, createComponent(Card, { children: "Text only" }), _marker4);
 	insert(_el, createComponent(Card, { get children() {
 		return _t1();
 	} }), _marker5);

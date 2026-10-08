@@ -3,7 +3,7 @@
 // branch/list); other props and plain functions keep their values.
 import { signal } from "lumen";
 import { Card } from "./Card.stsx";
-import { ssr, insert, list, branch, createComponent } from "lumen/server";
+import { ssr, insert, list, branchArm, createComponent } from "lumen/server";
 const _s0 = ["<p>Open</p>"];
 const _s1 = ["<p>Closed</p>"];
 const _s2 = ["<span>Visible</span>"];
@@ -33,29 +33,29 @@ export function Values(props) {
 	const open = signal(false);
 	const items = signal([]);
 	return ssr(_s9, insert(createComponent(Card, { get children() {
-		return branch(open(), () => ssr(_s0), () => ssr(_s1));
+		return open() ? branchArm(true, ssr(_s0)) : branchArm(false, ssr(_s1));
 	} })), insert(createComponent(Card, { get children() {
-		return branch(open(), () => ssr(_s2));
+		return open() ? branchArm(true, ssr(_s2)) : branchArm(false);
 	} })), insert(createComponent(Card, { get children() {
 		return list(items(), (item) => ssr(_s3, insert(item.name)));
 	} })), insert(createComponent(Card, { get children() {
 		return [ssr(_s4), list(items(), (item, i) => ssr(_s5, insert(i()), insert(item.name)))];
 	} })), insert(createComponent(Card, { get title() {
 		return open() ? ssr(_s6) : null;
-	} })), branch(open(), () => list(items(), (item) => ssr(_s7, insert(item.name))), () => ssr(_s8)));
+	} })), open() ? branchArm(true, list(items(), (item) => ssr(_s7, insert(item.name)))) : branchArm(false, ssr(_s8)));
 }
 export function Frag() {
 	const open = signal(false);
 	const items = signal([]);
 	return [
-		branch(open(), () => ssr(_s0), () => ssr(_s1)),
+		open() ? branchArm(true, ssr(_s0)) : branchArm(false, ssr(_s1)),
 		list(items(), (name) => ssr(_s3, insert(name))),
 		ssr(_s10)
 	];
 }
 export function Rows() {
 	const items = signal([]);
-	return ssr(_s12, list(items(), (name) => branch(name.length > 3, () => ssr(_s11, insert(name)), () => ssr(_s7, insert(name)))));
+	return ssr(_s12, list(items(), (name) => name.length > 3 ? branchArm(true, ssr(_s11, insert(name))) : branchArm(false, ssr(_s7, insert(name)))));
 }
 export function Plain(props) {
 	return props.list.map((name) => ssr(_s3, insert(name)));

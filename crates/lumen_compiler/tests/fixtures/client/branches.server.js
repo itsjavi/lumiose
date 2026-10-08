@@ -1,7 +1,7 @@
 // Conditionals: a reactive test with a JSX arm compiles to a memoised branch; static tests are
 // evaluated once; a component returning a reactive conditional returns a tracked function.
 import { signal } from "lumen";
-import { ssr, insert, branch } from "lumen/server";
+import { ssr, insert, branchArm } from "lumen/server";
 const _s0 = ["<p>Open</p>"];
 const _s1 = ["<p>Closed</p>"];
 const _s2 = ["<span>Visible</span>"];
@@ -25,8 +25,8 @@ const _s11 = ["<p>Off</p>"];
 export function Branches(props) {
 	const open = signal(false);
 	const loggedIn = true;
-	return ssr(_s9, branch(open(), () => ssr(_s0), () => ssr(_s1)), branch(open(), () => ssr(_s2)), branch(props.user, () => ssr(_s3, insert(props.user.name))), branch(props.mode === "a", () => ssr(_s4), () => branch(props.mode === "b", () => ssr(_s5), () => ssr(_s6))), insert(loggedIn ? ssr(_s7) : ssr(_s8)), insert(open() ? "yes" : "no"));
+	return ssr(_s9, open() ? branchArm(true, ssr(_s0)) : branchArm(false, ssr(_s1)), open() ? branchArm(true, ssr(_s2)) : branchArm(false), props.user ? branchArm(true, ssr(_s3, insert(props.user.name))) : branchArm(false), props.mode === "a" ? branchArm(true, ssr(_s4)) : branchArm(false, props.mode === "b" ? branchArm(true, ssr(_s5)) : branchArm(false, ssr(_s6))), insert(loggedIn ? ssr(_s7) : ssr(_s8)), insert(open() ? "yes" : "no"));
 }
 export function Switch(props) {
-	return branch(props.on, () => ssr(_s10), () => ssr(_s11));
+	return props.on ? branchArm(true, ssr(_s10)) : branchArm(false, ssr(_s11));
 }

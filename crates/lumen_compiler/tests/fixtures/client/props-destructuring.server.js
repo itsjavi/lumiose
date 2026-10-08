@@ -26,9 +26,7 @@ export function Props(props) {
 		count: props.count === void 0 ? 1 : props.count
 	});
 	return ssr(_s0, spreadAttrs(mergeProps({
-		get class() {
-			return props.class;
-		},
+		class: props.class,
 		get "data-name"() {
 			return (props.user === void 0 ? {} : props.user).name === void 0 ? "anon" : (props.user === void 0 ? {} : props.user).name;
 		}

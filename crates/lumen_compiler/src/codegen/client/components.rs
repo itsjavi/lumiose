@@ -114,9 +114,15 @@ impl<'a> Codegen<'a, '_> {
         if let Some(children) = children {
             let items = self.child_items(children);
             if let Some(compiled) = self.compile_fragment_items(items, span, true) {
+                // Static text (or another literal) has nothing to evaluate lazily: a data
+                // property keeps the object literal on V8's fast path (no accessor, no closure).
                 current.push(
-                    self.ast
-                        .getter(span, "children", compiled.setup, compiled.value),
+                    if compiled.setup.is_empty() && literal(&compiled.value).is_some() {
+                        self.ast.property(span, "children", compiled.value)
+                    } else {
+                        self.ast
+                            .getter(span, "children", compiled.setup, compiled.value)
+                    },
                 );
             }
         }
@@ -131,7 +137,8 @@ impl<'a> Codegen<'a, '_> {
     }
 
     /// One prop: literals, identifiers and functions are plain values; JSX and reactive reads are
-    /// getters (evaluated lazily by the child, inside its own tracking).
+    /// getters (evaluated lazily by the child, inside its own tracking). On the server, where
+    /// nothing is tracked, a trivially safe read is a plain value too (contract doc-2 §3.1).
     fn prop(&mut self, name: &str, expr: Expression<'a>, span: Span) -> ObjectPropertyKind<'a> {
         if literal(&expr).is_some() {
             return self.ast.property(span, name, expr);
@@ -141,10 +148,29 @@ impl<'a> Codegen<'a, '_> {
             return self.ast.getter(span, name, compiled.setup, compiled.value);
         }
         let expr = self.visited(expr);
-        if self.is_dynamic(&expr) {
+        if self.is_dynamic(&expr) && !(self.server() && self.is_trivially_safe(&expr)) {
             self.ast.getter(span, name, Vec::new(), expr)
         } else {
             self.ast.property(span, name, expr)
+        }
+    }
+
+    /// An expression that cannot throw or run user code beyond a props getter, so evaluating it
+    /// eagerly in the parent matches the client's lazy read (Lux, TASK-78): a literal, a local
+    /// identifier, a single-level `props.x` read, or a template literal of those.
+    fn is_trivially_safe(&self, expr: &Expression<'a>) -> bool {
+        match expr.without_parentheses() {
+            Expression::Identifier(_) => true,
+            Expression::StaticMemberExpression(member) => {
+                !member.optional
+                    && matches!(&member.object, Expression::Identifier(object)
+                        if self.component().is_some_and(|c| object.name == c.props_name.as_str()))
+            }
+            Expression::TemplateLiteral(template) => template
+                .expressions
+                .iter()
+                .all(|part| self.is_trivially_safe(part)),
+            other => literal(other).is_some(),
         }
     }
 }

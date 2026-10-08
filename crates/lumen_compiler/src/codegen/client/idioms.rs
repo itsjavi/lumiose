@@ -479,11 +479,58 @@ impl<'a> Codegen<'a, '_> {
         }
     }
 
-    /// `(cond, whenTrue, whenFalse?)` for `branch()`.
+    /// Client: `(cond, whenTrue, whenFalse?)` for `branch()`, each a function.
     pub(super) fn compile_branch(
         &mut self,
         expr: Expression<'a>,
     ) -> (Expression<'a>, Expression<'a>, Option<Expression<'a>>) {
+        let (test, when_true, when_false) = self.branch_parts(expr);
+        let cond = self.compute(test);
+        let arrow = |this: &Self, arm: Compiled<'a>| {
+            this.ast
+                .arrow_returning(arm.value.span(), &[], arm.setup, arm.value)
+        };
+        let when_true = arrow(self, when_true);
+        let when_false = when_false.map(|arm| arrow(self, arm));
+        (cond, when_true, when_false)
+    }
+
+    /// Server: the condition is evaluated once, so only the chosen arm is rendered, in place:
+    /// `cond ? branchArm(true, a) : branchArm(false, b)` allocates no closures (TASK-78). An arm
+    /// that needs setup statements keeps `branch(cond, () => a, () => b)`.
+    pub(super) fn server_branch(&mut self, expr: Expression<'a>) -> Expression<'a> {
+        let span = expr.span();
+        let (test, when_true, when_false) = self.branch_parts(expr);
+        if when_true.setup.is_empty() && when_false.as_ref().is_none_or(|arm| arm.setup.is_empty())
+        {
+            let on = [self.ast.boolean(span, true), when_true.value];
+            let off = std::iter::once(self.ast.boolean(span, false))
+                .chain(when_false.map(|arm| arm.value));
+            let callee = self.runtime("branchArm", span);
+            let on = self.ast.call(span, callee, on);
+            let callee = self.runtime("branchArm", span);
+            let off = self.ast.call(span, callee, off);
+            return self.ast.conditional(span, test, on, off);
+        }
+        let callee = self.runtime("branch", span);
+        let mut args = vec![test];
+        for arm in [Some(when_true), when_false].into_iter().flatten() {
+            let arm_span = arm.value.span();
+            args.push(
+                self.ast
+                    .arrow_returning(arm_span, &[], arm.setup, arm.value),
+            );
+        }
+        self.ast.call(span, callee, args)
+    }
+
+    /// The visited condition and the compiled arms of a reactive conditional (`whenFalse` is
+    /// `None` for `&&` and a `null` alternate). A nested reactive conditional or a list in an arm
+    /// is a parentless branch/list value.
+    fn branch_parts(
+        &mut self,
+        expr: Expression<'a>,
+    ) -> (Expression<'a>, Compiled<'a>, Option<Compiled<'a>>) {
         let mut expr = expr;
         while let Expression::ParenthesizedExpression(paren) = expr {
             expr = paren.unbox().expression;
@@ -500,25 +547,11 @@ impl<'a> Codegen<'a, '_> {
             _ => unreachable!("checked by is_branch"),
         };
         let test = self.visited(test);
-        let cond = if self.server() {
-            test
-        } else {
-            self.compute(test)
-        };
-        let when_true = self.branch_arm(consequent);
+        let when_true = self.compile_arm(consequent);
         let when_false = alternate
             .filter(|a| !matches!(a.without_parentheses(), Expression::NullLiteral(_)))
-            .map(|a| self.branch_arm(a));
-        (cond, when_true, when_false)
-    }
-
-    /// `() => <compiled arm>`; a nested reactive conditional or a list in an arm is a parentless
-    /// branch/list value.
-    fn branch_arm(&mut self, arm: Expression<'a>) -> Expression<'a> {
-        let span = arm.span();
-        let compiled = self.compile_arm(arm);
-        self.ast
-            .arrow_returning(span, &[], compiled.setup, compiled.value)
+            .map(|a| self.compile_arm(a));
+        (test, when_true, when_false)
     }
 
     /// A renderable that stays live without a parent element (doc-2 §2): a reactive conditional →
@@ -544,8 +577,11 @@ impl<'a> Codegen<'a, '_> {
             });
         }
         if self.is_branch(&expr) {
+            if server {
+                return Ok(Compiled::value(self.server_branch(expr)));
+            }
             let (cond, when_true, when_false) = self.compile_branch(expr);
-            let callee = self.runtime(if server { "branch" } else { "branchValue" }, span);
+            let callee = self.runtime("branchValue", span);
             let mut args = vec![cond, when_true];
             args.extend(when_false);
             return Ok(Compiled::value(self.ast.call(span, callee, args)));

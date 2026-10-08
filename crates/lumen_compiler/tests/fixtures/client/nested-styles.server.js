@@ -42,9 +42,7 @@ export function Siblings(props) {
 	})), insert(createComponent(Card, {
 		class: "outside",
 		$$scope: "data-l-nmviz5ch",
-		get children() {
-			return "no subtree tokens";
-		}
+		children: "no subtree tokens"
 	})));
 }
 // An async component with a nested block, and rows from .map() in styled lists and tables.

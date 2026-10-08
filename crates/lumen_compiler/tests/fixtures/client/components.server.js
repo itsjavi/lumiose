@@ -33,9 +33,7 @@ export function App(props) {
 		return user().name;
 	} }, "load", void 0, { children: () => ssr(_s0, insert(user().name)) })), insert(createComponent(Card, { get children() {
 		return user().name;
-	} })), insert(createComponent(Card, { get children() {
-		return "Text only";
-	} })), insert(createComponent(Card, { get children() {
+	} })), insert(createComponent(Card, { children: "Text only" })), insert(createComponent(Card, { get children() {
 		return ssr(_s1);
 	} })), insert(createComponent(Card, {
 		get icon() {

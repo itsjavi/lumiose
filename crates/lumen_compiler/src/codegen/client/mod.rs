@@ -160,6 +160,7 @@ const SERVER_RUNTIME: &[&str] = &[
     "escape",
     "list",
     "branch",
+    "branchArm",
     "selector",
     "createComponent",
     "restProps",

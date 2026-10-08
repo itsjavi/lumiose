@@ -26,9 +26,7 @@ function Hidden() {
 	return ssr(_s1);
 }
 export default function Page(props) {
-	return ssr(_s4, insert(island("/src/components/Team.stsx#TeamPanel", TeamPanel, { get ids() {
-		return props.ids;
-	} }, "visible", void 0, { children: () => ssr(_s2) })), insert(island("/src/components/Team.stsx#TeamPanel", TeamPanel, { ids: [] }, "visible", "200px")), insert(island("/charts/Chart.tsx#default", Chart, {
+	return ssr(_s4, insert(island("/src/components/Team.stsx#TeamPanel", TeamPanel, { ids: props.ids }, "visible", void 0, { children: () => ssr(_s2) })), insert(island("/src/components/Team.stsx#TeamPanel", TeamPanel, { ids: [] }, "visible", "200px")), insert(island("/charts/Chart.tsx#default", Chart, {
 		title: "x",
 		class: "wide",
 		$$scope: "data-l-k3v7p5ya"

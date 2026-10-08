@@ -36,9 +36,7 @@ export function Siblings(props) {
 	insert(_el, createComponent(Card, {
 		class: "outside",
 		$$scope: "data-l-nmviz5ch",
-		get children() {
-			return "no subtree tokens";
-		}
+		children: "no subtree tokens"
 	}));
 	return _el;
 }
