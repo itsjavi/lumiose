@@ -5,6 +5,7 @@ status: To Do
 assignee:
   - '@Photon'
 created_date: '2026-10-08 12:21'
+updated_date: '2026-10-08 13:27'
 labels: []
 milestone: m-2
 dependencies:
@@ -27,3 +28,14 @@ SSR must output strings with fused escaping and no instances. Hydration needs a 
 - [ ] #2 The hydrate walk is a separate generated path, emitted only for modules reachable from island or SPA entries
 - [ ] #3 Golden fixtures for server and hydrate output
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Lux (from Nova's TASK-16 server runtime, now implemented in packages/lumen/src/server):
+- String holes are trusted raw HTML, so emit them only through the helpers. A plain {t} object is escaped; rendered HTML is the branded SSRHtml.
+- Adjacent dynamic texts: put an empty static part "" between two text() holes, and the runtime emits <!--!--> inside islands.
+- Use insert() wherever the client uses insert, so island markers match. list and branch are holes directly.
+- Attribute helpers return strings with a leading space. $$scope goes through spreadAttrs; event handlers are dropped on the server.
+- JSX-valued island props go in slots and are left out of props.
+<!-- SECTION:NOTES:END -->
