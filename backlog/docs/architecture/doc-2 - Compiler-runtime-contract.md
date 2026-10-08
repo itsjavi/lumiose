@@ -3,7 +3,7 @@ id: doc-2
 title: Compiler-runtime contract
 type: specification
 created_date: '2026-10-08 12:27'
-updated_date: '2026-10-08 15:52'
+updated_date: '2026-10-08 16:12'
 tags:
   - architecture
   - contract
@@ -44,6 +44,8 @@ tags:
 | `insert(parent, value, marker?)` | Renders `Renderable` before `marker`. Functions and signals are tracked and reconciled. Arrays are flattened. Nodes are moved, not cloned. Strings become text nodes. `null`, `undefined` and booleans render nothing |
 | `list(parent, marker, source, render, key?)` | Keyed reconciliation (spec §6.3). `render.length > 1` means the index is used, so a per-row index signal is created. Each row's owner is created lazily |
 | `branch(parent, marker, cond, whenTrue, whenFalse?)` | Memoised on `!!cond()`. Disposes the inactive branch's owner |
+| `branchValue(cond, whenTrue, whenFalse?)` | `branch` without a parent: returns a `Renderable` range that `insert` places as one node. Memoised on `!!cond()`; disposes the inactive owner on a flip. Used for conditionals in component children, fragments and nested ternaries |
+| `listValue(source, render, key?)` | `list` without a parent: a `Renderable` range with the same keyed reconciliation and index rule. Clears remove rows one by one. **Codegen:** keep `branch`/`list` when the expression is a child of a template element (cheaper); use the value variants elsewhere, e.g. `get children() { return listValue(…) }`. Under hydration, TASK-18 maps the server `<!--[-->…<!--]-->` region onto the range |
 | `selector(source)` | Returns `isSelected(key)`. Only the previous and the next key re-notify |
 | `createComponent(C, props)` | New owner, untracked call. A native `async function` takes the async path (§4) |
 | `restProps(props, keys)`, `mergeProps(...)`, `spread(el, () => props)` | Reactive props utilities |
