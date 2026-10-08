@@ -3,7 +3,7 @@
 // as plain files.
 import { Footer, SiteHeader } from "@lumen/site-kit";
 import { color, radius, space } from "@lumen/site-kit/tokens";
-import { url } from "lumen";
+import { href, url } from "lumen";
 import { footerColumns, link, navLinks, sitePath, site } from "../lib/site.ts";
 
 export default function RootLayout(props: { children?: JSX.Element }) {
@@ -14,7 +14,7 @@ export default function RootLayout(props: { children?: JSX.Element }) {
       <a class="skip" href="#content">
         Skip to content
       </a>
-      <SiteHeader links={navLinks} current={current} home={link("/")} />
+      <SiteHeader links={navLinks} current={current} home={href("/")} />
       <main id="content">{props.children}</main>
       <Footer columns={footerColumns} tagline={site.tagline}>
         <p>MIT licensed. This site is a static Lumen app built with @lumen/site-kit.</p>

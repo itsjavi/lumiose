@@ -16,7 +16,7 @@ import {
   text,
   weight,
 } from "@lumen/site-kit/tokens";
-import { Meta, Title } from "lumen";
+import { href, Meta, Title } from "lumen";
 import { BarChart } from "../components/BarChart.stsx";
 import { evidence } from "../content/evidence.ts";
 import {
@@ -79,10 +79,10 @@ export default function Home() {
           interactive ship JavaScript.
         </p>
         <div class="actions">
-          <LinkButton href={link("/docs/getting-started")} size="lg">
+          <LinkButton href={href("/docs/[...path]", { path: "getting-started" })} size="lg">
             Get started
           </LinkButton>
-          <LinkButton href={link("/docs")} variant="secondary" size="lg">
+          <LinkButton href={href("/docs/[...path]", { path: "" })} variant="secondary" size="lg">
             Read the docs
           </LinkButton>
           <LinkButton href={link("/playground")} variant="ghost" size="lg">
@@ -138,7 +138,7 @@ export default function Home() {
               cloned once, and only the bindings that read a signal re-run.
             </li>
           </ul>
-          <a class="more" href={link("/docs/concepts/styles")}>
+          <a class="more" href={href("/docs/[...path]", { path: "concepts/styles" })}>
             How styles work →
           </a>
         </header>
@@ -203,7 +203,7 @@ export default function Home() {
           <Card
             title="Static"
             eyebrow="mode = static"
-            href={link("/docs/concepts/rendering-modes")}
+            href={href("/docs/[...path]", { path: "concepts/rendering-modes" })}
             icon={<Icon path={ICONS.static} />}
           >
             Prerendered at build time to plain HTML files, with <code>staticPaths</code> for params.
@@ -211,7 +211,7 @@ export default function Home() {
           <Card
             title="Server"
             eyebrow="mode = server"
-            href={link("/docs/concepts/rendering-modes")}
+            href={href("/docs/[...path]", { path: "concepts/rendering-modes" })}
             icon={<Icon path={ICONS.server} />}
           >
             Rendered per request and streamed: the shell first, then each Suspense boundary.
@@ -219,7 +219,7 @@ export default function Home() {
           <Card
             title="Islands"
             eyebrow="client:load · idle · visible"
-            href={link("/docs/concepts/islands")}
+            href={href("/docs/[...path]", { path: "concepts/islands" })}
             icon={<Icon path={ICONS.islands} />}
           >
             Only interactive components hydrate, with serializable props and slots.
@@ -227,7 +227,7 @@ export default function Home() {
           <Card
             title="SPA routes"
             eyebrow="mode = spa"
-            href={link("/docs/reference/router")}
+            href={href("/docs/[...path]", { path: "reference/router" })}
             icon={<Icon path={ICONS.spa} />}
           >
             Client navigation with persistent layouts, where an app needs it.
@@ -259,8 +259,8 @@ export default function Home() {
             </li>
             <li>
               <strong>Machine-readable.</strong> <code>--format json</code> on every command,{" "}
-              <a href={link("/llms.txt")}>llms.txt</a> and{" "}
-              <a href={link("/llms-full.txt")}>llms-full.txt</a> for this site.
+              <a href={href("/llms.txt")}>llms.txt</a> and{" "}
+              <a href={href("/llms-full.txt")}>llms-full.txt</a> for this site.
             </li>
           </ul>
         </header>
@@ -277,10 +277,10 @@ export default function Home() {
         </Callout>
         <h2 id="start-title">Build something light</h2>
         <div class="actions">
-          <LinkButton href={link("/docs/getting-started")} size="lg">
+          <LinkButton href={href("/docs/[...path]", { path: "getting-started" })} size="lg">
             Get started
           </LinkButton>
-          <LinkButton href={link("/docs/concepts/components")} variant="secondary" size="lg">
+          <LinkButton href={href("/docs/[...path]", { path: "concepts/components" })} variant="secondary" size="lg">
             Learn the concepts
           </LinkButton>
         </div>

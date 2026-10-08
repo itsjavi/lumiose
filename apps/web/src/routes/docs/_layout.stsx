@@ -2,10 +2,10 @@
 // folds into a closed disclosure above the page, so the content comes first on phones; on wide
 // screens CSS shows the disclosure's content without its summary.
 import { bp, color, font, layout, radius, space, text, weight } from "@lumen/site-kit/tokens";
-import { url } from "lumen";
+import { href, url } from "lumen";
 import { docNav, findDoc } from "../../content/docs.ts";
 import { DocsSearch } from "../../islands/DocsSearch.stsx";
-import { link, sitePath } from "../../lib/site.ts";
+import { sitePath } from "../../lib/site.ts";
 
 export default function DocsLayout(props: { children?: JSX.Element }) {
   const path = sitePath(url().pathname).replace(/^\/docs\/?|\/$/g, "");
@@ -14,7 +14,7 @@ export default function DocsLayout(props: { children?: JSX.Element }) {
   return (
     <div class="docs">
       <aside class="side" aria-label="Documentation">
-        <DocsSearch client:idle index={link("/search.json")} />
+        <DocsSearch client:idle index={href("/search.json")} />
         <details class="menu">
           <summary>Menu</summary>
           <nav aria-label="Docs">

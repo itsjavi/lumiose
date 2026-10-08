@@ -1,13 +1,12 @@
 // The URLs the runtime and compiler print (`https://lumen.dev/errors/LUM4006`) redirect to the
 // diagnostic's docs page. Prerendered as static redirect pages (meta refresh plus a link).
-import { redirect, type RouteProps } from "lumen";
+import { href, redirect, type RouteProps } from "lumen";
 import { diagnosticCodes } from "../../content/docs.ts";
-import { link } from "../../lib/site.ts";
 
 export function staticPaths() {
   return diagnosticCodes().map((code) => ({ params: { code } }));
 }
 
 export default function ErrorCode(props: RouteProps<"/errors/[code]">) {
-  return redirect(link(`/docs/errors/${props.params.code}`), 301);
+  return redirect(href("/docs/[...path]", { path: `errors/${props.params.code}` }), 301);
 }

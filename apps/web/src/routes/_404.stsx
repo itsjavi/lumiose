@@ -1,8 +1,7 @@
 // Unknown URLs (dist/client/404.html on a static host).
 import { LinkButton } from "@lumen/site-kit";
 import { color, layout, space, text } from "@lumen/site-kit/tokens";
-import { Title } from "lumen";
-import { link } from "../lib/site.ts";
+import { href, Title } from "lumen";
 
 export default function NotFound() {
   return (
@@ -12,8 +11,8 @@ export default function NotFound() {
       <h1>This page is not here</h1>
       <p>It may have moved when the docs were reorganised. Search the docs or start from the top.</p>
       <div class="actions">
-        <LinkButton href={link("/docs")}>Docs</LinkButton>
-        <LinkButton href={link("/")} variant="secondary">
+        <LinkButton href={href("/docs/[...path]", { path: "" })}>Docs</LinkButton>
+        <LinkButton href={href("/")} variant="secondary">
           Home
         </LinkButton>
       </div>

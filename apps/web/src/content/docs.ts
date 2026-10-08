@@ -8,8 +8,8 @@
 // `search.json` index instead, so `marked` never reaches the browser.
 
 import { highlight } from "@lumen/site-kit/highlight";
+import { href as routeHref } from "lumen";
 import { Marked, Renderer, type Token, type Tokens } from "marked";
-import { link } from "../lib/site.ts";
 
 const sources = import.meta.glob<string>("../../../../packages/lumen/docs/**/*.md", {
   query: "?raw",
@@ -164,8 +164,7 @@ export function topicPath(topic: string): string {
 
 /** The site URL of a topic, with an optional `#hash`. */
 export function topicUrl(topic: string, hash = ""): string {
-  const path = topicPath(topic);
-  return link(path === "" ? `/docs${hash}` : `/docs/${path}${hash}`);
+  return routeHref("/docs/[...path]", { path: topicPath(topic) }) + hash;
 }
 
 /**

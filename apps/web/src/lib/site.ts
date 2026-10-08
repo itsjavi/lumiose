@@ -1,7 +1,8 @@
 // Site-wide constants and the base path. The site may be served below a path (GitHub Pages:
-// `LUMEN_BASE=/lumen/`), and `href()` builds root-relative paths, so every internal URL goes
-// through `link()`.
+// `LUMEN_BASE=/lumen/`): route URLs come from `href()`, which adds the base; other site URLs
+// (public files, the playground app) go through `link()`.
 import type { FooterColumn, NavLink } from "@lumen/site-kit";
+import { href } from "lumen";
 
 /** Vite's `base`, always with a trailing slash ("/" or "/lumen/"). */
 export const BASE = import.meta.env.BASE_URL.endsWith("/")
@@ -27,7 +28,7 @@ export const site = {
 };
 
 export const navLinks: NavLink[] = [
-  { href: link("/docs"), label: "Docs" },
+  { href: href("/docs/[...path]", { path: "" }), label: "Docs" },
   { href: link("/playground"), label: "Playground" },
 ];
 
@@ -35,25 +36,25 @@ export const footerColumns: FooterColumn[] = [
   {
     title: "Learn",
     links: [
-      { href: link("/docs/getting-started"), label: "Getting started" },
-      { href: link("/docs/concepts/components"), label: "Components" },
-      { href: link("/docs/concepts/styles"), label: "Styles" },
-      { href: link("/docs/concepts/islands"), label: "Islands" },
+      { href: href("/docs/[...path]", { path: "getting-started" }), label: "Getting started" },
+      { href: href("/docs/[...path]", { path: "concepts/components" }), label: "Components" },
+      { href: href("/docs/[...path]", { path: "concepts/styles" }), label: "Styles" },
+      { href: href("/docs/[...path]", { path: "concepts/islands" }), label: "Islands" },
     ],
   },
   {
     title: "Reference",
     links: [
-      { href: link("/docs/reference/cli"), label: "CLI" },
-      { href: link("/docs/reference/vite"), label: "lumen/vite" },
-      { href: link("/docs/errors"), label: "Diagnostics" },
+      { href: href("/docs/[...path]", { path: "reference/cli" }), label: "CLI" },
+      { href: href("/docs/[...path]", { path: "reference/vite" }), label: "lumen/vite" },
+      { href: href("/docs/[...path]", { path: "errors" }), label: "Diagnostics" },
     ],
   },
   {
     title: "For agents",
     links: [
-      { href: link("/llms.txt"), label: "llms.txt" },
-      { href: link("/llms-full.txt"), label: "llms-full.txt" },
+      { href: href("/llms.txt"), label: "llms.txt" },
+      { href: href("/llms-full.txt"), label: "llms-full.txt" },
       { href: link("/playground"), label: "Playground" },
     ],
   },
