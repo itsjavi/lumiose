@@ -5,7 +5,7 @@ status: In Progress
 assignee:
   - '@Lux'
 created_date: '2026-10-08 09:59'
-updated_date: '2026-10-08 10:34'
+updated_date: '2026-10-08 10:57'
 labels:
   - needs-review
   - needs-decision
@@ -50,4 +50,6 @@ Goal 1 for Lumen is a design: a TS 7-first web framework with first-class styles
 Spec v0.1 is published as doc-1. Decisions 1-4 are accepted (user choices); decisions 5-10 are proposed and await user review. Decision bodies were filled by editing the decision files directly, because the Backlog CLI has no content option for decisions; the frontmatter was left untouched. Open questions for the user are in spec section 14: naming, data layer, signal read syntax, event naming, React island adapter.
 
 User feedback (2026-10-08): the user rejects CSS inside JS tagged templates (css``); styles must be written as real CSS. Lux proposed a .lumen file format: TSX plus top-level raw-CSS <style> blocks, with masking so the TSX regions stay byte-identical; reactive values go through CSS custom properties set from JSX. This awaits user confirmation. Once confirmed, decision-1 and decision-2 need successor decisions and spec sections 0, 4.4, 4.5, 5 and 9 need revising.
+
+User decisions (2026-10-08): .stsx extension plus plain .tsx (decision-11, supersedes decision-1); raw CSS blocks with build-time constants and no reactive CSS (decision-12, supersedes decision-2; interpolation syntax still pending); backlog is tracked in the main repo and is committed as part of the normal workflow (AGENTS.md updated). Still open: the constant syntax name and async client components. Spec v0.2 rewrite pending.
 <!-- SECTION:NOTES:END -->
