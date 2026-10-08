@@ -196,18 +196,19 @@ work remains.
   - The compiler-runtime contract comes from TASK-6.
 - **Ownership.** Concurrent workers stay inside their own area. Ask the orchestrator before editing anywhere else.
 
-  | Owner  | Area                                                                                                                                             |
-  | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------ |
-  | Lux    | Root configs, `pnpm-lock.yaml`, `packages/lumen/package.json`, `src/index*.ts`, the contract, `examples/ssg-*`                                   |
-  | Photon | `crates/**` (except `crates/lumen_css/**`), `packages/compiler/**`, `packages/lumen/src/vite/**`                                                 |
-  | Halo   | `crates/lumen_css/**`                                                                                                                            |
-  | Spark  | `packages/lumen/src/{core,dom}/**`, `benchmarks/js-framework-benchmark/**`, `examples/spa-*`                                                     |
-  | Nova   | `packages/lumen/src/{app,server}/**`, `packages/adapter-node/**`, `benchmarks/ssr/**`, `examples/ssr-*`                                          |
-  | Beacon | `packages/lumen/src/{cli,jsx}/**`, `packages/lumen/docs/**`, `packages/{language-server,vscode,create,testing,eslint-plugin,prettier-plugin}/**` |
+  | Owner  | Area                                                                                                                                                                          |
+  | ------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+  | Lux    | Root configs, `pnpm-lock.yaml`, `packages/lumen/package.json`, `src/index*.ts`, the contract, `examples/ssg-*`                                                                |
+  | Photon | `crates/**` (except `crates/lumen_css/**`), `packages/compiler/**`, `packages/lumen/src/vite/**`                                                                              |
+  | Halo   | `crates/lumen_css/**`                                                                                                                                                         |
+  | Spark  | `packages/lumen/src/{core,dom}/**`, `benchmarks/js-framework-benchmark/**`, `examples/spa-*`                                                                                  |
+  | Nova   | `packages/lumen/src/{app,server}/**`, `packages/adapter-node/**`, `benchmarks/ssr/**`, `examples/ssr-*`                                                                       |
+  | Beacon | `packages/lumen/src/{cli,jsx}/**`, `packages/lumen/docs/**`, `apps/{docs,playground}/**`, `packages/{language-server,vscode,create,testing,eslint-plugin,prettier-plugin}/**` |
 
 - **Dependencies.**
   - Before editing dependencies in any `package.json` or `Cargo.toml`, or running `pnpm install` / `cargo add`, create `.local/coordination/deps.lock/` atomically (`mkdir`), and remove it afterwards.
   - Pin Rust dependencies exactly, in `[workspace.dependencies]`.
+- **Docs.** A task that changes user-facing API, syntax or behaviour also updates `packages/lumen/docs/`, written for both agents and humans. If it can't, the task records a follow-up for Beacon. Regenerate `llms.txt` with `pnpm --filter lumen docs:gen`.
 - **Commits.** Workers do not commit. The orchestrator commits integrated work.
 
 ## Scratch space
