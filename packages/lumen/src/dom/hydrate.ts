@@ -30,7 +30,7 @@ import { decodeData } from "../server/serialize.ts";
 import { createComponent } from "./component.ts";
 import { DEV } from "./dev.ts";
 import { setFrameHook, withIsland, type AwaitReplay } from "./frame.ts";
-import { hydrator, setHydrator, type Hydrator } from "./hydration.ts";
+import { hydrator, MISMATCH, setHydrator, type Hydrator } from "./hydration.ts";
 import { insert, type RangeStart } from "./insert.ts";
 
 export type { Hydrator } from "./hydration.ts";
@@ -57,8 +57,6 @@ interface Island {
   d: boolean;
   r: () => void;
 }
-
-const MISMATCH = new Error("LUM4006");
 
 // Each frame carries the cursor of its run (or none): install it along with the frame.
 setFrameHook((next) => setHydrator(next?.h));
@@ -150,7 +148,7 @@ function walk(x: Island, t: Node, s: Node, holes: Hole[]): void {
           // Content before a template node would derail the compiled `firstChild`/`nextSibling`
           // walk: it waits in a fragment until its region opens.
           const content = (h.d = document.createDocumentFragment());
-          for (let node = next!; node !== close; ) {
+          for (let node = next!; node !== close;) {
             const after = node.nextSibling!;
             content.appendChild(node);
             node = after;
@@ -234,7 +232,7 @@ class Cursor implements Hydrator {
     } else {
       out = claim(this.x, h, content, holes);
     }
-    for (let k = holes.length; k--; ) {
+    for (let k = holes.length; k--;) {
       this.s.push(holes[k]!);
     }
     return out;
@@ -242,7 +240,7 @@ class Cursor implements Hydrator {
 
   region(parent: Node, marker: Node | null): Node[] {
     const s = this.s;
-    for (let k = s.length; k--; ) {
+    for (let k = s.length; k--;) {
       const h = s[k]!;
       if (h.m === marker && (marker !== null || h.p === parent)) {
         s.length = k + 1;
@@ -376,7 +374,7 @@ export function hydrate<P extends object>(
   }
   const walker = document.createTreeWalker(parent, 128);
   walker.currentNode = start;
-  for (let c: Comment | null; (c = walker.nextNode() as Comment | null) !== end && c !== null; ) {
+  for (let c: Comment | null; (c = walker.nextNode() as Comment | null) !== end && c !== null;) {
     if (c.data.startsWith("l:s:")) {
       const close = closeOf(c);
       const copy = (sources[c.data.slice(4)] ??= document.createDocumentFragment());

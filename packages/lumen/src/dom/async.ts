@@ -29,6 +29,7 @@ import {
   lookupContext,
   PENDING,
   pauseRun,
+  REVISION,
   resumeRun,
   runWithOwner,
   suspend,
@@ -54,6 +55,8 @@ interface Instance {
   pending: Signal<boolean>;
   /** Releases the Suspense registration once the first content settles. */
   release: () => void;
+  /** The SPA router's revision, read by every run so that `invalidate()` re-runs it. */
+  revision: (() => number) | undefined;
   /** The run whose UI is on screen. */
   shown: AsyncRun | undefined;
   latest: AsyncRun | undefined;
@@ -120,16 +123,14 @@ export function createAsync(component: AsyncComponent, props: unknown): RangeSta
     },
     pending: flag,
     release: suspend(owner),
+    revision: lookupContext(owner, REVISION, undefined) as (() => number) | undefined,
     shown: undefined,
     latest: undefined,
   };
   (owner.context ??= {})[PENDING] = flag;
   addCleanup(owner, instance.release);
   const parentFrame = frame;
-  startRun(
-    instance,
-    parentFrame === undefined ? undefined : childFrame(parentFrame, claimed?.[1]),
-  );
+  startRun(instance, parentFrame === undefined ? undefined : childFrame(parentFrame, claimed?.[1]));
   return start;
 }
 
@@ -148,6 +149,7 @@ function startRun(instance: Instance, runFrame: Frame | undefined): void {
   resume(run);
   let result: Promise<Renderable>;
   try {
+    instance.revision?.();
     result = instance.component(instance.props);
   } catch (error) {
     result = Promise.reject(error);

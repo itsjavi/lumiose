@@ -38,6 +38,12 @@ export interface Hydrator {
 
 export let hydrator: Hydrator | undefined;
 
+/**
+ * Thrown to abandon claiming on a mismatch. A handler that catches errors above an island's root
+ * (the SPA router's) passes it on to the island, which renders on the client instead.
+ */
+export const MISMATCH: Error = new Error("LUM4006");
+
 /** Installs (or removes, with `undefined`) the hydration cursor; returns the previous one. */
 export function setHydrator(next: Hydrator | undefined): Hydrator | undefined {
   const prev = hydrator;

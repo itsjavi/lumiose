@@ -37,4 +37,4 @@ export {
   type TriggerNode,
 } from "./reactive.ts";
 export { MUTABLE } from "./system.ts";
-export { beginBusy, PENDING, suspend, SUSPENSE, type Boundary } from "./async.ts";
+export { beginBusy, PENDING, REVISION, suspend, SUSPENSE, type Boundary } from "./async.ts";

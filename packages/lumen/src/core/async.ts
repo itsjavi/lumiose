@@ -25,6 +25,11 @@ import { computed, signal, type Signal } from "./signal.ts";
 export const PENDING: unique symbol = Symbol("lumen.pending");
 /** Context key of a `<Suspense>` boundary's count of pending content. */
 export const SUSPENSE: unique symbol = Symbol("lumen.suspense");
+/**
+ * Context key of a revision signal (the SPA router's): async component runs and resources below
+ * it read it, so bumping it (`invalidate()`) re-runs them.
+ */
+export const REVISION: unique symbol = Symbol("lumen.revision");
 
 const noop = (): void => {};
 
@@ -115,6 +120,7 @@ export function resource<T>(fetcher: (signal: AbortSignal) => T | PromiseLike<T>
   const loading = signal(true);
   const error = signal<unknown>(undefined);
   const release = suspend(owner);
+  const revision = lookupContext(owner, REVISION, undefined) as (() => number) | undefined;
   let current: Run | undefined;
 
   const settle = (run: Run, ok: boolean, result: unknown): void => {
@@ -140,6 +146,7 @@ export function resource<T>(fetcher: (signal: AbortSignal) => T | PromiseLike<T>
     resumeRun(run);
     let result: unknown;
     try {
+      revision?.();
       result = fetcher(lifetimeOf(run));
     } catch (thrown) {
       result = Promise.reject(thrown);
