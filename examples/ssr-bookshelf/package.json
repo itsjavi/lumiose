@@ -1,0 +1,15 @@
+{
+  "name": "@lumen-examples/ssr-bookshelf",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Lumen sample: a multi-page, server-rendered bookshelf backed by node:sqlite.",
+  "type": "module",
+  "scripts": {
+    "seed": "node src/server/seed.server.ts",
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "lumen": "workspace:*"
+  }
+}

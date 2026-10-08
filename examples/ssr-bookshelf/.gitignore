@@ -1,0 +1,2 @@
+# Seeded SQLite database (npm run seed), including its WAL files
+data/
