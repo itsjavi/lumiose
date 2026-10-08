@@ -5,8 +5,8 @@ status: To Do
 assignee:
   - '@Photon'
 created_date: '2026-10-08 16:20'
-labels:
-  - needs-decision
+updated_date: '2026-10-08 16:23'
+labels: []
 milestone: m-3
 dependencies: []
 documentation:
@@ -23,8 +23,15 @@ The user approved optional support for importing Markdown and HTML files as Lume
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Opt-in via lumen({ md: true | options, html: true }); import Post, { frontmatter } from './post.md' gives a static component (CommonMark + GFM, compiled in Rust, e.g. comrak or pulldown-cmark) plus a typed-as-unknown frontmatter export (YAML); headings get ids
-- [ ] #2 import Card from './card.html' gives a static component; a full document contributes only its <body> inner content (title/meta mapped to Head is optional); fragments are used as-is
-- [ ] #3 Type declarations for *.md and *.html modules (lumen/env); works in client and server builds and in dev with HMR; tests and docs (concept page)
-- [ ] #4 Open syntax/DX questions answered by the user before implementing: MDX-style components in .md, <script>/<style> semantics in .html and .md, layout via frontmatter, typed frontmatter
+- [ ] #1 Opt-in via lumen({ md: true | options, html: true }); import Post, { frontmatter } from "./post.md" gives a static component (plain CommonMark + GFM, no MDX, compiled in Rust, e.g. comrak or pulldown-cmark), with heading ids; frontmatter (YAML) exported
+- [ ] #2 import Card from "./card.html" gives a component; a full document contributes only its <body> inner content; fragments are used as-is; <script> elements run as client modules (bundled by Vite and loaded on the client wherever the component renders, like island modules), which web components need
+- [ ] #3 Top-level <style> in .html/.md files is scoped to that file content (like .stsx top-level blocks; <style global> opts out); <style> inside <template> or <svg> is left verbatim; no $refs
+- [ ] #4 Frontmatter is optionally typed via user-defined schemas (mechanism per the user confirmation recorded in decision-22); untyped frontmatter is Record<string, unknown>
+- [ ] #5 Type declarations for *.md and *.html (lumen/env); works in client and server builds and in dev with HMR; tests; docs concept page
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Lux: user answers recorded in the decision-22 amendment. Plain Markdown; html <script> runs as a client module; file-scoped <style> with <template>/<svg> left verbatim; layouts by folder only; user-defined frontmatter schemas (mechanism pending confirmation).
+<!-- SECTION:NOTES:END -->
