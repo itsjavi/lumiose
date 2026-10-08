@@ -5,6 +5,7 @@ status: To Do
 assignee:
   - '@Nova'
 created_date: '2026-10-08 21:32'
+updated_date: '2026-10-08 21:35'
 labels:
   - app
   - build
@@ -23,8 +24,7 @@ Spec §7.5 and §8 (Dev and config) design MPA navigation with cross-document Vi
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 lumen({ viewTransitions }) adds the cross-document View Transitions opt-in to every MPA page (static and server routes) in dev and builds, with the default decided and recorded
-- [ ] #2 lumen({ prefetch }) adds speculation rules for same-origin links (eagerness configurable), in dev and builds, and stays off for spa routes, which prefetch through lumen/router
-- [ ] #3 Docs (reference/vite.md, concepts/routing.md, rendering-modes.md) describe the options and their status accurately; tests cover the injected head content
-- [ ] #4 examples/ssg-travel-journal uses the options instead of its hand-written opt-in
+- [ ] #1 lumen({ viewTransitions?: boolean }) defaults to false (opt-in per user decision-24); when true, static/server routes get @view-transition { navigation: auto } (disabled under prefers-reduced-motion) with a documented way to name elements that morph
+- [ ] #2 lumen({ prefetch?: "hover" | "viewport" | "none" }) defaults to "hover": generated <script type="speculationrules"> for same-origin MPA links (moderate eagerness for hover, eager+in-viewport for viewport); SPA <Link prefetch> overrides per link; options validated in the plugin
+- [ ] #3 Docs (routing, rendering-modes, reference/vite) updated in the same commits; the travel-journal example switches from its manual CSS/script opt-in to the options; tests
 <!-- AC:END -->
