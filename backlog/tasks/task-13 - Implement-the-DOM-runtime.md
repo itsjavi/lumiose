@@ -1,11 +1,11 @@
 ---
 id: TASK-13
 title: Implement the DOM runtime
-status: To Do
+status: In Progress
 assignee:
   - '@Spark'
 created_date: '2026-10-08 12:20'
-updated_date: '2026-10-08 12:56'
+updated_date: '2026-10-08 13:04'
 labels: []
 milestone: m-1
 dependencies:
@@ -30,6 +30,18 @@ Compiled client code needs the runtime half of the contract: templates, inserts,
 - [ ] #3 The keyed list implements prefix/suffix trim, append/remove/clear/swap fast paths and LIS; selector() is O(1); branches are memoised; Portal and Dynamic
 - [ ] #4 Unit tests in a DOM environment cover every contract function; the core+dom size budget is checked
 <!-- AC:END -->
+
+## Implementation Plan
+
+<!-- SECTION:PLAN:BEGIN -->
+1. core: nested lazy owners (components inside lazy rows stay lazy), unwatched hook on trigger nodes (selector key cleanup).
+2. dom/hydration.ts: nullable module-level Hydrator hook (template claim + region adoption) for TASK-18.
+3. dom/template.ts, writers (attr/prop/class/style), insert regions (text/node/array reconciliation, nested functions), list (trim, append/remove/clear/swap, LIS, lazy row owners, index signals only when render.length > 1), branch, selector, components/props (createComponent, restProps, mergeProps, spread, applyScope), events (document delegation, data slots, boundaries, cancelBubble, batching), bindValue/bindChecked/attach/useRef; async stubs for TASK-17.
+4. dom/public.ts: Portal, Dynamic, ref<T>().
+5. Tests (happy-dom): every contract function, list property test vs expected order and node identity, delegation, class/style diffing, binds, attach, Portal/Dynamic; contract.test.ts satisfies ClientRuntime.
+6. Size script (vite build --lib, min+brotli) and record vs 4.5 kB.
+7. pnpm typecheck/test/lint.
+<!-- SECTION:PLAN:END -->
 
 ## Implementation Notes
 
