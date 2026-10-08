@@ -16,3 +16,18 @@ export interface AppDiagnostic {
 
 export const LUM_INVALID_ROUTE_FILE = "LUM5002";
 export const LUM_DUPLICATE_ROUTE = "LUM5003";
+/** A server-only API was reached from client code. */
+export const LUM_SERVER_ONLY = "LUM4003";
+/** Status, headers, cookies or head changed after the SSR shell was sent (decision-19). */
+export const LUM_AFTER_SHELL = "LUM5004";
+
+/** A runtime error carrying a Lumen code and its docs URL (contract doc-2 §6). */
+export class LumenError extends Error {
+  readonly code: AppDiagnostic["code"];
+
+  constructor(code: AppDiagnostic["code"], message: string) {
+    super(`${message} (${code}: https://lumen.dev/errors/${code})`);
+    this.name = "LumenError";
+    this.code = code;
+  }
+}
