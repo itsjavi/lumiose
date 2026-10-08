@@ -9,6 +9,10 @@
 //!   component styled under its root keeps its token; the k-th after it has
 //!   `scope_token(path, "name#k")`. `path` is the module id relative to the project root, so
 //!   tokens are stable across machines.
+//! - **Scopes.** Blocks under a root element of the component's JSX (one not nested in other JSX)
+//!   reach `lumen_css` as [`Scope::Component`]; blocks under any other element as
+//!   [`Scope::Subtree`], with the tokens of the enclosing style-bearing elements (`outer`), whose
+//!   `@keyframes` they see, and the element's tag for messages (TASK-88).
 //! - **Inventories.** Per token, the tags, static classes and ids of the scope's intrinsic
 //!   elements, plus the classes passed to components (class passthrough). Anything computed at
 //!   runtime (dynamic `class`/`id`, spreads, refs and attachments that may edit classes) marks
@@ -26,7 +30,7 @@ use oxc_span::GetSpan;
 use oxc_syntax::scope::ScopeFlags;
 
 use crate::analyze::{Analysis, property_key_name};
-use crate::codegen::client::{ScopeTokens, SubtreeScope};
+use crate::codegen::client::{ScopeTokens, SubtreeScope, tag_name};
 use crate::diagnostics::{Code, Diagnostic, Fix, Label, Severity, TextEdit};
 use crate::prepare::{ConstValue, ResolvedStyleRef};
 use crate::scanner::{Placement, StyleBlock};
@@ -62,7 +66,7 @@ impl ScopePlan {
         let elements = ElementSpans::collect(program, blocks);
         // Scoped component blocks with their component and enclosing element; tokens are
         // assigned once every style-bearing element of a component is known.
-        let mut scoped: Vec<(usize, String, Span)> = Vec::new();
+        let mut scoped: Vec<(usize, String, Element)> = Vec::new();
         for block in blocks {
             if block.svg {
                 continue;
@@ -96,7 +100,11 @@ impl ScopePlan {
                     } else {
                         // The parent's tag span is always an element of the parsed program;
                         // the block itself stands in when it is not (it never is stamped).
-                        let element = elements.get(parent.span.start).unwrap_or(block.span);
+                        let element = elements.get(parent.span.start).unwrap_or(Element {
+                            span: block.span,
+                            tag: String::new(),
+                            root: true,
+                        });
                         scoped.push((plan.blocks.len(), name.clone(), element));
                         Scope::Component {
                             name,
@@ -116,13 +124,14 @@ impl ScopePlan {
     }
 
     /// One token per style-bearing element of each component, in element order (see the module
-    /// docs), given to the element's blocks and to the codegen as a subtree scope.
-    fn assign_subtree_tokens(&mut self, scoped: &[(usize, String, Span)], path: &str) {
+    /// docs), given to the element's blocks and to the codegen as a subtree scope. Blocks under
+    /// a nested element become [`Scope::Subtree`]s.
+    fn assign_subtree_tokens(&mut self, scoped: &[(usize, String, Element)], path: &str) {
         let mut by_component: BTreeMap<&str, Vec<Span>> = BTreeMap::new();
         for (_, name, element) in scoped {
             let elements = by_component.entry(name).or_default();
-            if !elements.contains(element) {
-                elements.push(*element);
+            if !elements.contains(&element.span) {
+                elements.push(element.span);
             }
         }
         let mut tokens: HashMap<(&str, Span), String> = HashMap::new();
@@ -147,9 +156,30 @@ impl ScopePlan {
             }
         }
         for (index, name, element) in scoped {
-            if let Scope::Component { token, .. } = &mut self.blocks[*index].scope {
-                token.clone_from(&tokens[&(name.as_str(), *element)]);
-            }
+            let token = tokens[&(name.as_str(), element.span)].clone();
+            self.blocks[*index].scope = if element.root {
+                Scope::Component {
+                    name: name.clone(),
+                    token,
+                }
+            } else {
+                // Elements are sorted outermost first among those starting together.
+                let outer = by_component[name.as_str()]
+                    .iter()
+                    .filter(|span| {
+                        **span != element.span
+                            && span.start <= element.span.start
+                            && element.span.end <= span.end
+                    })
+                    .map(|span| tokens[&(name.as_str(), *span)].clone())
+                    .collect();
+                Scope::Subtree {
+                    name: name.clone(),
+                    token,
+                    outer,
+                    element: element.tag.clone(),
+                }
+            };
         }
     }
 
@@ -291,12 +321,24 @@ fn convert(diagnostic: &CssDiagnostic) -> Option<Diagnostic> {
     })
 }
 
-/// The spans of the JSX elements and fragments that directly contain style blocks, by the
-/// start of their tag name (fragments: of their `<>`), as the scanner reports parents.
+/// A JSX element or fragment that directly contains style blocks.
+#[derive(Debug, Clone)]
+struct Element {
+    span: Span,
+    /// The tag (`p`, `Card`), empty for a fragment.
+    tag: String,
+    /// Not nested in other JSX: a root of the component's JSX.
+    root: bool,
+}
+
+/// The JSX elements and fragments that directly contain style blocks, by the start of their tag
+/// name (fragments: of their `<>`), as the scanner reports parents.
 #[derive(Default)]
 struct ElementSpans {
     wanted: HashSet<u32>,
-    spans: HashMap<u32, Span>,
+    spans: HashMap<u32, Element>,
+    /// Depth of the JSX elements and fragments being visited.
+    depth: u32,
 }
 
 impl ElementSpans {
@@ -316,26 +358,36 @@ impl ElementSpans {
         collector
     }
 
-    fn get(&self, tag_start: u32) -> Option<Span> {
-        self.spans.get(&tag_start).copied()
+    fn get(&self, tag_start: u32) -> Option<Element> {
+        self.spans.get(&tag_start).cloned()
     }
 
-    fn found(&mut self, key: u32, span: oxc_span::Span) {
+    fn found(&mut self, key: u32, span: oxc_span::Span, tag: impl FnOnce() -> String) {
         if self.wanted.contains(&key) {
-            self.spans.insert(key, span.into());
+            let element = Element {
+                span: span.into(),
+                tag: tag(),
+                root: self.depth == 0,
+            };
+            self.spans.insert(key, element);
         }
     }
 }
 
 impl<'a> Visit<'a> for ElementSpans {
     fn visit_jsx_element(&mut self, it: &JSXElement<'a>) {
-        self.found(it.opening_element.name.span().start, it.span);
+        let name = &it.opening_element.name;
+        self.found(name.span().start, it.span, || tag_name(name));
+        self.depth += 1;
         walk::walk_jsx_element(self, it);
+        self.depth -= 1;
     }
 
     fn visit_jsx_fragment(&mut self, it: &JSXFragment<'a>) {
-        self.found(it.opening_fragment.span.start, it.span);
+        self.found(it.opening_fragment.span.start, it.span, String::new);
+        self.depth += 1;
         walk::walk_jsx_fragment(self, it);
+        self.depth -= 1;
     }
 }
 

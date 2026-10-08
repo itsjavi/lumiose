@@ -11,8 +11,30 @@ main[data-l-nmviz5ch] {
   color: #00f;
 }
 
+@keyframes pulse-44pntcw3 {
+  to {
+    opacity: .5;
+  }
+}
+
+.c2[data-l-44pntcw3] {
+  animation: 1s fade-wepye2d9, 2s pulse-44pntcw3;
+}
+
 .a[data-l-wepye2d9] {
   display: grid;
+}
+
+@keyframes fade-wepye2d9 {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes pulse-wepye2d9 {
+  from {
+    opacity: 1;
+  }
 }
 
 .head[data-l-7ikt7jyc] {

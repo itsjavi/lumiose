@@ -34,8 +34,10 @@ subtree for blocks inside a component. The last compound of each selector gets `
 a +0,1,0 specificity bump. Dynamic classes always work, because no element is pruned.
 
 - `:global(.sel)` leaves a selector unscoped; `:deep(.sel)` scopes only the part before it.
-- `@keyframes` names are scoped, and `animation` references are rewritten. Custom properties are
-  not scoped.
+- `@keyframes` names are scoped, and `animation` references are rewritten. A block sees its own
+  keyframes, then those of the blocks of enclosing elements (innermost first), then the file's, so
+  a nested block can animate with keyframes defined under the component's root. Custom properties
+  are not scoped.
 - **Class passthrough.** When a parent passes `class` to a child component, the parent's scope
   tokens at that call site travel with it: the file token plus every enclosing style subtree. So
   `.cta { … }` in the parent styles `<Button class="cta" />` wherever `Button` applies

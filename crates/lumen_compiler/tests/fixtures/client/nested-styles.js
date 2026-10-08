@@ -12,7 +12,9 @@ const _t4 = /* @__PURE__ */ template(`<tr data-l-nmviz5ch data-l-jwlnrxd5 data-l
 const _t5 = /* @__PURE__ */ template(`<ul class=list data-l-nmviz5ch data-l-jwlnrxd5 data-l-pqjmvna1></ul><table data-l-nmviz5ch data-l-jwlnrxd5 data-l-qcwvws3i><tbody data-l-nmviz5ch data-l-jwlnrxd5 data-l-qcwvws3i></tbody></table><table data-l-nmviz5ch data-l-jwlnrxd5><tbody data-l-nmviz5ch data-l-jwlnrxd5><tr class=row data-l-nmviz5ch data-l-jwlnrxd5 data-l-gw6dys2h><td data-l-nmviz5ch data-l-jwlnrxd5 data-l-gw6dys2h>static`, 1);
 $async(Rows);
 // A → B1 → C1 and A → B2 → C2 → <style>: C1 is not styled by C2's blocks (and `.c1` there is
-// LUM3005). The root block covers the whole component; blocks under one element share a token.
+// LUM3005, labelled with the `<p>` subtree). The root block covers the whole component; blocks
+// under one element share a token. Nested blocks see the @keyframes of enclosing subtrees: `fade`
+// resolves to the root's, `pulse` to C2's own.
 export function Tree() {
 	return _t0();
 }
@@ -62,4 +64,4 @@ export async function Rows(props) {
 }
 
 // --- diagnostics ---
-// LUM3005 warning 18:45 `.c1` matches no element in component `Tree`
+// LUM3005 warning 20:45 `.c1` matches no element in the `<p>` subtree of component `Tree`

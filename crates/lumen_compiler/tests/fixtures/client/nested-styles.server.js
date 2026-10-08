@@ -21,7 +21,9 @@ const _s5 = [
 ];
 $async(Rows);
 // A → B1 → C1 and A → B2 → C2 → <style>: C1 is not styled by C2's blocks (and `.c1` there is
-// LUM3005). The root block covers the whole component; blocks under one element share a token.
+// LUM3005, labelled with the `<p>` subtree). The root block covers the whole component; blocks
+// under one element share a token. Nested blocks see the @keyframes of enclosing subtrees: `fade`
+// resolves to the root's, `pulse` to C2's own.
 export function Tree() {
 	return ssr(_s0);
 }
@@ -56,4 +58,4 @@ export async function Rows(props) {
 }
 
 // --- diagnostics ---
-// LUM3005 warning 18:45 `.c1` matches no element in component `Tree`
+// LUM3005 warning 20:45 `.c1` matches no element in the `<p>` subtree of component `Tree`

@@ -4,7 +4,9 @@
 import { Card, Panel } from "./ui.stsx";
 
 // A → B1 → C1 and A → B2 → C2 → <style>: C1 is not styled by C2's blocks (and `.c1` there is
-// LUM3005). The root block covers the whole component; blocks under one element share a token.
+// LUM3005, labelled with the `<p>` subtree). The root block covers the whole component; blocks
+// under one element share a token. Nested blocks see the @keyframes of enclosing subtrees: `fade`
+// resolves to the root's, `pulse` to C2's own.
 export function Tree() {
   return (
     <section class="a">
@@ -16,9 +18,17 @@ export function Tree() {
           two
           <style>.c2 { color: red; }</style>
           <style>.c2 { font-weight: bold; } .c1 { color: blue; }</style>
+          <style>
+            @keyframes pulse { to { opacity: 0.5; } }
+            .c2 { animation: fade 1s, pulse 2s; }
+          </style>
         </p>
       </div>
-      <style>.a { display: grid; }</style>
+      <style>
+        .a { display: grid; }
+        @keyframes fade { from { opacity: 0; } }
+        @keyframes pulse { from { opacity: 1; } }
+      </style>
     </section>
   );
 }

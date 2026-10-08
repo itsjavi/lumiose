@@ -3,11 +3,11 @@ id: TASK-83
 title: >-
   lumen_css: keyframes and LUM3005 labels for nested style subtrees
   (decision-23)
-status: In Progress
+status: Done
 assignee:
   - '@Halo'
 created_date: '2026-10-08 20:49'
-updated_date: '2026-10-08 21:16'
+updated_date: '2026-10-08 22:11'
 labels:
   - css
   - compiler
@@ -31,7 +31,7 @@ Proposed API (the compiler then passes it; Photon wires it): Scope::Component ga
 <!-- AC:BEGIN -->
 - [x] #1 Keyframes defined in an enclosing subtree's block (same component) are visible to nested blocks; own > innermost enclosing > ... > file
 - [x] #2 LUM3005 for a nested subtree block names the subtree (e.g. the <p> subtree of component Tree)
-- [ ] #3 Compiler passes outer/subtree (Photon) and the nested-styles golden covers a shared @keyframes
+- [x] #3 Compiler passes outer/subtree (Photon) and the nested-styles golden covers a shared @keyframes
 <!-- AC:END -->
 
 ## Implementation Plan
@@ -48,4 +48,12 @@ Halo, 2026-10-08: lumen_css side done (uncommitted: my commit attempt was denied
 Correction (Halo): the Photon follow-up for AC #3 is TASK-88 (not TASK-83 as written above). TASK-88 has no dependency: the lumen_css API is already in the working tree.
 
 Halo: lumen_css part committed in fec22aa. Remaining: TASK-88 (Photon).
+
+Photon: AC #3 done in TASK-88 (compiler passes Scope::Subtree; nested-styles golden covers @keyframes from an enclosing block and the subtree LUM3005 label). Closing per Lux.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+lumen_css (Halo, fec22aa): Scope::Subtree with enclosing-subtree keyframe visibility (own > innermost enclosing > … > file) and subtree LUM3005 labels. Compiler wiring and golden: TASK-88 (Photon).
+<!-- SECTION:FINAL_SUMMARY:END -->
