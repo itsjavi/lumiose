@@ -1,7 +1,7 @@
 ---
 id: TASK-56
 title: 'Document JS values in styles, including build-time math'
-status: In Progress
+status: Done
 assignee:
   - '@Beacon'
 created_date: '2026-10-08 15:54'
@@ -53,3 +53,9 @@ Beacon (session beacon-task56-20261008T160359Z) claimed TASK-56.
 
 **Not done here.** TASK-61 (Halo, in progress) may keep negative calc() results in non-negative properties; that task should add a line to the Build-time math section when it lands. Follow-up TASK-66: lumen check/LSP do not answer moduleRequests, so files importing $ constants get no CSS diagnostics there.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+docs/concepts/styles.md now has one 'JS values in styles' section: what $name/$obj.key can reference (top-level and component consts, imported export consts incl. default/namespace/JSON, literals, template literals, arithmetic, as-const objects), what cannot (calls such as $space(2), let, signals/props, $arr.0, $brand-primary, out-of-scope consts, refs above their const) with LUM3008/3009/3013 and fixes, where $ is read (values and @media/@container/@supports preludes; not selectors, property names, strings, comments, url()), the style-prop/var() bridge, and a checked token-module example with its real compiled CSS. Its 'Build-time math' subsection explains the two steps (JS math by Lumen, CSS math by Lightning CSS) with a verified input/output table, why %, vw/vh, em/rem and var() cannot fold, custom-property folding (TASK-55: 16px, negatives/fractions kept in calc()), and credits Lightning CSS. Also: API table, common mistakes, related diagnostics, outdated CSS-pipeline status notes (styles, README, reference/vite, LUM3005/3008/3009/3012/3014-3016), the LUM5005-failing endpoint example (mode = "server"), llms regenerated. Validation: every example verified with @lumen/compiler output; vitest src/cli/docs 16/16 (checked examples pass), docs:check clean, oxfmt applied. Follow-up: TASK-66.
+<!-- SECTION:FINAL_SUMMARY:END -->
