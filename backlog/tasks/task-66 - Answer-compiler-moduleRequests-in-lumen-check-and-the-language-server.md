@@ -5,7 +5,7 @@ status: In Progress
 assignee:
   - '@Beacon'
 created_date: '2026-10-08 16:15'
-updated_date: '2026-10-08 16:21'
+updated_date: '2026-10-08 16:28'
 labels:
   - tooling
   - styles
@@ -36,3 +36,19 @@ lumen check and the language server call compile() without `modules` (packages/l
 4. Tests: check fixture (.stsx importing tokens via chained re-export, let/misspelled/unresolvable refs → LUM3008 at the ref, LUM3005 now reported), resolver unit tests, LSP test incl. dependency edit invalidation.
 5. Docs: styles.md build-time math clamp note (TASK-61); regen llms.
 <!-- SECTION:PLAN:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Beacon (session beacon-task66-20261008T161642Z): implemented.
+
+**ModuleHost** (packages/lumen/src/cli/check/modules.ts, exported from lumen/tooling with compileWithModules): TypeScript-compatible resolution (bundler) — relative/absolute paths (.js→.ts/.tsx, .jsx→.tsx, .mjs→.mts, .cjs→.cts first; then the file; then .ts/.tsx/.stsx/.js/.jsx; then dir index), tsconfig `paths` (exact key, else longest-prefix `*` pattern; followed through `extends` strings/arrays incl. packages; JSONC; targets relative to the declaring config; no baseUrl — TS 7), package `imports` (#x) and `exports` (subpaths, `*` patterns, null exclusions, conditions import/module/browser/default — not `types`, declarations have no values), else module/main/index; node_modules packages realpath'd (pnpm workspaces). Caches resolutions, package.json manifests and disk sources; optional `read` overlay (editor buffers, never cached). `record(file, cssDeps)` + `invalidate(path, change)` → dependents; created/deleted files or a tsconfig/package.json change clear resolutions and return every recorded file. Vite-only aliases are not seen (TS would not resolve them either; documented).
+
+**compile.ts**: compileWithModules runs the request loop (≤32 rounds, as lumen/vite), records cssDeps; compileDiagnostics({ modules }) uses it. lumen check's provider builds one ModuleHost per run with the checked tsconfig (DiagnosticProvider context gained optional `project`).
+
+**Language server**: one ModuleHost per project root reading open documents first; LumenFile.modules (unset for non-file URIs); didOpen/didChange/didClose and watched-file events invalidate the host and drop the cached provider results of open dependents, then refresh (pull) / push. Watchers now also registered for **/*.{ts,tsx,mts,cts,js,jsx,mjs,cjs,json}.
+
+**Docs**: styles.md — how imports of constants resolve (Vite vs check/editor, LUM3008), and the Build-time math "Negative results" paragraph + 2 table rows (TASK-61: negative results in non-negative properties ship as 0, mirroring lightningcss#1329; margins keep negatives; verified with the compiler: padding-left/width/font-size → 0, margin-left → -4px); cli.md lumen check mentions compiler diagnostics and resolution. llms regenerated (docs:check clean).
+
+**Evidence**: modules.test.ts (6: relative/extension rules, paths via extends + JSONC, #imports, exports conditions/patterns/null, main, overlay + cache invalidation, dependents, created files, tsconfig reload, --project). check.test.ts: Tokens.stsx importing via tsconfig paths + `export *` / `export { space as gap } from` → LUM3008 at $mutable (let), $brand (unresolvable), $gapp (no export) and LUM3005 .oops (previously all withheld); TS reports only TS2724/TS2307. server.test.ts: same in the LSP with exact ranges/messages, an unsaved edit of theme.ts re-checks the unchanged dependent, and a disk change two re-exports away (didChangeWatchedFiles) clears $acent. pnpm test 837/837; pnpm lint clean for my files (one pre-existing warning in app/router/index.ts); typecheck green for lumen and language-server — pnpm typecheck fails only in packages/site-kit (Halo, TASK-59 in progress: no tsconfig yet). lumen check on examples/vite-counter: no problems.
+<!-- SECTION:NOTES:END -->
