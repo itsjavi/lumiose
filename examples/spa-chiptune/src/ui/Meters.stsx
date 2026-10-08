@@ -1,0 +1,74 @@
+// Level meters (DOM, one style binding each) and oscilloscopes (canvas, drawn by the frame loop).
+import { onMount } from "lumen";
+import { levels, registerScope } from "../frame.ts";
+import { tokens } from "../tokens.ts";
+
+/** A segmented LED meter. `channel` indexes the engine levels (the last one is the master). */
+export function Vu(props: { channel: number; vertical?: boolean; class?: string }) {
+  return (
+    <div
+      class={["vu", props.class, { vertical: props.vertical }]}
+      style={{ "--level": levels[props.channel]!() }}
+      aria-hidden="true"
+    >
+      <div class="fill" />
+      <style>
+        .vu {
+          position: relative;
+          overflow: hidden;
+          background: var(--faint);
+          block-size: 6px;
+          inline-size: 100%;
+        }
+        .fill {
+          position: absolute;
+          inset: 0;
+          transform-origin: left;
+          transform: scaleX(var(--level));
+          background: linear-gradient(90deg, var(--green) 0 60%, var(--yellow) 60% 85%, var(--red) 85%);
+          background-size: 100% 100%;
+          /* LED segments: 3px lit, 1px gap. */
+          mask: repeating-linear-gradient(90deg, #000 0 3px, transparent 3px 4px);
+        }
+        .vertical {
+          block-size: 100%;
+          inline-size: 8px;
+        }
+        .vertical .fill {
+          transform-origin: bottom;
+          transform: scaleY(var(--level));
+          background: linear-gradient(0deg, var(--green) 0 60%, var(--yellow) 60% 85%, var(--red) 85%);
+          mask: repeating-linear-gradient(0deg, #000 0 3px, transparent 3px 4px);
+        }
+      </style>
+    </div>
+  );
+}
+
+/** A pixel oscilloscope: a low-resolution canvas scaled up without smoothing. */
+export function Scope(props: { channel: number; width?: number; height?: number; label: string }) {
+  let canvas: HTMLCanvasElement | undefined;
+  onMount(() => (canvas ? registerScope(canvas, props.channel) : undefined));
+  return (
+    <canvas
+      class="scope"
+      ref={(el) => (canvas = el)}
+      width={props.width ?? 112}
+      height={props.height ?? 32}
+      role="img"
+      aria-label={`${props.label} oscilloscope`}
+    >
+      <style>
+        .scope {
+          display: block;
+          inline-size: 100%;
+          block-size: auto;
+          image-rendering: pixelated;
+          background: var(--bg);
+          color: var(--cyan);
+          border: calc($tokens.border * 1px) solid var(--line);
+        }
+      </style>
+    </canvas>
+  );
+}

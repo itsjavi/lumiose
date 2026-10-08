@@ -1,0 +1,65 @@
+// A channel column header: name, mute/solo, oscilloscope and level meter.
+import { CHANNELS } from "../model/types.ts";
+import { doc, setMix } from "../state.ts";
+import { tokens } from "../tokens.ts";
+import { Scope, Vu } from "./Meters.stsx";
+
+export function toggleMute(channel: number): void {
+  setMix(["channels", channel, "mute"], !doc.song.mixer.channels[channel]!.mute);
+}
+
+export function toggleSolo(channel: number): void {
+  setMix(["channels", channel, "solo"], !doc.song.mixer.channels[channel]!.solo);
+}
+
+export function ChannelHeader(props: { channel: number }) {
+  const info = () => CHANNELS[props.channel]!;
+  const mix = () => doc.song.mixer.channels[props.channel]!;
+  return (
+    <div class={["head", { muted: mix().mute }]}>
+      <div class="top">
+        <span class="name" title={info().name}>
+          {info().short}
+        </span>
+        <button
+          class={["ms", { on: mix().mute }]}
+          aria-pressed={mix().mute}
+          aria-label={`Mute ${info().name}`}
+          onClick={() => toggleMute(props.channel)}
+        >
+          M
+        </button>
+        <button
+          class={["ms", "solo", { on: mix().solo }]}
+          aria-pressed={mix().solo}
+          aria-label={`Solo ${info().name}`}
+          onClick={() => toggleSolo(props.channel)}
+        >
+          S
+        </button>
+      </div>
+      <Scope channel={props.channel} label={info().name} />
+      <Vu channel={props.channel} />
+      <style>
+        .head {
+          display: grid;
+          gap: 3px;
+          padding: 4px 6px 6px;
+          border-inline-start: 1px solid var(--line);
+          font-size: $tokens.font.size;
+        }
+        .muted { opacity: 0.45; }
+        .top { display: flex; align-items: center; gap: 4px; }
+        .name { flex: 1; color: var(--yellow); font-weight: 700; letter-spacing: 0.08em; }
+        .ms {
+          inline-size: 20px;
+          block-size: 18px;
+          padding: 0;
+          font-size: 11px;
+        }
+        .ms.on { background: var(--red); color: var(--text); }
+        .solo.on { background: var(--yellow); color: var(--bg); }
+      </style>
+    </div>
+  );
+}

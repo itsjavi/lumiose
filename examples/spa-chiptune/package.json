@@ -1,0 +1,23 @@
+{
+  "name": "@lumen-examples/spa-chiptune",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Lumen sample: a client-only chiptune tracker, composer and mixer with an AudioWorklet NES-style synth.",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "test:e2e": "playwright test",
+    "typecheck": "lumen check"
+  },
+  "dependencies": {
+    "lumen": "workspace:*"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.63.0",
+    "@types/node": "^24.0.0",
+    "vite": "^8.3.4"
+  }
+}

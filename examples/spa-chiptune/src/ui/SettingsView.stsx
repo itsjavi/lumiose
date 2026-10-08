@@ -1,0 +1,132 @@
+// Settings: editor preferences, theme, audio diagnostics and the keyboard reference.
+import { audioInfo, engineStatus, telemetryMode } from "../audio/engine.ts";
+import { frameStats } from "../frame.ts";
+import { SHORTCUTS } from "../keys.ts";
+import { lens } from "../lens.ts";
+import { prefs } from "../state.ts";
+import { signal } from "lumen";
+
+export function SettingsView() {
+  const step = lens(() => prefs.step, (v) => (prefs.step = Math.min(16, Math.max(0, v || 0))));
+  const follow = lens(() => prefs.follow, (v) => (prefs.follow = v));
+  const record = lens(() => prefs.record, (v) => (prefs.record = v));
+  const perf = lens(() => prefs.perf, (v) => (prefs.perf = v));
+  const stats = signal(frameStats());
+  const isolated = globalThis.crossOriginIsolated === true;
+
+  return (
+    <div class="settings-view">
+      <section class="panel" aria-label="Editor">
+        <h2>Editor</h2>
+        <label class="check">
+          <input type="checkbox" bind:checked={record} /> Record mode (notes typed in the tracker are written)
+        </label>
+        <label class="check">
+          <input type="checkbox" bind:checked={follow} /> Follow playback
+        </label>
+        <label class="field">
+          Edit step (rows the cursor moves after an entry)
+          <input type="number" min={0} max={16} bind:value={step} />
+        </label>
+        <h2>Theme</h2>
+        <div class="themes" role="radiogroup" aria-label="Theme">
+          {(["nes", "dmg"] as const).map((theme) => (
+            <button
+              role="radio"
+              aria-checked={prefs.theme === theme}
+              class={{ on: prefs.theme === theme }}
+              onClick={() => (prefs.theme = theme)}
+            >
+              {theme === "nes" ? "NES night" : "DMG green"}
+            </button>
+          ))}
+        </div>
+      </section>
+      <section class="panel" aria-label="Audio">
+        <h2>Audio</h2>
+        <dl>
+          <dt>Engine</dt>
+          <dd>{engineStatus()}</dd>
+          <dt>Sample rate</dt>
+          <dd>{audioInfo().sampleRate ? `${audioInfo().sampleRate} Hz` : "—"}</dd>
+          <dt>Latency</dt>
+          <dd>
+            {audioInfo().sampleRate
+              ? `${(audioInfo().baseLatency * 1000).toFixed(1)} ms base, ${(audioInfo().outputLatency * 1000).toFixed(1)} ms output`
+              : "—"}
+          </dd>
+          <dt>Telemetry</dt>
+          <dd>
+            {telemetryMode() === "shared"
+              ? "SharedArrayBuffer (cross-origin isolated)"
+              : telemetryMode() === "message"
+                ? "postMessage, ~60 Hz"
+                : isolated
+                  ? "SharedArrayBuffer available"
+                  : "postMessage (page not cross-origin isolated)"}
+          </dd>
+        </dl>
+        <h2>Performance</h2>
+        <label class="check">
+          <input type="checkbox" bind:checked={perf} /> Show FPS and frame work in the status bar
+        </label>
+        <button onClick={() => stats.set(frameStats())}>Measure last 600 frames</button>
+        <dl>
+          <dt>Frames</dt>
+          <dd>{stats().frames}</dd>
+          <dt>Frame interval</dt>
+          <dd>
+            {stats().avgInterval.toFixed(2)} ms avg · {stats().p95Interval.toFixed(2)} ms p95 · {stats().maxInterval.toFixed(1)} ms max
+          </dd>
+          <dt>Frame work</dt>
+          <dd>
+            {stats().avgWork.toFixed(3)} ms avg · {stats().p95Work.toFixed(3)} ms p95
+          </dd>
+          <dt>Slow frames</dt>
+          <dd>{(stats().slowFrames * 100).toFixed(1)}% over 25 ms</dd>
+        </dl>
+      </section>
+      <section class="panel keys" aria-label="Keyboard">
+        <h2>Keyboard</h2>
+        <table>
+          <tbody>
+            {SHORTCUTS.map(([keys, action]) => (
+              <tr>
+                <th scope="row">
+                  <kbd>{keys}</kbd>
+                </th>
+                <td>{action}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        <h2>Effects</h2>
+        <p class="note">
+          0xy arpeggio · 1xx/2xx slide up/down · 3xx portamento · 4xy vibrato · Axy volume slide ·
+          Bxx jump · Dxx break · Fxx speed/BPM · Sxx cut · Vxx duty. Effects persist until set to 00.
+        </p>
+      </section>
+      <style>
+        .settings-view {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+          gap: 10px;
+          align-items: start;
+        }
+        .panel { display: grid; gap: 10px; }
+        .check { display: flex; gap: 8px; align-items: center; }
+        .field { display: grid; gap: 4px; color: var(--dim); }
+        .field input { inline-size: 8ch; }
+        .themes { display: flex; gap: 6px; }
+        .themes .on { background: var(--yellow); color: var(--bg); }
+        dl { display: grid; grid-template-columns: max-content 1fr; gap: 4px 12px; margin: 0; }
+        dt { color: var(--dim); }
+        dd { margin: 0; }
+        table { border-collapse: collapse; }
+        th, td { text-align: start; padding: 3px 8px 3px 0; vertical-align: top; font-weight: normal; }
+        kbd { color: var(--yellow); font-family: inherit; }
+        .note { margin: 0; color: var(--dim); line-height: 1.5; }
+      </style>
+    </div>
+  );
+}

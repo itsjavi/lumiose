@@ -1,0 +1,179 @@
+// Songs: the open song's properties, the library in localStorage, files and export.
+import { signal } from "lumen";
+import { demoSong } from "../model/demo.ts";
+import { deleteSaved, library, loadSaved, newId, saveSong, type LibraryEntry } from "../model/library.ts";
+import { emptyPattern, emptySong } from "../model/song.ts";
+import { exportJson, exportWav, exporting, importJson } from "../files.ts";
+import { lens } from "../lens.ts";
+import { doc, edit, openSong, readSong, saveNow, say, set, songId } from "../state.ts";
+import { SongNumber } from "./Header.stsx";
+
+function textField(field: "title" | "author") {
+  return lens(
+    () => doc.song[field],
+    (value) => edit(field === "title" ? "Rename song" : "Change author", () => set([field], value.slice(0, 64)), field),
+  );
+}
+
+function setPatternLength(event: Event) {
+  const select = event.currentTarget as HTMLSelectElement;
+  const length = Number(select.value);
+  const song = readSong();
+  edit("Pattern length", () => {
+    song.patterns.forEach((pattern, p) => {
+      const rows = pattern.rows.slice(0, length);
+      const fill = emptyPattern(length).rows.slice(rows.length);
+      set(["patterns", p, "rows"], [...rows, ...fill]);
+    });
+    set(["patternLength"], length);
+  });
+}
+
+function open(entry: LibraryEntry) {
+  const song = loadSaved(entry.id);
+  if (!song) return say(`Could not read “${entry.title}”`);
+  saveNow();
+  openSong(song, entry.id);
+  say(`Opened ${song.title}`);
+}
+
+function duplicate(entry: LibraryEntry) {
+  const song = loadSaved(entry.id);
+  if (!song) return;
+  song.title = `${song.title} copy`;
+  saveSong(newId(), song);
+}
+
+function start(song: ReturnType<typeof emptySong>, message: string) {
+  saveNow();
+  openSong(song);
+  saveNow();
+  say(message);
+}
+
+export function SongsView() {
+  const title = textField("title");
+  const author = textField("author");
+  const confirming = signal<string | null>(null);
+  let fileInput: HTMLInputElement | undefined;
+
+  return (
+    <div class="songs-view">
+      <section class="panel current" aria-label="Current song">
+        <h2>Current song</h2>
+        <label>
+          Title
+          <input bind:value={title} maxlength={64} />
+        </label>
+        <label>
+          Author
+          <input bind:value={author} maxlength={64} placeholder="you" />
+        </label>
+        <div class="row">
+          <SongNumber field="bpm" min={32} max={255} label="BPM" />
+          <SongNumber field="speed" min={1} max={31} label="Speed" />
+          <label class="inline">
+            Rows
+            <select onChange={setPatternLength}>
+              {[16, 32, 48, 64, 96, 128].map((n) => (
+                <option value={String(n)} selected={n === doc.song.patternLength}>
+                  {n}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
+        <p class="facts">
+          {doc.song.order.length} orders · {doc.song.patterns.length} patterns · {doc.song.instruments.length} instruments
+        </p>
+        <div class="actions">
+          <button onClick={() => (saveNow(), say("Saved"))}>Save</button>
+          <button onClick={exportJson}>Export file</button>
+          <button onClick={() => fileInput?.click()}>Import file</button>
+          <button class="wav" onClick={() => void exportWav()} disabled={exporting()}>
+            {exporting() ? "Rendering…" : "Export WAV"}
+          </button>
+          <input
+            ref={(el) => (fileInput = el)}
+            type="file"
+            accept=".json,application/json"
+            hidden
+            onChange={(event) => {
+              const file = event.currentTarget.files?.[0];
+              if (file) void importJson(file).then(saveNow);
+              event.currentTarget.value = "";
+            }}
+          />
+        </div>
+        <div class="actions">
+          <button onClick={() => start(emptySong(), "New song")}>New song</button>
+          <button onClick={() => start(demoSong(), "Demo song loaded")}>Load demo</button>
+        </div>
+      </section>
+      <section class="panel library" aria-label="Saved songs">
+        <h2>Library ({library().length})</h2>
+        <p class="facts">Songs save to this browser as you edit.</p>
+        <ul>
+          {library().map((entry) => (
+            <li class={{ open: entry.id === songId() }}>
+              <span class="title">{entry.title}</span>
+              <span class="meta">
+                {entry.author || "—"} · {entry.orders} orders · {new Date(entry.updated).toLocaleString()}
+              </span>
+              <span class="buttons">
+                <button onClick={() => open(entry)} disabled={entry.id === songId()}>
+                  {entry.id === songId() ? "Open" : "Load"}
+                </button>
+                <button onClick={() => duplicate(entry)}>Copy</button>
+                {confirming() === entry.id ? (
+                  <button
+                    class="danger"
+                    onClick={() => {
+                      deleteSaved(entry.id);
+                      confirming.set(null);
+                    }}
+                  >
+                    Sure?
+                  </button>
+                ) : (
+                  <button onClick={() => confirming.set(entry.id)} disabled={entry.id === songId()}>
+                    Delete
+                  </button>
+                )}
+              </span>
+            </li>
+          ))}
+        </ul>
+      </section>
+      <style>
+        .songs-view {
+          display: grid;
+          grid-template-columns: minmax(320px, 420px) minmax(0, 1fr);
+          gap: 10px;
+          align-items: start;
+        }
+        .current { display: grid; gap: 10px; }
+        label { display: grid; gap: 4px; font-size: 11px; color: var(--dim); text-transform: uppercase; }
+        .inline { display: inline-flex; align-items: center; gap: 4px; font-weight: 700; }
+        .row { display: flex; gap: 14px; flex-wrap: wrap; align-items: center; }
+        .facts { margin: 0; color: var(--dim); font-size: 12px; }
+        .actions { display: flex; gap: 6px; flex-wrap: wrap; }
+        .wav { background: var(--blue); }
+        ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+        li {
+          display: grid;
+          grid-template-columns: minmax(0, 1fr) auto;
+          gap: 2px 12px;
+          padding: 6px 8px;
+          background: var(--bg);
+          border: 1px solid var(--line);
+        }
+        li.open { border-color: var(--yellow); }
+        .title { font-weight: 700; }
+        .meta { grid-row: 2; color: var(--dim); font-size: 11px; }
+        .buttons { grid-row: 1 / 3; grid-column: 2; display: flex; gap: 4px; align-items: center; }
+        .danger { background: var(--red); }
+      </style>
+    </div>
+  );
+}

@@ -1,0 +1,94 @@
+// The song arrangement: which pattern plays at each position.
+import * as ed from "../editor.ts";
+import { playOrder, playing } from "../frame.ts";
+import { hex } from "../model/song.ts";
+import { cursor, doc } from "../state.ts";
+import { tokens } from "../tokens.ts";
+
+export function OrderList() {
+  return (
+    <section class="orders panel" aria-label="Order list">
+      <header>
+        <h2>Order</h2>
+        <span class="count">{doc.song.order.length}</span>
+      </header>
+      <ol class="list">
+        {doc.song.order.map((pattern, i) => (
+          <li>
+            <button
+              class={{ current: i === cursor.order, live: playing() && i === playOrder() }}
+              aria-current={i === cursor.order ? "true" : undefined}
+              onClick={() => ed.setOrder(i)}
+            >
+              <span class="pos">{hex(i)}</span>
+              <span class="pat">{hex(pattern)}</span>
+            </button>
+          </li>
+        ))}
+      </ol>
+      <div class="tools">
+        <button title="Previous pattern number" aria-label="Previous pattern number" onClick={() => ed.stepOrderPattern(-1)}>
+          −
+        </button>
+        <button title="Next pattern number (past the last: a new pattern)" aria-label="Next pattern number" onClick={() => ed.stepOrderPattern(1)}>
+          +
+        </button>
+        <button title="Insert this pattern again after the current position" onClick={() => ed.insertOrder(false)}>
+          INS
+        </button>
+        <button title="Insert a new empty pattern" onClick={ed.newPatternOrder}>
+          NEW
+        </button>
+        <button title="Insert a copy of this pattern" onClick={() => ed.insertOrder(true)}>
+          DUP
+        </button>
+        <button title="Remove this position" onClick={ed.removeOrder}>
+          DEL
+        </button>
+        <button title="Move up" aria-label="Move position up" onClick={() => ed.moveOrder(-1)}>
+          ▲
+        </button>
+        <button title="Move down" aria-label="Move position down" onClick={() => ed.moveOrder(1)}>
+          ▼
+        </button>
+      </div>
+      <style>
+        .orders { display: grid; grid-template-rows: auto 1fr auto; min-block-size: 0; }
+        header { display: flex; justify-content: space-between; align-items: baseline; }
+        .count { color: var(--dim); }
+        .list {
+          list-style: none;
+          margin: 0;
+          padding: 0;
+          overflow-y: auto;
+          min-block-size: 0;
+          font-family: $tokens.font.mono;
+        }
+        .list button {
+          display: flex;
+          gap: 2ch;
+          inline-size: 100%;
+          padding: 1px 8px;
+          background: transparent;
+          box-shadow: none;
+          border: 0;
+          color: var(--text);
+          justify-content: flex-start;
+        }
+        .list button:hover { background: var(--raised); }
+        .pos { color: var(--dim); }
+        .pat { color: var(--cyan); }
+        .list button.current { background: var(--raised); outline: 1px solid var(--yellow); outline-offset: -1px; }
+        .list button.live .pos { color: var(--red); }
+        .list button.live::after { content: "◀"; color: var(--red); margin-inline-start: auto; }
+        .tools {
+          display: grid;
+          grid-template-columns: repeat(4, 1fr);
+          gap: 3px;
+          padding-block-start: 6px;
+        }
+        .tools button { padding-inline: 0; font-size: 11px; }
+      </style>
+    </section>
+  );
+}

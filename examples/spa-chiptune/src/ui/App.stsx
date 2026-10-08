@@ -1,0 +1,204 @@
+// The application shell: header, the current view (app state, no router yet) and the status bar.
+import { Dynamic, effect, onMount, untrack } from "lumen";
+import { playOrder, playRow, playing, refreshScopeColors, startFrameLoop } from "../frame.ts";
+import { onKeyDown, onKeyUp } from "../keys.ts";
+import { cursor, prefs, view } from "../state.ts";
+import { tokens } from "../tokens.ts";
+import { Header } from "./Header.stsx";
+import { InstrumentView } from "./InstrumentView.stsx";
+import { SettingsView } from "./SettingsView.stsx";
+import { SongsView } from "./SongsView.stsx";
+import { StatusBar } from "./StatusBar.stsx";
+import { TrackerView } from "./TrackerView.stsx";
+
+const VIEWS = {
+  tracker: TrackerView,
+  instruments: InstrumentView,
+  songs: SongsView,
+  settings: SettingsView,
+};
+
+export function App() {
+  onMount(() => {
+    startFrameLoop();
+    document.addEventListener("keydown", onKeyDown);
+    document.addEventListener("keyup", onKeyUp);
+    return () => {
+      document.removeEventListener("keydown", onKeyDown);
+      document.removeEventListener("keyup", onKeyUp);
+    };
+  });
+
+  // Follow playback: the cursor (and so the centered row) tracks the playing position.
+  effect(() => {
+    if (!playing() || !prefs.follow) return;
+    const order = playOrder();
+    const row = playRow();
+    untrack(() => Object.assign(cursor, { order, row }));
+  });
+
+  effect(() => {
+    document.documentElement.dataset.theme = prefs.theme;
+    requestAnimationFrame(refreshScopeColors);
+  });
+
+  return (
+    <div class="app">
+      <Header />
+      <main class="view">
+        <Dynamic component={VIEWS[view()]} />
+      </main>
+      <StatusBar />
+    </div>
+  );
+}
+
+<style>
+  .app {
+    display: grid;
+    grid-template-rows: auto 1fr auto;
+    block-size: 100dvh;
+  }
+  .view {
+    min-block-size: 0;
+    padding: 10px 12px;
+    overflow: auto;
+  }
+</style>
+
+<style global>
+  :root {
+    --bg: $tokens.nes.bg;
+    --panel: $tokens.nes.panel;
+    --raised: $tokens.nes.raised;
+    --line: $tokens.nes.line;
+    --text: $tokens.nes.text;
+    --dim: $tokens.nes.dim;
+    --faint: $tokens.nes.faint;
+    --light: $tokens.nes.light;
+    --yellow: $tokens.nes.yellow;
+    --cyan: $tokens.nes.cyan;
+    --green: $tokens.nes.green;
+    --pink: $tokens.nes.pink;
+    --orange: $tokens.nes.orange;
+    --red: $tokens.nes.red;
+    --blue: $tokens.nes.blue;
+    color-scheme: dark;
+  }
+  :root[data-theme="dmg"] {
+    --bg: $tokens.dmg.bg;
+    --panel: $tokens.dmg.panel;
+    --raised: $tokens.dmg.raised;
+    --line: $tokens.dmg.line;
+    --text: $tokens.dmg.text;
+    --dim: $tokens.dmg.dim;
+    --faint: $tokens.dmg.faint;
+    --light: $tokens.dmg.light;
+    --yellow: $tokens.dmg.yellow;
+    --cyan: $tokens.dmg.cyan;
+    --green: $tokens.dmg.green;
+    --pink: $tokens.dmg.pink;
+    --orange: $tokens.dmg.orange;
+    --red: $tokens.dmg.red;
+    --blue: $tokens.dmg.blue;
+  }
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { margin: 0; block-size: 100%; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: $tokens.font.mono;
+    font-size: $tokens.font.size;
+    -webkit-font-smoothing: none;
+    font-smooth: never;
+    overflow: hidden;
+  }
+  h2 {
+    margin: 0 0 6px;
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--yellow);
+  }
+  /* Panels: crisp borders and a hard pixel shadow. */
+  .panel {
+    padding: 8px;
+    background: var(--panel);
+    border: calc($tokens.border * 1px) solid var(--line);
+    box-shadow: $tokens.shadow;
+    min-block-size: 0;
+  }
+  /* Buttons: a beveled 8-bit look that presses in. */
+  button {
+    font: inherit;
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: var(--text);
+    background: var(--raised);
+    border: 0;
+    padding: 4px 10px;
+    cursor: pointer;
+    box-shadow:
+      inset -2px -2px 0 0 rgb(0 0 0 / 0.45),
+      inset 2px 2px 0 0 var(--light);
+  }
+  button:hover { filter: brightness(1.15); }
+  button:active {
+    box-shadow:
+      inset 2px 2px 0 0 rgb(0 0 0 / 0.45),
+      inset -2px -2px 0 0 var(--light);
+  }
+  button:disabled { opacity: 0.4; cursor: default; filter: none; }
+  input, select, textarea {
+    font: inherit;
+    color: var(--text);
+    background: var(--bg);
+    border: calc($tokens.border * 1px) solid var(--line);
+    padding: 3px 6px;
+  }
+  /* Pixel sliders: a 4px track and a square thumb (also vertical, with writing-mode). */
+  input[type="range"] {
+    appearance: none;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    cursor: pointer;
+  }
+  input[type="range"]::-webkit-slider-runnable-track {
+    background: var(--line);
+    block-size: 4px;
+    inline-size: 4px;
+  }
+  input[type="range"]::-webkit-slider-thumb {
+    appearance: none;
+    inline-size: 12px;
+    block-size: 12px;
+    margin-block-start: -4px;
+    background: var(--yellow);
+    box-shadow: inset -2px -2px 0 rgb(0 0 0 / 0.4), 0 0 0 2px #000;
+  }
+  input[type="range"]::-moz-range-track { background: var(--line); block-size: 4px; }
+  input[type="range"]::-moz-range-thumb {
+    inline-size: 12px;
+    block-size: 12px;
+    border: 2px solid #000;
+    border-radius: 0;
+    background: var(--yellow);
+  }
+  input[type="number"] { inline-size: 9ch; }
+  input[type="checkbox"] { accent-color: var(--yellow); }
+  /* One visible focus style everywhere, keyboard only. */
+  :focus { outline: none; }
+  :focus-visible {
+    outline: 2px solid var(--yellow);
+    outline-offset: 2px;
+  }
+  ::selection { background: var(--blue); color: var(--text); }
+  ::-webkit-scrollbar { inline-size: 10px; block-size: 10px; }
+  ::-webkit-scrollbar-thumb { background: var(--line); }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; }
+  }
+</style>

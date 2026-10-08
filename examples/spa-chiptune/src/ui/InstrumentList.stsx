@@ -1,0 +1,106 @@
+// The instrument list: selects the instrument used for note entry.
+import { clone, instrument, macro } from "../model/song.ts";
+import { hex } from "../model/song.ts";
+import { doc, edit, prefs, readSong, set, view } from "../state.ts";
+import { tokens } from "../tokens.ts";
+
+export function addInstrument(copy: boolean): void {
+  const song = readSong();
+  const index = song.instruments.length;
+  if (index >= 64) return;
+  const source = song.instruments[prefs.instrument];
+  edit(copy ? "Duplicate instrument" : "New instrument", () =>
+    set(
+      ["instruments", index],
+      copy && source
+        ? { ...clone(source), name: `${source.name} copy` }
+        : instrument(`Instrument ${hex(index)}`, { volume: macro([15, 13, 11, 9, 8], -1, -1) }),
+    ),
+  );
+  prefs.instrument = index;
+}
+
+export function removeInstrument(): void {
+  const song = readSong();
+  if (song.instruments.length <= 1) return;
+  const index = prefs.instrument;
+  edit("Delete instrument", () =>
+    set(
+      ["instruments"],
+      song.instruments.filter((_, i) => i !== index),
+    ),
+  );
+  prefs.instrument = Math.min(index, song.instruments.length - 1);
+}
+
+export function InstrumentList(props: { compact?: boolean }) {
+  return (
+    <section class={["instruments panel", { compact: props.compact }]} aria-label="Instruments">
+      <header>
+        <h2>Instruments</h2>
+        {props.compact && (
+          <button class="edit" onClick={() => view.set("instruments")} title="Edit instruments (F2)">
+            EDIT
+          </button>
+        )}
+      </header>
+      <ol class="list">
+        {doc.song.instruments.map((ins, i) => (
+          <li>
+            <button
+              class={{ current: i === prefs.instrument }}
+              aria-current={i === prefs.instrument ? "true" : undefined}
+              onClick={() => (prefs.instrument = i)}
+              onDblClick={() => {
+                prefs.instrument = i;
+                view.set("instruments");
+              }}
+            >
+              <span class="index">{hex(i)}</span>
+              <span class="label">{ins.name}</span>
+            </button>
+          </li>
+        ))}
+      </ol>
+      {!props.compact && (
+        <div class="tools">
+          <button onClick={() => addInstrument(false)}>NEW</button>
+          <button onClick={() => addInstrument(true)}>DUP</button>
+          <button onClick={removeInstrument} disabled={doc.song.instruments.length <= 1}>
+            DEL
+          </button>
+        </div>
+      )}
+      <style>
+        .instruments { display: grid; grid-template-rows: auto 1fr auto; min-block-size: 0; }
+        header { display: flex; justify-content: space-between; align-items: center; }
+        .edit { font-size: 11px; padding: 1px 6px; }
+        .list {
+          list-style: none;
+          margin: 0;
+          padding: 0;
+          overflow-y: auto;
+          min-block-size: 0;
+        }
+        .list button {
+          display: flex;
+          gap: 1ch;
+          inline-size: 100%;
+          padding: 1px 8px;
+          background: transparent;
+          box-shadow: none;
+          border: 0;
+          color: var(--text);
+          text-transform: none;
+          justify-content: flex-start;
+          font-family: $tokens.font.mono;
+        }
+        .list button:hover { background: var(--raised); }
+        .list button.current { background: var(--raised); outline: 1px solid var(--cyan); outline-offset: -1px; }
+        .index { color: var(--cyan); }
+        .label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .tools { display: grid; grid-template-columns: repeat(3, 1fr); gap: 3px; padding-block-start: 6px; }
+      </style>
+    </section>
+  );
+}

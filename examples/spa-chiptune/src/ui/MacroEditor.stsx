@@ -1,0 +1,213 @@
+// A macro editor: draw the per-tick values with the pointer, set loop/release points, or type the
+// sequence as text. A pointer stroke is one undo step (same-key edits merge).
+import { computed } from "lumen";
+import { formatMacro, parseMacro } from "../model/mml.ts";
+import type { Macro, MacroKind } from "../model/types.ts";
+import { doc, edit, history, prefs, set } from "../state.ts";
+import { tokens } from "../tokens.ts";
+
+interface Props {
+  kind: MacroKind;
+  label: string;
+  min: number;
+  max: number;
+}
+
+const COLORS: Record<MacroKind, string> = {
+  volume: "var(--green)",
+  arpeggio: "var(--pink)",
+  pitch: "var(--orange)",
+  duty: "var(--cyan)",
+};
+
+export function MacroEditor(props: Props) {
+  const macro = (): Macro | undefined => doc.song.instruments[prefs.instrument]?.[props.kind];
+  const path = () => ["instruments", prefs.instrument, props.kind] as const;
+  const slots = computed(() => {
+    const length = Math.min(64, Math.max(24, (macro()?.values.length ?? 0) + 4));
+    return Array.from({ length }, (_, i) => i);
+  });
+  const range = () => props.max - props.min;
+  const zero = () => (props.min < 0 ? -props.min / range() : 0);
+
+  function write(next: Macro, label: string, key?: string) {
+    edit(label, () => set([...path()], next), key);
+  }
+
+  let drawing = false;
+  let stroke = 0;
+  function paint(event: PointerEvent) {
+    const m = macro();
+    if (!m) return;
+    const el = event.currentTarget as HTMLElement;
+    const rect = el.getBoundingClientRect();
+    const index = Math.floor(((event.clientX - rect.left) / rect.width) * slots().length);
+    const ratio = 1 - (event.clientY - rect.top) / rect.height;
+    const value = Math.round(props.min + Math.min(1, Math.max(0, ratio)) * range());
+    if (index < 0 || index >= 64) return;
+    const values = [...m.values];
+    while (values.length <= index) values.push(values[values.length - 1] ?? value);
+    if (values[index] === value && values.length === m.values.length) return;
+    values[index] = value;
+    write({ ...m, values }, `Draw ${props.label.toLowerCase()}`, `draw:${stroke}`);
+  }
+
+  function onPointerDown(event: PointerEvent) {
+    if (event.button !== 0) return;
+    drawing = true;
+    stroke++;
+    history.seal();
+    (event.currentTarget as HTMLElement).setPointerCapture(event.pointerId);
+    paint(event);
+  }
+
+  function setPoint(kind: "loop" | "release", index: number) {
+    const m = macro();
+    if (!m || index >= m.values.length) return;
+    write({ ...m, [kind]: m[kind] === index ? -1 : index }, kind === "loop" ? "Loop point" : "Release point");
+  }
+
+  function resize(delta: number) {
+    const m = macro();
+    if (!m) return;
+    const length = Math.min(64, Math.max(0, m.values.length + delta));
+    const values = m.values.slice(0, length);
+    while (values.length < length) values.push(values[values.length - 1] ?? (props.kind === "volume" ? 15 : 0));
+    write(
+      {
+        values,
+        loop: m.loop < length ? m.loop : -1,
+        release: m.release < length ? m.release : -1,
+      },
+      `${props.label} length`,
+    );
+  }
+
+  function onText(event: Event) {
+    const input = event.currentTarget as HTMLInputElement;
+    const next = parseMacro(input.value, props.min, props.max);
+    write(next, `${props.label} text`);
+    input.value = formatMacro(next);
+  }
+
+  return (
+    <section class="macro" style={{ "--color": COLORS[props.kind], "--zero": zero() }} aria-label={`${props.label} macro`}>
+      <header>
+        <h3>{props.label}</h3>
+        <span class="range">
+          {props.min}…{props.max}
+        </span>
+        <span class="length">{macro()?.values.length ?? 0} steps</span>
+        <button onClick={() => resize(-1)} aria-label={`Shorter ${props.label} macro`}>
+          −
+        </button>
+        <button onClick={() => resize(1)} aria-label={`Longer ${props.label} macro`}>
+          +
+        </button>
+      </header>
+      <div
+        class="bars"
+        style={{ "--slots": slots().length }}
+        onPointerDown={onPointerDown}
+        onPointerMove={(event) => drawing && paint(event)}
+        onPointerUp={() => (drawing = false)}
+        aria-hidden="true"
+      >
+        {slots().map((i) => (
+          <span
+            class={{
+              bar: true,
+              set: i < (macro()?.values.length ?? 0),
+              loop: i === macro()?.loop,
+              release: i === macro()?.release,
+            }}
+            style={{
+              "--v": i < (macro()?.values.length ?? 0) ? (macro()!.values[i]! - props.min) / range() : zero(),
+            }}
+          />
+        ))}
+      </div>
+      <div class="lanes" style={{ "--slots": slots().length }}>
+        {slots().map((i) => (
+          <button
+            class={{ mark: true, on: i === macro()?.loop }}
+            tabindex={-1}
+            title={`Loop from step ${i}`}
+            onClick={() => setPoint("loop", i)}
+          />
+        ))}
+        {slots().map((i) => (
+          <button
+            class={{ mark: true, rel: true, on: i === macro()?.release }}
+            tabindex={-1}
+            title={`Release after step ${i}`}
+            onClick={() => setPoint("release", i)}
+          />
+        ))}
+      </div>
+      <label class="text">
+        <span>MML</span>
+        <input
+          value={macro() ? formatMacro(macro()!) : ""}
+          onChange={onText}
+          spellcheck={false}
+          aria-label={`${props.label} values: numbers, | before the loop, / after the release`}
+          placeholder="e.g. 15 14 | 12 10 / 6 3 0"
+        />
+      </label>
+      <style>
+        .macro {
+          display: grid;
+          gap: 6px;
+          padding: 8px;
+          background: var(--bg);
+          border: calc($tokens.border * 1px) solid var(--line);
+        }
+        header { display: flex; align-items: center; gap: 8px; }
+        h3 { margin: 0; flex: 1; font-size: 12px; color: var(--color); text-transform: uppercase; letter-spacing: 0.1em; }
+        .range, .length { font-size: 11px; color: var(--dim); }
+        header button { padding: 1px 8px; }
+        .bars {
+          position: relative;
+          display: grid;
+          grid-template-columns: repeat(var(--slots), 1fr);
+          gap: 2px;
+          block-size: 110px;
+          cursor: crosshair;
+          touch-action: none;
+          background:
+            linear-gradient(var(--line), var(--line)) 0 calc((1 - var(--zero)) * 100%) / 100% 1px no-repeat,
+            var(--panel);
+        }
+        .bar { position: relative; }
+        .bar::before {
+          content: "";
+          position: absolute;
+          inset-inline: 0;
+          /* From the zero line up (or down, for negative values). */
+          inset-block-end: calc(min(var(--v), var(--zero)) * 100%);
+          block-size: max(2px, calc(max(var(--v) - var(--zero), var(--zero) - var(--v)) * 100%));
+          background: var(--faint);
+        }
+        .bar.set::before { background: var(--color); }
+        .bar.loop { box-shadow: inset 2px 0 0 var(--yellow); }
+        .bar.release { box-shadow: inset -2px 0 0 var(--red); }
+        .lanes {
+          display: grid;
+          grid-template-columns: repeat(var(--slots), 1fr);
+          gap: 2px;
+        }
+        .mark {
+          block-size: 8px;
+          padding: 0;
+          box-shadow: none;
+          background: var(--faint);
+        }
+        .mark.on { background: var(--yellow); }
+        .mark.rel.on { background: var(--red); }
+        .text { display: flex; gap: 8px; align-items: center; font-size: 11px; color: var(--dim); }
+        .text input { flex: 1; min-inline-size: 0; }
+      </style>
+    </section>
+  );
+}

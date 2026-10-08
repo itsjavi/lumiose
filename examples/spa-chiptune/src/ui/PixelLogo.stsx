@@ -1,0 +1,50 @@
+import { computed } from "lumen";
+
+// The logo, drawn from a tiny 5×7 bitmap font as one SVG path (crisp at any scale).
+const GLYPHS: Record<string, string> = {
+  L: "10000100001000010000100001000011111",
+  U: "10001100011000110001100011000101110",
+  M: "10001110111010110101100011000110001",
+  E: "11111100001000011110100001000011111",
+  N: "10001110011010110011100011000110001",
+  C: "01110100011000010000100001000101110",
+  H: "10001100011000111111100011000110001",
+  I: "01110001000010000100001000010001110",
+  P: "11110100011000111110100001000010000",
+  " ": "00000000000000000000000000000000000",
+};
+
+function pathFor(text: string): { d: string; width: number } {
+  let d = "";
+  [...text].forEach((char, index) => {
+    const bits = GLYPHS[char] ?? GLYPHS[" "]!;
+    for (let i = 0; i < 35; i++) {
+      if (bits[i] === "1") d += `M${index * 6 + (i % 5)} ${Math.floor(i / 5)}h1v1h-1z`;
+    }
+  });
+  return { d, width: text.length * 6 - 1 };
+}
+
+export function PixelLogo(props: { text: string; scale?: number }) {
+  const logo = computed(() => pathFor(props.text));
+  const scale = () => props.scale ?? 3;
+  return (
+    <svg
+      class="logo"
+      viewBox={`-1 -1 ${logo().width + 2} 9`}
+      width={(logo().width + 2) * scale()}
+      height={9 * scale()}
+      shape-rendering="crispEdges"
+      role="img"
+      aria-label={props.text}
+    >
+      <path d={logo().d} transform="translate(1 1)" class="shadow" />
+      <path d={logo().d} class="face" />
+      <style>
+        .logo { display: block; }
+        .shadow { fill: #000; }
+        .face { fill: var(--yellow); }
+      </style>
+    </svg>
+  );
+}

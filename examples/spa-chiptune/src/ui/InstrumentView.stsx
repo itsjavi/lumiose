@@ -1,0 +1,81 @@
+// The instrument editor: name, the four macros, and a test channel for the keyboard preview.
+import { changeOctave } from "../editor.ts";
+import { lens } from "../lens.ts";
+import { hex } from "../model/song.ts";
+import { CHANNELS, MACROS } from "../model/types.ts";
+import { cursor, doc, edit, prefs, set } from "../state.ts";
+import { InstrumentList } from "./InstrumentList.stsx";
+import { MacroEditor } from "./MacroEditor.stsx";
+
+export function InstrumentView() {
+  const ins = () => doc.song.instruments[prefs.instrument];
+  const name = lens(
+    () => ins()?.name ?? "",
+    (value) => edit("Rename instrument", () => set(["instruments", prefs.instrument, "name"], value.slice(0, 32)), `name:${prefs.instrument}`),
+  );
+  return (
+    <div class="instrument-view">
+      <InstrumentList />
+      {ins() ? (
+        <section class="editor panel" aria-label="Instrument editor">
+          <header>
+            <h2>Instrument {hex(prefs.instrument)}</h2>
+            <label class="name">
+              Name
+              <input bind:value={name} maxlength={32} />
+            </label>
+          </header>
+          <div class="test" role="group" aria-label="Preview channel">
+            <span>Preview on</span>
+            {CHANNELS.map((channel, i) => (
+              <button
+                class={{ on: cursor.channel === i }}
+                aria-pressed={cursor.channel === i}
+                onClick={() => (cursor.channel = i)}
+              >
+                {channel.short}
+              </button>
+            ))}
+            <span class="hint">
+              Play it with Z–M and Q–P · octave {prefs.octave}
+            </span>
+            <button onClick={() => changeOctave(-1)} aria-label="Octave down">−</button>
+            <button onClick={() => changeOctave(1)} aria-label="Octave up">+</button>
+          </div>
+          <div class="macros">
+            {MACROS.map((m) => (
+              <MacroEditor kind={m.kind} label={m.label} min={m.min} max={m.max} />
+            ))}
+          </div>
+          <p class="help">
+            Volume scales the channel volume (the triangle only switches on and off). Arpeggio adds
+            semitones per tick. Pitch accumulates 1/16 semitones per tick. Duty picks the pulse
+            width (12.5, 25, 50, 75%) or the noise mode (0 long, 1 short). Yellow marks the loop
+            start, red the release: the macro loops while the note is held and continues after a
+            note off.
+          </p>
+        </section>
+      ) : (
+        <p class="panel">Create an instrument to edit it.</p>
+      )}
+      <style>
+        .instrument-view {
+          display: grid;
+          grid-template-columns: minmax(180px, 240px) minmax(0, 1fr);
+          gap: 10px;
+          block-size: 100%;
+          min-block-size: 0;
+        }
+        .editor { display: grid; gap: 10px; align-content: start; overflow: auto; }
+        header { display: flex; align-items: baseline; gap: 16px; }
+        .name { display: flex; gap: 8px; align-items: center; font-size: 11px; color: var(--dim); }
+        .name input { inline-size: 24ch; }
+        .test { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; font-size: 11px; color: var(--dim); }
+        .test .on { background: var(--yellow); color: var(--bg); }
+        .hint { margin-inline-start: 12px; }
+        .macros { display: grid; grid-template-columns: repeat(auto-fit, minmax(440px, 1fr)); gap: 10px; }
+        .help { margin: 0; max-inline-size: 90ch; color: var(--dim); font-size: 12px; line-height: 1.5; }
+      </style>
+    </div>
+  );
+}

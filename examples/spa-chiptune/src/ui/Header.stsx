@@ -1,0 +1,199 @@
+// The top bar (logo, views, history, files) and the transport bar.
+import * as engine from "../audio/engine.ts";
+import { changeInstrument, changeOctave } from "../editor.ts";
+import { exportWav, exporting } from "../files.ts";
+import { liveBpm, liveSpeed, playOrder, playRow, playing } from "../frame.ts";
+import { togglePlay } from "../keys.ts";
+import { hex } from "../model/song.ts";
+import { cursor, doc, edit, history, prefs, redo, saved, set, undo, view, type View } from "../state.ts";
+import { tokens } from "../tokens.ts";
+import { PixelLogo } from "./PixelLogo.stsx";
+
+const TABS: { id: View; label: string; key: string }[] = [
+  { id: "tracker", label: "Tracker", key: "F1" },
+  { id: "instruments", label: "Instruments", key: "F2" },
+  { id: "songs", label: "Songs", key: "F3" },
+  { id: "settings", label: "Settings", key: "F4" },
+];
+
+/** A number field for a song value, committed on change as one undoable edit. */
+export function SongNumber(props: { field: "bpm" | "speed"; min: number; max: number; label: string }) {
+  const commit = (event: Event) => {
+    const input = event.currentTarget as HTMLInputElement;
+    const value = input.valueAsNumber;
+    const next = Number.isFinite(value)
+      ? Math.min(props.max, Math.max(props.min, Math.round(value)))
+      : doc.song[props.field];
+    edit(props.label, () => set([props.field], next));
+    input.value = String(next);
+  };
+  return (
+    <label class="number">
+      {props.label}
+      <input type="number" min={props.min} max={props.max} value={doc.song[props.field]} onChange={commit} />
+      <style>
+        .number {
+          display: inline-flex;
+          align-items: center;
+          gap: 4px;
+          font-size: 11px;
+          color: var(--dim);
+          font-weight: 700;
+          text-transform: uppercase;
+        }
+        input { inline-size: 9ch; }
+      </style>
+    </label>
+  );
+}
+
+export function Header() {
+  const ins = () => doc.song.instruments[prefs.instrument];
+  return (
+    <header class="header">
+      <div class="top">
+        <PixelLogo text="LUMEN CHIP" />
+        <nav class="tabs" aria-label="Views">
+          {TABS.map((tab) => (
+            <button
+              class={{ active: view() === tab.id }}
+              aria-current={view() === tab.id ? "page" : undefined}
+              title={`${tab.label} (${tab.key})`}
+              onClick={() => view.set(tab.id)}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </nav>
+        <div class="song" title={doc.song.author ? `by ${doc.song.author}` : undefined}>
+          <span class="title">{doc.song.title}</span>
+          <span class={["saved", { dirty: !saved() }]}>{saved() ? "saved" : "saving…"}</span>
+        </div>
+        <div class="group">
+          <button onClick={undo} disabled={!history.canUndo()} title={`Undo ${history.undoLabel() ?? ""} (Ctrl/Cmd+Z)`}>
+            Undo
+          </button>
+          <button onClick={redo} disabled={!history.canRedo()} title={`Redo ${history.redoLabel() ?? ""} (Ctrl/Cmd+Shift+Z)`}>
+            Redo
+          </button>
+          <button class="wav" onClick={() => void exportWav()} disabled={exporting()} title="Export WAV (Ctrl/Cmd+E)">
+            {exporting() ? "Rendering…" : "WAV"}
+          </button>
+        </div>
+      </div>
+      <div class="transport" role="toolbar" aria-label="Transport">
+        <button
+          class={["play", { on: playing() }]}
+          onClick={() => togglePlay("song")}
+          aria-label={playing() ? "Stop" : "Play song"}
+          title="Play song from this order / stop (Space)"
+        >
+          {playing() ? "■ STOP" : "▶ PLAY"}
+        </button>
+        <button onClick={() => togglePlay("pattern")} title="Loop this pattern (Shift+Space)">
+          ⟳ PATTERN
+        </button>
+        <button
+          class={["rec", { on: prefs.record }]}
+          aria-pressed={prefs.record}
+          onClick={() => (prefs.record = !prefs.record)}
+          title="Record mode: notes are written into the pattern (`)"
+        >
+          ● REC
+        </button>
+        <button
+          class={{ on: prefs.follow }}
+          aria-pressed={prefs.follow}
+          onClick={() => (prefs.follow = !prefs.follow)}
+          title="Follow playback"
+        >
+          FOLLOW
+        </button>
+        <SongNumber field="bpm" min={32} max={255} label="BPM" />
+        <SongNumber field="speed" min={1} max={31} label="SPD" />
+        <div class="lcd" aria-live="off" title="Order / row">
+          <span>ORD {hex(playing() ? playOrder() : cursor.order)}</span>
+          <span>ROW {hex(playing() ? playRow() : cursor.row)}</span>
+          <span class="live">{playing() ? `${liveBpm()}/${liveSpeed()}` : `${doc.song.bpm}/${doc.song.speed}`}</span>
+        </div>
+        <div class="field stepper" role="group" aria-label="Octave">
+          OCT
+          <button onClick={() => changeOctave(-1)} aria-label="Octave down" title="Octave down ([)">−</button>
+          <output>{prefs.octave}</output>
+          <button onClick={() => changeOctave(1)} aria-label="Octave up" title="Octave up (])">+</button>
+        </div>
+        <div class="field stepper" role="group" aria-label="Instrument">
+          INS
+          <button onClick={() => changeInstrument(-1)} aria-label="Previous instrument" title="Previous instrument ({)">◂</button>
+          <output class="ins">
+            {hex(prefs.instrument)} {ins()?.name ?? "?"}
+          </output>
+          <button onClick={() => changeInstrument(1)} aria-label="Next instrument" title="Next instrument (})">▸</button>
+        </div>
+        <div class="field stepper" role="group" aria-label="Edit step">
+          STEP
+          <button onClick={() => (prefs.step = Math.max(0, prefs.step - 1))} aria-label="Smaller edit step">−</button>
+          <output>{prefs.step}</output>
+          <button onClick={() => (prefs.step = Math.min(16, prefs.step + 1))} aria-label="Bigger edit step">+</button>
+        </div>
+        <span class={["engine", engine.engineStatus()]} title="Audio engine">
+          {engine.engineStatus() === "running" ? "AUDIO ON" : engine.engineStatus() === "starting" ? "STARTING" : "AUDIO OFF"}
+        </span>
+      </div>
+      <style>
+        .header {
+          display: grid;
+          gap: 6px;
+          padding: 8px 12px 6px;
+          background: var(--panel);
+          border-block-end: calc($tokens.border * 1px) solid var(--line);
+        }
+        .top { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+        .tabs { display: flex; gap: 4px; }
+        .tabs .active { background: var(--yellow); color: var(--bg); }
+        .song { display: flex; align-items: baseline; gap: 10px; margin-inline-start: auto; min-inline-size: 0; }
+        .title { font-weight: 700; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .saved { font-size: 11px; color: var(--green); }
+        .saved.dirty { color: var(--orange); }
+        .group { display: flex; gap: 4px; }
+        .wav { background: var(--blue); color: var(--text); }
+        .transport { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+        .play { min-inline-size: 9ch; background: var(--green); color: var(--bg); }
+        .play.on { background: var(--red); color: var(--text); }
+        .on { background: var(--raised); color: var(--yellow); }
+        .rec.on { background: var(--red); color: var(--text); }
+        .field {
+          display: inline-flex;
+          align-items: center;
+          gap: 4px;
+          font-size: 11px;
+          color: var(--dim);
+          font-weight: 700;
+        }
+        .stepper button { padding: 2px 6px; }
+        .stepper output {
+          min-inline-size: 2ch;
+          text-align: center;
+          color: var(--text);
+          font-family: $tokens.font.mono;
+          font-size: $tokens.font.size;
+        }
+        .stepper .ins { min-inline-size: 14ch; max-inline-size: 18ch; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; text-align: start; }
+        .lcd {
+          display: flex;
+          gap: 12px;
+          padding: 3px 10px;
+          background: #000;
+          color: var(--green);
+          font-family: $tokens.font.mono;
+          border: calc($tokens.border * 1px) inset var(--line);
+          text-shadow: 0 0 6px color-mix(in srgb, var(--green) 60%, transparent);
+        }
+        .live { color: var(--yellow); }
+        .engine { margin-inline-start: auto; font-size: 11px; color: var(--dim); }
+        .engine.running { color: var(--green); }
+        .engine.error { color: var(--red); }
+      </style>
+    </header>
+  );
+}

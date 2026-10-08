@@ -1,0 +1,267 @@
+// The pattern grid: rows × channels of note / instrument / volume / effect cells. The cursor row
+// stays in the middle and the sheet slides under it (one transform binding). The cursor, the
+// selection and the play bar are overlays positioned with custom properties, so moving them never
+// touches the cells; a cell's bindings re-run only when its own data changes.
+import { computed } from "lumen";
+import { COLUMNS, CELL_CH, ROWNUM_CH, moveRows, moveTo, selection, selectionBounds } from "../editor.ts";
+import { playOrder, playRow, playing } from "../frame.ts";
+import { hex, hexDigit, noteName } from "../model/song.ts";
+import { CHANNELS, type Cell } from "../model/types.ts";
+import { cursor, doc, pattern, prefs } from "../state.ts";
+import { tokens } from "../tokens.ts";
+import { ChannelHeader } from "./ChannelHeader.stsx";
+
+function PatternCell(props: { row: number; channel: number }) {
+  const noise = () => CHANNELS[props.channel]!.kind === "noise";
+  const cell = (): Cell | undefined => pattern()?.rows[props.row]?.[props.channel];
+  return (
+    <span
+      class={[
+        "cell",
+        {
+          en: (cell()?.note ?? -1) < 0,
+          ei: (cell()?.inst ?? -1) < 0,
+          ev: (cell()?.vol ?? -1) < 0,
+          ef: !cell()?.fx,
+        },
+      ]}
+      data-ch={props.channel}
+    >
+      <span class="note">{noteName(cell()?.note ?? -1, noise())}</span>
+      <span class="inst">{(cell()?.inst ?? -1) < 0 ? "··" : hex(cell()!.inst)}</span>
+      <span class="vol">{(cell()?.vol ?? -1) < 0 ? "·" : hexDigit(cell()!.vol)}</span>
+      <span class="fx">{cell()?.fx || "·"}</span>
+      <span class="param">{cell()?.fx ? hex(cell()!.param) : "··"}</span>
+    </span>
+  );
+}
+
+export function PatternEditor() {
+  const rowList = computed(() => Array.from({ length: doc.song.patternLength }, (_, i) => i));
+  const beat = () => doc.song.rowsPerBeat;
+  const column = () => COLUMNS[cursor.column]!;
+  const bounds = computed(() => {
+    const sel = selection();
+    return sel ? selectionBounds(sel) : null;
+  });
+  const showPlay = () => playing() && playOrder() === cursor.order;
+
+  let dragging = false;
+  function locate(event: PointerEvent) {
+    const target = event.target as HTMLElement;
+    const rowEl = target.closest<HTMLElement>("[data-row]");
+    const cellEl = target.closest<HTMLElement>("[data-ch]");
+    if (!rowEl || !cellEl) return undefined;
+    const rect = cellEl.getBoundingClientRect();
+    const char = Math.floor(((event.clientX - rect.left) / rect.width) * CELL_CH);
+    let col = 0;
+    COLUMNS.forEach((c, i) => {
+      if (char >= c.x) col = i;
+    });
+    return { row: Number(rowEl.dataset.row), channel: Number(cellEl.dataset.ch), column: col };
+  }
+
+  function onPointerDown(event: PointerEvent) {
+    const hit = locate(event);
+    if (!hit || event.button !== 0) return;
+    if (event.shiftKey) {
+      selection.set({
+        r1: selection()?.r1 ?? cursor.row,
+        c1: selection()?.c1 ?? cursor.channel,
+        r2: hit.row,
+        c2: hit.channel,
+      });
+    } else {
+      selection.set(null);
+      dragging = true;
+      (event.currentTarget as HTMLElement).setPointerCapture(event.pointerId);
+    }
+    moveTo(hit.row, hit.channel, hit.column);
+  }
+
+  function onPointerMove(event: PointerEvent) {
+    if (!dragging) return;
+    const hit = locate(event);
+    if (!hit) return;
+    if (hit.row !== cursor.row || hit.channel !== cursor.channel) {
+      selection.set({
+        r1: selection()?.r1 ?? cursor.row,
+        c1: selection()?.c1 ?? cursor.channel,
+        r2: hit.row,
+        c2: hit.channel,
+      });
+    }
+  }
+
+  function onWheel(event: WheelEvent) {
+    event.preventDefault();
+    moveRows(Math.sign(event.deltaY) * (Math.abs(event.deltaY) > 60 ? 4 : 1));
+  }
+
+  return (
+    <section class="editor" aria-label="Pattern editor">
+      <div class="heads">
+        <span class="corner">{hex(doc.song.order[cursor.order] ?? 0)}</span>
+        {CHANNELS.map((_, ch) => (
+          <ChannelHeader channel={ch} />
+        ))}
+      </div>
+      <div
+        class={["viewport", { recording: prefs.record }]}
+        on:wheel={onWheel}
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={() => (dragging = false)}
+        tabindex={0}
+        role="grid"
+        aria-label="Pattern rows: type notes on the computer keyboard"
+        aria-rowcount={doc.song.patternLength}
+      >
+        <div class="band" />
+        <div class="sheet" style={{ "--center": cursor.row }}>
+          {bounds() && (
+            <div
+              class="selection"
+              style={{
+                "--top": bounds()!.top,
+                "--rows": bounds()!.bottom - bounds()!.top + 1,
+                "--left": bounds()!.left,
+                "--chans": bounds()!.right - bounds()!.left + 1,
+              }}
+            />
+          )}
+          {showPlay() && <div class="playbar" style={{ "--play": playRow() }} />}
+          {rowList().map((row) => (
+            <div
+              class={["row", { beat: row % beat() === 0, bar: row % (beat() * 4) === 0 }]}
+              data-row={row}
+              role="row"
+            >
+              <span class="num">{hex(row)}</span>
+              {CHANNELS.map((_, ch) => (
+                <PatternCell row={row} channel={ch} />
+              ))}
+            </div>
+          ))}
+          <div
+            class="cursor"
+            style={{
+              "--cx": ROWNUM_CH + cursor.channel * CELL_CH + column().x,
+              "--cw": column().w,
+            }}
+          />
+        </div>
+      </div>
+    </section>
+  );
+}
+
+<style>
+  .editor {
+    display: grid;
+    grid-template-rows: auto 1fr;
+    min-block-size: 0;
+    font-family: $tokens.font.mono;
+    font-size: $tokens.font.grid;
+    background: var(--bg);
+    border: calc($tokens.border * 1px) solid var(--line);
+    box-shadow: $tokens.shadow;
+  }
+  .heads {
+    display: grid;
+    grid-template-columns: 4ch repeat(4, 14ch);
+    justify-content: center;
+    border-block-end: calc($tokens.border * 1px) solid var(--line);
+    background: var(--panel);
+  }
+  .corner {
+    align-self: end;
+    padding-block-end: 4px;
+    color: var(--dim);
+    text-align: center;
+  }
+  .viewport {
+    position: relative;
+    overflow: hidden;
+    min-block-size: 0;
+    cursor: cell;
+    user-select: none;
+    touch-action: none;
+  }
+  .band {
+    position: absolute;
+    inset-inline: 0;
+    inset-block-start: calc(50% - $tokens.row * 0.5px);
+    block-size: calc($tokens.row * 1px);
+    background: var(--raised);
+  }
+  .recording .band { background: color-mix(in srgb, var(--red) 28%, var(--raised)); }
+  .sheet {
+    position: absolute;
+    inset-block-start: 50%;
+    inset-inline-start: 50%;
+    inline-size: calc(4ch + 4 * 14ch);
+    transform: translate(-50%, calc((var(--center) + 0.5) * $tokens.row * -1px));
+    will-change: transform;
+  }
+  .row {
+    display: grid;
+    grid-template-columns: 4ch repeat(4, 14ch);
+    block-size: calc($tokens.row * 1px);
+    line-height: calc($tokens.row * 1px);
+    white-space: pre;
+    position: relative;
+  }
+  .row.beat { background: color-mix(in srgb, var(--faint) 55%, transparent); }
+  .row.bar { background: var(--faint); }
+  .num { color: var(--dim); text-align: center; }
+  .row.beat .num { color: var(--yellow); }
+  .cell {
+    display: flex;
+    gap: 1ch;
+    padding-inline-start: 1ch;
+    border-inline-start: 1px solid var(--line);
+  }
+  .note { color: var(--text); inline-size: 3ch; }
+  .inst { color: var(--cyan); inline-size: 2ch; }
+  .vol { color: var(--green); inline-size: 1ch; }
+  .fx { color: var(--pink); inline-size: 1ch; margin-inline-end: -1ch; }
+  .param { color: var(--orange); inline-size: 2ch; }
+  .en .note, .ei .inst, .ev .vol, .ef .fx, .ef .param { color: var(--faint); }
+  .row.bar .en .note, .row.bar .ei .inst, .row.bar .ev .vol, .row.bar .ef .fx, .row.bar .ef .param {
+    color: var(--line);
+  }
+  .cursor {
+    position: absolute;
+    pointer-events: none;
+    inset-block-start: calc(var(--center) * $tokens.row * 1px);
+    inset-inline-start: calc(var(--cx) * 1ch);
+    inline-size: calc(var(--cw) * 1ch);
+    block-size: calc($tokens.row * 1px);
+    outline: 2px solid var(--yellow);
+    background: color-mix(in srgb, var(--yellow) 25%, transparent);
+    z-index: 2;
+  }
+  .viewport:focus-visible { outline: 2px solid var(--yellow); outline-offset: -2px; }
+  .selection {
+    position: absolute;
+    pointer-events: none;
+    inset-block-start: calc(var(--top) * $tokens.row * 1px);
+    block-size: calc(var(--rows) * $tokens.row * 1px);
+    inset-inline-start: calc(4ch + var(--left) * 14ch);
+    inline-size: calc(var(--chans) * 14ch);
+    background: color-mix(in srgb, var(--blue) 45%, transparent);
+    outline: 1px solid var(--cyan);
+    z-index: 1;
+  }
+  .playbar {
+    position: absolute;
+    pointer-events: none;
+    inset-inline: 0;
+    inset-block-start: calc(var(--play) * $tokens.row * 1px);
+    block-size: calc($tokens.row * 1px);
+    border-block: 1px solid var(--red);
+    background: color-mix(in srgb, var(--red) 22%, transparent);
+    z-index: 1;
+  }
+</style>

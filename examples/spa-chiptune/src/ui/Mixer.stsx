@@ -1,0 +1,120 @@
+// The mixer: per-channel volume, pan, mute and solo with meters, plus the master bus.
+import { lens } from "../lens.ts";
+import { CHANNELS, CHANNEL_COUNT } from "../model/types.ts";
+import { doc, setMix } from "../state.ts";
+import { tokens } from "../tokens.ts";
+import { toggleMute, toggleSolo } from "./ChannelHeader.stsx";
+import { Scope, Vu } from "./Meters.stsx";
+
+function Strip(props: { channel: number }) {
+  const info = () => CHANNELS[props.channel]!;
+  const mix = () => doc.song.mixer.channels[props.channel]!;
+  const volume = lens(
+    () => Math.round(mix().volume * 100),
+    (v) => setMix(["channels", props.channel, "volume"], v / 100),
+  );
+  const pan = lens(
+    () => Math.round(mix().pan * 100),
+    (v) => setMix(["channels", props.channel, "pan"], v / 100),
+  );
+  const panLabel = () => {
+    const p = pan();
+    return p === 0 ? "C" : p < 0 ? `L${-p}` : `R${p}`;
+  };
+  return (
+    <div class={["strip", { muted: mix().mute }]} role="group" aria-label={`${info().name} channel`}>
+      <span class="name">{info().short}</span>
+      <div class="fader">
+        <Vu channel={props.channel} vertical />
+        <input
+          type="range"
+          min={0}
+          max={100}
+          bind:value={volume}
+          aria-label={`${info().name} volume`}
+          class="vertical"
+        />
+      </div>
+      <output class="value">{volume()}</output>
+      <input type="range" min={-100} max={100} step={5} bind:value={pan} aria-label={`${info().name} pan`} class="pan" />
+      <output class="value">{panLabel()}</output>
+      <div class="buttons">
+        <button
+          class={{ on: mix().mute }}
+          aria-pressed={mix().mute}
+          aria-label={`Mute ${info().name}`}
+          onClick={() => toggleMute(props.channel)}
+        >
+          M
+        </button>
+        <button
+          class={["solo", { on: mix().solo }]}
+          aria-pressed={mix().solo}
+          aria-label={`Solo ${info().name}`}
+          onClick={() => toggleSolo(props.channel)}
+        >
+          S
+        </button>
+      </div>
+    </div>
+  );
+}
+
+export function Mixer() {
+  const master = lens(
+    () => Math.round(doc.song.mixer.master * 100),
+    (v) => setMix(["master"], v / 100),
+  );
+  return (
+    <section class="mixer panel" aria-label="Mixer">
+      <h2>Mixer</h2>
+      <div class="strips">
+        {CHANNELS.map((_, ch) => (
+          <Strip channel={ch} />
+        ))}
+        <div class="strip master" role="group" aria-label="Master">
+          <span class="name">MST</span>
+          <div class="fader">
+            <Vu channel={CHANNEL_COUNT} vertical />
+            <input type="range" min={0} max={100} bind:value={master} aria-label="Master volume" class="vertical" />
+          </div>
+          <output class="value">{master()}</output>
+        </div>
+      </div>
+      <div class="master-scope">
+        <Scope channel={CHANNEL_COUNT} width={160} height={40} label="Master" />
+      </div>
+    </section>
+  );
+}
+
+<style>
+  .mixer { display: grid; grid-template-rows: auto auto 1fr; gap: 8px; align-content: start; }
+  .strips { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; }
+  .strip {
+    display: grid;
+    justify-items: center;
+    gap: 4px;
+    padding: 4px 2px;
+    background: var(--bg);
+    border: 1px solid var(--line);
+  }
+  .strip.muted { opacity: 0.5; }
+  .master { border-color: var(--yellow); }
+  .name { color: var(--yellow); font-weight: 700; font-size: 11px; }
+  .fader { display: flex; gap: 4px; block-size: 140px; align-items: stretch; }
+  .vertical {
+    writing-mode: vertical-lr;
+    direction: rtl;
+    inline-size: 18px;
+    block-size: 100%;
+    margin: 0;
+  }
+  .pan { inline-size: 100%; margin: 0; }
+  .value { font-family: $tokens.font.mono; font-size: 11px; color: var(--dim); }
+  .buttons { display: flex; gap: 3px; }
+  .buttons button { inline-size: 20px; block-size: 18px; padding: 0; font-size: 11px; }
+  .buttons .on { background: var(--red); color: var(--text); }
+  .buttons .solo.on { background: var(--yellow); color: var(--bg); }
+  .master-scope :global(.scope) { color: var(--yellow); }
+</style>
