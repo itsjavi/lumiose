@@ -1,11 +1,11 @@
 ---
 id: TASK-48
 title: Language server follow-ups
-status: To Do
+status: In Progress
 assignee:
   - Beacon
 created_date: '2026-10-08 14:03'
-updated_date: '2026-10-08 14:25'
+updated_date: '2026-10-08 15:48'
 labels:
   - tooling
 dependencies:
@@ -26,6 +26,17 @@ Gaps found while implementing TASK-29 (packages/language-server). (1) Import syn
 - [ ] #2 Compiler diagnostics flow into .stsx diagnostics with a protocol test
 - [ ] #3 TS LSP crash recovery covered by a test
 <!-- AC:END -->
+
+## Implementation Plan
+
+<!-- SECTION:PLAN:BEGIN -->
+1. LSP crash recovery: supervise the TS 7 child; on unexpected exit restart with exponential backoff (cap + max attempts), re-initialize, re-open synced documents, refresh diagnostics.
+2. Compiler diagnostics: a compile()-based DiagnosticProvider (target client) in the language server, debounced per open .stsx/.tsx document, UTF-16 spans mapped to LSP positions; wire into src/bin.ts and into lumen check via the existing DiagnosticProvider hook.
+3. Cross-file global classes: index <style global> classes across workspace .stsx files for completion/definition.
+4. CSS document symbols for .stsx merged with TS symbols.
+5. Execution-contract hovers only if compile() meta exposes per-expression tracking; else propose a meta shape to Lux.
+6. Protocol tests over stdio for each; pnpm typecheck/test/lint.
+<!-- SECTION:PLAN:END -->
 
 ## Implementation Notes
 
