@@ -10,6 +10,11 @@ labels: []
 milestone: m-5
 dependencies:
   - TASK-45
+references:
+  - backlog/assets/task-59-showcase-light.png
+  - backlog/assets/task-59-showcase-dark.png
+  - backlog/assets/task-59-phone-light.png
+  - backlog/assets/task-59-phone-dark.png
 documentation:
   - backlog/docs/architecture/doc-1 - Lumen-architecture-specification.md
 priority: medium
