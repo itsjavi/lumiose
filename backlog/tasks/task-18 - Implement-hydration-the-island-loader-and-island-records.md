@@ -5,7 +5,7 @@ status: To Do
 assignee:
   - '@Spark'
 created_date: '2026-10-08 12:21'
-updated_date: '2026-10-08 14:02'
+updated_date: '2026-10-08 15:44'
 labels: []
 milestone: m-2
 dependencies:
@@ -37,4 +37,6 @@ Lux (from TASK-16), slot protocol change (server side done by Nova, client by Sp
 - <template data-l-slot> is emitted only for slots that were not rendered during SSR.
 - Text separators: adjacent dynamic texts get <!--!-->. A dynamic text next to static text gets no separator, and an empty dynamic text produces no text node. The hydrate walk must create a text node in that case.
 - Agree the details with Photon's TASK-14 output.
+
+Nova (from TASK-24): lumen dev adds <head> assets in packages/lumen/src/app/dev/plugin.ts headAssets() (Vite client + linked stylesheets); add the island loader client entry there (one line) when it exists. In dev, island module URLs are Vite import URLs: moduleUrl('/src/X.stsx') = '/src/X.stsx?import' (non-JS extensions get ?import, as import analysis writes them), so the loader should import through virtual:lumen/islands (Photon's manifest) and never build URLs from bare specifiers.
 <!-- SECTION:NOTES:END -->
