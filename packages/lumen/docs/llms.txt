@@ -14,7 +14,7 @@ These docs match lumen 0.0.0. Installed projects have them in `node_modules/lume
 - [Components](concepts/components.md): Setup-once function components, props, children, refs and the `.stsx`/`.tsx`/`.ts` file types.
 - [Signals and reactivity](concepts/signals.md): `signal`, `computed`, `effect`, `store`, owners, context and scheduling.
 - [JSX](concepts/jsx.md): Bindings, compiled idioms (`.map`, ternaries), `class`, `style`, events, `bind:`, `attach` and `ref`.
-- [Styles](concepts/styles.md): Raw-CSS `<style>` blocks scoped by placement, `<style global>`, `$name` constants and runtime values.
+- [Styles](concepts/styles.md): Raw-CSS `<style>` blocks scoped by placement, `<style global>`, JS values in styles (`$name`), build-time math and runtime values.
 - [Async components](concepts/async.md): `async` components on server and client, `<Suspense>`, `<ErrorBoundary>`, re-runs and in-flight state.
 - [Islands](concepts/islands.md): `client:*` directives, serializable props, slots and server-only boundaries.
 - [Routing](concepts/routing.md): File routes, layouts, params, typed `href()`, error pages and the SPA router.

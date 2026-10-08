@@ -127,5 +127,5 @@ only to pin the server to your `lumen` version. See [Compiler and diagnostics](c
 ## Next
 
 - [Components](concepts/components.md) and [Signals](concepts/signals.md): the component model.
-- [Styles](concepts/styles.md): scoping by placement and `$name` constants.
+- [Styles](concepts/styles.md): scoping by placement, JS values in styles and build-time math.
 - [Rendering modes](concepts/rendering-modes.md): server-first pages with islands.

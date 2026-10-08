@@ -25,7 +25,7 @@ mistakes** and **Related diagnostics**. Reference pages list every export with i
 - [Components](concepts/components.md): Setup-once function components, props, children, refs and the `.stsx`/`.tsx`/`.ts` file types.
 - [Signals and reactivity](concepts/signals.md): `signal`, `computed`, `effect`, `store`, owners, context and scheduling.
 - [JSX](concepts/jsx.md): Bindings, compiled idioms (`.map`, ternaries), `class`, `style`, events, `bind:`, `attach` and `ref`.
-- [Styles](concepts/styles.md): Raw-CSS `<style>` blocks scoped by placement, `<style global>`, `$name` constants and runtime values.
+- [Styles](concepts/styles.md): Raw-CSS `<style>` blocks scoped by placement, `<style global>`, JS values in styles (`$name`), build-time math and runtime values.
 - [Async components](concepts/async.md): `async` components on server and client, `<Suspense>`, `<ErrorBoundary>`, re-runs and in-flight state.
 - [Islands](concepts/islands.md): `client:*` directives, serializable props, slots and server-only boundaries.
 - [Routing](concepts/routing.md): File routes, layouts, params, typed `href()`, error pages and the SPA router.
@@ -57,14 +57,14 @@ mistakes** and **Related diagnostics**. Reference pages list every export with i
 Lumen is pre-release (`0.0.0`). The docs describe the designed API; where this version does not
 implement something yet, the page says so in a **Status** note. In short:
 
-| Area                                                                                | Status                                                                          |
-| ----------------------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
-| Signals, components, JSX compilation, client rendering (`lumen/dom`)                | Available                                                                       |
-| Async components, `<Suspense>`, `<ErrorBoundary>`                                   | Available                                                                       |
-| Server rendering (`renderToStream`), shell-first streaming, head                    | Available                                                                       |
-| File routes, typegen, request handler, middleware, actions, `fetchJSON`             | Available as libraries; `lumen dev` and `lumen build` are in progress           |
-| `<style>` blocks                                                                    | Parsed, masked and type-checked; CSS output from the Vite plugin is in progress |
-| Islands hydration and the island loader                                             | In progress                                                                     |
-| SPA router (`lumen/router`)                                                         | Planned                                                                         |
-| `lumen check`, `lint`, `fmt`, `docs`, `explain`, language server, VS Code extension | Available                                                                       |
-| `create-lumen`, `@lumen/testing`, `lumen mcp`                                       | Planned                                                                         |
+| Area                                                                                | Status                                                                |
+| ----------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
+| Signals, components, JSX compilation, client rendering (`lumen/dom`)                | Available                                                             |
+| Async components, `<Suspense>`, `<ErrorBoundary>`                                   | Available                                                             |
+| Server rendering (`renderToStream`), shell-first streaming, head                    | Available                                                             |
+| File routes, typegen, request handler, middleware, actions, `fetchJSON`             | Available as libraries; `lumen dev` and `lumen build` are in progress |
+| `<style>` blocks                                                                    | Available                                                             |
+| Islands hydration and the island loader                                             | In progress                                                           |
+| SPA router (`lumen/router`)                                                         | Planned                                                               |
+| `lumen check`, `lint`, `fmt`, `docs`, `explain`, language server, VS Code extension | Available                                                             |
+| `create-lumen`, `@lumen/testing`, `lumen mcp`                                       | Planned                                                               |

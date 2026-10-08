@@ -10,7 +10,8 @@
    offset), so the rest is valid TSX;
 2. parses and analyses the TSX: components, props, compiled idioms, `await` sites, islands and
    `$name` references;
-3. compiles the CSS (scoping by placement, `$name` substitution, targets, minification);
+3. compiles the CSS (scoping by placement, `$name` substitution, constant math folding, targets,
+   minification);
 4. generates JS for the **client** (cloned templates, bindings, delegated events) or the **server**
    (string concatenation with escaping), with source maps. Types are stripped.
 

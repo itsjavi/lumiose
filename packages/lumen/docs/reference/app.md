@@ -244,6 +244,9 @@ interface Locals {} // augment: declare module "lumen" { interface Locals { … 
 // src/routes/api/session.ts
 import { isHttpError, type Endpoint } from "lumen";
 
+// Per request: it reads cookies and accepts POST, so it cannot be prerendered (LUM5005).
+export const mode = "server";
+
 export const GET: Endpoint = ({ cookies }) =>
   Response.json({ theme: cookies.get("theme") ?? "light" });
 

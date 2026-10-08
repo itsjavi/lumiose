@@ -29,9 +29,11 @@ What it does:
   of every module it reaches and re-mounts the app into the same container. Component state resets;
   module-level signals of unchanged modules survive.
 - Style blocks become `<file>?lumen&type=style&lang.css` modules handled by Vite's CSS pipeline.
+  Modules that `$` references import constants from are tracked as dependencies of that CSS module.
+  A style-only edit, or an edit to such a constants module, hot-updates the CSS without remounting.
 
-> **Status:** compilation, environments, diagnostics and HMR are available. The style-block CSS
-> modules are empty until the CSS pipeline lands. The designed app-level options (`adapter`, `css`,
+> **Status:** compilation, environments, diagnostics, HMR and style-block CSS are available. The
+> designed app-level options (`adapter`, `css`,
 > `csp`, `trailingSlash`, `viewTransitions`, `prefetch`) arrive with `lumen dev` and `lumen build`.
 > In Vitest, add `resolve.conditions: ["browser"]` for component tests (see
 > [Testing](../concepts/testing.md)).

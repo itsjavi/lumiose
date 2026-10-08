@@ -37,13 +37,26 @@ Markers are comments, used only for blocks, branches, text separators and async 
 **SPA mode.** An `spa` subtree is a single root island. Its props come from serializable route
 data; `request`, `cookies` and `locals` are not passed in. SPA code calls endpoints instead.
 
-**Build (`lumen build`).** 1. client build (islands, SPA, CSS, manifests), 2. server build, 3. prerender of every `static` route and static `GET` endpoint. Output: `dist/client` (assets and
-prerendered `path/index.html`, plus `404.html`) and `dist/server/entry.js` (`export default {
-fetch }`), which adapters such as `@lumen/adapter-node` deploy.
+**Build (`lumen build`).** 1. client build (islands, SPA, CSS, assets, `public/`), 2. server
+build, 3. prerender of every `static` route (each `staticPaths()` entry for routes with params) and
+every static `GET` endpoint, in-process through the built handler and fully resolved (no fallbacks
+or swap scripts). Output:
 
-> **Status:** route modes are read and inherited, and `renderToStream` implements the shell-first
-> model with out-of-order streaming. `lumen dev`, `lumen build`, prerendering (`staticPaths`), SPA
-> mode and hydration are in progress.
+- `dist/client`: assets and prerendered files: `path/index.html` (`path.html` with
+  `lumen({ trailingSlash: "never" })`), endpoint files such as `sitemap.xml`, and `404.html` from
+  the root `_404` when the root scope is static. Vite's `base` applies to URLs, not to file paths.
+- `dist/server/entry.js`: `export default { fetch }`, plus `createHandler({ env })` and `config`.
+
+A route that reads the request while it prerenders (`cookies()`, `locals()`, `request()`,
+`response()`, `url().searchParams`) stops the build with [LUM5001](../errors/LUM5001.md); a static
+endpoint can only export `GET` ([LUM5005](../errors/LUM5005.md)). Middleware still runs. A form
+post to a prerendered page reaches its `action` on the server. Serve the build with
+`@lumen/adapter-node` (`createServer({ port })`: `dist/client` with caching headers, then the
+handler) or `lumen preview`; a site whose routes are all static deploys with `dist/client` alone.
+
+> **Status:** `lumen dev`, `lumen build`, prerendering and `@lumen/adapter-node` are available.
+> CSS links in built pages, the island loader (hydration) and SPA mode (`ssr = false` shells) are
+> in progress.
 
 ## API
 

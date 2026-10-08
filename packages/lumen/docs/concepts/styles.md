@@ -1,6 +1,6 @@
 # Styles
 
-> Write plain CSS in `<style>` blocks in `.stsx` files. Where a block sits decides its scope: a component, the file, or the whole app with `<style global>`. CSS reads JS constants as `$name`, inlined at build time.
+> Write plain CSS in `<style>` blocks in `.stsx` files. Where a block sits decides its scope: a component, the file, or the whole app with `<style global>`. CSS reads JS constants as `$name`, inlined at build time, and constant math is precomputed.
 
 ## Concept
 
@@ -25,39 +25,219 @@ classes always work, because no element is pruned.
   `Button` applies `props.class`.
 - Within a file, file-level CSS comes first, then component blocks in source order.
 
-**`$name` constants.** CSS can read build-time constants: `$radius`, `$theme.space.lg`. They work
-in property values and in `@media`, `@container` and `@supports` preludes — not in selectors,
-property names, strings, comments or `url()`. A reference must be statically evaluable:
-
-- a top-level `const` of the file;
-- a `const` of the enclosing component (component blocks only);
-- an `export const` of a `.ts`, `.tsx` or `.stsx` module.
-
-Literals, template literals of constants, simple arithmetic and members of `as const` objects
-qualify. Strings are inserted verbatim and numbers as-is, so add units with
-`calc($gap * 1px)` or keep the unit in the constant. Imports used only by `$` references are
-removed from the JS output, and editing them hot-reloads the CSS only.
-
-**Runtime values** go through custom properties: `style={{ "--progress": pct() }}` and
-`width: var(--progress)` in CSS. There is no reactive CSS and no JS inside CSS.
-
 **Blocks are plain CSS:** no Sass, no `lang`, `media` or other attributes (only `global`). CSS
 imports, CSS Modules, Tailwind v4 and `.scss` imports still work through Vite.
 
-> **Status:** blocks are scanned, masked for TypeScript and checked, and the CSS compiler
-> (scoping, `$name` substitution, keyframes) exists, but the Vite plugin does not emit the CSS
-> yet: a style block's module is empty until the CSS pipeline lands.
+> **Status:** available. `lumen/vite` serves each file's CSS as a CSS module, and style-only or
+> constant-only edits hot-update the CSS without remounting. `LUM3012` is not reported yet.
+
+### JS values in styles
+
+`$name` and `$obj.key` put a JS value into CSS. The compiler evaluates the reference at build time
+and inlines the result, so the output is plain CSS: no runtime lookup and no JS inside CSS.
+TypeScript checks each reference like any other expression. Imports used only by `$` references
+are removed from the JS output, and editing them hot-reloads the CSS only.
+
+**What a reference can name:** a `const` whose value the compiler can work out without running the
+app.
+
+| Declared as                                                                                  | Readable from                                                                                                    |
+| -------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| A top-level `const` of the file                                                              | Every block of the file. A top-level block must come after it.                                                   |
+| A `const` of the enclosing component                                                         | Blocks inside that component, `<style global>` included.                                                         |
+| An `export const` (or `export default`) of an imported `.ts`, `.tsx`, `.stsx` or JSON module | Every block of the importing file: named, default or namespace imports (`$theme.space.md`), re-exports included. |
+
+The value may be built from literals, template literals, arithmetic (`+ - * / % **`, unary `-`),
+other constants, and object literals with their members at any depth (`$theme.color.brand`),
+including spreads, destructuring, `as const` and `satisfies`. Mark token objects `as const`: a plain
+object literal folds too, as written, but only `as const` keeps the JS read-only like the CSS.
+
+**How values are written.** Strings are inserted verbatim, without quotes (`"12px"` becomes
+`12px`; for a CSS string, put the quotes inside: `'"→"'`). Numbers are inserted as plain numbers
+(`const gap = 8` gives `8`), so give them a unit with `calc($gap * 1px)` (which ships as `8px`, see below) or keep the unit in the
+constant (`"8px"`, `` `${gap}px` ``). Lightning CSS happens to read a bare number in a length property
+as pixels (`gap: $gap` ships as `gap: 8px`), but in properties that take numbers (`line-height`,
+`flex`, `z-index`) and in custom properties it stays a number, so do not rely on it.
+
+**What cannot be referenced.** The compiler reports it; the CSS keeps the `$` text, which browsers
+ignore.
+
+| Reference                                                                                                   | Diagnostic                      | Fix                                                                                                    |
+| ----------------------------------------------------------------------------------------------------------- | ------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| `$space(2)`: a function call, or a `const` holding a function or a call's result (`Date.now()`, `signal()`) | [LUM3008](../errors/LUM3008.md) | Compute it as a constant: `calc($space * 2px)` with `const space = 4`, or name the steps: `$space.md`. |
+| `$count` where `count` is a `let` (or `var`)                                                                | [LUM3008](../errors/LUM3008.md) | Make it a `const`, or pass it at runtime (below).                                                      |
+| `$open`, `$props.width`: signals, props, parameters                                                         | [LUM3008](../errors/LUM3008.md) | Pass it at runtime (below).                                                                            |
+| `$sizes.0`: an array item (`sizes.0` is not JS)                                                             | [LUM3008](../errors/LUM3008.md) | An `as const` object with named keys: `$sizes.sm`.                                                     |
+| `$brand-primary`: a hyphen, read as `$brand` minus `primary`                                                | [LUM3009](../errors/LUM3009.md) | `$brand.primary`, or a camelCase constant: `$brandPrimary`.                                            |
+| A component's `const` in a block outside it (file level, or another component)                              | [LUM3008](../errors/LUM3008.md) | Move the `const` to the top level, or the block into the component.                                    |
+| A top-level block above the `const` it reads                                                                | [LUM3013](../errors/LUM3013.md) | Move the block below it; by convention, to the end of the file.                                        |
+
+`LUM3008`'s message says which case it is (a `let` binding, computed by a call at runtime, an array,
+not declared in scope, an import that does not export the name, …).
+
+**Where `$` is read:** in property values (`gap: calc($gap * 1px)`) and in `@media`, `@container`
+and `@supports` preludes (`@media (width < $narrow)`). Everywhere else `$` is left to CSS:
+
+- In selectors, `$` keeps its CSS meaning: `[href$=".pdf"]` is "ends with". `.size-$md` is not a
+  reference but an invalid selector, which Lightning CSS drops (`LUM3015`).
+- Property names, strings (`content: "$gap"`), comments and `url($file)` are not substituted. Put
+  the whole value in the constant instead: `const hero = 'url("/hero.png")'` and
+  `background-image: $hero`.
+
+**Runtime values.** A `$` reference is fixed at build time. For a value that changes (a signal, a
+prop, a measurement), set a custom property with the `style` prop and read it with `var()`. Custom
+properties are not scoped and inherit, so descendants can read them too.
+
+```stsx
+<div class="bar" style={{ "--fill": `${pct()}%` }}>
+  <style>
+    .bar { inline-size: var(--fill); }
+  </style>
+</div>
+```
+
+Tokens usually live in their own module:
+
+```ts check file=theme.ts
+// src/theme.ts
+export const space = { sm: 4, md: 8, lg: 16 } as const;
+export const radius = "6px";
+export const narrow = "40rem";
+```
+
+```stsx check file=components/Meter.stsx
+// src/components/Meter.stsx
+import * as theme from "../theme.ts";
+
+const track = theme.space.sm * 2;
+const shadow = `0 1px ${track / 4}px rgb(0 0 0 / 0.2)`;
+
+export function Meter(props: { label: string; value: number }) {
+  const border = 1;
+
+  return (
+    <div class="meter" style={{ "--value": `${props.value}%` }}>
+      <span>{props.label}</span>
+      <div class="track">
+        <div class="fill" />
+      </div>
+
+      <style>
+        .meter {
+          --pad: calc($theme.space.md * 2px);
+          display: grid;
+          gap: calc($theme.space.sm * 1px);
+          padding: var(--pad);
+          border: calc($border * 1px) solid;
+          border-radius: $theme.radius;
+        }
+        .track { block-size: calc($track * 1px); border-radius: calc($track * 1px / 2); box-shadow: $shadow; }
+        .fill { inline-size: var(--value); block-size: 100%; background: currentColor; }
+        @media (width < $theme.narrow) {
+          .meter { max-inline-size: calc(100% - $theme.space.lg * 2px); }
+        }
+      </style>
+    </div>
+  );
+}
+```
+
+The compiler's CSS output for that file (`data-l-lw1tegds` is the component's scope token). Every
+`$` reference and every constant `calc()` is gone; only the runtime `var(--value)` and the
+`%`-relative width are left to the browser:
+
+```css
+.meter[data-l-lw1tegds] {
+  --pad: 16px;
+  padding: var(--pad);
+  border: 1px solid;
+  border-radius: 6px;
+  gap: 4px;
+  display: grid;
+}
+
+.track[data-l-lw1tegds] {
+  border-radius: 4px;
+  block-size: 8px;
+  box-shadow: 0 1px 2px #0003;
+}
+
+.fill[data-l-lw1tegds] {
+  inline-size: var(--value);
+  background: currentColor;
+  block-size: 100%;
+}
+
+@media (width < 40rem) {
+  .meter[data-l-lw1tegds] {
+    max-inline-size: calc(100% - 32px);
+  }
+}
+```
+
+Lightning CSS also minifies values (`rgb(0 0 0 / 0.2)` becomes `#0003`) and may reorder or merge
+declarations, so the output is equivalent to the source, not identical.
+
+#### Build-time math
+
+Constant math never reaches the browser. It is computed in two steps:
+
+1. **JS math, by the Lumen compiler.** Arithmetic in constants and template literals is evaluated
+   before the value is inserted: `const track = theme.space.sm * 2` inlines `8`.
+2. **CSS math, by Lightning CSS.** After substitution, Lightning CSS reduces `calc()`, `min()`,
+   `max()`, `clamp()`, `round()`, `abs()`, the trigonometric functions and the other CSS math
+   functions whenever the operands are concrete values in compatible units. `calc($gap * 2px)`
+   becomes `calc(8 * 2px)`, which ships as `16px`.
+
+| Source (`$gap` is `8`)                    | Output                                | Why                                            |
+| ----------------------------------------- | ------------------------------------- | ---------------------------------------------- |
+| `padding: calc($gap * 2px)`               | `padding: 16px`                       | `calc(8 * 2px)` reduces.                       |
+| `inline-size: min(10px, 20px)`            | `inline-size: 10px`                   |                                                |
+| `block-size: clamp(4px, 8px, 12px)`       | `block-size: 8px`                     |                                                |
+| `transform: rotate(calc(45deg * 2))`      | `transform: rotate(90deg)`            | Math inside other functions reduces too.       |
+| `inset: calc(2px + 3px) calc(1rem + 4px)` | `inset: 5px calc(1rem + 4px)`         | Each value on its own: `rem` plus `px` stays.  |
+| `width: calc(100% - $gap * 2px)`          | `width: calc(100% - 16px)`            | The constant part reduces; `%` stays.          |
+| `font-size: calc(2 * 1rem)`               | `font-size: 2rem`                     | One unit: nothing to convert.                  |
+| `font-size: clamp(1rem, 2vw, 3rem)`       | unchanged                             | `rem` and `vw` are only known in the browser.  |
+| `max-width: calc(var(--w) + $gap * 2px)`  | `max-width: calc(var(--w) + 8 * 2px)` | A declaration with `var()` is kept as written. |
+| `--space: calc($gap * 2px)`               | `--space: 16px`                       | A custom property, folded by Lumen (below).    |
+
+**What cannot fold.** A math function is replaced only by a value that means the same thing
+wherever it is used. Absolute units convert into each other (`calc(1in + 4px)` is `100px`) and a
+unit combines with itself (`calc(2 * 1rem)` is `2rem`), but context-dependent units mixed with
+others need the browser: `%` resolves against the containing block (or the font size, depending on
+the property), `vw` and `vh` against the viewport, `em` against the element's font size and `rem`
+against the root's. A `var()` is only known when the browser computes styles, so Lightning CSS keeps
+any declaration containing one exactly as written, constant parts included. To precompute those,
+do the arithmetic in JS: with `` const extra = `${gap * 2}px` ``, `calc(var(--w) + $extra)` ships as
+`calc(var(--w) + 16px)`.
+
+**Custom properties.** Lightning CSS keeps custom property values as written, because it cannot
+know where they will be used. Lumen folds each math function in them that reduces to a single value
+in compatible units: `--space: calc($gap * 2px)` becomes `16px`, `--turn: rotate(calc(45deg * 2))`
+becomes `rotate(90deg)`, and `var(--x, calc($gap * 3px))` becomes `var(--x, 24px)`. Anything with
+`var()`, `env()` or context-dependent units mixed with other units stays whole, without the partial
+reduction regular properties get (`--inset: calc(100% - $gap * 2px)` stays `calc(100% - 8 * 2px)`).
+Negative results and fractional numbers stay inside `calc()` (`calc(-3px)`, `calc(.333333)`),
+because a bare value can behave differently where the property is read: `calc()` clamps to the
+property's range and rounds where an integer is expected.
+
+Folding regular properties, minification and browser targets come from
+[Lightning CSS](https://lightningcss.dev), the CSS parser, transformer and minifier from the Parcel
+project, which Lumen's CSS compiler is built on. Lumen adds `$` constants, scoping and the
+custom-property folding.
 
 ## API
 
-| Syntax                                  | Meaning                                                      |
-| --------------------------------------- | ------------------------------------------------------------ |
-| `<style>…</style>` in component JSX     | Component-scoped CSS.                                        |
-| `<style>…</style>` at module top level  | File-scoped CSS. Must come after the `const`s it references. |
-| `<style global>…</style>`               | Unscoped, app-wide CSS.                                      |
-| `$name`, `$obj.key`                     | A build-time constant.                                       |
-| `:global(sel)`, `:deep(sel)`            | Escape or extend the scope.                                  |
-| `style={{ "--x": value }}` + `var(--x)` | Runtime values.                                              |
+| Syntax                                   | Meaning                                                                                                  |
+| ---------------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| `<style>…</style>` in component JSX      | Component-scoped CSS.                                                                                    |
+| `<style>…</style>` at module top level   | File-scoped CSS. Must come after the `const`s it references.                                             |
+| `<style global>…</style>`                | Unscoped, app-wide CSS.                                                                                  |
+| `$name`, `$obj.key`                      | A JS constant, inlined at build time, in property values and `@media`/`@container`/`@supports` preludes. |
+| `calc()`, `min()`, `max()`, `clamp()`, … | Folded at build time when every operand is a concrete value in compatible units.                         |
+| `:global(sel)`, `:deep(sel)`             | Escape or extend the scope.                                                                              |
+| `style={{ "--x": value }}` + `var(--x)`  | Runtime values.                                                                                          |
 
 ## Example
 
@@ -111,8 +291,14 @@ in the file-level block styles every template in the file.
   inside the returned element (`LUM3011`).
 - **Hyphenated references.** `$brand-primary` reads `$brand` minus `primary`. Use an object
   member: `$brand.primary` (`LUM3009`).
-- **Non-constant references.** `$count` where `count` is a signal or a `let` is `LUM3008`. Pass
-  runtime values with `style={{ "--count": count() }}` and `var(--count)`.
+- **Non-constant references.** `$count` where `count` is a signal, a prop or a `let`, or a call
+  such as `$space(2)`, is `LUM3008`. Pass runtime values with `style={{ "--count": count() }}` and
+  `var(--count)`; replace calls with constant math (`calc($space * 2px)`).
+- **Array items.** `$sizes.0` is not JS (`LUM3008`). Use an `as const` object: `$sizes.sm`.
+- **A unit after a reference.** `margin: $gap px` ships as `8 px`, which browsers ignore, and no
+  diagnostic flags it. Write `calc($gap * 1px)` or keep the unit in the constant.
+- **`$` in selectors, strings or `url()`.** It is not substituted there (`[href$=".pdf"]` is CSS's
+  "ends with"). Put the whole value in a constant, `url()` included.
 - **A top-level block before the `const`s it reads.** Move the block to the end of the file
   (`LUM3013`).
 - **`<style>` in a `.tsx` file.** It is a type error in `.tsx` (and `LUM1006` for raw CSS); rename the file to `.stsx`.
@@ -127,5 +313,6 @@ in the file-level block styles every template in the file.
 - [LUM3008](../errors/LUM3008.md), [LUM3009](../errors/LUM3009.md), [LUM3013](../errors/LUM3013.md): `$` reference problems.
 - [LUM3010](../errors/LUM3010.md), [LUM3011](../errors/LUM3011.md): misplaced blocks.
 - [LUM3012](../errors/LUM3012.md): custom property set but never read.
+- [LUM3014](../errors/LUM3014.md), [LUM3015](../errors/LUM3015.md): CSS syntax error, invalid CSS dropped (such as `$` in a selector).
 
 See also: [Components](components.md), [JSX `style` and `class`](jsx.md).
