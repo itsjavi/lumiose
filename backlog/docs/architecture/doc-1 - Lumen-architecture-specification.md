@@ -3,7 +3,7 @@ id: doc-1
 title: Lumen architecture specification
 type: specification
 created_date: '2026-10-08 10:28'
-updated_date: '2026-10-08 13:40'
+updated_date: '2026-10-08 13:47'
 tags:
   - architecture
   - spec
@@ -272,7 +272,8 @@ The scanner produces both, so non-ASCII CSS (`content: "→"`) keeps both views 
 | `untrack(fn)`, `batch(fn)`, `flushSync()` | |
 | `onMount(fn)`, `onCleanup(fn)` | Owner-scoped |
 | `lifetime()` | An `AbortSignal`. Aborted when the run is superseded or the owner is disposed. On the server, it is the request's signal |
-| `pending()` | Inside an async component: whether a re-run is in flight |
+| `pending()` | Inside an async component: whether its own re-run is in flight |
+| `submitting(name?)`, `navigating()`, `busy()` | Form submissions in flight; SPA navigation in flight; app-wide summary of everything in flight (decision-20) |
 | `createContext(d)`, `provide(ctx, v)`, `inject(ctx)` | Work across `await` |
 | `resource(fetcher)` | Low-level on-demand loading |
 | `fetchJSON<T>(url, init?)` | Isomorphic and data-only. Same-origin requests are served in-process during SSR |
@@ -696,7 +697,7 @@ src/
   - `fail(status, data)`.
 - Forms post to the page, or to `?/name` for named actions.
 - An Origin/CSRF check is on by default.
-- Islands enhance forms with `submit(form | data, { action })`, `pending()` and `invalidate()`.
+- Islands enhance forms with `submit(form | data, { action })`, which resolves to a success or failure result and rejects only on unexpected errors, plus `submitting()` and `invalidate()` (decision-20).
 
 ### Context
 
