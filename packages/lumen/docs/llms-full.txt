@@ -1,0 +1,4406 @@
+# Lumen
+
+> Lumen is a TypeScript 7-first web framework: `.stsx` components (TSX plus raw-CSS `<style>` blocks), setup-once components with signals, and server-first rendering with islands.
+
+These docs match lumen 0.0.0. Installed projects have them in `node_modules/lumen/docs`;
+`lumen docs <topic>` prints one and `lumen explain <code>` explains a diagnostic.
+
+<!-- source: README.md -->
+
+# Lumen docs
+
+> Lumen is a TypeScript 7-first web framework: `.stsx` components (TSX plus raw-CSS `<style>` blocks), setup-once components with signals, and server-first rendering with islands.
+
+These docs ship inside the package, so they always match the installed version. Read them from
+`node_modules/lumen/docs`, or from the terminal:
+
+```sh
+lumen docs                    # this index
+lumen docs signals            # a topic, by name or path (concepts/signals)
+lumen docs "bind:value"       # search, when no topic matches
+lumen explain LUM2001         # the long-form explanation of a diagnostic
+lumen docs signals --format json
+```
+
+Every concept page has the same sections, in order: **Concept**, **API**, **Example**, **Common
+mistakes** and **Related diagnostics**. Reference pages list every export with its signature.
+
+## Start here
+
+- [Getting started](getting-started.md): Create a project, configure TypeScript and Vite, and render a first component.
+
+## Concepts
+
+- [Components](concepts/components.md): Setup-once function components, props, children, refs and the `.stsx`/`.tsx`/`.ts` file types.
+- [Signals and reactivity](concepts/signals.md): `signal`, `computed`, `effect`, `store`, owners, context and scheduling.
+- [JSX](concepts/jsx.md): Bindings, compiled idioms (`.map`, ternaries), `class`, `style`, events, `bind:`, `attach` and `ref`.
+- [Styles](concepts/styles.md): Raw-CSS `<style>` blocks scoped by placement, `<style global>`, `$name` constants and runtime values.
+- [Async components](concepts/async.md): `async` components on server and client, `<Suspense>`, `<ErrorBoundary>`, re-runs and in-flight state.
+- [Islands](concepts/islands.md): `client:*` directives, serializable props, slots and server-only boundaries.
+- [Routing](concepts/routing.md): File routes, layouts, params, typed `href()`, error pages and the SPA router.
+- [Data and actions](concepts/data-and-actions.md): Read data with async components, serve endpoints, mutate with form actions and `submit()`.
+- [Server](concepts/server.md): Request context, middleware, cookies, env, redirects and error helpers.
+- [Rendering modes](concepts/rendering-modes.md): `static`, `server` and `spa` routes, shell-first streaming, hydration and the build.
+- [Head and document](concepts/head.md): `<Title>`, `<Meta>`, `<Head>` and a custom `document.stsx`.
+- [Compiler and diagnostics](concepts/compiler.md): What the compiler does with `.stsx`/`.tsx`, and how `LUMxxxx` diagnostics work.
+- [Testing](concepts/testing.md): Test components with Vitest and the Lumen Vite plugin.
+
+## Reference
+
+- [`lumen`: reactivity](reference/reactivity.md): `signal`, `computed`, `effect`, `batch`, `flushSync`, `untrack`, `store`, owners, context, `pending`, `busy`, `resource`.
+- [`lumen`: components](reference/components.md): `Suspense`, `ErrorBoundary`, `Portal`, `Dynamic`, `ref`, `Head`, `Title`, `Meta`.
+- [`lumen`: app layer](reference/app.md): `fetchJSON`, `submit`, `submitting`, `actionData`, `invalidate`, `fail`, `redirect`, `notFound`, `error`, `href`, request APIs and types.
+- [`lumen`: server rendering](reference/server.md): `renderToStream`, `renderToString` and the `lumen/server` subpath.
+- [`lumen/dom`](reference/dom.md): `mount` and the compiler-runtime contract.
+- [`lumen/router`](reference/router.md): The SPA router: `Link`, `navigate`, `navigating` and reactive route state.
+- [`lumen/vite`](reference/vite.md): The Vite plugin and its options.
+- [JSX types and tsconfig](reference/jsx.md): `lumen/jsx-runtime`, `lumen/env` and the required `tsconfig.json`.
+- [CLI](reference/cli.md): `lumen check`, `lint`, `fmt`, `docs` and `explain`.
+
+## Diagnostics
+
+- [All diagnostics](errors/README.md): Every `LUMxxxx` code with its explanation and fix.
+
+## Status of this version
+
+Lumen is pre-release (`0.0.0`). The docs describe the designed API; where this version does not
+implement something yet, the page says so in a **Status** note. In short:
+
+| Area                                                                                | Status                                                                          |
+| ----------------------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
+| Signals, components, JSX compilation, client rendering (`lumen/dom`)                | Available                                                                       |
+| Async components, `<Suspense>`, `<ErrorBoundary>`                                   | Available                                                                       |
+| Server rendering (`renderToStream`), shell-first streaming, head                    | Available                                                                       |
+| File routes, typegen, request handler, middleware, actions, `fetchJSON`             | Available as libraries; `lumen dev` and `lumen build` are in progress           |
+| `<style>` blocks                                                                    | Parsed, masked and type-checked; CSS output from the Vite plugin is in progress |
+| Islands hydration and the island loader                                             | In progress                                                                     |
+| SPA router (`lumen/router`)                                                         | Planned                                                                         |
+| `lumen check`, `lint`, `fmt`, `docs`, `explain`, language server, VS Code extension | Available                                                                       |
+| `create-lumen`, `@lumen/testing`, `lumen mcp`                                       | Planned                                                                         |
+
+<!-- source: getting-started.md -->
+
+# Getting started
+
+> Set up a Lumen project with TypeScript 7 and Vite 8, write a first `.stsx` component and check it with `lumen check`.
+
+## Requirements
+
+- Node.js 24 or later.
+- TypeScript 7 (`typescript@^7`). Lumen uses stock `tsc`, with no TypeScript plugins.
+- Vite 8.
+
+> **Status:** `create-lumen` (a scaffolder that writes all of this plus `AGENTS.md`) and the
+> `lumen dev` / `lumen build` commands are in progress. Until they land, set the project up by hand
+> as shown here and run it with Vite.
+
+## 1. Install
+
+```sh
+pnpm add lumen
+pnpm add -D vite typescript
+```
+
+## 2. Configure TypeScript
+
+`tsconfig.json` (the template that `lumen check` prints when the file is missing):
+
+```json
+{
+  "compilerOptions": {
+    "jsx": "preserve",
+    "jsxImportSource": "lumen",
+    "module": "preserve",
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "noEmit": true,
+    "strict": true,
+    "rootDirs": ["src", ".lumen/shadow/src"],
+    "types": ["lumen/env"]
+  },
+  "include": ["src", ".lumen/shadow", ".lumen/types"]
+}
+```
+
+- `jsx: "preserve"`: the Lumen compiler transforms JSX, not TypeScript.
+- `rootDirs` and `.lumen/shadow`: TypeScript cannot read `.stsx`, so Lumen writes a masked copy of
+  each one (a _shadow file_, same line and column offsets) and `import "./X.stsx"` resolves to it.
+- `.lumen/types`: generated route types (`lumen typegen`, run by `lumen check`).
+
+Add `.lumen/` to `.gitignore`, and `*.stsx linguist-language=TSX` to `.gitattributes` so GitHub
+highlights `.stsx` files.
+
+## 3. Configure Vite
+
+```ts
+// vite.config.ts
+import lumen from "lumen/vite";
+import { defineConfig } from "vite";
+
+export default defineConfig({
+  plugins: [lumen()],
+});
+```
+
+## 4. Write a component
+
+```stsx check file=Counter.stsx
+// src/Counter.stsx
+import { signal } from "lumen";
+
+export function Counter({ start = 0 }: { start?: number }) {
+  const count = signal(start);
+
+  return (
+    <button class={{ hot: count() > 5 }} onClick={() => count.update((n) => n + 1)}>
+      Clicked {count()} times
+
+      <style>
+        button { font: inherit; padding: 0.5rem 1rem; }
+        .hot { color: crimson; }
+      </style>
+    </button>
+  );
+}
+```
+
+- The function body runs **once**. `count()` reads the signal; JSX that reads it updates on its own.
+- `<style>` inside the component's JSX is scoped to that component's elements.
+
+## 5. Mount it
+
+```html
+<!-- index.html -->
+<div id="app"></div>
+<script type="module" src="/src/main.tsx"></script>
+```
+
+```tsx check file=main.tsx
+// src/main.tsx
+import { mount } from "lumen/dom";
+import { Counter } from "./Counter.stsx";
+
+mount(() => <Counter start={1} />, document.getElementById("app")!);
+```
+
+Run `pnpm vite` and open the printed URL.
+
+## 6. Check the project
+
+```sh
+pnpm lumen check        # typegen + shadow files + tsc + Lumen diagnostics
+pnpm lumen lint         # oxlint, .stsx included
+pnpm lumen fmt          # oxfmt for the TSX, plus each <style> block
+```
+
+`lumen check` maps every TypeScript error in a shadow file back to the `.stsx` line and column.
+`--format json` prints machine-readable diagnostics; every Lumen diagnostic has a stable code that
+`lumen explain <code>` explains.
+
+## Editor
+
+Install the Lumen VS Code extension (`lumen-vscode`). It adds the `stsx` language and runs the
+Lumen language server, which proxies TypeScript 7 for `.ts`, `.tsx` and `.stsx` files and adds CSS
+features inside `<style>` blocks. The extension bundles the server (it runs on VS Code's own
+Node.js) and uses the project's `typescript`; install `@lumen/language-server` as a dev dependency
+only to pin the server to your `lumen` version. See [Compiler and diagnostics](concepts/compiler.md).
+
+## Next
+
+- [Components](concepts/components.md) and [Signals](concepts/signals.md): the component model.
+- [Styles](concepts/styles.md): scoping by placement and `$name` constants.
+- [Rendering modes](concepts/rendering-modes.md): server-first pages with islands.
+
+<!-- source: concepts/components.md -->
+
+# Components
+
+> A component is a PascalCase function that returns JSX. Its body runs once, as setup; signals make the JSX update in place.
+
+## Concept
+
+**Files.** Components live in `.stsx` files (TSX plus raw-CSS `<style>` blocks) or plain `.tsx`
+files. A file may export many components. Logic, tokens, endpoints and server code live in `.ts`.
+
+| Extension | Contents                                                              |
+| --------- | --------------------------------------------------------------------- |
+| `.stsx`   | TSX plus `<style>` blocks. Use it for components with styles.         |
+| `.tsx`    | Plain TSX. A `<style>` block here is `LUM1006` ("rename to `.stsx`"). |
+| `.ts`     | Everything else.                                                      |
+
+**Setup once.** The body of a component runs once per instance. There is no re-render: JSX
+expressions that read signals become fine-grained bindings, and only those update. Local variables
+are ordinary variables; state that changes lives in [signals](signals.md).
+
+**Props.** Props are the single parameter. The compiler keeps them reactive, even when you
+destructure them: `({ title, count = 0 })` is rewritten to reads of `props.title` and
+`props.count`, so a parent passing a signal value keeps the child up to date. `...rest` stays
+reactive too.
+
+**Children** are lazy: `children` is evaluated where you insert it. Insert it once; to render
+something several times, take a render function as a prop. Named slots are ordinary props that hold
+JSX.
+
+**Refs.** `ref` takes a callback `(el) => void`. `ref<T>()` returns such a callback that can also be
+read like a signal.
+
+**Async.** Any component may be `async` and `await` data in its body; see
+[Async components](async.md).
+
+## API
+
+| API                                     | Use                                                                             |
+| --------------------------------------- | ------------------------------------------------------------------------------- |
+| `function Name(props) { return <… /> }` | A component. PascalCase, returns JSX.                                           |
+| `children` prop                         | Lazy content passed between the tags. Insert once.                              |
+| `ref<T>()`                              | A ref callback that reads like a signal (`input()`), `undefined` until mounted. |
+| `onMount(fn)`, `onCleanup(fn)`          | Run after mount; run when the component is disposed.                            |
+| `<Dynamic component={X} … />`           | Render a component (or tag name) chosen at runtime.                             |
+| `<Portal mount={node}>`                 | Render children elsewhere in the document.                                      |
+
+Types: a component's return type is `JSX.Element`. Props are a plain interface; `children?:
+JSX.Element` for content.
+
+## Example
+
+```stsx check
+import { onMount, ref, signal } from "lumen";
+
+interface Props {
+  label: string;
+  initial?: string;
+  children?: JSX.Element;
+}
+
+export function SearchBox({ label, initial = "", children }: Props) {
+  const query = signal(initial);
+  const input = ref<HTMLInputElement>();
+
+  onMount(() => input()?.focus());
+
+  return (
+    <form class="search" onSubmit={(event) => event.preventDefault()}>
+      <label>
+        {label}
+        <input ref={input} bind:value={query} />
+      </label>
+      <p>Searching for “{query()}”</p>
+      {children}
+
+      <style>
+        .search { display: grid; gap: 0.5rem; }
+      </style>
+    </form>
+  );
+}
+
+export function Page() {
+  return (
+    <SearchBox label="Books">
+      <small>Try “Dune”.</small>
+    </SearchBox>
+  );
+}
+```
+
+## Common mistakes
+
+- **Reading a signal once in setup and expecting it to update.** `const doubled = count() * 2`
+  is computed once. Use a function or `computed`: `const doubled = () => count() * 2`. The compiler
+  warns with `LUM2001`.
+- **Returning early on reactive state.** `if (!user()) return <Login />` runs once. Put the
+  condition in the JSX: `{user() ? <Profile /> : <Login />}` (`LUM2003`).
+- **Calling a component as a function.** `{Card({ title })}` skips the component's owner and
+  props handling. Write `<Card title={title} />` (`LUM2004`).
+- **Inserting `children` twice.** The second insert moves or re-creates the nodes. Take a render
+  prop such as `renderItem: () => JSX.Element` instead (`LUM2005`).
+- **Writing a signal in the component body.** Setup runs during render; a write there
+  (`count.set(…)`) re-triggers bindings mid-render. Write in handlers or effects (`LUM2002`).
+- **Expecting React re-renders.** There are no hooks rules and no dependency arrays: nothing
+  re-runs except bindings and effects that read signals.
+- **`className`, `htmlFor`.** Use `class` and `for`; the React names are type errors.
+
+## Related diagnostics
+
+- [LUM1006](../errors/LUM1006.md): raw CSS in a `.tsx` file.
+- [LUM2001](../errors/LUM2001.md): stale derived value.
+- [LUM2002](../errors/LUM2002.md): signal write during render.
+- [LUM2003](../errors/LUM2003.md): reactive early return.
+- [LUM2004](../errors/LUM2004.md): component called as a function.
+- [LUM2005](../errors/LUM2005.md): children inserted twice.
+
+See also: [JSX](jsx.md), [Signals](signals.md), [reference: components](../reference/components.md).
+
+<!-- source: concepts/signals.md -->
+
+# Signals and reactivity
+
+> State lives in signals: read with `count()`, write with `count.set(v)`. Computeds derive, effects react, and only the code that read a signal re-runs.
+
+## Concept
+
+Lumen's reactive core is a push-pull signal graph (the alien-signals algorithm). Reading a signal
+inside a tracked scope (a JSX binding, a `computed`, an `effect`) subscribes that scope; writing
+the signal marks it dirty and re-runs only what depends on it.
+
+- **Reads are synchronous.** `count()` always returns the current value, even right after a write.
+- **Writes are batched.** Writes inside a delegated event handler are batched for the duration of
+  the handler. Any other write schedules a microtask flush. `flushSync()` flushes immediately.
+- **Flush order:** computeds are pulled, then DOM bindings run (parents before children), then user
+  effects.
+- **Owners.** Every component, effect and root is an _owner_. Owners scope cleanups
+  (`onCleanup`), context (`provide`/`inject`), error handling and `lifetime()`. Disposing an owner
+  disposes everything created under it.
+- **Equality.** A write that is `Object.is`-equal to the current value is not a change. Pass
+  `{ equals }` to customize, or `{ equals: false }` to treat every write as a change.
+- **On the server** signals are plain cells, computeds run once, and effects never run.
+
+## API
+
+| API                                                         | Shape                                                                                                                                       |
+| ----------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| `signal(value, { equals? })`                                | `s()` reads, `s.set(v)` and `s.update(fn)` write, `s.peek()` reads untracked.                                                               |
+| `computed(fn, { equals? })`                                 | `c()` reads. Lazy, cached and glitch-free; `fn` receives the previous value.                                                                |
+| `effect(fn)`                                                | Runs after the DOM updates and again when what it read changes. `fn` may return a cleanup. Returns a disposer.                              |
+| `onMount(fn)`                                               | Runs `fn` once, untracked, after the owner's DOM is mounted. May return a cleanup.                                                          |
+| `onCleanup(fn)`                                             | Runs `fn` when the current owner is disposed or re-runs.                                                                                    |
+| `store(obj)`                                                | Deep reactive proxy over a plain object or array: mutate it directly.                                                                       |
+| `untrack(fn)`                                               | Runs `fn` without subscribing to what it reads.                                                                                             |
+| `batch(fn)`                                                 | Groups writes; dependents run once at the end.                                                                                              |
+| `flushSync()`                                               | Runs pending bindings and effects now.                                                                                                      |
+| `lifetime()`                                                | An `AbortSignal` aborted when the owner is disposed, an effect re-runs, or an async run is superseded. On the server, the request's signal. |
+| `createContext(default?)`, `provide(ctx, v)`, `inject(ctx)` | Values passed down the owner tree; they survive `await`.                                                                                    |
+| `resource(fetcher)`                                         | Low-level on-demand loading with `loading()`, `error()`, `refetch()`. Prefer [async components](async.md).                                  |
+
+In-flight state (`pending()`, `busy()`, `submitting()`, `navigating()`) is covered in
+[Async components](async.md) and [Data and actions](data-and-actions.md).
+
+## Example
+
+```tsx check
+import { computed, createContext, effect, inject, provide, signal, store } from "lumen";
+
+const Theme = createContext<"light" | "dark">("light");
+
+export function Cart() {
+  const items = store([{ name: "Pen", price: 2, qty: 1 }]);
+  const discount = signal(0);
+  const total = computed(
+    () => items.reduce((sum, item) => sum + item.price * item.qty, 0) * (1 - discount()),
+  );
+
+  effect(() => {
+    document.title = `Cart: ${total().toFixed(2)}`;
+  });
+
+  provide(Theme, "dark");
+
+  return (
+    <section>
+      <button onClick={() => items.push({ name: "Ink", price: 5, qty: 1 })}>Add ink</button>
+      <button onClick={() => (items[0]!.qty += 1)}>One more pen</button>
+      <button onClick={() => discount.set(0.1)}>Apply 10%</button>
+      <p>Total: {total().toFixed(2)}</p>
+      <ThemeLabel />
+    </section>
+  );
+}
+
+function ThemeLabel() {
+  const theme = inject(Theme);
+  return <small>Theme: {theme}</small>;
+}
+```
+
+## Common mistakes
+
+- **Destructuring or copying a signal's value in setup.** `const n = count()` freezes the value.
+  Read `count()` where you need it, or derive: `const double = () => count() * 2` (`LUM2001`).
+- **Calling `set` with the same object after mutating it.** `list().push(x); list.set(list())` is
+  not a change (`Object.is`). Write a new value (`list.update((l) => [...l, x])`), use `store()`,
+  or create the signal with `{ equals: false }`.
+- **Writing signals in the component body or in a `computed`.** That is a write during render
+  (`LUM2002`). Computeds must be pure; write in handlers and effects.
+- **Using `effect` to derive state.** `effect(() => b.set(a() * 2))` adds a frame of staleness and
+  an extra flush. Use `computed(() => a() * 2)`.
+- **Expecting an effect to run synchronously.** Effects run after the DOM updates. In tests, call
+  `flushSync()` after a write before asserting.
+- **Module-scope signals in server code.** On the server, a signal at module scope is shared by
+  every request. Keep request data in components or context (`LUM4008`).
+- **Expecting `store()` to wrap class instances, `Map`s or `Set`s.** Only plain objects and arrays
+  become reactive; other values are returned as is.
+
+## Related diagnostics
+
+- [LUM2001](../errors/LUM2001.md): stale derived value.
+- [LUM2002](../errors/LUM2002.md): signal write during render.
+- [LUM2007](../errors/LUM2007.md): own signal read in an async body.
+- [LUM4008](../errors/LUM4008.md): module-scope signal written during SSR.
+
+See also: [reference: reactivity](../reference/reactivity.md), [JSX bindings](jsx.md).
+
+<!-- source: concepts/jsx.md -->
+
+# JSX
+
+> JSX reads like React (`.map()`, ternaries, `onClick`) but compiles to cloned templates with fine-grained bindings. Only expressions that read signals update.
+
+## Concept
+
+**Bindings.** The compiler looks at each JSX expression:
+
+- Literals and plain identifiers are **static**: written once.
+- Calls and member access (`count()`, `user.name`, `props.title`) become **bindings** that re-run
+  when a signal they read changes, and write only the part of the DOM they own.
+- `untrack(() => …)` opts an expression out.
+
+**Compiled idioms.** There are no `<For>` or `<Show>` components; ordinary JavaScript compiles to
+the efficient form:
+
+| Source                                              | Compiled to                                                                                                                |
+| --------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| `{items().map((item, i) => <Row key={item.id} />)}` | A keyed list. `key` is optional (items are keyed by reference otherwise). `i` becomes a reactive index only if you use it. |
+| `item.id === selected()` inside `.map`              | An O(1) selector: a selection change touches two rows.                                                                     |
+| `{c() ? <A /> : <B />}`, `{c() && <A />}`           | A memoised branch: switches only when the condition flips.                                                                 |
+| `{fn()}` returning nodes, arrays or text            | A dynamic insert.                                                                                                          |
+
+**Elements.**
+
+| Prop                         | Rule                                                                                                                                                                      |
+| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `class`                      | A string, an array, or a `{ name: boolean }` record (nested arrays allowed). `className` is a type error.                                                                 |
+| `style`                      | A string, or an object with **kebab-case** keys, including `--custom` properties. Each key updates on its own.                                                            |
+| `onClick`, `onKeyDown`, …    | camelCase handlers. Bubbling events are delegated (one listener per type at `document`); non-bubbling ones (`onFocus`, `onMouseEnter`, `onScroll`) get a direct listener. |
+| `on:click`, `on:my-event`    | A native `addEventListener` listener with the exact event name. Use it for custom and web-component events.                                                               |
+| `bind:value`, `bind:checked` | Two-way binding to a writable signal, on `input`, `select` and `textarea`.                                                                                                |
+| `attach={[fn]}`              | Runs `fn(el)` with the element in a tracked scope; it may return a cleanup.                                                                                               |
+| `ref={fn}`                   | Called with the element. `ref<T>()` makes a callback you can read like a signal.                                                                                          |
+| `innerHTML`                  | Sets unescaped HTML. The lint rule `no-unsafe-html` warns.                                                                                                                |
+| `key`                        | Allowed on intrinsic elements and components (list identity).                                                                                                             |
+| `client:*`                   | Island directives, on components only. See [Islands](islands.md).                                                                                                         |
+
+Handlers receive the **native** event, with `currentTarget` typed as the element. There are no
+synthetic events.
+
+## API
+
+JSX types come from `lumen/jsx-runtime` (via `jsxImportSource: "lumen"`) and the global `JSX`
+namespace from `lumen/env`:
+
+| Type                     | Meaning                                                                      |
+| ------------------------ | ---------------------------------------------------------------------------- |
+| `JSX.Element`            | Anything JSX can render: nodes, strings, numbers, arrays, functions, `null`. |
+| `JSX.ClassValue`         | The `class` prop value.                                                      |
+| `JSX.CSSProperties`      | The `style` object (kebab-case keys and `--custom` properties).              |
+| `JSX.EventHandler<E, T>` | A handler: the native event `E` with `currentTarget: T`.                     |
+| `JSX.Ref<T>`             | The value of `ref<T>()`.                                                     |
+| `JSX.HTMLProps<T>`       | Props of an HTML element, for wrappers and custom elements.                  |
+
+See [JSX types and tsconfig](../reference/jsx.md) for custom elements and the full rules.
+
+## Example
+
+```tsx check
+import { signal } from "lumen";
+
+interface Todo {
+  id: number;
+  title: string;
+}
+
+export function TodoList() {
+  const todos = signal<Todo[]>([
+    { id: 1, title: "Write docs" },
+    { id: 2, title: "Ship" },
+  ]);
+  const selected = signal(1);
+  const draft = signal("");
+  const progress = signal(40);
+
+  const add = (event: SubmitEvent) => {
+    event.preventDefault();
+    todos.update((list) => [...list, { id: Date.now(), title: draft() }]);
+    draft.set("");
+  };
+
+  return (
+    <section style={{ "--progress": `${progress()}%`, "max-inline-size": "40rem" }}>
+      <form onSubmit={add}>
+        <input bind:value={draft} on:focus={(event) => event.currentTarget.select()} />
+        <button disabled={draft() === ""}>Add</button>
+      </form>
+      {todos().length === 0 ? (
+        <p>Nothing to do.</p>
+      ) : (
+        <ul>
+          {todos().map((todo) => (
+            <li
+              key={todo.id}
+              class={["todo", { active: todo.id === selected() }]}
+              onClick={() => selected.set(todo.id)}
+            >
+              {todo.title}
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
+  );
+}
+```
+
+## Common mistakes
+
+- **React prop names.** `className` → `class`, `htmlFor` → `for`, `onclick`/`onKeydown` →
+  `onClick`/`onKeyDown` (camelCase after `on`). The wrong forms are type errors.
+- **camelCase style keys.** `style={{ fontWeight: 600 }}` is a type error; write
+  `{ "font-weight": 600 }`, as in CSS. Numbers get no units: write `"12px"`.
+- **Passing a value to `bind:value`.** It needs the signal itself: `bind:value={draft}`, not
+  `bind:value={draft()}`.
+- **Custom events with `onX`.** `onMyEvent` is not an event prop; write `on:my-event`.
+- **Using the index outside the row.** The `i` of `.map((item, i) => …)` is a reactive index that
+  belongs to its row; storing it in an outer variable or closure that outlives the row is
+  `LUM2006`.
+- **Wrapping lists in helper components.** `{items().map(…)}` already compiles to a keyed list;
+  there is no `<For>`.
+- **`innerHTML` with user input.** It is not escaped. Prefer text children.
+
+## Related diagnostics
+
+- [LUM2004](../errors/LUM2004.md): component called as a function.
+- [LUM2005](../errors/LUM2005.md): children inserted twice.
+- [LUM2006](../errors/LUM2006.md): reactive index escapes its callback.
+- [LUM1001](../errors/LUM1001.md): syntax error.
+
+See also: [Components](components.md), [Styles](styles.md), [reference: JSX types](../reference/jsx.md).
+
+<!-- source: concepts/styles.md -->
+
+# Styles
+
+> Write plain CSS in `<style>` blocks in `.stsx` files. Where a block sits decides its scope: a component, the file, or the whole app with `<style global>`. CSS reads JS constants as `$name`, inlined at build time.
+
+## Concept
+
+**Placement decides scope.**
+
+| Placement                                                                            | Scope                                                                                                                      |
+| ------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------- |
+| Inside a component's JSX, as a child of an intrinsic element or fragment (any depth) | That component's own templates, including closures inside it such as `.map` callbacks. It does not reach other components. |
+| File top level (conventionally at the end of the file)                               | Every template in the file.                                                                                                |
+| `<style global>` (anywhere a block is valid)                                         | The whole app, unscoped. Usually in the root `_layout.stsx`.                                                               |
+
+**How scoping works.** Each scope with styles gets a token `data-l-<hash>` (a stable hash of the
+file path, plus the component name). Every element of the scope's templates carries the token, and
+the last compound of each selector gets `[data-l-<hash>]` (a +0,1,0 specificity bump). Dynamic
+classes always work, because no element is pruned.
+
+- `:global(.sel)` leaves a selector unscoped; `:deep(.sel)` scopes only the part before it.
+- `@keyframes` names are scoped, and `animation` references are rewritten. Custom properties are
+  not scoped.
+- **Class passthrough.** When a parent passes `class` to a child component, the parent's scope
+  tokens travel with it, so `.cta { … }` in the parent styles `<Button class="cta" />` wherever
+  `Button` applies `props.class`.
+- Within a file, file-level CSS comes first, then component blocks in source order.
+
+**`$name` constants.** CSS can read build-time constants: `$radius`, `$theme.space.lg`. They work
+in property values and in `@media`, `@container` and `@supports` preludes — not in selectors,
+property names, strings, comments or `url()`. A reference must be statically evaluable:
+
+- a top-level `const` of the file;
+- a `const` of the enclosing component (component blocks only);
+- an `export const` of a `.ts`, `.tsx` or `.stsx` module.
+
+Literals, template literals of constants, simple arithmetic and members of `as const` objects
+qualify. Strings are inserted verbatim and numbers as-is, so add units with
+`calc($gap * 1px)` or keep the unit in the constant. Imports used only by `$` references are
+removed from the JS output, and editing them hot-reloads the CSS only.
+
+**Runtime values** go through custom properties: `style={{ "--progress": pct() }}` and
+`width: var(--progress)` in CSS. There is no reactive CSS and no JS inside CSS.
+
+**Blocks are plain CSS:** no Sass, no `lang`, `media` or other attributes (only `global`). CSS
+imports, CSS Modules, Tailwind v4 and `.scss` imports still work through Vite.
+
+> **Status:** blocks are scanned, masked for TypeScript and checked, and the CSS compiler
+> (scoping, `$name` substitution, keyframes) exists, but the Vite plugin does not emit the CSS
+> yet: a style block's module is empty until the CSS pipeline lands.
+
+## API
+
+| Syntax                                  | Meaning                                                      |
+| --------------------------------------- | ------------------------------------------------------------ |
+| `<style>…</style>` in component JSX     | Component-scoped CSS.                                        |
+| `<style>…</style>` at module top level  | File-scoped CSS. Must come after the `const`s it references. |
+| `<style global>…</style>`               | Unscoped, app-wide CSS.                                      |
+| `$name`, `$obj.key`                     | A build-time constant.                                       |
+| `:global(sel)`, `:deep(sel)`            | Escape or extend the scope.                                  |
+| `style={{ "--x": value }}` + `var(--x)` | Runtime values.                                              |
+
+## Example
+
+```stsx check
+// tokens are usually in their own module: `export const radius = { sm: "4px", lg: "12px" } as const;`
+const radius = { sm: "4px", lg: "12px" } as const;
+const BREAKPOINT = "40rem";
+
+export function Card(props: { title: string; progress: number; class?: string }) {
+  const gap = 12;
+
+  return (
+    <article class={["card", props.class]} style={{ "--progress": `${props.progress}%` }}>
+      <h2>{props.title}</h2>
+      <div class="bar" />
+
+      <style>
+        .card { display: grid; gap: calc($gap * 1px); border-radius: $radius.lg; }
+        .bar { inline-size: var(--progress); block-size: 4px; background: currentColor; }
+        @media (width < $BREAKPOINT) { .card { border-radius: $radius.sm; } }
+      </style>
+    </article>
+  );
+}
+
+export function Dashboard() {
+  return (
+    <main>
+      <Card class="featured" title="Uploads" progress={40} />
+
+      <style>
+        .featured { outline: 2px solid gold; }
+      </style>
+    </main>
+  );
+}
+
+<style>
+  h2 { margin: 0; }
+</style>
+```
+
+`.featured` in `Dashboard` reaches the `<article>` inside `Card` through class passthrough; `h2`
+in the file-level block styles every template in the file.
+
+## Common mistakes
+
+- **A block inside `{…}`, a conditional, a `.map` callback, or a component element** such as
+  `<Suspense>` or `<Card>`. Move it into an intrinsic element of the component (`LUM3010`).
+- **Returning a block, or using it as an expression** (`return <style>…`, `=> <style>`). Put it
+  inside the returned element (`LUM3011`).
+- **Hyphenated references.** `$brand-primary` reads `$brand` minus `primary`. Use an object
+  member: `$brand.primary` (`LUM3009`).
+- **Non-constant references.** `$count` where `count` is a signal or a `let` is `LUM3008`. Pass
+  runtime values with `style={{ "--count": count() }}` and `var(--count)`.
+- **A top-level block before the `const`s it reads.** Move the block to the end of the file
+  (`LUM3013`).
+- **`<style>` in a `.tsx` file.** It is a type error in `.tsx` (and `LUM1006` for raw CSS); rename the file to `.stsx`.
+- **Attributes on `<style>`.** Only `global` is allowed (`LUM1005`).
+- **Expecting a parent's styles to reach into children.** Scopes stop at component boundaries;
+  pass `class` (passthrough) or use `:deep()`.
+
+## Related diagnostics
+
+- [LUM1004](../errors/LUM1004.md), [LUM1005](../errors/LUM1005.md), [LUM1006](../errors/LUM1006.md): unclosed block, unknown attribute, raw CSS in `.tsx`.
+- [LUM3005](../errors/LUM3005.md): unused scoped selector.
+- [LUM3008](../errors/LUM3008.md), [LUM3009](../errors/LUM3009.md), [LUM3013](../errors/LUM3013.md): `$` reference problems.
+- [LUM3010](../errors/LUM3010.md), [LUM3011](../errors/LUM3011.md): misplaced blocks.
+- [LUM3012](../errors/LUM3012.md): custom property set but never read.
+
+See also: [Components](components.md), [JSX `style` and `class`](jsx.md).
+
+<!-- source: concepts/async.md -->
+
+# Async components
+
+> Any component may be `async` and `await` data in its body, on the server and the client. `<Suspense>` shows a fallback while new content loads; `<ErrorBoundary>` catches failures.
+
+## Concept
+
+Async components are **the** way to read data in Lumen (there are no route loaders). The same
+component works in every rendering mode.
+
+**The await rewrite.** The compiler rewrites `await` only where the nearest enclosing function is
+the component itself; awaits inside handlers and callbacks are ordinary awaits. Around each
+component-level `await`, the runtime restores the owner, context and tracking, so `inject()`,
+`lifetime()` and signal reads keep working after it.
+
+**Re-runs.** Props and signals read in the body (before or after an `await`) are tracked. When one
+changes, the component **re-runs**:
+
+- the previous run's `lifetime()` signal aborts (cancel your fetches with it);
+- the old UI stays on screen until the new run resolves, then swaps atomically;
+- signals created in the body start fresh on each run;
+- `pending()` is true while the re-run is in flight.
+
+**Boundaries.**
+
+- `<Suspense fallback={…}>` shows its fallback for **new** pending content: the first load, and
+  branches mounted later. Re-runs of content already shown keep the stale UI instead (use
+  `pending()` to dim it).
+- `<ErrorBoundary fallback={(error, retry) => …}>` catches rejections and render errors below it.
+- With no boundary: on the server the component becomes part of the page shell (the response waits
+  for it); on the client nothing renders until it resolves; errors go to the `_error` page.
+
+**In-flight state** (all are reactive and safe to read anywhere):
+
+| Helper              | True while                                                                                             |
+| ------------------- | ------------------------------------------------------------------------------------------------------ |
+| `pending()`         | this async component's own re-run is in flight (inside the component or its UI).                       |
+| `submitting(name?)` | a form action submission is in flight. See [Data and actions](data-and-actions.md).                    |
+| `navigating()`      | an SPA navigation is in flight. See [Routing](routing.md).                                             |
+| `busy()`            | anything above is in flight, or any `<Suspense>` shows its fallback. Use it for a global progress bar. |
+
+**Islands.** Inside an [island](islands.md), each awaited value is recorded during SSR and
+replayed during hydration, so the client does not fetch it again. Those values must be plain data
+(`LUM4007`), and **everything awaited inside an island is sent to the browser**.
+
+> **Status:** async components, the `await` rewrite, re-runs, `<Suspense>`, `<ErrorBoundary>`,
+> `pending()`, `busy()` and server streaming are available. Recording awaited values for island
+> hydration is part of the islands work in progress (see [Islands](islands.md)).
+
+## API
+
+| API                                                              | Shape                                                                                                     |
+| ---------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| `async function Name(props) { const x = await …; return <… /> }` | An async component.                                                                                       |
+| `<Suspense fallback={…}>`                                        | Fallback for new pending content below.                                                                   |
+| `<ErrorBoundary fallback={(error, retry) => …}>`                 | Fallback after an error below; `retry()` mounts the children again. `fallback` may also be plain content. |
+| `pending()`                                                      | Whether this component's re-run is in flight.                                                             |
+| `busy()`                                                         | Whether anything in the app is in flight.                                                                 |
+| `lifetime()`                                                     | `AbortSignal` of the current run; aborted when superseded or disposed.                                    |
+| `fetchJSON<T>(url, init?)`                                       | Isomorphic JSON fetch that returns plain data. See [Data and actions](data-and-actions.md).               |
+
+## Example
+
+```tsx check
+import { ErrorBoundary, Suspense, fetchJSON, lifetime, pending, signal } from "lumen";
+
+interface Book {
+  id: string;
+  title: string;
+  summary: string;
+}
+
+export async function BookDetails({ id }: { id: string }) {
+  const book = await fetchJSON<Book>(`/api/books/${id}`, { signal: lifetime() });
+  const expanded = signal(false);
+
+  return (
+    <article class={{ stale: pending() }}>
+      <h2>{book.title}</h2>
+      <button onClick={() => expanded.update((open) => !open)}>Details</button>
+      {expanded() && <p>{book.summary}</p>}
+    </article>
+  );
+}
+
+export function BookPage({ ids }: { ids: string[] }) {
+  const current = signal(ids[0] ?? "");
+
+  return (
+    <main>
+      <nav>
+        {ids.map((id) => (
+          <button onClick={() => current.set(id)}>{id}</button>
+        ))}
+      </nav>
+      <ErrorBoundary
+        fallback={(error, retry) => (
+          <p>
+            Could not load the book ({String(error)}). <button onClick={retry}>Retry</button>
+          </p>
+        )}
+      >
+        <Suspense fallback={<p>Loading…</p>}>
+          <BookDetails id={current()} />
+        </Suspense>
+      </ErrorBoundary>
+    </main>
+  );
+}
+```
+
+Clicking another id re-runs `BookDetails`: the old book stays (dimmed through `pending()`) until
+the new one arrives; `<Suspense>` only showed its fallback for the first load.
+
+## Common mistakes
+
+- **Reading the component's own signals in its body.** A signal created in the body and read in
+  the body re-runs the component, which re-creates the signal. Read it in JSX or handlers instead
+  (`LUM2007`).
+- **Not passing `lifetime()` to fetches.** Without it, a superseded run's request keeps going. Pass
+  `{ signal: lifetime() }`.
+- **Awaiting a `Response` inside an island.** `await fetch(url)` gives a non-serializable value.
+  Use `await fetchJSON(url)` (`LUM4007`).
+- **Putting secrets in awaited values inside islands.** They are serialized into the HTML. Fetch
+  only what the browser may see.
+- **Wrapping a re-run in `<Suspense>` and expecting the fallback again.** Revealed content keeps
+  its stale UI; show progress with `pending()` or `busy()`.
+- **`await using` in a component body.** Not supported in v1 (`LUM1007`).
+- **Expecting `resource()` on the server.** It never runs there; use an async component.
+
+## Related diagnostics
+
+- [LUM1007](../errors/LUM1007.md): `await using` in a component.
+- [LUM2007](../errors/LUM2007.md): own signal read in an async body.
+- [LUM4006](../errors/LUM4006.md): hydration mismatch (including replay key mismatches).
+- [LUM4007](../errors/LUM4007.md): non-serializable awaited value.
+
+See also: [Islands](islands.md), [Rendering modes](rendering-modes.md), [reference: components](../reference/components.md).
+
+<!-- source: concepts/islands.md -->
+
+# Islands
+
+> Pages render on the server and ship no JS by default. Add a `client:*` directive where a component is used, and only that component (an island) hydrates in the browser.
+
+## Concept
+
+An **island** is a component instance that runs in the browser. You declare it at the **usage
+site**, so the same component can be static on one page and interactive on another:
+
+```tsx
+<TeamPanel client:visible ids={ids} />
+```
+
+On the server, the call compiles to an island record: the component's module and export name, its
+props, its slots and the hydration strategy. The page HTML contains the server-rendered island
+between comment markers (`<!--l:ID-->…<!--/l:ID-->`) plus a JSON record; a small loader (about 1
+kB) reads the records, arms the triggers and imports the island's module when one fires. Clicks,
+input, submits and key presses that happen before hydration are replayed.
+
+**Directives** (components only):
+
+| Directive                                   | Hydrates                                            |
+| ------------------------------------------- | --------------------------------------------------- |
+| `client:load`                               | Immediately.                                        |
+| `client:idle`                               | When the browser is idle.                           |
+| `client:visible` / `client:visible="200px"` | When it enters the viewport (optional root margin). |
+| `client:media="(max-width: 600px)"`         | When the media query matches.                       |
+| `client:only`                               | Client-rendered only: no server HTML.               |
+
+**Props must be serializable**: JSON values plus `undefined`, `NaN`/`Infinity`, `BigInt`, `Date`,
+`URL`, `Map` and `Set`. Functions, symbols, class instances (a `Response` too), promises and cycles
+are `LUM4002`.
+
+**Children and JSX props are slots.** They are rendered on the server into
+`<template data-l-slot="name">` inside the island and inserted when the island renders the slot.
+They stay server components: they never ship their own JS.
+
+**Nested directives.** A `client:*` inside an island's own render is just a component: it is
+already client-side.
+
+**Server-only boundaries.** `*.server.ts` files and everything under `src/server/` may not be
+imported from code that reaches the browser (`LUM4003`): keep database access, secrets and
+`env()` there.
+
+**Awaited data** inside an island is recorded during SSR and replayed during hydration, so the
+browser does not fetch it again; it must be plain data (`LUM4007`), and it is visible in the page
+source.
+
+> **Status:** the compiler emits island calls for `client:*` and checks `LUM4001`; the server
+> renders island markers, slots and records. The browser-side loader and hydration are in
+> progress, so islands render on the server but do not hydrate yet.
+
+## API
+
+| API                                                                           | Use                                                                   |
+| ----------------------------------------------------------------------------- | --------------------------------------------------------------------- |
+| `client:load`, `client:idle`, `client:visible`, `client:media`, `client:only` | Make a component instance an island.                                  |
+| `export function X`                                                           | Islands must be exported, so the browser can import them (`LUM4001`). |
+| `*.server.ts`, `src/server/**`                                                | Server-only modules.                                                  |
+| `import.meta.env.PUBLIC_*`                                                    | Env values that may reach islands.                                    |
+
+## Example
+
+```stsx check file=components/LikeButton.stsx
+// src/components/LikeButton.stsx: an island; exported so the browser can import it
+import { signal } from "lumen";
+
+export function LikeButton({ initial, children }: { initial: number; children?: JSX.Element }) {
+  const likes = signal(initial);
+
+  return (
+    <button class="like" onClick={() => likes.update((n) => n + 1)}>
+      {children} {likes()}
+
+      <style>
+        .like { border-radius: 999px; }
+      </style>
+    </button>
+  );
+}
+```
+
+```stsx check file=routes/posts/[id].stsx
+// src/routes/posts/[id].stsx: a server component; only LikeButton ships JS
+import { params } from "lumen";
+import { LikeButton } from "../../components/LikeButton.stsx";
+
+export default function Post() {
+  const { id } = params<"/posts/[id]">();
+
+  return (
+    <main>
+      <h1>Post {id}</h1>
+      <LikeButton client:visible initial={3}>
+        <strong>Like</strong>
+      </LikeButton>
+    </main>
+  );
+}
+```
+
+## Common mistakes
+
+- **A non-exported island.** `function Counter` used with `client:load` cannot be imported by the
+  browser. Export it (`LUM4001`).
+- **Passing functions or class instances as island props.** `onSave={() => …}` cannot be
+  serialized. Pass data, and do the work inside the island, or post a form (`LUM4002`).
+- **Importing server code into an island.** `import { db } from "../server/db.server.ts"` in an
+  island's graph is `LUM4003`. Call an endpoint with `fetchJSON` instead.
+- **Touching `window` or `document` at module scope** in a module that also runs on the server.
+  Move it into `onMount` or an effect (`LUM4004`).
+- **Different output on server and client**, for example from `Math.random()` or `Date.now()` in
+  render. Hydration reports `LUM4006` in dev and client-renders the range in production.
+- **Making a whole page an island to get interactivity.** Mark only the interactive parts, or use
+  an `spa` route ([Rendering modes](rendering-modes.md)).
+
+## Related diagnostics
+
+- [LUM4001](../errors/LUM4001.md): island component is not exported.
+- [LUM4002](../errors/LUM4002.md): non-serializable island prop.
+- [LUM4003](../errors/LUM4003.md): server-only module in a client graph.
+- [LUM4004](../errors/LUM4004.md): browser API at module scope.
+- [LUM4006](../errors/LUM4006.md): hydration mismatch.
+- [LUM4007](../errors/LUM4007.md): non-serializable awaited value.
+
+See also: [Rendering modes](rendering-modes.md), [Async components](async.md).
+
+<!-- source: concepts/routing.md -->
+
+# Routing
+
+> Routes are files under `src/routes`: pages (`.stsx`/`.tsx`), endpoints (`.ts`), nested `_layout` files and `_404`/`_error` pages. Route patterns and params are typed by `lumen typegen`.
+
+## Concept
+
+```
+src/
+  routes/
+    _layout.stsx            root layout; nested _layout.stsx per folder
+    index.stsx              /
+    about.stsx              /about
+    blog/index.stsx         /blog
+    blog/[slug].stsx        /blog/:slug
+    docs/[...path].stsx     /docs/*  (rest param, may be empty)
+    (marketing)/pricing.stsx  /pricing  (a group folder adds no URL segment)
+    api/posts.ts            endpoint: export GET / POST / … = (ctx) => Response
+    sitemap.xml.ts          endpoint at /sitemap.xml
+    _404.stsx  _error.stsx  error pages, nearest one wins
+  document.stsx             optional: owns <html>, <head> and <body>
+  middleware.ts             optional: export default (ctx, next) => Promise<Response>
+```
+
+- **Matching priority:** static segments beat `[param]`, which beats `[...rest]`. Two files for
+  the same pattern are `LUM5003`.
+- Only `_layout`, `_404` and `_error` may start with `_`; keep shared modules out of `src/routes`
+  (`LUM5002`).
+- **Layouts** wrap every page below their folder and receive `{ params, children }`. `children`
+  is the page (the outlet).
+- **Pages** export a `default` component (it may be `async`), which receives `{ params }`. Other
+  page exports: `mode`, `ssr`, `staticPaths`, `action`/`actions` and `headers` (see
+  [Rendering modes](rendering-modes.md) and [Data and actions](data-and-actions.md)).
+- **Error pages:** `_404` renders unmatched URLs and `notFound()`; `_error` renders thrown errors
+  and `error(status)`. Both receive `{ status, error }`. Outside dev, unexpected errors are masked
+  as 500.
+
+**Typed routes.** `lumen typegen` (run by `lumen check` and the dev server) writes
+`.lumen/types/routes.d.ts`, which augments `RouteMap`. Then:
+
+- `href("/blog/[slug]", { slug })` builds a URL and type-checks the pattern and params;
+- `params<"/blog/[slug]">()` and `RouteProps<"/blog/[slug]">` type the params.
+
+**Navigation.** Routes are MPA by default (full page loads, with cross-document View Transitions
+and speculation-rules prefetch). Routes with `mode = "spa"` use the client router `lumen/router`:
+`<Link>`, `navigate()`, reactive `params()`/`search()`/`url()` and `navigating()`, persistent
+layouts, scroll restoration and a client-side `_404`. A navigation holds the old page until the new
+page's async content is ready.
+
+> **Status:** file routes, the manifest, matching, typegen, `href()` and the request handler are
+> available; `lumen dev` (which serves them) is in progress. The SPA router (`lumen/router`) is
+> planned and currently exports nothing.
+
+## API
+
+| API                                                              | Use                                                    |
+| ---------------------------------------------------------------- | ------------------------------------------------------ |
+| `export default function Page(props: RouteProps<"/x/[id]">)`     | A page component.                                      |
+| `params<"/x/[id]">()`                                            | The matched route's params, typed by pattern (server). |
+| `href(pattern, params?)`                                         | Build a URL from a typed route pattern.                |
+| `Routes`, `RouteParams<P>`, `RouteProps<P>`, `RouteMap`          | Route types.                                           |
+| `ErrorPageProps`                                                 | Props of `_404` and `_error`.                          |
+| `notFound()`, `error(status, message?)`, `redirect(to, status?)` | Stop rendering; see [Server](server.md).               |
+| `lumen/router`: `Link`, `navigate`, `navigating`, `search`       | SPA routes (planned).                                  |
+
+## Example
+
+```stsx check file=routes/_layout.stsx
+// src/routes/_layout.stsx
+import { href } from "lumen";
+
+export default function Layout(props: { children?: JSX.Element }) {
+  return (
+    <div class="app">
+      <nav>
+        <a href={href("/")}>Home</a>
+        <a href={href("/blog/[slug]", { slug: "hello-world" })}>First post</a>
+      </nav>
+      {props.children}
+
+      <style global>
+        body { margin: 0; font-family: system-ui, sans-serif; }
+      </style>
+    </div>
+  );
+}
+```
+
+```stsx check file=routes/blog/[slug].stsx
+// src/routes/blog/[slug].stsx
+import { Title, notFound, type RouteProps } from "lumen";
+
+const posts: Record<string, string> = { "hello-world": "Hello, world" };
+
+export const mode = "server";
+
+export default function Post({ params }: RouteProps<"/blog/[slug]">) {
+  const title = posts[params.slug] ?? notFound();
+
+  return (
+    <article>
+      <Title>{title}</Title>
+      <h1>{title}</h1>
+    </article>
+  );
+}
+```
+
+```tsx check file=routes/_404.tsx
+// src/routes/_404.tsx
+import type { ErrorPageProps } from "lumen";
+
+export default function NotFound({ status, error }: ErrorPageProps) {
+  return (
+    <main>
+      <h1>{status}</h1>
+      <p>{error.message}</p>
+    </main>
+  );
+}
+```
+
+```tsx check file=routes/index.tsx
+// src/routes/index.tsx
+export default function Home() {
+  return <h1>Home</h1>;
+}
+```
+
+## Common mistakes
+
+- **Helpers inside `src/routes`.** `src/routes/_utils.ts` or `src/routes/(x).stsx` are not routes
+  (`LUM5002`). Put shared modules in `src/lib` or `src/components`.
+- **Two files for one URL.** `blog.stsx` and `blog/index.stsx` both match `/blog` (`LUM5003`).
+- **Hard-coded URLs.** `"/blog/" + slug` breaks silently when a route moves; `href("/blog/[slug]",
+  { slug })` fails type-checking instead.
+- **Reading params from `window.location` in a server component.** Use `props.params` or
+  `params()`.
+- **Route loaders.** There are none: load data in the async page component itself (decision-18).
+- **`mode` that is not a string literal.** `export const mode = getMode()` cannot be read at build
+  time (`LUM5002`).
+
+## Related diagnostics
+
+- [LUM5002](../errors/LUM5002.md): invalid route file.
+- [LUM5003](../errors/LUM5003.md): duplicate route.
+- [LUM5001](../errors/LUM5001.md): request API used during prerender.
+
+See also: [Rendering modes](rendering-modes.md), [Server](server.md), [reference: app layer](../reference/app.md), [`lumen/router`](../reference/router.md).
+
+<!-- source: concepts/data-and-actions.md -->
+
+# Data and actions
+
+> One way to read data (async components), one way to serve an API (endpoints), one way to mutate (form actions, enhanced with `submit()`). No route loaders, no RPC server functions.
+
+## Concept
+
+**Reading: async components.** Await data in the component that needs it. Server-only data
+access (databases, secrets) lives in `*.server.ts` modules or `src/server/`. See
+[Async components](async.md).
+
+**HTTP APIs: endpoints.** A `.ts` file under `src/routes` exports handlers named after HTTP
+methods: `GET`, `POST`, `PUT`, `PATCH`, `DELETE` (and `HEAD`, `OPTIONS`), each
+`(ctx) => Response`. Islands, SPA code and other clients call them with `fetch` or `fetchJSON`.
+
+**`fetchJSON<T>(url, init?)`** fetches JSON and returns plain data, so awaited results stay
+serializable inside islands. Non-2xx responses throw a `FetchError` (an `HttpError` with `status`,
+`url` and the parsed body as `data`); if a server component lets it escape, the page renders
+`_error` (or `_404`) with that status. **During SSR, same-origin URLs are served in-process**, with
+the page request's cookies, without a network round-trip.
+
+**Mutations: form actions.** A page exports `action(ctx)` or named `actions = { name(ctx) }`. A
+`<form method="post">` posts to the page (or to `?/name` for a named action) and works without
+JavaScript. An action receives `ctx.formData()` and returns:
+
+| Return                         | Result                                                                                          |
+| ------------------------------ | ----------------------------------------------------------------------------------------------- |
+| `redirect(to)` or a `Response` | Sent as is (303 after a POST).                                                                  |
+| plain data                     | The page re-renders (200) and `actionData()` returns the data.                                  |
+| `fail(status, data)`           | The page re-renders with `status`; `actionData()` returns `data`. Use it for validation errors. |
+
+An Origin check protects page POSTs and form-encoded endpoint requests by default (403 for
+cross-site requests).
+
+**Enhancing forms.** Inside an island, `onSubmit={submit}` posts the form without a page load.
+`submit()` resolves to `{ type: "success", status, data }`, `{ type: "failure", status, data }` or
+follows a redirect, and sets `actionData()`. It rejects only for unexpected errors, with a
+`FetchError`. `submitting(name?)` is true while a submission is in flight.
+
+**Refreshing.** `invalidate()` re-runs the current page's async components (SPA), or reloads the
+page (MPA).
+
+## API
+
+| API                                                          | Shape                                                                 |
+| ------------------------------------------------------------ | --------------------------------------------------------------------- |
+| `export const GET: Endpoint = (ctx) => Response`             | An endpoint method.                                                   |
+| `export const action: Action = (ctx) => …`                   | The default form action of a page.                                    |
+| `export const actions = { name: (ctx: ActionContext) => … }` | Named actions, posted to `?/name`.                                    |
+| `ctx.formData()`                                             | The request body as `FormData` (400 if it is not a form).             |
+| `fail(status, data?)`                                        | A failed action result.                                               |
+| `actionData<T>()`                                            | The last action's data (or `fail` data). Reactive in the browser.     |
+| `submit(target, { action?, method?, signal? })`              | Post a form, submit event, `FormData`, `URLSearchParams` or a record. |
+| `submitting(name?)`                                          | Whether a submission (to `?/name`) is in flight.                      |
+| `invalidate()`                                               | Refresh the current page's server data.                               |
+| `fetchJSON<T>(url, init?)`, `isFetchError(e)`                | JSON fetch with typed errors.                                         |
+
+## Example
+
+```ts check file=routes/api/books.ts
+// src/routes/api/books.ts: GET /api/books?q=…
+import type { Endpoint } from "lumen";
+
+const books = [{ id: "1", title: "Dune" }];
+
+export const GET: Endpoint = ({ url }) => {
+  const q = url.searchParams.get("q")?.toLowerCase() ?? "";
+  return Response.json(books.filter((book) => book.title.toLowerCase().includes(q)));
+};
+```
+
+```stsx check file=routes/books/new.stsx
+// src/routes/books/new.stsx: a form that works without JS, enhanced when it hydrates
+import { actionData, fail, redirect, submit, submitting, type ActionContext } from "lumen";
+
+interface Errors {
+  title?: string;
+}
+
+export const mode = "server";
+
+export const actions = {
+  async create(ctx: ActionContext) {
+    const form = await ctx.formData();
+    const title = String(form.get("title") ?? "").trim();
+    if (title === "") return fail(400, { title: "A title is required." } satisfies Errors);
+    // await db.books.insert({ title });
+    redirect("/books");
+  },
+};
+
+export function NewBookForm() {
+  return (
+    <form method="post" action="?/create" onSubmit={submit}>
+      <input name="title" />
+      <p class="error">{actionData<Errors>()?.title}</p>
+      <button disabled={submitting("create")}>Add book</button>
+    </form>
+  );
+}
+
+export default function NewBook() {
+  return (
+    <main>
+      <h1>New book</h1>
+      <NewBookForm client:load />
+    </main>
+  );
+}
+```
+
+```tsx check
+import { fetchJSON, isFetchError } from "lumen";
+
+export async function BookSearch({ q }: { q: string }) {
+  try {
+    const books = await fetchJSON<{ id: string; title: string }[]>(
+      `/api/books?q=${encodeURIComponent(q)}`,
+    );
+    return (
+      <ul>
+        {books.map((book) => (
+          <li key={book.id}>{book.title}</li>
+        ))}
+      </ul>
+    );
+  } catch (error) {
+    if (isFetchError(error) && error.status === 404) return <p>No books.</p>;
+    throw error;
+  }
+}
+```
+
+## Common mistakes
+
+- **Route loaders.** Lumen has none. Await data in the page component; it is the same code on every
+  route mode.
+- **Calling server code from an island.** Import nothing from `*.server.ts` in island code
+  (`LUM4003`); expose an endpoint and call it with `fetchJSON`.
+- **`fetch()` instead of `fetchJSON()` inside islands.** A `Response` is not serializable
+  (`LUM4007`).
+- **Expecting `submit()` to reject on validation errors.** `fail()` resolves with
+  `{ type: "failure" }`; only unexpected errors reject.
+- **Forms without `method="post"`.** Actions only run for POST; `submit()` refuses a form that does
+  not say `method="post"`, as the no-JS form would not post either.
+- **Throwing for validation errors.** A thrown error renders `_error`. Return `fail(400, data)`.
+- **Disabling the Origin check to make a cross-site form work.** Allow the specific origin instead
+  (`csrf.allowedOrigins` in the request handler options).
+
+## Related diagnostics
+
+- [LUM4003](../errors/LUM4003.md): server-only module in a client graph.
+- [LUM4007](../errors/LUM4007.md): non-serializable awaited value.
+- [LUM5004](../errors/LUM5004.md): head or status change inside a streamed boundary.
+
+See also: [Server](server.md), [Routing](routing.md), [reference: app layer](../reference/app.md).
+
+<!-- source: concepts/server.md -->
+
+# Server
+
+> Server code gets the request context everywhere: `ctx` in middleware, endpoints and actions, and `request()`, `url()`, `params()`, `locals()`, `cookies()` and `response()` anywhere during a server render.
+
+## Concept
+
+**Request context.** Middleware, endpoints and actions receive
+`ctx = { request, url, params, locals, cookies, env }`. During a server render, the same values are
+available through functions scoped to the current request (they work after `await` too):
+`request()`, `url()`, `params()`, `locals()`, `cookies()`, `response()` and `env(name)`.
+
+**Middleware.** `src/middleware.ts` default-exports `(ctx, next) => Promise<Response>` (or an array,
+run in order). Use it for sessions, auth and headers. Put request data on `ctx.locals`, and type it
+by augmenting `Locals`:
+
+```ts
+declare module "lumen" {
+  interface Locals {
+    user: { id: string; name: string } | null;
+  }
+}
+```
+
+**Control flow.** `redirect(to, status?)`, `notFound()` and `error(status, message?)` throw; the
+framework turns them into a redirect or the nearest `_404`/`_error` page. Without a status,
+`redirect()` uses 302 for GET/HEAD and 303 for other methods.
+
+**Cookies.** `cookies.get/getAll/set/delete`. Defaults: `path=/`, `httpOnly`, `sameSite=lax`, and
+`secure` on HTTPS and in production. `signedCookie(name)` signs values with HMAC-SHA256 (secret:
+`LUMEN_SECRET`, or rotate with an array of secrets); signing protects integrity, not
+confidentiality.
+
+**Status and headers.** `response().setStatus()` and `setHeader()` change the page response, and
+a page may export `headers(ctx)`. They are writable **until the shell is sent** (see
+[Rendering modes](rendering-modes.md)); a change inside a streamed `<Suspense>` boundary is
+`LUM5004`.
+
+**Env.** `env("NAME")` reads server env variables (the adapter's env, else `process.env`) in
+server-only code. Only `import.meta.env.PUBLIC_*` reaches client code; `publicEnv()` returns that
+subset.
+
+**Server-only code** lives in `*.server.ts` modules and under `src/server/`. Importing it from code
+that reaches the browser is `LUM4003`.
+
+> **Status:** the request handler, middleware, endpoints, cookies, env and error pages are
+> available and tested; they are served by `lumen dev` and the build output, which are in progress.
+
+## API
+
+| API                                                                      | Use                                                                    |
+| ------------------------------------------------------------------------ | ---------------------------------------------------------------------- |
+| `RequestContext` (`ctx`)                                                 | `{ request, url, params, locals, cookies, env }`.                      |
+| `Middleware`                                                             | `(ctx, next) => Response \| Promise<Response>`.                        |
+| `request()`, `url()`, `params<P>()`, `locals()`, `cookies()`             | Request APIs during a server render.                                   |
+| `response()`                                                             | `{ status, setStatus, getHeader, setHeader }` until the shell is sent. |
+| `redirect(to, status?)`, `notFound(message?)`, `error(status, message?)` | Throw to stop rendering.                                               |
+| `isRedirect(e)`, `isHttpError(e)`                                        | Recognize those when you catch errors.                                 |
+| `signedCookie(name, options?)`                                           | `{ get(cookies), set(cookies, value), delete(cookies) }`.              |
+| `env(name)`, `publicEnv(source?)`                                        | Server env; the `PUBLIC_*` subset.                                     |
+| `Locals`                                                                 | Interface to augment with your request data.                           |
+
+## Example
+
+```ts check file=middleware.ts
+// src/middleware.ts
+import { signedCookie, type Middleware } from "lumen";
+
+const session = signedCookie("session");
+
+declare module "lumen" {
+  interface Locals {
+    userId: string | null;
+  }
+}
+
+const middleware: Middleware = async (ctx, next) => {
+  ctx.locals.userId = (await session.get(ctx.cookies)) ?? null;
+  if (ctx.url.pathname.startsWith("/account") && ctx.locals.userId === null) {
+    return Response.redirect(new URL("/login", ctx.url), 303);
+  }
+  const res = await next();
+  res.headers.set("x-frame-options", "DENY");
+  return res;
+};
+
+export default middleware;
+```
+
+```tsx check file=routes/account.tsx
+// src/routes/account.tsx
+import { locals, redirect, response } from "lumen";
+
+export const mode = "server";
+
+export default function Account() {
+  const { userId } = locals();
+  if (userId === null) redirect("/login");
+  response().setHeader("cache-control", "private, no-store");
+
+  return <h1>Signed in as {userId}</h1>;
+}
+```
+
+## Common mistakes
+
+- **Reading request APIs in a `static` route.** `cookies()`, `request()` and friends throw
+  `LUM5001` while prerendering. Set `export const mode = "server"`.
+- **Setting headers or status after the shell.** Inside a streamed `<Suspense>` boundary it is too
+  late (`LUM5004`). Do it before the boundary, in the page body outside `<Suspense>`, in
+  `headers(ctx)` or in middleware.
+- **Reading secrets with `import.meta.env`.** Only `PUBLIC_*` values exist there. Use `env("NAME")`
+  in server-only modules.
+- **Catching `redirect()` by accident.** It throws. In a `try`/`catch`, rethrow when
+  `isRedirect(error) || isHttpError(error)`.
+- **Storing request data in module-scope variables.** Modules are shared by every request. Use
+  `locals`, context or component state (`LUM4008`).
+- **Expecting signed cookies to hide data.** They are tamper-proof, not encrypted.
+
+## Related diagnostics
+
+- [LUM4003](../errors/LUM4003.md): server-only module in a client graph.
+- [LUM4008](../errors/LUM4008.md): module-scope signal written during SSR.
+- [LUM5001](../errors/LUM5001.md): request API used during prerender.
+- [LUM5004](../errors/LUM5004.md): head or status change inside a streamed boundary.
+
+See also: [Data and actions](data-and-actions.md), [Routing](routing.md), [reference: app layer](../reference/app.md).
+
+<!-- source: concepts/rendering-modes.md -->
+
+# Rendering modes
+
+> Each route picks a mode: `static` (built HTML, the default), `server` (rendered per request, shell first, then streamed `<Suspense>` boundaries) or `spa` (a client-routed subtree). All three use the same components.
+
+## Concept
+
+| Mode               | HTML                                                               | JS shipped        | Navigation               |
+| ------------------ | ------------------------------------------------------------------ | ----------------- | ------------------------ |
+| `static` (default) | At build time, for each path from `staticPaths()`                  | Islands only      | MPA (+ View Transitions) |
+| `server`           | Per request: the shell, then streamed boundaries                   | Islands only      | MPA                      |
+| `spa`              | Server-rendered and hydrated, or a client shell with `ssr = false` | The whole subtree | Client router            |
+
+A route sets `export const mode = "server"` (a string literal); pages inherit the mode of their
+nearest layout that sets one. `export const ssr = false` applies to `spa` routes: the build emits a
+static shell and the page renders in the browser.
+
+**Shell first, then stream (server mode).**
+
+1. **Shell.** The response starts once everything **outside** `<Suspense>` has resolved, including
+   async components without a boundary. Until then you can still set the status, headers and
+   cookies, call `redirect()`, `notFound()` or `error()`, and add `<Title>`/`<Meta>`/`<Head>`.
+   A failure renders `_error` with the right status.
+2. **Stream.** `<Suspense>` boundaries then stream in as they resolve, out of order, and replace
+   their fallbacks (with native `<template for>` updates or a ~300 B `$swap` script). An error
+   renders the boundary's `<ErrorBoundary>` in place. A head or status change inside a streamed
+   boundary is `LUM5004`.
+3. **SSG and prerender** resolve everything: no fallbacks and no swap scripts.
+
+So: put slow, optional content inside `<Suspense>` to send the page sooner; leave essential
+content (and anything that decides the status) outside.
+
+**Hydration.** Only islands and SPA subtrees hydrate. The compiled code has a single DOM walk;
+importing `lumen/dom/hydrate` (done by the island loader and SPA entries) makes it claim existing
+server nodes instead of creating them, so bundles without hydration carry no hydration code.
+Markers are comments, used only for blocks, branches, text separators and async ranges.
+
+**SPA mode.** An `spa` subtree is a single root island. Its props come from serializable route
+data; `request`, `cookies` and `locals` are not passed in. SPA code calls endpoints instead.
+
+**Build (`lumen build`).** 1. client build (islands, SPA, CSS, manifests), 2. server build, 3. prerender of every `static` route and static `GET` endpoint. Output: `dist/client` (assets and
+prerendered `path/index.html`, plus `404.html`) and `dist/server/entry.js` (`export default {
+fetch }`), which adapters such as `@lumen/adapter-node` deploy.
+
+> **Status:** route modes are read and inherited, and `renderToStream` implements the shell-first
+> model with out-of-order streaming. `lumen dev`, `lumen build`, prerendering (`staticPaths`), SPA
+> mode and hydration are in progress.
+
+## API
+
+| API                                                 | Use                                                                                 |
+| --------------------------------------------------- | ----------------------------------------------------------------------------------- |
+| `export const mode = "static" \| "server" \| "spa"` | The route's mode (inherited from layouts).                                          |
+| `export const ssr = false`                          | `spa` routes: render in the browser only.                                           |
+| `export async function staticPaths()`               | `static` routes with params: `[{ params: { slug: "a" } }, …]`.                      |
+| `export function headers(ctx)`                      | Response headers for the page.                                                      |
+| `<Suspense fallback>`                               | Marks content that may stream after the shell.                                      |
+| `renderToStream(root, options?)`                    | The server renderer behind it all; see [reference: server](../reference/server.md). |
+
+## Example
+
+```stsx check file=routes/stats.stsx
+// src/routes/stats.stsx: the shell (title, heading) is sent first; the slow chart streams in
+import { Suspense, Title } from "lumen";
+
+export const mode = "server";
+
+async function SlowChart() {
+  const points = await new Promise<number[]>((resolve) => setTimeout(() => resolve([3, 1, 4]), 500));
+  return <p>Points: {points.join(", ")}</p>;
+}
+
+export default function Stats() {
+  return (
+    <main>
+      <Title>Stats</Title>
+      <h1>Stats</h1>
+      <Suspense fallback={<p>Loading chart…</p>}>
+        <SlowChart />
+      </Suspense>
+    </main>
+  );
+}
+```
+
+```tsx check file=routes/docs/[slug].tsx
+// src/routes/docs/[slug].tsx: prerendered for each slug
+import type { RouteProps } from "lumen";
+
+const pages = { intro: "Introduction", setup: "Setup" } as const;
+
+export async function staticPaths() {
+  return Object.keys(pages).map((slug) => ({ params: { slug } }));
+}
+
+export default function Doc({ params }: RouteProps<"/docs/[slug]">) {
+  return <h1>{pages[params.slug as keyof typeof pages]}</h1>;
+}
+```
+
+## Common mistakes
+
+- **Request APIs in a `static` route.** `cookies()`, `request()`, `locals()` and actions need
+  `mode = "server"` (`LUM5001`).
+- **Setting status or `<Title>` inside `<Suspense>`.** It arrives after the shell was sent
+  (`LUM5004`). Decide them outside the boundary.
+- **Wrapping the whole page in `<Suspense>`.** The shell is then just the fallback, and the status
+  cannot change. Wrap only slow, optional parts.
+- **Expecting `spa` routes to receive `cookies` or `locals` as props.** They are not serializable
+  into the SPA (`LUM4002`); call an endpoint.
+- **Computing `mode` at runtime.** `mode` must be a string literal (`LUM5002`).
+
+## Related diagnostics
+
+- [LUM4002](../errors/LUM4002.md): non-serializable island prop.
+- [LUM5001](../errors/LUM5001.md): request API used during prerender.
+- [LUM5002](../errors/LUM5002.md): invalid route file.
+- [LUM5004](../errors/LUM5004.md): head or status change inside a streamed boundary.
+- [LUM4006](../errors/LUM4006.md): hydration mismatch.
+
+See also: [Islands](islands.md), [Async components](async.md), [Head and document](head.md).
+
+<!-- source: concepts/head.md -->
+
+# Head and document
+
+> Set head content with `<Title>`, `<Meta>` and `<Head>` from any component. Lumen renders `<html>`, `<head>` and `<body>` for you; `src/document.stsx` customizes them.
+
+## Concept
+
+**Head components.** `<Title>`, `<Meta>` and `<Head>` can be used in any component, layout or page.
+There is no `meta` export: these components are the one way to set head content.
+
+- `<Title>`: the deepest one wins, so a page overrides its layouts.
+- `<Meta name="…" content="…" />`: attributes as in HTML. Metas with the same `charset`, `name`,
+  `property`, `http-equiv` or `itemprop` dedupe: the deepest one wins, and the previous value comes
+  back when it is removed.
+- `<Head>`: any other head elements (`<link>`, `<script>`). Elements already in `<head>` are not
+  duplicated.
+
+**On the server** they are collected while the shell renders and flushed into `<head>`. Inside a
+streamed `<Suspense>` boundary they are too late (`LUM5004`). **In the browser** (islands, SPA)
+they update `document.title` and `<head>` live, and are removed with their component.
+
+**Document.** By default Lumen renders the HTML document. `src/document.stsx` takes over
+`<html>`, `<head>` and `<body>`: it receives `{ head, body }` and must render each once. It renders
+like any component, so it can set defaults with `<Title>`/`<Meta>` and provide context to pages.
+
+> **Status:** available on the server (`renderToStream`) and in the browser; the default and custom
+> documents are rendered by the request handler.
+
+## API
+
+| API                     | Use                                                                                 |
+| ----------------------- | ----------------------------------------------------------------------------------- |
+| `<Title>{text}</Title>` | The document title; the deepest wins.                                               |
+| `<Meta … />`            | A `<meta>` tag, keyed by `charset`, `name`, `property`, `http-equiv` or `itemprop`. |
+| `<Head>…</Head>`        | Other head elements.                                                                |
+| `DocumentProps`         | `{ head, body }`: props of `src/document.stsx`.                                     |
+
+## Example
+
+```stsx check file=document.stsx
+// src/document.stsx
+import { Meta, type DocumentProps } from "lumen";
+
+export default function Document(props: DocumentProps) {
+  return (
+    <html lang="en">
+      <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <Meta name="description" content="A Lumen site" />
+        {props.head}
+      </head>
+      <body>{props.body}</body>
+    </html>
+  );
+}
+```
+
+```tsx check file=routes/about.tsx
+// src/routes/about.tsx
+import { Head, Meta, Title } from "lumen";
+
+export default function About() {
+  return (
+    <main>
+      <Title>About us</Title>
+      <Meta name="description" content="Who we are" />
+      <Head>
+        <link rel="canonical" href="https://example.com/about" />
+      </Head>
+      <h1>About us</h1>
+    </main>
+  );
+}
+```
+
+## Common mistakes
+
+- **A `meta` or `title` export.** There is none; render `<Title>` and `<Meta>`.
+- **`<Title>` inside `<Suspense>`** on a server route: the head was already sent (`LUM5004`). Set
+  it in the page body outside the boundary.
+- **Rendering `props.head` or `props.body` twice** in `document.stsx`. Render each exactly once.
+- **Writing `<title>` or `<meta>` elements directly in a page.** They land in the body. Use the
+  components.
+- **Setting `document.title` in an effect.** It fights with `<Title>`; use the component.
+
+## Related diagnostics
+
+- [LUM5004](../errors/LUM5004.md): head or status change inside a streamed boundary.
+
+See also: [Rendering modes](rendering-modes.md), [reference: components](../reference/components.md).
+
+<!-- source: concepts/compiler.md -->
+
+# Compiler and diagnostics
+
+> A Rust compiler (OXC and Lightning CSS) turns `.stsx` and `.tsx` into fine-grained client code or string-concatenating server code. Every rule it enforces has a stable `LUMxxxx` code with a docs page.
+
+## Concept
+
+**Pipeline.** For each `.stsx`/`.tsx` module the Vite plugin calls the compiler, which:
+
+1. **scans** the file for `<style>` blocks and masks them (replaces them with spaces, keeping every
+   offset), so the rest is valid TSX;
+2. parses and analyses the TSX: components, props, compiled idioms, `await` sites, islands and
+   `$name` references;
+3. compiles the CSS (scoping by placement, `$name` substitution, targets, minification);
+4. generates JS for the **client** (cloned templates, bindings, delegated events) or the **server**
+   (string concatenation with escaping), with source maps. Types are stripped.
+
+Vite's own JSX transform is disabled for Lumen files, and `node_modules` is excluded.
+
+**The masking invariant.** Masked TSX parses as valid TSX with identical offsets. Tools rely on it:
+TypeScript type-checks _shadow files_ (`.lumen/shadow/<path>.stsx.tsx`, the masked text), so
+errors map back to the same line and column of the `.stsx`. `$name` references stay in place as
+real TS expressions (`$radius.lg` becomes `{radius.lg}` inside JSX, `;radius.lg;` at top level), so
+TypeScript checks them too.
+
+**Scanner rules.**
+
+- `<style` must be followed by whitespace or `>`; it is recognised wherever a JSX element can
+  start. Inside JSX text, quotes (as in `Don't`) do not start strings.
+- The only attribute is `global`; content runs to the first `</style>`.
+- A `<style>` inside `<svg>` is native SVG CSS: emitted verbatim and unscoped.
+
+**Diagnostics.** Every diagnostic has the shape
+`{ code, severity, message, span, labels, help, fix?, docs }`. Codes are stable forever and never
+reused; the compiler's registry is the source of truth, and the [error pages](../errors/README.md)
+are generated from it. They appear in the Vite overlay, in `lumen check`, in the editor and in
+`--format json` output.
+
+| Range | Area                                                                        |
+| ----- | --------------------------------------------------------------------------- |
+| 1xxx  | File format: syntax, scanner, `<style>` blocks                              |
+| 2xxx  | Reactivity: stale values, writes during render, early returns               |
+| 3xxx  | Styles: placement, `$name` references, unused CSS                           |
+| 4xxx  | Islands and boundaries: exports, serialization, server-only code, hydration |
+| 5xxx  | Routing and server: route files, prerender, streaming                       |
+
+**Tooling on top.** `lumen check` (typegen, shadow files, `tsc --noEmit`, Lumen diagnostics),
+`lumen lint` (oxlint on shadows, optional stylelint on blocks), `lumen fmt` (oxfmt plus each
+block's CSS), and the language server (a TypeScript 7 LSP proxy plus CSS features in blocks) all
+share the one scanner. TypeScript plugins are not used.
+
+## API
+
+| API                               | Use                                                  |
+| --------------------------------- | ---------------------------------------------------- |
+| `lumen check [--format json]`     | Type-check and report diagnostics; exit 1 on errors. |
+| `lumen explain <code>`            | Print a diagnostic's explanation.                    |
+| `lumen docs <topic>`              | Print or search these docs.                          |
+| `lumen/vite`                      | The plugin that runs the compiler in Vite.           |
+| `.lumen/shadow/`, `.lumen/types/` | Generated shadow TSX and route types (git-ignored).  |
+
+## Example
+
+```stsx check
+// The masked view TypeScript sees: the block becomes spaces, `$pad` stays as `{pad}`.
+export function Box() {
+  const pad = "1rem";
+  return (
+    <div class="box">
+      Content
+      <style>
+        .box { padding: $pad; }
+      </style>
+    </div>
+  );
+}
+```
+
+```sh
+$ lumen check --format json
+{ "diagnostics": [], "summary": { "errors": 0, "warnings": 0, "hints": 0, "files": 0 } }
+$ lumen explain LUM3010
+```
+
+## Common mistakes
+
+- **Running bare `tsc` without shadow files.** `import "./X.stsx"` only resolves after shadows
+  exist. Run `lumen check` (or `lumen typegen`), or keep the dev server or editor running.
+- **Missing `rootDirs` or `.lumen/shadow` in `tsconfig.json`.** `lumen check` reports the missing
+  options (`LUM6001`) and prints the template.
+- **Ignoring a code because the message is short.** Run `lumen explain <code>` for the cause and
+  the fix.
+- **Expecting TypeScript plugins.** Lumen uses stock `tsc` and a language server; there is no TS
+  plugin to configure.
+
+## Related diagnostics
+
+- [LUM1001](../errors/LUM1001.md): syntax error.
+- [LUM1002](../errors/LUM1002.md): unsupported by this compiler version.
+- [LUM1003](../errors/LUM1003.md): scanner ambiguity.
+- [All diagnostics](../errors/README.md).
+
+See also: [Styles](styles.md), [reference: CLI](../reference/cli.md).
+
+<!-- source: concepts/testing.md -->
+
+# Testing
+
+> Test components with Vitest through the Lumen Vite plugin: mount into a DOM environment, interact, call `flushSync()`, assert. Test server rendering with `renderToString`.
+
+## Concept
+
+Vitest uses your Vite config, so `lumen()` compiles `.stsx` and `.tsx` test subjects the same way
+as the app. Two things matter for component tests:
+
+- **A DOM environment.** Use `happy-dom` (or `jsdom`), per file with
+  `// @vitest-environment happy-dom` or for all tests with `test.environment`.
+- **The browser build of `lumen`.** `lumen` has a browser entry (signals, the DOM renderer) and a
+  `node` entry (server rendering, where signals are plain values and effects never run). Vitest
+  resolves Node conditions by default, so set `resolve.conditions: ["browser"]` in the config used
+  for component tests; otherwise components render once and never update.
+
+Updates are batched: after a write or an event outside a delegated handler, call `flushSync()`
+before asserting. Delegated events (`onClick`) need the element to be attached to `document`.
+
+Server rendering is tested with `renderToString(() => <Page />)` under the `node` entry (no DOM
+environment, default conditions), for example in a separate Vitest project.
+
+> **Status:** `@lumen/testing` (a `render()` helper and Testing Library integration) is planned.
+> Until then, use `mount` from `lumen/dom` as shown here. Making the Vite plugin pick the browser
+> entry for DOM test environments automatically is a tracked follow-up.
+
+## API
+
+| API                                                | Use                                                  |
+| -------------------------------------------------- | ---------------------------------------------------- |
+| `mount(() => <App />, container)` from `lumen/dom` | Render into a DOM node; returns a disposer.          |
+| `flushSync()`                                      | Run pending bindings and effects now.                |
+| `renderToString(() => <App />)`                    | Server-render to a string (node entry).              |
+| `resolve.conditions: ["browser"]`                  | Use the browser entry of `lumen` in component tests. |
+
+## Example
+
+```ts
+// vitest.config.ts
+import lumen from "lumen/vite";
+import { defineConfig } from "vite";
+
+export default defineConfig({
+  plugins: [lumen()],
+  resolve: { conditions: ["browser"] },
+  test: { environment: "happy-dom" },
+});
+```
+
+```tsx check file=Counter.test.tsx
+// src/Counter.test.tsx
+import { flushSync } from "lumen";
+import { mount } from "lumen/dom";
+import { expect, it } from "vitest";
+import { Counter } from "./Counter.stsx";
+
+it("counts clicks", () => {
+  const container = document.body.appendChild(document.createElement("div"));
+  const dispose = mount(() => <Counter start={2} />, container);
+
+  const button = container.querySelector("button")!;
+  button.click();
+  flushSync();
+
+  expect(button.textContent).toContain("Clicked 3 times");
+  dispose();
+  container.remove();
+});
+```
+
+## Common mistakes
+
+- **No `browser` condition.** Components render but never update, because the `node` entry of
+  `lumen` has no reactive graph. Add `resolve.conditions: ["browser"]`.
+- **Asserting right after a write.** Effects and bindings run in a microtask; call `flushSync()`
+  first.
+- **Clicking a detached element.** Delegated handlers listen at `document`; append the container
+  to `document.body`.
+- **Not disposing.** Call the disposer returned by `mount` so effects and listeners from one test
+  do not leak into the next.
+- **Testing server components in a DOM environment.** Async server components that use
+  `request()`, `cookies()` or `*.server.ts` modules belong in server-side tests with
+  `renderToString`.
+
+## Related diagnostics
+
+- [LUM4003](../errors/LUM4003.md): server-only module in a client graph (also `renderToString` called with the browser entry).
+- [LUM4004](../errors/LUM4004.md): browser API at module scope.
+
+See also: [Getting started](../getting-started.md), [reference: `lumen/dom`](../reference/dom.md), [reference: server](../reference/server.md).
+
+<!-- source: reference/reactivity.md -->
+
+# `lumen`: reactivity
+
+> Signatures and behavior of the reactive core exported by `lumen`: signals, computeds, effects, stores, owners, context and in-flight state.
+
+All of these are exported by `lumen` in the browser and on the server. On the server (the `node`
+entry) signals are plain cells, computeds evaluate once per request, and `effect`/`onMount` never
+run. Concepts: [Signals and reactivity](../concepts/signals.md).
+
+## signal
+
+```ts
+function signal<T>(value: T, options?: SignalOptions<T>): Signal<T>;
+
+interface Signal<T> {
+  (): T; // read (tracked)
+  set(value: T): void;
+  update(fn: (value: T) => T): void;
+  peek(): T; // read without tracking
+}
+interface SignalOptions<T> {
+  /** When a write counts as a change. Default Object.is; false: every write is a change. */
+  equals?: false | ((a: T, b: T) => boolean);
+}
+```
+
+## computed
+
+```ts
+function computed<T>(fn: (previous: T | undefined) => T, options?: SignalOptions<T>): Computed<T>;
+type Computed<T> = () => T;
+```
+
+Lazy (runs on first read), cached, glitch-free. `fn` must be pure: no signal writes (`LUM2002`).
+An unobserved computed unlinks itself from its sources.
+
+## effect
+
+```ts
+function effect(fn: EffectFn): () => void;
+type EffectFn = () => void | (() => void);
+```
+
+Runs `fn` after the DOM updates, then again whenever a signal it read changes. A returned function
+is a cleanup, run before the next run and on disposal. Returns a disposer. Owned by the current
+owner, so it is disposed with the component.
+
+## onMount
+
+```ts
+function onMount(fn: EffectFn): void;
+```
+
+Runs `fn` once, untracked, after the current owner's DOM is mounted. It may return a cleanup.
+
+## onCleanup
+
+```ts
+function onCleanup(fn: () => void): void;
+```
+
+Registers `fn` on the current owner: it runs when the owner is disposed (or, for an effect, before
+its next run).
+
+## lifetime
+
+```ts
+function lifetime(): AbortSignal;
+```
+
+An `AbortSignal` for the current owner. Aborted when the owner is disposed, when an effect re-runs,
+or when an async component run is superseded. On the server it is the request's signal. Throws
+outside an owner.
+
+## untrack
+
+```ts
+function untrack<T>(fn: () => T): T;
+```
+
+Runs `fn` without subscribing the current scope to the signals it reads.
+
+## batch
+
+```ts
+function batch<T>(fn: () => T): T;
+```
+
+Defers dependents until `fn` returns, so they run once. Delegated event handlers are batched
+automatically.
+
+## flushSync
+
+```ts
+function flushSync(): void;
+```
+
+Runs pending computeds, DOM bindings and effects now, instead of in the next microtask.
+
+## store
+
+```ts
+function store<T extends object>(value: T): T;
+```
+
+Wraps a plain object or array in a deep reactive proxy: reads track per property, writes notify
+only on change, array methods work. Class instances, `Map`s, `Set`s and frozen objects are returned
+as is.
+
+## createContext, provide, inject
+
+```ts
+function createContext<T>(defaultValue: T): Context<T>;
+function createContext<T>(): Context<T | undefined>;
+function provide<T>(context: Context<T>, value: T): void;
+function inject<T>(context: Context<T>): T;
+interface Context<T> {
+  readonly id: symbol;
+  readonly defaultValue: T;
+}
+```
+
+`provide` sets a value on the current owner for everything created below it; `inject` returns the
+nearest provided value, or the default. Context survives `await` in async components.
+
+## pending
+
+```ts
+function pending(): boolean;
+```
+
+Inside an async component (its body or its UI): whether a **re-run** is in flight. The first load is
+not a re-run (`<Suspense>` covers it). Reading it in the body does not re-run the component.
+Always `false` on the server.
+
+## busy
+
+```ts
+function busy(): boolean;
+```
+
+App-wide: whether anything is in flight: an async component run, a `<Suspense>` showing its
+fallback, a form submission (`submit()`) or an SPA navigation. Reactive. Always `false` on the
+server.
+
+## resource
+
+```ts
+function resource<T>(fetcher: (signal: AbortSignal) => T | PromiseLike<T>): Resource<T>;
+
+interface Resource<T> {
+  (): T | undefined; // latest value, tracked
+  loading(): boolean;
+  error(): unknown;
+  refetch(): void; // aborts a load in flight and loads again
+}
+```
+
+Low-level on-demand loading. `fetcher` runs now and whenever a signal it read synchronously
+changes; its `AbortSignal` aborts when superseded or disposed. The first load counts as pending
+for the nearest `<Suspense>`. Errors are not thrown: read `error()`. Browser only: on the server it
+stays loading. Prefer [async components](../concepts/async.md).
+
+## Example
+
+```tsx check
+import { batch, effect, lifetime, onCleanup, resource, signal, untrack } from "lumen";
+
+export function Clock() {
+  const now = signal(new Date());
+  const timer = setInterval(() => now.set(new Date()), 1000);
+  onCleanup(() => clearInterval(timer));
+
+  const first = signal("Ada");
+  const last = signal("Lovelace");
+  const rename = () =>
+    batch(() => {
+      first.set("Grace");
+      last.set("Hopper");
+    });
+
+  effect(() => {
+    console.log(`${first()} ${last()} at`, untrack(now).toISOString());
+  });
+
+  const user = resource((signal) =>
+    fetch(`/api/users/${first()}`, { signal }).then((res) => res.json() as Promise<{ id: string }>),
+  );
+
+  return (
+    <p onClick={rename}>
+      {now().toLocaleTimeString()} · {user.loading() ? "…" : user()?.id}
+      {String(lifetime().aborted)}
+    </p>
+  );
+}
+```
+
+<!-- source: reference/components.md -->
+
+# `lumen`: components
+
+> Signatures and behavior of the built-in components and element helpers exported by `lumen`: `Suspense`, `ErrorBoundary`, `Portal`, `Dynamic`, `ref`, `Head`, `Title` and `Meta`.
+
+All are exported by `lumen` in the browser and on the server. Concepts:
+[Components](../concepts/components.md), [Async components](../concepts/async.md),
+[Head and document](../concepts/head.md).
+
+## Suspense
+
+```ts
+function Suspense(props: SuspenseProps): JSX.Element;
+interface SuspenseProps {
+  /** Shown while new content below is pending. */
+  fallback?: JSX.Element;
+  children?: JSX.Element;
+}
+```
+
+Shows `fallback` while **new** async content below it is pending: the first load, and async
+components or resources that a branch mounts later. Re-runs of revealed content keep their stale UI
+(`pending()` tells them apart). Hidden content stays alive. A shown fallback counts for `busy()`.
+On the server, a boundary marks content that streams after the shell; with prerendering it is
+resolved inline.
+
+## ErrorBoundary
+
+```ts
+function ErrorBoundary(props: ErrorBoundaryProps): JSX.Element;
+interface ErrorBoundaryProps {
+  /** Rendered instead of the children after an error. */
+  fallback?: JSX.Element | ((error: unknown, retry: () => void) => JSX.Element);
+  children?: JSX.Element;
+}
+```
+
+Renders `fallback` when its children throw while rendering, an effect below throws, or an async
+component below rejects. `retry()` disposes the fallback and mounts the children again. On the
+server, an error in a streamed boundary renders the nearest `ErrorBoundary` in place.
+
+## Portal
+
+```ts
+function Portal(props: PortalProps): JSX.Element;
+interface PortalProps {
+  /** Where the content goes. Default: document.body. */
+  mount?: Node;
+  children?: JSX.Element;
+}
+```
+
+Renders `children` into a `<div>` appended to `mount`, removed with the owner. Delegated events
+from the portal's content continue at the portal's position in the component tree.
+
+## Dynamic
+
+```ts
+function Dynamic(props: DynamicProps): JSX.Element;
+interface DynamicProps {
+  /** A component or an intrinsic tag name. Nothing renders while it is nullish or false. */
+  component: Component | string | null | undefined | false;
+  [prop: string]: unknown;
+}
+```
+
+Renders `component` with the other props, re-creating it only when `component` changes.
+
+## ref
+
+```ts
+function ref<T extends Element>(): JSX.Ref<T>;
+```
+
+A callback for the `ref` prop that can also be read like a signal: `input()` is `undefined` until
+the element exists. Pass it as `ref={input}`.
+
+## Title
+
+```ts
+function Title(props: { children?: JSX.Element }): JSX.Element;
+```
+
+Sets the document title. The deepest `<Title>` wins, so a page overrides its layouts.
+
+## Meta
+
+```ts
+function Meta(props: Record<string, unknown>): JSX.Element;
+```
+
+Adds or updates a `<meta>` in `<head>`, with the given attributes. Metas with the same `charset`,
+`name`, `property`, `http-equiv` or `itemprop` dedupe: the deepest wins, and the previous one comes
+back when it is removed.
+
+## Head
+
+```ts
+function Head(props: { children?: JSX.Element }): JSX.Element;
+```
+
+Appends its children to `<head>` and removes them on disposal. Elements equal to one already in
+`<head>` (for example rendered by the server) are skipped.
+
+## Example
+
+```tsx check
+import { Dynamic, ErrorBoundary, Portal, Suspense, ref, signal } from "lumen";
+
+function Info() {
+  return <p>Info</p>;
+}
+
+export function Dialog() {
+  const open = signal(false);
+  const kind = signal<"h2" | "h3">("h2");
+  const button = ref<HTMLButtonElement>();
+
+  return (
+    <ErrorBoundary fallback={(error, retry) => <button onClick={retry}>{String(error)}</button>}>
+      <button ref={button} onClick={() => open.set(true)}>
+        Open
+      </button>
+      {open() && (
+        <Portal>
+          <div role="dialog">
+            <Dynamic component={kind()}>Title</Dynamic>
+            <Suspense fallback={<p>Loading…</p>}>
+              <Dynamic component={Info} />
+            </Suspense>
+            <button onClick={() => (open.set(false), button()?.focus())}>Close</button>
+          </div>
+        </Portal>
+      )}
+    </ErrorBoundary>
+  );
+}
+```
+
+<!-- source: reference/app.md -->
+
+# `lumen`: app layer
+
+> Signatures of the app-layer exports of `lumen`: data fetching, form actions, routing helpers, control flow, request APIs, cookies, env and the request-context types.
+
+`lumen` exposes the same names in the browser and on the server. Server-only APIs exist in the
+browser build as stubs that throw `LUM4003` with a hint; browser-only APIs reject on the server.
+Concepts: [Data and actions](../concepts/data-and-actions.md), [Server](../concepts/server.md),
+[Routing](../concepts/routing.md).
+
+## Data
+
+### fetchJSON
+
+```ts
+function fetchJSON<T = unknown>(input: string | URL, init?: RequestInit): Promise<T>;
+```
+
+Fetches and parses JSON (`Accept: application/json` unless `init` sets it); an empty body is
+`undefined`. Non-2xx responses throw a `FetchError`. During SSR, same-origin URLs are served
+in-process through the request handler, with the page request's cookies and headers. Returns plain
+data, so awaited results stay serializable in islands.
+
+### FetchError, isFetchError
+
+```ts
+interface FetchError extends HttpError {
+  readonly status: number; // 0 for network failures
+  readonly url: string;
+  /** Parsed JSON body for JSON responses, else text; undefined when empty. */
+  readonly data: unknown;
+}
+function isFetchError(value: unknown): value is FetchError;
+```
+
+Thrown by `fetchJSON()` and by `submit()` for unexpected errors. An `HttpError`, so if a server
+component lets it escape, the page renders `_error` (or `_404`) with the same status.
+
+## Form actions
+
+### submit
+
+```ts
+function submit<Data = unknown, Failure = unknown>(
+  target: SubmitTarget,
+  options?: SubmitOptions,
+): Promise<ActionResult<Data, Failure>>;
+
+type SubmitTarget =
+  | HTMLFormElement
+  | Event // a submit event: onSubmit={submit}
+  | FormData
+  | URLSearchParams
+  | Record<string, string | Blob | readonly (string | Blob)[]>;
+
+interface SubmitOptions {
+  /** A URL, or "?/name" for a named action. Default: the submitter's formaction, else the
+   *  form's action, else the current URL. */
+  action?: string;
+  /** Default POST. A form must say method="post". */
+  method?: string;
+  signal?: AbortSignal;
+}
+
+type ActionResult<Data = unknown, Failure = unknown> =
+  | { type: "success"; status: number; data: Data }
+  | { type: "failure"; status: number; data: Failure }
+  | { type: "redirect"; status: number; location: string };
+```
+
+Posts without a page load. `success` and `failure` set `actionData()`; `redirect` navigates.
+Rejects only for unexpected errors (the action throws, an error response, a network failure) with
+a `FetchError`. Browser only: rejects on the server.
+
+### submitting
+
+```ts
+function submitting(name?: string): boolean;
+```
+
+Whether a `submit()` is in flight; with a name, one to that named action (`?/name`). Reactive.
+`false` on the server.
+
+### actionData
+
+```ts
+function actionData<T = unknown>(): T | undefined;
+```
+
+The data of the last action result: what the action returned, or its `fail()` data. Reactive in
+the browser; after a no-JS form post it starts with the data the page was rendered with. On the
+server: the current request's action result while the page re-renders after a post.
+
+### fail, ActionFailure
+
+```ts
+function fail(status: number): ActionFailure<undefined>;
+function fail<Data>(status: number, data: Data): ActionFailure<Data>;
+```
+
+A failed action result, usually for validation errors: `return fail(400, { errors })`. Without
+JavaScript the page re-renders with `status`; `submit()` resolves with `{ type: "failure" }`.
+
+### invalidate
+
+```ts
+function invalidate(): Promise<void>;
+```
+
+Refreshes the current page's server data after a mutation: re-runs the page's async components in
+SPA routes, reloads the page otherwise. Browser only.
+
+## Routing
+
+### href
+
+```ts
+function href<P extends Routes>(pattern: P, ...args: HrefArgs<P>): string;
+```
+
+Builds a path from a route pattern, encoding each param; `params` is required when the pattern has
+params. A `[...rest]` param keeps its `/` separators and may be empty. Throws on a missing or empty
+`[param]`.
+
+### Route types
+
+```ts
+interface RouteMap {}                  // augmented by .lumen/types/routes.d.ts (typegen)
+type Routes = /* every route pattern, or string before typegen */;
+type RouteParams<P extends Routes>;    // { slug: string } for "/blog/[slug]"
+interface RouteProps<P extends Routes> { params: RouteParams<P> }
+```
+
+## Control flow
+
+```ts
+function redirect(location: string | URL, status?: 301 | 302 | 303 | 307 | 308): never;
+function notFound(message?: string): never;
+function error(status: number, message?: string): never; // 400-599
+function isRedirect(value: unknown): value is Redirect;
+function isHttpError(value: unknown): value is HttpError;
+```
+
+They throw; the framework renders a redirect, the nearest `_404` (404) or the nearest `_error`.
+Without a status, `redirect()` uses 302 for GET/HEAD and 303 otherwise. `HttpError` is an `Error`
+with a `status`.
+
+## Request APIs (server)
+
+```ts
+function request(): Request;
+function url(): URL;
+function params<P extends Routes = never>(): RouteParams<P>; // Record<string, string> without P
+function locals(): Locals;
+function cookies(): Cookies;
+function response(): ResponseContext;
+function env(name: string): string | undefined;
+function publicEnv(source?: ServerEnv): Record<string, string>;
+```
+
+Available anywhere during a server render (also after `await`), scoped to the current request. In
+the browser they throw `LUM4003`. `env()` reads the adapter's env, else `process.env`;
+`publicEnv()` returns the `PUBLIC_*` subset.
+
+```ts
+interface ResponseContext {
+  readonly status: number;
+  setStatus(status: number): void;
+  getHeader(name: string): string | null;
+  setHeader(name: string, value: string): void;
+}
+```
+
+Writable until the shell is sent; later writes throw `LUM5004`.
+
+## Cookies
+
+```ts
+interface Cookies {
+  get(name: string): string | undefined;
+  getAll(): Array<{ name: string; value: string }>;
+  set(name: string, value: string, options?: CookieOptions): void;
+  delete(name: string, options?: CookieDeleteOptions): void;
+}
+interface CookieOptions {
+  path?: string; // default "/"
+  domain?: string;
+  maxAge?: number; // seconds
+  expires?: Date;
+  httpOnly?: boolean; // default true
+  secure?: boolean; // default: true in production and on https
+  sameSite?: "lax" | "strict" | "none"; // default "lax"; "none" forces secure
+  partitioned?: boolean; // CHIPS; forces secure
+}
+type CookieDeleteOptions = Pick<CookieOptions, "path" | "domain" | "secure" | "sameSite">;
+
+function signedCookie(name: string, options?: SignedCookieOptions): SignedCookie;
+interface SignedCookieOptions extends CookieOptions {
+  /** HMAC secret; an array rotates keys (the first signs). Default: env LUMEN_SECRET. */
+  secret?: string | readonly string[];
+}
+interface SignedCookie {
+  readonly name: string;
+  get(cookies: Cookies): Promise<string | undefined>; // undefined when the signature is invalid
+  set(cookies: Cookies, value: string, options?: CookieOptions): Promise<void>;
+  delete(cookies: Cookies, options?: CookieDeleteOptions): void;
+}
+```
+
+## Context types
+
+```ts
+interface RequestContext<Params = Record<string, string>> {
+  request: Request;
+  url: URL;
+  params: Params;
+  locals: Locals;
+  cookies: Cookies;
+  env: ServerEnv; // Readonly<Record<string, string | undefined>>
+}
+interface ActionContext<Params> extends RequestContext<Params> {
+  formData(): Promise<FormData>; // parsed once; 400 if the body is not a form
+}
+type Middleware = (
+  ctx: RequestContext,
+  next: () => Promise<Response>,
+) => Response | Promise<Response>;
+type Endpoint<Params> = (ctx: RequestContext<Params>) => Response | Promise<Response>;
+type Action<Params, Result> = (ctx: ActionContext<Params>) => Result | Promise<Result>;
+type HttpMethod = "GET" | "HEAD" | "POST" | "PUT" | "PATCH" | "DELETE" | "OPTIONS";
+interface ErrorPageProps {
+  status: number;
+  error: Error & { status?: number };
+}
+interface DocumentProps {
+  head: JSX.Element;
+  body: JSX.Element;
+}
+interface Locals {} // augment: declare module "lumen" { interface Locals { … } }
+```
+
+## Example
+
+```ts check file=routes/api/session.ts
+// src/routes/api/session.ts
+import { isHttpError, type Endpoint } from "lumen";
+
+export const GET: Endpoint = ({ cookies }) =>
+  Response.json({ theme: cookies.get("theme") ?? "light" });
+
+export const POST: Endpoint = async ({ request, cookies }) => {
+  try {
+    const { theme } = (await request.json()) as { theme: string };
+    cookies.set("theme", theme, { maxAge: 60 * 60 * 24 * 365 });
+    return new Response(null, { status: 204 });
+  } catch (error) {
+    if (isHttpError(error)) throw error;
+    return Response.json({ error: "Invalid JSON" }, { status: 400 });
+  }
+};
+```
+
+<!-- source: reference/server.md -->
+
+# `lumen`: server rendering
+
+> `renderToStream` and `renderToString` render components to HTML under the `node` entry of `lumen`; `lumen/server` is the server half of the compiler-runtime contract.
+
+Most apps never call these directly: the request handler (and `lumen dev` / `lumen build`) does.
+Use them for custom servers, tests and tools. Concepts:
+[Rendering modes](../concepts/rendering-modes.md).
+
+## renderToStream
+
+```ts
+function renderToStream(
+  root: () => unknown,
+  options?: RenderToStreamOptions,
+): Promise<RenderedShell>;
+
+interface RenderToStreamOptions {
+  /** Aborts the render: rejects a pending shell, ends the stream and aborts lifetime(). */
+  signal?: AbortSignal;
+  /** SSG/prerender: render every Suspense boundary into the shell; no fallbacks, no stream. */
+  resolveAll?: boolean;
+  /** CSP nonce for the $swap scripts and strict-mode <style> rules. */
+  nonce?: string;
+  /** CSP strict mode: style props become nonce'd <style> rules. */
+  strictStyles?: boolean;
+  /** Maps an island module specifier to its URL for modulepreload hints. */
+  islandUrl?: (specifier: string) => string;
+  /** Errors of streamed boundaries that no ErrorBoundary handled. Default: console.error. */
+  onError?: (error: unknown) => void;
+}
+
+interface RenderedShell {
+  /** Collected <Title>/<Meta>/<Head> HTML, modulepreload hints and strict-mode styles. */
+  head: string;
+  /** The shell HTML, followed by the shell's island records. */
+  body: string;
+  /** Streamed boundary chunks to append inside <body>; null when nothing is pending. */
+  stream: ReadableStream<string> | null;
+}
+```
+
+Renders `root` shell-first (decision-19): resolves once everything outside `<Suspense>` is ready,
+and rejects with the first error thrown while rendering the shell (so the caller can render an
+error page with the right status). The stream then delivers each boundary as it resolves, out of
+order.
+
+## renderToString
+
+```ts
+function renderToString(
+  root: () => unknown,
+  options?: Omit<RenderToStreamOptions, "resolveAll">,
+): Promise<string>;
+```
+
+Renders everything resolved (no fallbacks, no stream) and returns the body HTML. Used for
+prerendering and tests.
+
+Both are server-only: in the browser build of `lumen` they throw `LUM4003`.
+
+## `lumen/server`
+
+The server runtime that compiled server code imports (`ssr`, `escape`, `insert`, `list`, `branch`,
+`createComponent`, `island`, `$await`, …). It is the compiler-runtime contract, not an
+application API: its members may change between versions without notice. It also re-exports
+`renderToStream` and `renderToString`.
+
+## Example
+
+```tsx check
+import { renderToStream } from "lumen";
+
+function App() {
+  return <h1>Hello</h1>;
+}
+
+export async function handle(request: Request): Promise<Response> {
+  const { head, body, stream } = await renderToStream(() => <App />, { signal: request.signal });
+  const encoder = new TextEncoderStream();
+  const writer = encoder.writable.getWriter();
+  void (async () => {
+    await writer.write(`<!doctype html><html><head>${head}</head><body>${body}`);
+    if (stream) for await (const chunk of stream) await writer.write(chunk);
+    await writer.write("</body></html>");
+    await writer.close();
+  })();
+  return new Response(encoder.readable, {
+    headers: { "content-type": "text/html; charset=utf-8" },
+  });
+}
+```
+
+<!-- source: reference/dom.md -->
+
+# `lumen/dom`
+
+> `mount` renders a component tree into a DOM element. The rest of `lumen/dom` is the client half of the compiler-runtime contract that compiled code imports.
+
+## mount
+
+```ts
+function mount(code: () => JSX.Element, container: Element): () => void;
+```
+
+Renders `code()` into `container` (appended after its existing content) under a new root owner, and
+marks the container as a delegation boundary. Returns a disposer that disposes the owner and
+removes the rendered nodes. With the Vite plugin, an entry module that imports `mount` re-mounts on
+hot updates.
+
+## Compiler-runtime contract
+
+`template`, `bind`, `insert`, `branch`, `list`, `selector`, `createComponent`, `mergeProps`,
+`restProps`, `spread`, `delegateEvents`, `listen`, `attach`, `bindValue`, `bindChecked`,
+`useRef`, `$async`, `$await`, `$leave` and friends are what the compiler emits calls to. They are
+not an application API and may change between versions; write JSX instead.
+
+## `lumen/dom/hydrate`
+
+Importing `lumen/dom/hydrate` installs the hydration cursor that makes the compiled walk claim
+server-rendered nodes. The island loader and SPA entries import it; bundles that never hydrate do
+not include it.
+
+## Example
+
+```tsx check
+import { signal } from "lumen";
+import { mount } from "lumen/dom";
+
+function App() {
+  const name = signal("world");
+  return <input bind:value={name} placeholder={`Hello, ${name()}`} />;
+}
+
+mount(() => <App />, document.getElementById("app")!);
+```
+
+<!-- source: reference/router.md -->
+
+# `lumen/router`
+
+> The client router for `spa` routes, built on the Navigation API: `<Link>`, `navigate()`, reactive `params()`, `search()`, `url()` and `navigating()`.
+
+> **Status:** planned. In this version `lumen/router` exports nothing; the API below is the design
+> (spec §7.5, decision-20) and may still change. MPA navigation (plain links, View Transitions)
+> works without it.
+
+## Planned API
+
+| API                                                    | Behavior                                                           |
+| ------------------------------------------------------ | ------------------------------------------------------------------ |
+| `<Link href prefetch="hover" \| "viewport" \| "none">` | A client-side link inside an `spa` subtree.                        |
+| `navigate(href, { replace? })`                         | Navigate programmatically.                                         |
+| `params()`                                             | Reactive params of the current route.                              |
+| `search()`                                             | Reactive `URLSearchParams`, with a setter.                         |
+| `url()`                                                | Reactive current URL.                                              |
+| `navigating()`                                         | `true` while a navigation is in flight (also counted by `busy()`). |
+
+Behavior:
+
+- Nested layouts persist across navigations; a layout's `children` is the outlet.
+- A navigation holds the old page until the new page's async content is ready, like a transition.
+- Scroll restoration, focus management and a client-side `_404`.
+- `invalidate()` re-runs the current page's async components.
+- `submit()` redirects navigate through the router.
+
+Until it lands, use `<a href>` links (MPA navigation) and `busy()` for global progress.
+
+See also: [Routing](../concepts/routing.md), [Rendering modes](../concepts/rendering-modes.md).
+
+<!-- source: reference/vite.md -->
+
+# `lumen/vite`
+
+> The Vite 8 plugin: compiles `.stsx` and `.tsx` with the Lumen compiler, picks the `lumen` entry per Vite environment, reports diagnostics in the overlay and reloads on edit.
+
+## lumen()
+
+```ts
+import lumen from "lumen/vite";
+
+function lumen(options?: LumenOptions): Plugin[];
+
+interface LumenOptions {
+  /** Modules compiled by Lumen. Default: .stsx and .tsx files. */
+  include?: RegExp;
+  /** Modules left to Vite. Default: anything in node_modules. */
+  exclude?: RegExp;
+}
+```
+
+What it does:
+
+- Compiles Lumen modules before Vite's own transform, which is told to skip them. Server consumers
+  (SSR) get `lumen/server` code; everything else gets `lumen/dom` code.
+- Resolves `lumen` to its `browser` entry in client environments and its `node` entry in server
+  environments, and keeps every `lumen` entry out of dependency pre-bundling, so compiled code and
+  the runtime share one module instance.
+- Turns compiler diagnostics into Vite warnings and errors with code frames (the dev overlay).
+- Hot updates: a client module that imports `mount` from `lumen/dom` (an app entry) accepts updates
+  of every module it reaches and re-mounts the app into the same container. Component state resets;
+  module-level signals of unchanged modules survive.
+- Style blocks become `<file>?lumen&type=style&lang.css` modules handled by Vite's CSS pipeline.
+
+> **Status:** compilation, environments, diagnostics and HMR are available. The style-block CSS
+> modules are empty until the CSS pipeline lands. The designed app-level options (`adapter`, `css`,
+> `csp`, `trailingSlash`, `viewTransitions`, `prefetch`) arrive with `lumen dev` and `lumen build`.
+> In Vitest, add `resolve.conditions: ["browser"]` for component tests (see
+> [Testing](../concepts/testing.md)).
+
+## Example
+
+```ts
+// vite.config.ts
+import lumen from "lumen/vite";
+import { defineConfig } from "vite";
+
+export default defineConfig({
+  plugins: [lumen({ exclude: /[\\/](node_modules|legacy)[\\/]/ })],
+});
+```
+
+<!-- source: reference/jsx.md -->
+
+# JSX types and tsconfig
+
+> `lumen/jsx-runtime` types JSX for `jsxImportSource: "lumen"`; `lumen/env` declares the global `JSX` namespace, `import.meta.env` and `Locals`. This page lists the type rules and the required tsconfig.
+
+## tsconfig.json
+
+```json
+{
+  "compilerOptions": {
+    "jsx": "preserve",
+    "jsxImportSource": "lumen",
+    "module": "preserve",
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "noEmit": true,
+    "strict": true,
+    "rootDirs": ["src", ".lumen/shadow/src"],
+    "types": ["lumen/env"]
+  },
+  "include": ["src", ".lumen/shadow", ".lumen/types"]
+}
+```
+
+| Option                                        | Why                                                                                 |
+| --------------------------------------------- | ----------------------------------------------------------------------------------- |
+| `jsx: "preserve"`, `jsxImportSource: "lumen"` | The Lumen compiler transforms JSX; TypeScript only checks it against Lumen's types. |
+| `rootDirs` with `.lumen/shadow/src`           | `import "./X.stsx"` resolves to the shadow file `X.stsx.tsx`.                       |
+| `include` `.lumen/shadow`, `.lumen/types`     | Shadow files and generated route types are part of the program.                     |
+| `types: ["lumen/env"]`                        | The global `JSX` namespace, `import.meta.env` and `Locals`.                         |
+| `allowImportingTsExtensions`                  | Imports name their extension: `./Card.stsx`, `./tokens.ts`.                         |
+
+`lumen check` reports missing options (`LUM6001`) and prints this template when there is no
+tsconfig.
+
+## The `JSX` namespace
+
+| Type                                                        | Rule                                                                                                                                                    |
+| ----------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `JSX.Element`                                               | What JSX evaluates to: nodes, strings, numbers, booleans, `null`/`undefined`, arrays and functions of those.                                            |
+| `JSX.ElementType`                                           | Intrinsic tags, and sync **or async** function components.                                                                                              |
+| `JSX.IntrinsicElements`                                     | Every HTML (except `style`), SVG and MathML tag of lib.dom, plus custom elements (`my-widget`).                                                         |
+| `JSX.IntrinsicAttributes`                                   | `key`, and on components `client:load`, `client:idle`, `client:visible` (`boolean \| string`), `client:media` (`string`), `client:only`.                |
+| `JSX.ClassValue`                                            | `string \| false \| null \| undefined \| Record<string, boolean \| null \| undefined> \| ClassValue[]`.                                                 |
+| `JSX.CSSProperties`                                         | Kebab-case CSS properties (`"font-weight"`, `"-webkit-line-clamp"`) and `--custom` properties; values `string \| number \| false \| null \| undefined`. |
+| `JSX.EventHandler<E, T>`                                    | `(event: E & { currentTarget: T }) => void`.                                                                                                            |
+| `JSX.Ref<T>`                                                | What `ref<T>()` returns: callable with the element, readable as `() => T \| undefined`.                                                                 |
+| `JSX.HTMLProps<T>`, `JSX.SVGProps<T>`, `JSX.MathMLProps<T>` | Props of an element type, for wrappers.                                                                                                                 |
+
+**Element props.** Every element accepts `children`, `class`, `style`, `ref`, `attach`, `innerHTML`,
+`key`, its attributes, `onX` handlers and `on:x` listeners. `input` also accepts `bind:value`
+(string or number signal) and `bind:checked` (boolean signal); `select` and `textarea` accept
+`bind:value`.
+
+**Rejected on purpose** (type errors with a hint): `className` (use `class`), `htmlFor` (use
+`for`), camelCase `style` keys, exact-case or lowercase handlers (`onKeydown`, `onclick`), and
+`<style>` in `.tsx` files.
+
+**Event names.** `onX` handlers use React-style camelCase after `on` (`onClick`, `onKeyDown`,
+`onDblClick`, `onPointerDown`, `onMouseEnter`); the DOM event is the suffix lowercased. Bubbling
+events are delegated; non-bubbling ones (`focus`, `blur`, `mouseenter`, `mouseleave`,
+`pointerenter`, `pointerleave`, `scroll`, `load`, `error`, media events) get a direct listener.
+`on:name` adds a native listener with the exact name; any `on:${string}` is accepted for custom
+events.
+
+## Custom elements
+
+Undeclared custom elements accept global attributes and any other attribute. Type one by
+augmenting `IntrinsicElements`:
+
+```tsx check
+declare module "lumen/jsx-runtime" {
+  namespace JSX {
+    interface IntrinsicElements {
+      "rating-stars": JSX.HTMLProps<HTMLElement> & { value: number; max?: number };
+    }
+  }
+}
+
+export function Review() {
+  return (
+    <rating-stars
+      value={4}
+      on:rating-change={(event: CustomEvent<number>) => console.log(event.detail)}
+    />
+  );
+}
+```
+
+## `lumen/env`
+
+```ts
+interface ImportMetaEnv {
+  readonly [publicVariable: `PUBLIC_${string}`]: string;
+  BASE_URL: string;
+  MODE: string;
+  DEV: boolean;
+  PROD: boolean;
+  SSR: boolean;
+}
+declare module "lumen" {
+  interface Locals {}
+}
+```
+
+Declare known public variables by merging `interface ImportMetaEnv { readonly PUBLIC_API: string }`.
+The built-in members match `vite/client`, so both can be loaded.
+
+<!-- source: reference/cli.md -->
+
+# CLI
+
+> The `lumen` command: `check`, `lint`, `fmt`, `docs` and `explain`, with `--format json` and stable exit codes.
+
+```sh
+lumen <command> [options]
+```
+
+Exit codes: `0` success, `1` problems found (errors, unformatted files, nothing found), `2` the
+tool itself failed or was misused.
+
+| Option                        | Applies to                 | Meaning                                                       |
+| ----------------------------- | -------------------------- | ------------------------------------------------------------- |
+| `--root <dir>`                | check, lint, fmt           | Project root (default: the current directory).                |
+| `-p, --project <file>`        | check                      | tsconfig path relative to the root (default `tsconfig.json`). |
+| `--format human \| json`      | check, lint, docs, explain | Output format (default `human`).                              |
+| `--check`                     | fmt                        | List unformatted files and exit 1 instead of writing.         |
+| `-h, --help`, `-v, --version` |                            | Help and version.                                             |
+
+## lumen check
+
+Type-checks the project: runs typegen (`.lumen/types/routes.d.ts`), writes shadow TSX files for
+every `.stsx` (`.lumen/shadow/`), runs `tsc --noEmit -p tsconfig.json`, maps shadow positions back
+to the `.stsx` sources (same line and UTF-16 column), and merges scanner, route and tsconfig
+diagnostics.
+
+```sh
+lumen check
+lumen check --format json   # { diagnostics: [...], summary: { errors, warnings, hints, files } }
+```
+
+Each JSON diagnostic has `source` (`ts`, `lumen`, `oxlint`, `stylelint`), `code`, `severity`,
+`file`, `line`, `column`, `endLine`, `endColumn`, `message`, and optional `help` and `docs`.
+
+## lumen lint
+
+Runs oxlint on the project, including `.stsx` files (through their shadow TSX, with diagnostics
+inside style blocks dropped), and, when the project installs and configures stylelint, on each
+block's CSS with `$` references replaced by same-length identifiers.
+
+## lumen fmt
+
+```sh
+lumen fmt [paths...]        # default path: src
+lumen fmt --check
+```
+
+Formats `.stsx` files: the TSX with oxfmt (each block replaced by a placeholder), then each block's
+CSS separately with its `$` references protected, then re-indents and stitches the file together.
+
+## lumen docs
+
+```sh
+lumen docs                  # the docs index
+lumen docs signals          # a topic by name...
+lumen docs concepts/signals # ...or by path
+lumen docs LUM2001          # a diagnostic page (also errors/LUM2001, diagnostics/LUM2001)
+lumen docs bind:value       # no topic matches: search, best matches first
+lumen docs --format json    # { topics: [{ topic, title, summary }] }
+lumen docs signals --format json   # { topic, title, summary, related, content }
+lumen docs "await island" --format json   # { query, results: [{ topic, title, score, snippet }] }
+```
+
+Prints the version-matched docs from `node_modules/lumen/docs`. A bare name prefers concepts over
+reference pages and lists the other matches. A search requires every term to occur in a page.
+Exits 1 when nothing matches.
+
+## lumen explain
+
+```sh
+lumen explain LUM3010
+lumen explain lum3010 --format json   # { code, title, severity, category, topic, content }
+```
+
+Prints the long-form explanation of a diagnostic code: what it means, an example, and how to fix
+it. Exits 1 for an unknown code and 2 for text that is not a code.
+
+## Planned commands
+
+`lumen dev`, `build`, `preview`, `typegen`, `routes`, `mcp`, `agents init` and `upgrade` are
+designed (spec §3, §10) and in progress; they are not in this version.
+
+<!-- source: errors/LUM1001.md -->
+
+<!-- Generated from crates/lumen_compiler/src/diagnostics/registry.rs by packages/lumen/scripts/gen-error-docs.ts. Edit the explanation below the end marker. -->
+
+# LUM1001: Syntax error
+
+**Severity:** error · **Category:** file format (1xxx)
+
+<!-- end of generated header -->
+
+> The file is not valid TSX after its `<style>` blocks are masked.
+
+**Reported by:** the compiler (Vite plugin, language server).
+
+## What it means
+
+The compiler could not parse the module. Lumen masks `<style>` blocks first, so the error is in
+the TSX itself: a missing bracket, an unterminated string, a stray `<` in JSX text, or TypeScript
+syntax that OXC does not accept.
+
+## Example
+
+```tsx
+export function Price() {
+  return <p>Total: {total</p>;
+}
+```
+
+## How to fix it
+
+Fix the syntax at the reported span. The message comes from the parser and names what it
+expected. If the error points into a `<style>` block, check that the block is closed (`LUM1004`)
+and that `<style` is not part of an expression.
+
+## Related
+
+- [Compiler and diagnostics](../concepts/compiler.md)
+- [JSX](../concepts/jsx.md)
+
+<!-- source: errors/LUM1002.md -->
+
+<!-- Generated from crates/lumen_compiler/src/diagnostics/registry.rs by packages/lumen/scripts/gen-error-docs.ts. Edit the explanation below the end marker. -->
+
+# LUM1002: Unsupported by this compiler version
+
+**Severity:** error · **Category:** file format (1xxx)
+
+<!-- end of generated header -->
+
+> The code uses a construct or target that this compiler version does not support yet.
+
+**Reported by:** the compiler.
+
+## What it means
+
+The construct parses, but this version of the Lumen compiler cannot compile it, or the requested
+compile target is not available. The message names the construct.
+
+## How to fix it
+
+Rewrite the code with a supported construct (the message suggests one when there is an obvious
+alternative), or upgrade `lumen`. If you believe the construct should be supported, report it with
+the smallest file that triggers the diagnostic.
+
+## Related
+
+- [Compiler and diagnostics](../concepts/compiler.md)
+
+<!-- source: errors/LUM1003.md -->
+
+<!-- Generated from crates/lumen_compiler/src/diagnostics/registry.rs by packages/lumen/scripts/gen-error-docs.ts. Edit the explanation below the end marker. -->
+
+# LUM1003: Scanner ambiguity
+
+**Severity:** warning · **Category:** file format (1xxx)
+
+<!-- end of generated header -->
+
+> The scanner read text in a way that may not be what you meant: a `<style` taken as a comparison, or blocks hidden by an unterminated string or comment.
+
+**Reported by:** the scanner (compiler, `lumen check`, language server). A warning.
+
+## What it means
+
+The `.stsx` scanner tracks JS, JSX, strings, template literals, comments and regular expressions to
+find `<style>` blocks. Two situations are ambiguous, and the scanner reports which reading it took:
+
+- `<style` right after an expression (`const a = b <style>`) is read as a `<` comparison, not as
+  a block.
+- An unterminated string, template literal or comment hides every `<style>` block after it.
+
+## Example
+
+```stsx
+const a = b <style>
+  .x { color: red; }
+</style>
+```
+
+On the same line as an expression, `<style` continues the expression `b`.
+
+## How to fix it
+
+Start a top-level block on its own line (a `<style` at the start of a line at top level is
+always a block), conventionally at the end of the file. For the second case, close the string, template
+literal or comment that the message points to.
+
+## Related
+
+- [Styles](../concepts/styles.md)
+- [Compiler and diagnostics](../concepts/compiler.md)
+
+<!-- source: errors/LUM1004.md -->
+
+<!-- Generated from crates/lumen_compiler/src/diagnostics/registry.rs by packages/lumen/scripts/gen-error-docs.ts. Edit the explanation below the end marker. -->
+
+# LUM1004: Unclosed `<style>` block
+
+**Severity:** error · **Category:** file format (1xxx)
+
+<!-- end of generated header -->
+
+> A `<style>` block has no closing `</style>`.
+
+**Reported by:** the scanner (compiler, `lumen check`, language server).
+
+## What it means
+
+Block content runs up to the first `</style>`. Without one, the rest of the file would be CSS, so
+the scanner stops and reports the block.
+
+## Example
+
+```stsx
+export function Card() {
+  return (
+    <div class="card">
+      <style>
+        .card { padding: 1rem; }
+    </div>
+  );
+}
+```
+
+## How to fix it
+
+Close the block with `</style>` before the end of its parent element. A self-closing
+`<style />` is not a block.
+
+## Related
+
+- [Styles](../concepts/styles.md)
+
+<!-- source: errors/LUM1005.md -->
+
+<!-- Generated from crates/lumen_compiler/src/diagnostics/registry.rs by packages/lumen/scripts/gen-error-docs.ts. Edit the explanation below the end marker. -->
+
+# LUM1005: Unknown `<style>` attribute
+
+**Severity:** error · **Category:** file format (1xxx)
+
+<!-- end of generated header -->
+
+> A `<style>` block has an attribute other than `global`.
+
+**Reported by:** the scanner (compiler, `lumen check`, language server).
+
+## What it means
+
+Blocks are plain CSS scoped by placement. The only allowed attribute is `global`, which makes the
+block unscoped. `lang`, `media`, `scoped`, `type` and others are not supported: there is no Sass
+inside `<style>`, and media queries go inside the CSS.
+
+## Example
+
+```stsx
+<style lang="scss">
+  .card { .title { color: red; } }
+</style>
+```
+
+## How to fix it
+
+Remove the attribute. Use `@media` inside the block instead of `media=""`, CSS nesting instead of
+Sass, or import a `.scss` file through Vite. For app-wide CSS, write `<style global>`.
+
+## Related
+
+- [Styles](../concepts/styles.md)
+
+<!-- source: errors/LUM1006.md -->
+
+<!-- Generated from crates/lumen_compiler/src/diagnostics/registry.rs by packages/lumen/scripts/gen-error-docs.ts. Edit the explanation below the end marker. -->
+
+# LUM1006: Raw CSS in a `.tsx` file
+
+**Severity:** error · **Category:** file format (1xxx)
+
+<!-- end of generated header -->
+
+> A `.tsx` file contains a raw-CSS `<style>` block.
+
+**Reported by:** the scanner (compiler, `lumen check`).
+
+## What it means
+
+Raw CSS blocks are the one syntax addition of `.stsx` files. In a `.tsx` file, TypeScript and other
+tools would read the CSS as JSX, so it is rejected (the JSX types also omit `style` from
+intrinsic elements in `.tsx`).
+
+## Example
+
+```tsx
+// Card.tsx
+export function Card() {
+  return (
+    <div class="card">
+      <style>.card { padding: 1rem; }</style>
+    </div>
+  );
+}
+```
+
+## How to fix it
+
+Rename the file to `.stsx` and update its imports (`./Card.stsx`).
+
+## Related
+
+- [Components: file types](../concepts/components.md)
+- [Styles](../concepts/styles.md)
+
+<!-- source: errors/LUM1007.md -->
+
+<!-- Generated from crates/lumen_compiler/src/diagnostics/registry.rs by packages/lumen/scripts/gen-error-docs.ts. Edit the explanation below the end marker. -->
+
+# LUM1007: `await using` in a component
+
+**Severity:** error · **Category:** file format (1xxx)
+
+<!-- end of generated header -->
+
+> A component body uses `await using`.
+
+**Reported by:** the compiler.
+
+## What it means
+
+The compiler rewrites component-level `await` to restore the owner, context and tracking after
+each await. `await using` (explicit resource management) needs disposal at scope exit, which this
+rewrite does not support in v1.
+
+## Example
+
+```tsx
+export async function Report() {
+  await using db = await openConnection();
+  return <p>{await db.count()}</p>;
+}
+```
+
+## How to fix it
+
+Acquire and release the resource inside a helper function, which the rewrite leaves alone, and
+await that:
+
+```tsx
+async function loadCount() {
+  await using db = await openConnection();
+  return db.count();
+}
+
+export async function Report() {
+  const count = await loadCount();
+  return <p>{count}</p>;
+}
+```
+
+## Related
+
+- [Async components](../concepts/async.md)
+
+<!-- source: errors/LUM2001.md -->
+
+<!-- Generated from crates/lumen_compiler/src/diagnostics/registry.rs by packages/lumen/scripts/gen-error-docs.ts. Edit the explanation below the end marker. -->
+
+# LUM2001: Stale derived value
+
+**Severity:** warning · **Category:** reactivity (2xxx)
+
+<!-- end of generated header -->
+
+> A value derived from a signal is computed once in setup and never updates.
+
+**Reported by:** the compiler. A warning. Does not apply to async components, whose body re-runs.
+
+## What it means
+
+A component's body runs once. `const doubled = count() * 2` reads the signal at setup time and
+stores a number, so JSX that uses `doubled` shows the first value forever.
+
+## Example
+
+```tsx
+export function Counter() {
+  const count = signal(1);
+  const doubled = count() * 2;
+  return <button onClick={() => count.update((n) => n + 1)}>{doubled}</button>;
+}
+```
+
+## How to fix it
+
+Derive with a function or `computed`, and call it where you need the value:
+
+```tsx
+const doubled = () => count() * 2; // cheap derivations
+const total = computed(() => expensive(count())); // cached
+return <button>{doubled()}</button>;
+```
+
+If you really want the initial value only, read it with `count.peek()` or `untrack(count)` to make
+that explicit.
+
+## Related
+
+- [Signals and reactivity](../concepts/signals.md)
+- [Components](../concepts/components.md)
+
+<!-- source: errors/LUM2002.md -->
+
+<!-- Generated from crates/lumen_compiler/src/diagnostics/registry.rs by packages/lumen/scripts/gen-error-docs.ts. Edit the explanation below the end marker. -->
+
+# LUM2002: Signal write during render
+
+**Severity:** error · **Category:** reactivity (2xxx)
+
+<!-- end of generated header -->
+
+> A signal is written while a component or computed is rendering.
+
+**Reported by:** the compiler.
+
+## What it means
+
+Component setup and computeds run during render. Writing a signal there (`count.set(…)`,
+`items.push(…)` on a store) re-triggers bindings mid-render, can loop, and makes the output depend
+on render order.
+
+## Example
+
+```tsx
+export function Profile(props: { name: string }) {
+  const visits = signal(0);
+  visits.set(visits.peek() + 1);
+  return <p>{props.name}</p>;
+}
+```
+
+## How to fix it
+
+Initialize the signal with the value instead (`signal(initial)`), derive with `computed`, or write
+in an event handler, `onMount` or an `effect`.
+
+## Related
+
+- [Signals and reactivity](../concepts/signals.md)
+
+<!-- source: errors/LUM2003.md -->
+
+<!-- Generated from crates/lumen_compiler/src/diagnostics/registry.rs by packages/lumen/scripts/gen-error-docs.ts. Edit the explanation below the end marker. -->
+
+# LUM2003: Reactive early return
+
+**Severity:** error · **Category:** reactivity (2xxx)
+
+<!-- end of generated header -->
+
+> A sync component returns early based on reactive state.
+
+**Reported by:** the compiler.
+
+## What it means
+
+The body of a sync component runs once, so `if (!user()) return <Login />` is decided once and
+never re-evaluated: the component keeps showing whichever branch it took first.
+
+## Example
+
+```tsx
+export function Account(props: { user: () => User | null }) {
+  if (!props.user()) return <Login />;
+  return <Profile user={props.user()!} />;
+}
+```
+
+## How to fix it
+
+Move the condition into the JSX, where it becomes a memoised branch:
+
+```tsx
+export function Account(props: { user: () => User | null }) {
+  return <>{props.user() ? <Profile user={props.user()!} /> : <Login />}</>;
+}
+```
+
+Early returns on props or values that never change are fine; async components may return early,
+because their body re-runs.
+
+## Related
+
+- [Components](../concepts/components.md)
+- [JSX: compiled idioms](../concepts/jsx.md)
+
+<!-- source: errors/LUM2004.md -->
+
+<!-- Generated from crates/lumen_compiler/src/diagnostics/registry.rs by packages/lumen/scripts/gen-error-docs.ts. Edit the explanation below the end marker. -->
+
+# LUM2004: Component called as a function
+
+**Severity:** error · **Category:** reactivity (2xxx)
+
+<!-- end of generated header -->
+
+> A component is called as a function instead of rendered with JSX.
+
+**Reported by:** the compiler.
+
+## What it means
+
+`{Card({ title })}` runs `Card` inside the caller: it gets no owner of its own, its props are not
+reactive getters, and cleanups, context and boundaries attach to the wrong component.
+
+## Example
+
+```tsx
+export function List(props: { items: string[] }) {
+  return <ul>{props.items.map((item) => Item({ label: item }))}</ul>;
+}
+```
+
+## How to fix it
+
+Render it with JSX: `<Item label={item} />`. To choose a component at runtime, use
+`<Dynamic component={X} … />`.
+
+## Related
+
+- [Components](../concepts/components.md)
+
+<!-- source: errors/LUM2005.md -->
+
+<!-- Generated from crates/lumen_compiler/src/diagnostics/registry.rs by packages/lumen/scripts/gen-error-docs.ts. Edit the explanation below the end marker. -->
+
+# LUM2005: Children inserted twice
+
+**Severity:** warning · **Category:** reactivity (2xxx)
+
+<!-- end of generated header -->
+
+> `children` is inserted more than once.
+
+**Reported by:** the compiler. A warning.
+
+## What it means
+
+`children` is lazy: each insertion evaluates it, creating a second set of nodes (or moving the
+first). Components below are instantiated twice, with separate state.
+
+## Example
+
+```tsx
+export function Tabs(props: { children?: JSX.Element }) {
+  return (
+    <div>
+      <nav>{props.children}</nav>
+      <main>{props.children}</main>
+    </div>
+  );
+}
+```
+
+## How to fix it
+
+Insert `children` once. To render content several times, accept a render function and call it in
+each place:
+
+```tsx
+export function Tabs(props: { renderTab: () => JSX.Element }) {
+  return (
+    <div>
+      <nav>{props.renderTab()}</nav>
+      <main>{props.renderTab()}</main>
+    </div>
+  );
+}
+```
+
+## Related
+
+- [Components](../concepts/components.md)
+
+<!-- source: errors/LUM2006.md -->
+
+<!-- Generated from crates/lumen_compiler/src/diagnostics/registry.rs by packages/lumen/scripts/gen-error-docs.ts. Edit the explanation below the end marker. -->
+
+# LUM2006: Reactive index escapes its callback
+
+**Severity:** warning · **Category:** reactivity (2xxx)
+
+<!-- end of generated header -->
+
+> The reactive index of a `.map()` row is used outside its row.
+
+**Reported by:** the compiler. A warning.
+
+## What it means
+
+In `{items().map((item, i) => …)}` the compiler makes `i` a reactive index that belongs to the row
+and updates when the row moves. Storing it in an outer variable, or capturing it in a callback that
+outlives the row, keeps a stale index.
+
+## Example
+
+```tsx
+let lastIndex = 0;
+export function List(props: { items: string[] }) {
+  return (
+    <ul>
+      {props.items.map((item, i) => {
+        lastIndex = i;
+        return <li>{item}</li>;
+      })}
+    </ul>
+  );
+}
+```
+
+## How to fix it
+
+Use the index only inside the row's JSX and handlers. To remember a position, store the item (or
+its key) and look it up when needed.
+
+## Related
+
+- [JSX: compiled idioms](../concepts/jsx.md)
+
+<!-- source: errors/LUM2007.md -->
+
+<!-- Generated from crates/lumen_compiler/src/diagnostics/registry.rs by packages/lumen/scripts/gen-error-docs.ts. Edit the explanation below the end marker. -->
+
+# LUM2007: Own signal read in an async body
+
+**Severity:** warning · **Category:** reactivity (2xxx)
+
+<!-- end of generated header -->
+
+> An async component reads a signal it created in its own body.
+
+**Reported by:** planned (not reported by this version). A warning.
+
+## What it means
+
+Signals read in an async component's body are tracked, and a change re-runs the component. Signals
+created in the body reset on each run. Reading such a signal in the body therefore re-runs the
+component whenever it changes, and the re-run re-creates the signal with its initial value: the
+update is lost.
+
+## Example
+
+```tsx
+export async function Book({ id }: { id: string }) {
+  const book = await fetchJSON<Book>(`/api/books/${id}`);
+  const open = signal(false);
+  if (open()) console.log("open");
+  return <button onClick={() => open.set(true)}>{book.title}</button>;
+}
+```
+
+## How to fix it
+
+Read the signal in JSX, handlers or effects, which are tracked separately from the body. If the
+value should survive re-runs, create the signal in a parent and pass it down.
+
+## Related
+
+- [Async components](../concepts/async.md)
+
+<!-- source: errors/LUM3005.md -->
+
+<!-- Generated from crates/lumen_compiler/src/diagnostics/registry.rs by packages/lumen/scripts/gen-error-docs.ts. Edit the explanation below the end marker. -->
+
+# LUM3005: Unused scoped selector
+
+**Severity:** warning · **Category:** styles (3xxx)
+
+<!-- end of generated header -->
+
+> A selector in a scoped `<style>` block matches no element of its scope.
+
+**Reported by:** the CSS compiler (`lumen_css`). The Vite plugin surfaces it once the CSS pipeline lands. A warning.
+
+## What it means
+
+A scoped block only styles the templates of its scope (the component, or the file). A selector
+whose classes, ids or tags never appear in those templates cannot match anything: usually a typo,
+leftover CSS, or a selector meant for a child component.
+
+## Example
+
+```stsx
+export function Card() {
+  return (
+    <div class="card">
+      <style>
+        .crad { padding: 1rem; }
+      </style>
+    </div>
+  );
+}
+```
+
+## How to fix it
+
+Fix the selector or delete the rule. To style an element rendered by a child component, pass it a
+`class` (class passthrough carries your scope) or use `:deep(.child)`. For classes added from
+outside the scope at runtime, use `:global(.name)`.
+
+## Related
+
+- [Styles](../concepts/styles.md)
+
+<!-- source: errors/LUM3008.md -->
+
+<!-- Generated from crates/lumen_compiler/src/diagnostics/registry.rs by packages/lumen/scripts/gen-error-docs.ts. Edit the explanation below the end marker. -->
+
+# LUM3008: Non-constant `$` reference
+
+**Severity:** error · **Category:** styles (3xxx)
+
+<!-- end of generated header -->
+
+> A `$name` reference in CSS does not resolve to a build-time constant.
+
+**Reported by:** planned (not reported by this version; such references are left unsubstituted).
+
+## What it means
+
+`$name` is inlined into the CSS at build time, so the value must be statically evaluable: a
+top-level `const`, a `const` of the enclosing component (component blocks only), or an
+`export const` of another module, made of literals, template literals of constants, simple
+arithmetic or members of `as const` objects. Signals, `let`s, function results and props are not.
+
+## Example
+
+```stsx
+export function Bar(props: { pct: number }) {
+  return (
+    <div class="bar">
+      <style>
+        .bar { inline-size: $props.pct; }
+      </style>
+    </div>
+  );
+}
+```
+
+## How to fix it
+
+Pass runtime values through a custom property:
+
+```stsx
+<div class="bar" style={{ "--pct": `${props.pct}%` }}>
+  <style>
+    .bar { inline-size: var(--pct); }
+  </style>
+</div>
+```
+
+## Related
+
+- [Styles: `$name` constants and runtime values](../concepts/styles.md)
+
+<!-- source: errors/LUM3009.md -->
+
+<!-- Generated from crates/lumen_compiler/src/diagnostics/registry.rs by packages/lumen/scripts/gen-error-docs.ts. Edit the explanation below the end marker. -->
+
+# LUM3009: Hyphenated `$` reference
+
+**Severity:** error · **Category:** styles (3xxx)
+
+<!-- end of generated header -->
+
+> A `$` reference is followed by a hyphen, as if the name contained one.
+
+**Reported by:** the CSS compiler (`lumen_css`). The Vite plugin surfaces it once the CSS pipeline lands.
+
+## What it means
+
+References are JS expressions: `$brand-primary` reads `$brand` followed by `-primary`, which is
+almost never intended (design-token names often contain hyphens).
+
+## Example
+
+```stsx
+const brand = { primary: "#4f46e5" } as const;
+
+<style>
+  a { color: $brand-primary; }
+</style>
+```
+
+## How to fix it
+
+Use an object member: `$brand.primary`. Name constants in camelCase or nest them in an `as const`
+object.
+
+## Related
+
+- [Styles](../concepts/styles.md)
+
+<!-- source: errors/LUM3010.md -->
+
+<!-- Generated from crates/lumen_compiler/src/diagnostics/registry.rs by packages/lumen/scripts/gen-error-docs.ts. Edit the explanation below the end marker. -->
+
+# LUM3010: Misplaced `<style>` block
+
+**Severity:** error · **Category:** styles (3xxx)
+
+<!-- end of generated header -->
+
+> A `<style>` block is in a position that has no well-defined scope.
+
+**Reported by:** the compiler (and the scanner for some positions).
+
+## What it means
+
+A block's scope comes from where it sits. Valid places are the module top level and inside a
+component's static JSX as a child of an intrinsic element or fragment, at any depth. Inside a
+component element (`<Suspense>`, `<Card>`), inside `{…}`, a conditional or a `.map()` callback, the
+block would be created or discarded at runtime, so it is rejected.
+
+## Example
+
+```stsx
+export function List(props: { items: string[] }) {
+  return (
+    <Suspense fallback={<p>…</p>}>
+      <ul>{props.items.map((item) => <li>{item}</li>)}</ul>
+      <style>
+        li { margin: 0; }
+      </style>
+    </Suspense>
+  );
+}
+```
+
+## How to fix it
+
+Move the block into an intrinsic element of the component (it styles the whole component anyway),
+or to the end of the file:
+
+```stsx
+export function List(props: { items: string[] }) {
+  return (
+    <section>
+      <Suspense fallback={<p>…</p>}>
+        <ul>{props.items.map((item) => <li>{item}</li>)}</ul>
+      </Suspense>
+      <style>
+        li { margin: 0; }
+      </style>
+    </section>
+  );
+}
+```
+
+## Related
+
+- [Styles: placement decides scope](../concepts/styles.md)
+
+<!-- source: errors/LUM3011.md -->
+
+<!-- Generated from crates/lumen_compiler/src/diagnostics/registry.rs by packages/lumen/scripts/gen-error-docs.ts. Edit the explanation below the end marker. -->
+
+# LUM3011: `<style>` as the root or in an expression
+
+**Severity:** error · **Category:** styles (3xxx)
+
+<!-- end of generated header -->
+
+> A `<style>` block is the root of a component's output, or is used as an expression.
+
+**Reported by:** the scanner and the compiler.
+
+## What it means
+
+A block is not an element: it renders nothing and only attaches CSS to its scope. `return
+<style>…</style>`, `() => <style>…</style>` or `const css = <style>…</style>` therefore have no
+
+element to attach to. (For tools, the block is masked to `null` so parsing continues.)
+
+## Example
+
+```stsx
+export function Theme() {
+  return (
+    <style>
+      :root { --accent: tomato; }
+    </style>
+  );
+}
+```
+
+## How to fix it
+
+Put the block inside the element the component returns, at the file top level, or make it global
+in a layout:
+
+```stsx
+<style global>
+  :root { --accent: tomato; }
+</style>
+```
+
+## Related
+
+- [Styles](../concepts/styles.md)
+
+<!-- source: errors/LUM3012.md -->
+
+<!-- Generated from crates/lumen_compiler/src/diagnostics/registry.rs by packages/lumen/scripts/gen-error-docs.ts. Edit the explanation below the end marker. -->
+
+# LUM3012: Custom property set but never read
+
+**Severity:** warning · **Category:** styles (3xxx)
+
+<!-- end of generated header -->
+
+> A custom property is set in a component's `style` prop but no CSS reads it.
+
+**Reported by:** the CSS compiler (`lumen_css`). The Vite plugin surfaces it once the CSS pipeline lands. A warning.
+
+## What it means
+
+Runtime values reach CSS through custom properties: `style={{ "--progress": pct() }}` plus
+`var(--progress)` in a block. A property that is set but never read with `var()` in the scope's
+CSS does nothing: usually a typo or leftover code.
+
+## Example
+
+```stsx
+export function Bar(props: { pct: number }) {
+  return (
+    <div class="bar" style={{ "--progres": `${props.pct}%` }}>
+      <style>
+        .bar { inline-size: var(--progress); }
+      </style>
+    </div>
+  );
+}
+```
+
+## How to fix it
+
+Make the names match, or remove the unused property. Properties consumed by global CSS or other
+components are fine to keep; the warning only knows the CSS of the scope.
+
+## Related
+
+- [Styles: runtime values](../concepts/styles.md)
+
+<!-- source: errors/LUM3013.md -->
+
+<!-- Generated from crates/lumen_compiler/src/diagnostics/registry.rs by packages/lumen/scripts/gen-error-docs.ts. Edit the explanation below the end marker. -->
+
+# LUM3013: `$` reference before its declaration
+
+**Severity:** error · **Category:** styles (3xxx)
+
+<!-- end of generated header -->
+
+> A top-level `<style>` block references a `const` declared after it.
+
+**Reported by:** the compiler.
+
+## What it means
+
+Top-level blocks are masked into the module as statements that read their references, so a
+reference before the `const` declaration would be a temporal-dead-zone error in the code
+TypeScript checks.
+
+## Example
+
+```stsx
+<style>
+  .card { border-radius: $radius; }
+</style>
+
+const radius = "12px";
+```
+
+## How to fix it
+
+Move the block below the declarations it references. By convention, top-level blocks go at the end
+of the file.
+
+## Related
+
+- [Styles](../concepts/styles.md)
+
+<!-- source: errors/LUM3014.md -->
+
+<!-- Generated from crates/lumen_compiler/src/diagnostics/registry.rs by packages/lumen/scripts/gen-error-docs.ts. Edit the explanation below the end marker. -->
+
+# LUM3014: CSS syntax error
+
+**Severity:** error · **Category:** styles (3xxx)
+
+<!-- end of generated header -->
+
+> Lightning CSS could not parse a `<style>` block, or could not minify or print it.
+
+**Reported by:** the CSS compiler (`lumen_css`). The Vite plugin surfaces it once the CSS pipeline lands.
+
+## What it means
+
+Blocks are plain CSS, compiled by Lightning CSS. A syntax error it cannot recover from (an
+unbalanced brace, an unterminated string, an invalid at-rule prelude) stops the block from
+compiling. The message is Lightning CSS's own and points at the CSS.
+
+## Example
+
+```stsx
+export function Card() {
+  return (
+    <div class="card">
+      <style>
+        .card { padding: 1rem;
+      </style>
+    </div>
+  );
+}
+```
+
+## How to fix it
+
+Fix the CSS at the reported position. Sass syntax (`$variables` with values, `@mixin`, `@include`)
+is not CSS; `$name` only reads JS constants. CSS nesting is supported.
+
+## Related
+
+- [Styles](../concepts/styles.md)
+
+<!-- source: errors/LUM3015.md -->
+
+<!-- Generated from crates/lumen_compiler/src/diagnostics/registry.rs by packages/lumen/scripts/gen-error-docs.ts. Edit the explanation below the end marker. -->
+
+# LUM3015: Invalid CSS ignored
+
+**Severity:** warning · **Category:** styles (3xxx)
+
+<!-- end of generated header -->
+
+> Lightning CSS dropped an invalid rule, declaration or selector from a `<style>` block.
+
+**Reported by:** the CSS compiler (`lumen_css`). The Vite plugin surfaces it once the CSS pipeline lands. A warning.
+
+## What it means
+
+Like browsers, Lightning CSS skips what it cannot parse and keeps the rest: for example a rule
+whose selector uses an unknown pseudo-class, or a malformed at-rule. The output works, but without
+the dropped part, which is usually a typo.
+
+## Example
+
+```stsx
+<style>
+  .card { padding: 1rem; }
+  .card:hoverr { color: blue; }
+</style>
+```
+
+## How to fix it
+
+Fix or remove the reported rule or selector (`.card:hover`). If it targets a newer browser feature on
+purpose, check the configured browser targets.
+
+## Related
+
+- [Styles](../concepts/styles.md)
+
+<!-- source: errors/LUM3016.md -->
+
+<!-- Generated from crates/lumen_compiler/src/diagnostics/registry.rs by packages/lumen/scripts/gen-error-docs.ts. Edit the explanation below the end marker. -->
+
+# LUM3016: Invalid `:global()` or `:deep()` selector
+
+**Severity:** error · **Category:** styles (3xxx)
+
+<!-- end of generated header -->
+
+> A `:global()` or `:deep()` selector is malformed.
+
+**Reported by:** the CSS compiler (`lumen_css`). The Vite plugin surfaces it once the CSS pipeline lands.
+
+## What it means
+
+`:global(sel)` leaves `sel` unscoped, and `:deep(sel)` scopes only the part of the selector before
+it so that `sel` can match inside child components. Both need a selector argument, and a selector
+may contain at most one `:deep()`, not nested in another.
+
+## Example
+
+```stsx
+<style>
+  :global { color: red; }
+  .list :deep(.item :deep(.icon)) { inline-size: 1rem; }
+</style>
+```
+
+## How to fix it
+
+Give the pseudo-class an argument (`:global(.toast)`), and use a single, top-level `:deep()` per
+selector (`.list :deep(.item .icon)`). For app-wide CSS, prefer a `<style global>` block.
+
+## Related
+
+- [Styles: how scoping works](../concepts/styles.md)
+
+<!-- source: errors/LUM4001.md -->
+
+<!-- Generated from crates/lumen_compiler/src/diagnostics/registry.rs by packages/lumen/scripts/gen-error-docs.ts. Edit the explanation below the end marker. -->
+
+# LUM4001: Island component is not exported
+
+**Severity:** error · **Category:** islands and boundaries (4xxx)
+
+<!-- end of generated header -->
+
+> A component used as an island (`client:*`) is not exported from its module.
+
+**Reported by:** the compiler.
+
+## What it means
+
+An island's server record names its module and export (`/src/Counter.stsx#Counter`), and the
+browser imports that export to hydrate it. A component that is not exported cannot be imported.
+
+## Example
+
+```stsx
+function Counter() {
+  return <button>0</button>;
+}
+
+export default function Page() {
+  return <Counter client:load />;
+}
+```
+
+## How to fix it
+
+Export the component: `export function Counter() { … }`. It may stay in the same file.
+
+## Related
+
+- [Islands](../concepts/islands.md)
+
+<!-- source: errors/LUM4002.md -->
+
+<!-- Generated from crates/lumen_compiler/src/diagnostics/registry.rs by packages/lumen/scripts/gen-error-docs.ts. Edit the explanation below the end marker. -->
+
+# LUM4002: Non-serializable island prop
+
+**Severity:** error · **Category:** islands and boundaries (4xxx)
+
+<!-- end of generated header -->
+
+> An island prop (or SPA route data) is not serializable.
+
+**Reported by:** the server runtime, with the path of the offending value.
+
+## What it means
+
+Island props travel from the server to the browser as data-only JSON. Supported: JSON values plus
+`undefined`, `NaN`/`Infinity`, `BigInt`, `Date`, `URL`, `Map` and `Set`. Functions, symbols, class
+instances, promises and cycles cannot be serialized. SPA routes get the same rule for their data,
+so `request`, `cookies` and `locals` are not passed in.
+
+## Example
+
+```stsx
+export default function Page() {
+  return <Editor client:load onSave={(text: string) => save(text)} />;
+}
+```
+
+## How to fix it
+
+Pass data only. Do the work inside the island (it can call an endpoint with `fetchJSON` or post a
+form with `submit()`), or convert values to plain objects before passing them.
+
+## Related
+
+- [Islands](../concepts/islands.md)
+- [Data and actions](../concepts/data-and-actions.md)
+
+<!-- source: errors/LUM4003.md -->
+
+<!-- Generated from crates/lumen_compiler/src/diagnostics/registry.rs by packages/lumen/scripts/gen-error-docs.ts. Edit the explanation below the end marker. -->
+
+# LUM4003: Server-only module in a client graph
+
+**Severity:** error · **Category:** islands and boundaries (4xxx)
+
+<!-- end of generated header -->
+
+> Server-only code is reachable from the browser.
+
+**Reported by:** the runtime: server-only APIs (`request()`, `cookies()`, `env()`, `renderToString()`, …) throw it in the browser build. The build-time check of import graphs is planned.
+
+## What it means
+
+`*.server.ts` modules, everything under `src/server/`, and the request APIs only exist on the
+server. Importing them into code that reaches the browser (islands, SPA routes, their imports)
+would leak server code and secrets, or fail at runtime.
+
+## Example
+
+```stsx
+import { db } from "../server/db.server.ts";
+
+export function Likes() {
+  return <button onClick={() => db.like()}>Like</button>;
+}
+```
+
+## How to fix it
+
+Keep the server code on the server and call it over HTTP: expose an endpoint (or a form action) and
+call it with `fetchJSON` or `submit()` from the island. In client code, read public config from
+`import.meta.env.PUBLIC_*` instead of `env()`.
+
+## Related
+
+- [Islands](../concepts/islands.md)
+- [Server](../concepts/server.md)
+- [Data and actions](../concepts/data-and-actions.md)
+
+<!-- source: errors/LUM4004.md -->
+
+<!-- Generated from crates/lumen_compiler/src/diagnostics/registry.rs by packages/lumen/scripts/gen-error-docs.ts. Edit the explanation below the end marker. -->
+
+# LUM4004: Browser API at module scope
+
+**Severity:** warning · **Category:** islands and boundaries (4xxx)
+
+<!-- end of generated header -->
+
+> A module that runs on the server uses a browser API at module scope.
+
+**Reported by:** planned (not reported by this version). A warning.
+
+## What it means
+
+Components are imported on the server for SSR. `window`, `document`, `localStorage` and similar
+globals do not exist there, so touching them while the module loads crashes the server render.
+
+## Example
+
+```tsx
+const saved = localStorage.getItem("theme");
+
+export function ThemeToggle() {
+  return <button>{saved}</button>;
+}
+```
+
+## How to fix it
+
+Read browser APIs inside `onMount`, an effect or an event handler, which only run in the browser:
+
+```tsx
+export function ThemeToggle() {
+  const theme = signal("light");
+  onMount(() => theme.set(localStorage.getItem("theme") ?? "light"));
+  return <button>{theme()}</button>;
+}
+```
+
+## Related
+
+- [Islands](../concepts/islands.md)
+- [Signals: onMount](../concepts/signals.md)
+
+<!-- source: errors/LUM4006.md -->
+
+<!-- Generated from crates/lumen_compiler/src/diagnostics/registry.rs by packages/lumen/scripts/gen-error-docs.ts. Edit the explanation below the end marker. -->
+
+# LUM4006: Hydration mismatch
+
+**Severity:** error · **Category:** islands and boundaries (4xxx)
+
+<!-- end of generated header -->
+
+> The DOM the server rendered does not match what the client renders while hydrating.
+
+**Reported by:** planned with the island loader; in dev it will be reported, in production the range is client-rendered instead.
+
+## What it means
+
+Hydration claims server-rendered nodes in order. If the client renders a different structure (other
+elements, a different branch, a different list length), or an async component's recorded await does
+not match its replay key, claiming fails.
+
+## Example
+
+```tsx
+export function Greeting() {
+  return <p>{Math.random() > 0.5 ? <b>Hi</b> : <i>Hello</i>}</p>;
+}
+```
+
+## How to fix it
+
+Render the same output on both sides for the same props: move non-deterministic values
+(`Math.random()`, `Date.now()`, `window` sizes, locale-dependent formatting) into `onMount` or
+effects, or compute them on the server and pass them as props. Keep awaits in a stable order.
+
+## Related
+
+- [Islands](../concepts/islands.md)
+- [Rendering modes: hydration](../concepts/rendering-modes.md)
+- [Async components](../concepts/async.md)
+
+<!-- source: errors/LUM4007.md -->
+
+<!-- Generated from crates/lumen_compiler/src/diagnostics/registry.rs by packages/lumen/scripts/gen-error-docs.ts. Edit the explanation below the end marker. -->
+
+# LUM4007: Non-serializable awaited value
+
+**Severity:** error · **Category:** islands and boundaries (4xxx)
+
+<!-- end of generated header -->
+
+> A value awaited inside an island is not plain data.
+
+**Reported by:** the server runtime, with the path of the offending value.
+
+## What it means
+
+Values awaited in an island's async components are recorded during SSR and replayed during
+hydration, so they are serialized into the page. A `Response`, a class instance, a function or a
+stream cannot be.
+
+## Example
+
+```tsx
+export async function Stock({ sku }: { sku: string }) {
+  const res = await fetch(`/api/stock/${sku}`);
+  const data = await res.json();
+  return <p>{data.count}</p>;
+}
+```
+
+## How to fix it
+
+Await plain data: `const data = await fetchJSON<Stock>(`/api/stock/${sku}`)`. Remember that every
+value awaited inside an island ends up in the HTML; never await secrets there.
+
+## Related
+
+- [Async components](../concepts/async.md)
+- [Islands](../concepts/islands.md)
+
+<!-- source: errors/LUM4008.md -->
+
+<!-- Generated from crates/lumen_compiler/src/diagnostics/registry.rs by packages/lumen/scripts/gen-error-docs.ts. Edit the explanation below the end marker. -->
+
+# LUM4008: Module-scope signal written during SSR
+
+**Severity:** warning · **Category:** islands and boundaries (4xxx)
+
+<!-- end of generated header -->
+
+> A module-scope signal is written during a server render.
+
+**Reported by:** planned (not reported by this version). A warning.
+
+## What it means
+
+Modules are loaded once per server process, so a signal declared at module scope is shared by every
+request. Writing it during SSR leaks one user's state into another user's page.
+
+## Example
+
+```tsx
+const currentUser = signal<string | null>(null);
+
+export function Header(props: { user: string }) {
+  currentUser.set(props.user);
+  return <p>{currentUser()}</p>;
+}
+```
+
+## How to fix it
+
+Keep request state in components, props or context (`provide`/`inject`), or in `locals` on the
+server. Module-scope signals are fine for browser-only state.
+
+## Related
+
+- [Signals and reactivity](../concepts/signals.md)
+- [Server](../concepts/server.md)
+
+<!-- source: errors/LUM5001.md -->
+
+<!-- Generated from crates/lumen_compiler/src/diagnostics/registry.rs by packages/lumen/scripts/gen-error-docs.ts. Edit the explanation below the end marker. -->
+
+# LUM5001: Request API used during prerender
+
+**Severity:** error · **Category:** routing and server (5xxx)
+
+<!-- end of generated header -->
+
+> A request API is used while a `static` route is prerendered.
+
+**Reported by:** planned with prerendering (`lumen build`).
+
+## What it means
+
+`static` routes (the default) are rendered at build time, where there is no request: no cookies,
+headers, query string or `locals`. Using `request()`, `cookies()`, `locals()`, a form action or
+`response()` there cannot work.
+
+## Example
+
+```tsx
+export default function Home() {
+  const theme = cookies().get("theme");
+  return <h1 class={theme}>Home</h1>;
+}
+```
+
+## How to fix it
+
+Render the route per request: `export const mode = "server";`. Or keep the route static and move
+the request-dependent part into an island that reads it in the browser or calls an endpoint.
+
+## Related
+
+- [Rendering modes](../concepts/rendering-modes.md)
+- [Server](../concepts/server.md)
+
+<!-- source: errors/LUM5002.md -->
+
+<!-- Generated from crates/lumen_compiler/src/diagnostics/registry.rs by packages/lumen/scripts/gen-error-docs.ts. Edit the explanation below the end marker. -->
+
+# LUM5002: Invalid route file
+
+**Severity:** error · **Category:** routing and server (5xxx)
+
+<!-- end of generated header -->
+
+> A file under `src/routes` is not a valid route file.
+
+**Reported by:** the route scanner (`lumen check`, typegen, dev server).
+
+## What it means
+
+Every file under `src/routes` is a route: pages (`.stsx`, `.tsx`), endpoints (`.ts`), or the special
+`_layout`, `_404` and `_error` pages. The message says which rule failed, for example:
+
+- a name starting with `_` other than `_layout`, `_404`, `_error`;
+- a special file that is not a page (`_layout.ts`);
+- an invalid segment (`[]`, `[a-b]`, a group used as a file name, unsafe characters);
+- `export const mode` that is not a string literal of `static`, `server` or `spa`, or `ssr` that is
+  not `true`/`false`, or `let` instead of `const`.
+
+## Example
+
+```
+src/routes/_helpers.ts       not a route file
+src/routes/(admin).stsx      route groups must be folders
+```
+
+## How to fix it
+
+Follow the `help` text. Move shared modules out of `src/routes` (to `src/lib` or
+`src/components`), make groups folders (`(admin)/index.stsx`), and declare `export const mode =
+"server";` with a literal.
+
+## Related
+
+- [Routing](../concepts/routing.md)
+- [Rendering modes](../concepts/rendering-modes.md)
+
+<!-- source: errors/LUM5003.md -->
+
+<!-- Generated from crates/lumen_compiler/src/diagnostics/registry.rs by packages/lumen/scripts/gen-error-docs.ts. Edit the explanation below the end marker. -->
+
+# LUM5003: Duplicate route
+
+**Severity:** error · **Category:** routing and server (5xxx)
+
+<!-- end of generated header -->
+
+> Two route files produce the same URL pattern.
+
+**Reported by:** the route scanner (`lumen check`, typegen, dev server).
+
+## What it means
+
+Each URL pattern must come from one file. Groups add no segment and `index` maps to its folder, so
+different paths can collide.
+
+## Example
+
+```
+src/routes/blog.stsx
+src/routes/blog/index.stsx            both are /blog
+src/routes/(shop)/cart.stsx
+src/routes/cart.stsx                  both are /cart
+```
+
+## How to fix it
+
+Delete or rename one of the files. Param names do not distinguish routes: `[id].stsx` and
+`[slug].stsx` in the same folder also collide.
+
+## Related
+
+- [Routing](../concepts/routing.md)
+
+<!-- source: errors/LUM5004.md -->
+
+<!-- Generated from crates/lumen_compiler/src/diagnostics/registry.rs by packages/lumen/scripts/gen-error-docs.ts. Edit the explanation below the end marker. -->
+
+# LUM5004: Head or status change inside a streamed boundary
+
+**Severity:** error · **Category:** routing and server (5xxx)
+
+<!-- end of generated header -->
+
+> The status, headers, cookies or head changed after the SSR shell was sent.
+
+**Reported by:** the server runtime.
+
+## What it means
+
+A `server` response starts with the shell: everything outside `<Suspense>`. Once it is sent, the
+status line, headers (including `Set-Cookie`) and `<head>` are on the wire. Content inside a
+streamed `<Suspense>` boundary that calls `response().setStatus()`, `setHeader()`, `cookies().set()`,
+`redirect()`, or renders `<Title>`/`<Meta>`/`<Head>` is too late.
+
+## Example
+
+```tsx
+export default function Product() {
+  return (
+    <Suspense fallback={<p>Loading…</p>}>
+      <Details />
+    </Suspense>
+  );
+}
+
+async function Details() {
+  const product = await fetchJSON<Product>("/api/product");
+  return <Title>{product.name}</Title>;
+}
+```
+
+## How to fix it
+
+Decide status, headers, cookies and head content in the shell: in middleware, in `headers(ctx)`,
+or in components outside `<Suspense>` (an async component without a boundary holds the shell until
+it resolves). Keep `<Suspense>` for content that can stream.
+
+## Related
+
+- [Rendering modes: shell first, then stream](../concepts/rendering-modes.md)
+- [Head and document](../concepts/head.md)
+- [Server](../concepts/server.md)
+
+<!-- source: errors/README.md -->
+
+<!-- Generated from crates/lumen_compiler/src/diagnostics/registry.rs by packages/lumen/scripts/gen-error-docs.ts. Edit the explanation below the end marker. -->
+
+# Diagnostics
+
+> Every `LUMxxxx` code the Lumen tools report, with its long-form explanation.
+
+Codes are stable forever and never reused. Print one with `lumen explain LUM1004`, or open
+`errors/LUM1004.md`. Each diagnostic carries `{ code, severity, message, span, labels, help,
+fix?, docs }`; `lumen check --format json` prints them.
+
+## File format (1xxx)
+
+| Code                  | Severity | Title                                |
+| --------------------- | -------- | ------------------------------------ |
+| [LUM1001](LUM1001.md) | error    | Syntax error                         |
+| [LUM1002](LUM1002.md) | error    | Unsupported by this compiler version |
+| [LUM1003](LUM1003.md) | warning  | Scanner ambiguity                    |
+| [LUM1004](LUM1004.md) | error    | Unclosed `<style>` block             |
+| [LUM1005](LUM1005.md) | error    | Unknown `<style>` attribute          |
+| [LUM1006](LUM1006.md) | error    | Raw CSS in a `.tsx` file             |
+| [LUM1007](LUM1007.md) | error    | `await using` in a component         |
+
+## Reactivity (2xxx)
+
+| Code                  | Severity | Title                               |
+| --------------------- | -------- | ----------------------------------- |
+| [LUM2001](LUM2001.md) | warning  | Stale derived value                 |
+| [LUM2002](LUM2002.md) | error    | Signal write during render          |
+| [LUM2003](LUM2003.md) | error    | Reactive early return               |
+| [LUM2004](LUM2004.md) | error    | Component called as a function      |
+| [LUM2005](LUM2005.md) | warning  | Children inserted twice             |
+| [LUM2006](LUM2006.md) | warning  | Reactive index escapes its callback |
+| [LUM2007](LUM2007.md) | warning  | Own signal read in an async body    |
+
+## Styles (3xxx)
+
+| Code                  | Severity | Title                                     |
+| --------------------- | -------- | ----------------------------------------- |
+| [LUM3005](LUM3005.md) | warning  | Unused scoped selector                    |
+| [LUM3008](LUM3008.md) | error    | Non-constant `$` reference                |
+| [LUM3009](LUM3009.md) | error    | Hyphenated `$` reference                  |
+| [LUM3010](LUM3010.md) | error    | Misplaced `<style>` block                 |
+| [LUM3011](LUM3011.md) | error    | `<style>` as the root or in an expression |
+| [LUM3012](LUM3012.md) | warning  | Custom property set but never read        |
+| [LUM3013](LUM3013.md) | error    | `$` reference before its declaration      |
+| [LUM3014](LUM3014.md) | error    | CSS syntax error                          |
+| [LUM3015](LUM3015.md) | warning  | Invalid CSS ignored                       |
+| [LUM3016](LUM3016.md) | error    | Invalid `:global()` or `:deep()` selector |
+
+## Islands and boundaries (4xxx)
+
+| Code                  | Severity | Title                                  |
+| --------------------- | -------- | -------------------------------------- |
+| [LUM4001](LUM4001.md) | error    | Island component is not exported       |
+| [LUM4002](LUM4002.md) | error    | Non-serializable island prop           |
+| [LUM4003](LUM4003.md) | error    | Server-only module in a client graph   |
+| [LUM4004](LUM4004.md) | warning  | Browser API at module scope            |
+| [LUM4006](LUM4006.md) | error    | Hydration mismatch                     |
+| [LUM4007](LUM4007.md) | error    | Non-serializable awaited value         |
+| [LUM4008](LUM4008.md) | warning  | Module-scope signal written during SSR |
+
+## Routing and server (5xxx)
+
+| Code                  | Severity | Title                                            |
+| --------------------- | -------- | ------------------------------------------------ |
+| [LUM5001](LUM5001.md) | error    | Request API used during prerender                |
+| [LUM5002](LUM5002.md) | error    | Invalid route file                               |
+| [LUM5003](LUM5003.md) | error    | Duplicate route                                  |
+| [LUM5004](LUM5004.md) | error    | Head or status change inside a streamed boundary |
+

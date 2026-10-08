@@ -17,8 +17,20 @@ async function run() {
   const document = await vscode.workspace.openTextDocument(card);
   await vscode.window.showTextDocument(document);
   assert.equal(document.languageId, "stsx", ".stsx files get the stsx language");
-  await extension.activate();
+  const api = await extension.activate();
   log("activated");
+
+  // Which server the extension launched: the workspace's @lumen/language-server (TS sources on
+  // `node`), or the one bundled in the .vsix on VS Code's own Node.js (scripts/test-vscode.ts).
+  const expected = process.env["LUMEN_SMOKE_EXPECT_SERVER"];
+  const server = api.server();
+  assert.ok(server, "a language server was started");
+  if (expected) assert.equal(server.source, expected, `the ${expected} server is used`);
+  if (server.source === "bundled") {
+    assert.match(server.path, /[\\/]server[\\/]bin\.mjs$/);
+    assert.match(server.runtime, /^VS Code's Node\.js/);
+  }
+  log(`server: ${server.source} (${server.path}) on ${server.runtime}`);
 
   // Grammar, as VS Code tokenizes it (the internal command behind VS Code's colorize tests).
   const tokens = await vscode.commands.executeCommand("_workbench.captureSyntaxTokens", card);
@@ -31,7 +43,7 @@ async function run() {
   assert.match(scopesOf("Card"), /entity\.name\.function\.tsx/);
   log(`grammar: ${tokens.length} tokens`);
 
-  // LSP client → @lumen/language-server (resolved from the workspace) → TypeScript 7.
+  // LSP client → the Lumen language server → TypeScript 7 (the workspace's typescript).
   const text = document.getText();
   const refHover = await hoverText(card, document.positionAt(text.indexOf("$gap") + 2));
   assert.match(refHover, /\b8\b/, "hover on a $ref shows its folded value");

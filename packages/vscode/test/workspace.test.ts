@@ -3,11 +3,14 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, test } from "vitest";
 import {
+  BUNDLED_SERVER,
   documentLanguages,
   resolveServerEntry,
+  serverRuntime,
   shouldPromptTakeover,
   takeoverActive,
   usesLumen,
+  type ServerSource,
 } from "../src/workspace.ts";
 
 const temps: string[] = [];
@@ -71,12 +74,39 @@ describe("resolveServerEntry", () => {
 
   test("falls back to a bundled server, else undefined", () => {
     const root = project({ "package.json": "{}" });
-    const extension = project({ "server/bin.js": "" });
+    const extension = project({ [BUNDLED_SERVER]: "" });
     expect(resolveServerEntry({ folders: [root], extensionPath: extension })).toEqual({
-      path: join(extension, "server/bin.js"),
+      path: join(extension, "server/bin.mjs"),
       source: "bundled",
     });
     expect(resolveServerEntry({ folders: [root], extensionPath: root })).toBeUndefined();
+  });
+});
+
+function entry(source: ServerSource) {
+  return { path: "/x/bin", source };
+}
+
+describe("serverRuntime", () => {
+  test("runs the bundled server on VS Code's Node.js, others on node", () => {
+    expect(serverRuntime(entry("bundled"), undefined)).toEqual({ kind: "vscode" });
+    expect(serverRuntime(entry("bundled"), " ")).toEqual({ kind: "vscode" });
+    expect(serverRuntime(entry("workspace"), "")).toEqual({ kind: "executable", command: "node" });
+    expect(serverRuntime(entry("setting"), undefined)).toEqual({
+      kind: "executable",
+      command: "node",
+    });
+  });
+
+  test("lumen.server.runtime wins for every server", () => {
+    expect(serverRuntime(entry("bundled"), "/opt/node24/bin/node")).toEqual({
+      kind: "executable",
+      command: "/opt/node24/bin/node",
+    });
+    expect(serverRuntime(entry("workspace"), "bun")).toEqual({
+      kind: "executable",
+      command: "bun",
+    });
   });
 });
 

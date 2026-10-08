@@ -1,0 +1,76 @@
+# Lumen
+
+> Lumen is a TypeScript 7-first web framework: `.stsx` components (TSX plus raw-CSS `<style>` blocks), setup-once components with signals, and server-first rendering with islands.
+
+These docs match lumen 0.0.0. Installed projects have them in `node_modules/lumen/docs`;
+`lumen docs <topic>` prints one and `lumen explain <code>` explains a diagnostic.
+
+## Start here
+
+- [Getting started](getting-started.md): Create a project, configure TypeScript and Vite, and render a first component.
+
+## Concepts
+
+- [Components](concepts/components.md): Setup-once function components, props, children, refs and the `.stsx`/`.tsx`/`.ts` file types.
+- [Signals and reactivity](concepts/signals.md): `signal`, `computed`, `effect`, `store`, owners, context and scheduling.
+- [JSX](concepts/jsx.md): Bindings, compiled idioms (`.map`, ternaries), `class`, `style`, events, `bind:`, `attach` and `ref`.
+- [Styles](concepts/styles.md): Raw-CSS `<style>` blocks scoped by placement, `<style global>`, `$name` constants and runtime values.
+- [Async components](concepts/async.md): `async` components on server and client, `<Suspense>`, `<ErrorBoundary>`, re-runs and in-flight state.
+- [Islands](concepts/islands.md): `client:*` directives, serializable props, slots and server-only boundaries.
+- [Routing](concepts/routing.md): File routes, layouts, params, typed `href()`, error pages and the SPA router.
+- [Data and actions](concepts/data-and-actions.md): Read data with async components, serve endpoints, mutate with form actions and `submit()`.
+- [Server](concepts/server.md): Request context, middleware, cookies, env, redirects and error helpers.
+- [Rendering modes](concepts/rendering-modes.md): `static`, `server` and `spa` routes, shell-first streaming, hydration and the build.
+- [Head and document](concepts/head.md): `<Title>`, `<Meta>`, `<Head>` and a custom `document.stsx`.
+- [Compiler and diagnostics](concepts/compiler.md): What the compiler does with `.stsx`/`.tsx`, and how `LUMxxxx` diagnostics work.
+- [Testing](concepts/testing.md): Test components with Vitest and the Lumen Vite plugin.
+
+## Reference
+
+- [`lumen`: reactivity](reference/reactivity.md): `signal`, `computed`, `effect`, `batch`, `flushSync`, `untrack`, `store`, owners, context, `pending`, `busy`, `resource`.
+- [`lumen`: components](reference/components.md): `Suspense`, `ErrorBoundary`, `Portal`, `Dynamic`, `ref`, `Head`, `Title`, `Meta`.
+- [`lumen`: app layer](reference/app.md): `fetchJSON`, `submit`, `submitting`, `actionData`, `invalidate`, `fail`, `redirect`, `notFound`, `error`, `href`, request APIs and types.
+- [`lumen`: server rendering](reference/server.md): `renderToStream`, `renderToString` and the `lumen/server` subpath.
+- [`lumen/dom`](reference/dom.md): `mount` and the compiler-runtime contract.
+- [`lumen/router`](reference/router.md): The SPA router: `Link`, `navigate`, `navigating` and reactive route state.
+- [`lumen/vite`](reference/vite.md): The Vite plugin and its options.
+- [JSX types and tsconfig](reference/jsx.md): `lumen/jsx-runtime`, `lumen/env` and the required `tsconfig.json`.
+- [CLI](reference/cli.md): `lumen check`, `lint`, `fmt`, `docs` and `explain`.
+
+## Diagnostics
+
+- [LUM1001: Syntax error](errors/LUM1001.md)
+- [LUM1002: Unsupported by this compiler version](errors/LUM1002.md)
+- [LUM1003: Scanner ambiguity](errors/LUM1003.md)
+- [LUM1004: Unclosed `<style>` block](errors/LUM1004.md)
+- [LUM1005: Unknown `<style>` attribute](errors/LUM1005.md)
+- [LUM1006: Raw CSS in a `.tsx` file](errors/LUM1006.md)
+- [LUM1007: `await using` in a component](errors/LUM1007.md)
+- [LUM2001: Stale derived value](errors/LUM2001.md)
+- [LUM2002: Signal write during render](errors/LUM2002.md)
+- [LUM2003: Reactive early return](errors/LUM2003.md)
+- [LUM2004: Component called as a function](errors/LUM2004.md)
+- [LUM2005: Children inserted twice](errors/LUM2005.md)
+- [LUM2006: Reactive index escapes its callback](errors/LUM2006.md)
+- [LUM2007: Own signal read in an async body](errors/LUM2007.md)
+- [LUM3005: Unused scoped selector](errors/LUM3005.md)
+- [LUM3008: Non-constant `$` reference](errors/LUM3008.md)
+- [LUM3009: Hyphenated `$` reference](errors/LUM3009.md)
+- [LUM3010: Misplaced `<style>` block](errors/LUM3010.md)
+- [LUM3011: `<style>` as the root or in an expression](errors/LUM3011.md)
+- [LUM3012: Custom property set but never read](errors/LUM3012.md)
+- [LUM3013: `$` reference before its declaration](errors/LUM3013.md)
+- [LUM3014: CSS syntax error](errors/LUM3014.md)
+- [LUM3015: Invalid CSS ignored](errors/LUM3015.md)
+- [LUM3016: Invalid `:global()` or `:deep()` selector](errors/LUM3016.md)
+- [LUM4001: Island component is not exported](errors/LUM4001.md)
+- [LUM4002: Non-serializable island prop](errors/LUM4002.md)
+- [LUM4003: Server-only module in a client graph](errors/LUM4003.md)
+- [LUM4004: Browser API at module scope](errors/LUM4004.md)
+- [LUM4006: Hydration mismatch](errors/LUM4006.md)
+- [LUM4007: Non-serializable awaited value](errors/LUM4007.md)
+- [LUM4008: Module-scope signal written during SSR](errors/LUM4008.md)
+- [LUM5001: Request API used during prerender](errors/LUM5001.md)
+- [LUM5002: Invalid route file](errors/LUM5002.md)
+- [LUM5003: Duplicate route](errors/LUM5003.md)
+- [LUM5004: Head or status change inside a streamed boundary](errors/LUM5004.md)

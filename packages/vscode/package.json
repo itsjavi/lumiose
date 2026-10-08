@@ -21,7 +21,7 @@
   "main": "./dist/extension.cjs",
   "scripts": {
     "build": "node scripts/build.ts",
-    "package": "node scripts/build.ts && vsce package --no-dependencies --allow-missing-repository --skip-license --out lumen-vscode.vsix",
+    "package": "node scripts/package.ts",
     "typecheck": "tsc -p tsconfig.json",
     "test": "vitest run",
     "test:vscode": "pnpm run package && node scripts/test-vscode.ts"
@@ -149,13 +149,13 @@
           "type": "string",
           "default": "",
           "scope": "machine-overridable",
-          "markdownDescription": "Path to the language server entry (`@lumen/language-server`'s `src/bin.ts` or a built `.js`), absolute or relative to the first workspace folder. Empty: resolve `@lumen/language-server` from the workspace, then the copy bundled with the extension."
+          "markdownDescription": "Path to the language server entry (`@lumen/language-server`'s `src/bin.ts` or a built `.js`/`.mjs`), absolute or relative to the first workspace folder. Empty: resolve `@lumen/language-server` from the workspace, then use the copy bundled with the extension."
         },
         "lumen.server.runtime": {
           "type": "string",
-          "default": "node",
+          "default": "",
           "scope": "machine-overridable",
-          "markdownDescription": "The Node.js executable that runs the language server. It must be Node ≥ 24, which runs the server's TypeScript sources natively."
+          "markdownDescription": "The Node.js executable that runs the language server. Empty: VS Code's own Node.js for the server bundled with the extension, and `node` from `PATH` for a workspace or `lumen.server.path` server, which runs from TypeScript sources and needs Node ≥ 24."
         },
         "lumen.trace.server": {
           "type": "string",

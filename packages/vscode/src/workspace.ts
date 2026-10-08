@@ -20,7 +20,7 @@ export interface ResolveServerOptions {
   configured?: string | undefined;
   /** Workspace folder paths. */
   folders: readonly string[];
-  /** The extension's install directory (a bundled server lives in `server/`). */
+  /** The extension's install directory (a bundled server lives in `server/`, see `BUNDLED_SERVER`). */
   extensionPath: string;
 }
 
@@ -40,8 +40,25 @@ export function resolveServerEntry(options: ResolveServerOptions): ServerEntry |
     const path = workspaceServer(folder);
     if (path !== undefined) return { path, source: "workspace" };
   }
-  const bundled = join(options.extensionPath, "server", "bin.js");
+  const bundled = join(options.extensionPath, BUNDLED_SERVER);
   return existsSync(bundled) ? { path: bundled, source: "bundled" } : undefined;
+}
+
+/** The server bundled into the .vsix by scripts/build.ts: one ESM file plus the native compiler. */
+export const BUNDLED_SERVER = "server/bin.mjs";
+
+/** How to run the server: VS Code's own Node.js, or an executable such as `node`. */
+export type ServerRuntime = { kind: "vscode" } | { kind: "executable"; command: string };
+
+/**
+ * The `lumen.server.runtime` setting when set; otherwise VS Code's own Node.js for the bundled
+ * server (plain JS, nothing to install), and `node` from PATH for a workspace or configured server,
+ * which runs from TypeScript sources and so needs Node ≥ 24.
+ */
+export function serverRuntime(entry: ServerEntry, configured: string | undefined): ServerRuntime {
+  const command = configured?.trim();
+  if (command) return { kind: "executable", command };
+  return entry.source === "bundled" ? { kind: "vscode" } : { kind: "executable", command: "node" };
 }
 
 function workspaceServer(folder: string): string | undefined {

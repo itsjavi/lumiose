@@ -12,9 +12,11 @@ import {
   documentLanguages,
   resolveServerEntry,
   SERVER_PACKAGE,
+  serverRuntime,
   shouldPromptTakeover,
   takeoverActive,
   usesLumen,
+  type ServerEntry,
   type TakeoverSetting,
   type TakeoverState,
 } from "./workspace.ts";
@@ -27,11 +29,19 @@ const TYPESCRIPT_EXTENSIONS = [
 const BUILTIN_TYPESCRIPT_NAME = "TypeScript and JavaScript Language Features";
 
 let client: LanguageClient | undefined;
+/** The server the running client was started with. */
+let server: (ServerEntry & { runtime: string }) | undefined;
 let output: vscode.LogOutputChannel | undefined;
 /** The takeover state the running client was started with. */
 let clientTakeover: boolean | undefined;
 
-export async function activate(context: vscode.ExtensionContext): Promise<void> {
+/** What `activate` returns: read by the smoke test, and by other extensions. */
+export interface LumenExtensionApi {
+  /** The language server in use: its entry, where it was found, and the runtime running it. */
+  server(): (ServerEntry & { runtime: string }) | undefined;
+}
+
+export async function activate(context: vscode.ExtensionContext): Promise<LumenExtensionApi> {
   output = vscode.window.createOutputChannel("Lumen Language Server", { log: true });
   context.subscriptions.push(
     output,
@@ -54,6 +64,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   );
   await start(context);
   void promptTakeover();
+  return { server: () => server };
 }
 
 export async function deactivate(): Promise<void> {
@@ -75,13 +86,21 @@ async function start(context: vscode.ExtensionContext): Promise<void> {
     return;
   }
 
-  const runtime = configuration.get<string>("server.runtime")?.trim() || "node";
-  const serverOptions: ServerOptions = {
-    command: runtime,
-    args: [entry.path],
-    transport: TransportKind.stdio,
-    options: { cwd: folders[0] ?? context.extensionPath },
-  };
+  const runtime = serverRuntime(entry, configuration.get<string>("server.runtime"));
+  const cwd = folders[0] ?? context.extensionPath;
+  // A module without `runtime` runs on VS Code's own Node.js (its executable as Node).
+  const serverOptions: ServerOptions =
+    runtime.kind === "vscode"
+      ? { module: entry.path, transport: TransportKind.stdio, options: { cwd } }
+      : {
+          command: runtime.command,
+          args: [entry.path],
+          transport: TransportKind.stdio,
+          options: { cwd },
+        };
+  const runtimeName =
+    runtime.kind === "vscode" ? `VS Code's Node.js ${process.version}` : runtime.command;
+  server = { ...entry, runtime: runtimeName };
   const takeover = takeoverActive(takeoverState());
   clientTakeover = takeover;
   const clientOptions: LanguageClientOptions = {
@@ -90,7 +109,7 @@ async function start(context: vscode.ExtensionContext): Promise<void> {
     outputChannel: output,
   };
   output?.info(
-    `Starting ${entry.path} (${entry.source}) with ${runtime}; takeover ${takeover ? "on" : "off"}.`,
+    `Starting ${entry.path} (${entry.source}) with ${runtimeName}; takeover ${takeover ? "on" : "off"}.`,
   );
   client = new LanguageClient("lumen", "Lumen Language Server", serverOptions, clientOptions);
   try {
@@ -98,7 +117,9 @@ async function start(context: vscode.ExtensionContext): Promise<void> {
   } catch (error) {
     output?.error(`The language server failed to start: ${String(error)}`);
     void vscode.window.showErrorMessage(
-      `Lumen: the language server failed to start (${runtime} ${entry.path}). It needs Node.js ≥ 24; set "lumen.server.runtime" to a newer node.`,
+      runtime.kind === "vscode"
+        ? `Lumen: the bundled language server failed to start (${entry.path}). See the "Lumen Language Server" output.`
+        : `Lumen: the language server failed to start (${runtime.command} ${entry.path}). It needs Node.js ≥ 24; set "lumen.server.runtime" to a newer node.`,
     );
   }
 }
@@ -106,6 +127,7 @@ async function start(context: vscode.ExtensionContext): Promise<void> {
 async function stop(): Promise<void> {
   const current = client;
   client = undefined;
+  server = undefined;
   clientTakeover = undefined;
   if (current?.isRunning()) await current.stop();
 }
