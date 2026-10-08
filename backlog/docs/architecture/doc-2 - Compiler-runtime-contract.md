@@ -3,7 +3,7 @@ id: doc-2
 title: Compiler-runtime contract
 type: specification
 created_date: '2026-10-08 12:27'
-updated_date: '2026-10-08 21:05'
+updated_date: '2026-10-08 22:00'
 tags:
   - architecture
   - contract
@@ -75,6 +75,7 @@ tags:
 | `list(source, render)` | Joins rows; inside islands, markers as on the client |
 | `branch(cond, a, b?)` | Inside islands it emits `<!--[-->` for the active branch or `<!--[!-->` for the inactive one |
 | `selector(source)` | Evaluated once |
+| `branchArm(active, out?)` | Closure-free server branch (Photon, TASK-78): the compiler evaluates the condition and renders the chosen side in place, and `branchArm` emits the island markers for it (`<!--[-->` for the active side, `<!--[!-->` for the inactive one). Outside islands it returns `out` unwrapped |
 | `createComponent(C, props)` | Runs in a context frame (owner-like: context, request scope, boundary, island flag). Async components return promises |
 | `island(ref, C, props, strategy, strategyValue?, slots?)` | Emits island markers, inline slot markers for the slots the island renders, `<template data-l-slot>` for the others, the serialized record, and the `modulepreload` hint for `load` |
 | `$await(thunk, site)`, `$leave()` | Same shape as the client (§4). Awaits. Inside an island it records `{ [instancePath:site:occurrence]: value }`, which must be plain data or it raises `LUM4007` |
