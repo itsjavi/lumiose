@@ -74,6 +74,22 @@ importers:
         specifier: ^8.3.4
         version: 8.3.4(@types/node@24.19.1)
 
+  examples/islands-e2e:
+    dependencies:
+      lumen:
+        specifier: workspace:*
+        version: link:../../packages/lumen
+    devDependencies:
+      '@playwright/test':
+        specifier: 1.63.0
+        version: 1.63.0
+      '@types/node':
+        specifier: ^24.0.0
+        version: 24.19.1
+      vite:
+        specifier: ^8.3.4
+        version: 8.3.4(@types/node@24.19.1)
+
   examples/spa-chiptune:
     dependencies:
       lumen:
@@ -143,6 +159,22 @@ importers:
       emnapi:
         specifier: 2.0.0-alpha.5
         version: 2.0.0-alpha.5
+
+  packages/create:
+    dependencies:
+      lumen:
+        specifier: workspace:*
+        version: link:../lumen
+    devDependencies:
+      '@lumen/adapter-node':
+        specifier: workspace:*
+        version: link:../adapter-node
+      typescript:
+        specifier: ^7.0.2
+        version: 7.0.2
+      vite:
+        specifier: ^8.3.4
+        version: 8.3.4(@types/node@24.19.1)
 
   packages/language-server:
     dependencies:
