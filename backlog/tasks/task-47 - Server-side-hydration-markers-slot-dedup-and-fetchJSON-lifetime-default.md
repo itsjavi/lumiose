@@ -1,7 +1,7 @@
 ---
 id: TASK-47
 title: 'Server-side hydration markers, slot dedup and fetchJSON lifetime default'
-status: In Progress
+status: Done
 assignee:
   - '@Nova'
 created_date: '2026-10-08 14:02'
@@ -22,10 +22,10 @@ Client hydration (TASK-18) needs the server output inside islands to delimit eve
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Inside islands, the server wraps every async component instance, Suspense range and ErrorBoundary range in block markers matching the client's range model (dom/async.ts), with await records keyed like the client's instance paths (dom/frame.ts)
-- [ ] #2 Slots rendered during SSR are emitted inline as <!--l:s:name-->…<!--/l:s--> only; <template data-l-slot> only for slots not rendered during SSR (TASK-18 notes)
-- [ ] #3 fetchJSON defaults its abort signal to lifetime() when called inside an async component run, so superseded runs cancel their fetches
-- [ ] #4 Server tests updated; the marker format is documented in contract doc-2 §3 (propose the text to Lux)
+- [x] #1 Inside islands, the server wraps every async component instance, Suspense range and ErrorBoundary range in block markers matching the client's range model (dom/async.ts), with await records keyed like the client's instance paths (dom/frame.ts)
+- [x] #2 Slots rendered during SSR are emitted inline as <!--l:s:name-->…<!--/l:s--> only; <template data-l-slot> only for slots not rendered during SSR (TASK-18 notes)
+- [x] #3 fetchJSON defaults its abort signal to lifetime() when called inside an async component run, so superseded runs cancel their fetches
+- [x] #4 Server tests updated; the marker format is documented in contract doc-2 §3 (propose the text to Lux)
 <!-- AC:END -->
 
 ## Implementation Plan
@@ -49,3 +49,22 @@ Nova (TASK-47):
 - Touched outside my area: packages/compiler/test/server.test.ts island expectation updated to the new markers (Photon); core/internal.ts export (Spark). Docs to align (not edited): doc-1 §7.2 slot sentence, packages/lumen/docs/concepts/islands.md slot paragraph (Beacon), doc-2 §3 island row (Lux; proposal in the summary).
 - Evidence: server/island.test.ts 16 tests (5 new: slot templates only for unread slots, async island slots, boundary blocks + [! fallbacks incl. async rejection, resolved/prerender + async island root, no markers outside islands; updated golden 5.5, await-record and streamed-chunk expectations); app/fetch-json.test.ts (new, happy-dom) 2 tests; app/server/fetch-json.test.ts +1; compiler server.test.ts island test green. pnpm test: all green except 3 compiler scope-token tests from Photon's in-progress TASK-45 (binding not rebuilt); typecheck clean except Photon's WIP src/vite/styles.ts; oxlint clean for my files.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Inside islands the server now marks every range the client claims: async component instances, <Suspense> (around content or the streamed placeholder) and <ErrorBoundary> (<!--[!--> when it rendered its fallback) are <!--[-->…<!--]--> blocks; instance paths and await keys match dom/frame.ts. Slots the island renders appear inline between <!--l:s:name--> and <!--/l:s-->, and only unread slots travel as <template data-l-slot>. fetchJSON defaults its signal to lifetime() inside async runs (client: the run, so superseded runs cancel fetches; server: the render). Proposed doc-2 §3 text (for Lux):
+
+**Hydration markers (inside islands only).** Within <!--l:ID-->…<!--/l:ID-->, the server marks every range the client claims; blocks nest, and <!--]--> closes the nearest open <!--[--> or <!--[!-->. Claim order is creation order, identical on both sides.
+| Marker | Server | Client counterpart |
+|---|---|---|
+| <!--[-->…<!--]--> | insert, list, active branch | the helper's region |
+| <!--[!-->…<!--]--> | inactive branch | the region (whenFalse) |
+| <!--!--> | between adjacent text() holes | text split |
+| <!--[-->…<!--]--> | each async component instance | its range (createAsync) |
+| <!--[-->…<!--]--> | <Suspense>: around the content, or around <?start name="lbN">fallback<?end>, which the streamed content replaces | the Suspense range; hydrates once its chunk arrived |
+| <!--[-->…<!--]--> / <!--[!-->…<!--]--> | <ErrorBoundary>: children / a server-rendered fallback | its range; [! = render afresh, do not claim |
+| <!--l:s:NAME-->…<!--/l:s--> | a slot the island rendered (every read) | the slot's nodes, adopted |
+| <template data-l-slot="NAME"> | a slot the island did not render, once, right after <!--l:ID--> | inserted when the island renders it |
+Await records { "path:site:occurrence": value }: the island root is instance 0; each instance numbers the components created in its body (boundaries included) in creation order, across awaits (0.1.2). Table row for island(): 'Emits island markers, inline slot markers for slots it renders, <template data-l-slot> for the others, the record and the modulepreload hint for load'.
+<!-- SECTION:FINAL_SUMMARY:END -->
