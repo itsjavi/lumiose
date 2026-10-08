@@ -1,11 +1,11 @@
 ---
 id: TASK-70
 title: Support .svg imports as components
-status: In Progress
+status: Done
 assignee:
   - '@Halo'
 created_date: '2026-10-08 16:20'
-updated_date: '2026-10-08 21:21'
+updated_date: '2026-10-08 21:46'
 labels:
   - needs-decision
 milestone: m-3
@@ -25,10 +25,10 @@ The user decided (2026-10-08) after Halo's study: SVG imports become inline comp
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 import Icon from "./x.svg" gives an inline SVG component accepting standard SVG props (class, style, width/height, aria-*) plus title (rendered as <title> with aria-labelledby; aria-hidden when no title); works on client and server (SSR) and in islands
-- [ ] #2 Query switches: ?inline (explicit default), ?url (asset URL via Vite), ?raw (string); no sprite mode
-- [ ] #3 Build-time SVG optimisation (OXVG crate if usable, else SVGO in the Vite plugin), configurable via lumen({ svg: { optimize } }); currentColor-friendly defaults
-- [ ] #4 Types for *.svg (and ?url/?raw) in lumen/env; tests; docs (concept page + reference) in the same commits
+- [x] #1 import Icon from "./x.svg" gives an inline SVG component accepting standard SVG props (class, style, width/height, aria-*) plus title (rendered as <title> with aria-labelledby; aria-hidden when no title); works on client and server (SSR) and in islands
+- [x] #2 Query switches: ?inline (explicit default), ?url (asset URL via Vite), ?raw (string); no sprite mode
+- [x] #3 Build-time SVG optimisation (OXVG crate if usable, else SVGO in the Vite plugin), configurable via lumen({ svg: { optimize } }); currentColor-friendly defaults
+- [x] #4 Types for *.svg (and ?url/?raw) in lumen/env; tests; docs (concept page + reference) in the same commits
 <!-- AC:END -->
 
 ## Implementation Plan
@@ -105,4 +105,21 @@ import logoRaw from "./logo.svg?raw";
 - Build: optimise (OXVG or SVGO), prefix internal ids with a content hash, warn when an inline icon with internal `url(#id)` references is used (suggest `?sprite`), compile to a static template (no runtime cost beyond a clone).
 
 COORDINATION (Halo, 2026-10-08, per Lux): TASK-70 touches other areas with small, additive edits: crates/lumen_napi/src/lib.rs + Cargo.toml (Photon: one new #[napi] fn compileSvg), packages/lumen/src/vite/{svg.ts (new), index.ts (register the sub-plugin), options.ts (svg option)} (Photon), packages/lumen/src/jsx/env.d.ts (Beacon: *.svg module types), root Cargo.toml [workspace.dependencies]/members (oxvg_*, under deps.lock), docs pages for the feature. Photon/Beacon: please avoid editing those exact spots until TASK-70 is committed; tell Lux if you need them.
+
+IMPLEMENTED (Halo, 2026-10-08), committed efc9fbd. OWNERSHIP: crates/lumen_svg/** is Halo's (Lux to add to AGENTS.md).
+Design: crates/lumen_svg turns an SVG into the .stsx source of a component; lumen_napi compileSvg compiles it with lumen_compiler for the target (static template on the client, static SSR parts on the server), so SSR/islands/hydration need nothing new. OXVG (oxvg_optimiser/oxvg_ast =0.0.9, roxmltree =0.21.1) runs Jobs::default + convertStyleToAttrs (twice: inlineStyles runs after it); always: removeScripts, removeTitle, removeXlink, prefixIds with the per-file hash as Info.path (PrefixGenerator is not exported; class names prefixed only when the file has a <style>). optimize:false runs only the safety jobs. currentColor:true = convertColors CurrentColor. Component: root attributes as defaults, {...rest} (props override; class passthrough 3039scope works), title -> <title id> + role=img + aria-labelledby (id = l<hash>-t-<title with whitespace as _>, deterministic for hydration), aria-hidden when no title/aria-label/aria-labelledby, children ignored. Errors: malformed XML / non-<svg> root -> build error with position; panics caught in napi.
+Vite (packages/lumen/src/vite/svg.ts, registered in index.ts; option lumen({ svg: boolean | { optimize, currentColor } }) in options.ts): load hook for project .svg and .svg?inline (Vite strips ?import first); ?url/?raw untouched; exclude (node_modules) keeps Vite's URL; svg:false disables. Types: packages/lumen/src/jsx/svg-modules.d.ts (script file, side-effect-imported by env.d.ts because a module cannot declare wildcard modules): *.svg, *.svg?inline (component: JSX.SVGProps<SVGSVGElement> & { title?: string }), ?url/?raw (string). Verified: with types ['vite/client','lumen/env'] vite's string wins (first declaration wins); documented 'list lumen/env first'.
+Tests: crates/lumen_svg unit (4), golden fixtures tests/fixtures/{icon,editor,text,monochrome,unoptimized}.svg (each also compiled for both targets with zero diagnostics), robustness (every prefix of every fixture + 10 odd documents, no panics); packages/lumen/src/vite/svg.test.ts (real dev server: client/ssr code, ?inline, SSR render via ssrLoadModule, ?url/?raw, node_modules, malformed file error, svg:false, option validation); svg.dom.test.ts (happy-dom: client render + a11y + reactive title, server/client parity, class passthrough scope, island hydration adopting the server <svg> with no LUM4006); jsx type fixture .fixtures/svg.tsx. Runs: cargo test --workspace (0 failures), clippy 0 for lumen_svg/lumen_napi, pnpm test 975 passed/2 skipped, pnpm typecheck clean, pnpm lint clean, docs:check OK.
+Docs: concepts/svg.md (new, in README index), reference/vite.md (svg option + behaviour + status), reference/jsx.md (lumen/env svg modules, vite/client order), llms regenerated. Beacon: please review concepts/svg.md and the jsx.md edit for doc-wide consistency.
+Follow-ups (not blocking): (a) Photon, perf: attributes before a {...spread} move into mergeProps, so every icon instance sets its root attributes at runtime (client spread effect, SSR spreadAttrs) instead of cloning them; keeping static attributes in the template when the spread can only add/override would make icons cheaper. (b) lumen_wasm/playground does not expose compileSvg (the playground cannot import .svg). (c) OXVG is 0.0.x: pinned exactly; its dependency tree (geo, rayon, spade, i_overlay) grows the native binary (see size note).
+
+SIZE NOTE (Halo, measured after commit): the release napi binary grows from 11,700,528 B (HEAD before efc9fbd, cargo build --release -p lumen_napi from git archive) to 18,142,224 B (+6.4 MB, +55%); gzip -9: 3.66 MB -> 5.96 MB. Cause: OXVG's dependency tree (geo, spade, rstar, rayon, i_overlay x2, regex, selectors), pulled in by jobs such as mergePaths/applyTransforms. Decision for Lux/user if the compiler package size matters: (1) keep (fast, Rust, one binary); (2) move SVG optimisation to SVGO in the Vite plugin (JS, ~dev/build-only dependency) and keep lumen_svg's component emission + safety transforms without OXVG; (3) ship OXVG in a separate optional native package. lumen_svg's API (component_source + SvgOptions) stays the same under all three.
+
+Lux decision on binary size (technical, decision-16): option 2. Optimise with SVGO in the Vite plugin, which is the ecosystem standard and lets users pass SVGO config/plugins via lumen({ svg: { optimize } }). Drop OXVG from the native binary; lumen_svg keeps only parsing, sanitisation (scripts, handlers, javascript: URLs), id prefixing and template generation. Target: compiler binary back to about 11.7 MB. Follow-up task created.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+.svg imports are inline components (user decision after the study: inline only, no sprite mode). import Icon from './x.svg' (or ?inline) yields a component compiled from the OXVG-optimised file into a static template for the environment's target, so it is identical on client, server and in islands (hydration adopts the server <svg>). Props override the file's root attributes; title labels it (role=img + aria-labelledby with a hydration-stable id), otherwise aria-hidden. Scripts/handlers/javascript: URLs always stripped; ids (and classes when a <style> exists) prefixed per file. ?url/?raw remain Vite's; node_modules SVGs keep URL imports; lumen({ svg: false | { optimize, currentColor } }). New crate crates/lumen_svg (Halo), napi compileSvg, Vite svg.ts, lumen/env types, concept + reference docs, tests at every layer. Committed efc9fbd.
+<!-- SECTION:FINAL_SUMMARY:END -->
