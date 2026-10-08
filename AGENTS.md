@@ -40,6 +40,7 @@ launch workers or enforce filesystem permissions.
 The default agent is the orchestrator.
 
 The orchestrator:
+
 - Turns agreed requirements into actionable backlog tasks.
 - Defines acceptance criteria, dependencies, and priorities.
 - Assigns each execution task to one accountable agent.
@@ -63,12 +64,14 @@ giving multiple workers concurrent ownership of one task.
 ## Task execution
 
 Before starting a task:
+
 1. Read its description, acceptance criteria, dependencies, and notes.
 2. Confirm it is within scope, unblocked, and permitted by your role.
 3. Acquire its active claim.
 4. Set its status to In Progress through the Backlog CLI.
 
 While working:
+
 - Keep implementation plans, decisions, blockers, and evidence in
   the task.
 - Append progress notes without replacing another agent's notes.
@@ -78,6 +81,7 @@ While working:
   release the claim and continue independent eligible work.
 
 Mark a task Done only when:
+
 - Its acceptance criteria are satisfied.
 - Relevant validation has passed, with limitations documented.
 - Its changes are integrated into the main working tree.
@@ -95,6 +99,7 @@ The backlog is the source of truth for requirements, assignments,
 dependencies, progress, decisions, and completion evidence.
 
 Use .local/coordination/ only for runtime coordination:
+
 - sessions/<session-id>.json: nickname, mode, activity, and owned claims.
 - claims/<task-id>/owner.json: owning session and working directory.
 - backlog-write.lock/: short-lived lock for backlog mutations.
@@ -119,16 +124,25 @@ live workers before taking new work.
 Do not duplicate task descriptions or progress histories in runtime
 files. Do not delete another session's coordination state.
 
-## Backlog repository boundary
+## Backlog in the repository
 
-backlog/ is ignored by the main repository and has its own local
-Git repository.
+backlog/ is tracked by the main repository. The Backlog CLI
+auto-commits its own changes there (`auto_commit: true`). An
+auto-commit may include anything already staged, so avoid backlog
+mutations while the index holds entries you did not stage.
 
-Agents may update backlog content through the Backlog CLI, but must
-not stage, commit, push, reset, or clean the backlog repository.
+Update backlog content through the Backlog CLI. One exception: the
+CLI cannot write decision bodies, so agents may edit the Context,
+Decision, and Consequences sections of decision files directly, and
+a decision's `status` field when it is superseded.
 
-Backlog is auto-committed automatically, but a dirty backlog state
-is expected and is not a blocker.
+Commit remaining backlog changes, such as hand-edited decision
+bodies, as part of the regular workflow, either on their own or
+together with the work they document. Do not reset, clean, or
+rewrite backlog history.
+
+A dirty backlog state between commits is expected and is not a
+blocker.
 
 Dirty application state is also not a blocker by itself. Inspect
 ownership and overlap, preserve existing changes, and continue work

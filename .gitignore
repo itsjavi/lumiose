@@ -4,7 +4,6 @@ __pycache__/
 .venv/
 
 # Agent coordination and state files
-backlog/
 .local/
 
 # Output directories

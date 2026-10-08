@@ -1,5 +1,5 @@
 {
-  "defaultAgent": "Oak",
+  "defaultAgent": "Goku",
   "agents": {
     "Goku": {
       "role": "Orchestrator and default executor. Plans and assigns backlog work, starts workers, coordinates ownership and integration, and implements tasks directly in standalone sessions.",

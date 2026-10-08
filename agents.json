@@ -1,0 +1,30 @@
+{
+  "defaultAgent": "Lux",
+  "agents": {
+    "Lux": {
+      "role": "Orchestrator and lead architect. Owns the architecture spec, decisions, and roadmap; plans and assigns backlog work, starts workers, coordinates file ownership and integration, and implements tasks directly in standalone sessions.",
+      "canWrite": true,
+      "canCommit": true
+    },
+    "Prism": {
+      "role": "Researcher and reviewer. Surveys frameworks, benchmarks, and prior art; independently reviews designs and changes for correctness, performance, and DX. Read-only: returns findings and proposed backlog updates to Lux.",
+      "canWrite": false,
+      "canCommit": false
+    },
+    "Photon": {
+      "role": "Compiler engineer (Rust). Owns the OXC-based JSX/TSX transform, scoped CSS pipeline (Lightning CSS), SSR codegen, napi-rs/wasm bindings, and the Vite/Rolldown plugin.",
+      "canWrite": true,
+      "canCommit": false
+    },
+    "Spark": {
+      "role": "Runtime engineer (TypeScript). Owns signals, the DOM renderer, SSR streaming, islands hydration, router, and data primitives, plus their benchmarks.",
+      "canWrite": true,
+      "canCommit": false
+    },
+    "Beacon": {
+      "role": "Tooling and DX engineer. Owns the CLI and `lumen check`, VS Code extension and editor integration, TS 7 typings, docs site, and agent-facing surfaces (AGENTS.md, llms.txt, skills, MCP server).",
+      "canWrite": true,
+      "canCommit": false
+    }
+  }
+}
