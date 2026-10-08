@@ -3,7 +3,7 @@ id: TASK-10
 title: >-
   Implement the lumen_css crate: scoping, selector rewrite and constants
   substitution
-status: In Progress
+status: Done
 assignee:
   - '@Halo'
 created_date: '2026-10-08 12:20'
@@ -74,3 +74,9 @@ Halo (session halo-task10-20261008T140036Z) claimed TASK-10. Lightning CSS: late
 
 **For TASK-45 (Photon).** Map StyleBlock→CssBlock (skip expression-position blocks); stamp `scope_attribute(scope_token(root_relative_path, component))`; pass ResolvedRef with StyleRef.span; do not report LUM3008 for hyphenated refs (`find_refs(..).hyphenated`, or `-`+ident right after the span); build inventories per token incl. component_classes; convert CssDiagnostic by `Code::from_id(code.id())`; consider making the scanner reuse `lumen_css::find_refs` for parity; lumen_wasm may want `default-features = false`.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Built the standalone lumen_css crate on Lightning CSS 1.0.0-alpha.72 (pinned). `process()` takes a file's blocks (File/Component/Global scopes, SVG flag), resolved $refs by span, browser targets, minify/source-map flags, optional element inventories and style-prop custom properties, and returns one stylesheet (file-level blocks first, then component blocks in source order), a source map composed back to .stsx line/UTF-16 columns, and LUM diagnostics. A text pre-pass substitutes $refs only in values and @media/@container/@supports preludes and scopes selectors ([data-l-<token>] on the last scoped compound before pseudo-elements, :global/:deep); an AST pass scopes @keyframes and rewrites animation references; Lightning CSS lowers nesting per targets and minifies. Diagnostics: LUM3005, LUM3009 (with fix), LUM3012, plus new LUM3014/3015/3016 that the compiler registry must add (TASK-45). Covered by 19 unit tests and 9 golden fixtures; clippy, fmt and rustdoc clean.
+<!-- SECTION:FINAL_SUMMARY:END -->
