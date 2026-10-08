@@ -376,7 +376,7 @@ function islandModuleUrl(base: string, module: string, server: ViteDevServer): s
   if (specifier === undefined) return module;
   if (!ABSOLUTE_ID.test(specifier)) return `${base}@id/${specifier}`;
   const url = `${base}@fs/${specifier.replace(/^\//, "")}`;
-  return JS_MODULE.test(specifier) ? url : `${url}?import`;
+  return JS_MODULE.test(specifier) ? url : withImportQuery(url);
 }
 
 /**
@@ -386,7 +386,13 @@ function islandModuleUrl(base: string, module: string, server: ViteDevServer): s
 function devModuleUrl(base: string, specifier: string): string {
   if (!specifier.startsWith("/")) return specifier;
   const url = base + specifier.slice(1);
-  return JS_MODULE.test(specifier) ? url : `${url}?import`;
+  return JS_MODULE.test(specifier) ? url : withImportQuery(url);
+}
+
+/** `url` with Vite's `import` param first, as its import analysis writes it (`x.html?import&q`). */
+function withImportQuery(url: string): string {
+  const query = url.indexOf("?");
+  return query === -1 ? `${url}?import` : `${url.slice(0, query)}?import&${url.slice(query + 1)}`;
 }
 
 function isStylesheet(url: string): boolean {

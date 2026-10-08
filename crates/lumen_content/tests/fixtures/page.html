@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>A page</title>
+  <link rel="stylesheet" href="/ignored.css">
+  <style global>body { margin: 0; }</style>
+  <style>.lead { font-size: 1.25rem; }</style>
+  <script type="importmap">{ "imports": {} }</script>
+  <script src="/src/head.ts" type="module"></script>
+</head>
+<body class="ignored">
+  <p class="lead">Hello &amp; welcome&nbsp;home, {not an expression}.</p>
+  <section>
+    <h2>Details</h2>
+    <style>h2 { color: tomato; }</style>
+  </section>
+  <svg viewBox="0 0 10 10" width="10"><style>.dot { fill: red; }</style><linearGradient id="g"></linearGradient><circle class="dot" cx="5" cy="5" r="4" xlink:href="#g"/></svg>
+  <pre>
+  indented
+</pre>
+  <textarea name="t">
+first line</textarea>
+  <button @click="open = true" x-on:click.prevent="go()" disabled onclick="track()">Open</button>
+  <input type="checkbox" checked value="yes" key="k">
+  <table><tr><td>cell</td></tr></table>
+  <noscript><img src="/pixel.gif" alt=""></noscript>
+  <script type="application/ld+json">{ "@type": "WebPage", "name": "</p>" }</script>
+  <script>console.log("classic, run as a module");</script>
+</body>
+</html>

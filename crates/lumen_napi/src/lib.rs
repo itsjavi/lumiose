@@ -620,6 +620,72 @@ pub fn compile(
     })
 }
 
+/// The kind of a content file (`lumen({ md, html })`).
+#[napi(string_enum = "kebab-case")]
+pub enum ContentKind {
+    Md,
+    Html,
+}
+
+/// A client script of an HTML or Markdown file: `src` as written, or inline `code`.
+#[napi(object)]
+pub struct ContentScript {
+    pub src: Option<String>,
+    pub code: Option<String>,
+}
+
+/// The `.stsx` module of a content file ([`content_source`]).
+#[napi(object)]
+pub struct ContentSource {
+    /// Compile it as `<file>.stsx`.
+    pub code: String,
+    /// The raw YAML frontmatter of a Markdown file.
+    pub frontmatter: Option<String>,
+    /// The client scripts, in document order, which `./<name>?lumen-script` imports.
+    pub scripts: Vec<ContentScript>,
+}
+
+/// The `.stsx` source of the component a `.md` or `.html` file imports as (`lumen_content`,
+/// TASK-69): a static component of the file's content, with its top-level `<style>` elements as
+/// file-level blocks and its scripts loaded by an island.
+#[napi]
+pub fn content_source(
+    source: String,
+    filename: String,
+    kind: ContentKind,
+) -> napi::Result<ContentSource> {
+    let name = std::path::Path::new(&filename)
+        .file_name()
+        .and_then(|name| name.to_str())
+        .unwrap_or(&filename);
+    // A panic must not abort the host process (the dev server, the language server).
+    let component = std::panic::catch_unwind(|| match kind {
+        ContentKind::Md => lumen_content::markdown(&source, name),
+        ContentKind::Html => lumen_content::html(&source, name),
+    })
+    .map_err(|_| {
+        napi::Error::from_reason(format!("{filename}: the file could not be processed"))
+    })?;
+    Ok(ContentSource {
+        code: component.source,
+        frontmatter: component.frontmatter,
+        scripts: component
+            .scripts
+            .into_iter()
+            .map(|script| match script {
+                lumen_content::Script::Src(src) => ContentScript {
+                    src: Some(src),
+                    code: None,
+                },
+                lumen_content::Script::Inline(code) => ContentScript {
+                    src: None,
+                    code: Some(code),
+                },
+            })
+            .collect(),
+    })
+}
+
 /// Options of [`compile_svg`].
 #[napi(object)]
 pub struct SvgCompileOptions {

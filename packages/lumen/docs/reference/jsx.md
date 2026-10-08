@@ -41,13 +41,13 @@ The generated file, with paths relative to `.lumen/`:
 }
 ```
 
-| Option                                        | Why                                                                                 |
-| --------------------------------------------- | ----------------------------------------------------------------------------------- |
-| `jsx: "preserve"`, `jsxImportSource: "lumen"` | The Lumen compiler transforms JSX; TypeScript only checks it against Lumen's types. |
-| `rootDirs` with `.lumen/shadow`               | `import "./X.stsx"` resolves to the shadow file `X.stsx.tsx`.                       |
-| `include` `.lumen/shadow`, `.lumen/types`     | Shadow files and generated route types are part of the program.                     |
-| `types: ["lumen/env"]`                        | The global `JSX` namespace, `import.meta.env`, `Locals` and `.svg` modules.         |
-| `allowImportingTsExtensions`                  | Imports name their extension: `./Card.stsx`, `./tokens.ts`.                         |
+| Option                                        | Why                                                                                       |
+| --------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| `jsx: "preserve"`, `jsxImportSource: "lumen"` | The Lumen compiler transforms JSX; TypeScript only checks it against Lumen's types.       |
+| `rootDirs` with `.lumen/shadow`               | `import "./X.stsx"` resolves to the shadow file `X.stsx.tsx`.                             |
+| `include` `.lumen/shadow`, `.lumen/types`     | Shadow files and generated route types are part of the program.                           |
+| `types: ["lumen/env"]`                        | The global `JSX` namespace, `import.meta.env`, `Locals` and `.svg`/`.md`/`.html` modules. |
+| `allowImportingTsExtensions`                  | Imports name their extension: `./Card.stsx`, `./tokens.ts`.                               |
 
 If you set `include` or `types` yourself, they replace the generated lists: keep `src`,
 `.lumen/shadow` and `.lumen/types` in `include`, and `lumen/env` in `types`. An array `extends`
@@ -168,6 +168,16 @@ declare module "*.svg" {
 declare module "*.svg?inline" {} // the same component
 declare module "*.svg?url" {} // export default url: string
 declare module "*.svg?raw" {} // export default raw: string
+declare module "*.md" {
+  const Content: () => JSX.Element;
+  export default Content;
+  export interface Frontmatter extends Record<string, unknown> {} // merge your fields into it
+  export const frontmatter: Frontmatter;
+}
+declare module "*.html" {
+  const Content: () => JSX.Element;
+  export default Content;
+}
 ```
 
 Declare known public variables by merging `interface ImportMetaEnv { readonly PUBLIC_API: string }`.

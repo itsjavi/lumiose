@@ -1,0 +1,188 @@
+//! `.md` and `.html` imports as Lumen components (decision-22, TASK-69).
+//!
+//! [`markdown`] and [`html`] turn a file into the `.stsx` source of a module whose default export
+//! renders the file's content statically; the host compiles that source with `lumen_compiler`
+//! (as `<file>.stsx`), so the component is a static template on the client and static parts on
+//! the server, and its styles go through the regular style pipeline.
+//!
+//! # Markdown
+//!
+//! CommonMark plus the GFM extensions (tables, strikethrough, task lists, autolinks, footnotes),
+//! rendered by comrak. Raw HTML is kept (the file is the project's own) and goes through the HTML
+//! pipeline below. Headings get GitHub-style ids (`## Hello, World!` → `id="hello-world"`, then
+//! `-1`, `-2` for repeats) unless they have one. A leading `---` YAML block is the frontmatter:
+//! returned raw in [`Component::frontmatter`] (the host parses it) and re-exported by the module
+//! from `./<name>?lumen-frontmatter`.
+//!
+//! # HTML
+//!
+//! Parsed with html5ever, the way a browser does. A full document (a doctype, or an `<html>`,
+//! `<head>` or `<body>` tag) contributes its `<body>` content, plus the `<style>` and `<script>`
+//! elements of its `<head>`; anything else is a fragment, used as it is.
+//!
+//! - Top-level `<style>` elements become file-level style blocks: scoped to the file's content
+//!   (`<style global>` is not scoped). A `<style>` nested in an element scopes to that element's
+//!   subtree, as in `.stsx`. `<style>` inside `<svg>` or `<template>` is left as it is.
+//! - JavaScript `<script>` elements (no `type`, `module` or a JavaScript MIME type) are removed
+//!   from the markup and returned in [`Component::scripts`], in document order. The module then
+//!   renders `<Script client:load />` from `./<name>?lumen-script`, an island whose module the
+//!   host makes import the scripts, so pages load them like island modules. Other scripts (JSON-LD,
+//!   import maps) stay in the markup.
+//! - A `<template>`'s content (a web component's shadow DOM) is kept verbatim, as are the raw
+//!   text elements (`<noscript>`, `<xmp>`, `<iframe>`…).
+//! - Comments and the doctype are dropped. Attributes JSX cannot write (`@click`) are passed
+//!   through a spread object.
+
+mod dom;
+mod emit;
+mod markdown;
+
+use html5ever::tendril::TendrilSink;
+use html5ever::tree_builder::TreeBuilderOpts;
+use html5ever::{ParseOpts, QualName, local_name, ns};
+
+use crate::dom::{Data, Handle, Sink};
+
+/// The module of a content file.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Component {
+    /// The `.stsx` source of the module.
+    pub source: String,
+    /// The raw YAML of a Markdown file's frontmatter (without its `---` lines).
+    pub frontmatter: Option<String>,
+    /// The client scripts, in document order.
+    pub scripts: Vec<Script>,
+}
+
+/// A client script of the file.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum Script {
+    /// `<script src="…">`: the URL as written, resolved against the file.
+    Src(String),
+    /// An inline script's code.
+    Inline(String),
+}
+
+/// The component module of a Markdown file named `name` (`post.md`).
+pub fn markdown(source: &str, name: &str) -> Component {
+    let (frontmatter, body) = markdown::split_frontmatter(source);
+    let html = markdown::to_html(body);
+    let nodes = fragment(&html);
+    markdown::heading_ids(&nodes);
+    emit::module(emit::Input {
+        nodes,
+        name,
+        markdown: true,
+        frontmatter: frontmatter.map(str::to_owned),
+    })
+}
+
+/// The component module of an HTML file named `name` (`card.html`).
+pub fn html(source: &str, name: &str) -> Component {
+    let nodes = if is_document(source) {
+        document(source)
+    } else {
+        fragment(source)
+    };
+    emit::module(emit::Input {
+        nodes,
+        name,
+        markdown: false,
+        frontmatter: None,
+    })
+}
+
+fn parse_options() -> ParseOpts {
+    ParseOpts {
+        tree_builder: TreeBuilderOpts {
+            scripting_enabled: true,
+            ..TreeBuilderOpts::default()
+        },
+        ..ParseOpts::default()
+    }
+}
+
+/// The top-level nodes of `html` parsed as the content of a `<template>`, which accepts any
+/// element (`<tr>`, `<li>`) at the top level.
+fn fragment(html: &str) -> Vec<Handle> {
+    let context = QualName::new(None, ns!(html), local_name!("template"));
+    let document =
+        html5ever::parse_fragment(Sink::default(), parse_options(), context, vec![], true)
+            .one(html);
+    // The fragment's nodes are the children of an `<html>` root.
+    let root = first_element(&document);
+    root.map_or_else(Vec::new, |root| root.children.borrow().clone())
+}
+
+/// A full document's content: the `<style>` elements and client scripts of its `<head>`, then
+/// the children of its `<body>`.
+fn document(html: &str) -> Vec<Handle> {
+    let document = html5ever::parse_document(Sink::default(), parse_options()).one(html);
+    let Some(root) = first_element(&document) else {
+        return Vec::new();
+    };
+    let mut nodes = Vec::new();
+    for part in root.children.borrow().iter() {
+        match part.html_name() {
+            Some("head") => nodes.extend(
+                part.children
+                    .borrow()
+                    .iter()
+                    .filter(|node| {
+                        node.html_name() == Some("style") || emit::is_client_script(node)
+                    })
+                    .cloned(),
+            ),
+            Some("body") => nodes.extend(part.children.borrow().iter().cloned()),
+            _ => {}
+        }
+    }
+    nodes
+}
+
+fn first_element(node: &Handle) -> Option<Handle> {
+    node.children
+        .borrow()
+        .iter()
+        .find(|child| matches!(child.data, Data::Element { .. }))
+        .cloned()
+}
+
+/// Whether `source` is a full document: a doctype or an `<html>` start tag first, or a `<head>`
+/// or `<body>` start tag anywhere.
+fn is_document(source: &str) -> bool {
+    let lower = source.to_ascii_lowercase();
+    let mut rest = lower.trim_start_matches(['\u{feff}', ' ', '\t', '\n', '\r', '\x0c']);
+    while let Some(after) = rest.strip_prefix("<!--") {
+        rest = after
+            .split_once("-->")
+            .map_or("", |(_, after)| after)
+            .trim_start();
+    }
+    let tag = |text: &str, name: &str| {
+        text.strip_prefix('<')
+            .and_then(|t| t.strip_prefix(name))
+            .is_some_and(|t| {
+                t.starts_with(|c: char| c.is_ascii_whitespace() || c == '>' || c == '/')
+            })
+    };
+    rest.starts_with("<!doctype")
+        || tag(rest, "html")
+        || lower
+            .match_indices('<')
+            .any(|(i, _)| tag(&lower[i..], "head") || tag(&lower[i..], "body"))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn detects_documents() {
+        assert!(is_document("<!DOCTYPE html><p>x"));
+        assert!(is_document("\u{feff}<!-- c --> <HTML lang=en>"));
+        assert!(is_document("<p>x</p><body class=a>"));
+        assert!(!is_document("<p>x</p>"));
+        assert!(!is_document("<header>x</header><bodyx>"));
+    }
+}

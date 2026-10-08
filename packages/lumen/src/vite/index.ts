@@ -25,6 +25,9 @@
 //   the stylesheets its static import graph reaches.
 // - `.svg` imports are inline components (`lumen({ svg })`, ./svg.ts); `?url` and `?raw` stay
 //   Vite's.
+// - `.md` and `.html` imports are components (`lumen({ md, html })`, ./content.ts): their Lumen
+//   modules (`<file>.md.stsx`) are compiled here like any `.stsx` module, with the source
+//   generated from the file (`content.source`, also for their CSS modules and the build scan).
 // - Project options (`mode`, `ssr`, `trailingSlash`, `csrf`; decision-21) are validated here and
 //   exposed as the plugin's `api.options` for `lumen dev`/`build` and the CLI (./options.ts).
 
@@ -44,6 +47,7 @@ import {
   type Rollup,
   type ViteDevServer,
 } from "vite";
+import { contentOf, contentOptionsOf } from "./content.ts";
 import { CSS_MANIFEST_ID, CssManifest, cssManifestCode, fillManifest } from "./css-manifest.ts";
 import { ISLANDS_ID, IslandRegistry } from "./islands.ts";
 import { projectOptionsOf, type LumenOptions, type LumenPluginApi } from "./options.ts";
@@ -63,6 +67,7 @@ export type {
   CsrfOptions,
   LumenOptions,
   LumenPluginApi,
+  MarkdownOptions,
   ProjectOptions,
   RouteMode,
   SvgOptions,
@@ -95,6 +100,9 @@ export default function lumen(options: LumenOptions = {}): Plugin<LumenPluginApi
   const svg = svgOptionsOf(options.svg);
   const include = options.include ?? LUMEN_MODULE;
   const exclude = options.exclude ?? NODE_MODULES;
+  const content = contentOf(contentOptionsOf(options.md, options.html), exclude);
+  // Content modules (`<file>.md.stsx`) are Lumen modules whatever `include` says.
+  const lumenModules = content ? [include, content.moduleFilter] : [include];
   let serve = false;
   let root = process.cwd();
   let devServer: ViteDevServer | undefined;
@@ -104,7 +112,7 @@ export default function lumen(options: LumenOptions = {}): Plugin<LumenPluginApi
   let packages = new Packages(root, exclude);
   let scanned: ScannedModule[] | undefined;
   const project = (): ScannedModule[] =>
-    (scanned ??= scanProject(root, include, exclude, packages));
+    (scanned ??= scanProject(root, include, exclude, packages, content));
   // Every compile of a file names modules alike, so its JS and CSS agree on scope tokens.
   const compileOptions = (file: string, target: Target) => ({
     target,
@@ -130,7 +138,7 @@ export default function lumen(options: LumenOptions = {}): Plugin<LumenPluginApi
         // `oxc: false` disables Vite's transform altogether; an explicit include/exclude is the
         // user's call. Otherwise Lumen modules are added to Vite's default exclusion.
         if (oxc === false || oxc?.include !== undefined || oxc?.exclude !== undefined) return;
-        return { oxc: { exclude: [VITE_OXC_EXCLUDE, include] } };
+        return { oxc: { exclude: [VITE_OXC_EXCLUDE, ...lumenModules] } };
       },
 
       async configResolved(config) {
@@ -188,10 +196,12 @@ export default function lumen(options: LumenOptions = {}): Plugin<LumenPluginApi
           const file = cleanId(id);
           let source: string;
           try {
-            source = await readFile(file, "utf8");
+            source = content?.isModule(file) ? content.source(file) : await readFile(file, "utf8");
           } catch {
             return "";
           }
+          // A content module's CSS comes from its `.md`/`.html` file.
+          if (content?.isModule(file)) this.addWatchFile(file.replace(/\.stsx$/, ""));
           let entry = styles.get(file);
           if (entry === undefined || entry.source !== source) {
             const result = await compileWithModules(
@@ -276,7 +286,7 @@ export default function lumen(options: LumenOptions = {}): Plugin<LumenPluginApi
       },
 
       transform: {
-        filter: { id: { include, exclude } },
+        filter: { id: { include: lumenModules, exclude } },
         async handler(code, id) {
           const target: Target =
             this.environment.config.consumer === "server" ? "server" : "client";
@@ -317,6 +327,8 @@ export default function lumen(options: LumenOptions = {}): Plugin<LumenPluginApi
     },
     // `.svg` imports as inline components (./svg.ts).
     ...(svg ? [svgPlugin(svg, exclude, () => root)] : []),
+    // `.md` and `.html` imports as components (./content.ts).
+    ...(content ? [content.plugin()] : []),
   ];
 }
 

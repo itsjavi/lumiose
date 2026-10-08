@@ -1,0 +1,26 @@
+<!-- A web component in one file -->
+<template id="user-card">
+  <style>
+    :host { display: block; }
+    ::slotted(img) { border-radius: 50%; }
+  </style>
+  <slot name="avatar"></slot>
+  <p><slot></slot></p>
+</template>
+
+<user-card>
+  <img slot="avatar" src="/avatar.png" alt="">
+  Ada Lovelace
+</user-card>
+
+<script type="module">
+  import { define } from "./define.js";
+  define("user-card", document.getElementById("user-card"));
+</script>
+
+<style>
+  user-card { margin: 1rem; }
+</style>
+<style global>
+  :root { --card-gap: 1rem; }
+</style>

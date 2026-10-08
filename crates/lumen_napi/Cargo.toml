@@ -10,6 +10,7 @@ crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 lumen_compiler.workspace = true
+lumen_content.workspace = true
 lumen_css = { workspace = true, features = ["browserslist"] }
 lumen_svg.workspace = true
 napi.workspace = true

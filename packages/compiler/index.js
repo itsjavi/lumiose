@@ -904,6 +904,8 @@ const {
   compile,
   compileSvg,
   CompileTarget,
+  ContentKind,
+  contentSource,
   FileKind,
   ParentKind,
   PlacementKind,
@@ -916,6 +918,8 @@ export { AttributeValueKind };
 export { compile };
 export { compileSvg };
 export { CompileTarget };
+export { ContentKind };
+export { contentSource };
 export { FileKind };
 export { ParentKind };
 export { PlacementKind };

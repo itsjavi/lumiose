@@ -108,6 +108,36 @@ export interface ComponentMeta {
   awaitSites: Array<Span>;
 }
 
+/** The kind of a content file (`lumen({ md, html })`). */
+export type ContentKind = "md" | "html";
+
+/** A client script of an HTML or Markdown file: `src` as written, or inline `code`. */
+export interface ContentScript {
+  src?: string;
+  code?: string;
+}
+
+/**
+ * The `.stsx` source of the component a `.md` or `.html` file imports as (`lumen_content`,
+ * TASK-69): a static component of the file's content, with its top-level `<style>` elements as
+ * file-level blocks and its scripts loaded by an island.
+ */
+export declare function contentSource(
+  source: string,
+  filename: string,
+  kind: ContentKind,
+): ContentSource;
+
+/** The `.stsx` module of a content file ([`content_source`]). */
+export interface ContentSource {
+  /** Compile it as `<file>.stsx`. */
+  code: string;
+  /** The raw YAML frontmatter of a Markdown file. */
+  frontmatter?: string;
+  /** The client scripts, in document order, which `./<name>?lumen-script` imports. */
+  scripts: Array<ContentScript>;
+}
+
 export interface Diagnostic {
   /** A stable code such as `LUM1004`. */
   code: string;

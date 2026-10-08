@@ -24,6 +24,10 @@ interface LumenOptions {
   csrf?: false | { allowedOrigins?: readonly string[] };
   /** `.svg` imports as inline components; false leaves them to Vite (URLs). */
   svg?: boolean | { optimize?: boolean | SvgoConfig; currentColor?: boolean }; // default true
+  /** `.md` imports as components; the hook validates or transforms each file's frontmatter. */
+  md?: boolean | { frontmatter?(data: Record<string, unknown>, ctx: { file: string }): unknown }; // default false
+  /** `.html` imports as components. */
+  html?: boolean; // default false
   /** Cross-document View Transitions between MPA pages (not under reduced motion). */
   viewTransitions?: boolean; // default false
   /** Speculation rules that prefetch the same-origin links of MPA pages. */
@@ -71,6 +75,11 @@ What it does:
   true` replaces every colour with `currentColor` (SVGO's `convertColors`, before other
   plugins). `?url` and `?raw` stay Vite's, and `.svg` files in `exclude` (node_modules) keep
   Vite's URL import. See [SVG imports](../concepts/svg.md).
+- With `md`/`html`, loads project `.md` and `.html` files as static components: their source
+  becomes the Lumen module `<file>.md.stsx` (`.html.stsx`), compiled like any `.stsx` file, with
+  `frontmatter` from `<file>.md?lumen-frontmatter` and client scripts loaded by an island from
+  `<file>.html?lumen-script`. HTML entries (`index.html`, HTML build inputs) and `public/` files
+  stay Vite's. See [Markdown and HTML imports](../concepts/content.md).
 - Hot updates: a client module that imports `mount` from `lumen/dom` (an app entry) accepts updates
   of every module it reaches and re-mounts the app into the same container. Component state resets;
   module-level signals of unchanged modules survive.
@@ -78,7 +87,7 @@ What it does:
   Modules that `$` references import constants from are tracked as dependencies of that CSS module.
   A style-only edit, or an edit to such a constants module, hot-updates the CSS without remounting.
 
-> **Status:** compilation, environments, diagnostics, HMR, style-block CSS, `.svg` imports and the
+> **Status:** compilation, environments, diagnostics, HMR, style-block CSS, `.svg`, `.md` and `.html` imports and the
 > project options above are available. The designed options `adapter`, `css` and `csp` are not.
 
 ## Example

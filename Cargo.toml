@@ -14,6 +14,7 @@ lumen_compiler = { path = "crates/lumen_compiler" }
 # lumen_css: browserslist is opted into by hosts that have a file system and a clock (napi).
 lumen_css = { path = "crates/lumen_css", default-features = false }
 lumen_svg = { path = "crates/lumen_svg" }
+lumen_content = { path = "crates/lumen_content" }
 
 # OXC: every oxc_* crate on the same exact version.
 oxc_allocator = "=0.153.0"
@@ -38,6 +39,11 @@ parcel_sourcemap = { version = "=2.1.1", features = ["json"] }
 # (same version) for prefixing ids in `<style>`.
 cssparser = "=0.37.0"
 roxmltree = "=0.21.1"
+
+# Markdown and HTML imports (lumen_content): comrak for CommonMark + GFM (autolinks included),
+# html5ever for spec-compliant HTML tree building.
+comrak = { version = "=0.55.0", default-features = false }
+html5ever = "=0.40.1"
 
 # Bindings
 napi = { version = "=3.14.2", default-features = false, features = ["napi4", "dyn-symbols"] }

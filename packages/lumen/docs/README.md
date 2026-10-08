@@ -33,6 +33,7 @@ mistakes** and **Related diagnostics**. Reference pages list every export with i
 - [Server](concepts/server.md): Request context, middleware, cookies, env, redirects and error helpers.
 - [Rendering modes](concepts/rendering-modes.md): `static`, `server` and `spa` routes, shell-first streaming, hydration and the build.
 - [SVG imports](concepts/svg.md): `import Icon from "./icon.svg"` as an inline, optimised component; `title`, `currentColor`, `?url` and `?raw`.
+- [Markdown and HTML imports](concepts/content.md): `.md` and `.html` files as static components; GFM, heading ids, frontmatter and its hook, scoped `<style>`, client `<script>`.
 - [Head and document](concepts/head.md): `<Title>`, `<Meta>`, `<Head>` and a custom `document.stsx`.
 - [Compiler and diagnostics](concepts/compiler.md): What the compiler does with `.stsx`/`.tsx`, and how `LUMxxxx` diagnostics work.
 - [Testing](concepts/testing.md): Test components with Vitest and the Lumen Vite plugin.

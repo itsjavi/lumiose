@@ -13,6 +13,7 @@ import { readdirSync, readFileSync, type Dirent } from "node:fs";
 import { join } from "node:path";
 import { compile, type IslandMeta } from "@lumen/compiler";
 import { isCSSRequest, normalizePath } from "vite";
+import type { Content } from "./content.ts";
 import type { Packages } from "./packages.ts";
 
 /** Files that make a directory a project of its own. */
@@ -44,6 +45,7 @@ export function scanProject(
   include: RegExp,
   exclude: RegExp,
   packages: Packages,
+  content: Content | null = null,
 ): ScannedModule[] {
   const modules: ScannedModule[] = [];
   const files = [
@@ -52,13 +54,15 @@ export function scanProject(
     ...packages.linked().flatMap((p) => sourceFiles(p.dir, true)),
   ];
   for (const file of files) {
-    const lumen = include.test(file) && !exclude.test(file);
+    // `.md`/`.html` files are compiled as their Lumen module (`<file>.md.stsx`, ./content.ts).
+    const contentModule = content?.scans(file) ? content.moduleId(file) : null;
+    const lumen = contentModule !== null || (include.test(file) && !exclude.test(file));
     if (!lumen && (!SCRIPT_MODULE.test(file) || DECLARATION.test(file) || exclude.test(file))) {
       continue;
     }
     let source: string;
     try {
-      source = readFileSync(file, "utf8");
+      source = contentModule ? content!.source(contentModule) : readFileSync(file, "utf8");
     } catch {
       continue;
     }
@@ -68,14 +72,14 @@ export function scanProject(
         modules.push({ file, islands: [], hasStyles: false, stylesheets });
       continue;
     }
-    const result = compile(source, file, {
+    const result = compile(source, contentModule ?? file, {
       root,
       packages: packages.for(file),
       sourceMap: false,
       emitCss: false,
     });
     modules.push({
-      file,
+      file: contentModule ?? file,
       islands: result.meta.islands,
       hasStyles: result.meta.hasStyles,
       // The compiled code: style blocks are gone, imports are printed verbatim, and the module's
