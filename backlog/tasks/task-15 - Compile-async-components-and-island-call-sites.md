@@ -5,6 +5,7 @@ status: To Do
 assignee:
   - '@Photon'
 created_date: '2026-10-08 12:21'
+updated_date: '2026-10-08 12:57'
 labels: []
 milestone: m-2
 dependencies:
@@ -27,3 +28,9 @@ Async components and islands both need compile-time support: the await rewrite w
 - [ ] #2 client:* usage compiles to island(ref, X, props, strategy, slot) on the server and is stripped on the client; LUM4001; the island manifest is emitted via the Vite plugin
 - [ ] #3 Golden fixtures
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Lux: use the amended $await shape from doc-2 §4: (await $await(() => e, n))() plus try { … } finally { $leave() } around async component bodies.
+<!-- SECTION:NOTES:END -->
