@@ -1,10 +1,11 @@
 ---
 id: TASK-34
 title: Implement the MCP server
-status: To Do
+status: In Progress
 assignee:
   - '@Beacon'
 created_date: '2026-10-08 12:21'
+updated_date: '2026-10-08 16:53'
 labels: []
 milestone: m-5
 dependencies:
