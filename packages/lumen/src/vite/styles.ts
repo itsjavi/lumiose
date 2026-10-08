@@ -17,7 +17,11 @@
 import { readFile } from "node:fs/promises";
 import { compile, type CompileOptions, type CompileResult, type HostModule } from "@lumen/compiler";
 
-export const STYLE_QUERY = /\?lumen&type=style&lang\.css$/;
+/**
+ * Ids of style modules. Vite may add params around ours: `<link rel="stylesheet">` requests become
+ * `?direct&lumen&type=style&lang.css` (plain CSS), and HMR adds `t=`.
+ */
+export const STYLE_QUERY = /[?&]lumen&type=style&lang\.css(?:&|$)/;
 
 /** Resolves an import specifier to a module id; `null` when it cannot be resolved. */
 export type Resolve = (specifier: string, importer: string) => Promise<string | null>;

@@ -228,6 +228,12 @@ describe.skipIf(!binding)("lumen/vite", () => {
     expect(css!.code).toContain(`button[${token}] {`);
     expect(css!.code).toContain("color: #dc143c;");
     expect(css!.code).toContain("updateStyle");
+    // `<link rel="stylesheet">` requests (Accept: text/css) get plain CSS: Vite adds `direct`.
+    const linked = await server.environments.client.transformRequest(
+      `/Counter.stsx?direct&${STYLE.slice(1)}`,
+    );
+    expect(linked!.code).toContain(`button[${token}]`);
+    expect(linked!.code).not.toContain("updateStyle");
     // The ssr environment loads the same CSS module (for the dev server's stylesheet links).
     const ssr = await server.environments.ssr.transformRequest(`/Counter.stsx${STYLE}`);
     expect(ssr).toBeTruthy();
