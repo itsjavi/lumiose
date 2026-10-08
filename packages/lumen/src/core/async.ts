@@ -43,8 +43,9 @@ export function pending(): boolean {
   return flag === undefined ? false : isRun(activeSub) ? flag.peek() : flag();
 }
 
-const inFlight = signal(0);
-const anyInFlight = computed(() => inFlight() > 0);
+// Pure: bundles that never read `busy()` or register work drop them.
+const inFlight = /* @__PURE__ */ signal(0);
+const anyInFlight = /* @__PURE__ */ computed(() => inFlight() > 0);
 
 /**
  * App-wide: whether anything is in flight (decision-20): an async component run, a `<Suspense>`

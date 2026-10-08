@@ -72,7 +72,7 @@ export function attachOwner(owner: Owner, parent: Owner | undefined): void {
 // materializes the frames below it first, so nesting stays allocation-free
 // until something registers.
 
-const LAZY: Owner = createOwner(undefined);
+const LAZY: Owner = /* @__PURE__ */ createOwner(undefined);
 const lazyParents: (Owner | undefined)[] = [];
 const lazyOwners: (Owner | undefined)[] = [];
 let lazyDepth = -1;

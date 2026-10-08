@@ -360,7 +360,8 @@ export function hydrate<P extends object>(
   fresh?: boolean,
 ): () => void {
   const parent = start.parentNode!;
-  const name = component.name || "(anonymous)";
+  // Dev diagnostics only: production builds drop the read.
+  const name = DEV ? component.name || "(anonymous)" : "";
   // Slot sources: `<template data-l-slot>` (slots the server did not render) right after `start`,
   // and a copy of each slot rendered inline.
   const sources: Record<string, Node> = {};

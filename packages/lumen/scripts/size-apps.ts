@@ -5,8 +5,9 @@
 // is split by the minified bytes of each side (from its source map); most chunks are all one or
 // the other.
 //
-// The runtime total counts every chunk, so it is what a page with every island (or every SPA route)
-// loads. Exits with code 1 when an app's runtime is above the cap: a CI check.
+// The framework total (runtime, router and app-layer helpers, reported apart) counts every chunk, so
+// it is what a page with every island (or every SPA route) loads. Exits with code 1 when an app's
+// framework total is above the cap: a CI check.
 //
 // Run: `pnpm --filter lumen size:apps [app…] [--modules]` (apps: example directory names; default
 // the three sample apps). `--modules` lists the modules of each chunk: minified bytes and an
@@ -38,8 +39,21 @@ const brotli = (code: string): number =>
     params: { [constants.BROTLI_PARAM_QUALITY]: constants.BROTLI_MAX_QUALITY },
   }).length;
 
-/** Lumen's runtime modules and Vite's client helpers (`\0vite/preload-helper.js`, …). */
-const isFramework = (id: string): boolean => id.startsWith(lumenSrc) || id.startsWith("\0vite/");
+/**
+ * Where a module's bytes count: the runtime (core, DOM, hydration, the island loader, Vite's client
+ * helpers such as `\0vite/preload-helper.js`), the SPA router (`lumen/router` and route matching),
+ * the app-layer helpers (`submit()`, `fetchJSON()`, `redirect()`…), or the app's own code
+ * (including its island manifest and route table).
+ */
+type Part = "runtime" | "router" | "helpers" | "app";
+
+function partOf(id: string): Part {
+  if (id.startsWith("\0vite/")) return "runtime";
+  if (!id.startsWith(lumenSrc)) return "app";
+  const path = id.slice(lumenSrc.length);
+  if (path.startsWith("app/router/") || path.startsWith("app/routes/")) return "router";
+  return path.startsWith("app/") ? "helpers" : "runtime";
+}
 
 /** Vite's preload file list (`__vite__mapDeps`) in the size report: app code. */
 const MAP_DEPS = "(vite preload list)";
@@ -198,21 +212,20 @@ let failed = false;
 for (const app of apps.length > 0 ? apps : APPS) {
   const root = join(examples, app);
   const chunks = await buildApp(root);
-  let runtime = 0;
-  let appCode = 0;
+  const parts: Record<Part, number> = { runtime: 0, router: 0, helpers: 0, app: 0 };
   const lines: string[] = [];
   for (const chunk of chunks.toSorted((a, b) => b.brotli - a.brotli)) {
     const entries = Object.entries(chunk.modules).filter(([id]) => id !== "");
-    const total = entries.reduce((sum, [, bytes]) => sum + bytes, 0) || 1;
-    const framework = entries
-      .filter(([id]) => isFramework(id))
-      .reduce((sum, [, bytes]) => sum + bytes, 0);
     // Unmapped glue (imports, exports) is split like the rest of the chunk.
-    const share = framework / total;
-    runtime += chunk.brotli * share;
-    appCode += chunk.brotli * (1 - share);
+    const total = entries.reduce((sum, [, bytes]) => sum + bytes, 0) || 1;
+    let framework = 0;
+    for (const [id, bytes] of entries) {
+      const part = partOf(id);
+      parts[part] += (chunk.brotli * bytes) / total;
+      if (part !== "app") framework += bytes;
+    }
     lines.push(
-      `  ${chunk.fileName}: brotli ${kb(chunk.brotli)}, runtime ${Math.round(share * 100)}%`,
+      `  ${chunk.fileName}: brotli ${kb(chunk.brotli)}, framework ${Math.round((framework / total) * 100)}%`,
     );
     if (listModules) {
       for (const [id, bytes] of entries.toSorted((a, b) => b[1] - a[1])) {
@@ -221,10 +234,11 @@ for (const app of apps.length > 0 ? apps : APPS) {
       }
     }
   }
-  const ok = runtime <= CAP;
+  const framework = parts.runtime + parts.router + parts.helpers;
+  const ok = framework <= CAP;
   failed ||= !ok;
   console.log(
-    `${app}: runtime ${kb(runtime)} brotli (cap ${kb(CAP)}: ${ok ? "OK" : "OVER"}), app code ${kb(appCode)}`,
+    `${app}: framework ${kb(framework)} brotli (cap ${kb(CAP)}: ${ok ? "OK" : "OVER"}) = runtime ${kb(parts.runtime)} + router ${kb(parts.router)} + app helpers ${kb(parts.helpers)}; app code ${kb(parts.app)}`,
   );
   console.log(lines.join("\n"));
 }

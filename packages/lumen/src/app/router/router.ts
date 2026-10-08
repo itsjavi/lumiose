@@ -45,6 +45,7 @@ import { injectContext } from "../../core/owner.ts";
 import { untrack } from "../../core/reactive.ts";
 import { computed, signal, type Signal } from "../../core/signal.ts";
 import { createComponent } from "../../dom/component.ts";
+import { DEV } from "../../dom/dev.ts";
 import { MISMATCH } from "../../dom/hydration.ts";
 import { createRange, renderRange, type RangeStart } from "../../dom/insert.ts";
 import { setClientNavigation } from "../actions/client.ts";
@@ -816,7 +817,9 @@ function scopeOf(api: string): Scope {
   if (found !== undefined) return found;
   if (router?.root !== undefined) return router.scope;
   throw new Error(
-    `${api} from lumen/router works inside spa routes (export const mode = "spa"). Islands of other routes receive what they need as props.`,
+    DEV
+      ? `${api} from lumen/router works inside spa routes (export const mode = "spa"). Islands of other routes receive what they need as props.`
+      : `${api} works inside spa routes.`,
   );
 }
 

@@ -32,7 +32,7 @@ export type LinkProps = Omit<JSX.IntrinsicElements["a"], "href" | "children"> & 
 };
 
 // `<a><!></a>`: the placeholder is where the server's children block hydrates.
-const anchor = template("<a><!></a>");
+const anchor = /* @__PURE__ */ template("<a><!></a>");
 let observer: IntersectionObserver | undefined;
 
 export function Link(props: LinkProps): Renderable {
