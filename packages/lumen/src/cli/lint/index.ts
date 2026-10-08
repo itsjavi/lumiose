@@ -79,7 +79,8 @@ interface OxlintDiagnostic {
 export async function lint(options: LintOptions): Promise<LintResult> {
   const root = realRoot(options.root);
   const oxlint = binPath(requirePackage(root, "oxlint", "lumen lint runs it"), "oxlint");
-  const { files } = await syncShadows(root);
+  // Only the project's own `.stsx` files: a used package's are linted by its own `lumen lint`.
+  const files = (await syncShadows(root)).files.filter((file) => file.own);
   const byShadow = new Map(files.map((file) => [file.shadow, file]));
   const sources = new Map<string, SourceText>();
   const diagnostics: CheckDiagnostic[] = [];

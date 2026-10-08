@@ -13,6 +13,7 @@ import {
   type OutputFormat,
 } from "./output.ts";
 import { projectRoot } from "./project.ts";
+import { writeLumenTsconfig } from "./check/layout.ts";
 
 export interface AppCommandOptions {
   root: string;
@@ -38,6 +39,8 @@ export async function buildCli(options: AppCommandOptions): Promise<number> {
   // Loaded on demand: Vite is only needed by dev, build and preview.
   const { build } = await import("../app/production/build.ts");
   try {
+    // Vite reads the tsconfig, which may extend the generated one.
+    await writeLumenTsconfig(root);
     const result = await build({
       root,
       // Below `info`, Rolldown's native reporter does not print its progress lines to stdout; the
@@ -69,6 +72,7 @@ export async function devCli(options: AppCommandOptions): Promise<number> {
   let server;
   try {
     const root = projectRoot(options.root);
+    await writeLumenTsconfig(root);
     const { createDevServer } = await import("../app/dev/server.ts");
     server = await createDevServer({
       root,

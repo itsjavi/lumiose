@@ -1,18 +1,36 @@
 // Shadow TSX (spec §9.1, decision-11). Every `src/**/*.stsx` is mirrored as its masked TSX at
 // `.lumen/shadow/<same path>.stsx.tsx`. The masked text is offset-identical to the source in
 // UTF-16 code units, so stock TypeScript type-checks it (with `rootDirs`, `import "./X.stsx"`
-// resolves to the shadow) and every position it reports is valid in the `.stsx` file.
+// resolves to the shadow) and every position it reports is valid in the `.stsx` file. The
+// tsconfig's `rootDirs` pair decides the paths, and whether the `.stsx` modules of the Lumen
+// packages the project uses are shadowed too (./layout.ts).
 //
-// Shared by `lumen check`, `lumen typegen`, the dev server and the language server.
+// Shared by `lumen check`, `lumen typegen`, `lumen lint` and the language server.
 
 import type { ScanResult } from "@lumen/compiler";
 import { mkdir, readdir, readFile, rm, rmdir, writeFile } from "node:fs/promises";
+import { existsSync } from "node:fs";
 import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { CheckFailure } from "./diagnostics.ts";
+import {
+  isWithin,
+  SHADOW_DIR,
+  shadowLayout,
+  SOURCE_DIR,
+  writeLumenTsconfig,
+  type ShadowLayout,
+} from "./layout.ts";
 
-export const SHADOW_DIR = ".lumen/shadow";
-/** Only the project's `src/` is mirrored; tsconfig `rootDirs` pairs it with `.lumen/shadow/src`. */
-export const SOURCE_DIR = "src";
+export {
+  LUMEN_TSCONFIG,
+  lumenTsconfig,
+  SHADOW_DIR,
+  shadowLayout,
+  SOURCE_DIR,
+  writeLumenTsconfig,
+  type ShadowLayout,
+} from "./layout.ts";
+
 const SHADOW_SUFFIX = ".tsx";
 
 export interface ShadowFile {
@@ -24,14 +42,21 @@ export interface ShadowFile {
   text: string;
   /** The scanner result: masked TSX, style blocks and scanner diagnostics. */
   scan: ScanResult;
+  /** Whether the source is the project's own (under `src/`), not a used package's. */
+  own: boolean;
 }
 
 export interface SyncShadowsOptions {
   /**
    * Sync only these sources (absolute or root-relative paths); a listed source that no longer
-   * exists has its shadow deleted. Default: every `.stsx` under `src/`, deleting all orphans.
+   * exists has its shadow deleted. Default: every `.stsx` under `src/` and the shadowed packages,
+   * deleting all orphans (a full sync also writes `.lumen/tsconfig.generated.json`).
    */
   files?: readonly string[];
+  /** The tsconfig whose `rootDirs` place the shadows, relative to the root. Default `tsconfig.json`. */
+  project?: string;
+  /** A layout already read (the language server caches them); default: read from the tsconfig. */
+  layout?: ShadowLayout;
 }
 
 export interface SyncShadowsResult {
@@ -41,20 +66,34 @@ export interface SyncShadowsResult {
   written: string[];
   /** Absolute paths of shadows deleted because their source is gone. */
   deleted: string[];
+  /** Where the shadows are. */
+  layout: ShadowLayout;
 }
 
-/** `<root>/src/a/B.stsx` → `<root>/.lumen/shadow/src/a/B.stsx.tsx`. */
-export function shadowPathFor(root: string, source: string): string {
-  return join(root, SHADOW_DIR, relative(root, resolve(root, source)) + SHADOW_SUFFIX);
+/**
+ * `<root>/src/a/B.stsx` → `<root>/.lumen/shadow/src/a/B.stsx.tsx`: the source's path relative to
+ * the layout's mirror base (default: the root) below `.lumen/shadow`.
+ */
+export function shadowPathFor(
+  root: string,
+  source: string,
+  layout?: Pick<ShadowLayout, "base">,
+): string {
+  const base = layout?.base ?? root;
+  return join(root, SHADOW_DIR, relative(base, resolve(root, source)) + SHADOW_SUFFIX);
 }
 
 /** The inverse of {@link shadowPathFor}; `undefined` for a path that is not a shadow. */
-export function sourcePathForShadow(root: string, shadow: string): string | undefined {
+export function sourcePathForShadow(
+  root: string,
+  shadow: string,
+  layout?: Pick<ShadowLayout, "base">,
+): string | undefined {
   const rel = relative(join(root, SHADOW_DIR), resolve(root, shadow));
   if (rel.startsWith("..") || isAbsolute(rel) || !rel.endsWith(".stsx" + SHADOW_SUFFIX)) {
     return undefined;
   }
-  return join(root, rel.slice(0, -SHADOW_SUFFIX.length));
+  return join(layout?.base ?? root, rel.slice(0, -SHADOW_SUFFIX.length));
 }
 
 /** Writes changed shadows and deletes those whose source is gone. */
@@ -66,23 +105,35 @@ export async function syncShadows(
   const { scan } = await loadCompiler();
   const sourceDir = join(root, SOURCE_DIR);
   const full = options.files === undefined;
+  // The project's tsconfig may extend the generated one, so it is written before it is read.
+  if (full) await writeLumenTsconfig(root);
+  const layout = options.layout ?? shadowLayout(root, options.project);
+  const dirs = [sourceDir, ...layout.packages];
   const candidates = full
-    ? await listFiles(sourceDir, (name) => name.endsWith(".stsx"))
-    : options.files!.map((file) => resolve(root, file)).filter((file) => isStsxIn(sourceDir, file));
+    ? (
+        await Promise.all(
+          dirs.map((dir) =>
+            listFiles(dir, (name) => name.endsWith(".stsx"), dir === sourceDir ? undefined : dir),
+          ),
+        )
+      ).flat()
+    : options
+        .files!.map((file) => resolve(root, file))
+        .filter((file) => dirs.some((dir) => isStsxIn(dir, file)));
 
   const files: ShadowFile[] = [];
   const written: string[] = [];
   const deleted: string[] = [];
   await Promise.all(
     [...new Set(candidates)].map(async (source) => {
-      const shadow = shadowPathFor(root, source);
+      const shadow = shadowPathFor(root, source, layout);
       const text = await readFile(source, "utf8").catch(ignoreMissing);
       if (text === undefined) {
         if (await removeFile(shadow)) deleted.push(shadow);
         return;
       }
       const result = scan(text, source);
-      files.push({ source, shadow, text, scan: result });
+      files.push({ source, shadow, text, scan: result, own: isWithin(source, sourceDir) });
       if (await writeIfChanged(shadow, result.masked)) written.push(shadow);
     }),
   );
@@ -105,6 +156,7 @@ export async function syncShadows(
     files: files.toSorted((a, b) => compare(a.source, b.source)),
     written: written.toSorted(compare),
     deleted: deleted.toSorted(compare),
+    layout,
   };
 }
 
@@ -128,19 +180,32 @@ function isStsxIn(dir: string, file: string): boolean {
   return file.endsWith(".stsx") && !rel.startsWith("..") && !isAbsolute(rel);
 }
 
-/** Absolute paths of matching files under `dir`, skipping dot-entries and `node_modules`. */
-export async function listFiles(dir: string, match: (name: string) => boolean): Promise<string[]> {
+/**
+ * Absolute paths of matching files under `dir`, skipping dot-entries and `node_modules`. Below a
+ * `packageDir`, directories of nested projects (with a `package.json` or `tsconfig.json`) are
+ * skipped too: they are checked on their own.
+ */
+export async function listFiles(
+  dir: string,
+  match: (name: string) => boolean,
+  packageDir?: string,
+): Promise<string[]> {
+  if (packageDir !== undefined && dir !== packageDir && isProjectDir(dir)) return [];
   const entries = await readdir(dir, { withFileTypes: true }).catch(ignoreMissing);
   if (entries === undefined) return [];
   const nested = await Promise.all(
     entries.map(async (entry) => {
       if (entry.name.startsWith(".") || entry.name === "node_modules") return [];
       const path = join(dir, entry.name);
-      if (entry.isDirectory()) return listFiles(path, match);
+      if (entry.isDirectory()) return listFiles(path, match, packageDir);
       return entry.isFile() && match(entry.name) ? [path] : [];
     }),
   );
   return nested.flat();
+}
+
+function isProjectDir(dir: string): boolean {
+  return existsSync(join(dir, "package.json")) || existsSync(join(dir, "tsconfig.json"));
 }
 
 async function writeIfChanged(file: string, content: string): Promise<boolean> {

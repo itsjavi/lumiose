@@ -1,13 +1,16 @@
 // Unit tests for the offset-preserving views and the URI mapping used by the proxy.
 
 import { scan } from "@lumen/compiler";
+import { mkdir, mkdtemp, realpath, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { TextDocument } from "vscode-languageserver-textdocument";
 import { describe, expect, it } from "vitest";
 import { filterBlockDiagnostics } from "./diagnostics.ts";
 import { rewriteUris } from "./rewrite.ts";
 import { foldedValue } from "./server.ts";
 import { virtualCss } from "./stsx.ts";
-import { isShadow, rewriteShadowText, shadowToSource } from "./workspace.ts";
+import { isShadow, pathToUri, Projects, rewriteShadowText, shadowToSource } from "./workspace.ts";
 
 const SOURCE = `const gap = 8;
 export function A() {
@@ -81,6 +84,32 @@ describe("shadow URIs", () => {
       data: { uri: shadow },
       contents: { kind: "markdown", value: `[x](${source})` },
     });
+  });
+});
+
+describe("shadow URIs below a wider mirror base (TASK-73)", () => {
+  it("maps sources and shadows through the project's rootDirs pair", async () => {
+    const dir = await realpath(await mkdtemp(join(tmpdir(), "lumen-ls-layout-")));
+    try {
+      const root = join(dir, "apps/web");
+      await mkdir(join(root, "src"), { recursive: true });
+      await writeFile(
+        join(root, "tsconfig.json"),
+        '{ "compilerOptions": { "rootDirs": ["../..", ".lumen/shadow"] } }',
+      );
+      const projects = new Projects([root]);
+      const source = pathToUri(join(root, "src/A.stsx"));
+      const shadow = pathToUri(join(root, ".lumen/shadow/apps/web/src/A.stsx.tsx"));
+      const packageShadow = join(root, ".lumen/shadow/packages/ui/src/B.stsx.tsx");
+      expect(projects.shadowUri(source)).toBe(shadow);
+      expect(projects.shadowToSource(shadow)).toBe(source);
+      expect(projects.shadowToSource(packageShadow)).toBe(join(dir, "packages/ui/src/B.stsx"));
+      expect(projects.rewriteShadowText(`See ${shadow}#L2 and ${packageShadow}.`)).toBe(
+        `See ${source}#L2 and ${join(dir, "packages/ui/src/B.stsx")}.`,
+      );
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
   });
 });
 

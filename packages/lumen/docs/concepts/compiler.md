@@ -89,6 +89,9 @@ $ lumen explain LUM3010
   exist. Run `lumen check` (or `lumen typegen`), or keep the dev server or editor running.
 - **Missing `rootDirs` or `.lumen/shadow` in `tsconfig.json`.** `lumen check` reports the missing
   options (`LUM6001`) and prints the template.
+- **Importing `.stsx` across `src/` or from a workspace package with the template tsconfig.** The
+  template's `rootDirs` only pair `src`. Extend `.lumen/tsconfig.generated.json` instead
+  ([tsconfig](../reference/jsx.md#imports-outside-src-and-stsx-from-other-packages)).
 - **Ignoring a code because the message is short.** Run `lumen explain <code>` for the cause and
   the fix.
 - **Expecting TypeScript plugins.** Lumen uses stock `tsc` and a language server; there is no TS

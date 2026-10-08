@@ -338,6 +338,23 @@ function conditionalTarget(value: unknown, star: string): string | undefined {
  * `files` collects the configs read.
  */
 function readPaths(file: string, files: Set<string>): PathMapping | undefined {
+  const found = readTsconfigOption(file, "paths", files);
+  return found !== undefined && isObject(found.value)
+    ? { base: found.base, paths: found.value }
+    : undefined;
+}
+
+/**
+ * A `compilerOptions` value of a tsconfig, following `extends` like TypeScript: the nearest
+ * declaration wins, later entries of an `extends` array override earlier ones, and `base` is the
+ * directory of the declaring file (paths in the value are relative to it). `files` collects the
+ * configs read.
+ */
+export function readTsconfigOption(
+  file: string,
+  option: string,
+  files: Set<string> = new Set(),
+): { base: string; value: unknown } | undefined {
   if (files.has(file)) return undefined;
   files.add(file);
   let config: unknown;
@@ -348,11 +365,11 @@ function readPaths(file: string, files: Set<string>): PathMapping | undefined {
   }
   if (!isObject(config)) return undefined;
   const options = config["compilerOptions"];
-  if (isObject(options) && isObject(options["paths"])) {
-    return { base: dirname(file), paths: options["paths"] };
+  if (isObject(options) && options[option] !== undefined) {
+    return { base: dirname(file), value: options[option] };
   }
   const parents = config["extends"];
-  let inherited: PathMapping | undefined;
+  let inherited: { base: string; value: unknown } | undefined;
   for (const parent of typeof parents === "string"
     ? [parents]
     : Array.isArray(parents)
@@ -360,8 +377,8 @@ function readPaths(file: string, files: Set<string>): PathMapping | undefined {
       : []) {
     if (typeof parent !== "string") continue;
     const path = resolveExtends(parent, dirname(file));
-    // Later entries of an `extends` array override earlier ones.
-    inherited = (path === undefined ? undefined : readPaths(path, files)) ?? inherited;
+    inherited =
+      (path === undefined ? undefined : readTsconfigOption(path, option, files)) ?? inherited;
   }
   return inherited;
 }

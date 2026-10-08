@@ -62,6 +62,9 @@ pnpm add -D vite typescript
 - `rootDirs` and `.lumen/shadow`: TypeScript cannot read `.stsx`, so Lumen writes a masked copy of
   each one (a _shadow file_, same line and column offsets) and `import "./X.stsx"` resolves to it.
 - `.lumen/types`: generated route types (`lumen typegen`, run by `lumen check`).
+- In a monorepo whose app imports `.stsx` components from a workspace package, extend
+  `.lumen/tsconfig.generated.json` instead of setting `rootDirs`. See
+  [tsconfig](./reference/jsx.md#imports-outside-src-and-stsx-from-other-packages).
 
 Add `.lumen/` to `.gitignore`, and `*.stsx linguist-language=TSX` to `.gitattributes` so GitHub
 highlights `.stsx` files.

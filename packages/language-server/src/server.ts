@@ -109,15 +109,7 @@ import {
   type TypeScriptExecutable,
   type TypeScriptServer,
 } from "./typescript.ts";
-import {
-  fileKey,
-  isStsx,
-  pathToUri,
-  Projects,
-  rewriteShadowText,
-  shadowToSource,
-  uriToPath,
-} from "./workspace.ts";
+import { fileKey, isStsx, pathToUri, Projects, uriToPath } from "./workspace.ts";
 
 export interface LumenFile {
   uri: string;
@@ -228,7 +220,7 @@ export function startServer(connection: Connection, options: ServerOptions = {})
   function toSource(uri: string): string | undefined {
     const open = openShadows.get(fileKey(uri));
     if (open !== undefined) return open;
-    const source = shadowToSource(uri);
+    const source = projects.shadowToSource(uri);
     return source === undefined ? undefined : (files.get(fileKey(source))?.uri ?? source);
   }
 
@@ -238,7 +230,8 @@ export function startServer(connection: Connection, options: ServerOptions = {})
   }
 
   const toTs = <T>(value: T): T => rewriteUris(value, toShadow);
-  const fromTs = <T>(value: T): T => rewriteUris(value, toSource, rewriteShadowText);
+  const fromTs = <T>(value: T): T =>
+    rewriteUris(value, toSource, (text) => projects.rewriteShadowText(text));
 
   /** Sends a request to TypeScript; the result's URIs are mapped back unless `raw`. */
   async function forward<R>(
@@ -508,8 +501,12 @@ export function startServer(connection: Connection, options: ServerOptions = {})
   async function syncRoot(root: string): Promise<void> {
     syncedRoots.add(root);
     try {
-      const { files: synced } = await syncShadows(root);
-      for (const file of synced) indexStyles(file.source, root, file.text, file.scan);
+      const { files: synced, layout } = await syncShadows(root);
+      projects.setLayout(root, layout);
+      // Used packages' files are indexed by their own project.
+      for (const file of synced) {
+        if (file.own) indexStyles(file.source, root, file.text, file.scan);
+      }
       for (const module of await projectModules(root)) {
         if (!files.has(fileKey(module.path))) styles.updateModule(module.path, root, module.text);
       }
@@ -533,17 +530,29 @@ export function startServer(connection: Connection, options: ServerOptions = {})
     else styles.updateModule(path, root, text);
   }
 
-  /** Syncs the shadows of `.stsx` paths and tells TypeScript which shadows changed. */
+  /**
+   * Syncs the shadows of `.stsx` paths and tells TypeScript which shadows changed: in the file's
+   * own project, and in the projects that shadow it as a used package's file (TASK-73).
+   */
   async function syncFiles(changes: ReadonlyArray<{ path: string; type: FileChangeType }>) {
-    const byRoot = Map.groupBy(changes, (change) => projects.rootFor(change.path));
+    const byRoot = new Map<string, { path: string; type: FileChangeType }[]>();
+    for (const change of changes) {
+      for (const root of projects.rootsShadowing(change.path)) {
+        byRoot.set(root, [...(byRoot.get(root) ?? []), change]);
+      }
+    }
     for (const [root, rootChanges] of byRoot) {
       try {
         const { files: synced } = await syncShadows(root, {
           files: rootChanges.map((change) => change.path),
+          layout: projects.layoutFor(root),
         });
         const found = new Set(synced.map((file) => fileKey(file.source)));
-        for (const file of synced) indexStyles(file.source, root, file.text, file.scan);
+        for (const file of synced) {
+          if (file.own) indexStyles(file.source, root, file.text, file.scan);
+        }
         for (const { path } of rootChanges) {
+          if (projects.rootFor(path) !== root) continue;
           if (!found.has(fileKey(path)) && !files.has(fileKey(path))) styles.delete(path);
         }
       } catch (error) {
@@ -552,7 +561,7 @@ export function startServer(connection: Connection, options: ServerOptions = {})
       }
       notifyTs("workspace/didChangeWatchedFiles", {
         changes: rootChanges.map((change) => ({
-          uri: projects.shadowUri(pathToUri(change.path)),
+          uri: projects.shadowUri(pathToUri(change.path), root),
           type: change.type,
         })),
       });
@@ -667,9 +676,7 @@ export function startServer(connection: Connection, options: ServerOptions = {})
     }
     const path = uriToPath(uri);
     if (file?.shadowUri !== undefined && path !== undefined) {
-      void syncShadows(projects.rootFor(path), { files: [path] }).catch((error: unknown) =>
-        connection.console.error(`Lumen: shadow sync failed for ${path}: ${String(error)}`),
-      );
+      void syncFiles([{ path, type: FileChangeType.Changed }]);
     }
   });
 
@@ -679,6 +686,18 @@ export function startServer(connection: Connection, options: ServerOptions = {})
       return path === undefined ? [] : [{ path, type: change.type }];
     });
     if (stsx.length > 0) void syncFiles(stsx);
+    // A tsconfig or manifest change may move the shadows (TASK-73): sync those projects again.
+    const configs = changes.flatMap((change) => {
+      const path = uriToPath(change.uri);
+      return path !== undefined && /(?:^|[/\\])(?:tsconfig[^/\\]*|package)\.json$/i.test(path)
+        ? [path]
+        : [];
+    });
+    for (const root of new Set(configs.map((path) => projects.rootFor(path)))) {
+      if (!syncedRoots.has(root)) continue;
+      projects.setLayout(root, undefined);
+      void syncRoot(root);
+    }
     for (const change of changes) {
       const path = uriToPath(change.uri);
       if (path === undefined) continue;

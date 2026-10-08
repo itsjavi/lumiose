@@ -63,7 +63,9 @@ Serves the build output with `@lumen/adapter-node` (a dependency of the project)
 ## lumen check
 
 Type-checks the project: runs typegen (`.lumen/types/routes.d.ts`), writes shadow TSX files for
-every `.stsx` (`.lumen/shadow/`), runs `tsc --noEmit -p tsconfig.json`, maps shadow positions back
+every `.stsx` (`.lumen/shadow/`; also those of used Lumen packages when the tsconfig extends
+`.lumen/tsconfig.generated.json`, see [tsconfig](./jsx.md#imports-outside-src-and-stsx-from-other-packages)),
+runs `tsc --noEmit -p tsconfig.json`, maps shadow positions back
 to the `.stsx` sources (same line and UTF-16 column), and merges scanner, route, tsconfig and
 compiler diagnostics for `.stsx` and `.tsx` files (such as `LUM1006` for a `<style>` block in a
 `.tsx` file). For style diagnostics, the modules that `$` constants are imported from are resolved
@@ -80,8 +82,9 @@ Each JSON diagnostic has `source` (`ts`, `lumen`, `oxlint`, `stylelint`), `code`
 
 ## lumen typegen
 
-Writes the route types (`.lumen/types/routes.d.ts`) and syncs the shadow TSX files
-(`.lumen/shadow/`), without type-checking: what a bare `tsc` or an editor needs.
+Writes the route types (`.lumen/types/routes.d.ts`), the generated tsconfig
+(`.lumen/tsconfig.generated.json`) and syncs the shadow TSX files (`.lumen/shadow/`), without
+type-checking: what a bare `tsc` or an editor needs.
 
 ```sh
 lumen typegen --format json   # { routeTypes: { file, changed }, routes, shadows: { dir, files, written, deleted }, diagnostics, summary }

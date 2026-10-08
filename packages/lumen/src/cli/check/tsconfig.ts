@@ -1,8 +1,8 @@
 // The Lumen tsconfig (spec §4.7) and the check that a project's resolved tsconfig has what
 // shadow type checking needs.
 
-import { dirname, resolve } from "node:path";
-import { SHADOW_DIR, SOURCE_DIR } from "./shadow.ts";
+import { dirname, relative, resolve, sep } from "node:path";
+import { LUMEN_TSCONFIG, SHADOW_DIR, shadowPair, SOURCE_DIR, type ShadowLayout } from "./layout.ts";
 import { runTsc } from "./tsc.ts";
 
 /**
@@ -71,6 +71,10 @@ export interface TsconfigExpectations {
   shadows: readonly string[];
   /** Absolute path of the generated route types, which must be a root file. */
   routeTypes: string;
+  /** The shadow layout (from the same tsconfig). */
+  layout?: ShadowLayout;
+  /** Directories of used Lumen packages outside the layout's mirror that have `.stsx` files. */
+  unshadowedPackages?: readonly string[];
 }
 
 /** Options shadow type checking depends on, in a stable order. */
@@ -98,15 +102,32 @@ export function tsconfigProblems(
       help: 'Set "jsxImportSource": "lumen".',
     });
   }
-  const rootDirs = new Set(asStrings(options["rootDirs"]).map((dir) => resolve(base, dir)));
-  const missingRootDirs = template.compilerOptions.rootDirs.filter(
-    (dir) => !rootDirs.has(resolve(expected.root, dir)),
-  );
-  if (missingRootDirs.length > 0) {
+  const rootDirs = asStrings(options["rootDirs"]).map((dir) => resolve(base, dir));
+  const extendGenerated = `extend the generated "${LUMEN_TSCONFIG}" ("extends": "./${LUMEN_TSCONFIG}")`;
+  if (shadowPair(expected.root, rootDirs) === undefined) {
+    const missing = template.compilerOptions.rootDirs.filter(
+      (dir) => !rootDirs.includes(resolve(expected.root, dir)),
+    );
     problems.push({
       option: "rootDirs",
-      message: `tsconfig \`rootDirs\` lacks ${list(missingRootDirs)}, so imports of \`.stsx\` files do not resolve to their shadow TSX.`,
-      help: `Set "rootDirs": ${JSON.stringify(template.compilerOptions.rootDirs)}.`,
+      message: `tsconfig \`rootDirs\` lacks ${list(missing)}, so imports of \`.stsx\` files do not resolve to their shadow TSX.`,
+      help: `Set "rootDirs": ${JSON.stringify(template.compilerOptions.rootDirs)}, or ${extendGenerated}.`,
+    });
+  } else if ((expected.unshadowedPackages ?? []).length > 0) {
+    const packages = expected.unshadowedPackages!.map((dir) =>
+      relative(expected.root, dir).split(sep).join("/"),
+    );
+    problems.push({
+      option: "rootDirs",
+      message: `tsconfig \`rootDirs\` pairs only "${relative(
+        expected.root,
+        expected.layout?.mirrored ?? expected.root,
+      )
+        .split(sep)
+        .join(
+          "/",
+        )}" with its shadows, so the \`.stsx\` modules of the Lumen packages in ${list(packages)} are not type-checked.`,
+      help: `Instead of setting "rootDirs", ${extendGenerated}: it pairs a directory that contains those packages with "${SHADOW_DIR}".`,
     });
   }
   const roots = new Set((config.files ?? []).map((file) => resolve(base, file)));

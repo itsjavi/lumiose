@@ -32,6 +32,44 @@
 `lumen check` reports missing options (`LUM6001`) and prints this template when there is no
 tsconfig.
 
+### Imports outside `src/` and `.stsx` from other packages
+
+With the template, `.stsx` files must stay inside `src/`, because `rootDirs` pairs `src` with
+`.lumen/shadow/src`. A `.stsx` import that leaves `src/` (`../../lib/x.ts`) does not resolve
+(TS2307). A component that a workspace package re-exports from its own `.stsx` files
+(`@acme/ui` → `./Button.stsx`) has no shadow in your project, so it does not type-check either.
+
+For these projects, extend the tsconfig that Lumen generates at `.lumen/tsconfig.generated.json`.
+`lumen check`, `lumen typegen`, `lumen dev`/`build`, `lumen/vite` and the language server write it:
+
+```json
+{
+  "extends": "./.lumen/tsconfig.generated.json",
+  "compilerOptions": {
+    "module": "preserve",
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "noEmit": true,
+    "strict": true
+  }
+}
+```
+
+The generated file sets `jsx`, `jsxImportSource`, `types` and `include`. It also sets `rootDirs` to
+a _mirror base_ and `.lumen/shadow`. The mirror base is the nearest directory that contains the
+project and the Lumen packages it uses. These are the linked dependencies that list `lumen` as a
+dependency, plus the enclosing package of a project without its own `package.json`.
+
+Shadows then mirror the paths below that base. For example, `apps/web/.lumen/shadow/apps/web/src/`
+holds the app's own shadows and `apps/web/.lumen/shadow/packages/ui/src/` holds a package's. The
+`.stsx` modules of those packages are type-checked with your project, and errors in them point at
+their sources. An array `extends` keeps a shared base:
+`["../../tsconfig.base.json", "./.lumen/tsconfig.generated.json"]`. If you also set `include`, keep
+`.lumen/shadow` and `.lumen/types` in it.
+
+`lumen check` warns (`LUM6001`) when a used package has `.stsx` files that the tsconfig's
+`rootDirs` leave out.
+
 ## The `JSX` namespace
 
 | Type                                                        | Rule                                                                                                                                                    |

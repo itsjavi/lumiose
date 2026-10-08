@@ -21,7 +21,7 @@ import {
   type CheckSummary,
 } from "./diagnostics.ts";
 import { formatHuman, formatJson, type CheckReport } from "./report.ts";
-import { sourcePathForShadow, syncShadows, type ShadowFile } from "./shadow.ts";
+import { listFiles, sourcePathForShadow, syncShadows, type ShadowFile } from "./shadow.ts";
 import { SourceText } from "./text.ts";
 import {
   formatTsconfig,
@@ -48,11 +48,16 @@ export { ModuleHost, type ModuleChange, type ModuleHostOptions } from "./modules
 export { CheckFailure, SUPERSEDED_BY_TYPESCRIPT } from "./diagnostics.ts";
 export { formatHuman, formatJson, type CheckReport } from "./report.ts";
 export {
+  LUMEN_TSCONFIG,
+  lumenTsconfig,
   SHADOW_DIR,
+  shadowLayout,
   shadowPathFor,
   sourcePathForShadow,
   syncShadows,
+  writeLumenTsconfig,
   type ShadowFile,
+  type ShadowLayout,
   type SyncShadowsOptions,
   type SyncShadowsResult,
 } from "./shadow.ts";
@@ -69,9 +74,10 @@ export interface FileDiagnostics {
 }
 
 /**
- * Hook for more Lumen diagnostics (lint results, …). It runs after shadow sync; `files` holds every
- * scanned `.stsx` with its source text and scan result. The compiler's diagnostics are built in
- * ({@link compilerDiagnostics}).
+ * Hook for more Lumen diagnostics (lint results, …). It runs after shadow sync; `files` holds the
+ * project's own scanned `.stsx` files with their source text and scan result (used packages'
+ * files are type-checked, but their Lumen diagnostics belong to their own check). The compiler's
+ * diagnostics are built in ({@link compilerDiagnostics}).
  */
 export type DiagnosticProvider = (context: {
   root: string;
@@ -113,9 +119,10 @@ export async function check(options: CheckOptions): Promise<CheckResult> {
   const { manifest } = await typegen(root, await routeOptions(root));
   diagnostics.push(...manifest.diagnostics.map(fromAppDiagnostic));
 
-  const { files } = await syncShadows(root);
+  const { files, layout } = await syncShadows(root, { project: relative(root, project) });
   const byShadow = new Map(files.map((file) => [file.shadow, file]));
-  for (const file of files) {
+  const own = files.filter((file) => file.own);
+  for (const file of own) {
     const key = fileKey(file.source);
     const text = new SourceText(file.text);
     sources.set(key, text);
@@ -134,11 +141,18 @@ export async function check(options: CheckOptions): Promise<CheckResult> {
   const projectText = await loadText(project);
   sources.set(projectKey, projectText);
   if (config) {
+    const unshadowedPackages = [];
+    for (const dir of layout.outside) {
+      const stsx = await listFiles(dir, (name) => name.endsWith(".stsx"), dir);
+      if (stsx.length > 0) unshadowedPackages.push(dir);
+    }
     const problems = tsconfigProblems(config, {
       root,
       project,
-      shadows: files.map((file) => file.shadow),
+      shadows: own.map((file) => file.shadow),
       routeTypes: join(root, ROUTE_TYPES_FILE),
+      layout,
+      unshadowedPackages,
     });
     diagnostics.push(
       ...problems.map((problem) => tsconfigWarning(projectKey, projectText, problem)),
@@ -156,7 +170,11 @@ export async function check(options: CheckOptions): Promise<CheckResult> {
   }
 
   for (const provider of [compilerDiagnostics, ...(options.providers ?? [])]) {
-    for (const { file, diagnostics: fileDiagnostics } of await provider({ root, project, files })) {
+    for (const { file, diagnostics: fileDiagnostics } of await provider({
+      root,
+      project,
+      files: own,
+    })) {
       const key = fileKey(resolve(root, file));
       const text = sources.get(key) ?? (await loadText(resolve(root, file)));
       sources.set(key, text);
@@ -187,7 +205,7 @@ export async function check(options: CheckOptions): Promise<CheckResult> {
     }
     const printed = resolve(root, diagnostic.file);
     const shadowed = byShadow.get(printed);
-    const file = shadowed?.source ?? sourcePathForShadow(root, printed) ?? printed;
+    const file = shadowed?.source ?? sourcePathForShadow(root, printed, layout) ?? printed;
     const key = fileKey(file);
     let text = sources.get(key);
     if (!text) {
