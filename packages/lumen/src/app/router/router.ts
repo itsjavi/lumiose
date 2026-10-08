@@ -48,7 +48,7 @@ import { createComponent } from "../../dom/component.ts";
 import { DEV } from "../../dom/dev.ts";
 import { MISMATCH } from "../../dom/hydration.ts";
 import { createRange, renderRange, type RangeStart } from "../../dom/insert.ts";
-import { setClientNavigation } from "../actions/client.ts";
+import { setClientNavigation } from "../actions/navigation.ts";
 import { createRouteMatcher, type RouteMatcher } from "../routes/match.ts";
 import type { RouteManifest } from "../routes/manifest.ts";
 import { HttpError, isHttpError, isRedirect } from "../server/control.ts";

@@ -7,6 +7,7 @@ import { beginBusy } from "../../core/internal.ts";
 import { signal, type Signal } from "../../core/signal.ts";
 import { decodeData } from "../../server/serialize.ts";
 import { fetchError, FetchError, readBody } from "../fetch-json.ts";
+import { navigation } from "./navigation.ts";
 import {
   ACTION_HEADER,
   actionName,
@@ -34,25 +35,7 @@ export interface SubmitOptions {
   signal?: AbortSignal;
 }
 
-/** How `submit()` redirects and `invalidate()` refresh. The SPA router replaces the MPA default. */
-export interface ClientNavigation {
-  navigate(href: string): void | Promise<void>;
-  invalidate(): void | Promise<void>;
-}
-
-let navigation: ClientNavigation = {
-  navigate: (href) => location.assign(href),
-  invalidate: () => location.reload(),
-};
-
-/** Installs navigation hooks (the SPA router does, TASK-25). Returns a function that undoes it. */
-export function setClientNavigation(hooks: ClientNavigation): () => void {
-  const previous = navigation;
-  navigation = hooks;
-  return () => {
-    navigation = previous;
-  };
-}
+export { setClientNavigation, type ClientNavigation } from "./navigation.ts";
 
 /** The action name of each submission in flight ("" for default actions). */
 const inFlight = signal<readonly string[]>([]);
