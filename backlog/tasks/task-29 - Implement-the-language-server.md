@@ -1,10 +1,11 @@
 ---
 id: TASK-29
 title: Implement the language server
-status: To Do
+status: In Progress
 assignee:
   - '@Beacon'
 created_date: '2026-10-08 12:21'
+updated_date: '2026-10-08 13:26'
 labels: []
 milestone: m-4
 dependencies:
