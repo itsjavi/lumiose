@@ -57,6 +57,11 @@ type DelegatedEvents<T, M> = {
 
 /** `on:click`, `on:scroll`, …: native `addEventListener` listeners. */
 type NativeEvents<T, M> = {
+  /**
+   * `on:event={handler}`: a native `addEventListener` listener for the exact event name, on this
+   * element (not delegated). Use it for custom and web-component events (`on:my-event`); prefer
+   * `onClick`-style props for standard events, which bubbling events share through delegation.
+   */
   [K in keyof M & string as `on:${K}`]?: JSX.EventHandler<M[K], T>;
 };
 
@@ -84,12 +89,30 @@ interface LumenProps<T extends Element> {
   children?: Renderable;
   class?: JSX.ClassValue;
   style?: string | JSX.CSSProperties;
+  /**
+   * `ref={fn}`: called with the element once it is created. `const input = ref<HTMLInputElement>()`
+   * makes a callback that can also be read like a signal: `input()` is the element (or
+   * `undefined` before it exists).
+   */
   ref?: RefProp<T>;
+  /**
+   * `attach={[fn, …]}`: each `fn(element)` runs as an effect once the element is mounted, so the
+   * signals it reads re-run it. It may return a cleanup, which runs before each re-run and when the
+   * element is removed. Falsy entries are skipped (`attach={[open() && trapFocus]}`).
+   */
   attach?: readonly (Attachment<T> | false | null | undefined)[];
   /** Sets `innerHTML` unescaped. The `no-unsafe-html` lint rule warns. */
   innerHTML?: string;
+  /**
+   * `key`: the identity of a row in a `.map` list, so a reordered list moves rows instead of
+   * re-creating them. Optional: rows are keyed by item reference otherwise.
+   */
   key?: unknown;
   className?: Rejected<"use `class` instead of `className`">;
+  /**
+   * `on:event={handler}`: a native `addEventListener` listener for the exact event name, on this
+   * element (not delegated). Use it for custom and web-component events (`on:my-event`).
+   */
   [nativeEvent: `on:${string}`]: CustomEventHandler | undefined;
 }
 
@@ -105,11 +128,32 @@ interface CustomElementProps extends JSX.HTMLProps<any> {
 /** `bind:value` / `bind:checked`: two-way binding to a writable signal, only where meaningful. */
 interface BindProps {
   input: {
+    /**
+     * `bind:value={signal}`: two-way binding. The signal sets the input's value, and `input`
+     * events write it back. A number signal on `type="number"` or `type="range"` uses
+     * `valueAsNumber`. Pass the signal itself, not its value: `bind:value={draft}`.
+     */
     "bind:value"?: WritableSource<string> | WritableSource<number>;
+    /**
+     * `bind:checked={signal}`: two-way binding of a checkbox or radio. The signal sets `checked`,
+     * and `change` events write it back. Pass the signal itself: `bind:checked={done}`.
+     */
     "bind:checked"?: WritableSource<boolean>;
   };
-  select: { "bind:value"?: WritableSource<string> };
-  textarea: { "bind:value"?: WritableSource<string> };
+  select: {
+    /**
+     * `bind:value={signal}`: two-way binding. The signal selects the option, and `input` events
+     * write the selected value back. Pass the signal itself: `bind:value={choice}`.
+     */
+    "bind:value"?: WritableSource<string>;
+  };
+  textarea: {
+    /**
+     * `bind:value={signal}`: two-way binding. The signal sets the text, and `input` events write
+     * it back. Pass the signal itself: `bind:value={draft}`.
+     */
+    "bind:value"?: WritableSource<string>;
+  };
 }
 
 type Lookup<M, K> = K extends keyof M ? M[K] : unknown;
@@ -147,13 +191,35 @@ export declare namespace JSX {
 
   /** Props every component accepts: `key`, and the island directives (decision-9, spec §7.2). */
   export interface IntrinsicAttributes {
+    /**
+     * `key`: the identity of a row in a `.map` list, so a reordered list moves rows instead of
+     * re-creating them. Optional: rows are keyed by item reference otherwise.
+     */
     key?: unknown;
+    /**
+     * Island directive: renders this component on the server and hydrates it in the browser
+     * **immediately** on page load. Its props must be serializable and the component exported.
+     */
     "client:load"?: boolean;
+    /**
+     * Island directive: renders this component on the server and hydrates it in the browser
+     * **when the browser is idle** (`requestIdleCallback`).
+     */
     "client:idle"?: boolean;
-    /** `client:visible`, or `client:visible="200px"` for a root margin. */
+    /**
+     * Island directive: renders this component on the server and hydrates it **when it enters the
+     * viewport**. `client:visible="200px"` sets a root margin, to hydrate a little earlier.
+     */
     "client:visible"?: boolean | string;
-    /** `client:media="(max-width: 600px)"`. */
+    /**
+     * Island directive: renders this component on the server and hydrates it **when the media
+     * query matches**: `client:media="(max-width: 600px)"`.
+     */
     "client:media"?: string;
+    /**
+     * Island directive: **client-rendered only**. The server sends no HTML for this component; it
+     * renders in the browser on page load.
+     */
     "client:only"?: boolean;
   }
 
