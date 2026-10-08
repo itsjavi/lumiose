@@ -1,10 +1,11 @@
 ---
 id: TASK-56
-title: Document build-time CSS math folding
+title: 'Document JS values in styles, including build-time math'
 status: To Do
 assignee:
   - '@Beacon'
 created_date: '2026-10-08 15:54'
+updated_date: '2026-10-08 15:58'
 labels: []
 milestone: m-5
 dependencies:
@@ -18,11 +19,12 @@ ordinal: 56000
 ## Description
 
 <!-- SECTION:DESCRIPTION:BEGIN -->
-Because $refs are substituted before Lightning CSS parses style blocks, any math whose operands are concrete, compatible values is precomputed at build time: calc($gap * 2px) becomes 16px, min/max/clamp/trig fold, and partial folding happens in mixed expressions. Custom properties are folded too (TASK-55). The user wants this presented to humans and agents as a benefit of Lumen's CSS pipeline, crediting Lightning CSS.
+The user wants build-time math documented together with the section on using JS values in styles ($name), so readers see in one place what can be used, what can't (e.g. function calls) and what gets precomputed. JS constants are folded by the Lumen compiler; CSS math on concrete values is folded by Lightning CSS (calc/min/max/clamp/trig; custom properties via TASK-55).
 <!-- SECTION:DESCRIPTION:END -->
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 docs/concepts/styles.md gains a 'Build-time math' section: what folds (examples table), what can't (%, vw, em/rem, var(): context-dependent) and why, custom properties, credit to Lightning CSS
-- [ ] #2 The reference page and the styles 'Common mistakes' mention it where relevant; llms.txt/llms-full.txt regenerated; examples marked check pass
+- [ ] #1 docs/concepts/styles.md has one section "JS values in styles" covering: what $name/$obj.key can reference (top-level and component consts, imported export consts, statically evaluable literals/template literals/arithmetic/as-const objects), what cannot (function calls, let, signals/props, array indexing) with the diagnostics, where values may appear (values and @media/@container/@supports, not selectors, strings, url()), and the style-prop bridge for runtime values
+- [ ] #2 A "Build-time math" subsection in that section: examples table of what folds and what stays (%, vw, em/rem, var() are context-dependent), custom properties, credit to Lightning CSS
+- [ ] #3 Reference, common mistakes and llms files updated; examples marked check pass
 <!-- AC:END -->
