@@ -5,7 +5,7 @@ status: In Progress
 assignee:
   - '@Spark'
 created_date: '2026-10-08 16:20'
-updated_date: '2026-10-08 16:21'
+updated_date: '2026-10-08 16:26'
 labels: []
 milestone: m-1
 dependencies:
@@ -40,4 +40,6 @@ The user wants the benchmark table to include Remix 3 (remix-run), a new framewo
 
 <!-- SECTION:NOTES:BEGIN -->
 Spark: claimed TASK-68 (session spark-task68-20261008T162132Z, benchmark-only; not touching packages/lumen/**).
+
+Spark: implementation in benchmarks/js-framework-benchmark/frameworks/keyed/remix-v3 (krausest layout: package.json with build-prod, package-lock.json, index.html, src/main.jsx), remix@3.0.0 + esbuild 0.28.2 pinned. Modeled on the Remix team's own benchmark app (remix-run/remix packages/component/bench/frameworks/remix/index.tsx, same app incl. per-row on('click') mixins and inline keyed rows in one App render) with krausest's data generation and HTML. Bundled with esbuild --bundle --minify --format=esm --jsx-import-source=remix/component, as that Remix bench does (Remix's own remix/assets serves unbundled modules compiled on demand, so it cannot produce krausest's static dist/). scripts/jsfb.ts: new LOCAL list, installLocal() copies the sources into .krausest/frameworks/keyed/<name>, npm ci when the lockfile changed, build-prod on every run; RESULTS.md notes and bundle sizes for local frameworks. Evidence: krausest isKeyed: 'remix-v3-v3.0.0-keyed is keyed for run, remove row and swap rows', no HTML-structure error; scripted check of every op (run, update every 10th, select, swap 1↔998, remove, append, runlots, clear) correct, row outerHTML identical to vanillajs/react-hooks, no class attribute on unselected rows. Bundle: 88.3 kB min — createRoot always builds a frame runtime (frame.js 20 kB, navigation, import-map manager), not tree-shakable from the app.
 <!-- SECTION:NOTES:END -->
