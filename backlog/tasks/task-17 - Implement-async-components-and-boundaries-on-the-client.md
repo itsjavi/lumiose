@@ -5,6 +5,7 @@ status: To Do
 assignee:
   - '@Spark'
 created_date: '2026-10-08 12:21'
+updated_date: '2026-10-08 13:26'
 labels: []
 milestone: m-2
 dependencies:
@@ -27,3 +28,11 @@ Async components re-run on tracked changes while keeping stale UI, with Suspense
 - [ ] #2 Suspense shows the fallback for new pending content only; ErrorBoundary supports retry; pending() works; resource() and fetchJSON client side
 - [ ] #3 Tests cover re-run races, cancellation and nested boundaries
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Lux (from TASK-16):
+- Client $await must match the server: it never rejects, and on rejection it resolves to a resume function that restores the run and then throws.
+- The browser lumen entry must export the same public names as the server: Suspense, ErrorBoundary, Head/Title/Meta (on the client Title/Meta update document.head for SPA navigations), renderToString/renderToStream (throw LUM4003-style errors in the browser).
+<!-- SECTION:NOTES:END -->
