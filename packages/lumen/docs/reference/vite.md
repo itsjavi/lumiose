@@ -22,6 +22,8 @@ interface LumenOptions {
   trailingSlash?: "ignore" | "always" | "never"; // default "ignore"
   /** The origin check of form posts (on by default); false turns it off. */
   csrf?: false | { allowedOrigins?: readonly string[] };
+  /** `.svg` imports as inline components; false leaves them to Vite (URLs). */
+  svg?: boolean | { optimize?: boolean; currentColor?: boolean }; // default true
 }
 ```
 
@@ -39,6 +41,10 @@ What it does:
   the runtime share one module instance. Under Vitest, tests in a DOM environment (`happy-dom`,
   `jsdom`) get the `browser` entry too (see [Testing](../concepts/testing.md)).
 - Turns compiler diagnostics into Vite warnings and errors with code frames (the dev overlay).
+- Loads project `.svg` files (`./icon.svg`, `./icon.svg?inline`) as inline components for the
+  environment's target, optimised with OXVG (`optimize`, default `true`); `currentColor: true`
+  replaces every colour with `currentColor`. `?url` and `?raw` stay Vite's, and `.svg` files in
+  `exclude` (node_modules) keep Vite's URL import. See [SVG imports](../concepts/svg.md).
 - Hot updates: a client module that imports `mount` from `lumen/dom` (an app entry) accepts updates
   of every module it reaches and re-mounts the app into the same container. Component state resets;
   module-level signals of unchanged modules survive.
@@ -46,8 +52,8 @@ What it does:
   Modules that `$` references import constants from are tracked as dependencies of that CSS module.
   A style-only edit, or an edit to such a constants module, hot-updates the CSS without remounting.
 
-> **Status:** compilation, environments, diagnostics, HMR, style-block CSS and the project options
-> above are available. The designed options `adapter`, `css`, `csp`, `viewTransitions` and
+> **Status:** compilation, environments, diagnostics, HMR, style-block CSS, `.svg` imports and the
+> project options above are available. The designed options `adapter`, `css`, `csp`, `viewTransitions` and
 > `prefetch` are not.
 
 ## Example

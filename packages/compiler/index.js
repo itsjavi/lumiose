@@ -902,6 +902,7 @@ if (!nativeBinding) {
 const {
   AttributeValueKind,
   compile,
+  compileSvg,
   CompileTarget,
   FileKind,
   ParentKind,
@@ -913,6 +914,7 @@ const {
 } = nativeBinding;
 export { AttributeValueKind };
 export { compile };
+export { compileSvg };
 export { CompileTarget };
 export { FileKind };
 export { ParentKind };

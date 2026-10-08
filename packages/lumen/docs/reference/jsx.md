@@ -26,7 +26,7 @@
 | `jsx: "preserve"`, `jsxImportSource: "lumen"` | The Lumen compiler transforms JSX; TypeScript only checks it against Lumen's types. |
 | `rootDirs` with `.lumen/shadow/src`           | `import "./X.stsx"` resolves to the shadow file `X.stsx.tsx`.                       |
 | `include` `.lumen/shadow`, `.lumen/types`     | Shadow files and generated route types are part of the program.                     |
-| `types: ["lumen/env"]`                        | The global `JSX` namespace, `import.meta.env` and `Locals`.                         |
+| `types: ["lumen/env"]`                        | The global `JSX` namespace, `import.meta.env`, `Locals` and `.svg` modules.         |
 | `allowImportingTsExtensions`                  | Imports name their extension: `./Card.stsx`, `./tokens.ts`.                         |
 
 `lumen check` reports missing options (`LUM6001`) and prints this template when there is no
@@ -138,7 +138,16 @@ interface ImportMetaEnv {
 declare module "lumen" {
   interface Locals {}
 }
+declare module "*.svg" {
+  const Svg: (props: JSX.SVGProps<SVGSVGElement> & { title?: string }) => JSX.Element;
+  export default Svg;
+}
+declare module "*.svg?inline" {} // the same component
+declare module "*.svg?url" {} // export default url: string
+declare module "*.svg?raw" {} // export default raw: string
 ```
 
 Declare known public variables by merging `interface ImportMetaEnv { readonly PUBLIC_API: string }`.
-The built-in members match `vite/client`, so both can be loaded.
+The built-in members match `vite/client`, so both can be loaded; list `lumen/env` first, because
+`vite/client` types `*.svg` as a URL string and the first declaration wins (see
+[SVG imports](../concepts/svg.md)).

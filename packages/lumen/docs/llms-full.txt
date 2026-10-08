@@ -41,6 +41,7 @@ mistakes** and **Related diagnostics**. Reference pages list every export with i
 - [Data and actions](concepts/data-and-actions.md): Read data with async components, serve endpoints, mutate with form actions and `submit()`.
 - [Server](concepts/server.md): Request context, middleware, cookies, env, redirects and error helpers.
 - [Rendering modes](concepts/rendering-modes.md): `static`, `server` and `spa` routes, shell-first streaming, hydration and the build.
+- [SVG imports](concepts/svg.md): `import Icon from "./icon.svg"` as an inline, optimised component; `title`, `currentColor`, `?url` and `?raw`.
 - [Head and document](concepts/head.md): `<Title>`, `<Meta>`, `<Head>` and a custom `document.stsx`.
 - [Compiler and diagnostics](concepts/compiler.md): What the compiler does with `.stsx`/`.tsx`, and how `LUMxxxx` diagnostics work.
 - [Testing](concepts/testing.md): Test components with Vitest and the Lumen Vite plugin.
@@ -398,6 +399,7 @@ the signal marks it dirty and re-runs only what depends on it.
 | `onMount(fn)`                                               | Runs `fn` once, untracked, after the owner's DOM is mounted. May return a cleanup.                                                          |
 | `onCleanup(fn)`                                             | Runs `fn` when the current owner is disposed or re-runs.                                                                                    |
 | `store(obj)`                                                | Deep reactive proxy over a plain object or array: mutate it directly.                                                                       |
+| `snapshot(value)`                                           | A deep plain copy of a store, for `structuredClone`, `postMessage` and saving.                                                              |
 | `untrack(fn)`                                               | Runs `fn` without subscribing to what it reads.                                                                                             |
 | `batch(fn)`                                                 | Groups writes; dependents run once at the end.                                                                                              |
 | `flushSync()`                                               | Runs pending bindings and effects now.                                                                                                      |
@@ -460,6 +462,8 @@ function ThemeLabel() {
   `flushSync()` after a write before asserting.
 - **Module-scope signals in server code.** On the server, a signal at module scope is shared by
   every request. Keep request data in components or context (`LUM4008`).
+- **Posting a store to a worker.** `postMessage()` and `structuredClone()` throw on proxies: send
+  `snapshot(state)`.
 - **Expecting `store()` to wrap class instances, `Map`s or `Set`s.** Only plain objects and arrays
   become reactive; other values are returned as is.
 
@@ -1877,6 +1881,115 @@ export default function Doc({ params }: RouteProps<"/docs/[slug]">) {
 
 See also: [Islands](islands.md), [Async components](async.md), [Head and document](head.md).
 
+<!-- source: concepts/svg.md -->
+
+# SVG imports
+
+> `import Icon from "./icon.svg"` gives an inline SVG component: optimised at build time, styled with `currentColor` and props, labelled with `title`, the same on the server, the client and in islands. `?url` and `?raw` keep Vite's meaning.
+
+## Concept
+
+With the Lumen Vite plugin, an `.svg` file in your project imports as a component. The build
+optimises the file (OXVG, a Rust port of SVGO's default preset) and compiles it into a static
+template, so rendering an icon clones markup, on the server and in the browser alike. The icon is
+**inline**: its paths are part of the page's HTML, CSS reaches them, and nothing is fetched.
+
+- **Props override the file.** The file's root attributes (`width`, `height`, `viewBox`, `fill`,
+  `stroke`, `class`, …) are defaults; any `<svg>` prop you pass replaces the matching one:
+  `class`, `style`, `width`, `height`, `fill`, `aria-*`, events and `ref`.
+- **Colour.** Icons drawn with `currentColor` follow the text colour (`color` in CSS). For icons
+  with a hard-coded colour, set `lumen({ svg: { currentColor: true } })` to replace every colour
+  with `currentColor`, or pass `fill`/`stroke` props.
+- **Accessibility.** Without `title`, `aria-label` or `aria-labelledby`, an icon is decorative
+  and gets `aria-hidden="true"`. `title="Home"` renders `<title>` as the first child, with
+  `role="img"` and `aria-labelledby` pointing at it. The id comes from the file and the title
+  text, so the server and the client agree without a counter. The file's own `<title>` is
+  dropped: the prop is the label.
+- **What the build removes.** Scripts, event attributes (`onload`) and `javascript:` URLs always;
+  editor metadata, comments and redundant markup when optimising. Ids get a per-file prefix (and
+  class names too, when the file has a `<style>`), so icons never clash with each other or with
+  the page.
+- **Query switches.** `./icon.svg` and `./icon.svg?inline` are the component. `?url` is Vite's
+  asset URL (or a `data:` URL for small files) and `?raw` the file's text.
+- **Dependencies.** `.svg` files under `node_modules` (the plugin's `exclude`) keep Vite's URL
+  import, which is what a library importing an `.svg` expects. `lumen({ svg: false })` leaves
+  every `.svg` import to Vite.
+
+Inline is a deliberate choice over sprites (`<use href="#id">`): with the compression every
+server applies, a page of repeated inline icons transfers about as many bytes as a sprite, and
+inline icons render faster and can be styled and animated part by part.
+
+## API
+
+| Import / option                          | Gives                                                       |
+| ---------------------------------------- | ----------------------------------------------------------- |
+| `import Icon from "./icon.svg"`          | `(props: JSX.SVGProps<SVGSVGElement> & { title?: string })` |
+| `import Icon from "./icon.svg?inline"`   | The same component                                          |
+| `import url from "./icon.svg?url"`       | The asset URL (`string`, Vite)                              |
+| `import text from "./icon.svg?raw"`      | The file's text (`string`, Vite)                            |
+| `lumen({ svg: { optimize: false } })`    | Skip the optimiser (safety transforms still run)            |
+| `lumen({ svg: { currentColor: true } })` | Replace every colour with `currentColor`                    |
+| `lumen({ svg: false })`                  | `.svg` imports stay Vite's URLs                             |
+
+The types come with `lumen/env` (`"types": ["lumen/env"]` in `tsconfig.json`).
+
+## Example
+
+```tsx
+// src/components/Nav.stsx
+import Home from "../icons/home.svg";
+import Search from "../icons/search.svg";
+import logoUrl from "../icons/logo.svg?url";
+
+export function Nav() {
+  return (
+    <nav>
+      <img src={logoUrl} alt="Acme" width={96} height={24} />
+      <a href="/" class="link">
+        <Home class="icon" /> Home
+      </a>
+      <button type="button">
+        <Search class="icon" title="Search" />
+      </button>
+      <style>
+        .link { color: rebeccapurple; }
+        .icon { width: 1.25em; height: 1.25em; vertical-align: -0.2em; }
+        .link:hover .icon { color: crimson; }
+      </style>
+    </nav>
+  );
+}
+```
+
+The `Home` icon is decorative (its link has text); the search button has no text, so its icon
+gets a `title`. Both follow the link or button colour through `currentColor`, and `class="icon"`
+receives the component's scope, so the scoped `.icon` rule applies.
+
+## Common mistakes
+
+- **Expecting a URL.** Before Lumen, `import icon from "./icon.svg"` was a URL string in Vite.
+  Use `./icon.svg?url` for `<img src>` and CSS, or `lumen({ svg: false })` for the old behaviour
+  everywhere.
+- **Loading `vite/client` types first.** `vite/client` also declares `*.svg` (as a string), and
+  whichever comes first in `"types"` wins: `Icon` then "cannot be used as a JSX component". List
+  `lumen/env` first, or drop `vite/client` (`lumen/env` already types `import.meta.env`).
+- **Styling inner paths from a scoped block.** The paths belong to the icon component, so only the
+  root `<svg>` (through `class`) carries your component's scope. Use inherited properties
+  (`color`, `fill`, `stroke`, `stroke-width`) on the root, or `:deep(path)`.
+- **Setting only `width`.** The file's `height` stays, and the drawing is centred in that box.
+  Pass both, or size icons with CSS as above.
+- **Labelling a decorative icon.** An icon next to visible text needs no `title`; a `title` there
+  makes screen readers repeat the text.
+- **Hard-coded colours in an icon set.** If icons stay black whatever `color` says, the files
+  hard-code a colour: use `lumen({ svg: { currentColor: true } })` for monochrome sets.
+
+## Related diagnostics
+
+A file that is not well-formed SVG fails the build with its location
+(`icon.svg: invalid SVG: … at 3:12`), as does a file whose root element is not `<svg>`.
+
+See also: [Styles](styles.md), [JSX](jsx.md), [reference: `lumen/vite`](../reference/vite.md), [reference: JSX types](../reference/jsx.md).
+
 <!-- source: concepts/head.md -->
 
 # Head and document
@@ -2280,6 +2393,25 @@ function store<T extends object>(value: T): T;
 Wraps a plain object or array in a deep reactive proxy: reads track per property, writes notify
 only on change, array methods work. Class instances, `Map`s, `Set`s and frozen objects are returned
 as is.
+
+## snapshot
+
+```ts
+function snapshot<T>(value: T): T;
+```
+
+A deep plain copy of a store, of a value inside one (`snapshot(state.items)`), or of plain data
+that holds stores. Plain objects and arrays are copied; other values (`Date`s, `Map`s, class
+instances) are kept as they are, and shared or circular references stay shared. Use it where a
+proxy does not work: `structuredClone()` and `postMessage()` (to a worker or an AudioWorklet)
+throw on proxies, and a copy does not change when the store does (saving, undo history). Reads
+are not tracked: in an effect, read the properties it should react to. On the server it copies the
+plain object.
+
+```ts
+const song = store({ title: "Demo", rows: [] as number[][] });
+worker.postMessage({ type: "song", song: snapshot(song) });
+```
 
 ## createContext, provide, inject
 
@@ -3187,6 +3319,8 @@ interface LumenOptions {
   trailingSlash?: "ignore" | "always" | "never"; // default "ignore"
   /** The origin check of form posts (on by default); false turns it off. */
   csrf?: false | { allowedOrigins?: readonly string[] };
+  /** `.svg` imports as inline components; false leaves them to Vite (URLs). */
+  svg?: boolean | { optimize?: boolean; currentColor?: boolean }; // default true
 }
 ```
 
@@ -3204,6 +3338,10 @@ What it does:
   the runtime share one module instance. Under Vitest, tests in a DOM environment (`happy-dom`,
   `jsdom`) get the `browser` entry too (see [Testing](../concepts/testing.md)).
 - Turns compiler diagnostics into Vite warnings and errors with code frames (the dev overlay).
+- Loads project `.svg` files (`./icon.svg`, `./icon.svg?inline`) as inline components for the
+  environment's target, optimised with OXVG (`optimize`, default `true`); `currentColor: true`
+  replaces every colour with `currentColor`. `?url` and `?raw` stay Vite's, and `.svg` files in
+  `exclude` (node_modules) keep Vite's URL import. See [SVG imports](../concepts/svg.md).
 - Hot updates: a client module that imports `mount` from `lumen/dom` (an app entry) accepts updates
   of every module it reaches and re-mounts the app into the same container. Component state resets;
   module-level signals of unchanged modules survive.
@@ -3211,8 +3349,8 @@ What it does:
   Modules that `$` references import constants from are tracked as dependencies of that CSS module.
   A style-only edit, or an edit to such a constants module, hot-updates the CSS without remounting.
 
-> **Status:** compilation, environments, diagnostics, HMR, style-block CSS and the project options
-> above are available. The designed options `adapter`, `css`, `csp`, `viewTransitions` and
+> **Status:** compilation, environments, diagnostics, HMR, style-block CSS, `.svg` imports and the
+> project options above are available. The designed options `adapter`, `css`, `csp`, `viewTransitions` and
 > `prefetch` are not.
 
 ## Example
@@ -3257,7 +3395,7 @@ export default defineConfig({
 | `jsx: "preserve"`, `jsxImportSource: "lumen"` | The Lumen compiler transforms JSX; TypeScript only checks it against Lumen's types. |
 | `rootDirs` with `.lumen/shadow/src`           | `import "./X.stsx"` resolves to the shadow file `X.stsx.tsx`.                       |
 | `include` `.lumen/shadow`, `.lumen/types`     | Shadow files and generated route types are part of the program.                     |
-| `types: ["lumen/env"]`                        | The global `JSX` namespace, `import.meta.env` and `Locals`.                         |
+| `types: ["lumen/env"]`                        | The global `JSX` namespace, `import.meta.env`, `Locals` and `.svg` modules.         |
 | `allowImportingTsExtensions`                  | Imports name their extension: `./Card.stsx`, `./tokens.ts`.                         |
 
 `lumen check` reports missing options (`LUM6001`) and prints this template when there is no
@@ -3369,10 +3507,19 @@ interface ImportMetaEnv {
 declare module "lumen" {
   interface Locals {}
 }
+declare module "*.svg" {
+  const Svg: (props: JSX.SVGProps<SVGSVGElement> & { title?: string }) => JSX.Element;
+  export default Svg;
+}
+declare module "*.svg?inline" {} // the same component
+declare module "*.svg?url" {} // export default url: string
+declare module "*.svg?raw" {} // export default raw: string
 ```
 
 Declare known public variables by merging `interface ImportMetaEnv { readonly PUBLIC_API: string }`.
-The built-in members match `vite/client`, so both can be loaded.
+The built-in members match `vite/client`, so both can be loaded; list `lumen/env` first, because
+`vite/client` types `*.svg` as a URL string and the first declaration wins (see
+[SVG imports](../concepts/svg.md)).
 
 <!-- source: reference/cli.md -->
 

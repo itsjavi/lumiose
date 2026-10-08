@@ -23,6 +23,8 @@
 // - `virtual:lumen/css-manifest` is the CSS manifest of builds (./css-manifest.ts): every
 //   stylesheet is built in the client environment, and the server build maps each route module to
 //   the stylesheets its static import graph reaches.
+// - `.svg` imports are inline components (`lumen({ svg })`, ./svg.ts); `?url` and `?raw` stay
+//   Vite's.
 // - Project options (`mode`, `ssr`, `trailingSlash`, `csrf`; decision-21) are validated here and
 //   exposed as the plugin's `api.options` for `lumen dev`/`build` and the CLI (./options.ts).
 
@@ -55,6 +57,7 @@ import {
   type Resolve,
   type Target,
 } from "./styles.ts";
+import { svgOptionsOf, svgPlugin } from "./svg.ts";
 
 export type {
   CsrfOptions,
@@ -62,6 +65,7 @@ export type {
   LumenPluginApi,
   ProjectOptions,
   RouteMode,
+  SvgOptions,
   TrailingSlash,
 } from "./options.ts";
 
@@ -85,6 +89,7 @@ const IMPORTS_MOUNT = /import\s*\{[^}]*\bmount\b[^}]*\}\s*from\s*"lumen\/dom"/;
 
 export default function lumen(options: LumenOptions = {}): Plugin<LumenPluginApi>[] {
   const api: LumenPluginApi = { options: Object.freeze(projectOptionsOf(options)) };
+  const svg = svgOptionsOf(options.svg);
   const include = options.include ?? LUMEN_MODULE;
   const exclude = options.exclude ?? NODE_MODULES;
   let serve = false;
@@ -307,6 +312,8 @@ export default function lumen(options: LumenOptions = {}): Plugin<LumenPluginApi
         },
       },
     },
+    // `.svg` imports as inline components (./svg.ts).
+    ...(svg ? [svgPlugin(svg, exclude, () => root)] : []),
   ];
 }
 

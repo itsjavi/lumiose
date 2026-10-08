@@ -619,3 +619,59 @@ pub fn compile(
         },
     })
 }
+
+/// Options of [`compile_svg`].
+#[napi(object)]
+pub struct SvgCompileOptions {
+    /// Default `"client"`.
+    pub target: Option<CompileTarget>,
+    /// Optimise with OXVG's default preset (SVGO's, in Rust). Default `true`.
+    pub optimize: Option<bool>,
+    /// Replace every colour with `currentColor` (monochrome icons). Default `false`.
+    pub current_color: Option<bool>,
+    /// The project root, as for [`compile`].
+    pub root: Option<String>,
+}
+
+/// Compiles an `.svg` file to the module of an inline component (`lumen_svg`, TASK-70): the
+/// default export renders the (optimised) SVG, takes SVG props and `title`. Throws when the
+/// file is not a well-formed SVG document.
+#[napi]
+pub fn compile_svg(
+    source: String,
+    filename: String,
+    options: Option<SvgCompileOptions>,
+) -> napi::Result<CompileResult> {
+    let options = options.unwrap_or(SvgCompileOptions {
+        target: None,
+        optimize: None,
+        current_color: None,
+        root: None,
+    });
+    let defaults = lumen_svg::SvgOptions::default();
+    let svg_options = lumen_svg::SvgOptions {
+        optimize: options.optimize.unwrap_or(defaults.optimize),
+        current_color: options.current_color.unwrap_or(defaults.current_color),
+    };
+    // A panic must not abort the host process (the dev server, the language server).
+    let component = std::panic::catch_unwind(|| lumen_svg::component_source(&source, &svg_options))
+        .map_err(|_| {
+            napi::Error::from_reason(format!("{filename}: the SVG could not be processed"))
+        })?
+        .map_err(|error| napi::Error::from_reason(format!("{filename}: {error}")))?;
+    compile(
+        component,
+        format!("{filename}.stsx"),
+        Some(CompileOptions {
+            target: options.target,
+            source_map: Some(false),
+            style_import: Some(false),
+            emit_css: Some(false),
+            css_targets: None,
+            css_minify: None,
+            root: options.root,
+            packages: None,
+            modules: None,
+        }),
+    )
+}

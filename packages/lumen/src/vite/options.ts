@@ -7,8 +7,9 @@ import type { ProjectOptions } from "../app/project.ts";
 import type { RouteMode } from "../app/routes/manifest.ts";
 import type { CsrfOptions } from "../app/server/csrf.ts";
 import type { TrailingSlash } from "../app/server/handler.ts";
+import type { SvgOptions } from "./svg.ts";
 
-export type { CsrfOptions, ProjectOptions, RouteMode, TrailingSlash };
+export type { CsrfOptions, ProjectOptions, RouteMode, SvgOptions, TrailingSlash };
 
 export interface LumenOptions {
   /** Modules compiled by Lumen. Default: `.stsx` and `.tsx` files. */
@@ -40,6 +41,12 @@ export interface LumenOptions {
    * (`"https://app.example.com"`); `false` turns the check off.
    */
   csrf?: false | CsrfOptions;
+  /**
+   * `.svg` imports (`import Icon from "./icon.svg"`) as inline components, optimised with OXVG;
+   * `?url` and `?raw` keep Vite's behaviour. `false` leaves `.svg` imports to Vite (a URL).
+   * Default: `true` (`{ optimize: true, currentColor: false }`).
+   */
+  svg?: boolean | SvgOptions;
 }
 
 /** The `api` of the `lumen` plugin, read by the app layer (app/project.ts `projectOptions`). */
@@ -50,7 +57,7 @@ export interface LumenPluginApi {
 
 const ROUTE_MODES: readonly RouteMode[] = ["static", "server", "spa"];
 const TRAILING_SLASHES: readonly TrailingSlash[] = ["ignore", "always", "never"];
-const KNOWN = ["include", "exclude", "mode", "ssr", "trailingSlash", "csrf"];
+const KNOWN = ["include", "exclude", "mode", "ssr", "trailingSlash", "csrf", "svg"];
 
 /** Validates `lumen({ … })` options and returns the project options; throws a `TypeError`. */
 export function projectOptionsOf(options: LumenOptions): ProjectOptions {

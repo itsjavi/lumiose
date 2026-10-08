@@ -85,6 +85,17 @@ export interface CompileResult {
   meta: CompileMeta;
 }
 
+/**
+ * Compiles an `.svg` file to the module of an inline component (`lumen_svg`, TASK-70): the
+ * default export renders the (optimised) SVG, takes SVG props and `title`. Throws when the
+ * file is not a well-formed SVG document.
+ */
+export declare function compileSvg(
+  source: string,
+  filename: string,
+  options?: SvgCompileOptions | undefined | null,
+): CompileResult;
+
 export type CompileTarget = "client" | "server";
 
 export interface ComponentMeta {
@@ -274,6 +285,18 @@ export interface SubtreeScope {
   attribute: string;
   /** The element (or fragment) that contains the blocks. */
   span: Span;
+}
+
+/** Options of [`compile_svg`]. */
+export interface SvgCompileOptions {
+  /** Default `"client"`. */
+  target?: CompileTarget;
+  /** Optimise with OXVG's default preset (SVGO's, in Rust). Default `true`. */
+  optimize?: boolean;
+  /** Replace every colour with `currentColor` (monochrome icons). Default `false`. */
+  currentColor?: boolean;
+  /** The project root, as for [`compile`]. */
+  root?: string;
 }
 
 export interface TextEdit {

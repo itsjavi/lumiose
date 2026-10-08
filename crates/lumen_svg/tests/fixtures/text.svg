@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 60">
+  <text x="10" y="20" font-family="serif">Price: <tspan font-weight="bold">5 &lt; 6 &amp; "7"</tspan> {braces}</text>
+  <foreignObject x="0" y="30" width="200" height="30">
+    <div xmlns="http://www.w3.org/1999/xhtml">HTML <b>inside</b></div>
+  </foreignObject>
+</svg>
