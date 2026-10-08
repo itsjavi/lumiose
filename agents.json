@@ -12,7 +12,7 @@
       "canCommit": false
     },
     "Photon": {
-      "role": "Compiler engineer (Rust). Owns the OXC-based JSX/TSX transform, scoped CSS pipeline (Lightning CSS), SSR codegen, napi-rs/wasm bindings, and the Vite/Rolldown plugin.",
+      "role": "Compiler engineer (Rust). Owns the .stsx/.tsx parser and masking, the OXC-based JSX transform, the CSS pipeline (Lightning CSS scoping by placement, $name constant folding), SSR codegen, napi-rs/wasm bindings, and the Vite/Rolldown plugin.",
       "canWrite": true,
       "canCommit": false
     },
@@ -22,7 +22,7 @@
       "canCommit": false
     },
     "Beacon": {
-      "role": "Tooling and DX engineer. Owns the CLI and `lumen check`, VS Code extension and editor integration, TS 7 typings, docs site, and agent-facing surfaces (AGENTS.md, llms.txt, skills, MCP server).",
+      "role": "Tooling and DX engineer. Owns the CLI and `lumen check`, shadow-TSX type checking, the .stsx language server (TS 7 LSP proxy + CSS) and VS Code extension, lint/format wrappers, TS 7 typings, docs site, and agent-facing surfaces (AGENTS.md, llms.txt, skills, MCP server).",
       "canWrite": true,
       "canCommit": false
     }

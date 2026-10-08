@@ -15,7 +15,7 @@ The user wants plain CSS. They need to reuse JS constants such as design tokens 
 ## Decision
 
 **Blocks**
-- `<style>` blocks sit at the top level of `.stsx` files (decision-11).
+- `<style>` blocks live in `.stsx` files (decision-11). Amended by decision-14: blocks may also sit inside a component, and placement decides scope.
 - They are scoped to the file. Each element in the file's templates gets a `data-l-<hash>` attribute, and the last compound of every selector gets a (0,1,0) specificity bump.
 - `<style global>` emits a block unscoped. `:global()` and `:deep()` remain as escapes.
 - `@keyframes` names are scoped.

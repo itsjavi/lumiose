@@ -47,7 +47,7 @@ The React Flight remote code execution vulnerability (CVE-2025-55182) showed the
 
 **Server/client separation**
 - `*.server.*` modules and `src/server/` are forbidden in client graphs (`LUM4003`).
-- An async component reachable from a client graph is an error (`LUM4005`).
+- ~~An async component reachable from a client graph is an error (`LUM4005`).~~ Dropped: async components are allowed on the client (decision-13).
 
 **Other modes**
 - An SPA subtree is a single root island.

@@ -18,14 +18,14 @@ TASK-2 found the following:
 ## Decision
 
 **Crates**
-- `lumen_jsx_compiler`: the pure core. It uses `oxc_parser`, `oxc_semantic`, `oxc_ast_visit` `VisitMut` + `AstBuilder`, and `oxc_codegen` with source maps. It avoids `oxc_traverse`.
-- `lumen_jsx_css`: scoping built on a Lightning CSS visitor.
-- `lumen_jsx_napi`: napi-rs v3 platform packages plus a `wasm32-wasip1-threads` fallback.
-- `lumen_jsx_wasm`: a single-threaded wasm-bindgen build for the playground.
+- `lumen_compiler`: the pure core. It uses `oxc_parser`, `oxc_semantic`, `oxc_ast_visit` `VisitMut` + `AstBuilder`, and `oxc_codegen` with source maps. It avoids `oxc_traverse`.
+- `lumen_css`: scoping built on a Lightning CSS visitor.
+- `lumen_napi`: napi-rs v3 platform packages plus a `wasm32-wasip1-threads` fallback.
+- `lumen_wasm`: a single-threaded wasm-bindgen build for the playground.
 
 **Version pinning.** Every `oxc_*` crate and `lightningcss` is pinned to an exact version. Upgrades happen deliberately and are guarded by a golden-fixture suite.
 
-**`lumen-jsx/vite` plugin**
+**`lumen/vite` plugin**
 - Runs as `enforce: "pre"` with a Rust-side hook filter.
 - Picks the client or server generator per Vite environment.
 - Emits CSS as virtual modules.

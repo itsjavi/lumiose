@@ -19,7 +19,7 @@ The user rejected writing CSS inside JS tagged templates (`<style>{css`…`}</st
 - **`.tsx`** files are also compiled as Lumen components. They have no `<style>` blocks and can import `.css` files. Use them for style-less components and for interop.
 - Non-UI logic stays in `.ts`.
 
-**Masking invariant (must hold).** Replacing every top-level `<style>…</style>` block in a `.stsx` file with whitespace, keeping newlines, yields valid TSX with identical offsets. The only exception is constant references inside CSS (decision-12), which are kept in place as expression statements. Every tool integration relies on this invariant.
+**Masking invariant (must hold; extended by decision-14 to `<style>` blocks inside JSX).** Replacing every top-level `<style>…</style>` block in a `.stsx` file with whitespace, keeping newlines, yields valid TSX with identical offsets. The only exception is constant references inside CSS (decision-12), which are kept in place as expression statements. Every tool integration relies on this invariant.
 
 **Type checking**
 - Lumen generates shadow `*.stsx.tsx` files from the masked source into `.lumen/shadow/`, and joins them to the source tree with `rootDirs`.

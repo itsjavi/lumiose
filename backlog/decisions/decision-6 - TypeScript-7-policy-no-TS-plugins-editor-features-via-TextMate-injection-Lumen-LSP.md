@@ -15,11 +15,11 @@ Tools that rely on TS plugins are stuck on TS 6 today. Examples are styled-compo
 ## Decision
 
 - **Codebase.** The Lumen codebase is written and checked with TS 7.
-- **User projects.** User projects need only stock TS 7 `tsc` and its native language service, with JSX types supplied via `jsxImportSource: "lumen-jsx"`.
+- **User projects.** User projects need only stock TS 7 `tsc` and its native language service, with JSX types supplied via `jsxImportSource: "lumen"`.
 - **No TypeScript plugins.** Lumen never depends on a TS language-service plugin.
 - **Editor features for CSS and compiler diagnostics** come from three parts:
-  - a VS Code extension with a TextMate injection grammar for `css` tagged templates;
-  - `@lumen-jsx/language-server`, a standalone Node LSP using `vscode-css-languageservice` over whitespace-masked virtual CSS, which also reports Lumen compiler diagnostics;
+  - a VS Code extension registering the `stsx` language (amended by decision-11: TSX grammar with embedded CSS, plus a language server that proxies TS 7’s native LSP over shadow TSX);
+  - `@lumen/language-server`, a standalone Node LSP using `vscode-css-languageservice` over whitespace-masked virtual CSS, which also reports Lumen compiler diagnostics;
   - `lumen check`, which combines `tsc`, compiler diagnostics and lint, with JSON output.
 - **Type-aware checks.** Checks that need type information, such as whether island props are serializable, run at runtime in development and through best-effort static analysis. They will be reassessed once the TS 7.1 API ships.
 
@@ -27,6 +27,6 @@ Tools that rely on TS plugins are stuck on TS 6 today. Examples are styled-compo
 
 - No Lumen tooling is blocked by TypeScript's API roadmap.
 - The LSP works in any LSP-capable editor.
-- CSS IntelliSense is weaker than a full TS plugin would give. For example, it cannot type-check `${}` values against CSS property types.
+- CSS IntelliSense comes from a CSS language service, not from TypeScript. `$name` constant references are still type-checked through the shadow TSX (decision-12).
 - Revisit this decision when TS 7.x exposes a stable API that would allow deeper integration.
 

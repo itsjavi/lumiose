@@ -22,8 +22,8 @@ Frameworks fail agents in predictable ways:
 Lumen commits to an agent-facing contract, which is tested in the same way as the API.
 
 1. **One obvious way.** A small surface of about 25 core exports. Alternatives are lint errors, not documented options.
-2. **Docs inside the package.** `lumen-jsx/docs/**/*.md` always matches the installed version.
-   - `create-lumen-jsx` writes `AGENTS.md`, plus a `CLAUDE.md` that references it, pointing agents at the local docs.
+2. **Docs inside the package.** `lumen/docs/**/*.md` always matches the installed version.
+   - `create-lumen` writes `AGENTS.md`, plus a `CLAUDE.md` that references it, pointing agents at the local docs.
    - `lumen docs <topic>` prints them.
    - The website publishes `llms.txt` and `llms-full.txt`.
    - Every concept page follows the same structure: concept, API, minimal example, common mistakes, then related diagnostics.

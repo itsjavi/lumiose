@@ -15,6 +15,11 @@ Ask about consequential unresolved product, architecture, security,
 or destructive decisions. Resolve routine implementation details
 using project conventions and judgment.
 
+Record a backlog decision only after the user explicitly approves
+the choice. An exploratory question ("would X be possible?") is not
+approval. Until then, keep options as proposals in chat or in the
+spec.
+
 ## Agent identity and roster
 
 Read agents.json at the start of each session. If the file does not
