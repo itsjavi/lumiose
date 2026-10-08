@@ -1,6 +1,6 @@
 # CLI
 
-> The `lumen` command: `dev`, `build`, `preview`, `check`, `typegen`, `routes`, `lint`, `fmt`, `docs`, `explain` and `agents init`, each with help, `--format json` and stable exit codes.
+> The `lumen` command: `dev`, `build`, `preview`, `check`, `typegen`, `routes`, `lint`, `fmt`, `docs`, `explain`, `agents init` and `mcp`, each with help, `--format json` and stable exit codes.
 
 ```sh
 lumen <command> [options]
@@ -78,7 +78,9 @@ lumen check --format json   # { command, ok, diagnostics: [...], summary: { erro
 ```
 
 Each JSON diagnostic has `source` (`ts`, `lumen`, `oxlint`, `stylelint`), `code`, `severity`,
-`file`, `line`, `column`, `endLine`, `endColumn`, `message`, and optional `help` and `docs`.
+`file`, `line`, `column`, `endLine`, `endColumn`, `message`, and optional `help`, `docs` and
+`fix`. A `fix` is `{ message, edits: [{ line, column, endLine, endColumn, text }] }`, with the same
+positions as diagnostics; apply all its edits together.
 
 ## lumen typegen
 
@@ -168,6 +170,17 @@ Makes an existing project agent-ready, as `create-lumen` does for new ones: a Lu
 that references `@AGENTS.md`, the `lumen` skill (`.claude/skills/lumen/SKILL.md`) and the
 `*.stsx linguist-language=TSX` line in `.gitattributes`. Re-running it updates only those parts.
 
+## lumen mcp
+
+```sh
+lumen mcp
+claude mcp add lumen -- npx lumen mcp   # register it with Claude Code
+```
+
+Starts the MCP server on stdio for coding agents: the tools `docs_search`, `docs_get`, `check`,
+`routes`, `components`, `compile`, `render` and `dev_logs`, and the docs and the route manifest as
+resources. It runs until the client disconnects. See [MCP server](mcp.md).
+
 ## Planned commands
 
-`lumen mcp` and `upgrade` are designed (spec §3, §10) but not available yet.
+`lumen upgrade` is designed (spec §3) but not available yet.

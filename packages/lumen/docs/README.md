@@ -47,7 +47,8 @@ mistakes** and **Related diagnostics**. Reference pages list every export with i
 - [`lumen/router`](reference/router.md): The SPA router: `Link`, `navigate`, `navigating` and reactive route state.
 - [`lumen/vite`](reference/vite.md): The Vite plugin and its options.
 - [JSX types and tsconfig](reference/jsx.md): `lumen/jsx-runtime`, `lumen/env` and the required `tsconfig.json`.
-- [CLI](reference/cli.md): `lumen dev`, `build`, `preview`, `check`, `typegen`, `routes`, `lint`, `fmt`, `docs`, `explain` and `agents init`; `--format json` and exit codes.
+- [CLI](reference/cli.md): `lumen dev`, `build`, `preview`, `check`, `typegen`, `routes`, `lint`, `fmt`, `docs`, `explain`, `agents init` and `mcp`; `--format json` and exit codes.
+- [MCP server](reference/mcp.md): `lumen mcp` for coding agents: docs, `check` with fixes, routes, components, compiler output, rendered HTML and dev logs.
 - [`@lumen/adapter-node`](reference/adapter-node.md): `createServer`, `createHandler` and `createStaticHandler`: serve a build with Node.
 
 ## Diagnostics
@@ -69,5 +70,6 @@ implement something yet, the page says so in a **Status** note. In short:
 | Islands hydration and the island loader                                             | Available                                                            |
 | SPA mode and the SPA router (`lumen/router`)                                        | Available, with `lumen dev` and `lumen build`                        |
 | `lumen check`, `lint`, `fmt`, `docs`, `explain`, language server, VS Code extension | Available                                                            |
+| `lumen mcp`                                                                         | Available                                                            |
 | `create-lumen` (templates `minimal`, `static`, `ssr`, `spa`), `lumen agents init`   | Available                                                            |
-| `@lumen/testing`, `lumen mcp`                                                       | Planned                                                              |
+| `@lumen/testing`                                                                    | Planned                                                              |

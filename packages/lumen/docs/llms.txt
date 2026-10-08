@@ -36,7 +36,8 @@ These docs match lumen 0.0.0. Installed projects have them in `node_modules/lume
 - [`lumen/router`](reference/router.md): The SPA router: `Link`, `navigate`, `navigating` and reactive route state.
 - [`lumen/vite`](reference/vite.md): The Vite plugin and its options.
 - [JSX types and tsconfig](reference/jsx.md): `lumen/jsx-runtime`, `lumen/env` and the required `tsconfig.json`.
-- [CLI](reference/cli.md): `lumen dev`, `build`, `preview`, `check`, `typegen`, `routes`, `lint`, `fmt`, `docs`, `explain` and `agents init`; `--format json` and exit codes.
+- [CLI](reference/cli.md): `lumen dev`, `build`, `preview`, `check`, `typegen`, `routes`, `lint`, `fmt`, `docs`, `explain`, `agents init` and `mcp`; `--format json` and exit codes.
+- [MCP server](reference/mcp.md): `lumen mcp` for coding agents: docs, `check` with fixes, routes, components, compiler output, rendered HTML and dev logs.
 - [`@lumen/adapter-node`](reference/adapter-node.md): `createServer`, `createHandler` and `createStaticHandler`: serve a build with Node.
 
 ## Diagnostics

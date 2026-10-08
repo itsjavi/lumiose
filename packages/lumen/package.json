@@ -51,7 +51,9 @@
   },
   "dependencies": {
     "@lumen/compiler": "workspace:*",
-    "svgo": "^4.1.0"
+    "@modelcontextprotocol/sdk": "^1.32.1",
+    "svgo": "^4.1.0",
+    "zod": "^4.6.5"
   },
   "devDependencies": {
     "vite": "^8.3.4"

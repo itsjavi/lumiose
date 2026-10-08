@@ -25,6 +25,14 @@ export interface CheckDiagnostic {
   help?: string;
   /** Docs topic, e.g. `diagnostics/LUM3010` (`lumen docs <topic>`). */
   docs?: string;
+  /** A machine-applicable fix (Lumen diagnostics that have one). */
+  fix?: CheckFix;
+}
+
+/** A fix: text edits with the same 1-based positions as diagnostics, applied together. */
+export interface CheckFix {
+  message: string;
+  edits: { line: number; column: number; endLine: number; endColumn: number; text: string }[];
 }
 
 export interface CheckSummary {
@@ -66,6 +74,24 @@ export function fromCompilerDiagnostic(
     message: diagnostic.message,
     ...(diagnostic.help === undefined ? {} : { help: diagnostic.help }),
     docs: diagnostic.docs,
+    ...(diagnostic.fix === undefined
+      ? {}
+      : {
+          fix: {
+            message: diagnostic.fix.message,
+            edits: diagnostic.fix.edits.map((edit) => {
+              const editStart = text.positionAt(edit.span.start);
+              const editEnd = text.positionAt(edit.span.end);
+              return {
+                line: editStart.line,
+                column: editStart.column,
+                endLine: editEnd.line,
+                endColumn: editEnd.column,
+                text: edit.text,
+              };
+            }),
+          },
+        }),
   };
 }
 

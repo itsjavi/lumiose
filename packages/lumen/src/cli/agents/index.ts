@@ -30,6 +30,9 @@ with islands. It is not React, Solid or Svelte: check the docs instead of guessi
 - \`npx lumen docs <topic>\` prints or searches them (\`npx lumen docs signals\`,
   \`npx lumen docs "form action"\`); \`npx lumen explain <code>\` explains a diagnostic such as
   \`LUM2001\`.
+- With MCP support, use the Lumen MCP server (register it with
+  \`claude mcp add lumen -- npx lumen mcp\` or your agent's equivalent): docs, \`check\` with fixes,
+  routes, components, compiler output, rendered HTML and dev logs as tools.
 
 ### \`.stsx\` files
 
@@ -87,6 +90,8 @@ Follow the Lumen section of \`AGENTS.md\`. This skill is the workflow.
   task: components, signals, jsx, styles, async, islands, routing, data-and-actions, server,
   rendering-modes, head.
 - Or from the terminal: \`npx lumen docs <topic or words>\`, and \`npx lumen explain LUMxxxx\`.
+- Or, when the Lumen MCP server (\`npx lumen mcp\`) is registered, its \`docs_search\` and
+  \`docs_get\` tools; its \`check\`, \`render\` and \`dev_logs\` tools serve step 3.
 
 ## 2. Make the change
 

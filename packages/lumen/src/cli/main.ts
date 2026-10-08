@@ -201,6 +201,18 @@ const COMMANDS: readonly Command[] = [
     run: ({ format, args, io }) => explainCommand({ code: args[0]!, format, ...out(io) }),
   },
   {
+    name: "mcp",
+    summary:
+      "Start the MCP server on stdio: docs, check, routes, components, compile, render, dev logs",
+    options: [],
+    positionals: { min: 0, max: 0 },
+    exitCodes: "0 the client disconnected, 2 the server could not start",
+    examples: ["lumen mcp", "claude mcp add lumen -- npx lumen mcp"],
+    // Loaded on demand: the MCP SDK is only needed here.
+    run: async ({ root, io }) =>
+      (await import("./mcp/index.ts")).mcpCommand({ root, writeError: io.writeError }),
+  },
+  {
     name: "agents",
     args: "init",
     summary:
