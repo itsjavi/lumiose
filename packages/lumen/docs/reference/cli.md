@@ -21,8 +21,9 @@ tool itself failed or was misused.
 
 Type-checks the project: runs typegen (`.lumen/types/routes.d.ts`), writes shadow TSX files for
 every `.stsx` (`.lumen/shadow/`), runs `tsc --noEmit -p tsconfig.json`, maps shadow positions back
-to the `.stsx` sources (same line and UTF-16 column), and merges scanner, route and tsconfig
-diagnostics.
+to the `.stsx` sources (same line and UTF-16 column), and merges scanner, route, tsconfig and
+compiler diagnostics. For style diagnostics, the modules that `$` constants are imported from are
+resolved like TypeScript resolves them (relative paths, tsconfig `paths`, package `exports`).
 
 ```sh
 lumen check

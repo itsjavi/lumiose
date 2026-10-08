@@ -2,7 +2,7 @@
 // the real TypeScript 7 native LSP, against a copy of `__fixtures__/workspace`.
 
 import { existsSync } from "node:fs";
-import { readFile } from "node:fs/promises";
+import { readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import type {
@@ -343,6 +343,74 @@ describe("language server (pull diagnostics)", () => {
     expect(await lumen("src/Calls.tsx")).toEqual([
       { code: "LUM2004", severity: 1, range: rangeOf(tsx, "{Inner()", 1) },
     ]);
+  });
+
+  it("supplies imported constants to the compiler, from buffers and disk, re-checking dependents", async () => {
+    // A chained re-export on disk (`tokens.ts` is open in an earlier test: its buffer would win).
+    const palette =
+      'export const radius = { lg: "12px" } as const;\nexport const accent = "#000";\n';
+    await writeFile(join(server.root, "src/palette.ts"), palette);
+    await writeFile(
+      join(server.root, "src/theme.ts"),
+      'export * from "./palette.ts";\nexport let mutable = "1px";\n',
+    );
+    const path = "src/components/Tokens.stsx";
+    const tokens = [
+      'import { acent, mutable, radius } from "../theme.ts";',
+      "",
+      "export function Tokens() {",
+      "  return (",
+      '    <div class="tokens">',
+      "      <style>",
+      "        .tokens { border-radius: $radius.lg; margin: $mutable; color: $acent; }",
+      "        .oops { color: red; }",
+      "      </style>",
+      "    </div>",
+      "  );",
+      "}",
+      "",
+    ].join("\n");
+    await server.open(path, tokens);
+    const lumen = async () => {
+      const report = await server.request<FullDocumentDiagnosticReport>(
+        "textDocument/diagnostic",
+        doc(path),
+      );
+      return sortRanges(report.items.filter((d) => d.source === "lumen")).map(
+        ({ code, range, message }) => ({ code, range, message }),
+      );
+    };
+    expect(await lumen()).toEqual([
+      {
+        code: "LUM3008",
+        range: rangeOf(tokens, "$mutable"),
+        message: expect.stringContaining("`mutable` is a `let` binding"),
+      },
+      {
+        code: "LUM3008",
+        range: rangeOf(tokens, "$acent"),
+        message: expect.stringContaining("has no export `acent`"),
+      },
+      { code: "LUM3005", range: rangeOf(tokens, ".oops"), message: expect.any(String) },
+    ]);
+
+    // An unsaved edit of the imported module re-checks the (unchanged) document.
+    await server.open("src/theme.ts");
+    server.change("src/theme.ts", 'export * from "./palette.ts";\nexport const mutable = "1px";\n');
+    expect((await lumen()).map((d) => d.range)).toEqual([
+      rangeOf(tokens, "$acent"),
+      rangeOf(tokens, ".oops"),
+    ]);
+
+    // A change on disk two re-exports away, announced by the client's file watcher.
+    await writeFile(
+      join(server.root, "src/palette.ts"),
+      `${palette}export const acent = "#fff";\n`,
+    );
+    await server.connection.sendNotification("workspace/didChangeWatchedFiles", {
+      changes: [{ uri: server.uri("src/palette.ts"), type: 2 }],
+    });
+    expect((await lumen()).map((d) => d.code)).toEqual(["LUM3005"]);
   });
 
   it("offers and defines <style global> classes of other files", async () => {

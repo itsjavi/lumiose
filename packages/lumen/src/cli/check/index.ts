@@ -38,8 +38,10 @@ export type {
 export {
   compileDiagnostics,
   compilerDiagnostics,
+  compileWithModules,
   type CompileDiagnosticsOptions,
 } from "./compile.ts";
+export { ModuleHost, type ModuleChange, type ModuleHostOptions } from "./modules.ts";
 export { CheckFailure, SUPERSEDED_BY_TYPESCRIPT } from "./diagnostics.ts";
 export { formatHuman, formatJson, type CheckReport } from "./report.ts";
 export {
@@ -72,6 +74,8 @@ export interface FileDiagnostics {
  */
 export type DiagnosticProvider = (context: {
   root: string;
+  /** The checked tsconfig (absolute). */
+  project?: string;
   files: readonly ShadowFile[];
 }) => Promise<readonly FileDiagnostics[]> | readonly FileDiagnostics[];
 
@@ -163,7 +167,7 @@ export async function check(options: CheckOptions): Promise<CheckResult> {
   }
 
   for (const provider of [compilerDiagnostics, ...(options.providers ?? [])]) {
-    for (const { file, diagnostics: fileDiagnostics } of await provider({ root, files })) {
+    for (const { file, diagnostics: fileDiagnostics } of await provider({ root, project, files })) {
       const key = fileKey(resolve(root, file));
       const text = sources.get(key) ?? (await loadText(resolve(root, file)));
       sources.set(key, text);

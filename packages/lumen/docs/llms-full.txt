@@ -626,6 +626,11 @@ app.
 | A `const` of the enclosing component                                                         | Blocks inside that component, `<style global>` included.                                                         |
 | An `export const` (or `export default`) of an imported `.ts`, `.tsx`, `.stsx` or JSON module | Every block of the importing file: named, default or namespace imports (`$theme.space.md`), re-exports included. |
 
+Imports are resolved the way the rest of the toolchain resolves them: by Vite in `lumen dev` and
+builds (aliases included), and like TypeScript in `lumen check` and the editor (relative paths,
+tsconfig `paths`, package `exports` and `imports`). An import that cannot be resolved, or that has
+no such export, is reported as [LUM3008](../errors/LUM3008.md) at each reference.
+
 The value may be built from literals, template literals, arithmetic (`+ - * / % **`, unary `-`),
 other constants, and object literals with their members at any depth (`$theme.color.brand`),
 including spreads, destructuring, `as const` and `satisfies`. Mark token objects `as const`: a plain
@@ -780,6 +785,8 @@ Constant math never reaches the browser. It is computed in two steps:
 | `font-size: clamp(1rem, 2vw, 3rem)`       | unchanged                             | `rem` and `vw` are only known in the browser.  |
 | `max-width: calc(var(--w) + $gap * 2px)`  | `max-width: calc(var(--w) + 8 * 2px)` | A declaration with `var()` is kept as written. |
 | `--space: calc($gap * 2px)`               | `--space: 16px`                       | A custom property, folded by Lumen (below).    |
+| `padding-left: calc($gap * 1px - 12px)`   | `padding-left: 0`                     | Negative in a non-negative property (below).   |
+| `margin-left: calc($gap * 1px - 12px)`    | `margin-left: -4px`                   | Margins can be negative.                       |
 
 **What cannot fold.** A math function is replaced only by a value that means the same thing
 wherever it is used. Absolute units convert into each other (`calc(1in + 4px)` is `100px`) and a
@@ -800,6 +807,16 @@ reduction regular properties get (`--inset: calc(100% - $gap * 2px)` stays `calc
 Negative results and fractional numbers stay inside `calc()` (`calc(-3px)`, `calc(.333333)`),
 because a bare value can behave differently where the property is read: `calc()` clamps to the
 property's range and rounds where an integer is expected.
+
+**Negative results.** Some properties cannot be negative: padding, sizes (`width`, `min-height`,
+…), border widths, `gap`, `font-size`, `line-height` and others. In the browser, a `calc()` that
+comes out negative there is clamped to 0, while a negative value written out is invalid and the
+whole declaration is dropped. So that folding does not change the meaning, a negative result in such
+a property ships as `0`: `padding-left: calc($gap * 1px - 12px)` gives `padding-left: 0`, and
+`font-size: calc(1rem - 2rem)` gives `font-size: 0`. This mirrors the upstream Lightning CSS fix
+([lightningcss#1329](https://github.com/parcel-bundler/lightningcss/pull/1329)), which Lumen
+applies until a release includes it. Properties that accept negative values, such as margins and
+`inset`, keep them.
 
 Folding regular properties, minification and browser targets come from
 [Lightning CSS](https://lightningcss.dev), the CSS parser, transformer and minifier from the Parcel
@@ -2997,8 +3014,9 @@ tool itself failed or was misused.
 
 Type-checks the project: runs typegen (`.lumen/types/routes.d.ts`), writes shadow TSX files for
 every `.stsx` (`.lumen/shadow/`), runs `tsc --noEmit -p tsconfig.json`, maps shadow positions back
-to the `.stsx` sources (same line and UTF-16 column), and merges scanner, route and tsconfig
-diagnostics.
+to the `.stsx` sources (same line and UTF-16 column), and merges scanner, route, tsconfig and
+compiler diagnostics. For style diagnostics, the modules that `$` constants are imported from are
+resolved like TypeScript resolves them (relative paths, tsconfig `paths`, package `exports`).
 
 ```sh
 lumen check

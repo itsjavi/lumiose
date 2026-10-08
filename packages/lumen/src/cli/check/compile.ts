@@ -2,20 +2,65 @@
 // reactivity, style and island checks (LUM2xxx–LUM4xxx) that scanning and type checking miss.
 // Shared by `lumen check` (as a built-in diagnostic provider) and the language server.
 
-import type { Diagnostic as CompilerDiagnostic } from "@lumen/compiler";
+import type {
+  CompileOptions,
+  CompileResult,
+  Diagnostic as CompilerDiagnostic,
+  HostModule,
+} from "@lumen/compiler";
 import { readFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import type { DiagnosticProvider, FileDiagnostics } from "./index.ts";
+import { ModuleHost } from "./modules.ts";
 import { listFiles, loadCompiler, SOURCE_DIR } from "./shadow.ts";
 
 /** TypeScript reports syntax errors itself, on the same (masked) text. */
 const REPORTED_BY_TYPESCRIPT = new Set(["LUM1001"]);
+
+/** Compile rounds before giving up on module requests (one per level of re-exports). */
+const MAX_ROUNDS = 32;
 
 export interface CompileDiagnosticsOptions {
   /** The project root (island refs are root-relative). */
   root?: string;
   /** Diagnostics already reported for this text (its scan's); not repeated. */
   reported?: readonly CompilerDiagnostic[];
+  /**
+   * Answers the compiler's requests for modules that `$` constants are imported from. Without it,
+   * the compiler withholds the CSS of a file that imports constants, and its style diagnostics.
+   */
+  modules?: ModuleHost | undefined;
+}
+
+/**
+ * Compiles `text`, answering the compiler's module requests from `host` (transitively, up to
+ * {@link MAX_ROUNDS} rounds) and recording the modules read as the file's dependencies.
+ */
+export async function compileWithModules(
+  text: string,
+  filename: string,
+  options: CompileOptions,
+  host: ModuleHost,
+): Promise<CompileResult> {
+  const { compile } = await loadCompiler();
+  const modules: HostModule[] = [];
+  for (let round = 1; ; round++) {
+    const result = compile(text, filename, { ...options, modules });
+    if (result.moduleRequests.length === 0 || round === MAX_ROUNDS) {
+      host.record(filename, result.cssDeps);
+      return result;
+    }
+    for (const { importer, specifier } of result.moduleRequests) {
+      const id = host.resolve(specifier, importer);
+      const source = id === null ? undefined : await host.load(id);
+      // Without `resolved`, the compiler reports LUM3008 (the module could not be resolved).
+      modules.push(
+        id === null || source === undefined
+          ? { importer, specifier }
+          : { importer, specifier, resolved: { id, source } },
+      );
+    }
+  }
 }
 
 /**
@@ -27,12 +72,15 @@ export async function compileDiagnostics(
   filename: string,
   options: CompileDiagnosticsOptions = {},
 ): Promise<CompilerDiagnostic[]> {
-  const { compile } = await loadCompiler();
-  const result = compile(text, filename, {
+  const compileOptions: CompileOptions = {
     target: "client",
     sourceMap: false,
     ...(options.root === undefined ? {} : { root: options.root }),
-  });
+  };
+  const result =
+    options.modules === undefined
+      ? (await loadCompiler()).compile(text, filename, compileOptions)
+      : await compileWithModules(text, filename, compileOptions, options.modules);
   const reported = new Set((options.reported ?? []).map(diagnosticKey));
   return result.diagnostics.filter(
     (diagnostic) =>
@@ -42,9 +90,10 @@ export async function compileDiagnostics(
 
 /**
  * `lumen check`'s compiler provider: every scanned `.stsx` (its scan diagnostics are already
- * reported) and every `src/**\/*.tsx`.
+ * reported) and every `src/**\/*.tsx`. Imported constants are resolved like TypeScript does
+ * (with the checked tsconfig's `paths`), each module read once per run.
  */
-export const compilerDiagnostics: DiagnosticProvider = async ({ root, files }) => {
+export const compilerDiagnostics: DiagnosticProvider = async ({ root, project, files }) => {
   const tsx = await listFiles(join(root, SOURCE_DIR), (name) => name.endsWith(".tsx"));
   const sources = [
     ...files.map((file) => ({
@@ -56,9 +105,14 @@ export const compilerDiagnostics: DiagnosticProvider = async ({ root, files }) =
       tsx.map(async (file) => ({ file, text: await readFile(file, "utf8"), reported: [] })),
     )),
   ];
+  const modules = new ModuleHost({ root, ...(project === undefined ? {} : { project }) });
   const results: FileDiagnostics[] = [];
   for (const { file, text, reported } of sources) {
-    const diagnostics = await compileDiagnostics(text, resolve(root, file), { root, reported });
+    const diagnostics = await compileDiagnostics(text, resolve(root, file), {
+      root,
+      reported,
+      modules,
+    });
     if (diagnostics.length > 0) results.push({ file, diagnostics });
   }
   return results;

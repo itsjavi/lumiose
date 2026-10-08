@@ -413,6 +413,59 @@ describe.skipIf(!binding)("lumen check", () => {
     expect(exitCode).toBe(1);
   });
 
+  it("resolves constants imported through tsconfig paths and re-exports for style diagnostics", async () => {
+    const template = tsconfigTemplate();
+    const root = await project("valid", {
+      ...template,
+      compilerOptions: { ...template.compilerOptions, paths: { "~/*": ["./src/*"] } },
+    });
+    await mkdir(join(root, "src/styles"));
+    await writeFile(
+      join(root, "src/styles/tokens.ts"),
+      'export const space = 4;\nexport let mutable = "1px";\n',
+    );
+    await writeFile(
+      join(root, "src/styles/theme.ts"),
+      'export * from "./tokens.ts";\nexport { space as gap } from "./tokens.ts";\n',
+    );
+    const tokens = [
+      'import { gap, gapp, mutable } from "~/styles/theme.ts";',
+      'import { brand } from "../styles/missing.ts";',
+      "",
+      "export function Tokens() {",
+      "  return (",
+      '    <div class="tokens">',
+      "      <style>",
+      "        .tokens { padding: calc($gap * 1px); margin: $mutable; color: $brand; inset: $gapp; }",
+      "        .oops { color: red; }",
+      "      </style>",
+      "    </div>",
+      "  );",
+      "}",
+      "",
+    ].join("\n");
+    const file = "src/components/Tokens.stsx";
+    await writeFile(join(root, file), tokens);
+    const { exitCode, report } = await checkJson(root);
+    // Without the modules, the compiler would withhold the file's CSS and all four diagnostics.
+    expect(report.diagnostics.filter((d) => d.source === "lumen")).toEqual([
+      lumenAt(file, "LUM3008", tokens, "$mutable"),
+      lumenAt(file, "LUM3008", tokens, "$brand"),
+      lumenAt(file, "LUM3008", tokens, "$gapp"),
+      lumenAt(file, "LUM3005", tokens, ".oops"),
+    ]);
+    const messages = report.diagnostics.map((d) => d.message);
+    expect(messages).toContainEqual(expect.stringMatching(/`mutable` is a `let` binding/));
+    expect(messages).toContainEqual(expect.stringMatching(/`\$brand`.*could not be resolved/));
+    expect(messages).toContainEqual(expect.stringMatching(/theme\.ts` has no export `gapp`/));
+    // TypeScript resolves the same way: only the two broken imports are type errors.
+    expect(report.diagnostics.filter((d) => d.source === "ts").map((d) => d.code)).toEqual([
+      "TS2724",
+      "TS2307",
+    ]);
+    expect(exitCode).toBe(1);
+  });
+
   it("exits with 2 when the tool cannot run", async () => {
     const root = await project("valid", null);
     const { exitCode, report } = await checkJson(root);

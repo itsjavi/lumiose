@@ -11,13 +11,15 @@
 // virtual CSS), class-name completion / definition / references / rename between JSX `class`
 // attributes and selectors (plus `<style global>` classes of other files), `$ref` hovers with the
 // folded value, CSS document symbols, and Lumen diagnostics (scanner and diagnostic providers,
-// e.g. the compiler's, also for `.tsx`).
+// e.g. the compiler's, also for `.tsx`). Diagnostic providers get a per-project `ModuleHost` that
+// reads open documents before the disk, so the compiler sees constants imported by `$` references
+// as edited; a change to such a module (in an editor or on disk) re-runs its dependents' providers.
 //
 // A crashed TypeScript server is restarted with backoff, and the open documents are re-sent.
 
 import type { Diagnostic as CompilerDiagnostic, ScanResult, StyleRef } from "@lumen/compiler";
 import { scan } from "@lumen/compiler";
-import { SUPERSEDED_BY_TYPESCRIPT } from "lumen/tooling";
+import { ModuleHost, SUPERSEDED_BY_TYPESCRIPT, type ModuleChange } from "lumen/tooling";
 import { existsSync } from "node:fs";
 import { join, relative, sep } from "node:path";
 import {
@@ -112,6 +114,11 @@ export interface LumenFile {
   root: string;
   text: string;
   scan: ScanResult;
+  /**
+   * Answers the compiler's module requests for imported `$` constants (open documents win over
+   * the disk); unset for documents that are not files.
+   */
+  modules?: ModuleHost;
 }
 
 /**
@@ -183,6 +190,8 @@ export function startServer(connection: Connection, options: ServerOptions = {})
   const openShadows = new Map<string, string>();
   const syncedRoots = new Set<string>();
   const globals = new GlobalClassIndex();
+  /** Module hosts of the diagnostic providers, by project root. */
+  const moduleHosts = new Map<string, ModuleHost>();
   let projects = new Projects([]);
   /** The initialized TypeScript server; unset while (re)starting or after it ended. */
   let ts: TypeScriptInstance | undefined;
@@ -451,7 +460,12 @@ export function startServer(connection: Connection, options: ServerOptions = {})
     notifyTs("initialized", {});
     if (client.workspace?.didChangeWatchedFiles?.dynamicRegistration) {
       void connection.client.register(DidChangeWatchedFilesNotification.type, {
-        watchers: [{ globPattern: "**/*.stsx" }],
+        // `.stsx` for shadows; modules that `$` constants can be imported from, and the configs
+        // that drive their resolution, for the module hosts.
+        watchers: [
+          { globPattern: "**/*.stsx" },
+          { globPattern: "**/*.{ts,tsx,mts,cts,js,jsx,mjs,cjs,json}" },
+        ],
       });
     }
     if (tsFailure !== undefined) {
@@ -560,6 +574,7 @@ export function startServer(connection: Connection, options: ServerOptions = {})
     }
     if (file.typescript)
       notifyTs("textDocument/didOpen", { textDocument: typeScriptDocument(file) });
+    modulesChanged([{ uri }]);
     schedulePush();
   });
 
@@ -576,6 +591,7 @@ export function startServer(connection: Connection, options: ServerOptions = {})
     } else if (file.typescript) {
       notifyTs("textDocument/didChange", { textDocument: { uri, version }, contentChanges });
     }
+    modulesChanged([{ uri }]);
     schedulePush();
   });
 
@@ -592,6 +608,8 @@ export function startServer(connection: Connection, options: ServerOptions = {})
     if (file.shadowUri !== undefined && path !== undefined) {
       void syncFiles([{ path, type: FileChangeType.Changed }]);
     }
+    // Module hosts read the file from disk again.
+    modulesChanged([{ uri }]);
     if (!pullDiagnostics) void connection.sendDiagnostics({ uri, diagnostics: [] });
   });
 
@@ -616,9 +634,53 @@ export function startServer(connection: Connection, options: ServerOptions = {})
     if (stsx.length > 0) void syncFiles(stsx);
     const others = changes.filter((change) => !isStsx(change.uri));
     if (others.length > 0) notifyTs("workspace/didChangeWatchedFiles", { changes: others });
+    modulesChanged(changes);
   });
 
   // --- Diagnostics -------------------------------------------------------------------------
+
+  function moduleHostFor(root: string): ModuleHost {
+    let host = moduleHosts.get(root);
+    if (host === undefined) {
+      host = new ModuleHost({
+        root,
+        read: (path) => files.get(fileKey(path))?.document.getText(),
+      });
+      moduleHosts.set(root, host);
+    }
+    return host;
+  }
+
+  /**
+   * Files changed (an open document's buffer, or files on disk): the module hosts forget them, and
+   * open documents whose providers read them are computed again.
+   */
+  function modulesChanged(changes: ReadonlyArray<{ uri: string; type?: FileChangeType }>): void {
+    let stale = false;
+    for (const { uri, type } of changes) {
+      const path = uriToPath(uri);
+      if (path === undefined) continue;
+      const change: ModuleChange =
+        type === FileChangeType.Created
+          ? "created"
+          : type === FileChangeType.Deleted
+            ? "deleted"
+            : "changed";
+      for (const host of moduleHosts.values()) {
+        for (const dependent of host.invalidate(path, change)) {
+          const file = files.get(fileKey(dependent));
+          if (file?.provided === undefined) continue;
+          file.provided = undefined;
+          stale = true;
+        }
+      }
+    }
+    if (!stale) return;
+    if (!pullDiagnostics) schedulePush();
+    else if (client.workspace?.diagnostics?.refreshSupport) {
+      void connection.languages.diagnostics.refresh().catch(() => undefined);
+    }
+  }
 
   async function diagnosticsFor(file: OpenFile, token?: CancellationToken): Promise<Diagnostic[]> {
     const fromTypeScript = async (uri: string) => {
@@ -668,12 +730,14 @@ export function startServer(connection: Connection, options: ServerOptions = {})
     const { version } = file.document;
     if (file.provided?.version === version) return file.provided.diagnostics;
     const path = uriToPath(file.uri);
+    const root = path === undefined ? tsRoot : projects.rootFor(path);
     const lumenFile: LumenFile = {
       uri: file.uri,
       path: path ?? file.uri,
-      root: path === undefined ? tsRoot : projects.rootFor(path),
+      root,
       text: file.document.getText(),
       scan: scanned,
+      ...(path === undefined ? {} : { modules: moduleHostFor(root) }),
     };
     const diagnostics = (async () => {
       const results = await Promise.all(
