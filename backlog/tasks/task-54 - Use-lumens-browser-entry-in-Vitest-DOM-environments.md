@@ -1,10 +1,11 @@
 ---
 id: TASK-54
 title: Use lumen's browser entry in Vitest DOM environments
-status: To Do
+status: In Progress
 assignee:
   - Photon
 created_date: '2026-10-08 15:40'
+updated_date: '2026-10-08 16:50'
 labels: []
 milestone: m-5
 dependencies: []
