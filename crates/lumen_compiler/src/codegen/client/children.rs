@@ -442,6 +442,12 @@ impl<'a> Codegen<'a, '_> {
     /// A dynamic item outside an element: components and JSX compile in place; other dynamic
     /// expressions become tracked functions when `wrap` is set.
     fn renderable(&mut self, expression: Expression<'a>, wrap: bool) -> Compiled<'a> {
+        // Reactive conditionals and lists render themselves (`branchValue`/`listValue`): the
+        // consumer's `insert` places one range and never re-runs for them.
+        let expression = match self.live_value(expression) {
+            Ok(compiled) => return compiled,
+            Err(expression) => expression,
+        };
         let jsx = matches!(
             expression.without_parentheses(),
             Expression::JSXElement(_) | Expression::JSXFragment(_)

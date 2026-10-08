@@ -10,7 +10,7 @@ use oxc_syntax::scope::{ScopeFlags, ScopeId};
 use oxc_syntax::symbol::SymbolId;
 
 use super::element::attribute_name;
-use super::{Codegen, clone_expression};
+use super::{Codegen, Compiled, clone_expression};
 use crate::analyze::is_jsx_like;
 use crate::diagnostics::{Code, Diagnostic};
 
@@ -19,6 +19,10 @@ pub struct MapCtx<'a> {
     pub item: Option<SymbolId>,
     pub index: Option<SymbolId>,
     pub scope: Option<ScopeId>,
+    /// Row data besides the item: `const`s of the callback body initialised from row data
+    /// without calls (`const id = row.id`, `const { id } = row`). Fixed per row, so selectors and
+    /// data-slot handlers treat them like the item.
+    pub row_consts: Vec<SymbolId>,
     /// Hoisted selectors: (source text, variable, `selector(...)` argument).
     selectors: Vec<(String, String, Expression<'a>)>,
 }
@@ -137,10 +141,12 @@ impl<'a> Codegen<'a, '_> {
             self.take_key(&mut callback, scope, item)
         };
 
+        let row_consts = self.row_consts(&callback, scope, item);
         self.maps.push(MapCtx {
             item,
             index: index.filter(|_| index_used),
             scope,
+            row_consts,
             selectors: Vec::new(),
         });
         self.row_callback = true;
@@ -168,6 +174,57 @@ impl<'a> Codegen<'a, '_> {
             render: callback,
             key,
         }
+    }
+
+    /// The callback body's top-level `const`s that hold row data (see [`MapCtx::row_consts`]), in
+    /// declaration order: an initialiser may read the item, earlier row consts and bindings outside
+    /// the callback, but calls nothing and writes nothing.
+    fn row_consts(
+        &self,
+        callback: &Expression<'a>,
+        scope: Option<ScopeId>,
+        item: Option<SymbolId>,
+    ) -> Vec<SymbolId> {
+        let mut found = Vec::new();
+        let Some(item) = item else {
+            return found;
+        };
+        let body = match callback {
+            Expression::ArrowFunctionExpression(arrow) => match &arrow.body {
+                ArrowFunctionBody::FunctionBody(body) => &**body,
+                _ => return found,
+            },
+            Expression::FunctionExpression(function) => match &function.body {
+                Some(body) => &**body,
+                None => return found,
+            },
+            _ => return found,
+        };
+        for statement in &body.statements {
+            let Statement::VariableDeclaration(declaration) = statement else {
+                continue;
+            };
+            if declaration.kind != VariableDeclarationKind::Const {
+                continue;
+            }
+            for declarator in &declaration.declarations {
+                let Some(init) = &declarator.init else {
+                    continue;
+                };
+                let mut checker = RowData {
+                    codegen: self,
+                    scope,
+                    item,
+                    row_consts: &found,
+                    plain: true,
+                };
+                checker.visit_expression(init);
+                if checker.plain {
+                    found.extend(plain_bindings(&declarator.id));
+                }
+            }
+        }
+        found
     }
 
     fn visit_expression_in_place(&mut self, expr: &mut Expression<'a>) {
@@ -266,6 +323,7 @@ impl<'a> Codegen<'a, '_> {
             codegen: self,
             scope,
             item,
+            row_data: &[],
             uses_item: false,
             uses_local: false,
             calls: false,
@@ -323,12 +381,12 @@ impl<'a> Codegen<'a, '_> {
             return None;
         }
         let map = self.maps.last()?;
-        let (scope, item) = (map.scope, map.item);
+        let (scope, item, row_data) = (map.scope, map.item, &map.row_consts);
         item?;
-        let left_is_key =
-            self.is_item_key(&binary.left, scope, item) && self.is_selected(&binary.right, scope);
+        let left_is_key = self.is_item_key(&binary.left, scope, item, row_data)
+            && self.is_selected(&binary.right, scope);
         let right_is_key = !left_is_key
-            && self.is_item_key(&binary.right, scope, item)
+            && self.is_item_key(&binary.right, scope, item, row_data)
             && self.is_selected(&binary.left, scope);
         if !left_is_key && !right_is_key {
             return None;
@@ -376,11 +434,13 @@ impl<'a> Codegen<'a, '_> {
         expr: &Expression<'a>,
         scope: Option<ScopeId>,
         item: Option<SymbolId>,
+        row_data: &[SymbolId],
     ) -> bool {
         let mut checker = RefChecker {
             codegen: self,
             scope,
             item,
+            row_data,
             uses_item: false,
             uses_local: false,
             calls: false,
@@ -394,6 +454,7 @@ impl<'a> Codegen<'a, '_> {
             codegen: self,
             scope,
             item: None,
+            row_data: &[],
             uses_item: false,
             uses_local: false,
             calls: false,
@@ -451,30 +512,52 @@ impl<'a> Codegen<'a, '_> {
         (cond, when_true, when_false)
     }
 
-    /// `() => <compiled arm>`; a nested reactive conditional stays a tracked function.
+    /// `() => <compiled arm>`; a nested reactive conditional or a list in an arm is a parentless
+    /// branch/list value.
     fn branch_arm(&mut self, arm: Expression<'a>) -> Expression<'a> {
         let span = arm.span();
-        let nested = !matches!(
-            arm.without_parentheses(),
-            Expression::JSXElement(_) | Expression::JSXFragment(_)
-        ) && is_jsx_like(&arm)
-            && self.is_nested_reactive(&arm);
-        let compiled = self.compile_value(arm);
-        let value = self
-            .ast
-            .arrow_returning(span, &[], compiled.setup, compiled.value);
-        if nested {
-            self.ast.arrow(span, &[], value)
-        } else {
-            value
-        }
+        let compiled = self.compile_arm(arm);
+        self.ast
+            .arrow_returning(span, &[], compiled.setup, compiled.value)
     }
 
-    fn is_nested_reactive(&self, arm: &Expression<'a>) -> bool {
-        match arm.without_parentheses() {
-            Expression::ConditionalExpression(cond) => self.reads_reactive(&cond.test),
-            Expression::LogicalExpression(logical) => self.reads_reactive(&logical.left),
-            _ => false,
+    /// A renderable that stays live without a parent element (doc-2 §2): a reactive conditional →
+    /// `branchValue(cond, () => a, () => b)`, a `.map()` rendering JSX →
+    /// `listValue(source, render, key?)`. Used where `branch`/`list` have no element to anchor
+    /// to: component children, fragments, nested ternaries and returned values. The server emits
+    /// its `branch`/`list` there, whose island markers are the regions these ranges hydrate.
+    /// `Err` gives back anything else.
+    pub(super) fn live_value(
+        &mut self,
+        expr: Expression<'a>,
+    ) -> Result<Compiled<'a>, Expression<'a>> {
+        let span = expr.span();
+        let server = self.server();
+        if self.is_list(&expr) {
+            let list = self.compile_list(expr);
+            let callee = self.runtime(if server { "list" } else { "listValue" }, span);
+            let mut args = vec![list.source, list.render];
+            args.extend(list.key);
+            return Ok(Compiled {
+                setup: list.setup,
+                value: self.ast.call(span, callee, args),
+            });
+        }
+        if self.is_branch(&expr) {
+            let (cond, when_true, when_false) = self.compile_branch(expr);
+            let callee = self.runtime(if server { "branch" } else { "branchValue" }, span);
+            let mut args = vec![cond, when_true];
+            args.extend(when_false);
+            return Ok(Compiled::value(self.ast.call(span, callee, args)));
+        }
+        Err(expr)
+    }
+
+    /// A conditional's arm: live when it is itself a reactive conditional or a list.
+    pub(super) fn compile_arm(&mut self, arm: Expression<'a>) -> Compiled<'a> {
+        match self.live_value(arm) {
+            Ok(compiled) => compiled,
+            Err(arm) => self.compile_value(arm),
         }
     }
 
@@ -511,6 +594,8 @@ struct RefChecker<'c, 'a, 's> {
     codegen: &'c Codegen<'a, 's>,
     scope: Option<ScopeId>,
     item: Option<SymbolId>,
+    /// Row consts counted as the item (selector keys; not `key` functions, which only get the item).
+    row_data: &'c [SymbolId],
     uses_item: bool,
     uses_local: bool,
     calls: bool,
@@ -521,7 +606,7 @@ impl<'a> Visit<'a> for RefChecker<'_, 'a, '_> {
         let Some(symbol) = self.codegen.symbol_of(it) else {
             return;
         };
-        if Some(symbol) == self.item {
+        if Some(symbol) == self.item || self.row_data.contains(&symbol) {
             self.uses_item = true;
             return;
         }
@@ -537,6 +622,104 @@ impl<'a> Visit<'a> for RefChecker<'_, 'a, '_> {
     fn visit_call_expression(&mut self, it: &CallExpression<'a>) {
         self.calls = true;
         walk::walk_call_expression(self, it);
+    }
+}
+
+/// Whether a row const's initialiser is row data: no calls, writes or functions; references to the
+/// item, earlier row consts or bindings outside the callback (not the index or other locals).
+struct RowData<'c, 'a, 's> {
+    codegen: &'c Codegen<'a, 's>,
+    scope: Option<ScopeId>,
+    item: SymbolId,
+    row_consts: &'c [SymbolId],
+    plain: bool,
+}
+
+impl<'a> Visit<'a> for RowData<'_, 'a, '_> {
+    fn visit_identifier_reference(&mut self, it: &IdentifierReference<'a>) {
+        let Some(symbol) = self.codegen.symbol_of(it) else {
+            return;
+        };
+        if symbol == self.item || self.row_consts.contains(&symbol) {
+            return;
+        }
+        let declared = self.codegen.scoping.symbol_scope_id(symbol);
+        if self
+            .scope
+            .is_some_and(|scope| self.codegen.scope_within(declared, scope))
+        {
+            self.plain = false;
+        }
+    }
+
+    fn visit_call_expression(&mut self, _: &CallExpression<'a>) {
+        self.plain = false;
+    }
+    fn visit_new_expression(&mut self, _: &NewExpression<'a>) {
+        self.plain = false;
+    }
+    fn visit_tagged_template_expression(&mut self, _: &TaggedTemplateExpression<'a>) {
+        self.plain = false;
+    }
+    fn visit_import_expression(&mut self, _: &ImportExpression<'a>) {
+        self.plain = false;
+    }
+    fn visit_await_expression(&mut self, _: &AwaitExpression<'a>) {
+        self.plain = false;
+    }
+    fn visit_yield_expression(&mut self, _: &YieldExpression<'a>) {
+        self.plain = false;
+    }
+    fn visit_assignment_expression(&mut self, _: &AssignmentExpression<'a>) {
+        self.plain = false;
+    }
+    fn visit_update_expression(&mut self, _: &UpdateExpression<'a>) {
+        self.plain = false;
+    }
+    fn visit_unary_expression(&mut self, it: &UnaryExpression<'a>) {
+        if it.operator == oxc_syntax::operator::UnaryOperator::Delete {
+            self.plain = false;
+        }
+        walk::walk_unary_expression(self, it);
+    }
+    fn visit_function(&mut self, _: &Function<'a>, _: ScopeFlags) {
+        self.plain = false;
+    }
+    fn visit_arrow_function_expression(&mut self, _: &ArrowFunctionExpression<'a>) {
+        self.plain = false;
+    }
+    fn visit_class(&mut self, _: &Class<'a>) {
+        self.plain = false;
+    }
+    fn visit_jsx_element(&mut self, _: &JSXElement<'a>) {
+        self.plain = false;
+    }
+    fn visit_jsx_fragment(&mut self, _: &JSXFragment<'a>) {
+        self.plain = false;
+    }
+}
+
+/// The identifiers a row const binds: `id`, or `{ id, label: name }` (no defaults or rest, which
+/// would run code or copy).
+fn plain_bindings(pattern: &BindingPattern<'_>) -> Vec<SymbolId> {
+    match pattern {
+        BindingPattern::BindingIdentifier(ident) => ident.symbol_id.get().into_iter().collect(),
+        BindingPattern::ObjectPattern(object) if object.rest.is_none() => {
+            let mut symbols = Vec::new();
+            for property in &object.properties {
+                if property.computed {
+                    return Vec::new();
+                }
+                match &property.value {
+                    BindingPattern::BindingIdentifier(ident) => {
+                        symbols.extend(ident.symbol_id.get());
+                    }
+                    _ => return Vec::new(),
+                }
+            }
+            symbols
+        }
+        _ => Vec::new(),
     }
 }
 

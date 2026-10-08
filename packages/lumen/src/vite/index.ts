@@ -17,19 +17,28 @@
 //   Vite's resolver and CSS-only HMR for style edits (./styles.ts).
 // - `virtual:lumen/islands` is the island manifest (./islands.ts). Island refs are root-relative
 //   (`/src/components/Team.stsx#TeamPanel`) for modules inside the Vite root.
+// - `virtual:lumen/css-manifest` is the CSS manifest of builds (./css-manifest.ts): every
+//   stylesheet is built in the client environment, and the server build maps each route module to
+//   the stylesheets its static import graph reaches.
 
+import { readFileSync } from "node:fs";
 import { readFile } from "node:fs/promises";
+import { dirname, join } from "node:path";
 import type { Diagnostic } from "@lumen/compiler";
 import {
   defaultClientConditions,
   defaultServerConditions,
+  normalizePath,
   type DevEnvironment,
   type EnvironmentOptions,
   type Plugin,
+  type ResolvedConfig,
   type Rollup,
   type ViteDevServer,
 } from "vite";
-import { ISLANDS, ISLANDS_ID, IslandRegistry } from "./islands.ts";
+import { CSS_MANIFEST_ID, CssManifest, cssManifestCode, fillManifest } from "./css-manifest.ts";
+import { ISLANDS_ID, IslandRegistry } from "./islands.ts";
+import { scanProject, type ScannedModule } from "./scan.ts";
 import {
   STYLE_QUERY,
   StyleCache,
@@ -72,11 +81,18 @@ export default function lumen(options: LumenOptions = {}): Plugin[] {
   let devServer: ViteDevServer | undefined;
   const islands = new IslandRegistry();
   const styles = new StyleCache();
+  const cssManifest = new CssManifest();
+  let scanned: ScannedModule[] | undefined;
+  const project = (): ScannedModule[] => (scanned ??= scanProject(root, include, exclude));
   const isLumenFile = (file: string): boolean => include.test(file) && !exclude.test(file);
   return [
     {
       name: "lumen",
       enforce: "pre",
+      // One instance for every environment of a build: the server build reads the stylesheets
+      // the client build recorded (./css-manifest.ts), also when a config file is resolved again
+      // per environment.
+      sharedDuringBuild: true,
 
       config(config, env) {
         serve = env.command === "serve";
@@ -111,18 +127,30 @@ export default function lumen(options: LumenOptions = {}): Plugin[] {
       },
 
       resolveId: {
-        filter: { id: /^virtual:lumen\/(?:hmr-dom|islands)$/ },
-        handler: (id) => (id === ISLANDS ? ISLANDS_ID : HMR_DOM_ID),
+        filter: { id: /^(?:virtual:lumen\/(?:hmr-dom|islands|css-manifest)|lumen)$/ },
+        async handler(id, importer) {
+          if (id !== "lumen") return `\0lumen:${id.slice("virtual:lumen/".length)}`;
+          // Client environments run the browser entry of `lumen`, whatever their conditions:
+          // Vitest gives its DOM environments (happy-dom, jsdom) Node's conditions, whose entry
+          // (index.server.ts) has no reactive graph, so mounted components would never update.
+          if (this.environment.config.consumer !== "client") return null;
+          const manifest = await this.resolve("lumen/package.json", importer, { skipSelf: true });
+          return manifest === null || manifest.external ? null : browserEntry(manifest.id);
+        },
       },
 
       load: {
-        filter: { id: [/^\0lumen:(?:hmr-dom|islands)$/, STYLE_QUERY] },
+        filter: { id: [/^\0lumen:(?:hmr-dom|islands|css-manifest)$/, STYLE_QUERY] },
         async handler(id) {
           if (id === HMR_DOM_ID) return HMR_DOM_CODE;
           if (id === ISLANDS_ID) {
-            islands.scan(root, include, exclude);
+            islands.scan(project);
             return islands.code();
           }
+          const serverBuild = !serve && this.environment.config.consumer === "server";
+          if (id === CSS_MANIFEST_ID) return cssManifestCode(serverBuild);
+          // The client build builds every stylesheet; the server's are empty (no CSS assets).
+          if (serverBuild) return "";
           // `<file>?lumen&type=style&lang.css`: the file's CSS; Vite's CSS plugin takes it from here.
           const file = cleanId(id);
           let source: string;
@@ -150,6 +178,26 @@ export default function lumen(options: LumenOptions = {}): Plugin[] {
           }
           return { code: entry.css ?? "", map: entry.cssMap };
         },
+      },
+
+      async buildStart() {
+        const environment = this.environment;
+        if (serve || environment.config.consumer !== "client") return;
+        if (hasServerBuild(environment.getTopLevelConfig())) {
+          await cssManifest.emit(this, project());
+        }
+      },
+
+      generateBundle(_, bundle) {
+        const config = this.environment.config;
+        if (serve || config.consumer !== "client") return;
+        cssManifest.record(bundle, config.base, config.build.cssCodeSplit);
+      },
+
+      renderChunk(code, chunk) {
+        if (serve || !chunk.moduleIds.includes(CSS_MANIFEST_ID)) return null;
+        const filled = fillManifest(code, cssManifest.manifest(this, root));
+        return filled === null ? null : { code: filled, map: null };
       },
 
       watchChange(id) {
@@ -235,6 +283,32 @@ export default function lumen(options: LumenOptions = {}): Plugin[] {
       },
     },
   ];
+}
+
+const browserEntries = new Map<string, string | null>();
+
+/** The `browser` export of `lumen` from its package.json (`null` when it has none). */
+function browserEntry(manifest: string): string | null {
+  let entry = browserEntries.get(manifest);
+  if (entry === undefined) {
+    const { exports } = JSON.parse(readFileSync(manifest, "utf8")) as {
+      exports?: { ".": { browser?: string } };
+    };
+    const browser = exports?.["."].browser;
+    entry = browser === undefined ? null : normalizePath(join(dirname(manifest), browser));
+    browserEntries.set(manifest, entry);
+  }
+  return entry;
+}
+
+/** Whether the build has a server environment to build (an SSR app, not a client-only SPA). */
+function hasServerBuild(config: ResolvedConfig): boolean {
+  if (config.build.ssr) return true;
+  return Object.values(config.environments).some(
+    (environment) =>
+      environment.consumer === "server" &&
+      (environment.build.rolldownOptions.input !== undefined || Boolean(environment.build.ssr)),
+  );
 }
 
 /** Resolution through the plugin pipeline (aliases, extensions, tsconfig paths). */

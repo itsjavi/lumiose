@@ -80,7 +80,8 @@ enum Level {
 
 struct Hoist {
     level: Level,
-    uses_item: bool,
+    /// The row data the handler reads (the item or one row const), passed through the data slot.
+    data: Option<SymbolId>,
 }
 
 impl<'a> Codegen<'a, '_> {
@@ -108,21 +109,22 @@ impl<'a> Codegen<'a, '_> {
         let slot = format!("$${event}");
         match self.hoistable(&handler) {
             Some(hoist) => {
-                let item = self.maps.last().and_then(|m| m.item).expect("a row item");
-                let item_name = self.scoping.symbol_name(item).to_owned();
-                let name = self.hoist_handler(handler, &event, &hoist, &item_name, span);
+                let data = hoist
+                    .data
+                    .map(|symbol| self.scoping.symbol_name(symbol).to_owned());
+                let name = self.hoist_handler(handler, &event, &hoist, data.as_deref(), span);
                 template.push(Op::Assign {
                     span,
                     node,
                     prop: slot.clone(),
                     value: self.ast.ident(span, &name),
                 });
-                if hoist.uses_item {
+                if let Some(data) = data {
                     template.push(Op::Assign {
                         span,
                         node,
                         prop: format!("{slot}Data"),
-                        value: self.ast.ident(span, &item_name),
+                        value: self.ast.ident(span, &data),
                     });
                 }
             }
@@ -155,7 +157,8 @@ impl<'a> Codegen<'a, '_> {
             handler_scope: scope,
             component_scope,
             item,
-            uses_item: false,
+            row_consts: &map.row_consts,
+            data: None,
             uses_setup: false,
             blocked: false,
             function_depth: 0,
@@ -170,30 +173,31 @@ impl<'a> Codegen<'a, '_> {
             } else {
                 Level::Module
             },
-            uses_item: checker.uses_item,
+            data: checker.data,
         })
     }
 
-    /// Declares `const _onClick = (row, …params) => …` at module or setup level.
+    /// Declares `const _onClick = (row, …params) => …` at module or setup level; the first
+    /// parameter is the row data (`data`) the handler reads, named as in the row.
     fn hoist_handler(
         &mut self,
         handler: Expression<'a>,
         event: &str,
         hoist: &Hoist,
-        item_name: &str,
+        data: Option<&str>,
         span: Span,
     ) -> String {
         let mut handler = self.visited(handler);
         while let Expression::ParenthesizedExpression(paren) = handler {
             handler = paren.unbox().expression;
         }
-        if hoist.uses_item {
+        if let Some(data) = data {
             let params = match &mut handler {
                 Expression::ArrowFunctionExpression(arrow) => &mut arrow.params,
                 Expression::FunctionExpression(function) => &mut function.params,
                 _ => unreachable!("checked by hoistable"),
             };
-            params.items.insert(0, self.ast.param(span, item_name));
+            params.items.insert(0, self.ast.param(span, data));
         }
         let mut base = String::from("_on");
         let mut chars = event.chars();
@@ -221,7 +225,9 @@ struct Captures<'c, 'a, 's> {
     handler_scope: ScopeId,
     component_scope: Option<ScopeId>,
     item: SymbolId,
-    uses_item: bool,
+    row_consts: &'c [SymbolId],
+    /// The one row value the handler reads; reading two (the item and a row const) blocks hoisting.
+    data: Option<SymbolId>,
     uses_setup: bool,
     blocked: bool,
     /// Nesting of non-arrow functions inside the handler (they rebind `this`/`arguments`).
@@ -249,8 +255,11 @@ impl<'a> Visit<'a> for Captures<'_, 'a, '_> {
             }
             return;
         };
-        if symbol == self.item {
-            self.uses_item = true;
+        if symbol == self.item || self.row_consts.contains(&symbol) {
+            match self.data {
+                Some(data) if data != symbol => self.blocked = true,
+                _ => self.data = Some(symbol),
+            }
             return;
         }
         let declared = scoping.symbol_scope_id(symbol);

@@ -176,6 +176,10 @@ impl<'a> Codegen<'a, '_> {
 
     /// A dynamic fragment item: compiled JSX, or the visited expression.
     fn ssr_renderable(&mut self, expression: Expression<'a>) -> Compiled<'a> {
+        let expression = match self.live_value(expression) {
+            Ok(compiled) => return compiled,
+            Err(expression) => expression,
+        };
         if matches!(
             expression.without_parentheses(),
             Expression::JSXElement(_) | Expression::JSXFragment(_)

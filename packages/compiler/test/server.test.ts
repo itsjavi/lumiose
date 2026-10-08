@@ -285,24 +285,25 @@ describe.skipIf(!binding)("server target renders on lumen/server", () => {
     const { Page, Card } = tokens;
     expect(await renderServer(module, "Page")).toBe(
       `<main ${Page}><article ${Card} class="featured" ${Page}>` +
-        `<h2 ${Card}>One</h2>First &lt;b&gt;</article></main>`,
+        `<h2 ${Card}>One</h2>First &lt;b></article></main>`,
     );
   });
 
   it("attributes, properties and escaping", async () => {
     const { module } = await load(ATTRIBUTES, "server");
     expect(await renderServer(module, "Attributes", { size: 3 })).toBe(
-      '<form title="Ada &quot;the&quot; &lt;first&gt;" data-size="3" aria-busy="true">' +
-        '<input value="Ada &quot;the&quot; &lt;first&gt;" disabled>' +
+      // The runtime escapes `&` and `<` in text, `&` and `"` in attribute values (TASK-71).
+      '<form title="Ada &quot;the&quot; <first>" data-size="3" aria-busy="true">' +
+        '<input value="Ada &quot;the&quot; <first>" disabled>' +
         "<input type=checkbox checked>" +
-        '<input value="Ada &quot;the&quot; &lt;first&gt;">' +
+        '<input value="Ada &quot;the&quot; <first>">' +
         '<p class="base on" style="color:red;width:3px"></p>' +
         '<p class="a b" style="margin: 0"></p>' +
         "<div><i>3</i></div>" +
-        '<span>Ada "the" &lt;first&gt;</span>' +
-        '<textarea>Ada "the" &lt;first&gt;</textarea>' +
-        '<label>Ada "the" &lt;first&gt;</label>' +
-        "<b>&lt;3&gt;</b>" +
+        '<span>Ada "the" &lt;first></span>' +
+        '<textarea>Ada "the" &lt;first></textarea>' +
+        '<label>Ada "the" &lt;first></label>' +
+        "<b>&lt;3></b>" +
         "</form>",
     );
   });

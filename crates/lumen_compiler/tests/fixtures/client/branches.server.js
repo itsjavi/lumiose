@@ -25,8 +25,8 @@ const _s11 = ["<p>Off</p>"];
 export function Branches(props) {
 	const open = signal(false);
 	const loggedIn = true;
-	return ssr(_s9, branch(open(), () => ssr(_s0), () => ssr(_s1)), branch(open(), () => ssr(_s2)), branch(props.user, () => ssr(_s3, insert(props.user.name))), branch(props.mode === "a", () => ssr(_s4), () => () => props.mode === "b" ? ssr(_s5) : ssr(_s6)), insert(loggedIn ? ssr(_s7) : ssr(_s8)), insert(open() ? "yes" : "no"));
+	return ssr(_s9, branch(open(), () => ssr(_s0), () => ssr(_s1)), branch(open(), () => ssr(_s2)), branch(props.user, () => ssr(_s3, insert(props.user.name))), branch(props.mode === "a", () => ssr(_s4), () => branch(props.mode === "b", () => ssr(_s5), () => ssr(_s6))), insert(loggedIn ? ssr(_s7) : ssr(_s8)), insert(open() ? "yes" : "no"));
 }
 export function Switch(props) {
-	return props.on ? ssr(_s10) : ssr(_s11);
+	return branch(props.on, () => ssr(_s10), () => ssr(_s11));
 }

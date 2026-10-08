@@ -9,15 +9,11 @@
 // module under the project root once, because route modules (where most call sites live) are in
 // the server graph, which is built after the client.
 
-import { readdirSync, readFileSync } from "node:fs";
-import { join } from "node:path";
-import { compile, type IslandMeta } from "@lumen/compiler";
+import type { IslandMeta } from "@lumen/compiler";
+import type { ScannedModule } from "./scan.ts";
 
 export const ISLANDS = "virtual:lumen/islands";
 export const ISLANDS_ID = "\0lumen:islands";
-
-/** Directories never scanned for call sites. */
-const SKIPPED_DIRECTORIES = new Set(["node_modules", "dist", "build", "coverage"]);
 
 interface Island {
   module: string;
@@ -39,25 +35,11 @@ export class IslandRegistry {
     return added;
   }
 
-  /** Compiles every Lumen module under `root` (once) and records its call sites. */
-  scan(root: string, include: RegExp, exclude: RegExp): void {
+  /** Records the call sites of every Lumen module under the root (./scan.ts), once. */
+  scan(project: () => readonly ScannedModule[]): void {
     if (this.#scanned) return;
     this.#scanned = true;
-    for (const file of lumenModules(root, include, exclude)) {
-      let source: string;
-      try {
-        source = readFileSync(file, "utf8");
-      } catch {
-        continue;
-      }
-      const result = compile(source, file, {
-        root,
-        sourceMap: false,
-        styleImport: false,
-        emitCss: false,
-      });
-      this.add(result.meta.islands);
-    }
+    for (const module of project()) this.add(module.islands);
   }
 
   /** The manifest module, with refs in a stable order. */
@@ -70,26 +52,4 @@ export class IslandRegistry {
       );
     return `export default {\n${entries.join("\n")}\n};\n`;
   }
-}
-
-function lumenModules(root: string, include: RegExp, exclude: RegExp): string[] {
-  const files: string[] = [];
-  const visit = (directory: string): void => {
-    let entries;
-    try {
-      entries = readdirSync(directory, { withFileTypes: true });
-    } catch {
-      return;
-    }
-    for (const entry of entries) {
-      const path = join(directory, entry.name);
-      if (entry.isDirectory()) {
-        if (!entry.name.startsWith(".") && !SKIPPED_DIRECTORIES.has(entry.name)) visit(path);
-      } else if (entry.isFile() && include.test(path) && !exclude.test(path)) {
-        files.push(path);
-      }
-    }
-  };
-  visit(root);
-  return files;
 }

@@ -2,7 +2,7 @@
 // hoisting for both operand orders and !==, block-bodied callbacks, nested lists.
 import { signal } from "lumen";
 import { Row } from "./Row.stsx";
-import { template, bind, setText, setAttr, setClass, toggleClass, insert, list, selector, createComponent } from "lumen/dom";
+import { template, bind, setText, setAttr, setClass, toggleClass, insert, list, branchValue, selector, createComponent } from "lumen/dom";
 const _t0 = /* @__PURE__ */ template(`<li>. `);
 const _t1 = /* @__PURE__ */ template(`<li>`);
 const _t2 = /* @__PURE__ */ template(`<td>`);
@@ -53,11 +53,11 @@ export function Lists(props) {
 	});
 	bind(_text2, () => items().map((item) => item.name).join(", "), setText);
 	list(_el7, _marker, items, (item) => createComponent(Row, { item }), (item) => item.id);
-	list(_el7, _marker2, items, (item) => () => active() > 0 ? (() => {
+	list(_el7, _marker2, items, (item) => branchValue(() => active() > 0, () => {
 		const _el6 = _t4();
 		insert(_el6, () => item.name);
 		return _el6;
-	})() : _t5());
+	}, () => _t5()));
 	list(_el7, null, items, (item, i) => {
 		const _nodes = _t6(), _dt = _nodes[0], _dd = _nodes[1];
 		insert(_dt, () => item.name);

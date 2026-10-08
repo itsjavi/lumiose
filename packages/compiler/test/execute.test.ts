@@ -263,6 +263,75 @@ describe.skipIf(!binding)("compiled output runs on lumen/dom", () => {
     expect(app.querySelector("p")!.innerHTML).toBe("<b>b</b><b>a</b>");
   });
 
+  it("parentless branches and lists: children, fragments, nested ternaries, returns", async (ctx) => {
+    const { module, missing, result } = await load(`
+      import { signal } from "lumen";
+      export const open = signal(false);
+      export const mode = signal("a");
+      export const items = signal([{ id: 1, n: "a" }, { id: 2, n: "b" }]);
+      function Box(props: { children?: JSX.Element }) {
+        return <section>{props.children}</section>;
+      }
+      function Switch(props: { on: boolean }) {
+        return props.on ? <b>on</b> : <i>off</i>;
+      }
+      function Frag() {
+        return (
+          <>
+            {open() && <em>!</em>}
+            {items().map((item) => <span key={item.id}>{item.n}</span>)}
+            <hr />
+          </>
+        );
+      }
+      export function View() {
+        return (
+          <div>
+            <Box>{open() ? <b>open</b> : <i>closed</i>}</Box>
+            <Box><h2>T</h2>{items().map((item) => <li key={item.id}>{item.n}</li>)}</Box>
+            <p>{mode() === "a" ? <b>A</b> : mode() === "b" ? <i>B</i> : <u>C</u>}</p>
+            <Switch on={open()} />
+            <nav><Frag /></nav>
+          </div>
+        );
+      }`);
+    if (!module) return ctx.skip(`lumen/dom lacks ${missing.join(", ")}`);
+    expect(result.code).toContain("branchValue(");
+    expect(result.code).toContain("listValue(");
+    const app = render(module.View);
+    const [box, listBox] = Array.from(app.querySelectorAll("section"));
+    const p = app.querySelector("p")!;
+    const nav = app.querySelector("nav")!;
+    expect(box!.innerHTML).toBe("<i>closed</i>");
+    expect(listBox!.innerHTML).toBe("<h2>T</h2><li>a</li><li>b</li>");
+    expect(p.innerHTML).toBe("<b>A</b>");
+    expect(app.querySelector("div > i")!.textContent).toBe("off");
+    expect(nav.innerHTML).toBe("<span>a</span><span>b</span><hr>");
+    const closed = box!.firstElementChild;
+    const [liA, liB] = Array.from(listBox!.querySelectorAll("li"));
+    const spanA = nav.querySelector("span");
+
+    // Memoised on the condition: an unrelated write keeps the rendered branch.
+    module.mode.set("b");
+    lumen.flushSync();
+    expect(p.innerHTML).toBe("<i>B</i>");
+    expect(box!.firstElementChild).toBe(closed);
+    module.mode.set("c");
+    lumen.flushSync();
+    expect(p.innerHTML).toBe("<u>C</u>");
+
+    module.open.set(true);
+    module.items.set(module.items().toReversed());
+    lumen.flushSync();
+    expect(box!.innerHTML).toBe("<b>open</b>");
+    expect(app.querySelector("div > b:not(p b)")!.textContent).toBe("on");
+    // Keyed: rows move instead of being re-created.
+    expect(Array.from(listBox!.querySelectorAll("li"))).toEqual([liB, liA]);
+    expect(listBox!.innerHTML).toBe("<h2>T</h2><li>b</li><li>a</li>");
+    expect(nav.innerHTML).toBe("<em>!</em><span>b</span><span>a</span><hr>");
+    expect(nav.querySelectorAll("span")[1]).toBe(spanA);
+  });
+
   it("two-way bindings, refs, attachments and native listeners", async (ctx) => {
     const { module, missing } = await load(`
       import { signal, ref } from "lumen";

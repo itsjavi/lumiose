@@ -92,6 +92,8 @@ const CLIENT_RUNTIME: &[&str] = &[
     "insert",
     "list",
     "branch",
+    "branchValue",
+    "listValue",
     "selector",
     "createComponent",
     "restProps",
@@ -557,10 +559,10 @@ impl<'a> Codegen<'a, '_> {
                 let cond = cond.unbox();
                 let test = self.visited(cond.test);
                 let consequent = self
-                    .compile_value(cond.consequent)
+                    .compile_arm(cond.consequent)
                     .into_expression(self.ast, span);
                 let alternate = self
-                    .compile_value(cond.alternate)
+                    .compile_arm(cond.alternate)
                     .into_expression(self.ast, span);
                 Compiled::value(self.ast.conditional(span, test, consequent, alternate))
             }
@@ -569,7 +571,7 @@ impl<'a> Codegen<'a, '_> {
                 let logical = logical.unbox();
                 let left = self.visited(logical.left);
                 let right = self
-                    .compile_value(logical.right)
+                    .compile_arm(logical.right)
                     .into_expression(self.ast, span);
                 Compiled::value(Expression::new_logical_expression(
                     span,
@@ -584,28 +586,24 @@ impl<'a> Codegen<'a, '_> {
     }
 
     /// A returned value. In a component or a row callback (both run once), a reactive conditional
-    /// is returned as a function so that it stays live (`insert` tracks functions).
+    /// or a list is returned as a parentless `branchValue`/`listValue` so that it stays live (the
+    /// server's `branch`/`list`).
     fn compile_return(&mut self, expr: Expression<'a>) -> Compiled<'a> {
-        let reactive_conditional = match expr.without_parentheses() {
-            Expression::ConditionalExpression(cond) => {
-                is_jsx_like(expr.without_parentheses()) && self.reads_reactive(&cond.test)
+        let renders_once = self.functions.last().copied().unwrap_or(false);
+        let expr = if renders_once {
+            match self.live_value(expr) {
+                Ok(compiled) => return compiled,
+                Err(expr) => expr,
             }
-            Expression::LogicalExpression(logical) => {
-                is_jsx_like(&logical.right) && self.reads_reactive(&logical.left)
-            }
-            _ => false,
+        } else {
+            expr
         };
-        // The server renders once: a conditional is just its value.
-        let renders_once = !self.server() && self.functions.last().copied().unwrap_or(false);
-        let span = expr.span();
-        let compiled = self.compile_value(expr);
-        if reactive_conditional && renders_once {
-            let value = self
-                .ast
-                .arrow_returning(span, &[], compiled.setup, compiled.value);
-            return Compiled::value(value);
-        }
-        compiled
+        self.compile_value(expr)
+    }
+
+    /// A returned `.map()` that `compile_return` makes a live list.
+    fn returns_list(&self, expr: &Expression<'a>) -> bool {
+        self.functions.last().copied().unwrap_or(false) && self.is_list(expr)
     }
 
     /// `is_dynamic` on an expression before it is visited (destructured props count as reads).
@@ -720,10 +718,9 @@ impl<'a> VisitMut<'a> for Codegen<'a, '_> {
             }
             match &mut statement {
                 Statement::ReturnStatement(ret)
-                    if ret
-                        .argument
-                        .as_ref()
-                        .is_some_and(|a| Self::is_jsx_root(a) || is_jsx_like(a)) =>
+                    if ret.argument.as_ref().is_some_and(|a| {
+                        Self::is_jsx_root(a) || is_jsx_like(a) || self.returns_list(a)
+                    }) =>
                 {
                     let argument = ret.argument.take().expect("checked");
                     let compiled = self.compile_return(argument);
@@ -868,7 +865,8 @@ impl<'a> VisitMut<'a> for Codegen<'a, '_> {
             }
             expression => {
                 let expression = expression.into_expression();
-                let compiled = if (component.is_some() || row_callback) && is_jsx_like(&expression)
+                let compiled = if (component.is_some() || row_callback)
+                    && (is_jsx_like(&expression) || self.returns_list(&expression))
                 {
                     self.compile_return(expression)
                 } else if Self::is_jsx_root(&expression) {
