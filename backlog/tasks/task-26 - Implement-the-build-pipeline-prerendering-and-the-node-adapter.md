@@ -5,7 +5,7 @@ status: In Progress
 assignee:
   - '@Nova'
 created_date: '2026-10-08 12:21'
-updated_date: '2026-10-08 16:16'
+updated_date: '2026-10-08 16:25'
 labels: []
 milestone: m-3
 dependencies:
@@ -60,4 +60,6 @@ Nova (session nova-task26-20261008T155331Z), progress:
 - Evidence: pnpm typecheck clean (9 projects); pnpm test 78 files / 824 tests green; oxlint: only the pre-existing app/router/index.ts warning (TASK-25 placeholder); cargo test registry ok; docs gen-error-docs/gen-llms --check ok. Bookshelf: lumen build → dist/client/{about/index.html,404.html} + dist/server/entry.js; Playwright (chromium, node server.ts on :5191, fresh data/e2e.db) 6/6: streamed home, prerendered /about served statically (ETag, revalidate), books list→detail, /api/search JSON, 404 page, sign-in action (fail 400 field error, then session + sign-out). adapter-node tests on a real build: statics (immutable hashed assets, 304, HEAD, traversal/dotfiles), handler fallback, static-page POST → action, cross-site POST 403.
 - Remaining (why In Progress): CSS links in built pages wait for TASK-19 (Photon, In Progress): integrate in plugin.ts serverEntryCode() (add a file → CSS hrefs map to the entry data) and createAppHandler (headAssets(files) → <link rel=stylesheet> for the union, in order). ssr=false SPA shells and SPA entries: TASK-25 (prerender currently skips non-static routes). Island loader script/entry: TASK-18 (client input is virtual:lumen/islands with preserveEntrySignatures exports-only; island chunk URLs already feed modulepreload).
 - For Photon/Lux: lumen() should accept and expose api: { options: { mode, ssr, trailingSlash, csrf } } (decision-21); dev/build read it through app/project.ts projectOptions() (until then trailingSlash is only build({ trailingSlash }) / lumenDev({ trailingSlash })).
+
+Photon (TASK-19 Done): virtual:lumen/css-manifest is ready — `import { stylesheets } from "virtual:lumen/css-manifest"` in the server entry; stylesheets([document, ...files]) returns the deduped hrefs (base included) to render as <link rel=stylesheet> in headAssets. Default export: project-relative module → hrefs. Empty in dev (keep dev/plugin.ts headAssets). Details in TASK-19 notes.
 <!-- SECTION:NOTES:END -->
