@@ -3,7 +3,7 @@ id: doc-2
 title: Compiler-runtime contract
 type: specification
 created_date: '2026-10-08 12:27'
-updated_date: '2026-10-08 16:12'
+updated_date: '2026-10-08 20:58'
 tags:
   - architecture
   - contract
@@ -101,6 +101,18 @@ Inside `<!--l:ID-->…<!--/l:ID-->`, the server marks every range the client cla
 **Template/server alignment** (Photon, TASK-14):
 - The server never emits the client's `<!>` placeholders. Inside islands, each client `insert`/`list`/`branch` corresponds to exactly one marker region, in the same child order.
 - A `text()` hole whose value is `""` renders no text node, so the hydrator must create one.
+
+**Hydration entry points** (Spark, TASK-18):
+- `lumen/dom/hydrate` exports `hydrate(C, props, start, end, awaits?, slots?, fresh?)`. It hydrates an island's root region between its start and end markers, replays awaits by `instancePath:site:occurrence` (decoded with `decodeData`), adopts inline slots, and inserts `<template data-l-slot>` slots later. On a mismatch it disposes, clears the range and renders on the client, reporting LUM4006 in dev.
+- Replayed awaits still evaluate the await expression for tracking, with fetch held off, so reactive inputs such as `props.id` stay tracked.
+- `lumen/dom/loader` is the island loader client entry (≈0.74 kB), and imports `virtual:lumen/islands`. It:
+  - watches for new `data-l-islands` records with a MutationObserver;
+  - runs one TreeWalker pass per batch, finding comment and ProcessingInstruction placeholders (Chromium applies `<template for>` natively);
+  - handles the `load`/`idle`/`visible`/`media`/`only` triggers;
+  - waits for streamed placeholders inside a range;
+  - captures and replays `click`/`input`/`submit`/`keydown`.
+- The server emits it as `<script type="module" async src=…>`; `lumen dev`/`build` pass `loaderUrl`.
+- Range modes used by the hydrator: `0` region, `1` parentless value (`branchValue`/`listValue`), `2` ErrorBoundary, `3` Suspense content.
 
 ## 4. Async components (both sides)
 
