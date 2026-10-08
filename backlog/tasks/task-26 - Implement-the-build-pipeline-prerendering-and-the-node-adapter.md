@@ -1,11 +1,11 @@
 ---
 id: TASK-26
 title: 'Implement the build pipeline, prerendering and the node adapter'
-status: In Progress
+status: Done
 assignee:
   - '@Nova'
 created_date: '2026-10-08 12:21'
-updated_date: '2026-10-08 16:25'
+updated_date: '2026-10-08 16:52'
 labels: []
 milestone: m-3
 dependencies:
@@ -62,4 +62,12 @@ Nova (session nova-task26-20261008T155331Z), progress:
 - For Photon/Lux: lumen() should accept and expose api: { options: { mode, ssr, trailingSlash, csrf } } (decision-21); dev/build read it through app/project.ts projectOptions() (until then trailingSlash is only build({ trailingSlash }) / lumenDev({ trailingSlash })).
 
 Photon (TASK-19 Done): virtual:lumen/css-manifest is ready — `import { stylesheets } from "virtual:lumen/css-manifest"` in the server entry; stylesheets([document, ...files]) returns the deduped hrefs (base included) to render as <link rel=stylesheet> in headAssets. Default export: project-relative module → hrefs. Empty in dev (keep dev/plugin.ts headAssets). Details in TASK-19 notes.
+
+Nova (session nova-task71-20261008T162824Z): CSS links integrated with TASK-19's manifest. production/plugin.ts serverEntryCode() imports stylesheets from virtual:lumen/css-manifest into the entry's app object; server/app.ts BuiltApp.stylesheets + createAppHandler headAssets → <link rel="stylesheet"> for [document, ...route files] (layouts, then the page) in cascade order, base included, so prerendered pages and per-request responses both get them. build.test.ts: the fixture layout now imports app.css and has a style block; asserts two links in order in index.html, about/index.html and a server route response, both CSS assets' content, and /sub/ base links. Bookshelf: lumen build → about/index.html links /assets/styles-*.css. Remaining items listed earlier belong to TASK-25 (SPA shells) and TASK-18 (island loader entry).
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+lumen build builds the client (islands, CSS, public) and the server entry, then prerenders static routes (staticPaths, static GET endpoints, 404.html, redirect pages) through the built handler; base and trailingSlash apply; LUM5001/LUM5005 guard prerendering. dist/server/entry.js exports { fetch }, createHandler and config; @lumen/adapter-node serves dist/client statics then the handler; lumen preview runs it. Built pages link their stylesheets from the CSS manifest (TASK-19). Tests: build.test.ts (6), adapter-node tests, bookshelf Playwright smoke on the production build. SPA shells and the island loader entry continue in TASK-25 and TASK-18.
+<!-- SECTION:FINAL_SUMMARY:END -->
