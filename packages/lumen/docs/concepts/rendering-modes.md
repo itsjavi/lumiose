@@ -11,8 +11,11 @@
 | `spa`              | Server-rendered and hydrated, or a client shell with `ssr = false` | The whole subtree | Client router            |
 
 A route sets `export const mode = "server"` (a string literal); pages inherit the mode of their
-nearest layout that sets one. `export const ssr = false` applies to `spa` routes: the build emits a
-static shell and the page renders in the browser.
+nearest layout that sets one, else the project default set in `vite.config.ts` with
+`lumen({ mode: "server" })` (`"static"` when unset). `export const ssr = false` applies to `spa`
+routes: the build emits a static shell and the page renders in the browser. `lumen({ ssr: false })`
+makes that the default for every `spa` route, so `lumen({ mode: "spa", ssr: false })` turns the
+whole project into a client-rendered SPA built as static files.
 
 **Shell first, then stream (server mode).**
 
@@ -54,8 +57,8 @@ post to a prerendered page reaches its `action` on the server. Serve the build w
 `@lumen/adapter-node` (`createServer({ port })`: `dist/client` with caching headers, then the
 handler) or `lumen preview`; a site whose routes are all static deploys with `dist/client` alone.
 
-> **Status:** `lumen dev`, `lumen build`, prerendering and `@lumen/adapter-node` are available.
-> CSS links in built pages, the island loader (hydration) and SPA mode (`ssr = false` shells) are
+> **Status:** `lumen dev`, `lumen build`, prerendering, `@lumen/adapter-node`, CSS links in
+> built pages and the island loader (hydration) are available. SPA mode (`ssr = false` shells) is
 > in progress.
 
 ## API
@@ -64,6 +67,7 @@ handler) or `lumen preview`; a site whose routes are all static deploys with `di
 | --------------------------------------------------- | ----------------------------------------------------------------------------------- |
 | `export const mode = "static" \| "server" \| "spa"` | The route's mode (inherited from layouts).                                          |
 | `export const ssr = false`                          | `spa` routes: render in the browser only.                                           |
+| `lumen({ mode, ssr })` in `vite.config.ts`          | The project defaults for routes and layouts that do not set them.                   |
 | `export async function staticPaths()`               | `static` routes with params: `[{ params: { slug: "a" } }, …]`.                      |
 | `export function headers(ctx)`                      | Response headers for the page.                                                      |
 | `<Suspense fallback>`                               | Marks content that may stream after the shell.                                      |

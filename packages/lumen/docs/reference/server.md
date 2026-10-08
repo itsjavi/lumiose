@@ -25,6 +25,12 @@ interface RenderToStreamOptions {
   strictStyles?: boolean;
   /** Maps an island module specifier to its URL for modulepreload hints. */
   islandUrl?: (specifier: string) => string;
+  /**
+   * URL of the island loader (lumen/dom/loader). A page with islands gets it once, as
+   * <script type="module" async>: in `head` when the shell has islands, else in the first
+   * streamed chunk with island records. Default: none (islands render but do not hydrate).
+   */
+  loaderUrl?: string;
   /** Errors of streamed boundaries that no ErrorBoundary handled. Default: console.error. */
   onError?: (error: unknown) => void;
 }

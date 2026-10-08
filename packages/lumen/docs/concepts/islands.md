@@ -46,9 +46,14 @@ imported from code that reaches the browser (`LUM4003`): keep database access, s
 browser does not fetch it again; it must be plain data (`LUM4007`), and it is visible in the page
 source.
 
-> **Status:** the compiler emits island calls for `client:*` and checks `LUM4001`; the server
-> renders island markers, slots and records. The browser-side loader and hydration are in
-> progress, so islands render on the server but do not hydrate yet.
+**The loader script.** `lumen dev` and `lumen build` add the loader to every page that renders an
+island, once, as `<script type="module" async>`: in the `<head>` when the shell has islands,
+otherwise with the first streamed chunk that does. In a build, pages without islands load no
+JavaScript; the loader is the client entry, and each island is a chunk it imports when the island's
+trigger fires. With your own server, pass its URL as `renderToStream(root, { loaderUrl })`.
+
+> **Status:** available: island calls and records (`LUM4001`, `LUM4002`), the loader with its
+> triggers and event replay, and hydration (`LUM4006` on a mismatch), in `lumen dev` and builds.
 
 ## API
 
