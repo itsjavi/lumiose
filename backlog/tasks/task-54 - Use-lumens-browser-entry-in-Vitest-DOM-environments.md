@@ -5,7 +5,7 @@ status: Done
 assignee:
   - Photon
 created_date: '2026-10-08 15:40'
-updated_date: '2026-10-08 20:51'
+updated_date: '2026-10-08 20:54'
 labels: []
 milestone: m-5
 dependencies: []
@@ -37,6 +37,8 @@ Next: AC#3 docs (packages/lumen/docs/concepts/testing.md lines ~14-74 and refere
 Photon (2026-10-08, resumed): the inner Vitest run printed no JSON because Vitest 5's json reporter writes to a file (.vitest/json/output.json) instead of stdout. packages/lumen/src/vite/vitest.test.ts now passes --outputFile=<tmp>/report.json, reads it, and is un-skipped: dom.test.ts (happy-dom, only plugins: [lumen()]) sees the click update and server.test.ts (node env) renders with renderToString on the node entry -> AC #1, #2. Negative check: forcing the resolveId redirect off makes dom.test.ts fail ('Clicked 0 times'), so the test guards the fix. Header comment of src/vite/index.ts mentions the Vitest case.
 AC #3 (solo edit of Beacon's docs, scoped to this task): concepts/testing.md drops resolve.conditions ['browser'] (concept text, status note, API table row, example config, 'common mistakes' now says a missing DOM environment); reference/vite.md drops the Vitest status line and says DOM test environments get the browser entry. llms-full.txt regenerated (gen-llms); pnpm docs:check passes.
 Left alone: examples/spa-chiptune/vite.config.ts still sets resolve.conditions ['browser'] in test mode; the file has uncommitted user/Spark changes, and the workaround is now redundant (owner may drop it).
+
+Spark (from TASK-35, the chiptune app): resolve.conditions ['browser'] alone is not enough in Vitest's default node environment — lumen still behaves as the node entry there (computeds read untracked never update); it needs environment: 'happy-dom' (or jsdom) too. examples/spa-chiptune/vite.config.ts uses both. Worth stating in the testing docs.
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary
