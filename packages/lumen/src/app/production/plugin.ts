@@ -2,18 +2,18 @@
 // server entry. `build()` (./build.ts) runs the client environment, then the server environment,
 // then prerenders; this plugin only shapes the two builds.
 //
-// - client → `dist/client`: the island manifest (`virtual:lumen/islands`, one chunk per island),
-//   SPA entries once TASK-25 lands, assets and `public/`.
+// - client → `dist/client`: the island loader (`lumen/dom/loader`, which imports the island
+//   manifest `virtual:lumen/islands`: one chunk per island), SPA entries once TASK-25 lands,
+//   assets and `public/`.
 // - ssr → `dist/server/entry.js` (`virtual:lumen/server-entry`): the route manifest, a lazy
-//   import per route module, the middleware and the document, the island URLs of the client
-//   build, the stylesheets of each module (`virtual:lumen/css-manifest`, lumen/vite) and
+//   import per route module, the middleware and the document, the island and loader URLs of the
+//   client build, the stylesheets of each module (`virtual:lumen/css-manifest`, lumen/vite) and
 //   `export default { fetch }` from `createAppHandler()`.
 
 import { fileURLToPath } from "node:url";
 import { join, resolve } from "node:path";
 import { normalizePath, type Plugin, type ResolvedConfig } from "vite";
 import { CSS_MANIFEST } from "../../vite/css-manifest.ts";
-import { ISLANDS } from "../../vite/islands.ts";
 import type { RouteManifest } from "../routes/manifest.ts";
 import type { BuiltAppConfig } from "../server/app.ts";
 import type { CsrfOptions } from "../server/csrf.ts";
@@ -22,6 +22,8 @@ import type { TrailingSlash } from "../server/handler.ts";
 export const SERVER_ENTRY = "virtual:lumen/server-entry";
 const SERVER_ENTRY_ID = "\0lumen:server-entry";
 const APP_RUNTIME = normalizePath(fileURLToPath(new URL("../server/app.ts", import.meta.url)));
+/** The island loader's client entry (`lumen/dom/loader`). */
+const ISLAND_LOADER = normalizePath(fileURLToPath(new URL("../../dom/loader.ts", import.meta.url)));
 
 /** What the build knows about the app, filled in by `build()` between the steps. */
 export interface BuildState {
@@ -39,6 +41,8 @@ export interface BuildState {
   };
   /** Island specifier → client chunk URL, from the client build. */
   islands: Record<string, string>;
+  /** URL of the island loader chunk; undefined when the app has no islands. */
+  loader?: string;
 }
 
 export function lumenBuild(state: BuildState): Plugin {
@@ -55,7 +59,7 @@ export function lumenBuild(state: BuildState): Plugin {
             build: {
               outDir: join(state.outDir, "client"),
               rolldownOptions: {
-                input: { islands: ISLANDS },
+                input: { loader: ISLAND_LOADER },
                 // Vite drops the exports of app entries; the island manifest's lazy imports are
                 // what puts each island in its own chunk.
                 preserveEntrySignatures: "exports-only",
@@ -124,6 +128,7 @@ export function serverEntryCode(state: BuildState, config: ResolvedConfig): stri
     ...(document === undefined ? {} : { document }),
     ...(state.csrf === undefined ? {} : { csrf: state.csrf }),
     islands: state.islands,
+    ...(state.loader === undefined ? {} : { loader: state.loader }),
   };
   // The runtime is imported dynamically so it lands in a chunk: route chunks then never import
   // this entry, which can be loaded again under another URL (the build's prerender pass).

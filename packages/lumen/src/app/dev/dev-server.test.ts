@@ -196,6 +196,14 @@ describe.skipIf(!binding)("lumen dev", () => {
     expect(html).toContain('<link rel="modulepreload" href="/src/components/Counter.stsx?import"');
     expect(html).toMatch(/<!--l:0-->.*<button>.*3.*<\/button>.*<!--\/l:0-->/);
     expect(html).toContain('"ref":"/src/components/Counter.stsx#Counter"');
+    // The island loader: a virtual module importing lumen's source, which imports the manifest.
+    expect(html).toContain('<script type="module" async src="/@id/__x00__lumen:loader"></script>');
+    const entry = await (await get("/@id/__x00__lumen:loader")).text();
+    const source = /import "(\/@fs\/[^"]+\/dom\/loader\.ts)"/.exec(entry);
+    expect(source).not.toBeNull();
+    const loader = await get(source![1]!);
+    expect(loader.status).toBe(200);
+    expect(await loader.text()).toContain("lumen:islands");
   });
 
   it("serves endpoints", async () => {

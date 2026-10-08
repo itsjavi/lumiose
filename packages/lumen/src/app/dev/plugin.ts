@@ -62,6 +62,13 @@ type AppServerModule = typeof import("../server/index.ts");
 const APP_SERVER_ENTRY = normalizePath(
   fileURLToPath(new URL("../server/index.ts", import.meta.url)),
 );
+/**
+ * The island loader's client entry (`lumen/dom/loader`). Pages load it through a virtual module
+ * that imports it, so Vite resolves it like any import: it is served from lumen's source (one
+ * module instance with the islands' `lumen`), also when lumen lies outside `server.fs.allow`.
+ */
+const ISLAND_LOADER = normalizePath(fileURLToPath(new URL("../../dom/loader.ts", import.meta.url)));
+const LOADER_ID = "\0lumen:loader";
 const NOT_A_STYLESHEET = /[?&](?:inline|url|raw)\b/;
 const JS_MODULE = /\.[cm]?[jt]sx?$/;
 
@@ -169,6 +176,7 @@ export function lumenDev(options: LumenDevOptions = {}): Plugin {
       loadModule: (file) => ssr.runner.import(`/${file}`),
       render: runtime.createServerRenderer({
         islandUrl: (specifier) => devModuleUrl(base, specifier),
+        loaderUrl: `${base}@id/${LOADER_ID.replace("\0", "__x00__")}`,
       }),
       ...(current.middleware === undefined ? {} : { middleware: current.middleware }),
       ...(current.document === undefined ? {} : { document: current.document }),
@@ -260,6 +268,16 @@ export function lumenDev(options: LumenDevOptions = {}): Plugin {
     config(config) {
       // No index.html fallback: every non-asset request is a route.
       if (config.appType === undefined) return { appType: "custom" };
+    },
+
+    resolveId: {
+      filter: { id: /^\0lumen:loader$/ },
+      handler: (id) => id,
+    },
+
+    load: {
+      filter: { id: /^\0lumen:loader$/ },
+      handler: () => `import ${JSON.stringify(ISLAND_LOADER)};\n`,
     },
 
     configResolved(config) {

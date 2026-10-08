@@ -3,10 +3,12 @@
 // order, on `stream`.
 //
 // Chunk shapes:
+//   head         …[<script type="module" async src="loader">] (with the shell's first island)
 //   shell body   …HTML…[<script type="application/json" data-l-islands>[records]</script>]
 //   placeholder  <?start name="lb3">fallback<?end>
 //   first chunk  <script>$swap=…</script>        (once per response; nonce'd when configured)
-//   each chunk   [<link rel="modulepreload" href>…][<style>rules</style>]
+//   each chunk   [<script type="module" async src="loader">][<link rel="modulepreload" href>…]
+//                [<style>rules</style>]
 //                <template for="lb3">HTML</template><script>$swap("lb3")</script>
 //                [<script type="application/json" data-l-islands>[records]</script>]
 // Browsers with declarative partial updates apply `<template for>` natively and `$swap` finds
@@ -43,6 +45,12 @@ export interface RenderToStreamOptions {
   strictStyles?: boolean;
   /** Maps an island module specifier to its URL for `modulepreload` hints. Default: unchanged. */
   islandUrl?: (specifier: string) => string;
+  /**
+   * URL of the island loader (`lumen/dom/loader`). A page with islands gets it once, as an async
+   * module script: in the head when the shell has islands, else before the first streamed chunk
+   * with island records. Default: no loader (islands render but do not hydrate).
+   */
+  loaderUrl?: string;
   /** Receives errors of streamed boundaries that no `<ErrorBoundary>` handled. Default: console.error. */
   onError?: (error: unknown) => void;
 }
@@ -76,6 +84,8 @@ export function renderToStream(
     nonce: options.nonce,
     strictStyles: options.strictStyles === true,
     moduleUrl: options.islandUrl ?? ((specifier) => specifier),
+    loaderUrl: options.loaderUrl,
+    loaderSent: false,
     onError: options.onError ?? ((error) => console.error(error)),
     owner: createOwner(undefined),
     shell: createUnit(undefined),
@@ -186,6 +196,10 @@ function headHtml(render: RenderState): string {
 
 function unitAssets(render: RenderState, unit: Unit): string {
   let out = "";
+  if (!render.loaderSent && render.loaderUrl !== undefined && unit.islands.length > 0) {
+    render.loaderSent = true;
+    out += `<script type="module" async src="${escapeAttr(render.loaderUrl)}"${nonceAttr(render)}></script>`;
+  }
   for (const url of unit.preloads) out += `<link rel="modulepreload" href="${escapeAttr(url)}">`;
   if (unit.styles.length > 0) out += `<style${nonceAttr(render)}>${unit.styles.join("")}</style>`;
   return out;

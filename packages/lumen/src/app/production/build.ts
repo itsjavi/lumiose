@@ -2,7 +2,7 @@
 //
 // 1. Scan the routes (typegen writes `.lumen/types/routes.d.ts`; shadow TSX stays with
 //    `lumen check`). Route manifest errors (LUM5002/5003/5005) stop the build.
-// 2. Client environment → `dist/client`: islands, assets, `public/`.
+// 2. Client environment → `dist/client`: the island loader and islands, assets, `public/`.
 // 3. Server environment → `dist/server/entry.js`, with the client build's island URLs.
 // 4. Prerender `static` routes and endpoints in-process through that entry (./prerender.ts).
 //
@@ -122,7 +122,7 @@ export async function build(options: BuildOptions = {}): Promise<BuildResult> {
   const client = builder.environments.client!;
   const clientDir = resolve(root, client.config.build.outDir);
   const clientOutput = await builder.build(client);
-  state.islands = await islandUrls(clientOutput, root, clientDir, client.config.base);
+  Object.assign(state, await islandUrls(clientOutput, root, clientDir, client.config.base));
 
   const ssr = builder.environments.ssr!;
   const serverDir = resolve(root, ssr.config.build.outDir);
@@ -148,29 +148,34 @@ export async function build(options: BuildOptions = {}): Promise<BuildResult> {
 }
 
 /**
- * Island module specifier (`/src/components/Team.stsx`) → URL of its chunk in the client build.
- * An island manifest without islands is removed: nothing loads it.
+ * Island module specifier (`/src/components/Team.stsx`) → URL of its chunk in the client build,
+ * and the URL of the island loader. A loader without islands is removed: no page loads it.
  */
 async function islandUrls(
   output: Awaited<ReturnType<Awaited<ReturnType<typeof createBuilder>>["build"]>>,
   root: string,
   clientDir: string,
   base: string,
-): Promise<Record<string, string>> {
+): Promise<{ islands: Record<string, string>; loader: string | undefined }> {
   const outputs = (Array.isArray(output) ? output : [output]) as Rollup.RolldownOutput[];
-  const urls: Record<string, string> = {};
+  const islands: Record<string, string> = {};
+  let loader: string | undefined;
   for (const { output: files } of outputs) {
     for (const chunk of files) {
       if (chunk.type !== "chunk") continue;
-      if (chunk.isEntry && chunk.name === "islands" && chunk.dynamicImports.length === 0) {
-        await rm(join(clientDir, chunk.fileName), { force: true });
-        // And its directory, when that leaves it empty.
-        await rmdir(dirname(join(clientDir, chunk.fileName))).catch(() => {});
+      if (chunk.isEntry && chunk.name === "loader") {
+        if (chunk.dynamicImports.length > 0) {
+          loader = base + chunk.fileName;
+        } else {
+          await rm(join(clientDir, chunk.fileName), { force: true });
+          // And its directory, when that leaves it empty.
+          await rmdir(dirname(join(clientDir, chunk.fileName))).catch(() => {});
+        }
       }
       if (!chunk.isDynamicEntry || chunk.facadeModuleId === null) continue;
       const path = normalizePath(relative(root, chunk.facadeModuleId));
-      if (!path.startsWith("../")) urls[`/${path}`] = base + chunk.fileName;
+      if (!path.startsWith("../")) islands[`/${path}`] = base + chunk.fileName;
     }
   }
-  return urls;
+  return { islands, loader };
 }

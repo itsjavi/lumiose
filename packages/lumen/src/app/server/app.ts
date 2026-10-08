@@ -33,6 +33,8 @@ export interface BuiltApp extends BuiltAppConfig {
   csrf?: false | CsrfOptions;
   /** Island module specifier (`/src/components/Team.stsx`) → its client chunk URL. */
   islands: Readonly<Record<string, string>>;
+  /** URL of the island loader chunk (with `base`); absent when the app has no islands. */
+  loader?: string;
   /**
    * The stylesheet URLs (with `base`) of project-relative modules, deduplicated in cascade order
    * (`stylesheets` of `virtual:lumen/css-manifest`).
@@ -51,7 +53,10 @@ export function createAppHandler(app: BuiltApp, options: AppHandlerOptions = {})
     ...options,
     manifest: app.manifest,
     loadModule: app.loadModule,
-    render: createServerRenderer({ islandUrl: (specifier) => app.islands[specifier] ?? specifier }),
+    render: createServerRenderer({
+      islandUrl: (specifier) => app.islands[specifier] ?? specifier,
+      ...(app.loader === undefined ? {} : { loaderUrl: app.loader }),
+    }),
     ...(app.middleware === undefined ? {} : { middleware: app.middleware }),
     ...(app.document === undefined ? {} : { document: app.document }),
     ...(app.csrf === undefined ? {} : { csrf: app.csrf }),

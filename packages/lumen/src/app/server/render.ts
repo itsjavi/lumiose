@@ -98,6 +98,8 @@ export interface ServerRendererOptions {
   strictStyles?: boolean;
   /** Maps island module specifiers to URLs for `modulepreload` hints (the build's manifest). */
   islandUrl?: (specifier: string) => string;
+  /** URL of the island loader script, added to pages with islands (`lumen/dom/loader`). */
+  loaderUrl?: string;
 }
 
 const rawHtml = (html: string) => new SSRHtml(html);

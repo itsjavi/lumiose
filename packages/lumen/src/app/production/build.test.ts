@@ -155,6 +155,11 @@ describe.skipIf(!binding)("lumen build", () => {
     const preload = /<link rel="modulepreload" href="\/(assets\/Counter-[\w-]+\.js)">/.exec(home);
     expect(preload).not.toBeNull();
     expect(existsSync(join(result.clientDir, preload![1]!))).toBe(true);
+    // The island loader entry, which imports each island's chunk lazily.
+    const loader =
+      /<script type="module" async src="\/(assets\/loader-[\w-]+\.js)"><\/script>/.exec(home);
+    expect(loader).not.toBeNull();
+    expect(read(root, loader![1]!)).toContain(preload![1]!.slice("assets/".length));
 
     // The stylesheets of the layout (an imported CSS file, then its style block), linked in the
     // head of every page (TASK-19's CSS manifest).

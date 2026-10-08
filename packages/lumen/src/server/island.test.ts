@@ -165,6 +165,46 @@ describe("island()", () => {
     expect(records(shell.body).map((record) => record.id)).toEqual([0, 1, 2]);
   });
 
+  it("adds the island loader once: in the head for shell islands, else with the first chunk", async () => {
+    const loaderUrl = "/assets/loader-abc.js";
+    const tag = '<script type="module" async src="/assets/loader-abc.js"></script>';
+    const shell = await renderToStream(
+      () =>
+        ssr(
+          ["", "", ""],
+          island("/src/Counter.stsx#Counter", Counter, {}, "idle"),
+          island("/src/Counter.stsx#Counter", Counter, {}, "idle"),
+        ),
+      { loaderUrl },
+    );
+    expect(shell.head).toBe(tag);
+    expect(shell.body).not.toContain('<script type="module"');
+
+    const none = await renderToStream(() => ssr(["<p>static</p>"]), { loaderUrl });
+    expect(none.head).toBe("");
+
+    const streamed = await renderToStream(
+      () =>
+        createComponent(Suspense, {
+          get fallback() {
+            return ssr(["…"]);
+          },
+          get children() {
+            return island("/src/Late.stsx#Late", Late, { value: "late" }, "visible");
+          },
+        }),
+      { loaderUrl, nonce: "n1" },
+    );
+    expect(streamed.head).toBe("");
+    let chunks = "";
+    for await (const chunk of streamed.stream!) chunks += chunk;
+    expect(chunks.split('<script type="module"')).toHaveLength(2);
+    expect(chunks).toContain(
+      '<script type="module" async src="/assets/loader-abc.js" nonce="n1"></script>',
+    );
+    expect(chunks.indexOf("loader-abc.js")).toBeLessThan(chunks.indexOf("data-l-islands"));
+  });
+
   it("renders slots inline where the island renders them (golden 5.5), with the strategy value", async () => {
     const shell = await renderToStream(() =>
       island(

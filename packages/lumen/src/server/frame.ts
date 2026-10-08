@@ -79,6 +79,9 @@ export interface RenderState {
   readonly nonce: string | undefined;
   readonly strictStyles: boolean;
   readonly moduleUrl: (specifier: string) => string;
+  /** URL of the island loader script; sent once, with the first island records. */
+  readonly loaderUrl: string | undefined;
+  loaderSent: boolean;
   readonly onError: (error: unknown) => void;
   /** The request's root owner: disposed (aborting `lifetime()`) when the render ends. */
   readonly owner: Owner;
