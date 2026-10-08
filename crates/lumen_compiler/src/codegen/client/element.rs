@@ -232,6 +232,7 @@ impl<'a> Codegen<'a, '_> {
             .iter()
             .any(|a| matches!(a, JSXAttributeItem::SpreadAttribute(_)))
         {
+            let attributes = self.bake_before_spreads(template, node, attributes);
             self.spread_attributes(template, node, attributes);
             return false;
         }
@@ -610,6 +611,71 @@ impl<'a> Codegen<'a, '_> {
                 args: vec![expr],
             });
         }
+    }
+
+    /// Bakes the constant attributes written before the first spread into the template when
+    /// every spread is the component's props object or its `...rest` (TASK-97): their keys are
+    /// fixed, so a key the spread does not have never appears later, and one it has overrides the
+    /// baked value exactly as the merged props would. `<svg viewBox="…" {...rest}>` then clones
+    /// its defaults instead of setting them on every render. `class`, `style`, properties,
+    /// events and helpers keep their runtime semantics in the spread. Returns the attributes
+    /// left for the spread.
+    fn bake_before_spreads(
+        &mut self,
+        template: &mut Template<'a>,
+        node: usize,
+        attributes: oxc_allocator::ArenaVec<'a, JSXAttributeItem<'a>>,
+    ) -> oxc_allocator::ArenaVec<'a, JSXAttributeItem<'a>> {
+        let Some(component) = self.component() else {
+            return attributes;
+        };
+        let fixed_keys = attributes.iter().all(|item| match item {
+            JSXAttributeItem::SpreadAttribute(spread) => {
+                matches!(spread.argument.without_parentheses(), Expression::Identifier(ident)
+                    if crate::analyze::reactivity::symbol_of(self.scoping, ident)
+                        .is_some_and(|symbol| component.props_objects.contains(&symbol)))
+            }
+            JSXAttributeItem::Attribute(_) => true,
+        });
+        if !fixed_keys {
+            return attributes;
+        }
+        let first_spread = attributes
+            .iter()
+            .position(|a| matches!(a, JSXAttributeItem::SpreadAttribute(_)))
+            .unwrap_or(attributes.len());
+        let name_of = |item: &JSXAttributeItem<'_>| match item {
+            JSXAttributeItem::Attribute(attribute) => Some(attribute_name(&attribute.name)),
+            JSXAttributeItem::SpreadAttribute(_) => None,
+        };
+        let mut left = self.ast.vec();
+        for (index, item) in attributes.into_iter().enumerate() {
+            let name = name_of(&item).unwrap_or_default();
+            let bakeable = index < first_spread
+                && !name.is_empty()
+                && !matches!(name.as_str(), "class" | "style" | "key" | "ref" | "attach")
+                && !name.contains(':')
+                && !is_property(&name)
+                && super::events::event_name(&name).is_none()
+                && !left
+                    .iter()
+                    .any(|earlier| name_of(earlier).as_ref() == Some(&name));
+            let constant = match &item {
+                JSXAttributeItem::Attribute(attribute) if bakeable => match &attribute.value {
+                    None => Some(None),
+                    Some(JSXAttributeValue::StringLiteral(text)) => {
+                        Some(Some(decode_entities(&text.value)))
+                    }
+                    _ => None,
+                },
+                _ => None,
+            };
+            match constant {
+                Some(value) => template.element_attrs_mut(node).push((name, value)),
+                None => left.push(item),
+            }
+        }
+        left
     }
 
     /// `<div {...rest} class="x">`: every attribute goes through `spread`, in order, so later

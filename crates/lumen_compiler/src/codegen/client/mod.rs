@@ -283,6 +283,9 @@ struct ComponentCtx<'a> {
     props: HashMap<SymbolId, PropPath<'a>>,
     /// Bindings of the component that may carry its `class` prop (class_flow.rs).
     class_carriers: HashSet<SymbolId>,
+    /// The props object and the `...rest` of a destructured props parameter: objects whose keys
+    /// are fixed for the component's lifetime.
+    props_objects: HashSet<SymbolId>,
     /// Statements hoisted to the start of the component body (delegated handlers).
     setup_hoists: Vec<Statement<'a>>,
 }

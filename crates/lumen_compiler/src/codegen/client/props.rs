@@ -47,12 +47,14 @@ impl<'a> Codegen<'a, '_> {
             props_name: "props".to_owned(),
             props: HashMap::new(),
             class_carriers: HashSet::new(),
+            props_objects: HashSet::new(),
             setup_hoists: Vec::new(),
         };
         let pattern = params.items.first().map(|p| &p.pattern);
         match pattern {
             Some(BindingPattern::BindingIdentifier(ident)) => {
                 ctx.props_name = ident.name.to_string();
+                ctx.props_objects.extend(ident.symbol_id.get());
             }
             Some(BindingPattern::ObjectPattern(_)) if component.props.is_some() => {
                 if let Some(collected) = self.take_props_pattern(params) {
@@ -63,6 +65,7 @@ impl<'a> Codegen<'a, '_> {
                     if !collected.keys.iter().any(|key| key == "class") {
                         ctx.class_carriers.extend(collected.rest_symbol);
                     }
+                    ctx.props_objects.extend(collected.rest_symbol);
                     params.items = self.ast.vec_from([self.ast.param(span, &ctx.props_name)]);
                     if let Some(rest) = collected.rest {
                         let callee = self.runtime("restProps", span);

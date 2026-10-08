@@ -1940,7 +1940,9 @@ rendering an icon clones markup, on the server and in the browser alike. The ico
 
 - **Props override the file.** The file's root attributes (`width`, `height`, `viewBox`, `fill`,
   `stroke`, `class`, …) are defaults; any `<svg>` prop you pass replaces the matching one:
-  `class`, `style`, `width`, `height`, `fill`, `aria-*`, events and `ref`.
+  `class`, `style`, `width`, `height`, `fill`, `aria-*`, events and `ref`. The defaults other
+  than `class` and `style` stay in the cloned template, so rendering an icon only sets the props
+  you pass.
 - **Colour.** Icons drawn with `currentColor` follow the text colour (`color` in CSS). For icons
   with a hard-coded colour, set `lumen({ svg: { currentColor: true } })` to replace every colour
   with `currentColor`, or pass `fill`/`stroke` props.
