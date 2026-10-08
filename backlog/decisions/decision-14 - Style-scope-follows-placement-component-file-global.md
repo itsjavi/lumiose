@@ -42,3 +42,5 @@ The user asked whether a raw `<style>` (no template tags) could live inside a co
 - The compiler must track which templates belong to which component in order to stamp per-component tokens.
 - Diagnostics are needed for misplaced `<style>` blocks, such as conditional ones or a block used as the sole root.
 
+
+_Clarified in spec v0.3 §4.1 (technical refinement, decision-16): a component-level block may sit at any depth of the static JSX, but its parent must be an intrinsic element or fragment, not a component element (LUM3010). Top-level blocks must come after the constants they reference (LUM3013). Masking uses the first non-newline character after a reference._

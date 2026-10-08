@@ -4,7 +4,7 @@ title: >-
   Rust compiler on OXC + Lightning CSS, shipped as napi-rs + a Vite/Rolldown
   plugin
 date: '2026-10-08 10:28'
-status: proposed
+status: accepted
 ---
 ## Context
 
@@ -41,3 +41,5 @@ TASK-2 found the following:
 - Crossing the JS boundary adds overhead compared with an in-core transform, roughly 50% by Evan You's estimate. That is acceptable for one pass per file. Revisit if Rolldown ships raw AST transfer for plugins.
 - The same core powers the Vite plugin, the CLI (`lumen check`), the LSP, the MCP server and the browser playground.
 
+
+_Accepted 2026-10-08 by Lux (architect) under the authority delegated in decision-16._

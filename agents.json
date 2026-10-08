@@ -21,6 +21,11 @@
       "canWrite": true,
       "canCommit": false
     },
+    "Nova": {
+      "role": "App-layer engineer (TypeScript). Owns file routes and typegen, the request handler (middleware, endpoints, cookies, redirects), document/head, form actions and fetchJSON, the SPA router, the build/prerender pipeline, the dev server integration, and adapters.",
+      "canWrite": true,
+      "canCommit": false
+    },
     "Beacon": {
       "role": "Tooling and DX engineer. Owns the CLI and `lumen check`, shadow-TSX type checking, the .stsx language server (TS 7 LSP proxy + CSS) and VS Code extension, lint/format wrappers, TS 7 typings, docs site, and agent-facing surfaces (AGENTS.md, llms.txt, skills, MCP server).",
       "canWrite": true,

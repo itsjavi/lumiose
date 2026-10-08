@@ -56,3 +56,5 @@ Rejected alternatives:
 - Breakpoints and tokens can be shared between JS and CSS, including in media queries.
 - Constant folding across modules requires the compiler to parse imported modules. Edits to those modules must invalidate the dependent CSS during HMR.
 
+
+_Clarified in spec v0.3 §4.6.2 (technical refinement, decision-16): every element in a scope carries its token, and class passthrough works as "tokens follow class". The caller's tokens are applied wherever the child applies `props.class`, so the developer-visible behaviour (parent styles reach `<Child class="x">`) is unchanged._

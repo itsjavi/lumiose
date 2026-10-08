@@ -2,7 +2,7 @@
 id: decision-7
 title: Compiler-recognised JSX idioms and reactive props destructuring
 date: '2026-10-08 10:28'
-status: proposed
+status: accepted
 ---
 ## Context
 
@@ -48,3 +48,5 @@ The compiler recognises a narrow set of patterns and compiles them to fine-grain
 - The rules for which patterns are recognised must be documented precisely. The LSP and MCP expose "show compiled output" and execution-contract hovers so the behaviour is visible.
 - Patterns the compiler doesn't recognise fall back to correct but unkeyed dynamic inserts. The compiler never miscompiles them.
 
+
+_Accepted 2026-10-08. The syntax was approved by the user (compiled `.map()`/ternaries; `client:*` directives at the usage site), and the remaining technical parts by Lux under decision-16._

@@ -15,10 +15,13 @@ Ask about consequential unresolved product, architecture, security,
 or destructive decisions. Resolve routine implementation details
 using project conventions and judgment.
 
-Record a backlog decision only after the user explicitly approves
-the choice. An exploratory question ("would X be possible?") is not
-approval. Until then, keep options as proposals in chat or in the
-spec.
+Syntax and developer-experience decisions (authoring syntax,
+public API shape, file formats) need the user's explicit approval
+before they are recorded. An exploratory question ("would X be
+possible?") is not approval; keep such options as proposals. All
+other technical, architecture, performance and process decisions
+are delegated to the orchestrator, who records them with their
+rationale (decision-16).
 
 ## Agent identity and roster
 

@@ -4,7 +4,7 @@ title: >-
   Island protocol: usage-site client directives, comment markers, data-only
   serialization
 date: '2026-10-08 10:28'
-status: proposed
+status: accepted
 ---
 ## Context
 
@@ -60,3 +60,5 @@ The React Flight remote code execution vulnerability (CVE-2025-55182) showed the
 - Island children are static, server-rendered HTML; they are reactive only if they are themselves islands.
 - Without a TS 7 API, serializability can only be partly enforced at the type level.
 
+
+_Accepted 2026-10-08. The syntax was approved by the user (compiled `.map()`/ternaries; `client:*` directives at the usage site), and the remaining technical parts by Lux under decision-16._

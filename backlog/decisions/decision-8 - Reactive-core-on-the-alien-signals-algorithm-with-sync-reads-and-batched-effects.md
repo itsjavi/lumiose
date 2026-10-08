@@ -4,7 +4,7 @@ title: >-
   Reactive core on the alien-signals algorithm with sync reads and batched
   effects
 date: '2026-10-08 10:28'
-status: proposed
+status: accepted
 ---
 ## Context
 
@@ -47,5 +47,7 @@ Scheduling semantics:
 
 - Lumen gets a best-in-class update path and memory profile.
 - Lumen owns this code and must maintain and test it. Property-based tests should compare it against a naive reference implementation.
-- Async inside the graph, as Solid 2 does it, is deferred to v1.x. Async in v1 goes through `resource()` and `<Suspense>`.
+- Async inside `computed` (Solid 2 style) is deferred to v1.x. Async components are covered by decision-13. A run of an async component gets a fresh subscriber node, which is paused (not ended) at each `$await`, so tracking across awaits is compatible with `depsTail` link reuse.
 
+
+_Accepted 2026-10-08 by Lux (architect) under the authority delegated in decision-16._

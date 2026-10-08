@@ -27,3 +27,5 @@ Alternatives considered:
 - Props must stay reactive. The compiler rewrites destructured props into getter access, as Vue 3.5 does with reactive props destructure, so idiomatic destructuring works.
 - Components cannot be called as plain functions to "re-render". Documentation and diagnostics must make the setup-once mental model explicit.
 
+
+_Signal syntax `count()` / `count.set(v)` / `count.update(fn)` confirmed by the user on 2026-10-08._

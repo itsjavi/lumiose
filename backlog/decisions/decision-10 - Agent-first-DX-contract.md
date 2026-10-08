@@ -2,7 +2,7 @@
 id: decision-10
 title: Agent-first DX contract
 date: '2026-10-08 10:28'
-status: proposed
+status: accepted
 ---
 ## Context
 
@@ -47,3 +47,5 @@ Lumen commits to an agent-facing contract, which is tested in the same way as th
 - The docs site and the in-package docs share one source.
 - A diagnostic code can never be reused, even after the diagnostic is retired.
 
+
+_Accepted 2026-10-08 by Lux (architect) under the authority delegated in decision-16._

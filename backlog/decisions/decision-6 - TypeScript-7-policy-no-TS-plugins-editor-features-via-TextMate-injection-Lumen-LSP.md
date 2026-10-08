@@ -4,7 +4,7 @@ title: >-
   TypeScript 7 policy: no TS plugins; editor features via TextMate injection +
   Lumen LSP
 date: '2026-10-08 10:28'
-status: proposed
+status: accepted
 ---
 ## Context
 
@@ -30,3 +30,5 @@ Tools that rely on TS plugins are stuck on TS 6 today. Examples are styled-compo
 - CSS IntelliSense comes from a CSS language service, not from TypeScript. `$name` constant references are still type-checked through the shadow TSX (decision-12).
 - Revisit this decision when TS 7.x exposes a stable API that would allow deeper integration.
 
+
+_Accepted 2026-10-08 by Lux (architect) under the authority delegated in decision-16._
