@@ -1,11 +1,11 @@
 ---
 id: TASK-11
 title: Build the napi bindings and the Vite plugin
-status: To Do
+status: In Progress
 assignee:
   - '@Photon'
 created_date: '2026-10-08 12:20'
-updated_date: '2026-10-08 14:11'
+updated_date: '2026-10-08 14:25'
 labels: []
 milestone: m-1
 dependencies:
