@@ -3,7 +3,7 @@ id: doc-1
 title: Lumen architecture specification
 type: specification
 created_date: '2026-10-08 10:28'
-updated_date: '2026-10-08 16:13'
+updated_date: '2026-10-08 21:02'
 tags:
   - architecture
   - spec
@@ -358,7 +358,7 @@ Replay validates the key. On a mismatch, it evaluates `e`, and reports `LUM4006`
 
 | Placement | Scope |
 |---|---|
-| Inside a component | That component's own templates, including closures inside it (`.map` callbacks). It does not reach other components |
+| Inside a component | Its enclosing element and everything written inside it (lexical subtree, including `.map` callbacks and JSX children passed there); a block directly under the root element covers the whole component; sibling subtrees and other components are not affected (decision-23) |
 | File top level | Every template in the file |
 | `<style global>` | The whole app, unscoped |
 
