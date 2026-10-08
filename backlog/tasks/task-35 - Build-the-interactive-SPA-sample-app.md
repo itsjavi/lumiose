@@ -5,7 +5,7 @@ status: In Progress
 assignee:
   - '@Spark'
 created_date: '2026-10-08 12:21'
-updated_date: '2026-10-08 16:29'
+updated_date: '2026-10-08 16:54'
 labels: []
 milestone: m-6
 dependencies:
@@ -46,4 +46,12 @@ Spark (standalone worker under Lux), scope examples/spa-chiptune/** only.
 
 <!-- SECTION:NOTES:BEGIN -->
 Spark: claimed (session spark-task35-20261008T162705Z), standalone worker under Lux; ownership examples/spa-chiptune/**.
+
+RESUME (Spark, checkpoint requested by Lux, 2026-10-08):
+State: examples/spa-chiptune is playable. Run: cd examples/spa-chiptune && pnpm dev (vite, COOP/COEP headers -> SharedArrayBuffer telemetry), open the URL, press PLAY (or Space). lumen check: no problems. vitest (pnpm test): 10/10 (synth/sequencer/history).
+Works (verified in headless Chromium via a scratch Playwright script): demo song 'Lumen Quest' (4 patterns, 8 orders, 8 instruments) plays through the AudioWorklet (2 pulse PolyBLEP + duty, 4-bit triangle, LFSR noise long/short; per-tick sequencer; 0/1/2/3/4/A/B/D/F/S/V effects; vol/arp/pitch/duty macros with loop/release); SAB telemetry -> single rAF loop drives playing-row signals, VU meters (one style binding each) and canvas scopes; follow mode; keyboard entry (piano keys, hex digits, effects, note off/cut, octave/instrument), selection, transpose, copy/cut/paste, insert/delete row, undo/redo (path-patch history, cursor restore); order list editing; mixer volume/pan/mute/solo/master; instrument editor (draw macros, loop/release lanes, MML text); songs view (library in localStorage with autosave, JSON import/export, new/demo); settings (theme NES/DMG, audio info, frame stats, shortcuts); WAV export via OfflineAudioContext (implemented, not yet verified in a browser).
+In progress (written, never run): tests/app.spec.ts + playwright.config.ts (dev 5193 / preview 5194). Just changed and unverified in browser: meters/scopes are now post-fader (synth.ts voice.gain/panL/panR) so mute reads silent; markOpened() so reload reopens the loaded song.
+Next steps: 1) run CHIPTUNE_SHOTS=$PWD/../../backlog/assets pnpm test:e2e (fix failures; check WAV download works with a detached <a>); 2) vite build + preview check; 3) README.md with run instructions, architecture and the perf note (numbers from the e2e frame stats; scratch run showed ~0.1 ms frame work, ~55-60 FPS headless); 4) visual polish seen in screenshots: vertical fader tracks, BPM field width (now 9ch, recheck), scope midline when silent; 5) check ACs, final summary, Done.
+Lumen notes (no tasks filed yet): (a) in Vitest's default node environment resolve.conditions ['browser'] alone still resolves lumen's node entry (computeds read untracked never update); needs environment happy-dom too - doc nuance for testing.md (Beacon). (b) store() has no toRaw/snapshot export and structuredClone(storeProxy) throws; app keeps the raw root to clone/post (possible runtime API gap, Spark). LUM3005/LUM2001 diagnostics were accurate and helpful.
+Files: examples/spa-chiptune/** only (package.json, tsconfig.json, vite.config.ts, playwright.config.ts, index.html, .gitignore, src/{main.tsx,state.ts,editor.ts,keys.ts,frame.ts,files.ts,lens.ts,tokens.ts}, src/model/{types,song,demo,history,library,mml}.ts + tests, src/audio/{synth,worklet,engine,protocol,wav}.ts + test, src/ui/*.stsx, tests/app.spec.ts); pnpm-lock.yaml gained the new importer (deps.lock taken/released). Not committed.
 <!-- SECTION:NOTES:END -->
