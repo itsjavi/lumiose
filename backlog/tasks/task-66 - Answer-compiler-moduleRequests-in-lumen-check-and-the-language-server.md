@@ -1,7 +1,7 @@
 ---
 id: TASK-66
 title: Answer compiler moduleRequests in lumen check and the language server
-status: In Progress
+status: Done
 assignee:
   - '@Beacon'
 created_date: '2026-10-08 16:15'
@@ -52,3 +52,9 @@ Beacon (session beacon-task66-20261008T161642Z): implemented.
 
 **Evidence**: modules.test.ts (6: relative/extension rules, paths via extends + JSONC, #imports, exports conditions/patterns/null, main, overlay + cache invalidation, dependents, created files, tsconfig reload, --project). check.test.ts: Tokens.stsx importing via tsconfig paths + `export *` / `export { space as gap } from` → LUM3008 at $mutable (let), $brand (unresolvable), $gapp (no export) and LUM3005 .oops (previously all withheld); TS reports only TS2724/TS2307. server.test.ts: same in the LSP with exact ranges/messages, an unsaved edit of theme.ts re-checks the unchanged dependent, and a disk change two re-exports away (didChangeWatchedFiles) clears $acent. pnpm test 837/837; pnpm lint clean for my files (one pre-existing warning in app/router/index.ts); typecheck green for lumen and language-server — pnpm typecheck fails only in packages/site-kit (Halo, TASK-59 in progress: no tsconfig yet). lumen check on examples/vite-counter: no problems.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+lumen check and the language server now answer the compiler's moduleRequests, so files whose $ references import constants get their full CSS diagnostics (LUM3005/3009/3014-3016, and LUM3008 for unresolvable imports, missing exports and non-constant values at the reference). A shared ModuleHost in lumen/tooling resolves like TypeScript (relative paths with TS extension rules, tsconfig paths through extends, package exports/imports), caches resolutions and sources per check run / per LSP project, reads editor buffers first in the LSP, and tracks each file's cssDeps so edits to a constants module (in a buffer or on disk) re-check open dependents. compileWithModules runs the request loop (32-round cap). Tests: ModuleHost unit tests, a lumen check fixture with tsconfig paths and chained re-exports, and an LSP test covering buffers and watched-file invalidation. Docs: styles.md explains import resolution per tool and the TASK-61 negative-result clamping in Build-time math; llms regenerated.
+<!-- SECTION:FINAL_SUMMARY:END -->
