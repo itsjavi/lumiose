@@ -176,8 +176,12 @@ ${modes.join("\n")}
   included).
 - Lumen went from 338 to about 540 renders/s with TASK-71 (escaping with \`indexOf\` scans and
   only the characters HTML requires, plain class strings memoized, owners created only when a
-  component uses one). Most of the remaining gap to Solid is in the code compiled for component
-  calls (getter objects for props and static children, closures per branch): TASK-78.
+  component uses one), then to about 660 with TASK-78 in the code compiled for component calls:
+  literal children and trivially safe server props (literals, local identifiers, single-level
+  \`props.x\`) are data properties instead of getters, and a server branch renders its chosen
+  side in place (\`branchArm\`) instead of through closures. Deeper reads such as
+  \`tags={props.item.tags}\` stay lazy getters, so they run when the child reads them, as on the
+  client.
 - Marko 6 is not included yet.
 - One machine, one Node version: compare ratios, not absolute numbers, and rerun before
   drawing conclusions from small differences.
