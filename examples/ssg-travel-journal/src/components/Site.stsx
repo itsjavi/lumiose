@@ -1,0 +1,178 @@
+import { href, url } from "lumen";
+import { Search } from "../islands/Search.stsx";
+import { ThemeToggle } from "../islands/ThemeToggle.stsx";
+import { site } from "../lib/site.ts";
+import * as theme from "../theme.ts";
+
+const sections = [
+  { label: "Journal", path: href("/"), match: /^\/(?:$|page\/|posts\/)/ },
+  { label: "Tags", path: href("/tags"), match: /^\/tags(?:\/|$)/ },
+  { label: "Archive", path: href("/archive"), match: /^\/archive\/?$/ },
+  { label: "About", path: href("/about"), match: /^\/about\/?$/ },
+];
+
+/**
+ * Site header. Prerendered pages may read `url().pathname` (not the query string), which marks
+ * the current section. Search and the theme toggle are islands; the rest ships no JavaScript.
+ */
+export function SiteHeader() {
+  const current = sections.find((section) => section.match.test(url().pathname));
+
+  return (
+    <header class="site-header">
+      <a class="brand" href={href("/")}>
+        <svg class="logo" viewBox="0 0 64 64" aria-hidden="true">
+          <circle cx="40" cy="24" r="9" />
+          <path d="M0 50 L18 30 L28 40 L40 28 L64 52 L64 64 L0 64 Z" />
+        </svg>
+        <span>
+          <strong>{site.title}</strong>
+          <small>{site.tagline}</small>
+        </span>
+      </a>
+      <nav aria-label="Main">
+        {sections.map((section) => (
+          <a href={section.path} aria-current={section === current ? "page" : undefined}>
+            {section.label}
+          </a>
+        ))}
+      </nav>
+      <div class="tools">
+        <Search client:idle index="/search.json" />
+        <ThemeToggle client:load />
+      </div>
+
+      <style>
+        .site-header {
+          view-transition-name: site-header;
+          display: flex;
+          flex-wrap: wrap;
+          align-items: center;
+          gap: $theme.space.sm $theme.space.xl;
+          max-width: $theme.layout.page;
+          width: 100%;
+          margin: 0 auto;
+          padding: $theme.space.lg $theme.space.lg $theme.space.md;
+        }
+        .brand {
+          display: flex;
+          align-items: center;
+          gap: $theme.space.sm;
+          color: inherit;
+          text-decoration: none;
+        }
+        .brand span {
+          display: grid;
+          line-height: 1.2;
+        }
+        .brand strong {
+          font-family: $theme.font.display;
+          font-size: 1.35rem;
+          letter-spacing: -0.01em;
+        }
+        .brand small {
+          color: $theme.color.muted;
+          font-size: $theme.font.tiny;
+          letter-spacing: 0.08em;
+          text-transform: uppercase;
+        }
+        .logo {
+          width: 2.4rem;
+          height: 2.4rem;
+          border-radius: $theme.radius.md;
+          background: $theme.color.accent;
+          fill: $theme.color.paper;
+        }
+        .logo circle {
+          fill: $theme.color.mark;
+        }
+        nav {
+          display: flex;
+          flex: 1;
+          gap: $theme.space.lg;
+        }
+        nav a {
+          position: relative;
+          padding: $theme.space.xs 0;
+          color: $theme.color.muted;
+          font-weight: 500;
+          text-decoration: none;
+          transition: color $theme.motion.fast;
+        }
+        nav a:hover,
+        nav a[aria-current="page"] {
+          color: $theme.color.ink;
+        }
+        nav a[aria-current="page"]::after {
+          content: "";
+          position: absolute;
+          inset: auto 0 -2px;
+          height: 2px;
+          border-radius: 2px;
+          background: $theme.color.accent;
+        }
+        .tools {
+          display: flex;
+          align-items: center;
+          gap: $theme.space.sm;
+        }
+        @media (width < $theme.layout.narrow) {
+          .site-header {
+            padding: $theme.space.md;
+          }
+          nav {
+            order: 3;
+            flex-basis: 100%;
+            gap: $theme.space.md;
+          }
+          .tools {
+            margin-left: auto;
+          }
+        }
+      </style>
+    </header>
+  );
+}
+
+export function SiteFooter() {
+  return (
+    <footer class="site-footer">
+      <p>
+        {site.title} is a sample site of the Lumen framework: Markdown posts, prerendered into
+        static HTML. The trips are real places; the journal is made up.
+      </p>
+      <p class="links">
+        <a href="/rss.xml">RSS feed</a>
+        <a href="/sitemap.xml">Sitemap</a>
+        <a href={href("/about")}>How it is built</a>
+      </p>
+
+      <style>
+        .site-footer {
+          display: grid;
+          gap: $theme.space.sm;
+          justify-items: center;
+          padding: $theme.space.xl $theme.space.lg;
+          border-top: 1px solid $theme.color.line;
+          color: $theme.color.muted;
+          font-size: $theme.font.small;
+          text-align: center;
+        }
+        p {
+          max-width: $theme.layout.prose;
+          margin: 0;
+        }
+        .links {
+          display: flex;
+          gap: $theme.space.lg;
+        }
+        a {
+          color: inherit;
+        }
+        a:hover {
+          color: $theme.color.accent;
+        }
+      </style>
+    </footer>
+  );
+}

@@ -1,0 +1,156 @@
+import { href } from "lumen";
+import type { Post } from "../content.ts";
+import { formatDate } from "../lib/format.ts";
+import * as theme from "../theme.ts";
+import { TagLinks } from "./TagLinks.stsx";
+
+/** A grid of post cards; with `feature`, the first card spans the full width. */
+export function PostGrid(props: { posts: readonly Post[]; feature?: boolean }) {
+  return (
+    <div class="grid">
+      {props.posts.map((post, index) => (
+        <PostCard post={post} featured={props.feature === true && index === 0} />
+      ))}
+
+      <style>
+        .grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(min(100%, 19rem), 1fr));
+          gap: $theme.space.xl $theme.space.lg;
+        }
+      </style>
+    </div>
+  );
+}
+
+/**
+ * One post: cover, date, title, summary and tags. The title link stretches over the whole card;
+ * the tag links sit above it. The cover's `view-transition-name` matches the post page's, so the
+ * image morphs into place when the post opens.
+ */
+export function PostCard(props: { post: Post; featured?: boolean }) {
+  return (
+    <article class={["card", { featured: props.featured === true }]}>
+      <img
+        class="cover"
+        src={props.post.cover}
+        alt=""
+        width="1200"
+        height="750"
+        loading={props.featured === true ? "eager" : "lazy"}
+        style={{ "view-transition-name": `cover-${props.post.slug}` }}
+      />
+      <div class="body">
+        <p class="meta">
+          <time datetime={props.post.date}>{formatDate(props.post.date)}</time>
+          <span aria-hidden="true">·</span>
+          <span>{props.post.readingMinutes} min read</span>
+        </p>
+        <h2>
+          <a href={href("/posts/[slug]", { slug: props.post.slug })}>{props.post.title}</a>
+        </h2>
+        <p class="summary">{props.post.summary}</p>
+        <TagLinks tags={props.post.tags} />
+      </div>
+
+      <style>
+        .card {
+          position: relative;
+          display: grid;
+          grid-template-rows: auto 1fr;
+          overflow: hidden;
+          border: 1px solid $theme.color.line;
+          border-radius: $theme.radius.lg;
+          background: $theme.color.card;
+          box-shadow: $theme.shadow.card;
+          transition:
+            translate $theme.motion.fast $theme.motion.ease,
+            box-shadow $theme.motion.fast $theme.motion.ease;
+        }
+        .card:hover {
+          translate: 0 -3px;
+          box-shadow: $theme.shadow.lift;
+        }
+        .card:focus-within {
+          outline: 2px solid $theme.color.accent;
+          outline-offset: 3px;
+        }
+        .cover {
+          display: block;
+          width: 100%;
+          aspect-ratio: 16 / 10;
+          object-fit: cover;
+        }
+        .body {
+          display: flex;
+          flex-direction: column;
+          gap: $theme.space.sm;
+          padding: $theme.space.md $theme.space.lg $theme.space.lg;
+        }
+        .meta {
+          display: flex;
+          gap: $theme.space.sm;
+          margin: 0;
+          color: $theme.color.muted;
+          font-size: $theme.font.tiny;
+          letter-spacing: 0.04em;
+          text-transform: uppercase;
+        }
+        h2 {
+          margin: 0;
+          font-size: 1.4rem;
+        }
+        h2 a {
+          color: inherit;
+          text-decoration: none;
+        }
+        h2 a:focus-visible {
+          outline: none;
+        }
+        h2 a::after {
+          content: "";
+          position: absolute;
+          inset: 0;
+        }
+        .summary {
+          flex: 1;
+          margin: 0 0 $theme.space.xs;
+          color: $theme.color.muted;
+        }
+        .featured {
+          grid-column: 1 / -1;
+          grid-template-rows: none;
+          grid-template-columns: 3fr 2fr;
+        }
+        .featured .cover {
+          height: 100%;
+          aspect-ratio: auto;
+          min-height: 18rem;
+        }
+        .featured .body {
+          justify-content: center;
+          padding: $theme.space.xl;
+        }
+        .featured h2 {
+          font-size: $theme.font.h2;
+        }
+        .featured .summary {
+          flex: none;
+          margin-bottom: $theme.space.sm;
+        }
+        @media (width < $theme.layout.narrow) {
+          .featured {
+            grid-template-columns: none;
+          }
+          .featured .cover {
+            min-height: 0;
+            aspect-ratio: 16 / 10;
+          }
+          .featured .body {
+            padding: $theme.space.md $theme.space.lg $theme.space.lg;
+          }
+        }
+      </style>
+    </article>
+  );
+}

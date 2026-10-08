@@ -1,0 +1,54 @@
+// One page per tag (`staticPaths`): its posts, newest first.
+import { href, Meta, notFound, Title, type RouteProps } from "lumen";
+import { PostGrid } from "../../components/PostCard.stsx";
+import { allTags, postsTagged, type Post } from "../../content.ts";
+import { tagLabel } from "../../lib/format.ts";
+import { site } from "../../lib/site.ts";
+import * as theme from "../../theme.ts";
+
+export function staticPaths() {
+  return allTags().map(({ tag }) => ({ params: { tag } }));
+}
+
+export default function TagPage(props: RouteProps<"/tags/[tag]">) {
+  return <TagView tag={props.params.tag} posts={postsOrNotFound(props.params.tag)} />;
+}
+
+function postsOrNotFound(tag: string): readonly Post[] {
+  const posts = postsTagged(tag);
+  return posts.length > 0 ? posts : notFound(`No posts are tagged "${tag}".`);
+}
+
+function TagView(props: { tag: string; posts: readonly Post[] }) {
+  return (
+    <section>
+      <Title>
+        {tagLabel(props.tag)} · {site.title}
+      </Title>
+      <Meta name="description" content={`Posts tagged ${tagLabel(props.tag)} in ${site.title}.`} />
+      <p class="crumbs">
+        <a href={href("/tags")}>All tags</a>
+      </p>
+      <h1>{tagLabel(props.tag)}</h1>
+      <p class="lead">
+        {props.posts.length} {props.posts.length === 1 ? "post" : "posts"} tagged “{props.tag}”.
+      </p>
+      <PostGrid posts={props.posts} />
+
+      <style>
+        .crumbs {
+          margin: 0 0 $theme.space.sm;
+          font-size: $theme.font.small;
+        }
+        .crumbs a::before {
+          content: "← ";
+        }
+        .lead {
+          margin: 0 0 $theme.space.xl;
+          color: $theme.color.muted;
+          font-size: $theme.font.lead;
+        }
+      </style>
+    </section>
+  );
+}

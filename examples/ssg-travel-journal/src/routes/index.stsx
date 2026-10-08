@@ -1,0 +1,9 @@
+// The journal's first page. Later pages are routes/page/[page].stsx.
+import { Journal } from "../components/Journal.stsx";
+import { allPosts } from "../content.ts";
+import { paginate } from "../lib/paginate.ts";
+import { site } from "../lib/site.ts";
+
+export default function Home() {
+  return <Journal page={paginate(allPosts(), site.pageSize, 1)!} path="/" />;
+}

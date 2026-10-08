@@ -1,0 +1,139 @@
+// Root layout: header, page, footer, and the site's global styles. Every route is prerendered
+// (`lumen({ mode: "static" })` in vite.config.ts), so the site deploys as plain files.
+import { SiteFooter, SiteHeader } from "../components/Site.stsx";
+import * as theme from "../theme.ts";
+
+export default function RootLayout(props: { children?: JSX.Element }) {
+  return (
+    <>
+      <a class="skip-link" href="#content">
+        Skip to content
+      </a>
+      <SiteHeader />
+      <main id="content">{props.children}</main>
+      <SiteFooter />
+
+      <style global>
+        /* Cross-document View Transitions: same-origin navigations cross-fade, and elements
+           with a shared view-transition-name (a post's cover) morph between pages. */
+        @view-transition {
+          navigation: auto;
+        }
+
+        :root {
+          color-scheme: light dark;
+          accent-color: $theme.color.accent;
+        }
+        :root[data-theme="light"] {
+          color-scheme: light;
+        }
+        :root[data-theme="dark"] {
+          color-scheme: dark;
+        }
+
+        *,
+        *::before,
+        *::after {
+          box-sizing: border-box;
+        }
+
+        body {
+          margin: 0;
+          min-height: 100vh;
+          display: flex;
+          flex-direction: column;
+          background: $theme.color.paper;
+          color: $theme.color.ink;
+          font-family: $theme.font.body;
+          font-size: 1.0625rem;
+          line-height: 1.6;
+          -webkit-font-smoothing: antialiased;
+          text-rendering: optimizeLegibility;
+        }
+
+        main {
+          flex: 1;
+          width: 100%;
+          max-width: $theme.layout.page;
+          margin: 0 auto;
+          padding: $theme.space.xl $theme.space.lg $theme.space.xxl;
+        }
+
+        h1,
+        h2,
+        h3 {
+          font-family: $theme.font.display;
+          font-weight: 600;
+          line-height: 1.15;
+          text-wrap: balance;
+        }
+        h1 {
+          font-size: $theme.font.h1;
+          margin: 0 0 $theme.space.md;
+          letter-spacing: -0.01em;
+        }
+
+        a {
+          color: $theme.color.accent;
+          text-underline-offset: 0.18em;
+          text-decoration-thickness: 1px;
+        }
+
+        img {
+          max-width: 100%;
+          height: auto;
+        }
+
+        :focus-visible {
+          outline: 2px solid $theme.color.accent;
+          outline-offset: 3px;
+          border-radius: 2px;
+        }
+
+        ::selection {
+          background: $theme.color.mark;
+        }
+
+        .skip-link {
+          position: absolute;
+          left: $theme.space.md;
+          top: -4rem;
+          z-index: 20;
+          padding: $theme.space.sm $theme.space.md;
+          border-radius: $theme.radius.sm;
+          background: $theme.color.accent;
+          color: $theme.color.accentInk;
+        }
+        .skip-link:focus {
+          top: $theme.space.sm;
+        }
+
+        .visually-hidden {
+          position: absolute;
+          width: 1px;
+          height: 1px;
+          overflow: hidden;
+          clip-path: inset(50%);
+          white-space: nowrap;
+        }
+
+        ::view-transition-old(root),
+        ::view-transition-new(root) {
+          animation-duration: 200ms;
+        }
+        @media (prefers-reduced-motion: reduce) {
+          ::view-transition-group(*),
+          ::view-transition-old(*),
+          ::view-transition-new(*) {
+            animation: none !important;
+          }
+        }
+        @media (width < $theme.layout.narrow) {
+          main {
+            padding: $theme.space.lg $theme.space.md $theme.space.xl;
+          }
+        }
+      </style>
+    </>
+  );
+}

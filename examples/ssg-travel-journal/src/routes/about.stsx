@@ -1,0 +1,82 @@
+// About the journal and how the site is built.
+import { href, Meta, Title } from "lumen";
+import { allPosts, allTags } from "../content.ts";
+import { site } from "../lib/site.ts";
+import * as theme from "../theme.ts";
+
+export default function About() {
+  return (
+    <section class="about">
+      <Title>About · {site.title}</Title>
+      <Meta name="description" content={`About ${site.title} and how it is built.`} />
+      <h1>About</h1>
+      <p class="lead">
+        {site.title} is a travel journal about taking the slow route: trains instead of planes,
+        walking instead of driving, staying a little longer than planned.
+      </p>
+
+      <h2>How this site is built</h2>
+      <p>
+        It is a sample of the Lumen framework: {allPosts().length} Markdown posts and{" "}
+        {allTags().length} tags, turned into plain HTML files by <code>lumen build</code>.
+      </p>
+      <ul>
+        <li>
+          <strong>Content</strong>: Markdown files with YAML frontmatter, loaded with Vite's{" "}
+          <code>import.meta.glob</code> and rendered with <code>marked</code>, all inside one
+          content module.
+        </li>
+        <li>
+          <strong>Routes</strong>: posts, tags and journal pages are dynamic routes, prerendered
+          once for each entry of their <code>staticPaths()</code>.
+        </li>
+        <li>
+          <strong>Feeds</strong>: the <a href="/rss.xml">RSS feed</a>, the{" "}
+          <a href="/sitemap.xml">sitemap</a> and the search index are static <code>GET</code>{" "}
+          endpoints, written to files at build time.
+        </li>
+        <li>
+          <strong>Styles</strong>: global styles in the root layout, scoped <code>&lt;style&gt;</code>{" "}
+          blocks in every component, and design tokens from <code>theme.ts</code> read as{" "}
+          <code>$theme.*</code> and inlined at build time.
+        </li>
+        <li>
+          <strong>Islands</strong>: only the search box and the theme toggle ship JavaScript.
+          Every other page is HTML and CSS.
+        </li>
+        <li>
+          <strong>Navigation</strong>: ordinary links between pages, animated with cross-document
+          View Transitions where the browser supports them.
+        </li>
+      </ul>
+      <p>
+        <a href={href("/")}>Back to the journal</a>
+      </p>
+
+      <style>
+        .about {
+          max-width: $theme.layout.prose;
+          font-size: 1.125rem;
+          line-height: 1.75;
+        }
+        .lead {
+          color: $theme.color.muted;
+          font-size: $theme.font.lead;
+        }
+        h2 {
+          margin: $theme.space.xl 0 $theme.space.sm;
+          font-size: $theme.font.h2;
+        }
+        li + li {
+          margin-top: $theme.space.sm;
+        }
+        code {
+          padding: 0.1em 0.35em;
+          border-radius: $theme.radius.sm;
+          background: $theme.color.chip;
+          font-size: 0.88em;
+        }
+      </style>
+    </section>
+  );
+}

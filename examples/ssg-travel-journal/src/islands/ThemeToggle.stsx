@@ -1,0 +1,117 @@
+// Island (client:load): cycles the color theme through system → light → dark. The choice is
+// stored in localStorage and applied as `<html data-theme>`; an inline script in document.tsx
+// applies it before the first paint. The server renders the "system" state, and the stored
+// choice is read after hydration, so server and client markup match. Without JavaScript the
+// button stays invisible (its space is kept) and the system theme applies.
+import { onMount, signal } from "lumen";
+import * as theme from "../theme.ts";
+
+type Choice = "system" | "light" | "dark";
+
+const NEXT: Record<Choice, Choice> = { system: "light", light: "dark", dark: "system" };
+const LABEL: Record<Choice, string> = {
+  system: "System theme",
+  light: "Light theme",
+  dark: "Dark theme",
+};
+const STORAGE_KEY = "theme";
+
+export function ThemeToggle() {
+  const choice = signal<Choice>("system");
+  const ready = signal(false);
+
+  onMount(() => {
+    choice.set(stored());
+    ready.set(true);
+  });
+
+  function cycle() {
+    const next = NEXT[choice()];
+    choice.set(next);
+    apply(next);
+  }
+
+  return (
+    <button
+      type="button"
+      class="toggle"
+      data-ready={ready() ? "" : undefined}
+      data-choice={choice()}
+      aria-label={`${LABEL[choice()]}: switch to ${LABEL[NEXT[choice()]].toLowerCase()}`}
+      title={LABEL[choice()]}
+      onClick={cycle}
+    >
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        {choice() === "light" ? (
+          <g class="sun">
+            <circle cx="12" cy="12" r="4.5" />
+            <path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M4.9 19.1l1.8-1.8M17.3 6.7l1.8-1.8" />
+          </g>
+        ) : choice() === "dark" ? (
+          <path class="moon" d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5Z" />
+        ) : (
+          <g class="system">
+            <circle cx="12" cy="12" r="8.5" />
+            <path d="M12 3.5a8.5 8.5 0 0 1 0 17Z" />
+          </g>
+        )}
+      </svg>
+
+      <style>
+        .toggle {
+          display: grid;
+          place-items: center;
+          width: 2.25rem;
+          height: 2.25rem;
+          padding: 0;
+          border: 1px solid $theme.color.line;
+          border-radius: $theme.radius.pill;
+          background: $theme.color.card;
+          color: $theme.color.ink;
+          cursor: pointer;
+          transition: background $theme.motion.fast;
+        }
+        .toggle:not([data-ready]) {
+          visibility: hidden;
+        }
+        .toggle:hover {
+          background: $theme.color.chip;
+        }
+        svg {
+          width: 1.15rem;
+          height: 1.15rem;
+          fill: none;
+          stroke: currentColor;
+          stroke-width: 1.8;
+          stroke-linecap: round;
+          stroke-linejoin: round;
+        }
+        .moon,
+        .system path {
+          fill: currentColor;
+        }
+      </style>
+    </button>
+  );
+}
+
+function stored(): Choice {
+  try {
+    const value = localStorage.getItem(STORAGE_KEY);
+    return value === "light" || value === "dark" ? value : "system";
+  } catch {
+    return "system";
+  }
+}
+
+function apply(choice: Choice): void {
+  const root = document.documentElement;
+  try {
+    if (choice === "system") localStorage.removeItem(STORAGE_KEY);
+    else localStorage.setItem(STORAGE_KEY, choice);
+  } catch {
+    // Storage blocked (private mode): the choice lasts for this page only.
+  }
+  if (choice === "system") delete root.dataset.theme;
+  else root.dataset.theme = choice;
+}

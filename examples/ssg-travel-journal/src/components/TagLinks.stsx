@@ -1,0 +1,52 @@
+import { href } from "lumen";
+import { tagLabel } from "../lib/format.ts";
+import * as theme from "../theme.ts";
+
+/** Tag chips linking to each tag's page; `counts` adds the number of posts. */
+export function TagLinks(props: { tags: readonly string[]; counts?: Record<string, number> }) {
+  return (
+    <ul class="tags" aria-label="Tags">
+      {props.tags.map((tag) => (
+        <li>
+          <a href={href("/tags/[tag]", { tag })}>
+            {tagLabel(tag)}
+            {props.counts === undefined ? null : <span class="count">{props.counts[tag]}</span>}
+          </a>
+        </li>
+      ))}
+
+      <style>
+        .tags {
+          position: relative;
+          z-index: 1;
+          display: flex;
+          flex-wrap: wrap;
+          gap: $theme.space.xs $theme.space.sm;
+          margin: 0;
+          padding: 0;
+          list-style: none;
+        }
+        a {
+          display: inline-flex;
+          align-items: center;
+          gap: $theme.space.xs;
+          padding: 0.15rem 0.7rem;
+          border-radius: $theme.radius.pill;
+          background: $theme.color.chip;
+          color: $theme.color.ink;
+          font-size: $theme.font.tiny;
+          font-weight: 500;
+          text-decoration: none;
+          transition: background $theme.motion.fast;
+        }
+        a:hover {
+          background: $theme.color.chipHover;
+        }
+        .count {
+          color: $theme.color.muted;
+          font-variant-numeric: tabular-nums;
+        }
+      </style>
+    </ul>
+  );
+}

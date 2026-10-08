@@ -1,0 +1,75 @@
+import { pageHref } from "../lib/paginate.ts";
+import * as theme from "../theme.ts";
+
+/** Links between the journal's pages: newer, each page number, older. */
+export function Pager(props: { page: number; count: number }) {
+  const numbers = () => Array.from({ length: props.count }, (_, index) => index + 1);
+
+  return (
+    <nav class="pager" aria-label="Journal pages">
+      {props.page > 1 ? (
+        <a class="step" rel="prev" href={pageHref(props.page - 1)}>
+          ← Newer
+        </a>
+      ) : (
+        <span class="step" />
+      )}
+      <ol>
+        {numbers().map((number) => (
+          <li>
+            <a href={pageHref(number)} aria-current={number === props.page ? "page" : undefined}>
+              {number}
+            </a>
+          </li>
+        ))}
+      </ol>
+      {props.page < props.count ? (
+        <a class="step" rel="next" href={pageHref(props.page + 1)}>
+          Older →
+        </a>
+      ) : (
+        <span class="step" />
+      )}
+
+      <style>
+        .pager {
+          display: grid;
+          grid-template-columns: 1fr auto 1fr;
+          align-items: center;
+          gap: $theme.space.md;
+          margin-top: $theme.space.xxl;
+        }
+        .step:last-child {
+          justify-self: end;
+        }
+        ol {
+          display: flex;
+          gap: $theme.space.xs;
+          margin: 0;
+          padding: 0;
+          list-style: none;
+        }
+        a {
+          font-weight: 500;
+          text-decoration: none;
+        }
+        ol a {
+          display: grid;
+          place-items: center;
+          min-width: 2.25rem;
+          height: 2.25rem;
+          border-radius: $theme.radius.pill;
+          color: $theme.color.ink;
+          font-variant-numeric: tabular-nums;
+        }
+        ol a:hover {
+          background: $theme.color.chip;
+        }
+        ol a[aria-current="page"] {
+          background: $theme.color.accent;
+          color: $theme.color.accentInk;
+        }
+      </style>
+    </nav>
+  );
+}

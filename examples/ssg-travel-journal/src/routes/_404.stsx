@@ -1,0 +1,69 @@
+// The not-found page. `lumen build` writes it to dist/client/404.html, which static hosts serve
+// for unknown paths.
+import { href, Title, type ErrorPageProps } from "lumen";
+import { allPosts } from "../content.ts";
+import { site } from "../lib/site.ts";
+import * as theme from "../theme.ts";
+
+export default function NotFound(_props: ErrorPageProps) {
+  return (
+    <section class="not-found">
+      <Title>Page not found · {site.title}</Title>
+      <p class="code">404</p>
+      <h1>This page took a wrong turn.</h1>
+      <p class="lead">
+        It may have moved, or it never existed. Try the search above, or one of the latest posts:
+      </p>
+      <ul>
+        {allPosts()
+          .slice(0, 3)
+          .map((post) => (
+            <li>
+              <a href={href("/posts/[slug]", { slug: post.slug })}>{post.title}</a>
+            </li>
+          ))}
+      </ul>
+      <p>
+        <a class="home" href={href("/")}>
+          Back to the journal
+        </a>
+      </p>
+
+      <style>
+        .not-found {
+          max-width: $theme.layout.prose;
+          margin: $theme.space.xl auto;
+          text-align: center;
+        }
+        .code {
+          margin: 0;
+          color: $theme.color.accent;
+          font-family: $theme.font.display;
+          font-size: 5rem;
+          line-height: 1;
+        }
+        .lead {
+          color: $theme.color.muted;
+          font-size: $theme.font.lead;
+        }
+        ul {
+          display: grid;
+          gap: $theme.space.sm;
+          margin: $theme.space.lg 0;
+          padding: 0;
+          list-style: none;
+          font-family: $theme.font.display;
+          font-size: 1.2rem;
+        }
+        .home {
+          display: inline-block;
+          padding: $theme.space.sm $theme.space.lg;
+          border-radius: $theme.radius.pill;
+          background: $theme.color.accent;
+          color: $theme.color.accentInk;
+          text-decoration: none;
+        }
+      </style>
+    </section>
+  );
+}

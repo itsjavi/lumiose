@@ -1,0 +1,81 @@
+// Every post on one page, grouped by year. Also where the search form goes without JavaScript.
+import { href, Meta, Title } from "lumen";
+import { allPosts, type Post } from "../content.ts";
+import { formatShortDate } from "../lib/format.ts";
+import { site } from "../lib/site.ts";
+import * as theme from "../theme.ts";
+
+function byYear(posts: readonly Post[]): { year: string; posts: Post[] }[] {
+  const years = new Map<string, Post[]>();
+  for (const post of posts) {
+    const year = post.date.slice(0, 4);
+    years.set(year, [...(years.get(year) ?? []), post]);
+  }
+  return [...years].map(([year, list]) => ({ year, posts: list }));
+}
+
+export default function Archive() {
+  return (
+    <section class="archive">
+      <Title>Archive · {site.title}</Title>
+      <Meta name="description" content={`Every post in ${site.title}, by year.`} />
+      <h1>Archive</h1>
+      <p class="lead">{allPosts().length} posts, newest first.</p>
+      {byYear(allPosts()).map((group) => (
+        <section aria-labelledby={`year-${group.year}`}>
+          <h2 id={`year-${group.year}`}>{group.year}</h2>
+          <ol>
+            {group.posts.map((post) => (
+              <li>
+                <time datetime={post.date}>{formatShortDate(post.date)}</time>
+                <a href={href("/posts/[slug]", { slug: post.slug })}>{post.title}</a>
+              </li>
+            ))}
+          </ol>
+        </section>
+      ))}
+
+      <style>
+        .archive {
+          max-width: $theme.layout.prose;
+        }
+        .lead {
+          margin: 0 0 $theme.space.lg;
+          color: $theme.color.muted;
+        }
+        h2 {
+          margin: $theme.space.xl 0 $theme.space.sm;
+          color: $theme.color.accent;
+          font-size: $theme.font.h2;
+        }
+        ol {
+          margin: 0;
+          padding: 0;
+          list-style: none;
+        }
+        li {
+          display: grid;
+          grid-template-columns: 7.5rem 1fr;
+          gap: $theme.space.md;
+          padding: $theme.space.sm 0;
+          border-bottom: 1px solid $theme.color.line;
+        }
+        time {
+          color: $theme.color.muted;
+          font-size: $theme.font.small;
+          font-variant-numeric: tabular-nums;
+          line-height: 1.9;
+        }
+        a {
+          color: $theme.color.ink;
+          font-family: $theme.font.display;
+          font-size: 1.15rem;
+          text-decoration: none;
+        }
+        a:hover {
+          color: $theme.color.accent;
+        }
+      </style>
+    </section>
+  );
+}

@@ -1,0 +1,64 @@
+import { Head, Meta, Title } from "lumen";
+import type { Post } from "../content.ts";
+import type { Page } from "../lib/paginate.ts";
+import { absoluteUrl, site } from "../lib/site.ts";
+import * as theme from "../theme.ts";
+import { Pager } from "./Pager.stsx";
+import { PostGrid } from "./PostCard.stsx";
+
+/** One page of the journal (`/`, `/page/2`, …): the intro on the first, then posts and pager. */
+export function Journal(props: { page: Page<Post>; path: string }) {
+  return (
+    <>
+      <Title>
+        {props.page.number === 1
+          ? `${site.title} · ${site.tagline}`
+          : `Page ${props.page.number} · ${site.title}`}
+      </Title>
+      <Meta name="description" content={site.description} />
+      <Head>
+        <link rel="canonical" href={absoluteUrl(props.path)} />
+      </Head>
+      {props.page.number === 1 ? (
+        <section class="intro">
+          <p class="kicker">{site.tagline}</p>
+          <h1>Notes from the slow way between places.</h1>
+          <p class="lead">
+            Night trains, mountain huts, foggy islands and morning markets. A journal for people
+            who would rather arrive late and see more.
+          </p>
+        </section>
+      ) : (
+        <h1 class="page-title">
+          Journal, page {props.page.number} of {props.page.count}
+        </h1>
+      )}
+      <PostGrid posts={props.page.items} feature={props.page.number === 1} />
+      <Pager page={props.page.number} count={props.page.count} />
+
+      <style>
+        .intro {
+          max-width: 46rem;
+          margin-bottom: $theme.space.xxl;
+        }
+        .kicker {
+          margin: 0 0 $theme.space.sm;
+          color: $theme.color.accent;
+          font-size: $theme.font.tiny;
+          font-weight: 600;
+          letter-spacing: 0.12em;
+          text-transform: uppercase;
+        }
+        .lead {
+          margin: 0;
+          color: $theme.color.muted;
+          font-size: $theme.font.lead;
+        }
+        .page-title {
+          margin-bottom: $theme.space.xl;
+          font-size: $theme.font.h2;
+        }
+      </style>
+    </>
+  );
+}
