@@ -280,7 +280,9 @@ function ReviewForm(props: {
         error={props.errors.rating}
       />
       <label>
-        Title <span class="byline">(optional)</span>
+        <span>
+          Title <span class="byline">(optional)</span>
+        </span>
         <input name="title" value={props.values?.title ?? ""} maxlength={LIMITS.reviewTitle} />
       </label>
       <p class="error">{props.errors.title}</p>

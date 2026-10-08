@@ -4,10 +4,11 @@ A multi-page book catalog with search, reviews, reading lists and accounts, back
 `node:sqlite`. It shows Lumen's `server` and `static` route modes, form actions, cookie sessions,
 islands and `<Suspense>` streaming.
 
-**Status.** The data layer is done (TASK-46). The first pages run on `lumen dev` (TASK-24) and
-in production with `lumen build` and `@lumen/adapter-node` (TASK-26): home (with the streamed
-recommendations), the book list and detail, sign-in/sign-out, about (prerendered), the search
-endpoint and the 404 page. The rest of the planned site below is TASK-36.
+Every page works without JavaScript; four islands enhance the search box, the reading-list
+buttons, the star rating input and the account menu of prerendered pages. It runs on `lumen dev`
+and in production with `lumen build` and `@lumen/adapter-node`.
+
+![Book page with the reader's review](../../backlog/assets/task-36-book.png)
 
 ## Run it
 
@@ -17,17 +18,24 @@ Node 24 or later; `node:sqlite` is built in.
 pnpm --filter @lumen-examples/ssr-bookshelf dev        # seeds if empty, then lumen dev on :5173
 pnpm --filter @lumen-examples/ssr-bookshelf seed       # (re)creates data/bookshelf.db
 pnpm --filter @lumen-examples/ssr-bookshelf test       # Vitest, in-memory databases
-pnpm --filter @lumen-examples/ssr-bookshelf typecheck
+pnpm --filter @lumen-examples/ssr-bookshelf typecheck  # lumen check: .ts and .stsx
 pnpm --filter @lumen-examples/ssr-bookshelf build      # lumen build: dist/client + dist/server/entry.js
 pnpm --filter @lumen-examples/ssr-bookshelf preview    # lumen preview on :4173 (LUMEN_SECRET from the env)
 pnpm --filter @lumen-examples/ssr-bookshelf start      # node server.ts: @lumen/adapter-node on $PORT (3000)
-pnpm --filter @lumen-examples/ssr-bookshelf test:e2e   # Playwright smoke test of the production build
+pnpm --filter @lumen-examples/ssr-bookshelf test:e2e   # Playwright, against the production build
 ```
 
-`lumen build` prerenders the `static` routes (`/about`, `404.html`) into `dist/client`; the rest
-render per request through `dist/server/entry.js`. `server.ts` serves both: static files first,
-then the handler. In production, set `LUMEN_SECRET` (and `ORIGIN` behind a TLS proxy). The e2e
-test builds the app and runs `server.ts` on a database of its own (`data/e2e.db`).
+`lumen build` prerenders the `static` routes (`/about`, `/genres`, one page per genre and
+`404.html`) into `dist/client`; the rest render per request through `dist/server/entry.js`.
+`server.ts` serves both: static files first, then the handler. In production, set
+`LUMEN_SECRET` (and `ORIGIN` behind a TLS proxy).
+
+The e2e tests (`e2e/bookshelf.e2e.ts`) build the app and run `server.ts` on a freshly seeded
+database of their own (`data/e2e.db`). They cover browsing, filters and paging, the static
+pages, streaming, sign-in, registration, private pages, review create/edit/delete and the
+forbidden case, the reading list, each island (and that hydration reports no `LUM4006`), and the
+same forms with JavaScript disabled. `BOOKSHELF_SCREENSHOTS=1` also saves the screenshots in
+`backlog/assets/task-36-*.png`.
 
 `node src/server/seed.server.ts --if-empty` keeps an already seeded database; `dev` runs it first.
 In dev, `LUMEN_SECRET` comes from `.env.development` (a development-only value).
@@ -135,7 +143,7 @@ was copied.
 `requireUser(ctx?)` returns `locals.user`, falling back to the cookie. With no user, it throws
 `redirect("/login?next=…")`. Pages can call it without `ctx`.
 
-## Planned site (TASK-36)
+## Site
 
 `src/middleware.ts` sets `ctx.locals.user = await auth().currentUser(ctx.cookies)`. The
 `Locals.user` type is declared in `auth.server.ts`.
@@ -143,23 +151,23 @@ was copied.
 Most routes are `server`, because they show the signed-in user or read the query string. The
 `static` routes are prerendered at build time and get the account menu from an island.
 
-| Route                 | Mode   | Content                                                                                   |
-| --------------------- | ------ | ----------------------------------------------------------------------------------------- |
-| `/`                   | server | Featured and trending books; **`<Suspense>` streams `recommendationsFor(user)`**          |
-| `/books`              | server | `listBooks(parseBookFilters(url().searchParams))`; genre and sort form; pager             |
-| `/books/[isbn]`       | server | Book detail, rating histogram, paginated reviews, your review form (create, edit, delete) |
-| `/authors`            | server | Paginated author index with a name filter                                                 |
-| `/authors/[slug]`     | server | Bio, rating, and `listBooks({ author })`                                                  |
-| `/genres`             | static | Genre index with book counts                                                              |
-| `/genres/[slug]`      | static | `staticPaths()` from `listGenres()`; top-rated books, with a link to `/books?genre=`      |
-| `/about`              | static | About the sample                                                                          |
-| `/login`, `/register` | server | Forms with `action`s; `fail(400, { errors })` re-renders with field errors                |
-| `/logout`             | server | `POST` endpoint: `auth().logout(ctx.cookies)`, then `redirect("/")`                       |
-| `/reading-list`       | server | `requireUser()`; your list, plus the `toggle` named action used by every toggle           |
-| `/profile`            | server | `requireUser()`; your reviews                                                             |
-| `/api/search`         | server | `GET` endpoint: top 8 `listBooks({ q })` results, for the live search island              |
-| `/api/me`             | server | `GET` endpoint: `{ user }` for the account menu on static pages                           |
-| `_404`, `_error`      | n/a    | Error pages                                                                               |
+| Route                 | Mode   | Content                                                                                                                 |
+| --------------------- | ------ | ----------------------------------------------------------------------------------------------------------------------- |
+| `/`                   | server | Featured and trending books; **`<Suspense>` streams `recommendationsFor(user)`**                                        |
+| `/books`              | server | `listBooks(parseBookFilters(url().searchParams))`; search, genre and sort form; pager                                   |
+| `/books/[isbn]`       | server | Book detail, rating histogram, reading-list toggle, your review (create, edit, delete), reviews paginated with `?page=` |
+| `/authors`            | server | Paginated author index with a name filter                                                                               |
+| `/authors/[slug]`     | server | Bio, rating, and `listBooks({ author })` with a pager                                                                   |
+| `/genres`             | static | Genre index with book counts                                                                                            |
+| `/genres/[slug]`      | static | `staticPaths()` from `listGenres()`; top-rated books, with a link to `/books?genre=`                                    |
+| `/about`              | static | About the sample                                                                                                        |
+| `/login`, `/register` | server | Forms with an `action`; `fail(400, { errors })` re-renders with field errors; `?next=`                                  |
+| `/logout`             | server | `POST` endpoint: `auth().logout(ctx.cookies)`, then `redirect("/")`                                                     |
+| `/reading-list`       | server | `requireUser()`; your list, plus the `toggle` named action used by every toggle                                         |
+| `/profile`            | server | `requireUser()`; your reviews, paginated                                                                                |
+| `/api/search`         | server | `GET` endpoint: top 8 `listBooks({ q })` results, for the search island                                                 |
+| `/api/me`             | server | `GET` endpoint: `{ user }` for the account menu on static pages                                                         |
+| `_404`, `_error`      | n/a    | Error pages (a forbidden review change renders `_error` with 403)                                                       |
 
 Layouts:
 
@@ -167,16 +175,32 @@ Layouts:
   with the user from `locals()`.
 - `(static)/_layout.stsx` holds the static routes. Its header renders `<AccountMenu client:idle>`.
 
+Pages read the request (`url()`, `locals()`, `params`) and run their queries in the default export,
+then pass the results to a component as props. node:sqlite is synchronous, so pages need no
+`await`; the slow recommendations are an async component inside `<Suspense>`.
+
+### Styles
+
+Each component has a `<style>` block directly under its root element, and pages have a file-level
+block at the end of the file, so their scope is the same whether a nested block covers the whole
+component or only its element's subtree (decision-23). Design tokens live in `src/theme.ts` and are
+read as `$theme.color.accent`, `$theme.space.md` and so on: the compiler inlines them, so the
+module never reaches the browser. `src/styles.css` holds the few base styles for plain elements
+(body, links, form controls, `.byline`, `.error`, `.form`).
+
 ### Form actions
 
-All of these are named actions posted to `?/name`, with the Origin/CSRF check on.
+`/login` and `/register` have a default `action`; the others are named actions posted to `?/name`.
+The Origin/CSRF check is on for all of them.
 
 - `/books/[isbn]?/createReview`, `?/updateReview` and `?/deleteReview`:
   1. `requireUser(ctx)`.
   2. `validateReview(await ctx.formData())`.
   3. Map the query result: `forbidden` becomes `error(403)`, `not-found` becomes `notFound()`,
      and `conflict` becomes `fail(409)`.
-- `/reading-list?/toggle`: add or remove `bookId`, then return `{ onList }`.
+  4. `redirect("/books/:isbn#your-review")`.
+- `/reading-list?/toggle`: add or remove `bookId`. A plain form post sends `next` and is
+  redirected back there; the island leaves `next` out and reads the returned `{ onList }`.
 - `/login`:
   1. `validateLogin`.
   2. `auth().authenticate`.
@@ -189,11 +213,16 @@ All of these are named actions posted to `?/name`, with the Origin/CSRF check on
 
 ### Islands
 
-| Island              | Directive        | Behavior                                                                                                                                          |
-| ------------------- | ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `SearchBox`         | `client:load`    | Debounced live suggestions from `/api/search`. Enter submits the plain `GET /books?q=` form.                                                      |
-| `ReadingListToggle` | `client:visible` | A `<form method="post" action="/reading-list?/toggle">` enhanced with `submit()` and `submitting()`. Initial state comes from `readingListIds()`. |
-| `StarRatingInput`   | `client:visible` | Accessible radio-group star picker inside the review form, with client hints from `validateReview`.                                               |
-| `AccountMenu`       | `client:idle`    | Static pages only: fetches `/api/me` and shows sign-in or the user's name.                                                                        |
+Islands live in `src/islands/`. Each one renders a working form or link on the server, and the
+loader hydrates it when its trigger fires.
+
+| Island              | Directive        | Behavior                                                                                                                                                      |
+| ------------------- | ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `SearchBox`         | `client:load`    | In the header. Debounced live suggestions from `/api/search` (older requests aborted); arrow keys and Enter open a book; Enter alone submits `GET /books?q=`. |
+| `ReadingListToggle` | `client:visible` | A `<form method="post" action="/reading-list?/toggle">` enhanced with `submit()`; stays on the page. Initial state comes from `readingListIds()`.             |
+| `StarRatingInput`   | `client:visible` | Radio-group star picker in the review form; lights stars on hover and runs `validateReview()` on submit, so a missing rating is a hint, not a round trip.     |
+| `AccountMenu`       | `client:idle`    | Prerendered pages only: renders the sign-in links, then fetches `/api/me` and shows the reader's links.                                                       |
 
 Without JavaScript, every island falls back to a plain link or form.
+
+![Live search suggestions](../../backlog/assets/task-36-search.png)
