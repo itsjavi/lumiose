@@ -1,11 +1,11 @@
 ---
 id: TASK-16
 title: 'Implement the server runtime: shell, Suspense streaming and head'
-status: To Do
+status: In Progress
 assignee:
   - '@Nova'
 created_date: '2026-10-08 12:21'
-updated_date: '2026-10-08 12:54'
+updated_date: '2026-10-08 13:11'
 labels: []
 milestone: m-2
 dependencies:
@@ -38,4 +38,6 @@ Lux: reassigned from Spark to Nova to balance load. Nova owns the server half of
 - It rejects with the first thrown shell value, unwrapped.
 - It reads the request through the app layer's getRequestScope(); do not duplicate the accessors.
 - It uses the server core variant (packages/lumen/src/core/server.ts from TASK-7).
+
+Nova: started (session nova-task16-20261008T131130Z). Plan: src/server/{node,escape,frame,ssr,components,island,serialize,render}.ts; index.ts = ServerRuntime + renderToStream/renderToString; public.ts = core server + render APIs + Suspense/ErrorBoundary/Head/Title/Meta. Then TASK-22 integration (createServerRenderer, document through createComponent).
 <!-- SECTION:NOTES:END -->
