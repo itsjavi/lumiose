@@ -200,7 +200,7 @@ work remains.
 
   | Owner  | Area                                                                                                                                                                         |
   | ------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-  | Lux    | Root configs, `pnpm-lock.yaml`, `packages/lumen/package.json`, `src/index*.ts`, the contract, `examples/ssg-*`                                                               |
+  | Lux    | Root configs, `pnpm-lock.yaml`, `packages/lumen/package.json`, `src/index*.ts`, the contract, the backlog leftovers                                                          |
   | Photon | `crates/**` (except `crates/lumen_css/**`), `packages/compiler/**`, `packages/lumen/src/vite/**`                                                                             |
   | Halo   | `crates/lumen_css/**`, `packages/site-kit/**`                                                                                                                                |
   | Spark  | `packages/lumen/src/{core,dom}/**`, `packages/lumen/src/app/router/**`, `benchmarks/js-framework-benchmark/**`, `examples/spa-*`, `examples/islands-e2e/**`                  |
