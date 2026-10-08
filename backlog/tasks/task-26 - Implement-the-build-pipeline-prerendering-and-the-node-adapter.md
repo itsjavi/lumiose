@@ -5,7 +5,7 @@ status: To Do
 assignee:
   - '@Nova'
 created_date: '2026-10-08 12:21'
-updated_date: '2026-10-08 15:52'
+updated_date: '2026-10-08 15:53'
 labels: []
 milestone: m-3
 dependencies:
@@ -36,4 +36,6 @@ Production needs client and server builds plus prerendering for static routes, p
 From TASK-23 (Nova): the request handler ignores route modes, so pages exporting action/actions serve POST in dev. For static (prerendered) pages with actions, the build must still route POSTs to the server entry (or require mode = "server" with a diagnostic). Decide and implement here. The handler's csrf option (default on, { allowedOrigins } or false) should be exposed through lumen({ … }) config / the adapter.
 
 Lux (from Nova): reuse app/server/node-http.ts for adapter-node; apply Vite base to route matching; the dev server/build should write shadows (or leave that to lumen check), decide in this task.
+
+Lux: may start before TASK-19 (CSS manifest, Photon): build the client→server→prerender pipeline, output layout, staticPaths, 404.html, static GET endpoints, LUM5001/LUM5005, adapter-node and preview. Integrate stylesheet links from the CSS manifest once TASK-19 is Done (the dependency stays for completion).
 <!-- SECTION:NOTES:END -->
