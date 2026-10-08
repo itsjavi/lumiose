@@ -32,7 +32,7 @@ function Strip(props: { channel: number }) {
           max={100}
           bind:value={volume}
           aria-label={`${info().name} volume`}
-          class="vertical"
+          class="vfader"
         />
       </div>
       <output class="value">{volume()}</output>
@@ -76,7 +76,7 @@ export function Mixer() {
           <span class="name">MST</span>
           <div class="fader">
             <Vu channel={CHANNEL_COUNT} vertical />
-            <input type="range" min={0} max={100} bind:value={master} aria-label="Master volume" class="vertical" />
+            <input type="range" min={0} max={100} bind:value={master} aria-label="Master volume" class="vfader" />
           </div>
           <output class="value">{master()}</output>
         </div>
@@ -103,13 +103,15 @@ export function Mixer() {
   .master { border-color: var(--yellow); }
   .name { color: var(--yellow); font-weight: 700; font-size: 11px; }
   .fader { display: flex; gap: 4px; block-size: 140px; align-items: stretch; }
-  .vertical {
+  /* Vertical faders: in vertical-lr, the inline axis is the height (min at the bottom with rtl). */
+  .vfader {
     writing-mode: vertical-lr;
     direction: rtl;
-    inline-size: 18px;
-    block-size: 100%;
+    inline-size: 100%;
+    block-size: 16px;
     margin: 0;
   }
+  .vfader::-webkit-slider-runnable-track { inline-size: 100%; }
   .pan { inline-size: 100%; margin: 0; }
   .value { font-family: $tokens.font.mono; font-size: 11px; color: var(--dim); }
   .buttons { display: flex; gap: 3px; }

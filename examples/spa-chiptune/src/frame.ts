@@ -35,12 +35,25 @@ export function registerScope(canvas: HTMLCanvasElement, channel: number): () =>
     blank: false,
   };
   scopes.add(scope);
+  // The silent midline until the engine reports audio, once the canvas is styled in the document.
+  requestAnimationFrame(() => refreshScope(scope));
   return () => scopes.delete(scope);
+}
+
+const NO_DATA = new Float32Array(0);
+
+/** Re-reads a scope's color and redraws it while it shows silence. */
+function refreshScope(scope: Scope): void {
+  scope.color = getComputedStyle(scope.canvas).color;
+  if (scope.blank || !playing()) {
+    scope.blank = false;
+    drawScope(scope, NO_DATA, 0, true);
+  }
 }
 
 /** Re-reads scope colors (after a theme change). */
 export function refreshScopeColors(): void {
-  for (const scope of scopes) scope.color = getComputedStyle(scope.canvas).color;
+  for (const scope of scopes) refreshScope(scope);
 }
 
 const WINDOW = 1024;
@@ -108,7 +121,7 @@ export interface FrameStats {
 }
 
 const percentile = (values: Float32Array, n: number, p: number) => {
-  const sorted = Array.from(values.subarray(0, n)).sort((a, b) => a - b);
+  const sorted = values.subarray(0, n).toSorted();
   return sorted[Math.min(n - 1, Math.floor(n * p))] ?? 0;
 };
 
@@ -158,7 +171,8 @@ function frame(now: number): void {
         liveBpm.set(header[HEADER.bpm]!);
         liveSpeed.set(header[HEADER.speed]!);
       }
-      for (let i = 0; i < LEVELS; i++) levels[i]!.set(Math.round(Math.min(1, peaks[i]! * 2) * 50) / 50);
+      for (let i = 0; i < LEVELS; i++)
+        levels[i]!.set(Math.round(Math.min(1, peaks[i]! * 2) * 50) / 50);
     });
     const pos = header[HEADER.scopePos]!;
     for (const s of scopes) drawScope(s, scope, pos, peaks[s.channel]! < 0.002);

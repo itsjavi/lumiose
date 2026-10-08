@@ -31,6 +31,7 @@ export function Vu(props: { channel: number; vertical?: boolean; class?: string 
           mask: repeating-linear-gradient(90deg, #000 0 3px, transparent 3px 4px);
         }
         .vertical {
+          flex: none;
           block-size: 100%;
           inline-size: 8px;
         }
@@ -53,8 +54,8 @@ export function Scope(props: { channel: number; width?: number; height?: number;
     <canvas
       class="scope"
       ref={(el) => (canvas = el)}
-      width={props.width ?? 112}
-      height={props.height ?? 32}
+      width={props.width ?? 96}
+      height={props.height ?? 28}
       role="img"
       aria-label={`${props.label} oscilloscope`}
     >
