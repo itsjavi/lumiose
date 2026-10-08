@@ -1,11 +1,11 @@
 ---
 id: TASK-1
 title: 'Survey framework runtimes, rendering models and benchmarks'
-status: In Progress
+status: Done
 assignee:
   - '@Prism'
 created_date: '2026-10-08 09:59'
-updated_date: '2026-10-08 10:28'
+updated_date: '2026-10-08 10:30'
 labels: []
 milestone: m-0
 dependencies: []
@@ -25,7 +25,7 @@ Lumen must beat React on js-framework-benchmark and land near or above Solid, Sv
 - [x] #1 Covers Solid 2.x, Svelte 5, Vue 3.6/Vapor (alien-signals), Preact signals, React 19.x + React Compiler, Remix 3 component, Astro islands/server islands and Qwik, each with status as of Oct 2026
 - [x] #2 Reports current js-framework-benchmark (keyed) standings for those frameworks with source links and date
 - [x] #3 Lists concrete runtime/SSR/hydration techniques to adopt and to avoid, with the reason for each
-- [ ] #4 Findings are recorded in the task notes and referenced by the architecture spec
+- [x] #4 Findings are recorded in the task notes and referenced by the architecture spec
 <!-- AC:END -->
 
 ## Implementation Notes
@@ -155,3 +155,9 @@ Values are CPU weighted geometric mean / run memory / compressed size / first pa
 ## Main sources
 https://github.com/solidjs/solid/discussions/2995 · https://github.com/stackblitz/alien-signals · https://github.com/sveltejs/svelte/blob/main/packages/svelte/src/constants.js · https://github.com/vuejs/core/blob/minor/packages/runtime-vapor/src/apiCreateFor.ts · https://github.com/vuejs/core/blob/minor/packages/compiler-vapor/src/generators/for.ts · https://guides.remix.run/interactivity/ · https://github.com/remix-run/remix/blob/main/packages/component/docs/hydration.md · https://docs.astro.build/en/guides/server-islands/ · https://markojs.com/docs/newsletter/june-2026 · https://tsrx.dev/ · https://github.com/octanejs/octane · https://blog.platformatic.dev/ssr-performance-showdown · https://developer.chrome.com/blog/declarative-partial-updates · https://www.vulncheck.com/blog/cve-2025-55182-react-nextjs · https://preactjs.com/blog/signal-boosting/
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Surveyed Solid 2, Svelte 5, Vue 3.6 Vapor/alien-signals, Preact signals, TC39 Signals, React 19.3, Remix 3, Astro 7, Qwik, Marko 6 and the new TSRX, Ripple and Octane, plus js-framework-benchmark Chrome 154 (2026-10-04) and the available SSR benchmarks. Findings and adopt/avoid lists are in the notes. They drive spec doc-1 sections 6, 7.4 and 11 and decisions 8-9. Verified by cross-checking the spec against the notes; sources are linked.
+<!-- SECTION:FINAL_SUMMARY:END -->
