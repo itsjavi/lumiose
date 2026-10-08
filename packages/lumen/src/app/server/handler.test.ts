@@ -2,10 +2,14 @@ import { describe, expect, it, vi } from "vitest";
 import { createRouteManifest } from "../routes/manifest.ts";
 import { error, notFound, redirect } from "./control.ts";
 import type { Endpoint, ErrorPageProps, Middleware, RequestContext } from "./context.ts";
-import type { DocumentComponent } from "./document.ts";
 import { createRequestHandler, type ModuleExports, type RequestHandlerOptions } from "./handler.ts";
 import { cookies, env, locals, params, request, response, signedCookie, url } from "./scope.ts";
-import { createStringRenderer, testDefer, testHead } from "./__fixtures__/string-renderer.ts";
+import {
+  createStringRenderer,
+  resolve as resolveFixture,
+  testDefer,
+  testHead,
+} from "./__fixtures__/string-renderer.ts";
 
 // Test components take loosely typed props, like compiled components.
 type Props = any;
@@ -46,8 +50,8 @@ const layout = (tag: string): ModuleExports =>
 const errorPage = (name: string): ModuleExports =>
   page((props: ErrorPageProps) => `<p>${name} ${props.status} ${props.error.message}</p>`);
 
-const Document: DocumentComponent = async ({ head, body }) => ({
-  t: `<html lang="es" data-path="${url().pathname}"><head>${head.t}</head><body class="app">${body.t}</body></html>`,
+const Document = async ({ head, body }: Props) => ({
+  t: `<html lang="es" data-path="${url().pathname}"><head>${head.t}</head><body class="app">${await resolveFixture(body)}</body></html>`,
 });
 
 const DOCUMENT_START =

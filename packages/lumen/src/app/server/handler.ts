@@ -15,8 +15,8 @@ import type {
 } from "./context.ts";
 import { HttpError, isHttpError, isRedirect, statusText, type Redirect } from "./control.ts";
 import { createCookieJar } from "./cookies.ts";
-import { documentBody, renderDocument, type DocumentComponent } from "./document.ts";
-import type { PageRenderer, PageTree } from "./render.ts";
+import { documentBody, documentParts, type DocumentComponent } from "./document.ts";
+import { createServerRenderer, type PageRenderer, type PageTree } from "./render.ts";
 import { createResponseState, processEnv, runInRequestScope, type RequestScope } from "./scope.ts";
 
 export type ModuleExports = Record<string, unknown>;
@@ -25,8 +25,8 @@ export interface RequestHandlerOptions {
   manifest: Pick<RouteManifest, "routes" | "layouts" | "notFoundPages" | "errorPages">;
   /** Loads a module by its project-relative path from the manifest (dev: Vite; prod: the build's map). */
   loadModule: (file: string) => Promise<ModuleExports>;
-  /** Renders a page tree to its shell and stream (lumen/server, TASK-16). */
-  render: PageRenderer;
+  /** Renders a page tree to its shell and stream. Default: lumen/server's `createServerRenderer()`. */
+  render?: PageRenderer;
   /** Project-relative path of `src/middleware.ts`, when the app has one. */
   middleware?: string;
   /** Project-relative path of `src/document.stsx`, when the app has one. */
@@ -56,7 +56,8 @@ interface ErrorPages {
 }
 
 export function createRequestHandler(options: RequestHandlerOptions): RequestHandler {
-  const { manifest, loadModule, render, dev = false, prerender = false } = options;
+  const { manifest, loadModule, dev = false, prerender = false } = options;
+  const render = options.render ?? createServerRenderer();
   const onError = options.onError ?? ((error: unknown) => console.error(error));
   const matcher = createRouteMatcher(manifest);
   // Reuses the _404 scope lookup to find the _error page covering an unmatched URL.
@@ -190,18 +191,26 @@ export function createRequestHandler(options: RequestHandlerOptions): RequestHan
     files: readonly string[],
   ): Promise<Response> {
     const { request } = scope.ctx;
-    const shell = await render(tree, { request, signal: request.signal, resolveAll: prerender });
+    const document =
+      options.document === undefined
+        ? undefined
+        : componentOf<DocumentComponent>(await loadModule(options.document), options.document);
+    const shell = await render(
+      { ...tree, document },
+      {
+        request,
+        signal: request.signal,
+        resolveAll: prerender,
+        onError: (error) => onError(error, request),
+      },
+    );
     const state = scope.response;
     state.seal();
     let body: string | ReadableStream<Uint8Array>;
     try {
       const assets = options.headAssets === undefined ? "" : await options.headAssets(files);
-      const document =
-        options.document === undefined
-          ? undefined
-          : componentOf<DocumentComponent>(await loadModule(options.document), options.document);
-      const parts = await renderDocument(shell.head + assets, document);
-      body = documentBody(parts, shell, (error) => onError(error, request));
+      const parts = documentParts(shell.body, shell.head + assets, document !== undefined);
+      body = documentBody(parts, shell.stream, (error) => onError(error, request));
     } catch (error) {
       await shell.stream?.cancel(error);
       throw error;

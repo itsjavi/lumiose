@@ -16,8 +16,12 @@ export interface AppDiagnostic {
 
 export const LUM_INVALID_ROUTE_FILE = "LUM5002";
 export const LUM_DUPLICATE_ROUTE = "LUM5003";
+/** An island prop is not plain data (decision-9). */
+export const LUM_ISLAND_PROP = "LUM4002";
 /** A server-only API was reached from client code. */
 export const LUM_SERVER_ONLY = "LUM4003";
+/** A value awaited inside an island is not plain data (spec §4.4). */
+export const LUM_AWAIT_VALUE = "LUM4007";
 /** Status, headers, cookies or head changed after the SSR shell was sent (decision-19). */
 export const LUM_AFTER_SHELL = "LUM5004";
 

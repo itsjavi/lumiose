@@ -34,7 +34,8 @@ export function testDefer(content: () => Promise<string>): string {
   return `<!--defer:${deferred.length - 1}-->`;
 }
 
-async function resolve(value: unknown): Promise<string> {
+/** Resolves fixture output (strings, `{ t }` nodes, arrays, promises) to HTML. */
+export async function resolve(value: unknown): Promise<string> {
   const settled = await value;
   if (settled === null || settled === undefined || typeof settled === "boolean") return "";
   if (Array.isArray(settled)) return (await Promise.all(settled.map(resolve))).join("");
@@ -47,6 +48,7 @@ export function createStringRenderer(): PageRenderer {
     const current: Frame = { head: [], deferred: [] };
     return frames.run(current, async () => {
       const root = composePageTree(tree, (component, props) => component(props));
+      // A custom document receives { t } placeholders and a body array; see composePageTree.
       let body = await resolve(root());
       const head = current.head.join("");
       if (current.deferred.length === 0) return { head, body, stream: null };

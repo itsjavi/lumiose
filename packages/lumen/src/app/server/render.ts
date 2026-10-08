@@ -1,11 +1,14 @@
 // The seam between the request handler and the server runtime (TASK-16, decision-19). The
-// handler decides *what* to render (layouts + page, or an error page) and owns the document and
-// the Response; the renderer resolves the shell, collects the head and streams Suspense
-// boundaries. Until TASK-16 lands, tests use a string renderer fixture; the integration adapts
-// lumen/server's renderToStream to `PageRenderer` with `composePageTree`.
+// handler decides *what* to render (layouts + page, or an error page, inside the custom document)
+// and owns the Response; the renderer resolves the shell, collects the head and streams Suspense
+// boundaries. `createServerRenderer` adapts lumen/server's renderToStream; handler tests can also
+// use the string renderer fixture.
 
 import type { Component } from "../../contract/client.ts";
-import type { RouteParamValues } from "./context.ts";
+import { createComponent, renderToStream } from "../../server/index.ts";
+import { SSRHtml } from "../../server/node.ts";
+import type { DocumentProps, RouteParamValues } from "./context.ts";
+import { BODY_SLOT, HEAD_SLOT } from "./document.ts";
 
 /** What to render: layouts wrap the page, outermost first. */
 export interface PageTree {
@@ -16,6 +19,11 @@ export interface PageTree {
   /** Props for `page`: `{ params }` for pages, `{ status, error }` (+ params) for error pages. */
   props: Record<string, unknown>;
   params: RouteParamValues;
+  /**
+   * `src/document.stsx`, rendered as the root component around the tree (so it can provide
+   * context and set head defaults), with `head` and `body` placeholders the handler fills in.
+   */
+  document?: Component<DocumentProps>;
 }
 
 export interface PageRenderOptions {
@@ -24,13 +32,15 @@ export interface PageRenderOptions {
   signal: AbortSignal;
   /** Prerender/SSG: resolve every Suspense boundary into the body; no fallbacks or swap scripts. */
   resolveAll: boolean;
+  /** Errors of streamed boundaries that no `<ErrorBoundary>` handled (headers are already sent). */
+  onError?: (error: unknown) => void;
 }
 
 /** The resolved shell (decision-19): everything outside `<Suspense>` plus the collected head. */
 export interface RenderedShell {
   /** HTML collected from `<Head>`, `<Title>` and `<Meta>` while rendering the shell. */
   head: string;
-  /** Body HTML of the shell, with Suspense fallbacks in place. */
+  /** Body HTML of the shell, with Suspense fallbacks in place (the whole custom document, if any). */
   body: string;
   /**
    * Suspense boundary chunks (`<template for>` / `$swap`), streamed right after `body` inside
@@ -52,17 +62,53 @@ export type CreateComponent = <P>(component: Component<P>, props: P) => unknown;
 /**
  * Composes a page tree into a root thunk with the runtime's `createComponent`. `children` is a
  * getter, as in compiled props (contract doc-2 §1), so each level renders inside its parent's frame.
+ * A custom document wraps the tree: `head` is a placeholder and `body` renders the tree followed by
+ * a marker, both created with `rawHtml` (the runtime's raw HTML node).
  */
-export function composePageTree(tree: PageTree, createComponent: CreateComponent): () => unknown {
-  const { layouts, page, props, params } = tree;
+export function composePageTree(
+  tree: PageTree,
+  create: CreateComponent,
+  rawHtml: (html: string) => unknown = (html) => ({ t: html }),
+): () => unknown {
+  const { layouts, page, props, params, document } = tree;
   const level = (index: number): unknown => {
-    if (index === layouts.length) return createComponent(page, props);
-    return createComponent(layouts[index]!, {
+    if (index === layouts.length) return create(page, props);
+    return create(layouts[index]!, {
       params,
       get children() {
         return level(index + 1);
       },
     });
   };
-  return () => level(0);
+  if (document === undefined) return () => level(0);
+  return () =>
+    create(document, {
+      head: rawHtml(HEAD_SLOT),
+      get body() {
+        return [level(0), rawHtml(BODY_SLOT)];
+      },
+    } as unknown as DocumentProps);
+}
+
+/** Options for the default renderer; per-request options come from the handler. */
+export interface ServerRendererOptions {
+  /** CSP nonce for streaming scripts and strict-mode styles. */
+  nonce?: string;
+  /** CSP strict mode: `style` props become nonce'd rules (spec §7.4). */
+  strictStyles?: boolean;
+  /** Maps island module specifiers to URLs for `modulepreload` hints (the build's manifest). */
+  islandUrl?: (specifier: string) => string;
+}
+
+const rawHtml = (html: string) => new SSRHtml(html);
+
+/** The default `PageRenderer`: lumen/server's shell-first `renderToStream`. */
+export function createServerRenderer(options: ServerRendererOptions = {}): PageRenderer {
+  return (tree, { signal, resolveAll, onError }) =>
+    renderToStream(composePageTree(tree, createComponent, rawHtml), {
+      ...options,
+      signal,
+      resolveAll,
+      onError,
+    });
 }

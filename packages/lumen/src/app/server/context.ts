@@ -1,7 +1,7 @@
 // Request context types (spec §8 Context). Type-only, so both public entries can export them:
 // TypeScript resolves `lumen` through the browser entry (package.json "types").
 
-import type { SSRNode } from "../../contract/server.ts";
+import type { Renderable } from "../../contract/client.ts";
 import type { Cookies } from "./cookies.ts";
 
 /**
@@ -58,8 +58,12 @@ export interface ErrorPageProps {
   error: Error & { status?: number };
 }
 
-/** Props of `src/document.stsx`: the collected head and the rendered body, as SSR nodes. */
+/**
+ * Props of `src/document.stsx`: the collected head and the page body, to render once each
+ * (`<head>{props.head}</head><body>{props.body}</body>`). The document renders like any component:
+ * it can provide context to the page and set head defaults with `<Title>`/`<Meta>`.
+ */
 export interface DocumentProps {
-  head: SSRNode;
-  body: SSRNode;
+  head: Renderable;
+  body: Renderable;
 }
