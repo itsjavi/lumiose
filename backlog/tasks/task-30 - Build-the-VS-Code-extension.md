@@ -1,10 +1,11 @@
 ---
 id: TASK-30
 title: Build the VS Code extension
-status: To Do
+status: In Progress
 assignee:
   - '@Beacon'
 created_date: '2026-10-08 12:21'
+updated_date: '2026-10-08 14:04'
 labels: []
 milestone: m-4
 dependencies:
