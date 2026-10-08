@@ -1,0 +1,13 @@
+import { href, Title } from "lumen";
+
+export default function NotFound() {
+  return (
+    <main>
+      <Title>Not found · {{name}}</Title>
+      <h1>Page not found</h1>
+      <p>
+        <a href={href("/")}>Back to the posts</a>
+      </p>
+    </main>
+  );
+}

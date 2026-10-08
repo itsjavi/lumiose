@@ -33,6 +33,7 @@
     "./build": "./src/app/production/index.ts",
     "./node": "./src/app/server/node-http.ts",
     "./tooling": "./src/cli/tooling.ts",
+    "./agents": "./src/cli/agents/index.ts",
     "./package.json": "./package.json"
   },
   "scripts": {

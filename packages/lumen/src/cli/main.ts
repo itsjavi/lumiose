@@ -1,40 +1,18 @@
-// `lumen` command dispatch. `check` (TASK-27), `lint` and `fmt` (TASK-31), `docs` and `explain`
-// (TASK-32); the full CLI is TASK-28.
+// `lumen` command dispatch (TASK-28, decision-10): one registry of commands drives argument
+// validation, per-command help and the JSON help. Every command takes the global options
+// (`--root`/`--cwd`, `--format`, `--help`) and follows the output contract of ./output.ts.
 
+import { resolve } from "node:path";
 import { parseArgs } from "node:util";
 import pkg from "../../package.json" with { type: "json" };
-import { checkCommand, EXIT_FAILURE, EXIT_OK } from "./check/index.ts";
+import { agentsCommand } from "./agents/index.ts";
+import { buildCli, devCli, previewCli } from "./app.ts";
+import { checkCommand } from "./check/index.ts";
 import { docsCommand, explainCommand } from "./docs/index.ts";
 import { fmtCommand } from "./fmt/index.ts";
 import { lintCommand } from "./lint/index.ts";
-
-const USAGE = `Usage: lumen <command> [options]
-
-Commands:
-  dev               Start the dev server (Vite, SSR with HMR)
-  build             Build for production: client and server bundles, then prerender static routes
-  preview           Serve the build output locally with @lumen/adapter-node
-  check             Type-check the project (typegen, shadow TSX, tsc) and report Lumen diagnostics
-  lint              Lint the project with oxlint, .stsx included (and their CSS with stylelint,
-                    if installed)
-  fmt [paths...]    Format .stsx files with oxfmt: TSX and each style block (default path: src)
-  docs [topic]      Print a docs topic (concepts/signals, LUM1004, …), search the docs for any
-                    other text, or list the topics
-  explain <code>    Explain a diagnostic code, such as LUM2001
-
-Options:
-  --root <dir>        Project root (default: current directory)
-  -p, --project <f>   check: tsconfig path, relative to the root (default: tsconfig.json)
-  --format <f>        check, lint, docs, explain: human (default) or json
-  --check             fmt: list unformatted files and exit 1 instead of writing
-  --port <n>          dev, preview: port (default: dev 5173, or the next free one; preview 4173)
-  --host <addr>       dev, preview: listen on this address (0.0.0.0: all addresses)
-
-  -h, --help          Show this help
-  -v, --version       Show the version
-`;
-
-const COMMANDS = new Set(["check", "lint", "fmt", "docs", "explain", "dev", "build", "preview"]);
+import { EXIT_FAILURE, EXIT_OK, formatEnvelope, type OutputFormat } from "./output.ts";
+import { routesCommand, typegenCommand } from "./routes.ts";
 
 export interface CliIO {
   cwd: string;
@@ -43,145 +21,466 @@ export interface CliIO {
   color: boolean;
 }
 
-/** Runs the CLI with `argv` (without node and script) and returns the exit code. */
-export async function main(argv: string[], io: CliIO = processIO()): Promise<number> {
-  let parsed;
-  try {
-    parsed = parseArgs({
-      args: argv,
-      allowPositionals: true,
-      options: {
-        root: { type: "string" },
-        project: { type: "string", short: "p" },
-        format: { type: "string" },
-        check: { type: "boolean" },
-        port: { type: "string" },
-        host: { type: "string" },
-        help: { type: "boolean", short: "h" },
-        version: { type: "boolean", short: "v" },
-      },
-    });
-  } catch (error) {
-    return usageError(io, (error as Error).message);
-  }
-  const { values, positionals } = parsed;
-  const [command, ...rest] = positionals;
+const OPTIONS = {
+  root: { type: "string" },
+  cwd: { type: "string" },
+  format: { type: "string" },
+  project: { type: "string", short: "p" },
+  check: { type: "boolean" },
+  port: { type: "string" },
+  host: { type: "string" },
+  help: { type: "boolean", short: "h" },
+  version: { type: "boolean", short: "v" },
+} as const;
 
-  if (values.version) {
-    io.write(`lumen ${pkg.version}\n`);
-    return EXIT_OK;
-  }
-  if (values.help || command === undefined || command === "help") {
-    io.write(USAGE);
-    return EXIT_OK;
-  }
-  if (!COMMANDS.has(command)) {
-    return usageError(io, `Unknown command "${command}".`);
-  }
-  if (values.format !== undefined && values.format !== "human" && values.format !== "json") {
-    return usageError(io, `--format must be "human" or "json", not "${values.format}".`);
-  }
-  const format = (values.format ?? "human") as "human" | "json";
-  if (command === "docs" || command === "explain") {
-    const { format: _format, ...others } = values;
-    if (Object.values(others).some((value) => value !== undefined)) {
-      return usageError(io, `${command} takes only --format.`);
-    }
-    if (command === "docs") {
-      return docsCommand({
-        query: rest.join(" "),
+type OptionName = keyof typeof OPTIONS;
+type OptionValues = {
+  [Name in OptionName]?: (typeof OPTIONS)[Name]["type"] extends "boolean" ? boolean : string;
+};
+
+const OPTION_HELP: Record<OptionName, { flag: string; description: string }> = {
+  root: { flag: "--root <dir>", description: "Project root (default: the current directory)" },
+  cwd: { flag: "--cwd <dir>", description: "Alias of --root" },
+  format: {
+    flag: "--format <format>",
+    description: "human (default) or json: one { command, ok, ... } document on stdout",
+  },
+  project: {
+    flag: "-p, --project <file>",
+    description: "tsconfig path, relative to the root (default: tsconfig.json)",
+  },
+  check: { flag: "--check", description: "List unformatted files and exit 1 instead of writing" },
+  port: { flag: "--port <n>", description: "Port (dev: 5173 or the next free one; preview: 4173)" },
+  host: { flag: "--host <addr>", description: "Listen on this address (0.0.0.0: all addresses)" },
+  help: { flag: "-h, --help", description: "Show help" },
+  version: { flag: "-v, --version", description: "Show the version" },
+};
+
+const GLOBAL_OPTIONS: readonly OptionName[] = ["root", "cwd", "format", "help", "version"];
+
+interface Context {
+  root: string;
+  format: OutputFormat;
+  values: OptionValues;
+  args: string[];
+  io: CliIO;
+}
+
+interface Command {
+  name: string;
+  /** Positional arguments in the usage line, e.g. `<code>`. */
+  args?: string;
+  summary: string;
+  /** Command-specific options (the global ones apply to every command). */
+  options: readonly OptionName[];
+  positionals: { min: number; max: number };
+  exitCodes: string;
+  examples: readonly string[];
+  run(context: Context): Promise<number> | number;
+}
+
+const PROBLEMS = "0 success, 1 errors found, 2 the tool failed";
+const SERVER = "0 stopped, 1 could not start, 2 misuse";
+
+const COMMANDS: readonly Command[] = [
+  {
+    name: "dev",
+    summary: "Start the dev server (Vite, SSR with HMR)",
+    options: ["port", "host"],
+    positionals: { min: 0, max: 0 },
+    exitCodes: SERVER,
+    examples: ["lumen dev", "lumen dev --port 3000 --host 0.0.0.0", "lumen dev --format json"],
+    run: ({ root, format, values, io }) =>
+      devCli({
+        root,
         format,
+        ...serverOptions(values),
         write: io.write,
         writeError: io.writeError,
-      });
-    }
-    if (rest.length !== 1)
-      return usageError(io, "explain takes one diagnostic code, such as LUM2001.");
-    return explainCommand({ code: rest[0]!, format, write: io.write, writeError: io.writeError });
-  }
-  if (rest.length > 0 && command !== "fmt") {
-    return usageError(io, `Unexpected argument "${rest[0]}".`);
-  }
-  if (values.check && command !== "fmt") return usageError(io, "--check applies to fmt only.");
-  if (values.project !== undefined && command !== "check") {
-    return usageError(io, "--project applies to check only.");
-  }
-  if (values.format !== undefined && command === "fmt") {
-    return usageError(io, "--format does not apply to fmt.");
-  }
+      }),
+  },
+  {
+    name: "build",
+    summary: "Build for production: client and server bundles, then prerender static routes",
+    options: [],
+    positionals: { min: 0, max: 0 },
+    exitCodes: "0 built, 1 the project failed to build, 2 misuse",
+    examples: ["lumen build", "lumen build --format json"],
+    run: ({ root, format, io }) =>
+      buildCli({ root, format, write: io.write, writeError: io.writeError }),
+  },
+  {
+    name: "preview",
+    summary: "Serve the build output locally with @lumen/adapter-node",
+    options: ["port", "host"],
+    positionals: { min: 0, max: 0 },
+    exitCodes: SERVER,
+    examples: ["lumen preview", "lumen preview --port 8080 --format json"],
+    run: ({ root, format, values, io }) =>
+      previewCli({
+        root,
+        format,
+        ...serverOptions(values),
+        write: io.write,
+        writeError: io.writeError,
+      }),
+  },
+  {
+    name: "check",
+    summary: "Type-check the project (typegen, shadow TSX, tsc) and report Lumen diagnostics",
+    options: ["project"],
+    positionals: { min: 0, max: 0 },
+    exitCodes: PROBLEMS,
+    examples: ["lumen check", "lumen check --format json", "lumen check -p tsconfig.app.json"],
+    run: ({ root, format, values, io }) =>
+      checkCommand({
+        root,
+        ...(values.project === undefined ? {} : { project: values.project }),
+        format,
+        color: io.color,
+        write: io.write,
+        writeError: io.writeError,
+      }),
+  },
+  {
+    name: "typegen",
+    summary: "Write the route types (.lumen/types) and sync the shadow TSX files (.lumen/shadow)",
+    options: [],
+    positionals: { min: 0, max: 0 },
+    exitCodes: "0 written, 1 the routes have errors, 2 the tool failed",
+    examples: ["lumen typegen", "lumen typegen --format json"],
+    run: ({ root, format, io }) => typegenCommand({ root, format, color: io.color, ...out(io) }),
+  },
+  {
+    name: "routes",
+    summary: "List the routes: pattern, kind, mode, file and layouts",
+    options: [],
+    positionals: { min: 0, max: 0 },
+    exitCodes: "0 listed, 1 the routes have errors, 2 the tool failed",
+    examples: ["lumen routes", "lumen routes --format json"],
+    run: ({ root, format, io }) => routesCommand({ root, format, color: io.color, ...out(io) }),
+  },
+  {
+    name: "lint",
+    summary: "Lint with oxlint, .stsx included (and their CSS with stylelint, if installed)",
+    options: [],
+    positionals: { min: 0, max: 0 },
+    exitCodes: PROBLEMS,
+    examples: ["lumen lint", "lumen lint --format json"],
+    run: ({ root, format, io }) => lintCommand({ root, format, color: io.color, ...out(io) }),
+  },
+  {
+    name: "fmt",
+    args: "[paths...]",
+    summary: "Format .stsx files with oxfmt: TSX and each style block (default path: src)",
+    options: ["check"],
+    positionals: { min: 0, max: Infinity },
+    exitCodes: "0 formatted, 1 unformatted (--check) or unformattable files, 2 the tool failed",
+    examples: ["lumen fmt", "lumen fmt --check", "lumen fmt src/components --format json"],
+    run: ({ root, format, values, args, io }) =>
+      fmtCommand({ root, paths: args, check: values.check ?? false, format, ...out(io) }),
+  },
+  {
+    name: "docs",
+    args: "[topic...]",
+    summary: "Print a docs topic (concepts/signals, LUM1004, …), search the docs, or list topics",
+    options: [],
+    positionals: { min: 0, max: Infinity },
+    exitCodes: "0 found, 1 nothing matches, 2 the tool failed",
+    examples: ["lumen docs", "lumen docs signals", 'lumen docs "await island" --format json'],
+    run: ({ format, args, io }) => docsCommand({ query: args.join(" "), format, ...out(io) }),
+  },
+  {
+    name: "explain",
+    args: "<code>",
+    summary: "Explain a diagnostic code, such as LUM2001",
+    options: [],
+    positionals: { min: 1, max: 1 },
+    exitCodes: "0 explained, 1 unknown code, 2 not a code",
+    examples: ["lumen explain LUM2001", "lumen explain lum3010 --format json"],
+    run: ({ format, args, io }) => explainCommand({ code: args[0]!, format, ...out(io) }),
+  },
+  {
+    name: "agents",
+    args: "init",
+    summary:
+      "Write or update AGENTS.md (Lumen section), CLAUDE.md, the lumen skill and .gitattributes",
+    options: [],
+    positionals: { min: 1, max: 1 },
+    exitCodes: "0 written, 2 the tool failed",
+    examples: ["lumen agents init", "lumen agents init --format json"],
+    run({ root, format, args, io }) {
+      if (args[0] !== "init") {
+        throw new UsageError(`Unknown agents subcommand "${args[0]}".`, BY_NAME.get("agents"), {
+          help: 'The only subcommand is "lumen agents init".',
+        });
+      }
+      return agentsCommand({ root, format, ...out(io) });
+    },
+  },
+];
 
-  if (
-    (values.port !== undefined || values.host !== undefined) &&
-    command !== "dev" &&
-    command !== "preview"
+const BY_NAME = new Map(COMMANDS.map((command) => [command.name, command]));
+
+function out(io: CliIO) {
+  return { write: io.write, writeError: io.writeError };
+}
+
+/** Thrown while validating arguments: a usage error (exit 2). */
+class UsageError extends Error {
+  readonly command: Command | undefined;
+  readonly extra: { help?: string; suggestions?: string[] };
+
+  constructor(
+    message: string,
+    command: Command | undefined,
+    extra: { help?: string; suggestions?: string[] } = {},
   ) {
-    return usageError(io, "--port and --host apply to dev and preview only.");
+    super(message);
+    this.command = command;
+    this.extra = extra;
   }
-  const root = values.root ?? io.cwd;
-  if (command === "build") {
-    // Loaded on demand: Vite is only needed by dev, build and preview.
-    const { buildCommand } = await import("../app/production/command.ts");
-    return buildCommand({ root, writeError: io.writeError });
-  }
-  if (command === "preview") {
-    const port = values.port === undefined ? undefined : Number(values.port);
-    if (port !== undefined && !(Number.isInteger(port) && port >= 0 && port <= 65535)) {
-      return usageError(io, `--port must be a port number, not "${values.port}".`);
+}
+
+function serverOptions(values: OptionValues): { port?: number; host?: string } {
+  const port = values.port === undefined ? undefined : Number(values.port);
+  return {
+    ...(port === undefined ? {} : { port }),
+    ...(values.host === undefined ? {} : { host: values.host }),
+  };
+}
+
+/** Runs the CLI with `argv` (without node and script) and returns the exit code. */
+export async function main(argv: string[], io: CliIO = processIO()): Promise<number> {
+  // Known before parsing, so that even argument errors are reported as JSON.
+  const wantsJson = argv.some(
+    (arg, index) => arg === "--format=json" || (arg === "--format" && argv[index + 1] === "json"),
+  );
+  let named: string | undefined;
+  try {
+    const { values, positionals } = parseArgs({
+      args: argv,
+      allowPositionals: true,
+      options: OPTIONS,
+    }) as { values: OptionValues; positionals: string[] };
+    const [name, ...args] = positionals;
+    named = name;
+    if (values.format !== undefined && values.format !== "human" && values.format !== "json") {
+      throw new UsageError(
+        `--format must be "human" or "json", not "${values.format}".`,
+        name === undefined ? undefined : BY_NAME.get(name),
+      );
     }
-    const { previewCommand } = await import("../app/production/command.ts");
-    return previewCommand({
-      root,
-      ...(port === undefined ? {} : { port }),
-      ...(values.host === undefined ? {} : { host: values.host }),
-      write: io.write,
-      writeError: io.writeError,
-    });
-  }
-  if (command === "dev") {
-    const port = values.port === undefined ? undefined : Number(values.port);
-    if (port !== undefined && !(Number.isInteger(port) && port >= 0 && port <= 65535)) {
-      return usageError(io, `--port must be a port number, not "${values.port}".`);
+    const format = values.format ?? "human";
+
+    if (values.version) {
+      io.write(
+        format === "json"
+          ? formatEnvelope("version", true, { version: pkg.version })
+          : `lumen ${pkg.version}\n`,
+      );
+      return EXIT_OK;
     }
-    // Loaded on demand: Vite is only needed by dev.
-    const { devCommand } = await import("../app/dev/command.ts");
-    return devCommand({
-      root,
-      ...(port === undefined ? {} : { port }),
-      ...(values.host === undefined ? {} : { host: values.host }),
-      writeError: io.writeError,
-    });
+    if (name === undefined || name === "help") {
+      const topic = name === "help" ? args[0] : undefined;
+      const command = topic === undefined ? undefined : commandNamed(topic);
+      io.write(format === "json" ? helpJson(command) : command ? commandHelp(command) : usage());
+      return EXIT_OK;
+    }
+    const command = commandNamed(name);
+    if (values.help) {
+      io.write(format === "json" ? helpJson(command) : commandHelp(command));
+      return EXIT_OK;
+    }
+    validate(command, values, args);
+    if (values.root !== undefined && values.cwd !== undefined && values.root !== values.cwd) {
+      throw new UsageError("--root and --cwd are the same option; pass one.", command);
+    }
+    const root = resolve(io.cwd, values.root ?? values.cwd ?? ".");
+    return await command.run({ root, format, values, args, io });
+  } catch (error) {
+    if (!(error instanceof UsageError) && !isParseArgsError(error)) throw error;
+    const usageError =
+      error instanceof UsageError
+        ? error
+        : new UsageError(error.message, named === undefined ? undefined : BY_NAME.get(named));
+    return reportUsageError(usageError, named, wantsJson, io);
   }
-  if (command === "fmt") {
-    return fmtCommand({
-      root,
-      paths: rest,
-      check: values.check ?? false,
-      write: io.write,
-      writeError: io.writeError,
-    });
-  }
-  if (command === "lint") {
-    return lintCommand({
-      root,
-      format,
-      color: io.color,
-      write: io.write,
-      writeError: io.writeError,
-    });
-  }
-  return checkCommand({
-    root,
-    ...(values.project === undefined ? {} : { project: values.project }),
-    format,
-    color: io.color,
-    write: io.write,
-    writeError: io.writeError,
+}
+
+function commandNamed(name: string): Command {
+  const command = BY_NAME.get(name);
+  if (command) return command;
+  const suggestions = suggest(name, [...BY_NAME.keys(), "help"]);
+  throw new UsageError(`Unknown command "${name}".`, undefined, {
+    help:
+      suggestions.length > 0
+        ? `Did you mean ${suggestions.map((suggestion) => `"lumen ${suggestion}"`).join(" or ")}?`
+        : 'Run "lumen --help" for the commands.',
+    suggestions,
   });
 }
 
-function usageError(io: CliIO, message: string): number {
-  io.writeError(`lumen: ${message}\n\n${USAGE}`);
+function validate(command: Command, values: OptionValues, args: string[]): void {
+  for (const [option, value] of Object.entries(values)) {
+    const name = option as OptionName;
+    if (value === undefined || GLOBAL_OPTIONS.includes(name) || command.options.includes(name)) {
+      continue;
+    }
+    const users = COMMANDS.filter((other) => other.options.includes(name)).map((c) => c.name);
+    throw new UsageError(
+      `${OPTION_HELP[name].flag.replace(/ <.*$/, "")} does not apply to ${command.name} (only to ${users.join(", ")}).`,
+      command,
+    );
+  }
+  if (args.length > command.positionals.max) {
+    throw new UsageError(`Unexpected argument "${args[command.positionals.max]}".`, command);
+  }
+  if (args.length < command.positionals.min) {
+    throw new UsageError(`Missing argument ${command.args}.`, command);
+  }
+  if (values.port !== undefined) {
+    const port = Number(values.port);
+    if (!(Number.isInteger(port) && port >= 0 && port <= 65535)) {
+      throw new UsageError(`--port must be a port number, not "${values.port}".`, command);
+    }
+  }
+}
+
+function reportUsageError(
+  error: UsageError,
+  named: string | undefined,
+  json: boolean,
+  io: CliIO,
+): number {
+  const command = error.command;
+  const help =
+    error.extra.help ??
+    (command ? `Run "lumen ${command.name} --help" for its options.` : 'Run "lumen --help".');
+  if (json) {
+    io.write(
+      formatEnvelope(command?.name ?? named ?? "lumen", false, {
+        failure: { message: error.message, help },
+        ...(error.extra.suggestions ? { suggestions: error.extra.suggestions } : {}),
+      }),
+    );
+  } else {
+    const usageLine = command ? `Usage: ${usageOf(command)}\n` : "";
+    io.writeError(`lumen: ${error.message}\n${usageLine}${help}\n`);
+  }
   return EXIT_FAILURE;
+}
+
+function isParseArgsError(error: unknown): error is Error {
+  const code = (error as { code?: unknown } | null)?.code;
+  return error instanceof Error && typeof code === "string" && code.startsWith("ERR_PARSE_ARGS_");
+}
+
+// --- help ------------------------------------------------------------------------------------
+
+function usageOf(command: Command): string {
+  return `lumen ${command.name}${command.args ? ` ${command.args}` : ""} [options]`;
+}
+
+function table(rows: readonly (readonly [string, string])[], indent = "  "): string {
+  const width = Math.max(...rows.map(([left]) => left.length));
+  return rows.map(([left, right]) => `${indent}${left.padEnd(width)}  ${right}\n`).join("");
+}
+
+function usage(): string {
+  return [
+    "Usage: lumen <command> [options]\n\n",
+    "Commands:\n",
+    table(
+      COMMANDS.map((command) => [
+        `${command.name}${command.args ? ` ${command.args}` : ""}`,
+        command.summary,
+      ]),
+    ),
+    "\nGlobal options:\n",
+    table(GLOBAL_OPTIONS.map((name) => [OPTION_HELP[name].flag, OPTION_HELP[name].description])),
+    "\nExit codes: 0 success, 1 problems found, 2 the tool failed or was misused.\n",
+    'Run "lumen <command> --help" for its options and examples.\n',
+  ].join("");
+}
+
+function commandOptions(command: Command): OptionName[] {
+  return [...command.options, ...GLOBAL_OPTIONS.filter((name) => name !== "version")];
+}
+
+function commandHelp(command: Command): string {
+  return [
+    `Usage: ${usageOf(command)}\n\n${command.summary}.\n\n`,
+    "Options:\n",
+    table(
+      commandOptions(command).map((name) => [
+        OPTION_HELP[name].flag,
+        OPTION_HELP[name].description,
+      ]),
+    ),
+    `\nExit codes: ${command.exitCodes}.\n\nExamples:\n`,
+    command.examples.map((example) => `  ${example}\n`).join(""),
+  ].join("");
+}
+
+function describeCommand(command: Command) {
+  return {
+    name: command.name,
+    usage: usageOf(command),
+    summary: command.summary,
+    options: commandOptions(command).map((name) => OPTION_HELP[name]),
+    exitCodes: command.exitCodes,
+    examples: command.examples,
+  };
+}
+
+/** `lumen help [command] --format json`: the command registry, for agents. */
+function helpJson(command: Command | undefined): string {
+  return formatEnvelope(
+    "help",
+    true,
+    command
+      ? describeCommand(command)
+      : {
+          version: pkg.version,
+          commands: COMMANDS.map(describeCommand),
+          globalOptions: GLOBAL_OPTIONS.map((name) => OPTION_HELP[name]),
+          exitCodes: { 0: "success", 1: "problems found", 2: "the tool failed or was misused" },
+        },
+  );
+}
+
+// --- suggestions --------------------------------------------------------------------------------
+
+/** Commands within a small edit distance of `input` (or that it prefixes), closest first. */
+export function suggest(input: string, candidates: readonly string[]): string[] {
+  const limit = input.length <= 3 ? 1 : 2;
+  const scored = candidates
+    .map((candidate) => ({
+      candidate,
+      distance:
+        input.length >= 2 && candidate.startsWith(input) ? 0 : editDistance(input, candidate),
+    }))
+    .filter(({ distance }) => distance <= limit);
+  const best = Math.min(...scored.map(({ distance }) => distance));
+  return scored.filter(({ distance }) => distance === best).map(({ candidate }) => candidate);
+}
+
+/** Optimal string alignment distance: insertions, deletions, substitutions and transpositions. */
+function editDistance(a: string, b: string): number {
+  const d: number[][] = Array.from({ length: a.length + 1 }, (_row, i) =>
+    Array.from({ length: b.length + 1 }, (_column, j) => (i === 0 ? j : j === 0 ? i : 0)),
+  );
+  for (let i = 1; i <= a.length; i++) {
+    for (let j = 1; j <= b.length; j++) {
+      const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+      d[i]![j] = Math.min(d[i - 1]![j]! + 1, d[i]![j - 1]! + 1, d[i - 1]![j - 1]! + cost);
+      if (i > 1 && j > 1 && a[i - 1] === b[j - 2] && a[i - 2] === b[j - 1]) {
+        d[i]![j] = Math.min(d[i]![j]!, d[i - 2]![j - 2]! + 1);
+      }
+    }
+  }
+  return d[a.length]![b.length]!;
 }
 
 function processIO(): CliIO {

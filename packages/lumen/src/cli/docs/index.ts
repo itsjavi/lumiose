@@ -9,6 +9,14 @@
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
+import {
+  EXIT_FAILURE,
+  EXIT_OK,
+  EXIT_PROBLEMS,
+  formatEnvelope,
+  type Failure,
+  type OutputFormat,
+} from "../output.ts";
 
 /** The docs shipped with this version of `lumen`. */
 export const DOCS_DIR = fileURLToPath(new URL("../../../docs/", import.meta.url));
@@ -209,19 +217,27 @@ export function errorPageMeta(doc: Doc): { severity: string; category: string } 
 export interface DocsCommandOptions {
   /** The topic or search query; empty prints the index. */
   query: string;
-  format: "human" | "json";
+  format: OutputFormat;
   write: (text: string) => void;
   writeError: (text: string) => void;
   /** Docs directory (tests). */
   dir?: string;
 }
 
-const EXIT_OK = 0;
-const EXIT_NOT_FOUND = 1;
-const EXIT_FAILURE = 2;
-
-function json(value: unknown): string {
-  return `${JSON.stringify(value, null, 2)}\n`;
+/** Writes a failure: the JSON envelope (with `payload`) on stdout, or the message on stderr. */
+function fail(
+  command: string,
+  options: Pick<DocsCommandOptions, "format" | "write" | "writeError">,
+  code: number,
+  failure: Failure,
+  payload: object = {},
+): number {
+  if (options.format === "json") {
+    options.write(formatEnvelope(command, false, { ...payload, failure }));
+  } else {
+    options.writeError(`lumen: ${failure.message}${failure.help ? ` ${failure.help}` : ""}\n`);
+  }
+  return code;
 }
 
 /** A doc as printed: without HTML comments (the generated-page markers), ending in a newline. */
@@ -241,19 +257,22 @@ function entry(doc: DocEntry): DocEntry {
 export function docsCommand(options: DocsCommandOptions): number {
   const docs = loadDocs(options.dir);
   if (docs.length === 0) {
-    options.writeError(`lumen: no docs found in ${options.dir ?? DOCS_DIR}.\n`);
-    return EXIT_FAILURE;
+    return fail("docs", options, EXIT_FAILURE, {
+      message: `no docs found in ${options.dir ?? DOCS_DIR}.`,
+    });
   }
   const query = options.query.trim();
   if (query === "" && options.format === "json") {
-    options.write(json({ topics: docs.map(entry) }));
+    options.write(formatEnvelope("docs", true, { topics: docs.map(entry) }));
     return EXIT_OK;
   }
   const doc = resolveTopic(query, docs);
   if (doc) {
     const related = relatedTopics(doc, docs);
     if (options.format === "json") {
-      options.write(json({ ...entry(doc), related, content: printable(doc.content) }));
+      options.write(
+        formatEnvelope("docs", true, { ...entry(doc), related, content: printable(doc.content) }),
+      );
     } else {
       options.write(printable(doc.content));
       if (related.length > 0) {
@@ -264,29 +283,37 @@ export function docsCommand(options: DocsCommandOptions): number {
   }
   const code = diagnosticCode(query);
   const results = code === undefined ? searchDocs(query, docs) : [];
-  if (options.format === "json") {
-    options.write(json({ query, results }));
-  } else if (results.length > 0) {
-    const width = Math.max(...results.map((result) => result.topic.length));
-    options.write(`No topic "${query}". Docs that mention it:\n\n`);
-    for (const result of results) {
-      options.write(`  ${result.topic.padEnd(width)}  ${result.title}\n`);
-      if (result.snippet) options.write(`  ${" ".repeat(width)}  ${result.snippet}\n`);
-    }
-    options.write(`\nPrint one with: lumen docs <topic>\n`);
-  } else {
-    options.writeError(
+  if (results.length === 0) {
+    return fail(
+      "docs",
+      options,
+      EXIT_PROBLEMS,
       code === undefined
-        ? `lumen: no docs match "${query}". List the topics with: lumen docs\n`
-        : `lumen: unknown diagnostic code ${code}. List the codes with: lumen docs errors\n`,
+        ? { message: `no docs match "${query}".`, help: "List the topics with: lumen docs" }
+        : {
+            message: `unknown diagnostic code ${code}.`,
+            help: "List the codes with: lumen docs errors",
+          },
+      { query, results },
     );
   }
-  return results.length > 0 ? EXIT_OK : EXIT_NOT_FOUND;
+  if (options.format === "json") {
+    options.write(formatEnvelope("docs", true, { query, results }));
+    return EXIT_OK;
+  }
+  const width = Math.max(...results.map((result) => result.topic.length));
+  options.write(`No topic "${query}". Docs that mention it:\n\n`);
+  for (const result of results) {
+    options.write(`  ${result.topic.padEnd(width)}  ${result.title}\n`);
+    if (result.snippet) options.write(`  ${" ".repeat(width)}  ${result.snippet}\n`);
+  }
+  options.write(`\nPrint one with: lumen docs <topic>\n`);
+  return EXIT_OK;
 }
 
 export interface ExplainCommandOptions {
   code: string;
-  format: "human" | "json";
+  format: OutputFormat;
   write: (text: string) => void;
   writeError: (text: string) => void;
   dir?: string;
@@ -296,23 +323,29 @@ export interface ExplainCommandOptions {
 export function explainCommand(options: ExplainCommandOptions): number {
   const code = diagnosticCode(options.code);
   if (code === undefined) {
-    options.writeError(
-      `lumen: "${options.code}" is not a diagnostic code. Codes look like LUM1004.\n`,
-    );
-    return EXIT_FAILURE;
+    return fail("explain", options, EXIT_FAILURE, {
+      message: `"${options.code}" is not a diagnostic code.`,
+      help: "Codes look like LUM1004.",
+    });
   }
   const docs = loadDocs(options.dir);
   const doc = docs.find((candidate) => candidate.topic === `errors/${code}`);
   if (!doc) {
-    options.writeError(
-      `lumen: unknown diagnostic code ${code}. List the codes with: lumen docs errors\n`,
+    return fail(
+      "explain",
+      options,
+      EXIT_PROBLEMS,
+      {
+        message: `unknown diagnostic code ${code}.`,
+        help: "List the codes with: lumen docs errors",
+      },
+      { code },
     );
-    return EXIT_NOT_FOUND;
   }
   if (options.format === "json") {
     const meta = errorPageMeta(doc);
     options.write(
-      json({
+      formatEnvelope("explain", true, {
         code,
         title: doc.title.replace(/^LUM\d{4}: /, ""),
         severity: meta?.severity,

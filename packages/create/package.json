@@ -1,0 +1,30 @@
+{
+  "name": "create-lumen",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Create a Lumen app: `pnpm create lumen my-app --template ssr`. Every project starts agent-ready (AGENTS.md, CLAUDE.md, the lumen skill).",
+  "license": "MIT",
+  "bin": {
+    "create-lumen": "./src/bin.ts"
+  },
+  "files": [
+    "src",
+    "templates"
+  ],
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "lumen": "workspace:*"
+  },
+  "devDependencies": {
+    "@lumen/adapter-node": "workspace:*",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.4"
+  },
+  "engines": {
+    "node": ">=24"
+  }
+}

@@ -7,10 +7,13 @@ import { existsSync, realpathSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { join, relative, resolve, sep } from "node:path";
 import { ROUTE_TYPES_FILE, typegen } from "../../app/typegen/index.ts";
+import { EXIT_FAILURE, EXIT_OK, EXIT_PROBLEMS } from "../output.ts";
+import { routeOptions } from "../project.ts";
 import { compilerDiagnostics } from "./compile.ts";
 import {
   CheckFailure,
   dropSuperseded,
+  fromAppDiagnostic,
   fromCompilerDiagnostic,
   normalizeDiagnostics,
   summarize,
@@ -57,9 +60,7 @@ export { formatTsconfig, LUM_TSCONFIG, tsconfigTemplate } from "./tsconfig.ts";
 export { parseTscOutput } from "./tsc.ts";
 
 /** Exit codes: no errors, errors found, the tool itself failed. */
-export const EXIT_OK = 0;
-export const EXIT_ERRORS = 1;
-export const EXIT_FAILURE = 2;
+export { EXIT_FAILURE, EXIT_OK, EXIT_PROBLEMS as EXIT_ERRORS };
 
 /** Compiler-shaped diagnostics (UTF-16 spans) for one absolute file path. */
 export interface FileDiagnostics {
@@ -108,21 +109,9 @@ export async function check(options: CheckOptions): Promise<CheckResult> {
   const diagnostics: CheckDiagnostic[] = [];
   const fileKey = (file: string) => relative(root, file).split(sep).join("/");
 
-  const { manifest } = await typegen(root);
-  for (const diagnostic of manifest.diagnostics) {
-    diagnostics.push({
-      source: "lumen",
-      code: diagnostic.code,
-      severity: diagnostic.severity,
-      file: diagnostic.file,
-      line: 1,
-      column: 1,
-      endLine: 1,
-      endColumn: 1,
-      message: diagnostic.message,
-      ...(diagnostic.help === undefined ? {} : { help: diagnostic.help }),
-    });
-  }
+  // Route diagnostics depend on the project's default mode (a `server` endpoint may take POST).
+  const { manifest } = await typegen(root, await routeOptions(root));
+  diagnostics.push(...manifest.diagnostics.map(fromAppDiagnostic));
 
   const { files } = await syncShadows(root);
   const byShadow = new Map(files.map((file) => [file.shadow, file]));
@@ -245,7 +234,7 @@ export async function checkCommand(options: CheckCommandOptions): Promise<number
         ? formatJson(report)
         : formatHuman(report, { sources: result.sources, color: options.color ?? false }),
     );
-    return result.summary.errors > 0 ? EXIT_ERRORS : EXIT_OK;
+    return result.summary.errors > 0 ? EXIT_PROBLEMS : EXIT_OK;
   } catch (error) {
     const failure = {
       message: error instanceof Error ? error.message : String(error),

@@ -1,0 +1,27 @@
+import { Suspense, Title } from "lumen";
+import { listEntries } from "../server/guestbook.server.ts";
+
+/** Slow data: the page is sent first and this part streams in when it resolves. */
+async function GuestCount() {
+  await new Promise((resolve) => setTimeout(resolve, 300));
+  return <p class="count">{listEntries().length} guestbook entries so far.</p>;
+}
+
+export default function Home() {
+  return (
+    <main>
+      <Title>{{name}}</Title>
+      <h1>{{name}}</h1>
+      <p>Rendered on the server at {new Date().toLocaleTimeString("en")}, on every request.</p>
+      <Suspense fallback={<p class="count">Counting entries…</p>}>
+        <GuestCount />
+      </Suspense>
+
+      <style>
+        .count {
+          color: #555;
+        }
+      </style>
+    </main>
+  );
+}

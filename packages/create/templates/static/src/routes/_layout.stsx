@@ -1,0 +1,49 @@
+// The root layout: wraps every page.
+import { href } from "lumen";
+
+export default function Layout(props: { children?: JSX.Element }) {
+  return (
+    <div class="site">
+      <header>
+        <a class="brand" href={href("/")}>
+          {{name}}
+        </a>
+        <nav>
+          <a href={href("/about")}>About</a>
+        </nav>
+      </header>
+      {props.children}
+      <footer>Built with Lumen.</footer>
+
+      <style>
+        .site {
+          max-width: 42rem;
+          margin: 0 auto;
+          padding: 1.5rem 1rem;
+        }
+        header {
+          display: flex;
+          justify-content: space-between;
+          margin-bottom: 2rem;
+        }
+        .brand {
+          font-weight: 700;
+        }
+        footer {
+          margin-top: 3rem;
+          color: #666;
+        }
+      </style>
+      <style global>
+        body {
+          margin: 0;
+          font-family: system-ui, sans-serif;
+          line-height: 1.6;
+        }
+        a {
+          color: #4338ca;
+        }
+      </style>
+    </div>
+  );
+}

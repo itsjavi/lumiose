@@ -55,7 +55,7 @@ mistakes** and **Related diagnostics**. Reference pages list every export with i
 - [`lumen/router`](reference/router.md): The SPA router: `Link`, `navigate`, `navigating` and reactive route state.
 - [`lumen/vite`](reference/vite.md): The Vite plugin and its options.
 - [JSX types and tsconfig](reference/jsx.md): `lumen/jsx-runtime`, `lumen/env` and the required `tsconfig.json`.
-- [CLI](reference/cli.md): `lumen check`, `lint`, `fmt`, `docs` and `explain`.
+- [CLI](reference/cli.md): `lumen dev`, `build`, `preview`, `check`, `typegen`, `routes`, `lint`, `fmt`, `docs` and `explain`; `--format json` and exit codes.
 
 ## Diagnostics
 
@@ -90,9 +90,27 @@ implement something yet, the page says so in a **Status** note. In short:
 - TypeScript 7 (`typescript@^7`). Lumen uses stock `tsc`, with no TypeScript plugins.
 - Vite 8.
 
-> **Status:** `create-lumen` (a scaffolder that writes all of this plus `AGENTS.md`) and the
-> `lumen dev` / `lumen build` commands are in progress. Until they land, set the project up by hand
-> as shown here and run it with Vite.
+## Create a project
+
+```sh
+pnpm create lumen my-app --template ssr   # or: minimal, static, spa
+cd my-app && pnpm install && pnpm dev
+```
+
+| Template  | `lumen({ mode })` | What you get                                                 |
+| --------- | ----------------- | ------------------------------------------------------------ |
+| `minimal` | `static`          | One page.                                                    |
+| `static`  | `static`          | A layout, pages, a blog with `staticPaths()` and a 404 page. |
+| `ssr`     | `server`          | Streaming, a form action, a JSON endpoint and a Node server. |
+| `spa`     | `spa`             | Pages and a persistent layout rendered in the browser.       |
+
+Every project starts agent-ready: `AGENTS.md` (with a Lumen section pointing at these docs),
+`CLAUDE.md` referencing it, the `lumen` skill in `.claude/skills/lumen`, and `.gitattributes`
+highlighting `.stsx` as TSX. In an existing project, `lumen agents init` writes the same files
+(re-run it after upgrading Lumen; it only touches its own parts). Run `create-lumen --help` for the
+options (`--yes`, `--force`, `--format json`).
+
+The rest of this page sets a project up by hand, step by step.
 
 ## 1. Install
 
@@ -1933,7 +1951,7 @@ export function Box() {
 
 ```sh
 $ lumen check --format json
-{ "diagnostics": [], "summary": { "errors": 0, "warnings": 0, "hints": 0, "files": 0 } }
+{ "command": "check", "ok": true, "diagnostics": [], "summary": { "errors": 0, "warnings": 0, "hints": 0, "files": 0 } }
 $ lumen explain LUM3010
 ```
 
@@ -2993,54 +3011,130 @@ The built-in members match `vite/client`, so both can be loaded.
 
 # CLI
 
-> The `lumen` command: `check`, `lint`, `fmt`, `docs` and `explain`, with `--format json` and stable exit codes.
+> The `lumen` command: `dev`, `build`, `preview`, `check`, `typegen`, `routes`, `lint`, `fmt`, `docs`, `explain` and `agents init`, each with help, `--format json` and stable exit codes.
 
 ```sh
 lumen <command> [options]
+lumen <command> --help        # usage, options, exit codes and examples
+lumen help --format json      # every command, for agents
 ```
 
-Exit codes: `0` success, `1` problems found (errors, unformatted files, nothing found), `2` the
-tool itself failed or was misused.
+## Output contract
 
-| Option                        | Applies to                 | Meaning                                                       |
-| ----------------------------- | -------------------------- | ------------------------------------------------------------- |
-| `--root <dir>`                | check, lint, fmt           | Project root (default: the current directory).                |
-| `-p, --project <file>`        | check                      | tsconfig path relative to the root (default `tsconfig.json`). |
-| `--format human \| json`      | check, lint, docs, explain | Output format (default `human`).                              |
-| `--check`                     | fmt                        | List unformatted files and exit 1 instead of writing.         |
-| `-h, --help`, `-v, --version` |                            | Help and version.                                             |
+- **Exit codes:** `0` success, `1` problems found (errors, unformatted files, nothing found, a
+  failed build, a server that could not start), `2` the tool itself failed or was misused (unknown
+  command or option, missing tsconfig or oxlint, a project root that does not exist). Each
+  command's `--help` lists its exit codes.
+- **`--format json`:** stdout carries one JSON document, `{ "command": "<name>", "ok": <bool>, ... }`.
+  `ok` is `true` exactly when the exit code is `0`. When the command could not do its job and no
+  diagnostics explain why, `failure: { message, help? }` says so. Fields are only ever added.
+  Usage errors are reported the same way (`lumen chek --format json` prints `{ "command": "chek",
+  "ok": false, "failure": {...}, "suggestions": ["check"] }`).
+- **Logs** go to stderr with `--format json`, so stdout parses as JSON.
+- **Typos** get suggestions: `lumen chek` prints `Did you mean "lumen check"?`.
+
+| Option                   | Applies to   | Meaning                                                       |
+| ------------------------ | ------------ | ------------------------------------------------------------- |
+| `--root <dir>`, `--cwd`  | all          | Project root (default: the current directory).                |
+| `--format human \| json` | all          | Output format (default `human`).                              |
+| `-h, --help`             | all          | Help for the command.                                         |
+| `-v, --version`          |              | The version (`{ command: "version", ok, version }` in JSON).  |
+| `-p, --project <file>`   | check        | tsconfig path relative to the root (default `tsconfig.json`). |
+| `--check`                | fmt          | List unformatted files and exit 1 instead of writing.         |
+| `--port <n>`             | dev, preview | Port; `0` picks a free one.                                   |
+| `--host <addr>`          | dev, preview | Listen address (`0.0.0.0`: all addresses).                    |
+
+## lumen dev
+
+Starts the Vite dev server with SSR and HMR, until interrupted.
+
+```sh
+lumen dev --port 3000
+lumen dev --format json   # one line once listening: { "command": "dev", "ok": true, "url": "http://localhost:5173/", "urls": { "local": [...], "network": [...] } }
+```
+
+Like Vite, the server stops when its stdin ends; start it with an open stdin when it runs in the
+background.
+
+## lumen build
+
+Builds the client and server bundles into `dist/`, then prerenders the `static` routes.
+
+```sh
+lumen build --format json   # { outDir, clientDir, serverEntry, prerendered: [{ path, file, kind }] }
+```
+
+Route errors (`LUM5002`, `LUM5003`, `LUM5005`) and compile errors exit 1.
+
+## lumen preview
+
+Serves the build output with `@lumen/adapter-node` (a dependency of the project), until interrupted.
+`--format json` prints one line once listening: `{ "command": "preview", "ok": true, "url" }`.
 
 ## lumen check
 
 Type-checks the project: runs typegen (`.lumen/types/routes.d.ts`), writes shadow TSX files for
 every `.stsx` (`.lumen/shadow/`), runs `tsc --noEmit -p tsconfig.json`, maps shadow positions back
 to the `.stsx` sources (same line and UTF-16 column), and merges scanner, route, tsconfig and
-compiler diagnostics. For style diagnostics, the modules that `$` constants are imported from are
-resolved like TypeScript resolves them (relative paths, tsconfig `paths`, package `exports`).
+compiler diagnostics for `.stsx` and `.tsx` files (such as `LUM1006` for a `<style>` block in a
+`.tsx` file). For style diagnostics, the modules that `$` constants are imported from are resolved
+like TypeScript resolves them (relative paths, tsconfig `paths`, package `exports`). Route
+diagnostics use the project's default mode from `lumen({ mode })`.
 
 ```sh
 lumen check
-lumen check --format json   # { diagnostics: [...], summary: { errors, warnings, hints, files } }
+lumen check --format json   # { command, ok, diagnostics: [...], summary: { errors, warnings, hints, files } }
 ```
 
 Each JSON diagnostic has `source` (`ts`, `lumen`, `oxlint`, `stylelint`), `code`, `severity`,
 `file`, `line`, `column`, `endLine`, `endColumn`, `message`, and optional `help` and `docs`.
 
+## lumen typegen
+
+Writes the route types (`.lumen/types/routes.d.ts`) and syncs the shadow TSX files
+(`.lumen/shadow/`), without type-checking: what a bare `tsc` or an editor needs.
+
+```sh
+lumen typegen --format json   # { routeTypes: { file, changed }, routes, shadows: { dir, files, written, deleted }, diagnostics, summary }
+```
+
+## lumen routes
+
+Lists the routes in match order, with their kind, mode (from the route, its layouts or the project
+default `lumen({ mode })`) and layouts. `spa (shell)` marks a `spa` page with `ssr = false`.
+
+```sh
+$ lumen routes
+Routes in src/routes (default mode: static): 2 pages, 1 endpoint
+
+PATTERN        KIND      MODE    FILE                LAYOUTS
+/              page      static  index.stsx          _layout.stsx
+/api/search    endpoint  server  api/search.ts
+/blog/[slug]   page      server  blog/[slug].stsx    _layout.stsx, blog/_layout.stsx
+
+$ lumen routes --format json   # { routesDir, defaultMode, routes: [{ pattern, file, kind, mode, ssr?, layouts, params }], diagnostics, summary }
+```
+
+Paths in JSON are project-relative. Exits 1 when the routes have errors.
+
 ## lumen lint
 
 Runs oxlint on the project, including `.stsx` files (through their shadow TSX, with diagnostics
 inside style blocks dropped), and, when the project installs and configures stylelint, on each
-block's CSS with `$` references replaced by same-length identifiers.
+block's CSS with `$` references replaced by same-length identifiers. The JSON report has the shape
+of `lumen check`'s.
 
 ## lumen fmt
 
 ```sh
 lumen fmt [paths...]        # default path: src
 lumen fmt --check
+lumen fmt --check --format json   # { check, files: [{ file, status, warnings, error? }], summary: { files, formatted, errors } }
 ```
 
 Formats `.stsx` files: the TSX with oxfmt (each block replaced by a placeholder), then each block's
 CSS separately with its `$` references protected, then re-indents and stitches the file together.
+With `--check`, a `formatted` file is one that is not formatted yet.
 
 ## lumen docs
 
@@ -3069,10 +3163,22 @@ lumen explain lum3010 --format json   # { code, title, severity, category, topic
 Prints the long-form explanation of a diagnostic code: what it means, an example, and how to fix
 it. Exits 1 for an unknown code and 2 for text that is not a code.
 
+## lumen agents init
+
+```sh
+lumen agents init
+lumen agents init --format json   # { files: [{ file, action: "created" | "updated" | "unchanged" }] }
+```
+
+Makes an existing project agent-ready, as `create-lumen` does for new ones: a Lumen section in
+`AGENTS.md` (between `<!-- lumen:start … -->` and `<!-- lumen:end -->`, pointing at
+`node_modules/lumen/docs`, the `.stsx` format, the key rules and `lumen check`), a `CLAUDE.md`
+that references `@AGENTS.md`, the `lumen` skill (`.claude/skills/lumen/SKILL.md`) and the
+`*.stsx linguist-language=TSX` line in `.gitattributes`. Re-running it updates only those parts.
+
 ## Planned commands
 
-`lumen dev`, `build`, `preview`, `typegen`, `routes`, `mcp`, `agents init` and `upgrade` are
-designed (spec §3, §10) and in progress; they are not in this version.
+`lumen mcp` and `upgrade` are designed (spec §3, §10) and in progress.
 
 <!-- source: errors/LUM1001.md -->
 

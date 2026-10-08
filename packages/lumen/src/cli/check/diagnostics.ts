@@ -2,6 +2,7 @@
 // diagnostics, with 1-based lines and UTF-16 columns (what tsc and editors report).
 
 import type { Diagnostic as CompilerDiagnostic } from "@lumen/compiler";
+import type { AppDiagnostic } from "../../app/diagnostics.ts";
 import type { SourceText } from "./text.ts";
 
 export type DiagnosticSource = "ts" | "lumen" | "oxlint" | "stylelint";
@@ -65,6 +66,23 @@ export function fromCompilerDiagnostic(
     message: diagnostic.message,
     ...(diagnostic.help === undefined ? {} : { help: diagnostic.help }),
     docs: diagnostic.docs,
+  };
+}
+
+/** Converts a route-manifest diagnostic (whole file, no position) into the check shape. */
+export function fromAppDiagnostic(diagnostic: AppDiagnostic): CheckDiagnostic {
+  return {
+    source: "lumen",
+    code: diagnostic.code,
+    severity: diagnostic.severity,
+    file: diagnostic.file,
+    line: 1,
+    column: 1,
+    endLine: 1,
+    endColumn: 1,
+    message: diagnostic.message,
+    ...(diagnostic.help === undefined ? {} : { help: diagnostic.help }),
+    docs: `diagnostics/${diagnostic.code}`,
   };
 }
 

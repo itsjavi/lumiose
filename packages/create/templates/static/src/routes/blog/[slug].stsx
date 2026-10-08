@@ -1,0 +1,27 @@
+import { notFound, params, Title } from "lumen";
+import { findPost, posts } from "../../lib/posts.ts";
+
+/** The paths `lumen build` prerenders for this route. */
+export async function staticPaths() {
+  return posts.map((post) => ({ params: { slug: post.slug } }));
+}
+
+export default function BlogPost() {
+  const post = findPost(params<"/blog/[slug]">().slug);
+  if (!post) notFound();
+
+  return (
+    <article>
+      <Title>{post.title} · {{name}}</Title>
+      <h1>{post.title}</h1>
+      <time>{post.date}</time>
+      <p>{post.body}</p>
+
+      <style>
+        time {
+          color: #666;
+        }
+      </style>
+    </article>
+  );
+}

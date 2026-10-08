@@ -1,21 +1,28 @@
 // `lumen check` output: human-readable code frames, or a stable JSON document (`--format json`).
 
 import { styleText } from "node:util";
+import type { Failure } from "../output.ts";
 import type { CheckDiagnostic, CheckSummary } from "./diagnostics.ts";
 import type { SourceText } from "./text.ts";
 
 /**
- * The `--format json` document. Stable: fields are only ever added.
- * `failure` is present only when the tool itself failed (exit code 2).
+ * The `--format json` document, in the CLI envelope (`command`, `ok`). Stable: fields are only ever
+ * added. `failure` is present only when the tool itself failed (exit code 2).
  */
 export interface CheckReport {
+  /** `check` or `lint`. */
+  command?: string;
+  /** No errors and no failure (exit code 0). */
+  ok?: boolean;
   diagnostics: CheckDiagnostic[];
   summary: CheckSummary;
-  failure?: { message: string; help?: string };
+  failure?: Failure;
 }
 
-export function formatJson(report: CheckReport): string {
+export function formatJson(report: CheckReport, command = report.command ?? "check"): string {
   const document: CheckReport = {
+    command,
+    ok: report.failure === undefined && report.summary.errors === 0,
     diagnostics: report.diagnostics.map((diagnostic) => ({
       source: diagnostic.source,
       code: diagnostic.code,

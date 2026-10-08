@@ -1,0 +1,33 @@
+// The root layout: in an `spa` app it stays mounted while the pages change.
+import { href } from "lumen";
+
+export default function Layout(props: { children?: JSX.Element }) {
+  return (
+    <div class="app">
+      <nav>
+        <a href={href("/")}>Home</a>
+        <a href={href("/about")}>About</a>
+      </nav>
+      {props.children}
+
+      <style>
+        .app {
+          max-width: 42rem;
+          margin: 0 auto;
+          padding: 1.5rem 1rem;
+        }
+        nav {
+          display: flex;
+          gap: 1rem;
+          margin-bottom: 2rem;
+        }
+      </style>
+      <style global>
+        body {
+          margin: 0;
+          font-family: system-ui, sans-serif;
+        }
+      </style>
+    </div>
+  );
+}

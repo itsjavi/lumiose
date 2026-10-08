@@ -293,7 +293,7 @@ export async function lintCommand(options: LintCommandOptions): Promise<number> 
     for (const note of result.notes) writeError(`lumen lint: ${note}\n`);
     write(
       json
-        ? formatJson(report)
+        ? formatJson(report, "lint")
         : formatHuman(report, { sources: result.sources, color: options.color ?? false }),
     );
     return result.summary.errors > 0 ? 1 : 0;
@@ -302,7 +302,7 @@ export async function lintCommand(options: LintCommandOptions): Promise<number> 
       message: error instanceof Error ? error.message : String(error),
       ...(error instanceof CheckFailure && error.help !== undefined ? { help: error.help } : {}),
     };
-    if (json) write(formatJson({ diagnostics: [], summary: summarize([]), failure }));
+    if (json) write(formatJson({ diagnostics: [], summary: summarize([]), failure }, "lint"));
     else
       writeError(
         `lumen lint failed: ${failure.message}\n${failure.help ? `${failure.help}\n` : ""}`,

@@ -254,6 +254,8 @@ describe.skipIf(!binding)("lumen check", () => {
     const root = await project("valid");
     const { exitCode, report } = await checkJson(root);
     expect(report).toEqual({
+      command: "check",
+      ok: true,
       diagnostics: [],
       summary: { errors: 0, warnings: 0, hints: 0, files: 0 },
     });

@@ -8,9 +8,27 @@
 - TypeScript 7 (`typescript@^7`). Lumen uses stock `tsc`, with no TypeScript plugins.
 - Vite 8.
 
-> **Status:** `create-lumen` (a scaffolder that writes all of this plus `AGENTS.md`) and the
-> `lumen dev` / `lumen build` commands are in progress. Until they land, set the project up by hand
-> as shown here and run it with Vite.
+## Create a project
+
+```sh
+pnpm create lumen my-app --template ssr   # or: minimal, static, spa
+cd my-app && pnpm install && pnpm dev
+```
+
+| Template  | `lumen({ mode })` | What you get                                                 |
+| --------- | ----------------- | ------------------------------------------------------------ |
+| `minimal` | `static`          | One page.                                                    |
+| `static`  | `static`          | A layout, pages, a blog with `staticPaths()` and a 404 page. |
+| `ssr`     | `server`          | Streaming, a form action, a JSON endpoint and a Node server. |
+| `spa`     | `spa`             | Pages and a persistent layout rendered in the browser.       |
+
+Every project starts agent-ready: `AGENTS.md` (with a Lumen section pointing at these docs),
+`CLAUDE.md` referencing it, the `lumen` skill in `.claude/skills/lumen`, and `.gitattributes`
+highlighting `.stsx` as TSX. In an existing project, `lumen agents init` writes the same files
+(re-run it after upgrading Lumen; it only touches its own parts). Run `create-lumen --help` for the
+options (`--yes`, `--force`, `--format json`).
+
+The rest of this page sets a project up by hand, step by step.
 
 ## 1. Install
 

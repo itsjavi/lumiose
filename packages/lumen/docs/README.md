@@ -46,7 +46,7 @@ mistakes** and **Related diagnostics**. Reference pages list every export with i
 - [`lumen/router`](reference/router.md): The SPA router: `Link`, `navigate`, `navigating` and reactive route state.
 - [`lumen/vite`](reference/vite.md): The Vite plugin and its options.
 - [JSX types and tsconfig](reference/jsx.md): `lumen/jsx-runtime`, `lumen/env` and the required `tsconfig.json`.
-- [CLI](reference/cli.md): `lumen check`, `lint`, `fmt`, `docs` and `explain`.
+- [CLI](reference/cli.md): `lumen dev`, `build`, `preview`, `check`, `typegen`, `routes`, `lint`, `fmt`, `docs` and `explain`; `--format json` and exit codes.
 
 ## Diagnostics
 

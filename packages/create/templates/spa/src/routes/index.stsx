@@ -1,0 +1,16 @@
+import { Title } from "lumen";
+import { Counter } from "../components/Counter.stsx";
+
+export default function Home() {
+  return (
+    <main>
+      <Title>{{name}}</Title>
+      <h1>{{name}}</h1>
+      <p>
+        An <code>spa</code> app: the whole page runs in the browser, so components need no
+        <code> client:</code> directive.
+      </p>
+      <Counter start={1} />
+    </main>
+  );
+}

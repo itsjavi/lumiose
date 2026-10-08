@@ -1,0 +1,30 @@
+import { href, Title } from "lumen";
+import { posts } from "../lib/posts.ts";
+
+export default function Home() {
+  return (
+    <main>
+      <Title>{{name}}</Title>
+      <h1>Posts</h1>
+      <ul class="posts">
+        {posts.map((post) => (
+          <li key={post.slug}>
+            <a href={href("/blog/[slug]", { slug: post.slug })}>{post.title}</a>
+            <time>{post.date}</time>
+          </li>
+        ))}
+      </ul>
+
+      <style>
+        .posts {
+          padding: 0;
+          list-style: none;
+        }
+        time {
+          margin-left: 0.5rem;
+          color: #666;
+        }
+      </style>
+    </main>
+  );
+}

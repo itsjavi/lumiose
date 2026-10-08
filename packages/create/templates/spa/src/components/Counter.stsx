@@ -1,0 +1,20 @@
+import { signal } from "lumen";
+
+export function Counter(props: { start?: number }) {
+  const count = signal(props.start ?? 0);
+
+  return (
+    <button class={{ counter: true, hot: count() >= 5 }} onClick={() => count.update((n) => n + 1)}>
+      Clicked {count()} times
+      <style>
+        .counter {
+          font: inherit;
+          padding: 0.5rem 1rem;
+        }
+        .hot {
+          color: crimson;
+        }
+      </style>
+    </button>
+  );
+}

@@ -13,6 +13,14 @@ import { isAbsolute, join, matchesGlob, relative, resolve, sep } from "node:path
 import { pathToFileURL } from "node:url";
 import { CheckFailure } from "../check/diagnostics.ts";
 import { loadCompiler } from "../check/shadow.ts";
+import {
+  EXIT_FAILURE,
+  EXIT_OK,
+  EXIT_PROBLEMS,
+  failureOf,
+  formatEnvelope,
+  type OutputFormat,
+} from "../output.ts";
 import { protectRefs } from "../style-css.ts";
 import { findConfig, parseJsonc, requirePackage } from "../tools.ts";
 
@@ -181,7 +189,7 @@ export interface FmtOptions {
   /** Report instead of writing. */
   check?: boolean;
   /** Overrides the project's oxfmt (tests). */
-  format?: Formatter;
+  formatter?: Formatter;
 }
 
 export interface FmtFileResult {
@@ -195,7 +203,7 @@ export interface FmtFileResult {
 /** Formats (or checks) the `.stsx` files under `paths`. Throws {@link CheckFailure} if oxfmt is missing. */
 export async function fmt(options: FmtOptions): Promise<FmtFileResult[]> {
   const root = resolve(options.root);
-  const format = options.format ?? (await loadOxfmt(root));
+  const format = options.formatter ?? (await loadOxfmt(root));
   const { config, ignore } = await loadFormatConfig(root);
   const files = (
     await Promise.all(
@@ -299,6 +307,7 @@ async function listStsx(
 }
 
 export interface FmtCommandOptions extends FmtOptions {
+  format?: OutputFormat;
   write?: (text: string) => void;
   writeError?: (text: string) => void;
 }
@@ -306,26 +315,41 @@ export interface FmtCommandOptions extends FmtOptions {
 /**
  * `lumen fmt [--check] [paths…]`: formats `.stsx` files (exit 0), or with `--check` lists those that
  * are not formatted (exit 1 if any). Files that cannot be formatted exit 1; tool failures exit 2.
+ * With `--check`, a `formatted` file in the JSON report is one that is not formatted yet.
  */
 export async function fmtCommand(options: FmtCommandOptions): Promise<number> {
   const write = options.write ?? ((text: string) => void process.stdout.write(text));
   const writeError = options.writeError ?? ((text: string) => void process.stderr.write(text));
+  const json = options.format === "json";
   let results: FmtFileResult[];
   try {
     results = await fmt(options);
   } catch (error) {
-    const help = error instanceof CheckFailure && error.help ? `${error.help}\n` : "";
-    writeError(
-      `lumen fmt failed: ${error instanceof Error ? error.message : String(error)}\n${help}`,
+    const failure = failureOf(error);
+    if (json) write(formatEnvelope("fmt", false, { check: options.check ?? false, failure }));
+    else
+      writeError(
+        `lumen fmt failed: ${failure.message}\n${failure.help ? `${failure.help}\n` : ""}`,
+      );
+    return EXIT_FAILURE;
+  }
+  const changed = results.filter((result) => result.status === "formatted");
+  const failed = results.filter((result) => result.status === "error").length;
+  const code = failed > 0 || (options.check && changed.length > 0) ? EXIT_PROBLEMS : EXIT_OK;
+  if (json) {
+    write(
+      formatEnvelope("fmt", code === EXIT_OK, {
+        check: options.check ?? false,
+        files: results,
+        summary: { files: results.length, formatted: changed.length, errors: failed },
+      }),
     );
-    return 2;
+    return code;
   }
   for (const result of results) {
     if (result.error) writeError(`${result.file}: could not format: ${result.error}\n`);
     for (const warning of result.warnings) writeError(`${result.file}: ${warning}\n`);
   }
-  const changed = results.filter((result) => result.status === "formatted");
-  const failed = results.filter((result) => result.status === "error").length;
   const total = plural(results.length, ".stsx file");
   if (options.check) {
     for (const result of changed) write(`${result.file}\n`);
@@ -337,7 +361,7 @@ export async function fmtCommand(options: FmtCommandOptions): Promise<number> {
   } else {
     write(`Formatted ${plural(changed.length, "file")} (of ${total}).\n`);
   }
-  return failed > 0 || (options.check && changed.length > 0) ? 1 : 0;
+  return code;
 }
 
 function plural(count: number, noun: string): string {

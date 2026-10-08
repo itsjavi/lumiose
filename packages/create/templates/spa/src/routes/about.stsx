@@ -1,0 +1,11 @@
+import { Title } from "lumen";
+
+export default function About() {
+  return (
+    <main>
+      <Title>About · {{name}}</Title>
+      <h1>About</h1>
+      <p>Pages are files in src/routes; the layout in src/routes/_layout.stsx wraps them.</p>
+    </main>
+  );
+}

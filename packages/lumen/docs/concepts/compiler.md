@@ -79,7 +79,7 @@ export function Box() {
 
 ```sh
 $ lumen check --format json
-{ "diagnostics": [], "summary": { "errors": 0, "warnings": 0, "hints": 0, "files": 0 } }
+{ "command": "check", "ok": true, "diagnostics": [], "summary": { "errors": 0, "warnings": 0, "hints": 0, "files": 0 } }
 $ lumen explain LUM3010
 ```
 
