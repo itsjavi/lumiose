@@ -1,11 +1,11 @@
 ---
 id: TASK-44
 title: Align server runtime with client parity rules
-status: In Progress
+status: Done
 assignee:
   - '@Nova'
 created_date: '2026-10-08 13:28'
-updated_date: '2026-10-08 13:57'
+updated_date: '2026-10-08 13:58'
 labels: []
 milestone: m-2
 dependencies:
@@ -22,11 +22,11 @@ The client DOM runtime (TASK-13) settled value-rendering rules that SSR output m
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 server text() renders booleans as empty (like client setText)
-- [ ] #2 server attr() writes aria-* and enumerated attributes (draggable, spellcheck, contenteditable, translate…) as "true"/"false" and removes plain boolean attributes on false (like client setAttr)
-- [ ] #3 index.server.ts exports server versions of ref, Portal (renders nothing / or into a deferred region: decide and document), and Dynamic
-- [ ] #4 parity tests compare server output with client DOM serialization for the same inputs
-- [ ] #5 submit() registers in-flight submissions with the core busy registry (decision-20), once Spark's TASK-17 exposes it
+- [x] #1 server text() renders booleans as empty (like client setText)
+- [x] #2 server attr() writes aria-* and enumerated attributes (draggable, spellcheck, contenteditable, translate…) as "true"/"false" and removes plain boolean attributes on false (like client setAttr)
+- [x] #3 index.server.ts exports server versions of ref, Portal (renders nothing / or into a deferred region: decide and document), and Dynamic
+- [x] #4 parity tests compare server output with client DOM serialization for the same inputs
+- [x] #5 submit() registers in-flight submissions with the core busy registry (decision-20), once Spark's TASK-17 exposes it
 <!-- AC:END -->
 
 ## Implementation Plan
@@ -51,4 +51,12 @@ Nova (TASK-44 implementation, packages/lumen/src/server + app/actions):
 - submit() (decision-20): registers each submission with core beginBusy() (core/internal.ts, landed by Spark in TASK-17) and ends it in finally. Verified result semantics: success/failure resolve, redirects followed, type error rejects with FetchError; FIXED network failures, which rejected with the raw TypeError: now FetchError with status 0 (cause = original error). Aborts via options.signal keep their AbortError (caller-initiated, not unexpected). Tests: busy() true while in flight and false after success and rejection; network/abort cases.
 For Spark (not applied): client spread writes innerText as an attribute while the compiler treats it as a property-only name. For TASK-18: the client Dynamic creates intrinsic tags with document.createElement, so the hydrator will not claim the server-rendered element.
 Validation: pnpm typecheck OK (3 projects); pnpm test 55 files / 594 tests green; pnpm lint 0 errors, 1 pre-existing warning (app/router/index.ts empty export stub).
+
+Nova: correction: server/parity.test.ts has 78 tests (not 80); ssr.test.ts 19 (+1 booleanish attr test, spread case extended); actions/client.test.ts 17 (+1 network/abort test, busy() assertions).
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Server runtime aligned with the TASK-13 client parity rules. server/attrs.ts: attr() writes aria-* and enumerated attributes as "true"/"false" (table copied from dom/attributes.ts, guarded by a source-equality parity test) and drops other false booleans; classAttr follows setClass token rules; spreadAttrs keeps namespaced attributes (xlink:href) and skips property-only indeterminate. text()/escape() already rendered booleans as empty. New server/elements.ts exported from index.server.ts: ref() (reads undefined), Portal (renders nothing; portal content is client-only, documented), Dynamic (components and intrinsic tags, void tags, innerHTML/textContent, tag-name validation); browser and node lumen entries now export the same names. server/parity.test.ts (happy-dom, 78 tests) compares server HTML with client DOM serialization for text, attributes (39 names x 11 values), class, style, spread, properties, ref, Portal and Dynamic. submit() registers with core beginBusy() (decision-20) and now rejects network failures with FetchError status 0 (aborts keep AbortError); tests cover busy() and the result semantics. Validation: pnpm typecheck OK, pnpm test 594/594, pnpm lint 0 errors (1 pre-existing warning).
+<!-- SECTION:FINAL_SUMMARY:END -->
