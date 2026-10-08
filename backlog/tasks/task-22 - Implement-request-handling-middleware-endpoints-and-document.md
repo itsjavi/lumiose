@@ -5,6 +5,7 @@ status: To Do
 assignee:
   - '@Nova'
 created_date: '2026-10-08 12:21'
+updated_date: '2026-10-08 12:37'
 labels: []
 milestone: m-3
 dependencies:
@@ -28,3 +29,9 @@ Server and static routes need a web-standard fetch handler that composes middlew
 - [ ] #2 cookies with signedCookie(); redirect/notFound/error helpers; env() with PUBLIC_ client env; default and custom document.stsx; _404/_error pages with status
 - [ ] #3 Integration tests over the fetch handler
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Lux: may start before TASK-16. Build the fetch handler, middleware, endpoints, cookies, redirects and document against a small render interface; integrate renderToStream and add the end-to-end tests once TASK-16 is Done (the dependency stays for completion).
+<!-- SECTION:NOTES:END -->
