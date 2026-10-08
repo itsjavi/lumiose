@@ -20,3 +20,5 @@ Lumen needs a single event syntax that is familiar to people and agents, fast on
 - The syntax is React-familiar, and it is the fastest option on the benchmark.
 - Types must declare both `onX` and `on:x` for every element.
 - The compiler decides which events are delegated using a fixed list of bubbling events. Anything else that is written as `onX` gets a diagnostic suggesting `on:x`.
+
+_Amended 2026-10-08 with user approval: delegated handlers use React-style camelCase names (`onKeyDown`, `onMouseEnter`, `onPointerDown`, `onDblClick`). The compiler lowercases the part after `on` to get the DOM event name. Exact-case forms such as `onKeydown` are rejected by the types. Native listeners keep the exact event name: `on:keydown`, `on:my-event`._
