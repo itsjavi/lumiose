@@ -1,6 +1,6 @@
 # Styles
 
-> Write plain CSS in `<style>` blocks in `.stsx` files. Where a block sits decides its scope: a component, the file, or the whole app with `<style global>`. CSS reads JS constants as `$name`, inlined at build time, and constant math is precomputed.
+> Write plain CSS in `<style>` blocks in `.stsx` files. Where a block sits decides its scope: the element that encloses it, the file, or the whole app with `<style global>`. CSS reads JS constants as `$name`, inlined at build time, and constant math is precomputed.
 
 ## Concept
 
@@ -8,21 +8,38 @@
 
 | Placement                                                                            | Scope                                                                                                                      |
 | ------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------- |
-| Inside a component's JSX, as a child of an intrinsic element or fragment (any depth) | That component's own templates, including closures inside it such as `.map` callbacks. It does not reach other components. |
+| Inside a component's JSX, as a child of an intrinsic element or fragment (any depth) | Its **enclosing element and everything written inside it** in that component, including `.map` callbacks and JSX passed as children there. A block directly under the component's root element therefore covers the whole component. Sibling subtrees are not affected, and it never reaches other components' own templates. |
 | File top level (conventionally at the end of the file)                               | Every template in the file.                                                                                                |
 | `<style global>` (anywhere a block is valid)                                         | The whole app, unscoped. Usually in the root `_layout.stsx`.                                                               |
 
-**How scoping works.** Each scope with styles gets a token `data-l-<hash>` (a stable hash of the
-file path, plus the component name). Every element of the scope's templates carries the token, and
-the last compound of each selector gets `[data-l-<hash>]` (a +0,1,0 specificity bump). Dynamic
-classes always work, because no element is pruned.
+```stsx
+export function Panel() {
+  return (
+    <div class="panel">
+      <aside class="side">…</aside>                 {/* not styled by the <style> below */}
+      <section class="body">
+        <p class="note">…</p>
+        <style> .note { color: tomato; } </style>  {/* only this <section> subtree */}
+      </section>
+      <style> .panel { display: grid; } </style>   {/* the whole component */}
+    </div>
+  );
+}
+```
+
+**How scoping works.** Each scope with styles gets a token `data-l-<hash>`, a stable hash of the
+file path plus the component name, with one token per style-bearing element. Every element in the
+scope carries the token: the whole file for top-level blocks, and the enclosing element's lexical
+subtree for blocks inside a component. The last compound of each selector gets `[data-l-<hash>]`,
+a +0,1,0 specificity bump. Dynamic classes always work, because no element is pruned.
 
 - `:global(.sel)` leaves a selector unscoped; `:deep(.sel)` scopes only the part before it.
 - `@keyframes` names are scoped, and `animation` references are rewritten. Custom properties are
   not scoped.
 - **Class passthrough.** When a parent passes `class` to a child component, the parent's scope
-  tokens travel with it, so `.cta { … }` in the parent styles `<Button class="cta" />` wherever
-  `Button` applies `props.class`.
+  tokens at that call site travel with it: the file token plus every enclosing style subtree. So
+  `.cta { … }` in the parent styles `<Button class="cta" />` wherever `Button` applies
+  `props.class`.
 - Within a file, file-level CSS comes first, then component blocks in source order.
 
 **Blocks are plain CSS:** no Sass, no `lang`, `media` or other attributes (only `global`). CSS
@@ -248,7 +265,7 @@ custom-property folding.
 
 | Syntax                                   | Meaning                                                                                                  |
 | ---------------------------------------- | -------------------------------------------------------------------------------------------------------- |
-| `<style>…</style>` in component JSX      | Component-scoped CSS.                                                                                    |
+| `<style>…</style>` in component JSX      | CSS scoped to its enclosing element's subtree (the whole component when placed under the root element).  |
 | `<style>…</style>` at module top level   | File-scoped CSS. Must come after the `const`s it references.                                             |
 | `<style global>…</style>`                | Unscoped, app-wide CSS.                                                                                  |
 | `$name`, `$obj.key`                      | A JS constant, inlined at build time, in property values and `@media`/`@container`/`@supports` preludes. |
@@ -322,6 +339,9 @@ in the file-level block styles every template in the file.
 - **Attributes on `<style>`.** Only `global` is allowed (`LUM1005`).
 - **Expecting a parent's styles to reach into children.** Scopes stop at component boundaries;
   pass `class` (passthrough) or use `:deep()`.
+- **Expecting a nested block to style sibling subtrees.** A `<style>` inside an element only
+  styles that element's subtree. Move it up to the common ancestor, or under the component's root
+  element, to cover more.
 
 ## Related diagnostics
 
