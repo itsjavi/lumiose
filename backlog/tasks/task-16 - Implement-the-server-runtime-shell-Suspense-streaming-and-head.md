@@ -5,7 +5,7 @@ status: Done
 assignee:
   - '@Nova'
 created_date: '2026-10-08 12:21'
-updated_date: '2026-10-08 13:25'
+updated_date: '2026-10-08 13:26'
 labels: []
 milestone: m-2
 dependencies:
@@ -60,3 +60,9 @@ Validation: pnpm typecheck OK; pnpm lint: no warnings/errors in src/server or sr
 
 Open items for Lux/Spark/Photon (in the report): $await rejection shape on the client; text adjacent to static text inside islands; empty dynamic text; slot HTML duplication (template + inline); browser `lumen` entry lacks Suspense/ErrorBoundary/Head/Title/Meta/renderToStream/renderToString (TASK-17); LUM4008 belongs to the core server signals.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+lumen/server implements the full ServerRuntime contract (checked at compile time) plus shell-first renderToStream/renderToString, Suspense out-of-order streaming via <template for> + <?start>/<?end> with a once-per-response $swap fallback, ErrorBoundary, Head/Title/Meta, islands with markers/slots/records/await replay keys, data-only tagged-JSON serialization with LUM4002/LUM4007 paths, LUM5004 inside streamed boundaries, CSP nonce and strict styles. 61 runtime tests + 7 end-to-end handler tests (TASK-22).
+<!-- SECTION:FINAL_SUMMARY:END -->
