@@ -24,6 +24,7 @@ const TYPES: Record<string, string> = {
   ".json": "application/json; charset=utf-8",
   ".svg": "image/svg+xml",
   ".txt": "text/plain; charset=utf-8",
+  ".wasm": "application/wasm",
 };
 
 async function isFile(path: string): Promise<boolean> {

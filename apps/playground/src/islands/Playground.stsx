@@ -1,0 +1,599 @@
+// Island (client:load): the playground. The server renders its frame (toolbar, editor and output
+// panes); in the browser it loads the WebAssembly compiler and CodeMirror, compiles the source on
+// every edit for the client and the server, shows the output and the diagnostics, runs the client
+// output in a sandboxed preview frame and keeps the state in the URL hash (shareable links).
+import { bp, color, font, radius, space, text, weight } from "@lumen/site-kit/tokens";
+import { onMount, signal } from "lumen";
+import type { EditorView } from "@codemirror/view";
+import {
+  compileBoth,
+  FILENAME,
+  loadCompiler,
+  type PlaygroundDiagnostic,
+  type WasmCompiler,
+} from "../lib/compiler.ts";
+import {
+  createEditor,
+  createOutput,
+  setText,
+  showDiagnostics,
+  setStyleScanner,
+} from "../lib/editor.ts";
+import { previewDocument, previewProgram, type PreviewMessage, type PreviewProgram } from "../lib/preview.ts";
+import { defaultSample, samples } from "../lib/samples.ts";
+import { decodeState, encodeState } from "../lib/share.ts";
+import { docsLink } from "../lib/site.ts";
+
+const TABS = [
+  { id: "preview", label: "Preview" },
+  { id: "client", label: "Client JS" },
+  { id: "server", label: "Server JS" },
+  { id: "css", label: "CSS" },
+  { id: "diagnostics", label: "Diagnostics" },
+] as const;
+
+type TabId = (typeof TABS)[number]["id"];
+
+interface LogEntry {
+  level: "log" | "info" | "warn" | "error";
+  text: string;
+}
+
+const isTab = (id: string | undefined): id is TabId => TABS.some((tab) => tab.id === id);
+
+export function Playground(props: { base: string; site: string }) {
+  const status = signal<"loading" | "ready" | "failed">("loading");
+  const failure = signal("");
+  const version = signal("");
+  const tab = signal<TabId>("preview");
+  const diagnostics = signal<PlaygroundDiagnostic[]>([]);
+  const errors = signal(0);
+  const logs = signal<LogEntry[]>([]);
+  const copied = signal(false);
+  const stale = signal(false);
+
+  let editorHost: HTMLDivElement | undefined;
+  let clientHost: HTMLDivElement | undefined;
+  let serverHost: HTMLDivElement | undefined;
+  let cssHost: HTMLDivElement | undefined;
+  let frame: HTMLIFrameElement | undefined;
+
+  let compiler: WasmCompiler | undefined;
+  let editor: EditorView | undefined;
+  const outputs: Partial<Record<"client" | "server" | "css", EditorView>> = {};
+  let runtime: Promise<string> | undefined;
+  let source = defaultSample.code;
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  let run = 0;
+  let pending: { id: number; program: PreviewProgram } | undefined;
+  let deferred: PreviewProgram | undefined;
+
+  function showOutput(view: EditorView | undefined, value: string) {
+    view?.dispatch({ changes: { from: 0, to: view.state.doc.length, insert: value } });
+  }
+
+  function update() {
+    if (!compiler || !editor) return;
+    const result = compileBoth(compiler, source);
+    showOutput(outputs.client, result.client.code);
+    showOutput(outputs.server, result.server.code);
+    showOutput(outputs.css, result.client.css ?? "/* No <style> blocks. */\n");
+    diagnostics.set(result.diagnostics);
+    errors.set(result.errors);
+    showDiagnostics(editor, result.diagnostics);
+    // The preview keeps the last good result while the source has errors.
+    stale.set(result.errors > 0);
+    if (result.errors === 0) {
+      deferred = previewProgram(result.client);
+      if (tab() === "preview") flushPreview();
+    }
+    void saveState();
+  }
+
+  function schedule() {
+    clearTimeout(timer);
+    timer = setTimeout(update, 250);
+  }
+
+  /** Runs the latest program. A hidden frame does not paint what it mounts, so runs wait for the tab. */
+  function flushPreview() {
+    if (deferred === undefined) return;
+    runPreview(deferred);
+    deferred = undefined;
+  }
+
+  function runPreview(program: PreviewProgram) {
+    if (!frame) return;
+    runtime ??= fetch(`${props.base}generated/runtime.js`).then((response) => {
+      if (!response.ok) throw new Error(`The preview runtime is missing (${response.status}).`);
+      return response.text();
+    });
+    pending = { id: ++run, program };
+    logs.set([]);
+    const theme = document.documentElement.dataset["theme"];
+    frame.srcdoc = previewDocument(theme === "light" || theme === "dark" ? theme : undefined);
+  }
+
+  async function onFrameMessage(event: MessageEvent<PreviewMessage>) {
+    if (!frame || event.source !== frame.contentWindow || event.data?.source !== "lumen-preview") {
+      return;
+    }
+    const message = event.data;
+    if (message.type === "loaded" && pending) {
+      const { id, program } = pending;
+      let code: string;
+      try {
+        code = await runtime!;
+      } catch (error) {
+        log("error", (error as Error).message);
+        return;
+      }
+      if (id === run) {
+        frame.contentWindow?.postMessage({ source: "lumen-playground", runtime: code, program }, "*");
+      }
+    } else if (message.type === "console") {
+      log(message.level, message.text);
+    } else if (message.type === "error") {
+      log("error", message.text);
+    }
+  }
+
+  function log(level: LogEntry["level"], text: string) {
+    logs.set([...logs().slice(-99), { level, text }]);
+  }
+
+  async function saveState() {
+    const hash = await encodeState({ code: source, tab: tab() });
+    if (hash !== location.hash) history.replaceState(null, "", hash);
+  }
+
+  async function loadState() {
+    const state = await decodeState(location.hash);
+    source = state?.code ?? defaultSample.code;
+    if (isTab(state?.tab)) tab.set(state.tab);
+    if (editor && editor.state.doc.toString() !== source) setText(editor, source);
+  }
+
+  function selectTab(id: TabId) {
+    tab.set(id);
+    if (id === "preview") flushPreview();
+    void saveState();
+  }
+
+  function onTabKey(event: KeyboardEvent) {
+    const index = TABS.findIndex((item) => item.id === tab());
+    const next =
+      event.key === "ArrowRight"
+        ? (index + 1) % TABS.length
+        : event.key === "ArrowLeft"
+          ? (index - 1 + TABS.length) % TABS.length
+          : event.key === "Home"
+            ? 0
+            : event.key === "End"
+              ? TABS.length - 1
+              : -1;
+    if (next === -1) return;
+    event.preventDefault();
+    selectTab(TABS[next]!.id);
+    document.getElementById(`tab-${TABS[next]!.id}`)?.focus();
+  }
+
+  function loadSample(id: string) {
+    const sample = samples.find((item) => item.id === id);
+    if (sample && editor) setText(editor, sample.code);
+  }
+
+  async function share() {
+    await saveState();
+    try {
+      await navigator.clipboard.writeText(location.href);
+      copied.set(true);
+      setTimeout(() => copied.set(false), 2000);
+    } catch {
+      // Clipboard access denied: the URL is in the address bar.
+    }
+  }
+
+  const onHashChange = () => void loadState();
+
+  onMount(() => {
+    let disposed = false;
+    addEventListener("message", onFrameMessage);
+    addEventListener("hashchange", onHashChange);
+    void (async () => {
+      await loadState();
+      editor = createEditor(editorHost!, source, (text) => {
+        source = text;
+        schedule();
+      });
+      outputs.client = createOutput(clientHost!, "js", "Compiled client JavaScript");
+      outputs.server = createOutput(serverHost!, "js", "Compiled server JavaScript");
+      outputs.css = createOutput(cssHost!, "css", "Compiled CSS");
+      try {
+        compiler = await loadCompiler(props.base);
+      } catch (error) {
+        failure.set((error as Error).message);
+        status.set("failed");
+        return;
+      }
+      if (disposed) return;
+      const scanner = compiler;
+      setStyleScanner(editor, (text) =>
+        scanner.scan(text, FILENAME).blocks.map((block) => ({
+          from: block.content.start,
+          to: block.content.end,
+        })),
+      );
+      version.set(compiler.version());
+      status.set("ready");
+      update();
+    })();
+    return () => {
+      disposed = true;
+      clearTimeout(timer);
+      removeEventListener("message", onFrameMessage);
+      removeEventListener("hashchange", onHashChange);
+      editor?.destroy();
+      for (const view of Object.values(outputs)) view.destroy();
+    };
+  });
+
+  return (
+    <div class="playground">
+      <div class="toolbar">
+        <label class="sample">
+          <span>Sample</span>
+          <select onChange={(event) => loadSample((event.target as HTMLSelectElement).value)}>
+            {samples.map((sample) => (
+              <option value={sample.id}>{sample.label}</option>
+            ))}
+          </select>
+        </label>
+        <p class="status" role="status">
+          {status() === "loading"
+            ? "Loading the compiler…"
+            : status() === "failed"
+              ? `The compiler could not load: ${failure()}`
+              : errors() > 0
+                ? `${errors()} error${errors() === 1 ? "" : "s"}`
+                : `Compiled with lumen_wasm ${version()}`}
+        </p>
+        <button type="button" class="share" onClick={() => void share()}>
+          {copied() ? "Link copied" : "Copy link"}
+        </button>
+      </div>
+
+      <div class="panes">
+        <section class="pane editor-pane" aria-label="Editor">
+          <div class="pane-head">
+            <span class="file">App.stsx</span>
+          </div>
+          <div class="code" ref={(element: HTMLDivElement) => (editorHost = element)} />
+        </section>
+
+        <section class="pane output-pane" aria-label="Output">
+          <div class="pane-head tabs" role="tablist" aria-label="Output" onKeyDown={onTabKey}>
+            {TABS.map((item) => (
+              <button
+                type="button"
+                role="tab"
+                id={`tab-${item.id}`}
+                aria-controls={`panel-${item.id}`}
+                aria-selected={tab() === item.id ? "true" : "false"}
+                tabindex={tab() === item.id ? 0 : -1}
+                onClick={() => selectTab(item.id)}
+              >
+                {item.label}
+                {item.id === "diagnostics" && diagnostics().length > 0 && (
+                  <span class={{ count: true, error: errors() > 0 }}>{diagnostics().length}</span>
+                )}
+              </button>
+            ))}
+          </div>
+
+          <div
+            class="panel preview"
+            role="tabpanel"
+            id="panel-preview"
+            aria-labelledby="tab-preview"
+            hidden={tab() !== "preview"}
+          >
+            {stale() && <p class="stale">Fix the errors to update the preview.</p>}
+            <iframe
+              title="Preview"
+              sandbox="allow-scripts allow-forms allow-modals"
+              ref={(element: HTMLIFrameElement) => (frame = element)}
+            />
+            <ol class="console" aria-label="Console">
+              {logs().map((entry) => (
+                <li class={entry.level}>{entry.text}</li>
+              ))}
+            </ol>
+          </div>
+          <div
+            class="panel code"
+            role="tabpanel"
+            id="panel-client"
+            aria-labelledby="tab-client"
+            hidden={tab() !== "client"}
+            ref={(element: HTMLDivElement) => (clientHost = element)}
+          />
+          <div
+            class="panel code"
+            role="tabpanel"
+            id="panel-server"
+            aria-labelledby="tab-server"
+            hidden={tab() !== "server"}
+            ref={(element: HTMLDivElement) => (serverHost = element)}
+          />
+          <div
+            class="panel code"
+            role="tabpanel"
+            id="panel-css"
+            aria-labelledby="tab-css"
+            hidden={tab() !== "css"}
+            ref={(element: HTMLDivElement) => (cssHost = element)}
+          />
+          <div
+            class="panel diagnostics"
+            role="tabpanel"
+            id="panel-diagnostics"
+            aria-labelledby="tab-diagnostics"
+            hidden={tab() !== "diagnostics"}
+          >
+            {diagnostics().length === 0 ? (
+              <p class="empty">No diagnostics.</p>
+            ) : (
+              <ul>
+                {diagnostics().map((diagnostic) => (
+                  <li class={diagnostic.severity}>
+                    <p class="head">
+                      <span class="severity">{diagnostic.severity}</span>
+                      <a href={docsLink(diagnostic.docs)} target="_blank" rel="noopener">
+                        {diagnostic.code}
+                      </a>
+                      <span class="where">
+                        App.stsx:{diagnostic.line}:{diagnostic.column}
+                      </span>
+                    </p>
+                    <p class="message">{diagnostic.message}</p>
+                    {diagnostic.help && <p class="help">{diagnostic.help}</p>}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </section>
+      </div>
+
+      <style>
+        .playground {
+          flex: 1;
+          display: flex;
+          flex-direction: column;
+          gap: $space.sm;
+          padding: $space.md;
+          min-block-size: 0;
+        }
+        .toolbar {
+          display: flex;
+          flex-wrap: wrap;
+          align-items: center;
+          gap: $space.sm $space.md;
+        }
+        .sample {
+          display: flex;
+          align-items: center;
+          gap: $space.xs;
+          font-size: $text.sm;
+          color: $color.muted;
+        }
+        select,
+        .share {
+          padding: $space.xxs $space.sm;
+          border: 1px solid $color.border;
+          border-radius: $radius.sm;
+          background: $color.surface;
+          color: $color.text;
+          font: inherit;
+          font-size: $text.sm;
+        }
+        .share {
+          margin-inline-start: auto;
+          cursor: pointer;
+        }
+        .share:hover {
+          border-color: $color.borderStrong;
+        }
+        .status {
+          margin: 0;
+          font-size: $text.sm;
+          color: $color.muted;
+        }
+        .panes {
+          flex: 1;
+          display: grid;
+          grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+          gap: $space.md;
+          min-block-size: 32rem;
+          block-size: calc(100dvh - 12rem);
+        }
+        .pane {
+          display: flex;
+          flex-direction: column;
+          min-block-size: 0;
+          border: 1px solid $color.border;
+          border-radius: $radius.md;
+          background: $color.codeBg;
+          overflow: hidden;
+        }
+        .pane-head {
+          display: flex;
+          align-items: stretch;
+          gap: $space.xxs;
+          padding-inline: $space.xs;
+          border-block-end: 1px solid $color.border;
+          background: $color.surface;
+          overflow-x: auto;
+        }
+        .file {
+          padding: $space.xs;
+          font-family: $font.mono;
+          font-size: $text.sm;
+          color: $color.text;
+        }
+        .tabs button {
+          display: inline-flex;
+          align-items: center;
+          gap: $space.xxs;
+          padding: $space.xs $space.sm;
+          border: 0;
+          border-block-end: 2px solid transparent;
+          background: none;
+          color: $color.muted;
+          font: inherit;
+          font-size: $text.sm;
+          white-space: nowrap;
+          cursor: pointer;
+        }
+        .tabs button[aria-selected="true"] {
+          border-block-end-color: $color.accent;
+          color: $color.text;
+          font-weight: $weight.semibold;
+        }
+        .count {
+          min-inline-size: 1.25rem;
+          padding-inline: $space.xxs;
+          border-radius: 999px;
+          background: $color.warnBg;
+          color: $color.warnFg;
+          font-size: $text.xs;
+          text-align: center;
+        }
+        .count.error {
+          background: #e5484d;
+          color: white;
+        }
+        .code {
+          flex: 1;
+          min-block-size: 0;
+          overflow: hidden;
+        }
+        .panel[hidden] {
+          display: none;
+        }
+        .panel {
+          flex: 1;
+          min-block-size: 0;
+        }
+        .preview {
+          display: flex;
+          flex-direction: column;
+          background: $color.bg;
+        }
+        iframe {
+          flex: 1;
+          inline-size: 100%;
+          border: 0;
+          background: $color.bg;
+        }
+        .stale {
+          margin: 0;
+          padding: $space.xs $space.sm;
+          background: $color.warnBg;
+          color: $color.warnFg;
+          font-size: $text.sm;
+        }
+        .console {
+          max-block-size: 8rem;
+          margin: 0;
+          padding: 0;
+          overflow: auto;
+          list-style: none;
+          border-block-start: 1px solid $color.border;
+          font-family: $font.mono;
+          font-size: $text.xs;
+        }
+        .console:empty {
+          display: none;
+        }
+        .console li {
+          padding: $space.xxs $space.sm;
+          white-space: pre-wrap;
+          color: $color.text;
+        }
+        .console li.warn {
+          background: $color.warnBg;
+          color: $color.warnFg;
+        }
+        .console li.error {
+          background: color-mix(in oklab, #e5484d 12%, transparent);
+          color: light-dark(#a3161b, #ff9592);
+        }
+        .diagnostics {
+          overflow: auto;
+          padding: $space.sm;
+          background: $color.bg;
+        }
+        .diagnostics ul {
+          display: grid;
+          gap: $space.sm;
+          margin: 0;
+          padding: 0;
+          list-style: none;
+        }
+        .diagnostics li {
+          padding: $space.sm;
+          border: 1px solid $color.border;
+          border-inline-start: 3px solid $color.warnFg;
+          border-radius: $radius.sm;
+        }
+        .diagnostics li.error {
+          border-inline-start-color: #e5484d;
+        }
+        .diagnostics p {
+          margin: 0;
+        }
+        .head {
+          display: flex;
+          flex-wrap: wrap;
+          gap: $space.xs;
+          align-items: baseline;
+          font-size: $text.sm;
+        }
+        .severity {
+          font-weight: $weight.semibold;
+          text-transform: capitalize;
+        }
+        .where {
+          font-family: $font.mono;
+          color: $color.muted;
+        }
+        .message {
+          margin-block-start: $space.xxs;
+        }
+        .help {
+          margin-block-start: $space.xxs;
+          color: $color.muted;
+          font-size: $text.sm;
+        }
+        .empty {
+          color: $color.muted;
+        }
+
+        @media (width < $bp.lg) {
+          .panes {
+            grid-template-columns: minmax(0, 1fr);
+            grid-template-rows: minmax(24rem, 1fr) minmax(24rem, 1fr);
+            block-size: auto;
+          }
+        }
+        @media (width < $bp.sm) {
+          .playground {
+            padding: $space.sm;
+          }
+        }
+      </style>
+    </div>
+  );
+}
