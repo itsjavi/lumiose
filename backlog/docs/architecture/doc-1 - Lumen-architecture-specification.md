@@ -3,7 +3,7 @@ id: doc-1
 title: Lumen architecture specification
 type: specification
 created_date: '2026-10-08 10:28'
-updated_date: '2026-10-08 12:57'
+updated_date: '2026-10-08 13:40'
 tags:
   - architecture
   - spec
@@ -547,9 +547,9 @@ export const MemberCard = $component(async function MemberCard(props) {
 ## 6. Runtime (decision-8)
 
 **Budgets.**
-- Client runtime (core, DOM, lists and boundaries) without hydration: **≤ 4.5 kB** min+brotli.
-- Hydration walk plus loader: ≤ 1.5 kB.
-- The js-framework-benchmark app bundle: ≤ 6 kB.
+- **Hard cap (set by the user, 2026-10-08):** the whole client runtime (core, DOM, lists, boundaries, hydration and loader) must stay **≤ 10 kB** min+brotli. Smaller is better, but CPU performance takes priority over shaving bytes.
+- **Soft targets:** a typical app import set ≤ 6 kB, and hydration plus loader ≤ 1.5 kB.
+- **js-framework-benchmark app bundle:** ≤ 8 kB.
 
 ### 6.1 Reactive core
 
@@ -835,7 +835,7 @@ js-framework-benchmark, Chrome 154, keyed, 2026-10-04, M4 (lower is better):
 |---|---|
 | CPU | ≤ 1.12 |
 | Memory | ≤ 2.7 MB (stretch goal: 2.5) |
-| Bundle | ≤ 6 kB |
+| Bundle | ≤ 8 kB (runtime hard cap 10 kB) |
 | First paint | ≤ 60 ms |
 
 ### Techniques by operation
@@ -848,7 +848,7 @@ js-framework-benchmark, Chrome 154, keyed, 2026-10-04, M4 (lower is better):
 | Select row | Compiled `selector()` (2 rows touched) |
 | Swap | Trim, swap detection, LIS |
 | Memory | Intrusive links, unlinked unobserved computeds, no row closures, signals passed directly as binding sources |
-| Startup | ≤ 4.5 kB runtime; the hydration code is a separate path and is tree-shaken when it isn't used |
+| Startup | Runtime ≤ 10 kB hard cap (aim ≤ 6 kB for typical imports); the hydration code is a separate path and is tree-shaken when it isn't used |
 
 ### SSR
 
