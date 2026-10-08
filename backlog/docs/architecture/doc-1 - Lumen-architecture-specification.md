@@ -3,7 +3,7 @@ id: doc-1
 title: Lumen architecture specification
 type: specification
 created_date: '2026-10-08 10:28'
-updated_date: '2026-10-08 12:27'
+updated_date: '2026-10-08 12:57'
 tags:
   - architecture
   - spec
@@ -281,7 +281,7 @@ The scanner produces both, so non-ASCII CSS (`content: "→"`) keeps both views 
 ### 4.4 Async components (decision-13)
 
 **Await rewrite.** The compiler rewrites `await` only where the nearest enclosing function is the component itself; awaits inside handlers and callbacks are untouched.
-- `await e` becomes `await $await(() => e, site)`, where `site` is the static index of the await (contract doc-2 §4).
+- `await e` becomes `(await $await(() => e, site))()`, and the body is wrapped in `try { … } finally { $leave() }` (contract doc-2 §4).
 - `for await (const x of it)` awaits each step through `$await`.
 - `await using` is `LUM1007` in v1.
 
@@ -493,7 +493,7 @@ const _t0 = /*#__PURE__*/ template(`<article class=card data-l-k3x9a2 data-l-f81
 const _a0 = (el, v) => (el.data = v);                          // hoisted apply fns (memory)
 
 export const MemberCard = $component(async function MemberCard(props) {
-  const member = await $await(() => fetchJSON(`/api/members/${props.id}`, { signal: lifetime() }), 0);
+  const member = (await $await(() => fetchJSON(`/api/members/${props.id}`, { signal: lifetime() }), 0))();
   const kudos = signal(member.kudos);
   const _el = _t0(), _h3 = _el.firstChild, _btn = _h3.nextSibling;
   _h3.firstChild.data = member.name;                           // static after await → one-time write
@@ -512,7 +512,7 @@ delegateEvents(["click"]);
 ```js
 import { ssr, escape, $await, $component, signal, lifetime } from "lumen/server";
 export const MemberCard = $component(async function MemberCard(props) {
-  const member = await $await(() => fetchJSON(`/api/members/${props.id}`, { signal: lifetime() }), 0);
+  const member = (await $await(() => fetchJSON(`/api/members/${props.id}`, { signal: lifetime() }), 0))();
   const kudos = signal(member.kudos);
   return ssr(_s0, escape(member.name), escape(kudos()));   // _s0: hoisted static string parts
 });
