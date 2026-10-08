@@ -5,10 +5,10 @@ status: To Do
 assignee:
   - Photon
 created_date: '2026-10-08 20:59'
+updated_date: '2026-10-08 21:00'
 labels: []
 milestone: m-1
-dependencies:
-  - TASK-83
+dependencies: []
 priority: medium
 ordinal: 88000
 ---
