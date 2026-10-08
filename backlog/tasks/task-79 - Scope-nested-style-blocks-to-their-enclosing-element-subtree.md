@@ -1,10 +1,11 @@
 ---
 id: TASK-79
 title: Scope nested style blocks to their enclosing element subtree
-status: To Do
+status: In Progress
 assignee:
   - '@Photon'
 created_date: '2026-10-08 20:34'
+updated_date: '2026-10-08 20:39'
 labels: []
 milestone: m-1
 dependencies:
