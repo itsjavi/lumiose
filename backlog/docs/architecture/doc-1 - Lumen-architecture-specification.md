@@ -3,7 +3,7 @@ id: doc-1
 title: Lumen architecture specification
 type: specification
 created_date: '2026-10-08 10:28'
-updated_date: '2026-10-08 10:30'
+updated_date: '2026-10-08 10:57'
 tags:
   - architecture
   - spec
@@ -13,6 +13,8 @@ tags:
 > Status: **draft v0.1 for review**. Owner: Lux (architect). Milestone: m-0. Tracking task: TASK-3.
 > Product name: **Lumen**. Working package name: **`lumen-jsx`**, because the npm name `lumen` is taken (see §14).
 > Normative words: **must**, **should**, **may**. Code samples are normative for API shape, not for internals.
+>
+> ⚠️ **Revision pending.** decision-11 (`.stsx` + `.tsx` files) and decision-12 (raw CSS `<style>` blocks, build-time constants, no reactive CSS) supersede decisions 1–2. Sections 0, 4.4, 4.5, 5.1–5.3 and 9 still describe the old `css` tagged-template design and will be rewritten in v0.2.
 
 ## 0. Summary
 
