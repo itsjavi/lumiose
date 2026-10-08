@@ -1,10 +1,11 @@
 ---
 id: TASK-52
 title: 'Codegen fixes: implicit tbody, select value SSR, hoisted async declarations'
-status: To Do
+status: In Progress
 assignee:
   - '@Photon'
 created_date: '2026-10-08 15:30'
+updated_date: '2026-10-08 16:01'
 labels: []
 milestone: m-2
 dependencies:
@@ -25,3 +26,9 @@ Photon's TASK-14/15 report found three issues: rows rendered directly in <table>
 - [ ] #2 <select value={v}> marks the matching <option> as selected in SSR output, for static and .map()-generated options; fixtures
 - [ ] #3 Async component function declarations stay hoisted: emit async function X(){…} plus $async(X) instead of a const; fixtures
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Photon (session photon-task45-20261008T153134Z) claimed TASK-52.
+<!-- SECTION:NOTES:END -->
