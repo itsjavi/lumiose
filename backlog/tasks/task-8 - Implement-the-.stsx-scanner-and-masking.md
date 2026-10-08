@@ -1,7 +1,7 @@
 ---
 id: TASK-8
 title: Implement the .stsx scanner and masking
-status: In Progress
+status: Done
 assignee:
   - '@Photon'
 created_date: '2026-10-08 12:20'
@@ -24,10 +24,10 @@ All tools (compiler, shadow TSX, language server, lint, format) depend on one co
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 The scanner implements the mode stack, the <style> recognition rules, placements, the global attribute, SVG style handling and CRLF, per spec §4.1
-- [ ] #2 Produces masked output in both UTF-8 bytes and UTF-16 code units, with the $ref masking rules (top-level ';' and JSX '{…}' using the first non-newline character)
-- [ ] #3 Emits LUM1003, LUM1004, LUM1005, LUM1006, LUM3010, LUM3011, LUM3013
-- [ ] #4 Golden tests pass, including the identity test on a style-free TSX corpus; scan() is exposed through napi and wasm
+- [x] #1 The scanner implements the mode stack, the <style> recognition rules, placements, the global attribute, SVG style handling and CRLF, per spec §4.1
+- [x] #2 Produces masked output in both UTF-8 bytes and UTF-16 code units, with the $ref masking rules (top-level ';' and JSX '{…}' using the first non-newline character)
+- [x] #3 Emits LUM1003, LUM1004, LUM1005, LUM1006, LUM3010, LUM3011, LUM3013
+- [x] #4 Golden tests pass, including the identity test on a style-free TSX corpus; scan() is exposed through napi and wasm
 <!-- AC:END -->
 
 ## Implementation Plan
@@ -70,3 +70,9 @@ Validation: cargo test --workspace (lumen_compiler: 29 unit tests incl. CRLF/UTF
 
 Follow-ups for Lux: (1) .oxfmtrc.json must ignore **/fixtures/** like .oxlintrc.json does; otherwise 'oxfmt .' rewrites crates/lumen_compiler/tests/fixtures/** and breaks the goldens (tsx-raw-css.tsx is intentionally not valid TSX). (2) AGENTS.md ownership table: add packages/compiler/** to Photon. (3) pnpm-lock.yaml changed (+@napi-rs/cli).
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Implemented the shared .stsx scanner in lumen_compiler (mode-stack lexer with TSX generic-arrow lookahead and speculative JSX roots, style block recognition and placement, SVG and CRLF handling, $ref extraction, masking rendered to UTF-8 and UTF-16 from one plan), the diagnostics module with the spec 5.4 registry, and diagnostics LUM1003-1006, 3010, 3011 and 3013 (3013 via an oxc_parser parse of the masked text). scan() is exposed through lumen_napi (built as compiler.darwin-arm64.node in the new @lumen/compiler package, UTF-16 offsets, string-union typings) and lumen_wasm (wasm-bindgen; host-compiled, no wasm32 artifact yet). Verified with cargo test --workspace (29 unit tests, 13 golden fixtures whose masked output parses in both offset spaces, an 11-file identity corpus), clippy -D warnings, fmt --check, a vitest smoke test of the native addon (4/4), and an opt-in run over 4,615 real-world TSX files. Follow-ups for Lux: ignore **/fixtures/** in .oxfmtrc.json, add packages/compiler to Photon's ownership.
+<!-- SECTION:FINAL_SUMMARY:END -->
