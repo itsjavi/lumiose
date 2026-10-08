@@ -5,7 +5,7 @@ status: To Do
 assignee:
   - '@Spark'
 created_date: '2026-10-08 12:21'
-updated_date: '2026-10-08 15:52'
+updated_date: '2026-10-08 16:12'
 labels: []
 milestone: m-2
 dependencies:
@@ -46,4 +46,8 @@ Lux: doc-2 §3.1 now holds the full hydration marker table (Nova, TASK-47). Also
 - The loader imports virtual:lumen/islands; its keys equal the record refs.
 - Walk template content and server nodes side by side.
 - Create text nodes for empty text() holes.
+
+Lux (from TASK-12 and TASK-49):
+- Parentless branchValue/listValue ranges must adopt the server <!--[-->…<!--]--> regions under hydration.
+- Size: all exports measure 9.48 kB against the 10 kB hard cap. Keep hydration and the loader tree-shakeable and as small as possible (soft target ≤ 1.5 kB). The cap applies to what an app actually ships; report the typical-app number with hydration included.
 <!-- SECTION:NOTES:END -->
