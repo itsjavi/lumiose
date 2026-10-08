@@ -1,10 +1,11 @@
 ---
 id: TASK-19
 title: Emit the CSS manifest and SSR stylesheet links
-status: To Do
+status: In Progress
 assignee:
   - '@Photon'
 created_date: '2026-10-08 12:21'
+updated_date: '2026-10-08 16:14'
 labels: []
 milestone: m-2
 dependencies:
