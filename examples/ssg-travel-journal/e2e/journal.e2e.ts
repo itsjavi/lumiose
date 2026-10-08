@@ -11,6 +11,8 @@ const SKYE = { slug: "walking-the-isle-of-skye", title: "Walking the Isle of Sky
 
 async function screenshot(page: Page, name: string, fullPage = false): Promise<void> {
   if (!process.env.JOURNAL_SCREENSHOTS) return;
+  // Let a cross-document view transition finish, so the shot is not mid cross-fade.
+  await page.waitForFunction(() => document.getAnimations().length === 0);
   await page.screenshot({ path: new URL(`task-37-${name}.png`, ASSETS).pathname, fullPage });
 }
 
@@ -136,9 +138,9 @@ test.describe("navigation", () => {
         .evaluate((h) => getComputedStyle(h).fontSize),
     ).not.toBe(await page.locator("body").evaluate((b) => getComputedStyle(b).fontSize));
     const toc = page.getByRole("navigation", { name: "On this page" });
+    await screenshot(page, "post", true);
     await toc.getByRole("link", { name: "Notes for next time" }).click();
     await expect(page).toHaveURL(/#notes-for-next-time$/);
-    await screenshot(page, "post");
 
     const more = page.getByRole("navigation", { name: "More posts" });
     await more.getByRole("link", { name: /Older/ }).click();
