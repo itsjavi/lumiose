@@ -5,14 +5,11 @@ status: To Do
 assignee:
   - '@Spark'
 created_date: '2026-10-08 12:21'
-updated_date: '2026-10-08 13:27'
+updated_date: '2026-10-08 14:02'
 labels: []
 milestone: m-2
 dependencies:
-  - TASK-14
-  - TASK-15
-  - TASK-16
-  - TASK-17
+  - TASK-47
 documentation:
   - backlog/docs/architecture/doc-1 - Lumen-architecture-specification.md
 priority: high
