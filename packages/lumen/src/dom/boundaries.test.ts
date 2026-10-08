@@ -3,7 +3,17 @@
 import { afterEach, describe, expect, it } from "vitest";
 import type { Renderable } from "../contract/client.ts";
 import { busy, effect, flushSync, pending, resource, signal } from "../core/index.ts";
-import { $async, $await, $leave, bind, branch, createComponent, insert, mount, setText } from "./index.ts";
+import {
+  $async,
+  $await,
+  $leave,
+  bind,
+  branch,
+  createComponent,
+  insert,
+  mount,
+  setText,
+} from "./index.ts";
 import { ErrorBoundary, Suspense } from "./boundaries.ts";
 
 interface Deferred<T> {

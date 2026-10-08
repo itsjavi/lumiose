@@ -96,6 +96,14 @@ export interface ClientRuntime {
     whenTrue: () => Renderable,
     whenFalse?: () => Renderable,
   ): void;
+  /** Parentless `branch` (component children, fragments, nested ternaries): a range that `insert` places as one node; memoised on `!!cond()`. */
+  branchValue(cond: () => unknown, whenTrue: () => Renderable, whenFalse?: () => Renderable): Renderable;
+  /** Parentless `list` (component children, fragments, branches): a range that `insert` places as one node; same keyed reconciliation as `list` (clears remove rows one by one). */
+  listValue<T>(
+    source: () => readonly T[] | null | undefined,
+    render: (item: T, index: () => number) => Renderable,
+    key?: (item: T) => unknown,
+  ): Renderable;
   /** O(1) selection helper: `selector(selected)(key)` is true for the selected key and only re-notifies the two keys that change. */
   selector<T>(source: () => T): (key: T) => boolean;
 

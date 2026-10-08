@@ -107,7 +107,7 @@ export function createAsync(component: AsyncComponent, props: unknown): RangeSta
     component,
     props,
     owner,
-    region: { parent: end.parentNode!, marker: end, nodes: [], owner: undefined },
+    region: { parent: end.parentNode!, marker: end, nodes: [], owner: undefined, value: undefined },
     pending: flag,
     release: suspend(owner),
     shown: undefined,

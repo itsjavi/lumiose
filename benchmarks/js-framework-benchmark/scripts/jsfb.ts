@@ -4,15 +4,16 @@
 //
 // Steps: check out a pinned krausest commit (sparse, shallow) into .krausest/, install its server
 // and runner, build the reference frameworks, build this package (Vite, production) into
-// .krausest/frameworks/keyed/lumen, start the krausest server, run the benchmarks, summarize.
+// .krausest/frameworks/keyed/lumen (and lumen-hand), start the krausest server, run the benchmarks, summarize.
 //
 // Options:
-//   --frameworks lumen,vanillajs,...  default: lumen and every reference framework
+//   --frameworks lumen,vanillajs,...  default: lumen, lumen-hand and every reference framework
 //   --benchmarks 01_,22_,40_          krausest id prefixes; default: all (CPU, memory, size)
 //   --count N                         iterations per CPU benchmark (krausest default: 15)
 //   --mem-count N                     iterations per memory benchmark (krausest default: 1)
 //   --headed                          show the browser (default: headless)
 //   --summary                         only rewrite RESULTS.md from existing results
+//   --build                           only set up and build (for manual runs against the server)
 //   --port N                          krausest server port (default 8131; env JSFB_PORT)
 import { spawn, spawnSync } from "node:child_process";
 import { copyFileSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
@@ -65,10 +66,11 @@ const { values: options } = parseArgs({
     "mem-count": { type: "string" },
     headed: { type: "boolean", default: false },
     summary: { type: "boolean", default: false },
+    build: { type: "boolean", default: false },
     port: { type: "string", default: process.env.JSFB_PORT ?? "8131" },
   },
 });
-const frameworks = options.frameworks?.split(",") ?? ["lumen", ...REFERENCE];
+const frameworks = options.frameworks?.split(",") ?? ["lumen", "lumen-hand", ...REFERENCE];
 const benchmarks = options.benchmarks?.split(",");
 const port = Number(options.port);
 
@@ -103,7 +105,13 @@ function checkout(): void {
   const keep = ["/*", "!/*/", "/css/", "/server/", "/webdriver-ts/"];
   sh(
     "git",
-    ["sparse-checkout", "set", "--no-cone", ...keep, ...REFERENCE.map((f) => `/frameworks/keyed/${f}/`)],
+    [
+      "sparse-checkout",
+      "set",
+      "--no-cone",
+      ...keep,
+      ...REFERENCE.map((f) => `/frameworks/keyed/${f}/`),
+    ],
     KRAUSEST,
   );
   sh("git", ["fetch", "-q", "--depth", "1", "--filter=blob:none", "origin", COMMIT], KRAUSEST);
@@ -122,7 +130,7 @@ function install(): void {
   }
   for (const name of frameworks) {
     const dir = join(KRAUSEST, "frameworks/keyed", name);
-    if (name === "lumen" || !existsSync(dir)) {
+    if (name in LUMEN || !existsSync(dir)) {
       continue;
     }
     const pkg = readJSON(join(dir, "package.json"));
@@ -134,17 +142,26 @@ function install(): void {
   }
 }
 
-/** Builds the Lumen app and lays it out as krausest's frameworks/keyed/lumen. */
-async function buildLumen(): Promise<void> {
-  await build({ root: PKG, configFile: join(PKG, "vite.config.ts"), logLevel: "warn" });
-  const dest = join(KRAUSEST, "frameworks/keyed/lumen");
+/** Lumen's krausest implementations: directory name → Vite build mode and output directory. */
+const LUMEN: Record<string, { mode: string; outDir: string }> = {
+  // src/App.stsx compiled by lumen/vite: the implementation.
+  lumen: { mode: "production", outDir: "dist" },
+  // The hand-compiled reference written from the compiler-runtime contract (src/hand-compiled.js).
+  "lumen-hand": { mode: "hand", outDir: "dist-hand" },
+};
+
+/** Builds a Lumen app and lays it out as krausest's frameworks/keyed/<name>. */
+async function buildLumen(name: string): Promise<void> {
+  const { mode, outDir } = LUMEN[name]!;
+  await build({ root: PKG, configFile: join(PKG, "vite.config.ts"), mode, logLevel: "warn" });
+  const dest = join(KRAUSEST, "frameworks/keyed", name);
   rmSync(dest, { recursive: true, force: true });
   mkdirSync(join(dest, "dist"), { recursive: true });
   copyFileSync(join(PKG, "index.html"), join(dest, "index.html"));
-  copyFileSync(join(PKG, "dist/main.js"), join(dest, "dist/main.js"));
+  copyFileSync(join(PKG, outDir, "main.js"), join(dest, "dist/main.js"));
   const version = readJSON(join(PKG, "../../packages/lumen/package.json")).version as string;
   const manifest = {
-    name: "js-framework-benchmark-lumen",
+    name: `js-framework-benchmark-${name}`,
     version,
     private: true,
     "js-framework-benchmark": { frameworkVersion: version, language: "JavaScript" },
@@ -253,7 +270,8 @@ function runner(ids: string[], count: string | undefined): Promise<number> {
     stdio: ["ignore", "pipe", "pipe"],
   });
   // The runner is very verbose: keep its per-benchmark summaries and errors.
-  const keep = /^(==> Duration for benchmark|result .*(total|DEFAULT)|ERROR|Executing .* failed|run was not)/;
+  const keep =
+    /^(==> Duration for benchmark|result .*(total|DEFAULT)|ERROR|Executing .* failed|run was not)/;
   for (const stream of [child.stdout, child.stderr]) {
     createInterface({ input: stream }).on("line", (line) => {
       if (keep.test(line)) {
@@ -320,8 +338,8 @@ const weighted = (factors: (number | undefined)[]): number | undefined => {
   return weights === 0 ? undefined : Math.exp(sum / weights);
 };
 
-function bundleSizes(): { min: number; gzip: number; brotli: number } | undefined {
-  const path = join(PKG, "dist/main.js");
+function bundleSizes(outDir: string): { min: number; gzip: number; brotli: number } | undefined {
+  const path = join(PKG, outDir, "main.js");
   if (!existsSync(path)) {
     return undefined;
   }
@@ -405,7 +423,8 @@ function summarize(names: Map<string, string>): string {
       `| ${id} ${label} | ${columns.map((f) => fmt(localResult(names.get(f)!, id)?.values.DEFAULT?.median, 1)).join(" | ")} |`,
   );
   const sample = localResult(names.get(columns[0]!)!, CPU[0][0])?.values.total?.values.length;
-  const bundle = bundleSizes();
+  const memorySample = localResult(names.get(columns[0]!)!, MEMORY[1][0])?.values.DEFAULT?.values
+    .length;
 
   lines.push(
     "# js-framework-benchmark results",
@@ -417,8 +436,9 @@ function summarize(names: Map<string, string>): string {
     `- Date: ${new Date().toISOString().slice(0, 16).replace("T", " ")} UTC`,
     `- Machine: ${cpus()[0]?.model ?? "unknown CPU"} (${cpus().length} cores), ${platform()} ${release()}`,
     `- Browser: ${chromeVersion()}`,
-    `- Iterations: ${sample ?? "?"} per CPU benchmark (median shown)`,
-    `- Lumen: hand-compiled app (src/main.js) until the compiler's Vite plugin lands (TASK-11)`,
+    `- Iterations: ${sample ?? "?"} per CPU benchmark, ${memorySample ?? "?"} per memory benchmark (medians shown)`,
+    "- lumen: src/App.stsx compiled by lumen/vite; lumen-hand: the same app hand-compiled from the",
+    "  compiler-runtime contract (src/hand-compiled.js), the target for the compiler's output",
     "",
     "## CPU (median total ms, factor vs the fastest framework here)",
     "",
@@ -452,12 +472,15 @@ function summarize(names: Map<string, string>): string {
     ...sizeRows,
     "",
   );
-  if (bundle !== undefined) {
-    lines.push(
-      `Lumen bundle (dist/main.js, runtime and app): min ${(bundle.min / 1024).toFixed(2)} kB, gzip ${(bundle.gzip / 1024).toFixed(2)} kB, brotli ${(bundle.brotli / 1024).toFixed(2)} kB (budget ≤ 8 kB).`,
-      "",
-    );
+  for (const [name, { outDir }] of Object.entries(LUMEN)) {
+    const bundle = bundleSizes(outDir);
+    if (bundle !== undefined) {
+      lines.push(
+        `- ${name} bundle (${outDir}/main.js, runtime and app): min ${(bundle.min / 1024).toFixed(2)} kB, gzip ${(bundle.gzip / 1024).toFixed(2)} kB, brotli ${(bundle.brotli / 1024).toFixed(2)} kB (budget ≤ 8 kB)`,
+      );
+    }
   }
+  lines.push("");
   return lines.join("\n");
 }
 
@@ -466,8 +489,11 @@ function summarize(names: Map<string, string>): string {
 if (!options.summary) {
   checkout();
   install();
-  if (frameworks.includes("lumen")) {
-    await buildLumen();
+  for (const name of frameworks.filter((f) => f in LUMEN)) {
+    await buildLumen(name);
+  }
+  if (options.build) {
+    process.exit(0);
   }
 }
 const stop = await startServer();

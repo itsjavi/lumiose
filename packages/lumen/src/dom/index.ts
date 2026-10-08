@@ -12,8 +12,8 @@ export {
   setText,
   toggleClass,
 } from "./attributes.ts";
-export { branch, insert } from "./insert.ts";
-export { list } from "./list.ts";
+export { branch, branchValue, insert } from "./insert.ts";
+export { list, listValue } from "./list.ts";
 export { selector } from "./selector.ts";
 export { createComponent, mergeProps, restProps } from "./component.ts";
 export { $async, $await, $leave } from "./async.ts";

@@ -1,0 +1,125 @@
+// Lumen's keyed js-framework-benchmark app (krausest rules: the vanillajs HTML, selection kept as
+// one id in state, no explicit event delegation or manual DOM work in app code).
+import { signal, type Signal } from "lumen";
+
+interface Row {
+  id: number;
+  label: Signal<string>;
+}
+
+const adjectives = ["pretty", "large", "big", "small", "tall", "short", "long", "handsome", "plain", "quaint", "clean", "elegant", "easy", "angry", "crazy", "helpful", "mushy", "odd", "unsightly", "adorable", "important", "inexpensive", "cheap", "expensive", "fancy"]; // prettier-ignore
+const colors = ["red", "yellow", "blue", "green", "pink", "brown", "purple", "brown", "white", "black", "orange"]; // prettier-ignore
+const nouns = ["table", "chair", "house", "bbq", "desk", "car", "pony", "cookie", "sandwich", "burger", "pizza", "mouse", "keyboard"]; // prettier-ignore
+
+const random = (max: number): number => Math.round(Math.random() * 1000) % max;
+
+let nextId = 1;
+
+function buildData(count: number): Row[] {
+  const rows: Row[] = [];
+  for (let i = 0; i < count; i++) {
+    rows.push({
+      id: nextId++,
+      label: signal(
+        `${adjectives[random(adjectives.length)]} ${colors[random(colors.length)]} ${nouns[random(nouns.length)]}`,
+      ),
+    });
+  }
+  return rows;
+}
+
+const data = signal<Row[]>([]);
+const selected = signal(0);
+
+// Delegated handlers batch their writes, so none of these needs `batch()`.
+const run = () => data.set(buildData(1000));
+const runLots = () => data.set(buildData(10000));
+const add = () => data.set(data().concat(buildData(1000)));
+const update = () => {
+  const rows = data();
+  for (let i = 0; i < rows.length; i += 10) {
+    rows[i]!.label.update((label) => label + " !!!");
+  }
+};
+const clear = () => data.set([]);
+const swapRows = () => {
+  const rows = data().slice();
+  if (rows.length > 998) {
+    const row = rows[1]!;
+    rows[1] = rows[998]!;
+    rows[998] = row;
+    data.set(rows);
+  }
+};
+const select = (id: number) => selected.set(id);
+const remove = (id: number) => {
+  const rows = data();
+  data.set(rows.toSpliced(rows.findIndex((row) => row.id === id), 1));
+};
+
+export function App() {
+  return (
+    <div class="container">
+      <div class="jumbotron">
+        <div class="row">
+          <div class="col-md-6">
+            <h1>Lumen</h1>
+          </div>
+          <div class="col-md-6">
+            <div class="row">
+              <div class="col-sm-6 smallpad">
+                <button type="button" class="btn btn-primary btn-block" id="run" onClick={run}>
+                  Create 1,000 rows
+                </button>
+              </div>
+              <div class="col-sm-6 smallpad">
+                <button type="button" class="btn btn-primary btn-block" id="runlots" onClick={runLots}>
+                  Create 10,000 rows
+                </button>
+              </div>
+              <div class="col-sm-6 smallpad">
+                <button type="button" class="btn btn-primary btn-block" id="add" onClick={add}>
+                  Append 1,000 rows
+                </button>
+              </div>
+              <div class="col-sm-6 smallpad">
+                <button type="button" class="btn btn-primary btn-block" id="update" onClick={update}>
+                  Update every 10th row
+                </button>
+              </div>
+              <div class="col-sm-6 smallpad">
+                <button type="button" class="btn btn-primary btn-block" id="clear" onClick={clear}>
+                  Clear
+                </button>
+              </div>
+              <div class="col-sm-6 smallpad">
+                <button type="button" class="btn btn-primary btn-block" id="swaprows" onClick={swapRows}>
+                  Swap Rows
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <table class="table table-hover table-striped test-data">
+        <tbody>
+          {data().map((row) => (
+            <tr class={{ danger: selected() === row.id }}>
+              <td class="col-md-1">{row.id}</td>
+              <td class="col-md-4">
+                <a onClick={() => select(row.id)}>{row.label()}</a>
+              </td>
+              <td class="col-md-1">
+                <a onClick={() => remove(row.id)}>
+                  <span class="glyphicon glyphicon-remove" aria-hidden="true" />
+                </a>
+              </td>
+              <td class="col-md-6" />
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      <span class="preloadicon glyphicon glyphicon-remove" aria-hidden="true" />
+    </div>
+  );
+}

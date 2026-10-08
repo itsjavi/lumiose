@@ -19,7 +19,7 @@ import {
 } from "../core/internal.ts";
 import { signal, type Signal } from "../core/signal.ts";
 import { hydrator } from "./hydration.ts";
-import { insert, type RangeStart } from "./insert.ts";
+import { createRange, insert, type RangeStart } from "./insert.ts";
 
 interface Row<T> {
   item: T;
@@ -317,15 +317,20 @@ function reconcileMiddle<T>(
     }
   }
   if (reused === 0 && aStart === 0 && aEnd === a.length - 1) {
-    // Replace all: nothing survives (no prefix or suffix either).
+    // Replace all: nothing survives (no prefix or suffix either). New rows are appended in order:
+    // inserting each row before the previous one would make the browser re-match positional
+    // selectors (`tr:nth-of-type(odd)`) on every following row, once per insertion.
     clearAll(parent, a, marker);
-  } else {
-    for (let i = aStart; i <= aEnd; i++) {
-      const row = a[i]!;
-      const j = positions.get(row.key);
-      if (j === undefined || b[j] !== row) {
-        removeRow(parent, row);
-      }
+    for (let j = bStart; j <= bEnd; j++) {
+      insertRow(parent, (b[j] = createRow(state, items[j]!, keys[j], j)), marker);
+    }
+    return;
+  }
+  for (let i = aStart; i <= aEnd; i++) {
+    const row = a[i]!;
+    const j = positions.get(row.key);
+    if (j === undefined || b[j] !== row) {
+      removeRow(parent, row);
     }
   }
   const sequence = moved ? longestIncreasingSubsequence(sources) : undefined;
@@ -391,4 +396,21 @@ export function list<T>(
   if (adopted !== undefined) {
     removeUnclaimed(adopted, state.rows);
   }
+}
+
+/**
+ * `list` without a parent element, for `.map()` the compiler cannot anchor to one: component
+ * children, fragments and branches. Returns a range (a `Renderable` node) that `insert` places as a
+ * unit; rows are reconciled before the range's end marker, wherever the range is, with the same
+ * keyed reconciliation (clears remove rows one by one, since the parent holds other nodes).
+ */
+export function listValue<T>(
+  source: () => readonly T[] | null | undefined,
+  render: (item: T, index: () => number) => Renderable,
+  key?: (item: T) => unknown,
+): RangeStart {
+  const start = createRange();
+  const end = start.$$end;
+  list(end.parentNode!, end, source, render, key);
+  return start;
 }

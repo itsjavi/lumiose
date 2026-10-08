@@ -1,3 +1,4 @@
 # krausest/js-framework-benchmark checkout, installed and built by `pnpm bench:jsfb`.
 .krausest/
 dist/
+dist-hand/

@@ -11,6 +11,7 @@ import {
   renderEffect,
   runWithLazyOwner,
   type Owner,
+  type RenderEffect,
 } from "../core/internal.ts";
 import { hydrator } from "./hydration.ts";
 
@@ -25,14 +26,20 @@ export interface Region {
   nodes: Node[];
   /** Owner of the latest evaluation of a dynamic value; disposed before the next one. */
   owner: Owner | undefined;
+  /** The dynamic value rendered by the region's binding (read by `computeRegion`). */
+  value: Renderable;
 }
+
+/** The initial `nodes` of every region; never mutated (regions replace their array). */
+const NO_NODES: Node[] = [];
 
 export function createRegion(parent: Node, marker: Node | null): Region {
   return {
     parent,
     marker,
-    nodes: hydrator === undefined ? [] : hydrator.region(parent, marker),
+    nodes: hydrator === undefined ? NO_NODES : hydrator.region(parent, marker),
     owner: undefined,
+    value: undefined,
   };
 }
 
@@ -199,6 +206,13 @@ function applyRegion(region: Region, content: Content): void {
       return;
     }
     content = document.createTextNode(content);
+    if (current.length === 0) {
+      // First text of a dynamic text child (the common case): no reconciliation needed.
+      region.nodes = [content];
+      const marker = region.marker;
+      (marker?.parentNode ?? region.parent).insertBefore(content, marker);
+      return;
+    }
   }
   if (content === null) {
     reconcile(region, []);
@@ -277,10 +291,17 @@ function renderNested(region: Region, value: Renderable): void {
   renderEffect(region, () => evaluate(region, scope, value), applyRegion);
 }
 
+/** A region binding's compute: `bind` calls it as a method of the binding, whose target is the region. */
+function computeRegion(this: RenderEffect<Content, Region>): Content {
+  const region = this.target;
+  return evaluate(region, region, region.value);
+}
+
 /** Renders `value` into `region`: tracked and reconciled when it is or contains a function. */
 export function renderInto(region: Region, value: Renderable): void {
   if (isDynamic(value)) {
-    renderEffect(region, () => evaluate(region, region, value), applyRegion);
+    region.value = value;
+    renderEffect(region, computeRegion, applyRegion);
   } else {
     applyRegion(region, resolve(value));
   }
@@ -366,4 +387,21 @@ export function branch(
   state.whenFalse = whenFalse;
   state.view = undefined;
   renderEffect(state, () => !!cond(), applyBranch);
+}
+
+/**
+ * `branch` without a parent element, for conditionals the compiler cannot anchor to one: component
+ * children, fragments and nested ternaries. Returns a range (a `Renderable` node) that `insert`
+ * places as a unit; the branch renders before the range's end marker, wherever the range is, with
+ * the same memoisation on `!!cond()`.
+ */
+export function branchValue(
+  cond: () => unknown,
+  whenTrue: () => Renderable,
+  whenFalse?: () => Renderable,
+): RangeStart {
+  const start = createRange();
+  const end = start.$$end;
+  branch(end.parentNode!, end, cond, whenTrue, whenFalse);
+  return start;
 }

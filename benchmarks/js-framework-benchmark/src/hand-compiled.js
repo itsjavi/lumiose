@@ -1,10 +1,11 @@
-// Lumen's keyed js-framework-benchmark app, hand-compiled.
+// Lumen's keyed js-framework-benchmark app, hand-compiled (krausest `lumen-hand`).
 //
-// This module is what the Lumen compiler emits for the component below, written by hand from the
+// The output the compiler should emit for the component below, written by hand from the
 // compiler-runtime contract (doc-2 §2 and the golden examples in §5.2 and §5.4): hoisted templates
 // and apply functions, a hoisted selector, delegated events with data slots, a signal passed
-// directly as a binding source, and one-time writes for plain values. It is replaced by the
-// compiled App.stsx once the Vite plugin exists (TASK-11).
+// directly as a binding source, and one-time writes for plain values (`id` is a const read from
+// row data). It is the reference for the compiled App.stsx (krausest `lumen`); RESULTS.md compares
+// both.
 //
 //   import { signal } from "lumen";
 //
@@ -132,7 +133,12 @@ const swapRows = () => {
 const select = (id) => selected.set(id);
 const remove = (id) => {
   const rows = data();
-  data.set(rows.toSpliced(rows.findIndex((row) => row.id === id), 1));
+  data.set(
+    rows.toSpliced(
+      rows.findIndex((row) => row.id === id),
+      1,
+    ),
+  );
 };
 
 // ---- compiled component --------------------------------------------------------------------------
