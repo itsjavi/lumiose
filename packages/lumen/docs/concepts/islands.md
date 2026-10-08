@@ -62,6 +62,13 @@ otherwise with the first streamed chunk that does. In a build, pages without isl
 JavaScript; the loader is the client entry, and each island is a chunk it imports when the island's
 trigger fires. With your own server, pass its URL as `renderToStream(root, { loaderUrl })`.
 
+**Islands from other packages.** Components of a linked workspace package (`"@acme/ui": "workspace:*"`)
+can be or render islands too. Island records name modules without build-machine paths:
+root-relative inside the project (`/src/components/LikeButton.stsx#LikeButton`), package-relative
+outside it (`@acme/ui/src/Nav.stsx#Nav`). Builds also look for island call sites in the linked
+packages that depend on `lumen`, so each of their islands gets its chunk even when only server code
+renders it.
+
 > **Status:** available: island calls and records (`LUM4001`, `LUM4002`), the loader with its
 > triggers and event replay, and hydration (`LUM4006` on a mismatch), in `lumen dev` and builds.
 

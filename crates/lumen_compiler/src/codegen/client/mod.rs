@@ -95,6 +95,8 @@ pub struct TransformOptions<'o> {
     pub target: Target,
     /// The project root: island refs name modules inside it root-relatively (`/src/x.stsx`).
     pub root: Option<&'o str>,
+    /// Packages outside the root: island refs name their modules package-relatively.
+    pub packages: &'o [crate::PackageRoot],
     /// The module id, used for the CSS module import.
     pub filename: &'o str,
     pub scope_tokens: &'o ScopeTokens,

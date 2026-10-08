@@ -1,5 +1,6 @@
 // `lumen/vite` against a real Vite 8 dev server (client and ssr environments). The fixture app is
-// written to a temp dir whose node_modules/lumen links to this package.
+// written to a temp dir whose node_modules/lumen links to this package; node_modules/@acme/kit
+// links a workspace package next to the app (outside the Vite root) with an island.
 import {
   mkdirSync,
   mkdtempSync,
@@ -75,22 +76,54 @@ export default function Home() {
   return <main><TeamPanel client:visible ids={[1, 2]} /></main>;
 }
 `,
+  "routes/kit.tsx": `import { Header } from "@acme/kit";
+export default function Kit() {
+  return <Header />;
+}
+`,
+  "package.json": `{ "name": "app", "private": true, "dependencies": { "@acme/kit": "workspace:*" } }\n`,
+};
+
+/** A linked workspace package (`../kit`), whose island call site only the server graph reaches. */
+const KIT: Record<string, string> = {
+  "package.json": `{ "name": "@acme/kit", "type": "module", "exports": { ".": "./src/index.ts" }, "dependencies": { "lumen": "workspace:*" } }\n`,
+  "src/index.ts": `export { Header } from "./Header.stsx";\n`,
+  "src/Header.stsx": `import { Nav } from "./Nav.stsx";
+export function Header() {
+  return <header class="top"><Nav client:load /><style>.top { margin: 0; }</style></header>;
+}
+`,
+  "src/Nav.stsx": `export function Nav() {
+  return <nav>Docs</nav>;
+}
+`,
 };
 
 const lumenRoot = resolve(import.meta.dirname, "../..");
+let base: string;
 let root: string;
+let kit: string;
 let server: ViteDevServer;
 const warnings: string[] = [];
 
 beforeAll(async () => {
   if (!binding) return;
-  root = realpathSync(mkdtempSync(join(tmpdir(), "lumen-vite-")));
-  for (const [name, code] of Object.entries(FILES)) {
-    mkdirSync(dirname(join(root, name)), { recursive: true });
-    writeFileSync(join(root, name), code);
+  base = realpathSync(mkdtempSync(join(tmpdir(), "lumen-vite-")));
+  root = join(base, "app");
+  kit = join(base, "kit");
+  for (const [dir, files] of [
+    [root, FILES],
+    [kit, KIT],
+  ] as const) {
+    for (const [name, code] of Object.entries(files)) {
+      mkdirSync(dirname(join(dir, name)), { recursive: true });
+      writeFileSync(join(dir, name), code);
+    }
+    mkdirSync(join(dir, "node_modules"));
+    symlinkSync(lumenRoot, join(dir, "node_modules/lumen"), "dir");
   }
-  mkdirSync(join(root, "node_modules"));
-  symlinkSync(lumenRoot, join(root, "node_modules/lumen"), "dir");
+  mkdirSync(join(root, "node_modules/@acme"));
+  symlinkSync(kit, join(root, "node_modules/@acme/kit"), "dir");
   const logger = createLogger("silent");
   logger.warn = (message) => void warnings.push(message);
   server = await createServer({
@@ -130,7 +163,7 @@ const STYLE = "?lumen&type=style&lang.css";
 
 afterAll(async () => {
   await server?.close();
-  if (root) rmSync(root, { recursive: true, force: true });
+  if (base) rmSync(base, { recursive: true, force: true });
 });
 
 describe.skipIf(!binding)("lumen/vite", () => {
@@ -196,6 +229,24 @@ describe.skipIf(!binding)("lumen/vite", () => {
     );
   });
 
+  it("names islands of linked packages package-relatively and scans their call sites", async () => {
+    // No kit module has been transformed yet: the project scan found the call site.
+    const client = server.environments.client.pluginContainer;
+    const loaded = await client.load("\0lumen:islands");
+    const code = typeof loaded === "string" ? loaded : loaded!.code;
+    expect(code).toContain(
+      `"@acme/kit/src/Nav.stsx#Nav": () => import(${JSON.stringify(`${kit}/src/Nav.stsx`)})`,
+    );
+    const ssr = await server.environments.ssr.transformRequest(`/@fs${kit}/src/Header.stsx`);
+    expect(ssr!.code).toContain('island)("@acme/kit/src/Nav.stsx#Nav"');
+    // Its JS and CSS hash the same package-relative path into the scope token.
+    const token = /data-l-(\w+)/.exec(ssr!.code)![1];
+    const css = await server.environments.client.transformRequest(
+      `/@fs${kit}/src/Header.stsx${STYLE}`,
+    );
+    expect(css!.code).toContain(`[data-l-${token}]`);
+  });
+
   it("builds every island into its own chunk from the manifest", async () => {
     const output = (await build({
       root,
@@ -218,6 +269,12 @@ describe.skipIf(!binding)("lumen/vite", () => {
     expect(manifest.code).toContain(`import(\`./${team.fileName.split("/").pop()}\`)`);
     expect(team.code).toContain("`<li>`");
     expect(team.exports).toEqual(["TeamPanel"]);
+    // A linked package's island, reached only through the server graph, with a stable ref.
+    const nav = chunks.find((chunk) => chunk.facadeModuleId === `${kit}/src/Nav.stsx`)!;
+    expect(nav).toBeDefined();
+    expect(manifest.code).toContain('"@acme/kit/src/Nav.stsx#Nav"');
+    expect(manifest.code).toContain(`import(\`./${nav.fileName.split("/").pop()}\`)`);
+    expect(manifest.code).not.toContain(base);
   });
 
   it("serves the scoped CSS of a file through Vite's CSS pipeline", async () => {

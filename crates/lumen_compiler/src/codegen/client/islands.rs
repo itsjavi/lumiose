@@ -2,7 +2,8 @@
 //!
 //! `<X client:visible ids={ids}>{children}</X>` compiles on the server to
 //! `island(ref, X, props, "visible", value?, slots?)`, where `ref` is `<module>#<export>` naming
-//! the module that defines `X` (root-relative when the project root is known), `props` is the
+//! the module that defines `X` by a machine-independent id (root-relative when the project root
+//! is known, package-relative in a listed package; crate::module_id), `props` is the
 //! data-only props object and JSX-valued props plus `children` are lazy `slots`. On the client,
 //! `client:*` is type-only: the element compiles like any component call (an island renders
 //! nested islands inline) and the island is reached through the island manifest. Both targets
@@ -22,6 +23,7 @@ use crate::IslandMeta;
 use crate::analyze::is_jsx_like;
 use crate::analyze::reactivity::symbol_of;
 use crate::diagnostics::{Code, Diagnostic};
+use crate::module_id;
 
 /// Hydration strategies (`client:<strategy>`).
 const STRATEGIES: &[&str] = &["load", "idle", "visible", "media", "only"];
@@ -188,10 +190,10 @@ impl<'a> Codegen<'a, '_> {
         let reference = self.island_reference(&opening.name);
         let resolved = match reference {
             Ok((module, export)) => {
-                let reference = format!("{module}#{export}");
+                let reference = format!("{}#{export}", module.reference);
                 self.islands.push(IslandMeta {
                     reference: reference.clone(),
-                    module,
+                    module: module.import,
                     export,
                     strategy: directive.strategy.clone(),
                     span: name_span.into(),
@@ -267,7 +269,10 @@ impl<'a> Codegen<'a, '_> {
     }
 
     /// `(module, export)` of an island component, or why it has none.
-    fn island_reference(&self, name: &JSXElementName<'a>) -> Result<(String, String), String> {
+    fn island_reference(
+        &self,
+        name: &JSXElementName<'a>,
+    ) -> Result<(IslandModule, String), String> {
         let not_exported = |name: &str| {
             format!(
                 "the island component `{name}` is not exported, so the browser cannot import it"
@@ -282,10 +287,10 @@ impl<'a> Codegen<'a, '_> {
                     if imported == "*" {
                         return Err(format!("`{}` is a namespace, not a component", ident.name));
                     }
-                    return Ok((self.resolve_module(source), imported.clone()));
+                    return Ok((self.island_module(Some(source)), imported.clone()));
                 }
                 match self.bindings.exports.get(&symbol) {
-                    Some(export) => Ok((self.module_path(), export.clone())),
+                    Some(export) => Ok((self.island_module(None), export.clone())),
                     None => Err(not_exported(&ident.name)),
                 }
             }
@@ -296,7 +301,7 @@ impl<'a> Codegen<'a, '_> {
                     && imported == "*"
                 {
                     return Ok((
-                        self.resolve_module(source),
+                        self.island_module(Some(source)),
                         member.property.name.to_string(),
                     ));
                 }
@@ -309,47 +314,58 @@ impl<'a> Codegen<'a, '_> {
         }
     }
 
-    /// This module's id: root-relative (`/src/x.stsx`) when it is inside the project root.
-    pub(super) fn module_path(&self) -> String {
-        let id = self
-            .options
-            .filename
-            .split(['?', '#'])
-            .next()
-            .unwrap_or_default()
-            .replace('\\', "/");
-        let Some(root) = self.options.root else {
-            return id;
-        };
-        let root = root.replace('\\', "/");
-        let root = root.trim_end_matches('/');
-        match id.strip_prefix(root) {
-            Some(rest) if rest.starts_with('/') => rest.to_owned(),
-            _ => id,
-        }
-    }
-
-    /// An import specifier as a module id: relative specifiers resolve against this module.
-    fn resolve_module(&self, specifier: &str) -> String {
-        if !(specifier.starts_with("./") || specifier.starts_with("../")) {
-            return specifier.to_owned();
-        }
-        let base = self.module_path();
-        let mut segments: Vec<&str> = base.split('/').collect();
-        segments.pop();
-        for segment in specifier.split('/') {
-            match segment {
-                "." => {}
-                ".." => {
-                    if segments.len() > 1 {
-                        segments.pop();
-                    }
-                }
-                segment => segments.push(segment),
+    /// The module an island component comes from: this module (`None`) or an import specifier.
+    /// Relative specifiers resolve against this module's id.
+    fn island_module(&self, specifier: Option<&str>) -> IslandModule {
+        let file = module_id::clean_id(self.options.filename);
+        let id = match specifier {
+            None => file,
+            Some(specifier) if specifier.starts_with("./") || specifier.starts_with("../") => {
+                resolve_relative(&file, specifier)
             }
+            Some(bare) => {
+                return IslandModule {
+                    import: bare.to_owned(),
+                    reference: bare.to_owned(),
+                };
+            }
+        };
+        let (root, packages) = (self.options.root, self.options.packages);
+        IslandModule {
+            // Bundling replaces an absolute id with a chunk, so it never reaches the HTML.
+            import: match root.and_then(|root| module_id::within(&id, root)) {
+                Some(rest) => rest.to_owned(),
+                None => id.clone(),
+            },
+            reference: module_id::stable_id(&id, root, packages),
         }
-        segments.join("/")
     }
+}
+
+/// How the browser imports an island's module, and how its ref names it.
+struct IslandModule {
+    /// Root-relative (`/src/x.stsx`), the absolute id, or a bare specifier.
+    import: String,
+    /// Root-relative, package-relative (`@acme/ui/src/Nav.stsx`), or as `import`.
+    reference: String,
+}
+
+/// `specifier` (`./x`, `../x`) resolved against the module id `base`.
+fn resolve_relative(base: &str, specifier: &str) -> String {
+    let mut segments: Vec<&str> = base.split('/').collect();
+    segments.pop();
+    for segment in specifier.split('/') {
+        match segment {
+            "." => {}
+            ".." => {
+                if segments.len() > 1 {
+                    segments.pop();
+                }
+            }
+            segment => segments.push(segment),
+        }
+    }
+    segments.join("/")
 }
 
 /// A prop rendered on the server as a slot: a JSX element or fragment, or a conditional of JSX.

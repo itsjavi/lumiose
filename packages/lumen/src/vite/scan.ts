@@ -1,5 +1,6 @@
-// A one-time scan of the project's source modules, for what the client build must know before
-// the server graph exists (the server environment is built after the client):
+// A one-time scan of the project's source modules (under the root and in the linked Lumen
+// packages of ./packages.ts), for what the client build must know before the server graph exists
+// (the server environment is built after the client):
 //
 // - island call sites (`meta.islands`), mostly in route modules (./islands.ts);
 // - stylesheets the server graph may import (./css-manifest.ts): every Lumen module with style
@@ -12,6 +13,7 @@ import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { compile, type IslandMeta } from "@lumen/compiler";
 import { isCSSRequest, normalizePath } from "vite";
+import type { Packages } from "./packages.ts";
 
 /** Directories never scanned. */
 const SKIPPED_DIRECTORIES = new Set(["node_modules", "dist", "build", "coverage"]);
@@ -34,10 +36,16 @@ export interface ScannedModule {
   stylesheets: string[];
 }
 
-/** Scans every source module under `root`. */
-export function scanProject(root: string, include: RegExp, exclude: RegExp): ScannedModule[] {
+/** Scans every source module under `root` and in the linked Lumen packages. */
+export function scanProject(
+  root: string,
+  include: RegExp,
+  exclude: RegExp,
+  packages: Packages,
+): ScannedModule[] {
   const modules: ScannedModule[] = [];
-  for (const file of sourceFiles(root)) {
+  const dirs = [root, ...packages.linked().map((p) => p.dir)];
+  for (const file of dirs.flatMap(sourceFiles)) {
     const lumen = include.test(file) && !exclude.test(file);
     if (!lumen && (!SCRIPT_MODULE.test(file) || DECLARATION.test(file) || exclude.test(file))) {
       continue;
@@ -54,7 +62,12 @@ export function scanProject(root: string, include: RegExp, exclude: RegExp): Sca
         modules.push({ file, islands: [], hasStyles: false, stylesheets });
       continue;
     }
-    const result = compile(source, file, { root, sourceMap: false, emitCss: false });
+    const result = compile(source, file, {
+      root,
+      packages: packages.for(file),
+      sourceMap: false,
+      emitCss: false,
+    });
     modules.push({
       file,
       islands: result.meta.islands,

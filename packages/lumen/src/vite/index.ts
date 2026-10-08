@@ -17,7 +17,9 @@
 //   compiler's CSS through Vite's CSS pipeline, with imported `$name` constants loaded through
 //   Vite's resolver and CSS-only HMR for style edits (./styles.ts).
 // - `virtual:lumen/islands` is the island manifest (./islands.ts). Island refs are root-relative
-//   (`/src/components/Team.stsx#TeamPanel`) for modules inside the Vite root.
+//   (`/src/components/Team.stsx#TeamPanel`) for modules inside the Vite root and package-relative
+//   (`@acme/ui/src/Nav.stsx#Nav`) outside it, so the HTML never holds build-machine paths; the
+//   scan covers linked Lumen packages too (./packages.ts).
 // - `virtual:lumen/css-manifest` is the CSS manifest of builds (./css-manifest.ts): every
 //   stylesheet is built in the client environment, and the server build maps each route module to
 //   the stylesheets its static import graph reaches.
@@ -42,6 +44,7 @@ import {
 import { CSS_MANIFEST_ID, CssManifest, cssManifestCode, fillManifest } from "./css-manifest.ts";
 import { ISLANDS_ID, IslandRegistry } from "./islands.ts";
 import { projectOptionsOf, type LumenOptions, type LumenPluginApi } from "./options.ts";
+import { Packages } from "./packages.ts";
 import { scanProject, type ScannedModule } from "./scan.ts";
 import {
   STYLE_QUERY,
@@ -89,8 +92,17 @@ export default function lumen(options: LumenOptions = {}): Plugin<LumenPluginApi
   const islands = new IslandRegistry();
   const styles = new StyleCache();
   const cssManifest = new CssManifest();
+  let packages = new Packages(root, exclude);
   let scanned: ScannedModule[] | undefined;
-  const project = (): ScannedModule[] => (scanned ??= scanProject(root, include, exclude));
+  const project = (): ScannedModule[] =>
+    (scanned ??= scanProject(root, include, exclude, packages));
+  // Every compile of a file names modules alike, so its JS and CSS agree on scope tokens.
+  const compileOptions = (file: string, target: Target) => ({
+    target,
+    sourceMap: true,
+    root,
+    packages: packages.for(cleanId(file)),
+  });
   const isLumenFile = (file: string): boolean => include.test(file) && !exclude.test(file);
   return [
     {
@@ -114,6 +126,7 @@ export default function lumen(options: LumenOptions = {}): Plugin<LumenPluginApi
 
       configResolved(config) {
         root = config.root;
+        packages = new Packages(root, exclude);
       },
 
       configureServer(server) {
@@ -173,7 +186,7 @@ export default function lumen(options: LumenOptions = {}): Plugin<LumenPluginApi
             const result = await compileWithModules(
               source,
               file,
-              { target: "client", sourceMap: true, root },
+              compileOptions(file, "client"),
               pluginResolve(this),
             );
             entry = styles.record(file, source, result, false);
@@ -235,7 +248,7 @@ export default function lumen(options: LumenOptions = {}): Plugin<LumenPluginApi
           const result = await compileWithModules(
             source,
             file,
-            { target, sourceMap: true, root },
+            compileOptions(file, target),
             environmentResolve(environment),
           );
           styles.record(file, source, result, false);
@@ -259,7 +272,7 @@ export default function lumen(options: LumenOptions = {}): Plugin<LumenPluginApi
           const result = await compileWithModules(
             code,
             id,
-            { target, sourceMap: true, root },
+            compileOptions(id, target),
             pluginResolve(this),
           );
           const errors = result.diagnostics.filter((d) => d.severity === "error");

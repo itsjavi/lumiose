@@ -55,6 +55,12 @@ export interface CompileOptions {
    * and scope tokens hash the root-relative path.
    */
   root?: string;
+  /**
+   * Packages outside `root` (linked workspace packages): island refs and scope tokens name
+   * their modules package-relatively (`@acme/ui/src/Nav.stsx#Nav`), so builds do not depend
+   * on where the package sits on disk. The innermost package containing a module wins.
+   */
+  packages?: Array<PackageRoot>;
   /** Modules answering earlier `moduleRequests`. */
   modules?: Array<HostModule>;
 }
@@ -152,6 +158,14 @@ export interface Label {
 export interface ModuleRequest {
   importer: string;
   specifier: string;
+}
+
+/** A package outside the project root (see `CompileOptions.packages`). */
+export interface PackageRoot {
+  /** The package name (`@acme/ui`). */
+  name: string;
+  /** The package directory (absolute). */
+  dir: string;
 }
 
 export type ParentKind = "intrinsic" | "fragment" | "component";

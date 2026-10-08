@@ -6,6 +6,7 @@ pub mod codegen;
 mod compile;
 pub mod css;
 pub mod diagnostics;
+mod module_id;
 pub mod prepare;
 pub mod scanner;
 pub mod span;
@@ -17,6 +18,7 @@ pub use compile::{
 pub use css::CssOptions;
 pub use diagnostics::{Code, Diagnostic, Severity};
 pub use lumen_css::Targets as CssTargets;
+pub use module_id::PackageRoot;
 pub use prepare::{ConstValue, HostModule, ModuleRequest, ResolvedModule};
 pub use scanner::{ScanResult, scan};
 pub use span::{Span, Utf16Index};

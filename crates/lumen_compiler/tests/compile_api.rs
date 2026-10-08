@@ -3,7 +3,8 @@
 
 use lumen_compiler::prepare::StyleRefBindingKind;
 use lumen_compiler::{
-    Code, CompileOptions, ConstValue, HostModule, ModuleRequest, ResolvedModule, Target, compile,
+    Code, CompileOptions, ConstValue, HostModule, ModuleRequest, PackageRoot, ResolvedModule,
+    Target, compile,
 };
 use oxc_sourcemap::SourceMap;
 
@@ -16,7 +17,7 @@ export async function Counter({ start = 0 }: { start?: number }) {
   return (
     <button onClick={() => count.update((c) => c + 1)}>
       {count()}
-      <style>button { border-radius: $radius.lg; margin: $gap; }</style>
+      <style>button { border-radius: $radius.lg; margin: calc($gap * 1px); }</style>
     </button>
   );
 }
@@ -168,6 +169,95 @@ export function Page() {
     }
 }
 
+#[test]
+fn islands_and_scope_tokens_outside_the_root_are_package_relative() {
+    let source = r#"import { Nav } from "./Nav.stsx";
+import { Menu } from "../../menu/src/Menu.stsx";
+import { Search } from "@acme/search";
+export function Header() {
+  return (
+    <header class="top">
+      <Nav client:load />
+      <Menu client:idle />
+      <Search client:visible />
+      <style>.top { color: red; }</style>
+    </header>
+  );
+}
+"#;
+    let filename = "/repo/packages/kit/src/Header.stsx";
+    let package = |name: &str, dir: &str| PackageRoot {
+        name: name.into(),
+        dir: dir.into(),
+    };
+    let options = CompileOptions {
+        target: Target::Server,
+        root: Some("/repo/apps/web".into()),
+        packages: vec![
+            package("@acme/kit", "/repo/packages/kit"),
+            package("@acme/menu", "/repo/packages/menu/"),
+        ],
+        ..CompileOptions::default()
+    };
+    let result = compile(source, filename, &options);
+    assert!(result.diagnostics.is_empty(), "{:?}", result.diagnostics);
+    let islands: Vec<_> = result
+        .meta
+        .islands
+        .iter()
+        .map(|island| (island.reference.as_str(), island.module.as_str()))
+        .collect();
+    // Refs (in the HTML) are machine-independent; modules stay importable by the bundler.
+    assert_eq!(
+        islands,
+        [
+            (
+                "@acme/kit/src/Nav.stsx#Nav",
+                "/repo/packages/kit/src/Nav.stsx"
+            ),
+            (
+                "@acme/menu/src/Menu.stsx#Menu",
+                "/repo/packages/menu/src/Menu.stsx"
+            ),
+            ("@acme/search#Search", "@acme/search"),
+        ]
+    );
+    assert!(
+        result
+            .code
+            .contains(r#"island("@acme/kit/src/Nav.stsx#Nav""#),
+        "{}",
+        result.code
+    );
+    assert!(!result.code.contains(r#"island("/repo"#), "{}", result.code);
+    let token = lumen_css::scope_token("@acme/kit/src/Header.stsx", Some("Header"));
+    assert!(
+        result.code.contains(&format!("data-l-{token}")),
+        "{}",
+        result.code
+    );
+
+    // Without the package, the absolute id is kept (and hashed).
+    let bare = compile(
+        source,
+        filename,
+        &CompileOptions {
+            packages: Vec::new(),
+            ..options
+        },
+    );
+    assert_eq!(
+        bare.meta.islands[0].reference,
+        "/repo/packages/kit/src/Nav.stsx#Nav"
+    );
+    let token = lumen_css::scope_token(filename, Some("Header"));
+    assert!(
+        bare.code.contains(&format!("data-l-{token}")),
+        "{}",
+        bare.code
+    );
+}
+
 fn tokens_module(source: &str) -> HostModule {
     HostModule {
         importer: "/src/Counter.stsx".into(),
@@ -223,7 +313,7 @@ fn imported_constants_are_requested_from_the_host() {
     assert_eq!(third.css_deps, ["/src/tokens.ts", "/src/unit.ts"]);
     let css = third.css.expect("css");
     assert!(
-        css.contains("border-radius: 12px") && css.contains("margin: 4"),
+        css.contains("border-radius: 12px") && css.contains("margin: 4px"),
         "{css}"
     );
     assert_eq!(

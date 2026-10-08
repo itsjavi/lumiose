@@ -325,8 +325,21 @@ pub struct CompileOptions {
     /// The project root: island refs name modules inside it root-relatively (`/src/x.stsx#X`),
     /// and scope tokens hash the root-relative path.
     pub root: Option<String>,
+    /// Packages outside `root` (linked workspace packages): island refs and scope tokens name
+    /// their modules package-relatively (`@acme/ui/src/Nav.stsx#Nav`), so builds do not depend
+    /// on where the package sits on disk. The innermost package containing a module wins.
+    pub packages: Option<Vec<PackageRoot>>,
     /// Modules answering earlier `moduleRequests`.
     pub modules: Option<Vec<HostModule>>,
+}
+
+/// A package outside the project root (see `CompileOptions.packages`).
+#[napi(object)]
+pub struct PackageRoot {
+    /// The package name (`@acme/ui`).
+    pub name: String,
+    /// The package directory (absolute).
+    pub dir: String,
 }
 
 /// An island call site (`<X client:* />`).
@@ -469,6 +482,15 @@ pub fn compile(
                     minify: o.css_minify.unwrap_or(false),
                 },
                 root: o.root,
+                packages: o
+                    .packages
+                    .unwrap_or_default()
+                    .into_iter()
+                    .map(|package| lumen_compiler::PackageRoot {
+                        name: package.name,
+                        dir: package.dir,
+                    })
+                    .collect(),
                 modules: o
                     .modules
                     .unwrap_or_default()

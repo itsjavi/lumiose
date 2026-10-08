@@ -21,6 +21,7 @@ use crate::codegen::ast::Ast;
 use crate::codegen::client::{self, ScopeTokens, TransformOptions};
 use crate::css::{self, CssOptions, ScopePlan};
 use crate::diagnostics::{Code, Diagnostic};
+use crate::module_id::{self, PackageRoot};
 use crate::prepare::{self, HostModule, ModuleRequest, ResolvedStyleRef};
 use crate::scanner::{self, FileKind};
 use crate::span::Span;
@@ -54,6 +55,10 @@ pub struct CompileOptions {
     /// (`/src/components/Team.stsx#TeamPanel`) and scope tokens hash the root-relative path;
     /// without it both use the module id as given.
     pub root: Option<String>,
+    /// Packages outside `root` (linked workspace packages): island refs and scope tokens name
+    /// their modules package-relatively (`@acme/ui/src/Nav.stsx#Nav`), so neither depends on
+    /// where the package sits on disk. The innermost package containing a module wins.
+    pub packages: Vec<PackageRoot>,
     /// Modules the host loaded for folding imported `$name` constants, answering earlier
     /// [`CompileResult::module_requests`].
     pub modules: Vec<HostModule>,
@@ -68,6 +73,7 @@ impl Default for CompileOptions {
             emit_css: true,
             css: CssOptions::default(),
             root: None,
+            packages: Vec::new(),
             modules: Vec::new(),
         }
     }
@@ -227,7 +233,7 @@ pub fn compile(source: &str, filename: &str, options: &CompileOptions) -> Compil
         &scan.blocks,
         &program,
         &analysis,
-        &root_relative(filename, options.root.as_deref()),
+        &scope_path(filename, options.root.as_deref(), &options.packages),
     );
     let emit_css = options.emit_css && scopes.has_css() && style.is_complete();
     let inventories = if emit_css {
@@ -239,6 +245,7 @@ pub fn compile(source: &str, filename: &str, options: &CompileOptions) -> Compil
     let transform_options = TransformOptions {
         target: options.target,
         root: options.root.as_deref(),
+        packages: &options.packages,
         filename,
         scope_tokens: &scopes.tokens,
         style_import: options.style_import,
@@ -313,20 +320,13 @@ pub fn compile(source: &str, filename: &str, options: &CompileOptions) -> Compil
 }
 
 /// The module path that scope tokens hash: relative to `root` (without a leading `/`) when the
-/// module is inside it, otherwise the id as given (without its query).
-fn root_relative(filename: &str, root: Option<&str>) -> String {
-    let id = filename
-        .split(['?', '#'])
-        .next()
-        .unwrap_or_default()
-        .replace('\\', "/");
-    let Some(root) = root else {
-        return id;
-    };
-    let root = root.replace('\\', "/");
-    match id.strip_prefix(root.trim_end_matches('/')) {
-        Some(rest) if rest.starts_with('/') => rest[1..].to_owned(),
-        _ => id,
+/// module is inside it, package-relative inside a listed package, otherwise the id as given
+/// (without its query).
+fn scope_path(filename: &str, root: Option<&str>, packages: &[PackageRoot]) -> String {
+    let id = module_id::clean_id(filename);
+    match root.and_then(|root| module_id::within(&id, root)) {
+        Some(rest) => rest[1..].to_owned(),
+        None => module_id::package_relative(&id, packages).unwrap_or(id),
     }
 }
 
