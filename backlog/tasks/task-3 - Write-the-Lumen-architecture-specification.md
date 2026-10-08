@@ -40,10 +40,10 @@ Decisions 5-10 are proposals awaiting user review. Spec v0.1 (doc-1) still descr
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Spec doc covers goals/non-goals, package layout, component and reactivity API, styles model, compiler pipeline, rendering modes (CSR/SSR/SSG/islands/SPA), hydration protocol, routing/data scope, tooling and agent-first DX
-- [ ] #2 Includes a performance model explaining why Lumen should beat React and match Solid/Svelte/Vue Vapor on js-framework-benchmark and SSR throughput
+- [x] #1 Spec doc covers goals/non-goals, package layout, component and reactivity API, styles model, compiler pipeline, rendering modes (CSR/SSR/SSG/islands/SPA), hydration protocol, routing/data scope, tooling and agent-first DX
+- [x] #2 Includes a performance model explaining why Lumen should beat React and match Solid/Svelte/Vue Vapor on js-framework-benchmark and SSR throughput
 - [ ] #3 User-approved choices are recorded as accepted decisions and linked from the spec; unapproved choices appear in the spec only as proposals
-- [ ] #4 Lists risks and open questions that need user input
+- [x] #4 Lists risks and open questions that need user input
 - [ ] #5 Spec v0.2 reflects decisions 11-16: .stsx/.tsx files, raw CSS <style> blocks scoped by placement, $name constants, no reactive CSS, async components with Suspense/ErrorBoundary, package name lumen
 <!-- AC:END -->
 
