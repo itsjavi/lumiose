@@ -5,7 +5,7 @@ status: In Progress
 assignee:
   - '@Spark'
 created_date: '2026-10-08 12:21'
-updated_date: '2026-10-08 16:53'
+updated_date: '2026-10-08 20:45'
 labels: []
 milestone: m-2
 dependencies:
@@ -24,9 +24,9 @@ Server-first islands need a small loader and a positional hydration protocol tha
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 The hydrate walk claims nodes positionally, with per-async-instance ranges and replay of await records keyed by (instancePath, site, occurrence)
-- [ ] #2 Loader ≤1 kB: records appended across chunks, TreeWalker discovery, load/idle/visible/media/only triggers, event capture and replay, slot templates
-- [ ] #3 An end-to-end browser test: SSR page → islands hydrate → no refetch; a mismatch falls back to a client render (LUM4006 in dev)
+- [x] #1 The hydrate walk claims nodes positionally, with per-async-instance ranges and replay of await records keyed by (instancePath, site, occurrence)
+- [x] #2 Loader ≤1 kB: records appended across chunks, TreeWalker discovery, load/idle/visible/media/only triggers, event capture and replay, slot templates
+- [x] #3 An end-to-end browser test: SSR page → islands hydrate → no refetch; a mismatch falls back to a client render (LUM4006 in dev)
 <!-- AC:END -->
 
 ## Implementation Plan
@@ -79,4 +79,11 @@ DONE (uncommitted, typecheck + lint clean for my files; lumen dom/core/server vi
 IN PROGRESS: e2e fixture examples/islands-e2e (package.json, vite.config.ts, tsconfig.json, server.ts, playwright.config.ts, src/{api.ts,Counter.stsx,Team.stsx,Greeting.stsx,Page.tsx,entry-server.tsx}); deps installed (lockfile has the importer). Not yet run.
 NEXT: 1) write e2e/islands.e2e.ts (gate loader route, tag server nodes, assert claimed + 0 /api requests; Select → 1 fetch; Extra → template slot; early clicks replayed via gated Counter module; visible counter gets data-hydrated only after scroll; /?mismatch → LUM4006 console warning + working island); 2) `pnpm --filter @lumen-examples/islands-e2e test:e2e`; check Greeting root ternary compiles without branchValue (else adjust); 3) optional size trims; 4) notes for Nova (headAssets: `<script type="module" async src="/@fs<abs>/packages/lumen/src/dom/loader.ts">` in dev; build: loader.ts as client entry instead of the bare manifest), Lux (package export "./dom/loader", doc-2 §1/§3.1 hydrate signature + range modes, new examples/islands-e2e dir ownership), Beacon (docs reference/dom.md hydrate + loader, LUM4006 "Reported by"); 5) ACs, final summary, Done.
 KNOWN: TASK-50 server side must emit branch()/list() in value positions (note left on TASK-50); until then compiled parentless values in islands fall back (LUM4006). Multi-root fragments mixing template roots with dynamic children mismatch (consecutive claims only).
+
+Spark (session spark-20261008T203611Z, resumed; solo on TASK-18):
+- E2E done: examples/islands-e2e/e2e/islands.e2e.ts, 5 Playwright tests in Chromium 153 against the fixture's Vite middleware-mode SSR server (renderToStream + islandUrl, loader as <script type=module async src=/@fs/…/dom/loader.ts>): (1) loader held until the stream ended, server nodes tagged → after hydration every island element and non-empty text is the server's (counter, Team, async members, streamed Suspense content, inline children slot, Greeting), 0 /api requests, counter state, Select → exactly one /api/member/bob (tracked reads in replayed awaits), Extra → template slot inserted/removed, no console errors; (2) /?slow=2500: Counter hydrates while the stream is open, Team waits for its streamed Suspense content and hydrates after it with 0 /api requests; (3) client:visible hydrates only after scrolling; (4) Counter module held → 2 early clicks replayed (3 → 5); (5) /?mismatch → exactly one LUM4006 (Greeting), client render works, other islands unaffected.
+- BUG found by e2e and fixed (dom/islands.ts streaming()): Chromium 153 parses <?start name=…>/<?end> as ProcessingInstruction nodes (declarative partial updates; <template for> is applied natively, $swap finds no template). The loader only looked for '?start' comments, so Team hydrated over the fallback → LUM4006 + refetch. Now walks SHOW_COMMENT|SHOW_PROCESSING_INSTRUCTION (target 'start' or comment '?start'). Unit test added (hydrate.test.ts: PI placeholders + emulated native patching; fails without the fix). Also contains() no longer throws when an unhydrated island's range left the document.
+- Fixture: typecheck script (lumen check, shadow rootDirs), ?slow= delay knob (api.ts delays + server.ts), Team slot props typed JSX.Element.
+- Size (pnpm --filter lumen size; new row splits hydrate/loader): typical 6.02 kB; typical+loader+hydrate 8.68 kB (cap 10 kB OK); islands increment 2.66 kB (soft 1.5 kB OVER) = hydrate 1.92 kB + loader 0.74 kB (AC #2 ≤1 kB OK).
+- Not done here (owners): lumen dev/build loader wiring is Nova's (in progress in the working tree: loaderUrl in renderToStream/createServerRenderer, \0lumen:loader virtual module, BuiltApp.loader); once it lands the fixture can pass loaderUrl instead of writing the script itself. Lux: package export ./dom/loader, doc-2 §1/§3.1 (hydrate signature, range modes), islands-e2e ownership → Spark. Beacon: docs reference/dom.md (hydrate, loader, triggers, event replay), LUM4006 'Reported by' (hydrate mismatch + missing await record).
 <!-- SECTION:NOTES:END -->
