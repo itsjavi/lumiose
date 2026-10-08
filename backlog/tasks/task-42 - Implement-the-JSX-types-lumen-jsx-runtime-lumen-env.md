@@ -5,7 +5,7 @@ status: In Progress
 assignee:
   - '@Beacon'
 created_date: '2026-10-08 12:28'
-updated_date: '2026-10-08 12:29'
+updated_date: '2026-10-08 12:48'
 labels: []
 milestone: m-1
 dependencies:
@@ -39,3 +39,16 @@ Every Lumen project type-checks with stock TS 7 against Lumen's JSX types. They 
 4. Type-test fixtures under src/jsx/__tests__/fixtures (tsconfig jsx preserve, jsxImportSource lumen) with positive and @ts-expect-error cases; Vitest test runs TS 7 tsc --noEmit -p and asserts exit 0.
 5. Validate: pnpm typecheck, pnpm test, pnpm lint.
 <!-- SECTION:PLAN:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Implemented (Beacon):
+- src/jsx/jsx-runtime.ts: type-only `export declare namespace JSX`. Element = contract Renderable; ElementType = keyof IntrinsicElements | ((props: any) => Element | Promise<Element>); IntrinsicAttributes = key + client:load|idle|visible(boolean|string)|media(string)|only. IntrinsicElements extends lazy mapped types over HTMLElementTagNameMap (minus style), SVGElementTagNameMap (minus HTML-shared tags) and MathMLElementTagNameMap, plus a `${string}-${string}` custom-element signature (loose, any extra attribute; typed by augmenting the module). Per-tag extras are single lookups (HTMLAttributeMap, BindProps).
+- Lumen props: class (string | record<boolean> | nested array), style (string | kebab-case object derived from lib.dom CSSStyleProperties, incl. -webkit-*, float, --custom), ref (el) => void, attach array, innerHTML, key, onX (on + Capitalize<event type>, delegated) and on:x (native) with currentTarget typed, on:${string} bivariant (e: Event) fallback for custom events; className/htmlFor rejected with a descriptive Rejected<hint> type; bind:value on input (string|number signal)/textarea/select, bind:checked on input.
+- src/jsx/attributes.ts: HTML attribute names (tabindex, for, http-equiv, accept-charset) — global attrs + aria-*/data-*, per-element catalog for ~45 tags, shared SVG and MathML Core attribute sets.
+- src/jsx/env.d.ts: global JSX mirrors lumen/jsx-runtime's JSX (interfaces extend, so both stay augmentable); ImportMetaEnv with readonly PUBLIC_${string}: string plus BASE_URL/MODE/DEV/PROD/SSR identical to vite/client so both merge; declare module "lumen" { interface Locals {} }.
+- Perf: KebabCase processes 2 chars/step (~95k instantiations once per program vs 288k for a per-char accumulator; ~+20 ms on TS 7); per-element cost is lazy.
+- Tests: src/jsx/__tests__/jsx-types.test.ts runs TS 7 tsc on src/jsx/__tests__/.fixtures (5 .tsx files, 40 @ts-expect-error cases + positive cases; each expected error verified to fire for the intended reason) and on a temp consumer project using the spec tsconfig with types: ["lumen/env"] via a node_modules link. .fixtures is a dot-dir because the package tsconfig (include src, no jsx option) would otherwise fail with TS17004; the fixture program self-resolves `lumen`, so it only fails on diagnostics located in src/jsx or unlocated ones (other areas' WIP errors are left to pnpm typecheck). Mutation check: an unused @ts-expect-error fails the test.
+- Known limits: ref<T>() of another element type passes (its () => T getter signature is assignable to any callback); React-style onKeyDown is rejected (typed names are onKeydown) per the Capitalize<event> spec.
+<!-- SECTION:NOTES:END -->
