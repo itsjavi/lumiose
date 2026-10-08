@@ -3,7 +3,7 @@ id: doc-1
 title: Lumen architecture specification
 type: specification
 created_date: '2026-10-08 10:28'
-updated_date: '2026-10-08 15:30'
+updated_date: '2026-10-08 15:53'
 tags:
   - architecture
   - spec
@@ -621,7 +621,7 @@ export const MemberCard = $component(async function MemberCard(props) {
 
 **Props and children.**
 - Props must be serializable; otherwise `LUM4002`.
-- `children` and any JSX-valued props are server-rendered into `<template data-l-slot="name">` inside the island range. The island inserts them when it renders the slot, even if `children` was falsy during SSR.
+- `children` and any JSX-valued props are server-rendered once. Slots the island renders appear inline between `<!--l:s:name-->` and `<!--/l:s-->`, and the client adopts those nodes. Slots it does not render during SSR travel as `<template data-l-slot="name">` and are inserted when the island later renders them (contract doc-2 §3.1).
 - A `client:*` inside an island's own render is rendered inline, with no separate record.
 
 **Boundaries.** `*.server.*` modules and `src/server/` may not be imported from client code (`LUM4003`). A module-scope signal written during SSR is `LUM4008`, because it would be shared across requests.
