@@ -116,19 +116,34 @@ export function lumenPackages(root: string): string[] {
   return [...dirs].toSorted();
 }
 
-/** The content of {@link LUMEN_TSCONFIG}: the Lumen compiler options with a mirror-base `rootDirs` pair. */
+/** The compiler options of spec §4.7 besides `rootDirs`, which depends on the layout. */
+export const LUMEN_COMPILER_OPTIONS = {
+  jsx: "preserve",
+  jsxImportSource: "lumen",
+  module: "preserve",
+  moduleResolution: "bundler",
+  allowImportingTsExtensions: true,
+  noEmit: true,
+  strict: true,
+  types: ["lumen/env"],
+} as const;
+
+/**
+ * The content of {@link LUMEN_TSCONFIG}, which a project's tsconfig extends (decision-25): the
+ * Lumen compiler options with a mirror-base `rootDirs` pair, and the includes.
+ */
 export function lumenTsconfig(root: string, packages = lumenPackages(root)): string {
   root = resolve(root);
   const base = packages.reduce(commonDir, root);
   const dir = dirname(join(root, LUMEN_TSCONFIG));
+  const { types, ...options } = LUMEN_COMPILER_OPTIONS;
   const config = {
     compilerOptions: {
-      jsx: "preserve",
-      jsxImportSource: "lumen",
+      ...options,
       // The mirror base and the shadow directory (see lumen check): `.stsx` imports may leave
       // `src/` and reach the `.stsx` modules of the Lumen packages this project uses.
       rootDirs: [posix(relative(dir, base)) || ".", "./shadow"],
-      types: ["lumen/env"],
+      types,
     },
     include: ["../src", "./shadow", "./types"],
   };

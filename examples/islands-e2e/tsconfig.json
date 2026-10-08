@@ -1,11 +1,8 @@
 {
-  "extends": "../../tsconfig.base.json",
+  // Lumen's options (JSX, rootDirs for the shadow TSX) come from the generated config.
+  "extends": ["../../tsconfig.base.json", "./.lumen/tsconfig.generated.json"],
   "compilerOptions": {
-    "jsx": "preserve",
-    "jsxImportSource": "lumen",
-    "types": ["node", "lumen/env", "vite/client"],
-    // `.stsx` files are type-checked through their shadow TSX (`lumen check`).
-    "rootDirs": ["src", ".lumen/shadow/src"]
+    "types": ["node", "lumen/env", "vite/client"]
   },
   "include": [
     "src",

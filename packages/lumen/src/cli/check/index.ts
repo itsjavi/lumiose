@@ -61,7 +61,7 @@ export {
   type SyncShadowsOptions,
   type SyncShadowsResult,
 } from "./shadow.ts";
-export { formatTsconfig, LUM_TSCONFIG, tsconfigTemplate } from "./tsconfig.ts";
+export { formatTsconfig, LUM_TSCONFIG, standaloneTsconfig, tsconfigTemplate } from "./tsconfig.ts";
 export { parseTscOutput } from "./tsc.ts";
 
 /** Exit codes: no errors, errors found, the tool itself failed. */

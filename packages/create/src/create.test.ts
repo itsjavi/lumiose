@@ -145,10 +145,7 @@ describe.skipIf(!binding).each(TEMPLATES)("template $name", (template) => {
     );
     const read = (file: string) => readFileSync(join(root, file), "utf8");
     expect(read("vite.config.ts")).toContain(`lumen({ mode: "${template.mode}" })`);
-    expect(JSON.parse(read("tsconfig.json")).compilerOptions).toMatchObject({
-      jsxImportSource: "lumen",
-      rootDirs: ["src", ".lumen/shadow/src"],
-    });
+    expect(read("tsconfig.json")).toContain('"extends": "./.lumen/tsconfig.generated.json"');
     expect(read(".gitattributes")).toBe("*.stsx linguist-language=TSX\n");
     expect(read("AGENTS.md")).toContain("node_modules/lumen/docs");
     expect(read("CLAUDE.md")).toContain("@AGENTS.md");

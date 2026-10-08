@@ -16,11 +16,13 @@ import {
   LUM_TSCONFIG,
   parseTscOutput,
   shadowPathFor,
+  standaloneTsconfig,
   syncShadows,
   tsconfigTemplate,
   type CheckDiagnostic,
   type CheckReport,
 } from "./index.ts";
+import { parseJsonc } from "./modules.ts";
 import { SourceText } from "./text.ts";
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -176,8 +178,13 @@ describe("parseTscOutput", () => {
 });
 
 describe("tsconfigTemplate", () => {
-  it("is the spec §4.7 tsconfig", () => {
-    expect(JSON.parse(formatTsconfig())).toEqual({
+  it("extends the generated tsconfig (decision-25)", () => {
+    expect(tsconfigTemplate()).toEqual({ extends: "./.lumen/tsconfig.generated.json" });
+    expect(parseJsonc(formatTsconfig())).toEqual(tsconfigTemplate());
+  });
+
+  it("writes out the spec §4.7 options in the standalone form", () => {
+    expect(standaloneTsconfig()).toEqual({
       compilerOptions: {
         jsx: "preserve",
         jsxImportSource: "lumen",
@@ -186,8 +193,8 @@ describe("tsconfigTemplate", () => {
         allowImportingTsExtensions: true,
         noEmit: true,
         strict: true,
-        rootDirs: ["src", ".lumen/shadow/src"],
         types: ["lumen/env"],
+        rootDirs: ["src", ".lumen/shadow/src"],
       },
       include: ["src", ".lumen/shadow", ".lumen/types"],
     });
@@ -320,7 +327,7 @@ describe.skipIf(!binding)("lumen check", () => {
   });
 
   it("warns about tsconfig options shadow checking needs, at the option", async () => {
-    const { compilerOptions } = tsconfigTemplate();
+    const { compilerOptions } = standaloneTsconfig();
 
     // Route shadows silently drop out of the program: a warning, not an error.
     const noShadows = await project("valid", { compilerOptions, include: ["src", ".lumen/types"] });
@@ -332,7 +339,7 @@ describe.skipIf(!binding)("lumen check", () => {
 
     // Without `lumen/env` the global JSX namespace is missing: the warning explains the error.
     const noEnv = await project("valid", {
-      ...tsconfigTemplate(),
+      ...standaloneTsconfig(),
       compilerOptions: { ...compilerOptions, types: [] },
     });
     const second = await checkJson(noEnv);
@@ -416,7 +423,7 @@ describe.skipIf(!binding)("lumen check", () => {
   });
 
   it("resolves constants imported through tsconfig paths and re-exports for style diagnostics", async () => {
-    const template = tsconfigTemplate();
+    const template = standaloneTsconfig();
     const root = await project("valid", {
       ...template,
       compilerOptions: { ...template.compilerOptions, paths: { "~/*": ["./src/*"] } },
@@ -474,7 +481,7 @@ describe.skipIf(!binding)("lumen check", () => {
     expect(exitCode).toBe(2);
     expect(report.diagnostics).toEqual([]);
     expect(report.failure?.message).toMatch(/No tsconfig/);
-    expect(report.failure?.help).toContain('"jsxImportSource": "lumen"');
+    expect(report.failure?.help).toContain('"extends": "./.lumen/tsconfig.generated.json"');
 
     expect(
       await main(["check", "--format", "xml"], {

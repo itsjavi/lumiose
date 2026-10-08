@@ -2,7 +2,14 @@
 // shadow type checking needs.
 
 import { dirname, relative, resolve, sep } from "node:path";
-import { LUMEN_TSCONFIG, SHADOW_DIR, shadowPair, SOURCE_DIR, type ShadowLayout } from "./layout.ts";
+import {
+  LUMEN_COMPILER_OPTIONS,
+  LUMEN_TSCONFIG,
+  SHADOW_DIR,
+  shadowPair,
+  SOURCE_DIR,
+  type ShadowLayout,
+} from "./layout.ts";
 import { runTsc } from "./tsc.ts";
 
 /**
@@ -11,27 +18,37 @@ import { runTsc } from "./tsc.ts";
  */
 export const LUM_TSCONFIG = "LUM6001";
 
-/** The tsconfig a Lumen project starts from (spec §4.7). */
-export function tsconfigTemplate() {
+/**
+ * The `tsconfig.json` a Lumen project starts from (decision-25): it extends the generated
+ * {@link LUMEN_TSCONFIG}, which holds the options of spec §4.7. Projects add their own on top.
+ */
+export function tsconfigTemplate(): { extends: string } {
+  return { extends: `./${LUMEN_TSCONFIG}` };
+}
+
+/** {@link tsconfigTemplate} as `tsconfig.json` file content, with a comment for humans. */
+export function formatTsconfig(): string {
+  return `{
+  // Lumen's compiler options, shadow TSX and route types. lumen dev, build, check and typegen
+  // write the generated file; add your own options below.
+  "extends": "./${LUMEN_TSCONFIG}"
+}
+`;
+}
+
+/**
+ * The spec §4.7 options written out, for a tsconfig that does not extend the generated one: its
+ * `rootDirs` pair only `src` with its shadows.
+ */
+export function standaloneTsconfig() {
   return {
     compilerOptions: {
-      jsx: "preserve",
-      jsxImportSource: "lumen",
-      module: "preserve",
-      moduleResolution: "bundler",
-      allowImportingTsExtensions: true,
-      noEmit: true,
-      strict: true,
+      ...LUMEN_COMPILER_OPTIONS,
+      types: [...LUMEN_COMPILER_OPTIONS.types],
       rootDirs: [SOURCE_DIR, `${SHADOW_DIR}/${SOURCE_DIR}`],
-      types: ["lumen/env"],
     },
     include: [SOURCE_DIR, SHADOW_DIR, ".lumen/types"],
   };
-}
-
-/** {@link tsconfigTemplate} as `tsconfig.json` file content. */
-export function formatTsconfig(): string {
-  return `${JSON.stringify(tsconfigTemplate(), null, 2)}\n`;
 }
 
 /** The fully resolved config printed by `tsc --showConfig` (extends applied, paths relative to it). */
@@ -85,7 +102,7 @@ export function tsconfigProblems(
   const problems: TsconfigProblem[] = [];
   const options = config.compilerOptions ?? {};
   const base = dirname(expected.project);
-  const template = tsconfigTemplate();
+  const standalone = standaloneTsconfig();
 
   if (options["jsx"] === undefined) {
     problems.push({
@@ -105,13 +122,13 @@ export function tsconfigProblems(
   const rootDirs = asStrings(options["rootDirs"]).map((dir) => resolve(base, dir));
   const extendGenerated = `extend the generated "${LUMEN_TSCONFIG}" ("extends": "./${LUMEN_TSCONFIG}")`;
   if (shadowPair(expected.root, rootDirs) === undefined) {
-    const missing = template.compilerOptions.rootDirs.filter(
+    const missing = standalone.compilerOptions.rootDirs.filter(
       (dir) => !rootDirs.includes(resolve(expected.root, dir)),
     );
     problems.push({
       option: "rootDirs",
       message: `tsconfig \`rootDirs\` lacks ${list(missing)}, so imports of \`.stsx\` files do not resolve to their shadow TSX.`,
-      help: `Set "rootDirs": ${JSON.stringify(template.compilerOptions.rootDirs)}, or ${extendGenerated}.`,
+      help: `${capitalize(extendGenerated)}, or set "rootDirs": ${JSON.stringify(standalone.compilerOptions.rootDirs)}.`,
     });
   } else if ((expected.unshadowedPackages ?? []).length > 0) {
     const packages = expected.unshadowedPackages!.map((dir) =>
@@ -157,6 +174,10 @@ export function tsconfigProblems(
 
 function asStrings(value: unknown): string[] {
   return Array.isArray(value) ? value.filter((item) => typeof item === "string") : [];
+}
+
+function capitalize(text: string): string {
+  return text.charAt(0).toUpperCase() + text.slice(1);
 }
 
 function list(items: string[]): string {

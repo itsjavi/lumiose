@@ -64,8 +64,9 @@ Serves the build output with `@lumen/adapter-node` (a dependency of the project)
 
 Type-checks the project: runs typegen (`.lumen/types/routes.d.ts`), writes shadow TSX files for
 every `.stsx` (`.lumen/shadow/`; also those of used Lumen packages when the tsconfig extends
-`.lumen/tsconfig.generated.json`, see [tsconfig](./jsx.md#imports-outside-src-and-stsx-from-other-packages)),
-runs `tsc --noEmit -p tsconfig.json`, maps shadow positions back
+`.lumen/tsconfig.generated.json`, as the template does, see
+[tsconfig](./jsx.md#imports-outside-src-and-stsx-from-other-packages)), writes the generated
+tsconfig, runs `tsc --noEmit -p tsconfig.json`, maps shadow positions back
 to the `.stsx` sources (same line and UTF-16 column), and merges scanner, route, tsconfig and
 compiler diagnostics for `.stsx` and `.tsx` files (such as `LUM1006` for a `<style>` block in a
 `.tsx` file). For style diagnostics, the modules that `$` constants are imported from are resolved
@@ -168,7 +169,9 @@ Makes an existing project agent-ready, as `create-lumen` does for new ones: a Lu
 `AGENTS.md` (between `<!-- lumen:start … -->` and `<!-- lumen:end -->`, pointing at
 `node_modules/lumen/docs`, the `.stsx` format, the key rules and `lumen check`), a `CLAUDE.md`
 that references `@AGENTS.md`, the `lumen` skill (`.claude/skills/lumen/SKILL.md`) and the
-`*.stsx linguist-language=TSX` line in `.gitattributes`. Re-running it updates only those parts.
+`*.stsx linguist-language=TSX` line in `.gitattributes`, and a `tsconfig.json` that extends
+`.lumen/tsconfig.generated.json` when the project has none (an existing one is left alone).
+Re-running it updates only those parts.
 
 ## lumen mcp
 

@@ -1,10 +1,12 @@
 // Agent setup files (spec §10, decision-10): `AGENTS.md` (a Lumen section between markers),
-// `CLAUDE.md` referencing it, the `lumen` skill and the `.gitattributes` line for `.stsx`. Written by
+// `CLAUDE.md` referencing it, the `lumen` skill, the `.gitattributes` line for `.stsx` and, when
+// missing, a `tsconfig.json` that extends the generated one (decision-25). Written by
 // `lumen agents init` for existing projects and by create-lumen for new ones (`lumen/agents`).
 // Re-running updates Lumen's parts and leaves everything else in these files alone.
 
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { basename, dirname, join } from "node:path";
+import { formatTsconfig } from "../check/tsconfig.ts";
 import { EXIT_FAILURE, EXIT_OK, failureOf, formatEnvelope, type OutputFormat } from "../output.ts";
 import { projectRoot } from "../project.ts";
 
@@ -174,6 +176,8 @@ export function planAgentFiles(
         ? current
         : `${current.trimEnd()}${current.trim() ? "\n" : ""}${GITATTRIBUTES_LINE}\n`;
     }),
+    // Only a missing tsconfig is written (decision-25); `lumen check` reviews an existing one.
+    ...(read("tsconfig.json") === undefined ? [plan("tsconfig.json", formatTsconfig)] : []),
   ];
 }
 
@@ -183,7 +187,7 @@ export async function agentsInit(
   options: AgentFilesOptions = {},
 ): Promise<AgentFile[]> {
   const current = new Map<string, string | undefined>();
-  for (const file of ["AGENTS.md", "CLAUDE.md", SKILL_FILE, ".gitattributes"]) {
+  for (const file of ["AGENTS.md", "CLAUDE.md", SKILL_FILE, ".gitattributes", "tsconfig.json"]) {
     current.set(file, await readFile(join(root, file), "utf8").catch(() => undefined));
   }
   const files = planAgentFiles((file) => current.get(file), {

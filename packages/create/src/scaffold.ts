@@ -1,5 +1,5 @@
 // Writes a new Lumen project: a template's `src/` (and extras), the generated package.json,
-// tsconfig.json (spec §4.7), vite.config.ts with the template's `lumen({ mode })` (decision-21),
+// tsconfig.json (extending the generated one, decision-25), vite.config.ts with the template's `lumen({ mode })` (decision-21),
 // .gitignore and README, then the agent files (AGENTS.md, CLAUDE.md, the lumen skill,
 // .gitattributes) from `lumen/agents`, shared with `lumen agents init`.
 
@@ -9,7 +9,7 @@ import { basename, dirname, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import { agentsInit, type AgentFile } from "lumen/agents";
 import lumenPackage from "lumen/package.json" with { type: "json" };
-import { tsconfigTemplate } from "lumen/tooling";
+import { formatTsconfig } from "lumen/tooling";
 
 export type TemplateName = "minimal" | "static" | "ssr" | "spa";
 
@@ -99,7 +99,7 @@ export async function scaffold(options: ScaffoldOptions): Promise<ScaffoldResult
     files.set(file, text.replaceAll("{{name}}", name));
   }
   files.set("package.json", packageJson(name, template));
-  files.set("tsconfig.json", `${JSON.stringify(tsconfigTemplate(), null, 2)}\n`);
+  files.set("tsconfig.json", formatTsconfig());
   files.set("vite.config.ts", viteConfig(template));
   files.set(".gitignore", "node_modules\ndist\n.lumen\n");
   files.set("README.md", readme(name, template));

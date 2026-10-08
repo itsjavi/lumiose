@@ -39,32 +39,25 @@ pnpm add -D vite typescript
 
 ## 2. Configure TypeScript
 
-`tsconfig.json` (the template that `lumen check` prints when the file is missing):
+`tsconfig.json` extends the tsconfig that Lumen generates (`lumen check` prints this file when it
+is missing, and `lumen agents init` writes it):
 
-```json
+```jsonc
 {
-  "compilerOptions": {
-    "jsx": "preserve",
-    "jsxImportSource": "lumen",
-    "module": "preserve",
-    "moduleResolution": "bundler",
-    "allowImportingTsExtensions": true,
-    "noEmit": true,
-    "strict": true,
-    "rootDirs": ["src", ".lumen/shadow/src"],
-    "types": ["lumen/env"]
-  },
-  "include": ["src", ".lumen/shadow", ".lumen/types"]
+  // Lumen's compiler options, shadow TSX and route types. lumen dev, build, check and typegen
+  // write the generated file; add your own options below.
+  "extends": "./.lumen/tsconfig.generated.json",
 }
 ```
 
-- `jsx: "preserve"`: the Lumen compiler transforms JSX, not TypeScript.
-- `rootDirs` and `.lumen/shadow`: TypeScript cannot read `.stsx`, so Lumen writes a masked copy of
-  each one (a _shadow file_, same line and column offsets) and `import "./X.stsx"` resolves to it.
+- `.lumen/tsconfig.generated.json` sets `jsx: "preserve"` (the Lumen compiler transforms JSX, not
+  TypeScript), `jsxImportSource: "lumen"`, bundler module resolution, `strict`, `types:
+  ["lumen/env"]`, and the `rootDirs` and `include` entries below. Lumen keeps it current.
+- `.lumen/shadow`: TypeScript cannot read `.stsx`, so Lumen writes a masked copy of each one (a
+  _shadow file_, same line and column offsets) and `import "./X.stsx"` resolves to it.
 - `.lumen/types`: generated route types (`lumen typegen`, run by `lumen check`).
-- In a monorepo whose app imports `.stsx` components from a workspace package, extend
-  `.lumen/tsconfig.generated.json` instead of setting `rootDirs`. See
-  [tsconfig](./reference/jsx.md#imports-outside-src-and-stsx-from-other-packages).
+- `lumen dev`, `build`, `check` and `typegen` write `.lumen/`. Before a bare `tsc` in a fresh
+  clone, run `lumen typegen`. See [tsconfig](./reference/jsx.md#tsconfigjson).
 
 Add `.lumen/` to `.gitignore`, and `*.stsx linguist-language=TSX` to `.gitattributes` so GitHub
 highlights `.stsx` files.

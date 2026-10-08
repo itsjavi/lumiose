@@ -38,6 +38,7 @@ describe("agent files", () => {
       ["CLAUDE.md", "created"],
       [SKILL_FILE, "created"],
       [".gitattributes", "created"],
+      ["tsconfig.json", "created"],
     ]);
     const agents = files[0]!.content;
     expect(agents).toMatch(/^# shop\n/);
@@ -46,6 +47,7 @@ describe("agent files", () => {
     expect(agents).toContain("npx lumen check");
     expect(files[1]!.content).toBe("Follow the instructions in @AGENTS.md\n");
     expect(files[3]!.content).toBe(`${GITATTRIBUTES_LINE}\n`);
+    expect(files[4]!.content).toContain('"extends": "./.lumen/tsconfig.generated.json"');
   });
 
   it("adds Lumen's parts to existing files and replaces only its own section", () => {
@@ -53,6 +55,7 @@ describe("agent files", () => {
       "AGENTS.md": `# Shop\n\nOur rules.\n\n${AGENTS_START}\nold Lumen text\n${AGENTS_END}\n\nMore rules.\n`,
       "CLAUDE.md": "Be brief.\n",
       ".gitattributes": "*.png binary",
+      "tsconfig.json": "{}",
     };
     const files = planAgentFiles((file) => existing[file], { name: "shop" });
     const content = Object.fromEntries(files.map((file) => [file.file, file.content]));
@@ -61,6 +64,8 @@ describe("agent files", () => {
     );
     expect(content["CLAUDE.md"]).toBe("Be brief.\n\nFollow the instructions in @AGENTS.md\n");
     expect(content[".gitattributes"]).toBe(`*.png binary\n${GITATTRIBUTES_LINE}\n`);
+    // An existing tsconfig is left alone.
+    expect(content["tsconfig.json"]).toBeUndefined();
 
     const appended = planAgentFiles((file) => (file === "AGENTS.md" ? "# Mine\n" : undefined), {
       name: "x",
@@ -80,6 +85,7 @@ describe("agent files", () => {
       { file: "CLAUDE.md", action: "unchanged" },
       { file: SKILL_FILE, action: "created" },
       { file: ".gitattributes", action: "created" },
+      { file: "tsconfig.json", action: "created" },
     ]);
     expect(readFileSync(join(root, SKILL_FILE), "utf8")).toMatch(
       /^---\nname: lumen\ndescription: /,
