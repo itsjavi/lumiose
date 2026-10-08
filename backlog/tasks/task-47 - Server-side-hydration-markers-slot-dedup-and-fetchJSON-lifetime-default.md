@@ -1,10 +1,11 @@
 ---
 id: TASK-47
 title: 'Server-side hydration markers, slot dedup and fetchJSON lifetime default'
-status: To Do
+status: In Progress
 assignee:
   - '@Nova'
 created_date: '2026-10-08 14:02'
+updated_date: '2026-10-08 15:44'
 labels: []
 milestone: m-2
 dependencies:
