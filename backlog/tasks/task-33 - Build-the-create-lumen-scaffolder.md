@@ -5,6 +5,7 @@ status: To Do
 assignee:
   - '@Beacon'
 created_date: '2026-10-08 12:21'
+updated_date: '2026-10-08 15:30'
 labels: []
 milestone: m-5
 dependencies:
@@ -26,3 +27,9 @@ A new project must start agent-ready: AGENTS.md, CLAUDE.md, a skill and a workin
 - [ ] #1 create-lumen offers templates (minimal, ssr, spa, static) that run out of the box
 - [ ] #2 Generated AGENTS.md (with the .stsx hint and local-docs pointer), a CLAUDE.md referencing it, and a skill bundle; lumen agents init does the same for existing projects
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Lux (decision-21): create-lumen templates set lumen({ mode }) explicitly (spa / ssr / static).
+<!-- SECTION:NOTES:END -->
