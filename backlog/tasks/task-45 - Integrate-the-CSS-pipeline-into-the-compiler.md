@@ -1,11 +1,11 @@
 ---
 id: TASK-45
 title: Integrate the CSS pipeline into the compiler
-status: To Do
+status: In Progress
 assignee:
   - '@Photon'
 created_date: '2026-10-08 13:59'
-updated_date: '2026-10-08 14:11'
+updated_date: '2026-10-08 15:31'
 labels: []
 milestone: m-1
 dependencies:
@@ -31,3 +31,9 @@ lumen_css (TASK-10) works on resolved inputs. The compiler has to feed it consta
 - [ ] #5 lumen/vite serves CSS virtual modules (File.stsx?lumen&type=style&lang.css) through the Vite CSS pipeline; style-only edits hot-update CSS without remounting; cssDeps invalidate on token edits
 - [ ] #6 The TASK-11 example app gains scoped styles and $tokens, verified in a browser
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Photon (session photon-task45-20261008T153134Z) claimed TASK-45.
+<!-- SECTION:NOTES:END -->
