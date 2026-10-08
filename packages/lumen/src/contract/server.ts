@@ -66,6 +66,12 @@ export interface ServerRuntime {
     slots?: Record<string, () => unknown>,
   ): unknown;
 
-  /** Server `$await`: awaits the thunk; inside an island records the value under its replay key. */
-  $await<T>(thunk: () => T | PromiseLike<T>, site: number): Promise<Awaited<T>>;
+  /**
+   * Server `$await`, same shape as the client: `(await $await(() => e, site))()`. Awaits the thunk;
+   * inside an island records the value under its replay key; the resume function restores the
+   * context frame.
+   */
+  $await<T>(thunk: () => T | PromiseLike<T>, site: number): Promise<() => Awaited<T>>;
+  /** `finally { $leave() }` around async component bodies; leaves the context frame. */
+  $leave(): void;
 }

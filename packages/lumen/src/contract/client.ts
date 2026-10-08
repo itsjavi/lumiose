@@ -150,11 +150,19 @@ export interface ClientRuntime {
   // ---- async components ------------------------------------------------------------------------------
   /**
    * Inserted by the compiler around every `await e` whose nearest function is the component:
-   * `await $await(() => e)`. Pauses the run's subscriber, restores owner/context/tracking after
-   * resumption, and during hydration replays the recorded value (key: instance path, site, occurrence)
-   * instead of calling the thunk. `site` is the static await index within the component.
+   * `(await $await(() => e, site))()`. Synchronously pauses the current run, evaluates the thunk
+   * (or, during hydration, replays the recorded value; key: instance path, site, occurrence) and
+   * resolves to a resume function. Calling it inside the component's own continuation restores the
+   * run (owner, context, tracking) and returns the value; this is the only sound place to resume,
+   * because other runs' continuations may interleave between microtasks. `site` is the static await
+   * index within the component.
    */
-  $await<T>(thunk: () => T | PromiseLike<T>, site: number): Promise<Awaited<T>>;
+  $await<T>(thunk: () => T | PromiseLike<T>, site: number): Promise<() => Awaited<T>>;
+  /**
+   * Emitted by the compiler as `finally { $leave() }` around the body of every async component, so
+   * the run is paused synchronously when the body returns or throws.
+   */
+  $leave(): void;
 }
 
 /** Minimal writable signal shape used by `bind:*` (matches `signal()` from `lumen`). */
