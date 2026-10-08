@@ -1,102 +1,100 @@
-/* Global styles. Component styles move into .stsx <style> blocks with the CSS pipeline (TASK-45). */
+/* Base styles for plain elements, shared by every page. Component styles live in scoped <style>
+   blocks next to their markup, with design tokens from src/theme.ts. */
 :root {
   color-scheme: light dark;
   --accent: #b4451f;
-  --muted: color-mix(in srgb, currentColor 60%, transparent);
+  --muted: color-mix(in srgb, currentColor 62%, transparent);
+  --line: color-mix(in srgb, currentColor 15%, transparent);
   font-family: system-ui, sans-serif;
   line-height: 1.5;
 }
 body {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
   margin: 0;
 }
 main {
-  max-width: 64rem;
+  flex: 1;
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 68rem;
   margin: 0 auto;
-  padding: 1rem;
+  padding: 1rem 1rem 3rem;
 }
 a {
   color: var(--accent);
 }
-.site-header {
-  display: flex;
-  gap: 1.5rem;
-  align-items: baseline;
-  padding: 0.75rem 1rem;
-  border-bottom: 1px solid color-mix(in srgb, currentColor 15%, transparent);
+h1 {
+  margin: 0.5rem 0 1rem;
+  line-height: 1.2;
 }
-.site-header nav {
-  display: flex;
-  gap: 1rem;
-  flex: 1;
+h2 {
+  margin: 2rem 0 0.75rem;
+  font-size: 1.25rem;
 }
-.brand {
-  font-weight: 700;
-  text-decoration: none;
+input,
+select,
+textarea,
+button {
+  font: inherit;
 }
-.account {
-  color: var(--muted);
-}
-.book-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(10rem, 1fr));
-  gap: 1rem;
-}
-.book-card h3 {
-  font-size: 1rem;
-  margin: 0.5rem 0 0;
-}
-.book-card a {
-  text-decoration: none;
-}
-.cover {
-  display: flex;
-  align-items: end;
-  aspect-ratio: 2 / 3;
-  padding: 0.75rem;
+input:not([type="radio"], [type="checkbox"], [type="hidden"]),
+select,
+textarea {
+  padding: 0.4rem 0.6rem;
+  border: 1px solid var(--line);
   border-radius: 4px;
-  color: white;
-  font-weight: 600;
-  background: linear-gradient(160deg, hsl(var(--hue) 55% 45%), hsl(var(--hue) 55% 25%));
+  background: Field;
+  color: FieldText;
 }
-.byline,
-.rating {
+button {
+  padding: 0.4rem 0.9rem;
+  border: 1px solid var(--accent);
+  border-radius: 4px;
+  background: var(--accent);
+  color: white;
+  cursor: pointer;
+}
+button:disabled {
+  opacity: 0.6;
+  cursor: progress;
+}
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.byline {
   margin: 0;
   color: var(--muted);
   font-size: 0.875rem;
 }
-.loading {
-  color: var(--muted);
+.error {
+  margin: 0;
+  color: #c62828;
+  font-size: 0.875rem;
 }
-form.filters {
-  display: flex;
-  gap: 0.5rem;
-  flex-wrap: wrap;
-  margin-bottom: 1rem;
+.error:empty {
+  display: none;
 }
-.pager {
-  display: flex;
-  gap: 1rem;
-  justify-content: center;
-  margin: 1.5rem 0;
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
 }
-.histogram {
-  list-style: none;
-  padding: 0;
-}
-.review {
-  border-top: 1px solid color-mix(in srgb, currentColor 15%, transparent);
-  padding: 0.5rem 0;
-}
+/* Stacked forms (sign in, register): one labelled field per row. */
 .form {
   display: grid;
   gap: 0.75rem;
-  max-width: 22rem;
+  max-width: 24rem;
 }
 .form label {
   display: grid;
   gap: 0.25rem;
 }
-.error {
-  color: #c62828;
-  font-size: 0.875rem;
+.form button {
+  justify-self: start;
 }

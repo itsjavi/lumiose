@@ -1,0 +1,58 @@
+// Prerendered at build time (a `static` route): the genre list with book counts.
+import { Title } from "lumen";
+import { queries } from "../../../server/queries.server.ts";
+import * as theme from "../../../theme.ts";
+
+export default function Genres() {
+  return (
+    <main>
+      <Title>Genres · Bookshelf</Title>
+      <h1>Genres</h1>
+      <ul class="genres">
+        {queries()
+          .listGenres()
+          .map((genre, index) => (
+            <li style={{ "--hue": String((index * 31 + 12) % 360) }}>
+              <a href={`/genres/${genre.slug}`}>
+                <strong>{genre.name}</strong>
+                <span>{genre.bookCount} books</span>
+              </a>
+            </li>
+          ))}
+      </ul>
+    </main>
+  );
+}
+
+<style>
+  .genres {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(13rem, 1fr));
+    gap: $theme.space.md;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .genres a {
+    display: grid;
+    gap: $theme.space.xs;
+    min-height: 5rem;
+    align-content: end;
+    padding: $theme.space.md;
+    border-radius: $theme.radius.md;
+    box-shadow: $theme.shadow.card;
+    color: white;
+    text-decoration: none;
+    background: linear-gradient(150deg, hsl(var(--hue) 50% 42%), hsl(var(--hue) 50% 26%));
+  }
+  .genres a:hover {
+    filter: brightness(1.1);
+  }
+  .genres strong {
+    font-size: $theme.font.lead;
+  }
+  .genres span {
+    opacity: 0.85;
+    font-size: $theme.font.small;
+  }
+</style>

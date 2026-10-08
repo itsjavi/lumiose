@@ -1,0 +1,83 @@
+// Island (client:visible): adds a book to the reader's list or removes it. Without JavaScript it
+// is a plain form posting to the `toggle` action of /reading-list, which redirects back to `next`;
+// once hydrated, it posts with submit() and stays on the page.
+import { signal, submit } from "lumen";
+import * as theme from "../theme.ts";
+
+const TOGGLE_ACTION = "/reading-list?/toggle";
+
+export function ReadingListToggle(props: {
+  bookId: number;
+  onList: boolean;
+  next: string;
+  compact?: boolean;
+}) {
+  const onList = signal(props.onList);
+  const busy = signal(false);
+  const failed = signal(false);
+
+  async function toggle(event: SubmitEvent) {
+    event.preventDefault();
+    busy.set(true);
+    failed.set(false);
+    try {
+      // No `next`: the action answers with the new state instead of redirecting.
+      const result = await submit<{ onList: boolean }>(
+        { bookId: String(props.bookId) },
+        { action: TOGGLE_ACTION },
+      );
+      if (result.type === "success") onList.set(result.data.onList);
+      else failed.set(true);
+    } catch {
+      failed.set(true);
+    } finally {
+      busy.set(false);
+    }
+  }
+
+  return (
+    <form
+      class={{ "reading-toggle": true, compact: props.compact === true }}
+      method="post"
+      action={TOGGLE_ACTION}
+      onSubmit={toggle}
+    >
+      <input type="hidden" name="bookId" value={String(props.bookId)} />
+      <input type="hidden" name="next" value={props.next} />
+      <button
+        class={{ on: onList() }}
+        aria-pressed={onList() ? "true" : "false"}
+        disabled={busy()}
+        title={onList() ? "Remove from your reading list" : "Add to your reading list"}
+      >
+        {onList() ? "✓ On your list" : "+ Reading list"}
+      </button>
+      <span class="error" role="status">
+        {failed() ? "Could not update your list." : ""}
+      </span>
+
+      <style>
+        .reading-toggle {
+          display: flex;
+          gap: $theme.space.sm;
+          align-items: center;
+          margin: 0;
+        }
+        button {
+          border-color: $theme.color.accent;
+          background: transparent;
+          color: $theme.color.accent;
+          white-space: nowrap;
+        }
+        button.on {
+          background: $theme.color.accent;
+          color: $theme.color.accentInk;
+        }
+        .compact button {
+          padding: 0.15rem 0.6rem;
+          font-size: $theme.font.small;
+        }
+      </style>
+    </form>
+  );
+}

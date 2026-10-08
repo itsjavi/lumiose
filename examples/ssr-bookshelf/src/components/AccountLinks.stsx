@@ -1,0 +1,51 @@
+import * as theme from "../theme.ts";
+import type { User } from "../types.ts";
+
+/** The header's account area: sign-in links, or the reader's pages and a sign-out button. */
+export function AccountLinks(props: { user: User | null }) {
+  return (
+    <div class="account">
+      {props.user === null ? (
+        <>
+          <a href="/login">Sign in</a>
+          <a class="register" href="/register">
+            Register
+          </a>
+        </>
+      ) : (
+        <>
+          <a href="/reading-list">Reading list</a>
+          <a href="/profile" title="Your profile">
+            {props.user.name}
+          </a>
+          <form method="post" action="/logout">
+            <button class="sign-out">Sign out</button>
+          </form>
+        </>
+      )}
+
+      <style>
+        .account {
+          display: flex;
+          gap: $theme.space.md;
+          align-items: center;
+          font-size: $theme.font.small;
+          white-space: nowrap;
+        }
+        form {
+          margin: 0;
+        }
+        .register,
+        .sign-out {
+          padding: 0.2rem 0.7rem;
+          border: 1px solid $theme.color.accent;
+          border-radius: $theme.radius.pill;
+          background: transparent;
+          color: $theme.color.accent;
+          font-size: $theme.font.small;
+          text-decoration: none;
+        }
+      </style>
+    </div>
+  );
+}

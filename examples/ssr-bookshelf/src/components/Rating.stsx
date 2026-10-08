@@ -1,11 +1,72 @@
+import * as theme from "../theme.ts";
 import type { RatingSummary } from "../types.ts";
 
+/** Average rating as five stars (filled to the average) plus the review count. */
 export function Rating(props: { rating: RatingSummary }) {
   return (
     <p class="rating">
-      {props.rating.average === null
-        ? "No reviews yet"
-        : `★ ${props.rating.average.toFixed(1)} · ${props.rating.count} reviews`}
+      {props.rating.average === null ? (
+        "No reviews yet"
+      ) : (
+        <>
+          <span
+            class="stars"
+            style={{ "--filled": `${(props.rating.average / 5) * 100}%` }}
+            role="img"
+            aria-label={`${props.rating.average.toFixed(1)} out of 5 stars`}
+          />
+          <span class="count">
+            {props.rating.average.toFixed(1)} · {props.rating.count}{" "}
+            {props.rating.count === 1 ? "review" : "reviews"}
+          </span>
+        </>
+      )}
+
+      <style>
+        .rating {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 0 $theme.space.sm;
+          align-items: center;
+          margin: 0;
+          color: $theme.color.muted;
+          font-size: $theme.font.small;
+        }
+        .stars {
+          display: inline-block;
+          font-size: 1rem;
+          letter-spacing: 1px;
+          background: linear-gradient(90deg, $theme.color.star var(--filled), $theme.color.starOff var(--filled));
+          background-clip: text;
+          color: transparent;
+        }
+        .count {
+          white-space: nowrap;
+        }
+        .stars::before {
+          content: "★★★★★";
+        }
+      </style>
     </p>
+  );
+}
+
+/** A review's own rating: `★★★★☆`. */
+export function Stars(props: { rating: number }) {
+  return (
+    <span class="review-stars" role="img" aria-label={`${props.rating} out of 5 stars`}>
+      {"★".repeat(props.rating)}
+      <span class="off">{"★".repeat(5 - props.rating)}</span>
+
+      <style>
+        .review-stars {
+          color: $theme.color.star;
+          letter-spacing: 1px;
+        }
+        .off {
+          color: $theme.color.starOff;
+        }
+      </style>
+    </span>
   );
 }

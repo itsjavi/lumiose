@@ -1,5 +1,11 @@
 {
   "extends": "../../tsconfig.base.json",
-  "compilerOptions": { "types": ["node", "lumen/env"] },
-  "include": ["src", "e2e", "server.ts", "playwright.config.ts"]
+  "compilerOptions": {
+    "jsx": "preserve",
+    "jsxImportSource": "lumen",
+    "types": ["node", "lumen/env"],
+    // `.stsx` files are type-checked through their shadow TSX (`lumen check`).
+    "rootDirs": ["src", ".lumen/shadow/src"]
+  },
+  "include": ["src", "e2e", "server.ts", "playwright.config.ts", ".lumen/shadow", ".lumen/types"]
 }

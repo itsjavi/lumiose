@@ -1,4 +1,4 @@
-import { actionData, fail, redirect, Title, type Action } from "lumen";
+import { actionData, fail, redirect, Title, url, type Action } from "lumen";
 import { validateLogin } from "../../lib/validation.ts";
 import { auth, safeRedirectPath } from "../../server/auth.server.ts";
 
@@ -19,26 +19,42 @@ export const action: Action = async (ctx) => {
 };
 
 export default function Login() {
-  const failed = actionData<LoginFailure>();
+  return (
+    <LoginForm failed={actionData<LoginFailure>()} next={url().searchParams.get("next")} />
+  );
+}
+
+function LoginForm(props: { failed: LoginFailure | undefined; next: string | null }) {
   return (
     <main>
       <Title>Sign in · Bookshelf</Title>
       <h1>Sign in</h1>
+      {/* No action attribute: the form posts to this URL, `?next=` included. */}
       <form class="form" method="post">
         <label>
           Email
-          <input type="email" name="email" value={failed?.email ?? ""} autocomplete="username" />
+          <input
+            type="email"
+            name="email"
+            value={props.failed?.email ?? ""}
+            autocomplete="username"
+            required
+          />
         </label>
-        {failed?.errors.email === undefined ? null : <p class="error">{failed.errors.email}</p>}
+        <p class="error">{props.failed?.errors.email}</p>
         <label>
           Password
-          <input type="password" name="password" autocomplete="current-password" />
+          <input type="password" name="password" autocomplete="current-password" required />
         </label>
-        {failed?.errors.password === undefined ? null : (
-          <p class="error">{failed.errors.password}</p>
-        )}
+        <p class="error">{props.failed?.errors.password}</p>
         <button>Sign in</button>
       </form>
+      <p>
+        New here?{" "}
+        <a href={props.next === null ? "/register" : `/register?next=${encodeURIComponent(props.next)}`}>
+          Create an account
+        </a>
+      </p>
       <p class="byline">
         Every seeded account has the password <code>bookshelf</code>, for example
         reader@example.com.

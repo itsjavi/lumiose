@@ -10,7 +10,7 @@
     "start": "node server.ts",
     "preview": "lumen preview",
     "seed": "node src/server/seed.server.ts",
-    "typecheck": "tsc -p tsconfig.json",
+    "typecheck": "lumen check",
     "test": "vitest run",
     "test:e2e": "playwright test"
   },

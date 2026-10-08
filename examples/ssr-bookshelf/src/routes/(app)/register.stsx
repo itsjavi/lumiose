@@ -1,0 +1,81 @@
+import { actionData, fail, redirect, Title, url, type Action } from "lumen";
+import { LIMITS } from "../../lib/validation.ts";
+import { auth, safeRedirectPath } from "../../server/auth.server.ts";
+import type { FieldErrors } from "../../types.ts";
+
+interface RegisterFailure {
+  name: string;
+  email: string;
+  errors: FieldErrors<"name" | "email" | "password">;
+}
+
+export const action: Action = async (ctx) => {
+  const form = await ctx.formData();
+  const result = await auth().register(form);
+  if (!result.ok) {
+    return fail(400, {
+      name: String(form.get("name") ?? ""),
+      email: String(form.get("email") ?? ""),
+      errors: result.errors,
+    } satisfies RegisterFailure);
+  }
+  await auth().login(ctx.cookies, result.user.id);
+  redirect(safeRedirectPath(ctx.url.searchParams.get("next")));
+};
+
+export default function Register() {
+  return (
+    <RegisterForm failed={actionData<RegisterFailure>()} next={url().searchParams.get("next")} />
+  );
+}
+
+function RegisterForm(props: { failed: RegisterFailure | undefined; next: string | null }) {
+  return (
+    <main>
+      <Title>Create an account · Bookshelf</Title>
+      <h1>Create an account</h1>
+      <form class="form" method="post">
+        <label>
+          Name
+          <input
+            name="name"
+            value={props.failed?.name ?? ""}
+            autocomplete="name"
+            maxlength={LIMITS.name}
+            required
+          />
+        </label>
+        <p class="error">{props.failed?.errors.name}</p>
+        <label>
+          Email
+          <input
+            type="email"
+            name="email"
+            value={props.failed?.email ?? ""}
+            autocomplete="email"
+            required
+          />
+        </label>
+        <p class="error">{props.failed?.errors.email}</p>
+        <label>
+          Password
+          <input
+            type="password"
+            name="password"
+            autocomplete="new-password"
+            minlength={LIMITS.passwordMin}
+            required
+          />
+        </label>
+        <p class="error">{props.failed?.errors.password}</p>
+        <button>Create account</button>
+      </form>
+      <p>
+        Already have an account?{" "}
+        <a href={props.next === null ? "/login" : `/login?next=${encodeURIComponent(props.next)}`}>
+          Sign in
+        </a>
+      </p>
+    </main>
+  );
+}

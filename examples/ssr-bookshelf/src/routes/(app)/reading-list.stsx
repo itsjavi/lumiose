@@ -1,0 +1,99 @@
+// The reader's list, plus the `toggle` action that every reading-list button posts to.
+import { error, notFound, redirect, Title, url, type ActionContext } from "lumen";
+import { BookCard } from "../../components/BookCard.stsx";
+import { Pager } from "../../components/Pager.stsx";
+import { formatDate } from "../../components/ReviewCard.stsx";
+import { parsePageParam } from "../../lib/search-params.ts";
+import { requireUser, safeRedirectPath } from "../../server/auth.server.ts";
+import { queries } from "../../server/queries.server.ts";
+import * as theme from "../../theme.ts";
+import type { Page, ReadingListEntry } from "../../types.ts";
+
+export const actions = {
+  /**
+   * Adds `bookId` to the list or removes it. A plain form post sends `next` and returns there;
+   * the enhanced island leaves it out and reads `{ onList }`.
+   */
+  async toggle(ctx: ActionContext) {
+    const user = await requireUser(ctx);
+    const form = await ctx.formData();
+    const bookId = Number(form.get("bookId"));
+    if (!Number.isSafeInteger(bookId) || bookId < 1) error(400, "The form has no book id.");
+    let onList: boolean;
+    if (queries().removeFromReadingList(user.id, bookId)) {
+      onList = false;
+    } else {
+      if (!queries().addToReadingList(user.id, bookId).ok) notFound("No such book.");
+      onList = true;
+    }
+    const next = form.get("next");
+    if (typeof next === "string" && next !== "") redirect(safeRedirectPath(next));
+    return { onList };
+  },
+};
+
+export default async function ReadingListPage() {
+  const user = await requireUser();
+  return (
+    <ReadingList
+      list={queries().readingList(user.id, {
+        page: parsePageParam(url().searchParams.get("page")),
+        pageSize: 24,
+      })}
+    />
+  );
+}
+
+function ReadingList(props: { list: Page<ReadingListEntry> }) {
+  return (
+    <main>
+      <Title>Reading list · Bookshelf</Title>
+      <h1>Your reading list</h1>
+      <p class="byline">
+        {props.list.total === 1 ? "1 book" : `${props.list.total} books`}, most recently added first.
+      </p>
+      {props.list.total === 0 ? (
+        <p class="empty">
+          Nothing here yet. <a href="/books">Browse the books</a> and add some with “+ Reading
+          list”.
+        </p>
+      ) : null}
+      <div class="entries">
+        {props.list.items.map((entry) => (
+          <div class="entry">
+            <BookCard
+              book={entry.book}
+              toggle={{ onList: () => true, next: url().pathname + url().search }}
+            />
+            <p class="byline">Added {formatDate(entry.addedAt)}</p>
+          </div>
+        ))}
+      </div>
+      <Pager
+        info={props.list}
+        href={(page) => (page > 1 ? `/reading-list?page=${page}` : "/reading-list")}
+        label="Reading list pages"
+      />
+    </main>
+  );
+}
+
+<style>
+  .entries {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(10rem, 1fr));
+    gap: $theme.space.lg $theme.space.md;
+    margin-top: $theme.space.lg;
+  }
+  .entry {
+    display: grid;
+    gap: $theme.space.xs;
+    align-content: start;
+  }
+  .empty {
+    padding: $theme.space.xl;
+    border-radius: $theme.radius.md;
+    background: $theme.color.surface;
+    text-align: center;
+  }
+</style>

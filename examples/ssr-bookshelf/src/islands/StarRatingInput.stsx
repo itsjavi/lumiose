@@ -1,0 +1,107 @@
+// Island (client:visible): the star picker of the review form. It is a radio group, so without
+// JavaScript it still posts `rating`; once hydrated, stars light up on hover and selection, and
+// the form checks the rating with the same validateReview() the action runs before posting.
+import { onMount, ref, signal } from "lumen";
+import { validateReview } from "../lib/validation.ts";
+import * as theme from "../theme.ts";
+
+const STARS = [1, 2, 3, 4, 5] as const;
+const LABELS = ["", "Poor", "Fair", "Good", "Very good", "Excellent"] as const;
+
+export function StarRatingInput(props: { name: string; value: number | null; error?: string }) {
+  const value = signal(props.value);
+  const hover = signal<number | null>(null);
+  const hint = signal(props.error ?? "");
+  const fieldset = ref<HTMLFieldSetElement>();
+  const shown = () => hover() ?? value() ?? 0;
+
+  onMount(() => {
+    const form = fieldset()?.form;
+    if (form == null) return;
+    const check = (event: SubmitEvent) => {
+      const result = validateReview(new FormData(form));
+      const message = result.ok ? "" : (result.errors.rating ?? "");
+      hint.set(message);
+      if (message !== "") {
+        event.preventDefault();
+        fieldset()?.querySelector("input")?.focus();
+      }
+    };
+    form.addEventListener("submit", check);
+    return () => form.removeEventListener("submit", check);
+  });
+
+  return (
+    <fieldset class="star-input" ref={fieldset} onMouseLeave={() => hover.set(null)}>
+      <legend>Your rating</legend>
+      <div class="row">
+        {STARS.map((stars) => (
+          <label class={{ lit: stars <= shown() }} onMouseEnter={() => hover.set(stars)}>
+            <input
+              type="radio"
+              name={props.name}
+              value={String(stars)}
+              checked={value() === stars}
+              onChange={() => {
+                value.set(stars);
+                hint.set("");
+              }}
+            />
+            <span aria-hidden="true">★</span>
+            <span class="visually-hidden">
+              {stars} {stars === 1 ? "star" : "stars"}
+            </span>
+          </label>
+        ))}
+        <output>{shown() === 0 ? "Not rated" : LABELS[shown()]}</output>
+      </div>
+      <p class="error" role="alert">
+        {hint()}
+      </p>
+
+      <style>
+        .star-input {
+          margin: 0;
+          padding: 0;
+          border: 0;
+        }
+        legend {
+          padding: 0;
+        }
+        .row {
+          display: flex;
+          gap: 2px;
+          align-items: center;
+        }
+        label {
+          position: relative;
+          font-size: 1.75rem;
+          line-height: 1;
+          color: $theme.color.line;
+          cursor: pointer;
+        }
+        label.lit,
+        label:has(input:checked) {
+          color: $theme.color.star;
+        }
+        label:has(input:focus-visible) {
+          outline: 2px solid $theme.color.accent;
+          outline-offset: 2px;
+          border-radius: $theme.radius.sm;
+        }
+        input {
+          position: absolute;
+          inset: 0;
+          margin: 0;
+          opacity: 0;
+          cursor: pointer;
+        }
+        output {
+          margin-left: $theme.space.sm;
+          color: $theme.color.muted;
+          font-size: $theme.font.small;
+        }
+      </style>
+    </fieldset>
+  );
+}

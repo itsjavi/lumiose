@@ -1,0 +1,116 @@
+import { Title, url } from "lumen";
+import { Pager } from "../../../components/Pager.stsx";
+import { parsePageParam } from "../../../lib/search-params.ts";
+import { queries } from "../../../server/queries.server.ts";
+import * as theme from "../../../theme.ts";
+import type { AuthorSummary, Page } from "../../../types.ts";
+
+function authorsHref(q: string, page: number): string {
+  const params = new URLSearchParams();
+  if (q !== "") params.set("q", q);
+  if (page > 1) params.set("page", String(page));
+  const search = params.toString();
+  return search === "" ? "/authors" : `/authors?${search}`;
+}
+
+export default function Authors() {
+  const filters = authorFilters(url().searchParams);
+  return (
+    <AuthorIndex q={filters.q} result={queries().listAuthors({ ...filters, pageSize: 30 })} />
+  );
+}
+
+function authorFilters(params: URLSearchParams): { q: string; page: number } {
+  return { q: params.get("q")?.trim() ?? "", page: parsePageParam(params.get("page")) };
+}
+
+function AuthorIndex(props: { q: string; result: Page<AuthorSummary> }) {
+  return (
+    <main>
+      <Title>Authors · Bookshelf</Title>
+      <h1>Authors</h1>
+      <form class="filter" method="get" action="/authors">
+        <input
+          type="search"
+          name="q"
+          value={props.q}
+          placeholder="Filter by name"
+          aria-label="Filter authors by name"
+        />
+        <button>Filter</button>
+      </form>
+      <p class="byline" role="status">
+        {props.result.total === 1 ? "1 author" : `${props.result.total} authors`}
+        {props.q === "" ? "" : ` matching “${props.q}”`}
+      </p>
+      <ul class="authors">
+        {props.result.items.map((author) => (
+          <li>
+            <a href={`/authors/${author.slug}`}>
+              <span class="initial" aria-hidden="true">
+                {author.name.charAt(0)}
+              </span>
+              <span>
+                <strong>{author.name}</strong>
+                <span class="byline">
+                  {author.bookCount === 1 ? "1 book" : `${author.bookCount} books`}
+                </span>
+              </span>
+            </a>
+          </li>
+        ))}
+      </ul>
+      <Pager
+        info={props.result}
+        href={(page) => authorsHref(props.q, page)}
+        label="Author pages"
+      />
+    </main>
+  );
+}
+
+<style>
+  .filter {
+    display: flex;
+    gap: $theme.space.sm;
+    max-width: $theme.layout.form;
+    margin-bottom: $theme.space.sm;
+  }
+  .filter input {
+    flex: 1;
+  }
+  .authors {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
+    gap: $theme.space.sm;
+    margin: $theme.space.lg 0 0;
+    padding: 0;
+    list-style: none;
+  }
+  .authors a {
+    display: flex;
+    gap: $theme.space.md;
+    align-items: center;
+    padding: $theme.space.sm;
+    border-radius: $theme.radius.md;
+    color: inherit;
+    text-decoration: none;
+  }
+  .authors a:hover {
+    background: $theme.color.hover;
+  }
+  .authors a > span:last-child {
+    display: grid;
+  }
+  .initial {
+    display: grid;
+    place-items: center;
+    flex: none;
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 50%;
+    background: color-mix(in srgb, $theme.color.accent 18%, transparent);
+    color: $theme.color.accent;
+    font-weight: 700;
+  }
+</style>

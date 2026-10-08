@@ -1,0 +1,84 @@
+import { pageWindow } from "../lib/pagination.ts";
+import * as theme from "../theme.ts";
+import type { PageInfo } from "../types.ts";
+
+/** Numbered page links (`← 1 … 4 5 [6] 7 8 … 20 →`); nothing when everything fits on one page. */
+export function Pager(props: {
+  info: Pick<PageInfo, "page" | "pageCount">;
+  href: (page: number) => string;
+  label?: string;
+}) {
+  return (
+    <nav class="pager" aria-label={props.label ?? "Pages"} hidden={props.info.pageCount <= 1}>
+      {props.info.page > 1 ? (
+        <a rel="prev" href={props.href(props.info.page - 1)}>
+          ← Previous
+        </a>
+      ) : (
+        <span class="edge">← Previous</span>
+      )}
+      <ol>
+        {pageWindow(props.info.page, props.info.pageCount).map((page) => (
+          <li>
+            {page === null ? (
+              <span class="gap">…</span>
+            ) : page === props.info.page ? (
+              <span aria-current="page">{page}</span>
+            ) : (
+              <a href={props.href(page)}>{page}</a>
+            )}
+          </li>
+        ))}
+      </ol>
+      {props.info.page < props.info.pageCount ? (
+        <a rel="next" href={props.href(props.info.page + 1)}>
+          Next →
+        </a>
+      ) : (
+        <span class="edge">Next →</span>
+      )}
+
+      <style>
+        .pager {
+          display: flex;
+          flex-wrap: wrap;
+          gap: $theme.space.md;
+          align-items: center;
+          justify-content: center;
+          margin: $theme.space.xl 0 $theme.space.md;
+        }
+        .pager[hidden] {
+          display: none;
+        }
+        ol {
+          display: flex;
+          gap: $theme.space.xs;
+          margin: 0;
+          padding: 0;
+          list-style: none;
+        }
+        a,
+        span {
+          display: inline-block;
+          min-width: 1.5rem;
+          padding: $theme.space.xs $theme.space.sm;
+          border-radius: $theme.radius.sm;
+          text-align: center;
+          text-decoration: none;
+        }
+        a:hover {
+          background: $theme.color.hover;
+        }
+        [aria-current="page"] {
+          background: $theme.color.accent;
+          color: $theme.color.accentInk;
+          font-weight: 600;
+        }
+        .edge,
+        .gap {
+          color: $theme.color.muted;
+        }
+      </style>
+    </nav>
+  );
+}

@@ -1,0 +1,64 @@
+import * as theme from "../theme.ts";
+import type { Review, UserReview } from "../types.ts";
+import { Stars } from "./Rating.stsx";
+
+const DATE = new Intl.DateTimeFormat("en", { dateStyle: "medium", timeZone: "UTC" });
+
+export function formatDate(iso: string): string {
+  return DATE.format(new Date(iso));
+}
+
+/** One review. On a profile (`book` set) it links to the book; `own` marks the reader's review. */
+export function ReviewCard(props: { review: Review | UserReview; own?: boolean; showBook?: boolean }) {
+  return (
+    <article class={{ review: true, own: props.own === true }}>
+      <header>
+        <Stars rating={props.review.rating} />
+        <h3>{props.review.title ?? "Untitled review"}</h3>
+      </header>
+      {props.showBook === true && "book" in props.review ? (
+        <p class="book">
+          on <a href={`/books/${props.review.book.isbn}`}>{props.review.book.title}</a>
+        </p>
+      ) : null}
+      <p class="byline">
+        {props.own === true ? "You" : props.review.user.name} ·{" "}
+        <time datetime={props.review.createdAt}>{formatDate(props.review.createdAt)}</time>
+        {props.review.updatedAt === props.review.createdAt ? "" : " · edited"}
+      </p>
+      <p class="body">{props.review.body}</p>
+
+      <style>
+        .review {
+          display: grid;
+          gap: $theme.space.xs;
+          padding: $theme.space.md 0;
+          border-top: 1px solid $theme.color.line;
+        }
+        .own {
+          padding-inline: $theme.space.md;
+          border: 1px solid color-mix(in srgb, $theme.color.accent 40%, transparent);
+          border-radius: $theme.radius.md;
+          background: color-mix(in srgb, $theme.color.accent 6%, transparent);
+        }
+        header {
+          display: flex;
+          flex-wrap: wrap;
+          gap: $theme.space.sm;
+          align-items: baseline;
+        }
+        h3 {
+          margin: 0;
+          font-size: 1rem;
+        }
+        .book,
+        .body {
+          margin: 0;
+        }
+        .body {
+          white-space: pre-line;
+        }
+      </style>
+    </article>
+  );
+}

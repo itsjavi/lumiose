@@ -1,27 +1,100 @@
+import { ReadingListToggle } from "../islands/ReadingListToggle.stsx";
+import * as theme from "../theme.ts";
 import type { BookSummary } from "../types.ts";
 import { Rating } from "./Rating.stsx";
 
-export function BookCard(props: { book: BookSummary }) {
+/** Reading-list state for a signed-in reader: `next` is where a no-JS toggle returns to. */
+export interface ToggleState {
+  onList: (bookId: number) => boolean;
+  next: string;
+}
+
+/** The generated cover: a gradient from the book's hue with its title. */
+export function Cover(props: { book: Pick<BookSummary, "title" | "coverHue">; size?: "large" }) {
+  return (
+    <div class={["cover", props.size]} style={{ "--hue": String(props.book.coverHue) }}>
+      <span>{props.book.title}</span>
+
+      <style>
+        .cover {
+          display: flex;
+          align-items: end;
+          aspect-ratio: 2 / 3;
+          padding: $theme.space.md;
+          border-radius: $theme.radius.sm;
+          box-shadow: $theme.shadow.card;
+          color: white;
+          font-weight: 600;
+          line-height: 1.25;
+          text-wrap: balance;
+          background:
+            linear-gradient(90deg, rgb(0 0 0 / 0.25), transparent 8%),
+            linear-gradient(160deg, hsl(var(--hue) 55% 45%), hsl(var(--hue) 55% 24%));
+        }
+        .large {
+          font-size: $theme.font.lead;
+        }
+      </style>
+    </div>
+  );
+}
+
+export function BookCard(props: { book: BookSummary; toggle?: ToggleState | undefined }) {
   return (
     <article class="book-card">
       <a href={`/books/${props.book.isbn}`}>
-        <div class="cover" style={`--hue: ${props.book.coverHue}`}>
-          <span>{props.book.title}</span>
-        </div>
+        <Cover book={props.book} />
         <h3>{props.book.title}</h3>
       </a>
       <p class="byline">{props.book.authors.map((author) => author.name).join(", ")}</p>
       <Rating rating={props.book.rating} />
+      {props.toggle === undefined ? null : (
+        <ReadingListToggle
+          client:visible
+          bookId={props.book.id}
+          onList={props.toggle.onList(props.book.id)}
+          next={props.toggle.next}
+          compact
+        />
+      )}
+
+      <style>
+        .book-card {
+          display: grid;
+          gap: $theme.space.xs;
+          align-content: start;
+        }
+        .book-card a {
+          color: inherit;
+          text-decoration: none;
+        }
+        .book-card a:hover h3 {
+          color: $theme.color.accent;
+        }
+        h3 {
+          margin: $theme.space.sm 0 0;
+          font-size: 1rem;
+          line-height: 1.3;
+        }
+      </style>
     </article>
   );
 }
 
-export function BookGrid(props: { books: BookSummary[] }) {
+export function BookGrid(props: { books: BookSummary[]; toggle?: ToggleState | undefined }) {
   return (
     <div class="book-grid">
       {props.books.map((book) => (
-        <BookCard book={book} />
+        <BookCard book={book} toggle={props.toggle} />
       ))}
+
+      <style>
+        .book-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(10rem, 1fr));
+          gap: $theme.space.lg $theme.space.md;
+        }
+      </style>
     </div>
   );
 }

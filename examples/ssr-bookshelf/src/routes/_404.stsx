@@ -1,8 +1,8 @@
-import { Title } from "lumen";
-import { Header } from "../components/Header.stsx";
+import { Title, type ErrorPageProps } from "lumen";
 import "../styles.css";
+import { Footer, Header } from "../components/Header.stsx";
 
-export default function NotFound(props: { error: Error }) {
+export default function NotFound(props: ErrorPageProps) {
   return (
     <>
       <Header />
@@ -14,6 +14,7 @@ export default function NotFound(props: { error: Error }) {
           <a href="/books">Browse the books</a>
         </p>
       </main>
+      <Footer />
     </>
   );
 }

@@ -1,14 +1,58 @@
 import { Title } from "lumen";
+import * as theme from "../../theme.ts";
+
+const FEATURES = [
+  ["Server routes", "Books, authors, your list and profile render per request from node:sqlite."],
+  ["Static routes", "This page and the genre pages are prerendered by lumen build."],
+  ["Streaming", "The home page sends its shell first; slow recommendations stream in."],
+  ["Form actions", "Sign-in, registration, reviews and the reading list post plain forms."],
+  ["Islands", "Search suggestions, star ratings, reading-list buttons and the account menu."],
+  ["Scoped styles", "Each component styles itself, with tokens from src/theme.ts."],
+] as const;
 
 export default function About() {
   return (
     <main>
       <Title>About · Bookshelf</Title>
       <h1>About this sample</h1>
-      <p>
+      <p class="lead">
         Bookshelf is a server-rendered Lumen app backed by <code>node:sqlite</code>. This page is a{" "}
         <code>static</code> route: the build prerenders it, while the book pages render per request.
+        Every form works without JavaScript; islands enhance a few of them.
       </p>
+      <dl class="features">
+        {FEATURES.map(([name, text]) => (
+          <div>
+            <dt>{name}</dt>
+            <dd>{text}</dd>
+          </div>
+        ))}
+      </dl>
     </main>
   );
 }
+
+<style>
+  .lead {
+    max-width: 42rem;
+    font-size: $theme.font.lead;
+  }
+  .features {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr));
+    gap: $theme.space.md;
+    margin: $theme.space.xl 0 0;
+  }
+  .features div {
+    padding: $theme.space.md;
+    border-radius: $theme.radius.md;
+    background: $theme.color.surface;
+  }
+  dt {
+    font-weight: 700;
+  }
+  dd {
+    margin: $theme.space.xs 0 0;
+    color: $theme.color.muted;
+  }
+</style>

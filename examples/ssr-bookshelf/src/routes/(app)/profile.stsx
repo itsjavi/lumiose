@@ -1,0 +1,98 @@
+import { response, Title, url } from "lumen";
+import { Pager } from "../../components/Pager.stsx";
+import { formatDate, ReviewCard } from "../../components/ReviewCard.stsx";
+import { parsePageParam } from "../../lib/search-params.ts";
+import { requireUser } from "../../server/auth.server.ts";
+import { queries } from "../../server/queries.server.ts";
+import * as theme from "../../theme.ts";
+import type { Page, User, UserReview } from "../../types.ts";
+
+export default async function ProfilePage() {
+  const user = await requireUser();
+  response().setHeader("cache-control", "private, no-store");
+  return (
+    <Profile
+      user={user}
+      reviews={queries().listUserReviews(user.id, {
+        page: parsePageParam(url().searchParams.get("page")),
+        pageSize: 10,
+      })}
+      listed={queries().readingList(user.id, { pageSize: 1 }).total}
+    />
+  );
+}
+
+function Profile(props: { user: User; reviews: Page<UserReview>; listed: number }) {
+  return (
+    <main>
+      <Title>{props.user.name} · Bookshelf</Title>
+      <div class="profile">
+        <span class="avatar" aria-hidden="true">
+          {props.user.name.charAt(0)}
+        </span>
+        <div>
+          <h1>{props.user.name}</h1>
+          <p class="byline">
+            {props.user.email} · member since {formatDate(props.user.createdAt)}
+          </p>
+        </div>
+      </div>
+      <ul class="stats">
+        <li>
+          <strong>{props.reviews.total}</strong> reviews
+        </li>
+        <li>
+          <a href="/reading-list">
+            <strong>{props.listed}</strong> on your reading list
+          </a>
+        </li>
+      </ul>
+      <h2>Your reviews</h2>
+      {props.reviews.total === 0 ? (
+        <p class="byline">You have not reviewed any books yet.</p>
+      ) : null}
+      {props.reviews.items.map((review) => (
+        <ReviewCard review={review} showBook />
+      ))}
+      <Pager
+        info={props.reviews}
+        href={(page) => (page > 1 ? `/profile?page=${page}` : "/profile")}
+        label="Review pages"
+      />
+    </main>
+  );
+}
+
+<style>
+  .profile {
+    display: flex;
+    gap: $theme.space.md;
+    align-items: center;
+  }
+  .profile h1 {
+    margin: 0;
+  }
+  .avatar {
+    display: grid;
+    place-items: center;
+    width: 3.5rem;
+    height: 3.5rem;
+    border-radius: 50%;
+    background: $theme.color.accent;
+    color: $theme.color.accentInk;
+    font-size: 1.5rem;
+    font-weight: 700;
+  }
+  .stats {
+    display: flex;
+    gap: $theme.space.lg;
+    margin: $theme.space.lg 0 0;
+    padding: 0;
+    list-style: none;
+  }
+  .stats li {
+    padding: $theme.space.sm $theme.space.md;
+    border-radius: $theme.radius.md;
+    background: $theme.color.surface;
+  }
+</style>
