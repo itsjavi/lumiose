@@ -1,7 +1,7 @@
 ---
 id: TASK-30
 title: Build the VS Code extension
-status: In Progress
+status: Done
 assignee:
   - '@Beacon'
 created_date: '2026-10-08 12:21'
@@ -60,3 +60,13 @@ Evidence:
 
 Limitations: the .vsix does not bundle the language server (it resolves @lumen/language-server from the workspace or lumen.server.path; a bundled server/bin.js is looked up but not produced) -> follow-up task. The TS JSDoc injection grammar (injectTo source.tsx) does not apply to source.stsx. Unterminated CSS blocks can swallow </style> (TextMate limitation, same as HTML). In this monorepo the LS is not resolvable from the root, so set lumen.server.path to packages/language-server/src/bin.ts when dogfooding.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Built packages/vscode (lumen-vscode): the stsx language ("Styled TSX", .stsx) with a TextMate grammar that includes VS Code's source.tsx and injects <style> blocks (embedded source.css, incl. <style global> and single-line blocks) and $ref highlighting ($name / $a.b as variable tokens, not in CSS strings/comments/url()); a language configuration based on VS Code's TS one plus <style> auto-closing and block folding; snippets comp/acomp/island/route; an LSP client (vscode-languageclient 10, stdio, node runtime) for @lumen/language-server resolved from lumen.server.path, the workspace (directly or via lumen), or a bundled server/ dir; takeover mode (serves .ts/.tsx/.js/.jsx when the built-in TS / TS native preview extension is disabled) with a Vue-style prompt honoring lumen.takeover (prompt|auto|off). Bundled with rolldown; pnpm --filter lumen-vscode package builds lumen-vscode.vsix (95.6 KB). The language server now imports from lumen/tooling.
+
+Evidence: 18 vitest tests (grammar snapshots + assertions via vscode-textmate/oniguruma over tm-grammars' tsx/css; resolution/takeover logic); real VS Code 1.141 smoke test on the unpacked .vsix (test:vscode) passing: activation, VS Code-captured token scopes, $ref + TS hovers through the LS, takeover hover in .tsx, snippet insertion, <style> auto-close; vsix installs as lumen.lumen-vscode@0.0.0. Screenshot: ![Card.stsx in VS Code](../assets/task-30-vscode-stsx.png)
+
+Follow-up: TASK-51 (ship the language server inside the extension).
+<!-- SECTION:FINAL_SUMMARY:END -->
