@@ -1,10 +1,11 @@
 ---
 id: TASK-32
 title: Write the docs in the package and generate diagnostics docs
-status: To Do
+status: In Progress
 assignee:
   - '@Beacon'
 created_date: '2026-10-08 12:21'
+updated_date: '2026-10-08 15:18'
 labels: []
 milestone: m-5
 dependencies:
