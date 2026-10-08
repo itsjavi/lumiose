@@ -1,11 +1,11 @@
 ---
 id: TASK-33
 title: Build the create-lumen scaffolder
-status: In Progress
+status: Done
 assignee:
   - '@Beacon'
 created_date: '2026-10-08 12:21'
-updated_date: '2026-10-08 16:53'
+updated_date: '2026-10-08 21:12'
 labels: []
 milestone: m-5
 dependencies:
@@ -24,7 +24,7 @@ A new project must start agent-ready: AGENTS.md, CLAUDE.md, a skill and a workin
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 create-lumen offers templates (minimal, ssr, spa, static) that run out of the box
+- [x] #1 create-lumen offers templates (minimal, ssr, spa, static) that run out of the box
 - [x] #2 Generated AGENTS.md (with the .stsx hint and local-docs pointer), a CLAUDE.md referencing it, and a skill bundle; lumen agents init does the same for existing projects
 <!-- AC:END -->
 
@@ -50,4 +50,12 @@ Beacon: implemented (standalone worker run).
 - Publishing note (TASK-39): create-lumen depends on lumen for lumen/agents and tsconfigTemplate (single source with lumen agents init); that pulls lumen's deps into pnpm create; vendor them at publish time if the install weight matters.
 
 RESUME (Beacon, checkpoint): Done: create-lumen package + 4 templates + lumen agents init, tests green (packages/create 16 passed/4 skipped; lumen cli/agents 3/3), typecheck ok, docs regenerated. Remaining: only AC #1, blocked by TASK-77 (lumen({ mode }) in the Vite plugin). Next: after TASK-77, remove the pluginTakesMode guard in packages/create/src/create.test.ts, run pnpm vitest packages/create, check AC #1, mark Done. Files touched: packages/create/** (new), packages/lumen/src/cli/agents/{index,agents.test}.ts, packages/lumen/src/cli/main.ts, packages/lumen/package.json (./agents export), packages/lumen/docs/{getting-started,reference/cli,README}.md + llms*.txt, pnpm-lock.yaml (packages/create importer). Not committed.
+
+2026-10-08 Beacon (resumed after TASK-77 Done): Photon's a32f5b9 already dropped the pluginTakesMode guard. packages/create: 20/20 passed, none skipped — every template (minimal, static, ssr, spa) passes lumen check, fmt --check, build, 'routes use the template's default mode' (defaultMode static/server/spa from lumen({ mode })) and lumen dev (GET / 200; ssr POST /guestbook?/sign → 303 and /api/entries). Docs status table: create-lumen and lumen agents init marked Available (commit 5c7e84d).
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+create-lumen (packages/create) scaffolds minimal, static, ssr and spa projects that run out of the box (lumen check, fmt, build, dev verified per template in packages/create/src/create.test.ts), each with vite.config.ts lumen({ mode }) (decision-21), a TS 7 tsconfig, and agent files (AGENTS.md Lumen section, CLAUDE.md, .claude/skills/lumen); lumen agents init adds the same agent files to existing projects (lumen/agents).
+<!-- SECTION:FINAL_SUMMARY:END -->
