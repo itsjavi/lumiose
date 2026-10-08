@@ -5,6 +5,7 @@ status: To Do
 assignee:
   - Beacon
 created_date: '2026-10-08 14:03'
+updated_date: '2026-10-08 14:25'
 labels:
   - tooling
 dependencies:
@@ -21,7 +22,13 @@ Gaps found while implementing TASK-29 (packages/language-server). (1) Import syn
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Language server imports the shadow API from a lumen package export
+- [x] #1 Language server imports the shadow API from a lumen package export
 - [ ] #2 Compiler diagnostics flow into .stsx diagnostics with a protocol test
 - [ ] #3 TS LSP crash recovery covered by a test
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Beacon (2026-10-08, during TASK-30): AC #1 done: packages/language-server/src/shadows.ts imports from the lumen/tooling export (dependency lumen: workspace:*); LS suite 32/32.
+<!-- SECTION:NOTES:END -->
