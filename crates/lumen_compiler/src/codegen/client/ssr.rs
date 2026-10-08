@@ -1,0 +1,593 @@
+//! Server target (contract doc-2 §3, spec §5.3): JSX becomes `ssr(parts, ...holes)` on
+//! `lumen/server`, with the static HTML hoisted into deduplicated part arrays and every dynamic
+//! value passed through a runtime helper (string holes are trusted HTML).
+//!
+//! The output mirrors the client walk so that islands hydrate: wherever the client calls
+//! `insert`, `list` or `branch` the server has an `insert()`, `list()` or `branch()` hole (each one
+//! dynamic region, wrapped in markers by the runtime inside islands), a sole text-like child the
+//! client writes with `setText` is a `text()` hole, and the static HTML is the client template's
+//! (same text normalisation, implicit `<tbody>`, scope tokens) without its `<!>` placeholders.
+//! Attributes follow the client's DOM order: static and baked ones, scope tokens, then dynamic
+//! ones in source order. Event handlers, refs and attachments do not exist on the server.
+
+use oxc_allocator::{ArenaBox, ArenaVec};
+use oxc_ast::ast::*;
+use oxc_span::{GetSpan, Span};
+
+use super::children::{Item, is_text_like};
+use super::element::{
+    AttrValue, Literal, attr_value, attribute_name, literal, static_object_keys, static_strings,
+    strip_parens, tag_name,
+};
+use super::events::event_name;
+use super::html;
+use super::{Codegen, Compiled};
+use crate::analyze::{is_jsx_like, property_key_name};
+
+/// Server output under construction: hoisted static parts around holes.
+pub struct Ssr<'a> {
+    /// Escaped HTML; always one more than `holes`.
+    parts: Vec<String>,
+    holes: Vec<Expression<'a>>,
+    setup: Vec<Statement<'a>>,
+    /// The decoded text when the buffer only holds text (a fragment's text item).
+    plain: String,
+    /// True once the buffer holds elements, raw HTML or holes.
+    markup: bool,
+}
+
+impl<'a> Ssr<'a> {
+    pub fn new() -> Self {
+        Self {
+            parts: vec![String::new()],
+            holes: Vec::new(),
+            setup: Vec::new(),
+            plain: String::new(),
+            markup: false,
+        }
+    }
+
+    fn html(&mut self, html: &str) {
+        self.markup = true;
+        self.last().push_str(html);
+    }
+
+    fn text(&mut self, text: &str) {
+        self.plain.push_str(text);
+        html::escape_text(text, self.last());
+    }
+
+    fn attribute(&mut self, name: &str, value: Option<&str>) {
+        html::write_attribute(name, value, self.last());
+    }
+
+    fn hole(&mut self, hole: Expression<'a>) {
+        self.markup = true;
+        self.holes.push(hole);
+        self.parts.push(String::new());
+    }
+
+    fn piece(&mut self, piece: Piece<'a>) {
+        match piece {
+            Piece::Html(html) => self.html(&html),
+            Piece::Hole(hole) => self.hole(hole),
+        }
+    }
+
+    fn last(&mut self) -> &mut String {
+        self.parts.last_mut().expect("parts are never empty")
+    }
+
+    fn is_empty(&self) -> bool {
+        self.holes.is_empty() && self.parts[0].is_empty()
+    }
+
+    /// `ssr(_sN, ...holes)` with the hoisted parts.
+    fn emit(self, cg: &mut Codegen<'a, '_>, span: Span) -> Compiled<'a> {
+        let name = cg.ssr_parts(&self.parts, span);
+        let callee = cg.runtime("ssr", span);
+        let args = std::iter::once(cg.ast.ident(span, &name)).chain(self.holes);
+        Compiled {
+            setup: self.setup,
+            value: cg.ast.call(span, callee, args),
+        }
+    }
+}
+
+/// Static HTML or a hole.
+enum Piece<'a> {
+    Html(String),
+    Hole(Expression<'a>),
+}
+
+/// The attributes of an opening tag, in client DOM order, plus a content override.
+#[derive(Default)]
+struct OpenTag<'a> {
+    /// Static attributes and the `class`/`style` attributes the client bakes into its template.
+    head: Vec<Piece<'a>>,
+    /// Attributes the client sets after cloning, in source order.
+    tail: Vec<Piece<'a>>,
+    /// `innerHTML`, `textContent` or a `<textarea>` value, replacing the children.
+    content: Option<Piece<'a>>,
+}
+
+impl<'a> Codegen<'a, '_> {
+    /// An intrinsic JSX element in value position: `ssr(_sN, ...holes)`.
+    pub(super) fn ssr_element_root(
+        &mut self,
+        element: ArenaBox<'a, JSXElement<'a>>,
+    ) -> Compiled<'a> {
+        let span = element.span;
+        let mut out = Ssr::new();
+        self.ssr_element(&mut out, element);
+        out.emit(self, span)
+    }
+
+    /// A fragment or a component's children: one renderable, or an array of them. Runs of static
+    /// items become one `ssr()` node (a lone text stays a string, escaped by the runtime);
+    /// dynamic items are values, rendered by whoever renders the array.
+    pub(super) fn ssr_fragment_items(&mut self, items: Vec<Item<'a>>, span: Span) -> Compiled<'a> {
+        let mut values = Vec::new();
+        let mut setup = Vec::new();
+        let mut run = Ssr::new();
+        for item in items {
+            match item {
+                Item::Text(text, _) => run.text(&text),
+                Item::Raw(raw, _) => run.html(&raw),
+                Item::Element(element) => self.ssr_element(&mut run, element),
+                Item::Dynamic(expression) => {
+                    self.flush_run(&mut run, &mut values, &mut setup, span);
+                    let compiled = self.ssr_renderable(expression);
+                    setup.extend(compiled.setup);
+                    values.push(compiled.value);
+                }
+            }
+        }
+        self.flush_run(&mut run, &mut values, &mut setup, span);
+        let value = if values.len() == 1 {
+            values.pop().expect("one value")
+        } else {
+            self.ast.array(span, values)
+        };
+        Compiled { setup, value }
+    }
+
+    fn flush_run(
+        &mut self,
+        run: &mut Ssr<'a>,
+        values: &mut Vec<Expression<'a>>,
+        setup: &mut Vec<Statement<'a>>,
+        span: Span,
+    ) {
+        if run.is_empty() {
+            return;
+        }
+        let run = std::mem::replace(run, Ssr::new());
+        if !run.markup {
+            values.push(self.ast.string(span, &run.plain));
+            return;
+        }
+        let compiled = run.emit(self, span);
+        setup.extend(compiled.setup);
+        values.push(compiled.value);
+    }
+
+    /// A dynamic fragment item: compiled JSX, or the visited expression.
+    fn ssr_renderable(&mut self, expression: Expression<'a>) -> Compiled<'a> {
+        if matches!(
+            expression.without_parentheses(),
+            Expression::JSXElement(_) | Expression::JSXFragment(_)
+        ) || is_jsx_like(&expression)
+        {
+            self.compile_value(expression)
+        } else {
+            Compiled::value(self.visited(expression))
+        }
+    }
+
+    /// Writes an intrinsic element: opening tag, content, closing tag.
+    fn ssr_element(&mut self, out: &mut Ssr<'a>, element: ArenaBox<'a, JSXElement<'a>>) {
+        let span = element.span;
+        let element = element.unbox();
+        let opening = element.opening_element.unbox();
+        let tag = tag_name(&opening.name);
+        let mut open = OpenTag::default();
+        self.ssr_attributes(&tag, opening.attributes, &mut open, span);
+        out.html(&format!("<{tag}"));
+        for piece in open.head {
+            out.piece(piece);
+        }
+        for token in self.scope_tokens() {
+            out.attribute(&token, None);
+        }
+        for piece in open.tail {
+            out.piece(piece);
+        }
+        out.html(">");
+        if html::is_void(&tag) {
+            return;
+        }
+        match open.content {
+            Some(content) => out.piece(content),
+            None => self.ssr_children(out, &tag, element.children),
+        }
+        out.html(&format!("</{tag}>"));
+    }
+
+    fn ssr_children(&mut self, out: &mut Ssr<'a>, tag: &str, children: ArenaVec<'a, JSXChild<'a>>) {
+        let items = self.child_items(children);
+        let count = items.len();
+        // The parser drops a newline right after these start tags; keep the authored one.
+        if matches!(tag, "pre" | "textarea" | "listing")
+            && matches!(items.first(), Some(Item::Text(text, _)) if text.starts_with('\n'))
+        {
+            out.html("\n");
+        }
+        // `<tr>` children of `<table>` get the `<tbody>` the HTML parser (and the client
+        // template) inserts.
+        let in_table = tag == "table";
+        let mut in_tbody = false;
+        for item in items {
+            let is_row = in_table
+                && matches!(&item, Item::Element(e) if tag_name(&e.opening_element.name) == "tr");
+            if in_tbody && !is_row {
+                out.html("</tbody>");
+                in_tbody = false;
+            }
+            match item {
+                Item::Text(text, _) => out.text(&text),
+                Item::Raw(raw, _) => out.html(&raw),
+                Item::Element(element) => {
+                    if is_row && !in_tbody {
+                        out.html("<tbody");
+                        for token in self.scope_tokens() {
+                            out.attribute(&token, None);
+                        }
+                        out.html(">");
+                        in_tbody = true;
+                    }
+                    self.ssr_element(out, element);
+                }
+                Item::Dynamic(expression) => self.ssr_dynamic_child(out, expression, count == 1),
+            }
+        }
+        if in_tbody {
+            out.html("</tbody>");
+        }
+    }
+
+    /// The hole of a dynamic child, matching the client's `insert`/`list`/`branch`/`setText`.
+    fn ssr_dynamic_child(&mut self, out: &mut Ssr<'a>, expression: Expression<'a>, sole: bool) {
+        let span = expression.span();
+        let hole = if self.is_list(&expression) {
+            let list = self.compile_list(expression);
+            out.setup.extend(list.setup);
+            let callee = self.runtime("list", span);
+            self.ast.call(span, callee, [list.source, list.render])
+        } else if self.is_branch(&expression) {
+            let (cond, when_true, when_false) = self.compile_branch(expression);
+            let callee = self.runtime("branch", span);
+            let args = [cond, when_true].into_iter().chain(when_false);
+            self.ast.call(span, callee, args)
+        } else {
+            let compiled_jsx = matches!(
+                expression.without_parentheses(),
+                Expression::JSXElement(_) | Expression::JSXFragment(_)
+            ) || is_jsx_like(&expression);
+            let value = if compiled_jsx {
+                self.compile_value(expression)
+                    .into_expression(self.ast, span)
+            } else {
+                self.visited(expression)
+            };
+            let helper = if sole && !compiled_jsx && is_text_like(&value) {
+                "text"
+            } else {
+                "insert"
+            };
+            let callee = self.runtime(helper, span);
+            self.ast.call(span, callee, [value])
+        };
+        out.hole(hole);
+    }
+
+    fn ssr_attributes(
+        &mut self,
+        tag: &str,
+        attributes: ArenaVec<'a, JSXAttributeItem<'a>>,
+        open: &mut OpenTag<'a>,
+        span: Span,
+    ) {
+        if attributes
+            .iter()
+            .any(|a| matches!(a, JSXAttributeItem::SpreadAttribute(_)))
+        {
+            // As on the client, every attribute goes through the spread, in order.
+            let props = self.props_expression(attributes, None, span);
+            let hole = self.helper_call("spreadAttrs", [props], span);
+            open.tail.push(Piece::Hole(hole));
+            return;
+        }
+        for item in attributes {
+            let JSXAttributeItem::Attribute(attribute) = item else {
+                continue;
+            };
+            let attribute = attribute.unbox();
+            let span = attribute.span;
+            let name = attribute_name(&attribute.name);
+            let value = attr_value(attribute.value);
+            match name.as_str() {
+                "key" | "ref" | "attach" => {}
+                _ if name.starts_with("client:") || name.starts_with("on:") => {}
+                _ if event_name(&name).is_some() => {}
+                "class" => self.ssr_class(open, value, span),
+                "style" => self.ssr_style(open, value, span),
+                "bind:value" | "bind:checked" => {
+                    if let AttrValue::Expr(expr) = value {
+                        let signal = self.visited(expr);
+                        let current = self.ast.call(span, signal, []);
+                        let property = &name["bind:".len()..];
+                        if property == "value" && tag == "textarea" {
+                            let escaped = self.helper_call("escape", [current], span);
+                            open.content = Some(Piece::Hole(escaped));
+                        } else {
+                            let hole = self.attr_call(property, current, span);
+                            open.tail.push(Piece::Hole(hole));
+                        }
+                    }
+                }
+                _ => self.ssr_plain_attribute(tag, open, &name, value, span),
+            }
+        }
+    }
+
+    fn ssr_plain_attribute(
+        &mut self,
+        tag: &str,
+        open: &mut OpenTag<'a>,
+        name: &str,
+        value: AttrValue<'a>,
+        span: Span,
+    ) {
+        // Properties without an attribute form set the content (or nothing) on the server.
+        let text_content =
+            matches!(name, "textContent" | "innerText") || (name == "value" && tag == "textarea");
+        let constant = match value {
+            AttrValue::Empty => return,
+            AttrValue::True => Literal::Bool(true),
+            AttrValue::Str(s) => Literal::Str(s),
+            AttrValue::Expr(expr) => match literal(&expr) {
+                Some(constant) => constant,
+                None => {
+                    let expr = self.visited(expr);
+                    if name == "innerHTML" {
+                        // Trusted HTML by definition: the value is written as it is.
+                        open.content = Some(Piece::Hole(expr));
+                    } else if text_content {
+                        let escaped = self.helper_call("escape", [expr], span);
+                        open.content = Some(Piece::Hole(escaped));
+                    } else if name != "indeterminate" {
+                        let hole = self.attr_call(name, expr, span);
+                        open.tail.push(Piece::Hole(hole));
+                    }
+                    return;
+                }
+            },
+        };
+        match constant {
+            Literal::Str(value) if name == "innerHTML" => open.content = Some(Piece::Html(value)),
+            Literal::Str(value) if text_content => {
+                let mut escaped = String::new();
+                html::escape_text(&value, &mut escaped);
+                open.content = Some(Piece::Html(escaped));
+            }
+            _ if matches!(name, "innerHTML" | "indeterminate") || text_content => {}
+            Literal::Str(value) => open
+                .head
+                .push(Piece::Html(attribute_html(name, Some(&value)))),
+            Literal::Bool(true) => open.head.push(Piece::Html(attribute_html(name, None))),
+            Literal::Bool(false) | Literal::Nullish => {}
+        }
+    }
+
+    /// `class`: static values are baked like on the client; an object with static keys keeps
+    /// the client's token order (baked keys first); anything else is one `classAttr()` hole,
+    /// followed by the caller's scope tokens when it applies `props.class` (spec §4.6.2).
+    fn ssr_class(&mut self, open: &mut OpenTag<'a>, value: AttrValue<'a>, span: Span) {
+        let expr = match value {
+            AttrValue::Empty | AttrValue::True => return,
+            AttrValue::Str(s) => {
+                open.head
+                    .push(Piece::Html(attribute_html("class", Some(&s))));
+                return;
+            }
+            AttrValue::Expr(expr) => expr,
+        };
+        match literal(&expr) {
+            Some(Literal::Str(s)) => {
+                open.head
+                    .push(Piece::Html(attribute_html("class", Some(&s))));
+                return;
+            }
+            Some(_) => return,
+            None => {}
+        }
+        if let Expression::ArrayExpression(array) = expr.without_parentheses()
+            && let Some(parts) = static_strings(array)
+        {
+            let joined = parts.join(" ");
+            if !joined.is_empty() {
+                open.head
+                    .push(Piece::Html(attribute_html("class", Some(&joined))));
+            }
+            return;
+        }
+        if let Expression::ObjectExpression(object) = expr.without_parentheses()
+            && static_object_keys(object)
+                .is_some_and(|keys| keys.iter().all(|k| !k.contains(char::is_whitespace)))
+        {
+            let (baked, dynamic) = self.split_object(expr, |value| match value {
+                Literal::Bool(true) => true,
+                Literal::Str(s) => !s.is_empty(),
+                _ => false,
+            });
+            let baked: Vec<String> = baked.into_iter().map(|(key, _)| key).collect();
+            if dynamic.is_empty() {
+                if !baked.is_empty() {
+                    open.head
+                        .push(Piece::Html(attribute_html("class", Some(&baked.join(" ")))));
+                }
+                return;
+            }
+            let mut properties: Vec<ObjectPropertyKind<'a>> = baked
+                .iter()
+                .map(|key| self.ast.property(span, key, self.ast.boolean(span, true)))
+                .collect();
+            properties.extend(dynamic);
+            let object = self.ast.object(span, properties);
+            let hole = Piece::Hole(self.helper_call("classAttr", [object], span));
+            if baked.is_empty() {
+                open.tail.push(hole);
+            } else {
+                open.head.push(hole);
+            }
+            return;
+        }
+        let expr = self.visited(expr);
+        let passes_class = self.reads_props_class(&expr);
+        let hole = self.helper_call("classAttr", [expr], span);
+        open.tail.push(Piece::Hole(hole));
+        if let Some(props_name) = passes_class {
+            let scope = self
+                .ast
+                .member(span, self.ast.ident(span, &props_name), "$$scope");
+            let object = self
+                .ast
+                .object(span, [self.ast.property(span, "$$scope", scope)]);
+            let hole = self.helper_call("spreadAttrs", [object], span);
+            open.tail.push(Piece::Hole(hole));
+        }
+    }
+
+    /// `style`: like `class`, with baked `key:value` declarations first.
+    fn ssr_style(&mut self, open: &mut OpenTag<'a>, value: AttrValue<'a>, span: Span) {
+        let expr = match value {
+            AttrValue::Empty | AttrValue::True => return,
+            AttrValue::Str(s) => {
+                open.head
+                    .push(Piece::Html(attribute_html("style", Some(&s))));
+                return;
+            }
+            AttrValue::Expr(expr) => expr,
+        };
+        match literal(&expr) {
+            Some(Literal::Str(s)) => {
+                open.head
+                    .push(Piece::Html(attribute_html("style", Some(&s))));
+                return;
+            }
+            Some(_) => return,
+            None => {}
+        }
+        if let Expression::ObjectExpression(object) = expr.without_parentheses()
+            && static_object_keys(object).is_some()
+        {
+            let (baked, dynamic) =
+                self.split_object(expr, |value| matches!(value, Literal::Str(_)));
+            let declarations: Vec<(String, String)> = baked
+                .into_iter()
+                .filter_map(|(key, value)| match value {
+                    Literal::Str(value) => Some((key, value)),
+                    _ => None,
+                })
+                .collect();
+            if dynamic.is_empty() {
+                if !declarations.is_empty() {
+                    let css = declarations
+                        .iter()
+                        .map(|(key, value)| format!("{key}:{value}"))
+                        .collect::<Vec<_>>()
+                        .join(";");
+                    open.head
+                        .push(Piece::Html(attribute_html("style", Some(&css))));
+                }
+                return;
+            }
+            let mut properties: Vec<ObjectPropertyKind<'a>> = declarations
+                .iter()
+                .map(|(key, value)| self.ast.property(span, key, self.ast.string(span, value)))
+                .collect();
+            properties.extend(dynamic);
+            let object = self.ast.object(span, properties);
+            let hole = Piece::Hole(self.helper_call("styleAttr", [object], span));
+            if declarations.is_empty() {
+                open.tail.push(hole);
+            } else {
+                open.head.push(hole);
+            }
+            return;
+        }
+        let expr = self.visited(expr);
+        let hole = self.helper_call("styleAttr", [expr], span);
+        open.tail.push(Piece::Hole(hole));
+    }
+
+    /// Splits an object literal with static keys into the literal entries `bake` keeps and the
+    /// other (visited) properties, in source order. Literals `bake` rejects are dropped, as on
+    /// the client.
+    #[allow(clippy::type_complexity)]
+    fn split_object(
+        &mut self,
+        expr: Expression<'a>,
+        bake: impl Fn(&Literal) -> bool,
+    ) -> (Vec<(String, Literal)>, Vec<ObjectPropertyKind<'a>>) {
+        let Expression::ObjectExpression(object) = strip_parens(expr) else {
+            unreachable!("an object literal")
+        };
+        let mut baked = Vec::new();
+        let mut dynamic = Vec::new();
+        for property in object.unbox().properties {
+            let ObjectPropertyKind::ObjectProperty(property) = property else {
+                continue;
+            };
+            let property = property.unbox();
+            let key = property_key_name(&property.key)
+                .unwrap_or_default()
+                .to_owned();
+            match literal(&property.value) {
+                Some(value) => {
+                    if bake(&value) {
+                        baked.push((key, value));
+                    }
+                }
+                None => {
+                    let value = self.visited(property.value);
+                    dynamic.push(self.ast.property(property.span, &key, value));
+                }
+            }
+        }
+        (baked, dynamic)
+    }
+
+    fn attr_call(&mut self, name: &str, value: Expression<'a>, span: Span) -> Expression<'a> {
+        let name = self.ast.string(span, name);
+        self.helper_call("attr", [name, value], span)
+    }
+
+    fn helper_call<const N: usize>(
+        &mut self,
+        helper: &'static str,
+        args: [Expression<'a>; N],
+        span: Span,
+    ) -> Expression<'a> {
+        let callee = self.runtime(helper, span);
+        self.ast.call(span, callee, args)
+    }
+}
+
+/// ` name` / ` name=value` as in client templates.
+fn attribute_html(name: &str, value: Option<&str>) -> String {
+    let mut out = String::new();
+    html::write_attribute(name, value, &mut out);
+    out
+}

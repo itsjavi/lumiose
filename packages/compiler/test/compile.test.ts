@@ -69,13 +69,13 @@ describe.skipIf(!binding)("@lumen/compiler native compile", () => {
     expect(text.slice(start, end)).toBe("A()");
   });
 
-  it("reports syntax errors and the unimplemented server target", () => {
+  it("reports syntax errors and compiles the server target", () => {
     expect(compile("export const = ;", "/src/x.tsx").diagnostics[0]).toMatchObject({
       code: "LUM1001",
       severity: "error",
     });
     const server = compile(source, "/src/Counter.stsx", { target: "server" });
-    expect(server.code).toBe("");
-    expect(server.diagnostics).toMatchObject([{ code: "LUM1002", severity: "error" }]);
+    expect(server.code).toContain('from "lumen/server"');
+    expect(server.meta.runtimeHelpers).toContain("ssr");
   });
 });

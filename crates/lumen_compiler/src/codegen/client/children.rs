@@ -326,6 +326,9 @@ impl<'a> Codegen<'a, '_> {
         if items.is_empty() {
             return None;
         }
+        if self.server() {
+            return Some(self.ssr_fragment_items(items, span));
+        }
         if items.len() == 1 {
             let item = items.into_iter().next().expect("one item");
             return Some(match item {

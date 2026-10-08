@@ -1,6 +1,6 @@
-//! Client codegen goldens: each `tests/fixtures/client/<name>.{stsx,tsx}` compiles to
-//! `<name>.js` (the client output followed by its diagnostics as comments). Regenerate with
-//! `UPDATE_GOLDEN=1 cargo test -p lumen_compiler --test client_golden`.
+//! Codegen goldens: each `tests/fixtures/client/<name>.{stsx,tsx}` compiles to `<name>.js` (client
+//! target) and `<name>.server.js` (server target), each output followed by its diagnostics as
+//! comments. Regenerate with `UPDATE_GOLDEN=1 cargo test -p lumen_compiler --test codegen_golden`.
 //!
 //! A fixture may start with `// @scope file=data-l-f1 Counter=data-l-c1` to provide the scope
 //! tokens the CSS pipeline would compute. Every output must parse as a JavaScript module.
@@ -9,19 +9,29 @@ mod support;
 
 use std::fmt::Write as _;
 
-use lumen_compiler::{CompileOptions, ScopeTokens, compile};
+use lumen_compiler::{CompileOptions, ScopeTokens, Target, compile};
 use oxc_allocator::Allocator;
 use oxc_parser::Parser;
 use oxc_span::SourceType;
 
 #[test]
 fn client_goldens() {
+    goldens(Target::Client, "js");
+}
+
+#[test]
+fn server_goldens() {
+    goldens(Target::Server, "server.js");
+}
+
+fn goldens(target: Target, extension: &str) {
     let files = support::fixtures("client");
     assert!(!files.is_empty());
     for path in files {
         let name = path.file_name().unwrap().to_str().unwrap().to_owned();
         let source = std::fs::read_to_string(&path).unwrap();
         let options = CompileOptions {
+            target,
             scope_tokens: scope_tokens(&source),
             ..CompileOptions::default()
         };
@@ -47,7 +57,7 @@ fn client_goldens() {
         let stem = name
             .rsplit_once('.')
             .map_or(name.as_str(), |(stem, _)| stem);
-        support::assert_golden(&path.with_file_name(format!("{stem}.js")), &output);
+        support::assert_golden(&path.with_file_name(format!("{stem}.{extension}")), &output);
     }
 }
 

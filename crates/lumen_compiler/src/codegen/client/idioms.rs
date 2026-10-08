@@ -101,7 +101,12 @@ impl<'a> Codegen<'a, '_> {
         };
         let span = call.span;
         let object = self.visited(member.unbox().object);
-        let source = self.compute(object);
+        // The server `list` takes the array; the client tracks a source function.
+        let source = if self.server() {
+            object
+        } else {
+            self.compute(object)
+        };
         let mut callback = call
             .arguments
             .pop()
@@ -125,7 +130,12 @@ impl<'a> Codegen<'a, '_> {
         if let Some(index) = index.filter(|_| index_used) {
             self.check_index_escape(&callback, index);
         }
-        let key = self.take_key(&mut callback, scope, item);
+        // Rows are never reconciled on the server; the `key` attribute is skipped there.
+        let key = if self.server() {
+            None
+        } else {
+            self.take_key(&mut callback, scope, item)
+        };
 
         self.maps.push(MapCtx {
             item,
@@ -429,7 +439,11 @@ impl<'a> Codegen<'a, '_> {
             _ => unreachable!("checked by is_branch"),
         };
         let test = self.visited(test);
-        let cond = self.compute(test);
+        let cond = if self.server() {
+            test
+        } else {
+            self.compute(test)
+        };
         let when_true = self.branch_arm(consequent);
         let when_false = alternate
             .filter(|a| !matches!(a.without_parentheses(), Expression::NullLiteral(_)))

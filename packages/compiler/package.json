@@ -2,12 +2,16 @@
   "name": "@lumen/compiler",
   "version": "0.0.0",
   "private": true,
-  "description": "Native bindings (napi-rs) of the Lumen Rust compiler: the .stsx scanner and masking.",
+  "description": "Native bindings (napi-rs) of the Lumen Rust compiler, with a WebAssembly (WASI) fallback.",
   "license": "MIT",
   "files": [
     "index.js",
     "index.d.ts",
-    "*.node"
+    "*.node",
+    "*.wasm",
+    "*.wasi.cjs",
+    "*.wasi-browser.js",
+    "wasi-worker*.mjs"
   ],
   "type": "module",
   "main": "./index.js",
@@ -22,11 +26,18 @@
   "scripts": {
     "build": "napi build --platform --release --esm --no-const-enum --manifest-path ../../crates/lumen_napi/Cargo.toml --output-dir . && oxfmt index.js index.d.ts",
     "build:debug": "napi build --platform --esm --no-const-enum --manifest-path ../../crates/lumen_napi/Cargo.toml --output-dir . && oxfmt index.js index.d.ts",
+    "build:wasm": "napi build --platform --release --esm --no-const-enum --target wasm32-wasip1-threads --manifest-path ../../crates/lumen_napi/Cargo.toml --output-dir . && oxfmt index.js index.d.ts",
     "typecheck": "tsc -p tsconfig.json",
     "test": "vitest run"
   },
+  "dependencies": {
+    "@emnapi/core": "2.0.0-alpha.5",
+    "@emnapi/runtime": "2.0.0-alpha.5",
+    "@napi-rs/wasm-runtime": "1.2.4"
+  },
   "devDependencies": {
-    "@napi-rs/cli": "^3.10.0"
+    "@napi-rs/cli": "^3.10.0",
+    "emnapi": "2.0.0-alpha.5"
   },
   "napi": {
     "binaryName": "compiler",

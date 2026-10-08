@@ -82,7 +82,7 @@ pub fn js_number(value: f64) -> String {
 }
 
 /// Names written as DOM properties rather than attributes.
-fn is_property(name: &str) -> bool {
+pub(super) fn is_property(name: &str) -> bool {
     matches!(
         name,
         "value"
@@ -97,7 +97,7 @@ fn is_property(name: &str) -> bool {
 }
 
 /// Properties without an attribute form: always assigned.
-fn is_property_only(name: &str) -> bool {
+pub(super) fn is_property_only(name: &str) -> bool {
     matches!(
         name,
         "indeterminate" | "innerHTML" | "textContent" | "innerText"
@@ -137,6 +137,9 @@ impl<'a> Codegen<'a, '_> {
     ) -> Compiled<'a> {
         if !is_intrinsic(&element.opening_element.name) {
             return self.compile_component(element);
+        }
+        if self.server() {
+            return self.ssr_element_root(element);
         }
         let span = element.span;
         let tag = tag_name(&element.opening_element.name);
@@ -316,8 +319,11 @@ impl<'a> Codegen<'a, '_> {
                 }
             },
         };
+        // A `<textarea>` has no `value` attribute: its value is the content or the property.
+        let property_only =
+            is_property_only(name) || (name == "value" && template.tag(node) == Some("textarea"));
         match constant {
-            Literal::Str(value) if is_property_only(name) => {
+            Literal::Str(value) if property_only => {
                 let value = self.ast.string(span, &value);
                 template.push(Op::Assign {
                     span,
@@ -326,7 +332,7 @@ impl<'a> Codegen<'a, '_> {
                     value,
                 });
             }
-            Literal::Bool(true) if is_property_only(name) => {
+            Literal::Bool(true) if property_only => {
                 let value = self.ast.boolean(span, true);
                 template.push(Op::Assign {
                     span,
@@ -464,7 +470,7 @@ impl<'a> Codegen<'a, '_> {
     }
 
     /// The props name when `expr` reads `props.class` (class passthrough, spec §4.6.2).
-    fn reads_props_class(&self, expr: &Expression<'a>) -> Option<String> {
+    pub(super) fn reads_props_class(&self, expr: &Expression<'a>) -> Option<String> {
         let props_name = self.component()?.props_name.clone();
         let mut finder = ClassReadFinder {
             props_name: &props_name,
@@ -603,7 +609,7 @@ impl<'a> Visit<'a> for ClassReadFinder<'_> {
     }
 }
 
-fn strip_parens(mut expr: Expression<'_>) -> Expression<'_> {
+pub(super) fn strip_parens(mut expr: Expression<'_>) -> Expression<'_> {
     while let Expression::ParenthesizedExpression(paren) = expr {
         expr = paren.unbox().expression;
     }
@@ -611,7 +617,7 @@ fn strip_parens(mut expr: Expression<'_>) -> Expression<'_> {
 }
 
 /// The keys of an object literal when all are static (no spreads, methods or computed keys).
-fn static_object_keys(object: &ObjectExpression<'_>) -> Option<Vec<String>> {
+pub(super) fn static_object_keys(object: &ObjectExpression<'_>) -> Option<Vec<String>> {
     object
         .properties
         .iter()
@@ -629,7 +635,7 @@ fn static_object_keys(object: &ObjectExpression<'_>) -> Option<Vec<String>> {
 }
 
 /// The elements of an array literal of string constants.
-fn static_strings(array: &ArrayExpression<'_>) -> Option<Vec<String>> {
+pub(super) fn static_strings(array: &ArrayExpression<'_>) -> Option<Vec<String>> {
     array
         .elements
         .iter()

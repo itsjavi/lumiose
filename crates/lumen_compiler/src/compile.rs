@@ -2,7 +2,7 @@
 //!
 //! ```text
 //! scan → oxc_parser(masked) → semantic → style artifacts ($ref bindings, placeholders)
-//!      → TypeScript strip → semantic → analyze → client codegen → oxc_codegen + source map
+//!      → TypeScript strip → semantic → analyze → client | server codegen → oxc_codegen + source map
 //! ```
 //!
 //! Spans everywhere are byte offsets into the original source: the masked text the parser sees
@@ -16,7 +16,7 @@ use oxc_span::SourceType;
 
 use crate::analyze;
 use crate::codegen::ast::Ast;
-use crate::codegen::client::{self, ClientOptions};
+use crate::codegen::client::{self, TransformOptions};
 use crate::diagnostics::{Code, Diagnostic};
 use crate::prepare::{self, ResolvedStyleRef};
 use crate::scanner::{self, FileKind};
@@ -35,7 +35,7 @@ pub enum Target {
     /// Browser code on `lumen/dom`.
     #[default]
     Client,
-    /// SSR code on `lumen/server` (TASK-14).
+    /// SSR code on `lumen/server`.
     Server,
 }
 
@@ -89,7 +89,7 @@ pub struct CompileMeta {
     pub templates: usize,
     /// Events registered with `delegateEvents`.
     pub delegated_events: Vec<String>,
-    /// `lumen/dom` helpers the module imports.
+    /// `lumen/dom` (client) or `lumen/server` (server) helpers the module imports.
     pub runtime_helpers: Vec<String>,
     /// Every `$name` style reference with its binding (input of the CSS pipeline).
     pub style_refs: Vec<ResolvedStyleRef>,
@@ -119,20 +119,6 @@ impl CompileResult {
 pub fn compile(source: &str, filename: &str, options: &CompileOptions) -> CompileResult {
     let scan = scanner::scan(source, filename);
     let mut diagnostics = scan.diagnostics.clone();
-    if options.target == Target::Server {
-        diagnostics.push(
-            Diagnostic::new(
-                Code::Unsupported,
-                Span::default(),
-                "the server target is not implemented yet",
-            )
-            .with_help("Server codegen lands with TASK-14; compile with `target: \"client\"`."),
-        );
-        return CompileResult {
-            diagnostics,
-            ..CompileResult::default()
-        };
-    }
 
     let allocator = Allocator::default();
     let ast = Ast::new(&allocator);
@@ -173,7 +159,8 @@ pub fn compile(source: &str, filename: &str, options: &CompileOptions) -> Compil
     let analysis = analyze::analyze(&program, &scoping, &scan.blocks, &scan.diagnostics);
     diagnostics.extend(analysis.diagnostics.iter().cloned());
 
-    let client_options = ClientOptions {
+    let transform_options = TransformOptions {
+        target: options.target,
         filename,
         scope_tokens: &options.scope_tokens,
         style_import: options.style_import,
@@ -185,7 +172,7 @@ pub fn compile(source: &str, filename: &str, options: &CompileOptions) -> Compil
         &analysis,
         source,
         &scan.blocks,
-        &client_options,
+        &transform_options,
     );
     diagnostics.extend(output.diagnostics);
 

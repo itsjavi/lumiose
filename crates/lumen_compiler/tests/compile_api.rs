@@ -21,16 +21,19 @@ export async function Counter({ start = 0 }: { start?: number }) {
 "#;
 
 #[test]
-fn server_target_is_reported_as_unsupported() {
+fn server_target_imports_lumen_server() {
     let options = CompileOptions {
         target: Target::Server,
         ..CompileOptions::default()
     };
     let result = compile(COUNTER, "/src/Counter.stsx", &options);
-    assert!(result.code.is_empty());
-    assert_eq!(result.diagnostics.len(), 1);
-    assert_eq!(result.diagnostics[0].code, Code::Unsupported);
-    assert!(result.has_errors());
+    assert!(result.diagnostics.is_empty(), "{:?}", result.diagnostics);
+    assert!(result.code.contains(r#"from "lumen/server""#));
+    assert!(!result.code.contains("lumen/dom"));
+    assert!(!result.code.contains("onClick") && !result.code.contains("delegateEvents"));
+    assert_eq!(result.meta.runtime_helpers, ["ssr", "insert"]);
+    assert!(result.meta.delegated_events.is_empty());
+    assert_eq!(result.meta.templates, 1);
 }
 
 #[test]

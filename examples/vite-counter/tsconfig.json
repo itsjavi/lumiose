@@ -1,0 +1,9 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "jsx": "preserve",
+    "jsxImportSource": "lumen",
+    "types": ["node", "lumen/env"]
+  },
+  "include": ["src", "tests", "vite.config.ts", "playwright.config.ts"]
+}

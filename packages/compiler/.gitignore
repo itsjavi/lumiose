@@ -1,0 +1,9 @@
+# Build outputs of `build:wasm` (the WASI fallback of the native addon).
+*.wasm
+*.wasi.cjs
+*.wasi-browser.js
+wasi-worker*.mjs
+# Execution tests write compiled modules here.
+test/out/
+browser.js
+*.wasi.d.cts

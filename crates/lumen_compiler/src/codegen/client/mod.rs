@@ -1,9 +1,15 @@
-//! Client codegen (contract doc-2 §2, spec §5.2): JSX becomes hoisted templates, path walks and
-//! fine-grained bindings on the `lumen/dom` runtime.
+//! JSX codegen for both targets.
+//!
+//! - Client (contract doc-2 §2, spec §5.2): JSX becomes hoisted templates, path walks and
+//!   fine-grained bindings on the `lumen/dom` runtime.
+//! - Server (contract doc-2 §3, spec §5.3): JSX becomes `ssr(parts, ...holes)` string
+//!   concatenation on the `lumen/server` runtime (`ssr.rs`).
 //!
 //! The transform is a `VisitMut` over the type-stripped program. JSX roots are compiled in one go
 //! (`compile_*`); every user expression moved into the output is visited exactly once, which
 //! applies the reactive props rewrite, the list index rewrite and the selector rewrite to it.
+//! Components, props objects and the list/branch/selector idioms are shared by both targets, so
+//! that the server output has the same dynamic regions as the client walk (hydration relies on it).
 
 mod children;
 mod components;
@@ -12,6 +18,7 @@ mod events;
 mod html;
 mod idioms;
 mod props;
+mod ssr;
 mod template;
 mod text;
 
@@ -25,6 +32,7 @@ use oxc_span::{GetSpan, Span};
 use oxc_syntax::scope::{ScopeFlags, ScopeId};
 use oxc_syntax::symbol::SymbolId;
 
+use crate::Target;
 use crate::analyze::{Analysis, is_jsx_like};
 use crate::codegen::ast::Ast;
 use crate::diagnostics::Diagnostic;
@@ -44,7 +52,8 @@ pub struct ScopeTokens {
     pub components: BTreeMap<String, String>,
 }
 
-pub struct ClientOptions<'o> {
+pub struct TransformOptions<'o> {
+    pub target: Target,
     /// The module id, used for the CSS module import.
     pub filename: &'o str,
     pub scope_tokens: &'o ScopeTokens,
@@ -53,15 +62,16 @@ pub struct ClientOptions<'o> {
 }
 
 #[derive(Debug, Default)]
-pub struct ClientOutput {
+pub struct TransformOutput {
     pub diagnostics: Vec<Diagnostic>,
+    /// Hoisted templates (client) or static part arrays (server).
     pub templates: usize,
     pub delegated_events: Vec<String>,
     pub runtime_helpers: Vec<String>,
 }
 
 /// Runtime helpers in `lumen/dom` contract order (also the import order).
-const RUNTIME: &[&str] = &[
+const CLIENT_RUNTIME: &[&str] = &[
     "template",
     "bind",
     "setText",
@@ -88,7 +98,25 @@ const RUNTIME: &[&str] = &[
     "useRef",
 ];
 
-/// Transforms `program` in place into client JS.
+/// Runtime helpers in `lumen/server` contract order (also the import order).
+const SERVER_RUNTIME: &[&str] = &[
+    "ssr",
+    "text",
+    "insert",
+    "attr",
+    "classAttr",
+    "styleAttr",
+    "spreadAttrs",
+    "escape",
+    "list",
+    "branch",
+    "selector",
+    "createComponent",
+    "restProps",
+    "mergeProps",
+];
+
+/// Transforms `program` in place into client or server JS.
 pub fn transform<'a>(
     ast: &Ast<'a>,
     program: &mut Program<'a>,
@@ -96,8 +124,8 @@ pub fn transform<'a>(
     analysis: &Analysis,
     source: &str,
     blocks: &[StyleBlock],
-    options: &ClientOptions<'_>,
-) -> ClientOutput {
+    options: &TransformOptions<'_>,
+) -> TransformOutput {
     let mut codegen = Codegen {
         ast,
         scoping,
@@ -204,13 +232,14 @@ pub struct Codegen<'a, 's> {
     /// The original source (JSX text and SVG blocks are read from it).
     pub source: &'s str,
     pub blocks: &'s [StyleBlock],
-    pub options: &'s ClientOptions<'s>,
+    pub options: &'s TransformOptions<'s>,
     pub names: Names,
     /// Symbols named `props` (for the props parameter name choice).
     props_symbols: Vec<SymbolId>,
+    /// Hoisted templates (client) or static part arrays (server) by content.
     templates: HashMap<(String, u8), String>,
-    /// Module-scope declarations, emitted after the imports: templates, apply functions, then
-    /// hoisted handlers.
+    /// Module-scope declarations, emitted after the imports: templates (or part arrays), apply
+    /// functions, then hoisted handlers.
     template_decls: Vec<Statement<'a>>,
     apply_decls: Vec<Statement<'a>>,
     hoisted: Vec<Statement<'a>>,
@@ -233,9 +262,23 @@ pub struct Codegen<'a, 's> {
 impl<'a> Codegen<'a, '_> {
     // ---- module-level state --------------------------------------------------------------------
 
-    /// A reference to a runtime helper (imported on first use).
+    /// True when compiling for `lumen/server`.
+    pub fn server(&self) -> bool {
+        self.options.target == Target::Server
+    }
+
+    fn runtime_names(&self) -> &'static [&'static str] {
+        if self.server() {
+            SERVER_RUNTIME
+        } else {
+            CLIENT_RUNTIME
+        }
+    }
+
+    /// A reference to a runtime helper of the target (imported on first use).
     pub fn runtime(&mut self, helper: &'static str, span: Span) -> Expression<'a> {
-        let index = RUNTIME
+        let index = self
+            .runtime_names()
             .iter()
             .position(|&h| h == helper)
             .expect("known runtime helper");
@@ -264,6 +307,26 @@ impl<'a> Codegen<'a, '_> {
             args.push(self.ast.number(span, f64::from(flags)));
         }
         let init = self.ast.call_pure(span, callee, args);
+        self.template_decls
+            .push(self.ast.const_decl(span, &name, init));
+        self.templates.insert(key, name.clone());
+        name
+    }
+
+    /// The hoisted static parts array of an `ssr()` call (deduplicated, server target).
+    pub fn ssr_parts(&mut self, parts: &[String], span: Span) -> String {
+        // Parts never contain NUL (JSX text and attribute values cannot), so it is a safe key
+        // separator; flag 255 keeps the keys apart from client templates.
+        let key = (parts.join("\0"), u8::MAX);
+        if let Some(name) = self.templates.get(&key) {
+            return name.clone();
+        }
+        let name = self.names.fresh(&format!("_s{}", self.templates.len()));
+        let elements = parts
+            .iter()
+            .map(|part| self.ast.string(span, part))
+            .collect::<Vec<_>>();
+        let init = self.ast.array(span, elements);
         self.template_decls
             .push(self.ast.const_decl(span, &name, init));
         self.templates.insert(key, name.clone());
@@ -302,7 +365,7 @@ impl<'a> Codegen<'a, '_> {
         self.delegated.insert(event.to_owned());
     }
 
-    fn finish_module(mut self, program: &mut Program<'a>) -> ClientOutput {
+    fn finish_module(mut self, program: &mut Program<'a>) -> TransformOutput {
         let span = Span::default();
         if !self.delegated.is_empty() {
             let callee = self.runtime("delegateEvents", span);
@@ -315,13 +378,19 @@ impl<'a> Codegen<'a, '_> {
             program.body.push(self.ast.expr_stmt(span, call));
         }
         let mut header = Vec::new();
+        let names = self.runtime_names();
         if !self.runtime.is_empty() {
             let pairs: Vec<(&str, &str)> = self
                 .runtime
                 .iter()
-                .map(|(&i, local)| (RUNTIME[i], local.as_str()))
+                .map(|(&i, local)| (names[i], local.as_str()))
                 .collect();
-            header.push(self.ast.import_named("lumen/dom", &pairs));
+            let module = if self.server() {
+                "lumen/server"
+            } else {
+                "lumen/dom"
+            };
+            header.push(self.ast.import_named(module, &pairs));
         }
         if self.options.style_import && self.blocks.iter().any(|b| !b.svg) {
             let id = self
@@ -349,15 +418,11 @@ impl<'a> Codegen<'a, '_> {
         out.extend(header);
         out.extend(iter);
         program.body = out;
-        ClientOutput {
+        TransformOutput {
             diagnostics: self.diagnostics,
             templates: self.templates.len(),
             delegated_events: self.delegated.into_iter().collect(),
-            runtime_helpers: self
-                .runtime
-                .keys()
-                .map(|&i| RUNTIME[i].to_owned())
-                .collect(),
+            runtime_helpers: self.runtime.keys().map(|&i| names[i].to_owned()).collect(),
         }
     }
 
@@ -502,7 +567,8 @@ impl<'a> Codegen<'a, '_> {
             }
             _ => false,
         };
-        let renders_once = self.functions.last().copied().unwrap_or(false);
+        // The server renders once: a conditional is just its value.
+        let renders_once = !self.server() && self.functions.last().copied().unwrap_or(false);
         let span = expr.span();
         let compiled = self.compile_value(expr);
         if reactive_conditional && renders_once {
