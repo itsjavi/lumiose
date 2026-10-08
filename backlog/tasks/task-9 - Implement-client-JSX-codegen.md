@@ -1,11 +1,11 @@
 ---
 id: TASK-9
 title: Implement client JSX codegen
-status: To Do
+status: In Progress
 assignee:
   - '@Photon'
 created_date: '2026-10-08 12:20'
-updated_date: '2026-10-08 12:56'
+updated_date: '2026-10-08 13:12'
 labels: []
 milestone: m-1
 dependencies:
