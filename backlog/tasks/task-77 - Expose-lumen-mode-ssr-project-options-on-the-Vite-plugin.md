@@ -1,11 +1,11 @@
 ---
 id: TASK-77
 title: 'Expose lumen({ mode, ssr }) project options on the Vite plugin'
-status: To Do
+status: In Progress
 assignee:
   - Photon
 created_date: '2026-10-08 16:38'
-updated_date: '2026-10-08 16:53'
+updated_date: '2026-10-08 20:36'
 labels:
   - compiler
   - app
@@ -26,6 +26,15 @@ decision-21: the project default route mode is set with lumen({ mode, ssr }) in 
 - [ ] #2 The 'lumen' plugin exposes api: { options } with them, so projectOptions() returns them (dev, build, lumen routes/check)
 - [ ] #3 A test: a project with lumen({ mode: 'server' }) lists its routes as server via lumen routes
 <!-- AC:END -->
+
+## Implementation Plan
+
+<!-- SECTION:PLAN:BEGIN -->
+1. Add mode/ssr/trailingSlash/csrf (+ md/html per Lux) to LumenOptions, typed via app-layer types.
+2. Validate at plugin creation; expose api: { options } on the 'lumen' plugin.
+3. Tests: plugin api.options + lumen routes lists server routes for lumen({ mode: 'server' }).
+4. Remove TODO(TASK-77) workarounds in create.test.ts / cli.test.ts (coordinate with Beacon/Nova owners via notes).
+<!-- SECTION:PLAN:END -->
 
 ## Implementation Notes
 
