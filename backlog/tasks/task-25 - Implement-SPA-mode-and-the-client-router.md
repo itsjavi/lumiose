@@ -5,6 +5,7 @@ status: To Do
 assignee:
   - '@Nova'
 created_date: '2026-10-08 12:21'
+updated_date: '2026-10-08 13:43'
 labels: []
 milestone: m-3
 dependencies:
@@ -28,3 +29,9 @@ Highly interactive apps need per-route SPA mode with a client router built on th
 - [ ] #2 lumen/router: <Link prefetch>, navigate(), params()/search()/url()/navigating() signals, persistent nested layouts, scroll/focus restoration, client 404, transitions that hold the old page, invalidate()
 - [ ] #3 Browser tests for navigation flows
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+From TASK-23 (Nova): install the router's hooks with setClientNavigation({ navigate, invalidate }) from packages/lumen/src/app/actions/client.ts, so submit() redirect results use client navigation (full navigation for cross-origin locations) and invalidate() re-runs the current page's async components instead of location.reload(). Consider re-running async components after successful submit() in SPA routes.
+<!-- SECTION:NOTES:END -->
