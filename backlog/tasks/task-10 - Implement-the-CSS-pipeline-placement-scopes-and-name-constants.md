@@ -7,7 +7,7 @@ status: In Progress
 assignee:
   - '@Halo'
 created_date: '2026-10-08 12:20'
-updated_date: '2026-10-08 14:00'
+updated_date: '2026-10-08 14:10'
 labels: []
 milestone: m-1
 dependencies:
@@ -32,3 +32,9 @@ The CSS pipeline is split so it can proceed in parallel with client codegen. Thi
 - [ ] #4 Lightning CSS pinned exactly; nesting lowered per targets; minify; source maps back to the original .stsx offsets (whitespace-padding approach)
 - [ ] #5 Golden fixtures and cargo test/clippy/fmt pass
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Photon (TASK-9 hooks for the CSS pipeline): compile() already resolves every $ref to its binding with oxc_semantic on the masked AST (lumen_compiler::prepare::style → CompileMeta.style_refs: block index, path, span, binding {name, declaration span, kind Module{constant}/Local{constant}/Import{source, imported}}) and drops imports used only by $refs from the JS. Scope tokens plug in through CompileOptions.scope_tokens {file: Option<String>, components: name → token}: the client codegen adds them to every template element of the scope, passes $$scope at component call sites that pass class, and emits applyScope(el, props.$$scope) where props.class is applied. Fixture tests/fixtures/client/styles.stsx shows the output.
+<!-- SECTION:NOTES:END -->
