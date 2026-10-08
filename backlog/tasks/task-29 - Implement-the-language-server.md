@@ -5,7 +5,7 @@ status: Done
 assignee:
   - '@Beacon'
 created_date: '2026-10-08 12:21'
-updated_date: '2026-10-08 14:03'
+updated_date: '2026-10-08 14:04'
 labels: []
 milestone: m-4
 dependencies:
@@ -57,6 +57,8 @@ Deps (deps.lock taken/released): vscode-languageserver ^10.1.2, vscode-languages
 Gaps: no TS auto-restart after a crash (error message shown); compiler compile() diagnostics only via ServerOptions.diagnosticProviders (no compile() binding yet); class features are per file (global classes from other files not offered); no CSS document symbols merged into TS symbols; execution-contract hovers not implemented; TS logMessage output is forwarded verbatim (verbose).
 
 Final validation (Beacon): pnpm typecheck OK (3 packages); pnpm test 55 files / 596 tests OK; pnpm lint: 0 errors, 1 pre-existing warning outside this package. A first full run hung in a lumen worker while other agents' in-progress tests were changing; a rerun passed and the language-server + compiler projects pass in isolation. Follow-ups recorded as TASK-48.
+
+Lux review: the class-rename scoping is confirmed (a class defined only in one component's block renames within that component, otherwise across the file). Added the lumen/tooling export (src/cli/tooling.ts re-exports check + syncShadows); switch the language server's relative import to it in your next task.
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary
