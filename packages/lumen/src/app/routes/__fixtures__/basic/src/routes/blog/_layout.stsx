@@ -1,0 +1,6 @@
+// Blog pages render per request.
+export const mode = "server";
+
+export default function BlogLayout(props) {
+  return <section>{props.children}</section>;
+}

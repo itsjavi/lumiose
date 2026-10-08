@@ -1,0 +1,7 @@
+export default function RootLayout(props) {
+  return <main>{props.children}</main>;
+}
+
+<style>
+  main { background: url(https://example.com/bg.png); } /* it's fine */
+</style>

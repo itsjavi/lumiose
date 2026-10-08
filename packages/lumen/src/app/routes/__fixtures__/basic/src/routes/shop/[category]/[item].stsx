@@ -1,0 +1,5 @@
+export const mode = "server";
+
+export default function Item(props) {
+  return <h1>{props.params.category}/{props.params.item}</h1>;
+}

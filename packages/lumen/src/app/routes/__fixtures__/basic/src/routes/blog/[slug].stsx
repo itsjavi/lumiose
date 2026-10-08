@@ -1,0 +1,10 @@
+// export const mode = "spa";
+export const mode = "static" as const;
+
+export async function staticPaths() {
+  return [{ params: { slug: "hello" } }];
+}
+
+export default function Post(props) {
+  return <h1>{props.params.slug}</h1>;
+}

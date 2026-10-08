@@ -1,0 +1,6 @@
+export const mode = "spa";
+export const ssr = false;
+
+export default function AppLayout(props) {
+  return <div id="app">{props.children}</div>;
+}

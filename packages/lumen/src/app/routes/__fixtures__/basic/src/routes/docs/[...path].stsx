@@ -1,0 +1,3 @@
+export default function Docs(props) {
+  return <h1>{props.params.path}</h1>;
+}
