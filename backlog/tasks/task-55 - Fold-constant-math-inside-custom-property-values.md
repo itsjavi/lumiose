@@ -1,10 +1,11 @@
 ---
 id: TASK-55
 title: Fold constant math inside custom property values
-status: To Do
+status: In Progress
 assignee:
   - '@Halo'
 created_date: '2026-10-08 15:50'
+updated_date: '2026-10-08 15:51'
 labels: []
 milestone: m-1
 dependencies:
