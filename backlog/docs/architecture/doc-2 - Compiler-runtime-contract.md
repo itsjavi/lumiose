@@ -3,7 +3,7 @@ id: doc-2
 title: Compiler-runtime contract
 type: specification
 created_date: '2026-10-08 12:27'
-updated_date: '2026-10-08 12:57'
+updated_date: '2026-10-08 13:26'
 tags:
   - architecture
   - contract
@@ -85,6 +85,7 @@ tags:
 - **Rewrite.** Only awaits whose nearest enclosing function is the component are rewritten:
   - `await e` becomes `(await $await(() => e, N))()`, where `N` is the 0-based static site index in source order. `$await` pauses the run synchronously and resolves to a resume function. Calling it in the component's own continuation restores the run and returns the value. Resuming inside the runtime's `.then` would be unsound, because another run's continuation can interleave (found by Spark in TASK-7).
   - The whole body is wrapped as `try { … } finally { $leave(); }`, so the run is paused synchronously when the body returns or throws.
+  - `$await` never rejects. If the thunk rejects, it resolves to a resume function that restores the run and then throws the error. This keeps `try/catch` blocks in the component running with context restored (Nova, TASK-16). Client and server behave the same way.
   - `for await (const x of it)` is lowered to a loop of `(await $await(() => iter.next(), N))()`.
 - **Client semantics** (spec §4.4):
   - Each run gets a fresh run subscriber.
