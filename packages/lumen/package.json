@@ -33,7 +33,8 @@
   },
   "scripts": {
     "typecheck": "tsc -p tsconfig.json",
-    "test": "vitest run"
+    "test": "vitest run",
+    "size": "node scripts/size.ts"
   },
   "dependencies": {
     "@lumen/compiler": "workspace:*"

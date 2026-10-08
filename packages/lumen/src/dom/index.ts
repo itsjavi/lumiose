@@ -1,2 +1,23 @@
-// `lumen/dom`: runtime imported by compiled client output (owner: Spark). Must match the compiler-runtime contract (TASK-6).
-export {};
+// `lumen/dom`: runtime imported by compiled client output (owner: Spark).
+// Implements `ClientRuntime` from the compiler-runtime contract (src/contract/client.ts, doc-2).
+export { renderEffect as bind } from "../core/internal.ts";
+export { template } from "./template.ts";
+export {
+  applyScope,
+  setAttr,
+  setClass,
+  setProp,
+  setStyle,
+  setStyleProperty,
+  setText,
+  toggleClass,
+} from "./attributes.ts";
+export { branch, insert } from "./insert.ts";
+export { list } from "./list.ts";
+export { selector } from "./selector.ts";
+export { $await, $leave, createComponent, mergeProps, restProps } from "./component.ts";
+export { spread } from "./spread.ts";
+export { delegateEvents, listen } from "./events.ts";
+export { attach, bindChecked, bindValue, useRef } from "./element.ts";
+// Not part of the contract: mounting for SPA entries, tests and benchmarks.
+export { mount } from "./mount.ts";

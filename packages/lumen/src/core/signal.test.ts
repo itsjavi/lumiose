@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { computed, effect, flushSync, signal, untrack } from "./index.ts";
+import { disposeOwner, MUTABLE, renderEffect, track, type TriggerNode } from "./internal.ts";
 import { SIGNAL_NODE, type Signal } from "./signal.ts";
 
 const subscriberCount = (s: Signal<unknown>): number => {
@@ -280,5 +281,31 @@ describe("computed", () => {
     dispose();
     expect(subscriberCount(s as Signal<unknown>)).toBe(0);
     expect(c()).toBe(4);
+  });
+});
+
+describe("trigger nodes", () => {
+  it("call their unwatched hook when the last subscriber goes", () => {
+    const dropped: unknown[] = [];
+    const node: TriggerNode = {
+      subs: undefined,
+      subsTail: undefined,
+      flags: MUTABLE,
+      unwatched: (n) => dropped.push(n),
+    };
+    const a = renderEffect(
+      null,
+      () => track(node),
+      () => {},
+    );
+    const b = renderEffect(
+      null,
+      () => track(node),
+      () => {},
+    );
+    disposeOwner(a);
+    expect(dropped).toEqual([]);
+    disposeOwner(b);
+    expect(dropped).toEqual([node]);
   });
 });

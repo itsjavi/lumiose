@@ -27,7 +27,10 @@ export interface ComputedNode<T = unknown> extends ReactiveNode {
 }
 
 /** A value-less node: readers track it, writers fire it (store properties, selectors). */
-export type TriggerNode = ReactiveNode;
+export interface TriggerNode extends ReactiveNode {
+  /** Called when the node loses its last subscriber (selectors drop their per-key nodes). */
+  unwatched?: ((node: TriggerNode) => void) | undefined;
+}
 
 // --- Execution context -------------------------------------------------------
 
@@ -101,6 +104,8 @@ export const { link, unlink, propagate, checkDirty, shallowPropagate } = createR
     if (node.depsTail !== undefined) {
       node.flags = MUTABLE | DIRTY;
       releaseDeps(node);
+    } else {
+      (node as TriggerNode).unwatched?.(node);
     }
   },
 });

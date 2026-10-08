@@ -18,6 +18,7 @@ import {
   runWithOwner,
   type Owner,
 } from "./internal.ts";
+import { currentOwner } from "./reactive.ts";
 
 describe("owners", () => {
   it("getOwner/runWithOwner scope the current owner and restore it", () => {
@@ -144,6 +145,43 @@ describe("lazy owners", () => {
     });
     expect(seen).toBe("dark");
     expect(owner).toBeUndefined();
+  });
+
+  it("nests under a pending lazy owner without allocating", () => {
+    const Theme = createContext("light");
+    const parent = createOwner(undefined);
+    runWithOwner(parent, () => provide(Theme, "dark"));
+    let seen = "";
+    let inner: Owner | undefined = parent;
+    const outer = runWithLazyOwner(parent, () => {
+      inner = runWithLazyOwner(currentOwner, () => {
+        seen = inject(Theme);
+      });
+    });
+    expect(seen).toBe("dark");
+    expect(inner).toBeUndefined();
+    expect(outer).toBeUndefined();
+    expect(parent.firstChild).toBeUndefined();
+  });
+
+  it("materializes pending outer owners first when a nested one registers", () => {
+    const parent = createOwner(undefined);
+    const log: string[] = [];
+    let inner: Owner | undefined;
+    let deep: Owner | undefined;
+    const outer = runWithLazyOwner(parent, () => {
+      inner = runWithLazyOwner(currentOwner, () => {
+        deep = runWithLazyOwner(currentOwner, () => onCleanup(() => log.push("deep")));
+      });
+      // The outer frame sees the owner its nested frame materialized.
+      expect(getOwner()).toBe(inner!.parent);
+    });
+    expect(outer!.parent).toBe(parent);
+    expect(inner!.parent).toBe(outer);
+    expect(deep!.parent).toBe(inner);
+    expect(deep!.depth).toBe(3);
+    disposeOwner(outer!);
+    expect(log).toEqual(["deep"]);
   });
 
   it("nests and restores the outer owner", () => {

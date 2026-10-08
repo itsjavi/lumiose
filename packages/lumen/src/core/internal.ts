@@ -20,4 +20,13 @@ export {
   type RenderEffect,
   type Run,
 } from "./effect.ts";
-export { createTrigger, track, trigger, type TriggerNode } from "./reactive.ts";
+export {
+  activeSub,
+  createTrigger,
+  currentOwner,
+  setActiveSub,
+  track,
+  trigger,
+  type TriggerNode,
+} from "./reactive.ts";
+export { MUTABLE } from "./system.ts";

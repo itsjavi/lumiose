@@ -63,11 +63,28 @@ export function attachOwner(owner: Owner, parent: Owner | undefined): void {
 
 // --- Lazy owners -------------------------------------------------------------
 // A lazy owner exists only once something registers on it (a cleanup, a child,
-// an effect, a provided value or a lifetime), so static list rows allocate none.
+// an effect, a provided value or a lifetime), so static list rows and
+// components allocate none.
+//
+// Pending lazy owners form a stack of frames (one per `runWithLazyOwner` call in
+// progress). `currentOwner === LAZY` stands for the innermost frame. A frame's
+// parent may itself be `LAZY` (a component inside a lazy row): materializing it
+// materializes the frames below it first, so nesting stays allocation-free
+// until something registers.
 
 const LAZY: Owner = createOwner(undefined);
-let lazyParent: Owner | undefined;
-let lazyOwner: Owner | undefined;
+const lazyParents: (Owner | undefined)[] = [];
+const lazyOwners: (Owner | undefined)[] = [];
+let lazyDepth = -1;
+
+function materialize(depth: number): Owner {
+  let owner = lazyOwners[depth];
+  if (owner === undefined) {
+    const parent = lazyParents[depth];
+    owner = lazyOwners[depth] = createOwner(parent === LAZY ? materialize(depth - 1) : parent);
+  }
+  return owner;
+}
 
 /** The current owner, materializing a pending lazy owner. */
 export function getOwner(): Owner | undefined {
@@ -75,33 +92,40 @@ export function getOwner(): Owner | undefined {
   if (owner !== LAZY) {
     return owner;
   }
-  lazyOwner = createOwner(lazyParent);
-  setCurrentOwner(lazyOwner);
-  return lazyOwner;
+  const materialized = materialize(lazyDepth);
+  setCurrentOwner(materialized);
+  return materialized;
 }
 
 /** The owner to resolve context from, without materializing a lazy owner. */
 function lookupOwner(): Owner | undefined {
-  return currentOwner === LAZY ? lazyParent : currentOwner;
+  if (currentOwner !== LAZY) {
+    return currentOwner;
+  }
+  let depth = lazyDepth;
+  while (lazyOwners[depth] === undefined && lazyParents[depth] === LAZY) {
+    depth--;
+  }
+  return lazyOwners[depth] ?? lazyParents[depth];
 }
 
 /**
  * Runs `fn` under a lazy child of `parent`. Returns the child if something
- * registered on it, otherwise `undefined` (nothing to dispose).
+ * registered on it, otherwise `undefined` (nothing to dispose). `parent` may be
+ * the raw current owner (`currentOwner`), even while it is itself lazy.
  */
 export function runWithLazyOwner(parent: Owner | undefined, fn: () => void): Owner | undefined {
+  const depth = ++lazyDepth;
+  lazyParents[depth] = parent;
+  lazyOwners[depth] = undefined;
   const prevOwner = setCurrentOwner(LAZY);
-  const prevParent = lazyParent;
-  const prevLazy = lazyOwner;
-  lazyParent = parent;
-  lazyOwner = undefined;
   try {
     fn();
-    return lazyOwner;
+    return lazyOwners[depth];
   } finally {
     setCurrentOwner(prevOwner);
-    lazyParent = prevParent;
-    lazyOwner = prevLazy;
+    lazyParents[depth] = lazyOwners[depth] = undefined;
+    lazyDepth = depth - 1;
   }
 }
 
