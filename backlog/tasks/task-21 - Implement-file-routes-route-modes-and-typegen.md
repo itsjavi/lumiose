@@ -59,6 +59,11 @@ Decisions (routine, flag if you disagree):
 Open questions: endpoints default to static, so an endpoint with POST and no mode is static (TASK-26 should flag non-GET handlers on static endpoints). href() does not apply Vite base/trailingSlash yet (TASK-24/26).
 
 Validation: pnpm typecheck OK, pnpm lint OK (0 errors; only pre-existing empty-export warnings in stubs), pnpm test 89/89 (app layer: 7 files, 87 tests). typegen.test.ts copies the fixture into a temp dir, runs typegen and tsc 7 --noEmit on a usage file with exact Routes/RouteParams assertions and @ts-expect-error broken links.
+
+Lux review: all of Nova's choices are confirmed.
+- Endpoints inherit their mode from layouts. A static endpoint that exports non-GET methods must be a build error in TASK-26 (new code LUM5005).
+- Optional params and mixed segments are deferred, since none of the sample apps needs them.
+- href() base/trailingSlash handling belongs to TASK-25/26.
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary
