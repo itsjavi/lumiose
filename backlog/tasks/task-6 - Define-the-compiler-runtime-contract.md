@@ -5,7 +5,7 @@ status: Done
 assignee:
   - '@Lux'
 created_date: '2026-10-08 12:20'
-updated_date: '2026-10-08 12:28'
+updated_date: '2026-10-08 12:57'
 labels: []
 milestone: m-1
 dependencies:
@@ -42,6 +42,8 @@ Photon (compiler) and Spark (runtime) work in parallel. The exact set of runtime
 
 <!-- SECTION:NOTES:BEGIN -->
 Contract published as doc-2 with typed interfaces in packages/lumen/src/contract/{client,server}.ts; lumen/dom/hydrate subpath export added. Architect amendments to spec v0.3: hydration uses one compiled walk plus a pluggable claim cursor (no separate _tN.h walk); $await takes a static site index; createComponent detects async components (no $component wrapper). Spec doc-1 updated accordingly. Verified: TS 7 typecheck of the contract modules passes and the contract import test passes.
+
+Contract amendment (Lux, from Spark's TASK-7 finding): $await now returns Promise<resume>, the compiled shape is (await $await(() => e, n))(), and async bodies get try/finally $leave(). Updated in client.ts, server.ts, doc-2 §2-§5 and spec doc-1.
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary
