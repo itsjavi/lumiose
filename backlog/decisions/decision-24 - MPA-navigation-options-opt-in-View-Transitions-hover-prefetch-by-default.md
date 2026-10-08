@@ -21,3 +21,5 @@ MPA routes (static and server) navigate with full page loads. Cross-document Vie
 
 - MPA navigations get faster by default, with no surprise animations.
 - The options are validated by the Vite plugin and documented. TASK-93 implements them.
+
+_Amended 2026-10-08 (user): `<Link prefetch="none" | "hover" | "viewport">` from `lumen/router` also works on MPA pages, where it renders a plain `<a>` that the speculation rules include or exclude accordingly. It is the per-link way to opt out of or change prefetching. Plain `<a>` links follow the project default._
