@@ -17,3 +17,6 @@ export function Card(props) {
 	return ssr(_s1, insert(props.title), insert(used), list([1, 2], (n) => ssr(_s0, insert(n))));
 }
 export const Footer = () => ssr(_s2);
+
+// --- diagnostics ---
+// LUM3018 warning 10:57 `$radius.lg` is a unitless number (`8`) where `border-radius` needs a length

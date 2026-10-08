@@ -20,3 +20,6 @@ export function Card(props) {
 	return _el2;
 }
 export const Footer = () => _t2();
+
+// --- diagnostics ---
+// LUM3018 warning 10:57 `$radius.lg` is a unitless number (`8`) where `border-radius` needs a length

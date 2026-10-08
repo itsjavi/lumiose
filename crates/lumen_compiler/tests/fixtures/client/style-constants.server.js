@@ -18,6 +18,7 @@ export function Panel(props) {
 }
 
 // --- diagnostics ---
+// LUM3018 warning 21:82 `$tokens.radius.sm` is a unitless number (`2`) where `border-radius` needs a length
 // LUM3005 warning 24:9 `.bad` matches no element in component `Panel`
 // LUM3008 error 24:23 `$width` cannot be inlined into CSS: only literals, template literals, arithmetic, `as const` objects and other constants can be inlined
 // LUM3008 error 24:39 `$mutable` cannot be inlined into CSS: `mutable` is a `let` binding
