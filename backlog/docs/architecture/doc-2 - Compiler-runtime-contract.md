@@ -3,7 +3,7 @@ id: doc-2
 title: Compiler-runtime contract
 type: specification
 created_date: '2026-10-08 12:27'
-updated_date: '2026-10-08 14:02'
+updated_date: '2026-10-08 15:52'
 tags:
   - architecture
   - contract
@@ -74,10 +74,31 @@ tags:
 | `branch(cond, a, b?)` | Inside islands it emits `<!--[-->` for the active branch or `<!--[!-->` for the inactive one |
 | `selector(source)` | Evaluated once |
 | `createComponent(C, props)` | Runs in a context frame (owner-like: context, request scope, boundary, island flag). Async components return promises |
-| `island(ref, C, props, strategy, strategyValue?, slots?)` | Emits island markers, the serialized record, `<template data-l-slot>` slots, and the `modulepreload` hint for `load` |
+| `island(ref, C, props, strategy, strategyValue?, slots?)` | Emits island markers, inline slot markers for the slots the island renders, `<template data-l-slot>` for the others, the serialized record, and the `modulepreload` hint for `load` |
 | `$await(thunk, site)`, `$leave()` | Same shape as the client (§4). Awaits. Inside an island it records `{ [instancePath:site:occurrence]: value }`, which must be plain data or it raises `LUM4007` |
 
 **Public server variants** come from `lumen` under the `node` condition, with the same names: `renderToStream`, `renderToString`, `Suspense`, `ErrorBoundary`, `Head`/`Title`/`Meta`, and request accessors.
+
+### 3.1 Hydration markers (inside islands only)
+
+Inside `<!--l:ID-->…<!--/l:ID-->`, the server marks every range the client claims. Blocks nest, and `<!--]-->` closes the nearest open `<!--[-->` or `<!--[!-->`. Claim order is creation order, the same on both sides (Nova, TASK-47).
+
+| Marker | Server emits it for | Client counterpart |
+|---|---|---|
+| `<!--[-->…<!--]-->` | `insert`, `list`, the active branch | The helper's region |
+| `<!--[!-->…<!--]-->` | The inactive branch | The region (`whenFalse`) |
+| `<!--!-->` | Between adjacent `text()` holes | Text split |
+| `<!--[-->…<!--]-->` | Each async component instance | Its range (`createAsync`) |
+| `<!--[-->…<!--]-->` | `<Suspense>`: around the content, or around `<?start name="lbN">fallback<?end>`, which the streamed content replaces | The Suspense range; hydrates once its chunk has arrived |
+| `<!--[-->…<!--]-->` / `<!--[!-->…<!--]-->` | `<ErrorBoundary>`: its children / a server-rendered fallback | Its range; `[!` means render afresh rather than claim |
+| `<!--l:s:NAME-->…<!--/l:s-->` | A slot the island rendered (for every read) | The slot's nodes, adopted |
+| `<template data-l-slot="NAME">` | A slot the island did not render; emitted once, right after `<!--l:ID-->` | Inserted when the island renders it |
+
+**Await records** have the shape `{ "path:site:occurrence": value }`. The island root is instance `0`. Each instance numbers the components created in its body, boundaries included, in creation order and across awaits (for example `0.1.2`).
+
+**Template/server alignment** (Photon, TASK-14):
+- The server never emits the client's `<!>` placeholders. Inside islands, each client `insert`/`list`/`branch` corresponds to exactly one marker region, in the same child order.
+- A `text()` hole whose value is `""` renders no text node, so the hydrator must create one.
 
 ## 4. Async components (both sides)
 
