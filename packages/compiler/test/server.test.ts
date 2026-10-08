@@ -209,6 +209,31 @@ const NESTED_STYLES = `
     );
   }`;
 
+// TASK-65: provably text children alone between nodes are text nodes (setText or a one-time
+// write) on the client and text() holes on the server; the others stay inserts.
+const TEXT_CHILDREN = `
+  import { signal } from "lumen";
+  const n = signal(3);
+  export function Texts(props: { a: string; icon?: unknown }) {
+    const label = String(props.a);
+    return (
+      <div>
+        <b>x</b>
+        {n() * 2}
+        <i />
+        {label}
+        <hr />
+        {\`\${props.a}!\`}
+        <p>
+          <br />
+          {props.icon}
+          <br />
+          {n()}{n() + 1} and {label}
+        </p>
+      </div>
+    );
+  }`;
+
 const ATTRIBUTES = `
   import { signal } from "lumen";
   const name = signal('Ada "the" <first>');
@@ -492,6 +517,11 @@ describe.skipIf(!binding)("client/server parity", () => {
   it("keyed list", () => expectParity(TABLE, [["Table"]]));
   it("components and scope tokens", () => expectParity(CARD, [["Page"]]));
   it("nested style subtrees (decision-23)", () => expectParity(NESTED_STYLES, [["Tree"]]));
+  it("text children (TASK-65)", () =>
+    expectParity(TEXT_CHILDREN, [
+      ["Texts", { a: "A" }],
+      ["Texts", { a: "" }],
+    ]));
   it("attributes and properties", () => expectParity(ATTRIBUTES, [["Attributes", { size: 3 }]]));
   it("table rows and select values", () =>
     // A string value: happy-dom's select.value setter does not convert numbers.

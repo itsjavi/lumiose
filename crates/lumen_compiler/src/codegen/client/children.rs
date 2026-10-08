@@ -2,11 +2,15 @@
 //! with `<!>` markers only where the parser would otherwise merge text or lose a position.
 //! Fragments and component children compile to arrays of renderables.
 
+use std::collections::HashSet;
+
 use oxc_allocator::{ArenaBox, ArenaVec};
 use oxc_ast::ast::*;
 use oxc_ast_visit::{Visit, walk};
+use oxc_semantic::Scoping;
 use oxc_span::{GetSpan, Span};
 use oxc_syntax::scope::ScopeFlags;
+use oxc_syntax::symbol::SymbolId;
 
 use super::element::{is_intrinsic, js_number, tag_name};
 use super::html::{self, Namespace};
@@ -29,14 +33,22 @@ pub enum Item<'a> {
 }
 
 #[derive(Clone, Copy, PartialEq, Eq)]
-enum Kind {
+pub(super) enum Kind {
     Text,
     Static,
     Dynamic,
 }
 
+/// Whether the dynamic child at `index` stands alone between nodes: no text or other dynamic
+/// child next to it, so a text node in its place stays a node of its own when the template (or
+/// the server HTML) is parsed. Provably text values there compile to a text node (TASK-65).
+pub(super) fn is_isolated(kinds: &[Kind], index: usize) -> bool {
+    let alone = |kind: Option<&Kind>| kind.is_none_or(|&kind| kind == Kind::Static);
+    alone(index.checked_sub(1).and_then(|i| kinds.get(i))) && alone(kinds.get(index + 1))
+}
+
 impl Item<'_> {
-    fn kind(&self) -> Kind {
+    pub(super) fn kind(&self) -> Kind {
         match self {
             Item::Text(..) => Kind::Text,
             Item::Raw(..) | Item::Element(_) | Item::Rows(..) => Kind::Static,
@@ -208,19 +220,22 @@ impl<'a> Codegen<'a, '_> {
                     } else {
                         MarkerPlan::NextStatic
                     };
-                    self.dynamic_child(template, parent, expression, plan, count == 1);
+                    let isolated = is_isolated(&kinds, i);
+                    self.dynamic_child(template, parent, expression, plan, isolated);
                 }
             }
         }
     }
 
+    /// A dynamic child; `isolated` (see [`is_isolated`]) lets a provably text value be a text
+    /// node of the template: bound with `setText`, or written once when it is not reactive.
     fn dynamic_child(
         &mut self,
         template: &mut Template<'a>,
         parent: usize,
         expression: Expression<'a>,
         plan: MarkerPlan,
-        sole: bool,
+        isolated: bool,
     ) {
         let span = expression.span();
         let op = if self.is_list(&expression) {
@@ -257,7 +272,7 @@ impl<'a> Codegen<'a, '_> {
             } else {
                 self.visited(expression)
             };
-            if sole && !compiled_jsx && is_text_like(&value) {
+            if isolated && !compiled_jsx && self.is_text(&value) {
                 let text = template.add(Some(parent), NodeKind::Text(" ".to_owned()), span);
                 if self.is_dynamic(&value) {
                     let apply = self.runtime("setText", span);
@@ -485,6 +500,58 @@ impl<'a> Codegen<'a, '_> {
             _ => false,
         }
     }
+}
+
+impl Codegen<'_, '_> {
+    /// Whether `value` is provably a string or number: [`is_text_like`], or a `const` initialised
+    /// with such a value.
+    pub(super) fn is_text(&self, value: &Expression<'_>) -> bool {
+        match value.without_parentheses() {
+            Expression::Identifier(ident) => self
+                .symbol_of(ident)
+                .is_some_and(|symbol| self.text_consts.contains(&symbol)),
+            value => is_text_like(value),
+        }
+    }
+}
+
+/// The `const` bindings initialised with a provably text value ([`is_text_like`], or another such
+/// const), in source order, such as `const total = a + b` or `const label = String(id)`.
+pub(super) fn text_consts(program: &Program<'_>, scoping: &Scoping) -> HashSet<SymbolId> {
+    struct Collector<'s> {
+        scoping: &'s Scoping,
+        consts: HashSet<SymbolId>,
+    }
+    impl<'a> Visit<'a> for Collector<'_> {
+        fn visit_variable_declaration(&mut self, it: &VariableDeclaration<'a>) {
+            if it.kind == VariableDeclarationKind::Const {
+                for declarator in &it.declarations {
+                    let (BindingPattern::BindingIdentifier(id), Some(init)) =
+                        (&declarator.id, &declarator.init)
+                    else {
+                        continue;
+                    };
+                    let text = match init.without_parentheses() {
+                        Expression::Identifier(ident) => {
+                            crate::analyze::reactivity::symbol_of(self.scoping, ident)
+                                .is_some_and(|symbol| self.consts.contains(&symbol))
+                        }
+                        init => is_text_like(init),
+                    };
+                    if text && let Some(symbol) = id.symbol_id.get() {
+                        self.consts.insert(symbol);
+                    }
+                }
+            }
+            walk::walk_variable_declaration(self, it);
+        }
+    }
+    let mut collector = Collector {
+        scoping,
+        consts: HashSet::new(),
+    };
+    collector.visit_program(program);
+    collector.consts
 }
 
 /// Merges adjacent text items (e.g. `a{"b"}c`).

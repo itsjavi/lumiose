@@ -69,7 +69,8 @@ mod tests {
     fn compile_uses_utf16_offsets() {
         let source = "const s = \"é\";\nexport const A = () => <p>{s}</p>;\nA();\n";
         let result = compile_view(source, "a.tsx");
-        assert!(result.code.contains("template(`<p>`)"));
+        // `s` is a text const: a template text node written once (TASK-65).
+        assert!(result.code.contains("template(`<p> `)"), "{}", result.code);
         let diagnostic = &result.diagnostics[0];
         assert_eq!(diagnostic.code.id(), "LUM2004");
         let units: Vec<u16> = source.encode_utf16().collect();

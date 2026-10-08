@@ -476,12 +476,13 @@ See also: [reference: reactivity](../reference/reactivity.md), [JSX bindings](js
 **Compiled idioms.** There are no `<For>` or `<Show>` components; ordinary JavaScript compiles to
 the efficient form:
 
-| Source                                              | Compiled to                                                                                                                |
-| --------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
-| `{items().map((item, i) => <Row key={item.id} />)}` | A keyed list. `key` is optional (items are keyed by reference otherwise). `i` becomes a reactive index only if you use it. |
-| `item.id === selected()` inside `.map`              | An O(1) selector: a selection change touches two rows.                                                                     |
-| `{c() ? <A /> : <B />}`, `{c() && <A />}`           | A memoised branch: switches only when the condition flips.                                                                 |
-| `{fn()}` returning nodes, arrays or text            | A dynamic insert.                                                                                                          |
+| Source                                              | Compiled to                                                                                                                                                                                                                           |
+| --------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `{items().map((item, i) => <Row key={item.id} />)}` | A keyed list. `key` is optional (items are keyed by reference otherwise). `i` becomes a reactive index only if you use it.                                                                                                            |
+| `item.id === selected()` inside `.map`              | An O(1) selector: a selection change touches two rows.                                                                                                                                                                                |
+| `{c() ? <A /> : <B />}`, `{c() && <A />}`           | A memoised branch: switches only when the condition flips.                                                                                                                                                                            |
+| `{count() * 2}`, ``{`#${id}`}``, `{String(x)}`      | Provably text: a text node of the template, updated with `setText` (written once when nothing reactive is read). Applies to sole children and to children between elements; a `const` initialised with such an expression counts too. |
+| `{fn()}` returning nodes, arrays or text            | A dynamic insert.                                                                                                                                                                                                                     |
 
 **Elements.**
 
@@ -1679,8 +1680,11 @@ See also: [Data and actions](data-and-actions.md), [Routing](routing.md), [refer
 | `spa`              | Server-rendered and hydrated, or a client shell with `ssr = false` | The whole subtree | Client router            |
 
 A route sets `export const mode = "server"` (a string literal); pages inherit the mode of their
-nearest layout that sets one. `export const ssr = false` applies to `spa` routes: the build emits a
-static shell and the page renders in the browser.
+nearest layout that sets one, else the project default set in `vite.config.ts` with
+`lumen({ mode: "server" })` (`"static"` when unset). `export const ssr = false` applies to `spa`
+routes: the build emits a static shell and the page renders in the browser. `lumen({ ssr: false })`
+makes that the default for every `spa` route, so `lumen({ mode: "spa", ssr: false })` turns the
+whole project into a client-rendered SPA built as static files.
 
 **Shell first, then stream (server mode).**
 
@@ -1732,6 +1736,7 @@ handler) or `lumen preview`; a site whose routes are all static deploys with `di
 | --------------------------------------------------- | ----------------------------------------------------------------------------------- |
 | `export const mode = "static" \| "server" \| "spa"` | The route's mode (inherited from layouts).                                          |
 | `export const ssr = false`                          | `spa` routes: render in the browser only.                                           |
+| `lumen({ mode, ssr })` in `vite.config.ts`          | The project defaults for routes and layouts that do not set them.                   |
 | `export async function staticPaths()`               | `static` routes with params: `[{ params: { slug: "a" } }, …]`.                      |
 | `export function headers(ctx)`                      | Response headers for the page.                                                      |
 | `<Suspense fallback>`                               | Marks content that may stream after the shell.                                      |

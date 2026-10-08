@@ -14,12 +14,13 @@
 **Compiled idioms.** There are no `<For>` or `<Show>` components; ordinary JavaScript compiles to
 the efficient form:
 
-| Source                                              | Compiled to                                                                                                                |
-| --------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
-| `{items().map((item, i) => <Row key={item.id} />)}` | A keyed list. `key` is optional (items are keyed by reference otherwise). `i` becomes a reactive index only if you use it. |
-| `item.id === selected()` inside `.map`              | An O(1) selector: a selection change touches two rows.                                                                     |
-| `{c() ? <A /> : <B />}`, `{c() && <A />}`           | A memoised branch: switches only when the condition flips.                                                                 |
-| `{fn()}` returning nodes, arrays or text            | A dynamic insert.                                                                                                          |
+| Source                                              | Compiled to                                                                                                                                                                                                                           |
+| --------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `{items().map((item, i) => <Row key={item.id} />)}` | A keyed list. `key` is optional (items are keyed by reference otherwise). `i` becomes a reactive index only if you use it.                                                                                                            |
+| `item.id === selected()` inside `.map`              | An O(1) selector: a selection change touches two rows.                                                                                                                                                                                |
+| `{c() ? <A /> : <B />}`, `{c() && <A />}`           | A memoised branch: switches only when the condition flips.                                                                                                                                                                            |
+| `{count() * 2}`, ``{`#${id}`}``, `{String(x)}`      | Provably text: a text node of the template, updated with `setText` (written once when nothing reactive is read). Applies to sole children and to children between elements; a `const` initialised with such an expression counts too. |
+| `{fn()}` returning nodes, arrays or text            | A dynamic insert.                                                                                                                                                                                                                     |
 
 **Elements.**
 

@@ -1,7 +1,7 @@
 // The HTML parser wraps rows of a <table> in an implicit <tbody>: both targets spell it out for
 // static <tr>s, row-producing .map() calls and conditionals, so walks match the parsed DOM.
 import { signal } from "lumen";
-import { ssr, insert, list, branch } from "lumen/server";
+import { ssr, text, insert, list, branch } from "lumen/server";
 const _s0 = ["<tr><td>", "</td></tr>"];
 const _s1 = ["<table><tbody>", "</tbody></table>"];
 const _s2 = ["<tr><td>open</td></tr>"];
@@ -23,7 +23,7 @@ export function Mapped() {
 export function Mixed() {
 	return ssr(_s4, list(rows(), (row) => {
 		const label = row.name.toUpperCase();
-		return ssr(_s0, insert(label));
+		return ssr(_s0, text(label));
 	}), branch(open(), () => ssr(_s2)), branch(open(), () => ssr(_s3)));
 }
 export function Explicit() {

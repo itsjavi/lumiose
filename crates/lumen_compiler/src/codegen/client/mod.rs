@@ -191,6 +191,7 @@ pub fn transform<'a>(
             .symbol_ids()
             .filter(|&symbol| scoping.symbol_name(symbol) == "props")
             .collect(),
+        text_consts: children::text_consts(program, scoping),
         templates: HashMap::new(),
         template_decls: Vec::new(),
         apply_decls: Vec::new(),
@@ -294,6 +295,8 @@ pub struct Codegen<'a, 's> {
     islands: Vec<IslandMeta>,
     /// Symbols named `props` (for the props parameter name choice).
     props_symbols: Vec<SymbolId>,
+    /// Consts with a provably text value (`children::text_consts`).
+    text_consts: HashSet<SymbolId>,
     /// Hoisted templates (client) or static part arrays (server) by content.
     templates: HashMap<(String, u8), String>,
     /// Module-scope declarations, emitted after the imports: templates (or part arrays), apply

@@ -87,6 +87,33 @@ describe.skipIf(!binding)("compiled output runs on lumen/dom", () => {
     expect(button.className).toBe("hot");
   });
 
+  it("text children alone between nodes are text nodes (TASK-65)", async (ctx) => {
+    const { module, missing, result } = await load(`
+      import { signal } from "lumen";
+      export const n = signal(3);
+      export function Texts(props: { a: string }) {
+        const label = String(props.a);
+        return <div><b>x</b>{n() * 2}<i />{label}<hr />{\`\${props.a}!\`}</div>;
+      }`);
+    if (!module) return ctx.skip(`lumen/dom lacks ${missing.join(", ")}`);
+    expect(result.code).toContain("setText");
+    expect(result.code).not.toContain("insert(");
+    const app = render(module.Texts, { a: "A" });
+    const div = app.querySelector("div")!;
+    expect([...div.childNodes].map((node) => node.nodeName)).toEqual([
+      "B",
+      "#text",
+      "I",
+      "#text",
+      "HR",
+      "#text",
+    ]);
+    expect(div.textContent).toBe("x6AA!");
+    module.n.set(5);
+    lumen.flushSync();
+    expect(div.textContent).toBe("x10AA!");
+  });
+
   it("keyed list, selector and data-slot events (doc-2 §5.2)", async (ctx) => {
     const { module, missing, result } = await load(`
       import { signal } from "lumen";

@@ -4,9 +4,10 @@
 //!
 //! The output mirrors the client walk so that islands hydrate: wherever the client calls
 //! `insert`, `list` or `branch` the server has an `insert()`, `list()` or `branch()` hole (each one
-//! dynamic region, wrapped in markers by the runtime inside islands), a sole text-like child the
-//! client writes with `setText` is a `text()` hole, and the static HTML is the client template's
-//! (same text normalisation, implicit `<tbody>`, scope tokens) without its `<!>` placeholders.
+//! dynamic region, wrapped in markers by the runtime inside islands), a text-like child that the
+//! client compiles to a text node (alone between nodes: `setText` or a one-time write) is a
+//! `text()` hole, and the static HTML is the client template's (same text normalisation,
+//! implicit `<tbody>`, scope tokens) without its `<!>` placeholders.
 //! Attributes follow the client's DOM order: static and baked ones, scope tokens, then dynamic
 //! ones in source order. Event handlers, refs and attachments do not exist on the server.
 
@@ -15,7 +16,7 @@ use oxc_ast::ast::*;
 use oxc_span::{GetSpan, Span};
 use oxc_syntax::operator::BinaryOperator;
 
-use super::children::{Item, group_table_rows, is_text_like};
+use super::children::{Item, Kind, group_table_rows, is_isolated};
 use super::element::{
     AttrValue, Literal, attr_value, attribute_name, literal, static_object_keys, static_strings,
     strip_parens, tag_name,
@@ -360,8 +361,8 @@ impl<'a> Codegen<'a, '_> {
     }
 
     fn ssr_items(&mut self, out: &mut Ssr<'a>, items: Vec<Item<'a>>) {
-        let count = items.len();
-        for item in items {
+        let kinds: Vec<Kind> = items.iter().map(Item::kind).collect();
+        for (i, item) in items.into_iter().enumerate() {
             match item {
                 Item::Text(text, _) => out.text(&text),
                 Item::Raw(raw, _) => out.html(&raw),
@@ -375,13 +376,16 @@ impl<'a> Codegen<'a, '_> {
                     self.ssr_items(out, rows);
                     out.html("</tbody>");
                 }
-                Item::Dynamic(expression) => self.ssr_dynamic_child(out, expression, count == 1),
+                Item::Dynamic(expression) => {
+                    self.ssr_dynamic_child(out, expression, is_isolated(&kinds, i));
+                }
             }
         }
     }
 
-    /// The hole of a dynamic child, matching the client's `insert`/`list`/`branch`/`setText`.
-    fn ssr_dynamic_child(&mut self, out: &mut Ssr<'a>, expression: Expression<'a>, sole: bool) {
+    /// The hole of a dynamic child, matching the client's `insert`/`list`/`branch`/text node: a
+    /// provably text value in an isolated position is a `text()` hole.
+    fn ssr_dynamic_child(&mut self, out: &mut Ssr<'a>, expression: Expression<'a>, isolated: bool) {
         let span = expression.span();
         let hole = if self.is_list(&expression) {
             let list = self.compile_list(expression);
@@ -404,7 +408,7 @@ impl<'a> Codegen<'a, '_> {
             } else {
                 self.visited(expression)
             };
-            let helper = if sole && !compiled_jsx && is_text_like(&value) {
+            let helper = if isolated && !compiled_jsx && self.is_text(&value) {
                 "text"
             } else {
                 "insert"
