@@ -1,11 +1,11 @@
 ---
 id: TASK-91
 title: 'Size: a real islands app ships 11.5 kB brotli of runtime (10 kB cap)'
-status: In Progress
+status: Done
 assignee:
   - '@Spark'
 created_date: '2026-10-08 21:08'
-updated_date: '2026-10-08 22:15'
+updated_date: '2026-10-08 22:19'
 labels:
   - size
   - runtime
@@ -22,8 +22,8 @@ Measured on the built bookshelf (TASK-36, `pnpm --filter @lumen-examples/ssr-boo
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Size report includes a real-app row (bookshelf islands or equivalent) with hydration
-- [ ] #2 Either the real app fits the 10 kB cap or Lux decides on the budget
+- [x] #1 Size report includes a real-app row (bookshelf islands or equivalent) with hydration
+- [x] #2 Either the real app fits the 10 kB cap or Lux decides on the budget
 <!-- AC:END -->
 
 ## Implementation Plan
@@ -45,4 +45,20 @@ Lux (from Nova, TASK-37): SSG pages ship ~12.4 kB brotli JS and Nova measured th
 Spark (2026-10-09): Investigation (scripts/size-apps.ts, source-map attribution). No duplication across chunks; the excess came from (a) Rolldown splitting the runtime into 2-4 shared chunks (loader + dom + attributes; SPA: islands + spa + dom + src) whose import/export lists and separate compression cost 0.5-1.5 kB, (b) Vite's __vitePreload helper (1.6 kB min, ~0.55 kB brotli) in every app, (c) the SPA entry pulling the island loader + hydration + serialize (~2.3 kB brotli) into spa-chiptune although nothing there hydrates (ssr=false, no islands). The 0.74 kB 'loader' figure of TASK-18 is the loader's increment over the runtime it shares; the loader chunk holds that shared runtime.
 Before (runtime brotli / app code): ssr-bookshelf 11.01 / 3.14 kB, ssg-travel-journal 9.88 / 2.23 kB, spa-chiptune 15.69 / 25.33 kB.
 Commit fadbc30: app/production/client-runtime.ts (new, wired in lumenBuild in plugin.ts: Nova's area, minimal edit after TASK-98 landed) = one runtime chunk + empty loader without islands + smaller preload helper; router/csr.ts + entry.ts CSR start; size-apps.ts (pnpm --filter lumen size:apps, exits 1 above 10 kB); docs (islands, rendering modes). After: bookshelf 9.94 / 3.09, journal 9.07 / 2.24, chiptune 11.21 / 25.22 kB. Validation: typecheck, lint, pnpm test (1023 passed), e2e build projects green: spa-router-e2e 11/11, spa-chiptune 7/7, ssr-bookshelf 14/14, ssg-travel-journal 16/16, islands-e2e 5/5.
+
+Spark (2026-10-09, cont.): 9fa37ec pure module-level owners/signals (core/async busy, owner LAZY, Link template), dev-only island name and router error text; size:apps now reports framework = runtime + router + app helpers. aeab6f8 ClientNavigation hooks moved to app/actions/navigation.ts (my TASK-25 note; Nova's area, minimal edit) so the router no longer bundles the form helpers. Tree-shaking check: islands apps bundle no router and no head; chiptune bundles no hydration, no island loader, no submit().
+After (framework brotli = runtime + router + app helpers; app code):
+| app | before | after | app code |
+| ssr-bookshelf | 11.01 | 9.82 (8.57 + 0 + 1.25) | 3.10 |
+| ssg-travel-journal | 9.88 | 9.03 (8.55 + 0 + 0.48) | 2.23 |
+| spa-chiptune | 15.69 | 11.18 (7.30 + 3.69 + 0.19) | 25.18 |
+spa-chiptune stays over: the router is 3.7 kB. Recorded as TASK-106 (Lux to decide the budget for SPA apps; router slimming options measured there). size:apps exits 1 until then.
+For Lux: packages/lumen/package.json gained the size:apps script (one line); app/production/client-runtime.ts is a new file in Nova's directory, wired with one line in lumenBuild (plugin.ts); consider running size:apps in CI/pnpm check once TASK-106 settles the SPA budget; spec doc-1 §6 could cite the real-app rows above.
+For Nova: (1) islandUrls() removes an entry chunk without checking that nothing imports it; safe now (the loader is empty without islands) but a codeSplitting group could otherwise move shared code into it. (2) SPA + islands apps load the entry, then the shared lumen chunk: a modulepreload hint for the entries' static imports would save a round trip. (3) submit()/fetchJSON()/control are 1.25 kB brotli in the bookshelf; trimming them is the next lever for islands apps.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Real-app sizes are measured and the islands apps fit the 10 kB cap. pnpm --filter lumen size:apps (scripts/size-apps.ts) builds each sample app and attributes every client chunk's brotli bytes to runtime, router, app helpers or app code through source maps; it exits 1 above the cap. The overrun was chunking and glue, not duplication: lumen build now puts the runtime in one chunk (the only client entry's when there is one), builds an empty island loader without islands, replaces Vite's preload helper with a smaller one (no vite:preloadError event), and starts SPAs where nothing hydrates without the island loader or hydration (router/csr.ts); plus pure module-level signals/owners and a ClientNavigation split. Framework JS brotli before -> after: ssr-bookshelf 11.01 -> 9.82, ssg-travel-journal 9.88 -> 9.03, spa-chiptune 15.69 -> 11.18 (router 3.69 kB; follow-up TASK-106 for Lux's budget decision and router slimming). Commits fadbc30, 9fa37ec, aeab6f8. Validation: pnpm typecheck, pnpm lint, pnpm test (1025 passed), docs:check; Playwright against builds: spa-router-e2e 11/11, spa-chiptune 7/7, ssr-bookshelf 14/14, ssg-travel-journal 16/16, islands-e2e 5/5. Docs: concepts/islands (runtime chunk, build output), concepts/rendering-modes (CSR start).
+<!-- SECTION:FINAL_SUMMARY:END -->
