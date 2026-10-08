@@ -89,6 +89,18 @@ describe("attributes", () => {
     expect(attr("onclick", () => {})).toBe("");
   });
 
+  it("writes aria-* and enumerated attributes as true/false, like the client setAttr", () => {
+    expect(attr("aria-hidden", true)).toBe(' aria-hidden="true"');
+    expect(attr("aria-expanded", false)).toBe(' aria-expanded="false"');
+    expect(attr("draggable", false)).toBe(' draggable="false"');
+    expect(attr("spellcheck", true)).toBe(' spellcheck="true"');
+    expect(attr("contenteditable", false)).toBe(' contenteditable="false"');
+    expect(attr("aria-label", null)).toBe("");
+    // translate takes yes/no, so it stays a plain attribute (as on the client).
+    expect(attr("translate", false)).toBe("");
+    expect(attr("hidden", false)).toBe("");
+  });
+
   it("combines class strings, arrays and objects", () => {
     expect(classAttr("a b")).toBe(' class="a b"');
     expect(classAttr(["a", { b: true, c: false }, ["d", null]])).toBe(' class="a b d"');
@@ -116,11 +128,16 @@ describe("attributes", () => {
         children: "c",
         ref: () => {},
         hidden: true,
+        "aria-busy": false,
+        indeterminate: true,
+        "xlink:href": "#icon",
         title: undefined,
         'x" onload="alert(1)': "y",
         $$scope: "data-l-p1",
       }),
-    ).toBe(' id="x" class="a b" style="color:red" hidden data-l-p1');
+    ).toBe(
+      ' id="x" class="a b" style="color:red" hidden aria-busy="false" xlink:href="#icon" data-l-p1',
+    );
   });
 });
 

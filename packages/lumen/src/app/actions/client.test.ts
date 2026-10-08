@@ -78,7 +78,7 @@ describe("submit()", () => {
     expect((await request!.formData()).get("title")).toBe("milk");
   });
 
-  it("tracks submissions in flight with submitting(), also per named action", async () => {
+  it("tracks submissions in flight with submitting(), also per named action, and busy()", async () => {
     let finish!: () => void;
     serve(
       () =>
@@ -88,9 +88,10 @@ describe("submit()", () => {
     );
     const seen: string[] = [];
     const { effect, flushSync } = core;
+    const { busy } = await import("../../core/async.ts");
     const stop = effect(() => {
       seen.push(
-        `${client.submitting()}/${client.submitting("add")}/${client.submitting("remove")}`,
+        `${client.submitting()}/${client.submitting("add")}/${client.submitting("remove")} busy=${busy()}`,
       );
     });
     flushSync();
@@ -101,7 +102,11 @@ describe("submit()", () => {
     await pending;
     flushSync();
     stop();
-    expect(seen).toEqual(["false/false/false", "true/true/false", "false/false/false"]);
+    expect(seen).toEqual([
+      "false/false/false busy=false",
+      "true/true/false busy=true",
+      "false/false/false busy=false",
+    ]);
   });
 
   it("enhances a submit event: prevents the native submission and posts the submitter", async () => {
@@ -159,6 +164,28 @@ describe("submit()", () => {
       status: 405,
       data: "Method Not Allowed",
     });
+  });
+
+  it("rejects network failures with a FetchError (status 0) and keeps aborts as AbortError", async () => {
+    const offline = new TypeError("Failed to fetch");
+    serve(() => Promise.reject(offline));
+    const failed = await client.submit({}).catch((caught: unknown) => caught);
+    expect(fetchModule.isFetchError(failed)).toBe(true);
+    expect(failed).toMatchObject({
+      status: 0,
+      message: "Network error: Failed to fetch",
+      url: "http://localhost:3000/todos",
+      cause: offline,
+    });
+    expect(client.submitting()).toBe(false);
+
+    const abort = new DOMException("The operation was aborted.", "AbortError");
+    serve(() => Promise.reject(abort));
+    await expect(client.submit({})).rejects.toBe(abort);
+    expect(client.submitting()).toBe(false);
+    // Rejected submissions leave the busy() registry too.
+    const { busy } = await import("../../core/async.ts");
+    expect(busy()).toBe(false);
   });
 
   it("resolves responses outside the protocol as success with their body", async () => {

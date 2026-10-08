@@ -3,6 +3,7 @@
 // state as signals; `invalidate()` refreshes server data after a mutation. Navigation is MPA (a
 // full page load) unless the SPA router (TASK-25) installs its hooks with setClientNavigation().
 
+import { beginBusy } from "../../core/internal.ts";
 import { signal, type Signal } from "../../core/signal.ts";
 import { decodeData } from "../../server/serialize.ts";
 import { fetchError, FetchError, readBody } from "../fetch-json.ts";
@@ -84,8 +85,9 @@ export function submitting(name?: string): boolean {
 
 /**
  * Posts a form to its page action without a page load, and resolves with the action result:
- * `success` and `failure` set `actionData()`, `redirect` navigates. Rejects with a `FetchError` when
- * the action throws or the response is an error. Pass it the submit event to enhance a form:
+ * `success` and `failure` (`fail()`) set `actionData()`, `redirect` navigates. Rejects only for
+ * unexpected errors, with a `FetchError`: the action throws, the response is an error, or the
+ * network fails (status 0). Pass it the submit event to enhance a form:
  * `<form method="post" action="?/create" onSubmit={submit}>`.
  */
 export async function submit<Data = unknown, Failure = unknown>(
@@ -110,20 +112,37 @@ export async function submit<Data = unknown, Failure = unknown>(
   );
   const name = actionName(url) ?? "";
   inFlight.update((names) => [...names, name]);
+  // Counts toward the app-wide busy() summary while in flight (decision-20).
+  const endBusy = beginBusy();
   try {
     const response = await fetch(url, {
       method,
       body,
       headers: { accept: "application/json", [ACTION_HEADER]: "1" },
       signal: options.signal,
+    }).catch((error: unknown) => {
+      throw networkError(error, url.href);
     });
     const result = await readResult<Data, Failure>(response, url.href);
     if (result.type === "redirect") await navigation.navigate(result.location);
     else dataSignal().set(result.data);
     return result;
   } finally {
+    endBusy();
     inFlight.update((names) => names.toSpliced(names.indexOf(name), 1));
   }
+}
+
+/**
+ * A failed `fetch` as a `FetchError` with status 0 (no response), so `submit()` rejects with
+ * `FetchError` only (decision-20). Aborts through `options.signal` keep their `AbortError`.
+ */
+function networkError(error: unknown, url: string): unknown {
+  if ((error as { name?: unknown } | null)?.name === "AbortError") return error;
+  const message = error instanceof Error ? error.message : String(error);
+  const failure = new FetchError(0, `Network error: ${message}`, url, undefined);
+  failure.cause = error;
+  return failure;
 }
 
 /** Refreshes the current page's server data after a mutation. MPA: reloads the page. */

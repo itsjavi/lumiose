@@ -4,34 +4,55 @@
 import { currentFrame, resolveUnit } from "./frame.ts";
 import { escapeAttr } from "./node.ts";
 
-/** ` name="escaped"`, ` name` for `true`, "" for null/undefined/false and functions (handlers). */
+/**
+ * Attributes whose boolean values are written as "true"/"false" instead of present/absent:
+ * `aria-*` and the enumerated (`Booleanish`) attributes of HTML, SVG and MathML. A copy of the
+ * client table in ../dom/attributes.ts (client parity rule, TASK-13); ./parity.test.ts keeps the
+ * two in sync.
+ */
+export const BOOLEANISH =
+  /^(?:aria-|(?:contenteditable|draggable|spellcheck|writingsuggestions|preserveAlpha|displaystyle|accent|accentunder|fence|largeop|movablelimits|separator|stretchy|symmetric)$)/;
+
+/**
+ * ` name="escaped"`, or "" for null/undefined and functions (handlers). Booleans follow the client
+ * `setAttr`: `aria-*` and enumerated attributes get "true"/"false"; other attributes are present
+ * (` name`) for `true` and omitted for `false`.
+ */
 export function attr(name: string, value: unknown): string {
-  if (value == null || value === false || typeof value === "function") return "";
-  if (value === true) return ` ${name}`;
+  if (value == null || typeof value === "function") return "";
+  if (typeof value === "boolean") {
+    if (BOOLEANISH.test(name)) return ` ${name}="${value}"`;
+    return value ? ` ${name}` : "";
+  }
   return ` ${name}="${escapeAttr(typeof value === "string" ? value : String(value))}"`;
 }
 
-/** ` class="…"` from a string, an array or a `Record<string, boolean>` (combinable). */
+/** ` class="…"` from a string, an array or a `Record<string, boolean>` (combinable), as `setClass`. */
 export function classAttr(value: unknown): string {
   const classes = classString(value);
   return classes === "" ? "" : ` class="${escapeAttr(classes)}"`;
 }
 
+// The client's class tokens (setClass): whitespace-separated, each once, in first-seen order.
 function classString(value: unknown): string {
-  if (typeof value === "string") return value.trim();
-  if (value == null || typeof value !== "object") return "";
-  let out = "";
-  if (Array.isArray(value)) {
-    for (const item of value) {
-      const name = classString(item);
-      if (name !== "") out = out === "" ? name : `${out} ${name}`;
+  const tokens: string[] = [];
+  addTokens(value, tokens);
+  return tokens.join(" ");
+}
+
+function addTokens(value: unknown, out: string[]): void {
+  if (!value) return;
+  if (typeof value === "string") {
+    for (const token of value.split(/\s+/)) {
+      if (token !== "" && !out.includes(token)) out.push(token);
     }
-    return out;
+  } else if (Array.isArray(value)) {
+    for (const item of value) addTokens(item, out);
+  } else if (typeof value === "object") {
+    for (const key of Object.keys(value)) {
+      if ((value as Record<string, unknown>)[key]) addTokens(key, out);
+    }
   }
-  for (const key of Object.keys(value)) {
-    if ((value as Record<string, unknown>)[key]) out = out === "" ? key : `${out} ${key}`;
-  }
-  return out;
 }
 
 /**
@@ -63,16 +84,21 @@ function styleString(value: unknown): string {
   return out;
 }
 
-// Keys that never become attributes: content, refs, keys and compile-time directives.
+// Keys that never become attributes: content, property-only DOM state, refs, keys and
+// compile-time directives.
 const SKIPPED = new Set([
   "children",
   "ref",
   "key",
   "innerHTML",
   "textContent",
+  "indeterminate",
   "attach",
   "$$scope",
 ]);
+// Event handlers (`onClick`, `on:custom`) and directives. Other namespaced names (`xlink:href`,
+// `xml:lang`) are attributes, as on the client.
+const NOT_ATTRIBUTE = /^(?:on[A-Z]|on:|bind:|client:)/;
 // A valid attribute name with nothing that could close the tag or start another attribute.
 const ATTRIBUTE_NAME = /^[^\s"'<>/=\p{Cc}]+$/u;
 
@@ -80,7 +106,7 @@ const ATTRIBUTE_NAME = /^[^\s"'<>/=\p{Cc}]+$/u;
 export function spreadAttrs(props: Record<string, unknown>): string {
   let out = "";
   for (const key of Object.keys(props)) {
-    if (SKIPPED.has(key) || key.includes(":") || /^on[A-Z]/.test(key)) continue;
+    if (SKIPPED.has(key) || NOT_ATTRIBUTE.test(key)) continue;
     const value = props[key];
     if (key === "class") out += classAttr(value);
     else if (key === "style") out += styleAttr(value);
