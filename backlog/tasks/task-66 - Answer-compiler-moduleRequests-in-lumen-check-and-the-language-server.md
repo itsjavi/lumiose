@@ -1,10 +1,11 @@
 ---
 id: TASK-66
 title: Answer compiler moduleRequests in lumen check and the language server
-status: To Do
+status: In Progress
 assignee:
-  - Beacon
+  - '@Beacon'
 created_date: '2026-10-08 16:15'
+updated_date: '2026-10-08 16:16'
 labels:
   - tooling
   - styles
