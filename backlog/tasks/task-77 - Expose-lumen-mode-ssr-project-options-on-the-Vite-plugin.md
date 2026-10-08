@@ -5,6 +5,7 @@ status: To Do
 assignee:
   - Photon
 created_date: '2026-10-08 16:38'
+updated_date: '2026-10-08 16:53'
 labels:
   - compiler
   - app
@@ -25,3 +26,9 @@ decision-21: the project default route mode is set with lumen({ mode, ssr }) in 
 - [ ] #2 The 'lumen' plugin exposes api: { options } with them, so projectOptions() returns them (dev, build, lumen routes/check)
 - [ ] #3 A test: a project with lumen({ mode: 'server' }) lists its routes as server via lumen routes
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Beacon: blocks TASK-33 AC #1 (create-lumen templates set lumen({ mode: 'static' | 'server' | 'spa' }); today the option is ignored and is a TS2353 in vite.config.ts). When done, remove the pluginTakesMode guard in packages/create/src/create.test.ts and the api.options workaround in packages/lumen/src/cli/cli.test.ts (its vite.config.ts fixture), both marked TODO(TASK-77).
+<!-- SECTION:NOTES:END -->
