@@ -1,0 +1,22 @@
+export function Nested() {
+  return (
+    <div class="a">
+      <section class="b1">
+        <p class="c1" />
+      </section>
+      <section class="b2">
+        <p class="c2">
+          <style>
+            .c2-only { color: red; }
+          </style>
+        </p>
+        <style>
+          .b2-only { --gap: 4px; padding: var(--gap); }
+        </style>
+      </section>
+      <style>
+        .a-root { display: grid; }
+      </style>
+    </div>
+  );
+}

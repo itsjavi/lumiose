@@ -9,18 +9,26 @@
 //
 // On top, for `.stsx`: CSS features in style blocks (vscode-css-languageservice on per-block
 // virtual CSS), class-name completion / definition / references / rename between JSX `class`
-// attributes and selectors (plus `<style global>` classes of other files), `$ref` hovers with the
-// folded value, CSS document symbols, and Lumen diagnostics (scanner and diagnostic providers,
-// e.g. the compiler's, also for `.tsx`). Diagnostic providers get a per-project `ModuleHost` that
+// attributes and selectors, scoped by placement (decision-23: a nested block covers its enclosing
+// element's subtree), plus the project's global classes (`<style global>` blocks and imported
+// `.css` files) and custom properties, `$ref` hovers with the folded value, `<style>` tag
+// completion and hovers, snippets, CSS document symbols, and Lumen diagnostics (scanner and
+// diagnostic providers, e.g. the compiler's, also for `.tsx`). Diagnostic providers get a per-project `ModuleHost` that
 // reads open documents before the disk, so the compiler sees constants imported by `$` references
 // as edited; a change to such a module (in an editor or on disk) re-runs its dependents' providers.
 //
 // A crashed TypeScript server is restarted with backoff, and the open documents are re-sent.
 
-import type { Diagnostic as CompilerDiagnostic, ScanResult, StyleRef } from "@lumen/compiler";
+import type {
+  Diagnostic as CompilerDiagnostic,
+  ScanResult,
+  StyleBlock,
+  StyleRef,
+} from "@lumen/compiler";
 import { scan } from "@lumen/compiler";
 import { ModuleHost, SUPERSEDED_BY_TYPESCRIPT, type ModuleChange } from "lumen/tooling";
 import { existsSync } from "node:fs";
+import { readFile } from "node:fs/promises";
 import { join, relative, sep } from "node:path";
 import {
   CompletionItemKind,
@@ -28,6 +36,7 @@ import {
   DidChangeWatchedFilesNotification,
   DocumentHighlightKind,
   FileChangeType,
+  InsertTextFormat,
   MarkupKind,
   ResponseError,
   ErrorCodes,
@@ -79,16 +88,19 @@ import {
   toLspDiagnostic,
   touchesBlock,
 } from "./diagnostics.ts";
-import { GlobalClassIndex, type GlobalClass } from "./globals.ts";
+import { attributeDoc, GLOBAL_DOC, STYLE_DOC } from "./descriptions.ts";
+import {
+  isProjectModule,
+  projectModules,
+  ProjectStyles,
+  type CustomProperty,
+  type GlobalClass,
+} from "./project-styles.ts";
+import { propertyContext, propertyDeclarations } from "./properties.ts";
 import { rewriteUris } from "./rewrite.ts";
 import { syncShadows } from "./shadows.ts";
-import {
-  componentAt,
-  StsxSnapshot,
-  visibleBlocks,
-  type CssBlock,
-  type OffsetRange,
-} from "./stsx.ts";
+import { snippetCompletions } from "./snippets.ts";
+import { StsxSnapshot, type CssBlock } from "./stsx.ts";
 import {
   RESTART_DELAYS,
   RESTART_RESET_AFTER,
@@ -189,7 +201,9 @@ export function startServer(connection: Connection, options: ServerOptions = {})
   /** Shadow URI key → source URI of open `.stsx` documents (also covers non-file schemes). */
   const openShadows = new Map<string, string>();
   const syncedRoots = new Set<string>();
-  const globals = new GlobalClassIndex();
+  const styles = new ProjectStyles((specifier, importer) =>
+    moduleHostFor(projects.rootFor(importer)).resolve(specifier, importer),
+  );
   /** Module hosts of the diagnostic providers, by project root. */
   const moduleHosts = new Map<string, ModuleHost>();
   let projects = new Projects([]);
@@ -461,10 +475,12 @@ export function startServer(connection: Connection, options: ServerOptions = {})
     if (client.workspace?.didChangeWatchedFiles?.dynamicRegistration) {
       void connection.client.register(DidChangeWatchedFilesNotification.type, {
         // `.stsx` for shadows; modules that `$` constants can be imported from, and the configs
-        // that drive their resolution, for the module hosts.
+        // that drive their resolution, for the module hosts (and the CSS imports of modules).
+        // `.css` for the project's global classes and custom properties.
         watchers: [
           { globPattern: "**/*.stsx" },
           { globPattern: "**/*.{ts,tsx,mts,cts,js,jsx,mjs,cjs,json}" },
+          { globPattern: "**/*.css" },
         ],
       });
     }
@@ -493,15 +509,28 @@ export function startServer(connection: Connection, options: ServerOptions = {})
     syncedRoots.add(root);
     try {
       const { files: synced } = await syncShadows(root);
-      for (const file of synced) indexGlobals(file.source, root, file.text, file.scan);
+      for (const file of synced) indexStyles(file.source, root, file.text, file.scan);
+      for (const module of await projectModules(root)) {
+        if (!files.has(fileKey(module.path))) styles.updateModule(module.path, root, module.text);
+      }
     } catch (error) {
       connection.console.error(`Lumen: shadow sync failed in ${root}: ${String(error)}`);
     }
   }
 
-  /** Indexes a file's `<style global>` classes from disk, unless it is open (its buffer wins). */
-  function indexGlobals(path: string, root: string, text: string, scanned: ScanResult): void {
-    if (!files.has(fileKey(path))) globals.update(path, root, text, scanned);
+  /** Indexes a file's project-wide style symbols from disk, unless it is open (its buffer wins). */
+  function indexStyles(path: string, root: string, text: string, scanned: ScanResult): void {
+    if (!files.has(fileKey(path))) styles.updateStsx(path, root, text, scanned);
+  }
+
+  /** Re-indexes the CSS imports of a JS/TS module of a project from disk (unless it is open). */
+  async function indexModule(path: string): Promise<void> {
+    const root = projects.rootFor(path);
+    if (!isProjectModule(root, path) || files.has(fileKey(path))) return;
+    const text = await readFile(path, "utf8").catch(() => undefined);
+    if (files.has(fileKey(path))) return;
+    if (text === undefined) styles.delete(path);
+    else styles.updateModule(path, root, text);
   }
 
   /** Syncs the shadows of `.stsx` paths and tells TypeScript which shadows changed. */
@@ -513,9 +542,9 @@ export function startServer(connection: Connection, options: ServerOptions = {})
           files: rootChanges.map((change) => change.path),
         });
         const found = new Set(synced.map((file) => fileKey(file.source)));
-        for (const file of synced) indexGlobals(file.source, root, file.text, file.scan);
+        for (const file of synced) indexStyles(file.source, root, file.text, file.scan);
         for (const { path } of rootChanges) {
-          if (!found.has(fileKey(path)) && !files.has(fileKey(path))) globals.delete(path);
+          if (!found.has(fileKey(path)) && !files.has(fileKey(path))) styles.delete(path);
         }
       } catch (error) {
         connection.console.error(`Lumen: shadow sync failed in ${root}: ${String(error)}`);
@@ -545,10 +574,24 @@ export function startServer(connection: Connection, options: ServerOptions = {})
       const path = uriToPath(file.uri);
       file.snapshot = new StsxSnapshot(copy, path ?? file.uri);
       if (path !== undefined) {
-        globals.update(path, projects.rootFor(path), copy.getText(), file.snapshot.scan, file.uri);
+        styles.updateStsx(
+          path,
+          projects.rootFor(path),
+          copy.getText(),
+          file.snapshot.scan,
+          file.uri,
+        );
       }
     }
     return file.snapshot;
+  }
+
+  /** Indexes the CSS imports of an open JS/TS module of a project from its buffer. */
+  function indexOpenModule(file: OpenFile): void {
+    const path = uriToPath(file.uri);
+    if (path === undefined) return;
+    const root = projects.rootFor(path);
+    if (isProjectModule(root, path)) styles.updateModule(path, root, file.document.getText());
   }
 
   connection.onDidOpenTextDocument(({ textDocument: { uri, languageId, version, text } }) => {
@@ -571,6 +614,7 @@ export function startServer(connection: Connection, options: ServerOptions = {})
       file.typescript = true;
     } else if (isTypeScriptDocument(uri, languageId)) {
       file.typescript = true;
+      indexOpenModule(file);
     }
     if (file.typescript)
       notifyTs("textDocument/didOpen", { textDocument: typeScriptDocument(file) });
@@ -590,6 +634,7 @@ export function startServer(connection: Connection, options: ServerOptions = {})
       });
     } else if (file.typescript) {
       notifyTs("textDocument/didChange", { textDocument: { uri, version }, contentChanges });
+      indexOpenModule(file);
     }
     modulesChanged([{ uri }]);
     schedulePush();
@@ -607,6 +652,8 @@ export function startServer(connection: Connection, options: ServerOptions = {})
     // TypeScript falls back to the on-disk shadow, which must follow the saved source again.
     if (file.shadowUri !== undefined && path !== undefined) {
       void syncFiles([{ path, type: FileChangeType.Changed }]);
+    } else if (path !== undefined) {
+      void indexModule(path);
     }
     // Module hosts read the file from disk again.
     modulesChanged([{ uri }]);
@@ -632,7 +679,13 @@ export function startServer(connection: Connection, options: ServerOptions = {})
       return path === undefined ? [] : [{ path, type: change.type }];
     });
     if (stsx.length > 0) void syncFiles(stsx);
-    const others = changes.filter((change) => !isStsx(change.uri));
+    for (const change of changes) {
+      const path = uriToPath(change.uri);
+      if (path === undefined) continue;
+      if (/\.css$/i.test(path)) styles.cssChanged(path);
+      else if (!isStsx(path)) void indexModule(path);
+    }
+    const others = changes.filter((change) => !isStsx(change.uri) && !/\.css$/i.test(change.uri));
     if (others.length > 0) notifyTs("workspace/didChangeWatchedFiles", { changes: others });
     modulesChanged(changes);
   });
@@ -803,74 +856,9 @@ export function startServer(connection: Connection, options: ServerOptions = {})
     };
   }
 
-  /** Top-level declaration ranges (components) from TypeScript's document symbols, cached. */
-  function componentsOf(at: StsxAt): Promise<OffsetRange[] | undefined> {
-    const { snapshot, file } = at;
-    snapshot.components ??= (async () => {
-      const symbols = await forward<Array<DocumentSymbol | SymbolInformation>>(
-        "textDocument/documentSymbol",
-        { textDocument: { uri: file.uri } },
-        undefined,
-        true,
-      );
-      if (!symbols) return undefined;
-      return symbols.flatMap((symbol) => {
-        const range =
-          "location" in symbol
-            ? symbol.containerName
-              ? undefined
-              : symbol.location.range
-            : symbol.range;
-        return range
-          ? [
-              {
-                start: snapshot.document.offsetAt(range.start),
-                end: snapshot.document.offsetAt(range.end),
-              },
-            ]
-          : [];
-      });
-    })().catch(() => undefined);
-    return snapshot.components;
-  }
-
-  /**
-   * The occurrences that rename together with `target`: when only component blocks of the
-   * target's component define the class, that component's selectors and usages; otherwise
-   * (file-level or global definitions, or no definition) every occurrence in the file.
-   */
-  async function classGroup(at: StsxAt, target: ClassTarget): Promise<ClassOccurrenceRef[]> {
-    const { snapshot } = at;
-    const components = await componentsOf(at);
-    const scopeOf = (offset: number) => components && componentAt(components, offset);
-    const blockScope = (index: number) => {
-      const block = snapshot.blocks[index]!;
-      return block.placement === "jsx" ? scopeOf(block.span.start) : undefined;
-    };
-    const selectors = snapshot.selectors.filter((selector) => selector.name === target.name);
-    const usages = snapshot.classAttributes.usages.filter((usage) => usage.name === target.name);
-    const origin = target.block !== undefined ? blockScope(target.block) : scopeOf(target.start);
-    const visible = selectors.filter((selector) => {
-      const scope = blockScope(selector.block);
-      return scope === undefined || scope === origin;
-    });
-    const fileWide =
-      origin === undefined ||
-      visible.length === 0 ||
-      visible.some((selector) => blockScope(selector.block) === undefined);
-    return [
-      ...selectors
-        .filter((selector) => fileWide || blockScope(selector.block) === origin)
-        .map((selector) => ({ ...selector, selector: true })),
-      ...usages
-        .filter((usage) => fileWide || scopeOf(usage.start) === origin)
-        .map((usage) => ({ ...usage, selector: false })),
-    ];
-  }
-
   // --- Completion --------------------------------------------------------------------------
 
-  type Tag = "ts" | "css" | "class";
+  type Tag = "ts" | "css" | "class" | "snippet" | "style";
 
   function tagged(result: CompletionList | CompletionItem[] | null, tag: Tag) {
     if (!result) return result;
@@ -882,7 +870,19 @@ export function startServer(connection: Connection, options: ServerOptions = {})
     return list;
   }
 
-  async function classCompletion(at: StsxAt): Promise<CompletionList | undefined> {
+  /** The project root and path of a file URI (unset for other schemes). */
+  function projectOf(uri: string): { root: string; path: string } | undefined {
+    const path = uriToPath(uri);
+    return path === undefined ? undefined : { root: projects.rootFor(path), path };
+  }
+
+  /**
+   * Class completion in a `class` attribute (decision-23): the blocks that apply at the cursor
+   * (its enclosing subtrees' blocks, file-level and global blocks of the file), then the project's
+   * global classes (other files' `<style global>` blocks, imported `.css` files). Sorted in that
+   * order: innermost subtree first.
+   */
+  function classCompletion(at: StsxAt): CompletionList | undefined {
     const { snapshot, offset } = at;
     const slot = snapshot.classAttributes.slots.find(
       (candidate) => candidate.start <= offset && offset <= candidate.end,
@@ -902,55 +902,167 @@ export function startServer(connection: Connection, options: ServerOptions = {})
         ? (text.slice(slot.start, start) + " " + text.slice(end, slot.end)).split(/\s+/)
         : [],
     );
-    const visible = visibleBlocks(snapshot, await componentsOf(at), offset);
     const range = rangeOf(snapshot, start, end);
     const items = new Map<string, CompletionItem>();
-    for (const selector of snapshot.selectors) {
-      if (!visible.has(selector.block) || present.has(selector.name)) continue;
-      if (items.has(selector.name)) continue;
-      const block = snapshot.blocks[selector.block]!;
-      const line = snapshot.document.positionAt(selector.start).line + 1;
-      const newText =
-        slot.kind === "key" && !isIdentifier(selector.name)
-          ? JSON.stringify(selector.name)
-          : selector.name;
-      items.set(selector.name, {
-        label: selector.name,
+    const add = (name: string, detail: string, rank: string) => {
+      if (present.has(name) || items.has(name)) return;
+      items.set(name, {
+        label: name,
         kind: CompletionItemKind.Class,
-        detail: `${block.global ? "global" : block.placement === "jsx" ? "component" : "file"} style, line ${line}`,
-        filterText: selector.name,
-        textEdit: { range, newText },
-        data: { lumen: "class" satisfies Tag },
-      });
-    }
-    const path = uriToPath(at.file.uri);
-    const root = path === undefined ? undefined : projects.rootFor(path);
-    for (const global of root === undefined ? [] : globals.classes(root, path!)) {
-      if (present.has(global.name) || items.has(global.name)) continue;
-      const file = relative(root!, global.path).split(sep).join("/");
-      items.set(global.name, {
-        label: global.name,
-        kind: CompletionItemKind.Class,
-        detail: `global style, ${file}:${global.range.start.line + 1}`,
-        filterText: global.name,
+        detail,
+        sortText: `${rank}-${name}`,
+        filterText: name,
         textEdit: {
           range,
-          newText:
-            slot.kind === "key" && !isIdentifier(global.name)
-              ? JSON.stringify(global.name)
-              : global.name,
+          newText: slot.kind === "key" && !isIdentifier(name) ? JSON.stringify(name) : name,
         },
         data: { lumen: "class" satisfies Tag },
       });
+    };
+    // Ranks: enclosing subtrees (the innermost, i.e. the smallest, first), file, global.
+    const local = snapshot.selectors
+      .filter((selector) => snapshot.visibleAt(selector.block, offset))
+      .map((selector) => {
+        const block = snapshot.blocks[selector.block]!;
+        const scope = snapshot.scopes[selector.block];
+        const rank = scope
+          ? `0${String(scope.end - scope.start).padStart(10, "0")}`
+          : block.global
+            ? "2"
+            : "1";
+        const kind = scope ? `<${scope.element?.name ?? ""}>` : block.global ? "global" : "file";
+        return { selector, rank, kind };
+      })
+      .toSorted((a, b) => a.rank.localeCompare(b.rank));
+    for (const { selector, rank, kind } of local) {
+      const line = snapshot.document.positionAt(selector.start).line + 1;
+      add(selector.name, `${kind} style, line ${line}`, rank);
+    }
+    const project = projectOf(at.file.uri);
+    for (const global of project ? styles.classes(project.root, project.path) : []) {
+      const kind = global.css ? "global CSS" : "global style";
+      add(
+        global.name,
+        `${kind}, ${where(project!.root, global.path, global.range.start.line)}`,
+        "3",
+      );
     }
     return { isIncomplete: false, items: [...items.values()] };
   }
 
-  /** `<style global>` definitions of `name` in the other files of `uri`'s project. */
+  /** Project global classes (other files, imported `.css`) named `name`, for `uri`'s project. */
   function globalDefinitions(uri: string, name: string): GlobalClass[] {
-    const path = uriToPath(uri);
-    if (path === undefined) return [];
-    return globals.classes(projects.rootFor(path), path).filter((global) => global.name === name);
+    const project = projectOf(uri);
+    if (!project) return [];
+    return styles.classes(project.root, project.path).filter((global) => global.name === name);
+  }
+
+  /**
+   * Custom property names in `var(…)` and at declaration starts: the file's own declarations
+   * first (every block: custom properties are not scoped), then the project's. The detail is the
+   * declared value; the documentation lists the declarations.
+   */
+  function propertyCompletion(at: StsxAt & { css: CssBlock }, base: CompletionList) {
+    const { snapshot, css, offset } = at;
+    const virtual = css.document.getText();
+    const context = propertyContext(
+      virtual,
+      offset,
+      css.block.content.start,
+      css.block.content.end,
+    );
+    if (!context) return base;
+    const text = snapshot.document.getText();
+    const local: CustomProperty[] = snapshot.cssBlocks.flatMap(({ block, document }) =>
+      propertyDeclarations(document.getText(), block.content.start, block.content.end)
+        .filter((found) => !(found.start <= offset && offset <= found.end))
+        .map((found) => ({
+          name: found.name,
+          uri: at.file.uri,
+          path: uriToPath(at.file.uri) ?? at.file.uri,
+          range: rangeOf(snapshot, found.start, found.end),
+          value: text.slice(found.valueStart, found.valueEnd),
+          selector: found.selector,
+          origin: block.global ? "global" : block.placement === "jsx" ? "element" : "file",
+        })),
+    );
+    const project = projectOf(at.file.uri);
+    const others = project ? styles.customProperties(project.root, project.path) : [];
+    const byName = new Map<string, { local: boolean; declarations: CustomProperty[] }>();
+    for (const property of [...local, ...others]) {
+      const entry = byName.get(property.name) ?? {
+        local: local.includes(property),
+        declarations: [],
+      };
+      entry.declarations.push(property);
+      byName.set(property.name, entry);
+    }
+    const range = rangeOf(snapshot, context.start, context.end);
+    const snippets = client.textDocument?.completion?.completionItem?.snippetSupport === true;
+    // A declaration name gets its colon unless one follows already.
+    const colon =
+      context.kind === "declaration" && !/^\s*:/.test(virtual.slice(context.end, context.end + 40));
+    const items: CompletionItem[] = [...byName].map(([name, { local: own, declarations }]) => ({
+      label: name,
+      kind: CompletionItemKind.Variable,
+      detail: clip(declarations[0]!.value),
+      documentation: {
+        kind: MarkupKind.Markdown,
+        value: declarations
+          .slice(0, 6)
+          .map((declaration) => {
+            const file = project
+              ? where(project.root, declaration.path, declaration.range.start.line)
+              : `line ${declaration.range.start.line + 1}`;
+            const rule = declaration.selector ? `\`${declaration.selector}\` ` : "";
+            return `- ${rule}\`${clip(declaration.value)}\` (${declaration.origin}, ${file})`;
+          })
+          .join("\n"),
+      },
+      sortText: `${own ? 0 : 1}-${name}`,
+      filterText: name,
+      textEdit: {
+        range,
+        newText: colon ? (snippets ? `${name}: $0;` : `${name}: `) : name,
+      },
+      ...(colon && snippets ? { insertTextFormat: InsertTextFormat.Snippet } : {}),
+      data: { lumen: "css" satisfies Tag },
+    }));
+    // The CSS service's own custom properties are the current block's only: replaced.
+    const kept = base.items.filter(
+      (item) => !(item.label.startsWith("--") && byName.has(item.label)),
+    );
+    return { ...base, items: [...kept, ...items] };
+  }
+
+  /** Completion in a `<style …>` open tag: its only attribute, `global`. */
+  function styleTagCompletion(at: StsxAt, block: StyleBlock): CompletionList | null {
+    const { snapshot, offset } = at;
+    const text = snapshot.document.getText();
+    const nameEnd = block.openTag.start + "<style".length;
+    if (offset < nameEnd || offset >= block.openTag.end) return null;
+    let start = offset;
+    while (start > nameEnd && /[\w-]/.test(text[start - 1]!)) start--;
+    let end = offset;
+    while (end < block.openTag.end && /[\w-]/.test(text[end]!)) end++;
+    if (start === nameEnd && start === offset && !/\s/.test(text[start] ?? "")) return null;
+    const written = block.attributes.some(
+      (attribute) => attribute.name === "global" && !(attribute.span.start === start),
+    );
+    if (written) return { isIncomplete: false, items: [] };
+    return {
+      isIncomplete: false,
+      items: [
+        {
+          label: "global",
+          kind: CompletionItemKind.Property,
+          detail: "app-wide, unscoped CSS",
+          documentation: { kind: MarkupKind.Markdown, value: GLOBAL_DOC },
+          textEdit: { range: rangeOf(snapshot, start, end), newText: "global" },
+          data: { lumen: "style" satisfies Tag },
+        },
+      ],
+    };
   }
 
   connection.onCompletion(async (params, token) => {
@@ -959,11 +1071,15 @@ export function startServer(connection: Connection, options: ServerOptions = {})
       if (at.ref && at.offset > at.ref.span.start) {
         return tagged(await forward("textDocument/completion", params, token, true), "ts");
       }
-      return tagged(cssCompletion(at.css, params.position), "css");
+      return propertyCompletion(
+        { ...at, css: at.css },
+        tagged(cssCompletion(at.css, params.position), "css")!,
+      );
     }
-    if (at?.snapshot.inBlock(at.offset)) return null;
+    const block = at?.snapshot.inBlock(at.offset);
+    if (at && block) return styleTagCompletion(at, block);
     if (at) {
-      const classes = await classCompletion(at);
+      const classes = classCompletion(at);
       if (classes) return classes;
     }
     const trigger = params.context?.triggerCharacter;
@@ -974,7 +1090,21 @@ export function startServer(connection: Connection, options: ServerOptions = {})
       return null;
     }
     // Completion lists carry no URIs (TypeScript keeps them in `data`), so they pass unmapped.
-    return tagged(await forward("textDocument/completion", params, token, true), "ts");
+    const list = tagged(await forward("textDocument/completion", params, token, true), "ts");
+    if (!at || trigger !== undefined) return list;
+    const snippets = snippetCompletions(
+      at.snapshot.scan.masked,
+      at.offset,
+      at.snapshot.jsx,
+      uriToPath(at.file.uri) ?? at.file.uri,
+      (start, end) => rangeOf(at.snapshot, start, end),
+    );
+    if (snippets.length === 0) return list;
+    return {
+      isIncomplete: list?.isIncomplete ?? false,
+      ...(list?.itemDefaults ? { itemDefaults: list.itemDefaults } : {}),
+      items: [...(list?.items ?? []), ...snippets],
+    };
   });
 
   connection.onCompletionResolve(async (item, token) => {
@@ -985,7 +1115,15 @@ export function startServer(connection: Connection, options: ServerOptions = {})
       { ...item, data: data.data },
       token,
     );
-    return resolved ? { ...resolved, data } : item;
+    if (!resolved) return item;
+    // Lumen attributes TypeScript cannot document (`on:x`, `key`).
+    const doc =
+      resolved.detail && !hasText(resolved.documentation) && attributeDoc(resolved.detail);
+    return {
+      ...resolved,
+      ...(doc ? { documentation: { kind: MarkupKind.Markdown, value: doc } } : {}),
+      data,
+    };
   });
 
   // --- Hover -------------------------------------------------------------------------------
@@ -1018,8 +1156,12 @@ export function startServer(connection: Connection, options: ServerOptions = {})
     const at = stsxAt(params.textDocument.uri, params.position);
     if (at?.ref) return refHover(at, at.ref, token);
     if (at?.css) return cssHover(at.css, params.position);
-    if (at?.snapshot.inBlock(at.offset)) return null;
-    return forward<Hover>("textDocument/hover", params, token);
+    const block = at?.snapshot.inBlock(at.offset);
+    if (at && block) return styleTagHover(at, block);
+    const hover = await forward<Hover>("textDocument/hover", params, token);
+    const document = at?.snapshot.document ?? files.get(fileKey(params.textDocument.uri))?.document;
+    if (!document) return hover;
+    return withAttributeDoc(hover, document.getText(), document.offsetAt(params.position));
   });
 
   // --- Definition, references, highlights, rename ------------------------------------------
@@ -1035,9 +1177,9 @@ export function startServer(connection: Connection, options: ServerOptions = {})
         let local: ClassOccurrence[] = [target]; // a selector is its own definition
         let external: GlobalClass[] = [];
         if (target.block === undefined) {
-          const blocks = visibleBlocks(snapshot, await componentsOf(at), target.start);
           local = snapshot.selectors.filter(
-            (selector) => selector.name === target.name && blocks.has(selector.block),
+            (selector) =>
+              selector.name === target.name && snapshot.visibleAt(selector.block, target.start),
           );
           external = globalDefinitions(at.file.uri, target.name);
         }
@@ -1072,7 +1214,7 @@ export function startServer(connection: Connection, options: ServerOptions = {})
     if (at && !at.ref) {
       const target = classTarget(at);
       if (target) {
-        return (await classGroup(at, target))
+        return classGroup(at.snapshot, target)
           .filter((occurrence) => params.context.includeDeclaration || !occurrence.selector)
           .map((occurrence): Location => ({
             uri: at.file.uri,
@@ -1089,7 +1231,7 @@ export function startServer(connection: Connection, options: ServerOptions = {})
     if (at && !at.ref) {
       const target = classTarget(at);
       if (target) {
-        return (await classGroup(at, target)).map((occurrence): DocumentHighlight => ({
+        return classGroup(at.snapshot, target).map((occurrence): DocumentHighlight => ({
           range: rangeOf(at.snapshot, occurrence.start, occurrence.end),
           kind: occurrence.selector ? DocumentHighlightKind.Write : DocumentHighlightKind.Read,
         }));
@@ -1124,7 +1266,7 @@ export function startServer(connection: Connection, options: ServerOptions = {})
       if (!/^-?[_a-zA-Z\u0080-￿][\w\-\u0080-￿]*$/.test(name)) {
         throw new ResponseError(ErrorCodes.InvalidParams, `\`${name}\` is not a valid class name.`);
       }
-      const edits = (await classGroup(at, target)).map((occurrence): TextEdit => ({
+      const edits = classGroup(at.snapshot, target).map((occurrence): TextEdit => ({
         range: rangeOf(at.snapshot, occurrence.start, occurrence.end),
         newText: occurrence.key && !isIdentifier(name) ? JSON.stringify(name) : name,
       }));
@@ -1260,6 +1402,84 @@ function withoutSuperseded(
   );
 }
 
+/**
+ * The occurrences that rename together with `target`. Its definitions are the selectors of the
+ * blocks that apply at its position (for a selector: at its block's enclosing element). When all
+ * of them are nested blocks, the group is the outermost of their subtrees: the selectors of the
+ * blocks inside it and the usages inside it. Otherwise (a file-level or global definition, or
+ * none) it is every occurrence in the file.
+ */
+function classGroup(snapshot: StsxSnapshot, target: ClassTarget): ClassOccurrenceRef[] {
+  const { scopes } = snapshot;
+  const selectors = snapshot.selectors.filter((selector) => selector.name === target.name);
+  const usages = snapshot.classAttributes.usages.filter((usage) => usage.name === target.name);
+  const origin = target.block === undefined ? target.start : scopes[target.block]?.start;
+  const defining =
+    origin === undefined
+      ? [undefined]
+      : selectors
+          .filter((selector) => snapshot.visibleAt(selector.block, origin))
+          .map((selector) => scopes[selector.block]);
+  let group: { start: number; end: number } | undefined;
+  if (defining.length > 0 && defining.every((scope) => scope !== undefined)) {
+    group = {
+      start: Math.min(...defining.map((scope) => scope!.start)),
+      end: Math.max(...defining.map((scope) => scope!.end)),
+    };
+  }
+  const inGroup = (start: number, end: number) =>
+    group === undefined || (group.start <= start && end <= group.end);
+  return [
+    ...selectors
+      .filter((selector) => {
+        const scope = scopes[selector.block];
+        return group === undefined || (scope !== undefined && inGroup(scope.start, scope.end));
+      })
+      .map((selector) => ({ ...selector, selector: true })),
+    ...usages
+      .filter((usage) => inGroup(usage.start, usage.end))
+      .map((usage) => ({ ...usage, selector: false })),
+  ];
+}
+
+/** `src/a.stsx:3`, relative to the project root. */
+function where(root: string, path: string, line: number): string {
+  return `${relative(root, path).split(sep).join("/")}:${line + 1}`;
+}
+
+/** The `style` name and the `global` attribute of a `<style>` open tag. */
+function styleTagHover(at: StsxAt, block: StyleBlock): Hover | null {
+  const { snapshot, offset } = at;
+  const name = { start: block.openTag.start + 1, end: block.openTag.start + "<style".length };
+  if (name.start <= offset && offset <= name.end) {
+    return {
+      contents: { kind: MarkupKind.Markdown, value: STYLE_DOC },
+      range: rangeOf(snapshot, name.start, name.end),
+    };
+  }
+  const global = block.attributes.find(
+    (attribute) =>
+      attribute.name === "global" && attribute.span.start <= offset && offset <= attribute.span.end,
+  );
+  if (!global) return null;
+  return {
+    contents: { kind: MarkupKind.Markdown, value: GLOBAL_DOC },
+    range: rangeOf(snapshot, global.span.start, global.span.end),
+  };
+}
+
+/** Adds the description of a Lumen attribute TypeScript leaves undocumented (`on:x`, `key`). */
+function withAttributeDoc(hover: Hover | null, text: string, offset: number): Hover | null {
+  if (!hover) return hover;
+  const markdown = hoverMarkdown(hover.contents);
+  const code = /^```\w*\n([\s\S]*?)```\s*$/.exec(markdown)?.[1];
+  if (code === undefined) return hover; // documented already, or not a property
+  const doc = attributeDoc(code);
+  // `key` must be a JSX attribute (`key={…}`), not an object's `key` property.
+  if (!doc || (/\bkey\?/.test(code) && !/^[\w$]*\s*=/.test(text.slice(offset)))) return hover;
+  return { ...hover, contents: { kind: MarkupKind.Markdown, value: `${markdown}\n${doc}` } };
+}
+
 function classTarget(at: StsxAt): ClassTarget | undefined {
   const { snapshot, offset } = at;
   if (at.css) {
@@ -1270,6 +1490,17 @@ function classTarget(at: StsxAt): ClassTarget | undefined {
   return snapshot.classAttributes.usages.find(
     (usage) => usage.start <= offset && offset <= usage.end,
   );
+}
+
+/** A declared value for a one-line detail. */
+function clip(value: string): string {
+  const line = value.replace(/\s+/g, " ");
+  return line.length > 60 ? `${line.slice(0, 59)}…` : line;
+}
+
+function hasText(documentation: CompletionItem["documentation"]): boolean {
+  if (documentation === undefined) return false;
+  return (typeof documentation === "string" ? documentation : documentation.value).trim() !== "";
 }
 
 function rangeOf(snapshot: StsxSnapshot, start: number, end: number): Range {

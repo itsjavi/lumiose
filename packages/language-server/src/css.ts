@@ -88,7 +88,11 @@ export function cssDocumentSymbols(snapshot: StsxSnapshot): DocumentSymbol[] {
   const text = snapshot.document.getText();
   return snapshot.cssBlocks.map(({ block, document, stylesheet }) => ({
     name: blockName(text, block.openTag),
-    detail: block.global ? "global" : block.placement === "jsx" ? "component" : "file",
+    detail: block.global
+      ? "global"
+      : block.placement === "jsx"
+        ? `<${block.parent?.name ?? ""}> subtree`
+        : "file",
     kind: SymbolKind.Namespace,
     range: blockRange(snapshot, block.span.start, block.span.end),
     selectionRange: blockRange(snapshot, block.openTag.start, block.openTag.end),

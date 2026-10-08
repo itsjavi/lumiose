@@ -5,6 +5,7 @@ import { existsSync } from "node:fs";
 import { readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { CompletionItemKind } from "vscode-languageserver/node";
 import type {
   CodeAction,
   ColorInformation,
@@ -37,6 +38,17 @@ function rangeOf(text: string, needle: string, shift = 0, length = needle.length
   return { start, end: { line: start.line, character: start.character + length } };
 }
 
+/** Labels in ranking order (sortText, then label), as an editor lists them. */
+function ranked(list: CompletionList | null): string[] {
+  return (list?.items ?? [])
+    .toSorted(
+      (a, b) =>
+        (a.sortText ?? a.label).localeCompare(b.sortText ?? b.label) ||
+        a.label.localeCompare(b.label),
+    )
+    .map((item) => item.label);
+}
+
 /** Symbol names as a tree: `{ parent: [children] }` or a leaf's name. */
 function outline(list: DocumentSymbol[] | undefined): unknown[] {
   return (list ?? []).map((symbol) =>
@@ -66,6 +78,14 @@ describe("language server (pull diagnostics)", () => {
   afterAll(() => server?.close());
 
   const doc = (path: string) => ({ textDocument: { uri: server.uri(path) } });
+
+  /** The completion list in `path` (with content `text`) at `needle` plus `shift`. */
+  async function completion(path: string, text: string, needle: string, shift: number) {
+    return server.request<CompletionList | null>("textDocument/completion", {
+      ...doc(path),
+      position: positionOf(text, needle, shift),
+    });
+  }
 
   /** Sorted completion labels in Button.stsx at `needle` plus `shift`. */
   async function complete(needle: string, shift: number): Promise<string[]> {
@@ -179,8 +199,9 @@ describe("language server (pull diagnostics)", () => {
 
   it("completes class names from the styles in scope", async () => {
     // Button's component block, the file block and the global block; not Icon's block. Plus the
-    // `<style global>` classes of other files (the unopened `_layout.stsx`).
+    // `<style global>` classes of other files (the unopened `_layout.stsx`) and imported `.css`.
     expect(await complete('["button"', 2)).toEqual([
+      "app-button",
       "app-shell",
       "button",
       "is-primary",
@@ -189,6 +210,7 @@ describe("language server (pull diagnostics)", () => {
       "visually-hidden",
     ]);
     expect(await complete('class="icon"', 7)).toEqual([
+      "app-button",
       "app-shell",
       "icon",
       "shared",
@@ -452,6 +474,180 @@ describe("language server (pull diagnostics)", () => {
       { uri: server.uri(layout), range: rangeOf(layoutText, ".visually-hidden", 1) },
     ]);
     server.change(CARD, card);
+  });
+
+  describe("project styles and Lumen syntax (TASK-80)", () => {
+    const NESTED = "src/components/Nested.stsx";
+    let nested: string;
+    beforeAll(async () => {
+      nested = await server.open(NESTED);
+    });
+
+    it("scopes class completion to the enclosing subtrees (decision-23), then globals", async () => {
+      const globals = ["app-button", "app-shell", "theme-dark", "visually-hidden"];
+      // C1 is in B1's subtree: B2's and C2's blocks do not apply there.
+      expect(ranked(await completion(NESTED, nested, 'class="c1"', 7))).toEqual([
+        "a-root",
+        ...globals,
+      ]);
+      // C2: its own block first, then B2's, then the root's, then the project's globals.
+      expect(ranked(await completion(NESTED, nested, 'class="c2"', 7))).toEqual([
+        "c2-only",
+        "b2-only",
+        "a-root",
+        ...globals,
+      ]);
+      const b2 = await completion(NESTED, nested, 'class="b2"', 7);
+      expect(ranked(b2)).toEqual(["b2-only", "a-root", ...globals]);
+      const details = Object.fromEntries(b2!.items.map((item) => [item.label, item.detail]));
+      expect(details).toMatchObject({
+        "b2-only": `<section> style, line ${positionOf(nested, ".b2-only").line + 1}`,
+        "app-button": "global CSS, src/styles/app.css:3",
+      });
+    });
+
+    it("defines and renames classes within their subtree", async () => {
+      const using = nested.replace('class="c1"', 'class="c1 a-root"');
+      server.change(NESTED, using);
+      const definition = await server.request<Location[]>("textDocument/definition", {
+        ...doc(NESTED),
+        position: positionOf(using, "a-root", 2),
+      });
+      expect(definition).toEqual([
+        { uri: server.uri(NESTED), range: rangeOf(using, ".a-root", 1) },
+      ]);
+      const css = await server.request<Location[]>("textDocument/definition", {
+        ...doc(CARD),
+        position: positionOf(card, 'class="card"', 7),
+      });
+      expect(css).toEqual([{ uri: server.uri(CARD), range: rangeOf(card, ".card ", 1, 4) }]);
+      server.change(NESTED, nested);
+
+      const appButton = card.replace('class="card"', 'class="card app-button"');
+      server.change(CARD, appButton);
+      const global = await server.request<Location[]>("textDocument/definition", {
+        ...doc(CARD),
+        position: positionOf(appButton, "app-button", 2),
+      });
+      const appCss = await readFile(join(server.root, "src/styles/app.css"), "utf8");
+      expect(global).toEqual([
+        { uri: server.uri("src/styles/app.css"), range: rangeOf(appCss, ".app-button", 1) },
+      ]);
+      server.change(CARD, card);
+    });
+
+    it("completes custom properties of the whole project with their values", async () => {
+      const list = await completion(NESTED, nested, "var(--gap)", 4);
+      expect(ranked(list).filter((label) => label.startsWith("--"))).toEqual([
+        "--gap",
+        "--brand",
+        "--radius",
+        "--space",
+      ]);
+      const items = Object.fromEntries(list!.items.map((item) => [item.label, item]));
+      expect(items["--gap"]!.detail).toBe("4px");
+      expect(items["--brand"]!.detail).toBe("#ff6600");
+      expect((items["--brand"]!.documentation as MarkupContent).value).toBe(
+        "- `:root` `#ff6600` (css, src/styles/tokens.css:2)",
+      );
+      expect(items["--radius"]!.detail).toBe("6px");
+      expect(items["--gap"]!.textEdit).toEqual({
+        range: rangeOf(nested, "--gap)", 0, 5),
+        newText: "--gap",
+      });
+
+      // A declaration name: the property with its colon.
+      const declaring = nested.replace(".c2-only { color: red; }", ".c2-only { --b }");
+      server.change(NESTED, declaring);
+      const declaration = await completion(NESTED, declaring, "--b }", 3);
+      const brand = declaration!.items.find((item) => item.label === "--brand")!;
+      expect(brand.textEdit).toEqual({
+        range: rangeOf(declaring, "--b }", 0, 3),
+        newText: "--brand: $0;",
+      });
+      server.change(NESTED, nested);
+    });
+
+    it("offers only `global` inside a <style> open tag, and no snippets", async () => {
+      const open = nested.replace(
+        "<style>\n            .c2-only",
+        "<style >\n            .c2-only",
+      );
+      server.change(NESTED, open);
+      const list = await completion(NESTED, open, "<style >", 7);
+      expect(list!.items.map((item) => item.label)).toEqual(["global"]);
+      expect((list!.items[0]!.documentation as MarkupContent).value).toContain(
+        "**`<style global>`**",
+      );
+      const global = open.replace("<style >", "<style global >");
+      server.change(NESTED, global);
+      expect((await completion(NESTED, global, "<style global >", 14))!.items).toEqual([]);
+      server.change(NESTED, nested);
+    });
+
+    it("offers snippets at a top-level statement and in JSX children only", async () => {
+      const typed = `${nested}\nco\n`.replace('<p class="c1" />', '<p class="c1">isl</p>');
+      server.change(NESTED, typed);
+      const snippets = async (needle: string, shift: number) =>
+        ((await completion(NESTED, typed, needle, shift))?.items ?? [])
+          .filter(
+            (item) =>
+              item.kind === CompletionItemKind.Snippet &&
+              (item.data as { lumen?: string } | undefined)?.lumen === "snippet",
+          )
+          .map((item) => item.label);
+      expect(await snippets("\nco\n", 3)).toEqual(["comp", "acomp", "route"]);
+      expect(await snippets(">isl<", 4)).toEqual(["island"]);
+      expect(await snippets("return (", 6)).toEqual([]); // inside a function body
+      expect(await snippets('<section class="b1"', 9)).toEqual([]); // a JSX tag
+      const comp = (await completion(NESTED, typed, "\nco\n", 3))!.items.find(
+        (item) => item.label === "comp",
+      )!;
+      expect(comp.textEdit).toMatchObject({
+        newText: expect.stringMatching(/^export function \$\{1:Nested\}/),
+      });
+      server.change(NESTED, nested);
+    });
+
+    it("describes Lumen attributes and <style> tags in hovers and completion", async () => {
+      const text = `import { signal } from "lumen";
+import { Card } from "./Card.stsx";
+
+const draft = signal("");
+
+export function Attributes() {
+  return (
+    <div on:click={() => {}} key={1}>
+      <input bind:value={draft} />
+      <Card title="x" client:visible />
+      <style global>
+        .x { color: red; }
+      </style>
+    </div>
+  );
+}
+`;
+      const path = "src/components/Attributes.stsx";
+      await server.open(path, text);
+      const hover = async (needle: string, shift: number) => {
+        const result = await server.request<Hover | null>("textDocument/hover", {
+          ...doc(path),
+          position: positionOf(text, needle, shift),
+        });
+        return (result?.contents as MarkupContent | undefined)?.value ?? "";
+      };
+      expect(await hover("on:click", 4)).toContain("native `addEventListener` listener");
+      expect(await hover("key={1}", 1)).toContain("the identity of a row");
+      expect(await hover("bind:value", 6)).toContain("two-way binding");
+      expect(await hover("client:visible", 8)).toContain("when it enters the");
+      expect(await hover("<style global>", 3)).toContain("**`<style>`**");
+      expect(await hover("<style global>", 9)).toContain("**`<style global>`**");
+
+      const list = await completion(path, text, "<input ", 7);
+      const item = list!.items.find((candidate) => candidate.label.startsWith("on:click"))!;
+      const resolved = await server.request<CompletionItem>("completionItem/resolve", item);
+      expect((resolved.documentation as MarkupContent).value).toContain("`on:event={handler}`");
+    });
   });
 
   it("merges style block symbols into TypeScript's document symbols", async () => {

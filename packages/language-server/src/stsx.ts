@@ -7,6 +7,7 @@ import type { Stylesheet } from "vscode-css-languageservice";
 import { TextDocument } from "vscode-languageserver-textdocument";
 import { classAttributes, selectorClasses, type ClassAttributes } from "./classes.ts";
 import { cssService } from "./css.ts";
+import { jsxStructure, type JsxElement, type JsxStructure } from "./jsx.ts";
 
 export interface CssBlock {
   index: number;
@@ -24,10 +25,20 @@ export interface SelectorClass {
   block: number;
 }
 
-/** Offsets of a top-level declaration (a component), used to scope component blocks. */
+/** A half-open offset range. */
 export interface OffsetRange {
   start: number;
   end: number;
+}
+
+/**
+ * Where a block's CSS applies within its file (decision-23): a nested block's enclosing element
+ * and everything written inside it (`range`); `undefined` for file-level and global blocks, and
+ * blocks in expressions (misplaced), which apply to the whole file.
+ */
+export interface BlockScope extends OffsetRange {
+  /** The enclosing element; unset when it could not be read (an unclosed element while typing). */
+  element?: JsxElement;
 }
 
 export class StsxSnapshot {
@@ -36,8 +47,8 @@ export class StsxSnapshot {
   #css: CssBlock[] | undefined;
   #selectors: SelectorClass[] | undefined;
   #attributes: ClassAttributes | undefined;
-  /** Top-level declaration ranges, filled from TypeScript's document symbols on demand. */
-  components: Promise<OffsetRange[] | undefined> | undefined;
+  #jsx: JsxStructure | undefined;
+  #scopes: Array<BlockScope | undefined> | undefined;
 
   constructor(document: TextDocument, filename: string) {
     this.document = document;
@@ -97,6 +108,30 @@ export class StsxSnapshot {
     this.#attributes ??= classAttributes(this.scan.masked);
     return this.#attributes;
   }
+
+  get jsx(): JsxStructure {
+    this.#jsx ??= jsxStructure(this.scan.masked);
+    return this.#jsx;
+  }
+
+  /** Each block's scope, by block index. */
+  get scopes(): ReadonlyArray<BlockScope | undefined> {
+    this.#scopes ??= this.scan.blocks.map((block) => {
+      if (block.global || block.placement !== "jsx" || !block.parent) return undefined;
+      const element = this.jsx.elementAt(block.parent.span.start);
+      if (element) return { start: element.start, end: element.end, element };
+      // Unreadable structure: from the parent's `<` to the end of the file.
+      const lt = this.scan.masked.lastIndexOf("<", block.parent.span.start);
+      return { start: Math.max(lt, 0), end: this.scan.masked.length };
+    });
+    return this.#scopes;
+  }
+
+  /** Whether block `index` applies at `offset`. */
+  visibleAt(index: number, offset: number): boolean {
+    const scope = this.scopes[index];
+    return scope === undefined || (scope.start <= offset && offset < scope.end);
+  }
 }
 
 /**
@@ -118,34 +153,4 @@ export function virtualCss(text: string, block: StyleBlock): string {
 
 function blank(text: string): string {
   return text.replace(/[^\r\n]/g, " ");
-}
-
-/**
- * Blocks visible from a position: global and file-level blocks, plus the component blocks of the
- * top-level declaration containing `offset` (spec §4.6.1). Without declaration ranges, all blocks.
- */
-export function visibleBlocks(
-  snapshot: StsxSnapshot,
-  components: readonly OffsetRange[] | undefined,
-  offset: number,
-): Set<number> {
-  const visible = new Set<number>();
-  const component = components && componentAt(components, offset);
-  snapshot.blocks.forEach((block, index) => {
-    if (
-      components === undefined ||
-      block.placement !== "jsx" ||
-      componentAt(components, block.span.start) === component
-    ) {
-      visible.add(index);
-    }
-  });
-  return visible;
-}
-
-export function componentAt(
-  components: readonly OffsetRange[],
-  offset: number,
-): OffsetRange | undefined {
-  return components.find((range) => range.start <= offset && offset < range.end);
 }

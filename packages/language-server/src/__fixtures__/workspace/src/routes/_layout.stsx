@@ -3,6 +3,7 @@ export default function Layout(props: { children?: JSX.Element }) {
 }
 
 <style global>
+  :root { --radius: 6px; }
   .app-shell { min-height: 100vh; }
   .visually-hidden { position: absolute; }
 </style>
