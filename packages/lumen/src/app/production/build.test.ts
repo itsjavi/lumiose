@@ -219,6 +219,46 @@ export default { base: "/sub/", build: { outDir: "out" }, plugins: [lumen()] };
     expect((await entry.default.fetch(new Request("http://app.test/about"))).status).toBe(404);
   });
 
+  it("writes no JS chunk left empty by the stylesheets of styled islands (TASK-94)", async () => {
+    const root = project({
+      "src/shared.css": ".shared { color: teal; }\n",
+      "src/components/Toggle.stsx": `import { signal } from "lumen";
+import "../shared.css";
+export function Toggle() {
+  const on = signal(false);
+  return (
+    <button class="toggle shared" onClick={() => on.update((value) => !value)}>
+      {on() ? "on" : "off"}
+      <style>
+        .toggle { color: tomato; }
+      </style>
+    </button>
+  );
+}
+`,
+      "src/routes/index.stsx": `import { Toggle } from "../components/Toggle.stsx";
+export default function Home() { return <main><Toggle client:load /></main>; }
+`,
+    });
+    const result = await build({ root, ...quiet() });
+
+    // The island's stylesheets are linked and its chunk preloaded, but no JS chunk is only the
+    // `/* empty css */` left of a stylesheet entry.
+    const home = read(root, "index.html");
+    const css = [...home.matchAll(/<link rel="stylesheet" href="\/(assets\/[\w.-]+\.css)">/g)];
+    const styles = css.map((link) => read(root, link[1]!)).join("");
+    expect(styles).toContain("color:teal");
+    expect(styles).toMatch(/\.toggle\[data-l-\w+\]\{color:tomato\}/);
+    expect(home).toMatch(/<link rel="modulepreload" href="\/assets\/Toggle-[\w-]+\.js">/);
+    const scripts = readdirSync(join(result.clientDir, "assets")).filter((file) =>
+      file.endsWith(".js"),
+    );
+    expect(scripts.length).toBeGreaterThan(0);
+    for (const file of scripts) {
+      expect(read(root, `assets/${file}`), file).not.toMatch(/^(?:\s|\/\*\s*empty css\s*\*\/)*$/);
+    }
+  });
+
   it("builds a site without islands or server routes to a self-contained dist/client", async () => {
     const root = project({
       "src/routes/index.stsx": "export default function Home() { return <h1>Static</h1>; }\n",

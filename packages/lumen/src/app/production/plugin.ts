@@ -12,8 +12,8 @@
 
 import { fileURLToPath } from "node:url";
 import { join, resolve } from "node:path";
-import { normalizePath, type Plugin, type ResolvedConfig } from "vite";
-import { CSS_MANIFEST } from "../../vite/css-manifest.ts";
+import { normalizePath, type Plugin, type ResolvedConfig, type Rollup } from "vite";
+import { CSS_MANIFEST, isStylesheet } from "../../vite/css-manifest.ts";
 import type { RouteManifest } from "../routes/manifest.ts";
 import type { BuiltAppConfig } from "../server/app.ts";
 import type { CsrfOptions } from "../server/csrf.ts";
@@ -25,6 +25,8 @@ const SERVER_ENTRY_ID = "\0lumen:server-entry";
 const APP_RUNTIME = normalizePath(fileURLToPath(new URL("../server/app.ts", import.meta.url)));
 /** The island loader's client entry (`lumen/dom/loader`). */
 const ISLAND_LOADER = normalizePath(fileURLToPath(new URL("../../dom/loader.ts", import.meta.url)));
+/** JS left of a chunk whose pure-CSS imports Vite removed. */
+const EMPTY_CSS_JS = /^(?:\s|\/\*\s*empty css\s*\*\/)*$/;
 
 /** What the build knows about the app, filled in by `build()` between the steps. */
 export interface BuildState {
@@ -101,7 +103,32 @@ function lumenBuildEnvironments(state: BuildState): Plugin {
         return serverEntryCode(state, this.environment.config);
       },
     },
+
+    // lumen/vite builds every stylesheet as an entry of the client build (its CSS manifest). When
+    // an island imports one too, Rolldown moves the stylesheet to a shared chunk and gives the entry
+    // a facade chunk that only imports it; Vite then drops the pure-CSS chunk and blanks the import
+    // (`/* empty css */`). Nothing loads the facade, so it is not written either (TASK-94).
+    generateBundle: {
+      order: "post",
+      handler(_, bundle) {
+        if (this.environment.name !== "client") return;
+        for (const [fileName, file] of Object.entries(bundle)) {
+          if (isEmptyStylesheetFacade(file)) delete bundle[fileName];
+        }
+      },
+    },
   };
+}
+
+function isEmptyStylesheetFacade(file: Rollup.OutputAsset | Rollup.OutputChunk): boolean {
+  return (
+    file.type === "chunk" &&
+    file.isEntry &&
+    file.facadeModuleId !== null &&
+    isStylesheet(file.facadeModuleId) &&
+    file.exports.length === 0 &&
+    EMPTY_CSS_JS.test(file.code)
+  );
 }
 
 /** The server entry module: data of the built app plus its handler. */
