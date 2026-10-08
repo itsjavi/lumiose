@@ -1,10 +1,11 @@
 ---
 id: TASK-24
 title: Integrate the dev server with Vite environments
-status: To Do
+status: In Progress
 assignee:
   - '@Nova'
 created_date: '2026-10-08 12:21'
+updated_date: '2026-10-08 15:18'
 labels: []
 milestone: m-3
 dependencies:
