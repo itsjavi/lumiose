@@ -1,10 +1,11 @@
 ---
 id: TASK-50
 title: 'Codegen: emit parentless branch and list values'
-status: To Do
+status: In Progress
 assignee:
   - '@Photon'
 created_date: '2026-10-08 14:11'
+updated_date: '2026-10-08 16:40'
 labels: []
 milestone: m-1
 dependencies:
