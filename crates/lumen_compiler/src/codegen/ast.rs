@@ -143,6 +143,16 @@ impl<'a> Ast<'a> {
         Expression::new_binary_expression(span, left, operator, right, self)
     }
 
+    /// `left ?? right`.
+    pub fn coalesce(
+        &self,
+        span: Span,
+        left: Expression<'a>,
+        right: Expression<'a>,
+    ) -> Expression<'a> {
+        Expression::new_logical_expression(span, left, LogicalOperator::Coalesce, right, self)
+    }
+
     pub fn conditional(
         &self,
         span: Span,

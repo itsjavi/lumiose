@@ -209,6 +209,27 @@ const NESTED_STYLES = `
     );
   }`;
 
+// TASK-92: a class forwarded through a middle component keeps the original caller's scope.
+const CLASS_FORWARDING = `
+  function Inner(props: { class?: unknown }) {
+    return <span class={props.class}>inner</span>;
+  }
+  function Middle(props: { class?: string }) {
+    return <div><Inner class={["mid", props.class]} /><style>.mid { color: teal }</style></div>;
+  }
+  function Plain({ class: cls }: { class?: string }) {
+    return <Inner class={cls} />;
+  }
+  export function Outer() {
+    return (
+      <main>
+        <Middle class="cta" />
+        <Plain class="cta" />
+        <style>.cta { font-weight: bold }</style>
+      </main>
+    );
+  }`;
+
 // TASK-65: provably text children alone between nodes are text nodes (setText or a one-time
 // write) on the client and text() holes on the server; the others stay inserts.
 const TEXT_CHILDREN = `
@@ -349,6 +370,15 @@ describe.skipIf(!binding)("server target renders on lumen/server", () => {
       `<section ${root}><p class=c1 ${root}>one</p><div ${root} ${nested}>` +
         `<p class=c2 ${root} ${nested}>two</p><b ${card} class="pass" ${root} ${nested}>card</b>` +
         `</div></section>`,
+    );
+  });
+
+  it("a class forwarded through a middle component keeps the caller's scope (TASK-92)", async () => {
+    const { module, tokens } = await load(CLASS_FORWARDING, "server");
+    const { Outer, Middle } = tokens;
+    expect(await renderServer(module, "Outer")).toBe(
+      `<main ${Outer}><div ${Middle}><span class="mid cta" ${Middle} ${Outer}>inner</span></div>` +
+        `<span class="cta" ${Outer}>inner</span></main>`,
     );
   });
 
@@ -517,6 +547,7 @@ describe.skipIf(!binding)("client/server parity", () => {
   it("keyed list", () => expectParity(TABLE, [["Table"]]));
   it("components and scope tokens", () => expectParity(CARD, [["Page"]]));
   it("nested style subtrees (decision-23)", () => expectParity(NESTED_STYLES, [["Tree"]]));
+  it("class forwarding (TASK-92)", () => expectParity(CLASS_FORWARDING, [["Outer"]]));
   it("text children (TASK-65)", () =>
     expectParity(TEXT_CHILDREN, [
       ["Texts", { a: "A" }],

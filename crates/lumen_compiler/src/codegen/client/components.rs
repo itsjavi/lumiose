@@ -1,6 +1,8 @@
 //! Component calls: `createComponent(C, props)` with getter props for dynamic values, plain
 //! values for literals, identifiers and functions, a lazy `children` getter, `mergeProps` for
-//! spreads and the hidden `$$scope` prop for class passthrough (contract doc-2 §1, §5.3).
+//! spreads and the hidden `$$scope` prop for class passthrough (contract doc-2 §1, §5.3). A
+//! component that forwards its own `class` prop to a child (`<Inner class={props.class} />`)
+//! forwards its caller's scope too: `$$scope` is its own tokens plus `props.$$scope` (TASK-92).
 
 use oxc_allocator::{ArenaBox, ArenaVec};
 use oxc_ast::ast::*;
@@ -69,6 +71,8 @@ impl<'a> Codegen<'a, '_> {
         let mut sources: Vec<Expression<'a>> = Vec::new();
         let mut current: Vec<ObjectPropertyKind<'a>> = Vec::new();
         let mut passes_class = false;
+        // The props name when the passed `class` may carry this component's own `class` prop.
+        let mut forwards_class: Option<String> = None;
         for item in attributes {
             match item {
                 JSXAttributeItem::SpreadAttribute(spread) => {
@@ -86,7 +90,14 @@ impl<'a> Codegen<'a, '_> {
                     }
                     passes_class |= name == "class";
                     let span = attribute.span;
-                    match attr_value(attribute.value) {
+                    let value = attr_value(attribute.value);
+                    if is_component
+                        && name == "class"
+                        && let AttrValue::Expr(expr) = &value
+                    {
+                        forwards_class = self.reads_props_class(expr);
+                    }
+                    match value {
                         AttrValue::Empty => {}
                         AttrValue::True => current.push(self.ast.property(
                             span,
@@ -103,12 +114,25 @@ impl<'a> Codegen<'a, '_> {
         }
         if is_component && passes_class {
             let tokens = self.scope_tokens(span);
-            if !tokens.is_empty() {
-                current.push(self.ast.property(
-                    span,
-                    "$$scope",
-                    self.ast.string(span, &tokens.join(" ")),
-                ));
+            let own = (!tokens.is_empty()).then(|| self.ast.string(span, &tokens.join(" ")));
+            let forwarded = forwards_class.map(|props_name| {
+                self.ast
+                    .member(span, self.ast.ident(span, &props_name), "$$scope")
+            });
+            let scope = match (own, forwarded) {
+                (own, None) => own,
+                (None, forwarded) => forwarded,
+                // `"<own> " + (props.$$scope ?? "")`: the runtimes skip empty tokens.
+                (Some(_), Some(forwarded)) => {
+                    let own = self.ast.string(span, &format!("{} ", tokens.join(" ")));
+                    let caller = self
+                        .ast
+                        .coalesce(span, forwarded, self.ast.string(span, ""));
+                    Some(self.ast.binary(span, own, BinaryOperator::Addition, caller))
+                }
+            };
+            if let Some(scope) = scope {
+                current.push(self.ast.property(span, "$$scope", scope));
             }
         }
         if let Some(children) = children {

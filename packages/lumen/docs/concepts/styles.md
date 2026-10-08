@@ -46,7 +46,9 @@ a +0,1,0 specificity bump. Dynamic classes always work, because no element is pr
   `props` (`class={variantClass(props)}`), or a local value or function built from them
   (`const classes = () => ["btn", props.class]`). A class that reaches the element any other way
   (a module-level variable, a context) loses the parent's scope, so read `props.class` in the
-  component.
+  component. Forwarding works through intermediate components: when `Field` passes its own
+  `class` prop on (`<Input class={["field", props.class]} />`), `Input`'s element gets `Field`'s
+  tokens and those of `Field`'s caller.
 - Within a file, file-level CSS comes first, then component blocks in source order.
 - **In the editor**, class completion follows the same scopes: in a `class` attribute it offers
   the classes of the blocks that apply there (innermost first), then the project's global classes
