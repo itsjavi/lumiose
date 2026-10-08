@@ -24,3 +24,14 @@ The user wants to import Markdown (blogs and content) and HTML (for example web 
 
 - The compiler gains a Markdown pipeline (Rust) and an HTML-fragment pipeline. Both reuse the static-template codegen.
 - Type declarations for `*.md`, `*.html` and `*.svg` modules ship in `lumen/env`.
+
+## Amendment (user answers, 2026-10-08)
+
+- **Markdown stays plain Markdown** (CommonMark + GFM). There is no MDX for now.
+- **`<script>` in `.html` runs as a client module**, which some web components need. It is bundled by Vite and loaded on the client wherever the component is rendered, the same way an island module would be.
+- **`<style>` in `.html`/`.md`** was delegated to Lux, who chose the least surprising rule:
+  - Top-level `<style>` elements are scoped to that file's content, like a top-level block in `.stsx`, and `<style global>` opts out.
+  - `<style>` inside `<template>` (a web component's shadow DOM) or inside `<svg>` is left verbatim and never scoped or extracted.
+  - `$refs` are not available, because there is no JS scope.
+- **Layouts come only from folders**; frontmatter cannot select a layout.
+- **Frontmatter is optionally typed with schemas the user defines**, so Lumen ships no built-in schemas. The mechanism is pending the user's confirmation.
