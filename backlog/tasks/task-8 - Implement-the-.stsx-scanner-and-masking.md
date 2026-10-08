@@ -5,7 +5,7 @@ status: In Progress
 assignee:
   - '@Photon'
 created_date: '2026-10-08 12:20'
-updated_date: '2026-10-08 12:32'
+updated_date: '2026-10-08 13:10'
 labels: []
 milestone: m-1
 dependencies:
@@ -42,3 +42,31 @@ All tools (compiler, shadow TSX, language server, lint, format) depend on one co
 7. lumen_napi (napi-rs v3) scan() with UTF-16 offsets + packages/compiler (@lumen/compiler, @napi-rs/cli 3) darwin-arm64 .node smoke test; lumen_wasm scan() via wasm-bindgen (host compile).
 8. cargo test/clippy -D warnings/fmt --check.
 <!-- SECTION:PLAN:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+## Implementation (Photon)
+Structure: crates/lumen_compiler/src/{span.rs, diagnostics/{mod,registry}.rs, scanner/{mod,lexer,jsx,block,css_refs,mask,declarations,chars,tests}.rs}. Public API: scan(source, filename) / scan_kind(source, FileKind) -> ScanResult { kind, blocks, diagnostics, masked(), masked_utf16(source), map_spans(f) }; StyleBlock { span, open_tag, content, close_tag, placement: TopLevel | InJsx{parent: JsxParent{kind, name, span}} | Expression, global, svg, attributes, refs: StyleRef{span, path, close} }; Diagnostic { code, severity, message, span, labels, help, fix } + docs(); registry.rs lists every spec 5.4 code.
+
+Decisions:
+- Lexer = explicit mode stack (JS paren/bracket/brace kinds, template, JSX tag, JSX children, JSX containers; strings/comments/regex atomic) with expression-start tracking. TS generic arrows use TypeScript's TSX lookahead rule (<T,>, <T = ...>, <T extends U>). Generic function types (type F = <T>(x: T) => T, call signatures) are resolved by speculation: every JSX root has a checkpoint; JSX text containing > or } or a malformed tag rewinds and re-reads < as an operator. Mismatched closing tags recover (close up to the matching ancestor).
+- Top level: <style at module top level is a block after a statement end, or on a new line after an operand / closing type args (no-semicolon style, as const, satisfies X<Y>). On the same line after an operand it is a comparison; LUM1003 (warning) if a </style> follows before any other <style.
+- LUM1003 also (error) for an unterminated template literal / block comment that swallows <style.
+- LUM3010: parent is a component element; block inside a {...} container / attribute value / conditional root (?, :, &&, ||, ??); statement-level block inside a function. LUM3011: expression positions (return/=>/{...}/attribute value) and a root fragment whose only children are style blocks. Not lexically detectable: .map() callbacks outside JSX containers -> left to analysis (TASK-9/10) on the OXC AST.
+- LUM3013: parse the masked text with oxc_parser only when a top-level block has refs; lexical top-level bindings (const/let/using/class, destructuring, export) declared after the ref.
+- LUM1005: unknown attribute (fix removes it), global with a value (fix), stray tag characters. SVG <style> keeps static attributes. LUM1006: .tsx <style> whose content is raw text (not {..}/empty); masked like .stsx so TSX still parses. LUM1004: unclosed open tag or no </style>; the block runs to EOF.
+- SVG: inside <svg> (inherited through containers, reset by foreignObject) -> svg=true, masked, no refs.
+- Refs: values and @media/@container/@supports preludes only; not selectors/property names/strings/comments/url(). $brand-primary yields brand (LUM3009 belongs to TASK-10). close = first non-line-terminator char after the ref; a ref cannot start at the previous ref's close.
+- Masking: UTF-8 and UTF-16 rendered from one plan (spaces per byte / per code unit, line terminators kept). Extensions to spec 4.1: attribute-value expression blocks mask to {null} (bare null is not a valid attribute value); <style ... /> is an empty block.
+- Fast path: no '<style' substring or .ts/.js -> identity without lexing.
+
+Bindings:
+- napi: crates/lumen_napi (napi =3.14.2, napi4 + dyn-symbols) exposes scan() and version() with UTF-16 offsets and the UTF-16 masked text. New package packages/compiler (@lumen/compiler, ownership addition for Photon) with @napi-rs/cli ^3.10.0 (3.10.8): pnpm --filter @lumen/compiler build -> compiler.darwin-arm64.node (built), ESM loader + string-union typings (--no-const-enum), generated files formatted by oxfmt in the build script. Platform packages resolve as @lumen/compiler-<platform> (spec 5.5).
+- wasm: crates/lumen_wasm scan()/version() via wasm-bindgen + serde-wasm-bindgen (lumen_compiler 'serde' feature), UTF-16 offsets. Compiled and unit-tested on the host; the wasm32 target is not installed, so no .wasm artifact yet (needs rust-toolchain targets + wasm-bindgen-cli, playground task).
+- Deps pinned in [workspace.dependencies]: oxc_allocator/oxc_ast/oxc_parser/oxc_span =0.153.0, serde =1.0.229, napi =3.14.2, napi-derive =3.6.12, napi-build =2.6.0, wasm-bindgen =0.2.129, serde-wasm-bindgen =0.6.5.
+
+Validation: cargo test --workspace (lumen_compiler: 29 unit tests incl. CRLF/UTF-16/speculation/placements; golden test over 13 fixtures with .masked + .snap files, every non-broken masked output parses with oxc_parser in both UTF-8 and UTF-16 views; identity test over 11 style-free TSX corpus files, each also re-scanned with a trailing top-level block to prove the lexer ends at the top level; lumen_wasm 1), cargo clippy --workspace --all-targets -D warnings, cargo fmt --check, vitest project compiler 4/4 against the built .node, tsc and oxlint clean for packages/compiler. Opt-in external corpus test (LUMEN_SCAN_CORPUS, ignored by default): 4,615 real-world TSX files from local projects all keep identity and end at top level.
+
+Follow-ups for Lux: (1) .oxfmtrc.json must ignore **/fixtures/** like .oxlintrc.json does; otherwise 'oxfmt .' rewrites crates/lumen_compiler/tests/fixtures/** and breaks the goldens (tsx-raw-css.tsx is intentionally not valid TSX). (2) AGENTS.md ownership table: add packages/compiler/** to Photon. (3) pnpm-lock.yaml changed (+@napi-rs/cli).
+<!-- SECTION:NOTES:END -->
