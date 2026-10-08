@@ -1,11 +1,11 @@
 ---
 id: TASK-48
 title: Language server follow-ups
-status: In Progress
+status: Done
 assignee:
   - Beacon
 created_date: '2026-10-08 14:03'
-updated_date: '2026-10-08 16:02'
+updated_date: '2026-10-08 16:03'
 labels:
   - tooling
 dependencies:
@@ -23,11 +23,11 @@ Gaps found while implementing TASK-29 (packages/language-server). (1) Import syn
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
 - [x] #1 Language server imports the shadow API from a lumen package export
-- [ ] #2 Compiler diagnostics flow into .stsx diagnostics with a protocol test
-- [ ] #3 TS LSP crash recovery covered by a test
-- [ ] #4 <style global> classes of other workspace files are offered in class completion and resolved by go-to-definition, with a protocol test
-- [ ] #5 CSS document symbols for style blocks are merged into TypeScript's document symbols, with a protocol test
-- [ ] #6 Execution-contract hovers implemented, or the needed compile() meta shape proposed to Lux when meta lacks per-expression tracking
+- [x] #2 Compiler diagnostics flow into .stsx diagnostics with a protocol test
+- [x] #3 TS LSP crash recovery covered by a test
+- [x] #4 <style global> classes of other workspace files are offered in class completion and resolved by go-to-definition, with a protocol test
+- [x] #5 CSS document symbols for style blocks are merged into TypeScript's document symbols, with a protocol test
+- [x] #6 Execution-contract hovers implemented, or the needed compile() meta shape proposed to Lux when meta lacks per-expression tracking
 <!-- AC:END -->
 
 ## Implementation Plan
@@ -45,4 +45,21 @@ Gaps found while implementing TASK-29 (packages/language-server). (1) Import syn
 
 <!-- SECTION:NOTES:BEGIN -->
 Beacon (2026-10-08, during TASK-30): AC #1 done: packages/language-server/src/shadows.ts imports from the lumen/tooling export (dependency lumen: workspace:*); LS suite 32/32.
+
+Beacon (2026-10-08, TASK-48):
+- Compiler diagnostics: shared core compileDiagnostics() in packages/lumen/src/cli/check/compile.ts (exported via lumen/tooling): client compile(), drops LUM1001 (TypeScript reports syntax errors) and diagnostics already in the scan. lumen check runs it as a built-in DiagnosticProvider (compilerDiagnostics: every .stsx plus src/**/*.tsx), so main.ts is untouched. LS: src/providers.ts wraps it as a LumenDiagnosticProvider, wired in src/bin.ts; providers now also run for .tsx documents, at most once per document version (pull: client debounce; push: 200 ms server debounce); their fixes become quick fixes. LumenFile gained root.
+- Duplicate rule: LUM3008 on a $ref that holds a TypeScript error start is dropped (unknown name: TS2304/2552 'Did you mean' is the actionable one), in both check (dropSuperseded) and the LS (withoutSuperseded); SUPERSEDED_BY_TYPESCRIPT exported from lumen/tooling.
+- Crash recovery: the TS process is supervised (exit/error); on an unexpected exit after initialize it restarts with backoff 0.5/1/2/4/8 s (counter resets after 60 s of uptime), re-sends initialize/initialized and didOpen for every open document (masked text for .stsx, current unsaved versions), then refreshes diagnostics/semantic tokens/inlay hints; gives up with an error message after 5 failed restarts. Requests in flight during a crash answer null; notifications to a closed connection are swallowed. Startup log now includes the tsc pid.
+- Cross-file classes: src/globals.ts GlobalClassIndex of <style global> selector classes per file, fed by syncShadows at startup/watched changes (disk) and by open buffers (snapshots); completion detail 'global style, <file>:<line>', definition returns Locations/LocationLinks into other files. Rename/references stay file-local.
+- CSS document symbols: one Namespace symbol per block (named by its open tag, detail global/component/file) with vscode-css-languageservice symbols as children, nested into the innermost TS symbol (component blocks under their component); flat SymbolInformation fallback.
+- Execution-contract hovers NOT implemented: compile() meta has no per-expression tracking. Proposed meta (to Lux): CompileOptions.contract?: boolean (opt-in); CompileMeta.contract?: Array<{ span: Span; kind: 'tracked'|'untracked'|'once'|'deferred'; site: 'child'|'attribute'|'property'|'class'|'style'|'prop'|'event'|'ref'|'spread'|'await'; component?: string; via?: string /* runtime helper, e.g. insert, effect(setAttribute), getter prop */; reads?: Span[] /* reactive reads that make it tracked */ }>. The LS would hover the innermost entry containing the cursor.
+- Docs: compiler.md, getting-started.md, vscode README updated; routing.md example 2 fixed (now flagged LUM2001 by check: derived title is a function); llms regenerated.
+- Not done (optional item 6): filtering TS window/logMessage verbosity.
+- Validation: LS suite 36/36 (3 reruns stable; new: compiler diagnostics .stsx/.tsx, global classes, document symbols, crash recovery via SIGKILL of tsc); lumen check suite 14/14 (new compiler-diagnostics test); pnpm typecheck OK; pnpm lint: no warnings in my files; pnpm test 784/785, the 1 failure is docs examples LUM5005 in docs/reference/app.md example 1 from Nova's in-progress static-endpoint rule (TASK-26), not this task. VS Code bundle builds with the new server code.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Language server follow-ups: compiler (compile()) diagnostics in the LS for .stsx/.tsx and in lumen check via a shared provider; TS 7 crash recovery with backoff and document re-sync; <style global> classes across files for completion/definition; CSS document symbols merged into the outline. Execution-contract hovers need compile() meta (shape proposed to Lux). Tests over stdio for each; check/LS suites green.
+<!-- SECTION:FINAL_SUMMARY:END -->
