@@ -1,17 +1,17 @@
 ---
 id: TASK-6
 title: Define the compiler-runtime contract
-status: In Progress
+status: Done
 assignee:
   - '@Lux'
 created_date: '2026-10-08 12:20'
-updated_date: '2026-10-08 12:26'
+updated_date: '2026-10-08 12:28'
 labels: []
 milestone: m-1
 dependencies:
   - TASK-5
 documentation:
-  - backlog/docs/architecture/doc-1 - Lumen-architecture-specification.md
+  - backlog/docs/architecture/doc-2 - Compiler-runtime-contract.md
 priority: high
 ordinal: 6000
 ---
@@ -24,9 +24,9 @@ Photon (compiler) and Spark (runtime) work in parallel. The exact set of runtime
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 A backlog doc lists every runtime import used by client, hydrate and server output, with signatures and semantics
-- [ ] #2 A typed stub module in packages/lumen declares these functions, so compiled output type-checks against it
-- [ ] #3 Golden examples (.stsx in, client/server JS + CSS out) cover templates, bindings, events, lists, branches, selector, components and props, styles and $refs, async/$await, islands
+- [x] #1 A backlog doc lists every runtime import used by client, hydrate and server output, with signatures and semantics
+- [x] #2 A typed stub module in packages/lumen declares these functions, so compiled output type-checks against it
+- [x] #3 Golden examples (.stsx in, client/server JS + CSS out) cover templates, bindings, events, lists, branches, selector, components and props, styles and $refs, async/$await, islands
 <!-- AC:END -->
 
 ## Implementation Plan
@@ -37,3 +37,15 @@ Photon (compiler) and Spark (runtime) work in parallel. The exact set of runtime
 3. Add typed interfaces in packages/lumen/src/contract/ that the runtime must satisfy and the compiler targets.
 4. Amend spec §5.2/§7.4: one compiled walk, with hydration claiming pluggable through lumen/dom/hydrate.
 <!-- SECTION:PLAN:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Contract published as doc-2 with typed interfaces in packages/lumen/src/contract/{client,server}.ts; lumen/dom/hydrate subpath export added. Architect amendments to spec v0.3: hydration uses one compiled walk plus a pluggable claim cursor (no separate _tN.h walk); $await takes a static site index; createComponent detects async components (no $component wrapper). Spec doc-1 updated accordingly. Verified: TS 7 typecheck of the contract modules passes and the contract import test passes.
+<!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Defined the compiler-runtime contract: doc-2 gives semantics and golden examples (counter, keyed list with selector and data-slot events, component props/children/class passthrough, async component, island call site), and packages/lumen/src/contract/{client,server}.ts give the typed ClientRuntime/ServerRuntime surfaces that runtime and compiler must satisfy. Verified by TS 7 typecheck and the contract test.
+<!-- SECTION:FINAL_SUMMARY:END -->
