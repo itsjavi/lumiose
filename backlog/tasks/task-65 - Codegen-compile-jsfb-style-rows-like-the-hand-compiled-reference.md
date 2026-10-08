@@ -5,6 +5,7 @@ status: To Do
 assignee:
   - '@Photon'
 created_date: '2026-10-08 16:10'
+updated_date: '2026-10-08 16:12'
 labels: []
 milestone: m-1
 dependencies: []
@@ -25,3 +26,9 @@ The compiled js-framework-benchmark app (benchmarks/js-framework-benchmark, krau
 - [ ] #3 Dynamic text children ({row.label()}) avoid a region and a created text node per row (template placeholder plus a text binding; Spark adds a runtime helper with an insert fallback for non-text values if the contract needs one)
 - [ ] #4 pnpm bench:jsfb: lumen run memory ≤ 2.7 MB and CPU within 2 % of lumen-hand
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Lux: reviewed and assigned to Photon. The compiled js-framework-benchmark run uses 2.87 MB vs 2.50 MB hand-compiled, against a 2.7 MB target. Do this after TASK-45/52, before TASK-50.
+<!-- SECTION:NOTES:END -->
