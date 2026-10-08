@@ -1,0 +1,49 @@
+# Invalid declarations that Lightning CSS keeps as raw tokens (or accepts, for grid), and
+# browsers drop. Each must produce exactly one LUM3017.
+color: notacolor
+color: #12345
+color: rgb(1 2)
+background-color: bleu
+width: 10 px
+width: 10pxx
+height: 100 %
+padding: none
+padding: 8px 8px 8px 8px 8px
+margin: auto auto auto auto auto
+display: flexbox
+display: inline-blok
+position: absolut
+rotate: 45
+transform: rotate(45)
+transform: translateX(10px 20px)
+transition: opacity 200
+transition-duration: 2
+animation-duration: 2
+font: 16/1.5 serif
+font-weight: bolder bold
+justify-content: centre
+align-items: middle
+flex-direction: horizontal
+text-align: middle
+border: 1px solid red blue
+border-style: solidd
+box-shadow: 0 0 4px red blue green
+opacity: half
+z-index: 1.5
+z-index: auto auto
+grid-template-columns: 2fr repeat(auto-fit, minmax(9rem, 1fr))
+grid-template-columns: repeat(auto-fill, 1fr)
+grid-template-columns: repeat(auto-fill, 10px) repeat(auto-fit, 10px)
+grid-template-columns: minmax(1fr, 2fr)
+grid-template-rows: auto repeat(auto-fill, minmax(auto, 1fr))
+grid: auto / 1fr repeat(auto-fit, 10px)
+filter: hue-rotate(45)
+overflow: scrolll
+visibility: hiden
+cursor: hand
+white-space: no-wrap
+text-decoration-style: wavyy
+inset: 1px 2px 3px 4px 5px
+aspect-ratio: 16 9
+line-height: 1.5 2
+clip-path: border-box padding-box

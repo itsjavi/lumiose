@@ -15,6 +15,7 @@ use crate::edits::{Edit, Rewritten};
 use crate::lines::{LineIndex, Newlines};
 use crate::prepass::{self, RefSite};
 use crate::selector::{self, Rewrite, ScopeContext};
+use crate::values::Substitution;
 use crate::{
     CssBlock, CssInput, CssOptions, CssOutput, RefValue, Scope, Span, scope_attribute, sourcemap,
 };
@@ -166,17 +167,32 @@ fn prepare<'a>(
     let content = &input.source[block.content.range()];
     let scan = prepass::scan(content);
     let mut edits = Vec::new();
+    let mut substitutions = Vec::with_capacity(scan.refs.len());
     for site in &scan.refs {
         if site.hyphenated.is_some() {
             diagnostics.push(hyphenated_ref(content, site).offset(base));
+            substitutions.push(Substitution {
+                range: site.range.clone(),
+                value: None,
+            });
             continue;
         }
         let base = base as usize;
         let span = Span::from_usize(base + site.range.start, base + site.range.end);
-        if let Some(value) = values.get(&span) {
+        let value = values.get(&span).copied();
+        if let Some(value) = value {
             edits.push(Edit::replace(site.range.clone(), value_text(value)));
         }
+        substitutions.push(Substitution {
+            range: site.range.clone(),
+            value,
+        });
     }
+    diagnostics.extend(
+        crate::values::check(content, &scan.declarations, &substitutions)
+            .into_iter()
+            .map(|d| d.offset(base)),
+    );
     let clamps = clamp::guard(content, &scan.declarations, &edits);
     edits.extend(clamps);
 
@@ -186,6 +202,9 @@ fn prepare<'a>(
         .map(|token| format!("[{}]", scope_attribute(token)));
     let label = match &block.scope {
         Scope::Component { name, .. } => format!("component `{name}`"),
+        Scope::Subtree { name, element, .. } => {
+            format!("the `<{element}>` subtree of component `{name}`")
+        }
         Scope::File { .. } | Scope::Global { .. } => "this file".to_owned(),
     };
     let scope = ScopeContext {
@@ -261,7 +280,7 @@ fn hyphenated_ref(content: &str, site: &RefSite) -> CssDiagnostic {
 }
 
 /// Strings are inserted raw; numbers in plain decimal notation (`8`, `0.5`, never `1e21`).
-fn value_text(value: &RefValue) -> String {
+pub(crate) fn value_text(value: &RefValue) -> String {
     match value {
         RefValue::String(text) => text.clone(),
         RefValue::Number(number) if *number == 0.0 => "0".to_owned(),
@@ -288,29 +307,38 @@ fn scope_keyframes(prepared: &[Prepared], sheets: &mut [Option<StyleSheet>]) -> 
             names.insert(name, renamed);
         }
     }
-    // A component sees its own keyframes first, then the file's.
+    // A block sees its own keyframes first, then those of its enclosing subtrees (innermost
+    // first), then the file's.
     let file_names: HashMap<String, String> = file_tokens
         .iter()
         .filter_map(|token| defined.get(token))
         .flatten()
         .map(|(name, renamed)| (name.clone(), renamed.clone()))
         .collect();
-    let mut visible: HashMap<&str, HashMap<String, String>> = HashMap::new();
-    for (token, names) in &defined {
-        let mut references = file_names.clone();
-        references.extend(names.iter().map(|(n, r)| (n.clone(), r.clone())));
-        visible.insert(token, references);
-    }
+    let visible: Vec<HashMap<String, String>> = prepared
+        .iter()
+        .map(|block| {
+            let mut references = file_names.clone();
+            let scope = &block.block.scope;
+            let tokens = scope.enclosing().iter().map(String::as_str);
+            for token in tokens.chain(scope.token()) {
+                if let Some(names) = defined.get(token) {
+                    references.extend(names.iter().map(|(n, r)| (n.clone(), r.clone())));
+                }
+            }
+            references
+        })
+        .collect();
 
     let empty = HashMap::new();
     let mut reads = BTreeSet::new();
-    for (block, sheet) in prepared.iter().zip(sheets.iter_mut()) {
+    for ((block, sheet), references) in prepared.iter().zip(sheets.iter_mut()).zip(&visible) {
         let Some(sheet) = sheet else {
             continue;
         };
         let renames = block.block.scope.token().map(|token| Renames {
             definitions: defined.get(token).unwrap_or(&empty),
-            references: visible.get(token).unwrap_or(&empty),
+            references,
         });
         ast::rewrite(sheet, renames, &mut reads);
     }
@@ -405,6 +433,101 @@ mod tests {
             );
             assert_eq!(output, CssOutput::default());
         }
+    }
+
+    /// A block per `(css, scope)`, laid out one after another in the source.
+    fn run(blocks: &[(&str, Scope)], inventories: &[crate::ElementInventory]) -> CssOutput {
+        let mut source = String::new();
+        let mut spans = Vec::new();
+        for (css, scope) in blocks {
+            source.push_str("<style>");
+            let start = source.len();
+            source.push_str(css);
+            spans.push(CssBlock {
+                content: Span::from_usize(start, source.len()),
+                scope: scope.clone(),
+                svg: false,
+            });
+            source.push_str("</style>\n");
+        }
+        process(
+            &CssInput {
+                filename: "a.stsx",
+                source: &source,
+                blocks: &spans,
+                inventories,
+                ..CssInput::default()
+            },
+            &CssOptions {
+                minify: true,
+                ..CssOptions::default()
+            },
+        )
+    }
+
+    fn subtree(token: &str, outer: &[&str], element: &str) -> Scope {
+        Scope::Subtree {
+            name: "Tree".into(),
+            token: token.into(),
+            outer: outer.iter().map(|t| (*t).to_owned()).collect(),
+            element: element.into(),
+        }
+    }
+
+    #[test]
+    fn subtrees_see_the_keyframes_of_enclosing_subtrees() {
+        let root = Scope::Component {
+            name: "Tree".into(),
+            token: "r".into(),
+        };
+        let output = run(
+            &[
+                ("@keyframes spin {} @keyframes fade {}", root),
+                (
+                    "@keyframes fade {} .b { animation: spin 1s, fade 1s }",
+                    subtree("b", &["r"], "section"),
+                ),
+                (
+                    ".c { animation: spin 1s, fade 1s, pulse 1s }",
+                    subtree("c", &["r", "b"], "p"),
+                ),
+                (".d { animation: fade 1s }", subtree("d", &["r"], "aside")),
+            ],
+            &[],
+        );
+        let css = output.css;
+        // Own > innermost enclosing > outer; unknown names stay global; siblings are separate.
+        assert!(
+            css.contains(".b[data-l-b]{animation:1s spin-r,1s fade-b}"),
+            "{css}"
+        );
+        assert!(
+            css.contains(".c[data-l-c]{animation:1s spin-r,1s fade-b,1s pulse}"),
+            "{css}"
+        );
+        assert!(css.contains(".d[data-l-d]{animation:1s fade-r}"), "{css}");
+    }
+
+    #[test]
+    fn unused_selectors_name_the_subtree() {
+        let inventory = crate::ElementInventory {
+            token: "c".into(),
+            tags: ["p".to_owned()].into(),
+            ..crate::ElementInventory::default()
+        };
+        let output = run(
+            &[(".missing { color: red }", subtree("c", &["r"], "p"))],
+            &[inventory],
+        );
+        let messages: Vec<&str> = output
+            .diagnostics
+            .iter()
+            .map(|d| d.message.as_str())
+            .collect();
+        assert_eq!(
+            messages,
+            ["`.missing` matches no element in the `<p>` subtree of component `Tree`"]
+        );
     }
 
     #[test]

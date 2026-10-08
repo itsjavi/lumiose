@@ -1,0 +1,75 @@
+=== css
+.card[data-l-qdse9v4z] {
+  color: notacolor;
+  width: 10 px;
+  background-color: notacolor;
+  margin: 8 px;
+  padding: calc(8 px + 1px);
+  rotate: 45;
+  transition: opacity 200;
+  grid-template-columns: 2fr repeat(auto-fit, minmax(9rem, 1fr));
+  gap: 8px;
+  width: calc(8 + 1px);
+  max-width: min(100%, 600);
+  font-size: 16px;
+  display: flexbox !important;
+}
+
+.card[data-l-qdse9v4z] {
+  @media print {
+    color: nope;
+  }
+
+  display: grid-lanes;
+  color: var(--c, notacolor);
+  box-shadow: none;
+  width: inherit;
+  grid-template-columns: repeat(3, 1fr) repeat(auto-fill, 10rem);
+  margin: 8px 0;
+  line-height: 1.5;
+}
+
+@font-face {
+  font-family: x;
+  font-weight: 100 900;
+}
+=== diagnostics
+LUM3017 warning 536..545 `notacolor`: `notacolor` is not a valid value for `color`
+  help: Browsers ignore the declaration. Check the value against the property's syntax
+LUM3017 warning 564..569 `10 px`: `10 px` is not a valid value for `width`
+  help: Browsers ignore the declaration. Check the value against the property's syntax
+LUM3017 warning 590..597 `flexbox`: `flexbox` is not a valid value for `display`
+  help: Browsers ignore the declaration. Check the value against the property's syntax
+LUM3017 warning 643..682 `2fr repeat(auto-fit, minmax(9rem, 1fr))`: `2fr repeat(auto-fit, minmax(9rem, 1fr))` is not a valid value for `grid-template-columns`
+  help: Browsers ignore the declaration: with `repeat(auto-fill, …)` or `repeat(auto-fit, …)`, every track needs a fixed size (a length or percentage, or a `minmax()` with one), and `2fr` is not fixed
+LUM3017 warning 712..718 `$brand`: `notacolor` is not a valid value for `background-color` (with `$brand`)
+  help: Browsers ignore the declaration. Check the value against the property's syntax
+LUM3018 warning 761..765 `$gap`: `$gap` is a unitless number (`8`) where `gap` needs a length
+  help: Lightning CSS outputs it as `8px`, but CSS itself rejects unitless lengths. Multiply the constant by the unit, `calc($gap * 1px)`, or give the constant a unit
+  fix: Replace with `calc($gap * 1px)` (`$gap` → `calc($gap * 1px)`)
+LUM3019 warning 785..792 `$gap px`: `$gap px` is `8 px`: a unit must follow its number without whitespace
+  help: Multiply the constant by the unit, `calc($gap * 1px)`, or give the constant a unit
+  fix: Replace with `calc($gap * 1px)` (`$gap px` → `calc($gap * 1px)`)
+LUM3019 warning 818..825 `$gap px`: `$gap px` is `8 px`: a unit must follow its number without whitespace
+  help: Multiply the constant by the unit, `$gap * 1px`, or give the constant a unit
+  fix: Replace with `$gap * 1px` (`$gap px` → `$gap * 1px`)
+LUM3018 warning 852..858 `$angle`: `$angle` is a unitless number (`45`) where `rotate` needs an angle
+  help: Browsers ignore the declaration. Multiply the constant by the unit, `calc($angle * 1deg)`, or give the constant a unit
+  fix: Replace with `calc($angle * 1deg)` (`$angle` → `calc($angle * 1deg)`)
+LUM3018 warning 890..899 `$duration`: `$duration` is a unitless number (`200`) where `transition` needs a time
+  help: Browsers ignore the declaration. Multiply the constant by a time unit, `calc($duration * 1ms)` or `calc($duration * 1s)`, or give the constant a unit
+LUM3018 warning 932..936 `$max`: `$max` is a unitless number (`600`) where `max-width` needs a length
+  help: Browsers ignore the declaration. Multiply the constant by the unit, `$max * 1px`, or give the constant a unit
+  fix: Replace with `$max * 1px` (`$max` → `$max * 1px`)
+LUM3018 warning 961..965 `$gap`: `$gap` is a unitless number (`8`) where `width` needs a length
+  help: Browsers ignore the declaration. Multiply the constant by the unit, `$gap * 1px`, or give the constant a unit
+  fix: Replace with `$gap * 1px` (`$gap` → `$gap * 1px`)
+LUM3018 warning 995..1000 `$size`: `$size` is a unitless number (`16`) where `font-size` needs a length
+  help: Lightning CSS outputs it as `16px`, but CSS itself rejects unitless lengths. Multiply the constant by the unit, `calc($size * 1px)`, or give the constant a unit
+  fix: Replace with `calc($size * 1px)` (`$size` → `calc($size * 1px)`)
+LUM3017 warning 1060..1064 `nope`: `nope` is not a valid value for `color`
+  help: Browsers ignore the declaration. Check the value against the property's syntax
+LUM3017 warning 1131..1177 `repeat($columns, 1fr) repeat(auto-fill, 10rem)`: `repeat(3, 1fr) repeat(auto-fill, 10rem)` is not a valid value for `grid-template-columns` (with `$columns`)
+  help: Browsers ignore the declaration: with `repeat(auto-fill, …)` or `repeat(auto-fit, …)`, every track needs a fixed size (a length or percentage, or a `minmax()` with one), and `1fr` is not fixed
+=== var() reads
+--c

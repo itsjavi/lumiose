@@ -20,6 +20,16 @@ pub enum CssCode {
     /// `LUM3016` (error): `:global` or `:deep` without an argument, a nested `:deep()`, or a
     /// second `:deep()` in one selector.
     InvalidScopeSelector,
+    /// `LUM3017` (warning): a declaration's value does not parse for its property, so
+    /// browsers ignore the declaration (`color: notacolor`, an auto-repeat grid track list
+    /// with flexible tracks).
+    InvalidCssValue,
+    /// `LUM3018` (warning): a `$` reference resolves to a unitless number where the property
+    /// needs a length, angle or time (`gap: $gap`).
+    UnitlessStyleRef,
+    /// `LUM3019` (warning): a unit separated from a numeric `$` reference by whitespace
+    /// (`$gap px`).
+    DetachedUnit,
 }
 
 impl CssCode {
@@ -32,14 +42,20 @@ impl CssCode {
             Self::CssSyntaxError => "LUM3014",
             Self::InvalidCssIgnored => "LUM3015",
             Self::InvalidScopeSelector => "LUM3016",
+            Self::InvalidCssValue => "LUM3017",
+            Self::UnitlessStyleRef => "LUM3018",
+            Self::DetachedUnit => "LUM3019",
         }
     }
 
     pub fn default_severity(self) -> Severity {
         match self {
-            Self::UnusedSelector | Self::CustomPropertyNeverRead | Self::InvalidCssIgnored => {
-                Severity::Warning
-            }
+            Self::UnusedSelector
+            | Self::CustomPropertyNeverRead
+            | Self::InvalidCssIgnored
+            | Self::InvalidCssValue
+            | Self::UnitlessStyleRef
+            | Self::DetachedUnit => Severity::Warning,
             Self::HyphenatedStyleRef | Self::CssSyntaxError | Self::InvalidScopeSelector => {
                 Severity::Error
             }

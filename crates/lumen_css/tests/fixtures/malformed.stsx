@@ -1,0 +1,15 @@
+// Malformed CSS while typing (regression: an empty value panicked the value checks and
+// crashed the language server). Everything comes back as diagnostics.
+// @ref w = 8
+export function Malformed() {
+  return (
+    <div class="broken">
+      <style>
+        .broken { color: red; width: $missing; }
+        .oops { color: ; }
+        .bare { color:; margin: !important; }
+        .half { width: $w px; height: calc($w + ); top: min(
+      </style>
+    </div>
+  );
+}

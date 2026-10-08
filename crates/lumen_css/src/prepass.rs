@@ -11,7 +11,8 @@
 //! Selector preludes are the preludes of style rules, including nested ones; keyframe
 //! selectors and the bodies of other at-rules (`@font-face`, `@page`, …) are skipped.
 //!
-//! Declarations are those of style rules, keyframes and other declaration blocks.
+//! Declarations are those of style rules (including group rules nested in them), keyframes
+//! and other at-rule blocks; the last are marked as descriptors.
 
 use std::ops::Range;
 
@@ -48,6 +49,9 @@ pub(crate) struct Declaration {
     pub name: Range<usize>,
     /// Everything after the colon, up to the `;`, `}` or end of the text.
     pub value: Range<usize>,
+    /// In the body of an at-rule such as `@font-face`, `@page` or `@property`, whose
+    /// descriptors have their own grammar (`font-weight: 100 900`).
+    pub descriptor: bool,
 }
 
 #[derive(Debug, Default)]
@@ -67,8 +71,11 @@ enum Context {
     Style,
     /// A `@keyframes` body: keyframe selectors.
     Keyframes,
-    /// Any other block (`@font-face`, a keyframe, `@page`, …): declarations only.
+    /// A keyframe block: declarations only.
     Declarations,
+    /// Any other at-rule block (`@font-face`, `@page`, `@property`, …) and blocks inside it:
+    /// descriptors.
+    Descriptors,
 }
 
 impl Context {
@@ -196,12 +203,18 @@ fn flush_statement(css: &str, item: Item, end: usize, context: Context, out: &mu
     if item.at_rule.is_some() {
         return;
     }
-    if let (Some(start), Some(colon), Context::Style | Context::Declarations) =
-        (item.start, item.colon_at, context)
-    {
+    let declarations = matches!(
+        context,
+        Context::Style
+            | Context::Declarations
+            | Context::Descriptors
+            | Context::Rules { nested: true }
+    );
+    if let (Some(start), Some(colon), true) = (item.start, item.colon_at, declarations) {
         out.declarations.push(Declaration {
             name: start..start + css[start..colon].trim_end().len(),
             value: colon + 1..end,
+            descriptor: context == Context::Descriptors,
         });
     }
     out.refs.extend(
@@ -226,7 +239,7 @@ fn open_block(css: &str, item: Item, brace: usize, parent: Context, out: &mut Sc
                     nested: parent.in_style_rule(),
                 },
                 _ if name.ends_with("keyframes") => Context::Keyframes,
-                _ => Context::Declarations,
+                _ => Context::Descriptors,
             }
         }
         None => match parent {
@@ -241,6 +254,7 @@ fn open_block(css: &str, item: Item, brace: usize, parent: Context, out: &mut Sc
                 Context::Style
             }
             Context::Keyframes | Context::Declarations => Context::Declarations,
+            Context::Descriptors => Context::Descriptors,
         },
     }
 }
@@ -448,6 +462,34 @@ mod tests {
             [Some("$brand-primary.dark"), Some("$gap-1px"), None]
         );
         assert_eq!(&css[sites[0].range.clone()], "$brand");
+    }
+
+    #[test]
+    fn finds_declarations_and_descriptors() {
+        let css = "\
+.a { color: red; @media print { margin: 0 } .b { top: 1px } }
+@media (width > 1px) { left: 0; .c { right: 0 } }
+@keyframes k { from { opacity: 0 } }
+@font-face { font-weight: 100 900 }
+@page { @top-left { content: 'x' } }";
+        let scan = scan(css);
+        let declarations: Vec<(&str, bool)> = scan
+            .declarations
+            .iter()
+            .map(|d| (&css[d.name.clone()], d.descriptor))
+            .collect();
+        assert_eq!(
+            declarations,
+            [
+                ("color", false),
+                ("margin", false),
+                ("top", false),
+                ("right", false),
+                ("opacity", false),
+                ("font-weight", true),
+                ("content", true),
+            ]
+        );
     }
 
     #[test]

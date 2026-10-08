@@ -1,0 +1,47 @@
+// Values browsers would drop: invalid values (LUM3017), unitless numbers from `$` constants
+// (LUM3018) and units separated from them (LUM3019). Lightning CSS keeps these declarations
+// as written (or converts unitless lengths to px), so the output is unchanged.
+// @ref gap = 8
+// @ref angle = 45
+// @ref duration = 200
+// @ref max = 600
+// @ref columns = 3
+// @ref ratio = 1.5
+// @ref size = "16"
+// @ref brand = "notacolor"
+export function Card() {
+  return (
+    <div class="card">
+      <style>
+        .card {
+          color: notacolor;
+          width: 10 px;
+          display: flexbox !important;
+          grid-template-columns: 2fr repeat(auto-fit, minmax(9rem, 1fr));
+          background-color: $brand;
+        }
+        .card {
+          gap: $gap;
+          margin: $gap px;
+          padding: calc($gap px + 1px);
+          rotate: $angle;
+          transition: opacity $duration;
+          max-width: min(100%, $max);
+          width: calc($gap + 1px);
+          font-size: $size;
+        }
+        .card {
+          @media print { color: nope }
+          line-height: $ratio;
+          grid-template-columns: repeat($columns, 1fr) repeat(auto-fill, 10rem);
+          margin: calc($gap * 1px) 0;
+          display: grid-lanes;
+          color: var(--c, notacolor);
+          box-shadow: none;
+          width: inherit;
+        }
+        @font-face { font-family: x; font-weight: 100 900; }
+      </style>
+    </div>
+  );
+}

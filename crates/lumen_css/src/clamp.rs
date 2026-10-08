@@ -298,6 +298,10 @@ mod tests {
             guarded("@keyframes k { to { font-size: calc(1rem - 2rem) } }"),
             "@keyframes k { to { font-size: max(0rem, calc(1rem - 2rem)) } }"
         );
+        assert_eq!(
+            guarded(".a { @media print { width: calc(1px - 2px) } }"),
+            ".a { @media print { width: max(0px, calc(1px - 2px)) } }"
+        );
     }
 
     #[test]

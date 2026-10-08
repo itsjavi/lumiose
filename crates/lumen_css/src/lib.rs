@@ -8,7 +8,8 @@
 //!
 //! # Behaviour
 //!
-//! - **Scopes.** A [`Scope::File`] or [`Scope::Component`] block is scoped with the attribute
+//! - **Scopes.** A [`Scope::File`], [`Scope::Component`] or [`Scope::Subtree`] block is scoped
+//!   with the attribute
 //!   [`scope_attribute`]`(token)`, `[data-l-<token>]`, appended to the last compound of
 //!   every selector, before any pseudo-element (a (0,1,0) specificity bump). Use
 //!   [`scope_token`] to derive tokens so that templates and CSS agree. [`Scope::Global`]
@@ -20,8 +21,9 @@
 //!   `:deep(.b)` is `[t] .b`, and in a nested rule it is relative to the (already scoped)
 //!   parent. A compound containing `&` is never given the token again: the parent has it.
 //! - **`@keyframes`** names in a scoped block get the suffix `-<token>`. `animation` and
-//!   `animation-name` references are rewritten when the name is defined in the same scope
-//!   (a component's own keyframes first, then the file's); other names are left alone.
+//!   `animation-name` references are rewritten when the name is defined in a visible scope:
+//!   the block's own, then (for a [`Scope::Subtree`]) its enclosing subtrees from the
+//!   innermost, then the file's. Other names are left alone.
 //! - **Custom properties** are never scoped or renamed. Lightning CSS keeps their values as
 //!   raw tokens, so lumen_css folds their math itself: a math function that reduces to a
 //!   single number, percentage, length, angle or time is replaced by it (`--x: calc(8 * 2px)`
@@ -44,6 +46,11 @@
 //!   left untouched: the compiler reports why (`LUM3008`, `LUM3013`).
 //! - **Lightning CSS** parses each block with error recovery, lowers nesting and prefixes for
 //!   [`CssOptions::targets`], and minifies when [`CssOptions::minify`] is set.
+//! - **Value checks.** Lightning CSS keeps a value it cannot parse as written, so browsers
+//!   drop the declaration silently. Such values are warned about (`LUM3017`, conservatively:
+//!   valid CSS the pinned Lightning CSS does not parse yet is never reported), as are unitless
+//!   numbers from `$` constants where a length, angle or time is needed (`LUM3018`) and a unit
+//!   separated from a constant (`$gap px`, `LUM3019`). Output is unchanged.
 //!
 //! # Source maps
 //!
@@ -70,6 +77,7 @@ mod process;
 mod selector;
 mod sourcemap;
 mod token;
+mod values;
 
 use std::collections::HashSet;
 
@@ -112,8 +120,23 @@ pub enum Scope {
     Global { component: Option<String> },
     /// A top-level block: every template in the file carries the token.
     File { token: String },
-    /// A block inside a component's JSX: only that component's templates carry the token.
+    /// A block directly under a component's root element: every element of the component's
+    /// templates carries the token.
     Component { name: String, token: String },
+    /// A block under a nested element of a component's JSX (decision-23): only the elements
+    /// lexically inside that element carry the token. They also carry the tokens of the
+    /// enclosing subtrees, so the block sees their `@keyframes` (innermost first, then the
+    /// file's).
+    Subtree {
+        /// The component.
+        name: String,
+        token: String,
+        /// The tokens of the enclosing style-bearing subtrees of the same component (its root
+        /// included), outermost first.
+        outer: Vec<String>,
+        /// The enclosing element's tag (`p`, `Card`), for messages.
+        element: String,
+    },
 }
 
 impl Scope {
@@ -121,7 +144,9 @@ impl Scope {
     pub fn token(&self) -> Option<&str> {
         match self {
             Self::Global { .. } => None,
-            Self::File { token } | Self::Component { token, .. } => Some(token),
+            Self::File { token } | Self::Component { token, .. } | Self::Subtree { token, .. } => {
+                Some(token)
+            }
         }
     }
 
@@ -129,7 +154,16 @@ impl Scope {
         match self {
             Self::Global { component } => component.is_some(),
             Self::File { .. } => false,
-            Self::Component { .. } => true,
+            Self::Component { .. } | Self::Subtree { .. } => true,
+        }
+    }
+
+    /// The tokens whose `@keyframes` a block of this scope sees besides its own and the
+    /// file's, from the innermost.
+    pub(crate) fn enclosing(&self) -> &[String] {
+        match self {
+            Self::Subtree { outer, .. } => outer,
+            _ => &[],
         }
     }
 }
