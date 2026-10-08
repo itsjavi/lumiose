@@ -40,3 +40,9 @@ Mutations go through form actions that work without JS and can be enhanced from 
 6. fetchJSON + FetchError (HttpError subclass): browser = fetch; server = same-origin requests dispatched in-process through the handler (shared cookie jar, locals copy, depth guard).
 7. Tests (handler actions, csrf, JSON protocol, submit in happy-dom, fetchJSON in-process + client), typecheck/lint/test.
 <!-- SECTION:PLAN:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Nova (session nova-task23-20261008T133112Z): claimed, In Progress.
+<!-- SECTION:NOTES:END -->
