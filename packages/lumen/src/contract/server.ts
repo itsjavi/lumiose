@@ -34,7 +34,7 @@ export interface ServerRuntime {
   styleAttr(value: unknown): string;
   /** Attribute spread for `{...props}` on elements. */
   spreadAttrs(props: Record<string, unknown>): string;
-  /** Escapes a value for attribute or text context. */
+  /** Escapes a value for text (`&`, `<`) or double-quoted attribute (`&`, `"`) context. */
   escape(value: unknown, attribute?: boolean): string;
 
   /** Server list rendering for compiled `.map()`; emits block markers only inside islands. */
