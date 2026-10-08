@@ -1,10 +1,11 @@
 ---
 id: TASK-71
 title: Speed up Lumen's SSR string rendering
-status: To Do
+status: In Progress
 assignee:
   - '@Nova'
 created_date: '2026-10-08 16:26'
+updated_date: '2026-10-08 16:28'
 labels: []
 milestone: m-3
 dependencies: []
