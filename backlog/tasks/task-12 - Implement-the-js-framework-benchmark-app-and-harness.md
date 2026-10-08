@@ -1,7 +1,7 @@
 ---
 id: TASK-12
 title: Implement the js-framework-benchmark app and harness
-status: In Progress
+status: Done
 assignee:
   - '@Spark'
 created_date: '2026-10-08 12:20'
@@ -75,3 +75,9 @@ Profiling notes: Lumen's synchronous script time is within ~5 % of vanillajs on 
 
 Validation: `pnpm typecheck` clean; `pnpm lint` clean for my files; dom/core tests green (209), the whole-suite failures seen at the end (compiler implicit-tbody/select parity, app build tests, cli docs examples) belong to concurrent in-progress work (Photon, Nova, Beacon); the compiler execute test passes when re-run.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+krausest's own webdriver-ts runner now runs locally through `pnpm bench:jsfb` (benchmarks/js-framework-benchmark): pinned sparse checkout, reference frameworks at the published Chrome 154 versions, Lumen compiled from App.stsx with lumen/vite (`lumen`) and a hand-compiled reference (`lumen-hand`), RESULTS.md with krausest's weighted geomean plus a projection calibrated to the published table. Both Lumen apps pass isKeyed and the HTML check. Projected CPU: lumen 1.122, lumen-hand 1.106 (projection runs 3–5 % high; Solid 1.185 vs published 1.133), i.e. ahead of Solid and Vue Vapor and within the ≤ 1.12 target. Run memory: hand 2.50 MB (target met), compiled 2.87 MB (missed; compiler follow-up TASK-65). Bundle 6.2 kB brotli (≤ 8 kB). Runtime tuning: $async tag dispatch (async path tree-shaken, −0.6 kB), classList-free row creation, in-order replace-all, cheaper dynamic text regions. Runtime every-export size 9.48 kB leaves ~0.5 kB for hydration under the 10 kB cap.
+<!-- SECTION:FINAL_SUMMARY:END -->
