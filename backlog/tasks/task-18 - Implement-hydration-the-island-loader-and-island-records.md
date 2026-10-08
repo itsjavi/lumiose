@@ -5,7 +5,7 @@ status: Done
 assignee:
   - '@Spark'
 created_date: '2026-10-08 12:21'
-updated_date: '2026-10-08 20:45'
+updated_date: '2026-10-08 20:58'
 labels: []
 milestone: m-2
 dependencies:
@@ -86,6 +86,8 @@ Spark (session spark-20261008T203611Z, resumed; solo on TASK-18):
 - Fixture: typecheck script (lumen check, shadow rootDirs), ?slow= delay knob (api.ts delays + server.ts), Team slot props typed JSX.Element.
 - Size (pnpm --filter lumen size; new row splits hydrate/loader): typical 6.02 kB; typical+loader+hydrate 8.68 kB (cap 10 kB OK); islands increment 2.66 kB (soft 1.5 kB OVER) = hydrate 1.92 kB + loader 0.74 kB (AC #2 ≤1 kB OK).
 - Not done here (owners): lumen dev/build loader wiring is Nova's (in progress in the working tree: loaderUrl in renderToStream/createServerRenderer, \0lumen:loader virtual module, BuiltApp.loader); once it lands the fixture can pass loaderUrl instead of writing the script itself. Lux: package export ./dom/loader, doc-2 §1/§3.1 (hydrate signature, range modes), islands-e2e ownership → Spark. Beacon: docs reference/dom.md (hydrate, loader, triggers, event replay), LUM4006 'Reported by' (hydrate mismatch + missing await record).
+
+Spark: committed as 88f71d4.
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary
