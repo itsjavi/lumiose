@@ -30,6 +30,7 @@ import { readFileSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import type { Diagnostic } from "@lumen/compiler";
+import { writeLumenTsconfig } from "../cli/check/layout.ts";
 import {
   defaultClientConditions,
   defaultServerConditions,
@@ -124,9 +125,11 @@ export default function lumen(options: LumenOptions = {}): Plugin<LumenPluginApi
         return { oxc: { exclude: [VITE_OXC_EXCLUDE, include] } };
       },
 
-      configResolved(config) {
+      async configResolved(config) {
         root = config.root;
         packages = new Packages(root, exclude);
+        // Vite reads the project's tsconfig, which may extend the generated one (TASK-73).
+        await writeLumenTsconfig(root);
       },
 
       configureServer(server) {
