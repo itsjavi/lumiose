@@ -33,3 +33,5 @@ The user wanted specific names, plus one summary state, so that UI like a global
 
 - The core needs an app-wide in-flight registry, which `busy()` reads. Async components, Suspense, `submit()` and the router register with it.
 - Spec §4.3, §7.5 and §8 now use these names. TASK-23's `submitting()` and `submit()` already follow them.
+
+_Amended 2026-10-09 (user): after a successful `submit()`, Lumen automatically runs `invalidate()` for the current page. Its async components re-run, and the stale UI stays visible until the new data arrives. To opt out, pass `submit(form, { invalidate: false })`._
