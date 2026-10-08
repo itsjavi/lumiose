@@ -5,7 +5,7 @@ status: Done
 assignee:
   - '@Photon'
 created_date: '2026-10-08 12:21'
-updated_date: '2026-10-08 16:25'
+updated_date: '2026-10-08 16:27'
 labels: []
 milestone: m-2
 dependencies:
@@ -62,6 +62,8 @@ Integration: in serverEntryCode `import { stylesheets } from "virtual:lumen/css-
 - packages/lumen/src/vite/css-manifest.test.ts (5 tests): real Vite 8 builds from a vite.config.ts (base /app/, server sourcemaps): manifest keys = _layout + index only (about has no CSS); index → Card, Late (inside Suspense), Counter in import order; _layout → app.css (plain CSS from a server-only layout), _layout styles; stylesheets() dedupes/orders; dist/client has exactly one CSS asset per stylesheet and no JS for them, crimson only once; dist/server has no CSS; no warnings. Dev server: links for all five with base, data-vite-dev-id == client CSS module __vite__id, island imports the same URL. stylesheetImports unit test.
 - src/vite + src/app/production + src/app/dev Vitest: 42/42. tsc, oxlint clean for src/vite.
 - ssr-bookshelf (copy in scratch, Nova's build(), probe plugin re-exporting the manifest): client emits assets/styles-*.css, server none; manifest maps (app)/_layout, (static)/_layout and _404 → /assets/styles-k6BrbWxT.css. Prerendered HTML has no links until TASK-26 wires headAssets.
+
+Lux (from Nova, TASK-26): lumen() should expose api: { options: { mode, ssr, trailingSlash, csrf } }, which dev and build already read. CSS link integration notes are in TASK-19 (Nova's handoff).
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary
