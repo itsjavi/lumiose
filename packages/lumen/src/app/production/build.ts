@@ -80,6 +80,7 @@ export async function build(options: BuildOptions = {}): Promise<BuildResult> {
     viewTransitions: false,
     prefetch: "hover",
     islands: {},
+    islandChunks: {},
   };
   const config: InlineConfig = {
     root,
@@ -128,6 +129,10 @@ export async function build(options: BuildOptions = {}): Promise<BuildResult> {
   const clientDir = resolve(root, client.config.build.outDir);
   const clientOutput = await builder.build(client);
   Object.assign(state, await islandUrls(clientOutput, root, clientDir, client.config.base));
+  // Island refs, including those of linked packages and bare specifiers (TASK-98).
+  for (const [module, fileName] of Object.entries(state.islandChunks)) {
+    state.islands[module] = client.config.base + fileName;
+  }
 
   const ssr = builder.environments.ssr!;
   const serverDir = resolve(root, ssr.config.build.outDir);

@@ -65,6 +65,13 @@ export interface LumenOptions {
 export interface LumenPluginApi {
   /** The project options given to `lumen({ … })`; unset options are absent. */
   readonly options: Readonly<ProjectOptions>;
+  /**
+   * The island modules known so far: the module of each island ref (`/src/Nav.stsx`,
+   * `@acme/ui/src/Nav.stsx` or a bare `@acme/ui`) → the specifier the island manifest imports it
+   * with (root-relative, an absolute id, or bare). `lumen build` and `lumen dev` map refs to URLs
+   * with it.
+   */
+  islandModules(): ReadonlyMap<string, string>;
 }
 
 const ROUTE_MODES: readonly RouteMode[] = ["static", "server", "spa"];

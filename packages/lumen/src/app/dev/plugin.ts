@@ -27,6 +27,7 @@ import type { AppDiagnostic } from "../diagnostics.ts";
 import {
   DOCUMENT_FILES,
   findAppFile,
+  islandModules,
   MIDDLEWARE_FILES,
   navigationOptions,
   projectOptions,
@@ -76,6 +77,8 @@ const virtualUrl = (base: string, id: string): string =>
   `${base}@id/${id.replace("\0", "__x00__")}`;
 const NOT_A_STYLESHEET = /[?&](?:inline|url|raw)\b/;
 const JS_MODULE = /\.[cm]?[jt]sx?$/;
+/** An absolute module id (`/repo/kit/src/Nav.stsx`, `C:/repo/…`), not a bare specifier. */
+const ABSOLUTE_ID = /^(?:\/|[a-z]:\/)/i;
 
 /** What the handler is built from; replaced (never mutated) when the routes change. */
 interface AppFiles {
@@ -184,7 +187,7 @@ export function lumenDev(options: LumenDevOptions = {}): Plugin {
       manifest: current.manifest,
       loadModule: (file) => ssr.runner.import(`/${file}`),
       render: runtime.createServerRenderer({
-        islandUrl: (specifier) => devModuleUrl(base, specifier),
+        islandUrl: (specifier) => islandModuleUrl(base, specifier, server),
         loaderUrl: virtualUrl(base, LOADER_ID),
       }),
       ...(hasSpa(current.manifest) ? { spaEntry: virtualUrl(base, SPA_ENTRY_ID) } : {}),
@@ -359,6 +362,21 @@ export function lumenDev(options: LumenDevOptions = {}): Plugin {
       }
     }
   }
+}
+
+/**
+ * The dev URL of an island's module, by the module part of its ref: root-relative refs are paths;
+ * the modules of linked packages (`@acme/ui/src/Nav.stsx`, TASK-74) load through Vite's `/@fs/`
+ * route from the absolute id the island manifest imports, and bare refs (`@acme/ui`) through
+ * `/@id/` (TASK-98).
+ */
+function islandModuleUrl(base: string, module: string, server: ViteDevServer): string {
+  if (module.startsWith("/")) return devModuleUrl(base, module);
+  const specifier = islandModules(server.config).get(module);
+  if (specifier === undefined) return module;
+  if (!ABSOLUTE_ID.test(specifier)) return `${base}@id/${specifier}`;
+  const url = `${base}@fs/${specifier.replace(/^\//, "")}`;
+  return JS_MODULE.test(specifier) ? url : `${url}?import`;
 }
 
 /**

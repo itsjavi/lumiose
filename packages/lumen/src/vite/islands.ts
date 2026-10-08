@@ -42,6 +42,16 @@ export class IslandRegistry {
     for (const module of project()) this.add(module.islands);
   }
 
+  /** The module of each island ref (`<module>#<export>`) → the specifier the manifest imports. */
+  modules(): Map<string, string> {
+    const modules = new Map<string, string>();
+    for (const [ref, island] of this.#islands) {
+      const hash = ref.lastIndexOf("#");
+      modules.set(hash === -1 ? ref : ref.slice(0, hash), island.module);
+    }
+    return modules;
+  }
+
   /** The manifest module, with refs in a stable order. */
   code(): string {
     const entries = [...this.#islands]

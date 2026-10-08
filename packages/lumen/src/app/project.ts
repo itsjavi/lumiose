@@ -58,6 +58,16 @@ export function navigationOptions(project: ProjectOptions): {
   };
 }
 
+/**
+ * The island modules the `lumen` plugin knows (`api.islandModules()`): the module of each island
+ * ref → the specifier the island manifest imports it with. Empty without the plugin.
+ */
+export function islandModules(config: ResolvedConfig): ReadonlyMap<string, string> {
+  const compiler = config.plugins.find((plugin) => plugin.name === "lumen");
+  const api = compiler?.api as { islandModules?: () => ReadonlyMap<string, string> } | undefined;
+  return api?.islandModules?.() ?? new Map();
+}
+
 /** Reads the project options from the resolved config; throws when `lumen()` is missing. */
 export function projectOptions(config: ResolvedConfig, command: string): ProjectOptions {
   const compiler = config.plugins.find((plugin) => plugin.name === "lumen");

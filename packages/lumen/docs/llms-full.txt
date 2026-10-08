@@ -1195,10 +1195,13 @@ trigger fires. With your own server, pass its URL as `renderToStream(root, { loa
 **Islands from other packages.** Components of a linked workspace package (`"@acme/ui": "workspace:*"`)
 can be or render islands too. Island records name modules without build-machine paths:
 root-relative inside the project (`/src/components/LikeButton.stsx#LikeButton`), package-relative
-outside it (`@acme/ui/src/Nav.stsx#Nav`). Builds also look for island call sites in the linked
-packages that depend on `lumen`, so each of their islands gets its chunk even when only server code
-renders it. Folders inside such a package that are projects of their own (with a `package.json`,
-`tsconfig.json` or `vite.config.*`, such as a showcase app) are left out.
+outside it (`@acme/ui/src/Nav.stsx#Nav`), or by the import's bare name
+(`import { Nav } from "@acme/ui"` gives `@acme/ui#Nav`). Either way, the `modulepreload` hint of a
+`client:load` island points at its chunk in a build and at Vite's URL of the module in dev. Builds
+also look for island call sites in the linked packages that depend on `lumen`, so each of their
+islands gets its chunk even when only server code renders it. Folders inside such a package that
+are projects of their own (with a `package.json`, `tsconfig.json` or `vite.config.*`, such as a
+showcase app) are left out.
 
 > **Status:** available: island calls and records (`LUM4001`, `LUM4002`), the loader with its
 > triggers and event replay, and hydration (`LUM4006` on a mismatch), in `lumen dev` and builds.

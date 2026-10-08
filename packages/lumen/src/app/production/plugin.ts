@@ -20,6 +20,8 @@ import type { CsrfOptions } from "../server/csrf.ts";
 import type { TrailingSlash } from "../server/handler.ts";
 import type { Prefetch } from "../server/navigation.ts";
 import { SPA_ENTRY, spaEntryPlugin } from "../router/entry.ts";
+import { islandModules } from "../project.ts";
+import { ISLANDS_ID } from "../../vite/islands.ts";
 
 export const SERVER_ENTRY = "virtual:lumen/server-entry";
 const SERVER_ENTRY_ID = "\0lumen:server-entry";
@@ -47,6 +49,11 @@ export interface BuildState {
   };
   /** Island specifier → client chunk URL, from the client build. */
   islands: Record<string, string>;
+  /**
+   * The module of each island ref (`/src/Nav.stsx`, `@acme/ui/src/Nav.stsx` in a linked package,
+   * a bare `@acme/ui`) → the file name of the chunk the island manifest loads it from.
+   */
+  islandChunks: Record<string, string>;
   /** URL of the island loader chunk; undefined when the app has no islands. */
   loader?: string;
   /** URL of the SPA entry chunk; undefined when the app has no `spa` pages. */
@@ -111,16 +118,50 @@ function lumenBuildEnvironments(state: BuildState): Plugin {
     // an island imports one too, Rolldown moves the stylesheet to a shared chunk and gives the entry
     // a facade chunk that only imports it; Vite then drops the pure-CSS chunk and blanks the import
     // (`/* empty css */`). Nothing loads the facade, so it is not written either (TASK-94).
+    //
+    // It also finds the chunk of each island, by the module part of its ref (TASK-98).
     generateBundle: {
       order: "post",
-      handler(_, bundle) {
+      async handler(_, bundle) {
         if (this.environment.name !== "client") return;
         for (const [fileName, file] of Object.entries(bundle)) {
           if (isEmptyStylesheetFacade(file)) delete bundle[fileName];
         }
+        state.islandChunks = await islandChunks(this, bundle);
       },
     },
   };
+}
+
+/**
+ * The chunk of each island module. Refs name modules root-relatively, package-relatively in linked
+ * packages (`@acme/ui/src/Nav.stsx`, TASK-74) or by a bare specifier (`@acme/ui`), so chunks are
+ * found by resolving the island manifest's import of each module, as the build did.
+ */
+async function islandChunks(
+  context: Rollup.PluginContext,
+  bundle: Rollup.OutputBundle,
+): Promise<Record<string, string>> {
+  // A lazily imported module is the facade of its chunk, or part of a chunk that also holds the
+  // modules importing it statically (a package's index that re-exports the island).
+  const chunkOf = new Map<string, string>();
+  const chunks = Object.values(bundle).filter((file) => file.type === "chunk");
+  for (const chunk of chunks) {
+    if (chunk.isDynamicEntry && chunk.facadeModuleId !== null) {
+      chunkOf.set(chunk.facadeModuleId, chunk.fileName);
+    }
+  }
+  for (const chunk of chunks) {
+    for (const id of chunk.moduleIds) if (!chunkOf.has(id)) chunkOf.set(id, chunk.fileName);
+  }
+  const found: Record<string, string> = {};
+  const modules = islandModules(context.environment.getTopLevelConfig());
+  for (const [module, specifier] of modules) {
+    const resolved = await context.resolve(specifier, ISLANDS_ID);
+    const fileName = resolved === null ? undefined : chunkOf.get(resolved.id);
+    if (fileName !== undefined) found[module] = fileName;
+  }
+  return found;
 }
 
 function isEmptyStylesheetFacade(file: Rollup.OutputAsset | Rollup.OutputChunk): boolean {

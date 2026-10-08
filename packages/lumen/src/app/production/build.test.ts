@@ -259,6 +259,51 @@ export default function Home() { return <main><Toggle client:load /></main>; }
     }
   });
 
+  it("maps the islands of linked packages to their chunks (TASK-98)", async () => {
+    // `@acme/kit`, a linked Lumen package outside the root. Its Header renders the Nav island
+    // (ref named package-relatively, TASK-74); the app renders Badge imported by the bare name.
+    const kit = project({
+      "package.json": `{ "name": "@acme/kit", "type": "module", "exports": { ".": "./src/index.ts" }, "dependencies": { "lumen": "workspace:*" } }\n`,
+      "src/index.ts": `export { Header } from "./Header.stsx";\nexport { Badge } from "./Badge.stsx";\n`,
+      "src/Header.stsx": `import { Nav } from "./Nav.stsx";
+export function Header() { return <header><Nav client:load /></header>; }
+`,
+      "src/Nav.stsx": `import { signal } from "lumen";
+export function Nav() {
+  const open = signal(false);
+  return <nav onClick={() => open.set(true)}>{open() ? "open" : "closed"}</nav>;
+}
+`,
+      "src/Badge.stsx": `export function Badge() { return <b onClick={() => {}}>New</b>; }\n`,
+    });
+    const root = project({
+      "package.json": `{ "name": "app", "private": true, "dependencies": { "@acme/kit": "workspace:*" } }\n`,
+      "src/routes/index.stsx": `import { Badge, Header } from "@acme/kit";
+export default function Home() { return <main><Header /><Badge client:load /></main>; }
+`,
+    });
+    mkdirSync(join(root, "node_modules/@acme"));
+    symlinkSync(kit, join(root, "node_modules/@acme/kit"), "dir");
+    const result = await build({ root, ...quiet() });
+
+    const home = read(root, "index.html");
+    expect(home).toContain('"ref":"@acme/kit/src/Nav.stsx#Nav"');
+    expect(home).toContain('"ref":"@acme/kit#Badge"');
+    // Each island's modulepreload points at a built chunk, not at its ref.
+    const preloads = [...home.matchAll(/<link rel="modulepreload" href="([^"]+)">/g)].map(
+      (match) => match[1]!,
+    );
+    expect(preloads).toHaveLength(2);
+    for (const href of preloads) {
+      expect(href).toMatch(/^\/assets\/[\w-]+\.js$/);
+      expect(existsSync(join(result.clientDir, href))).toBe(true);
+    }
+    expect(preloads.some((href) => /^\/assets\/Nav-[\w-]+\.js$/.test(href))).toBe(true);
+    // The server entry maps the same refs, for server-rendered pages.
+    const entry = readFileSync(result.serverEntry, "utf8");
+    for (const href of preloads) expect(entry).toContain(JSON.stringify(href));
+  });
+
   it("adds lumen({ viewTransitions, prefetch }) to the page documents (TASK-93)", async () => {
     const root = project({
       "vite.config.ts": `import lumen from "lumen/vite";

@@ -88,7 +88,10 @@ const HMR_DOM_ID = "\0lumen:hmr-dom";
 const IMPORTS_MOUNT = /import\s*\{[^}]*\bmount\b[^}]*\}\s*from\s*"lumen\/dom"/;
 
 export default function lumen(options: LumenOptions = {}): Plugin<LumenPluginApi>[] {
-  const api: LumenPluginApi = { options: Object.freeze(projectOptionsOf(options)) };
+  const api: LumenPluginApi = {
+    options: Object.freeze(projectOptionsOf(options)),
+    islandModules: () => islands.modules(),
+  };
   const svg = svgOptionsOf(options.svg);
   const include = options.include ?? LUMEN_MODULE;
   const exclude = options.exclude ?? NODE_MODULES;
