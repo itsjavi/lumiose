@@ -1,7 +1,7 @@
 ---
 id: TASK-23
 title: 'Implement form actions, fetchJSON and invalidate'
-status: In Progress
+status: Done
 assignee:
   - '@Nova'
 created_date: '2026-10-08 12:21'
@@ -54,3 +54,14 @@ Implementation (Nova):
 - DX decision for Lux/user: in-flight state is exposed as submitting(name?) (parallels router navigating(); core pending() stays the async-component flag from TASK-17); submit() resolves success/failure/redirect and rejects with FetchError for error results.
 - Validation: pnpm test 441/441 passing (46 new: actions.test.ts 20, fetch-json.test.ts 9, actions/client.test.ts 16, public-api +1); lumen typecheck clean for app/server (only error is Spark's in-progress src/core/async.ts, TASK-17); language-server typecheck fails on Beacon's untracked package (TASK-29); pnpm lint 0 errors (pre-existing router placeholder warning).
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Form actions, fetchJSON and invalidate (decision-18, spec §8).
+Server: pages export action(ctx) or actions = { name(ctx) }; POST runs it (?/name for named; 404 for a missing action, 405 + Allow when the page has none). ctx.formData() is cached (400 if not a form). Results: Response/redirect() (303 after POST); data -> page re-renders 200 with actionData(); fail(status, data) -> re-render with that status. Origin check on by default (Sec-Fetch-Site, else Origin host; csrf: { allowedOrigins } or false), 403 otherwise; applies to page POSTs and form-encoded endpoint requests.
+Enhancement protocol: Accept: application/json + x-lumen-action: 1 -> JSON { type: success|failure|redirect|error, status, data? | location | error.message }, data encoded with encodeData; redirects (also middleware 3xx) travel as HTTP 200 redirect results; the header is echoed.
+Client: submit(form | submitEvent | FormData | URLSearchParams | record, { action?, method?, signal? }) -> ActionResult (rejects FetchError on error results); submitting(name?) and actionData() signals (actionData starts from server-embedded data after a no-JS post); invalidate() (MPA reload); setClientNavigation() hook for the SPA router.
+fetchJSON<T>(url, init?): FetchError (an HttpError with url/data) on non-2xx; during SSR same-origin URLs are served in-process (shared cookie jar, cookie/authorization forwarded, locals copy, abort link, redirect following, depth limit).
+Tests: 46 new (441 total passing). Open: submitting() naming is a DX decision for Lux/user (spec §8 says pending()); static pages with actions need a build rule (TASK-26 note); SPA hooks (TASK-25 note).
+<!-- SECTION:FINAL_SUMMARY:END -->
