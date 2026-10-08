@@ -1,0 +1,12 @@
+const size: number = "big";
+
+export function Broken() {
+  return (
+    <div class="broken">
+      <style lang="scss">
+        .broken { color: red; width: $missing; }
+        .oops { color: ; }
+      </style>
+    </div>
+  );
+}

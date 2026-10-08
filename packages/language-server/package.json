@@ -1,0 +1,29 @@
+{
+  "name": "@lumen/language-server",
+  "version": "0.0.0",
+  "private": true,
+  "description": "The Lumen language server: a TypeScript 7 takeover proxy for .ts/.tsx/.stsx plus CSS features for .stsx style blocks.",
+  "license": "MIT",
+  "bin": {
+    "lumen-language-server": "./src/bin.ts"
+  },
+  "files": [
+    "src"
+  ],
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./package.json": "./package.json"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@lumen/compiler": "workspace:*",
+    "typescript": "^7.0.2",
+    "vscode-css-languageservice": "^6.3.10",
+    "vscode-languageserver": "^10.1.2",
+    "vscode-languageserver-textdocument": "^1.0.15"
+  }
+}

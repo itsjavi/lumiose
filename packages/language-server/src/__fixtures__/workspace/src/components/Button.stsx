@@ -1,0 +1,31 @@
+import { accent, radius } from "../tokens.ts";
+
+export function Button(props: { label: string; primary?: boolean }) {
+  return (
+    <button class={["button", { "is-primary": props.primary }]}>
+      {props.label}
+      <style>
+        .button { border-radius: $radius.lg; background: $accent; color: #ff0000; }
+        .is-primary { font-weight: bold; }
+      </style>
+    </button>
+  );
+}
+
+export function Icon() {
+  return (
+    <i class="icon">
+      <style>
+        .icon { width: 1em; }
+      </style>
+    </i>
+  );
+}
+
+<style>
+  .shared { margin: 0; }
+</style>
+
+<style global>
+  .theme-dark { color: white; }
+</style>

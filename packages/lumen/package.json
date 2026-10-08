@@ -29,6 +29,7 @@
       "types": "./src/jsx/env.d.ts"
     },
     "./vite": "./src/vite/index.ts",
+    "./tooling": "./src/cli/tooling.ts",
     "./package.json": "./package.json"
   },
   "scripts": {
