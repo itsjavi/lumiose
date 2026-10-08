@@ -3,11 +3,11 @@ id: TASK-10
 title: >-
   Implement the lumen_css crate: scoping, selector rewrite and constants
   substitution
-status: To Do
+status: In Progress
 assignee:
   - '@Halo'
 created_date: '2026-10-08 12:20'
-updated_date: '2026-10-08 13:59'
+updated_date: '2026-10-08 14:00'
 labels: []
 milestone: m-1
 dependencies:
