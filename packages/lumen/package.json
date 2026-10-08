@@ -20,6 +20,7 @@
       "default": "./src/index.ts"
     },
     "./dom": "./src/dom/index.ts",
+    "./dom/hydrate": "./src/dom/hydrate.ts",
     "./server": "./src/server/index.ts",
     "./router": "./src/app/router/index.ts",
     "./jsx-runtime": "./src/jsx/jsx-runtime.ts",
