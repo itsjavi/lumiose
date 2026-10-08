@@ -67,7 +67,7 @@ Both are server-only: in the browser build of `lumen` they throw `LUM4003`.
 ## `lumen/server`
 
 The server runtime that compiled server code imports (`ssr`, `escape`, `insert`, `list`, `branch`,
-`createComponent`, `island`, `$await`, …). It is the compiler-runtime contract, not an
+`branchArm`, `createComponent`, `island`, `$await`, …). It is the compiler-runtime contract, not an
 application API: its members may change between versions without notice. It also re-exports
 `renderToStream` and `renderToString`.
 

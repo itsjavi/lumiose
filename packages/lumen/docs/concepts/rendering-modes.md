@@ -4,11 +4,11 @@
 
 ## Concept
 
-| Mode               | HTML                                                               | JS shipped        | Navigation               |
-| ------------------ | ------------------------------------------------------------------ | ----------------- | ------------------------ |
-| `static` (default) | At build time, for each path from `staticPaths()`                  | Islands only      | MPA (+ View Transitions) |
-| `server`           | Per request: the shell, then streamed boundaries                   | Islands only      | MPA                      |
-| `spa`              | Server-rendered and hydrated, or a client shell with `ssr = false` | The whole subtree | Client router            |
+| Mode               | HTML                                                               | JS shipped        | Navigation                            |
+| ------------------ | ------------------------------------------------------------------ | ----------------- | ------------------------------------- |
+| `static` (default) | At build time, for each path from `staticPaths()`                  | Islands only      | MPA (View Transitions via CSS opt-in) |
+| `server`           | Per request: the shell, then streamed boundaries                   | Islands only      | MPA                                   |
+| `spa`              | Server-rendered and hydrated, or a client shell with `ssr = false` | The whole subtree | Client router                         |
 
 A route sets `export const mode = "server"` (a string literal); pages inherit the mode of their
 nearest layout that sets one, else the project default set in `vite.config.ts` with

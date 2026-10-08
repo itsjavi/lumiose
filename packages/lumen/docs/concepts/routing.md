@@ -40,8 +40,10 @@ src/
 - `href("/blog/[slug]", { slug })` builds a URL and type-checks the pattern and params;
 - `params<"/blog/[slug]">()` and `RouteProps<"/blog/[slug]">` type the params.
 
-**Navigation.** Routes are MPA by default (full page loads, with cross-document View Transitions
-and speculation-rules prefetch). Routes with `mode = "spa"` use the client router `lumen/router`
+**Navigation.** Routes are MPA by default (full page loads). For smooth MPA navigation today, add
+the CSS opt-in `@view-transition { navigation: auto; }` to a global style block, and optionally a
+`<script type="speculationrules">` for prefetching; the travel-journal example does both. Built-in
+`lumen()` options for these are planned (TASK-93). Routes with `mode = "spa"` use the client router `lumen/router`
 ([reference](../reference/router.md)):
 
 - The SPA starts at the outermost `spa` layout (or the page itself) and covers every `spa` page
