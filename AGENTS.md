@@ -201,8 +201,8 @@ work remains.
   | Lux    | Root configs, `pnpm-lock.yaml`, `packages/lumen/package.json`, `src/index*.ts`, the contract, `examples/ssg-*`                                                               |
   | Photon | `crates/**` (except `crates/lumen_css/**`), `packages/compiler/**`, `packages/lumen/src/vite/**`                                                                             |
   | Halo   | `crates/lumen_css/**`, `packages/site-kit/**`                                                                                                                                |
-  | Spark  | `packages/lumen/src/{core,dom}/**`, `benchmarks/js-framework-benchmark/**`, `examples/spa-*`                                                                                 |
-  | Nova   | `packages/lumen/src/{app,server}/**`, `packages/adapter-node/**`, `benchmarks/ssr/**`, `examples/ssr-*`                                                                      |
+  | Spark  | `packages/lumen/src/{core,dom}/**`, `packages/lumen/src/app/router/**`, `benchmarks/js-framework-benchmark/**`, `examples/spa-*`, `examples/islands-e2e/**`                  |
+  | Nova   | `packages/lumen/src/{app,server}/**` (except `app/router/**`), `packages/adapter-node/**`, `benchmarks/ssr/**`, `examples/ssr-*`                                             |
   | Beacon | `packages/lumen/src/{cli,jsx}/**`, `packages/lumen/docs/**`, `apps/{web,playground}/**`, `packages/{language-server,vscode,create,testing,eslint-plugin,prettier-plugin}/**` |
 
 - **Dependencies.**
