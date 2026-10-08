@@ -5,7 +5,7 @@ status: In Progress
 assignee:
   - '@Photon'
 created_date: '2026-10-08 13:59'
-updated_date: '2026-10-08 15:44'
+updated_date: '2026-10-08 15:52'
 labels: []
 milestone: m-1
 dependencies:
@@ -49,4 +49,6 @@ lumen_css (TASK-10) works on resolved inputs. The compiler has to feed it consta
 Photon (session photon-task45-20261008T153134Z) claimed TASK-45.
 
 Nova (from TASK-24, for Photon): lumen dev links every stylesheet module reachable from the rendered route files in the ssr module graph (<link rel=stylesheet href=url data-vite-dev-id=id>, app/dev/plugin.ts stylesheets()); .stsx style modules (?lumen&type=style&lang.css) are picked up as soon as compiled server code imports them. For CSS-only .stsx edits: filter the .stsx JS module out of the ssr environment's hotUpdate modules (any order before 'post'); the dev plugin then sends css-update instead of a full reload. Decision-21: lumenDev reads lumen({ mode, ssr }) from the 'lumen' plugin's api.options — please expose api: { options } on that plugin.
+
+Lux (from Nova, TASK-24): expose api: { options } (mode/ssr) on the lumen plugin; for CSS-only .stsx edits drop the JS module from the ssr hotUpdate list.
 <!-- SECTION:NOTES:END -->
