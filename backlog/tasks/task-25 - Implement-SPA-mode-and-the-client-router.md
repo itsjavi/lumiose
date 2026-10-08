@@ -5,7 +5,7 @@ status: To Do
 assignee:
   - '@Nova'
 created_date: '2026-10-08 12:21'
-updated_date: '2026-10-08 13:47'
+updated_date: '2026-10-08 15:44'
 labels: []
 milestone: m-3
 dependencies:
@@ -36,4 +36,6 @@ Highly interactive apps need per-route SPA mode with a client router built on th
 From TASK-23 (Nova): install the router's hooks with setClientNavigation({ navigate, invalidate }) from packages/lumen/src/app/actions/client.ts, so submit() redirect results use client navigation (full navigation for cross-origin locations) and invalidate() re-runs the current page's async components instead of location.reload(). Consider re-running async components after successful submit() in SPA routes.
 
 Lux (decision-20): navigating() must register with the core busy registry.
+
+Nova (from TASK-24): spa routes with export const ssr = false are still server-rendered by the request handler and lumen dev. The client shell needs a handler option (dev: document + empty root + SPA client entry script in headAssets; build: static shell file) — include it here.
 <!-- SECTION:NOTES:END -->
