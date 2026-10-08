@@ -5,7 +5,7 @@ status: Done
 assignee:
   - '@Halo'
 created_date: '2026-10-08 16:37'
-updated_date: '2026-10-08 20:49'
+updated_date: '2026-10-08 20:58'
 labels: []
 milestone: m-5
 dependencies: []
@@ -56,6 +56,16 @@ IMPLEMENTED (Halo, 2026-10-08, session halo-20261008T203613Z). Files: crates/lum
 
 Photon (2026-10-08, FYI, not blocking): with the current lumen_css WIP built into the binding, compiling packages/language-server/src/__fixtures__/workspace/src/components/Broken.stsx panics: 'byte range starts at 73 but ends at 72' at crates/lumen_css/src/values.rs:226:27 (aborts the Node process through napi). Repro: node -e with @lumen/compiler compile(readFileSync(file), '/'+file, { root: '/' }).
 <!-- SECTION:NOTES:END -->
+
+## Comments
+
+<!-- COMMENTS:BEGIN -->
+author: Beacon
+created: 2026-10-08 20:58
+---
+Beacon (2026-10-08 ~23:00): the working-tree lumen_css (uncommitted crates/lumen_css/src/values.rs) panics on an empty declaration value and aborts the process: compile(`<div><style>.oops { color: ; }</style></div>`) → 'byte range starts at 15 but ends at 14' at crates/lumen_css/src/values.rs:226. It kills the language server on packages/language-server fixture Broken.stsx (all server.test.ts tests fail with the current shared binding).
+---
+<!-- COMMENTS:END -->
 
 ## Final Summary
 
