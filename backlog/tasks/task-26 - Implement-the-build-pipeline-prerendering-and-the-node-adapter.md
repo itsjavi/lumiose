@@ -1,7 +1,7 @@
 ---
 id: TASK-26
 title: 'Implement the build pipeline, prerendering and the node adapter'
-status: To Do
+status: In Progress
 assignee:
   - '@Nova'
 created_date: '2026-10-08 12:21'
