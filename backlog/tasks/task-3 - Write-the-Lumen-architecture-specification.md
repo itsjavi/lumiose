@@ -1,14 +1,12 @@
 ---
 id: TASK-3
 title: Write the Lumen architecture specification
-status: In Progress
+status: Done
 assignee:
   - '@Lux'
 created_date: '2026-10-08 09:59'
-updated_date: '2026-10-08 11:35'
-labels:
-  - needs-review
-  - needs-decision
+updated_date: '2026-10-08 12:18'
+labels: []
 milestone: m-0
 dependencies:
   - TASK-1
@@ -42,9 +40,9 @@ Decisions 5-10 are proposals awaiting user review. Spec v0.1 (doc-1) still descr
 <!-- AC:BEGIN -->
 - [x] #1 Spec doc covers goals/non-goals, package layout, component and reactivity API, styles model, compiler pipeline, rendering modes (CSR/SSR/SSG/islands/SPA), hydration protocol, routing/data scope, tooling and agent-first DX
 - [x] #2 Includes a performance model explaining why Lumen should beat React and match Solid/Svelte/Vue Vapor on js-framework-benchmark and SSR throughput
-- [ ] #3 User-approved choices are recorded as accepted decisions and linked from the spec; unapproved choices appear in the spec only as proposals
+- [x] #3 User-approved choices are recorded as accepted decisions and linked from the spec; unapproved choices appear in the spec only as proposals
 - [x] #4 Lists risks and open questions that need user input
-- [ ] #5 Spec v0.2 reflects decisions 11-16: .stsx/.tsx files, raw CSS <style> blocks scoped by placement, $name constants, no reactive CSS, async components with Suspense/ErrorBoundary, package name lumen
+- [x] #5 Spec v0.2 reflects decisions 11-16: .stsx/.tsx files, raw CSS <style> blocks scoped by placement, $name constants, no reactive CSS, async components with Suspense/ErrorBoundary, package name lumen
 <!-- AC:END -->
 
 ## Implementation Plan
@@ -70,4 +68,12 @@ User feedback (2026-10-08): the user rejects CSS inside JS tagged templates (css
 User decisions (2026-10-08): .stsx extension plus plain .tsx (decision-11, supersedes decision-1); raw CSS blocks with build-time constants and no reactive CSS (decision-12, supersedes decision-2; interpolation syntax still pending); backlog is tracked in the main repo and is committed as part of the normal workflow (AGENTS.md updated). Still open: the constant syntax name and async client components. Spec v0.2 rewrite pending.
 
 Decisions 14 (style scope by placement), 15 (package name lumen) and 16 (backlog workflow, approval rule) were recorded after explicit user approval. Proposed decisions 5, 6, 9 and 10 were aligned with 11-15: package renamed to lumen, the LUM4005 rule dropped, and the editor section amended.
+
+Spec v0.3 is published as doc-1. User syntax choices recorded: count() reads, compiled .map/ternaries, onClick + on:click, client:* at the usage site. The user delegated all non-syntax decisions to Lux (decision-16 amended). Decisions 5-10 accepted; 17 (events), 18 (data loading) and 19 (SSR shell model) added. Prism's v0.2 review (blockers B1-B4, majors M1-M8, perf, sample-app gaps) is folded into v0.3.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Architecture spec v0.3 (doc-1) is the implementation baseline: .stsx authoring with placement-scoped raw CSS and $name constants, setup-once signals, async components with Suspense, a Rust/OXC compiler, server-first islands with per-route SPA and a shell-first SSR model, plus tooling, agent DX and the performance model. Decisions 3-19 are accepted. Verified by an independent Prism review (with TS 7.0.2 experiments) whose findings are incorporated.
+<!-- SECTION:FINAL_SUMMARY:END -->
