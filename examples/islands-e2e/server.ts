@@ -10,7 +10,9 @@ import { fileURLToPath } from "node:url";
 import { createServer, isRunnableDevEnvironment } from "vite";
 
 const port = Number(process.env.PORT ?? 5193);
-const loader = fileURLToPath(new URL("./src/dom/loader.ts", import.meta.resolve("lumen/package.json")));
+const loader = fileURLToPath(
+  new URL("./src/dom/loader.ts", import.meta.resolve("lumen/package.json")),
+);
 
 const vite = await createServer({
   root: import.meta.dirname,
@@ -19,13 +21,14 @@ const vite = await createServer({
 });
 const ssr = vite.environments.ssr;
 if (!isRunnableDevEnvironment(ssr)) throw new Error("Vite's ssr environment must be runnable");
+const { runner } = ssr;
 
 type Entry = typeof import("./src/entry-server.tsx");
 type Api = typeof import("./src/api.ts");
 
 async function handle(url: URL, res: ServerResponse): Promise<void> {
   if (url.pathname.startsWith("/api/member/")) {
-    const { loadMember } = await ssr.runner.import<Api>("/src/api.ts");
+    const { loadMember } = await runner.import<Api>("/src/api.ts");
     const member = await loadMember(url.pathname.slice("/api/member/".length));
     res.setHeader("content-type", "application/json");
     res.end(JSON.stringify(member));
@@ -36,7 +39,9 @@ async function handle(url: URL, res: ServerResponse): Promise<void> {
     res.end("Not found");
     return;
   }
-  const { render } = await ssr.runner.import<Entry>("/src/entry-server.tsx");
+  const { delays } = await runner.import<Api>("/src/api.ts");
+  delays.slow = Number(url.searchParams.get("slow") ?? 600);
+  const { render } = await runner.import<Entry>("/src/entry-server.tsx");
   // `.stsx` modules are Vite import URLs in dev (`?import`), as the island manifest imports them.
   const shell = await render({ islandUrl: (specifier) => `${specifier}?import` });
   res.setHeader("content-type", "text/html; charset=utf-8");

@@ -170,9 +170,7 @@ describe("hydrate", () => {
     expect(cards[0]).toBe(document.querySelectorAll("i")[0]);
     (globalThis as any).set("z");
     flushSync();
-    expect(div.textContent).toBe(
-      "before z afterzzz trailingzleading zcard 1zcard 2zz",
-    );
+    expect(div.textContent).toBe("before z afterzzz trailingzleading zcard 1zcard 2zz");
     expect(document.querySelectorAll("i")[1]).toBe(cards[1]);
   });
 
@@ -241,14 +239,19 @@ describe("hydrate", () => {
         return <div>{props.children}</div>;
       }`);
     const s = await import("../server/index.ts");
-    const Box = (props: { children?: unknown }) => s.ssr(["<div>", "</div>"], s.insert(props.children));
+    const Box = (props: { children?: unknown }) =>
+      s.ssr(["<div>", "</div>"], s.insert(props.children));
     const Shelf = (props: { on: boolean; items: string[] }) =>
       s.ssr(
         ["<section>", "", "</section>"],
         s.insert(
           s.createComponent(Box, {
             get children() {
-              return s.branch(props.on, () => s.ssr(["<u>inner yes</u>"]), () => "inner no");
+              return s.branch(
+                props.on,
+                () => s.ssr(["<u>inner yes</u>"]),
+                () => "inner no",
+              );
             },
           }),
         ),
@@ -384,7 +387,9 @@ describe("hydrate", () => {
     (globalThis as any).serverSide = false;
     const main = document.querySelector("main")!;
     await hydrateAll(client);
-    expect(warn).toHaveBeenCalledWith(expect.stringContaining("LUM4006: hydration mismatch in island Page"));
+    expect(warn).toHaveBeenCalledWith(
+      expect.stringContaining("LUM4006: hydration mismatch in island Page"),
+    );
     expect(api.calls).toEqual([]);
     expect(document.querySelector("main")).not.toBe(main);
     expect(visible()).toBe("<main><div>name-x</div></main>");
@@ -467,6 +472,67 @@ describe("island loader", () => {
     expect(document.querySelector("h3")).toBe(h3);
     h3.click();
     expect((globalThis as any).clicked).toBe("slow-s");
+  });
+
+  it("also waits where `<?start>` parses as a processing instruction (native patching)", async () => {
+    const { client, server } = await load(`
+      import { Suspense } from "lumen";
+      export async function Slow(props: { id: string }) {
+        const m = await (globalThis as any).api.slow(props.id);
+        return <h3>{m.name}</h3>;
+      }
+      export function Feed() {
+        return <section><Suspense fallback={<p>loading</p>}><Slow id="s" /></Suspense></section>;
+      }`);
+    const slow = deferred<{ name: string }>();
+    (api as unknown as Record<string, unknown>).slow = (id: string) =>
+      fetch(`/api/slow/${id}`).then(() => slow.promise);
+    const shell = await renderToStream(() => island("/src/case#Feed", server.Feed, {}, "load"));
+    document.body.innerHTML = shell.body;
+    // As Chromium parses them: `<?start name="lb0">` → instruction `start`, data `name="lb0"`.
+    const walker = document.createTreeWalker(document.body, 128);
+    const placeholders: Comment[] = [];
+    for (let c = walker.nextNode(); c !== null; c = walker.nextNode()) {
+      if ((c as Comment).data.startsWith("?")) placeholders.push(c as Comment);
+    }
+    expect(placeholders.length).toBe(2);
+    for (const c of placeholders) {
+      const [, target, data] = /^\?(\w+) ?(.*)$/.exec(c.data)!;
+      c.replaceWith(document.createProcessingInstruction(target!, data!));
+    }
+    const scan = loadIslands({ "/src/case#Feed": () => Promise.resolve(client.Feed) });
+    api.calls = [];
+    await settle();
+    expect(warn).not.toHaveBeenCalled();
+    expect(api.calls).toEqual([]);
+    expect(document.querySelector("p")!.textContent).toBe("loading");
+
+    // The browser patches `<template for>` itself; `$swap` then finds no template.
+    slow.resolve({ name: "slow-s" });
+    const reader = shell.stream!.getReader();
+    for (let chunk = await reader.read(); !chunk.done; chunk = await reader.read()) {
+      document.body.insertAdjacentHTML("beforeend", chunk.value);
+      for (const template of document.querySelectorAll<HTMLTemplateElement>("template[for]")) {
+        const all = document.createTreeWalker(document.body, 64);
+        let start = all.nextNode() as ProcessingInstruction;
+        while (start.data !== `name="${template.getAttribute("for")}"`) {
+          start = all.nextNode() as ProcessingInstruction;
+        }
+        while ((start.nextSibling as ProcessingInstruction).target !== "end") {
+          start.nextSibling!.remove();
+        }
+        start.nextSibling!.remove();
+        start.replaceWith(template.content);
+        template.remove();
+      }
+    }
+    const h3 = document.querySelector("h3")!;
+    expect(h3.textContent).toBe("slow-s");
+    scan();
+    await settle();
+    expect(warn).not.toHaveBeenCalled();
+    expect(api.calls).toEqual([]);
+    expect(document.querySelector("h3")).toBe(h3);
   });
 
   it("replays clicks and input made before the island hydrated", async () => {

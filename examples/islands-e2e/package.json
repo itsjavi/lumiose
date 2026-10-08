@@ -6,6 +6,7 @@
   "type": "module",
   "scripts": {
     "dev": "node server.ts",
+    "typecheck": "lumen check",
     "test:e2e": "playwright test"
   },
   "dependencies": {

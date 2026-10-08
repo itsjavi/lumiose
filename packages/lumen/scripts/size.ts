@@ -24,6 +24,8 @@ const entries: Record<string, string> = {
   "core + dom (typical app imports)": TYPICAL,
   // An islands page: what its islands import plus the loader and hydration (lumen/dom/loader).
   "core + dom + islands (typical app imports, loader, hydrate)": TYPICAL + ISLANDS,
+  // The same without the loader, to tell the loader's share from hydration's.
+  "core + dom + hydrate (typical app imports, hydrate)": `${TYPICAL} export { hydrate } from "${src}dom/hydrate.ts";`,
   // What the js-framework-benchmark app needs (its bundle budget is 8 kB including app code).
   "core + dom (benchmark imports)": `export { signal, batch } from "${src}core/index.ts"; export { template, bind, setText, toggleClass, list, selector, createComponent, delegateEvents, mount } from "${src}dom/index.ts";`,
   "core + dom (every export)": `export * from "${src}core/index.ts"; export * from "${src}dom/index.ts"; export * from "${src}dom/public.ts";`,
@@ -90,4 +92,9 @@ const islands = measured["core + dom + islands (typical app imports, loader, hyd
 const added = islands.brotli - base.brotli;
 console.log(
   `islands on top of typical app imports: min ${kb(islands.min - base.min)}, gzip ${kb(islands.gzip - base.gzip)}, brotli ${kb(added)} (soft target 1.50 kB: ${added <= 1.5 * 1024 ? "OK" : "OVER"})`,
+);
+const hydrateOnly = measured["core + dom + hydrate (typical app imports, hydrate)"]!;
+const loader = islands.brotli - hydrateOnly.brotli;
+console.log(
+  `  of which hydrate: brotli ${kb(hydrateOnly.brotli - base.brotli)}; loader: brotli ${kb(loader)} (target 1.00 kB: ${loader <= 1024 ? "OK" : "OVER"})`,
 );

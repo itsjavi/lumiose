@@ -78,7 +78,7 @@ export function loadIslands(manifest: IslandManifest): () => void {
 
   const find = (): void => {
     const walker = document.createTreeWalker(document, 128);
-    for (let c: Comment | null; (c = walker.nextNode() as Comment | null) !== null; ) {
+    for (let c: Comment | null; (c = walker.nextNode() as Comment | null) !== null;) {
       const match = /^(\/?)l:(\d+)$/.exec(c.data);
       const island = match === null ? undefined : islands[+match[2]!];
       if (island !== undefined) {
@@ -138,12 +138,19 @@ export function loadIslands(manifest: IslandManifest): () => void {
     }
   };
 
-  /** Whether the range still holds a streamed `<Suspense>` placeholder. */
+  /**
+   * Whether the range still holds a streamed `<Suspense>` placeholder: `<?start name="…">` parses
+   * as a processing instruction where the browser patches natively (Chromium), else as a comment.
+   */
   const streaming = (island: Island): boolean => {
-    const walker = document.createTreeWalker(island.s!.parentNode!, 128);
+    // SHOW_PROCESSING_INSTRUCTION | SHOW_COMMENT
+    const walker = document.createTreeWalker(island.s!.parentNode!, 192);
     walker.currentNode = island.s!;
-    for (let c: Comment | null; (c = walker.nextNode() as Comment | null) !== island.e; ) {
-      if (c!.data.startsWith("?start")) {
+    for (let c: Node | null; (c = walker.nextNode()) !== island.e;) {
+      if (
+        (c as ProcessingInstruction).target === "start" ||
+        (c as Comment).data.startsWith("?start")
+      ) {
         return true;
       }
     }
@@ -202,8 +209,9 @@ export function loadIslands(manifest: IslandManifest): () => void {
   };
 
   const contains = (island: Island, target: Node): boolean => {
-    for (let node = island.s!.nextSibling; node !== island.e; node = node!.nextSibling) {
-      if (node!.contains(target)) {
+    // `node` runs out when the range left the document (removed by a parent's render).
+    for (let node = island.s!.nextSibling; node && node !== island.e; node = node.nextSibling) {
+      if (node.contains(target)) {
         return true;
       }
     }

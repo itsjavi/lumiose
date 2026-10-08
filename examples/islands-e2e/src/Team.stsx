@@ -15,7 +15,7 @@ export async function Profile(props: { id: string }) {
  * An island with async components (await records), a `<Suspense>` boundary that streams after the
  * shell, an inline slot (`children`) and a slot it renders only later (`extra`).
  */
-export function Team(props: { ids: string[]; children?: unknown; extra?: unknown }) {
+export function Team(props: { ids: string[]; children?: JSX.Element; extra?: JSX.Element }) {
   const selected = signal(props.ids[0]!);
   const showExtra = signal(false);
   return (

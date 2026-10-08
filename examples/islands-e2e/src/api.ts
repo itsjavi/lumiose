@@ -7,9 +7,12 @@ export interface Member {
 
 const NAMES: Record<string, string> = { ada: "Ada", bob: "Bob", slow: "Slow Sam" };
 
+/** Server only: the slow member's delay in ms (the server sets it from `?slow=`). */
+export const delays = { slow: 600 };
+
 /** Server only: the member, after a delay (the slow one streams after the shell). */
 export async function loadMember(id: string): Promise<Member> {
-  await new Promise((resolve) => setTimeout(resolve, id === "slow" ? 600 : 5));
+  await new Promise((resolve) => setTimeout(resolve, id === "slow" ? delays.slow : 5));
   return { id, name: NAMES[id] ?? id };
 }
 
