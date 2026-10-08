@@ -5,6 +5,7 @@ status: To Do
 assignee:
   - Beacon
 created_date: '2026-10-08 20:48'
+updated_date: '2026-10-08 21:09'
 labels: []
 milestone: m-5
 dependencies:
@@ -26,3 +27,9 @@ lumen_css warns about CSS values browsers would drop (TASK-76, TASK-67). Message
 - [ ] #1 packages/lumen/docs/errors/LUM3017.md, LUM3018.md, LUM3019.md in the existing error-page format (what, why, fix, examples), linked from the errors README
 - [ ] #2 The styles docs ($ constants section) recommend unit-carrying constants or calc($x * 1px); llms.txt / llms-full.txt regenerated
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Photon (2026-10-08, TASK-81 commit 0a0e469): wrote docs/errors/LUM3017.md, LUM3018.md, LUM3019.md (what, why, example, fix, related), linked from the generated errors README; llms.txt/llms-full.txt regenerated (AC#1 done). Left for AC#2: concepts/styles.md 'How values are written' already recommends calc($gap * 1px) and unit-carrying constants; it only needs links to LUM3018/LUM3019 once Halo's lumen_css change lands (the warnings are not emitted at HEAD yet).
+<!-- SECTION:NOTES:END -->
