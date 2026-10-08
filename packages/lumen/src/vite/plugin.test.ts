@@ -97,6 +97,17 @@ export function Header() {
   return <nav>Docs</nav>;
 }
 `,
+  // A nested project (its own tsconfig), not part of the package: never scanned (TASK-99).
+  "showcase/tsconfig.json": "{}\n",
+  "showcase/Demo.stsx": `import { Widget } from "./Widget.stsx";
+export function Demo() {
+  return <div><Widget client:idle /></div>;
+}
+`,
+  "showcase/Widget.stsx": `export function Widget() {
+  return <p>Widget</p>;
+}
+`,
 };
 
 const lumenRoot = resolve(import.meta.dirname, "../..");
@@ -237,6 +248,7 @@ describe.skipIf(!binding)("lumen/vite", () => {
     expect(code).toContain(
       `"@acme/kit/src/Nav.stsx#Nav": () => import(${JSON.stringify(`${kit}/src/Nav.stsx`)})`,
     );
+    expect(code).not.toContain("showcase");
     // The browser imports it through Vite's file-system route.
     const served = await server.environments.client.transformRequest("virtual:lumen/islands");
     expect(served!.code).toContain(`import("/@fs${kit}/src/Nav.stsx`);

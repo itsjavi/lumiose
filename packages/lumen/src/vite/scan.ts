@@ -9,12 +9,14 @@
 // Lumen modules are compiled once without CSS; other JS/TS modules are only searched for import
 // specifiers. A specifier found in a comment only builds an unused stylesheet.
 
-import { readdirSync, readFileSync } from "node:fs";
+import { readdirSync, readFileSync, type Dirent } from "node:fs";
 import { join } from "node:path";
 import { compile, type IslandMeta } from "@lumen/compiler";
 import { isCSSRequest, normalizePath } from "vite";
 import type { Packages } from "./packages.ts";
 
+/** Files that make a directory a project of its own. */
+const PROJECT_FILE = /^(?:package\.json|tsconfig\.json|vite\.config\.[cm]?[jt]s)$/;
 /** Directories never scanned. */
 const SKIPPED_DIRECTORIES = new Set(["node_modules", "dist", "build", "coverage"]);
 /** Other source modules searched for stylesheet imports. */
@@ -44,8 +46,12 @@ export function scanProject(
   packages: Packages,
 ): ScannedModule[] {
   const modules: ScannedModule[] = [];
-  const dirs = [root, ...packages.linked().map((p) => p.dir)];
-  for (const file of dirs.flatMap(sourceFiles)) {
+  const files = [
+    ...sourceFiles(root, false),
+    // A linked package's nested projects (a showcase app, examples) are not part of it.
+    ...packages.linked().flatMap((p) => sourceFiles(p.dir, true)),
+  ];
+  for (const file of files) {
     const lumen = include.test(file) && !exclude.test(file);
     if (!lumen && (!SCRIPT_MODULE.test(file) || DECLARATION.test(file) || exclude.test(file))) {
       continue;
@@ -89,7 +95,8 @@ export function stylesheetImports(code: string): string[] {
   return [...found];
 }
 
-function sourceFiles(root: string): string[] {
+/** Files under `root`; with `skipProjects`, not in subdirectories that are projects themselves. */
+function sourceFiles(root: string, skipProjects: boolean): string[] {
   const files: string[] = [];
   const visit = (directory: string): void => {
     let entries;
@@ -98,6 +105,7 @@ function sourceFiles(root: string): string[] {
     } catch {
       return;
     }
+    if (skipProjects && directory !== root && entries.some(isProjectFile)) return;
     for (const entry of entries) {
       const path = join(directory, entry.name);
       if (entry.isDirectory()) {
@@ -109,4 +117,9 @@ function sourceFiles(root: string): string[] {
   };
   visit(root);
   return files;
+}
+
+/** A file that makes its directory a project of its own (as for `lumen check`). */
+function isProjectFile(entry: Dirent): boolean {
+  return entry.isFile() && PROJECT_FILE.test(entry.name);
 }
