@@ -5,11 +5,11 @@ status: To Do
 assignee:
   - '@Photon'
 created_date: '2026-10-08 12:20'
+updated_date: '2026-10-08 13:59'
 labels: []
 milestone: m-1
 dependencies:
-  - TASK-9
-  - TASK-10
+  - TASK-45
 documentation:
   - backlog/docs/architecture/doc-1 - Lumen-architecture-specification.md
 priority: high
