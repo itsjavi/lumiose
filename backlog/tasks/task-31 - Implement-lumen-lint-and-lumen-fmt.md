@@ -1,7 +1,7 @@
 ---
 id: TASK-31
 title: Implement lumen lint and lumen fmt
-status: In Progress
+status: Done
 assignee:
   - '@Beacon'
 created_date: '2026-10-08 12:21'
@@ -61,3 +61,15 @@ Evidence:
 
 Limitations: stylelint not exercised for real (not installed in the repo; stub-tested against its Node API shape); oxlint/oxfmt JS/TS config files are not read (JSON/JSONC only); oxfmt overrides not applied to .stsx; a config found in an ancestor dir has its globs matched relative to the project root for shadows; lumen fmt formats .stsx only (oxfmt handles other files); no lint --fix.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Added lumen lint and lumen fmt (packages/lumen/src/cli/{lint,fmt}, shared tools.ts + style-css.ts, wired in main.ts, exported from lumen/tooling).
+
+lumen lint [--format json]: syncs shadows, runs oxlint -f json on the project (shadows excluded) and on the shadow TSX with the project's oxlint config copied to the shadow root (so overrides/ignorePatterns still match), maps shadow paths and UTF-8 spans back to .stsx UTF-16 positions, drops diagnostics inside style blocks except on $refs (never no-unused-expressions, the masking artefact), and runs stylelint per block on same-length-ref virtual CSS when the project installs and configures it. Output reuses the lumen check report (human code frames or stable JSON; sources oxlint/stylelint); exit 0/1/2.
+
+lumen fmt [--check] [paths]: formats the TSX with oxfmt with blocks replaced by placeholders, each block's CSS with oxfmt (which formats CSS natively) with $refs protected by unique same-length identifiers, then re-indents and stitches; honours .oxfmtrc.json(c) options and ignorePatterns; idempotent; files with scanner/syntax errors are reported and untouched; --check lists unformatted files and exits 1.
+
+Evidence: 12 tests with real oxlint 1.87 / oxfmt 0.72 (positions incl. non-ASCII, filtering, overrides on shadows, stylelint stub mapping, JSON CLI; exact formatting, double-pass idempotence, ref preservation, config options, errors, CLI check/write). typecheck + lint green; 3 unrelated repo test failures come from an in-progress import.meta.env change in packages/lumen/src/dom/component.ts.
+<!-- SECTION:FINAL_SUMMARY:END -->
