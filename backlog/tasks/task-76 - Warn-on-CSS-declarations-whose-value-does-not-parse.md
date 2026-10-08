@@ -1,7 +1,7 @@
 ---
 id: TASK-76
 title: Warn on CSS declarations whose value does not parse
-status: In Progress
+status: Done
 assignee:
   - '@Halo'
 created_date: '2026-10-08 16:37'
@@ -21,8 +21,8 @@ Found while building @lumen/site-kit (TASK-59): 'grid-template-columns: 2fr repe
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 lumen_css reports a warning (LUM3015 or a new registered code) for a declaration of a known property whose value does not parse and contains no var()/env()/attr(), with the property and value in the message
-- [ ] #2 No warning for valid values, custom properties or vendor-prefixed properties Lightning CSS does not know; tests in crates/lumen_css
+- [x] #1 lumen_css reports a warning (LUM3015 or a new registered code) for a declaration of a known property whose value does not parse and contains no var()/env()/attr(), with the property and value in the message
+- [x] #2 No warning for valid values, custom properties or vendor-prefixed properties Lightning CSS does not know; tests in crates/lumen_css
 <!-- AC:END -->
 
 ## Implementation Plan
@@ -51,4 +51,12 @@ Design (agreed plan, not yet coded):
 3. diagnostics.rs: CssCode::{InvalidCssValue = LUM3017, UnitlessStyleRef = LUM3018, DetachedUnit = LUM3019}, all Warning. Compiler `convert()` drops unknown ids, so Photon must add them to crates/lumen_compiler/src/diagnostics/registry.rs (3xxx block, after LUM3016); Beacon to add docs pages (packages/lumen/docs/errors/LUM3017-3019.md) + llms.
 4. Tests: unit tests in values.rs (valid corpus produces nothing; invalid list warns), new fixture tests/fixtures/values.stsx(+.out); re-run all fixtures (UPDATE_FIXTURES=1 only after reviewing diffs); cargo clippy -p lumen_css.
 TASK-67 is folded into the same module (LUM3018/3019); TASK-70 study not started.
+
+IMPLEMENTED (Halo, 2026-10-08, session halo-20261008T203613Z). Files: crates/lumen_css/src/values.rs (new), prepass.rs (Context::Descriptors + Declaration.descriptor; declarations directly inside group rules nested in style rules are now recorded, so the negative-math clamp covers them too), process.rs (prepare() builds Substitutions and calls values::check before clamp; value_text pub(crate)), diagnostics.rs (InvalidCssValue=LUM3017, UnitlessStyleRef=LUM3018, DetachedUnit=LUM3019, all Warning), lib.rs (docs), clamp.rs (nested @media test). Tests: values.rs unit tests (8), tests/values.rs corpus test (tests/values/valid.txt = 1105 valid declarations from the probe corpora, none warns; tests/values/invalid.txt = 47 invalid ones, each exactly one LUM3017), golden fixture tests/fixtures/values.stsx/.out (messages, help, fixes). Deviations from the design: math functions are NOT in the LUM3017 known-function set (Lightning keeps valid z-index: calc(3 * 2) as raw tokens; math.stsx caught it); LUM3018 also fires when a math function reduces to a bare number in a length position (width: calc($a * $b) prints '8'); one LUM3018 per math function. Corpus check found clip-path: border-box padding-box (in my valid corpus) is actually invalid -> moved to invalid.txt. Repo scan of all 127 tracked .stsx files (refs unresolved): one hit, a true positive in the user's uncommitted examples/spa-chiptune/src/ui/App.stsx ('border: 2px <word> solid'). Known conservative misses: unknown function names (blurr()), unknown properties (object-fit is unknown to Lightning alpha.72), Unparsed values containing math, literal unitless lengths (gap: 8, Lightning converts them to px so output is valid). Follow-ups: TASK-81 (Photon: register LUM3017-3019 in lumen_compiler registry; until then convert() drops them), TASK-82 (Beacon: error docs + llms). Validation: cargo test -p lumen_css (all suites) and cargo test -p lumen_compiler pass; cargo clippy -p lumen_css --all-targets: 0 warnings; cargo fmt -p lumen_css --check clean. Probe test removed from crates (copy remains in .local/agents/Halo/halo-task76-20261008T164216Z/).
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+lumen_css now warns about declaration values browsers would drop. LUM3017 (invalid CSS value): values Lightning CSS keeps as raw tokens, behind conservative filters (CSS-wide keywords, var/env/attr, unknown or math functions, gradients with 'in <space>', vendor idents, a newer-keyword list, known (property, keyword) gaps, three unchecked properties), plus a typed grid check for repeat(auto-fill|auto-fit) with non-fixed tracks (the site-kit footer case). LUM3018/LUM3019 cover TASK-67. At-rule descriptors, custom/vendor/unknown properties and values with unresolved refs are skipped. Output CSS is unchanged. Tests: unit tests, a 1105-line valid corpus (no warnings) and 47-line invalid corpus (one warning each), golden fixture values.stsx. Codes need registry entries (TASK-81, Photon) and docs (TASK-82, Beacon).
+<!-- SECTION:FINAL_SUMMARY:END -->
