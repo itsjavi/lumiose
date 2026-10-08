@@ -5,7 +5,7 @@ status: To Do
 assignee:
   - '@Spark'
 created_date: '2026-10-08 12:21'
-updated_date: '2026-10-08 15:44'
+updated_date: '2026-10-08 15:52'
 labels: []
 milestone: m-2
 dependencies:
@@ -39,4 +39,11 @@ Lux (from TASK-16), slot protocol change (server side done by Nova, client by Sp
 - Agree the details with Photon's TASK-14 output.
 
 Nova (from TASK-24): lumen dev adds <head> assets in packages/lumen/src/app/dev/plugin.ts headAssets() (Vite client + linked stylesheets); add the island loader client entry there (one line) when it exists. In dev, island module URLs are Vite import URLs: moduleUrl('/src/X.stsx') = '/src/X.stsx?import' (non-JS extensions get ?import, as import analysis writes them), so the loader should import through virtual:lumen/islands (Photon's manifest) and never build URLs from bare specifiers.
+
+Lux: doc-2 §3.1 now holds the full hydration marker table (Nova, TASK-47). Also from Nova and Photon:
+- Add the island loader to headAssets().
+- Dev island URLs are /src/X.stsx?import.
+- The loader imports virtual:lumen/islands; its keys equal the record refs.
+- Walk template content and server nodes side by side.
+- Create text nodes for empty text() holes.
 <!-- SECTION:NOTES:END -->
