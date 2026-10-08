@@ -12,10 +12,7 @@ import {
 } from "./layout.ts";
 import { runTsc } from "./tsc.ts";
 
-/**
- * Provisional code for tsconfig problems found by `lumen check`.
- * TODO(Lux/Photon): register a tooling range in `crates/lumen_compiler/src/diagnostics/registry.rs`.
- */
+/** tsconfig problems found by `lumen check` (registered in the compiler's registry, 6xxx). */
 export const LUM_TSCONFIG = "LUM6001";
 
 /**

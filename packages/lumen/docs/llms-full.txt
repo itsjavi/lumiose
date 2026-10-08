@@ -5770,6 +5770,62 @@ folder). Keep the endpoint `static` only if it serves `GET` alone.
 - [Rendering modes](../concepts/rendering-modes.md)
 - [Routing](../concepts/routing.md)
 
+<!-- source: errors/LUM6001.md -->
+
+<!-- Generated from crates/lumen_compiler/src/diagnostics/registry.rs by packages/lumen/scripts/gen-error-docs.ts. Edit the explanation below the end marker. -->
+
+# LUM6001: tsconfig missing options required by Lumen
+
+**Severity:** warning · **Category:** tooling and config (6xxx)
+
+<!-- end of generated header -->
+> The project's `tsconfig.json` lacks an option that type checking `.stsx` files depends on.
+
+**Reported by:** `lumen check`, on the option's key in the tsconfig. A
+warning: the check still runs, but some files are typed wrongly or not at all.
+
+## What it means
+
+`lumen check` type-checks `.stsx` files through generated shadow TSX files in `.lumen/shadow`
+(spec §4.7). That only works when the tsconfig sets:
+
+- `"jsx": "preserve"` and `"jsxImportSource": "lumen"`, so JSX is typed as Lumen JSX;
+- `rootDirs` pairing the sources with their shadows (`["src", ".lumen/shadow/src"]`), so
+  `import "./Card.stsx"` resolves to the shadow. The warning also fires when `rootDirs` pairs only
+  `src` but a Lumen package the project uses (a linked workspace package) has `.stsx` files: they
+  are outside the pair and are not type-checked;
+- `include` covering `.lumen/shadow` (routes and other files nothing imports) and `.lumen/types`
+  (route types);
+- `types` containing `"lumen/env"` (Lumen's globals).
+
+## Example
+
+```json
+{
+  "compilerOptions": { "strict": true, "jsx": "react-jsx" },
+  "include": ["src"]
+}
+```
+
+## How to fix it
+
+Extend the tsconfig that `lumen check` generates, which holds all of these options and pairs
+linked packages too (decision-25), and add your own options on top:
+
+```json
+{
+  "extends": "./.lumen/tsconfig.generated.json",
+  "compilerOptions": { "strict": true }
+}
+```
+
+Or set the option named in the message, as its help line says.
+
+## Related
+
+- [Compiler and tooling](../concepts/compiler.md)
+- [JSX reference](../reference/jsx.md)
+
 <!-- source: errors/README.md -->
 
 <!-- Generated from crates/lumen_compiler/src/diagnostics/registry.rs by packages/lumen/scripts/gen-error-docs.ts. Edit the explanation below the end marker. -->
@@ -5845,4 +5901,10 @@ fix?, docs }`; `lumen check --format json` prints them.
 | [LUM5003](LUM5003.md) | error    | Duplicate route                                  |
 | [LUM5004](LUM5004.md) | error    | Head or status change inside a streamed boundary |
 | [LUM5005](LUM5005.md) | error    | Non-GET method in a static endpoint              |
+
+## Tooling and config (6xxx)
+
+| Code                  | Severity | Title                                      |
+| --------------------- | -------- | ------------------------------------------ |
+| [LUM6001](LUM6001.md) | warning  | tsconfig missing options required by Lumen |
 

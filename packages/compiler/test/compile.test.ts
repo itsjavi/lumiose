@@ -114,7 +114,7 @@ describe.skipIf(!binding)("@lumen/compiler native compile", () => {
     const text = 'const s = "é";\nexport const A = () => <p>{s}</p>;\nA();\n';
     const result = compile(text, "/src/a.tsx");
     expect(result.diagnostics).toMatchObject([
-      { code: "LUM2004", severity: "error", docs: "diagnostics/LUM2004" },
+      { code: "LUM2004", severity: "error", docs: "errors/LUM2004" },
     ]);
     const { start, end } = result.diagnostics[0]!.span;
     expect(text.slice(start, end)).toBe("A()");

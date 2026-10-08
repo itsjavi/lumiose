@@ -300,5 +300,5 @@ fn diagnostics_are_sorted_and_have_docs() {
         codes(&result),
         [Code::UnknownStyleAttribute, Code::MisplacedStyle]
     );
-    assert_eq!(result.diagnostics[0].docs(), "diagnostics/LUM1005");
+    assert_eq!(result.diagnostics[0].docs(), "errors/LUM1005");
 }

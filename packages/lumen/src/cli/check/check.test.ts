@@ -107,7 +107,7 @@ function lumenAt(file: string, code: string, text: string, needle: string, shift
     line: start.line,
     column: start.column,
     endColumn: start.column + needle.length - shift,
-    docs: `diagnostics/${code}`,
+    docs: `errors/${code}`,
   });
 }
 
@@ -291,7 +291,7 @@ describe.skipIf(!binding)("lumen check", () => {
           ...errorAt("src/components/Panel.stsx", panel, "LUM1005", 'lang="scss"', 'lang="scss"'),
           source: "lumen",
           help: expect.any(String),
-          docs: "diagnostics/LUM1005",
+          docs: "errors/LUM1005",
         },
         // A type error across an import between .stsx files.
         errorAt("src/components/Panel.stsx", panel, "TS2322", "label={42}", "label"),
@@ -322,7 +322,7 @@ describe.skipIf(!binding)("lumen check", () => {
         "  |                                                      ~~~~~",
       ].join("\n"),
     );
-    expect(stdout).toContain("  docs: lumen docs diagnostics/LUM1005");
+    expect(stdout).toContain("  docs: lumen docs errors/LUM1005");
     expect(stdout).toMatch(/Found 7 errors, 0 warnings in 4 files\.\n$/);
   });
 
@@ -371,7 +371,7 @@ describe.skipIf(!binding)("lumen check", () => {
                   message: "not a constant",
                   span: { start, end: start + 4 },
                   labels: [],
-                  docs: "diagnostics/LUM3008",
+                  docs: "errors/LUM3008",
                 },
               ],
             },
@@ -393,7 +393,7 @@ describe.skipIf(!binding)("lumen check", () => {
         endLine: at.line,
         endColumn: at.column + 4,
         message: "not a constant",
-        docs: "diagnostics/LUM3008",
+        docs: "errors/LUM3008",
       },
     ]);
     expect(exitCode).toBe(1);

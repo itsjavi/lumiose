@@ -71,3 +71,9 @@ fix?, docs }`; `lumen check --format json` prints them.
 | [LUM5003](LUM5003.md) | error    | Duplicate route                                  |
 | [LUM5004](LUM5004.md) | error    | Head or status change inside a streamed boundary |
 | [LUM5005](LUM5005.md) | error    | Non-GET method in a static endpoint              |
+
+## Tooling and config (6xxx)
+
+| Code                  | Severity | Title                                      |
+| --------------------- | -------- | ------------------------------------------ |
+| [LUM6001](LUM6001.md) | warning  | tsconfig missing options required by Lumen |

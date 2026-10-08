@@ -52,7 +52,7 @@ describe.skipIf(!binding)("@lumen/compiler native scan", () => {
   it("returns diagnostics with stable codes and docs topics", () => {
     const result = scan("export const A = () => <B><style>.a {}</style></B>;\n", "A.stsx");
     expect(result.diagnostics).toMatchObject([
-      { code: "LUM3010", severity: "error", docs: "diagnostics/LUM3010" },
+      { code: "LUM3010", severity: "error", docs: "errors/LUM3010" },
     ]);
     expect(version()).toBe("0.0.0");
   });

@@ -23,7 +23,7 @@ export interface CheckDiagnostic {
   endColumn: number;
   message: string;
   help?: string;
-  /** Docs topic, e.g. `diagnostics/LUM3010` (`lumen docs <topic>`). */
+  /** Docs topic, e.g. `errors/LUM3010` (`lumen docs <topic>`). */
   docs?: string;
   /** A machine-applicable fix (Lumen diagnostics that have one). */
   fix?: CheckFix;
@@ -108,7 +108,7 @@ export function fromAppDiagnostic(diagnostic: AppDiagnostic): CheckDiagnostic {
     endColumn: 1,
     message: diagnostic.message,
     ...(diagnostic.help === undefined ? {} : { help: diagnostic.help }),
-    docs: `diagnostics/${diagnostic.code}`,
+    docs: `errors/${diagnostic.code}`,
   };
 }
 

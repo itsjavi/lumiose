@@ -127,7 +127,7 @@ pub struct Diagnostic {
     pub labels: Vec<Label>,
     pub help: Option<String>,
     pub fix: Option<Fix>,
-    /// Docs topic, e.g. `diagnostics/LUM1004`.
+    /// Docs topic, e.g. `errors/LUM1004` (`lumen docs errors/LUM1004`).
     pub docs: String,
 }
 

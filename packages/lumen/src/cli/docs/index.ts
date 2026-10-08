@@ -3,7 +3,7 @@
 // `docs_get` / `docs_search` tools build on (TASK-34).
 //
 // A topic is a docs path without `.md`: `concepts/signals`, `reference/app`, `errors/LUM1004`.
-// Lookups also accept a bare name (`signals`), a code (`LUM1004`) and the registry's
+// Lookups also accept a bare name (`signals`), a code (`LUM1004`) and the older
 // `diagnostics/LUM1004` form; anything else is searched.
 
 import { existsSync, readdirSync, readFileSync } from "node:fs";

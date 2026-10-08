@@ -81,3 +81,4 @@ These docs match lumen 0.0.0. Installed projects have them in `node_modules/lume
 - [LUM5003: Duplicate route](errors/LUM5003.md)
 - [LUM5004: Head or status change inside a streamed boundary](errors/LUM5004.md)
 - [LUM5005: Non-GET method in a static endpoint](errors/LUM5005.md)
+- [LUM6001: tsconfig missing options required by Lumen](errors/LUM6001.md)

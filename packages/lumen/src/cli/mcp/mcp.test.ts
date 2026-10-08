@@ -251,7 +251,7 @@ describe("lumen mcp", () => {
         code: "LUM1005",
         severity: "error",
         line: 4,
-        docs: "diagnostics/LUM1005",
+        docs: "errors/LUM1005",
         fix: {
           message: "Remove `lang`",
           edits: [{ line: 4, column: 13, endLine: 4, endColumn: 25, text: "" }],

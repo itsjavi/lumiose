@@ -17,9 +17,10 @@ pub struct DiagnosticInfo {
 }
 
 impl DiagnosticInfo {
-    /// The docs topic for this code, as resolved by `lumen docs` and `lumen explain`.
+    /// The docs topic for this code, as resolved by `lumen docs` and `lumen explain`: its page
+    /// `docs/errors/<id>.md` (`https://lumen.dev/errors/<id>` online).
     pub fn docs(&self) -> String {
-        format!("diagnostics/{}", self.id)
+        format!("errors/{}", self.id)
     }
 }
 
@@ -89,6 +90,8 @@ registry! {
     DuplicateRoute = "LUM5003", Error, "Duplicate route";
     HeadChangeInStreamedBoundary = "LUM5004", Error, "Head or status change inside a streamed boundary";
     StaticEndpointMethod = "LUM5005", Error, "Non-GET method in a static endpoint";
+    // 6xxx tooling and config
+    TsconfigMissingOptions = "LUM6001", Warning, "tsconfig missing options required by Lumen";
 }
 
 impl Code {

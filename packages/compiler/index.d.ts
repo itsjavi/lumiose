@@ -117,7 +117,7 @@ export interface Diagnostic {
   labels: Array<Label>;
   help?: string;
   fix?: Fix;
-  /** Docs topic, e.g. `diagnostics/LUM1004`. */
+  /** Docs topic, e.g. `errors/LUM1004` (`lumen docs errors/LUM1004`). */
   docs: string;
 }
 
