@@ -1,11 +1,11 @@
 ---
 id: TASK-14
 title: Implement server codegen and the hydrate walk
-status: To Do
+status: In Progress
 assignee:
   - '@Photon'
 created_date: '2026-10-08 12:21'
-updated_date: '2026-10-08 14:10'
+updated_date: '2026-10-08 14:11'
 labels: []
 milestone: m-2
 dependencies:
