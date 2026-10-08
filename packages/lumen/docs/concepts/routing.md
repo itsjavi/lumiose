@@ -41,14 +41,21 @@ src/
 - `params<"/blog/[slug]">()` and `RouteProps<"/blog/[slug]">` type the params.
 
 **Navigation.** Routes are MPA by default (full page loads, with cross-document View Transitions
-and speculation-rules prefetch). Routes with `mode = "spa"` use the client router `lumen/router`:
-`<Link>`, `navigate()`, reactive `params()`/`search()`/`url()` and `navigating()`, persistent
-layouts, scroll restoration and a client-side `_404`. A navigation holds the old page until the new
-page's async content is ready.
+and speculation-rules prefetch). Routes with `mode = "spa"` use the client router `lumen/router`
+([reference](../reference/router.md)):
 
-> **Status:** file routes, the manifest, matching, typegen, `href()` and the request handler are
-> available, served by `lumen dev`, `lumen build` and `lumen preview`. The SPA router
-> (`lumen/router`) is in progress and currently exports nothing.
+- The SPA starts at the outermost `spa` layout (or the page itself) and covers every `spa` page
+  below it; links between them navigate on the client, other links load the document.
+- `<Link href prefetch>` (plain `<a>` links work too), `navigate(href, { replace })`, reactive
+  `params()`, `url()`, `search()` (`search.set()` changes the query) and `navigating()`.
+- Layouts persist: a layout's `children` is the outlet, and layouts shared by the old and the new
+  page keep their state. A page with other param values (`songs/[id]`) is a new page.
+- A navigation holds the old page until the new page's async content is ready, then swaps.
+- Scroll restoration, focus reset, `_404` for unknown URLs and `notFound()`, `_error` for errors.
+
+> **Status:** file routes, the manifest, matching, typegen, `href()`, the request handler and the
+> SPA router (`lumen/router`) are available, served by `lumen dev`, `lumen build` and
+> `lumen preview`.
 
 ## API
 
@@ -60,7 +67,7 @@ page's async content is ready.
 | `Routes`, `RouteParams<P>`, `RouteProps<P>`, `RouteMap`          | Route types.                                           |
 | `ErrorPageProps`                                                 | Props of `_404` and `_error`.                          |
 | `notFound()`, `error(status, message?)`, `redirect(to, status?)` | Stop rendering; see [Server](server.md).               |
-| `lumen/router`: `Link`, `navigate`, `navigating`, `search`       | SPA routes (planned).                                  |
+| `lumen/router`: `Link`, `navigate`, `navigating`, `search`       | SPA routes ([reference](../reference/router.md)).      |
 
 ## Example
 

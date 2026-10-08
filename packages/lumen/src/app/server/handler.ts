@@ -28,6 +28,7 @@ import { createCookieJar, type CookieJar } from "./cookies.ts";
 import { isSameOriginRequest, needsOriginCheck, type CsrfOptions } from "./csrf.ts";
 import { documentBody, documentParts, type DocumentComponent } from "./document.ts";
 import { createServerRenderer, type PageRenderer, type PageTree } from "./render.ts";
+import { spaErrorPart, spaPagePart, spaPageTree } from "../router/server.ts";
 import {
   assertRequestApi,
   createResponseState,
@@ -51,6 +52,11 @@ export interface RequestHandlerOptions {
   middleware?: string;
   /** Project-relative path of `src/document.stsx`, when the app has one. */
   document?: string;
+  /**
+   * URL of the SPA entry (`virtual:lumen/spa`, TASK-25): pages that render an SPA (`mode = "spa"`)
+   * load it instead of the island loader.
+   */
+  spaEntry?: string;
   /** Extra `<head>` HTML (CSS links, module preloads, island loader) for the rendered route files. */
   headAssets?: (files: readonly string[]) => string | Promise<string>;
   /** Server env for `ctx.env` and `env()`. Default: `process.env`. */
@@ -288,28 +294,48 @@ export function createRequestHandler(options: RequestHandlerOptions): RequestHan
 
     const baseline = new Headers(scope.response.headers);
     try {
+      // `spa` pages render their SPA part as one root island; with `ssr = false` the server sends
+      // a shell and neither loads nor runs the SPA's layouts and page (TASK-25).
+      const spa =
+        route.mode === "spa"
+          ? spaPagePart(manifest, route.layouts, route.file, route.ssr)
+          : undefined;
+      const csr = spa !== undefined && !spa.ssr;
       const [layouts, pageModule] = await Promise.all([
-        Promise.all(route.layouts.map((file) => loadComponent(file))),
-        loadModule(route.file),
+        Promise.all((csr ? spa.outer : route.layouts).map((file) => loadComponent(file))),
+        csr ? undefined : loadModule(route.file),
       ]);
-      const allow = hasActions(pageModule) ? ACTION_PAGE_METHODS : PAGE_METHODS;
+      const allow =
+        pageModule !== undefined && hasActions(pageModule) ? ACTION_PAGE_METHODS : PAGE_METHODS;
       if (request.method === "OPTIONS") return allowResponse(204, allow);
       if (request.method === "POST" && allow === ACTION_PAGE_METHODS) {
-        const response = await handleAction(scope, pageModule, actionResult);
+        const response = await handleAction(scope, pageModule!, actionResult);
         if (response !== undefined) return response;
       } else if (request.method !== "GET" && request.method !== "HEAD") {
         return allowResponse(405, allow);
       }
-      const page = componentOf(pageModule, route.file);
-      if (typeof pageModule.headers === "function") {
+      const page = pageModule === undefined ? undefined : componentOf(pageModule, route.file);
+      if (typeof pageModule?.headers === "function") {
         const headers = new Headers(await pageModule.headers(routeCtx));
         for (const [name, value] of headers) scope.response.setHeader(name, value);
       }
+      const props = { params: match.params };
+      const tree: PageTree =
+        spa === undefined
+          ? { layouts, page: page!, props, params: match.params }
+          : spaPageTree(
+              spa,
+              layouts.slice(0, spa.outer.length),
+              csr ? undefined : [...layouts.slice(spa.outer.length), page!],
+              props,
+              match.params,
+            );
       return await renderPage(
         scope,
-        { layouts, page, props: { params: match.params }, params: match.params },
+        tree,
         [...route.layouts, route.file],
         prerendering || (typeof prerender === "function" ? prerender(route) : prerender),
+        spa !== undefined,
       );
     } catch (error) {
       scope.response = createResponseState(200, baseline);
@@ -372,6 +398,7 @@ export function createRequestHandler(options: RequestHandlerOptions): RequestHan
     tree: PageTree,
     files: readonly string[],
     resolveAll = prerender === true,
+    spa = false,
   ): Promise<Response> {
     const { request } = scope.ctx;
     const document =
@@ -385,6 +412,7 @@ export function createRequestHandler(options: RequestHandlerOptions): RequestHan
         signal: request.signal,
         resolveAll,
         onError: (error) => onError(error, request),
+        ...(spa && options.spaEntry !== undefined ? { loaderUrl: options.spaEntry } : {}),
       },
     );
     const state = scope.response;
@@ -436,20 +464,31 @@ export function createRequestHandler(options: RequestHandlerOptions): RequestHan
       for (const layouts of layoutFiles.length > 0 ? [layoutFiles, []] : [[]]) {
         scope.response = createResponseState(status, baseline);
         try {
+          // Error pages below an `spa` layout render inside the SPA, as pages do (TASK-25).
+          const spa = spaErrorPart(manifest, layouts, page.file);
+          const csr = spa !== undefined && !spa.ssr;
           const [layoutComponents, component] = await Promise.all([
-            Promise.all(layouts.map((layout) => loadComponent(layout))),
-            loadComponent(page.file),
+            Promise.all((csr ? spa.outer : layouts).map((layout) => loadComponent(layout))),
+            csr ? undefined : loadComponent(page.file),
           ]);
           const params = scope.ctx.params;
+          const props = { status, error: exposed, params };
+          const tree: PageTree =
+            spa === undefined
+              ? { layouts: layoutComponents, page: component!, props, params }
+              : spaPageTree(
+                  spa,
+                  layoutComponents.slice(0, spa.outer.length),
+                  csr ? undefined : [...layoutComponents.slice(spa.outer.length), component!],
+                  props,
+                  params,
+                );
           return await renderPage(
             scope,
-            {
-              layouts: layoutComponents,
-              page: component,
-              props: { status, error: exposed, params },
-              params,
-            },
+            tree,
             [...layouts, page.file],
+            undefined,
+            spa !== undefined,
           );
         } catch (failure) {
           if (isRedirect(failure)) return redirectResponse(failure, request);

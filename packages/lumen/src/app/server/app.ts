@@ -35,6 +35,8 @@ export interface BuiltApp extends BuiltAppConfig {
   islands: Readonly<Record<string, string>>;
   /** URL of the island loader chunk (with `base`); absent when the app has no islands. */
   loader?: string;
+  /** URL of the SPA entry chunk (with `base`); absent when the app has no `spa` pages. */
+  spa?: string;
   /**
    * The stylesheet URLs (with `base`) of project-relative modules, deduplicated in cascade order
    * (`stylesheets` of `virtual:lumen/css-manifest`).
@@ -60,6 +62,7 @@ export function createAppHandler(app: BuiltApp, options: AppHandlerOptions = {})
     ...(app.middleware === undefined ? {} : { middleware: app.middleware }),
     ...(app.document === undefined ? {} : { document: app.document }),
     ...(app.csrf === undefined ? {} : { csrf: app.csrf }),
+    ...(app.spa === undefined ? {} : { spaEntry: app.spa }),
     headAssets: (files) => stylesheetLinks(app, files),
     base: app.base,
     trailingSlash: app.trailingSlash,

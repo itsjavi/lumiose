@@ -33,6 +33,7 @@ import { DEFAULT_ROUTES_DIR, type RouteMode } from "../routes/manifest.ts";
 import type { TrailingSlash } from "../server/handler.ts";
 import { typegen } from "../typegen/index.ts";
 import { lumenBuild, type BuildState } from "./plugin.ts";
+import { ISLANDS_ID } from "../../vite/islands.ts";
 import { prerender, type PrerenderedFile, type ServerEntryModule } from "./prerender.ts";
 
 export interface BuildOptions {
@@ -148,34 +149,51 @@ export async function build(options: BuildOptions = {}): Promise<BuildResult> {
 }
 
 /**
- * Island module specifier (`/src/components/Team.stsx`) → URL of its chunk in the client build,
- * and the URL of the island loader. A loader without islands is removed: no page loads it.
+ * Island module specifier (`/src/components/Team.stsx`) → URL of its chunk in the client build
+ * (SPA layouts and pages too), and the URLs of the island loader and the SPA entry. A loader
+ * without islands, or an SPA entry without `spa` pages, is removed: no page loads it.
  */
 async function islandUrls(
   output: Awaited<ReturnType<Awaited<ReturnType<typeof createBuilder>>["build"]>>,
   root: string,
   clientDir: string,
   base: string,
-): Promise<{ islands: Record<string, string>; loader: string | undefined }> {
+): Promise<{
+  islands: Record<string, string>;
+  loader: string | undefined;
+  spa: string | undefined;
+}> {
   const outputs = (Array.isArray(output) ? output : [output]) as Rollup.RolldownOutput[];
+  const chunks = outputs.flatMap(({ output: files }) =>
+    files.filter((file): file is Rollup.OutputChunk => file.type === "chunk"),
+  );
+  const remove = async (chunk: Rollup.OutputChunk): Promise<void> => {
+    await rm(join(clientDir, chunk.fileName), { force: true });
+    // And its directory, when that leaves it empty.
+    await rmdir(dirname(join(clientDir, chunk.fileName))).catch(() => {});
+  };
+  // The island manifest's lazy imports are the islands. It lives in the loader chunk, or in a chunk
+  // the loader shares with the SPA entry (TASK-25), whose own lazy imports are SPA modules.
+  const manifest = chunks.find((chunk) => chunk.moduleIds.includes(ISLANDS_ID));
+  const hasIslands =
+    manifest !== undefined &&
+    (manifest.isEntry && manifest.name === "spa" ? true : manifest.dynamicImports.length > 0);
   const islands: Record<string, string> = {};
   let loader: string | undefined;
-  for (const { output: files } of outputs) {
-    for (const chunk of files) {
-      if (chunk.type !== "chunk") continue;
-      if (chunk.isEntry && chunk.name === "loader") {
-        if (chunk.dynamicImports.length > 0) {
-          loader = base + chunk.fileName;
-        } else {
-          await rm(join(clientDir, chunk.fileName), { force: true });
-          // And its directory, when that leaves it empty.
-          await rmdir(dirname(join(clientDir, chunk.fileName))).catch(() => {});
-        }
-      }
-      if (!chunk.isDynamicEntry || chunk.facadeModuleId === null) continue;
-      const path = normalizePath(relative(root, chunk.facadeModuleId));
-      if (!path.startsWith("../")) islands[`/${path}`] = base + chunk.fileName;
+  let spa: string | undefined;
+  for (const chunk of chunks) {
+    if (chunk.isEntry && chunk.name === "loader") {
+      if (hasIslands) loader = base + chunk.fileName;
+      else await remove(chunk);
     }
+    if (chunk.isEntry && chunk.name === "spa") {
+      // An app without `spa` pages builds an empty SPA entry.
+      if (chunk.dynamicImports.length > 0) spa = base + chunk.fileName;
+      else await remove(chunk);
+    }
+    if (!chunk.isDynamicEntry || chunk.facadeModuleId === null) continue;
+    const path = normalizePath(relative(root, chunk.facadeModuleId));
+    if (!path.startsWith("../")) islands[`/${path}`] = base + chunk.fileName;
   }
-  return { islands, loader };
+  return { islands, loader, spa };
 }

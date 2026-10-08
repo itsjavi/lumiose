@@ -41,6 +41,7 @@ import type { RequestHandler, TrailingSlash } from "../server/handler.ts";
 import { sendWebResponse, toWebRequest } from "../server/node-http.ts";
 import { typegen } from "../typegen/index.ts";
 import { formatError, overlayError, overlayScript, type OverlayError } from "./errors.ts";
+import { hasSpa, SPA_ENTRY_ID, spaEntryCode } from "../router/entry.ts";
 
 export interface LumenDevOptions {
   /** Project-relative routes directory. Default `src/routes`. */
@@ -69,6 +70,9 @@ const APP_SERVER_ENTRY = normalizePath(
  */
 const ISLAND_LOADER = normalizePath(fileURLToPath(new URL("../../dom/loader.ts", import.meta.url)));
 const LOADER_ID = "\0lumen:loader";
+/** The browser URL of a virtual module id (`\0lumen:spa` → `/@id/__x00__lumen:spa`). */
+const virtualUrl = (base: string, id: string): string =>
+  `${base}@id/${id.replace("\0", "__x00__")}`;
 const NOT_A_STYLESHEET = /[?&](?:inline|url|raw)\b/;
 const JS_MODULE = /\.[cm]?[jt]sx?$/;
 
@@ -136,6 +140,10 @@ export function lumenDev(options: LumenDevOptions = {}): Plugin {
         if (next.key === app.key) continue;
         reportDiagnostics(next.manifest.diagnostics);
         app = next;
+        // The SPA entry holds the route table (TASK-25).
+        const graph = server.environments.client.moduleGraph;
+        const spa = graph.getModuleById(SPA_ENTRY_ID);
+        if (spa !== undefined) graph.invalidateModule(spa);
         server.environments.client.hot.send({ type: "full-reload", path: "*" });
       } while (rescan);
     })()
@@ -176,8 +184,9 @@ export function lumenDev(options: LumenDevOptions = {}): Plugin {
       loadModule: (file) => ssr.runner.import(`/${file}`),
       render: runtime.createServerRenderer({
         islandUrl: (specifier) => devModuleUrl(base, specifier),
-        loaderUrl: `${base}@id/${LOADER_ID.replace("\0", "__x00__")}`,
+        loaderUrl: virtualUrl(base, LOADER_ID),
       }),
+      ...(hasSpa(current.manifest) ? { spaEntry: virtualUrl(base, SPA_ENTRY_ID) } : {}),
       ...(current.middleware === undefined ? {} : { middleware: current.middleware }),
       ...(current.document === undefined ? {} : { document: current.document }),
       headAssets: (files) => headAssets(current, files),
@@ -271,13 +280,16 @@ export function lumenDev(options: LumenDevOptions = {}): Plugin {
     },
 
     resolveId: {
-      filter: { id: /^\0lumen:loader$/ },
+      filter: { id: /^\0lumen:(?:loader|spa)$/ },
       handler: (id) => id,
     },
 
     load: {
-      filter: { id: /^\0lumen:loader$/ },
-      handler: () => `import ${JSON.stringify(ISLAND_LOADER)};\n`,
+      filter: { id: /^\0lumen:(?:loader|spa)$/ },
+      handler: (id) =>
+        id === SPA_ENTRY_ID
+          ? spaEntryCode(app.manifest, server.config.base)
+          : `import ${JSON.stringify(ISLAND_LOADER)};\n`,
     },
 
     configResolved(config) {

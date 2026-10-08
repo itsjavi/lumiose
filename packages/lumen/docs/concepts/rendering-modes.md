@@ -37,8 +37,19 @@ importing `lumen/dom/hydrate` (done by the island loader and SPA entries) makes 
 server nodes instead of creating them, so bundles without hydration carry no hydration code.
 Markers are comments, used only for blocks, branches, text separators and async ranges.
 
-**SPA mode.** An `spa` subtree is a single root island. Its props come from serializable route
-data; `request`, `cookies` and `locals` are not passed in. SPA code calls endpoints instead.
+**SPA mode.** An `spa` subtree starts at the outermost `spa` layout of a page (or at the page
+itself) and renders as a single root island: layouts above it render on the server only. Its props
+come from serializable route data; `request`, `cookies` and `locals` are not passed in. SPA code
+calls endpoints instead. Pages with an SPA load the SPA entry (the client route table, a lazy
+chunk per SPA layout and page, and the island loader) and navigate with
+[`lumen/router`](../reference/router.md).
+
+- **`ssr` (the default):** the server renders the island and the browser hydrates it, replaying
+  the server's awaited data.
+- **`ssr = false`:** the server sends a shell (the document, the layouts above the SPA and an
+  empty island) without loading the SPA's modules, so they may use browser APIs at module scope;
+  the browser renders the island. Such pages cannot export `action` or `headers`: use endpoints.
+- `_404` and `_error` pages below an `spa` layout render inside the SPA too.
 
 **Build (`lumen build`).** 1. client build (islands, SPA, CSS, assets, `public/`), 2. server
 build, 3. prerender of every `static` route (each `staticPaths()` entry for routes with params) and
@@ -46,8 +57,11 @@ every static `GET` endpoint, in-process through the built handler and fully reso
 or swap scripts). Output:
 
 - `dist/client`: assets and prerendered files: `path/index.html` (`path.html` with
-  `lumen({ trailingSlash: "never" })`), endpoint files such as `sitemap.xml`, and `404.html` from
-  the root `_404` when the root scope is static. Vite's `base` applies to URLs, not to file paths.
+  `lumen({ trailingSlash: "never" })`), endpoint files such as `sitemap.xml`, the shell of each
+  `ssr = false` page without params, and `404.html` from the root `_404` when the root scope is
+  static or `spa`. In an `ssr = false` SPA, `404.html` is the shell: a static host that serves it
+  for unknown URLs gets deep links to every route. Vite's `base` applies to URLs, not to file
+  paths.
 - `dist/server/entry.js`: `export default { fetch }`, plus `createHandler({ env })` and `config`.
 
 A route that reads the request while it prerenders (`cookies()`, `locals()`, `request()`,
@@ -58,9 +72,9 @@ post to a prerendered page reaches its `action` on the server. Serve the build w
 handler) or `lumen preview`; a site whose routes are all static deploys with `dist/client` alone.
 
 > **Status:** `lumen dev`, `lumen build`, prerendering,
-> [`@lumen/adapter-node`](../reference/adapter-node.md), CSS links in built pages and the island
-> loader (hydration) are available. SPA mode (`spa` routes booting as one root island, and
-> `ssr = false` shells) and the SPA router are in progress.
+> [`@lumen/adapter-node`](../reference/adapter-node.md), CSS links in built pages, the island
+> loader (hydration), SPA mode (one root island, `ssr = false` shells) and the SPA router are
+> available.
 
 ## API
 

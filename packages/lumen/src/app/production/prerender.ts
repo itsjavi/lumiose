@@ -1,7 +1,8 @@
 // Prerendering (spec §7.1, §8 Build step 3): renders every `static` page and `GET`s every
 // `static` endpoint through the built server entry, in-process, and writes the results to
 // `dist/client`: `path/index.html` (`path.html` with `trailingSlash: "never"`), endpoint files
-// at their path (`sitemap.xml`), and `404.html` from the root `_404` when the root scope is static.
+// at their path (`sitemap.xml`), and `404.html` from the root `_404` when the root scope is static
+// or `spa`. `spa` pages with `ssr = false` (and no params) get their shell, which the client renders.
 // Routes with params are rendered for each entry of their `staticPaths()`. Request APIs used by
 // a route while it prerenders are LUM5001 (the handler's `prerendering` guard); a static endpoint
 // exporting other methods than GET is LUM5005. Every problem is collected; the build fails once.
@@ -82,9 +83,14 @@ export async function prerender(options: PrerenderOptions): Promise<PrerenderedF
 
   const targets: Target[] = [];
   for (const route of app.manifest.routes) {
-    // `spa` routes with `ssr = false` get a static shell with TASK-25; other modes render per request.
-    if (route.mode !== "static") continue;
+    // `spa` pages with `ssr = false` get their shell; other modes render per request.
+    const shell = route.kind === "page" && route.mode === "spa" && !route.ssr;
+    if (route.mode !== "static" && !(shell && route.params.length === 0)) continue;
     const kind = route.kind;
+    if (shell) {
+      targets.push({ route, path: route.pattern, kind });
+      continue;
+    }
     let module: Record<string, unknown>;
     try {
       module = await app.loadModule(route.file);
@@ -105,7 +111,9 @@ export async function prerender(options: PrerenderOptions): Promise<PrerenderedF
       targets.push({ route, path, kind });
     }
   }
-  if (rootMode(app, options.defaultMode) === "static") {
+  // Static hosts serve 404.html for unknown URLs: in an `spa` root it is the SPA (an empty shell
+  // with `ssr = false`), which renders the URL's route if the SPA has one.
+  if (rootMode(app, options.defaultMode) !== "server") {
     if (createRouteMatcher(app.manifest).match(NOT_FOUND_PROBE) === null) {
       targets.push({ route: undefined, path: NOT_FOUND_PROBE, kind: "404" });
     }

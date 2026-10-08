@@ -66,7 +66,7 @@ implement something yet, the page says so in a **Status** note. In short:
 | File routes, typegen, request handler, middleware, actions, `fetchJSON`             | Available, with `lumen dev`, `lumen build` and `@lumen/adapter-node` |
 | `<style>` blocks                                                                    | Available                                                            |
 | Islands hydration and the island loader                                             | Available                                                            |
-| SPA router (`lumen/router`)                                                         | Planned                                                              |
+| SPA mode and the SPA router (`lumen/router`)                                        | Available, with `lumen dev` and `lumen build`                        |
 | `lumen check`, `lint`, `fmt`, `docs`, `explain`, language server, VS Code extension | Available                                                            |
 | `create-lumen` (templates `minimal`, `static`, `ssr`, `spa`), `lumen agents init`   | Available                                                            |
 | `@lumen/testing`, `lumen mcp`                                                       | Planned                                                              |

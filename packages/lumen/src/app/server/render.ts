@@ -34,6 +34,8 @@ export interface PageRenderOptions {
   resolveAll: boolean;
   /** Errors of streamed boundaries that no `<ErrorBoundary>` handled (headers are already sent). */
   onError?: (error: unknown) => void;
+  /** Overrides the renderer's `loaderUrl` for this page (pages with an SPA load the SPA entry). */
+  loaderUrl?: string;
 }
 
 /** The resolved shell (decision-19): everything outside `<Suspense>` plus the collected head. */
@@ -106,11 +108,12 @@ const rawHtml = (html: string) => new SSRHtml(html);
 
 /** The default `PageRenderer`: lumen/server's shell-first `renderToStream`. */
 export function createServerRenderer(options: ServerRendererOptions = {}): PageRenderer {
-  return (tree, { signal, resolveAll, onError }) =>
+  return (tree, { signal, resolveAll, onError, loaderUrl }) =>
     renderToStream(composePageTree(tree, createComponent, rawHtml), {
       ...options,
       signal,
       resolveAll,
       onError,
+      ...(loaderUrl === undefined ? {} : { loaderUrl }),
     });
 }

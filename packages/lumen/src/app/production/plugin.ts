@@ -3,8 +3,8 @@
 // then prerenders; this plugin only shapes the two builds.
 //
 // - client → `dist/client`: the island loader (`lumen/dom/loader`, which imports the island
-//   manifest `virtual:lumen/islands`: one chunk per island), SPA entries once TASK-25 lands,
-//   assets and `public/`.
+//   manifest `virtual:lumen/islands`: one chunk per island), the SPA entry (`virtual:lumen/spa`:
+//   the client route table and a chunk per SPA layout and page), assets and `public/`.
 // - ssr → `dist/server/entry.js` (`virtual:lumen/server-entry`): the route manifest, a lazy
 //   import per route module, the middleware and the document, the island and loader URLs of the
 //   client build, the stylesheets of each module (`virtual:lumen/css-manifest`, lumen/vite) and
@@ -18,6 +18,7 @@ import type { RouteManifest } from "../routes/manifest.ts";
 import type { BuiltAppConfig } from "../server/app.ts";
 import type { CsrfOptions } from "../server/csrf.ts";
 import type { TrailingSlash } from "../server/handler.ts";
+import { SPA_ENTRY, spaEntryPlugin } from "../router/entry.ts";
 
 export const SERVER_ENTRY = "virtual:lumen/server-entry";
 const SERVER_ENTRY_ID = "\0lumen:server-entry";
@@ -43,9 +44,15 @@ export interface BuildState {
   islands: Record<string, string>;
   /** URL of the island loader chunk; undefined when the app has no islands. */
   loader?: string;
+  /** URL of the SPA entry chunk; undefined when the app has no `spa` pages. */
+  spa?: string;
 }
 
-export function lumenBuild(state: BuildState): Plugin {
+export function lumenBuild(state: BuildState): Plugin[] {
+  return [lumenBuildEnvironments(state), spaEntryPlugin(() => state.app?.manifest)];
+}
+
+function lumenBuildEnvironments(state: BuildState): Plugin {
   return {
     name: "lumen:build",
     apply: "build",
@@ -59,7 +66,9 @@ export function lumenBuild(state: BuildState): Plugin {
             build: {
               outDir: join(state.outDir, "client"),
               rolldownOptions: {
-                input: { loader: ISLAND_LOADER },
+                // The SPA entry is an input of every build; without `spa` pages it is empty and
+                // removed afterwards, like a loader without islands.
+                input: { loader: ISLAND_LOADER, spa: SPA_ENTRY },
                 // Vite drops the exports of app entries; the island manifest's lazy imports are
                 // what puts each island in its own chunk.
                 preserveEntrySignatures: "exports-only",
@@ -129,6 +138,7 @@ export function serverEntryCode(state: BuildState, config: ResolvedConfig): stri
     ...(state.csrf === undefined ? {} : { csrf: state.csrf }),
     islands: state.islands,
     ...(state.loader === undefined ? {} : { loader: state.loader }),
+    ...(state.spa === undefined ? {} : { spa: state.spa }),
   };
   // The runtime is imported dynamically so it lands in a chunk: route chunks then never import
   // this entry, which can be loaded again under another URL (the build's prerender pass).

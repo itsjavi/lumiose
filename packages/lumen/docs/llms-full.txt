@@ -75,7 +75,7 @@ implement something yet, the page says so in a **Status** note. In short:
 | File routes, typegen, request handler, middleware, actions, `fetchJSON`             | Available, with `lumen dev`, `lumen build` and `@lumen/adapter-node` |
 | `<style>` blocks                                                                    | Available                                                            |
 | Islands hydration and the island loader                                             | Available                                                            |
-| SPA router (`lumen/router`)                                                         | Planned                                                              |
+| SPA mode and the SPA router (`lumen/router`)                                        | Available, with `lumen dev` and `lumen build`                        |
 | `lumen check`, `lint`, `fmt`, `docs`, `explain`, language server, VS Code extension | Available                                                            |
 | `create-lumen` (templates `minimal`, `static`, `ssr`, `spa`), `lumen agents init`   | Available                                                            |
 | `@lumen/testing`, `lumen mcp`                                                       | Planned                                                              |
@@ -1315,14 +1315,21 @@ src/
 - `params<"/blog/[slug]">()` and `RouteProps<"/blog/[slug]">` type the params.
 
 **Navigation.** Routes are MPA by default (full page loads, with cross-document View Transitions
-and speculation-rules prefetch). Routes with `mode = "spa"` use the client router `lumen/router`:
-`<Link>`, `navigate()`, reactive `params()`/`search()`/`url()` and `navigating()`, persistent
-layouts, scroll restoration and a client-side `_404`. A navigation holds the old page until the new
-page's async content is ready.
+and speculation-rules prefetch). Routes with `mode = "spa"` use the client router `lumen/router`
+([reference](../reference/router.md)):
 
-> **Status:** file routes, the manifest, matching, typegen, `href()` and the request handler are
-> available, served by `lumen dev`, `lumen build` and `lumen preview`. The SPA router
-> (`lumen/router`) is in progress and currently exports nothing.
+- The SPA starts at the outermost `spa` layout (or the page itself) and covers every `spa` page
+  below it; links between them navigate on the client, other links load the document.
+- `<Link href prefetch>` (plain `<a>` links work too), `navigate(href, { replace })`, reactive
+  `params()`, `url()`, `search()` (`search.set()` changes the query) and `navigating()`.
+- Layouts persist: a layout's `children` is the outlet, and layouts shared by the old and the new
+  page keep their state. A page with other param values (`songs/[id]`) is a new page.
+- A navigation holds the old page until the new page's async content is ready, then swaps.
+- Scroll restoration, focus reset, `_404` for unknown URLs and `notFound()`, `_error` for errors.
+
+> **Status:** file routes, the manifest, matching, typegen, `href()`, the request handler and the
+> SPA router (`lumen/router`) are available, served by `lumen dev`, `lumen build` and
+> `lumen preview`.
 
 ## API
 
@@ -1334,7 +1341,7 @@ page's async content is ready.
 | `Routes`, `RouteParams<P>`, `RouteProps<P>`, `RouteMap`          | Route types.                                           |
 | `ErrorPageProps`                                                 | Props of `_404` and `_error`.                          |
 | `notFound()`, `error(status, message?)`, `redirect(to, status?)` | Stop rendering; see [Server](server.md).               |
-| `lumen/router`: `Link`, `navigate`, `navigating`, `search`       | SPA routes (planned).                                  |
+| `lumen/router`: `Link`, `navigate`, `navigating`, `search`       | SPA routes ([reference](../reference/router.md)).      |
 
 ## Example
 
@@ -1751,8 +1758,19 @@ importing `lumen/dom/hydrate` (done by the island loader and SPA entries) makes 
 server nodes instead of creating them, so bundles without hydration carry no hydration code.
 Markers are comments, used only for blocks, branches, text separators and async ranges.
 
-**SPA mode.** An `spa` subtree is a single root island. Its props come from serializable route
-data; `request`, `cookies` and `locals` are not passed in. SPA code calls endpoints instead.
+**SPA mode.** An `spa` subtree starts at the outermost `spa` layout of a page (or at the page
+itself) and renders as a single root island: layouts above it render on the server only. Its props
+come from serializable route data; `request`, `cookies` and `locals` are not passed in. SPA code
+calls endpoints instead. Pages with an SPA load the SPA entry (the client route table, a lazy
+chunk per SPA layout and page, and the island loader) and navigate with
+[`lumen/router`](../reference/router.md).
+
+- **`ssr` (the default):** the server renders the island and the browser hydrates it, replaying
+  the server's awaited data.
+- **`ssr = false`:** the server sends a shell (the document, the layouts above the SPA and an
+  empty island) without loading the SPA's modules, so they may use browser APIs at module scope;
+  the browser renders the island. Such pages cannot export `action` or `headers`: use endpoints.
+- `_404` and `_error` pages below an `spa` layout render inside the SPA too.
 
 **Build (`lumen build`).** 1. client build (islands, SPA, CSS, assets, `public/`), 2. server
 build, 3. prerender of every `static` route (each `staticPaths()` entry for routes with params) and
@@ -1760,8 +1778,11 @@ every static `GET` endpoint, in-process through the built handler and fully reso
 or swap scripts). Output:
 
 - `dist/client`: assets and prerendered files: `path/index.html` (`path.html` with
-  `lumen({ trailingSlash: "never" })`), endpoint files such as `sitemap.xml`, and `404.html` from
-  the root `_404` when the root scope is static. Vite's `base` applies to URLs, not to file paths.
+  `lumen({ trailingSlash: "never" })`), endpoint files such as `sitemap.xml`, the shell of each
+  `ssr = false` page without params, and `404.html` from the root `_404` when the root scope is
+  static or `spa`. In an `ssr = false` SPA, `404.html` is the shell: a static host that serves it
+  for unknown URLs gets deep links to every route. Vite's `base` applies to URLs, not to file
+  paths.
 - `dist/server/entry.js`: `export default { fetch }`, plus `createHandler({ env })` and `config`.
 
 A route that reads the request while it prerenders (`cookies()`, `locals()`, `request()`,
@@ -1772,9 +1793,9 @@ post to a prerendered page reaches its `action` on the server. Serve the build w
 handler) or `lumen preview`; a site whose routes are all static deploys with `dist/client` alone.
 
 > **Status:** `lumen dev`, `lumen build`, prerendering,
-> [`@lumen/adapter-node`](../reference/adapter-node.md), CSS links in built pages and the island
-> loader (hydration) are available. SPA mode (`spa` routes booting as one root island, and
-> `ssr = false` shells) and the SPA router are in progress.
+> [`@lumen/adapter-node`](../reference/adapter-node.md), CSS links in built pages, the island
+> loader (hydration), SPA mode (one root island, `ssr = false` shells) and the SPA router are
+> available.
 
 ## API
 
@@ -2946,34 +2967,191 @@ mount(() => <App />, document.getElementById("app")!);
 
 # `lumen/router`
 
-> The client router for `spa` routes, built on the Navigation API: `<Link>`, `navigate()`, reactive `params()`, `search()`, `url()` and `navigating()`.
+> The client router for `spa` routes, built on the Navigation API: `<Link>`, `navigate()`, reactive `params()`, `search()`, `url()` and `navigating()`, persistent layouts, transitions that hold the old page, scroll and focus restoration, and a client-side `_404`.
 
-> **Status:** planned. In this version `lumen/router` exports nothing; the API below is the design
-> (spec §7.5, decision-20) and may still change. MPA navigation (plain links, View Transitions)
-> works without it.
+`lumen/router` works inside `spa` routes (`export const mode = "spa"`, or `lumen({ mode: "spa" })`
+for the whole project). Pages and layouts of an SPA import it like any module; on the server
+(`ssr` pages) the same names read the request: `params()`, `url()` and `search()` return the
+request's values, `<Link>` renders its `<a>`, `navigating()` is `false`, and `navigate()` and
+`search.set()` throw (call them from event handlers and effects). Concepts:
+[Routing](../concepts/routing.md), [Rendering modes](../concepts/rendering-modes.md).
 
-## Planned API
+## Components
 
-| API                                                    | Behavior                                                           |
-| ------------------------------------------------------ | ------------------------------------------------------------------ |
-| `<Link href prefetch="hover" \| "viewport" \| "none">` | A client-side link inside an `spa` subtree.                        |
-| `navigate(href, { replace? })`                         | Navigate programmatically.                                         |
-| `params()`                                             | Reactive params of the current route.                              |
-| `search()`                                             | Reactive `URLSearchParams`, with a setter.                         |
-| `url()`                                                | Reactive current URL.                                              |
-| `navigating()`                                         | `true` while a navigation is in flight (also counted by `busy()`). |
+### Link
 
-Behavior:
+```ts
+function Link(props: LinkProps): JSX.Element;
 
-- Nested layouts persist across navigations; a layout's `children` is the outlet.
-- A navigation holds the old page until the new page's async content is ready, like a transition.
-- Scroll restoration, focus management and a client-side `_404`.
-- `invalidate()` re-runs the current page's async components.
-- `submit()` redirects navigate through the router.
+type LinkProps = Omit<JSX.IntrinsicElements["a"], "href" | "children"> & {
+  href: string;
+  /** Default "hover". */
+  prefetch?: "hover" | "viewport" | "none";
+  children?: JSX.Element;
+};
+```
 
-Until it lands, use `<a href>` links (MPA navigation) and `busy()` for global progress.
+An `<a href>` with every attribute and event of `<a>`. The router navigates plain `<a>` links too;
+`<Link>` adds:
 
-See also: [Routing](../concepts/routing.md), [Rendering modes](../concepts/rendering-modes.md).
+- **Prefetch.** It loads the target route's modules ahead of the click: when the pointer enters
+  the link or it gets focus (`hover`), when it enters the viewport (`viewport`), or not (`none`).
+  Data still loads when the page renders.
+- **`aria-current="page"`** while its path is the current URL's path (style it with
+  `a[aria-current="page"]`).
+
+Build `href` with [`href()`](app.md#href) so the route and its params type-check.
+
+## Navigation
+
+### navigate
+
+```ts
+function navigate(href: string | URL, options?: NavigateOptions): Promise<void>;
+
+interface NavigateOptions {
+  /** Replace the current history entry instead of adding one. */
+  replace?: boolean;
+}
+```
+
+Navigates on the client when `href` belongs to the current SPA, else loads the document. Resolves
+once the new page is on screen (its async content ready), or when another navigation supersedes
+it. Browser only.
+
+### navigating
+
+```ts
+function navigating(): boolean;
+```
+
+Whether a navigation is in flight: from the click until the new page is on screen. Reactive, and
+counted by [`busy()`](reactivity.md) (decision-20).
+
+## Route state
+
+### params
+
+```ts
+function params<P extends Routes = never>(): RouteParams<P>; // untyped: Record<string, string>
+```
+
+The current route's params, reactive: `params<"/songs/[id]">().id`. Pages also receive them as
+`props.params`.
+
+### url
+
+```ts
+function url(): URL;
+```
+
+The current URL, reactive. Do not mutate it.
+
+### search
+
+```ts
+interface Search {
+  (): URLSearchParams;
+  set(
+    next: SearchInit | ((current: URLSearchParams) => SearchInit),
+    options?: NavigateOptions,
+  ): Promise<void>;
+}
+const search: Search;
+
+type SearchInit =
+  | URLSearchParams
+  | string
+  | Record<string, string | number | boolean | readonly string[] | null | undefined>;
+```
+
+`search()` is the current URL's query, reactive (a new object per change). `search.set()`
+navigates to the current path with a new query, keeping the scroll position; `null` and
+`undefined` values are left out. It adds a history entry unless `{ replace: true }`.
+
+While a page is still loading during a navigation, `params()`, `url()` and `search()` called in it
+(and its props) already describe the page it is loading; everything else keeps the shown URL until
+the new page is on screen.
+
+## Behaviour
+
+- **Interception.** The router handles same-document navigations to URLs of its SPA: link clicks,
+  `navigate()`, back/forward and (with the Navigation API) `GET` form submissions. URLs of other
+  routes (`static` or `server` pages, endpoints, other SPAs) load the document. Without the
+  Navigation API, a History API fallback intercepts link clicks and `popstate`.
+- **Persistent layouts.** A layout's `children` is the outlet. Layouts the old and the new page
+  share stay mounted with their state; the first level that differs (another file, or other
+  values of the params in its path, such as `songs/[id].stsx` for another song) is replaced. A
+  navigation that only changes the query keeps every level and updates `search()`.
+- **Transitions.** The new page is created off-screen. The old page stays until the new page's
+  async content (async components and resources outside a `<Suspense>` of the new page) is ready;
+  then the URL signals change and the pages swap in one step. A `<Suspense>` inside the new page
+  shows its fallback instead.
+- **Scroll and focus.** After a navigation the page scrolls to the top (or to the URL's `#hash`)
+  and focus moves to the document (or the first `[autofocus]` element); back/forward restore the
+  scroll position. `search.set()` keeps both.
+- **Errors.** `notFound()` and unknown URLs render the nearest `_404` page of the SPA; other errors
+  its `_error` page (`{ status, error }` props), with the layouts kept. A thrown `redirect()`
+  navigates. Without such a page, a minimal built-in error page replaces the SPA.
+- **`invalidate()`** from `lumen` re-runs the SPA's async components and resources (they keep
+  their UI meanwhile) and resolves once they settled. `submit()` redirects navigate through the
+  router.
+- **Stale modules.** A page module that fails to load (an old chunk after a deploy) loads the URL
+  as a document instead.
+
+## Example
+
+```tsx check file=routes/music/_layout.tsx
+// src/routes/music/_layout.tsx: an SPA under /music, with a persistent layout
+import { href } from "lumen";
+import { Link, navigating } from "lumen/router";
+
+export const mode = "spa";
+
+export default function Layout(props: { children?: JSX.Element }) {
+  return (
+    <div class="app">
+      <nav>
+        <Link href={href("/music")}>Songs</Link>
+        <Link href={href("/music/settings")} prefetch="viewport">
+          Settings
+        </Link>
+      </nav>
+      {navigating() && <progress />}
+      <main>{props.children}</main>
+    </div>
+  );
+}
+```
+
+```tsx check file=routes/music/index.tsx
+// src/routes/music/index.tsx: a filter kept in the query
+import { search } from "lumen/router";
+
+export default function Songs() {
+  const query = () => search().get("q") ?? "";
+  return (
+    <input
+      type="search"
+      value={query()}
+      onInput={(event) => search.set({ q: event.currentTarget.value || null }, { replace: true })}
+    />
+  );
+}
+```
+
+```tsx check file=routes/music/settings.tsx
+// src/routes/music/settings.tsx
+import { href } from "lumen";
+import { navigate } from "lumen/router";
+
+export default function Settings() {
+  return <button onClick={() => navigate(href("/music"), { replace: true })}>Done</button>;
+}
+```
+
+See also: [Routing](../concepts/routing.md), [Rendering modes](../concepts/rendering-modes.md),
+[`lumen`: app layer](app.md).
 
 <!-- source: reference/vite.md -->
 
