@@ -1,0 +1,210 @@
+1:1 "import" meta.import.tsx keyword.control.import.tsx
+1:8 "{" meta.import.tsx meta.block.tsx punctuation.definition.block.tsx
+1:10 "signal" meta.import.tsx meta.block.tsx variable.other.readwrite.alias.tsx
+1:17 "}" meta.import.tsx meta.block.tsx punctuation.definition.block.tsx
+1:19 "from" meta.import.tsx keyword.control.from.tsx
+1:24 "\"" meta.import.tsx string.quoted.double.tsx punctuation.definition.string.begin.tsx
+1:25 "lumen" meta.import.tsx string.quoted.double.tsx
+1:30 "\"" meta.import.tsx string.quoted.double.tsx punctuation.definition.string.end.tsx
+1:31 ";" punctuation.terminator.statement.tsx
+3:1 "const" meta.var.expr.tsx storage.type.tsx
+3:7 "gap" meta.var.expr.tsx meta.var-single-variable.expr.tsx meta.definition.variable.tsx variable.other.constant.tsx
+3:11 "=" meta.var.expr.tsx keyword.operator.assignment.tsx
+3:13 "8" meta.var.expr.tsx constant.numeric.decimal.tsx
+3:14 ";" punctuation.terminator.statement.tsx
+5:1 "export" meta.function.tsx keyword.control.export.tsx
+5:8 "function" meta.function.tsx storage.type.function.tsx
+5:17 "Counter" meta.function.tsx meta.definition.function.tsx entity.name.function.tsx
+5:24 "(" meta.function.tsx meta.parameters.tsx punctuation.definition.parameters.begin.tsx
+5:25 ")" meta.function.tsx meta.parameters.tsx punctuation.definition.parameters.end.tsx
+5:27 "{" meta.function.tsx meta.block.tsx punctuation.definition.block.tsx
+6:3 "const" meta.function.tsx meta.block.tsx meta.var.expr.tsx storage.type.tsx
+6:9 "count" meta.function.tsx meta.block.tsx meta.var.expr.tsx meta.var-single-variable.expr.tsx meta.definition.variable.tsx variable.other.constant.tsx
+6:15 "=" meta.function.tsx meta.block.tsx meta.var.expr.tsx keyword.operator.assignment.tsx
+6:17 "signal" meta.function.tsx meta.block.tsx meta.var.expr.tsx meta.function-call.tsx entity.name.function.tsx
+6:23 "(" meta.function.tsx meta.block.tsx meta.var.expr.tsx meta.brace.round.tsx
+6:24 "0" meta.function.tsx meta.block.tsx meta.var.expr.tsx constant.numeric.decimal.tsx
+6:25 ")" meta.function.tsx meta.block.tsx meta.var.expr.tsx meta.brace.round.tsx
+6:26 ";" meta.function.tsx meta.block.tsx punctuation.terminator.statement.tsx
+7:3 "const" meta.function.tsx meta.block.tsx meta.var.expr.tsx storage.type.tsx
+7:9 "accent" meta.function.tsx meta.block.tsx meta.var.expr.tsx meta.var-single-variable.expr.tsx meta.definition.variable.tsx variable.other.constant.tsx
+7:16 "=" meta.function.tsx meta.block.tsx meta.var.expr.tsx keyword.operator.assignment.tsx
+7:18 "{" meta.function.tsx meta.block.tsx meta.var.expr.tsx meta.objectliteral.tsx punctuation.definition.block.tsx
+7:20 "dark" meta.function.tsx meta.block.tsx meta.var.expr.tsx meta.objectliteral.tsx meta.object.member.tsx meta.object-literal.key.tsx
+7:24 ":" meta.function.tsx meta.block.tsx meta.var.expr.tsx meta.objectliteral.tsx meta.object.member.tsx meta.object-literal.key.tsx punctuation.separator.key-value.tsx
+7:26 "\"" meta.function.tsx meta.block.tsx meta.var.expr.tsx meta.objectliteral.tsx meta.object.member.tsx string.quoted.double.tsx punctuation.definition.string.begin.tsx
+7:27 "#333" meta.function.tsx meta.block.tsx meta.var.expr.tsx meta.objectliteral.tsx meta.object.member.tsx string.quoted.double.tsx
+7:31 "\"" meta.function.tsx meta.block.tsx meta.var.expr.tsx meta.objectliteral.tsx meta.object.member.tsx string.quoted.double.tsx punctuation.definition.string.end.tsx
+7:33 "}" meta.function.tsx meta.block.tsx meta.var.expr.tsx meta.objectliteral.tsx punctuation.definition.block.tsx
+7:35 "as" meta.function.tsx meta.block.tsx meta.var.expr.tsx keyword.control.as.tsx
+7:38 "const" meta.function.tsx meta.block.tsx meta.var.expr.tsx storage.modifier.tsx
+7:43 ";" meta.function.tsx meta.block.tsx punctuation.terminator.statement.tsx
+8:3 "return" meta.function.tsx meta.block.tsx keyword.control.flow.tsx
+8:10 "(" meta.function.tsx meta.block.tsx meta.brace.round.tsx
+9:5 "<" meta.function.tsx meta.block.tsx meta.tag.tsx punctuation.definition.tag.begin.tsx
+9:6 "div" meta.function.tsx meta.block.tsx meta.tag.tsx entity.name.tag.tsx
+9:10 "class" meta.function.tsx meta.block.tsx meta.tag.tsx meta.tag.attributes.tsx entity.other.attribute-name.tsx
+9:15 "=" meta.function.tsx meta.block.tsx meta.tag.tsx meta.tag.attributes.tsx keyword.operator.assignment.tsx
+9:16 "\"" meta.function.tsx meta.block.tsx meta.tag.tsx meta.tag.attributes.tsx string.quoted.double.tsx punctuation.definition.string.begin.tsx
+9:17 "counter" meta.function.tsx meta.block.tsx meta.tag.tsx meta.tag.attributes.tsx string.quoted.double.tsx
+9:24 "\"" meta.function.tsx meta.block.tsx meta.tag.tsx meta.tag.attributes.tsx string.quoted.double.tsx punctuation.definition.string.end.tsx
+9:25 ">" meta.function.tsx meta.block.tsx meta.tag.tsx punctuation.definition.tag.end.tsx
+10:7 "<" meta.function.tsx meta.block.tsx meta.tag.tsx meta.jsx.children.tsx meta.tag.tsx punctuation.definition.tag.begin.tsx
+10:8 "button" meta.function.tsx meta.block.tsx meta.tag.tsx meta.jsx.children.tsx meta.tag.tsx entity.name.tag.tsx
+10:15 "onClick" meta.function.tsx meta.block.tsx meta.tag.tsx meta.jsx.children.tsx meta.tag.tsx meta.tag.attributes.tsx entity.other.attribute-name.tsx
+10:22 "=" meta.function.tsx meta.block.tsx meta.tag.tsx meta.jsx.children.tsx meta.tag.tsx meta.tag.attributes.tsx keyword.operator.assignment.tsx
+10:23 "{" meta.function.tsx meta.block.tsx meta.tag.tsx meta.jsx.children.tsx meta.tag.tsx meta.tag.attributes.tsx punctuation.section.embedded.begin.tsx
+10:24 "(" meta.function.tsx meta.block.tsx meta.tag.tsx meta.jsx.children.tsx meta.tag.tsx meta.tag.attributes.tsx meta.embedded.expression.tsx meta.arrow.tsx meta.parameters.tsx punctuation.definition.parameters.begin.tsx
+10:25 ")" meta.function.tsx meta.block.tsx meta.tag.tsx meta.jsx.children.tsx meta.tag.tsx meta.tag.attributes.tsx meta.embedded.expression.tsx meta.arrow.tsx meta.parameters.tsx punctuation.definition.parameters.end.tsx
+10:27 "=>" meta.function.tsx meta.block.tsx meta.tag.tsx meta.jsx.children.tsx meta.tag.tsx meta.tag.attributes.tsx meta.embedded.expression.tsx meta.arrow.tsx storage.type.function.arrow.tsx
+10:30 "count" meta.function.tsx meta.block.tsx meta.tag.tsx meta.jsx.children.tsx meta.tag.tsx meta.tag.attributes.tsx meta.embedded.expression.tsx meta.function-call.tsx variable.other.object.tsx
+10:35 "." meta.function.tsx meta.block.tsx meta.tag.tsx meta.jsx.children.tsx meta.tag.tsx meta.tag.attributes.tsx meta.embedded.expression.tsx meta.function-call.tsx punctuation.accessor.tsx
+10:36 "update" meta.function.tsx meta.block.tsx meta.tag.tsx meta.jsx.children.tsx meta.tag.tsx meta.tag.attributes.tsx meta.embedded.expression.tsx meta.function-call.tsx entity.name.function.tsx
+10:42 "(" meta.function.tsx meta.block.tsx meta.tag.tsx meta.jsx.children.tsx meta.tag.tsx meta.tag.attributes.tsx meta.embedded.expression.tsx meta.brace.round.tsx
+10:43 "(" meta.function.tsx meta.block.tsx meta.tag.tsx meta.jsx.children.tsx meta.tag.tsx meta.tag.attributes.tsx meta.embedded.expression.tsx meta.arrow.tsx meta.parameters.tsx punctuation.definition.parameters.begin.tsx
+10:44 "n" meta.function.tsx meta.block.tsx meta.tag.tsx meta.jsx.children.tsx meta.tag.tsx meta.tag.attributes.tsx meta.embedded.expression.tsx meta.arrow.tsx meta.parameters.tsx variable.parameter.tsx
+10:45 ")" meta.function.tsx meta.block.tsx meta.tag.tsx meta.jsx.children.tsx meta.tag.tsx meta.tag.attributes.tsx meta.embedded.expression.tsx meta.arrow.tsx meta.parameters.tsx punctuation.definition.parameters.end.tsx
+10:47 "=>" meta.function.tsx meta.block.tsx meta.tag.tsx meta.jsx.children.tsx meta.tag.tsx meta.tag.attributes.tsx meta.embedded.expression.tsx meta.arrow.tsx storage.type.function.arrow.tsx
+10:50 "n" meta.function.tsx meta.block.tsx meta.tag.tsx meta.jsx.children.tsx meta.tag.tsx meta.tag.attributes.tsx meta.embedded.expression.tsx variable.other.readwrite.tsx
+10:52 "+" meta.function.tsx meta.block.tsx meta.tag.tsx meta.jsx.children.tsx meta.tag.tsx meta.tag.attributes.tsx meta.embedded.expression.tsx keyword.operator.arithmetic.tsx
+10:54 "1" meta.function.tsx meta.block.tsx meta.tag.tsx meta.jsx.children.tsx meta.tag.tsx meta.tag.attributes.tsx meta.embedded.expression.tsx constant.numeric.decimal.tsx
+10:55 ")" meta.function.tsx meta.block.tsx meta.tag.tsx meta.jsx.children.tsx meta.tag.tsx meta.tag.attributes.tsx meta.embedded.expression.tsx meta.brace.round.tsx
+10:56 "}" meta.function.tsx meta.block.tsx meta.tag.tsx meta.jsx.children.tsx meta.tag.tsx meta.tag.attributes.tsx punctuation.section.embedded.end.tsx
+10:57 ">" meta.function.tsx meta.block.tsx meta.tag.tsx meta.jsx.children.tsx meta.tag.tsx punctuation.definition.tag.end.tsx
+10:58 "Don't click " meta.function.tsx meta.block.tsx meta.tag.tsx meta.jsx.children.tsx meta.tag.tsx meta.jsx.children.tsx
+10:70 "{" meta.function.tsx meta.block.tsx meta.tag.tsx meta.jsx.children.tsx meta.tag.tsx meta.jsx.children.tsx punctuation.section.embedded.begin.tsx
+10:71 "count" meta.function.tsx meta.block.tsx meta.tag.tsx meta.jsx.children.tsx meta.tag.tsx meta.jsx.children.tsx meta.embedded.expression.tsx meta.function-call.tsx entity.name.function.tsx
+10:76 "(" meta.function.tsx meta.block.tsx meta.tag.tsx meta.jsx.children.tsx meta.tag.tsx meta.jsx.children.tsx meta.embedded.expression.tsx meta.brace.round.tsx
+10:77 ")" meta.function.tsx meta.block.tsx meta.tag.tsx meta.jsx.children.tsx meta.tag.tsx meta.jsx.children.tsx meta.embedded.expression.tsx meta.brace.round.tsx
+10:78 "}" meta.function.tsx meta.block.tsx meta.tag.tsx meta.jsx.children.tsx meta.tag.tsx meta.jsx.children.tsx punctuation.section.embedded.end.tsx
+10:79 "</" meta.function.tsx meta.block.tsx meta.tag.tsx meta.jsx.children.tsx meta.tag.tsx punctuation.definition.tag.begin.tsx
+10:81 "button" meta.function.tsx meta.block.tsx meta.tag.tsx meta.jsx.children.tsx meta.tag.tsx entity.name.tag.tsx
+10:87 ">" meta.function.tsx meta.block.tsx meta.tag.tsx meta.jsx.children.tsx meta.tag.tsx punctuation.definition.tag.end.tsx
+11:7 "<" meta.function.tsx meta.block.tsx meta.tag.tsx meta.jsx.children.tsx meta.embedded.block.style.stsx punctuation.definition.tag.begin.stsx
+11:8 "style" meta.function.tsx meta.block.tsx meta.tag.tsx meta.jsx.children.tsx meta.embedded.block.style.stsx entity.name.tag.style.stsx
+11:13 ">" meta.function.tsx meta.block.tsx meta.tag.tsx meta.jsx.children.tsx meta.embedded.block.style.stsx punctuation.definition.tag.end.stsx
+12:9 "." meta.function.tsx meta.block.tsx meta.tag.tsx meta.jsx.children.tsx meta.embedded.block.style.stsx source.css meta.selector.css entity.other.attribute-name.class.css punctuation.definition.entity.css
+12:10 "counter" meta.function.tsx meta.block.tsx meta.tag.tsx meta.jsx.children.tsx meta.embedded.block.style.stsx source.css meta.selector.css entity.other.attribute-name.class.css
+12:18 "{" meta.function.tsx meta.block.tsx meta.tag.tsx meta.jsx.children.tsx meta.embedded.block.style.stsx source.css meta.property-list.css punctuation.section.property-list.begin.bracket.curly.css
+12:20 "display" meta.function.tsx meta.block.tsx meta.tag.tsx meta.jsx.children.tsx meta.embedded.block.style.stsx source.css meta.property-list.css meta.property-name.css support.type.property-name.css
+12:27 ":" meta.function.tsx meta.block.tsx meta.tag.tsx meta.jsx.children.tsx meta.embedded.block.style.stsx source.css meta.property-list.css punctuation.separator.key-value.css
+12:29 "flex" meta.function.tsx meta.block.tsx meta.tag.tsx meta.jsx.children.tsx meta.embedded.block.style.stsx source.css meta.property-list.css meta.property-value.css support.constant.property-value.css
+12:33 ";" meta.function.tsx meta.block.tsx meta.tag.tsx meta.jsx.children.tsx meta.embedded.block.style.stsx source.css meta.property-list.css punctuation.terminator.rule.css
+12:35 "gap" meta.function.tsx meta.block.tsx meta.tag.tsx meta.jsx.children.tsx meta.embedded.block.style.stsx source.css meta.property-list.css meta.property-name.css support.type.property-name.css
+12:38 ":" meta.function.tsx meta.block.tsx meta.tag.tsx meta.jsx.children.tsx meta.embedded.block.style.stsx source.css meta.property-list.css punctuation.separator.key-value.css
+12:40 "calc" meta.function.tsx meta.block.tsx meta.tag.tsx meta.jsx.children.tsx meta.embedded.block.style.stsx source.css meta.property-list.css meta.property-value.css meta.function.calc.css support.function.calc.css
+12:44 "(" meta.function.tsx meta.block.tsx meta.tag.tsx meta.jsx.children.tsx meta.embedded.block.style.stsx source.css meta.property-list.css meta.property-value.css meta.function.calc.css punctuation.section.function.begin.bracket.round.css
+12:45 "$" meta.function.tsx meta.block.tsx meta.tag.tsx meta.jsx.children.tsx meta.embedded.block.style.stsx source.css meta.property-list.css meta.property-value.css meta.function.calc.css meta.ref.stsx punctuation.definition.variable.stsx
+12:46 "gap" meta.function.tsx meta.block.tsx meta.tag.tsx meta.jsx.children.tsx meta.embedded.block.style.stsx source.css meta.property-list.css meta.property-value.css meta.function.calc.css meta.ref.stsx variable.other.constant.ref.stsx
+12:50 "*" meta.function.tsx meta.block.tsx meta.tag.tsx meta.jsx.children.tsx meta.embedded.block.style.stsx source.css meta.property-list.css meta.property-value.css meta.function.calc.css keyword.operator.arithmetic.css
+12:52 "1" meta.function.tsx meta.block.tsx meta.tag.tsx meta.jsx.children.tsx meta.embedded.block.style.stsx source.css meta.property-list.css meta.property-value.css meta.function.calc.css constant.numeric.css
+12:53 "px" meta.function.tsx meta.block.tsx meta.tag.tsx meta.jsx.children.tsx meta.embedded.block.style.stsx source.css meta.property-list.css meta.property-value.css meta.function.calc.css constant.numeric.css keyword.other.unit.px.css
+12:55 ")" meta.function.tsx meta.block.tsx meta.tag.tsx meta.jsx.children.tsx meta.embedded.block.style.stsx source.css meta.property-list.css meta.property-value.css meta.function.calc.css punctuation.section.function.end.bracket.round.css
+12:56 ";" meta.function.tsx meta.block.tsx meta.tag.tsx meta.jsx.children.tsx meta.embedded.block.style.stsx source.css meta.property-list.css punctuation.terminator.rule.css
+12:58 "}" meta.function.tsx meta.block.tsx meta.tag.tsx meta.jsx.children.tsx meta.embedded.block.style.stsx source.css meta.property-list.css punctuation.section.property-list.end.bracket.curly.css
+13:9 "button" meta.function.tsx meta.block.tsx meta.tag.tsx meta.jsx.children.tsx meta.embedded.block.style.stsx source.css meta.selector.css entity.name.tag.css
+13:16 "{" meta.function.tsx meta.block.tsx meta.tag.tsx meta.jsx.children.tsx meta.embedded.block.style.stsx source.css meta.property-list.css punctuation.section.property-list.begin.bracket.curly.css
+13:18 "color" meta.function.tsx meta.block.tsx meta.tag.tsx meta.jsx.children.tsx meta.embedded.block.style.stsx source.css meta.property-list.css meta.property-name.css support.type.property-name.css
+13:23 ":" meta.function.tsx meta.block.tsx meta.tag.tsx meta.jsx.children.tsx meta.embedded.block.style.stsx source.css meta.property-list.css punctuation.separator.key-value.css
+13:25 "$" meta.function.tsx meta.block.tsx meta.tag.tsx meta.jsx.children.tsx meta.embedded.block.style.stsx source.css meta.property-list.css meta.property-value.css meta.ref.stsx punctuation.definition.variable.stsx
+13:26 "accent" meta.function.tsx meta.block.tsx meta.tag.tsx meta.jsx.children.tsx meta.embedded.block.style.stsx source.css meta.property-list.css meta.property-value.css meta.ref.stsx variable.other.constant.ref.stsx
+13:32 "." meta.function.tsx meta.block.tsx meta.tag.tsx meta.jsx.children.tsx meta.embedded.block.style.stsx source.css meta.property-list.css meta.property-value.css meta.ref.stsx punctuation.accessor.stsx
+13:33 "dark" meta.function.tsx meta.block.tsx meta.tag.tsx meta.jsx.children.tsx meta.embedded.block.style.stsx source.css meta.property-list.css meta.property-value.css meta.ref.stsx variable.other.property.ref.stsx
+13:38 "}" meta.function.tsx meta.block.tsx meta.tag.tsx meta.jsx.children.tsx meta.embedded.block.style.stsx source.css meta.property-list.css punctuation.section.property-list.end.bracket.curly.css
+14:7 "</" meta.function.tsx meta.block.tsx meta.tag.tsx meta.jsx.children.tsx meta.embedded.block.style.stsx punctuation.definition.tag.begin.stsx
+14:9 "style" meta.function.tsx meta.block.tsx meta.tag.tsx meta.jsx.children.tsx meta.embedded.block.style.stsx entity.name.tag.style.stsx
+14:14 ">" meta.function.tsx meta.block.tsx meta.tag.tsx meta.jsx.children.tsx meta.embedded.block.style.stsx punctuation.definition.tag.end.stsx
+15:5 "</" meta.function.tsx meta.block.tsx meta.tag.tsx punctuation.definition.tag.begin.tsx
+15:7 "div" meta.function.tsx meta.block.tsx meta.tag.tsx entity.name.tag.tsx
+15:10 ">" meta.function.tsx meta.block.tsx meta.tag.tsx punctuation.definition.tag.end.tsx
+16:3 ")" meta.function.tsx meta.block.tsx meta.brace.round.tsx
+16:4 ";" meta.function.tsx meta.block.tsx punctuation.terminator.statement.tsx
+17:1 "}" meta.function.tsx meta.block.tsx punctuation.definition.block.tsx
+19:1 "export" meta.var.expr.tsx keyword.control.export.tsx
+19:8 "const" meta.var.expr.tsx storage.type.tsx
+19:14 "Badge" meta.var.expr.tsx meta.var-single-variable.expr.tsx meta.definition.variable.tsx variable.other.constant.tsx entity.name.function.tsx
+19:20 "=" meta.var.expr.tsx keyword.operator.assignment.tsx
+19:22 "(" meta.var.expr.tsx meta.arrow.tsx meta.parameters.tsx punctuation.definition.parameters.begin.tsx
+19:23 "props" meta.var.expr.tsx meta.arrow.tsx meta.parameters.tsx variable.parameter.tsx
+19:28 ":" meta.var.expr.tsx meta.arrow.tsx meta.parameters.tsx meta.type.annotation.tsx keyword.operator.type.annotation.tsx
+19:30 "{" meta.var.expr.tsx meta.arrow.tsx meta.parameters.tsx meta.type.annotation.tsx meta.object.type.tsx punctuation.definition.block.tsx
+19:32 "label" meta.var.expr.tsx meta.arrow.tsx meta.parameters.tsx meta.type.annotation.tsx meta.object.type.tsx meta.field.declaration.tsx meta.definition.property.tsx variable.object.property.tsx
+19:37 ":" meta.var.expr.tsx meta.arrow.tsx meta.parameters.tsx meta.type.annotation.tsx meta.object.type.tsx meta.field.declaration.tsx meta.type.annotation.tsx keyword.operator.type.annotation.tsx
+19:39 "string" meta.var.expr.tsx meta.arrow.tsx meta.parameters.tsx meta.type.annotation.tsx meta.object.type.tsx meta.field.declaration.tsx meta.type.annotation.tsx support.type.primitive.tsx
+19:46 "}" meta.var.expr.tsx meta.arrow.tsx meta.parameters.tsx meta.type.annotation.tsx meta.object.type.tsx punctuation.definition.block.tsx
+19:47 ")" meta.var.expr.tsx meta.arrow.tsx meta.parameters.tsx punctuation.definition.parameters.end.tsx
+19:49 "=>" meta.var.expr.tsx meta.arrow.tsx storage.type.function.arrow.tsx
+19:52 "(" meta.var.expr.tsx meta.arrow.tsx meta.brace.round.tsx
+20:3 "<" meta.var.expr.tsx meta.arrow.tsx meta.tag.without-attributes.tsx punctuation.definition.tag.begin.tsx
+20:4 ">" meta.var.expr.tsx meta.arrow.tsx meta.tag.without-attributes.tsx punctuation.definition.tag.end.tsx
+21:5 "<" meta.var.expr.tsx meta.arrow.tsx meta.tag.without-attributes.tsx meta.jsx.children.tsx meta.tag.tsx punctuation.definition.tag.begin.tsx
+21:6 "span" meta.var.expr.tsx meta.arrow.tsx meta.tag.without-attributes.tsx meta.jsx.children.tsx meta.tag.tsx entity.name.tag.tsx
+21:11 "class" meta.var.expr.tsx meta.arrow.tsx meta.tag.without-attributes.tsx meta.jsx.children.tsx meta.tag.tsx meta.tag.attributes.tsx entity.other.attribute-name.tsx
+21:16 "=" meta.var.expr.tsx meta.arrow.tsx meta.tag.without-attributes.tsx meta.jsx.children.tsx meta.tag.tsx meta.tag.attributes.tsx keyword.operator.assignment.tsx
+21:17 "\"" meta.var.expr.tsx meta.arrow.tsx meta.tag.without-attributes.tsx meta.jsx.children.tsx meta.tag.tsx meta.tag.attributes.tsx string.quoted.double.tsx punctuation.definition.string.begin.tsx
+21:18 "badge" meta.var.expr.tsx meta.arrow.tsx meta.tag.without-attributes.tsx meta.jsx.children.tsx meta.tag.tsx meta.tag.attributes.tsx string.quoted.double.tsx
+21:23 "\"" meta.var.expr.tsx meta.arrow.tsx meta.tag.without-attributes.tsx meta.jsx.children.tsx meta.tag.tsx meta.tag.attributes.tsx string.quoted.double.tsx punctuation.definition.string.end.tsx
+21:24 ">" meta.var.expr.tsx meta.arrow.tsx meta.tag.without-attributes.tsx meta.jsx.children.tsx meta.tag.tsx punctuation.definition.tag.end.tsx
+21:25 "{" meta.var.expr.tsx meta.arrow.tsx meta.tag.without-attributes.tsx meta.jsx.children.tsx meta.tag.tsx meta.jsx.children.tsx punctuation.section.embedded.begin.tsx
+21:26 "props" meta.var.expr.tsx meta.arrow.tsx meta.tag.without-attributes.tsx meta.jsx.children.tsx meta.tag.tsx meta.jsx.children.tsx meta.embedded.expression.tsx variable.other.object.tsx
+21:31 "." meta.var.expr.tsx meta.arrow.tsx meta.tag.without-attributes.tsx meta.jsx.children.tsx meta.tag.tsx meta.jsx.children.tsx meta.embedded.expression.tsx punctuation.accessor.tsx
+21:32 "label" meta.var.expr.tsx meta.arrow.tsx meta.tag.without-attributes.tsx meta.jsx.children.tsx meta.tag.tsx meta.jsx.children.tsx meta.embedded.expression.tsx variable.other.property.tsx
+21:37 "}" meta.var.expr.tsx meta.arrow.tsx meta.tag.without-attributes.tsx meta.jsx.children.tsx meta.tag.tsx meta.jsx.children.tsx punctuation.section.embedded.end.tsx
+21:38 "</" meta.var.expr.tsx meta.arrow.tsx meta.tag.without-attributes.tsx meta.jsx.children.tsx meta.tag.tsx punctuation.definition.tag.begin.tsx
+21:40 "span" meta.var.expr.tsx meta.arrow.tsx meta.tag.without-attributes.tsx meta.jsx.children.tsx meta.tag.tsx entity.name.tag.tsx
+21:44 ">" meta.var.expr.tsx meta.arrow.tsx meta.tag.without-attributes.tsx meta.jsx.children.tsx meta.tag.tsx punctuation.definition.tag.end.tsx
+22:5 "<" meta.var.expr.tsx meta.arrow.tsx meta.tag.without-attributes.tsx meta.jsx.children.tsx meta.embedded.block.style.stsx punctuation.definition.tag.begin.stsx
+22:6 "style" meta.var.expr.tsx meta.arrow.tsx meta.tag.without-attributes.tsx meta.jsx.children.tsx meta.embedded.block.style.stsx entity.name.tag.style.stsx
+22:11 ">" meta.var.expr.tsx meta.arrow.tsx meta.tag.without-attributes.tsx meta.jsx.children.tsx meta.embedded.block.style.stsx punctuation.definition.tag.end.stsx
+22:12 "." meta.var.expr.tsx meta.arrow.tsx meta.tag.without-attributes.tsx meta.jsx.children.tsx meta.embedded.block.style.stsx source.css meta.selector.css entity.other.attribute-name.class.css punctuation.definition.entity.css
+22:13 "badge" meta.var.expr.tsx meta.arrow.tsx meta.tag.without-attributes.tsx meta.jsx.children.tsx meta.embedded.block.style.stsx source.css meta.selector.css entity.other.attribute-name.class.css
+22:19 "{" meta.var.expr.tsx meta.arrow.tsx meta.tag.without-attributes.tsx meta.jsx.children.tsx meta.embedded.block.style.stsx source.css meta.property-list.css punctuation.section.property-list.begin.bracket.curly.css
+22:21 "border" meta.var.expr.tsx meta.arrow.tsx meta.tag.without-attributes.tsx meta.jsx.children.tsx meta.embedded.block.style.stsx source.css meta.property-list.css meta.property-name.css support.type.property-name.css
+22:27 ":" meta.var.expr.tsx meta.arrow.tsx meta.tag.without-attributes.tsx meta.jsx.children.tsx meta.embedded.block.style.stsx source.css meta.property-list.css punctuation.separator.key-value.css
+22:29 "1" meta.var.expr.tsx meta.arrow.tsx meta.tag.without-attributes.tsx meta.jsx.children.tsx meta.embedded.block.style.stsx source.css meta.property-list.css meta.property-value.css constant.numeric.css
+22:30 "px" meta.var.expr.tsx meta.arrow.tsx meta.tag.without-attributes.tsx meta.jsx.children.tsx meta.embedded.block.style.stsx source.css meta.property-list.css meta.property-value.css constant.numeric.css keyword.other.unit.px.css
+22:33 "solid" meta.var.expr.tsx meta.arrow.tsx meta.tag.without-attributes.tsx meta.jsx.children.tsx meta.embedded.block.style.stsx source.css meta.property-list.css meta.property-value.css support.constant.property-value.css
+22:39 "$" meta.var.expr.tsx meta.arrow.tsx meta.tag.without-attributes.tsx meta.jsx.children.tsx meta.embedded.block.style.stsx source.css meta.property-list.css meta.property-value.css meta.ref.stsx punctuation.definition.variable.stsx
+22:40 "accent" meta.var.expr.tsx meta.arrow.tsx meta.tag.without-attributes.tsx meta.jsx.children.tsx meta.embedded.block.style.stsx source.css meta.property-list.css meta.property-value.css meta.ref.stsx variable.other.constant.ref.stsx
+22:46 "." meta.var.expr.tsx meta.arrow.tsx meta.tag.without-attributes.tsx meta.jsx.children.tsx meta.embedded.block.style.stsx source.css meta.property-list.css meta.property-value.css meta.ref.stsx punctuation.accessor.stsx
+22:47 "dark" meta.var.expr.tsx meta.arrow.tsx meta.tag.without-attributes.tsx meta.jsx.children.tsx meta.embedded.block.style.stsx source.css meta.property-list.css meta.property-value.css meta.ref.stsx variable.other.property.ref.stsx
+22:51 ";" meta.var.expr.tsx meta.arrow.tsx meta.tag.without-attributes.tsx meta.jsx.children.tsx meta.embedded.block.style.stsx source.css meta.property-list.css punctuation.terminator.rule.css
+22:53 "}" meta.var.expr.tsx meta.arrow.tsx meta.tag.without-attributes.tsx meta.jsx.children.tsx meta.embedded.block.style.stsx source.css meta.property-list.css punctuation.section.property-list.end.bracket.curly.css
+22:54 "</" meta.var.expr.tsx meta.arrow.tsx meta.tag.without-attributes.tsx meta.jsx.children.tsx meta.embedded.block.style.stsx punctuation.definition.tag.begin.stsx
+22:56 "style" meta.var.expr.tsx meta.arrow.tsx meta.tag.without-attributes.tsx meta.jsx.children.tsx meta.embedded.block.style.stsx entity.name.tag.style.stsx
+22:61 ">" meta.var.expr.tsx meta.arrow.tsx meta.tag.without-attributes.tsx meta.jsx.children.tsx meta.embedded.block.style.stsx punctuation.definition.tag.end.stsx
+23:3 "</" meta.var.expr.tsx meta.arrow.tsx meta.tag.without-attributes.tsx punctuation.definition.tag.begin.tsx
+23:5 ">" meta.var.expr.tsx meta.arrow.tsx meta.tag.without-attributes.tsx punctuation.definition.tag.end.tsx
+24:1 ")" meta.var.expr.tsx meta.arrow.tsx meta.brace.round.tsx
+24:2 ";" punctuation.terminator.statement.tsx
+26:1 "export" meta.function.tsx keyword.control.export.tsx
+26:8 "function" meta.function.tsx storage.type.function.tsx
+26:17 "Inline" meta.function.tsx meta.definition.function.tsx entity.name.function.tsx
+26:23 "(" meta.function.tsx meta.parameters.tsx punctuation.definition.parameters.begin.tsx
+26:24 ")" meta.function.tsx meta.parameters.tsx punctuation.definition.parameters.end.tsx
+26:26 "{" meta.function.tsx meta.block.tsx punctuation.definition.block.tsx
+27:3 "return" meta.function.tsx meta.block.tsx keyword.control.flow.tsx
+27:10 "(" meta.function.tsx meta.block.tsx meta.brace.round.tsx
+28:5 "<" meta.function.tsx meta.block.tsx meta.tag.without-attributes.tsx punctuation.definition.tag.begin.tsx
+28:6 "li" meta.function.tsx meta.block.tsx meta.tag.without-attributes.tsx entity.name.tag.tsx
+28:8 ">" meta.function.tsx meta.block.tsx meta.tag.without-attributes.tsx punctuation.definition.tag.end.tsx
+29:1 "      text" meta.function.tsx meta.block.tsx meta.tag.without-attributes.tsx meta.jsx.children.tsx
+29:11 "<" meta.function.tsx meta.block.tsx meta.tag.without-attributes.tsx meta.jsx.children.tsx meta.embedded.block.style.stsx punctuation.definition.tag.begin.stsx
+29:12 "style" meta.function.tsx meta.block.tsx meta.tag.without-attributes.tsx meta.jsx.children.tsx meta.embedded.block.style.stsx entity.name.tag.style.stsx
+29:17 ">" meta.function.tsx meta.block.tsx meta.tag.without-attributes.tsx meta.jsx.children.tsx meta.embedded.block.style.stsx punctuation.definition.tag.end.stsx
+29:18 "li" meta.function.tsx meta.block.tsx meta.tag.without-attributes.tsx meta.jsx.children.tsx meta.embedded.block.style.stsx source.css meta.selector.css entity.name.tag.css
+29:21 "{" meta.function.tsx meta.block.tsx meta.tag.without-attributes.tsx meta.jsx.children.tsx meta.embedded.block.style.stsx source.css meta.property-list.css punctuation.section.property-list.begin.bracket.curly.css
+29:23 "margin" meta.function.tsx meta.block.tsx meta.tag.without-attributes.tsx meta.jsx.children.tsx meta.embedded.block.style.stsx source.css meta.property-list.css meta.property-name.css support.type.property-name.css
+29:29 ":" meta.function.tsx meta.block.tsx meta.tag.without-attributes.tsx meta.jsx.children.tsx meta.embedded.block.style.stsx source.css meta.property-list.css punctuation.separator.key-value.css
+29:31 "0" meta.function.tsx meta.block.tsx meta.tag.without-attributes.tsx meta.jsx.children.tsx meta.embedded.block.style.stsx source.css meta.property-list.css meta.property-value.css constant.numeric.css
+29:33 "}" meta.function.tsx meta.block.tsx meta.tag.without-attributes.tsx meta.jsx.children.tsx meta.embedded.block.style.stsx source.css meta.property-list.css punctuation.section.property-list.end.bracket.curly.css
+29:34 "</" meta.function.tsx meta.block.tsx meta.tag.without-attributes.tsx meta.jsx.children.tsx meta.embedded.block.style.stsx punctuation.definition.tag.begin.stsx
+29:36 "style" meta.function.tsx meta.block.tsx meta.tag.without-attributes.tsx meta.jsx.children.tsx meta.embedded.block.style.stsx entity.name.tag.style.stsx
+29:41 ">" meta.function.tsx meta.block.tsx meta.tag.without-attributes.tsx meta.jsx.children.tsx meta.embedded.block.style.stsx punctuation.definition.tag.end.stsx
+29:42 "more text" meta.function.tsx meta.block.tsx meta.tag.without-attributes.tsx meta.jsx.children.tsx
+30:5 "</" meta.function.tsx meta.block.tsx meta.tag.without-attributes.tsx punctuation.definition.tag.begin.tsx
+30:7 "li" meta.function.tsx meta.block.tsx meta.tag.without-attributes.tsx entity.name.tag.tsx
+30:9 ">" meta.function.tsx meta.block.tsx meta.tag.without-attributes.tsx punctuation.definition.tag.end.tsx
+31:3 ")" meta.function.tsx meta.block.tsx meta.brace.round.tsx
+31:4 ";" meta.function.tsx meta.block.tsx punctuation.terminator.statement.tsx
+32:1 "}" meta.function.tsx meta.block.tsx punctuation.definition.block.tsx

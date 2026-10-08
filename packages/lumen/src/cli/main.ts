@@ -1,18 +1,24 @@
-// `lumen` command dispatch. Minimal for now (TASK-27 adds `check`); the full CLI is TASK-28.
+// `lumen` command dispatch. `check` (TASK-27), `lint` and `fmt` (TASK-31); the full CLI is TASK-28.
 
 import { parseArgs } from "node:util";
 import pkg from "../../package.json" with { type: "json" };
 import { checkCommand, EXIT_FAILURE, EXIT_OK } from "./check/index.ts";
+import { fmtCommand } from "./fmt/index.ts";
+import { lintCommand } from "./lint/index.ts";
 
 const USAGE = `Usage: lumen <command> [options]
 
 Commands:
-  check     Type-check the project (typegen, shadow TSX, tsc) and report Lumen diagnostics
+  check             Type-check the project (typegen, shadow TSX, tsc) and report Lumen diagnostics
+  lint              Lint the project with oxlint, .stsx included (and their CSS with stylelint,
+                    if installed)
+  fmt [paths...]    Format .stsx files with oxfmt: TSX and each style block (default path: src)
 
-Options for check:
+Options:
   --root <dir>        Project root (default: current directory)
-  -p, --project <f>   tsconfig path, relative to the root (default: tsconfig.json)
-  --format <f>        human (default) or json
+  -p, --project <f>   check: tsconfig path, relative to the root (default: tsconfig.json)
+  --format <f>        check, lint: human (default) or json
+  --check             fmt: list unformatted files and exit 1 instead of writing
 
   -h, --help          Show this help
   -v, --version       Show the version
@@ -36,6 +42,7 @@ export async function main(argv: string[], io: CliIO = processIO()): Promise<num
         root: { type: "string" },
         project: { type: "string", short: "p" },
         format: { type: "string" },
+        check: { type: "boolean" },
         help: { type: "boolean", short: "h" },
         version: { type: "boolean", short: "v" },
       },
@@ -54,14 +61,44 @@ export async function main(argv: string[], io: CliIO = processIO()): Promise<num
     io.write(USAGE);
     return EXIT_OK;
   }
-  if (command !== "check") return usageError(io, `Unknown command "${command}".`);
-  if (rest.length > 0) return usageError(io, `Unexpected argument "${rest[0]}".`);
+  if (command !== "check" && command !== "lint" && command !== "fmt") {
+    return usageError(io, `Unknown command "${command}".`);
+  }
+  if (rest.length > 0 && command !== "fmt") {
+    return usageError(io, `Unexpected argument "${rest[0]}".`);
+  }
   if (values.format !== undefined && values.format !== "human" && values.format !== "json") {
     return usageError(io, `--format must be "human" or "json", not "${values.format}".`);
   }
+  if (values.check && command !== "fmt") return usageError(io, "--check applies to fmt only.");
+  if (values.project !== undefined && command !== "check") {
+    return usageError(io, "--project applies to check only.");
+  }
+  if (values.format !== undefined && command === "fmt") {
+    return usageError(io, "--format applies to check and lint only.");
+  }
 
+  const root = values.root ?? io.cwd;
+  if (command === "fmt") {
+    return fmtCommand({
+      root,
+      paths: rest,
+      check: values.check ?? false,
+      write: io.write,
+      writeError: io.writeError,
+    });
+  }
+  if (command === "lint") {
+    return lintCommand({
+      root,
+      format: values.format ?? "human",
+      color: io.color,
+      write: io.write,
+      writeError: io.writeError,
+    });
+  }
   return checkCommand({
-    root: values.root ?? io.cwd,
+    root,
     ...(values.project === undefined ? {} : { project: values.project }),
     format: values.format ?? "human",
     color: io.color,

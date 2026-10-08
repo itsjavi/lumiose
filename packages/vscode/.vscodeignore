@@ -1,0 +1,6 @@
+**
+!dist/extension.cjs
+!syntaxes/**
+!snippets/**
+!language-configuration.json
+!package.json

@@ -21,6 +21,7 @@
   },
   "dependencies": {
     "@lumen/compiler": "workspace:*",
+    "lumen": "workspace:*",
     "typescript": "^7.0.2",
     "vscode-css-languageservice": "^6.3.10",
     "vscode-languageserver": "^10.1.2",

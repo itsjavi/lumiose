@@ -3,5 +3,7 @@ packages:
   - apps/*
   - examples/*
   - benchmarks/*
+allowBuilds:
+  "@vscode/vsce-sign": false
 minimumReleaseAgeExclude:
   - vite@8.3.4

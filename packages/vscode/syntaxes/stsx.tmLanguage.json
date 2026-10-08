@@ -1,0 +1,91 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "Styled TSX",
+  "scopeName": "source.stsx",
+  "fileTypes": ["stsx"],
+  "patterns": [{ "include": "source.tsx" }],
+  "injections": {
+    "L:source.stsx -comment -string -source.css": {
+      "patterns": [{ "include": "#style-block" }]
+    },
+    "L:source.stsx source.css -comment -string": {
+      "patterns": [{ "include": "#style-ref" }]
+    }
+  },
+  "repository": {
+    "style-block": {
+      "name": "meta.embedded.block.style.stsx",
+      "begin": "(<)(style)(?=[\\s>])",
+      "beginCaptures": {
+        "1": { "name": "punctuation.definition.tag.begin.stsx" },
+        "2": { "name": "entity.name.tag.style.stsx" }
+      },
+      "end": "(</)(style)\\s*(>)",
+      "endCaptures": {
+        "1": { "name": "punctuation.definition.tag.begin.stsx" },
+        "2": { "name": "entity.name.tag.style.stsx" },
+        "3": { "name": "punctuation.definition.tag.end.stsx" }
+      },
+      "patterns": [
+        { "include": "#style-attribute" },
+        {
+          "begin": ">",
+          "beginCaptures": { "0": { "name": "punctuation.definition.tag.end.stsx" } },
+          "end": "(?=</style\\s*>)",
+          "contentName": "source.css",
+          "patterns": [
+            {
+              "comment": "A selector right after `>` on the same line: the CSS grammar's own selector rule needs a preceding line start, space, brace or semicolon.",
+              "begin": "\\G(?=\\s*(?:[-\\w.#:*&\\[|]|\\\\))",
+              "end": "(?=\\s*(?:[)/@{]|</style\\s*>|$))",
+              "name": "meta.selector.css",
+              "patterns": [{ "include": "source.css#selector-innards" }]
+            },
+            { "include": "source.css" }
+          ]
+        }
+      ]
+    },
+    "style-attribute": {
+      "patterns": [
+        {
+          "match": "[$_A-Za-z][-$\\w:.]*",
+          "name": "entity.other.attribute-name.stsx"
+        },
+        { "match": "=", "name": "keyword.operator.assignment.stsx" },
+        {
+          "begin": "\"",
+          "beginCaptures": { "0": { "name": "punctuation.definition.string.begin.stsx" } },
+          "end": "\"",
+          "endCaptures": { "0": { "name": "punctuation.definition.string.end.stsx" } },
+          "name": "string.quoted.double.stsx"
+        },
+        {
+          "begin": "'",
+          "beginCaptures": { "0": { "name": "punctuation.definition.string.begin.stsx" } },
+          "end": "'",
+          "endCaptures": { "0": { "name": "punctuation.definition.string.end.stsx" } },
+          "name": "string.quoted.single.stsx"
+        }
+      ]
+    },
+    "style-ref": {
+      "name": "meta.ref.stsx",
+      "begin": "(\\$)([A-Za-z_][\\w]*)",
+      "beginCaptures": {
+        "1": { "name": "punctuation.definition.variable.stsx" },
+        "2": { "name": "variable.other.constant.ref.stsx" }
+      },
+      "end": "(?!\\.[A-Za-z_])",
+      "patterns": [
+        {
+          "match": "(\\.)([A-Za-z_][\\w]*)",
+          "captures": {
+            "1": { "name": "punctuation.accessor.stsx" },
+            "2": { "name": "variable.other.property.ref.stsx" }
+          }
+        }
+      ]
+    }
+  }
+}

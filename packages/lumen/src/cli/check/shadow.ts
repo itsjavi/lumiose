@@ -112,7 +112,7 @@ type Compiler = typeof import("@lumen/compiler");
 let compiler: Promise<Compiler> | undefined;
 
 /** Loads the native scanner once; a missing binding is a tool failure, not a code error. */
-function loadCompiler(): Promise<Compiler> {
+export function loadCompiler(): Promise<Compiler> {
   compiler ??= import("@lumen/compiler").catch((cause: unknown) => {
     compiler = undefined;
     throw new CheckFailure("The Lumen compiler binding (@lumen/compiler) could not be loaded.", {

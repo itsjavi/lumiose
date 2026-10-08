@@ -1,0 +1,32 @@
+import { signal } from "lumen";
+
+const gap = 8;
+
+export function Counter() {
+  const count = signal(0);
+  const accent = { dark: "#333" } as const;
+  return (
+    <div class="counter">
+      <button onClick={() => count.update((n) => n + 1)}>Don't click {count()}</button>
+      <style>
+        .counter { display: flex; gap: calc($gap * 1px); }
+        button { color: $accent.dark }
+      </style>
+    </div>
+  );
+}
+
+export const Badge = (props: { label: string }) => (
+  <>
+    <span class="badge">{props.label}</span>
+    <style>.badge { border: 1px solid $accent.dark; }</style>
+  </>
+);
+
+export function Inline() {
+  return (
+    <li>
+      text<style>li { margin: 0 }</style>more text
+    </li>
+  );
+}

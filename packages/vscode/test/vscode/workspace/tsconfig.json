@@ -1,0 +1,14 @@
+{
+  "compilerOptions": {
+    "jsx": "preserve",
+    "jsxImportSource": "lumen",
+    "module": "preserve",
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "noEmit": true,
+    "strict": true,
+    "rootDirs": ["src", ".lumen/shadow/src"],
+    "types": ["lumen/env"]
+  },
+  "include": ["src", ".lumen/shadow", ".lumen/types"]
+}

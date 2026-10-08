@@ -4,12 +4,12 @@
 import type { Diagnostic as CompilerDiagnostic } from "@lumen/compiler";
 import type { SourceText } from "./text.ts";
 
-export type DiagnosticSource = "ts" | "lumen";
+export type DiagnosticSource = "ts" | "lumen" | "oxlint" | "stylelint";
 export type DiagnosticSeverity = "error" | "warning" | "hint";
 
 export interface CheckDiagnostic {
   source: DiagnosticSource;
-  /** `TS2322`, `LUM3010`, … */
+  /** `TS2322`, `LUM3010`, `eslint(no-debugger)`, `color-no-invalid-hex`, … */
   code: string;
   severity: DiagnosticSeverity;
   /** Root-relative POSIX path (`../` for files outside the project root). */

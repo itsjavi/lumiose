@@ -1,0 +1,16 @@
+// A comment mentioning <style> is not a block.
+const sheet = `<style>.not { a: block }</style>`;
+const nested = `${`<style>`}`;
+const identity = <T,>(value: T) => value;
+const lt = sheet.length < 2;
+
+export const T = () => (
+  <div title="<style>" data-x={`${sheet} <style>`}>
+    {`<style>`}
+    {/* <style> in a JSX comment */}
+    <svg viewBox="0 0 10 10">
+      <style>circle { fill: $notInSvg }</style>
+    </svg>
+    <style>.real { color: red }</style>
+  </div>
+);

@@ -1,0 +1,181 @@
+{
+  "name": "lumen-vscode",
+  "displayName": "Lumen",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Lumen .stsx support: TSX with embedded CSS style blocks and $ref highlighting, snippets, and the Lumen language server (TypeScript 7 takeover).",
+  "categories": [
+    "Programming Languages",
+    "Snippets"
+  ],
+  "keywords": [
+    "css",
+    "lumen",
+    "stsx",
+    "tsx",
+    "typescript"
+  ],
+  "license": "MIT",
+  "publisher": "lumen",
+  "type": "module",
+  "main": "./dist/extension.cjs",
+  "scripts": {
+    "build": "node scripts/build.ts",
+    "package": "node scripts/build.ts && vsce package --no-dependencies --allow-missing-repository --skip-license --out lumen-vscode.vsix",
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "vitest run",
+    "test:vscode": "pnpm run package && node scripts/test-vscode.ts"
+  },
+  "devDependencies": {
+    "@types/vscode": "~1.100.0",
+    "@vscode/vsce": "^4.0.0",
+    "rolldown": "^1.2.12",
+    "tm-grammars": "^1.32.22",
+    "vscode-languageclient": "^10.1.2",
+    "vscode-oniguruma": "^2.0.1",
+    "vscode-textmate": "^9.3.2"
+  },
+  "contributes": {
+    "languages": [
+      {
+        "id": "stsx",
+        "aliases": [
+          "Styled TSX",
+          "stsx"
+        ],
+        "extensions": [
+          ".stsx"
+        ],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "stsx",
+        "scopeName": "source.stsx",
+        "path": "./syntaxes/stsx.tmLanguage.json",
+        "embeddedLanguages": {
+          "source.css": "css",
+          "meta.tag.tsx": "jsx-tags",
+          "meta.tag.without-attributes.tsx": "jsx-tags",
+          "meta.tag.attributes.tsx": "stsx",
+          "meta.embedded.expression.tsx": "stsx"
+        },
+        "unbalancedBracketScopes": [
+          "keyword.operator.relational",
+          "storage.type.function.arrow",
+          "keyword.operator.bitwise.shift",
+          "punctuation.definition.tag",
+          "keyword.operator.assignment.compound.bitwise.ts"
+        ],
+        "tokenTypes": {
+          "punctuation.definition.template-expression": "other",
+          "entity.name.type.instance.jsdoc": "other",
+          "entity.name.function.tagged-template": "other",
+          "meta.import string.quoted": "other",
+          "variable.other.jsdoc": "other"
+        }
+      }
+    ],
+    "semanticTokenScopes": [
+      {
+        "language": "stsx",
+        "scopes": {
+          "property": [
+            "variable.other.property.tsx"
+          ],
+          "property.readonly": [
+            "variable.other.constant.property.tsx"
+          ],
+          "variable": [
+            "variable.other.readwrite.tsx"
+          ],
+          "variable.readonly": [
+            "variable.other.constant.object.tsx"
+          ],
+          "function": [
+            "entity.name.function.tsx"
+          ],
+          "namespace": [
+            "entity.name.type.module.tsx"
+          ],
+          "variable.defaultLibrary": [
+            "support.variable.tsx"
+          ],
+          "function.defaultLibrary": [
+            "support.function.tsx"
+          ]
+        }
+      }
+    ],
+    "snippets": [
+      {
+        "language": "stsx",
+        "path": "./snippets/stsx.code-snippets"
+      }
+    ],
+    "commands": [
+      {
+        "command": "lumen.restartServer",
+        "title": "Restart Language Server",
+        "category": "Lumen"
+      },
+      {
+        "command": "lumen.setupTakeover",
+        "title": "Set Up Takeover Mode",
+        "category": "Lumen"
+      }
+    ],
+    "configuration": {
+      "title": "Lumen",
+      "properties": {
+        "lumen.takeover": {
+          "type": "string",
+          "enum": [
+            "prompt",
+            "auto",
+            "off"
+          ],
+          "enumDescriptions": [
+            "Take over .ts/.tsx/.js/.jsx when the built-in TypeScript extension is disabled for the workspace, and offer to disable it in workspaces that use Lumen.",
+            "Take over .ts/.tsx/.js/.jsx when the built-in TypeScript extension is disabled, without prompting.",
+            "Never take over: the Lumen language server handles .stsx files only, and no prompt is shown."
+          ],
+          "default": "prompt",
+          "scope": "resource",
+          "markdownDescription": "Takeover mode: one Lumen language server (in front of the TypeScript 7 native LSP) serves `.ts`, `.tsx` and `.stsx`, so types flow between them. It requires disabling the built-in **TypeScript and JavaScript Language Features** extension for the workspace."
+        },
+        "lumen.server.path": {
+          "type": "string",
+          "default": "",
+          "scope": "machine-overridable",
+          "markdownDescription": "Path to the language server entry (`@lumen/language-server`'s `src/bin.ts` or a built `.js`), absolute or relative to the first workspace folder. Empty: resolve `@lumen/language-server` from the workspace, then the copy bundled with the extension."
+        },
+        "lumen.server.runtime": {
+          "type": "string",
+          "default": "node",
+          "scope": "machine-overridable",
+          "markdownDescription": "The Node.js executable that runs the language server. It must be Node ≥ 24, which runs the server's TypeScript sources natively."
+        },
+        "lumen.trace.server": {
+          "type": "string",
+          "enum": [
+            "off",
+            "messages",
+            "verbose"
+          ],
+          "default": "off",
+          "scope": "window",
+          "description": "Traces the communication between VS Code and the Lumen language server."
+        }
+      }
+    }
+  },
+  "activationEvents": [
+    "workspaceContains:**/*.stsx",
+    "workspaceContains:node_modules/lumen/package.json"
+  ],
+  "engines": {
+    "vscode": "^1.100.0"
+  }
+}

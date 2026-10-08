@@ -1,0 +1,18 @@
+import { tokens } from "../tokens.ts";
+
+const gap = 8;
+
+export function Card(props: { title: string }) {
+  return (
+    <section class="card">
+      <h2 class="card-title">{props.title}</h2>
+    </section>
+  );
+}
+
+<style>
+  .card {
+    padding: calc($gap * 1px);
+    color: $tokens.color.primary;
+  }
+</style>
