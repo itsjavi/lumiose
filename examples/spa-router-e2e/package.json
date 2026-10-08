@@ -1,0 +1,22 @@
+{
+  "name": "@lumen-examples/spa-router-e2e",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Lumen fixture: an spa-mode app on file routes and lumen/router, tested in Chromium under lumen dev and a production build (TASK-25 end-to-end test).",
+  "type": "module",
+  "scripts": {
+    "dev": "lumen dev",
+    "build": "lumen build",
+    "preview": "lumen preview",
+    "typecheck": "lumen check",
+    "test:e2e": "playwright test"
+  },
+  "dependencies": {
+    "lumen": "workspace:*"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.63.0",
+    "@types/node": "^24.0.0",
+    "vite": "^8.3.4"
+  }
+}
