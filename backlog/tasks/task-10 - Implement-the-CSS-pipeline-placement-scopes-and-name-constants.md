@@ -1,10 +1,13 @@
 ---
 id: TASK-10
-title: 'Implement the CSS pipeline: placement scopes and $name constants'
+title: >-
+  Implement the lumen_css crate: scoping, selector rewrite and constants
+  substitution
 status: To Do
 assignee:
-  - '@Photon'
+  - '@Halo'
 created_date: '2026-10-08 12:20'
+updated_date: '2026-10-08 13:59'
 labels: []
 milestone: m-1
 dependencies:
@@ -18,13 +21,14 @@ ordinal: 10000
 ## Description
 
 <!-- SECTION:DESCRIPTION:BEGIN -->
-Styles are first-class in Lumen. Scoping by placement, the global attribute and build-time constants all have to compile to static CSS with no runtime (decisions 12 and 14).
+The CSS pipeline is split so it can proceed in parallel with client codegen. This task builds the standalone lumen_css crate. The compiler integration (constant folding via oxc_semantic, token stamping in templates, class passthrough, cssDeps) is TASK-45 (Photon).
 <!-- SECTION:DESCRIPTION:END -->
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 lumen_css on pinned Lightning CSS: per-scope tokens on every element in scope, last-compound selector rewrite, :global/:deep, scoped keyframes, file-then-component ordering, targets and minification
-- [ ] #2 $ref resolution via oxc_semantic and constant folding, including imported consts requested from the host; $-only imports removed from the JS; cssDeps reported
-- [ ] #3 Class passthrough: call sites pass $$scope and children apply it wherever props.class is applied
-- [ ] #4 Diagnostics LUM3005, LUM3008, LUM3009 and LUM3012; golden fixtures
+- [ ] #1 lumen_css API: process(blocks with placement + scope token, resolved $ref values, targets, minify) → { css, map, diagnostics }; file-scope CSS first, then component blocks in source order
+- [ ] #2 Selector rewrite: [data-l-<hash>] on the last compound (before pseudo-elements), :global(), :deep() (left side only), scoped @keyframes and rewritten animation/animation-name references, custom properties untouched, SVG blocks passed through verbatim
+- [ ] #3 $ref substitution of resolved values in values and @media/@container/@supports preludes only (never in selectors, strings, comments, url()); LUM3009 for hyphenated refs; LUM3005 unused-selector check given an element/class inventory input; LUM3012 hook
+- [ ] #4 Lightning CSS pinned exactly; nesting lowered per targets; minify; source maps back to the original .stsx offsets (whitespace-padding approach)
+- [ ] #5 Golden fixtures and cargo test/clippy/fmt pass
 <!-- AC:END -->
