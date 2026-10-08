@@ -16,10 +16,21 @@ lumen_css = { path = "crates/lumen_css" }
 # OXC: every oxc_* crate on the same exact version.
 oxc_allocator = "=0.153.0"
 oxc_ast = "=0.153.0"
+oxc_ast_visit = "=0.153.0"
+oxc_codegen = "=0.153.0"
+oxc_diagnostics = "=0.153.0"
 oxc_parser = "=0.153.0"
+oxc_semantic = "=0.153.0"
+oxc_sourcemap = "=9.0.0"
 oxc_span = "=0.153.0"
+oxc_syntax = "=0.153.0"
+oxc_transformer = "=0.153.0"
 
 serde = { version = "=1.0.229", features = ["derive"] }
+
+# CSS (lumen_css): parcel_sourcemap is the map type Lightning CSS prints into.
+lightningcss = { version = "=1.0.0-alpha.72", default-features = false, features = ["sourcemap", "visitor", "browserslist"] }
+parcel_sourcemap = { version = "=2.1.1", features = ["json"] }
 
 # Bindings
 napi = { version = "=3.14.2", default-features = false, features = ["napi4", "dyn-symbols"] }

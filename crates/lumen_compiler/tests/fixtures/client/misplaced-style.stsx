@@ -1,0 +1,24 @@
+// LUM3010 found on the AST: blocks inside .map() callbacks and nested functions (the scanner
+// cannot see these placements).
+export function List(props: { items: string[] }) {
+  const rows = props.items.map((item) => (
+    <li>
+      {item}
+      <style>li { color: red; }</style>
+    </li>
+  ));
+  const renderFooter = () => (
+    <footer>
+      <style>footer { margin: 0; }</style>
+    </footer>
+  );
+  return <ul>{rows}{renderFooter()}</ul>;
+}
+
+function helper() {
+  return (
+    <p>
+      <style>p { margin: 0; }</style>
+    </p>
+  );
+}

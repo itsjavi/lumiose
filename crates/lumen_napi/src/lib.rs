@@ -4,7 +4,10 @@
 //! UTF-16 offset, and `masked` is the UTF-16 masked text (offset-identical to the source
 //! string the caller passed in).
 
+use std::collections::HashMap;
+
 use lumen_compiler::Utf16Index;
+use lumen_compiler::prepare::StyleRefBindingKind;
 use lumen_compiler::scanner::{self, AttributeValue, JsxParentKind, Placement};
 use napi::bindgen_prelude::Utf16String;
 use napi_derive::napi;
@@ -268,5 +271,179 @@ fn convert_diagnostic(diagnostic: lumen_compiler::Diagnostic) -> Diagnostic {
                 })
                 .collect(),
         }),
+    }
+}
+
+#[napi(string_enum = "lowercase")]
+pub enum CompileTarget {
+    Client,
+    Server,
+}
+
+/// `data-l-*` scope tokens computed by the CSS pipeline.
+#[napi(object)]
+pub struct ScopeTokens {
+    /// The file scope token (top-level `<style>` blocks).
+    pub file: Option<String>,
+    /// Component scope tokens by component name.
+    pub components: Option<HashMap<String, String>>,
+}
+
+#[napi(object)]
+pub struct CompileOptions {
+    /// Default `"client"`. `"server"` is not implemented yet (TASK-14) and reports `LUM1002`.
+    pub target: Option<CompileTarget>,
+    pub scope_tokens: Option<ScopeTokens>,
+    /// Default `true`.
+    pub source_map: Option<bool>,
+    /// Import `<id>?lumen&type=style&lang.css` when the file has style blocks. Default `true`.
+    pub style_import: Option<bool>,
+}
+
+#[napi(object)]
+pub struct ComponentMeta {
+    pub name: String,
+    pub span: Span,
+    pub exported: bool,
+    pub is_async: bool,
+    /// The `await`s indexed as sites `0..n` by the async rewrite.
+    pub await_sites: Vec<Span>,
+}
+
+#[napi(string_enum = "kebab-case")]
+pub enum StyleRefBindingType {
+    Module,
+    Local,
+    Import,
+}
+
+#[napi(object)]
+pub struct StyleRefBinding {
+    pub name: String,
+    pub declaration: Span,
+    pub kind: StyleRefBindingType,
+    /// `const` and never reassigned (module and local bindings).
+    pub constant: bool,
+    /// The module specifier, for imports.
+    pub source: Option<String>,
+    /// The imported name (`"default"`, `"*"` for namespaces), for imports.
+    pub imported: Option<String>,
+}
+
+#[napi(object)]
+pub struct ResolvedStyleRef {
+    /// Index of the block in `scan().blocks`.
+    pub block: u32,
+    pub path: Vec<String>,
+    pub span: Span,
+    pub binding: Option<StyleRefBinding>,
+}
+
+#[napi(object)]
+pub struct CompileMeta {
+    pub components: Vec<ComponentMeta>,
+    pub templates: u32,
+    pub delegated_events: Vec<String>,
+    pub runtime_helpers: Vec<String>,
+    pub style_refs: Vec<ResolvedStyleRef>,
+    pub has_styles: bool,
+}
+
+#[napi(object)]
+pub struct CompileResult {
+    /// JavaScript with types stripped; empty when the source could not be parsed.
+    pub code: String,
+    /// Source map v3 JSON.
+    pub map: Option<String>,
+    pub diagnostics: Vec<Diagnostic>,
+    pub meta: CompileMeta,
+}
+
+/// Compiles a `.stsx` / `.tsx` module to JavaScript for the given target. Spans are UTF-16
+/// offsets into `source`.
+#[napi]
+pub fn compile(source: String, filename: String, options: Option<CompileOptions>) -> CompileResult {
+    let options = options.map_or_else(lumen_compiler::CompileOptions::default, |o| {
+        let defaults = lumen_compiler::CompileOptions::default();
+        lumen_compiler::CompileOptions {
+            target: match o.target {
+                Some(CompileTarget::Server) => lumen_compiler::Target::Server,
+                _ => lumen_compiler::Target::Client,
+            },
+            scope_tokens: o
+                .scope_tokens
+                .map(|tokens| lumen_compiler::ScopeTokens {
+                    file: tokens.file,
+                    components: tokens.components.unwrap_or_default().into_iter().collect(),
+                })
+                .unwrap_or_default(),
+            source_map: o.source_map.unwrap_or(defaults.source_map),
+            style_import: o.style_import.unwrap_or(defaults.style_import),
+        }
+    });
+    let mut result = lumen_compiler::compile(&source, &filename, &options);
+    let index = Utf16Index::new(&source);
+    if !index.is_identity() {
+        result.map_spans(&|offset| index.to_utf16(offset));
+    }
+    let meta = result.meta;
+    CompileResult {
+        code: result.code,
+        map: result.map,
+        diagnostics: result
+            .diagnostics
+            .into_iter()
+            .map(convert_diagnostic)
+            .collect(),
+        meta: CompileMeta {
+            components: meta
+                .components
+                .into_iter()
+                .map(|c| ComponentMeta {
+                    name: c.name,
+                    span: span(c.span),
+                    exported: c.exported,
+                    is_async: c.is_async,
+                    await_sites: c.await_sites.into_iter().map(span).collect(),
+                })
+                .collect(),
+            templates: u32::try_from(meta.templates).unwrap_or(u32::MAX),
+            delegated_events: meta.delegated_events,
+            runtime_helpers: meta.runtime_helpers,
+            style_refs: meta
+                .style_refs
+                .into_iter()
+                .map(|r| ResolvedStyleRef {
+                    block: r.block,
+                    path: r.path,
+                    span: span(r.span),
+                    binding: r.binding.map(|b| {
+                        let (kind, constant, source, imported) = match b.kind {
+                            StyleRefBindingKind::Module { constant } => {
+                                (StyleRefBindingType::Module, constant, None, None)
+                            }
+                            StyleRefBindingKind::Local { constant } => {
+                                (StyleRefBindingType::Local, constant, None, None)
+                            }
+                            StyleRefBindingKind::Import { source, imported } => (
+                                StyleRefBindingType::Import,
+                                false,
+                                Some(source),
+                                Some(imported),
+                            ),
+                        };
+                        StyleRefBinding {
+                            name: b.name,
+                            declaration: span(b.declaration),
+                            kind,
+                            constant,
+                            source,
+                            imported,
+                        }
+                    }),
+                })
+                .collect(),
+            has_styles: meta.has_styles,
+        },
     }
 }

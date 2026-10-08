@@ -899,13 +899,26 @@ if (!nativeBinding) {
   throw new Error(`Failed to load native binding`);
 }
 
-const { AttributeValueKind, FileKind, ParentKind, PlacementKind, scan, Severity, version } =
-  nativeBinding;
+const {
+  AttributeValueKind,
+  compile,
+  CompileTarget,
+  FileKind,
+  ParentKind,
+  PlacementKind,
+  scan,
+  Severity,
+  StyleRefBindingType,
+  version,
+} = nativeBinding;
 export { AttributeValueKind };
+export { compile };
+export { CompileTarget };
 export { FileKind };
 export { ParentKind };
 export { PlacementKind };
 export { scan };
 export { Severity };
+export { StyleRefBindingType };
 export { version };
 export const __napiBindingTarget = __napiLoadedBindingTarget;

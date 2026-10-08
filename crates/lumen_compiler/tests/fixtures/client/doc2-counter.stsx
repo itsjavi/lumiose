@@ -1,0 +1,12 @@
+// @scope Counter=data-l-c1
+// Contract doc-2 §5.1: static and dynamic text, delegated event, class object, scoped style.
+import { signal } from "lumen";
+export function Counter({ start = 0 }: { start?: number }) {
+  const count = signal(start);
+  return (
+    <button class={{ hot: count() > 5 }} onClick={() => count.update((c) => c + 1)}>
+      Clicked {count()} times
+      <style>.hot { color: crimson; }</style>
+    </button>
+  );
+}

@@ -46,6 +46,8 @@ macro_rules! registry {
 
 registry! {
     // 1xxx file format
+    SyntaxError = "LUM1001", Error, "Syntax error";
+    Unsupported = "LUM1002", Error, "Unsupported by this compiler version";
     ScannerAmbiguity = "LUM1003", Warning, "Scanner ambiguity";
     UnclosedStyle = "LUM1004", Error, "Unclosed `<style>` block";
     UnknownStyleAttribute = "LUM1005", Error, "Unknown `<style>` attribute";

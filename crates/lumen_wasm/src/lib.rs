@@ -31,6 +31,24 @@ pub fn scan(source: &str, filename: &str) -> Result<JsValue, JsError> {
     serde_wasm_bindgen::to_value(&view).map_err(|error| JsError::new(&error.to_string()))
 }
 
+/// Compiles a module for the client: `{ code, map, diagnostics, meta }` with UTF-16 spans.
+/// (Scope tokens and other options use their defaults in the playground.)
+#[wasm_bindgen]
+pub fn compile(source: &str, filename: &str) -> Result<JsValue, JsError> {
+    let result = compile_view(source, filename);
+    serde_wasm_bindgen::to_value(&result).map_err(|error| JsError::new(&error.to_string()))
+}
+
+fn compile_view(source: &str, filename: &str) -> lumen_compiler::CompileResult {
+    let mut result =
+        lumen_compiler::compile(source, filename, &lumen_compiler::CompileOptions::default());
+    let index = Utf16Index::new(source);
+    if !index.is_identity() {
+        result.map_spans(&|offset| index.to_utf16(offset));
+    }
+    result
+}
+
 /// The scan result with UTF-16 offsets, and the UTF-16 masked text as a string.
 fn scan_view(source: &str, filename: &str) -> (String, ScanResult) {
     let mut result = lumen_compiler::scan(source, filename);
@@ -46,6 +64,20 @@ fn scan_view(source: &str, filename: &str) -> (String, ScanResult) {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn compile_uses_utf16_offsets() {
+        let source = "const s = \"é\";\nexport const A = () => <p>{s}</p>;\nA();\n";
+        let result = compile_view(source, "a.tsx");
+        assert!(result.code.contains("template(`<p>`)"));
+        let diagnostic = &result.diagnostics[0];
+        assert_eq!(diagnostic.code.id(), "LUM2004");
+        let units: Vec<u16> = source.encode_utf16().collect();
+        assert_eq!(
+            String::from_utf16(&units[diagnostic.span.range()]).unwrap(),
+            "A()"
+        );
+    }
 
     #[test]
     fn view_uses_utf16_offsets() {

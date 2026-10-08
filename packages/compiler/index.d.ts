@@ -11,6 +11,55 @@ export declare const __napiBindingTarget: "native" | "wasm32-wasi" | "wasm32-was
 
 export type AttributeValueKind = "string" | "expression";
 
+/**
+ * Compiles a `.stsx` / `.tsx` module to JavaScript for the given target. Spans are UTF-16
+ * offsets into `source`.
+ */
+export declare function compile(
+  source: string,
+  filename: string,
+  options?: CompileOptions | undefined | null,
+): CompileResult;
+
+export interface CompileMeta {
+  components: Array<ComponentMeta>;
+  templates: number;
+  delegatedEvents: Array<string>;
+  runtimeHelpers: Array<string>;
+  styleRefs: Array<ResolvedStyleRef>;
+  hasStyles: boolean;
+}
+
+export interface CompileOptions {
+  /** Default `"client"`. `"server"` is not implemented yet (TASK-14) and reports `LUM1002`. */
+  target?: CompileTarget;
+  scopeTokens?: ScopeTokens;
+  /** Default `true`. */
+  sourceMap?: boolean;
+  /** Import `<id>?lumen&type=style&lang.css` when the file has style blocks. Default `true`. */
+  styleImport?: boolean;
+}
+
+export interface CompileResult {
+  /** JavaScript with types stripped; empty when the source could not be parsed. */
+  code: string;
+  /** Source map v3 JSON. */
+  map?: string;
+  diagnostics: Array<Diagnostic>;
+  meta: CompileMeta;
+}
+
+export type CompileTarget = "client" | "server";
+
+export interface ComponentMeta {
+  name: string;
+  span: Span;
+  exported: boolean;
+  isAsync: boolean;
+  /** The `await`s indexed as sites `0..n` by the async rewrite. */
+  awaitSites: Array<Span>;
+}
+
 export interface Diagnostic {
   /** A stable code such as `LUM1004`. */
   code: string;
@@ -47,6 +96,14 @@ export type ParentKind = "intrinsic" | "fragment" | "component";
 
 export type PlacementKind = "top-level" | "jsx" | "expression";
 
+export interface ResolvedStyleRef {
+  /** Index of the block in `scan().blocks`. */
+  block: number;
+  path: Array<string>;
+  span: Span;
+  binding?: StyleRefBinding;
+}
+
 /**
  * Scans a `.stsx` / `.tsx` source: style blocks, `$` references, masked TSX and
  * scanner diagnostics. The file kind comes from `filename`'s extension.
@@ -59,6 +116,14 @@ export interface ScanResult {
   masked: string;
   blocks: Array<StyleBlock>;
   diagnostics: Array<Diagnostic>;
+}
+
+/** `data-l-*` scope tokens computed by the CSS pipeline. */
+export interface ScopeTokens {
+  /** The file scope token (top-level `<style>` blocks). */
+  file?: string;
+  /** Component scope tokens by component name. */
+  components?: Record<string, string>;
 }
 
 export type Severity = "error" | "warning" | "hint";
@@ -99,6 +164,20 @@ export interface StyleRef {
   /** Offset of the character masked as the closing `;` or `}`. */
   close?: number;
 }
+
+export interface StyleRefBinding {
+  name: string;
+  declaration: Span;
+  kind: StyleRefBindingType;
+  /** `const` and never reassigned (module and local bindings). */
+  constant: boolean;
+  /** The module specifier, for imports. */
+  source?: string;
+  /** The imported name (`"default"`, `"*"` for namespaces), for imports. */
+  imported?: string;
+}
+
+export type StyleRefBindingType = "module" | "local" | "import";
 
 export interface TextEdit {
   span: Span;

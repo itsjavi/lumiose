@@ -1,0 +1,261 @@
+//! `compile()`: the per-module pipeline (spec §5.1).
+//!
+//! ```text
+//! scan → oxc_parser(masked) → semantic → style artifacts ($ref bindings, placeholders)
+//!      → TypeScript strip → semantic → analyze → client codegen → oxc_codegen + source map
+//! ```
+//!
+//! Spans everywhere are byte offsets into the original source: the masked text the parser sees
+//! has identical offsets, so mapping back is the identity.
+
+use oxc_allocator::Allocator;
+use oxc_codegen::{Codegen, CodegenOptions};
+use oxc_parser::Parser;
+use oxc_semantic::SemanticBuilder;
+use oxc_span::SourceType;
+
+use crate::analyze;
+use crate::codegen::ast::Ast;
+use crate::codegen::client::{self, ClientOptions};
+use crate::diagnostics::{Code, Diagnostic};
+use crate::prepare::{self, ResolvedStyleRef};
+use crate::scanner::{self, FileKind};
+use crate::span::Span;
+
+pub use crate::codegen::client::ScopeTokens;
+
+/// The output environment.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize),
+    serde(rename_all = "lowercase")
+)]
+pub enum Target {
+    /// Browser code on `lumen/dom`.
+    #[default]
+    Client,
+    /// SSR code on `lumen/server` (TASK-14).
+    Server,
+}
+
+#[derive(Debug, Clone)]
+pub struct CompileOptions {
+    pub target: Target,
+    /// Scope tokens from the CSS pipeline (TASK-10); empty means no scoped styles.
+    pub scope_tokens: ScopeTokens,
+    /// Produce a source map.
+    pub source_map: bool,
+    /// Import the file's CSS module (`<id>?lumen&type=style&lang.css`) when it has style blocks.
+    pub style_import: bool,
+}
+
+impl Default for CompileOptions {
+    fn default() -> Self {
+        Self {
+            target: Target::Client,
+            scope_tokens: ScopeTokens::default(),
+            source_map: true,
+            style_import: true,
+        }
+    }
+}
+
+/// A component of the module.
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize),
+    serde(rename_all = "camelCase")
+)]
+pub struct ComponentMeta {
+    pub name: String,
+    pub span: Span,
+    pub exported: bool,
+    pub is_async: bool,
+    /// Spans of the `await`s the async rewrite (TASK-15) indexes as sites `0..n`.
+    pub await_sites: Vec<Span>,
+}
+
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize),
+    serde(rename_all = "camelCase")
+)]
+pub struct CompileMeta {
+    pub components: Vec<ComponentMeta>,
+    /// Number of hoisted templates.
+    pub templates: usize,
+    /// Events registered with `delegateEvents`.
+    pub delegated_events: Vec<String>,
+    /// `lumen/dom` helpers the module imports.
+    pub runtime_helpers: Vec<String>,
+    /// Every `$name` style reference with its binding (input of the CSS pipeline).
+    pub style_refs: Vec<ResolvedStyleRef>,
+    /// True when the module imports its CSS module.
+    pub has_styles: bool,
+}
+
+#[derive(Debug, Clone, Default)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize))]
+pub struct CompileResult {
+    /// JavaScript (types stripped). Empty when the source could not be parsed.
+    pub code: String,
+    /// Source map v3 JSON.
+    pub map: Option<String>,
+    pub diagnostics: Vec<Diagnostic>,
+    pub meta: CompileMeta,
+}
+
+impl CompileResult {
+    pub fn has_errors(&self) -> bool {
+        self.diagnostics.iter().any(Diagnostic::is_error)
+    }
+}
+
+/// Compiles one module. `filename` is the module id (also the source map's `sources` entry and
+/// the CSS module import base).
+pub fn compile(source: &str, filename: &str, options: &CompileOptions) -> CompileResult {
+    let scan = scanner::scan(source, filename);
+    let mut diagnostics = scan.diagnostics.clone();
+    if options.target == Target::Server {
+        diagnostics.push(
+            Diagnostic::new(
+                Code::Unsupported,
+                Span::default(),
+                "the server target is not implemented yet",
+            )
+            .with_help("Server codegen lands with TASK-14; compile with `target: \"client\"`."),
+        );
+        return CompileResult {
+            diagnostics,
+            ..CompileResult::default()
+        };
+    }
+
+    let allocator = Allocator::default();
+    let ast = Ast::new(&allocator);
+    let parsed = Parser::new(&allocator, scan.masked(), source_type(scan.kind, filename)).parse();
+    diagnostics.extend(
+        parsed
+            .diagnostics
+            .into_vec()
+            .iter()
+            .map(|d| prepare::from_oxc(Code::SyntaxError, d)),
+    );
+    if parsed.fatal_error {
+        sort(&mut diagnostics);
+        return CompileResult {
+            diagnostics,
+            ..CompileResult::default()
+        };
+    }
+    let mut program = parsed.program;
+
+    let scoping = SemanticBuilder::new()
+        .with_enum_eval(true)
+        .build(&program)
+        .semantic
+        .into_scoping();
+    let style_refs = prepare::prepare_style_artifacts(&ast, &mut program, &scoping, &scan.blocks);
+    diagnostics.extend(prepare::strip_types(
+        &allocator,
+        &mut program,
+        scoping,
+        filename,
+    ));
+
+    let scoping = SemanticBuilder::new()
+        .build(&program)
+        .semantic
+        .into_scoping();
+    let analysis = analyze::analyze(&program, &scoping, &scan.blocks, &scan.diagnostics);
+    diagnostics.extend(analysis.diagnostics.iter().cloned());
+
+    let client_options = ClientOptions {
+        filename,
+        scope_tokens: &options.scope_tokens,
+        style_import: options.style_import,
+    };
+    let output = client::transform(
+        &ast,
+        &mut program,
+        &scoping,
+        &analysis,
+        source,
+        &scan.blocks,
+        &client_options,
+    );
+    diagnostics.extend(output.diagnostics);
+
+    // Print against the original text: source map columns and `sourcesContent` then refer to
+    // the authored file (masked style regions are never printed).
+    program.source_text = source;
+    let codegen_options = CodegenOptions {
+        source_map_path: options.source_map.then(|| filename.into()),
+        ..CodegenOptions::default()
+    };
+    let printed = Codegen::new().with_options(codegen_options).build(&program);
+    sort(&mut diagnostics);
+    let has_styles = options.style_import && scan.blocks.iter().any(|b| !b.svg);
+    CompileResult {
+        code: printed.code,
+        map: printed.map.map(|map| map.to_json_string()),
+        diagnostics,
+        meta: CompileMeta {
+            components: analysis
+                .components
+                .iter()
+                .map(|c| ComponentMeta {
+                    name: c.name.clone(),
+                    span: c.span,
+                    exported: c.exported,
+                    is_async: c.is_async,
+                    await_sites: c.await_sites.clone(),
+                })
+                .collect(),
+            templates: output.templates,
+            delegated_events: output.delegated_events,
+            runtime_helpers: output.runtime_helpers,
+            style_refs,
+            has_styles,
+        },
+    }
+}
+
+fn source_type(kind: FileKind, filename: &str) -> SourceType {
+    let path = filename.split(['?', '#']).next().unwrap_or(filename);
+    match kind {
+        FileKind::Stsx => SourceType::tsx(),
+        FileKind::Tsx if path.ends_with(".jsx") => SourceType::jsx(),
+        FileKind::Tsx => SourceType::tsx(),
+        FileKind::Script if path.ends_with(".ts") || path.ends_with(".mts") => SourceType::ts(),
+        FileKind::Script => SourceType::mjs(),
+    }
+}
+
+fn sort(diagnostics: &mut [Diagnostic]) {
+    diagnostics.sort_by_key(|d| (d.span.start, d.span.end));
+}
+
+impl CompileResult {
+    /// Applies an offset mapping (for example byte → UTF-16) to every span.
+    pub fn map_spans(&mut self, f: &impl Fn(u32) -> u32) {
+        for diagnostic in &mut self.diagnostics {
+            diagnostic.map_spans(f);
+        }
+        for component in &mut self.meta.components {
+            component.span = component.span.map(f);
+            for site in &mut component.await_sites {
+                *site = site.map(f);
+            }
+        }
+        for reference in &mut self.meta.style_refs {
+            reference.span = reference.span.map(f);
+            if let Some(binding) = &mut reference.binding {
+                binding.declaration = binding.declaration.map(f);
+            }
+        }
+    }
+}

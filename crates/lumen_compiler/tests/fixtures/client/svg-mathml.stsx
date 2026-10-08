@@ -1,0 +1,28 @@
+// Namespaces: <svg> parses in place; SVG-only roots get the Svg flag; SVG <style> is native CSS
+// emitted verbatim; foreignObject switches back to HTML; MathML roots get the MathMl flag.
+export function Chart(props: { points: () => { x: number; y: number }[] }) {
+  return (
+    <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+      <style>.dot { fill: $notARef; }</style>
+      <g class="dots">
+        {props.points().map((p) => <circle class="dot" cx={p.x} cy={p.y} r="2" />)}
+      </g>
+      <foreignObject width="100" height="20">
+        <p>HTML inside</p>
+      </foreignObject>
+      <text x="0" y="10">{props.points().length} points</text>
+    </svg>
+  );
+}
+
+export function Marker() {
+  return <path d="M0 0L10 10" stroke="black" />;
+}
+
+export function Formula() {
+  return <mrow><mi>x</mi><mo>=</mo><mn>2</mn></mrow>;
+}
+
+export function MathBlock() {
+  return <math><mi>y</mi></math>;
+}
