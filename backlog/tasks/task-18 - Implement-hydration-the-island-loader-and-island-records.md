@@ -5,7 +5,7 @@ status: In Progress
 assignee:
   - '@Spark'
 created_date: '2026-10-08 12:21'
-updated_date: '2026-10-08 16:33'
+updated_date: '2026-10-08 16:51'
 labels: []
 milestone: m-2
 dependencies:
@@ -62,4 +62,10 @@ Lux: doc-2 §3.1 now holds the full hydration marker table (Nova, TASK-47). Also
 Lux (from TASK-12 and TASK-49):
 - Parentless branchValue/listValue ranges must adopt the server <!--[-->…<!--]--> regions under hydration.
 - Size: all exports measure 9.48 kB against the 10 kB hard cap. Keep hydration and the loader tree-shakeable and as small as possible (soft target ≤ 1.5 kB). The cap applies to what an app actually ships; report the typical-app number with hydration included.
+
+Spark progress: cursor + hooks + hydrate() + loader implemented (dom/hydrate.ts, dom/islands.ts, dom/loader.ts; hooks in insert/list/async/boundaries/frame/hydration). Findings so far:
+- The compiled walk (firstChild/nextSibling) needs the template structure, so server content of a hole that precedes a template node (a <!> placeholder or a static marker) waits in a fragment until its region opens; append holes stay in place. Focus is restored after the pass.
+- Replay skipped the await expression, so its reactive reads (props.id in fetchJSON(`/api/${props.id}`)) were not tracked and hydrated async components never re-ran. Replay now evaluates the expression for tracking with fetch held off (pending promise) and drops its result.
+- The cursor install moved behind a frame hook set by lumen/dom/hydrate, so apps without hydration tree-shake every claiming path again (typical imports back to 6.02 kB).
+- Server side of TASK-50 (branch()/list() in value positions) noted on TASK-50 for Photon; until then parentless values in islands fall back (LUM4006).
 <!-- SECTION:NOTES:END -->
