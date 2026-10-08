@@ -16,6 +16,11 @@
       "canWrite": true,
       "canCommit": false
     },
+    "Halo": {
+      "role": "CSS compiler engineer (Rust). Owns the lumen_css crate: Lightning CSS processing, placement scope tokens and selector rewriting, :global/:deep, scoped keyframes, $ref substitution of resolved constants, targets/minification and CSS diagnostics.",
+      "canWrite": true,
+      "canCommit": false
+    },
     "Spark": {
       "role": "Runtime engineer (TypeScript). Owns signals, the DOM renderer, SSR streaming, islands hydration, router, and data primitives, plus their benchmarks.",
       "canWrite": true,
