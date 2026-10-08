@@ -5,12 +5,11 @@ status: To Do
 assignee:
   - '@Nova'
 created_date: '2026-10-08 12:21'
+updated_date: '2026-10-08 13:59'
 labels: []
 milestone: m-6
 dependencies:
-  - TASK-23
-  - TASK-26
-  - TASK-24
+  - TASK-46
 documentation:
   - backlog/docs/architecture/doc-1 - Lumen-architecture-specification.md
 priority: high
