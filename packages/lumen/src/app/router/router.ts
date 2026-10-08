@@ -46,7 +46,7 @@ import { untrack } from "../../core/reactive.ts";
 import { computed, signal, type Signal } from "../../core/signal.ts";
 import { createComponent } from "../../dom/component.ts";
 import { MISMATCH } from "../../dom/hydration.ts";
-import { renderRange, type RangeStart } from "../../dom/insert.ts";
+import { createRange, renderRange, type RangeStart } from "../../dom/insert.ts";
 import { setClientNavigation } from "../actions/client.ts";
 import { createRouteMatcher, type RouteMatcher } from "../routes/match.ts";
 import type { RouteManifest } from "../routes/manifest.ts";
@@ -333,9 +333,18 @@ function spaRoot(r: Router, view: View): Renderable {
  */
 function createOutlet(depth: number, scope: Scope): Outlet {
   const owner = getOwner();
-  const content = untrack(() =>
-    mountLevel(createOwner(owner), depth, scope, untrack(scope.view), 3),
-  );
+  const view = untrack(scope.view);
+  let content: Content;
+  try {
+    content = untrack(() => mountLevel(createOwner(owner), depth, scope, view, 3));
+  } catch (error) {
+    // A level that throws while it is created (`redirect()`, `notFound()`, a bug): the outlet
+    // starts empty and the error page (or the redirect) replaces it once the SPA has started.
+    content = { file: "", owner: createOwner(owner), node: createRange(), child: undefined };
+    queueMicrotask(() => {
+      if (router !== undefined) fail(router, error, view);
+    });
+  }
   return { owner, shown: signal(content) };
 }
 

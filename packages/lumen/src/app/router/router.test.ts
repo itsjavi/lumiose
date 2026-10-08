@@ -78,6 +78,8 @@ const User = $async(async function User(props: { params: { id: string } }) {
 
 const Search: Component<object> = () => el("p", () => `q=${search().get("q") ?? ""}`);
 
+const Old: Component<object> = () => redirect("/search?q=moved");
+
 const Slow = $async(async function Slow() {
   try {
     (await $await(() => new Promise<void>((resolve) => setTimeout(resolve, 5)), 0))();
@@ -109,6 +111,7 @@ const modules: Record<string, Component<any>> = {
   "src/routes/users/_layout.tsx": Users,
   "src/routes/users/[id].tsx": User,
   "src/routes/search.tsx": Search,
+  "src/routes/old.tsx": Old,
   "src/routes/slow.tsx": SuspensePage,
   "src/routes/_404.tsx": NotFound,
   "src/routes/_error.tsx": ErrorPage,
@@ -123,6 +126,7 @@ function config(): SpaConfig {
     routes: [
       { segments: [], app: APP, levels: [APP, "src/routes/index.tsx"] },
       { segments: [s("search")], app: APP, levels: [APP, "src/routes/search.tsx"] },
+      { segments: [s("old")], app: APP, levels: [APP, "src/routes/old.tsx"] },
       { segments: [s("slow")], app: APP, levels: [APP, "src/routes/slow.tsx"] },
       { segments: [s("static")] },
       {
@@ -269,6 +273,14 @@ describe("lumen/router", () => {
     await settled();
     expect(location.pathname).toBe("/users/2");
     expect(text()).toBe("path /users/2users of 2user 2");
+  });
+
+  it("follows a redirect() thrown while the first page renders", async () => {
+    await boot("/old", "src/routes/old.tsx");
+    await settled();
+    expect(location.pathname + location.search).toBe("/search?q=moved");
+    expect(text()).toBe("path /searchq=moved");
+    expect(rootMounts).toBe(1);
   });
 
   it("navigates to URLs it does not own with a document navigation", async () => {
