@@ -35,3 +35,7 @@ The user wants to import Markdown (blogs and content) and HTML (for example web 
   - `$refs` are not available, because there is no JS scope.
 - **Layouts come only from folders**; frontmatter cannot select a layout.
 - **Frontmatter is optionally typed with schemas the user defines**, so Lumen ships no built-in schemas. The mechanism is pending the user's confirmation.
+- **Frontmatter typing (confirmed by the user):** Lumen has no opinion and ships no schema conventions.
+  - Frontmatter is exported as plain data, typed `Record<string, unknown>`.
+  - Users can validate it at build time through an optional hook, `lumen({ md: { frontmatter(data, { file }) { …; return data } } })`. Throwing fails the build with file context.
+  - For static types, users augment `declare module "*.md"` themselves, or validate at the import site.
