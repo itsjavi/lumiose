@@ -5,6 +5,7 @@ status: To Do
 assignee:
   - '@Beacon'
 created_date: '2026-10-08 12:21'
+updated_date: '2026-10-08 13:25'
 labels: []
 milestone: m-4
 dependencies:
@@ -29,3 +30,11 @@ One CLI gives humans and agents every entry point, with machine-readable output 
 - [ ] #2 --format json on every command; stable exit codes; help text
 - [ ] #3 Smoke tests
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Lux (from TASK-27):
+- `lumen typegen` must also sync shadows (syncShadows from src/cli/check/shadow.ts).
+- `lumen check` should scan .tsx files too, to report LUM1006.
+<!-- SECTION:NOTES:END -->
