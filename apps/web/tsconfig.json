@@ -1,0 +1,17 @@
+{
+  // The generated Lumen tsconfig pairs the workspace with `.lumen/shadow`, so the `.stsx` modules
+  // of @lumen/site-kit type-check with the site (`lumen check`).
+  "extends": ["../../tsconfig.base.json", "./.lumen/tsconfig.generated.json"],
+  "compilerOptions": {
+    // `vite/client` types `import.meta.glob` and `?raw` imports in src/content.
+    "types": ["node", "lumen/env", "vite/client"]
+  },
+  "include": [
+    "src",
+    "e2e",
+    "vite.config.ts",
+    "playwright.config.ts",
+    ".lumen/shadow",
+    ".lumen/types"
+  ]
+}

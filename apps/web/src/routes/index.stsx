@@ -1,0 +1,457 @@
+// The landing page: what Lumen is, with evidence. The benchmark numbers come from the committed
+// results (content/evidence.ts) and the compiled output from this version's compiler
+// (content/samples.ts, checked by its test).
+import { Callout, Card, CodeBlock, LinkButton, Tabs } from "@lumen/site-kit";
+import { highlight } from "@lumen/site-kit/highlight";
+import {
+  bp,
+  color,
+  font,
+  gradient,
+  layout,
+  leading,
+  radius,
+  shadow,
+  space,
+  text,
+  weight,
+} from "@lumen/site-kit/tokens";
+import { Meta, Title } from "lumen";
+import { BarChart } from "../components/BarChart.stsx";
+import { evidence } from "../content/evidence.ts";
+import {
+  checkSample,
+  checkSource,
+  counterCss,
+  counterOutput,
+  counterSource,
+  createCommands,
+} from "../content/samples.ts";
+import { link, site } from "../lib/site.ts";
+
+const fixed = (digits: number) => (value: number) => value.toFixed(digits);
+
+function Icon(props: { path: string }) {
+  return (
+    <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" class="icon">
+      <path d={props.path} />
+      <style>
+        .icon {
+          fill: none;
+          stroke: currentColor;
+          stroke-width: 2;
+          stroke-linecap: round;
+          stroke-linejoin: round;
+        }
+      </style>
+    </svg>
+  );
+}
+
+const ICONS = {
+  static: "M4 5h16v4H4zM4 11h16v4H4zM4 17h10v2H4z",
+  server: "M4 4h16v6H4zM4 14h16v6H4zM7 7h2M7 17h2",
+  islands: "M12 3a4 4 0 1 1 0 8 4 4 0 0 1 0-8ZM5 14a3 3 0 1 1 0 6 3 3 0 0 1 0-6ZM19 14a3 3 0 1 1 0 6 3 3 0 0 1 0-6Z",
+  spa: "M4 12h12M12 6l6 6-6 6",
+};
+
+export default function Home() {
+  const results = evidence();
+  const lumenCpu = () => results.cpu.find((bar) => bar.self)?.value ?? 0;
+  const lumenSize = () => results.size.find((bar) => bar.self)?.value ?? 0;
+  const lumenSsr = () => results.ssr.find((bar) => bar.self)?.value ?? 0;
+
+  return (
+    <div class="home">
+      <Title>Lumen: signals, islands and scoped styles, compiled</Title>
+      <Meta name="description" content={site.description} />
+      <Meta property="og:title" content="Lumen" />
+      <Meta property="og:description" content={site.description} />
+
+      <section class="hero">
+        <p class="eyebrow">TypeScript 7 · .stsx · signals · islands</p>
+        <h1>
+          Web apps that ship <span class="lit">light</span>
+        </h1>
+        <p class="lead">
+          Lumen compiles <code>.stsx</code> components, TSX with plain CSS beside it, into direct DOM
+          updates driven by signals. Pages render on the server, and only the parts that need to be
+          interactive ship JavaScript.
+        </p>
+        <div class="actions">
+          <LinkButton href={link("/docs/getting-started")} size="lg">
+            Get started
+          </LinkButton>
+          <LinkButton href={link("/docs")} variant="secondary" size="lg">
+            Read the docs
+          </LinkButton>
+          <LinkButton href={link("/playground")} variant="ghost" size="lg">
+            Playground
+          </LinkButton>
+        </div>
+        <div class="install">
+          <Tabs client:load id="create" label="Package manager" labels={Object.keys(createCommands)}>
+            {Object.values(createCommands).map((code) => (
+              <CodeBlock code={code} lang="sh" highlight={highlight} />
+            ))}
+          </Tabs>
+        </div>
+        <ul class="facts" role="list">
+          <li>
+            <strong>{fixed(2)(lumenCpu())}</strong>
+            <span>weighted factor on js-framework-benchmark (1.00 is the fastest)</span>
+          </li>
+          <li>
+            <strong>{fixed(1)(lumenSize())} kB</strong>
+            <span>compressed, runtime and app, for the benchmark app</span>
+          </li>
+          <li>
+            <strong>{Math.round(lumenSsr())}/s</strong>
+            <span>server renders of a 5,000-component page</span>
+          </li>
+        </ul>
+      </section>
+
+      <section class="section split" aria-labelledby="stsx-title">
+        <header>
+          <p class="kicker">One file per component</p>
+          <h2 id="stsx-title">TSX and CSS, compiled together</h2>
+          <p>
+            A <code>.stsx</code> file is TSX with <code>&lt;style&gt;</code> blocks of plain CSS. The
+            compiler turns both into the smallest thing that does the job.
+          </p>
+          <ul class="points" role="list">
+            <li>
+              <strong>Scoped by placement.</strong> A block styles the element it sits in, the whole
+              file at the top level, or the app with <code>&lt;style global&gt;</code>.
+            </li>
+            <li>
+              <strong>JS values in CSS.</strong> <code>$gap</code> and <code>$radius.pill</code>{" "}
+              read TypeScript constants, type-checked and inlined at build time.
+            </li>
+            <li>
+              <strong>Math at build time.</strong> Lightning CSS folds{" "}
+              <code>calc($gap * 2px)</code> to <code>16px</code>: no runtime, no CSS-in-JS.
+            </li>
+            <li>
+              <strong>Setup once, update what changed.</strong> No virtual DOM: a template is
+              cloned once, and only the bindings that read a signal re-run.
+            </li>
+          </ul>
+          <a class="more" href={link("/docs/concepts/styles")}>
+            How styles work →
+          </a>
+        </header>
+        <div class="code-pair">
+          <Tabs client:visible id="counter" label="Counter.stsx" labels={["You write", "JS output", "CSS output"]}>
+            <CodeBlock code={counterSource} lang="stsx" title="Counter.stsx" highlight={highlight} />
+            <CodeBlock code={counterOutput} lang="js" title="Counter.js" highlight={highlight} />
+            <CodeBlock code={counterCss} lang="css" title="Counter.css" highlight={highlight} />
+          </Tabs>
+        </div>
+      </section>
+
+      <section class="section" id="performance" aria-labelledby="performance-title">
+        <header class="section-head">
+          <p class="kicker">Measured, not claimed</p>
+          <h2 id="performance-title">Fast on the client and the server</h2>
+          <p>
+            The same apps in every framework, measured with krausest's own js-framework-benchmark
+            runner and a server rendering benchmark. Numbers come from the latest committed run.
+          </p>
+        </header>
+        <div class="charts">
+          <BarChart
+            title="Client updates"
+            unit="Weighted geometric mean of CPU time, × the fastest"
+            better="lower"
+            bars={results.cpu}
+            format={fixed(2)}
+          />
+          <BarChart
+            title="Server rendering"
+            unit="Renders per second of a 1,000-row page"
+            better="higher"
+            bars={results.ssr}
+            format={(value) => Math.round(value).toString()}
+          />
+          <BarChart
+            title="Bundle size"
+            unit="Compressed kB, runtime and benchmark app"
+            better="lower"
+            bars={results.size}
+            format={fixed(1)}
+          />
+        </div>
+        <p class="source">
+          Client: {results.clientRun}. Server: {results.serverRun}. Method, every benchmark and the
+          caveats are in <code>benchmarks/js-framework-benchmark/RESULTS.md</code> and{" "}
+          <code>benchmarks/ssr/RESULTS.md</code> in the repository.
+        </p>
+      </section>
+
+      <section class="section" aria-labelledby="modes-title">
+        <header class="section-head">
+          <p class="kicker">Server first</p>
+          <h2 id="modes-title">Choose how each route renders</h2>
+          <p>
+            Static, server or SPA, per route, with islands where a page needs interaction. This site
+            is a static Lumen app: every page is prerendered, and the search box is an island.
+          </p>
+        </header>
+        <div class="cards">
+          <Card
+            title="Static"
+            eyebrow="mode = static"
+            href={link("/docs/concepts/rendering-modes")}
+            icon={<Icon path={ICONS.static} />}
+          >
+            Prerendered at build time to plain HTML files, with <code>staticPaths</code> for params.
+          </Card>
+          <Card
+            title="Server"
+            eyebrow="mode = server"
+            href={link("/docs/concepts/rendering-modes")}
+            icon={<Icon path={ICONS.server} />}
+          >
+            Rendered per request and streamed: the shell first, then each Suspense boundary.
+          </Card>
+          <Card
+            title="Islands"
+            eyebrow="client:load · idle · visible"
+            href={link("/docs/concepts/islands")}
+            icon={<Icon path={ICONS.islands} />}
+          >
+            Only interactive components hydrate, with serializable props and slots.
+          </Card>
+          <Card
+            title="SPA routes"
+            eyebrow="mode = spa"
+            href={link("/docs/reference/router")}
+            icon={<Icon path={ICONS.spa} />}
+          >
+            Client navigation with persistent layouts, where an app needs it.
+          </Card>
+        </div>
+      </section>
+
+      <section class="section split" aria-labelledby="tools-title">
+        <header>
+          <p class="kicker">For humans and agents</p>
+          <h2 id="tools-title">Tooling that explains itself</h2>
+          <p>
+            Every tool speaks the same diagnostics, with stable <code>LUMxxxx</code> codes and a fix,
+            in your editor, in the terminal and as JSON.
+          </p>
+          <ul class="points" role="list">
+            <li>
+              <strong>Stock TypeScript 7.</strong> <code>lumen check</code> type-checks{" "}
+              <code>.stsx</code> through shadow files and maps every error back to your source.
+            </li>
+            <li>
+              <strong>Docs in the package.</strong> <code>lumen docs</code> and{" "}
+              <code>lumen explain</code> print the version you installed; agents read them from{" "}
+              <code>node_modules/lumen/docs</code>.
+            </li>
+            <li>
+              <strong>Editor support.</strong> A language server and VS Code extension, with CSS
+              completion inside style blocks, scoped to where you type.
+            </li>
+            <li>
+              <strong>Machine-readable.</strong> <code>--format json</code> on every command,{" "}
+              <a href={link("/llms.txt")}>llms.txt</a> and{" "}
+              <a href={link("/llms-full.txt")}>llms-full.txt</a> for this site.
+            </li>
+          </ul>
+        </header>
+        <div class="code-pair">
+          <CodeBlock code={checkSource} lang="stsx" title="src/Counter.stsx" highlight={highlight} />
+          <CodeBlock code={checkSample} lang="sh" title="terminal" highlight={highlight} />
+        </div>
+      </section>
+
+      <section class="section closing" aria-labelledby="start-title">
+        <Callout kind="info" title="Pre-release">
+          Lumen is at 0.0.0. The docs mark what this version does not implement yet with a Status
+          note, and the APIs may still change.
+        </Callout>
+        <h2 id="start-title">Build something light</h2>
+        <div class="actions">
+          <LinkButton href={link("/docs/getting-started")} size="lg">
+            Get started
+          </LinkButton>
+          <LinkButton href={link("/docs/concepts/components")} variant="secondary" size="lg">
+            Learn the concepts
+          </LinkButton>
+        </div>
+      </section>
+
+      <style>
+        .home {
+          background:
+            $gradient.glow no-repeat,
+            $color.bg;
+          background-size:
+            100% 40rem,
+            auto;
+        }
+        .hero,
+        .section {
+          max-inline-size: $layout.page;
+          margin-inline: auto;
+          padding-inline: $layout.gutter;
+        }
+
+        .hero {
+          padding-block: $space.xxxl $space.xxl;
+          text-align: center;
+        }
+        .eyebrow,
+        .kicker {
+          color: $color.accentText;
+          font-family: $font.mono;
+          font-size: $text.sm;
+          font-weight: $weight.semibold;
+        }
+        h1 {
+          margin-block: $space.sm $space.md;
+          font-size: $text.display;
+        }
+        .lit {
+          background: $gradient.text;
+          background-clip: text;
+          -webkit-background-clip: text;
+          color: transparent;
+        }
+        .lead {
+          max-inline-size: $layout.prose;
+          margin-inline: auto;
+          color: $color.muted;
+          font-size: $text.lg;
+          line-height: $leading.normal;
+        }
+        .actions {
+          display: flex;
+          flex-wrap: wrap;
+          justify-content: center;
+          gap: $space.sm;
+          margin-block-start: $space.xl;
+        }
+        .install {
+          max-inline-size: 34rem;
+          margin: $space.xl auto 0;
+          text-align: start;
+        }
+        /* Until a Tabs island runs (it labels the panels role="tabpanel"), show its first panel. */
+        .install :deep(.panels > :not([role]) ~ :not([role])),
+        .code-pair :deep(.panels > :not([role]) ~ :not([role])) {
+          display: none;
+        }
+        .facts {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
+          gap: $space.md;
+          max-inline-size: 60rem;
+          margin: $space.xl auto 0;
+        }
+        .facts li {
+          display: grid;
+          gap: $space.xxs;
+          padding: $space.md $space.lg;
+          border: 1px solid $color.border;
+          border-radius: $radius.lg;
+          background: color-mix(in oklab, $color.surface 80%, transparent);
+          box-shadow: $shadow.sm;
+        }
+        .facts strong {
+          font-size: $text.xxl;
+          letter-spacing: -0.02em;
+          font-variant-numeric: tabular-nums;
+        }
+        .facts span {
+          color: $color.muted;
+          font-size: $text.sm;
+          line-height: $leading.snug;
+        }
+
+        .section {
+          padding-block: $space.xxxl;
+          border-block-start: 1px solid $color.border;
+        }
+        .section h2 {
+          margin-block: $space.xs $space.sm;
+          font-size: $text.xxxl;
+        }
+        .section header p:not(.kicker) {
+          color: $color.muted;
+          font-size: $text.lg;
+        }
+        .section-head {
+          max-inline-size: $layout.prose;
+          margin-block-end: $space.xl;
+        }
+        .split {
+          display: grid;
+          gap: $space.xl;
+          align-items: start;
+        }
+        @media (width >= $bp.lg) {
+          .split {
+            grid-template-columns: minmax(0, 5fr) minmax(0, 6fr);
+            gap: $space.xxl;
+          }
+        }
+        .points {
+          display: grid;
+          gap: $space.sm;
+          margin-block: $space.lg;
+        }
+        .points li {
+          padding-inline-start: $space.md;
+          border-inline-start: 2px solid $color.border;
+          color: $color.muted;
+        }
+        .points strong {
+          color: $color.text;
+        }
+        .more {
+          font-weight: $weight.semibold;
+        }
+        .code-pair {
+          display: grid;
+          grid-template-columns: minmax(0, 1fr);
+          min-inline-size: 0;
+        }
+
+        .charts {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(20rem, 1fr));
+          gap: $space.md;
+        }
+        .source {
+          margin-block-start: $space.md;
+          color: $color.subtle;
+          font-size: $text.sm;
+        }
+
+        .cards {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+          gap: $space.md;
+        }
+        .closing {
+          display: grid;
+          justify-items: center;
+          gap: $space.md;
+          text-align: center;
+        }
+        .closing h2 {
+          margin-block-start: $space.lg;
+        }
+        .closing .actions {
+          margin-block-start: 0;
+        }
+      </style>
+    </div>
+  );
+}

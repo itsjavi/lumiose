@@ -1,0 +1,335 @@
+// The docs content layer: the version-matched Markdown of `packages/lumen/docs` (the single source
+// that `lumen docs` prints and the package ships), rendered for /docs.
+//
+// This is the only module that knows the docs are Markdown files read through Vite: it loads them
+// as raw strings with `import.meta.glob(…, { query: "?raw" })` and renders them with `marked`.
+// Pages, endpoints and tests use the API below, so moving to `.md` imports (decision-22, TASK-69)
+// only changes this file. Server-only in practice: the search island gets the prebuilt
+// `search.json` index instead, so `marked` never reaches the browser.
+
+import { highlight } from "@lumen/site-kit/highlight";
+import { Marked, Renderer, type Token, type Tokens } from "marked";
+import { link } from "../lib/site.ts";
+
+const sources = import.meta.glob<string>("../../../../packages/lumen/docs/**/*.md", {
+  query: "?raw",
+  import: "default",
+  eager: true,
+});
+const DOCS_DIR = "../../../../packages/lumen/docs/";
+
+export interface DocHeading {
+  depth: 2 | 3;
+  id: string;
+  text: string;
+}
+
+/** A run of rendered Markdown, or a code block (rendered by the kit's CodeBlock, with copy). */
+export type DocBlock =
+  | { kind: "html"; html: string }
+  | { kind: "code"; code: string; lang: string; title?: string };
+
+export interface DocPage {
+  /** The docs path without `.md`: `concepts/signals`, `errors/LUM1001`, `README`. */
+  topic: string;
+  /** The URL path below /docs: `concepts/signals`, `errors/LUM1001`; "" for the index. */
+  path: string;
+  /** The site URL (base included). */
+  url: string;
+  /** The first `#` heading, as plain text. */
+  title: string;
+  /** The label in the navigation (the index's link text, else the title). */
+  label: string;
+  /** The page's one-line summary (its first `>` quote), as plain text. */
+  summary: string;
+  /** The summary as inline HTML (code spans and links kept). */
+  summaryHtml: string;
+  /** The navigation section: Start here, Concepts, Reference or Diagnostics. */
+  section: string;
+  blocks: DocBlock[];
+  /** `##` and `###` headings, for the table of contents. */
+  headings: DocHeading[];
+  /** Plain text of the page, for search. */
+  text: string;
+}
+
+export interface NavSection {
+  title: string;
+  pages: DocPage[];
+}
+
+const DIAGNOSTICS = "Diagnostics";
+
+let cache: { pages: DocPage[]; byPath: Map<string, DocPage>; nav: NavSection[] } | undefined;
+
+function load() {
+  if (cache !== undefined) return cache;
+  const texts = new Map(
+    Object.entries(sources).map(([file, text]) => [
+      file.slice(DOCS_DIR.length, -".md".length),
+      text,
+    ]),
+  );
+  const index = texts.get("README");
+  if (index === undefined) throw new Error(`No docs index at ${DOCS_DIR}README.md.`);
+
+  // The index's sections give the reading order and the navigation labels.
+  const outline = readOutline(index);
+  const placed = new Set(outline.flatMap((section) => section.entries.map((entry) => entry.topic)));
+  const diagnostics = [...texts.keys()]
+    .filter((topic) => topic.startsWith("errors/") && !placed.has(topic))
+    .toSorted();
+  const order: { topic: string; section: string; label?: string }[] = [
+    { topic: "README", section: "Start here", label: "Overview" },
+    ...outline.flatMap((section) =>
+      section.entries.map((entry) => ({ ...entry, section: section.title })),
+    ),
+    ...diagnostics.map((topic) => ({ topic, section: DIAGNOSTICS })),
+  ];
+
+  const pages: DocPage[] = [];
+  for (const { topic, section, label } of order) {
+    const text = texts.get(topic);
+    if (text === undefined || pages.some((page) => page.topic === topic)) continue;
+    pages.push(renderDoc(topic, text, section, label));
+  }
+  const nav: NavSection[] = [];
+  for (const page of pages) {
+    const last = nav.at(-1);
+    if (last?.title === page.section) last.pages.push(page);
+    else nav.push({ title: page.section, pages: [page] });
+  }
+  cache = { pages, byPath: new Map(pages.map((page) => [page.path, page])), nav };
+  return cache;
+}
+
+/** Every docs page, in reading order (the index's order, then the diagnostics by code). */
+export function docPages(): readonly DocPage[] {
+  return load().pages;
+}
+
+/** The page at a URL path below /docs (`""` is the index). */
+export function findDoc(path: string): DocPage | undefined {
+  return load().byPath.get(path.replace(/^\/+|\/+$/g, ""));
+}
+
+export function docNav(): readonly NavSection[] {
+  return load().nav;
+}
+
+/** The pages before and after `page` in reading order. */
+export function adjacentDocs(page: DocPage): { prev?: DocPage; next?: DocPage } {
+  const pages = docPages();
+  const at = pages.indexOf(page);
+  return { prev: pages[at - 1], next: pages[at + 1] };
+}
+
+/** The diagnostic codes with a page (`LUM1001`, …), for the /errors/LUMxxxx redirects. */
+export function diagnosticCodes(): string[] {
+  return docPages()
+    .map((page) => /^errors\/(LUM\d{4})$/.exec(page.topic)?.[1])
+    .filter((code) => code !== undefined);
+}
+
+// --- The index outline -------------------------------------------------------------------------
+
+interface OutlineSection {
+  title: string;
+  entries: { topic: string; label: string }[];
+}
+
+/** `## Section` headings with `- [Label](topic.md): …` items, in order. */
+export function readOutline(index: string): OutlineSection[] {
+  const sections: OutlineSection[] = [];
+  for (const line of index.split("\n")) {
+    const heading = /^## (.+)$/.exec(line);
+    if (heading) {
+      sections.push({ title: heading[1]!.trim(), entries: [] });
+      continue;
+    }
+    const item = /^- \[([^\]]+)\]\(([^)#]+)\.md\)/.exec(line);
+    if (item && sections.length > 0) {
+      sections.at(-1)!.entries.push({ topic: item[2]!, label: plain(item[1]!) });
+    }
+  }
+  return sections.filter((section) => section.entries.length > 0);
+}
+
+// --- Rendering ---------------------------------------------------------------------------------
+
+/** URL path below /docs of a topic: `README` → "", `errors/README` → `errors`. */
+export function topicPath(topic: string): string {
+  return topic === "README" ? "" : topic.replace(/\/README$/, "");
+}
+
+/** The site URL of a topic, with an optional `#hash`. */
+export function topicUrl(topic: string, hash = ""): string {
+  const path = topicPath(topic);
+  return link(path === "" ? `/docs${hash}` : `/docs/${path}${hash}`);
+}
+
+/**
+ * Rewrites a link of a page: a relative `.md` link becomes the site URL of that topic (keeping
+ * its `#hash`); other links are left alone.
+ */
+export function docHref(href: string, from: string): string {
+  if (/^[a-z][a-z0-9+.-]*:|^\/\/|^#/i.test(href)) return href;
+  const match = /^([^#?]*?)\.md(#.*)?$/.exec(href);
+  if (match === null) return href;
+  const parts = from.split("/").slice(0, -1);
+  for (const segment of match[1]!.split("/")) {
+    if (segment === "..") parts.pop();
+    else if (segment !== "." && segment !== "") parts.push(segment);
+  }
+  return topicUrl(parts.join("/"), match[2] ?? "");
+}
+
+/** GitHub's heading anchors: lowercase, punctuation dropped, spaces to hyphens. */
+export function slugify(text: string): string {
+  return text
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}\s_-]/gu, "")
+    .trim()
+    .replace(/\s/g, "-");
+}
+
+/** Markdown inline syntax to plain text (titles, summaries, labels). */
+function plain(markdown: string): string {
+  return markdown
+    .replace(/!?\[([^\]]*)\]\([^)]*\)/g, "$1")
+    .replace(/[`*_]/g, "")
+    .trim();
+}
+
+const headingIds = new WeakMap<Tokens.Heading, string>();
+let currentTopic = "README";
+const defaults = new Renderer();
+
+const markdown = new Marked({
+  gfm: true,
+  renderer: {
+    heading(token) {
+      const inner = this.parser.parseInline(token.tokens);
+      const id = headingIds.get(token);
+      if (id === undefined) return `<h${token.depth}>${inner}</h${token.depth}>\n`;
+      return `<h${token.depth} id="${id}"><a class="anchor" href="#${id}" aria-label="Link to this section">#</a>${inner}</h${token.depth}>\n`;
+    },
+    link(token) {
+      const href = docHref(token.href, currentTopic);
+      const inner = this.parser.parseInline(token.tokens);
+      const external = /^https?:/i.test(href);
+      return `<a href="${escapeAttr(href)}"${external ? ' rel="noopener"' : ""}>${inner}</a>`;
+    },
+    table(token) {
+      // Wide reference tables scroll on their own instead of widening the page.
+      return `<div class="table">${defaults.table.call(this, token)}</div>\n`;
+    },
+    code(token) {
+      // Top-level code blocks become CodeBlocks (renderDoc); these are nested ones (in lists).
+      const lang = (token.lang ?? "").split(/\s+/)[0] || "text";
+      return `<pre class="nested-code"><code class="language-${escapeAttr(lang)}">${highlight(token.text, lang)}</code></pre>\n`;
+    },
+    blockquote(token) {
+      const body = this.parser.parse(token.tokens);
+      const status = /^\s*<p><strong>Status:<\/strong>/.test(body);
+      return `<blockquote${status ? ' class="status"' : ""}>\n${body}</blockquote>\n`;
+    },
+  },
+});
+
+function renderDoc(topic: string, source: string, section: string, label?: string): DocPage {
+  // Generated pages carry HTML comments (generator notes and markers).
+  const tokens = markdown.lexer(source.replace(/<!--[\s\S]*?-->\n?/g, ""));
+  let title = topic;
+  let summary = "";
+  let summaryHtml = "";
+  const headings: DocHeading[] = [];
+  const used = new Map<string, number>();
+  const body: Token[] = [];
+  let beforeSections = true;
+  for (const token of tokens) {
+    if (token.type === "heading" && token.depth === 1 && title === topic) {
+      title = plain(token.text);
+      continue;
+    }
+    if (token.type === "heading" && token.depth >= 2) beforeSections = false;
+    // The first quote before any section is the page's summary (the lead).
+    if (token.type === "blockquote" && beforeSections && summary === "") {
+      const quote = token.text.replace(/\n/g, " ");
+      summary = plain(quote);
+      currentTopic = topic;
+      summaryHtml = markdown.parseInline(quote) as string;
+      continue;
+    }
+    if (token.type === "heading" && (token.depth === 2 || token.depth === 3)) {
+      const base = slugify(plain(token.text));
+      const count = used.get(base) ?? 0;
+      used.set(base, count + 1);
+      const id = count === 0 ? base : `${base}-${count}`;
+      headingIds.set(token as Tokens.Heading, id);
+      headings.push({ depth: token.depth, id, text: plain(token.text) });
+    }
+    body.push(token);
+  }
+
+  currentTopic = topic;
+  const blocks: DocBlock[] = [];
+  let run: Token[] = [];
+  const flush = () => {
+    if (run.length === 0) return;
+    blocks.push({
+      kind: "html",
+      html: markdown.parser(Object.assign(run, { links: tokens.links })),
+    });
+    run = [];
+  };
+  for (const token of body) {
+    if (token.type !== "code") {
+      run.push(token);
+      continue;
+    }
+    flush();
+    const code = token as Tokens.Code;
+    const [lang = "text", ...meta] = (code.lang ?? "").split(/\s+/).filter(Boolean);
+    const file = meta.find((part) => part.startsWith("file="))?.slice("file=".length);
+    blocks.push({ kind: "code", code: code.text, lang, ...(file ? { title: file } : {}) });
+  }
+  flush();
+
+  return {
+    topic,
+    path: topicPath(topic),
+    url: topicUrl(topic),
+    title,
+    label: label ?? title,
+    summary,
+    summaryHtml,
+    section,
+    blocks,
+    headings,
+    text: searchText(body),
+  };
+}
+
+/** The page's words: text of every token, code included (API names are search terms). */
+function searchText(tokens: readonly Token[]): string {
+  const parts: string[] = [];
+  const visit = (list: readonly Token[]) => {
+    for (const token of list) {
+      if (token.type === "code") parts.push(token.text);
+      else if ("tokens" in token && Array.isArray(token.tokens)) visit(token.tokens);
+      else if (token.type === "table") {
+        const table = token as Tokens.Table;
+        for (const cell of [...table.header, ...table.rows.flat()]) visit(cell.tokens);
+      } else if (token.type === "list") {
+        for (const item of (token as Tokens.List).items) visit(item.tokens);
+      } else if ("text" in token && typeof token.text === "string") parts.push(token.text);
+    }
+  };
+  visit(tokens);
+  return parts.join(" ").replace(/\s+/g, " ").trim();
+}
+
+function escapeAttr(value: string): string {
+  return value.replace(/&/g, "&amp;").replace(/"/g, "&quot;");
+}

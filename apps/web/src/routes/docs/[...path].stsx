@@ -1,0 +1,291 @@
+// Every docs page (`staticPaths`: the index at /docs, the concept and reference pages, and the
+// diagnostics at /docs/errors/LUMxxxx), rendered from packages/lumen/docs: the page header, the
+// Markdown with the kit's CodeBlock for code, prev/next links and the table of contents.
+import { CodeBlock } from "@lumen/site-kit";
+import { highlight } from "@lumen/site-kit/highlight";
+import {
+  bp,
+  color,
+  font,
+  layout,
+  leading,
+  radius,
+  space,
+  text,
+  weight,
+} from "@lumen/site-kit/tokens";
+import { Meta, notFound, Title, type RouteProps } from "lumen";
+import { adjacentDocs, docPages, findDoc, type DocPage } from "../../content/docs.ts";
+
+export function staticPaths() {
+  return docPages().map((page) => ({ params: { path: page.path } }));
+}
+
+export default function DocsPage(props: RouteProps<"/docs/[...path]">) {
+  return <DocView page={findDoc(props.params.path) ?? notFound(`No docs page "${props.params.path}".`)} />;
+}
+
+function DocView(props: { page: DocPage }) {
+  const around = () => adjacentDocs(props.page);
+  const toc = () => props.page.headings.filter((heading) => heading.depth === 2 || props.page.headings.length < 14);
+
+  return (
+    <div class="doc">
+      <Title>{props.page.path === "" ? "Lumen docs" : `${props.page.title} · Lumen docs`}</Title>
+      <Meta name="description" content={props.page.summary} />
+      <Meta property="og:title" content={props.page.title} />
+      <Meta property="og:description" content={props.page.summary} />
+
+      <article>
+        <header class="head">
+          <p class="section">{props.page.section}</p>
+          <h1>{props.page.title}</h1>
+          {props.page.summary !== "" && <p class="lead" innerHTML={props.page.summaryHtml} />}
+        </header>
+        <div class="prose">
+          {props.page.blocks.map((block) =>
+            block.kind === "code" ? (
+              <CodeBlock code={block.code} lang={block.lang} title={block.title} highlight={highlight} />
+            ) : (
+              <div class="chunk" innerHTML={block.html} />
+            ),
+          )}
+        </div>
+        <nav class="adjacent" aria-label="Previous and next pages">
+          {around().prev === undefined ? (
+            <span />
+          ) : (
+            <a rel="prev" href={around().prev!.url}>
+              <small>Previous</small>
+              {around().prev!.label}
+            </a>
+          )}
+          {around().next === undefined ? (
+            <span />
+          ) : (
+            <a rel="next" class="next" href={around().next!.url}>
+              <small>Next</small>
+              {around().next!.label}
+            </a>
+          )}
+        </nav>
+      </article>
+
+      {toc().length > 1 && (
+        <nav class="toc" aria-label="On this page">
+          <p>On this page</p>
+          <ol role="list">
+            {toc().map((heading) => (
+              <li class={{ sub: heading.depth === 3 }}>
+                <a href={`#${heading.id}`}>{heading.text}</a>
+              </li>
+            ))}
+          </ol>
+        </nav>
+      )}
+
+      <style>
+        .doc {
+          display: grid;
+          gap: $space.xl;
+        }
+        @media (width >= $bp.xl) {
+          .doc {
+            grid-template-columns: minmax(0, 1fr) 13rem;
+          }
+          .toc {
+            position: sticky;
+            inset-block-start: calc($layout.header + $space.md);
+            align-self: start;
+            max-block-size: calc(100dvh - $layout.header - $space.xl);
+            overflow-y: auto;
+          }
+        }
+        @media (width < $bp.xl) {
+          .toc {
+            display: none;
+          }
+        }
+        article {
+          min-inline-size: 0;
+          max-inline-size: 50rem;
+        }
+        .head {
+          margin-block-end: $space.lg;
+        }
+        .section {
+          color: $color.accentText;
+          font-size: $text.sm;
+          font-weight: $weight.semibold;
+        }
+        h1 {
+          margin-block: $space.xxs $space.sm;
+          font-size: $text.xxxl;
+        }
+        .lead {
+          color: $color.muted;
+          font-size: $text.lg;
+          line-height: $leading.snug;
+        }
+
+        .chunk {
+          display: contents;
+        }
+        .prose {
+          line-height: $leading.normal;
+        }
+        .prose :deep(:is(p, ul, ol, blockquote, .table, .nested-code)) {
+          margin-block: 0 $space.md;
+        }
+        .prose :deep(:is(h2, h3, h4)) {
+          position: relative;
+          scroll-margin-block-start: calc($layout.header + $space.md);
+        }
+        .prose :deep(h2) {
+          margin-block: $space.xxl $space.md;
+          padding-block-start: $space.md;
+          border-block-start: 1px solid $color.border;
+          font-size: $text.xxl;
+        }
+        .prose :deep(h3) {
+          margin-block: $space.xl $space.sm;
+          font-size: $text.xl;
+        }
+        .prose :deep(h4) {
+          margin-block: $space.lg $space.xs;
+        }
+        .prose :deep(.anchor) {
+          position: absolute;
+          inset-inline-start: -1.1em;
+          padding-inline-end: 0.3em;
+          color: $color.subtle;
+          text-decoration: none;
+          opacity: 0;
+          transition: opacity 120ms;
+        }
+        .prose :deep(:is(h2, h3, h4):hover .anchor),
+        .prose :deep(.anchor:focus-visible) {
+          opacity: 1;
+        }
+        .prose :deep(:is(ul, ol)) {
+          padding-inline-start: 1.4em;
+        }
+        .prose :deep(li + li) {
+          margin-block-start: $space.xxs;
+        }
+        .prose :deep(li > :is(ul, ol)) {
+          margin-block: $space.xxs 0;
+        }
+        .prose :deep(blockquote) {
+          padding: $space.sm $space.md;
+          border-inline-start: 3px solid $color.border;
+          border-radius: 0 $radius.md $radius.md 0;
+          background: $color.sunken;
+          color: $color.muted;
+        }
+        .prose :deep(blockquote.status) {
+          border-color: $color.infoBorder;
+          background: $color.infoBg;
+          color: $color.text;
+        }
+        .prose :deep(blockquote > :last-child) {
+          margin-block-end: 0;
+        }
+        .prose :deep(.table) {
+          overflow-x: auto;
+          border: 1px solid $color.border;
+          border-radius: $radius.md;
+        }
+        .prose :deep(table) {
+          inline-size: 100%;
+          border-collapse: collapse;
+          font-size: $text.sm;
+        }
+        .prose :deep(:is(th, td)) {
+          padding: $space.xs $space.sm;
+          border-block-end: 1px solid $color.border;
+          text-align: start;
+          vertical-align: top;
+        }
+        .prose :deep(th) {
+          background: $color.sunken;
+          font-weight: $weight.semibold;
+          white-space: nowrap;
+        }
+        .prose :deep(tr:last-child td) {
+          border-block-end: 0;
+        }
+        .prose :deep(td code) {
+          white-space: nowrap;
+        }
+        .prose :deep(.nested-code) {
+          padding: $space.sm $space.md;
+          border: 1px solid $color.border;
+          border-radius: $radius.md;
+          background: $color.codeBg;
+          overflow-x: auto;
+          font-size: $text.sm;
+        }
+
+        .adjacent {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: $space.md;
+          margin-block-start: $space.xxl;
+          padding-block-start: $space.lg;
+          border-block-start: 1px solid $color.border;
+        }
+        .adjacent a {
+          display: grid;
+          gap: 0.15rem;
+          padding: $space.sm $space.md;
+          border: 1px solid $color.border;
+          border-radius: $radius.md;
+          font-weight: $weight.semibold;
+          text-decoration: none;
+        }
+        .adjacent a:hover {
+          border-color: $color.accent;
+        }
+        .adjacent small {
+          color: $color.muted;
+          font-weight: $weight.regular;
+        }
+        .next {
+          text-align: end;
+        }
+
+        .toc p {
+          margin-block-end: $space.xs;
+          font-size: $text.xs;
+          font-weight: $weight.semibold;
+          letter-spacing: 0.06em;
+          text-transform: uppercase;
+        }
+        .toc ol {
+          display: grid;
+          gap: 0.2rem;
+          border-inline-start: 1px solid $color.border;
+        }
+        .toc a {
+          display: block;
+          padding: 0.15rem $space.sm;
+          color: $color.muted;
+          font-size: $text.sm;
+          line-height: 1.35;
+          text-decoration: none;
+        }
+        .toc a:hover {
+          color: $color.text;
+        }
+        .toc .sub a {
+          padding-inline-start: $space.lg;
+          font-size: $text.xs;
+        }
+        .prose :deep(code) {
+          font-family: $font.mono;
+        }
+      </style>
+    </div>
+  );
+}

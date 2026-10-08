@@ -1,0 +1,7 @@
+// /errors redirects to the list of diagnostics.
+import { redirect } from "lumen";
+import { link } from "../../lib/site.ts";
+
+export default function Errors() {
+  return redirect(link("/docs/errors"), 301);
+}

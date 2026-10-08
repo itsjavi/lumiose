@@ -1,0 +1,103 @@
+// A small horizontal bar chart for benchmark results: one row per framework, Lumen's bar in the
+// brand gradient. Plain HTML and CSS (bar widths are custom properties), so it prerenders and
+// reads well without JavaScript; the values are in the text for screen readers.
+import { color, font, radius, space, text, weight } from "@lumen/site-kit/tokens";
+import type { Bar } from "../content/evidence.ts";
+
+export interface BarChartProps {
+  title: string;
+  /** What the numbers are, such as "renders/s" or "× fastest". */
+  unit: string;
+  better: "lower" | "higher";
+  bars: readonly Bar[];
+  /** Formats a value for display. Default: as is. */
+  format?: (value: number) => string;
+}
+
+export function BarChart(props: BarChartProps) {
+  const max = () => Math.max(...props.bars.map((bar) => bar.value));
+  const sorted = () =>
+    props.bars.toSorted((a, b) => (props.better === "lower" ? a.value - b.value : b.value - a.value));
+  const shown = (value: number) => (props.format ?? String)(value);
+
+  return (
+    <figure class="chart">
+      <figcaption>
+        <strong>{props.title}</strong>
+        <span>
+          {props.unit}, {props.better} is better
+        </span>
+      </figcaption>
+      <ol role="list">
+        {sorted().map((bar) => (
+          <li class={{ self: bar.self }} style={{ "--size": `${(bar.value / max()) * 100}%` }}>
+            <span class="label">{bar.label}</span>
+            <span class="track" aria-hidden="true">
+              <span class="bar" />
+            </span>
+            <span class="value">{shown(bar.value)}</span>
+          </li>
+        ))}
+      </ol>
+
+      <style>
+        .chart {
+          display: grid;
+          gap: $space.sm;
+          padding: $space.lg;
+          border: 1px solid $color.border;
+          border-radius: $radius.lg;
+          background: $color.surface;
+        }
+        figcaption {
+          display: grid;
+          gap: 0.15rem;
+        }
+        figcaption span {
+          color: $color.muted;
+          font-size: $text.sm;
+        }
+        ol {
+          display: grid;
+          gap: $space.xs;
+        }
+        li {
+          display: grid;
+          grid-template-columns: 6.5rem 1fr 4.5rem;
+          align-items: center;
+          gap: $space.sm;
+          font-size: $text.sm;
+        }
+        .label {
+          color: $color.muted;
+        }
+        .self .label,
+        .self .value {
+          color: $color.text;
+          font-weight: $weight.semibold;
+        }
+        .track {
+          block-size: 0.6rem;
+          border-radius: $radius.pill;
+          background: $color.sunken;
+          overflow: hidden;
+        }
+        .bar {
+          display: block;
+          inline-size: var(--size);
+          block-size: 100%;
+          border-radius: inherit;
+          background: $color.borderStrong;
+        }
+        .self .bar {
+          background: linear-gradient(90deg, $color.glowA, $color.glowB);
+        }
+        .value {
+          font-family: $font.mono;
+          font-variant-numeric: tabular-nums;
+          text-align: end;
+        }
+      </style>
+    </figure>
+  );
+}

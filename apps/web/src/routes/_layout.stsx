@@ -1,0 +1,55 @@
+// Root layout: the site header (with the theme toggle), the page and the footer, all from
+// @lumen/site-kit. Every route is prerendered (`lumen({ mode: "static" })`), so the site deploys
+// as plain files.
+import { Footer, SiteHeader } from "@lumen/site-kit";
+import { color, radius, space } from "@lumen/site-kit/tokens";
+import { url } from "lumen";
+import { footerColumns, link, navLinks, sitePath, site } from "../lib/site.ts";
+
+export default function RootLayout(props: { children?: JSX.Element }) {
+  const current = link(sitePath(url().pathname));
+
+  return (
+    <div class="site">
+      <a class="skip" href="#content">
+        Skip to content
+      </a>
+      <SiteHeader links={navLinks} current={current} home={link("/")} />
+      <main id="content">{props.children}</main>
+      <Footer columns={footerColumns} tagline={site.tagline}>
+        <p>MIT licensed. This site is a static Lumen app built with @lumen/site-kit.</p>
+      </Footer>
+
+      <style>
+        .site {
+          display: flex;
+          flex-direction: column;
+          min-block-size: 100dvh;
+        }
+        main {
+          flex: 1;
+        }
+        .skip {
+          position: absolute;
+          inset-block-start: $space.xs;
+          inset-inline-start: $space.xs;
+          z-index: 100;
+          padding: $space.xs $space.sm;
+          border-radius: $radius.md;
+          background: $color.accent;
+          color: $color.accentFg;
+          translate: 0 -200%;
+        }
+        .skip:focus-visible {
+          translate: 0 0;
+        }
+      </style>
+      <style global>
+        /* Same-origin navigations cross-fade (cross-document View Transitions). */
+        @view-transition {
+          navigation: auto;
+        }
+      </style>
+    </div>
+  );
+}

@@ -1,0 +1,47 @@
+// Unknown URLs (dist/client/404.html on a static host).
+import { LinkButton } from "@lumen/site-kit";
+import { color, layout, space, text } from "@lumen/site-kit/tokens";
+import { Title } from "lumen";
+import { link } from "../lib/site.ts";
+
+export default function NotFound() {
+  return (
+    <section class="missing">
+      <Title>Page not found · Lumen</Title>
+      <p class="code">404</p>
+      <h1>This page is not here</h1>
+      <p>It may have moved when the docs were reorganised. Search the docs or start from the top.</p>
+      <div class="actions">
+        <LinkButton href={link("/docs")}>Docs</LinkButton>
+        <LinkButton href={link("/")} variant="secondary">
+          Home
+        </LinkButton>
+      </div>
+
+      <style>
+        .missing {
+          display: grid;
+          justify-items: center;
+          gap: $space.sm;
+          max-inline-size: $layout.prose;
+          margin-inline: auto;
+          padding: $space.xxxl $layout.gutter;
+          text-align: center;
+        }
+        .code {
+          color: $color.accentText;
+          font-size: $text.xxxl;
+          font-weight: 700;
+        }
+        p {
+          color: $color.muted;
+        }
+        .actions {
+          display: flex;
+          gap: $space.sm;
+          margin-block-start: $space.md;
+        }
+      </style>
+    </section>
+  );
+}
