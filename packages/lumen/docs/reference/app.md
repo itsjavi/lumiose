@@ -121,6 +121,19 @@ Builds a path from a route pattern, encoding each param; `params` is required wh
 params. A `[...rest]` param keeps its `/` separators and may be empty. Throws on a missing or empty
 `[param]`.
 
+The path is below Vite's `base` and follows `lumen({ trailingSlash })`, on the server and in the
+browser alike (`lumen dev`, `lumen build` and prerendering):
+
+| `base`  | `trailingSlash` | `href("/")` | `href("/blog/[slug]", { slug: "a" })` | `href("/feed.xml")` |
+| ------- | --------------- | ----------- | ------------------------------------- | ------------------- |
+| `/`     | `"ignore"`      | `/`         | `/blog/a`                             | `/feed.xml`         |
+| `/sub/` | `"never"`       | `/sub/`     | `/sub/blog/a`                         | `/sub/feed.xml`     |
+| `/sub/` | `"always"`      | `/sub/`     | `/sub/blog/a/`                        | `/sub/feed.xml`     |
+
+With `"always"`, a pattern whose last segment has a dot (an endpoint such as `/feed.xml`) gets no
+trailing slash. A relative `base` (`./`) counts as `/`. Outside Vite (plain Node) the path is
+root-relative.
+
 ### Route types
 
 ```ts

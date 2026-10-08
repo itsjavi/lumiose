@@ -9,6 +9,7 @@ import { $async, $await, $leave, createComponent, insert, mount } from "../../do
 import { Suspense } from "../../dom/boundaries.ts";
 import { invalidate as appInvalidate } from "../actions/client.ts";
 import { notFound, redirect } from "../server/control.ts";
+import { href } from "../routes/href.ts";
 import type { RouteSegment } from "../routes/segments.ts";
 import { Link, navigate, navigating, params, search, url } from "./index.ts";
 import { createRouter, invalidate, prepareRoot, resetRouter, type SpaConfig } from "./router.ts";
@@ -120,9 +121,9 @@ const modules: Record<string, Component<any>> = {
 const APP = "src/routes/_layout.tsx";
 const userLevels = [APP, "src/routes/users/_layout.tsx", "src/routes/users/[id].tsx"];
 
-function config(): SpaConfig {
+function config(base = "/"): SpaConfig {
   return {
-    base: "/",
+    base,
     routes: [
       { segments: [], app: APP, levels: [APP, "src/routes/index.tsx"] },
       { segments: [s("search")], app: APP, levels: [APP, "src/routes/search.tsx"] },
@@ -154,9 +155,9 @@ function config(): SpaConfig {
 let container: HTMLElement;
 let dispose: (() => void) | undefined;
 
-async function boot(path: string, leaf = "src/routes/index.tsx"): Promise<void> {
+async function boot(path: string, leaf = "src/routes/index.tsx", base?: string): Promise<void> {
   history.replaceState(null, "", path);
-  createRouter(config(), APP);
+  createRouter(config(base), APP);
   const RootComponent = await prepareRoot(leaf, true);
   container = document.createElement("div");
   document.body.append(container);
@@ -312,6 +313,22 @@ describe("lumen/router", () => {
     await new Promise((resolve) => setTimeout(resolve, 20));
     expect(location.pathname).toBe("/");
     expect(text()).toBe("path /home");
+  });
+
+  it("routes href() links below the base, with trailing slashes (TASK-101)", async () => {
+    vi.stubEnv("BASE_URL", "/sub/");
+    vi.stubEnv("LUMEN_TRAILING_SLASH", "always");
+    try {
+      await boot("/sub/", undefined, "/sub/");
+      expect(text()).toBe("path /sub/home");
+      await navigate(href("/users/[id]", { id: "7" }));
+      expect(location.pathname).toBe("/sub/users/7/");
+      expect(text()).toBe("path /sub/users/7/users of 7user 7");
+      await navigate(href("/"));
+      expect(text()).toBe("path /sub/home");
+    } finally {
+      vi.unstubAllEnvs();
+    }
   });
 
   it("invalidate() re-runs the async components and keeps their UI meanwhile", async () => {

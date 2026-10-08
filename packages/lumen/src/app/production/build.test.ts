@@ -328,6 +328,49 @@ export default function Live() { return <h1>Live</h1>; }
     expect(await live.text()).toContain(head);
   });
 
+  it("builds href() below the base, with trailingSlash: always, on the server and the client (TASK-101)", async () => {
+    const root = project({
+      "vite.config.ts": `import lumen from "lumen/vite";
+export default { base: "/sub/", plugins: [lumen({ trailingSlash: "always" })] };
+`,
+      "src/routes/index.stsx": `import { href } from "lumen";
+import { Nav } from "../components/Nav.stsx";
+export default function Home() {
+  return (
+    <main>
+      <a href={href("/blog/[slug]", { slug: "hello" })}>Post</a>
+      <a href={href("/feed.xml")}>Feed</a>
+      <Nav client:load />
+    </main>
+  );
+}
+`,
+      "src/components/Nav.stsx": `import { href } from "lumen";
+export function Nav() { return <a class="nav" href={href("/")}>Home</a>; }
+`,
+      "src/routes/blog/[slug].stsx": `export const staticPaths = () => [{ params: { slug: "hello" } }];
+export default function Post() { return <h1>Post</h1>; }
+`,
+      "src/routes/feed.xml.ts": 'export function GET() { return new Response("<feed/>"); }\n',
+    });
+    const result = await build({ root, ...quiet() });
+    expect(result.prerendered.map((file) => file.file)).toEqual(
+      expect.arrayContaining(["index.html", "blog/hello/index.html", "feed.xml"]),
+    );
+    const home = read(root, "index.html");
+    expect(home).toContain('<a href="/sub/blog/hello/">Post</a><a href="/sub/feed.xml">Feed</a>');
+    expect(home).toMatch(/<a class="?nav"? href="?\/sub\/"?>Home<\/a>/);
+    // The client build has the same values: Vite replaced import.meta.env in lumen's code.
+    const assets = join(result.clientDir, "assets");
+    const chunks = readdirSync(assets)
+      .filter((file) => file.endsWith(".js"))
+      .map((file) => readFileSync(join(assets, file), "utf8"));
+    const runtime = chunks.filter((code) => code.includes("missing value for param"));
+    expect(runtime).toHaveLength(1);
+    expect(runtime[0]).not.toContain("import.meta");
+    expect(runtime[0]).not.toContain("LUMEN_TRAILING_SLASH");
+  });
+
   it("builds a site without islands or server routes to a self-contained dist/client", async () => {
     const root = project({
       "src/routes/index.stsx": "export default function Home() { return <h1>Static</h1>; }\n",

@@ -37,7 +37,8 @@ src/
 **Typed routes.** `lumen typegen` (run by `lumen check` and the dev server) writes
 `.lumen/types/routes.d.ts`, which augments `RouteMap`. Then:
 
-- `href("/blog/[slug]", { slug })` builds a URL and type-checks the pattern and params;
+- `href("/blog/[slug]", { slug })` builds a URL and type-checks the pattern and params; the URL
+  includes Vite's `base` and follows `trailingSlash` ([reference](../reference/app.md#href));
 - `params<"/blog/[slug]">()` and `RouteProps<"/blog/[slug]">` type the params.
 
 **Navigation.** Routes are MPA by default: links load the next document. Two `lumen()` options in

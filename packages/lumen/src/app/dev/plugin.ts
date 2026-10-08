@@ -25,8 +25,10 @@ import { isCSSRequest, isRunnableDevEnvironment, loadEnv, normalizePath } from "
 import { escapeAttr } from "../../server/node.ts";
 import type { AppDiagnostic } from "../diagnostics.ts";
 import {
+  configProjectOptions,
   DOCUMENT_FILES,
   findAppFile,
+  hrefDefine,
   islandModules,
   MIDDLEWARE_FILES,
   navigationOptions,
@@ -280,8 +282,13 @@ export function lumenDev(options: LumenDevOptions = {}): Plugin {
     apply: "serve",
 
     config(config) {
-      // No index.html fallback: every non-asset request is a route.
-      if (config.appType === undefined) return { appType: "custom" };
+      const trailingSlash =
+        options.trailingSlash ?? configProjectOptions(config.plugins).trailingSlash ?? "ignore";
+      return {
+        // No index.html fallback: every non-asset request is a route.
+        ...(config.appType === undefined ? { appType: "custom" as const } : {}),
+        define: hrefDefine(trailingSlash),
+      };
     },
 
     resolveId: {

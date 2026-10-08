@@ -3,6 +3,7 @@
 // endpoint or renders a page through its layouts, the document and the `_404`/`_error` pages.
 
 import type { PageRoute, RouteManifest, SpecialPage } from "../routes/manifest.ts";
+import { normalizeBase } from "../routes/href.ts";
 import { createRouteMatcher, type RouteMatch } from "../routes/match.ts";
 import type { Component } from "../../contract/client.ts";
 import type {
@@ -604,14 +605,6 @@ function prerenderContext(ctx: RequestContext): RequestContext {
     },
     env: ctx.env,
   };
-}
-
-/** `base` with leading and trailing slashes (`/`, `/docs/`); a full URL keeps its path. */
-function normalizeBase(base: string): string {
-  let path = /^[a-z][a-z\d+.-]*:\/\//i.test(base) ? new URL(base).pathname : base;
-  if (path === "" || path === "./") return "/";
-  if (!path.startsWith("/")) path = `/${path}`;
-  return path.endsWith("/") ? path : `${path}/`;
 }
 
 /** The pathname below `base`, starting with "/"; `undefined` outside it. */

@@ -1,5 +1,5 @@
-import { describe, expect, it } from "vitest";
-import { href } from "./href.ts";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { appPath, fillPattern, href, normalizeBase } from "./href.ts";
 
 describe("href", () => {
   it("returns static patterns unchanged", () => {
@@ -29,5 +29,56 @@ describe("href", () => {
     );
     expect(() => href("/blog/[slug]", { slug: "" })).toThrow(TypeError);
     expect(() => href("/docs/[...path]")).toThrow(TypeError);
+  });
+});
+
+// Vite fills in `import.meta.env` (BASE_URL, and LUMEN_TRAILING_SLASH from `lumen dev`/`build`).
+describe("href below the base, with the trailing-slash policy (TASK-101)", () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  it("prefixes Vite's base; the root is the base itself", () => {
+    vi.stubEnv("BASE_URL", "/lumen/");
+    expect(href("/")).toBe("/lumen/");
+    expect(href("/docs/[...path]", { path: "concepts/signals" })).toBe(
+      "/lumen/docs/concepts/signals",
+    );
+    expect(href("/docs/[...path]", { path: "" })).toBe("/lumen/docs");
+    vi.stubEnv("BASE_URL", "/lumen");
+    expect(href("/about")).toBe("/lumen/about");
+  });
+
+  it("treats a relative base as the root and keeps a full URL's path", () => {
+    vi.stubEnv("BASE_URL", "./");
+    expect(href("/about")).toBe("/about");
+    vi.stubEnv("BASE_URL", "https://cdn.example.com/site/");
+    expect(href("/about")).toBe("/site/about");
+  });
+
+  it('adds a trailing slash to pages with "always", not to the root or file-like endpoints', () => {
+    vi.stubEnv("BASE_URL", "/sub/");
+    vi.stubEnv("LUMEN_TRAILING_SLASH", "always");
+    expect(href("/")).toBe("/sub/");
+    expect(href("/blog/[slug]", { slug: "v1.2" })).toBe("/sub/blog/v1.2/");
+    expect(href("/llms.txt")).toBe("/sub/llms.txt");
+    expect(href("/docs/[...path]", { path: "a/b" })).toBe("/sub/docs/a/b/");
+  });
+
+  it('leaves paths bare with "never" and "ignore"', () => {
+    for (const policy of ["never", "ignore"]) {
+      vi.stubEnv("LUMEN_TRAILING_SLASH", policy);
+      expect(href("/")).toBe("/");
+      expect(href("/blog/[slug]", { slug: "a" })).toBe("/blog/a");
+    }
+  });
+
+  it("builds base-less paths for the build (fillPattern, appPath, normalizeBase)", () => {
+    vi.stubEnv("BASE_URL", "/sub/");
+    expect(fillPattern("/blog/[slug]", { slug: "hola mundo" })).toBe("/blog/hola%20mundo");
+    expect(appPath("/", "/sub/", true)).toBe("/sub/");
+    expect(appPath("/a", "/sub/", true)).toBe("/sub/a/");
+    expect(normalizeBase("")).toBe("/");
+    expect(normalizeBase("docs")).toBe("/docs/");
   });
 });

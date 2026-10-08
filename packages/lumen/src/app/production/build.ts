@@ -75,6 +75,7 @@ export async function build(options: BuildOptions = {}): Promise<BuildResult> {
   const state: BuildState = {
     root,
     outDir: "",
+    ...(options.trailingSlash === undefined ? {} : { trailingSlashOption: options.trailingSlash }),
     trailingSlash: "ignore",
     csrf: undefined,
     viewTransitions: false,
@@ -95,7 +96,6 @@ export async function build(options: BuildOptions = {}): Promise<BuildResult> {
   const resolved = builder.config;
   const logger = resolved.logger;
   const project = projectOptions(resolved, "build");
-  state.trailingSlash = options.trailingSlash ?? project.trailingSlash ?? "ignore";
   state.csrf = project.csrf;
   Object.assign(state, navigationOptions(project));
   const defaultMode: RouteMode = project.mode ?? "static";

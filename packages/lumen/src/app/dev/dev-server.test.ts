@@ -307,3 +307,48 @@ describe.skipIf(!binding)("lumen dev", () => {
     await eventually(async () => !(await (await get("/")).text()).includes("LUM5003"));
   });
 });
+
+describe.skipIf(!binding)("lumen dev below a base (TASK-101)", () => {
+  let site: string;
+  let server: DevServer;
+
+  beforeAll(async () => {
+    if (!binding) return;
+    site = realpathSync(mkdtempSync(join(tmpdir(), "lumen-dev-base-")));
+    const files: Record<string, string> = {
+      "vite.config.ts": `import lumen from "lumen/vite";
+export default { base: "/sub/", plugins: [lumen({ trailingSlash: "always" })] };
+`,
+      "src/routes/index.stsx": `import { href } from "lumen";
+export default function Home() {
+  return <main><a href={href("/blog/[slug]", { slug: "hello" })}>Post</a><a href={href("/")}>Home</a></main>;
+}
+`,
+      "src/routes/blog/[slug].stsx": `export default function Post() { return <h1>Post</h1>; }
+`,
+    };
+    for (const [name, code] of Object.entries(files)) {
+      mkdirSync(dirname(join(site, name)), { recursive: true });
+      writeFileSync(join(site, name), code);
+    }
+    mkdirSync(join(site, "node_modules"));
+    symlinkSync(lumenRoot, join(site, "node_modules/lumen"), "dir");
+    server = await createDevServer({ root: site, port: 0, customLogger: createLogger("silent") });
+  });
+
+  afterAll(async () => {
+    await server?.close();
+    if (site) rmSync(site, { recursive: true, force: true });
+  });
+
+  it("renders href() links with the base and the trailing-slash policy, and serves both to the client", async () => {
+    const html = await (await fetch(new URL("/sub/", server.url))).text();
+    expect(html).toContain('<a href="/sub/blog/hello/">Post</a><a href="/sub/">Home</a>');
+    // The browser's copy of href() gets the same values from Vite's import.meta.env.
+    const module = await fetch(new URL(`/sub/@fs${lumenRoot}/src/app/routes/href.ts`, server.url));
+    expect(module.status).toBe(200);
+    const code = await module.text();
+    expect(code).toContain('"BASE_URL": "/sub/"');
+    expect(code).toContain('"LUMEN_TRAILING_SLASH": "always"');
+  });
+});

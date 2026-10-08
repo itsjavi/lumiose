@@ -22,7 +22,7 @@ import type { TrailingSlash } from "../server/handler.ts";
 import type { Prefetch } from "../server/navigation.ts";
 import { SPA_ENTRY, spaEntryPlugin } from "../router/entry.ts";
 import { clientRuntime } from "./client-runtime.ts";
-import { islandModules } from "../project.ts";
+import { configProjectOptions, hrefDefine, islandModules } from "../project.ts";
 import { ISLANDS_ID } from "../../vite/islands.ts";
 
 export const SERVER_ENTRY = "virtual:lumen/server-entry";
@@ -39,6 +39,9 @@ export interface BuildState {
   root: string;
   /** Absolute output directory (Vite's `build.outDir`): `client/` and `server/` go below it. */
   outDir: string;
+  /** `build({ trailingSlash })`, which overrides `lumen({ trailingSlash })`. */
+  trailingSlashOption?: TrailingSlash;
+  /** The effective policy, set when the config resolves (`href()` reads it too). */
   trailingSlash: TrailingSlash;
   csrf: false | CsrfOptions | undefined;
   viewTransitions: boolean;
@@ -77,8 +80,11 @@ function lumenBuildEnvironments(state: BuildState): Plugin {
 
     config(config) {
       state.outDir = normalizePath(resolve(state.root, config.build?.outDir ?? "dist"));
+      state.trailingSlash =
+        state.trailingSlashOption ?? configProjectOptions(config.plugins).trailingSlash ?? "ignore";
       return {
         appType: "custom",
+        define: hrefDefine(state.trailingSlash),
         environments: {
           client: {
             build: {

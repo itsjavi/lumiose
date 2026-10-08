@@ -10,7 +10,7 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { LUM_STATIC_ENDPOINT_METHOD } from "../diagnostics.ts";
-import { href } from "../routes/href.ts";
+import { fillPattern } from "../routes/href.ts";
 import type { RouteEntry, RouteMode } from "../routes/manifest.ts";
 import { createRouteMatcher } from "../routes/match.ts";
 import type { AppHandlerOptions, BuiltApp, BuiltAppConfig } from "../server/app.ts";
@@ -217,7 +217,7 @@ async function routePaths(
       continue;
     }
     try {
-      paths.add(href(route.pattern as never, params as never));
+      paths.add(fillPattern(route.pattern, params as Record<string, unknown>));
     } catch (error) {
       problems.push(`${route.file}: staticPaths(): ${describe(error)}`);
     }
