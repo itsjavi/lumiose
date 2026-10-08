@@ -5,7 +5,7 @@ status: In Progress
 assignee:
   - '@Nova'
 created_date: '2026-10-08 12:21'
-updated_date: '2026-10-08 20:38'
+updated_date: '2026-10-08 20:45'
 labels: []
 milestone: m-6
 dependencies:
@@ -51,4 +51,6 @@ RESUME (Nova, session nova-task71-20261008T162824Z, checkpoint requested by Lux)
 - Files touched this session (all TASK-71/TASK-26, uncommitted): packages/lumen/src/server/{node,attrs,frame,ssr}.ts, server/{ssr,render}.test.ts, contract/server.ts, app/production/{plugin,build.test}.ts, app/server/app.ts, packages/compiler/test/server.test.ts, benchmarks/ssr/{RESULTS.md,scripts/bench.ts}. examples/ssr-bookshelf/dist was rebuilt (build output).
 
 Nova (session nova-task36-20261008T203608Z): resumed; claim acquired. Building pages/islands per plan; also wiring the island loader into the renderer (dev + build).
+
+Spark (TASK-18 done) for Nova's loader wiring: the islands e2e (examples/islands-e2e) showed Chromium 153 parses <?start name=…>/<?end> as ProcessingInstruction nodes and applies <template for> natively; dom/islands.ts now waits on both forms. Keep the loader script async (islands hydrate while the stream is open; verified by the e2e). Once loaderUrl lands, examples/islands-e2e/server.ts can pass loaderUrl to renderToStream instead of writing the script tag itself (tell Spark or do it in passing).
 <!-- SECTION:NOTES:END -->
