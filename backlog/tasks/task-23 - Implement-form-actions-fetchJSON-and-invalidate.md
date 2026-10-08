@@ -5,7 +5,7 @@ status: In Progress
 assignee:
   - '@Nova'
 created_date: '2026-10-08 12:21'
-updated_date: '2026-10-08 13:31'
+updated_date: '2026-10-08 13:43'
 labels: []
 milestone: m-3
 dependencies:
@@ -45,4 +45,12 @@ Mutations go through form actions that work without JS and can be enhanced from 
 
 <!-- SECTION:NOTES:BEGIN -->
 Nova (session nova-task23-20261008T133112Z): claimed, In Progress.
+
+Implementation (Nova):
+- Shared protocol: packages/lumen/src/app/actions/protocol.ts (fail()/ActionFailure, ActionResult, ACTION_HEADER = x-lumen-action, ?/name parsing).
+- Server: app/server/actions.ts (resolve/run actions, ctx.formData() cached, 400 for non-form bodies, JSON results with encodeData), app/server/csrf.ts (Go CrossOriginProtection-style: Sec-Fetch-Site, else Origin host vs request host; allowedOrigins; csrf: false), handler.ts (page POST dispatch, 404 missing action, 405 + Allow when no actions, re-render with actionData()/fail status, embedded <script type=application/json data-l-action> so islands hydrate with the same actionData(), 3xx -> redirect results for enhanced requests, in-process fetch with shared cookie jar, locals copy, abort link, depth limit 8).
+- Client: app/actions/client.ts (submit, submitting, actionData, invalidate, setClientNavigation hook for TASK-25); node-entry stubs in app/actions/server.ts.
+- fetchJSON: app/fetch-json.ts (FetchError extends HttpError with url/data; browser fetchJSON), app/server/fetch-json.ts (in-process same-origin dispatch during SSR, follows same-origin redirects).
+- DX decision for Lux/user: in-flight state is exposed as submitting(name?) (parallels router navigating(); core pending() stays the async-component flag from TASK-17); submit() resolves success/failure/redirect and rejects with FetchError for error results.
+- Validation: pnpm test 441/441 passing (46 new: actions.test.ts 20, fetch-json.test.ts 9, actions/client.test.ts 16, public-api +1); lumen typecheck clean for app/server (only error is Spark's in-progress src/core/async.ts, TASK-17); language-server typecheck fails on Beacon's untracked package (TASK-29); pnpm lint 0 errors (pre-existing router placeholder warning).
 <!-- SECTION:NOTES:END -->
