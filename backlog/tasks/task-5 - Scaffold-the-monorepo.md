@@ -1,10 +1,11 @@
 ---
 id: TASK-5
 title: Scaffold the monorepo
-status: To Do
+status: In Progress
 assignee:
   - '@Lux'
 created_date: '2026-10-08 12:20'
+updated_date: '2026-10-08 12:21'
 labels: []
 milestone: m-1
 dependencies: []
