@@ -1,11 +1,11 @@
 ---
 id: TASK-2
 title: Survey Rust compiler toolchain and editor tooling
-status: In Progress
+status: Done
 assignee:
   - '@Photon'
 created_date: '2026-10-08 09:59'
-updated_date: '2026-10-08 10:19'
+updated_date: '2026-10-08 10:30'
 labels: []
 milestone: m-0
 dependencies: []
@@ -26,7 +26,7 @@ The Lumen compiler must be Rust-based, components are valid TSX with a <style>{c
 - [x] #2 Evaluates Lightning CSS for scoping, nesting, minification and native @scope output, including current browser baseline for @scope
 - [x] #3 Describes how to deliver CSS highlighting/completions/diagnostics inside css tagged templates in .tsx under TS 7 (TextMate injection, VS Code virtual documents, TS 7 LSP limits)
 - [x] #4 Confirms oxlint, oxfmt and TS 7 handle the authoring format, and how JSX types (jsxImportSource, IntrinsicElements) are configured
-- [ ] #5 Findings are recorded in the task notes and referenced by the architecture spec
+- [x] #5 Findings are recorded in the task notes and referenced by the architecture spec
 <!-- AC:END -->
 
 ## Implementation Notes
@@ -99,3 +99,9 @@ Research by Photon (a subagent, research only), recorded by Lux. Experiments are
 ## Sources
 https://oxc.rs/docs/guide/usage/transformer/plugins · https://vite.dev/guide/migration · https://rolldown.rs/builtin-plugins · https://rolldown.rs/apis/plugin-api/hook-filters · https://socket.dev/blog/rolldown-pulls-rust-react-compiler-integration · https://blog.swc.rs/2025-11-4-wasm-backward-compatibility · https://github.com/ryansolid/dom-expressions/tree/next/packages/compiler · https://github.com/yumemi-thomas/solid-1x-compiler · https://github.com/ubugeeei/vize · https://github.com/trueadm/ripple · https://blog.master.dev/how-to-scope-css-now-that-its-baseline/ · https://web.dev/blog/web-platform-12-2025 · https://devblogs.microsoft.com/typescript/announcing-typescript-7-0/ · https://github.com/microsoft/TypeScript/issues/63703 · https://github.com/microsoft/typescript-go/issues/3848 · https://code.visualstudio.com/api/language-extensions/embedded-languages · https://oxc.rs/docs/guide/usage/formatter/embedded-formatting · https://oxc.rs/docs/guide/usage/linter/js-plugins · https://napi.rs/docs/concepts/webassembly
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Compared OXC and SWC (recommendation: OXC), evaluated Lightning CSS and @scope (recommendation: attribute scoping), designed the editor strategy under TS 7 (TextMate injection plus an LSP, no TS plugins), verified TS 7.0.2 JSX typing and oxfmt embedded CSS formatting experimentally, and checked name availability. Findings drive spec doc-1 sections 4.4, 4.5, 5 and 9 and decisions 5-6.
+<!-- SECTION:FINAL_SUMMARY:END -->
