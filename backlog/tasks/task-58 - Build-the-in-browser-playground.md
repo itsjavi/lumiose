@@ -1,11 +1,11 @@
 ---
 id: TASK-58
 title: Build the in-browser playground at /playground
-status: To Do
+status: In Progress
 assignee:
   - '@Beacon'
 created_date: '2026-10-08 15:54'
-updated_date: '2026-10-08 15:58'
+updated_date: '2026-10-08 22:15'
 labels: []
 milestone: m-5
 dependencies:
