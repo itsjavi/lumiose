@@ -3,7 +3,7 @@ id: doc-2
 title: Compiler-runtime contract
 type: specification
 created_date: '2026-10-08 12:27'
-updated_date: '2026-10-08 13:26'
+updated_date: '2026-10-08 14:02'
 tags:
   - architecture
   - contract
@@ -81,7 +81,7 @@ tags:
 
 ## 4. Async components (both sides)
 
-- The compiler wraps nothing. Instead, the runtime's `createComponent` detects `C instanceof AsyncFunction`.
+- **Async marking.** The compiler wraps every async component definition as `export const X = $async(async function X(props) { … })`, using `$async` from `lumen/dom` or `lumen/server`. `createComponent` dispatches on the `$async` tag, so bundles without async components tree-shake the async path (about 0.7 kB, measured by Spark in TASK-17). `instanceof AsyncFunction` remains only as a dev-mode fallback: an untagged async component, such as one from a library compiled without Lumen, gets a warning and still works.
 - **Rewrite.** Only awaits whose nearest enclosing function is the component are rewritten:
   - `await e` becomes `(await $await(() => e, N))()`, where `N` is the 0-based static site index in source order. `$await` pauses the run synchronously and resolves to a resume function. Calling it in the component's own continuation restores the run and returns the value. Resuming inside the runtime's `.then` would be unsound, because another run's continuation can interleave (found by Spark in TASK-7).
   - The whole body is wrapped as `try { … } finally { $leave(); }`, so the run is paused synchronously when the body returns or throws.
