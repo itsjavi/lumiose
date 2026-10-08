@@ -1,7 +1,7 @@
 ---
 id: TASK-18
 title: 'Implement hydration, the island loader and island records'
-status: To Do
+status: In Progress
 assignee:
   - '@Spark'
 created_date: '2026-10-08 12:21'
