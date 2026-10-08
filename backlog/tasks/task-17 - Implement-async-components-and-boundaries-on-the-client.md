@@ -1,7 +1,7 @@
 ---
 id: TASK-17
 title: Implement async components and boundaries on the client
-status: In Progress
+status: Done
 assignee:
   - '@Spark'
 created_date: '2026-10-08 12:21'
@@ -63,3 +63,9 @@ Size (brotli, pnpm --filter lumen size): typical 5.75 -> 6.65 kB (+0.90), benchm
 Not done: LUM2007 runtime warning (needs a dev flag; leave to the compiler). fetchJSON client side is Nova's (TASK-23, app/fetch-json.ts, in progress).
 Follow-ups for Lux: (1) proposal to make the async path tree-shakable (compiler tags async components so createComponent dispatches by reference instead of instanceof), (2) TASK-18/14: the server must emit markers for async instance, Suspense and ErrorBoundary ranges inside islands for hydration, (3) Nova: fetchJSON could default its signal to lifetime() so superseded runs abort their fetches; submit() can import beginBusy from core/internal.ts.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Async components on the client: per-run core subscribers with $await/$leave per contract doc-2 §4 (sync pause, resume fn, never rejects), re-runs with lifetime() abort and latest-wins races, stale UI kept and an atomic swap that disposes the old run; runs hold their swap for nested async content until shown. Suspense (fallback for new pending content only), ErrorBoundary (retry), pending(), busy()/beginBusy() (decision-20), resource(), client Head/Title/Meta, browser LUM4003 stubs for renderToString/renderToStream; browser and node lumen entries export the same names. Range-aware regions and nested effects in insert (fixes component re-creation by children getters). Instance-path frames + withIsland(replay) hook for TASK-18. 596 tests pass; typecheck/lint clean; size +0.9 kB brotli (typical 6.65 kB), see notes for the tree-shaking proposal.
+<!-- SECTION:FINAL_SUMMARY:END -->
