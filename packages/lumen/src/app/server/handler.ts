@@ -27,7 +27,7 @@ import { HttpError, isHttpError, isRedirect, statusText, type Redirect } from ".
 import { createCookieJar, type CookieJar } from "./cookies.ts";
 import { isSameOriginRequest, needsOriginCheck, type CsrfOptions } from "./csrf.ts";
 import { documentBody, documentParts, type DocumentComponent } from "./document.ts";
-import { navigationHead, type Prefetch } from "./navigation.ts";
+import { documentRules, navigationHead, type Prefetch } from "./navigation.ts";
 import { createServerRenderer, type PageRenderer, type PageTree } from "./render.ts";
 import { spaErrorPart, spaPagePart, spaPageTree } from "../router/server.ts";
 import {
@@ -431,6 +431,10 @@ export function createRequestHandler(options: RequestHandlerOptions): RequestHan
     const state = scope.response;
     state.seal();
     let body: string | ReadableStream<Uint8Array>;
+    // The speculation rules of MPA pages (the stream may carry them, see ./navigation.ts).
+    const rules = spa
+      ? { head: "", stream: shell.stream }
+      : documentRules(navigation.mpa, shell.body, shell.stream);
     try {
       const assets = options.headAssets === undefined ? "" : await options.headAssets(files);
       // Islands read the same actionData() while hydrating as during SSR.
@@ -438,11 +442,11 @@ export function createRequestHandler(options: RequestHandlerOptions): RequestHan
         scope.action === undefined || scope.action.data === undefined
           ? ""
           : `<script type="application/json" data-l-action>${jsonForScript(scope.action.encoded)}</script>`;
-      const head = shell.head + assets + navigation.pages + (spa ? "" : navigation.mpa) + action;
+      const head = shell.head + assets + navigation.pages + rules.head + action;
       const parts = documentParts(shell.body, head, document !== undefined);
-      body = documentBody(parts, shell.stream, (error) => onError(error, request));
+      body = documentBody(parts, rules.stream, (error) => onError(error, request));
     } catch (error) {
-      await shell.stream?.cancel(error);
+      await rules.stream?.cancel(error);
       throw error;
     }
     const headers = new Headers(state.headers);

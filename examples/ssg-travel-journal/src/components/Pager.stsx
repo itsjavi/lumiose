@@ -1,32 +1,39 @@
+import { Link } from "lumen/router";
 import { pageHref } from "../lib/paginate.ts";
 import * as theme from "../theme.ts";
 
-/** Links between the journal's pages: newer, each page number, older. */
+/**
+ * Links between the journal's pages: newer, each page number, older. `<Link prefetch>` sets their
+ * prefetch apart from the site's `lumen({ prefetch: "hover" })`: readers page on with the steps,
+ * which prefetch early, while the row of numbers is not worth prefetching. The page is still MPA:
+ * `<Link>` renders a plain `<a>` and ships no JavaScript. Its `class` carries this file's scope,
+ * so the styles below reach it.
+ */
 export function Pager(props: { page: number; count: number }) {
   const numbers = () => Array.from({ length: props.count }, (_, index) => index + 1);
 
   return (
     <nav class="pager" aria-label="Journal pages">
       {props.page > 1 ? (
-        <a class="step" rel="prev" href={pageHref(props.page - 1)}>
+        <Link class="step" rel="prev" href={pageHref(props.page - 1)} prefetch="viewport">
           ← Newer
-        </a>
+        </Link>
       ) : (
         <span class="step" />
       )}
       <ol>
         {numbers().map((number) => (
           <li>
-            <a href={pageHref(number)} aria-current={number === props.page ? "page" : undefined}>
+            <Link class="number" href={pageHref(number)} prefetch="none">
               {number}
-            </a>
+            </Link>
           </li>
         ))}
       </ol>
       {props.page < props.count ? (
-        <a class="step" rel="next" href={pageHref(props.page + 1)}>
+        <Link class="step" rel="next" href={pageHref(props.page + 1)} prefetch="viewport">
           Older →
-        </a>
+        </Link>
       ) : (
         <span class="step" />
       )}
@@ -49,11 +56,12 @@ export function Pager(props: { page: number; count: number }) {
           padding: 0;
           list-style: none;
         }
-        a {
+        .step,
+        .number {
           font-weight: 500;
           text-decoration: none;
         }
-        ol a {
+        .number {
           display: grid;
           place-items: center;
           min-width: 2.25rem;
@@ -62,10 +70,10 @@ export function Pager(props: { page: number; count: number }) {
           color: $theme.color.ink;
           font-variant-numeric: tabular-nums;
         }
-        ol a:hover {
+        .number:hover {
           background: $theme.color.chip;
         }
-        ol a[aria-current="page"] {
+        .number[aria-current="page"] {
           background: $theme.color.accent;
           color: $theme.color.accentInk;
         }

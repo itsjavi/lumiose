@@ -49,4 +49,7 @@ export interface Search {
 }
 
 /** The current URL's query (`search()`), and `search.set()` to change it. */
-export const search: Search = Object.assign(() => currentSearch(), { set: setSearch });
+// Pure: an island that only uses `<Link>` (on an MPA page) ships none of the router.
+export const search: Search = /* @__PURE__ */ Object.assign(() => currentSearch(), {
+  set: setSearch,
+});

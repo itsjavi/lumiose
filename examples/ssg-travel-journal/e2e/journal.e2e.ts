@@ -175,6 +175,37 @@ test.describe("navigation", () => {
     await expect.poll(() => prefetched).toEqual([`/posts/${NEWEST.slug}`]);
   });
 
+  test("<Link prefetch> sets a link's prefetch apart from the default", async ({ page }) => {
+    const prefetched: string[] = [];
+    page.on("request", (request) => {
+      if (request.headers()["sec-purpose"]?.startsWith("prefetch")) {
+        prefetched.push(new URL(request.url()).pathname);
+      }
+    });
+    await page.goto("/");
+    const pager = page.getByRole("navigation", { name: "Journal pages" });
+    // A pointer that only passes over a link: too short for moderate eagerness (hover), enough
+    // for eager (viewport), which desktop Chromium triggers on a brief hover.
+    const passOver = async (link: ReturnType<Page["locator"]>) => {
+      await link.hover();
+      await page.waitForTimeout(40);
+      await page.mouse.move(0, 0);
+    };
+    // prefetch="none": never, however long the pointer rests on it. (Page 3: the browser prefetches
+    // URLs, and "Older →" makes /page/2 a candidate, whichever link to it is hovered.)
+    await pager.getByRole("link", { name: "3", exact: true }).hover();
+    await page.waitForTimeout(500);
+    // A plain link (the project default, hover) the pointer passes over.
+    await passOver(page.locator(".card:not(.featured) h2 a").first());
+    await page.waitForTimeout(500);
+    expect(prefetched).toEqual([]);
+    // prefetch="viewport": eager.
+    await passOver(pager.getByRole("link", { name: "Older →" }));
+    await expect.poll(() => prefetched).toEqual(["/page/2"]);
+    // The pager ships no JavaScript: <Link> on an MPA page renders a plain <a>.
+    await expect(pager.locator("a[data-l-prefetch]")).toHaveCount(4);
+  });
+
   test("tags list their posts", async ({ page }) => {
     await page.goto("/tags");
     await expect(page.getByRole("heading", { level: 1 })).toHaveText("Tags");

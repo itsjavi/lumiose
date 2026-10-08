@@ -3,7 +3,7 @@
 > The client router for `spa` routes, built on the Navigation API: `<Link>`, `navigate()`, reactive `params()`, `search()`, `url()` and `navigating()`, persistent layouts, transitions that hold the old page, scroll and focus restoration, and a client-side `_404`.
 
 `lumen/router` works inside `spa` routes (`export const mode = "spa"`, or `lumen({ mode: "spa" })`
-for the whole project). Pages and layouts of an SPA import it like any module; on the server
+for the whole project); `<Link>` works on MPA pages too (see [Link](#link)). Pages and layouts of an SPA import it like any module; on the server
 (`ssr` pages) the same names read the request: `params()`, `url()` and `search()` return the
 request's values, `<Link>` renders its `<a>`, `navigating()` is `false`, and `navigate()` and
 `search.set()` throw (call them from event handlers and effects). Concepts:
@@ -18,7 +18,7 @@ function Link(props: LinkProps): JSX.Element;
 
 type LinkProps = Omit<JSX.IntrinsicElements["a"], "href" | "children"> & {
   href: string;
-  /** Default "hover". */
+  /** Default "hover" in spa pages; on MPA pages, lumen({ prefetch }). */
   prefetch?: "hover" | "viewport" | "none";
   children?: JSX.Element;
 };
@@ -30,8 +30,15 @@ An `<a href>` with every attribute and event of `<a>`. The router navigates plai
 - **Prefetch.** It loads the target route's modules ahead of the click: when the pointer enters
   the link or it gets focus (`hover`), when it enters the viewport (`viewport`), or not (`none`).
   Data still loads when the page renders. `spa` pages get no speculation rules, so this is the
-  prefetch of their links; MPA pages prefetch every link with `lumen({ prefetch })`
-  ([Routing](../concepts/routing.md)).
+  prefetch of their links.
+- **On MPA pages** (static and server routes) there is no router: `<Link>` renders a plain `<a>`,
+  outside islands without any JavaScript, and `prefetch` sets how the page's speculation rules from
+  `lumen({ prefetch })` treat it ([Routing](../concepts/routing.md)). The `<a>` gets
+  `data-l-prefetch="<level>"`; the rules skip `none` links, prefetch `viewport` links with `eager`
+  and `hover` links with `moderate` eagerness, and give unmarked links (`<Link>` without
+  `prefetch`, plain `<a>`) the project default. With `lumen({ prefetch: "none" })`, only pages that
+  have `hover` or `viewport` links get rules. Browsers prefetch URLs: a `none` link to a URL that
+  another link on the page prefetches does not stop it.
 - **`aria-current="page"`** while its path is the current URL's path (style it with
   `a[aria-current="page"]`).
 

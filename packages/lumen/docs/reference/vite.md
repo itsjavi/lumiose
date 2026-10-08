@@ -45,8 +45,11 @@ MPA navigation ([Routing](../concepts/routing.md)): the page documents that `lum
 - `prefetch`: a `<script type="speculationrules">` on every page except `spa` pages, whose
   `<Link prefetch>` prefetches instead. It matches the links below Vite's `base` (`href_matches`),
   except the URLs of endpoints, with `moderate` eagerness for `"hover"` (the pointer rests on the
-  link, or it is pressed) and `eager` for `"viewport"` (as soon as the browser sees fit); `"none"`
-  emits nothing.
+  link, or it is pressed) and `eager` for `"viewport"` (as soon as the browser sees fit: desktop
+  Chromium on a brief hover, mobile Chromium as links enter the viewport); `"none"` emits nothing.
+  On a page with `<Link prefetch>` links (marked `data-l-prefetch`), the rules give each level its
+  own `selector_matches` rule, and the default's rule skips links marked otherwise; with `"none"`,
+  only such pages get rules ([`lumen/router`](router.md#link)).
 
 Both are inline elements: a Content-Security-Policy you set without `'unsafe-inline'` needs
 `'inline-speculation-rules'` in `script-src` for the rules, and the hash of the `<style>` in

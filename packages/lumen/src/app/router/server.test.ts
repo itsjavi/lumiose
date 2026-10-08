@@ -114,7 +114,7 @@ describe("SPA pages in the request handler", () => {
 });
 
 describe("server <Link>", () => {
-  it("renders an <a> and marks the current page", async () => {
+  it("renders an <a>, marks the current page and the prefetch level", async () => {
     const { get } = app(
       { "_layout.tsx": SPA, "index.tsx": "", "b.tsx": "" },
       {
@@ -131,7 +131,7 @@ describe("server <Link>", () => {
     );
     const { html } = await get("/");
     expect(html).toContain(
-      '<nav><!--[--><a href="/" aria-current="page"><!--[-->Home<!--]--></a><!--]--><!--[--><a href="/b" class="x"><!--[--><!--]--></a><!--]--></nav>',
+      '<nav><!--[--><a href="/" aria-current="page"><!--[-->Home<!--]--></a><!--]--><!--[--><a href="/b" class="x" data-l-prefetch="none"><!--[--><!--]--></a><!--]--></nav>',
     );
   });
 });

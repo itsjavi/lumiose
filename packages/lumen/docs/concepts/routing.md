@@ -48,6 +48,10 @@ progressive, so browsers without support navigate normally:
   prefetches same-origin links: when the pointer rests on a link (`"hover"`), early, as the browser
   sees fit (`"viewport"`), or never (`"none"`). Links to endpoints are never prefetched, since a GET
   endpoint may act (`/logout`). `spa` pages get no rules: there `<Link prefetch>` decides per link.
+- **Per link**, `<Link prefetch>` from `lumen/router` overrides the default on MPA pages too. There
+  it renders a plain `<a>` (no JavaScript, no router) with a `data-l-prefetch` marker, and the
+  rules prefetch it at its own level: `"none"` opts the link out, `"viewport"` prefetches it early,
+  `"hover"` on hover. `<Link>` without `prefetch`, like a plain `<a>`, follows the default.
 - **View Transitions** (`viewTransitions: true`, off by default). Every page opts into
   cross-document View Transitions (`@view-transition { navigation: auto }`), except for readers who
   prefer reduced motion: the old page cross-fades into the new one. An element morphs into its
@@ -59,6 +63,14 @@ progressive, so browsers without support navigate normally:
 ```ts
 // vite.config.ts
 export default defineConfig({ plugins: [lumen({ viewTransitions: true })] });
+```
+
+```tsx
+import { Link } from "lumen/router";
+
+// In any page or component: the next page prefetches early, the archive never.
+<Link href="/page/2" prefetch="viewport">Older →</Link>
+<Link href="/archive" prefetch="none">Archive</Link>
 ```
 
 Routes with `mode = "spa"` use the client router `lumen/router` ([reference](../reference/router.md)):

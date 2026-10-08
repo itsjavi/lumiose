@@ -113,7 +113,9 @@ Pages are ordinary documents linked with `<a href>`. `lumen({ viewTransitions: t
 that support them (not for readers who prefer reduced motion), and each post's cover has a
 `view-transition-name` shared by its card and its page, so it morphs into place. Links prefetch
 when the pointer rests on them: speculation rules from `lumen({ prefetch })`, `"hover"` by default.
-Both are progressive: other browsers navigate normally.
+The pager sets its links apart with `<Link prefetch>` from `lumen/router`, which renders a plain
+`<a>` on these MPA pages: "Newer"/"Older" prefetch early (`"viewport"`), the page numbers never
+(`"none"`). Both are progressive: other browsers navigate normally.
 
 ## Tests
 
@@ -121,7 +123,8 @@ Both are progressive: other browsers navigate normally.
   validation, heading ids.
 - `src/lib/lib.test.ts`: pagination, date and XML formatting, the search matcher.
 - `e2e/journal.e2e.ts` (Playwright, against `lumen build` + `serve.ts`): prerendered files and the
-  JavaScript a page loads, pagination, post pages (table of contents, the Markdown body, the shared
+  JavaScript a page loads, pagination, prefetch (on hover, and per `<Link prefetch>` in
+  Chromium), post pages (table of contents, the Markdown body, the shared
   view-transition name, newer/older links), tags, the archive, 404, both islands (no `LUM4006`
   hydration errors), the RSS feed, the sitemap (every URL resolves), the search index, the site
   without JavaScript and a phone-sized layout. `JOURNAL_SCREENSHOTS=1` also saves the screenshots

@@ -7,6 +7,7 @@ import { restProps } from "../../server/ssr.ts";
 import type { RouteParams, Routes } from "../routes/registry.ts";
 import type { RouteParamValues } from "../server/context.ts";
 import { params as requestParams, url as requestUrl } from "../server/scope.ts";
+import { PREFETCH_MARKER } from "../server/navigation.ts";
 import type { LinkProps } from "./link.ts";
 import type { Search } from "./index.ts";
 import type { NavigateOptions, SearchInit } from "./router.ts";
@@ -20,7 +21,10 @@ function browserOnly(api: string): never {
   );
 }
 
-/** Server `<Link>`: the `<a>` the client adopts, with `aria-current="page"` on the current URL. */
+/**
+ * Server `<Link>`: the `<a>` the client adopts, with `aria-current="page"` on the current URL and
+ * the `prefetch` marker that MPA pages' speculation rules read.
+ */
 export function Link(props: LinkProps): Renderable {
   const others = restProps(props, ["prefetch"]) as Record<string, unknown>;
   let current = false;
@@ -33,6 +37,7 @@ export function Link(props: LinkProps): Renderable {
   }
   // Getters stay getters: children render inside the element, as on the client.
   others.component = "a";
+  others[PREFETCH_MARKER] = props.prefetch;
   others["aria-current"] = current ? "page" : undefined;
   return Dynamic(others as LinkProps & { component: "a" }) as Renderable;
 }

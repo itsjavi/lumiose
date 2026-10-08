@@ -2,6 +2,9 @@
 // and the History fallback intercept plain links too), plus prefetching of the target route's
 // modules and `aria-current="page"` on the link to the current page. Its server variant
 // (./index.server.ts) renders the same `<a>` with markers for hydration.
+//
+// On MPA pages there is no router: `prefetch` only sets the `data-l-prefetch` marker, which the
+// page's speculation rules group links by (app/server/navigation.ts, decision-24 amendment).
 import type { Renderable } from "../../contract/client.ts";
 import { onCleanup } from "../../core/owner.ts";
 import { restProps } from "../../dom/component.ts";
@@ -20,7 +23,9 @@ export type LinkProps = Omit<JSX.IntrinsicElements["a"], "href" | "children"> & 
   href: string;
   /**
    * Load the target route's modules when the pointer enters or the link gets focus (`hover`, the
-   * default), when the link enters the viewport (`viewport`), or not (`none`).
+   * default), when the link enters the viewport (`viewport`), or not (`none`). On MPA pages, the
+   * speculation rules prefetch the target page accordingly; without it, the link follows
+   * `lumen({ prefetch })`.
    */
   prefetch?: Prefetch;
   children?: JSX.Element;
@@ -33,7 +38,11 @@ let observer: IntersectionObserver | undefined;
 export function Link(props: LinkProps): Renderable {
   const el = anchor() as HTMLAnchorElement;
   const others = restProps(props, ["prefetch", "children"]);
-  spread(el, () => ({ ...others, "aria-current": isCurrent(props.href) ? "page" : undefined }));
+  spread(el, () => ({
+    ...others,
+    "data-l-prefetch": props.prefetch,
+    "aria-current": isCurrent(props.href) ? "page" : undefined,
+  }));
   insert(el, () => props.children as Renderable, el.firstChild);
   const mode = props.prefetch ?? "hover";
   const load = (): void => prefetch(props.href);

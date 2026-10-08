@@ -9,6 +9,13 @@
 //   (`moderate` eagerness) or early (`eager`). Endpoint URLs are left out, since a GET endpoint
 //   may act (`/logout`) and is no page to navigate to. `spa` documents get no rules: the client
 //   router navigates their links, and `<Link prefetch>` loads the target route's modules instead.
+// - Per link (decision-24 amendment): on MPA pages `<Link prefetch>` renders a plain `<a>` with a
+//   `data-l-prefetch` marker. The rules of a page with marked links group them by level: the
+//   project default's rule skips links marked with another level, each other level gets a rule
+//   for its marked links, and `none` gets none. Pages without marked links keep the plain rules.
+//   The marker is found in the shell; a streamed page may still render marked links, so its head
+//   gets the marked rules, or, with `prefetch: "none"` (no rules otherwise), the rules follow the
+//   stream once a streamed boundary has a marked link.
 
 import { jsonForScript } from "../../server/node.ts";
 import type { Prefetch } from "../router/link.ts";
@@ -22,8 +29,20 @@ export interface NavigationHead {
   /** For every page document: the View Transitions opt-in. */
   pages: string;
   /** For MPA page documents only (not `spa` pages): the speculation rules. */
-  mpa: string;
+  mpa: MpaRules;
 }
+
+/** The speculation rules of the MPA documents of one app, without and with marked links. */
+export interface MpaRules {
+  prefetch: Prefetch;
+  plain: string;
+  marked: string;
+}
+
+/** The attribute `<Link prefetch>` marks its `<a>` with on MPA pages. */
+export const PREFETCH_MARKER = "data-l-prefetch";
+/** What a marked link's HTML contains. */
+const MARKED = `${PREFETCH_MARKER}=`;
 
 const VIEW_TRANSITIONS =
   "<style>@media (prefers-reduced-motion:no-preference){@view-transition{navigation:auto}}</style>";
@@ -39,27 +58,94 @@ export function navigationHead(
 ): NavigationHead {
   return {
     pages: options.viewTransitions === true ? VIEW_TRANSITIONS : "",
-    mpa: speculationRules(options.prefetch ?? "none", routes, base),
+    mpa: mpaRules(options.prefetch ?? "none", routes, base),
   };
 }
 
-/** `<script type="speculationrules">` for the links of a page, or "" for `none`. */
+function mpaRules(prefetch: Prefetch, routes: readonly RouteEntry[], base: string): MpaRules {
+  return {
+    prefetch,
+    plain: speculationRules(prefetch, routes, base),
+    marked: speculationRules(prefetch, routes, base, true),
+  };
+}
+
+/**
+ * The speculation rules of one MPA document: `head` for its `<head>`, and `stream` with the rules
+ * appended when they wait for a marked link in the streamed boundaries.
+ */
+export function documentRules(
+  rules: MpaRules,
+  shellBody: string,
+  stream: ReadableStream<string | Uint8Array> | null,
+): { head: string; stream: ReadableStream<string | Uint8Array> | null } {
+  const marked = shellBody.includes(MARKED);
+  if (marked || stream === null) return { head: marked ? rules.marked : rules.plain, stream };
+  // Streamed boundaries may still render marked links.
+  if (rules.prefetch !== "none") return { head: rules.marked, stream };
+  return { head: "", stream: appendIfMarked(stream, rules.marked) };
+}
+
+/** `stream`, followed by `html` when one of its chunks has a marked link. */
+function appendIfMarked(
+  stream: ReadableStream<string | Uint8Array>,
+  html: string,
+): ReadableStream<string | Uint8Array> {
+  let marked = false;
+  return stream.pipeThrough(
+    new TransformStream<string | Uint8Array, string | Uint8Array>({
+      transform(chunk, controller) {
+        // Lumen's renderer streams strings; a custom renderer's bytes are not searched.
+        if (typeof chunk === "string" && chunk.includes(MARKED)) marked = true;
+        controller.enqueue(chunk);
+      },
+      flush(controller) {
+        if (marked) controller.enqueue(html);
+      },
+    }),
+  );
+}
+
+/**
+ * `<script type="speculationrules">` for the links of a page, or "" when no link is prefetched.
+ * `marked`: the page has `<Link prefetch>` links, which the rules group by their level.
+ */
 export function speculationRules(
   prefetch: Prefetch,
   routes: readonly RouteEntry[],
   base: string,
+  marked = false,
 ): string {
-  if (prefetch === "none") return "";
   // URL patterns resolve against the document's URL: a path keeps them same-origin.
   const prefix = base.slice(0, -1);
-  const links = { href_matches: prefix === "" ? "/*" : `${prefix}{/*}?` };
+  const links: object[] = [{ href_matches: prefix === "" ? "/*" : `${prefix}{/*}?` }];
   const endpoints = routes
     .filter((route) => route.kind === "endpoint")
     .map((route) => urlPattern(prefix, route.segments));
-  const where =
-    endpoints.length === 0 ? links : { and: [links, { not: { href_matches: endpoints } }] };
-  const rules = { prefetch: [{ where, eagerness: EAGERNESS[prefetch] }] };
-  return `<script type="speculationrules">${jsonForScript(rules)}</script>`;
+  if (endpoints.length > 0) links.push({ not: { href_matches: endpoints } });
+  const rule = (level: Exclude<Prefetch, "none">, only?: object) => ({
+    where:
+      only !== undefined
+        ? { and: [...links, only] }
+        : links.length === 1
+          ? links[0]
+          : { and: links },
+    eagerness: EAGERNESS[level],
+  });
+  const rules: object[] = [];
+  for (const level of ["hover", "viewport"] as const) {
+    if (!marked) {
+      if (level === prefetch) rules.push(rule(level));
+    } else if (level === prefetch) {
+      // Plain links and the links marked with this level.
+      const other = `[${PREFETCH_MARKER}]:not([${PREFETCH_MARKER}=${level}])`;
+      rules.push(rule(level, { not: { selector_matches: other } }));
+    } else {
+      rules.push(rule(level, { selector_matches: `[${PREFETCH_MARKER}=${level}]` }));
+    }
+  }
+  if (rules.length === 0) return "";
+  return `<script type="speculationrules">${jsonForScript({ prefetch: rules })}</script>`;
 }
 
 /**
