@@ -30,6 +30,7 @@ the signal marks it dirty and re-runs only what depends on it.
 | `onMount(fn)`                                               | Runs `fn` once, untracked, after the owner's DOM is mounted. May return a cleanup.                                                          |
 | `onCleanup(fn)`                                             | Runs `fn` when the current owner is disposed or re-runs.                                                                                    |
 | `store(obj)`                                                | Deep reactive proxy over a plain object or array: mutate it directly.                                                                       |
+| `snapshot(value)`                                           | A deep plain copy of a store, for `structuredClone`, `postMessage` and saving.                                                              |
 | `untrack(fn)`                                               | Runs `fn` without subscribing to what it reads.                                                                                             |
 | `batch(fn)`                                                 | Groups writes; dependents run once at the end.                                                                                              |
 | `flushSync()`                                               | Runs pending bindings and effects now.                                                                                                      |
@@ -92,6 +93,8 @@ function ThemeLabel() {
   `flushSync()` after a write before asserting.
 - **Module-scope signals in server code.** On the server, a signal at module scope is shared by
   every request. Keep request data in components or context (`LUM4008`).
+- **Posting a store to a worker.** `postMessage()` and `structuredClone()` throw on proxies: send
+  `snapshot(state)`.
 - **Expecting `store()` to wrap class instances, `Map`s or `Set`s.** Only plain objects and arrays
   become reactive; other values are returned as is.
 

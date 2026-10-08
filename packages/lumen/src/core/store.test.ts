@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { computed, effect, flushSync, store } from "./index.ts";
+import { computed, effect, flushSync, snapshot, store } from "./index.ts";
 
 /** Counts the runs of an effect that reads `fn`, and records the values it saw. */
 function watch<T>(fn: () => T): { runs: () => number; values: T[] } {
@@ -139,5 +139,43 @@ describe("store", () => {
     expect(state.date).toBe(date);
     expect(state.frozen).toBe(frozen);
     expect(state.map).toBeInstanceOf(Map);
+  });
+});
+
+describe("snapshot", () => {
+  it("copies nested objects and arrays into plain data that structuredClone accepts", () => {
+    const date = new Date(0);
+    const song = store({ title: "a", rows: [[{ note: 1 }], [{ note: 2 }]], meta: { date } });
+    const copy = snapshot(song);
+    expect(copy).toEqual({ title: "a", rows: [[{ note: 1 }], [{ note: 2 }]], meta: { date } });
+    expect(structuredClone(copy)).toEqual(copy);
+    expect(() => structuredClone(song)).toThrow();
+    // Values are copied; non-plain values are kept.
+    expect(copy.rows).not.toBe(song.rows);
+    expect(copy.meta.date).toBe(date);
+    // A nested store value, and plain data holding store proxies.
+    expect(structuredClone(snapshot(song.rows[1]!))).toEqual([{ note: 2 }]);
+    expect(structuredClone(snapshot({ first: song.rows[0] }))).toEqual({ first: [{ note: 1 }] });
+  });
+
+  it("is not reactive: later writes do not change it, and it tracks nothing", () => {
+    const state = store({ list: [1, 2], nested: { n: 1 } });
+    const seen = watch(() => snapshot(state));
+    const copy = snapshot(state);
+    state.list.push(3);
+    state.nested.n = 2;
+    flushSync();
+    expect(copy).toEqual({ list: [1, 2], nested: { n: 1 } });
+    expect(seen.runs()).toBe(1);
+    expect(snapshot(state)).toEqual({ list: [1, 2, 3], nested: { n: 2 } });
+  });
+
+  it("keeps shared and circular references", () => {
+    const shared = { n: 1 };
+    const raw: Record<string, unknown> = { a: shared, b: shared };
+    raw.self = raw;
+    const copy = snapshot(store(raw));
+    expect(copy.a).toBe(copy.b);
+    expect(copy.self).toBe(copy);
   });
 });

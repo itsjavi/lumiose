@@ -43,6 +43,9 @@ describe("server core", () => {
     expect(runs).toBe(0);
     const obj = { a: 1 };
     expect(server.store(obj)).toBe(obj);
+    const copy = server.snapshot({ list: [obj] });
+    expect(copy).toEqual({ list: [{ a: 1 }] });
+    expect(copy.list[0]).not.toBe(obj);
     expect(server.untrack(() => 1)).toBe(1);
     expect(server.batch(() => 2)).toBe(2);
   });

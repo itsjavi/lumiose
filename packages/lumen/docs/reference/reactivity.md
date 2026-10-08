@@ -106,6 +106,25 @@ Wraps a plain object or array in a deep reactive proxy: reads track per property
 only on change, array methods work. Class instances, `Map`s, `Set`s and frozen objects are returned
 as is.
 
+## snapshot
+
+```ts
+function snapshot<T>(value: T): T;
+```
+
+A deep plain copy of a store, of a value inside one (`snapshot(state.items)`), or of plain data
+that holds stores. Plain objects and arrays are copied; other values (`Date`s, `Map`s, class
+instances) are kept as they are, and shared or circular references stay shared. Use it where a
+proxy does not work: `structuredClone()` and `postMessage()` (to a worker or an AudioWorklet)
+throw on proxies, and a copy does not change when the store does (saving, undo history). Reads
+are not tracked: in an effect, read the properties it should react to. On the server it copies the
+plain object.
+
+```ts
+const song = store({ title: "Demo", rows: [] as number[][] });
+worker.postMessage({ type: "song", song: snapshot(song) });
+```
+
 ## createContext, provide, inject
 
 ```ts

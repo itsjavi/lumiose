@@ -12,6 +12,7 @@ import {
   trigger,
   type TriggerNode,
 } from "./reactive.ts";
+import { copyPlain } from "./snapshot.ts";
 
 type Key = string | symbol;
 
@@ -198,4 +199,14 @@ const handler: ProxyHandler<Record<Key, unknown>> = {
  */
 export function store<T extends object>(value: T): T {
   return isWrappable(value) ? wrap(value) : value;
+}
+
+/**
+ * A deep plain copy of a store (or of any value inside one, or of plain data holding stores):
+ * plain objects and arrays are copied, so the result works with `structuredClone()`,
+ * `postMessage()` and `JSON.stringify()`, and later writes to the store do not change it. Reads
+ * are not tracked. Other values (Dates, Maps, class instances) are kept as they are.
+ */
+export function snapshot<T>(value: T): T {
+  return copyPlain(value, toRaw);
 }

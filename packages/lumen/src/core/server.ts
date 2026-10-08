@@ -5,6 +5,7 @@
 import type { Resource } from "./async.ts";
 import type { EffectFn } from "./effect.ts";
 import { getOwner, lifetimeOf, type Owner } from "./owner.ts";
+import { copyPlain } from "./snapshot.ts";
 import type { Computed, Signal, SignalOptions } from "./signal.ts";
 
 export type { Computed, Signal, SignalOptions } from "./signal.ts";
@@ -65,6 +66,11 @@ export function onMount(_fn: EffectFn): void {}
 
 export function store<T extends object>(value: T): T {
   return value;
+}
+
+/** Server `snapshot()`: stores are the plain objects themselves, so this is a deep plain copy. */
+export function snapshot<T>(value: T): T {
+  return copyPlain(value, (raw) => raw);
 }
 
 export function untrack<T>(fn: () => T): T {
