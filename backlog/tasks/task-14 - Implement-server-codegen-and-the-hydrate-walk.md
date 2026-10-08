@@ -5,7 +5,7 @@ status: In Progress
 assignee:
   - '@Photon'
 created_date: '2026-10-08 12:21'
-updated_date: '2026-10-08 14:11'
+updated_date: '2026-10-08 14:17'
 labels: []
 milestone: m-2
 dependencies:
@@ -28,6 +28,16 @@ SSR must output strings with fused escaping and no instances. Hydration needs a 
 - [ ] #2 The hydrate walk is a separate generated path, emitted only for modules reachable from island or SPA entries
 - [ ] #3 Golden fixtures for server and hydrate output
 <!-- AC:END -->
+
+## Implementation Plan
+
+<!-- SECTION:PLAN:BEGIN -->
+1. Target-aware shared JSX visitor (codegen/client): props rewrite, list/branch/selector idioms, components and props objects are shared; target picks the runtime module (lumen/dom | lumen/server) and helper list.
+2. Server builders (codegen/client/ssr.rs): elements/fragments/children become ssr(_sN, ...holes) with hoisted, deduplicated parts arrays. Static attrs + scope tokens + text baked into parts (same HTML rules as client templates, closing tags always written, implicit <tbody>, pre/textarea newline). Holes: attr/classAttr/styleAttr/spreadAttrs (+ $$scope via spreadAttrs when props.class is applied), text() exactly where the client uses setText, insert() where the client uses insert, list(source, render) and branch(cond, a, b) holes directly. Events, refs, attach dropped; bind:value/checked -> attributes; innerHTML/textContent/textarea value -> content.
+3. compile(): remove the LUM1002 server stub. Hydrate walk: per doc-2 §1 there is no separate generated walk; document the server/client structural correspondence for Spark (TASK-18).
+4. Goldens: every client fixture also compiles to <stem>.server.js (tests/server_golden.rs) + server-specific fixtures.
+5. Vitest (packages/compiler/test/server.test.ts): compile server modules, renderToString and compare HTML; client-vs-server parity (server HTML parsed vs client DOM).
+<!-- SECTION:PLAN:END -->
 
 ## Implementation Notes
 
