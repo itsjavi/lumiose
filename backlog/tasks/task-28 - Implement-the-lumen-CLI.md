@@ -1,11 +1,11 @@
 ---
 id: TASK-28
 title: Implement the lumen CLI
-status: To Do
+status: In Progress
 assignee:
   - '@Beacon'
 created_date: '2026-10-08 12:21'
-updated_date: '2026-10-08 13:25'
+updated_date: '2026-10-08 16:29'
 labels: []
 milestone: m-4
 dependencies:
