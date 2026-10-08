@@ -2,17 +2,20 @@
 // per-block virtual CSS documents. Those keep source offsets, so results need no position mapping.
 
 import { getCSSLanguageService } from "vscode-css-languageservice";
-import type {
-  Color,
-  ColorInformation,
-  ColorPresentation,
-  CompletionList,
-  Diagnostic,
-  DocumentHighlight,
-  FoldingRange,
-  Hover,
-  Position,
-  Range,
+import {
+  SymbolKind,
+  type Color,
+  type ColorInformation,
+  type ColorPresentation,
+  type CompletionList,
+  type Diagnostic,
+  type DocumentHighlight,
+  type DocumentSymbol,
+  type FoldingRange,
+  type Hover,
+  type Position,
+  type Range,
+  type SymbolInformation,
 } from "vscode-languageserver";
 import type { CssBlock, StsxSnapshot } from "./stsx.ts";
 
@@ -78,4 +81,75 @@ export function cssFoldingRanges(snapshot: StsxSnapshot): FoldingRange[] {
     ranges.push(...(cssService.getFoldingRanges(css.document) as FoldingRange[]));
   }
   return ranges;
+}
+
+/** One symbol per style block, named by its open tag (`<style global>`), holding its rules. */
+export function cssDocumentSymbols(snapshot: StsxSnapshot): DocumentSymbol[] {
+  const text = snapshot.document.getText();
+  return snapshot.cssBlocks.map(({ block, document, stylesheet }) => ({
+    name: blockName(text, block.openTag),
+    detail: block.global ? "global" : block.placement === "jsx" ? "component" : "file",
+    kind: SymbolKind.Namespace,
+    range: blockRange(snapshot, block.span.start, block.span.end),
+    selectionRange: blockRange(snapshot, block.openTag.start, block.openTag.end),
+    children: cssService.findDocumentSymbols2(document, stylesheet) as DocumentSymbol[],
+  }));
+}
+
+/** Flat symbols (clients without hierarchical symbols): rules contained by their block's tag. */
+export function cssSymbolInformation(snapshot: StsxSnapshot): SymbolInformation[] {
+  const text = snapshot.document.getText();
+  return snapshot.cssBlocks.flatMap(({ block, document, stylesheet }) => {
+    const name = blockName(text, block.openTag);
+    return [
+      {
+        name,
+        kind: SymbolKind.Namespace,
+        location: {
+          uri: snapshot.document.uri,
+          range: blockRange(snapshot, block.span.start, block.span.end),
+        },
+      },
+      ...(cssService.findDocumentSymbols(document, stylesheet) as SymbolInformation[]).map(
+        (symbol) => ({ ...symbol, containerName: name }),
+      ),
+    ];
+  });
+}
+
+/** Inserts each symbol into the innermost symbol containing it, keeping siblings in order. */
+export function mergeDocumentSymbols(
+  symbols: DocumentSymbol[],
+  extra: readonly DocumentSymbol[],
+): DocumentSymbol[] {
+  for (const symbol of extra) insertSymbol(symbols, symbol);
+  return symbols;
+}
+
+function insertSymbol(siblings: DocumentSymbol[], symbol: DocumentSymbol): void {
+  const parent = siblings.find((candidate) => contains(candidate.range, symbol.range));
+  if (parent) {
+    insertSymbol((parent.children ??= []), symbol);
+    return;
+  }
+  const index = siblings.findIndex((s) => comparePositions(s.range.start, symbol.range.start) > 0);
+  siblings.splice(index === -1 ? siblings.length : index, 0, symbol);
+}
+
+function contains(outer: Range, inner: Range): boolean {
+  return (
+    comparePositions(outer.start, inner.start) <= 0 && comparePositions(inner.end, outer.end) <= 0
+  );
+}
+
+function comparePositions(a: Position, b: Position): number {
+  return a.line - b.line || a.character - b.character;
+}
+
+function blockName(text: string, openTag: { start: number; end: number }): string {
+  return text.slice(openTag.start, openTag.end).replace(/\s+/g, " ");
+}
+
+function blockRange(snapshot: StsxSnapshot, start: number, end: number): Range {
+  return { start: snapshot.document.positionAt(start), end: snapshot.document.positionAt(end) };
 }

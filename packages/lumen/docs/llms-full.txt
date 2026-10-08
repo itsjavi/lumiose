@@ -201,7 +201,8 @@ pnpm lumen fmt          # oxfmt for the TSX, plus each <style> block
 
 Install the Lumen VS Code extension (`lumen-vscode`). It adds the `stsx` language and runs the
 Lumen language server, which proxies TypeScript 7 for `.ts`, `.tsx` and `.stsx` files and adds CSS
-features inside `<style>` blocks. The extension bundles the server (it runs on VS Code's own
+features inside `<style>` blocks, class completion (including other files' `<style global>`
+classes) and the compiler's diagnostics. The extension bundles the server (it runs on VS Code's own
 Node.js) and uses the project's `typescript`; install `@lumen/language-server` as a dev dependency
 only to pin the server to your `lumen` version. See [Compiler and diagnostics](concepts/compiler.md).
 
@@ -1075,12 +1076,13 @@ const posts: Record<string, string> = { "hello-world": "Hello, world" };
 export const mode = "server";
 
 export default function Post({ params }: RouteProps<"/blog/[slug]">) {
-  const title = posts[params.slug] ?? notFound();
+  // A function, so the JSX re-reads it when the params change (a plain const would be LUM2001).
+  const title = () => posts[params.slug] ?? notFound();
 
   return (
     <article>
-      <Title>{title}</Title>
-      <h1>{title}</h1>
+      <Title>{title()}</Title>
+      <h1>{title()}</h1>
     </article>
   );
 }
@@ -1678,10 +1680,11 @@ are generated from it. They appear in the Vite overlay, in `lumen check`, in the
 | 4xxx  | Islands and boundaries: exports, serialization, server-only code, hydration |
 | 5xxx  | Routing and server: route files, prerender, streaming                       |
 
-**Tooling on top.** `lumen check` (typegen, shadow files, `tsc --noEmit`, Lumen diagnostics),
-`lumen lint` (oxlint on shadows, optional stylelint on blocks), `lumen fmt` (oxfmt plus each
-block's CSS), and the language server (a TypeScript 7 LSP proxy plus CSS features in blocks) all
-share the one scanner. TypeScript plugins are not used.
+**Tooling on top.** `lumen check` (typegen, shadow files, `tsc --noEmit`, scanner and compiler
+diagnostics), `lumen lint` (oxlint on shadows, optional stylelint on blocks), `lumen fmt` (oxfmt
+plus each block's CSS), and the language server (a TypeScript 7 LSP proxy plus CSS features in
+blocks and the compiler's diagnostics as you type) all share the one scanner. TypeScript plugins
+are not used.
 
 ## API
 
@@ -4175,13 +4178,15 @@ server. Module-scope signals are fine for browser-only state.
 
 > A request API is used while a `static` route is prerendered.
 
-**Reported by:** planned with prerendering (`lumen build`).
+**Reported by:** `lumen build`, while it prerenders `static` routes.
 
 ## What it means
 
 `static` routes (the default) are rendered at build time, where there is no request: no cookies,
-headers, query string or `locals`. Using `request()`, `cookies()`, `locals()`, a form action or
-`response()` there cannot work.
+headers, query string or `locals`. Using `request()`, `cookies()`, `locals()`, `response()` or
+`url().searchParams` there (or `ctx.request`, `ctx.cookies` and `ctx.locals` in a static endpoint
+or `headers(ctx)`) cannot work, and the build stops. Middleware still runs for prerendered routes
+and may read the (empty) request; only route code is checked.
 
 ## Example
 
@@ -4332,6 +4337,47 @@ it resolves). Keep `<Suspense>` for content that can stream.
 - [Head and document](../concepts/head.md)
 - [Server](../concepts/server.md)
 
+<!-- source: errors/LUM5005.md -->
+
+<!-- Generated from crates/lumen_compiler/src/diagnostics/registry.rs by packages/lumen/scripts/gen-error-docs.ts. Edit the explanation below the end marker. -->
+
+# LUM5005: Non-GET method in a static endpoint
+
+**Severity:** error · **Category:** routing and server (5xxx)
+
+<!-- end of generated header -->
+
+> A `static` endpoint exports a method other than `GET`.
+
+**Reported by:** the route scanner (`lumen dev`, `lumen check`, `lumen build`).
+
+## What it means
+
+`static` endpoints (the default mode) are prerendered by `lumen build`: their `GET` response is
+written to a file in `dist/client`, such as `sitemap.xml`. A file can only answer `GET`, so a
+`POST`, `PUT`, `PATCH`, `DELETE`, `HEAD` or `OPTIONS` export would never run in production.
+
+## Example
+
+```ts
+// src/routes/api/subscribe.ts
+export const GET: Endpoint = () => Response.json({ open: true });
+export const POST: Endpoint = async (ctx) => {
+  await subscribe(await ctx.request.formData());
+  return new Response(null, { status: 204 });
+};
+```
+
+## How to fix it
+
+Serve the endpoint per request: `export const mode = "server";` (or set it on a layout of its
+folder). Keep the endpoint `static` only if it serves `GET` alone.
+
+## Related
+
+- [Rendering modes](../concepts/rendering-modes.md)
+- [Routing](../concepts/routing.md)
+
 <!-- source: errors/README.md -->
 
 <!-- Generated from crates/lumen_compiler/src/diagnostics/registry.rs by packages/lumen/scripts/gen-error-docs.ts. Edit the explanation below the end marker. -->
@@ -4403,4 +4449,5 @@ fix?, docs }`; `lumen check --format json` prints them.
 | [LUM5002](LUM5002.md) | error    | Invalid route file                               |
 | [LUM5003](LUM5003.md) | error    | Duplicate route                                  |
 | [LUM5004](LUM5004.md) | error    | Head or status change inside a streamed boundary |
+| [LUM5005](LUM5005.md) | error    | Non-GET method in a static endpoint              |
 

@@ -1,0 +1,8 @@
+export default function Layout(props: { children?: JSX.Element }) {
+  return <div class="app-shell">{props.children}</div>;
+}
+
+<style global>
+  .app-shell { min-height: 100vh; }
+  .visually-hidden { position: absolute; }
+</style>

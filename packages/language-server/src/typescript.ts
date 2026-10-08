@@ -73,3 +73,9 @@ export function spawnTypeScript(
   );
   return { connection, process: child, executable };
 }
+
+/** Delays before each restart of a crashed TypeScript server; after the last, give up. */
+export const RESTART_DELAYS: readonly number[] = [500, 1000, 2000, 4000, 8000];
+
+/** A server that ran this long before crashing gets a fresh series of restarts. */
+export const RESTART_RESET_AFTER = 60_000;

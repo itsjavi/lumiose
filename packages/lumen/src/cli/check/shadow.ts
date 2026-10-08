@@ -129,7 +129,7 @@ function isStsxIn(dir: string, file: string): boolean {
 }
 
 /** Absolute paths of matching files under `dir`, skipping dot-entries and `node_modules`. */
-async function listFiles(dir: string, match: (name: string) => boolean): Promise<string[]> {
+export async function listFiles(dir: string, match: (name: string) => boolean): Promise<string[]> {
   const entries = await readdir(dir, { withFileTypes: true }).catch(ignoreMissing);
   if (entries === undefined) return [];
   const nested = await Promise.all(

@@ -43,10 +43,11 @@ are generated from it. They appear in the Vite overlay, in `lumen check`, in the
 | 4xxx  | Islands and boundaries: exports, serialization, server-only code, hydration |
 | 5xxx  | Routing and server: route files, prerender, streaming                       |
 
-**Tooling on top.** `lumen check` (typegen, shadow files, `tsc --noEmit`, Lumen diagnostics),
-`lumen lint` (oxlint on shadows, optional stylelint on blocks), `lumen fmt` (oxfmt plus each
-block's CSS), and the language server (a TypeScript 7 LSP proxy plus CSS features in blocks) all
-share the one scanner. TypeScript plugins are not used.
+**Tooling on top.** `lumen check` (typegen, shadow files, `tsc --noEmit`, scanner and compiler
+diagnostics), `lumen lint` (oxlint on shadows, optional stylelint on blocks), `lumen fmt` (oxfmt
+plus each block's CSS), and the language server (a TypeScript 7 LSP proxy plus CSS features in
+blocks and the compiler's diagnostics as you type) all share the one scanner. TypeScript plugins
+are not used.
 
 ## API
 

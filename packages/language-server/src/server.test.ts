@@ -11,6 +11,7 @@ import type {
   CompletionItem,
   CompletionList,
   Diagnostic,
+  DocumentSymbol,
   FoldingRange,
   FullDocumentDiagnosticReport,
   Hover,
@@ -34,6 +35,13 @@ const BROKEN = "src/components/Broken.stsx";
 function rangeOf(text: string, needle: string, shift = 0, length = needle.length - shift, nth = 1) {
   const start = positionOf(text, needle, shift, nth);
   return { start, end: { line: start.line, character: start.character + length } };
+}
+
+/** Symbol names as a tree: `{ parent: [children] }` or a leaf's name. */
+function outline(list: DocumentSymbol[] | undefined): unknown[] {
+  return (list ?? []).map((symbol) =>
+    symbol.children?.length ? { [symbol.name]: outline(symbol.children) } : symbol.name,
+  );
 }
 
 function sortRanges<T extends { range: Range }>(items: T[]): T[] {
@@ -117,6 +125,8 @@ describe("language server (pull diagnostics)", () => {
       { source: "lumen", code: "LUM1005", range: rangeOf(broken, 'lang="scss"') },
       // A TypeScript error on a `$ref` inside a block is kept, at the reference's name.
       { source: "ts", code: 2304, range: rangeOf(broken, "$missing", 1) },
+      // The compiler's LUM3008 on `$missing` is superseded by TypeScript's 2304.
+      { source: "lumen", code: "LUM3005", range: rangeOf(broken, ".oops") },
       {
         source: "css",
         code: "css-propertyvalueexpected",
@@ -168,14 +178,23 @@ describe("language server (pull diagnostics)", () => {
   });
 
   it("completes class names from the styles in scope", async () => {
-    // Button's component block, the file block and the global block; not Icon's block.
+    // Button's component block, the file block and the global block; not Icon's block. Plus the
+    // `<style global>` classes of other files (the unopened `_layout.stsx`).
     expect(await complete('["button"', 2)).toEqual([
+      "app-shell",
       "button",
       "is-primary",
       "shared",
       "theme-dark",
+      "visually-hidden",
     ]);
-    expect(await complete('class="icon"', 7)).toEqual(["icon", "shared", "theme-dark"]);
+    expect(await complete('class="icon"', 7)).toEqual([
+      "app-shell",
+      "icon",
+      "shared",
+      "theme-dark",
+      "visually-hidden",
+    ]);
   });
 
   it("goes from a class to its selector and back", async () => {
@@ -288,6 +307,102 @@ describe("language server (pull diagnostics)", () => {
       },
     });
   });
+
+  it("reports compiler diagnostics for .stsx and .tsx documents", async () => {
+    const stsx = [
+      "function Inner() { return <i />; }",
+      "let width = 2;",
+      "export function Calls() {",
+      '  return <div class="calls">{Inner()}<style>.calls { width: $width; }</style></div>;',
+      "}",
+      "",
+    ].join("\n");
+    await server.open("src/Calls.stsx", stsx);
+    const lumen = async (path: string) => {
+      const report = await server.request<FullDocumentDiagnosticReport>(
+        "textDocument/diagnostic",
+        doc(path),
+      );
+      return sortRanges(report.items.filter((d) => d.source === "lumen")).map(
+        ({ code, severity, range }) => ({ code, severity, range }),
+      );
+    };
+    expect(await lumen("src/Calls.stsx")).toEqual([
+      { code: "LUM2004", severity: 1, range: rangeOf(stsx, "{Inner()", 1) },
+      { code: "LUM3008", severity: 1, range: rangeOf(stsx, "$width") },
+    ]);
+
+    // An edit is compiled again (once per version).
+    const fixed = stsx.replace("{Inner()}", "<Inner />");
+    server.change("src/Calls.stsx", fixed);
+    expect((await lumen("src/Calls.stsx")).map((d) => d.code)).toEqual(["LUM3008"]);
+
+    const tsx =
+      "function Inner() {\n  return <i />;\n}\nexport const A = () => <p>{Inner()}</p>;\n";
+    await server.open("src/Calls.tsx", tsx);
+    expect(await lumen("src/Calls.tsx")).toEqual([
+      { code: "LUM2004", severity: 1, range: rangeOf(tsx, "{Inner()", 1) },
+    ]);
+  });
+
+  it("offers and defines <style global> classes of other files", async () => {
+    const layout = "src/routes/_layout.stsx";
+    const layoutText = await readFile(join(server.root, layout), "utf8");
+    const at = (text: string, needle: string, shift: number) => ({
+      ...doc(CARD),
+      position: positionOf(text, needle, shift),
+    });
+    const list = await server.request<CompletionList>(
+      "textDocument/completion",
+      at(card, 'class="card-title"', 7),
+    );
+    const details = Object.fromEntries(list.items.map((item) => [item.label, item.detail]));
+    expect(details).toMatchObject({
+      "card-title": expect.stringMatching(/^file style/),
+      "app-shell": `global style, ${layout}:${positionOf(layoutText, ".app-shell").line + 1}`,
+      "theme-dark": `global style, ${BUTTON}:${positionOf(button, ".theme-dark").line + 1}`,
+    });
+
+    // An unsaved edit to an open file's global block is visible in other files.
+    server.change(BUTTON, button.replace(".theme-dark", ".theme-night"));
+    const edited = await server.request<CompletionList>(
+      "textDocument/completion",
+      at(card, 'class="card-title"', 7),
+    );
+    const labels = edited.items.map((item) => item.label);
+    expect(labels).toContain("theme-night");
+    expect(labels).not.toContain("theme-dark");
+    server.change(BUTTON, button);
+
+    const using = card.replace('class="card"', 'class="card visually-hidden"');
+    server.change(CARD, using);
+    const definition = await server.request<Location[]>(
+      "textDocument/definition",
+      at(using, "visually-hidden", 3),
+    );
+    expect(definition).toEqual([
+      { uri: server.uri(layout), range: rangeOf(layoutText, ".visually-hidden", 1) },
+    ]);
+    server.change(CARD, card);
+  });
+
+  it("merges style block symbols into TypeScript's document symbols", async () => {
+    const symbols = await server.request<DocumentSymbol[]>(
+      "textDocument/documentSymbol",
+      doc(BUTTON),
+    );
+    expect(outline(symbols)).toEqual([
+      "accent",
+      "radius",
+      { Button: ['"is-primary"', { "<style>": [".button", ".is-primary"] }] },
+      { Icon: [{ "<style>": [".icon"] }] },
+      { "<style>": [".shared"] },
+      { "<style global>": [".theme-dark"] },
+    ]);
+    const global = symbols.find((symbol) => symbol.name === "<style global>")!;
+    expect(global.selectionRange).toEqual(rangeOf(button, "<style global>"));
+    expect(global.detail).toBe("global");
+  });
 });
 
 describe("language server (push diagnostics)", () => {
@@ -311,7 +426,67 @@ describe("language server (push diagnostics)", () => {
       if (!diagnostics) await new Promise((resolve) => setTimeout(resolve, 50));
     }
     expect(diagnostics?.map((d) => d.code).toSorted()).toEqual(
-      ["LUM1005", 2304, 2322, 6133, "css-propertyvalueexpected"].toSorted(),
+      ["LUM1005", "LUM3005", 2304, 2322, 6133, "css-propertyvalueexpected"].toSorted(),
     );
+  });
+});
+
+describe("language server (TypeScript crash recovery)", () => {
+  let server: TestServer;
+  beforeAll(async () => {
+    server = await startTestServer("workspace");
+  });
+  afterAll(() => server?.close());
+
+  const logs = () =>
+    server.notifications
+      .filter((n) => n.method === "window/logMessage")
+      .map((n) => (n.params as { message: string }).message);
+
+  async function waitForLog(pattern: RegExp, after = 0): Promise<string> {
+    const deadline = Date.now() + 20_000;
+    for (;;) {
+      const found = logs()
+        .slice(after)
+        .find((message) => pattern.test(message));
+      if (found !== undefined) return found;
+      if (Date.now() > deadline)
+        throw new Error(`no log matching ${pattern}:\n${logs().join("\n")}`);
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    }
+  }
+
+  it("restarts TypeScript and re-sends unsaved documents", async () => {
+    const card = await server.open(CARD);
+    const edited = card.replace("const gap = 8;", 'const gap: number = "8";');
+    server.change(CARD, edited);
+    const doc = { textDocument: { uri: server.uri(CARD) } };
+    const typeErrors = async () =>
+      (await server.request<FullDocumentDiagnosticReport>("textDocument/diagnostic", doc)).items
+        .filter((d) => d.source === "ts")
+        .map(({ code, range }) => ({ code, range }));
+    const expected = [{ code: 2322, range: rangeOf(edited, "gap: number", 0, 3) }];
+    expect(await typeErrors()).toEqual(expected);
+
+    const started = await waitForLog(/language server \(.*pid (\d+)\)/);
+    const pid = Number(/pid (\d+)/.exec(started)![1]);
+    const before = logs().length;
+    process.kill(pid, "SIGKILL");
+
+    await waitForLog(/restarting TypeScript in \d+ ms \(attempt 1 of \d+\)/, before);
+    const restarted = await waitForLog(
+      /TypeScript language server restarted \(pid (\d+)\)/,
+      before,
+    );
+    expect(Number(/pid (\d+)/.exec(restarted)![1])).not.toBe(pid);
+    expect(restarted).toContain("1 open document(s) re-sent");
+
+    // TypeScript sees the unsaved buffer again, and serves requests.
+    expect(await typeErrors()).toEqual(expected);
+    const hover = await server.request<Hover>("textDocument/hover", {
+      ...doc,
+      position: positionOf(edited, "<Button", 1),
+    });
+    expect((hover.contents as MarkupContent).value).toContain("function Button(props");
   });
 });

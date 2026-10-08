@@ -68,6 +68,31 @@ export function fromCompilerDiagnostic(
   };
 }
 
+/**
+ * Lumen codes on a `$` reference that a TypeScript error inside the reference supersedes: for an
+ * unknown name both would fire, and TypeScript's message ("Did you mean …?") is the actionable one.
+ */
+export const SUPERSEDED_BY_TYPESCRIPT: ReadonlySet<string> = new Set(["LUM3008"]);
+
+/** Drops {@link SUPERSEDED_BY_TYPESCRIPT} diagnostics whose range holds a TypeScript error's start. */
+export function dropSuperseded(diagnostics: CheckDiagnostic[]): CheckDiagnostic[] {
+  const errors = diagnostics.filter((d) => d.source === "ts" && d.severity === "error");
+  return diagnostics.filter(
+    (d) =>
+      !(d.source === "lumen" && SUPERSEDED_BY_TYPESCRIPT.has(d.code)) ||
+      !errors.some(
+        (error) =>
+          error.file === d.file &&
+          comparePositions(error.line, error.column, d.line, d.column) >= 0 &&
+          comparePositions(error.line, error.column, d.endLine, d.endColumn) < 0,
+      ),
+  );
+}
+
+function comparePositions(line: number, column: number, otherLine: number, otherColumn: number) {
+  return line - otherLine || column - otherColumn;
+}
+
 /** Sorts by file, position, source and code, dropping exact duplicates (same code and range). */
 export function normalizeDiagnostics(diagnostics: CheckDiagnostic[]): CheckDiagnostic[] {
   const seen = new Set<string>();

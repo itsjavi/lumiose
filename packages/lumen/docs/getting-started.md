@@ -119,7 +119,8 @@ pnpm lumen fmt          # oxfmt for the TSX, plus each <style> block
 
 Install the Lumen VS Code extension (`lumen-vscode`). It adds the `stsx` language and runs the
 Lumen language server, which proxies TypeScript 7 for `.ts`, `.tsx` and `.stsx` files and adds CSS
-features inside `<style>` blocks. The extension bundles the server (it runs on VS Code's own
+features inside `<style>` blocks, class completion (including other files' `<style global>`
+classes) and the compiler's diagnostics. The extension bundles the server (it runs on VS Code's own
 Node.js) and uses the project's `typescript`; install `@lumen/language-server` as a dev dependency
 only to pin the server to your `lumen` version. See [Compiler and diagnostics](concepts/compiler.md).
 

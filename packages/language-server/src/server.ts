@@ -9,14 +9,20 @@
 //
 // On top, for `.stsx`: CSS features in style blocks (vscode-css-languageservice on per-block
 // virtual CSS), class-name completion / definition / references / rename between JSX `class`
-// attributes and selectors, `$ref` hovers with the folded value, and Lumen diagnostics.
+// attributes and selectors (plus `<style global>` classes of other files), `$ref` hovers with the
+// folded value, CSS document symbols, and Lumen diagnostics (scanner and diagnostic providers,
+// e.g. the compiler's, also for `.tsx`).
+//
+// A crashed TypeScript server is restarted with backoff, and the open documents are re-sent.
 
 import type { Diagnostic as CompilerDiagnostic, ScanResult, StyleRef } from "@lumen/compiler";
 import { scan } from "@lumen/compiler";
+import { SUPERSEDED_BY_TYPESCRIPT } from "lumen/tooling";
 import { existsSync } from "node:fs";
-import { join } from "node:path";
+import { join, relative, sep } from "node:path";
 import {
   CompletionItemKind,
+  DiagnosticSeverity,
   DidChangeWatchedFilesNotification,
   DocumentHighlightKind,
   FileChangeType,
@@ -38,6 +44,7 @@ import {
   type DocumentSymbol,
   type FoldingRange,
   type Hover,
+  type InitializeParams,
   type InitializeResult,
   type Location,
   type LocationLink,
@@ -57,9 +64,12 @@ import {
   cssColors,
   cssCompletion,
   cssDiagnostics,
+  cssDocumentSymbols,
   cssFoldingRanges,
   cssHighlights,
   cssHover,
+  cssSymbolInformation,
+  mergeDocumentSymbols,
 } from "./css.ts";
 import {
   filterBlockDiagnostics,
@@ -67,6 +77,7 @@ import {
   toLspDiagnostic,
   touchesBlock,
 } from "./diagnostics.ts";
+import { GlobalClassIndex, type GlobalClass } from "./globals.ts";
 import { rewriteUris } from "./rewrite.ts";
 import { syncShadows } from "./shadows.ts";
 import {
@@ -76,7 +87,14 @@ import {
   type CssBlock,
   type OffsetRange,
 } from "./stsx.ts";
-import { resolveTypeScript, spawnTypeScript, type TypeScriptServer } from "./typescript.ts";
+import {
+  RESTART_DELAYS,
+  RESTART_RESET_AFTER,
+  resolveTypeScript,
+  spawnTypeScript,
+  type TypeScriptExecutable,
+  type TypeScriptServer,
+} from "./typescript.ts";
 import {
   fileKey,
   isStsx,
@@ -90,11 +108,16 @@ import {
 export interface LumenFile {
   uri: string;
   path: string;
+  /** The file's project root. */
+  root: string;
   text: string;
   scan: ScanResult;
 }
 
-/** Extra Lumen diagnostics (e.g. the compiler's) for an `.stsx` file, as UTF-16 spans. */
+/**
+ * Extra Lumen diagnostics (e.g. the compiler's) for an open `.stsx` or `.tsx` document, as UTF-16
+ * spans. Called at most once per document version.
+ */
 export type LumenDiagnosticProvider = (
   file: LumenFile,
 ) => readonly CompilerDiagnostic[] | Promise<readonly CompilerDiagnostic[]>;
@@ -117,6 +140,15 @@ interface OpenFile {
   /** Whether TypeScript was told about the document. */
   typescript: boolean;
   snapshot?: StsxSnapshot;
+  /** The diagnostic providers' results for one document version. */
+  provided?: { version: number; diagnostics: Promise<CompilerDiagnostic[]> };
+}
+
+/** A TypeScript process under supervision. */
+interface TypeScriptInstance extends TypeScriptServer {
+  startedAt: number;
+  /** Set once the process exited or failed. */
+  ended: boolean;
 }
 
 interface StsxAt {
@@ -150,10 +182,17 @@ export function startServer(connection: Connection, options: ServerOptions = {})
   /** Shadow URI key → source URI of open `.stsx` documents (also covers non-file schemes). */
   const openShadows = new Map<string, string>();
   const syncedRoots = new Set<string>();
+  const globals = new GlobalClassIndex();
   let projects = new Projects([]);
-  let ts: TypeScriptServer | undefined;
+  /** The initialized TypeScript server; unset while (re)starting or after it ended. */
+  let ts: TypeScriptInstance | undefined;
+  let tsExecutable: TypeScriptExecutable | undefined;
+  let tsRoot = process.cwd();
+  let tsInitialize: InitializeParams | undefined;
   let tsCapabilities: ServerCapabilities = {};
   let tsFailure: string | undefined;
+  let restartAttempts = 0;
+  let restartTimer: NodeJS.Timeout | undefined;
   let client: ClientCapabilities = {};
   let pullDiagnostics = false;
   let shuttingDown = false;
@@ -185,22 +224,119 @@ export function startServer(connection: Connection, options: ServerOptions = {})
     token?: CancellationToken,
     raw = false,
   ): Promise<R | null> {
-    if (!ts) return null;
+    const server = ts;
+    if (!server) return null;
     // vscode-jsonrpc sends every argument before a token as a parameter, so an `undefined` token
     // must not be passed (it would turn the params into a positional array).
     const args: unknown[] = params === undefined ? [] : [toTs(params)];
     if (token) args.push(token);
-    const result = await ts.connection.sendRequest<R>(method, ...args);
+    let result: R;
+    try {
+      result = await server.connection.sendRequest<R>(method, ...args);
+    } catch (error) {
+      // A crash fails the requests in flight; the restarted server answers the next ones.
+      if (server.ended || ts !== server) return null;
+      throw error;
+    }
     return raw ? result : fromTs(result);
   }
 
   function notifyTs(method: string, params: unknown): void {
-    if (ts) void ts.connection.sendNotification(method, params);
+    if (!ts) return;
+    try {
+      // A connection that just closed (a crash not yet seen as an exit) throws.
+      ts.connection.sendNotification(method, params).catch(() => undefined);
+    } catch {
+      // The restart re-sends the open documents.
+    }
   }
 
   // --- TypeScript process ------------------------------------------------------------------
 
-  function wireTypeScript(server: TypeScriptServer): void {
+  /** Spawns and initializes TypeScript; it becomes {@link ts} once initialized. */
+  async function startTypeScript(executable: TypeScriptExecutable): Promise<InitializeResult> {
+    const server: TypeScriptInstance = {
+      ...spawnTypeScript(executable, tsRoot, log),
+      startedAt: Date.now(),
+      ended: false,
+    };
+    const failed = new Promise<never>((_, reject) => {
+      server.process.once("error", reject);
+      server.process.once("exit", (code, signal) =>
+        reject(new Error(`The TypeScript language server exited (${signal ?? `code ${code}`}).`)),
+      );
+    });
+    wireTypeScript(server);
+    try {
+      const result = await Promise.race([
+        server.connection.sendRequest<InitializeResult>("initialize", tsInitialize),
+        failed,
+      ]);
+      ts = server;
+      return result;
+    } catch (error) {
+      server.process.kill();
+      throw error;
+    }
+  }
+
+  /** After an unexpected exit: restart with exponential backoff, giving up after a few tries. */
+  function scheduleRestart(): void {
+    const delay = RESTART_DELAYS[restartAttempts];
+    if (delay === undefined || !tsExecutable) {
+      const message = `TypeScript features are unavailable: the TypeScript language server failed ${restartAttempts + 1} times in a row.`;
+      connection.console.error(`Lumen: ${message}`);
+      void connection.window.showErrorMessage(
+        `Lumen: ${message} Restart the Lumen language server to try again.`,
+      );
+      return;
+    }
+    restartAttempts++;
+    log(
+      `Lumen: restarting TypeScript in ${delay} ms (attempt ${restartAttempts} of ${RESTART_DELAYS.length}).`,
+    );
+    const executable = tsExecutable;
+    restartTimer = setTimeout(() => void restartTypeScript(executable), delay);
+  }
+
+  async function restartTypeScript(executable: TypeScriptExecutable): Promise<void> {
+    if (shuttingDown) return;
+    try {
+      tsCapabilities = (await startTypeScript(executable)).capabilities;
+    } catch (error) {
+      connection.console.error(`Lumen: TypeScript failed to restart: ${errorMessage(error)}`);
+      if (!shuttingDown) scheduleRestart();
+      return;
+    }
+    notifyTs("initialized", {});
+    let reopened = 0;
+    for (const file of files.values()) {
+      if (!file.typescript) continue;
+      notifyTs("textDocument/didOpen", { textDocument: typeScriptDocument(file) });
+      reopened++;
+    }
+    log(
+      `Lumen: TypeScript language server restarted (pid ${ts?.process.pid}); ${reopened} open document(s) re-sent.`,
+    );
+    refreshClient();
+  }
+
+  /** Asks the client to re-pull what TypeScript computes (after a restart). */
+  function refreshClient(): void {
+    const workspace = client.workspace;
+    if (!pullDiagnostics) schedulePush();
+    else if (workspace?.diagnostics?.refreshSupport) {
+      void connection.languages.diagnostics.refresh().catch(() => undefined);
+    }
+    if (workspace?.semanticTokens?.refreshSupport) {
+      void connection.languages.semanticTokens.refresh().catch(() => undefined);
+    }
+    if (workspace?.inlayHint?.refreshSupport) {
+      void connection.languages.inlayHint.refresh().catch(() => undefined);
+    }
+  }
+
+  function wireTypeScript(server: TypeScriptInstance): void {
     const tsc = server.connection;
     tsc.onRequest(async (method, params, token) => {
       if (method === "workspace/diagnostic/refresh") {
@@ -231,17 +367,35 @@ export function startServer(connection: Connection, options: ServerOptions = {})
       }
       void connection.sendNotification(method, fromTs(params));
     });
-    server.process.on("exit", (code, signal) => {
-      if (ts === server) ts = undefined;
-      if (!shuttingDown) {
-        const reason = `The TypeScript language server exited (${signal ?? `code ${code}`}).`;
-        connection.console.error(reason);
-        void connection.window.showErrorMessage(
-          `Lumen: ${reason} Restart the Lumen language server to recover TypeScript features.`,
-        );
-      }
-    });
+    const ended = (reason: string) => {
+      if (server.ended) return;
+      server.ended = true;
+      tsc.dispose();
+      // A server that never initialized is reported by `startTypeScript`'s caller.
+      if (ts !== server) return;
+      ts = undefined;
+      if (shuttingDown) return;
+      connection.console.error(`Lumen: ${reason}`);
+      if (Date.now() - server.startedAt >= RESTART_RESET_AFTER) restartAttempts = 0;
+      scheduleRestart();
+    };
+    server.process.once("exit", (code, signal) =>
+      ended(`The TypeScript language server exited (${signal ?? `code ${code}`}).`),
+    );
+    server.process.once("error", (error) =>
+      ended(`The TypeScript language server failed: ${error.message}`),
+    );
     tsc.listen();
+  }
+
+  /** The `textDocument` of a `didOpen` to TypeScript: `.stsx` documents as their masked shadow. */
+  function typeScriptDocument(file: OpenFile) {
+    const { version } = file.document;
+    if (file.shadowUri !== undefined) {
+      const text = snapshotOf(file).scan.masked;
+      return { uri: file.shadowUri, languageId: "typescriptreact", version, text };
+    }
+    return { uri: file.uri, languageId: file.languageId, version, text: file.document.getText() };
   }
 
   // --- Lifecycle ---------------------------------------------------------------------------
@@ -262,25 +416,25 @@ export function startServer(connection: Connection, options: ServerOptions = {})
     const { lumen, ...initializationOptions } = (params.initializationOptions ?? {}) as {
       lumen?: { typescript?: string };
     };
+    tsRoot = root;
+    tsInitialize = {
+      ...params,
+      processId: process.pid,
+      capabilities: capabilitiesForTypeScript(params.capabilities),
+      initializationOptions,
+    };
     try {
       const custom = options.typescript ?? lumen?.typescript;
       const executable = custom
         ? { path: custom, version: "custom" }
         : await resolveTypeScript(root);
-      ts = spawnTypeScript(executable, root, log);
-      wireTypeScript(ts);
-      const result = await ts.connection.sendRequest<InitializeResult>("initialize", {
-        ...params,
-        processId: process.pid,
-        capabilities: capabilitiesForTypeScript(params.capabilities),
-        initializationOptions,
-      });
-      tsCapabilities = result.capabilities;
-      log(`Lumen: TypeScript ${executable.version} language server (${executable.path}).`);
+      tsCapabilities = (await startTypeScript(executable)).capabilities;
+      tsExecutable = executable;
+      log(
+        `Lumen: TypeScript ${executable.version} language server (${executable.path}, pid ${ts?.process.pid}).`,
+      );
     } catch (error) {
-      ts?.process.kill();
-      ts = undefined;
-      tsFailure = error instanceof Error ? error.message : String(error);
+      tsFailure = errorMessage(error);
       connection.console.error(`Lumen: TypeScript features are unavailable: ${tsFailure}`);
     }
 
@@ -307,11 +461,13 @@ export function startServer(connection: Connection, options: ServerOptions = {})
 
   connection.onShutdown(async () => {
     shuttingDown = true;
+    clearTimeout(restartTimer);
     if (ts) await ts.connection.sendRequest("shutdown").catch(() => undefined);
   });
 
   connection.onExit(() => {
     shuttingDown = true;
+    clearTimeout(restartTimer);
     if (!ts) return;
     void ts.connection.sendNotification("exit").catch(() => undefined);
     ts.process.kill();
@@ -322,10 +478,16 @@ export function startServer(connection: Connection, options: ServerOptions = {})
   async function syncRoot(root: string): Promise<void> {
     syncedRoots.add(root);
     try {
-      await syncShadows(root);
+      const { files: synced } = await syncShadows(root);
+      for (const file of synced) indexGlobals(file.source, root, file.text, file.scan);
     } catch (error) {
       connection.console.error(`Lumen: shadow sync failed in ${root}: ${String(error)}`);
     }
+  }
+
+  /** Indexes a file's `<style global>` classes from disk, unless it is open (its buffer wins). */
+  function indexGlobals(path: string, root: string, text: string, scanned: ScanResult): void {
+    if (!files.has(fileKey(path))) globals.update(path, root, text, scanned);
   }
 
   /** Syncs the shadows of `.stsx` paths and tells TypeScript which shadows changed. */
@@ -333,7 +495,14 @@ export function startServer(connection: Connection, options: ServerOptions = {})
     const byRoot = Map.groupBy(changes, (change) => projects.rootFor(change.path));
     for (const [root, rootChanges] of byRoot) {
       try {
-        await syncShadows(root, { files: rootChanges.map((change) => change.path) });
+        const { files: synced } = await syncShadows(root, {
+          files: rootChanges.map((change) => change.path),
+        });
+        const found = new Set(synced.map((file) => fileKey(file.source)));
+        for (const file of synced) indexGlobals(file.source, root, file.text, file.scan);
+        for (const { path } of rootChanges) {
+          if (!found.has(fileKey(path)) && !files.has(fileKey(path))) globals.delete(path);
+        }
       } catch (error) {
         connection.console.error(`Lumen: shadow sync failed in ${root}: ${String(error)}`);
         continue;
@@ -359,7 +528,11 @@ export function startServer(connection: Connection, options: ServerOptions = {})
         document.version,
         document.getText(),
       );
-      file.snapshot = new StsxSnapshot(copy, uriToPath(file.uri) ?? file.uri);
+      const path = uriToPath(file.uri);
+      file.snapshot = new StsxSnapshot(copy, path ?? file.uri);
+      if (path !== undefined) {
+        globals.update(path, projects.rootFor(path), copy.getText(), file.snapshot.scan, file.uri);
+      }
     }
     return file.snapshot;
   }
@@ -382,18 +555,11 @@ export function startServer(connection: Connection, options: ServerOptions = {})
         void syncRoot(root);
       }
       file.typescript = true;
-      notifyTs("textDocument/didOpen", {
-        textDocument: {
-          uri: file.shadowUri,
-          languageId: "typescriptreact",
-          version,
-          text: snapshotOf(file).scan.masked,
-        },
-      });
     } else if (isTypeScriptDocument(uri, languageId)) {
       file.typescript = true;
-      notifyTs("textDocument/didOpen", { textDocument: { uri, languageId, version, text } });
     }
+    if (file.typescript)
+      notifyTs("textDocument/didOpen", { textDocument: typeScriptDocument(file) });
     schedulePush();
   });
 
@@ -465,46 +631,70 @@ export function startServer(connection: Connection, options: ServerOptions = {})
       return report?.kind === "full" ? report.items : [];
     };
     if (file.shadowUri === undefined) {
-      const items = file.typescript ? fromTs(await fromTypeScript(file.uri)) : [];
-      if (/\.tsx$/i.test(file.uri)) {
-        // Raw CSS in a `.tsx` file (LUM1006 "rename to .stsx").
-        const result = scan(file.document.getText(), uriToPath(file.uri) ?? file.uri);
-        items.push(...result.diagnostics.map((d) => toLspDiagnostic(file.document, d)));
-      }
-      return items;
+      const typescript = file.typescript ? fromTs(await fromTypeScript(file.uri)) : [];
+      if (!isTsx(file.uri)) return typescript;
+      // Raw CSS in a `.tsx` file (LUM1006 "rename to .stsx"), then the providers'.
+      const { document } = file;
+      const scanned = scan(document.getText(), uriToPath(file.uri) ?? file.uri);
+      const lumen = [...scanned.diagnostics, ...(await provided(file, scanned))];
+      return [
+        ...typescript,
+        ...withoutSuperseded(document, lumen, typescript).map((d) => toLspDiagnostic(document, d)),
+      ];
     }
     const snapshot = snapshotOf(file);
-    const typescript = filterBlockDiagnostics(
-      snapshot.document,
-      snapshot.blocks,
-      await fromTypeScript(file.shadowUri),
+    const typescript = fromTs(
+      filterBlockDiagnostics(
+        snapshot.document,
+        snapshot.blocks,
+        await fromTypeScript(file.shadowUri),
+      ),
     );
-    const lumen = [...snapshot.scan.diagnostics];
-    const path = uriToPath(file.uri) ?? file.uri;
-    for (const provider of options.diagnosticProviders ?? []) {
-      try {
-        lumen.push(
-          ...(await provider({
-            uri: file.uri,
-            path,
-            text: snapshot.document.getText(),
-            scan: snapshot.scan,
-          })),
-        );
-      } catch (error) {
-        connection.console.error(`Lumen: a diagnostic provider failed: ${String(error)}`);
-      }
-    }
+    const lumen = [...snapshot.scan.diagnostics, ...(await provided(file, snapshot.scan))];
     return [
-      ...fromTs(typescript),
-      ...lumen.map((diagnostic) => toLspDiagnostic(snapshot.document, diagnostic)),
+      ...typescript,
+      ...withoutSuperseded(snapshot.document, lumen, typescript).map((diagnostic) =>
+        toLspDiagnostic(snapshot.document, diagnostic),
+      ),
       ...cssDiagnostics(snapshot),
     ];
   }
 
+  /**
+   * The diagnostic providers' results for the document's current version. Each version is
+   * computed once: pulls follow the client's own debounce, pushes the server's.
+   */
+  function provided(file: OpenFile, scanned: ScanResult): Promise<CompilerDiagnostic[]> {
+    const { version } = file.document;
+    if (file.provided?.version === version) return file.provided.diagnostics;
+    const path = uriToPath(file.uri);
+    const lumenFile: LumenFile = {
+      uri: file.uri,
+      path: path ?? file.uri,
+      root: path === undefined ? tsRoot : projects.rootFor(path),
+      text: file.document.getText(),
+      scan: scanned,
+    };
+    const diagnostics = (async () => {
+      const results = await Promise.all(
+        (options.diagnosticProviders ?? []).map(async (provider) => {
+          try {
+            return await provider(lumenFile);
+          } catch (error) {
+            connection.console.error(`Lumen: a diagnostic provider failed: ${errorMessage(error)}`);
+            return [];
+          }
+        }),
+      );
+      return results.flat();
+    })();
+    file.provided = { version, diagnostics };
+    return diagnostics;
+  }
+
   connection.languages.diagnostics.on(async (params, token) => {
     const file = files.get(fileKey(params.textDocument.uri));
-    if (file && (file.shadowUri !== undefined || /\.tsx$/i.test(file.uri))) {
+    if (file && (file.shadowUri !== undefined || isTsx(file.uri))) {
       return { kind: "full", items: await diagnosticsFor(file, token) };
     }
     return (
@@ -669,7 +859,34 @@ export function startServer(connection: Connection, options: ServerOptions = {})
         data: { lumen: "class" satisfies Tag },
       });
     }
+    const path = uriToPath(at.file.uri);
+    const root = path === undefined ? undefined : projects.rootFor(path);
+    for (const global of root === undefined ? [] : globals.classes(root, path!)) {
+      if (present.has(global.name) || items.has(global.name)) continue;
+      const file = relative(root!, global.path).split(sep).join("/");
+      items.set(global.name, {
+        label: global.name,
+        kind: CompletionItemKind.Class,
+        detail: `global style, ${file}:${global.range.start.line + 1}`,
+        filterText: global.name,
+        textEdit: {
+          range,
+          newText:
+            slot.kind === "key" && !isIdentifier(global.name)
+              ? JSON.stringify(global.name)
+              : global.name,
+        },
+        data: { lumen: "class" satisfies Tag },
+      });
+    }
     return { isIncomplete: false, items: [...items.values()] };
+  }
+
+  /** `<style global>` definitions of `name` in the other files of `uri`'s project. */
+  function globalDefinitions(uri: string, name: string): GlobalClass[] {
+    const path = uriToPath(uri);
+    if (path === undefined) return [];
+    return globals.classes(projects.rootFor(path), path).filter((global) => global.name === name);
   }
 
   connection.onCompletion(async (params, token) => {
@@ -751,25 +968,35 @@ export function startServer(connection: Connection, options: ServerOptions = {})
         if (!target) return null;
         const { snapshot } = at;
         const origin = rangeOf(snapshot, target.start, target.end);
-        let definitions: ClassOccurrence[] = [target]; // a selector is its own definition
+        let local: ClassOccurrence[] = [target]; // a selector is its own definition
+        let external: GlobalClass[] = [];
         if (target.block === undefined) {
           const blocks = visibleBlocks(snapshot, await componentsOf(at), target.start);
-          definitions = snapshot.selectors.filter(
+          local = snapshot.selectors.filter(
             (selector) => selector.name === target.name && blocks.has(selector.block),
           );
+          external = globalDefinitions(at.file.uri, target.name);
         }
+        const definitions = [
+          ...local.map((selector) => ({
+            uri: at.file.uri,
+            range: rangeOf(snapshot, selector.start, selector.end),
+          })),
+          ...external.map(({ uri, range }) => ({ uri, range })),
+        ];
         if (client.textDocument?.definition?.linkSupport) {
-          return definitions.map((selector): LocationLink => ({
+          return definitions.map(({ uri, range }): LocationLink => ({
             originSelectionRange: origin,
-            targetUri: at.file.uri,
-            targetRange: rangeOf(snapshot, selector.start - 1, selector.end),
-            targetSelectionRange: rangeOf(snapshot, selector.start, selector.end),
+            targetUri: uri,
+            // The selector with its dot.
+            targetRange: {
+              start: { line: range.start.line, character: range.start.character - 1 },
+              end: range.end,
+            },
+            targetSelectionRange: range,
           }));
         }
-        return definitions.map((selector): Location => ({
-          uri: at.file.uri,
-          range: rangeOf(snapshot, selector.start, selector.end),
-        }));
+        return definitions satisfies Location[];
       }
       if (at.snapshot.inBlock(at.offset)) return null;
     }
@@ -866,6 +1093,28 @@ export function startServer(connection: Connection, options: ServerOptions = {})
     return snapshot ? [...ranges, ...cssFoldingRanges(snapshot)] : ranges;
   });
 
+  /** TypeScript's symbols plus one symbol per style block holding its rules. */
+  connection.onDocumentSymbol(async (params, token) => {
+    const symbols = await forward<DocumentSymbol[] | SymbolInformation[]>(
+      "textDocument/documentSymbol",
+      params,
+      token,
+    );
+    const snapshot = openStsx(params.textDocument.uri);
+    if (!snapshot || snapshot.blocks.length === 0) return symbols;
+    const first = symbols?.[0];
+    const hierarchical = first
+      ? "selectionRange" in first
+      : client.textDocument?.documentSymbol?.hierarchicalDocumentSymbolSupport === true;
+    if (hierarchical) {
+      return mergeDocumentSymbols(
+        (symbols ?? []) as DocumentSymbol[],
+        cssDocumentSymbols(snapshot),
+      );
+    }
+    return [...((symbols ?? []) as SymbolInformation[]), ...cssSymbolInformation(snapshot)];
+  });
+
   // --- Forwarded with `.stsx` adjustments --------------------------------------------------
 
   /** Formatting the masked TSX must not touch style blocks (blank there; `lumen fmt` formats CSS). */
@@ -903,10 +1152,9 @@ export function startServer(connection: Connection, options: ServerOptions = {})
       (await forward<Array<CodeAction | Command>>("textDocument/codeAction", tsParams, token)) ??
       [];
     if (!snapshot) return actions;
-    return [
-      ...lumenQuickFixes(snapshot.document, snapshot.scan.diagnostics, params.range),
-      ...actions,
-    ];
+    const file = files.get(fileKey(params.textDocument.uri))!;
+    const lumen = [...snapshot.scan.diagnostics, ...(await provided(file, snapshot.scan))];
+    return [...lumenQuickFixes(snapshot.document, lumen, params.range), ...actions];
   });
 
   // --- Everything else goes to TypeScript --------------------------------------------------
@@ -919,6 +1167,33 @@ export function startServer(connection: Connection, options: ServerOptions = {})
 
 function isTypeScriptDocument(uri: string, languageId: string): boolean {
   return TS_LANGUAGES.has(languageId) || TS_EXTENSION.test(uri);
+}
+
+function errorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
+}
+
+function isTsx(uri: string): boolean {
+  return /\.tsx$/i.test(uri);
+}
+
+/**
+ * Drops Lumen diagnostics that a TypeScript error inside their span supersedes (an unknown `$`
+ * reference: TypeScript's "Cannot find name" is the actionable one), as `lumen check` does.
+ */
+function withoutSuperseded(
+  document: TextDocument,
+  lumen: readonly CompilerDiagnostic[],
+  typescript: readonly Diagnostic[],
+): CompilerDiagnostic[] {
+  const errors = typescript
+    .filter((d) => d.severity === DiagnosticSeverity.Error)
+    .map((d) => document.offsetAt(d.range.start));
+  return lumen.filter(
+    (d) =>
+      !SUPERSEDED_BY_TYPESCRIPT.has(d.code) ||
+      !errors.some((offset) => d.span.start <= offset && offset < d.span.end),
+  );
 }
 
 function classTarget(at: StsxAt): ClassTarget | undefined {
@@ -982,6 +1257,7 @@ function serverCapabilities(ts: ServerCapabilities): ServerCapabilities {
     renameProvider: { prepareProvider: true },
     colorProvider: true,
     foldingRangeProvider: true,
+    documentSymbolProvider: ts.documentSymbolProvider ?? true,
     codeActionProvider: {
       ...codeActions,
       codeActionKinds: [...new Set([...(codeActions.codeActionKinds ?? []), "quickfix"])],

@@ -94,12 +94,13 @@ const posts: Record<string, string> = { "hello-world": "Hello, world" };
 export const mode = "server";
 
 export default function Post({ params }: RouteProps<"/blog/[slug]">) {
-  const title = posts[params.slug] ?? notFound();
+  // A function, so the JSX re-reads it when the params change (a plain const would be LUM2001).
+  const title = () => posts[params.slug] ?? notFound();
 
   return (
     <article>
-      <Title>{title}</Title>
-      <h1>{title}</h1>
+      <Title>{title()}</Title>
+      <h1>{title()}</h1>
     </article>
   );
 }

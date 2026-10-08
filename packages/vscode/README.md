@@ -5,7 +5,9 @@ Language support for Lumen `.stsx` files (TSX plus raw-CSS `<style>` blocks):
 - the `stsx` language: TSX highlighting with embedded CSS and `$name` reference highlighting,
   snippets, and `<style>` auto-closing;
 - the Lumen language server: TypeScript 7 features in `.ts`, `.tsx` and `.stsx` (takeover mode),
-  CSS features inside `<style>` blocks, class completion, `$name` hovers and Lumen diagnostics.
+  CSS features inside `<style>` blocks and in the outline, class completion (with other files'
+  `<style global>` classes), `$name` hovers and Lumen diagnostics (scanner and compiler). A
+  crashed TypeScript server is restarted automatically.
 
 ## Which language server runs
 

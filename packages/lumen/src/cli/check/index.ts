@@ -7,8 +7,10 @@ import { existsSync, realpathSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { join, relative, resolve, sep } from "node:path";
 import { ROUTE_TYPES_FILE, typegen } from "../../app/typegen/index.ts";
+import { compilerDiagnostics } from "./compile.ts";
 import {
   CheckFailure,
+  dropSuperseded,
   fromCompilerDiagnostic,
   normalizeDiagnostics,
   summarize,
@@ -33,7 +35,12 @@ export type {
   DiagnosticSeverity,
   DiagnosticSource,
 } from "./diagnostics.ts";
-export { CheckFailure } from "./diagnostics.ts";
+export {
+  compileDiagnostics,
+  compilerDiagnostics,
+  type CompileDiagnosticsOptions,
+} from "./compile.ts";
+export { CheckFailure, SUPERSEDED_BY_TYPESCRIPT } from "./diagnostics.ts";
 export { formatHuman, formatJson, type CheckReport } from "./report.ts";
 export {
   SHADOW_DIR,
@@ -59,8 +66,9 @@ export interface FileDiagnostics {
 }
 
 /**
- * Hook for more Lumen diagnostics (the compiler's `compile()` diagnostics, lint results). It runs
- * after shadow sync; `files` holds every scanned `.stsx` with its source text and scan result.
+ * Hook for more Lumen diagnostics (lint results, …). It runs after shadow sync; `files` holds every
+ * scanned `.stsx` with its source text and scan result. The compiler's diagnostics are built in
+ * ({@link compilerDiagnostics}).
  */
 export type DiagnosticProvider = (context: {
   root: string;
@@ -154,7 +162,7 @@ export async function check(options: CheckOptions): Promise<CheckResult> {
     diagnostics.push(await fromTsc(diagnostic));
   }
 
-  for (const provider of options.providers ?? []) {
+  for (const provider of [compilerDiagnostics, ...(options.providers ?? [])]) {
     for (const { file, diagnostics: fileDiagnostics } of await provider({ root, files })) {
       const key = fileKey(resolve(root, file));
       const text = sources.get(key) ?? (await loadText(resolve(root, file)));
@@ -165,7 +173,7 @@ export async function check(options: CheckOptions): Promise<CheckResult> {
     }
   }
 
-  const normalized = normalizeDiagnostics(diagnostics);
+  const normalized = normalizeDiagnostics(dropSuperseded(diagnostics));
   return { diagnostics: normalized, summary: summarize(normalized), sources };
 
   async function fromTsc(diagnostic: TscDiagnostic): Promise<CheckDiagnostic> {

@@ -74,3 +74,4 @@ These docs match lumen 0.0.0. Installed projects have them in `node_modules/lume
 - [LUM5002: Invalid route file](errors/LUM5002.md)
 - [LUM5003: Duplicate route](errors/LUM5003.md)
 - [LUM5004: Head or status change inside a streamed boundary](errors/LUM5004.md)
+- [LUM5005: Non-GET method in a static endpoint](errors/LUM5005.md)

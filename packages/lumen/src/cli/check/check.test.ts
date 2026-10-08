@@ -95,6 +95,20 @@ function errorAt(
   };
 }
 
+/** A Lumen diagnostic at `needle` (plus `shift`) on one line, with its docs topic. */
+function lumenAt(file: string, code: string, text: string, needle: string, shift = 0) {
+  const start = locate(text, needle, shift);
+  return expect.objectContaining({
+    source: "lumen",
+    file,
+    code,
+    line: start.line,
+    column: start.column,
+    endColumn: start.column + needle.length - shift,
+    docs: `diagnostics/${code}`,
+  });
+}
+
 /** A tsconfig warning located at the `"option"` key of the project's tsconfig. */
 async function tsconfigWarning(root: string, option: string, message: string) {
   const at = locate(await readFile(join(root, "tsconfig.json"), "utf8"), `"${option}"`);
@@ -372,6 +386,29 @@ describe.skipIf(!binding)("lumen check", () => {
         message: "not a constant",
         docs: "diagnostics/LUM3008",
       },
+    ]);
+    expect(exitCode).toBe(1);
+  });
+
+  it("reports compiler diagnostics for .stsx and .tsx files", async () => {
+    const root = await project("valid");
+    const calls = [
+      "function Inner() { return <i />; }",
+      "let width = 2;",
+      "export function Calls() {",
+      '  return <div class="calls">{Inner()}<style>.calls { width: $width; }</style></div>;',
+      "}",
+      "",
+    ].join("\n");
+    const raw = 'export const Raw = () => <div class="raw">\n  <style>.raw {}</style>\n</div>;\n';
+    await writeFile(join(root, "src/components/Calls.stsx"), calls);
+    await writeFile(join(root, "src/Raw.tsx"), raw);
+    const { exitCode, report } = await checkJson(root);
+    // (TypeScript also rejects `<style>` in the `.tsx` file.)
+    expect(report.diagnostics.filter((d) => d.source === "lumen")).toEqual([
+      lumenAt("src/Raw.tsx", "LUM1006", raw, "<style>"),
+      lumenAt("src/components/Calls.stsx", "LUM2004", calls, "{Inner()", 1),
+      lumenAt("src/components/Calls.stsx", "LUM3008", calls, "$width"),
     ]);
     expect(exitCode).toBe(1);
   });
