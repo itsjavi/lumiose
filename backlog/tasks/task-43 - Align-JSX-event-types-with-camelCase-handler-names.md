@@ -41,6 +41,8 @@ The user approved React-style camelCase delegated handlers (decision-17 amendmen
 ## Implementation Notes
 
 <!-- SECTION:NOTES:BEGIN -->
+Beacon: claimed (session beacon-task43-20261008T125006Z), standalone worker under Lux.
+
 Implemented (Beacon):
 - src/jsx/events.ts: exported const object `delegatedEvents` (`as const satisfies Record<string, keyof HTMLElementEventMap>`), camelCase suffix → DOM event type (`KeyDown: "keydown"`, `DblClick: "dblclick"`, `MouseEnter`, `PointerDown`, `FocusIn`, `BeforeInput`, `ContextMenu`, `AnimationEnd`, `TransitionEnd`, …), 104 entries grouped by kind; header documents the rule (value = key lowercased), consumers (types, compiler mirror, LSP/lint) and exclusions. Also exports DelegatedEventTable / DelegatedEventSuffix / DelegatedEventType types. Covers every event of lib.dom HTMLElementEventMap = SVGElementEventMap = MathMLElementEventMap (TS 7.0.2) except deprecated webkit* aliases (still usable as on:webkit…).
 - jsx-runtime.ts: onX props are mapped from the table (`on${K}`), event type looked up in the element's event map, currentTarget typed via JSX.EventHandler. onKeydown/onclick/onDoubleClick/onWebkitAnimationEnd are excess props (TS suggests the camelCase name). on:x unchanged (exact names + on:${string} custom fallback).
@@ -51,3 +53,9 @@ Implemented (Beacon):
 
 Validation: TS 7.0.2 fixtures clean; vitest src/jsx 2 files / 4 tests pass; pnpm test 21 files / 225 tests pass; pnpm lint: no findings in src/jsx (only pre-existing warnings in core/app/server); oxfmt --check src/jsx clean; pnpm typecheck passes (packages/lumen Done).
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Delegated handler props now use an explicit React-style camelCase table: src/jsx/events.ts exports `delegatedEvents` (KeyDown → keydown, DblClick → dblclick, …; 104 entries covering lib.dom's HTML/SVG/MathML element event maps minus deprecated webkit* aliases), documented as the list the compiler mirrors. jsx-runtime.ts derives onX props from it with the element's event type and typed currentTarget; exact-case forms (onKeydown) are rejected; on:x keeps exact DOM names and custom events. The ref<T>() hole is fixed with JSX.Ref<T> plus a type-only marker checked by the ref prop. Type tests (TS 7) and a runtime table test cover accepted/rejected cases; pnpm test, lint, format and typecheck pass.
+<!-- SECTION:FINAL_SUMMARY:END -->
