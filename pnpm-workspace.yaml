@@ -1,0 +1,7 @@
+packages:
+  - packages/*
+  - apps/*
+  - examples/*
+  - benchmarks/*
+minimumReleaseAgeExclude:
+  - vite@8.3.4

@@ -1,0 +1,19 @@
+[workspace]
+resolver = "3"
+members = ["crates/*"]
+
+[workspace.package]
+version = "0.0.0"
+edition = "2024"
+license = "MIT"
+publish = false
+
+# Shared dependencies are pinned exactly (decision-5); owners add them here.
+[workspace.dependencies]
+lumen_compiler = { path = "crates/lumen_compiler" }
+lumen_css = { path = "crates/lumen_css" }
+
+[profile.release]
+lto = "fat"
+codegen-units = 1
+strip = "symbols"

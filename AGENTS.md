@@ -176,6 +176,39 @@ Before closing a worktree, integrate and verify its needed changes
 in the main working tree. Remove it only after confirming no needed
 work remains.
 
+## Lumen workspace
+
+- **Layout.** A pnpm workspace (`packages/*`, `apps/*`, `examples/*`, `benchmarks/*`) plus a Cargo workspace (`crates/*`).
+- **Toolchain.**
+  - Node ≥ 24. TS sources run directly through Node's type stripping, so keep code compatible with `erasableSyntaxOnly`.
+  - TypeScript 7.
+  - Rust 1.98.1 (`rust-toolchain.toml`).
+- **Commands.**
+  - `pnpm typecheck`
+  - `pnpm test` (Vitest; DOM tests use `// @vitest-environment happy-dom`)
+  - `pnpm lint` (oxlint)
+  - `pnpm fmt` (oxfmt)
+  - `cargo test --workspace`
+  - `pnpm check` runs all of them.
+- **Sources of truth.**
+  - The architecture spec is backlog doc-1.
+  - Decisions are in `backlog/decisions/`.
+  - The compiler-runtime contract comes from TASK-6.
+- **Ownership.** Concurrent workers stay inside their own area. Ask the orchestrator before editing anywhere else.
+
+  | Owner  | Area                                                                                                                                             |
+  | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+  | Lux    | Root configs, `pnpm-lock.yaml`, `packages/lumen/package.json`, `src/index*.ts`, the contract, `examples/ssg-*`                                   |
+  | Photon | `crates/**`, `packages/lumen/src/vite/**`                                                                                                        |
+  | Spark  | `packages/lumen/src/{core,dom,server}/**`, `benchmarks/**`, `examples/spa-*`                                                                     |
+  | Nova   | `packages/lumen/src/app/**`, `packages/adapter-node/**`, `examples/ssr-*`                                                                        |
+  | Beacon | `packages/lumen/src/{cli,jsx}/**`, `packages/lumen/docs/**`, `packages/{language-server,vscode,create,testing,eslint-plugin,prettier-plugin}/**` |
+
+- **Dependencies.**
+  - Before editing dependencies in any `package.json` or `Cargo.toml`, or running `pnpm install` / `cargo add`, create `.local/coordination/deps.lock/` atomically (`mkdir`), and remove it afterwards.
+  - Pin Rust dependencies exactly, in `[workspace.dependencies]`.
+- **Commits.** Workers do not commit. The orchestrator commits integrated work.
+
 ## Scratch space
 
 Use .local/agents/<nickname>/<session-id>/ for session scratch work.
