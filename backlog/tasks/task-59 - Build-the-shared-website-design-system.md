@@ -1,10 +1,11 @@
 ---
 id: TASK-59
 title: Build the shared website design system
-status: To Do
+status: In Progress
 assignee:
   - '@Halo'
 created_date: '2026-10-08 15:58'
+updated_date: '2026-10-08 16:14'
 labels: []
 milestone: m-5
 dependencies:
