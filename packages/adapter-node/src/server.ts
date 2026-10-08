@@ -1,11 +1,13 @@
 // `@lumen/adapter-node` (spec §8 Build, "Adapters"): serves a `lumen build` output with Node.
 // Requests go to the static files of `dist/client` first (GET/HEAD), then to the app's
 // `export default { fetch }` from `dist/server/entry.js`, through lumen's Node bridge (streamed
-// responses, client disconnects abort the request).
+// responses, client disconnects abort the request). Configured `headers` go on every response
+// first, so the static files' and the app's own headers win.
 
 import {
   createServer as createHttpServer,
   type IncomingMessage,
+  type OutgoingHttpHeaders,
   type Server,
   type ServerResponse,
 } from "node:http";
@@ -28,6 +30,13 @@ export interface HandlerOptions {
   origin?: string;
   /** `ctx.env` and `env()` of requests. Default: `process.env`. */
   env?: Readonly<Record<string, string | undefined>>;
+  /**
+   * Headers for every response, static files and the app's alike, such as
+   * `Cross-Origin-Opener-Policy`/`Cross-Origin-Embedder-Policy` for `crossOriginIsolated`. A
+   * response's own header of the same name wins (a page's `response().setHeader()`, a static
+   * file's `cache-control`). `lumen preview` passes Vite's `preview.headers` (else `server.headers`).
+   */
+  headers?: OutgoingHttpHeaders;
 }
 
 /** A Node request listener, also usable as connect/express middleware (errors go to `next`). */
@@ -61,8 +70,12 @@ function nodeHandler(dir: string, entry: ServerEntryModule, options: HandlerOpti
   const app = options.env === undefined ? entry.default : entry.createHandler({ env: options.env });
   const statics = createStaticHandler(join(dir, "client"), entry.config);
   const origin = options.origin ?? process.env.ORIGIN;
+  const headers = Object.entries(options.headers ?? {}).filter(
+    (header): header is [string, number | string | string[]] => header[1] !== undefined,
+  );
 
   return (req, res, next) => {
+    for (const [name, value] of headers) res.setHeader(name, value);
     void (async () => {
       if (await statics(req, res)) return;
       const response = await app.fetch(toWebRequest(req, res, origin));

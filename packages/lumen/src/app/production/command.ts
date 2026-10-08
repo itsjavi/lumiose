@@ -1,5 +1,6 @@
 // `lumen build` and `lumen preview` for the CLI (TASK-28).
 
+import type { OutgoingHttpHeaders } from "node:http";
 import { createRequire } from "node:module";
 import { join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
@@ -50,6 +51,7 @@ interface AdapterNode {
     port?: number;
     host?: string;
     env?: Record<string, string>;
+    headers?: OutgoingHttpHeaders;
   }): Promise<{
     url: string;
     close(): Promise<void>;
@@ -61,7 +63,8 @@ export type PreviewServerOptions = Pick<PreviewCommandOptions, "root" | "port" |
 /**
  * Serves the build output with `@lumen/adapter-node` (installed in the project). Requests see the
  * `.env` files of the production mode under the process environment, as the build's prerendering
- * did. Used by `lumen preview` (CLI, with `--format json`) and {@link previewCommand}.
+ * did, and responses get Vite's `preview.headers` (which default to `server.headers`), as with
+ * `vite preview`. Used by `lumen preview` (CLI, with `--format json`) and {@link previewCommand}.
  */
 export async function startPreview(
   options: PreviewServerOptions,
@@ -78,6 +81,8 @@ export async function startPreview(
     port: options.port ?? 4173,
     host: options.host ?? "localhost",
     env: loadEnv(config.mode, config.envDir === false ? root : config.envDir, ""),
+    // Vite resolves `preview.headers` to `server.headers` when unset.
+    ...(config.preview.headers === undefined ? {} : { headers: config.preview.headers }),
   });
 }
 

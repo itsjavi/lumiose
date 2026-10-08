@@ -25,12 +25,14 @@ pnpm build      # lumen build: dist/client (static shells and assets) and dist/s
 pnpm preview    # lumen preview: serves the build with @lumen/adapter-node
 ```
 
-`src/middleware.ts` adds COOP/COEP headers to the pages the server renders, so they are
-cross-origin isolated. The engine then publishes the playing row, the levels and the scope samples
-through a `SharedArrayBuffer`. Without isolation it falls back to `postMessage`, at about 60 Hz.
-`lumen build` also writes each route's shell as a static file (`dist/client/index.html`,
-`songs/index.html`, … and `404.html`, which serves deep links on a static host); `lumen preview`
-serves those files without the headers, and a static host needs its own header configuration.
+The pages are cross-origin isolated by COOP/COEP headers: `server.headers` in `vite.config.ts`,
+which `lumen dev` and `lumen preview` send with every response, and `src/middleware.ts` for the
+pages the server renders. The engine then publishes the playing row, the levels and the scope
+samples through a `SharedArrayBuffer`. Without isolation it falls back to `postMessage`, at about
+60 Hz. `lumen build` also writes each route's shell as a static file (`dist/client/index.html`,
+`songs/index.html`, … and `404.html`, which serves deep links on a static host); a deployment
+serves them with the headers through `createServer({ headers })` of `@lumen/adapter-node`, and a
+static host needs its own header configuration.
 
 Checks:
 

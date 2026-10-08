@@ -37,6 +37,13 @@ export default function Contact() {
 export const mode = "server";
 export default function Account() { return <p>user {cookies().get("user") ?? "anonymous"}</p>; }
 `,
+  "src/routes/embed.stsx": `import { response } from "lumen";
+export const mode = "server";
+export default function Embed() {
+  response().setHeader("cross-origin-embedder-policy", "credentialless");
+  return <p>embed</p>;
+}
+`,
   "src/routes/api/time.ts": `export const mode = "server";
 export const GET = () => Response.json({ ok: true });
 `,
@@ -94,6 +101,37 @@ describe.skipIf(!binding)("@lumen/adapter-node", () => {
     const missing = await get("/missing");
     expect(missing.status).toBe(404);
     expect(await missing.text()).toContain("<h1>Not here</h1>");
+  });
+
+  it("adds configured headers to every response; a response's own headers win", async () => {
+    const isolated = await createServer({
+      dir: join(root, "dist"),
+      port: 0,
+      host: "127.0.0.1",
+      headers: {
+        "cross-origin-opener-policy": "same-origin",
+        "cross-origin-embedder-policy": "require-corp",
+        "cache-control": "no-store",
+      },
+    });
+    try {
+      const at = (path: string) => fetch(new URL(path.slice(1), isolated.url));
+      // Static files (a page, a public file), a server page, an endpoint, the 404 page.
+      for (const path of ["/", "/favicon.svg", "/account", "/api/time", "/missing"]) {
+        const response = await at(path);
+        expect(response.headers.get("cross-origin-opener-policy"), path).toBe("same-origin");
+        expect(response.headers.get("cross-origin-embedder-policy"), path).toBe("require-corp");
+      }
+      expect((await at("/")).headers.get("cache-control")).toBe(
+        "public, max-age=0, must-revalidate",
+      );
+      expect((await at("/account")).headers.get("cache-control")).toBe("no-store");
+      expect((await at("/embed")).headers.get("cross-origin-embedder-policy")).toBe(
+        "credentialless",
+      );
+    } finally {
+      await isolated.close();
+    }
   });
 
   it("routes form posts to a prerendered page to its action on the server", async () => {

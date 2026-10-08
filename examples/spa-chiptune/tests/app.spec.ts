@@ -43,6 +43,10 @@ const level = (page: Page, channel: number) =>
 const noteAt = (page: Page, row: number, channel: number) =>
   page.locator(`.row[data-row="${row}"] .cell[data-ch="${channel}"] .note`);
 
+test("the pages are cross-origin isolated (COOP/COEP from server.headers)", async ({ page }) => {
+  expect(await page.evaluate(() => globalThis.crossOriginIsolated)).toBe(true);
+});
+
 test("plays the demo song with moving rows, meters and scopes", async ({ page }, info) => {
   await page.getByRole("button", { name: "Play song" }).click();
   await expect(page.locator(".engine")).toHaveText("AUDIO ON");

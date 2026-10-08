@@ -1,11 +1,17 @@
-import { mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, realpathSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join, resolve } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import { afterAll, describe, expect, it } from "vitest";
-import { buildCommand, previewCommand } from "./command.ts";
+import { build } from "./build.ts";
+import { buildCommand, previewCommand, startPreview } from "./command.ts";
 
+const binding = await import("@lumen/compiler").catch(() => undefined);
+const adapterRoot = resolve(import.meta.dirname, "../../../../adapter-node");
 const root = mkdtempSync(join(tmpdir(), "lumen-command-"));
-afterAll(() => rmSync(root, { recursive: true, force: true }));
+const roots = [root];
+afterAll(() => {
+  for (const dir of roots) rmSync(dir, { recursive: true, force: true });
+});
 
 describe("build and preview commands", () => {
   it("lumen build reports route errors and exits 1", async () => {
@@ -22,11 +28,7 @@ describe("build and preview commands", () => {
 
   it("lumen preview serves with the project's @lumen/adapter-node and needs a build", async () => {
     mkdirSync(join(root, "node_modules/@lumen"), { recursive: true });
-    symlinkSync(
-      resolve(import.meta.dirname, "../../../../adapter-node"),
-      join(root, "node_modules/@lumen/adapter-node"),
-      "dir",
-    );
+    symlinkSync(adapterRoot, join(root, "node_modules/@lumen/adapter-node"), "dir");
     const errors: string[] = [];
     const code = await previewCommand({
       root,
@@ -36,4 +38,69 @@ describe("build and preview commands", () => {
     expect(code).toBe(1);
     expect(errors.join("")).toMatch(/^lumen preview: No build in .*Run `lumen build` first\.\n$/);
   });
+
+  it.skipIf(!binding)(
+    "lumen preview sends Vite's preview.headers, else server.headers (TASK-95)",
+    async () => {
+      const app = realpathSync(mkdtempSync(join(tmpdir(), "lumen-preview-")));
+      roots.push(app);
+      const files: Record<string, string> = {
+        "src/routes/index.stsx": "export default function Home() { return <h1>Home</h1>; }\n",
+        "src/routes/live.stsx": `export const mode = "server";
+export default function Live() { return <h1>Live</h1>; }
+`,
+        "vite.config.ts": `import lumen from "lumen/vite";
+export default {
+  plugins: [lumen()],
+  server: { headers: { "cross-origin-opener-policy": "same-origin" } },
+};
+`,
+      };
+      for (const [name, code] of Object.entries(files)) {
+        mkdirSync(dirname(join(app, name)), { recursive: true });
+        writeFileSync(join(app, name), code);
+      }
+      mkdirSync(join(app, "node_modules/@lumen"), { recursive: true });
+      symlinkSync(resolve(import.meta.dirname, "../../.."), join(app, "node_modules/lumen"), "dir");
+      symlinkSync(adapterRoot, join(app, "node_modules/@lumen/adapter-node"), "dir");
+      await build({ root: app, logLevel: "silent" });
+
+      const headersOf = async (path: string) => {
+        const server = await startPreview({ root: app, port: 0, host: "127.0.0.1" });
+        try {
+          const response = await fetch(new URL(path, server.url));
+          return Object.fromEntries(
+            ["cross-origin-opener-policy", "cross-origin-embedder-policy"].map((name) => [
+              name,
+              response.headers.get(name),
+            ]),
+          );
+        } finally {
+          await server.close();
+        }
+      };
+      // server.headers, on a prerendered page and a server route.
+      for (const path of ["/", "/live"]) {
+        expect(await headersOf(path)).toEqual({
+          "cross-origin-opener-policy": "same-origin",
+          "cross-origin-embedder-policy": null,
+        });
+      }
+      // preview.headers replaces them.
+      writeFileSync(
+        join(app, "vite.config.ts"),
+        `import lumen from "lumen/vite";
+export default {
+  plugins: [lumen()],
+  server: { headers: { "cross-origin-opener-policy": "same-origin" } },
+  preview: { headers: { "cross-origin-embedder-policy": "require-corp" } },
+};
+`,
+      );
+      expect(await headersOf("/")).toEqual({
+        "cross-origin-opener-policy": null,
+        "cross-origin-embedder-policy": "require-corp",
+      });
+    },
+  );
 });

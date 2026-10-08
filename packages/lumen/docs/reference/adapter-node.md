@@ -40,6 +40,8 @@ interface HandlerOptions {
   origin?: string;
   /** `ctx.env` and `env()` of requests. Default: `process.env`. */
   env?: Readonly<Record<string, string | undefined>>;
+  /** Headers for every response; a response's own header of the same name wins. */
+  headers?: import("node:http").OutgoingHttpHeaders;
 }
 
 type NodeHandler = (
@@ -52,6 +54,13 @@ type NodeHandler = (
 The same request handling as a Node request listener, for your own `http.createServer` or as
 connect/Express middleware (errors go to `next`). Set `origin` (or `ORIGIN`) when a proxy terminates
 TLS or rewrites the host: request URLs, and the cross-site check of form posts, use it.
+
+`headers` go on every response, the static files (prerendered pages included) and the app's
+alike: the place for headers that middleware cannot add to static files, such as
+`Cross-Origin-Opener-Policy` and `Cross-Origin-Embedder-Policy` for a cross-origin isolated page.
+They are set first, so a response's own header of the same name wins: a static file's
+`cache-control`, a page's `response().setHeader()`, a middleware's response. `lumen preview` passes
+Vite's `preview.headers`, which default to `server.headers`.
 
 ## createStaticHandler
 
@@ -74,7 +83,13 @@ follow the build's `trailingSlash`: `/about` serves `about/index.html` (`"ignore
 // server.ts: run with `node server.ts` after `lumen build`
 import { createServer } from "@lumen/adapter-node";
 
-const app = await createServer({ port: 8080 });
+const app = await createServer({
+  port: 8080,
+  headers: {
+    "cross-origin-opener-policy": "same-origin",
+    "cross-origin-embedder-policy": "require-corp",
+  },
+});
 console.log(`Listening on ${app.url}`);
 ```
 

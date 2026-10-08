@@ -58,6 +58,10 @@ Route errors (`LUM5002`, `LUM5003`, `LUM5005`) and compile errors exit 1.
 ## lumen preview
 
 Serves the build output with `@lumen/adapter-node` (a dependency of the project), until interrupted.
+Every response, static files included, gets Vite's `preview.headers` from the project's
+`vite.config.*`, which default to `server.headers` (as with `vite preview`), so headers configured
+for `lumen dev`, such as COOP/COEP, apply in the preview too
+([adapter `headers`](./adapter-node.md#createhandler)).
 `--format json` prints one line once listening: `{ "command": "preview", "ok": true, "url" }`.
 
 ## lumen check
