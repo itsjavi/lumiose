@@ -237,6 +237,9 @@ describe.skipIf(!binding)("lumen/vite", () => {
     expect(code).toContain(
       `"@acme/kit/src/Nav.stsx#Nav": () => import(${JSON.stringify(`${kit}/src/Nav.stsx`)})`,
     );
+    // The browser imports it through Vite's file-system route.
+    const served = await server.environments.client.transformRequest("virtual:lumen/islands");
+    expect(served!.code).toContain(`import("/@fs${kit}/src/Nav.stsx`);
     const ssr = await server.environments.ssr.transformRequest(`/@fs${kit}/src/Header.stsx`);
     expect(ssr!.code).toContain('island)("@acme/kit/src/Nav.stsx#Nav"');
     // Its JS and CSS hash the same package-relative path into the scope token.
