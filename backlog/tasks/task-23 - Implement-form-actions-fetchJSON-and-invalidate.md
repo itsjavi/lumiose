@@ -24,9 +24,9 @@ Mutations go through form actions that work without JS and can be enhanced from 
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 action/actions with ?/name, formData, fail(), actionData(), Origin/CSRF check on by default
-- [ ] #2 submit(), pending() and invalidate() client helpers; fetchJSON is served in-process during SSR
-- [ ] #3 Tests for no-JS and enhanced flows
+- [x] #1 action/actions with ?/name, formData, fail(), actionData(), Origin/CSRF check on by default
+- [x] #2 submit(), pending() and invalidate() client helpers; fetchJSON is served in-process during SSR
+- [x] #3 Tests for no-JS and enhanced flows
 <!-- AC:END -->
 
 ## Implementation Plan
