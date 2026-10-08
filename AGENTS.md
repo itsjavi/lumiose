@@ -199,7 +199,8 @@ work remains.
   | Owner  | Area                                                                                                                                             |
   | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------ |
   | Lux    | Root configs, `pnpm-lock.yaml`, `packages/lumen/package.json`, `src/index*.ts`, the contract, `examples/ssg-*`                                   |
-  | Photon | `crates/**` (except `crates/lumen_css/**`), `packages/compiler/**`, `packages/lumen/src/vite/**`                                                                                |
+  | Photon | `crates/**` (except `crates/lumen_css/**`), `packages/compiler/**`, `packages/lumen/src/vite/**`                                                 |
+  | Halo   | `crates/lumen_css/**`                                                                                                                            |
   | Spark  | `packages/lumen/src/{core,dom}/**`, `benchmarks/js-framework-benchmark/**`, `examples/spa-*`                                                     |
   | Nova   | `packages/lumen/src/{app,server}/**`, `packages/adapter-node/**`, `benchmarks/ssr/**`, `examples/ssr-*`                                          |
   | Beacon | `packages/lumen/src/{cli,jsx}/**`, `packages/lumen/docs/**`, `packages/{language-server,vscode,create,testing,eslint-plugin,prettier-plugin}/**` |
