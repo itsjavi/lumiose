@@ -22,9 +22,9 @@ lumen check and the language server call compile() without `modules` (packages/l
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 lumen check and the LSP resolve and supply requested modules (transitively) so files importing $ constants get their CSS diagnostics
-- [ ] #2 LUM3008 is reported for an import that cannot be resolved or does not export the name
-- [ ] #3 Tests cover a file with an imported token and a CSS error
+- [x] #1 lumen check and the LSP resolve and supply requested modules (transitively) so files importing $ constants get their CSS diagnostics
+- [x] #2 LUM3008 is reported for an import that cannot be resolved or does not export the name
+- [x] #3 Tests cover a file with an imported token and a CSS error
 <!-- AC:END -->
 
 ## Implementation Plan
