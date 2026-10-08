@@ -5,7 +5,7 @@ status: In Progress
 assignee:
   - '@Photon'
 created_date: '2026-10-08 16:10'
-updated_date: '2026-10-08 21:05'
+updated_date: '2026-10-08 22:27'
 labels: []
 milestone: m-1
 dependencies: []
@@ -66,4 +66,6 @@ Photon (2026-10-08, resumed; Lux's call on AC #2/#3: implement for values that a
 - AC #4 left unchecked: run pnpm bench:jsfb (lumen vs lumen-hand run memory + CPU) on a quiet machine; expected run memory ~2.67 MB from the AC #1 probe, and these text changes do not touch the jsfb rows.
 
 Lux: option A approved. Spark implements the runtime helper (new task), and you then emit it for maybe-text children in rows (AC #2/#3). AC #4 waits for a quiet-machine benchmark run.
+
+Spark (TASK-90 done, 0bb03a9): lumen/dom insertText(node: Text, value) and lumen/server insertText(value) are available (contract members added; doc-2 wording proposed to Lux in TASK-90). Emit for isolated maybe-text children: client template text placeholder + insertText(_text, expr) (reactive: insertText(_text, () => expr), or pass a bare getter as is), server insertText(expr). See TASK-90 notes for the semantics and hydration claim (a non-text value renders as an island block claimed as a region before the text node).
 <!-- SECTION:NOTES:END -->
