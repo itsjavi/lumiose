@@ -5,7 +5,7 @@ status: In Progress
 assignee:
   - '@Spark'
 created_date: '2026-10-08 12:21'
-updated_date: '2026-10-08 16:51'
+updated_date: '2026-10-08 16:53'
 labels: []
 milestone: m-2
 dependencies:
@@ -70,4 +70,13 @@ Spark progress: cursor + hooks + hydrate() + loader implemented (dom/hydrate.ts,
 - Server side of TASK-50 (branch()/list() in value positions) noted on TASK-50 for Photon; until then parentless values in islands fall back (LUM4006).
 
 Nova (TASK-71) touched packages/lumen/src/server/frame.ts runComponent only (your runAsync/block/inAsyncRun hunks untouched): sync components now run under core's runWithLazyOwner (owner materialized on first getOwner/provide/onCleanup/lifetime), with component/props passed via module slots (runNext). Also server/node.ts escaping now emits only &amp; &lt; in text and &amp; &quot; in attributes (DOM-identical). Your hydrate tests pass with these changes.
+
+RESUME (Spark, checkpoint 2026-10-08, session spark-task18-20261008T161236Z):
+DONE (uncommitted, typecheck + lint clean for my files; lumen dom/core/server vitest 367/367 green at last run):
+- packages/lumen/src/dom/hydrate.ts (cursor, hydrate(C, props, start, end, awaits?, slots?, fresh?), slots, replay with tracking, mismatch fallback + LUM4006), dom/islands.ts (loadIslands(manifest): records/MutationObserver, TreeWalker, load/idle/visible/media/only, streamed-placeholder wait, event capture+replay), dom/loader.ts (entry: imports virtual:lumen/islands), dom/virtual.d.ts.
+- Hooks: dom/hydration.ts (Hydrator: template/region/end/branch/range/fork), frame.ts (Frame.h, setFrameHook, withIsland(replay, h, fn), AwaitReplay(key, thunk)), insert.ts (createRange(mode), renderRange(value, mode), end() after insert/branch, branch side check, branchValue mode 1), list.ts (end, listValue mode 1, in-place rows), async.ts (fork, show() with frame), boundaries.ts (Suspense createRange(1)+content mode 3, cond = show content, no fallback while hydrating; ErrorBoundary mode 2/3). Tests: dom/hydrate.test.ts (12, compiler-backed), hydration.test.ts/async.test.ts updated. scripts/size.ts: islands rows.
+- Size: typical 6.02 kB; typical+loader+hydrate 8.61 kB (< 10 kB cap); increment 2.60 kB brotli (> 1.5 kB soft target); every export 9.53 kB.
+IN PROGRESS: e2e fixture examples/islands-e2e (package.json, vite.config.ts, tsconfig.json, server.ts, playwright.config.ts, src/{api.ts,Counter.stsx,Team.stsx,Greeting.stsx,Page.tsx,entry-server.tsx}); deps installed (lockfile has the importer). Not yet run.
+NEXT: 1) write e2e/islands.e2e.ts (gate loader route, tag server nodes, assert claimed + 0 /api requests; Select → 1 fetch; Extra → template slot; early clicks replayed via gated Counter module; visible counter gets data-hydrated only after scroll; /?mismatch → LUM4006 console warning + working island); 2) `pnpm --filter @lumen-examples/islands-e2e test:e2e`; check Greeting root ternary compiles without branchValue (else adjust); 3) optional size trims; 4) notes for Nova (headAssets: `<script type="module" async src="/@fs<abs>/packages/lumen/src/dom/loader.ts">` in dev; build: loader.ts as client entry instead of the bare manifest), Lux (package export "./dom/loader", doc-2 §1/§3.1 hydrate signature + range modes, new examples/islands-e2e dir ownership), Beacon (docs reference/dom.md hydrate + loader, LUM4006 "Reported by"); 5) ACs, final summary, Done.
+KNOWN: TASK-50 server side must emit branch()/list() in value positions (note left on TASK-50); until then compiled parentless values in islands fall back (LUM4006). Multi-root fragments mixing template roots with dynamic children mismatch (consecutive claims only).
 <!-- SECTION:NOTES:END -->
