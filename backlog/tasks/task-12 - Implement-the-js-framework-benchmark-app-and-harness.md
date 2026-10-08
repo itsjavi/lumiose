@@ -1,11 +1,11 @@
 ---
 id: TASK-12
 title: Implement the js-framework-benchmark app and harness
-status: To Do
+status: In Progress
 assignee:
   - '@Spark'
 created_date: '2026-10-08 12:20'
-updated_date: '2026-10-08 14:02'
+updated_date: '2026-10-08 14:03'
 labels: []
 milestone: m-1
 dependencies:
@@ -36,4 +36,6 @@ The performance goal must be measured, not asserted: CPU ≤1.12, memory ≤2.7 
 Lux: the user set the runtime size budget to a 10 kB hard cap (min+brotli, the whole client runtime). Smaller is better, but CPU wins over bytes. Soft target: ≤ 6 kB for typical imports; the js-framework-benchmark bundle ≤ 8 kB. The current 5.02 kB for the benchmark import set is within budget, so focus tuning on CPU and memory.
 
 Lux: start now with a hand-compiled Lumen implementation (written as the compiler would emit it, per doc-2) to set up the krausest harness and get early runtime numbers for tuning. The final AC requires the compiled .stsx version once TASK-11 is Done.
+
+Spark: claimed TASK-12 (session spark-task12-20261008T140314Z). Starting harness + hand-compiled Lumen keyed impl per Lux's note.
 <!-- SECTION:NOTES:END -->
