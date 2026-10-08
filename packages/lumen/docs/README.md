@@ -67,4 +67,5 @@ implement something yet, the page says so in a **Status** note. In short:
 | Islands hydration and the island loader                                             | Available                                                            |
 | SPA router (`lumen/router`)                                                         | Planned                                                              |
 | `lumen check`, `lint`, `fmt`, `docs`, `explain`, language server, VS Code extension | Available                                                            |
-| `create-lumen`, `@lumen/testing`, `lumen mcp`                                       | Planned                                                              |
+| `create-lumen` (templates `minimal`, `static`, `ssr`, `spa`), `lumen agents init`   | Available                                                            |
+| `@lumen/testing`, `lumen mcp`                                                       | Planned                                                              |
