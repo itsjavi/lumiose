@@ -1,0 +1,21 @@
+// @sourcemap
+// @crlf
+// @ref gap = "4px"
+// Source maps point back to .stsx lines and UTF-16 columns, across CRLF line endings,
+// non-ASCII text and $ref substitutions on the same line.
+export function Arrow() {
+  return (
+    <p class="arrow">
+      <style>
+        .arrow::before { content: "→ 😀"; } .arrow { gap: $gap; } .next { gap: $gap; color: red; }
+        @media (width > 1px) {
+          .arrow { color: red; }
+        }
+      </style>
+    </p>
+  );
+}
+
+<style>
+  p { margin: 0; }
+</style>

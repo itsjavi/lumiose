@@ -1,0 +1,55 @@
+=== css
+.anything-goes[data-l-6uzmws3n], section[data-l-6uzmws3n], .card[data-l-jrwca9d4], .card .title[data-l-jrwca9d4], h2.title[data-l-jrwca9d4], #main[data-l-jrwca9d4], .card:hover[data-l-jrwca9d4] {
+  color: red;
+}
+
+.missing[data-l-jrwca9d4], footer[data-l-jrwca9d4], #nope[data-l-jrwca9d4], .card .gone[data-l-jrwca9d4] {
+  color: #00f;
+}
+
+Button.cta[data-l-jrwca9d4], a.cta[data-l-jrwca9d4], .cta#anything[data-l-jrwca9d4] {
+  color: green;
+}
+
+.missing[data-l-jrwca9d4] .child, .outside .card[data-l-jrwca9d4], .x\:y[data-l-jrwca9d4] {
+  margin: 0;
+}
+
+.card[data-l-jrwca9d4] {
+  & .absent[data-l-jrwca9d4], &.dynamic {
+    color: red;
+  }
+}
+
+.bar[data-l-jrwca9d4] {
+  width: calc(var(--progress) * 100%);
+}
+=== diagnostics
+LUM3012 warning 234..242 `--unused`: `--unused` is set in a `style` prop, but no `var(--unused)` in this file's CSS reads it
+  help: Read it with `var(--unused)` in a `<style>` block, or remove it
+LUM3005 warning 588..596 `.missing`: `.missing` matches no element in component `Card`
+  label `.missing`: no element has the class `missing`
+  help: Remove the rule, or wrap the selector in `:global()` if it targets elements outside this scope
+LUM3005 warning 598..604 `footer`: `footer` matches no element in component `Card`
+  label `footer`: no element is a `<footer>`
+  help: Remove the rule, or wrap the selector in `:global()` if it targets elements outside this scope
+LUM3005 warning 606..611 `#nope`: `#nope` matches no element in component `Card`
+  label `#nope`: no element has the id `nope`
+  help: Remove the rule, or wrap the selector in `:global()` if it targets elements outside this scope
+LUM3005 warning 613..624 `.card .gone`: `.card .gone` matches no element in component `Card`
+  label `.gone`: no element has the class `gone`
+  help: Remove the rule, or wrap the selector in `:global()` if it targets elements outside this scope
+LUM3005 warning 709..731 `.missing :deep(.child)`: `.missing :deep(.child)` matches no element in component `Card`
+  label `.missing`: no element has the class `missing`
+  help: Remove the rule, or wrap the selector in `:global()` if it targets elements outside this scope
+LUM3005 warning 805..812 `.absent`: `.absent` matches no element in component `Card`
+  label `.absent`: no element has the class `absent`
+  help: Remove the rule, or wrap the selector in `:global()` if it targets elements outside this scope
+LUM3005 warning 883..887 `.bar`: `.bar` matches no element in component `Card`
+  label `.bar`: no element has the class `bar`
+  help: Remove the rule, or wrap the selector in `:global()` if it targets elements outside this scope
+LUM3005 warning 1066..1073 `section`: `section` matches no element in this file
+  label `section`: no element is a `<section>`
+  help: Remove the rule, or wrap the selector in `:global()` if it targets elements outside this scope
+=== var() reads
+--progress

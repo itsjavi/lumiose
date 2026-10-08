@@ -1,2 +1,232 @@
-//! Lumen CSS pipeline: `$name` substitution, placement scopes and Lightning CSS processing.
-//! See spec doc-1 §4.6.
+//! Lumen CSS pipeline for the raw-CSS `<style>` blocks of a `.stsx` file (spec doc-1 §4.6).
+//!
+//! The compiler scans a file, resolves its `$name` constants and hands this crate the
+//! blocks with their scopes. [`process`] returns one stylesheet for the file, an optional
+//! source map back to the `.stsx` source and the CSS diagnostics. The crate does not depend
+//! on `lumen_compiler`: the compiler maps its scanner output into [`CssInput`] and converts
+//! [`CssDiagnostic`]s into its own diagnostics (same shape, same `LUM` ids).
+//!
+//! # Behaviour
+//!
+//! - **Scopes.** A [`Scope::File`] or [`Scope::Component`] block is scoped with the attribute
+//!   [`scope_attribute`]`(token)`, `[data-l-<token>]`, appended to the last compound of
+//!   every selector, before any pseudo-element (a (0,1,0) specificity bump). Use
+//!   [`scope_token`] to derive tokens so that templates and CSS agree. [`Scope::Global`]
+//!   blocks are emitted unscoped.
+//! - **`:global(sel)`** leaves `sel` unscoped; the token goes on the last compound that still
+//!   has a scoped part (a type, class, id, attribute, `*` or `&`), so `.a :global(.b)` is
+//!   `.a[t] .b` and a selector made only of `:global()` parts is fully global.
+//!   **`:deep(sel)`** scopes only what is to its left: `.a :deep(.b)` is `.a[t] .b`, a leading
+//!   `:deep(.b)` is `[t] .b`, and in a nested rule it is relative to the (already scoped)
+//!   parent. A compound containing `&` is never given the token again: the parent has it.
+//! - **`@keyframes`** names in a scoped block get the suffix `-<token>`. `animation` and
+//!   `animation-name` references are rewritten when the name is defined in the same scope
+//!   (a component's own keyframes first, then the file's); other names are left alone.
+//! - **Custom properties** are never scoped or renamed.
+//! - **SVG blocks** ([`CssBlock::svg`]) are native SVG CSS that stays verbatim in the
+//!   template: they are never extracted, scoped or substituted, so `process` skips them.
+//! - **Order.** File-level blocks (file scope and top-level `<style global>`) come first,
+//!   then component-level blocks, each group in source order.
+//! - **`$name` references** are substituted only in declaration values and in `@media`,
+//!   `@container` and `@supports` preludes, never in selectors (where `[attr$=…]` keeps its
+//!   CSS meaning), property names, strings, comments or `url()`. See [`find_refs`]. Strings
+//!   are inserted as raw CSS text, numbers as-is. A reference without a [`ResolvedRef`] is
+//!   left untouched: the compiler reports why (`LUM3008`, `LUM3013`).
+//! - **Lightning CSS** parses each block with error recovery, lowers nesting and prefixes for
+//!   [`CssOptions::targets`], and minifies when [`CssOptions::minify`] is set.
+//!
+//! # Source maps
+//!
+//! Maps are composed rather than padded. Each block is rewritten (substitutions, scope
+//! attributes) into its own text with a position map back to the original block; Lightning
+//! CSS prints a map against those texts, and every mapping is then rewritten through the
+//! position map to a line and UTF-16 column of the `.stsx` file. Padding the block with
+//! whitespace to its original offset was rejected: `$ref` substitution and scope attributes
+//! change lengths, so padded columns drift on every edited line. The map has one source,
+//! [`CssInput::filename`], with the full `.stsx` text as its `sourcesContent`.
+//!
+//! # Diagnostics
+//!
+//! Spans are UTF-8 byte offsets into [`CssInput::source`]. Codes are listed on [`CssCode`].
+
+mod ast;
+mod diagnostics;
+mod edits;
+mod lines;
+mod prepass;
+mod process;
+mod selector;
+mod sourcemap;
+mod token;
+
+use std::collections::HashSet;
+
+pub use diagnostics::{CssCode, CssDiagnostic, Fix, Label, Severity, TextEdit};
+pub use lightningcss::targets::{Browsers, Targets};
+pub use prepass::{RefSite, find_refs};
+pub use process::process;
+pub use token::{scope_attribute, scope_token};
+
+/// A half-open byte range `start..end` in the original source.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default, PartialOrd, Ord)]
+pub struct Span {
+    pub start: u32,
+    pub end: u32,
+}
+
+impl Span {
+    pub const fn new(start: u32, end: u32) -> Self {
+        Self { start, end }
+    }
+
+    pub(crate) fn from_usize(start: usize, end: usize) -> Self {
+        Self::new(to_u32(start), to_u32(end))
+    }
+
+    pub fn range(self) -> std::ops::Range<usize> {
+        self.start as usize..self.end as usize
+    }
+}
+
+pub(crate) fn to_u32(offset: usize) -> u32 {
+    u32::try_from(offset).expect("source files larger than 4 GiB are not supported")
+}
+
+/// The scope a block applies to (spec §4.6.1).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum Scope {
+    /// `<style global>`: unscoped. `component` names the enclosing component for a
+    /// component-level block; it only decides the output order.
+    Global { component: Option<String> },
+    /// A top-level block: every template in the file carries the token.
+    File { token: String },
+    /// A block inside a component's JSX: only that component's templates carry the token.
+    Component { name: String, token: String },
+}
+
+impl Scope {
+    /// The scope token, `None` for global blocks.
+    pub fn token(&self) -> Option<&str> {
+        match self {
+            Self::Global { .. } => None,
+            Self::File { token } | Self::Component { token, .. } => Some(token),
+        }
+    }
+
+    pub(crate) fn is_component_level(&self) -> bool {
+        match self {
+            Self::Global { component } => component.is_some(),
+            Self::File { .. } => false,
+            Self::Component { .. } => true,
+        }
+    }
+}
+
+/// One `<style>` block of the file.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct CssBlock {
+    /// The CSS text between `<style …>` and `</style>`.
+    pub content: Span,
+    pub scope: Scope,
+    /// Inside an `<svg>` subtree: native SVG CSS, left verbatim in the template and skipped.
+    pub svg: bool,
+}
+
+/// A resolved `$name` constant.
+#[derive(Debug, Clone, PartialEq)]
+pub enum RefValue {
+    /// Inserted as raw CSS text.
+    String(String),
+    /// Inserted as a plain number (`8`, `0.5`); add units with `calc($n * 1px)`.
+    Number(f64),
+}
+
+/// The value of the `$name` reference at `span` (`$` through the last path segment, as
+/// the scanner reports it).
+#[derive(Debug, Clone, PartialEq)]
+pub struct ResolvedRef {
+    pub span: Span,
+    pub value: RefValue,
+}
+
+/// The elements of one scope's templates, for the unused-selector check (`LUM3005`).
+///
+/// The check is conservative: it only looks at the type, class and id selectors of the
+/// compound that receives the scope token, and skips a kind of selector whose values are
+/// computed at runtime (`dynamic_*`).
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct ElementInventory {
+    /// The scope token these elements carry.
+    pub token: String,
+    /// Intrinsic tag names, lowercase.
+    pub tags: HashSet<String>,
+    /// Static classes on intrinsic elements.
+    pub classes: HashSet<String>,
+    /// Classes passed as `class` to component elements. Their element is rendered by the
+    /// child component (class passthrough), so a compound using one is not tag- or id-checked.
+    pub component_classes: HashSet<String>,
+    pub ids: HashSet<String>,
+    pub dynamic_tags: bool,
+    pub dynamic_classes: bool,
+    pub dynamic_ids: bool,
+}
+
+/// A custom property set through a JSX `style` prop, for `LUM3012`.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct CustomPropertySet {
+    /// The property name, including `--`.
+    pub name: String,
+    /// Where it is set, for the diagnostic.
+    pub span: Span,
+}
+
+/// Everything [`process`] needs to know about one file.
+#[derive(Debug, Clone, Copy, Default)]
+pub struct CssInput<'a> {
+    /// The name written to the source map's `sources` (typically the module id).
+    pub filename: &'a str,
+    /// The full `.stsx` source. Every span is a byte range into it.
+    pub source: &'a str,
+    pub blocks: &'a [CssBlock],
+    pub refs: &'a [ResolvedRef],
+    /// Element inventories by scope token. `LUM3005` runs only for scopes listed here.
+    pub inventories: &'a [ElementInventory],
+    /// Custom properties set in this file's `style` props; those no `var()` in this file's
+    /// CSS reads are reported as `LUM3012`. Leave empty to skip the check (for example when
+    /// the property is meant for CSS in another file; see [`CssOutput::custom_properties_read`]).
+    pub custom_properties_set: &'a [CustomPropertySet],
+}
+
+/// Build options shared by every file.
+#[derive(Debug, Clone, Copy, Default)]
+pub struct CssOptions {
+    /// Browser targets for nesting lowering and prefixing; the default keeps modern syntax.
+    pub targets: Targets,
+    pub minify: bool,
+    /// Produce [`CssOutput::map`].
+    pub source_map: bool,
+}
+
+/// The result of [`process`].
+#[derive(Debug, Clone, Default, PartialEq)]
+pub struct CssOutput {
+    /// The file's stylesheet; empty when no block yields CSS.
+    pub css: String,
+    /// A source map (JSON, version 3) from `css` to the `.stsx` source.
+    pub map: Option<String>,
+    pub diagnostics: Vec<CssDiagnostic>,
+    /// Every custom property read through `var()` in the file's CSS, sorted. Hosts can use it
+    /// for a cross-file `LUM3012` check.
+    pub custom_properties_read: Vec<String>,
+}
+
+/// Lightning CSS targets from browserslist queries, such as `["chrome 100", "safari 16"]`.
+#[cfg(feature = "browserslist")]
+pub fn browserslist_targets<S: AsRef<str>>(queries: &[S]) -> Result<Targets, String> {
+    Browsers::from_browserslist(queries.iter().map(AsRef::as_ref))
+        .map(|browsers| Targets {
+            browsers,
+            ..Targets::default()
+        })
+        .map_err(|error| error.to_string())
+}

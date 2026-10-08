@@ -1,0 +1,41 @@
+// Placement scopes, selector rewriting and output order: file-level CSS first, then
+// component blocks in source order, even though the file block is written last.
+export function Card(props) {
+  return (
+    <article class="card">
+      <style>
+        .card { padding: 1rem; }
+        .card > h2 + p ~ span, a[href$=".pdf"] { color: var(--accent, red); }
+        .card::before, .card:hover::after, ::selection { content: ""; }
+        .card {
+          --accent: tomato;
+          &:hover { color: var(--accent); }
+          .title { font-weight: bold; }
+          & .meta::after { content: "→"; }
+        }
+        @media (width > 40rem) {
+          .card { padding: 2rem; }
+        }
+      </style>
+      <h2 class="title">{props.title}</h2>
+    </article>
+  );
+}
+
+export function Badge() {
+  return (
+    <span class="badge">
+      <style>
+        .badge { border-radius: 999px; }
+        :is(.badge, .pill):focus-visible { outline: 2px solid; }
+      </style>
+    </span>
+  );
+}
+
+<style>
+  h2 { margin: 0; }
+  @layer base {
+    * { box-sizing: border-box; }
+  }
+</style>

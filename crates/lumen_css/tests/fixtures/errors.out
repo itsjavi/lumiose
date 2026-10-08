@@ -1,0 +1,23 @@
+=== css
+.broken[data-l-108q9hnp] {
+  width: 10px;
+}
+
+:global {
+  color: red;
+}
+
+.broken :deep()[data-l-108q9hnp] {
+  color: red;
+}
+
+.ok[data-l-108q9hnp] {
+  color: red;
+}
+=== diagnostics
+LUM3015 warning 284..285 `;`: Unexpected token Semicolon
+LUM3015 warning 317..321 `hovr`: 'hovr' is not recognized as a valid pseudo-class. Did you mean '::hovr' (pseudo-element) or is this a typo?
+LUM3015 warning 335..344 `!importnt`: Unexpected token Delim('!')
+LUM3015 warning 361..371 `>> .deeper`: Invalid dangling combinator in selector
+LUM3016 error 396..403 `:global`: `:global` needs a selector argument, such as `:global(.selector)`
+LUM3016 error 436..443 `:deep()`: `:deep` needs a selector argument, such as `:deep(.selector)`

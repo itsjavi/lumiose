@@ -1,0 +1,30 @@
+// @inventory Card tags=article,h2,button classes=card,title component-classes=cta ids=main
+// @inventory file tags=article,h2,button,span,div classes=card,title,badge ids=main dynamic=classes
+// @style-prop --progress
+// @style-prop --unused
+// LUM3005 (unused scoped selector, only with an inventory) and LUM3012 (custom property set
+// in a `style` prop but never read).
+export function Card() {
+  return (
+    <article class="card" id="main" style={{ "--progress": 0.5, "--unused": 1 }}>
+      <style>
+        .card, .card .title, h2.title, #main, .card:hover { color: red; }
+        .missing, footer, #nope, .card .gone { color: blue; }
+        Button.cta, a.cta, .cta#anything { color: green; }
+        .missing :deep(.child), :global(.outside) .card, .x\:y { margin: 0; }
+        .card {
+          .absent { color: red; }
+          &.dynamic { color: red; }
+        }
+        .bar { width: calc(var(--progress) * 100%); }
+      </style>
+      <h2 class="title" />
+      <Button class="cta" />
+    </article>
+  );
+}
+
+<style>
+  .anything-goes { color: red; }
+  section { color: red; }
+</style>

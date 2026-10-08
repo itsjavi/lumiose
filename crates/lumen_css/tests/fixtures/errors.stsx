@@ -1,0 +1,16 @@
+// Invalid CSS: Lightning CSS drops what it cannot parse and keeps the rest of the block
+// (LUM3015 warnings); misused :global/:deep are errors (LUM3016), without a duplicate warning.
+export function Broken() {
+  return (
+    <div class="broken">
+      <style>
+        .broken { 12px; width: 10px; }
+        .broken:hovr { color: red !importnt; }
+        .ok >>> .deeper { color: red; }
+        :global { color: red; }
+        .broken :deep() { color: red; }
+        .ok { color: red; }
+      </style>
+    </div>
+  );
+}

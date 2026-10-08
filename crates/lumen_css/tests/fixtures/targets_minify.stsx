@@ -1,0 +1,22 @@
+// @targets chrome 100
+// @minify
+// Nesting is lowered for targets without CSS nesting, then minified.
+export function List() {
+  return (
+    <ul class="list">
+      <style>
+        .list {
+          display: flex;
+          user-select: none;
+          & > li { margin: 0; }
+          .item, .entry {
+            color: red;
+            &:hover { color: blue; }
+          }
+        }
+        .a { color: red; }
+        .b { color: red; }
+      </style>
+    </ul>
+  );
+}

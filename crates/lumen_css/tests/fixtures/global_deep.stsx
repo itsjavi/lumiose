@@ -1,0 +1,34 @@
+// `:global()` and `:deep()` escapes, and `<style global>` blocks at both placements.
+export function Menu() {
+  return (
+    <nav class="menu">
+      <style>
+        :global(body.dark) .menu { background: black; }
+        .menu :global(.icon) { width: 1em; }
+        .menu:global(.open) { display: block; }
+        :global(.toast), :global(.a) :global(.b) { position: fixed; }
+        :global(.theme):hover { color: red; }
+        .menu :deep(.item a) { color: inherit; }
+        .menu:deep(.item) { margin: 0; }
+        :deep(.child) { gap: 1rem; }
+        .menu {
+          :deep(.nested) { color: blue; }
+          > :global(.raw) { color: green; }
+        }
+        .menu:not(:global(.disabled)) { cursor: pointer; }
+        :global .bare, .menu :deep(.one) :deep(.two), .menu:is(:deep(.x)) { color: red; }
+      </style>
+      <style global>
+        .menu-portal { z-index: 10; }
+      </style>
+    </nav>
+  );
+}
+
+<style global>
+  html { color-scheme: light dark; }
+  :global(.kept) .global-block :deep(.too) { margin: 0; }
+</style>
+<style>
+  .file { color: red; }
+</style>

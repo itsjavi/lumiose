@@ -1,0 +1,19 @@
+// @ref fill = "red"
+// An SVG <style> is native SVG CSS: left verbatim in the template, never extracted, scoped or
+// substituted. Only the component block reaches the stylesheet.
+export function Logo() {
+  return (
+    <div class="logo">
+      <svg viewBox="0 0 10 10">
+        <style>
+          .mark { fill: $fill; }
+          circle[data-x$="y"] { stroke: blue; }
+        </style>
+        <circle class="mark" r="4" />
+      </svg>
+      <style>
+        .logo { fill: $fill; }
+      </style>
+    </div>
+  );
+}

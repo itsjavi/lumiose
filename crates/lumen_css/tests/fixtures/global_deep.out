@@ -1,0 +1,70 @@
+=== css
+html {
+  color-scheme: light dark;
+}
+
+.kept .global-block .too {
+  margin: 0;
+}
+
+.file[data-l-4jzvlchn] {
+  color: red;
+}
+
+body.dark .menu[data-l-jyhh5azx] {
+  background: #000;
+}
+
+.menu[data-l-jyhh5azx] .icon {
+  width: 1em;
+}
+
+.menu.open[data-l-jyhh5azx] {
+  display: block;
+}
+
+.toast, .a .b {
+  position: fixed;
+}
+
+.theme:hover {
+  color: red;
+}
+
+.menu[data-l-jyhh5azx] .item a {
+  color: inherit;
+}
+
+.menu[data-l-jyhh5azx] .item {
+  margin: 0;
+}
+
+[data-l-jyhh5azx] .child {
+  gap: 1rem;
+}
+
+.menu[data-l-jyhh5azx] {
+  & .nested {
+    color: #00f;
+  }
+
+  & > .raw {
+    color: green;
+  }
+}
+
+.menu:not(.disabled)[data-l-jyhh5azx] {
+  cursor: pointer;
+}
+
+:global .bare[data-l-jyhh5azx], .menu[data-l-jyhh5azx] .one .two, .menu.x[data-l-jyhh5azx] {
+  color: red;
+}
+
+.menu-portal {
+  z-index: 10;
+}
+=== diagnostics
+LUM3016 error 730..737 `:global`: `:global` needs a selector argument, such as `:global(.selector)`
+LUM3016 error 763..774 `:deep(.two)`: only one `:deep()` is allowed per selector
+LUM3016 error 785..794 `:deep(.x)`: `:deep()` is only allowed at the top level of a selector

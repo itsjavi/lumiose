@@ -1,0 +1,69 @@
+=== css
+@keyframes fade-rm5eopd9 {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+.page[data-l-rm5eopd9] {
+  --name: fade;
+  animation: .2s fade-rm5eopd9;
+}
+
+@keyframes vendor-bounce {
+  50% {
+    translate: 0 -4px;
+  }
+}
+
+.global-anim {
+  animation: 1s fade, 1s vendor-bounce;
+}
+
+@keyframes spin-sy3s2vln {
+  to {
+    transform: rotate(1turn);
+  }
+}
+
+@keyframes pulse\ wave-sy3s2vln {
+  50% {
+    opacity: .5;
+  }
+}
+
+.spinner[data-l-sy3s2vln] {
+  animation: 1s linear infinite spin-sy3s2vln;
+}
+
+.dot[data-l-sy3s2vln] {
+  animation: 2s fade-rm5eopd9, 1s pulse\ wave-sy3s2vln, 1s vendor-bounce;
+}
+
+.ring[data-l-sy3s2vln] {
+  animation-name: spin-sy3s2vln, fade-rm5eopd9;
+}
+
+.busy[data-l-sy3s2vln] {
+  animation-name: none;
+}
+
+.toast[data-l-5htuz52m] {
+  animation: 3s spin;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  @keyframes fade-5htuz52m {
+    from {
+      opacity: 0;
+    }
+  }
+
+  .toast[data-l-5htuz52m] {
+    animation: .3s ease-out fade-5htuz52m;
+  }
+}

@@ -1,0 +1,39 @@
+// Scoped @keyframes: names get the scope token; `animation` and `animation-name` references
+// are rewritten when the name is defined in the same file scope (own component first).
+export function Spinner() {
+  return (
+    <div class="spinner">
+      <style>
+        @keyframes spin { to { transform: rotate(1turn); } }
+        @keyframes "pulse wave" { 50% { opacity: 0.5; } }
+        .spinner { animation: spin 1s linear infinite; }
+        .dot { animation: fade 2s, "pulse wave" 1s, vendor-bounce 1s; }
+        .ring { animation-name: spin, fade; }
+        .busy { animation-name: none; }
+      </style>
+    </div>
+  );
+}
+
+export function Toast() {
+  return (
+    <div class="toast">
+      <style>
+        .toast { animation: spin 3s; }
+        @media (prefers-reduced-motion: no-preference) {
+          @keyframes fade { from { opacity: 0; } }
+          .toast { animation: fade 300ms ease-out; }
+        }
+      </style>
+    </div>
+  );
+}
+
+<style>
+  @keyframes fade { from { opacity: 0; } to { opacity: 1; } }
+  .page { animation: fade 200ms; --name: fade; }
+</style>
+<style global>
+  @keyframes vendor-bounce { 50% { translate: 0 -4px; } }
+  .global-anim { animation: fade 1s, vendor-bounce 1s; }
+</style>

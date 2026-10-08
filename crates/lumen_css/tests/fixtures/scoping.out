@@ -1,0 +1,54 @@
+=== css
+h2[data-l-816y5k9w] {
+  margin: 0;
+}
+
+@layer base {
+  [data-l-816y5k9w] {
+    box-sizing: border-box;
+  }
+}
+
+.card[data-l-ek2xlvuu] {
+  padding: 1rem;
+}
+
+.card > h2 + p ~ span[data-l-ek2xlvuu], a[href$=".pdf"][data-l-ek2xlvuu] {
+  color: var(--accent, red);
+}
+
+.card[data-l-ek2xlvuu]:before, .card:hover[data-l-ek2xlvuu]:after, [data-l-ek2xlvuu]::selection {
+  content: "";
+}
+
+.card[data-l-ek2xlvuu] {
+  --accent: tomato;
+
+  &:hover {
+    color: var(--accent);
+  }
+
+  & .title[data-l-ek2xlvuu] {
+    font-weight: bold;
+  }
+
+  & .meta[data-l-ek2xlvuu]:after {
+    content: "→";
+  }
+}
+
+@media (width > 40rem) {
+  .card[data-l-ek2xlvuu] {
+    padding: 2rem;
+  }
+}
+
+.badge[data-l-8l5pt6ca] {
+  border-radius: 999px;
+}
+
+:is(.badge, .pill):focus-visible[data-l-8l5pt6ca] {
+  outline: 2px solid;
+}
+=== var() reads
+--accent

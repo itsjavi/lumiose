@@ -1,0 +1,34 @@
+// @ref radius.lg = "8px"
+// @ref gap = 4
+// @ref ratio = 0.5
+// @ref BREAKPOINT = "48rem"
+// @ref card.min = "20rem"
+// @ref font.stack = "\"Inter\", sans-serif"
+// @ref brand = "nope"
+// @ref gap2 = 2
+// $ref constants: substituted in declaration values and in @media/@container/@supports
+// preludes only. Strings go in raw, numbers as-is.
+export function Profile() {
+  const local = 1;
+  return (
+    <section class="profile">
+      <style>
+        .profile {
+          border-radius: $radius.lg;
+          padding: calc($gap * 1px) calc($gap * 2px);
+          opacity: $ratio;
+          font-family: $font.stack;
+          --gap: $gap;
+        }
+        @media (width < $BREAKPOINT) { .profile { padding: 0; } }
+        @container (min-width: $card.min) { .profile { display: grid; } }
+        @supports (aspect-ratio: $ratio) { .profile { aspect-ratio: 1; } }
+        a[href$=".pdf"] { color: red; }
+        .profile$gap { color: red; }
+        .profile::after { content: "$gap"; background: url($gap.png); /* $gap */ }
+        .missing { width: $unknown; }
+        .bad { color: $brand-primary; margin: calc($gap2-1px); }
+      </style>
+    </section>
+  );
+}

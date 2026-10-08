@@ -1,0 +1,51 @@
+=== css
+.profile[data-l-uk1rwesc] {
+  opacity: .5;
+  --gap: 4;
+  border-radius: 8px;
+  padding: 4px 8px;
+  font-family: Inter, sans-serif;
+}
+
+@media (width < 48rem) {
+  .profile[data-l-uk1rwesc] {
+    padding: 0;
+  }
+}
+
+@container (width >= 20rem) {
+  .profile[data-l-uk1rwesc] {
+    display: grid;
+  }
+}
+
+@supports (aspect-ratio: 0.5) {
+  .profile[data-l-uk1rwesc] {
+    aspect-ratio: 1;
+  }
+}
+
+a[href$=".pdf"][data-l-uk1rwesc] {
+  color: red;
+}
+
+.profile[data-l-uk1rwesc]:after {
+  content: "$gap";
+  background: url("$gap.png");
+}
+
+.missing[data-l-uk1rwesc] {
+  width: $unknown;
+}
+
+.bad[data-l-uk1rwesc] {
+  color: $brand-primary;
+  margin: calc($gap2-1px);
+}
+=== diagnostics
+LUM3015 warning 922..926 `$gap`: Unexpected token Delim('$')
+LUM3009 error 1086..1100 `$brand-primary`: `$brand-primary` is not a valid reference: JavaScript identifiers cannot contain `-`
+  help: Use `$brand.primary` for a member of an `as const` object, or a camelCase constant such as `$brandPrimary`
+  fix: Replace with `$brand.primary` (`$brand-primary` → `$brand.primary`)
+LUM3009 error 1115..1124 `$gap2-1px`: `$gap2-1px` is not a valid reference: JavaScript identifiers cannot contain `-`
+  help: If you meant a subtraction, put spaces around `-`: `calc($gap2 - 1px)`
