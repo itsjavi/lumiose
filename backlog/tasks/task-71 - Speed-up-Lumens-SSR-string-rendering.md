@@ -1,11 +1,11 @@
 ---
 id: TASK-71
 title: Speed up Lumen's SSR string rendering
-status: In Progress
+status: Done
 assignee:
   - '@Nova'
 created_date: '2026-10-08 16:26'
-updated_date: '2026-10-08 16:51'
+updated_date: '2026-10-08 16:52'
 labels: []
 milestone: m-3
 dependencies: []
@@ -21,8 +21,8 @@ The SSR benchmark (TASK-20, benchmarks/ssr/RESULTS.md) renders the 1,000-row pag
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Lumen renders the benchmark page at least 1.5x faster than in the TASK-20 baseline on the same machine, with the server parity and golden tests green
-- [ ] #2 benchmarks/ssr/RESULTS.md regenerated with the new numbers
+- [x] #1 Lumen renders the benchmark page at least 1.5x faster than in the TASK-20 baseline on the same machine, with the server parity and golden tests green
+- [x] #2 benchmarks/ssr/RESULTS.md regenerated with the new numbers
 <!-- AC:END -->
 
 ## Implementation Plan
@@ -50,3 +50,9 @@ Remaining gap to Solid is in compiled component calls, measured by hand-editing 
 
 Test expectation updates caused by the escaping change: server/ssr.test.ts, server/render.test.ts, and packages/compiler/test/server.test.ts (Photon's file: two expectations, '&gt;' and attribute '&lt;' no longer escaped).
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Lumen's SSR renders the benchmark page 1.61x faster (338 -> 543 +/- 49 renders/s over 4 rounds on a heavily loaded machine; ~545-570 in quiet stretches), now second to Solid (663 +/- 51) and ahead of Solid hydratable and Svelte. Runtime changes in packages/lumen/src/server: indexOf-based escaping of only what HTML requires (& < in text, & " in attributes; DOM-identical, parity tests green), memoized and allocation-free class strings, lazy component owners without per-component closures, direct list concatenation. benchmarks/ssr/RESULTS.md regenerated (notes and bench.ts template updated). The remaining gap to Solid is compiled component-call overhead, measured at ~695 renders/s with hand-edited codegen: TASK-78 (Photon; eager server props need Lux's decision). Validation: lumen server tests 146/146, full pnpm test green except an untracked examples/vite-counter/src/__probe.test.ts (not mine); pnpm typecheck clean; oxlint clean for touched files (one error in another agent's examples/vite-counter/__probe.config.ts).
+<!-- SECTION:FINAL_SUMMARY:END -->
