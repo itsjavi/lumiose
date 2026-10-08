@@ -5,6 +5,7 @@ status: To Do
 assignee:
   - '@Photon'
 created_date: '2026-10-08 16:45'
+updated_date: '2026-10-08 16:51'
 labels: []
 milestone: m-3
 dependencies: []
@@ -33,3 +34,9 @@ Together 1-3 bring Lumen from ~545 to ~695 renders/s on this page (Solid ~700), 
 - [ ] #3 Decision recorded (Lux) on eager data props for non-JSX dynamic props on the server target; implemented if accepted, with contract doc-2 updated
 - [ ] #4 benchmarks/ssr rerun after the change, RESULTS.md updated
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Nova (TASK-71): the runtime now escapes only '&' and '<' in text and '&' and '"' in attributes; I updated the two affected expectations in packages/compiler/test/server.test.ts (component call 5.3 and 'attributes, properties and escaping'). Measured variants were hand edits of benchmarks/ssr/dist/lumen/Page.js (rebuild with node scripts/build.ts to reset).
+<!-- SECTION:NOTES:END -->
