@@ -3,11 +3,20 @@
 Language support for Lumen `.stsx` files (TSX plus raw-CSS `<style>` blocks):
 
 - the `stsx` language: TSX highlighting with embedded CSS and `$name` reference highlighting,
-  snippets, and `<style>` auto-closing;
+  and `<style>` auto-closing;
 - the Lumen language server: TypeScript 7 features in `.ts`, `.tsx` and `.stsx` (takeover mode),
-  CSS features inside `<style>` blocks and in the outline, class completion (with other files'
-  `<style global>` classes), `$name` hovers and Lumen diagnostics (scanner and compiler). A
-  crashed TypeScript server is restarted automatically.
+  CSS features inside `<style>` blocks and in the outline, `$name` hovers and Lumen diagnostics
+  (scanner and compiler). A crashed TypeScript server is restarted automatically.
+
+## Editor features
+
+| Where                    | What you get                                                                                                                                                                                                                                                                                                                        |
+| ------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `class="…"`, `class={…}` | Classes of the blocks that apply there, by placement: the enclosing elements' nested blocks (innermost first, never a sibling subtree's), the file's blocks, then the project's global classes (`<style global>` in any file, and global `.css` files imported by its modules). Go to definition and rename follow the same scopes. |
+| `var(--…)`, `--name: …`  | Every custom property declared in the project (any `<style>` block or imported `.css`), the file's own first, with its declared value as the detail and every declaration in the documentation.                                                                                                                                     |
+| `<style …>`              | `global`, its only attribute, with a description; hovers on `style` and `global` describe the block's scope.                                                                                                                                                                                                                        |
+| Lumen attributes         | Descriptions in hovers and completion for `client:load`, `client:idle`, `client:visible`, `client:media`, `client:only`, `bind:value`, `bind:checked`, `on:event`, `attach`, `ref` and `key`.                                                                                                                                       |
+| Snippets                 | `comp`, `acomp` and `route` at a top-level statement start; `island` in JSX children. They come from the server, so they never show up inside tags, strings, `<style>` tags or blocks.                                                                                                                                              |
 
 ## Which language server runs
 
@@ -57,6 +66,25 @@ Limits:
   Lumen package with a server; a project can still install `@lumen/language-server` (with its
   own compiler build) and point `lumen.server.path` at it.
 - The compiler's WebAssembly fallback is not bundled.
+
+## Installing a local build
+
+Build the native compiler and package the extension for this machine, then install the `.vsix`
+over any previous Lumen build (`--force` replaces it even though the version is unchanged):
+
+```sh
+pnpm build:compiler                          # packages/compiler/compiler.<platform>.node
+pnpm --filter lumen-vscode run package       # packages/vscode/lumen-vscode-<target>.vsix
+code --install-extension packages/vscode/lumen-vscode-darwin-arm64.vsix --force
+```
+
+Use the `.vsix` of your platform (`lumen-vscode-linux-x64.vsix`, …; see Platforms). Then run
+**Developer: Reload Window** in every open VS Code window. To check what runs, open the **Lumen
+Language Server** output channel: it logs the server's path and source (`bundled`, `workspace` or
+`setting`). In this repository, a workspace with `@lumen/language-server` installed uses the
+repository's server from its TypeScript sources (see Which language server runs): after a server
+change, **Lumen: Restart Language Server** picks it up without reinstalling. If an older install
+misbehaves, remove it first with `code --uninstall-extension lumen.lumen-vscode`.
 
 ## Building
 

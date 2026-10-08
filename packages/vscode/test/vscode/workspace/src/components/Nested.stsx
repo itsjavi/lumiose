@@ -1,0 +1,23 @@
+export function Nested() {
+  return (
+    <div class="panel">
+      <section class="intro">
+        <p class="lead">Hello</p>
+      </section>
+      <section class="details">
+        <p class="note">
+          Details
+          <style>
+            .note-text { color: var(--brand); }
+          </style>
+        </p>
+        <style>
+          .details-grid { display: grid; gap: var(--space); }
+        </style>
+      </section>
+      <style>
+        .panel-frame { padding: 1rem; }
+      </style>
+    </div>
+  );
+}

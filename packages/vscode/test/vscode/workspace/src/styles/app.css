@@ -1,0 +1,8 @@
+:root {
+  --brand: #3b82f6;
+  --space: 8px;
+}
+
+.app-button {
+  color: var(--brand);
+}

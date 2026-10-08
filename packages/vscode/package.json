@@ -3,7 +3,7 @@
   "displayName": "Lumen",
   "version": "0.0.0",
   "private": true,
-  "description": "Lumen .stsx support: TSX with embedded CSS style blocks and $ref highlighting, snippets, and the Lumen language server (TypeScript 7 takeover).",
+  "description": "Lumen .stsx support: TSX with embedded CSS style blocks and $ref highlighting, and the Lumen language server (TypeScript 7 takeover, CSS, project-wide classes and custom properties, snippets).",
   "categories": [
     "Programming Languages",
     "Snippets"
@@ -106,12 +106,6 @@
             "support.function.tsx"
           ]
         }
-      }
-    ],
-    "snippets": [
-      {
-        "language": "stsx",
-        "path": "./snippets/stsx.code-snippets"
       }
     ],
     "commands": [

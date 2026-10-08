@@ -6,11 +6,11 @@
 
 **Placement decides scope.**
 
-| Placement                                                                            | Scope                                                                                                                      |
-| ------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------- |
+| Placement                                                                            | Scope                                                                                                                                                                                                                                                                                                                         |
+| ------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Inside a component's JSX, as a child of an intrinsic element or fragment (any depth) | Its **enclosing element and everything written inside it** in that component, including `.map` callbacks and JSX passed as children there. A block directly under the component's root element therefore covers the whole component. Sibling subtrees are not affected, and it never reaches other components' own templates. |
-| File top level (conventionally at the end of the file)                               | Every template in the file.                                                                                                |
-| `<style global>` (anywhere a block is valid)                                         | The whole app, unscoped. Usually in the root `_layout.stsx`.                                                               |
+| File top level (conventionally at the end of the file)                               | Every template in the file.                                                                                                                                                                                                                                                                                                   |
+| `<style global>` (anywhere a block is valid)                                         | The whole app, unscoped. Usually in the root `_layout.stsx`.                                                                                                                                                                                                                                                                  |
 
 ```stsx
 export function Panel() {
@@ -41,6 +41,10 @@ a +0,1,0 specificity bump. Dynamic classes always work, because no element is pr
   `.cta { … }` in the parent styles `<Button class="cta" />` wherever `Button` applies
   `props.class`.
 - Within a file, file-level CSS comes first, then component blocks in source order.
+- **In the editor**, class completion follows the same scopes: in a `class` attribute it offers
+  the classes of the blocks that apply there (innermost first), then the project's global classes
+  (`<style global>` blocks and imported global `.css` files), never a sibling subtree's.
+  `var(--…)` offers every custom property declared in the project, with its value.
 
 **Blocks are plain CSS:** no Sass, no `lang`, `media` or other attributes (only `global`). CSS
 imports, CSS Modules, Tailwind v4 and `.scss` imports still work through Vite.

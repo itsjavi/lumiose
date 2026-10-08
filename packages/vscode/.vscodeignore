@@ -3,7 +3,6 @@
 !server/bin.mjs
 !server/*.node
 !syntaxes/**
-!snippets/**
 !language-configuration.json
 !package.json
 !README.md

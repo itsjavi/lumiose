@@ -37,6 +37,9 @@ await build({
   cwd: fileURLToPath(new URL("../../language-server/", import.meta.url)),
   input: "src/bin.ts",
   platform: "node",
+  // `lumen check` loads the project's Vite config (`import("vite")` in lumen/tooling); the server
+  // never does, so Vite stays out of the bundle.
+  external: ["vite"],
   // The ESM builds: the UMD builds of the vscode-* packages hide their requires from bundlers.
   resolve: { mainFields: ["module", "main"] },
   output: { file: `${serverDir}bin.mjs`, format: "esm", minify: true, sourcemap: true },

@@ -12,7 +12,8 @@
 // The suite asserts which server and runtime the extension picked. `--mode=workspace|bundled` runs
 // one mode (default: both). VS Code: $VSCODE_EXECUTABLE, else the default macOS install.
 // `--screenshot=<file.png>` also saves a capture of the VS Code window (over the Chrome DevTools
-// protocol, so only that window) showing Card.stsx, in the first mode run.
+// protocol, so only that window) showing Card.stsx, in the first mode run;
+// `--screenshot-view=completion` shows the class completion list in Nested.stsx instead.
 
 import { execFileSync, spawn } from "node:child_process";
 import { existsSync } from "node:fs";
@@ -52,6 +53,10 @@ const modes: Mode[] = modeArg === undefined ? ["workspace", "bundled"] : [modeAr
 let screenshotFile = process.argv
   .find((arg) => arg.startsWith("--screenshot="))
   ?.slice("--screenshot=".length);
+/** `hover` (default: a `$ref` hover in Card.stsx) or `completion` (scoped class completion). */
+const screenshotView = process.argv
+  .find((arg) => arg.startsWith("--screenshot-view="))
+  ?.slice("--screenshot-view=".length);
 const debugPort = 9339;
 
 let failed = false;
@@ -91,6 +96,7 @@ async function runMode(mode: Mode, screenshot: string | undefined): Promise<numb
   if (screenshot) {
     const signal = join(temp, "screenshot-signal");
     env["LUMEN_SMOKE_SCREENSHOT_SIGNAL"] = signal;
+    if (screenshotView) env["LUMEN_SMOKE_SCREENSHOT_VIEW"] = screenshotView;
     captured = captureWhenReady(signal, resolve(screenshot));
   }
   const code = await new Promise<number | null>((done) => {
