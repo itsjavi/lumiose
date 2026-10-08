@@ -22,3 +22,5 @@ Lumen needs a single event syntax that is familiar to people and agents, fast on
 - The compiler decides which events are delegated using a fixed list of bubbling events. Anything else that is written as `onX` gets a diagnostic suggesting `on:x`.
 
 _Amended 2026-10-08 with user approval: delegated handlers use React-style camelCase names (`onKeyDown`, `onMouseEnter`, `onPointerDown`, `onDblClick`). The compiler lowercases the part after `on` to get the DOM event name. Exact-case forms such as `onKeydown` are rejected by the types. Native listeners keep the exact event name: `on:keydown`, `on:my-event`._
+
+_Clarified 2026-10-08 by Lux (technical, decision-16): `onX` props for events that do not bubble (`onMouseEnter`, `onFocus`, `onScroll`, …) are valid. The compiler attaches them as direct native listeners instead of delegating, so no diagnostic is raised, as Solid does. Delegation applies to the bubbling subset. `on:x` stays for exact or custom event names and listener options._

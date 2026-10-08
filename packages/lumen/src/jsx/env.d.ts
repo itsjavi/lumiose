@@ -13,6 +13,7 @@ declare global {
     type ClassValue = LumenJSX.ClassValue;
     interface CSSProperties extends LumenJSX.CSSProperties {}
     type EventHandler<E, T> = LumenJSX.EventHandler<E, T>;
+    type Ref<T extends Element> = LumenJSX.Ref<T>;
     interface HTMLProps<T extends HTMLElement> extends LumenJSX.HTMLProps<T> {}
     interface SVGProps<T extends SVGElement> extends LumenJSX.SVGProps<T> {}
     interface MathMLProps<T extends MathMLElement> extends LumenJSX.MathMLProps<T> {}

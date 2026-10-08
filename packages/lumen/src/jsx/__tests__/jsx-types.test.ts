@@ -78,7 +78,7 @@ describe("JSX types (TypeScript 7)", () => {
           'import type { Locals } from "lumen";',
           "async function Greeting(props: { name: string }) {",
           "  const name = await Promise.resolve(props.name);",
-          "  return <p class={{ hot: name.length > 3 }} onClick={(e) => e.currentTarget.title}>{name}</p>;",
+          "  return <p class={{ hot: name.length > 3 }} onClick={(e) => e.currentTarget.title} onKeyDown={(e) => e.key}>{name}</p>;",
           "}",
           'export const app: JSX.Element = <Greeting name="Ada" client:visible="200px" />;',
           "export const url: string = import.meta.env.PUBLIC_URL;",

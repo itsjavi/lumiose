@@ -12,4 +12,11 @@ export interface Signal<T> {
 export declare function signal<T>(value: T): Signal<T>;
 
 /** `ref<T>()`: a ref callback that can also be read like a signal. */
-export declare function ref<T extends Element>(): ((element: T) => void) & (() => T | undefined);
+export declare function ref<T extends Element>(): JSX.Ref<T>;
+
+/** Fails to compile unless `T` is `true`. */
+export type Assert<T extends true> = T;
+
+/** `true` when `A` and `B` are the same type. */
+export type Equal<A, B> =
+  (<V>() => V extends A ? 1 : 2) extends <V>() => V extends B ? 1 : 2 ? true : false;

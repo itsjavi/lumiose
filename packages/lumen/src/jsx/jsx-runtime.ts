@@ -9,6 +9,7 @@ import type {
   MathMLAttributes,
   SVGAttributes,
 } from "./attributes.ts";
+import type { DelegatedEventTable } from "./events.ts";
 
 // ---- class and style ------------------------------------------------------------------------------
 
@@ -43,9 +44,15 @@ type StandardCSSProperties = {
  */
 type CustomEventHandler = { bivarianceHack(event: Event): void }["bivarianceHack"];
 
-/** `onClick`, `onKeydown`, …: delegated (decision-17). The name is `on` + the capitalised event type. */
+/**
+ * `onClick`, `onKeyDown`, `onDblClick`, …: delegated (decision-17). Only the camelCase names of the
+ * `delegatedEvents` table in `events.ts` exist, so `onKeydown` and `onclick` are rejected.
+ */
 type DelegatedEvents<T, M> = {
-  [K in keyof M & string as `on${Capitalize<K>}`]?: JSX.EventHandler<M[K], T>;
+  [K in keyof DelegatedEventTable as `on${K}`]?: JSX.EventHandler<
+    Lookup<M, DelegatedEventTable[K]>,
+    T
+  >;
 };
 
 /** `on:click`, `on:scroll`, …: native `addEventListener` listeners. */
@@ -54,6 +61,15 @@ type NativeEvents<T, M> = {
 };
 
 // ---- element props ----------------------------------------------------------------------------------
+
+/**
+ * `ref={fn}`: called with the element. A plain callback only meets the call signature. The marker
+ * matters for `JSX.Ref` values, whose getter signature `() => T` would otherwise fit any callback:
+ * through the marker, a ref of another element type is rejected.
+ */
+type RefProp<T extends Element> = ((element: T) => void) & {
+  readonly "~element"?: (element: T) => void;
+};
 
 /** `attach={[fn]}` entry: runs with the element in a tracked scope and may return a cleanup. */
 type Attachment<T> = (element: T) => void | (() => void);
@@ -68,7 +84,7 @@ interface LumenProps<T extends Element> {
   children?: Renderable;
   class?: JSX.ClassValue;
   style?: string | JSX.CSSProperties;
-  ref?: (element: T) => void;
+  ref?: RefProp<T>;
   attach?: readonly (Attachment<T> | false | null | undefined)[];
   /** Sets `innerHTML` unescaped. The `no-unsafe-html` lint rule warns. */
   innerHTML?: string;
@@ -159,6 +175,18 @@ export declare namespace JSX {
 
   /** `onX` / `on:x` handler: the native event (no synthetic events) with a typed `currentTarget`. */
   export type EventHandler<E, T> = (event: E & { currentTarget: T }) => void;
+
+  /**
+   * The value of `ref<T>()` (spec §4.5): the runtime calls it with the element, and code reads it
+   * like a signal (`input()`). `ref<T>()` must return this type. A plain intersection of the two
+   * call signatures would let a ref of another element type pass: the type-only `"~element"`
+   * marker is what the `ref` prop checks.
+   */
+  export interface Ref<T extends Element> {
+    (element: T): void;
+    (): T | undefined;
+    readonly "~element"?: (element: T) => void;
+  }
 
   /** Props of HTML, SVG and MathML elements: Lumen props, attributes, `onX` and `on:x` events. */
   export interface HTMLProps<T extends HTMLElement>

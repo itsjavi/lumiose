@@ -4,6 +4,9 @@ import { ref, signal } from "./helpers.ts";
 const active = signal(false);
 const width = signal(50);
 const inputRef = ref<HTMLInputElement>();
+const elementRef = ref<HTMLElement>();
+const circleRef = ref<SVGCircleElement>();
+const current: HTMLInputElement | undefined = inputRef();
 
 export const accepted = [
   <div id="main" class="card" />,
@@ -51,6 +54,11 @@ export const accepted = [
     <span />
   </>,
   <input ref={inputRef} />,
+  <input ref={elementRef} />,
+  <svg>
+    <circle ref={circleRef} />
+  </svg>,
+  current,
   <input ref={(el) => el.select()} />,
   <input ref={(el: HTMLElement) => el.focus()} />,
   <canvas
@@ -100,6 +108,12 @@ export const rejected = [
   <input type="nope" />,
   // @ts-expect-error a ref callback typed for an input does not fit a div.
   <div ref={(el: HTMLInputElement) => el.select()} />,
+  // @ts-expect-error a `ref<HTMLInputElement>()` does not fit a div.
+  <div ref={inputRef} />,
+  // @ts-expect-error a ref of an SVG element does not fit an HTML element.
+  <div ref={circleRef} />,
+  // @ts-expect-error reading a ref gives the element or undefined.
+  ((element: HTMLInputElement) => element)(inputRef()),
   // @ts-expect-error attachments receive the element.
   <div attach={[(el: HTMLInputElement) => el.select()]} />,
   // @ts-expect-error attach takes an array.
