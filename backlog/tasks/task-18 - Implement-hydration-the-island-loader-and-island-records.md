@@ -1,7 +1,7 @@
 ---
 id: TASK-18
 title: 'Implement hydration, the island loader and island records'
-status: In Progress
+status: Done
 assignee:
   - '@Spark'
 created_date: '2026-10-08 12:21'
@@ -87,3 +87,13 @@ Spark (session spark-20261008T203611Z, resumed; solo on TASK-18):
 - Size (pnpm --filter lumen size; new row splits hydrate/loader): typical 6.02 kB; typical+loader+hydrate 8.68 kB (cap 10 kB OK); islands increment 2.66 kB (soft 1.5 kB OVER) = hydrate 1.92 kB + loader 0.74 kB (AC #2 ≤1 kB OK).
 - Not done here (owners): lumen dev/build loader wiring is Nova's (in progress in the working tree: loaderUrl in renderToStream/createServerRenderer, \0lumen:loader virtual module, BuiltApp.loader); once it lands the fixture can pass loaderUrl instead of writing the script itself. Lux: package export ./dom/loader, doc-2 §1/§3.1 (hydrate signature, range modes), islands-e2e ownership → Spark. Beacon: docs reference/dom.md (hydrate, loader, triggers, event replay), LUM4006 'Reported by' (hydrate mismatch + missing await record).
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Hydration and the island loader are complete and verified end to end.
+- Runtime: positional claim cursor (dom/hydrate.ts, dom/hydration.ts hooks in insert/list/async/boundaries/frame), per-async-instance ranges, await replay keyed by instancePath:site:occurrence with tracked reads, slots (inline adopted, <template data-l-slot> on demand), mismatch → client render + LUM4006 in dev.
+- Loader (dom/islands.ts, entry dom/loader.ts): records across chunks via MutationObserver, one TreeWalker pass per batch, load/idle/visible/media/only, waits for streamed Suspense content (comment or processing-instruction placeholders), click/input/submit/keydown capture + replay. 0.74 kB brotli on top of an app; hydrate 1.92 kB; typical app with islands 8.68 kB (< 10 kB cap; 1.5 kB soft target for both together exceeded at 2.66 kB).
+- Evidence: 13 happy-dom tests (packages/lumen/src/dom/hydrate.test.ts) and 5 Playwright tests (examples/islands-e2e, pnpm --filter @lumen-examples/islands-e2e test:e2e): no refetch, node identity kept, state, streamed Suspense, visible trigger, early-click replay, mismatch fallback. The e2e found and fixed a Chromium 153 issue (<?start> parsed as a processing instruction).
+- Follow-ups: Nova's lumen dev/build loader wiring (loaderUrl, in progress), Lux's ./dom/loader export + doc-2, Beacon's docs (see notes).
+<!-- SECTION:FINAL_SUMMARY:END -->
