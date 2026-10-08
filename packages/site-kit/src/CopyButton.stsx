@@ -1,0 +1,99 @@
+// Copies a text to the clipboard. CodeBlock uses it as an island (`client:visible`), so its props
+// are plain data. A polite live region announces the result.
+
+import { onCleanup, signal } from "lumen";
+import { color, motion, radius, space, text } from "./tokens.ts";
+
+export interface CopyButtonProps {
+  text: string;
+  /** The accessible name. Default "Copy code". */
+  label?: string;
+  class?: JSX.ClassValue;
+}
+
+export function CopyButton(props: CopyButtonProps) {
+  const state = signal<"idle" | "copied" | "failed">("idle");
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  onCleanup(() => clearTimeout(timer));
+
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(props.text);
+      state.set("copied");
+    } catch {
+      state.set("failed");
+    }
+    clearTimeout(timer);
+    timer = setTimeout(() => state.set("idle"), 1800);
+  };
+
+  return (
+    <span class={["copy", props.class]}>
+      <button
+        type="button"
+        class={{ done: state() === "copied" }}
+        aria-label={props.label ?? "Copy code"}
+        title={props.label ?? "Copy code"}
+        onClick={copy}
+      >
+        <svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true">
+          {state() === "copied" ? (
+            <path d="m3.5 8.5 3 3 6-7" />
+          ) : (
+            <>
+              <rect x="5.5" y="5.5" width="8" height="8" rx="1.8" />
+              <path d="M10.5 3.2V3a1.5 1.5 0 0 0-1.5-1.5H4A1.5 1.5 0 0 0 2.5 3v5A1.5 1.5 0 0 0 4 9.5h.3" />
+            </>
+          )}
+        </svg>
+      </button>
+      <span class="sr-only" role="status">
+        {state() === "copied"
+          ? "Copied to the clipboard"
+          : state() === "failed"
+            ? "Copy failed"
+            : ""}
+      </span>
+
+      <style>
+        .copy {
+          display: inline-flex;
+        }
+        button {
+          display: inline-grid;
+          place-items: center;
+          inline-size: 2rem;
+          block-size: 2rem;
+          padding: 0;
+          border: 1px solid transparent;
+          border-radius: $radius.sm;
+          background: transparent;
+          color: $color.subtle;
+          font-size: $text.xs;
+          transition:
+            color $motion.fast $motion.ease,
+            background-color $motion.fast $motion.ease,
+            border-color $motion.fast $motion.ease;
+        }
+        button:hover {
+          color: $color.text;
+          background: $color.surface;
+          border-color: $color.border;
+        }
+        button.done {
+          color: $color.tipFg;
+        }
+        button:focus-visible {
+          outline-offset: calc($space.xxs * -1);
+        }
+        svg {
+          fill: none;
+          stroke: currentColor;
+          stroke-width: 1.4;
+          stroke-linecap: round;
+          stroke-linejoin: round;
+        }
+      </style>
+    </span>
+  );
+}

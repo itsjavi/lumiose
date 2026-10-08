@@ -1,0 +1,92 @@
+// An aside for notes, warnings and tips in prose.
+
+import { color, radius, space, text, weight } from "./tokens.ts";
+
+export type CalloutKind = "info" | "warn" | "tip";
+
+const TITLES: Record<CalloutKind, string> = { info: "Note", warn: "Warning", tip: "Tip" };
+
+export interface CalloutProps {
+  /** Default "info". */
+  kind?: CalloutKind;
+  /** Default: "Note", "Warning" or "Tip". */
+  title?: string;
+  children?: JSX.Element;
+  class?: JSX.ClassValue;
+}
+
+export function Callout(props: CalloutProps) {
+  const kind = () => props.kind ?? "info";
+  return (
+    <div
+      role="note"
+      class={[
+        "callout",
+        { info: kind() === "info", warn: kind() === "warn", tip: kind() === "tip" },
+        props.class,
+      ]}
+    >
+      <svg class="icon" viewBox="0 0 20 20" width="20" height="20" aria-hidden="true">
+        {kind() === "warn" ? (
+          <path d="M10 3.2 17.4 16H2.6L10 3.2Zm0 5.3v3.4m0 2.3v.1" />
+        ) : kind() === "tip" ? (
+          <path d="M7.4 14.2h5.2M8.2 16.8h3.6M10 2.8a5.2 5.2 0 0 0-3 9.4c.5.4.8.9.8 1.5h4.4c0-.6.3-1.1.8-1.5a5.2 5.2 0 0 0-3-9.4Z" />
+        ) : (
+          <path d="M10 17.2a7.2 7.2 0 1 0 0-14.4 7.2 7.2 0 0 0 0 14.4Zm0-8v4.6m0-7.2v.1" />
+        )}
+      </svg>
+      <div class="body">
+        <p class="title">{props.title ?? TITLES[kind()]}</p>
+        <div class="content">{props.children}</div>
+      </div>
+
+      <style>
+        .callout {
+          --callout-fg: $color.infoFg;
+          --callout-bg: $color.infoBg;
+          --callout-border: $color.infoBorder;
+          display: grid;
+          grid-template-columns: auto 1fr;
+          gap: $space.sm;
+          margin-block: $space.lg;
+          padding: $space.md $space.lg $space.md $space.md;
+          border: 1px solid var(--callout-border);
+          border-inline-start-width: 3px;
+          border-radius: $radius.md;
+          background: var(--callout-bg);
+          color: $color.text;
+          font-size: $text.sm;
+        }
+        .callout.warn {
+          --callout-fg: $color.warnFg;
+          --callout-bg: $color.warnBg;
+          --callout-border: $color.warnBorder;
+        }
+        .callout.tip {
+          --callout-fg: $color.tipFg;
+          --callout-bg: $color.tipBg;
+          --callout-border: $color.tipBorder;
+        }
+        .icon {
+          margin-block-start: 0.1rem;
+          fill: none;
+          stroke: var(--callout-fg);
+          stroke-width: 1.6;
+          stroke-linecap: round;
+          stroke-linejoin: round;
+        }
+        .title {
+          margin-block-end: $space.xxs;
+          color: var(--callout-fg);
+          font-weight: $weight.semibold;
+        }
+        .content > :deep(* + *) {
+          margin-block-start: $space.xs;
+        }
+        .content :deep(a) {
+          color: var(--callout-fg);
+        }
+      </style>
+    </div>
+  );
+}

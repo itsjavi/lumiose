@@ -1,0 +1,168 @@
+// Buttons and links styled as buttons. Both share the file-level stylesheet below; variants and
+// sizes are class objects, so a variant is one selector (`.btn.primary`).
+
+import { color, motion, radius, shadow, space, text, weight } from "./tokens.ts";
+
+export type ButtonVariant = "primary" | "secondary" | "ghost";
+export type ButtonSize = "sm" | "md" | "lg";
+
+interface ButtonBase {
+  /** `primary` (default): the main action, with the brand glow. `secondary`: outlined. `ghost`: quiet. */
+  variant?: ButtonVariant;
+  size?: ButtonSize;
+  class?: JSX.ClassValue;
+  children?: JSX.Element;
+}
+
+export interface ButtonProps extends ButtonBase {
+  type?: "button" | "submit" | "reset";
+  disabled?: boolean;
+  /** The accessible name, for icon-only buttons. */
+  label?: string;
+  onClick?: JSX.EventHandler<MouseEvent, HTMLButtonElement>;
+}
+
+export function Button(props: ButtonProps) {
+  return (
+    <button
+      type={props.type ?? "button"}
+      class={[
+        "btn",
+        {
+          primary: (props.variant ?? "primary") === "primary",
+          secondary: props.variant === "secondary",
+          ghost: props.variant === "ghost",
+          sm: props.size === "sm",
+          lg: props.size === "lg",
+        },
+        props.class,
+      ]}
+      disabled={props.disabled}
+      aria-label={props.label}
+      onClick={props.onClick}
+    >
+      {props.children}
+    </button>
+  );
+}
+
+export interface LinkButtonProps extends ButtonBase {
+  href: string;
+  /** Opens in a new tab, with `rel="noopener"` and a hint for screen readers. */
+  external?: boolean;
+}
+
+export function LinkButton(props: LinkButtonProps) {
+  return (
+    <a
+      href={props.href}
+      class={[
+        "btn",
+        {
+          primary: (props.variant ?? "primary") === "primary",
+          secondary: props.variant === "secondary",
+          ghost: props.variant === "ghost",
+          sm: props.size === "sm",
+          lg: props.size === "lg",
+        },
+        props.class,
+      ]}
+      target={props.external ? "_blank" : undefined}
+      rel={props.external ? "noopener" : undefined}
+    >
+      {props.children}
+      {props.external && <span class="sr-only"> (opens in a new tab)</span>}
+    </a>
+  );
+}
+
+<style>
+  .btn {
+    --btn-pad-block: $space.xs;
+    --btn-pad-inline: $space.md;
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: $space.xs;
+    padding: var(--btn-pad-block) var(--btn-pad-inline);
+    border: 1px solid transparent;
+    border-radius: $radius.pill;
+    font-size: $text.sm;
+    font-weight: $weight.semibold;
+    line-height: 1.25;
+    text-decoration: none;
+    white-space: nowrap;
+    cursor: pointer;
+    transition:
+      background-color $motion.fast $motion.ease,
+      border-color $motion.fast $motion.ease,
+      box-shadow $motion.base $motion.ease,
+      transform $motion.fast $motion.ease;
+  }
+  .btn:active:not(:disabled) {
+    transform: translateY(1px);
+  }
+  .btn:disabled {
+    cursor: not-allowed;
+    opacity: 0.55;
+  }
+
+  .btn.sm {
+    --btn-pad-block: $space.xxs;
+    --btn-pad-inline: $space.sm;
+    font-size: $text.xs;
+  }
+  .btn.lg {
+    --btn-pad-block: $space.sm;
+    --btn-pad-inline: $space.lg;
+    font-size: $text.md;
+  }
+
+  .btn.primary {
+    background: linear-gradient(
+      180deg,
+      color-mix(in oklab, $color.accent 92%, white),
+      $color.accent
+    );
+    color: $color.accentFg;
+    box-shadow:
+      $shadow.sm,
+      inset 0 1px 0 rgb(255 255 255 / 0.18);
+  }
+  /* The glow: the brand colors light up around the button. */
+  .btn.primary:hover:not(:disabled) {
+    background: linear-gradient(
+      180deg,
+      color-mix(in oklab, $color.accentHover 92%, white),
+      $color.accentHover
+    );
+    box-shadow:
+      $shadow.glow,
+      inset 0 1px 0 rgb(255 255 255 / 0.18);
+  }
+
+  .btn.secondary {
+    background: $color.surface;
+    color: $color.text;
+    border-color: $color.borderStrong;
+  }
+  .btn.secondary:hover:not(:disabled) {
+    border-color: $color.accent;
+    color: $color.accentText;
+    background: $color.accentSoft;
+  }
+
+  .btn.ghost {
+    background: transparent;
+    color: $color.muted;
+  }
+  .btn.ghost:hover:not(:disabled) {
+    background: $color.sunken;
+    color: $color.text;
+  }
+
+  .btn:focus-visible {
+    outline-offset: 3px;
+  }
+</style>

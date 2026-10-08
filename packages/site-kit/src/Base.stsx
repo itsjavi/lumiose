@@ -1,0 +1,231 @@
+// The base stylesheet of the Lumen websites: theme custom properties, a small reset, typography,
+// focus rings and code fonts. It is global (`<style global>`) and loads with the kit's entry
+// (`@lumen/site-kit`), before any component stylesheet.
+//
+// Theming: every color is `light-dark(<light>, <dark>)`, resolved against `color-scheme`. By default
+// the root follows the system (`prefers-color-scheme`); `<html data-theme="light|dark">` (set by
+// ThemeToggle, restored early by `themeInitScript`) pins one, and `data-theme` on any element gives
+// that subtree a theme of its own. The properties are declared on every `[data-theme]` element, not
+// only on the root: production builds for older targets lower `light-dark()` to variables that
+// resolve where a property is declared, not where it is used.
+
+import {
+  color,
+  dark,
+  focus,
+  font,
+  layout,
+  leading,
+  light,
+  motion,
+  radius,
+  space,
+  text,
+  weight,
+} from "./tokens.ts";
+
+<style global>
+  :root {
+    color-scheme: light dark;
+  }
+  [data-theme="light"] {
+    color-scheme: light;
+  }
+  [data-theme="dark"] {
+    color-scheme: dark;
+  }
+
+  :root,
+  [data-theme] {
+    --lm-bg: light-dark($light.bg, $dark.bg);
+    --lm-surface: light-dark($light.surface, $dark.surface);
+    --lm-sunken: light-dark($light.sunken, $dark.sunken);
+    --lm-text: light-dark($light.text, $dark.text);
+    --lm-muted: light-dark($light.muted, $dark.muted);
+    --lm-subtle: light-dark($light.subtle, $dark.subtle);
+    --lm-border: light-dark($light.border, $dark.border);
+    --lm-border-strong: light-dark($light.borderStrong, $dark.borderStrong);
+    --lm-accent: light-dark($light.accent, $dark.accent);
+    --lm-accent-hover: light-dark($light.accentHover, $dark.accentHover);
+    --lm-accent-fg: light-dark($light.accentFg, $dark.accentFg);
+    --lm-accent-text: light-dark($light.accentText, $dark.accentText);
+    --lm-accent-soft: light-dark($light.accentSoft, $dark.accentSoft);
+    --lm-glow-a: light-dark($light.glowA, $dark.glowA);
+    --lm-glow-b: light-dark($light.glowB, $dark.glowB);
+    --lm-glow-text: light-dark($light.glowText, $dark.glowText);
+    --lm-shadow: light-dark($light.shadow, $dark.shadow);
+    --lm-code-bg: light-dark($light.codeBg, $dark.codeBg);
+    --lm-code-fg: light-dark($light.codeFg, $dark.codeFg);
+    --lm-info-fg: light-dark($light.infoFg, $dark.infoFg);
+    --lm-info-bg: light-dark($light.infoBg, $dark.infoBg);
+    --lm-info-border: light-dark($light.infoBorder, $dark.infoBorder);
+    --lm-warn-fg: light-dark($light.warnFg, $dark.warnFg);
+    --lm-warn-bg: light-dark($light.warnBg, $dark.warnBg);
+    --lm-warn-border: light-dark($light.warnBorder, $dark.warnBorder);
+    --lm-tip-fg: light-dark($light.tipFg, $dark.tipFg);
+    --lm-tip-bg: light-dark($light.tipBg, $dark.tipBg);
+    --lm-tip-border: light-dark($light.tipBorder, $dark.tipBorder);
+    --lm-syn-keyword: light-dark($light.synKeyword, $dark.synKeyword);
+    --lm-syn-string: light-dark($light.synString, $dark.synString);
+    --lm-syn-comment: light-dark($light.synComment, $dark.synComment);
+    --lm-syn-number: light-dark($light.synNumber, $dark.synNumber);
+    --lm-syn-tag: light-dark($light.synTag, $dark.synTag);
+    --lm-syn-attr: light-dark($light.synAttr, $dark.synAttr);
+    --lm-syn-prop: light-dark($light.synProp, $dark.synProp);
+    --lm-syn-punct: light-dark($light.synPunct, $dark.synPunct);
+  }
+
+  :where([data-theme]) {
+    background: $color.bg;
+    color: $color.text;
+  }
+
+  /* Reset: the useful parts of modern resets, at zero specificity so components win. */
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
+  :where(body, h1, h2, h3, h4, h5, h6, p, figure, blockquote, dl, dd, pre) {
+    margin: 0;
+  }
+  :where(ul[role="list"], ol[role="list"]) {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+  :where(img, svg, video, canvas) {
+    display: block;
+    max-inline-size: 100%;
+  }
+  :where(input, button, textarea, select) {
+    font: inherit;
+    color: inherit;
+  }
+  :where(button) {
+    cursor: pointer;
+  }
+  :where([hidden]) {
+    display: none !important;
+  }
+
+  html {
+    -webkit-text-size-adjust: none;
+    text-size-adjust: none;
+    scroll-padding-block-start: calc($layout.header + $space.md);
+  }
+
+  body {
+    min-block-size: 100dvh;
+    background: $color.bg;
+    color: $color.text;
+    font-family: $font.sans;
+    font-size: $text.md;
+    line-height: $leading.normal;
+    font-feature-settings: "cv11", "ss01";
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  /* Typography */
+  :where(h1, h2, h3, h4, h5, h6) {
+    line-height: $leading.tight;
+    font-weight: $weight.bold;
+    letter-spacing: -0.02em;
+    text-wrap: balance;
+  }
+  :where(h1) {
+    font-size: $text.xxxl;
+    letter-spacing: -0.03em;
+  }
+  :where(h2) {
+    font-size: $text.xxl;
+  }
+  :where(h3) {
+    font-size: $text.xl;
+  }
+  :where(h4) {
+    font-size: $text.lg;
+  }
+  :where(p, li) {
+    text-wrap: pretty;
+  }
+  :where(small) {
+    font-size: $text.sm;
+  }
+  :where(strong, b) {
+    font-weight: $weight.semibold;
+  }
+  :where(hr) {
+    border: 0;
+    border-block-start: 1px solid $color.border;
+    margin-block: $space.xl;
+  }
+
+  :where(a) {
+    color: $color.accentText;
+    text-decoration-line: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 0.2em;
+    text-decoration-color: color-mix(in oklab, currentColor 40%, transparent);
+    transition: text-decoration-color $motion.fast $motion.ease;
+  }
+  :where(a:hover) {
+    text-decoration-color: currentColor;
+  }
+
+  ::selection {
+    background: color-mix(in oklab, $color.accent 28%, transparent);
+  }
+
+  /* Code */
+  :where(code, kbd, samp, pre) {
+    font-family: $font.mono;
+    font-size: 0.9em;
+    font-variant-ligatures: none;
+  }
+  :where(:not(pre) > code) {
+    padding: 0.1em 0.35em;
+    border-radius: $radius.sm;
+    background: $color.sunken;
+    border: 1px solid $color.border;
+    color: $color.text;
+  }
+  :where(kbd) {
+    padding: 0.1em 0.4em;
+    border-radius: $radius.sm;
+    border: 1px solid $color.border;
+    border-block-end-width: 2px;
+    background: $color.surface;
+  }
+
+  /* Focus: one visible ring for keyboard users, everywhere. */
+  :focus-visible {
+    outline: $focus.ring;
+    outline-offset: $focus.offset;
+  }
+
+  /* Hides content visually but keeps it for assistive technology. */
+  .sr-only {
+    position: absolute;
+    inline-size: 1px;
+    block-size: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+</style>

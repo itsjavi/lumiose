@@ -1,0 +1,11 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "jsx": "preserve",
+    "jsxImportSource": "lumen",
+    "types": ["lumen/env"],
+    // `.stsx` files are type-checked through their shadow TSX (`lumen check`).
+    "rootDirs": ["src", ".lumen/shadow/src"]
+  },
+  "include": ["src", ".lumen/shadow", ".lumen/types"]
+}

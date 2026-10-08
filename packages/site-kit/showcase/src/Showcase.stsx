@@ -1,0 +1,455 @@
+// Every site-kit component on one page, in the active theme and side by side in both.
+
+import {
+  Button,
+  Callout,
+  Card,
+  CodeBlock,
+  Footer,
+  LinkButton,
+  SiteHeader,
+  Tabs,
+  ThemeToggle,
+  bp,
+  color,
+  gradient,
+  highlight,
+  layout,
+  leading,
+  radius,
+  shadow,
+  siteLinks,
+  space,
+  text,
+  weight,
+} from "./kit.ts";
+import { counterSample, cssSample, installSamples } from "./samples.ts";
+
+const SWATCHES = [
+  ["bg", "--lm-bg"],
+  ["surface", "--lm-surface"],
+  ["sunken", "--lm-sunken"],
+  ["text", "--lm-text"],
+  ["muted", "--lm-muted"],
+  ["border", "--lm-border"],
+  ["accent", "--lm-accent"],
+  ["accentText", "--lm-accent-text"],
+  ["accentSoft", "--lm-accent-soft"],
+  ["glowA", "--lm-glow-a"],
+  ["glowB", "--lm-glow-b"],
+  ["codeBg", "--lm-code-bg"],
+] as const;
+
+const TYPE_SCALE = ["display", "xxxl", "xxl", "xl", "lg", "md", "sm", "xs"] as const;
+const SPACE_SCALE = ["xxs", "xs", "sm", "md", "lg", "xl", "xxl", "xxxl"] as const;
+
+function Section(props: { id: string; title: string; lead: string; children: JSX.Element }) {
+  return (
+    <section class="section" id={props.id} aria-labelledby={`${props.id}-title`}>
+      <header>
+        <h2 id={`${props.id}-title`}>{props.title}</h2>
+        <p>{props.lead}</p>
+      </header>
+      {props.children}
+    </section>
+  );
+}
+
+function Sparkle() {
+  return (
+    <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" class="sparkle">
+      <path d="M12 3c.6 4.4 2.6 6.4 7 7-4.4.6-6.4 2.6-7 7-.6-4.4-2.6-6.4-7-7 4.4-.6 6.4-2.6 7-7Z" />
+    </svg>
+  );
+}
+
+export function Showcase() {
+  return (
+    <div class="shell">
+      <SiteHeader
+        current="/docs/site-kit"
+        links={[...siteLinks, { href: "https://github.com/", label: "GitHub", external: true }]}
+      />
+
+      <main class="page">
+        <section class="hero">
+          <p class="eyebrow">@lumen/site-kit</p>
+          <h1>
+            The <span class="lit">light</span> design system
+          </h1>
+          <p class="lead">
+            Tokens, a base stylesheet and <code>.stsx</code> components for the Lumen website, docs
+            and playground. Everything below renders in the current theme; switch it with the toggle
+            in the header.
+          </p>
+          <div class="actions">
+            <LinkButton href="#buttons" size="lg">
+              Browse components
+            </LinkButton>
+            <LinkButton href="#themes" variant="secondary" size="lg">
+              Compare themes
+            </LinkButton>
+          </div>
+        </section>
+
+        <Section
+          id="tokens"
+          title="Tokens"
+          lead="Read in style blocks as $color.accent, $space.md or @media (width < $bp.md), and inlined at build time. Colors are custom properties that follow the theme."
+        >
+          <ul class="swatches" role="list">
+            {SWATCHES.map(([name, property]) => (
+              <li>
+                <span class="swatch" style={{ "--swatch": `var(${property})` }} />
+                <code>$color.{name}</code>
+              </li>
+            ))}
+          </ul>
+          <div class="scales">
+            <ul class="type" role="list">
+              {TYPE_SCALE.map((size) => (
+                <li style={{ "--size": text[size] }}>
+                  <span class="sample">Lumen</span>
+                  <code>$text.{size}</code>
+                </li>
+              ))}
+            </ul>
+            <ul class="space" role="list">
+              {SPACE_SCALE.map((step) => (
+                <li style={{ "--step": space[step] }}>
+                  <span class="bar" />
+                  <code>$space.{step}</code>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </Section>
+
+        <Section
+          id="buttons"
+          title="Button and LinkButton"
+          lead="Three variants and three sizes, as class objects. LinkButton is an anchor with the same look."
+        >
+          <div class="row">
+            <Button>Primary</Button>
+            <Button variant="secondary">Secondary</Button>
+            <Button variant="ghost">Ghost</Button>
+            <Button disabled>Disabled</Button>
+          </div>
+          <div class="row">
+            <Button size="sm">Small</Button>
+            <Button size="md" variant="secondary">
+              Medium
+            </Button>
+            <Button size="lg">
+              <Sparkle /> Large, with an icon
+            </Button>
+            <LinkButton href="https://github.com/" external variant="ghost">
+              External link
+            </LinkButton>
+          </div>
+        </Section>
+
+        <Section
+          id="callouts"
+          title="Callout"
+          lead="Notes, warnings and tips in prose. Each kind has its own colors and icon, AA contrast in both themes."
+        >
+          <Callout>
+            Style blocks are scoped by placement. A block inside a component styles only that
+            component's elements; see <a href="#tokens">tokens</a>.
+          </Callout>
+          <Callout kind="warn" title="Hyphens are subtraction">
+            <code>$brand-primary</code> reads <code>$brand</code> minus <code>primary</code>. Use{" "}
+            <code>$brand.primary</code>.
+          </Callout>
+          <Callout kind="tip">
+            Press <kbd>Tab</kbd> to see the focus rings: every interactive element has one.
+          </Callout>
+        </Section>
+
+        <Section
+          id="cards"
+          title="Card"
+          lead="Content cards. With href the whole card is a link and lights up on hover or focus."
+        >
+          <div class="cards">
+            <Card title="Signals" href="#cards" eyebrow="Concepts" icon={<Sparkle />}>
+              Fine-grained state: only the bindings that read a signal update.
+            </Card>
+            <Card title="Islands" href="#cards" eyebrow="Concepts" icon={<Sparkle />}>
+              Server-rendered pages that hydrate only the interactive parts.
+            </Card>
+            <Card title="Scoped styles" href="#cards" eyebrow="Concepts" icon={<Sparkle />}>
+              Plain CSS in .stsx files, scoped by where the block sits.
+            </Card>
+            <Card title="A static card">Without href, a card is just a surface for content.</Card>
+          </div>
+        </Section>
+
+        <Section
+          id="code"
+          title="CodeBlock"
+          lead="Code with a title bar and a copy button (an island). Highlighting is a hook: the kit's highlighter knows .stsx, including $token references in style blocks."
+        >
+          <CodeBlock code={counterSample} lang="stsx" title="Counter.stsx" highlight={highlight} />
+          <div class="two">
+            <CodeBlock code={cssSample} lang="css" title="theme.css" highlight={highlight} />
+            <CodeBlock code={"Plain text, escaped: <b>not bold</b> & co."} />
+          </div>
+        </Section>
+
+        <Section
+          id="tabs"
+          title="Tabs"
+          lead="The WAI-ARIA tabs pattern: arrow keys, Home and End move between tabs. Each child is a panel."
+        >
+          <Tabs id="install" label="Package manager" labels={Object.keys(installSamples)}>
+            {Object.values(installSamples).map((code) => (
+              <div>
+                <CodeBlock code={code} lang="sh" highlight={highlight} />
+              </div>
+            ))}
+          </Tabs>
+          <Tabs id="modes" label="Rendering modes" labels={["SSR", "SSG", "SPA"]}>
+            <p>Rendered on each request, streamed, with islands hydrating in the browser.</p>
+            <p>Rendered at build time into static HTML: the docs site works this way.</p>
+            <p>Rendered in the browser only: the playground is a single-page app.</p>
+          </Tabs>
+        </Section>
+
+        <Section
+          id="theme"
+          title="ThemeToggle"
+          lead="An island that switches between light and dark and remembers the choice. Without a choice, the system preference wins."
+        >
+          <div class="row">
+            <ThemeToggle />
+            <span class="hint">
+              Also in the header. The icon follows the theme through CSS alone.
+            </span>
+          </div>
+        </Section>
+
+        <Section
+          id="themes"
+          title="Both themes"
+          lead="Colors are light-dark() custom properties, and data-theme gives any subtree a theme of its own. The same components, side by side."
+        >
+          <div class="compare">
+            <div class="scheme" data-theme="light">
+              <p class="scheme-label">Light</p>
+              <Card title="Card" href="#themes">
+                Muted text on a surface.
+              </Card>
+              <Callout kind="tip">A tip in the light scheme.</Callout>
+              <div class="row">
+                <Button>Primary</Button>
+                <Button variant="secondary">Secondary</Button>
+              </div>
+            </div>
+            <div class="scheme" data-theme="dark">
+              <p class="scheme-label">Dark</p>
+              <Card title="Card" href="#themes">
+                Muted text on a surface.
+              </Card>
+              <Callout kind="tip">A tip in the dark scheme.</Callout>
+              <div class="row">
+                <Button>Primary</Button>
+                <Button variant="secondary">Secondary</Button>
+              </div>
+            </div>
+          </div>
+        </Section>
+      </main>
+
+      <Footer />
+    </div>
+  );
+}
+
+<style>
+  .shell {
+    background:
+      $gradient.glow no-repeat,
+      $color.bg;
+    background-size:
+      100% 36rem,
+      auto;
+  }
+
+  .page {
+    max-inline-size: $layout.page;
+    margin-inline: auto;
+    padding-inline: $layout.gutter;
+  }
+
+  .hero {
+    padding-block: $space.xxxl $space.xxl;
+    text-align: center;
+  }
+  .eyebrow {
+    color: $color.accentText;
+    font-family: ui-monospace, monospace;
+    font-size: $text.sm;
+    font-weight: $weight.semibold;
+  }
+  h1 {
+    margin-block: $space.sm $space.md;
+    font-size: $text.display;
+  }
+  .lit {
+    background: $gradient.text;
+    background-clip: text;
+    -webkit-background-clip: text;
+    color: transparent;
+  }
+  .lead {
+    max-inline-size: $layout.prose;
+    margin-inline: auto;
+    color: $color.muted;
+    font-size: $text.lg;
+    line-height: $leading.normal;
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: $space.sm;
+    margin-block-start: $space.xl;
+  }
+
+  .section {
+    padding-block: $space.xxl;
+    border-block-start: 1px solid $color.border;
+  }
+  .section > header {
+    margin-block-end: $space.lg;
+    max-inline-size: $layout.prose;
+  }
+  .section > header p {
+    margin-block-start: $space.xs;
+    color: $color.muted;
+  }
+
+  .row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: $space.sm;
+    margin-block: $space.md;
+  }
+  .hint {
+    color: $color.muted;
+    font-size: $text.sm;
+  }
+  .sparkle {
+    fill: currentColor;
+  }
+
+  .swatches {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(9.5rem, 1fr));
+    gap: $space.md;
+  }
+  .swatches li {
+    display: grid;
+    gap: $space.xs;
+    font-size: $text.xs;
+  }
+  .swatch {
+    block-size: 3.5rem;
+    border: 1px solid $color.border;
+    border-radius: $radius.md;
+    background: var(--swatch);
+    box-shadow: $shadow.sm;
+  }
+
+  .scales {
+    display: grid;
+    grid-template-columns: 3fr 2fr;
+    gap: $space.xl;
+    margin-block-start: $space.xl;
+  }
+  .type li,
+  .space li {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: $space.md;
+    padding-block: $space.xxs;
+    border-block-end: 1px dashed $color.border;
+  }
+  .type .sample {
+    font-size: var(--size);
+    font-weight: $weight.bold;
+    letter-spacing: -0.02em;
+    line-height: 1.1;
+  }
+  .space li {
+    align-items: center;
+    justify-content: flex-start;
+  }
+  .space .bar {
+    inline-size: var(--step);
+    block-size: 0.75rem;
+    border-radius: $radius.sm;
+    background: $gradient.brand;
+  }
+  .type code,
+  .space code,
+  .swatches code {
+    color: $color.muted;
+    font-size: $text.xs;
+  }
+
+  .cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
+    gap: $space.md;
+  }
+
+  .two {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: $space.md;
+  }
+  .two > :deep(*) {
+    margin-block: 0;
+  }
+
+  .compare {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: $space.md;
+  }
+  .scheme {
+    padding: $space.lg;
+    border: 1px solid $color.border;
+    border-radius: $radius.xl;
+    background: $color.bg;
+    color: $color.text;
+  }
+  .scheme-label {
+    margin-block-end: $space.md;
+    color: $color.muted;
+    font-size: $text.xs;
+    font-weight: $weight.semibold;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  @media (width < $bp.md) {
+    .scales,
+    .two,
+    .compare {
+      grid-template-columns: 1fr;
+    }
+    .hero {
+      text-align: start;
+    }
+    .actions {
+      justify-content: flex-start;
+    }
+  }
+</style>

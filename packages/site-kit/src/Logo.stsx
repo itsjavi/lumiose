@@ -1,0 +1,44 @@
+// The Lumen mark (a small orb of light) and wordmark. Pure CSS, so any number of instances can
+// share a page without SVG id clashes.
+
+import { color, font, gradient, text, weight } from "./tokens.ts";
+
+export function Logo(props: { wordmark?: boolean; class?: JSX.ClassValue }) {
+  return (
+    <span class={["logo", props.class]}>
+      <span class="mark" aria-hidden="true" />
+      {props.wordmark !== false && <span class="word">Lumen</span>}
+
+      <style>
+        .logo {
+          display: inline-flex;
+          align-items: center;
+          gap: 0.55em;
+          font-family: $font.sans;
+          font-size: $text.lg;
+          font-weight: $weight.bold;
+          letter-spacing: -0.02em;
+          color: $color.text;
+        }
+        .mark {
+          position: relative;
+          inline-size: 1.25em;
+          block-size: 1.25em;
+          border-radius: 50%;
+          background:
+            radial-gradient(circle at 34% 30%, #fff 0 14%, transparent 42%), $gradient.brand;
+          box-shadow:
+            0 0 0.6em color-mix(in oklab, $color.glowA 55%, transparent),
+            0 0 1.4em color-mix(in oklab, $color.glowB 35%, transparent);
+        }
+        .mark::after {
+          content: "";
+          position: absolute;
+          inset: -0.3em;
+          border-radius: 50%;
+          border: 1px solid color-mix(in oklab, $color.glowA 35%, transparent);
+        }
+      </style>
+    </span>
+  );
+}

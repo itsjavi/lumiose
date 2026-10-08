@@ -1,0 +1,146 @@
+// The site footer: the logo with a tagline, link columns and a bottom line.
+
+import { Logo } from "./Logo.stsx";
+import type { NavLink } from "./SiteNav.stsx";
+import { bp, color, layout, space, text, weight } from "./tokens.ts";
+
+export interface FooterColumn {
+  title: string;
+  links: NavLink[];
+}
+
+/** The footer columns of the Lumen websites. */
+export const siteFooterColumns: FooterColumn[] = [
+  {
+    title: "Learn",
+    links: [
+      { href: "/docs", label: "Getting started" },
+      { href: "/docs/concepts/components", label: "Components" },
+      { href: "/docs/concepts/styles", label: "Styles" },
+    ],
+  },
+  {
+    title: "Build",
+    links: [
+      { href: "/playground", label: "Playground" },
+      { href: "/docs/reference/cli", label: "CLI" },
+      { href: "/llms.txt", label: "llms.txt" },
+    ],
+  },
+];
+
+export interface FooterProps {
+  /** Link columns. Default: {@link siteFooterColumns}. */
+  columns?: FooterColumn[];
+  /** The line under the logo. */
+  tagline?: string;
+  /** The bottom line (slot). Default: the license. */
+  children?: JSX.Element;
+  class?: JSX.ClassValue;
+}
+
+export function Footer(props: FooterProps) {
+  return (
+    <footer class={["footer", props.class]}>
+      <div class="inner">
+        <div class="about">
+          <Logo />
+          <p class="tagline">
+            {props.tagline ?? "Signals, islands and scoped styles, compiled. Light by default."}
+          </p>
+        </div>
+        {(props.columns ?? siteFooterColumns).map((column) => (
+          <nav class="column" aria-label={column.title}>
+            <h2>{column.title}</h2>
+            <ul role="list">
+              {column.links.map((link) => (
+                <li>
+                  <a
+                    href={link.href}
+                    target={link.external ? "_blank" : undefined}
+                    rel={link.external ? "noopener" : undefined}
+                  >
+                    {link.label}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </nav>
+        ))}
+      </div>
+      <div class="bottom">
+        <p>{props.children ?? "MIT licensed. Built with Lumen."}</p>
+      </div>
+
+      <style>
+        .footer {
+          margin-block-start: $space.xxxl;
+          border-block-start: 1px solid $color.border;
+          background:
+            radial-gradient(
+              50% 80% at 50% 100%,
+              color-mix(in oklab, $color.glowA 8%, transparent),
+              transparent
+            ),
+            $color.bg;
+          color: $color.muted;
+          font-size: $text.sm;
+        }
+        .inner {
+          display: flex;
+          flex-wrap: wrap;
+          gap: $space.xl $space.xxl;
+          max-inline-size: $layout.page;
+          margin-inline: auto;
+          padding: $space.xxl $layout.gutter $space.xl;
+        }
+        .about {
+          flex: 1 1 18rem;
+        }
+        .column {
+          flex: 0 1 10rem;
+        }
+        .tagline {
+          margin-block-start: $space.sm;
+          max-inline-size: 22rem;
+        }
+        h2 {
+          margin-block-end: $space.sm;
+          color: $color.text;
+          font-size: $text.xs;
+          font-weight: $weight.semibold;
+          letter-spacing: 0.08em;
+          text-transform: uppercase;
+        }
+        ul {
+          display: grid;
+          gap: $space.xs;
+        }
+        a {
+          color: $color.muted;
+          text-decoration: none;
+        }
+        a:hover {
+          color: $color.accentText;
+          text-decoration: underline;
+        }
+        .bottom {
+          max-inline-size: $layout.page;
+          margin-inline: auto;
+          padding: $space.md $layout.gutter $space.xl;
+          border-block-start: 1px solid $color.border;
+          color: $color.subtle;
+          font-size: $text.xs;
+        }
+        @media (width < $bp.sm) {
+          .about {
+            flex-basis: 100%;
+          }
+          .column {
+            flex: 1 1 8rem;
+          }
+        }
+      </style>
+    </footer>
+  );
+}

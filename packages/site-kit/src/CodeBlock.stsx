@@ -1,0 +1,160 @@
+// A code block: an optional title bar (file name or language), the code, and a copy button (an
+// island). Highlighting is a hook: `highlight(code, lang)` returns HTML, so pages can use the
+// kit's small highlighter (./highlight.ts), Shiki, or nothing (the code is escaped).
+
+import { CopyButton } from "./CopyButton.stsx";
+import { escapeHtml, type Highlighter } from "./highlight.ts";
+import { bp, color, font, radius, shadow, space, syntax, text, weight } from "./tokens.ts";
+
+export interface CodeBlockProps {
+  code: string;
+  /** The language, passed to `highlight` and shown when there is no title. Default "text". */
+  lang?: string;
+  /** A file name or caption for the title bar. */
+  title?: string;
+  /** Turns the code into HTML. It must escape what it does not mark up. Default: escape only. */
+  highlight?: Highlighter;
+  /** Shows the copy button. Default true. */
+  copy?: boolean;
+  class?: JSX.ClassValue;
+}
+
+export function CodeBlock(props: CodeBlockProps) {
+  const lang = () => props.lang ?? "text";
+  const html = () => (props.highlight ?? escapeHtml)(props.code.replace(/\n$/, ""), lang());
+
+  return (
+    <figure class={["code", props.class]}>
+      <figcaption class="bar">
+        <span class="dots" aria-hidden="true" />
+        <span class={{ title: true, lang: props.title === undefined }}>
+          {props.title ?? lang()}
+        </span>
+        {props.copy !== false && <CopyButton client:visible text={props.code} />}
+      </figcaption>
+      <pre tabindex="0">
+        <code class={`language-${lang()}`} innerHTML={html()} />
+      </pre>
+
+      <style>
+        .code {
+          margin-block: $space.lg;
+          border: 1px solid $color.border;
+          border-radius: $radius.lg;
+          background: $color.codeBg;
+          box-shadow: $shadow.sm;
+          overflow: hidden;
+        }
+        .bar {
+          display: flex;
+          align-items: center;
+          gap: $space.sm;
+          min-block-size: 2.5rem;
+          padding-inline: $space.md $space.xxs;
+          border-block-end: 1px solid $color.border;
+          color: $color.subtle;
+          font-family: $font.mono;
+          font-size: $text.xs;
+        }
+        /* Three small lights. */
+        .dots,
+        .dots::before,
+        .dots::after {
+          inline-size: 0.5rem;
+          block-size: 0.5rem;
+          border-radius: 50%;
+          background: $color.border;
+        }
+        .dots {
+          position: relative;
+          margin-inline-end: 1.25rem;
+          background: color-mix(in oklab, $color.glowA 60%, $color.border);
+        }
+        .dots::before,
+        .dots::after {
+          content: "";
+          position: absolute;
+          inset-block-start: 0;
+        }
+        .dots::before {
+          inset-inline-start: 0.85rem;
+          background: color-mix(in oklab, $color.glowB 60%, $color.border);
+        }
+        .dots::after {
+          inset-inline-start: 1.7rem;
+        }
+        .title {
+          flex: 1;
+          color: $color.muted;
+          font-weight: $weight.medium;
+        }
+        .lang {
+          text-transform: lowercase;
+          color: $color.subtle;
+        }
+
+        pre {
+          margin: 0;
+          padding: $space.md $space.lg;
+          overflow-x: auto;
+          color: $color.codeFg;
+          font-size: $text.sm;
+          line-height: 1.7;
+          tab-size: 2;
+        }
+        pre:focus-visible {
+          outline-offset: -2px;
+          border-radius: 0 0 $radius.lg $radius.lg;
+        }
+        code {
+          font-size: inherit;
+        }
+
+        code :deep(.tok-comment) {
+          color: $syntax.comment;
+          font-style: italic;
+        }
+        code :deep(.tok-keyword) {
+          color: $syntax.keyword;
+        }
+        code :deep(.tok-string) {
+          color: $syntax.string;
+        }
+        code :deep(.tok-number) {
+          color: $syntax.number;
+        }
+        code :deep(.tok-ref) {
+          color: $syntax.number;
+          font-weight: $weight.semibold;
+        }
+        code :deep(.tok-tag) {
+          color: $syntax.tag;
+        }
+        code :deep(.tok-type) {
+          color: $syntax.attr;
+        }
+        code :deep(.tok-attr) {
+          color: $syntax.attr;
+        }
+        code :deep(.tok-fn) {
+          color: $syntax.prop;
+        }
+        code :deep(.tok-prop) {
+          color: $syntax.prop;
+        }
+        code :deep(.tok-punct) {
+          color: $syntax.punct;
+        }
+
+        @media (width < $bp.sm) {
+          .code {
+            border-radius: $radius.md;
+          }
+          pre {
+            padding-inline: $space.md;
+          }
+        }
+      </style>
+    </figure>
+  );
+}

@@ -1,0 +1,104 @@
+// The sticky site header: logo, navigation (an island) and actions (the theme toggle, an island).
+// The header itself is static, so a server-rendered page ships JS only for the two islands.
+
+import { Logo } from "./Logo.stsx";
+import { SiteNav, type NavLink } from "./SiteNav.stsx";
+import { ThemeToggle } from "./ThemeToggle.stsx";
+import { bp, color, layout, space, z } from "./tokens.ts";
+
+/** The links of the Lumen websites. */
+export const siteLinks: NavLink[] = [
+  { href: "/docs", label: "Docs" },
+  { href: "/playground", label: "Playground" },
+];
+
+export interface SiteHeaderProps {
+  /** Navigation links. Default: {@link siteLinks}. */
+  links?: NavLink[];
+  /** The current path, for the active link. */
+  current?: string;
+  /** Where the logo links to. Default "/". */
+  home?: string;
+  /** Replaces the Lumen logo (slot). */
+  logo?: JSX.Element;
+  /** Extra actions before the theme toggle (slot), such as a GitHub link or a search button. */
+  actions?: JSX.Element;
+  class?: JSX.ClassValue;
+}
+
+export function SiteHeader(props: SiteHeaderProps) {
+  return (
+    <header class={["header", props.class]}>
+      <div class="inner">
+        <a class="brand" href={props.home ?? "/"}>
+          {props.logo ?? <Logo />}
+          <span class="sr-only"> home</span>
+        </a>
+        <SiteNav client:load links={props.links ?? siteLinks} current={props.current} />
+        <div class="actions">
+          {props.actions}
+          <ThemeToggle client:load />
+        </div>
+      </div>
+
+      <style>
+        .header {
+          position: sticky;
+          inset-block-start: 0;
+          z-index: $z.header;
+          background: color-mix(in oklab, $color.bg 80%, transparent);
+          backdrop-filter: blur(14px) saturate(1.5);
+          border-block-end: 1px solid $color.border;
+        }
+        /* A thin line of light along the bottom edge. */
+        .header::after {
+          content: "";
+          position: absolute;
+          inset-inline: 0;
+          inset-block-end: -1px;
+          block-size: 1px;
+          background: linear-gradient(
+            90deg,
+            transparent,
+            color-mix(in oklab, $color.glowA 70%, transparent) 30%,
+            color-mix(in oklab, $color.glowB 70%, transparent) 70%,
+            transparent
+          );
+          opacity: 0.7;
+          pointer-events: none;
+        }
+        .inner {
+          display: flex;
+          align-items: center;
+          gap: $space.lg;
+          max-inline-size: $layout.page;
+          block-size: $layout.header;
+          margin-inline: auto;
+          padding-inline: $layout.gutter;
+        }
+        .brand {
+          display: inline-flex;
+          border-radius: $space.xs;
+          text-decoration: none;
+        }
+        .actions {
+          display: flex;
+          align-items: center;
+          gap: $space.xs;
+          margin-inline-start: auto;
+        }
+        @media (width < $bp.md) {
+          .inner {
+            gap: $space.xs;
+          }
+          .brand {
+            margin-inline-end: auto;
+          }
+          .actions {
+            margin-inline-start: 0;
+          }
+        }
+      </style>
+    </header>
+  );
+}
