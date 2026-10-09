@@ -5,7 +5,7 @@ status: In Progress
 assignee:
   - Quasar
 created_date: '2026-10-08 12:21'
-updated_date: '2026-10-09 15:51'
+updated_date: '2026-10-09 16:25'
 labels: []
 milestone: m-7
 dependencies:
@@ -42,4 +42,11 @@ Quasar 2026-10-09 (resumed): 20 tasks, all validated against the committed revis
 Smoke screenshot: backlog/assets/task-40-evals-viewer.png. Task stays In Progress until Lux decides the next matrix.
 
 Quasar RESUME (2026-10-09 15:51 UTC, paused for Claude quota ~87%): matrix (option C: 20 tasks × 1 run × 6 configs, all medium, baseline, Lumen pinned at ed72928) is at 62/120 runs, all 62 passed. Done for all six configs: about-page, blog-tags, class-passthrough, contact-form, counter-island, custom-404, fix-browser-api-module-scope, fix-island-function-prop, fix-list-mutation, fix-reactive-early-return; fix-server-import-in-island done for Opus and Sonnet only. Results: evals/results/2026-10-09T151008-macbookpro.json (meta.complete=false, notes explain the pin, the discarded high-effort luna/haiku runs and the pause). Remaining 58 runs, exact command (skips done pairs, appends to the same file): cd evals && LUMEN_EVAL_REV=ed7292832908857eed3fb57b126eeb6a7d3fd913 node src/cli.ts run --agents claude:claude-opus-5-5:medium,claude:claude-sonnet-5-5:medium,codex:gpt-6-astra:medium,codex:gpt-6.1-sol:medium,codex:gpt-6-luna:medium,claude:claude-haiku-5-5:medium --runs 1 --ablations baseline --keep --resume 2026-10-09T151008-macbookpro.json  (Claude share of the remaining runs: 29). Then write the summary (pass rate per model and category, median time, cost/tokens, failures classified) and report to Lux. Kept projects/transcripts in evals/.runs/2026-10-09T151008 (git-ignored).
+
+Quasar 2026-10-09 16:30 UTC — option C matrix summary (20 tasks × 1 run × 6 configs, all medium, baseline, Lumen ed72928; results evals/results/2026-10-09T151008-macbookpro.json).
+- Valid runs 116/120, all 116 PASS. 4 Claude runs could not start (Claude session limit, resets 20:40 Europe/Berlin): styled-badge/haiku, todo-named-actions/opus, sonnet, haiku. Not recorded; finish with the RESUME command above (same --resume file) after the reset. The runner now stops on a quota error instead of recording it (exit 3).
+- Per model (pass, median wall time [max], median turns / tool calls, median output tokens, median input tokens incl. cache, cost): Opus 19/19, 27 s [47], 6/5, 1.8k, 226k, $0.23/run ($4.83 total, list price); Sonnet 19/19, 17 s [30], 5/4, 1.1k, 145k, $0.10/run ($1.97); Haiku 18/18, 31 s [67], 11/9, 3.3k, 334k, $0.01/run ($0.19); gpt-6-astra 20/20, 34 s [68], 9.5/8, 0.8k, 120k; gpt-6.1-sol 20/20, 38 s [121], 11/9.5, 0.8k, 124k; gpt-6-luna 20/20, 16 s [30], 7/5, 0.7k, 101k. Codex reports no cost. Wall times are indicative (other agents active).
+- Per category: scaffold 6/6, routing 30/30, styles 23/23, islands 30/30, actions 9/9, reactivity 18/18 (median 21–45 s; actions slowest).
+- Failures: none by model, none by task/fixture, none by Lumen DX. Every run ran lumen check; the first check failed in 7 runs (fix-island-function-prop ×3, where the starting code has the error, so that is diagnosis; plus fix-stale-total/sonnet, like-button-island/sonnet, progress-runtime-style/haiku, scaffold-from-scratch/opus), all fixed before finishing. Haiku loaded the project's lumen skill in 16/18 runs, Opus/Sonnet in 2; Codex models read llms.txt more (1.0–1.6 per run) than Claude (0–0.5).
+- Assessment: ceiling effect — this suite does not separate the models yet. Next (needs Lux): harder tasks (multi-file features, SPA router, Suspense/streaming, middleware/cookies, CSP, debugging from failing tests) and the ablations, where the differences should show.
 <!-- SECTION:NOTES:END -->

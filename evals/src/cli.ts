@@ -11,7 +11,7 @@
 import { execFileSync } from "node:child_process";
 import { cpSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { cpus, hostname, release, tmpdir, totalmem, type } from "node:os";
-import { join } from "node:path";
+import { basename, join } from "node:path";
 import { parseArgs } from "node:util";
 import { type AgentConfig, agentId, parseAgent, runAgent } from "./agents.ts";
 import { type Grade, grade } from "./grade.ts";
@@ -19,6 +19,9 @@ import { type RunMetrics, metricsOf } from "./metrics.ts";
 import { resultsPath, writeResults, type ResultsFile, type RunRecord } from "./results.ts";
 import { ABLATIONS, type Ablation, selectTasks, type Task } from "./tasks.ts";
 import { EVALS, REPO, createProject, lumenRev, vendor } from "./workspace.ts";
+
+/** What the CLIs print when a subscription's usage limit is reached. */
+const QUOTA = /hit your (?:session |usage |weekly )?limit|usage limit|rate limit|quota/i;
 
 const [command = "run", ...rest] = process.argv.slice(2);
 const { values } = parseArgs({
@@ -165,6 +168,13 @@ async function run(): Promise<void> {
           const name = `${task.id}--${agentId(agent).replaceAll(":", "_")}--${ablation.id}--${index + 1}`;
           log(`[${n}/${total}] ${task.id} · ${agentId(agent)} · ${ablation.id} · run ${index + 1}`);
           const record = await runOne(task, agent, ablation, index, name, logs);
+          // A CLI out of quota fails instantly without working: stop instead of recording it, so
+          // --resume can run the pair once the quota is back.
+          if (record.tokens.output === 0 && QUOTA.test(record.exit.error ?? "")) {
+            log(`  stopped: ${record.exit.error} (not recorded; continue later with --resume ${basename(output)})`);
+            process.exitCode = 3;
+            return;
+          }
           records.push(record);
           // Rewritten after every run, so an interrupted matrix keeps what it measured.
           writeResults({ schema: 1, meta, runs: records }, output);

@@ -53,8 +53,9 @@
     "notes": [
       "Matrix approved by the user (option C): 20 tasks × 1 run × 6 configurations, all at medium effort, baseline ablation, Lumen pinned at ed72928 for every run.",
       "gpt-6-luna and claude-haiku-5-5 first ran 4 runs at high effort by mistake; those were discarded and rerun at medium.",
-      "Paused at 62/120 runs (Claude quota at ~87%): 10 tasks complete for all six configurations, plus fix-server-import-in-island for Opus and Sonnet. Resume with --resume on this file.",
-      "Other agents were active on the machine: wall times are indicative only."
+      "Other agents were active on the machine: wall times are indicative only.",
+      "The matrix was paused at 62/120 for Claude quota and resumed (--resume) at 15:51 UTC.",
+      "4 Claude runs could not start (session limit, resets 20:40 Europe/Berlin): styled-badge / claude-haiku-5-5, todo-named-actions / claude-opus-5-5, todo-named-actions / claude-sonnet-5-5, todo-named-actions / claude-haiku-5-5. They are not recorded; --resume runs them later."
     ]
   },
   "runs": [
@@ -5346,6 +5347,4722 @@
         }
       },
       "log": ".runs/2026-10-09T151008/fix-server-import-in-island--claude_claude-sonnet-5-5_medium--baseline--1.jsonl"
+    },
+    {
+      "task": "fix-server-import-in-island",
+      "category": "islands",
+      "agent": "codex:gpt-6-astra:medium",
+      "cli": "codex",
+      "model": "gpt-6-astra",
+      "effort": "medium",
+      "ablation": "baseline",
+      "index": 0,
+      "success": true,
+      "grade": {
+        "success": true,
+        "tests": {
+          "passed": 4,
+          "failed": 0,
+          "total": 4,
+          "results": [
+            {
+              "name": "stock serves the stock endpoint",
+              "ok": true
+            },
+            {
+              "name": "stock renders the stock in the product page HTML, inside the island",
+              "ok": true
+            },
+            {
+              "name": "stock keeps server code out of the island",
+              "ok": true
+            },
+            {
+              "name": "stock builds",
+              "ok": true
+            }
+          ]
+        },
+        "check": {
+          "ok": true,
+          "errors": 0,
+          "warnings": 0,
+          "codes": []
+        },
+        "diff": {
+          "filesChanged": 3,
+          "linesAdded": 39,
+          "linesRemoved": 8
+        },
+        "durationMs": 2910.2900840000075
+      },
+      "wallMs": 68342,
+      "tokens": {
+        "input": 24909,
+        "cacheRead": 238208,
+        "cacheWrite": 0,
+        "output": 2086,
+        "reasoning": 26
+      },
+      "costUsd": null,
+      "modelUsed": null,
+      "metrics": {
+        "turns": 12,
+        "steps": 11,
+        "commands": 8,
+        "edits": 3,
+        "checkRuns": 1,
+        "firstCheckOk": true,
+        "lumCodes": [],
+        "docsReads": 4,
+        "llmsReads": 1,
+        "mcpCalls": 0,
+        "mcpTools": [],
+        "skills": []
+      },
+      "exit": {
+        "code": 0,
+        "timedOut": false,
+        "error": null
+      },
+      "usageInfo": null,
+      "log": ".runs/2026-10-09T151008/fix-server-import-in-island--codex_gpt-6-astra_medium--baseline--1.jsonl"
+    },
+    {
+      "task": "fix-server-import-in-island",
+      "category": "islands",
+      "agent": "codex:gpt-6.1-sol:medium",
+      "cli": "codex",
+      "model": "gpt-6.1-sol",
+      "effort": "medium",
+      "ablation": "baseline",
+      "index": 0,
+      "success": true,
+      "grade": {
+        "success": true,
+        "tests": {
+          "passed": 4,
+          "failed": 0,
+          "total": 4,
+          "results": [
+            {
+              "name": "stock serves the stock endpoint",
+              "ok": true
+            },
+            {
+              "name": "stock renders the stock in the product page HTML, inside the island",
+              "ok": true
+            },
+            {
+              "name": "stock keeps server code out of the island",
+              "ok": true
+            },
+            {
+              "name": "stock builds",
+              "ok": true
+            }
+          ]
+        },
+        "check": {
+          "ok": true,
+          "errors": 0,
+          "warnings": 0,
+          "codes": []
+        },
+        "diff": {
+          "filesChanged": 3,
+          "linesAdded": 28,
+          "linesRemoved": 8
+        },
+        "durationMs": 2783.2250829999975
+      },
+      "wallMs": 68963,
+      "tokens": {
+        "input": 22731,
+        "cacheRead": 205568,
+        "cacheWrite": 0,
+        "output": 2087,
+        "reasoning": 58
+      },
+      "costUsd": null,
+      "modelUsed": null,
+      "metrics": {
+        "turns": 16,
+        "steps": 15,
+        "commands": 12,
+        "edits": 3,
+        "checkRuns": 1,
+        "firstCheckOk": true,
+        "lumCodes": [],
+        "docsReads": 3,
+        "llmsReads": 2,
+        "mcpCalls": 0,
+        "mcpTools": [],
+        "skills": []
+      },
+      "exit": {
+        "code": 0,
+        "timedOut": false,
+        "error": null
+      },
+      "usageInfo": null,
+      "log": ".runs/2026-10-09T151008/fix-server-import-in-island--codex_gpt-6.1-sol_medium--baseline--1.jsonl"
+    },
+    {
+      "task": "fix-server-import-in-island",
+      "category": "islands",
+      "agent": "codex:gpt-6-luna:medium",
+      "cli": "codex",
+      "model": "gpt-6-luna",
+      "effort": "medium",
+      "ablation": "baseline",
+      "index": 0,
+      "success": true,
+      "grade": {
+        "success": true,
+        "tests": {
+          "passed": 4,
+          "failed": 0,
+          "total": 4,
+          "results": [
+            {
+              "name": "stock serves the stock endpoint",
+              "ok": true
+            },
+            {
+              "name": "stock renders the stock in the product page HTML, inside the island",
+              "ok": true
+            },
+            {
+              "name": "stock keeps server code out of the island",
+              "ok": true
+            },
+            {
+              "name": "stock builds",
+              "ok": true
+            }
+          ]
+        },
+        "check": {
+          "ok": true,
+          "errors": 0,
+          "warnings": 0,
+          "codes": []
+        },
+        "diff": {
+          "filesChanged": 3,
+          "linesAdded": 26,
+          "linesRemoved": 8
+        },
+        "durationMs": 2638.376458999992
+      },
+      "wallMs": 30265,
+      "tokens": {
+        "input": 33797,
+        "cacheRead": 198144,
+        "cacheWrite": 0,
+        "output": 1330,
+        "reasoning": 126
+      },
+      "costUsd": null,
+      "modelUsed": null,
+      "metrics": {
+        "turns": 13,
+        "steps": 9,
+        "commands": 6,
+        "edits": 3,
+        "checkRuns": 1,
+        "firstCheckOk": true,
+        "lumCodes": [],
+        "docsReads": 2,
+        "llmsReads": 1,
+        "mcpCalls": 0,
+        "mcpTools": [],
+        "skills": []
+      },
+      "exit": {
+        "code": 0,
+        "timedOut": false,
+        "error": null
+      },
+      "usageInfo": null,
+      "log": ".runs/2026-10-09T151008/fix-server-import-in-island--codex_gpt-6-luna_medium--baseline--1.jsonl"
+    },
+    {
+      "task": "fix-server-import-in-island",
+      "category": "islands",
+      "agent": "claude:claude-haiku-5-5:medium",
+      "cli": "claude",
+      "model": "claude-haiku-5-5",
+      "effort": "medium",
+      "ablation": "baseline",
+      "index": 0,
+      "success": true,
+      "grade": {
+        "success": true,
+        "tests": {
+          "passed": 4,
+          "failed": 0,
+          "total": 4,
+          "results": [
+            {
+              "name": "stock serves the stock endpoint",
+              "ok": true
+            },
+            {
+              "name": "stock renders the stock in the product page HTML, inside the island",
+              "ok": true
+            },
+            {
+              "name": "stock keeps server code out of the island",
+              "ok": true
+            },
+            {
+              "name": "stock builds",
+              "ok": true
+            }
+          ]
+        },
+        "check": {
+          "ok": true,
+          "errors": 0,
+          "warnings": 0,
+          "codes": []
+        },
+        "diff": {
+          "filesChanged": 3,
+          "linesAdded": 29,
+          "linesRemoved": 7
+        },
+        "durationMs": 2737.090208999987
+      },
+      "wallMs": 52274,
+      "tokens": {
+        "input": 20,
+        "cacheRead": 436042,
+        "cacheWrite": 32949,
+        "output": 5334,
+        "reasoning": 1361
+      },
+      "costUsd": 0.01361922,
+      "modelUsed": "claude-haiku-5-5",
+      "metrics": {
+        "turns": 14,
+        "steps": 12,
+        "commands": 8,
+        "edits": 3,
+        "checkRuns": 1,
+        "firstCheckOk": true,
+        "lumCodes": [],
+        "docsReads": 3,
+        "llmsReads": 0,
+        "mcpCalls": 0,
+        "mcpTools": [],
+        "skills": [
+          "lumen"
+        ]
+      },
+      "exit": {
+        "code": 0,
+        "timedOut": false,
+        "error": null
+      },
+      "usageInfo": {
+        "claude-haiku-5-5": {
+          "inputTokens": 20,
+          "outputTokens": 5334,
+          "cacheReadInputTokens": 436042,
+          "cacheCreationInputTokens": 32949,
+          "webSearchRequests": 0,
+          "costUSD": 0.01361922,
+          "contextWindow": 1000000,
+          "maxOutputTokens": 128000,
+          "thinkingTokens": 1361,
+          "canonicalModel": "claude-haiku-5-5",
+          "provider": "firstParty",
+          "costBasis": "list"
+        }
+      },
+      "log": ".runs/2026-10-09T151008/fix-server-import-in-island--claude_claude-haiku-5-5_medium--baseline--1.jsonl"
+    },
+    {
+      "task": "fix-stale-total",
+      "category": "reactivity",
+      "agent": "claude:claude-opus-5-5:medium",
+      "cli": "claude",
+      "model": "claude-opus-5-5",
+      "effort": "medium",
+      "ablation": "baseline",
+      "index": 0,
+      "success": true,
+      "grade": {
+        "success": true,
+        "tests": {
+          "passed": 3,
+          "failed": 0,
+          "total": 3,
+          "results": [
+            {
+              "name": "has no stale derived values left",
+              "ok": true
+            },
+            {
+              "name": "starts with one item",
+              "ok": true
+            },
+            {
+              "name": "updates the total and the label",
+              "ok": true
+            }
+          ]
+        },
+        "check": {
+          "ok": true,
+          "errors": 0,
+          "warnings": 0,
+          "codes": []
+        },
+        "diff": {
+          "filesChanged": 1,
+          "linesAdded": 5,
+          "linesRemoved": 5
+        },
+        "durationMs": 2225.2058750000433
+      },
+      "wallMs": 21347,
+      "tokens": {
+        "input": 8,
+        "cacheRead": 124201,
+        "cacheWrite": 14872,
+        "output": 1332,
+        "reasoning": 94
+      },
+      "costUsd": 0.17048819999999998,
+      "modelUsed": "claude-opus-5-5",
+      "metrics": {
+        "turns": 5,
+        "steps": 4,
+        "commands": 3,
+        "edits": 0,
+        "checkRuns": 1,
+        "firstCheckOk": true,
+        "lumCodes": [],
+        "docsReads": 2,
+        "llmsReads": 0,
+        "mcpCalls": 0,
+        "mcpTools": [],
+        "skills": []
+      },
+      "exit": {
+        "code": 0,
+        "timedOut": false,
+        "error": null
+      },
+      "usageInfo": {
+        "claude-opus-5-5": {
+          "inputTokens": 8,
+          "outputTokens": 1332,
+          "cacheReadInputTokens": 124201,
+          "cacheCreationInputTokens": 14872,
+          "webSearchRequests": 0,
+          "costUSD": 0.17048819999999998,
+          "contextWindow": 1000000,
+          "maxOutputTokens": 128000,
+          "thinkingTokens": 94,
+          "canonicalModel": "claude-opus-5-5",
+          "provider": "firstParty",
+          "costBasis": "list"
+        }
+      },
+      "log": ".runs/2026-10-09T151008/fix-stale-total--claude_claude-opus-5-5_medium--baseline--1.jsonl"
+    },
+    {
+      "task": "fix-stale-total",
+      "category": "reactivity",
+      "agent": "claude:claude-sonnet-5-5:medium",
+      "cli": "claude",
+      "model": "claude-sonnet-5-5",
+      "effort": "medium",
+      "ablation": "baseline",
+      "index": 0,
+      "success": true,
+      "grade": {
+        "success": true,
+        "tests": {
+          "passed": 3,
+          "failed": 0,
+          "total": 3,
+          "results": [
+            {
+              "name": "has no stale derived values left",
+              "ok": true
+            },
+            {
+              "name": "starts with one item",
+              "ok": true
+            },
+            {
+              "name": "updates the total and the label",
+              "ok": true
+            }
+          ]
+        },
+        "check": {
+          "ok": true,
+          "errors": 0,
+          "warnings": 0,
+          "codes": []
+        },
+        "diff": {
+          "filesChanged": 1,
+          "linesAdded": 5,
+          "linesRemoved": 5
+        },
+        "durationMs": 2153.3120839999756
+      },
+      "wallMs": 20638,
+      "tokens": {
+        "input": 10,
+        "cacheRead": 155963,
+        "cacheWrite": 13830,
+        "output": 1620,
+        "reasoning": 79
+      },
+      "costUsd": 0.10273260000000001,
+      "modelUsed": "claude-sonnet-5-5",
+      "metrics": {
+        "turns": 8,
+        "steps": 7,
+        "commands": 2,
+        "edits": 4,
+        "checkRuns": 2,
+        "firstCheckOk": false,
+        "lumCodes": [],
+        "docsReads": 0,
+        "llmsReads": 0,
+        "mcpCalls": 0,
+        "mcpTools": [],
+        "skills": []
+      },
+      "exit": {
+        "code": 0,
+        "timedOut": false,
+        "error": null
+      },
+      "usageInfo": {
+        "claude-sonnet-5-5": {
+          "inputTokens": 10,
+          "outputTokens": 1620,
+          "cacheReadInputTokens": 155963,
+          "cacheCreationInputTokens": 13830,
+          "webSearchRequests": 0,
+          "costUSD": 0.10273260000000001,
+          "contextWindow": 1000000,
+          "maxOutputTokens": 128000,
+          "thinkingTokens": 79,
+          "canonicalModel": "claude-sonnet-5-5",
+          "provider": "firstParty",
+          "costBasis": "list"
+        }
+      },
+      "log": ".runs/2026-10-09T151008/fix-stale-total--claude_claude-sonnet-5-5_medium--baseline--1.jsonl"
+    },
+    {
+      "task": "fix-stale-total",
+      "category": "reactivity",
+      "agent": "codex:gpt-6-astra:medium",
+      "cli": "codex",
+      "model": "gpt-6-astra",
+      "effort": "medium",
+      "ablation": "baseline",
+      "index": 0,
+      "success": true,
+      "grade": {
+        "success": true,
+        "tests": {
+          "passed": 3,
+          "failed": 0,
+          "total": 3,
+          "results": [
+            {
+              "name": "has no stale derived values left",
+              "ok": true
+            },
+            {
+              "name": "starts with one item",
+              "ok": true
+            },
+            {
+              "name": "updates the total and the label",
+              "ok": true
+            }
+          ]
+        },
+        "check": {
+          "ok": true,
+          "errors": 0,
+          "warnings": 0,
+          "codes": []
+        },
+        "diff": {
+          "filesChanged": 1,
+          "linesAdded": 4,
+          "linesRemoved": 4
+        },
+        "durationMs": 2050.9761670000153
+      },
+      "wallMs": 30472,
+      "tokens": {
+        "input": 12877,
+        "cacheRead": 95360,
+        "cacheWrite": 0,
+        "output": 576,
+        "reasoning": 0
+      },
+      "costUsd": null,
+      "modelUsed": null,
+      "metrics": {
+        "turns": 8,
+        "steps": 6,
+        "commands": 5,
+        "edits": 1,
+        "checkRuns": 1,
+        "firstCheckOk": true,
+        "lumCodes": [],
+        "docsReads": 3,
+        "llmsReads": 2,
+        "mcpCalls": 0,
+        "mcpTools": [],
+        "skills": []
+      },
+      "exit": {
+        "code": 0,
+        "timedOut": false,
+        "error": null
+      },
+      "usageInfo": null,
+      "log": ".runs/2026-10-09T151008/fix-stale-total--codex_gpt-6-astra_medium--baseline--1.jsonl"
+    },
+    {
+      "task": "fix-stale-total",
+      "category": "reactivity",
+      "agent": "codex:gpt-6.1-sol:medium",
+      "cli": "codex",
+      "model": "gpt-6.1-sol",
+      "effort": "medium",
+      "ablation": "baseline",
+      "index": 0,
+      "success": true,
+      "grade": {
+        "success": true,
+        "tests": {
+          "passed": 3,
+          "failed": 0,
+          "total": 3,
+          "results": [
+            {
+              "name": "has no stale derived values left",
+              "ok": true
+            },
+            {
+              "name": "starts with one item",
+              "ok": true
+            },
+            {
+              "name": "updates the total and the label",
+              "ok": true
+            }
+          ]
+        },
+        "check": {
+          "ok": true,
+          "errors": 0,
+          "warnings": 0,
+          "codes": []
+        },
+        "diff": {
+          "filesChanged": 1,
+          "linesAdded": 4,
+          "linesRemoved": 4
+        },
+        "durationMs": 2029.8588750000345
+      },
+      "wallMs": 33540,
+      "tokens": {
+        "input": 18894,
+        "cacheRead": 63488,
+        "cacheWrite": 0,
+        "output": 622,
+        "reasoning": 0
+      },
+      "costUsd": null,
+      "modelUsed": null,
+      "metrics": {
+        "turns": 10,
+        "steps": 8,
+        "commands": 7,
+        "edits": 1,
+        "checkRuns": 1,
+        "firstCheckOk": true,
+        "lumCodes": [],
+        "docsReads": 2,
+        "llmsReads": 1,
+        "mcpCalls": 0,
+        "mcpTools": [],
+        "skills": []
+      },
+      "exit": {
+        "code": 0,
+        "timedOut": false,
+        "error": null
+      },
+      "usageInfo": null,
+      "log": ".runs/2026-10-09T151008/fix-stale-total--codex_gpt-6.1-sol_medium--baseline--1.jsonl"
+    },
+    {
+      "task": "fix-stale-total",
+      "category": "reactivity",
+      "agent": "codex:gpt-6-luna:medium",
+      "cli": "codex",
+      "model": "gpt-6-luna",
+      "effort": "medium",
+      "ablation": "baseline",
+      "index": 0,
+      "success": true,
+      "grade": {
+        "success": true,
+        "tests": {
+          "passed": 3,
+          "failed": 0,
+          "total": 3,
+          "results": [
+            {
+              "name": "has no stale derived values left",
+              "ok": true
+            },
+            {
+              "name": "starts with one item",
+              "ok": true
+            },
+            {
+              "name": "updates the total and the label",
+              "ok": true
+            }
+          ]
+        },
+        "check": {
+          "ok": true,
+          "errors": 0,
+          "warnings": 0,
+          "codes": []
+        },
+        "diff": {
+          "filesChanged": 1,
+          "linesAdded": 4,
+          "linesRemoved": 4
+        },
+        "durationMs": 2072.488000000012
+      },
+      "wallMs": 14845,
+      "tokens": {
+        "input": 12270,
+        "cacheRead": 64512,
+        "cacheWrite": 0,
+        "output": 612,
+        "reasoning": 84
+      },
+      "costUsd": null,
+      "modelUsed": null,
+      "metrics": {
+        "turns": 7,
+        "steps": 4,
+        "commands": 3,
+        "edits": 1,
+        "checkRuns": 1,
+        "firstCheckOk": true,
+        "lumCodes": [],
+        "docsReads": 2,
+        "llmsReads": 1,
+        "mcpCalls": 0,
+        "mcpTools": [],
+        "skills": []
+      },
+      "exit": {
+        "code": 0,
+        "timedOut": false,
+        "error": null
+      },
+      "usageInfo": null,
+      "log": ".runs/2026-10-09T151008/fix-stale-total--codex_gpt-6-luna_medium--baseline--1.jsonl"
+    },
+    {
+      "task": "fix-stale-total",
+      "category": "reactivity",
+      "agent": "claude:claude-haiku-5-5:medium",
+      "cli": "claude",
+      "model": "claude-haiku-5-5",
+      "effort": "medium",
+      "ablation": "baseline",
+      "index": 0,
+      "success": true,
+      "grade": {
+        "success": true,
+        "tests": {
+          "passed": 3,
+          "failed": 0,
+          "total": 3,
+          "results": [
+            {
+              "name": "has no stale derived values left",
+              "ok": true
+            },
+            {
+              "name": "starts with one item",
+              "ok": true
+            },
+            {
+              "name": "updates the total and the label",
+              "ok": true
+            }
+          ]
+        },
+        "check": {
+          "ok": true,
+          "errors": 0,
+          "warnings": 0,
+          "codes": []
+        },
+        "diff": {
+          "filesChanged": 1,
+          "linesAdded": 2,
+          "linesRemoved": 4
+        },
+        "durationMs": 2206.323959000001
+      },
+      "wallMs": 19824,
+      "tokens": {
+        "input": 8,
+        "cacheRead": 127269,
+        "cacheWrite": 16171,
+        "output": 2356,
+        "reasoning": 651
+      },
+      "costUsd": 0.00568569,
+      "modelUsed": "claude-haiku-5-5",
+      "metrics": {
+        "turns": 9,
+        "steps": 7,
+        "commands": 2,
+        "edits": 3,
+        "checkRuns": 2,
+        "firstCheckOk": true,
+        "lumCodes": [],
+        "docsReads": 0,
+        "llmsReads": 0,
+        "mcpCalls": 0,
+        "mcpTools": [],
+        "skills": [
+          "lumen"
+        ]
+      },
+      "exit": {
+        "code": 0,
+        "timedOut": false,
+        "error": null
+      },
+      "usageInfo": {
+        "claude-haiku-5-5": {
+          "inputTokens": 8,
+          "outputTokens": 2356,
+          "cacheReadInputTokens": 127269,
+          "cacheCreationInputTokens": 16171,
+          "webSearchRequests": 0,
+          "costUSD": 0.00568569,
+          "contextWindow": 1000000,
+          "maxOutputTokens": 128000,
+          "thinkingTokens": 651,
+          "canonicalModel": "claude-haiku-5-5",
+          "provider": "firstParty",
+          "costBasis": "list"
+        }
+      },
+      "log": ".runs/2026-10-09T151008/fix-stale-total--claude_claude-haiku-5-5_medium--baseline--1.jsonl"
+    },
+    {
+      "task": "json-endpoint",
+      "category": "routing",
+      "agent": "claude:claude-opus-5-5:medium",
+      "cli": "claude",
+      "model": "claude-opus-5-5",
+      "effort": "medium",
+      "ablation": "baseline",
+      "index": 0,
+      "success": true,
+      "grade": {
+        "success": true,
+        "tests": {
+          "passed": 9,
+          "failed": 0,
+          "total": 9,
+          "results": [
+            {
+              "name": "GET /api/books returns every book sorted by year, then id",
+              "ok": true
+            },
+            {
+              "name": "GET /api/books returns whole book objects",
+              "ok": true
+            },
+            {
+              "name": "GET /api/books filters by title or author, case-insensitively",
+              "ok": true
+            },
+            {
+              "name": "GET /api/books limits the results",
+              "ok": true
+            },
+            {
+              "name": "GET /api/books rejects limit=0",
+              "ok": true
+            },
+            {
+              "name": "GET /api/books rejects limit=51",
+              "ok": true
+            },
+            {
+              "name": "GET /api/books rejects limit=abc",
+              "ok": true
+            },
+            {
+              "name": "GET /api/books rejects limit=2.5",
+              "ok": true
+            },
+            {
+              "name": "GET /api/books rejects limit=-1",
+              "ok": true
+            }
+          ]
+        },
+        "check": {
+          "ok": true,
+          "errors": 0,
+          "warnings": 0,
+          "codes": []
+        },
+        "diff": {
+          "filesChanged": 1,
+          "linesAdded": 30,
+          "linesRemoved": 0
+        },
+        "durationMs": 1700.2569999999832
+      },
+      "wallMs": 28911,
+      "tokens": {
+        "input": 12,
+        "cacheRead": 199612,
+        "cacheWrite": 17793,
+        "output": 1982,
+        "reasoning": 191
+      },
+      "costUsd": 0.22195439999999997,
+      "modelUsed": "claude-opus-5-5",
+      "metrics": {
+        "turns": 6,
+        "steps": 5,
+        "commands": 4,
+        "edits": 1,
+        "checkRuns": 1,
+        "firstCheckOk": true,
+        "lumCodes": [],
+        "docsReads": 2,
+        "llmsReads": 0,
+        "mcpCalls": 0,
+        "mcpTools": [],
+        "skills": []
+      },
+      "exit": {
+        "code": 0,
+        "timedOut": false,
+        "error": null
+      },
+      "usageInfo": {
+        "claude-opus-5-5": {
+          "inputTokens": 12,
+          "outputTokens": 1982,
+          "cacheReadInputTokens": 199612,
+          "cacheCreationInputTokens": 17793,
+          "webSearchRequests": 0,
+          "costUSD": 0.22195439999999997,
+          "contextWindow": 1000000,
+          "maxOutputTokens": 128000,
+          "thinkingTokens": 191,
+          "canonicalModel": "claude-opus-5-5",
+          "provider": "firstParty",
+          "costBasis": "list"
+        }
+      },
+      "log": ".runs/2026-10-09T151008/json-endpoint--claude_claude-opus-5-5_medium--baseline--1.jsonl"
+    },
+    {
+      "task": "json-endpoint",
+      "category": "routing",
+      "agent": "claude:claude-sonnet-5-5:medium",
+      "cli": "claude",
+      "model": "claude-sonnet-5-5",
+      "effort": "medium",
+      "ablation": "baseline",
+      "index": 0,
+      "success": true,
+      "grade": {
+        "success": true,
+        "tests": {
+          "passed": 9,
+          "failed": 0,
+          "total": 9,
+          "results": [
+            {
+              "name": "GET /api/books returns every book sorted by year, then id",
+              "ok": true
+            },
+            {
+              "name": "GET /api/books returns whole book objects",
+              "ok": true
+            },
+            {
+              "name": "GET /api/books filters by title or author, case-insensitively",
+              "ok": true
+            },
+            {
+              "name": "GET /api/books limits the results",
+              "ok": true
+            },
+            {
+              "name": "GET /api/books rejects limit=0",
+              "ok": true
+            },
+            {
+              "name": "GET /api/books rejects limit=51",
+              "ok": true
+            },
+            {
+              "name": "GET /api/books rejects limit=abc",
+              "ok": true
+            },
+            {
+              "name": "GET /api/books rejects limit=2.5",
+              "ok": true
+            },
+            {
+              "name": "GET /api/books rejects limit=-1",
+              "ok": true
+            }
+          ]
+        },
+        "check": {
+          "ok": true,
+          "errors": 0,
+          "warnings": 0,
+          "codes": []
+        },
+        "diff": {
+          "filesChanged": 1,
+          "linesAdded": 18,
+          "linesRemoved": 0
+        },
+        "durationMs": 1619.0738750000019
+      },
+      "wallMs": 16543,
+      "tokens": {
+        "input": 8,
+        "cacheRead": 125052,
+        "cacheWrite": 15633,
+        "output": 1086,
+        "reasoning": 0
+      },
+      "costUsd": 0.0984184,
+      "modelUsed": "claude-sonnet-5-5",
+      "metrics": {
+        "turns": 4,
+        "steps": 3,
+        "commands": 3,
+        "edits": 0,
+        "checkRuns": 1,
+        "firstCheckOk": true,
+        "lumCodes": [],
+        "docsReads": 2,
+        "llmsReads": 0,
+        "mcpCalls": 0,
+        "mcpTools": [],
+        "skills": []
+      },
+      "exit": {
+        "code": 0,
+        "timedOut": false,
+        "error": null
+      },
+      "usageInfo": {
+        "claude-sonnet-5-5": {
+          "inputTokens": 8,
+          "outputTokens": 1086,
+          "cacheReadInputTokens": 125052,
+          "cacheCreationInputTokens": 15633,
+          "webSearchRequests": 0,
+          "costUSD": 0.0984184,
+          "contextWindow": 1000000,
+          "maxOutputTokens": 128000,
+          "thinkingTokens": 0,
+          "canonicalModel": "claude-sonnet-5-5",
+          "provider": "firstParty",
+          "costBasis": "list"
+        }
+      },
+      "log": ".runs/2026-10-09T151008/json-endpoint--claude_claude-sonnet-5-5_medium--baseline--1.jsonl"
+    },
+    {
+      "task": "json-endpoint",
+      "category": "routing",
+      "agent": "codex:gpt-6-astra:medium",
+      "cli": "codex",
+      "model": "gpt-6-astra",
+      "effort": "medium",
+      "ablation": "baseline",
+      "index": 0,
+      "success": true,
+      "grade": {
+        "success": true,
+        "tests": {
+          "passed": 9,
+          "failed": 0,
+          "total": 9,
+          "results": [
+            {
+              "name": "GET /api/books returns every book sorted by year, then id",
+              "ok": true
+            },
+            {
+              "name": "GET /api/books returns whole book objects",
+              "ok": true
+            },
+            {
+              "name": "GET /api/books filters by title or author, case-insensitively",
+              "ok": true
+            },
+            {
+              "name": "GET /api/books limits the results",
+              "ok": true
+            },
+            {
+              "name": "GET /api/books rejects limit=0",
+              "ok": true
+            },
+            {
+              "name": "GET /api/books rejects limit=51",
+              "ok": true
+            },
+            {
+              "name": "GET /api/books rejects limit=abc",
+              "ok": true
+            },
+            {
+              "name": "GET /api/books rejects limit=2.5",
+              "ok": true
+            },
+            {
+              "name": "GET /api/books rejects limit=-1",
+              "ok": true
+            }
+          ]
+        },
+        "check": {
+          "ok": true,
+          "errors": 0,
+          "warnings": 0,
+          "codes": []
+        },
+        "diff": {
+          "filesChanged": 1,
+          "linesAdded": 30,
+          "linesRemoved": 0
+        },
+        "durationMs": 1672.7252910000389
+      },
+      "wallMs": 44256,
+      "tokens": {
+        "input": 16981,
+        "cacheRead": 103168,
+        "cacheWrite": 0,
+        "output": 1156,
+        "reasoning": 20
+      },
+      "costUsd": null,
+      "modelUsed": null,
+      "metrics": {
+        "turns": 9,
+        "steps": 7,
+        "commands": 6,
+        "edits": 1,
+        "checkRuns": 1,
+        "firstCheckOk": true,
+        "lumCodes": [],
+        "docsReads": 3,
+        "llmsReads": 2,
+        "mcpCalls": 0,
+        "mcpTools": [],
+        "skills": []
+      },
+      "exit": {
+        "code": 0,
+        "timedOut": false,
+        "error": null
+      },
+      "usageInfo": null,
+      "log": ".runs/2026-10-09T151008/json-endpoint--codex_gpt-6-astra_medium--baseline--1.jsonl"
+    },
+    {
+      "task": "json-endpoint",
+      "category": "routing",
+      "agent": "codex:gpt-6.1-sol:medium",
+      "cli": "codex",
+      "model": "gpt-6.1-sol",
+      "effort": "medium",
+      "ablation": "baseline",
+      "index": 0,
+      "success": true,
+      "grade": {
+        "success": true,
+        "tests": {
+          "passed": 9,
+          "failed": 0,
+          "total": 9,
+          "results": [
+            {
+              "name": "GET /api/books returns every book sorted by year, then id",
+              "ok": true
+            },
+            {
+              "name": "GET /api/books returns whole book objects",
+              "ok": true
+            },
+            {
+              "name": "GET /api/books filters by title or author, case-insensitively",
+              "ok": true
+            },
+            {
+              "name": "GET /api/books limits the results",
+              "ok": true
+            },
+            {
+              "name": "GET /api/books rejects limit=0",
+              "ok": true
+            },
+            {
+              "name": "GET /api/books rejects limit=51",
+              "ok": true
+            },
+            {
+              "name": "GET /api/books rejects limit=abc",
+              "ok": true
+            },
+            {
+              "name": "GET /api/books rejects limit=2.5",
+              "ok": true
+            },
+            {
+              "name": "GET /api/books rejects limit=-1",
+              "ok": true
+            }
+          ]
+        },
+        "check": {
+          "ok": true,
+          "errors": 0,
+          "warnings": 0,
+          "codes": []
+        },
+        "diff": {
+          "filesChanged": 1,
+          "linesAdded": 29,
+          "linesRemoved": 0
+        },
+        "durationMs": 1946.1830000000773
+      },
+      "wallMs": 45282,
+      "tokens": {
+        "input": 32845,
+        "cacheRead": 87680,
+        "cacheWrite": 0,
+        "output": 1187,
+        "reasoning": 39
+      },
+      "costUsd": null,
+      "modelUsed": null,
+      "metrics": {
+        "turns": 11,
+        "steps": 9,
+        "commands": 8,
+        "edits": 1,
+        "checkRuns": 1,
+        "firstCheckOk": true,
+        "lumCodes": [],
+        "docsReads": 3,
+        "llmsReads": 2,
+        "mcpCalls": 0,
+        "mcpTools": [],
+        "skills": []
+      },
+      "exit": {
+        "code": 0,
+        "timedOut": false,
+        "error": null
+      },
+      "usageInfo": null,
+      "log": ".runs/2026-10-09T151008/json-endpoint--codex_gpt-6.1-sol_medium--baseline--1.jsonl"
+    },
+    {
+      "task": "json-endpoint",
+      "category": "routing",
+      "agent": "codex:gpt-6-luna:medium",
+      "cli": "codex",
+      "model": "gpt-6-luna",
+      "effort": "medium",
+      "ablation": "baseline",
+      "index": 0,
+      "success": true,
+      "grade": {
+        "success": true,
+        "tests": {
+          "passed": 9,
+          "failed": 0,
+          "total": 9,
+          "results": [
+            {
+              "name": "GET /api/books returns every book sorted by year, then id",
+              "ok": true
+            },
+            {
+              "name": "GET /api/books returns whole book objects",
+              "ok": true
+            },
+            {
+              "name": "GET /api/books filters by title or author, case-insensitively",
+              "ok": true
+            },
+            {
+              "name": "GET /api/books limits the results",
+              "ok": true
+            },
+            {
+              "name": "GET /api/books rejects limit=0",
+              "ok": true
+            },
+            {
+              "name": "GET /api/books rejects limit=51",
+              "ok": true
+            },
+            {
+              "name": "GET /api/books rejects limit=abc",
+              "ok": true
+            },
+            {
+              "name": "GET /api/books rejects limit=2.5",
+              "ok": true
+            },
+            {
+              "name": "GET /api/books rejects limit=-1",
+              "ok": true
+            }
+          ]
+        },
+        "check": {
+          "ok": true,
+          "errors": 0,
+          "warnings": 0,
+          "codes": []
+        },
+        "diff": {
+          "filesChanged": 1,
+          "linesAdded": 24,
+          "linesRemoved": 0
+        },
+        "durationMs": 1644.9754579999717
+      },
+      "wallMs": 15324,
+      "tokens": {
+        "input": 13234,
+        "cacheRead": 67584,
+        "cacheWrite": 0,
+        "output": 720,
+        "reasoning": 0
+      },
+      "costUsd": null,
+      "modelUsed": null,
+      "metrics": {
+        "turns": 7,
+        "steps": 4,
+        "commands": 3,
+        "edits": 1,
+        "checkRuns": 1,
+        "firstCheckOk": true,
+        "lumCodes": [],
+        "docsReads": 2,
+        "llmsReads": 1,
+        "mcpCalls": 0,
+        "mcpTools": [],
+        "skills": []
+      },
+      "exit": {
+        "code": 0,
+        "timedOut": false,
+        "error": null
+      },
+      "usageInfo": null,
+      "log": ".runs/2026-10-09T151008/json-endpoint--codex_gpt-6-luna_medium--baseline--1.jsonl"
+    },
+    {
+      "task": "json-endpoint",
+      "category": "routing",
+      "agent": "claude:claude-haiku-5-5:medium",
+      "cli": "claude",
+      "model": "claude-haiku-5-5",
+      "effort": "medium",
+      "ablation": "baseline",
+      "index": 0,
+      "success": true,
+      "grade": {
+        "success": true,
+        "tests": {
+          "passed": 9,
+          "failed": 0,
+          "total": 9,
+          "results": [
+            {
+              "name": "GET /api/books returns every book sorted by year, then id",
+              "ok": true
+            },
+            {
+              "name": "GET /api/books returns whole book objects",
+              "ok": true
+            },
+            {
+              "name": "GET /api/books filters by title or author, case-insensitively",
+              "ok": true
+            },
+            {
+              "name": "GET /api/books limits the results",
+              "ok": true
+            },
+            {
+              "name": "GET /api/books rejects limit=0",
+              "ok": true
+            },
+            {
+              "name": "GET /api/books rejects limit=51",
+              "ok": true
+            },
+            {
+              "name": "GET /api/books rejects limit=abc",
+              "ok": true
+            },
+            {
+              "name": "GET /api/books rejects limit=2.5",
+              "ok": true
+            },
+            {
+              "name": "GET /api/books rejects limit=-1",
+              "ok": true
+            }
+          ]
+        },
+        "check": {
+          "ok": true,
+          "errors": 0,
+          "warnings": 0,
+          "codes": []
+        },
+        "diff": {
+          "filesChanged": 1,
+          "linesAdded": 24,
+          "linesRemoved": 0
+        },
+        "durationMs": 1650.0068329999922
+      },
+      "wallMs": 38333,
+      "tokens": {
+        "input": 16,
+        "cacheRead": 314837,
+        "cacheWrite": 24729,
+        "output": 3628,
+        "reasoning": 736
+      },
+      "costUsd": 0.00990977,
+      "modelUsed": "claude-haiku-5-5",
+      "metrics": {
+        "turns": 11,
+        "steps": 9,
+        "commands": 7,
+        "edits": 1,
+        "checkRuns": 2,
+        "firstCheckOk": true,
+        "lumCodes": [],
+        "docsReads": 2,
+        "llmsReads": 1,
+        "mcpCalls": 0,
+        "mcpTools": [],
+        "skills": [
+          "lumen"
+        ]
+      },
+      "exit": {
+        "code": 0,
+        "timedOut": false,
+        "error": null
+      },
+      "usageInfo": {
+        "claude-haiku-5-5": {
+          "inputTokens": 16,
+          "outputTokens": 3628,
+          "cacheReadInputTokens": 314837,
+          "cacheCreationInputTokens": 24729,
+          "webSearchRequests": 0,
+          "costUSD": 0.00990977,
+          "contextWindow": 1000000,
+          "maxOutputTokens": 128000,
+          "thinkingTokens": 736,
+          "canonicalModel": "claude-haiku-5-5",
+          "provider": "firstParty",
+          "costBasis": "list"
+        }
+      },
+      "log": ".runs/2026-10-09T151008/json-endpoint--claude_claude-haiku-5-5_medium--baseline--1.jsonl"
+    },
+    {
+      "task": "like-button-island",
+      "category": "islands",
+      "agent": "claude:claude-opus-5-5:medium",
+      "cli": "claude",
+      "model": "claude-opus-5-5",
+      "effort": "medium",
+      "ablation": "baseline",
+      "index": 0,
+      "success": true,
+      "grade": {
+        "success": true,
+        "tests": {
+          "passed": 3,
+          "failed": 0,
+          "total": 3,
+          "results": [
+            {
+              "name": "toggles a like",
+              "ok": true
+            },
+            {
+              "name": "like button on post pages is an idle island with the likes of hello-lumen",
+              "ok": true
+            },
+            {
+              "name": "like button on post pages is an idle island with the likes of adding-pages",
+              "ok": true
+            }
+          ]
+        },
+        "check": {
+          "ok": true,
+          "errors": 0,
+          "warnings": 0,
+          "codes": []
+        },
+        "diff": {
+          "filesChanged": 2,
+          "linesAdded": 33,
+          "linesRemoved": 0
+        },
+        "durationMs": 2356.430166999926
+      },
+      "wallMs": 24543,
+      "tokens": {
+        "input": 12,
+        "cacheRead": 207172,
+        "cacheWrite": 19211,
+        "output": 1541,
+        "reasoning": 118
+      },
+      "costUsd": 0.22599039999999998,
+      "modelUsed": "claude-opus-5-5",
+      "metrics": {
+        "turns": 6,
+        "steps": 5,
+        "commands": 5,
+        "edits": 0,
+        "checkRuns": 1,
+        "firstCheckOk": true,
+        "lumCodes": [],
+        "docsReads": 2,
+        "llmsReads": 1,
+        "mcpCalls": 0,
+        "mcpTools": [],
+        "skills": []
+      },
+      "exit": {
+        "code": 0,
+        "timedOut": false,
+        "error": null
+      },
+      "usageInfo": {
+        "claude-opus-5-5": {
+          "inputTokens": 12,
+          "outputTokens": 1541,
+          "cacheReadInputTokens": 207172,
+          "cacheCreationInputTokens": 19211,
+          "webSearchRequests": 0,
+          "costUSD": 0.22599039999999998,
+          "contextWindow": 1000000,
+          "maxOutputTokens": 128000,
+          "thinkingTokens": 118,
+          "canonicalModel": "claude-opus-5-5",
+          "provider": "firstParty",
+          "costBasis": "list"
+        }
+      },
+      "log": ".runs/2026-10-09T151008/like-button-island--claude_claude-opus-5-5_medium--baseline--1.jsonl"
+    },
+    {
+      "task": "like-button-island",
+      "category": "islands",
+      "agent": "claude:claude-sonnet-5-5:medium",
+      "cli": "claude",
+      "model": "claude-sonnet-5-5",
+      "effort": "medium",
+      "ablation": "baseline",
+      "index": 0,
+      "success": true,
+      "grade": {
+        "success": true,
+        "tests": {
+          "passed": 3,
+          "failed": 0,
+          "total": 3,
+          "results": [
+            {
+              "name": "toggles a like",
+              "ok": true
+            },
+            {
+              "name": "like button on post pages is an idle island with the likes of hello-lumen",
+              "ok": true
+            },
+            {
+              "name": "like button on post pages is an idle island with the likes of adding-pages",
+              "ok": true
+            }
+          ]
+        },
+        "check": {
+          "ok": true,
+          "errors": 0,
+          "warnings": 0,
+          "codes": []
+        },
+        "diff": {
+          "filesChanged": 2,
+          "linesAdded": 32,
+          "linesRemoved": 0
+        },
+        "durationMs": 2247.7134160000132
+      },
+      "wallMs": 20925,
+      "tokens": {
+        "input": 10,
+        "cacheRead": 164928,
+        "cacheWrite": 17601,
+        "output": 1658,
+        "reasoning": 134
+      },
+      "costUsd": 0.1199896,
+      "modelUsed": "claude-sonnet-5-5",
+      "metrics": {
+        "turns": 7,
+        "steps": 6,
+        "commands": 4,
+        "edits": 0,
+        "checkRuns": 1,
+        "firstCheckOk": false,
+        "lumCodes": [],
+        "docsReads": 2,
+        "llmsReads": 0,
+        "mcpCalls": 0,
+        "mcpTools": [],
+        "skills": []
+      },
+      "exit": {
+        "code": 0,
+        "timedOut": false,
+        "error": null
+      },
+      "usageInfo": {
+        "claude-sonnet-5-5": {
+          "inputTokens": 10,
+          "outputTokens": 1658,
+          "cacheReadInputTokens": 164928,
+          "cacheCreationInputTokens": 17601,
+          "webSearchRequests": 0,
+          "costUSD": 0.1199896,
+          "contextWindow": 1000000,
+          "maxOutputTokens": 128000,
+          "thinkingTokens": 134,
+          "canonicalModel": "claude-sonnet-5-5",
+          "provider": "firstParty",
+          "costBasis": "list"
+        }
+      },
+      "log": ".runs/2026-10-09T151008/like-button-island--claude_claude-sonnet-5-5_medium--baseline--1.jsonl"
+    },
+    {
+      "task": "like-button-island",
+      "category": "islands",
+      "agent": "codex:gpt-6-astra:medium",
+      "cli": "codex",
+      "model": "gpt-6-astra",
+      "effort": "medium",
+      "ablation": "baseline",
+      "index": 0,
+      "success": true,
+      "grade": {
+        "success": true,
+        "tests": {
+          "passed": 3,
+          "failed": 0,
+          "total": 3,
+          "results": [
+            {
+              "name": "toggles a like",
+              "ok": true
+            },
+            {
+              "name": "like button on post pages is an idle island with the likes of hello-lumen",
+              "ok": true
+            },
+            {
+              "name": "like button on post pages is an idle island with the likes of adding-pages",
+              "ok": true
+            }
+          ]
+        },
+        "check": {
+          "ok": true,
+          "errors": 0,
+          "warnings": 0,
+          "codes": []
+        },
+        "diff": {
+          "filesChanged": 2,
+          "linesAdded": 17,
+          "linesRemoved": 0
+        },
+        "durationMs": 2141.9171659999993
+      },
+      "wallMs": 34034,
+      "tokens": {
+        "input": 18015,
+        "cacheRead": 131456,
+        "cacheWrite": 0,
+        "output": 874,
+        "reasoning": 38
+      },
+      "costUsd": null,
+      "modelUsed": null,
+      "metrics": {
+        "turns": 10,
+        "steps": 9,
+        "commands": 7,
+        "edits": 2,
+        "checkRuns": 1,
+        "firstCheckOk": true,
+        "lumCodes": [],
+        "docsReads": 3,
+        "llmsReads": 2,
+        "mcpCalls": 0,
+        "mcpTools": [],
+        "skills": []
+      },
+      "exit": {
+        "code": 0,
+        "timedOut": false,
+        "error": null
+      },
+      "usageInfo": null,
+      "log": ".runs/2026-10-09T151008/like-button-island--codex_gpt-6-astra_medium--baseline--1.jsonl"
+    },
+    {
+      "task": "like-button-island",
+      "category": "islands",
+      "agent": "codex:gpt-6.1-sol:medium",
+      "cli": "codex",
+      "model": "gpt-6.1-sol",
+      "effort": "medium",
+      "ablation": "baseline",
+      "index": 0,
+      "success": true,
+      "grade": {
+        "success": true,
+        "tests": {
+          "passed": 3,
+          "failed": 0,
+          "total": 3,
+          "results": [
+            {
+              "name": "toggles a like",
+              "ok": true
+            },
+            {
+              "name": "like button on post pages is an idle island with the likes of hello-lumen",
+              "ok": true
+            },
+            {
+              "name": "like button on post pages is an idle island with the likes of adding-pages",
+              "ok": true
+            }
+          ]
+        },
+        "check": {
+          "ok": true,
+          "errors": 0,
+          "warnings": 0,
+          "codes": []
+        },
+        "diff": {
+          "filesChanged": 2,
+          "linesAdded": 17,
+          "linesRemoved": 0
+        },
+        "durationMs": 2025.4997079999885
+      },
+      "wallMs": 37921,
+      "tokens": {
+        "input": 19688,
+        "cacheRead": 94208,
+        "cacheWrite": 0,
+        "output": 734,
+        "reasoning": 13
+      },
+      "costUsd": null,
+      "modelUsed": null,
+      "metrics": {
+        "turns": 8,
+        "steps": 7,
+        "commands": 5,
+        "edits": 2,
+        "checkRuns": 1,
+        "firstCheckOk": true,
+        "lumCodes": [],
+        "docsReads": 3,
+        "llmsReads": 2,
+        "mcpCalls": 0,
+        "mcpTools": [],
+        "skills": []
+      },
+      "exit": {
+        "code": 0,
+        "timedOut": false,
+        "error": null
+      },
+      "usageInfo": null,
+      "log": ".runs/2026-10-09T151008/like-button-island--codex_gpt-6.1-sol_medium--baseline--1.jsonl"
+    },
+    {
+      "task": "like-button-island",
+      "category": "islands",
+      "agent": "codex:gpt-6-luna:medium",
+      "cli": "codex",
+      "model": "gpt-6-luna",
+      "effort": "medium",
+      "ablation": "baseline",
+      "index": 0,
+      "success": true,
+      "grade": {
+        "success": true,
+        "tests": {
+          "passed": 3,
+          "failed": 0,
+          "total": 3,
+          "results": [
+            {
+              "name": "toggles a like",
+              "ok": true
+            },
+            {
+              "name": "like button on post pages is an idle island with the likes of hello-lumen",
+              "ok": true
+            },
+            {
+              "name": "like button on post pages is an idle island with the likes of adding-pages",
+              "ok": true
+            }
+          ]
+        },
+        "check": {
+          "ok": true,
+          "errors": 0,
+          "warnings": 0,
+          "codes": []
+        },
+        "diff": {
+          "filesChanged": 2,
+          "linesAdded": 13,
+          "linesRemoved": 0
+        },
+        "durationMs": 2152.8325409999816
+      },
+      "wallMs": 15974,
+      "tokens": {
+        "input": 16145,
+        "cacheRead": 68608,
+        "cacheWrite": 0,
+        "output": 661,
+        "reasoning": 117
+      },
+      "costUsd": null,
+      "modelUsed": null,
+      "metrics": {
+        "turns": 6,
+        "steps": 5,
+        "commands": 3,
+        "edits": 2,
+        "checkRuns": 1,
+        "firstCheckOk": true,
+        "lumCodes": [],
+        "docsReads": 2,
+        "llmsReads": 1,
+        "mcpCalls": 0,
+        "mcpTools": [],
+        "skills": []
+      },
+      "exit": {
+        "code": 0,
+        "timedOut": false,
+        "error": null
+      },
+      "usageInfo": null,
+      "log": ".runs/2026-10-09T151008/like-button-island--codex_gpt-6-luna_medium--baseline--1.jsonl"
+    },
+    {
+      "task": "like-button-island",
+      "category": "islands",
+      "agent": "claude:claude-haiku-5-5:medium",
+      "cli": "claude",
+      "model": "claude-haiku-5-5",
+      "effort": "medium",
+      "ablation": "baseline",
+      "index": 0,
+      "success": true,
+      "grade": {
+        "success": true,
+        "tests": {
+          "passed": 3,
+          "failed": 0,
+          "total": 3,
+          "results": [
+            {
+              "name": "toggles a like",
+              "ok": true
+            },
+            {
+              "name": "like button on post pages is an idle island with the likes of hello-lumen",
+              "ok": true
+            },
+            {
+              "name": "like button on post pages is an idle island with the likes of adding-pages",
+              "ok": true
+            }
+          ]
+        },
+        "check": {
+          "ok": true,
+          "errors": 0,
+          "warnings": 0,
+          "codes": []
+        },
+        "diff": {
+          "filesChanged": 2,
+          "linesAdded": 23,
+          "linesRemoved": 0
+        },
+        "durationMs": 2175.9044170000125
+      },
+      "wallMs": 37355,
+      "tokens": {
+        "input": 20,
+        "cacheRead": 418818,
+        "cacheWrite": 27778,
+        "output": 4349,
+        "reasoning": 1002
+      },
+      "costUsd": 0.011920280000000002,
+      "modelUsed": "claude-haiku-5-5",
+      "metrics": {
+        "turns": 14,
+        "steps": 12,
+        "commands": 8,
+        "edits": 3,
+        "checkRuns": 3,
+        "firstCheckOk": true,
+        "lumCodes": [],
+        "docsReads": 1,
+        "llmsReads": 1,
+        "mcpCalls": 0,
+        "mcpTools": [],
+        "skills": [
+          "lumen"
+        ]
+      },
+      "exit": {
+        "code": 0,
+        "timedOut": false,
+        "error": null
+      },
+      "usageInfo": {
+        "claude-haiku-5-5": {
+          "inputTokens": 20,
+          "outputTokens": 4349,
+          "cacheReadInputTokens": 418818,
+          "cacheCreationInputTokens": 27778,
+          "webSearchRequests": 0,
+          "costUSD": 0.011920280000000002,
+          "contextWindow": 1000000,
+          "maxOutputTokens": 128000,
+          "thinkingTokens": 1002,
+          "canonicalModel": "claude-haiku-5-5",
+          "provider": "firstParty",
+          "costBasis": "list"
+        }
+      },
+      "log": ".runs/2026-10-09T151008/like-button-island--claude_claude-haiku-5-5_medium--baseline--1.jsonl"
+    },
+    {
+      "task": "progress-runtime-style",
+      "category": "styles",
+      "agent": "claude:claude-opus-5-5:medium",
+      "cli": "claude",
+      "model": "claude-opus-5-5",
+      "effort": "medium",
+      "ablation": "baseline",
+      "index": 0,
+      "success": true,
+      "grade": {
+        "success": true,
+        "tests": {
+          "passed": 3,
+          "failed": 0,
+          "total": 3,
+          "results": [
+            {
+              "name": "reads --progress in the component's CSS",
+              "ok": true
+            },
+            {
+              "name": "has no non-constant $ references left",
+              "ok": true
+            },
+            {
+              "name": "sets --progress and aria-valuenow from the value, live and clamped",
+              "ok": true
+            }
+          ]
+        },
+        "check": {
+          "ok": true,
+          "errors": 0,
+          "warnings": 0,
+          "codes": []
+        },
+        "diff": {
+          "filesChanged": 1,
+          "linesAdded": 11,
+          "linesRemoved": 2
+        },
+        "durationMs": 2317.483416000032
+      },
+      "wallMs": 28829,
+      "tokens": {
+        "input": 12,
+        "cacheRead": 198062,
+        "cacheWrite": 16834,
+        "output": 1914,
+        "reasoning": 43
+      },
+      "costUsd": 0.21261239999999998,
+      "modelUsed": "claude-opus-5-5",
+      "metrics": {
+        "turns": 8,
+        "steps": 7,
+        "commands": 5,
+        "edits": 1,
+        "checkRuns": 2,
+        "firstCheckOk": true,
+        "lumCodes": [
+          "LUM3008",
+          "LUM3012",
+          "LUM3017",
+          "LUM3018",
+          "LUM3020"
+        ],
+        "docsReads": 3,
+        "llmsReads": 0,
+        "mcpCalls": 0,
+        "mcpTools": [],
+        "skills": []
+      },
+      "exit": {
+        "code": 0,
+        "timedOut": false,
+        "error": null
+      },
+      "usageInfo": {
+        "claude-opus-5-5": {
+          "inputTokens": 12,
+          "outputTokens": 1914,
+          "cacheReadInputTokens": 198062,
+          "cacheCreationInputTokens": 16834,
+          "webSearchRequests": 0,
+          "costUSD": 0.21261239999999998,
+          "contextWindow": 1000000,
+          "maxOutputTokens": 128000,
+          "thinkingTokens": 43,
+          "canonicalModel": "claude-opus-5-5",
+          "provider": "firstParty",
+          "costBasis": "list"
+        }
+      },
+      "log": ".runs/2026-10-09T151008/progress-runtime-style--claude_claude-opus-5-5_medium--baseline--1.jsonl"
+    },
+    {
+      "task": "progress-runtime-style",
+      "category": "styles",
+      "agent": "claude:claude-sonnet-5-5:medium",
+      "cli": "claude",
+      "model": "claude-sonnet-5-5",
+      "effort": "medium",
+      "ablation": "baseline",
+      "index": 0,
+      "success": true,
+      "grade": {
+        "success": true,
+        "tests": {
+          "passed": 3,
+          "failed": 0,
+          "total": 3,
+          "results": [
+            {
+              "name": "reads --progress in the component's CSS",
+              "ok": true
+            },
+            {
+              "name": "has no non-constant $ references left",
+              "ok": true
+            },
+            {
+              "name": "sets --progress and aria-valuenow from the value, live and clamped",
+              "ok": true
+            }
+          ]
+        },
+        "check": {
+          "ok": true,
+          "errors": 0,
+          "warnings": 0,
+          "codes": []
+        },
+        "diff": {
+          "filesChanged": 1,
+          "linesAdded": 12,
+          "linesRemoved": 3
+        },
+        "durationMs": 2505.890832999954
+      },
+      "wallMs": 19590,
+      "tokens": {
+        "input": 8,
+        "cacheRead": 126507,
+        "cacheWrite": 17205,
+        "output": 1065,
+        "reasoning": 53
+      },
+      "costUsd": 0.1047874,
+      "modelUsed": "claude-sonnet-5-5",
+      "metrics": {
+        "turns": 5,
+        "steps": 4,
+        "commands": 3,
+        "edits": 0,
+        "checkRuns": 1,
+        "firstCheckOk": true,
+        "lumCodes": [],
+        "docsReads": 2,
+        "llmsReads": 0,
+        "mcpCalls": 0,
+        "mcpTools": [],
+        "skills": []
+      },
+      "exit": {
+        "code": 0,
+        "timedOut": false,
+        "error": null
+      },
+      "usageInfo": {
+        "claude-sonnet-5-5": {
+          "inputTokens": 8,
+          "outputTokens": 1065,
+          "cacheReadInputTokens": 126507,
+          "cacheCreationInputTokens": 17205,
+          "webSearchRequests": 0,
+          "costUSD": 0.1047874,
+          "contextWindow": 1000000,
+          "maxOutputTokens": 128000,
+          "thinkingTokens": 53,
+          "canonicalModel": "claude-sonnet-5-5",
+          "provider": "firstParty",
+          "costBasis": "list"
+        }
+      },
+      "log": ".runs/2026-10-09T151008/progress-runtime-style--claude_claude-sonnet-5-5_medium--baseline--1.jsonl"
+    },
+    {
+      "task": "progress-runtime-style",
+      "category": "styles",
+      "agent": "codex:gpt-6-astra:medium",
+      "cli": "codex",
+      "model": "gpt-6-astra",
+      "effort": "medium",
+      "ablation": "baseline",
+      "index": 0,
+      "success": true,
+      "grade": {
+        "success": true,
+        "tests": {
+          "passed": 3,
+          "failed": 0,
+          "total": 3,
+          "results": [
+            {
+              "name": "reads --progress in the component's CSS",
+              "ok": true
+            },
+            {
+              "name": "has no non-constant $ references left",
+              "ok": true
+            },
+            {
+              "name": "sets --progress and aria-valuenow from the value, live and clamped",
+              "ok": true
+            }
+          ]
+        },
+        "check": {
+          "ok": true,
+          "errors": 0,
+          "warnings": 0,
+          "codes": []
+        },
+        "diff": {
+          "filesChanged": 1,
+          "linesAdded": 11,
+          "linesRemoved": 2
+        },
+        "durationMs": 2460.6440419999417
+      },
+      "wallMs": 30896,
+      "tokens": {
+        "input": 14773,
+        "cacheRead": 98816,
+        "cacheWrite": 0,
+        "output": 584,
+        "reasoning": 6
+      },
+      "costUsd": null,
+      "modelUsed": null,
+      "metrics": {
+        "turns": 6,
+        "steps": 4,
+        "commands": 3,
+        "edits": 1,
+        "checkRuns": 1,
+        "firstCheckOk": true,
+        "lumCodes": [],
+        "docsReads": 2,
+        "llmsReads": 1,
+        "mcpCalls": 0,
+        "mcpTools": [],
+        "skills": []
+      },
+      "exit": {
+        "code": 0,
+        "timedOut": false,
+        "error": null
+      },
+      "usageInfo": null,
+      "log": ".runs/2026-10-09T151008/progress-runtime-style--codex_gpt-6-astra_medium--baseline--1.jsonl"
+    },
+    {
+      "task": "progress-runtime-style",
+      "category": "styles",
+      "agent": "codex:gpt-6.1-sol:medium",
+      "cli": "codex",
+      "model": "gpt-6.1-sol",
+      "effort": "medium",
+      "ablation": "baseline",
+      "index": 0,
+      "success": true,
+      "grade": {
+        "success": true,
+        "tests": {
+          "passed": 3,
+          "failed": 0,
+          "total": 3,
+          "results": [
+            {
+              "name": "reads --progress in the component's CSS",
+              "ok": true
+            },
+            {
+              "name": "has no non-constant $ references left",
+              "ok": true
+            },
+            {
+              "name": "sets --progress and aria-valuenow from the value, live and clamped",
+              "ok": true
+            }
+          ]
+        },
+        "check": {
+          "ok": true,
+          "errors": 0,
+          "warnings": 0,
+          "codes": []
+        },
+        "diff": {
+          "filesChanged": 1,
+          "linesAdded": 11,
+          "linesRemoved": 2
+        },
+        "durationMs": 2690.8660829999717
+      },
+      "wallMs": 36948,
+      "tokens": {
+        "input": 18590,
+        "cacheRead": 106752,
+        "cacheWrite": 0,
+        "output": 708,
+        "reasoning": 15
+      },
+      "costUsd": null,
+      "modelUsed": null,
+      "metrics": {
+        "turns": 11,
+        "steps": 9,
+        "commands": 8,
+        "edits": 1,
+        "checkRuns": 1,
+        "firstCheckOk": true,
+        "lumCodes": [],
+        "docsReads": 2,
+        "llmsReads": 1,
+        "mcpCalls": 0,
+        "mcpTools": [],
+        "skills": []
+      },
+      "exit": {
+        "code": 0,
+        "timedOut": false,
+        "error": null
+      },
+      "usageInfo": null,
+      "log": ".runs/2026-10-09T151008/progress-runtime-style--codex_gpt-6.1-sol_medium--baseline--1.jsonl"
+    },
+    {
+      "task": "progress-runtime-style",
+      "category": "styles",
+      "agent": "codex:gpt-6-luna:medium",
+      "cli": "codex",
+      "model": "gpt-6-luna",
+      "effort": "medium",
+      "ablation": "baseline",
+      "index": 0,
+      "success": true,
+      "grade": {
+        "success": true,
+        "tests": {
+          "passed": 3,
+          "failed": 0,
+          "total": 3,
+          "results": [
+            {
+              "name": "reads --progress in the component's CSS",
+              "ok": true
+            },
+            {
+              "name": "has no non-constant $ references left",
+              "ok": true
+            },
+            {
+              "name": "sets --progress and aria-valuenow from the value, live and clamped",
+              "ok": true
+            }
+          ]
+        },
+        "check": {
+          "ok": true,
+          "errors": 0,
+          "warnings": 0,
+          "codes": []
+        },
+        "diff": {
+          "filesChanged": 1,
+          "linesAdded": 11,
+          "linesRemoved": 2
+        },
+        "durationMs": 2564.4063750000205
+      },
+      "wallMs": 15615,
+      "tokens": {
+        "input": 26684,
+        "cacheRead": 83712,
+        "cacheWrite": 0,
+        "output": 764,
+        "reasoning": 107
+      },
+      "costUsd": null,
+      "modelUsed": null,
+      "metrics": {
+        "turns": 6,
+        "steps": 4,
+        "commands": 3,
+        "edits": 1,
+        "checkRuns": 1,
+        "firstCheckOk": true,
+        "lumCodes": [],
+        "docsReads": 2,
+        "llmsReads": 1,
+        "mcpCalls": 0,
+        "mcpTools": [],
+        "skills": []
+      },
+      "exit": {
+        "code": 0,
+        "timedOut": false,
+        "error": null
+      },
+      "usageInfo": null,
+      "log": ".runs/2026-10-09T151008/progress-runtime-style--codex_gpt-6-luna_medium--baseline--1.jsonl"
+    },
+    {
+      "task": "progress-runtime-style",
+      "category": "styles",
+      "agent": "claude:claude-haiku-5-5:medium",
+      "cli": "claude",
+      "model": "claude-haiku-5-5",
+      "effort": "medium",
+      "ablation": "baseline",
+      "index": 0,
+      "success": true,
+      "grade": {
+        "success": true,
+        "tests": {
+          "passed": 3,
+          "failed": 0,
+          "total": 3,
+          "results": [
+            {
+              "name": "reads --progress in the component's CSS",
+              "ok": true
+            },
+            {
+              "name": "has no non-constant $ references left",
+              "ok": true
+            },
+            {
+              "name": "sets --progress and aria-valuenow from the value, live and clamped",
+              "ok": true
+            }
+          ]
+        },
+        "check": {
+          "ok": true,
+          "errors": 0,
+          "warnings": 0,
+          "codes": []
+        },
+        "diff": {
+          "filesChanged": 1,
+          "linesAdded": 11,
+          "linesRemoved": 2
+        },
+        "durationMs": 2421.537000000011
+      },
+      "wallMs": 29386,
+      "tokens": {
+        "input": 16,
+        "cacheRead": 305214,
+        "cacheWrite": 24066,
+        "output": 2922,
+        "reasoning": 839
+      },
+      "costUsd": 0.00932794,
+      "modelUsed": "claude-haiku-5-5",
+      "metrics": {
+        "turns": 10,
+        "steps": 8,
+        "commands": 5,
+        "edits": 1,
+        "checkRuns": 3,
+        "firstCheckOk": false,
+        "lumCodes": [
+          "LUM3008",
+          "LUM3009",
+          "LUM3012",
+          "LUM3013",
+          "LUM3015",
+          "LUM3018",
+          "LUM3019"
+        ],
+        "docsReads": 3,
+        "llmsReads": 0,
+        "mcpCalls": 0,
+        "mcpTools": [],
+        "skills": [
+          "lumen"
+        ]
+      },
+      "exit": {
+        "code": 0,
+        "timedOut": false,
+        "error": null
+      },
+      "usageInfo": {
+        "claude-haiku-5-5": {
+          "inputTokens": 16,
+          "outputTokens": 2922,
+          "cacheReadInputTokens": 305214,
+          "cacheCreationInputTokens": 24066,
+          "webSearchRequests": 0,
+          "costUSD": 0.00932794,
+          "contextWindow": 1000000,
+          "maxOutputTokens": 128000,
+          "thinkingTokens": 839,
+          "canonicalModel": "claude-haiku-5-5",
+          "provider": "firstParty",
+          "costBasis": "list"
+        }
+      },
+      "log": ".runs/2026-10-09T151008/progress-runtime-style--claude_claude-haiku-5-5_medium--baseline--1.jsonl"
+    },
+    {
+      "task": "scaffold-from-scratch",
+      "category": "scaffold",
+      "agent": "claude:claude-opus-5-5:medium",
+      "cli": "claude",
+      "model": "claude-opus-5-5",
+      "effort": "medium",
+      "ablation": "baseline",
+      "index": 0,
+      "success": true,
+      "grade": {
+        "success": true,
+        "tests": {
+          "passed": 3,
+          "failed": 0,
+          "total": 3,
+          "results": [
+            {
+              "name": "scaffolded app serves the home page in dev",
+              "ok": true
+            },
+            {
+              "name": "scaffolded app has the package scripts",
+              "ok": true
+            },
+            {
+              "name": "scaffolded app prerenders the home page",
+              "ok": true
+            }
+          ]
+        },
+        "check": {
+          "ok": true,
+          "errors": 0,
+          "warnings": 0,
+          "codes": []
+        },
+        "diff": {
+          "filesChanged": 5,
+          "linesAdded": 26,
+          "linesRemoved": 0
+        },
+        "durationMs": 2086.0131659999024
+      },
+      "wallMs": 26812,
+      "tokens": {
+        "input": 14,
+        "cacheRead": 247860,
+        "cacheWrite": 25128,
+        "output": 1983,
+        "reasoning": 60
+      },
+      "costUsd": 0.290312,
+      "modelUsed": "claude-opus-5-5",
+      "metrics": {
+        "turns": 7,
+        "steps": 6,
+        "commands": 6,
+        "edits": 0,
+        "checkRuns": 2,
+        "firstCheckOk": false,
+        "lumCodes": [],
+        "docsReads": 4,
+        "llmsReads": 1,
+        "mcpCalls": 0,
+        "mcpTools": [],
+        "skills": []
+      },
+      "exit": {
+        "code": 0,
+        "timedOut": false,
+        "error": null
+      },
+      "usageInfo": {
+        "claude-opus-5-5": {
+          "inputTokens": 14,
+          "outputTokens": 1983,
+          "cacheReadInputTokens": 247860,
+          "cacheCreationInputTokens": 25128,
+          "webSearchRequests": 0,
+          "costUSD": 0.290312,
+          "contextWindow": 1000000,
+          "maxOutputTokens": 128000,
+          "thinkingTokens": 60,
+          "canonicalModel": "claude-opus-5-5",
+          "provider": "firstParty",
+          "costBasis": "list"
+        }
+      },
+      "log": ".runs/2026-10-09T151008/scaffold-from-scratch--claude_claude-opus-5-5_medium--baseline--1.jsonl"
+    },
+    {
+      "task": "scaffold-from-scratch",
+      "category": "scaffold",
+      "agent": "claude:claude-sonnet-5-5:medium",
+      "cli": "claude",
+      "model": "claude-sonnet-5-5",
+      "effort": "medium",
+      "ablation": "baseline",
+      "index": 0,
+      "success": true,
+      "grade": {
+        "success": true,
+        "tests": {
+          "passed": 3,
+          "failed": 0,
+          "total": 3,
+          "results": [
+            {
+              "name": "scaffolded app serves the home page in dev",
+              "ok": true
+            },
+            {
+              "name": "scaffolded app has the package scripts",
+              "ok": true
+            },
+            {
+              "name": "scaffolded app prerenders the home page",
+              "ok": true
+            }
+          ]
+        },
+        "check": {
+          "ok": true,
+          "errors": 0,
+          "warnings": 0,
+          "codes": []
+        },
+        "diff": {
+          "filesChanged": 4,
+          "linesAdded": 27,
+          "linesRemoved": 3
+        },
+        "durationMs": 1937.4558329998981
+      },
+      "wallMs": 17054,
+      "tokens": {
+        "input": 12,
+        "cacheRead": 196217,
+        "cacheWrite": 19814,
+        "output": 1128,
+        "reasoning": 0
+      },
+      "costUsd": 0.1298034,
+      "modelUsed": "claude-sonnet-5-5",
+      "metrics": {
+        "turns": 6,
+        "steps": 5,
+        "commands": 5,
+        "edits": 0,
+        "checkRuns": 1,
+        "firstCheckOk": true,
+        "lumCodes": [],
+        "docsReads": 4,
+        "llmsReads": 0,
+        "mcpCalls": 0,
+        "mcpTools": [],
+        "skills": []
+      },
+      "exit": {
+        "code": 0,
+        "timedOut": false,
+        "error": null
+      },
+      "usageInfo": {
+        "claude-sonnet-5-5": {
+          "inputTokens": 12,
+          "outputTokens": 1128,
+          "cacheReadInputTokens": 196217,
+          "cacheCreationInputTokens": 19814,
+          "webSearchRequests": 0,
+          "costUSD": 0.1298034,
+          "contextWindow": 1000000,
+          "maxOutputTokens": 128000,
+          "thinkingTokens": 0,
+          "canonicalModel": "claude-sonnet-5-5",
+          "provider": "firstParty",
+          "costBasis": "list"
+        }
+      },
+      "log": ".runs/2026-10-09T151008/scaffold-from-scratch--claude_claude-sonnet-5-5_medium--baseline--1.jsonl"
+    },
+    {
+      "task": "scaffold-from-scratch",
+      "category": "scaffold",
+      "agent": "codex:gpt-6-astra:medium",
+      "cli": "codex",
+      "model": "gpt-6-astra",
+      "effort": "medium",
+      "ablation": "baseline",
+      "index": 0,
+      "success": true,
+      "grade": {
+        "success": true,
+        "tests": {
+          "passed": 3,
+          "failed": 0,
+          "total": 3,
+          "results": [
+            {
+              "name": "scaffolded app serves the home page in dev",
+              "ok": true
+            },
+            {
+              "name": "scaffolded app has the package scripts",
+              "ok": true
+            },
+            {
+              "name": "scaffolded app prerenders the home page",
+              "ok": true
+            }
+          ]
+        },
+        "check": {
+          "ok": true,
+          "errors": 0,
+          "warnings": 0,
+          "codes": []
+        },
+        "diff": {
+          "filesChanged": 4,
+          "linesAdded": 24,
+          "linesRemoved": 0
+        },
+        "durationMs": 2003.0184580001514
+      },
+      "wallMs": 43498,
+      "tokens": {
+        "input": 17010,
+        "cacheRead": 176256,
+        "cacheWrite": 0,
+        "output": 1027,
+        "reasoning": 0
+      },
+      "costUsd": null,
+      "modelUsed": null,
+      "metrics": {
+        "turns": 9,
+        "steps": 10,
+        "commands": 6,
+        "edits": 4,
+        "checkRuns": 1,
+        "firstCheckOk": true,
+        "lumCodes": [],
+        "docsReads": 3,
+        "llmsReads": 0,
+        "mcpCalls": 0,
+        "mcpTools": [],
+        "skills": []
+      },
+      "exit": {
+        "code": 0,
+        "timedOut": false,
+        "error": null
+      },
+      "usageInfo": null,
+      "log": ".runs/2026-10-09T151008/scaffold-from-scratch--codex_gpt-6-astra_medium--baseline--1.jsonl"
+    },
+    {
+      "task": "scaffold-from-scratch",
+      "category": "scaffold",
+      "agent": "codex:gpt-6.1-sol:medium",
+      "cli": "codex",
+      "model": "gpt-6.1-sol",
+      "effort": "medium",
+      "ablation": "baseline",
+      "index": 0,
+      "success": true,
+      "grade": {
+        "success": true,
+        "tests": {
+          "passed": 3,
+          "failed": 0,
+          "total": 3,
+          "results": [
+            {
+              "name": "scaffolded app serves the home page in dev",
+              "ok": true
+            },
+            {
+              "name": "scaffolded app has the package scripts",
+              "ok": true
+            },
+            {
+              "name": "scaffolded app prerenders the home page",
+              "ok": true
+            }
+          ]
+        },
+        "check": {
+          "ok": true,
+          "errors": 0,
+          "warnings": 0,
+          "codes": []
+        },
+        "diff": {
+          "filesChanged": 4,
+          "linesAdded": 24,
+          "linesRemoved": 0
+        },
+        "durationMs": 2068.1015419999603
+      },
+      "wallMs": 47545,
+      "tokens": {
+        "input": 19436,
+        "cacheRead": 161920,
+        "cacheWrite": 0,
+        "output": 968,
+        "reasoning": 0
+      },
+      "costUsd": null,
+      "modelUsed": null,
+      "metrics": {
+        "turns": 10,
+        "steps": 11,
+        "commands": 7,
+        "edits": 4,
+        "checkRuns": 1,
+        "firstCheckOk": true,
+        "lumCodes": [],
+        "docsReads": 3,
+        "llmsReads": 0,
+        "mcpCalls": 0,
+        "mcpTools": [],
+        "skills": []
+      },
+      "exit": {
+        "code": 0,
+        "timedOut": false,
+        "error": null
+      },
+      "usageInfo": null,
+      "log": ".runs/2026-10-09T151008/scaffold-from-scratch--codex_gpt-6.1-sol_medium--baseline--1.jsonl"
+    },
+    {
+      "task": "scaffold-from-scratch",
+      "category": "scaffold",
+      "agent": "codex:gpt-6-luna:medium",
+      "cli": "codex",
+      "model": "gpt-6-luna",
+      "effort": "medium",
+      "ablation": "baseline",
+      "index": 0,
+      "success": true,
+      "grade": {
+        "success": true,
+        "tests": {
+          "passed": 3,
+          "failed": 0,
+          "total": 3,
+          "results": [
+            {
+              "name": "scaffolded app serves the home page in dev",
+              "ok": true
+            },
+            {
+              "name": "scaffolded app has the package scripts",
+              "ok": true
+            },
+            {
+              "name": "scaffolded app prerenders the home page",
+              "ok": true
+            }
+          ]
+        },
+        "check": {
+          "ok": true,
+          "errors": 0,
+          "warnings": 0,
+          "codes": []
+        },
+        "diff": {
+          "filesChanged": 4,
+          "linesAdded": 24,
+          "linesRemoved": 0
+        },
+        "durationMs": 2022.0482500002254
+      },
+      "wallMs": 28247,
+      "tokens": {
+        "input": 34590,
+        "cacheRead": 190976,
+        "cacheWrite": 0,
+        "output": 1068,
+        "reasoning": 121
+      },
+      "costUsd": null,
+      "modelUsed": null,
+      "metrics": {
+        "turns": 11,
+        "steps": 11,
+        "commands": 7,
+        "edits": 4,
+        "checkRuns": 1,
+        "firstCheckOk": true,
+        "lumCodes": [],
+        "docsReads": 4,
+        "llmsReads": 0,
+        "mcpCalls": 0,
+        "mcpTools": [],
+        "skills": []
+      },
+      "exit": {
+        "code": 0,
+        "timedOut": false,
+        "error": null
+      },
+      "usageInfo": null,
+      "log": ".runs/2026-10-09T151008/scaffold-from-scratch--codex_gpt-6-luna_medium--baseline--1.jsonl"
+    },
+    {
+      "task": "scaffold-from-scratch",
+      "category": "scaffold",
+      "agent": "claude:claude-haiku-5-5:medium",
+      "cli": "claude",
+      "model": "claude-haiku-5-5",
+      "effort": "medium",
+      "ablation": "baseline",
+      "index": 0,
+      "success": true,
+      "grade": {
+        "success": true,
+        "tests": {
+          "passed": 3,
+          "failed": 0,
+          "total": 3,
+          "results": [
+            {
+              "name": "scaffolded app serves the home page in dev",
+              "ok": true
+            },
+            {
+              "name": "scaffolded app has the package scripts",
+              "ok": true
+            },
+            {
+              "name": "scaffolded app prerenders the home page",
+              "ok": true
+            }
+          ]
+        },
+        "check": {
+          "ok": true,
+          "errors": 0,
+          "warnings": 0,
+          "codes": []
+        },
+        "diff": {
+          "filesChanged": 4,
+          "linesAdded": 29,
+          "linesRemoved": 0
+        },
+        "durationMs": 1929.4431249999907
+      },
+      "wallMs": 47581,
+      "tokens": {
+        "input": 28,
+        "cacheRead": 734775,
+        "cacheWrite": 43318,
+        "output": 6491,
+        "reasoning": 1657
+      },
+      "costUsd": 0.01925965,
+      "modelUsed": "claude-haiku-5-5",
+      "metrics": {
+        "turns": 18,
+        "steps": 17,
+        "commands": 10,
+        "edits": 4,
+        "checkRuns": 2,
+        "firstCheckOk": true,
+        "lumCodes": [],
+        "docsReads": 4,
+        "llmsReads": 0,
+        "mcpCalls": 0,
+        "mcpTools": [],
+        "skills": []
+      },
+      "exit": {
+        "code": 0,
+        "timedOut": false,
+        "error": null
+      },
+      "usageInfo": {
+        "claude-haiku-5-5": {
+          "inputTokens": 28,
+          "outputTokens": 6491,
+          "cacheReadInputTokens": 734775,
+          "cacheCreationInputTokens": 43318,
+          "webSearchRequests": 0,
+          "costUSD": 0.01925965,
+          "contextWindow": 1000000,
+          "maxOutputTokens": 128000,
+          "thinkingTokens": 1657,
+          "canonicalModel": "claude-haiku-5-5",
+          "provider": "firstParty",
+          "costBasis": "list"
+        }
+      },
+      "log": ".runs/2026-10-09T151008/scaffold-from-scratch--claude_claude-haiku-5-5_medium--baseline--1.jsonl"
+    },
+    {
+      "task": "scope-leak",
+      "category": "styles",
+      "agent": "claude:claude-opus-5-5:medium",
+      "cli": "claude",
+      "model": "claude-opus-5-5",
+      "effort": "medium",
+      "ablation": "baseline",
+      "index": 0,
+      "success": true,
+      "grade": {
+        "success": true,
+        "tests": {
+          "passed": 3,
+          "failed": 0,
+          "total": 3,
+          "results": [
+            {
+              "name": "Notice styles still has the notice's declarations",
+              "ok": true
+            },
+            {
+              "name": "Notice styles scopes every notice rule",
+              "ok": true
+            },
+            {
+              "name": "Notice styles uses a scoped style block, not a global one",
+              "ok": true
+            }
+          ]
+        },
+        "check": {
+          "ok": true,
+          "errors": 0,
+          "warnings": 0,
+          "codes": []
+        },
+        "diff": {
+          "filesChanged": 1,
+          "linesAdded": 1,
+          "linesRemoved": 1
+        },
+        "durationMs": 1495.7756250000093
+      },
+      "wallMs": 22763,
+      "tokens": {
+        "input": 10,
+        "cacheRead": 160926,
+        "cacheWrite": 16454,
+        "output": 1452,
+        "reasoning": 107
+      },
+      "costUsd": 0.1928972,
+      "modelUsed": "claude-opus-5-5",
+      "metrics": {
+        "turns": 7,
+        "steps": 6,
+        "commands": 4,
+        "edits": 1,
+        "checkRuns": 1,
+        "firstCheckOk": true,
+        "lumCodes": [],
+        "docsReads": 2,
+        "llmsReads": 0,
+        "mcpCalls": 0,
+        "mcpTools": [],
+        "skills": []
+      },
+      "exit": {
+        "code": 0,
+        "timedOut": false,
+        "error": null
+      },
+      "usageInfo": {
+        "claude-opus-5-5": {
+          "inputTokens": 10,
+          "outputTokens": 1452,
+          "cacheReadInputTokens": 160926,
+          "cacheCreationInputTokens": 16454,
+          "webSearchRequests": 0,
+          "costUSD": 0.1928972,
+          "contextWindow": 1000000,
+          "maxOutputTokens": 128000,
+          "thinkingTokens": 107,
+          "canonicalModel": "claude-opus-5-5",
+          "provider": "firstParty",
+          "costBasis": "list"
+        }
+      },
+      "log": ".runs/2026-10-09T151008/scope-leak--claude_claude-opus-5-5_medium--baseline--1.jsonl"
+    },
+    {
+      "task": "scope-leak",
+      "category": "styles",
+      "agent": "claude:claude-sonnet-5-5:medium",
+      "cli": "claude",
+      "model": "claude-sonnet-5-5",
+      "effort": "medium",
+      "ablation": "baseline",
+      "index": 0,
+      "success": true,
+      "grade": {
+        "success": true,
+        "tests": {
+          "passed": 3,
+          "failed": 0,
+          "total": 3,
+          "results": [
+            {
+              "name": "Notice styles still has the notice's declarations",
+              "ok": true
+            },
+            {
+              "name": "Notice styles scopes every notice rule",
+              "ok": true
+            },
+            {
+              "name": "Notice styles uses a scoped style block, not a global one",
+              "ok": true
+            }
+          ]
+        },
+        "check": {
+          "ok": true,
+          "errors": 0,
+          "warnings": 0,
+          "codes": []
+        },
+        "diff": {
+          "filesChanged": 1,
+          "linesAdded": 1,
+          "linesRemoved": 1
+        },
+        "durationMs": 1499.3691249999683
+      },
+      "wallMs": 14345,
+      "tokens": {
+        "input": 6,
+        "cacheRead": 87243,
+        "cacheWrite": 12490,
+        "output": 601,
+        "reasoning": 34
+      },
+      "costUsd": 0.0734306,
+      "modelUsed": "claude-sonnet-5-5",
+      "metrics": {
+        "turns": 4,
+        "steps": 3,
+        "commands": 1,
+        "edits": 1,
+        "checkRuns": 1,
+        "firstCheckOk": true,
+        "lumCodes": [],
+        "docsReads": 0,
+        "llmsReads": 0,
+        "mcpCalls": 0,
+        "mcpTools": [],
+        "skills": []
+      },
+      "exit": {
+        "code": 0,
+        "timedOut": false,
+        "error": null
+      },
+      "usageInfo": {
+        "claude-sonnet-5-5": {
+          "inputTokens": 6,
+          "outputTokens": 601,
+          "cacheReadInputTokens": 87243,
+          "cacheCreationInputTokens": 12490,
+          "webSearchRequests": 0,
+          "costUSD": 0.0734306,
+          "contextWindow": 1000000,
+          "maxOutputTokens": 128000,
+          "thinkingTokens": 34,
+          "canonicalModel": "claude-sonnet-5-5",
+          "provider": "firstParty",
+          "costBasis": "list"
+        }
+      },
+      "log": ".runs/2026-10-09T151008/scope-leak--claude_claude-sonnet-5-5_medium--baseline--1.jsonl"
+    },
+    {
+      "task": "scope-leak",
+      "category": "styles",
+      "agent": "codex:gpt-6-astra:medium",
+      "cli": "codex",
+      "model": "gpt-6-astra",
+      "effort": "medium",
+      "ablation": "baseline",
+      "index": 0,
+      "success": true,
+      "grade": {
+        "success": true,
+        "tests": {
+          "passed": 3,
+          "failed": 0,
+          "total": 3,
+          "results": [
+            {
+              "name": "Notice styles still has the notice's declarations",
+              "ok": true
+            },
+            {
+              "name": "Notice styles scopes every notice rule",
+              "ok": true
+            },
+            {
+              "name": "Notice styles uses a scoped style block, not a global one",
+              "ok": true
+            }
+          ]
+        },
+        "check": {
+          "ok": true,
+          "errors": 0,
+          "warnings": 0,
+          "codes": []
+        },
+        "diff": {
+          "filesChanged": 1,
+          "linesAdded": 1,
+          "linesRemoved": 1
+        },
+        "durationMs": 1549.1142920001876
+      },
+      "wallMs": 26061,
+      "tokens": {
+        "input": 34713,
+        "cacheRead": 108032,
+        "cacheWrite": 0,
+        "output": 489,
+        "reasoning": 0
+      },
+      "costUsd": null,
+      "modelUsed": null,
+      "metrics": {
+        "turns": 7,
+        "steps": 5,
+        "commands": 4,
+        "edits": 1,
+        "checkRuns": 1,
+        "firstCheckOk": true,
+        "lumCodes": [],
+        "docsReads": 2,
+        "llmsReads": 1,
+        "mcpCalls": 0,
+        "mcpTools": [],
+        "skills": []
+      },
+      "exit": {
+        "code": 0,
+        "timedOut": false,
+        "error": null
+      },
+      "usageInfo": null,
+      "log": ".runs/2026-10-09T151008/scope-leak--codex_gpt-6-astra_medium--baseline--1.jsonl"
+    },
+    {
+      "task": "scope-leak",
+      "category": "styles",
+      "agent": "codex:gpt-6.1-sol:medium",
+      "cli": "codex",
+      "model": "gpt-6.1-sol",
+      "effort": "medium",
+      "ablation": "baseline",
+      "index": 0,
+      "success": true,
+      "grade": {
+        "success": true,
+        "tests": {
+          "passed": 3,
+          "failed": 0,
+          "total": 3,
+          "results": [
+            {
+              "name": "Notice styles still has the notice's declarations",
+              "ok": true
+            },
+            {
+              "name": "Notice styles scopes every notice rule",
+              "ok": true
+            },
+            {
+              "name": "Notice styles uses a scoped style block, not a global one",
+              "ok": true
+            }
+          ]
+        },
+        "check": {
+          "ok": true,
+          "errors": 0,
+          "warnings": 0,
+          "codes": []
+        },
+        "diff": {
+          "filesChanged": 1,
+          "linesAdded": 1,
+          "linesRemoved": 1
+        },
+        "durationMs": 1527.6898750001565
+      },
+      "wallMs": 38371,
+      "tokens": {
+        "input": 16984,
+        "cacheRead": 156160,
+        "cacheWrite": 0,
+        "output": 678,
+        "reasoning": 15
+      },
+      "costUsd": null,
+      "modelUsed": null,
+      "metrics": {
+        "turns": 13,
+        "steps": 11,
+        "commands": 10,
+        "edits": 1,
+        "checkRuns": 1,
+        "firstCheckOk": true,
+        "lumCodes": [],
+        "docsReads": 3,
+        "llmsReads": 2,
+        "mcpCalls": 0,
+        "mcpTools": [],
+        "skills": []
+      },
+      "exit": {
+        "code": 0,
+        "timedOut": false,
+        "error": null
+      },
+      "usageInfo": null,
+      "log": ".runs/2026-10-09T151008/scope-leak--codex_gpt-6.1-sol_medium--baseline--1.jsonl"
+    },
+    {
+      "task": "scope-leak",
+      "category": "styles",
+      "agent": "codex:gpt-6-luna:medium",
+      "cli": "codex",
+      "model": "gpt-6-luna",
+      "effort": "medium",
+      "ablation": "baseline",
+      "index": 0,
+      "success": true,
+      "grade": {
+        "success": true,
+        "tests": {
+          "passed": 3,
+          "failed": 0,
+          "total": 3,
+          "results": [
+            {
+              "name": "Notice styles still has the notice's declarations",
+              "ok": true
+            },
+            {
+              "name": "Notice styles scopes every notice rule",
+              "ok": true
+            },
+            {
+              "name": "Notice styles uses a scoped style block, not a global one",
+              "ok": true
+            }
+          ]
+        },
+        "check": {
+          "ok": true,
+          "errors": 0,
+          "warnings": 0,
+          "codes": []
+        },
+        "diff": {
+          "filesChanged": 1,
+          "linesAdded": 1,
+          "linesRemoved": 1
+        },
+        "durationMs": 1487.437249999959
+      },
+      "wallMs": 15298,
+      "tokens": {
+        "input": 18036,
+        "cacheRead": 92928,
+        "cacheWrite": 0,
+        "output": 582,
+        "reasoning": 0
+      },
+      "costUsd": null,
+      "modelUsed": null,
+      "metrics": {
+        "turns": 9,
+        "steps": 5,
+        "commands": 4,
+        "edits": 1,
+        "checkRuns": 1,
+        "firstCheckOk": true,
+        "lumCodes": [],
+        "docsReads": 2,
+        "llmsReads": 1,
+        "mcpCalls": 0,
+        "mcpTools": [],
+        "skills": []
+      },
+      "exit": {
+        "code": 0,
+        "timedOut": false,
+        "error": null
+      },
+      "usageInfo": null,
+      "log": ".runs/2026-10-09T151008/scope-leak--codex_gpt-6-luna_medium--baseline--1.jsonl"
+    },
+    {
+      "task": "scope-leak",
+      "category": "styles",
+      "agent": "claude:claude-haiku-5-5:medium",
+      "cli": "claude",
+      "model": "claude-haiku-5-5",
+      "effort": "medium",
+      "ablation": "baseline",
+      "index": 0,
+      "success": true,
+      "grade": {
+        "success": true,
+        "tests": {
+          "passed": 3,
+          "failed": 0,
+          "total": 3,
+          "results": [
+            {
+              "name": "Notice styles still has the notice's declarations",
+              "ok": true
+            },
+            {
+              "name": "Notice styles scopes every notice rule",
+              "ok": true
+            },
+            {
+              "name": "Notice styles uses a scoped style block, not a global one",
+              "ok": true
+            }
+          ]
+        },
+        "check": {
+          "ok": true,
+          "errors": 0,
+          "warnings": 0,
+          "codes": []
+        },
+        "diff": {
+          "filesChanged": 1,
+          "linesAdded": 1,
+          "linesRemoved": 1
+        },
+        "durationMs": 1581.7800829999615
+      },
+      "wallMs": 22617,
+      "tokens": {
+        "input": 10,
+        "cacheRead": 182715,
+        "cacheWrite": 26572,
+        "output": 2733,
+        "reasoning": 1096
+      },
+      "costUsd": 0.008509049999999999,
+      "modelUsed": "claude-haiku-5-5",
+      "metrics": {
+        "turns": 8,
+        "steps": 6,
+        "commands": 4,
+        "edits": 1,
+        "checkRuns": 1,
+        "firstCheckOk": true,
+        "lumCodes": [],
+        "docsReads": 2,
+        "llmsReads": 0,
+        "mcpCalls": 0,
+        "mcpTools": [],
+        "skills": [
+          "lumen"
+        ]
+      },
+      "exit": {
+        "code": 0,
+        "timedOut": false,
+        "error": null
+      },
+      "usageInfo": {
+        "claude-haiku-5-5": {
+          "inputTokens": 10,
+          "outputTokens": 2733,
+          "cacheReadInputTokens": 182715,
+          "cacheCreationInputTokens": 26572,
+          "webSearchRequests": 0,
+          "costUSD": 0.008509049999999999,
+          "contextWindow": 1000000,
+          "maxOutputTokens": 128000,
+          "thinkingTokens": 1096,
+          "canonicalModel": "claude-haiku-5-5",
+          "provider": "firstParty",
+          "costBasis": "list"
+        }
+      },
+      "log": ".runs/2026-10-09T151008/scope-leak--claude_claude-haiku-5-5_medium--baseline--1.jsonl"
+    },
+    {
+      "task": "ssr-search",
+      "category": "routing",
+      "agent": "claude:claude-opus-5-5:medium",
+      "cli": "claude",
+      "model": "claude-opus-5-5",
+      "effort": "medium",
+      "ablation": "baseline",
+      "index": 0,
+      "success": true,
+      "grade": {
+        "success": true,
+        "tests": {
+          "passed": 5,
+          "failed": 0,
+          "total": 5,
+          "results": [
+            {
+              "name": "search page lists matching products",
+              "ok": true
+            },
+            {
+              "name": "search page has a GET form to /search",
+              "ok": true
+            },
+            {
+              "name": "search page says when nothing matches",
+              "ok": true
+            },
+            {
+              "name": "search page asks for a query when there is none",
+              "ok": true
+            },
+            {
+              "name": "search page ships no islands",
+              "ok": true
+            }
+          ]
+        },
+        "check": {
+          "ok": true,
+          "errors": 0,
+          "warnings": 0,
+          "codes": []
+        },
+        "diff": {
+          "filesChanged": 1,
+          "linesAdded": 52,
+          "linesRemoved": 0
+        },
+        "durationMs": 1836.6787079998758
+      },
+      "wallMs": 41612,
+      "tokens": {
+        "input": 18,
+        "cacheRead": 346744,
+        "cacheWrite": 25876,
+        "output": 3176,
+        "reasoning": 590
+      },
+      "costUsd": 0.3399488,
+      "modelUsed": "claude-opus-5-5",
+      "metrics": {
+        "turns": 10,
+        "steps": 9,
+        "commands": 8,
+        "edits": 1,
+        "checkRuns": 1,
+        "firstCheckOk": true,
+        "lumCodes": [],
+        "docsReads": 4,
+        "llmsReads": 1,
+        "mcpCalls": 0,
+        "mcpTools": [],
+        "skills": []
+      },
+      "exit": {
+        "code": 0,
+        "timedOut": false,
+        "error": null
+      },
+      "usageInfo": {
+        "claude-opus-5-5": {
+          "inputTokens": 18,
+          "outputTokens": 3176,
+          "cacheReadInputTokens": 346744,
+          "cacheCreationInputTokens": 25876,
+          "webSearchRequests": 0,
+          "costUSD": 0.3399488,
+          "contextWindow": 1000000,
+          "maxOutputTokens": 128000,
+          "thinkingTokens": 590,
+          "canonicalModel": "claude-opus-5-5",
+          "provider": "firstParty",
+          "costBasis": "list"
+        }
+      },
+      "log": ".runs/2026-10-09T151008/ssr-search--claude_claude-opus-5-5_medium--baseline--1.jsonl"
+    },
+    {
+      "task": "ssr-search",
+      "category": "routing",
+      "agent": "claude:claude-sonnet-5-5:medium",
+      "cli": "claude",
+      "model": "claude-sonnet-5-5",
+      "effort": "medium",
+      "ablation": "baseline",
+      "index": 0,
+      "success": true,
+      "grade": {
+        "success": true,
+        "tests": {
+          "passed": 5,
+          "failed": 0,
+          "total": 5,
+          "results": [
+            {
+              "name": "search page lists matching products",
+              "ok": true
+            },
+            {
+              "name": "search page has a GET form to /search",
+              "ok": true
+            },
+            {
+              "name": "search page says when nothing matches",
+              "ok": true
+            },
+            {
+              "name": "search page asks for a query when there is none",
+              "ok": true
+            },
+            {
+              "name": "search page ships no islands",
+              "ok": true
+            }
+          ]
+        },
+        "check": {
+          "ok": true,
+          "errors": 0,
+          "warnings": 0,
+          "codes": []
+        },
+        "diff": {
+          "filesChanged": 1,
+          "linesAdded": 32,
+          "linesRemoved": 0
+        },
+        "durationMs": 1901.9599999999627
+      },
+      "wallMs": 30127,
+      "tokens": {
+        "input": 16,
+        "cacheRead": 278527,
+        "cacheWrite": 18176,
+        "output": 1567,
+        "reasoning": 29
+      },
+      "costUsd": 0.14411140000000003,
+      "modelUsed": "claude-sonnet-5-5",
+      "metrics": {
+        "turns": 10,
+        "steps": 8,
+        "commands": 7,
+        "edits": 0,
+        "checkRuns": 1,
+        "firstCheckOk": true,
+        "lumCodes": [],
+        "docsReads": 4,
+        "llmsReads": 0,
+        "mcpCalls": 0,
+        "mcpTools": [],
+        "skills": [
+          "lumen"
+        ]
+      },
+      "exit": {
+        "code": 0,
+        "timedOut": false,
+        "error": null
+      },
+      "usageInfo": {
+        "claude-sonnet-5-5": {
+          "inputTokens": 16,
+          "outputTokens": 1567,
+          "cacheReadInputTokens": 278527,
+          "cacheCreationInputTokens": 18176,
+          "webSearchRequests": 0,
+          "costUSD": 0.14411140000000003,
+          "contextWindow": 1000000,
+          "maxOutputTokens": 128000,
+          "thinkingTokens": 29,
+          "canonicalModel": "claude-sonnet-5-5",
+          "provider": "firstParty",
+          "costBasis": "list"
+        }
+      },
+      "log": ".runs/2026-10-09T151008/ssr-search--claude_claude-sonnet-5-5_medium--baseline--1.jsonl"
+    },
+    {
+      "task": "ssr-search",
+      "category": "routing",
+      "agent": "codex:gpt-6-astra:medium",
+      "cli": "codex",
+      "model": "gpt-6-astra",
+      "effort": "medium",
+      "ablation": "baseline",
+      "index": 0,
+      "success": true,
+      "grade": {
+        "success": true,
+        "tests": {
+          "passed": 5,
+          "failed": 0,
+          "total": 5,
+          "results": [
+            {
+              "name": "search page lists matching products",
+              "ok": true
+            },
+            {
+              "name": "search page has a GET form to /search",
+              "ok": true
+            },
+            {
+              "name": "search page says when nothing matches",
+              "ok": true
+            },
+            {
+              "name": "search page asks for a query when there is none",
+              "ok": true
+            },
+            {
+              "name": "search page ships no islands",
+              "ok": true
+            }
+          ]
+        },
+        "check": {
+          "ok": true,
+          "errors": 0,
+          "warnings": 0,
+          "codes": []
+        },
+        "diff": {
+          "filesChanged": 1,
+          "linesAdded": 32,
+          "linesRemoved": 0
+        },
+        "durationMs": 1762.3276659999974
+      },
+      "wallMs": 30859,
+      "tokens": {
+        "input": 23819,
+        "cacheRead": 67456,
+        "cacheWrite": 0,
+        "output": 722,
+        "reasoning": 14
+      },
+      "costUsd": null,
+      "modelUsed": null,
+      "metrics": {
+        "turns": 7,
+        "steps": 5,
+        "commands": 4,
+        "edits": 1,
+        "checkRuns": 1,
+        "firstCheckOk": true,
+        "lumCodes": [],
+        "docsReads": 3,
+        "llmsReads": 1,
+        "mcpCalls": 0,
+        "mcpTools": [],
+        "skills": []
+      },
+      "exit": {
+        "code": 0,
+        "timedOut": false,
+        "error": null
+      },
+      "usageInfo": null,
+      "log": ".runs/2026-10-09T151008/ssr-search--codex_gpt-6-astra_medium--baseline--1.jsonl"
+    },
+    {
+      "task": "ssr-search",
+      "category": "routing",
+      "agent": "codex:gpt-6.1-sol:medium",
+      "cli": "codex",
+      "model": "gpt-6.1-sol",
+      "effort": "medium",
+      "ablation": "baseline",
+      "index": 0,
+      "success": true,
+      "grade": {
+        "success": true,
+        "tests": {
+          "passed": 5,
+          "failed": 0,
+          "total": 5,
+          "results": [
+            {
+              "name": "search page lists matching products",
+              "ok": true
+            },
+            {
+              "name": "search page has a GET form to /search",
+              "ok": true
+            },
+            {
+              "name": "search page says when nothing matches",
+              "ok": true
+            },
+            {
+              "name": "search page asks for a query when there is none",
+              "ok": true
+            },
+            {
+              "name": "search page ships no islands",
+              "ok": true
+            }
+          ]
+        },
+        "check": {
+          "ok": true,
+          "errors": 0,
+          "warnings": 0,
+          "codes": []
+        },
+        "diff": {
+          "filesChanged": 1,
+          "linesAdded": 32,
+          "linesRemoved": 0
+        },
+        "durationMs": 1729.5111670000479
+      },
+      "wallMs": 39524,
+      "tokens": {
+        "input": 23357,
+        "cacheRead": 103680,
+        "cacheWrite": 0,
+        "output": 939,
+        "reasoning": 39
+      },
+      "costUsd": null,
+      "modelUsed": null,
+      "metrics": {
+        "turns": 12,
+        "steps": 10,
+        "commands": 9,
+        "edits": 1,
+        "checkRuns": 1,
+        "firstCheckOk": true,
+        "lumCodes": [],
+        "docsReads": 3,
+        "llmsReads": 2,
+        "mcpCalls": 0,
+        "mcpTools": [],
+        "skills": []
+      },
+      "exit": {
+        "code": 0,
+        "timedOut": false,
+        "error": null
+      },
+      "usageInfo": null,
+      "log": ".runs/2026-10-09T151008/ssr-search--codex_gpt-6.1-sol_medium--baseline--1.jsonl"
+    },
+    {
+      "task": "ssr-search",
+      "category": "routing",
+      "agent": "codex:gpt-6-luna:medium",
+      "cli": "codex",
+      "model": "gpt-6-luna",
+      "effort": "medium",
+      "ablation": "baseline",
+      "index": 0,
+      "success": true,
+      "grade": {
+        "success": true,
+        "tests": {
+          "passed": 5,
+          "failed": 0,
+          "total": 5,
+          "results": [
+            {
+              "name": "search page lists matching products",
+              "ok": true
+            },
+            {
+              "name": "search page has a GET form to /search",
+              "ok": true
+            },
+            {
+              "name": "search page says when nothing matches",
+              "ok": true
+            },
+            {
+              "name": "search page asks for a query when there is none",
+              "ok": true
+            },
+            {
+              "name": "search page ships no islands",
+              "ok": true
+            }
+          ]
+        },
+        "check": {
+          "ok": true,
+          "errors": 0,
+          "warnings": 0,
+          "codes": []
+        },
+        "diff": {
+          "filesChanged": 1,
+          "linesAdded": 35,
+          "linesRemoved": 0
+        },
+        "durationMs": 1718.0114160000812
+      },
+      "wallMs": 17906,
+      "tokens": {
+        "input": 18463,
+        "cacheRead": 90880,
+        "cacheWrite": 0,
+        "output": 883,
+        "reasoning": 114
+      },
+      "costUsd": null,
+      "modelUsed": null,
+      "metrics": {
+        "turns": 7,
+        "steps": 5,
+        "commands": 4,
+        "edits": 1,
+        "checkRuns": 1,
+        "firstCheckOk": true,
+        "lumCodes": [],
+        "docsReads": 3,
+        "llmsReads": 1,
+        "mcpCalls": 0,
+        "mcpTools": [],
+        "skills": []
+      },
+      "exit": {
+        "code": 0,
+        "timedOut": false,
+        "error": null
+      },
+      "usageInfo": null,
+      "log": ".runs/2026-10-09T151008/ssr-search--codex_gpt-6-luna_medium--baseline--1.jsonl"
+    },
+    {
+      "task": "ssr-search",
+      "category": "routing",
+      "agent": "claude:claude-haiku-5-5:medium",
+      "cli": "claude",
+      "model": "claude-haiku-5-5",
+      "effort": "medium",
+      "ablation": "baseline",
+      "index": 0,
+      "success": true,
+      "grade": {
+        "success": true,
+        "tests": {
+          "passed": 5,
+          "failed": 0,
+          "total": 5,
+          "results": [
+            {
+              "name": "search page lists matching products",
+              "ok": true
+            },
+            {
+              "name": "search page has a GET form to /search",
+              "ok": true
+            },
+            {
+              "name": "search page says when nothing matches",
+              "ok": true
+            },
+            {
+              "name": "search page asks for a query when there is none",
+              "ok": true
+            },
+            {
+              "name": "search page ships no islands",
+              "ok": true
+            }
+          ]
+        },
+        "check": {
+          "ok": true,
+          "errors": 0,
+          "warnings": 0,
+          "codes": []
+        },
+        "diff": {
+          "filesChanged": 1,
+          "linesAdded": 47,
+          "linesRemoved": 0
+        },
+        "durationMs": 2034.375250000041
+      },
+      "wallMs": 60271,
+      "tokens": {
+        "input": 28,
+        "cacheRead": 622862,
+        "cacheWrite": 31989,
+        "output": 6760,
+        "reasoning": 2561
+      },
+      "costUsd": 0.016009219999999998,
+      "modelUsed": "claude-haiku-5-5",
+      "metrics": {
+        "turns": 14,
+        "steps": 13,
+        "commands": 12,
+        "edits": 1,
+        "checkRuns": 2,
+        "firstCheckOk": true,
+        "lumCodes": [],
+        "docsReads": 4,
+        "llmsReads": 0,
+        "mcpCalls": 0,
+        "mcpTools": [],
+        "skills": []
+      },
+      "exit": {
+        "code": 0,
+        "timedOut": false,
+        "error": null
+      },
+      "usageInfo": {
+        "claude-haiku-5-5": {
+          "inputTokens": 28,
+          "outputTokens": 6760,
+          "cacheReadInputTokens": 622862,
+          "cacheCreationInputTokens": 31989,
+          "webSearchRequests": 0,
+          "costUSD": 0.016009219999999998,
+          "contextWindow": 1000000,
+          "maxOutputTokens": 128000,
+          "thinkingTokens": 2561,
+          "canonicalModel": "claude-haiku-5-5",
+          "provider": "firstParty",
+          "costBasis": "list"
+        }
+      },
+      "log": ".runs/2026-10-09T151008/ssr-search--claude_claude-haiku-5-5_medium--baseline--1.jsonl"
+    },
+    {
+      "task": "styled-badge",
+      "category": "styles",
+      "agent": "claude:claude-opus-5-5:medium",
+      "cli": "claude",
+      "model": "claude-opus-5-5",
+      "effort": "medium",
+      "ablation": "baseline",
+      "index": 0,
+      "success": true,
+      "grade": {
+        "success": true,
+        "tests": {
+          "passed": 3,
+          "failed": 0,
+          "total": 3,
+          "results": [
+            {
+              "name": "Badge renders three badges on the home page",
+              "ok": true
+            },
+            {
+              "name": "Badge is exported from src/components/Badge.stsx and reads the tokens",
+              "ok": true
+            },
+            {
+              "name": "Badge builds scoped CSS with the token colors",
+              "ok": true
+            }
+          ]
+        },
+        "check": {
+          "ok": true,
+          "errors": 0,
+          "warnings": 0,
+          "codes": []
+        },
+        "diff": {
+          "filesChanged": 2,
+          "linesAdded": 47,
+          "linesRemoved": 0
+        },
+        "durationMs": 2304.195416999981
+      },
+      "wallMs": 38784,
+      "tokens": {
+        "input": 16,
+        "cacheRead": 311869,
+        "cacheWrite": 26335,
+        "output": 2455,
+        "reasoning": 83
+      },
+      "costUsd": 0.3222178,
+      "modelUsed": "claude-opus-5-5",
+      "metrics": {
+        "turns": 12,
+        "steps": 10,
+        "commands": 5,
+        "edits": 4,
+        "checkRuns": 1,
+        "firstCheckOk": true,
+        "lumCodes": [],
+        "docsReads": 3,
+        "llmsReads": 0,
+        "mcpCalls": 0,
+        "mcpTools": [],
+        "skills": [
+          "lumen"
+        ]
+      },
+      "exit": {
+        "code": 0,
+        "timedOut": false,
+        "error": null
+      },
+      "usageInfo": {
+        "claude-opus-5-5": {
+          "inputTokens": 16,
+          "outputTokens": 2455,
+          "cacheReadInputTokens": 311869,
+          "cacheCreationInputTokens": 26335,
+          "webSearchRequests": 0,
+          "costUSD": 0.3222178,
+          "contextWindow": 1000000,
+          "maxOutputTokens": 128000,
+          "thinkingTokens": 83,
+          "canonicalModel": "claude-opus-5-5",
+          "provider": "firstParty",
+          "costBasis": "list"
+        }
+      },
+      "log": ".runs/2026-10-09T151008/styled-badge--claude_claude-opus-5-5_medium--baseline--1.jsonl"
+    },
+    {
+      "task": "styled-badge",
+      "category": "styles",
+      "agent": "claude:claude-sonnet-5-5:medium",
+      "cli": "claude",
+      "model": "claude-sonnet-5-5",
+      "effort": "medium",
+      "ablation": "baseline",
+      "index": 0,
+      "success": true,
+      "grade": {
+        "success": true,
+        "tests": {
+          "passed": 3,
+          "failed": 0,
+          "total": 3,
+          "results": [
+            {
+              "name": "Badge renders three badges on the home page",
+              "ok": true
+            },
+            {
+              "name": "Badge is exported from src/components/Badge.stsx and reads the tokens",
+              "ok": true
+            },
+            {
+              "name": "Badge builds scoped CSS with the token colors",
+              "ok": true
+            }
+          ]
+        },
+        "check": {
+          "ok": true,
+          "errors": 0,
+          "warnings": 0,
+          "codes": []
+        },
+        "diff": {
+          "filesChanged": 2,
+          "linesAdded": 38,
+          "linesRemoved": 0
+        },
+        "durationMs": 1989.1493329999503
+      },
+      "wallMs": 26150,
+      "tokens": {
+        "input": 12,
+        "cacheRead": 200603,
+        "cacheWrite": 16335,
+        "output": 1640,
+        "reasoning": 0
+      },
+      "costUsd": 0.12188460000000001,
+      "modelUsed": "claude-sonnet-5-5",
+      "metrics": {
+        "turns": 6,
+        "steps": 5,
+        "commands": 5,
+        "edits": 0,
+        "checkRuns": 3,
+        "firstCheckOk": true,
+        "lumCodes": [],
+        "docsReads": 2,
+        "llmsReads": 0,
+        "mcpCalls": 0,
+        "mcpTools": [],
+        "skills": []
+      },
+      "exit": {
+        "code": 0,
+        "timedOut": false,
+        "error": null
+      },
+      "usageInfo": {
+        "claude-sonnet-5-5": {
+          "inputTokens": 12,
+          "outputTokens": 1640,
+          "cacheReadInputTokens": 200603,
+          "cacheCreationInputTokens": 16335,
+          "webSearchRequests": 0,
+          "costUSD": 0.12188460000000001,
+          "contextWindow": 1000000,
+          "maxOutputTokens": 128000,
+          "thinkingTokens": 0,
+          "canonicalModel": "claude-sonnet-5-5",
+          "provider": "firstParty",
+          "costBasis": "list"
+        }
+      },
+      "log": ".runs/2026-10-09T151008/styled-badge--claude_claude-sonnet-5-5_medium--baseline--1.jsonl"
+    },
+    {
+      "task": "styled-badge",
+      "category": "styles",
+      "agent": "codex:gpt-6-astra:medium",
+      "cli": "codex",
+      "model": "gpt-6-astra",
+      "effort": "medium",
+      "ablation": "baseline",
+      "index": 0,
+      "success": true,
+      "grade": {
+        "success": true,
+        "tests": {
+          "passed": 3,
+          "failed": 0,
+          "total": 3,
+          "results": [
+            {
+              "name": "Badge renders three badges on the home page",
+              "ok": true
+            },
+            {
+              "name": "Badge is exported from src/components/Badge.stsx and reads the tokens",
+              "ok": true
+            },
+            {
+              "name": "Badge builds scoped CSS with the token colors",
+              "ok": true
+            }
+          ]
+        },
+        "check": {
+          "ok": true,
+          "errors": 0,
+          "warnings": 0,
+          "codes": []
+        },
+        "diff": {
+          "filesChanged": 2,
+          "linesAdded": 46,
+          "linesRemoved": 3
+        },
+        "durationMs": 2059.3761249999516
+      },
+      "wallMs": 30955,
+      "tokens": {
+        "input": 16644,
+        "cacheRead": 74880,
+        "cacheWrite": 0,
+        "output": 859,
+        "reasoning": 0
+      },
+      "costUsd": null,
+      "modelUsed": null,
+      "metrics": {
+        "turns": 9,
+        "steps": 8,
+        "commands": 6,
+        "edits": 2,
+        "checkRuns": 1,
+        "firstCheckOk": true,
+        "lumCodes": [],
+        "docsReads": 2,
+        "llmsReads": 1,
+        "mcpCalls": 0,
+        "mcpTools": [],
+        "skills": []
+      },
+      "exit": {
+        "code": 0,
+        "timedOut": false,
+        "error": null
+      },
+      "usageInfo": null,
+      "log": ".runs/2026-10-09T151008/styled-badge--codex_gpt-6-astra_medium--baseline--1.jsonl"
+    },
+    {
+      "task": "styled-badge",
+      "category": "styles",
+      "agent": "codex:gpt-6.1-sol:medium",
+      "cli": "codex",
+      "model": "gpt-6.1-sol",
+      "effort": "medium",
+      "ablation": "baseline",
+      "index": 0,
+      "success": true,
+      "grade": {
+        "success": true,
+        "tests": {
+          "passed": 3,
+          "failed": 0,
+          "total": 3,
+          "results": [
+            {
+              "name": "Badge renders three badges on the home page",
+              "ok": true
+            },
+            {
+              "name": "Badge is exported from src/components/Badge.stsx and reads the tokens",
+              "ok": true
+            },
+            {
+              "name": "Badge builds scoped CSS with the token colors",
+              "ok": true
+            }
+          ]
+        },
+        "check": {
+          "ok": true,
+          "errors": 0,
+          "warnings": 0,
+          "codes": []
+        },
+        "diff": {
+          "filesChanged": 2,
+          "linesAdded": 38,
+          "linesRemoved": 1
+        },
+        "durationMs": 1994.1124169998802
+      },
+      "wallMs": 49506,
+      "tokens": {
+        "input": 23025,
+        "cacheRead": 129152,
+        "cacheWrite": 0,
+        "output": 937,
+        "reasoning": 14
+      },
+      "costUsd": null,
+      "modelUsed": null,
+      "metrics": {
+        "turns": 11,
+        "steps": 10,
+        "commands": 8,
+        "edits": 2,
+        "checkRuns": 1,
+        "firstCheckOk": true,
+        "lumCodes": [],
+        "docsReads": 3,
+        "llmsReads": 2,
+        "mcpCalls": 0,
+        "mcpTools": [],
+        "skills": []
+      },
+      "exit": {
+        "code": 0,
+        "timedOut": false,
+        "error": null
+      },
+      "usageInfo": null,
+      "log": ".runs/2026-10-09T151008/styled-badge--codex_gpt-6.1-sol_medium--baseline--1.jsonl"
+    },
+    {
+      "task": "styled-badge",
+      "category": "styles",
+      "agent": "codex:gpt-6-luna:medium",
+      "cli": "codex",
+      "model": "gpt-6-luna",
+      "effort": "medium",
+      "ablation": "baseline",
+      "index": 0,
+      "success": true,
+      "grade": {
+        "success": true,
+        "tests": {
+          "passed": 3,
+          "failed": 0,
+          "total": 3,
+          "results": [
+            {
+              "name": "Badge renders three badges on the home page",
+              "ok": true
+            },
+            {
+              "name": "Badge is exported from src/components/Badge.stsx and reads the tokens",
+              "ok": true
+            },
+            {
+              "name": "Badge builds scoped CSS with the token colors",
+              "ok": true
+            }
+          ]
+        },
+        "check": {
+          "ok": true,
+          "errors": 0,
+          "warnings": 0,
+          "codes": []
+        },
+        "diff": {
+          "filesChanged": 2,
+          "linesAdded": 40,
+          "linesRemoved": 0
+        },
+        "durationMs": 1996.8423750000075
+      },
+      "wallMs": 23582,
+      "tokens": {
+        "input": 32418,
+        "cacheRead": 79616,
+        "cacheWrite": 0,
+        "output": 944,
+        "reasoning": 0
+      },
+      "costUsd": null,
+      "modelUsed": null,
+      "metrics": {
+        "turns": 8,
+        "steps": 5,
+        "commands": 3,
+        "edits": 2,
+        "checkRuns": 1,
+        "firstCheckOk": true,
+        "lumCodes": [],
+        "docsReads": 2,
+        "llmsReads": 1,
+        "mcpCalls": 0,
+        "mcpTools": [],
+        "skills": []
+      },
+      "exit": {
+        "code": 0,
+        "timedOut": false,
+        "error": null
+      },
+      "usageInfo": null,
+      "log": ".runs/2026-10-09T151008/styled-badge--codex_gpt-6-luna_medium--baseline--1.jsonl"
+    },
+    {
+      "task": "todo-named-actions",
+      "category": "actions",
+      "agent": "codex:gpt-6-astra:medium",
+      "cli": "codex",
+      "model": "gpt-6-astra",
+      "effort": "medium",
+      "ablation": "baseline",
+      "index": 0,
+      "success": true,
+      "grade": {
+        "success": true,
+        "tests": {
+          "passed": 4,
+          "failed": 0,
+          "total": 4,
+          "results": [
+            {
+              "name": "todos lists the todos",
+              "ok": true
+            },
+            {
+              "name": "todos uses named actions",
+              "ok": true
+            },
+            {
+              "name": "todos adds, toggles and removes",
+              "ok": true
+            },
+            {
+              "name": "todos rejects an empty title",
+              "ok": true
+            }
+          ]
+        },
+        "check": {
+          "ok": true,
+          "errors": 0,
+          "warnings": 0,
+          "codes": []
+        },
+        "diff": {
+          "filesChanged": 1,
+          "linesAdded": 56,
+          "linesRemoved": 0
+        },
+        "durationMs": 1814.4279159998987
+      },
+      "wallMs": 44934,
+      "tokens": {
+        "input": 17067,
+        "cacheRead": 130816,
+        "cacheWrite": 0,
+        "output": 1070,
+        "reasoning": 8
+      },
+      "costUsd": null,
+      "modelUsed": null,
+      "metrics": {
+        "turns": 10,
+        "steps": 8,
+        "commands": 7,
+        "edits": 1,
+        "checkRuns": 1,
+        "firstCheckOk": true,
+        "lumCodes": [],
+        "docsReads": 2,
+        "llmsReads": 1,
+        "mcpCalls": 0,
+        "mcpTools": [],
+        "skills": []
+      },
+      "exit": {
+        "code": 0,
+        "timedOut": false,
+        "error": null
+      },
+      "usageInfo": null,
+      "log": ".runs/2026-10-09T151008/todo-named-actions--codex_gpt-6-astra_medium--baseline--1.jsonl"
+    },
+    {
+      "task": "todo-named-actions",
+      "category": "actions",
+      "agent": "codex:gpt-6.1-sol:medium",
+      "cli": "codex",
+      "model": "gpt-6.1-sol",
+      "effort": "medium",
+      "ablation": "baseline",
+      "index": 0,
+      "success": true,
+      "grade": {
+        "success": true,
+        "tests": {
+          "passed": 4,
+          "failed": 0,
+          "total": 4,
+          "results": [
+            {
+              "name": "todos lists the todos",
+              "ok": true
+            },
+            {
+              "name": "todos uses named actions",
+              "ok": true
+            },
+            {
+              "name": "todos adds, toggles and removes",
+              "ok": true
+            },
+            {
+              "name": "todos rejects an empty title",
+              "ok": true
+            }
+          ]
+        },
+        "check": {
+          "ok": true,
+          "errors": 0,
+          "warnings": 0,
+          "codes": []
+        },
+        "diff": {
+          "filesChanged": 1,
+          "linesAdded": 54,
+          "linesRemoved": 0
+        },
+        "durationMs": 1680.7007500000764
+      },
+      "wallMs": 53713,
+      "tokens": {
+        "input": 15589,
+        "cacheRead": 126976,
+        "cacheWrite": 0,
+        "output": 1322,
+        "reasoning": 62
+      },
+      "costUsd": null,
+      "modelUsed": null,
+      "metrics": {
+        "turns": 14,
+        "steps": 11,
+        "commands": 10,
+        "edits": 1,
+        "checkRuns": 2,
+        "firstCheckOk": true,
+        "lumCodes": [],
+        "docsReads": 3,
+        "llmsReads": 2,
+        "mcpCalls": 0,
+        "mcpTools": [],
+        "skills": []
+      },
+      "exit": {
+        "code": 0,
+        "timedOut": false,
+        "error": null
+      },
+      "usageInfo": null,
+      "log": ".runs/2026-10-09T151008/todo-named-actions--codex_gpt-6.1-sol_medium--baseline--1.jsonl"
+    },
+    {
+      "task": "todo-named-actions",
+      "category": "actions",
+      "agent": "codex:gpt-6-luna:medium",
+      "cli": "codex",
+      "model": "gpt-6-luna",
+      "effort": "medium",
+      "ablation": "baseline",
+      "index": 0,
+      "success": true,
+      "grade": {
+        "success": true,
+        "tests": {
+          "passed": 4,
+          "failed": 0,
+          "total": 4,
+          "results": [
+            {
+              "name": "todos lists the todos",
+              "ok": true
+            },
+            {
+              "name": "todos uses named actions",
+              "ok": true
+            },
+            {
+              "name": "todos adds, toggles and removes",
+              "ok": true
+            },
+            {
+              "name": "todos rejects an empty title",
+              "ok": true
+            }
+          ]
+        },
+        "check": {
+          "ok": true,
+          "errors": 0,
+          "warnings": 0,
+          "codes": []
+        },
+        "diff": {
+          "filesChanged": 1,
+          "linesAdded": 87,
+          "linesRemoved": 0
+        },
+        "durationMs": 1723.2620000001043
+      },
+      "wallMs": 28686,
+      "tokens": {
+        "input": 21326,
+        "cacheRead": 164864,
+        "cacheWrite": 0,
+        "output": 1681,
+        "reasoning": 184
+      },
+      "costUsd": null,
+      "modelUsed": null,
+      "metrics": {
+        "turns": 11,
+        "steps": 8,
+        "commands": 6,
+        "edits": 2,
+        "checkRuns": 2,
+        "firstCheckOk": true,
+        "lumCodes": [
+          "LUM2001"
+        ],
+        "docsReads": 3,
+        "llmsReads": 2,
+        "mcpCalls": 0,
+        "mcpTools": [],
+        "skills": []
+      },
+      "exit": {
+        "code": 0,
+        "timedOut": false,
+        "error": null
+      },
+      "usageInfo": null,
+      "log": ".runs/2026-10-09T151008/todo-named-actions--codex_gpt-6-luna_medium--baseline--1.jsonl"
     }
   ]
 }
