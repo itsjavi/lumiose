@@ -5,6 +5,7 @@ pub mod analyze;
 pub mod codegen;
 mod compile;
 pub mod css;
+pub mod custom_properties;
 pub mod diagnostics;
 mod module_id;
 pub mod prepare;
@@ -13,9 +14,11 @@ pub mod span;
 
 pub use codegen::client::{ScopeTokens, SubtreeScope};
 pub use compile::{
-    CompileMeta, CompileOptions, CompileResult, ComponentMeta, IslandMeta, Target, compile,
+    CompileMeta, CompileOptions, CompileResult, ComponentMeta, CustomPropertiesMeta, IslandMeta,
+    Target, compile,
 };
 pub use css::CssOptions;
+pub use custom_properties::CustomPropertySet;
 pub use diagnostics::{Code, Diagnostic, Severity};
 pub use lumen_css::Targets as CssTargets;
 pub use module_id::PackageRoot;

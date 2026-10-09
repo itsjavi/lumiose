@@ -497,3 +497,32 @@ fn scanner_and_css_pipeline_find_the_same_references() {
     }
     assert!(checked > 10, "only {checked} references checked");
 }
+
+#[test]
+fn metadata_lists_custom_properties_set_in_style_props_and_read_by_the_css() {
+    let source = r#"export function Bar(props: { pct: number }) {
+  return (
+    <div class="bar" style={{ "--fill": `${props.pct}%`, "--unused": 1 }}>
+      <style>.bar { inline-size: var(--fill); color: var(--theme-fg, var(--fallback)); }</style>
+    </div>
+  );
+}
+"#;
+    let result = compile(source, "/src/Bar.stsx", &CompileOptions::default());
+    assert!(result.diagnostics.is_empty(), "{:?}", result.diagnostics);
+    let set: Vec<(&str, &str)> = result
+        .meta
+        .custom_properties
+        .set
+        .iter()
+        .map(|p| {
+            let written = &source[p.span.start as usize..p.span.end as usize];
+            (p.name.as_str(), written)
+        })
+        .collect();
+    assert_eq!(set, [("--fill", "--fill"), ("--unused", "--unused")]);
+    assert_eq!(
+        result.meta.custom_properties.read,
+        ["--fallback", "--fill", "--theme-fg"]
+    );
+}

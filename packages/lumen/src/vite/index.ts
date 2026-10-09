@@ -49,6 +49,7 @@ import {
 } from "vite";
 import { contentOf, contentOptionsOf } from "./content.ts";
 import { CSS_MANIFEST_ID, CssManifest, cssManifestCode, fillManifest } from "./css-manifest.ts";
+import { CustomPropertyCheck, unreadMessage } from "./custom-properties.ts";
 import { ISLANDS_ID, IslandRegistry } from "./islands.ts";
 import { projectOptionsOf, type LumenOptions, type LumenPluginApi } from "./options.ts";
 import { Packages } from "./packages.ts";
@@ -88,6 +89,8 @@ const LUMEN_ENTRIES = [
   "lumen/router",
   "@lumen/compiler",
 ];
+/** Stylesheets Vite's CSS pipeline handles (its `CSS_LANGS_RE`). */
+const STYLESHEET = /\.(?:css|less|sass|scss|styl|stylus|pcss|postcss|sss)(?:$|\?)/;
 const HMR_DOM = "virtual:lumen/hmr-dom";
 const HMR_DOM_ID = "\0lumen:hmr-dom";
 // The compiler prints user imports verbatim, normalized by the code printer.
@@ -110,6 +113,7 @@ export default function lumen(options: LumenOptions = {}): Plugin<LumenPluginApi
   const islands = new IslandRegistry();
   const styles = new StyleCache();
   const cssManifest = new CssManifest();
+  const customProperties = new CustomPropertyCheck();
   let packages = new Packages(root, exclude);
   let scanned: ScannedModule[] | undefined;
   const project = (): ScannedModule[] =>
@@ -219,6 +223,7 @@ export default function lumen(options: LumenOptions = {}): Plugin<LumenPluginApi
               pluginResolve(this),
             );
             entry = styles.record(file, source, result, false);
+            if (!serve) customProperties.module(file, source, result);
           }
           // Constants modules join the graph as imports of the CSS module (token edits update it).
           for (const dep of entry.deps) this.addWatchFile(dep);
@@ -236,6 +241,19 @@ export default function lumen(options: LumenOptions = {}): Plugin<LumenPluginApi
         if (serve || environment.config.consumer !== "client") return;
         if (hasServerBuild(environment.getTopLevelConfig())) {
           await cssManifest.emit(this, project());
+        }
+      },
+
+      buildEnd(error) {
+        // Every module of the build is compiled: report the custom properties no stylesheet
+        // reads, once, at the end of the last environment (the server's in an SSR app).
+        const environment = this.environment;
+        if (serve || error) return;
+        const last = hasServerBuild(environment.getTopLevelConfig()) ? "server" : "client";
+        if (environment.config.consumer !== last) return;
+        for (const unread of customProperties.unread()) {
+          const { file, line, column } = unread;
+          this.warn({ message: unreadMessage(unread.name), id: file, loc: { file, line, column } });
         }
       },
 
@@ -305,6 +323,7 @@ export default function lumen(options: LumenOptions = {}): Plugin<LumenPluginApi
             pluginResolve(this),
           );
           const errors = result.diagnostics.filter((d) => d.severity === "error");
+          if (!serve) customProperties.module(cleanId(id), code, result);
           if (result.meta.hasStyles) {
             const file = cleanId(id);
             styles.record(file, code, result, true);
@@ -330,6 +349,20 @@ export default function lumen(options: LumenOptions = {}): Plugin<LumenPluginApi
           let out = result.code;
           if (serve && target === "client" && IMPORTS_MOUNT.test(out)) out = hmrEntry(out);
           return { code: out, map: result.map, moduleType: "js" };
+        },
+      },
+    },
+    {
+      // The `var()` reads of the project's other stylesheets, for `LUM3012` (before Sass & co.).
+      name: "lumen:custom-properties",
+      apply: "build",
+      enforce: "pre",
+      sharedDuringBuild: true,
+      transform: {
+        filter: { id: { include: STYLESHEET, exclude: [STYLE_QUERY, /^\0/] } },
+        handler(code, id) {
+          customProperties.stylesheet(id, code);
+          return null;
         },
       },
     },

@@ -20,6 +20,7 @@ use crate::analyze;
 use crate::codegen::ast::Ast;
 use crate::codegen::client::{self, ScopeTokens, TransformOptions};
 use crate::css::{self, CssOptions, ScopePlan};
+use crate::custom_properties::{self, CustomPropertySet};
 use crate::diagnostics::{Code, Diagnostic};
 use crate::module_id::{self, PackageRoot};
 use crate::prepare::{self, HostModule, ModuleRequest, ResolvedStyleRef};
@@ -138,6 +139,24 @@ pub struct CompileMeta {
     pub scope_tokens: ScopeTokens,
     /// Island call sites, in source order (both targets).
     pub islands: Vec<IslandMeta>,
+    /// Custom properties the file sets in `style` props and reads in its CSS, for a
+    /// project-wide `LUM3012` check (another file's CSS may read what this one sets).
+    pub custom_properties: CustomPropertiesMeta,
+}
+
+/// The custom properties of a file (`LUM3012`, TASK-62).
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize),
+    serde(rename_all = "camelCase")
+)]
+pub struct CustomPropertiesMeta {
+    /// Set in `style` props (elements and components), in source order.
+    pub set: Vec<CustomPropertySet>,
+    /// Read through `var()` in the file's CSS, sorted. Empty when no CSS was compiled
+    /// ([`CompileResult::css`] is `None`).
+    pub read: Vec<String>,
 }
 
 #[derive(Debug, Clone, Default)]
@@ -248,6 +267,8 @@ pub fn compile(source: &str, filename: &str, options: &CompileOptions) -> Compil
         Vec::new()
     };
 
+    let custom_properties_set = custom_properties::set_in_style_props(&program);
+
     let transform_options = TransformOptions {
         target: options.target,
         root: options.root.as_deref(),
@@ -276,6 +297,7 @@ pub fn compile(source: &str, filename: &str, options: &CompileOptions) -> Compil
     };
     let printed = Codegen::new().with_options(codegen_options).build(&program);
 
+    let mut custom_properties_read = Vec::new();
     let (css, css_map) = if emit_css {
         let (output, css_diagnostics) = css::process(
             source,
@@ -287,6 +309,7 @@ pub fn compile(source: &str, filename: &str, options: &CompileOptions) -> Compil
             options.source_map,
         );
         diagnostics.extend(css_diagnostics);
+        custom_properties_read = output.custom_properties_read;
         (Some(output.css), output.map)
     } else {
         (None, None)
@@ -321,6 +344,10 @@ pub fn compile(source: &str, filename: &str, options: &CompileOptions) -> Compil
             has_styles,
             scope_tokens: scopes.tokens,
             islands: output.islands,
+            custom_properties: CustomPropertiesMeta {
+                set: custom_properties_set,
+                read: custom_properties_read,
+            },
         },
     }
 }
@@ -365,6 +392,9 @@ impl CompileResult {
         }
         for island in &mut self.meta.islands {
             island.span = island.span.map(f);
+        }
+        for set in &mut self.meta.custom_properties.set {
+            set.span = set.span.map(f);
         }
         for subtree in self.meta.scope_tokens.components.values_mut().flatten() {
             subtree.span = subtree.span.map(f);

@@ -671,7 +671,8 @@ a +0,1,0 specificity bump. Dynamic classes always work, because no element is pr
 imports, CSS Modules, Tailwind v4 and `.scss` imports still work through Vite.
 
 > **Status:** available. `lumen/vite` serves each file's CSS as a CSS module, and style-only or
-> constant-only edits hot-update the CSS without remounting. `LUM3012` is not reported yet.
+> constant-only edits hot-update the CSS without remounting. `LUM3012` (a custom property set in a
+> `style` prop that no stylesheet reads) is reported by `lumen build` only.
 
 ### JS values in styles
 
@@ -5238,14 +5239,20 @@ in a layout:
 
 > A custom property is set in a component's `style` prop but no CSS reads it.
 
-**Reported by:** planned (not reported by this version). Another file's CSS may read the property,
-so the check has to be project-wide. A warning.
+**Reported by:** `lumen build` (`lumen/vite`), once every module is compiled: another file's CSS
+may read the property, so the check is project-wide. Not reported in dev, by `lumen check` or by
+the language server yet. A warning.
 
 ## What it means
 
 Runtime values reach CSS through custom properties: `style={{ "--progress": pct() }}` plus
-`var(--progress)` in a block. A property that is set but never read with `var()` in the scope's
-CSS does nothing: usually a typo or leftover code.
+`var(--progress)` in a block. A property that is set but never read with `var()` by any stylesheet
+of the project does nothing: usually a typo or leftover code.
+
+The check collects the properties set in `style` props (object keys such as `"--fill"` and
+`--fill:` declarations of `style` strings, on elements and components) and the `var()` reads of
+every stylesheet in the build: the style blocks of every Lumen module, imported `.css` files
+(also Sass, Less, …) and those of dependencies.
 
 ## Example
 
@@ -5263,8 +5270,10 @@ export function Bar(props: { pct: number }) {
 
 ## How to fix it
 
-Make the names match, or remove the unused property. Properties consumed by global CSS or other
-components are fine to keep; the warning only knows the CSS of the scope.
+Make the names match, or remove the unused property. Properties consumed by another component's
+blocks or an imported stylesheet are not reported. A property read only by CSS outside the build
+(a stylesheet in `public/`, or a `var()` built at runtime) is still reported: read it in a
+block, or ignore the warning.
 
 ## Related
 

@@ -59,7 +59,8 @@ a +0,1,0 specificity bump. Dynamic classes always work, because no element is pr
 imports, CSS Modules, Tailwind v4 and `.scss` imports still work through Vite.
 
 > **Status:** available. `lumen/vite` serves each file's CSS as a CSS module, and style-only or
-> constant-only edits hot-update the CSS without remounting. `LUM3012` is not reported yet.
+> constant-only edits hot-update the CSS without remounting. `LUM3012` (a custom property set in a
+> `style` prop that no stylesheet reads) is reported by `lumen build` only.
 
 ### JS values in styles
 

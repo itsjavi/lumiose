@@ -32,6 +32,8 @@ export interface CompileMeta {
   scopeTokens: ScopeTokens;
   /** Island call sites, in source order. */
   islands: Array<IslandMeta>;
+  /** Custom properties set in `style` props and read by the file's CSS. */
+  customProperties: CustomPropertiesMeta;
 }
 
 export interface CompileOptions {
@@ -138,6 +140,22 @@ export interface ContentSource {
   scripts: Array<ContentScript>;
   /** Errors in the file (`LUM1008`: a `<script>` in Markdown); spans are in the file's source. */
   diagnostics: Array<Diagnostic>;
+}
+
+/** Custom properties of a file, for a project-wide `LUM3012` check. */
+export interface CustomPropertiesMeta {
+  /** Set in `style` props (elements and components), in source order. */
+  set: Array<CustomPropertySet>;
+  /** Read through `var()` in the file's CSS, sorted; empty when `css` is `null`. */
+  read: Array<string>;
+}
+
+/** A custom property set in a `style` prop. */
+export interface CustomPropertySet {
+  /** The name, including `--`. */
+  name: string;
+  /** The name as written. */
+  span: Span;
 }
 
 export interface Diagnostic {

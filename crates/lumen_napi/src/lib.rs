@@ -417,6 +417,24 @@ pub struct SubtreeScope {
     pub span: Span,
 }
 
+/// A custom property set in a `style` prop.
+#[napi(object)]
+pub struct CustomPropertySet {
+    /// The name, including `--`.
+    pub name: String,
+    /// The name as written.
+    pub span: Span,
+}
+
+/// Custom properties of a file, for a project-wide `LUM3012` check.
+#[napi(object)]
+pub struct CustomPropertiesMeta {
+    /// Set in `style` props (elements and components), in source order.
+    pub set: Vec<CustomPropertySet>,
+    /// Read through `var()` in the file's CSS, sorted; empty when `css` is `null`.
+    pub read: Vec<String>,
+}
+
 #[napi(object)]
 pub struct CompileMeta {
     pub components: Vec<ComponentMeta>,
@@ -429,6 +447,8 @@ pub struct CompileMeta {
     pub scope_tokens: ScopeTokens,
     /// Island call sites, in source order.
     pub islands: Vec<IslandMeta>,
+    /// Custom properties set in `style` props and read by the file's CSS.
+    pub custom_properties: CustomPropertiesMeta,
 }
 
 #[napi(object)]
@@ -616,6 +636,18 @@ pub fn compile(
                     span: span(island.span),
                 })
                 .collect(),
+            custom_properties: CustomPropertiesMeta {
+                set: meta
+                    .custom_properties
+                    .set
+                    .into_iter()
+                    .map(|set| CustomPropertySet {
+                        name: set.name,
+                        span: span(set.span),
+                    })
+                    .collect(),
+                read: meta.custom_properties.read,
+            },
         },
     })
 }
