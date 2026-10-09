@@ -33,7 +33,12 @@ export class CustomPropertyCheck {
 
   /** A compiled Lumen module. A compile without CSS keeps the reads of an earlier one. */
   module(file: string, source: string, result: CompileResult): void {
-    const { set, read } = result.meta.customProperties;
+    // Optional for a native binding built before TASK-62 (a stale `@lumen/compiler`).
+    const meta = result.meta.customProperties as
+      | CompileResult["meta"]["customProperties"]
+      | undefined;
+    if (meta === undefined) return;
+    const { set, read } = meta;
     if (set.length > 0) this.#set.set(file, { source, set });
     else this.#set.delete(file);
     if (result.css !== null) this.#read.set(file, read);

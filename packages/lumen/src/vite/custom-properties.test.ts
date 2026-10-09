@@ -90,5 +90,8 @@ describe("CustomPropertyCheck", () => {
     expect(check.unread()).toEqual([
       { file: "/a.stsx", name: "--k", start, end: start + 3, line: 2, column: 23 },
     ]);
+    // A stale native binding without `meta.customProperties`: ignored.
+    check.module("/b.stsx", source, { css: "", meta: {} } as never);
+    expect(check.unread()).toHaveLength(1);
   });
 });
