@@ -33,7 +33,7 @@ export const APPS: App[] = [
     clientOutput: ["dist/client"],
     serverOutput: ["dist/server"],
     hmr: {
-      file: join(FULLSTACK, "apps/lumen/src/components/Layout.stsx"),
+      file: join(FULLSTACK, "apps/lumen/src/components/layout.tsx"),
       find: "fullstack comparison benchmark",
     },
   },
@@ -220,18 +220,14 @@ export function resolvedVersion(app: App, pkg: string): string | null {
 export async function sampleRoutes(
   app: App,
 ): Promise<{ home: string; project: string; issue: string }> {
+  // Quotes are optional in HTML attributes; the first project link is the sidebar's first entry.
   const home = await (await fetch(`${baseUrl(app)}/`)).text();
-  const slug =
-    /data-testid="sidebar-project"[^>]*href="\/projects\/([^"?#]+)"|href="\/projects\/([^"?#]+)"[^>]*data-testid="sidebar-project"/.exec(
-      home,
-    );
-  const project = `/projects/${slug?.[1] ?? slug?.[2]}`;
+  const slug = /href=["']?\/projects\/([a-z0-9-]+)/.exec(home)?.[1];
+  const project = `/projects/${slug}`;
   const list = await (await fetch(`${baseUrl(app)}${project}`)).text();
-  const id =
-    /data-testid="issue-row"[^>]*data-issue-id="(\d+)"|data-issue-id="(\d+)"[^>]*data-testid="issue-row"/.exec(
-      list,
-    );
-  if (slug === null || id === null)
+  const id = /data-issue-id=["']?(\d+)/.exec(list)?.[1];
+  if (slug === undefined || id === undefined) {
     throw new Error(`${app.id}: cannot find the sample project/issue in the HTML`);
-  return { home: "/", project, issue: `/issues/${id[1] ?? id[2]}` };
+  }
+  return { home: "/", project, issue: `/issues/${id}` };
 }

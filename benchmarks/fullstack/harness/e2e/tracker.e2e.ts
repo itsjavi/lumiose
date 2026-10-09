@@ -277,9 +277,10 @@ test.describe("issue page", () => {
 
     if (process.env.BENCH_EXPECT_STREAMING === "1") {
       const html = await (await request.get(href)).text();
-      const fallback = html.indexOf('data-testid="comments-loading"');
+      // Attribute quotes are optional in HTML (Lumen omits them where it can).
+      const fallback = html.search(/data-testid=["']?comments-loading\b/);
       expect(fallback, "the comments fallback is in the shell").toBeGreaterThan(-1);
-      expect(html.indexOf('data-testid="comment-list"')).toBeGreaterThan(fallback);
+      expect(html.search(/data-testid=["']?comment-list\b/)).toBeGreaterThan(fallback);
     }
 
     const api = await request.get(`/api/issues/${id}`);
