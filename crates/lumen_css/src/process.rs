@@ -43,6 +43,10 @@ pub fn process(input: &CssInput, options: &CssOptions) -> CssOutput {
 
     let mut sheets = Vec::with_capacity(prepared.len());
     for (index, block) in prepared.iter().enumerate() {
+        if block.too_deep {
+            sheets.push(None);
+            continue;
+        }
         let warnings = Arc::new(RwLock::new(Vec::new()));
         let parsed = StyleSheet::parse(
             &block.rewritten.text,
@@ -125,6 +129,8 @@ pub(crate) struct Prepared<'a> {
     content: &'a str,
     rewritten: Rewritten,
     lines: LineIndex,
+    /// Nested too deep to parse safely: reported, and left out of the output.
+    too_deep: bool,
 }
 
 impl Prepared<'_> {
@@ -166,6 +172,30 @@ fn prepare<'a>(
     let base = block.content.start;
     let content = &input.source[block.content.range()];
     let scan = prepass::scan(content);
+    if let Some(at) = scan.too_deep {
+        let at = base + crate::to_u32(at);
+        diagnostics.push(
+            CssDiagnostic::new(
+                CssCode::CssSyntaxError,
+                Span::new(at, at + 1),
+                format!(
+                    "blocks are nested deeper than {} levels, or parentheses deeper than {}",
+                    prepass::MAX_BLOCKS,
+                    prepass::MAX_PARENS
+                ),
+            )
+            .with_help("Flatten the nesting; the block is left out of the CSS"),
+        );
+        let rewritten = Rewritten::apply(content, Vec::new());
+        let lines = LineIndex::new(&rewritten.text, Newlines::Css);
+        return Prepared {
+            block,
+            content,
+            rewritten,
+            lines,
+            too_deep: true,
+        };
+    }
     let mut edits = Vec::new();
     let mut substitutions = Vec::with_capacity(scan.refs.len());
     for site in &scan.refs {
@@ -179,7 +209,26 @@ fn prepare<'a>(
         }
         let base = base as usize;
         let span = Span::from_usize(base + site.range.start, base + site.range.end);
-        let value = values.get(&span).copied();
+        let mut value = values.get(&span).copied();
+        if let Some(RefValue::String(text)) = value
+            && let Some(problem) = unsafe_value(text)
+        {
+            // Not substituted: it would end the declaration, the rule or the `<style>`.
+            let name = &content[site.range.clone()];
+            diagnostics.push(
+                CssDiagnostic::new(
+                    CssCode::UnsafeStyleRef,
+                    span,
+                    format!("`{name}` is {text:?}, which {problem}"),
+                )
+                .with_help(
+                    "A constant is inserted as CSS text inside one value: it cannot contain `{`, \
+                     `}`, `;` or `<` outside a string, a comment or an unterminated string. \
+                     Keep the constant to one value.",
+                ),
+            );
+            value = None;
+        }
         if let Some(value) = value {
             edits.push(Edit::replace(site.range.clone(), value_text(value)));
         }
@@ -234,6 +283,7 @@ fn prepare<'a>(
         content,
         rewritten,
         lines,
+        too_deep: false,
     }
 }
 
@@ -285,6 +335,31 @@ fn hyphenated_ref(content: &str, site: &RefSite) -> CssDiagnostic {
 }
 
 /// Strings are inserted raw; numbers in plain decimal notation (`8`, `0.5`, never `1e21`).
+/// Why a constant's text cannot be inserted into a declaration value: it could end the
+/// declaration, the rule or the `<style>` element, or swallow the CSS after it. `<` is refused
+/// even in strings, since an HTML parser ends `<style>` at `</style` wherever it is.
+fn unsafe_value(text: &str) -> Option<&'static str> {
+    let mut quote = None;
+    let mut chars = text.chars();
+    while let Some(ch) = chars.next() {
+        match (quote, ch) {
+            (_, '<') => return Some("contains `<`"),
+            (Some(_), '\\') | (None, '\\') => {
+                if chars.next().is_none() {
+                    return Some("ends with an escape");
+                }
+            }
+            (Some(q), ch) if ch == q => quote = None,
+            (Some(_), _) => {}
+            (None, '"' | '\'') => quote = Some(ch),
+            (None, '{' | '}' | ';') => return Some("contains `{`, `}` or `;` outside a string"),
+            (None, '/') if chars.clone().next() == Some('*') => return Some("contains a comment"),
+            (None, _) => {}
+        }
+    }
+    quote.map(|_| "has an unterminated string")
+}
+
 pub(crate) fn value_text(value: &RefValue) -> String {
     match value {
         RefValue::String(text) => text.clone(),

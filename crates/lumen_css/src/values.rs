@@ -61,11 +61,14 @@ pub(crate) fn check(
             diagnostics.push(diagnostic);
         }
     }
+    // Both lists are in source order: each declaration looks up its own with a binary search
+    // (a file with many `$` references stays linear, TASK-169).
     for declaration in declarations {
         let value = &declaration.value;
-        let reported = detached
-            .iter()
-            .any(|span| value.start <= span.start as usize && span.end as usize <= value.end);
+        let first = detached.partition_point(|span: &Span| (span.start as usize) < value.start);
+        let reported = detached[first..]
+            .first()
+            .is_some_and(|span| span.end as usize <= value.end);
         if !declaration.descriptor && !reported {
             check_declaration(content, declaration, refs, &mut diagnostics);
         }
@@ -151,9 +154,11 @@ fn check_declaration(
         // An empty value (`color: ;`) is left to the CSS language service in editors.
         return;
     };
-    let refs: Vec<&Substitution> = refs
+    let first = refs.partition_point(|site| site.range.start < range.start);
+    let refs: Vec<&Substitution> = refs[first..]
         .iter()
-        .filter(|site| range.start <= site.range.start && site.range.end <= range.end)
+        .take_while(|site| site.range.start < range.end)
+        .filter(|site| site.range.end <= range.end)
         .collect();
     if refs.iter().any(|site| site.value.is_none()) {
         return;

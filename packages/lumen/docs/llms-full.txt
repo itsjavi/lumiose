@@ -2828,6 +2828,19 @@ Trailing-slash redirects (`lumen({ trailingSlash })`) always stay on your site, 
 request path such as `//evil.com/`. `href()` refuses `.` and `..` as param values, which a browser
 would resolve into another route.
 
+**Files from elsewhere.** Icon sets, Markdown and HTML often come from outside the project. The
+compiler treats them as untrusted input:
+
+- **SVG imports** keep an allowlist of SVG elements and attributes: no scripts, handlers,
+  `<foreignObject>` HTML, `javascript:` URLs or animations of links, and `<style>` text cannot
+  open a tag ([SVG imports](svg.md)).
+- **`$` constants** in style blocks cannot end their declaration or the `<style>` element
+  ([LUM3021](../errors/LUM3021.md)), so data in a constant cannot add CSS outside its scope.
+- **Frontmatter** keys such as `__proto__` stay plain data.
+- **Depth limits** turn absurdly nested files into errors instead of crashes or stalls: CSS
+  blocks past 64 levels and parentheses past 16 ([LUM3014](../errors/LUM3014.md)), SVG elements past 128,
+  Markdown and HTML past 512 ([LUM1009](../errors/LUM1009.md)).
+
 **Cross-site form posts.** Form actions and form-encoded posts to endpoints are checked against
 the `Origin` header (on by default, `lumen({ csrf })`); see [Data and actions](data-and-actions.md).
 
@@ -2914,7 +2927,10 @@ page's policy lists the script's hash.
 
 ## Related diagnostics
 
-None yet: a violation shows in the browser console, with the refused element.
+A CSP violation shows in the browser console, with the refused element. For files:
+[LUM1009](../errors/LUM1009.md) (content nested too deeply), [LUM3014](../errors/LUM3014.md) (CSS
+nested too deeply), [LUM3021](../errors/LUM3021.md) (a `$` constant that would break out of its
+value).
 
 See also: [Head and document](head.md), [Styles](styles.md), [Rendering modes](rendering-modes.md), [reference: `lumen/vite`](../reference/vite.md), [reference: app APIs](../reference/app.md).
 
@@ -5269,6 +5285,53 @@ export default function Page() {
 - [Markdown and HTML imports](../concepts/content.md)
 - [Islands](../concepts/islands.md)
 
+<!-- source: errors/LUM1009.md -->
+
+<!-- Generated from crates/lumen_compiler/src/diagnostics/registry.rs by packages/lumen/scripts/gen-error-docs.ts. Edit the explanation below the end marker. -->
+
+# LUM1009: Content nested too deeply
+
+**Severity:** error · **Category:** file format (1xxx)
+
+<!-- end of generated header -->
+
+> A Markdown or HTML import nests elements or block quotes deeper than 512 levels.
+
+**Reported by:** the Vite plugin (`lumen({ md, html })`), in `lumen dev` and builds, at the first
+element or line past the limit.
+
+## What it means
+
+The HTML tree builder and the Markdown block parser get slower with every level of nesting, and
+a file with tens of thousands of unclosed `<div>`s or `>` markers would take seconds to compile
+(or stall the dev server on every save). No real document nests this deep, so Lumen checks the
+depth before parsing and stops at 512 levels: elements that are opened and never closed, or block
+quote markers on one line. Elements whose end tag is optional (`<p>`, `<li>`, `<td>`…), void
+elements and self-closing tags do not count. The component is empty until the file is fixed.
+
+## Example
+
+```html
+<!-- generated markup that never closes its wrappers -->
+<div>
+  <div>
+    <div>
+      <div><div>…</div></div>
+    </div>
+  </div>
+</div>
+```
+
+## How to fix it
+
+Close the elements you open, or generate flatter markup. For a quote of a quote of a quote, a few
+levels are plenty.
+
+## Related
+
+- [Markdown and HTML imports](../concepts/content.md)
+- [Security](../concepts/security.md)
+
 <!-- source: errors/LUM1010.md -->
 
 <!-- Generated from crates/lumen_compiler/src/diagnostics/registry.rs by packages/lumen/scripts/gen-error-docs.ts. Edit the explanation below the end marker. -->
@@ -6062,6 +6125,10 @@ A `{` without its `}` is reported too, at the brace, although Lightning CSS clos
 the end of the `<style>`: the rules after it end up nested inside the unclosed rule, which is
 rarely what was meant (`.a { color: red; .b { top: 0 }` styles `.a .b`).
 
+Blocks nested more than 64 levels deep, or parentheses (functions, `:is(…)`, media conditions)
+more than 16, are an error too: the block is left out of the CSS. The parser recurses once per
+level, and nested math functions take time exponential in their depth.
+
 ## Example
 
 ```stsx
@@ -6371,6 +6438,57 @@ newer than Lumen's list, the warning is safe to ignore; report it so the list ca
 ## Related
 
 - [LUM3017](LUM3017.md): a known property with a value browsers ignore
+- [Styles](../concepts/styles.md)
+
+<!-- source: errors/LUM3021.md -->
+
+<!-- Generated from crates/lumen_compiler/src/diagnostics/registry.rs by packages/lumen/scripts/gen-error-docs.ts. Edit the explanation below the end marker. -->
+
+# LUM3021: Unsafe `$` constant value
+
+**Severity:** error · **Category:** styles (3xxx)
+
+<!-- end of generated header -->
+
+> A `$` constant used in a style block holds text that could end its declaration, its rule or the `<style>` element.
+
+**Reported by:** the CSS compiler (`lumen_css`), in `lumen/vite`, `lumen check` and the language server. An error; the constant is not inserted.
+
+## What it means
+
+`$name` inserts the constant's value as CSS text into one declaration value. A value with `{`, `}`
+or `;` outside a string, a `/*` comment, an unterminated string or a trailing `\` would end the
+declaration or the rule and add CSS of its own, outside the component's scope; a `<` anywhere
+(even in a string) could end the `<style>` element in the page's HTML. When the value comes from
+data, that is an injection; even from the project, it silently breaks the scoping. So such a value
+is refused.
+
+## Example
+
+```stsx
+const accent = "red; } body { display: none";
+
+export function Badge() {
+  return (
+    <span class="badge">
+      New
+      <style>
+        .badge { color: $accent; }
+      </style>
+    </span>
+  );
+}
+```
+
+## How to fix it
+
+Keep each constant to one CSS value (`"red"`, `"1px solid #000"`, `"\"Inter\", sans-serif"`). For
+several declarations, use several constants, or set a custom property from a `style` prop and read
+it with `var()`.
+
+## Related
+
+- [LUM3008](LUM3008.md): a `$` reference that is not a constant
 - [Styles](../concepts/styles.md)
 
 <!-- source: errors/LUM4001.md -->
@@ -7029,6 +7147,7 @@ fix?, docs }`; `lumen check --format json` prints them.
 | [LUM1006](LUM1006.md) | error    | Raw CSS in a `.tsx` file             |
 | [LUM1007](LUM1007.md) | error    | `await using` in a component         |
 | [LUM1008](LUM1008.md) | error    | `<script>` in a Markdown file        |
+| [LUM1009](LUM1009.md) | error    | Content nested too deeply            |
 | [LUM1010](LUM1010.md) | error    | Source nested too deeply             |
 
 ## Reactivity (2xxx)
@@ -7061,6 +7180,7 @@ fix?, docs }`; `lumen check --format json` prints them.
 | [LUM3018](LUM3018.md) | warning  | Unitless number from a `$` reference      |
 | [LUM3019](LUM3019.md) | warning  | Unit separated from a `$` reference       |
 | [LUM3020](LUM3020.md) | warning  | Unknown CSS property                      |
+| [LUM3021](LUM3021.md) | error    | Unsafe `$` constant value                 |
 
 ## Islands and boundaries (4xxx)
 

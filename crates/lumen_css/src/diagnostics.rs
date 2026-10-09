@@ -32,6 +32,9 @@ pub enum CssCode {
     DetachedUnit,
     /// `LUM3020` (warning): a declaration's property is not a CSS property (`colr: red`).
     UnknownProperty,
+    /// `LUM3021` (error): a `$` constant whose text could end its declaration, rule or `<style>`
+    /// (`{`, `}`, `;` or `<`), and is not substituted.
+    UnsafeStyleRef,
 }
 
 impl CssCode {
@@ -48,6 +51,7 @@ impl CssCode {
             Self::UnitlessStyleRef => "LUM3018",
             Self::DetachedUnit => "LUM3019",
             Self::UnknownProperty => "LUM3020",
+            Self::UnsafeStyleRef => "LUM3021",
         }
     }
 
@@ -60,9 +64,10 @@ impl CssCode {
             | Self::UnitlessStyleRef
             | Self::DetachedUnit
             | Self::UnknownProperty => Severity::Warning,
-            Self::HyphenatedStyleRef | Self::CssSyntaxError | Self::InvalidScopeSelector => {
-                Severity::Error
-            }
+            Self::HyphenatedStyleRef
+            | Self::CssSyntaxError
+            | Self::InvalidScopeSelector
+            | Self::UnsafeStyleRef => Severity::Error,
         }
     }
 }

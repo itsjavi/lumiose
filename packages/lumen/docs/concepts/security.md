@@ -88,6 +88,19 @@ Trailing-slash redirects (`lumen({ trailingSlash })`) always stay on your site, 
 request path such as `//evil.com/`. `href()` refuses `.` and `..` as param values, which a browser
 would resolve into another route.
 
+**Files from elsewhere.** Icon sets, Markdown and HTML often come from outside the project. The
+compiler treats them as untrusted input:
+
+- **SVG imports** keep an allowlist of SVG elements and attributes: no scripts, handlers,
+  `<foreignObject>` HTML, `javascript:` URLs or animations of links, and `<style>` text cannot
+  open a tag ([SVG imports](svg.md)).
+- **`$` constants** in style blocks cannot end their declaration or the `<style>` element
+  ([LUM3021](../errors/LUM3021.md)), so data in a constant cannot add CSS outside its scope.
+- **Frontmatter** keys such as `__proto__` stay plain data.
+- **Depth limits** turn absurdly nested files into errors instead of crashes or stalls: CSS
+  blocks past 64 levels and parentheses past 16 ([LUM3014](../errors/LUM3014.md)), SVG elements past 128,
+  Markdown and HTML past 512 ([LUM1009](../errors/LUM1009.md)).
+
 **Cross-site form posts.** Form actions and form-encoded posts to endpoints are checked against
 the `Origin` header (on by default, `lumen({ csrf })`); see [Data and actions](data-and-actions.md).
 
@@ -174,6 +187,9 @@ page's policy lists the script's hash.
 
 ## Related diagnostics
 
-None yet: a violation shows in the browser console, with the refused element.
+A CSP violation shows in the browser console, with the refused element. For files:
+[LUM1009](../errors/LUM1009.md) (content nested too deeply), [LUM3014](../errors/LUM3014.md) (CSS
+nested too deeply), [LUM3021](../errors/LUM3021.md) (a `$` constant that would break out of its
+value).
 
 See also: [Head and document](head.md), [Styles](styles.md), [Rendering modes](rendering-modes.md), [reference: `lumen/vite`](../reference/vite.md), [reference: app APIs](../reference/app.md).

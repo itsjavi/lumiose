@@ -55,6 +55,7 @@ registry! {
     RawCssInTsx = "LUM1006", Error, "Raw CSS in a `.tsx` file";
     AwaitUsingInComponent = "LUM1007", Error, "`await using` in a component";
     ScriptInMarkdown = "LUM1008", Error, "`<script>` in a Markdown file";
+    ContentNestedTooDeep = "LUM1009", Error, "Content nested too deeply";
     SourceNestedTooDeep = "LUM1010", Error, "Source nested too deeply";
     // 2xxx reactivity
     StaleDerivedValue = "LUM2001", Warning, "Stale derived value";
@@ -79,6 +80,7 @@ registry! {
     UnitlessStyleRef = "LUM3018", Warning, "Unitless number from a `$` reference";
     DetachedUnit = "LUM3019", Warning, "Unit separated from a `$` reference";
     UnknownCssProperty = "LUM3020", Warning, "Unknown CSS property";
+    UnsafeStyleRef = "LUM3021", Error, "Unsafe `$` constant value";
     // 4xxx islands and boundaries
     NonExportedIsland = "LUM4001", Error, "Island component is not exported";
     NonSerializableIslandProp = "LUM4002", Error, "Non-serializable island prop";

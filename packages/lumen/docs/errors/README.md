@@ -20,6 +20,7 @@ fix?, docs }`; `lumen check --format json` prints them.
 | [LUM1006](LUM1006.md) | error    | Raw CSS in a `.tsx` file             |
 | [LUM1007](LUM1007.md) | error    | `await using` in a component         |
 | [LUM1008](LUM1008.md) | error    | `<script>` in a Markdown file        |
+| [LUM1009](LUM1009.md) | error    | Content nested too deeply            |
 | [LUM1010](LUM1010.md) | error    | Source nested too deeply             |
 
 ## Reactivity (2xxx)
@@ -52,6 +53,7 @@ fix?, docs }`; `lumen check --format json` prints them.
 | [LUM3018](LUM3018.md) | warning  | Unitless number from a `$` reference      |
 | [LUM3019](LUM3019.md) | warning  | Unit separated from a `$` reference       |
 | [LUM3020](LUM3020.md) | warning  | Unknown CSS property                      |
+| [LUM3021](LUM3021.md) | error    | Unsafe `$` constant value                 |
 
 ## Islands and boundaries (4xxx)
 

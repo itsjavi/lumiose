@@ -61,7 +61,18 @@ pub(crate) struct Scan {
     pub declarations: Vec<Declaration>,
     /// The offsets of the `{` that have no matching `}`.
     pub unclosed: Vec<usize>,
+    /// The first `{` nested deeper than [`MAX_BLOCKS`] or `(` deeper than [`MAX_PARENS`].
+    pub too_deep: Option<usize>,
 }
+
+/// Blocks (`{`) nested deeper than this make a `<style>` block an error: Lightning CSS and the
+/// selector pass recurse per level.
+pub(crate) const MAX_BLOCKS: usize = 64;
+
+/// Parentheses (functions, `:is(…)`, media conditions) nested deeper than this make a `<style>`
+/// block an error: besides recursing, Lightning CSS parses nested math functions in time
+/// exponential in their depth (16 levels of `calc(` take about 10 ms, 24 seconds).
+pub(crate) const MAX_PARENS: usize = 16;
 
 /// What the current `{…}` block contains.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -139,6 +150,9 @@ pub(crate) fn scan(css: &str) -> Scan {
                 let item = std::mem::take(&mut item);
                 stack.push(open_block(css, item, pos, context, &mut out));
                 braces.push(pos);
+                if braces.len() > MAX_BLOCKS && out.too_deep.is_none() {
+                    out.too_deep = Some(pos);
+                }
                 pos += 1;
             }
             b';' | b'}' => {
@@ -153,6 +167,9 @@ pub(crate) fn scan(css: &str) -> Scan {
             b'(' => {
                 item.begin(pos);
                 item.parens += 1;
+                if item.parens > MAX_PARENS && out.too_deep.is_none() {
+                    out.too_deep = Some(pos);
+                }
                 pos += 1;
             }
             b')' => {

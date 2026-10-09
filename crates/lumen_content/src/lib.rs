@@ -41,6 +41,7 @@
 mod assets;
 mod dom;
 mod emit;
+mod limits;
 mod markdown;
 
 use html5ever::tendril::TendrilSink;
@@ -64,6 +65,9 @@ pub struct Component {
 
 /// The diagnostic code of a `<script>` in a Markdown file (registered in `lumen_compiler`).
 pub const SCRIPT_IN_MARKDOWN: &str = "LUM1008";
+
+/// The diagnostic code of a file nested too deeply to parse (registered in `lumen_compiler`).
+pub const NESTED_TOO_DEEP: &str = "LUM1009";
 
 /// An error in a content file. Its code is registered in `lumen_compiler`'s diagnostics registry.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -90,7 +94,13 @@ pub fn markdown(source: &str, name: &str) -> Component {
     let (frontmatter, body) = markdown::split_frontmatter(source);
     // `body` is the end of `source`.
     let body_start = source.len() - body.len();
+    if let Some(offset) = limits::quotes_too_deep(body) {
+        return too_deep(name, true, frontmatter, body_start + offset);
+    }
     let (html, scripts) = markdown::to_html(body);
+    if limits::html_too_deep(&html).is_some() {
+        return too_deep(name, true, frontmatter, body_start);
+    }
     let nodes = fragment(&html);
     let headings = markdown::heading_ids(&nodes);
     let mut component = emit::module(emit::Input {
@@ -118,6 +128,9 @@ pub fn markdown(source: &str, name: &str) -> Component {
 
 /// The component module of an HTML file named `name` (`card.html`).
 pub fn html(source: &str, name: &str) -> Component {
+    if let Some(offset) = limits::html_too_deep(source) {
+        return too_deep(name, false, None, offset);
+    }
     let nodes = if is_document(source) {
         document(source)
     } else {
@@ -129,6 +142,29 @@ pub fn html(source: &str, name: &str) -> Component {
         markdown: None,
         frontmatter: None,
     })
+}
+
+/// An empty component and the `LUM1009` error at `offset`: the file nests deeper than
+/// [`limits::MAX_NESTING`] and is not parsed.
+fn too_deep(name: &str, markdown: bool, frontmatter: Option<&str>, offset: usize) -> Component {
+    let mut component = emit::module(emit::Input {
+        nodes: Vec::new(),
+        name,
+        markdown: markdown.then(Vec::new),
+        frontmatter: frontmatter.map(str::to_owned),
+    });
+    component.diagnostics.push(Diagnostic {
+        code: NESTED_TOO_DEEP,
+        message: format!(
+            "the content is nested deeper than {} levels",
+            limits::MAX_NESTING
+        ),
+        span: offset..offset + 1,
+        help: Some(
+            "Close the elements or block quotes you open; no document nests this deep.".to_owned(),
+        ),
+    });
+    component
 }
 
 fn parse_options() -> ParseOpts {
