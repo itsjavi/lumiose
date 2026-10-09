@@ -1,0 +1,37 @@
+{
+  "name": "@bench/app-react-router",
+  "version": "0.0.0",
+  "private": true,
+  "description": "The Tracker app (doc-4) in React Router framework mode with SSR.",
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "seed": "bench-seed",
+    "dev": "react-router dev --host 127.0.0.1 --port ${PORT:-4102} --strictPort",
+    "build": "react-router build",
+    "start": "NODE_ENV=production node server.ts",
+    "typecheck": "react-router typegen && tsc -p tsconfig.json",
+    "clean": "rm -rf build .react-router node_modules/.vite"
+  },
+  "dependencies": {
+    "@bench/data": "workspace:*",
+    "@bench/react-ui": "workspace:*",
+    "@bench/ui-css": "workspace:*",
+    "@react-router/express": "8.4.0",
+    "@react-router/node": "8.4.0",
+    "express": "5.2.1",
+    "isbot": "5.2.2",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "react-router": "8.4.0"
+  },
+  "devDependencies": {
+    "@react-router/dev": "8.4.0",
+    "@types/express": "5.0.6",
+    "@types/node": "24.19.1",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "typescript": "7.0.2",
+    "vite": "8.3.4"
+  }
+}

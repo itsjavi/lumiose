@@ -5,7 +5,7 @@ import { LabelPicker } from "./label-picker.tsx";
 export function FieldError({ name, error }: { name: string; error: string | undefined }) {
   if (!error) return null;
   return (
-    <p className="field-error" id={`${name}-error`} data-testid={`field-error-${name}`}>
+    <p className="field-error" id={`${name}-error`} data-testid={`error-${name}`}>
       {error}
     </p>
   );
@@ -105,7 +105,12 @@ export function IssueFormFields({
         <LabelPicker labels={labels} defaultValue={values.labels} />
         <FieldError name="labels" error={errors.labels} />
       </div>
-      <button type="submit" className="btn btn-primary" disabled={pending}>
+      <button
+        type="submit"
+        className="btn btn-primary"
+        data-testid="create-issue"
+        disabled={pending}
+      >
         Create issue
       </button>
     </>
@@ -119,7 +124,7 @@ export function LoginFields({ username, error }: { username: string; error: stri
       <Field name="username" label="Username" error={error}>
         <input id="username" name="username" defaultValue={username} autoComplete="username" />
       </Field>
-      <button type="submit" className="btn btn-primary">
+      <button type="submit" className="btn btn-primary" data-testid="login-submit">
         Log in
       </button>
       <p className="muted">

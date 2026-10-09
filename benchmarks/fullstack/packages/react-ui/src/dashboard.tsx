@@ -18,31 +18,27 @@ export function DashboardStats({
 }: Pick<Dashboard, "byStatus" | "byPriority">) {
   return (
     <>
-      <section className="stats" aria-label="Issues by status">
+      <section className="stats" data-testid="status-stats" aria-label="Issues by status">
         {STATUSES.map((status) => (
-          <div
-            key={status}
-            className={`stat-card status-${status}`}
-            data-testid={`stat-status-${status}`}
-          >
+          <div key={status} className={`stat-card status-${status}`} data-testid={`stat-${status}`}>
             <span className="stat-label">{STATUS_LABELS[status]}</span>
-            <span className="stat-value" data-testid="stat-value">
-              {byStatus[status]}
-            </span>
+            <span className="stat-value">{byStatus[status]}</span>
           </div>
         ))}
       </section>
-      <section className="stats" aria-label="Issues by priority">
+      <section
+        className="stats"
+        data-testid="priority-stats"
+        aria-label="Unresolved issues by priority"
+      >
         {PRIORITIES.map((priority) => (
           <div
             key={priority}
             className={`stat-card priority-${priority}`}
-            data-testid={`stat-priority-${priority}`}
+            data-testid={`stat-${priority}`}
           >
             <span className="stat-label">{PRIORITY_LABELS[priority]}</span>
-            <span className="stat-value" data-testid="stat-value">
-              {byPriority[priority]}
-            </span>
+            <span className="stat-value">{byPriority[priority]}</span>
           </div>
         ))}
       </section>
@@ -85,14 +81,22 @@ export function ProjectTable({
   );
 }
 
-/** The dashboard's "recently updated" list. */
-export function RecentIssues({ Link, issues }: { Link: LinkComponent; issues: IssueSummary[] }) {
+/** A compact list of issues (the dashboard's "recently updated", testId `recent-issues`). */
+export function IssueList({
+  Link,
+  issues,
+  testId,
+}: {
+  Link: LinkComponent;
+  issues: IssueSummary[];
+  testId: string;
+}) {
   return (
-    <ul className="issue-list" data-testid="recent-issues">
+    <ul className="issue-list" data-testid={testId}>
       {issues.map((issue) => (
-        <li key={issue.id} className="issue-item" data-testid="recent-issue">
-          <Link href={`/issues/${issue.id}`} className="issue-link" data-testid="issue-link">
-            {issue.title}
+        <li key={issue.id} className="issue-item">
+          <Link href={`/issues/${issue.id}`} className="issue-link">
+            <span className="issue-number">#{issue.id}</span> {issue.title}
           </Link>
           <span className="issue-item-meta">
             <StatusBadge status={issue.status} />
@@ -111,8 +115,8 @@ export function SearchResults({ Link, hits }: { Link: LinkComponent; hits: Searc
     <ul className="issue-list" data-testid="search-results">
       {hits.map((hit) => (
         <li key={hit.id} className="issue-item" data-testid="search-result">
-          <Link href={`/issues/${hit.id}`} className="issue-link" data-testid="issue-link">
-            {hit.title}
+          <Link href={`/issues/${hit.id}`} className="issue-link">
+            <span className="issue-number">#{hit.id}</span> {hit.title}
           </Link>
           <span className="issue-item-meta">
             <StatusBadge status={hit.status} />

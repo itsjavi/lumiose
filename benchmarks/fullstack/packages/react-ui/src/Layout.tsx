@@ -6,7 +6,7 @@ export interface AppShellProps {
   Link: LinkComponent;
   projects: Project[];
   user: User | undefined;
-  /** The app's logout form (`data-testid="logout-form"`, wrapping `<LogoutButton>`), shown with a user. */
+  /** The app's logout form (posting to /logout, wrapping `<LogoutButton>`), shown with a user. */
   logout: ReactNode;
   children: ReactNode;
 }
@@ -15,27 +15,19 @@ export interface AppShellProps {
 export function AppShell({ Link, projects, user, logout, children }: AppShellProps) {
   return (
     <div className="app">
-      <header className="app-header" data-testid="site-header">
+      <header className="app-header" data-testid="app-header">
         <Link href="/" className="brand">
           Tracker
         </Link>
-        <nav className="nav">
-          <Link href="/" data-testid="nav-home">
-            Dashboard
-          </Link>
-          <Link href="/issues/new" data-testid="nav-new-issue">
-            New issue
-          </Link>
-          <Link href="/search" data-testid="nav-search">
-            Search
-          </Link>
+        <nav className="nav" data-testid="nav">
+          <Link href="/">Dashboard</Link>
+          <Link href="/issues/new">New issue</Link>
+          <Link href="/search">Search</Link>
         </nav>
-        <div className="user">
+        <div className="user" data-testid="current-user">
           {user ? (
             <>
-              <span className="user-name" data-testid="current-user">
-                {user.name}
-              </span>
+              <span className="user-name">{user.displayName}</span>
               {logout}
             </>
           ) : (
@@ -47,10 +39,12 @@ export function AppShell({ Link, projects, user, logout, children }: AppShellPro
       </header>
       <div className="app-body">
         <Sidebar Link={Link} projects={projects} />
-        <main className="main">{children}</main>
+        <main className="main" data-testid="main">
+          {children}
+        </main>
       </div>
-      <footer className="app-footer" data-testid="site-footer">
-        Tracker benchmark · the same app in Lumen, React Router and Next.js
+      <footer className="app-footer" data-testid="app-footer">
+        Tracker · fullstack comparison benchmark
       </footer>
     </div>
   );
@@ -65,9 +59,7 @@ export function Sidebar({ Link, projects }: { Link: LinkComponent; projects: Pro
           <li key={project.slug}>
             <Link href={`/projects/${project.slug}`} data-testid="sidebar-project">
               <span className="project-name">{project.name}</span>
-              <span className="count" data-testid="sidebar-project-count">
-                {project.openCount}
-              </span>
+              <span className="count">{project.openCount}</span>
             </Link>
           </li>
         ))}
@@ -78,7 +70,7 @@ export function Sidebar({ Link, projects }: { Link: LinkComponent; projects: Pro
 
 export function LogoutButton() {
   return (
-    <button type="submit" className="btn btn-link">
+    <button type="submit" className="btn btn-link" data-testid="logout-button">
       Log out
     </button>
   );
@@ -87,9 +79,7 @@ export function LogoutButton() {
 export function NotFound({ Link }: { Link: LinkComponent }) {
   return (
     <section className="not-found" data-testid="not-found">
-      <h1 className="page-title" data-testid="page-title">
-        Page not found
-      </h1>
+      <h1 className="page-title">Page not found</h1>
       <p className="muted">The page you are looking for does not exist.</p>
       <Link href="/" className="btn">
         Back to the dashboard
@@ -100,9 +90,5 @@ export function NotFound({ Link }: { Link: LinkComponent }) {
 
 /** A page's `<h1>`. */
 export function PageTitle({ children }: { children: ReactNode }) {
-  return (
-    <h1 className="page-title" data-testid="page-title">
-      {children}
-    </h1>
-  );
+  return <h1 className="page-title">{children}</h1>;
 }

@@ -57,12 +57,13 @@ export function SearchBox({
         placeholder="Search issues"
         autoComplete="off"
         aria-label="Search issues"
+        data-testid="search-input"
       />
       {open && hits.length > 0 && (
-        <ul className="suggestions" data-testid="search-suggestions">
+        <ul className="suggestions" data-testid="suggestions">
           {hits.map((hit) => (
-            <li key={hit.id}>
-              <Link href={`/issues/${hit.id}`} data-testid="search-suggestion">
+            <li key={hit.id} data-testid="suggestion">
+              <Link href={`/issues/${hit.id}`}>
                 <span className="issue-number">#{hit.id}</span> {hit.title}
               </Link>
             </li>

@@ -6,9 +6,9 @@ export {
   PageTitle,
   Sidebar,
   type AppShellProps,
-} from "./Layout.tsx";
+} from "./layout.tsx";
 export { LabelList, PriorityBadge, StatusBadge } from "./badges.tsx";
-export { DashboardStats, ProjectTable, RecentIssues, SearchResults } from "./dashboard.tsx";
+export { DashboardStats, ProjectTable, IssueList, SearchResults } from "./dashboard.tsx";
 export {
   BulkBar,
   FilterFields,

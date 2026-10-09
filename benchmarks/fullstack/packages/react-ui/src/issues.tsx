@@ -69,7 +69,7 @@ export function FilterFields({ filters, labels }: { filters: IssueFilters; label
           placeholder="Filter by title"
         />
       </label>
-      <button type="submit" className="btn">
+      <button type="submit" className="btn" data-testid="filter-submit">
         Apply
       </button>
     </>
@@ -81,16 +81,24 @@ export interface IssueTableProps {
   issues: IssueSummary[];
   selected: ReadonlySet<number>;
   onToggle: (id: number) => void;
+  onToggleAll: () => void;
 }
 
 /** The project page's issue table with row checkboxes (rendered by the app's bulk-select client component). */
-export function IssueTable({ Link, issues, selected, onToggle }: IssueTableProps) {
+export function IssueTable({ Link, issues, selected, onToggle, onToggleAll }: IssueTableProps) {
+  const allSelected = issues.length > 0 && issues.every((issue) => selected.has(issue.id));
   return (
     <table className="table issue-table" data-testid="issue-table">
       <thead>
         <tr>
           <th className="col-check">
-            <span className="visually-hidden">Select</span>
+            <input
+              type="checkbox"
+              aria-label="Select all"
+              data-testid="select-all"
+              checked={allSelected}
+              onChange={onToggleAll}
+            />
           </th>
           <th className="num">#</th>
           <th>Title</th>
@@ -103,32 +111,32 @@ export function IssueTable({ Link, issues, selected, onToggle }: IssueTableProps
       </thead>
       <tbody>
         {issues.map((issue) => (
-          <tr key={issue.id} data-testid="issue-row" data-id={issue.id}>
+          <tr key={issue.id} data-testid="issue-row" data-issue-id={issue.id}>
             <td className="col-check">
               <input
                 type="checkbox"
                 name="ids"
                 value={issue.id}
-                aria-label={`Select issue ${issue.id}`}
-                data-testid="issue-select"
+                aria-label={`Select issue #${issue.id}`}
+                data-testid="row-select"
                 checked={selected.has(issue.id)}
                 onChange={() => onToggle(issue.id)}
               />
             </td>
             <td className="num muted">{issue.id}</td>
             <td className="col-title">
-              <Link href={`/issues/${issue.id}`} className="issue-link" data-testid="issue-link">
+              <Link href={`/issues/${issue.id}`} className="issue-link">
                 {issue.title}
               </Link>
               <LabelList labels={issue.labels} />
             </td>
             <td>
-              <StatusBadge status={issue.status} testId="issue-status" />
+              <StatusBadge status={issue.status} />
             </td>
             <td>
-              <PriorityBadge priority={issue.priority} testId="issue-priority" />
+              <PriorityBadge priority={issue.priority} />
             </td>
-            <td data-testid="issue-assignee">{issue.assignee?.name ?? "Unassigned"}</td>
+            <td>{issue.assignee?.displayName ?? <span className="muted">Unassigned</span>}</td>
             <td className="num">{issue.commentCount}</td>
             <td>
               <time dateTime={issue.updatedAt}>{formatDate(issue.updatedAt)}</time>
@@ -150,7 +158,7 @@ export function BulkBar({ count, pending }: { count: number; pending: boolean })
         data-testid="close-selected"
         disabled={count === 0 || pending}
       >
-        Close selected
+        {pending ? "Closing…" : "Close selected"}
       </button>
     </div>
   );
@@ -164,6 +172,7 @@ export interface PaginationProps {
 }
 
 export function Pagination({ Link, page, totalPages, hrefFor }: PaginationProps) {
+  if (totalPages <= 1) return null;
   return (
     <nav className="pagination" data-testid="pagination" aria-label="Pagination">
       {page > 1 ? (
@@ -173,8 +182,8 @@ export function Pagination({ Link, page, totalPages, hrefFor }: PaginationProps)
       ) : (
         <span className="btn disabled">Previous</span>
       )}
-      <span className="page-info">
-        Page <span data-testid="page-current">{page}</span> of {totalPages}
+      <span className="page-info" data-testid="page-info">
+        Page {page} of {totalPages}
       </span>
       {page < totalPages ? (
         <Link href={hrefFor(page + 1)} rel="next" className="btn" data-testid="page-next">

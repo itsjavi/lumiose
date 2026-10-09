@@ -9,22 +9,19 @@ import {
   type Status,
 } from "@bench/data/format";
 import { LabelList, PriorityBadge, StatusBadge } from "./badges.tsx";
-import { PageTitle } from "./Layout.tsx";
 import type { LinkComponent } from "./link.tsx";
 
 export function IssueHeader({ Link, issue }: { Link: LinkComponent; issue: Issue }) {
   return (
     <header className="issue-header">
-      <PageTitle>{issue.title}</PageTitle>
-      <div className="issue-meta">
-        <span className="issue-number">#{issue.id}</span>
-        <StatusBadge status={issue.status} testId="issue-status" />
-        <PriorityBadge priority={issue.priority} testId="issue-priority" />
+      <h1 className="page-title" data-testid="issue-title">
+        {issue.title} <span className="issue-number">#{issue.id}</span>
+      </h1>
+      <div className="issue-meta" data-testid="issue-status">
+        <StatusBadge status={issue.status} />
+        <PriorityBadge priority={issue.priority} />
         <span className="muted">
-          in{" "}
-          <Link href={`/projects/${issue.project.slug}`} data-testid="issue-project">
-            {issue.project.name}
-          </Link>
+          in <Link href={`/projects/${issue.project.slug}`}>{issue.project.name}</Link>
         </span>
       </div>
     </header>
@@ -45,24 +42,24 @@ export function IssueDetails({ issue }: { issue: Issue }) {
   return (
     <dl className="details">
       <dt>Assignee</dt>
-      <dd data-testid="issue-assignee">{issue.assignee?.name ?? "Unassigned"}</dd>
+      <dd data-testid="assignee">{issue.assignee?.displayName ?? "Unassigned"}</dd>
       <dt>Reporter</dt>
-      <dd data-testid="issue-reporter">{issue.reporter.name}</dd>
+      <dd data-testid="reporter">{issue.reporter.displayName}</dd>
       <dt>Created</dt>
       <dd>
-        <time dateTime={issue.createdAt} data-testid="issue-created">
-          {formatDate(issue.createdAt)}
-        </time>
+        <time dateTime={issue.createdAt}>{formatDate(issue.createdAt)}</time>
       </dd>
       <dt>Updated</dt>
       <dd>
-        <time dateTime={issue.updatedAt} data-testid="issue-updated">
-          {formatDate(issue.updatedAt)}
-        </time>
+        <time dateTime={issue.updatedAt}>{formatDate(issue.updatedAt)}</time>
       </dd>
       <dt>Labels</dt>
       <dd>
-        <LabelList labels={issue.labels} testId="issue-labels" />
+        {issue.labels.length ? (
+          <LabelList labels={issue.labels} testId="issue-labels" />
+        ) : (
+          <span className="muted">None</span>
+        )}
       </dd>
     </dl>
   );
@@ -74,7 +71,7 @@ export function StatusFields({ status, pending = false }: { status: Status; pend
     <>
       <label className="field">
         <span className="field-label">Status</span>
-        <select name="status" defaultValue={status}>
+        <select name="status" defaultValue={status} data-testid="status-select">
           {STATUSES.map((value) => (
             <option key={value} value={value}>
               {STATUS_LABELS[value]}
@@ -82,7 +79,7 @@ export function StatusFields({ status, pending = false }: { status: Status; pend
           ))}
         </select>
       </label>
-      <button type="submit" className="btn" disabled={pending}>
+      <button type="submit" className="btn" data-testid="status-submit" disabled={pending}>
         Update status
       </button>
     </>
@@ -90,26 +87,19 @@ export function StatusFields({ status, pending = false }: { status: Status; pend
 }
 
 export function CommentList({ comments }: { comments: Comment[] }) {
-  if (comments.length === 0) {
-    return (
-      <p className="muted" data-testid="comments-empty">
-        No comments yet.
-      </p>
-    );
-  }
   return (
     <>
-      <p className="muted">{plural(comments.length, "comment")}</p>
+      <p className="muted" data-testid="comment-count">
+        {plural(comments.length, "comment")}
+      </p>
       <ol className="comment-list" data-testid="comment-list">
         {comments.map((comment) => (
           <li key={comment.id} className="comment" data-testid="comment">
             <div className="comment-meta">
-              <strong data-testid="comment-author">{comment.author.name}</strong>{" "}
+              <strong>{comment.author.displayName}</strong>{" "}
               <time dateTime={comment.createdAt}>{formatDate(comment.createdAt)}</time>
             </div>
-            <p className="comment-body" data-testid="comment-body">
-              {comment.body}
-            </p>
+            <p className="comment-body">{comment.body}</p>
           </li>
         ))}
       </ol>
@@ -119,7 +109,7 @@ export function CommentList({ comments }: { comments: Comment[] }) {
 
 export function CommentsFallback() {
   return (
-    <p className="loading" data-testid="comments-fallback">
+    <p className="loading" data-testid="comments-loading">
       Loading comments…
     </p>
   );
@@ -144,10 +134,11 @@ export function CommentFields({ value, onChange, pending, error }: CommentFields
           maxLength={COMMENT_MAX}
           value={value}
           onChange={(event) => onChange(event.target.value)}
+          data-testid="comment-input"
         />
       </label>
       {error && (
-        <p className="field-error" data-testid="field-error-body">
+        <p className="field-error" data-testid="comment-error">
           {error}
         </p>
       )}
@@ -155,8 +146,13 @@ export function CommentFields({ value, onChange, pending, error }: CommentFields
         <span className="char-count" data-testid="char-count">
           {value.length} / {COMMENT_MAX}
         </span>
-        <button type="submit" className="btn btn-primary" disabled={pending}>
-          Comment
+        <button
+          type="submit"
+          className="btn btn-primary"
+          data-testid="comment-submit"
+          disabled={pending || value.trim().length === 0}
+        >
+          {pending ? "Posting…" : "Comment"}
         </button>
       </div>
     </>

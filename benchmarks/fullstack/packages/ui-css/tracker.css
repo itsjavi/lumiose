@@ -90,7 +90,7 @@ h3 {
   align-items: center;
   gap: 12px;
 }
-.user form {
+.logout-form {
   margin: 0;
 }
 .app-header .btn-link {
@@ -160,7 +160,7 @@ h3 {
   padding: var(--gap);
   margin-bottom: var(--gap);
 }
-.section-title {
+.panel-title {
   font-size: 15px;
 }
 
@@ -490,7 +490,7 @@ textarea {
   margin: 0 0 8px;
   color: var(--muted);
 }
-.bulk {
+.bulk-form {
   margin: 0;
   background: var(--surface);
   border: 1px solid var(--border);
@@ -503,7 +503,7 @@ textarea {
   justify-content: space-between;
   gap: 12px;
   padding: 8px 10px;
-  border-bottom: 1px solid var(--border);
+  border-top: 1px solid var(--border);
 }
 .pagination {
   display: flex;
@@ -540,7 +540,7 @@ textarea {
   padding: 4px var(--gap);
   margin-bottom: 24px;
 }
-.issue-sidebar {
+.issue-side {
   display: grid;
   gap: var(--gap);
 }
@@ -590,7 +590,7 @@ textarea {
   color: var(--muted);
   font-style: italic;
 }
-.composer {
+.comment-form {
   display: grid;
   gap: 8px;
 }

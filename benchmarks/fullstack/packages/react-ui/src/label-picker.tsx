@@ -23,8 +23,7 @@ export function LabelPicker({ labels, defaultValue }: { labels: Label[]; default
             aria-pressed={on}
             disabled={!on && selected.length >= LABELS_MAX}
             onClick={() => toggle(label.name)}
-            data-testid="label-option"
-            data-label={label.name}
+            data-testid="label-chip"
           >
             {label.name}
           </button>
