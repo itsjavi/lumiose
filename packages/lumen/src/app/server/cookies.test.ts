@@ -1,8 +1,12 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { createCookieJar, parseCookieHeader, serializeCookie, signedCookie } from "./cookies.ts";
 
 const request = (cookie?: string) =>
   new Request("https://lumen.test/", cookie === undefined ? {} : { headers: { cookie } });
+
+/** An env with `NODE_ENV` and a short `LUMEN_SECRET`. */
+const env = (nodeEnv: string) => (name: string) =>
+  name === "NODE_ENV" ? nodeEnv : name === "LUMEN_SECRET" ? "short" : undefined;
 
 async function sign(name: string, value: string, secret: string | string[]) {
   const jar = createCookieJar(request(), { secure: true });
@@ -120,5 +124,22 @@ describe("signedCookie", () => {
     const jar = createCookieJar(request(), { secure: false });
     signedCookie("s", { secret: "k", path: "/app" }).delete(jar);
     expect(jar.headers()[0]).toMatch(/^s=; Path=\/app; Max-Age=0;/);
+  });
+
+  it("refuses secrets under 32 bytes in production, warns in development (decision-29)", async () => {
+    const jar = createCookieJar(request(), { secure: true });
+    await expect(signedCookie("p", {}, env("production")).set(jar, "v")).rejects.toThrow(
+      /shorter than 32 bytes/,
+    );
+    await signedCookie("p", { allowWeakSecret: true }, env("production")).set(jar, "v");
+    const long = "x".repeat(32);
+    await signedCookie("p", { secret: long }, env("production")).set(jar, "v");
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    try {
+      await signedCookie("dev-only", {}, env("development")).set(jar, "v");
+      expect(warn).toHaveBeenCalledWith(expect.stringMatching(/shorter than 32 bytes/));
+    } finally {
+      warn.mockRestore();
+    }
   });
 });

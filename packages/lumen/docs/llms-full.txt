@@ -1358,8 +1358,9 @@ src/
 - **Layouts** wrap every page below their folder and receive `{ params, children }`. `children`
   is the page (the outlet).
 - **Pages** export a `default` component (it may be `async`), which receives `{ params }`. Other
-  page exports: `mode`, `ssr`, `staticPaths`, `action`/`actions` and `headers` (see
-  [Rendering modes](rendering-modes.md) and [Data and actions](data-and-actions.md)).
+  page exports: `mode`, `ssr`, `staticPaths`, `action`/`actions`, `headers` and `limits` (see
+  [Rendering modes](rendering-modes.md), [Data and actions](data-and-actions.md) and
+  [Security](security.md)). Endpoints may export `limits` too.
 - **Error pages:** `_404` renders unmatched URLs and `notFound()`; `_error` renders thrown errors
   and `error(status)`. Both receive `{ status, error }`. Outside dev, unexpected errors are masked
   as 500. An error page renders inside the layouts of its folder, like a page there: the root
@@ -1780,7 +1781,9 @@ framework turns them into a redirect or the nearest `_404`/`_error` page. Withou
 **Cookies.** `cookies.get/getAll/set/delete`. Defaults: `path=/`, `httpOnly`, `sameSite=lax`, and
 `secure` on HTTPS and in production. `signedCookie(name)` signs values with HMAC-SHA256 (secret:
 `LUMEN_SECRET`, or rotate with an array of secrets); signing protects integrity, not
-confidentiality.
+confidentiality. Secrets must be at least 32 bytes: a shorter one throws in production and warns
+in development, unless you pass `{ allowWeakSecret: true }`. Generate one with
+`openssl rand -base64 32`.
 
 **Status and headers.** `response().setStatus()` and `setHeader()` change the page response, and
 a page may export `headers(ctx)`. They are writable **until the shell is sent** (see
@@ -2789,11 +2792,25 @@ never see another host. Targets that are not a path (`http://other/x`, or `*` ot
 `OPTIONS`) and invalid `Host` headers get `400 Bad Request`. Behind a proxy that rewrites the
 host, set `ORIGIN` (or the adapter's `origin`) so a client cannot choose the origin through `Host`.
 
-**Request body limits.** `ctx.formData()` in a form action reads at most 1 MB of URL-encoded
-fields and 16 MB of multipart data, and every request body through `lumen dev`, `lumen preview`
-and `@lumen/adapter-node` at most 16 MB: a larger body gets `413 Payload Too Large`, refused before
-reading when its `Content-Length` says so, else as soon as the count passes the limit. Nothing
-buffers an unbounded body. (These defaults are fixed for now.)
+**Request body limits.** Every request body is bounded (decision-29): URL-encoded forms, JSON and
+other bodies at 1 MB, `multipart/form-data` (uploads) at 10 MB. A larger request gets `413 Payload
+Too Large`, refused before reading when its `Content-Length` says so, else as soon as the bytes
+read pass the limit; nothing buffers an unbounded body. The limits hold for form actions
+(`ctx.formData()`), endpoints (`request.formData()`, `json()`, `text()`, `arrayBuffer()` read the
+bounded body) and middleware alike, in every deployment. Raise or lower them for the app with
+`lumen({ limits: { body: "2mb", upload: "50mb" } })`, and for one route with
+`export const limits = { upload: "200mb" }` in its page or endpoint file.
+
+**Default response headers.** `X-Content-Type-Options: nosniff` (no MIME sniffing of uploads and
+JSON) and `Referrer-Policy: strict-origin-when-cross-origin` (no full URLs to other sites) go on
+every response; override them in `lumen({ headers })`, or remove one with `""`.
+
+**Secrets.** `signedCookie()` needs a secret of at least 32 bytes in production
+(`LUMEN_SECRET`); a shorter one throws when the cookie is used (in development it warns).
+`{ allowWeakSecret: true }` opts out.
+
+**Compression.** `@lumen/adapter-node` compresses responses; for pages that render a secret next
+to reflected input, see BREACH in the [adapter reference](../reference/adapter-node.md).
 
 ## API
 
@@ -3469,6 +3486,8 @@ function signedCookie(name: string, options?: SignedCookieOptions): SignedCookie
 interface SignedCookieOptions extends CookieOptions {
   /** HMAC secret; an array rotates keys (the first signs). Default: env LUMEN_SECRET. */
   secret?: string | readonly string[];
+  /** Accept secrets under 32 bytes (else they throw in production, warn in dev). */
+  allowWeakSecret?: boolean;
 }
 interface SignedCookie {
   readonly name: string;
@@ -3988,11 +4007,13 @@ interface LumenOptions {
   csp?: "strict";
   /** Response headers: a record for every response, or rules by path (below base). */
   headers?: Record<string, string> | { path: string; headers: Record<string, string> }[];
+  /** Request body limits, in bytes or "512kb"/"1mb": larger requests get 413. */
+  limits?: { body?: number | string; upload?: number | string }; // default { body: "1mb", upload: "10mb" }
 }
 ```
 
 The project options (`mode`, `ssr`, `trailingSlash`, `csrf`, `viewTransitions`, `prefetch`,
-`headers`) are
+`headers`, `limits`) are
 read by `lumen dev`, `lumen build` and `lumen routes`/`check` from the plugin's `api.options`.
 Invalid values and unknown option names throw when the config loads. `csp: "strict"` is
 described in [Security](../concepts/security.md): nonces on every inline script and style Lumen
@@ -4006,7 +4027,14 @@ later rules win for the same header). `lumen dev`, `lumen preview` and `@lumen/a
 them on every response, static files included, and `lumen build` writes them to
 `dist/client/_headers`, the file Netlify and Cloudflare Pages read (`**` becomes `*`, a `*`
 segment a `:name` placeholder). Headers that middleware, endpoints or `response().setHeader()` set
-win.
+win. Two headers are sent by default, as Rails and Django do: `X-Content-Type-Options: nosniff` and
+`Referrer-Policy: strict-origin-when-cross-origin`; give them another value in `headers`, or `""`
+to remove one (`_headers` gets `! name`).
+
+**Body limits** (`limits`). `body` caps URL-encoded forms, JSON and any other non-multipart
+request body (default `"1mb"`), `upload` caps `multipart/form-data` bodies (default `"10mb"`). A
+route's `export const limits = { upload: "100mb" }` overrides them for its requests. See
+[Security](../concepts/security.md#request-body-limits).
 
 ```ts
 lumen({
@@ -4669,6 +4697,8 @@ interface HandlerOptions {
   headers?: import("node:http").OutgoingHttpHeaders;
   /** Compress responses for clients that accept brotli or gzip. Default: true. */
   compress?: boolean;
+  /** Symbolic links in dist/client: follow them (warning about escapes) or "contain". */
+  symlinks?: "follow" | "contain"; // default "follow"
 }
 
 type NodeHandler = (
@@ -4713,11 +4743,8 @@ which skips on-the-fly compression for that response, or turn compression off wi
 
 **Malformed requests** never reach the app and are not logged: a request target that is not a
 path (`http://other/x`, `//host` is a path) or an invalid `Host` header gets `400`, `TRACE`/`TRACK`
-`405`, `CONNECT` `501`. **Request bodies are bounded**: a body larger than 16 MB gets `413 Payload
-Too Large`, refused before reading when `Content-Length` says so, else as soon as the limit is
-passed while the app reads it (an endpoint's `request.arrayBuffer()` rejects with that `413`).
-Form actions read at most 1 MB of URL-encoded fields and 16 MB of multipart data (see
-[Security](../concepts/security.md)). These are fixed defaults for now.
+`405`, `CONNECT` `501`. Request bodies are bounded by the app's limits (1 MB, 10 MB for
+uploads, `lumen({ limits })`; see [Security](../concepts/security.md#request-body-limits)).
 
 **Timeouts.** The server keeps Node's defaults (`headersTimeout` 60 s, `requestTimeout` 300 s,
 `keepAliveTimeout` 5 s), which bound slow clients. On the open internet, put a reverse proxy
@@ -4736,6 +4763,8 @@ type StaticHandler = (req: IncomingMessage, res: ServerResponse) => Promise<bool
 interface StaticOptions {
   /** Serve the precompressed `.br`/`.gz` copies to clients that accept them. Default: true. */
   compress?: boolean;
+  /** Follow symbolic links that leave `dir` (with a warning), or "contain" them. */
+  symlinks?: "follow" | "contain"; // default "follow"
 }
 ```
 
@@ -4751,7 +4780,8 @@ follow the build's `trailingSlash`: `/about` serves `about/index.html` (`"ignore
 `dir` is indexed once, when the handler is created: a build output does not change while it is
 served, and requests no file answers (every page) cost no file system call. Files written into
 `dir` later are not served until the server restarts. An entry that cannot be read is skipped with a
-warning, and symbolic links that lead outside `dir` are served but listed in a warning at startup.
+warning. Symbolic links are followed (as serve-static and nginx do); links that lead outside `dir`
+are listed in a warning at startup, and `symlinks: "contain"` leaves them out.
 `_headers` (rules for static hosts) and the `.br`/`.gz` copies are not served as files of their own.
 
 ## Example

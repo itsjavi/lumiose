@@ -104,6 +104,7 @@ export async function build(options: BuildOptions = {}): Promise<BuildResult> {
   const logger = resolved.logger;
   const project = projectOptions(resolved, "build");
   state.csrf = project.csrf;
+  if (project.limits !== undefined) state.limits = project.limits;
   if (project.headers !== undefined) state.headers = project.headers;
   Object.assign(state, navigationOptions(project));
   const defaultMode: RouteMode = project.mode ?? "static";
@@ -162,8 +163,9 @@ export async function build(options: BuildOptions = {}): Promise<BuildResult> {
     logger.info(`  ${normalizePath(relative(root, join(clientDir, file.file)))}`);
   }
   logger.info(`✓ ${prerendered.length} file${prerendered.length === 1 ? "" : "s"} prerendered.`);
-  if (project.headers !== undefined) {
-    // After `public/`: a hand-written `_headers` keeps its rules, ours follow.
+  {
+    // Lumen's default headers and lumen({ headers }) for static hosts. After `public/`: a
+    // hand-written `_headers` keeps its rules, ours follow.
     const file = join(clientDir, "_headers");
     const own = await readFile(file, "utf8").catch(() => "");
     await writeFile(

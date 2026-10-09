@@ -220,6 +220,7 @@ export function lumenDev(options: LumenDevOptions = {}): Plugin {
       base,
       ...(project.trailingSlash === undefined ? {} : { trailingSlash: project.trailingSlash }),
       ...(project.csrf === undefined ? {} : { csrf: project.csrf }),
+      ...(project.limits === undefined ? {} : { limits: project.limits }),
       ...(project.csp === undefined ? {} : { csp: project.csp }),
       ...(project.headers === undefined ? {} : { headers: project.headers }),
       ...navigationOptions(project),
@@ -352,18 +353,17 @@ export function lumenDev(options: LumenDevOptions = {}): Plugin {
       reportDiagnostics(app.manifest.diagnostics);
       vite.watcher.on("all", onFileEvent);
       // Before Vite's middlewares, so modules and assets get them too; later setHeader calls win.
+      // Lumen's default headers (decision-29) and lumen({ headers }).
       const headers = project.headers;
-      if (headers !== undefined) {
-        vite.middlewares.use((req, res, next) => {
-          const path = pathBelowBase(req.url ?? "/", vite.config.base);
-          if (path !== undefined) {
-            for (const [name, value] of Object.entries(headersFor(headers, path))) {
-              res.setHeader(name, value);
-            }
+      vite.middlewares.use((req, res, next) => {
+        const path = pathBelowBase(req.url ?? "/", vite.config.base);
+        if (path !== undefined) {
+          for (const [name, value] of Object.entries(headersFor(headers, path))) {
+            res.setHeader(name, value);
           }
-          next();
-        });
-      }
+        }
+        next();
+      });
       // After Vite's middlewares, so modules and assets are served first.
       return () => {
         vite.middlewares.use(middleware);

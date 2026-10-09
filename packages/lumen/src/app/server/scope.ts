@@ -4,6 +4,7 @@
 // cookies(), response() and env(). Server-only: imports node:async_hooks.
 
 import type { ActionData, ActionsExport } from "../actions/types.ts";
+import type { BodyLimits } from "./body.ts";
 import { AsyncLocalStorage } from "node:async_hooks";
 import type { Routes, RouteParams } from "../routes/registry.ts";
 import { LUM_AFTER_SHELL, LUM_PRERENDER_REQUEST, LumenError } from "../diagnostics.ts";
@@ -43,6 +44,8 @@ export interface RequestScope {
   nonce?: string;
   /** Set when the page rendered a `<Link prefetch>` marker (./navigation.ts). */
   prefetchLinks?: boolean;
+  /** The body limits of the request: the app's, then the route's (./body.ts). */
+  bodyLimits?: { current: BodyLimits };
 }
 
 export interface ActionState {

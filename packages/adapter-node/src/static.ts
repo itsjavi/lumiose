@@ -57,6 +57,11 @@ const REVALIDATE = "public, max-age=0, must-revalidate";
 export interface StaticOptions {
   /** Serve the precompressed `.br`/`.gz` copies to clients that accept them. Default: true. */
   compress?: boolean;
+  /**
+   * Symbolic links in `dir`: `"follow"` serves what they point to, with a startup warning for
+   * links that leave `dir`; `"contain"` serves only links that stay inside it. Default: `"follow"`.
+   */
+  symlinks?: "follow" | "contain";
 }
 
 export function createStaticHandler(
@@ -66,7 +71,7 @@ export function createStaticHandler(
 ): StaticHandler {
   const compress = options.compress !== false;
   const assetsPrefix = `${config.assetsDir.replace(/^\/+|\/+$/g, "")}/`;
-  const files = indexFiles(dir);
+  const files = indexFiles(dir, options.symlinks ?? "follow");
   const fileStats = (path: string): FileInfo | undefined => files.get(path);
 
   return async (req, res) => {
@@ -145,7 +150,7 @@ interface FileInfo {
  * that cannot be read is skipped (logged), never the whole index; links that lead outside `dir`
  * are served but reported once at startup (TASK-167 L2).
  */
-function indexFiles(dir: string): Map<string, FileInfo> {
+function indexFiles(dir: string, symlinks: "follow" | "contain"): Map<string, FileInfo> {
   const files = new Map<string, FileInfo>();
   let root: string;
   try {
@@ -171,8 +176,10 @@ function indexFiles(dir: string): Map<string, FileInfo> {
         stats = statSync(absolute);
         if (entry.isSymbolicLink()) {
           const target = realpathSync(absolute);
-          if (target !== root && !target.startsWith(root + sep))
+          if (target !== root && !target.startsWith(root + sep)) {
+            if (symlinks === "contain") continue;
             escaping.push(`${path} -> ${target}`);
+          }
           if (stats.isDirectory() && visited.has(target)) continue; // a cycle
           if (stats.isDirectory()) visited.add(target);
         }
@@ -197,7 +204,8 @@ function indexFiles(dir: string): Map<string, FileInfo> {
   }
   // Precompressed copies are served for their file (Content-Encoding), not as files of their own,
   // and `_headers` (rules for static hosts, TASK-125) is configuration (TASK-167 L6).
-  for (const path of [...files.keys()]) {
+  // Deleting the current key while iterating a Map is safe.
+  for (const path of files.keys()) {
     const original = path.replace(/\.(?:br|gz)$/, "");
     if (original !== path && files.has(original)) files.delete(path);
   }

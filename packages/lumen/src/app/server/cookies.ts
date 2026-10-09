@@ -160,6 +160,11 @@ export interface SignedCookieOptions extends CookieOptions {
    * Default: the `LUMEN_SECRET` env variable, read when the cookie is used.
    */
   secret?: string | readonly string[];
+  /**
+   * Accept secrets shorter than 32 bytes (decision-29). Without it, a short secret throws in
+   * production (`NODE_ENV=production`) and warns once in development.
+   */
+  allowWeakSecret?: boolean;
 }
 
 export interface SignedCookie {
@@ -171,6 +176,9 @@ export interface SignedCookie {
 }
 
 export const SECRET_ENV = "LUMEN_SECRET";
+/** The shortest secret accepted without `allowWeakSecret` (decision-29, iron-session's rule). */
+export const MIN_SECRET_BYTES = 32;
+const warnedWeak = new Set<string>();
 
 /**
  * A cookie whose value is signed with HMAC-SHA256 (`value.signature`, base64url). The signature
@@ -182,7 +190,7 @@ export function signedCookie(
   options: SignedCookieOptions = {},
   readEnv: (name: string) => string | undefined = defaultEnv,
 ): SignedCookie {
-  const { secret, ...cookieOptions } = options;
+  const { secret, allowWeakSecret = false, ...cookieOptions } = options;
   const secrets = (): readonly string[] => {
     const value = secret ?? readEnv(SECRET_ENV);
     const list = typeof value === "string" ? [value] : (value ?? []);
@@ -190,6 +198,15 @@ export function signedCookie(
       throw new Error(
         `signedCookie("${name}") needs a secret: set the ${SECRET_ENV} env variable or pass { secret }.`,
       );
+    }
+    if (!allowWeakSecret && list.some((item) => encoder.encode(item).byteLength < MIN_SECRET_BYTES)) {
+      const message = `signedCookie("${name}"): a secret is shorter than ${MIN_SECRET_BYTES} bytes, which a brute-force search can recover. Use a random secret (\`openssl rand -base64 32\`), or pass { allowWeakSecret: true }.`;
+      const production = (readEnv("NODE_ENV") ?? defaultEnv("NODE_ENV")) === "production";
+      if (production) throw new Error(message);
+      if (!warnedWeak.has(name)) {
+        warnedWeak.add(name);
+        console.warn(message);
+      }
     }
     return list;
   };

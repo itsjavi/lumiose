@@ -23,6 +23,7 @@ import type { RouteManifest } from "../routes/manifest.ts";
 import type { BuiltAppConfig } from "../server/app.ts";
 import type { HeadersOption } from "../headers.ts";
 import type { CsrfOptions } from "../server/csrf.ts";
+import type { LimitsOption } from "../server/body.ts";
 import type { TrailingSlash } from "../server/handler.ts";
 import type { Prefetch } from "../server/navigation.ts";
 import { SPA_ENTRY, spaEntryPlugin } from "../router/entry.ts";
@@ -50,6 +51,8 @@ export interface BuildState {
   /** The effective policy, set when the config resolves (`href()` reads it too). */
   trailingSlash: TrailingSlash;
   csrf: false | CsrfOptions | undefined;
+  /** `lumen({ limits })`, for the server entry. */
+  limits?: LimitsOption;
   /** `lumen({ headers })`, for adapters (`config.headers` of the server entry). */
   headers?: HeadersOption;
   viewTransitions: boolean;
@@ -331,6 +334,7 @@ export function serverEntryCode(state: BuildState, config: ResolvedConfig): stri
     ...(middleware === undefined ? {} : { middleware }),
     ...(document === undefined ? {} : { document }),
     ...(state.csrf === undefined ? {} : { csrf: state.csrf }),
+    ...(state.limits === undefined ? {} : { limits: state.limits }),
     ...(state.viewTransitions ? { viewTransitions: true } : {}),
     ...(projectOptions(config, "build").csp === undefined ? {} : { csp: "strict" }),
     ...(state.prefetch === "none" ? {} : { prefetch: state.prefetch }),

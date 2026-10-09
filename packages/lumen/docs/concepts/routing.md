@@ -28,8 +28,9 @@ src/
 - **Layouts** wrap every page below their folder and receive `{ params, children }`. `children`
   is the page (the outlet).
 - **Pages** export a `default` component (it may be `async`), which receives `{ params }`. Other
-  page exports: `mode`, `ssr`, `staticPaths`, `action`/`actions` and `headers` (see
-  [Rendering modes](rendering-modes.md) and [Data and actions](data-and-actions.md)).
+  page exports: `mode`, `ssr`, `staticPaths`, `action`/`actions`, `headers` and `limits` (see
+  [Rendering modes](rendering-modes.md), [Data and actions](data-and-actions.md) and
+  [Security](security.md)). Endpoints may export `limits` too.
 - **Error pages:** `_404` renders unmatched URLs and `notFound()`; `_error` renders thrown errors
   and `error(status)`. Both receive `{ status, error }`. Outside dev, unexpected errors are masked
   as 500. An error page renders inside the layouts of its folder, like a page there: the root

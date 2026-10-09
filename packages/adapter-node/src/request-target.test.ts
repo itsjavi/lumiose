@@ -55,6 +55,14 @@ describe("request targets", () => {
     expect(response.text).toContain("app https://victim.test//robots.txt");
   });
 
+  it("sends Lumen's default headers on static files and app responses (decision-29)", async () => {
+    for (const path of ["/robots.txt", "/page"]) {
+      const response = await raw(`GET ${path} HTTP/1.1`);
+      expect(response.text).toMatch(/x-content-type-options: nosniff/i);
+      expect(response.text).toMatch(/referrer-policy: strict-origin-when-cross-origin/i);
+    }
+  });
+
   it("answers 400 to absolute-form targets, without reaching the app", async () => {
     const response = await raw("GET http://attacker.test/ HTTP/1.1");
     expect(response.status).toBe(400);

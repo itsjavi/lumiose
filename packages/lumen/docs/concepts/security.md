@@ -77,11 +77,25 @@ never see another host. Targets that are not a path (`http://other/x`, or `*` ot
 `OPTIONS`) and invalid `Host` headers get `400 Bad Request`. Behind a proxy that rewrites the
 host, set `ORIGIN` (or the adapter's `origin`) so a client cannot choose the origin through `Host`.
 
-**Request body limits.** `ctx.formData()` in a form action reads at most 1 MB of URL-encoded
-fields and 16 MB of multipart data, and every request body through `lumen dev`, `lumen preview`
-and `@lumen/adapter-node` at most 16 MB: a larger body gets `413 Payload Too Large`, refused before
-reading when its `Content-Length` says so, else as soon as the count passes the limit. Nothing
-buffers an unbounded body. (These defaults are fixed for now.)
+**Request body limits.** Every request body is bounded (decision-29): URL-encoded forms, JSON and
+other bodies at 1 MB, `multipart/form-data` (uploads) at 10 MB. A larger request gets `413 Payload
+Too Large`, refused before reading when its `Content-Length` says so, else as soon as the bytes
+read pass the limit; nothing buffers an unbounded body. The limits hold for form actions
+(`ctx.formData()`), endpoints (`request.formData()`, `json()`, `text()`, `arrayBuffer()` read the
+bounded body) and middleware alike, in every deployment. Raise or lower them for the app with
+`lumen({ limits: { body: "2mb", upload: "50mb" } })`, and for one route with
+`export const limits = { upload: "200mb" }` in its page or endpoint file.
+
+**Default response headers.** `X-Content-Type-Options: nosniff` (no MIME sniffing of uploads and
+JSON) and `Referrer-Policy: strict-origin-when-cross-origin` (no full URLs to other sites) go on
+every response; override them in `lumen({ headers })`, or remove one with `""`.
+
+**Secrets.** `signedCookie()` needs a secret of at least 32 bytes in production
+(`LUMEN_SECRET`); a shorter one throws when the cookie is used (in development it warns).
+`{ allowWeakSecret: true }` opts out.
+
+**Compression.** `@lumen/adapter-node` compresses responses; for pages that render a secret next
+to reflected input, see BREACH in the [adapter reference](../reference/adapter-node.md).
 
 ## API
 

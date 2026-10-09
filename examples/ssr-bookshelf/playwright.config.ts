@@ -17,7 +17,7 @@ export default defineConfig({
     env: {
       BOOKSHELF_DB: "data/e2e.db",
       BOOKSHELF_SLOW_MS: "300",
-      LUMEN_SECRET: "bookshelf-e2e-only",
+      LUMEN_SECRET: "bookshelf-e2e-only-secret-of-32-bytes+",
       HOST: "127.0.0.1",
       PORT: String(PORT),
     },

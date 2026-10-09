@@ -4,6 +4,7 @@
 // typo or a wrong value fails the config load with a message instead of being ignored.
 
 import type { HeaderRule, HeadersOption } from "../app/headers.ts";
+import { DEFAULT_LIMITS, resolveLimits, type LimitsOption } from "../app/server/body.ts";
 import type { ProjectOptions } from "../app/project.ts";
 import type { RouteMode } from "../app/routes/manifest.ts";
 import type { CsrfOptions } from "../app/server/csrf.ts";
@@ -105,6 +106,13 @@ export interface LumenOptions {
    * @example lumen({ headers: [{ path: "/admin/**", headers: { "x-robots-tag": "noindex" } }] })
    */
   headers?: HeadersOption;
+  /**
+   * Request body limits (decision-29): `body` for URL-encoded forms, JSON and other bodies,
+   * `upload` for multipart bodies, in bytes or as `"512kb"`, `"1mb"`. Larger requests get 413. A
+   * route's `export const limits` overrides them for its requests.
+   * Default: `{ body: "1mb", upload: "10mb" }`.
+   */
+  limits?: LimitsOption;
 }
 
 /** The `api` of the `lumen` plugin, read by the app layer (app/project.ts `projectOptions`). */
@@ -143,6 +151,7 @@ const KNOWN = [
   "prefetch",
   "csp",
   "headers",
+  "limits",
 ];
 
 /** Validates `lumen({ … })` options and returns the project options; throws a `TypeError`. */
@@ -182,6 +191,14 @@ export function projectOptionsOf(options: LumenOptions): ProjectOptions {
   if (prefetch !== undefined) project.prefetch = oneOf("prefetch", prefetch, PREFETCH);
   if (options.csp !== undefined) project.csp = oneOf("csp", options.csp, ["strict"] as const);
   if (headers !== undefined) project.headers = headersOption(headers);
+  if (options.limits !== undefined) {
+    try {
+      resolveLimits(options.limits, DEFAULT_LIMITS, "limits");
+    } catch (error) {
+      fail("limits", (error as Error).message.replace(/^limits(?:\.\w+)?: /, ""));
+    }
+    project.limits = options.limits;
+  }
   return project;
 }
 

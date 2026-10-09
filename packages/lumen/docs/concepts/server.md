@@ -29,7 +29,9 @@ framework turns them into a redirect or the nearest `_404`/`_error` page. Withou
 **Cookies.** `cookies.get/getAll/set/delete`. Defaults: `path=/`, `httpOnly`, `sameSite=lax`, and
 `secure` on HTTPS and in production. `signedCookie(name)` signs values with HMAC-SHA256 (secret:
 `LUMEN_SECRET`, or rotate with an array of secrets); signing protects integrity, not
-confidentiality.
+confidentiality. Secrets must be at least 32 bytes: a shorter one throws in production and warns
+in development, unless you pass `{ allowWeakSecret: true }`. Generate one with
+`openssl rand -base64 32`.
 
 **Status and headers.** `response().setStatus()` and `setHeader()` change the page response, and
 a page may export `headers(ctx)`. They are writable **until the shell is sent** (see

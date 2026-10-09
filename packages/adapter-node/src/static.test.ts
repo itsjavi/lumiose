@@ -177,6 +177,22 @@ describe("the static index (TASK-167 L2)", () => {
       const warnings = warn.mock.calls.map((call) => String(call[0])).join("\n");
       expect(warnings).toContain("cannot read");
       expect(warnings).toContain("shared.txt ->");
+      // symlinks: "contain" serves only what stays inside the directory.
+      const contained = createStaticHandler(
+        root,
+        { base: "/", trailingSlash: "ignore", assetsDir: "assets" },
+        { symlinks: "contain" },
+      );
+      const strict = createServer((req, res) => {
+        void contained(req, res).then((served) => {
+          if (!served) res.writeHead(418).end();
+        });
+      });
+      servers.push(strict);
+      await new Promise<void>((done) => strict.listen(0, "127.0.0.1", done));
+      const strictOrigin = `http://127.0.0.1:${(strict.address() as AddressInfo).port}`;
+      expect((await fetch(`${strictOrigin}/shared.txt`)).status).toBe(418);
+      expect(await (await fetch(`${strictOrigin}/ok.txt`)).text()).toBe("ok");
     } finally {
       warn.mockRestore();
       chmodSync(join(root, "locked"), 0o755);

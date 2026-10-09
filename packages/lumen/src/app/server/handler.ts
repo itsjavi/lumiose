@@ -26,6 +26,13 @@ import {
 } from "./actions.ts";
 import { HttpError, isHttpError, isRedirect, statusText, type Redirect } from "./control.ts";
 import { createCookieJar, type CookieJar } from "./cookies.ts";
+import {
+  boundedRequest,
+  checkContentLength,
+  DEFAULT_LIMITS,
+  resolveLimits,
+  type LimitsOption,
+} from "./body.ts";
 import { isSameOriginRequest, needsOriginCheck, type CsrfOptions } from "./csrf.ts";
 import {
   addNonce,
@@ -55,6 +62,12 @@ export type ModuleExports = Record<string, unknown>;
 
 export interface RequestHandlerOptions {
   manifest: Pick<RouteManifest, "routes" | "layouts" | "notFoundPages" | "errorPages">;
+  /**
+   * Request body limits (`lumen({ limits })`, decision-29): `body` for URL-encoded, JSON and other
+   * bodies (default 1 MB), `upload` for multipart (default 10 MB). A route's `export const limits`
+   * overrides them for its requests.
+   */
+  limits?: LimitsOption;
   /** Loads a module by its project-relative path from the manifest (dev: Vite; prod: the build's map). */
   loadModule: (file: string) => Promise<ModuleExports>;
   /** Renders a page tree to its shell and stream. Default: lumen/server's `createServerRenderer()`. */
@@ -166,12 +179,17 @@ export function createRequestHandler(options: RequestHandlerOptions): RequestHan
   );
 
   const allowedOrigins = new Set(options.csrf === false ? [] : options.csrf?.allowedOrigins);
+  const appLimits = resolveLimits(options.limits, DEFAULT_LIMITS, "lumen({ limits })");
 
   function fetch(request: Request): Promise<Response> {
     return handle(request, undefined);
   }
 
-  async function handle(request: Request, parent: ParentRequest | undefined): Promise<Response> {
+  async function handle(incoming: Request, parent: ParentRequest | undefined): Promise<Response> {
+    // Every body is bounded (413 beyond the limits); a route's own limits replace the app's once
+    // its module is loaded (`applyRouteLimits`).
+    const limits = { current: appLimits };
+    const request = boundedRequest(incoming, () => limits.current);
     const url = new URL(request.url);
     // The path below `base`; outside it nothing matches and the root error pages apply.
     const pathname = routePath(url.pathname, base);
@@ -220,6 +238,7 @@ export function createRequestHandler(options: RequestHandlerOptions): RequestHan
       response: createResponseState(),
       fetch: (inner) => fetchInProcess(inner, { cookies, locals: ctx.locals, depth }, request),
       ...(options.csp === "strict" && !prerendering ? { nonce: createNonce() } : {}),
+      bodyLimits: limits,
     };
 
     // Prerendering guards request APIs in routes, not in middleware (nested in-process requests
@@ -325,7 +344,9 @@ export function createRequestHandler(options: RequestHandlerOptions): RequestHan
     const routeCtx = prerendering ? prerenderContext(scope.ctx) : scope.ctx;
     if (route.kind === "endpoint") {
       try {
-        return await serveEndpoint(routeCtx, request, await loadModule(route.file));
+        const module = await loadModule(route.file);
+        applyRouteLimits(scope, module, route.file);
+        return await serveEndpoint(routeCtx, request, module);
       } catch (error) {
         return endpointError(error, request);
       }
@@ -344,6 +365,7 @@ export function createRequestHandler(options: RequestHandlerOptions): RequestHan
         Promise.all((csr ? spa.outer : route.layouts).map((file) => loadComponent(file))),
         csr ? undefined : loadModule(route.file),
       ]);
+      if (pageModule !== undefined) applyRouteLimits(scope, pageModule, route.file);
       const allow =
         pageModule !== undefined && hasActions(pageModule) ? ACTION_PAGE_METHODS : PAGE_METHODS;
       if (request.method === "OPTIONS") return allowResponse(204, allow);
@@ -600,6 +622,19 @@ export function createRequestHandler(options: RequestHandlerOptions): RequestHan
 
   async function loadComponent(file: string): Promise<Component<any>> {
     return componentOf(await loadModule(file), file);
+  }
+
+  /**
+   * A route's `export const limits` over the app's, for the rest of the request; then a declared
+   * `Content-Length` over the limit is refused before the route reads anything (413).
+   */
+  function applyRouteLimits(scope: RequestScope, module: ModuleExports, file: string): void {
+    const limits = scope.bodyLimits!;
+    if (module.limits !== undefined) {
+      limits.current = resolveLimits(module.limits, appLimits, `${file}: export const limits`);
+    }
+    if (scope.ctx.request.body !== null)
+      checkContentLength(scope.ctx.request.headers, limits.current);
   }
 
   return { fetch };

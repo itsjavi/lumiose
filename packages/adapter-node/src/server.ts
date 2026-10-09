@@ -55,6 +55,12 @@ export interface HandlerOptions {
    * or CDN in front compresses. Default: true.
    */
   compress?: boolean;
+  /**
+   * Symbolic links in `dist/client`: `"follow"` (like serve-static and nginx) serves their targets
+   * and warns at startup about links that leave the directory; `"contain"` ignores those.
+   * Default: `"follow"`.
+   */
+  symlinks?: "follow" | "contain";
 }
 
 /** A Node request listener, also usable as connect/express middleware (errors go to `next`). */
@@ -87,7 +93,10 @@ export async function createHandler(options: HandlerOptions = {}): Promise<NodeH
 function nodeHandler(dir: string, entry: ServerEntryModule, options: HandlerOptions): NodeHandler {
   const app = options.env === undefined ? entry.default : entry.createHandler({ env: options.env });
   const compress = options.compress !== false;
-  const statics = createStaticHandler(join(dir, "client"), entry.config, { compress });
+  const statics = createStaticHandler(join(dir, "client"), entry.config, {
+    compress,
+    ...(options.symlinks === undefined ? {} : { symlinks: options.symlinks }),
+  });
   const origin = options.origin ?? process.env.ORIGIN;
   const headers = Object.entries(options.headers ?? {}).filter(
     (header): header is [string, number | string | string[]] => header[1] !== undefined,
@@ -99,13 +108,14 @@ function nodeHandler(dir: string, entry: ServerEntryModule, options: HandlerOpti
     // Only `/path` targets (and `OPTIONS *`): `//host/…` must not become another origin (TASK-164).
     const target = requestTarget(req);
     if (target === undefined) {
-      reject(res, 400);
+      refuse(res, 400);
       return;
     }
     for (const [name, value] of headers) res.setHeader(name, value);
     // `lumen({ headers })` for this path (decision-26 §4); the files' and the app's headers win.
-    const path = configured && pathBelowBase(target, entry.config.base);
-    if (configured !== undefined && path !== undefined) {
+    // Lumen's default headers (nosniff, referrer policy) are part of it (decision-29).
+    const path = pathBelowBase(target, entry.config.base);
+    if (path !== undefined) {
       for (const [name, value] of Object.entries(headersFor(configured, path))) {
         res.setHeader(name, value);
       }
@@ -127,7 +137,7 @@ function nodeHandler(dir: string, entry: ServerEntryModule, options: HandlerOpti
       if (error instanceof RejectedRequest) {
         // A malformed request (bad Host, forbidden method, body too large): the client's fault,
         // answered with its status and nothing logged.
-        reject(res, error.status);
+        refuse(res, error.status);
         return;
       }
       if (next !== undefined) {
@@ -152,7 +162,7 @@ const STATUS_TEXT: Record<number, string> = {
   501: "Not Implemented",
 };
 
-function reject(res: ServerResponse, status: number): void {
+function refuse(res: ServerResponse, status: number): void {
   if (res.headersSent) {
     res.destroy();
     return;

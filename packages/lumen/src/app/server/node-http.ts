@@ -4,7 +4,6 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { Readable } from "node:stream";
 import type { TLSSocket } from "node:tls";
-import { limitedStream, MAX_BODY_BYTES } from "./body.ts";
 import { HttpError } from "./control.ts";
 
 // For adapters: the `lumen({ headers })` of a request path (`config.headers` of the server entry).
@@ -23,8 +22,8 @@ export function requestTarget(req: IncomingMessage & { originalUrl?: string }): 
 }
 
 /**
- * A request `toWebRequest` refuses: a target or `Host` it cannot serve (400), or a body declared
- * larger than the limit (413). Answer `status` without logging: it is the client's fault.
+ * A request `toWebRequest` refuses: a target, `Host`, method or header it cannot serve (400, 405,
+ * 501). Answer `status` without logging: it is the client's fault.
  */
 export class RejectedRequest extends HttpError {
   constructor(message: string, status = 400) {
@@ -91,12 +90,8 @@ export function toWebRequest(
   if (/^CONNECT$/i.test(method)) throw new RejectedRequest("CONNECT is not supported.", 501);
   const init: RequestInit & { duplex?: "half" } = { method, headers, signal: controller.signal };
   if (method !== "GET" && method !== "HEAD") {
-    // Bounded (TASK-167): a declared length above the cap is refused before reading; a longer
-    // streamed body errors with a 413 HttpError where the app reads it.
-    if (Number(req.headers["content-length"] ?? 0) > MAX_BODY_BYTES) {
-      throw new RejectedRequest(`The request body is larger than ${MAX_BODY_BYTES} bytes.`, 413);
-    }
-    init.body = limitedStream(Readable.toWeb(req) as ReadableStream<Uint8Array>, MAX_BODY_BYTES);
+    // Streamed; the request handler bounds it with the app's and the route's limits (./body.ts).
+    init.body = Readable.toWeb(req) as ReadableStream<Uint8Array>;
     init.duplex = "half";
   }
   try {

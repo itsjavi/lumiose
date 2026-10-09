@@ -6,7 +6,7 @@ import type { AddressInfo } from "node:net";
 import { connect } from "node:net";
 import { afterEach, describe, expect, it } from "vitest";
 import { pathBelowBase } from "../headers.ts";
-import { FORM_LIMITS, MAX_BODY_BYTES } from "./body.ts";
+import { DEFAULT_LIMITS } from "./body.ts";
 import { url } from "./scope.ts";
 import { app } from "./__fixtures__/app.ts";
 import { RejectedRequest, sendWebResponse, toWebRequest } from "./node-http.ts";
@@ -166,6 +166,10 @@ function declaredOnly(port: number, head: string, length: number): Promise<numbe
   });
 }
 
+/** A raw POST head to an endpoint. */
+const endpointHead = (path: string) =>
+  `POST ${path} HTTP/1.1\r\nHost: victim.test\r\nContent-Type: application/octet-stream`;
+
 /** A form action and an endpoint that reads its whole body. */
 function actionApp() {
   const ran = { count: 0 };
@@ -183,6 +187,12 @@ function actionApp() {
       POST: async (ctx: { request: Request }) =>
         new Response(String((await ctx.request.arrayBuffer()).byteLength)),
     },
+    "src/routes/api/small.ts": {
+      mode: "server",
+      limits: { body: "2kb" },
+      POST: async (ctx: { request: Request }) =>
+        new Response(String((await ctx.request.arrayBuffer()).byteLength)),
+    },
   });
   return { handle, ran };
 }
@@ -195,21 +205,48 @@ describe("request bodies and malformed requests", () => {
     const { handle, ran } = actionApp();
     const port = await serve(handle, "http://victim.test");
     const head = `POST /form HTTP/1.1\r\nHost: victim.test\r\nOrigin: http://victim.test\r\n${form}`;
-    expect(await declaredOnly(port, head, FORM_LIMITS.urlencoded + 1)).toBe(413);
-    expect(await rawChunked(port, head, FORM_LIMITS.urlencoded + 64 * 1024)).toBe(413);
+    expect(await declaredOnly(port, head, DEFAULT_LIMITS.body + 1)).toBe(413);
+    expect(await rawChunked(port, head, DEFAULT_LIMITS.body + 64 * 1024)).toBe(413);
     expect(ran.count).toBe(0);
     expect((await raw(port, head, "a=1")).status).toBe(200);
     expect(ran.count).toBe(1);
   });
 
-  it("caps every body through the bridge, endpoints included", async () => {
+  it("bounds endpoint bodies too, with the route's own limits over the app's", async () => {
     const { handle } = actionApp();
     const port = await serve(handle, "http://victim.test");
-    const head =
-      "POST /api/upload HTTP/1.1\r\nHost: victim.test\r\nContent-Type: application/octet-stream";
-    expect((await raw(port, head, "x".repeat(1000))).body).toBe("1000");
-    expect(await rawChunked(port, head, MAX_BODY_BYTES + 64 * 1024)).toBe(413);
-    expect(await declaredOnly(port, head, MAX_BODY_BYTES + 1)).toBe(413);
+    expect((await raw(port, endpointHead("/api/upload"), "x".repeat(1000))).body).toBe("1000");
+    expect(
+      await rawChunked(port, endpointHead("/api/upload"), DEFAULT_LIMITS.body + 64 * 1024),
+    ).toBe(413);
+    expect(await declaredOnly(port, endpointHead("/api/upload"), DEFAULT_LIMITS.body + 1)).toBe(
+      413,
+    );
+    // `export const limits = { body: "2kb" }` on the route.
+    expect((await raw(port, endpointHead("/api/small"), "x".repeat(2048))).body).toBe("2048");
+    expect((await raw(port, endpointHead("/api/small"), "x".repeat(4096))).status).toBe(413);
+    // Multipart bodies get the `upload` limit.
+    const multipart = `POST /api/upload HTTP/1.1\r\nHost: victim.test\r\nContent-Type: multipart/form-data; boundary=x`;
+    const upload = "x".repeat(DEFAULT_LIMITS.body + 1024);
+    expect((await raw(port, multipart, upload)).body).toBe(String(upload.length));
+    expect(await declaredOnly(port, multipart, DEFAULT_LIMITS.upload + 1)).toBe(413);
+  });
+
+  it("takes the app's limits from lumen({ limits })", async () => {
+    const { handle } = app(
+      {
+        "src/routes/api/upload.ts": {
+          mode: "server",
+          POST: async (ctx: { request: Request }) =>
+            new Response(String((await ctx.request.arrayBuffer()).byteLength)),
+        },
+      },
+      { limits: { body: "1kb" } },
+    );
+    const port = await serve(handle, "http://victim.test");
+    const head = "POST /api/upload HTTP/1.1\r\nHost: victim.test\r\nContent-Type: text/plain";
+    expect((await raw(port, head, "x".repeat(1024))).body).toBe("1024");
+    expect((await raw(port, head, "x".repeat(1025))).status).toBe(413);
   });
 
   it("answers forbidden methods with 405, not a server error", async () => {

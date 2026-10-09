@@ -18,8 +18,8 @@ export function staticPreviewPlugin(
       // Before Vite's static files, so they get the headers too.
       server.middlewares.use((req, res, next) => {
         const option = headers();
-        const path = option === undefined ? undefined : pathBelowBase(req.url ?? "/", base);
-        if (option !== undefined && path !== undefined) {
+        const path = pathBelowBase(req.url ?? "/", base);
+        if (path !== undefined) {
           for (const [name, value] of Object.entries(headersFor(option, path))) {
             res.setHeader(name, value);
           }

@@ -245,6 +245,8 @@ function signedCookie(name: string, options?: SignedCookieOptions): SignedCookie
 interface SignedCookieOptions extends CookieOptions {
   /** HMAC secret; an array rotates keys (the first signs). Default: env LUMEN_SECRET. */
   secret?: string | readonly string[];
+  /** Accept secrets under 32 bytes (else they throw in production, warn in dev). */
+  allowWeakSecret?: boolean;
 }
 interface SignedCookie {
   readonly name: string;

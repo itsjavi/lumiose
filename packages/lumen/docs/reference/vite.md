@@ -36,11 +36,13 @@ interface LumenOptions {
   csp?: "strict";
   /** Response headers: a record for every response, or rules by path (below base). */
   headers?: Record<string, string> | { path: string; headers: Record<string, string> }[];
+  /** Request body limits, in bytes or "512kb"/"1mb": larger requests get 413. */
+  limits?: { body?: number | string; upload?: number | string }; // default { body: "1mb", upload: "10mb" }
 }
 ```
 
 The project options (`mode`, `ssr`, `trailingSlash`, `csrf`, `viewTransitions`, `prefetch`,
-`headers`) are
+`headers`, `limits`) are
 read by `lumen dev`, `lumen build` and `lumen routes`/`check` from the plugin's `api.options`.
 Invalid values and unknown option names throw when the config loads. `csp: "strict"` is
 described in [Security](../concepts/security.md): nonces on every inline script and style Lumen
@@ -54,7 +56,14 @@ later rules win for the same header). `lumen dev`, `lumen preview` and `@lumen/a
 them on every response, static files included, and `lumen build` writes them to
 `dist/client/_headers`, the file Netlify and Cloudflare Pages read (`**` becomes `*`, a `*`
 segment a `:name` placeholder). Headers that middleware, endpoints or `response().setHeader()` set
-win.
+win. Two headers are sent by default, as Rails and Django do: `X-Content-Type-Options: nosniff` and
+`Referrer-Policy: strict-origin-when-cross-origin`; give them another value in `headers`, or `""`
+to remove one (`_headers` gets `! name`).
+
+**Body limits** (`limits`). `body` caps URL-encoded forms, JSON and any other non-multipart
+request body (default `"1mb"`), `upload` caps `multipart/form-data` bodies (default `"10mb"`). A
+route's `export const limits = { upload: "100mb" }` overrides them for its requests. See
+[Security](../concepts/security.md#request-body-limits).
 
 ```ts
 lumen({

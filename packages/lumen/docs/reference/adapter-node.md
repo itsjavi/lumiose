@@ -50,6 +50,8 @@ interface HandlerOptions {
   headers?: import("node:http").OutgoingHttpHeaders;
   /** Compress responses for clients that accept brotli or gzip. Default: true. */
   compress?: boolean;
+  /** Symbolic links in dist/client: follow them (warning about escapes) or "contain". */
+  symlinks?: "follow" | "contain"; // default "follow"
 }
 
 type NodeHandler = (
@@ -94,11 +96,8 @@ which skips on-the-fly compression for that response, or turn compression off wi
 
 **Malformed requests** never reach the app and are not logged: a request target that is not a
 path (`http://other/x`, `//host` is a path) or an invalid `Host` header gets `400`, `TRACE`/`TRACK`
-`405`, `CONNECT` `501`. **Request bodies are bounded**: a body larger than 16 MB gets `413 Payload
-Too Large`, refused before reading when `Content-Length` says so, else as soon as the limit is
-passed while the app reads it (an endpoint's `request.arrayBuffer()` rejects with that `413`).
-Form actions read at most 1 MB of URL-encoded fields and 16 MB of multipart data (see
-[Security](../concepts/security.md)). These are fixed defaults for now.
+`405`, `CONNECT` `501`. Request bodies are bounded by the app's limits (1 MB, 10 MB for
+uploads, `lumen({ limits })`; see [Security](../concepts/security.md#request-body-limits)).
 
 **Timeouts.** The server keeps Node's defaults (`headersTimeout` 60 s, `requestTimeout` 300 s,
 `keepAliveTimeout` 5 s), which bound slow clients. On the open internet, put a reverse proxy
@@ -117,6 +116,8 @@ type StaticHandler = (req: IncomingMessage, res: ServerResponse) => Promise<bool
 interface StaticOptions {
   /** Serve the precompressed `.br`/`.gz` copies to clients that accept them. Default: true. */
   compress?: boolean;
+  /** Follow symbolic links that leave `dir` (with a warning), or "contain" them. */
+  symlinks?: "follow" | "contain"; // default "follow"
 }
 ```
 
@@ -132,7 +133,8 @@ follow the build's `trailingSlash`: `/about` serves `about/index.html` (`"ignore
 `dir` is indexed once, when the handler is created: a build output does not change while it is
 served, and requests no file answers (every page) cost no file system call. Files written into
 `dir` later are not served until the server restarts. An entry that cannot be read is skipped with a
-warning, and symbolic links that lead outside `dir` are served but listed in a warning at startup.
+warning. Symbolic links are followed (as serve-static and nginx do); links that lead outside `dir`
+are listed in a warning at startup, and `symlinks: "contain"` leaves them out.
 `_headers` (rules for static hosts) and the `.br`/`.gz` copies are not served as files of their own.
 
 ## Example
