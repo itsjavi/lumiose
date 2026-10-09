@@ -7,6 +7,12 @@ async function shot(page: Page, name: string, project: string) {
   if (SHOTS && project === "dev") await page.screenshot({ path: `${SHOTS}/task-133-${name}.png` });
 }
 
+// Screenshots for TASK-159 use their own prefix.
+async function shot159(page: Page, name: string, project: string) {
+  if (SHOTS && project === "dev")
+    await page.screenshot({ path: `${SHOTS}/task-159-${name}.png`, fullPage: true });
+}
+
 // Screenshots for TASK-157 use their own prefix.
 async function shot157(page: Page, name: string, project: string) {
   if (SHOTS && project === "dev")
@@ -582,4 +588,54 @@ test("the creature and base-voice grids fill complete rows", async ({ page }, in
   await expect(page.locator(".chips button")).toHaveCount(20);
   expect(20 % (await columns(".chips"))).toBe(0);
   await shot155(page, "creatures", info.project.name);
+});
+
+test("the studio exports its song as code that imports back identically", async ({
+  page,
+  context,
+}, info) => {
+  await context.grantPermissions(["clipboard-read", "clipboard-write"]);
+  await page.goto("/songs");
+  await page.getByRole("button", { name: "Open Echo Cave in the studio" }).click();
+  const original = await page.evaluate(() => JSON.stringify(dotmatrix.song()));
+  await page.getByRole("radio", { name: "Code" }).click();
+  const { name, data } = await readDownload(page, () =>
+    page.getByRole("button", { name: "Export code" }).click(),
+  );
+  expect(name).toBe("echo-cave.asm");
+  const text = data.toString("utf8");
+  expect(text).toContain('song_title "Echo Cave"');
+  await page.getByRole("button", { name: "Copy code" }).click();
+  expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(text);
+  await shot159(page, "studio-export", info.project.name);
+  // Start over, then import the file: the same song comes back.
+  await page.getByRole("button", { name: "New song" }).click();
+  await expect(page.locator("#song-title")).toHaveValue("New song");
+  await page
+    .getByLabel("Import code file")
+    .setInputFiles({ name, mimeType: "text/plain", buffer: data });
+  await expect(page.locator("#song-title")).toHaveValue("Echo Cave");
+  expect(await page.evaluate(() => JSON.stringify(dotmatrix.song()))).toBe(original);
+});
+
+test("a built-in sound exports code that a saved sound imports back identically", async ({
+  page,
+}) => {
+  await page.goto("/sfx");
+  await page.getByRole("button", { name: /^Jump/ }).click();
+  await page.getByRole("button", { name: "Show code" }).click();
+  const shown = await page.locator(".code pre").textContent();
+  const { name, data } = await readDownload(page, () =>
+    page.getByRole("button", { name: "Export code" }).click(),
+  );
+  expect(name).toBe("jump.asm");
+  expect(data.toString("utf8")).toBe(`${shown}\n`);
+  await page.getByRole("button", { name: "Copy to My sounds" }).click();
+  await page
+    .getByLabel("Import driver code")
+    .setInputFiles({ name, mimeType: "text/plain", buffer: data });
+  await expect(page.locator(".errors li")).toHaveCount(0);
+  await page.getByRole("button", { name: "Save", exact: true }).click();
+  await expect(page.locator(".mine li.on")).toHaveText(/jump/);
+  await expect(page.locator(".code pre")).toHaveText(shown!);
 });

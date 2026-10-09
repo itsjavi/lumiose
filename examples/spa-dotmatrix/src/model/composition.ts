@@ -14,7 +14,11 @@ export interface CompositionReport {
   range: number;
   /** Beats where the lead is a minor second (or major seventh) away from Pulse 2 or the bass. */
   clashes: number;
-  /** The last lead note is the key's tonic. */
+  /**
+   * The lead comes home: its last note is the tonic, or, in a song that loops, a note of the
+   * dominant chord (the fifth, the leading tone or the second) that resolves at the loop start to a
+   * note of the tonic chord.
+   */
   endsOnTonic: boolean;
 }
 
@@ -62,8 +66,21 @@ export function analyse(song: Song): CompositionReport {
     maxLeap: Math.max(0, ...intervals),
     range: pitches.length ? Math.max(...pitches) - Math.min(...pitches) : 0,
     clashes,
-    endsOnTonic: pitches.length > 0 && pc(pitches.at(-1)!) === song.key,
+    endsOnTonic: endsHome(song, lead!),
   };
+}
+
+function endsHome(song: Song, lead: readonly Note[]): boolean {
+  const last = lead.at(-1);
+  if (!last) return false;
+  const degree = (p: number) => pc(p - song.key);
+  if (degree(last.p) === 0) return true;
+  // A turnaround: V (fifth, leading tone or second) into the loop, which starts on the tonic chord.
+  const loopStep = song.loop * STEPS_PER_BAR;
+  const restart = lead.find((n) => n.s >= loopStep);
+  return (
+    !!restart && [7, 11, 2].includes(degree(last.p)) && [0, 3, 4, 7].includes(degree(restart.p))
+  );
 }
 
 /** What a song misses, in words (empty when it passes). */
@@ -78,6 +95,7 @@ export function failures(report: CompositionReport): string[] {
   if (report.range > LIMITS.range) out.push(`a range of ${report.range} semitones (want ≤ 19)`);
   if (report.clashes > LIMITS.clashes)
     out.push(`${report.clashes} minor-second clashes on beats (want ≤ 2)`);
-  if (!report.endsOnTonic) out.push("the lead does not end on the tonic");
+  if (!report.endsOnTonic)
+    out.push("the lead does not come home (tonic, or V into a tonic loop start)");
   return out;
 }

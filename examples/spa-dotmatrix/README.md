@@ -74,7 +74,8 @@ To save the e2e screenshots, set `DOTMATRIX_SHOTS=<dir>`. The task screenshots a
   (read-only for built-ins, with "Copy to My sounds"); saved sounds can be edited, pasted over or
   imported from a `.txt`/`.asm` file. In the Studio, the screen's **Grid | Code** switch shows the
   song as music macros (or a sound sheet as SFX code) and applies edits, pastes and imports as one
-  undoable step. Errors are listed by line. See the [composing guide](docs/composing.md#songs-as-code).
+  undoable step. Errors are listed by line. Copy code and Export code (a `.asm` file that imports
+  back identically) work everywhere code is shown. See the [composing guide](docs/composing.md#songs-as-code).
 - **Open in studio** (SFX and Creatures): the sound opens in the studio as a _sound sheet_, a
   song on a frame grid (one step per video frame, played once). Per-note settings the grid does not
   draw (volume, envelope, duty, hardware sweep, fine tuning) travel with each note, shown by a

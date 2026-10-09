@@ -240,9 +240,10 @@ and length variants of one base voice sound like a family: use them for creature
 
 ## Editing, pasting and importing code
 
-In **SFX** or **Creatures**, **Show code** shows a sound as driver code. Built-in sounds are
-read-only, a learning view: press **Copy to My sounds** (or **My voices**) to get your own copy.
-On a saved sound:
+In **SFX** or **Creatures**, **Show code** shows a sound as driver code. **Copy code** puts it on
+the clipboard and **Export code** downloads it as an `.asm` file named after the sound, for any
+sound, built-in or saved. Built-in sounds are read-only, a learning view: press **Copy to My
+sounds** (or **My voices**) to get your own copy. On a saved sound:
 
 - **Edit code** opens its code in an editor. Change numbers, add or remove lines, then **Play
   code**: it plays at once and its waveform appears.
@@ -290,7 +291,9 @@ Every built-in sound effect and creature voice exports to code and imports back 
 In the **Studio**, the screen has a **Grid | Code** switch. **Code** shows what is open as driver
 code: a sound sheet in the format above, a song as music macros. Edit it, paste over it or
 **Import file…**, then **Apply** (or Ctrl/⌘ Enter): the song is replaced as one step that Undo
-reverts. Errors are listed by line, as in the makers. While the code has no edits of its own it
+reverts. **Copy code** and **Export code** take what the editor shows; an exported `.asm` file
+imports back as the identical song or sound (`src/model/codefile.test.ts` checks every demo song,
+sound effect and voice). Errors are listed by line, as in the makers. While the code has no edits of its own it
 follows the grid; **Revert** drops your edits.
 
 A song starts with a header, then one section per channel:

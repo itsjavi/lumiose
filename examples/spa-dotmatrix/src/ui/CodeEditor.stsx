@@ -10,6 +10,7 @@ import { sfxToSheet } from "../model/sheet.ts";
 import type { Sfx, SoundSheet } from "../model/types.ts";
 import { renderSound, updateSound } from "../sounds.ts";
 import { say } from "../state.ts";
+import { copyCode, exportCode } from "../files.ts";
 import { tokens } from "../tokens.ts";
 
 export function CodeEditor(props: {
@@ -92,6 +93,20 @@ export function CodeEditor(props: {
     await run();
   }
 
+  async function copy() {
+    if (props.code === null) return;
+    say(
+      (await copyCode(props.code))
+        ? "Code copied"
+        : "Could not copy: the browser refused the clipboard",
+    );
+  }
+
+  function exportFile() {
+    if (props.code === null) return;
+    say(`Saved ${exportCode(props.code, props.title)}`);
+  }
+
   /** Selects a line of the draft (from an error). */
   function selectLine(line: number) {
     if (!area) return;
@@ -161,6 +176,16 @@ export function CodeEditor(props: {
             </p>
           ) : (
             <pre>{props.code}</pre>
+          )}
+          {props.code === null ? null : (
+            <div class="row">
+              <button type="button" class="btn" onClick={() => void copy()}>
+                Copy code
+              </button>
+              <button type="button" class="btn" onClick={exportFile}>
+                Export code
+              </button>
+            </div>
           )}
           {props.customId ? (
             <div class="row">

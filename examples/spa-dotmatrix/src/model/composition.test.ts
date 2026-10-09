@@ -5,13 +5,10 @@ import { analyse, failures } from "./composition.ts";
 import { DEMOS } from "./songs/index.ts";
 
 const KNOWN = new Set([
-  "maple-hollow",
-  "over-the-ridge",
   "rival-clash",
   "last-stand",
   "lantern-night",
   "bumbling-along",
-  "faded-letters",
   "roll-credits",
 ]);
 

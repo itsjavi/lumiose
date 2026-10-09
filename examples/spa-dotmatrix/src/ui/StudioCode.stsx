@@ -5,6 +5,7 @@ import { computed, effect, signal, untrack } from "lumen";
 import { readStudioCode, studioCode } from "../model/studiocode.ts";
 import type { CodeError } from "../model/code.ts";
 import { doc, openSong, plainSong, say } from "../state.ts";
+import { copyCode, exportCode } from "../files.ts";
 import { tokens } from "../tokens.ts";
 
 /** The song, read so the computed follows every change to it. */
@@ -64,6 +65,19 @@ export function StudioCode() {
     draft.set(await picked.text());
     dirty.set(true);
     apply();
+  }
+
+  async function copy() {
+    say(
+      (await copyCode(draft()))
+        ? "Code copied"
+        : "Could not copy: the browser refused the clipboard",
+    );
+  }
+
+  /** Downloads what the editor shows as `<title>.asm`. */
+  function exportFile() {
+    say(`Saved ${exportCode(draft(), doc.song.title || doc.song.sheet?.name || "song")}`);
   }
 
   function selectLine(line: number) {
@@ -136,6 +150,12 @@ export function StudioCode() {
           aria-label="Import code file"
           onChange={(event) => void importFile(event)}
         />
+        <button type="button" class="key" onClick={() => void copy()}>
+          Copy code
+        </button>
+        <button type="button" class="key" onClick={exportFile}>
+          Export code
+        </button>
         <span class="hint">{dirty() ? "Edited: Apply to hear it" : "In sync with the grid"}</span>
       </div>
       <style>

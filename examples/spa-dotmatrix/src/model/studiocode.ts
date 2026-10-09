@@ -24,6 +24,8 @@ export function readStudioCode(
   const sheet = sfxToSheet(parsed.sfx, current.sheet.kind, current.sheet.ticks);
   if ("reasons" in sheet) return { errors: [{ line: 1, message: sheet.reasons.join(", ") }] };
   sheet.song.title = current.title;
+  // Trailing silence is not code: keep the sheet's own length unless the code needs more.
+  sheet.song.bars = Math.max(sheet.song.bars, current.bars);
   sheet.song.sheet = { ...sheet.song.sheet!, name: current.sheet.name };
   return { song: sheet.song };
 }
