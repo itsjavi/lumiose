@@ -30,6 +30,7 @@ const { values } = parseArgs({
     ablations: { type: "string", default: "baseline" },
     keep: { type: "boolean", default: false },
     list: { type: "boolean", default: false },
+    resume: { type: "string" },
   },
 });
 
@@ -111,12 +112,26 @@ async function run(): Promise<void> {
     return ablation;
   });
   const runs = Number(values.runs);
-  const startedAt = new Date().toISOString();
+  // --resume <results file>: continue an interrupted matrix in that file. Its runs of the requested
+  // configurations are kept and skipped; runs of other configurations are dropped.
+  const resumed =
+    values.resume === undefined
+      ? undefined
+      : (JSON.parse(readFileSync(join(EVALS, "results", values.resume), "utf8")) as ResultsFile);
+  if (resumed !== undefined && resumed.meta.lumen !== lumenRev()) {
+    throw new Error(`--resume: the file was measured at ${resumed.meta.lumen}; set LUMEN_EVAL_REV to it`);
+  }
+  const startedAt = resumed?.meta.date ?? new Date().toISOString();
   const stamp = `${startedAt.slice(0, 10)}T${startedAt.slice(11, 19).replaceAll(":", "")}`;
   const logs = join(EVALS, ".runs", stamp);
   mkdirSync(logs, { recursive: true });
 
-  const records: RunRecord[] = [];
+  const key = (task: string, agent: string, ablation: string, index: number) =>
+    `${task}|${agent}|${ablation}|${index}`;
+  const records: RunRecord[] = (resumed?.runs ?? []).filter((r) =>
+    agents.some((agent) => agentId(agent) === r.agent),
+  );
+  const done = new Set(records.map((r) => key(r.task, r.agent, r.ablation, r.index)));
   const host = hostname().replace(/\.local$/, "").toLowerCase();
   const meta: ResultsFile["meta"] = {
     date: startedAt,
@@ -135,8 +150,9 @@ async function run(): Promise<void> {
     ablations: ablations.map((a) => a.id),
     runs,
     complete: false,
+    ...(resumed?.meta.notes ? { notes: resumed.meta.notes } : {}),
   };
-  const output = resultsPath(stamp, host);
+  const output = resumed === undefined ? resultsPath(stamp, host) : join(EVALS, "results", values.resume!);
   const total = agents.length * tasks.length * ablations.length * runs;
   let n = 0;
   // Interleave agents inside each (task, run) so a slow period does not hit one agent only.
@@ -145,6 +161,7 @@ async function run(): Promise<void> {
       for (const task of tasks) {
         for (const agent of agents) {
           n++;
+          if (done.has(key(task.id, agentId(agent), ablation.id, index))) continue;
           const name = `${task.id}--${agentId(agent).replaceAll(":", "_")}--${ablation.id}--${index + 1}`;
           log(`[${n}/${total}] ${task.id} · ${agentId(agent)} · ${ablation.id} · run ${index + 1}`);
           const record = await runOne(task, agent, ablation, index, name, logs);

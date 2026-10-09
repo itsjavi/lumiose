@@ -1,0 +1,5351 @@
+{
+  "schema": 1,
+  "meta": {
+    "date": "2026-10-09T15:10:08.696Z",
+    "host": "macbookpro",
+    "machine": {
+      "cpu": "Apple M1 Max",
+      "cores": 10,
+      "memoryGb": 32,
+      "os": "Darwin 27.0.0"
+    },
+    "node": "v26.8.1",
+    "lumen": "ed72928",
+    "clis": {
+      "claude": "2.1.293 (Claude Code)",
+      "codex": "codex-cli 0.161.0"
+    },
+    "agents": [
+      "claude:claude-opus-5-5:medium",
+      "claude:claude-sonnet-5-5:medium",
+      "codex:gpt-6-astra:medium",
+      "codex:gpt-6.1-sol:medium",
+      "codex:gpt-6-luna:medium",
+      "claude:claude-haiku-5-5:medium"
+    ],
+    "tasks": [
+      "about-page",
+      "blog-tags",
+      "class-passthrough",
+      "contact-form",
+      "counter-island",
+      "custom-404",
+      "fix-browser-api-module-scope",
+      "fix-island-function-prop",
+      "fix-list-mutation",
+      "fix-reactive-early-return",
+      "fix-server-import-in-island",
+      "fix-stale-total",
+      "json-endpoint",
+      "like-button-island",
+      "progress-runtime-style",
+      "scaffold-from-scratch",
+      "scope-leak",
+      "ssr-search",
+      "styled-badge",
+      "todo-named-actions"
+    ],
+    "ablations": [
+      "baseline"
+    ],
+    "runs": 1,
+    "complete": false,
+    "notes": [
+      "Matrix approved by the user (option C): 20 tasks × 1 run × 6 configurations, all at medium effort, baseline ablation, Lumen pinned at ed72928 for every run.",
+      "gpt-6-luna and claude-haiku-5-5 first ran 4 runs at high effort by mistake; those were discarded and rerun at medium.",
+      "Paused at 62/120 runs (Claude quota at ~87%): 10 tasks complete for all six configurations, plus fix-server-import-in-island for Opus and Sonnet. Resume with --resume on this file.",
+      "Other agents were active on the machine: wall times are indicative only."
+    ]
+  },
+  "runs": [
+    {
+      "task": "about-page",
+      "category": "routing",
+      "agent": "claude:claude-opus-5-5:medium",
+      "cli": "claude",
+      "model": "claude-opus-5-5",
+      "effort": "medium",
+      "ablation": "baseline",
+      "index": 0,
+      "success": true,
+      "grade": {
+        "success": true,
+        "tests": {
+          "passed": 5,
+          "failed": 0,
+          "total": 5,
+          "results": [
+            {
+              "name": "about page serves /about with its heading",
+              "ok": true
+            },
+            {
+              "name": "about page shows the navigation on /",
+              "ok": true
+            },
+            {
+              "name": "about page shows the navigation on /about",
+              "ok": true
+            },
+            {
+              "name": "about page keeps the home page",
+              "ok": true
+            },
+            {
+              "name": "about page builds the navigation URLs with href()",
+              "ok": true
+            }
+          ]
+        },
+        "check": {
+          "ok": true,
+          "errors": 0,
+          "warnings": 0,
+          "codes": []
+        },
+        "diff": {
+          "filesChanged": 2,
+          "linesAdded": 48,
+          "linesRemoved": 0
+        },
+        "durationMs": 1767.6565000000119
+      },
+      "wallMs": 22694,
+      "tokens": {
+        "input": 8,
+        "cacheRead": 130194,
+        "cacheWrite": 21798,
+        "output": 1178,
+        "reasoning": 44
+      },
+      "costUsd": 0.22401480000000001,
+      "modelUsed": "claude-opus-5-5",
+      "metrics": {
+        "turns": 4,
+        "steps": 3,
+        "commands": 3,
+        "edits": 0,
+        "checkRuns": 1,
+        "firstCheckOk": true,
+        "lumCodes": [],
+        "docsReads": 2,
+        "llmsReads": 1,
+        "mcpCalls": 0,
+        "mcpTools": [],
+        "skills": []
+      },
+      "exit": {
+        "code": 0,
+        "timedOut": false,
+        "error": null
+      },
+      "usageInfo": {
+        "claude-opus-5-5": {
+          "inputTokens": 8,
+          "outputTokens": 1178,
+          "cacheReadInputTokens": 130194,
+          "cacheCreationInputTokens": 21798,
+          "webSearchRequests": 0,
+          "costUSD": 0.22401480000000001,
+          "contextWindow": 1000000,
+          "maxOutputTokens": 128000,
+          "thinkingTokens": 44,
+          "canonicalModel": "claude-opus-5-5",
+          "provider": "firstParty",
+          "costBasis": "list"
+        }
+      },
+      "log": ".runs/2026-10-09T151008/about-page--claude_claude-opus-5-5_medium--baseline--1.jsonl"
+    },
+    {
+      "task": "about-page",
+      "category": "routing",
+      "agent": "claude:claude-sonnet-5-5:medium",
+      "cli": "claude",
+      "model": "claude-sonnet-5-5",
+      "effort": "medium",
+      "ablation": "baseline",
+      "index": 0,
+      "success": true,
+      "grade": {
+        "success": true,
+        "tests": {
+          "passed": 5,
+          "failed": 0,
+          "total": 5,
+          "results": [
+            {
+              "name": "about page serves /about with its heading",
+              "ok": true
+            },
+            {
+              "name": "about page shows the navigation on /",
+              "ok": true
+            },
+            {
+              "name": "about page shows the navigation on /about",
+              "ok": true
+            },
+            {
+              "name": "about page keeps the home page",
+              "ok": true
+            },
+            {
+              "name": "about page builds the navigation URLs with href()",
+              "ok": true
+            }
+          ]
+        },
+        "check": {
+          "ok": true,
+          "errors": 0,
+          "warnings": 0,
+          "codes": []
+        },
+        "diff": {
+          "filesChanged": 2,
+          "linesAdded": 48,
+          "linesRemoved": 0
+        },
+        "durationMs": 1715.9640000000072
+      },
+      "wallMs": 14780,
+      "tokens": {
+        "input": 6,
+        "cacheRead": 92166,
+        "cacheWrite": 14092,
+        "output": 879,
+        "reasoning": 0
+      },
+      "costUsd": 0.08360320000000002,
+      "modelUsed": "claude-sonnet-5-5",
+      "metrics": {
+        "turns": 3,
+        "steps": 2,
+        "commands": 2,
+        "edits": 0,
+        "checkRuns": 1,
+        "firstCheckOk": true,
+        "lumCodes": [],
+        "docsReads": 1,
+        "llmsReads": 0,
+        "mcpCalls": 0,
+        "mcpTools": [],
+        "skills": []
+      },
+      "exit": {
+        "code": 0,
+        "timedOut": false,
+        "error": null
+      },
+      "usageInfo": {
+        "claude-sonnet-5-5": {
+          "inputTokens": 6,
+          "outputTokens": 879,
+          "cacheReadInputTokens": 92166,
+          "cacheCreationInputTokens": 14092,
+          "webSearchRequests": 0,
+          "costUSD": 0.08360320000000002,
+          "contextWindow": 1000000,
+          "maxOutputTokens": 128000,
+          "thinkingTokens": 0,
+          "canonicalModel": "claude-sonnet-5-5",
+          "provider": "firstParty",
+          "costBasis": "list"
+        }
+      },
+      "log": ".runs/2026-10-09T151008/about-page--claude_claude-sonnet-5-5_medium--baseline--1.jsonl"
+    },
+    {
+      "task": "about-page",
+      "category": "routing",
+      "agent": "codex:gpt-6-astra:medium",
+      "cli": "codex",
+      "model": "gpt-6-astra",
+      "effort": "medium",
+      "ablation": "baseline",
+      "index": 0,
+      "success": true,
+      "grade": {
+        "success": true,
+        "tests": {
+          "passed": 5,
+          "failed": 0,
+          "total": 5,
+          "results": [
+            {
+              "name": "about page serves /about with its heading",
+              "ok": true
+            },
+            {
+              "name": "about page shows the navigation on /",
+              "ok": true
+            },
+            {
+              "name": "about page shows the navigation on /about",
+              "ok": true
+            },
+            {
+              "name": "about page keeps the home page",
+              "ok": true
+            },
+            {
+              "name": "about page builds the navigation URLs with href()",
+              "ok": true
+            }
+          ]
+        },
+        "check": {
+          "ok": true,
+          "errors": 0,
+          "warnings": 0,
+          "codes": []
+        },
+        "diff": {
+          "filesChanged": 2,
+          "linesAdded": 48,
+          "linesRemoved": 0
+        },
+        "durationMs": 1702.3880840000056
+      },
+      "wallMs": 32465,
+      "tokens": {
+        "input": 12752,
+        "cacheRead": 71168,
+        "cacheWrite": 0,
+        "output": 760,
+        "reasoning": 0
+      },
+      "costUsd": null,
+      "modelUsed": null,
+      "metrics": {
+        "turns": 8,
+        "steps": 7,
+        "commands": 5,
+        "edits": 2,
+        "checkRuns": 1,
+        "firstCheckOk": true,
+        "lumCodes": [],
+        "docsReads": 2,
+        "llmsReads": 1,
+        "mcpCalls": 0,
+        "mcpTools": [],
+        "skills": []
+      },
+      "exit": {
+        "code": 0,
+        "timedOut": false,
+        "error": null
+      },
+      "usageInfo": null,
+      "log": ".runs/2026-10-09T151008/about-page--codex_gpt-6-astra_medium--baseline--1.jsonl"
+    },
+    {
+      "task": "about-page",
+      "category": "routing",
+      "agent": "codex:gpt-6.1-sol:medium",
+      "cli": "codex",
+      "model": "gpt-6.1-sol",
+      "effort": "medium",
+      "ablation": "baseline",
+      "index": 0,
+      "success": true,
+      "grade": {
+        "success": true,
+        "tests": {
+          "passed": 5,
+          "failed": 0,
+          "total": 5,
+          "results": [
+            {
+              "name": "about page serves /about with its heading",
+              "ok": true
+            },
+            {
+              "name": "about page shows the navigation on /",
+              "ok": true
+            },
+            {
+              "name": "about page shows the navigation on /about",
+              "ok": true
+            },
+            {
+              "name": "about page keeps the home page",
+              "ok": true
+            },
+            {
+              "name": "about page builds the navigation URLs with href()",
+              "ok": true
+            }
+          ]
+        },
+        "check": {
+          "ok": true,
+          "errors": 0,
+          "warnings": 0,
+          "codes": []
+        },
+        "diff": {
+          "filesChanged": 2,
+          "linesAdded": 48,
+          "linesRemoved": 0
+        },
+        "durationMs": 1920.3919999999925
+      },
+      "wallMs": 33528,
+      "tokens": {
+        "input": 24556,
+        "cacheRead": 60032,
+        "cacheWrite": 0,
+        "output": 846,
+        "reasoning": 0
+      },
+      "costUsd": null,
+      "modelUsed": null,
+      "metrics": {
+        "turns": 10,
+        "steps": 9,
+        "commands": 7,
+        "edits": 2,
+        "checkRuns": 1,
+        "firstCheckOk": true,
+        "lumCodes": [],
+        "docsReads": 3,
+        "llmsReads": 2,
+        "mcpCalls": 0,
+        "mcpTools": [],
+        "skills": []
+      },
+      "exit": {
+        "code": 0,
+        "timedOut": false,
+        "error": null
+      },
+      "usageInfo": null,
+      "log": ".runs/2026-10-09T151008/about-page--codex_gpt-6.1-sol_medium--baseline--1.jsonl"
+    },
+    {
+      "task": "blog-tags",
+      "category": "routing",
+      "agent": "claude:claude-opus-5-5:medium",
+      "cli": "claude",
+      "model": "claude-opus-5-5",
+      "effort": "medium",
+      "ablation": "baseline",
+      "index": 0,
+      "success": true,
+      "grade": {
+        "success": true,
+        "tests": {
+          "passed": 4,
+          "failed": 0,
+          "total": 4,
+          "results": [
+            {
+              "name": "tag pages lists the posts of a tag, newest first",
+              "ok": true
+            },
+            {
+              "name": "tag pages works for a single-post tag",
+              "ok": true
+            },
+            {
+              "name": "tag pages is a 404 for an unknown tag",
+              "ok": true
+            },
+            {
+              "name": "tag pages prerenders every tag",
+              "ok": true
+            }
+          ]
+        },
+        "check": {
+          "ok": true,
+          "errors": 0,
+          "warnings": 0,
+          "codes": []
+        },
+        "diff": {
+          "filesChanged": 2,
+          "linesAdded": 51,
+          "linesRemoved": 0
+        },
+        "durationMs": 2275.7462500000256
+      },
+      "wallMs": 31250,
+      "tokens": {
+        "input": 12,
+        "cacheRead": 228150,
+        "cacheWrite": 26088,
+        "output": 2299,
+        "reasoning": 289
+      },
+      "costUsd": 0.300362,
+      "modelUsed": "claude-opus-5-5",
+      "metrics": {
+        "turns": 6,
+        "steps": 5,
+        "commands": 5,
+        "edits": 0,
+        "checkRuns": 1,
+        "firstCheckOk": true,
+        "lumCodes": [],
+        "docsReads": 2,
+        "llmsReads": 1,
+        "mcpCalls": 0,
+        "mcpTools": [],
+        "skills": []
+      },
+      "exit": {
+        "code": 0,
+        "timedOut": false,
+        "error": null
+      },
+      "usageInfo": {
+        "claude-opus-5-5": {
+          "inputTokens": 12,
+          "outputTokens": 2299,
+          "cacheReadInputTokens": 228150,
+          "cacheCreationInputTokens": 26088,
+          "webSearchRequests": 0,
+          "costUSD": 0.300362,
+          "contextWindow": 1000000,
+          "maxOutputTokens": 128000,
+          "thinkingTokens": 289,
+          "canonicalModel": "claude-opus-5-5",
+          "provider": "firstParty",
+          "costBasis": "list"
+        }
+      },
+      "log": ".runs/2026-10-09T151008/blog-tags--claude_claude-opus-5-5_medium--baseline--1.jsonl"
+    },
+    {
+      "task": "blog-tags",
+      "category": "routing",
+      "agent": "claude:claude-sonnet-5-5:medium",
+      "cli": "claude",
+      "model": "claude-sonnet-5-5",
+      "effort": "medium",
+      "ablation": "baseline",
+      "index": 0,
+      "success": true,
+      "grade": {
+        "success": true,
+        "tests": {
+          "passed": 4,
+          "failed": 0,
+          "total": 4,
+          "results": [
+            {
+              "name": "tag pages lists the posts of a tag, newest first",
+              "ok": true
+            },
+            {
+              "name": "tag pages works for a single-post tag",
+              "ok": true
+            },
+            {
+              "name": "tag pages is a 404 for an unknown tag",
+              "ok": true
+            },
+            {
+              "name": "tag pages prerenders every tag",
+              "ok": true
+            }
+          ]
+        },
+        "check": {
+          "ok": true,
+          "errors": 0,
+          "warnings": 0,
+          "codes": []
+        },
+        "diff": {
+          "filesChanged": 1,
+          "linesAdded": 30,
+          "linesRemoved": 0
+        },
+        "durationMs": 2159.7136670000036
+      },
+      "wallMs": 18759,
+      "tokens": {
+        "input": 8,
+        "cacheRead": 124184,
+        "cacheWrite": 14061,
+        "output": 1196,
+        "reasoning": 53
+      },
+      "costUsd": 0.09305680000000001,
+      "modelUsed": "claude-sonnet-5-5",
+      "metrics": {
+        "turns": 4,
+        "steps": 3,
+        "commands": 3,
+        "edits": 0,
+        "checkRuns": 1,
+        "firstCheckOk": true,
+        "lumCodes": [],
+        "docsReads": 1,
+        "llmsReads": 0,
+        "mcpCalls": 0,
+        "mcpTools": [],
+        "skills": []
+      },
+      "exit": {
+        "code": 0,
+        "timedOut": false,
+        "error": null
+      },
+      "usageInfo": {
+        "claude-sonnet-5-5": {
+          "inputTokens": 8,
+          "outputTokens": 1196,
+          "cacheReadInputTokens": 124184,
+          "cacheCreationInputTokens": 14061,
+          "webSearchRequests": 0,
+          "costUSD": 0.09305680000000001,
+          "contextWindow": 1000000,
+          "maxOutputTokens": 128000,
+          "thinkingTokens": 53,
+          "canonicalModel": "claude-sonnet-5-5",
+          "provider": "firstParty",
+          "costBasis": "list"
+        }
+      },
+      "log": ".runs/2026-10-09T151008/blog-tags--claude_claude-sonnet-5-5_medium--baseline--1.jsonl"
+    },
+    {
+      "task": "blog-tags",
+      "category": "routing",
+      "agent": "codex:gpt-6-astra:medium",
+      "cli": "codex",
+      "model": "gpt-6-astra",
+      "effort": "medium",
+      "ablation": "baseline",
+      "index": 0,
+      "success": true,
+      "grade": {
+        "success": true,
+        "tests": {
+          "passed": 4,
+          "failed": 0,
+          "total": 4,
+          "results": [
+            {
+              "name": "tag pages lists the posts of a tag, newest first",
+              "ok": true
+            },
+            {
+              "name": "tag pages works for a single-post tag",
+              "ok": true
+            },
+            {
+              "name": "tag pages is a 404 for an unknown tag",
+              "ok": true
+            },
+            {
+              "name": "tag pages prerenders every tag",
+              "ok": true
+            }
+          ]
+        },
+        "check": {
+          "ok": true,
+          "errors": 0,
+          "warnings": 0,
+          "codes": []
+        },
+        "diff": {
+          "filesChanged": 1,
+          "linesAdded": 30,
+          "linesRemoved": 0
+        },
+        "durationMs": 2294.8125
+      },
+      "wallMs": 63090,
+      "tokens": {
+        "input": 33564,
+        "cacheRead": 230400,
+        "cacheWrite": 0,
+        "output": 1575,
+        "reasoning": 27
+      },
+      "costUsd": null,
+      "modelUsed": null,
+      "metrics": {
+        "turns": 10,
+        "steps": 8,
+        "commands": 7,
+        "edits": 1,
+        "checkRuns": 1,
+        "firstCheckOk": true,
+        "lumCodes": [],
+        "docsReads": 3,
+        "llmsReads": 1,
+        "mcpCalls": 0,
+        "mcpTools": [],
+        "skills": []
+      },
+      "exit": {
+        "code": 0,
+        "timedOut": false,
+        "error": null
+      },
+      "usageInfo": null,
+      "log": ".runs/2026-10-09T151008/blog-tags--codex_gpt-6-astra_medium--baseline--1.jsonl"
+    },
+    {
+      "task": "blog-tags",
+      "category": "routing",
+      "agent": "codex:gpt-6.1-sol:medium",
+      "cli": "codex",
+      "model": "gpt-6.1-sol",
+      "effort": "medium",
+      "ablation": "baseline",
+      "index": 0,
+      "success": true,
+      "grade": {
+        "success": true,
+        "tests": {
+          "passed": 4,
+          "failed": 0,
+          "total": 4,
+          "results": [
+            {
+              "name": "tag pages lists the posts of a tag, newest first",
+              "ok": true
+            },
+            {
+              "name": "tag pages works for a single-post tag",
+              "ok": true
+            },
+            {
+              "name": "tag pages is a 404 for an unknown tag",
+              "ok": true
+            },
+            {
+              "name": "tag pages prerenders every tag",
+              "ok": true
+            }
+          ]
+        },
+        "check": {
+          "ok": true,
+          "errors": 0,
+          "warnings": 0,
+          "codes": []
+        },
+        "diff": {
+          "filesChanged": 1,
+          "linesAdded": 30,
+          "linesRemoved": 0
+        },
+        "durationMs": 2014.7010840000003
+      },
+      "wallMs": 87489,
+      "tokens": {
+        "input": 26997,
+        "cacheRead": 344576,
+        "cacheWrite": 0,
+        "output": 2278,
+        "reasoning": 120
+      },
+      "costUsd": null,
+      "modelUsed": null,
+      "metrics": {
+        "turns": 20,
+        "steps": 17,
+        "commands": 16,
+        "edits": 1,
+        "checkRuns": 1,
+        "firstCheckOk": true,
+        "lumCodes": [],
+        "docsReads": 4,
+        "llmsReads": 2,
+        "mcpCalls": 0,
+        "mcpTools": [],
+        "skills": []
+      },
+      "exit": {
+        "code": 0,
+        "timedOut": false,
+        "error": null
+      },
+      "usageInfo": null,
+      "log": ".runs/2026-10-09T151008/blog-tags--codex_gpt-6.1-sol_medium--baseline--1.jsonl"
+    },
+    {
+      "task": "class-passthrough",
+      "category": "styles",
+      "agent": "claude:claude-opus-5-5:medium",
+      "cli": "claude",
+      "model": "claude-opus-5-5",
+      "effort": "medium",
+      "ablation": "baseline",
+      "index": 0,
+      "success": true,
+      "grade": {
+        "success": true,
+        "tests": {
+          "passed": 3,
+          "failed": 0,
+          "total": 3,
+          "results": [
+            {
+              "name": "class passthrough renders both buttons with their classes",
+              "ok": true
+            },
+            {
+              "name": "class passthrough applies the page's scoped .cta rule to the Sign up button",
+              "ok": true
+            },
+            {
+              "name": "class passthrough keeps the .cta style out of the global scope",
+              "ok": true
+            }
+          ]
+        },
+        "check": {
+          "ok": true,
+          "errors": 0,
+          "warnings": 0,
+          "codes": []
+        },
+        "diff": {
+          "filesChanged": 1,
+          "linesAdded": 4,
+          "linesRemoved": 3
+        },
+        "durationMs": 1468.9504579999484
+      },
+      "wallMs": 27921,
+      "tokens": {
+        "input": 12,
+        "cacheRead": 220630,
+        "cacheWrite": 24332,
+        "output": 1776,
+        "reasoning": 315
+      },
+      "costUsd": 0.27435,
+      "modelUsed": "claude-opus-5-5",
+      "metrics": {
+        "turns": 7,
+        "steps": 6,
+        "commands": 5,
+        "edits": 1,
+        "checkRuns": 1,
+        "firstCheckOk": true,
+        "lumCodes": [],
+        "docsReads": 2,
+        "llmsReads": 0,
+        "mcpCalls": 0,
+        "mcpTools": [],
+        "skills": []
+      },
+      "exit": {
+        "code": 0,
+        "timedOut": false,
+        "error": null
+      },
+      "usageInfo": {
+        "claude-opus-5-5": {
+          "inputTokens": 12,
+          "outputTokens": 1776,
+          "cacheReadInputTokens": 220630,
+          "cacheCreationInputTokens": 24332,
+          "webSearchRequests": 0,
+          "costUSD": 0.27435,
+          "contextWindow": 1000000,
+          "maxOutputTokens": 128000,
+          "thinkingTokens": 315,
+          "canonicalModel": "claude-opus-5-5",
+          "provider": "firstParty",
+          "costBasis": "list"
+        }
+      },
+      "log": ".runs/2026-10-09T151008/class-passthrough--claude_claude-opus-5-5_medium--baseline--1.jsonl"
+    },
+    {
+      "task": "class-passthrough",
+      "category": "styles",
+      "agent": "claude:claude-sonnet-5-5:medium",
+      "cli": "claude",
+      "model": "claude-sonnet-5-5",
+      "effort": "medium",
+      "ablation": "baseline",
+      "index": 0,
+      "success": true,
+      "grade": {
+        "success": true,
+        "tests": {
+          "passed": 3,
+          "failed": 0,
+          "total": 3,
+          "results": [
+            {
+              "name": "class passthrough renders both buttons with their classes",
+              "ok": true
+            },
+            {
+              "name": "class passthrough applies the page's scoped .cta rule to the Sign up button",
+              "ok": true
+            },
+            {
+              "name": "class passthrough keeps the .cta style out of the global scope",
+              "ok": true
+            }
+          ]
+        },
+        "check": {
+          "ok": true,
+          "errors": 0,
+          "warnings": 0,
+          "codes": []
+        },
+        "diff": {
+          "filesChanged": 1,
+          "linesAdded": 3,
+          "linesRemoved": 2
+        },
+        "durationMs": 1549.8995420000283
+      },
+      "wallMs": 14803,
+      "tokens": {
+        "input": 8,
+        "cacheRead": 130763,
+        "cacheWrite": 23170,
+        "output": 865,
+        "reasoning": 0
+      },
+      "costUsd": 0.1274986,
+      "modelUsed": "claude-sonnet-5-5",
+      "metrics": {
+        "turns": 5,
+        "steps": 4,
+        "commands": 3,
+        "edits": 0,
+        "checkRuns": 1,
+        "firstCheckOk": true,
+        "lumCodes": [],
+        "docsReads": 2,
+        "llmsReads": 0,
+        "mcpCalls": 0,
+        "mcpTools": [],
+        "skills": []
+      },
+      "exit": {
+        "code": 0,
+        "timedOut": false,
+        "error": null
+      },
+      "usageInfo": {
+        "claude-sonnet-5-5": {
+          "inputTokens": 8,
+          "outputTokens": 865,
+          "cacheReadInputTokens": 130763,
+          "cacheCreationInputTokens": 23170,
+          "webSearchRequests": 0,
+          "costUSD": 0.1274986,
+          "contextWindow": 1000000,
+          "maxOutputTokens": 128000,
+          "thinkingTokens": 0,
+          "canonicalModel": "claude-sonnet-5-5",
+          "provider": "firstParty",
+          "costBasis": "list"
+        }
+      },
+      "log": ".runs/2026-10-09T151008/class-passthrough--claude_claude-sonnet-5-5_medium--baseline--1.jsonl"
+    },
+    {
+      "task": "about-page",
+      "category": "routing",
+      "agent": "codex:gpt-6-luna:medium",
+      "cli": "codex",
+      "model": "gpt-6-luna",
+      "effort": "medium",
+      "ablation": "baseline",
+      "index": 0,
+      "success": true,
+      "grade": {
+        "success": true,
+        "tests": {
+          "passed": 5,
+          "failed": 0,
+          "total": 5,
+          "results": [
+            {
+              "name": "about page serves /about with its heading",
+              "ok": true
+            },
+            {
+              "name": "about page shows the navigation on /",
+              "ok": true
+            },
+            {
+              "name": "about page shows the navigation on /about",
+              "ok": true
+            },
+            {
+              "name": "about page keeps the home page",
+              "ok": true
+            },
+            {
+              "name": "about page builds the navigation URLs with href()",
+              "ok": true
+            }
+          ]
+        },
+        "check": {
+          "ok": true,
+          "errors": 0,
+          "warnings": 0,
+          "codes": []
+        },
+        "diff": {
+          "filesChanged": 2,
+          "linesAdded": 22,
+          "linesRemoved": 0
+        },
+        "durationMs": 1702.756875000001
+      },
+      "wallMs": 14333,
+      "tokens": {
+        "input": 14787,
+        "cacheRead": 86784,
+        "cacheWrite": 0,
+        "output": 652,
+        "reasoning": 0
+      },
+      "costUsd": null,
+      "modelUsed": null,
+      "metrics": {
+        "turns": 7,
+        "steps": 5,
+        "commands": 3,
+        "edits": 2,
+        "checkRuns": 1,
+        "firstCheckOk": true,
+        "lumCodes": [],
+        "docsReads": 2,
+        "llmsReads": 1,
+        "mcpCalls": 0,
+        "mcpTools": [],
+        "skills": []
+      },
+      "exit": {
+        "code": 0,
+        "timedOut": false,
+        "error": null
+      },
+      "usageInfo": null,
+      "log": ".runs/2026-10-09T151008/about-page--codex_gpt-6-luna_medium--baseline--1.jsonl"
+    },
+    {
+      "task": "about-page",
+      "category": "routing",
+      "agent": "claude:claude-haiku-5-5:medium",
+      "cli": "claude",
+      "model": "claude-haiku-5-5",
+      "effort": "medium",
+      "ablation": "baseline",
+      "index": 0,
+      "success": true,
+      "grade": {
+        "success": true,
+        "tests": {
+          "passed": 5,
+          "failed": 0,
+          "total": 5,
+          "results": [
+            {
+              "name": "about page serves /about with its heading",
+              "ok": true
+            },
+            {
+              "name": "about page shows the navigation on /",
+              "ok": true
+            },
+            {
+              "name": "about page shows the navigation on /about",
+              "ok": true
+            },
+            {
+              "name": "about page keeps the home page",
+              "ok": true
+            },
+            {
+              "name": "about page builds the navigation URLs with href()",
+              "ok": true
+            }
+          ]
+        },
+        "check": {
+          "ok": true,
+          "errors": 0,
+          "warnings": 0,
+          "codes": []
+        },
+        "diff": {
+          "filesChanged": 2,
+          "linesAdded": 56,
+          "linesRemoved": 0
+        },
+        "durationMs": 1746.108500000002
+      },
+      "wallMs": 33044,
+      "tokens": {
+        "input": 18,
+        "cacheRead": 373013,
+        "cacheWrite": 29992,
+        "output": 3707,
+        "reasoning": 886
+      },
+      "costUsd": 0.01158383,
+      "modelUsed": "claude-haiku-5-5",
+      "metrics": {
+        "turns": 12,
+        "steps": 10,
+        "commands": 7,
+        "edits": 2,
+        "checkRuns": 2,
+        "firstCheckOk": true,
+        "lumCodes": [],
+        "docsReads": 3,
+        "llmsReads": 1,
+        "mcpCalls": 0,
+        "mcpTools": [],
+        "skills": [
+          "lumen"
+        ]
+      },
+      "exit": {
+        "code": 0,
+        "timedOut": false,
+        "error": null
+      },
+      "usageInfo": {
+        "claude-haiku-5-5": {
+          "inputTokens": 18,
+          "outputTokens": 3707,
+          "cacheReadInputTokens": 373013,
+          "cacheCreationInputTokens": 29992,
+          "webSearchRequests": 0,
+          "costUSD": 0.01158383,
+          "contextWindow": 1000000,
+          "maxOutputTokens": 128000,
+          "thinkingTokens": 886,
+          "canonicalModel": "claude-haiku-5-5",
+          "provider": "firstParty",
+          "costBasis": "list"
+        }
+      },
+      "log": ".runs/2026-10-09T151008/about-page--claude_claude-haiku-5-5_medium--baseline--1.jsonl"
+    },
+    {
+      "task": "blog-tags",
+      "category": "routing",
+      "agent": "codex:gpt-6-luna:medium",
+      "cli": "codex",
+      "model": "gpt-6-luna",
+      "effort": "medium",
+      "ablation": "baseline",
+      "index": 0,
+      "success": true,
+      "grade": {
+        "success": true,
+        "tests": {
+          "passed": 4,
+          "failed": 0,
+          "total": 4,
+          "results": [
+            {
+              "name": "tag pages lists the posts of a tag, newest first",
+              "ok": true
+            },
+            {
+              "name": "tag pages works for a single-post tag",
+              "ok": true
+            },
+            {
+              "name": "tag pages is a 404 for an unknown tag",
+              "ok": true
+            },
+            {
+              "name": "tag pages prerenders every tag",
+              "ok": true
+            }
+          ]
+        },
+        "check": {
+          "ok": true,
+          "errors": 0,
+          "warnings": 0,
+          "codes": []
+        },
+        "diff": {
+          "filesChanged": 1,
+          "linesAdded": 31,
+          "linesRemoved": 0
+        },
+        "durationMs": 2231.951166999992
+      },
+      "wallMs": 17900,
+      "tokens": {
+        "input": 16618,
+        "cacheRead": 68608,
+        "cacheWrite": 0,
+        "output": 818,
+        "reasoning": 0
+      },
+      "costUsd": null,
+      "modelUsed": null,
+      "metrics": {
+        "turns": 7,
+        "steps": 4,
+        "commands": 3,
+        "edits": 1,
+        "checkRuns": 1,
+        "firstCheckOk": true,
+        "lumCodes": [],
+        "docsReads": 2,
+        "llmsReads": 1,
+        "mcpCalls": 0,
+        "mcpTools": [],
+        "skills": []
+      },
+      "exit": {
+        "code": 0,
+        "timedOut": false,
+        "error": null
+      },
+      "usageInfo": null,
+      "log": ".runs/2026-10-09T151008/blog-tags--codex_gpt-6-luna_medium--baseline--1.jsonl"
+    },
+    {
+      "task": "blog-tags",
+      "category": "routing",
+      "agent": "claude:claude-haiku-5-5:medium",
+      "cli": "claude",
+      "model": "claude-haiku-5-5",
+      "effort": "medium",
+      "ablation": "baseline",
+      "index": 0,
+      "success": true,
+      "grade": {
+        "success": true,
+        "tests": {
+          "passed": 4,
+          "failed": 0,
+          "total": 4,
+          "results": [
+            {
+              "name": "tag pages lists the posts of a tag, newest first",
+              "ok": true
+            },
+            {
+              "name": "tag pages works for a single-post tag",
+              "ok": true
+            },
+            {
+              "name": "tag pages is a 404 for an unknown tag",
+              "ok": true
+            },
+            {
+              "name": "tag pages prerenders every tag",
+              "ok": true
+            }
+          ]
+        },
+        "check": {
+          "ok": true,
+          "errors": 0,
+          "warnings": 0,
+          "codes": []
+        },
+        "diff": {
+          "filesChanged": 2,
+          "linesAdded": 51,
+          "linesRemoved": 0
+        },
+        "durationMs": 6631.12270800001
+      },
+      "wallMs": 66917,
+      "tokens": {
+        "input": 22,
+        "cacheRead": 499094,
+        "cacheWrite": 32949,
+        "output": 6700,
+        "reasoning": 1786
+      },
+      "costUsd": 0.014932939999999997,
+      "modelUsed": "claude-haiku-5-5",
+      "metrics": {
+        "turns": 15,
+        "steps": 13,
+        "commands": 11,
+        "edits": 1,
+        "checkRuns": 2,
+        "firstCheckOk": true,
+        "lumCodes": [],
+        "docsReads": 3,
+        "llmsReads": 1,
+        "mcpCalls": 0,
+        "mcpTools": [],
+        "skills": [
+          "lumen"
+        ]
+      },
+      "exit": {
+        "code": 0,
+        "timedOut": false,
+        "error": null
+      },
+      "usageInfo": {
+        "claude-haiku-5-5": {
+          "inputTokens": 22,
+          "outputTokens": 6700,
+          "cacheReadInputTokens": 499094,
+          "cacheCreationInputTokens": 32949,
+          "webSearchRequests": 0,
+          "costUSD": 0.014932939999999997,
+          "contextWindow": 1000000,
+          "maxOutputTokens": 128000,
+          "thinkingTokens": 1786,
+          "canonicalModel": "claude-haiku-5-5",
+          "provider": "firstParty",
+          "costBasis": "list"
+        }
+      },
+      "log": ".runs/2026-10-09T151008/blog-tags--claude_claude-haiku-5-5_medium--baseline--1.jsonl"
+    },
+    {
+      "task": "class-passthrough",
+      "category": "styles",
+      "agent": "codex:gpt-6-astra:medium",
+      "cli": "codex",
+      "model": "gpt-6-astra",
+      "effort": "medium",
+      "ablation": "baseline",
+      "index": 0,
+      "success": true,
+      "grade": {
+        "success": true,
+        "tests": {
+          "passed": 3,
+          "failed": 0,
+          "total": 3,
+          "results": [
+            {
+              "name": "class passthrough renders both buttons with their classes",
+              "ok": true
+            },
+            {
+              "name": "class passthrough applies the page's scoped .cta rule to the Sign up button",
+              "ok": true
+            },
+            {
+              "name": "class passthrough keeps the .cta style out of the global scope",
+              "ok": true
+            }
+          ]
+        },
+        "check": {
+          "ok": true,
+          "errors": 0,
+          "warnings": 0,
+          "codes": []
+        },
+        "diff": {
+          "filesChanged": 1,
+          "linesAdded": 3,
+          "linesRemoved": 2
+        },
+        "durationMs": 1465.3198750000156
+      },
+      "wallMs": 34693,
+      "tokens": {
+        "input": 17687,
+        "cacheRead": 104576,
+        "cacheWrite": 0,
+        "output": 568,
+        "reasoning": 0
+      },
+      "costUsd": null,
+      "modelUsed": null,
+      "metrics": {
+        "turns": 11,
+        "steps": 9,
+        "commands": 8,
+        "edits": 1,
+        "checkRuns": 1,
+        "firstCheckOk": true,
+        "lumCodes": [],
+        "docsReads": 2,
+        "llmsReads": 1,
+        "mcpCalls": 0,
+        "mcpTools": [],
+        "skills": []
+      },
+      "exit": {
+        "code": 0,
+        "timedOut": false,
+        "error": null
+      },
+      "usageInfo": null,
+      "log": ".runs/2026-10-09T151008/class-passthrough--codex_gpt-6-astra_medium--baseline--1.jsonl"
+    },
+    {
+      "task": "class-passthrough",
+      "category": "styles",
+      "agent": "codex:gpt-6.1-sol:medium",
+      "cli": "codex",
+      "model": "gpt-6.1-sol",
+      "effort": "medium",
+      "ablation": "baseline",
+      "index": 0,
+      "success": true,
+      "grade": {
+        "success": true,
+        "tests": {
+          "passed": 3,
+          "failed": 0,
+          "total": 3,
+          "results": [
+            {
+              "name": "class passthrough renders both buttons with their classes",
+              "ok": true
+            },
+            {
+              "name": "class passthrough applies the page's scoped .cta rule to the Sign up button",
+              "ok": true
+            },
+            {
+              "name": "class passthrough keeps the .cta style out of the global scope",
+              "ok": true
+            }
+          ]
+        },
+        "check": {
+          "ok": true,
+          "errors": 0,
+          "warnings": 0,
+          "codes": []
+        },
+        "diff": {
+          "filesChanged": 1,
+          "linesAdded": 3,
+          "linesRemoved": 2
+        },
+        "durationMs": 1516.9949170000036
+      },
+      "wallMs": 32307,
+      "tokens": {
+        "input": 15676,
+        "cacheRead": 100096,
+        "cacheWrite": 0,
+        "output": 575,
+        "reasoning": 0
+      },
+      "costUsd": null,
+      "modelUsed": null,
+      "metrics": {
+        "turns": 10,
+        "steps": 8,
+        "commands": 7,
+        "edits": 1,
+        "checkRuns": 1,
+        "firstCheckOk": true,
+        "lumCodes": [],
+        "docsReads": 2,
+        "llmsReads": 1,
+        "mcpCalls": 0,
+        "mcpTools": [],
+        "skills": []
+      },
+      "exit": {
+        "code": 0,
+        "timedOut": false,
+        "error": null
+      },
+      "usageInfo": null,
+      "log": ".runs/2026-10-09T151008/class-passthrough--codex_gpt-6.1-sol_medium--baseline--1.jsonl"
+    },
+    {
+      "task": "class-passthrough",
+      "category": "styles",
+      "agent": "codex:gpt-6-luna:medium",
+      "cli": "codex",
+      "model": "gpt-6-luna",
+      "effort": "medium",
+      "ablation": "baseline",
+      "index": 0,
+      "success": true,
+      "grade": {
+        "success": true,
+        "tests": {
+          "passed": 3,
+          "failed": 0,
+          "total": 3,
+          "results": [
+            {
+              "name": "class passthrough renders both buttons with their classes",
+              "ok": true
+            },
+            {
+              "name": "class passthrough applies the page's scoped .cta rule to the Sign up button",
+              "ok": true
+            },
+            {
+              "name": "class passthrough keeps the .cta style out of the global scope",
+              "ok": true
+            }
+          ]
+        },
+        "check": {
+          "ok": true,
+          "errors": 0,
+          "warnings": 0,
+          "codes": []
+        },
+        "diff": {
+          "filesChanged": 1,
+          "linesAdded": 3,
+          "linesRemoved": 2
+        },
+        "durationMs": 1541.2925000000105
+      },
+      "wallMs": 25132,
+      "tokens": {
+        "input": 23847,
+        "cacheRead": 107008,
+        "cacheWrite": 0,
+        "output": 1082,
+        "reasoning": 189
+      },
+      "costUsd": null,
+      "modelUsed": null,
+      "metrics": {
+        "turns": 8,
+        "steps": 5,
+        "commands": 4,
+        "edits": 1,
+        "checkRuns": 1,
+        "firstCheckOk": true,
+        "lumCodes": [],
+        "docsReads": 2,
+        "llmsReads": 1,
+        "mcpCalls": 0,
+        "mcpTools": [],
+        "skills": []
+      },
+      "exit": {
+        "code": 0,
+        "timedOut": false,
+        "error": null
+      },
+      "usageInfo": null,
+      "log": ".runs/2026-10-09T151008/class-passthrough--codex_gpt-6-luna_medium--baseline--1.jsonl"
+    },
+    {
+      "task": "class-passthrough",
+      "category": "styles",
+      "agent": "claude:claude-haiku-5-5:medium",
+      "cli": "claude",
+      "model": "claude-haiku-5-5",
+      "effort": "medium",
+      "ablation": "baseline",
+      "index": 0,
+      "success": true,
+      "grade": {
+        "success": true,
+        "tests": {
+          "passed": 3,
+          "failed": 0,
+          "total": 3,
+          "results": [
+            {
+              "name": "class passthrough renders both buttons with their classes",
+              "ok": true
+            },
+            {
+              "name": "class passthrough applies the page's scoped .cta rule to the Sign up button",
+              "ok": true
+            },
+            {
+              "name": "class passthrough keeps the .cta style out of the global scope",
+              "ok": true
+            }
+          ]
+        },
+        "check": {
+          "ok": true,
+          "errors": 0,
+          "warnings": 0,
+          "codes": []
+        },
+        "diff": {
+          "filesChanged": 1,
+          "linesAdded": 4,
+          "linesRemoved": 3
+        },
+        "durationMs": 1568.374582999968
+      },
+      "wallMs": 27538,
+      "tokens": {
+        "input": 12,
+        "cacheRead": 216607,
+        "cacheWrite": 22754,
+        "output": 2852,
+        "reasoning": 773
+      },
+      "costUsd": 0.00814407,
+      "modelUsed": "claude-haiku-5-5",
+      "metrics": {
+        "turns": 9,
+        "steps": 7,
+        "commands": 5,
+        "edits": 1,
+        "checkRuns": 1,
+        "firstCheckOk": true,
+        "lumCodes": [],
+        "docsReads": 3,
+        "llmsReads": 1,
+        "mcpCalls": 0,
+        "mcpTools": [],
+        "skills": [
+          "lumen"
+        ]
+      },
+      "exit": {
+        "code": 0,
+        "timedOut": false,
+        "error": null
+      },
+      "usageInfo": {
+        "claude-haiku-5-5": {
+          "inputTokens": 12,
+          "outputTokens": 2852,
+          "cacheReadInputTokens": 216607,
+          "cacheCreationInputTokens": 22754,
+          "webSearchRequests": 0,
+          "costUSD": 0.00814407,
+          "contextWindow": 1000000,
+          "maxOutputTokens": 128000,
+          "thinkingTokens": 773,
+          "canonicalModel": "claude-haiku-5-5",
+          "provider": "firstParty",
+          "costBasis": "list"
+        }
+      },
+      "log": ".runs/2026-10-09T151008/class-passthrough--claude_claude-haiku-5-5_medium--baseline--1.jsonl"
+    },
+    {
+      "task": "contact-form",
+      "category": "actions",
+      "agent": "claude:claude-opus-5-5:medium",
+      "cli": "claude",
+      "model": "claude-opus-5-5",
+      "effort": "medium",
+      "ablation": "baseline",
+      "index": 0,
+      "success": true,
+      "grade": {
+        "success": true,
+        "tests": {
+          "passed": 4,
+          "failed": 0,
+          "total": 4,
+          "results": [
+            {
+              "name": "contact form renders the form",
+              "ok": true
+            },
+            {
+              "name": "contact form rejects invalid input with 400, errors and the typed values",
+              "ok": true
+            },
+            {
+              "name": "contact form keeps the message when only the email is wrong",
+              "ok": true
+            },
+            {
+              "name": "contact form stores a valid message and redirects to the thanks page",
+              "ok": true
+            }
+          ]
+        },
+        "check": {
+          "ok": true,
+          "errors": 0,
+          "warnings": 0,
+          "codes": []
+        },
+        "diff": {
+          "filesChanged": 3,
+          "linesAdded": 74,
+          "linesRemoved": 1
+        },
+        "durationMs": 1782.2437919999938
+      },
+      "wallMs": 39475,
+      "tokens": {
+        "input": 18,
+        "cacheRead": 338738,
+        "cacheWrite": 24168,
+        "output": 3035,
+        "reasoning": 258
+      },
+      "costUsd": 0.32186359999999997,
+      "modelUsed": "claude-opus-5-5",
+      "metrics": {
+        "turns": 11,
+        "steps": 9,
+        "commands": 7,
+        "edits": 1,
+        "checkRuns": 2,
+        "firstCheckOk": true,
+        "lumCodes": [],
+        "docsReads": 3,
+        "llmsReads": 1,
+        "mcpCalls": 0,
+        "mcpTools": [],
+        "skills": [
+          "lumen"
+        ]
+      },
+      "exit": {
+        "code": 0,
+        "timedOut": false,
+        "error": null
+      },
+      "usageInfo": {
+        "claude-opus-5-5": {
+          "inputTokens": 18,
+          "outputTokens": 3035,
+          "cacheReadInputTokens": 338738,
+          "cacheCreationInputTokens": 24168,
+          "webSearchRequests": 0,
+          "costUSD": 0.32186359999999997,
+          "contextWindow": 1000000,
+          "maxOutputTokens": 128000,
+          "thinkingTokens": 258,
+          "canonicalModel": "claude-opus-5-5",
+          "provider": "firstParty",
+          "costBasis": "list"
+        }
+      },
+      "log": ".runs/2026-10-09T151008/contact-form--claude_claude-opus-5-5_medium--baseline--1.jsonl"
+    },
+    {
+      "task": "contact-form",
+      "category": "actions",
+      "agent": "claude:claude-sonnet-5-5:medium",
+      "cli": "claude",
+      "model": "claude-sonnet-5-5",
+      "effort": "medium",
+      "ablation": "baseline",
+      "index": 0,
+      "success": true,
+      "grade": {
+        "success": true,
+        "tests": {
+          "passed": 4,
+          "failed": 0,
+          "total": 4,
+          "results": [
+            {
+              "name": "contact form renders the form",
+              "ok": true
+            },
+            {
+              "name": "contact form rejects invalid input with 400, errors and the typed values",
+              "ok": true
+            },
+            {
+              "name": "contact form keeps the message when only the email is wrong",
+              "ok": true
+            },
+            {
+              "name": "contact form stores a valid message and redirects to the thanks page",
+              "ok": true
+            }
+          ]
+        },
+        "check": {
+          "ok": true,
+          "errors": 0,
+          "warnings": 0,
+          "codes": []
+        },
+        "diff": {
+          "filesChanged": 2,
+          "linesAdded": 69,
+          "linesRemoved": 0
+        },
+        "durationMs": 1767.3798750000424
+      },
+      "wallMs": 30370,
+      "tokens": {
+        "input": 10,
+        "cacheRead": 170669,
+        "cacheWrite": 18607,
+        "output": 1810,
+        "reasoning": 69
+      },
+      "costUsd": 0.12668179999999998,
+      "modelUsed": "claude-sonnet-5-5",
+      "metrics": {
+        "turns": 7,
+        "steps": 5,
+        "commands": 4,
+        "edits": 0,
+        "checkRuns": 1,
+        "firstCheckOk": true,
+        "lumCodes": [],
+        "docsReads": 2,
+        "llmsReads": 0,
+        "mcpCalls": 0,
+        "mcpTools": [],
+        "skills": [
+          "lumen"
+        ]
+      },
+      "exit": {
+        "code": 0,
+        "timedOut": false,
+        "error": null
+      },
+      "usageInfo": {
+        "claude-sonnet-5-5": {
+          "inputTokens": 10,
+          "outputTokens": 1810,
+          "cacheReadInputTokens": 170669,
+          "cacheCreationInputTokens": 18607,
+          "webSearchRequests": 0,
+          "costUSD": 0.12668179999999998,
+          "contextWindow": 1000000,
+          "maxOutputTokens": 128000,
+          "thinkingTokens": 69,
+          "canonicalModel": "claude-sonnet-5-5",
+          "provider": "firstParty",
+          "costBasis": "list"
+        }
+      },
+      "log": ".runs/2026-10-09T151008/contact-form--claude_claude-sonnet-5-5_medium--baseline--1.jsonl"
+    },
+    {
+      "task": "contact-form",
+      "category": "actions",
+      "agent": "codex:gpt-6-astra:medium",
+      "cli": "codex",
+      "model": "gpt-6-astra",
+      "effort": "medium",
+      "ablation": "baseline",
+      "index": 0,
+      "success": true,
+      "grade": {
+        "success": true,
+        "tests": {
+          "passed": 4,
+          "failed": 0,
+          "total": 4,
+          "results": [
+            {
+              "name": "contact form renders the form",
+              "ok": true
+            },
+            {
+              "name": "contact form rejects invalid input with 400, errors and the typed values",
+              "ok": true
+            },
+            {
+              "name": "contact form keeps the message when only the email is wrong",
+              "ok": true
+            },
+            {
+              "name": "contact form stores a valid message and redirects to the thanks page",
+              "ok": true
+            }
+          ]
+        },
+        "check": {
+          "ok": true,
+          "errors": 0,
+          "warnings": 0,
+          "codes": []
+        },
+        "diff": {
+          "filesChanged": 2,
+          "linesAdded": 76,
+          "linesRemoved": 0
+        },
+        "durationMs": 1647.1860829999787
+      },
+      "wallMs": 50275,
+      "tokens": {
+        "input": 23129,
+        "cacheRead": 129792,
+        "cacheWrite": 0,
+        "output": 1367,
+        "reasoning": 43
+      },
+      "costUsd": null,
+      "modelUsed": null,
+      "metrics": {
+        "turns": 14,
+        "steps": 12,
+        "commands": 10,
+        "edits": 2,
+        "checkRuns": 2,
+        "firstCheckOk": true,
+        "lumCodes": [],
+        "docsReads": 3,
+        "llmsReads": 2,
+        "mcpCalls": 0,
+        "mcpTools": [],
+        "skills": []
+      },
+      "exit": {
+        "code": 0,
+        "timedOut": false,
+        "error": null
+      },
+      "usageInfo": null,
+      "log": ".runs/2026-10-09T151008/contact-form--codex_gpt-6-astra_medium--baseline--1.jsonl"
+    },
+    {
+      "task": "contact-form",
+      "category": "actions",
+      "agent": "codex:gpt-6.1-sol:medium",
+      "cli": "codex",
+      "model": "gpt-6.1-sol",
+      "effort": "medium",
+      "ablation": "baseline",
+      "index": 0,
+      "success": true,
+      "grade": {
+        "success": true,
+        "tests": {
+          "passed": 4,
+          "failed": 0,
+          "total": 4,
+          "results": [
+            {
+              "name": "contact form renders the form",
+              "ok": true
+            },
+            {
+              "name": "contact form rejects invalid input with 400, errors and the typed values",
+              "ok": true
+            },
+            {
+              "name": "contact form keeps the message when only the email is wrong",
+              "ok": true
+            },
+            {
+              "name": "contact form stores a valid message and redirects to the thanks page",
+              "ok": true
+            }
+          ]
+        },
+        "check": {
+          "ok": true,
+          "errors": 0,
+          "warnings": 0,
+          "codes": []
+        },
+        "diff": {
+          "filesChanged": 2,
+          "linesAdded": 84,
+          "linesRemoved": 0
+        },
+        "durationMs": 2045.3564580000238
+      },
+      "wallMs": 120907,
+      "tokens": {
+        "input": 27457,
+        "cacheRead": 380288,
+        "cacheWrite": 0,
+        "output": 3302,
+        "reasoning": 155
+      },
+      "costUsd": null,
+      "modelUsed": null,
+      "metrics": {
+        "turns": 21,
+        "steps": 19,
+        "commands": 17,
+        "edits": 2,
+        "checkRuns": 2,
+        "firstCheckOk": true,
+        "lumCodes": [],
+        "docsReads": 4,
+        "llmsReads": 2,
+        "mcpCalls": 0,
+        "mcpTools": [],
+        "skills": []
+      },
+      "exit": {
+        "code": 0,
+        "timedOut": false,
+        "error": null
+      },
+      "usageInfo": null,
+      "log": ".runs/2026-10-09T151008/contact-form--codex_gpt-6.1-sol_medium--baseline--1.jsonl"
+    },
+    {
+      "task": "contact-form",
+      "category": "actions",
+      "agent": "codex:gpt-6-luna:medium",
+      "cli": "codex",
+      "model": "gpt-6-luna",
+      "effort": "medium",
+      "ablation": "baseline",
+      "index": 0,
+      "success": true,
+      "grade": {
+        "success": true,
+        "tests": {
+          "passed": 4,
+          "failed": 0,
+          "total": 4,
+          "results": [
+            {
+              "name": "contact form renders the form",
+              "ok": true
+            },
+            {
+              "name": "contact form rejects invalid input with 400, errors and the typed values",
+              "ok": true
+            },
+            {
+              "name": "contact form keeps the message when only the email is wrong",
+              "ok": true
+            },
+            {
+              "name": "contact form stores a valid message and redirects to the thanks page",
+              "ok": true
+            }
+          ]
+        },
+        "check": {
+          "ok": true,
+          "errors": 0,
+          "warnings": 0,
+          "codes": []
+        },
+        "diff": {
+          "filesChanged": 2,
+          "linesAdded": 72,
+          "linesRemoved": 0
+        },
+        "durationMs": 1758.205083000008
+      },
+      "wallMs": 16972,
+      "tokens": {
+        "input": 14353,
+        "cacheRead": 65536,
+        "cacheWrite": 0,
+        "output": 1035,
+        "reasoning": 77
+      },
+      "costUsd": null,
+      "modelUsed": null,
+      "metrics": {
+        "turns": 6,
+        "steps": 5,
+        "commands": 3,
+        "edits": 2,
+        "checkRuns": 1,
+        "firstCheckOk": true,
+        "lumCodes": [],
+        "docsReads": 2,
+        "llmsReads": 1,
+        "mcpCalls": 0,
+        "mcpTools": [],
+        "skills": []
+      },
+      "exit": {
+        "code": 0,
+        "timedOut": false,
+        "error": null
+      },
+      "usageInfo": null,
+      "log": ".runs/2026-10-09T151008/contact-form--codex_gpt-6-luna_medium--baseline--1.jsonl"
+    },
+    {
+      "task": "contact-form",
+      "category": "actions",
+      "agent": "claude:claude-haiku-5-5:medium",
+      "cli": "claude",
+      "model": "claude-haiku-5-5",
+      "effort": "medium",
+      "ablation": "baseline",
+      "index": 0,
+      "success": true,
+      "grade": {
+        "success": true,
+        "tests": {
+          "passed": 4,
+          "failed": 0,
+          "total": 4,
+          "results": [
+            {
+              "name": "contact form renders the form",
+              "ok": true
+            },
+            {
+              "name": "contact form rejects invalid input with 400, errors and the typed values",
+              "ok": true
+            },
+            {
+              "name": "contact form keeps the message when only the email is wrong",
+              "ok": true
+            },
+            {
+              "name": "contact form stores a valid message and redirects to the thanks page",
+              "ok": true
+            }
+          ]
+        },
+        "check": {
+          "ok": true,
+          "errors": 0,
+          "warnings": 0,
+          "codes": []
+        },
+        "diff": {
+          "filesChanged": 2,
+          "linesAdded": 79,
+          "linesRemoved": 0
+        },
+        "durationMs": 1883.4029169999994
+      },
+      "wallMs": 46262,
+      "tokens": {
+        "input": 20,
+        "cacheRead": 444509,
+        "cacheWrite": 31549,
+        "output": 5567,
+        "reasoning": 1376
+      },
+      "costUsd": 0.013540390000000001,
+      "modelUsed": "claude-haiku-5-5",
+      "metrics": {
+        "turns": 13,
+        "steps": 11,
+        "commands": 8,
+        "edits": 2,
+        "checkRuns": 1,
+        "firstCheckOk": true,
+        "lumCodes": [],
+        "docsReads": 3,
+        "llmsReads": 1,
+        "mcpCalls": 0,
+        "mcpTools": [],
+        "skills": [
+          "lumen"
+        ]
+      },
+      "exit": {
+        "code": 0,
+        "timedOut": false,
+        "error": null
+      },
+      "usageInfo": {
+        "claude-haiku-5-5": {
+          "inputTokens": 20,
+          "outputTokens": 5567,
+          "cacheReadInputTokens": 444509,
+          "cacheCreationInputTokens": 31549,
+          "webSearchRequests": 0,
+          "costUSD": 0.013540390000000001,
+          "contextWindow": 1000000,
+          "maxOutputTokens": 128000,
+          "thinkingTokens": 1376,
+          "canonicalModel": "claude-haiku-5-5",
+          "provider": "firstParty",
+          "costBasis": "list"
+        }
+      },
+      "log": ".runs/2026-10-09T151008/contact-form--claude_claude-haiku-5-5_medium--baseline--1.jsonl"
+    },
+    {
+      "task": "counter-island",
+      "category": "islands",
+      "agent": "claude:claude-opus-5-5:medium",
+      "cli": "claude",
+      "model": "claude-opus-5-5",
+      "effort": "medium",
+      "ablation": "baseline",
+      "index": 0,
+      "success": true,
+      "grade": {
+        "success": true,
+        "tests": {
+          "passed": 3,
+          "failed": 0,
+          "total": 3,
+          "results": [
+            {
+              "name": "still counts by its step",
+              "ok": true
+            },
+            {
+              "name": "counter island hydrates the counter, on visibility, with its props",
+              "ok": true
+            },
+            {
+              "name": "counter island keeps the page server-rendered",
+              "ok": true
+            }
+          ]
+        },
+        "check": {
+          "ok": true,
+          "errors": 0,
+          "warnings": 0,
+          "codes": []
+        },
+        "diff": {
+          "filesChanged": 2,
+          "linesAdded": 3,
+          "linesRemoved": 3
+        },
+        "durationMs": 2377.2459159999853
+      },
+      "wallMs": 24557,
+      "tokens": {
+        "input": 10,
+        "cacheRead": 165672,
+        "cacheWrite": 17130,
+        "output": 1479,
+        "reasoning": 330
+      },
+      "costUsd": 0.19979439999999998,
+      "modelUsed": "claude-opus-5-5",
+      "metrics": {
+        "turns": 5,
+        "steps": 4,
+        "commands": 4,
+        "edits": 0,
+        "checkRuns": 1,
+        "firstCheckOk": true,
+        "lumCodes": [],
+        "docsReads": 2,
+        "llmsReads": 1,
+        "mcpCalls": 0,
+        "mcpTools": [],
+        "skills": []
+      },
+      "exit": {
+        "code": 0,
+        "timedOut": false,
+        "error": null
+      },
+      "usageInfo": {
+        "claude-opus-5-5": {
+          "inputTokens": 10,
+          "outputTokens": 1479,
+          "cacheReadInputTokens": 165672,
+          "cacheCreationInputTokens": 17130,
+          "webSearchRequests": 0,
+          "costUSD": 0.19979439999999998,
+          "contextWindow": 1000000,
+          "maxOutputTokens": 128000,
+          "thinkingTokens": 330,
+          "canonicalModel": "claude-opus-5-5",
+          "provider": "firstParty",
+          "costBasis": "list"
+        }
+      },
+      "log": ".runs/2026-10-09T151008/counter-island--claude_claude-opus-5-5_medium--baseline--1.jsonl"
+    },
+    {
+      "task": "counter-island",
+      "category": "islands",
+      "agent": "claude:claude-sonnet-5-5:medium",
+      "cli": "claude",
+      "model": "claude-sonnet-5-5",
+      "effort": "medium",
+      "ablation": "baseline",
+      "index": 0,
+      "success": true,
+      "grade": {
+        "success": true,
+        "tests": {
+          "passed": 3,
+          "failed": 0,
+          "total": 3,
+          "results": [
+            {
+              "name": "still counts by its step",
+              "ok": true
+            },
+            {
+              "name": "counter island hydrates the counter, on visibility, with its props",
+              "ok": true
+            },
+            {
+              "name": "counter island keeps the page server-rendered",
+              "ok": true
+            }
+          ]
+        },
+        "check": {
+          "ok": true,
+          "errors": 0,
+          "warnings": 0,
+          "codes": []
+        },
+        "diff": {
+          "filesChanged": 1,
+          "linesAdded": 1,
+          "linesRemoved": 1
+        },
+        "durationMs": 2311.8955419999547
+      },
+      "wallMs": 15983,
+      "tokens": {
+        "input": 8,
+        "cacheRead": 122817,
+        "cacheWrite": 12326,
+        "output": 1036,
+        "reasoning": 0
+      },
+      "costUsd": 0.08424340000000001,
+      "modelUsed": "claude-sonnet-5-5",
+      "metrics": {
+        "turns": 6,
+        "steps": 5,
+        "commands": 1,
+        "edits": 1,
+        "checkRuns": 1,
+        "firstCheckOk": true,
+        "lumCodes": [],
+        "docsReads": 0,
+        "llmsReads": 0,
+        "mcpCalls": 0,
+        "mcpTools": [],
+        "skills": []
+      },
+      "exit": {
+        "code": 0,
+        "timedOut": false,
+        "error": null
+      },
+      "usageInfo": {
+        "claude-sonnet-5-5": {
+          "inputTokens": 8,
+          "outputTokens": 1036,
+          "cacheReadInputTokens": 122817,
+          "cacheCreationInputTokens": 12326,
+          "webSearchRequests": 0,
+          "costUSD": 0.08424340000000001,
+          "contextWindow": 1000000,
+          "maxOutputTokens": 128000,
+          "thinkingTokens": 0,
+          "canonicalModel": "claude-sonnet-5-5",
+          "provider": "firstParty",
+          "costBasis": "list"
+        }
+      },
+      "log": ".runs/2026-10-09T151008/counter-island--claude_claude-sonnet-5-5_medium--baseline--1.jsonl"
+    },
+    {
+      "task": "counter-island",
+      "category": "islands",
+      "agent": "codex:gpt-6-astra:medium",
+      "cli": "codex",
+      "model": "gpt-6-astra",
+      "effort": "medium",
+      "ablation": "baseline",
+      "index": 0,
+      "success": true,
+      "grade": {
+        "success": true,
+        "tests": {
+          "passed": 3,
+          "failed": 0,
+          "total": 3,
+          "results": [
+            {
+              "name": "still counts by its step",
+              "ok": true
+            },
+            {
+              "name": "counter island hydrates the counter, on visibility, with its props",
+              "ok": true
+            },
+            {
+              "name": "counter island keeps the page server-rendered",
+              "ok": true
+            }
+          ]
+        },
+        "check": {
+          "ok": true,
+          "errors": 0,
+          "warnings": 0,
+          "codes": []
+        },
+        "diff": {
+          "filesChanged": 1,
+          "linesAdded": 1,
+          "linesRemoved": 1
+        },
+        "durationMs": 2171.711249999935
+      },
+      "wallMs": 28175,
+      "tokens": {
+        "input": 14432,
+        "cacheRead": 73856,
+        "cacheWrite": 0,
+        "output": 479,
+        "reasoning": 14
+      },
+      "costUsd": null,
+      "modelUsed": null,
+      "metrics": {
+        "turns": 10,
+        "steps": 8,
+        "commands": 7,
+        "edits": 1,
+        "checkRuns": 1,
+        "firstCheckOk": true,
+        "lumCodes": [],
+        "docsReads": 2,
+        "llmsReads": 1,
+        "mcpCalls": 0,
+        "mcpTools": [],
+        "skills": []
+      },
+      "exit": {
+        "code": 0,
+        "timedOut": false,
+        "error": null
+      },
+      "usageInfo": null,
+      "log": ".runs/2026-10-09T151008/counter-island--codex_gpt-6-astra_medium--baseline--1.jsonl"
+    },
+    {
+      "task": "counter-island",
+      "category": "islands",
+      "agent": "codex:gpt-6.1-sol:medium",
+      "cli": "codex",
+      "model": "gpt-6.1-sol",
+      "effort": "medium",
+      "ablation": "baseline",
+      "index": 0,
+      "success": true,
+      "grade": {
+        "success": true,
+        "tests": {
+          "passed": 3,
+          "failed": 0,
+          "total": 3,
+          "results": [
+            {
+              "name": "still counts by its step",
+              "ok": true
+            },
+            {
+              "name": "counter island hydrates the counter, on visibility, with its props",
+              "ok": true
+            },
+            {
+              "name": "counter island keeps the page server-rendered",
+              "ok": true
+            }
+          ]
+        },
+        "check": {
+          "ok": true,
+          "errors": 0,
+          "warnings": 0,
+          "codes": []
+        },
+        "diff": {
+          "filesChanged": 1,
+          "linesAdded": 1,
+          "linesRemoved": 1
+        },
+        "durationMs": 2249.7571250000037
+      },
+      "wallMs": 36980,
+      "tokens": {
+        "input": 24769,
+        "cacheRead": 98432,
+        "cacheWrite": 0,
+        "output": 638,
+        "reasoning": 20
+      },
+      "costUsd": null,
+      "modelUsed": null,
+      "metrics": {
+        "turns": 13,
+        "steps": 11,
+        "commands": 10,
+        "edits": 1,
+        "checkRuns": 1,
+        "firstCheckOk": true,
+        "lumCodes": [],
+        "docsReads": 3,
+        "llmsReads": 2,
+        "mcpCalls": 0,
+        "mcpTools": [],
+        "skills": []
+      },
+      "exit": {
+        "code": 0,
+        "timedOut": false,
+        "error": null
+      },
+      "usageInfo": null,
+      "log": ".runs/2026-10-09T151008/counter-island--codex_gpt-6.1-sol_medium--baseline--1.jsonl"
+    },
+    {
+      "task": "counter-island",
+      "category": "islands",
+      "agent": "codex:gpt-6-luna:medium",
+      "cli": "codex",
+      "model": "gpt-6-luna",
+      "effort": "medium",
+      "ablation": "baseline",
+      "index": 0,
+      "success": true,
+      "grade": {
+        "success": true,
+        "tests": {
+          "passed": 3,
+          "failed": 0,
+          "total": 3,
+          "results": [
+            {
+              "name": "still counts by its step",
+              "ok": true
+            },
+            {
+              "name": "counter island hydrates the counter, on visibility, with its props",
+              "ok": true
+            },
+            {
+              "name": "counter island keeps the page server-rendered",
+              "ok": true
+            }
+          ]
+        },
+        "check": {
+          "ok": true,
+          "errors": 0,
+          "warnings": 0,
+          "codes": []
+        },
+        "diff": {
+          "filesChanged": 1,
+          "linesAdded": 1,
+          "linesRemoved": 1
+        },
+        "durationMs": 2254.205707999994
+      },
+      "wallMs": 15726,
+      "tokens": {
+        "input": 28967,
+        "cacheRead": 77568,
+        "cacheWrite": 0,
+        "output": 506,
+        "reasoning": 0
+      },
+      "costUsd": null,
+      "modelUsed": null,
+      "metrics": {
+        "turns": 8,
+        "steps": 4,
+        "commands": 3,
+        "edits": 1,
+        "checkRuns": 1,
+        "firstCheckOk": true,
+        "lumCodes": [],
+        "docsReads": 2,
+        "llmsReads": 1,
+        "mcpCalls": 0,
+        "mcpTools": [],
+        "skills": []
+      },
+      "exit": {
+        "code": 0,
+        "timedOut": false,
+        "error": null
+      },
+      "usageInfo": null,
+      "log": ".runs/2026-10-09T151008/counter-island--codex_gpt-6-luna_medium--baseline--1.jsonl"
+    },
+    {
+      "task": "counter-island",
+      "category": "islands",
+      "agent": "claude:claude-haiku-5-5:medium",
+      "cli": "claude",
+      "model": "claude-haiku-5-5",
+      "effort": "medium",
+      "ablation": "baseline",
+      "index": 0,
+      "success": true,
+      "grade": {
+        "success": true,
+        "tests": {
+          "passed": 3,
+          "failed": 0,
+          "total": 3,
+          "results": [
+            {
+              "name": "still counts by its step",
+              "ok": true
+            },
+            {
+              "name": "counter island hydrates the counter, on visibility, with its props",
+              "ok": true
+            },
+            {
+              "name": "counter island keeps the page server-rendered",
+              "ok": true
+            }
+          ]
+        },
+        "check": {
+          "ok": true,
+          "errors": 0,
+          "warnings": 0,
+          "codes": []
+        },
+        "diff": {
+          "filesChanged": 1,
+          "linesAdded": 1,
+          "linesRemoved": 1
+        },
+        "durationMs": 2981.6553330000024
+      },
+      "wallMs": 26049,
+      "tokens": {
+        "input": 14,
+        "cacheRead": 275602,
+        "cacheWrite": 26184,
+        "output": 2742,
+        "reasoning": 609
+      },
+      "costUsd": 0.009365220000000002,
+      "modelUsed": "claude-haiku-5-5",
+      "metrics": {
+        "turns": 10,
+        "steps": 8,
+        "commands": 6,
+        "edits": 1,
+        "checkRuns": 1,
+        "firstCheckOk": true,
+        "lumCodes": [],
+        "docsReads": 2,
+        "llmsReads": 1,
+        "mcpCalls": 0,
+        "mcpTools": [],
+        "skills": [
+          "lumen"
+        ]
+      },
+      "exit": {
+        "code": 0,
+        "timedOut": false,
+        "error": null
+      },
+      "usageInfo": {
+        "claude-haiku-5-5": {
+          "inputTokens": 14,
+          "outputTokens": 2742,
+          "cacheReadInputTokens": 275602,
+          "cacheCreationInputTokens": 26184,
+          "webSearchRequests": 0,
+          "costUSD": 0.009365220000000002,
+          "contextWindow": 1000000,
+          "maxOutputTokens": 128000,
+          "thinkingTokens": 609,
+          "canonicalModel": "claude-haiku-5-5",
+          "provider": "firstParty",
+          "costBasis": "list"
+        }
+      },
+      "log": ".runs/2026-10-09T151008/counter-island--claude_claude-haiku-5-5_medium--baseline--1.jsonl"
+    },
+    {
+      "task": "custom-404",
+      "category": "routing",
+      "agent": "claude:claude-opus-5-5:medium",
+      "cli": "claude",
+      "model": "claude-opus-5-5",
+      "effort": "medium",
+      "ablation": "baseline",
+      "index": 0,
+      "success": true,
+      "grade": {
+        "success": true,
+        "tests": {
+          "passed": 3,
+          "failed": 0,
+          "total": 3,
+          "results": [
+            {
+              "name": "not-found page renders /nope as a 404 inside the layout",
+              "ok": true
+            },
+            {
+              "name": "not-found page renders /a/b/c as a 404 inside the layout",
+              "ok": true
+            },
+            {
+              "name": "not-found page keeps the home page in the layout",
+              "ok": true
+            }
+          ]
+        },
+        "check": {
+          "ok": true,
+          "errors": 0,
+          "warnings": 0,
+          "codes": []
+        },
+        "diff": {
+          "filesChanged": 2,
+          "linesAdded": 25,
+          "linesRemoved": 0
+        },
+        "durationMs": 1778.376082999981
+      },
+      "wallMs": 44405,
+      "tokens": {
+        "input": 18,
+        "cacheRead": 343864,
+        "cacheWrite": 23106,
+        "output": 2252,
+        "reasoning": 317
+      },
+      "costUsd": 0.2987327999999999,
+      "modelUsed": "claude-opus-5-5",
+      "metrics": {
+        "turns": 9,
+        "steps": 8,
+        "commands": 8,
+        "edits": 0,
+        "checkRuns": 1,
+        "firstCheckOk": true,
+        "lumCodes": [],
+        "docsReads": 2,
+        "llmsReads": 1,
+        "mcpCalls": 0,
+        "mcpTools": [],
+        "skills": []
+      },
+      "exit": {
+        "code": 0,
+        "timedOut": false,
+        "error": null
+      },
+      "usageInfo": {
+        "claude-opus-5-5": {
+          "inputTokens": 18,
+          "outputTokens": 2252,
+          "cacheReadInputTokens": 343864,
+          "cacheCreationInputTokens": 23106,
+          "webSearchRequests": 0,
+          "costUSD": 0.2987327999999999,
+          "contextWindow": 1000000,
+          "maxOutputTokens": 128000,
+          "thinkingTokens": 317,
+          "canonicalModel": "claude-opus-5-5",
+          "provider": "firstParty",
+          "costBasis": "list"
+        }
+      },
+      "log": ".runs/2026-10-09T151008/custom-404--claude_claude-opus-5-5_medium--baseline--1.jsonl"
+    },
+    {
+      "task": "custom-404",
+      "category": "routing",
+      "agent": "claude:claude-sonnet-5-5:medium",
+      "cli": "claude",
+      "model": "claude-sonnet-5-5",
+      "effort": "medium",
+      "ablation": "baseline",
+      "index": 0,
+      "success": true,
+      "grade": {
+        "success": true,
+        "tests": {
+          "passed": 3,
+          "failed": 0,
+          "total": 3,
+          "results": [
+            {
+              "name": "not-found page renders /nope as a 404 inside the layout",
+              "ok": true
+            },
+            {
+              "name": "not-found page renders /a/b/c as a 404 inside the layout",
+              "ok": true
+            },
+            {
+              "name": "not-found page keeps the home page in the layout",
+              "ok": true
+            }
+          ]
+        },
+        "check": {
+          "ok": true,
+          "errors": 0,
+          "warnings": 0,
+          "codes": []
+        },
+        "diff": {
+          "filesChanged": 2,
+          "linesAdded": 25,
+          "linesRemoved": 0
+        },
+        "durationMs": 1651.043166999938
+      },
+      "wallMs": 15926,
+      "tokens": {
+        "input": 8,
+        "cacheRead": 127339,
+        "cacheWrite": 17474,
+        "output": 822,
+        "reasoning": 21
+      },
+      "costUsd": 0.10359979999999999,
+      "modelUsed": "claude-sonnet-5-5",
+      "metrics": {
+        "turns": 4,
+        "steps": 3,
+        "commands": 3,
+        "edits": 0,
+        "checkRuns": 1,
+        "firstCheckOk": true,
+        "lumCodes": [],
+        "docsReads": 2,
+        "llmsReads": 0,
+        "mcpCalls": 0,
+        "mcpTools": [],
+        "skills": []
+      },
+      "exit": {
+        "code": 0,
+        "timedOut": false,
+        "error": null
+      },
+      "usageInfo": {
+        "claude-sonnet-5-5": {
+          "inputTokens": 8,
+          "outputTokens": 822,
+          "cacheReadInputTokens": 127339,
+          "cacheCreationInputTokens": 17474,
+          "webSearchRequests": 0,
+          "costUSD": 0.10359979999999999,
+          "contextWindow": 1000000,
+          "maxOutputTokens": 128000,
+          "thinkingTokens": 21,
+          "canonicalModel": "claude-sonnet-5-5",
+          "provider": "firstParty",
+          "costBasis": "list"
+        }
+      },
+      "log": ".runs/2026-10-09T151008/custom-404--claude_claude-sonnet-5-5_medium--baseline--1.jsonl"
+    },
+    {
+      "task": "custom-404",
+      "category": "routing",
+      "agent": "codex:gpt-6-astra:medium",
+      "cli": "codex",
+      "model": "gpt-6-astra",
+      "effort": "medium",
+      "ablation": "baseline",
+      "index": 0,
+      "success": true,
+      "grade": {
+        "success": true,
+        "tests": {
+          "passed": 3,
+          "failed": 0,
+          "total": 3,
+          "results": [
+            {
+              "name": "not-found page renders /nope as a 404 inside the layout",
+              "ok": true
+            },
+            {
+              "name": "not-found page renders /a/b/c as a 404 inside the layout",
+              "ok": true
+            },
+            {
+              "name": "not-found page keeps the home page in the layout",
+              "ok": true
+            }
+          ]
+        },
+        "check": {
+          "ok": true,
+          "errors": 0,
+          "warnings": 0,
+          "codes": []
+        },
+        "diff": {
+          "filesChanged": 2,
+          "linesAdded": 22,
+          "linesRemoved": 0
+        },
+        "durationMs": 1946.7301250000019
+      },
+      "wallMs": 54817,
+      "tokens": {
+        "input": 18297,
+        "cacheRead": 212608,
+        "cacheWrite": 0,
+        "output": 1386,
+        "reasoning": 53
+      },
+      "costUsd": null,
+      "modelUsed": null,
+      "metrics": {
+        "turns": 11,
+        "steps": 10,
+        "commands": 8,
+        "edits": 2,
+        "checkRuns": 1,
+        "firstCheckOk": true,
+        "lumCodes": [],
+        "docsReads": 2,
+        "llmsReads": 1,
+        "mcpCalls": 0,
+        "mcpTools": [],
+        "skills": []
+      },
+      "exit": {
+        "code": 0,
+        "timedOut": false,
+        "error": null
+      },
+      "usageInfo": null,
+      "log": ".runs/2026-10-09T151008/custom-404--codex_gpt-6-astra_medium--baseline--1.jsonl"
+    },
+    {
+      "task": "custom-404",
+      "category": "routing",
+      "agent": "codex:gpt-6.1-sol:medium",
+      "cli": "codex",
+      "model": "gpt-6.1-sol",
+      "effort": "medium",
+      "ablation": "baseline",
+      "index": 0,
+      "success": true,
+      "grade": {
+        "success": true,
+        "tests": {
+          "passed": 3,
+          "failed": 0,
+          "total": 3,
+          "results": [
+            {
+              "name": "not-found page renders /nope as a 404 inside the layout",
+              "ok": true
+            },
+            {
+              "name": "not-found page renders /a/b/c as a 404 inside the layout",
+              "ok": true
+            },
+            {
+              "name": "not-found page keeps the home page in the layout",
+              "ok": true
+            }
+          ]
+        },
+        "check": {
+          "ok": true,
+          "errors": 0,
+          "warnings": 0,
+          "codes": []
+        },
+        "diff": {
+          "filesChanged": 2,
+          "linesAdded": 22,
+          "linesRemoved": 0
+        },
+        "durationMs": 1846.8317079999251
+      },
+      "wallMs": 37110,
+      "tokens": {
+        "input": 19887,
+        "cacheRead": 89984,
+        "cacheWrite": 0,
+        "output": 694,
+        "reasoning": 46
+      },
+      "costUsd": null,
+      "modelUsed": null,
+      "metrics": {
+        "turns": 7,
+        "steps": 6,
+        "commands": 4,
+        "edits": 2,
+        "checkRuns": 1,
+        "firstCheckOk": true,
+        "lumCodes": [],
+        "docsReads": 2,
+        "llmsReads": 1,
+        "mcpCalls": 0,
+        "mcpTools": [],
+        "skills": []
+      },
+      "exit": {
+        "code": 0,
+        "timedOut": false,
+        "error": null
+      },
+      "usageInfo": null,
+      "log": ".runs/2026-10-09T151008/custom-404--codex_gpt-6.1-sol_medium--baseline--1.jsonl"
+    },
+    {
+      "task": "custom-404",
+      "category": "routing",
+      "agent": "codex:gpt-6-luna:medium",
+      "cli": "codex",
+      "model": "gpt-6-luna",
+      "effort": "medium",
+      "ablation": "baseline",
+      "index": 0,
+      "success": true,
+      "grade": {
+        "success": true,
+        "tests": {
+          "passed": 3,
+          "failed": 0,
+          "total": 3,
+          "results": [
+            {
+              "name": "not-found page renders /nope as a 404 inside the layout",
+              "ok": true
+            },
+            {
+              "name": "not-found page renders /a/b/c as a 404 inside the layout",
+              "ok": true
+            },
+            {
+              "name": "not-found page keeps the home page in the layout",
+              "ok": true
+            }
+          ]
+        },
+        "check": {
+          "ok": true,
+          "errors": 0,
+          "warnings": 0,
+          "codes": []
+        },
+        "diff": {
+          "filesChanged": 2,
+          "linesAdded": 24,
+          "linesRemoved": 0
+        },
+        "durationMs": 1664.5727499999339
+      },
+      "wallMs": 14757,
+      "tokens": {
+        "input": 13874,
+        "cacheRead": 66560,
+        "cacheWrite": 0,
+        "output": 559,
+        "reasoning": 0
+      },
+      "costUsd": null,
+      "modelUsed": null,
+      "metrics": {
+        "turns": 7,
+        "steps": 5,
+        "commands": 3,
+        "edits": 2,
+        "checkRuns": 1,
+        "firstCheckOk": true,
+        "lumCodes": [],
+        "docsReads": 2,
+        "llmsReads": 1,
+        "mcpCalls": 0,
+        "mcpTools": [],
+        "skills": []
+      },
+      "exit": {
+        "code": 0,
+        "timedOut": false,
+        "error": null
+      },
+      "usageInfo": null,
+      "log": ".runs/2026-10-09T151008/custom-404--codex_gpt-6-luna_medium--baseline--1.jsonl"
+    },
+    {
+      "task": "custom-404",
+      "category": "routing",
+      "agent": "claude:claude-haiku-5-5:medium",
+      "cli": "claude",
+      "model": "claude-haiku-5-5",
+      "effort": "medium",
+      "ablation": "baseline",
+      "index": 0,
+      "success": true,
+      "grade": {
+        "success": true,
+        "tests": {
+          "passed": 3,
+          "failed": 0,
+          "total": 3,
+          "results": [
+            {
+              "name": "not-found page renders /nope as a 404 inside the layout",
+              "ok": true
+            },
+            {
+              "name": "not-found page renders /a/b/c as a 404 inside the layout",
+              "ok": true
+            },
+            {
+              "name": "not-found page keeps the home page in the layout",
+              "ok": true
+            }
+          ]
+        },
+        "check": {
+          "ok": true,
+          "errors": 0,
+          "warnings": 0,
+          "codes": []
+        },
+        "diff": {
+          "filesChanged": 2,
+          "linesAdded": 42,
+          "linesRemoved": 0
+        },
+        "durationMs": 1806.187166000018
+      },
+      "wallMs": 38377,
+      "tokens": {
+        "input": 20,
+        "cacheRead": 423539,
+        "cacheWrite": 30034,
+        "output": 4292,
+        "reasoning": 897
+      },
+      "costUsd": 0.012390189999999999,
+      "modelUsed": "claude-haiku-5-5",
+      "metrics": {
+        "turns": 14,
+        "steps": 12,
+        "commands": 9,
+        "edits": 2,
+        "checkRuns": 2,
+        "firstCheckOk": true,
+        "lumCodes": [],
+        "docsReads": 2,
+        "llmsReads": 1,
+        "mcpCalls": 0,
+        "mcpTools": [],
+        "skills": [
+          "lumen"
+        ]
+      },
+      "exit": {
+        "code": 0,
+        "timedOut": false,
+        "error": null
+      },
+      "usageInfo": {
+        "claude-haiku-5-5": {
+          "inputTokens": 20,
+          "outputTokens": 4292,
+          "cacheReadInputTokens": 423539,
+          "cacheCreationInputTokens": 30034,
+          "webSearchRequests": 0,
+          "costUSD": 0.012390189999999999,
+          "contextWindow": 1000000,
+          "maxOutputTokens": 128000,
+          "thinkingTokens": 897,
+          "canonicalModel": "claude-haiku-5-5",
+          "provider": "firstParty",
+          "costBasis": "list"
+        }
+      },
+      "log": ".runs/2026-10-09T151008/custom-404--claude_claude-haiku-5-5_medium--baseline--1.jsonl"
+    },
+    {
+      "task": "fix-browser-api-module-scope",
+      "category": "islands",
+      "agent": "claude:claude-opus-5-5:medium",
+      "cli": "claude",
+      "model": "claude-opus-5-5",
+      "effort": "medium",
+      "ablation": "baseline",
+      "index": 0,
+      "success": true,
+      "grade": {
+        "success": true,
+        "tests": {
+          "passed": 4,
+          "failed": 0,
+          "total": 4,
+          "results": [
+            {
+              "name": "reads the saved theme after mounting and saves changes",
+              "ok": true
+            },
+            {
+              "name": "theme toggle on the server renders the page",
+              "ok": true
+            },
+            {
+              "name": "theme toggle on the server has no browser APIs at module scope",
+              "ok": true
+            },
+            {
+              "name": "theme toggle on the server builds",
+              "ok": true
+            }
+          ]
+        },
+        "check": {
+          "ok": true,
+          "errors": 0,
+          "warnings": 0,
+          "codes": []
+        },
+        "diff": {
+          "filesChanged": 1,
+          "linesAdded": 6,
+          "linesRemoved": 4
+        },
+        "durationMs": 2980.5728749999544
+      },
+      "wallMs": 20305,
+      "tokens": {
+        "input": 8,
+        "cacheRead": 122017,
+        "cacheWrite": 13683,
+        "output": 1333,
+        "reasoning": 0
+      },
+      "costUsd": 0.1605594,
+      "modelUsed": "claude-opus-5-5",
+      "metrics": {
+        "turns": 6,
+        "steps": 5,
+        "commands": 3,
+        "edits": 1,
+        "checkRuns": 1,
+        "firstCheckOk": true,
+        "lumCodes": [],
+        "docsReads": 1,
+        "llmsReads": 0,
+        "mcpCalls": 0,
+        "mcpTools": [],
+        "skills": []
+      },
+      "exit": {
+        "code": 0,
+        "timedOut": false,
+        "error": null
+      },
+      "usageInfo": {
+        "claude-opus-5-5": {
+          "inputTokens": 8,
+          "outputTokens": 1333,
+          "cacheReadInputTokens": 122017,
+          "cacheCreationInputTokens": 13683,
+          "webSearchRequests": 0,
+          "costUSD": 0.1605594,
+          "contextWindow": 1000000,
+          "maxOutputTokens": 128000,
+          "thinkingTokens": 0,
+          "canonicalModel": "claude-opus-5-5",
+          "provider": "firstParty",
+          "costBasis": "list"
+        }
+      },
+      "log": ".runs/2026-10-09T151008/fix-browser-api-module-scope--claude_claude-opus-5-5_medium--baseline--1.jsonl"
+    },
+    {
+      "task": "fix-browser-api-module-scope",
+      "category": "islands",
+      "agent": "claude:claude-sonnet-5-5:medium",
+      "cli": "claude",
+      "model": "claude-sonnet-5-5",
+      "effort": "medium",
+      "ablation": "baseline",
+      "index": 0,
+      "success": true,
+      "grade": {
+        "success": true,
+        "tests": {
+          "passed": 4,
+          "failed": 0,
+          "total": 4,
+          "results": [
+            {
+              "name": "reads the saved theme after mounting and saves changes",
+              "ok": true
+            },
+            {
+              "name": "theme toggle on the server renders the page",
+              "ok": true
+            },
+            {
+              "name": "theme toggle on the server has no browser APIs at module scope",
+              "ok": true
+            },
+            {
+              "name": "theme toggle on the server builds",
+              "ok": true
+            }
+          ]
+        },
+        "check": {
+          "ok": true,
+          "errors": 0,
+          "warnings": 0,
+          "codes": []
+        },
+        "diff": {
+          "filesChanged": 1,
+          "linesAdded": 8,
+          "linesRemoved": 4
+        },
+        "durationMs": 2964.3909580002073
+      },
+      "wallMs": 16944,
+      "tokens": {
+        "input": 8,
+        "cacheRead": 122533,
+        "cacheWrite": 14613,
+        "output": 969,
+        "reasoning": 0
+      },
+      "costUsd": 0.0926646,
+      "modelUsed": "claude-sonnet-5-5",
+      "metrics": {
+        "turns": 5,
+        "steps": 4,
+        "commands": 3,
+        "edits": 0,
+        "checkRuns": 1,
+        "firstCheckOk": true,
+        "lumCodes": [],
+        "docsReads": 2,
+        "llmsReads": 0,
+        "mcpCalls": 0,
+        "mcpTools": [],
+        "skills": []
+      },
+      "exit": {
+        "code": 0,
+        "timedOut": false,
+        "error": null
+      },
+      "usageInfo": {
+        "claude-sonnet-5-5": {
+          "inputTokens": 8,
+          "outputTokens": 969,
+          "cacheReadInputTokens": 122533,
+          "cacheCreationInputTokens": 14613,
+          "webSearchRequests": 0,
+          "costUSD": 0.0926646,
+          "contextWindow": 1000000,
+          "maxOutputTokens": 128000,
+          "thinkingTokens": 0,
+          "canonicalModel": "claude-sonnet-5-5",
+          "provider": "firstParty",
+          "costBasis": "list"
+        }
+      },
+      "log": ".runs/2026-10-09T151008/fix-browser-api-module-scope--claude_claude-sonnet-5-5_medium--baseline--1.jsonl"
+    },
+    {
+      "task": "fix-browser-api-module-scope",
+      "category": "islands",
+      "agent": "codex:gpt-6-astra:medium",
+      "cli": "codex",
+      "model": "gpt-6-astra",
+      "effort": "medium",
+      "ablation": "baseline",
+      "index": 0,
+      "success": true,
+      "grade": {
+        "success": true,
+        "tests": {
+          "passed": 4,
+          "failed": 0,
+          "total": 4,
+          "results": [
+            {
+              "name": "reads the saved theme after mounting and saves changes",
+              "ok": true
+            },
+            {
+              "name": "theme toggle on the server renders the page",
+              "ok": true
+            },
+            {
+              "name": "theme toggle on the server has no browser APIs at module scope",
+              "ok": true
+            },
+            {
+              "name": "theme toggle on the server builds",
+              "ok": true
+            }
+          ]
+        },
+        "check": {
+          "ok": true,
+          "errors": 0,
+          "warnings": 0,
+          "codes": []
+        },
+        "diff": {
+          "filesChanged": 1,
+          "linesAdded": 7,
+          "linesRemoved": 4
+        },
+        "durationMs": 3003.969000000041
+      },
+      "wallMs": 34126,
+      "tokens": {
+        "input": 27296,
+        "cacheRead": 84608,
+        "cacheWrite": 0,
+        "output": 601,
+        "reasoning": 0
+      },
+      "costUsd": null,
+      "modelUsed": null,
+      "metrics": {
+        "turns": 10,
+        "steps": 8,
+        "commands": 7,
+        "edits": 1,
+        "checkRuns": 1,
+        "firstCheckOk": true,
+        "lumCodes": [],
+        "docsReads": 2,
+        "llmsReads": 1,
+        "mcpCalls": 0,
+        "mcpTools": [],
+        "skills": []
+      },
+      "exit": {
+        "code": 0,
+        "timedOut": false,
+        "error": null
+      },
+      "usageInfo": null,
+      "log": ".runs/2026-10-09T151008/fix-browser-api-module-scope--codex_gpt-6-astra_medium--baseline--1.jsonl"
+    },
+    {
+      "task": "fix-browser-api-module-scope",
+      "category": "islands",
+      "agent": "codex:gpt-6.1-sol:medium",
+      "cli": "codex",
+      "model": "gpt-6.1-sol",
+      "effort": "medium",
+      "ablation": "baseline",
+      "index": 0,
+      "success": true,
+      "grade": {
+        "success": true,
+        "tests": {
+          "passed": 4,
+          "failed": 0,
+          "total": 4,
+          "results": [
+            {
+              "name": "reads the saved theme after mounting and saves changes",
+              "ok": true
+            },
+            {
+              "name": "theme toggle on the server renders the page",
+              "ok": true
+            },
+            {
+              "name": "theme toggle on the server has no browser APIs at module scope",
+              "ok": true
+            },
+            {
+              "name": "theme toggle on the server builds",
+              "ok": true
+            }
+          ]
+        },
+        "check": {
+          "ok": true,
+          "errors": 0,
+          "warnings": 0,
+          "codes": []
+        },
+        "diff": {
+          "filesChanged": 1,
+          "linesAdded": 7,
+          "linesRemoved": 4
+        },
+        "durationMs": 4029.1794579999987
+      },
+      "wallMs": 43289,
+      "tokens": {
+        "input": 19468,
+        "cacheRead": 142848,
+        "cacheWrite": 0,
+        "output": 845,
+        "reasoning": 38
+      },
+      "costUsd": null,
+      "modelUsed": null,
+      "metrics": {
+        "turns": 14,
+        "steps": 12,
+        "commands": 11,
+        "edits": 1,
+        "checkRuns": 1,
+        "firstCheckOk": true,
+        "lumCodes": [],
+        "docsReads": 3,
+        "llmsReads": 2,
+        "mcpCalls": 0,
+        "mcpTools": [],
+        "skills": []
+      },
+      "exit": {
+        "code": 0,
+        "timedOut": false,
+        "error": null
+      },
+      "usageInfo": null,
+      "log": ".runs/2026-10-09T151008/fix-browser-api-module-scope--codex_gpt-6.1-sol_medium--baseline--1.jsonl"
+    },
+    {
+      "task": "fix-browser-api-module-scope",
+      "category": "islands",
+      "agent": "codex:gpt-6-luna:medium",
+      "cli": "codex",
+      "model": "gpt-6-luna",
+      "effort": "medium",
+      "ablation": "baseline",
+      "index": 0,
+      "success": true,
+      "grade": {
+        "success": true,
+        "tests": {
+          "passed": 4,
+          "failed": 0,
+          "total": 4,
+          "results": [
+            {
+              "name": "reads the saved theme after mounting and saves changes",
+              "ok": true
+            },
+            {
+              "name": "theme toggle on the server renders the page",
+              "ok": true
+            },
+            {
+              "name": "theme toggle on the server has no browser APIs at module scope",
+              "ok": true
+            },
+            {
+              "name": "theme toggle on the server builds",
+              "ok": true
+            }
+          ]
+        },
+        "check": {
+          "ok": true,
+          "errors": 0,
+          "warnings": 0,
+          "codes": []
+        },
+        "diff": {
+          "filesChanged": 1,
+          "linesAdded": 3,
+          "linesRemoved": 4
+        },
+        "durationMs": 3126.95941700018
+      },
+      "wallMs": 15663,
+      "tokens": {
+        "input": 13437,
+        "cacheRead": 87808,
+        "cacheWrite": 0,
+        "output": 576,
+        "reasoning": 0
+      },
+      "costUsd": null,
+      "modelUsed": null,
+      "metrics": {
+        "turns": 8,
+        "steps": 5,
+        "commands": 4,
+        "edits": 1,
+        "checkRuns": 1,
+        "firstCheckOk": true,
+        "lumCodes": [],
+        "docsReads": 2,
+        "llmsReads": 1,
+        "mcpCalls": 0,
+        "mcpTools": [],
+        "skills": []
+      },
+      "exit": {
+        "code": 0,
+        "timedOut": false,
+        "error": null
+      },
+      "usageInfo": null,
+      "log": ".runs/2026-10-09T151008/fix-browser-api-module-scope--codex_gpt-6-luna_medium--baseline--1.jsonl"
+    },
+    {
+      "task": "fix-browser-api-module-scope",
+      "category": "islands",
+      "agent": "claude:claude-haiku-5-5:medium",
+      "cli": "claude",
+      "model": "claude-haiku-5-5",
+      "effort": "medium",
+      "ablation": "baseline",
+      "index": 0,
+      "success": true,
+      "grade": {
+        "success": true,
+        "tests": {
+          "passed": 4,
+          "failed": 0,
+          "total": 4,
+          "results": [
+            {
+              "name": "reads the saved theme after mounting and saves changes",
+              "ok": true
+            },
+            {
+              "name": "theme toggle on the server renders the page",
+              "ok": true
+            },
+            {
+              "name": "theme toggle on the server has no browser APIs at module scope",
+              "ok": true
+            },
+            {
+              "name": "theme toggle on the server builds",
+              "ok": true
+            }
+          ]
+        },
+        "check": {
+          "ok": true,
+          "errors": 0,
+          "warnings": 0,
+          "codes": []
+        },
+        "diff": {
+          "filesChanged": 1,
+          "linesAdded": 3,
+          "linesRemoved": 4
+        },
+        "durationMs": 3339.186457999982
+      },
+      "wallMs": 27629,
+      "tokens": {
+        "input": 16,
+        "cacheRead": 299576,
+        "cacheWrite": 22185,
+        "output": 2804,
+        "reasoning": 327
+      },
+      "costUsd": 0.00883636,
+      "modelUsed": "claude-haiku-5-5",
+      "metrics": {
+        "turns": 11,
+        "steps": 9,
+        "commands": 6,
+        "edits": 1,
+        "checkRuns": 1,
+        "firstCheckOk": true,
+        "lumCodes": [],
+        "docsReads": 2,
+        "llmsReads": 1,
+        "mcpCalls": 0,
+        "mcpTools": [],
+        "skills": [
+          "lumen"
+        ]
+      },
+      "exit": {
+        "code": 0,
+        "timedOut": false,
+        "error": null
+      },
+      "usageInfo": {
+        "claude-haiku-5-5": {
+          "inputTokens": 16,
+          "outputTokens": 2804,
+          "cacheReadInputTokens": 299576,
+          "cacheCreationInputTokens": 22185,
+          "webSearchRequests": 0,
+          "costUSD": 0.00883636,
+          "contextWindow": 1000000,
+          "maxOutputTokens": 128000,
+          "thinkingTokens": 327,
+          "canonicalModel": "claude-haiku-5-5",
+          "provider": "firstParty",
+          "costBasis": "list"
+        }
+      },
+      "log": ".runs/2026-10-09T151008/fix-browser-api-module-scope--claude_claude-haiku-5-5_medium--baseline--1.jsonl"
+    },
+    {
+      "task": "fix-island-function-prop",
+      "category": "islands",
+      "agent": "claude:claude-opus-5-5:medium",
+      "cli": "claude",
+      "model": "claude-opus-5-5",
+      "effort": "medium",
+      "ablation": "baseline",
+      "index": 0,
+      "success": true,
+      "grade": {
+        "success": true,
+        "tests": {
+          "passed": 3,
+          "failed": 0,
+          "total": 3,
+          "results": [
+            {
+              "name": "formats what you type",
+              "ok": true
+            },
+            {
+              "name": "price editor island is an island with serializable props only",
+              "ok": true
+            },
+            {
+              "name": "price editor island has no non-serializable island props",
+              "ok": true
+            }
+          ]
+        },
+        "check": {
+          "ok": true,
+          "errors": 0,
+          "warnings": 0,
+          "codes": []
+        },
+        "diff": {
+          "filesChanged": 2,
+          "linesAdded": 6,
+          "linesRemoved": 15
+        },
+        "durationMs": 2721.5914169999305
+      },
+      "wallMs": 23717,
+      "tokens": {
+        "input": 12,
+        "cacheRead": 190499,
+        "cacheWrite": 40543,
+        "output": 1263,
+        "reasoning": 124
+      },
+      "costUsd": 0.3877518,
+      "modelUsed": "claude-opus-5-5",
+      "metrics": {
+        "turns": 6,
+        "steps": 5,
+        "commands": 5,
+        "edits": 0,
+        "checkRuns": 2,
+        "firstCheckOk": false,
+        "lumCodes": [
+          "LUM4002"
+        ],
+        "docsReads": 3,
+        "llmsReads": 0,
+        "mcpCalls": 0,
+        "mcpTools": [],
+        "skills": []
+      },
+      "exit": {
+        "code": 0,
+        "timedOut": false,
+        "error": null
+      },
+      "usageInfo": {
+        "claude-opus-5-5": {
+          "inputTokens": 12,
+          "outputTokens": 1263,
+          "cacheReadInputTokens": 190499,
+          "cacheCreationInputTokens": 40543,
+          "webSearchRequests": 0,
+          "costUSD": 0.3877518,
+          "contextWindow": 1000000,
+          "maxOutputTokens": 128000,
+          "thinkingTokens": 124,
+          "canonicalModel": "claude-opus-5-5",
+          "provider": "firstParty",
+          "costBasis": "list"
+        }
+      },
+      "log": ".runs/2026-10-09T151008/fix-island-function-prop--claude_claude-opus-5-5_medium--baseline--1.jsonl"
+    },
+    {
+      "task": "fix-island-function-prop",
+      "category": "islands",
+      "agent": "claude:claude-sonnet-5-5:medium",
+      "cli": "claude",
+      "model": "claude-sonnet-5-5",
+      "effort": "medium",
+      "ablation": "baseline",
+      "index": 0,
+      "success": true,
+      "grade": {
+        "success": true,
+        "tests": {
+          "passed": 3,
+          "failed": 0,
+          "total": 3,
+          "results": [
+            {
+              "name": "formats what you type",
+              "ok": true
+            },
+            {
+              "name": "price editor island is an island with serializable props only",
+              "ok": true
+            },
+            {
+              "name": "price editor island has no non-serializable island props",
+              "ok": true
+            }
+          ]
+        },
+        "check": {
+          "ok": true,
+          "errors": 0,
+          "warnings": 0,
+          "codes": []
+        },
+        "diff": {
+          "filesChanged": 2,
+          "linesAdded": 3,
+          "linesRemoved": 11
+        },
+        "durationMs": 2927.844708000077
+      },
+      "wallMs": 17688,
+      "tokens": {
+        "input": 8,
+        "cacheRead": 122785,
+        "cacheWrite": 13363,
+        "output": 1192,
+        "reasoning": 0
+      },
+      "costUsd": 0.089945,
+      "modelUsed": "claude-sonnet-5-5",
+      "metrics": {
+        "turns": 5,
+        "steps": 4,
+        "commands": 2,
+        "edits": 0,
+        "checkRuns": 2,
+        "firstCheckOk": true,
+        "lumCodes": [
+          "LUM4002"
+        ],
+        "docsReads": 0,
+        "llmsReads": 0,
+        "mcpCalls": 0,
+        "mcpTools": [],
+        "skills": []
+      },
+      "exit": {
+        "code": 0,
+        "timedOut": false,
+        "error": null
+      },
+      "usageInfo": {
+        "claude-sonnet-5-5": {
+          "inputTokens": 8,
+          "outputTokens": 1192,
+          "cacheReadInputTokens": 122785,
+          "cacheCreationInputTokens": 13363,
+          "webSearchRequests": 0,
+          "costUSD": 0.089945,
+          "contextWindow": 1000000,
+          "maxOutputTokens": 128000,
+          "thinkingTokens": 0,
+          "canonicalModel": "claude-sonnet-5-5",
+          "provider": "firstParty",
+          "costBasis": "list"
+        }
+      },
+      "log": ".runs/2026-10-09T151008/fix-island-function-prop--claude_claude-sonnet-5-5_medium--baseline--1.jsonl"
+    },
+    {
+      "task": "fix-island-function-prop",
+      "category": "islands",
+      "agent": "codex:gpt-6-astra:medium",
+      "cli": "codex",
+      "model": "gpt-6-astra",
+      "effort": "medium",
+      "ablation": "baseline",
+      "index": 0,
+      "success": true,
+      "grade": {
+        "success": true,
+        "tests": {
+          "passed": 3,
+          "failed": 0,
+          "total": 3,
+          "results": [
+            {
+              "name": "formats what you type",
+              "ok": true
+            },
+            {
+              "name": "price editor island is an island with serializable props only",
+              "ok": true
+            },
+            {
+              "name": "price editor island has no non-serializable island props",
+              "ok": true
+            }
+          ]
+        },
+        "check": {
+          "ok": true,
+          "errors": 0,
+          "warnings": 0,
+          "codes": []
+        },
+        "diff": {
+          "filesChanged": 2,
+          "linesAdded": 3,
+          "linesRemoved": 11
+        },
+        "durationMs": 2671.9303749999963
+      },
+      "wallMs": 35034,
+      "tokens": {
+        "input": 21135,
+        "cacheRead": 98176,
+        "cacheWrite": 0,
+        "output": 813,
+        "reasoning": 9
+      },
+      "costUsd": null,
+      "modelUsed": null,
+      "metrics": {
+        "turns": 12,
+        "steps": 10,
+        "commands": 8,
+        "edits": 2,
+        "checkRuns": 1,
+        "firstCheckOk": true,
+        "lumCodes": [],
+        "docsReads": 2,
+        "llmsReads": 2,
+        "mcpCalls": 0,
+        "mcpTools": [],
+        "skills": []
+      },
+      "exit": {
+        "code": 0,
+        "timedOut": false,
+        "error": null
+      },
+      "usageInfo": null,
+      "log": ".runs/2026-10-09T151008/fix-island-function-prop--codex_gpt-6-astra_medium--baseline--1.jsonl"
+    },
+    {
+      "task": "fix-island-function-prop",
+      "category": "islands",
+      "agent": "codex:gpt-6.1-sol:medium",
+      "cli": "codex",
+      "model": "gpt-6.1-sol",
+      "effort": "medium",
+      "ablation": "baseline",
+      "index": 0,
+      "success": true,
+      "grade": {
+        "success": true,
+        "tests": {
+          "passed": 3,
+          "failed": 0,
+          "total": 3,
+          "results": [
+            {
+              "name": "formats what you type",
+              "ok": true
+            },
+            {
+              "name": "price editor island is an island with serializable props only",
+              "ok": true
+            },
+            {
+              "name": "price editor island has no non-serializable island props",
+              "ok": true
+            }
+          ]
+        },
+        "check": {
+          "ok": true,
+          "errors": 0,
+          "warnings": 0,
+          "codes": []
+        },
+        "diff": {
+          "filesChanged": 2,
+          "linesAdded": 3,
+          "linesRemoved": 11
+        },
+        "durationMs": 2817.8285000000615
+      },
+      "wallMs": 35786,
+      "tokens": {
+        "input": 21499,
+        "cacheRead": 66048,
+        "cacheWrite": 0,
+        "output": 690,
+        "reasoning": 0
+      },
+      "costUsd": null,
+      "modelUsed": null,
+      "metrics": {
+        "turns": 9,
+        "steps": 8,
+        "commands": 6,
+        "edits": 2,
+        "checkRuns": 2,
+        "firstCheckOk": false,
+        "lumCodes": [
+          "LUM2001",
+          "LUM2002",
+          "LUM2007",
+          "LUM4001",
+          "LUM4002",
+          "LUM4003",
+          "LUM4004",
+          "LUM4006",
+          "LUM4007",
+          "LUM4008"
+        ],
+        "docsReads": 2,
+        "llmsReads": 1,
+        "mcpCalls": 0,
+        "mcpTools": [],
+        "skills": []
+      },
+      "exit": {
+        "code": 0,
+        "timedOut": false,
+        "error": null
+      },
+      "usageInfo": null,
+      "log": ".runs/2026-10-09T151008/fix-island-function-prop--codex_gpt-6.1-sol_medium--baseline--1.jsonl"
+    },
+    {
+      "task": "fix-island-function-prop",
+      "category": "islands",
+      "agent": "codex:gpt-6-luna:medium",
+      "cli": "codex",
+      "model": "gpt-6-luna",
+      "effort": "medium",
+      "ablation": "baseline",
+      "index": 0,
+      "success": true,
+      "grade": {
+        "success": true,
+        "tests": {
+          "passed": 3,
+          "failed": 0,
+          "total": 3,
+          "results": [
+            {
+              "name": "formats what you type",
+              "ok": true
+            },
+            {
+              "name": "price editor island is an island with serializable props only",
+              "ok": true
+            },
+            {
+              "name": "price editor island has no non-serializable island props",
+              "ok": true
+            }
+          ]
+        },
+        "check": {
+          "ok": true,
+          "errors": 0,
+          "warnings": 0,
+          "codes": []
+        },
+        "diff": {
+          "filesChanged": 2,
+          "linesAdded": 2,
+          "linesRemoved": 7
+        },
+        "durationMs": 8963.686916999985
+      },
+      "wallMs": 15604,
+      "tokens": {
+        "input": 13610,
+        "cacheRead": 66560,
+        "cacheWrite": 0,
+        "output": 581,
+        "reasoning": 0
+      },
+      "costUsd": null,
+      "modelUsed": null,
+      "metrics": {
+        "turns": 7,
+        "steps": 5,
+        "commands": 3,
+        "edits": 2,
+        "checkRuns": 1,
+        "firstCheckOk": true,
+        "lumCodes": [],
+        "docsReads": 2,
+        "llmsReads": 1,
+        "mcpCalls": 0,
+        "mcpTools": [],
+        "skills": []
+      },
+      "exit": {
+        "code": 0,
+        "timedOut": false,
+        "error": null
+      },
+      "usageInfo": null,
+      "log": ".runs/2026-10-09T151008/fix-island-function-prop--codex_gpt-6-luna_medium--baseline--1.jsonl"
+    },
+    {
+      "task": "fix-island-function-prop",
+      "category": "islands",
+      "agent": "claude:claude-haiku-5-5:medium",
+      "cli": "claude",
+      "model": "claude-haiku-5-5",
+      "effort": "medium",
+      "ablation": "baseline",
+      "index": 0,
+      "success": true,
+      "grade": {
+        "success": true,
+        "tests": {
+          "passed": 3,
+          "failed": 0,
+          "total": 3,
+          "results": [
+            {
+              "name": "formats what you type",
+              "ok": true
+            },
+            {
+              "name": "price editor island is an island with serializable props only",
+              "ok": true
+            },
+            {
+              "name": "price editor island has no non-serializable island props",
+              "ok": true
+            }
+          ]
+        },
+        "check": {
+          "ok": true,
+          "errors": 0,
+          "warnings": 0,
+          "codes": []
+        },
+        "diff": {
+          "filesChanged": 2,
+          "linesAdded": 4,
+          "linesRemoved": 13
+        },
+        "durationMs": 2818.5350830000825
+      },
+      "wallMs": 23213,
+      "tokens": {
+        "input": 8,
+        "cacheRead": 127876,
+        "cacheWrite": 17232,
+        "output": 2081,
+        "reasoning": 378
+      },
+      "costUsd": 0.005766459999999999,
+      "modelUsed": "claude-haiku-5-5",
+      "metrics": {
+        "turns": 9,
+        "steps": 7,
+        "commands": 2,
+        "edits": 2,
+        "checkRuns": 2,
+        "firstCheckOk": false,
+        "lumCodes": [
+          "LUM4002"
+        ],
+        "docsReads": 1,
+        "llmsReads": 0,
+        "mcpCalls": 0,
+        "mcpTools": [],
+        "skills": [
+          "lumen"
+        ]
+      },
+      "exit": {
+        "code": 0,
+        "timedOut": false,
+        "error": null
+      },
+      "usageInfo": {
+        "claude-haiku-5-5": {
+          "inputTokens": 8,
+          "outputTokens": 2081,
+          "cacheReadInputTokens": 127876,
+          "cacheCreationInputTokens": 17232,
+          "webSearchRequests": 0,
+          "costUSD": 0.005766459999999999,
+          "contextWindow": 1000000,
+          "maxOutputTokens": 128000,
+          "thinkingTokens": 378,
+          "canonicalModel": "claude-haiku-5-5",
+          "provider": "firstParty",
+          "costBasis": "list"
+        }
+      },
+      "log": ".runs/2026-10-09T151008/fix-island-function-prop--claude_claude-haiku-5-5_medium--baseline--1.jsonl"
+    },
+    {
+      "task": "fix-list-mutation",
+      "category": "reactivity",
+      "agent": "claude:claude-opus-5-5:medium",
+      "cli": "claude",
+      "model": "claude-opus-5-5",
+      "effort": "medium",
+      "ablation": "baseline",
+      "index": 0,
+      "success": true,
+      "grade": {
+        "success": true,
+        "tests": {
+          "passed": 1,
+          "failed": 0,
+          "total": 1,
+          "results": [
+            {
+              "name": "adds and removes items",
+              "ok": true
+            }
+          ]
+        },
+        "check": {
+          "ok": true,
+          "errors": 0,
+          "warnings": 0,
+          "codes": []
+        },
+        "diff": {
+          "filesChanged": 1,
+          "linesAdded": 2,
+          "linesRemoved": 4
+        },
+        "durationMs": 1598.2722910000011
+      },
+      "wallMs": 26614,
+      "tokens": {
+        "input": 10,
+        "cacheRead": 164374,
+        "cacheWrite": 18677,
+        "output": 1490,
+        "reasoning": 281
+      },
+      "costUsd": 0.21213079999999995,
+      "modelUsed": "claude-opus-5-5",
+      "metrics": {
+        "turns": 6,
+        "steps": 5,
+        "commands": 4,
+        "edits": 0,
+        "checkRuns": 1,
+        "firstCheckOk": true,
+        "lumCodes": [],
+        "docsReads": 3,
+        "llmsReads": 0,
+        "mcpCalls": 0,
+        "mcpTools": [],
+        "skills": []
+      },
+      "exit": {
+        "code": 0,
+        "timedOut": false,
+        "error": null
+      },
+      "usageInfo": {
+        "claude-opus-5-5": {
+          "inputTokens": 10,
+          "outputTokens": 1490,
+          "cacheReadInputTokens": 164374,
+          "cacheCreationInputTokens": 18677,
+          "webSearchRequests": 0,
+          "costUSD": 0.21213079999999995,
+          "contextWindow": 1000000,
+          "maxOutputTokens": 128000,
+          "thinkingTokens": 281,
+          "canonicalModel": "claude-opus-5-5",
+          "provider": "firstParty",
+          "costBasis": "list"
+        }
+      },
+      "log": ".runs/2026-10-09T151008/fix-list-mutation--claude_claude-opus-5-5_medium--baseline--1.jsonl"
+    },
+    {
+      "task": "fix-list-mutation",
+      "category": "reactivity",
+      "agent": "claude:claude-sonnet-5-5:medium",
+      "cli": "claude",
+      "model": "claude-sonnet-5-5",
+      "effort": "medium",
+      "ablation": "baseline",
+      "index": 0,
+      "success": true,
+      "grade": {
+        "success": true,
+        "tests": {
+          "passed": 1,
+          "failed": 0,
+          "total": 1,
+          "results": [
+            {
+              "name": "adds and removes items",
+              "ok": true
+            }
+          ]
+        },
+        "check": {
+          "ok": true,
+          "errors": 0,
+          "warnings": 0,
+          "codes": []
+        },
+        "diff": {
+          "filesChanged": 1,
+          "linesAdded": 2,
+          "linesRemoved": 4
+        },
+        "durationMs": 1753.250708000036
+      },
+      "wallMs": 12895,
+      "tokens": {
+        "input": 6,
+        "cacheRead": 87474,
+        "cacheWrite": 12373,
+        "output": 707,
+        "reasoning": 128
+      },
+      "costUsd": 0.0740688,
+      "modelUsed": "claude-sonnet-5-5",
+      "metrics": {
+        "turns": 3,
+        "steps": 2,
+        "commands": 1,
+        "edits": 0,
+        "checkRuns": 1,
+        "firstCheckOk": true,
+        "lumCodes": [],
+        "docsReads": 0,
+        "llmsReads": 0,
+        "mcpCalls": 0,
+        "mcpTools": [],
+        "skills": []
+      },
+      "exit": {
+        "code": 0,
+        "timedOut": false,
+        "error": null
+      },
+      "usageInfo": {
+        "claude-sonnet-5-5": {
+          "inputTokens": 6,
+          "outputTokens": 707,
+          "cacheReadInputTokens": 87474,
+          "cacheCreationInputTokens": 12373,
+          "webSearchRequests": 0,
+          "costUSD": 0.0740688,
+          "contextWindow": 1000000,
+          "maxOutputTokens": 128000,
+          "thinkingTokens": 128,
+          "canonicalModel": "claude-sonnet-5-5",
+          "provider": "firstParty",
+          "costBasis": "list"
+        }
+      },
+      "log": ".runs/2026-10-09T151008/fix-list-mutation--claude_claude-sonnet-5-5_medium--baseline--1.jsonl"
+    },
+    {
+      "task": "fix-list-mutation",
+      "category": "reactivity",
+      "agent": "codex:gpt-6-astra:medium",
+      "cli": "codex",
+      "model": "gpt-6-astra",
+      "effort": "medium",
+      "ablation": "baseline",
+      "index": 0,
+      "success": true,
+      "grade": {
+        "success": true,
+        "tests": {
+          "passed": 1,
+          "failed": 0,
+          "total": 1,
+          "results": [
+            {
+              "name": "adds and removes items",
+              "ok": true
+            }
+          ]
+        },
+        "check": {
+          "ok": true,
+          "errors": 0,
+          "warnings": 0,
+          "codes": []
+        },
+        "diff": {
+          "filesChanged": 1,
+          "linesAdded": 2,
+          "linesRemoved": 4
+        },
+        "durationMs": 1973.124042000156
+      },
+      "wallMs": 29133,
+      "tokens": {
+        "input": 13460,
+        "cacheRead": 72448,
+        "cacheWrite": 0,
+        "output": 476,
+        "reasoning": 0
+      },
+      "costUsd": null,
+      "modelUsed": null,
+      "metrics": {
+        "turns": 9,
+        "steps": 7,
+        "commands": 6,
+        "edits": 1,
+        "checkRuns": 1,
+        "firstCheckOk": true,
+        "lumCodes": [],
+        "docsReads": 2,
+        "llmsReads": 1,
+        "mcpCalls": 0,
+        "mcpTools": [],
+        "skills": []
+      },
+      "exit": {
+        "code": 0,
+        "timedOut": false,
+        "error": null
+      },
+      "usageInfo": null,
+      "log": ".runs/2026-10-09T151008/fix-list-mutation--codex_gpt-6-astra_medium--baseline--1.jsonl"
+    },
+    {
+      "task": "fix-list-mutation",
+      "category": "reactivity",
+      "agent": "codex:gpt-6.1-sol:medium",
+      "cli": "codex",
+      "model": "gpt-6.1-sol",
+      "effort": "medium",
+      "ablation": "baseline",
+      "index": 0,
+      "success": true,
+      "grade": {
+        "success": true,
+        "tests": {
+          "passed": 1,
+          "failed": 0,
+          "total": 1,
+          "results": [
+            {
+              "name": "adds and removes items",
+              "ok": true
+            }
+          ]
+        },
+        "check": {
+          "ok": true,
+          "errors": 0,
+          "warnings": 0,
+          "codes": []
+        },
+        "diff": {
+          "filesChanged": 1,
+          "linesAdded": 2,
+          "linesRemoved": 4
+        },
+        "durationMs": 1584.7900829999708
+      },
+      "wallMs": 31995,
+      "tokens": {
+        "input": 11517,
+        "cacheRead": 89856,
+        "cacheWrite": 0,
+        "output": 567,
+        "reasoning": 12
+      },
+      "costUsd": null,
+      "modelUsed": null,
+      "metrics": {
+        "turns": 10,
+        "steps": 7,
+        "commands": 6,
+        "edits": 1,
+        "checkRuns": 2,
+        "firstCheckOk": true,
+        "lumCodes": [],
+        "docsReads": 2,
+        "llmsReads": 2,
+        "mcpCalls": 0,
+        "mcpTools": [],
+        "skills": []
+      },
+      "exit": {
+        "code": 0,
+        "timedOut": false,
+        "error": null
+      },
+      "usageInfo": null,
+      "log": ".runs/2026-10-09T151008/fix-list-mutation--codex_gpt-6.1-sol_medium--baseline--1.jsonl"
+    },
+    {
+      "task": "fix-list-mutation",
+      "category": "reactivity",
+      "agent": "codex:gpt-6-luna:medium",
+      "cli": "codex",
+      "model": "gpt-6-luna",
+      "effort": "medium",
+      "ablation": "baseline",
+      "index": 0,
+      "success": true,
+      "grade": {
+        "success": true,
+        "tests": {
+          "passed": 1,
+          "failed": 0,
+          "total": 1,
+          "results": [
+            {
+              "name": "adds and removes items",
+              "ok": true
+            }
+          ]
+        },
+        "check": {
+          "ok": true,
+          "errors": 0,
+          "warnings": 0,
+          "codes": []
+        },
+        "diff": {
+          "filesChanged": 1,
+          "linesAdded": 2,
+          "linesRemoved": 4
+        },
+        "durationMs": 1652.503458000021
+      },
+      "wallMs": 14601,
+      "tokens": {
+        "input": 20824,
+        "cacheRead": 74496,
+        "cacheWrite": 0,
+        "output": 488,
+        "reasoning": 0
+      },
+      "costUsd": null,
+      "modelUsed": null,
+      "metrics": {
+        "turns": 8,
+        "steps": 4,
+        "commands": 3,
+        "edits": 1,
+        "checkRuns": 1,
+        "firstCheckOk": true,
+        "lumCodes": [],
+        "docsReads": 2,
+        "llmsReads": 1,
+        "mcpCalls": 0,
+        "mcpTools": [],
+        "skills": []
+      },
+      "exit": {
+        "code": 0,
+        "timedOut": false,
+        "error": null
+      },
+      "usageInfo": null,
+      "log": ".runs/2026-10-09T151008/fix-list-mutation--codex_gpt-6-luna_medium--baseline--1.jsonl"
+    },
+    {
+      "task": "fix-list-mutation",
+      "category": "reactivity",
+      "agent": "claude:claude-haiku-5-5:medium",
+      "cli": "claude",
+      "model": "claude-haiku-5-5",
+      "effort": "medium",
+      "ablation": "baseline",
+      "index": 0,
+      "success": true,
+      "grade": {
+        "success": true,
+        "tests": {
+          "passed": 1,
+          "failed": 0,
+          "total": 1,
+          "results": [
+            {
+              "name": "adds and removes items",
+              "ok": true
+            }
+          ]
+        },
+        "check": {
+          "ok": true,
+          "errors": 0,
+          "warnings": 0,
+          "codes": []
+        },
+        "diff": {
+          "filesChanged": 1,
+          "linesAdded": 2,
+          "linesRemoved": 4
+        },
+        "durationMs": 1540.730416999897
+      },
+      "wallMs": 21105,
+      "tokens": {
+        "input": 10,
+        "cacheRead": 166937,
+        "cacheWrite": 17756,
+        "output": 2194,
+        "reasoning": 520
+      },
+      "costUsd": 0.006318570000000001,
+      "modelUsed": "claude-haiku-5-5",
+      "metrics": {
+        "turns": 8,
+        "steps": 6,
+        "commands": 3,
+        "edits": 1,
+        "checkRuns": 1,
+        "firstCheckOk": true,
+        "lumCodes": [],
+        "docsReads": 1,
+        "llmsReads": 0,
+        "mcpCalls": 0,
+        "mcpTools": [],
+        "skills": [
+          "lumen"
+        ]
+      },
+      "exit": {
+        "code": 0,
+        "timedOut": false,
+        "error": null
+      },
+      "usageInfo": {
+        "claude-haiku-5-5": {
+          "inputTokens": 10,
+          "outputTokens": 2194,
+          "cacheReadInputTokens": 166937,
+          "cacheCreationInputTokens": 17756,
+          "webSearchRequests": 0,
+          "costUSD": 0.006318570000000001,
+          "contextWindow": 1000000,
+          "maxOutputTokens": 128000,
+          "thinkingTokens": 520,
+          "canonicalModel": "claude-haiku-5-5",
+          "provider": "firstParty",
+          "costBasis": "list"
+        }
+      },
+      "log": ".runs/2026-10-09T151008/fix-list-mutation--claude_claude-haiku-5-5_medium--baseline--1.jsonl"
+    },
+    {
+      "task": "fix-reactive-early-return",
+      "category": "reactivity",
+      "agent": "claude:claude-opus-5-5:medium",
+      "cli": "claude",
+      "model": "claude-opus-5-5",
+      "effort": "medium",
+      "ablation": "baseline",
+      "index": 0,
+      "success": true,
+      "grade": {
+        "success": true,
+        "tests": {
+          "passed": 2,
+          "failed": 0,
+          "total": 2,
+          "results": [
+            {
+              "name": "has no reactive early return",
+              "ok": true
+            },
+            {
+              "name": "signs in and out repeatedly",
+              "ok": true
+            }
+          ]
+        },
+        "check": {
+          "ok": true,
+          "errors": 0,
+          "warnings": 0,
+          "codes": []
+        },
+        "diff": {
+          "filesChanged": 1,
+          "linesAdded": 21,
+          "linesRemoved": 21
+        },
+        "durationMs": 2147.0720420000143
+      },
+      "wallMs": 19334,
+      "tokens": {
+        "input": 6,
+        "cacheRead": 87256,
+        "cacheWrite": 13402,
+        "output": 1279,
+        "reasoning": 37
+      },
+      "costUsd": 0.15027120000000002,
+      "modelUsed": "claude-opus-5-5",
+      "metrics": {
+        "turns": 5,
+        "steps": 4,
+        "commands": 2,
+        "edits": 1,
+        "checkRuns": 1,
+        "firstCheckOk": true,
+        "lumCodes": [],
+        "docsReads": 1,
+        "llmsReads": 0,
+        "mcpCalls": 0,
+        "mcpTools": [],
+        "skills": []
+      },
+      "exit": {
+        "code": 0,
+        "timedOut": false,
+        "error": null
+      },
+      "usageInfo": {
+        "claude-opus-5-5": {
+          "inputTokens": 6,
+          "outputTokens": 1279,
+          "cacheReadInputTokens": 87256,
+          "cacheCreationInputTokens": 13402,
+          "webSearchRequests": 0,
+          "costUSD": 0.15027120000000002,
+          "contextWindow": 1000000,
+          "maxOutputTokens": 128000,
+          "thinkingTokens": 37,
+          "canonicalModel": "claude-opus-5-5",
+          "provider": "firstParty",
+          "costBasis": "list"
+        }
+      },
+      "log": ".runs/2026-10-09T151008/fix-reactive-early-return--claude_claude-opus-5-5_medium--baseline--1.jsonl"
+    },
+    {
+      "task": "fix-reactive-early-return",
+      "category": "reactivity",
+      "agent": "claude:claude-sonnet-5-5:medium",
+      "cli": "claude",
+      "model": "claude-sonnet-5-5",
+      "effort": "medium",
+      "ablation": "baseline",
+      "index": 0,
+      "success": true,
+      "grade": {
+        "success": true,
+        "tests": {
+          "passed": 2,
+          "failed": 0,
+          "total": 2,
+          "results": [
+            {
+              "name": "has no reactive early return",
+              "ok": true
+            },
+            {
+              "name": "signs in and out repeatedly",
+              "ok": true
+            }
+          ]
+        },
+        "check": {
+          "ok": true,
+          "errors": 0,
+          "warnings": 0,
+          "codes": []
+        },
+        "diff": {
+          "filesChanged": 1,
+          "linesAdded": 21,
+          "linesRemoved": 21
+        },
+        "durationMs": 2064.423124999972
+      },
+      "wallMs": 16524,
+      "tokens": {
+        "input": 10,
+        "cacheRead": 155089,
+        "cacheWrite": 12858,
+        "output": 948,
+        "reasoning": 59
+      },
+      "costUsd": 0.0919498,
+      "modelUsed": "claude-sonnet-5-5",
+      "metrics": {
+        "turns": 5,
+        "steps": 4,
+        "commands": 3,
+        "edits": 0,
+        "checkRuns": 1,
+        "firstCheckOk": true,
+        "lumCodes": [],
+        "docsReads": 2,
+        "llmsReads": 0,
+        "mcpCalls": 0,
+        "mcpTools": [],
+        "skills": []
+      },
+      "exit": {
+        "code": 0,
+        "timedOut": false,
+        "error": null
+      },
+      "usageInfo": {
+        "claude-sonnet-5-5": {
+          "inputTokens": 10,
+          "outputTokens": 948,
+          "cacheReadInputTokens": 155089,
+          "cacheCreationInputTokens": 12858,
+          "webSearchRequests": 0,
+          "costUSD": 0.0919498,
+          "contextWindow": 1000000,
+          "maxOutputTokens": 128000,
+          "thinkingTokens": 59,
+          "canonicalModel": "claude-sonnet-5-5",
+          "provider": "firstParty",
+          "costBasis": "list"
+        }
+      },
+      "log": ".runs/2026-10-09T151008/fix-reactive-early-return--claude_claude-sonnet-5-5_medium--baseline--1.jsonl"
+    },
+    {
+      "task": "fix-reactive-early-return",
+      "category": "reactivity",
+      "agent": "codex:gpt-6-astra:medium",
+      "cli": "codex",
+      "model": "gpt-6-astra",
+      "effort": "medium",
+      "ablation": "baseline",
+      "index": 0,
+      "success": true,
+      "grade": {
+        "success": true,
+        "tests": {
+          "passed": 2,
+          "failed": 0,
+          "total": 2,
+          "results": [
+            {
+              "name": "has no reactive early return",
+              "ok": true
+            },
+            {
+              "name": "signs in and out repeatedly",
+              "ok": true
+            }
+          ]
+        },
+        "check": {
+          "ok": true,
+          "errors": 0,
+          "warnings": 0,
+          "codes": []
+        },
+        "diff": {
+          "filesChanged": 1,
+          "linesAdded": 21,
+          "linesRemoved": 21
+        },
+        "durationMs": 2264.3153750000056
+      },
+      "wallMs": 32534,
+      "tokens": {
+        "input": 11574,
+        "cacheRead": 70016,
+        "cacheWrite": 0,
+        "output": 752,
+        "reasoning": 0
+      },
+      "costUsd": null,
+      "modelUsed": null,
+      "metrics": {
+        "turns": 9,
+        "steps": 7,
+        "commands": 6,
+        "edits": 1,
+        "checkRuns": 1,
+        "firstCheckOk": true,
+        "lumCodes": [],
+        "docsReads": 2,
+        "llmsReads": 1,
+        "mcpCalls": 0,
+        "mcpTools": [],
+        "skills": []
+      },
+      "exit": {
+        "code": 0,
+        "timedOut": false,
+        "error": null
+      },
+      "usageInfo": null,
+      "log": ".runs/2026-10-09T151008/fix-reactive-early-return--codex_gpt-6-astra_medium--baseline--1.jsonl"
+    },
+    {
+      "task": "fix-reactive-early-return",
+      "category": "reactivity",
+      "agent": "codex:gpt-6.1-sol:medium",
+      "cli": "codex",
+      "model": "gpt-6.1-sol",
+      "effort": "medium",
+      "ablation": "baseline",
+      "index": 0,
+      "success": true,
+      "grade": {
+        "success": true,
+        "tests": {
+          "passed": 2,
+          "failed": 0,
+          "total": 2,
+          "results": [
+            {
+              "name": "has no reactive early return",
+              "ok": true
+            },
+            {
+              "name": "signs in and out repeatedly",
+              "ok": true
+            }
+          ]
+        },
+        "check": {
+          "ok": true,
+          "errors": 0,
+          "warnings": 0,
+          "codes": []
+        },
+        "diff": {
+          "filesChanged": 1,
+          "linesAdded": 21,
+          "linesRemoved": 21
+        },
+        "durationMs": 2153.4085830000695
+      },
+      "wallMs": 28283,
+      "tokens": {
+        "input": 27175,
+        "cacheRead": 84864,
+        "cacheWrite": 0,
+        "output": 501,
+        "reasoning": 0
+      },
+      "costUsd": null,
+      "modelUsed": null,
+      "metrics": {
+        "turns": 9,
+        "steps": 7,
+        "commands": 6,
+        "edits": 1,
+        "checkRuns": 1,
+        "firstCheckOk": true,
+        "lumCodes": [],
+        "docsReads": 2,
+        "llmsReads": 1,
+        "mcpCalls": 0,
+        "mcpTools": [],
+        "skills": []
+      },
+      "exit": {
+        "code": 0,
+        "timedOut": false,
+        "error": null
+      },
+      "usageInfo": null,
+      "log": ".runs/2026-10-09T151008/fix-reactive-early-return--codex_gpt-6.1-sol_medium--baseline--1.jsonl"
+    },
+    {
+      "task": "fix-reactive-early-return",
+      "category": "reactivity",
+      "agent": "codex:gpt-6-luna:medium",
+      "cli": "codex",
+      "model": "gpt-6-luna",
+      "effort": "medium",
+      "ablation": "baseline",
+      "index": 0,
+      "success": true,
+      "grade": {
+        "success": true,
+        "tests": {
+          "passed": 2,
+          "failed": 0,
+          "total": 2,
+          "results": [
+            {
+              "name": "has no reactive early return",
+              "ok": true
+            },
+            {
+              "name": "signs in and out repeatedly",
+              "ok": true
+            }
+          ]
+        },
+        "check": {
+          "ok": true,
+          "errors": 0,
+          "warnings": 0,
+          "codes": []
+        },
+        "diff": {
+          "filesChanged": 1,
+          "linesAdded": 6,
+          "linesRemoved": 6
+        },
+        "durationMs": 2230.092249999987
+      },
+      "wallMs": 16438,
+      "tokens": {
+        "input": 11385,
+        "cacheRead": 84736,
+        "cacheWrite": 0,
+        "output": 558,
+        "reasoning": 64
+      },
+      "costUsd": null,
+      "modelUsed": null,
+      "metrics": {
+        "turns": 7,
+        "steps": 4,
+        "commands": 3,
+        "edits": 1,
+        "checkRuns": 1,
+        "firstCheckOk": true,
+        "lumCodes": [],
+        "docsReads": 2,
+        "llmsReads": 1,
+        "mcpCalls": 0,
+        "mcpTools": [],
+        "skills": []
+      },
+      "exit": {
+        "code": 0,
+        "timedOut": false,
+        "error": null
+      },
+      "usageInfo": null,
+      "log": ".runs/2026-10-09T151008/fix-reactive-early-return--codex_gpt-6-luna_medium--baseline--1.jsonl"
+    },
+    {
+      "task": "fix-reactive-early-return",
+      "category": "reactivity",
+      "agent": "claude:claude-haiku-5-5:medium",
+      "cli": "claude",
+      "model": "claude-haiku-5-5",
+      "effort": "medium",
+      "ablation": "baseline",
+      "index": 0,
+      "success": true,
+      "grade": {
+        "success": true,
+        "tests": {
+          "passed": 2,
+          "failed": 0,
+          "total": 2,
+          "results": [
+            {
+              "name": "has no reactive early return",
+              "ok": true
+            },
+            {
+              "name": "signs in and out repeatedly",
+              "ok": true
+            }
+          ]
+        },
+        "check": {
+          "ok": true,
+          "errors": 0,
+          "warnings": 0,
+          "codes": []
+        },
+        "diff": {
+          "filesChanged": 1,
+          "linesAdded": 21,
+          "linesRemoved": 21
+        },
+        "durationMs": 2287.075708999997
+      },
+      "wallMs": 18896,
+      "tokens": {
+        "input": 10,
+        "cacheRead": 163367,
+        "cacheWrite": 15823,
+        "output": 1913,
+        "reasoning": 358
+      },
+      "costUsd": 0.00575577,
+      "modelUsed": "claude-haiku-5-5",
+      "metrics": {
+        "turns": 7,
+        "steps": 5,
+        "commands": 2,
+        "edits": 1,
+        "checkRuns": 1,
+        "firstCheckOk": true,
+        "lumCodes": [],
+        "docsReads": 1,
+        "llmsReads": 0,
+        "mcpCalls": 0,
+        "mcpTools": [],
+        "skills": [
+          "lumen"
+        ]
+      },
+      "exit": {
+        "code": 0,
+        "timedOut": false,
+        "error": null
+      },
+      "usageInfo": {
+        "claude-haiku-5-5": {
+          "inputTokens": 10,
+          "outputTokens": 1913,
+          "cacheReadInputTokens": 163367,
+          "cacheCreationInputTokens": 15823,
+          "webSearchRequests": 0,
+          "costUSD": 0.00575577,
+          "contextWindow": 1000000,
+          "maxOutputTokens": 128000,
+          "thinkingTokens": 358,
+          "canonicalModel": "claude-haiku-5-5",
+          "provider": "firstParty",
+          "costBasis": "list"
+        }
+      },
+      "log": ".runs/2026-10-09T151008/fix-reactive-early-return--claude_claude-haiku-5-5_medium--baseline--1.jsonl"
+    },
+    {
+      "task": "fix-server-import-in-island",
+      "category": "islands",
+      "agent": "claude:claude-opus-5-5:medium",
+      "cli": "claude",
+      "model": "claude-opus-5-5",
+      "effort": "medium",
+      "ablation": "baseline",
+      "index": 0,
+      "success": true,
+      "grade": {
+        "success": true,
+        "tests": {
+          "passed": 4,
+          "failed": 0,
+          "total": 4,
+          "results": [
+            {
+              "name": "stock serves the stock endpoint",
+              "ok": true
+            },
+            {
+              "name": "stock renders the stock in the product page HTML, inside the island",
+              "ok": true
+            },
+            {
+              "name": "stock keeps server code out of the island",
+              "ok": true
+            },
+            {
+              "name": "stock builds",
+              "ok": true
+            }
+          ]
+        },
+        "check": {
+          "ok": true,
+          "errors": 0,
+          "warnings": 0,
+          "codes": []
+        },
+        "diff": {
+          "filesChanged": 3,
+          "linesAdded": 23,
+          "linesRemoved": 8
+        },
+        "durationMs": 2845.7829589999747
+      },
+      "wallMs": 46549,
+      "tokens": {
+        "input": 18,
+        "cacheRead": 326688,
+        "cacheWrite": 25245,
+        "output": 2834,
+        "reasoning": 181
+      },
+      "costUsd": 0.32404960000000005,
+      "modelUsed": "claude-opus-5-5",
+      "metrics": {
+        "turns": 9,
+        "steps": 8,
+        "commands": 8,
+        "edits": 0,
+        "checkRuns": 1,
+        "firstCheckOk": true,
+        "lumCodes": [],
+        "docsReads": 2,
+        "llmsReads": 0,
+        "mcpCalls": 0,
+        "mcpTools": [],
+        "skills": []
+      },
+      "exit": {
+        "code": 0,
+        "timedOut": false,
+        "error": null
+      },
+      "usageInfo": {
+        "claude-opus-5-5": {
+          "inputTokens": 18,
+          "outputTokens": 2834,
+          "cacheReadInputTokens": 326688,
+          "cacheCreationInputTokens": 25245,
+          "webSearchRequests": 0,
+          "costUSD": 0.32404960000000005,
+          "contextWindow": 1000000,
+          "maxOutputTokens": 128000,
+          "thinkingTokens": 181,
+          "canonicalModel": "claude-opus-5-5",
+          "provider": "firstParty",
+          "costBasis": "list"
+        }
+      },
+      "log": ".runs/2026-10-09T151008/fix-server-import-in-island--claude_claude-opus-5-5_medium--baseline--1.jsonl"
+    },
+    {
+      "task": "fix-server-import-in-island",
+      "category": "islands",
+      "agent": "claude:claude-sonnet-5-5:medium",
+      "cli": "claude",
+      "model": "claude-sonnet-5-5",
+      "effort": "medium",
+      "ablation": "baseline",
+      "index": 0,
+      "success": true,
+      "grade": {
+        "success": true,
+        "tests": {
+          "passed": 4,
+          "failed": 0,
+          "total": 4,
+          "results": [
+            {
+              "name": "stock serves the stock endpoint",
+              "ok": true
+            },
+            {
+              "name": "stock renders the stock in the product page HTML, inside the island",
+              "ok": true
+            },
+            {
+              "name": "stock keeps server code out of the island",
+              "ok": true
+            },
+            {
+              "name": "stock builds",
+              "ok": true
+            }
+          ]
+        },
+        "check": {
+          "ok": true,
+          "errors": 0,
+          "warnings": 0,
+          "codes": []
+        },
+        "diff": {
+          "filesChanged": 3,
+          "linesAdded": 21,
+          "linesRemoved": 7
+        },
+        "durationMs": 2654.8096249999944
+      },
+      "wallMs": 20163,
+      "tokens": {
+        "input": 10,
+        "cacheRead": 160635,
+        "cacheWrite": 16403,
+        "output": 1398,
+        "reasoning": 59
+      },
+      "costUsd": 0.111739,
+      "modelUsed": "claude-sonnet-5-5",
+      "metrics": {
+        "turns": 6,
+        "steps": 5,
+        "commands": 5,
+        "edits": 0,
+        "checkRuns": 1,
+        "firstCheckOk": true,
+        "lumCodes": [],
+        "docsReads": 2,
+        "llmsReads": 0,
+        "mcpCalls": 0,
+        "mcpTools": [],
+        "skills": []
+      },
+      "exit": {
+        "code": 0,
+        "timedOut": false,
+        "error": null
+      },
+      "usageInfo": {
+        "claude-sonnet-5-5": {
+          "inputTokens": 10,
+          "outputTokens": 1398,
+          "cacheReadInputTokens": 160635,
+          "cacheCreationInputTokens": 16403,
+          "webSearchRequests": 0,
+          "costUSD": 0.111739,
+          "contextWindow": 1000000,
+          "maxOutputTokens": 128000,
+          "thinkingTokens": 59,
+          "canonicalModel": "claude-sonnet-5-5",
+          "provider": "firstParty",
+          "costBasis": "list"
+        }
+      },
+      "log": ".runs/2026-10-09T151008/fix-server-import-in-island--claude_claude-sonnet-5-5_medium--baseline--1.jsonl"
+    }
+  ]
+}

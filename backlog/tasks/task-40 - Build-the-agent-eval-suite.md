@@ -5,7 +5,7 @@ status: In Progress
 assignee:
   - Quasar
 created_date: '2026-10-08 12:21'
-updated_date: '2026-10-09 14:58'
+updated_date: '2026-10-09 15:51'
 labels: []
 milestone: m-7
 dependencies:
@@ -40,4 +40,6 @@ Quasar RESUME (2026-10-09, session checkpoint): evals/ committed (package @lumen
 Quasar 2026-10-09 (resumed): 20 tasks, all validated against the committed revision (hidden tests fail on start/, pass on solution/). Viewer (evals/viewer, pnpm --filter @lumen/evals run view) and doc-5 (spec). Fix found by the smoke: the vendor snapshot copied the working tree, which held other agents' unfinished component-HMR code (dom/hot.ts) and broke DOM tests in 8 runs; it now comes from git archive of the pinned revision with the napi binding built from it (cargo, ~2 min first time per revision). Smoke (5 tasks x 1 run x 4 medium models, baseline): 20/20 pass; affected 8 runs repeated; merged into results/2026-10-09T143057-macbookpro.json with notes. Per run: Opus median 27 s, $0.30 list (sum $1.46/5); Sonnet 18 s, $0.13 ($0.59/5); gpt-6-astra 34 s; gpt-6.1-sol 48 s (max 124 s); Codex reports tokens only (median in 87k/114k incl. cache, out ~800). Runner overhead ~10-20 s per run (project + grading). Finding for Lux: LUM4004 (browser API at module scope) is registered and documented but never emitted by the compiler or lumen check (localStorage at module scope passes check, crashes SSR). Waiting for Lux's go-ahead before any larger matrix.
 
 Smoke screenshot: backlog/assets/task-40-evals-viewer.png. Task stays In Progress until Lux decides the next matrix.
+
+Quasar RESUME (2026-10-09 15:51 UTC, paused for Claude quota ~87%): matrix (option C: 20 tasks × 1 run × 6 configs, all medium, baseline, Lumen pinned at ed72928) is at 62/120 runs, all 62 passed. Done for all six configs: about-page, blog-tags, class-passthrough, contact-form, counter-island, custom-404, fix-browser-api-module-scope, fix-island-function-prop, fix-list-mutation, fix-reactive-early-return; fix-server-import-in-island done for Opus and Sonnet only. Results: evals/results/2026-10-09T151008-macbookpro.json (meta.complete=false, notes explain the pin, the discarded high-effort luna/haiku runs and the pause). Remaining 58 runs, exact command (skips done pairs, appends to the same file): cd evals && LUMEN_EVAL_REV=ed7292832908857eed3fb57b126eeb6a7d3fd913 node src/cli.ts run --agents claude:claude-opus-5-5:medium,claude:claude-sonnet-5-5:medium,codex:gpt-6-astra:medium,codex:gpt-6.1-sol:medium,codex:gpt-6-luna:medium,claude:claude-haiku-5-5:medium --runs 1 --ablations baseline --keep --resume 2026-10-09T151008-macbookpro.json  (Claude share of the remaining runs: 29). Then write the summary (pass rate per model and category, median time, cost/tokens, failures classified) and report to Lux. Kept projects/transcripts in evals/.runs/2026-10-09T151008 (git-ignored).
 <!-- SECTION:NOTES:END -->

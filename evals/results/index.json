@@ -1,6 +1,25 @@
 {
   "runs": [
     {
+      "file": "2026-10-09T151008-macbookpro.json",
+      "date": "2026-10-09T15:10:08.696Z",
+      "host": "macbookpro",
+      "agents": [
+        "claude:claude-opus-5-5:medium",
+        "claude:claude-sonnet-5-5:medium",
+        "codex:gpt-6-astra:medium",
+        "codex:gpt-6.1-sol:medium",
+        "codex:gpt-6-luna:medium",
+        "claude:claude-haiku-5-5:medium"
+      ],
+      "tasks": 20,
+      "ablations": [
+        "baseline"
+      ],
+      "runs": 62,
+      "complete": false
+    },
+    {
       "file": "2026-10-09T143057-macbookpro.json",
       "date": "2026-10-09T14:30:57.119Z",
       "host": "macbookpro",
