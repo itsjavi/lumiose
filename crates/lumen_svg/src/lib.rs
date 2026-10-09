@@ -119,6 +119,12 @@ mod tests {
             error.message,
             "the root element is `<html>`, expected `<svg>`"
         );
+        let error = component_source(r#"<s:svg xmlns:s="urn:not-svg"/>"#).unwrap_err();
+        assert_eq!(
+            error.message,
+            "the root element is `<svg>` in the namespace `urn:not-svg`, expected the SVG \
+             namespace `http://www.w3.org/2000/svg`"
+        );
         assert!(component_source("").is_err());
     }
 }

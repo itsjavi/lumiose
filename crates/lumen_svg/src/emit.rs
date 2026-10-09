@@ -66,11 +66,17 @@ pub(crate) fn svg_root<'a, 'input>(
     if root.tag_name().name() == "svg" && matches!(root.tag_name().namespace(), None | Some(SVG)) {
         return Ok(root);
     }
-    Err(SvgError {
-        message: format!(
-            "the root element is `<{}>`, expected `<svg>`",
-            root.tag_name().name()
+    let name = root.tag_name().name();
+    let message = match root.tag_name().namespace() {
+        // `<x:svg xmlns:x="…">`: the right name in another namespace.
+        Some(namespace) if name == "svg" => format!(
+            "the root element is `<svg>` in the namespace `{namespace}`, expected the SVG \
+             namespace `{SVG}`"
         ),
+        _ => format!("the root element is `<{name}>`, expected `<svg>`"),
+    };
+    Err(SvgError {
+        message,
         position: None,
     })
 }
