@@ -213,9 +213,12 @@ export const sleep = (ms: number): Promise<void> =>
   new Promise((resolve) => setTimeout(resolve, ms));
 
 /** Version of a package as the app resolves it, or null. */
-export function resolvedVersion(app: App, pkg: string): string | null {
+export function resolvedVersion(app: App, pkg: string, via?: string): string | null {
   try {
-    const require = createRequire(join(app.dir, "package.json"));
+    let base = join(app.dir, "package.json");
+    // A dependency of a dependency (`vite` via `lumen`): resolve from that package's directory.
+    if (via !== undefined) base = createRequire(base).resolve(`${via}/package.json`);
+    const require = createRequire(base);
     return (
       JSON.parse(readFileSync(require.resolve(`${pkg}/package.json`), "utf8")) as {
         version: string;

@@ -82,6 +82,7 @@ type Route = keyof typeof ROUTES;
 
 const recorder = new Recorder();
 const notes: string[] = [];
+const firstLine = (error: unknown) => (error as Error).message.split("\n")[0];
 const log = (message: string) =>
   console.log(`[${new Date().toISOString().slice(11, 19)}] ${message}`);
 
@@ -174,12 +175,14 @@ try {
         dependencyCount(app),
       );
       for (let i = 0; i < iterations.build; i++) {
-        recorder.add(
-          app.id,
-          "other.typecheck",
-          def("other", "Type check", "ms"),
-          await runScript(app, "typecheck"),
-        );
+        try {
+          const ms = await runScript(app, "typecheck");
+          recorder.add(app.id, "other.typecheck", def("other", "Type check", "ms"), ms);
+        } catch (error) {
+          // A type error is the app's problem, not a timing: record it and keep benchmarking.
+          notes.push(`${app.id}: type check failed, not timed: ${firstLine(error)}`);
+          break;
+        }
       }
     }
   }
@@ -223,7 +226,7 @@ try {
               await hmr(browser, app),
             );
           } catch (error) {
-            notes.push(`${app.id}: HMR not measured: ${(error as Error).message.split("\n")[0]}`);
+            notes.push(`${app.id}: HMR not measured: ${firstLine(error)}`);
           }
         });
         log(`${app.name}: dev warm start ${i + 1}/${iterations.dev}`);
@@ -430,7 +433,10 @@ const run: RunFile = {
       "react-dom": versionOf("react-dom", "next"),
       "react-router": versionOf("react-router", "react-router"),
       next: versionOf("next", "next"),
-      vite: versionOf("vite", "lumen"),
+      vite: (() => {
+        const lumenApp = apps.find((a) => a.id === "lumen");
+        return lumenApp === undefined ? null : resolvedVersion(lumenApp, "vite", "lumen");
+      })(),
     },
     iterations,
     quick,

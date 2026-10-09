@@ -1,11 +1,11 @@
 ---
 id: TASK-111
 title: 'Fullstack bench: harness, conformance suite, results JSON and HTML viewer'
-status: In Progress
+status: Done
 assignee:
   - Nova
 created_date: '2026-10-09 04:07'
-updated_date: '2026-10-09 04:45'
+updated_date: '2026-10-09 04:56'
 labels:
   - benchmark
 milestone: m-8
@@ -22,9 +22,9 @@ doc-4 §4–§7: @bench/harness runner for every metric, the shared Playwright c
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 pnpm --filter @bench/harness bench [--quick|--only|--metrics] measures every metric in doc-4 §4 and writes results/<date>-<host>.json + index.json
-- [ ] #2 The conformance suite covers doc-4 §5 and runs against any app by base URL
-- [ ] #3 viewer/index.html shows a run (and a comparison of two runs) per metric group with tables and bar charts; served by the view script
+- [x] #1 pnpm --filter @bench/harness bench [--quick|--only|--metrics] measures every metric in doc-4 §4 and writes results/<date>-<host>.json + index.json
+- [x] #2 The conformance suite covers doc-4 §5 and runs against any app by base URL
+- [x] #3 viewer/index.html shows a run (and a comparison of two runs) per metric group with tables and bar charts; served by the view script
 <!-- AC:END -->
 
 ## Implementation Notes
@@ -53,4 +53,12 @@ Quasar 2026-10-09 (supersedes my markup note above): we crossed. I have now reve
 Nova 2026-10-09: Lumen app passes 15/15; harness bench --quick works end to end on Lumen; viewer committed. Waiting for the React Router and Next apps to be final for the 3-app --quick smoke run. Quasar: when TASK-113/114 are done, please stop your dev/prod servers on ports 4102/4103 (the harness refuses busy ports) and leave a note here.
 
 Nova 2026-10-09: per Lux, (1) source size counts @bench/react-ui in both React apps (other.loc = app + shared, with other.loc-app / other.loc-shared and the same for files, shown as a 'Source size' section in the viewer); (2) NEXT_TELEMETRY_DISABLED=1 on every script the harness runs for Next (per-app env in apps.ts); (3) results are now results/<YYYY-MM-DD>T<HHMMSS>-<host>.json (UTC run start), never overwritten, index.json lists all. NOTE: the 'three-app run' briefly visible in the viewer around 05:00 UTC (zz-fake.json) was a SYNTHETIC fixture I generated to test the viewer layout (React Router/Next values = Lumen × 1.8/2.6) and deleted right after; no real three-app run existed yet.
+
+Nova 2026-10-09: 3-app --quick smoke run committed: results/2026-10-09T045317-macbookpro.json (quick: true, one iteration, 3 s load tests; noisy). Conformance: lumen pass, react-router pass, next pass. Harness fixes from the run: dependency count walks node_modules (pnpm list dedupes across workspace projects and does not expand linked packages), output sizes skip .br/.gz copies, Vite version resolved through lumen, a failing type check is noted instead of aborting the run. Observation for TASK-115/Prism: Lumen's /projects/:slug LCP was worse than both React apps in every quick run (~190-210 ms vs ~130-145 ms) although its HTML, JS and ready time are smaller: worth a look with more iterations. Screenshots: ![viewer server light](../assets/task-111-viewer-server-light.png) ![viewer build dark](../assets/task-111-viewer-build-dark.png). Run: pnpm --filter @bench/harness bench [--quick] [--only ...] [--metrics ...]; conformance; view (http://127.0.0.1:4100/).
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+@bench/harness (benchmarks/fullstack/harness): bench runner for every doc-4 §4 metric with --quick/--only/--metrics/--iterations/--network/--comments-delay, conformance gate, time-stamped results JSON + index.json; Playwright conformance suite (harness/e2e, 15 tests, base-URL parameterised, markup contract in landmarks.ts); static viewer (viewer/index.html: run picker, two-run comparison, tables + bars per group, best highlighted, ratios, light/dark). Smoke run over all three apps committed (quick).
+<!-- SECTION:FINAL_SUMMARY:END -->

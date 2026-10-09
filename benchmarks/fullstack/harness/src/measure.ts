@@ -1,8 +1,15 @@
 // The measurements of doc-4 §4. Each function measures one app once (one iteration) and returns
 // plain numbers; bench.ts loops, records and summarises.
 import { execFileSync } from "node:child_process";
-import { readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
-import { extname, join } from "node:path";
+import {
+  existsSync,
+  readdirSync,
+  readFileSync,
+  realpathSync,
+  statSync,
+  writeFileSync,
+} from "node:fs";
+import { dirname, extname, join } from "node:path";
 import { brotliCompressSync, constants, gzipSync } from "node:zlib";
 import autocannon from "autocannon";
 import type { Browser, Page } from "@playwright/test";
@@ -105,7 +112,8 @@ export function dirSize(path: string): number {
   } catch {
     return 0;
   }
-  if (!stats.isDirectory()) return stats.size;
+  // Precompressed copies (`.br`, `.gz` from lumen build) are alternatives, not more output.
+  if (!stats.isDirectory()) return /\.(?:br|gz)$/.test(path) ? 0 : stats.size;
   return readdirSync(path).reduce((sum, entry) => sum + dirSize(join(path, entry)), 0);
 }
 
@@ -334,27 +342,41 @@ export function sourceSize(app: App): {
   return { app: sourceSizeOf(app.dir), shared };
 }
 
-interface ListNode {
-  version?: string;
-  dependencies?: Record<string, ListNode>;
+/** The installed package directory of `name` as seen from `dir` (Node's node_modules lookup). */
+function findPackage(name: string, dir: string): string | undefined {
+  for (let current = dir; ; current = dirname(current)) {
+    const candidate = join(current, "node_modules", name, "package.json");
+    if (existsSync(candidate)) return realpathSync(dirname(candidate));
+    if (dirname(current) === current) return undefined;
+  }
 }
 
-/** Number of distinct packages (name@version) in the app's production dependency tree. */
+/**
+ * Number of distinct packages in the app's production dependency closure: its `dependencies`,
+ * theirs, and so on (installed optional and peer dependencies too), workspace packages included
+ * and followed. Read from node_modules, since `pnpm list` dedupes across workspace projects and
+ * does not expand linked packages.
+ */
 export function dependencyCount(app: App): number {
-  const json = execFileSync("pnpm", ["list", "--prod", "--depth", "Infinity", "--json"], {
-    cwd: app.dir,
-    encoding: "utf8",
-    maxBuffer: 256 * 1024 * 1024,
-  });
   const seen = new Set<string>();
-  const walk = (deps: Record<string, ListNode> | undefined) => {
-    for (const [name, node] of Object.entries(deps ?? {})) {
-      const key = `${name}@${node.version ?? "?"}`;
-      if (seen.has(key)) continue;
-      seen.add(key);
-      walk(node.dependencies);
+  const visit = (dir: string, own: boolean) => {
+    const manifest = JSON.parse(readFileSync(join(dir, "package.json"), "utf8")) as {
+      dependencies?: Record<string, string>;
+      optionalDependencies?: Record<string, string>;
+      peerDependencies?: Record<string, string>;
+    };
+    const names = new Set([
+      ...Object.keys(manifest.dependencies ?? {}),
+      ...Object.keys(manifest.optionalDependencies ?? {}),
+      ...(own ? [] : Object.keys(manifest.peerDependencies ?? {})),
+    ]);
+    for (const name of names) {
+      const found = findPackage(name, dir);
+      if (found === undefined || seen.has(found)) continue;
+      seen.add(found);
+      visit(found, false);
     }
   };
-  for (const root of JSON.parse(json) as ListNode[]) walk(root.dependencies);
+  visit(app.dir, true);
   return seen.size;
 }
