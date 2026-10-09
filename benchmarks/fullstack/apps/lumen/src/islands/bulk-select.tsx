@@ -1,10 +1,12 @@
 // Island: bulk selection of the project page. The issue table is a server-rendered slot (its 50
 // rows ship no JS and no data); the island owns the surrounding form, counts the checked rows,
-// handles "select all" and posts the `close` action with `submit`, which reloads the list.
+// handles "select all" and posts the `close` action with `submit`; the action redirects back to
+// the list, filters included, so it shows the change.
 import { onMount, ref, signal, submit, submitting } from "lumen";
 import { markReady } from "../lib/ready.ts";
 
-export function BulkSelect(props: { children?: JSX.Element }) {
+/** `action`: the list URL with its filters plus the `/close` action key (`?status=open&/close`). */
+export function BulkSelect(props: { action: string; children?: JSX.Element }) {
   const form = ref<HTMLFormElement>();
   const count = signal(0);
 
@@ -33,7 +35,7 @@ export function BulkSelect(props: { children?: JSX.Element }) {
   return (
     <form
       method="post"
-      action="?/close"
+      action={props.action}
       class="bulk-form"
       ref={form}
       onChange={onChange}

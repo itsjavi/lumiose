@@ -23,10 +23,10 @@ export const actions = {
       .map(Number)
       .filter((id) => Number.isSafeInteger(id) && id > 0);
     closeIssues(ids, user.id);
-    // Back to the list the form was on, filters included (the action URL `?/close` has none).
-    const from = URL.parse(ctx.request.headers.get("referer") ?? "");
-    const back = from?.origin === ctx.url.origin ? from.pathname + from.search : ctx.url.pathname;
-    redirect(back.startsWith(`/projects/${ctx.params.slug}`) ? back : ctx.url.pathname);
+    // Back to the list, filters included: the form posts to `<list URL>&/close`.
+    const back = new URL(ctx.url);
+    back.searchParams.delete("/close");
+    redirect(back.pathname + back.search);
   },
 };
 
@@ -40,6 +40,8 @@ export default function ProjectPage() {
     pageSize: PAGE_SIZE,
   });
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const listHref = issueListHref(project.slug, filters);
+  const closeAction = `${listHref}${listHref.includes("?") ? "&" : "?"}/close`;
   return (
     <>
       <Title>{project.name} · Tracker</Title>
@@ -52,7 +54,7 @@ export default function ProjectPage() {
       <form method="get" class="filters">
         <FilterFields filters={filters} labels={listLabels()} />
       </form>
-      <BulkSelect client:load>
+      <BulkSelect client:load action={closeAction}>
         <IssueTable issues={items} />
       </BulkSelect>
       <Pagination
