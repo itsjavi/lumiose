@@ -1,0 +1,415 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Fullstack benchmark</title>
+    <meta name="description" content="Lumen, React Router and Next.js running the same Tracker app (doc-4): dev, build, page load and server metrics." />
+    <style>
+      /* Tokens: surfaces and text, plus one categorical hue per app (fixed order: Lumen, React Router,
+         Next.js), validated for both modes. Text never wears a series color. */
+      :root {
+        color-scheme: light;
+        --bg: #f6f6f4;
+        --surface: #fcfcfb;
+        --surface-2: #f0efec;
+        --line: #e2e1dc;
+        --text: #0b0b0b;
+        --text-2: #52514e;
+        --text-3: #7a7974;
+        --accent: #2a78d6;
+        --best-bg: #e7f0fb;
+        --series-1: #2a78d6;
+        --series-2: #eb6834;
+        --series-3: #1baf7a;
+        --better: #1f7a3a;
+        --worse: #b42318;
+        --shadow: 0 1px 2px rgb(0 0 0 / 0.05), 0 4px 16px rgb(0 0 0 / 0.04);
+      }
+      @media (prefers-color-scheme: dark) {
+        :root:where(:not([data-theme="light"])) {
+          color-scheme: dark;
+          --bg: #121211;
+          --surface: #1a1a19;
+          --surface-2: #232321;
+          --line: #33332f;
+          --text: #ffffff;
+          --text-2: #c3c2b7;
+          --text-3: #94938a;
+          --accent: #3987e5;
+          --best-bg: #1c2b3f;
+          --series-1: #3987e5;
+          --series-2: #d95926;
+          --series-3: #199e70;
+          --better: #5cc37a;
+          --worse: #f07a6e;
+          --shadow: none;
+        }
+      }
+      :root[data-theme="dark"] {
+        color-scheme: dark;
+        --bg: #121211;
+        --surface: #1a1a19;
+        --surface-2: #232321;
+        --line: #33332f;
+        --text: #ffffff;
+        --text-2: #c3c2b7;
+        --text-3: #94938a;
+        --accent: #3987e5;
+        --best-bg: #1c2b3f;
+        --series-1: #3987e5;
+        --series-2: #d95926;
+        --series-3: #199e70;
+        --better: #5cc37a;
+        --worse: #f07a6e;
+        --shadow: none;
+      }
+
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--text);
+        font: 14px/1.5 ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+        -webkit-font-smoothing: antialiased;
+      }
+      .wrap { max-width: 1180px; margin: 0 auto; padding: 24px 16px 64px; }
+      header.top { display: flex; flex-wrap: wrap; gap: 16px 24px; align-items: end; justify-content: space-between; }
+      h1 { margin: 0; font-size: 22px; letter-spacing: -0.01em; }
+      .subtitle { margin: 2px 0 0; color: var(--text-2); }
+      .controls { display: flex; flex-wrap: wrap; gap: 12px; align-items: end; }
+      label.ctl { display: grid; gap: 4px; font-size: 12px; color: var(--text-2); }
+      select, button.theme {
+        font: inherit; color: var(--text); background: var(--surface);
+        border: 1px solid var(--line); border-radius: 8px; padding: 6px 10px; min-height: 34px;
+      }
+      select { max-width: 100%; }
+      button.theme { cursor: pointer; }
+
+      .meta {
+        margin-top: 20px; padding: 14px 16px; background: var(--surface); border: 1px solid var(--line);
+        border-radius: 12px; box-shadow: var(--shadow); display: grid; gap: 8px;
+      }
+      .meta dl { margin: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 8px 16px; }
+      .meta dt { font-size: 12px; color: var(--text-3); }
+      .meta dd { margin: 0; overflow-wrap: anywhere; }
+      .notes { margin: 0; padding-left: 18px; color: var(--text-2); font-size: 13px; }
+      .pill { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: 12px; border: 1px solid var(--line); background: var(--surface-2); color: var(--text-2); }
+      .pill.quick { border-color: var(--worse); color: var(--worse); }
+
+      .legend { display: flex; flex-wrap: wrap; gap: 16px; margin: 18px 0 6px; color: var(--text-2); }
+      .legend span { display: inline-flex; align-items: center; gap: 6px; }
+      .swatch { width: 12px; height: 12px; border-radius: 3px; display: inline-block; }
+
+      nav.tabs { display: flex; gap: 4px; flex-wrap: wrap; margin: 18px 0 12px; border-bottom: 1px solid var(--line); }
+      nav.tabs button {
+        font: inherit; background: none; border: 0; padding: 8px 12px; color: var(--text-2); cursor: pointer;
+        border-bottom: 2px solid transparent; margin-bottom: -1px;
+      }
+      nav.tabs button[aria-selected="true"] { color: var(--text); border-bottom-color: var(--accent); font-weight: 600; }
+
+      section.card {
+        background: var(--surface); border: 1px solid var(--line); border-radius: 12px; box-shadow: var(--shadow);
+        margin: 14px 0; overflow: hidden;
+      }
+      section.card h2 { margin: 0; padding: 12px 16px; font-size: 15px; border-bottom: 1px solid var(--line); }
+      .scroll { overflow-x: auto; }
+      table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+      th, td { padding: 8px 12px; text-align: left; vertical-align: middle; border-bottom: 1px solid var(--line); }
+      tr:last-child td { border-bottom: 0; }
+      thead th { font-size: 12px; font-weight: 600; color: var(--text-2); background: var(--surface-2); white-space: nowrap; }
+      th.app-h .swatch { margin-right: 6px; vertical-align: -1px; }
+      td.metric { min-width: 180px; }
+      td.metric .hint { display: block; font-size: 12px; color: var(--text-3); }
+      td.val { white-space: nowrap; text-align: right; }
+      td.val.best { background: var(--best-bg); font-weight: 600; }
+      td.val .ratio { display: block; font-size: 12px; font-weight: 400; color: var(--text-3); }
+      td.val .range { display: block; font-size: 11px; font-weight: 400; color: var(--text-3); }
+      td.val .delta { display: block; font-size: 12px; font-weight: 500; }
+      .delta.better { color: var(--better); }
+      .delta.worse { color: var(--worse); }
+      td.val.missing { color: var(--text-3); text-align: center; }
+      td.chart { width: 34%; min-width: 200px; }
+      .bars { display: grid; gap: 3px; }
+      .bar-row { display: grid; grid-template-columns: 1fr; height: 10px; position: relative; }
+      .bar { height: 10px; border-radius: 0 4px 4px 0; min-width: 2px; }
+      .bar.compare { opacity: 0.35; height: 6px; margin-top: 2px; }
+      .bar-row:hover .bar { filter: brightness(1.1); }
+      .empty { padding: 40px 16px; text-align: center; color: var(--text-2); }
+      .tip {
+        position: fixed; pointer-events: none; z-index: 10; background: var(--surface); color: var(--text);
+        border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; font-size: 12px;
+        box-shadow: 0 4px 16px rgb(0 0 0 / 0.15); max-width: 280px; display: none;
+      }
+      .tip strong { display: block; margin-bottom: 2px; }
+      .tip .muted { color: var(--text-3); }
+      footer.foot { margin-top: 24px; color: var(--text-3); font-size: 12px; }
+      @media (max-width: 640px) {
+        td.chart { display: none; }
+        th.chart-h { display: none; }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <header class="top">
+        <div>
+          <h1>Fullstack benchmark</h1>
+          <p class="subtitle">The same Tracker app in Lumen, React Router and Next.js (doc-4). Medians; lower is better unless noted.</p>
+        </div>
+        <div class="controls">
+          <label class="ctl">Run <select id="run"></select></label>
+          <label class="ctl">Compare with <select id="compare"><option value="">None</option></select></label>
+          <button class="theme" id="theme" type="button" title="Switch the color theme">Theme: auto</button>
+        </div>
+      </header>
+      <div id="meta"></div>
+      <div class="legend" id="legend"></div>
+      <nav class="tabs" id="tabs" role="tablist"></nav>
+      <div id="content"><p class="empty">Loading results…</p></div>
+      <footer class="foot">
+        Best value per metric is highlighted; ratios are relative to the best app. In comparison mode, the
+        delta shows the change from the compared run to the selected run. Generated by
+        <code>pnpm --filter @bench/harness bench</code>.
+      </footer>
+    </div>
+    <div class="tip" id="tip" role="tooltip"></div>
+
+    <script type="module">
+      const APPS = [
+        { id: "lumen", name: "Lumen", color: "var(--series-1)" },
+        { id: "react-router", name: "React Router", color: "var(--series-2)" },
+        { id: "next", name: "Next.js", color: "var(--series-3)" },
+      ];
+      const GROUPS = [
+        { id: "dev", label: "Dev" },
+        { id: "build", label: "Build & payload" },
+        { id: "load", label: "Page load" },
+        { id: "server", label: "Server" },
+        { id: "other", label: "Other" },
+      ];
+      const $ = (id) => document.getElementById(id);
+      const store = {
+        get(key) { try { return localStorage.getItem(key); } catch { return null; } },
+        set(key, value) { try { localStorage.setItem(key, value); } catch {} },
+      };
+      const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+
+      function fmt(value, unit) {
+        if (value === undefined || value === null || Number.isNaN(value)) return "–";
+        const n = (v, d) => v.toLocaleString("en-US", { maximumFractionDigits: d, minimumFractionDigits: 0 });
+        switch (unit) {
+          case "ms": return value >= 1000 ? `${n(value / 1000, 2)} s` : `${n(value, value < 10 ? 1 : 0)} ms`;
+          case "bytes":
+            if (value >= 1024 * 1024) return `${n(value / 1024 / 1024, 2)} MB`;
+            if (value >= 1024) return `${n(value / 1024, 1)} kB`;
+            return `${n(value, 0)} B`;
+          case "MB": return `${n(value, 0)} MB`;
+          case "req/s": return `${n(value, 0)} req/s`;
+          case "lines": return `${n(value, 0)} lines`;
+          default: return n(value, 1);
+        }
+      }
+
+      // ---- theme toggle (auto → light → dark), remembered per viewer
+      const THEMES = ["auto", "light", "dark"];
+      function applyTheme(theme) {
+        if (theme === "auto") delete document.documentElement.dataset.theme;
+        else document.documentElement.dataset.theme = theme;
+        $("theme").textContent = `Theme: ${theme}`;
+      }
+      let theme = THEMES.includes(store.get("bench-theme")) ? store.get("bench-theme") : "auto";
+      applyTheme(theme);
+      $("theme").addEventListener("click", () => {
+        theme = THEMES[(THEMES.indexOf(theme) + 1) % THEMES.length];
+        store.set("bench-theme", theme);
+        applyTheme(theme);
+      });
+
+      // ---- data
+      const cache = new Map();
+      let resultsBase = "results/";
+      // The viewer is served at / with results at /results/ (view script), or opened from the repo
+      // folder with results at ../results/.
+      async function loadIndex() {
+        for (const base of ["results/", "../results/"]) {
+          try {
+            const response = await fetch(`${base}index.json`);
+            if (response.ok) {
+              const index = await response.json();
+              resultsBase = base;
+              return index;
+            }
+          } catch {}
+        }
+        throw new Error("results/index.json not found");
+      }
+
+      let index;
+      let run;
+      let other;
+      let group = store.get("bench-group") ?? "dev";
+
+      function runLabel(entry) {
+        const date = entry.date.slice(0, 16).replace("T", " ");
+        return `${date} · ${entry.host}${entry.quick ? " · quick" : ""} · ${entry.apps.join(", ")}`;
+      }
+
+      async function init() {
+        try {
+          index = await loadIndex();
+        } catch {
+          $("content").innerHTML = `<p class="empty">No results yet. Run <code>pnpm --filter @bench/harness bench --quick</code>.</p>`;
+          return;
+        }
+        if (index.runs.length === 0) {
+          $("content").innerHTML = `<p class="empty">No results yet.</p>`;
+          return;
+        }
+        $("run").innerHTML = index.runs.map((r) => `<option value="${esc(r.file)}">${esc(runLabel(r))}</option>`).join("");
+        $("compare").innerHTML = `<option value="">None</option>` + index.runs.map((r) => `<option value="${esc(r.file)}">${esc(runLabel(r))}</option>`).join("");
+        const params = new URLSearchParams(location.search);
+        if (params.get("run")) $("run").value = params.get("run");
+        if (params.get("compare")) $("compare").value = params.get("compare");
+        $("run").addEventListener("change", update);
+        $("compare").addEventListener("change", update);
+        await update();
+      }
+      async function fetchRun(file) {
+        if (!cache.has(file)) cache.set(file, fetch(`${resultsBase}${file}`).then((r) => r.json()));
+        return cache.get(file);
+      }
+
+      async function update() {
+        const file = $("run").value;
+        const compareFile = $("compare").value;
+        run = await fetchRun(file);
+        other = compareFile && compareFile !== file ? await fetchRun(compareFile) : undefined;
+        const params = new URLSearchParams();
+        params.set("run", file);
+        if (other) params.set("compare", compareFile);
+        history.replaceState(null, "", `?${params}`);
+        render();
+      }
+
+      function renderMeta() {
+        const m = run.meta;
+        const versions = Object.entries(m.versions).filter(([, v]) => v).map(([k, v]) => `${k} ${v}`).join(" · ");
+        const conformance = Object.entries(m.conformance ?? {}).map(([app, s]) => `${app}: ${s}`).join(" · ") || "–";
+        const iterations = Object.entries(m.iterations).map(([k, v]) => `${k} ×${v}`).join(", ");
+        $("meta").innerHTML = `
+          <div class="meta">
+            <dl>
+              <div><dt>Date</dt><dd>${esc(m.date.replace("T", " ").slice(0, 19))} UTC ${m.quick ? '<span class="pill quick">quick, noisy</span>' : ""}</dd></div>
+              <div><dt>Machine</dt><dd>${esc(m.machine.cpu)}, ${m.machine.cores} cores, ${m.machine.memoryGb} GB · ${esc(m.machine.os)}</dd></div>
+              <div><dt>Node</dt><dd>${esc(m.node)}</dd></div>
+              <div><dt>Versions</dt><dd>${esc(versions)}</dd></div>
+              <div><dt>Iterations</dt><dd>${esc(iterations)}</dd></div>
+              <div><dt>Conformance</dt><dd>${esc(conformance)}</dd></div>
+            </dl>
+            ${m.notes?.length ? `<ul class="notes">${m.notes.map((n) => `<li>${esc(n)}</li>`).join("")}</ul>` : ""}
+          </div>`;
+      }
+
+      function appsIn() {
+        return APPS.filter((app) => run.results[app.id] || other?.results[app.id]);
+      }
+
+      function render() {
+        renderMeta();
+        const apps = appsIn();
+        $("legend").innerHTML = apps.map((a) => `<span><i class="swatch" style="background:${a.color}"></i>${esc(a.name)}</span>`).join("") +
+          (other ? `<span><i class="swatch" style="background:var(--text-3);opacity:.35"></i>Compared run (thin bar)</span>` : "");
+        const groups = GROUPS.filter((g) => Object.values(run.metrics).some((m) => m.group === g.id));
+        if (!groups.some((g) => g.id === group)) group = groups[0]?.id ?? "dev";
+        $("tabs").innerHTML = groups.map((g) => `<button role="tab" type="button" data-group="${g.id}" aria-selected="${g.id === group}">${esc(g.label)}</button>`).join("");
+        for (const button of $("tabs").querySelectorAll("button")) {
+          button.addEventListener("click", () => {
+            group = button.dataset.group;
+            store.set("bench-group", group);
+            render();
+          });
+        }
+        renderGroup(apps);
+      }
+
+      function renderGroup(apps) {
+        const sections = new Map();
+        for (const [id, def] of Object.entries(run.metrics)) {
+          if (def.group !== group) continue;
+          const key = def.section ?? "";
+          if (!sections.has(key)) sections.set(key, []);
+          sections.get(key).push([id, def]);
+        }
+        const html = [];
+        for (const [section, metrics] of sections) {
+          html.push(`<section class="card">${section ? `<h2>${esc(section)}</h2>` : ""}<div class="scroll"><table>
+            <thead><tr><th>Metric</th>${apps.map((a) => `<th class="app-h" style="text-align:right"><i class="swatch" style="background:${a.color}"></i>${esc(a.name)}</th>`).join("")}<th class="chart-h">Chart</th></tr></thead>
+            <tbody>${metrics.map(([id, def]) => row(id, def, apps)).join("")}</tbody></table></div></section>`);
+        }
+        $("content").innerHTML = html.join("") || `<p class="empty">No metrics in this group for this run.</p>`;
+        bindTips();
+      }
+
+      function row(id, def, apps) {
+        const value = (r, app) => r?.results[app.id]?.[id];
+        const medians = apps.map((app) => value(run, app)?.median);
+        const present = medians.filter((v) => typeof v === "number");
+        const higher = def.better === "higher";
+        const best = present.length ? (higher ? Math.max(...present) : Math.min(...present)) : undefined;
+        const otherMedians = apps.map((app) => value(other, app)?.median);
+        const scaleMax = Math.max(...present, ...(other ? otherMedians.filter((v) => typeof v === "number") : []), 0);
+        const cells = apps.map((app, i) => {
+          const s = value(run, app);
+          if (!s) return `<td class="val missing">–</td>`;
+          const isBest = present.length > 1 && s.median === best;
+          let ratio = "";
+          if (present.length > 1 && !isBest && best !== undefined) {
+            if (higher && s.median > 0) ratio = `${(best / s.median).toFixed(2)}× slower`;
+            else if (!higher && best > 0) ratio = `${(s.median / best).toFixed(2)}×`;
+            else if (!higher && best === 0 && s.median > 0) ratio = "vs 0";
+          }
+          const range = s.values.length > 1 ? `${fmt(s.min, def.unit)} – ${fmt(s.max, def.unit)}` : "";
+          let delta = "";
+          const o = otherMedians[i];
+          if (other && typeof o === "number") {
+            const change = o === 0 ? (s.median === 0 ? 0 : Infinity) : ((s.median - o) / o) * 100;
+            const improved = higher ? s.median > o : s.median < o;
+            const same = Math.abs(change) < 1;
+            const text = Number.isFinite(change) ? `${change > 0 ? "+" : ""}${change.toFixed(0)}%` : "new";
+            delta = `<span class="delta ${same ? "" : improved ? "better" : "worse"}">${same ? "≈ same" : `${improved ? "▲ better" : "▼ worse"} ${text}`}</span>`;
+          }
+          return `<td class="val${isBest ? " best" : ""}">${esc(fmt(s.median, def.unit))}${isBest ? ' <span class="ratio">best</span>' : ratio ? `<span class="ratio">${ratio}</span>` : ""}${range ? `<span class="range">${esc(range)}</span>` : ""}${delta}</td>`;
+        });
+        const bars = apps.map((app, i) => {
+          const s = value(run, app);
+          const width = (v) => (scaleMax > 0 && typeof v === "number" ? Math.max(0.5, (v / scaleMax) * 100) : 0);
+          const tip = s ? `${app.name}|${fmt(s.median, def.unit)}|${s.values.length > 1 ? `min ${fmt(s.min, def.unit)}, max ${fmt(s.max, def.unit)}, n=${s.values.length}` : "1 sample"}${other && typeof otherMedians[i] === "number" ? `|compared run: ${fmt(otherMedians[i], def.unit)}` : ""}` : `${app.name}|no data`;
+          return `<div class="bar-row" data-tip="${esc(tip)}">
+              ${s ? `<div class="bar" style="width:${width(s.median)}%;background:${app.color}"></div>` : ""}
+              ${other && typeof otherMedians[i] === "number" ? `<div class="bar compare" style="width:${width(otherMedians[i])}%;background:${app.color}"></div>` : ""}
+            </div>`;
+        });
+        return `<tr><td class="metric">${esc(def.label)}${def.better === "higher" ? '<span class="hint">higher is better</span>' : ""}</td>${cells.join("")}<td class="chart"><div class="bars">${bars.join("")}</div></td></tr>`;
+      }
+
+      function bindTips() {
+        const tip = $("tip");
+        for (const el of document.querySelectorAll("[data-tip]")) {
+          el.addEventListener("pointermove", (event) => {
+            const [title, value, ...rest] = el.dataset.tip.split("|");
+            tip.innerHTML = `<strong>${esc(title)}</strong>${esc(value)}${rest.map((r) => `<div class="muted">${esc(r)}</div>`).join("")}`;
+            tip.style.display = "block";
+            const x = Math.min(event.clientX + 14, window.innerWidth - tip.offsetWidth - 8);
+            const y = Math.min(event.clientY + 14, window.innerHeight - tip.offsetHeight - 8);
+            tip.style.left = `${x}px`;
+            tip.style.top = `${y}px`;
+          });
+          el.addEventListener("pointerleave", () => (tip.style.display = "none"));
+        }
+      }
+
+      init();
+    </script>
+  </body>
+</html>

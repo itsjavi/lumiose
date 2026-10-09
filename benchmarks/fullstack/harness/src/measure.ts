@@ -60,7 +60,7 @@ async function footerHas(page: Page, token: string): Promise<boolean> {
   try {
     return await page.evaluate(
       (t) =>
-        document.querySelector('[data-testid="site-footer"]')?.textContent?.includes(t) ?? false,
+        document.querySelector('[data-testid="app-footer"]')?.textContent?.includes(t) ?? false,
       token,
     );
   } catch {
