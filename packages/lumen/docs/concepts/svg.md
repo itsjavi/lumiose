@@ -109,6 +109,8 @@ receives the component's scope, so the scoped `.icon` rule applies.
 - **Loading `vite/client` types first.** `vite/client` also declares `*.svg` (as a string), and
   whichever comes first in `"types"` wins: `Icon` then "cannot be used as a JSX component". List
   `lumen/env` first, or drop `vite/client` (`lumen/env` already types `import.meta.env`).
+  Both type `*.svg` with a default export, a duplicate that TypeScript reports in the two `.d.ts`
+  files unless `skipLibCheck` is on (the generated tsconfig sets it).
 - **Styling inner paths from a scoped block.** The paths belong to the icon component, so only the
   root `<svg>` (through `class`) carries your component's scope. Use inherited properties
   (`color`, `fill`, `stroke`, `stroke-width`) on the root, or `:deep(path)`.

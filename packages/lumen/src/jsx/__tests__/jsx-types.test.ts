@@ -50,6 +50,51 @@ describe("JSX types (TypeScript 7)", () => {
     if (status !== 0) expect(output).toMatch(/\(\d+,\d+\): error TS/);
   });
 
+  it("loads `lumen/env` with `vite/client`: the first `*.svg` declaration wins (TASK-122)", () => {
+    const project = mkdtempSync(join(tmpdir(), "lumen-jsx-vite-client-"));
+    try {
+      mkdirSync(join(project, "node_modules"));
+      symlinkSync(packageDir, join(project, "node_modules/lumen"), "junction");
+      symlinkSync(
+        dirname(require.resolve("vite/package.json")),
+        join(project, "node_modules/vite"),
+        "junction",
+      );
+      mkdirSync(join(project, "src"));
+      writeFileSync(
+        join(project, "tsconfig.json"),
+        JSON.stringify({
+          compilerOptions: {
+            jsx: "preserve",
+            jsxImportSource: "lumen",
+            module: "preserve",
+            moduleResolution: "bundler",
+            allowImportingTsExtensions: true,
+            noEmit: true,
+            strict: true,
+            skipLibCheck: true,
+            types: ["lumen/env", "vite/client"],
+          },
+          include: ["src"],
+        }),
+      );
+      writeFileSync(
+        join(project, "src/app.tsx"),
+        [
+          'import Icon from "./icon.svg";',
+          'export const icon: JSX.Element = <Icon title="Home" />;',
+          "export const hot = import.meta.hot;",
+          "",
+        ].join("\n"),
+      );
+      const { status, output } = tsc(join(project, "tsconfig.json"));
+      expect(output).toBe("");
+      expect(status).toBe(0);
+    } finally {
+      rmSync(project, { recursive: true, force: true });
+    }
+  });
+
   it('works from a consumer project with the spec tsconfig and `types: ["lumen/env"]`', () => {
     const project = mkdtempSync(join(tmpdir(), "lumen-jsx-types-"));
     try {

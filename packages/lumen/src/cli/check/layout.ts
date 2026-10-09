@@ -125,6 +125,10 @@ export const LUMEN_COMPILER_OPTIONS = {
   allowImportingTsExtensions: true,
   noEmit: true,
   strict: true,
+  // `lumen/env` and `vite/client` both declare `*.svg` (an inline component, a URL): loaded
+  // together, the second default export is a duplicate in the two `.d.ts` files. As in Vite's own
+  // templates, declaration files are not checked; the type listed first in `types` wins.
+  skipLibCheck: true,
   types: ["lumen/env"],
 } as const;
 

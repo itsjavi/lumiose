@@ -214,6 +214,7 @@ describe("tsconfigTemplate", () => {
         allowImportingTsExtensions: true,
         noEmit: true,
         strict: true,
+        skipLibCheck: true,
         types: ["lumen/env"],
         rootDirs: ["src", ".lumen/shadow/src"],
       },

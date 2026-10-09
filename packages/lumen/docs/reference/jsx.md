@@ -34,6 +34,7 @@ The generated file, with paths relative to `.lumen/`:
     "allowImportingTsExtensions": true,
     "noEmit": true,
     "strict": true,
+    "skipLibCheck": true,
     "rootDirs": ["..", "./shadow"],
     "types": ["lumen/env"]
   },
@@ -48,6 +49,7 @@ The generated file, with paths relative to `.lumen/`:
 | `include` `.lumen/shadow`, `.lumen/types`     | Shadow files and generated route types are part of the program.                           |
 | `types: ["lumen/env"]`                        | The global `JSX` namespace, `import.meta.env`, `Locals` and `.svg`/`.md`/`.html` modules. |
 | `allowImportingTsExtensions`                  | Imports name their extension: `./Card.stsx`, `./tokens.ts`.                               |
+| `skipLibCheck`                                | `lumen/env` and `vite/client` can both be loaded: their `*.svg` declarations collide.     |
 
 If you set `include` or `types` yourself, they replace the generated lists: keep `src`,
 `.lumen/shadow` and `.lumen/types` in `include`, and `lumen/env` in `types`. An array `extends`
@@ -81,6 +83,7 @@ A tsconfig can also set the options itself:
     "allowImportingTsExtensions": true,
     "noEmit": true,
     "strict": true,
+    "skipLibCheck": true,
     "rootDirs": ["src", ".lumen/shadow/src"],
     "types": ["lumen/env"]
   },
@@ -192,7 +195,8 @@ declare module "*.html" {
 
 Declare known public variables by merging `interface ImportMetaEnv { readonly PUBLIC_API: string }`.
 The built-in members match `vite/client`, so both can be loaded; list `lumen/env` first, because
-`vite/client` types `*.svg` as a URL string and the first declaration wins (see
+`vite/client` types `*.svg` as a URL string and the first declaration wins. The two default exports
+of `*.svg` are a duplicate in their `.d.ts` files, which `skipLibCheck` (generated) does not check (see
 [SVG imports](../concepts/svg.md)). TypeScript 7 checks side-effect imports
 (`noUncheckedSideEffectImports`), hence `*.css`. With `lumen/env` listed first it also matches
 `*.module.css`, so a CSS module import has no class map type; scoped `<style>` blocks replace CSS
