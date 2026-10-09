@@ -7,7 +7,7 @@ import { existsSync } from "node:fs";
 import { mkdir, readdir, readFile, writeFile } from "node:fs/promises";
 import { basename, dirname, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
-import { agentsInit, type AgentFile } from "lumen/agents";
+import { agentsInit, type AgentFile, type PackageManager } from "lumen/agents";
 import lumenPackage from "lumen/package.json" with { type: "json" };
 import { formatTsconfig } from "lumen/tooling";
 
@@ -66,6 +66,11 @@ export interface ScaffoldOptions {
   name?: string;
   /** Write into a non-empty directory, overwriting files with the same names. */
   force?: boolean;
+  /**
+   * Register `lumen mcp` for Claude Code (`.mcp.json`) and Codex (`.codex/config.toml`), run with
+   * this package manager.
+   */
+  mcp?: PackageManager;
 }
 
 export interface ScaffoldResult {
@@ -108,7 +113,10 @@ export async function scaffold(options: ScaffoldOptions): Promise<ScaffoldResult
     await mkdir(dirname(join(dir, file)), { recursive: true });
     await writeFile(join(dir, file), text);
   }
-  const agentFiles = await agentsInit(dir, { name });
+  const agentFiles = await agentsInit(dir, {
+    name,
+    ...(options.mcp === undefined ? {} : { mcp: options.mcp }),
+  });
   return {
     dir,
     name,

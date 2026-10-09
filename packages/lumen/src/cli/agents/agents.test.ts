@@ -8,6 +8,9 @@ import {
   AGENTS_END,
   AGENTS_START,
   agentsSection,
+  CODEX_CONFIG,
+  detectPackageManager,
+  MCP_JSON,
   GITATTRIBUTES_LINE,
   planAgentFiles,
   SKILL_FILE,
@@ -102,5 +105,80 @@ describe("agent files", () => {
     });
     expect(misuse).toBe(2);
     expect(stderr).toContain('Unknown agents subcommand "setup".');
+  });
+
+  it("registers lumen mcp with --mcp, keeping other servers and settings (TASK-131)", async () => {
+    const existing: Record<string, string> = {
+      [MCP_JSON]: JSON.stringify({ mcpServers: { db: { command: "db-mcp" } }, other: 1 }),
+      [CODEX_CONFIG]: [
+        'model = "o4"',
+        "",
+        "[mcp_servers.lumen]",
+        'command = "old"',
+        "",
+        "[mcp_servers.lumen.env]",
+        'A = "1"',
+        "",
+        "[mcp_servers.db]",
+        'command = "db-mcp"',
+        "",
+      ].join("\n"),
+    };
+    const files = planAgentFiles((file) => existing[file], { name: "shop", mcp: "pnpm" });
+    const content = Object.fromEntries(files.map((file) => [file.file, file.content]));
+    expect(JSON.parse(content[MCP_JSON]!)).toEqual({
+      mcpServers: {
+        db: { command: "db-mcp" },
+        lumen: { command: "pnpm", args: ["exec", "lumen", "mcp"] },
+      },
+      other: 1,
+    });
+    expect(content[CODEX_CONFIG]).toBe(
+      'model = "o4"\n\n[mcp_servers.lumen]\ncommand = "pnpm"\nargs = ["exec", "lumen", "mcp"]\n\n[mcp_servers.db]\ncommand = "db-mcp"\n',
+    );
+    // Appended to a config without the table; untouched without --mcp.
+    const appended = planAgentFiles(
+      (file) => (file === CODEX_CONFIG ? 'model = "o4"\n' : undefined),
+      { name: "x", mcp: "bun" },
+    );
+    expect(appended.find((file) => file.file === CODEX_CONFIG)!.content).toBe(
+      'model = "o4"\n\n[mcp_servers.lumen]\ncommand = "bunx"\nargs = ["lumen", "mcp"]\n',
+    );
+    expect(planAgentFiles(() => undefined, { name: "x" }).map((file) => file.file)).not.toContain(
+      MCP_JSON,
+    );
+  });
+
+  it("detects the package manager from the lockfile, then package.json", () => {
+    const reader = (files: Record<string, string>) => (file: string) => files[file];
+    expect(detectPackageManager(reader({ "pnpm-lock.yaml": "" }))).toBe("pnpm");
+    expect(detectPackageManager(reader({ "yarn.lock": "" }))).toBe("yarn");
+    expect(detectPackageManager(reader({ "bun.lock": "" }))).toBe("bun");
+    expect(
+      detectPackageManager(reader({ "package.json": '{ "packageManager": "pnpm@10.0.0" }' })),
+    ).toBe("pnpm");
+    expect(detectPackageManager(reader({}))).toBe("npm");
+    expect(detectPackageManager(reader({}), "yarn")).toBe("yarn");
+  });
+
+  it("lumen agents init --mcp writes both configs and prints the Codex note", async () => {
+    const root = realpathSync(mkdtempSync(join(tmpdir(), "lumen-agents-mcp-")));
+    roots.push(root);
+    writeFileSync(join(root, "pnpm-lock.yaml"), "");
+    let stdout = "";
+    const code = await main(["agents", "init", "--mcp"], {
+      cwd: root,
+      color: false,
+      write: (text) => void (stdout += text),
+      writeError: () => {},
+    });
+    expect(code).toBe(0);
+    expect(stdout).toContain(`created  ${MCP_JSON}`);
+    expect(stdout).toContain(`created  ${CODEX_CONFIG}`);
+    expect(stdout).toContain("codex mcp add lumen -- pnpm exec lumen mcp");
+    expect(JSON.parse(readFileSync(join(root, MCP_JSON), "utf8")).mcpServers.lumen).toEqual({
+      command: "pnpm",
+      args: ["exec", "lumen", "mcp"],
+    });
   });
 });

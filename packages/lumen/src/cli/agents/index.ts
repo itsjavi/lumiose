@@ -4,6 +4,7 @@
 // `lumen agents init` for existing projects and by create-lumen for new ones (`lumen/agents`).
 // Re-running updates Lumen's parts and leaves everything else in these files alone.
 
+import { existsSync } from "node:fs";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { basename, dirname, join } from "node:path";
 import { formatTsconfig } from "../check/tsconfig.ts";
@@ -32,8 +33,8 @@ with islands. It is not React, Solid or Svelte: check the docs instead of guessi
 - \`npx lumen docs <topic>\` prints or searches them (\`npx lumen docs signals\`,
   \`npx lumen docs "form action"\`); \`npx lumen explain <code>\` explains a diagnostic such as
   \`LUM2001\`.
-- With MCP support, use the Lumen MCP server (register it with
-  \`claude mcp add lumen -- npx lumen mcp\` or your agent's equivalent): docs, \`check\` with fixes,
+- With MCP support, use the Lumen MCP server (\`npx lumen agents init --mcp\` registers it for
+  Claude Code and Codex; elsewhere run \`npx lumen mcp\` over stdio): docs, \`check\` with fixes,
   routes, components, compiler output, rendered HTML and dev logs as tools.
 
 ### \`.stsx\` files
@@ -133,6 +134,88 @@ export interface AgentFile {
 export interface AgentFilesOptions {
   /** Project name for a new `AGENTS.md`. Default: the directory name. */
   name?: string;
+  /**
+   * Also register `lumen mcp` for Claude Code (`.mcp.json`) and Codex (`.codex/config.toml`),
+   * run with this package manager (decision-26 §5).
+   */
+  mcp?: PackageManager;
+}
+
+export type PackageManager = "npm" | "pnpm" | "yarn" | "bun";
+
+export const MCP_JSON = ".mcp.json";
+export const CODEX_CONFIG = ".codex/config.toml";
+
+/** How a package manager runs the project's own `lumen` binary: `pnpm exec lumen mcp`, … */
+export function mcpCommand(pm: PackageManager): { command: string; args: string[] } {
+  switch (pm) {
+    case "pnpm":
+      return { command: "pnpm", args: ["exec", "lumen", "mcp"] };
+    case "yarn":
+      return { command: "yarn", args: ["lumen", "mcp"] };
+    case "bun":
+      return { command: "bunx", args: ["lumen", "mcp"] };
+    default:
+      return { command: "npx", args: ["lumen", "mcp"] };
+  }
+}
+
+/**
+ * The package manager of the project in `read`'s view: its lockfile, else the `packageManager`
+ * field of `package.json`, else `fallback` (create-lumen: the one that ran it), else npm.
+ */
+export function detectPackageManager(
+  read: (file: string) => string | undefined,
+  fallback?: PackageManager,
+): PackageManager {
+  if (read("pnpm-lock.yaml") !== undefined) return "pnpm";
+  if (read("yarn.lock") !== undefined) return "yarn";
+  if (read("bun.lock") !== undefined || read("bun.lockb") !== undefined) return "bun";
+  if (read("package-lock.json") !== undefined) return "npm";
+  const field = /"packageManager"\s*:\s*"(npm|pnpm|yarn|bun)@/.exec(read("package.json") ?? "");
+  return (field?.[1] as PackageManager | undefined) ?? fallback ?? "npm";
+}
+
+/** `.mcp.json` with the `lumen` server added or updated; other servers and keys are kept. */
+function mcpJson(current: string | undefined, pm: PackageManager): string {
+  let config: { mcpServers?: Record<string, unknown> } & Record<string, unknown> = {};
+  if (current !== undefined && current.trim() !== "") {
+    const parsed: unknown = JSON.parse(current);
+    if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
+      throw new Error(`${MCP_JSON} is not a JSON object.`);
+    }
+    config = parsed as typeof config;
+  }
+  const servers = { ...config.mcpServers, lumen: mcpCommand(pm) };
+  return `${JSON.stringify({ ...config, mcpServers: servers }, null, 2)}\n`;
+}
+
+/**
+ * `.codex/config.toml` with an `[mcp_servers.lumen]` table: replaced when present (up to the
+ * next table that is not one of its subtables), else appended. The rest is kept as it is.
+ */
+function codexConfig(current: string | undefined, pm: PackageManager): string {
+  const { command, args } = mcpCommand(pm);
+  const table = [
+    "[mcp_servers.lumen]",
+    `command = ${JSON.stringify(command)}`,
+    `args = [${args.map((arg) => JSON.stringify(arg)).join(", ")}]`,
+  ].join("\n");
+  if (current === undefined || current.trim() === "") return `${table}\n`;
+  const lines = current.split("\n");
+  const start = lines.findIndex((line) => line.trim() === "[mcp_servers.lumen]");
+  if (start === -1) return `${current.trimEnd()}\n\n${table}\n`;
+  let end = start + 1;
+  while (end < lines.length) {
+    const header = /^\s*\[\[?([^\]]+)\]/.exec(lines[end]!);
+    if (header && !header[1]!.trim().startsWith("mcp_servers.lumen.")) break;
+    end++;
+  }
+  const rest = lines.slice(end);
+  return [...lines.slice(0, start), table, ...(rest.length > 0 ? ["", ...rest] : [])]
+    .join("\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .replace(/\n*$/, "\n");
 }
 
 /**
@@ -182,6 +265,12 @@ export function planAgentFiles(
     }),
     // Only a missing tsconfig is written (decision-25); `lumen check` reviews an existing one.
     ...(read("tsconfig.json") === undefined ? [plan("tsconfig.json", formatTsconfig)] : []),
+    ...(options.mcp === undefined
+      ? []
+      : [
+          plan(MCP_JSON, (current) => mcpJson(current, options.mcp!)),
+          plan(CODEX_CONFIG, (current) => codexConfig(current, options.mcp!)),
+        ]),
   ];
 }
 
@@ -191,22 +280,36 @@ export async function agentsInit(
   options: AgentFilesOptions = {},
 ): Promise<AgentFile[]> {
   const current = new Map<string, string | undefined>();
-  for (const file of ["AGENTS.md", "CLAUDE.md", SKILL_FILE, ".gitattributes", "tsconfig.json"]) {
+  const files = ["AGENTS.md", "CLAUDE.md", SKILL_FILE, ".gitattributes", "tsconfig.json"];
+  if (options.mcp !== undefined) files.push(MCP_JSON, CODEX_CONFIG);
+  for (const file of files) {
     current.set(file, await readFile(join(root, file), "utf8").catch(() => undefined));
   }
-  const files = planAgentFiles((file) => current.get(file), {
+  const planned = planAgentFiles((file) => current.get(file), {
+    ...options,
     name: options.name ?? basename(root),
   });
-  for (const { file, action, content } of files) {
+  for (const { file, action, content } of planned) {
     if (action === "unchanged") continue;
     await mkdir(dirname(join(root, file)), { recursive: true });
     await writeFile(join(root, file), content);
   }
-  return files;
+  return planned;
+}
+
+/** What to tell the user after registering the MCP server: Codex only reads trusted projects. */
+export function mcpNote(pm: PackageManager): string {
+  const { command, args } = mcpCommand(pm);
+  return (
+    `Codex reads ${CODEX_CONFIG} only in trusted projects; otherwise register the server with: ` +
+    `codex mcp add lumen -- ${[command, ...args].join(" ")}`
+  );
 }
 
 export interface AgentsCommandOptions {
   root: string;
+  /** Also register `lumen mcp` for Claude Code and Codex. */
+  mcp?: boolean;
   format: OutputFormat;
   write: (text: string) => void;
   writeError: (text: string) => void;
@@ -215,8 +318,15 @@ export interface AgentsCommandOptions {
 /** `lumen agents init`: writes or updates the agent files; exit 0, or 2 when it cannot write. */
 export async function agentsCommand(options: AgentsCommandOptions): Promise<number> {
   let files: AgentFile[];
+  let pm: PackageManager | undefined;
   try {
-    files = await agentsInit(projectRoot(options.root));
+    const root = projectRoot(options.root);
+    if (options.mcp) {
+      const read = (file: string) => (existsSync(join(root, file)) ? "" : undefined);
+      const pkg = await readFile(join(root, "package.json"), "utf8").catch(() => undefined);
+      pm = detectPackageManager((file) => (file === "package.json" ? pkg : read(file)));
+    }
+    files = await agentsInit(root, pm === undefined ? {} : { mcp: pm });
   } catch (error) {
     const failure = failureOf(error);
     if (options.format === "json") options.write(formatEnvelope("agents", false, { failure }));
@@ -227,11 +337,13 @@ export async function agentsCommand(options: AgentsCommandOptions): Promise<numb
     options.write(
       formatEnvelope("agents", true, {
         files: files.map(({ file, action }) => ({ file, action })),
+        ...(pm === undefined ? {} : { mcp: { ...mcpCommand(pm), note: mcpNote(pm) } }),
       }),
     );
   } else {
     const width = Math.max(...files.map(({ action }) => action.length));
     for (const { file, action } of files) options.write(`  ${action.padEnd(width)}  ${file}\n`);
+    if (pm !== undefined) options.write(`\n${mcpNote(pm)}\n`);
   }
   return EXIT_OK;
 }

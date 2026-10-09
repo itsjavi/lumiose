@@ -177,6 +177,7 @@ it. Exits 1 for an unknown code and 2 for text that is not a code.
 
 ```sh
 lumen agents init
+lumen agents init --mcp           # also .mcp.json (Claude Code) and .codex/config.toml (Codex)
 lumen agents init --format json   # { files: [{ file, action: "created" | "updated" | "unchanged" }] }
 ```
 
@@ -186,7 +187,9 @@ Makes an existing project agent-ready, as `create-lumen` does for new ones: a Lu
 that references `@AGENTS.md`, the `lumen` skill (`.claude/skills/lumen/SKILL.md`) and the
 `*.stsx linguist-language=TSX` line in `.gitattributes`, and a `tsconfig.json` that extends
 `.lumen/tsconfig.generated.json` when the project has none (an existing one is left alone).
-Re-running it updates only those parts.
+Re-running it updates only those parts. `--mcp` also registers `lumen mcp` for Claude Code and
+Codex, run with the package manager of the lockfile (see [MCP](mcp.md#register-it)); the JSON
+report then has `mcp: { command, args, note }`.
 
 ## lumen mcp
 

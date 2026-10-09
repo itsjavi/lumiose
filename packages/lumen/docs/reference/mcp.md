@@ -8,7 +8,18 @@ output. Related: [CLI](cli.md), [Compiler and diagnostics](../concepts/compiler.
 
 ## Register it
 
-The agent starts the server itself; run these once in the project directory.
+The agent starts the server itself. `create-lumen --mcp` (new projects) and
+`lumen agents init --mcp` (existing ones) register it for both Claude Code and Codex, run with the
+project's package manager (`npx lumen mcp`, `pnpm exec lumen mcp`, `yarn lumen mcp` or
+`bunx lumen mcp`, from the lockfile):
+
+- `.mcp.json`: the `lumen` entry of `mcpServers` (Claude Code's project servers; it asks once
+  before starting them). Other servers in the file are kept.
+- `.codex/config.toml`: an `[mcp_servers.lumen]` table. Codex reads project config only in
+  trusted projects; otherwise register it with `codex mcp add` as below. The rest of the file is
+  kept.
+
+Or by hand, once in the project directory:
 
 ```sh
 # Claude Code (add --scope project to write .mcp.json and share it with the team)

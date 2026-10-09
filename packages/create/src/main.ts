@@ -6,6 +6,7 @@
 import { createInterface } from "node:readline/promises";
 import { relative, resolve } from "node:path";
 import { parseArgs } from "node:util";
+import { mcpCommand, mcpNote, type PackageManager } from "lumen/agents";
 import pkg from "../package.json" with { type: "json" };
 import {
   DEFAULT_TEMPLATE,
@@ -34,6 +35,8 @@ Options:
   --name <name>          Package name (default: from the directory name)
   -y, --yes              Ask nothing: use the defaults
   --force                Write into a non-empty directory (same-name files are overwritten)
+  --mcp                  Register the Lumen MCP server for Claude Code (.mcp.json) and Codex
+                         (.codex/config.toml), run with your package manager
   --format <format>      human (default) or json: { command: "create", ok, ... } on stdout
   -h, --help             Show this help
   -v, --version          Show the version
@@ -46,6 +49,7 @@ Exit codes: 0 created, 1 the directory cannot be used, 2 misuse.
 Examples:
   pnpm create lumen my-app --template ssr
   create-lumen my-site -t static --yes --format json
+  pnpm create lumen my-app --mcp
 `;
 
 export async function main(argv: string[], io: CreateIO = processIO()): Promise<number> {
@@ -68,6 +72,7 @@ export async function main(argv: string[], io: CreateIO = processIO()): Promise<
         name: { type: "string" },
         yes: { type: "boolean", short: "y" },
         force: { type: "boolean" },
+        mcp: { type: "boolean" },
         format: { type: "string" },
         help: { type: "boolean", short: "h" },
         version: { type: "boolean", short: "v" },
@@ -103,6 +108,7 @@ export async function main(argv: string[], io: CreateIO = processIO()): Promise<
   if (template === undefined && ask) template = await askTemplate(ask);
   template ??= DEFAULT_TEMPLATE;
 
+  const pm = packageManager(io.userAgent);
   let result;
   try {
     result = await scaffold({
@@ -110,6 +116,7 @@ export async function main(argv: string[], io: CreateIO = processIO()): Promise<
       template,
       ...(values.name === undefined ? {} : { name: values.name }),
       force: values.force ?? false,
+      ...(values.mcp ? { mcp: pm } : {}),
     });
   } catch (error) {
     if (!(error instanceof ScaffoldError)) throw error;
@@ -118,7 +125,6 @@ export async function main(argv: string[], io: CreateIO = processIO()): Promise<
     return 1;
   }
 
-  const pm = packageManager(io.userAgent);
   const fromCwd = relative(io.cwd, result.dir);
   const cd = fromCwd.startsWith("..") ? result.dir : fromCwd || ".";
   const next = [
@@ -135,12 +141,17 @@ export async function main(argv: string[], io: CreateIO = processIO()): Promise<
         mode: result.template.mode,
         files: result.files,
         next,
+        ...(values.mcp ? { mcp: { ...mcpCommand(pm), note: mcpNote(pm) } } : {}),
       }),
     );
   } else {
     io.write(
       `\nCreated ${result.name} in ${result.dir} (template: ${result.template.name}, mode: ${result.template.mode}).\n` +
-        `Agent-ready: AGENTS.md, CLAUDE.md and the lumen skill (.claude/skills/lumen).\n\n` +
+        `Agent-ready: AGENTS.md, CLAUDE.md and the lumen skill (.claude/skills/lumen).\n` +
+        (values.mcp
+          ? `MCP: .mcp.json (Claude Code) and .codex/config.toml (Codex) run the Lumen MCP server.\n${mcpNote(pm)}\n`
+          : "") +
+        "\n" +
         `Next:\n${next.map((line) => `  ${line}\n`).join("")}`,
     );
   }
@@ -169,7 +180,7 @@ function envelope(ok: boolean, payload: object): string {
 }
 
 /** The package manager that runs us (`pnpm create lumen`, `npm create lumen`, …). */
-function packageManager(userAgent: string | undefined): string {
+function packageManager(userAgent: string | undefined): PackageManager {
   const name = userAgent?.split("/")[0];
   return name === "npm" || name === "yarn" || name === "bun" ? name : "pnpm";
 }

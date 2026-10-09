@@ -25,8 +25,10 @@ cd my-app && pnpm install && pnpm dev
 Every project starts agent-ready: `AGENTS.md` (with a Lumen section pointing at these docs),
 `CLAUDE.md` referencing it, the `lumen` skill in `.claude/skills/lumen`, and `.gitattributes`
 highlighting `.stsx` as TSX. In an existing project, `lumen agents init` writes the same files
-(re-run it after upgrading Lumen; it only touches its own parts). Run `create-lumen --help` for the
-options (`--yes`, `--force`, `--format json`).
+(re-run it after upgrading Lumen; it only touches its own parts). With `--mcp`, both also register
+the [Lumen MCP server](reference/mcp.md) for Claude Code (`.mcp.json`) and Codex
+(`.codex/config.toml`). Run `create-lumen --help` for the options (`--yes`, `--force`, `--mcp`,
+`--format json`).
 
 The rest of this page sets a project up by hand, step by step.
 

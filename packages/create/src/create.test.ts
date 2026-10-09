@@ -105,6 +105,35 @@ describe("create-lumen CLI", () => {
     expect(asked.out.stdout).toContain("  cd asked-app\n  npm install\n  npm run dev\n");
   });
 
+  it("registers the MCP server for Claude Code and Codex with --mcp (TASK-131)", async () => {
+    const dir = join(tmp, "with-mcp");
+    const created = io();
+    created.io.userAgent = "npm/11.0.0 node/v24.0.0";
+    expect(await main([dir, "-t", "minimal", "-y", "--mcp", "--format", "json"], created.io)).toBe(
+      0,
+    );
+    expect(JSON.parse(readFileSync(join(dir, ".mcp.json"), "utf8"))).toEqual({
+      mcpServers: { lumen: { command: "npx", args: ["lumen", "mcp"] } },
+    });
+    expect(readFileSync(join(dir, ".codex/config.toml"), "utf8")).toBe(
+      '[mcp_servers.lumen]\ncommand = "npx"\nargs = ["lumen", "mcp"]\n',
+    );
+    const report = JSON.parse(created.out.stdout);
+    expect(report.files).toEqual(expect.arrayContaining([".mcp.json", ".codex/config.toml"]));
+    expect(report.mcp).toMatchObject({ command: "npx", args: ["lumen", "mcp"] });
+    expect(report.mcp.note).toContain("codex mcp add lumen -- npx lumen mcp");
+
+    // Without --mcp nothing is registered; pnpm runs the project's binary with `pnpm exec`.
+    const plain = join(tmp, "without-mcp");
+    expect(await main([plain, "-t", "minimal", "-y"], io().io)).toBe(0);
+    expect(existsSync(join(plain, ".mcp.json"))).toBe(false);
+    const pnpm = join(tmp, "pnpm-mcp");
+    expect(await main([pnpm, "-t", "minimal", "-y", "--mcp"], io().io)).toBe(0);
+    expect(readFileSync(join(pnpm, ".codex/config.toml"), "utf8")).toContain(
+      'command = "pnpm"\nargs = ["exec", "lumen", "mcp"]',
+    );
+  });
+
   it("derives valid package names", () => {
     expect(packageName("My App!")).toBe("my-app");
     expect(packageName("...")).toBe("lumen-app");

@@ -113,8 +113,10 @@ cd my-app && pnpm install && pnpm dev
 Every project starts agent-ready: `AGENTS.md` (with a Lumen section pointing at these docs),
 `CLAUDE.md` referencing it, the `lumen` skill in `.claude/skills/lumen`, and `.gitattributes`
 highlighting `.stsx` as TSX. In an existing project, `lumen agents init` writes the same files
-(re-run it after upgrading Lumen; it only touches its own parts). Run `create-lumen --help` for the
-options (`--yes`, `--force`, `--format json`).
+(re-run it after upgrading Lumen; it only touches its own parts). With `--mcp`, both also register
+the [Lumen MCP server](reference/mcp.md) for Claude Code (`.mcp.json`) and Codex
+(`.codex/config.toml`). Run `create-lumen --help` for the options (`--yes`, `--force`, `--mcp`,
+`--format json`).
 
 The rest of this page sets a project up by hand, step by step.
 
@@ -4211,6 +4213,7 @@ it. Exits 1 for an unknown code and 2 for text that is not a code.
 
 ```sh
 lumen agents init
+lumen agents init --mcp           # also .mcp.json (Claude Code) and .codex/config.toml (Codex)
 lumen agents init --format json   # { files: [{ file, action: "created" | "updated" | "unchanged" }] }
 ```
 
@@ -4220,7 +4223,9 @@ Makes an existing project agent-ready, as `create-lumen` does for new ones: a Lu
 that references `@AGENTS.md`, the `lumen` skill (`.claude/skills/lumen/SKILL.md`) and the
 `*.stsx linguist-language=TSX` line in `.gitattributes`, and a `tsconfig.json` that extends
 `.lumen/tsconfig.generated.json` when the project has none (an existing one is left alone).
-Re-running it updates only those parts.
+Re-running it updates only those parts. `--mcp` also registers `lumen mcp` for Claude Code and
+Codex, run with the package manager of the lockfile (see [MCP](mcp.md#register-it)); the JSON
+report then has `mcp: { command, args, note }`.
 
 ## lumen mcp
 
@@ -4249,7 +4254,18 @@ output. Related: [CLI](cli.md), [Compiler and diagnostics](../concepts/compiler.
 
 ## Register it
 
-The agent starts the server itself; run these once in the project directory.
+The agent starts the server itself. `create-lumen --mcp` (new projects) and
+`lumen agents init --mcp` (existing ones) register it for both Claude Code and Codex, run with the
+project's package manager (`npx lumen mcp`, `pnpm exec lumen mcp`, `yarn lumen mcp` or
+`bunx lumen mcp`, from the lockfile):
+
+- `.mcp.json`: the `lumen` entry of `mcpServers` (Claude Code's project servers; it asks once
+  before starting them). Other servers in the file are kept.
+- `.codex/config.toml`: an `[mcp_servers.lumen]` table. Codex reads project config only in
+  trusted projects; otherwise register it with `codex mcp add` as below. The rest of the file is
+  kept.
+
+Or by hand, once in the project directory:
 
 ```sh
 # Claude Code (add --scope project to write .mcp.json and share it with the team)

@@ -27,6 +27,7 @@ const OPTIONS = {
   format: { type: "string" },
   project: { type: "string", short: "p" },
   check: { type: "boolean" },
+  mcp: { type: "boolean" },
   port: { type: "string" },
   host: { type: "string" },
   help: { type: "boolean", short: "h" },
@@ -50,6 +51,11 @@ const OPTION_HELP: Record<OptionName, { flag: string; description: string }> = {
     description: "tsconfig path, relative to the root (default: tsconfig.json)",
   },
   check: { flag: "--check", description: "List unformatted files and exit 1 instead of writing" },
+  mcp: {
+    flag: "--mcp",
+    description:
+      "Also register lumen mcp for Claude Code (.mcp.json) and Codex (.codex/config.toml)",
+  },
   port: { flag: "--port <n>", description: "Port (dev: 5173 or the next free one; preview: 4173)" },
   host: { flag: "--host <addr>", description: "Listen on this address (0.0.0.0: all addresses)" },
   help: { flag: "-h, --help", description: "Show help" },
@@ -217,17 +223,17 @@ const COMMANDS: readonly Command[] = [
     args: "init",
     summary:
       "Write or update AGENTS.md (Lumen section), CLAUDE.md, the lumen skill and .gitattributes",
-    options: [],
+    options: ["mcp"],
     positionals: { min: 1, max: 1 },
     exitCodes: "0 written, 2 the tool failed",
-    examples: ["lumen agents init", "lumen agents init --format json"],
-    run({ root, format, args, io }) {
+    examples: ["lumen agents init", "lumen agents init --mcp", "lumen agents init --format json"],
+    run({ root, format, values, args, io }) {
       if (args[0] !== "init") {
         throw new UsageError(`Unknown agents subcommand "${args[0]}".`, BY_NAME.get("agents"), {
           help: 'The only subcommand is "lumen agents init".',
         });
       }
-      return agentsCommand({ root, format, ...out(io) });
+      return agentsCommand({ root, format, mcp: values.mcp === true, ...out(io) });
     },
   },
 ];
