@@ -1,13 +1,14 @@
 # Server
 
-> Server code gets the request context everywhere: `ctx` in middleware, endpoints and actions, and `request()`, `url()`, `params()`, `locals()`, `cookies()` and `response()` anywhere during a server render.
+> Server code gets the request context everywhere: `ctx` in middleware, endpoints and actions, and `request()`, `url()`, `params()`, `route()`, `locals()`, `cookies()` and `response()` anywhere during a server render.
 
 ## Concept
 
 **Request context.** Middleware, endpoints and actions receive
 `ctx = { request, url, params, locals, cookies, env }`. During a server render, the same values are
 available through functions scoped to the current request (they work after `await` too):
-`request()`, `url()`, `params()`, `locals()`, `cookies()`, `response()` and `env(name)`.
+`request()`, `url()`, `params()`, `route()` (the matched pattern), `locals()`, `cookies()`,
+`response()` and `env(name)`.
 
 **Middleware.** `src/middleware.ts` default-exports `(ctx, next) => Promise<Response>` (or an array,
 run in order). Use it for sessions, auth and headers. Put request data on `ctx.locals`, and type it
@@ -52,7 +53,7 @@ that reaches the browser is `LUM4003`.
 | ------------------------------------------------------------------------ | ---------------------------------------------------------------------- |
 | `RequestContext` (`ctx`)                                                 | `{ request, url, params, locals, cookies, env }`.                      |
 | `Middleware`                                                             | `(ctx, next) => Response \| Promise<Response>`.                        |
-| `request()`, `url()`, `params<P>()`, `locals()`, `cookies()`             | Request APIs during a server render.                                   |
+| `request()`, `url()`, `params<P>()`, `route()`, `locals()`, `cookies()`  | Request APIs during a server render.                                   |
 | `response()`                                                             | `{ status, setStatus, getHeader, setHeader }` until the shell is sent. |
 | `redirect(to, status?)`, `notFound(message?)`, `error(status, message?)` | Throw to stop rendering.                                               |
 | `isRedirect(e)`, `isHttpError(e)`                                        | Recognize those when you catch errors.                                 |

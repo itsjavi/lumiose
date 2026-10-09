@@ -32,6 +32,8 @@ export interface RequestScope {
   ctx: RequestContext;
   cookies: CookieJar;
   response: ResponseState;
+  /** The matched route pattern (`/blog/[slug]`); undefined when no route matched. */
+  route?: string;
   /** Set when a form action ran and the page re-renders with its data. */
   action?: ActionState;
   /** Serves a same-origin request in-process, as part of this request (`fetchJSON()` in SSR). */
@@ -151,6 +153,14 @@ export function request(): Request {
 /** The current request URL. */
 export function url(): URL {
   return prerenderUrl(currentScope("url()").ctx.url);
+}
+
+/**
+ * The matched route pattern, e.g. `"/blog/[slug]"`: compare it instead of matching `url().pathname`.
+ * Undefined when no route matched (a `_404` page for an unknown URL).
+ */
+export function route(): Routes | undefined {
+  return currentScope("route()").route as Routes | undefined;
 }
 
 /** Params of the matched route; pass the route pattern to type them: `params<"/blog/[slug]">()`. */

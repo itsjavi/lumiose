@@ -27,6 +27,7 @@ describe("public app API", () => {
       () => browser.request(),
       () => browser.url(),
       () => browser.params(),
+      () => browser.route(),
       () => browser.locals(),
       () => browser.cookies(),
       () => browser.response(),
@@ -134,6 +135,7 @@ const USAGE = `import {
   notFound,
   params,
   redirect,
+  route,
   type Endpoint,
   type ErrorPageProps,
   type Middleware,
@@ -177,9 +179,12 @@ export function badRedirect(): never {
 export async function Post() {
   const slug: string = params<"/blog/[slug]">().slug;
   const any: Record<string, string> = params();
+  const pattern: "/blog/[slug]" | "/api/posts/[id]" | undefined = route();
+  // @ts-expect-error not a route pattern of the app
+  const unknown = route() === "/blog/[id]";
   const user = locals().user?.name;
   cookies().set("seen", slug, { sameSite: "strict", maxAge: 60 });
-  return [slug, any, user];
+  return [slug, any, user, pattern, unknown];
 }
 
 export function ErrorPage({ status, error }: ErrorPageProps): string {

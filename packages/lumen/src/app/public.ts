@@ -31,6 +31,7 @@ export {
   publicEnv,
   request,
   response,
+  route,
   signedCookie,
   url,
 } from "./server/browser.ts";

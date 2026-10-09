@@ -6,7 +6,11 @@ import { Dynamic } from "../../server/elements.ts";
 import { restProps } from "../../server/ssr.ts";
 import type { RouteParams, Routes } from "../routes/registry.ts";
 import type { RouteParamValues } from "../server/context.ts";
-import { params as requestParams, url as requestUrl } from "../server/scope.ts";
+import {
+  params as requestParams,
+  route as requestRoute,
+  url as requestUrl,
+} from "../server/scope.ts";
 import { PREFETCH_MARKER } from "../server/navigation.ts";
 import type { LinkProps } from "./link.ts";
 import type { Search } from "./index.ts";
@@ -54,6 +58,10 @@ export function params<P extends Routes = never>(): [P] extends [never]
   ? RouteParamValues
   : RouteParams<P> {
   return requestParams() as never;
+}
+
+export function route(): Routes | undefined {
+  return requestRoute();
 }
 
 export function url(): URL {

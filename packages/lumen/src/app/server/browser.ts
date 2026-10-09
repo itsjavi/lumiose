@@ -31,6 +31,10 @@ export function params<P extends Routes = never>(): [P] extends [never]
   return serverOnly("params()", "Inside SPA routes, use params() from lumen/router.");
 }
 
+export function route(): Routes | undefined {
+  return serverOnly("route()", "Inside SPA routes, use route() from lumen/router.");
+}
+
 export function locals(): Locals {
   return serverOnly("locals()", CALL_ENDPOINT);
 }

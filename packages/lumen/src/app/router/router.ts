@@ -50,6 +50,7 @@ import { MISMATCH } from "../../dom/hydration.ts";
 import { createRange, renderRange, type RangeStart } from "../../dom/insert.ts";
 import { setClientNavigation } from "../actions/navigation.ts";
 import { createRouteMatcher, type RouteMatcher } from "../routes/match.ts";
+import { formatPattern } from "../routes/segments.ts";
 import type { RouteManifest } from "../routes/manifest.ts";
 import { HttpError, isHttpError, isRedirect } from "../server/control.ts";
 import type { ClientRoute, ClientTable } from "./table.ts";
@@ -74,6 +75,8 @@ interface Level {
 export interface View {
   url: URL;
   params: Params;
+  /** The matched route pattern (`/songs/[id]`); undefined when no route matched (a 404). */
+  route?: string;
   levels: Level[];
   /** Error pages (`_404`, `_error`, the built-in one): the leaf's `status` and `error` props. */
   error?: { status: number; error: Error };
@@ -84,6 +87,7 @@ interface Scope {
   view: () => View;
   params: () => Params;
   url: () => URL;
+  route: () => string | undefined;
   search: () => URLSearchParams;
 }
 
@@ -168,6 +172,7 @@ function createScope(view: () => View): Scope {
     view,
     params,
     url: computed(() => view().url),
+    route: computed(() => view().route),
     search: computed(() => new URLSearchParams(search())),
   };
 }
@@ -243,6 +248,7 @@ function createView(r: Router, url: URL, target: Target, levels: Level[]): View 
         : target.params,
     levels,
   };
+  if (target.route !== undefined) view.route = formatPattern(target.route.segments);
   if (target.status !== undefined) {
     view.error = { status: target.status, error: new HttpError(target.status, "Not Found") };
   }
@@ -286,6 +292,7 @@ export async function prepareRoot(leaf: string, csr: boolean): Promise<Component
         levels: errorLevels,
         error: { status, error: new HttpError(status, props.message ?? "") },
       };
+      if (target?.route !== undefined) view.route = formatPattern(target.route.segments);
     } else if (target !== undefined) {
       view = createView(r, url, target, routeLevels!);
     } else {
@@ -555,6 +562,7 @@ function fail(r: Router, error: unknown, view: View): void {
               params: view.params,
               levels: await loadLevels(r, r.config.pages[file]!.levels),
               error: { status, error: exposed },
+              ...(view.route === undefined ? {} : { route: view.route }),
             };
     } catch {
       next = builtinError(view.url, status, exposed);
@@ -727,6 +735,11 @@ export function currentParams(): Params {
 /** `url()` of lumen/router. */
 export function currentUrl(): URL {
   return scopeOf("url()").url();
+}
+
+/** `route()` of lumen/router. */
+export function currentRoute(): string | undefined {
+  return scopeOf("route()").route();
 }
 
 /** `search()` of lumen/router. */

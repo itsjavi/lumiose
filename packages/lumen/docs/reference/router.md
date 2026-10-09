@@ -1,10 +1,10 @@
 # `lumen/router`
 
-> The client router for `spa` routes, built on the Navigation API: `<Link>`, `navigate()`, reactive `params()`, `search()`, `url()` and `navigating()`, persistent layouts, transitions that hold the old page, scroll and focus restoration, and a client-side `_404`.
+> The client router for `spa` routes, built on the Navigation API: `<Link>`, `navigate()`, reactive `params()`, `route()`, `search()`, `url()` and `navigating()`, persistent layouts, transitions that hold the old page, scroll and focus restoration, and a client-side `_404`.
 
 `lumen/router` works inside `spa` routes (`export const mode = "spa"`, or `lumen({ mode: "spa" })`
 for the whole project); `<Link>` works on MPA pages too (see [Link](#link)). Pages and layouts of an SPA import it like any module; on the server
-(`ssr` pages) the same names read the request: `params()`, `url()` and `search()` return the
+(`ssr` pages) the same names read the request: `params()`, `route()`, `url()` and `search()` return the
 request's values, `<Link>` renders its `<a>`, `navigating()` is `false`, and `navigate()` and
 `search.set()` throw (call them from event handlers and effects). Concepts:
 [Routing](../concepts/routing.md), [Rendering modes](../concepts/rendering-modes.md).
@@ -81,6 +81,16 @@ function params<P extends Routes = never>(): RouteParams<P>; // untyped: Record<
 The current route's params, reactive: `params<"/songs/[id]">().id`. Pages also receive them as
 `props.params`.
 
+### route
+
+```ts
+function route(): Routes | undefined;
+```
+
+The matched route pattern, reactive: `route() === "/songs/[id]"`. Compare patterns instead of
+matching `url().pathname`; typegen makes an unknown pattern a type error. `undefined` on a `_404`
+page for an unknown URL (a matched route that throws `notFound()` keeps its pattern).
+
 ### url
 
 ```ts
@@ -111,7 +121,7 @@ type SearchInit =
 navigates to the current path with a new query, keeping the scroll position; `null` and
 `undefined` values are left out. It adds a history entry unless `{ replace: true }`.
 
-While a page is still loading during a navigation, `params()`, `url()` and `search()` called in it
+While a page is still loading during a navigation, `params()`, `route()`, `url()` and `search()` called in it
 (and its props) already describe the page it is loading; everything else keeps the shown URL until
 the new page is on screen.
 

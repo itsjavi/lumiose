@@ -196,6 +196,7 @@ export function createRequestHandler(options: RequestHandlerOptions): RequestHan
     const scope: RequestScope = {
       ctx,
       cookies,
+      ...(match === null ? {} : { route: match.route.pattern }),
       response: createResponseState(),
       fetch: (inner) => fetchInProcess(inner, { cookies, locals: ctx.locals, depth }, request),
     };

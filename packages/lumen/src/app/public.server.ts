@@ -25,6 +25,7 @@ export {
   publicEnv,
   request,
   response,
+  route,
   signedCookie,
   url,
 } from "./server/scope.ts";

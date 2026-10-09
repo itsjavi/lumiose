@@ -1,7 +1,7 @@
 // The app's views are routes (src/routes): the URL of each view, the view the URL shows, and
 // navigation from keyboard shortcuts and buttons.
 import { href } from "lumen";
-import { navigate, url } from "lumen/router";
+import { navigate, route } from "lumen/router";
 import { songId } from "./state.ts";
 
 export type View = "tracker" | "instruments" | "songs" | "settings";
@@ -20,14 +20,20 @@ export function viewHref(view: View): string {
   }
 }
 
-/** The view of the current URL. Reactive. */
+/** The view of the current route. Reactive. */
 export function currentView(): View | undefined {
-  const path = url().pathname;
-  if (path.startsWith("/songs/")) return "tracker";
-  if (path === "/songs") return "songs";
-  if (path === "/instruments") return "instruments";
-  if (path === "/settings") return "settings";
-  return undefined;
+  switch (route()) {
+    case "/songs/[id]":
+      return "tracker";
+    case "/songs":
+      return "songs";
+    case "/instruments":
+      return "instruments";
+    case "/settings":
+      return "settings";
+    default:
+      return undefined;
+  }
 }
 
 export function showView(view: View): void {

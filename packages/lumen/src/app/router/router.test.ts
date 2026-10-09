@@ -11,7 +11,7 @@ import { invalidate as appInvalidate } from "../actions/client.ts";
 import { notFound, redirect } from "../server/control.ts";
 import { href } from "../routes/href.ts";
 import type { RouteSegment } from "../routes/segments.ts";
-import { Link, navigate, navigating, params, search, url } from "./index.ts";
+import { Link, navigate, navigating, params, route, search, url } from "./index.ts";
 import { createRouter, invalidate, prepareRoot, resetRouter, type SpaConfig } from "./router.ts";
 
 interface Deferred<T> {
@@ -186,6 +186,7 @@ describe("lumen/router", () => {
     expect(text()).toBe("path /users/1users of 1user 1");
     expect(params()).toEqual({ id: "1" });
     expect(url().pathname).toBe("/users/1");
+    expect(route()).toBe("/users/[id]");
   });
 
   it("keeps the layouts both pages share mounted", async () => {
@@ -253,10 +254,13 @@ describe("lumen/router", () => {
     await boot("/");
     await navigate("/nowhere");
     expect(text()).toBe("path /nowhere404 Not Found");
+    expect(route()).toBeUndefined();
     userData["9"] = "missing";
     await navigate("/users/9");
     await settled();
     expect(text()).toBe("path /users/9404 Not Found");
+    // notFound() in a matched route keeps its pattern, as on the server.
+    expect(route()).toBe("/users/[id]");
     userData["8"] = "broken";
     await navigate("/users/8");
     await settled();
@@ -397,6 +401,7 @@ describe("lumen/router", () => {
 
   it("reads url() and params() outside the router as errors", () => {
     expect(() => params()).toThrow(/inside spa routes/);
+    expect(() => route()).toThrow(/inside spa routes/);
     expect(navigating()).toBe(false);
     const count = signal(0);
     expect(count()).toBe(0);

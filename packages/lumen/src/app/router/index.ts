@@ -4,6 +4,7 @@ import type { RouteParams, Routes } from "../routes/registry.ts";
 import type { RouteParamValues } from "../server/context.ts";
 import {
   currentParams,
+  currentRoute,
   currentSearch,
   currentUrl,
   navigate,
@@ -24,6 +25,14 @@ export function params<P extends Routes = never>(): [P] extends [never]
   ? RouteParamValues
   : RouteParams<P> {
   return currentParams() as never;
+}
+
+/**
+ * The matched route pattern, reactive: `route() === "/songs/[id]"`. Undefined on a not-found page.
+ * Inside a page that is still loading during a navigation, the pattern of the page it is loading.
+ */
+export function route(): Routes | undefined {
+  return currentRoute() as Routes | undefined;
 }
 
 /**

@@ -79,7 +79,8 @@ Routes with `mode = "spa"` use the client router `lumen/router` ([reference](../
 - The SPA starts at the outermost `spa` layout (or the page itself) and covers every `spa` page
   below it; links between them navigate on the client, other links load the document.
 - `<Link href prefetch>` (plain `<a>` links work too), `navigate(href, { replace })`, reactive
-  `params()`, `url()`, `search()` (`search.set()` changes the query) and `navigating()`.
+  `params()`, `route()` (the matched pattern), `url()`, `search()` (`search.set()` changes the
+  query) and `navigating()`.
 - Layouts persist: a layout's `children` is the outlet, and layouts shared by the old and the new
   page keep their state. A page with other param values (`songs/[id]`) is a new page.
 - A navigation holds the old page until the new page's async content is ready, then swaps.
@@ -175,6 +176,8 @@ export default function Home() {
   { slug })` fails type-checking instead.
 - **Reading params from `window.location` in a server component.** Use `props.params` or
   `params()`.
+- **Matching `url().pathname` to know which route is showing.** `route() === "/songs/[id]"`
+  compares the matched pattern, type-checked against the app's routes.
 - **Route loaders.** There are none: load data in the async page component itself (decision-18).
 - **`mode` that is not a string literal.** `export const mode = getMode()` cannot be read at build
   time (`LUM5002`).

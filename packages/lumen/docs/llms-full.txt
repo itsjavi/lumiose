@@ -1383,7 +1383,8 @@ Routes with `mode = "spa"` use the client router `lumen/router` ([reference](../
 - The SPA starts at the outermost `spa` layout (or the page itself) and covers every `spa` page
   below it; links between them navigate on the client, other links load the document.
 - `<Link href prefetch>` (plain `<a>` links work too), `navigate(href, { replace })`, reactive
-  `params()`, `url()`, `search()` (`search.set()` changes the query) and `navigating()`.
+  `params()`, `route()` (the matched pattern), `url()`, `search()` (`search.set()` changes the
+  query) and `navigating()`.
 - Layouts persist: a layout's `children` is the outlet, and layouts shared by the old and the new
   page keep their state. A page with other param values (`songs/[id]`) is a new page.
 - A navigation holds the old page until the new page's async content is ready, then swaps.
@@ -1479,6 +1480,8 @@ export default function Home() {
   { slug })` fails type-checking instead.
 - **Reading params from `window.location` in a server component.** Use `props.params` or
   `params()`.
+- **Matching `url().pathname` to know which route is showing.** `route() === "/songs/[id]"`
+  compares the matched pattern, type-checked against the app's routes.
 - **Route loaders.** There are none: load data in the async page component itself (decision-18).
 - **`mode` that is not a string literal.** `export const mode = getMode()` cannot be read at build
   time (`LUM5002`).
@@ -1663,14 +1666,15 @@ See also: [Server](server.md), [Routing](routing.md), [reference: app layer](../
 
 # Server
 
-> Server code gets the request context everywhere: `ctx` in middleware, endpoints and actions, and `request()`, `url()`, `params()`, `locals()`, `cookies()` and `response()` anywhere during a server render.
+> Server code gets the request context everywhere: `ctx` in middleware, endpoints and actions, and `request()`, `url()`, `params()`, `route()`, `locals()`, `cookies()` and `response()` anywhere during a server render.
 
 ## Concept
 
 **Request context.** Middleware, endpoints and actions receive
 `ctx = { request, url, params, locals, cookies, env }`. During a server render, the same values are
 available through functions scoped to the current request (they work after `await` too):
-`request()`, `url()`, `params()`, `locals()`, `cookies()`, `response()` and `env(name)`.
+`request()`, `url()`, `params()`, `route()` (the matched pattern), `locals()`, `cookies()`,
+`response()` and `env(name)`.
 
 **Middleware.** `src/middleware.ts` default-exports `(ctx, next) => Promise<Response>` (or an array,
 run in order). Use it for sessions, auth and headers. Put request data on `ctx.locals`, and type it
@@ -1715,7 +1719,7 @@ that reaches the browser is `LUM4003`.
 | ------------------------------------------------------------------------ | ---------------------------------------------------------------------- |
 | `RequestContext` (`ctx`)                                                 | `{ request, url, params, locals, cookies, env }`.                      |
 | `Middleware`                                                             | `(ctx, next) => Response \| Promise<Response>`.                        |
-| `request()`, `url()`, `params<P>()`, `locals()`, `cookies()`             | Request APIs during a server render.                                   |
+| `request()`, `url()`, `params<P>()`, `route()`, `locals()`, `cookies()`  | Request APIs during a server render.                                   |
 | `response()`                                                             | `{ status, setStatus, getHeader, setHeader }` until the shell is sent. |
 | `redirect(to, status?)`, `notFound(message?)`, `error(status, message?)` | Throw to stop rendering.                                               |
 | `isRedirect(e)`, `isHttpError(e)`                                        | Recognize those when you catch errors.                                 |
@@ -3140,6 +3144,7 @@ with a `status`.
 function request(): Request;
 function url(): URL;
 function params<P extends Routes = never>(): RouteParams<P>; // Record<string, string> without P
+function route(): Routes | undefined; // the matched pattern, "/blog/[slug]"; undefined if none
 function locals(): Locals;
 function cookies(): Cookies;
 function response(): ResponseContext;
@@ -3451,11 +3456,11 @@ mount(() => <App />, document.getElementById("app")!);
 
 # `lumen/router`
 
-> The client router for `spa` routes, built on the Navigation API: `<Link>`, `navigate()`, reactive `params()`, `search()`, `url()` and `navigating()`, persistent layouts, transitions that hold the old page, scroll and focus restoration, and a client-side `_404`.
+> The client router for `spa` routes, built on the Navigation API: `<Link>`, `navigate()`, reactive `params()`, `route()`, `search()`, `url()` and `navigating()`, persistent layouts, transitions that hold the old page, scroll and focus restoration, and a client-side `_404`.
 
 `lumen/router` works inside `spa` routes (`export const mode = "spa"`, or `lumen({ mode: "spa" })`
 for the whole project); `<Link>` works on MPA pages too (see [Link](#link)). Pages and layouts of an SPA import it like any module; on the server
-(`ssr` pages) the same names read the request: `params()`, `url()` and `search()` return the
+(`ssr` pages) the same names read the request: `params()`, `route()`, `url()` and `search()` return the
 request's values, `<Link>` renders its `<a>`, `navigating()` is `false`, and `navigate()` and
 `search.set()` throw (call them from event handlers and effects). Concepts:
 [Routing](../concepts/routing.md), [Rendering modes](../concepts/rendering-modes.md).
@@ -3532,6 +3537,16 @@ function params<P extends Routes = never>(): RouteParams<P>; // untyped: Record<
 The current route's params, reactive: `params<"/songs/[id]">().id`. Pages also receive them as
 `props.params`.
 
+### route
+
+```ts
+function route(): Routes | undefined;
+```
+
+The matched route pattern, reactive: `route() === "/songs/[id]"`. Compare patterns instead of
+matching `url().pathname`; typegen makes an unknown pattern a type error. `undefined` on a `_404`
+page for an unknown URL (a matched route that throws `notFound()` keeps its pattern).
+
 ### url
 
 ```ts
@@ -3562,7 +3577,7 @@ type SearchInit =
 navigates to the current path with a new query, keeping the scroll position; `null` and
 `undefined` values are left out. It adds a history entry unless `{ replace: true }`.
 
-While a page is still loading during a navigation, `params()`, `url()` and `search()` called in it
+While a page is still loading during a navigation, `params()`, `route()`, `url()` and `search()` called in it
 (and its props) already describe the page it is loading; everything else keeps the shown URL until
 the new page is on screen.
 

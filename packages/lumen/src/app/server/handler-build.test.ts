@@ -1,7 +1,7 @@
 // Handler options for built apps: `base`, `trailingSlash` and the prerendering guard (LUM5001).
 import { describe, expect, it } from "vitest";
 import type { Endpoint, Middleware } from "./context.ts";
-import { cookies, env, locals, params, request, response, url } from "./scope.ts";
+import { cookies, env, locals, params, request, response, route, url } from "./scope.ts";
 import { app, layout, page } from "./__fixtures__/app.ts";
 import { testDefer } from "./__fixtures__/string-renderer.ts";
 
@@ -125,14 +125,14 @@ describe("prerendering (LUM5001)", () => {
         "src/middleware.ts": { default: readingMiddleware },
         "src/routes/_layout.stsx": layout("main"),
         "src/routes/blog/[slug].stsx": page(
-          () => `<h1>${url().pathname} ${params().slug} ${env("SITE") ?? ""}</h1>`,
+          () => `<h1>${url().pathname} ${params().slug} ${route()} ${env("SITE") ?? ""}</h1>`,
         ),
       },
       { prerendering: true, env: { SITE: "site" } },
     );
     const res = await fetch("/blog/hello");
     expect(onError).not.toHaveBeenCalled();
-    expect(await body(res)).toBe("<main><h1>/blog/hello hello site</h1></main>");
+    expect(await body(res)).toBe("<main><h1>/blog/hello hello /blog/[slug] site</h1></main>");
   });
 
   it("guards ctx in endpoints and headers(ctx)", async () => {

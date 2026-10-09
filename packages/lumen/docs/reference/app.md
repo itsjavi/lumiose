@@ -171,6 +171,7 @@ with a `status`.
 function request(): Request;
 function url(): URL;
 function params<P extends Routes = never>(): RouteParams<P>; // Record<string, string> without P
+function route(): Routes | undefined; // the matched pattern, "/blog/[slug]"; undefined if none
 function locals(): Locals;
 function cookies(): Cookies;
 function response(): ResponseContext;
