@@ -29,27 +29,27 @@ LUM3012 warning 234..242 `--unused`: `--unused` is set in a `style` prop, but no
   help: Read it with `var(--unused)` in a `<style>` block, or remove it
 LUM3005 warning 588..596 `.missing`: `.missing` matches no element in component `Card`
   label `.missing`: no element has the class `missing`
-  help: Remove the rule, or wrap the selector in `:global()` if it targets elements outside this scope
+  help: Remove the rule, or wrap the selector in `:global()` if it targets elements outside this scope. JSX returned by a helper function (`const field = () => <label class="field">…`) is not inside a nested `<style>`'s element: move the block to the top level of the file, or render that JSX inside the styled element
 LUM3005 warning 598..604 `footer`: `footer` matches no element in component `Card`
   label `footer`: no element is a `<footer>`
-  help: Remove the rule, or wrap the selector in `:global()` if it targets elements outside this scope
+  help: Remove the rule, or wrap the selector in `:global()` if it targets elements outside this scope. JSX returned by a helper function (`const field = () => <label class="field">…`) is not inside a nested `<style>`'s element: move the block to the top level of the file, or render that JSX inside the styled element
 LUM3005 warning 606..611 `#nope`: `#nope` matches no element in component `Card`
   label `#nope`: no element has the id `nope`
-  help: Remove the rule, or wrap the selector in `:global()` if it targets elements outside this scope
+  help: Remove the rule, or wrap the selector in `:global()` if it targets elements outside this scope. JSX returned by a helper function (`const field = () => <label class="field">…`) is not inside a nested `<style>`'s element: move the block to the top level of the file, or render that JSX inside the styled element
 LUM3005 warning 613..624 `.card .gone`: `.card .gone` matches no element in component `Card`
   label `.gone`: no element has the class `gone`
-  help: Remove the rule, or wrap the selector in `:global()` if it targets elements outside this scope
+  help: Remove the rule, or wrap the selector in `:global()` if it targets elements outside this scope. JSX returned by a helper function (`const field = () => <label class="field">…`) is not inside a nested `<style>`'s element: move the block to the top level of the file, or render that JSX inside the styled element
 LUM3005 warning 709..731 `.missing :deep(.child)`: `.missing :deep(.child)` matches no element in component `Card`
   label `.missing`: no element has the class `missing`
-  help: Remove the rule, or wrap the selector in `:global()` if it targets elements outside this scope
+  help: Remove the rule, or wrap the selector in `:global()` if it targets elements outside this scope. JSX returned by a helper function (`const field = () => <label class="field">…`) is not inside a nested `<style>`'s element: move the block to the top level of the file, or render that JSX inside the styled element
 LUM3005 warning 805..812 `.absent`: `.absent` matches no element in component `Card`
   label `.absent`: no element has the class `absent`
-  help: Remove the rule, or wrap the selector in `:global()` if it targets elements outside this scope
+  help: Remove the rule, or wrap the selector in `:global()` if it targets elements outside this scope. JSX returned by a helper function (`const field = () => <label class="field">…`) is not inside a nested `<style>`'s element: move the block to the top level of the file, or render that JSX inside the styled element
 LUM3005 warning 883..887 `.bar`: `.bar` matches no element in component `Card`
   label `.bar`: no element has the class `bar`
-  help: Remove the rule, or wrap the selector in `:global()` if it targets elements outside this scope
+  help: Remove the rule, or wrap the selector in `:global()` if it targets elements outside this scope. JSX returned by a helper function (`const field = () => <label class="field">…`) is not inside a nested `<style>`'s element: move the block to the top level of the file, or render that JSX inside the styled element
 LUM3005 warning 1066..1073 `section`: `section` matches no element in this file
   label `section`: no element is a `<section>`
-  help: Remove the rule, or wrap the selector in `:global()` if it targets elements outside this scope
+  help: Remove the rule, or wrap the selector in `:global()` if it targets elements outside this scope. JSX returned by a helper function (`const field = () => <label class="field">…`) is not inside a nested `<style>`'s element: move the block to the top level of the file, or render that JSX inside the styled element
 === var() reads
 --progress

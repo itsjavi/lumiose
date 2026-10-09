@@ -174,7 +174,10 @@ fn rewrite_complex(
             .with_label(span(&simple.range), reason)
             .with_help(
                 "Remove the rule, or wrap the selector in `:global()` if it targets elements \
-                 outside this scope",
+                 outside this scope. JSX returned by a helper function (`const field = () => \
+                 <label class=\"field\">…`) is not inside a nested `<style>`'s element: move \
+                 the block to the top level of the file, or render that JSX inside the styled \
+                 element",
             ),
         );
     }

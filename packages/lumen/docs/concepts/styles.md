@@ -370,6 +370,10 @@ in the file-level block styles every template in the file.
 - **Expecting a nested block to style sibling subtrees.** A `<style>` inside an element only
   styles that element's subtree. Move it up to the common ancestor, or under the component's root
   element, to cover more.
+- **Styling JSX returned by a helper function.** In `const field = () => <label class="field">…`
+  inside a component, the helper's JSX is not inside the element that holds a nested `<style>`, so
+  `.field` matches nothing there (`LUM3005`). Move the block to the top level of the file (it
+  styles every element of the file), or render that JSX inside the styled element.
 
 ## Related diagnostics
 
