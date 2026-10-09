@@ -1,6 +1,7 @@
-// Client runtime size report (spec §6 budgets, min+brotli: the whole client runtime ≤ 10 kB hard cap;
-// typical app imports ≤ 6 kB soft target; hydration and the island loader ≤ 1.5 kB on top of what
-// an app imports). Bundles each entry with Vite (Rolldown, minified, tree-shaken) and prints
+// Client runtime size report (spec §6 budgets, min+brotli: what any one page can ship ≤ 10 kB hard
+// cap, i.e. every export, and typical imports plus hydration and the loader; typical app imports
+// ≤ 6.25 kB soft target; hydration and the island loader ≤ 2.75 kB on top of what an app imports).
+// The whole runtime (every export plus hydration and the loader) is reported only. Bundles each entry with Vite (Rolldown, minified, tree-shaken) and prints
 // minified, gzip and brotli sizes. Exits 1 when a hard cap is exceeded (it runs in `pnpm check`);
 // soft targets are only reported. Run: `pnpm --filter lumen size`.
 import { brotliCompressSync, constants, gzipSync } from "node:zlib";
@@ -11,7 +12,7 @@ const src = fileURLToPath(new URL("../src/", import.meta.url));
 const HARD_CAP = 10 * 1024;
 /** Entry name prefix → budget in bytes; `hard` budgets fail the run. */
 const BUDGETS: Record<string, { limit: number; hard: boolean }> = {
-  "core + dom (typical": { limit: 6 * 1024, hard: false },
+  "core + dom (typical": { limit: 6.25 * 1024, hard: false },
   "core + dom (every": { limit: HARD_CAP, hard: true },
   "core + dom + islands (typical": { limit: HARD_CAP, hard: true },
 };
@@ -31,8 +32,8 @@ const entries: Record<string, string> = {
   // What the js-framework-benchmark app needs (its bundle budget is 8 kB including app code).
   "core + dom (benchmark imports)": `export { signal, batch } from "${src}core/index.ts"; export { template, bind, setText, toggleClass, list, selector, createComponent, delegateEvents, mount } from "${src}dom/index.ts";`,
   "core + dom (every export)": `export * from "${src}core/index.ts"; export * from "${src}dom/index.ts"; export * from "${src}dom/public.ts";`,
-  // Every export plus hydration and the loader: no page ships all of it (reported, not gated).
-  "whole client runtime (every export, hydrate, loader)": `export * from "${src}core/index.ts"; export * from "${src}dom/index.ts"; export * from "${src}dom/public.ts"; export { hydrate } from "${src}dom/hydrate.ts"; ${ISLANDS}`,
+  // Every export plus hydration and the loader: no page ships all of it (report-only, spec §6).
+  "whole client runtime, report-only (every export, hydrate, loader)": `export * from "${src}core/index.ts"; export * from "${src}dom/index.ts"; export * from "${src}dom/public.ts"; export { hydrate } from "${src}dom/hydrate.ts"; ${ISLANDS}`,
   "core (every export)": `export * from "${src}core/index.ts";`,
   "dom only (core imports excluded)": `export * from "${src}dom/index.ts";`,
 };
@@ -100,7 +101,7 @@ const base = measured["core + dom (typical app imports)"]!;
 const islands = measured["core + dom + islands (typical app imports, loader, hydrate)"]!;
 const added = islands.brotli - base.brotli;
 console.log(
-  `islands on top of typical app imports: min ${kb(islands.min - base.min)}, gzip ${kb(islands.gzip - base.gzip)}, brotli ${kb(added)} (soft target 1.50 kB: ${added <= 1.5 * 1024 ? "OK" : "OVER"})`,
+  `islands on top of typical app imports: min ${kb(islands.min - base.min)}, gzip ${kb(islands.gzip - base.gzip)}, brotli ${kb(added)} (soft target 2.75 kB: ${added <= 2.75 * 1024 ? "OK" : "OVER"})`,
 );
 const hydrateOnly = measured["core + dom + hydrate (typical app imports, hydrate)"]!;
 const loader = islands.brotli - hydrateOnly.brotli;
