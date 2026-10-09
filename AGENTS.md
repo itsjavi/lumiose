@@ -122,6 +122,12 @@ the lock afterward.
 Do not hold the backlog write lock while implementing, testing,
 waiting for workers, or waiting for user input.
 
+Release a lock only if your `mkdir` created it. Never chain the
+release after the acquire with `;` (`mkdir L && cmd; rm -r L` removes
+someone else's lock when `mkdir` fails). Use
+`mkdir L && { cmd; rmdir L; }`, or a helper that checks it owns
+the lock before removing it.
+
 Release claims when work finishes, is handed off, or is blocked.
 Do not reclaim claims or locks based only on their age: first confirm
 the owning session has stopped or explicitly released ownership.
