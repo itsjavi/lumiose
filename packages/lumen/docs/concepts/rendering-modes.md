@@ -58,7 +58,9 @@ loader, and the build ships no hydration code.
 **Build (`lumen build`).** 1. client build (islands, SPA, CSS, assets, `public/`), 2. server
 build, 3. prerender of every `static` route (each `staticPaths()` entry for routes with params) and
 every static `GET` endpoint, in-process through the built handler and fully resolved (no fallbacks
-or swap scripts). Output:
+or swap scripts), 4. precompression: a `.br` and a `.gz` copy next to every text file of
+`dist/client` of at least 1 kB, which `@lumen/adapter-node` (and most static hosts and CDNs) serve
+to browsers that accept them. Output:
 
 - `dist/client`: assets and prerendered files. Assets include those only server-rendered code
   imports (`import photo from "./photo.png"` in a route, a relative `<img src>` in a `.md`

@@ -5,6 +5,7 @@
 // 2. Client environment → `dist/client`: the island loader and islands, assets, `public/`.
 // 3. Server environment → `dist/server/entry.js`, with the client build's island URLs.
 // 4. Prerender `static` routes and endpoints in-process through that entry (./prerender.ts).
+// 5. Precompress `dist/client` (`.br` and `.gz` copies, ./precompress.ts) for adapters to serve.
 //
 // The output deploys with `@lumen/adapter-node` (statics, then the handler); a site whose routes
 // are all static deploys with `dist/client` alone.
@@ -35,6 +36,7 @@ import type { TrailingSlash } from "../server/handler.ts";
 import { typegen } from "../typegen/index.ts";
 import { lumenBuild, type BuildState } from "./plugin.ts";
 import { ISLANDS_ID } from "../../vite/islands.ts";
+import { precompress } from "./precompress.ts";
 import { prerender, type PrerenderedFile, type ServerEntryModule } from "./prerender.ts";
 
 export interface BuildOptions {
@@ -62,6 +64,8 @@ export interface BuildResult {
   /** Prerendered files, relative to `clientDir`. */
   prerendered: PrerenderedFile[];
 }
+
+const kb = (bytes: number): string => `${(bytes / 1024).toFixed(1)} kB`;
 
 /** Route manifest errors and other problems found before building. */
 export class BuildError extends Error {
@@ -154,6 +158,12 @@ export async function build(options: BuildOptions = {}): Promise<BuildResult> {
     logger.info(`  ${normalizePath(relative(root, join(clientDir, file.file)))}`);
   }
   logger.info(`✓ ${prerendered.length} file${prerendered.length === 1 ? "" : "s"} prerendered.`);
+  const compressed = await precompress(clientDir);
+  if (compressed.files > 0) {
+    logger.info(
+      `✓ ${compressed.files} file${compressed.files === 1 ? "" : "s"} precompressed (.br, .gz): ${kb(compressed.bytes)} → ${kb(compressed.brotliBytes)} brotli.`,
+    );
+  }
   return { outDir: state.outDir, clientDir, serverEntry, prerendered };
 }
 

@@ -1,6 +1,8 @@
 // Static files of `dist/client` (assets, `public/`, prerendered pages and endpoints) for GET and
 // HEAD requests below the app's `base`. Content-hashed files in the assets directory are cached
 // for a year (`immutable`); everything else revalidates (ETag / Last-Modified, 304).
+// With `compress`, a client that accepts brotli or gzip gets the build's precompressed `.br`/`.gz`
+// copy of a file when there is one (`Vary: Accept-Encoding`).
 // Page URLs follow the build's `trailingSlash`: `/about` serves `about/index.html` (`ignore`),
 // redirects to `/about/` (`always`), or serves `about.html` (`never`, which redirects `/about/`).
 
@@ -9,6 +11,7 @@ import { stat } from "node:fs/promises";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { extname, join } from "node:path";
 import type { BuiltAppConfig } from "lumen/build";
+import { acceptedEncodings, varyOnEncoding } from "./compress.ts";
 
 /** Serves a request from the directory; resolves `false` when no file answers it. */
 export type StaticHandler = (req: IncomingMessage, res: ServerResponse) => Promise<boolean>;
@@ -49,7 +52,17 @@ const MIME_TYPES: Record<string, string> = {
 const IMMUTABLE = "public, max-age=31536000, immutable";
 const REVALIDATE = "public, max-age=0, must-revalidate";
 
-export function createStaticHandler(dir: string, config: BuiltAppConfig): StaticHandler {
+export interface StaticOptions {
+  /** Serve the precompressed `.br`/`.gz` copies to clients that accept them. Default: true. */
+  compress?: boolean;
+}
+
+export function createStaticHandler(
+  dir: string,
+  config: BuiltAppConfig,
+  options: StaticOptions = {},
+): StaticHandler {
+  const compress = options.compress !== false;
   const assetsPrefix = `${config.assetsDir.replace(/^\/+|\/+$/g, "")}/`;
 
   return async (req, res) => {
@@ -66,20 +79,22 @@ export function createStaticHandler(dir: string, config: BuiltAppConfig): Static
           return redirect(res, `${url.pathname.replace(/\/+$/, "")}${url.search}`);
         }
       }
-      return index === undefined ? false : send(req, res, index, `${path}index.html`, false);
+      return index === undefined
+        ? false
+        : send(req, res, index, `${path}index.html`, false, compress);
     }
     const file = await fileStats(dir, path);
     if (file !== undefined) {
-      return send(req, res, file, path, path.startsWith(assetsPrefix));
+      return send(req, res, file, path, path.startsWith(assetsPrefix), compress);
     }
     if (config.trailingSlash !== "always") {
       const page = await fileStats(dir, `${path}.html`);
-      if (page !== undefined) return send(req, res, page, `${path}.html`, false);
+      if (page !== undefined) return send(req, res, page, `${path}.html`, false, compress);
     }
     const index = await fileStats(dir, `${path}/index.html`);
     if (index === undefined) return false;
     if (config.trailingSlash === "always") return redirect(res, `${url.pathname}/${url.search}`);
-    return send(req, res, index, `${path}/index.html`, false);
+    return send(req, res, index, `${path}/index.html`, false, compress);
   };
 }
 
@@ -127,31 +142,66 @@ function redirect(res: ServerResponse, location: string): true {
   return true;
 }
 
-function send(
+const PRECOMPRESSED: Record<string, string> = { br: ".br", gzip: ".gz" };
+
+/** The precompressed copy of a file for the client's encoding, if the build wrote one. */
+async function variantOf(
+  req: IncomingMessage,
+  file: FileInfo,
+): Promise<{ encoding: string; file: FileInfo } | undefined> {
+  // br first, then gzip: a client that accepts both but finds no .br still gets the .gz.
+  for (const encoding of acceptedEncodings(req.headers["accept-encoding"])) {
+    const path = `${file.absolute}${PRECOMPRESSED[encoding]}`;
+    try {
+      const stats = await stat(path);
+      if (stats.isFile()) return { encoding, file: { absolute: path, stats } };
+    } catch {}
+  }
+  return undefined;
+}
+
+async function hasVariants(file: FileInfo): Promise<boolean> {
+  for (const suffix of Object.values(PRECOMPRESSED)) {
+    try {
+      if ((await stat(`${file.absolute}${suffix}`)).isFile()) return true;
+    } catch {}
+  }
+  return false;
+}
+
+async function send(
   req: IncomingMessage,
   res: ServerResponse,
-  { absolute, stats }: FileInfo,
+  original: FileInfo,
   path: string,
   immutable: boolean,
+  compress: boolean,
 ): Promise<true> {
-  const etag = `W/"${stats.size.toString(16)}-${Math.floor(stats.mtimeMs).toString(16)}"`;
+  const variant = compress ? await variantOf(req, original) : undefined;
+  const { absolute, stats } = variant?.file ?? original;
+  const tag = `${stats.size.toString(16)}-${Math.floor(stats.mtimeMs).toString(16)}`;
+  const etag = `W/"${variant === undefined ? tag : `${tag}-${variant.encoding}`}"`;
   const lastModified = stats.mtime.toUTCString();
   const headers: Record<string, string> = {
     "cache-control": immutable ? IMMUTABLE : REVALIDATE,
     etag,
     "last-modified": lastModified,
   };
+  if (variant !== undefined || (compress && (await hasVariants(original)))) {
+    headers.vary = varyOnEncoding(undefined);
+  }
   if (notModified(req, etag, stats.mtime)) {
     res.writeHead(304, headers);
     res.end();
-    return Promise.resolve(true);
+    return true;
   }
   headers["content-type"] = MIME_TYPES[extname(path).toLowerCase()] ?? "application/octet-stream";
+  if (variant !== undefined) headers["content-encoding"] = variant.encoding;
   headers["content-length"] = String(stats.size);
   res.writeHead(200, headers);
   if (req.method === "HEAD") {
     res.end();
-    return Promise.resolve(true);
+    return true;
   }
   return new Promise((resolve, reject) => {
     const stream = createReadStream(absolute);

@@ -2,7 +2,9 @@
 // Requests go to the static files of `dist/client` first (GET/HEAD), then to the app's
 // `export default { fetch }` from `dist/server/entry.js`, through lumen's Node bridge (streamed
 // responses, client disconnects abort the request). Configured `headers` go on every response
-// first, so the static files' and the app's own headers win.
+// first, so the static files' and the app's own headers win. Responses are compressed by default
+// (`compress: false` turns it off): static files from the build's precompressed `.br`/`.gz`
+// copies, the app's text responses on the fly (./compress.ts), streaming included.
 
 import {
   createServer as createHttpServer,
@@ -17,6 +19,7 @@ import { join, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import type { ServerEntryModule } from "lumen/build";
 import { sendWebResponse, toWebRequest } from "lumen/node";
+import { compressResponse, negotiateEncoding } from "./compress.ts";
 import { createStaticHandler } from "./static.ts";
 
 export interface HandlerOptions {
@@ -37,6 +40,13 @@ export interface HandlerOptions {
    * file's `cache-control`). `lumen preview` passes Vite's `preview.headers` (else `server.headers`).
    */
   headers?: OutgoingHttpHeaders;
+  /**
+   * Compress responses for clients that accept brotli or gzip: static files with the `.br`/`.gz`
+   * copies `lumen build` writes, the app's HTML, JSON and other text responses on the fly
+   * (brotli quality 4 or gzip 6; streamed HTML is flushed as it renders). Turn it off when a proxy
+   * or CDN in front compresses. Default: true.
+   */
+  compress?: boolean;
 }
 
 /** A Node request listener, also usable as connect/express middleware (errors go to `next`). */
@@ -68,7 +78,8 @@ export async function createHandler(options: HandlerOptions = {}): Promise<NodeH
 
 function nodeHandler(dir: string, entry: ServerEntryModule, options: HandlerOptions): NodeHandler {
   const app = options.env === undefined ? entry.default : entry.createHandler({ env: options.env });
-  const statics = createStaticHandler(join(dir, "client"), entry.config);
+  const compress = options.compress !== false;
+  const statics = createStaticHandler(join(dir, "client"), entry.config, { compress });
   const origin = options.origin ?? process.env.ORIGIN;
   const headers = Object.entries(options.headers ?? {}).filter(
     (header): header is [string, number | string | string[]] => header[1] !== undefined,
@@ -79,7 +90,16 @@ function nodeHandler(dir: string, entry: ServerEntryModule, options: HandlerOpti
     void (async () => {
       if (await statics(req, res)) return;
       const response = await app.fetch(toWebRequest(req, res, origin));
-      await sendWebResponse(res, response);
+      await sendWebResponse(
+        res,
+        compress
+          ? compressResponse(
+              response,
+              negotiateEncoding(req.headers["accept-encoding"]),
+              req.method,
+            )
+          : response,
+      );
     })().catch((error: unknown) => {
       if (next !== undefined) {
         next(error);

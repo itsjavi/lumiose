@@ -5,4 +5,4 @@
 export { createHandler, createServer } from "./server.ts";
 export type { HandlerOptions, LumenServer, NodeHandler, ServerOptions } from "./server.ts";
 export { createStaticHandler } from "./static.ts";
-export type { StaticHandler } from "./static.ts";
+export type { StaticHandler, StaticOptions } from "./static.ts";
