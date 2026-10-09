@@ -1,0 +1,158 @@
+# The checks of `pnpm check` on Linux, macOS and Windows, plus the Playwright suites: every suite on
+# Linux, a smoke subset on macOS and Windows. Runs on pushes and pull requests to main.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# A newer push to the same branch or PR cancels the older run.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+  # Keeps target/ small enough for the cache.
+  CARGO_INCREMENTAL: 0
+
+jobs:
+  check:
+    name: check (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      # rust-toolchain.toml selects the toolchain (with rustfmt and clippy).
+      - name: Rust toolchain
+        run: rustup toolchain install
+
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Build the native compiler
+        run: pnpm build:compiler
+
+      - run: pnpm typecheck
+      - run: pnpm lint
+      - run: pnpm fmt:examples
+      - run: pnpm --filter lumen size
+      - run: pnpm test
+
+      - run: cargo fmt --all --check
+      - run: cargo clippy --workspace --all-targets -- -D warnings
+      - run: cargo test --workspace
+
+  e2e:
+    name: e2e (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Every Playwright suite.
+          - os: ubuntu-latest
+            suites: all
+          # A smoke subset: dev and preview servers, SSR, islands and HMR.
+          - os: macos-latest
+            suites: examples/vite-counter examples/islands-e2e
+          - os: windows-latest
+            suites: examples/vite-counter examples/islands-e2e
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Rust toolchain
+        shell: bash
+        run: |
+          rustup toolchain install
+          # The playground (in "all") runs the WebAssembly compiler.
+          if [ "${{ matrix.suites }}" = all ]; then rustup target add wasm32-unknown-unknown; fi
+
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+
+      # Must match the workspace's wasm-bindgen pin in Cargo.toml.
+      - if: matrix.suites == 'all'
+        uses: taiki-e/install-action@f7e5d7c961414b23f5b25b2da9294395d08513ad # v2.87.26
+        with:
+          tool: wasm-bindgen@0.2.129
+
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Build the native compiler
+        run: pnpm build:compiler
+
+      - name: Playwright version
+        id: playwright
+        shell: bash
+        run: echo "version=$(pnpm --filter @lumen-examples/vite-counter exec playwright --version | awk '{print $2}')" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        id: browsers
+        with:
+          path: |
+            ~/.cache/ms-playwright
+            ~/Library/Caches/ms-playwright
+            ~/AppData/Local/ms-playwright
+          key: playwright-${{ runner.os }}-${{ steps.playwright.outputs.version }}
+
+      - name: Install Chromium
+        if: steps.browsers.outputs.cache-hit != 'true'
+        run: pnpm --filter @lumen-examples/vite-counter exec playwright install --with-deps chromium
+
+      - name: Chromium system dependencies
+        if: steps.browsers.outputs.cache-hit == 'true' && runner.os == 'Linux'
+        run: pnpm --filter @lumen-examples/vite-counter exec playwright install-deps chromium
+
+      - name: Playwright suites
+        shell: bash
+        run: |
+          if [ "${{ matrix.suites }}" = all ]; then
+            suites=$(ls -d examples/*/playwright.config.ts apps/*/playwright.config.ts | xargs -n1 dirname)
+          else
+            suites="${{ matrix.suites }}"
+          fi
+          failed=""
+          for suite in $suites; do
+            echo "::group::$suite"
+            (cd "$suite" && pnpm exec playwright test --reporter=line) || failed="$failed $suite"
+            echo "::endgroup::"
+          done
+          if [ -n "$failed" ]; then
+            echo "::error::Playwright suites failed:$failed"
+            exit 1
+          fi
+
+      - if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: playwright-results-${{ matrix.os }}
+          path: |
+            examples/*/test-results
+            apps/*/test-results
+          if-no-files-found: ignore
+          retention-days: 7
