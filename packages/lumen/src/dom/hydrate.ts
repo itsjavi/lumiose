@@ -416,7 +416,10 @@ export function hydrate<P extends object>(
   const name = DEV ? component.name || "(anonymous)" : "";
   // Slot sources: `<template data-l-slot>` (slots the server did not render) right after `start`,
   // and the nodes of each slot rendered inline (copied only if a slot renders a copy).
-  const sources: Record<string, SlotSource> = {};
+  // Dev: a hot swap renders the island again (fresh), with the slot sources of its first render.
+  const kept = start as Node & { $$slots?: Record<string, SlotSource> };
+  const sources: Record<string, SlotSource> = (DEV && kept.$$slots) || {};
+  if (DEV) kept.$$slots = sources;
   for (
     let el = start.nextSibling as Element;
     el.nodeName === "TEMPLATE" && el.hasAttribute("data-l-slot");

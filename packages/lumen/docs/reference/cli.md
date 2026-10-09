@@ -37,6 +37,12 @@ lumen help --format json      # every command, for agents
 
 Starts the Vite dev server with SSR and HMR, until interrupted.
 
+What an edit updates: a stylesheet or a file's `<style>` block updates in place; an island's own
+module re-renders the island's instances in the browser from their props (the page, its scroll
+position and the other islands keep their state; the edited island starts afresh); any other
+server-rendered code reloads the page. An island module that other client modules import also
+reloads, since they would keep its old exports.
+
 ```sh
 lumen dev --port 3000
 lumen dev --format json   # one line once listening: { "command": "dev", "ok": true, "url": "http://localhost:5173/", "urls": { "local": [...], "network": [...] } }

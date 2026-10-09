@@ -47,6 +47,7 @@ import { RejectedRequest, sendWebResponse, toWebRequest } from "../server/node-h
 import { typegen } from "../typegen/index.ts";
 import { formatError, overlayError, overlayScript, type OverlayError } from "./errors.ts";
 import { hasSpa, SPA_ENTRY_ID, spaEntryCode } from "../router/entry.ts";
+import { ISLANDS_ID } from "../../vite/islands.ts";
 import { headersFor, pathBelowBase } from "../headers.ts";
 
 /** How long a burst of file events may last and still reload the browser once. */
@@ -370,6 +371,26 @@ export function lumenDev(options: LumenDevOptions = {}): Plugin {
       };
     },
 
+    // Dev: an island module accepts its own updates and re-renders its instances (TASK-147); the
+    // loader (lumen/dom islands.ts) answers whether it did, else the update falls back to a reload.
+    // Before Vite's import analysis, which marks the module self-accepting.
+    transform: {
+      handler(code, id) {
+        if (this.environment !== server?.environments.client) return;
+        const module = islandModuleOf(id.split("?", 1)[0]!);
+        if (module === undefined) return;
+        return {
+          code: `${code}
+if (import.meta.hot) import.meta.hot.accept((next) => {
+  const hot = globalThis[Symbol.for("lumen.hot")];
+  if (!next || !hot || !hot.reduce((done, swap) => swap(${JSON.stringify(module)}, next) || done, false)) import.meta.hot.invalidate();
+});
+`,
+          map: null,
+        };
+      },
+    },
+
     hotUpdate: {
       order: "post",
       handler({ file, modules, timestamp }) {
@@ -379,6 +400,11 @@ export function lumenDev(options: LumenDevOptions = {}): Plugin {
         // request re-imports them; unrelated server modules (a database client) stay loaded.
         invalidateRunner(file);
         const client = server.environments.client.hot;
+        if (hotSwappable(file)) {
+          // An island's own module: its instances re-render in the browser (the accept handler
+          // appended by `transform`), so the page and the other islands keep their state.
+          return [];
+        }
         if (modules.every((mod) => isStylesheet(mod.url))) {
           client.send({
             type: "update",
@@ -396,6 +422,37 @@ export function lumenDev(options: LumenDevOptions = {}): Plugin {
       },
     },
   };
+
+  /** The ref module (`/src/Counter.stsx`) of the island module at `id`, if it is one. */
+  function islandModuleOf(id: string): string | undefined {
+    for (const [module, specifier] of islandModules(server.config)) {
+      if (
+        specifier === id ||
+        (specifier.startsWith("/") && normalizePath(join(root, specifier)) === id)
+      ) {
+        return module;
+      }
+    }
+    return undefined;
+  }
+
+  /**
+   * Whether an edit of `file` can update in the browser without a reload: it is an island module
+   * the page has loaded, imported only by the island manifest (another importer would keep using
+   * the old exports).
+   */
+  function hotSwappable(file: string): boolean {
+    if (islandModuleOf(file) === undefined) return false;
+    const mods = server.environments.client.moduleGraph.getModulesByFile(file);
+    if (mods === undefined || mods.size === 0) return false;
+    for (const mod of mods) {
+      if (mod.importers.size === 0) return false;
+      for (const importer of mod.importers) {
+        if (importer.id !== ISLANDS_ID) return false;
+      }
+    }
+    return true;
+  }
 
   function invalidateRunner(file: string): void {
     const ssr = server.environments.ssr;

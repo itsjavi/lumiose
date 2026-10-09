@@ -19,6 +19,9 @@ import { decodeData } from "../server/serialize.ts";
 import { DEV } from "./dev.ts";
 import { hydrate } from "./hydrate.ts";
 
+/** Dev: re-renders the hydrated instances of an edited island module; false when it cannot. */
+type HotSwap = (module: string, exports: unknown) => boolean;
+
 /** Island ref (`/src/Counter.stsx#Counter`) → import of the component (`virtual:lumen/islands`). */
 export type IslandManifest = Record<string, () => Promise<unknown>>;
 
@@ -39,6 +42,8 @@ interface Island {
   w?: boolean;
   /** Events caught before hydration, with their target's value at the time. */
   q?: [Event, unknown][];
+  /** Dev: disposes the hydrated island (for a hot swap). */
+  x?: () => void;
 }
 
 /**
@@ -47,6 +52,34 @@ interface Island {
  */
 export function loadIslands(manifest: IslandManifest): () => void {
   const islands: Record<number, Island> = {};
+  if (DEV) {
+    // Hot swap (TASK-147): an edited island module re-renders its hydrated instances on the client
+    // from their serialized props; the page and other islands keep their state. False makes the
+    // module's accept handler fall back to a reload.
+    const hot = ((globalThis as Record<symbol, HotSwap[]>)[Symbol.for("lumen.hot")] ??= []);
+    hot.push((module, exports) => {
+      let swapped = false;
+      for (const id in islands) {
+        const island = islands[id]!;
+        if (island.g !== 2 || !island.ref.startsWith(`${module}#`)) continue;
+        const component = (exports as Record<string, unknown>)[island.ref.slice(module.length + 1)];
+        if (typeof component !== "function") return false;
+        island.x?.();
+        while (island.s!.nextSibling !== island.e) (island.s!.nextSibling as ChildNode).remove();
+        island.x = hydrate(
+          component as Component<object>,
+          decodeData(island.props) as object,
+          island.s!,
+          island.e!,
+          island.awaits,
+          island.slots,
+          true,
+        );
+        swapped = true;
+      }
+      return swapped;
+    });
+  }
 
   const scan = (): void => {
     let added = false;
@@ -171,7 +204,7 @@ export function loadIslands(manifest: IslandManifest): () => void {
       throw new Error(`Lumen: the island ${island.ref} is missing from virtual:lumen/islands.`);
     }
     void load!().then((component) => {
-      hydrate(
+      const dispose = hydrate(
         component as Component<object>,
         decodeData(island.props) as object,
         island.s!,
@@ -180,6 +213,7 @@ export function loadIslands(manifest: IslandManifest): () => void {
         island.slots,
         island.strategy === "only",
       );
+      if (DEV) island.x = dispose;
       island.g = 2;
       // Replayed awaits resolve in microtasks: dispatch caught events once they rendered.
       setTimeout(() => replay(island));

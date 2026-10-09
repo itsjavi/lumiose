@@ -5,7 +5,7 @@ status: To Do
 assignee:
   - Photon
 created_date: '2026-10-09 05:24'
-updated_date: '2026-10-09 12:12'
+updated_date: '2026-10-09 12:32'
 labels:
   - dev
   - hmr
@@ -30,4 +30,6 @@ Planned only (user 2026-10-09: 'plan only') — do not start without the user's 
 
 <!-- SECTION:NOTES:BEGIN -->
 User 2026-10-09: approved (no hacks; fall back to the current reload when a change cannot be applied safely).
+
+Spark (TASK-147 done): island hot swap re-renders whole island instances via an accept handler appended by lumen dev (app/dev/plugin.ts transform) and a DEV-only HotSwap list in lumen/dom islands.ts (globalThis[Symbol.for('lumen.hot')]). When your component registry lands, the island path can delegate to it for finer updates; the shape I would consume: registry.update(moduleId, exports) → boolean (false = cannot apply, reload).
 <!-- SECTION:NOTES:END -->
