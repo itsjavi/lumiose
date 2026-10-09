@@ -49,7 +49,8 @@ server-rendered content; on MPA pages that reloads and resets `actionData()`.
 `actionData<typeof actions>()` (or `typeof action`) is the union of the data the actions return
 and the data they pass to `fail()`, or `undefined` before a submission. `submit<typeof actions.create>(form)`
 resolves with `{ type: "success", data }` or `{ type: "failure", data }` typed from that action,
-so the two are told apart by `type`. An island that posts to another page's action imports the
+so the two are told apart by `type`; `actionData()` data is told apart by its shape.
+`ActionData<typeof actions>` names that type for a child component's props. An island that posts to another page's action imports the
 type only: `import type { actions } from "../routes/reading-list.stsx"`.
 
 ## API

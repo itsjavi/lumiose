@@ -1,11 +1,16 @@
-import { actionData, fail, href, redirect, Title, url, type ActionContext } from "lumen";
-import { validateLogin } from "../../lib/validation.ts";
+import {
+  actionData,
+  fail,
+  href,
+  redirect,
+  Title,
+  url,
+  type ActionContext,
+  type ActionData,
+} from "lumen";
+import { validateLogin, type LoginInput } from "../../lib/validation.ts";
 import { auth, safeRedirectPath } from "../../server/auth.server.ts";
-
-interface LoginFailure {
-  email: string;
-  errors: { email?: string; password?: string };
-}
+import type { FieldErrors } from "../../types.ts";
 
 export const action = async (ctx: ActionContext<"/login">) => {
   const form = await ctx.formData();
@@ -13,7 +18,11 @@ export const action = async (ctx: ActionContext<"/login">) => {
   const parsed = validateLogin(form);
   if (!parsed.ok) return fail(400, { email, errors: parsed.errors });
   const user = await auth().authenticate(parsed.value.email, parsed.value.password);
-  if (user === null) return fail(400, { email, errors: { password: "Wrong email or password." } });
+  if (user === null) {
+    // Typed as the field errors, so `failed.errors` has one shape for both failures.
+    const errors: FieldErrors<keyof LoginInput> = { password: "Wrong email or password." };
+    return fail(400, { email, errors });
+  }
   await auth().login(ctx.cookies, user.id);
   redirect(safeRedirectPath(ctx.url.searchParams.get("next")));
 };
@@ -22,7 +31,7 @@ export default function Login() {
   return <LoginForm failed={actionData<typeof action>()} next={url().searchParams.get("next")} />;
 }
 
-function LoginForm(props: { failed: LoginFailure | undefined; next: string | null }) {
+function LoginForm(props: { failed: ActionData<typeof action> | undefined; next: string | null }) {
   return (
     <main>
       <Title>Sign in · Bookshelf</Title>

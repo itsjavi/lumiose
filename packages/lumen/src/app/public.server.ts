@@ -3,6 +3,7 @@
 export { actionData, invalidate, submit, submitting } from "./actions/server.ts";
 export type { SubmitOptions, SubmitTarget } from "./actions/client.ts";
 export { fail, type ActionFailure, type ActionResult } from "./actions/protocol.ts";
+export type { ActionData } from "./actions/types.ts";
 export { isFetchError, type FetchError } from "./fetch-json.ts";
 export { fetchJSON } from "./server/fetch-json.ts";
 export { href, type HrefArgs } from "./routes/href.ts";

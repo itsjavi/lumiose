@@ -14,7 +14,7 @@ import {
   type ActionResponseBody,
   type ActionResult,
 } from "./protocol.ts";
-import type { ActionFailureData, ActionsExport, ActionSuccessData } from "./types.ts";
+import type { ActionData, ActionFailureData, ActionsExport, ActionSuccessData } from "./types.ts";
 
 /** What `submit()` posts: a form, its submit event (`onSubmit={submit}`), or the fields. */
 export type SubmitTarget =
@@ -68,10 +68,7 @@ export function actionData(): unknown;
  * Typed by the page's actions: `actionData<typeof actions>()` (or `typeof action`) is the data an
  * action returned or passed to `fail()`, or `undefined` before a submission.
  */
-export function actionData<A extends ActionsExport>():
-  | ActionSuccessData<A>
-  | ActionFailureData<A>
-  | undefined;
+export function actionData<A extends ActionsExport>(): ActionData<A> | undefined;
 export function actionData(): unknown {
   return dataSignal()();
 }

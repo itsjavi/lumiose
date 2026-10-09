@@ -16,7 +16,7 @@ Prism's DX review of the three sample apps (TASK-38) found boilerplate and unche
 - `PageProps<"/books/[isbn]">` → `{ params }` (replaces `RouteProps`).
 - `LayoutProps<"/books">` → `{ params, children }`.
 - `RequestContext<P>`, `ActionContext<P>`, `Action<P>`, `Endpoint<P>` take the pattern: `export const actions = { save: (ctx: ActionContext<"/books/[isbn]">) => … }`.
-- Action results are inferred from the `actions` export, never cast: `actionData<typeof actions>()` returns the union of every action's data and `fail()` data (or `undefined`), discriminated so success and failure are told apart; `submit<typeof actions.save>(form)` infers its data and failure types. A single `export const action` works the same with `typeof action`.
+- Action results are inferred from the `actions` export, never cast: `actionData<typeof actions>()` returns the union of every action's data and `fail()` data (or `undefined`), told apart by shape as with React Router's `useActionData` and SvelteKit's `form` (no runtime marker; amended 2026-10-09); `ActionData<typeof actions>` names that type for the props of a component that receives it; `submit<typeof actions.save>(form)` infers its data and failure types, discriminated by `type`. A single `export const action` works the same with `typeof action`.
 
 React Router's `./+types/<route>` import was considered: it avoids repeating the pattern, but relies on a generated relative path per file that agents often get wrong; Lumen already uses pattern literals (`RouteParams`, `href()`), so one convention covers everything.
 

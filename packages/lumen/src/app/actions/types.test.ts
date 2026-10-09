@@ -4,6 +4,7 @@ import { describe, expectTypeOf, it } from "vitest";
 import type { ActionContext } from "../server/context.ts";
 import { actionData, submit } from "./client.ts";
 import { fail, type ActionResult } from "./protocol.ts";
+import type { ActionData } from "./types.ts";
 
 interface Review {
   id: number;
@@ -26,6 +27,15 @@ describe("actionData<typeof actions>()", () => {
   it("is the union of the actions' data and fail() data, or undefined", () => {
     expectTypeOf(actionData<typeof actions>).returns.toEqualTypeOf<
       Review | undefined | { errors: string[] } | { reason: "locked" }
+    >();
+  });
+
+  it("is ActionData<typeof actions>, for the props of a component that receives it", () => {
+    expectTypeOf<ActionData<typeof actions>>().toEqualTypeOf<
+      Review | undefined | { errors: string[] } | { reason: "locked" }
+    >();
+    expectTypeOf<ActionData<typeof action>>().toEqualTypeOf<
+      { welcome: true } | { email: string } | undefined
     >();
   });
 

@@ -10,6 +10,7 @@ export {
   type SubmitTarget,
 } from "./actions/client.ts";
 export { fail, type ActionFailure, type ActionResult } from "./actions/protocol.ts";
+export type { ActionData } from "./actions/types.ts";
 export { fetchJSON, isFetchError, type FetchError } from "./fetch-json.ts";
 export { href, type HrefArgs } from "./routes/href.ts";
 export type {
@@ -32,6 +33,7 @@ export {
 } from "./server/control.ts";
 export {
   cookies,
+  cspNonce,
   env,
   locals,
   params,

@@ -93,10 +93,10 @@ Whether a `submit()` is in flight; with a name, one to that named action (`?/nam
 ```ts
 function actionData(): unknown;
 // Typed by the page's actions: actionData<typeof actions>() or actionData<typeof action>()
-function actionData<A extends ActionsExport>():
+function actionData<A extends ActionsExport>(): ActionData<A> | undefined;
+type ActionData<A extends ActionsExport> =
   | ActionSuccessData<A> // what the actions return (not fail() or a Response); void → undefined
-  | ActionFailureData<A> // the data they pass to fail()
-  | undefined;
+  | ActionFailureData<A>; // the data they pass to fail()
 // typeof action, typeof actions or typeof actions.name
 type ActionsExport =
   | ((ctx: never) => unknown)
@@ -104,7 +104,10 @@ type ActionsExport =
 ```
 
 The data of the last action result: what the action returned, or its `fail()` data. The type
-argument is the actions export itself, never a data type: the result types are inferred from it. Reactive in
+argument is the actions export itself, never a data type: the result types are inferred from it.
+`ActionData<typeof actions>` names the same type, for the props of a component that receives it
+(`failed: ActionData<typeof action> | undefined`). Success and failure data are told apart by
+their shape, as with React Router's `useActionData` and SvelteKit's `form`. Reactive in
 the browser; after a no-JS form post it starts with the data the page was rendered with. On the
 server: the current request's action result while the page re-renders after a post.
 

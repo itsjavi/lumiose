@@ -27,3 +27,10 @@ export type ActionSuccessData<A extends ActionsExport> = Data<
 /** The data the actions pass to `fail(status, data)`. */
 export type ActionFailureData<A extends ActionsExport> =
   Outcome<A> extends infer R ? (R extends ActionFailure<infer D> ? D : never) : never;
+
+/**
+ * What `actionData<A>()` returns once an action ran: the data the actions return or pass to
+ * `fail()`. Types the props of a component that receives it: `failed: ActionData<typeof action>`.
+ * Success and failure data are told apart by their shape (no runtime marker).
+ */
+export type ActionData<A extends ActionsExport> = ActionSuccessData<A> | ActionFailureData<A>;
