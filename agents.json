@@ -35,6 +35,11 @@
       "role": "Tooling and DX engineer. Owns the CLI and `lumen check`, shadow-TSX type checking, the .stsx language server (TS 7 LSP proxy + CSS) and VS Code extension, lint/format wrappers, TS 7 typings, docs site, and agent-facing surfaces (AGENTS.md, llms.txt, skills, MCP server).",
       "canWrite": true,
       "canCommit": true
+    },
+    "Quasar": {
+      "role": "Comparison-app engineer (React). Owns the React Router and Next.js implementations of the fullstack comparison benchmark (doc-4) and its shared data, CSS and React UI packages.",
+      "canWrite": true,
+      "canCommit": true
     }
   }
 }

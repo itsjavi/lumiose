@@ -3,6 +3,9 @@ packages:
   - apps/*
   - examples/*
   - benchmarks/*
+  - benchmarks/fullstack/apps/*
+  - benchmarks/fullstack/packages/*
+  - benchmarks/fullstack/harness
 allowBuilds:
   "@vscode/vsce-sign": false
 minimumReleaseAgeExclude:
