@@ -1791,11 +1791,13 @@ a page may export `headers(ctx)`. They are writable **until the shell is sent** 
 `LUM5004`.
 
 **Env.** `env("NAME")` reads server env variables (the adapter's env, else `process.env`) in
-server-only code. Only `import.meta.env.PUBLIC_*` reaches client code; `publicEnv()` returns that
-subset.
+server-only code. Only `import.meta.env.PUBLIC_*` reaches client code (`lumen/vite` sets Vite's
+`envPrefix` to `"PUBLIC_"` unless the config sets its own); `publicEnv()` returns that subset.
 
 **Server-only code** lives in `*.server.ts` modules and under `src/server/`. Importing it from code
-that reaches the browser is `LUM4003`.
+that reaches the browser is `LUM4003`, also through a web worker, `new URL("…", import.meta.url)`
+or a `?raw`/`?url` import. `lumen dev` does not serve these files over HTTP either: they are added
+to Vite's `server.fs.deny` unless the config sets its own list (the server still loads them).
 
 > **Status:** the request handler, middleware, endpoints, cookies, env and error pages are
 > available, served by `lumen dev` and by the build output (`lumen preview`,
@@ -2864,6 +2866,11 @@ bounded body) and middleware alike, in every deployment. Raise or lower them for
 **Default response headers.** `X-Content-Type-Options: nosniff` (no MIME sniffing of uploads and
 JSON) and `Referrer-Policy: strict-origin-when-cross-origin` (no full URLs to other sites) go on
 every response; override them in `lumen({ headers })`, or remove one with `""`.
+
+**Server-only code** (`*.server.*` files, `src/server/`) never reaches the browser: imports from
+client code fail `lumen dev`/`lumen build` (`LUM4003`), `lumen dev` refuses to serve the files
+(`server.fs.deny`), and only `import.meta.env.PUBLIC_*` variables reach client code (`envPrefix`).
+See [Server](server.md).
 
 **Secrets.** `signedCookie()` needs a secret of at least 32 bytes in production
 (`LUMEN_SECRET`); a shorter one throws when the cookie is used (in development it warns).
@@ -6613,6 +6620,12 @@ the request APIs only exist on the server. Importing them into code that reaches
 (islands, SPA routes, client entries, and everything they import, directly or not) would ship
 server code and secrets in the client bundle, or fail at runtime. Server code (pages rendered on
 the server, endpoints, actions) imports them freely; stylesheets of `.server.stsx` files are fine.
+
+Every way into the client graph counts: imports (static or dynamic, also `?raw` and `?url`), web
+workers, and `new URL("./db.server.ts", import.meta.url)`, which would ship the file as an asset.
+Files are matched by their real path (a symlink to a server-only file is server-only) and
+case-insensitively; a sibling workspace folder outside the Vite root follows the same rule from its
+own `package.json` folder. Dependencies in `node_modules` are not checked.
 
 ```text
 LUM4003: src/server/db.server.ts is server-only, but client code imports it:

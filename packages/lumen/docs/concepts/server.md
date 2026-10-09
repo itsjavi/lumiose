@@ -39,11 +39,13 @@ a page may export `headers(ctx)`. They are writable **until the shell is sent** 
 `LUM5004`.
 
 **Env.** `env("NAME")` reads server env variables (the adapter's env, else `process.env`) in
-server-only code. Only `import.meta.env.PUBLIC_*` reaches client code; `publicEnv()` returns that
-subset.
+server-only code. Only `import.meta.env.PUBLIC_*` reaches client code (`lumen/vite` sets Vite's
+`envPrefix` to `"PUBLIC_"` unless the config sets its own); `publicEnv()` returns that subset.
 
 **Server-only code** lives in `*.server.ts` modules and under `src/server/`. Importing it from code
-that reaches the browser is `LUM4003`.
+that reaches the browser is `LUM4003`, also through a web worker, `new URL("…", import.meta.url)`
+or a `?raw`/`?url` import. `lumen dev` does not serve these files over HTTP either: they are added
+to Vite's `server.fs.deny` unless the config sets its own list (the server still loads them).
 
 > **Status:** the request handler, middleware, endpoints, cookies, env and error pages are
 > available, served by `lumen dev` and by the build output (`lumen preview`,

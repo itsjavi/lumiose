@@ -125,6 +125,11 @@ bounded body) and middleware alike, in every deployment. Raise or lower them for
 JSON) and `Referrer-Policy: strict-origin-when-cross-origin` (no full URLs to other sites) go on
 every response; override them in `lumen({ headers })`, or remove one with `""`.
 
+**Server-only code** (`*.server.*` files, `src/server/`) never reaches the browser: imports from
+client code fail `lumen dev`/`lumen build` (`LUM4003`), `lumen dev` refuses to serve the files
+(`server.fs.deny`), and only `import.meta.env.PUBLIC_*` variables reach client code (`envPrefix`).
+See [Server](server.md).
+
 **Secrets.** `signedCookie()` needs a secret of at least 32 bytes in production
 (`LUMEN_SECRET`); a shorter one throws when the cookie is used (in development it warns).
 `{ allowWeakSecret: true }` opts out.

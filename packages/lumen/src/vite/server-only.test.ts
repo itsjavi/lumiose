@@ -32,23 +32,37 @@ mount(() => <Likes />, document.body);
   "src/entry.server.ts": `import { like } from "./lib/db.server.ts";
 export { like };
 `,
+  // TASK-170 bypasses.
+  "src/asset.ts": `export const secrets = new URL("./server/secrets.ts", import.meta.url).href;\n`,
+  "src/worker.ts": `import { like } from "./lib/db.server.ts";\nself.onmessage = () => like();\n`,
+  "src/spawn.ts": `export const worker = new Worker(new URL("./worker.ts", import.meta.url), { type: "module" });\n`,
+  "src/raw.ts": `import code from "./server/secrets.ts?raw";\nexport { code };\n`,
+  "src/outside.ts": `import { token } from "../../shared/src/server/token.ts";\nexport { token };\n`,
+  "src/linked.ts": `import { SECRET } from "./lib/alias.ts";\nexport { SECRET };\n`,
 };
 
+let base: string;
 let root: string;
 
 beforeAll(() => {
   if (!binding) return;
-  root = realpathSync(mkdtempSync(join(tmpdir(), "lumen-server-only-")));
+  base = realpathSync(mkdtempSync(join(tmpdir(), "lumen-server-only-")));
+  root = join(base, "app");
   for (const [name, code] of Object.entries(FILES)) {
     mkdirSync(dirname(join(root, name)), { recursive: true });
     writeFileSync(join(root, name), code);
   }
   mkdirSync(join(root, "node_modules"));
   symlinkSync(lumenRoot, join(root, "node_modules/lumen"), "dir");
+  // A sibling workspace folder outside the Vite root, and a symlink to a server-only file.
+  mkdirSync(join(base, "shared/src/server"), { recursive: true });
+  writeFileSync(join(base, "shared/package.json"), `{ "name": "shared" }\n`);
+  writeFileSync(join(base, "shared/src/server/token.ts"), `export const token = "t0k3n";\n`);
+  symlinkSync(join(root, "src/server/secrets.ts"), join(root, "src/lib/alias.ts"));
 });
 
 afterAll(() => {
-  if (root) rmSync(root, { recursive: true, force: true });
+  if (base) rmSync(base, { recursive: true, force: true });
 });
 
 function clientBuild(input: string) {
@@ -75,6 +89,23 @@ describe.skipIf(!binding)("LUM4003", () => {
     expect(error!.message).toContain("LUM4003: src/server/secrets.ts is server-only");
     await expect(clientBuild("src/clean.tsx")).resolves.toBeDefined();
   }, 30_000);
+
+  it("closes the bypasses: new URL, workers, ?raw, packages outside the root, symlinks (TASK-170)", async () => {
+    const failure = (input: string) =>
+      clientBuild(input).then(
+        () => "built",
+        (thrown: unknown) => (thrown as Error).message,
+      );
+    expect(await failure("src/asset.ts")).toContain(
+      'LUM4003: src/server/secrets.ts is server-only, but client code references it with new URL("./server/secrets.ts", import.meta.url)',
+    );
+    expect(await failure("src/spawn.ts")).toContain("LUM4003: src/lib/db.server.ts is server-only");
+    expect(await failure("src/raw.ts")).toContain("LUM4003: src/server/secrets.ts is server-only");
+    expect(await failure("src/outside.ts")).toContain(
+      "LUM4003: ../shared/src/server/token.ts is server-only",
+    );
+    expect(await failure("src/linked.ts")).toContain("LUM4003");
+  }, 60_000);
 
   it("leaves server builds alone", async () => {
     await expect(
@@ -118,6 +149,32 @@ describe.skipIf(!binding)("LUM4003", () => {
   }, 30_000);
 });
 
+describe.skipIf(!binding)("decision-29 defaults", () => {
+  it("exposes only PUBLIC_ variables and denies server-only files over HTTP; both overridable", async () => {
+    const config = async (extra: object) => {
+      const server = await createServer({
+        root,
+        configFile: false,
+        logLevel: "silent",
+        plugins: [lumen()],
+        appType: "custom",
+        server: { middlewareMode: true, ws: false, watch: null },
+        ...extra,
+      });
+      await server.close();
+      return server.config;
+    };
+    const defaults = await config({});
+    expect(defaults.envPrefix).toBe("PUBLIC_");
+    expect(defaults.server.fs.deny).toEqual(
+      expect.arrayContaining([".env", "**/.git/**", `${root}/**/*.server.*`, `${root}/src/server/**`]),
+    );
+    const own = await config({ envPrefix: "APP_", server: { fs: { deny: [".env"] } } });
+    expect(own.envPrefix).toBe("APP_");
+    expect(own.server.fs.deny).toEqual([".env"]);
+  });
+});
+
 describe("isServerOnly", () => {
   it("matches *.server.* files and src/server/ of the project, not CSS or dependencies", () => {
     expect(isServerOnly("/app/src/lib/db.server.ts", "/app")).toBe(true);
@@ -128,7 +185,12 @@ describe("isServerOnly", () => {
     expect(isServerOnly("/app/src/components/server/Nav.stsx", "/app")).toBe(false);
     expect(isServerOnly("/app/src/serverless.ts", "/app")).toBe(false);
     expect(isServerOnly("/app/node_modules/x/index.server.js", "/app")).toBe(false);
-    expect(isServerOnly("/repo/packages/lumen/src/index.server.ts", "/app")).toBe(false);
+    // Case-insensitive file systems: any spelling.
+    expect(isServerOnly("/app/SRC/Server/db.ts", "/app")).toBe(true);
+    expect(isServerOnly("/app/src/lib/Db.SERVER.ts", "/app")).toBe(true);
+    // A query does not hide the file; a stylesheet is not code.
+    expect(isServerOnly("/app/src/server/db.ts?raw", "/app")).toBe(true);
+    expect(isServerOnly("/app/src/x.css?url&server.ts", "/app")).toBe(false);
   });
 
   it("follows the first importer up to an entry, without cycles", () => {

@@ -33,7 +33,7 @@
 
 import { readFileSync } from "node:fs";
 import { readFile } from "node:fs/promises";
-import { dirname, join } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import type { Diagnostic } from "@lumen/compiler";
 import { writeLumenTsconfig } from "../cli/check/layout.ts";
 import {
@@ -45,6 +45,7 @@ import {
   type Plugin,
   type ResolvedConfig,
   type Rollup,
+  type UserConfig,
   type ViteDevServer,
 } from "vite";
 import { contentOf, contentOptionsOf } from "./content.ts";
@@ -93,6 +94,20 @@ const LUMEN_ENTRIES = [
 ];
 /** Stylesheets Vite's CSS pipeline handles (its `CSS_LANGS_RE`). */
 const STYLESHEET = /\.(?:css|less|sass|scss|styl|stylus|pcss|postcss|sss)(?:$|\?)/;
+/** `path` as a literal glob prefix (Vite matches `server.fs.deny` with picomatch). */
+function globEscape(path: string): string {
+  return path.replace(/[()[\]{}*?!+@]/g, "\\$&");
+}
+
+/** Vite 8's default `server.fs.deny`, kept when Lumen adds server-only files to it. */
+const VITE_FS_DENY = [
+  ".env",
+  ".env.*",
+  "*.{crt,pem,key,p12,pfx,cer,der}",
+  ".npmrc",
+  ".yarnrc.yml",
+  "**/.git/**",
+];
 const HMR_DOM = "virtual:lumen/hmr-dom";
 const HMR_DOM_ID = "\0lumen:hmr-dom";
 // The compiler prints user imports verbatim, normalized by the code printer.
@@ -155,11 +170,30 @@ export default function lumen(options: LumenOptions = {}): Plugin<LumenPluginApi
 
       config(config, env) {
         serve = env.command === "serve";
+        const out: UserConfig = {};
+        // decision-29: only `PUBLIC_` variables reach client code through `import.meta.env`.
+        if (config.envPrefix === undefined) out.envPrefix = "PUBLIC_";
+        // decision-29: the dev server does not serve server-only files over HTTP (`/@fs/`, `?raw`);
+        // the ssr environment still loads them. Both are the user's to override.
+        if (config.server?.fs?.deny === undefined) {
+          // Anchored at the project: dependencies (lumen's own `src/server/` helpers) stay served.
+          const base = globEscape(normalizePath(resolve(config.root ?? process.cwd())));
+          out.server = {
+            fs: { deny: [...VITE_FS_DENY, `${base}/**/*.server.*`, `${base}/src/server/**`] },
+          };
+        }
+        // LUM4003 in web worker bundles too (./server-only.ts).
+        const workerPlugins = config.worker?.plugins;
+        out.worker = {
+          plugins: () => [serverOnlyPlugin({ worker: true }), ...(workerPlugins?.() ?? [])],
+        };
         const oxc = config.oxc;
         // `oxc: false` disables Vite's transform altogether; an explicit include/exclude is the
         // user's call. Otherwise Lumen modules are added to Vite's default exclusion.
-        if (oxc === false || oxc?.include !== undefined || oxc?.exclude !== undefined) return;
-        return { oxc: { exclude: [VITE_OXC_EXCLUDE, ...lumenModules] } };
+        if (oxc !== false && oxc?.include === undefined && oxc?.exclude === undefined) {
+          out.oxc = { exclude: [VITE_OXC_EXCLUDE, ...lumenModules] };
+        }
+        return out;
       },
 
       async configResolved(config) {
