@@ -10,6 +10,9 @@ import {
   symlinkSync,
   writeFileSync,
 } from "node:fs";
+import { once } from "node:events";
+import { createServer as createHttpServer } from "node:http";
+import type { AddressInfo } from "node:net";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
@@ -53,6 +56,11 @@ export const Broken = () => <div>;
       })}
     </ul>
   );
+}
+`,
+  // A route file whose CSS only reaches the client through a \`<link rel="stylesheet">\` (TASK-85).
+  "Linked.stsx": `export default function Linked() {
+  return <h1 class="title">Hi<style>.title { color: navy; }</style></h1>;
 }
 `,
   "util.ts": `export const answer: number = 42;\n`,
@@ -162,6 +170,19 @@ async function hmrPayloads(file: string, edit: () => void): Promise<HotPayload[]
     hot.send = send;
   }
   return payloads;
+}
+
+/** A request through the dev server's middlewares (the browser's `Accept` header decides CSS). */
+async function request(url: string, accept: string): Promise<{ type: string; body: string }> {
+  const http = createHttpServer(server.middlewares).listen(0);
+  try {
+    await once(http, "listening");
+    const { port } = http.address() as AddressInfo;
+    const response = await fetch(`http://localhost:${port}${url}`, { headers: { accept } });
+    return { type: response.headers.get("content-type") ?? "", body: await response.text() };
+  } finally {
+    http.close();
+  }
 }
 
 function updatedPaths(payloads: HotPayload[]): string[] {
@@ -350,6 +371,30 @@ describe.skipIf(!binding)("lumen/vite", () => {
       writeFileSync(file, source.replace("</p>", "</b>")),
     );
     expect(updatedPaths(jsError)).toEqual(["full-reload"]);
+    writeFileSync(file, source);
+  });
+
+  it("hot-updates a linked stylesheet (Vite's direct CSS request) on a style-only edit", async () => {
+    const file = join(root, "Linked.stsx");
+    const source = readFileSync(file, "utf8");
+    const linkedUrl = `/Linked.stsx?direct&${STYLE.slice(1)}`;
+    // The dev server renders the page in the ssr environment; the browser only requests the link.
+    await server.environments.ssr.transformRequest("/Linked.stsx");
+    const before = await server.environments.client.transformRequest(linkedUrl);
+    expect(before!.code).toContain("color: navy;");
+    const payloads = await hmrPayloads("Linked.stsx", () =>
+      writeFileSync(file, source.replace("navy", "teal")),
+    );
+    expect(payloads).toMatchObject([
+      { type: "update", updates: [{ type: "css-update", path: linkedUrl }] },
+    ]);
+    // Vite's client swaps the link for one with the query dropped: `/Linked.stsx?t=…`.
+    const response = await request(`/Linked.stsx?t=${Date.now()}`, "text/css,*/*;q=0.1");
+    expect(response.type).toMatch(/^text\/css\b/);
+    expect(response.body).toContain("color: teal;");
+    expect(response.body).not.toContain("export default");
+    // Module requests of the same path still get the compiled JS.
+    expect((await request("/Linked.stsx", "*/*")).body).toContain("export default");
     writeFileSync(file, source);
   });
 

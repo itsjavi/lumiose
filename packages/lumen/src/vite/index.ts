@@ -58,6 +58,7 @@ import {
   StyleCache,
   cleanId,
   compileWithModules,
+  linkedStyleUrl,
   type Resolve,
   type Target,
 } from "./styles.ts";
@@ -150,6 +151,13 @@ export default function lumen(options: LumenOptions = {}): Plugin<LumenPluginApi
 
       configureServer(server) {
         devServer = server;
+        // Before Vite's transform middleware: a hot-updated `<link rel="stylesheet">` of a style
+        // module comes back without its query (./styles.ts `linkedStyleUrl`).
+        server.middlewares.use((req, _res, next) => {
+          const url = req.url && linkedStyleUrl(req.url, req.headers.accept, isLumenFile);
+          if (url) req.url = url;
+          next();
+        });
       },
 
       configEnvironment(name, config) {

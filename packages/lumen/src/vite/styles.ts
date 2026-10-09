@@ -23,6 +23,24 @@ import { compile, type CompileOptions, type CompileResult, type HostModule } fro
  */
 export const STYLE_QUERY = /[?&]lumen&type=style&lang\.css(?:&|$)/;
 
+/**
+ * The style module URL that a stylesheet request (`Accept: text/css`) for a Lumen file stands for,
+ * or `undefined` when the request is not one. Vite's client hot-updates a `<link>` by requesting
+ * its path with the query dropped (`/src/X.stsx?t=…`), which would otherwise serve the file's JS:
+ * the style query is put back (Vite then adds `direct` and drops `t=`).
+ */
+export function linkedStyleUrl(
+  url: string,
+  accept: string | undefined,
+  isLumenFile: (path: string) => boolean,
+): string | undefined {
+  if (accept === undefined || !accept.includes("text/css") || STYLE_QUERY.test(url)) return;
+  if (!isLumenFile(cleanId(url))) return;
+  const hash = url.indexOf("#");
+  const path = hash === -1 ? url : url.slice(0, hash);
+  return `${path}${path.includes("?") ? "&" : "?"}lumen&type=style&lang.css`;
+}
+
 /** Resolves an import specifier to a module id; `null` when it cannot be resolved. */
 export type Resolve = (specifier: string, importer: string) => Promise<string | null>;
 
