@@ -239,6 +239,7 @@ export function Transport() {
           min-inline-size: 0;
         }
         .title input {
+          inline-size: 100%;
           min-block-size: 0;
           padding: 0;
           border: 0;

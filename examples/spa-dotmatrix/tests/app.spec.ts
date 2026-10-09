@@ -214,3 +214,35 @@ test("dark theme", async ({ page }, info) => {
   await expect(page.locator("html")).toHaveAttribute("data-lcd", "dusk");
   await shot(page, "studio-dark", info.project.name);
 });
+
+/** Elements that stick out of their panel or card, ignoring content of scroll areas (the grid). */
+function overflowing(): string[] {
+  const out: string[] = [];
+  for (const panel of document.querySelectorAll(".panel, .cart, .card, .pad")) {
+    const box = panel.getBoundingClientRect();
+    for (const el of panel.querySelectorAll("*")) {
+      let clipped = false;
+      for (let a = el.parentElement; a && a !== panel; a = a.parentElement) {
+        if (getComputedStyle(a).overflowX !== "visible") clipped = true;
+      }
+      const r = el.getBoundingClientRect();
+      if (!clipped && r.width > 0 && (r.right > box.right + 1 || r.left < box.left - 1)) {
+        out.push(
+          `${el.tagName.toLowerCase()}.${String(el.getAttribute("class"))} in .${panel.classList[0]}`,
+        );
+      }
+    }
+  }
+  return out;
+}
+
+test("no control sticks out of its panel at desktop, tablet and phone widths", async ({ page }) => {
+  for (const width of [1920, 1440, 1280, 1024, 820, 390, 360]) {
+    await page.setViewportSize({ width, height: 900 });
+    for (const path of ["/", "/songs", "/sfx", "/creatures", "/learn"]) {
+      await page.goto(path);
+      await page.locator("main .panel, main .cart").first().waitFor();
+      expect(await page.evaluate(overflowing), `${path} at ${width}px`).toEqual([]);
+    }
+  }
+});

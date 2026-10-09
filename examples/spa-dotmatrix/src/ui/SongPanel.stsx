@@ -218,13 +218,17 @@ export function SongPanel() {
         }
         .rows {
           display: grid;
-          grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+          grid-template-columns: repeat(auto-fill, minmax(min(130px, 100%), 1fr));
           gap: 12px;
         }
         .field {
           display: grid;
           gap: 4px;
           align-content: start;
+          min-inline-size: 0;
+        }
+        select {
+          inline-size: 100%;
         }
         .stepper {
           display: flex;

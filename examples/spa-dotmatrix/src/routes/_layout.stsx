@@ -453,6 +453,8 @@ export default function Layout(props: { children?: JSX.Element }) {
   input[type="text"],
   input[type="number"],
   input[type="url"] {
+    min-inline-size: 0;
+    max-inline-size: 100%;
     min-block-size: 34px;
     padding: 4px 10px;
     border: 2px solid var(--edge);
