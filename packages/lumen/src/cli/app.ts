@@ -2,6 +2,7 @@
 // the CLI's output contract. With `--format json`, Vite's logs go to stderr and stdout carries only
 // the envelope: one line once a server listens (dev, preview), or the build result.
 
+import { realpathSync } from "node:fs";
 import { relative, sep } from "node:path";
 import type { Logger } from "vite";
 import {
@@ -50,7 +51,10 @@ export async function buildCli(options: AppCommandOptions): Promise<number> {
         : {}),
     });
     if (json) {
-      const key = (file: string) => relative(root, file).split(sep).join("/");
+      // Real paths on both sides: on Windows the root may be an 8.3 short path
+      // (C:\Users\RUNNER~1\…) while the build reports long ones.
+      const base = realPath(root);
+      const key = (file: string) => relative(base, realPath(file)).split(sep).join("/");
       options.write(
         formatEnvelope("build", true, {
           outDir: key(result.outDir),
@@ -167,4 +171,13 @@ function stderrLogger(writeError: (text: string) => void): Logger {
     hasErrorLogged: (error) => logged.has(error),
   };
   return logger;
+}
+
+/** The canonical path of an existing file (long names on Windows); the path itself otherwise. */
+function realPath(path: string): string {
+  try {
+    return realpathSync.native(path);
+  } catch {
+    return path;
+  }
 }
