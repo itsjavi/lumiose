@@ -20,6 +20,14 @@ export default defineConfig({
       },
     }),
   ],
+  // GitHub Pages cannot send COOP/COEP: the site build (scripts/site.ts, which sets LUMEN_BASE)
+  // turns on the cross-origin-isolation service worker (src/isolation.ts, public/coi-sw.js).
+  // LUMEN_COI_SW=1 or 0 forces it on or off.
+  define: {
+    "import.meta.env.LUMEN_COI_SW": JSON.stringify(
+      (process.env["LUMEN_COI_SW"] ?? (process.env["LUMEN_BASE"] ? "1" : "0")) === "1",
+    ),
+  },
   // The AudioWorklet module is loaded with `?worker&url`: an ES module bundle of its own.
   worker: { format: "es" },
   // Unit tests run in a DOM environment; browser e2e specs run with Playwright instead.

@@ -8,9 +8,9 @@ of a tracker and hex effect columns.
 
 ![The studio playing a demo song](../../backlog/assets/task-133-studio-demo.png)
 
-> The sound engine in `vendor/gbapu/` comes from the Newbark engine (`packages/gbapu`) and is vendored
-> unchanged; it is not openly licensed, so redistributing it needs the rights holder's permission (see
-> [its notice](vendor/gbapu/LICENSE-NOTICE.md)).
+> The sound engine in `vendor/gbapu/` is gbapu, the author's own Game Boy APU library from the
+> Newbark engine (`packages/gbapu`), planned for an MIT release. It is vendored unchanged, with its
+> current [notice](vendor/gbapu/LICENSE-NOTICE.md), provenance and checksums kept as they were.
 
 ## Run it
 
@@ -113,8 +113,9 @@ recipes and original examples.
 
 ## Credits
 
-- Sound engine: gbapu (Newbark), vendored unchanged with `LICENSE-NOTICE.md`, `PROVENANCE.json` and
-  `CHECKSUMS.sha256`; `src/audio/vendor.test.ts` checks the files against the checksums.
+- Sound engine: gbapu, the author's own library from the Newbark engine, planned for an MIT release;
+  vendored unchanged with `LICENSE-NOTICE.md`, `PROVENANCE.json` and `CHECKSUMS.sha256`;
+  `src/audio/vendor.test.ts` checks the files against the checksums.
 - The driver, presets, wave tables, drum kit, demo songs and sound effects are original work for
   this sample, written in the style of late-90s handheld RPG soundtracks. No game music, sound
   effects or data are included.
@@ -124,4 +125,5 @@ recipes and original examples.
 
 ## License
 
-The app code is [MIT](../../LICENSE). The vendored gbapu engine in `vendor/gbapu` is not covered: it keeps its own notice.
+The app code is [MIT](../../LICENSE). The vendored gbapu engine in `vendor/gbapu` keeps its own
+notice until its planned MIT release.

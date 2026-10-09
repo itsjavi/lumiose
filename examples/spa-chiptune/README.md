@@ -34,12 +34,24 @@ through a `SharedArrayBuffer`. Without isolation it falls back to `postMessage`,
 `songs/index.html`, … and `404.html`, which serves deep links such as `/songs/<id>` on a static
 host).
 
+**GitHub Pages** cannot send headers, so the Lumen website's build of this example (`pnpm
+build:site`, which sets `LUMEN_BASE`) adds a small first-party service worker,
+`public/coi-sw.js`. On the first visit, a page that is not cross-origin isolated registers it
+(`src/isolation.ts`) and reloads once; from then on the worker re-serves every same-origin response
+with COOP/COEP (and CORP), so the page is isolated and the engine uses the `SharedArrayBuffer`. The
+trade-off: one extra reload on the first visit, and isolation that depends on the service worker.
+Where it cannot run (a private window that blocks it, an insecure origin), the page stays as it is
+and the engine falls back to `postMessage`. Hosts that send the real headers never install the
+worker; `LUMEN_COI_SW=1` or `0` forces it on or off in any build.
+
 Checks:
 
 ```sh
 pnpm typecheck  # lumen check (.stsx through shadow TSX)
 pnpm test       # Vitest: synth, sequencer, history
 pnpm test:e2e   # Playwright against `lumen dev` and against `lumen build` + `lumen preview`
+pnpm test:e2e:pages  # the GitHub Pages build (build:site + preview:site, no headers): isolation
+                     # through the service worker, deep links, and the fallback without it
 ```
 
 To save the e2e screenshots, set `CHIPTUNE_SHOTS=<dir>`. The task screenshots are made with

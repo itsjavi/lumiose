@@ -11,12 +11,17 @@ import {
   resetFrameStats,
   startFrameLoop,
 } from "../frame.ts";
+import { isolate } from "../isolation.ts";
 import { onKeyDown, onKeyUp } from "../keys.ts";
 import { cursor, prefs, readSong, restoreSession } from "../state.ts";
 import { tokens } from "../tokens.ts";
 import { Header } from "../ui/Header.stsx";
 import { Mixer } from "../ui/Mixer.stsx";
 import { StatusBar } from "../ui/StatusBar.stsx";
+
+// GitHub Pages sends no COOP/COEP: in that build a service worker adds them (one reload on the
+// first visit). Everywhere else this does nothing.
+void isolate();
 
 // A small handle for the e2e tests and the curious: frame timing and the open song.
 Object.assign(globalThis, { chiptune: { frameStats, resetFrameStats, song: readSong } });

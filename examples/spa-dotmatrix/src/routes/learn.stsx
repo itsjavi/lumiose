@@ -227,10 +227,9 @@ export default function Learn() {
         <h2>Credits</h2>
         <ul>
           <li>
-            Sound: <b>gbapu</b>, a Game Boy APU emulator and offline renderer from the Newbark
-            engine, vendored unchanged in <code>vendor/gbapu</code> with its license notice and
-            provenance. It is not openly licensed: redistributing it needs the rights holder's
-            permission.
+            Sound: <b>gbapu</b>, the author's own Game Boy APU emulator and offline renderer from
+            the Newbark engine, planned for an MIT release; vendored unchanged in{" "}
+            <code>vendor/gbapu</code> with its notice and provenance.
           </li>
           <li>
             The sound driver (notes, vibrato, slides, arpeggios, drums), the instrument presets,

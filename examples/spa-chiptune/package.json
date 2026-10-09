@@ -11,6 +11,7 @@
     "preview": "lumen preview",
     "test": "vitest run",
     "test:e2e": "playwright test",
+    "test:e2e:pages": "playwright test -c playwright.pages.config.ts",
     "typecheck": "lumen check"
   },
   "dependencies": {
