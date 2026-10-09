@@ -109,7 +109,9 @@ describe.skipIf(!binding)("oxlint", () => {
     writeFileSync(join(dir, "Counter.tsx"), FROZEN);
     let output = "";
     try {
-      execFileSync(join(repo, "node_modules/.bin/oxlint"), ["--format", "unix", "."], {
+      // oxlint's JS bin through Node: `.bin/oxlint` is a shell shim on Windows.
+      const oxlint = join(repo, "node_modules/oxlint/bin/oxlint");
+      execFileSync(process.execPath, [oxlint, "--format", "unix", "."], {
         cwd: dir,
         encoding: "utf8",
       });

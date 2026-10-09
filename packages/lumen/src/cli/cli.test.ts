@@ -137,8 +137,9 @@ async function serve(command: string, use: (url: string) => Promise<void>) {
   } finally {
     child.kill("SIGTERM");
   }
-  // Vite's dev server exits with 128 + 15 on SIGTERM.
-  expect([0, 143]).toContain(await closed);
+  // Vite's dev server exits with 128 + 15 on SIGTERM; on Windows the process is terminated
+  // without an exit code (null).
+  expect(process.platform === "win32" ? [0, 143, null] : [0, 143]).toContain(await closed);
 }
 
 describe("lumen CLI", () => {
@@ -249,23 +250,27 @@ describe("lumen CLI", () => {
     );
   });
 
-  it.skipIf(!binding)("lumen check, lint and fmt report in the envelope", async () => {
-    const check = await runJson("check");
-    expect(check.code, check.stderr).toBe(0);
-    expect(check.json).toMatchObject({ command: "check", ok: true, diagnostics: [] });
+  it.skipIf(!binding)(
+    "lumen check, lint and fmt report in the envelope",
+    async () => {
+      const check = await runJson("check");
+      expect(check.code, check.stderr).toBe(0);
+      expect(check.json).toMatchObject({ command: "check", ok: true, diagnostics: [] });
 
-    const lint = await runJson("lint");
-    expect(lint.json).toMatchObject({ command: "lint", ok: lint.code === 0 });
+      const lint = await runJson("lint");
+      expect(lint.json).toMatchObject({ command: "lint", ok: lint.code === 0 });
 
-    const fmt = await runJson("fmt", "--check", "src/components");
-    expect(fmt.json).toMatchObject({
-      command: "fmt",
-      ok: fmt.code === 0,
-      check: true,
-      summary: { files: 1, errors: 0 },
-    });
-    // Three CLI runs, one of them a full TypeScript check: seconds on a CI runner.
-  }, 60_000);
+      const fmt = await runJson("fmt", "--check", "src/components");
+      expect(fmt.json).toMatchObject({
+        command: "fmt",
+        ok: fmt.code === 0,
+        check: true,
+        summary: { files: 1, errors: 0 },
+      });
+      // Three CLI runs, one of them a full TypeScript check: seconds on a CI runner.
+    },
+    60_000,
+  );
 
   it("lumen docs and explain answer in the envelope", async () => {
     expect((await runJson("docs", "signals")).json).toMatchObject({

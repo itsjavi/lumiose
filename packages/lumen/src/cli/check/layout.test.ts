@@ -6,7 +6,7 @@ import { existsSync } from "node:fs";
 import { mkdir, mkdtemp, readFile, realpath, rm, symlink, writeFile } from "node:fs/promises";
 import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
-import { dirname, join } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { afterAll, describe, expect, it } from "vitest";
 import { main } from "../main.ts";
@@ -92,27 +92,30 @@ const UI = {
 };
 
 describe("shadowPair", () => {
+  /** A native absolute path (`D:\w\…` on Windows). */
+  const p = (path: string) => resolve(path);
+
   it("pairs .lumen/shadow/p with B/p around the root's src", () => {
-    const root = "/w/apps/web";
-    expect(shadowPair(root, ["/w/apps/web/src", "/w/apps/web/.lumen/shadow/src"])).toEqual({
+    const root = p("/w/apps/web");
+    expect(shadowPair(root, [p("/w/apps/web/src"), p("/w/apps/web/.lumen/shadow/src")])).toEqual({
       base: root,
-      mirrored: "/w/apps/web/src",
+      mirrored: p("/w/apps/web/src"),
     });
-    expect(shadowPair(root, ["/w", "/w/apps/web/.lumen/shadow"])).toEqual({
-      base: "/w",
-      mirrored: "/w",
+    expect(shadowPair(root, [p("/w"), p("/w/apps/web/.lumen/shadow")])).toEqual({
+      base: p("/w"),
+      mirrored: p("/w"),
     });
     // A pair that does not contain the root's src, or no shadow entry at all.
-    expect(shadowPair(root, ["/w/lib", "/w/apps/web/.lumen/shadow/lib"])).toBeUndefined();
-    expect(shadowPair(root, ["/w/apps/web/src"])).toBeUndefined();
+    expect(shadowPair(root, [p("/w/lib"), p("/w/apps/web/.lumen/shadow/lib")])).toBeUndefined();
+    expect(shadowPair(root, [p("/w/apps/web/src")])).toBeUndefined();
   });
 
   it("maps sources to shadows below the mirror base and back", () => {
-    const layout = { base: "/w" };
-    const shadow = shadowPathFor("/w/apps/web", "/w/packages/ui/src/Badge.stsx", layout);
-    expect(shadow).toBe("/w/apps/web/.lumen/shadow/packages/ui/src/Badge.stsx.tsx");
-    expect(sourcePathForShadow("/w/apps/web", shadow, layout)).toBe(
-      "/w/packages/ui/src/Badge.stsx",
+    const layout = { base: p("/w") };
+    const shadow = shadowPathFor(p("/w/apps/web"), p("/w/packages/ui/src/Badge.stsx"), layout);
+    expect(shadow).toBe(p("/w/apps/web/.lumen/shadow/packages/ui/src/Badge.stsx.tsx"));
+    expect(sourcePathForShadow(p("/w/apps/web"), shadow, layout)).toBe(
+      p("/w/packages/ui/src/Badge.stsx"),
     );
   });
 });
