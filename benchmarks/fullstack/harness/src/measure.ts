@@ -299,27 +299,39 @@ const CODE = new Set([
   ".mdx",
 ]);
 
-/** Source files of the app (tracked or not ignored by git) and their non-blank lines. */
-export function sourceSize(app: App): { files: number; lines: number } {
-  const files = execFileSync(
-    "git",
-    ["ls-files", "--cached", "--others", "--exclude-standard", "."],
-    {
-      cwd: app.dir,
+/** Source files under `dir` (tracked or not ignored by git) and their non-blank lines. */
+function sourceSizeOf(dir: string): { files: number; lines: number } {
+  const files = new Set(
+    execFileSync("git", ["ls-files", "--cached", "--others", "--exclude-standard", "."], {
+      cwd: dir,
       encoding: "utf8",
-    },
-  )
-    .split("\n")
-    .filter((file) => CODE.has(extname(file)) && !file.endsWith(".d.ts"));
+    })
+      .split("\n")
+      .filter((file) => CODE.has(extname(file)) && !file.endsWith(".d.ts")),
+  );
   let lines = 0;
-  for (const file of new Set(files)) {
+  for (const file of files) {
     try {
-      lines += readFileSync(join(app.dir, file), "utf8")
+      lines += readFileSync(join(dir, file), "utf8")
         .split("\n")
         .filter((line) => line.trim() !== "").length;
     } catch {}
   }
-  return { files: new Set(files).size, lines };
+  return { files: files.size, lines };
+}
+
+/** The app's own sources and the shared UI packages it is built from (doc-4 §4 "Other"). */
+export function sourceSize(app: App): {
+  app: { files: number; lines: number };
+  shared: { files: number; lines: number };
+} {
+  const shared = { files: 0, lines: 0 };
+  for (const dir of app.sharedSources) {
+    const size = sourceSizeOf(dir);
+    shared.files += size.files;
+    shared.lines += size.lines;
+  }
+  return { app: sourceSizeOf(app.dir), shared };
 }
 
 interface ListNode {

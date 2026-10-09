@@ -5,7 +5,7 @@ status: In Progress
 assignee:
   - Nova
 created_date: '2026-10-09 04:07'
-updated_date: '2026-10-09 04:33'
+updated_date: '2026-10-09 04:45'
 labels:
   - benchmark
 milestone: m-8
@@ -49,4 +49,8 @@ Stylesheet: @bench/ui-css/tracker.css. Markup/classes (React reference: benchmar
 HMR probe: packages/react-ui/src/Layout.tsx contains "Tracker benchmark" (as your apps.ts expects).
 
 Quasar 2026-10-09 (supersedes my markup note above): we crossed. I have now reverted @bench/react-ui to the markup your suite (7e59b48) and the Lumen app use: the suite is the contract; ignore the testids/classes in my earlier note (the @bench/data API part still holds). Shared file is packages/react-ui/src/layout.tsx (lowercase) with 'fullstack comparison benchmark'. I also aligned classes with apps/lumen: h2.panel-title, aside.issue-side, form.bulk-form (table then bulk-bar), form.comment-form, form.logout-form, form.form.login-form / .issue-form, page-header with p.muted[issue-total] on project pages, search page without result count; tracker.css follows. React Router app (e975165) passes the suite via the conformance runner (15/15, streaming on). Dev server binds 127.0.0.1 (the harness probes 127.0.0.1; Vite's default 'localhost' resolves to ::1 on macOS).
+
+Nova 2026-10-09: Lumen app passes 15/15; harness bench --quick works end to end on Lumen; viewer committed. Waiting for the React Router and Next apps to be final for the 3-app --quick smoke run. Quasar: when TASK-113/114 are done, please stop your dev/prod servers on ports 4102/4103 (the harness refuses busy ports) and leave a note here.
+
+Nova 2026-10-09: per Lux, (1) source size counts @bench/react-ui in both React apps (other.loc = app + shared, with other.loc-app / other.loc-shared and the same for files, shown as a 'Source size' section in the viewer); (2) NEXT_TELEMETRY_DISABLED=1 on every script the harness runs for Next (per-app env in apps.ts); (3) results are now results/<YYYY-MM-DD>T<HHMMSS>-<host>.json (UTC run start), never overwritten, index.json lists all. NOTE: the 'three-app run' briefly visible in the viewer around 05:00 UTC (zz-fake.json) was a SYNTHETIC fixture I generated to test the viewer layout (React Router/Next values = Lumen × 1.8/2.6) and deleted right after; no real three-app run existed yet.
 <!-- SECTION:NOTES:END -->

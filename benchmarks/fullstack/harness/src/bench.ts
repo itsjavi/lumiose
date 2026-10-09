@@ -52,6 +52,7 @@ const values = args({
   iterations: { type: "string" },
 });
 
+const startedAt = new Date().toISOString();
 const quick = values.quick;
 const groups = (values.metrics?.split(",") ?? GROUPS).map((g) => g.trim()) as Group[];
 for (const group of groups)
@@ -146,9 +147,26 @@ try {
   if (groups.includes("other")) {
     for (const app of apps) {
       log(`${app.name}: source size, dependencies, type check`);
-      const { files, lines } = sourceSize(app);
-      recorder.add(app.id, "other.loc", def("other", "Source lines (non-blank)", "lines"), lines);
-      recorder.add(app.id, "other.files", def("other", "Source files", "count"), files);
+      // React apps reuse @bench/react-ui; the Lumen app writes its own markup: totals count both.
+      const size = sourceSize(app);
+      const loc = (key: string, label: string, value: number, unit: "lines" | "count") =>
+        recorder.add(app.id, key, def("other", label, unit, "Source size"), value);
+      loc(
+        "other.loc",
+        "Source lines (non-blank), app + shared UI",
+        size.app.lines + size.shared.lines,
+        "lines",
+      );
+      loc("other.loc-app", "… in the app", size.app.lines, "lines");
+      loc("other.loc-shared", "… in shared UI packages", size.shared.lines, "lines");
+      loc(
+        "other.files",
+        "Source files, app + shared UI",
+        size.app.files + size.shared.files,
+        "count",
+      );
+      loc("other.files-app", "… in the app", size.app.files, "count");
+      loc("other.files-shared", "… in shared UI packages", size.shared.files, "count");
       recorder.add(
         app.id,
         "other.deps",
@@ -399,7 +417,7 @@ const versionOf = (pkg: string, id: App["id"]) => {
 const run: RunFile = {
   schema: 1,
   meta: {
-    date: new Date().toISOString(),
+    date: startedAt,
     host: shortHost(),
     machine: machine(),
     node: process.version,

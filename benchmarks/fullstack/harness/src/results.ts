@@ -103,14 +103,17 @@ export const shortHost = (): string =>
     .toLowerCase()
     .replace(/[^a-z0-9-]+/g, "-");
 
-/** Writes `results/<date>-<host>.json` (suffixed when that run exists) and refreshes index.json. */
+/**
+ * Writes `results/<YYYY-MM-DD>T<HHMMSS>-<host>.json` (UTC start of the run) and refreshes
+ * index.json. Every run gets its own file, so a later run (a `--quick` or `--only` one included)
+ * never replaces an earlier one.
+ */
 export function writeRun(run: RunFile): string {
   mkdirSync(RESULTS_DIR, { recursive: true });
-  const day = run.meta.date.slice(0, 10);
-  let name = `${day}-${run.meta.host}.json`;
-  if (existsSync(join(RESULTS_DIR, name))) {
-    name = `${day}-${run.meta.host}-${run.meta.date.slice(11, 19).replaceAll(":", "")}.json`;
-  }
+  const stamp = `${run.meta.date.slice(0, 10)}T${run.meta.date.slice(11, 19).replaceAll(":", "")}`;
+  let name = `${stamp}-${run.meta.host}.json`;
+  for (let n = 2; existsSync(join(RESULTS_DIR, name)); n++)
+    name = `${stamp}-${run.meta.host}-${n}.json`;
   writeFileSync(join(RESULTS_DIR, name), `${JSON.stringify(run, null, 2)}\n`);
   writeIndex();
   return join(RESULTS_DIR, name);

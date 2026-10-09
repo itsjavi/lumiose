@@ -22,6 +22,10 @@ export interface App {
   serverOutput: string[];
   /** HMR probe: a text in a shared component rendered in the footer of every page. */
   hmr: { file: string; find: string };
+  /** Shared source packages the app's UI is built from, counted in its source size. */
+  sharedSources: string[];
+  /** Extra environment of every script the harness runs for this app. */
+  env: Record<string, string>;
 }
 
 export const APPS: App[] = [
@@ -36,6 +40,8 @@ export const APPS: App[] = [
       file: join(FULLSTACK, "apps/lumen/src/components/layout.tsx"),
       find: "fullstack comparison benchmark",
     },
+    sharedSources: [],
+    env: {},
   },
   {
     id: "react-router",
@@ -48,6 +54,8 @@ export const APPS: App[] = [
       file: join(FULLSTACK, "packages/react-ui/src/layout.tsx"),
       find: "fullstack comparison benchmark",
     },
+    sharedSources: [join(FULLSTACK, "packages/react-ui")],
+    env: {},
   },
   {
     id: "next",
@@ -60,6 +68,8 @@ export const APPS: App[] = [
       file: join(FULLSTACK, "packages/react-ui/src/layout.tsx"),
       find: "fullstack comparison benchmark",
     },
+    sharedSources: [join(FULLSTACK, "packages/react-ui")],
+    env: { NEXT_TELEMETRY_DISABLED: "1" },
   },
 ];
 
@@ -75,7 +85,7 @@ export function runScript(app: App, script: string, env: NodeJS.ProcessEnv = {})
     const started = performance.now();
     const child = spawn("pnpm", ["run", "--silent", script], {
       cwd: app.dir,
-      env: { ...process.env, ...env },
+      env: { ...process.env, ...app.env, ...env },
       stdio: ["ignore", "pipe", "pipe"],
     });
     let output = "";
@@ -126,7 +136,7 @@ export async function startServer(
   const started = performance.now();
   const child: ChildProcess = spawn("pnpm", ["run", "--silent", script], {
     cwd: app.dir,
-    env: { ...process.env, PORT: String(app.port), ...env },
+    env: { ...process.env, ...app.env, PORT: String(app.port), ...env },
     stdio: ["ignore", "pipe", "pipe"],
     detached: true, // own process group, so stop() also ends the framework's child processes
   });
