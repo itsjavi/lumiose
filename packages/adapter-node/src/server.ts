@@ -156,6 +156,9 @@ export async function createServer(options: ServerOptions = {}): Promise<LumenSe
 }
 
 async function loadEntry(dir: string): Promise<ServerEntryModule> {
+  // A build runs in production, for the app and the libraries it imports: default NODE_ENV before
+  // loading anything of it, and keep an explicit value (TASK-149). The entry does the same.
+  process.env.NODE_ENV ??= "production";
   const file = join(dir, "server", "entry.js");
   try {
     return (await import(pathToFileURL(file).href)) as ServerEntryModule;

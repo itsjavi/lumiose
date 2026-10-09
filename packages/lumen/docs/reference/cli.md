@@ -61,7 +61,8 @@ Route errors (`LUM5002`, `LUM5003`, `LUM5005`) and compile errors exit 1.
 ## lumen preview
 
 Serves the build output until interrupted. With `dist/server`, it serves it with
-`@lumen/adapter-node` (a dependency of the project). Without it (every route prerendered), it serves
+`@lumen/adapter-node` (a dependency of the project), and the app runs with `NODE_ENV=production`
+unless `NODE_ENV` is set. Without it (every route prerendered), it serves
 `dist/client` as a static site, no adapter needed: page URLs map to `about/index.html` or
 `about.html`, and unknown URLs get `404.html` with status 404, as static hosts do. Every response,
 static files included, gets `lumen({ headers })` and Vite's `preview.headers`, which default to

@@ -39,13 +39,14 @@ describe("negotiateEncoding", () => {
   });
 });
 
-describe("compressResponse", () => {
-  const html = (body: BodyInit, init: ResponseInit = {}) =>
-    new Response(body, {
-      ...init,
-      headers: { "content-type": "text/html; charset=utf-8", ...init.headers },
-    });
+/** An HTML response. */
+const html = (body: BodyInit, init: ResponseInit = {}) =>
+  new Response(body, {
+    ...init,
+    headers: { "content-type": "text/html; charset=utf-8", ...init.headers },
+  });
 
+describe("compressResponse", () => {
   it("compresses text bodies with the negotiated encoding", async () => {
     const text = "<p>hello</p>".repeat(500);
     const br = compressResponse(html(text), "br", "GET");

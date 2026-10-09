@@ -189,6 +189,12 @@ describe.skipIf(!binding)("lumen build", () => {
     // Server routes are not prerendered.
     expect(existsSync(join(result.clientDir, "live"))).toBe(false);
 
+    // The entry defaults NODE_ENV to production before it loads the runtime and the routes.
+    const entrySource = readFileSync(join(root, "dist/server/entry.js"), "utf8");
+    const nodeEnv = entrySource.indexOf('process.env.NODE_ENV = "production"');
+    expect(nodeEnv).toBeGreaterThan(-1);
+    expect(nodeEnv).toBeLessThan(entrySource.indexOf("import("));
+
     // dist/server/entry.js: `export default { fetch }` serves every route.
     const entry = await entryOf(root);
     const live = await entry.default.fetch(

@@ -28,6 +28,12 @@ interface LumenServer {
 Loads the build and starts an HTTP server; resolves once it listens. A missing build fails with
 "No build in dist … Run `lumen build` first."
 
+**`NODE_ENV`.** A build runs in production: `createServer` and `createHandler` set
+`process.env.NODE_ENV` to `"production"` when it is unset, before they load the build, so the
+app and every library it imports (many branch on `NODE_ENV`) see it from their first line. An
+explicit value is kept (`NODE_ENV=staging node server.ts`). `dist/server/entry.js` does the same
+when another server imports it directly.
+
 ## createHandler
 
 ```ts

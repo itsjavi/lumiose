@@ -343,7 +343,12 @@ export function serverEntryCode(state: BuildState, config: ResolvedConfig): stri
   };
   // The runtime is imported dynamically so it lands in a chunk: route chunks then never import
   // this entry, which can be loaded again under another URL (the build's prerender pass).
+  // A build runs in production: NODE_ENV defaults to "production" (an explicit value is kept)
+  // before the runtime, the routes and the dependencies they import are loaded (TASK-149).
   return `import { stylesheets } from ${JSON.stringify(CSS_MANIFEST)};
+if (typeof process !== "undefined" && process.env && process.env.NODE_ENV === undefined) {
+  process.env.NODE_ENV = "production";
+}
 const { createAppHandler } = await import(${JSON.stringify(APP_RUNTIME)});
 
 const modules = {
