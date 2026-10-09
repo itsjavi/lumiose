@@ -10,6 +10,7 @@ import { bumblingAlong } from "./bumbling-along.ts";
 import { echoCave } from "./echo-cave.ts";
 import { fadedLetters } from "./faded-letters.ts";
 import { lastStand } from "./last-stand.ts";
+import { lines } from "./lines.ts";
 import { rollCredits } from "./roll-credits.ts";
 import { sanctum } from "./sanctum.ts";
 import { wildEncounter } from "./wild-encounter.ts";
@@ -156,6 +157,19 @@ export const DEMOS: Demo[] = [
       "A drum-only intro before the loop, like the start of a parade.",
     ],
     song: rollCredits,
+  },
+  {
+    id: "lines",
+    title: "Lines",
+    mood: "Adventure",
+    blurb:
+      "A piano sketch in F, arranged for the four channels: a calm intro, then a loop that walks.",
+    tips: [
+      "Bars 1–10 are an intro of held chords; the score's repeat sign at bar 11 is the loop marker.",
+      "In the loop the wave bass plays the left hand note for note; Pulse 2 adds off-beat stabs.",
+      "From bar 19 Pulse 2 sings a third below the lead, and bar 24 leaves the lead alone.",
+    ],
+    song: lines,
   },
   {
     id: "first-steps",

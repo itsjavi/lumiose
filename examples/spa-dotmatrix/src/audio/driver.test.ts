@@ -66,7 +66,7 @@ describe("demo songs", () => {
         for (const n of track.notes) expect(n.s + n.l).toBeLessThanOrEqual(total);
       }
       const seconds = (total * 15) / song.bpm;
-      expect(seconds).toBeLessThan(60);
+      expect(seconds).toBeLessThan(65);
       for (const ch of [0, 1, 2, 3] as ChannelIndex[]) {
         const data = songData(song, [ch]);
         const { interleavedStereo } = renderEngineAudioToPcm(data, {

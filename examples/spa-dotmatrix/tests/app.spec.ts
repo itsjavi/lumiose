@@ -154,7 +154,7 @@ test("changes a preset and fine-tunes it", async ({ page }) => {
 
 test("plays a demo from the gallery and opens it in the studio", async ({ page }, info) => {
   await page.goto("/songs");
-  await expect(page.locator(".cart")).toHaveCount(12);
+  await expect(page.locator(".cart")).toHaveCount(13);
   await shot156(page, "songs", info.project.name);
   await page.getByRole("button", { name: "Listen to Rival Clash" }).click();
   await expect(page.getByRole("button", { name: "Stop Rival Clash" })).toBeVisible();

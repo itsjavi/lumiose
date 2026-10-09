@@ -7,6 +7,13 @@
       "runtimeArgs": ["--filter", "@lumen/playground", "exec", "lumen", "dev", "--port", "5196"],
       "port": 5196,
       "url": "http://localhost:5196"
+    },
+    {
+      "name": "dotmatrix",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["--dir", "examples/spa-dotmatrix", "exec", "lumen", "dev", "--port", "5197"],
+      "port": 5197,
+      "url": "http://localhost:5197"
     }
   ]
 }

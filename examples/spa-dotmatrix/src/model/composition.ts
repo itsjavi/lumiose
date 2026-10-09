@@ -16,8 +16,8 @@ export interface CompositionReport {
   clashes: number;
   /**
    * The lead comes home: its last note is the tonic, or, in a song that loops, a note of the
-   * dominant chord (the fifth, the leading tone or the second) that resolves at the loop start to a
-   * note of the tonic chord.
+   * dominant chord (the fifth, the leading tone, the second, or the seventh over a dominant bass)
+   * that resolves at the loop start to a note of the tonic chord.
    */
   endsOnTonic: boolean;
 }
@@ -66,21 +66,24 @@ export function analyse(song: Song): CompositionReport {
     maxLeap: Math.max(0, ...intervals),
     range: pitches.length ? Math.max(...pitches) - Math.min(...pitches) : 0,
     clashes,
-    endsOnTonic: endsHome(song, lead!),
+    endsOnTonic: endsHome(song, lead!, bass!),
   };
 }
 
-function endsHome(song: Song, lead: readonly Note[]): boolean {
+function endsHome(song: Song, lead: readonly Note[], bass: readonly Note[]): boolean {
   const last = lead.at(-1);
   if (!last) return false;
   const degree = (p: number) => pc(p - song.key);
   if (degree(last.p) === 0) return true;
   // A turnaround: V (fifth, leading tone or second) into the loop, which starts on the tonic chord.
+  // The fourth counts too when the bass under it is the dominant: the seventh of V7.
   const loopStep = song.loop * STEPS_PER_BAR;
   const restart = lead.find((n) => n.s >= loopStep);
-  return (
-    !!restart && [7, 11, 2].includes(degree(last.p)) && [0, 3, 4, 7].includes(degree(restart.p))
-  );
+  const under = at(bass, last.s);
+  const dominant =
+    [7, 11, 2].includes(degree(last.p)) ||
+    (degree(last.p) === 5 && !!under && degree(under.p) === 7);
+  return !!restart && dominant && [0, 3, 4, 7].includes(degree(restart.p));
 }
 
 /** What a song misses, in words (empty when it passes). */
