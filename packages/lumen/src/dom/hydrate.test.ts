@@ -15,7 +15,7 @@ import { loadIslands } from "./islands.ts";
 // happy-dom replaces the global `URL`, so paths are built with node:path.
 const src = resolve(import.meta.dirname, "..");
 const IMPORTS = {
-  client: { "lumen/dom": "dom/index.ts", lumen: "index.ts" },
+  client: { "lumen/dom/hot": "dom/hot.ts", "lumen/dom": "dom/index.ts", lumen: "index.ts" },
   server: { "lumen/server": "server/index.ts", lumen: "index.server.ts" },
 } as const;
 // Compiled modules go to packages/lumen/test/out (ignored), inside the Vite root.
@@ -26,7 +26,10 @@ let counter = 0;
 type Module = Record<string, any>;
 
 /** Compiles `source` for both targets and imports the two modules. */
-async function load(source: string): Promise<{ client: Module; server: Module }> {
+async function load(
+  source: string,
+  options: { hot?: boolean } = {},
+): Promise<{ client: Module; server: Module }> {
   const id = counter++;
   const modules: Record<string, Module> = {};
   for (const target of ["client", "server"] as const) {
@@ -34,12 +37,15 @@ async function load(source: string): Promise<{ client: Module; server: Module }>
       target,
       styleImport: false,
       sourceMap: false,
+      ...(options.hot && target === "client" ? { hot: true } : {}),
     });
     expect(result.diagnostics.filter((d) => d.severity === "error")).toEqual([]);
     let code = result.code;
     for (const [specifier, file] of Object.entries(IMPORTS[target])) {
       code = code.replaceAll(`from "${specifier}"`, `from ${JSON.stringify(join(src, file))}`);
     }
+    // Hot cases: a stand-in for Vite's `import.meta.hot` (`globalThis.hot`).
+    if (options.hot) code = code.replaceAll("import.meta.hot", "globalThis.hot");
     const path = join(out, `case${id}-${Date.now()}.${target}.js`);
     writeFileSync(path, code);
     modules[target] = (await import(/* @vite-ignore */ path)) as Module;
@@ -480,6 +486,57 @@ describe("hydrate", () => {
     await hydrateAll(client);
     expect(warn).not.toHaveBeenCalled();
     expect(document.activeElement).toBe(document.getElementById("own"));
+  });
+
+  it("keeps hot-registered components hydrating in place, then re-renders an edited one (TASK-146)", async () => {
+    const hot = { data: {} as Record<string, unknown>, invalidate: vi.fn(), accept: vi.fn() };
+    (globalThis as Record<string, unknown>).hot = hot;
+    const source = (label: string) => `
+      import { signal } from "lumen";
+      async function Member(props: { id: string }) {
+        const member = await api.member(props.id);
+        return <li>{member.name}</li>;
+      }
+      export function Badge(props: { n: number }) {
+        return <b>${label} {props.n}</b>;
+      }
+      export function Team(props: { ids: string[] }) {
+        const picked = signal(0);
+        (globalThis as any).pick = () => picked.set(picked() + 1);
+        return (
+          <section>
+            <Badge n={1} />
+            <ul>{props.ids.map((id) => <Member id={id} />)}</ul>
+            <p>{picked()}</p>
+          </section>
+        );
+      }`;
+    try {
+      const { client, server } = await load(source("v1"), { hot: true });
+      await serve(server, [["Team", { ids: ["a", "b"] }]]);
+      const section = document.querySelector("section")!;
+      const items = [...document.querySelectorAll("li")];
+      await hydrateAll(client);
+      // Claimed in place, with the recorded awaits replayed (no refetch, no LUM4006).
+      expect(warn).not.toHaveBeenCalled();
+      expect(api.calls).toEqual([]);
+      expect(document.querySelector("section")).toBe(section);
+      expect([...document.querySelectorAll("li")]).toEqual(items);
+      (globalThis as any).pick();
+      flushSync();
+      expect(section.querySelector("p")!.textContent).toBe("1");
+
+      // An edit to Badge: only its instance re-renders; Team keeps its DOM and state.
+      await load(source("v2"), { hot: true });
+      flushSync();
+      expect(hot.invalidate).not.toHaveBeenCalled();
+      expect(section.querySelector("b")!.textContent).toBe("v2 1");
+      expect(document.querySelector("section")).toBe(section);
+      expect([...document.querySelectorAll("li")]).toEqual(items);
+      expect(section.querySelector("p")!.textContent).toBe("1");
+    } finally {
+      delete (globalThis as Record<string, unknown>).hot;
+    }
   });
 
   it("falls back to a client render on a mismatch, still replaying awaits (LUM4006)", async () => {

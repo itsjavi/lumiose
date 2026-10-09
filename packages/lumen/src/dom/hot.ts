@@ -9,9 +9,14 @@
 // tracked function: when a later module version registers a changed component, each instance
 // re-renders in its own region (the region an `insert` gives any component, also under
 // hydration), and the rest of the page keeps its DOM and state.
+//
+// Under hydration (islands, the SPA's first page) the wrapper adds no instance: its first render
+// runs with the frame `createComponent` gave the instance (its path, await records and claim
+// cursor), inside the region `insert` opens for it, so paths, await replay and claiming match the
+// server's as without the wrapper.
 
-import { onCleanup, signal, untrack, type Signal } from "../core/index.ts";
-import { frame } from "./frame.ts";
+import { signal, untrack, type Signal } from "../core/index.ts";
+import { frame, setFrame } from "./frame.ts";
 
 // oxlint-disable-next-line typescript/no-explicit-any -- any props, as `createComponent` takes.
 type Component = (props: any) => unknown;
@@ -26,8 +31,6 @@ interface HotComponent {
   version: string;
   current: Signal<{ fn: Component }>;
   wrapper: Component;
-  /** Live instances rendered in place, which cannot re-render (see the wrapper). */
-  fixed: number;
 }
 
 const WRAPPER = Symbol.for("lumen.hotComponent");
@@ -48,24 +51,27 @@ export function $hot<C extends Component>(
     if (known.version !== version) {
       known.version = version;
       known.current.set({ fn: component });
-      if (known.fixed > 0) hot.invalidate(`lumen: ${name} has hydrated instances`);
     }
     return known.wrapper as C;
   }
   const current = signal({ fn: component });
-  const entry: HotComponent = { version, current, wrapper: () => null, fixed: 0 };
+  const entry: HotComponent = { version, current, wrapper: () => null };
   const wrapper: Component = (props) => {
-    // Hydrating an island (or the SPA): instance paths and the claim order must match the
-    // server's, so the instance renders in place, like without the wrapper; a later change to
-    // the component then falls back to Vite's update (re-mount or reload).
-    if (frame !== undefined) {
-      entry.fixed++;
-      onCleanup(() => entry.fixed--);
-      return entry.current().fn(props);
-    }
+    // The instance's hydration frame, for its first render only (later ones render afresh).
+    let hydrating = frame;
     return () => {
       const { fn } = current();
-      return untrack(() => fn(props));
+      const instanceFrame = hydrating;
+      hydrating = undefined;
+      return untrack(() => {
+        if (instanceFrame === undefined) return fn(props);
+        const prev = setFrame(instanceFrame);
+        try {
+          return fn(props);
+        } finally {
+          setFrame(prev);
+        }
+      });
     };
   };
   entry.wrapper = wrapper;

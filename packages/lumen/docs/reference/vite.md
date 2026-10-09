@@ -126,10 +126,10 @@ What it does:
 - Hot updates: an edited component re-renders in place, in every instance, and the rest of the page
   keeps its DOM and state (`lumen dev` registers each named component of client code with
   `lumen/dom/hot`). Only the components whose code changed re-render; an edit outside every
-  component of the file (a constant, a helper) re-renders all of the file's components. A module
+  component of the file (a constant, a helper) re-renders all of the file's components. Components
+  hydrated in an island or on the SPA's first page update the same way once hydrated. A module
   whose exports are not all such components (a constant or signal export, a changed export list,
-  an async or anonymous default component), or a component hydrated in an island or the SPA's first
-  page, falls back to the app entry: a client module that imports `mount` from `lumen/dom` accepts
+  an async or anonymous default component) falls back to the app entry: a client module that imports `mount` from `lumen/dom` accepts
   updates of every module it reaches and re-mounts the app into the same container (component
   state resets; module-level signals of unchanged modules survive), else the page reloads.
 - Style blocks become `<file>?lumen&type=style&lang.css` modules handled by Vite's CSS pipeline.

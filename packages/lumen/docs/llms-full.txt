@@ -4167,10 +4167,10 @@ What it does:
 - Hot updates: an edited component re-renders in place, in every instance, and the rest of the page
   keeps its DOM and state (`lumen dev` registers each named component of client code with
   `lumen/dom/hot`). Only the components whose code changed re-render; an edit outside every
-  component of the file (a constant, a helper) re-renders all of the file's components. A module
+  component of the file (a constant, a helper) re-renders all of the file's components. Components
+  hydrated in an island or on the SPA's first page update the same way once hydrated. A module
   whose exports are not all such components (a constant or signal export, a changed export list,
-  an async or anonymous default component), or a component hydrated in an island or the SPA's first
-  page, falls back to the app entry: a client module that imports `mount` from `lumen/dom` accepts
+  an async or anonymous default component) falls back to the app entry: a client module that imports `mount` from `lumen/dom` accepts
   updates of every module it reaches and re-mounts the app into the same container (component
   state resets; module-level signals of unchanged modules survive), else the page reloads.
 - Style blocks become `<file>?lumen&type=style&lang.css` modules handled by Vite's CSS pipeline.
@@ -4439,10 +4439,11 @@ lumen help --format json      # every command, for agents
 
 Starts the Vite dev server with SSR and HMR, until interrupted.
 
-What an edit updates: a stylesheet or a file's `<style>` block updates in place; an island's own
-module re-renders the island's instances in the browser from their props (the page, its scroll
-position and the other islands keep their state; the edited island starts afresh); any other
-server-rendered code reloads the page. An island module that other client modules import also
+What an edit updates: a stylesheet or a file's `<style>` block updates in place; an edited
+component in an island's own module re-renders its instances in place (the page, its scroll
+position, the island's other components and the other islands keep their state; see
+[hot updates](./vite.md)); an island module the compiler could not register re-renders the
+island's instances from their props; any other server-rendered code reloads the page. An island module that other client modules import also
 reloads, since they would keep its old exports.
 
 ```sh

@@ -378,7 +378,9 @@ export function lumenDev(options: LumenDevOptions = {}): Plugin {
       handler(code, id) {
         if (this.environment !== server?.environments.client) return;
         const module = islandModuleOf(id.split("?", 1)[0]!);
-        if (module === undefined) return;
+        // Modules the compiler registered for component-level updates (lumen/dom/hot, TASK-146)
+        // re-render their instances themselves, hydrated islands included.
+        if (module === undefined || code.includes("$hotAccept")) return;
         return {
           code: `${code}
 if (import.meta.hot) import.meta.hot.accept((next) => {
