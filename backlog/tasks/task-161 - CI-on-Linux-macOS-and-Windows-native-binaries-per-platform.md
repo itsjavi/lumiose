@@ -5,7 +5,7 @@ status: In Progress
 assignee:
   - '@Photon'
 created_date: '2026-10-09 11:53'
-updated_date: '2026-10-09 11:54'
+updated_date: '2026-10-09 12:38'
 labels:
   - ci
   - release
@@ -27,3 +27,9 @@ User 2026-10-09: drive production hardening. The repo now has a private GitHub r
 - [ ] #2 Native binaries for the 6 targets and the wasm build produced as artifacts by a workflow, with a smoke test loading each where the runner allows
 - [ ] #3 Docs: a CONTRIBUTING/README section on CI and building binaries
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Photon — RESUME (checkpoint 2026-10-09, In Progress). Done and pushed: .github/workflows/ci.yml (check + e2e on ubuntu/macos/windows; Linux runs every Playwright suite, macOS/Windows vite-counter + islands-e2e), binaries.yml (6 napi targets + lumen_wasm artifacts with smoke tests: ALL GREEN on run 37929413798), .github/scripts/smoke-*.mjs, CONTRIBUTING.md + README link, .gitattributes (LF; fixed Windows fmt:examples), concurrency (main pushes not cancelled), fixes for CI: cargo fmt (components.rs, lumen_content headings test), clippy needless_borrow (components.rs), cli.test.ts envelope test 60 s timeout. Observed CI failures not yet fixed (file/route to owners): (1) apps/web content.test 'links only to pages and anchors that exist': reference/vite.md and reference/adapter-node.md link to /docs/concepts/security#request-body-limits, but security.md has it as bold text, not a heading (TASK-167 author); (2) vite-counter 'compiler errors show in the dev overlay' fails on Linux CI only (overlay still present after restoring the file; passes on macOS) — investigate (CSS-only HMR path after an error edit?); (3) Pages workflow fails on a clean checkout: apps/playground scripts/assets.ts vite build needs .lumen/tsconfig.generated.json (Beacon); (4) lumen fmt --check prints 'undefined' after its summary (Beacon). Windows check results after the .gitattributes fix not seen yet. Next: gh run list --workflow CI; read failed job logs (gh api repos/itsjavi/lumen/actions/jobs/<id>/logs --allow-escape-sequences); fix own-area failures, file tasks for the rest; then tick ACs.
+<!-- SECTION:NOTES:END -->
