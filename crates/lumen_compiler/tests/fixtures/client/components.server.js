@@ -29,19 +29,19 @@ export function App(props) {
 		flag: false,
 		onSelect: handler,
 		size
-	})), insert(island("/src/ui.stsx#Card", Card, { get title() {
-		return user().name;
-	} }, "load", void 0, { children: () => ssr(_s0, insertText(user().name)) })), insert(createComponent(Card, { get children() {
-		return user().name;
-	} })), insert(createComponent(Card, { children: "Text only" })), insert(createComponent(Card, { get children() {
-		return ssr(_s1);
-	} })), insert(createComponent(Card, {
+	})), insert(island("/src/ui.stsx#Card", Card, ((_d, _v) => ({ get title() {
+		return _d ? _v : (_v = user().name, _d = true, _v);
+	} }))(), "load", void 0, { children: () => ssr(_s0, insertText(user().name)) })), insert(createComponent(Card, ((_d2, _v2) => ({ get children() {
+		return _d2 ? _v2 : (_v2 = user().name, _d2 = true, _v2);
+	} }))())), insert(createComponent(Card, { children: "Text only" })), insert(createComponent(Card, ((_d3, _v3) => ({ get children() {
+		return _d3 ? _v3 : (_v3 = ssr(_s1), _d3 = true, _v3);
+	} }))())), insert(createComponent(Card, ((_d4, _v4) => ({
 		get icon() {
-			return createComponent(props.Icon, {});
+			return _d4 ? _v4 : (_v4 = createComponent(props.Icon, {}), _d4 = true, _v4);
 		},
 		render: () => ssr(_s2)
-	})), insert(createComponent(Card, mergeProps(props.extra, { title: "after" }, { a: 1 }))), insert(createComponent(ui.Panel.Header, { level: 2 })), insert(createComponent(props.Icon, { size: 16 })));
+	}))())), insert(createComponent(Card, mergeProps(props.extra, { title: "after" }, { a: 1 }))), insert(createComponent(ui.Panel.Header, { level: 2 })), insert(createComponent(props.Icon, { size: 16 })));
 }
-export const Wrapper = (props) => createComponent(Card, { get children() {
-	return props.children;
-} });
+export const Wrapper = (props) => createComponent(Card, ((_d5, _v5) => ({ get children() {
+	return _d5 ? _v5 : (_v5 = props.children, _d5 = true, _v5);
+} }))());

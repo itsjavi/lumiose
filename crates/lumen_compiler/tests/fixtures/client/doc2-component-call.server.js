@@ -12,14 +12,14 @@ export function Card(props) {
 	return ssr(_s0, classAttr(props.class), spreadAttrs({ $$scope: props.$$scope }), insertText(props.title), insertText(props.children));
 }
 export function Page(props) {
-	return ssr(_s1, insert(createComponent(Card, {
+	return ssr(_s1, insert(createComponent(Card, ((_d, _v, _d2, _v2) => ({
 		get title() {
-			return props.post().title;
+			return _d ? _v : (_v = props.post().title, _d = true, _v);
 		},
 		class: "featured",
 		$$scope: "data-l-qlayfokw",
 		get children() {
-			return props.post().body;
+			return _d2 ? _v2 : (_v2 = props.post().body, _d2 = true, _v2);
 		}
-	})));
+	}))())));
 }

@@ -18,13 +18,13 @@ function Inner(props) {
 }
 // Styled: its own tokens plus the caller's.
 export function Middle(props) {
-	return ssr(_s1, insert(createComponent(Inner, {
+	return ssr(_s1, insert(createComponent(Inner, ((_d, _v) => ({
 		get class() {
-			return ["middle", props.class];
+			return _d ? _v : (_v = ["middle", props.class], _d = true, _v);
 		},
 		label: props.label,
 		$$scope: "data-l-xv47rtvg " + (props.$$scope ?? "")
-	})));
+	}))())));
 }
 // Unstyled and destructured: only the caller's.
 export function Plain(props) {

@@ -3,6 +3,11 @@
 //! spreads and the hidden `$$scope` prop for class passthrough (contract doc-2 §1, §5.3). A
 //! component that forwards its own `class` prop to a child (`<Inner class={props.class} />`)
 //! forwards its caller's scope too: `$$scope` is its own tokens plus `props.$$scope` (TASK-92).
+//!
+//! On the server a component's getter props are evaluated lazily and at most once per instance
+//! (decision-28): the props object is built by an arrow whose parameters cache each getter's value,
+//! `((_d, _v) => ({ get p() { return _d ? _v : (_v = expr, _d = true, _v); } }))()`. Closure
+//! variables keep the object's shape and add no visible keys; unread props never evaluate.
 
 use oxc_allocator::{ArenaBox, ArenaVec};
 use oxc_ast::ast::*;
@@ -68,6 +73,9 @@ impl<'a> Codegen<'a, '_> {
         span: Span,
     ) -> Expression<'a> {
         let is_component = children.is_some();
+        // Cache variables (`_d`, `_v` pairs) of the memoized getters of `current` (server only).
+        let memoize = is_component && self.server();
+        let mut memo: Vec<String> = Vec::new();
         let mut sources: Vec<Expression<'a>> = Vec::new();
         let mut current: Vec<ObjectPropertyKind<'a>> = Vec::new();
         let mut passes_class = false;
@@ -77,7 +85,8 @@ impl<'a> Codegen<'a, '_> {
             match item {
                 JSXAttributeItem::SpreadAttribute(spread) => {
                     if !current.is_empty() {
-                        sources.push(self.ast.object(span, std::mem::take(&mut current)));
+                        let object = self.ast.object(span, std::mem::take(&mut current));
+                        sources.push(self.with_memo(span, object, std::mem::take(&mut memo)));
                     }
                     let argument = self.visited(spread.unbox().argument);
                     sources.push(argument);
@@ -107,7 +116,10 @@ impl<'a> Codegen<'a, '_> {
                         AttrValue::Str(s) => {
                             current.push(self.ast.property(span, &name, self.ast.string(span, &s)))
                         }
-                        AttrValue::Expr(expr) => current.push(self.prop(&name, expr, span)),
+                        AttrValue::Expr(expr) => {
+                            let memo = memoize.then_some(&mut memo);
+                            current.push(self.prop(&name, expr, span, memo));
+                        }
                     }
                 }
             }
@@ -143,6 +155,8 @@ impl<'a> Codegen<'a, '_> {
                 current.push(
                     if compiled.setup.is_empty() && literal(&compiled.value).is_some() {
                         self.ast.property(span, "children", compiled.value)
+                    } else if memoize {
+                        self.memo_getter(span, "children", compiled.setup, compiled.value, &mut memo)
                     } else {
                         self.ast
                             .getter(span, "children", compiled.setup, compiled.value)
@@ -151,7 +165,8 @@ impl<'a> Codegen<'a, '_> {
             }
         }
         if !current.is_empty() || sources.is_empty() {
-            sources.push(self.ast.object(span, current));
+            let object = self.ast.object(span, current);
+            sources.push(self.with_memo(span, object, memo));
         }
         if sources.len() == 1 {
             return sources.pop().expect("one source");
@@ -163,20 +178,88 @@ impl<'a> Codegen<'a, '_> {
     /// One prop: literals, identifiers and functions are plain values; JSX and reactive reads are
     /// getters (evaluated lazily by the child, inside its own tracking). On the server, where
     /// nothing is tracked, a trivially safe read is a plain value too (contract doc-2 §3.1).
-    fn prop(&mut self, name: &str, expr: Expression<'a>, span: Span) -> ObjectPropertyKind<'a> {
+    ///
+    /// With `memo` (server component props), getters cache their first value (decision-28).
+    fn prop(
+        &mut self,
+        name: &str,
+        expr: Expression<'a>,
+        span: Span,
+        memo: Option<&mut Vec<String>>,
+    ) -> ObjectPropertyKind<'a> {
         if literal(&expr).is_some() {
             return self.ast.property(span, name, expr);
         }
         if is_jsx_like(&expr) {
             let compiled = self.compile_value(expr);
-            return self.ast.getter(span, name, compiled.setup, compiled.value);
+            return match memo {
+                Some(memo) => self.memo_getter(span, name, compiled.setup, compiled.value, memo),
+                None => self.ast.getter(span, name, compiled.setup, compiled.value),
+            };
         }
         let expr = self.visited(expr);
         if self.is_dynamic(&expr) && !(self.server() && self.is_trivially_safe(&expr)) {
-            self.ast.getter(span, name, Vec::new(), expr)
+            match memo {
+                Some(memo) => self.memo_getter(span, name, Vec::new(), expr, memo),
+                None => self.ast.getter(span, name, Vec::new(), expr),
+            }
         } else {
             self.ast.property(span, name, expr)
         }
+    }
+
+    /// `get name() { return _d ? _v : (_v = value, _d = true, _v); }`, with `setup` run inside the
+    /// first evaluation; pushes `_d` and `_v` to `memo`, the parameters of the wrapping arrow.
+    fn memo_getter(
+        &mut self,
+        span: Span,
+        name: &str,
+        setup: Vec<Statement<'a>>,
+        value: Expression<'a>,
+        memo: &mut Vec<String>,
+    ) -> ObjectPropertyKind<'a> {
+        let done = self.names.fresh("_d");
+        let cached = self.names.fresh("_v");
+        let value = self.ast.iife(span, setup, value);
+        let assign = |ast: &super::super::ast::Ast<'a>, target: &str, value: Expression<'a>| {
+            let target =
+                AssignmentTarget::new_assignment_target_identifier(span, ast.str(target), ast);
+            Expression::new_assignment_expression(
+                span,
+                oxc_syntax::operator::AssignmentOperator::Assign,
+                target,
+                value,
+                ast,
+            )
+        };
+        let first = Expression::new_sequence_expression(
+            span,
+            self.ast.vec_from([
+                assign(&self.ast, &cached, value),
+                assign(&self.ast, &done, self.ast.boolean(span, true)),
+                self.ast.ident(span, &cached),
+            ]),
+            self.ast,
+        );
+        let body = self.ast.conditional(
+            span,
+            self.ast.ident(span, &done),
+            self.ast.ident(span, &cached),
+            first,
+        );
+        memo.push(done);
+        memo.push(cached);
+        self.ast.getter(span, name, Vec::new(), body)
+    }
+
+    /// `object`, or `((_d, _v, …) => object)()` when it has memoized getters.
+    fn with_memo(&self, span: Span, object: Expression<'a>, memo: Vec<String>) -> Expression<'a> {
+        if memo.is_empty() {
+            return object;
+        }
+        let params = memo.iter().map(String::as_str).collect::<Vec<_>>();
+        let arrow = self.ast.arrow(span, &params, object);
+        self.ast.call(span, arrow, [])
     }
 
     /// An expression that cannot throw or run user code beyond a props getter, so evaluating it

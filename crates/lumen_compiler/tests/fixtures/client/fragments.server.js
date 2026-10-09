@@ -27,7 +27,7 @@ export function Nested() {
 }
 export function TextAndDynamic() {
 	const count = signal(0);
-	return createComponent(Card, { get children() {
-		return ["Footer ", count()];
-	} });
+	return createComponent(Card, ((_d, _v) => ({ get children() {
+		return _d ? _v : (_v = ["Footer ", count()], _d = true, _v);
+	} }))());
 }

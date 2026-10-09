@@ -11,7 +11,7 @@ export function Typed(_props) {
 	const mode = signal(Mode.A);
 	const first = _props.items[0];
 	const props = { title: pick(first) };
-	return createComponent(Card, mergeProps(props, { get mode() {
-		return mode();
-	} }));
+	return createComponent(Card, mergeProps(props, ((_d, _v) => ({ get mode() {
+		return _d ? _v : (_v = mode(), _d = true, _v);
+	} }))()));
 }

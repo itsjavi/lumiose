@@ -21,35 +21,35 @@ export function Page(props) {
 	})), insert(createComponent(Badge, {
 		kind: "count",
 		children: "42"
-	})), insert(createComponent(Detail, {
+	})), insert(createComponent(Detail, ((_d, _v, _d2, _v2, _d3, _v3, _d4, _v4, _d5, _v5, _d6, _v6) => ({
 		title: props.title,
 		size,
 		label: `${props.tone}-${size}`,
 		get name() {
-			return user().name;
+			return _d ? _v : (_v = user().name, _d = true, _v);
 		},
 		get deep() {
-			return props.user.name;
+			return _d2 ? _v2 : (_v2 = props.user.name, _d2 = true, _v2);
 		},
 		get maybe() {
-			return props.user?.name;
+			return _d3 ? _v3 : (_v3 = props.user?.name, _d3 = true, _v3);
 		},
 		get show() {
-			return user() != null;
+			return _d4 ? _v4 : (_v4 = user() != null, _d4 = true, _v4);
 		},
 		get icon() {
-			return ssr(_s0);
+			return _d5 ? _v5 : (_v5 = ssr(_s0), _d5 = true, _v5);
 		},
 		get children() {
-			return props.title;
+			return _d6 ? _v6 : (_v6 = props.title, _d6 = true, _v6);
 		}
-	})));
+	}))())));
 }
 export function Defaults(props) {
-	return createComponent(Badge, {
+	return createComponent(Badge, ((_d7, _v7) => ({
 		get kind() {
-			return props.tone === void 0 ? "plain" : props.tone;
+			return _d7 ? _v7 : (_v7 = props.tone === void 0 ? "plain" : props.tone, _d7 = true, _v7);
 		},
 		label: props.label
-	});
+	}))());
 }

@@ -29,19 +29,19 @@ export function Tree() {
 }
 // Sibling subtrees, class passthrough and children passed to a component inside a subtree.
 export function Siblings(props) {
-	return ssr(_s2, insert(createComponent(Card, {
+	return ssr(_s2, insert(createComponent(Card, ((_d, _v) => ({
 		class: "title",
 		$$scope: "data-l-nmviz5ch data-l-7ikt7jyc",
 		get children() {
-			return props.label;
+			return _d ? _v : (_v = props.label, _d = true, _v);
 		}
-	})), insert(createComponent(Panel, {
+	}))())), insert(createComponent(Panel, ((_d2, _v2) => ({
 		class: "panel",
 		$$scope: "data-l-nmviz5ch data-l-238shbm8",
 		get children() {
-			return ssr(_s1);
+			return _d2 ? _v2 : (_v2 = ssr(_s1), _d2 = true, _v2);
 		}
-	})), insert(createComponent(Card, {
+	}))())), insert(createComponent(Card, {
 		class: "outside",
 		$$scope: "data-l-nmviz5ch",
 		children: "no subtree tokens"

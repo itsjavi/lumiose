@@ -22,6 +22,12 @@ destructure them: `({ title, count = 0 })` is rewritten to reads of `props.title
 `props.count`, so a parent passing a signal value keeps the child up to date. `...rest` stays
 reactive too.
 
+On the server, where nothing is reactive, a prop expression is evaluated **lazily and at most once
+per component instance** (decision-28): the first read runs it, later reads reuse the value, and a
+prop the component never reads never runs. `<Filters labels={listLabels()} />` queries the labels
+once per render however often `Filters` reads `props.labels`. In the browser props stay live: each
+read re-evaluates the expression, so keep prop expressions free of side effects.
+
 **Children** are lazy: `children` is evaluated where you insert it. Insert it once; to render
 something several times, take a render function as a prop. Named slots are ordinary props that hold
 JSX.
