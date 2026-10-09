@@ -3,7 +3,7 @@ id: doc-2
 title: Compiler-runtime contract
 type: specification
 created_date: '2026-10-08 12:27'
-updated_date: '2026-10-09 08:45'
+updated_date: '2026-10-09 15:40'
 tags:
   - architecture
   - contract
@@ -65,6 +65,14 @@ tags:
 - `Suspense`, `ErrorBoundary`, `Portal`, `Dynamic`;
 - `signal`, `computed` and the rest of the reactive core;
 - `lifetime`, `pending`, `fetchJSON`.
+
+### 2.1 Dev-only hot runtime (`lumen/dom/hot`)
+
+Imported only by code compiled with the `hot` option in `lumen dev`; never part of production bundles (0 B).
+
+| Name | Contract |
+|---|---|
+| `$hot(hot, name, component, version)` | Emitted after each named component: `Name = $hot(import.meta.hot, "Name", Name, version)`. Returns a stable wrapper per component (kept in `import.meta.hot.data`) whose instances re-render in place when a later module version registers a different `version`; returns `component` itself when `hot` is undefined. Modules whose exports change shape fall back to the re-mount/reload path (TASK-146) |
 
 ## 3. Server runtime (`lumen/server`)
 
