@@ -1957,6 +1957,9 @@ to browsers that accept them. Output:
   for unknown URLs gets deep links to every route. Vite's `base` applies to URLs, not to file
   paths.
 - `dist/server/entry.js`: `export default { fetch }`, plus `createHandler({ env })` and `config`.
+  The server output bundles your server code, linked workspace packages and the Lumen runtime
+  (npm dependencies stay external, as Vite does for SSR), minified with function and class names
+  kept, so production stack traces still name the functions.
 
 A route that reads the request while it prerenders (`cookies()`, `locals()`, `request()`,
 `response()`, `url().searchParams`) stops the build with [LUM5001](../errors/LUM5001.md); a static

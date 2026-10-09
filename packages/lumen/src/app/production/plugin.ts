@@ -120,7 +120,14 @@ function lumenBuildEnvironments(state: BuildState): Plugin {
               emitAssets: true,
               rolldownOptions: {
                 input: { entry: SERVER_ENTRY },
-                output: { entryFileNames: "entry.js", chunkFileNames: "chunks/[name]-[hash].js" },
+                output: {
+                  entryFileNames: "entry.js",
+                  chunkFileNames: "chunks/[name]-[hash].js",
+                  // Smaller server output (-29% on the fullstack bench) with function and class
+                  // names kept, so production stack traces stay readable (TASK-174). Mangling would
+                  // save 20% more for no measurable cold-start or throughput gain on Node.
+                  minify: { compress: true, mangle: false, codegen: { removeWhitespace: true } },
+                },
               },
             },
           },

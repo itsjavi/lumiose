@@ -191,7 +191,8 @@ describe.skipIf(!binding)("lumen build", () => {
 
     // The entry defaults NODE_ENV to production before it loads the runtime and the routes.
     const entrySource = readFileSync(join(root, "dist/server/entry.js"), "utf8");
-    const nodeEnv = entrySource.indexOf('process.env.NODE_ENV = "production"');
+    // The server output is minified (quotes may become backticks).
+    const nodeEnv = entrySource.search(/process\.env\.NODE_ENV\s*=\s*["'`]production["'`]/);
     expect(nodeEnv).toBeGreaterThan(-1);
     expect(nodeEnv).toBeLessThan(entrySource.indexOf("import("));
 
@@ -320,7 +321,7 @@ export default function Home() { return <main><Header /><Badge client:load /></m
     expect(preloads.some((href) => /^\/assets\/Nav-[\w-]+\.js$/.test(href))).toBe(true);
     // The server entry maps the same refs, for server-rendered pages.
     const entry = readFileSync(result.serverEntry!, "utf8");
-    for (const href of preloads) expect(entry).toContain(JSON.stringify(href));
+    for (const href of preloads) expect(entry).toMatch(new RegExp(`["'\`]${href}["'\`]`));
   });
 
   it("adds lumen({ viewTransitions, prefetch }) to the page documents (TASK-93)", async () => {
