@@ -76,6 +76,12 @@ To save the e2e screenshots, set `DOTMATRIX_SHOTS=<dir>`. The task screenshots a
   the sound still plays, exports and reopens in the studio.
 - **Learn** (`/learn`): the four channels, each trick with a button to hear it, and the credits.
 
+## Composing
+
+[docs/composing.md](docs/composing.md) is a guide to writing music, sound effects and creature
+voices for the four channels, in the app and in the sound-driver format of its code view, with
+recipes and original examples.
+
 ## How it works
 
 - `src/audio/driver.ts` is the sound driver. It turns a song into gbapu command streams (register

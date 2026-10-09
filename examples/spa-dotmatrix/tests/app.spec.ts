@@ -7,6 +7,12 @@ async function shot(page: Page, name: string, project: string) {
   if (SHOTS && project === "dev") await page.screenshot({ path: `${SHOTS}/task-133-${name}.png` });
 }
 
+// Screenshots for TASK-153 use their own prefix.
+async function shot153(page: Page, name: string, project: string) {
+  if (SHOTS && project === "dev")
+    await page.screenshot({ path: `${SHOTS}/task-153-${name}.png`, fullPage: true });
+}
+
 // Screenshots for TASK-143 use their own prefix.
 async function shot143(page: Page, name: string, project: string) {
   if (SHOTS && project === "dev") await page.screenshot({ path: `${SHOTS}/task-143-${name}.png` });
@@ -246,7 +252,7 @@ test("no control sticks out of its panel at desktop, tablet and phone widths", a
 }, info) => {
   for (const width of [1920, 1440, 1280, 1024, 820, 390, 360]) {
     await page.setViewportSize({ width, height: 900 });
-    for (const path of ["/", "/songs", "/sfx", "/creatures", "/learn"]) {
+    for (const path of ["/", "/songs", "/sfx", "/creatures", "/learn", "/learn/composing"]) {
       await page.goto(path);
       await page.locator("main .panel, main .cart").first().waitFor();
       expect(await page.evaluate(overflowing), `${path} at ${width}px`).toEqual([]);
@@ -271,6 +277,9 @@ test("creature voices: pick, bend, read the code and export", async ({ page }, i
   await expect(page.locator("#maker-title")).toHaveText("Wispet (remix)");
   await page.getByRole("button", { name: "Surprise me" }).click();
   await expect(page.locator("#maker-title")).toHaveText("Mystery creature");
+  await page.getByRole("button", { name: "Emberkit" }).click();
+  await expect(page.locator(".code pre")).toContainText("duty_cycle_pattern");
+  await shot153(page, "creatures", info.project.name);
   await page.getByRole("button", { name: "Boulderback" }).click();
   await shot143(page, "creatures", info.project.name);
   const { name, data } = await readDownload(page, () =>
@@ -356,4 +365,14 @@ test.describe("phone, creatures and sheets", () => {
     expect(overflow).toBeLessThanOrEqual(0);
     await shot143(page, "studio-sheet-phone", info.project.name);
   });
+});
+
+test("the composing guide opens from Learn", async ({ page }) => {
+  await page.goto("/learn");
+  await page.getByRole("link", { name: "composing guide" }).click();
+  await expect(page).toHaveURL(/\/learn\/composing$/);
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Composing for Dotmatrix");
+  await expect(page.locator(".guide table").first()).toBeVisible();
+  await expect(page.locator(".guide pre").first()).toContainText("square_note");
+  await shot153(page, "guide", test.info().project.name);
 });

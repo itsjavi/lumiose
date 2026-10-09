@@ -186,6 +186,13 @@ export default function Learn() {
           </Link>{" "}
           room, then remix them.
         </p>
+        <p>
+          Want to write your own music, effects and voices? The{" "}
+          <Link class="link" href={href("/learn/composing")}>
+            composing guide
+          </Link>{" "}
+          walks through all of it, with recipes.
+        </p>
       </section>
 
       <section class="panel card">
