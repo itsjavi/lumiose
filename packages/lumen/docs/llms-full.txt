@@ -676,6 +676,15 @@ imports, CSS Modules, Tailwind v4 and `.scss` imports still work through Vite.
 > constant-only edits hot-update the CSS without remounting. `LUM3012` (a custom property set in a
 > `style` prop that no stylesheet reads) is reported by `lumen build` only.
 
+**In builds**, a page needs few render-blocking stylesheets. `lumen build` merges the stylesheets
+every page starts with (the document's, the root layouts', shared components') into one file that
+all pages link and browsers cache, then puts each page's own stylesheets after it: inline in one
+`<style>` when they total 4 kB or less, else merged into one file for that page. The cascade
+order is the same as in dev, where each file's CSS stays a separate stylesheet for HMR. In the
+sample apps a first view went from 6–8 stylesheet requests to one, with about 30% fewer CSS bytes (brotli).
+Each tag lists the stylesheets it holds in `data-l-css`, so an island or an SPA route that imports
+one does not load it again.
+
 ### JS values in styles
 
 `$name` and `$obj.key` put a JS value into CSS. The compiler evaluates the reference at build time
@@ -1205,8 +1214,8 @@ the sample apps (`pnpm --filter lumen size:apps` reports them; the runtime's 10 
 entry's when the app has no islands, or a shared `lumen-[hash].js` when it has both. The router's
 History API fallback is a separate chunk, loaded only by browsers without the Navigation API. Dynamic
 imports go through a smaller preload helper than Vite's: it still adds the imported chunk's
-stylesheets (and waits for them), module preloads and the CSP nonce of
-`<meta property="csp-nonce">`, but dispatches no `vite:preloadError` event (the router loads the
+stylesheets (and waits for them, skipping those the page already holds in its merged or inline
+styles), module preloads and the CSP nonce of `<meta property="csp-nonce">`, but dispatches no `vite:preloadError` event (the router loads the
 URL with a document navigation when a page's module does not load).
 
 **Islands from other packages.** Components of a linked workspace package (`"@acme/ui": "workspace:*"`)

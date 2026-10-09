@@ -102,6 +102,7 @@ export default function lumen(options: LumenOptions = {}): Plugin<LumenPluginApi
   const api: LumenPluginApi = {
     options: Object.freeze(projectOptionsOf(options)),
     islandModules: () => islands.modules(),
+    cssManifest: (context) => cssManifest.manifest(context, root),
   };
   const svg = svgOptionsOf(options.svg);
   const include = options.include ?? LUMEN_MODULE;

@@ -29,6 +29,7 @@ import { clientRuntime } from "./client-runtime.ts";
 import { configProjectOptions, hrefDefine, islandModules } from "../project.ts";
 import { ISLANDS_ID } from "../../vite/islands.ts";
 
+import { STYLE_TAGS_PLACEHOLDER, styleTags } from "./stylesheets.ts";
 export const SERVER_ENTRY = "virtual:lumen/server-entry";
 const SERVER_ENTRY_ID = "\0lumen:server-entry";
 const APP_RUNTIME = normalizePath(fileURLToPath(new URL("../server/app.ts", import.meta.url)));
@@ -137,6 +138,28 @@ function lumenBuildEnvironments(state: BuildState): Plugin {
     // lumen/vite builds every stylesheet as an entry of the client build (its CSS manifest). When
     // an island imports one too, Rolldown moves the stylesheet to a shared chunk and gives the entry
     // a facade chunk that only imports it; Vite then drops the pure-CSS chunk and blanks the import
+    // Each page's stylesheets, grouped into a shared file and the page's own (./stylesheets.ts),
+    // once the server graph (the CSS manifest) is complete.
+    renderChunk: {
+      async handler(code, chunk) {
+        if (this.environment.name !== "ssr" || !chunk.moduleIds.includes(SERVER_ENTRY_ID)) return;
+        const placeholder = JSON.stringify(STYLE_TAGS_PLACEHOLDER);
+        if (!code.includes(placeholder)) return;
+        const config = this.environment.getTopLevelConfig();
+        const { pages, others } = pageStylesheets(this, state);
+        const tags = await styleTags(pages, others, {
+          clientDir: resolve(config.root, config.environments.client!.build.outDir),
+          base: config.base,
+          assetsDir: config.build.assetsDir,
+        });
+        // The placeholder ends its line: no mapped code moves.
+        return {
+          code: code.replace(placeholder, () => `JSON.parse(${JSON.stringify(JSON.stringify(tags))})`),
+          map: null,
+        };
+      },
+    },
+
     // (`/* empty css */`). Nothing loads the facade, so it is not written either (TASK-94).
     //
     // It also finds the chunk of each island, by the module part of its ref (TASK-98).
@@ -193,6 +216,51 @@ async function islandChunks(
 /**
  * Moves the server build's emitted assets to the client output: files under `assetsDir`, named by
  * content hash as in the client build, so one the client build already wrote is identical and
+/**
+ * The stylesheet URLs of every page the app renders (routes, `_404` and `_error` pages: the
+ * document, the layouts, then the page), as the CSS manifest's `stylesheets()` lists them.
+ */
+function pageStylesheets(
+  context: Rollup.PluginContext,
+  state: BuildState,
+): { pages: string[][]; others: string[][] } {
+  const compiler = context.environment
+    .getTopLevelConfig()
+    .plugins.find((plugin) => plugin.name === "lumen");
+  const api = compiler?.api as
+    | {
+        cssManifest?: (
+          context: Rollup.PluginContext,
+        ) => Readonly<Record<string, readonly string[]>>;
+      }
+    | undefined;
+  const manifest = api?.cssManifest?.(context);
+  if (manifest === undefined || state.app === undefined) return { pages: [], others: [] };
+  const { manifest: routes, document } = state.app;
+  const layoutsFor = (dir: string): string[] =>
+    routes.layouts
+      .filter(
+        (layout) => layout.dir === "" || dir === layout.dir || dir.startsWith(`${layout.dir}/`),
+      )
+      .toSorted((a, b) => a.dir.length - b.dir.length)
+      .map((layout) => layout.file);
+  const hrefsOf = (files: readonly string[]): string[] => {
+    const hrefs = new Set<string>();
+    for (const file of document === undefined ? files : [document, ...files]) {
+      for (const href of manifest[file] ?? []) hrefs.add(href);
+    }
+    return [...hrefs];
+  };
+  return {
+    pages: routes.routes.flatMap((route) =>
+      route.kind === "page" ? [hrefsOf([...route.layouts, route.file])] : [],
+    ),
+    others: [...routes.notFoundPages, ...routes.errorPages].map((page) =>
+      hrefsOf([...layoutsFor(page.dir), page.file]),
+    ),
+  };
+}
+
  * kept. Stylesheets are dropped: the client build emits every stylesheet (lumen/vite's CSS
  * manifest), and pages link those.
  */
@@ -285,6 +353,7 @@ export const app = {
     const load = modules[file];
     return load === undefined
       ? Promise.reject(new Error(\`\${file} is not part of this build.\`))
+  styleTags: ${JSON.stringify(STYLE_TAGS_PLACEHOLDER)},
       : load();
   },
 };

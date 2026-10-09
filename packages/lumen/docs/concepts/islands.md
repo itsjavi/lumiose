@@ -71,8 +71,8 @@ the sample apps (`pnpm --filter lumen size:apps` reports them; the runtime's 10 
 entry's when the app has no islands, or a shared `lumen-[hash].js` when it has both. The router's
 History API fallback is a separate chunk, loaded only by browsers without the Navigation API. Dynamic
 imports go through a smaller preload helper than Vite's: it still adds the imported chunk's
-stylesheets (and waits for them), module preloads and the CSP nonce of
-`<meta property="csp-nonce">`, but dispatches no `vite:preloadError` event (the router loads the
+stylesheets (and waits for them, skipping those the page already holds in its merged or inline
+styles), module preloads and the CSP nonce of `<meta property="csp-nonce">`, but dispatches no `vite:preloadError` event (the router loads the
 URL with a document navigation when a page's module does not load).
 
 **Islands from other packages.** Components of a linked workspace package (`"@acme/ui": "workspace:*"`)

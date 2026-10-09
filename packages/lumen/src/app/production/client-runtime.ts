@@ -13,7 +13,8 @@
 // - A smaller preload helper. Vite wraps every dynamic `import()` in `__vitePreload`, which adds
 //   `<link>` tags for the chunk's CSS and imports first. The replacement keeps that (stylesheets
 //   it waits for, module preloads, deduplication, the CSP nonce of `<meta property="csp-nonce">`)
-//   in about a third of the size.
+//   in about a third of the size. A stylesheet the page already holds in a merged file or an inline
+//   `<style>` (`data-l-css`, ./stylesheets.ts) is not linked again.
 
 import { fileURLToPath } from "node:url";
 import { normalizePath, type Plugin } from "vite";
@@ -89,7 +90,7 @@ function exact(id: string): RegExp {
  * A stylesheet that fails rejects the import; unlike Vite's helper, no `vite:preloadError` event
  * is dispatched (the router falls back to a document navigation when a page does not load).
  */
-function preloadHelper(base: string): string {
+export function preloadHelper(base: string): string {
   return `const base = ${JSON.stringify(base)};
 const seen = {};
 export const __vitePreload = (load, deps, importer) =>
@@ -98,6 +99,7 @@ export const __vitePreload = (load, deps, importer) =>
       const href = new URL(importer ? dep : base + dep, importer || location.href).href;
       return (seen[href] ||= new Promise((resolve, reject) => {
         const css = href.endsWith(".css");
+        if (css && !importer && document.querySelector('[data-l-css~="' + base + dep + '"]')) return resolve();
         for (const link of document.querySelectorAll("link")) {
           if (link.href === href && (!css || link.rel === "stylesheet")) return resolve();
         }

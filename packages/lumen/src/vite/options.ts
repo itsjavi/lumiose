@@ -9,6 +9,7 @@ import type { CsrfOptions } from "../app/server/csrf.ts";
 import type { TrailingSlash } from "../app/server/handler.ts";
 import type { MarkdownOptions } from "./content.ts";
 import type { SvgOptions } from "./svg.ts";
+import type { Rollup } from "vite";
 
 export type { CsrfOptions, MarkdownOptions, ProjectOptions, RouteMode, SvgOptions, TrailingSlash };
 
@@ -106,6 +107,12 @@ const KNOWN = [
 
 /** Validates `lumen({ … })` options and returns the project options; throws a `TypeError`. */
 export function projectOptionsOf(options: LumenOptions): ProjectOptions {
+  /**
+   * In the server build's `renderChunk`: project-relative module → the client URLs of the
+   * stylesheets it reaches, as `virtual:lumen/css-manifest` holds them. `lumen build` groups each
+   * page's stylesheets with it.
+   */
+  cssManifest(context: Rollup.PluginContext): Readonly<Record<string, readonly string[]>>;
   if (typeof options !== "object" || options === null) {
     fail("", `expected an options object, got ${describe(options)}`);
   }

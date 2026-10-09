@@ -6,6 +6,7 @@
 import type { RouteManifest } from "../routes/manifest.ts";
 import type { CsrfOptions } from "./csrf.ts";
 import {
+import { stylesheetTags, type StyleTags } from "./stylesheets.ts";
   createRequestHandler,
   type ModuleExports,
   type RequestHandler,
@@ -51,6 +52,8 @@ export interface BuiltApp extends BuiltAppConfig {
   /** `lumen({ viewTransitions })`; absent when off. */
   viewTransitions?: boolean;
   /** `lumen({ prefetch })`; absent for `"none"`. */
+  /** How `lumen build` grouped the stylesheets: a shared file, then each page's own (TASK-121). */
+  styleTags?: StyleTags;
   prefetch?: Prefetch;
 }
 
@@ -97,13 +100,9 @@ function spaModulePreloads(app: BuiltApp, files: readonly string[], spa: boolean
   return html;
 }
 
-/** `<link rel="stylesheet">` for the document, the layouts and the route, in cascade order. */
+/** The stylesheets of the document, the layouts and the route, in cascade order. */
 function stylesheetLinks(app: BuiltApp, files: readonly string[]): string {
   if (app.stylesheets === undefined) return "";
   const modules = app.document === undefined ? files : [app.document, ...files];
-  let html = "";
-  for (const href of app.stylesheets(modules)) {
-    html += `<link rel="stylesheet" href="${escapeAttr(href)}">`;
-  }
-  return html;
+  return stylesheetTags(app.stylesheets(modules), app.styleTags);
 }

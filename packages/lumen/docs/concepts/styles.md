@@ -62,6 +62,15 @@ imports, CSS Modules, Tailwind v4 and `.scss` imports still work through Vite.
 > constant-only edits hot-update the CSS without remounting. `LUM3012` (a custom property set in a
 > `style` prop that no stylesheet reads) is reported by `lumen build` only.
 
+**In builds**, a page needs few render-blocking stylesheets. `lumen build` merges the stylesheets
+every page starts with (the document's, the root layouts', shared components') into one file that
+all pages link and browsers cache, then puts each page's own stylesheets after it: inline in one
+`<style>` when they total 4 kB or less, else merged into one file for that page. The cascade
+order is the same as in dev, where each file's CSS stays a separate stylesheet for HMR. In the
+sample apps a first view went from 6–8 stylesheet requests to one, with about 30% fewer CSS bytes (brotli).
+Each tag lists the stylesheets it holds in `data-l-css`, so an island or an SPA route that imports
+one does not load it again.
+
 ### JS values in styles
 
 `$name` and `$obj.key` put a JS value into CSS. The compiler evaluates the reference at build time

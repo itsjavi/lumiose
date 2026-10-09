@@ -161,14 +161,22 @@ describe.skipIf(!binding)("lumen build", () => {
     expect(loader).not.toBeNull();
     expect(read(root, loader![1]!)).toContain(preload![1]!.slice("assets/".length));
 
-    // The stylesheets of the layout (an imported CSS file, then its style block), linked in the
-    // head of every page (TASK-19's CSS manifest).
-    const links = [...home.matchAll(/<link rel="stylesheet" href="\/(assets\/[\w.-]+\.css)">/g)];
-    expect(links.map((link) => link[1])).toHaveLength(2);
-    expect(read(root, links[0]![1]!)).toContain("margin:0");
-    expect(read(root, links[1]![1]!)).toMatch(/\.layout\[data-l-\w+\]\{color:#dc143c\}/);
-    expect(home.indexOf(links[1]![0])).toBeLessThan(home.indexOf("</head>"));
-    expect(read(root, "about/index.html")).toContain(links[0]![0] + links[1]![0]);
+    // The stylesheets of the layout (an imported CSS file, then its style block), which every page
+    // links first (TASK-19's CSS manifest): merged into one file, in cascade order (TASK-121).
+    const links = [
+      ...home.matchAll(
+        /<link rel="stylesheet" href="\/(assets\/styles-[\w-]+\.css)" data-l-css="([^"]+)">/g,
+      ),
+    ];
+    expect(links).toHaveLength(1);
+    expect(links[0]![2]!.split(" ")).toHaveLength(2);
+    const shared = read(root, links[0]![1]!);
+    expect(shared).toMatch(/margin:0[^]*\.layout\[data-l-\w+\]\{color:#dc143c\}/);
+    for (const href of links[0]![2]!.split(" ")) {
+      expect(shared).toContain(read(root, href.slice(1)).trim());
+    }
+    expect(home.indexOf(links[0]![0])).toBeLessThan(home.indexOf("</head>"));
+    expect(read(root, "about/index.html")).toContain(links[0]![0]);
 
     expect(read(root, "blog/hola mundo/index.html")).toContain("<h1>Post hola mundo</h1>");
     expect(read(root, "docs/guide/intro/index.html")).toContain("<h1>Doc guide/intro</h1>");
@@ -188,7 +196,7 @@ describe.skipIf(!binding)("lumen build", () => {
     );
     const liveHtml = await live.text();
     expect(liveHtml).toContain("<p>live b 1</p>");
-    expect(liveHtml).toContain(links[0]![0] + links[1]![0]);
+    expect(liveHtml).toContain(links[0]![0]);
     const posted = await entry.default.fetch(
       new Request("http://app.test/api/echo", { method: "POST" }),
     );
@@ -209,7 +217,7 @@ export default { base: "/sub/", build: { outDir: "out" }, plugins: [lumen()] };
     expect(files).toEqual(expect.arrayContaining(["index.html", "about.html", "blog/hello.html"]));
     const home = readFileSync(join(result.clientDir, "index.html"), "utf8");
     expect(home).toMatch(/<link rel="modulepreload" href="\/sub\/assets\/Counter-[\w-]+\.js">/);
-    expect(home).toMatch(/<link rel="stylesheet" href="\/sub\/assets\/[\w.-]+\.css">/);
+    expect(home).toMatch(/<link rel="stylesheet" href="\/sub\/assets\/[\w.-]+\.css"/);
 
     const entry = (await import(pathToFileURL(result.serverEntry).href)) as ServerEntryModule;
     expect(entry.config).toEqual({ base: "/sub/", trailingSlash: "never", assetsDir: "assets" });
@@ -245,7 +253,7 @@ export default function Home() { return <main><Toggle client:load /></main>; }
     // The island's stylesheets are linked and its chunk preloaded, but no JS chunk is only the
     // `/* empty css */` left of a stylesheet entry.
     const home = read(root, "index.html");
-    const css = [...home.matchAll(/<link rel="stylesheet" href="\/(assets\/[\w.-]+\.css)">/g)];
+    const css = [...home.matchAll(/<link rel="stylesheet" href="\/(assets\/[\w.-]+\.css)"/g)];
     const styles = css.map((link) => read(root, link[1]!)).join("");
     expect(styles).toContain("color:teal");
     expect(styles).toMatch(/\.toggle\[data-l-\w+\]\{color:tomato\}/);
@@ -373,6 +381,45 @@ export default function Post() { return <h1>Post</h1>; }
 
   it("writes assets that only server-rendered pages import to dist/client, once (TASK-126)", async () => {
     // Above Vite's 4 kB inline limit, so they are files. `shared.png` is also an island's.
+  it("links one shared stylesheet, then inlines or merges each page's own (TASK-121)", async () => {
+    const big = Array.from({ length: 120 }, (_, i) => `.rule-${i} { margin-left: ${i}px; }`);
+    const root = project({
+      "src/app.css": "body { margin: 0; }\n",
+      "src/routes/_layout.stsx": `import "../app.css";
+export default function Layout(props: { children?: JSX.Element }) {
+  return <div class="layout">{props.children}<style>.layout { color: navy; }</style></div>;
+}
+`,
+      "src/routes/index.stsx": `export default function Home() {
+  return <main class="home">Home<style>.home { color: teal; }</style></main>;
+}
+`,
+      "src/routes/big.stsx": `export default function Big() {
+  return <main class="big">Big<style>${big.join("\n")}</style></main>;
+}
+`,
+    });
+    await build({ root, ...quiet() });
+    const home = read(root, "index.html");
+    const page = read(root, "big/index.html");
+    const sharedLink =
+      /<link rel="stylesheet" href="\/(assets\/styles-[\w-]+\.css)" data-l-css="([^"]+)">/;
+    const shared = sharedLink.exec(home)!;
+    expect(shared).not.toBeNull();
+    expect(page).toContain(shared[0]);
+    // The layout's stylesheets, in cascade order: the imported file, then the style block.
+    expect(read(root, shared[1]!)).toMatch(/margin:0[^]*\.layout\[data-l-\w+\]\{color:navy\}/);
+    expect(shared[2]!.split(" ")).toHaveLength(2);
+    // A small page stylesheet is inlined after it; one over 4 kB is linked.
+    const inline = /<style data-l-css="\/assets\/index-[\w-]+\.css">([^<]*)<\/style>/.exec(home);
+    expect(inline![1]).toMatch(/\.home\[data-l-\w+\]\{color:teal\}/);
+    expect(home.indexOf(shared[0])).toBeLessThan(home.indexOf(inline![0]));
+    expect(page).toMatch(
+      /<link rel="stylesheet" href="\/assets\/big-[\w-]+\.css" data-l-css="\/assets\/big-[\w-]+\.css">/,
+    );
+    expect([...home.matchAll(/rel="stylesheet"/g)]).toHaveLength(1);
+  });
+
     const root = project({
       "vite.config.ts": `import lumen from "lumen/vite";
 export default { plugins: [lumen({ md: true })] };
