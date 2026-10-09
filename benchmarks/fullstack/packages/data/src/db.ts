@@ -56,7 +56,8 @@ CREATE INDEX comments_issue ON comments(issue_id, created_at);
 
 /** The DB file: `TRACKER_DB`, or `.data/tracker.db` under the current working directory (the app). */
 export function dbPath(): string {
-  return resolve(process.env.TRACKER_DB ?? ".data/tracker.db");
+  // The ignore comment keeps Next.js output tracing from treating this runtime path as a project-wide read.
+  return resolve(/*turbopackIgnore: true*/ process.env.TRACKER_DB ?? ".data/tracker.db");
 }
 
 let current: { path: string; db: DatabaseSync } | undefined;

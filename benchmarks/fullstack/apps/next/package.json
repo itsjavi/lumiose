@@ -1,0 +1,30 @@
+{
+  "name": "@bench/app-next",
+  "version": "0.0.0",
+  "private": true,
+  "description": "The Tracker app (doc-4) in Next.js 16 (App Router).",
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "seed": "bench-seed",
+    "dev": "next dev --hostname 127.0.0.1 --port ${PORT:-4103}",
+    "build": "next build",
+    "start": "next start --port ${PORT:-4103}",
+    "typecheck": "next typegen && tsc -p tsconfig.json",
+    "clean": "rm -rf .next node_modules/.cache"
+  },
+  "dependencies": {
+    "@bench/data": "workspace:*",
+    "@bench/react-ui": "workspace:*",
+    "@bench/ui-css": "workspace:*",
+    "next": "16.4.0",
+    "react": "19.3.0",
+    "react-dom": "19.3.0"
+  },
+  "devDependencies": {
+    "@types/node": "24.19.1",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "typescript": "7.0.2"
+  }
+}
