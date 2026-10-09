@@ -12,13 +12,17 @@ import {
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
-import { dirname, join, resolve } from "node:path";
+import { dirname, join as joinPath, resolve as resolvePath } from "node:path";
 import { pathToFileURL } from "node:url";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { createBuilder, createLogger } from "vite";
+import { createBuilder, createLogger, normalizePath } from "vite";
 import { createDevServer } from "../app/dev/server.ts";
 import type { CssManifestModule } from "./css-manifest.ts";
 import { stylesheetImports } from "./scan.ts";
+
+// Vite's ids use `/`, also on Windows: so do the paths in these expectations.
+const join = (...parts: string[]): string => normalizePath(joinPath(...parts));
+const resolve = (...parts: string[]): string => normalizePath(resolvePath(...parts));
 
 const binding = await import("@lumen/compiler").catch(() => undefined);
 const lumenRoot = resolve(import.meta.dirname, "../..");
@@ -120,7 +124,7 @@ function files(directory: string): string[] {
 
 beforeAll(async () => {
   if (!binding) return;
-  root = realpathSync.native(mkdtempSync(join(tmpdir(), "lumen-css-manifest-")));
+  root = normalizePath(realpathSync.native(mkdtempSync(join(tmpdir(), "lumen-css-manifest-"))));
   for (const [name, code] of Object.entries(FILES)) {
     mkdirSync(dirname(join(root, name)), { recursive: true });
     writeFileSync(join(root, name), code);

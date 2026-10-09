@@ -15,8 +15,13 @@ import {
 } from "node:fs";
 import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
-import { dirname, join, resolve } from "node:path";
+import { dirname, join as joinPath, resolve as resolvePath } from "node:path";
+import { normalizePath } from "vite";
 import { afterAll, describe, expect, it } from "vitest";
+
+// Vite's ids use `/`, also on Windows: so do the paths in these expectations.
+const join = (...parts: string[]): string => normalizePath(joinPath(...parts));
+const resolve = (...parts: string[]): string => normalizePath(resolvePath(...parts));
 
 const binding = await import("@lumen/compiler").catch(() => undefined);
 const lumenRoot = resolve(import.meta.dirname, "../..");
@@ -69,7 +74,7 @@ afterAll(() => {
 
 describe.skipIf(!binding)("lumen/vite in Vitest", () => {
   it("gives DOM tests the browser entry and node tests the server entry", () => {
-    root = realpathSync.native(mkdtempSync(join(tmpdir(), "lumen-vitest-")));
+    root = normalizePath(realpathSync.native(mkdtempSync(join(tmpdir(), "lumen-vitest-"))));
     for (const [name, code] of Object.entries(FILES)) writeFileSync(join(root, name), code);
     mkdirSync(join(root, "node_modules"));
     symlinkSync(lumenRoot, join(root, "node_modules/lumen"), "junction");

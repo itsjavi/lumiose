@@ -2,11 +2,15 @@
 // dev request, with the importer chain; server graphs and stylesheets are unaffected.
 import { mkdirSync, mkdtempSync, realpathSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { dirname, join, resolve } from "node:path";
+import { dirname, join as joinPath, resolve as resolvePath } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { build, createServer } from "vite";
+import { build, createServer, normalizePath } from "vite";
 import lumen from "./index.ts";
 import { importerChain, isServerOnly } from "./server-only.ts";
+
+// Vite's ids use `/`, also on Windows: so do the paths in these expectations.
+const join = (...parts: string[]): string => normalizePath(joinPath(...parts));
+const resolve = (...parts: string[]): string => normalizePath(resolvePath(...parts));
 
 const binding = await import("@lumen/compiler").catch(() => undefined);
 const lumenRoot = resolve(import.meta.dirname, "../..");
@@ -46,7 +50,7 @@ let root: string;
 
 beforeAll(() => {
   if (!binding) return;
-  base = realpathSync.native(mkdtempSync(join(tmpdir(), "lumen-server-only-")));
+  base = normalizePath(realpathSync.native(mkdtempSync(join(tmpdir(), "lumen-server-only-"))));
   root = join(base, "app");
   for (const [name, code] of Object.entries(FILES)) {
     mkdirSync(dirname(join(root, name)), { recursive: true });

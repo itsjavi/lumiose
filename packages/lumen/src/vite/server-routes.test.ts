@@ -2,11 +2,15 @@
 // (no LUM2001); spa routes and islands still get it. lumen/vite compiles with the route mode.
 import { mkdirSync, mkdtempSync, realpathSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { dirname, join, resolve } from "node:path";
+import { dirname, join as joinPath, resolve as resolvePath } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { createLogger, createServer, type ViteDevServer } from "vite";
+import { createLogger, createServer, type ViteDevServer, normalizePath } from "vite";
 import lumen from "./index.ts";
 import { scanServerRoutes } from "./server-routes.ts";
+
+// Vite's ids use `/`, also on Windows: so do the paths in these expectations.
+const join = (...parts: string[]): string => normalizePath(joinPath(...parts));
+const resolve = (...parts: string[]): string => normalizePath(resolvePath(...parts));
 
 const binding = await import("@lumen/compiler").catch(() => undefined);
 const lumenRoot = resolve(import.meta.dirname, "../..");
@@ -41,7 +45,7 @@ const warnings: string[] = [];
 
 beforeAll(async () => {
   if (!binding) return;
-  root = realpathSync.native(mkdtempSync(join(tmpdir(), "lumen-server-routes-")));
+  root = normalizePath(realpathSync.native(mkdtempSync(join(tmpdir(), "lumen-server-routes-"))));
   for (const [name, code] of Object.entries(FILES)) {
     mkdirSync(dirname(join(root, name)), { recursive: true });
     writeFileSync(join(root, name), code);

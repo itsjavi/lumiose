@@ -2,11 +2,15 @@
 // set in a `style` prop is reported only when no stylesheet of the project reads it.
 import { mkdirSync, mkdtempSync, realpathSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { dirname, join, resolve } from "node:path";
+import { dirname, join as joinPath, resolve as resolvePath } from "node:path";
 import { afterAll, describe, expect, it } from "vitest";
-import { build, type Rollup } from "vite";
+import { build, type Rollup, normalizePath } from "vite";
 import { CustomPropertyCheck, cssReads } from "./custom-properties.ts";
 import lumen from "./index.ts";
+
+// Vite's ids use `/`, also on Windows: so do the paths in these expectations.
+const join = (...parts: string[]): string => normalizePath(joinPath(...parts));
+const resolve = (...parts: string[]): string => normalizePath(resolvePath(...parts));
 
 const binding = await import("@lumen/compiler").catch(() => undefined);
 const lumenRoot = resolve(import.meta.dirname, "../..");
@@ -43,7 +47,9 @@ afterAll(() => {
 
 describe.skipIf(!binding)("LUM3012 in lumen build", () => {
   it("reports only the custom properties no stylesheet of the project reads", async () => {
-    root = realpathSync.native(mkdtempSync(join(tmpdir(), "lumen-custom-properties-")));
+    root = normalizePath(
+      realpathSync.native(mkdtempSync(join(tmpdir(), "lumen-custom-properties-"))),
+    );
     for (const [name, code] of Object.entries(FILES)) {
       mkdirSync(dirname(join(root, name)), { recursive: true });
       writeFileSync(join(root, name), code);

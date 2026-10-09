@@ -14,7 +14,7 @@ import { once } from "node:events";
 import { createServer as createHttpServer } from "node:http";
 import type { AddressInfo } from "node:net";
 import { tmpdir } from "node:os";
-import { dirname, join, resolve } from "node:path";
+import { dirname, join as joinPath, resolve as resolvePath } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import {
   build,
@@ -23,8 +23,13 @@ import {
   type HotPayload,
   type Rolldown,
   type ViteDevServer,
+  normalizePath,
 } from "vite";
 import lumen from "./index.ts";
+
+// Vite's ids use `/`, also on Windows: so do the paths in these expectations.
+const join = (...parts: string[]): string => normalizePath(joinPath(...parts));
+const resolve = (...parts: string[]): string => normalizePath(resolvePath(...parts));
 
 const binding = await import("@lumen/compiler").catch(() => undefined);
 
@@ -127,7 +132,7 @@ const warnings: string[] = [];
 
 beforeAll(async () => {
   if (!binding) return;
-  base = realpathSync.native(mkdtempSync(join(tmpdir(), "lumen-vite-")));
+  base = normalizePath(realpathSync.native(mkdtempSync(join(tmpdir(), "lumen-vite-"))));
   root = join(base, "app");
   kit = join(base, "kit");
   for (const [dir, files] of [
