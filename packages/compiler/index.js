@@ -906,6 +906,8 @@ const {
   CompileTarget,
   ContentKind,
   contentSource,
+  ContractKind,
+  ContractSite,
   FileKind,
   ParentKind,
   PlacementKind,
@@ -920,6 +922,8 @@ export { compileSvg };
 export { CompileTarget };
 export { ContentKind };
 export { contentSource };
+export { ContractKind };
+export { ContractSite };
 export { FileKind };
 export { ParentKind };
 export { PlacementKind };
