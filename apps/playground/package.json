@@ -3,6 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "description": "The Lumen playground at /playground: edit .stsx in the browser, see the compiled client and server code, the CSS, the diagnostics and the running result. Uses the WebAssembly compiler (crates/lumen_wasm).",
+  "license": "MIT",
   "type": "module",
   "scripts": {
     "prepare:assets": "node scripts/assets.ts",

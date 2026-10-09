@@ -121,3 +121,7 @@ recipes and original examples.
 - Fonts: [Silkscreen](https://fonts.google.com/specimen/Silkscreen) and
   [Space Grotesk](https://fonts.google.com/specimen/Space+Grotesk), SIL Open Font License, bundled
   from `@fontsource`.
+
+## License
+
+The app code is [MIT](../../LICENSE). The vendored gbapu engine in `vendor/gbapu` is not covered: it keeps its own notice.

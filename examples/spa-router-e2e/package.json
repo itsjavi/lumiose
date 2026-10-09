@@ -3,6 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "description": "Lumen fixture: an spa-mode app on file routes and lumen/router, tested in Chromium under lumen dev and a production build (TASK-25 end-to-end test).",
+  "license": "MIT",
   "type": "module",
   "scripts": {
     "dev": "lumen dev",

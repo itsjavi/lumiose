@@ -3,6 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "description": "Lumen sample: a chiptune tracker, composer and mixer with an AudioWorklet NES-style synth, as a client-rendered SPA on file routes and lumen/router.",
+  "license": "MIT",
   "type": "module",
   "scripts": {
     "dev": "lumen dev",

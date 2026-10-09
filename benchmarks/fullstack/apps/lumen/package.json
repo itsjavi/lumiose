@@ -3,6 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "description": "The Tracker app of the fullstack comparison benchmark (doc-4) in Lumen: server routes, async components with Suspense, form actions and islands.",
+  "license": "MIT",
   "type": "module",
   "scripts": {
     "seed": "bench-seed",

@@ -3,6 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "description": "Lumen sample: Dotmatrix, a beginner-friendly Game Boy chiptune studio and SFX maker on the gbapu engine, as a client-rendered SPA on file routes and lumen/router.",
+  "license": "MIT",
   "type": "module",
   "scripts": {
     "dev": "lumen dev",

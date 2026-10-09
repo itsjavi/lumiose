@@ -3,6 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "description": "Lumen sample: a client-rendered counter and todo list on Vite 8 with lumen/vite.",
+  "license": "MIT",
   "type": "module",
   "scripts": {
     "dev": "vite",

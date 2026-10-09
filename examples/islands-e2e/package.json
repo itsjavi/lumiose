@@ -3,6 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "description": "Lumen fixture: server-rendered islands hydrating in Chromium, served by Vite in middleware mode (TASK-18 end-to-end test).",
+  "license": "MIT",
   "type": "module",
   "scripts": {
     "dev": "node server.ts",

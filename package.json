@@ -1,6 +1,7 @@
 {
   "name": "lumen-monorepo",
   "private": true,
+  "license": "MIT",
   "type": "module",
   "scripts": {
     "typecheck": "pnpm -r --parallel --if-present typecheck",

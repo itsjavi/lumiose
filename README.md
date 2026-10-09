@@ -15,3 +15,7 @@ pnpm preview:site --base /lumen/ # serves dist/site at http://localhost:4173/lum
 `--skip-compiler` reuses an existing native compiler build. The playground also builds the WebAssembly compiler, which needs `rustup target add wasm32-unknown-unknown` and `cargo install wasm-bindgen-cli --version 0.2.129 --locked` (the version must match the workspace's `wasm-bindgen` pin).
 
 `.github/workflows/pages.yml` runs the same build on every push to `main` (or manually) and deploys `dist/site` to GitHub Pages, with the base taken from the Pages configuration. To enable it, set **Settings > Pages > Source** to **GitHub Actions** on the repository.
+
+## License
+
+[MIT](LICENSE). This covers the Lumen packages, the website and all examples, except third-party code kept under its own license, such as the gbapu engine vendored in `examples/spa-dotmatrix/vendor/gbapu` and the Remix 3 benchmark entry.

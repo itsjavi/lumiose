@@ -3,6 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "description": "The Lumen website: the landing page at / and the docs at /docs. A static Lumen site built with @lumen/site-kit.",
+  "license": "MIT",
   "type": "module",
   "scripts": {
     "dev": "lumen dev",

@@ -3,6 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "description": "Lumen sample: a static, multi-page travel journal built from Markdown, with tags, pagination, RSS, a sitemap and two islands.",
+  "license": "MIT",
   "type": "module",
   "scripts": {
     "dev": "lumen dev",
