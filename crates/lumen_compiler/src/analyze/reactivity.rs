@@ -75,8 +75,12 @@ const SERVER_REQUEST_APIS: [&str; 7] = [
     "url",
 ];
 
-/// Bindings whose calls never read a signal (TASK-86): `lumen`'s request APIs, and every import of
-/// a server-only module (`is_server_only(specifier)`), which cannot reach a client graph (LUM4003).
+/// `lumen`'s control-flow APIs: they throw and never return a value (TASK-135), so
+/// `getProject(slug) ?? notFound()` derives nothing reactive.
+const CONTROL_FLOW_APIS: [&str; 3] = ["error", "notFound", "redirect"];
+
+/// Bindings whose calls never read a signal (TASK-86): `lumen`'s request and control-flow APIs, and
+/// every import of a server-only module (`is_server_only(specifier)`), which cannot reach a client graph (LUM4003).
 pub fn server_only_imports(
     program: &Program<'_>,
     is_server_only: impl Fn(&str) -> bool,
@@ -91,7 +95,8 @@ pub fn server_only_imports(
         for specifier in import.specifiers.iter().flatten() {
             let request_api = source == "lumen"
                 && matches!(specifier, ImportDeclarationSpecifier::ImportSpecifier(s)
-                    if SERVER_REQUEST_APIS.contains(&s.imported.name().as_str()));
+                    if SERVER_REQUEST_APIS.contains(&s.imported.name().as_str())
+                        || CONTROL_FLOW_APIS.contains(&s.imported.name().as_str()));
             if (all || request_api)
                 && let Some(symbol) = specifier.local().symbol_id.get()
             {

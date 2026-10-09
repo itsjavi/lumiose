@@ -667,3 +667,25 @@ export { Book as default, Helper };
     // Only the default export (the page) gets plain props; other components keep the rule.
     assert_eq!(stale(named, true), ["twice = props.n * 2"]);
 }
+
+#[test]
+fn control_flow_apis_are_not_reactive_reads() {
+    let source = r#"import { signal, notFound, error, params } from "lumen";
+import { getProject } from "../lib/data.ts";
+export default function Page() {
+  const count = signal(0);
+  const project = getProject(params().slug) ?? notFound();
+  const checked = project.ok ? project : error();
+  const stale = count() ?? notFound();
+  return <h1>{project.name}{checked.name}{stale}</h1>;
+}
+"#;
+    let result = compile(source, "/src/routes/[slug].tsx", &CompileOptions::default());
+    let stale: Vec<&str> = result
+        .diagnostics
+        .iter()
+        .filter(|d| d.code == Code::StaleDerivedValue)
+        .map(|d| &source[d.span.start as usize..d.span.end as usize])
+        .collect();
+    assert_eq!(stale, ["stale = count() ?? notFound()"]);
+}
