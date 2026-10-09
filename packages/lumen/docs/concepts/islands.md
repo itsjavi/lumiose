@@ -149,6 +149,9 @@ export default function Post() {
   Move it into `onMount` or an effect (`LUM4004`).
 - **Different output on server and client**, for example from `Math.random()` or `Date.now()` in
   render. Hydration reports `LUM4006` in dev and client-renders the range in production.
+- **Expecting `submit()` to refresh the page.** On MPA pages a successful `submit()` does not
+  reload: the island owns its state and updates itself from the result. Call `invalidate()` when
+  the page needs fresh server HTML ([Data and actions](data-and-actions.md)).
 - **Making a whole page an island to get interactivity.** Mark only the interactive parts, or use
   an `spa` route ([Rendering modes](rendering-modes.md)).
 

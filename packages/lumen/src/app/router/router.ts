@@ -309,6 +309,7 @@ function spaRoot(r: Router, view: View): Renderable {
   onCleanup(listen(r));
   onCleanup(
     setClientNavigation({
+      clientRouted: true,
       navigate: (href) => navigate(href),
       invalidate,
     }),

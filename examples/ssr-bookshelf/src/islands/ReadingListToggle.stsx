@@ -1,7 +1,8 @@
 // Island (client:visible): adds a book to the reader's list or removes it. Without JavaScript it
 // is a plain form posting to the `toggle` action of /reading-list, which redirects back to `next`;
-// once hydrated, it posts with submit(), shows the new state at once and lets submit() refresh the
-// page's data (on /reading-list, the entry goes away).
+// once hydrated, it posts with submit() and updates itself from the result. This is an MPA page, so
+// submit() does not reload it (decision-20): the island owns its state, and on /reading-list it
+// removes its own entry (`removeClosest`) instead of asking for fresh server data.
 import { signal, submit } from "lumen";
 import * as theme from "../theme.ts";
 
@@ -12,6 +13,8 @@ export function ReadingListToggle(props: {
   onList: boolean;
   next: string;
   compact?: boolean;
+  /** A selector of the ancestor to remove once the book leaves the list (a /reading-list entry). */
+  removeClosest?: string | undefined;
 }) {
   const onList = signal(props.onList);
   const busy = signal(false);
@@ -19,6 +22,7 @@ export function ReadingListToggle(props: {
 
   async function toggle(event: SubmitEvent) {
     event.preventDefault();
+    const form = event.currentTarget as HTMLFormElement;
     busy.set(true);
     failed.set(false);
     try {
@@ -27,8 +31,10 @@ export function ReadingListToggle(props: {
         { bookId: String(props.bookId) },
         { action: TOGGLE_ACTION },
       );
-      if (result.type === "success") onList.set(result.data.onList);
-      else failed.set(true);
+      if (result.type !== "success") failed.set(true);
+      else if (!result.data.onList && props.removeClosest !== undefined) {
+        form.closest(props.removeClosest)?.remove();
+      } else onList.set(result.data.onList);
     } catch {
       failed.set(true);
     } finally {

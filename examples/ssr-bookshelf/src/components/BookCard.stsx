@@ -7,6 +7,8 @@ import { Rating } from "./Rating.stsx";
 export interface ToggleState {
   onList: (bookId: number) => boolean;
   next: string;
+  /** On /reading-list: the entry to remove once a book leaves the list. */
+  removeClosest?: string;
 }
 
 /** The generated cover: a gradient from the book's hue with its title. */
@@ -54,6 +56,7 @@ export function BookCard(props: { book: BookSummary; toggle?: ToggleState | unde
           bookId={props.book.id}
           onList={props.toggle.onList(props.book.id)}
           next={props.toggle.next}
+          removeClosest={props.toggle.removeClosest}
           compact
         />
       )}

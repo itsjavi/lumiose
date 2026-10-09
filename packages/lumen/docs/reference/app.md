@@ -59,7 +59,8 @@ interface SubmitOptions {
   /** Default POST. A form must say method="post". */
   method?: string;
   signal?: AbortSignal;
-  /** After a success, refresh the page's data with invalidate(). Default true. */
+  /** Client-routed (SPA) pages: after a success, refresh the page's data with invalidate().
+   *  Default true. MPA pages never invalidate on their own. */
   invalidate?: boolean;
 }
 
@@ -70,9 +71,10 @@ type ActionResult<Data = unknown, Failure = unknown> =
 ```
 
 Posts without a page load. `success` and `failure` set `actionData()`; `redirect` navigates.
-After a `success`, `submit()` runs [`invalidate()`](#invalidate) and resolves once the page's data
-is fresh (decision-20); `{ invalidate: false }` skips it. Failures, redirects and errors do not
-invalidate. Rejects only for unexpected errors (the action throws, an error response, a network
+On client-routed (SPA) pages, after a `success`, `submit()` runs [`invalidate()`](#invalidate) and
+resolves once the page's data is fresh (decision-20); `{ invalidate: false }` skips it. On MPA pages
+it never reloads: the island updates itself from the result, or calls `invalidate()` explicitly.
+Failures, redirects and errors do not invalidate. Rejects only for unexpected errors (the action throws, an error response, a network
 failure) with a `FetchError`. Browser only: rejects on the server.
 
 ### submitting
@@ -112,7 +114,8 @@ function invalidate(): Promise<void>;
 
 Refreshes the current page's server data after a mutation: re-runs the page's async components in
 SPA routes (their UI stays until the new data arrives), reloads the page otherwise. A successful
-`submit()` calls it for you. Browser only.
+`submit()` calls it for you on SPA pages only; on MPA pages call it yourself when the page needs
+fresh server HTML. Browser only.
 
 ## Routing
 

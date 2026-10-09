@@ -37,10 +37,12 @@ follows a redirect, and sets `actionData()`. It rejects only for unexpected erro
 `FetchError`. `submitting(name?)` is true while a submission is in flight.
 
 **Refreshing.** `invalidate()` re-runs the current page's async components (SPA; the stale UI stays
-until the new data arrives), or reloads the page (MPA). A successful `submit()` runs it for you, so
-the page shows the mutation without extra code; pass `submit(form, { invalidate: false })` to keep
-the page as it is, for example when an island already shows the result. On MPA pages that reload
-also resets `actionData()`.
+until the new data arrives), or reloads the page (MPA). On client-routed (SPA) pages a successful
+`submit()` runs it for you, so the page shows the mutation without extra code; pass
+`submit(form, { invalidate: false })` to keep the page as it is. On MPA pages a successful
+`submit()` never reloads: an island owns only its own state, so it updates itself from the result
+(`result.data`, `actionData()`). Call `invalidate()` yourself when the page needs fresh
+server-rendered content; on MPA pages that reloads and resets `actionData()`.
 
 ## API
 
@@ -143,8 +145,11 @@ export async function BookSearch({ q }: { q: string }) {
   (`LUM4007`).
 - **Expecting `submit()` to reject on validation errors.** `fail()` resolves with
   `{ type: "failure" }`; only unexpected errors reject.
-- **Calling `invalidate()` after a successful `submit()`.** `submit()` already did; a second call
-  refreshes twice.
+- **Calling `invalidate()` after a successful `submit()` on an SPA page.** `submit()` already did;
+  a second call refreshes twice.
+- **Expecting an MPA page to refresh after `submit()`.** On MPA pages `submit()` never reloads.
+  Update the island from the result (a toggle sets its own state, a list removes its own row), or
+  call `invalidate()` explicitly if the page must show fresh server HTML.
 - **Forms without `method="post"`.** Actions only run for POST; `submit()` refuses a form that does
   not say `method="post"`, as the no-JS form would not post either.
 - **Throwing for validation errors.** A thrown error renders `_error`. Return `fail(400, data)`.

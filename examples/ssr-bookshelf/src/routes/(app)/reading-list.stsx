@@ -63,7 +63,11 @@ function ReadingList(props: { list: Page<ReadingListEntry> }) {
           <div class="entry">
             <BookCard
               book={entry.book}
-              toggle={{ onList: () => true, next: url().pathname + url().search }}
+              toggle={{
+                onList: () => true,
+                next: url().pathname + url().search,
+                removeClosest: ".entry",
+              }}
             />
             <p class="byline">Added {formatDate(entry.addedAt)}</p>
           </div>

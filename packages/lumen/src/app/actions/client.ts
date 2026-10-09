@@ -34,8 +34,9 @@ export interface SubmitOptions {
   /** Aborts the request. */
   signal?: AbortSignal;
   /**
-   * After a `success` result, refresh the current page's data with `invalidate()` before
-   * resolving (decision-20). Default `true`; `false` keeps the page as it is.
+   * On client-routed (SPA) pages, after a `success` result, refresh the page's data with
+   * `invalidate()` before resolving (decision-20). Default `true`; `false` keeps the page as it
+   * is. MPA pages never invalidate on their own (that would reload): call `invalidate()` yourself.
    */
   invalidate?: boolean;
 }
@@ -73,9 +74,10 @@ export function submitting(name?: string): boolean {
 
 /**
  * Posts a form to its page action without a page load, and resolves with the action result:
- * `success` and `failure` (`fail()`) set `actionData()`, `redirect` navigates. After a `success`
- * it runs `invalidate()` and resolves once the page's data is fresh (opt out with
- * `{ invalidate: false }`). Rejects only for unexpected errors, with a `FetchError`: the action
+ * `success` and `failure` (`fail()`) set `actionData()`, `redirect` navigates. On client-routed
+ * (SPA) pages, after a `success` it runs `invalidate()` and resolves once the page's data is fresh
+ * (opt out with `{ invalidate: false }`). On MPA pages it never reloads: islands update themselves
+ * from the result, or call `invalidate()` explicitly. Rejects only for unexpected errors, with a `FetchError`: the action
  * throws, the response is an error, or the network fails (status 0). Pass it the submit event to
  * enhance a form: `<form method="post" action="?/create" onSubmit={submit}>`.
  */
@@ -121,7 +123,10 @@ export async function submit<Data = unknown, Failure = unknown>(
     inFlight.update((names) => names.toSpliced(names.indexOf(name), 1));
   }
   // After the submission left busy(): the SPA's invalidate() resolves once nothing is in flight.
-  if (result.type === "success" && options.invalidate !== false) await invalidate();
+  // MPA pages only reload on an explicit invalidate() (decision-20 amendment).
+  if (result.type === "success" && navigation.clientRouted && options.invalidate !== false) {
+    await invalidate();
+  }
   return result;
 }
 

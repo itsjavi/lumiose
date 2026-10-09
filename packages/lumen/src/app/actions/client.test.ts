@@ -13,7 +13,11 @@ let client: Client;
 let fetchModule: FetchJSON;
 let core: Core;
 let requests: Request[];
-let navigation: { navigate: Mock<(href: string) => void>; invalidate: Mock<() => void> };
+let navigation: {
+  clientRouted: boolean;
+  navigate: Mock<(href: string) => void>;
+  invalidate: Mock<() => void>;
+};
 
 /** Each test gets fresh module state (the actionData() signal is created on first read). */
 beforeEach(async () => {
@@ -23,7 +27,7 @@ beforeEach(async () => {
   core = await import("../../core/effect.ts");
   fetchModule = await import("../fetch-json.ts");
   requests = [];
-  navigation = { navigate: vi.fn(), invalidate: vi.fn() };
+  navigation = { clientRouted: true, navigate: vi.fn(), invalidate: vi.fn() };
   client.setClientNavigation(navigation);
   history.replaceState(null, "", "/todos");
 });
@@ -214,7 +218,7 @@ describe("submit()", () => {
   });
 });
 
-describe("submit() refreshes the page after a success (decision-20, TASK-105)", () => {
+describe("submit() refreshes client-routed pages after a success (decision-20, TASK-105)", () => {
   it("runs invalidate() once the submission left busy(), and resolves after it", async () => {
     serve(() => actionResult({ type: "success", status: 200, data: "saved" }));
     const { busy } = await import("../../core/async.ts");
@@ -253,6 +257,16 @@ describe("submit() refreshes the page after a success (decision-20, TASK-105)", 
     await client.submit({});
     expect(navigation.invalidate).toHaveBeenCalledTimes(1);
   });
+
+  it("never invalidates on its own on MPA pages; an explicit invalidate() still does (TASK-118)", async () => {
+    navigation.clientRouted = false;
+    serve(() => actionResult({ type: "success", status: 200, data: "saved" }));
+    expect(await client.submit({})).toEqual({ type: "success", status: 200, data: "saved" });
+    expect(navigation.invalidate).not.toHaveBeenCalled();
+    expect(client.actionData()).toBe("saved");
+    await client.invalidate();
+    expect(navigation.invalidate).toHaveBeenCalledTimes(1);
+  });
 });
 
 describe("actionData()", () => {
@@ -274,7 +288,7 @@ describe("invalidate()", () => {
   });
 
   it("restores the previous hooks when the installer undoes", async () => {
-    const spa = { navigate: vi.fn(), invalidate: vi.fn() };
+    const spa = { clientRouted: true, navigate: vi.fn(), invalidate: vi.fn() };
     const undo = client.setClientNavigation(spa);
     await client.invalidate();
     undo();

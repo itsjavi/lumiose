@@ -1280,6 +1280,9 @@ export default function Post() {
   Move it into `onMount` or an effect (`LUM4004`).
 - **Different output on server and client**, for example from `Math.random()` or `Date.now()` in
   render. Hydration reports `LUM4006` in dev and client-renders the range in production.
+- **Expecting `submit()` to refresh the page.** On MPA pages a successful `submit()` does not
+  reload: the island owns its state and updates itself from the result. Call `invalidate()` when
+  the page needs fresh server HTML ([Data and actions](data-and-actions.md)).
 - **Making a whole page an island to get interactivity.** Mark only the interactive parts, or use
   an `spa` route ([Rendering modes](rendering-modes.md)).
 
@@ -1526,10 +1529,12 @@ follows a redirect, and sets `actionData()`. It rejects only for unexpected erro
 `FetchError`. `submitting(name?)` is true while a submission is in flight.
 
 **Refreshing.** `invalidate()` re-runs the current page's async components (SPA; the stale UI stays
-until the new data arrives), or reloads the page (MPA). A successful `submit()` runs it for you, so
-the page shows the mutation without extra code; pass `submit(form, { invalidate: false })` to keep
-the page as it is, for example when an island already shows the result. On MPA pages that reload
-also resets `actionData()`.
+until the new data arrives), or reloads the page (MPA). On client-routed (SPA) pages a successful
+`submit()` runs it for you, so the page shows the mutation without extra code; pass
+`submit(form, { invalidate: false })` to keep the page as it is. On MPA pages a successful
+`submit()` never reloads: an island owns only its own state, so it updates itself from the result
+(`result.data`, `actionData()`). Call `invalidate()` yourself when the page needs fresh
+server-rendered content; on MPA pages that reloads and resets `actionData()`.
 
 ## API
 
@@ -1632,8 +1637,11 @@ export async function BookSearch({ q }: { q: string }) {
   (`LUM4007`).
 - **Expecting `submit()` to reject on validation errors.** `fail()` resolves with
   `{ type: "failure" }`; only unexpected errors reject.
-- **Calling `invalidate()` after a successful `submit()`.** `submit()` already did; a second call
-  refreshes twice.
+- **Calling `invalidate()` after a successful `submit()` on an SPA page.** `submit()` already did;
+  a second call refreshes twice.
+- **Expecting an MPA page to refresh after `submit()`.** On MPA pages `submit()` never reloads.
+  Update the island from the result (a toggle sets its own state, a list removes its own row), or
+  call `invalidate()` explicitly if the page must show fresh server HTML.
 - **Forms without `method="post"`.** Actions only run for POST; `submit()` refuses a form that does
   not say `method="post"`, as the no-JS form would not post either.
 - **Throwing for validation errors.** A thrown error renders `_error`. Return `fail(400, data)`.
@@ -2999,7 +3007,8 @@ interface SubmitOptions {
   /** Default POST. A form must say method="post". */
   method?: string;
   signal?: AbortSignal;
-  /** After a success, refresh the page's data with invalidate(). Default true. */
+  /** Client-routed (SPA) pages: after a success, refresh the page's data with invalidate().
+   *  Default true. MPA pages never invalidate on their own. */
   invalidate?: boolean;
 }
 
@@ -3010,9 +3019,10 @@ type ActionResult<Data = unknown, Failure = unknown> =
 ```
 
 Posts without a page load. `success` and `failure` set `actionData()`; `redirect` navigates.
-After a `success`, `submit()` runs [`invalidate()`](#invalidate) and resolves once the page's data
-is fresh (decision-20); `{ invalidate: false }` skips it. Failures, redirects and errors do not
-invalidate. Rejects only for unexpected errors (the action throws, an error response, a network
+On client-routed (SPA) pages, after a `success`, `submit()` runs [`invalidate()`](#invalidate) and
+resolves once the page's data is fresh (decision-20); `{ invalidate: false }` skips it. On MPA pages
+it never reloads: the island updates itself from the result, or calls `invalidate()` explicitly.
+Failures, redirects and errors do not invalidate. Rejects only for unexpected errors (the action throws, an error response, a network
 failure) with a `FetchError`. Browser only: rejects on the server.
 
 ### submitting
@@ -3052,7 +3062,8 @@ function invalidate(): Promise<void>;
 
 Refreshes the current page's server data after a mutation: re-runs the page's async components in
 SPA routes (their UI stays until the new data arrives), reloads the page otherwise. A successful
-`submit()` calls it for you. Browser only.
+`submit()` calls it for you on SPA pages only; on MPA pages call it yourself when the page needs
+fresh server HTML. Browser only.
 
 ## Routing
 
@@ -3558,7 +3569,7 @@ the new page is on screen.
   navigates. Without such a page, a minimal built-in error page replaces the SPA.
 - **`invalidate()`** from `lumen` re-runs the SPA's async components and resources (they keep
   their UI meanwhile) and resolves once they settled. `submit()` redirects navigate through the
-  router, and a successful `submit()` invalidates.
+  router, and a successful `submit()` invalidates (on MPA pages it does not: that would reload).
 - **Stale modules.** A page module that fails to load (an old chunk after a deploy) loads the URL
   as a document instead.
 

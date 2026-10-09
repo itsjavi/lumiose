@@ -235,6 +235,8 @@ test.describe("islands", () => {
     await page.goto("/books");
     const card = page.locator(".book-card", { hasText: BOOK.title });
     const toggle = card.getByRole("button", { name: "+ Reading list" });
+    // On MPA pages submit() never reloads (decision-20): the island updates itself.
+    await page.evaluate(() => ((window as { notReloaded?: boolean }).notReloaded = true));
     const posted = enhancedPost(page, "/reading-list?/toggle");
     await toggle.click();
     expect((await posted).status()).toBe(200);
@@ -242,6 +244,7 @@ test.describe("islands", () => {
       "aria-pressed",
       "true",
     );
+    expect(await page.evaluate(() => (window as { notReloaded?: boolean }).notReloaded)).toBe(true);
     await expect(page).toHaveURL(/\/books$/);
     await screenshot(page, "books");
 
@@ -252,11 +255,13 @@ test.describe("islands", () => {
     await expect(page.locator(".entry")).toContainText(BOOK.title);
     await screenshot(page, "reading-list");
 
+    // The island removes its own entry instead of reloading for fresh server data.
+    await page.evaluate(() => ((window as { notReloaded?: boolean }).notReloaded = true));
     const off = enhancedPost(page, "/reading-list?/toggle");
     await page.getByRole("button", { name: "✓ On your list" }).click();
     await off;
-    // A successful submit() refreshes the page's data itself (decision-20): no manual reload.
     await expect(page.locator(".entry")).toHaveCount(0);
+    expect(await page.evaluate(() => (window as { notReloaded?: boolean }).notReloaded)).toBe(true);
   });
 
   test("reviews: the star input checks the rating, then create, edit and delete", async ({

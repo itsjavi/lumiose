@@ -4,11 +4,17 @@
 
 /** How `submit()` redirects and `invalidate()` refresh. The SPA router replaces the MPA default. */
 export interface ClientNavigation {
+  /**
+   * Whether pages are client-routed, so that `invalidate()` re-runs async components without a
+   * reload. Only then does a successful `submit()` invalidate on its own (decision-20 amendment).
+   */
+  clientRouted: boolean;
   navigate(href: string): void | Promise<void>;
   invalidate(): void | Promise<void>;
 }
 
 export let navigation: ClientNavigation = {
+  clientRouted: false,
   navigate: (href) => location.assign(href),
   invalidate: () => location.reload(),
 };
