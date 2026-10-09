@@ -7,12 +7,13 @@
 // `/@fs/`, which is how a dev server can reference it.
 import { createServer as createHttpServer, type ServerResponse } from "node:http";
 import { fileURLToPath } from "node:url";
-import { createServer, isRunnableDevEnvironment } from "vite";
+import { createServer, isRunnableDevEnvironment, normalizePath } from "vite";
 
 const port = Number(process.env.PORT ?? 5193);
-const loader = fileURLToPath(
-  new URL("./src/dom/loader.ts", import.meta.resolve("lumen/package.json")),
-);
+// `/@fs/D:/…` on Windows, `/@fs/home/…` elsewhere.
+const loader = normalizePath(
+  fileURLToPath(new URL("./src/dom/loader.ts", import.meta.resolve("lumen/package.json"))),
+).replace(/^\/?/, "/");
 
 const vite = await createServer({
   root: import.meta.dirname,

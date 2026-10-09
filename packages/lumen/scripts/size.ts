@@ -8,7 +8,8 @@ import { brotliCompressSync, constants, gzipSync } from "node:zlib";
 import { fileURLToPath } from "node:url";
 import { build, type Rollup } from "vite";
 
-const src = fileURLToPath(new URL("../src/", import.meta.url));
+// Forward slashes: the path goes into generated `import` strings (backslashes would be escapes on Windows).
+const src = fileURLToPath(new URL("../src/", import.meta.url)).replaceAll("\\", "/");
 const HARD_CAP = 10 * 1024;
 /** Entry name prefix → budget in bytes; `hard` budgets fail the run. */
 const BUDGETS: Record<string, { limit: number; hard: boolean }> = {
