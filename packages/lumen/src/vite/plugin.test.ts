@@ -287,19 +287,15 @@ describe.skipIf(!binding)("lumen/vite", () => {
       `"@acme/kit/src/Nav.stsx#Nav": () => import(${JSON.stringify(`${kit}/src/Nav.stsx`)})`,
     );
     expect(code).not.toContain("showcase");
-    // The browser imports it through Vite's file-system route.
+    // The browser imports it through Vite's file-system route (`/@fs/C:/…` on Windows).
+    const fs = `/@fs${kit.startsWith("/") ? "" : "/"}${kit}`;
     const served = await server.environments.client.transformRequest("virtual:lumen/islands");
-    // `/@fs/C:/…` on Windows.
-    expect(served!.code).toContain(
-      `import("/@fs${kit.startsWith("/") ? "" : "/"}${kit}/src/Nav.stsx`,
-    );
-    const ssr = await server.environments.ssr.transformRequest(`/@fs${kit}/src/Header.stsx`);
+    expect(served!.code).toContain(`import("${fs}/src/Nav.stsx`);
+    const ssr = await server.environments.ssr.transformRequest(`${fs}/src/Header.stsx`);
     expect(ssr!.code).toContain('island)("@acme/kit/src/Nav.stsx#Nav"');
     // Its JS and CSS hash the same package-relative path into the scope token.
     const token = /data-l-(\w+)/.exec(ssr!.code)![1];
-    const css = await server.environments.client.transformRequest(
-      `/@fs${kit}/src/Header.stsx${STYLE}`,
-    );
+    const css = await server.environments.client.transformRequest(`${fs}/src/Header.stsx${STYLE}`);
     expect(css!.code).toContain(`[data-l-${token}]`);
   });
 
