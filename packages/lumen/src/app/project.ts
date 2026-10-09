@@ -1,8 +1,8 @@
 // Project conventions shared by `lumen dev`, `lumen build` and `lumen preview`: where the
 // optional app files live, the Vite config lookup, and the project options of `lumen({ … })`.
 
-import { existsSync } from "node:fs";
-import { join } from "node:path";
+import { existsSync, realpathSync } from "node:fs";
+import { join, resolve } from "node:path";
 import type { Plugin, PluginOption, ResolvedConfig } from "vite";
 import { TRAILING_SLASH_DEFINE } from "./routes/href.ts";
 import type { RouteMode } from "./routes/manifest.ts";
@@ -11,6 +11,21 @@ import type { CsrfOptions } from "./server/csrf.ts";
 import type { LimitsOption } from "./server/body.ts";
 import type { TrailingSlash } from "./server/handler.ts";
 import type { Prefetch } from "./server/navigation.ts";
+
+/**
+ * The project root as the module graph sees it: absolute and real, with symbolic links and
+ * Windows 8.3 short names (`C:\\Users\\RUNNER~1`) resolved, as Vite resolves module ids. Paths
+ * relative to it (route files, island refs, the CSS manifest) are then computed from matching
+ * prefixes. Falls back to the resolved path when it does not exist.
+ */
+export function realProjectRoot(root: string = process.cwd()): string {
+  const absolute = resolve(root);
+  try {
+    return realpathSync.native(absolute);
+  } catch {
+    return absolute;
+  }
+}
 
 export const MIDDLEWARE_FILES = ["src/middleware.ts", "src/middleware.js"];
 export const DOCUMENT_FILES = ["src/document.stsx", "src/document.tsx"];

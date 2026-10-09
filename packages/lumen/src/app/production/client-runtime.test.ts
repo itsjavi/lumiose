@@ -28,7 +28,7 @@ afterAll(() => {
 });
 
 function project(files: Record<string, string>): string {
-  const root = realpathSync(mkdtempSync(join(tmpdir(), "lumen-runtime-")));
+  const root = realpathSync.native(mkdtempSync(join(tmpdir(), "lumen-runtime-")));
   roots.push(root);
   for (const [name, code] of Object.entries(files)) {
     mkdirSync(dirname(join(root, name)), { recursive: true });

@@ -55,7 +55,7 @@ let server: LumenServer;
 
 beforeAll(async () => {
   if (!binding) return;
-  root = realpathSync(mkdtempSync(join(tmpdir(), "lumen-adapter-")));
+  root = realpathSync.native(mkdtempSync(join(tmpdir(), "lumen-adapter-")));
   for (const [name, code] of Object.entries(FILES)) {
     mkdirSync(dirname(join(root, name)), { recursive: true });
     writeFileSync(join(root, name), code);
@@ -135,7 +135,7 @@ describe.skipIf(!binding)("@lumen/adapter-node", () => {
   });
 
   it("sends the build's lumen({ headers }) by path; a response's own headers win (TASK-125)", async () => {
-    const app = realpathSync(mkdtempSync(join(tmpdir(), "lumen-adapter-headers-")));
+    const app = realpathSync.native(mkdtempSync(join(tmpdir(), "lumen-adapter-headers-")));
     const files: Record<string, string> = {
       "src/routes/index.stsx": "export default function Home() { return <h1>Home</h1>; }\n",
       "src/routes/embed.stsx": FILES["src/routes/embed.stsx"]!,

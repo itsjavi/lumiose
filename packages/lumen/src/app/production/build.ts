@@ -31,6 +31,7 @@ import {
   MIDDLEWARE_FILES,
   navigationOptions,
   projectOptions,
+  realProjectRoot,
 } from "../project.ts";
 import { DEFAULT_ROUTES_DIR, type RouteMode } from "../routes/manifest.ts";
 import type { TrailingSlash } from "../server/handler.ts";
@@ -76,7 +77,8 @@ export class BuildError extends Error {
 }
 
 export async function build(options: BuildOptions = {}): Promise<BuildResult> {
-  const root = normalizePath(resolve(options.root ?? process.cwd()));
+  // Real (symlinks and Windows short names resolved), as Vite's module ids are.
+  const root = normalizePath(realProjectRoot(options.root));
   const configFile = options.configFile ?? findViteConfig(root);
   const routesDir = options.routesDir ?? DEFAULT_ROUTES_DIR;
   const state: BuildState = {

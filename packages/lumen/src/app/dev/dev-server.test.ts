@@ -12,7 +12,7 @@ import {
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
-import { createLogger, type HotPayload } from "vite";
+import { createLogger, normalizePath, type HotPayload } from "vite";
 import { createDevServer, type DevServer } from "./server.ts";
 
 const binding = await import("@lumen/compiler").catch(() => undefined);
@@ -99,7 +99,7 @@ const errors: string[] = [];
 
 beforeAll(async () => {
   if (!binding) return;
-  root = realpathSync(mkdtempSync(join(tmpdir(), "lumen-dev-")));
+  root = realpathSync.native(mkdtempSync(join(tmpdir(), "lumen-dev-")));
   for (const [name, code] of Object.entries(FILES)) write(name, code);
   mkdirSync(join(root, "node_modules"));
   symlinkSync(lumenRoot, join(root, "node_modules/lumen"), "dir");
@@ -330,7 +330,7 @@ describe.skipIf(!binding)("lumen dev below a base (TASK-101)", () => {
 
   beforeAll(async () => {
     if (!binding) return;
-    site = realpathSync(mkdtempSync(join(tmpdir(), "lumen-dev-base-")));
+    site = realpathSync.native(mkdtempSync(join(tmpdir(), "lumen-dev-base-")));
     const files: Record<string, string> = {
       "vite.config.ts": `import lumen from "lumen/vite";
 export default { base: "/sub/", plugins: [lumen({ trailingSlash: "always" })] };
@@ -361,7 +361,9 @@ export default function Home() {
     const html = await (await fetch(new URL("/sub/", server.url))).text();
     expect(html).toContain('<a href="/sub/blog/hello/">Post</a><a href="/sub/">Home</a>');
     // The browser's copy of href() gets the same values from Vite's import.meta.env.
-    const module = await fetch(new URL(`/sub/@fs${lumenRoot}/src/app/routes/href.ts`, server.url));
+    // `/@fs/` + the absolute path with forward slashes (`/@fs/C:/…` on Windows).
+    const fsPath = normalizePath(lumenRoot).replace(/^\//, "");
+    const module = await fetch(new URL(`/sub/@fs/${fsPath}/src/app/routes/href.ts`, server.url));
     expect(module.status).toBe(200);
     const code = await module.text();
     expect(code).toContain('"BASE_URL": "/sub/"');

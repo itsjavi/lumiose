@@ -172,10 +172,13 @@ describe("the static index (TASK-167 L2)", () => {
       await new Promise<void>((done) => server.listen(0, "127.0.0.1", done));
       const origin = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
       expect(await (await fetch(`${origin}/ok.txt`)).text()).toBe("ok");
-      expect((await fetch(`${origin}/locked/secret.txt`)).status).toBe(418);
+      // Windows has no POSIX permission bits: chmod 000 does not make the directory unreadable.
+      if (process.platform !== "win32") {
+        expect((await fetch(`${origin}/locked/secret.txt`)).status).toBe(418);
+      }
       expect(await (await fetch(`${origin}/shared.txt`)).text()).toBe("shared");
       const warnings = warn.mock.calls.map((call) => String(call[0])).join("\n");
-      expect(warnings).toContain("cannot read");
+      if (process.platform !== "win32") expect(warnings).toContain("cannot read");
       expect(warnings).toContain("shared.txt ->");
       // symlinks: "contain" serves only what stays inside the directory.
       const contained = createStaticHandler(

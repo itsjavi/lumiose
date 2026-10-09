@@ -66,7 +66,7 @@ island manifest (`virtual:lumen/islands`, from `lumen/vite`), and:
 - reads the island records (`<script type="application/json" data-l-islands>`) as each streamed
   chunk arrives, and finds each island's range;
 - arms its trigger: `client:load` and `client:only` at once, `client:idle` on
-  `requestIdleCallback`, `client:visible` when the range's first element intersects the viewport
+  `requestIdleCallback` with a 2 s timeout (a busy main thread cannot leave the island inert), `client:visible` when the range's first element intersects the viewport
   (the value is the `rootMargin`), `client:media` when the query matches;
 - waits for an island whose range still holds a streamed `<Suspense>` fallback until its content
   (and the await records sent with it) arrives;

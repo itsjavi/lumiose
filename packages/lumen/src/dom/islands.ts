@@ -6,7 +6,9 @@
 //   additions for islands whose content streamed later. A MutationObserver picks up each script
 //   as the stream arrives; one TreeWalker pass over comments then finds `<!--l:ID-->` and
 //   `<!--/l:ID-->` for the new records.
-// - Triggers: `load` and `only` at once, `idle` on `requestIdleCallback`, `visible` when the first
+// - Triggers: `load` and `only` at once, `idle` on `requestIdleCallback` (with a 2 s timeout:
+//   a main thread that never idles, or a headless browser that schedules no idle periods, must not
+//   leave the island inert), `visible` when the first
 //   element of the range intersects the viewport (the value is the `rootMargin`), `media` when the
 //   query matches. An island whose range still holds a streamed `<Suspense>` placeholder waits
 //   for its content (and the await records sent with it).
@@ -18,6 +20,9 @@ import type { Component } from "../contract/client.ts";
 import { decodeData } from "../server/serialize.ts";
 import { DEV } from "./dev.ts";
 import { hydrate } from "./hydrate.ts";
+
+/** `client:idle`: the latest moment an idle island hydrates, in ms, when the browser never idles. */
+export const IDLE_TIMEOUT = 2000;
 
 /** Dev: re-renders the hydrated instances of an edited island module; false when it cannot. */
 type HotSwap = (module: string, exports: unknown) => boolean;
@@ -152,7 +157,11 @@ export function loadIslands(manifest: IslandManifest): () => void {
         break;
       }
       case "idle":
-        (window.requestIdleCallback ?? setTimeout)(start);
+        if (typeof requestIdleCallback === "function") {
+          requestIdleCallback(start, { timeout: IDLE_TIMEOUT });
+        } else {
+          setTimeout(start);
+        }
         break;
       case "media": {
         const query = matchMedia(value!);

@@ -29,7 +29,7 @@ describe("dev errors", () => {
   });
 
   it("locates runtime errors at the first project frame, route groups included", () => {
-    const root = realpathSync(mkdtempSync(join(tmpdir(), "lumen-errors-")));
+    const root = realpathSync.native(mkdtempSync(join(tmpdir(), "lumen-errors-")));
     try {
       const file = join(root, "src/routes/(app)/page.stsx");
       const error = new Error("Boom");

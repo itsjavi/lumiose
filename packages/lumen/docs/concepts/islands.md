@@ -22,7 +22,7 @@ input, submits and key presses that happen before hydration are replayed.
 | Directive                                   | Hydrates                                            |
 | ------------------------------------------- | --------------------------------------------------- |
 | `client:load`                               | Immediately.                                        |
-| `client:idle`                               | When the browser is idle.                           |
+| `client:idle`                               | When the browser is idle (at the latest after 2 s). |
 | `client:visible` / `client:visible="200px"` | When it enters the viewport (optional root margin). |
 | `client:media="(max-width: 600px)"`         | When the media query matches.                       |
 | `client:only`                               | Client-rendered only: no server HTML.               |

@@ -5,6 +5,7 @@
 
 import { readFileSync } from "node:fs";
 import { isAbsolute, relative } from "node:path";
+import { fileURLToPath } from "node:url";
 import { jsonForScript } from "../../server/node.ts";
 
 /** The error shape Vite's `ErrorOverlay` renders (`ErrorPayload["err"]`). */
@@ -25,7 +26,7 @@ interface ViteErrorFields {
 }
 
 // `at name (/path/file:1:2)` or `at /path/file:1:2`; paths may contain parentheses (route groups).
-const STACK_LOCATION = /^at (?:.*? \()?((?:file:\/\/)?(?:\/|[A-Za-z]:\\).*?):(\d+):(\d+)\)?$/;
+const STACK_LOCATION = /^at (?:.*? \()?((?:file:\/\/)?(?:\/|[A-Za-z]:[\\/]).*?):(\d+):(\d+)\)?$/;
 
 /** Prepares a thrown value for the overlay (and the terminal). */
 export function overlayError(error: unknown, root: string): OverlayError {
@@ -121,11 +122,24 @@ function projectFrame(
   for (const line of stack.split("\n").slice(1)) {
     const match = STACK_LOCATION.exec(line.trim());
     if (match === null) continue;
-    const file = match[1]!.replace(/^file:\/\//, "").replace(/\?.*$/, "");
-    if (!file.startsWith(`${root}/`) || /[\\/]node_modules[\\/]/.test(file)) continue;
+    const raw = match[1]!.replace(/\?.*$/, "");
+    // `file:///C:/x` and `C:\x` alike: the native path, compared separator- and drive-case-agnostic.
+    const file = raw.startsWith("file://") ? fileURLToPath(raw) : raw;
+    if (!isInside(file, root) || /[\\/]node_modules[\\/]/.test(file)) continue;
     return { file, line: Number(match[2]), column: Number(match[3]) };
   }
   return undefined;
+}
+
+/** Whether `file` is below `root`, whatever their separators (`C:\\a` and `c:/a/b` match). */
+function isInside(file: string, root: string): boolean {
+  return pathKey(file).startsWith(`${pathKey(root)}/`);
+}
+
+/** A path with `/` separators, without a trailing one, lowercased when it has a drive letter. */
+function pathKey(path: string): string {
+  const slashed = path.replaceAll("\\", "/").replace(/\/+$/, "");
+  return /^[A-Za-z]:\//.test(slashed) ? slashed.toLowerCase() : slashed;
 }
 
 /** The stack without its first line (the message, which the overlay shows separately). */

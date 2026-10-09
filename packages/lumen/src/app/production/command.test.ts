@@ -50,7 +50,7 @@ describe("build and preview commands", () => {
   it.skipIf(!binding)(
     "lumen preview sends Vite's preview.headers, else server.headers (TASK-95)",
     async () => {
-      const app = realpathSync(mkdtempSync(join(tmpdir(), "lumen-preview-")));
+      const app = realpathSync.native(mkdtempSync(join(tmpdir(), "lumen-preview-")));
       roots.push(app);
       const files: Record<string, string> = {
         "src/routes/index.stsx": "export default function Home() { return <h1>Home</h1>; }\n",
@@ -115,7 +115,7 @@ export default {
   it.skipIf(!binding)(
     "lumen preview serves a build without dist/server as static files, without the adapter (TASK-125)",
     async () => {
-      const app = realpathSync(mkdtempSync(join(tmpdir(), "lumen-preview-static-")));
+      const app = realpathSync.native(mkdtempSync(join(tmpdir(), "lumen-preview-static-")));
       roots.push(app);
       const files: Record<string, string> = {
         "src/routes/index.stsx": "export default function Home() { return <h1>Home</h1>; }\n",
