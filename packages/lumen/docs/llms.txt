@@ -52,6 +52,7 @@ These docs match lumen 0.0.0. Installed projects have them in `node_modules/lume
 - [LUM1006: Raw CSS in a `.tsx` file](errors/LUM1006.md)
 - [LUM1007: `await using` in a component](errors/LUM1007.md)
 - [LUM1008: `<script>` in a Markdown file](errors/LUM1008.md)
+- [LUM1010: Source nested too deeply](errors/LUM1010.md)
 - [LUM2001: Stale derived value](errors/LUM2001.md)
 - [LUM2002: Signal write during render](errors/LUM2002.md)
 - [LUM2003: Reactive early return](errors/LUM2003.md)

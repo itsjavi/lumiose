@@ -593,7 +593,7 @@ pub fn compile(
             }
         }
     };
-    let mut result = lumen_compiler::compile(&source, &filename, &options);
+    let mut result = on_large_stack(|| lumen_compiler::compile(&source, &filename, &options))?;
     let index = Utf16Index::new(&source);
     if !index.is_identity() {
         result.map_spans(&|offset| index.to_utf16(offset));
@@ -725,6 +725,28 @@ pub fn compile(
                 .contract
                 .map(|entries| entries.into_iter().map(convert_contract_entry).collect()),
         },
+    })
+}
+
+/// Stack of the compile thread. oxc's passes recurse once per nesting level; `compile` rejects
+/// bracket nesting past `lumen_compiler::depth::MAX_DEPTH` (LUM1010), and this covers what that
+/// check does not measure (JSX element nesting) far beyond real code, whatever the stack of the
+/// calling thread (Node's main thread has 1 MB on Windows). The memory is reserved, not committed.
+const COMPILE_STACK: usize = 256 * 1024 * 1024;
+
+/// Runs `f` on a thread with [`COMPILE_STACK`] (TASK-170). A panic becomes a JS error instead of
+/// aborting the host process (the dev server, the language server).
+fn on_large_stack<T: Send>(f: impl FnOnce() -> T + Send) -> napi::Result<T> {
+    std::thread::scope(|scope| {
+        std::thread::Builder::new()
+            .name("lumen-compile".to_owned())
+            .stack_size(COMPILE_STACK)
+            .spawn_scoped(scope, f)
+            .map_err(|error| {
+                napi::Error::from_reason(format!("cannot start the compiler: {error}"))
+            })?
+            .join()
+            .map_err(|_| napi::Error::from_reason("the compiler failed (internal error)"))
     })
 }
 

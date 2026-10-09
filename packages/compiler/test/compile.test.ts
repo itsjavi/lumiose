@@ -141,6 +141,35 @@ describe.skipIf(!binding)("@lumen/compiler native compile", () => {
     ]);
   });
 
+  it("survives nesting 100k levels deep: LUM1010 for brackets, a large stack for JSX (TASK-170)", () => {
+    const n = 100_000;
+    const deep = {
+      parens: `export const x = ${"(".repeat(n)}1${")".repeat(n)};`,
+      objects: `export const x = ${"{a:".repeat(n)}1${"}".repeat(n)};`,
+      arrays: `export const x = ${"[".repeat(n)}1${"]".repeat(n)};`,
+      templates: `export const x = ${"`${".repeat(n)}1${"}`".repeat(n)};`,
+      blocks: `export function f() ${"{".repeat(n)}${"}".repeat(n)}`,
+    };
+    for (const [kind, source] of Object.entries(deep)) {
+      const result = compile(source, "/src/deep.tsx");
+      expect(
+        result.diagnostics.map((d) => d.code),
+        kind,
+      ).toEqual(["LUM1010"]);
+      expect(result.code).toBe("");
+    }
+    // JSX element nesting is not limited: the compile thread's stack holds it.
+    const jsx = compile(
+      `export const X = () => ${"<b>".repeat(n)}x${"</b>".repeat(n)};`,
+      "/src/deep.tsx",
+    );
+    expect(jsx.diagnostics).toEqual([]);
+    expect(jsx.code).toContain("template(");
+    // 1000 levels still compile.
+    const ok = compile(`export const x = ${"(".repeat(1000)}1${")".repeat(1000)};`, "/src/ok.tsx");
+    expect(ok.diagnostics).toEqual([]);
+  });
+
   it("reports syntax errors and compiles the server target", () => {
     expect(compile("export const = ;", "/src/x.tsx").diagnostics[0]).toMatchObject({
       code: "LUM1001",

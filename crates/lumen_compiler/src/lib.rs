@@ -6,6 +6,7 @@ pub mod codegen;
 mod compile;
 pub mod css;
 pub mod custom_properties;
+pub mod depth;
 pub mod diagnostics;
 pub mod imports;
 mod module_id;
