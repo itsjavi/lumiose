@@ -49,7 +49,7 @@ describe("lumen() project options", () => {
       'lumen({ include }): expected a RegExp, got "*.stsx".',
     );
     expect(create({ moed: "spa" })).toThrow(
-      "lumen({ moed }): unknown option. Known options: include, exclude, mode, ssr, trailingSlash, csrf, svg, md, html, viewTransitions, prefetch.",
+      "lumen({ moed }): unknown option. Known options: include, exclude, mode, ssr, trailingSlash, csrf, svg, md, html, viewTransitions, prefetch, headers.",
     );
     expect(create(null)).toThrow("lumen(): expected an options object, got null.");
   });
@@ -68,6 +68,25 @@ describe("lumen() project options", () => {
     );
     expect(create({ prefetch: false })).toThrow(
       'lumen({ prefetch }): expected one of "hover", "viewport", "none", got false.',
+    );
+  });
+
+  it("validates headers: a record, or { path, headers } rules (TASK-125)", () => {
+    const coop = { "cross-origin-opener-policy": "same-origin" };
+    expect(apiOf({ headers: coop })).toEqual({ headers: coop });
+    const rules = [{ path: "/assets/**", headers: { "cache-control": "no-cache" } }];
+    expect(apiOf({ headers: rules })).toEqual({ headers: rules });
+    expect(create({ headers: "x" })).toThrow(
+      'lumen({ headers }): expected a record of header names to values, got "x".',
+    );
+    expect(create({ headers: { "x-a": 1 } })).toThrow(
+      "lumen({ headers.x-a }): expected a string, got 1.",
+    );
+    expect(create({ headers: [{ path: "assets", headers: {} }] })).toThrow(
+      'lumen({ headers[0].path }): expected a path pattern such as "/assets/**", got "assets".',
+    );
+    expect(create({ headers: [{ path: "/", headers: {}, when: 1 }] })).toThrow(
+      "lumen({ headers[0].when }): unknown option. Known options: path, headers.",
     );
   });
 });

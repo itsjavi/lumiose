@@ -21,6 +21,7 @@ import { normalizePath, type Plugin, type ResolvedConfig, type Rollup } from "vi
 import { CSS_MANIFEST, isStylesheet } from "../../vite/css-manifest.ts";
 import type { RouteManifest } from "../routes/manifest.ts";
 import type { BuiltAppConfig } from "../server/app.ts";
+import type { HeadersOption } from "../headers.ts";
 import type { CsrfOptions } from "../server/csrf.ts";
 import type { TrailingSlash } from "../server/handler.ts";
 import type { Prefetch } from "../server/navigation.ts";
@@ -49,6 +50,8 @@ export interface BuildState {
   /** The effective policy, set when the config resolves (`href()` reads it too). */
   trailingSlash: TrailingSlash;
   csrf: false | CsrfOptions | undefined;
+  /** `lumen({ headers })`, for adapters (`config.headers` of the server entry). */
+  headers?: HeadersOption;
   viewTransitions: boolean;
   prefetch: Prefetch;
   /** Scanned before the builds. */
@@ -313,6 +316,7 @@ export function serverEntryCode(state: BuildState, config: ResolvedConfig): stri
     base: config.base,
     trailingSlash: state.trailingSlash,
     assetsDir: config.build.assetsDir,
+    ...(state.headers === undefined ? {} : { headers: state.headers }),
   };
   const data = {
     manifest: {

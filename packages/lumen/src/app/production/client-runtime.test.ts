@@ -139,7 +139,7 @@ export default function Page() { return <Counter start={1} />; }
       customLogger: createLogger("silent"),
       logLevel: "silent",
     });
-    const entry = (await import(pathToFileURL(serverEntry).href)) as {
+    const entry = (await import(pathToFileURL(serverEntry!).href)) as {
       default: { fetch(request: Request): Promise<Response> };
     };
     const preloads = async (path: string): Promise<string[]> => {

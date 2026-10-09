@@ -3,6 +3,7 @@
 // `lumen routes`/`check`/typegen; app/project.ts). Validated when the plugin is created, so a
 // typo or a wrong value fails the config load with a message instead of being ignored.
 
+import type { HeaderRule, HeadersOption } from "../app/headers.ts";
 import type { ProjectOptions } from "../app/project.ts";
 import type { RouteMode } from "../app/routes/manifest.ts";
 import type { CsrfOptions } from "../app/server/csrf.ts";
@@ -11,7 +12,16 @@ import type { MarkdownOptions } from "./content.ts";
 import type { Rollup } from "vite";
 import type { SvgOptions } from "./svg.ts";
 
-export type { CsrfOptions, MarkdownOptions, ProjectOptions, RouteMode, SvgOptions, TrailingSlash };
+export type {
+  CsrfOptions,
+  HeaderRule,
+  HeadersOption,
+  MarkdownOptions,
+  ProjectOptions,
+  RouteMode,
+  SvgOptions,
+  TrailingSlash,
+};
 
 export interface LumenOptions {
   /** Modules compiled by Lumen. Default: `.stsx` and `.tsx` files. */
@@ -73,6 +83,17 @@ export interface LumenOptions {
    * In `spa` routes, `<Link prefetch>` decides per link. Default: `"hover"`.
    */
   prefetch?: "hover" | "viewport" | "none";
+  /**
+   * Response headers, declared once: a record for every response, or `{ path, headers }` rules
+   * for the paths that match (below `base`; `*` is one segment, `**` any depth; later rules win).
+   * `lumen dev`, `lumen preview` and @lumen/adapter-node send them, and `lumen build` writes
+   * `dist/client/_headers` for static hosts. Headers set by middleware, endpoints or `setHeader`
+   * win.
+   *
+   * @example lumen({ headers: { "cross-origin-opener-policy": "same-origin" } })
+   * @example lumen({ headers: [{ path: "/admin/**", headers: { "x-robots-tag": "noindex" } }] })
+   */
+  headers?: HeadersOption;
 }
 
 /** The `api` of the `lumen` plugin, read by the app layer (app/project.ts `projectOptions`). */
@@ -109,6 +130,7 @@ const KNOWN = [
   "html",
   "viewTransitions",
   "prefetch",
+  "headers",
 ];
 
 /** Validates `lumen({ … })` options and returns the project options; throws a `TypeError`. */
@@ -121,7 +143,8 @@ export function projectOptionsOf(options: LumenOptions): ProjectOptions {
       fail(key, `unknown option. Known options: ${KNOWN.join(", ")}`);
     }
   }
-  const { include, exclude, mode, ssr, trailingSlash, csrf, viewTransitions, prefetch } = options;
+  const { include, exclude, mode, ssr, trailingSlash, csrf, viewTransitions, prefetch, headers } =
+    options;
   if (include !== undefined && !(include instanceof RegExp)) {
     fail("include", `expected a RegExp, got ${describe(include)}`);
   }
@@ -145,7 +168,45 @@ export function projectOptionsOf(options: LumenOptions): ProjectOptions {
     project.viewTransitions = viewTransitions;
   }
   if (prefetch !== undefined) project.prefetch = oneOf("prefetch", prefetch, PREFETCH);
+  if (headers !== undefined) project.headers = headersOption(headers);
   return project;
+}
+
+function headersOption(headers: unknown): HeadersOption {
+  if (Array.isArray(headers)) {
+    return headers.map((rule: unknown, i): HeaderRule => {
+      const where = `headers[${i}]`;
+      if (typeof rule !== "object" || rule === null || Array.isArray(rule)) {
+        fail(where, `expected { path, headers }, got ${describe(rule)}`);
+      }
+      for (const key of Object.keys(rule)) {
+        if (key !== "path" && key !== "headers") {
+          fail(`${where}.${key}`, "unknown option. Known options: path, headers");
+        }
+      }
+      const { path, headers: values } = rule as { path?: unknown; headers?: unknown };
+      if (typeof path !== "string" || !path.startsWith("/")) {
+        fail(
+          `${where}.path`,
+          `expected a path pattern such as "/assets/**", got ${describe(path)}`,
+        );
+      }
+      return { path, headers: headerRecord(`${where}.headers`, values) };
+    });
+  }
+  return headerRecord("headers", headers);
+}
+
+function headerRecord(option: string, value: unknown): Record<string, string> {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) {
+    fail(option, `expected a record of header names to values, got ${describe(value)}`);
+  }
+  for (const [name, header] of Object.entries(value)) {
+    if (typeof header !== "string") {
+      fail(`${option}.${name}`, `expected a string, got ${describe(header)}`);
+    }
+  }
+  return { ...(value as Record<string, string>) };
 }
 
 function csrfOptions(csrf: unknown): false | CsrfOptions {

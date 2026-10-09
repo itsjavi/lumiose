@@ -62,7 +62,9 @@ alike: the place for headers that middleware cannot add to static files, such as
 `Cross-Origin-Opener-Policy` and `Cross-Origin-Embedder-Policy` for a cross-origin isolated page.
 They are set first, so a response's own header of the same name wins: a static file's
 `cache-control`, a page's `response().setHeader()`, a middleware's response. `lumen preview` passes
-Vite's `preview.headers`, which default to `server.headers`.
+Vite's `preview.headers`, which default to `server.headers`. The build's `lumen({ headers })`
+([lumen/vite](./vite.md#lumen)) apply too, by path, after these: prefer them, so dev, preview,
+this adapter and static hosts send the same headers.
 
 **Compression** is on by default. Static files are served from the `.br` and `.gz` copies that
 `lumen build` writes next to every text file of `dist/client` of at least 1 kB (brotli quality 11,

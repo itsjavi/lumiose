@@ -5,6 +5,9 @@ import type { IncomingMessage, ServerResponse } from "node:http";
 import { Readable } from "node:stream";
 import type { TLSSocket } from "node:tls";
 
+// For adapters: the `lumen({ headers })` of a request path (`config.headers` of the server entry).
+export { headersFor, pathBelowBase, type HeadersOption } from "../headers.ts";
+
 /**
  * A web `Request` for an incoming Node request. The URL comes from `origin` (or the `Host` header
  * and the socket's protocol) and `originalUrl` (connect) or `url`. The body streams; the signal

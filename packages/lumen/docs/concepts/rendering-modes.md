@@ -78,7 +78,11 @@ A route that reads the request while it prerenders (`cookies()`, `locals()`, `re
 endpoint can only export `GET` ([LUM5005](../errors/LUM5005.md)). Middleware still runs. A form
 post to a prerendered page reaches its `action` on the server. Serve the build with
 `@lumen/adapter-node` (`createServer({ port })`: `dist/client` with caching headers, then the
-handler) or `lumen preview`; a site whose routes are all static deploys with `dist/client` alone.
+handler) or `lumen preview`. A site whose every route is prerendered (no `server` route, no
+server-rendered `spa` route, no form action; `ssr = false` routes with params need a `404.html`
+shell) builds no `dist/server`: deploy `dist/client` to any static host, and `lumen preview` serves
+it without the adapter. Set response headers once with `lumen({ headers })`
+([lumen/vite](../reference/vite.md#lumen)).
 
 > **Status:** `lumen dev`, `lumen build`, prerendering,
 > [`@lumen/adapter-node`](../reference/adapter-node.md), CSS links in built pages, the island

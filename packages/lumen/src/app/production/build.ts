@@ -8,9 +8,10 @@
 // 5. Precompress `dist/client` (`.br` and `.gz` copies, ./precompress.ts) for adapters to serve.
 //
 // The output deploys with `@lumen/adapter-node` (statics, then the handler); a site whose routes
-// are all static deploys with `dist/client` alone.
+// are all prerendered deploys with `dist/client` alone, so the build then removes `dist/server`
+// (./static-site.ts). `lumen({ headers })` is written to `dist/client/_headers` for static hosts.
 
-import { rm, rmdir } from "node:fs/promises";
+import { readFile, rm, rmdir, writeFile } from "node:fs/promises";
 import { dirname, join, relative, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import {
@@ -38,6 +39,8 @@ import { lumenBuild, type BuildState } from "./plugin.ts";
 import { ISLANDS_ID } from "../../vite/islands.ts";
 import { precompress } from "./precompress.ts";
 import { prerender, type PrerenderedFile, type ServerEntryModule } from "./prerender.ts";
+import { serverReason } from "./static-site.ts";
+import { headersFile } from "../headers.ts";
 
 export interface BuildOptions {
   /** Project root. Default: the current directory. */
@@ -59,8 +62,8 @@ export interface BuildResult {
   outDir: string;
   /** Absolute `dist/client`: static assets and prerendered files. */
   clientDir: string;
-  /** Absolute `dist/server/entry.js`. */
-  serverEntry: string;
+  /** Absolute `dist/server/entry.js`; undefined when every route is prerendered (no `dist/server`). */
+  serverEntry: string | undefined;
   /** Prerendered files, relative to `clientDir`. */
   prerendered: PrerenderedFile[];
 }
@@ -101,6 +104,7 @@ export async function build(options: BuildOptions = {}): Promise<BuildResult> {
   const logger = resolved.logger;
   const project = projectOptions(resolved, "build");
   state.csrf = project.csrf;
+  if (project.headers !== undefined) state.headers = project.headers;
   Object.assign(state, navigationOptions(project));
   const defaultMode: RouteMode = project.mode ?? "static";
 
@@ -158,13 +162,33 @@ export async function build(options: BuildOptions = {}): Promise<BuildResult> {
     logger.info(`  ${normalizePath(relative(root, join(clientDir, file.file)))}`);
   }
   logger.info(`✓ ${prerendered.length} file${prerendered.length === 1 ? "" : "s"} prerendered.`);
+  if (project.headers !== undefined) {
+    // After `public/`: a hand-written `_headers` keeps its rules, ours follow.
+    const file = join(clientDir, "_headers");
+    const own = await readFile(file, "utf8").catch(() => "");
+    await writeFile(
+      file,
+      (own === "" || own.endsWith("\n") ? own : `${own}\n`) +
+        headersFile(project.headers, client.config.base),
+    );
+  }
+  const needsServer = await serverReason(entry, clientDir);
+  if (needsServer === undefined) {
+    await rm(serverDir, { recursive: true, force: true });
+    logger.info("✓ every route is prerendered: dist/client is the whole site (no dist/server).");
+  }
   const compressed = await precompress(clientDir);
   if (compressed.files > 0) {
     logger.info(
       `✓ ${compressed.files} file${compressed.files === 1 ? "" : "s"} precompressed (.br, .gz): ${kb(compressed.bytes)} → ${kb(compressed.brotliBytes)} brotli.`,
     );
   }
-  return { outDir: state.outDir, clientDir, serverEntry, prerendered };
+  return {
+    outDir: state.outDir,
+    clientDir,
+    serverEntry: needsServer === undefined ? undefined : serverEntry,
+    prerendered,
+  };
 }
 
 /**

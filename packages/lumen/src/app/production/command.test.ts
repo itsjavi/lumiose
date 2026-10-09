@@ -1,4 +1,12 @@
-import { mkdirSync, mkdtempSync, realpathSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  realpathSync,
+  rmSync,
+  symlinkSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { afterAll, describe, expect, it } from "vitest";
@@ -101,6 +109,49 @@ export default {
         "cross-origin-opener-policy": null,
         "cross-origin-embedder-policy": "require-corp",
       });
+    },
+  );
+
+  it.skipIf(!binding)(
+    "lumen preview serves a build without dist/server as static files, without the adapter (TASK-125)",
+    async () => {
+      const app = realpathSync(mkdtempSync(join(tmpdir(), "lumen-preview-static-")));
+      roots.push(app);
+      const files: Record<string, string> = {
+        "src/routes/index.stsx": "export default function Home() { return <h1>Home</h1>; }\n",
+        "src/routes/about.stsx": "export default function About() { return <h1>About</h1>; }\n",
+        "src/routes/_404.stsx": "export default function Missing() { return <h1>Missing</h1>; }\n",
+        "vite.config.ts": `import lumen from "lumen/vite";
+export default {
+  plugins: [lumen({ headers: [{ path: "/**", headers: { "x-site": "1" } }, { path: "/about", headers: { "x-about": "1" } }] })],
+};
+`,
+      };
+      for (const [name, code] of Object.entries(files)) {
+        mkdirSync(dirname(join(app, name)), { recursive: true });
+        writeFileSync(join(app, name), code);
+      }
+      mkdirSync(join(app, "node_modules"), { recursive: true });
+      symlinkSync(resolve(import.meta.dirname, "../../.."), join(app, "node_modules/lumen"), "dir");
+      await build({ root: app, logLevel: "silent" });
+      expect(existsSync(join(app, "dist/server"))).toBe(false);
+
+      const server = await startPreview({ root: app, port: 0, host: "127.0.0.1" });
+      try {
+        const at = (path: string) => fetch(new URL(path, server.url));
+        const home = await at("/");
+        expect(await home.text()).toContain("<h1>Home</h1>");
+        expect(home.headers.get("x-site")).toBe("1");
+        const about = await at("/about");
+        expect(await about.text()).toContain("<h1>About</h1>");
+        expect(about.headers.get("x-about")).toBe("1");
+        const missing = await at("/nowhere");
+        expect(missing.status).toBe(404);
+        expect(await missing.text()).toContain("<h1>Missing</h1>");
+        expect(missing.headers.get("x-site")).toBe("1");
+      } finally {
+        await server.close();
+      }
     },
   );
 });

@@ -134,6 +134,46 @@ describe.skipIf(!binding)("@lumen/adapter-node", () => {
     }
   });
 
+  it("sends the build's lumen({ headers }) by path; a response's own headers win (TASK-125)", async () => {
+    const app = realpathSync(mkdtempSync(join(tmpdir(), "lumen-adapter-headers-")));
+    const files: Record<string, string> = {
+      "src/routes/index.stsx": "export default function Home() { return <h1>Home</h1>; }\n",
+      "src/routes/embed.stsx": FILES["src/routes/embed.stsx"]!,
+      "vite.config.ts": `import lumen from "lumen/vite";
+export default {
+  plugins: [
+    lumen({
+      headers: [
+        { path: "/**", headers: { "cross-origin-embedder-policy": "require-corp" } },
+        { path: "/embed", headers: { "x-embed": "1" } },
+      ],
+    }),
+  ],
+};
+`,
+    };
+    for (const [name, code] of Object.entries(files)) {
+      mkdirSync(dirname(join(app, name)), { recursive: true });
+      writeFileSync(join(app, name), code);
+    }
+    mkdirSync(join(app, "node_modules"));
+    symlinkSync(lumenRoot, join(app, "node_modules/lumen"), "dir");
+    await build({ root: app, logLevel: "silent" });
+    const configured = await createServer({ dir: join(app, "dist"), port: 0, host: "127.0.0.1" });
+    try {
+      const at = (path: string) => fetch(new URL(path.slice(1), configured.url));
+      const home = await at("/");
+      expect(home.headers.get("cross-origin-embedder-policy")).toBe("require-corp");
+      expect(home.headers.get("x-embed")).toBeNull();
+      const embed = await at("/embed");
+      expect(embed.headers.get("x-embed")).toBe("1");
+      expect(embed.headers.get("cross-origin-embedder-policy")).toBe("credentialless");
+    } finally {
+      await configured.close();
+      rmSync(app, { recursive: true, force: true });
+    }
+  });
+
   it("routes form posts to a prerendered page to its action on the server", async () => {
     expect(await (await get("/contact")).text()).toContain("<p class=result>form</p>");
     const posted = await get("/contact", {

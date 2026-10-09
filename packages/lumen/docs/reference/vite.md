@@ -32,13 +32,42 @@ interface LumenOptions {
   viewTransitions?: boolean; // default false
   /** Speculation rules that prefetch the same-origin links of MPA pages. */
   prefetch?: "hover" | "viewport" | "none"; // default "hover"
+  /** Response headers: a record for every response, or rules by path (below base). */
+  headers?: Record<string, string> | { path: string; headers: Record<string, string> }[];
 }
 ```
 
-The project options (`mode`, `ssr`, `trailingSlash`, `csrf`, `viewTransitions`, `prefetch`) are
+The project options (`mode`, `ssr`, `trailingSlash`, `csrf`, `viewTransitions`, `prefetch`,
+`headers`) are
 read by `lumen dev`, `lumen build` and `lumen routes`/`check` from the plugin's `api.options`.
 Invalid values and unknown option names throw when the config loads. `allowedOrigins` takes full
 origins such as `"https://app.example.com"`, without a path or trailing slash.
+
+**Response headers** (`headers`). Declare them once: a record applies to every response; rules
+apply to the paths they match, below Vite's `base` (`*` matches one segment, `**` any number,
+later rules win for the same header). `lumen dev`, `lumen preview` and `@lumen/adapter-node` send
+them on every response, static files included, and `lumen build` writes them to
+`dist/client/_headers`, the file Netlify and Cloudflare Pages read (`**` becomes `*`, a `*`
+segment a `:name` placeholder). Headers that middleware, endpoints or `response().setHeader()` set
+win.
+
+```ts
+lumen({
+  headers: [
+    { path: "/**", headers: { "cross-origin-opener-policy": "same-origin" } },
+    { path: "/admin/**", headers: { "x-robots-tag": "noindex" } },
+  ],
+});
+```
+
+| Deployment                   | Where the headers come from                                                       |
+| ---------------------------- | --------------------------------------------------------------------------------- |
+| `lumen dev`, `lumen preview` | `lumen({ headers })`                                                              |
+| `@lumen/adapter-node`        | `lumen({ headers })`, from the build (`config.headers` of `dist/server/entry.js`) |
+| Netlify, Cloudflare Pages    | `lumen({ headers })`, as `dist/client/_headers`                                   |
+| Other static hosts and CDNs  | The host's own header configuration, copied from `lumen({ headers })`             |
+
+Per-response headers that depend on the request belong in middleware or `response().setHeader()`.
 
 MPA navigation ([Routing](../concepts/routing.md)): the page documents that `lumen dev` and
 `lumen build` render get, in `<head>`:

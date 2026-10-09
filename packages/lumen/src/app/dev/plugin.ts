@@ -47,6 +47,7 @@ import { sendWebResponse, toWebRequest } from "../server/node-http.ts";
 import { typegen } from "../typegen/index.ts";
 import { formatError, overlayError, overlayScript, type OverlayError } from "./errors.ts";
 import { hasSpa, SPA_ENTRY_ID, spaEntryCode } from "../router/entry.ts";
+import { headersFor, pathBelowBase } from "../headers.ts";
 
 /** How long a burst of file events may last and still reload the browser once. */
 const RELOAD_DEBOUNCE_MS = 30;
@@ -337,6 +338,19 @@ export function lumenDev(options: LumenDevOptions = {}): Plugin {
       app = await scan();
       reportDiagnostics(app.manifest.diagnostics);
       vite.watcher.on("all", onFileEvent);
+      // Before Vite's middlewares, so modules and assets get them too; later setHeader calls win.
+      const headers = project.headers;
+      if (headers !== undefined) {
+        vite.middlewares.use((req, res, next) => {
+          const path = pathBelowBase(req.url ?? "/", vite.config.base);
+          if (path !== undefined) {
+            for (const [name, value] of Object.entries(headersFor(headers, path))) {
+              res.setHeader(name, value);
+            }
+          }
+          next();
+        });
+      }
       // After Vite's middlewares, so modules and assets are served first.
       return () => {
         vite.middlewares.use(middleware);

@@ -1,8 +1,9 @@
 // `@lumen/adapter-node` (spec §8 Build, "Adapters"): serves a `lumen build` output with Node.
 // Requests go to the static files of `dist/client` first (GET/HEAD), then to the app's
 // `export default { fetch }` from `dist/server/entry.js`, through lumen's Node bridge (streamed
-// responses, client disconnects abort the request). Configured `headers` go on every response
-// first, so the static files' and the app's own headers win. Responses are compressed by default
+// responses, client disconnects abort the request). Configured `headers`, then the build's
+// `lumen({ headers })` for the path, go on every response first, so the static files' and the
+// app's own headers win. Responses are compressed by default
 // (`compress: false` turns it off): static files from the build's precompressed `.br`/`.gz`
 // copies, the app's text responses on the fly (./compress.ts), streaming included.
 
@@ -18,7 +19,7 @@ import { existsSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import type { ServerEntryModule } from "lumen/build";
-import { sendWebResponse, toWebRequest } from "lumen/node";
+import { headersFor, pathBelowBase, sendWebResponse, toWebRequest } from "lumen/node";
 import { compressResponse, negotiateEncoding } from "./compress.ts";
 import { createStaticHandler } from "./static.ts";
 
@@ -85,8 +86,17 @@ function nodeHandler(dir: string, entry: ServerEntryModule, options: HandlerOpti
     (header): header is [string, number | string | string[]] => header[1] !== undefined,
   );
 
+  const configured = entry.config.headers;
+
   return (req, res, next) => {
     for (const [name, value] of headers) res.setHeader(name, value);
+    // `lumen({ headers })` for this path (decision-26 §4); the files' and the app's headers win.
+    const path = configured && pathBelowBase(req.url ?? "/", entry.config.base);
+    if (configured !== undefined && path !== undefined) {
+      for (const [name, value] of Object.entries(headersFor(configured, path))) {
+        res.setHeader(name, value);
+      }
+    }
     void (async () => {
       if (await statics(req, res)) return;
       const response = await app.fetch(toWebRequest(req, res, origin));

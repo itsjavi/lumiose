@@ -4,6 +4,7 @@
 // are bundled together and share one module instance.
 
 import type { RouteManifest } from "../routes/manifest.ts";
+import type { HeadersOption } from "../headers.ts";
 import type { CsrfOptions } from "./csrf.ts";
 import { stylesheetTags, type StyleTags } from "./stylesheets.ts";
 import {
@@ -24,6 +25,8 @@ export interface BuiltAppConfig {
   trailingSlash: TrailingSlash;
   /** Vite's `build.assetsDir` in `dist/client` (content-hashed files: cache them forever). */
   assetsDir: string;
+  /** `lumen({ headers })`: adapters send them (`headersFor()` from lumen/node), app headers win. */
+  headers?: HeadersOption;
 }
 
 export interface BuiltApp extends BuiltAppConfig {

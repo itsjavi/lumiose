@@ -21,18 +21,18 @@ Then:
 ```sh
 cd examples/spa-chiptune
 pnpm dev        # lumen dev; open the printed URL and press PLAY (or Space)
-pnpm build      # lumen build: dist/client (static shells and assets) and dist/server
-pnpm preview    # lumen preview: serves the build with @lumen/adapter-node
+pnpm build      # lumen build: dist/client only (every route is a static shell or asset)
+pnpm preview    # lumen preview: serves dist/client as a static site
 ```
 
-The pages are cross-origin isolated by COOP/COEP headers: `server.headers` in `vite.config.ts`,
-which `lumen dev` and `lumen preview` send with every response, and `src/middleware.ts` for the
-pages the server renders. The engine then publishes the playing row, the levels and the scope
-samples through a `SharedArrayBuffer`. Without isolation it falls back to `postMessage`, at about
-60 Hz. `lumen build` also writes each route's shell as a static file (`dist/client/index.html`,
-`songs/index.html`, … and `404.html`, which serves deep links on a static host); a deployment
-serves them with the headers through `createServer({ headers })` of `@lumen/adapter-node`, and a
-static host needs its own header configuration.
+The pages are cross-origin isolated by COOP/COEP headers, declared once with
+`lumen({ headers })` in `vite.config.ts`: `lumen dev` and `lumen preview` send them, and
+`lumen build` writes them to `dist/client/_headers` for static hosts that read it (Netlify,
+Cloudflare Pages). The engine then publishes the playing row, the levels and the scope samples
+through a `SharedArrayBuffer`. Without isolation it falls back to `postMessage`, at about 60 Hz.
+`lumen build` writes each route's shell as a static file (`dist/client/index.html`,
+`songs/index.html`, … and `404.html`, which serves deep links such as `/songs/<id>` on a static
+host).
 
 Checks:
 

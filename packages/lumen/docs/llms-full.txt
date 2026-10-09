@@ -1951,7 +1951,11 @@ A route that reads the request while it prerenders (`cookies()`, `locals()`, `re
 endpoint can only export `GET` ([LUM5005](../errors/LUM5005.md)). Middleware still runs. A form
 post to a prerendered page reaches its `action` on the server. Serve the build with
 `@lumen/adapter-node` (`createServer({ port })`: `dist/client` with caching headers, then the
-handler) or `lumen preview`; a site whose routes are all static deploys with `dist/client` alone.
+handler) or `lumen preview`. A site whose every route is prerendered (no `server` route, no
+server-rendered `spa` route, no form action; `ssr = false` routes with params need a `404.html`
+shell) builds no `dist/server`: deploy `dist/client` to any static host, and `lumen preview` serves
+it without the adapter. Set response headers once with `lumen({ headers })`
+([lumen/vite](../reference/vite.md#lumen)).
 
 > **Status:** `lumen dev`, `lumen build`, prerendering,
 > [`@lumen/adapter-node`](../reference/adapter-node.md), CSS links in built pages, the island
@@ -3810,13 +3814,42 @@ interface LumenOptions {
   viewTransitions?: boolean; // default false
   /** Speculation rules that prefetch the same-origin links of MPA pages. */
   prefetch?: "hover" | "viewport" | "none"; // default "hover"
+  /** Response headers: a record for every response, or rules by path (below base). */
+  headers?: Record<string, string> | { path: string; headers: Record<string, string> }[];
 }
 ```
 
-The project options (`mode`, `ssr`, `trailingSlash`, `csrf`, `viewTransitions`, `prefetch`) are
+The project options (`mode`, `ssr`, `trailingSlash`, `csrf`, `viewTransitions`, `prefetch`,
+`headers`) are
 read by `lumen dev`, `lumen build` and `lumen routes`/`check` from the plugin's `api.options`.
 Invalid values and unknown option names throw when the config loads. `allowedOrigins` takes full
 origins such as `"https://app.example.com"`, without a path or trailing slash.
+
+**Response headers** (`headers`). Declare them once: a record applies to every response; rules
+apply to the paths they match, below Vite's `base` (`*` matches one segment, `**` any number,
+later rules win for the same header). `lumen dev`, `lumen preview` and `@lumen/adapter-node` send
+them on every response, static files included, and `lumen build` writes them to
+`dist/client/_headers`, the file Netlify and Cloudflare Pages read (`**` becomes `*`, a `*`
+segment a `:name` placeholder). Headers that middleware, endpoints or `response().setHeader()` set
+win.
+
+```ts
+lumen({
+  headers: [
+    { path: "/**", headers: { "cross-origin-opener-policy": "same-origin" } },
+    { path: "/admin/**", headers: { "x-robots-tag": "noindex" } },
+  ],
+});
+```
+
+| Deployment                   | Where the headers come from                                                       |
+| ---------------------------- | --------------------------------------------------------------------------------- |
+| `lumen dev`, `lumen preview` | `lumen({ headers })`                                                              |
+| `@lumen/adapter-node`        | `lumen({ headers })`, from the build (`config.headers` of `dist/server/entry.js`) |
+| Netlify, Cloudflare Pages    | `lumen({ headers })`, as `dist/client/_headers`                                   |
+| Other static hosts and CDNs  | The host's own header configuration, copied from `lumen({ headers })`             |
+
+Per-response headers that depend on the request belong in middleware or `response().setHeader()`.
 
 MPA navigation ([Routing](../concepts/routing.md)): the page documents that `lumen dev` and
 `lumen build` render get, in `<head>`:
@@ -4137,7 +4170,10 @@ background.
 
 ## lumen build
 
-Builds the client and server bundles into `dist/`, then prerenders the `static` routes.
+Builds the client and server bundles into `dist/`, then prerenders the `static` routes. When every
+route is prerendered (no `server` route, no server-rendered `spa` route, no form action), the build
+removes `dist/server`: `dist/client` is the whole site, and `serverEntry` is `null`.
+`lumen({ headers })` is written to `dist/client/_headers`.
 
 ```sh
 lumen build --format json   # { outDir, clientDir, serverEntry, prerendered: [{ path, file, kind }] }
@@ -4147,10 +4183,12 @@ Route errors (`LUM5002`, `LUM5003`, `LUM5005`) and compile errors exit 1.
 
 ## lumen preview
 
-Serves the build output with `@lumen/adapter-node` (a dependency of the project), until interrupted.
-Every response, static files included, gets Vite's `preview.headers` from the project's
-`vite.config.*`, which default to `server.headers` (as with `vite preview`), so headers configured
-for `lumen dev`, such as COOP/COEP, apply in the preview too
+Serves the build output until interrupted. With `dist/server`, it serves it with
+`@lumen/adapter-node` (a dependency of the project). Without it (every route prerendered), it serves
+`dist/client` as a static site, no adapter needed: page URLs map to `about/index.html` or
+`about.html`, and unknown URLs get `404.html` with status 404, as static hosts do. Every response,
+static files included, gets `lumen({ headers })` and Vite's `preview.headers`, which default to
+`server.headers` (as with `vite preview`)
 ([adapter `headers`](./adapter-node.md#createhandler)).
 `--format json` prints one line once listening: `{ "command": "preview", "ok": true, "url" }`.
 
@@ -4467,7 +4505,9 @@ alike: the place for headers that middleware cannot add to static files, such as
 `Cross-Origin-Opener-Policy` and `Cross-Origin-Embedder-Policy` for a cross-origin isolated page.
 They are set first, so a response's own header of the same name wins: a static file's
 `cache-control`, a page's `response().setHeader()`, a middleware's response. `lumen preview` passes
-Vite's `preview.headers`, which default to `server.headers`.
+Vite's `preview.headers`, which default to `server.headers`. The build's `lumen({ headers })`
+([lumen/vite](./vite.md#lumen)) apply too, by path, after these: prefer them, so dev, preview,
+this adapter and static hosts send the same headers.
 
 **Compression** is on by default. Static files are served from the `.br` and `.gz` copies that
 `lumen build` writes next to every text file of `dist/client` of at least 1 kB (brotli quality 11,

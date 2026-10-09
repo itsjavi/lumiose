@@ -43,7 +43,7 @@ const level = (page: Page, channel: number) =>
 const noteAt = (page: Page, row: number, channel: number) =>
   page.locator(`.row[data-row="${row}"] .cell[data-ch="${channel}"] .note`);
 
-test("the pages are cross-origin isolated (COOP/COEP from server.headers)", async ({ page }) => {
+test("the pages are cross-origin isolated (COOP/COEP from lumen({ headers }))", async ({ page }) => {
   expect(await page.evaluate(() => globalThis.crossOriginIsolated)).toBe(true);
 });
 

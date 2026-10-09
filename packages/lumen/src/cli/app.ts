@@ -55,7 +55,8 @@ export async function buildCli(options: AppCommandOptions): Promise<number> {
         formatEnvelope("build", true, {
           outDir: key(result.outDir),
           clientDir: key(result.clientDir),
-          serverEntry: key(result.serverEntry),
+          // null when every route is prerendered: dist/client is the whole site.
+          serverEntry: result.serverEntry === undefined ? null : key(result.serverEntry),
           prerendered: result.prerendered,
         }),
       );

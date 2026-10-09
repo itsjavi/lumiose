@@ -47,7 +47,10 @@ background.
 
 ## lumen build
 
-Builds the client and server bundles into `dist/`, then prerenders the `static` routes.
+Builds the client and server bundles into `dist/`, then prerenders the `static` routes. When every
+route is prerendered (no `server` route, no server-rendered `spa` route, no form action), the build
+removes `dist/server`: `dist/client` is the whole site, and `serverEntry` is `null`.
+`lumen({ headers })` is written to `dist/client/_headers`.
 
 ```sh
 lumen build --format json   # { outDir, clientDir, serverEntry, prerendered: [{ path, file, kind }] }
@@ -57,10 +60,12 @@ Route errors (`LUM5002`, `LUM5003`, `LUM5005`) and compile errors exit 1.
 
 ## lumen preview
 
-Serves the build output with `@lumen/adapter-node` (a dependency of the project), until interrupted.
-Every response, static files included, gets Vite's `preview.headers` from the project's
-`vite.config.*`, which default to `server.headers` (as with `vite preview`), so headers configured
-for `lumen dev`, such as COOP/COEP, apply in the preview too
+Serves the build output until interrupted. With `dist/server`, it serves it with
+`@lumen/adapter-node` (a dependency of the project). Without it (every route prerendered), it serves
+`dist/client` as a static site, no adapter needed: page URLs map to `about/index.html` or
+`about.html`, and unknown URLs get `404.html` with status 404, as static hosts do. Every response,
+static files included, gets `lumen({ headers })` and Vite's `preview.headers`, which default to
+`server.headers` (as with `vite preview`)
 ([adapter `headers`](./adapter-node.md#createhandler)).
 `--format json` prints one line once listening: `{ "command": "preview", "ok": true, "url" }`.
 

@@ -4,8 +4,11 @@ import type { OutgoingHttpHeaders } from "node:http";
 import { createRequire } from "node:module";
 import { join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
-import { loadEnv, resolveConfig } from "vite";
-import { findViteConfig } from "../project.ts";
+import { existsSync } from "node:fs";
+import { loadEnv, preview, resolveConfig } from "vite";
+import { findViteConfig, projectOptions } from "../project.ts";
+import type { HeadersOption } from "../headers.ts";
+import { staticPreviewPlugin } from "./static-preview.ts";
 import { build, BuildError } from "./build.ts";
 import { PrerenderError } from "./prerender.ts";
 
@@ -64,26 +67,68 @@ export type PreviewServerOptions = Pick<PreviewCommandOptions, "root" | "port" |
  * Serves the build output with `@lumen/adapter-node` (installed in the project). Requests see the
  * `.env` files of the production mode under the process environment, as the build's prerendering
  * did, and responses get Vite's `preview.headers` (which default to `server.headers`), as with
- * `vite preview`. Used by `lumen preview` (CLI, with `--format json`) and {@link previewCommand}.
+ * `vite preview`, and `lumen({ headers })`. A build without `dist/server` (every route is
+ * prerendered) is served as static files by Vite's preview server instead, without the adapter.
+ * Used by `lumen preview` (CLI, with `--format json`) and {@link previewCommand}.
  */
 export async function startPreview(
   options: PreviewServerOptions,
 ): Promise<{ url: string; close(): Promise<void> }> {
   const root = resolve(options.root);
-  const adapter = await importAdapter(root);
+  const configFile = findViteConfig(root);
   // The build's outDir and env, from the project's Vite config.
-  const config = await resolveConfig(
-    { root, configFile: findViteConfig(root), logLevel: "silent" },
-    "build",
-  );
+  const config = await resolveConfig({ root, configFile, logLevel: "silent" }, "build");
+  const outDir = resolve(root, config.build.outDir);
+  if (!existsSync(join(outDir, "server/entry.js"))) {
+    return startStaticPreview(root, configFile, outDir, options);
+  }
+  const adapter = await importAdapter(root);
   return adapter.createServer({
-    dir: resolve(root, config.build.outDir),
+    dir: outDir,
     port: options.port ?? 4173,
     host: options.host ?? "localhost",
     env: loadEnv(config.mode, config.envDir === false ? root : config.envDir, ""),
     // Vite resolves `preview.headers` to `server.headers` when unset.
     ...(config.preview.headers === undefined ? {} : { headers: config.preview.headers }),
   });
+}
+
+/**
+ * `dist/client` with Vite's preview server: files, `about.html`/`about/index.html` for page URLs,
+ * `404.html` (status 404) for unknown URLs as static hosts do, `preview.headers` and
+ * `lumen({ headers })`.
+ */
+async function startStaticPreview(
+  root: string,
+  configFile: string | false,
+  outDir: string,
+  options: PreviewServerOptions,
+): Promise<{ url: string; close(): Promise<void> }> {
+  const clientDir = join(outDir, "client");
+  if (!existsSync(clientDir)) {
+    throw new Error(`No build in ${outDir}. Run \`lumen build\` first.`);
+  }
+  let headers: HeadersOption | undefined;
+  const server = await preview({
+    root,
+    configFile,
+    logLevel: "warn",
+    appType: "mpa",
+    build: { outDir: clientDir },
+    preview: { port: options.port ?? 4173, strictPort: true, host: options.host ?? "localhost" },
+    plugins: [
+      {
+        name: "lumen:preview-options",
+        configResolved(config) {
+          headers = projectOptions(config, "preview").headers;
+        },
+      },
+      staticPreviewPlugin(clientDir, () => headers),
+    ],
+  });
+  const url = server.resolvedUrls?.local[0];
+  if (url === undefined) throw new Error("lumen preview: the server has no local URL.");
+  return { url, close: () => server.close() };
 }
 
 /**

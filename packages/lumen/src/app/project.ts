@@ -6,6 +6,7 @@ import { join } from "node:path";
 import type { Plugin, PluginOption, ResolvedConfig } from "vite";
 import { TRAILING_SLASH_DEFINE } from "./routes/href.ts";
 import type { RouteMode } from "./routes/manifest.ts";
+import type { HeadersOption } from "./headers.ts";
 import type { CsrfOptions } from "./server/csrf.ts";
 import type { TrailingSlash } from "./server/handler.ts";
 import type { Prefetch } from "./server/navigation.ts";
@@ -46,6 +47,7 @@ export interface ProjectOptions {
   csrf?: false | CsrfOptions;
   viewTransitions?: boolean;
   prefetch?: Prefetch;
+  headers?: HeadersOption;
 }
 
 /** MPA navigation of `lumen({ viewTransitions, prefetch })` with its defaults (decision-24). */
