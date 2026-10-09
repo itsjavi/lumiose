@@ -123,6 +123,38 @@ const x = 1; <style>.a{b:c}</style> const y = 2;
     expect(code).toContain(".p");
   });
 
+  it("is idempotent on multi-line CSS comments, keeping their relative indentation (TASK-134)", async () => {
+    const source = `export const A = () => (
+  <main>
+    <style>
+      /* The page grid:
+         sidebar and content. */
+      main {
+        display: grid;
+        /*
+         * Nested comment.
+         */
+        gap: 1rem;
+      }
+    </style>
+  </main>
+);
+<style>
+  /* Top level,
+     two lines. */
+  .a { color: red; }
+</style>
+`;
+    const code = await stable(source);
+    expect(code).toContain(
+      "      /* The page grid:\n         sidebar and content. */\n      main {",
+    );
+    expect(code).toContain(
+      "        /*\n         * Nested comment.\n         */\n        gap: 1rem;",
+    );
+    expect(code).toContain("  /* Top level,\n     two lines. */\n  .a {");
+  });
+
   it("follows the oxfmt config: tabs, tab width, semicolons, line endings", async () => {
     const source =
       "const g = 1\nexport const A = () => <div><style>.a{margin:$g}</style></div>\n<style>.b{c:d}</style>\n";

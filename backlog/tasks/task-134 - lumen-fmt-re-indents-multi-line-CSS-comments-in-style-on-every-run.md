@@ -1,10 +1,11 @@
 ---
 id: TASK-134
 title: lumen fmt re-indents multi-line CSS comments in <style> on every run
-status: To Do
+status: Done
 assignee:
   - Beacon
 created_date: '2026-10-09 04:35'
+updated_date: '2026-10-09 04:46'
 labels:
   - fmt
   - tooling
@@ -21,5 +22,17 @@ Found in TASK-124: lumen fmt is not idempotent for a multi-line /* … */ commen
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 lumen fmt is idempotent for multi-line CSS comments in <style> blocks, with a regression test
+- [x] #1 lumen fmt is idempotent for multi-line CSS comments in <style> blocks, with a regression test
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Beacon: formatCss dedents the block's CSS by the leading whitespace its lines share (the <style> line's own text excepted, $ ref offsets remapped) before oxfmt, which keeps a comment's continuation lines verbatim; stitch then indents once, so relative comment indentation is stable. Regression test in fmt.test.ts (JSX-nested and top-level blocks, comment inside a rule). pnpm fmt:examples passes. Restoring the multi-line comments in examples/ssg-travel-journal (_layout.stsx, posts/[slug].stsx) is left to the example's owner (Nova/Spark).
+<!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+lumen fmt is idempotent for multi-line CSS comments in <style> blocks.
+<!-- SECTION:FINAL_SUMMARY:END -->

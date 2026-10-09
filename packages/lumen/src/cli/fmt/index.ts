@@ -142,12 +142,64 @@ async function formatCss(
     start: ref.span.start - start,
     end: ref.span.end - start,
   }));
-  const guarded = protectRefs(content, refs);
+  // Without the source indentation: oxfmt keeps the continuation lines of a multi-line comment
+  // as they are, and `stitch` indents every line again.
+  const dedented = dedent(content);
+  const guarded = protectRefs(dedented.text, dedented.mapRefs(refs));
   const result = await format("style.css", guarded.css, config);
   if (result.errors.length > 0) return { error: result.errors.map((e) => e.message).join("; ") };
   const restored = guarded.restore(result.code);
   if (restored === undefined) return { error: "a $ reference was lost while formatting" };
   return restored.replace(/\s+$/, "");
+}
+
+/**
+ * `css` without the leading whitespace its lines share (the text on the `<style>` line itself
+ * excepted), and a mapping of offsets in `css` to offsets in the result.
+ */
+function dedent(css: string): {
+  text: string;
+  mapRefs: (refs: { start: number; end: number }[]) => { start: number; end: number }[];
+} {
+  const lines = css.split(/(?<=\r\n|\r(?!\n)|\n)/);
+  let common: string | undefined;
+  for (const line of lines.slice(1)) {
+    if (line.trim() === "") continue;
+    const lead = /^[ \t]*/.exec(line)![0];
+    if (common === undefined) common = lead;
+    else {
+      let n = 0;
+      while (n < common.length && n < lead.length && common[n] === lead[n]) n++;
+      common = common.slice(0, n);
+    }
+  }
+  const cut = common?.length ?? 0;
+  if (cut === 0) return { text: css, mapRefs: (refs) => refs };
+  // Where each line starts in `css`, and how many characters are removed up to its content.
+  const starts: { at: number; removed: number }[] = [];
+  let at = 0;
+  let removed = 0;
+  let text = "";
+  lines.forEach((line, index) => {
+    // Non-blank lines all start with `common`; blank lines lose what whitespace they have.
+    const strip = index === 0 ? 0 : Math.min(cut, /^[ \t]*/.exec(line)![0].length);
+    starts.push({ at, removed: removed + strip });
+    removed += strip;
+    text += line.slice(strip);
+    at += line.length;
+  });
+  const map = (offset: number) => {
+    let entry = starts[0]!;
+    for (const start of starts) {
+      if (start.at > offset) break;
+      entry = start;
+    }
+    return offset - entry.removed;
+  };
+  return {
+    text,
+    mapRefs: (refs) => refs.map((ref) => ({ start: map(ref.start), end: map(ref.end) })),
+  };
 }
 
 /** The block's text: open tag, CSS one level deeper than `indent`, close tag at `indent`. */
