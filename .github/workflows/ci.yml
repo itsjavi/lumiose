@@ -133,14 +133,20 @@ jobs:
         shell: bash
         run: |
           if [ "${{ matrix.suites }}" = all ]; then
-            suites=$(ls -d examples/*/playwright.config.ts apps/*/playwright.config.ts | xargs -n1 dirname)
+            # vite-counter first (HMR specs that edit files; see TASK-161 notes), then the rest.
+            suites="examples/vite-counter $(ls -d examples/*/playwright.config.ts apps/*/playwright.config.ts | xargs -n1 dirname | grep -v vite-counter)"
           else
             suites="${{ matrix.suites }}"
+          fi
+          if [ "$RUNNER_OS" = Linux ]; then
+            echo "inotify: $(cat /proc/sys/fs/inotify/max_user_watches) watches, $(cat /proc/sys/fs/inotify/max_user_instances) instances"
           fi
           failed=""
           for suite in $suites; do
             echo "::group::$suite"
             (cd "$suite" && pnpm exec playwright test --reporter=line) || failed="$failed $suite"
+            # Dev servers a suite left running would keep watching files and ports.
+            ps -eo pid,args | grep -E "lumen|vite" | grep -vE "grep|playwright" || true
             echo "::endgroup::"
           done
           if [ -n "$failed" ]; then
