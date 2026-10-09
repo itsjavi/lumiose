@@ -8,7 +8,7 @@ import { expect, test } from "@playwright/test";
  * right after its edit was applied; real edits are never that close.
  */
 async function edit(file: string, content: string): Promise<void> {
-  await new Promise((resolve) => setTimeout(resolve, 100));
+  await new Promise((done) => setTimeout(done, 100));
   writeFileSync(file, content);
 }
 
