@@ -18,7 +18,7 @@ pnpm preview:site --base /lumen/ # serves dist/site at http://localhost:4173/lum
 
 ## License
 
-[MIT](LICENSE). This covers the Lumen packages, the website and all examples, except third-party code kept under its own license, such as the gbapu engine vendored in `examples/spa-dotmatrix/vendor/gbapu` and the Remix 3 benchmark entry.
+[MIT](LICENSE). This covers the Lumen packages, the website and all examples, except code vendored with its own notice: the gbapu Game Boy APU engine in `examples/spa-dotmatrix/vendor/gbapu` (by the same author, MIT release planned) and the Remix 3 benchmark entry (Apache-2.0).
 
 ## Contributing
 
