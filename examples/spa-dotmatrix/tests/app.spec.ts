@@ -122,6 +122,10 @@ test("plays a demo from the gallery and opens it in the studio", async ({ page }
   await expect(page).toHaveURL(/\/$/);
   await expect(page.locator("#song-title")).toHaveValue("Rival Clash");
   await expect(page.locator(".flag")).toHaveText("LOOP");
+  await page.getByRole("button", { name: "Play song" }).click();
+  await expect.poll(() => page.evaluate(() => dotmatrix.position())).toBeGreaterThan(3.5);
+  await shot(page, "studio-demo", info.project.name);
+  await page.getByRole("button", { name: "Stop" }).click();
   // Undo brings back the previous song.
   await page.getByRole("button", { name: "Undo" }).click();
   await expect(page.locator("#song-title")).toHaveValue("First Steps");

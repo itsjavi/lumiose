@@ -6,7 +6,7 @@ effects for the four channels of the Game Boy sound chip, rendered by the gbapu 
 It is the beginner-friendly sibling of [Lumen Chip](../spa-chiptune): a piano roll and presets instead
 of a tracker and hex effect columns.
 
-![The studio playing a demo song](../../backlog/assets/task-133-studio.png)
+![The studio playing a demo song](../../backlog/assets/task-133-studio-demo.png)
 
 > The sound engine in `vendor/gbapu/` comes from the Newbark engine (`packages/gbapu`) and is vendored
 > unchanged; it is not openly licensed, so redistributing it needs the rights holder's permission (see
