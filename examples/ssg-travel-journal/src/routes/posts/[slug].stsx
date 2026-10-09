@@ -153,8 +153,8 @@ function PostView(props: { post: Post }) {
           color: inherit;
         }
 
-        /* The Markdown body is inserted as HTML, so its elements carry no scope token: style */
-        /* them from the scoped .prose wrapper with :deep(). */
+        /* The Markdown body is inserted as HTML, so its elements carry no scope token: style
+           them from the scoped .prose wrapper with :deep(). */
         .prose {
           font-size: 1.125rem;
           line-height: 1.75;
