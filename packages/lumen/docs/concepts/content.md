@@ -12,7 +12,9 @@ the same in `static`, `server` and `spa` routes and inside islands.
 **Markdown** is plain CommonMark with the GitHub extensions: tables, strikethrough, task lists,
 autolinks (`www.example.com`, bare URLs) and footnotes. There is no MDX: Markdown cannot use
 components or JS expressions. Raw HTML is allowed, since the file is part of your project, and
-follows the HTML rules below.
+follows the HTML rules below, except for `<script>`: Markdown is content only, so a `<script>`
+fails the build ([LUM1008](../errors/LUM1008.md)). Put scripts in an `.html` import or a
+component.
 
 - **Heading ids.** Each heading gets a GitHub-style id from its text: `## Hello, World!` becomes
   `id="hello-world"`, and repeats get `-1`, `-2`. A heading written as raw HTML with its own `id`
@@ -47,7 +49,8 @@ follows the HTML rules below.
 - **Attributes** are kept as written, including inline handlers (`onclick="…"`) and names JSX
   cannot write (`@click`, `x-on:click.prevent`), which are passed through a spread.
 
-Markdown with raw `<style>` and `<script>` follows the same rules.
+Raw `<style>` in Markdown follows the same rules. Raw `<script>` in Markdown is an error, with
+the file and line ([LUM1008](../errors/LUM1008.md)); scripts belong in `.html` imports.
 
 **How scripts load.** When a file has scripts, its component also renders an empty island with
 `client:load`. On a server-rendered page, the island loader imports the island's module, which
@@ -177,6 +180,8 @@ its light-DOM rule is scoped to the file.
   `.md` file itself.
 - **Targeting `body` or `html` from an HTML file's `<style>`.** Its top-level styles are scoped
   to the file's content (`LUM3005`: the selector matches no element). Use `<style global>`.
+- **A `<script>` in Markdown.** It fails with [LUM1008](../errors/LUM1008.md). Move the markup
+  and script to an `.html` file and import that, or render the Markdown next to an island.
 - **Expecting a script per use.** A file's scripts run once per page, not once per rendered
   component. Query the elements they work on (`document.querySelectorAll`) or use a custom
   element, which runs its code for every instance.
@@ -186,7 +191,8 @@ its light-DOM rule is scoped to the file.
 ## Related diagnostics
 
 The generated component compiles like a `.stsx` file, so style diagnostics apply to its blocks,
-for example [LUM3005](../errors/LUM3005.md) for a selector that matches nothing. A frontmatter
+for example [LUM3005](../errors/LUM3005.md) for a selector that matches nothing.
+[LUM1008](../errors/LUM1008.md) reports a `<script>` in a Markdown file. A frontmatter
 block that is not a mapping, or a hook that throws, fails the build with the file's name.
 
 See also: [Styles](styles.md), [Islands](islands.md), [SVG imports](svg.md), [reference: `lumen/vite`](../reference/vite.md), [reference: JSX types](../reference/jsx.md).

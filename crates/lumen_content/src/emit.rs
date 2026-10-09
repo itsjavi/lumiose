@@ -43,6 +43,8 @@ pub(crate) struct Input<'a> {
 
 #[derive(Default)]
 struct Emitter {
+    /// Markdown drops `<script>` elements (an error, reported by the caller).
+    markdown: bool,
     jsx: String,
     /// File-level style blocks: (global, css).
     blocks: Vec<(bool, String)>,
@@ -50,16 +52,19 @@ struct Emitter {
 }
 
 pub(crate) fn module(input: Input) -> Component {
-    let mut emitter = Emitter::default();
+    let mut emitter = Emitter {
+        markdown: input.markdown,
+        ..Emitter::default()
+    };
     // Top-level blocks and scripts leave the markup; what is left is trimmed, and runs of
     // whitespace between the nodes they leave are kept once.
     let mut content: Vec<&Handle> = Vec::new();
     for node in &input.nodes {
         if let Some(css) = style_block(node) {
             emitter.blocks.push(css);
-        } else if let Some(script) = script(node) {
-            emitter.scripts.push(script);
-        } else if !(is_blank(node) && content.last().is_some_and(|last| is_blank(last))) {
+        } else if !emitter.take_script(node)
+            && !(is_blank(node) && content.last().is_some_and(|last| is_blank(last)))
+        {
             content.push(node);
         }
     }
@@ -78,6 +83,7 @@ pub(crate) fn module(input: Input) -> Component {
         jsx,
         blocks,
         scripts,
+        ..
     } = emitter;
 
     let name = input.name;
@@ -118,6 +124,7 @@ pub(crate) fn module(input: Input) -> Component {
         source: out,
         frontmatter: input.frontmatter,
         scripts,
+        diagnostics: Vec::new(),
     }
 }
 
@@ -181,8 +188,7 @@ impl Emitter {
         let local: &str = &name.local;
         let html = name.ns == ns!(html);
         // Data blocks (JSON-LD, an import map…) stay in the markup, as raw text.
-        if let Some(script) = script(node) {
-            self.scripts.push(script);
+        if self.take_script(node) {
             return;
         }
         if !is_jsx_name(local) {
@@ -248,6 +254,16 @@ impl Emitter {
         }
         self.children(node, depth);
         let _ = writeln!(self.jsx, "{indent}</{local}>");
+    }
+
+    /// Collects a client script (in Markdown, drops any `<script>`): whether `node` was one.
+    fn take_script(&mut self, node: &Handle) -> bool {
+        if self.markdown {
+            return matches!(&node.data, Data::Element { name, .. } if &*name.local == "script");
+        }
+        script(node)
+            .map(|script| self.scripts.push(script))
+            .is_some()
     }
 
     fn children(&mut self, node: &Handle, depth: usize) {

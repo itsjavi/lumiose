@@ -75,6 +75,13 @@ fn golden(component: &Component) -> String {
             }
         }
     }
+    for diagnostic in &component.diagnostics {
+        let _ = writeln!(
+            out,
+            "// {} at {:?}: {}",
+            diagnostic.code, diagnostic.span, diagnostic.message
+        );
+    }
     if let Some(frontmatter) = &component.frontmatter {
         let _ = writeln!(out, "// frontmatter: {frontmatter:?}");
     }

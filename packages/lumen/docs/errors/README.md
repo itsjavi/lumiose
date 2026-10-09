@@ -19,6 +19,7 @@ fix?, docs }`; `lumen check --format json` prints them.
 | [LUM1005](LUM1005.md) | error    | Unknown `<style>` attribute          |
 | [LUM1006](LUM1006.md) | error    | Raw CSS in a `.tsx` file             |
 | [LUM1007](LUM1007.md) | error    | `await using` in a component         |
+| [LUM1008](LUM1008.md) | error    | `<script>` in a Markdown file        |
 
 ## Reactivity (2xxx)
 

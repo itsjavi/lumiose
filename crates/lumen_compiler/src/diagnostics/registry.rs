@@ -54,6 +54,7 @@ registry! {
     UnknownStyleAttribute = "LUM1005", Error, "Unknown `<style>` attribute";
     RawCssInTsx = "LUM1006", Error, "Raw CSS in a `.tsx` file";
     AwaitUsingInComponent = "LUM1007", Error, "`await using` in a component";
+    ScriptInMarkdown = "LUM1008", Error, "`<script>` in a Markdown file";
     // 2xxx reactivity
     StaleDerivedValue = "LUM2001", Warning, "Stale derived value";
     WriteDuringRender = "LUM2002", Error, "Signal write during render";

@@ -19,7 +19,7 @@
 
 import { existsSync, readFileSync } from "node:fs";
 import { isAbsolute, resolve } from "node:path";
-import { contentSource, type ContentSource } from "@lumen/compiler";
+import { contentSource, type ContentSource, type Diagnostic } from "@lumen/compiler";
 import { normalizePath, type Plugin, type ResolvedConfig } from "vite";
 import { parse as parseYaml } from "yaml";
 
@@ -185,8 +185,20 @@ export class Content {
             if (!content.isModule(id)) return null;
             const file = sourceFile(id);
             this.addWatchFile(file);
+            const result = content.#convert(file);
+            // A `<script>` in Markdown (LUM1008): the file is its own error's location.
+            const [first, ...rest] = result.diagnostics;
+            if (first) {
+              const text = readFileSync(file, "utf8");
+              const more = rest.map((d) => `\n${message(d)}`).join("");
+              return this.error({
+                message: message(first) + more,
+                id: file,
+                loc: { file, ...lineColumn(text, first.span.start) },
+              });
+            }
             // Compiled by the main plugin's transform, like any `.stsx` module.
-            return { code: content.#convert(file).code };
+            return { code: result.code };
           }
           const file = id.replace(/\?.*$/, "");
           if (content.#kind(file) === null) return null;
@@ -233,6 +245,19 @@ export class Content {
       },
     };
   }
+}
+
+function message(diagnostic: Diagnostic): string {
+  let text = `${diagnostic.code}: ${diagnostic.message}`;
+  if (diagnostic.help) text += `\nhelp: ${diagnostic.help}`;
+  return text;
+}
+
+/** The 1-based line and 0-based column (Rollup's) of a byte offset in `text`. */
+function lineColumn(text: string, offset: number): { line: number; column: number } {
+  const before = Buffer.from(text).subarray(0, offset).toString("utf8");
+  const lineStart = before.lastIndexOf("\n") + 1;
+  return { line: before.split("\n").length, column: before.length - lineStart };
 }
 
 /** The file of a content module id (`<file>.md.stsx` → `<file>.md`). */

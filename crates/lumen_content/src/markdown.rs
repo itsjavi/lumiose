@@ -2,6 +2,8 @@
 
 use std::collections::HashSet;
 
+use comrak::nodes::NodeValue;
+
 use crate::dom::{Data, Handle};
 
 /// `(frontmatter, body)`: a leading block between `---` lines (the closing one may be `...`).
@@ -31,7 +33,9 @@ fn strip_line<'a>(text: &'a str, marker: &str) -> Option<&'a str> {
         .or_else(|| rest.strip_prefix('\n'))
 }
 
-pub(crate) fn to_html(body: &str) -> String {
+/// The HTML of a Markdown body, and the byte offsets in `body` of the `<script>` start tags of
+/// its raw HTML (unsupported in Markdown, decision-22).
+pub(crate) fn to_html(body: &str) -> (String, Vec<usize>) {
     let mut options = comrak::Options::default();
     options.extension.strikethrough = true;
     options.extension.table = true;
@@ -40,7 +44,73 @@ pub(crate) fn to_html(body: &str) -> String {
     options.extension.footnotes = true;
     // The project's own files: raw HTML is kept (GFM's tag filter would drop `<style>`).
     options.render.r#unsafe = true;
-    comrak::markdown_to_html(body, &options)
+    let arena = comrak::Arena::new();
+    let root = comrak::parse_document(&arena, body, &options);
+    let mut scripts = Vec::new();
+    for node in root.descendants() {
+        let ast = node.data();
+        let literal = match &ast.value {
+            NodeValue::HtmlBlock(block) => &block.literal,
+            NodeValue::HtmlInline(html) => html,
+            _ => continue,
+        };
+        for offset in script_tags(literal) {
+            scripts.push(source_offset(
+                body,
+                ast.sourcepos.start.line,
+                literal,
+                offset,
+            ));
+        }
+    }
+    let mut html = String::new();
+    // Writing to a `String` cannot fail.
+    let _ = comrak::format_html(root, &options, &mut html);
+    (html, scripts)
+}
+
+/// The offsets of the `<script` start tags in raw HTML, outside comments and script contents.
+fn script_tags(html: &str) -> Vec<usize> {
+    let lower = html.to_ascii_lowercase();
+    let mut tags = Vec::new();
+    let mut at = 0;
+    while let Some(found) = lower[at..].find('<') {
+        let start = at + found;
+        let rest = &lower[start..];
+        if rest.starts_with("<!--") {
+            at = rest.find("-->").map_or(lower.len(), |end| start + end + 3);
+        } else if rest.strip_prefix("<script").is_some_and(|after| {
+            after.is_empty()
+                || after.starts_with(|c: char| c.is_ascii_whitespace() || c == '>' || c == '/')
+        }) {
+            tags.push(start);
+            at = rest
+                .find("</script")
+                .map_or(lower.len(), |end| start + end + 8);
+        } else {
+            at = start + 1;
+        }
+    }
+    tags
+}
+
+/// The offset in `body` of the tag at `offset` in the raw HTML `literal` of a node that starts on
+/// `line` (1-based). Container markers (`> `, list indentation) are not part of the literal, so
+/// the tag is found again on its source line, as the same occurrence on that line.
+fn source_offset(body: &str, line: usize, literal: &str, offset: usize) -> usize {
+    let before = &literal[..offset];
+    let line = line + before.matches('\n').count();
+    let index = script_tags(&before[before.rfind('\n').map_or(0, |i| i + 1)..]).len();
+    let line_start = body
+        .split_inclusive('\n')
+        .take(line.saturating_sub(1))
+        .map(str::len)
+        .sum::<usize>()
+        .min(body.len());
+    let source_line = body[line_start..].lines().next().unwrap_or("");
+    script_tags(source_line)
+        .get(index)
+        .map_or(line_start, |tag| line_start + tag)
 }
 
 /// Gives `<h1>`…`<h6>` without an id a GitHub-style slug of their text, unique in the file.

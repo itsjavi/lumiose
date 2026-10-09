@@ -12,7 +12,9 @@
 //! pipeline below. Headings get GitHub-style ids (`## Hello, World!` → `id="hello-world"`, then
 //! `-1`, `-2` for repeats) unless they have one. A leading `---` YAML block is the frontmatter:
 //! returned raw in [`Component::frontmatter`] (the host parses it) and re-exported by the module
-//! from `./<name>?lumen-frontmatter`.
+//! from `./<name>?lumen-frontmatter`. A `<script>` element in the raw HTML is an error,
+//! [`SCRIPT_IN_MARKDOWN`] (decision-22): only `.html` imports run scripts. It is left out of the
+//! markup.
 //!
 //! # HTML
 //!
@@ -52,6 +54,22 @@ pub struct Component {
     pub frontmatter: Option<String>,
     /// The client scripts, in document order.
     pub scripts: Vec<Script>,
+    /// Errors in the file; the host fails the import with them.
+    pub diagnostics: Vec<Diagnostic>,
+}
+
+/// The diagnostic code of a `<script>` in a Markdown file (registered in `lumen_compiler`).
+pub const SCRIPT_IN_MARKDOWN: &str = "LUM1008";
+
+/// An error in a content file. Its code is registered in `lumen_compiler`'s diagnostics registry.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Diagnostic {
+    /// A registered code, such as `LUM1008`.
+    pub code: &'static str,
+    pub message: String,
+    /// Byte offsets in the file's source.
+    pub span: std::ops::Range<usize>,
+    pub help: Option<String>,
 }
 
 /// A client script of the file.
@@ -66,15 +84,32 @@ pub enum Script {
 /// The component module of a Markdown file named `name` (`post.md`).
 pub fn markdown(source: &str, name: &str) -> Component {
     let (frontmatter, body) = markdown::split_frontmatter(source);
-    let html = markdown::to_html(body);
+    // `body` is the end of `source`.
+    let body_start = source.len() - body.len();
+    let (html, scripts) = markdown::to_html(body);
     let nodes = fragment(&html);
     markdown::heading_ids(&nodes);
-    emit::module(emit::Input {
+    let mut component = emit::module(emit::Input {
         nodes,
         name,
         markdown: true,
         frontmatter: frontmatter.map(str::to_owned),
-    })
+    });
+    component.diagnostics = scripts
+        .into_iter()
+        .map(|offset| Diagnostic {
+            code: SCRIPT_IN_MARKDOWN,
+            message: "`<script>` is not supported in Markdown".to_owned(),
+            span: body_start + offset..body_start + offset + "<script".len(),
+            help: Some(
+                "Markdown is content only. Move the script to an `.html` file and import that \
+                 instead, or render this content from a component that loads the script \
+                 (an island or a `.stsx` module)."
+                    .to_owned(),
+            ),
+        })
+        .collect();
+    component
 }
 
 /// The component module of an HTML file named `name` (`card.html`).

@@ -136,6 +136,8 @@ export interface ContentSource {
   frontmatter?: string;
   /** The client scripts, in document order, which `./<name>?lumen-script` imports. */
   scripts: Array<ContentScript>;
+  /** Errors in the file (`LUM1008`: a `<script>` in Markdown); spans are in the file's source. */
+  diagnostics: Array<Diagnostic>;
 }
 
 export interface Diagnostic {

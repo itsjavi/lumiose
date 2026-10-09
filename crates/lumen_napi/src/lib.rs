@@ -643,6 +643,8 @@ pub struct ContentSource {
     pub frontmatter: Option<String>,
     /// The client scripts, in document order, which `./<name>?lumen-script` imports.
     pub scripts: Vec<ContentScript>,
+    /// Errors in the file (`LUM1008`: a `<script>` in Markdown); spans are in the file's source.
+    pub diagnostics: Vec<Diagnostic>,
 }
 
 /// The `.stsx` source of the component a `.md` or `.html` file imports as (`lumen_content`,
@@ -681,6 +683,23 @@ pub fn content_source(
                     src: None,
                     code: Some(code),
                 },
+            })
+            .collect(),
+        diagnostics: component
+            .diagnostics
+            .into_iter()
+            .map(|diagnostic| Diagnostic {
+                code: diagnostic.code.to_owned(),
+                severity: Severity::Error,
+                message: diagnostic.message,
+                span: Span {
+                    start: u32::try_from(diagnostic.span.start).unwrap_or(u32::MAX),
+                    end: u32::try_from(diagnostic.span.end).unwrap_or(u32::MAX),
+                },
+                labels: Vec::new(),
+                help: diagnostic.help,
+                fix: None,
+                docs: format!("errors/{}", diagnostic.code),
             })
             .collect(),
     })

@@ -29,6 +29,7 @@ Some *Markdown* with <span class="note">raw HTML</span>.
 `,
   "content/bad.md": `---\ndraft: true\n---\n# No title\n`,
   "content/list.md": `---\n- a\n- b\n---\n# A list\n`,
+  "content/scripted.md": `---\ntitle: Scripted\n---\n# Counter\n\n  <script type="module">count()</script>\n`,
   "components/card.html": `<!doctype html>
 <html><head><style>user-card { display: block; }</style></head>
 <body>
@@ -148,6 +149,19 @@ describe.skipIf(!binding)(".md and .html imports", () => {
     } finally {
       await list.close();
     }
+  });
+
+  it("rejects a <script> in Markdown with LUM1008 at its line", async () => {
+    const failure = await server.environments.client
+      .transformRequest("/content/scripted.md.stsx")
+      .then(
+        () => null,
+        (error: { message: string; id?: string; loc?: object }) => error,
+      );
+    expect(failure!.message).toContain("LUM1008: `<script>` is not supported in Markdown");
+    expect(failure!.message).toContain("help: Markdown is content only.");
+    expect(failure!.id).toBe(join(root, "content/scripted.md"));
+    expect(failure!.loc).toEqual({ file: join(root, "content/scripted.md"), line: 6, column: 2 });
   });
 
   it("server-renders the components, with the scripts as an island", async () => {
