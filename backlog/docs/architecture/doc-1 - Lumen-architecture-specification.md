@@ -3,7 +3,7 @@ id: doc-1
 title: Lumen architecture specification
 type: specification
 created_date: '2026-10-08 10:28'
-updated_date: '2026-10-09 04:39'
+updated_date: '2026-10-09 05:12'
 tags:
   - architecture
   - spec
@@ -650,7 +650,10 @@ export const MemberCard = $component(async function MemberCard(props) {
 - It captures and replays `click`, `input`, `submit` and `keydown`.
 - On a mismatch, development reports `LUM4006`. Production client-renders the range instead.
 
-**CSP.** `csp: "strict"` uses nonce'd `<style>` rules for `style` props in SSR output, and nonces on the scripts.
+**CSP.** `csp: "strict"` (TASK-138):
+- Pages rendered per request get a fresh nonce per response on every inline `<script>`/`<style>` and module preload Lumen writes (inlined page CSS, `style`-prop rules, the loader, `$swap` scripts, speculation rules, the View Transitions opt-in), `<meta property="csp-nonce">` for the client's preload helper, and `Content-Security-Policy: script-src 'nonce-…' 'strict-dynamic'; style-src 'self' 'nonce-…'; object-src 'none'; base-uri 'self'` unless the page, middleware or `lumen({ headers })` sets one. `lumen dev` writes nonces but sends no policy (Vite injects its own styles).
+- Prerendered pages cannot carry a per-visitor nonce: they get the policy as a `<meta http-equiv>` first in `<head>`, with SHA-256 hashes of their inline scripts and styles and `'self'` for external ones.
+- `style` props render as `data-l-v` rules of a nonce'd/hashed `<style>`; the client sets styles through the CSSOM. `cspNonce()` gives the app the nonce for its own inline elements.
 
 ### 7.5 Navigation and the SPA router
 

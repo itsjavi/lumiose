@@ -12,6 +12,9 @@ export default defineConfig({
     lumen({
       mode: "static",
       viewTransitions: true,
+      // A strict Content Security Policy: prerendered pages allow their inline scripts and styles
+      // by hash (a <meta> policy), so the site needs no `'unsafe-inline'`.
+      csp: "strict",
       md: {
         frontmatter: (data, { file }) => postFrontmatter(data, file, readFileSync(file, "utf8")),
       },

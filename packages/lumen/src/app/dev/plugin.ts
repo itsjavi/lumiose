@@ -220,6 +220,8 @@ export function lumenDev(options: LumenDevOptions = {}): Plugin {
       base,
       ...(project.trailingSlash === undefined ? {} : { trailingSlash: project.trailingSlash }),
       ...(project.csrf === undefined ? {} : { csrf: project.csrf }),
+      ...(project.csp === undefined ? {} : { csp: project.csp }),
+      ...(project.headers === undefined ? {} : { headers: project.headers }),
       ...navigationOptions(project),
       // Static routes render fully resolved, as the build prerenders them.
       prerender: (route) => route.mode === "static",

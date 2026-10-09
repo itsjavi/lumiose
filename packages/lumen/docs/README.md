@@ -37,6 +37,7 @@ mistakes** and **Related diagnostics**. Reference pages list every export with i
 - [Head and document](concepts/head.md): `<Title>`, `<Meta>`, `<Head>` and a custom `document.stsx`.
 - [Compiler and diagnostics](concepts/compiler.md): What the compiler does with `.stsx`/`.tsx`, and how `LUMxxxx` diagnostics work.
 - [Testing](concepts/testing.md): Test components with Vitest and the Lumen Vite plugin.
+- [Security](concepts/security.md): A strict Content Security Policy with nonces and hashes (`lumen({ csp: "strict" })`, `cspNonce()`), and the cross-site form check.
 
 ## Reference
 

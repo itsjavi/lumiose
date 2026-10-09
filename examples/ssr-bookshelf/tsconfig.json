@@ -4,5 +4,5 @@
   "compilerOptions": {
     "types": ["node", "lumen/env"]
   },
-  "include": ["src", "e2e", "server.ts", "playwright.config.ts", ".lumen/shadow", ".lumen/types"]
+  "include": ["src", "e2e", "server.ts", "vite.config.ts", "playwright.config.ts", ".lumen/shadow", ".lumen/types"]
 }

@@ -36,6 +36,7 @@ import {
   type CspOption,
 } from "./csp.ts";
 import { documentBody, documentParts, type DocumentComponent } from "./document.ts";
+import { headersFor, type HeadersOption } from "../headers.ts";
 import { documentRules, navigationHead, type Prefetch } from "./navigation.ts";
 import { createServerRenderer, type PageRenderer, type PageTree } from "./render.ts";
 import { spaErrorPart, spaPagePart, spaPageTree } from "../router/server.ts";
@@ -117,6 +118,11 @@ export interface RequestHandlerOptions {
    * unless the page or middleware sets one); prerendered pages get a hash policy `<meta>`.
    */
   csp?: CspOption;
+  /**
+   * `lumen({ headers })`, which adapters and `lumen dev` send: a `Content-Security-Policy` it
+   * configures for a path replaces Lumen's strict policy there (header and prerendered `<meta>`).
+   */
+  headers?: HeadersOption;
 }
 
 export type TrailingSlash = "ignore" | "always" | "never";
@@ -435,6 +441,14 @@ export function createRequestHandler(options: RequestHandlerOptions): RequestHan
   ): Promise<Response> {
     const { request } = scope.ctx;
     const { nonce } = scope;
+    // A policy configured with `lumen({ headers })` for this path replaces Lumen's.
+    const ownPolicy =
+      options.csp === "strict" &&
+      !(
+        options.headers !== undefined &&
+        "content-security-policy" in
+          headersFor(options.headers, routePath(scope.ctx.url.pathname, base) ?? "/")
+      );
     const document =
       options.document === undefined
         ? undefined
@@ -474,7 +488,7 @@ export function createRequestHandler(options: RequestHandlerOptions): RequestHan
       const parts = documentParts(shell.body, head, document !== undefined);
       body = documentBody(parts, rules.stream, (error) => onError(error, request));
       // A prerendered page is a file: its inline scripts and styles are allowed by hash.
-      if (options.csp === "strict" && prerendering && typeof body === "string") {
+      if (ownPolicy && prerendering && typeof body === "string") {
         body = withHashPolicy(body);
       }
     } catch (error) {
@@ -483,7 +497,7 @@ export function createRequestHandler(options: RequestHandlerOptions): RequestHan
     }
     const headers = new Headers(state.headers);
     if (!headers.has("content-type")) headers.set("content-type", "text/html; charset=utf-8");
-    if (nonce !== undefined && !dev && !headers.has("content-security-policy")) {
+    if (ownPolicy && nonce !== undefined && !dev && !headers.has("content-security-policy")) {
       headers.set("content-security-policy", noncePolicy(nonce));
     }
     if (request.method === "HEAD") {

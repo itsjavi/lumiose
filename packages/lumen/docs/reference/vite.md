@@ -32,6 +32,8 @@ interface LumenOptions {
   viewTransitions?: boolean; // default false
   /** Speculation rules that prefetch the same-origin links of MPA pages. */
   prefetch?: "hover" | "viewport" | "none"; // default "hover"
+  /** A strict Content Security Policy: nonces per response, hashes for prerendered pages. */
+  csp?: "strict";
   /** Response headers: a record for every response, or rules by path (below base). */
   headers?: Record<string, string> | { path: string; headers: Record<string, string> }[];
 }
@@ -40,7 +42,10 @@ interface LumenOptions {
 The project options (`mode`, `ssr`, `trailingSlash`, `csrf`, `viewTransitions`, `prefetch`,
 `headers`) are
 read by `lumen dev`, `lumen build` and `lumen routes`/`check` from the plugin's `api.options`.
-Invalid values and unknown option names throw when the config loads. `allowedOrigins` takes full
+Invalid values and unknown option names throw when the config loads. `csp: "strict"` is
+described in [Security](../concepts/security.md): nonces on every inline script and style Lumen
+writes, a `Content-Security-Policy` header for pages rendered per request, and a hash policy
+`<meta>` in prerendered pages. `allowedOrigins` takes full
 origins such as `"https://app.example.com"`, without a path or trailing slash.
 
 **Response headers** (`headers`). Declare them once: a record applies to every response; rules
@@ -117,7 +122,7 @@ What it does:
   A style-only edit, or an edit to such a constants module, hot-updates the CSS without remounting.
 
 > **Status:** compilation, environments, diagnostics, HMR, style-block CSS, `.svg`, `.md` and `.html` imports and the
-> project options above are available. The designed options `adapter`, `css` and `csp` are not.
+> project options above are available. The designed options `adapter` and `css` are not.
 
 ## Example
 

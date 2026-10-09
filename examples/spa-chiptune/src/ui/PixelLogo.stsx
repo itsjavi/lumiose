@@ -40,17 +40,20 @@ export function PixelLogo(props: { text: string; scale?: number }) {
     >
       <path d={logo().d} transform="translate(1 1)" class="shadow" />
       <path d={logo().d} class="face" />
-      <style>
-        .logo {
-          display: block;
-        }
-        .shadow {
-          fill: #000;
-        }
-        .face {
-          fill: var(--yellow);
-        }
-      </style>
     </svg>
   );
 }
+
+<style>
+  /* A file-level block, not a <style> inside the <svg>: that would be an inline style, which the
+     strict Content Security Policy (lumen({ csp: "strict" })) refuses. */
+  .logo {
+    display: block;
+  }
+  .shadow {
+    fill: #000;
+  }
+  .face {
+    fill: var(--yellow);
+  }
+</style>

@@ -27,7 +27,7 @@ import type { TrailingSlash } from "../server/handler.ts";
 import type { Prefetch } from "../server/navigation.ts";
 import { SPA_ENTRY, spaEntryPlugin } from "../router/entry.ts";
 import { clientRuntime } from "./client-runtime.ts";
-import { configProjectOptions, hrefDefine, islandModules } from "../project.ts";
+import { configProjectOptions, hrefDefine, islandModules, projectOptions } from "../project.ts";
 import { ISLANDS_ID } from "../../vite/islands.ts";
 import { STYLE_TAGS_PLACEHOLDER, styleTags } from "./stylesheets.ts";
 
@@ -154,7 +154,10 @@ function lumenBuildEnvironments(state: BuildState): Plugin {
         });
         // The placeholder ends its line: no mapped code moves.
         return {
-          code: code.replace(placeholder, () => `JSON.parse(${JSON.stringify(JSON.stringify(tags))})`),
+          code: code.replace(
+            placeholder,
+            () => `JSON.parse(${JSON.stringify(JSON.stringify(tags))})`,
+          ),
           map: null,
         };
       },
@@ -329,6 +332,7 @@ export function serverEntryCode(state: BuildState, config: ResolvedConfig): stri
     ...(document === undefined ? {} : { document }),
     ...(state.csrf === undefined ? {} : { csrf: state.csrf }),
     ...(state.viewTransitions ? { viewTransitions: true } : {}),
+    ...(projectOptions(config, "build").csp === undefined ? {} : { csp: "strict" }),
     ...(state.prefetch === "none" ? {} : { prefetch: state.prefetch }),
     islands: state.islands,
     ...(state.loader === undefined ? {} : { loader: state.loader }),

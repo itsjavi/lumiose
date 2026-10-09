@@ -49,9 +49,14 @@ describe("lumen() project options", () => {
       'lumen({ include }): expected a RegExp, got "*.stsx".',
     );
     expect(create({ moed: "spa" })).toThrow(
-      "lumen({ moed }): unknown option. Known options: include, exclude, mode, ssr, trailingSlash, csrf, svg, md, html, viewTransitions, prefetch, headers.",
+      "lumen({ moed }): unknown option. Known options: include, exclude, mode, ssr, trailingSlash, csrf, svg, md, html, viewTransitions, prefetch, csp, headers.",
     );
     expect(create(null)).toThrow("lumen(): expected an options object, got null.");
+  });
+
+  it("validates csp (TASK-138)", () => {
+    expect(apiOf({ csp: "strict" })).toEqual({ csp: "strict" });
+    expect(create({ csp: true })).toThrow('lumen({ csp }): expected one of "strict", got true.');
   });
 
   it("validates the MPA navigation options viewTransitions and prefetch (TASK-93)", () => {

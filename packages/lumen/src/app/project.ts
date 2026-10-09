@@ -47,6 +47,7 @@ export interface ProjectOptions {
   csrf?: false | CsrfOptions;
   viewTransitions?: boolean;
   prefetch?: Prefetch;
+  csp?: "strict";
   headers?: HeadersOption;
 }
 

@@ -58,6 +58,8 @@ export interface BuiltApp extends BuiltAppConfig {
   viewTransitions?: boolean;
   /** `lumen({ prefetch })`; absent for `"none"`. */
   prefetch?: Prefetch;
+  /** `lumen({ csp })`; absent when off. */
+  csp?: "strict";
 }
 
 export type AppHandlerOptions = Pick<
@@ -81,6 +83,8 @@ export function createAppHandler(app: BuiltApp, options: AppHandlerOptions = {})
     ...(app.spa === undefined ? {} : { spaEntry: app.spa }),
     ...(app.viewTransitions === undefined ? {} : { viewTransitions: app.viewTransitions }),
     ...(app.prefetch === undefined ? {} : { prefetch: app.prefetch }),
+    ...(app.csp === undefined ? {} : { csp: app.csp }),
+    ...(app.headers === undefined ? {} : { headers: app.headers }),
     headAssets: (files, spa) => stylesheetLinks(app, files) + spaModulePreloads(app, files, spa),
     base: app.base,
     trailingSlash: app.trailingSlash,

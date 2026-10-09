@@ -52,14 +52,16 @@ export function hashPolicy(html: string): string {
 }
 
 /**
- * A prerendered document with its hash policy as the first element of `<head>`, so it covers
- * every inline script and style after it.
+ * A prerendered document with its hash policy first in `<head>` (after `<meta charset>`), so it
+ * covers every inline script and style after it.
  */
 export function withHashPolicy(html: string): string {
   const head = /<head(?:\s[^>]*)?>/i.exec(html);
   if (head === null) return html;
   const meta = `<meta http-equiv="Content-Security-Policy" content="${hashPolicy(html)}">`;
-  const at = head.index + head[0].length;
+  let at = head.index + head[0].length;
+  // After a leading `<meta charset>`, which must come early.
+  at += /^\s*<meta\s+charset\b[^>]*>/i.exec(html.slice(at))?.[0].length ?? 0;
   return html.slice(0, at) + meta + html.slice(at);
 }
 

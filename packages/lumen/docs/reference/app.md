@@ -197,7 +197,12 @@ function cookies(): Cookies;
 function response(): ResponseContext;
 function env(name: string): string | undefined;
 function publicEnv(source?: ServerEnv): Record<string, string>;
+function cspNonce(): string | undefined; // lumen({ csp: "strict" }): the response's nonce
 ```
+
+`cspNonce()` is `undefined` without strict CSP, outside a request and while prerendering (the
+page's hash policy covers its inline elements); in the browser it reads
+`<meta property="csp-nonce">`. See [Security](../concepts/security.md).
 
 Available anywhere during a server render (also after `await`), scoped to the current request. In
 the browser they throw `LUM4003`. `env()` reads the adapter's env, else `process.env`;

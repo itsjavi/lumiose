@@ -11,6 +11,7 @@ export default defineConfig({
     lumen({
       mode: "spa",
       ssr: false,
+      csp: "strict",
       headers: {
         "cross-origin-opener-policy": "same-origin",
         "cross-origin-embedder-policy": "require-corp",

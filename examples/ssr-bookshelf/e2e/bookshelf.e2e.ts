@@ -51,6 +51,38 @@ test.beforeEach(({ page }) => {
   });
 });
 
+test.describe("strict CSP", () => {
+  test("server pages get a nonce policy, static ones a hash policy, and nothing violates them", async ({
+    page,
+  }) => {
+    await page.addInitScript(() => {
+      const seen: string[] = ((window as unknown as { cspViolations: string[] }).cspViolations =
+        []);
+      document.addEventListener("securitypolicyviolation", (event) => {
+        seen.push(`${event.violatedDirective} ${event.blockedURI}`);
+      });
+    });
+    const violations = () =>
+      page.evaluate(() => (window as unknown as { cspViolations: string[] }).cspViolations);
+    for (const path of ["/", "/books", `/books/${BOOK.isbn}`, "/authors", "/login"]) {
+      const response = await page.goto(path);
+      const policy = await response!.headerValue("content-security-policy");
+      expect(policy, path).toMatch(
+        /^script-src 'nonce-[\w+/=]+' 'strict-dynamic'; style-src 'self'/,
+      );
+      // Streamed boundaries, islands and their styles have arrived.
+      await page.waitForLoadState("networkidle");
+      expect(await violations(), path).toEqual([]);
+    }
+    for (const path of ["/about", "/genres"]) {
+      await page.goto(path);
+      const meta = page.locator('meta[http-equiv="Content-Security-Policy"]');
+      expect(await meta.getAttribute("content"), path).toMatch(/^script-src 'self'/);
+      expect(await violations(), path).toEqual([]);
+    }
+  });
+});
+
 test.describe("pages", () => {
   test("the home page sends its shell, then streams the recommendations", async ({
     page,

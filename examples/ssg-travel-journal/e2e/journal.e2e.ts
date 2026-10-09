@@ -311,6 +311,37 @@ test.describe("islands", () => {
   });
 });
 
+test.describe("strict CSP", () => {
+  test("pages carry a hash policy and nothing they load violates it", async ({ page }) => {
+    await page.addInitScript(() => {
+      const seen: string[] = ((window as unknown as { cspViolations: string[] }).cspViolations =
+        []);
+      document.addEventListener("securitypolicyviolation", (event) => {
+        seen.push(`${event.violatedDirective} ${event.blockedURI}`);
+      });
+    });
+    const violations = () =>
+      page.evaluate(() => (window as unknown as { cspViolations: string[] }).cspViolations);
+    for (const path of ["/", `/posts/${SKYE.slug}`, "/tags", "/archive", "/about"]) {
+      await page.goto(path);
+      await islandsReady(page);
+      const policy = await page
+        .locator('meta[http-equiv="Content-Security-Policy"]')
+        .getAttribute("content");
+      expect(policy).toMatch(/^script-src 'self'( 'sha256-[\w+/=]+')+; style-src 'self'/);
+      expect(await violations(), path).toEqual([]);
+    }
+    // The check is not vacuous: an injected inline style is refused.
+    page.removeAllListeners("console");
+    await page.evaluate(() => {
+      const style = document.createElement("style");
+      style.textContent = "body { outline: 1px solid red; }";
+      document.head.append(style);
+    });
+    await expect.poll(violations).toEqual([expect.stringMatching(/^style-src/)]);
+  });
+});
+
 test.describe("feeds", () => {
   test("RSS lists every post with absolute links", async ({ request }) => {
     const response = await request.get("/rss.xml");

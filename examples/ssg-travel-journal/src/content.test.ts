@@ -65,11 +65,12 @@ describe("postFrontmatter (the lumen({ md }) hook)", () => {
     });
   });
 
+  const check =
+    (fields: Record<string, unknown>, path = file) =>
+    () =>
+      postFrontmatter({ ...data, ...fields }, path, source);
+
   it("rejects invalid fields and file names", () => {
-    const check =
-      (fields: Record<string, unknown>, path = file) =>
-      () =>
-        postFrontmatter({ ...data, ...fields }, path, source);
     expect(check({ date: "soon" })).toThrow('"date" must be a day');
     expect(check({ tags: ["Coast"] })).toThrow('tag "Coast" must be a lowercase slug');
     expect(check({ tags: [] })).toThrow('"tags" must be a non-empty list');

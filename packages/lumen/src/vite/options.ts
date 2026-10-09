@@ -84,6 +84,16 @@ export interface LumenOptions {
    */
   prefetch?: "hover" | "viewport" | "none";
   /**
+   * A strict Content Security Policy (spec §7.4): pages rendered per request get a nonce on every
+   * inline script and style Lumen writes, `cspNonce()` for the app's own, and a
+   * `Content-Security-Policy` header (`script-src 'nonce-…' 'strict-dynamic'`); prerendered pages
+   * get the same policy with hashes in a `<meta>`. `style` props render as nonce'd rules instead of
+   * `style` attributes. A policy set by `setHeader`, middleware or `headers` replaces it. Default: off.
+   *
+   * @example lumen({ csp: "strict" })
+   */
+  csp?: "strict";
+  /**
    * Response headers, declared once: a record for every response, or `{ path, headers }` rules
    * for the paths that match (below `base`; `*` is one segment, `**` any depth; later rules win).
    * `lumen dev`, `lumen preview` and @lumen/adapter-node send them, and `lumen build` writes
@@ -130,6 +140,7 @@ const KNOWN = [
   "html",
   "viewTransitions",
   "prefetch",
+  "csp",
   "headers",
 ];
 
@@ -168,6 +179,7 @@ export function projectOptionsOf(options: LumenOptions): ProjectOptions {
     project.viewTransitions = viewTransitions;
   }
   if (prefetch !== undefined) project.prefetch = oneOf("prefetch", prefetch, PREFETCH);
+  if (options.csp !== undefined) project.csp = oneOf("csp", options.csp, ["strict"] as const);
   if (headers !== undefined) project.headers = headersOption(headers);
   return project;
 }

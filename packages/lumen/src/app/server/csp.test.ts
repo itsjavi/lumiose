@@ -25,7 +25,8 @@ function app(modules: Modules, options: Partial<RequestHandlerOptions> = {}) {
     csp: "strict",
     viewTransitions: true,
     prefetch: "hover",
-    headAssets: () => '<style data-l-css="/a.css">.a{}</style><link rel="stylesheet" href="/b.css">',
+    headAssets: () =>
+      '<style data-l-css="/a.css">.a{}</style><link rel="stylesheet" href="/b.css">',
     ...options,
   });
   return (path: string) => fetch(new Request(new URL(path, "https://lumen.test")));
@@ -58,6 +59,14 @@ const page: ModuleExports = {
     ),
 };
 
+const ownPolicy: Middleware = async (_ctx, next) => {
+  const res = await next();
+  res.headers.set("content-security-policy", "default-src 'self'");
+  return res;
+};
+
+const sha = (source: string) => `'sha256-${createHash("sha256").update(source).digest("base64")}'`;
+
 describe('lumen({ csp: "strict" })', () => {
   it("puts a fresh nonce on every inline script and style and in the policy header", async () => {
     const fetch = app({ "src/routes/index.stsx": page });
@@ -87,16 +96,28 @@ describe('lumen({ csp: "strict" })', () => {
   });
 
   it("leaves the policy to a page or middleware that sets one", async () => {
-    const middleware: Middleware = async (_ctx, next) => {
-      const res = await next();
-      res.headers.set("content-security-policy", "default-src 'self'");
-      return res;
-    };
     const fetch = app(
-      { "src/routes/index.stsx": page, "src/middleware.ts": { default: middleware } },
+      { "src/routes/index.stsx": page, "src/middleware.ts": { default: ownPolicy } },
       { middleware: "src/middleware.ts" },
     );
     expect((await fetch("/")).headers.get("content-security-policy")).toBe("default-src 'self'");
+  });
+
+  it("leaves a path whose lumen({ headers }) sets a policy to it", async () => {
+    const headers = [
+      { path: "/admin/**", headers: { "content-security-policy": "default-src 'self'" } },
+    ];
+    const fetch = app(
+      { "src/routes/index.stsx": page, "src/routes/admin/index.stsx": page },
+      { headers },
+    );
+    // The adapter sends the configured header; the handler adds none of its own there.
+    expect((await fetch("/admin")).headers.get("content-security-policy")).toBeNull();
+    expect((await fetch("/")).headers.get("content-security-policy")).toMatch(
+      /^script-src 'nonce-/,
+    );
+    const prerender = app({ "src/routes/admin/index.stsx": page }, { headers, prerendering: true });
+    expect(await (await prerender("/admin")).text()).not.toContain("http-equiv");
   });
 
   it("sends no header in dev, where Vite injects its own styles", async () => {
@@ -113,9 +134,11 @@ describe('lumen({ csp: "strict" })', () => {
     const html = await res.text();
     expect(html).not.toContain("nonce");
     expect(html).toContain("<i>none</i>");
-    const meta = /<head><meta http-equiv="Content-Security-Policy" content="([^"]+)">/.exec(html);
+    const meta =
+      /<head>(?:<meta charset="utf-8">)?<meta http-equiv="Content-Security-Policy" content="([^"]+)">/.exec(
+        html,
+      );
     expect(meta).not.toBeNull();
-    const sha = (text: string) => `'sha256-${createHash("sha256").update(text).digest("base64")}'`;
     expect(meta![1]).toContain(sha('[data-l-v="0"]{color:red}'));
     expect(meta![1]).toContain(sha(".a{}"));
     expect(meta![1]).toMatch(/^script-src 'self' 'sha256-[^;]+; style-src 'self' /);
