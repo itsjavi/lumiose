@@ -379,8 +379,6 @@ export default function Post() { return <h1>Post</h1>; }
     expect(runtime[0]).not.toContain("LUMEN_TRAILING_SLASH");
   });
 
-  it("writes assets that only server-rendered pages import to dist/client, once (TASK-126)", async () => {
-    // Above Vite's 4 kB inline limit, so they are files. `shared.png` is also an island's.
   it("links one shared stylesheet, then inlines or merges each page's own (TASK-121)", async () => {
     const big = Array.from({ length: 120 }, (_, i) => `.rule-${i} { margin-left: ${i}px; }`);
     const root = project({
@@ -420,6 +418,8 @@ export default function Layout(props: { children?: JSX.Element }) {
     expect([...home.matchAll(/rel="stylesheet"/g)]).toHaveLength(1);
   });
 
+  it("writes assets that only server-rendered pages import to dist/client, once (TASK-126)", async () => {
+    // Above Vite's 4 kB inline limit, so they are files. `shared.png` is also an island's.
     const root = project({
       "vite.config.ts": `import lumen from "lumen/vite";
 export default { plugins: [lumen({ md: true })] };

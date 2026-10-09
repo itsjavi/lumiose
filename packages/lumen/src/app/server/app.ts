@@ -5,8 +5,8 @@
 
 import type { RouteManifest } from "../routes/manifest.ts";
 import type { CsrfOptions } from "./csrf.ts";
-import {
 import { stylesheetTags, type StyleTags } from "./stylesheets.ts";
+import {
   createRequestHandler,
   type ModuleExports,
   type RequestHandler,
@@ -49,11 +49,11 @@ export interface BuiltApp extends BuiltAppConfig {
    * (`stylesheets` of `virtual:lumen/css-manifest`).
    */
   stylesheets?: (files: readonly string[]) => readonly string[];
+  /** How `lumen build` grouped the stylesheets: a shared file, then each page's own (TASK-121). */
+  styleTags?: StyleTags;
   /** `lumen({ viewTransitions })`; absent when off. */
   viewTransitions?: boolean;
   /** `lumen({ prefetch })`; absent for `"none"`. */
-  /** How `lumen build` grouped the stylesheets: a shared file, then each page's own (TASK-121). */
-  styleTags?: StyleTags;
   prefetch?: Prefetch;
 }
 

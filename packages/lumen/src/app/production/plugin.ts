@@ -28,8 +28,8 @@ import { SPA_ENTRY, spaEntryPlugin } from "../router/entry.ts";
 import { clientRuntime } from "./client-runtime.ts";
 import { configProjectOptions, hrefDefine, islandModules } from "../project.ts";
 import { ISLANDS_ID } from "../../vite/islands.ts";
-
 import { STYLE_TAGS_PLACEHOLDER, styleTags } from "./stylesheets.ts";
+
 export const SERVER_ENTRY = "virtual:lumen/server-entry";
 const SERVER_ENTRY_ID = "\0lumen:server-entry";
 const APP_RUNTIME = normalizePath(fileURLToPath(new URL("../server/app.ts", import.meta.url)));
@@ -135,9 +135,6 @@ function lumenBuildEnvironments(state: BuildState): Plugin {
       },
     },
 
-    // lumen/vite builds every stylesheet as an entry of the client build (its CSS manifest). When
-    // an island imports one too, Rolldown moves the stylesheet to a shared chunk and gives the entry
-    // a facade chunk that only imports it; Vite then drops the pure-CSS chunk and blanks the import
     // Each page's stylesheets, grouped into a shared file and the page's own (./stylesheets.ts),
     // once the server graph (the CSS manifest) is complete.
     renderChunk: {
@@ -160,6 +157,9 @@ function lumenBuildEnvironments(state: BuildState): Plugin {
       },
     },
 
+    // lumen/vite builds every stylesheet as an entry of the client build (its CSS manifest). When
+    // an island imports one too, Rolldown moves the stylesheet to a shared chunk and gives the entry
+    // a facade chunk that only imports it; Vite then drops the pure-CSS chunk and blanks the import
     // (`/* empty css */`). Nothing loads the facade, so it is not written either (TASK-94).
     //
     // It also finds the chunk of each island, by the module part of its ref (TASK-98).
@@ -214,9 +214,6 @@ async function islandChunks(
 }
 
 /**
- * Moves the server build's emitted assets to the client output: files under `assetsDir`, named by
- * content hash as in the client build, so one the client build already wrote is identical and
-/**
  * The stylesheet URLs of every page the app renders (routes, `_404` and `_error` pages: the
  * document, the layouts, then the page), as the CSS manifest's `stylesheets()` lists them.
  */
@@ -261,6 +258,9 @@ function pageStylesheets(
   };
 }
 
+/**
+ * Moves the server build's emitted assets to the client output: files under `assetsDir`, named by
+ * content hash as in the client build, so one the client build already wrote is identical and
  * kept. Stylesheets are dropped: the client build emits every stylesheet (lumen/vite's CSS
  * manifest), and pages link those.
  */
@@ -349,11 +349,11 @@ export const app = {
   ...config,
   ...${JSON.stringify(data)},
   stylesheets,
+  styleTags: ${JSON.stringify(STYLE_TAGS_PLACEHOLDER)},
   loadModule(file) {
     const load = modules[file];
     return load === undefined
       ? Promise.reject(new Error(\`\${file} is not part of this build.\`))
-  styleTags: ${JSON.stringify(STYLE_TAGS_PLACEHOLDER)},
       : load();
   },
 };
