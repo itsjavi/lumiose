@@ -63,5 +63,8 @@
   --not-math: translate(10px, 20px);
   unknown-property: calc(8 * 2px);
 }
+=== diagnostics
+LUM3020 warning 2334..2350 `unknown-property`: `unknown-property` is not a CSS property, so browsers ignore the declaration
+  help: Check the spelling. Custom properties start with `--`, and vendor-prefixed ones with `-webkit-`, `-moz-`…
 === var() reads
 --gap --missing --w

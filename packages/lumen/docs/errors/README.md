@@ -50,6 +50,7 @@ fix?, docs }`; `lumen check --format json` prints them.
 | [LUM3017](LUM3017.md) | warning  | Invalid CSS value                         |
 | [LUM3018](LUM3018.md) | warning  | Unitless number from a `$` reference      |
 | [LUM3019](LUM3019.md) | warning  | Unit separated from a `$` reference       |
+| [LUM3020](LUM3020.md) | warning  | Unknown CSS property                      |
 
 ## Islands and boundaries (4xxx)
 

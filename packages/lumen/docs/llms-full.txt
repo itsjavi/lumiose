@@ -982,7 +982,8 @@ in the file-level block styles every template in the file.
 - [LUM3010](../errors/LUM3010.md), [LUM3011](../errors/LUM3011.md): misplaced blocks.
 - [LUM3012](../errors/LUM3012.md): custom property set but never read.
 - [LUM3014](../errors/LUM3014.md), [LUM3015](../errors/LUM3015.md): CSS syntax error, invalid CSS dropped (such as `$` in a selector).
-- [LUM3017](../errors/LUM3017.md): a declaration value browsers would ignore.
+- [LUM3017](../errors/LUM3017.md): a declaration value browsers would ignore, or no value.
+- [LUM3020](../errors/LUM3020.md): an unknown property name, with a fix for close typos.
 - [LUM3018](../errors/LUM3018.md), [LUM3019](../errors/LUM3019.md): a unitless `$` number, a unit separated from a reference.
 
 See also: [Components](components.md), [JSX `style` and `class`](jsx.md).
@@ -5362,6 +5363,10 @@ Blocks are plain CSS, compiled by Lightning CSS. A syntax error it cannot recove
 unbalanced brace, an unterminated string, an invalid at-rule prelude) stops the block from
 compiling. The message is Lightning CSS's own and points at the CSS.
 
+A `{` without its `}` is reported too, at the brace, although Lightning CSS closes the block at
+the end of the `<style>`: the rules after it end up nested inside the unclosed rule, which is
+rarely what was meant (`.a { color: red; .b { top: 0 }` styles `.a .b`).
+
 ## Example
 
 ```stsx
@@ -5477,6 +5482,9 @@ selector (`.list :deep(.item .icon)`). For app-wide CSS, prefer a `<style global
 
 ## What it means
 
+A declaration without a value (`color: ;`, `color: !important`) is reported too: browsers drop
+it. An empty custom property (`--x: ;`) is valid and is not reported.
+
 Lightning CSS keeps a value it cannot parse for its property as written, and browsers then drop the
 declaration: `color: notacolor`, `width: 10 px` (a space before the unit), `display: flexbox`. The
 check runs after `$` references are substituted, so a constant that holds an invalid value is
@@ -5488,8 +5496,8 @@ or percentage, or a `minmax()` with one), so `2fr repeat(auto-fit, minmax(9rem, 
 
 The check is conservative: values Lightning CSS does not understand yet but browsers may (`var()`,
 `env()`, `attr()`, `anchor()`, `if()`, `color-mix()`, `subgrid`, newer keywords, vendor-prefixed
-values, CSS-wide keywords such as `inherit`) are never reported, and neither are custom properties,
-unknown properties or at-rule descriptors. A value it does not report can still be invalid.
+values, CSS-wide keywords such as `inherit`) are never reported, and neither are custom properties
+or at-rule descriptors. Unknown properties are [LUM3020](LUM3020.md). A value it does not report can still be invalid.
 
 ## Example
 
@@ -5621,6 +5629,53 @@ function, multiply in place: `calc($gap * 1px + 1px)`. Or keep the unit in the c
 ## Related
 
 - [LUM3018](LUM3018.md): a unitless number where a length, angle or time is required
+- [Styles](../concepts/styles.md)
+
+<!-- source: errors/LUM3020.md -->
+
+<!-- Generated from crates/lumen_compiler/src/diagnostics/registry.rs by packages/lumen/scripts/gen-error-docs.ts. Edit the explanation below the end marker. -->
+
+# LUM3020: Unknown CSS property
+
+**Severity:** warning · **Category:** styles (3xxx)
+
+<!-- end of generated header -->
+
+> A declaration's property is not a CSS property, so browsers ignore the declaration.
+
+**Reported by:** the CSS compiler (`lumen_css`), in `lumen/vite`, `lumen check` and the language server. A warning; the CSS is emitted unchanged.
+
+## What it means
+
+Lightning CSS keeps a declaration with an unknown property name as it is, and browsers skip it, so
+a typo such as `colr: red` silently does nothing. A property is known when it is in MDN's list of
+CSS properties (standard, experimental, non-standard and obsolete ones) or Lightning CSS knows it.
+When a known property is one or two edits away, the help names it and the fix replaces it.
+
+Not checked: custom properties (`--brand`), vendor-prefixed properties (`-webkit-line-clamp`,
+`-moz-…`), at-rule descriptors (`@font-face`, `@page`, `@property`) and names that are not plain
+identifiers.
+
+## Example
+
+```stsx
+<style>
+  .card {
+    colr: navy;
+    backgrund-color: white;
+  }
+</style>
+```
+
+## How to fix it
+
+Correct the name (`color`, `background-color`): the fix does it for close matches. For a value
+you read with `var()`, name it as a custom property (`--card-color`). If the property is real but
+newer than Lumen's list, the warning is safe to ignore; report it so the list can be updated.
+
+## Related
+
+- [LUM3017](LUM3017.md): a known property with a value browsers ignore
 - [Styles](../concepts/styles.md)
 
 <!-- source: errors/LUM4001.md -->
@@ -6231,6 +6286,7 @@ fix?, docs }`; `lumen check --format json` prints them.
 | [LUM3017](LUM3017.md) | warning  | Invalid CSS value                         |
 | [LUM3018](LUM3018.md) | warning  | Unitless number from a `$` reference      |
 | [LUM3019](LUM3019.md) | warning  | Unit separated from a `$` reference       |
+| [LUM3020](LUM3020.md) | warning  | Unknown CSS property                      |
 
 ## Islands and boundaries (4xxx)
 

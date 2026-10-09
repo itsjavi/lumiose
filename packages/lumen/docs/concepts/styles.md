@@ -370,7 +370,8 @@ in the file-level block styles every template in the file.
 - [LUM3010](../errors/LUM3010.md), [LUM3011](../errors/LUM3011.md): misplaced blocks.
 - [LUM3012](../errors/LUM3012.md): custom property set but never read.
 - [LUM3014](../errors/LUM3014.md), [LUM3015](../errors/LUM3015.md): CSS syntax error, invalid CSS dropped (such as `$` in a selector).
-- [LUM3017](../errors/LUM3017.md): a declaration value browsers would ignore.
+- [LUM3017](../errors/LUM3017.md): a declaration value browsers would ignore, or no value.
+- [LUM3020](../errors/LUM3020.md): an unknown property name, with a fix for close typos.
 - [LUM3018](../errors/LUM3018.md), [LUM3019](../errors/LUM3019.md): a unitless `$` number, a unit separated from a reference.
 
 See also: [Components](components.md), [JSX `style` and `class`](jsx.md).

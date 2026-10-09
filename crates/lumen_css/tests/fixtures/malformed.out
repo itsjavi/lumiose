@@ -20,6 +20,15 @@
       );
 }
 === diagnostics
+LUM3017 warning 318..323 `color`: `color` has no value, so browsers ignore the declaration
+  help: Give it a value, or remove the declaration
+LUM3017 warning 345..350 `color`: `color` has no value, so browsers ignore the declaration
+  help: Give it a value, or remove the declaration
+LUM3017 warning 353..359 `margin`: `margin` has no value, so browsers ignore the declaration
+  help: Give it a value, or remove the declaration
+LUM3014 error 389..390 `{`: this `{` has no matching `}`, so the block runs to the end of the `<style>`
+  label `.half`: the unclosed block
+  help: Add the missing `}`
 LUM3019 warning 398..403 `$w px`: `$w px` is `8 px`: a unit must follow its number without whitespace
   help: Multiply the constant by the unit, `calc($w * 1px)`, or give the constant a unit
   fix: Replace with `calc($w * 1px)` (`$w px` → `calc($w * 1px)`)

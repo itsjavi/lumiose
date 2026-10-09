@@ -77,6 +77,7 @@ registry! {
     InvalidCssValue = "LUM3017", Warning, "Invalid CSS value";
     UnitlessStyleRef = "LUM3018", Warning, "Unitless number from a `$` reference";
     DetachedUnit = "LUM3019", Warning, "Unit separated from a `$` reference";
+    UnknownCssProperty = "LUM3020", Warning, "Unknown CSS property";
     // 4xxx islands and boundaries
     NonExportedIsland = "LUM4001", Error, "Island component is not exported";
     NonSerializableIslandProp = "LUM4002", Error, "Non-serializable island prop";
@@ -151,6 +152,7 @@ mod tests {
                 Code::DetachedUnit,
                 "Unit separated from a `$` reference",
             ),
+            ("LUM3020", Code::UnknownCssProperty, "Unknown CSS property"),
         ] {
             let info = code.info();
             assert_eq!(Code::from_id(id), Some(code));

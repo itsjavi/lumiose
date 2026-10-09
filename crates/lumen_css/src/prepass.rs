@@ -59,6 +59,8 @@ pub(crate) struct Scan {
     pub refs: Vec<RefSite>,
     pub preludes: Vec<Prelude>,
     pub declarations: Vec<Declaration>,
+    /// The offsets of the `{` that have no matching `}`.
+    pub unclosed: Vec<usize>,
 }
 
 /// What the current `{…}` block contains.
@@ -110,6 +112,8 @@ pub(crate) fn scan(css: &str) -> Scan {
     let end = bytes.len();
     let mut out = Scan::default();
     let mut stack = vec![Context::Rules { nested: false }];
+    // The `{` of each open block (`stack` minus the root).
+    let mut braces = Vec::new();
     let mut item = Item::default();
     let mut pos = 0;
     // The character right after a reference cannot start another one.
@@ -134,6 +138,7 @@ pub(crate) fn scan(css: &str) -> Scan {
                 let context = *stack.last().expect("the root context is never popped");
                 let item = std::mem::take(&mut item);
                 stack.push(open_block(css, item, pos, context, &mut out));
+                braces.push(pos);
                 pos += 1;
             }
             b';' | b'}' => {
@@ -141,6 +146,7 @@ pub(crate) fn scan(css: &str) -> Scan {
                 flush_statement(css, std::mem::take(&mut item), pos, context, &mut out);
                 if byte == b'}' && stack.len() > 1 {
                     stack.pop();
+                    braces.pop();
                 }
                 pos += 1;
             }
@@ -195,6 +201,7 @@ pub(crate) fn scan(css: &str) -> Scan {
     }
     let context = *stack.last().expect("the root context is never popped");
     flush_statement(css, item, end, context, &mut out);
+    out.unclosed = braces;
     out
 }
 

@@ -30,6 +30,8 @@ pub enum CssCode {
     /// `LUM3019` (warning): a unit separated from a numeric `$` reference by whitespace
     /// (`$gap px`).
     DetachedUnit,
+    /// `LUM3020` (warning): a declaration's property is not a CSS property (`colr: red`).
+    UnknownProperty,
 }
 
 impl CssCode {
@@ -45,6 +47,7 @@ impl CssCode {
             Self::InvalidCssValue => "LUM3017",
             Self::UnitlessStyleRef => "LUM3018",
             Self::DetachedUnit => "LUM3019",
+            Self::UnknownProperty => "LUM3020",
         }
     }
 
@@ -55,7 +58,8 @@ impl CssCode {
             | Self::InvalidCssIgnored
             | Self::InvalidCssValue
             | Self::UnitlessStyleRef
-            | Self::DetachedUnit => Severity::Warning,
+            | Self::DetachedUnit
+            | Self::UnknownProperty => Severity::Warning,
             Self::HyphenatedStyleRef | Self::CssSyntaxError | Self::InvalidScopeSelector => {
                 Severity::Error
             }

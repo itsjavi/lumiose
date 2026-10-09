@@ -51,6 +51,11 @@
 //!   valid CSS the pinned Lightning CSS does not parse yet is never reported), as are unitless
 //!   numbers from `$` constants where a length, angle or time is needed (`LUM3018`) and a unit
 //!   separated from a constant (`$gap px`, `LUM3019`). Output is unchanged.
+//! - **Declaration checks.** Lightning CSS also keeps unknown property names (`colr`) and empty
+//!   values (`color: ;`), and closes an unclosed `{` at the end of the block, all without a
+//!   warning. Unknown properties are warned about (`LUM3020`, with a fix for close typos;
+//!   custom, vendor-prefixed and descriptor names are not checked), empty values too
+//!   (`LUM3017`), and an unclosed `{` is an error (`LUM3014`).
 //!
 //! # Source maps
 //!
@@ -71,9 +76,11 @@ mod clamp;
 mod diagnostics;
 mod edits;
 mod fold;
+mod known_properties;
 mod lines;
 mod prepass;
 mod process;
+mod properties;
 mod selector;
 mod sourcemap;
 mod token;

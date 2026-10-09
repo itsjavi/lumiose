@@ -71,6 +71,7 @@ These docs match lumen 0.0.0. Installed projects have them in `node_modules/lume
 - [LUM3017: Invalid CSS value](errors/LUM3017.md)
 - [LUM3018: Unitless number from a `$` reference](errors/LUM3018.md)
 - [LUM3019: Unit separated from a `$` reference](errors/LUM3019.md)
+- [LUM3020: Unknown CSS property](errors/LUM3020.md)
 - [LUM4001: Island component is not exported](errors/LUM4001.md)
 - [LUM4002: Non-serializable island prop](errors/LUM4002.md)
 - [LUM4003: Server-only module in a client graph](errors/LUM4003.md)

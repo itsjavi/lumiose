@@ -147,6 +147,8 @@ describe("language server (pull diagnostics)", () => {
       { source: "ts", code: 2304, range: rangeOf(broken, "$missing", 1) },
       // The compiler's LUM3008 on `$missing` is superseded by TypeScript's 2304.
       { source: "lumen", code: "LUM3005", range: rangeOf(broken, ".oops") },
+      // LUM3017 (TASK-120) and the CSS service both report the empty value (TASK-132).
+      { source: "lumen", code: "LUM3017", range: rangeOf(broken, "color: ;", 0, 5) },
       {
         source: "css",
         code: "css-propertyvalueexpected",
@@ -690,7 +692,7 @@ describe("language server (push diagnostics)", () => {
       if (!diagnostics) await new Promise((resolve) => setTimeout(resolve, 50));
     }
     expect(diagnostics?.map((d) => d.code).toSorted()).toEqual(
-      ["LUM1005", "LUM3005", 2304, 2322, 6133, "css-propertyvalueexpected"].toSorted(),
+      ["LUM1005", "LUM3005", "LUM3017", 2304, 2322, 6133, "css-propertyvalueexpected"].toSorted(),
     );
   });
 });

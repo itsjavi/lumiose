@@ -191,6 +191,11 @@ fn prepare<'a>(
     diagnostics.extend(
         crate::values::check(content, &scan.declarations, &substitutions)
             .into_iter()
+            .chain(crate::properties::check(
+                content,
+                &scan.declarations,
+                &scan.unclosed,
+            ))
             .map(|d| d.offset(base)),
     );
     let clamps = clamp::guard(content, &scan.declarations, &edits);
