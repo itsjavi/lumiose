@@ -241,8 +241,8 @@ impl<'a> Codegen<'a, '_> {
         let first = Expression::new_sequence_expression(
             span,
             self.ast.vec_from([
-                assign(&self.ast, &cached, value),
-                assign(&self.ast, &done, self.ast.boolean(span, true)),
+                assign(self.ast, &cached, value),
+                assign(self.ast, &done, self.ast.boolean(span, true)),
                 self.ast.ident(span, &cached),
             ]),
             self.ast,
