@@ -1,11 +1,11 @@
 ---
 id: TASK-180
 title: 'Windows CI: adapter-node and app dev/build tests'
-status: To Do
+status: Done
 assignee:
   - '@Nova'
 created_date: '2026-10-09 15:39'
-updated_date: '2026-10-09 15:51'
+updated_date: '2026-10-09 20:55'
 labels:
   - ci
   - windows
@@ -31,4 +31,6 @@ Found by the CI workflow (TASK-161, run 37951517996, check (windows-latest)). Fa
 
 <!-- SECTION:NOTES:BEGIN -->
 Nova RESUME 2026-10-09: all my work is committed and pushed (216b895: real project roots via realProjectRoot()/realpathSync.native in build() and createDevServer(), path-agnostic dev overlay frames, tests using realpathSync.native temp roots, the /@fs/ URL from normalizePath, chmod-000 assertions skipped on win32; client:idle requestIdleCallback timeout 2 s for the ubuntu e2e flake). CI run 37952282108 on 216b895: check macOS/ubuntu, e2e macOS/windows green; check (windows-latest) and e2e (ubuntu-latest) were still running at checkpoint. NEXT: gh run view 37952282108 — if Windows check still fails in app/dev, app/production or adapter-node tests, read the log (gh run view --job <id> --log-failed) and continue from there; Halo's (content/svg) and Photon's (vite/) Windows failures are listed on TASK-161. Nothing uncommitted from me; no claims or locks held.
+
+Lux 2026-10-09: confirmed in CI run 37954801977 — e2e ubuntu green and this task's Windows tests pass; the remaining windows-latest failures are Photon's vite plugin test and Beacon's cli.test.
 <!-- SECTION:NOTES:END -->
