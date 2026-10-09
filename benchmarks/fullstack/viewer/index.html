@@ -161,6 +161,12 @@
       .bar-row { display: grid; grid-template-columns: 1fr; height: 10px; position: relative; }
       .bar { height: 10px; border-radius: 0 4px 4px 0; min-width: 2px; }
       .bar.compare { opacity: 0.35; height: 6px; margin-top: 2px; }
+      /* min–max spread drawn over the median bar */
+      .whisker { position: absolute; top: 4px; height: 2px; background: var(--text-2); opacity: 0.7; }
+      .whisker::before, .whisker::after { content: ""; position: absolute; top: -3px; width: 1px; height: 8px; background: inherit; }
+      .whisker::before { left: 0; }
+      .whisker::after { right: 0; }
+      td.val .range.wide { color: var(--warn, #b45309); font-weight: 600; }
       .bar-row:hover .bar { filter: brightness(1.1); }
       .empty { padding: 40px 16px; text-align: center; color: var(--text-2); }
       .tip {
@@ -182,7 +188,7 @@
       <header class="top">
         <div>
           <h1>Fullstack benchmark</h1>
-          <p class="subtitle">The same Tracker app in Lumen, React Router and Next.js (doc-4). Medians; lower is better unless noted.</p>
+          <p class="subtitle">The same Tracker app in Lumen, React Router and Next.js (doc-4). Medians with the min–max range (whiskers on the bars; a range wider than 25% of the median is highlighted); lower is better unless noted.</p>
         </div>
         <div class="controls">
           <label class="ctl">Run <select id="run"></select></label>
@@ -454,7 +460,8 @@
         const higher = def.better === "higher";
         const best = present.length ? (higher ? Math.max(...present) : Math.min(...present)) : undefined;
         const otherMedians = apps.map((app) => value(other, app)?.median);
-        const scaleMax = Math.max(...present, ...(other ? otherMedians.filter((v) => typeof v === "number") : []), 0);
+        const maxes = apps.map((app) => value(run, app)?.max).filter((v) => typeof v === "number");
+        const scaleMax = Math.max(...present, ...maxes, ...(other ? otherMedians.filter((v) => typeof v === "number") : []), 0);
         const cells = apps.map((app, i) => {
           const s = value(run, app);
           if (!s) return `<td class="val missing">–</td>`;
@@ -466,6 +473,8 @@
             else if (!higher && best === 0 && s.median > 0) ratio = "vs 0";
           }
           const range = s.values.length > 1 ? `${fmt(s.min, def.unit)} – ${fmt(s.max, def.unit)}` : "";
+          // A spread over 25% of the median marks a noisy metric (a load spike, a cold cache…).
+          const wide = s.values.length > 1 && s.median > 0 && (s.max - s.min) / s.median > 0.25;
           let delta = "";
           const o = otherMedians[i];
           if (other && typeof o === "number") {
@@ -475,7 +484,7 @@
             const text = Number.isFinite(change) ? `${change > 0 ? "+" : ""}${change.toFixed(0)}%` : "new";
             delta = `<span class="delta ${same ? "" : improved ? "better" : "worse"}">${same ? "≈ same" : `${improved ? "▲ better" : "▼ worse"} ${text}`}</span>`;
           }
-          return `<td class="val${isBest ? " best" : ""}">${esc(fmt(s.median, def.unit))}${isBest ? ' <span class="ratio">best</span>' : ratio ? `<span class="ratio">${ratio}</span>` : ""}${range ? `<span class="range">${esc(range)}</span>` : ""}${delta}</td>`;
+          return `<td class="val${isBest ? " best" : ""}">${esc(fmt(s.median, def.unit))}${isBest ? ' <span class="ratio">best</span>' : ratio ? `<span class="ratio">${ratio}</span>` : ""}${range ? `<span class="range${wide ? " wide" : ""}" title="min – max of ${s.values.length} samples${wide ? "; spread over 25% of the median" : ""}">${esc(range)}</span>` : ""}${delta}</td>`;
         });
         const bars = apps.map((app, i) => {
           const s = value(run, app);
@@ -483,6 +492,7 @@
           const tip = s ? `${app.name}|${fmt(s.median, def.unit)}|${s.values.length > 1 ? `min ${fmt(s.min, def.unit)}, max ${fmt(s.max, def.unit)}, n=${s.values.length}` : "1 sample"}${other && typeof otherMedians[i] === "number" ? `|compared run: ${fmt(otherMedians[i], def.unit)}` : ""}` : `${app.name}|no data`;
           return `<div class="bar-row" data-tip="${esc(tip)}">
               ${s ? `<div class="bar" style="width:${width(s.median)}%;background:${app.color}"></div>` : ""}
+              ${s && s.values.length > 1 ? `<div class="whisker" style="left:${width(s.min)}%;width:${Math.max(0, width(s.max) - width(s.min))}%"></div>` : ""}
               ${other && typeof otherMedians[i] === "number" ? `<div class="bar compare" style="width:${width(otherMedians[i])}%;background:${app.color}"></div>` : ""}
             </div>`;
         });

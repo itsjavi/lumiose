@@ -1,5 +1,6 @@
 // The fullstack comparison benchmark runner (doc-4 §4, §6, §7). Runs every metric group across the
-// selected apps, one group at a time and the apps one after the other inside it, then writes
+// selected apps, one group at a time and the apps one after the other inside it (server rounds are
+// interleaved across apps instead, with a cool-down and an idle check before each), then writes
 // results/<date>-<host>.json and results/index.json.
 //
 //   pnpm --filter @bench/harness bench [--quick] [--only lumen,next] [--metrics dev,build,load,server,other]
@@ -11,6 +12,7 @@ import { execFileSync } from "node:child_process";
 import { join } from "node:path";
 import {
   type App,
+  type Server,
   REPO,
   baseUrl,
   listenerEnv,
@@ -32,6 +34,7 @@ import {
   pageLoad,
   payload,
   sourceSize,
+  waitForIdle,
 } from "./measure.ts";
 import {
   GROUPS,
@@ -76,6 +79,14 @@ if (values.network !== undefined && network === undefined) {
 const serverRuns = quick
   ? { warmup: 1, runs: 1, duration: 3 }
   : { warmup: 3, runs: 3, duration: 10 };
+/** Cool-down and idle check before every server round (load average per core). */
+const idle = quick
+  ? { coolDownMs: 500, maxLoadPerCore: 0.5, timeoutMs: 5_000 }
+  : { coolDownMs: 3_000, maxLoadPerCore: 0.5, timeoutMs: 60_000 };
+const busyRounds: string[] = [];
+/** `items` rotated left by `n`: round i starts with a different app. */
+const rotate = <T>(items: T[], n: number): T[] =>
+  items.map((_, k) => items[(k + n) % items.length]!);
 const CPU_THROTTLING = 4;
 const env = { COMMENTS_DELAY_MS: values["comments-delay"] };
 
@@ -358,8 +369,19 @@ try {
   }
 
   if (groups.includes("server")) {
-    for (const app of apps) {
-      for (let i = 0; i < iterations.server; i++) {
+    // Rounds are interleaved across apps (cold starts, then each route's load-test rounds) with a
+    // cool-down and an idle check before each one, so a transient load spike on the machine
+    // cannot land on a single framework's rounds.
+    const idleCheck = async (what: string) => {
+      const state = await waitForIdle(idle);
+      if (!state.idle) {
+        busyRounds.push(`${what} (load ${state.load.toFixed(1)})`);
+        log(`  machine busy: 1-min load ${state.load.toFixed(1)}, running ${what} anyway`);
+      }
+    };
+    for (let i = 0; i < iterations.server; i++) {
+      for (const app of rotate(apps, i)) {
+        await idleCheck(`${app.id} cold start ${i + 1}`);
         log(`${app.name}: server cold start ${i + 1}/${iterations.server}`);
         await withServer(app, "start", async (startMs) => {
           recorder.add(
@@ -370,26 +392,42 @@ try {
           );
         });
       }
-      const server = await startServer(app, "start", env);
-      try {
+    }
+    // Every app's production server stays up (each on its own port) while the others are measured.
+    const servers = new Map<App, Server>();
+    try {
+      for (const app of apps) {
+        servers.set(app, await startServer(app, "start", env));
+        await checkProduction(app);
+      }
+      const labels = {
+        home: "/",
+        project: "/projects/:slug?page=3",
+        issue: "/issues/:id (streamed)",
+        api: "/api/issues/:id",
+      };
+      const targets = new Map<App, Record<keyof typeof labels, string>>();
+      for (const app of apps) {
         const paths = await routes(app);
-        const targets = {
+        targets.set(app, {
           home: "/",
           project: `${paths.project}?page=3`,
           issue: paths.issue,
           api: `/api${paths.issue}`,
-        };
-        const labels = {
-          home: "/",
-          project: "/projects/:slug?page=3",
-          issue: "/issues/:id (streamed)",
-          api: "/api/issues/:id",
-        };
-        for (const [route, path] of Object.entries(targets) as [keyof typeof targets, string][]) {
-          log(`${app.name}: autocannon ${path}`);
-          await loadTest(baseUrl(app) + path, serverRuns.warmup);
-          const section = `Throughput ${labels[route]}`;
-          for (let i = 0; i < serverRuns.runs; i++) {
+        });
+      }
+      for (const route of Object.keys(labels) as (keyof typeof labels)[]) {
+        const section = `Throughput ${labels[route]}`;
+        for (const app of apps) {
+          log(`${app.name}: autocannon warm-up ${targets.get(app)![route]}`);
+          await loadTest(baseUrl(app) + targets.get(app)![route], serverRuns.warmup);
+        }
+        for (let i = 0; i < serverRuns.runs; i++) {
+          // Rotating the order (A B C, B C A, C A B) also spreads any position effect.
+          for (const app of rotate(apps, i)) {
+            const path = targets.get(app)![route];
+            await idleCheck(`${app.id} ${labels[route]} round ${i + 1}`);
+            log(`${app.name}: autocannon ${path} round ${i + 1}/${serverRuns.runs}`);
             const r = await loadTest(baseUrl(app) + path, serverRuns.duration);
             recorder.add(
               app.id,
@@ -417,15 +455,17 @@ try {
             );
           }
         }
+      }
+      for (const [app, server] of servers) {
         recorder.add(
           app.id,
           "server.rss",
           def("server", "Server RSS after the load test", "MB"),
           server.rssMb(),
         );
-      } finally {
-        await server.stop();
       }
+    } finally {
+      for (const server of servers.values()) await server.stop();
     }
   }
 } finally {
@@ -493,6 +533,14 @@ const run: RunFile = {
         : []),
       `Load: Chromium, CPU throttled ${CPU_THROTTLING}×${values.network ? `, network ${values.network}` : ", no network throttling"}; COMMENTS_DELAY_MS=${env.COMMENTS_DELAY_MS}.`,
       "Payload: bytes of the first load until ready and network idle; gzip level 6, brotli quality 11 computed offline.",
+      ...(groups.includes("server")
+        ? [
+            `Server: rounds interleaved across apps (order rotated each round), each after a ${idle.coolDownMs / 1000} s cool-down and an idle check (1-min load average ≤ ${idle.maxLoadPerCore}/core, waiting up to ${idle.timeoutMs / 1000} s).`,
+          ]
+        : []),
+      ...(busyRounds.length
+        ? [`Rounds that started on a busy machine: ${busyRounds.join("; ")}.`]
+        : []),
       ...notes,
     ],
   },

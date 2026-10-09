@@ -3,7 +3,7 @@ id: doc-4
 title: Fullstack comparison benchmark
 type: specification
 created_date: '2026-10-09 04:07'
-updated_date: '2026-10-09 05:27'
+updated_date: '2026-10-09 12:19'
 ---
 # Fullstack comparison benchmark
 
@@ -82,7 +82,7 @@ benchmarks/fullstack/
 
 ## 4. Metrics
 
-Median plus spread (min/max or p95) over N iterations; `--quick` runs one iteration for smoke tests.
+Median plus spread (min and max; the viewer draws them as whiskers and highlights a range wider than 25% of the median) over N iterations; `--quick` runs one iteration for smoke tests.
 
 **Environment of each metric** (TASK-145). Dev servers (Vite, Turbopack) compile on request and differ a lot from production servers, so every metric says where it was measured:
 
@@ -107,6 +107,7 @@ The harness runs every `start` with `NODE_ENV=production` and checks, on each ap
 
 **Production server**
 - Throughput and latency with autocannon (warmup, then 3 × 10 s, 50 connections): `/`, `/projects/:slug?page=3`, `/issues/:id` (streamed), `/api/issues/:id`. Report req/s, p50 and p99 latency, errors.
+- **Interleaved rounds (TASK-154).** All apps' production servers run at once (each on its own port). Cold starts and, per route, the load-test rounds are interleaved across apps with the order rotated each round (A B C, B C A, C A B), so a transient load spike on the machine cannot land on one framework's rounds. Each round starts after a cool-down (3 s; 0.5 s with `--quick`) and an idle check: wait until the 1-minute load average is at most 0.5 per core, for up to 60 s (5 s with `--quick`). A round that still starts on a busy machine runs anyway and is listed in the results notes.
 - Server cold start: spawn → first `200`.
 - Server RSS after the load test.
 
@@ -140,12 +141,12 @@ The harness runs every `start` with `NODE_ENV=production` and checks, on each ap
   ```
   Schema 1 files (before TASK-145) have no `env` and no `meta.servers`; readers derive `env` from the group (`dev` → dev; `load`, `server` and `payload.*` → prod; the rest → build).
 - `results/index.json` lists the files (newest first).
-- `viewer/index.html`: a static page with no build step. It loads `results/index.json`, lets you pick a run (and optionally compare two runs). Tabs are grouped and badged by environment: **Development** (dev server), **Production** (build, payload, page load, server) and **Source & tooling**; each tab starts with a line per app on how it is served in that mode (command, bundler, NODE_ENV and compression as checked). Each section is a table and bar chart with the best value highlighted and ratios to the best. Served by `pnpm --filter @bench/harness view`.
+- `viewer/index.html`: a static page with no build step. It loads `results/index.json`, lets you pick a run (and optionally compare two runs). Tabs are grouped and badged by environment: **Development** (dev server), **Production** (build, payload, page load, server) and **Source & tooling**; each tab starts with a line per app on how it is served in that mode (command, bundler, NODE_ENV and compression as checked). Each section is a table and bar chart with the best value highlighted and ratios to the best. Served by `pnpm --filter @bench/harness run view` (`run` is needed: `pnpm view` is a built-in command).
 
 ## 7. Commands
 
 - `pnpm --filter @bench/harness bench [--quick] [--only lumen,next] [--metrics dev,build,load,server,other]`
 - `pnpm --filter @bench/harness conformance`
-- `pnpm --filter @bench/harness view`
+- `pnpm --filter @bench/harness run view`
 
 Full runs happen on a quiet machine (no agents running), together with the TASK-68 js-framework-benchmark rerun (TASK-115).

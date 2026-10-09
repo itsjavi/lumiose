@@ -1,5 +1,5 @@
 // Serves the static results viewer: benchmarks/fullstack/viewer/ at /, results/ at /results/.
-//   pnpm --filter @bench/harness view [--port 4100]
+//   pnpm --filter @bench/harness run view [--port 4100]   (`run`: `pnpm view` is a built-in)
 import { createReadStream, existsSync, statSync } from "node:fs";
 import { createServer } from "node:http";
 import { extname, join, normalize } from "node:path";

@@ -9,6 +9,7 @@ import {
   statSync,
   writeFileSync,
 } from "node:fs";
+import { cpus, loadavg } from "node:os";
 import { dirname, extname, join } from "node:path";
 import { brotliCompressSync, constants, gzipSync } from "node:zlib";
 import autocannon from "autocannon";
@@ -289,6 +290,40 @@ export async function loadTest(
     p99: result.latency.p99,
     errors: result.errors + result.timeouts + result.non2xx,
   };
+}
+
+export interface IdleOptions {
+  /** Pause before checking, so the previous round's sockets and GC settle. */
+  coolDownMs: number;
+  /** Highest 1-minute load average per core that counts as idle. */
+  maxLoadPerCore: number;
+  /** Give up waiting after this long (the round then runs anyway and is reported). */
+  timeoutMs: number;
+}
+
+export interface IdleState {
+  /** 1-minute load average when the round started. */
+  load: number;
+  /** Whether it was at or under the threshold. */
+  idle: boolean;
+  waitedMs: number;
+}
+
+/**
+ * Cool-down, then waits until the machine is idle (1-minute load average per core at or under
+ * `maxLoadPerCore`) before a load-test round, so a transient spike from another process does not
+ * land on one framework's rounds.
+ */
+export async function waitForIdle(options: IdleOptions): Promise<IdleState> {
+  const started = performance.now();
+  await sleep(options.coolDownMs);
+  const limit = options.maxLoadPerCore * cpus().length;
+  let load = loadavg()[0]!;
+  while (load > limit && performance.now() - started < options.timeoutMs) {
+    await sleep(1000);
+    load = loadavg()[0]!;
+  }
+  return { load, idle: load <= limit, waitedMs: performance.now() - started };
 }
 
 // ---- other ----
