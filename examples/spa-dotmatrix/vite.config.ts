@@ -6,6 +6,8 @@ import { defineConfig } from "vite";
 // `lumen build` emits static shells. Audio renders offline in a module Web Worker (the vendored
 // gbapu engine), so no cross-origin isolation is needed.
 export default defineConfig({
+  // Served below a path when LUMEN_BASE is set (the Lumen website: /lumen/examples/spa-dotmatrix/).
+  base: process.env["LUMEN_BASE"] ?? "/",
   // `md: true` lets the Learn section render docs/composing.md as a page.
   plugins: [lumen({ mode: "spa", ssr: false, md: true })],
   worker: { format: "es" },

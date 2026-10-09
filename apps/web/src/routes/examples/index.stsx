@@ -7,9 +7,9 @@ import { examples, REPOSITORY } from "../../content/showcase.ts";
 export default function Examples() {
   return (
     <div class="page">
-      <Title>Examples · Lumen</Title>
+      <Title>Made with Lumen · Examples</Title>
       <Meta name="description" content="Example apps built with Lumen, running on this site." />
-      <PageHead kicker="See it run" title="Examples">
+      <PageHead kicker="Examples" title="Made with Lumen">
         <p>
           Complete apps from the <a href={`${REPOSITORY}/tree/main/examples`}>examples folder</a>,
           each built with <code>lumen build</code> and published here as static files. Start your

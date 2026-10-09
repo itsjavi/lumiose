@@ -17,7 +17,7 @@ export interface Showcase {
   demo?: string;
   /** Its source in the repository. */
   source: string;
-  /** A screenshot (public/), for apps that cannot run here. */
+  /** A screenshot (public/examples/<name>.png). */
   image?: string;
 }
 
@@ -31,6 +31,17 @@ export function examples(): Showcase[] {
       tags: ["mode = spa", "router", "signals", "CSP"],
       demo: link("/examples/spa-chiptune/"),
       source: `${REPOSITORY}/tree/main/examples/spa-chiptune`,
+      image: link("/examples/spa-chiptune.png"),
+    },
+    {
+      name: "spa-dotmatrix",
+      title: "Dotmatrix",
+      description:
+        "A pocket chiptune studio for the four channels of the Game Boy sound chip: a piano roll, presets and sound effects, rendered by the gbapu engine in a Web Worker.",
+      tags: ["mode = spa", "router", ".md imports", "Web Worker"],
+      demo: link("/examples/spa-dotmatrix/"),
+      source: `${REPOSITORY}/tree/main/examples/spa-dotmatrix`,
+      image: link("/examples/spa-dotmatrix.png"),
     },
     {
       name: "ssg-travel-journal",
@@ -40,6 +51,7 @@ export function examples(): Showcase[] {
       tags: ["mode = static", ".md imports", "islands", "View Transitions"],
       demo: link("/examples/ssg-travel-journal/"),
       source: `${REPOSITORY}/tree/main/examples/ssg-travel-journal`,
+      image: link("/examples/ssg-travel-journal.png"),
     },
     {
       name: "vite-counter",
@@ -49,6 +61,7 @@ export function examples(): Showcase[] {
       tags: ["lumen/vite", "signals", ".stsx"],
       demo: link("/examples/vite-counter/"),
       source: `${REPOSITORY}/tree/main/examples/vite-counter`,
+      image: link("/examples/vite-counter.png"),
     },
     {
       name: "ssr-bookshelf",

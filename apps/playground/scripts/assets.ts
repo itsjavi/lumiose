@@ -13,6 +13,7 @@ import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { writeLumenTsconfig } from "lumen/tooling";
 import { build } from "vite";
 
 const app = fileURLToPath(new URL("..", import.meta.url));
@@ -56,6 +57,10 @@ run(
   ],
   repo,
 );
+
+// The bundle is transformed with the app's tsconfig, which extends the generated one: write it
+// first, since a fresh checkout (CI) has no .lumen/ yet.
+await writeLumenTsconfig(app);
 
 await build({
   configFile: false,

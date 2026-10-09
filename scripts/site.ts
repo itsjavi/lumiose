@@ -1,14 +1,13 @@
 // Builds the Lumen website into one static directory, as GitHub Pages serves it
 // (.github/workflows/pages.yml runs the same command):
 //
-//   pnpm build:site [--base /lumen/] [--out dist/site] [--skip-compiler] [--with-dotmatrix]
+//   pnpm build:site [--base /lumen/] [--out dist/site] [--skip-compiler]
 //   pnpm preview:site [--base /lumen/] [--out dist/site] [--port 4173]
 //
 // - apps/web (/, /docs, /examples, /benchmarks) lands at the root of the output, apps/playground
 //   under playground/.
-// - The examples that need no server are built below examples/<name>/ (TASK-163). spa-dotmatrix is
-//   left out unless --with-dotmatrix: it bundles the gbapu engine, whose redistribution rights
-//   are not confirmed yet. ssr-bookshelf needs a server: the website links its code instead.
+// - The examples that need no server are built below examples/<name>/ (TASK-163). ssr-bookshelf
+//   needs a server: the website shows a screenshot and links its code instead.
 // - Benchmarks: the fullstack results viewer with the committed results at
 //   benchmarks/fullstack/, and the Lumen js-framework-benchmark app at
 //   benchmarks/js-framework-benchmark/app/ (the results page itself is apps/web's).
@@ -51,7 +50,6 @@ const { positionals, values } = parseArgs({
     out: { type: "string", default: "dist/site" },
     port: { type: "string", default: "4173" },
     "skip-compiler": { type: "boolean", default: false },
-    "with-dotmatrix": { type: "boolean", default: false },
   },
 });
 
@@ -72,8 +70,6 @@ interface Example {
   name: string;
   /** The built static files, relative to the example. */
   dist: string;
-  /** Only with --with-dotmatrix. */
-  optIn?: boolean;
 }
 
 /** The examples published below examples/<name>/: static output, no server. */
@@ -81,7 +77,7 @@ const EXAMPLES: Example[] = [
   { name: "spa-chiptune", dist: "dist/client" },
   { name: "ssg-travel-journal", dist: "dist/client" },
   { name: "vite-counter", dist: "dist" },
-  { name: "spa-dotmatrix", dist: "dist/client", optIn: true },
+  { name: "spa-dotmatrix", dist: "dist/client" },
 ];
 
 /** Copies a build without the precompressed twins and host config Pages does not use. */
@@ -97,10 +93,12 @@ function build(): void {
   for (const app of ["@lumen/web", "@lumen/playground"]) {
     pnpm(["--filter", app, "build"], { LUMEN_BASE: base });
   }
-  const examples = EXAMPLES.filter((example) => !example.optIn || values["with-dotmatrix"]);
-  for (const { name } of examples) {
+  for (const { name } of EXAMPLES) {
+    // LUMEN_PAGES tells an example it is built for a static host without custom headers
+    // (spa-chiptune's cross-origin isolation service worker, TASK-172).
     pnpm(["--filter", `@lumen-examples/${name}`, "build"], {
       LUMEN_BASE: `${base}examples/${name}/`,
+      LUMEN_PAGES: "1",
     });
   }
   pnpm(["--filter", "@lumen/bench-jsfb", "build"]);
@@ -108,7 +106,7 @@ function build(): void {
   rmSync(out, { recursive: true, force: true });
   copyBuild(join(repo, "apps/web/dist/client"), out);
   copyBuild(join(repo, "apps/playground/dist/client"), join(out, "playground"));
-  for (const { name, dist } of examples) {
+  for (const { name, dist } of EXAMPLES) {
     copyBuild(join(repo, "examples", name, dist), join(out, "examples", name));
   }
   const fullstack = join(repo, "benchmarks/fullstack");
@@ -124,7 +122,7 @@ function build(): void {
   copyBuild(join(jsfb, "demo"), app);
   cpSync(join(jsfb, "dist/main.js"), join(app, "main.js"));
 
-  const scopes = examples.flatMap(({ name }) =>
+  const scopes = EXAMPLES.flatMap(({ name }) =>
     existsSync(join(out, "examples", name, "404.html")) ? [`examples/${name}/`] : [],
   );
   writeFileSync(
