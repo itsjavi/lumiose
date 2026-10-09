@@ -120,7 +120,9 @@ the new page is on screen.
 - **Interception.** The router handles same-document navigations to URLs of its SPA: link clicks,
   `navigate()`, back/forward and (with the Navigation API) `GET` form submissions. URLs of other
   routes (`static` or `server` pages, endpoints, other SPAs) load the document. Without the
-  Navigation API, a History API fallback intercepts link clicks and `popstate`.
+  Navigation API, a History API fallback intercepts link clicks and `popstate`; it is a chunk of its
+  own that only those browsers load, shortly after the SPA starts (a click before it loads is a
+  document navigation).
 - **Persistent layouts.** A layout's `children` is the outlet. Layouts the old and the new page
   share stay mounted with their state; the first level that differs (another file, or other
   values of the params in its path, such as `songs/[id].stsx` for another song) is replaced. A

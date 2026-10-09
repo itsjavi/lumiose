@@ -6,7 +6,8 @@
 //   would cut by importer: a page loads all of them anyway, and one file compresses better and
 //   needs no import lists between runtime chunks. When the app has only one client entry (the
 //   island loader without `spa` pages, or the SPA entry without islands), the runtime goes into
-//   that entry's chunk, so the page loads a single file before its islands or routes.
+//   that entry's chunk, so the page loads a single file before its islands or routes. The router's
+//   History API fallback stays a chunk of its own: only browsers without the Navigation API load it.
 // - An app without islands builds an empty island loader, so nothing lands in a chunk that
 //   `lumen build` removes afterwards.
 // - A smaller preload helper. Vite wraps every dynamic `import()` in `__vitePreload`, which adds
@@ -24,6 +25,8 @@ const LUMEN_SRC = normalizePath(fileURLToPath(new URL("../../", import.meta.url)
 /** The island loader's client entry (`lumen/dom/loader`). */
 const ISLAND_LOADER = `${LUMEN_SRC}dom/loader.ts`;
 const PRELOAD_HELPER = "\0vite/preload-helper.js";
+/** The router's History API fallback, loaded only without the Navigation API. */
+const HISTORY_FALLBACK = `${LUMEN_SRC}app/router/history.ts`;
 
 export function clientRuntime(state: BuildState): Plugin {
   // Known once the client build transformed the island loader.
@@ -34,6 +37,7 @@ export function clientRuntime(state: BuildState): Plugin {
   const runtime = (id: string): boolean => {
     if (id === ISLAND_LOADER) return islands && !spa();
     if (id === SPA_ENTRY_ID) return !islands && spa();
+    if (id === HISTORY_FALLBACK) return false;
     return id.startsWith(LUMEN_SRC) || id.startsWith("\0vite/") || id.startsWith("\0rolldown/");
   };
 

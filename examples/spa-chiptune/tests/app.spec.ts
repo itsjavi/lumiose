@@ -258,3 +258,22 @@ test("views are routes: playback and the mixer persist, songs deep-link", async 
   await page.getByRole("link", { name: "Open the song library" }).click();
   await expect(page.locator(".library li")).toHaveCount(2);
 });
+
+test("routes with the History API fallback where the Navigation API is missing", async ({
+  page,
+}) => {
+  await page.addInitScript(() => delete (window as { navigation?: unknown }).navigation);
+  await page.reload();
+  await expect(page.locator(".row").first()).toBeVisible();
+  expect(await page.evaluate(() => "navigation" in window)).toBe(false);
+  // A marker on the root layout: client-side routing keeps it mounted.
+  await page.locator(".mixer").evaluate((el) => ((el as unknown as { kept: boolean }).kept = true));
+  await page.getByRole("link", { name: "Instruments" }).click();
+  await expect(page).toHaveURL(/\/instruments$/);
+  await expect(page.getByRole("heading", { name: "Instrument 00" })).toBeVisible();
+  await page.goBack();
+  await expect(page.locator(".row").first()).toBeVisible();
+  expect(
+    await page.locator(".mixer").evaluate((el) => (el as unknown as { kept?: boolean }).kept),
+  ).toBe(true);
+});

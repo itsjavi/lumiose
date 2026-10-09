@@ -93,8 +93,11 @@ export default function Home() { return <Counter client:load start={1} />; }
         "src/routes/index.stsx": "export default function Home() { return <h1>Home</h1>; }\n",
       }),
     );
-    expect(Object.keys(files).toSorted()).toEqual(["_layout", "routes", "spa"]);
+    // The router's History API fallback: a chunk of its own, loaded without the Navigation API.
+    expect(Object.keys(files).toSorted()).toEqual(["_layout", "history", "routes", "spa"]);
     expect(files.spa).toContain("#lumen:csr");
+    expect(files.spa).not.toContain("scrollRestoration");
+    expect(files.history).toContain("scrollRestoration");
     expect(files.spa).not.toContain(ISLAND_LOADER);
     expect(files.spa).not.toContain(HYDRATION);
     expect(files.spa).not.toContain(VITE_PRELOAD);

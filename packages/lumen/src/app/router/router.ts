@@ -16,8 +16,8 @@
 //   then the committed one.
 // - Navigation API: same-document navigations to URLs of this SPA are intercepted, so plain
 //   `<a href>` links, back/forward and `navigation.navigate()` all route here; it also restores
-//   scroll and resets focus after each transition. Without it, the History API fallback intercepts
-//   link clicks and `popstate`, and restores scroll itself.
+//   scroll and resets focus after each transition. Without it, the History API fallback
+//   (./history.ts, loaded only then) intercepts link clicks and `popstate`, and restores scroll.
 // - Errors: a render error, a rejected async page or `notFound()` render the nearest `_error` or
 //   `_404` page inside the SPA (`redirect()` navigates); without one, a minimal built-in page.
 // - `invalidate()` bumps a revision that every async component run and resource below the SPA
@@ -109,8 +109,6 @@ interface Target {
   status?: number;
 }
 
-type NavigationKind = "push" | "replace" | "traverse";
-
 /** A navigation in flight. */
 interface Nav {
   /** Disposes content prepared for it. */
@@ -139,8 +137,6 @@ interface Router {
 const ROUTE: unique symbol = Symbol("lumen.route");
 /** `navigation.navigate()` info of navigations that keep the scroll position (`search.set()`). */
 const KEEP_SCROLL = "lumen:keep-scroll";
-/** `history.state` key of an entry, for scroll restoration without the Navigation API. */
-const KEY = "lumen:key";
 
 let router: Router | undefined;
 
@@ -628,7 +624,9 @@ function navigateTo(url: URL, replace: boolean, keepScroll: boolean): Promise<vo
       () => {},
     );
   }
-  return historyGo(r!, url, target, replace ? "replace" : "push", keepScroll);
+  return loadHistory().then((fallback) =>
+    fallback.historyGo(url, () => go(r!, url, target), replace ? "replace" : "push", keepScroll),
+  );
 }
 
 // --- Navigation API and History fallback ---------------------------------------------------------
@@ -683,130 +681,27 @@ function listen(r: Router): () => void {
     return () => api.removeEventListener("navigate", onNavigate);
   }
 
-  // History API fallback: links, back/forward, scroll restoration and focus reset.
-  const positions = new Map<string, [number, number]>();
-  let key = (history.state as Record<string, unknown> | null)?.[KEY] as string | undefined;
-  if (key === undefined) {
-    key = newKey();
-    history.replaceState({ ...(history.state as object | null), [KEY]: key }, "");
-  }
-  const restoration = history.scrollRestoration;
-  history.scrollRestoration = "manual";
-  historyState = {
-    save() {
-      positions.set(key!, [scrollX, scrollY]);
-    },
-    enter(next) {
-      key = next;
-    },
-    position: (entry) => positions.get(entry),
-  };
-
-  const onClick = (event: MouseEvent): void => {
-    if (
-      event.defaultPrevented ||
-      event.button !== 0 ||
-      event.metaKey ||
-      event.ctrlKey ||
-      event.shiftKey ||
-      event.altKey
-    ) {
-      return;
-    }
-    const link = (event.target as Element | null)?.closest?.("a");
-    if (
-      !(link instanceof HTMLAnchorElement) ||
-      link.href === "" ||
-      (link.target !== "" && link.target !== "_self") ||
-      link.hasAttribute("download")
-    ) {
-      return;
-    }
-    const url = new URL(link.href);
-    // An in-page anchor: the browser scrolls to it.
-    if (url.hash !== "" && url.pathname === location.pathname && url.search === location.search) {
-      return;
-    }
-    const target = targetOf(r, url);
-    if (target === undefined) return;
-    event.preventDefault();
-    void historyGo(r, url, target, url.href === location.href ? "replace" : "push", false);
-  };
-  const onPopState = (): void => {
-    historyState?.save();
-    const entry = (history.state as Record<string, unknown> | null)?.[KEY] as string | undefined;
-    historyState?.enter(entry ?? newKey());
-    const url = new URL(location.href);
-    const target = targetOf(r, url);
-    if (target === undefined) {
-      location.reload();
-      return;
-    }
-    void historyGo(r, url, target, "traverse", false, entry);
-  };
-  addEventListener("click", onClick);
-  addEventListener("popstate", onPopState);
+  // The History API fallback, loaded only here.
+  let stop: (() => void) | undefined;
+  let stopped = false;
+  void loadHistory().then((fallback) => {
+    if (!stopped) stop = fallback.listenHistory((url) => routeOf(r, url));
+  });
   return () => {
-    removeEventListener("click", onClick);
-    removeEventListener("popstate", onPopState);
-    history.scrollRestoration = restoration;
-    historyState = undefined;
+    stopped = true;
+    stop?.();
   };
 }
 
-/** Scroll positions of history entries, while the History fallback runs. */
-let historyState:
-  | {
-      save(): void;
-      enter(key: string): void;
-      position(key: string): [number, number] | undefined;
-    }
-  | undefined;
+/** The History API fallback (./history.ts), for browsers without the Navigation API. */
+let historyModule: Promise<typeof import("./history.ts")> | undefined;
+const loadHistory = (): Promise<typeof import("./history.ts")> =>
+  (historyModule ??= import("./history.ts"));
 
-function newKey(): string {
-  return Math.random().toString(36).slice(2, 10);
-}
-
-async function historyGo(
-  r: Router,
-  url: URL,
-  target: Target,
-  kind: NavigationKind,
-  keepScroll: boolean,
-  entry?: string,
-): Promise<void> {
-  if (kind !== "traverse") {
-    historyState?.save();
-    const key = newKey();
-    const state = { [KEY]: key };
-    if (kind === "push") history.pushState(state, "", url.href);
-    else history.replaceState(state, "", url.href);
-    historyState?.enter(key);
-  }
-  const nav = go(r, url, target);
-  await nav.catch(() => {});
-  // Only the navigation still current when it commits scrolls and moves focus.
-  if (location.href !== url.href) return;
-  if (kind === "traverse") {
-    const [x, y] = (entry === undefined ? undefined : historyState?.position(entry)) ?? [0, 0];
-    scrollTo(x, y);
-  } else if (!keepScroll) {
-    const id = decodeURIComponent(url.hash.slice(1));
-    const anchor = id === "" ? null : document.getElementById(id);
-    if (anchor !== null) anchor.scrollIntoView();
-    else scrollTo(0, 0);
-  }
-  if (!keepScroll) resetFocus();
-}
-
-/** Like the Navigation API's focus reset: the first `autofocus` element, else the body. */
-function resetFocus(): void {
-  const autofocus = document.querySelector<HTMLElement>("[autofocus]");
-  if (autofocus !== null) {
-    autofocus.focus();
-  } else {
-    (document.activeElement as HTMLElement | null)?.blur?.();
-  }
+/** The fallback's view of `url`: the navigation that shows it, if the SPA owns it. */
+function routeOf(r: Router, url: URL): (() => Promise<void>) | undefined {
+  const target = targetOf(r, url);
+  return target === undefined ? undefined : () => go(r, url, target);
 }
 
 // --- Public API ---------------------------------------------------------------------------------

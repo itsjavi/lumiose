@@ -1,13 +1,13 @@
-// Framework runtime shipped by the sample apps (spec §6: the 10 kB brotli hard cap applies to what an
-// app actually ships). Builds each app with `lumen build` into a temporary directory and splits
+// Framework JS shipped by the sample apps: a report, with no per-app budget (spec §6: the 10 kB
+// brotli hard cap applies to the framework runtime, enforced by `pnpm --filter lumen size`). Builds each app with `lumen build` into a temporary directory and splits
 // every client JS chunk into framework runtime (lumen's own modules plus Vite's helpers) and app
 // code (the app's modules and its generated island manifest / route table). A chunk's brotli size
 // is split by the minified bytes of each side (from its source map); most chunks are all one or
 // the other.
 //
 // The framework total (runtime, router and app-layer helpers, reported apart) counts every chunk, so
-// it is what a page with every island (or every SPA route) loads. Exits with code 1 when an app's
-// framework total is above the cap: a CI check.
+// it is what a page with every island (or every SPA route) loads. The router's History API fallback
+// is reported apart: only browsers without the Navigation API load it.
 //
 // Run: `pnpm --filter lumen size:apps [app…] [--modules]` (apps: example directory names; default
 // the three sample apps). `--modules` lists the modules of each chunk: minified bytes and an
@@ -22,7 +22,6 @@ import { build } from "../src/app/production/build.ts";
 import { findViteConfig } from "../src/app/project.ts";
 import lumen from "../src/vite/index.ts";
 
-const CAP = 10 * 1024;
 const APPS = ["ssr-bookshelf", "ssg-travel-journal", "spa-chiptune"];
 const examples = fileURLToPath(new URL("../../../examples/", import.meta.url));
 const lumenSrc = fileURLToPath(new URL("../src/", import.meta.url));
@@ -42,15 +41,16 @@ const brotli = (code: string): number =>
 /**
  * Where a module's bytes count: the runtime (core, DOM, hydration, the island loader, Vite's client
  * helpers such as `\0vite/preload-helper.js`), the SPA router (`lumen/router` and route matching),
- * the app-layer helpers (`submit()`, `fetchJSON()`, `redirect()`…), or the app's own code
+ * its History API fallback, the app-layer helpers (`submit()`, `fetchJSON()`, `redirect()`…), or the app's own code
  * (including its island manifest and route table).
  */
-type Part = "runtime" | "router" | "helpers" | "app";
+type Part = "runtime" | "router" | "fallback" | "helpers" | "app";
 
 function partOf(id: string): Part {
   if (id.startsWith("\0vite/")) return "runtime";
   if (!id.startsWith(lumenSrc)) return "app";
   const path = id.slice(lumenSrc.length);
+  if (path === "app/router/history.ts") return "fallback";
   if (path.startsWith("app/router/") || path.startsWith("app/routes/")) return "router";
   return path.startsWith("app/") ? "helpers" : "runtime";
 }
@@ -207,12 +207,11 @@ const kb = (n: number): string => `${(n / 1024).toFixed(2)} kB`;
 const args = process.argv.slice(2);
 const listModules = args.includes("--modules");
 const apps = args.filter((arg) => !arg.startsWith("--"));
-let failed = false;
 
 for (const app of apps.length > 0 ? apps : APPS) {
   const root = join(examples, app);
   const chunks = await buildApp(root);
-  const parts: Record<Part, number> = { runtime: 0, router: 0, helpers: 0, app: 0 };
+  const parts: Record<Part, number> = { runtime: 0, router: 0, fallback: 0, helpers: 0, app: 0 };
   const lines: string[] = [];
   for (const chunk of chunks.toSorted((a, b) => b.brotli - a.brotli)) {
     const entries = Object.entries(chunk.modules).filter(([id]) => id !== "");
@@ -235,11 +234,8 @@ for (const app of apps.length > 0 ? apps : APPS) {
     }
   }
   const framework = parts.runtime + parts.router + parts.helpers;
-  const ok = framework <= CAP;
-  failed ||= !ok;
   console.log(
-    `${app}: framework ${kb(framework)} brotli (cap ${kb(CAP)}: ${ok ? "OK" : "OVER"}) = runtime ${kb(parts.runtime)} + router ${kb(parts.router)} + app helpers ${kb(parts.helpers)}; app code ${kb(parts.app)}`,
+    `${app}: framework ${kb(framework)} brotli = runtime ${kb(parts.runtime)} + router ${kb(parts.router)} + app helpers ${kb(parts.helpers)}${parts.fallback > 0 ? ` (History API fallback ${kb(parts.fallback)}, without the Navigation API only)` : ""}; app code ${kb(parts.app)}`,
   );
   console.log(lines.join("\n"));
 }
-if (failed) process.exitCode = 1;

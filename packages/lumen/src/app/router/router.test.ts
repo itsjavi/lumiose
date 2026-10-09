@@ -373,6 +373,8 @@ describe("lumen/router", () => {
     expect(link.outerHTML).toBe('<a href="/search?q=1">Search<!----></a>');
     link.dispatchEvent(new Event("pointerenter"));
     expect(load).toHaveBeenCalledOnce();
+    // happy-dom has no Navigation API: the History fallback starts listening once it loads.
+    await settled();
     link.click();
     await settled();
     expect(link.getAttribute("aria-current")).toBe("page");
