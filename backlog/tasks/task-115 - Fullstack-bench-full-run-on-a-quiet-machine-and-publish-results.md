@@ -1,7 +1,7 @@
 ---
 id: TASK-115
 title: 'Fullstack bench: full run on a quiet machine and publish results'
-status: In Progress
+status: Done
 assignee:
   - Lux
 created_date: '2026-10-09 04:07'
@@ -28,7 +28,7 @@ After TASK-110..114: run the full benchmark with no agents running (together wit
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
 - [x] #1 A full results file is committed and viewable
-- [ ] #2 Findings summarised; follow-up tasks filed
+- [x] #2 Findings summarised; follow-up tasks filed
 <!-- AC:END -->
 
 ## Implementation Notes
@@ -40,3 +40,9 @@ Lux: full run results/2026-10-09T084814-macbookpro.json (all three pass conforma
 
 Lux: full run committed (36b3775); findings summarised to the user; follow-ups: TASK-154 (interleaving), dependency footprint tied to TASK-39 (package split, user decision).
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Full fullstack run (2026-10-09T084814) plus server-only rerun (085822): Lumen leads req/s on every route (/issues 5652 vs RR 1432 vs Next 679), JS payload (11 kB vs 99/119 kB), interactivity, build and dev start; loses on production dependency count (139 vs 81/28) and server bundle size. Follow-ups: TASK-154; package split pending TASK-39.
+<!-- SECTION:FINAL_SUMMARY:END -->
