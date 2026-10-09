@@ -1,0 +1,15 @@
+{
+  "name": "@bench/ui-css",
+  "version": "0.0.0",
+  "private": true,
+  "description": "The one plain stylesheet shared by every Tracker app in the fullstack comparison benchmark (doc-4).",
+  "license": "MIT",
+  "type": "module",
+  "sideEffects": [
+    "*.css"
+  ],
+  "exports": {
+    "./tracker.css": "./tracker.css",
+    "./package.json": "./package.json"
+  }
+}
