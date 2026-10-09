@@ -3,7 +3,7 @@ id: doc-5
 title: Agent eval suite
 type: specification
 created_date: '2026-10-09 14:31'
-updated_date: '2026-10-09 14:31'
+updated_date: '2026-10-09 14:58'
 ---
 # Agent eval suite
 
@@ -27,7 +27,7 @@ updated_date: '2026-10-09 14:31'
 
 One run = one task × one agent config × one ablation × one repetition:
 
-1. **Project.** A fresh directory under the OS temp dir (outside the repo, so no repo `AGENTS.md`/`CLAUDE.md` applies): the template scaffolded by create-lumen, the task's `start/` files, a `package.json` whose `lumen` and `@lumen/adapter-node` are `link:`s to a read-only snapshot of this repo's packages (Lumen ships TypeScript sources, which Node only runs outside `node_modules`), and Vite, TypeScript, Vitest, happy-dom, oxlint and oxfmt at the repo's versions. A lockfile resolved once per snapshot makes `pnpm install --offline` reproducible. The start state is committed to a fresh git repo.
+1. **Project.** A fresh directory under the OS temp dir (outside the repo, so no repo `AGENTS.md`/`CLAUDE.md` applies): the template scaffolded by create-lumen, the task's `start/` files, a `package.json` whose `lumen` and `@lumen/adapter-node` are `link:`s to a read-only snapshot of this repo's packages at the evaluated revision (Lumen ships TypeScript sources, which Node only runs outside `node_modules`). The snapshot comes from `git archive` of the commit (HEAD, or `LUMEN_EVAL_REV`), never the working tree, with the compiler's native binding built from that commit (`cargo build --release -p lumen_napi`, about 2 minutes the first time, incremental after); the revision is pinned for a whole invocation, and create-lumen comes from the same snapshot, and Vite, TypeScript, Vitest, happy-dom, oxlint and oxfmt at the repo's versions. A lockfile resolved once per snapshot makes `pnpm install --offline` reproducible. The start state is committed to a fresh git repo.
 2. **Agent.** The CLI runs in the project with the prompt on stdin:
    - Claude Code: `claude -p --output-format stream-json --model <id> --effort <e> --setting-sources project,local --strict-mcp-config --permission-mode acceptEdits --permission-prompts none --max-turns <n>`, Bash in Claude Code's sandbox (writes confined to the project, no network), no web tools. User-level CLAUDE.md, plugins and MCP servers are not loaded; the project's files are.
    - Codex: `codex exec --json --ephemeral --model <id> -c model_reasoning_effort=<e> --sandbox workspace-write` (no network, `approval_policy="never"`) with a private `CODEX_HOME` that only shares the login (`auth.json` symlink), so the user's config, `AGENTS.md`, skills and plugins do not apply.

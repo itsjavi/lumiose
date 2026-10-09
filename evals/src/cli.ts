@@ -18,7 +18,7 @@ import { type Grade, grade } from "./grade.ts";
 import { type RunMetrics, metricsOf } from "./metrics.ts";
 import { resultsPath, writeResults, type ResultsFile, type RunRecord } from "./results.ts";
 import { ABLATIONS, type Ablation, selectTasks, type Task } from "./tasks.ts";
-import { EVALS, REPO, createProject, vendor } from "./workspace.ts";
+import { EVALS, REPO, createProject, lumenRev, vendor } from "./workspace.ts";
 
 const [command = "run", ...rest] = process.argv.slice(2);
 const { values } = parseArgs({
@@ -52,6 +52,7 @@ async function project(task: Task, ablation: Ablation, name: string): Promise<st
 }
 
 async function validate(): Promise<void> {
+  pinRevision();
   let failures = 0;
   for (const task of selectTasks(values.tasks)) {
     const ablation = ABLATIONS.baseline!;
@@ -94,7 +95,13 @@ function solutionRemovals(task: Task): string[] {
 const summary = (g: Grade) =>
   `${g.tests.passed}/${g.tests.total} tests, check ${g.check.ok ? "ok" : `${g.check.errors} errors`}`;
 
+/** Pins the evaluated Lumen revision for the whole invocation (other commits may land meanwhile). */
+function pinRevision(): void {
+  process.env.LUMEN_EVAL_REV ??= execFileSync("git", ["rev-parse", "HEAD"], { cwd: REPO, encoding: "utf8" }).trim();
+}
+
 async function run(): Promise<void> {
+  pinRevision();
   if (values.agents === undefined) throw new Error("pass --agents (see --list)");
   const agents = values.agents.split(",").map((spec) => parseAgent(spec.trim()));
   const tasks = selectTasks(values.tasks);
@@ -121,7 +128,7 @@ async function run(): Promise<void> {
       os: `${type()} ${release()}`,
     },
     node: process.version,
-    lumen: execFileSync("git", ["rev-parse", "--short", "HEAD"], { cwd: REPO, encoding: "utf8" }).trim(),
+    lumen: lumenRev(),
     clis: { claude: version("claude"), codex: version("codex") },
     agents: agents.map(agentId),
     tasks: tasks.map((task) => task.id),

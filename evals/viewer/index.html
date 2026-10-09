@@ -293,7 +293,7 @@
           <div><dt>CLIs</dt><dd>${Object.entries(m.clis).map(([k, v]) => `${esc(k)} ${esc(v ?? "–")}`).join("<br>")}</dd></div>
           <div><dt>Matrix</dt><dd>${m.tasks.length} tasks × ${m.agents.length} agents × ${m.ablations.length} ablations × ${m.runs} runs</dd></div>
           <div><dt>Ablations</dt><dd>${m.ablations.map(esc).join(", ")}</dd></div>
-        </dl></div>`;
+        </dl>${m.notes?.length ? `<ul class="notes">${m.notes.map((n) => `<li>${esc(n)}</li>`).join("")}</ul>` : ""}</div>`;
         const agents = [...new Set(runs.map((r) => r.agent))];
         const color = (i) => `var(--series-${(i % 6) + 1})`;
         $("legend").innerHTML = agents.map((a, i) => `<span><i class="swatch" style="background:${color(i)}"></i>${esc(a)}</span>`).join("");

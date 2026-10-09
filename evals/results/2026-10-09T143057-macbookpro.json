@@ -1,0 +1,1764 @@
+{
+  "schema": 1,
+  "meta": {
+    "date": "2026-10-09T14:30:57.119Z",
+    "host": "macbookpro",
+    "machine": {
+      "cpu": "Apple M1 Max",
+      "cores": 10,
+      "memoryGb": 32,
+      "os": "Darwin 27.0.0"
+    },
+    "node": "v26.8.1",
+    "lumen": "afbc193 / 3c511a7",
+    "clis": {
+      "claude": "2.1.293 (Claude Code)",
+      "codex": "codex-cli 0.161.0"
+    },
+    "agents": [
+      "claude:claude-opus-5-5:medium",
+      "claude:claude-sonnet-5-5:medium",
+      "codex:gpt-6-astra:medium",
+      "codex:gpt-6.1-sol:medium"
+    ],
+    "tasks": [
+      "about-page",
+      "contact-form",
+      "counter-island",
+      "fix-stale-total",
+      "styled-badge"
+    ],
+    "ablations": [
+      "baseline"
+    ],
+    "runs": 1,
+    "complete": true,
+    "notes": [
+      "Smoke run: 5 tasks × 1 run × 4 models (medium effort), baseline ablation.",
+      "The runs of counter-island and fix-stale-total were repeated at 14:51 UTC: in the first pass their DOM tests could not load (the vendor snapshot then copied the working tree, which held unfinished component-HMR code). Since then the snapshot is built from the committed revision.",
+      "Lumen revisions: the first pass used the working tree around afbc193; the repeated runs used HEAD at each run (the revision is pinned per invocation since)."
+    ]
+  },
+  "runs": [
+    {
+      "task": "about-page",
+      "category": "routing",
+      "agent": "claude:claude-opus-5-5:medium",
+      "cli": "claude",
+      "model": "claude-opus-5-5",
+      "effort": "medium",
+      "ablation": "baseline",
+      "index": 0,
+      "success": true,
+      "grade": {
+        "success": true,
+        "tests": {
+          "passed": 5,
+          "failed": 0,
+          "total": 5,
+          "results": [
+            {
+              "name": "about page serves /about with its heading",
+              "ok": true
+            },
+            {
+              "name": "about page shows the navigation on /",
+              "ok": true
+            },
+            {
+              "name": "about page shows the navigation on /about",
+              "ok": true
+            },
+            {
+              "name": "about page keeps the home page",
+              "ok": true
+            },
+            {
+              "name": "about page builds the navigation URLs with href()",
+              "ok": true
+            }
+          ]
+        },
+        "check": {
+          "ok": true,
+          "errors": 0,
+          "warnings": 0,
+          "codes": []
+        },
+        "diff": {
+          "filesChanged": 2,
+          "linesAdded": 48,
+          "linesRemoved": 0
+        },
+        "durationMs": 2121.0911250000026
+      },
+      "wallMs": 27046,
+      "tokens": {
+        "input": 8,
+        "cacheRead": 109788,
+        "cacheWrite": 41794,
+        "output": 1431,
+        "reasoning": 56
+      },
+      "costUsd": 0.3849616,
+      "modelUsed": "claude-opus-5-5",
+      "metrics": {
+        "turns": 4,
+        "steps": 3,
+        "commands": 3,
+        "edits": 0,
+        "checkRuns": 1,
+        "firstCheckOk": true,
+        "lumCodes": [],
+        "docsReads": 2,
+        "llmsReads": 1,
+        "mcpCalls": 0,
+        "mcpTools": [],
+        "skills": []
+      },
+      "exit": {
+        "code": 0,
+        "timedOut": false,
+        "error": null
+      },
+      "usageInfo": {
+        "claude-opus-5-5": {
+          "inputTokens": 8,
+          "outputTokens": 1431,
+          "cacheReadInputTokens": 109788,
+          "cacheCreationInputTokens": 41794,
+          "webSearchRequests": 0,
+          "costUSD": 0.3849616,
+          "contextWindow": 1000000,
+          "maxOutputTokens": 128000,
+          "thinkingTokens": 56,
+          "canonicalModel": "claude-opus-5-5",
+          "provider": "firstParty",
+          "costBasis": "list"
+        }
+      },
+      "log": ".runs/2026-10-09T143057/about-page--claude_claude-opus-5-5_medium--baseline--1.jsonl"
+    },
+    {
+      "task": "about-page",
+      "category": "routing",
+      "agent": "claude:claude-sonnet-5-5:medium",
+      "cli": "claude",
+      "model": "claude-sonnet-5-5",
+      "effort": "medium",
+      "ablation": "baseline",
+      "index": 0,
+      "success": true,
+      "grade": {
+        "success": true,
+        "tests": {
+          "passed": 5,
+          "failed": 0,
+          "total": 5,
+          "results": [
+            {
+              "name": "about page serves /about with its heading",
+              "ok": true
+            },
+            {
+              "name": "about page shows the navigation on /",
+              "ok": true
+            },
+            {
+              "name": "about page shows the navigation on /about",
+              "ok": true
+            },
+            {
+              "name": "about page keeps the home page",
+              "ok": true
+            },
+            {
+              "name": "about page builds the navigation URLs with href()",
+              "ok": true
+            }
+          ]
+        },
+        "check": {
+          "ok": true,
+          "errors": 0,
+          "warnings": 0,
+          "codes": []
+        },
+        "diff": {
+          "filesChanged": 2,
+          "linesAdded": 46,
+          "linesRemoved": 0
+        },
+        "durationMs": 1904.2852920000005
+      },
+      "wallMs": 17857,
+      "tokens": {
+        "input": 8,
+        "cacheRead": 102547,
+        "cacheWrite": 37137,
+        "output": 947,
+        "reasoning": 0
+      },
+      "costUsd": 0.17854340000000002,
+      "modelUsed": "claude-sonnet-5-5",
+      "metrics": {
+        "turns": 4,
+        "steps": 3,
+        "commands": 3,
+        "edits": 0,
+        "checkRuns": 1,
+        "firstCheckOk": true,
+        "lumCodes": [],
+        "docsReads": 2,
+        "llmsReads": 0,
+        "mcpCalls": 0,
+        "mcpTools": [],
+        "skills": []
+      },
+      "exit": {
+        "code": 0,
+        "timedOut": false,
+        "error": null
+      },
+      "usageInfo": {
+        "claude-sonnet-5-5": {
+          "inputTokens": 8,
+          "outputTokens": 947,
+          "cacheReadInputTokens": 102547,
+          "cacheCreationInputTokens": 37137,
+          "webSearchRequests": 0,
+          "costUSD": 0.17854340000000002,
+          "contextWindow": 1000000,
+          "maxOutputTokens": 128000,
+          "thinkingTokens": 0,
+          "canonicalModel": "claude-sonnet-5-5",
+          "provider": "firstParty",
+          "costBasis": "list"
+        }
+      },
+      "log": ".runs/2026-10-09T143057/about-page--claude_claude-sonnet-5-5_medium--baseline--1.jsonl"
+    },
+    {
+      "task": "about-page",
+      "category": "routing",
+      "agent": "codex:gpt-6-astra:medium",
+      "cli": "codex",
+      "model": "gpt-6-astra",
+      "effort": "medium",
+      "ablation": "baseline",
+      "index": 0,
+      "success": true,
+      "grade": {
+        "success": true,
+        "tests": {
+          "passed": 5,
+          "failed": 0,
+          "total": 5,
+          "results": [
+            {
+              "name": "about page serves /about with its heading",
+              "ok": true
+            },
+            {
+              "name": "about page shows the navigation on /",
+              "ok": true
+            },
+            {
+              "name": "about page shows the navigation on /about",
+              "ok": true
+            },
+            {
+              "name": "about page keeps the home page",
+              "ok": true
+            },
+            {
+              "name": "about page builds the navigation URLs with href()",
+              "ok": true
+            }
+          ]
+        },
+        "check": {
+          "ok": true,
+          "errors": 0,
+          "warnings": 0,
+          "codes": []
+        },
+        "diff": {
+          "filesChanged": 2,
+          "linesAdded": 47,
+          "linesRemoved": 0
+        },
+        "durationMs": 1960.8141669999895
+      },
+      "wallMs": 33678,
+      "tokens": {
+        "input": 11658,
+        "cacheRead": 70144,
+        "cacheWrite": 0,
+        "output": 769,
+        "reasoning": 0
+      },
+      "costUsd": null,
+      "modelUsed": null,
+      "metrics": {
+        "turns": 8,
+        "steps": 7,
+        "commands": 5,
+        "edits": 2,
+        "checkRuns": 1,
+        "firstCheckOk": true,
+        "lumCodes": [],
+        "docsReads": 2,
+        "llmsReads": 1,
+        "mcpCalls": 0,
+        "mcpTools": [],
+        "skills": []
+      },
+      "exit": {
+        "code": 0,
+        "timedOut": false,
+        "error": null
+      },
+      "usageInfo": null,
+      "log": ".runs/2026-10-09T143057/about-page--codex_gpt-6-astra_medium--baseline--1.jsonl"
+    },
+    {
+      "task": "about-page",
+      "category": "routing",
+      "agent": "codex:gpt-6.1-sol:medium",
+      "cli": "codex",
+      "model": "gpt-6.1-sol",
+      "effort": "medium",
+      "ablation": "baseline",
+      "index": 0,
+      "success": true,
+      "grade": {
+        "success": true,
+        "tests": {
+          "passed": 5,
+          "failed": 0,
+          "total": 5,
+          "results": [
+            {
+              "name": "about page serves /about with its heading",
+              "ok": true
+            },
+            {
+              "name": "about page shows the navigation on /",
+              "ok": true
+            },
+            {
+              "name": "about page shows the navigation on /about",
+              "ok": true
+            },
+            {
+              "name": "about page keeps the home page",
+              "ok": true
+            },
+            {
+              "name": "about page builds the navigation URLs with href()",
+              "ok": true
+            }
+          ]
+        },
+        "check": {
+          "ok": true,
+          "errors": 0,
+          "warnings": 0,
+          "codes": []
+        },
+        "diff": {
+          "filesChanged": 2,
+          "linesAdded": 48,
+          "linesRemoved": 0
+        },
+        "durationMs": 1880.0424160000111
+      },
+      "wallMs": 41740,
+      "tokens": {
+        "input": 13017,
+        "cacheRead": 71552,
+        "cacheWrite": 0,
+        "output": 833,
+        "reasoning": 0
+      },
+      "costUsd": null,
+      "modelUsed": null,
+      "metrics": {
+        "turns": 10,
+        "steps": 9,
+        "commands": 7,
+        "edits": 2,
+        "checkRuns": 1,
+        "firstCheckOk": true,
+        "lumCodes": [],
+        "docsReads": 3,
+        "llmsReads": 2,
+        "mcpCalls": 0,
+        "mcpTools": [],
+        "skills": []
+      },
+      "exit": {
+        "code": 0,
+        "timedOut": false,
+        "error": null
+      },
+      "usageInfo": null,
+      "log": ".runs/2026-10-09T143057/about-page--codex_gpt-6.1-sol_medium--baseline--1.jsonl"
+    },
+    {
+      "task": "contact-form",
+      "category": "actions",
+      "agent": "claude:claude-opus-5-5:medium",
+      "cli": "claude",
+      "model": "claude-opus-5-5",
+      "effort": "medium",
+      "ablation": "baseline",
+      "index": 0,
+      "success": true,
+      "grade": {
+        "success": true,
+        "tests": {
+          "passed": 4,
+          "failed": 0,
+          "total": 4,
+          "results": [
+            {
+              "name": "contact form renders the form",
+              "ok": true
+            },
+            {
+              "name": "contact form rejects invalid input with 400, errors and the typed values",
+              "ok": true
+            },
+            {
+              "name": "contact form keeps the message when only the email is wrong",
+              "ok": true
+            },
+            {
+              "name": "contact form stores a valid message and redirects to the thanks page",
+              "ok": true
+            }
+          ]
+        },
+        "check": {
+          "ok": true,
+          "errors": 0,
+          "warnings": 0,
+          "codes": []
+        },
+        "diff": {
+          "filesChanged": 2,
+          "linesAdded": 71,
+          "linesRemoved": 0
+        },
+        "durationMs": 3964.758541999996
+      },
+      "wallMs": 37757,
+      "tokens": {
+        "input": 16,
+        "cacheRead": 301700,
+        "cacheWrite": 23883,
+        "output": 2594,
+        "reasoning": 274
+      },
+      "costUsd": 0.30334800000000006,
+      "modelUsed": "claude-opus-5-5",
+      "metrics": {
+        "turns": 8,
+        "steps": 7,
+        "commands": 7,
+        "edits": 0,
+        "checkRuns": 1,
+        "firstCheckOk": true,
+        "lumCodes": [],
+        "docsReads": 4,
+        "llmsReads": 1,
+        "mcpCalls": 0,
+        "mcpTools": [],
+        "skills": []
+      },
+      "exit": {
+        "code": 0,
+        "timedOut": false,
+        "error": null
+      },
+      "usageInfo": {
+        "claude-opus-5-5": {
+          "inputTokens": 16,
+          "outputTokens": 2594,
+          "cacheReadInputTokens": 301700,
+          "cacheCreationInputTokens": 23883,
+          "webSearchRequests": 0,
+          "costUSD": 0.30334800000000006,
+          "contextWindow": 1000000,
+          "maxOutputTokens": 128000,
+          "thinkingTokens": 274,
+          "canonicalModel": "claude-opus-5-5",
+          "provider": "firstParty",
+          "costBasis": "list"
+        }
+      },
+      "log": ".runs/2026-10-09T143057/contact-form--claude_claude-opus-5-5_medium--baseline--1.jsonl"
+    },
+    {
+      "task": "contact-form",
+      "category": "actions",
+      "agent": "claude:claude-sonnet-5-5:medium",
+      "cli": "claude",
+      "model": "claude-sonnet-5-5",
+      "effort": "medium",
+      "ablation": "baseline",
+      "index": 0,
+      "success": true,
+      "grade": {
+        "success": true,
+        "tests": {
+          "passed": 4,
+          "failed": 0,
+          "total": 4,
+          "results": [
+            {
+              "name": "contact form renders the form",
+              "ok": true
+            },
+            {
+              "name": "contact form rejects invalid input with 400, errors and the typed values",
+              "ok": true
+            },
+            {
+              "name": "contact form keeps the message when only the email is wrong",
+              "ok": true
+            },
+            {
+              "name": "contact form stores a valid message and redirects to the thanks page",
+              "ok": true
+            }
+          ]
+        },
+        "check": {
+          "ok": true,
+          "errors": 0,
+          "warnings": 0,
+          "codes": []
+        },
+        "diff": {
+          "filesChanged": 2,
+          "linesAdded": 67,
+          "linesRemoved": 0
+        },
+        "durationMs": 2414.019459000003
+      },
+      "wallMs": 29633,
+      "tokens": {
+        "input": 10,
+        "cacheRead": 168639,
+        "cacheWrite": 19005,
+        "output": 1867,
+        "reasoning": 138
+      },
+      "costUsd": 0.1284378,
+      "modelUsed": "claude-sonnet-5-5",
+      "metrics": {
+        "turns": 7,
+        "steps": 5,
+        "commands": 4,
+        "edits": 0,
+        "checkRuns": 1,
+        "firstCheckOk": true,
+        "lumCodes": [],
+        "docsReads": 2,
+        "llmsReads": 0,
+        "mcpCalls": 0,
+        "mcpTools": [],
+        "skills": [
+          "lumen"
+        ]
+      },
+      "exit": {
+        "code": 0,
+        "timedOut": false,
+        "error": null
+      },
+      "usageInfo": {
+        "claude-sonnet-5-5": {
+          "inputTokens": 10,
+          "outputTokens": 1867,
+          "cacheReadInputTokens": 168639,
+          "cacheCreationInputTokens": 19005,
+          "webSearchRequests": 0,
+          "costUSD": 0.1284378,
+          "contextWindow": 1000000,
+          "maxOutputTokens": 128000,
+          "thinkingTokens": 138,
+          "canonicalModel": "claude-sonnet-5-5",
+          "provider": "firstParty",
+          "costBasis": "list"
+        }
+      },
+      "log": ".runs/2026-10-09T143057/contact-form--claude_claude-sonnet-5-5_medium--baseline--1.jsonl"
+    },
+    {
+      "task": "contact-form",
+      "category": "actions",
+      "agent": "codex:gpt-6-astra:medium",
+      "cli": "codex",
+      "model": "gpt-6-astra",
+      "effort": "medium",
+      "ablation": "baseline",
+      "index": 0,
+      "success": true,
+      "grade": {
+        "success": true,
+        "tests": {
+          "passed": 4,
+          "failed": 0,
+          "total": 4,
+          "results": [
+            {
+              "name": "contact form renders the form",
+              "ok": true
+            },
+            {
+              "name": "contact form rejects invalid input with 400, errors and the typed values",
+              "ok": true
+            },
+            {
+              "name": "contact form keeps the message when only the email is wrong",
+              "ok": true
+            },
+            {
+              "name": "contact form stores a valid message and redirects to the thanks page",
+              "ok": true
+            }
+          ]
+        },
+        "check": {
+          "ok": true,
+          "errors": 0,
+          "warnings": 0,
+          "codes": []
+        },
+        "diff": {
+          "filesChanged": 2,
+          "linesAdded": 78,
+          "linesRemoved": 0
+        },
+        "durationMs": 1798.108750000014
+      },
+      "wallMs": 48259,
+      "tokens": {
+        "input": 15557,
+        "cacheRead": 125952,
+        "cacheWrite": 0,
+        "output": 1310,
+        "reasoning": 28
+      },
+      "costUsd": null,
+      "modelUsed": null,
+      "metrics": {
+        "turns": 10,
+        "steps": 8,
+        "commands": 6,
+        "edits": 2,
+        "checkRuns": 2,
+        "firstCheckOk": true,
+        "lumCodes": [],
+        "docsReads": 2,
+        "llmsReads": 1,
+        "mcpCalls": 0,
+        "mcpTools": [],
+        "skills": []
+      },
+      "exit": {
+        "code": 0,
+        "timedOut": false,
+        "error": null
+      },
+      "usageInfo": null,
+      "log": ".runs/2026-10-09T143057/contact-form--codex_gpt-6-astra_medium--baseline--1.jsonl"
+    },
+    {
+      "task": "contact-form",
+      "category": "actions",
+      "agent": "codex:gpt-6.1-sol:medium",
+      "cli": "codex",
+      "model": "gpt-6.1-sol",
+      "effort": "medium",
+      "ablation": "baseline",
+      "index": 0,
+      "success": true,
+      "grade": {
+        "success": true,
+        "tests": {
+          "passed": 4,
+          "failed": 0,
+          "total": 4,
+          "results": [
+            {
+              "name": "contact form renders the form",
+              "ok": true
+            },
+            {
+              "name": "contact form rejects invalid input with 400, errors and the typed values",
+              "ok": true
+            },
+            {
+              "name": "contact form keeps the message when only the email is wrong",
+              "ok": true
+            },
+            {
+              "name": "contact form stores a valid message and redirects to the thanks page",
+              "ok": true
+            }
+          ]
+        },
+        "check": {
+          "ok": true,
+          "errors": 0,
+          "warnings": 0,
+          "codes": []
+        },
+        "diff": {
+          "filesChanged": 2,
+          "linesAdded": 81,
+          "linesRemoved": 0
+        },
+        "durationMs": 2108.9492079999764
+      },
+      "wallMs": 123850,
+      "tokens": {
+        "input": 26387,
+        "cacheRead": 295296,
+        "cacheWrite": 0,
+        "output": 3332,
+        "reasoning": 132
+      },
+      "costUsd": null,
+      "modelUsed": null,
+      "metrics": {
+        "turns": 19,
+        "steps": 17,
+        "commands": 15,
+        "edits": 2,
+        "checkRuns": 2,
+        "firstCheckOk": true,
+        "lumCodes": [],
+        "docsReads": 4,
+        "llmsReads": 2,
+        "mcpCalls": 0,
+        "mcpTools": [],
+        "skills": []
+      },
+      "exit": {
+        "code": 0,
+        "timedOut": false,
+        "error": null
+      },
+      "usageInfo": null,
+      "log": ".runs/2026-10-09T143057/contact-form--codex_gpt-6.1-sol_medium--baseline--1.jsonl"
+    },
+    {
+      "task": "styled-badge",
+      "category": "styles",
+      "agent": "claude:claude-opus-5-5:medium",
+      "cli": "claude",
+      "model": "claude-opus-5-5",
+      "effort": "medium",
+      "ablation": "baseline",
+      "index": 0,
+      "success": true,
+      "grade": {
+        "success": true,
+        "tests": {
+          "passed": 3,
+          "failed": 0,
+          "total": 3,
+          "results": [
+            {
+              "name": "Badge renders three badges on the home page",
+              "ok": true
+            },
+            {
+              "name": "Badge is exported from src/components/Badge.stsx and reads the tokens",
+              "ok": true
+            },
+            {
+              "name": "Badge builds scoped CSS with the token colors",
+              "ok": true
+            }
+          ]
+        },
+        "check": {
+          "ok": true,
+          "errors": 0,
+          "warnings": 0,
+          "codes": []
+        },
+        "diff": {
+          "filesChanged": 2,
+          "linesAdded": 51,
+          "linesRemoved": 0
+        },
+        "durationMs": 2199.68274999992
+      },
+      "wallMs": 29896,
+      "tokens": {
+        "input": 12,
+        "cacheRead": 206193,
+        "cacheWrite": 19975,
+        "output": 2168,
+        "reasoning": 56
+      },
+      "costUsd": 0.2444466,
+      "modelUsed": "claude-opus-5-5",
+      "metrics": {
+        "turns": 9,
+        "steps": 8,
+        "commands": 4,
+        "edits": 4,
+        "checkRuns": 1,
+        "firstCheckOk": true,
+        "lumCodes": [],
+        "docsReads": 3,
+        "llmsReads": 0,
+        "mcpCalls": 0,
+        "mcpTools": [],
+        "skills": []
+      },
+      "exit": {
+        "code": 0,
+        "timedOut": false,
+        "error": null
+      },
+      "usageInfo": {
+        "claude-opus-5-5": {
+          "inputTokens": 12,
+          "outputTokens": 2168,
+          "cacheReadInputTokens": 206193,
+          "cacheCreationInputTokens": 19975,
+          "webSearchRequests": 0,
+          "costUSD": 0.2444466,
+          "contextWindow": 1000000,
+          "maxOutputTokens": 128000,
+          "thinkingTokens": 56,
+          "canonicalModel": "claude-opus-5-5",
+          "provider": "firstParty",
+          "costBasis": "list"
+        }
+      },
+      "log": ".runs/2026-10-09T143057/styled-badge--claude_claude-opus-5-5_medium--baseline--1.jsonl"
+    },
+    {
+      "task": "styled-badge",
+      "category": "styles",
+      "agent": "claude:claude-sonnet-5-5:medium",
+      "cli": "claude",
+      "model": "claude-sonnet-5-5",
+      "effort": "medium",
+      "ablation": "baseline",
+      "index": 0,
+      "success": true,
+      "grade": {
+        "success": true,
+        "tests": {
+          "passed": 3,
+          "failed": 0,
+          "total": 3,
+          "results": [
+            {
+              "name": "Badge renders three badges on the home page",
+              "ok": true
+            },
+            {
+              "name": "Badge is exported from src/components/Badge.stsx and reads the tokens",
+              "ok": true
+            },
+            {
+              "name": "Badge builds scoped CSS with the token colors",
+              "ok": true
+            }
+          ]
+        },
+        "check": {
+          "ok": true,
+          "errors": 0,
+          "warnings": 0,
+          "codes": []
+        },
+        "diff": {
+          "filesChanged": 2,
+          "linesAdded": 37,
+          "linesRemoved": 0
+        },
+        "durationMs": 2187.46079199994
+      },
+      "wallMs": 29548,
+      "tokens": {
+        "input": 14,
+        "cacheRead": 238108,
+        "cacheWrite": 16654,
+        "output": 2047,
+        "reasoning": 0
+      },
+      "costUsd": 0.1347356,
+      "modelUsed": "claude-sonnet-5-5",
+      "metrics": {
+        "turns": 9,
+        "steps": 8,
+        "commands": 7,
+        "edits": 1,
+        "checkRuns": 3,
+        "firstCheckOk": true,
+        "lumCodes": [],
+        "docsReads": 4,
+        "llmsReads": 0,
+        "mcpCalls": 0,
+        "mcpTools": [],
+        "skills": []
+      },
+      "exit": {
+        "code": 0,
+        "timedOut": false,
+        "error": null
+      },
+      "usageInfo": {
+        "claude-sonnet-5-5": {
+          "inputTokens": 14,
+          "outputTokens": 2047,
+          "cacheReadInputTokens": 238108,
+          "cacheCreationInputTokens": 16654,
+          "webSearchRequests": 0,
+          "costUSD": 0.1347356,
+          "contextWindow": 1000000,
+          "maxOutputTokens": 128000,
+          "thinkingTokens": 0,
+          "canonicalModel": "claude-sonnet-5-5",
+          "provider": "firstParty",
+          "costBasis": "list"
+        }
+      },
+      "log": ".runs/2026-10-09T143057/styled-badge--claude_claude-sonnet-5-5_medium--baseline--1.jsonl"
+    },
+    {
+      "task": "styled-badge",
+      "category": "styles",
+      "agent": "codex:gpt-6-astra:medium",
+      "cli": "codex",
+      "model": "gpt-6-astra",
+      "effort": "medium",
+      "ablation": "baseline",
+      "index": 0,
+      "success": true,
+      "grade": {
+        "success": true,
+        "tests": {
+          "passed": 3,
+          "failed": 0,
+          "total": 3,
+          "results": [
+            {
+              "name": "Badge renders three badges on the home page",
+              "ok": true
+            },
+            {
+              "name": "Badge is exported from src/components/Badge.stsx and reads the tokens",
+              "ok": true
+            },
+            {
+              "name": "Badge builds scoped CSS with the token colors",
+              "ok": true
+            }
+          ]
+        },
+        "check": {
+          "ok": true,
+          "errors": 0,
+          "warnings": 0,
+          "codes": []
+        },
+        "diff": {
+          "filesChanged": 2,
+          "linesAdded": 46,
+          "linesRemoved": 0
+        },
+        "durationMs": 2555.160499999998
+      },
+      "wallMs": 35823,
+      "tokens": {
+        "input": 15232,
+        "cacheRead": 73600,
+        "cacheWrite": 0,
+        "output": 828,
+        "reasoning": 0
+      },
+      "costUsd": null,
+      "modelUsed": null,
+      "metrics": {
+        "turns": 9,
+        "steps": 8,
+        "commands": 6,
+        "edits": 2,
+        "checkRuns": 1,
+        "firstCheckOk": true,
+        "lumCodes": [],
+        "docsReads": 2,
+        "llmsReads": 1,
+        "mcpCalls": 0,
+        "mcpTools": [],
+        "skills": []
+      },
+      "exit": {
+        "code": 0,
+        "timedOut": false,
+        "error": null
+      },
+      "usageInfo": null,
+      "log": ".runs/2026-10-09T143057/styled-badge--codex_gpt-6-astra_medium--baseline--1.jsonl"
+    },
+    {
+      "task": "styled-badge",
+      "category": "styles",
+      "agent": "codex:gpt-6.1-sol:medium",
+      "cli": "codex",
+      "model": "gpt-6.1-sol",
+      "effort": "medium",
+      "ablation": "baseline",
+      "index": 0,
+      "success": true,
+      "grade": {
+        "success": true,
+        "tests": {
+          "passed": 3,
+          "failed": 0,
+          "total": 3,
+          "results": [
+            {
+              "name": "Badge renders three badges on the home page",
+              "ok": true
+            },
+            {
+              "name": "Badge is exported from src/components/Badge.stsx and reads the tokens",
+              "ok": true
+            },
+            {
+              "name": "Badge builds scoped CSS with the token colors",
+              "ok": true
+            }
+          ]
+        },
+        "check": {
+          "ok": true,
+          "errors": 0,
+          "warnings": 0,
+          "codes": []
+        },
+        "diff": {
+          "filesChanged": 2,
+          "linesAdded": 40,
+          "linesRemoved": 0
+        },
+        "durationMs": 2820.397083000047
+      },
+      "wallMs": 47983,
+      "tokens": {
+        "input": 33638,
+        "cacheRead": 87552,
+        "cacheWrite": 0,
+        "output": 924,
+        "reasoning": 10
+      },
+      "costUsd": null,
+      "modelUsed": null,
+      "metrics": {
+        "turns": 12,
+        "steps": 11,
+        "commands": 9,
+        "edits": 2,
+        "checkRuns": 1,
+        "firstCheckOk": true,
+        "lumCodes": [],
+        "docsReads": 3,
+        "llmsReads": 2,
+        "mcpCalls": 0,
+        "mcpTools": [],
+        "skills": []
+      },
+      "exit": {
+        "code": 0,
+        "timedOut": false,
+        "error": null
+      },
+      "usageInfo": null,
+      "log": ".runs/2026-10-09T143057/styled-badge--codex_gpt-6.1-sol_medium--baseline--1.jsonl"
+    },
+    {
+      "task": "counter-island",
+      "category": "islands",
+      "agent": "claude:claude-opus-5-5:medium",
+      "cli": "claude",
+      "model": "claude-opus-5-5",
+      "effort": "medium",
+      "ablation": "baseline",
+      "index": 0,
+      "success": true,
+      "grade": {
+        "success": true,
+        "tests": {
+          "passed": 3,
+          "failed": 0,
+          "total": 3,
+          "results": [
+            {
+              "name": "still counts by its step",
+              "ok": true
+            },
+            {
+              "name": "counter island hydrates the counter, on visibility, with its props",
+              "ok": true
+            },
+            {
+              "name": "counter island keeps the page server-rendered",
+              "ok": true
+            }
+          ]
+        },
+        "check": {
+          "ok": true,
+          "errors": 0,
+          "warnings": 0,
+          "codes": []
+        },
+        "diff": {
+          "filesChanged": 1,
+          "linesAdded": 1,
+          "linesRemoved": 1
+        },
+        "durationMs": 2544.766458000002
+      },
+      "wallMs": 23608,
+      "tokens": {
+        "input": 8,
+        "cacheRead": 111172,
+        "cacheWrite": 39520,
+        "output": 1049,
+        "reasoning": 53
+      },
+      "costUsd": 0.3594064,
+      "modelUsed": "claude-opus-5-5",
+      "metrics": {
+        "turns": 4,
+        "steps": 3,
+        "commands": 3,
+        "edits": 0,
+        "checkRuns": 1,
+        "firstCheckOk": true,
+        "lumCodes": [],
+        "docsReads": 1,
+        "llmsReads": 0,
+        "mcpCalls": 0,
+        "mcpTools": [],
+        "skills": []
+      },
+      "exit": {
+        "code": 0,
+        "timedOut": false,
+        "error": null
+      },
+      "usageInfo": {
+        "claude-opus-5-5": {
+          "inputTokens": 8,
+          "outputTokens": 1049,
+          "cacheReadInputTokens": 111172,
+          "cacheCreationInputTokens": 39520,
+          "webSearchRequests": 0,
+          "costUSD": 0.3594064,
+          "contextWindow": 1000000,
+          "maxOutputTokens": 128000,
+          "thinkingTokens": 53,
+          "canonicalModel": "claude-opus-5-5",
+          "provider": "firstParty",
+          "costBasis": "list"
+        }
+      },
+      "log": ".runs/2026-10-09T145102/counter-island--claude_claude-opus-5-5_medium--baseline--1.jsonl"
+    },
+    {
+      "task": "counter-island",
+      "category": "islands",
+      "agent": "claude:claude-sonnet-5-5:medium",
+      "cli": "claude",
+      "model": "claude-sonnet-5-5",
+      "effort": "medium",
+      "ablation": "baseline",
+      "index": 0,
+      "success": true,
+      "grade": {
+        "success": true,
+        "tests": {
+          "passed": 3,
+          "failed": 0,
+          "total": 3,
+          "results": [
+            {
+              "name": "still counts by its step",
+              "ok": true
+            },
+            {
+              "name": "counter island hydrates the counter, on visibility, with its props",
+              "ok": true
+            },
+            {
+              "name": "counter island keeps the page server-rendered",
+              "ok": true
+            }
+          ]
+        },
+        "check": {
+          "ok": true,
+          "errors": 0,
+          "warnings": 0,
+          "codes": []
+        },
+        "diff": {
+          "filesChanged": 1,
+          "linesAdded": 1,
+          "linesRemoved": 1
+        },
+        "durationMs": 2288.2422499999957
+      },
+      "wallMs": 13137,
+      "tokens": {
+        "input": 8,
+        "cacheRead": 122630,
+        "cacheWrite": 11924,
+        "output": 765,
+        "reasoning": 0
+      },
+      "costUsd": 0.07988799999999999,
+      "modelUsed": "claude-sonnet-5-5",
+      "metrics": {
+        "turns": 5,
+        "steps": 4,
+        "commands": 1,
+        "edits": 1,
+        "checkRuns": 1,
+        "firstCheckOk": true,
+        "lumCodes": [],
+        "docsReads": 0,
+        "llmsReads": 0,
+        "mcpCalls": 0,
+        "mcpTools": [],
+        "skills": []
+      },
+      "exit": {
+        "code": 0,
+        "timedOut": false,
+        "error": null
+      },
+      "usageInfo": {
+        "claude-sonnet-5-5": {
+          "inputTokens": 8,
+          "outputTokens": 765,
+          "cacheReadInputTokens": 122630,
+          "cacheCreationInputTokens": 11924,
+          "webSearchRequests": 0,
+          "costUSD": 0.07988799999999999,
+          "contextWindow": 1000000,
+          "maxOutputTokens": 128000,
+          "thinkingTokens": 0,
+          "canonicalModel": "claude-sonnet-5-5",
+          "provider": "firstParty",
+          "costBasis": "list"
+        }
+      },
+      "log": ".runs/2026-10-09T145102/counter-island--claude_claude-sonnet-5-5_medium--baseline--1.jsonl"
+    },
+    {
+      "task": "counter-island",
+      "category": "islands",
+      "agent": "codex:gpt-6-astra:medium",
+      "cli": "codex",
+      "model": "gpt-6-astra",
+      "effort": "medium",
+      "ablation": "baseline",
+      "index": 0,
+      "success": true,
+      "grade": {
+        "success": true,
+        "tests": {
+          "passed": 3,
+          "failed": 0,
+          "total": 3,
+          "results": [
+            {
+              "name": "still counts by its step",
+              "ok": true
+            },
+            {
+              "name": "counter island hydrates the counter, on visibility, with its props",
+              "ok": true
+            },
+            {
+              "name": "counter island keeps the page server-rendered",
+              "ok": true
+            }
+          ]
+        },
+        "check": {
+          "ok": true,
+          "errors": 0,
+          "warnings": 0,
+          "codes": []
+        },
+        "diff": {
+          "filesChanged": 1,
+          "linesAdded": 1,
+          "linesRemoved": 1
+        },
+        "durationMs": 2304.1550419999985
+      },
+      "wallMs": 29838,
+      "tokens": {
+        "input": 14066,
+        "cacheRead": 72832,
+        "cacheWrite": 0,
+        "output": 461,
+        "reasoning": 14
+      },
+      "costUsd": null,
+      "modelUsed": null,
+      "metrics": {
+        "turns": 7,
+        "steps": 5,
+        "commands": 4,
+        "edits": 1,
+        "checkRuns": 1,
+        "firstCheckOk": true,
+        "lumCodes": [],
+        "docsReads": 2,
+        "llmsReads": 1,
+        "mcpCalls": 0,
+        "mcpTools": [],
+        "skills": []
+      },
+      "exit": {
+        "code": 0,
+        "timedOut": false,
+        "error": null
+      },
+      "usageInfo": null,
+      "log": ".runs/2026-10-09T145102/counter-island--codex_gpt-6-astra_medium--baseline--1.jsonl"
+    },
+    {
+      "task": "counter-island",
+      "category": "islands",
+      "agent": "codex:gpt-6.1-sol:medium",
+      "cli": "codex",
+      "model": "gpt-6.1-sol",
+      "effort": "medium",
+      "ablation": "baseline",
+      "index": 0,
+      "success": true,
+      "grade": {
+        "success": true,
+        "tests": {
+          "passed": 3,
+          "failed": 0,
+          "total": 3,
+          "results": [
+            {
+              "name": "still counts by its step",
+              "ok": true
+            },
+            {
+              "name": "counter island hydrates the counter, on visibility, with its props",
+              "ok": true
+            },
+            {
+              "name": "counter island keeps the page server-rendered",
+              "ok": true
+            }
+          ]
+        },
+        "check": {
+          "ok": true,
+          "errors": 0,
+          "warnings": 0,
+          "codes": []
+        },
+        "diff": {
+          "filesChanged": 1,
+          "linesAdded": 1,
+          "linesRemoved": 1
+        },
+        "durationMs": 2641.233749999985
+      },
+      "wallMs": 62093,
+      "tokens": {
+        "input": 15021,
+        "cacheRead": 99072,
+        "cacheWrite": 0,
+        "output": 621,
+        "reasoning": 0
+      },
+      "costUsd": null,
+      "modelUsed": null,
+      "metrics": {
+        "turns": 11,
+        "steps": 9,
+        "commands": 8,
+        "edits": 1,
+        "checkRuns": 1,
+        "firstCheckOk": true,
+        "lumCodes": [],
+        "docsReads": 2,
+        "llmsReads": 1,
+        "mcpCalls": 0,
+        "mcpTools": [],
+        "skills": []
+      },
+      "exit": {
+        "code": 0,
+        "timedOut": false,
+        "error": null
+      },
+      "usageInfo": null,
+      "log": ".runs/2026-10-09T145102/counter-island--codex_gpt-6.1-sol_medium--baseline--1.jsonl"
+    },
+    {
+      "task": "fix-stale-total",
+      "category": "reactivity",
+      "agent": "claude:claude-opus-5-5:medium",
+      "cli": "claude",
+      "model": "claude-opus-5-5",
+      "effort": "medium",
+      "ablation": "baseline",
+      "index": 0,
+      "success": true,
+      "grade": {
+        "success": true,
+        "tests": {
+          "passed": 3,
+          "failed": 0,
+          "total": 3,
+          "results": [
+            {
+              "name": "has no stale derived values left",
+              "ok": true
+            },
+            {
+              "name": "starts with one item",
+              "ok": true
+            },
+            {
+              "name": "updates the total and the label",
+              "ok": true
+            }
+          ]
+        },
+        "check": {
+          "ok": true,
+          "errors": 0,
+          "warnings": 0,
+          "codes": []
+        },
+        "diff": {
+          "filesChanged": 1,
+          "linesAdded": 5,
+          "linesRemoved": 5
+        },
+        "durationMs": 2182.730583000026
+      },
+      "wallMs": 21880,
+      "tokens": {
+        "input": 8,
+        "cacheRead": 126046,
+        "cacheWrite": 13875,
+        "output": 1620,
+        "reasoning": 0
+      },
+      "costUsd": 0.16864119999999996,
+      "modelUsed": "claude-opus-5-5",
+      "metrics": {
+        "turns": 8,
+        "steps": 7,
+        "commands": 2,
+        "edits": 4,
+        "checkRuns": 1,
+        "firstCheckOk": true,
+        "lumCodes": [],
+        "docsReads": 1,
+        "llmsReads": 0,
+        "mcpCalls": 0,
+        "mcpTools": [],
+        "skills": []
+      },
+      "exit": {
+        "code": 0,
+        "timedOut": false,
+        "error": null
+      },
+      "usageInfo": {
+        "claude-opus-5-5": {
+          "inputTokens": 8,
+          "outputTokens": 1620,
+          "cacheReadInputTokens": 126046,
+          "cacheCreationInputTokens": 13875,
+          "webSearchRequests": 0,
+          "costUSD": 0.16864119999999996,
+          "contextWindow": 1000000,
+          "maxOutputTokens": 128000,
+          "thinkingTokens": 0,
+          "canonicalModel": "claude-opus-5-5",
+          "provider": "firstParty",
+          "costBasis": "list"
+        }
+      },
+      "log": ".runs/2026-10-09T145102/fix-stale-total--claude_claude-opus-5-5_medium--baseline--1.jsonl"
+    },
+    {
+      "task": "fix-stale-total",
+      "category": "reactivity",
+      "agent": "claude:claude-sonnet-5-5:medium",
+      "cli": "claude",
+      "model": "claude-sonnet-5-5",
+      "effort": "medium",
+      "ablation": "baseline",
+      "index": 0,
+      "success": true,
+      "grade": {
+        "success": true,
+        "tests": {
+          "passed": 3,
+          "failed": 0,
+          "total": 3,
+          "results": [
+            {
+              "name": "has no stale derived values left",
+              "ok": true
+            },
+            {
+              "name": "starts with one item",
+              "ok": true
+            },
+            {
+              "name": "updates the total and the label",
+              "ok": true
+            }
+          ]
+        },
+        "check": {
+          "ok": true,
+          "errors": 0,
+          "warnings": 0,
+          "codes": []
+        },
+        "diff": {
+          "filesChanged": 1,
+          "linesAdded": 4,
+          "linesRemoved": 4
+        },
+        "durationMs": 2198.6158749999595
+      },
+      "wallMs": 14734,
+      "tokens": {
+        "input": 6,
+        "cacheRead": 88891,
+        "cacheWrite": 10841,
+        "output": 755,
+        "reasoning": 46
+      },
+      "costUsd": 0.06870419999999999,
+      "modelUsed": "claude-sonnet-5-5",
+      "metrics": {
+        "turns": 3,
+        "steps": 2,
+        "commands": 1,
+        "edits": 0,
+        "checkRuns": 1,
+        "firstCheckOk": true,
+        "lumCodes": [],
+        "docsReads": 0,
+        "llmsReads": 0,
+        "mcpCalls": 0,
+        "mcpTools": [],
+        "skills": []
+      },
+      "exit": {
+        "code": 0,
+        "timedOut": false,
+        "error": null
+      },
+      "usageInfo": {
+        "claude-sonnet-5-5": {
+          "inputTokens": 6,
+          "outputTokens": 755,
+          "cacheReadInputTokens": 88891,
+          "cacheCreationInputTokens": 10841,
+          "webSearchRequests": 0,
+          "costUSD": 0.06870419999999999,
+          "contextWindow": 1000000,
+          "maxOutputTokens": 128000,
+          "thinkingTokens": 46,
+          "canonicalModel": "claude-sonnet-5-5",
+          "provider": "firstParty",
+          "costBasis": "list"
+        }
+      },
+      "log": ".runs/2026-10-09T145102/fix-stale-total--claude_claude-sonnet-5-5_medium--baseline--1.jsonl"
+    },
+    {
+      "task": "fix-stale-total",
+      "category": "reactivity",
+      "agent": "codex:gpt-6-astra:medium",
+      "cli": "codex",
+      "model": "gpt-6-astra",
+      "effort": "medium",
+      "ablation": "baseline",
+      "index": 0,
+      "success": true,
+      "grade": {
+        "success": true,
+        "tests": {
+          "passed": 3,
+          "failed": 0,
+          "total": 3,
+          "results": [
+            {
+              "name": "has no stale derived values left",
+              "ok": true
+            },
+            {
+              "name": "starts with one item",
+              "ok": true
+            },
+            {
+              "name": "updates the total and the label",
+              "ok": true
+            }
+          ]
+        },
+        "check": {
+          "ok": true,
+          "errors": 0,
+          "warnings": 0,
+          "codes": []
+        },
+        "diff": {
+          "filesChanged": 1,
+          "linesAdded": 4,
+          "linesRemoved": 4
+        },
+        "durationMs": 2176.2366250000196
+      },
+      "wallMs": 30868,
+      "tokens": {
+        "input": 12707,
+        "cacheRead": 71680,
+        "cacheWrite": 0,
+        "output": 563,
+        "reasoning": 0
+      },
+      "costUsd": null,
+      "modelUsed": null,
+      "metrics": {
+        "turns": 10,
+        "steps": 8,
+        "commands": 7,
+        "edits": 1,
+        "checkRuns": 1,
+        "firstCheckOk": true,
+        "lumCodes": [],
+        "docsReads": 3,
+        "llmsReads": 2,
+        "mcpCalls": 0,
+        "mcpTools": [],
+        "skills": []
+      },
+      "exit": {
+        "code": 0,
+        "timedOut": false,
+        "error": null
+      },
+      "usageInfo": null,
+      "log": ".runs/2026-10-09T145102/fix-stale-total--codex_gpt-6-astra_medium--baseline--1.jsonl"
+    },
+    {
+      "task": "fix-stale-total",
+      "category": "reactivity",
+      "agent": "codex:gpt-6.1-sol:medium",
+      "cli": "codex",
+      "model": "gpt-6.1-sol",
+      "effort": "medium",
+      "ablation": "baseline",
+      "index": 0,
+      "success": true,
+      "grade": {
+        "success": true,
+        "tests": {
+          "passed": 3,
+          "failed": 0,
+          "total": 3,
+          "results": [
+            {
+              "name": "has no stale derived values left",
+              "ok": true
+            },
+            {
+              "name": "starts with one item",
+              "ok": true
+            },
+            {
+              "name": "updates the total and the label",
+              "ok": true
+            }
+          ]
+        },
+        "check": {
+          "ok": true,
+          "errors": 0,
+          "warnings": 0,
+          "codes": []
+        },
+        "diff": {
+          "filesChanged": 1,
+          "linesAdded": 4,
+          "linesRemoved": 4
+        },
+        "durationMs": 3132.548916999949
+      },
+      "wallMs": 31046,
+      "tokens": {
+        "input": 23886,
+        "cacheRead": 68352,
+        "cacheWrite": 0,
+        "output": 662,
+        "reasoning": 0
+      },
+      "costUsd": null,
+      "modelUsed": null,
+      "metrics": {
+        "turns": 11,
+        "steps": 9,
+        "commands": 8,
+        "edits": 1,
+        "checkRuns": 1,
+        "firstCheckOk": true,
+        "lumCodes": [],
+        "docsReads": 3,
+        "llmsReads": 2,
+        "mcpCalls": 0,
+        "mcpTools": [],
+        "skills": []
+      },
+      "exit": {
+        "code": 0,
+        "timedOut": false,
+        "error": null
+      },
+      "usageInfo": null,
+      "log": ".runs/2026-10-09T145102/fix-stale-total--codex_gpt-6.1-sol_medium--baseline--1.jsonl"
+    }
+  ]
+}

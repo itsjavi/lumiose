@@ -21,7 +21,6 @@ import {
 import { createRequire } from "node:module";
 import { dirname, join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
-import { scaffold } from "create-lumen/src/scaffold.ts";
 import type { Ablation, Task } from "./tasks.ts";
 
 export const EVALS = fileURLToPath(new URL("../", import.meta.url));
@@ -49,30 +48,69 @@ function toolVersions(): Record<string, string> {
   };
 }
 
-const gitSha = () =>
-  execFileSync("git", ["rev-parse", "--short", "HEAD"], { cwd: REPO, encoding: "utf8" }).trim();
+/** The commit Lumen is evaluated at: HEAD unless `LUMEN_EVAL_REV` names another revision. */
+export function lumenRev(): string {
+  return execFileSync("git", ["rev-parse", "--short", process.env.LUMEN_EVAL_REV ?? "HEAD"], {
+    cwd: REPO,
+    encoding: "utf8",
+  }).trim();
+}
+
+/** Packages copied into the vendor snapshot: the linked ones plus create-lumen (the runner's scaffolder). */
+const COPIED = [...Object.values(VENDORED), "create"];
 
 /**
- * A read-only copy of the Lumen packages (published files only) whose own dependencies are
- * symlinked to this repo's installed ones. Cached per git commit and docs variant.
+ * The repo at `rev` (not the working tree, which may hold other agents' unfinished work), with the
+ * compiler's native binding built from that revision. Cached per revision; the Cargo target dir is
+ * shared across revisions so later builds are incremental.
+ */
+function source(cacheDir: string, rev: string): string {
+  const dir = join(cacheDir, `src-${rev}`);
+  if (existsSync(join(dir, ".complete"))) return dir;
+  rmSync(dir, { recursive: true, force: true, maxRetries: 3 });
+  mkdirSync(dir, { recursive: true });
+  const paths = ["Cargo.toml", "Cargo.lock", "rust-toolchain.toml", "crates", ...COPIED.map((p) => `packages/${p}`)];
+  execFileSync("sh", ["-c", `git archive ${rev} ${paths.join(" ")} | tar -x -C "${dir}"`], { cwd: REPO });
+  console.log(`[evals] building the compiler binding at ${rev} (cached afterwards)…`);
+  execFileSync("cargo", ["build", "--quiet", "--release", "-p", "lumen_napi"], {
+    cwd: dir,
+    stdio: ["ignore", "ignore", "inherit"],
+    env: { ...process.env, CARGO_TARGET_DIR: join(cacheDir, "target") },
+  });
+  const ext = process.platform === "darwin" ? "dylib" : process.platform === "win32" ? "dll" : "so";
+  const lib = join(cacheDir, "target/release", `${process.platform === "win32" ? "" : "lib"}lumen_napi.${ext}`);
+  const platform =
+    process.platform === "linux" ? `linux-${process.arch}-gnu` : process.platform === "win32" ? `win32-${process.arch}-msvc` : `${process.platform}-${process.arch}`;
+  cpSync(lib, join(dir, "packages/compiler", `compiler.${platform}.node`));
+  writeFileSync(join(dir, ".complete"), "");
+  return dir;
+}
+
+/**
+ * A read-only copy of the Lumen packages at the evaluated revision (published files only) whose
+ * own dependencies are symlinked to this repo's installed ones. Cached per revision and docs
+ * variant.
  */
 export function vendor(cacheDir: string, ablation: Ablation): string {
   const variant = ablation.llms ? "full" : "no-llms";
-  const dir = join(cacheDir, `vendor-${gitSha()}-${variant}`);
+  const rev = lumenRev();
+  const dir = join(cacheDir, `vendor2-${rev}-${variant}`);
   if (existsSync(join(dir, ".complete"))) return dir;
+  const src = source(cacheDir, rev);
   rmSync(dir, { recursive: true, force: true, maxRetries: 3 });
-  for (const [, folder] of Object.entries(VENDORED)) {
-    const source = join(PACKAGES, folder);
+  for (const folder of COPIED) {
+    const from = join(src, "packages", folder);
+    const installed = join(PACKAGES, folder);
     const target = join(dir, folder);
-    const manifest = JSON.parse(readFileSync(join(source, "package.json"), "utf8")) as {
+    const manifest = JSON.parse(readFileSync(join(from, "package.json"), "utf8")) as {
       files?: string[];
       dependencies?: Record<string, string>;
     };
     mkdirSync(target, { recursive: true });
     for (const entry of [...(manifest.files ?? []), "package.json"]) {
-      for (const name of readdirSync(source)) {
+      for (const name of readdirSync(from)) {
         if (!matches(name, entry)) continue;
-        cpSync(join(source, name), join(target, name), {
+        cpSync(join(from, name), join(target, name), {
           recursive: true,
           filter: (path) => !/\.test\.tsx?$|[/\\]__fixtures__([/\\]|$)/.test(path),
         });
@@ -86,13 +124,15 @@ export function vendor(cacheDir: string, ablation: Ablation): string {
       mkdirSync(dirname(link), { recursive: true });
       const sibling = VENDORED[name as keyof typeof VENDORED];
       symlinkSync(
-        sibling ? join(dir, sibling) : realpathSync(join(source, "node_modules", name)),
+        sibling ? join(dir, sibling) : realpathSync(join(installed, "node_modules", name)),
         link,
         "dir",
       );
     }
     // lumen's peer: the same Vite the repo builds with.
-    if (folder === "lumen") symlinkSync(realpathSync(join(source, "node_modules/vite")), join(modules, "vite"), "dir");
+    if (folder === "lumen") {
+      symlinkSync(realpathSync(join(installed, "node_modules/vite")), join(modules, "vite"), "dir");
+    }
   }
   if (!ablation.llms) {
     for (const file of ["llms.txt", "llms-full.txt"]) rmSync(join(dir, "lumen/docs", file), { force: true });
@@ -139,6 +179,8 @@ export async function createProject(
 ): Promise<RunProject> {
   mkdirSync(dir, { recursive: true });
   if (task.template !== "none") {
+    // create-lumen from the vendor snapshot, so templates and agent files match the evaluated revision.
+    const { scaffold } = (await import(join(vendorDir, "create/src/scaffold.ts"))) as typeof import("create-lumen/src/scaffold.ts");
     await scaffold({ dir, template: task.template, name: "eval-app", force: true });
   }
   const start = join(task.dir, "start");

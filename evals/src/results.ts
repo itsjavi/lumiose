@@ -50,6 +50,8 @@ export interface ResultsFile {
     runs: number;
     /** False while the matrix is still running (or when it was interrupted). */
     complete: boolean;
+    /** Caveats about the run, shown by the viewer. */
+    notes?: string[];
   };
   runs: RunRecord[];
 }
