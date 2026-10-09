@@ -49,13 +49,13 @@
       "baseline"
     ],
     "runs": 1,
-    "complete": false,
+    "complete": true,
     "notes": [
       "Matrix approved by the user (option C): 20 tasks × 1 run × 6 configurations, all at medium effort, baseline ablation, Lumen pinned at ed72928 for every run.",
       "gpt-6-luna and claude-haiku-5-5 first ran 4 runs at high effort by mistake; those were discarded and rerun at medium.",
       "Other agents were active on the machine: wall times are indicative only.",
       "The matrix was paused at 62/120 for Claude quota and resumed (--resume) at 15:51 UTC.",
-      "4 Claude runs could not start (session limit, resets 20:40 Europe/Berlin): styled-badge / claude-haiku-5-5, todo-named-actions / claude-opus-5-5, todo-named-actions / claude-sonnet-5-5, todo-named-actions / claude-haiku-5-5. They are not recorded; --resume runs them later."
+      "4 Claude runs (styled-badge / Haiku; todo-named-actions / Opus, Sonnet, Haiku) first hit the Claude session limit; they were run after the reset (18:55 UTC) with --resume, at the same pinned commit."
     ]
   },
   "runs": [
@@ -10063,6 +10063,386 @@
       },
       "usageInfo": null,
       "log": ".runs/2026-10-09T151008/todo-named-actions--codex_gpt-6-luna_medium--baseline--1.jsonl"
+    },
+    {
+      "task": "styled-badge",
+      "category": "styles",
+      "agent": "claude:claude-haiku-5-5:medium",
+      "cli": "claude",
+      "model": "claude-haiku-5-5",
+      "effort": "medium",
+      "ablation": "baseline",
+      "index": 0,
+      "success": true,
+      "grade": {
+        "success": true,
+        "tests": {
+          "passed": 3,
+          "failed": 0,
+          "total": 3,
+          "results": [
+            {
+              "name": "Badge renders three badges on the home page",
+              "ok": true
+            },
+            {
+              "name": "Badge is exported from src/components/Badge.stsx and reads the tokens",
+              "ok": true
+            },
+            {
+              "name": "Badge builds scoped CSS with the token colors",
+              "ok": true
+            }
+          ]
+        },
+        "check": {
+          "ok": true,
+          "errors": 0,
+          "warnings": 0,
+          "codes": []
+        },
+        "diff": {
+          "filesChanged": 2,
+          "linesAdded": 42,
+          "linesRemoved": 0
+        },
+        "durationMs": 1928.4150829999999
+      },
+      "wallMs": 38731,
+      "tokens": {
+        "input": 22,
+        "cacheRead": 433733,
+        "cacheWrite": 48685,
+        "output": 4645,
+        "reasoning": 1018
+      },
+      "costUsd": 0.01639903,
+      "modelUsed": "claude-haiku-5-5",
+      "metrics": {
+        "turns": 13,
+        "steps": 11,
+        "commands": 7,
+        "edits": 3,
+        "checkRuns": 2,
+        "firstCheckOk": false,
+        "lumCodes": [],
+        "docsReads": 3,
+        "llmsReads": 0,
+        "mcpCalls": 0,
+        "mcpTools": [],
+        "skills": [
+          "lumen"
+        ]
+      },
+      "exit": {
+        "code": 0,
+        "timedOut": false,
+        "error": null
+      },
+      "usageInfo": {
+        "claude-haiku-5-5": {
+          "inputTokens": 22,
+          "outputTokens": 4645,
+          "cacheReadInputTokens": 433733,
+          "cacheCreationInputTokens": 48685,
+          "webSearchRequests": 0,
+          "costUSD": 0.01639903,
+          "contextWindow": 1000000,
+          "maxOutputTokens": 128000,
+          "thinkingTokens": 1018,
+          "canonicalModel": "claude-haiku-5-5",
+          "provider": "firstParty",
+          "costBasis": "list"
+        }
+      },
+      "log": ".runs/2026-10-09T151008/styled-badge--claude_claude-haiku-5-5_medium--baseline--1.jsonl"
+    },
+    {
+      "task": "todo-named-actions",
+      "category": "actions",
+      "agent": "claude:claude-opus-5-5:medium",
+      "cli": "claude",
+      "model": "claude-opus-5-5",
+      "effort": "medium",
+      "ablation": "baseline",
+      "index": 0,
+      "success": true,
+      "grade": {
+        "success": true,
+        "tests": {
+          "passed": 4,
+          "failed": 0,
+          "total": 4,
+          "results": [
+            {
+              "name": "todos lists the todos",
+              "ok": true
+            },
+            {
+              "name": "todos uses named actions",
+              "ok": true
+            },
+            {
+              "name": "todos adds, toggles and removes",
+              "ok": true
+            },
+            {
+              "name": "todos rejects an empty title",
+              "ok": true
+            }
+          ]
+        },
+        "check": {
+          "ok": true,
+          "errors": 0,
+          "warnings": 0,
+          "codes": []
+        },
+        "diff": {
+          "filesChanged": 1,
+          "linesAdded": 76,
+          "linesRemoved": 0
+        },
+        "durationMs": 1691.138957999996
+      },
+      "wallMs": 38240,
+      "tokens": {
+        "input": 16,
+        "cacheRead": 285274,
+        "cacheWrite": 46839,
+        "output": 3092,
+        "reasoning": 350
+      },
+      "costUsd": 0.4936708,
+      "modelUsed": "claude-opus-5-5",
+      "metrics": {
+        "turns": 8,
+        "steps": 7,
+        "commands": 6,
+        "edits": 1,
+        "checkRuns": 1,
+        "firstCheckOk": true,
+        "lumCodes": [],
+        "docsReads": 2,
+        "llmsReads": 1,
+        "mcpCalls": 0,
+        "mcpTools": [],
+        "skills": []
+      },
+      "exit": {
+        "code": 0,
+        "timedOut": false,
+        "error": null
+      },
+      "usageInfo": {
+        "claude-opus-5-5": {
+          "inputTokens": 16,
+          "outputTokens": 3092,
+          "cacheReadInputTokens": 285274,
+          "cacheCreationInputTokens": 46839,
+          "webSearchRequests": 0,
+          "costUSD": 0.4936708,
+          "contextWindow": 1000000,
+          "maxOutputTokens": 128000,
+          "thinkingTokens": 350,
+          "canonicalModel": "claude-opus-5-5",
+          "provider": "firstParty",
+          "costBasis": "list"
+        }
+      },
+      "log": ".runs/2026-10-09T151008/todo-named-actions--claude_claude-opus-5-5_medium--baseline--1.jsonl"
+    },
+    {
+      "task": "todo-named-actions",
+      "category": "actions",
+      "agent": "claude:claude-sonnet-5-5:medium",
+      "cli": "claude",
+      "model": "claude-sonnet-5-5",
+      "effort": "medium",
+      "ablation": "baseline",
+      "index": 0,
+      "success": true,
+      "grade": {
+        "success": true,
+        "tests": {
+          "passed": 4,
+          "failed": 0,
+          "total": 4,
+          "results": [
+            {
+              "name": "todos lists the todos",
+              "ok": true
+            },
+            {
+              "name": "todos uses named actions",
+              "ok": true
+            },
+            {
+              "name": "todos adds, toggles and removes",
+              "ok": true
+            },
+            {
+              "name": "todos rejects an empty title",
+              "ok": true
+            }
+          ]
+        },
+        "check": {
+          "ok": true,
+          "errors": 0,
+          "warnings": 0,
+          "codes": []
+        },
+        "diff": {
+          "filesChanged": 1,
+          "linesAdded": 73,
+          "linesRemoved": 0
+        },
+        "durationMs": 1603.8459580000053
+      },
+      "wallMs": 21427,
+      "tokens": {
+        "input": 8,
+        "cacheRead": 106693,
+        "cacheWrite": 40434,
+        "output": 1767,
+        "reasoning": 47
+      },
+      "costUsd": 0.2007606,
+      "modelUsed": "claude-sonnet-5-5",
+      "metrics": {
+        "turns": 7,
+        "steps": 5,
+        "commands": 3,
+        "edits": 1,
+        "checkRuns": 1,
+        "firstCheckOk": true,
+        "lumCodes": [],
+        "docsReads": 2,
+        "llmsReads": 0,
+        "mcpCalls": 0,
+        "mcpTools": [],
+        "skills": [
+          "lumen"
+        ]
+      },
+      "exit": {
+        "code": 0,
+        "timedOut": false,
+        "error": null
+      },
+      "usageInfo": {
+        "claude-sonnet-5-5": {
+          "inputTokens": 8,
+          "outputTokens": 1767,
+          "cacheReadInputTokens": 106693,
+          "cacheCreationInputTokens": 40434,
+          "webSearchRequests": 0,
+          "costUSD": 0.2007606,
+          "contextWindow": 1000000,
+          "maxOutputTokens": 128000,
+          "thinkingTokens": 47,
+          "canonicalModel": "claude-sonnet-5-5",
+          "provider": "firstParty",
+          "costBasis": "list"
+        }
+      },
+      "log": ".runs/2026-10-09T151008/todo-named-actions--claude_claude-sonnet-5-5_medium--baseline--1.jsonl"
+    },
+    {
+      "task": "todo-named-actions",
+      "category": "actions",
+      "agent": "claude:claude-haiku-5-5:medium",
+      "cli": "claude",
+      "model": "claude-haiku-5-5",
+      "effort": "medium",
+      "ablation": "baseline",
+      "index": 0,
+      "success": true,
+      "grade": {
+        "success": true,
+        "tests": {
+          "passed": 4,
+          "failed": 0,
+          "total": 4,
+          "results": [
+            {
+              "name": "todos lists the todos",
+              "ok": true
+            },
+            {
+              "name": "todos uses named actions",
+              "ok": true
+            },
+            {
+              "name": "todos adds, toggles and removes",
+              "ok": true
+            },
+            {
+              "name": "todos rejects an empty title",
+              "ok": true
+            }
+          ]
+        },
+        "check": {
+          "ok": true,
+          "errors": 0,
+          "warnings": 0,
+          "codes": []
+        },
+        "diff": {
+          "filesChanged": 1,
+          "linesAdded": 93,
+          "linesRemoved": 0
+        },
+        "durationMs": 1684.6271659999911
+      },
+      "wallMs": 71632,
+      "tokens": {
+        "input": 28,
+        "cacheRead": 633885,
+        "cacheWrite": 57435,
+        "output": 9461,
+        "reasoning": 3066
+      },
+      "costUsd": 0.022559150000000004,
+      "modelUsed": "claude-haiku-5-5",
+      "metrics": {
+        "turns": 15,
+        "steps": 14,
+        "commands": 12,
+        "edits": 2,
+        "checkRuns": 3,
+        "firstCheckOk": true,
+        "lumCodes": [],
+        "docsReads": 3,
+        "llmsReads": 1,
+        "mcpCalls": 0,
+        "mcpTools": [],
+        "skills": []
+      },
+      "exit": {
+        "code": 0,
+        "timedOut": false,
+        "error": null
+      },
+      "usageInfo": {
+        "claude-haiku-5-5": {
+          "inputTokens": 28,
+          "outputTokens": 9461,
+          "cacheReadInputTokens": 633885,
+          "cacheCreationInputTokens": 57435,
+          "webSearchRequests": 0,
+          "costUSD": 0.022559150000000004,
+          "contextWindow": 1000000,
+          "maxOutputTokens": 128000,
+          "thinkingTokens": 3066,
+          "canonicalModel": "claude-haiku-5-5",
+          "provider": "firstParty",
+          "costBasis": "list"
+        }
+      },
+      "log": ".runs/2026-10-09T151008/todo-named-actions--claude_claude-haiku-5-5_medium--baseline--1.jsonl"
     }
   ]
 }

@@ -5,7 +5,7 @@ status: In Progress
 assignee:
   - Quasar
 created_date: '2026-10-08 12:21'
-updated_date: '2026-10-09 16:25'
+updated_date: '2026-10-09 20:58'
 labels: []
 milestone: m-7
 dependencies:
@@ -49,4 +49,6 @@ Quasar 2026-10-09 16:30 UTC — option C matrix summary (20 tasks × 1 run × 6 
 - Per category: scaffold 6/6, routing 30/30, styles 23/23, islands 30/30, actions 9/9, reactivity 18/18 (median 21–45 s; actions slowest).
 - Failures: none by model, none by task/fixture, none by Lumen DX. Every run ran lumen check; the first check failed in 7 runs (fix-island-function-prop ×3, where the starting code has the error, so that is diagnosis; plus fix-stale-total/sonnet, like-button-island/sonnet, progress-runtime-style/haiku, scaffold-from-scratch/opus), all fixed before finishing. Haiku loaded the project's lumen skill in 16/18 runs, Opus/Sonnet in 2; Codex models read llms.txt more (1.0–1.6 per run) than Claude (0–0.5).
 - Assessment: ceiling effect — this suite does not separate the models yet. Next (needs Lux): harder tasks (multi-file features, SPA router, Suspense/streaming, middleware/cookies, CSP, debugging from failing tests) and the ablations, where the differences should show.
+
+Quasar 2026-10-09 18:58 UTC — matrix complete: the 4 Claude runs blocked by the session limit were run after the reset (--resume, same pin ed72928); all 4 passed. Final: 120/120 PASS (meta.complete=true). Updated Claude figures: Opus 20/20, median 27 s [47], $0.25/run median, $5.32 total (list price); Sonnet 20/20, 17 s [30], $0.10/run, $2.17 total; Haiku 20/20, 35 s [72], $0.011/run, $0.23 total. Codex figures unchanged (astra 20/20 34 s; sol 20/20 38 s; luna 20/20 16 s). Categories: scaffold 6/6, routing 30/30, styles 24/24, islands 30/30, actions 12/12, reactivity 18/18. No model, task/fixture or Lumen DX failures. Next step (harder tasks, ablations) awaits Lux/user.
 <!-- SECTION:NOTES:END -->

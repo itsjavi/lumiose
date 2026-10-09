@@ -16,8 +16,8 @@
       "ablations": [
         "baseline"
       ],
-      "runs": 116,
-      "complete": false
+      "runs": 120,
+      "complete": true
     },
     {
       "file": "2026-10-09T143057-macbookpro.json",
