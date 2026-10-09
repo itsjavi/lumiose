@@ -235,7 +235,9 @@ describe.skipIf(!binding)("stylesheets in dev", () => {
     } finally {
       await dev.close();
     }
-  });
+    // Starting a dev server and rendering the page takes ~0.25 s alone and several times that
+    // under full-suite parallelism plus a concurrent cargo build: Vitest's 5 s default flaked.
+  }, 30_000);
 });
 
 /** The content of a built stylesheet, by URL. */
