@@ -57,46 +57,50 @@ describe("notes", () => {
   });
 });
 
+/**
+ * Each demo channel rendered once on the real engine (at 16 kHz), shared by the
+ * per-song checks below so CI renders every song only once.
+ */
+const levels = new Map<string, { peak: number; rms: number }[]>();
+function channelLevels(id: string) {
+  let found = levels.get(id);
+  if (!found) {
+    const song = DEMOS.find((d) => d.id === id)!.song();
+    found = ([0, 1, 2, 3] as ChannelIndex[]).map((ch) =>
+      stats(
+        renderEngineAudioToPcm(songData(song, [ch]), { sampleRate: 16000, tailMs: 0 })
+          .interleavedStereo,
+      ),
+    );
+    levels.set(id, found);
+  }
+  return found;
+}
+
 describe("demo songs", () => {
-  for (const demo of DEMOS) {
-    it(`${demo.title}: every track fits the song and every channel sounds`, () => {
+  describe.each(DEMOS.map((d) => [d.title, d] as const))("%s", (_, demo) => {
+    it("every track fits the song and every channel sounds", () => {
       const song = demo.song();
       const total = song.bars * STEPS_PER_BAR;
       for (const track of song.tracks) {
         for (const n of track.notes) expect(n.s + n.l).toBeLessThanOrEqual(total);
       }
-      const seconds = (total * 15) / song.bpm;
-      expect(seconds).toBeLessThan(65);
-      for (const ch of [0, 1, 2, 3] as ChannelIndex[]) {
-        const data = songData(song, [ch]);
-        const { interleavedStereo } = renderEngineAudioToPcm(data, {
-          sampleRate: 16000,
-          tailMs: 0,
-        });
-        const { peak, rms } = stats(interleavedStereo);
+      expect((total * 15) / song.bpm).toBeLessThan(65);
+      for (const [ch, { peak, rms }] of channelLevels(demo.id).entries()) {
         expect(peak, `channel ${ch} peak`).toBeGreaterThan(0.02);
         expect(peak).toBeLessThanOrEqual(0.3);
         expect(rms).toBeGreaterThan(0.002);
       }
     });
-  }
 
-  it("balances every demo: no channel drowns the lead, none is inaudible", () => {
-    for (const demo of DEMOS) {
-      const song = demo.song();
-      const rms = ([0, 1, 2, 3] as ChannelIndex[]).map((ch) => {
-        const { interleavedStereo } = renderEngineAudioToPcm(songData(song, [ch]), {
-          sampleRate: 16000,
-          tailMs: 0,
-        });
-        return stats(interleavedStereo).rms;
-      });
+    it("is balanced: no channel drowns the lead, none is inaudible", () => {
+      const rms = channelLevels(demo.id).map((l) => l.rms);
       const lead = rms[0]!;
       for (const [ch, level] of rms.entries()) {
-        expect(level / lead, `${demo.title} channel ${ch}`).toBeLessThan(2);
-        expect(level, `${demo.title} channel ${ch}`).toBeGreaterThan(0.004);
+        expect(level / lead, `channel ${ch}`).toBeLessThan(2);
+        expect(level, `channel ${ch}`).toBeGreaterThan(0.004);
       }
-    }
+    });
   });
 
   it("marks the loop at the loop bar on every channel", () => {
