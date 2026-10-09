@@ -19,7 +19,14 @@ import { existsSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import type { ServerEntryModule } from "lumen/build";
-import { headersFor, pathBelowBase, sendWebResponse, toWebRequest } from "lumen/node";
+import {
+  BadRequestTarget,
+  headersFor,
+  pathBelowBase,
+  requestTarget,
+  sendWebResponse,
+  toWebRequest,
+} from "lumen/node";
 import { compressResponse, negotiateEncoding } from "./compress.ts";
 import { createStaticHandler } from "./static.ts";
 
@@ -89,9 +96,15 @@ function nodeHandler(dir: string, entry: ServerEntryModule, options: HandlerOpti
   const configured = entry.config.headers;
 
   return (req, res, next) => {
+    // Only `/path` targets (and `OPTIONS *`): `//host/…` must not become another origin (TASK-164).
+    const target = requestTarget(req);
+    if (target === undefined) {
+      badRequest(res);
+      return;
+    }
     for (const [name, value] of headers) res.setHeader(name, value);
     // `lumen({ headers })` for this path (decision-26 §4); the files' and the app's headers win.
-    const path = configured && pathBelowBase(req.url ?? "/", entry.config.base);
+    const path = configured && pathBelowBase(target, entry.config.base);
     if (configured !== undefined && path !== undefined) {
       for (const [name, value] of Object.entries(headersFor(configured, path))) {
         res.setHeader(name, value);
@@ -111,6 +124,10 @@ function nodeHandler(dir: string, entry: ServerEntryModule, options: HandlerOpti
           : response,
       );
     })().catch((error: unknown) => {
+      if (error instanceof BadRequestTarget) {
+        badRequest(res); // an invalid Host header: the client's fault, nothing to log
+        return;
+      }
       if (next !== undefined) {
         next(error);
         return;
@@ -124,6 +141,15 @@ function nodeHandler(dir: string, entry: ServerEntryModule, options: HandlerOpti
       }
     });
   };
+}
+
+function badRequest(res: ServerResponse): void {
+  if (res.headersSent) {
+    res.destroy();
+    return;
+  }
+  res.writeHead(400, { "content-type": "text/plain; charset=utf-8", connection: "close" });
+  res.end("Bad Request");
 }
 
 /** Starts an HTTP server for the build in `dir`; resolves once it listens. */

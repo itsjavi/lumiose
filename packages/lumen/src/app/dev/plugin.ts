@@ -43,7 +43,7 @@ import {
   type RouteMode,
 } from "../routes/manifest.ts";
 import type { RequestHandler, TrailingSlash } from "../server/handler.ts";
-import { sendWebResponse, toWebRequest } from "../server/node-http.ts";
+import { BadRequestTarget, sendWebResponse, toWebRequest } from "../server/node-http.ts";
 import { typegen } from "../typegen/index.ts";
 import { formatError, overlayError, overlayScript, type OverlayError } from "./errors.ts";
 import { hasSpa, SPA_ENTRY_ID, spaEntryCode } from "../router/entry.ts";
@@ -291,7 +291,15 @@ export function lumenDev(options: LumenDevOptions = {}): Plugin {
     void (async () => {
       if (scanning !== undefined) await scanning;
       const handler = await getHandler();
-      const request = toWebRequest(req, res);
+      let request: Request;
+      try {
+        request = toWebRequest(req, res);
+      } catch (error) {
+        if (!(error instanceof BadRequestTarget)) throw error;
+        // `//host/…` and other non-path targets (TASK-164): the client's fault.
+        res.writeHead(400, { "content-type": "text/plain; charset=utf-8" }).end("Bad Request");
+        return;
+      }
       const errors = [...app.errors];
       const response = await requestErrors.run(errors, () => handler.fetch(request));
       await sendWebResponse(res, withOverlay(response, errors));

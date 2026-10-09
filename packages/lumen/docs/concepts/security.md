@@ -58,6 +58,14 @@ functions in `onClick`.
 **Cross-site form posts.** Form actions and form-encoded posts to endpoints are checked against
 the `Origin` header (on by default, `lumen({ csrf })`); see [Data and actions](data-and-actions.md).
 
+**Request URLs.** `lumen dev`, `lumen preview` and `@lumen/adapter-node` build each request's URL
+from the server's origin (`ORIGIN`, else the socket's protocol and the `Host` header) plus the
+request target's path, appended as is: a request for `//attacker.test/reset` stays on your origin
+with that path, so `ctx.url`, `url()`, the cross-site check and `fetchJSON()`'s same-origin test
+never see another host. Targets that are not a path (`http://other/x`, or `*` other than with
+`OPTIONS`) and invalid `Host` headers get `400 Bad Request`. Behind a proxy that rewrites the
+host, set `ORIGIN` (or the adapter's `origin`) so a client cannot choose the origin through `Host`.
+
 ## API
 
 | Option / export                   | Meaning                                                                     |

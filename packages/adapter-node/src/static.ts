@@ -12,6 +12,7 @@ import { createReadStream, readdirSync, statSync, type Stats } from "node:fs";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { extname, join, relative, sep } from "node:path";
 import type { BuiltAppConfig } from "lumen/build";
+import { requestTarget } from "lumen/node";
 import { acceptedEncodings, varyOnEncoding } from "./compress.ts";
 
 /** Serves a request from the directory; resolves `false` when no file answers it. */
@@ -70,7 +71,14 @@ export function createStaticHandler(
 
   return async (req, res) => {
     if (req.method !== "GET" && req.method !== "HEAD") return false;
-    const url = new URL(req.url ?? "/", "http://localhost");
+    // The raw target's path, never resolved as a URL: `//robots.txt` is no host (TASK-164).
+    const target = requestTarget(req);
+    if (target === undefined) return false;
+    const query = target.search(/[?#]/);
+    const url = {
+      pathname: query < 0 ? target : target.slice(0, query),
+      search: query < 0 ? "" : target.slice(query).replace(/#.*$/, ""),
+    };
     const path = relativePath(url.pathname, config.base);
     if (path === undefined) return false;
 
@@ -163,7 +171,8 @@ function indexFiles(dir: string): Map<string, FileInfo> {
 }
 
 function redirect(res: ServerResponse, location: string): true {
-  res.writeHead(308, { location });
+  // A path, never a protocol-relative URL: `//evil.com` (or `/\\evil.com`) would leave the site.
+  res.writeHead(308, { location: location.replace(/^[/\\]+/, "/") });
   res.end();
   return true;
 }
