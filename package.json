@@ -12,7 +12,9 @@
     "cargo:build": "cargo build --workspace",
     "cargo:test": "cargo test --workspace",
     "check": "pnpm build:compiler && pnpm typecheck && pnpm lint && pnpm test && cargo test --workspace",
-    "build:compiler": "pnpm --filter @lumen/compiler build"
+    "build:compiler": "pnpm --filter @lumen/compiler build",
+    "build:site": "node scripts/site.ts build",
+    "preview:site": "node scripts/site.ts preview"
   },
   "devDependencies": {
     "@types/node": "^24.0.0",
