@@ -371,6 +371,44 @@ export default function Post() { return <h1>Post</h1>; }
     expect(runtime[0]).not.toContain("LUMEN_TRAILING_SLASH");
   });
 
+  it("writes assets that only server-rendered pages import to dist/client, once (TASK-126)", async () => {
+    // Above Vite's 4 kB inline limit, so they are files. `shared.png` is also an island's.
+    const root = project({
+      "vite.config.ts": `import lumen from "lumen/vite";
+export default { plugins: [lumen({ md: true })] };
+`,
+      "src/photo.png": "p".repeat(5000),
+      "src/shared.png": "s".repeat(5000),
+      "src/content/post.md": "# Post\n\n![A view](../view.png)\n",
+      "src/view.png": "v".repeat(5000),
+      "src/app.css": "body { margin: 0; }\n",
+      "src/components/Badge.stsx": `import shared from "../shared.png";
+export function Badge() { return <img class="badge" src={shared} onClick={() => {}} />; }
+`,
+      "src/routes/index.stsx": `import "../app.css";
+import photo from "../photo.png";
+import shared from "../shared.png";
+import Post from "../content/post.md";
+import { Badge } from "../components/Badge.stsx";
+export default function Home() {
+  return <main><img src={photo} /><img src={shared} /><Post /><Badge client:load /></main>;
+}
+`,
+    });
+    const result = await build({ root, ...quiet() });
+    const home = read(root, "index.html");
+    const urls = [...home.matchAll(/src="?(\/assets\/[\w.-]+\.png)/g)].map((match) => match[1]!);
+    expect(urls.map((url) => url.replace(/-[\w-]+\.png$/, ""))).toEqual(
+      expect.arrayContaining(["/assets/photo", "/assets/shared", "/assets/view"]),
+    );
+    for (const url of urls) expect(existsSync(join(result.clientDir, url))).toBe(true);
+    // One file per asset, and none (nor CSS) left in the server output.
+    const assets = readdirSync(join(result.clientDir, "assets"));
+    expect(assets.filter((name) => name.startsWith("shared-"))).toHaveLength(1);
+    expect(assets.filter((name) => name.endsWith(".css"))).toHaveLength(1);
+    expect(existsSync(join(root, "dist/server/assets"))).toBe(false);
+  });
+
   it("builds a site without islands or server routes to a self-contained dist/client", async () => {
     const root = project({
       "src/routes/index.stsx": "export default function Home() { return <h1>Static</h1>; }\n",

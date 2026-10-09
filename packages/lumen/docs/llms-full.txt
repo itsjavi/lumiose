@@ -1857,7 +1857,10 @@ build, 3. prerender of every `static` route (each `staticPaths()` entry for rout
 every static `GET` endpoint, in-process through the built handler and fully resolved (no fallbacks
 or swap scripts). Output:
 
-- `dist/client`: assets and prerendered files: `path/index.html` (`path.html` with
+- `dist/client`: assets and prerendered files. Assets include those only server-rendered code
+  imports (`import photo from "./photo.png"` in a route, a relative `<img src>` in a `.md`
+  import), written once under `assets/` with the fingerprinted URL the HTML uses. Prerendered
+  files are `path/index.html` (`path.html` with
   `lumen({ trailingSlash: "never" })`), endpoint files such as `sitemap.xml`, the shell of each
   `ssr = false` page without params, and `404.html` from the root `_404` when the root scope is
   static or `spa`. In an `ssr = false` SPA, `404.html` is the shell: a static host that serves it

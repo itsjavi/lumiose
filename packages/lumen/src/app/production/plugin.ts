@@ -9,10 +9,14 @@
 // - ssr → `dist/server/entry.js` (`virtual:lumen/server-entry`): the route manifest, a lazy
 //   import per route module, the middleware and the document, the island and loader URLs of the
 //   client build, the stylesheets of each module (`virtual:lumen/css-manifest`, lumen/vite) and
-//   `export default { fetch }` from `createAppHandler()`.
+//   `export default { fetch }` from `createAppHandler()`. Assets that only server-rendered modules
+//   import (`import photo from "./photo.png"`, a relative `<img src>` in a `.md` import) are
+//   emitted by this build and moved to `dist/client`, where their URLs point (TASK-126).
 
+import { existsSync } from "node:fs";
+import { mkdir, writeFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
-import { join, resolve } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import { normalizePath, type Plugin, type ResolvedConfig, type Rollup } from "vite";
 import { CSS_MANIFEST, isStylesheet } from "../../vite/css-manifest.ts";
 import type { RouteManifest } from "../routes/manifest.ts";
@@ -105,6 +109,8 @@ function lumenBuildEnvironments(state: BuildState): Plugin {
             build: {
               outDir: join(state.outDir, "server"),
               copyPublicDir: false,
+              // Assets only server-rendered modules import: moved to the client output below.
+              emitAssets: true,
               rolldownOptions: {
                 input: { entry: SERVER_ENTRY },
                 output: { entryFileNames: "entry.js", chunkFileNames: "chunks/[name]-[hash].js" },
@@ -137,6 +143,12 @@ function lumenBuildEnvironments(state: BuildState): Plugin {
     generateBundle: {
       order: "post",
       async handler(_, bundle) {
+        if (this.environment.name === "ssr") {
+          const config = this.environment.getTopLevelConfig();
+          const clientDir = resolve(config.root, config.environments.client!.build.outDir);
+          await moveServerAssets(bundle, config.build.assetsDir, clientDir);
+          return;
+        }
         if (this.environment.name !== "client") return;
         for (const [fileName, file] of Object.entries(bundle)) {
           if (isEmptyStylesheetFacade(file)) delete bundle[fileName];
@@ -176,6 +188,29 @@ async function islandChunks(
     if (fileName !== undefined) found[module] = fileName;
   }
   return found;
+}
+
+/**
+ * Moves the server build's emitted assets to the client output: files under `assetsDir`, named by
+ * content hash as in the client build, so one the client build already wrote is identical and
+ * kept. Stylesheets are dropped: the client build emits every stylesheet (lumen/vite's CSS
+ * manifest), and pages link those.
+ */
+async function moveServerAssets(
+  bundle: Rollup.OutputBundle,
+  assetsDir: string,
+  clientDir: string,
+): Promise<void> {
+  const prefix = `${normalizePath(assetsDir).replace(/\/$/, "")}/`;
+  for (const [fileName, file] of Object.entries(bundle)) {
+    if (file.type !== "asset" || !fileName.startsWith(prefix)) continue;
+    delete bundle[fileName];
+    if (fileName.endsWith(".css")) continue;
+    const target = join(clientDir, fileName);
+    if (existsSync(target)) continue;
+    await mkdir(dirname(target), { recursive: true });
+    await writeFile(target, file.source);
+  }
 }
 
 function isEmptyStylesheetFacade(file: Rollup.OutputAsset | Rollup.OutputChunk): boolean {
