@@ -188,8 +188,8 @@ export default function Creatures() {
         <h1>Creature voices</h1>
         <p>
           In handheld RPGs every creature has a cry, and most share a handful of base voices: each
-          creature just changes the pitch and the length. These thirteen are originals. Meet them,
-          then make your own.
+          creature just changes the pitch and the length. These {CREATURES.length} are all
+          originals. Meet them, then make your own.
         </p>
       </header>
       <div class="layout">
