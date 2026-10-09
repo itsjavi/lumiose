@@ -51,6 +51,17 @@ export default function DocsLayout(props: LayoutProps<"/docs">) {
                 </div>
               ),
             )}
+            <div class="group">
+              <p class="heading">See it run</p>
+              <ul role="list">
+                <li>
+                  <a href={href("/examples")}>Examples</a>
+                </li>
+                <li>
+                  <a href={href("/benchmarks")}>Benchmarks</a>
+                </li>
+              </ul>
+            </div>
           </nav>
         </details>
       </aside>

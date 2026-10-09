@@ -1,5 +1,7 @@
-# Builds the website (apps/web at /, /docs; apps/playground at /playground) with `pnpm build:site`
-# and deploys it to GitHub Pages. Enable it under Settings > Pages > Source: GitHub Actions.
+# Builds the website with `pnpm build:site` and deploys it to GitHub Pages: apps/web at / (docs,
+# examples and benchmarks pages), apps/playground at /playground, the serverless examples at
+# /examples/<name>/ and the benchmark UIs at /benchmarks/ (scripts/site.ts). Enable it under
+# Settings > Pages > Source: GitHub Actions.
 name: Pages
 
 on:

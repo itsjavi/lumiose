@@ -1,0 +1,93 @@
+/* A small stand-in for krausest's Bootstrap 3 stylesheet: the classes the benchmark app uses. */
+:root {
+  color-scheme: light dark;
+  font-family: system-ui, sans-serif;
+  --accent: #6d4aff;
+  --stripe: color-mix(in srgb, currentColor 5%, transparent);
+  --danger: color-mix(in srgb, #e5484d 22%, transparent);
+}
+body {
+  margin: 0;
+  padding: 1rem;
+}
+.note {
+  max-inline-size: 60rem;
+  margin: 0 auto 1rem;
+  font-size: 0.9rem;
+  opacity: 0.8;
+}
+.container {
+  max-inline-size: 60rem;
+  margin-inline: auto;
+}
+.jumbotron {
+  padding: 1.5rem;
+  border-radius: 0.75rem;
+  background: var(--stripe);
+  margin-block-end: 1rem;
+}
+.jumbotron h1 {
+  margin: 0;
+  font-size: 2.25rem;
+}
+.row {
+  display: flex;
+  flex-wrap: wrap;
+}
+.col-md-6 {
+  flex: 1 1 50%;
+  min-inline-size: 16rem;
+}
+.col-sm-6 {
+  flex: 1 1 50%;
+}
+.smallpad {
+  padding: 0.25rem;
+  box-sizing: border-box;
+}
+.btn {
+  inline-size: 100%;
+  padding: 0.5rem 0.75rem;
+  border: 0;
+  border-radius: 0.5rem;
+  background: var(--accent);
+  color: white;
+  font: inherit;
+  cursor: pointer;
+}
+.btn:hover {
+  filter: brightness(1.1);
+}
+.table {
+  inline-size: 100%;
+  border-collapse: collapse;
+}
+.table td {
+  padding: 0.35rem 0.5rem;
+  border-block-start: 1px solid var(--stripe);
+}
+.table-striped tr:nth-child(odd) {
+  background: var(--stripe);
+}
+.table-hover tr:hover {
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+}
+tr.danger {
+  background: var(--danger) !important;
+}
+.col-md-1 {
+  inline-size: 8%;
+}
+.col-md-4 {
+  inline-size: 40%;
+}
+.table a {
+  cursor: pointer;
+}
+.glyphicon-remove::before {
+  content: "×";
+  font-weight: 700;
+}
+.preloadicon {
+  display: none;
+}

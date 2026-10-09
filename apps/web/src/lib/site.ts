@@ -29,6 +29,8 @@ export const site = {
 
 export const navLinks: NavLink[] = [
   { href: href("/docs/[...path]", { path: "" }), label: "Docs" },
+  { href: href("/examples"), label: "Examples" },
+  { href: href("/benchmarks"), label: "Benchmarks" },
   { href: link("/playground"), label: "Playground" },
 ];
 
@@ -48,6 +50,15 @@ export const footerColumns: FooterColumn[] = [
       { href: href("/docs/[...path]", { path: "reference/cli" }), label: "CLI" },
       { href: href("/docs/[...path]", { path: "reference/vite" }), label: "lumen/vite" },
       { href: href("/docs/[...path]", { path: "errors" }), label: "Diagnostics" },
+    ],
+  },
+  {
+    title: "See it run",
+    links: [
+      { href: href("/examples"), label: "Examples" },
+      { href: href("/benchmarks"), label: "Benchmarks" },
+      { href: href("/benchmarks/js-framework-benchmark"), label: "js-framework-benchmark" },
+      { href: link("/benchmarks/fullstack/"), label: "Fullstack comparison" },
     ],
   },
   {

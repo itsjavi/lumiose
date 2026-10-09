@@ -1,0 +1,31 @@
+// /examples: the example apps, built by scripts/site.ts below /examples/<name>/ (TASK-163).
+import { layout, space } from "@lumen/site-kit/tokens";
+import { href, Meta, Title } from "lumen";
+import { PageHead, ShowcaseGrid } from "../../components/Showcase.stsx";
+import { examples, REPOSITORY } from "../../content/showcase.ts";
+
+export default function Examples() {
+  return (
+    <div class="page">
+      <Title>Examples · Lumen</Title>
+      <Meta name="description" content="Example apps built with Lumen, running on this site." />
+      <PageHead kicker="See it run" title="Examples">
+        <p>
+          Complete apps from the <a href={`${REPOSITORY}/tree/main/examples`}>examples folder</a>,
+          each built with <code>lumen build</code> and published here as static files. Start your
+          own with the{" "}
+          <a href={href("/docs/[...path]", { path: "getting-started" })}>getting started</a> guide.
+        </p>
+      </PageHead>
+      <ShowcaseGrid items={examples()} open="Open the app" />
+
+      <style>
+        .page {
+          max-inline-size: $layout.page;
+          margin-inline: auto;
+          padding: $space.xl $layout.gutter $space.xxl;
+        }
+      </style>
+    </div>
+  );
+}

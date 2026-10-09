@@ -1,0 +1,86 @@
+// /benchmarks/js-framework-benchmark: the committed results (benchmarks/js-framework-benchmark/
+// RESULTS.md, rendered at build time) and a link to the Lumen benchmark app, which scripts/site.ts
+// publishes below this page at app/ (TASK-163).
+import { LinkButton } from "@lumen/site-kit";
+import { color, font, layout, radius, space, text } from "@lumen/site-kit/tokens";
+import { Meta, Title } from "lumen";
+import { Marked } from "marked";
+import results from "../../../../../benchmarks/js-framework-benchmark/RESULTS.md?raw";
+import { PageHead } from "../../components/Showcase.stsx";
+import { REPOSITORY } from "../../content/showcase.ts";
+import { link } from "../../lib/site.ts";
+
+/** RESULTS.md without its title (the page has its own), as HTML. */
+const html = new Marked({ gfm: true }).parse(results.replace(/^# .*\n/, ""), { async: false });
+
+export default function JsFrameworkBenchmark() {
+  return (
+    <div class="page">
+      <Title>js-framework-benchmark results · Lumen</Title>
+      <Meta
+        name="description"
+        content="Lumen in krausest's js-framework-benchmark: CPU, script time and memory, with the method."
+      />
+      <PageHead kicker="Benchmarks" title="js-framework-benchmark">
+        <p>
+          The keyed benchmark, run with krausest's own runner. Try the same Lumen app in your
+          browser, or read how the numbers were measured.
+        </p>
+        <p class="actions">
+          <LinkButton href={link("/benchmarks/js-framework-benchmark/app/")}>
+            Try the app
+          </LinkButton>
+          <LinkButton
+            href={`${REPOSITORY}/tree/main/benchmarks/js-framework-benchmark`}
+            variant="secondary"
+            external
+          >
+            Source
+          </LinkButton>
+        </p>
+      </PageHead>
+      <div class="results" innerHTML={html} />
+
+      <style>
+        .page {
+          max-inline-size: $layout.page;
+          margin-inline: auto;
+          padding: $space.xl $layout.gutter $space.xxl;
+        }
+        .actions {
+          display: flex;
+          gap: $space.xs;
+        }
+        .results {
+          max-inline-size: 100%;
+          overflow-x: auto;
+        }
+        .results :deep(table) {
+          border-collapse: collapse;
+          font-size: $text.sm;
+          font-variant-numeric: tabular-nums;
+          margin-block: $space.md;
+        }
+        .results :deep(:is(th, td)) {
+          padding: $space.xxs $space.xs;
+          border-block-end: 1px solid $color.border;
+          white-space: nowrap;
+        }
+        .results :deep(code) {
+          font-family: $font.mono;
+          font-size: 0.9em;
+        }
+        .results :deep(:is(p, li)) {
+          max-inline-size: 46rem;
+          color: $color.muted;
+        }
+        .results :deep(pre) {
+          padding: $space.sm;
+          border-radius: $radius.md;
+          background: $color.sunken;
+          overflow-x: auto;
+        }
+      </style>
+    </div>
+  );
+}

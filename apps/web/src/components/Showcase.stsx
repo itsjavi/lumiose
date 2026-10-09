@@ -1,0 +1,137 @@
+// A grid of example apps or benchmark pages (content/showcase.ts): what each one shows, its tags,
+// and links to the running app on this site and to its source.
+import { LinkButton } from "@lumen/site-kit";
+import { bp, color, radius, space, text, weight } from "@lumen/site-kit/tokens";
+import type { Showcase } from "../content/showcase.ts";
+
+export function ShowcaseGrid(props: { items: Showcase[]; open?: string }) {
+  return (
+    <ul class="grid" role="list">
+      {props.items.map((item) => (
+        <li class="item">
+          {item.image !== undefined && (
+            <img class="shot" src={item.image} alt={`Screenshot of ${item.title}`} loading="lazy" />
+          )}
+          <h3>
+            {item.demo !== undefined ? <a href={item.demo}>{item.title}</a> : item.title}{" "}
+            <code class="name">{item.name}</code>
+          </h3>
+          <p>{item.description}</p>
+          <ul class="tags" role="list">
+            {item.tags.map((tag) => (
+              <li>{tag}</li>
+            ))}
+          </ul>
+          <p class="links">
+            {item.demo !== undefined && (
+              <LinkButton href={item.demo} size="sm">
+                {props.open ?? "Open"}
+              </LinkButton>
+            )}
+            <LinkButton href={item.source} size="sm" variant="secondary" external>
+              Source
+            </LinkButton>
+          </p>
+        </li>
+      ))}
+
+      <style>
+        .grid {
+          display: grid;
+          gap: $space.lg;
+          margin: 0;
+          padding: 0;
+        }
+        @media (width >= $bp.md) {
+          .grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            align-items: start;
+          }
+        }
+        .item {
+          display: flex;
+          flex-direction: column;
+          gap: $space.xs;
+          padding: $space.lg;
+          border: 1px solid $color.border;
+          border-radius: $radius.lg;
+          background: $color.surface;
+        }
+        .shot {
+          inline-size: 100%;
+          aspect-ratio: 16 / 10;
+          object-fit: cover;
+          object-position: top;
+          border: 1px solid $color.border;
+          border-radius: $radius.md;
+        }
+        h3 {
+          margin: 0;
+          font-size: $text.lg;
+          font-weight: $weight.semibold;
+        }
+        .name {
+          font-size: $text.xs;
+          color: $color.muted;
+        }
+        p {
+          margin: 0;
+          color: $color.muted;
+        }
+        .tags {
+          display: flex;
+          flex-wrap: wrap;
+          gap: $space.xxs;
+          margin: 0;
+          padding: 0;
+        }
+        .tags li {
+          padding: 0 $space.xs;
+          border: 1px solid $color.border;
+          border-radius: $radius.pill;
+          font-size: $text.xs;
+          color: $color.muted;
+        }
+        .links {
+          display: flex;
+          gap: $space.xs;
+          padding-block-start: $space.xs;
+        }
+      </style>
+    </ul>
+  );
+}
+
+/** The header of a showcase page. */
+export function PageHead(props: { kicker: string; title: string; children?: JSX.Element }) {
+  return (
+    <header class="head">
+      <p class="kicker">{props.kicker}</p>
+      <h1>{props.title}</h1>
+      <div class="lead">{props.children}</div>
+
+      <style>
+        .head {
+          display: grid;
+          gap: $space.sm;
+          margin-block-end: $space.xl;
+        }
+        .kicker {
+          margin: 0;
+          color: $color.accent;
+          font-size: $text.sm;
+          font-weight: $weight.semibold;
+        }
+        h1 {
+          margin: 0;
+          font-size: $text.xxxl;
+        }
+        .lead {
+          max-inline-size: 46rem;
+          color: $color.muted;
+          font-size: $text.lg;
+        }
+      </style>
+    </header>
+  );
+}

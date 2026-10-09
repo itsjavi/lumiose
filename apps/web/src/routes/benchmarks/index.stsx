@@ -1,0 +1,32 @@
+// /benchmarks: the benchmark pages (TASK-163). The fullstack results viewer is copied by
+// scripts/site.ts to /benchmarks/fullstack/; the js-framework-benchmark results are a page of
+// this site, with the Lumen benchmark app below it.
+import { layout, space } from "@lumen/site-kit/tokens";
+import { Meta, Title } from "lumen";
+import { PageHead, ShowcaseGrid } from "../../components/Showcase.stsx";
+import { benchmarks, REPOSITORY } from "../../content/showcase.ts";
+
+export default function Benchmarks() {
+  return (
+    <div class="page">
+      <Title>Benchmarks · Lumen</Title>
+      <Meta name="description" content="Lumen's benchmarks and their latest committed results." />
+      <PageHead kicker="Measured, not claimed" title="Benchmarks">
+        <p>
+          The latest committed runs of Lumen's benchmarks, with the machine and date of each. The
+          runners and every app measured are in the{" "}
+          <a href={`${REPOSITORY}/tree/main/benchmarks`}>benchmarks folder</a>.
+        </p>
+      </PageHead>
+      <ShowcaseGrid items={benchmarks()} open="See the results" />
+
+      <style>
+        .page {
+          max-inline-size: $layout.page;
+          margin-inline: auto;
+          padding: $space.xl $layout.gutter $space.xxl;
+        }
+      </style>
+    </div>
+  );
+}

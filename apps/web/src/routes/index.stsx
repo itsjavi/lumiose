@@ -18,6 +18,8 @@ import {
 } from "@lumen/site-kit/tokens";
 import { href, Meta, Title } from "lumen";
 import { BarChart } from "../components/BarChart.stsx";
+import { ShowcaseGrid } from "../components/Showcase.stsx";
+import { examples } from "../content/showcase.ts";
 import { evidence } from "../content/evidence.ts";
 import {
   checkSample,
@@ -185,8 +187,9 @@ export default function Home() {
         </div>
         <p class="source">
           Client: {results.clientRun}. Server: {results.serverRun}. Method, every benchmark and the
-          caveats are in <code>benchmarks/js-framework-benchmark/RESULTS.md</code> and{" "}
-          <code>benchmarks/ssr/RESULTS.md</code> in the repository.
+          caveats: <a href={href("/benchmarks/js-framework-benchmark")}>js-framework-benchmark</a>,{" "}
+          <code>benchmarks/ssr/RESULTS.md</code> in the repository, and the{" "}
+          <a href={href("/benchmarks")}>other benchmarks</a>.
         </p>
       </section>
 
@@ -233,6 +236,19 @@ export default function Home() {
             Client navigation with persistent layouts, where an app needs it.
           </Card>
         </div>
+      </section>
+
+      <section class="section" aria-labelledby="examples-title">
+        <header class="section-head">
+          <p class="kicker">See it run</p>
+          <h2 id="examples-title">Example apps</h2>
+          <p>
+            Complete apps built with Lumen, running on this site. See all the{" "}
+            <a href={href("/examples")}>examples</a>, and the{" "}
+            <a href={href("/benchmarks")}>benchmarks</a> with their latest results.
+          </p>
+        </header>
+        <ShowcaseGrid items={examples().filter((item) => item.demo !== undefined)} open="Open the app" />
       </section>
 
       <section class="section split" aria-labelledby="tools-title">

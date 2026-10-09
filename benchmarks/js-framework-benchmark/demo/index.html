@@ -1,0 +1,24 @@
+<!doctype html>
+<!--
+  The Lumen js-framework-benchmark app (src/App.stsx, built to dist/main.js), as the Lumen website
+  publishes it to try in the browser (scripts/site.ts copies this folder with main.js). krausest's
+  runner loads ../index.html with his Bootstrap stylesheet instead; style.css is a small stand-in.
+-->
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Lumen · js-framework-benchmark app</title>
+    <link href="style.css" rel="stylesheet" />
+  </head>
+  <body>
+    <p class="note">
+      The keyed
+      <a href="https://github.com/krausest/js-framework-benchmark">js-framework-benchmark</a>
+      app, built with Lumen. Click the buttons to time it yourself (DevTools Performance panel);
+      <a href="../">the measured results</a>.
+    </p>
+    <div id="main"></div>
+    <script type="module" src="main.js"></script>
+  </body>
+</html>
