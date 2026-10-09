@@ -63,6 +63,8 @@ export interface BuildState {
   loader?: string;
   /** URL of the SPA entry chunk; undefined when the app has no `spa` pages. */
   spa?: string;
+  /** SPA layout or page (project-relative) → the chunk URLs to modulepreload with it. */
+  spaPreloads?: Record<string, string[]>;
 }
 
 export function lumenBuild(state: BuildState): Plugin[] {
@@ -224,6 +226,9 @@ export function serverEntryCode(state: BuildState, config: ResolvedConfig): stri
     islands: state.islands,
     ...(state.loader === undefined ? {} : { loader: state.loader }),
     ...(state.spa === undefined ? {} : { spa: state.spa }),
+    ...(state.spaPreloads === undefined || Object.keys(state.spaPreloads).length === 0
+      ? {}
+      : { spaPreloads: state.spaPreloads }),
   };
   // The runtime is imported dynamically so it lands in a chunk: route chunks then never import
   // this entry, which can be loaded again under another URL (the build's prerender pass).

@@ -1,17 +1,19 @@
 // Client runtime size report (spec §6 budgets, min+brotli: the whole client runtime ≤ 10 kB hard cap;
 // typical app imports ≤ 6 kB soft target; hydration and the island loader ≤ 1.5 kB on top of what
 // an app imports). Bundles each entry with Vite (Rolldown, minified, tree-shaken) and prints
-// minified, gzip and brotli sizes. Run: `pnpm --filter lumen size`.
+// minified, gzip and brotli sizes. Exits 1 when a hard cap is exceeded (it runs in `pnpm check`);
+// soft targets are only reported. Run: `pnpm --filter lumen size`.
 import { brotliCompressSync, constants, gzipSync } from "node:zlib";
 import { fileURLToPath } from "node:url";
 import { build, type Rollup } from "vite";
 
 const src = fileURLToPath(new URL("../src/", import.meta.url));
-/** Entry name prefix → budget in bytes. */
-const BUDGETS: Record<string, number> = {
-  "core + dom (typical": 6 * 1024,
-  "core + dom (every": 10 * 1024,
-  "core + dom + islands (typical": 10 * 1024,
+const HARD_CAP = 10 * 1024;
+/** Entry name prefix → budget in bytes; `hard` budgets fail the run. */
+const BUDGETS: Record<string, { limit: number; hard: boolean }> = {
+  "core + dom (typical": { limit: 6 * 1024, hard: false },
+  "core + dom (every": { limit: HARD_CAP, hard: true },
+  "core + dom + islands (typical": { limit: HARD_CAP, hard: true },
 };
 
 const TYPICAL = `export { signal, computed, effect, batch, untrack, onCleanup, onMount } from "${src}core/index.ts"; export { template, bind, setText, setAttr, setClass, toggleClass, setStyle, insert, list, branch, selector, createComponent, delegateEvents, listen, mount } from "${src}dom/index.ts";`;
@@ -29,6 +31,8 @@ const entries: Record<string, string> = {
   // What the js-framework-benchmark app needs (its bundle budget is 8 kB including app code).
   "core + dom (benchmark imports)": `export { signal, batch } from "${src}core/index.ts"; export { template, bind, setText, toggleClass, list, selector, createComponent, delegateEvents, mount } from "${src}dom/index.ts";`,
   "core + dom (every export)": `export * from "${src}core/index.ts"; export * from "${src}dom/index.ts"; export * from "${src}dom/public.ts";`,
+  // Every export plus hydration and the loader: no page ships all of it (reported, not gated).
+  "whole client runtime (every export, hydrate, loader)": `export * from "${src}core/index.ts"; export * from "${src}dom/index.ts"; export * from "${src}dom/public.ts"; export { hydrate } from "${src}dom/hydrate.ts"; ${ISLANDS}`,
   "core (every export)": `export * from "${src}core/index.ts";`,
   "dom only (core imports excluded)": `export * from "${src}dom/index.ts";`,
 };
@@ -79,12 +83,17 @@ function sizes(code: string): { min: number; gzip: number; brotli: number } {
 const kb = (n: number): string => `${(n / 1024).toFixed(2)} kB`;
 
 const measured: Record<string, ReturnType<typeof sizes>> = {};
+const overHardCap: string[] = [];
 for (const [name, code] of Object.entries(entries)) {
   const s = (measured[name] = sizes(await bundle(code, name.startsWith("dom only"))));
-  const limit = Object.entries(BUDGETS).find(([prefix]) => name.startsWith(prefix))?.[1];
-  const budget =
-    limit === undefined ? "" : ` (budget ${kb(limit)}: ${s.brotli <= limit ? "OK" : "OVER"})`;
-  console.log(`${name}: min ${kb(s.min)}, gzip ${kb(s.gzip)}, brotli ${kb(s.brotli)}${budget}`);
+  const budget = Object.entries(BUDGETS).find(([prefix]) => name.startsWith(prefix))?.[1];
+  let verdict = "";
+  if (budget !== undefined) {
+    const ok = s.brotli <= budget.limit;
+    if (!ok && budget.hard) overHardCap.push(name);
+    verdict = ` (${budget.hard ? "hard cap" : "soft target"} ${kb(budget.limit)}: ${ok ? "OK" : "OVER"})`;
+  }
+  console.log(`${name}: min ${kb(s.min)}, gzip ${kb(s.gzip)}, brotli ${kb(s.brotli)}${verdict}`);
 }
 // What hydration and the loader add to a typical app (shared runtime code counted once).
 const base = measured["core + dom (typical app imports)"]!;
@@ -98,3 +107,7 @@ const loader = islands.brotli - hydrateOnly.brotli;
 console.log(
   `  of which hydrate: brotli ${kb(hydrateOnly.brotli - base.brotli)}; loader: brotli ${kb(loader)} (target 1.00 kB: ${loader <= 1024 ? "OK" : "OVER"})`,
 );
+if (overHardCap.length > 0) {
+  console.error(`\nOver the ${kb(HARD_CAP)} hard cap (spec §6): ${overHardCap.join("; ")}`);
+  process.exitCode = 1;
+}

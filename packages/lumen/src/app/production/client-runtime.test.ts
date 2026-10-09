@@ -14,6 +14,7 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
+import { pathToFileURL } from "node:url";
 import { afterAll, describe, expect, it } from "vitest";
 import { createLogger } from "vite";
 import { build } from "./build.ts";
@@ -122,5 +123,36 @@ export default function Home() { return <Counter client:load start={1} />; }
       expect(entry).toMatch(/from"\.\/lumen-[\w-]+\.js"/);
       expect(entry).not.toContain(HYDRATION);
     }
+  });
+
+  it("modulepreloads an SPA page's layout and page chunks, and nothing on MPA pages (TASK-123)", async () => {
+    const root = project({
+      "src/routes/index.stsx": "export default function Home() { return <h1>Home</h1>; }\n",
+      "src/routes/app/_layout.stsx": SPA_LAYOUT,
+      "src/routes/app/index.stsx": `import { Counter } from "../../components/Counter.stsx";
+export default function Page() { return <Counter start={1} />; }
+`,
+      "src/components/Counter.stsx": COUNTER,
+    });
+    const { serverEntry } = await build({
+      root,
+      customLogger: createLogger("silent"),
+      logLevel: "silent",
+    });
+    const entry = (await import(pathToFileURL(serverEntry).href)) as {
+      default: { fetch(request: Request): Promise<Response> };
+    };
+    const preloads = async (path: string): Promise<string[]> => {
+      const html = await (await entry.default.fetch(new Request(`http://app.test${path}`))).text();
+      return [...html.matchAll(/<link rel="?modulepreload"? href="?([^">]+)/g)].map((match) =>
+        match[1]!.replace(/-[\w-]+\.js$/, ""),
+      );
+    };
+    const spaPage = await preloads("/app");
+    // The layout chunk and the page's (named after its folder), which holds the Counter too.
+    expect(spaPage).toContain("/assets/_layout");
+    expect(spaPage.filter((name) => name === "/assets/app").length).toBeGreaterThan(0);
+    expect(spaPage).not.toContain("/assets/spa");
+    expect(await preloads("/")).toEqual([]);
   });
 });

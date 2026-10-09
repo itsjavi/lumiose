@@ -160,7 +160,9 @@ export async function build(options: BuildOptions = {}): Promise<BuildResult> {
 /**
  * Island module specifier (`/src/components/Team.stsx`) → URL of its chunk in the client build
  * (SPA layouts and pages too), and the URLs of the island loader and the SPA entry. A loader
- * without islands, or an SPA entry without `spa` pages, is removed: no page loads it.
+ * without islands, or an SPA entry without `spa` pages, is removed: no page loads it. `spaPreloads`
+ * lists, per SPA layout and page, its chunk and the chunks it imports statically: the server
+ * modulepreloads them so that a deep link does not wait for the entry to run first (TASK-123).
  */
 async function islandUrls(
   output: Awaited<ReturnType<Awaited<ReturnType<typeof createBuilder>>["build"]>>,
@@ -171,6 +173,7 @@ async function islandUrls(
   islands: Record<string, string>;
   loader: string | undefined;
   spa: string | undefined;
+  spaPreloads: Record<string, string[]>;
 }> {
   const outputs = (Array.isArray(output) ? output : [output]) as Rollup.RolldownOutput[];
   const chunks = outputs.flatMap(({ output: files }) =>
@@ -204,5 +207,26 @@ async function islandUrls(
     const path = normalizePath(relative(root, chunk.facadeModuleId));
     if (!path.startsWith("../")) islands[`/${path}`] = base + chunk.fileName;
   }
-  return { islands, loader, spa };
+  const spaPreloads: Record<string, string[]> = {};
+  const spaEntry = chunks.find((chunk) => chunk.isEntry && chunk.name === "spa");
+  if (spa !== undefined && spaEntry !== undefined) {
+    const byFile = new Map(chunks.map((chunk) => [chunk.fileName, chunk]));
+    for (const fileName of spaEntry.dynamicImports) {
+      const chunk = byFile.get(fileName);
+      if (chunk?.facadeModuleId == null) continue;
+      const path = normalizePath(relative(root, chunk.facadeModuleId));
+      if (path.startsWith("../")) continue;
+      // The entry itself is already a <script> of the page.
+      const closure = new Set<string>([spaEntry.fileName]);
+      const visit = (name: string): void => {
+        if (closure.has(name)) return;
+        closure.add(name);
+        for (const imported of byFile.get(name)?.imports ?? []) visit(imported);
+      };
+      visit(fileName);
+      closure.delete(spaEntry.fileName);
+      spaPreloads[path] = [...closure].map((name) => base + name);
+    }
+  }
+  return { islands, loader, spa, spaPreloads };
 }

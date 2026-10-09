@@ -1832,7 +1832,9 @@ itself) and renders as a single root island: layouts above it render on the serv
 come from serializable route data; `request`, `cookies` and `locals` are not passed in. SPA code
 calls endpoints instead. Pages with an SPA load the SPA entry (the client route table, a lazy
 chunk per SPA layout and page, and the island loader) and navigate with
-[`lumen/router`](../reference/router.md). When nothing in a build hydrates (every SPA page is
+[`lumen/router`](../reference/router.md). In a build, the page also modulepreloads the chunks of
+its SPA layouts and page (and their imports), so a deep link fetches them alongside the entry
+instead of after it has run. When nothing in a build hydrates (every SPA page is
 `ssr = false` and the app has no islands), the SPA entry starts the router without the island
 loader, and the build ships no hydration code.
 

@@ -59,8 +59,11 @@ export interface RequestHandlerOptions {
    * load it instead of the island loader.
    */
   spaEntry?: string;
-  /** Extra `<head>` HTML (CSS links, module preloads, island loader) for the rendered route files. */
-  headAssets?: (files: readonly string[]) => string | Promise<string>;
+  /**
+   * Extra `<head>` HTML (CSS links, module preloads, island loader) for the rendered route files;
+   * `spa` is true for pages that render an SPA.
+   */
+  headAssets?: (files: readonly string[], spa: boolean) => string | Promise<string>;
   /** Server env for `ctx.env` and `env()`. Default: `process.env`. */
   env?: ServerEnv;
   /** Dev mode: error pages get the real error, and cookies are not `secure` on http. */
@@ -437,7 +440,7 @@ export function createRequestHandler(options: RequestHandlerOptions): RequestHan
       ? { head: "", stream: shell.stream }
       : documentRules(navigation.mpa, shell.body, shell.stream);
     try {
-      const assets = options.headAssets === undefined ? "" : await options.headAssets(files);
+      const assets = options.headAssets === undefined ? "" : await options.headAssets(files, spa);
       // Islands read the same actionData() while hydrating as during SSR.
       const action =
         scope.action === undefined || scope.action.data === undefined

@@ -39,6 +39,11 @@ export interface BuiltApp extends BuiltAppConfig {
   /** URL of the SPA entry chunk (with `base`); absent when the app has no `spa` pages. */
   spa?: string;
   /**
+   * SPA layout or page (project-relative) → its chunk URL and those of its static imports (with
+   * `base`), modulepreloaded by the pages that render an SPA.
+   */
+  spaPreloads?: Readonly<Record<string, readonly string[]>>;
+  /**
    * The stylesheet URLs (with `base`) of project-relative modules, deduplicated in cascade order
    * (`stylesheets` of `virtual:lumen/css-manifest`).
    */
@@ -70,13 +75,26 @@ export function createAppHandler(app: BuiltApp, options: AppHandlerOptions = {})
     ...(app.spa === undefined ? {} : { spaEntry: app.spa }),
     ...(app.viewTransitions === undefined ? {} : { viewTransitions: app.viewTransitions }),
     ...(app.prefetch === undefined ? {} : { prefetch: app.prefetch }),
-    headAssets: (files) => stylesheetLinks(app, files),
+    headAssets: (files, spa) => stylesheetLinks(app, files) + spaModulePreloads(app, files, spa),
     base: app.base,
     trailingSlash: app.trailingSlash,
     // Static routes that reach the server (a form post, params staticPaths() did not list) render
     // fully resolved, like their prerendered HTML.
     prerender: (route) => route.mode === "static",
   });
+}
+
+/**
+ * `<link rel="modulepreload">` for the chunks of an SPA page's layouts and page: without them the
+ * browser only finds them once the SPA entry has run and matched the URL (TASK-123).
+ */
+function spaModulePreloads(app: BuiltApp, files: readonly string[], spa: boolean): string {
+  if (!spa || app.spaPreloads === undefined) return "";
+  const urls = new Set<string>();
+  for (const file of files) for (const url of app.spaPreloads[file] ?? []) urls.add(url);
+  let html = "";
+  for (const href of urls) html += `<link rel="modulepreload" href="${escapeAttr(href)}">`;
+  return html;
 }
 
 /** `<link rel="stylesheet">` for the document, the layouts and the route, in cascade order. */

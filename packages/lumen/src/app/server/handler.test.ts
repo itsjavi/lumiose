@@ -58,7 +58,10 @@ describe("pages", () => {
     expect(html).toBe(
       `${DOCUMENT_START}<title>Home</title><link rel="stylesheet" href="/2.css"></head><body><main><h1>Home</h1></main></body></html>`,
     );
-    expect(headAssets).toHaveBeenCalledWith(["src/routes/_layout.stsx", "src/routes/index.stsx"]);
+    expect(headAssets).toHaveBeenCalledWith(
+      ["src/routes/_layout.stsx", "src/routes/index.stsx"],
+      false,
+    );
   });
 
   it("renders a custom src/document.stsx with { head, body } and adds the doctype", async () => {
