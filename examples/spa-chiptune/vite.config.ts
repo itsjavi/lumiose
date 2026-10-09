@@ -7,6 +7,8 @@ import { defineConfig } from "vite";
 // cross-origin isolated (SharedArrayBuffer for the audio engine): `lumen({ headers })` sends them
 // in `lumen dev` and `lumen preview`, and writes them to dist/client/_headers for static hosts.
 export default defineConfig({
+  // Served below a path when LUMEN_BASE is set (the Lumen website: /lumen/examples/spa-chiptune/).
+  base: process.env["LUMEN_BASE"] ?? "/",
   plugins: [
     lumen({
       mode: "spa",

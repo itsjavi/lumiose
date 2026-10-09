@@ -4,7 +4,7 @@ import { Head, href, Meta, notFound, Title, type PageProps } from "lumen";
 import { TagLinks } from "../../components/TagLinks.stsx";
 import { adjacentPosts, allPosts, findPost, type Post } from "../../content.ts";
 import { formatDate } from "../../lib/format.ts";
-import { absoluteUrl, site } from "../../lib/site.ts";
+import { absoluteUrl, asset, site } from "../../lib/site.ts";
 import * as theme from "../../theme.ts";
 
 export function staticPaths() {
@@ -47,7 +47,7 @@ function PostView(props: { post: Post }) {
       </header>
       <img
         class="cover"
-        src={props.post.cover}
+        src={asset(props.post.cover)}
         alt=""
         width="1200"
         height="750"

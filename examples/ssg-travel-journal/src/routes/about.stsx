@@ -31,9 +31,9 @@ export default function About() {
           once for each entry of their <code>staticPaths()</code>.
         </li>
         <li>
-          <strong>Feeds</strong>: the <a href="/rss.xml">RSS feed</a>, the{" "}
-          <a href="/sitemap.xml">sitemap</a> and the search index are static <code>GET</code>{" "}
-          endpoints, written to files at build time.
+          <strong>Feeds</strong>: the <a href={href("/rss.xml")}>RSS feed</a>, the{" "}
+          <a href={href("/sitemap.xml")}>sitemap</a> and the search index are static{" "}
+          <code>GET</code> endpoints, written to files at build time.
         </li>
         <li>
           <strong>Styles</strong>: global styles in the root layout, scoped{" "}

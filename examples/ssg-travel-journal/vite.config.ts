@@ -5,6 +5,8 @@ import { defineConfig } from "vite";
 import { postFrontmatter } from "./src/frontmatter.ts";
 
 export default defineConfig({
+  // Served below a path when LUMEN_BASE is set (the Lumen website: /lumen/examples/ssg-travel-journal/).
+  base: process.env["LUMEN_BASE"] ?? "/",
   // Every route is prerendered by `lumen build` ("static" is also the default). Page navigations
   // are cross-document View Transitions; links prefetch on hover (the `prefetch` default).
   // The posts are `.md` imports; the hook validates each one's frontmatter at build time.

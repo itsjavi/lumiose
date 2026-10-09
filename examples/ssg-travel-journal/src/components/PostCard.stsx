@@ -1,5 +1,6 @@
 import { href } from "lumen";
 import type { Post } from "../content.ts";
+import { asset } from "../lib/site.ts";
 import { formatDate } from "../lib/format.ts";
 import * as theme from "../theme.ts";
 import { TagLinks } from "./TagLinks.stsx";
@@ -33,7 +34,7 @@ export function PostCard(props: { post: Post; featured?: boolean }) {
     <article class={["card", { featured: props.featured === true }]}>
       <img
         class="cover"
-        src={props.post.cover}
+        src={asset(props.post.cover)}
         alt=""
         width="1200"
         height="750"

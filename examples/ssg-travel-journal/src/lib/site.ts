@@ -12,6 +12,14 @@ export const site = {
   pageSize: 4,
 } as const;
 
+/**
+ * A file of `public/` (`/covers/x.svg`) below Vite's base, so the site also works below a path
+ * (`LUMEN_BASE=/lumen/examples/ssg-travel-journal/ lumen build`, as on the Lumen website).
+ */
+export function asset(path: string): string {
+  return import.meta.env.BASE_URL.replace(/\/$/, "") + path;
+}
+
 /** An absolute URL on the deployed site. */
 export function absoluteUrl(path: string): string {
   return new URL(path, site.url).href;

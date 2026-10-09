@@ -142,8 +142,8 @@ export function SiteFooter() {
         static HTML. The trips are real places; the journal is made up.
       </p>
       <p class="links">
-        <a href="/rss.xml">RSS feed</a>
-        <a href="/sitemap.xml">Sitemap</a>
+        <a href={href("/rss.xml")}>RSS feed</a>
+        <a href={href("/sitemap.xml")}>Sitemap</a>
         <a href={href("/about")}>How it is built</a>
       </p>
 
