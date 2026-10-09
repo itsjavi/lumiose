@@ -450,6 +450,40 @@ describe.skipIf(!binding)("lumen check", () => {
     expect(exitCode).toBe(1);
   });
 
+  it("reports LUM3012 for custom properties no stylesheet of the project reads (TASK-137)", async () => {
+    const root = await project("valid");
+    const meter = [
+      "export function Meter(props: { value: number }) {",
+      '  return <div class="meter" style={{ "--fill": props.value, "--fil": 1, "--tone": "red" }} />;',
+      "}",
+      "",
+    ].join("\n");
+    // `--fill` is read by a child component's block, `--tone` by a plain stylesheet.
+    const bar = [
+      "export function Bar() {",
+      '  return <i class="bar"><style>.bar { width: calc(var(--fill) * 1%); }</style></i>;',
+      "}",
+      "",
+    ].join("\n");
+    await writeFile(join(root, "src/components/Meter.tsx"), meter);
+    await writeFile(join(root, "src/components/Bar.stsx"), bar);
+    await writeFile(join(root, "src/theme.css"), ".meter { color: var(--tone); }\n");
+    const { report } = await checkJson(root);
+    const at = locate(meter, '"--fil"', 1);
+    expect(report.diagnostics.filter((d) => d.code === "LUM3012")).toEqual([
+      expect.objectContaining({
+        source: "lumen",
+        file: "src/components/Meter.tsx",
+        line: at.line,
+        column: at.column,
+        endColumn: at.column + "--fil".length,
+        severity: "warning",
+        message: "`--fil` is set in a `style` prop, but no stylesheet of the project reads it",
+        docs: "errors/LUM3012",
+      }),
+    ]);
+  });
+
   it("reports LUM4003 where client code imports a server-only module (TASK-116)", async () => {
     const root = await project("valid");
     await mkdir(join(root, "src/server"), { recursive: true });

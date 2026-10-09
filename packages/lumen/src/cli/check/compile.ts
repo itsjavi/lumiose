@@ -13,7 +13,7 @@ import { join, resolve } from "node:path";
 import type { DiagnosticProvider, FileDiagnostics } from "./index.ts";
 import { scanServerRoutes, serverRouteFiles } from "../../vite/server-routes.ts";
 import { routeOptions } from "../project.ts";
-import { clientGraphDiagnostics } from "./client-graph.ts";
+import { projectDiagnostics, type CompiledSource } from "./project-checks.ts";
 import { ModuleHost } from "./modules.ts";
 import { listFiles, loadCompiler, SOURCE_DIR } from "./shadow.ts";
 
@@ -131,17 +131,17 @@ export const compilerDiagnostics: DiagnosticProvider = async ({
   ];
   const modules = new ModuleHost({ root, ...(project === undefined ? {} : { project }) });
   const results: FileDiagnostics[] = [];
-  const compiled = new Map<string, CompileResult>();
+  const compiled = new Map<string, CompiledSource>();
   const serverRoutes = manifest === undefined ? new Set() : serverRouteFiles(root, manifest);
   for (const { file, text, reported } of sources) {
     const path = resolve(root, file);
     const serverRoute = serverRoutes.has(path.replaceAll("\\", "/"));
     const checked = await compileChecked(text, path, { root, reported, modules, serverRoute });
-    compiled.set(resolve(root, file), checked.result);
+    compiled.set(resolve(root, file), { text, result: checked.result });
     if (checked.diagnostics.length > 0) results.push({ file, diagnostics: checked.diagnostics });
   }
-  // LUM4003 needs the project's client graph (./client-graph.ts).
-  for (const found of await clientGraphDiagnostics(root, compiled, modules)) {
+  // LUM4003 and LUM3012 need the whole project (./project-checks.ts).
+  for (const found of await projectDiagnostics(root, compiled, modules)) {
     const existing = results.find((entry) => resolve(root, entry.file) === found.file);
     if (existing === undefined) results.push(found);
     else existing.diagnostics = [...existing.diagnostics, ...found.diagnostics];

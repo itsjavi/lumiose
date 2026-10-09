@@ -422,6 +422,87 @@ describe("language server (pull diagnostics)", () => {
     }
   });
 
+  it("reports project-wide LUM4003 and LUM3012, following buffer edits (TASK-137)", async () => {
+    const { mkdir } = await import("node:fs/promises");
+    await mkdir(join(server.root, "src/server"), { recursive: true });
+    await writeFile(
+      join(server.root, "src/server/db.server.ts"),
+      "export const likes = () => 1;\n",
+    );
+    const likes = [
+      'import { likes } from "../server/db.server.ts";',
+      "export function Likes() {",
+      "  return <button>{likes()}</button>;",
+      "}",
+      "",
+    ].join("\n");
+    const page = [
+      'import { Likes } from "./Likes.stsx";',
+      "export function Page() {",
+      '  return <main class="page" style={{ "--fil": 1 }}><Likes client:load /></main>;',
+      "}",
+      "",
+    ].join("\n");
+    await writeFile(join(server.root, "src/components/Likes.stsx"), likes);
+    await writeFile(join(server.root, "src/components/Page.stsx"), page);
+    await server.open("src/components/Likes.stsx", likes);
+    await server.open("src/components/Page.stsx", page);
+    const codes = async (path: string) => {
+      const report = await server.request<FullDocumentDiagnosticReport>(
+        "textDocument/diagnostic",
+        doc(path),
+      );
+      return report.items
+        .filter((d) => d.code === "LUM4003" || d.code === "LUM3012")
+        .map(({ code, range }) => ({ code, range }));
+    };
+    // The island imports a server-only module, reported at the specifier.
+    expect(await codes("src/components/Likes.stsx")).toEqual([
+      { code: "LUM4003", range: rangeOf(likes, "../server/db.server.ts") },
+    ]);
+    expect(await codes("src/components/Page.stsx")).toEqual([
+      { code: "LUM3012", range: rangeOf(page, '"--fil"', 1, 5) },
+    ]);
+
+    // Edits of open buffers count: the island stops importing it, a block reads the property.
+    const fixed = likes.replace(
+      'import { likes } from "../server/db.server.ts";',
+      "const likes = () => 1;",
+    );
+    server.change("src/components/Likes.stsx", fixed);
+    expect(await codes("src/components/Likes.stsx")).toEqual([]);
+    const read = page.replace("</main>", "<style>.page { width: var(--fil); }</style></main>");
+    server.change("src/components/Page.stsx", read);
+    expect(await codes("src/components/Page.stsx")).toEqual([]);
+  });
+
+  it("shows the execution contract of JSX expressions in hovers (TASK-137)", async () => {
+    const text = [
+      'import { signal } from "lumen";',
+      "export function Count() {",
+      "  const n = signal(0);",
+      '  return <p title={"fixed"} onClick={() => n.set(n() + 1)}>{n()}</p>;',
+      "}",
+      "",
+    ].join("\n");
+    await server.open("src/components/Count.stsx", text);
+    const hover = async (needle: string, shift = 0) => {
+      const result = await server.request<Hover | null>("textDocument/hover", {
+        ...doc("src/components/Count.stsx"),
+        position: positionOf(text, needle, shift),
+      });
+      return (result?.contents as MarkupContent | undefined)?.value ?? "";
+    };
+    const child = await hover("{n()}", 1);
+    expect(child).toContain("**Lumen**: a child in `Count`");
+    expect(child).toContain("**tracked**");
+    expect(child).toContain("Reactive reads: `n()`");
+    expect(await hover('"fixed"', 1)).toContain("**once**");
+    expect(await hover("() => n.set", 0)).toContain("**deferred**");
+    // Outside any expression: no contract.
+    expect(await hover("signal(0)", 0)).not.toContain("**Lumen**");
+  });
+
   it("supplies imported constants to the compiler, from buffers and disk, re-checking dependents", async () => {
     // A chained re-export on disk (`tokens.ts` is open in an earlier test: its buffer would win).
     const palette =

@@ -24,6 +24,7 @@ import type {
   ScanResult,
   StyleBlock,
   StyleRef,
+  ContractEntry,
 } from "@lumen/compiler";
 import { scan } from "@lumen/compiler";
 import { ModuleHost, SUPERSEDED_BY_TYPESCRIPT, type ModuleChange } from "lumen/tooling";
@@ -89,6 +90,7 @@ import {
   toLspDiagnostic,
   touchesBlock,
 } from "./diagnostics.ts";
+import { contractAt, contractEntries, contractMarkdown } from "./contract.ts";
 import { attributeDoc, GLOBAL_DOC, STYLE_DOC } from "./descriptions.ts";
 import {
   isProjectModule,
@@ -134,8 +136,19 @@ export type LumenDiagnosticProvider = (
   file: LumenFile,
 ) => readonly CompilerDiagnostic[] | Promise<readonly CompilerDiagnostic[]>;
 
+/**
+ * Project-wide Lumen diagnostics (LUM4003, LUM3012; TASK-137): for a project root and its module
+ * host (open documents win over the disk), a function that checks the whole project, by absolute
+ * file. Called again after files change; it should only redo the work for what changed.
+ */
+export type ProjectDiagnosticsFactory = (
+  root: string,
+  modules: ModuleHost,
+) => () => Promise<ReadonlyMap<string, readonly CompilerDiagnostic[]>>;
+
 export interface ServerOptions {
   diagnosticProviders?: readonly LumenDiagnosticProvider[];
+  projectDiagnostics?: ProjectDiagnosticsFactory;
   /**
    * Path of the TypeScript 7 native binary. Default: `initializationOptions.lumen.typescript`, else
    * resolved from the project's `typescript` package, else from this package's.
@@ -154,6 +167,8 @@ interface OpenFile {
   snapshot?: StsxSnapshot;
   /** The diagnostic providers' results for one document version. */
   provided?: { version: number; diagnostics: Promise<CompilerDiagnostic[]> };
+  /** The execution contract of one document version, for hovers. */
+  contract?: { version: number; entries: readonly ContractEntry[] };
 }
 
 /** A TypeScript process under supervision. */
@@ -199,6 +214,19 @@ export function startServer(connection: Connection, options: ServerOptions = {})
   );
   /** Module hosts of the diagnostic providers, by project root. */
   const moduleHosts = new Map<string, ModuleHost>();
+  /** Per project root: its project-wide check and the last run, by change generation. */
+  const projectChecks = new Map<
+    string,
+    {
+      run: () => Promise<ReadonlyMap<string, readonly CompilerDiagnostic[]>>;
+      generation: number;
+      result?: Promise<ReadonlyMap<string, readonly CompilerDiagnostic[]>>;
+      /** The diagnostics last reported per file, to tell whether other documents need a refresh. */
+      reported: Map<string, string>;
+    }
+  >();
+  /** Bumped by every change to a document or a file, so project checks run again. */
+  let changeGeneration = 0;
   let projects = new Projects([]);
   /** The initialized TypeScript server; unset while (re)starting or after it ended. */
   let ts: TypeScriptInstance | undefined;
@@ -743,6 +771,7 @@ export function startServer(connection: Connection, options: ServerOptions = {})
    * open documents whose providers read them are computed again.
    */
   function modulesChanged(changes: ReadonlyArray<{ uri: string; type?: FileChangeType }>): void {
+    if (changes.length > 0) changeGeneration++;
     let stale = false;
     for (const { uri, type } of changes) {
       const path = uriToPath(uri);
@@ -789,7 +818,11 @@ export function startServer(connection: Connection, options: ServerOptions = {})
       const { document } = file;
       const scanned = scan(document.getText(), uriToPath(file.uri) ?? file.uri);
       const kept = filterBlockDiagnostics(document, scanned.blocks, typescript);
-      const lumen = [...scanned.diagnostics, ...(await provided(file, scanned))];
+      const lumen = [
+        ...scanned.diagnostics,
+        ...(await provided(file, scanned)),
+        ...(await projectFindings(file)),
+      ];
       return [
         ...kept,
         ...withoutSuperseded(document, lumen, kept).map((d) => toLspDiagnostic(document, d)),
@@ -806,11 +839,64 @@ export function startServer(connection: Connection, options: ServerOptions = {})
         ),
       ),
     );
-    const lumen = [...snapshot.scan.diagnostics, ...(await provided(file, snapshot.scan))];
+    const lumen = [
+      ...snapshot.scan.diagnostics,
+      ...(await provided(file, snapshot.scan)),
+      ...(await projectFindings(file)),
+    ];
     const lumenLsp = withoutSuperseded(snapshot.document, lumen, typescript).map((diagnostic) =>
       toLspDiagnostic(snapshot.document, diagnostic),
     );
     return [...typescript, ...lumenLsp, ...cssDiagnostics(snapshot, lumenLsp)];
+  }
+
+  /**
+   * The project-wide diagnostics of the document's file (LUM4003, LUM3012): one run per project
+   * and change generation. When a run changes what other open documents show, they are refreshed.
+   */
+  async function projectFindings(file: OpenFile): Promise<readonly CompilerDiagnostic[]> {
+    const factory = options.projectDiagnostics;
+    const path = uriToPath(file.uri);
+    if (factory === undefined || path === undefined) return [];
+    const root = projects.rootFor(path);
+    let state = projectChecks.get(root);
+    if (state === undefined) {
+      state = { run: factory(root, moduleHostFor(root)), generation: -1, reported: new Map() };
+      projectChecks.set(root, state);
+    }
+    let result = state.result;
+    if (result === undefined || state.generation !== changeGeneration) {
+      const current = state;
+      current.generation = changeGeneration;
+      result = current.run().catch((error: unknown) => {
+        connection.console.error(`Lumen: the project checks failed: ${errorMessage(error)}`);
+        return new Map();
+      });
+      current.result = result;
+      void result.then((found) => refreshIfChanged(current, found, path));
+    }
+    return (await result).get(path) ?? [];
+  }
+
+  /** Refreshes the diagnostics of the other open documents whose project findings changed. */
+  function refreshIfChanged(
+    state: { reported: Map<string, string> },
+    found: ReadonlyMap<string, readonly CompilerDiagnostic[]>,
+    requested: string,
+  ): void {
+    let changed = false;
+    const keys = new Set([...state.reported.keys(), ...found.keys()]);
+    for (const key of keys) {
+      const next = JSON.stringify(found.get(key) ?? []);
+      if (state.reported.get(key) === next) continue;
+      state.reported.set(key, next);
+      if (key !== requested && files.has(fileKey(key))) changed = true;
+    }
+    if (!changed) return;
+    if (!pullDiagnostics) schedulePush();
+    else if (client.workspace?.diagnostics?.refreshSupport) {
+      void connection.languages.diagnostics.refresh().catch(() => undefined);
+    }
   }
 
   /**
@@ -1197,10 +1283,46 @@ export function startServer(connection: Connection, options: ServerOptions = {})
     const block = at?.snapshot.inBlock(at.offset);
     if (at && block) return styleTagHover(at, block);
     const hover = await forward<Hover>("textDocument/hover", params, token);
-    const document = at?.snapshot.document ?? files.get(fileKey(params.textDocument.uri))?.document;
+    const file = files.get(fileKey(params.textDocument.uri));
+    const document = at?.snapshot.document ?? file?.document;
     if (!document) return hover;
-    return withAttributeDoc(hover, document.getText(), document.offsetAt(params.position));
+    const offset = document.offsetAt(params.position);
+    const documented = withAttributeDoc(hover, document.getText(), offset);
+    return file && (isStsx(file.uri) || isTsx(file.uri))
+      ? withContract(documented, file, offset)
+      : documented;
   });
+
+  /** Adds the execution contract of the JSX expression under the cursor (TASK-137). */
+  function withContract(hover: Hover | null, file: OpenFile, offset: number): Hover | null {
+    const { document } = file;
+    if (file.contract?.version !== document.version) {
+      const path = uriToPath(file.uri) ?? file.uri;
+      file.contract = {
+        version: document.version,
+        entries: contractEntries(document.getText(), path),
+      };
+    }
+    const entry = contractAt(file.contract.entries, offset);
+    if (entry === undefined) return hover;
+    const contract = contractMarkdown(entry, document.getText());
+    if (!hover) {
+      return {
+        contents: { kind: MarkupKind.Markdown, value: contract },
+        range: {
+          start: document.positionAt(entry.span.start),
+          end: document.positionAt(entry.span.end),
+        },
+      };
+    }
+    return {
+      ...hover,
+      contents: {
+        kind: MarkupKind.Markdown,
+        value: `${hoverMarkdown(hover.contents)}\n\n---\n\n${contract}`,
+      },
+    };
+  }
 
   // --- Definition, references, highlights, rename ------------------------------------------
 

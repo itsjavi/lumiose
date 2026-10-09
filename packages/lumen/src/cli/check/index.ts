@@ -55,6 +55,12 @@ export {
   type CompileDiagnosticsOptions,
 } from "./compile.ts";
 export { ModuleHost, type ModuleChange, type ModuleHostOptions } from "./modules.ts";
+export {
+  ProjectChecks,
+  projectDiagnostics,
+  type CompiledSource,
+  type ProjectCompile,
+} from "./project-checks.ts";
 export { CheckFailure, SUPERSEDED_BY_TYPESCRIPT } from "./diagnostics.ts";
 export {
   islandPropMessage,

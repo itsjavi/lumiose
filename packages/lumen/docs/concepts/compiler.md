@@ -47,7 +47,8 @@ are generated from it. They appear in the Vite overlay, in `lumen check`, in the
 **Tooling on top.** `lumen check` (typegen, shadow files, `tsc --noEmit`, scanner and compiler
 diagnostics), `lumen lint` (oxlint on shadows, optional stylelint on blocks), `lumen fmt` (oxfmt
 plus each block's CSS), and the language server (a TypeScript 7 LSP proxy plus CSS features in
-blocks and the compiler's diagnostics as you type) all share the one scanner. TypeScript plugins
+blocks, the compiler's diagnostics as you type and each JSX expression's execution contract in
+hovers) all share the one scanner. TypeScript plugins
 are not used.
 
 ## API

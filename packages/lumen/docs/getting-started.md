@@ -143,7 +143,10 @@ Lumen language server, which proxies TypeScript 7 for `.ts`, `.tsx` and `.stsx` 
 - `var(--…)` completion of every custom property declared in the project, with its value;
 - descriptions of `<style global>` and of Lumen attributes (`client:*`, `bind:*`, `on:*`, `attach`,
   `ref`, `key`), and the snippets `comp`, `acomp`, `route` and `island`;
-- the compiler's diagnostics.
+- the compiler's diagnostics, with the project-wide ones (`LUM4003` server-only imports in the
+  client graph, `LUM3012` unread custom properties) that follow the other files' edits;
+- hovers on JSX expressions with their execution contract: tracked (re-runs when the signals it
+  reads change, which it lists), once, untracked or deferred, and the runtime helper that runs it.
 
 The extension bundles the server (it runs on VS Code's own Node.js) and uses the project's
 `typescript`; install `@lumen/language-server` as a dev dependency only to pin the server to your

@@ -1,7 +1,12 @@
 // Diagnostic providers for `ServerOptions.diagnosticProviders`.
 
-import { compileDiagnostics, isServerRoute } from "lumen/tooling";
-import type { LumenDiagnosticProvider } from "./server.ts";
+import {
+  compileDiagnostics,
+  compileWithModules,
+  isServerRoute,
+  ProjectChecks,
+} from "lumen/tooling";
+import type { LumenDiagnosticProvider, ProjectDiagnosticsFactory } from "./server.ts";
 
 /**
  * The compiler's diagnostics (reactivity LUM2xxx, styles LUM3xxx, islands LUM4xxx) from a client
@@ -16,3 +21,14 @@ export const compilerDiagnostics: LumenDiagnosticProvider = async (file) =>
     // Server-rendered pages read their own props as plain values (TASK-109).
     serverRoute: await isServerRoute(file.root, file.path),
   });
+
+/**
+ * Project-wide diagnostics (LUM4003 at import sites, LUM3012), as `lumen check` reports them: each
+ * run recompiles only the project files whose text changed.
+ */
+export const projectDiagnostics: ProjectDiagnosticsFactory = (root, modules) => {
+  const checks = new ProjectChecks(root, modules, (text, file) =>
+    compileWithModules(text, file, { target: "client", sourceMap: false, root }, modules),
+  );
+  return () => checks.run();
+};
