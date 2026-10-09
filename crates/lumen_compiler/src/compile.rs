@@ -66,6 +66,10 @@ pub struct CompileOptions {
     pub modules: Vec<HostModule>,
     /// Fill [`CompileMeta::contract`] (the language server's hovers).
     pub contract: bool,
+    /// The module is a route module rendered only on the server (route mode `server` or
+    /// `static`): its default export's props are plain values, so reading them is not a
+    /// reactive read (no `LUM2001`/`LUM2003` for them). The host knows the route mode.
+    pub server_route: bool,
 }
 
 impl Default for CompileOptions {
@@ -80,6 +84,7 @@ impl Default for CompileOptions {
             packages: Vec::new(),
             modules: Vec::new(),
             contract: false,
+            server_route: false,
         }
     }
 }
@@ -263,6 +268,7 @@ pub fn compile(source: &str, filename: &str, options: &CompileOptions) -> Compil
         &scan.blocks,
         &scan.diagnostics,
         is_server_only,
+        options.server_route,
     );
     let contract = options.contract.then(|| {
         let server_only = analyze::reactivity::server_only_imports(&program, is_server_only);

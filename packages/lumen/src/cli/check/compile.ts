@@ -11,6 +11,8 @@ import type {
 import { readFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import type { DiagnosticProvider, FileDiagnostics } from "./index.ts";
+import { scanServerRoutes, serverRouteFiles } from "../../vite/server-routes.ts";
+import { routeOptions } from "../project.ts";
 import { clientGraphDiagnostics } from "./client-graph.ts";
 import { ModuleHost } from "./modules.ts";
 import { listFiles, loadCompiler, SOURCE_DIR } from "./shadow.ts";
@@ -31,6 +33,11 @@ export interface CompileDiagnosticsOptions {
    * the compiler withholds the CSS of a file that imports constants, and its style diagnostics.
    */
   modules?: ModuleHost | undefined;
+  /**
+   * The file is a route module rendered only on the server (`static`/`server` route mode, see
+   * `serverRouteFiles`): its default export's props are plain values (no LUM2001 for them).
+   */
+  serverRoute?: boolean;
 }
 
 /**
@@ -86,6 +93,7 @@ async function compileChecked(
     target: "client",
     sourceMap: false,
     ...(options.root === undefined ? {} : { root: options.root }),
+    ...(options.serverRoute ? { serverRoute: true } : {}),
   };
   const result =
     options.modules === undefined
@@ -104,7 +112,12 @@ async function compileChecked(
  * reported) and every `src/**\/*.tsx`. Imported constants are resolved like TypeScript does
  * (with the checked tsconfig's `paths`), each module read once per run.
  */
-export const compilerDiagnostics: DiagnosticProvider = async ({ root, project, files }) => {
+export const compilerDiagnostics: DiagnosticProvider = async ({
+  root,
+  project,
+  files,
+  manifest,
+}) => {
   const tsx = await listFiles(join(root, SOURCE_DIR), (name) => name.endsWith(".tsx"));
   const sources = [
     ...files.map((file) => ({
@@ -119,8 +132,11 @@ export const compilerDiagnostics: DiagnosticProvider = async ({ root, project, f
   const modules = new ModuleHost({ root, ...(project === undefined ? {} : { project }) });
   const results: FileDiagnostics[] = [];
   const compiled = new Map<string, CompileResult>();
+  const serverRoutes = manifest === undefined ? new Set() : serverRouteFiles(root, manifest);
   for (const { file, text, reported } of sources) {
-    const checked = await compileChecked(text, resolve(root, file), { root, reported, modules });
+    const path = resolve(root, file);
+    const serverRoute = serverRoutes.has(path.replaceAll("\\", "/"));
+    const checked = await compileChecked(text, path, { root, reported, modules, serverRoute });
     compiled.set(resolve(root, file), checked.result);
     if (checked.diagnostics.length > 0) results.push({ file, diagnostics: checked.diagnostics });
   }
@@ -132,6 +148,25 @@ export const compilerDiagnostics: DiagnosticProvider = async ({ root, project, f
   }
   return results;
 };
+
+/** Route options per project root: reading them resolves the Vite config, so once per root. */
+const routeOptionsByRoot = new Map<string, ReturnType<typeof routeOptions>>();
+
+/**
+ * Whether `file` is a route module rendered only on the server (`static`/`server` mode), for
+ * {@link CompileDiagnosticsOptions.serverRoute} in editors: the routes directory is scanned on
+ * each call (route modes may have changed), the project's default mode is read once per root.
+ */
+export async function isServerRoute(root: string, file: string): Promise<boolean> {
+  const path = file.replaceAll("\\", "/");
+  if (!path.startsWith(`${root.replaceAll("\\", "/")}/src/routes/`)) return false;
+  let options = routeOptionsByRoot.get(root);
+  if (options === undefined) {
+    options = routeOptions(root).catch(() => ({}));
+    routeOptionsByRoot.set(root, options);
+  }
+  return (await scanServerRoutes(root, await options)).has(path);
+}
 
 function diagnosticKey(diagnostic: CompilerDiagnostic): string {
   return `${diagnostic.code}:${diagnostic.span.start}:${diagnostic.span.end}`;

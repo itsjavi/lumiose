@@ -13,7 +13,7 @@
 // (./css-manifest.ts) and is allowed.
 
 import { relative } from "node:path";
-import { isCSSRequest, normalizePath, type Plugin, type Rollup } from "vite";
+import type { Plugin, Rollup } from "vite";
 import { cleanId } from "./styles.ts";
 
 export const SERVER_ONLY_CODE = "LUM4003";
@@ -21,13 +21,17 @@ export const SERVER_ONLY_CODE = "LUM4003";
 /** Candidate ids for the hook filter; {@link isServerOnly} decides. */
 const CANDIDATE = /\.server\.|\/src\/server\//;
 const NODE_MODULES = /[\\/]node_modules[\\/]/;
+/** Vite's CSS requests (its `CSS_LANGS_RE`), without loading Vite (`lumen check` uses this). */
+const CSS_REQUEST = /\.(?:css|less|sass|scss|styl|stylus|pcss|postcss|sss)(?:$|\?)/;
+
+const posix = (path: string): string => path.replaceAll("\\", "/");
 
 /** Whether a module id names server-only code of the project at `root`. */
 export function isServerOnly(id: string, root: string): boolean {
-  if (id.startsWith("\0") || isCSSRequest(id)) return false;
-  const file = normalizePath(cleanId(id));
+  if (id.startsWith("\0") || CSS_REQUEST.test(id)) return false;
+  const file = posix(cleanId(id));
   if (NODE_MODULES.test(file)) return false;
-  const rest = relative(normalizePath(root), file).replaceAll("\\", "/");
+  const rest = posix(relative(posix(root), file));
   if (rest.startsWith("../") || rest.startsWith("/")) return false;
   const name = rest.slice(rest.lastIndexOf("/") + 1);
   return name.split(".").slice(1).includes("server") || rest.startsWith("src/server/");

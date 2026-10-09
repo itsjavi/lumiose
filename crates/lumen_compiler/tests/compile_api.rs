@@ -629,3 +629,41 @@ export function A(props: { rows: Row[]; db: Db }) {
         ]
     );
 }
+
+#[test]
+fn server_routes_read_their_own_props_without_lum2001() {
+    let page = r#"export default function Book(props: { params: { slug: string } }) {
+  const title = props.params.slug.toUpperCase();
+  const { params } = props;
+  return <h1>{title} {params.slug}</h1>;
+}
+"#;
+    let named = r#"function Book({ params }: { params: { slug: string } }) {
+  const title = params.slug.toUpperCase();
+  return <h1>{title}</h1>;
+}
+function Helper(props: { n: number }) {
+  const twice = props.n * 2;
+  return <b>{twice}</b>;
+}
+export { Book as default, Helper };
+"#;
+    let stale = |source: &str, server_route: bool| -> Vec<String> {
+        let options = CompileOptions {
+            server_route,
+            ..CompileOptions::default()
+        };
+        compile(source, "/src/routes/book.tsx", &options)
+            .diagnostics
+            .iter()
+            .filter(|d| d.code == Code::StaleDerivedValue)
+            .map(|d| source[d.span.start as usize..d.span.end as usize].to_owned())
+            .collect()
+    };
+    // Islands and spa routes (no `server_route`) re-render with new props: still reported.
+    assert_eq!(stale(page, false).len(), 2);
+    assert_eq!(stale(page, true), Vec::<String>::new());
+    assert_eq!(stale(named, false).len(), 2);
+    // Only the default export (the page) gets plain props; other components keep the rule.
+    assert_eq!(stale(named, true), ["twice = props.n * 2"]);
+}

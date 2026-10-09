@@ -13,6 +13,7 @@ import { main } from "../main.ts";
 import {
   checkCommand,
   formatTsconfig,
+  isServerRoute,
   LUM_TSCONFIG,
   parseTscOutput,
   shadowPathFor,
@@ -109,6 +110,15 @@ function lumenAt(file: string, code: string, text: string, needle: string, shift
     endColumn: start.column + needle.length - shift,
     docs: `errors/${code}`,
   });
+}
+
+/** A page deriving a value from its own props, with an optional `mode` export first. */
+function derivingPage(mode: string): string {
+  return (
+    `${mode}export default function Page(props: { params: { slug: string } }) {\n` +
+    "  const title = props.params.slug.toUpperCase();\n" +
+    "  return <h1>{title}</h1>;\n}\n"
+  );
 }
 
 /** A tsconfig warning located at the `"option"` key of the project's tsconfig. */
@@ -462,6 +472,28 @@ describe.skipIf(!binding)("lumen check", () => {
       "(src/routes/likes.tsx → src/components/Likes.tsx → src/lib/util.ts)",
     );
     expect(exitCode).toBe(1);
+  });
+
+  it("reports LUM2001 for props reads in spa routes, not in server-rendered pages (TASK-109)", async () => {
+    const root = await project("valid");
+    await mkdir(join(root, "src/routes/books"), { recursive: true });
+    await mkdir(join(root, "src/routes/app"), { recursive: true });
+    await writeFile(join(root, "src/routes/books/[slug].tsx"), derivingPage(""));
+    const spa = derivingPage('export const mode = "spa";\n');
+    await writeFile(join(root, "src/routes/app/[slug].tsx"), spa);
+    const { report } = await checkJson(root);
+    expect(report.diagnostics.filter((d) => d.code === "LUM2001")).toEqual([
+      lumenAt(
+        "src/routes/app/[slug].tsx",
+        "LUM2001",
+        spa,
+        "title = props.params.slug.toUpperCase()",
+      ),
+    ]);
+    // The language server asks per file (lumen/tooling).
+    expect(await isServerRoute(root, join(root, "src/routes/books/[slug].tsx"))).toBe(true);
+    expect(await isServerRoute(root, join(root, "src/routes/app/[slug].tsx"))).toBe(false);
+    expect(await isServerRoute(root, join(root, "src/components/Card.tsx"))).toBe(false);
   });
 
   it("resolves constants imported through tsconfig paths and re-exports for style diagnostics", async () => {

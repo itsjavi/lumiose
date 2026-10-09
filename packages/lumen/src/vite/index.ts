@@ -64,6 +64,7 @@ import {
   type Target,
 } from "./styles.ts";
 import { serverOnlyPlugin } from "./server-only.ts";
+import { scanServerRoutes } from "./server-routes.ts";
 import { svgOptionsOf, svgPlugin } from "./svg.ts";
 
 export type {
@@ -127,6 +128,17 @@ export default function lumen(options: LumenOptions = {}): Plugin<LumenPluginApi
     packages: packages.for(cleanId(file)),
   });
   const isLumenFile = (file: string): boolean => include.test(file) && !exclude.test(file);
+  // Server-rendered route modules (./server-routes.ts), scanned once and again after a route
+  // module changes (its `mode` export may have).
+  let serverRoutes: Promise<Set<string>> | undefined;
+  const isServerRoute = async (file: string): Promise<boolean> => {
+    const { mode, ssr } = api.options;
+    serverRoutes ??= scanServerRoutes(root, {
+      ...(mode === undefined ? {} : { defaultMode: mode }),
+      ...(ssr === undefined ? {} : { defaultSsr: ssr }),
+    });
+    return (await serverRoutes).has(cleanId(file));
+  };
   return [
     {
       name: "lumen",
@@ -272,6 +284,9 @@ export default function lumen(options: LumenOptions = {}): Plugin<LumenPluginApi
 
       watchChange(id) {
         styles.invalidateDependents(cleanId(id));
+        if (normalizePath(id).startsWith(`${normalizePath(root)}/src/routes/`)) {
+          serverRoutes = undefined;
+        }
       },
 
       hotUpdate: {
@@ -320,7 +335,7 @@ export default function lumen(options: LumenOptions = {}): Plugin<LumenPluginApi
           const result = await compileWithModules(
             code,
             id,
-            compileOptions(id, target),
+            { ...compileOptions(id, target), serverRoute: await isServerRoute(id) },
             pluginResolve(this),
           );
           const errors = result.diagnostics.filter((d) => d.severity === "error");

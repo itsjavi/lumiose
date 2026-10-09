@@ -5,6 +5,7 @@
 mod components;
 pub mod reactivity;
 
+use std::borrow::Cow;
 use std::collections::{HashMap, HashSet};
 
 use oxc_ast::ast::*;
@@ -32,6 +33,9 @@ pub struct Component {
     pub exported: bool,
     /// The props bindings, or `None` when the parameter shape is not rewritable.
     pub props: Option<PropsSymbols>,
+    /// The default export of a route module rendered only on the server
+    /// ([`crate::CompileOptions::server_route`]): its props are plain values, never reactive reads.
+    pub server_props: bool,
     /// `await` expressions whose nearest function is the component, in source order
     /// (the static site indices of TASK-15's await rewrite).
     pub await_sites: Vec<Span>,
@@ -52,13 +56,16 @@ impl Analysis {
 }
 
 /// Analyses a type-stripped program. `scanner_diagnostics` avoids duplicate LUM3010 reports;
-/// `is_server_only` tells whether an import specifier names a server-only module.
+/// `is_server_only` tells whether an import specifier names a server-only module. `server_route`:
+/// the module is a route module rendered only on the server, whose default export's props are
+/// plain values.
 pub fn analyze(
     program: &Program<'_>,
     scoping: &Scoping,
     blocks: &[StyleBlock],
     scanner_diagnostics: &[Diagnostic],
     is_server_only: impl Fn(&str) -> bool,
+    server_route: bool,
 ) -> Analysis {
     let jsx_blocks = blocks
         .iter()
@@ -84,6 +91,8 @@ pub fn analyze(
         signals: HashSet::new(),
         server_only: server_only_imports(program, is_server_only),
         component_calls: Vec::new(),
+        server_route,
+        default_name: server_route.then(|| default_export_name(program)).flatten(),
     };
     analyzer.visit_program(program);
     analyzer.finish()
@@ -125,6 +134,10 @@ struct Analyzer<'s> {
     /// Imports whose calls are never reactive reads (see [`server_only_imports`]).
     server_only: HashSet<SymbolId>,
     component_calls: Vec<(Span, SymbolId, String)>,
+    /// See [`analyze`].
+    server_route: bool,
+    /// `Page` in `export default Page` / `export { Page as default }` (server routes only).
+    default_name: Option<String>,
 }
 
 impl<'s> Analyzer<'s> {
@@ -170,10 +183,20 @@ impl<'s> Analyzer<'s> {
         frame.component.map(|i| &self.analysis.components[i])
     }
 
-    fn props_of_current(&self) -> PropsSymbols {
-        self.current_component()
-            .and_then(|c| c.props.clone())
-            .unwrap_or_default()
+    /// The current component's props bindings, as reactive reads, and the bindings whose calls
+    /// are not reads: server-only imports, plus the props of a `server_props` component (plain
+    /// values: `props.slug.toUpperCase()` derives nothing reactive).
+    fn reactive_context(&self) -> (PropsSymbols, Cow<'_, HashSet<SymbolId>>) {
+        let component = self.current_component();
+        let props = component.and_then(|c| c.props.clone()).unwrap_or_default();
+        if !component.is_some_and(|c| c.server_props) {
+            return (props, Cow::Borrowed(&self.server_only));
+        }
+        let mut plain = self.server_only.clone();
+        plain.extend(props.object);
+        plain.extend(props.rest);
+        plain.extend(props.destructured.iter().copied());
+        (PropsSymbols::default(), Cow::Owned(plain))
     }
 
     fn enter_function(
@@ -186,6 +209,7 @@ impl<'s> Analyzer<'s> {
         returns_jsx: bool,
     ) {
         let pending = self.pending.take();
+        let from_default = pending.as_ref().is_some_and(|p| p.name == "default");
         let (name, exported, symbol) = match (id, pending) {
             (Some(id), pending) => (
                 id.name.to_string(),
@@ -200,6 +224,8 @@ impl<'s> Analyzer<'s> {
         let mut frame = Frame::default();
         if is_component {
             let index = self.analysis.components.len();
+            let server_props = self.server_route
+                && (from_default || self.default_name.as_deref() == Some(name.as_str()));
             self.analysis.components.push(Component {
                 name,
                 span: span.into(),
@@ -207,6 +233,7 @@ impl<'s> Analyzer<'s> {
                 is_async,
                 exported,
                 props: components::props_symbols(params),
+                server_props,
                 await_sites: Vec::new(),
             });
             self.analysis.by_span.insert(span.start, index);
@@ -301,7 +328,7 @@ impl<'s> Analyzer<'s> {
         let Some(init) = &declarator.init else {
             return;
         };
-        let props = self.props_of_current();
+        let (props, plain) = self.reactive_context();
         let (symbols, name) = binding_symbols(&declarator.id);
         if symbols.is_empty() {
             return;
@@ -325,7 +352,7 @@ impl<'s> Analyzer<'s> {
                     | Expression::JSXElement(_)
                     | Expression::JSXFragment(_)
             )
-            && first_reactive_read(self.scoping, &props, &self.server_only, init).is_some();
+            && first_reactive_read(self.scoping, &props, &plain, init).is_some();
         if (destructures_props || derived)
             && let Some(frame) = self.frames.last_mut()
         {
@@ -345,8 +372,8 @@ impl<'s> Analyzer<'s> {
         if !returns {
             return;
         }
-        let props = self.props_of_current();
-        if let Some(read) = first_reactive_read(self.scoping, &props, &self.server_only, &it.test) {
+        let (props, plain) = self.reactive_context();
+        if let Some(read) = first_reactive_read(self.scoping, &props, &plain, &it.test) {
             self.analysis.diagnostics.push(
                 Diagnostic::new(
                     Code::ReactiveEarlyReturn,
@@ -710,4 +737,20 @@ fn statement_returns(statement: &Statement<'_>) -> bool {
     let mut finder = Finder(false);
     finder.visit_statement(statement);
     finder.0
+}
+
+/// The local name a module exports as `default` (`export default Page`,
+/// `export { Page as default }`), if it names a binding.
+fn default_export_name(program: &Program<'_>) -> Option<String> {
+    program.body.iter().find_map(|statement| match statement {
+        Statement::ExportDefaultDeclaration(export) => match &export.declaration {
+            ExportDefaultDeclarationKind::Identifier(ident) => Some(ident.name.to_string()),
+            _ => None,
+        },
+        Statement::ExportNamedDeclaration(export) => export
+            .specifiers
+            .iter()
+            .find_map(|s| (s.exported.name() == "default").then(|| s.local.name().to_string())),
+        _ => None,
+    })
 }

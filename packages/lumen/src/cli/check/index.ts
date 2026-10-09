@@ -6,6 +6,7 @@ import type { Diagnostic as CompilerDiagnostic } from "@lumen/compiler";
 import { existsSync, realpathSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { join, relative, resolve, sep } from "node:path";
+import type { RouteManifest } from "../../app/routes/manifest.ts";
 import { ROUTE_TYPES_FILE, typegen } from "../../app/typegen/index.ts";
 import { EXIT_FAILURE, EXIT_OK, EXIT_PROBLEMS } from "../output.ts";
 import { routeOptions } from "../project.ts";
@@ -49,6 +50,7 @@ export {
   compileDiagnostics,
   compilerDiagnostics,
   compileWithModules,
+  isServerRoute,
   type CompileDiagnosticsOptions,
 } from "./compile.ts";
 export { ModuleHost, type ModuleChange, type ModuleHostOptions } from "./modules.ts";
@@ -98,6 +100,8 @@ export type DiagnosticProvider = (context: {
   /** The checked tsconfig (absolute). */
   project?: string;
   files: readonly ShadowFile[];
+  /** The route manifest (route modes), with the project's default mode. */
+  manifest?: RouteManifest;
 }) => Promise<readonly FileDiagnostics[]> | readonly FileDiagnostics[];
 
 export interface CheckOptions {
@@ -188,6 +192,7 @@ export async function check(options: CheckOptions): Promise<CheckResult> {
       root,
       project,
       files: own,
+      manifest,
     })) {
       const key = fileKey(resolve(root, file));
       const text = sources.get(key) ?? (await loadText(resolve(root, file)));

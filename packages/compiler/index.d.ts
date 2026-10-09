@@ -74,6 +74,11 @@ export interface CompileOptions {
   modules?: Array<HostModule>;
   /** Fill `meta.contract` (execution contracts, for hovers). Default `false`. */
   contract?: boolean;
+  /**
+   * A route module rendered only on the server (route mode `server` or `static`): its default
+   * export's props are plain values (no LUM2001/LUM2003 for reading them). Default `false`.
+   */
+  serverRoute?: boolean;
 }
 
 export interface CompileResult {

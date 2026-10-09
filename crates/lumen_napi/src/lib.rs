@@ -333,6 +333,9 @@ pub struct CompileOptions {
     pub modules: Option<Vec<HostModule>>,
     /// Fill `meta.contract` (execution contracts, for hovers). Default `false`.
     pub contract: Option<bool>,
+    /// A route module rendered only on the server (route mode `server` or `static`): its default
+    /// export's props are plain values (no LUM2001/LUM2003 for reading them). Default `false`.
+    pub server_route: Option<bool>,
 }
 
 /// A package outside the project root (see `CompileOptions.packages`).
@@ -582,6 +585,7 @@ pub fn compile(
                     })
                     .collect(),
                 contract: o.contract.unwrap_or(defaults.contract),
+                server_route: o.server_route.unwrap_or(defaults.server_route),
             }
         }
     };
@@ -876,6 +880,7 @@ pub fn compile_svg(
             packages: None,
             modules: None,
             contract: None,
+            server_route: None,
         }),
     )
 }
