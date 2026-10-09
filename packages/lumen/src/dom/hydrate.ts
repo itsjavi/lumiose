@@ -46,13 +46,31 @@ interface Hole extends Array<Node> {
   f: boolean;
   /** The server block was `<!--[!-->`: a branch showed its `whenFalse` side. */
   n: boolean;
-  /** Content moved out of the compiled walk's way until the region opens. */
-  d?: DocumentFragment;
+  /** The walk link that skips the block's content until the region opens (see `skip`). */
+  d?: Link;
+}
+
+/**
+ * A `firstChild`/`nextSibling` own property set on a server node so that the compiled template
+ * walk steps over block content left in place (see `walk`).
+ */
+type Link = [node: Node, key: "firstChild" | "nextSibling"];
+
+/** Makes `link` lead to `to` for the compiled walk, without moving any node. */
+function skip(link: Link, to: Node): void {
+  Object.defineProperty(link[0], link[1], { configurable: true, value: to });
+}
+
+/** Restores the DOM's own `firstChild`/`nextSibling` of a link that `skip` redirected. */
+function unskip(link: Link | undefined): void {
+  if (link !== undefined) delete (link[0] as unknown as Record<string, unknown>)[link[1]];
 }
 
 /** Per island: whether claiming failed, and the client-render fallback. */
 interface Island {
   f: boolean;
+  /** Walk links redirected by `skip` whose regions have not opened yet. */
+  l: Link[];
   /** The fallback ran. */
   d: boolean;
   r: () => void;
@@ -119,16 +137,35 @@ function claim(x: Island, h: Hole, t: Node, holes: Hole[]): Node {
     fail(x);
   }
   h.i++;
-  walk(x, t, s, holes);
+  walk(x, t, s, holes, x.l);
   return s;
 }
 
-/** Aligns the children of server node `s` with those of template node `t`; collects holes. */
-function walk(x: Island, t: Node, s: Node, holes: Hole[]): void {
+/**
+ * Aligns the children of server node `s` with those of template node `t`; collects holes. Block
+ * content stays in place (moving server nodes makes the browser paint them again, and report a
+ * new Largest Contentful Paint): the link the compiled `firstChild`/`nextSibling` walk takes into
+ * a run of blocks is redirected to the server node aligned with the next template node, until the
+ * blocks' regions open.
+ */
+function walk(x: Island, t: Node, s: Node, holes: Hole[], links: Link[]): void {
   let tc = t.firstChild;
   let sc = s.firstChild;
   // A block that precedes a static template node, which becomes its marker.
   let before: Hole | undefined;
+  // The walk's way to the next aligned node: `firstChild` of `s`, then the last aligned node's
+  // `nextSibling`; `blocked` once block content lies on it.
+  let link: Link = [s, "firstChild"];
+  let blocked: Hole[] = [];
+  const align = (node: Node): void => {
+    if (blocked.length > 0) {
+      skip(link, node);
+      links.push(link);
+      for (const h of blocked) h.d = link;
+      blocked = [];
+    }
+    link = [node, "nextSibling"];
+  };
   for (;;) {
     if (sc !== null && sc.nodeType === 8) {
       const data = (sc as Comment).data;
@@ -144,18 +181,13 @@ function walk(x: Island, t: Node, s: Node, holes: Hole[]): void {
         holes.push(h);
         s.removeChild(sc);
         sc = close.nextSibling;
-        if (tc !== null) {
-          // Content before a template node would derail the compiled `firstChild`/`nextSibling`
-          // walk: it waits in a fragment until its region opens.
-          const content = (h.d = document.createDocumentFragment());
-          for (let node = next!; node !== close;) {
-            const after = node.nextSibling!;
-            content.appendChild(node);
-            node = after;
-          }
+        if (tc !== null && next !== close) {
+          // Content before a template node would derail the compiled walk: it steps over it.
+          blocked.push(h);
         }
         if (tc !== null && tc.nodeType === 8) {
           // A `<!>` placeholder: the closing comment is the marker.
+          align(close);
           tc = tc.nextSibling;
         } else {
           s.removeChild(close);
@@ -179,7 +211,8 @@ function walk(x: Island, t: Node, s: Node, holes: Hole[]): void {
       before.m = sc;
       before = undefined;
     }
-    walk(x, tc, sc, holes);
+    align(sc);
+    walk(x, tc, sc, holes, links);
     tc = tc.nextSibling;
     sc = sc.nextSibling;
   }
@@ -245,7 +278,8 @@ class Cursor implements Hydrator {
       if (h.m === marker && (marker !== null || h.p === parent)) {
         s.length = k + 1;
         if (h.d !== undefined) {
-          parent.insertBefore(h.d, marker);
+          // The compiled walk is past this block: the DOM's own links apply again.
+          unskip(h.d);
           h.d = undefined;
         }
         return h;
@@ -325,26 +359,43 @@ function track(thunk: () => unknown): void {
   }
 }
 
+/** Where a slot's server HTML comes from: its `<template data-l-slot>`, or inline nodes. */
+interface SlotSource {
+  /** The template content, or the copy made from `n` on first use. */
+  c?: Node;
+  /** The inline server nodes of the slot's first occurrence, copied lazily. */
+  n?: Node[];
+}
+
 /**
- * A slot's content: under hydration, the inline server nodes at the cursor (adopted); otherwise a
- * copy of its server HTML (the first inline occurrence, or its `<template data-l-slot>`).
+ * A slot's content: under hydration, the inline server nodes at the cursor, adopted in place (the
+ * region's hole takes them instead of the slot's opening comment, so reconciling moves nothing);
+ * otherwise a copy of its server HTML (the first inline occurrence, or its template).
  */
-function slot(name: string, sources: Record<string, Node>): Renderable {
+function slot(name: string, sources: Record<string, SlotSource>): Renderable {
   const cursor = hydrator as Cursor | undefined;
   const x = cursor && top(cursor.s);
   const open = x !== undefined && !x.f ? x[x.i] : undefined;
   if (open !== undefined && open.nodeType === 8 && (open as Comment).data === `l:s:${name}`) {
-    x!.i++;
     const close = closeOf(open as Comment);
     const nodes: Node[] = [];
     for (let node = open.nextSibling!; node !== close; node = node.nextSibling!) {
       nodes.push(node);
     }
+    x!.splice(x!.i, 1, ...nodes);
+    x!.i += nodes.length;
     open.parentNode!.removeChild(open);
     close.parentNode!.removeChild(close);
     return nodes;
   }
-  return sources[name]?.cloneNode(true) as Renderable;
+  const source = sources[name];
+  if (source === undefined) return undefined;
+  if (source.c === undefined) {
+    // First copy of an inline slot: made now, not for every hydration.
+    const copy = (source.c = document.createDocumentFragment());
+    for (const node of source.n!) copy.appendChild(node.cloneNode(true));
+  }
+  return source.c.cloneNode(true) as Renderable;
 }
 
 /**
@@ -367,14 +418,14 @@ export function hydrate<P extends object>(
   // Dev diagnostics only: production builds drop the read.
   const name = DEV ? component.name || "(anonymous)" : "";
   // Slot sources: `<template data-l-slot>` (slots the server did not render) right after `start`,
-  // and a copy of each slot rendered inline.
-  const sources: Record<string, Node> = {};
+  // and the nodes of each slot rendered inline (copied only if a slot renders a copy).
+  const sources: Record<string, SlotSource> = {};
   for (
     let el = start.nextSibling as Element;
     el.nodeName === "TEMPLATE" && el.hasAttribute("data-l-slot");
     el = start.nextSibling as Element
   ) {
-    sources[el.getAttribute("data-l-slot")!] = (el as HTMLTemplateElement).content;
+    sources[el.getAttribute("data-l-slot")!] = { c: (el as HTMLTemplateElement).content };
     parent.removeChild(el);
   }
   const walker = document.createTreeWalker(parent, 128);
@@ -382,10 +433,11 @@ export function hydrate<P extends object>(
   for (let c: Comment | null; (c = walker.nextNode() as Comment | null) !== end && c !== null;) {
     if (c.data.startsWith("l:s:")) {
       const close = closeOf(c);
-      const copy = (sources[c.data.slice(4)] ??= document.createDocumentFragment());
-      if (!copy.hasChildNodes()) {
+      const source = (sources[c.data.slice(4)] ??= {});
+      if (source.c === undefined && source.n === undefined) {
+        source.n = [];
         for (let node = c.nextSibling!; node !== close; node = node.nextSibling!) {
-          copy.appendChild(node.cloneNode(true));
+          source.n.push(node);
         }
       }
       walker.currentNode = close;
@@ -427,6 +479,7 @@ export function hydrate<P extends object>(
   };
   const island: Island = {
     f: false,
+    l: [],
     d: false,
     r: () => {
       if (island.d) {
@@ -448,7 +501,7 @@ export function hydrate<P extends object>(
   if (fresh) {
     render(undefined);
   } else {
-    // Claiming moves some server nodes out and back in (see `walk`): keep the focus where it was.
+    // Claiming replaces some markers around focused content: keep the focus where it was.
     const focused = document.activeElement as HTMLElement | null;
     try {
       render(new Cursor([hole(entries(start.nextSibling, end), parent, end)], island));
@@ -457,6 +510,9 @@ export function hydrate<P extends object>(
         throw error;
       }
     }
+    // Normally each link is restored when its region opens; never leave one redirected.
+    for (const link of island.l) unskip(link);
+    island.l = [];
     if (island.f) {
       island.r();
     } else if (focused !== document.activeElement && focused?.isConnected) {

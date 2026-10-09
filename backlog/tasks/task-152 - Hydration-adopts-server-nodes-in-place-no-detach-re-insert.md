@@ -1,10 +1,11 @@
 ---
 id: TASK-152
 title: Hydration adopts server nodes in place (no detach/re-insert)
-status: To Do
+status: Done
 assignee:
   - Spark
 created_date: '2026-10-09 05:35'
+updated_date: '2026-10-09 05:42'
 labels:
   - hydration
   - perf
@@ -21,6 +22,12 @@ TASK-136 (Prism): on the bench project page, hydration detaches and re-inserts t
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 No server-rendered node is detached or re-inserted during hydration of slots and blocks (MutationObserver test); text nodes adopted; inline slot cloning lazy
-- [ ] #2 Bench project-page LCP ≈ FCP (measured); dom/hydrate tests, islands-e2e, spa-router-e2e and sample suites green
+- [x] #1 No server-rendered node is detached or re-inserted during hydration of slots and blocks (MutationObserver test); text nodes adopted; inline slot cloning lazy
+- [x] #2 Bench project-page LCP ≈ FCP (measured); dom/hydrate tests, islands-e2e, spa-router-e2e and sample suites green
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Spark: no codegen change needed. (1) Blocks before a template node stay in place: walk() redirects the one link the compiled firstChild/nextSibling walk takes into the block (an own firstChild/nextSibling property on the parent or the preceding aligned node, pointing at the next aligned server node) until the block's region opens (region() deletes it; hydrate() clears any leftovers after the sync pass). (2) slot() adopts the inline slot nodes into the region's hole in place (Prism's prototype), so reconcile moves nothing. (3) Text: the '0' text moves came from (1); text values are adopted as before. (4) Inline slots are no longer cloned per hydration: their nodes are recorded and copied on first use (the copy is made from the live nodes then). Test: hydrate.test.ts 'moves no server node while it adopts slots, blocks and text (TASK-152)' (MutationObserver: only marker comments and empty range texts change; fails on HEAD with TABLE/I/#text moves); insert-text.test.ts walks like compiled code. Bench /projects/api (4x CPU throttle, 5 runs): before FCP 116-136 ms with a second LCP entry at 156-180 ms (td after hydration); after a single LCP entry = FCP (112-168 ms). Validation: lumen dom+app vitest green (2 unrelated failures from Halo's csp WIP in server/contract and cli tests), typecheck, oxlint; Playwright islands-e2e 5, spa-router-e2e 22, bookshelf 15, travel journal 17, chiptune 20. Also fixed vite-counter's style-HMR test (its source.replace string predated TASK-124's lumen fmt): 9/9.
+<!-- SECTION:NOTES:END -->

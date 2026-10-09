@@ -26,7 +26,8 @@ const bold = template(`<b>node</b>`);
 
 function slot(): [HTMLElement, Text] {
   const el = row() as HTMLElement;
-  return [el, el.childNodes[1] as Text];
+  // As compiled code walks (under hydration, it steps over server block content left in place).
+  return [el, el.firstChild!.nextSibling as Text];
 }
 
 describe("insertText", () => {

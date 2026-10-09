@@ -414,6 +414,54 @@ describe("hydrate", () => {
     );
   });
 
+  it("moves no server node while it adopts slots, blocks and text (TASK-152)", async () => {
+    const { client, server } = await load(`
+      import { signal } from "lumen";
+      export function Card(props: { n: number }) {
+        return <i>card {props.n}</i>;
+      }
+      export function Page(props: { title: string; children?: any }) {
+        const count = signal(0);
+        (globalThis as any).bump = () => count.set(count() + 1);
+        return (
+          <main>
+            <h1>{props.title}</h1>
+            {props.children}
+            <p><Card n={1} />{count()}<Card n={2} /></p>
+            <footer>{count()} selected</footer>
+          </main>
+        );
+      }`);
+    const { ssr } = await import("../server/index.ts");
+    await serve(server, [
+      ["Page", { title: "T" }, { children: () => ssr(["<table><tr><td>row</td></tr></table>"]) }],
+    ]);
+    const table = document.querySelector("table")!;
+    const cards = [...document.querySelectorAll("i")];
+    const moved: string[] = [];
+    const observer = new MutationObserver((records) => {
+      for (const record of records) {
+        for (const node of [...record.removedNodes, ...record.addedNodes]) {
+          // Marker comments go and range markers (empty texts) come; content stays put.
+          const marker = node.nodeType === 8 || (node.nodeType === 3 && node.textContent === "");
+          if (!marker) moved.push(`${node.nodeName} ${node.textContent}`);
+        }
+      }
+    });
+    observer.observe(document.body, { childList: true, subtree: true });
+    await hydrateAll(client);
+    observer.disconnect();
+    expect(warn).not.toHaveBeenCalled();
+    expect(moved).toEqual([]);
+    expect(document.querySelector("table")).toBe(table);
+    expect([...document.querySelectorAll("i")]).toEqual(cards);
+    (globalThis as any).bump();
+    flushSync();
+    expect(visible()).toBe(
+      "<main><h1>T</h1><table><tbody><tr><td>row</td></tr></tbody></table><p><i>card 1</i>1<i>card 2</i></p><footer>1 selected</footer></main>",
+    );
+  });
+
   it("falls back to a client render on a mismatch, still replaying awaits (LUM4006)", async () => {
     const { client, server } = await load(`
       export async function Profile(props: { id: string }) {
