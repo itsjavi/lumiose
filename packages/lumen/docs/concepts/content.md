@@ -1,6 +1,6 @@
 # Markdown and HTML imports
 
-> With `lumen({ md: true, html: true })`, `import Post, { frontmatter } from "./post.md"` and `import Card from "./card.html"` give static components, compiled at build time: CommonMark + GFM with heading ids and YAML frontmatter, or HTML whose `<style>` is scoped to the file and whose `<script>` runs in the browser.
+> With `lumen({ md: true, html: true })`, `import Post, { frontmatter, headings } from "./post.md"` and `import Card from "./card.html"` give static components, compiled at build time: CommonMark + GFM with heading ids, a headings list and YAML frontmatter, or HTML whose `<style>` is scoped to the file and whose `<script>` runs in the browser.
 
 ## Concept
 
@@ -26,6 +26,10 @@ component.
   exported (returning `undefined` keeps `data`), and it may be async. A hook that throws fails the
   build with the file's name. Values may be JSON data, `Date`, `URL`, `Map`, `Set`, `BigInt`,
   `undefined` or `RegExp`.
+- **Headings list.** The module also exports `headings`: each heading's `depth` (1 to 6), `text`
+  and `id`, in document order, raw HTML headings included. The ids are the rendered anchors', so
+  a table of contents links with `#${id}`. A heading whose text has no slug (`## !!!`) has no id
+  and is not listed.
 - **Code blocks** render as `<pre><code class="language-js">`, without highlighting.
 
 **HTML** files are parsed the way a browser parses them.
@@ -78,6 +82,7 @@ page in dev, since scripts such as `customElements.define` cannot run twice.
 | `lumen({ md: { frontmatter(data, { file }) {} } })`  | Enables them, with a build-time frontmatter hook      |
 | `lumen({ html: true })`                              | Enables `.html` imports                               |
 | `import Post, { frontmatter } from "./post.md"`      | `Post: () => JSX.Element`; `frontmatter: Frontmatter` |
+| `import { headings } from "./post.md"`               | `ReadonlyArray<{ depth; text; id }>`, document order  |
 | `declare module "*.md" { interface Frontmatter {} }` | Declares the fields your hook guarantees              |
 | `import Card from "./card.html"`                     | `Card: () => JSX.Element`                             |
 | `import.meta.glob("./posts/*.md", { eager: true })`  | Every post's module (component and frontmatter)       |
@@ -115,17 +120,21 @@ declare module "*.md" {
 ```
 
 ```stsx
-// src/routes/blog/index.stsx: a list of posts and the latest one
-import type { Frontmatter } from "*.md";
+// src/routes/blog/index.stsx: a list of posts and the latest one, with its table of contents
+import type { Frontmatter, Heading } from "*.md";
 
-type Post = { default: () => JSX.Element; frontmatter: Frontmatter };
+type Post = {
+  default: () => JSX.Element;
+  frontmatter: Frontmatter;
+  headings: ReadonlyArray<Heading>;
+};
 // `import.meta.glob` is Vite's (types from `vite/client`).
 const posts = Object.values(import.meta.glob<Post>("../../posts/*.md", { eager: true })).toSorted(
   (a, b) => b.frontmatter.date.getTime() - a.frontmatter.date.getTime(),
 );
 
 export default function Blog() {
-  const Latest = posts[0]!.default;
+  const { default: Latest, headings } = posts[0]!;
   return (
     <main>
       <ul>
@@ -133,6 +142,13 @@ export default function Blog() {
           <li>{post.frontmatter.title}</li>
         ))}
       </ul>
+      <nav aria-label="On this page">
+        {headings
+          .filter((heading) => heading.depth === 2)
+          .map((heading) => (
+            <a href={`#${heading.id}`}>{heading.text}</a>
+          ))}
+      </nav>
       <article class="post">
         <Latest />
       </article>

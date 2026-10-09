@@ -14,6 +14,19 @@ declare module "*.md" {
   export interface Frontmatter extends Record<string, unknown> {}
   /** The file's YAML frontmatter (`{}` without one), as returned by the optional hook. */
   export const frontmatter: Frontmatter;
+  /** A heading of the file: its level, its text, and the id of its rendered anchor. */
+  export interface Heading {
+    readonly depth: 1 | 2 | 3 | 4 | 5 | 6;
+    /** The heading's text content, whitespace collapsed. */
+    readonly text: string;
+    /** The rendered element's `id` (`#${id}` links to it). */
+    readonly id: string;
+  }
+  /**
+   * The file's headings in document order, raw HTML ones included, with the ids of their rendered
+   * anchors. Headings whose text has no slug (`## !!!`) have no id and are left out.
+   */
+  export const headings: ReadonlyArray<Heading>;
 }
 
 declare module "*.html" {

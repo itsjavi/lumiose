@@ -134,6 +134,10 @@ describe.skipIf(!binding)(".md and .html imports", () => {
       "/content/post.md.stsx?lumen&type=style&lang.css",
     );
     expect(css!.code).toMatch(/\.note\[data-l-\w+\]/);
+    const { headings } = (await server.ssrLoadModule("/content/post.md.stsx")) as {
+      headings: unknown;
+    };
+    expect(headings).toEqual([{ depth: 1, text: "Hello, Lumen", id: "hello-lumen" }]);
   });
 
   it("exports the frontmatter after the hook, and reports its errors with the file", async () => {

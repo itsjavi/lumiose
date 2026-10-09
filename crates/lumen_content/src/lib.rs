@@ -10,7 +10,8 @@
 //! CommonMark plus the GFM extensions (tables, strikethrough, task lists, autolinks, footnotes),
 //! rendered by comrak. Raw HTML is kept (the file is the project's own) and goes through the HTML
 //! pipeline below. Headings get GitHub-style ids (`## Hello, World!` → `id="hello-world"`, then
-//! `-1`, `-2` for repeats) unless they have one. A leading `---` YAML block is the frontmatter:
+//! `-1`, `-2` for repeats) unless they have one. The module exports them as `headings`
+//! (`{ depth, text, id }`, document order; headings whose text has no slug are left out). A leading `---` YAML block is the frontmatter:
 //! returned raw in [`Component::frontmatter`] (the host parses it) and re-exported by the module
 //! from `./<name>?lumen-frontmatter`. A `<script>` element in the raw HTML is an error,
 //! [`SCRIPT_IN_MARKDOWN`] (decision-22): only `.html` imports run scripts. It is left out of the
@@ -91,11 +92,11 @@ pub fn markdown(source: &str, name: &str) -> Component {
     let body_start = source.len() - body.len();
     let (html, scripts) = markdown::to_html(body);
     let nodes = fragment(&html);
-    markdown::heading_ids(&nodes);
+    let headings = markdown::heading_ids(&nodes);
     let mut component = emit::module(emit::Input {
         nodes,
         name,
-        markdown: true,
+        markdown: Some(headings),
         frontmatter: frontmatter.map(str::to_owned),
     });
     component.diagnostics = scripts
@@ -125,7 +126,7 @@ pub fn html(source: &str, name: &str) -> Component {
     emit::module(emit::Input {
         nodes,
         name,
-        markdown: false,
+        markdown: None,
         frontmatter: None,
     })
 }

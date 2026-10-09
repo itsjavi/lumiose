@@ -77,8 +77,8 @@ What it does:
   Vite's URL import. See [SVG imports](../concepts/svg.md).
 - With `md`/`html`, loads project `.md` and `.html` files as static components: their source
   becomes the Lumen module `<file>.md.stsx` (`.html.stsx`), compiled like any `.stsx` file, with
-  `frontmatter` from `<file>.md?lumen-frontmatter` and client scripts loaded by an island from
-  `<file>.html?lumen-script`. HTML entries (`index.html`, HTML build inputs) and `public/` files
+  `frontmatter` from `<file>.md?lumen-frontmatter`, `headings`, relative asset URLs as `?url`
+  imports, and client scripts loaded by an island from `<file>.html?lumen-script`. HTML entries (`index.html`, HTML build inputs) and `public/` files
   stay Vite's. See [Markdown and HTML imports](../concepts/content.md).
 - Hot updates: a client module that imports `mount` from `lumen/dom` (an app entry) accepts updates
   of every module it reaches and re-mounts the app into the same container. Component state resets;

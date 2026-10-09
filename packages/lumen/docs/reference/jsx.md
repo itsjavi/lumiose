@@ -173,6 +173,12 @@ declare module "*.md" {
   export default Content;
   export interface Frontmatter extends Record<string, unknown> {} // merge your fields into it
   export const frontmatter: Frontmatter;
+  export interface Heading {
+    depth: 1 | 2 | 3 | 4 | 5 | 6;
+    text: string;
+    id: string;
+  } // read-only
+  export const headings: ReadonlyArray<Heading>; // document order, ids of the rendered anchors
 }
 declare module "*.html" {
   const Content: () => JSX.Element;

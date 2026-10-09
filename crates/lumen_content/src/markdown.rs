@@ -113,8 +113,17 @@ fn source_offset(body: &str, line: usize, literal: &str, offset: usize) -> usize
         .map_or(line_start, |tag| line_start + tag)
 }
 
-/// Gives `<h1>`…`<h6>` without an id a GitHub-style slug of their text, unique in the file.
-pub(crate) fn heading_ids(nodes: &[Handle]) {
+/// A heading of a Markdown file, for its `headings` export.
+pub(crate) struct Heading {
+    pub(crate) depth: u8,
+    pub(crate) text: String,
+    pub(crate) id: String,
+}
+
+/// Gives `<h1>`…`<h6>` without an id a GitHub-style slug of their text, unique in the file, and
+/// returns the headings that have an id (all but those whose text has no slug), in document
+/// order.
+pub(crate) fn heading_ids(nodes: &[Handle]) -> Vec<Heading> {
     let mut elements = Vec::new();
     let mut stack: Vec<Handle> = nodes.iter().rev().cloned().collect();
     while let Some(node) = stack.pop() {
@@ -124,29 +133,41 @@ pub(crate) fn heading_ids(nodes: &[Handle]) {
         }
     }
     let mut used: HashSet<String> = elements.iter().filter_map(|e| e.attribute("id")).collect();
+    let mut headings = Vec::new();
     for element in &elements {
-        let heading = matches!(
-            element.html_name(),
-            Some("h1" | "h2" | "h3" | "h4" | "h5" | "h6")
-        );
-        if !heading || element.attribute("id").is_some() {
-            continue;
-        }
-        let mut text = String::new();
-        element.text_content(&mut text);
-        let slug = slug(&text);
-        if slug.is_empty() {
-            continue;
-        }
-        let mut id = slug.clone();
-        let mut n = 0;
-        while used.contains(&id) {
-            n += 1;
-            id = format!("{slug}-{n}");
-        }
-        element.set_attribute("id", &id);
-        used.insert(id);
+        let depth = match element.html_name() {
+            Some("h1") => 1,
+            Some("h2") => 2,
+            Some("h3") => 3,
+            Some("h4") => 4,
+            Some("h5") => 5,
+            Some("h6") => 6,
+            _ => continue,
+        };
+        let mut raw = String::new();
+        element.text_content(&mut raw);
+        let text = raw.split_whitespace().collect::<Vec<_>>().join(" ");
+        let id = match element.attribute("id") {
+            Some(id) => id,
+            None => {
+                let slug = slug(&raw);
+                if slug.is_empty() {
+                    continue;
+                }
+                let mut id = slug.clone();
+                let mut n = 0;
+                while used.contains(&id) {
+                    n += 1;
+                    id = format!("{slug}-{n}");
+                }
+                element.set_attribute("id", &id);
+                used.insert(id.clone());
+                id
+            }
+        };
+        headings.push(Heading { depth, text, id });
     }
+    headings
 }
 
 /// GitHub's heading slug: lowercase, punctuation and symbols removed, spaces as `-`.
