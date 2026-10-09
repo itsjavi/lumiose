@@ -3,7 +3,7 @@ id: doc-3
 title: Checkpoint and resume guide
 type: guide
 created_date: '2026-10-08 16:56'
-updated_date: '2026-10-09 12:37'
+updated_date: '2026-10-09 12:46'
 tags:
   - checkpoint
   - resume
@@ -22,16 +22,22 @@ tags:
 - DX: route-literal types and inferred action types (decision-26), route(), .md headings, lumen({ headers }), create-lumen --mcp (Claude Code + Codex), ESLint/oxlint and Prettier plugins, island hot-swap in dev (TASK-147).
 - Samples: Dotmatrix (Game Boy chiptune studio on the user's gbapu engine: 12 songs, 20 SFX, 20 creatures, code editor/export) and chiptune on GitHub Pages with a first-party COOP/COEP service worker.
 
+## Uncommitted work left in the tree (on purpose)
+
+- **Halo, TASK-169:** CSS nesting limit (LUM3014) and LUM3021 for unsafe `$` values in `crates/lumen_css/**` (not green yet: the 64-level nesting test is very slow in debug, check Lightning CSS growth in release and lower the limit if needed); md/html nesting limit LUM1009 in `crates/lumen_content` (green); Halo's two lines in `crates/lumen_compiler/src/diagnostics/registry.rs` (commit only those, Photon's LUM1010 is already in HEAD); docs pages LUM1009/LUM3021, LUM3014 note, security.md section (regenerate llms files from HEAD + these). Committed so far: d4465d9 (SVG allowlist and related fixes).
+- **Spark, TASK-176:** `packages/lumen/src/dom/list.ts` and `insert.ts` share range helpers (−94 B, unit tests green) pending a short jsfb 01–09 check.
+- Everything else is committed and pushed (Photon: main == origin/main at its checkpoint).
+
 ## Open work (owner → task)
 
 | Owner | Task | Note |
 |---|---|---|
-| Photon | TASK-161 CI + native binaries | check `gh run list`; RESUME note on task |
-| Photon | TASK-170 scanner/oxc depth limits, LUM4003 bypasses, PUBLIC_ env prefix, dev fs.deny | high, security |
+| Photon | TASK-161 CI + native binaries | binaries green on 6 targets + wasm; open CI failures listed on the task (docs anchor, vite-counter overlay on Linux, Pages clean checkout, `lumen fmt --check` prints undefined); Windows after the LF fix pending |
+| Photon | TASK-170 | depth limit LUM1010 + 256 MB compile thread done (d784d8a); LUM4003 bypasses closed (0b4fe45, tests pending); still: bypass tests, worker.plugins, PUBLIC_ env prefix, dev fs.deny, docs |
 | Photon | TASK-146 component-level HMR | approved, after 170 |
 | Halo | TASK-169 SVG sanitizer allowlist, CSS/SVG depth limits, CSS `$` breakout, md/html quadratic parsing | high, security; LUM3021 docs may be uncommitted |
 | Spark | TASK-176 runtime headroom (every-export 9.97 kB vs 10 kB cap) | |
-| Quasar | TASK-154 harness interleaving, then TASK-40 agent eval suite | smoke run (5 tasks × 1 run × 4 models via local `claude -p` / `codex exec`) needs Lux's review of time/quota cost before the full matrix |
+| Quasar | TASK-40 agent eval suite (TASK-154 done) | 7 of 20 tasks + runner committed (e53b3da); model ids confirmed (claude-opus-5-5, claude-sonnet-5-5, claude-haiku-5-5, gpt-6-astra, gpt-6.1-sol, gpt-6-luna); smoke run (5 tasks × 1 run × 4 models) only after Lux reviews time/quota cost |
 | Nova | TASK-175 adapters (Cloudflare, Vercel, Netlify) + deploy docs | waits for the adapter API decision |
 | Lux | TASK-39 package names and split | waits for the user |
 | — | TASK-148 HMR DOM morphing | deferred |
