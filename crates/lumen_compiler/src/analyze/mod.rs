@@ -45,6 +45,9 @@ pub struct Component {
 pub struct Analysis {
     pub components: Vec<Component>,
     pub diagnostics: Vec<Diagnostic>,
+    /// Module-level `const` array literals that are never mutated: their rows never move, so a
+    /// `.map()` index over them is stable (no LUM2006).
+    pub constant_arrays: HashSet<SymbolId>,
     by_span: HashMap<u32, usize>,
 }
 
@@ -95,7 +98,121 @@ pub fn analyze(
         default_name: server_route.then(|| default_export_name(program)).flatten(),
     };
     analyzer.visit_program(program);
-    analyzer.finish()
+    let mut analysis = analyzer.finish();
+    analysis.constant_arrays = constant_arrays(program, scoping);
+    analysis
+}
+
+/// Array methods that reorder, add or remove elements.
+const MUTATING_METHODS: [&str; 9] = [
+    "copyWithin",
+    "fill",
+    "pop",
+    "push",
+    "reverse",
+    "shift",
+    "sort",
+    "splice",
+    "unshift",
+];
+
+/// See [`Analysis::constant_arrays`]: `const X = [...]` at the top level, never reassigned, and
+/// never written through (`X[i] = …`, `X.length = 0`, `delete X[i]`, `X.push(…)`, …).
+fn constant_arrays(program: &Program<'_>, scoping: &Scoping) -> HashSet<SymbolId> {
+    let mut candidates = HashSet::new();
+    for statement in &program.body {
+        let declaration = match statement {
+            Statement::VariableDeclaration(declaration) => declaration,
+            Statement::ExportDeclaration(export) => match &export.declaration {
+                Declaration::VariableDeclaration(declaration) => declaration,
+                _ => continue,
+            },
+            _ => continue,
+        };
+        if declaration.kind != VariableDeclarationKind::Const {
+            continue;
+        }
+        for declarator in &declaration.declarations {
+            if let (BindingPattern::BindingIdentifier(id), Some(init)) =
+                (&declarator.id, &declarator.init)
+                && matches!(init.without_parentheses(), Expression::ArrayExpression(_))
+                && let Some(symbol) = id.symbol_id.get()
+                && !scoping.symbol_is_mutated(symbol)
+            {
+                candidates.insert(symbol);
+            }
+        }
+    }
+    if candidates.is_empty() {
+        return candidates;
+    }
+    let mut finder = ArrayWrites {
+        scoping,
+        written: HashSet::new(),
+    };
+    finder.visit_program(program);
+    candidates.retain(|symbol| !finder.written.contains(symbol));
+    candidates
+}
+
+struct ArrayWrites<'s> {
+    scoping: &'s Scoping,
+    written: HashSet<SymbolId>,
+}
+
+impl ArrayWrites<'_> {
+    /// Records the array a member expression writes through (`X[i]`, `X.length`).
+    fn member_target(&mut self, object: &Expression<'_>) {
+        if let Expression::Identifier(ident) = object.without_parentheses()
+            && let Some(symbol) = symbol_of(self.scoping, ident)
+        {
+            self.written.insert(symbol);
+        }
+    }
+
+    fn simple_target(&mut self, target: &SimpleAssignmentTarget<'_>) {
+        match target {
+            SimpleAssignmentTarget::StaticMemberExpression(member) => {
+                self.member_target(&member.object)
+            }
+            SimpleAssignmentTarget::ComputedMemberExpression(member) => {
+                self.member_target(&member.object)
+            }
+            _ => {}
+        }
+    }
+}
+
+impl<'a> Visit<'a> for ArrayWrites<'_> {
+    fn visit_assignment_expression(&mut self, it: &AssignmentExpression<'a>) {
+        if let Some(target) = it.left.as_simple_assignment_target() {
+            self.simple_target(target);
+        }
+        walk::walk_assignment_expression(self, it);
+    }
+
+    fn visit_update_expression(&mut self, it: &UpdateExpression<'a>) {
+        self.simple_target(&it.argument);
+        walk::walk_update_expression(self, it);
+    }
+
+    fn visit_unary_expression(&mut self, it: &UnaryExpression<'a>) {
+        if it.operator == UnaryOperator::Delete
+            && let Some(member) = it.argument.as_member_expression()
+        {
+            self.member_target(member.object());
+        }
+        walk::walk_unary_expression(self, it);
+    }
+
+    fn visit_call_expression(&mut self, it: &CallExpression<'a>) {
+        if let Expression::StaticMemberExpression(member) = it.callee.without_parentheses()
+            && MUTATING_METHODS.contains(&member.property.name.as_str())
+        {
+            self.member_target(&member.object);
+        }
+        walk::walk_call_expression(self, it);
+    }
 }
 
 struct Pending {

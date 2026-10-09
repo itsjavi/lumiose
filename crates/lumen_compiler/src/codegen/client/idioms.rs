@@ -105,6 +105,9 @@ impl<'a> Codegen<'a, '_> {
         };
         let span = call.span;
         let object = self.visited(member.unbox().object);
+        // A never-mutated module-level array literal: its rows never move (TASK-140).
+        let stable_rows = matches!(object.without_parentheses(), Expression::Identifier(ident)
+            if self.symbol_of(ident).is_some_and(|s| self.analysis.constant_arrays.contains(&s)));
         // The server `list` takes the array; the client tracks a source function.
         let source = if self.server() {
             object
@@ -131,7 +134,7 @@ impl<'a> Codegen<'a, '_> {
             _ => None,
         });
         let index_used = index.is_some_and(|i| !self.scoping.symbol_is_unused(i));
-        if let Some(index) = index.filter(|_| index_used) {
+        if let Some(index) = index.filter(|_| index_used && !stable_rows) {
             self.check_index_escape(&callback, index);
         }
         // Rows are never reconciled on the server; the `key` attribute is skipped there.

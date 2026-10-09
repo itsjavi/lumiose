@@ -689,3 +689,32 @@ export default function Page() {
         .collect();
     assert_eq!(stale, ["stale = count() ?? notFound()"]);
 }
+
+#[test]
+fn stable_list_sources_keep_the_index_without_lum2006() {
+    let source = r#"import { signal } from "lumen";
+const CHANNELS = [{ name: "pulse" }, { name: "wave" }] as const;
+const SORTED = ["b", "a"];
+SORTED.sort();
+export function Mixer() {
+  const rows = signal([1, 2]);
+  return (
+    <div>
+      <ul>{CHANNELS.map((info, i) => { const ch = i; return <li>{info.name}{ch}</li>; })}</ul>
+      <ol>{SORTED.map((name, i) => { const at = i; return <li>{name}{at}</li>; })}</ol>
+      <p>{rows().map((row, i) => { const n = i; return <b>{row}{n}</b>; })}</p>
+    </div>
+  );
+}
+"#;
+    let result = compile(source, "/src/Mixer.tsx", &CompileOptions::default());
+    let escapes: Vec<&str> = result
+        .diagnostics
+        .iter()
+        .filter(|d| d.code == Code::ReactiveIndexEscapes)
+        .map(|d| &source[d.span.start as usize..d.span.end as usize])
+        .collect();
+    // The constant array's rows never move; a sorted array and a signal still warn.
+    assert_eq!(escapes, ["i", "i"]);
+    assert!(result.code.contains("const ch = i();"));
+}
