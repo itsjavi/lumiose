@@ -20,6 +20,13 @@ import {
   type CheckDiagnostic,
   type CheckSummary,
 } from "./diagnostics.ts";
+import {
+  islandPropMessage,
+  islandPropProblem,
+  islandPropRange,
+  LUM_ISLAND_PROP,
+  type IslandPropProblem,
+} from "./island-props.ts";
 import { formatHuman, formatJson, type CheckReport } from "./report.ts";
 import { listFiles, sourcePathForShadow, syncShadows, type ShadowFile } from "./shadow.ts";
 import { SourceText } from "./text.ts";
@@ -46,6 +53,13 @@ export {
 } from "./compile.ts";
 export { ModuleHost, type ModuleChange, type ModuleHostOptions } from "./modules.ts";
 export { CheckFailure, SUPERSEDED_BY_TYPESCRIPT } from "./diagnostics.ts";
+export {
+  islandPropMessage,
+  islandPropProblem,
+  islandPropRange,
+  LUM_ISLAND_PROP,
+  type IslandPropProblem,
+} from "./island-props.ts";
 export { formatHuman, formatJson, type CheckReport } from "./report.ts";
 export {
   LUMEN_TSCONFIG,
@@ -214,6 +228,8 @@ export async function check(options: CheckOptions): Promise<CheckResult> {
     }
     const line = diagnostic.line!;
     const column = diagnostic.column!;
+    const island = islandPropProblem(diagnostic.message);
+    if (island) return islandDiagnostic(key, text, text.offsetAt({ line, column }), island);
     const end = text.positionAt(text.tokenEnd(text.offsetAt({ line, column })));
     // A position past the known text (a source that changed or vanished) gets an empty range.
     const valid = end.line > line || (end.line === line && end.column >= column);
@@ -270,6 +286,34 @@ export async function checkCommand(options: CheckCommandOptions): Promise<number
     }
     return EXIT_FAILURE;
   }
+}
+
+/** A TypeScript error on an island call site as LUM4002, on the prop when it can be found. */
+function islandDiagnostic(
+  file: string,
+  text: SourceText,
+  offset: number,
+  problem: IslandPropProblem,
+): CheckDiagnostic {
+  const range = (problem.prop !== undefined &&
+    islandPropRange(text.text, offset, problem.prop)) || {
+    start: offset,
+    end: text.tokenEnd(offset),
+  };
+  const start = text.positionAt(range.start);
+  const end = text.positionAt(range.end);
+  return {
+    source: "lumen",
+    code: LUM_ISLAND_PROP,
+    severity: "error",
+    file,
+    line: start.line,
+    column: start.column,
+    endLine: end.line,
+    endColumn: end.column,
+    ...islandPropMessage(problem),
+    docs: `errors/${LUM_ISLAND_PROP}`,
+  };
 }
 
 /** A tsconfig problem as a warning at the option's key, or at the top when the key is absent. */

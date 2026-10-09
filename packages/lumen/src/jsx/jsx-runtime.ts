@@ -84,8 +84,15 @@ interface Rejected<Hint extends string> {
   readonly "~lumen": Hint;
 }
 
+/**
+ * Brands the props of intrinsic elements, which {@link JSX.LibraryManagedAttributes} leaves as they
+ * are. A symbol key, so it is never offered as an attribute.
+ */
+declare const intrinsic: unique symbol;
+
 /** Lumen props shared by every intrinsic element (spec §4.5). */
 interface LumenProps<T extends Element> {
+  readonly [intrinsic]?: never;
   children?: Renderable;
   class?: JSX.ClassValue;
   style?: string | JSX.CSSProperties;
@@ -176,6 +183,45 @@ type HTMLElements = {
 type SVGElements = { [K in SVGTag]: JSX.SVGProps<SVGElementTagNameMap[K]> };
 type MathMLElements = { [K in MathMLTag]: JSX.MathMLProps<MathMLElementTagNameMap[K]> };
 
+// ---- island props -----------------------------------------------------------------------------------
+
+/** Serialized as is (spec §7.2): JSON values plus `undefined`, `BigInt`, `Date` and `URL`. */
+type SerializableLeaf = string | number | boolean | bigint | null | undefined | Date | URL;
+
+/**
+ * The type an island prop is checked against. Not distributive at the top, so a slot type such as
+ * `JSX.Element` (whose union includes functions and nodes) is kept whole; members of other unions
+ * are checked one by one.
+ */
+type IslandValue<T> = [JSX.Element] extends [T] ? T : IslandMember<T>;
+
+type IslandMember<T> = T extends SerializableLeaf
+  ? T
+  : T extends (...args: never) => unknown
+    ? NotSerializable<"a function">
+    : T extends symbol
+      ? NotSerializable<"a symbol">
+      : T extends PromiseLike<unknown>
+        ? NotSerializable<"a promise">
+        : T extends readonly unknown[]
+          ? number extends T["length"]
+            ? readonly IslandValue<T[number]>[]
+            : { [K in keyof T]: IslandValue<T[K]> }
+          : T extends ReadonlyMap<infer K, infer V>
+            ? ReadonlyMap<IslandValue<K>, IslandValue<V>>
+            : T extends ReadonlySet<infer V>
+              ? ReadonlySet<IslandValue<V>>
+              : { [K in keyof T]: IslandValue<T[K]> };
+
+/**
+ * What a non-serializable island prop is checked against: no value but `undefined` fits, and the
+ * marker names the rule in the TypeScript message (`lumen check` and the language server report
+ * it as LUM4002).
+ */
+interface NotSerializable<What extends string> {
+  readonly "~lumen": `LUM4002: ${What} cannot be an island prop (not serializable)`;
+}
+
 // ---- JSX namespace -----------------------------------------------------------------------------------
 
 export declare namespace JSX {
@@ -189,13 +235,30 @@ export declare namespace JSX {
     children: {};
   }
 
-  /** Props every component accepts: `key`, and the island directives (decision-9, spec §7.2). */
+  /** Props every component accepts: `key`. The island directives come from {@link LibraryManagedAttributes}. */
   export interface IntrinsicAttributes {
     /**
      * `key`: the identity of a row in a `.map` list, so a reordered list moves rows instead of
      * re-creating them. Optional: rows are keyed by item reference otherwise.
      */
     key?: unknown;
+  }
+
+  /**
+   * The props of a component call. A component whose props all serialize takes its props plus the
+   * island directives. Otherwise the type is a union discriminated by the directive: its own props
+   * without a `client:*` directive, or, with one, its props as {@link IslandProps}, so passing a
+   * function (or another value that cannot be serialized) to an island is a type error at the
+   * call site, which `lumen check` and the language server report as LUM4002.
+   */
+  export type LibraryManagedAttributes<_C, P> = typeof intrinsic extends keyof P
+    ? P // an intrinsic element (TypeScript calls this for its contextual types too)
+    : [P] extends [IslandProps<P>]
+      ? P & IslandDirectives
+      : (P & NoIslandDirectives) | (IslandProps<P> & IslandDirectives);
+
+  /** The island directives (decision-9, spec §7.2). Island props must be serializable. */
+  export interface IslandDirectives {
     /**
      * Island directive: renders this component on the server and hydrates it in the browser
      * **immediately** on page load. Its props must be serializable and the component exported.
@@ -223,6 +286,16 @@ export declare namespace JSX {
     "client:only"?: boolean;
   }
 
+  /** A plain component call: no island directive. */
+  export type NoIslandDirectives = { [K in keyof IslandDirectives]?: undefined };
+
+  /**
+   * Props of an island call site (`client:*`): every prop whose declared type cannot be serialized
+   * (functions, symbols, promises, objects with methods such as class instances) only accepts
+   * `undefined`, so passing one is a LUM4002 type error at the prop. Slots (props that accept
+   * JSX, like `children`), `unknown` and `any` stay as declared.
+   */
+  export type IslandProps<P> = { [K in keyof P]: IslandValue<P[K]> };
   /**
    * Every HTML (except `style`), SVG and MathML tag of lib.dom, plus custom elements. Type a custom
    * element by augmenting this interface: `declare module "lumen/jsx-runtime" { namespace JSX { … } }`.

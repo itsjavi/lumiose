@@ -1,0 +1,21 @@
+import { Button } from "./Button.stsx";
+
+class Tool {
+  name = "pen";
+  use() {}
+}
+
+export function Picker(props: { tool?: Tool; label: string }) {
+  return <p>{props.tool?.name ?? props.label}</p>;
+}
+
+export function Toolbar() {
+  const save = () => undefined;
+  return (
+    <nav>
+      <Button label="Plain" onClick={save} />
+      <Button client:load label={`Save ${"{"}`} onClick={save} />
+      <Picker label="Tools" client:idle tool={new Tool()} />
+    </nav>
+  );
+}

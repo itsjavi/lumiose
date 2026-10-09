@@ -84,6 +84,7 @@ import {
 } from "./css.ts";
 import {
   filterBlockDiagnostics,
+  islandPropDiagnostics,
   lumenQuickFixes,
   toLspDiagnostic,
   touchesBlock,
@@ -374,8 +375,13 @@ export function startServer(connection: Connection, options: ServerOptions = {})
         const file = files.get(fileKey(toSource(uri) ?? uri));
         const snapshot = file?.shadowUri !== undefined ? snapshotOf(file) : undefined;
         const kept = snapshot
-          ? filterBlockDiagnostics(snapshot.document, snapshot.blocks, diagnostics)
-          : diagnostics;
+          ? islandPropDiagnostics(
+              snapshot.document,
+              filterBlockDiagnostics(snapshot.document, snapshot.blocks, diagnostics),
+            )
+          : file
+            ? islandPropDiagnostics(file.document, diagnostics)
+            : diagnostics;
         void connection.sendDiagnostics(
           fromTs({ uri, diagnostics: kept, ...(version === undefined ? {} : { version }) }),
         );
@@ -765,7 +771,9 @@ export function startServer(connection: Connection, options: ServerOptions = {})
       return report?.kind === "full" ? report.items : [];
     };
     if (file.shadowUri === undefined) {
-      const typescript = file.typescript ? fromTs(await fromTypeScript(file.uri)) : [];
+      const typescript = file.typescript
+        ? islandPropDiagnostics(file.document, fromTs(await fromTypeScript(file.uri)))
+        : [];
       if (!isTsx(file.uri)) return typescript;
       // Raw CSS in a `.tsx` file (LUM1006 "rename to .stsx"), then the providers'.
       const { document } = file;
@@ -777,11 +785,14 @@ export function startServer(connection: Connection, options: ServerOptions = {})
       ];
     }
     const snapshot = snapshotOf(file);
-    const typescript = fromTs(
-      filterBlockDiagnostics(
-        snapshot.document,
-        snapshot.blocks,
-        await fromTypeScript(file.shadowUri),
+    const typescript = islandPropDiagnostics(
+      snapshot.document,
+      fromTs(
+        filterBlockDiagnostics(
+          snapshot.document,
+          snapshot.blocks,
+          await fromTypeScript(file.shadowUri),
+        ),
       ),
     );
     const lumen = [...snapshot.scan.diagnostics, ...(await provided(file, snapshot.scan))];

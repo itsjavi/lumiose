@@ -5752,7 +5752,8 @@ Export the component: `export function Counter() { … }`. It may stay in the sa
 
 > An island prop (or SPA route data) is not serializable.
 
-**Reported by:** the server runtime, with the path of the offending value.
+**Reported by:** `lumen check` and the language server, at the prop, when its declared type cannot
+be serialized; otherwise the server runtime, with the path of the offending value.
 
 ## What it means
 
@@ -5760,6 +5761,23 @@ Island props travel from the server to the browser as data-only JSON. Supported:
 `undefined`, `NaN`/`Infinity`, `BigInt`, `Date`, `URL`, `Map` and `Set`. Functions, symbols, class
 instances, promises and cycles cannot be serialized. SPA routes get the same rule for their data,
 so `request`, `cookies` and `locals` are not passed in.
+
+## At check time
+
+With a `client:*` directive, the JSX types check each prop against its serializable form: a prop
+whose declared type is a function, a symbol, a promise or an object with methods (a class
+instance) only accepts `undefined`. `lumen check` and the editor report the TypeScript error as
+LUM4002 on the prop:
+
+```text
+src/routes/index.stsx:2:36 - error LUM4002: Island prop `onSave` is not serializable: it is a function. Island props are sent to the browser as data.
+```
+
+The same component without a directive is a server component and takes its props as declared.
+Props typed
+`JSX.Element` (slots), `unknown` or `any` are not checked; values TypeScript cannot see through
+(a class instance without methods, a cycle) are still reported by the server when the page
+renders.
 
 ## Example
 

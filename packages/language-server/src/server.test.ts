@@ -369,6 +369,27 @@ describe("language server (pull diagnostics)", () => {
     ]);
   });
 
+  it("reports non-serializable island props as LUM4002 on the prop (.stsx and .tsx)", async () => {
+    const islands = [
+      "export function Counter(props: { start?: number; onDone?: () => void }) {",
+      "  return <p>{props.start}</p>;",
+      "}",
+      "export const A = () => <Counter client:load start={1} onDone={() => {}} />;",
+      "",
+    ].join("\n");
+    for (const path of ["src/Islands.stsx", "src/Islands.tsx"]) {
+      await server.open(path, islands);
+      const report = await server.request<FullDocumentDiagnosticReport>(
+        "textDocument/diagnostic",
+        doc(path),
+      );
+      expect(report.items.map(({ source, code, range }) => ({ source, code, range }))).toEqual([
+        { source: "lumen", code: "LUM4002", range: rangeOf(islands, "onDone={() =>", 0, 6) },
+      ]);
+      expect(report.items[0]!.message).toMatch(/^Island prop `onDone` is not serializable/);
+    }
+  });
+
   it("supplies imported constants to the compiler, from buffers and disk, re-checking dependents", async () => {
     // A chained re-export on disk (`tokens.ts` is open in an earlier test: its buffer would win).
     const palette =

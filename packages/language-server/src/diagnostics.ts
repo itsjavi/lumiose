@@ -9,6 +9,12 @@ import {
   type Range,
 } from "vscode-languageserver";
 import type { TextDocument } from "vscode-languageserver-textdocument";
+import {
+  islandPropMessage,
+  islandPropProblem,
+  islandPropRange,
+  LUM_ISLAND_PROP,
+} from "lumen/tooling";
 
 /** Converts a compiler-shaped diagnostic (UTF-16 span) of `document` to an LSP diagnostic. */
 export function toLspDiagnostic(
@@ -84,6 +90,34 @@ export function filterBlockDiagnostics<T extends { range: Range }>(
     const offset = document.offsetAt(diagnostic.range.start);
     const block = blocks.find((b) => b.span.start <= offset && offset < b.span.end);
     return !block || block.refs.some((ref) => ref.span.start <= offset && offset < ref.span.end);
+  });
+}
+
+/**
+ * TypeScript errors on island call sites (a function or another value that cannot be serialized
+ * passed with a `client:*` directive) as LUM4002 on the prop, as `lumen check` reports them.
+ */
+export function islandPropDiagnostics<T extends Diagnostic>(
+  document: TextDocument,
+  diagnostics: readonly T[],
+): T[] {
+  return diagnostics.map((diagnostic) => {
+    const problem =
+      typeof diagnostic.message === "string" ? islandPropProblem(diagnostic.message) : undefined;
+    if (!problem) return diagnostic;
+    const offset = document.offsetAt(diagnostic.range.start);
+    const span =
+      problem.prop === undefined
+        ? undefined
+        : islandPropRange(document.getText(), offset, problem.prop);
+    const { message, help } = islandPropMessage(problem);
+    return {
+      ...diagnostic,
+      range: span ? spanRange(document, span) : diagnostic.range,
+      code: LUM_ISLAND_PROP,
+      source: "lumen",
+      message: `${message}\n${help}`,
+    };
   });
 }
 
