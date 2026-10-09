@@ -1,11 +1,11 @@
 ---
 id: TASK-68
 title: Add Remix 3 to the js-framework-benchmark comparison
-status: In Progress
+status: Done
 assignee:
   - '@Spark'
 created_date: '2026-10-08 16:20'
-updated_date: '2026-10-08 16:53'
+updated_date: '2026-10-09 09:50'
 labels: []
 milestone: m-1
 dependencies:
@@ -22,8 +22,8 @@ The user wants the benchmark table to include Remix 3 (remix-run), a new framewo
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 A keyed js-framework-benchmark implementation for remix/component 1.0 (remix@3.0.0) following krausest's rules and Remix's idioms (handle.update(), on() mixins), passing isKeyed and the HTML checks
-- [ ] #2 pnpm bench:jsfb includes it next to lumen, vanilla, solid, svelte, vue-vapor and react; RESULTS.md updated with CPU, memory and size
+- [x] #1 A keyed js-framework-benchmark implementation for remix/component 1.0 (remix@3.0.0) following krausest's rules and Remix's idioms (handle.update(), on() mixins), passing isKeyed and the HTML checks
+- [x] #2 pnpm bench:jsfb includes it next to lumen, vanilla, solid, svelte, vue-vapor and react; RESULTS.md updated with CPU, memory and size
 <!-- AC:END -->
 
 ## Implementation Plan
@@ -54,4 +54,12 @@ Partial run (CPU 01–05 only, 10 iterations, 1-min load ~6–7 from other sessi
 | swap | 29.9/1.2 | 29.6/1.1 | 25.9/0.6 | 29.9/2.5 | 30.2/3.0 | 29.3/2.2 | 171.1/33.8 | 49.5/21.7 |
 RESULTS.md is unchanged (still the TASK-12 table). Note: the interrupted run already deleted the old 06–09, memory and size result JSONs in .krausest/webdriver-ts/results, so do not run --summary alone; rerun everything.
 Rerun (wait for a quiet machine, ~35 min): cd benchmarks/js-framework-benchmark && node scripts/jsfb.ts --count 10 --mem-count 3   (equivalently pnpm --filter @lumen/bench-jsfb bench:jsfb -- --count 10 --mem-count 3; default frameworks now include remix-v3; it rebuilds remix-v3 and lumen and starts its own server on 8131).
+
+Lux 2026-10-09: full rerun started on a quiet machine (no agents) at HEAD 36b3775, includes TASK-65 insertText codegen (TASK-65 AC #4 also needs these numbers).
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Full quiet rerun (10 CPU / 3 memory iterations, Chrome 154, 2026-10-09 09:50 UTC) with Remix 3: lumen 1.047 local / 1.086 projected weighted geomean vs Solid 1.124/1.166, Vue Vapor 1.084/1.124, Svelte 1.150/1.193, React 1.543/1.601, Remix 3 1.564/1.623. RESULTS.md committed.
+<!-- SECTION:FINAL_SUMMARY:END -->

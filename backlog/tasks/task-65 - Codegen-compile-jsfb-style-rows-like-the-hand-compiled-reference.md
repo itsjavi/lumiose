@@ -1,11 +1,11 @@
 ---
 id: TASK-65
 title: 'Codegen: compile jsfb-style rows like the hand-compiled reference'
-status: In Progress
+status: Done
 assignee:
   - '@Photon'
 created_date: '2026-10-08 16:10'
-updated_date: '2026-10-09 04:52'
+updated_date: '2026-10-09 09:51'
 labels: []
 milestone: m-1
 dependencies: []
@@ -24,7 +24,7 @@ The compiled js-framework-benchmark app (benchmarks/js-framework-benchmark, krau
 - [x] #1 In .map() callbacks, consts initialised from row data without calls (const id = row.id) count as row data: selector hoisting and data-slot event hoisting apply (doc-2 §5.2)
 - [x] #2 Plain-value text children ({id}) compile to a one-time write into a template text placeholder (doc-2 §5.4) instead of a static insert
 - [x] #3 Dynamic text children ({row.label()}) avoid a region and a created text node per row (template placeholder plus a text binding; Spark adds a runtime helper with an insert fallback for non-text values if the contract needs one)
-- [ ] #4 pnpm bench:jsfb: lumen run memory ≤ 2.7 MB and CPU within 2 % of lumen-hand
+- [x] #4 pnpm bench:jsfb: lumen run memory ≤ 2.7 MB and CPU within 2 % of lumen-hand
 <!-- AC:END -->
 
 ## Implementation Plan
@@ -72,4 +72,12 @@ Spark (TASK-90 done, 0bb03a9): lumen/dom insertText(node: Text, value) and lumen
 Photon (2026-10-09): insertText emitted (Spark's TASK-90 rule). children.rs: an isolated dynamic child (is_isolated: alone between nodes or the only child, never next to JSX text or another {...}) that is not provably text becomes a template text node + insertText(_text, value) (reactive: compute() = the bare signal for count(), else () => expr; one-time values passed as they are); ssr.rs: insertText(expr) hole. Not isolated -> insert (region) as before; lists/branches/JSX unchanged. jsfb rows now: <td>{id}</td> -> insertText(_t, id) and <a>{row.label()}</a> -> insertText(_t, () => row.label()) (no region per row). Goldens regenerated (insert -> insertText where isolated, template text placeholders added). Tests updated for the new output: compile_api, packages/compiler compile/server tests (island HTML: isolated text values carry no region markers now), vite/plugin.test (li template with a text placeholder), dom/hydrate.test.ts hand-written server half now uses s.insertText like the codegen (small edit in Spark's area; it hydrates a branch fallback without LUM4006). Docs: concepts/jsx.md compiled idioms rows. Contract doc-2 wording for insertText is Lux's (TASK-90 notes).
 
 Photon (2026-10-09) AC #4, short indicative run only (krausest runner, lumen vs lumen-hand, --count 5 --mem-count 3, machine shared with other agents; RESULTS.md restored afterwards): 22_run-memory 2.60 MB vs hand 2.50 (target <= 2.7 met; was 2.87); 21_ready-memory 0.62 vs 0.61. CPU medians: 01_run1k 35.5 vs 34.0 ms (1.04), 03_update10th 26.8 vs 28.7 (0.93), 07_create10k 394.2 vs 375.9 (1.05): not within 2 % in this noisy short run. AC #4 left open for the quiet full run (TASK-68).
+
+Lux 2026-10-09: AC #4 met in the quiet TASK-68 run: run memory 2.60 MB (hand 2.49; target ≤ 2.7); CPU weighted geomean lumen 1.047 vs lumen-hand 1.061 (compiled output at or ahead of the hand-compiled reference on 6 of 9 ops).
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Compiled rows match the hand-compiled reference: run memory 2.87 → 2.60 MB, CPU geomean 1.047 vs hand 1.061 (TASK-68 quiet run).
+<!-- SECTION:FINAL_SUMMARY:END -->
