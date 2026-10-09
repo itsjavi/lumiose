@@ -1,12 +1,14 @@
 // The RSS 2.0 feed: a static GET endpoint, so `lumen build` writes it to dist/client/rss.xml.
 import { href, type Endpoint } from "lumen";
+import { renderToString } from "lumen/server";
 import { allPosts } from "../content.ts";
 import { escapeXml, rssDate } from "../lib/format.ts";
 import { absoluteUrl, site } from "../lib/site.ts";
 
-export const GET: Endpoint = () => {
+export const GET: Endpoint = async () => {
   const posts = allPosts();
-  const items = posts.map((post) => {
+  const bodies = await Promise.all(posts.map((post) => renderToString(post.Content)));
+  const items = posts.map((post, index) => {
     const link = absoluteUrl(href("/posts/[slug]", { slug: post.slug }));
     return `    <item>
       <title>${escapeXml(post.title)}</title>
@@ -15,7 +17,7 @@ export const GET: Endpoint = () => {
       <pubDate>${rssDate(post.date)}</pubDate>
       <description>${escapeXml(post.summary)}</description>
 ${post.tags.map((tag) => `      <category>${escapeXml(tag)}</category>`).join("\n")}
-      <content:encoded>${cdata(post.html)}</content:encoded>
+      <content:encoded>${cdata(bodies[index]!)}</content:encoded>
     </item>`;
   });
   const xml = `<?xml version="1.0" encoding="utf-8"?>

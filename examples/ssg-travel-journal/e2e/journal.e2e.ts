@@ -128,7 +128,7 @@ test.describe("navigation", () => {
     expect(await cover.evaluate((img) => getComputedStyle(img).viewTransitionName)).toBe(coverName);
     expect(coverName).toBe("cover-dolomites-hut-to-hut");
 
-    // The Markdown body: a GFM table, a list and heading anchors, styled through :deep().
+    // The Markdown body: a GFM table, a list and heading ids, styled through :deep().
     const prose = page.locator(".prose");
     await expect(prose.locator("table tbody tr")).toHaveCount(5);
     await expect(prose.locator("h2#the-stages")).toBeVisible();

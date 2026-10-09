@@ -30,7 +30,9 @@ serves. `lumen build` also writes `dist/server`, which a static deploy does not 
 content/posts/*.md         the posts: YAML frontmatter + Markdown
 public/covers/*.svg        cover illustrations (copied to dist/client as they are)
 src/
-  content.ts               the content layer: loads, validates and renders the posts
+  content.ts               the content layer: the posts as .md imports, sorted, by slug and tag
+  frontmatter.ts           frontmatter validation and reading time (the lumen({ md }) hook)
+  posts.d.ts               the frontmatter fields, merged into lumen/env's Frontmatter
   theme.ts                 design tokens, read by style blocks as $theme.*
   document.tsx             <html>/<head>: RSS link, theme script
   lib/                     site settings, pagination, formatting, the search matcher
@@ -74,21 +76,23 @@ In February the sun barely clears the mountains…
 All five fields are required; tags are lowercase slugs. A missing or invalid field fails the
 build with the file name and the problem.
 
-`src/content.ts` is the only module that knows the posts are Markdown files. It loads them with
-`import.meta.glob("../content/posts/*.md", { query: "?raw", import: "default", eager: true })`,
-parses the frontmatter with [`yaml`](https://eemeli.org/yaml/) and renders the body with
-[`marked`](https://marked.js.org) (GitHub-flavored Markdown, with ids and anchors on headings and
-a table of contents from the `##` headings). Pages and endpoints use its small API: `allPosts()`,
-`findPost()`, `adjacentPosts()`, `allTags()`, `postsTagged()`. When Lumen supports importing `.md`
-files directly (TASK-69), only this file changes. Both libraries run at build time only; they
-never reach the browser.
+The posts are native `.md` imports (`lumen({ md })` in `vite.config.ts`): each file compiles to a
+static component (GitHub-flavored Markdown, headings with ids) whose module also exports its
+`frontmatter` and `headings`. The plugin's `frontmatter` hook runs `postFrontmatter()`
+(`src/frontmatter.ts`) at build time: it validates the fields and adds the reading time, and
+`src/posts.d.ts` declares the result's type. `src/content.ts` loads every post with
+`import.meta.glob("../content/posts/*.md", { eager: true })` and gives pages and endpoints a small
+API: `allPosts()`, `findPost()`, `adjacentPosts()`, `allTags()`, `postsTagged()`. A post page
+renders the body with `<props.post.Content />` and its table of contents from the `##` entries of
+`headings`, whose ids are the rendered headings'. The RSS feed renders each body to a string with
+`renderToString()`. No Markdown library is involved, and nothing of it reaches the browser.
 
 ## Styles
 
 - **Global**: `<style global>` in `routes/_layout.stsx`: the page base, `color-scheme` for the
   light and dark themes, focus styles, and the View Transitions opt-in.
-- **Scoped**: every component has its own `<style>` block. The post body is HTML from Markdown
-  (inserted with `innerHTML`), so its elements carry no scope token; `posts/[slug].stsx` styles
+- **Scoped**: every component has its own `<style>` block. The post body is the Markdown file's
+  own component, so its elements carry no scope token of the page; `posts/[slug].stsx` styles
   them from its scoped `.prose` wrapper with `:deep()`.
 - **Tokens**: `src/theme.ts` holds colors, fonts, spacing, radii, shadows and breakpoints. Blocks
   read them as `$theme.color.accent` or `@media (width < $theme.layout.narrow)`, and the compiler
@@ -119,8 +123,8 @@ The pager sets its links apart with `<Link prefetch>` from `lumen/router`, which
 
 ## Tests
 
-- `src/content.test.ts`: every post parses, sort order, tags and neighbours, frontmatter
-  validation, heading ids.
+- `src/content.test.ts`: every post loads and renders, sort order, tags and neighbours, heading
+  ids, frontmatter validation.
 - `src/lib/lib.test.ts`: pagination, date and XML formatting, the search matcher.
 - `e2e/journal.e2e.ts` (Playwright, against `lumen build` + `serve.ts`): prerendered files and the
   JavaScript a page loads, pagination, prefetch (on hover, and per `<Link prefetch>` in

@@ -1,26 +1,30 @@
+import { renderToString } from "lumen/server";
 import { describe, expect, it } from "vitest";
-import { adjacentPosts, allPosts, allTags, findPost, parsePost, postsTagged } from "./content.ts";
-
-const source = (frontmatter: string, body = "Hello.") => `---\n${frontmatter}\n---\n${body}`;
-const valid = [
-  'title: "A walk: by the sea"',
-  "date: 2026-01-02",
-  "tags: [coast, slow-travel]",
-  "summary: Salt and wind.",
-  "cover: /covers/a.svg",
-].join("\n");
+import { adjacentPosts, allPosts, allTags, findPost, postsTagged } from "./content.ts";
+import { postFrontmatter } from "./frontmatter.ts";
 
 describe("the posts in content/posts", () => {
-  it("parses every post, newest first, with unique slugs", () => {
+  it("loads every post, newest first, with unique slugs", async () => {
     const posts = allPosts();
     expect(posts.length).toBeGreaterThanOrEqual(8);
     expect(new Set(posts.map((post) => post.slug)).size).toBe(posts.length);
     const dates = posts.map((post) => post.date);
     expect(dates).toEqual(dates.toSorted().toReversed());
     for (const post of posts) {
-      expect(post.html).toContain("<p>");
+      expect(await renderToString(post.Content)).toContain("<p>");
       expect(post.cover).toMatch(/^\/covers\/.+\.svg$/);
+      expect(post.readingMinutes).toBeGreaterThanOrEqual(1);
     }
+  });
+
+  it("lists the ## headings with the ids of the rendered anchors", async () => {
+    const post = findPost("dolomites-hut-to-hut")!;
+    expect(post.headings.map(({ text, id }) => ({ text, id }))).toEqual([
+      { text: "The stages", id: "the-stages" },
+      { text: "Notes for next time", id: "notes-for-next-time" },
+    ]);
+    const html = await renderToString(post.Content);
+    for (const heading of post.headings) expect(html).toContain(`<h2 id=${heading.id}>`);
   });
 
   it("finds posts, their neighbours and tags", () => {
@@ -39,47 +43,39 @@ describe("the posts in content/posts", () => {
   });
 });
 
-describe("parsePost", () => {
-  it("reads the frontmatter and renders the Markdown body", () => {
-    const post = parsePost(
-      "../content/posts/sea-walk.md",
-      source(valid, "Intro.\n\n## First *stop*\n\nText.\n\n## First stop\n\n### Detail\n"),
-    );
-    expect(post).toMatchObject({
-      slug: "sea-walk",
+describe("postFrontmatter (the lumen({ md }) hook)", () => {
+  const file = "/site/content/posts/sea-walk.md";
+  const data = {
+    title: " A walk: by the sea ",
+    date: "2026-01-02",
+    tags: ["coast", "slow-travel", "coast"],
+    summary: "Salt and wind.",
+    cover: "/covers/a.svg",
+  };
+  const source = `---\ntitle: x\n---\n${"word ".repeat(450)}`;
+
+  it("validates the fields and adds the reading time", () => {
+    expect(postFrontmatter(data, file, source)).toEqual({
       title: "A walk: by the sea",
       date: "2026-01-02",
       tags: ["coast", "slow-travel"],
       summary: "Salt and wind.",
       cover: "/covers/a.svg",
-      readingMinutes: 1,
+      readingMinutes: 2,
     });
-    // `##` headings get unique ids and anchors, and make the table of contents.
-    expect(post.headings).toEqual([
-      { id: "first-stop", text: "First stop" },
-      { id: "first-stop-2", text: "First stop" },
-    ]);
-    expect(post.html).toContain('<h2 id="first-stop"><a class="anchor" href="#first-stop"');
-    expect(post.html).toContain("<em>stop</em></h2>");
-    expect(post.html).toContain('<h3 id="detail">');
   });
 
-  it("reports invalid files with their path", () => {
-    const file = "../content/posts/bad.md";
-    expect(() => parsePost(file, "No frontmatter")).toThrow(`${file}: expected frontmatter`);
-    expect(() => parsePost(file, source("title: a: b"))).toThrow(
-      `${file}: the frontmatter is not valid YAML`,
-    );
-    expect(() => parsePost(file, source(valid.replace("date: 2026-01-02", "date: soon")))).toThrow(
-      'frontmatter "date" must be a day',
-    );
-    expect(() => parsePost(file, source(valid.replace("[coast, slow-travel]", "[Coast]")))).toThrow(
-      'tag "Coast" must be a lowercase slug',
-    );
-    expect(() => parsePost(file, source(valid.replace('title: "A walk: by the sea"', "")))).toThrow(
-      'frontmatter "title" must be a non-empty string',
-    );
-    expect(() => parsePost("../content/posts/Bad Name.md", source(valid))).toThrow(
+  it("rejects invalid fields and file names", () => {
+    const check =
+      (fields: Record<string, unknown>, path = file) =>
+      () =>
+        postFrontmatter({ ...data, ...fields }, path, source);
+    expect(check({ date: "soon" })).toThrow('"date" must be a day');
+    expect(check({ tags: ["Coast"] })).toThrow('tag "Coast" must be a lowercase slug');
+    expect(check({ tags: [] })).toThrow('"tags" must be a non-empty list');
+    expect(check({ title: undefined })).toThrow('"title" must be a non-empty string');
+    expect(check({ cover: "covers/a.svg" })).toThrow('"cover" must be a site path');
+    expect(check({}, "/site/content/posts/Bad Name.md")).toThrow(
       "the file name must be a lowercase slug",
     );
   });

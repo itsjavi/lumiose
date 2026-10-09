@@ -13,9 +13,7 @@
     "test:e2e": "playwright test"
   },
   "dependencies": {
-    "lumen": "workspace:*",
-    "marked": "^18.0.14",
-    "yaml": "^2.9.1"
+    "lumen": "workspace:*"
   },
   "devDependencies": {
     "@playwright/test": "1.63.0",

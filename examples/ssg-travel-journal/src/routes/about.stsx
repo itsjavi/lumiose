@@ -22,9 +22,9 @@ export default function About() {
       </p>
       <ul>
         <li>
-          <strong>Content</strong>: Markdown files with YAML frontmatter, loaded with Vite's{" "}
-          <code>import.meta.glob</code> and rendered with <code>marked</code>, all inside one
-          content module.
+          <strong>Content</strong>: Markdown files with YAML frontmatter, imported as static
+          components with Lumen's <code>.md</code> imports. Their frontmatter is validated at
+          build time, and their headings make each post's table of contents.
         </li>
         <li>
           <strong>Routes</strong>: posts, tags and journal pages are dynamic routes, prerendered

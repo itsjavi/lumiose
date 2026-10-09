@@ -67,7 +67,9 @@ function PostView(props: { post: Post }) {
             </ol>
           </nav>
         ) : null}
-        <div class="prose" innerHTML={props.post.html} />
+        <div class="prose">
+          <props.post.Content />
+        </div>
       </div>
 
       <nav class="adjacent" aria-label="More posts">
@@ -158,25 +160,12 @@ function PostView(props: { post: Post }) {
           line-height: 1.75;
         }
         .prose :deep(h2) {
-          position: relative;
           margin: $theme.space.xl 0 $theme.space.sm;
           font-size: $theme.font.h2;
           scroll-margin-top: $theme.space.lg;
         }
         .prose :deep(h3) {
           margin: $theme.space.lg 0 $theme.space.sm;
-        }
-        .prose :deep(.anchor) {
-          position: absolute;
-          right: 100%;
-          padding-right: 0.4em;
-          color: $theme.color.muted;
-          text-decoration: none;
-          opacity: 0;
-          transition: opacity $theme.motion.fast;
-        }
-        .prose :deep(h2:hover .anchor) {
-          opacity: 1;
         }
         .prose :deep(p),
         .prose :deep(ul),
