@@ -1855,7 +1855,9 @@ loader, and the build ships no hydration code.
 **Build (`lumen build`).** 1. client build (islands, SPA, CSS, assets, `public/`), 2. server
 build, 3. prerender of every `static` route (each `staticPaths()` entry for routes with params) and
 every static `GET` endpoint, in-process through the built handler and fully resolved (no fallbacks
-or swap scripts). Output:
+or swap scripts), 4. precompression: a `.br` and a `.gz` copy next to every text file of
+`dist/client` of at least 1 kB, which `@lumen/adapter-node` (and most static hosts and CDNs) serve
+to browsers that accept them. Output:
 
 - `dist/client`: assets and prerendered files. Assets include those only server-rendered code
   imports (`import photo from "./photo.png"` in a route, a relative `<img src>` in a `.md`
@@ -4321,6 +4323,8 @@ interface HandlerOptions {
   env?: Readonly<Record<string, string | undefined>>;
   /** Headers for every response; a response's own header of the same name wins. */
   headers?: import("node:http").OutgoingHttpHeaders;
+  /** Compress responses for clients that accept brotli or gzip. Default: true. */
+  compress?: boolean;
 }
 
 type NodeHandler = (
@@ -4341,11 +4345,30 @@ They are set first, so a response's own header of the same name wins: a static f
 `cache-control`, a page's `response().setHeader()`, a middleware's response. `lumen preview` passes
 Vite's `preview.headers`, which default to `server.headers`.
 
+**Compression** is on by default. Static files are served from the `.br` and `.gz` copies that
+`lumen build` writes next to every text file of `dist/client` of at least 1 kB (brotli quality 11,
+gzip level 9), so they cost no CPU per request. The app's own responses (pages, endpoints) with a
+text content type (`text/*`, JSON, JavaScript, XML, SVG) are compressed on the fly: brotli at
+quality 4, else gzip at level 6, as `Accept-Encoding` allows. Streamed pages stay streamed: the
+compressor flushes whenever the render pauses, so the shell and each `<Suspense>` chunk reach the
+browser as soon as they are rendered. Responses that are already encoded, below 1 kB with a known
+length, `HEAD`, `204`/`304` or marked `Cache-Control: no-transform` are sent as they are; every
+compressible response gets `Vary: Accept-Encoding`. Pass `compress: false` when a proxy or CDN in
+front compresses, or to measure raw payloads.
+
 ## createStaticHandler
 
 ```ts
-function createStaticHandler(dir: string, config: BuiltAppConfig): StaticHandler;
+function createStaticHandler(
+  dir: string,
+  config: BuiltAppConfig,
+  options?: StaticOptions,
+): StaticHandler;
 type StaticHandler = (req: IncomingMessage, res: ServerResponse) => Promise<boolean>;
+interface StaticOptions {
+  /** Serve the precompressed `.br`/`.gz` copies to clients that accept them. Default: true. */
+  compress?: boolean;
+}
 ```
 
 Serves `GET` and `HEAD` requests below the app's `base` from `dir` (the build's `client/`), and
@@ -4354,7 +4377,8 @@ year (`immutable`); everything else revalidates with `ETag` and `Last-Modified` 
 follow the build's `trailingSlash`: `/about` serves `about/index.html` (`"ignore"`), redirects to
 `/about/` (`"always"`), or serves `about.html` (`"never"`, which redirects `/about/`). Paths with
 `..` or dot files (other than `.well-known`) are never served. `config` is the build entry's
-`config` export.
+`config` export. With `compress`, a client that accepts brotli (else gzip) gets the file's `.br`
+(else `.gz`) copy when the build wrote one, with `Content-Encoding` and `Vary: Accept-Encoding`.
 
 ## Example
 
