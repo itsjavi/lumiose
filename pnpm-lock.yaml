@@ -304,6 +304,19 @@ importers:
         specifier: ^8.3.4
         version: 8.3.4(@types/node@24.19.1)(yaml@2.9.1)
 
+  evals:
+    dependencies:
+      create-lumen:
+        specifier: workspace:*
+        version: link:../packages/create
+      lumen:
+        specifier: workspace:*
+        version: link:../packages/lumen
+    devDependencies:
+      '@types/node':
+        specifier: 24.19.1
+        version: 24.19.1
+
   examples/islands-e2e:
     dependencies:
       lumen:

@@ -1,0 +1,37 @@
+import { signal } from "lumen";
+
+export interface CartProps {
+  name: string;
+  price: number;
+}
+
+export function Cart({ name, price }: CartProps) {
+  const quantity = signal(1);
+  const total = price * quantity();
+  const unit = quantity() === 1 ? "item" : "items";
+
+  return (
+    <section class="cart">
+      <h2>{name}</h2>
+      <p class="quantity">
+        <button type="button" onClick={() => quantity.update((n) => Math.max(0, n - 1))}>
+          −
+        </button>
+        <span>
+          {quantity()} {unit}
+        </span>
+        <button type="button" onClick={() => quantity.update((n) => n + 1)}>
+          +
+        </button>
+      </p>
+      <p class="total">Total: {total.toFixed(2)} €</p>
+
+      <style>
+        .cart {
+          border: 1px solid #ddd;
+          padding: 1rem;
+        }
+      </style>
+    </section>
+  );
+}

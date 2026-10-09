@@ -1,0 +1,10 @@
+import { Title } from "lumen";
+
+export default function Thanks() {
+  return (
+    <main>
+      <Title>Thanks</Title>
+      <h1>Thanks for your message</h1>
+    </main>
+  );
+}

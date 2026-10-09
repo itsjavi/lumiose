@@ -1,0 +1,27 @@
+import { href, notFound, params, Title } from "lumen";
+import { posts } from "../../lib/posts.ts";
+
+export async function staticPaths() {
+  const tags = new Set(posts.flatMap((post) => post.tags));
+  return [...tags].map((tag) => ({ params: { tag } }));
+}
+
+export default function TagPage() {
+  const { tag } = params<"/tags/[tag]">();
+  const tagged = posts.filter((post) => post.tags.includes(tag)).toSorted((a, b) => b.date.localeCompare(a.date));
+  if (tagged.length === 0) notFound();
+
+  return (
+    <main>
+      <Title>Posts tagged {tag}</Title>
+      <h1>Posts tagged “{tag}”</h1>
+      <ul>
+        {tagged.map((post) => (
+          <li key={post.slug}>
+            <a href={href("/blog/[slug]", { slug: post.slug })}>{post.title}</a>
+          </li>
+        ))}
+      </ul>
+    </main>
+  );
+}

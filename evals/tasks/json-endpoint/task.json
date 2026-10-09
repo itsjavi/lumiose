@@ -1,0 +1,7 @@
+{
+  "title": "A JSON search endpoint with validated query parameters",
+  "category": "routing",
+  "template": "ssr",
+  "minutes": 15,
+  "maxTurns": 60
+}

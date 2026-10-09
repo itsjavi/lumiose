@@ -1,0 +1,7 @@
+{
+  "title": "A styled Badge component that reads design tokens",
+  "category": "styles",
+  "template": "minimal",
+  "minutes": 15,
+  "maxTurns": 60
+}

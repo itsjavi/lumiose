@@ -1,0 +1,43 @@
+import { actionData, fail, redirect, Title, type ActionContext } from "lumen";
+import { saveMessage } from "../../server/messages.server.ts";
+
+interface Failure {
+  email: string;
+  message: string;
+  errors: { email?: string; message?: string };
+}
+
+export const action = async (ctx: ActionContext<"/contact">) => {
+  const form = await ctx.formData();
+  const email = String(form.get("email") ?? "").trim();
+  const message = String(form.get("message") ?? "").trim();
+  const errors: Failure["errors"] = {};
+  if (!email.includes("@")) errors.email = "Enter a valid email.";
+  if (message === "") errors.message = "Write a message.";
+  if (errors.email || errors.message) {
+    return fail(400, { email, message: String(form.get("message") ?? ""), errors } satisfies Failure);
+  }
+  saveMessage(email, message);
+  redirect("/contact/thanks");
+};
+
+export default function Contact() {
+  const failed = actionData<typeof action>();
+  return (
+    <main>
+      <Title>Contact</Title>
+      <h1>Contact</h1>
+      <form method="post">
+        <label>
+          Email <input name="email" value={failed?.email ?? ""} />
+        </label>
+        <p class="error">{failed?.errors.email}</p>
+        <label>
+          Message <textarea name="message">{failed?.message ?? ""}</textarea>
+        </label>
+        <p class="error">{failed?.errors.message}</p>
+        <button>Send</button>
+      </form>
+    </main>
+  );
+}

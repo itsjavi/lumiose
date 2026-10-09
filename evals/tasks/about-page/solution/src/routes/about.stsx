@@ -1,0 +1,11 @@
+import { Title } from "lumen";
+
+export default function About() {
+  return (
+    <main>
+      <Title>About</Title>
+      <h1>About this site</h1>
+      <p>A small Lumen site.</p>
+    </main>
+  );
+}

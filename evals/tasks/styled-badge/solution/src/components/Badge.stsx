@@ -1,0 +1,31 @@
+import { colors, radius } from "../lib/tokens.ts";
+
+export interface BadgeProps {
+  tone: "info" | "warning" | "danger";
+  children?: JSX.Element;
+}
+
+export function Badge({ tone, children }: BadgeProps) {
+  return (
+    <span class={["badge", `badge-${tone}`]}>
+      {children}
+      <style>
+        .badge {
+          display: inline-block;
+          padding: 0.125rem 0.5rem;
+          border-radius: $radius;
+          color: $colors.text;
+        }
+        .badge-info {
+          background: $colors.info;
+        }
+        .badge-warning {
+          background: $colors.warning;
+        }
+        .badge-danger {
+          background: $colors.danger;
+        }
+      </style>
+    </span>
+  );
+}

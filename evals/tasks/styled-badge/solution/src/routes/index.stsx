@@ -1,0 +1,15 @@
+import { Title } from "lumen";
+import { Badge } from "../components/Badge.stsx";
+
+export default function Home() {
+  return (
+    <main>
+      <Title>Badges</Title>
+      <h1>Badges</h1>
+      <p>
+        <Badge tone="info">Info</Badge> <Badge tone="warning">Careful</Badge>{" "}
+        <Badge tone="danger">Broken</Badge>
+      </p>
+    </main>
+  );
+}

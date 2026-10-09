@@ -1,0 +1,7 @@
+{
+  "title": "Make a server-rendered counter interactive (island)",
+  "category": "islands",
+  "template": "static",
+  "minutes": 15,
+  "maxTurns": 60
+}

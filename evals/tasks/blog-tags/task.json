@@ -1,0 +1,7 @@
+{
+  "title": "Prerendered tag pages for a static blog",
+  "category": "routing",
+  "template": "static",
+  "minutes": 15,
+  "maxTurns": 60
+}

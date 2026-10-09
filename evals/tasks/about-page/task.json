@@ -1,0 +1,7 @@
+{
+  "title": "Add an About page and a site-wide navigation",
+  "category": "routing",
+  "template": "minimal",
+  "minutes": 15,
+  "maxTurns": 60
+}

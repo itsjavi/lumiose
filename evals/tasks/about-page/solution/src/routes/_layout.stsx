@@ -1,0 +1,22 @@
+import { href, type LayoutProps } from "lumen";
+
+export default function Layout(props: LayoutProps<"/">) {
+  return (
+    <div class="site">
+      <header>
+        <nav>
+          <a href={href("/")}>Home</a>
+          <a href={href("/about")}>About</a>
+        </nav>
+      </header>
+      {props.children}
+
+      <style>
+        nav {
+          display: flex;
+          gap: 1rem;
+        }
+      </style>
+    </div>
+  );
+}

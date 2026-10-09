@@ -1,0 +1,24 @@
+import { signal } from "lumen";
+
+export function Counter({ start = 0, step = 1 }: { start?: number; step?: number }) {
+  const count = signal(start);
+  return (
+    <div class="counter">
+      <button type="button" onClick={() => count.update((n) => n - step)}>
+        −
+      </button>
+      <output>{count()}</output>
+      <button type="button" onClick={() => count.update((n) => n + step)}>
+        +
+      </button>
+
+      <style>
+        .counter {
+          display: inline-flex;
+          gap: 0.5rem;
+          align-items: center;
+        }
+      </style>
+    </div>
+  );
+}

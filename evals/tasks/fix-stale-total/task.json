@@ -1,0 +1,7 @@
+{
+  "title": "Fix a cart whose total never updates",
+  "category": "reactivity",
+  "template": "minimal",
+  "minutes": 15,
+  "maxTurns": 60
+}

@@ -1,0 +1,12 @@
+import { Title } from "lumen";
+import { Cart } from "../components/Cart.stsx";
+
+export default function Home() {
+  return (
+    <main>
+      <Title>Shop</Title>
+      <h1>Shop</h1>
+      <Cart client:load name="Notebook" price={4.5} />
+    </main>
+  );
+}

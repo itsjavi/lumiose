@@ -1,0 +1,7 @@
+{
+  "title": "A contact page with a validated form action",
+  "category": "actions",
+  "template": "ssr",
+  "minutes": 15,
+  "maxTurns": 60
+}

@@ -1,0 +1,21 @@
+{
+  "name": "@lumen/evals",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Agent eval suite (TASK-40): Lumen tasks solved by local coding-agent CLIs, graded by hidden tests.",
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "eval": "node src/cli.ts run",
+    "validate": "node src/cli.ts validate",
+    "view": "node src/view.ts",
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "create-lumen": "workspace:*",
+    "lumen": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "24.19.1"
+  }
+}
