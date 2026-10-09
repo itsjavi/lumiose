@@ -77,7 +77,8 @@ On client-routed (SPA) pages, after a `success`, `submit()` runs [`invalidate()`
 resolves once the page's data is fresh (decision-20); `{ invalidate: false }` skips it. On MPA pages
 it never reloads: the island updates itself from the result, or calls `invalidate()` explicitly.
 Failures, redirects and errors do not invalidate. Rejects only for unexpected errors (the action throws, an error response, a network
-failure) with a `FetchError`. Browser only: rejects on the server.
+failure) with a `FetchError`, and with a `TypeError` for a redirect to a URL that is not `http(s)`
+(a `javascript:` location never runs). Browser only: rejects on the server.
 
 ### submitting
 

@@ -49,6 +49,12 @@ navigation) take the nonce from `<meta property="csp-nonce">`. A prerendered pag
 so such an element is refused there unless it was in the prerendered HTML: put its rules in the
 file's `<style>` block.
 
+**Client navigation.** `navigate()` and the redirects of enhanced form actions only
+follow `http:` and `https:` URLs (relative ones included); a `javascript:` or `data:` location
+throws a `TypeError` instead of running in the page. Spread props drop lowercase `on*` keys
+(`{...{ onclick: "…" }}`): an inline handler attribute is a script sink, so handlers are only
+functions in `onClick`.
+
 **Cross-site form posts.** Form actions and form-encoded posts to endpoints are checked against
 the `Origin` header (on by default, `lumen({ csrf })`); see [Data and actions](data-and-actions.md).
 

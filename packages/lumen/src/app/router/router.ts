@@ -48,7 +48,7 @@ import { createComponent } from "../../dom/component.ts";
 import { DEV } from "../../dom/dev.ts";
 import { MISMATCH } from "../../dom/hydration.ts";
 import { createRange, renderRange, type RangeStart } from "../../dom/insert.ts";
-import { setClientNavigation } from "../actions/navigation.ts";
+import { navigationUrl, setClientNavigation } from "../actions/navigation.ts";
 import { createRouteMatcher, type RouteMatcher } from "../routes/match.ts";
 import { formatPattern } from "../routes/segments.ts";
 import type { RouteManifest } from "../routes/manifest.ts";
@@ -611,7 +611,7 @@ export interface NavigateOptions {
  * the new page is on screen (its async content ready), or when another navigation supersedes it.
  */
 export function navigate(href: string | URL, options: NavigateOptions = {}): Promise<void> {
-  return navigateTo(new URL(href, document.baseURI), options.replace === true, false);
+  return navigateTo(navigationUrl(href), options.replace === true, false);
 }
 
 function navigateTo(url: URL, replace: boolean, keepScroll: boolean): Promise<void> {

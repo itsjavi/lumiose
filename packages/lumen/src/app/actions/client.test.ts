@@ -281,6 +281,32 @@ describe("actionData()", () => {
   });
 });
 
+describe("navigation safety (TASK-166)", () => {
+  it("navigates only to http(s) URLs, relative ones included", async () => {
+    vi.resetModules();
+    const { navigation: mpa, navigationUrl } = await import("./navigation.ts");
+    expect(navigationUrl("/todos/1").href).toBe(new URL("/todos/1", document.baseURI).href);
+    expect(navigationUrl("https://example.com/a").href).toBe("https://example.com/a");
+    for (const href of [
+      "javascript:alert(1)",
+      " JavaScript:alert(1)",
+      "data:text/html,x",
+      "vbscript:x",
+    ]) {
+      expect(() => navigationUrl(href)).toThrow(TypeError);
+      // The MPA default (location.assign) refuses it too.
+      expect(() => mpa.navigate(href)).toThrow(/only http\(s\) URLs navigate/);
+    }
+  });
+
+  it("rejects submit() when an action redirects to a javascript: URL", async () => {
+    vi.resetModules();
+    const fresh = await import("./client.ts");
+    serve(() => actionResult({ type: "redirect", status: 303, location: "javascript:alert(1)" }));
+    await expect(fresh.submit({})).rejects.toThrow(TypeError);
+  });
+});
+
 describe("invalidate()", () => {
   it("refreshes through the navigation hook", async () => {
     await client.invalidate();

@@ -48,6 +48,9 @@ function setSpreadProp(el: Element, key: string, value: unknown, prev: unknown):
     if (typeof value === "function") {
       el.addEventListener(event, value as Listener);
     }
+  } else if (/^on/i.test(key)) {
+    // A lowercase `onclick` would be an inline handler attribute, a script sink: dropped, as on
+    // the server and in React.
   } else if (key === "class") {
     setClass(el, value);
   } else if (key === "style") {

@@ -7,6 +7,7 @@ status: To Do
 assignee:
   - Nova
 created_date: '2026-10-09 12:01'
+updated_date: '2026-10-09 12:03'
 labels:
   - security
   - server
@@ -27,3 +28,9 @@ TASK-162 (Prism): M1 trailingSlash redirect builds Location from url.pathname, s
 - [ ] #1 Each item fixed with a regression test (probes in .local/agents/Prism/prism-20261009T1200Z/app/)
 - [ ] #2 security.md documents body limits, redirect safety (same-origin recipe for user-supplied next URLs), cache headers with CSP
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Spark (TASK-166): client spread now drops /^on/i non-handler keys; when you change server/attrs.ts NOT_ATTRIBUTE, add an onclick: "alert(1)" key to the props of server/parity.test.ts 'spread parity' so both sides stay checked. Client navigate()/action redirects throw on non-http(s) URLs (navigationUrl in app/actions/navigation.ts).
+<!-- SECTION:NOTES:END -->

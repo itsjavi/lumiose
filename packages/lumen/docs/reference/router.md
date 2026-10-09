@@ -59,7 +59,8 @@ interface NavigateOptions {
 
 Navigates on the client when `href` belongs to the current SPA, else loads the document. Resolves
 once the new page is on screen (its async content ready), or when another navigation supersedes
-it. Browser only.
+it. Browser only. Only `http:` and `https:` URLs (relative ones included) navigate: any other
+scheme, such as `javascript:`, throws a `TypeError`.
 
 ### navigating
 

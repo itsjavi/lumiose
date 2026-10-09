@@ -15,9 +15,24 @@ export interface ClientNavigation {
 
 export let navigation: ClientNavigation = {
   clientRouted: false,
-  navigate: (href) => location.assign(href),
+  navigate: (href) => location.assign(navigationUrl(href)),
   invalidate: () => location.reload(),
 };
+
+/**
+ * `href` resolved against the document, for a navigation: only `http:` and `https:` URLs (relative
+ * ones included) navigate. Anything else, such as a `javascript:` URL from a redirect, throws a
+ * `TypeError` instead of running in the page.
+ */
+export function navigationUrl(href: string | URL): URL {
+  const url = new URL(href, document.baseURI);
+  if (url.protocol !== "http:" && url.protocol !== "https:") {
+    throw new TypeError(
+      `Refusing to navigate to a ${url.protocol} URL: only http(s) URLs navigate.`,
+    );
+  }
+  return url;
+}
 
 /** Installs navigation hooks (the SPA router does, TASK-25). Returns a function that undoes it. */
 export function setClientNavigation(hooks: ClientNavigation): () => void {

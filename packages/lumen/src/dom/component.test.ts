@@ -176,6 +176,14 @@ describe("restProps and mergeProps", () => {
 });
 
 describe("spread", () => {
+  it("drops lowercase on* keys, which would be inline handler attributes (TASK-166)", () => {
+    const el = document.createElement("div");
+    root(() =>
+      spread(el, () => ({ onclick: "alert(1)", ONMOUSEOVER: "x", onLoad: undefined, id: "a" })),
+    );
+    expect(el.getAttributeNames()).toEqual(["id"]);
+  });
+
   it("applies attributes, properties, class, style, events, ref and $$scope, and diffs updates", () => {
     const el = document.createElement("input");
     const clicks: string[] = [];

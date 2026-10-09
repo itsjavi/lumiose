@@ -399,6 +399,12 @@ describe("lumen/router", () => {
     stop();
   });
 
+  it("refuses to navigate to a javascript: URL (TASK-166)", async () => {
+    await boot("/");
+    expect(() => navigate("javascript:alert(1)")).toThrow(TypeError);
+    expect(location.pathname).toBe("/");
+  });
+
   it("reads url() and params() outside the router as errors", () => {
     expect(() => params()).toThrow(/inside spa routes/);
     expect(() => route()).toThrow(/inside spa routes/);

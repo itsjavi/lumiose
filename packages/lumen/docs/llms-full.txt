@@ -2761,6 +2761,12 @@ navigation) take the nonce from `<meta property="csp-nonce">`. A prerendered pag
 so such an element is refused there unless it was in the prerendered HTML: put its rules in the
 file's `<style>` block.
 
+**Client navigation.** `navigate()` and the redirects of enhanced form actions only
+follow `http:` and `https:` URLs (relative ones included); a `javascript:` or `data:` location
+throws a `TypeError` instead of running in the page. Spread props drop lowercase `on*` keys
+(`{...{ onclick: "…" }}`): an inline handler attribute is a script sink, so handlers are only
+functions in `onClick`.
+
 **Cross-site form posts.** Form actions and form-encoded posts to endpoints are checked against
 the `Origin` header (on by default, `lumen({ csrf })`); see [Data and actions](data-and-actions.md).
 
@@ -3262,7 +3268,8 @@ On client-routed (SPA) pages, after a `success`, `submit()` runs [`invalidate()`
 resolves once the page's data is fresh (decision-20); `{ invalidate: false }` skips it. On MPA pages
 it never reloads: the island updates itself from the result, or calls `invalidate()` explicitly.
 Failures, redirects and errors do not invalidate. Rejects only for unexpected errors (the action throws, an error response, a network
-failure) with a `FetchError`. Browser only: rejects on the server.
+failure) with a `FetchError`, and with a `TypeError` for a redirect to a URL that is not `http(s)`
+(a `javascript:` location never runs). Browser only: rejects on the server.
 
 ### submitting
 
@@ -3759,7 +3766,8 @@ interface NavigateOptions {
 
 Navigates on the client when `href` belongs to the current SPA, else loads the document. Resolves
 once the new page is on screen (its async content ready), or when another navigation supersedes
-it. Browser only.
+it. Browser only. Only `http:` and `https:` URLs (relative ones included) navigate: any other
+scheme, such as `javascript:`, throws a `TypeError`.
 
 ### navigating
 
