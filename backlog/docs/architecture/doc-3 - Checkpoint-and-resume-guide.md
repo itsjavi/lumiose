@@ -3,14 +3,14 @@ id: doc-3
 title: Checkpoint and resume guide
 type: guide
 created_date: '2026-10-08 16:56'
-updated_date: '2026-10-09 03:42'
+updated_date: '2026-10-09 04:12'
 tags:
   - checkpoint
   - resume
 ---
 # Checkpoint and resume guide (2026-10-09)
 
-**Checkpoint.** All agents are stopped and all work is committed on `main`. No claims or locks are held. Last agent reports: `pnpm typecheck`, `pnpm lint` and `pnpm test` (1072 passed) green; `cargo test`/clippy/fmt green for the touched crates. `pnpm --filter lumen size:apps` fails on purpose for spa-chiptune (TASK-106).
+**Checkpoint.** All agents are stopped and all work is committed on `main`. No claims or locks are held. Last agent reports: `pnpm typecheck`, `pnpm lint` and `pnpm test` (1072 passed) green; `cargo test`/clippy/fmt green for the touched crates. `pnpm --filter lumen size:apps` is a report (examples have no size budget, TASK-106); `size` enforces the runtime cap.
 
 **Sources of truth:** spec doc-1, contract doc-2, decisions 1–25 in `backlog/decisions/`, `AGENTS.md` (workflow, ownership), `agents.json` (Lux, Prism, Photon, Halo, Spark, Nova, Beacon).
 
@@ -44,7 +44,6 @@ tags:
 
 **For Lux:**
 - TASK-86 follow-up: a server page deriving from its own props (`params.slug.toUpperCase()`) still warns LUM2001; fixing it needs the route mode in Vite/`lumen check`.
-- Add `size:apps` to CI once TASK-106 settles.
 
 ## How to resume
 
