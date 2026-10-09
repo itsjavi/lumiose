@@ -5,6 +5,7 @@ status: To Do
 assignee:
   - Prism
 created_date: '2026-10-09 11:53'
+updated_date: '2026-10-09 12:01'
 labels:
   - security
 milestone: m-7
@@ -24,3 +25,9 @@ User 2026-10-09: production hardening. Read-only review of packages/lumen/src/{a
 - [ ] #1 Findings report with severity, evidence (file:line, repro) and fixes; Lux files tasks
 - [ ] #2 Fuzz-style probes of the .stsx scanner/masking and CSS pipeline (crashes, hangs) included
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Lux 2026-10-09: partial report received (app/server only). H1 → TASK-164 (Nova, high); M1/M3/M4/L1-server/L5/L6 + server redirect() scheme check → TASK-165 (Nova); M2 + L1-client → TASK-166 (Spark). L2 (URL sanitization default), L3 (ErrorBoundary production error sanitization), L4 (signed-cookie secret length) need the user's approval. Still open: adapter-node, compiler/svg/content fuzzing (AC #2), Vite dev/LUM4003/MCP, dependency audit.
+<!-- SECTION:NOTES:END -->
