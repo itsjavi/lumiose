@@ -1,0 +1,8 @@
+# LF everywhere, also in Windows checkouts (formatters, goldens and snapshots compare bytes).
+* text=auto eol=lf
+*.png binary
+*.jpg binary
+*.ico binary
+*.woff2 binary
+*.node binary
+*.wasm binary

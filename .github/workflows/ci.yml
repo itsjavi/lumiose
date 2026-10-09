@@ -15,7 +15,8 @@ permissions:
 # A newer push to the same branch or PR cancels the older run.
 concurrency:
   group: ci-${{ github.ref }}
-  cancel-in-progress: true
+  # Pushes to main all run to the end (several agents push); a newer push to a PR cancels.
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 env:
   CARGO_TERM_COLOR: always
