@@ -13,7 +13,7 @@ The pre-release security review (TASK-162, Prism) found unbounded request bodies
 ## Decision
 
 **Chosen by the user**
-- **Body limits.** Urlencoded/JSON bodies are capped at 1 MB and multipart at 10 MB; larger requests get 413 (rejected early on `Content-Length`, otherwise while streaming). Configurable globally with `lumen({ limits: { body: "1mb", upload: "10mb" } })` and per route with `export const limits = { … }`. Endpoints get the same limits through a body helper.
+- **Body limits.** Urlencoded/JSON bodies are capped at 1 MB and multipart at 10 MB; larger requests get 413 (rejected early on `Content-Length`, otherwise while streaming). Configurable globally with `lumen({ limits: { body: "1mb", upload: "10mb" } })` and per route with `export const limits = { … }`. Endpoints get the same limits: the request handler bounds every body, so `request.formData()`, `json()` and `arrayBuffer()` enforce them (no separate helper needed).
 - **Unsafe URLs.** Dynamic values for URL attributes (`href`, `src`, `action`, `formaction`, `xlink:href`, `poster`, `data` …) with a `javascript:` (or `vbscript:`/`data:text/html`) scheme render as a harmless placeholder in production, with a LUM dev warning. Static string literals are left alone.
 - **Production errors.** During server rendering, `ErrorBoundary` fallbacks receive a generic error with a short digest instead of a non-`HttpError` error; the full error goes to the server log with the same digest. Development keeps the raw error. This matches page-level errors.
 
