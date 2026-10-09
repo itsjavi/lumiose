@@ -70,6 +70,10 @@ pub struct CompileOptions {
     /// `static`): its default export's props are plain values, so reading them is not a
     /// reactive read (no `LUM2001`/`LUM2003` for them). The host knows the route mode.
     pub server_route: bool,
+    /// `lumen({ csp: "strict" })` (TASK-142, decision-27): static `style` strings are applied
+    /// through `setStyle`/`styleAttr` instead of baked `style="…"` attributes, and JSX
+    /// `<script>`/`<style>` elements get the CSP nonce (`setNonce`/`nonceAttr()`).
+    pub strict_csp: bool,
 }
 
 impl Default for CompileOptions {
@@ -85,6 +89,7 @@ impl Default for CompileOptions {
             modules: Vec::new(),
             contract: false,
             server_route: false,
+            strict_csp: false,
         }
     }
 }
@@ -299,6 +304,7 @@ pub fn compile(source: &str, filename: &str, options: &CompileOptions) -> Compil
         filename,
         scope_tokens: &scopes.tokens,
         style_import: options.style_import,
+        strict_csp: options.strict_csp,
     };
     let output = client::transform(
         &ast,

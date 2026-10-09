@@ -68,6 +68,8 @@ export interface ClientRuntime {
   setStyle(el: HTMLElement | SVGElement, value: unknown): void;
   /** Sets one style property (`setProperty`), removing it when nullish/false. Usable as an `apply` function via `bind(el, () => v, ...)` wrappers generated per key. */
   setStyleProperty(el: HTMLElement | SVGElement, name: string, value: unknown): void;
+  /** `lumen({ csp: "strict" })`: gives a `<script>`/`<style>` the page's CSP nonce (`<meta property="csp-nonce">`), if any. */
+  setNonce(el: HTMLElement | SVGElement): void;
 
   // ---- dynamic content ----------------------------------------------------------------------------
   /**

@@ -2,7 +2,15 @@
 // hand-compiled server components, per request (nonces) and while prerendering (hashes).
 import { createHash } from "node:crypto";
 import { describe, expect, it, vi } from "vitest";
-import { $await, $leave, createComponent, ssr, styleAttr, text } from "../../server/index.ts";
+import {
+  $await,
+  $leave,
+  createComponent,
+  nonceAttr,
+  ssr,
+  styleAttr,
+  text,
+} from "../../server/index.ts";
 import { Suspense } from "../../server/components.ts";
 import { createRouteManifest } from "../routes/manifest.ts";
 import { addNonce, hashPolicy, withHashPolicy } from "./csp.ts";
@@ -93,6 +101,40 @@ describe('lumen({ csp: "strict" })', () => {
     // Another response, another nonce.
     const again = (await fetch("/")).headers.get("content-security-policy")!;
     expect(again).not.toContain(nonce);
+  });
+
+  it("gives JSX-authored scripts and styles the nonce; an explicit one wins (TASK-142)", async () => {
+    // As compiled with `strictCsp`: `<script innerHTML>`, an SVG `<style>`, a static `style`
+    // string and a script with its own `nonce`.
+    const authored: ModuleExports = {
+      mode: "server",
+      default: () =>
+        ssr(
+          [
+            "<main",
+            "><script",
+            ">window.a = 1</script><svg><style",
+            ">rect{fill:teal}</style></svg><script nonce=own>window.b = 2</script></main>",
+          ],
+          styleAttr("color: red"),
+          nonceAttr(),
+          nonceAttr(),
+        ),
+    };
+    const res = await app({ "src/routes/index.stsx": authored })("/");
+    const nonce = /'nonce-([^']+)'/.exec(res.headers.get("content-security-policy")!)![1]!;
+    const html = await res.text();
+    expect(html).toContain(`<script nonce="${nonce}">window.a = 1</script>`);
+    expect(html).toContain(`<style nonce="${nonce}">rect{fill:teal}</style>`);
+    expect(html).toContain("<script nonce=own>window.b = 2</script>");
+    expect(html).not.toMatch(/\sstyle="/);
+    // Prerendered, the same page gets no nonce: its hash policy lists the inline elements.
+    const prerendered = await (
+      await app({ "src/routes/index.stsx": authored }, { prerendering: true })("/")
+    ).text();
+    expect(prerendered).toContain("<script>window.a = 1</script>");
+    expect(prerendered).toContain(sha("window.a = 1"));
+    expect(prerendered).toContain(sha("rect{fill:teal}"));
   });
 
   it("leaves the policy to a page or middleware that sets one", async () => {

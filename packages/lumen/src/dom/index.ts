@@ -6,6 +6,7 @@ export {
   applyScope,
   setAttr,
   setClass,
+  setNonce,
   setProp,
   setStyle,
   setStyleProperty,

@@ -127,6 +127,8 @@ export default function lumen(options: LumenOptions = {}): Plugin<LumenPluginApi
     sourceMap: true,
     root,
     packages: packages.for(cleanId(file)),
+    // Static `style` strings through the CSSOM, nonces on JSX scripts and styles (TASK-142).
+    ...(api.options.csp === "strict" ? { strictCsp: true } : {}),
   });
   const isLumenFile = (file: string): boolean => include.test(file) && !exclude.test(file);
   // Server-rendered route modules (./server-routes.ts), scanned once and again after a route

@@ -85,9 +85,10 @@ export interface LumenOptions {
   prefetch?: "hover" | "viewport" | "none";
   /**
    * A strict Content Security Policy (spec §7.4): pages rendered per request get a nonce on every
-   * inline script and style Lumen writes, `cspNonce()` for the app's own, and a
-   * `Content-Security-Policy` header (`script-src 'nonce-…' 'strict-dynamic'`); prerendered pages
-   * get the same policy with hashes in a `<meta>`. `style` props render as nonce'd rules instead of
+   * inline script and style Lumen writes and on those written in JSX (an explicit `nonce` wins),
+   * `cspNonce()` for markup the app builds itself, and a `Content-Security-Policy` header
+   * (`script-src 'nonce-…' 'strict-dynamic'`); prerendered pages get the same policy with hashes in
+   * a `<meta>`. `style` props and static `style` strings render as nonce'd rules instead of
    * `style` attributes. A policy set by `setHeader`, middleware or `headers` replaces it. Default: off.
    *
    * @example lumen({ csp: "strict" })

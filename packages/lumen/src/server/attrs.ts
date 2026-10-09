@@ -121,6 +121,15 @@ export function styleAttr(value: unknown): string {
   return ` data-l-v="${id}"`;
 }
 
+/**
+ * ` nonce="…"` for a `<script>`/`<style>` written in JSX, with `lumen({ csp: "strict" })` on a page
+ * rendered per request (decision-27); "" otherwise (prerendered pages hash them instead).
+ */
+export function nonceAttr(): string {
+  const nonce = currentFrame()?.render.nonce;
+  return nonce === undefined ? "" : ` nonce="${escapeAttr(nonce)}"`;
+}
+
 function styleString(value: unknown): string {
   if (typeof value === "string") return value.trim();
   if (value == null || typeof value !== "object") return "";

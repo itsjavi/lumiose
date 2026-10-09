@@ -192,7 +192,17 @@ impl<'a> Codegen<'a, '_> {
                     template.add_text(Some(parent), &text, span);
                 }
                 Item::Raw(raw, span) => {
-                    template.add(Some(parent), NodeKind::Raw(raw), span);
+                    let style = raw.starts_with("<style");
+                    let node = template.add(Some(parent), NodeKind::Raw(raw), span);
+                    if style && self.options.strict_csp {
+                        // A native SVG `<style>` under strict CSP: the page's nonce (TASK-142).
+                        template.push(Op::Call {
+                            span,
+                            helper: "setNonce",
+                            node,
+                            args: Vec::new(),
+                        });
+                    }
                 }
                 Item::Element(element) => {
                     self.build_element(template, element, Some(parent), namespace);

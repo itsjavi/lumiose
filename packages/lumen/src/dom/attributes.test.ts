@@ -6,6 +6,7 @@ import {
   bind,
   setAttr,
   setClass,
+  setNonce,
   setProp,
   setStyle,
   setStyleProperty,
@@ -166,5 +167,22 @@ describe("applyScope", () => {
     expect(el.getAttribute("data-l-p2")).toBe("");
     applyScope(el, undefined);
     expect(el.attributes.length).toBe(2);
+  });
+});
+
+describe("setNonce", () => {
+  it("gives a script or style the page's CSP nonce, keeping an explicit one (TASK-142)", () => {
+    const meta = document.createElement("meta");
+    meta.setAttribute("property", "csp-nonce");
+    meta.nonce = "n0nce";
+    document.head.appendChild(meta);
+    const style = document.createElement("style");
+    setNonce(style);
+    expect(style.nonce).toBe("n0nce");
+    const own = document.createElement("script");
+    own.nonce = "own";
+    setNonce(own);
+    expect(own.nonce).toBe("own");
+    meta.remove();
   });
 });

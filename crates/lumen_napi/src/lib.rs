@@ -336,6 +336,9 @@ pub struct CompileOptions {
     /// A route module rendered only on the server (route mode `server` or `static`): its default
     /// export's props are plain values (no LUM2001/LUM2003 for reading them). Default `false`.
     pub server_route: Option<bool>,
+    /// `lumen({ csp: "strict" })`: no baked `style="…"` strings, nonces on JSX `<script>`/`<style>`.
+    /// Default `false`.
+    pub strict_csp: Option<bool>,
 }
 
 /// A package outside the project root (see `CompileOptions.packages`).
@@ -586,6 +589,7 @@ pub fn compile(
                     .collect(),
                 contract: o.contract.unwrap_or(defaults.contract),
                 server_route: o.server_route.unwrap_or(defaults.server_route),
+                strict_csp: o.strict_csp.unwrap_or(defaults.strict_csp),
             }
         }
     };
@@ -881,6 +885,7 @@ pub fn compile_svg(
             modules: None,
             contract: None,
             server_route: None,
+            strict_csp: None,
         }),
     )
 }

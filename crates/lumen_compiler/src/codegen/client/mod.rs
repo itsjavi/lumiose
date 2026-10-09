@@ -105,6 +105,8 @@ pub struct TransformOptions<'o> {
     pub scope_tokens: &'o ScopeTokens,
     /// Emit `import "<id>?lumen&type=style&lang.css"` when the file has style blocks.
     pub style_import: bool,
+    /// See [`crate::CompileOptions::strict_csp`].
+    pub strict_csp: bool,
 }
 
 #[derive(Debug, Default)]
@@ -128,6 +130,7 @@ const CLIENT_RUNTIME: &[&str] = &[
     "toggleClass",
     "setStyle",
     "setStyleProperty",
+    "setNonce",
     "insert",
     "insertText",
     "list",
@@ -160,6 +163,7 @@ const SERVER_RUNTIME: &[&str] = &[
     "attr",
     "classAttr",
     "styleAttr",
+    "nonceAttr",
     "spreadAttrs",
     "escape",
     "list",

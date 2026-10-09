@@ -87,6 +87,7 @@ struct CompileOptions {
     modules: Vec<HostModule>,
     contract: Option<bool>,
     server_route: Option<bool>,
+    strict_csp: Option<bool>,
 }
 
 #[derive(Deserialize)]
@@ -204,6 +205,7 @@ fn compiler_options(options: CompileOptions) -> lumen_compiler::CompileOptions {
             .collect(),
         contract: options.contract.unwrap_or(defaults.contract),
         server_route: options.server_route.unwrap_or(defaults.server_route),
+        strict_csp: options.strict_csp.unwrap_or(defaults.strict_csp),
     }
 }
 

@@ -205,7 +205,19 @@ impl<'a> Codegen<'a, '_> {
         } else {
             self.ast.vec()
         };
+        let auto_nonce = self.options.strict_csp
+            && matches!(tag.as_str(), "script" | "style")
+            && !has_attribute(&attributes, "nonce");
         let has_inner_html = self.element_attributes(template, node, attributes);
+        if auto_nonce {
+            // Strict CSP (decision-27): the page's nonce, before the element is inserted.
+            template.push(Op::Call {
+                span,
+                helper: "setNonce",
+                node,
+                args: Vec::new(),
+            });
+        }
         for token in self.scope_tokens(span) {
             template.element_attrs_mut(node).push((token, None));
         }
@@ -547,6 +559,24 @@ impl<'a> Codegen<'a, '_> {
         flow.check(expr).then(|| component.props_name.clone())
     }
 
+    /// A static `style` string: baked into the template, or with strict CSP applied through the
+    /// CSSOM (`setStyle`), since a policy without `'unsafe-inline'` refuses `style="…"`.
+    fn static_style(&mut self, template: &mut Template<'a>, node: usize, css: String, span: Span) {
+        if self.options.strict_csp {
+            let css = self.ast.string(span, &css);
+            template.push(Op::Call {
+                span,
+                helper: "setStyle",
+                node,
+                args: vec![css],
+            });
+        } else {
+            template
+                .element_attrs_mut(node)
+                .push(("style".to_owned(), Some(css)));
+        }
+    }
+
     fn style_attribute(
         &mut self,
         template: &mut Template<'a>,
@@ -557,18 +587,14 @@ impl<'a> Codegen<'a, '_> {
         let expr = match value {
             AttrValue::Empty | AttrValue::True => return,
             AttrValue::Str(s) => {
-                template
-                    .element_attrs_mut(node)
-                    .push(("style".to_owned(), Some(s)));
+                self.static_style(template, node, s, span);
                 return;
             }
             AttrValue::Expr(expr) => expr,
         };
         match literal(&expr) {
             Some(Literal::Str(s)) => {
-                template
-                    .element_attrs_mut(node)
-                    .push(("style".to_owned(), Some(s)));
+                self.static_style(template, node, s, span);
                 return;
             }
             Some(_) => return,
@@ -590,6 +616,17 @@ impl<'a> Codegen<'a, '_> {
                     .unwrap_or_default()
                     .to_owned();
                 match literal(&property.value) {
+                    // Strict CSP: one CSSOM write per key, in order with the dynamic ones.
+                    Some(Literal::Str(s)) if self.options.strict_csp => {
+                        let key = self.ast.string(span, &key);
+                        let value = self.ast.string(span, &s);
+                        template.push(Op::Call {
+                            span,
+                            helper: "setStyleProperty",
+                            node,
+                            args: vec![key, value],
+                        });
+                    }
                     Some(Literal::Str(s)) => baked.push(format!("{key}:{s}")),
                     Some(_) => {}
                     None => {
@@ -615,9 +652,7 @@ impl<'a> Codegen<'a, '_> {
                 }
             }
             if !baked.is_empty() {
-                template
-                    .element_attrs_mut(node)
-                    .push(("style".to_owned(), Some(baked.join(";"))));
+                self.static_style(template, node, baked.join(";"), span);
             }
             return;
         }
@@ -761,4 +796,11 @@ pub(super) fn static_strings(array: &ArrayExpression<'_>) -> Option<Vec<String>>
         })
         .collect::<Option<Vec<_>>>()
         .map(|parts| parts.into_iter().filter(|p| !p.is_empty()).collect())
+}
+
+/// Whether `attributes` has an attribute named `name` (spreads may still set it at runtime).
+pub(super) fn has_attribute(attributes: &[JSXAttributeItem<'_>], name: &str) -> bool {
+    attributes.iter().any(|item| {
+        matches!(item, JSXAttributeItem::Attribute(attribute) if attribute_name(&attribute.name) == name)
+    })
 }

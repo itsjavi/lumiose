@@ -135,7 +135,7 @@ impl<'a> Codegen<'a, '_> {
         for item in items {
             match item {
                 Item::Text(text, _) => run.text(&text),
-                Item::Raw(raw, _) => run.html(&raw),
+                Item::Raw(raw, span) => self.ssr_raw(&mut run, &raw, span),
                 Item::Element(element) => self.ssr_element(&mut run, element),
                 Item::Dynamic(expression) => {
                     self.flush_run(&mut run, &mut values, &mut setup, span);
@@ -209,7 +209,15 @@ impl<'a> Codegen<'a, '_> {
             None
         };
         let mut open = OpenTag::default();
+        let auto_nonce = self.options.strict_csp
+            && matches!(tag.as_str(), "script" | "style")
+            && !super::element::has_attribute(&opening.attributes, "nonce");
         self.ssr_attributes(&tag, opening.attributes, &mut open, span);
+        if auto_nonce {
+            // Strict CSP (decision-27): the response's nonce; after a spread, whose own wins.
+            let hole = self.helper_call("nonceAttr", [], span);
+            open.tail.push(Piece::Hole(hole));
+        }
         open.tail.extend(selected.map(Piece::Hole));
         out.html(&format!("<{tag}"));
         for piece in open.head {
@@ -365,7 +373,7 @@ impl<'a> Codegen<'a, '_> {
         for (i, item) in items.into_iter().enumerate() {
             match item {
                 Item::Text(text, _) => out.text(&text),
-                Item::Raw(raw, _) => out.html(&raw),
+                Item::Raw(raw, span) => self.ssr_raw(out, &raw, span),
                 Item::Element(element) => self.ssr_element(out, element),
                 Item::Rows(rows, span) => {
                     out.html("<tbody");
@@ -602,20 +610,43 @@ impl<'a> Codegen<'a, '_> {
     }
 
     /// `style`: like `class`, with baked `key:value` declarations first.
+    /// A native SVG `<style>` block, verbatim; with strict CSP it gets the response's nonce.
+    fn ssr_raw(&mut self, out: &mut Ssr<'a>, raw: &str, span: Span) {
+        match raw.strip_prefix("<style") {
+            Some(rest) if self.options.strict_csp => {
+                out.html("<style");
+                let hole = self.helper_call("nonceAttr", [], span);
+                out.hole(hole);
+                out.html(rest);
+            }
+            _ => out.html(raw),
+        }
+    }
+
+    /// A static `style` string: baked, or with strict CSP through `styleAttr` (a nonce'd rule).
+    fn ssr_static_style(&mut self, open: &mut OpenTag<'a>, css: String, span: Span) {
+        if self.options.strict_csp {
+            let css = self.ast.string(span, &css);
+            let hole = self.helper_call("styleAttr", [css], span);
+            open.tail.push(Piece::Hole(hole));
+        } else {
+            open.head
+                .push(Piece::Html(attribute_html("style", Some(&css))));
+        }
+    }
+
     fn ssr_style(&mut self, open: &mut OpenTag<'a>, value: AttrValue<'a>, span: Span) {
         let expr = match value {
             AttrValue::Empty | AttrValue::True => return,
             AttrValue::Str(s) => {
-                open.head
-                    .push(Piece::Html(attribute_html("style", Some(&s))));
+                self.ssr_static_style(open, s, span);
                 return;
             }
             AttrValue::Expr(expr) => expr,
         };
         match literal(&expr) {
             Some(Literal::Str(s)) => {
-                open.head
-                    .push(Piece::Html(attribute_html("style", Some(&s))));
+                self.ssr_static_style(open, s, span);
                 return;
             }
             Some(_) => return,
@@ -640,8 +671,7 @@ impl<'a> Codegen<'a, '_> {
                         .map(|(key, value)| format!("{key}:{value}"))
                         .collect::<Vec<_>>()
                         .join(";");
-                    open.head
-                        .push(Piece::Html(attribute_html("style", Some(&css))));
+                    self.ssr_static_style(open, css, span);
                 }
                 return;
             }

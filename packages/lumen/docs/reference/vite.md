@@ -44,7 +44,7 @@ The project options (`mode`, `ssr`, `trailingSlash`, `csrf`, `viewTransitions`, 
 read by `lumen dev`, `lumen build` and `lumen routes`/`check` from the plugin's `api.options`.
 Invalid values and unknown option names throw when the config loads. `csp: "strict"` is
 described in [Security](../concepts/security.md): nonces on every inline script and style Lumen
-writes, a `Content-Security-Policy` header for pages rendered per request, and a hash policy
+writes and on those written in JSX, static `style` strings as nonce'd rules, a `Content-Security-Policy` header for pages rendered per request, and a hash policy
 `<meta>` in prerendered pages. `allowedOrigins` takes full
 origins such as `"https://app.example.com"`, without a path or trailing slash.
 

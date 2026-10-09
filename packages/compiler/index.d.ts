@@ -79,6 +79,11 @@ export interface CompileOptions {
    * export's props are plain values (no LUM2001/LUM2003 for reading them). Default `false`.
    */
   serverRoute?: boolean;
+  /**
+   * `lumen({ csp: "strict" })`: no baked `style="…"` strings, nonces on JSX `<script>`/`<style>`.
+   * Default `false`.
+   */
+  strictCsp?: boolean;
 }
 
 export interface CompileResult {

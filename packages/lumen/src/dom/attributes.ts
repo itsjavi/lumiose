@@ -9,6 +9,18 @@ type Slots = Record<string, unknown>;
 const BOOLEANISH =
   /^(?:aria-|(?:contenteditable|draggable|spellcheck|writingsuggestions|preserveAlpha|displaystyle|accent|accentunder|fence|largeop|movablelimits|separator|stretchy|symmetric)$)/;
 
+/** The page's CSP nonce (`<meta property="csp-nonce">`); `null` when it has none. */
+let pageNonce: string | null | undefined;
+
+/**
+ * `lumen({ csp: "strict" })`: gives a `<script>`/`<style>` created on the client the page's nonce,
+ * so a strict policy applies it (TASK-142). The `nonce` property survives cloning.
+ */
+export function setNonce(el: HTMLElement | SVGElement): void {
+  pageNonce ??= document.querySelector<HTMLMetaElement>('meta[property="csp-nonce"]')?.nonce || null;
+  if (pageNonce !== null && !el.nonce) el.nonce = pageNonce;
+}
+
 /** Text content: nullish and booleans render nothing, like `insert`. */
 export function setText(node: Text, value: unknown): void {
   node.data = value == null || typeof value === "boolean" ? "" : String(value);

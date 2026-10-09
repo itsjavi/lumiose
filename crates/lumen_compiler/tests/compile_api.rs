@@ -718,3 +718,54 @@ export function Mixer() {
     assert_eq!(escapes, ["i", "i"]);
     assert!(result.code.contains("const ch = i();"));
 }
+
+#[test]
+fn strict_csp_applies_static_styles_through_the_cssom_and_nonces_inline_elements() {
+    let source = r#"export function Logo(props: { n: number }) {
+  return (
+    <div style="color: red" class="logo">
+      <p style={{ margin: "0", width: `${props.n}px` }}>x</p>
+      <script innerHTML="window.a = 1" />
+      <script nonce="fixed" innerHTML="window.b = 2" />
+    </div>
+  );
+}
+"#;
+    let svg = r#"export function Pixel() {
+  return <svg viewBox="0 0 1 1"><style>rect { fill: teal; }</style><rect /></svg>;
+}
+"#;
+    let compile_strict = |source: &str, id: &str, target: Target| {
+        let options = CompileOptions {
+            target,
+            strict_csp: true,
+            ..CompileOptions::default()
+        };
+        let result = compile(source, id, &options);
+        assert!(result.diagnostics.is_empty(), "{:?}", result.diagnostics);
+        result.code
+    };
+    let client = compile_strict(source, "/src/Logo.tsx", Target::Client);
+    assert!(
+        client
+            .contains("template(`<div class=logo><p>x</p><script><\\/script><script nonce=fixed>")
+    );
+    assert!(client.contains(r#"setStyle(_el, "color: red");"#));
+    assert!(client.contains(r#"setStyleProperty(_p, "margin", "0");"#));
+    // Only the script without an explicit nonce gets the page's.
+    assert_eq!(client.matches("setNonce(").count(), 1);
+    let server = compile_strict(source, "/src/Logo.tsx", Target::Server);
+    assert!(!server.contains("style="));
+    assert!(server.contains(r#"styleAttr("color: red")"#));
+    assert_eq!(server.matches("nonceAttr()").count(), 1);
+    // A native SVG `<style>` block gets the nonce on both sides.
+    let client = compile_strict(svg, "/src/Pixel.stsx", Target::Client);
+    assert!(client.contains("setNonce(_raw);"));
+    let server = compile_strict(svg, "/src/Pixel.stsx", Target::Server);
+    assert!(
+        server.contains(r#""<svg viewBox=\"0 0 1 1\"><style", ">rect { fill: teal; }</style>"#)
+    );
+    // Without strict CSP nothing changes.
+    let plain = compile(source, "/src/Logo.tsx", &CompileOptions::default()).code;
+    assert!(plain.contains("style=\"color: red\"") && !plain.contains("setNonce"));
+}

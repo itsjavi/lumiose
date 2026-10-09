@@ -34,6 +34,8 @@ export interface ServerRuntime {
   classAttr(value: unknown): string;
   /** ` style="…"` from string | object (kebab-case keys, custom properties); in `csp: "strict"` mode emits a `data-l-v` hook and records a nonce'd rule instead. */
   styleAttr(value: unknown): string;
+  /** `lumen({ csp: "strict" })`: ` nonce="…"` with the response's CSP nonce for a JSX `<script>`/`<style>`, "" without one. */
+  nonceAttr(): string;
   /** Attribute spread for `{...props}` on elements. */
   spreadAttrs(props: Record<string, unknown>): string;
   /** Escapes a value for text (`&`, `<`) or double-quoted attribute (`&`, `"`) context. */

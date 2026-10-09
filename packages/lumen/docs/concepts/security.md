@@ -1,6 +1,6 @@
 # Security
 
-> `lumen({ csp: "strict" })` sends a strict Content Security Policy: a fresh nonce on every inline script and style Lumen writes, `cspNonce()` for your own, and hashes for prerendered pages. Form actions are also checked against cross-site posts.
+> `lumen({ csp: "strict" })` sends a strict Content Security Policy: a fresh nonce on every inline script and style Lumen writes and on those you write in JSX, `cspNonce()` for markup you build yourself, and hashes for prerendered pages. Form actions are also checked against cross-site posts.
 
 ## Concept
 
@@ -29,18 +29,25 @@ only the styles the page meant to include, so injected markup cannot run code. W
 - **`style` props** render as rules of a nonce'd (or hashed) `<style>` that target a `data-l-v`
   attribute, instead of `style="…"` attributes, which a strict policy refuses. In the browser,
   styles are set through the CSSOM, which the policy allows.
-- **Your own inline scripts and styles** need the nonce: `<script nonce={cspNonce()}>`.
-  `cspNonce()` returns the response's nonce during a server render (the document included) and in
-  middleware, and `undefined` without strict CSP or while prerendering, where the hash covers the
-  element.
+- **Your own inline scripts and styles** written in JSX get the nonce automatically: a
+  `<script innerHTML={…}>` in the document, a JSON-LD block, an SVG `<style>`. An explicit `nonce`
+  prop wins. Strings rendered as text are escaped and never become elements, and raw HTML strings
+  (`innerHTML` of another element) never get a nonce. On prerendered pages the hash covers them.
+- **Static `style="…"` strings** (in JSX, and in `.md`/`.html` imports) are applied like `style`
+  props: a nonce'd rule on the server, the CSSOM in the browser.
+- **`cspNonce()`** returns the response's nonce during a server render (the document included) and
+  in middleware, and `undefined` without strict CSP or while prerendering. Use it for markup you
+  build yourself: a third-party snippet as a string, a custom `Content-Security-Policy` header, a
+  script you create at runtime. In the browser it reads `<meta property="csp-nonce">`.
 - **Your own policy wins.** A `Content-Security-Policy` header from `lumen({ headers })` for the
   path, or one set with `response().setHeader()` or by middleware, replaces Lumen's; with `headers`,
   the path's prerendered pages get no `<meta>` policy either. `lumen dev` puts nonces on the page but sends no policy,
   because Vite injects styles of its own for hot updates.
 
-Not covered by the policy: `style="…"` attributes written as plain strings in markup that the
-compiler keeps static, `<style>` elements inside an `<svg>` (native SVG CSS) and inline styles in
-`.md`/`.html` imports. Move such CSS into a `<style>` block of the file.
+Elements that the client creates later (a `<style>` inside an `<svg>` rendered after a client
+navigation) take the nonce from `<meta property="csp-nonce">`. A prerendered page has no nonce,
+so such an element is refused there unless it was in the prerendered HTML: put its rules in the
+file's `<style>` block.
 
 **Cross-site form posts.** Form actions and form-encoded posts to endpoints are checked against
 the `Origin` header (on by default, `lumen({ csrf })`); see [Data and actions](data-and-actions.md).
@@ -50,7 +57,7 @@ the `Origin` header (on by default, `lumen({ csrf })`); see [Data and actions](d
 | Option / export                   | Meaning                                                                     |
 | --------------------------------- | --------------------------------------------------------------------------- |
 | `lumen({ csp: "strict" })`        | Nonces per response, the policy header, hash policies for prerendered pages |
-| `cspNonce(): string \| undefined` | The response's nonce (from `lumen`), for the app's own inline scripts       |
+| `cspNonce(): string \| undefined` | The response's nonce (from `lumen`), for markup the app builds itself       |
 | `<meta property="csp-nonce">`     | Written by Lumen with the nonce; the client's preload helper reads it       |
 
 ## Example
@@ -64,7 +71,7 @@ export default { plugins: [lumen({ csp: "strict" })] };
 
 ```tsx
 // src/document.tsx: an inline script that runs before the first paint
-import { cspNonce, type DocumentProps } from "lumen";
+import type { DocumentProps } from "lumen";
 
 const THEME = `document.documentElement.dataset.theme = localStorage.getItem("theme") ?? "auto"`;
 
@@ -73,7 +80,7 @@ export default function Document(props: DocumentProps) {
     <html lang="en">
       <head>
         <meta charset="utf-8" />
-        <script nonce={cspNonce()} innerHTML={THEME} />
+        <script innerHTML={THEME} />
         {props.head}
       </head>
       <body>{props.body}</body>
@@ -82,15 +89,17 @@ export default function Document(props: DocumentProps) {
 }
 ```
 
-On a server-rendered page the script carries the nonce; on a prerendered page `cspNonce()` is
-`undefined` and the page's policy lists the script's hash.
+On a server-rendered page Lumen gives the script the response's nonce; on a prerendered page the
+page's policy lists the script's hash.
 
 ## Common mistakes
 
-- **An inline script without the nonce.** The browser refuses it, and logs a CSP violation. Add
-  `nonce={cspNonce()}`, or load the code as a module.
-- **`<style>` inside an `<svg>`.** It is an inline style, kept as written. Put the rules in the
-  file's `<style>` block.
+- **An inline script built as a string** (`<div innerHTML={'<script>…</script>'}>`, a snippet
+  added at runtime). Lumen only nonces elements written in JSX: the browser refuses it and logs a
+  CSP violation. Write it as a JSX `<script>`, add `nonce={cspNonce()}` to the markup you build,
+  or load the code as a module.
+- **A `<style>` inside an `<svg>` that only the client renders, on a prerendered page.** No nonce
+  exists there. Put the rules in the file's `<style>` block.
 - **Expecting the policy in `lumen dev`.** Dev sends none; check with `lumen build` and
   `lumen preview` or your server.
 - **Adding `'unsafe-inline'` to make an error go away.** It disables the protection for every
