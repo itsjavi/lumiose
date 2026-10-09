@@ -5,6 +5,7 @@ status: To Do
 assignee:
   - Nova
 created_date: '2026-10-09 12:02'
+updated_date: '2026-10-09 12:10'
 labels:
   - security
   - adapter
@@ -24,4 +25,11 @@ Prism's adapter review (probes in .local/agents/Prism/prism-20261009T1200Z/adapt
 <!-- AC:BEGIN -->
 - [ ] #1 H1: default body limits enforced early (Content-Length) and while streaming (413), for actions and a helper for endpoints — the default values and any public option need the user's approval (pending in chat); implement internals behind a constant until approved
 - [ ] #2 L1, L3, L5, L6 fixed; L2: per-entry error handling (never empty the index) and a startup warning for symlinks escaping dist/client (containment by default pending approval); M2 and L7 documented in adapter-node.md/security.md; regression tests for each
+- [ ] #3 decision-29 options implemented with tests and docs: limits (global + per route + endpoint helper), default nosniff/Referrer-Policy headers, signed cookie secret check with allowWeakSecret, adapter-node symlinks option
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Lux 2026-10-09: decision-29 approves the public shapes: lumen({ limits: { body: "1mb", upload: "10mb" } }) + route export const limits + an endpoint body helper; default headers X-Content-Type-Options: nosniff and Referrer-Policy: strict-origin-when-cross-origin (overridable via lumen({ headers })); signedCookie throws in production for secrets < 32 bytes, warns in dev, allowWeakSecret: true opts out; adapter-node keeps following symlinks with a startup warning for escapes and symlinks: "contain" as an option; Node default timeouts stay, documented.
+<!-- SECTION:NOTES:END -->
