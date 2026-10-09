@@ -3,12 +3,12 @@ id: doc-3
 title: Checkpoint and resume guide
 type: guide
 created_date: '2026-10-08 16:56'
-updated_date: '2026-10-09 15:51'
+updated_date: '2026-10-09 21:52'
 tags:
   - checkpoint
   - resume
 ---
-# Checkpoint and resume guide (2026-10-09, late)
+# Checkpoint and resume guide (2026-10-09, night)
 
 **State.** `main` is pushed to `origin` (github.com/itsjavi/lumen, private). The site deploys via GitHub Actions to **https://itsjavi.com/lumen/** (site, docs, playground, `/examples` "Made with Lumen" incl. Dotmatrix and chiptune with a COOP/COEP service worker, `/benchmarks`). Workers were told to checkpoint with RESUME notes; read `backlog task list -s "In Progress" --plain` and each note first.
 
@@ -23,13 +23,13 @@ tags:
 - Plugins (@lumen/eslint-plugin for oxlint/ESLint, @lumen/prettier-plugin), MCP boundaries, Pages examples/benchmarks.
 - Agent eval suite (TASK-40, doc-5): 20 validated tasks, runner over local `claude -p` / `codex exec`, viewer (`pnpm --filter @lumen/evals run view`). Smoke 20/20 passed.
 
+**CI:** all green (CI run 37994401362 on Linux/macOS/Windows; Binaries 37995499815 on 6 targets + wasm; Pages deployed).
+
 ## Open work (owner → task)
 
 | Owner | Task | State |
 |---|---|---|
-| Quasar | TASK-40 option C: 20 tasks × 1 run × 6 models, all medium (opus-5-5, sonnet-5-5, gpt-6-astra, gpt-6.1-sol, gpt-6-luna, haiku-5-5) | PAUSED for quota; partial results + resume command in the TASK-40 RESUME note. Uses the user's Claude/Codex quota. |
-| Halo | TASK-179 Windows content/svg tests; TASK-177 SVG namespace message | see RESUME note |
-| Nova | TASK-180 Windows app/dev/build/adapter-node tests; ssg-travel-journal island flake on Linux CI | see RESUME note |
+| Quasar | TASK-40 | option C complete: 120/120 passed (6 models, medium, results in evals/results/2026-10-09T151008-macbookpro.json); next step (harder tasks + ablations) waits for the user |
 | Nova | TASK-175 adapters | waits for the adapter API decision |
 | Lux | TASK-39 package names + split (runtime-only unscoped package, scoped tooling; prebuilt JS) | waits for the user |
 | — | TASK-148 HMR DOM morphing (deferred), TASK-64 Lightning CSS upgrade (upstream) | |
