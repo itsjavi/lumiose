@@ -53,6 +53,12 @@ export interface RenderToStreamOptions {
   loaderUrl?: string;
   /** Receives errors of streamed boundaries that no `<ErrorBoundary>` handled. Default: console.error. */
   onError?: (error: unknown) => void;
+  /**
+   * Production (decision-29): an `<ErrorBoundary>` fallback receives a generic error with a short
+   * `digest` instead of an error that is not an `HttpError`, and the original error goes to
+   * `onError` with the same `digest`. Default: false (the fallback gets the error itself).
+   */
+  sanitizeErrors?: boolean;
 }
 
 export interface RenderedShell {
@@ -112,6 +118,7 @@ export function renderShell(
     loaderUrl: options.loaderUrl,
     loaderSent: false,
     onError: options.onError ?? ((error) => console.error(error)),
+    sanitizeErrors: options.sanitizeErrors === true,
     owner: createOwner(undefined),
     shell: createUnit(undefined),
     shellDone: false,

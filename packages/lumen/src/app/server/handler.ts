@@ -460,6 +460,8 @@ export function createRequestHandler(options: RequestHandlerOptions): RequestHan
         signal: request.signal,
         resolveAll,
         onError: (error) => onError(error, request),
+        // Production: ErrorBoundary fallbacks see a generic error with a digest (decision-29).
+        ...(dev ? {} : { sanitizeErrors: true }),
         ...(spa && options.spaEntry !== undefined ? { loaderUrl: options.spaEntry } : {}),
         ...(options.csp === undefined ? {} : { csp: { nonce } }),
       },

@@ -318,6 +318,22 @@ describe("Suspense streaming", () => {
 });
 
 describe("ErrorBoundary", () => {
+  it("gives fallbacks a generic error with a digest in production, and logs the original (decision-29)", async () => {
+    const logged: unknown[] = [];
+    const shell = await renderToStream(() => errorBoundary(() => createComponent(Throws, {})), {
+      sanitizeErrors: true,
+      onError: (error) => logged.push(error),
+    });
+    const digest = /digest ([0-9a-f]{8})/.exec(shell.body)?.[1];
+    expect(digest).toBeDefined();
+    expect(shell.body).not.toContain("boom");
+    expect(logged).toHaveLength(1);
+    expect(logged[0]).toMatchObject({ message: "sync <boom>", digest });
+    // HttpErrors are meant for users: they reach the fallback as they are. Dev keeps raw errors.
+    const raw = await renderToStream(() => errorBoundary(() => createComponent(Throws, {})));
+    expect(raw.body).toContain("sync &lt;boom>");
+  });
+
   it("renders the fallback in place for sync throws and async rejections", async () => {
     const shell = await renderToStream(() =>
       ssr(

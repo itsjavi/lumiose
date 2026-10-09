@@ -83,6 +83,8 @@ export interface RenderState {
   readonly loaderUrl: string | undefined;
   loaderSent: boolean;
   readonly onError: (error: unknown) => void;
+  /** `<ErrorBoundary>` fallbacks get a generic error with a digest (production, decision-29). */
+  readonly sanitizeErrors: boolean;
   /** The request's root owner: disposed (aborting `lifetime()`) when the render ends. */
   readonly owner: Owner;
   readonly shell: Unit;

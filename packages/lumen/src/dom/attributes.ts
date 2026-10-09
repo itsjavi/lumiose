@@ -1,5 +1,7 @@
 // Pure DOM writers, usable as `bind` apply functions (contract doc-2 §2, spec §4.5, §4.6.2).
 
+import { safeAttrValue } from "./url.ts";
+
 type Slots = Record<string, unknown>;
 
 /**
@@ -36,7 +38,8 @@ export function setAttr(el: Element, name: string, value: unknown): void {
   } else if (value == null || value === false) {
     el.removeAttribute(name);
   } else {
-    el.setAttribute(name, value === true ? "" : String(value));
+    // Unsafe URLs in URL attributes become a placeholder (./url.ts).
+    el.setAttribute(name, value === true ? "" : safeAttrValue(name, String(value)));
   }
 }
 

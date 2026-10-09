@@ -3,6 +3,7 @@
 
 import { currentFrame, resolveUnit } from "./frame.ts";
 import { escapeAttr } from "./node.ts";
+import { safeAttrValue } from "../dom/url.ts";
 
 /**
  * Attributes whose boolean values are written as "true"/"false" instead of present/absent:
@@ -24,7 +25,9 @@ export function attr(name: string, value: unknown): string {
     if (BOOLEANISH.test(name)) return ` ${name}="${value}"`;
     return value ? ` ${name}` : "";
   }
-  return ` ${name}="${escapeAttr(typeof value === "string" ? value : String(value))}"`;
+  // Unsafe URLs in URL attributes become a placeholder, as on the client (../dom/url.ts).
+  const text = safeAttrValue(name, typeof value === "string" ? value : String(value));
+  return ` ${name}="${escapeAttr(text)}"`;
 }
 
 /** ` class="…"` from a string, an array or a `Record<string, boolean>` (combinable), as `setClass`. */

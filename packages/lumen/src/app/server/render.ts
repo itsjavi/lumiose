@@ -42,6 +42,8 @@ export interface PageRenderOptions {
    * nonce, when the response has one, goes on every script, style and module preload.
    */
   csp?: { nonce: string | undefined };
+  /** Production: `<ErrorBoundary>` fallbacks get a generic error with a digest (decision-29). */
+  sanitizeErrors?: boolean;
 }
 
 /** The resolved shell (decision-19): everything outside `<Suspense>` plus the collected head. */
@@ -118,7 +120,7 @@ const rawHtml = (html: string) => new SSRHtml(html);
 
 /** The default `PageRenderer`: lumen/server's shell-first `renderToStream`. */
 export function createServerRenderer(options: ServerRendererOptions = {}): PageRenderer {
-  return async (tree, { signal, resolveAll, onError, loaderUrl, csp }) => {
+  return async (tree, { signal, resolveAll, onError, loaderUrl, csp, sanitizeErrors }) => {
     const { head, html, records, stream } = await renderShell(
       composePageTree(tree, createComponent, rawHtml),
       {
@@ -126,6 +128,7 @@ export function createServerRenderer(options: ServerRendererOptions = {}): PageR
         signal,
         resolveAll,
         onError,
+        ...(sanitizeErrors === true ? { sanitizeErrors } : {}),
         ...(loaderUrl === undefined ? {} : { loaderUrl }),
         ...(csp === undefined ? {} : { strictStyles: true }),
         ...(csp?.nonce === undefined ? {} : { nonce: csp.nonce }),

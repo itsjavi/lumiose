@@ -70,6 +70,26 @@ const noop = (): void => {};
  * `notFound()` and `error()` pass through to the request handler; inside a streamed boundary they
  * become LUM5004 errors and render the fallback.
  */
+/**
+ * Production (decision-29): the error an `<ErrorBoundary>` fallback receives instead of `error`,
+ * which may hold secrets (a database message, a file path). The original goes to the server log
+ * (`onError`) with the same short `digest`, so a reported page can be matched to its log entry.
+ */
+function sanitized(error: unknown, render: RenderState): Error & { digest: string } {
+  const bytes = crypto.getRandomValues(new Uint8Array(4));
+  const digest = Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("");
+  const logged =
+    typeof error === "object" && error !== null
+      ? error
+      : new Error(String(error), { cause: error });
+  Object.defineProperty(logged, "digest", { configurable: true, enumerable: true, value: digest });
+  render.onError(logged);
+  return Object.assign(
+    new Error(`An error occurred while rendering this part of the page (digest ${digest}).`),
+    { digest },
+  );
+}
+
 export function ErrorBoundary(props: ErrorBoundaryProps): unknown {
   const frame = currentFrame();
   const owner = getOwner();
@@ -81,6 +101,8 @@ export function ErrorBoundary(props: ErrorBoundaryProps): unknown {
       if (frame === undefined || !frame.streamed) throw error;
       error = boundaryError(error);
     }
+    if (frame?.render.sanitizeErrors === true && !isHttpError(error))
+      error = sanitized(error, frame.render);
     const out = withFrame(frame, owner, () => {
       const value = props.fallback;
       return content(typeof value === "function" ? value(error, noop) : value);

@@ -38,6 +38,14 @@ Renders `fallback` when its children throw while rendering, an effect below thro
 component below rejects. `retry()` disposes the fallback and mounts the children again. On the
 server, an error in a streamed boundary renders the nearest `ErrorBoundary` in place.
 
+In production server rendering, a fallback receives a generic `Error` with a short `digest`
+(`An error occurred while rendering this part of the page (digest 1a2b3c4d).`) instead of an
+error that is not an `HttpError`, which could reveal a database message or a file path. The
+original error goes to the server log (the request handler's `onError`) with the same `digest`
+property, so a user's report can be matched to the log entry. `HttpError`s (`notFound()`,
+`error(403, …)`) reach the fallback as they are, development keeps the raw error, and boundaries
+that catch in the browser get the error itself (decision-29).
+
 ## Portal
 
 ```ts

@@ -80,6 +80,7 @@ These docs match lumen 0.0.0. Installed projects have them in `node_modules/lume
 - [LUM4006: Hydration mismatch](errors/LUM4006.md)
 - [LUM4007: Non-serializable awaited value](errors/LUM4007.md)
 - [LUM4008: Module-scope signal written during SSR](errors/LUM4008.md)
+- [LUM4009: Unsafe URL blocked in a URL attribute](errors/LUM4009.md)
 - [LUM5001: Request API used during prerender](errors/LUM5001.md)
 - [LUM5002: Invalid route file](errors/LUM5002.md)
 - [LUM5003: Duplicate route](errors/LUM5003.md)

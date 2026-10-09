@@ -63,6 +63,7 @@ fix?, docs }`; `lumen check --format json` prints them.
 | [LUM4006](LUM4006.md) | error    | Hydration mismatch                     |
 | [LUM4007](LUM4007.md) | error    | Non-serializable awaited value         |
 | [LUM4008](LUM4008.md) | warning  | Module-scope signal written during SSR |
+| [LUM4009](LUM4009.md) | warning  | Unsafe URL blocked in a URL attribute  |
 
 ## Routing and server (5xxx)
 

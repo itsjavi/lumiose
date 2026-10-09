@@ -314,10 +314,16 @@ describe("default server renderer", () => {
           ),
       },
     });
-    expect(await (await fetch("/")).text()).toContain(
-      '<template for="lb0"><p role=alert>widget failed</p></template>',
-    );
-    expect(onError).not.toHaveBeenCalled();
+    // Production: the fallback gets a generic error; the original is logged with its digest.
+    const body = await (await fetch("/")).text();
+    const digest =
+      /<template for="lb0"><p role=alert>An error occurred while rendering this part of the page \(digest ([0-9a-f]{8})\)\.<\/p><\/template>/.exec(
+        body,
+      )?.[1];
+    expect(digest).toBeDefined();
+    expect(body).not.toContain("widget failed");
+    expect(onError).toHaveBeenCalledTimes(1);
+    expect(onError.mock.calls[0]![0]).toMatchObject({ message: "widget failed", digest });
   });
 
   it("reports LUM5004 for redirects, head and status changes inside a streamed boundary", async () => {

@@ -55,6 +55,17 @@ throws a `TypeError` instead of running in the page. Spread props drop lowercase
 (`{...{ onclick: "…" }}`): an inline handler attribute is a script sink, so handlers are only
 functions in `onClick`.
 
+**Unsafe URLs.** A dynamic value for a URL attribute (`href`, `src`, `action`, `formaction`,
+`xlink:href`, `poster`, `data`, …) whose scheme is `javascript:`, `vbscript:` or `data:text/html`
+renders as `about:blank#blocked`, on the server and in the browser, with a
+[LUM4009](../errors/LUM4009.md) warning in development. Case, leading spaces and control
+characters, and tabs or newlines inside the scheme do not get past it. String literals in your JSX
+are left as written.
+
+**Error details.** In production server rendering, `<ErrorBoundary>` fallbacks receive a generic
+error with a short `digest`, and the original error is logged with the same digest
+([ErrorBoundary](../reference/components.md#errorboundary)).
+
 **Cross-site form posts.** Form actions and form-encoded posts to endpoints are checked against
 the `Origin` header (on by default, `lumen({ csrf })`); see [Data and actions](data-and-actions.md).
 

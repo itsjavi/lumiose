@@ -153,6 +153,50 @@ describe("attribute parity", () => {
   });
 });
 
+describe("unsafe URL parity (TASK-168, decision-29)", () => {
+  const UNSAFE = [
+    "javascript:alert(1)",
+    "JavaScript:alert(1)",
+    " \u0001javascript:alert(1)",
+    "java\tscr\nipt:alert(1)",
+    "\njavascript:alert(1)",
+    "vbscript:msgbox(1)",
+    "data:text/html,<script>alert(1)</script>",
+    "DATA: Text/HTML;base64,PHNjcmlwdD4=",
+  ];
+  const SAFE = [
+    "/relative?q=javascript:x",
+    "https://example.com/a",
+    "mailto:a@example.com",
+    "data:image/png;base64,AAAA",
+    "&#106;avascript:alert(1)",
+    "&#x6A;avascript:alert(1)",
+    "#javascript:x",
+  ];
+
+  it("blocks unsafe values of URL attributes the same way on both sides", () => {
+    for (const name of ["href", "src", "action", "formaction", "xlink:href", "poster", "data"]) {
+      for (const value of [...UNSAFE, ...SAFE]) {
+        const el = document.createElement("a");
+        setAttr(el, name, value);
+        const html = parsed(`<a${attr(name, value)}></a>`);
+        expect(html, `${name}=${JSON.stringify(value)}`).toBe(written(el));
+        const expected = UNSAFE.includes(value) ? "about:blank#blocked" : value;
+        expect(el.getAttribute(name), `${name}=${JSON.stringify(value)}`).toBe(expected);
+      }
+    }
+  });
+
+  it("blocks them in spread props too, and leaves other attributes alone", () => {
+    const props = { href: "javascript:alert(1)", title: "javascript:alert(1)", src: "/ok.png" };
+    const el = document.createElement("a");
+    mount(() => (spread(el, () => props), el), document.createElement("main"));
+    expect(parsed(`<a${spreadAttrs(props)}></a>`)).toBe(written(el));
+    expect(el.getAttribute("href")).toBe("about:blank#blocked");
+    expect(el.getAttribute("title")).toBe("javascript:alert(1)");
+  });
+});
+
 describe("class and style parity", () => {
   it.each([
     "a b",

@@ -2767,6 +2767,17 @@ throws a `TypeError` instead of running in the page. Spread props drop lowercase
 (`{...{ onclick: "…" }}`): an inline handler attribute is a script sink, so handlers are only
 functions in `onClick`.
 
+**Unsafe URLs.** A dynamic value for a URL attribute (`href`, `src`, `action`, `formaction`,
+`xlink:href`, `poster`, `data`, …) whose scheme is `javascript:`, `vbscript:` or `data:text/html`
+renders as `about:blank#blocked`, on the server and in the browser, with a
+[LUM4009](../errors/LUM4009.md) warning in development. Case, leading spaces and control
+characters, and tabs or newlines inside the scheme do not get past it. String literals in your JSX
+are left as written.
+
+**Error details.** In production server rendering, `<ErrorBoundary>` fallbacks receive a generic
+error with a short `digest`, and the original error is logged with the same digest
+([ErrorBoundary](../reference/components.md#errorboundary)).
+
 **Cross-site form posts.** Form actions and form-encoded posts to endpoints are checked against
 the `Origin` header (on by default, `lumen({ csrf })`); see [Data and actions](data-and-actions.md).
 
@@ -3102,6 +3113,14 @@ interface ErrorBoundaryProps {
 Renders `fallback` when its children throw while rendering, an effect below throws, or an async
 component below rejects. `retry()` disposes the fallback and mounts the children again. On the
 server, an error in a streamed boundary renders the nearest `ErrorBoundary` in place.
+
+In production server rendering, a fallback receives a generic `Error` with a short `digest`
+(`An error occurred while rendering this part of the page (digest 1a2b3c4d).`) instead of an
+error that is not an `HttpError`, which could reveal a database message or a file path. The
+original error goes to the server log (the request handler's `onError`) with the same `digest`
+property, so a user's report can be matched to the log entry. `HttpError`s (`notFound()`,
+`error(403, …)`) reach the fallback as they are, development keeps the raw error, and boundaries
+that catch in the browser get the error itself (decision-29).
 
 ## Portal
 
@@ -6497,6 +6516,52 @@ server. Module-scope signals are fine for browser-only state.
 - [Signals and reactivity](../concepts/signals.md)
 - [Server](../concepts/server.md)
 
+<!-- source: errors/LUM4009.md -->
+
+<!-- Generated from crates/lumen_compiler/src/diagnostics/registry.rs by packages/lumen/scripts/gen-error-docs.ts. Edit the explanation below the end marker. -->
+
+# LUM4009: Unsafe URL blocked in a URL attribute
+
+**Severity:** warning · **Category:** islands and boundaries (4xxx)
+
+<!-- end of generated header -->
+
+> A dynamic value for a URL attribute would run script, so Lumen rendered a placeholder instead.
+
+**Reported by:** the runtime (`lumen/dom` and `lumen/server`), as a console warning in development.
+The value is blocked in production too, without the warning.
+
+## What it means
+
+A URL attribute (`href`, `src`, `action`, `formaction`, `xlink:href`, `poster`, `data`, `cite`,
+`background`, …) got a value from an expression whose scheme is `javascript:`, `vbscript:` or
+`data:text/html`. Such a URL runs script in your page when it is followed, which is how injected
+links turn into cross-site scripting. Lumen writes `about:blank#blocked` instead, on the server
+and in the browser alike (decision-29). The check ignores case, leading spaces and control
+characters, and tabs or newlines inside the scheme, as browsers do.
+
+Only dynamic values are checked. A string literal in your JSX (`<a href="javascript:void 0">`) is
+written as it is.
+
+## Example
+
+```tsx
+export function Profile(props: { website: string }) {
+  // A user who saves "javascript:alert(document.cookie)" as their website gets a dead link.
+  return <a href={props.website}>Website</a>;
+}
+```
+
+## How to fix it
+
+- Run code with an event handler, not a script URL: `<button onClick={save}>`.
+- For user-supplied links, validate the URL when you store it, and accept only `http:` and
+  `https:` (`new URL(value).protocol`).
+
+## Related
+
+- [Security](../concepts/security.md)
+
 <!-- source: errors/LUM5001.md -->
 
 <!-- Generated from crates/lumen_compiler/src/diagnostics/registry.rs by packages/lumen/scripts/gen-error-docs.ts. Edit the explanation below the end marker. -->
@@ -6832,6 +6897,7 @@ fix?, docs }`; `lumen check --format json` prints them.
 | [LUM4006](LUM4006.md) | error    | Hydration mismatch                     |
 | [LUM4007](LUM4007.md) | error    | Non-serializable awaited value         |
 | [LUM4008](LUM4008.md) | warning  | Module-scope signal written during SSR |
+| [LUM4009](LUM4009.md) | warning  | Unsafe URL blocked in a URL attribute  |
 
 ## Routing and server (5xxx)
 
