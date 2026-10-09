@@ -143,6 +143,8 @@ jobs:
           # `web` is what the playground loads; `nodejs` is for Node and the smoke test.
           wasm-bindgen --target web --no-typescript --out-dir dist/wasm-web "$wasm"
           wasm-bindgen --target nodejs --out-dir dist/wasm-node "$wasm"
+          # The nodejs output is CommonJS; the repository's package.json says "type": "module".
+          echo '{ "type": "commonjs" }' > dist/wasm-node/package.json
 
       - name: Smoke test
         run: node .github/scripts/smoke-wasm.mjs dist/wasm-node

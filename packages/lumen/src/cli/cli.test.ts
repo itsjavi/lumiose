@@ -264,7 +264,8 @@ describe("lumen CLI", () => {
       check: true,
       summary: { files: 1, errors: 0 },
     });
-  });
+    // Three CLI runs, one of them a full TypeScript check: seconds on a CI runner.
+  }, 60_000);
 
   it("lumen docs and explain answer in the envelope", async () => {
     expect((await runJson("docs", "signals")).json).toMatchObject({
