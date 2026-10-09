@@ -67,6 +67,8 @@ export function sfxToSheet(sfx: Sfx, kind: SoundSheet["kind"]): SheetResult {
         if (voice.channel !== 3) {
           if (n.duty !== track.inst.duty) note.d = n.duty;
           if (voice.channel === 0 && n.sweep !== 0) note.w = n.sweep;
+          if (n.pattern !== undefined) note.dp = n.pattern;
+          if (n.slide) note.sl = n.slide;
           const tune = Math.round((n.pitch - note.p) * 1000) / 1000;
           if (tune !== 0) note.t = tune;
         }
@@ -129,6 +131,8 @@ export function sheetToSfx(song: Song, id: string): { sfx: Sfx } | { reasons: st
         duty: ch === 3 ? 0 : (n.d ?? i.duty),
         sweep: ch === 0 ? (n.w ?? 0) : 0,
         noise: ch === 3 ? n.p : 0,
+        ...(ch !== 3 && n.dp !== undefined ? { pattern: n.dp } : {}),
+        ...(ch !== 3 && n.sl ? { slide: n.sl } : {}),
       });
       at = n.s + n.l;
     }

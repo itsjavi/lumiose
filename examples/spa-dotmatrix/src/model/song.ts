@@ -127,6 +127,8 @@ export function sanitizeSong(input: unknown): Song {
         if (n.e !== undefined) note.e = clamp(n.e, -7, 7, 0);
         if (n.d !== undefined) note.d = clamp(n.d, 0, 3, 2);
         if (n.w !== undefined) note.w = clamp(n.w, -7, 7, 0);
+        if (n.dp !== undefined) note.dp = clamp(n.dp, 0, 255, 0);
+        if (n.sl !== undefined) note.sl = clamp(n.sl, -128, 128, 0);
         if (typeof n.t === "number" && Number.isFinite(n.t))
           note.t = Math.min(0.5, Math.max(-0.5, n.t));
         return note;

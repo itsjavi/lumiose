@@ -1,7 +1,7 @@
 // The SFX gallery: original sound effects written the way a Game Boy RPG writes them, as short
 // runs of square and noise notes (length in frames, volume, envelope, pitch) with duty cycles and
 // hardware pitch sweeps. The maker applies a few friendly modifiers on top of a preset.
-import { freqReg, sweepByte } from "../audio/driver.ts";
+import { freqReg, patternDuty, sweepByte } from "../audio/driver.ts";
 import { DUTY_NAMES } from "./instruments.ts";
 import { noteName, parseNote } from "./music.ts";
 import type { Sfx, SfxNote, SfxVoice } from "./types.ts";
@@ -216,6 +216,8 @@ export function applyMods(sfx: Sfx, mods: SfxMods): Sfx {
           volume,
           pitch: Math.min(120, Math.max(36, n.pitch + mods.pitch)),
           duty: mods.duty >= 0 ? mods.duty : n.duty,
+          // A fixed duty from the slider replaces a duty pattern.
+          pattern: mods.duty >= 0 ? undefined : n.pattern,
           sweep: voice.channel === 0 && mods.sweep !== 0 ? mods.sweep : n.sweep,
         };
       }),
@@ -237,6 +239,7 @@ export function listing(sfx: Sfx): string {
   for (const voice of sfx.voices) {
     lines.push(`; ${voice.channel === 3 ? "noise" : `pulse ${voice.channel + 1}`}`);
     let duty = -1;
+    let pattern = -1;
     let sweep = 0;
     for (const n of voice.notes) {
       if (voice.channel === 3) {
@@ -247,14 +250,28 @@ export function listing(sfx: Sfx): string {
         lines.push(`  square_note ${n.frames}, 0, 0, 0  ; rest`);
         continue;
       }
-      if (n.duty !== duty) lines.push(`  duty_cycle ${(duty = n.duty)}  ; ${DUTY_NAMES[n.duty]}`);
+      if (n.pattern !== undefined) {
+        if (n.pattern !== pattern) {
+          pattern = n.pattern;
+          duty = -1;
+          const d = [0, 1, 2, 3].map((f) => patternDuty(n.pattern!, f));
+          lines.push(
+            `  duty_cycle_pattern ${d.join(", ")}  ; ${d.map((x) => DUTY_NAMES[x]).join(" ")}`,
+          );
+        }
+      } else if (n.duty !== duty) {
+        pattern = -1;
+        lines.push(`  duty_cycle ${(duty = n.duty)}  ; ${DUTY_NAMES[n.duty]}`);
+      }
       if (voice.channel === 0 && n.sweep !== sweep) {
         sweep = n.sweep;
         const byte = sweepByte(n.sweep);
         lines.push(`  pitch_sweep ${byte >> 4}, ${byte & 0x08 ? "-" : ""}${byte & 7}`);
       }
       lines.push(
-        `  square_note ${n.frames}, ${n.volume}, ${fadeArg(n.env)}, ${hex(freqReg(n.pitch, false), 3)}  ; ${noteName(n.pitch)}`,
+        `  square_note ${n.frames}, ${n.volume}, ${fadeArg(n.env)}, ${hex(freqReg(n.pitch, false), 3)}  ; ${noteName(n.pitch)}${
+          n.slide ? `, slides ${n.slide > 0 ? "+" : ""}${n.slide}/frame (Dotmatrix)` : ""
+        }`,
       );
     }
     lines.push("  sound_ret");

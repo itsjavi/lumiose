@@ -80,6 +80,10 @@ export function sweepByte(sweep: number): number {
   return (pace << 4) | (sweep < 0 ? 0x08 : 0) | shift;
 }
 
+/** Duty `f` of a duty cycle pattern byte (four 2-bit duties, first in the high bits). */
+export const patternDuty = (pattern: number, f: number): number =>
+  (pattern >> (6 - 2 * (f % 4))) & 3;
+
 const ARPS: Record<ArpId, readonly number[]> = {
   off: [0],
   major: [0, 4, 7],
@@ -224,8 +228,12 @@ function trackWrites(
     const release = gate === 1 && touchesNext ? undefined : t0 + Math.max(FRAME, (t1 - t0) * gate);
     const until = release ?? t1;
 
-    let x = freqReg(framePitch(inst, pitch, 0, from), wave);
-    let duty = base;
+    const startFrame = Math.round(t0 / FRAME);
+    const slide = Math.round(note.sl ?? 0);
+    const regAt = (f: number) =>
+      Math.min(2047, Math.max(0, freqReg(framePitch(inst, pitch, f, from), wave) + slide * f));
+    let x = regAt(0);
+    let duty = note.dp === undefined ? base : patternDuty(note.dp, startFrame);
     const top = note.v === undefined ? startLevel : waveLevel(note.v);
     let level = env < 0 && top !== 0 ? 3 : top;
     if (wave) at(t0, ["n1c", level << 5], ...freq(x, true));
@@ -240,10 +248,13 @@ function trackWrites(
 
     for (let f = 1; t0 + f * FRAME < until; f++) {
       const writes: Write[] = [];
-      const nx = freqReg(framePitch(inst, pitch, f, from), wave);
+      const nx = regAt(f);
       // A hardware sweep moves the frequency itself: the driver leaves it alone.
       if (nx !== x && !note.w) writes.push(...freq((x = nx), false));
-      if (!wave && inst.shimmer && pattern[f % 4] !== duty) {
+      if (!wave && note.dp !== undefined) {
+        const d = patternDuty(note.dp, startFrame + f);
+        if (d !== duty) writes.push([pulse.duty, (duty = d) << 6]);
+      } else if (!wave && inst.shimmer && pattern[f % 4] !== duty) {
         duty = pattern[f % 4]!;
         writes.push([pulse.duty, duty << 6]);
       }
@@ -377,6 +388,8 @@ export function sfxData(sfx: Sfx): EngineAudioData {
     channels: sfx.voices.map((voice) => {
       const events: TimedWrites[] = [];
       let t = 0;
+      /** Frames since the voice started: duty patterns rotate on it, across notes. */
+      let frame = 0;
       for (const note of voice.notes) {
         if (note.volume === 0) {
           // A rest silences the channel without retriggering it.
@@ -393,18 +406,31 @@ export function sfxData(sfx: Sfx): EngineAudioData {
           });
         } else {
           const regs = PULSE_REGS[voice.channel === 0 ? 1 : 2];
-          const x = freqReg(note.pitch, false);
+          let x = freqReg(note.pitch, false);
+          const duty = (f: number) =>
+            note.pattern === undefined ? note.duty & 3 : patternDuty(note.pattern, f);
           const writes: Write[] = [];
           if (voice.channel === 0) writes.push(["n10", sweepByte(note.sweep)]);
           writes.push(
-            [regs.duty, (note.duty & 3) << 6],
+            [regs.duty, duty(frame) << 6],
             [regs.env, envByte(note.volume, note.env)],
             [regs.lo, x & 0xff],
             [regs.hi, 0x80 | (x >> 8)],
           );
           events.push({ t, writes });
+          // Frame updates inside the note: the duty pattern rotates and the slide moves the pitch.
+          for (let f = 1; f < note.frames; f++) {
+            const each: Write[] = [];
+            if (note.pattern !== undefined) each.push([regs.duty, duty(frame + f) << 6]);
+            if (note.slide) {
+              x = Math.min(2047, Math.max(0, x + Math.round(note.slide)));
+              each.push([regs.lo, x & 0xff], [regs.hi, x >> 8]);
+            }
+            if (each.length) events.push({ t: t + f * FRAME, writes: each });
+          }
         }
         t += note.frames * FRAME;
+        frame += note.frames;
       }
       const silence: Write =
         voice.channel === 3 ? ["n21", 0] : [PULSE_REGS[voice.channel === 0 ? 1 : 2].env, 0];

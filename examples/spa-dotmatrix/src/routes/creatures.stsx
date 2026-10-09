@@ -187,9 +187,10 @@ export default function Creatures() {
       <header class="intro">
         <h1>Creature voices</h1>
         <p>
-          In handheld RPGs every creature has a cry, and most share a handful of base voices: each
-          creature just changes the pitch and the length. These {CREATURES.length} are all
-          originals. Meet them, then make your own.
+          A cry is one short gesture: square notes that glide in tiny frequency steps, duty patterns
+          that rasp every frame, fading envelopes and a layer of noise. Games reused base voices
+          with a new pitch and length for each creature. These {CREATURES.length} are all originals,
+          each on its own base voice: meet them, then remix them.
         </p>
       </header>
       <div class="layout">

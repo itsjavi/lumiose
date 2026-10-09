@@ -39,10 +39,14 @@ export interface Note {
   w?: number;
   /** Fine tuning in semitones (-0.5…0.5): sounds can sit between the grid's rows. */
   t?: number;
+  /** Pulse duty cycle pattern (as SfxNote.pattern). */
+  dp?: number;
+  /** Frequency slide in register units per frame (as SfxNote.slide). */
+  sl?: number;
 }
 
 /** The note settings that override the instrument. */
-export const NOTE_OVERRIDES = ["v", "e", "d", "w", "t"] as const;
+export const NOTE_OVERRIDES = ["v", "e", "d", "w", "t", "dp", "sl"] as const;
 
 export type ArpId = "off" | "major" | "minor" | "fifth" | "octave";
 export type WaveShape = "soft" | "triangle" | "saw" | "square" | "organ" | "hollow";
@@ -139,6 +143,13 @@ export interface SfxNote {
   sweep: number;
   /** Noise: NR43 polynomial counter byte (clock shift, width, divisor). */
   noise: number;
+  /**
+   * Pulse: a duty cycle pattern, four 2-bit duties (first in the high bits) that rotate every
+   * frame, as the original drivers' duty_cycle_pattern. Overrides `duty`.
+   */
+  pattern?: number;
+  /** Pulse: slide the frequency register by this much every frame, without retriggering. */
+  slide?: number;
 }
 
 export interface SfxVoice {

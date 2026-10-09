@@ -241,7 +241,9 @@ function overflowing(): string[] {
   return out;
 }
 
-test("no control sticks out of its panel at desktop, tablet and phone widths", async ({ page }, info) => {
+test("no control sticks out of its panel at desktop, tablet and phone widths", async ({
+  page,
+}, info) => {
   for (const width of [1920, 1440, 1280, 1024, 820, 390, 360]) {
     await page.setViewportSize({ width, height: 900 });
     for (const path of ["/", "/songs", "/sfx", "/creatures", "/learn"]) {
@@ -253,7 +255,6 @@ test("no control sticks out of its panel at desktop, tablet and phone widths", a
   }
 });
 
-
 test("creature voices: pick, bend, read the code and export", async ({ page }, info) => {
   await page.goto("/creatures");
   await expect(page.locator(".critter")).toHaveCount(13);
@@ -261,12 +262,12 @@ test("creature voices: pick, bend, read the code and export", async ({ page }, i
   await expect(page.locator("#maker-title")).toHaveText("Wispet");
   await page.getByRole("button", { name: "Show code" }).click();
   await expect(page.locator(".code pre")).toContainText(
-    'base voice "Wail", pitch $0000, length $0133',
+    'base voice "Moan", pitch $0000, length $0100',
   );
   await page.locator(".maker input[type=range]").first().fill("64");
   await expect(page.locator(".code pre")).toContainText("pitch $0040");
-  await page.getByRole("radio", { name: /Growl/ }).click();
-  await expect(page.locator(".code pre")).toContainText('base voice "Growl"');
+  await page.getByRole("radio", { name: /Rumble/ }).click();
+  await expect(page.locator(".code pre")).toContainText('base voice "Rumble"');
   await expect(page.locator("#maker-title")).toHaveText("Wispet (remix)");
   await page.getByRole("button", { name: "Surprise me" }).click();
   await expect(page.locator("#maker-title")).toHaveText("Mystery creature");

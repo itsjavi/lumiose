@@ -5,7 +5,7 @@
 // brighter; `length` stretches the pulse notes like a tempo, while the noise keeps its own timing.
 // The base voices, creatures and sprites here are original.
 import { freqReg } from "../audio/driver.ts";
-import { ns, nz, p1, p2, rest, sq } from "./sfx.ts";
+import { ns, p1, p2, rest } from "./sfx.ts";
 import type { Sfx, SfxNote, SfxVoice } from "./types.ts";
 
 export interface BaseVoice {
@@ -15,105 +15,310 @@ export interface BaseVoice {
   voices: SfxVoice[];
 }
 
-/** A pulse-2 copy of a run of notes, slightly detuned and quieter: two pulses beating together. */
-function shadow(notes: SfxNote[], detune: number, gain: number, duty = 1): SfxNote[] {
-  return notes.map((n) => ({
-    ...n,
-    pitch: n.pitch + detune,
-    duty,
-    volume: n.volume === 0 ? 0 : Math.max(1, Math.round(n.volume * gain)),
-  }));
+/** A duty cycle pattern byte: four duties that rotate every frame. */
+const pat = (a: number, b: number, c: number, d: number) => (a << 6) | (b << 4) | (c << 2) | d;
+
+/** The MIDI pitch of a pulse frequency register. */
+export function regPitch(x: number): number {
+  return 69 + 12 * Math.log2(131072 / (2048 - x) / 440);
 }
 
-const chirp = [
-  sq(3, 12, 0, "E6", 2),
-  sq(4, 12, 0, "G6", 2),
-  sq(3, 10, 0, "E6", 2),
-  sq(12, 11, 3, "B5", 2),
-];
-const trill = [
-  ...Array.from({ length: 5 }, () => [sq(2, 11, 0, "A6", 1), sq(2, 11, 0, "C#7", 1)]).flat(),
-  sq(10, 10, 4, "E6", 1),
-];
-const growl = [sq(6, 15, 0, "C3", 3), sq(10, 14, 0, "B2", 3), sq(18, 13, 2, "A2", 3)];
-const zap = [
-  ...Array.from({ length: 3 }, () => [sq(2, 12, 0, "C7", 0), sq(2, 12, 0, "F#6", 0)]).flat(),
-  sq(14, 12, 4, "C6", 0, -3),
-];
-const wail = [
-  sq(10, 3, -6, "E5", 2),
-  sq(10, 10, 0, "F5", 2),
-  sq(14, 10, 0, "E5", 2),
-  sq(22, 10, 3, "D#5", 2),
-];
-const bubble = [
-  sq(3, 11, 2, "C5", 1),
-  sq(3, 11, 2, "E5", 1),
-  sq(3, 9, 2, "G5", 1),
+/** Fade as the original drivers write it: 0 holds, 1-7 fades out (1 fastest), 9-15 fades in (9 fastest). */
+const env = (fade: number) => (fade === 0 ? 0 : fade < 8 ? 8 - fade : fade - 16);
+
+/**
+ * A square note in the drivers' own terms: frames, volume, fade and a frequency register (not a
+ * scale note), with an optional duty pattern and a per-frame slide of the register.
+ */
+function sqr(
+  frames: number,
+  volume: number,
+  fade: number,
+  reg: number,
+  o: { pattern?: number; duty?: number; slide?: number } = {},
+): SfxNote {
+  return {
+    frames,
+    volume,
+    env: env(fade),
+    pitch: Math.round(regPitch(reg) * 1000) / 1000,
+    duty: o.duty ?? 2,
+    sweep: 0,
+    noise: 0,
+    ...(o.pattern === undefined ? {} : { pattern: o.pattern }),
+    ...(o.slide ? { slide: o.slide } : {}),
+  };
+}
+
+const hiss = (frames: number, volume: number, fade: number, poly: number): SfxNote => ({
+  frames,
+  volume,
+  env: env(fade),
+  pitch: 0,
+  duty: 0,
+  sweep: 0,
+  noise: poly,
+});
+
+/**
+ * Pulse 2 following pulse 1's contour: a few frames late, a few register units off and quieter,
+ * often with its own duty pattern, so the pair beats like one rough voice instead of a harmony.
+ */
+function follow(
+  notes: SfxNote[],
+  o: { delay: number; offset: number; gain: number; pattern?: number },
+): SfxNote[] {
+  const shifted = notes.map((n): SfxNote => {
+    if (n.volume === 0) return n;
+    const x = Math.min(2047, Math.max(0, freqReg(n.pitch, false) + o.offset));
+    return {
+      ...n,
+      pitch: Math.round(regPitch(x) * 1000) / 1000,
+      volume: Math.max(1, Math.round(n.volume * o.gain)),
+      ...(o.pattern === undefined ? {} : { pattern: o.pattern }),
+    };
+  });
+  return o.delay > 0 ? [rest(o.delay), ...shifted] : shifted;
+}
+
+// Base voices. Each is one gesture: a contour of frequency registers that glides and wobbles, duty
+// patterns for a voiced rasp, fading envelopes, a detuned second pulse and a layer of noise.
+
+const squeak = [
+  sqr(2, 13, 1, 1872, { pattern: pat(1, 1, 0, 0), slide: 18 }),
+  sqr(3, 14, 2, 1914, { pattern: pat(1, 1, 0, 0), slide: 10 }),
+  sqr(2, 9, 1, 1950, { pattern: pat(1, 1, 0, 0), slide: -26 }),
   rest(2),
-  sq(3, 9, 2, "C6", 1),
-  sq(12, 9, 4, "A5", 1),
+  sqr(3, 12, 1, 1890, { pattern: pat(1, 0, 1, 0), slide: 22 }),
+  sqr(7, 10, 3, 1946, { pattern: pat(1, 0, 1, 0), slide: -9 }),
 ];
-const beep = [
-  sq(4, 12, 0, "C5", 2),
-  sq(4, 12, 0, "C6", 2),
-  sq(4, 12, 0, "G5", 2),
-  sq(4, 12, 0, "C6", 2),
-  sq(10, 12, 3, "C5", 2),
+
+const warble = [
+  ...Array.from({ length: 8 }, (_, i) =>
+    sqr(1, 12 - (i >> 2), 0, 1832 + (i % 2 ? 44 : 0) + i * 5, { pattern: pat(2, 1, 2, 1) }),
+  ),
+  sqr(9, 11, 2, 1898, { pattern: pat(2, 1, 2, 1), slide: -5 }),
+];
+
+const crackle = [
+  sqr(3, 15, 1, 1690, { pattern: pat(3, 0, 3, 0), slide: 38 }),
+  sqr(2, 12, 1, 1812, { pattern: pat(3, 0, 3, 0), slide: -22 }),
+  sqr(4, 14, 2, 1752, { pattern: pat(0, 3, 3, 0), slide: 28 }),
+  sqr(7, 10, 3, 1868, { pattern: pat(0, 3, 3, 0), slide: -14 }),
+];
+
+const moan = [
+  sqr(12, 3, 11, 1598, { pattern: pat(2, 2, 2, 1), slide: 3 }),
+  sqr(20, 11, 0, 1634, { pattern: pat(2, 2, 2, 1), slide: -2 }),
+  sqr(14, 9, 3, 1594, { pattern: pat(2, 2, 1, 1), slide: -4 }),
+];
+
+const blub = [
+  sqr(3, 11, 1, 1496, { pattern: pat(1, 1, 2, 2), slide: 34 }),
+  rest(1),
+  sqr(3, 10, 1, 1558, { pattern: pat(1, 1, 2, 2), slide: 34 }),
+  rest(1),
+  sqr(4, 12, 1, 1527, { pattern: pat(1, 1, 2, 2), slide: 29 }),
+  rest(2),
+  sqr(5, 9, 2, 1617, { pattern: pat(1, 2, 1, 2), slide: 24 }),
+];
+
+const servo = [
+  sqr(4, 12, 0, 1700, { pattern: pat(3, 3, 0, 0) }),
+  sqr(4, 12, 0, 1572, { pattern: pat(3, 3, 0, 0) }),
+  sqr(4, 12, 0, 1700, { pattern: pat(3, 3, 0, 0) }),
+  sqr(3, 12, 0, 1828, { pattern: pat(3, 3, 0, 0) }),
+  sqr(8, 12, 2, 1572, { pattern: pat(3, 3, 0, 0), slide: -8 }),
+];
+
+const yawn = [
+  sqr(8, 4, 10, 1502, { pattern: pat(1, 2, 1, 2), slide: 8 }),
+  sqr(10, 12, 0, 1566, { pattern: pat(1, 2, 1, 2), slide: 2 }),
+  sqr(16, 11, 5, 1586, { pattern: pat(2, 2, 1, 2), slide: -6 }),
+];
+
+const yip = [
+  sqr(1, 15, 0, 1878, { duty: 3 }),
+  sqr(1, 8, 0, 1870, { duty: 3 }),
+  sqr(1, 15, 0, 1858, { duty: 3 }),
+  sqr(1, 8, 0, 1848, { duty: 3 }),
+  sqr(2, 14, 1, 1834, { pattern: pat(3, 2, 3, 2), slide: -20 }),
+  sqr(3, 10, 2, 1782, { pattern: pat(3, 2, 3, 2), slide: -18 }),
+  rest(3),
+  sqr(1, 15, 0, 1898, { duty: 3 }),
+  sqr(1, 8, 0, 1888, { duty: 3 }),
+  sqr(1, 14, 0, 1876, { duty: 3 }),
+  sqr(3, 12, 1, 1862, { pattern: pat(3, 2, 3, 2), slide: -24 }),
+  sqr(5, 9, 2, 1782, { pattern: pat(3, 2, 3, 2), slide: -15 }),
+];
+
+const rumble = [
+  sqr(10, 14, 0, 702, { pattern: pat(3, 3, 2, 2), slide: -4 }),
+  sqr(14, 13, 0, 662, { pattern: pat(3, 3, 2, 2), slide: -3 }),
+  sqr(20, 12, 3, 618, { pattern: pat(3, 2, 3, 2), slide: -2 }),
+];
+
+const glint = [
+  ...Array.from({ length: 10 }, (_, i) => sqr(1, 10, 0, 1958 + (i % 2 ? 7 : 0), { duty: 0 })),
+  sqr(12, 11, 0, 1944, { duty: 0, slide: 4 }),
+  sqr(16, 8, 5, 1992, { duty: 0 }),
+];
+
+const flutter = [
+  ...Array.from({ length: 10 }, (_, i) =>
+    sqr(2, i % 2 ? 6 : 12, 0, 1778 + i * 4, { pattern: pat(2, 2, 1, 1) }),
+  ),
+  sqr(10, 10, 3, 1828, { pattern: pat(2, 2, 1, 1), slide: 4 }),
+];
+
+const roar = [
+  sqr(4, 15, 0, 1198, { pattern: pat(3, 0, 3, 0), slide: 20 }),
+  sqr(16, 15, 0, 1278, { pattern: pat(3, 0, 3, 0), slide: -6 }),
+  sqr(20, 13, 3, 1182, { pattern: pat(3, 0, 0, 3), slide: -4 }),
+];
+
+const snore = [
+  rest(26),
+  sqr(18, 6, 0, 902, { pattern: pat(3, 3, 2, 2), slide: -3 }),
+  sqr(10, 5, 2, 848, { pattern: pat(3, 2, 2, 2) }),
 ];
 
 export const BASES: BaseVoice[] = [
   {
-    id: "chirp",
-    name: "Chirp",
-    hint: "Small and bright",
-    voices: [p1(...chirp), p2(rest(1), ...shadow(chirp, 0.2, 0.6))],
+    id: "squeak",
+    name: "Squeak",
+    hint: "Two tiny upward squeaks",
+    voices: [p1(...squeak), p2(...follow(squeak, { delay: 1, offset: -10, gain: 0.6 }))],
   },
   {
-    id: "trill",
-    name: "Trill",
-    hint: "A fluttering bird call",
-    voices: [p1(...trill), p2(rest(3), ...shadow(trill, -12, 0.5))],
-  },
-  {
-    id: "growl",
-    name: "Growl",
-    hint: "Low 75% squares and rumbling noise",
+    id: "warble",
+    name: "Warble",
+    hint: "A frame-fast trill that settles",
     voices: [
-      p1(...growl),
-      p2(...shadow(growl, 0.35, 0.8, 2)),
-      ns(nz(4, 10, 1, 5, 4), nz(24, 7, 3, 6, 6)),
+      p1(...warble),
+      p2(...follow(warble, { delay: 2, offset: -24, gain: 0.5, pattern: pat(1, 2, 1, 2) })),
+      ns(hiss(2, 4, 1, 0x10), rest(2), hiss(2, 3, 1, 0x11)),
     ],
   },
   {
-    id: "zap",
-    name: "Zap",
-    hint: "Crackling 12.5% blips with a falling sweep",
+    id: "crackle",
+    name: "Crackle",
+    hint: "Buzzing jumps over sparking noise",
     voices: [
-      p1(...zap),
-      ns(nz(2, 12, 1, 0, 1), rest(2), nz(2, 11, 1, 0, 2), rest(2), nz(8, 10, 2, 1, 1)),
+      p1(...crackle),
+      p2(...follow(crackle, { delay: 0, offset: 6, gain: 0.45, pattern: pat(0, 3, 0, 3) })),
+      ns(
+        hiss(1, 13, 1, 0x01),
+        rest(1),
+        hiss(1, 12, 1, 0x02),
+        rest(2),
+        hiss(1, 14, 1, 0x00),
+        rest(1),
+        hiss(6, 10, 2, 0x11),
+      ),
     ],
   },
   {
-    id: "wail",
-    name: "Wail",
-    hint: "Swells in, two pulses beating",
-    voices: [p1(...wail), p2(...shadow(wail, 0.45, 0.5, 2))],
-  },
-  {
-    id: "bubble",
-    name: "Bubble",
-    hint: "Rising blips with a soft hiss",
-    voices: [p1(...bubble), p2(rest(2), ...shadow(bubble, 5, 0.55)), ns(nz(6, 4, 1, 3, 3))],
-  },
-  {
-    id: "beep",
-    name: "Beep",
-    hint: "Square steps and ticking noise",
+    id: "moan",
+    name: "Moan",
+    hint: "Swells in and sags, two pulses beating",
     voices: [
-      p1(...beep),
-      p2(...shadow(beep, -12, 0.6, 0)),
-      ns(...Array.from({ length: 4 }, () => [nz(1, 8, 0, 0, 0), rest(3)]).flat()),
+      p1(...moan),
+      p2(...follow(moan, { delay: 3, offset: -5, gain: 0.7 })),
+      ns(hiss(12, 2, 11, 0x34), hiss(24, 6, 3, 0x35)),
+    ],
+  },
+  {
+    id: "blub",
+    name: "Blub",
+    hint: "Bubbles that rise and pop",
+    voices: [
+      p1(...blub),
+      p2(...follow(blub, { delay: 2, offset: -30, gain: 0.5 })),
+      ns(hiss(3, 3, 1, 0x26), rest(5), hiss(4, 2, 1, 0x27)),
+    ],
+  },
+  {
+    id: "servo",
+    name: "Servo",
+    hint: "Grinding steps and ticks",
+    voices: [
+      p1(...servo),
+      p2(...follow(servo, { delay: 0, offset: 3, gain: 0.6, pattern: pat(0, 0, 3, 3) })),
+      ns(
+        ...Array.from({ length: 5 }, () => [hiss(1, 9, 1, 0x00), rest(3)]).flat(),
+        hiss(2, 6, 1, 0x22),
+      ),
+    ],
+  },
+  {
+    id: "yawn",
+    name: "Yawn",
+    hint: "A slow rise, a sigh and a breath",
+    voices: [
+      p1(...yawn),
+      p2(...follow(yawn, { delay: 4, offset: -8, gain: 0.6 })),
+      ns(hiss(20, 3, 12, 0x45)),
+    ],
+  },
+  {
+    id: "yip",
+    name: "Yip",
+    hint: "Two raspy barks that drop",
+    voices: [
+      p1(...yip),
+      p2(...follow(yip, { delay: 0, offset: -40, gain: 0.6, pattern: pat(2, 2, 2, 2) })),
+      ns(hiss(2, 10, 1, 0x23), rest(13), hiss(2, 9, 1, 0x23)),
+    ],
+  },
+  {
+    id: "rumble",
+    name: "Rumble",
+    hint: "Very low, slow and heavy",
+    voices: [
+      p1(...rumble),
+      p2(...follow(rumble, { delay: 0, offset: -24, gain: 0.8, pattern: pat(2, 3, 2, 3) })),
+      ns(hiss(6, 12, 1, 0x56), hiss(30, 9, 4, 0x67)),
+    ],
+  },
+  {
+    id: "glint",
+    name: "Glint",
+    hint: "A glassy shiver with a metal ring",
+    voices: [
+      p1(...glint),
+      p2(...follow(glint, { delay: 6, offset: 4, gain: 0.5 })),
+      ns(hiss(4, 7, 1, 0x18), hiss(26, 5, 4, 0x19)),
+    ],
+  },
+  {
+    id: "flutter",
+    name: "Flutter",
+    hint: "Wing-beat tremolo, drifting up",
+    voices: [
+      p1(...flutter),
+      p2(...follow(flutter, { delay: 1, offset: -14, gain: 0.5 })),
+      ns(...Array.from({ length: 5 }, () => [hiss(2, 4, 1, 0x14), rest(2)]).flat()),
+    ],
+  },
+  {
+    id: "roar",
+    name: "Roar",
+    hint: "A rough bellow over a long crash",
+    voices: [
+      p1(...roar),
+      p2(...follow(roar, { delay: 1, offset: -40, gain: 0.9, pattern: pat(0, 3, 0, 3) })),
+      ns(hiss(3, 15, 1, 0x31), hiss(40, 13, 5, 0x44)),
+    ],
+  },
+  {
+    id: "snore",
+    name: "Snore",
+    hint: "Breathe in, grumble, breathe out",
+    voices: [
+      p1(...snore),
+      p2(...follow(snore, { delay: 1, offset: -10, gain: 0.7 })),
+      ns(hiss(24, 1, 13, 0x46), rest(6), hiss(30, 9, 4, 0x57)),
     ],
   },
 ];
@@ -136,9 +341,9 @@ export const CREATURES: Creature[] = [
     id: "pipsqueak",
     name: "Pipsqueak",
     blurb: "A puffball that squeaks when it is happy, which is always.",
-    base: "chirp",
-    pitch: 16,
-    length: 0.8,
+    base: "squeak",
+    pitch: 0,
+    length: 1,
     sprite: [
       "..c......c..",
       ".cac....cac.",
@@ -158,7 +363,7 @@ export const CREATURES: Creature[] = [
     id: "chirrup",
     name: "Chirrup",
     blurb: "A songbird that answers every whistle.",
-    base: "trill",
+    base: "warble",
     pitch: 0,
     length: 1,
     sprite: [
@@ -180,9 +385,9 @@ export const CREATURES: Creature[] = [
     id: "zapling",
     name: "Zapling",
     blurb: "A static spark that hides in old radios.",
-    base: "zap",
-    pitch: 32,
-    length: 1,
+    base: "crackle",
+    pitch: 0,
+    length: 0.9,
     sprite: [
       ".....c......",
       "....cac.....",
@@ -202,9 +407,9 @@ export const CREATURES: Creature[] = [
     id: "wispet",
     name: "Wispet",
     blurb: "A shy ghost. Its wail is mostly a yawn.",
-    base: "wail",
+    base: "moan",
     pitch: 0,
-    length: 1.2,
+    length: 1,
     sprite: [
       "....cccc....",
       "...caaaac...",
@@ -224,7 +429,7 @@ export const CREATURES: Creature[] = [
     id: "bubbloon",
     name: "Bubbloon",
     blurb: "A round fish that talks in bubbles.",
-    base: "bubble",
+    base: "blub",
     pitch: 0,
     length: 1,
     sprite: [
@@ -246,7 +451,7 @@ export const CREATURES: Creature[] = [
     id: "gearbot",
     name: "Gearbot",
     blurb: "A tin helper that beeps in squares.",
-    base: "beep",
+    base: "servo",
     pitch: 0,
     length: 1,
     sprite: [
@@ -268,9 +473,9 @@ export const CREATURES: Creature[] = [
     id: "mossling",
     name: "Mossling",
     blurb: "A sleepy sprout with a slow, low chirp.",
-    base: "chirp",
-    pitch: -96,
-    length: 1.4,
+    base: "yawn",
+    pitch: 0,
+    length: 1.25,
     sprite: [
       "....b..b....",
       "...bab.bab..",
@@ -290,9 +495,9 @@ export const CREATURES: Creature[] = [
     id: "emberkit",
     name: "Emberkit",
     blurb: "A fox kit with a warm, tiny growl.",
-    base: "growl",
-    pitch: 224,
-    length: 0.7,
+    base: "yip",
+    pitch: 24,
+    length: 0.9,
     sprite: [
       ".c.......c..",
       ".cc.....cc..",
@@ -312,9 +517,9 @@ export const CREATURES: Creature[] = [
     id: "boulderback",
     name: "Boulderback",
     blurb: "A tortoise with a hill on its back and a voice to match.",
-    base: "growl",
-    pitch: -40,
-    length: 1.5,
+    base: "rumble",
+    pitch: 0,
+    length: 1.2,
     sprite: [
       "............",
       "....cccc....",
@@ -334,9 +539,9 @@ export const CREATURES: Creature[] = [
     id: "glaciore",
     name: "Glaciore",
     blurb: "An ice spirit whose wail echoes in caves.",
-    base: "wail",
-    pitch: -64,
-    length: 1.6,
+    base: "glint",
+    pitch: -32,
+    length: 1.1,
     sprite: [
       ".....c......",
       "....cac.....",
@@ -356,9 +561,9 @@ export const CREATURES: Creature[] = [
     id: "lumoth",
     name: "Lumoth",
     blurb: "A moth that sings to streetlamps at night.",
-    base: "trill",
-    pitch: -128,
-    length: 1.3,
+    base: "flutter",
+    pitch: 0,
+    length: 1,
     sprite: [
       "............",
       "..c......c..",
@@ -378,9 +583,9 @@ export const CREATURES: Creature[] = [
     id: "stormaw",
     name: "Stormaw",
     blurb: "A thunder beast. Its crackle rolls on long after it stops.",
-    base: "zap",
-    pitch: -160,
-    length: 1.6,
+    base: "roar",
+    pitch: 0,
+    length: 1.1,
     sprite: [
       "c..........c",
       "cc..cccc..cc",
@@ -400,9 +605,9 @@ export const CREATURES: Creature[] = [
     id: "snoozle",
     name: "Snoozle",
     blurb: "It only ever talks in its sleep.",
-    base: "wail",
-    pitch: 40,
-    length: 2,
+    base: "snore",
+    pitch: 0,
+    length: 1,
     sprite: [
       "........bbb.",
       ".........b..",
@@ -424,12 +629,6 @@ export const baseById = (id: string): BaseVoice => BASES.find((b) => b.id === id
 export const creatureById = (id: string): Creature | undefined =>
   CREATURES.find((c) => c.id === id);
 
-/** The MIDI pitch of a pulse frequency register. */
-function regPitch(x: number): number {
-  const freq = 131072 / (2048 - x);
-  return 69 + 12 * Math.log2(freq / 440);
-}
-
 /** A base voice with a creature's pitch and length, as an SFX the driver can play. */
 export function voiceSfx(base: BaseVoice, pitch: number, length: number, name = base.name): Sfx {
   return {
@@ -446,8 +645,15 @@ export function voiceSfx(base: BaseVoice, pitch: number, length: number, name = 
         }
         const frames = Math.max(1, Math.round(n.frames * length));
         if (n.volume === 0) return { ...n, frames };
+        // Slides keep the contour's shape when the voice is stretched.
+        const slide = n.slide ? Math.round(n.slide / length) || Math.sign(n.slide) : undefined;
         const x = Math.min(2047, Math.max(0, freqReg(n.pitch, false) + Math.round(pitch)));
-        return { ...n, frames, pitch: Math.round(regPitch(x) * 1000) / 1000 };
+        return {
+          ...n,
+          frames,
+          pitch: Math.round(regPitch(x) * 1000) / 1000,
+          ...(slide ? { slide } : {}),
+        };
       }),
     })),
   };
