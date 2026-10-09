@@ -6,7 +6,7 @@ import type { Renderable } from "../contract/client.ts";
 import { getOwner, renderEffect } from "../core/internal.ts";
 import { onCleanup } from "../core/owner.ts";
 import { setAttr } from "./attributes.ts";
-import { renderRange } from "./insert.ts";
+import { place, renderRange } from "./insert.ts";
 
 interface Entry<T> {
   depth: number;
@@ -106,20 +106,14 @@ function adoptMeta(key: string, attributes: Attributes): Element | undefined {
   for (const el of document.head.querySelectorAll("meta")) {
     if (
       !managed.has(el) &&
-      (key[0] === "#" ? el.isEqualNode(probe) : metaKey(attrsOf(el)) === key)
+      (key[0] === "#"
+        ? el.isEqualNode(probe)
+        : metaKey(Object.fromEntries(Array.from(el.attributes, (a) => [a.name, a.value]))) === key)
     ) {
       return el;
     }
   }
   return undefined;
-}
-
-function attrsOf(el: Element): Attributes {
-  const out: Attributes = {};
-  for (const name of el.getAttributeNames()) {
-    out[name] = el.getAttribute(name);
-  }
-  return out;
 }
 
 function updateMeta(key: string): void {
@@ -166,21 +160,12 @@ export function Head(props: { children?: Renderable }): Renderable {
   for (let node = start.nextSibling!; node !== end;) {
     const next = node.nextSibling!;
     if (node.nodeType === 1 && Array.from(head.children).some((el) => el.isEqualNode(node))) {
-      node.parentNode!.removeChild(node);
+      (node as ChildNode).remove();
     }
     node = next;
   }
-  for (let node: Node | null = start; node !== null;) {
-    const next: Node | null = node === end ? null : node.nextSibling;
-    head.appendChild(node);
-    node = next;
-  }
-  onCleanup(() => {
-    for (let node: Node | null = start; node !== null;) {
-      const next: Node | null = node === end ? null : node.nextSibling;
-      node.parentNode?.removeChild(node);
-      node = next;
-    }
-  });
+  place(head, start, null);
+  // The range leaves `<head>` as a unit (into a fragment of its own).
+  onCleanup(() => place(new DocumentFragment(), start, null));
   return null;
 }

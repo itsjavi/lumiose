@@ -7,6 +7,7 @@ import { onCleanup } from "../core/owner.ts";
 import { computed, signal } from "../core/signal.ts";
 import type { JSX } from "../jsx/jsx-runtime.ts";
 import { createComponent, restProps } from "./component.ts";
+import { DEV } from "./dev.ts";
 import { insert } from "./insert.ts";
 import { spread } from "./spread.ts";
 import type { RenderedShell, RenderToStreamOptions } from "../server/render.ts";
@@ -77,7 +78,10 @@ export function Dynamic(props: DynamicProps): Renderable {
 function serverOnly(api: string): never {
   throw new LumenError(
     LUM_SERVER_ONLY,
-    `${api} is server-only and cannot run in the browser. Render on the server (the node condition of lumen), or mount on the client`,
+    // The full hint in dev; production keeps the code, which `lumen docs LUM4003` explains.
+    DEV
+      ? `${api} is server-only and cannot run in the browser. Render on the server (the node condition of lumen), or mount on the client`
+      : `${api} is server-only`,
   );
 }
 
