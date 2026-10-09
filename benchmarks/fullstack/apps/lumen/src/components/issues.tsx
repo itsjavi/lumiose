@@ -34,21 +34,27 @@ export function FilterFields(props: { filters: IssueFilters; labels: Label[] }) 
       <label class="filter">
         <span>Status</span>
         <select name="status">
-          <option value="">Any</option>
+          <option value="" selected={props.filters.status === undefined}>
+            Any
+          </option>
           <Options values={STATUSES} labels={STATUS_LABELS} selected={props.filters.status} />
         </select>
       </label>
       <label class="filter">
         <span>Priority</span>
         <select name="priority">
-          <option value="">Any</option>
+          <option value="" selected={props.filters.priority === undefined}>
+            Any
+          </option>
           <Options values={PRIORITIES} labels={PRIORITY_LABELS} selected={props.filters.priority} />
         </select>
       </label>
       <label class="filter">
         <span>Label</span>
         <select name="label">
-          <option value="">Any</option>
+          <option value="" selected={props.filters.label === undefined}>
+            Any
+          </option>
           <Options
             values={props.labels.map((label) => label.name)}
             labels={Object.fromEntries(props.labels.map((label) => [label.name, label.name]))}
