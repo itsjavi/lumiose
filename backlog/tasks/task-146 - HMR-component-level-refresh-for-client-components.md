@@ -5,6 +5,7 @@ status: To Do
 assignee:
   - Photon
 created_date: '2026-10-09 05:24'
+updated_date: '2026-10-09 12:12'
 labels:
   - dev
   - hmr
@@ -24,3 +25,9 @@ Planned only (user 2026-10-09: 'plan only') — do not start without the user's 
 - [ ] #1 Editing a component re-creates only its instances; sibling/parent signals and DOM state survive; works in SPA routes and islands
 - [ ] #2 Falls back to a re-mount/reload when a module's exports change shape; zero production cost; tests
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+User 2026-10-09: approved (no hacks; fall back to the current reload when a change cannot be applied safely).
+<!-- SECTION:NOTES:END -->

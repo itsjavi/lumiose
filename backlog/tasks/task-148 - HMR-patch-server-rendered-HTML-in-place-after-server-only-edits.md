@@ -5,6 +5,7 @@ status: To Do
 assignee:
   - Nova
 created_date: '2026-10-09 05:24'
+updated_date: '2026-10-09 12:12'
 labels:
   - dev
   - hmr
@@ -25,3 +26,9 @@ Planned only (user 2026-10-09: 'plan only') — do not start without the user's 
 - [ ] #1 Server-only component edits update the page without a reload; islands and scroll survive; head changes apply
 - [ ] #2 Fallback to reload on structural changes; tests
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Lux 2026-10-09: deferred (user accepted the pushback): DOM morphing after server edits risks unexpected behaviour; keep the full reload.
+<!-- SECTION:NOTES:END -->

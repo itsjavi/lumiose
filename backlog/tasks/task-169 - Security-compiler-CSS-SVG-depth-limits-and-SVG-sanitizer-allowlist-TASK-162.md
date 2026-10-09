@@ -1,10 +1,11 @@
 ---
 id: TASK-169
 title: 'Security: compiler/CSS/SVG depth limits and SVG sanitizer allowlist (TASK-162)'
-status: To Do
+status: In Progress
 assignee:
   - Halo
 created_date: '2026-10-09 12:10'
+updated_date: '2026-10-09 12:11'
 labels:
   - security
   - css

@@ -1,10 +1,11 @@
 ---
 id: TASK-161
 title: 'CI on Linux, macOS and Windows; native binaries per platform'
-status: To Do
+status: In Progress
 assignee:
-  - Photon
+  - '@Photon'
 created_date: '2026-10-09 11:53'
+updated_date: '2026-10-09 11:54'
 labels:
   - ci
   - release

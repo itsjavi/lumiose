@@ -5,6 +5,7 @@ status: To Do
 assignee:
   - Spark
 created_date: '2026-10-09 05:24'
+updated_date: '2026-10-09 12:12'
 labels:
   - dev
   - hmr
@@ -25,3 +26,9 @@ Planned only (user 2026-10-09: 'plan only') — do not start without the user's 
 - [ ] #1 Editing an island's code updates its instances in place on server and static pages; other islands keep state; server-only edits still reload
 - [ ] #2 Playwright test in islands-e2e for both cases
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+User 2026-10-09: approved.
+<!-- SECTION:NOTES:END -->
