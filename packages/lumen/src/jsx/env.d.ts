@@ -1,7 +1,8 @@
 // `lumen/env`: ambient types for Lumen projects (owner: Beacon). Spec §4.7, §8 (Context, Env).
 // Enabled with `"types": ["lumen/env"]` in tsconfig.
 import type { JSX as LumenJSX } from "./jsx-runtime.ts";
-// `.svg`, `.md` and `.html` module patterns: script files, since this module cannot declare them.
+// `.css`, `.svg`, `.md` and `.html` module patterns: script files, since this module cannot declare them.
+import "./css-modules.d.ts";
 import "./svg-modules.d.ts";
 import "./content-modules.d.ts";
 

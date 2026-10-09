@@ -360,7 +360,7 @@ export default function lumen(options: LumenOptions = {}): Plugin<LumenPluginApi
           if (errors.length > 0) {
             const [first, ...rest] = errors;
             const more = rest.map((d) => `\n${message(d)}`).join("");
-            this.error({ message: message(first!) + more, id }, first!.span.start);
+            this.error(diagnosticError(message(first!) + more, { id }), first!.span.start);
           }
           let out = result.code;
           if (serve && target === "client" && IMPORTS_MOUNT.test(out)) out = hmrEntry(out);
@@ -459,12 +459,21 @@ function reportFromLoad(
       .slice(1)
       .map((d) => `\n${message(d)}`)
       .join("");
-    context.error({
-      message: message(errors[0]!) + more,
-      id: file,
-      loc: loc(errors[0]!.span.start),
-    });
+    context.error(
+      diagnosticError(message(errors[0]!) + more, { id: file, loc: loc(errors[0]!.span.start) }),
+    );
   }
+}
+
+/**
+ * A LUMxxxx build error. Its message, help and code frame explain it, so it has no stack: the
+ * bundler would print the plugin's internals after the frame (TASK-122).
+ */
+function diagnosticError(text: string, props: { id: string; loc?: unknown }): Error {
+  const error = Object.assign(new Error(text), props);
+  error.name = "LumenError";
+  error.stack = "";
+  return error;
 }
 
 function message(diagnostic: Diagnostic): string {

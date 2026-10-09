@@ -367,6 +367,18 @@ describe("language server (pull diagnostics)", () => {
     expect(await lumen("src/Calls.tsx")).toEqual([
       { code: "LUM2004", severity: 1, range: rangeOf(tsx, "{Inner()", 1) },
     ]);
+
+    // Raw CSS in a `.tsx` file: LUM1006 only, without TypeScript's errors on the CSS (TASK-122).
+    const raw =
+      'export const Raw = () => <div class="raw"><style>.raw { color: red; }</style></div>;\n';
+    await server.open("src/Raw.tsx", raw);
+    const report = await server.request<FullDocumentDiagnosticReport>(
+      "textDocument/diagnostic",
+      doc("src/Raw.tsx"),
+    );
+    expect(report.items.map(({ source, code }) => ({ source, code }))).toEqual([
+      { source: "lumen", code: "LUM1006" },
+    ]);
   });
 
   it("reports non-serializable island props as LUM4002 on the prop (.stsx and .tsx)", async () => {

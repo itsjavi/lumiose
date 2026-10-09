@@ -29,12 +29,13 @@ export const LUM_AFTER_SHELL = "LUM5004";
 /** A static endpoint exports a method other than GET (it is prerendered to a file). */
 export const LUM_STATIC_ENDPOINT_METHOD = "LUM5005";
 
-/** A runtime error carrying a Lumen code and its docs URL (contract doc-2 §6). */
+/** A runtime error carrying a Lumen code and where to read about it (contract doc-2 §6). */
 export class LumenError extends Error {
   readonly code: AppDiagnostic["code"];
 
   constructor(code: AppDiagnostic["code"], message: string) {
-    super(`${message} (${code}: https://lumen.dev/errors/${code})`);
+    // `lumen docs <code>` until the docs site is online (TASK-122).
+    super(`${message} (${code}: run \`lumen docs ${code}\`)`);
     this.name = "LumenError";
     this.code = code;
   }

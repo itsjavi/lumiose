@@ -4,7 +4,8 @@
 //
 // A topic is a docs path without `.md`: `concepts/signals`, `reference/app`, `errors/LUM1004`.
 // Lookups also accept a bare name (`signals`), a code (`LUM1004`) and the older
-// `diagnostics/LUM1004` form; anything else is searched.
+// `diagnostics/LUM1004` form; an exported name (`fetchJSON`) prints its reference section;
+// anything else is searched.
 
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
@@ -126,6 +127,58 @@ export function resolveTopic(query: string, docs: readonly Doc[] = loadDocs()): 
   }
   // Docs are in reading order, so concepts win over reference pages of the same name.
   return docs.find((doc) => doc.topic.toLowerCase().split("/").pop() === normalized);
+}
+
+export interface ExportSection {
+  /** The reference page, such as `reference/reactivity`. */
+  topic: string;
+  /** The section heading, such as `createContext, provide, inject`. */
+  heading: string;
+  /** The section's Markdown, from its heading to the next heading of the same or a higher level. */
+  content: string;
+}
+
+const IDENTIFIER = /^[A-Za-z_$][\w$]*$/;
+
+/**
+ * The reference section of an exported name (`signal`, `fetchJSON`, `Link`): a `##`/`###` heading
+ * of a `reference/` page that lists it (`fail, ActionFailure`, `lumen()`). Case-sensitive, and
+ * only for names no topic is called (`jsx` stays a topic) that one page documents.
+ */
+export function resolveExport(
+  query: string,
+  docs: readonly Doc[] = loadDocs(),
+): ExportSection | undefined {
+  const name = query.trim().replace(/\(\)$/, "");
+  if (!IDENTIFIER.test(name)) return undefined;
+  if (docs.some((doc) => doc.topic.split("/").pop() === name)) return undefined;
+  const found: ExportSection[] = [];
+  for (const doc of docs) {
+    if (!doc.topic.startsWith("reference/")) continue;
+    const lines = doc.content.split("\n");
+    let fence = false;
+    for (const [index, line] of lines.entries()) {
+      if (line.startsWith("```")) fence = !fence;
+      const heading = fence ? null : /^(#{2,3}) (.+)$/.exec(line);
+      if (!heading) continue;
+      const names = heading[2]!.split(",").map((part) => part.trim().replace(/^`|`$/g, ""));
+      if (!names.some((candidate) => candidate.replace(/\(\)$/, "") === name)) continue;
+      const level = heading[1]!.length;
+      let end = index + 1;
+      let inFence = false;
+      for (; end < lines.length; end++) {
+        if (lines[end]!.startsWith("```")) inFence = !inFence;
+        const next = inFence ? null : /^(#+) /.exec(lines[end]!);
+        if (next && next[1]!.length <= level) break;
+      }
+      found.push({
+        topic: doc.topic,
+        heading: heading[2]!,
+        content: `${lines.slice(index, end).join("\n").trimEnd()}\n`,
+      });
+    }
+  }
+  return found.length === 1 ? found[0] : undefined;
 }
 
 /** Other topics with the same bare name as `doc` (`reference/jsx` for `concepts/jsx`). */
@@ -264,6 +317,16 @@ export function docsCommand(options: DocsCommandOptions): number {
   const query = options.query.trim();
   if (query === "" && options.format === "json") {
     options.write(formatEnvelope("docs", true, { topics: docs.map(entry) }));
+    return EXIT_OK;
+  }
+  const exported = resolveExport(query, docs);
+  if (exported) {
+    if (options.format === "json") {
+      options.write(formatEnvelope("docs", true, { ...exported }));
+    } else {
+      options.write(exported.content);
+      options.write(`\nFrom ${exported.topic}: lumen docs ${exported.topic}\n`);
+    }
     return EXIT_OK;
   }
   const doc = resolveTopic(query, docs);

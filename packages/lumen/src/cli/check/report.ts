@@ -16,6 +16,8 @@ export interface CheckReport {
   ok?: boolean;
   diagnostics: CheckDiagnostic[];
   summary: CheckSummary;
+  /** Remarks on the run (present when there are some), e.g. type errors hidden by syntax errors. */
+  notes?: string[];
   failure?: Failure;
 }
 
@@ -37,6 +39,7 @@ export function formatJson(report: CheckReport, command = report.command ?? "che
       ...(diagnostic.docs === undefined ? {} : { docs: diagnostic.docs }),
     })),
     summary: report.summary,
+    ...(report.notes === undefined || report.notes.length === 0 ? {} : { notes: report.notes }),
     ...(report.failure === undefined ? {} : { failure: report.failure }),
   };
   return `${JSON.stringify(document, null, 2)}\n`;
@@ -67,7 +70,8 @@ export function formatHuman(report: CheckReport, options: HumanFormatOptions = {
     if (diagnostic.docs) lines.push(`  ${paint("bold", "docs:")} lumen docs ${diagnostic.docs}`);
     return `${lines.join("\n")}\n`;
   });
-  return [...blocks, summaryLine(report.summary)].join("\n");
+  const notes = (report.notes ?? []).map((note) => `${paint("bold", "note:")} ${note}\n`);
+  return [...blocks, summaryLine(report.summary) + notes.join("")].join("\n");
 }
 
 const SEVERITY_COLORS = { error: "red", warning: "yellow", hint: "blue" } as const;

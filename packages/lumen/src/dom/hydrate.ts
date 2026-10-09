@@ -402,7 +402,7 @@ export function hydrate<P extends object>(
     }
     if (DEV && !fresh) {
       console.warn(
-        `Lumen: LUM4006: island ${name} has no recorded await ${key}, so the client awaits it again. Keep awaits in the same order on the server and the client (https://lumen.dev/errors/LUM4006).`,
+        `Lumen: LUM4006: island ${name} has no recorded await ${key}, so the client awaits it again. Keep awaits in the same order on the server and the client (run \`lumen docs LUM4006\`).`,
       );
     }
     return undefined;
@@ -435,7 +435,7 @@ export function hydrate<P extends object>(
       }
       if (DEV) {
         console.warn(
-          `Lumen: LUM4006: hydration mismatch in island ${name}: the server HTML does not match the client render, so the island was rendered on the client instead. Render the same output on both sides for the same props (https://lumen.dev/errors/LUM4006).`,
+          `Lumen: LUM4006: hydration mismatch in island ${name}: the server HTML does not match the client render, so the island was rendered on the client instead. Render the same output on both sides for the same props (run \`lumen docs LUM4006\`).`,
         );
       }
       render(undefined);

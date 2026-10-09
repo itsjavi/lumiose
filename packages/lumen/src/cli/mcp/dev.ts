@@ -73,7 +73,13 @@ export class DevSession {
   /** Requests `path` from the dev server (starting it if needed), without following redirects. */
   async render(
     path: string,
-    options: { method?: string; headers?: Record<string, string>; maxLength?: number } = {},
+    options: {
+      method?: string;
+      headers?: Record<string, string>;
+      maxLength?: number;
+      /** Only the visible markup of an HTML body (see {@link stripHtml}). */
+      strip?: boolean;
+    } = {},
   ): Promise<RenderResult> {
     const server = await this.server();
     const url = new URL(path.startsWith("/") ? path.slice(1) : path, server.url);
@@ -82,7 +88,8 @@ export class DevSession {
       ...(options.headers === undefined ? {} : { headers: options.headers }),
       redirect: "manual",
     });
-    const text = await response.text();
+    const html = response.headers.get("content-type")?.includes("text/html") ?? false;
+    const text = options.strip && html ? stripHtml(await response.text()) : await response.text();
     const maxLength = options.maxLength ?? 100_000;
     return {
       url: url.pathname + url.search,
@@ -150,4 +157,19 @@ const LEVELS: readonly LogLevel[] = ["info", "warn", "error"];
 
 function messageOf(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
+}
+
+/**
+ * The visible markup of a page, for reading what it renders: no `<script>`, `<style>`, `<link>`,
+ * `<meta>` or `<template>` elements (island records, CSS, slots sent for later), no comments
+ * (hydration markers) and no `data-l-*` attributes; blank lines collapsed.
+ */
+export function stripHtml(html: string): string {
+  return html
+    .replace(/<(script|style|template)\b[^>]*>[\s\S]*?<\/\1\s*>/gi, "")
+    .replace(/<(?:link|meta)\b[^>]*>/gi, "")
+    .replace(/<!--[\s\S]*?-->/g, "")
+    .replace(/\s+data-l-[\w-]*(?:=(?:"[^"]*"|'[^']*'|[^\s>]*))?/g, "")
+    .replace(/[ \t]+$/gm, "")
+    .replace(/\n{2,}/g, "\n");
 }

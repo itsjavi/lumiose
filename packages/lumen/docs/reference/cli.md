@@ -87,6 +87,13 @@ Each JSON diagnostic has `source` (`ts`, `lumen`, `oxlint`, `stylelint`), `code`
 `fix`. A `fix` is `{ message, edits: [{ line, column, endLine, endColumn, text }] }`, with the same
 positions as diagnostics; apply all its edits together.
 
+TypeScript errors inside a raw-CSS `<style>` block of a `.tsx` file are dropped: `LUM1006` reports
+the block, and renaming the file to `.stsx` removes them. TypeScript errors on an island call site
+for a prop that cannot be serialized are reported as `LUM4002` on the prop (see
+[LUM4002](../errors/LUM4002.md)). While the project has syntax errors, TypeScript reports no type
+errors yet: the report then ends with a note (JSON: `notes: [...]`), and another run after the
+fixes shows them.
+
 ## lumen typegen
 
 Writes the route types (`.lumen/types/routes.d.ts`), the generated tsconfig
@@ -142,14 +149,18 @@ lumen docs                  # the docs index
 lumen docs signals          # a topic by name...
 lumen docs concepts/signals # ...or by path
 lumen docs LUM2001          # a diagnostic page (also errors/LUM2001, diagnostics/LUM2001)
+lumen docs fetchJSON        # an exported name: its section of the API reference
 lumen docs bind:value       # no topic matches: search, best matches first
 lumen docs --format json    # { topics: [{ topic, title, summary }] }
 lumen docs signals --format json   # { topic, title, summary, related, content }
+lumen docs Link --format json      # { topic, heading, content }
 lumen docs "await island" --format json   # { query, results: [{ topic, title, score, snippet }] }
 ```
 
 Prints the version-matched docs from `node_modules/lumen/docs`. A bare name prefers concepts over
-reference pages and lists the other matches. A search requires every term to occur in a page.
+reference pages and lists the other matches. An exported name (case-sensitive, such as `signal`,
+`Link` or `fail`) prints the section of the reference page that documents it. A search requires
+every term to occur in a page.
 Exits 1 when nothing matches.
 
 ## lumen explain

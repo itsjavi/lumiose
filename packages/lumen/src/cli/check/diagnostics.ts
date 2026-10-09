@@ -133,6 +133,36 @@ export function dropSuperseded(diagnostics: CheckDiagnostic[]): CheckDiagnostic[
   );
 }
 
+/**
+ * Drops TypeScript diagnostics inside a raw-CSS `<style>` block of a `.tsx` file (LUM1006, from its
+ * `<style` tag to the next `</style>`): TypeScript reads the CSS as JSX text and reports noise
+ * ("'}' expected") that renaming the file to `.stsx` removes.
+ */
+export function dropInsideRawCss(
+  diagnostics: CheckDiagnostic[],
+  sources: ReadonlyMap<string, SourceText>,
+): CheckDiagnostic[] {
+  const blocks = diagnostics.flatMap((d) => {
+    const text = d.source === "lumen" && d.code === "LUM1006" ? sources.get(d.file) : undefined;
+    if (!text) return [];
+    const start = text.offsetAt({ line: d.line, column: d.column });
+    const close = text.text.indexOf("</style>", start);
+    const end = close === -1 ? text.text.length : close + "</style>".length;
+    return [{ file: d.file, start: text.positionAt(start), end: text.positionAt(end) }];
+  });
+  if (blocks.length === 0) return diagnostics;
+  return diagnostics.filter(
+    (d) =>
+      d.source !== "ts" ||
+      !blocks.some(
+        (block) =>
+          block.file === d.file &&
+          comparePositions(d.line, d.column, block.start.line, block.start.column) >= 0 &&
+          comparePositions(d.line, d.column, block.end.line, block.end.column) < 0,
+      ),
+  );
+}
+
 function comparePositions(line: number, column: number, otherLine: number, otherColumn: number) {
   return line - otherLine || column - otherColumn;
 }

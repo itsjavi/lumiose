@@ -18,6 +18,7 @@ import {
   loadDocs,
   printable,
   relatedTopics,
+  resolveExport,
   resolveTopic,
   searchDocs,
   type Doc,
@@ -90,7 +91,7 @@ export async function createLumenMcpServer(options: LumenMcpOptions): Promise<Lu
     {
       title: "Read a Lumen docs page",
       description:
-        'A Lumen docs page as Markdown, by topic: "concepts/signals", "reference/app", a bare name ("signals"), a diagnostic code ("LUM2001") or "" for the index.',
+        'A Lumen docs page as Markdown, by topic: "concepts/signals", "reference/app", a bare name ("signals"), a diagnostic code ("LUM2001") or "" for the index. An exported name ("fetchJSON", "Link") returns its API reference section.',
       inputSchema: {
         topic: z.string().describe('Docs topic, bare name or diagnostic code, e.g. "LUM2001"'),
       },
@@ -98,6 +99,12 @@ export async function createLumenMcpServer(options: LumenMcpOptions): Promise<Lu
     },
     ({ topic }) => {
       const all = docs();
+      const exported = resolveExport(topic, all);
+      if (exported) {
+        return text(
+          `<!-- lumen docs: ${exported.topic} -->\n${exported.content}\n---\nFrom ${exported.topic}; read the whole page with docs_get("${exported.topic}").\n`,
+        );
+      }
       const doc = resolveTopic(topic, all);
       if (doc) {
         const related = relatedTopics(doc, all);
@@ -142,6 +149,7 @@ export async function createLumenMcpServer(options: LumenMcpOptions): Promise<Lu
           ok: summary.errors === 0,
           summary,
           ...(wanted === undefined ? {} : { projectSummary: result.summary }),
+          ...(result.notes.length > 0 ? { notes: result.notes } : {}),
           diagnostics,
         });
       }),
@@ -217,16 +225,23 @@ export async function createLumenMcpServer(options: LumenMcpOptions): Promise<Lu
           .min(1)
           .optional()
           .describe("Cut the body after this many characters (100000)"),
+        strip: z
+          .boolean()
+          .optional()
+          .describe(
+            "HTML only: return the visible markup, without scripts, styles, link/meta tags, templates, hydration comments and data-l-* attributes",
+          ),
       },
       annotations: { readOnlyHint: false, openWorldHint: false },
     },
-    ({ path, method, headers, maxLength }) =>
+    ({ path, method, headers, maxLength, strip }) =>
       run(async () => {
         return json(
           await dev.render(path, {
             ...(method === undefined ? {} : { method }),
             ...(headers === undefined ? {} : { headers }),
             ...(maxLength === undefined ? {} : { maxLength }),
+            ...(strip === undefined ? {} : { strip }),
           }),
         );
       }),

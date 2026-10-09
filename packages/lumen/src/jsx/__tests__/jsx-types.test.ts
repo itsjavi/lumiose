@@ -76,6 +76,9 @@ describe("JSX types (TypeScript 7)", () => {
         join(project, "src/app.tsx"),
         [
           'import type { Locals } from "lumen";',
+          "// Side-effect CSS imports are checked by TypeScript 7 (lumen/env declares `*.css`).",
+          'import "./app.css";',
+          'import stylesheet from "./app.css?url";',
           "async function Greeting(props: { name: string }) {",
           "  const name = await Promise.resolve(props.name);",
           "  return <p class={{ hot: name.length > 3 }} onClick={(e) => e.currentTarget.title} onKeyDown={(e) => e.key}>{name}</p>;",
@@ -83,6 +86,7 @@ describe("JSX types (TypeScript 7)", () => {
           'export const app: JSX.Element = <Greeting name="Ada" client:visible="200px" />;',
           "export const url: string = import.meta.env.PUBLIC_URL;",
           "export const locals: Locals = {};",
+          "export const href: string = stylesheet;",
           "// @ts-expect-error <style> blocks belong in .stsx files.",
           "export const style = <style>{'p { color: red }'}</style>;",
           "",

@@ -12,12 +12,14 @@ import { afterAll, describe, expect, it } from "vitest";
 import { main } from "../main.ts";
 import {
   checkCommand,
+  formatHuman,
   formatTsconfig,
   isServerRoute,
   LUM_TSCONFIG,
   parseTscOutput,
   shadowPathFor,
   standaloneTsconfig,
+  SYNTAX_ERRORS_NOTE,
   syncShadows,
   tsconfigTemplate,
   type CheckDiagnostic,
@@ -184,6 +186,15 @@ describe("parseTscOutput", () => {
           "Cannot find type definition file for 'nope'.\nThe file is in the program because:",
       },
     ]);
+  });
+});
+
+describe("formatHuman", () => {
+  it("ends with the notes after the summary", () => {
+    const summary = { errors: 1, warnings: 0, hints: 0, files: 1 };
+    expect(formatHuman({ diagnostics: [], summary, notes: [SYNTAX_ERRORS_NOTE] })).toBe(
+      `Found 1 error, 0 warnings in 1 file.\nnote: ${SYNTAX_ERRORS_NOTE}\n`,
+    );
   });
 });
 
@@ -419,16 +430,22 @@ describe.skipIf(!binding)("lumen check", () => {
       "}",
       "",
     ].join("\n");
-    const raw = 'export const Raw = () => <div class="raw">\n  <style>.raw {}</style>\n</div>;\n';
+    const raw =
+      'export const Raw = () => <div class="raw">\n  <style>.raw { color: red; }</style>\n</div>;\n';
     await writeFile(join(root, "src/components/Calls.stsx"), calls);
     await writeFile(join(root, "src/Raw.tsx"), raw);
     const { exitCode, report } = await checkJson(root);
-    // (TypeScript also rejects `<style>` in the `.tsx` file.)
     expect(report.diagnostics.filter((d) => d.source === "lumen")).toEqual([
       lumenAt("src/Raw.tsx", "LUM1006", raw, "<style>"),
       lumenAt("src/components/Calls.stsx", "LUM2004", calls, "{Inner()", 1),
       lumenAt("src/components/Calls.stsx", "LUM3008", calls, "$width"),
     ]);
+    // TypeScript's errors inside the raw-CSS block (it reads the CSS as JSX) are dropped (TASK-122),
+    expect(report.diagnostics.filter((d) => d.file === "src/Raw.tsx" && d.source === "ts")).toEqual(
+      [],
+    );
+    // and its syntax errors there still hide type errors, which the report notes.
+    expect(report.notes).toEqual([SYNTAX_ERRORS_NOTE]);
     expect(exitCode).toBe(1);
   });
 

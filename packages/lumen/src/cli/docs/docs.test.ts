@@ -7,7 +7,7 @@ import { describe, expect, it } from "vitest";
 import pkg from "../../../package.json" with { type: "json" };
 import { main } from "../main.ts";
 import { generateErrorDocs, generateLlms, parseRegistry, REGISTRY_PATH } from "./generate.ts";
-import { DOCS_DIR, loadDocs, resolveTopic, searchDocs } from "./index.ts";
+import { DOCS_DIR, loadDocs, resolveExport, resolveTopic, searchDocs } from "./index.ts";
 
 const repo = resolve(DOCS_DIR, "../../..");
 const docs = loadDocs();
@@ -41,6 +41,30 @@ describe("lumen docs", () => {
     expect(resolveTopic("diagnostics/LUM1004", docs)?.topic).toBe("errors/LUM1004");
     expect(resolveTopic("errors", docs)?.topic).toBe("errors/README");
     expect(resolveTopic("no-such-topic", docs)).toBeUndefined();
+  });
+
+  it("prints the reference section of an exported name (TASK-122)", async () => {
+    expect(resolveExport("fetchJSON", docs)).toMatchObject({
+      topic: "reference/app",
+      heading: "fetchJSON",
+    });
+    // A name in a list heading, and `name()`.
+    expect(resolveExport("ActionFailure", docs)?.heading).toBe("fail, ActionFailure");
+    expect(resolveExport("lumen", docs)?.topic).toBe("reference/vite");
+    // Case-sensitive; topics, section names of several pages and non-names are not exports.
+    expect(resolveExport("FetchJSON", docs)).toBeUndefined();
+    expect(resolveExport("jsx", docs)).toBeUndefined();
+    expect(resolveExport("Example", docs)).toBeUndefined();
+    expect(resolveExport("bind:value", docs)).toBeUndefined();
+
+    const { exitCode, stdout } = await run("docs", "signal");
+    expect(exitCode).toBe(0);
+    expect(stdout).toMatch(/^## signal\n/);
+    expect(stdout).not.toContain("## computed");
+    expect(stdout).toContain("From reference/reactivity: lumen docs reference/reactivity");
+    const json = JSON.parse((await run("docs", "Link", "--format", "json")).stdout);
+    expect(json).toMatchObject({ ok: true, topic: "reference/router", heading: "Link" });
+    expect(json.content).toMatch(/^### Link\n/);
   });
 
   it("prints a topic and points at same-named topics", async () => {

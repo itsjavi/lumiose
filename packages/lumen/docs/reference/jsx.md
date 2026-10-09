@@ -161,6 +161,10 @@ interface ImportMetaEnv {
 declare module "lumen" {
   interface Locals {}
 }
+declare module "*.css" {} // import "./app.css": bundled into the page's CSS
+declare module "*.css?url" {} // export default url: string
+declare module "*.css?inline" {} // export default css: string
+declare module "*.css?raw" {} // export default source: string
 declare module "*.svg" {
   const Svg: (props: JSX.SVGProps<SVGSVGElement> & { title?: string }) => JSX.Element;
   export default Svg;
@@ -189,4 +193,7 @@ declare module "*.html" {
 Declare known public variables by merging `interface ImportMetaEnv { readonly PUBLIC_API: string }`.
 The built-in members match `vite/client`, so both can be loaded; list `lumen/env` first, because
 `vite/client` types `*.svg` as a URL string and the first declaration wins (see
-[SVG imports](../concepts/svg.md)).
+[SVG imports](../concepts/svg.md)). TypeScript 7 checks side-effect imports
+(`noUncheckedSideEffectImports`), hence `*.css`. With `lumen/env` listed first it also matches
+`*.module.css`, so a CSS module import has no class map type; scoped `<style>` blocks replace CSS
+modules in Lumen components.

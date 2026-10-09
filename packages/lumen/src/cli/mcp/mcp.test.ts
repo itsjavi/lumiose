@@ -12,6 +12,7 @@ import { fileURLToPath } from "node:url";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { tsconfigTemplate } from "../check/index.ts";
 import { createLumenMcpServer, type LumenMcp } from "./index.ts";
+import { stripHtml } from "./dev.ts";
 import { propsOf } from "./source.ts";
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -118,6 +119,21 @@ async function callJson<T = any>(name: string, args: Record<string, unknown> = {
   expect(isError, text).toBe(false);
   return JSON.parse(text) as T;
 }
+
+describe("stripHtml", () => {
+  it("keeps the visible markup", () => {
+    const html = [
+      '<!doctype html><html><head><meta charset="utf-8"><title>T</title>',
+      '<link rel="stylesheet" href="/a.css"><style>p{}</style></head>',
+      '<body><main data-l-p="1"><!--l:0--><p class="x">Hi</p><!--/l:0-->',
+      '<template data-l-slot="icon"><svg></svg></template>',
+      '<script type="application/json" data-l-islands>[]</script></main></body></html>',
+    ].join("\n");
+    expect(stripHtml(html)).toBe(
+      '<!doctype html><html><head><title>T</title>\n</head>\n<body><main><p class="x">Hi</p>\n</main></body></html>',
+    );
+  });
+});
 
 describe("lumen mcp", () => {
   it("lists the tools, with instructions", async () => {
@@ -277,6 +293,12 @@ describe("lumen mcp", () => {
       expect(page.body).toContain("<h1>Hello MCP</h1>");
       expect(page.body).toContain("<title>Home</title>");
       expect(page.truncated).toBe(false);
+
+      // Stripped: the visible markup only (TASK-122).
+      const stripped = await callJson("render", { path: "/", strip: true });
+      expect(stripped.body).toContain("<h1>Hello MCP</h1>");
+      expect(stripped.body).toContain("<title>Home</title>");
+      expect(stripped.body).not.toMatch(/<script|<style|<link|<!--|data-l-/);
 
       const api = await callJson("render", { path: "/api/hello" });
       expect(JSON.parse(api.body)).toEqual({ hello: "world" });

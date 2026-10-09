@@ -3937,6 +3937,10 @@ interface ImportMetaEnv {
 declare module "lumen" {
   interface Locals {}
 }
+declare module "*.css" {} // import "./app.css": bundled into the page's CSS
+declare module "*.css?url" {} // export default url: string
+declare module "*.css?inline" {} // export default css: string
+declare module "*.css?raw" {} // export default source: string
 declare module "*.svg" {
   const Svg: (props: JSX.SVGProps<SVGSVGElement> & { title?: string }) => JSX.Element;
   export default Svg;
@@ -3965,7 +3969,10 @@ declare module "*.html" {
 Declare known public variables by merging `interface ImportMetaEnv { readonly PUBLIC_API: string }`.
 The built-in members match `vite/client`, so both can be loaded; list `lumen/env` first, because
 `vite/client` types `*.svg` as a URL string and the first declaration wins (see
-[SVG imports](../concepts/svg.md)).
+[SVG imports](../concepts/svg.md)). TypeScript 7 checks side-effect imports
+(`noUncheckedSideEffectImports`), hence `*.css`. With `lumen/env` listed first it also matches
+`*.module.css`, so a CSS module import has no class map type; scoped `<style>` blocks replace CSS
+modules in Lumen components.
 
 <!-- source: reference/cli.md -->
 
@@ -4058,6 +4065,13 @@ Each JSON diagnostic has `source` (`ts`, `lumen`, `oxlint`, `stylelint`), `code`
 `fix`. A `fix` is `{ message, edits: [{ line, column, endLine, endColumn, text }] }`, with the same
 positions as diagnostics; apply all its edits together.
 
+TypeScript errors inside a raw-CSS `<style>` block of a `.tsx` file are dropped: `LUM1006` reports
+the block, and renaming the file to `.stsx` removes them. TypeScript errors on an island call site
+for a prop that cannot be serialized are reported as `LUM4002` on the prop (see
+[LUM4002](../errors/LUM4002.md)). While the project has syntax errors, TypeScript reports no type
+errors yet: the report then ends with a note (JSON: `notes: [...]`), and another run after the
+fixes shows them.
+
 ## lumen typegen
 
 Writes the route types (`.lumen/types/routes.d.ts`), the generated tsconfig
@@ -4113,14 +4127,18 @@ lumen docs                  # the docs index
 lumen docs signals          # a topic by name...
 lumen docs concepts/signals # ...or by path
 lumen docs LUM2001          # a diagnostic page (also errors/LUM2001, diagnostics/LUM2001)
+lumen docs fetchJSON        # an exported name: its section of the API reference
 lumen docs bind:value       # no topic matches: search, best matches first
 lumen docs --format json    # { topics: [{ topic, title, summary }] }
 lumen docs signals --format json   # { topic, title, summary, related, content }
+lumen docs Link --format json      # { topic, heading, content }
 lumen docs "await island" --format json   # { query, results: [{ topic, title, score, snippet }] }
 ```
 
 Prints the version-matched docs from `node_modules/lumen/docs`. A bare name prefers concepts over
-reference pages and lists the other matches. A search requires every term to occur in a page.
+reference pages and lists the other matches. An exported name (case-sensitive, such as `signal`,
+`Link` or `fail`) prints the section of the reference page that documents it. A search requires
+every term to occur in a page.
 Exits 1 when nothing matches.
 
 ## lumen explain
@@ -4210,16 +4228,16 @@ exist. stdout carries the protocol; console output of app code goes to stderr an
 
 ## Tools
 
-| Tool          | Input                                       | Returns                                                                                                                                           |
-| ------------- | ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `docs_search` | `query`, `limit?` (10)                      | `{ query, results: [{ topic, title, summary, score, snippet }] }`, best first; every term must occur in a page.                                   |
-| `docs_get`    | `topic`                                     | The page as Markdown. A topic is a path (`concepts/signals`), a bare name (`signals`), a code (`LUM2001`) or `""` for the index.                  |
-| `check`       | `files?`, `project?`                        | `lumen check` as `{ ok, summary, diagnostics }`. With `files`, only their diagnostics, and `projectSummary` for the whole project.                |
-| `routes`      | none                                        | `lumen routes --format json`: `{ routesDir, defaultMode, routes: [{ pattern, file, kind, mode, ssr?, layouts, params }], diagnostics, summary }`. |
-| `components`  | `file?`                                     | `{ files: [{ file, components, islands, fileScope, hasStyles, errors }] }` for one file, or for every `.stsx`/`.tsx` file under `src/`.           |
-| `compile`     | `file?` or `source`, `target?` (`both`)     | `{ file, client: { code, css, cssDeps }, server: { code }, diagnostics }`: what the Vite plugin compiles, without source maps.                    |
-| `render`      | `path`, `method?`, `headers?`, `maxLength?` | `{ url, status, headers, body, truncated }` from an in-process dev server. Redirects are returned, not followed.                                  |
-| `dev_logs`    | `since?`, `level?`, `limit?` (100)          | `{ available, entries: [{ id, time, level, source, message }] }`: the logs of the dev server that `render` started.                               |
+| Tool          | Input                                                 | Returns                                                                                                                                                                                                                                                                      |
+| ------------- | ----------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `docs_search` | `query`, `limit?` (10)                                | `{ query, results: [{ topic, title, summary, score, snippet }] }`, best first; every term must occur in a page.                                                                                                                                                              |
+| `docs_get`    | `topic`                                               | The page as Markdown. A topic is a path (`concepts/signals`), a bare name (`signals`), a code (`LUM2001`) or `""` for the index. An exported name (`fetchJSON`) returns its reference section.                                                                               |
+| `check`       | `files?`, `project?`                                  | `lumen check` as `{ ok, summary, diagnostics, notes? }`. With `files`, only their diagnostics, and `projectSummary` for the whole project.                                                                                                                                   |
+| `routes`      | none                                                  | `lumen routes --format json`: `{ routesDir, defaultMode, routes: [{ pattern, file, kind, mode, ssr?, layouts, params }], diagnostics, summary }`.                                                                                                                            |
+| `components`  | `file?`                                               | `{ files: [{ file, components, islands, fileScope, hasStyles, errors }] }` for one file, or for every `.stsx`/`.tsx` file under `src/`.                                                                                                                                      |
+| `compile`     | `file?` or `source`, `target?` (`both`)               | `{ file, client: { code, css, cssDeps }, server: { code }, diagnostics }`: what the Vite plugin compiles, without source maps.                                                                                                                                               |
+| `render`      | `path`, `method?`, `headers?`, `maxLength?`, `strip?` | `{ url, status, headers, body, truncated }` from an in-process dev server. Redirects are returned, not followed. `strip: true` returns only the visible markup of an HTML page (no scripts, styles, link/meta tags, templates, hydration comments or `data-l-*` attributes). |
+| `dev_logs`    | `since?`, `level?`, `limit?` (100)                    | `{ available, entries: [{ id, time, level, source, message }] }`: the logs of the dev server that `render` started.                                                                                                                                                          |
 
 - **Diagnostics** (`check`, `compile`, `components`) have the shape of `lumen check --format json`:
   `source`, `code`, `severity`, `file`, 1-based `line`/`column`/`endLine`/`endColumn`, `message`,

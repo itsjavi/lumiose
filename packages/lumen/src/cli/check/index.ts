@@ -13,6 +13,7 @@ import { routeOptions } from "../project.ts";
 import { compilerDiagnostics } from "./compile.ts";
 import {
   CheckFailure,
+  dropInsideRawCss,
   dropSuperseded,
   fromAppDiagnostic,
   fromCompilerDiagnostic,
@@ -115,6 +116,8 @@ export interface CheckOptions {
 export interface CheckResult {
   diagnostics: CheckDiagnostic[];
   summary: CheckSummary;
+  /** Remarks on the run, such as type errors TypeScript did not report yet. */
+  notes: string[];
   /** Source texts by root-relative path, for code frames. */
   sources: Map<string, SourceText>;
 }
@@ -203,8 +206,9 @@ export async function check(options: CheckOptions): Promise<CheckResult> {
     }
   }
 
-  const normalized = normalizeDiagnostics(dropSuperseded(diagnostics));
-  return { diagnostics: normalized, summary: summarize(normalized), sources };
+  const normalized = normalizeDiagnostics(dropInsideRawCss(dropSuperseded(diagnostics), sources));
+  const notes = hidesSemanticErrors(tscDiagnostics) ? [SYNTAX_ERRORS_NOTE] : [];
+  return { diagnostics: normalized, summary: summarize(normalized), notes, sources };
 
   async function fromTsc(diagnostic: TscDiagnostic): Promise<CheckDiagnostic> {
     const severity = diagnostic.category === "message" ? "hint" : diagnostic.category;
@@ -267,7 +271,11 @@ export async function checkCommand(options: CheckCommandOptions): Promise<number
   const json = options.format === "json";
   try {
     const result = await check(options);
-    const report: CheckReport = { diagnostics: result.diagnostics, summary: result.summary };
+    const report: CheckReport = {
+      diagnostics: result.diagnostics,
+      summary: result.summary,
+      ...(result.notes.length > 0 ? { notes: result.notes } : {}),
+    };
     write(
       json
         ? formatJson(report)
@@ -291,6 +299,21 @@ export async function checkCommand(options: CheckCommandOptions): Promise<number
     }
     return EXIT_FAILURE;
   }
+}
+
+/** Printed while TypeScript has syntax errors (TS1xxx): it reports type errors only after them. */
+export const SYNTAX_ERRORS_NOTE =
+  "TypeScript reports type errors only once the syntax errors are fixed: run lumen check again after fixing them.";
+
+/**
+ * Whether TypeScript stopped at syntax errors: `tsc` reports semantic diagnostics only when no
+ * file has syntactic ones, so TS1xxx errors without any other TypeScript error mean more may come.
+ */
+function hidesSemanticErrors(diagnostics: readonly TscDiagnostic[]): boolean {
+  const errors = diagnostics.filter((d) => d.category === "error");
+  return (
+    errors.some((d) => /^TS1\d{3}$/.test(d.code)) && errors.every((d) => /^TS1\d{3}$/.test(d.code))
+  );
 }
 
 /** A TypeScript error on an island call site as LUM4002, on the prop when it can be found. */

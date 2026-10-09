@@ -380,7 +380,16 @@ export function startServer(connection: Connection, options: ServerOptions = {})
               filterBlockDiagnostics(snapshot.document, snapshot.blocks, diagnostics),
             )
           : file
-            ? islandPropDiagnostics(file.document, diagnostics)
+            ? islandPropDiagnostics(
+                file.document,
+                isTsx(file.uri)
+                  ? filterBlockDiagnostics(
+                      file.document,
+                      scan(file.document.getText(), uriToPath(file.uri) ?? file.uri).blocks,
+                      diagnostics,
+                    )
+                  : diagnostics,
+              )
             : diagnostics;
         void connection.sendDiagnostics(
           fromTs({ uri, diagnostics: kept, ...(version === undefined ? {} : { version }) }),
@@ -775,13 +784,15 @@ export function startServer(connection: Connection, options: ServerOptions = {})
         ? islandPropDiagnostics(file.document, fromTs(await fromTypeScript(file.uri)))
         : [];
       if (!isTsx(file.uri)) return typescript;
-      // Raw CSS in a `.tsx` file (LUM1006 "rename to .stsx"), then the providers'.
+      // Raw CSS in a `.tsx` file (LUM1006 "rename to .stsx"), then the providers'. TypeScript's
+      // errors inside such a block are noise that the rename removes.
       const { document } = file;
       const scanned = scan(document.getText(), uriToPath(file.uri) ?? file.uri);
+      const kept = filterBlockDiagnostics(document, scanned.blocks, typescript);
       const lumen = [...scanned.diagnostics, ...(await provided(file, scanned))];
       return [
-        ...typescript,
-        ...withoutSuperseded(document, lumen, typescript).map((d) => toLspDiagnostic(document, d)),
+        ...kept,
+        ...withoutSuperseded(document, lumen, kept).map((d) => toLspDiagnostic(document, d)),
       ];
     }
     const snapshot = snapshotOf(file);
