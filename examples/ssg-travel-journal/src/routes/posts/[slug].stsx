@@ -1,6 +1,6 @@
 // One page per post (`staticPaths`): cover, title, table of contents, the rendered Markdown, and
 // links to the next and previous posts.
-import { Head, href, Meta, notFound, Title, type RouteProps } from "lumen";
+import { Head, href, Meta, notFound, Title, type PageProps } from "lumen";
 import { TagLinks } from "../../components/TagLinks.stsx";
 import { adjacentPosts, allPosts, findPost, type Post } from "../../content.ts";
 import { formatDate } from "../../lib/format.ts";
@@ -11,7 +11,7 @@ export function staticPaths() {
   return allPosts().map((post) => ({ params: { slug: post.slug } }));
 }
 
-export default function PostPage(props: RouteProps<"/posts/[slug]">) {
+export default function PostPage(props: PageProps<"/posts/[slug]">) {
   return (
     <PostView post={findPost(props.params.slug) ?? notFound(`No post "${props.params.slug}".`)} />
   );

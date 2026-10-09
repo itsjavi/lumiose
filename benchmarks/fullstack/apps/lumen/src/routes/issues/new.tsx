@@ -1,6 +1,6 @@
 // The new-issue form: a plain form action. Validation errors re-render the form with the typed
 // values (fail); success redirects to the new issue. The label picker is an island.
-import { Title, actionData, fail, redirect, type Action } from "lumen";
+import { Title, actionData, fail, redirect, type ActionContext } from "lumen";
 import {
   EMPTY_ISSUE_FORM,
   IssueFormFields,
@@ -25,7 +25,7 @@ const text = (form: FormData, name: string) => {
   return typeof value === "string" ? value : "";
 };
 
-export const action: Action = async (ctx) => {
+export const action = async (ctx: ActionContext<"/issues/new">) => {
   const user = requireUser(ctx);
   const form = await ctx.formData();
   const values: IssueFormValues = {
@@ -41,7 +41,7 @@ export const action: Action = async (ctx) => {
 };
 
 export default function NewIssuePage() {
-  const failure = actionData<Failure>();
+  const failure = actionData<typeof action>();
   return (
     <>
       <Title>New issue · Tracker</Title>

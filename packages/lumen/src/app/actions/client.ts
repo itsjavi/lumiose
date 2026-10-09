@@ -14,6 +14,7 @@ import {
   type ActionResponseBody,
   type ActionResult,
 } from "./protocol.ts";
+import type { ActionFailureData, ActionsExport, ActionSuccessData } from "./types.ts";
 
 /** What `submit()` posts: a form, its submit event (`onSubmit={submit}`), or the fields. */
 export type SubmitTarget =
@@ -62,8 +63,17 @@ function embeddedActionData(): unknown {
  * The data of the last action result: what the action returned, or its `fail()` data. Reactive.
  * After a no-JS form post it starts with the data the page was rendered with.
  */
-export function actionData<T = unknown>(): T | undefined {
-  return dataSignal()() as T | undefined;
+export function actionData(): unknown;
+/**
+ * Typed by the page's actions: `actionData<typeof actions>()` (or `typeof action`) is the data an
+ * action returned or passed to `fail()`, or `undefined` before a submission.
+ */
+export function actionData<A extends ActionsExport>():
+  | ActionSuccessData<A>
+  | ActionFailureData<A>
+  | undefined;
+export function actionData(): unknown {
+  return dataSignal()();
 }
 
 /** Whether a `submit()` is in flight; with a name, one to that named action (`?/name`). Reactive. */
@@ -81,10 +91,16 @@ export function submitting(name?: string): boolean {
  * throws, the response is an error, or the network fails (status 0). Pass it the submit event to
  * enhance a form: `<form method="post" action="?/create" onSubmit={submit}>`.
  */
-export async function submit<Data = unknown, Failure = unknown>(
+export function submit(target: SubmitTarget, options?: SubmitOptions): Promise<ActionResult>;
+/** Typed by the action it posts to: `submit<typeof actions.save>(event)`. */
+export function submit<A extends ActionsExport>(
+  target: SubmitTarget,
+  options?: SubmitOptions,
+): Promise<ActionResult<ActionSuccessData<A>, ActionFailureData<A>>>;
+export async function submit(
   target: SubmitTarget,
   options: SubmitOptions = {},
-): Promise<ActionResult<Data, Failure>> {
+): Promise<ActionResult> {
   const { form, submitter, body } = readTarget(target);
   const method = (
     options.method ??
@@ -105,7 +121,7 @@ export async function submit<Data = unknown, Failure = unknown>(
   inFlight.update((names) => [...names, name]);
   // Counts toward the app-wide busy() summary while in flight (decision-20).
   const endBusy = beginBusy();
-  let result: ActionResult<Data, Failure>;
+  let result: ActionResult;
   try {
     const response = await fetch(url, {
       method,
@@ -115,7 +131,7 @@ export async function submit<Data = unknown, Failure = unknown>(
     }).catch((error: unknown) => {
       throw networkError(error, url.href);
     });
-    result = await readResult<Data, Failure>(response, url.href);
+    result = await readResult(response, url.href);
     if (result.type === "redirect") await navigation.navigate(result.location);
     else dataSignal().set(result.data);
   } finally {

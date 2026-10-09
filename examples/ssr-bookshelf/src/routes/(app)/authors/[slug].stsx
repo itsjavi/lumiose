@@ -1,4 +1,4 @@
-import { href, Meta, notFound, Title, url, type RouteProps } from "lumen";
+import { href, Meta, notFound, Title, url, type PageProps } from "lumen";
 import { BookGrid } from "../../../components/BookCard.stsx";
 import { Pager } from "../../../components/Pager.stsx";
 import { Rating } from "../../../components/Rating.stsx";
@@ -8,7 +8,7 @@ import { readingListToggles } from "../../../server/toggles.server.ts";
 import * as theme from "../../../theme.ts";
 import type { Author, BookSummary, Page } from "../../../types.ts";
 
-export default function AuthorPage(props: RouteProps<"/authors/[slug]">) {
+export default function AuthorPage(props: PageProps<"/authors/[slug]">) {
   return (
     <AuthorDetail
       author={

@@ -2,7 +2,7 @@
 import type { Endpoint } from "lumen";
 import { searchIssues } from "../../server/data.ts";
 
-export const GET: Endpoint = (ctx) => {
+export const GET: Endpoint<"/api/search"> = (ctx) => {
   const q = ctx.url.searchParams.get("q")?.trim() ?? "";
   return Response.json(q === "" ? [] : searchIssues(q, 8));
 };

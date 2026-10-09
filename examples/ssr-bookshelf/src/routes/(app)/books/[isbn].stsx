@@ -12,8 +12,7 @@ import {
   Title,
   url,
   type ActionContext,
-  type RouteParams,
-  type RouteProps,
+  type PageProps,
 } from "lumen";
 import { Cover } from "../../../components/BookCard.stsx";
 import { Pager } from "../../../components/Pager.stsx";
@@ -28,7 +27,7 @@ import { queries } from "../../../server/queries.server.ts";
 import * as theme from "../../../theme.ts";
 import type { Book, FieldErrors, MutationResult, Page, Review, User } from "../../../types.ts";
 
-type Context = ActionContext<RouteParams<"/books/[isbn]">>;
+type Context = ActionContext<"/books/[isbn]">;
 
 interface ReviewValues {
   rating: string;
@@ -77,7 +76,11 @@ export const actions = {
     const form = await ctx.formData();
     const parsed = validateReview(form);
     if (!parsed.ok) {
-      return fail(400, { form: "create", values: typedValues(form), errors: parsed.errors });
+      return fail(400, {
+        form: "create",
+        values: typedValues(form),
+        errors: parsed.errors,
+      } satisfies ReviewFailure);
     }
     const result = queries().createReview(user.id, book.id, parsed.value);
     if (!result.ok && result.reason === "conflict") {
@@ -96,7 +99,11 @@ export const actions = {
     const form = await ctx.formData();
     const parsed = validateReview(form);
     if (!parsed.ok) {
-      return fail(400, { form: "update", values: typedValues(form), errors: parsed.errors });
+      return fail(400, {
+        form: "update",
+        values: typedValues(form),
+        errors: parsed.errors,
+      } satisfies ReviewFailure);
     }
     check(queries().updateReview(user.id, reviewId(form), parsed.value));
     redirect(`${href("/books/[isbn]", { isbn: ctx.params.isbn })}#your-review`);
@@ -109,13 +116,13 @@ export const actions = {
   },
 };
 
-export default function BookPage(props: RouteProps<"/books/[isbn]">) {
+export default function BookPage(props: PageProps<"/books/[isbn]">) {
   return (
     <BookDetail
       book={findBook(props.params.isbn)}
       user={locals().user ?? null}
       page={parsePageParam(url().searchParams.get("page"))}
-      failure={actionData<ReviewFailure>()}
+      failure={actionData<typeof actions>()}
     />
   );
 }

@@ -1,6 +1,6 @@
 // Journal pages 2 and up, one prerendered file each. `/page/1` is prerendered as a redirect to `/`
 // (a static build writes a redirect page for it).
-import { notFound, redirect, type RouteProps } from "lumen";
+import { notFound, redirect, type PageProps } from "lumen";
 import { Journal } from "../../components/Journal.stsx";
 import { allPosts } from "../../content.ts";
 import { pageCount, paginate, pageHref } from "../../lib/paginate.ts";
@@ -11,7 +11,7 @@ export function staticPaths() {
   return Array.from({ length: count }, (_, index) => ({ params: { page: String(index + 1) } }));
 }
 
-export default function JournalPage(props: RouteProps<"/page/[page]">) {
+export default function JournalPage(props: PageProps<"/page/[page]">) {
   return (
     <Journal page={journalPage(props.params.page)} path={pageHref(Number(props.params.page))} />
   );

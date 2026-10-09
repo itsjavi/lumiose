@@ -1,8 +1,8 @@
-import { signal } from "lumen";
+import { signal, type LayoutProps } from "lumen";
 import { params } from "lumen/router";
 
 // A nested layout: it stays mounted while navigating between users.
-export default function UsersLayout(props: { children?: JSX.Element }) {
+export default function UsersLayout(props: LayoutProps<"/users">) {
   const count = signal(0);
   return (
     <section>

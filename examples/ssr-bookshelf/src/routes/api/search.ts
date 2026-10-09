@@ -4,7 +4,7 @@ import { queries } from "../../server/queries.server.ts";
 
 export const mode = "server";
 
-export const GET: Endpoint = (ctx) => {
+export const GET: Endpoint<"/api/search"> = (ctx) => {
   const q = ctx.url.searchParams.get("q")?.trim() ?? "";
   if (q === "") return Response.json({ results: [] });
   const { items } = queries().listBooks({ q, pageSize: 8 });

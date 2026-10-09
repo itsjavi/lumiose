@@ -4,6 +4,7 @@
 // submit() does not reload it (decision-20): the island owns its state, and on /reading-list it
 // removes its own entry (`removeClosest`) instead of asking for fresh server data.
 import { href, signal, submit } from "lumen";
+import type { actions } from "../routes/(app)/reading-list.stsx";
 import * as theme from "../theme.ts";
 
 const TOGGLE_ACTION = `${href("/reading-list")}?/toggle`;
@@ -27,7 +28,7 @@ export function ReadingListToggle(props: {
     failed.set(false);
     try {
       // No `next`: the action answers with the new state instead of redirecting.
-      const result = await submit<{ onList: boolean }>(
+      const result = await submit<typeof actions.toggle>(
         { bookId: String(props.bookId) },
         { action: TOGGLE_ACTION },
       );

@@ -3,7 +3,7 @@ import type { Endpoint } from "lumen";
 import { docPages } from "../content/docs.ts";
 import type { SearchEntry } from "../lib/search.ts";
 
-export const GET: Endpoint = () =>
+export const GET: Endpoint<"/search.json"> = () =>
   Response.json(
     docPages().map((page): SearchEntry => ({
       url: page.url,

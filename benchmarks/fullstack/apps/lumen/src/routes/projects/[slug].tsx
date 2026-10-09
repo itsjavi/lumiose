@@ -1,22 +1,14 @@
 // A project's issues: GET filter form, 50 issues per page, pagination, and bulk "close selected"
 // (the bulk-select island around the server-rendered table posts the `close` action).
 import { PAGE_SIZE, issueListHref, parseIssueFilters, plural } from "@bench/data/format";
-import {
-  Title,
-  notFound,
-  params,
-  redirect,
-  url,
-  type ActionContext,
-  type RouteParams,
-} from "lumen";
+import { Title, notFound, params, redirect, url, type ActionContext } from "lumen";
 import { FilterFields, IssueTable, Pagination } from "../../components/issues.tsx";
 import { BulkSelect } from "../../islands/bulk-select.tsx";
 import { closeIssues, getProject, listIssues, listLabels } from "../../server/data.ts";
 import { requireUser } from "../../server/session.ts";
 
 export const actions = {
-  async close(ctx: ActionContext<RouteParams<"/projects/[slug]">>) {
+  async close(ctx: ActionContext<"/projects/[slug]">) {
     const user = requireUser(ctx);
     const ids = (await ctx.formData())
       .getAll("ids")

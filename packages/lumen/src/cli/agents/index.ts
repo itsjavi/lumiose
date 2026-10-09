@@ -59,6 +59,9 @@ with islands. It is not React, Solid or Svelte: check the docs instead of guessi
   layout overrides it with \`export const mode = "static" | "server" | "spa"\`. Request APIs
   (\`cookies()\`, \`request()\`) need \`server\` (\`LUM5001\`). Load data in async page components;
   mutate with form \`actions\`.
+- Route types take the route pattern literal: \`PageProps<"/blog/[slug]">\`,
+  \`LayoutProps<"/blog">\`, \`ActionContext<"/blog/[slug]">\`, \`Endpoint<"/api/posts">\`. Never cast
+  action results: \`actionData<typeof actions>()\` and \`submit<typeof actions.save>(form)\` infer them.
 - Only islands ship JS in \`static\`/\`server\` pages: \`<Counter client:load />\` or
   \`client:visible\`, with exported components and serializable props (\`LUM4001\`, \`LUM4002\`).
 - Server-only code lives in \`*.server.ts\` modules or \`src/server/\`; never import it into islands
@@ -97,11 +100,12 @@ Follow the Lumen section of \`AGENTS.md\`. This skill is the workflow.
 
 ## 2. Make the change
 
-- Page: \`src/routes/<path>.stsx\` exporting a default component (may be \`async\`); params come
-  from \`[name]\` segments (\`params<"/blog/[slug]">()\`), links from \`href()\`.
-- Endpoint: \`src/routes/<path>.ts\` exporting \`GET\`/\`POST\`/… as \`(ctx) => Response\`.
-- Form: export \`actions = { name(ctx) {…} }\` from the page, post to \`?/name\`, read the result
-  with \`actionData()\`; return \`fail(status, data)\` or call \`redirect()\`.
+- Page: \`src/routes/<path>.stsx\` exporting a default component (may be \`async\`) taking
+  \`PageProps<"/blog/[slug]">\`; params come from \`[name]\` segments, links from \`href()\`.
+- Endpoint: \`src/routes/<path>.ts\` exporting \`GET\`/\`POST\`/… typed \`Endpoint<"/api/x">\`.
+- Form: export \`actions = { name(ctx: ActionContext<"/path">) {…} }\` from the page, post to
+  \`?/name\`, read the result with \`actionData<typeof actions>()\`; return \`fail(status, data)\`
+  or call \`redirect()\`.
 - Interactivity in a \`static\`/\`server\` page: an exported component in \`src/components\`, used
   with \`client:load\` or \`client:visible\` and plain-data props.
 - Styles: a \`<style>\` block inside the component's root element (scoped), \`<style global>\` for

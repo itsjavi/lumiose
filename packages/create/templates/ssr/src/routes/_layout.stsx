@@ -1,7 +1,7 @@
 // The root layout: wraps every page.
-import { href } from "lumen";
+import { href, type LayoutProps } from "lumen";
 
-export default function Layout(props: { children?: JSX.Element }) {
+export default function Layout(props: LayoutProps<"/">) {
   return (
     <div class="app">
       <header>

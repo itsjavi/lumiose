@@ -1,9 +1,10 @@
 // Root layout: header, page, footer, and the site's global styles. Every route is prerendered
 // (`lumen({ mode: "static" })` in vite.config.ts), so the site deploys as plain files.
+import type { LayoutProps } from "lumen";
 import { SiteFooter, SiteHeader } from "../components/Site.stsx";
 import * as theme from "../theme.ts";
 
-export default function RootLayout(props: { children?: JSX.Element }) {
+export default function RootLayout(props: LayoutProps<"/">) {
   return (
     <>
       <a class="skip-link" href="#content">

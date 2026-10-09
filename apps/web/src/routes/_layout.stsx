@@ -3,10 +3,10 @@
 // as plain files.
 import { Footer, SiteHeader } from "@lumen/site-kit";
 import { color, radius, space } from "@lumen/site-kit/tokens";
-import { href, url } from "lumen";
+import { href, url, type LayoutProps } from "lumen";
 import { footerColumns, link, navLinks, sitePath, site } from "../lib/site.ts";
 
-export default function RootLayout(props: { children?: JSX.Element }) {
+export default function RootLayout(props: LayoutProps<"/">) {
   const current = link(sitePath(url().pathname));
 
   return (

@@ -1,5 +1,5 @@
 // One page per tag (`staticPaths`): its posts, newest first.
-import { href, Meta, notFound, Title, type RouteProps } from "lumen";
+import { href, Meta, notFound, Title, type PageProps } from "lumen";
 import { PostGrid } from "../../components/PostCard.stsx";
 import { allTags, postsTagged, type Post } from "../../content.ts";
 import { tagLabel } from "../../lib/format.ts";
@@ -10,7 +10,7 @@ export function staticPaths() {
   return allTags().map(({ tag }) => ({ params: { tag } }));
 }
 
-export default function TagPage(props: RouteProps<"/tags/[tag]">) {
+export default function TagPage(props: PageProps<"/tags/[tag]">) {
   return <TagView tag={props.params.tag} posts={postsOrNotFound(props.params.tag)} />;
 }
 

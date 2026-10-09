@@ -3,6 +3,7 @@
 // tree (including streamed Suspense boundaries) can call request(), url(), params(), locals(),
 // cookies(), response() and env(). Server-only: imports node:async_hooks.
 
+import type { ActionFailureData, ActionsExport, ActionSuccessData } from "../actions/types.ts";
 import { AsyncLocalStorage } from "node:async_hooks";
 import type { Routes, RouteParams } from "../routes/registry.ts";
 import { LUM_AFTER_SHELL, LUM_PRERENDER_REQUEST, LumenError } from "../diagnostics.ts";
@@ -195,8 +196,13 @@ export function response(): ResponseContext {
  * What this request's form action returned (the `fail()` data for failures), while the page
  * re-renders after a form post; `undefined` otherwise, also outside a request.
  */
-export function actionData<T = unknown>(): T | undefined {
-  return storage.getStore()?.action?.data as T | undefined;
+export function actionData(): unknown;
+export function actionData<A extends ActionsExport>():
+  | ActionSuccessData<A>
+  | ActionFailureData<A>
+  | undefined;
+export function actionData(): unknown {
+  return storage.getStore()?.action?.data;
 }
 
 /** A server env variable: the request's env when handling a request, else `process.env`. */

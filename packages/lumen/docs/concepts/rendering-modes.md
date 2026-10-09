@@ -125,7 +125,7 @@ export default function Stats() {
 
 ```tsx check file=routes/docs/[slug].tsx
 // src/routes/docs/[slug].tsx: prerendered for each slug
-import type { RouteProps } from "lumen";
+import type { PageProps } from "lumen";
 
 const pages = { intro: "Introduction", setup: "Setup" } as const;
 
@@ -133,7 +133,7 @@ export async function staticPaths() {
   return Object.keys(pages).map((slug) => ({ params: { slug } }));
 }
 
-export default function Doc({ params }: RouteProps<"/docs/[slug]">) {
+export default function Doc({ params }: PageProps<"/docs/[slug]">) {
   return <h1>{pages[params.slug as keyof typeof pages]}</h1>;
 }
 ```

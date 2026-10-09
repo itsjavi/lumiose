@@ -5,6 +5,7 @@
 
 import type { ActionResult } from "./protocol.ts";
 import type { SubmitOptions, SubmitTarget } from "./client.ts";
+import type { ActionFailureData, ActionsExport, ActionSuccessData } from "./types.ts";
 
 export { actionData } from "../server/scope.ts";
 
@@ -12,10 +13,12 @@ export function submitting(_name?: string): boolean {
   return false;
 }
 
-export function submit<Data = unknown, Failure = unknown>(
-  _target: SubmitTarget,
-  _options?: SubmitOptions,
-): Promise<ActionResult<Data, Failure>> {
+export function submit(target: SubmitTarget, options?: SubmitOptions): Promise<ActionResult>;
+export function submit<A extends ActionsExport>(
+  target: SubmitTarget,
+  options?: SubmitOptions,
+): Promise<ActionResult<ActionSuccessData<A>, ActionFailureData<A>>>;
+export function submit(_target: SubmitTarget, _options?: SubmitOptions): Promise<ActionResult> {
   return Promise.reject(browserOnly("submit()"));
 }
 

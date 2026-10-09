@@ -2,6 +2,7 @@
 // TypeScript resolves `lumen` through the browser entry (package.json "types").
 
 import type { Renderable } from "../../contract/client.ts";
+import type { EndpointRoutes, PageRoutes, RouteParams, Routes } from "../routes/registry.ts";
 import type { Cookies } from "./cookies.ts";
 
 /**
@@ -16,11 +17,18 @@ export type ServerEnv = Readonly<Record<string, string | undefined>>;
 
 export type RouteParamValues = Record<string, string>;
 
-export interface RequestContext<Params = RouteParamValues> {
+/** The params of route pattern `P`, or any params without one (middleware, shared helpers). */
+type ParamsOf<P extends Routes> = [P] extends [never] ? RouteParamValues : RouteParams<P>;
+
+/**
+ * What middleware, endpoints and actions receive. With a route pattern, `params` is typed:
+ * `RequestContext<"/users/[id]">`. Without one (middleware, shared helpers) it is a string record.
+ */
+export interface RequestContext<P extends Routes = never> {
   request: Request;
   url: URL;
   /** Params of the matched route; `{}` when nothing matched. */
-  params: Params;
+  params: ParamsOf<P>;
   locals: Locals;
   cookies: Cookies;
   env: ServerEnv;
@@ -34,24 +42,33 @@ export type Middleware = (
 
 export type HttpMethod = "GET" | "HEAD" | "POST" | "PUT" | "PATCH" | "DELETE" | "OPTIONS";
 
-/** An endpoint method export: `export const GET: Endpoint = (ctx) => Response.json(…)`. */
-export type Endpoint<Params = RouteParamValues> = (
-  ctx: RequestContext<Params>,
+/**
+ * An endpoint method export, by route pattern:
+ * `export const GET: Endpoint<"/api/users/[id]"> = (ctx) => Response.json(…)`.
+ */
+export type Endpoint<P extends EndpointRoutes = never> = (
+  ctx: RequestContext<P>,
 ) => Response | Promise<Response>;
 
-/** The context of a form action: the request context plus its parsed form body. */
-export interface ActionContext<Params = RouteParamValues> extends RequestContext<Params> {
+/**
+ * The context of a form action, by page pattern: the request context plus its parsed form body.
+ * Annotate the action's parameter with it so `actionData<typeof actions>()` and `submit()` infer
+ * what the action returns: `save: async (ctx: ActionContext<"/books/[isbn]">) => …`.
+ */
+export interface ActionContext<P extends PageRoutes = never> extends RequestContext<P> {
   /** The request body as `FormData`; parsed once, so it can be called again. 400 if not a form. */
   formData(): Promise<FormData>;
 }
 
 /**
- * A page's form action: `export const action: Action = (ctx) => …`, or one entry of
- * `export const actions = { name: (ctx) => … }` (posted to `?/name`). Return a `Response` or
- * `redirect()`, data for `actionData()`, or `fail(status, data)`.
+ * A page's form action, by page pattern: `export const action` or one entry of
+ * `export const actions = { name: … }` (posted to `?/name`). Return a `Response` or `redirect()`,
+ * data for `actionData()`, or `fail(status, data)`. An annotation with `Action` hides the result
+ * type from `actionData<typeof action>()`: annotate the parameter with `ActionContext` instead, or
+ * check the action with `satisfies Action<"/login">`.
  */
-export type Action<Params = RouteParamValues, Result = unknown> = (
-  ctx: ActionContext<Params>,
+export type Action<P extends PageRoutes = never, Result = unknown> = (
+  ctx: ActionContext<P>,
 ) => Result | Promise<Result>;
 
 /**

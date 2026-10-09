@@ -1,16 +1,7 @@
 // An issue: header, body, details, the status form (a plain form action), the comments streamed
 // behind <Suspense> (an async component), and the comment composer island.
 import { isStatus } from "@bench/data/format";
-import {
-  Suspense,
-  Title,
-  fail,
-  notFound,
-  redirect,
-  params,
-  type ActionContext,
-  type RouteParams,
-} from "lumen";
+import { Suspense, Title, fail, notFound, redirect, params, type ActionContext } from "lumen";
 import {
   CommentList,
   CommentsFallback,
@@ -29,7 +20,7 @@ import {
 } from "../../server/data.ts";
 import { requireUser } from "../../server/session.ts";
 
-type Context = ActionContext<RouteParams<"/issues/[id]">>;
+type Context = ActionContext<"/issues/[id]">;
 
 function issueId(raw: string): number {
   const id = /^\d+$/.test(raw) ? Number(raw) : Number.NaN;

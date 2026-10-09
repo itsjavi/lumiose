@@ -1,4 +1,4 @@
-import { fetchJSON, invalidate, Title, type RouteProps } from "lumen";
+import { fetchJSON, invalidate, Title, type PageProps } from "lumen";
 
 interface User {
   id: string;
@@ -8,7 +8,7 @@ interface User {
 
 // An async page: a navigation to it keeps the previous page on screen until the user has loaded.
 // `invalidate()` loads it again.
-export default async function UserPage(props: RouteProps<"/users/[id]">) {
+export default async function UserPage(props: PageProps<"/users/[id]">) {
   const user = await fetchJSON<User>(`/api/users/${props.params.id}`);
   return (
     <article>

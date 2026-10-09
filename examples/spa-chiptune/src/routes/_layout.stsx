@@ -1,7 +1,7 @@
 // The root layout: the application shell, mounted once for every view. The header (with the
 // transport), the mixer and the status bar stay mounted while the views (the routes below) change,
 // so playback, meters and scopes keep running across navigation.
-import { effect, onMount, untrack } from "lumen";
+import { effect, onMount, untrack, type LayoutProps } from "lumen";
 import {
   frameStats,
   playOrder,
@@ -21,7 +21,7 @@ import { StatusBar } from "../ui/StatusBar.stsx";
 // A small handle for the e2e tests and the curious: frame timing and the open song.
 Object.assign(globalThis, { chiptune: { frameStats, resetFrameStats, song: readSong } });
 
-export default function Layout(props: { children?: JSX.Element }) {
+export default function Layout(props: LayoutProps<"/">) {
   // Reopen the last song (or save the demo as the first one) before the first view renders; a
   // song URL (/songs/[id]) then opens its own song.
   restoreSession();

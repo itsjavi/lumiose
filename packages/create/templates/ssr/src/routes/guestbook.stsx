@@ -9,7 +9,7 @@ interface Errors {
 }
 
 export const actions = {
-  async sign(ctx: ActionContext) {
+  async sign(ctx: ActionContext<"/guestbook">) {
     const form = await ctx.formData();
     const name = String(form.get("name") ?? "").trim();
     const message = String(form.get("message") ?? "").trim();
@@ -23,7 +23,7 @@ export const actions = {
 };
 
 export default function Guestbook() {
-  const errors = actionData<Errors>();
+  const errors = actionData<typeof actions>();
 
   return (
     <main>

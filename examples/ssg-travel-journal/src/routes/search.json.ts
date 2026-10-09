@@ -3,7 +3,7 @@ import { href, type Endpoint } from "lumen";
 import { allPosts } from "../content.ts";
 import type { SearchEntry } from "../lib/search.ts";
 
-export const GET: Endpoint = () =>
+export const GET: Endpoint<"/search.json"> = () =>
   Response.json(
     allPosts().map((post): SearchEntry => ({
       url: href("/posts/[slug]", { slug: post.slug }),

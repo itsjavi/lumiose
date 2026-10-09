@@ -3,12 +3,13 @@
 import { COMMENT_MAX } from "@bench/data/format";
 import { actionData, onMount, signal, submit, submitting } from "lumen";
 import { markReady } from "../lib/ready.ts";
+import type { actions } from "../routes/issues/[id].tsx";
 
 export interface CommentFailure {
   error: string;
 }
 
-const error = () => actionData<CommentFailure>()?.error;
+const error = () => actionData<typeof actions.comment>()?.error;
 
 export function CommentComposer() {
   const body = signal("");

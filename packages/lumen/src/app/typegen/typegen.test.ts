@@ -18,8 +18,11 @@ const TSC = join(
 );
 
 describe("generateRouteTypes", () => {
-  it("augments the lumen RouteMap with every route, sorted by pattern", () => {
+  it("augments the lumen RouteMap and LayoutMap with every route and layout, sorted by pattern", () => {
     const manifest = createRouteManifest([
+      { path: "_layout.stsx", source: "" },
+      { path: "(shop)/_layout.stsx", source: "" },
+      { path: "shop/[category]/_layout.stsx", source: "" },
       { path: "index.stsx", source: "" },
       { path: "blog/[slug].stsx", source: "" },
       { path: "shop/[category]/[item].stsx", source: "" },
@@ -38,6 +41,10 @@ describe("generateRouteTypes", () => {
         `    "/docs/[...path]": { kind: "page"; params: { path: string } };`,
         `    "/shop/[category]/[item]": { kind: "page"; params: { category: string; item: string } };`,
         `    "/sitemap.xml": { kind: "endpoint"; params: {} };`,
+        "  }",
+        "  interface LayoutMap {",
+        `    "/": { params: {} };`,
+        `    "/shop/[category]": { params: { category: string } };`,
         "  }",
         "}",
         "",
@@ -95,7 +102,7 @@ describe("typegen", () => {
   });
 });
 
-const USAGE = `import { href, type RouteParams, type RouteProps, type Routes } from "lumen";
+const USAGE = `import { href, type PageProps, type RouteParams, type Routes } from "lumen";
 
 type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends <T>() => T extends B ? 1 : 2 ? true : false;
 export type Assert<T extends true> = T;
@@ -131,7 +138,7 @@ export const links: string[] = [
   href("/api/posts/[id]", { id: "7" }),
 ];
 
-export function Post(props: RouteProps<"/blog/[slug]">): string {
+export function Post(props: PageProps<"/blog/[slug]">): string {
   return props.params.slug;
 }
 
@@ -145,8 +152,10 @@ href("/blog/[slug]", { id: "x" });
 href("/shop/[category]/[item]", { category: "books" });
 // @ts-expect-error not a route pattern
 export const bad: Routes = "/blog/hello";
-export function Wrong(props: RouteProps<"/blog/[slug]">): string {
+export function Wrong(props: PageProps<"/blog/[slug]">): string {
   // @ts-expect-error no such param
   return props.params.id;
 }
+// @ts-expect-error unknown page pattern
+export type Stale = PageProps<"/blgo/[slug]">;
 `;

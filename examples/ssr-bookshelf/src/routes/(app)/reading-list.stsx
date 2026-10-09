@@ -14,7 +14,7 @@ export const actions = {
    * Adds `bookId` to the list or removes it. A plain form post sends `next` and returns there;
    * the enhanced island leaves it out and reads `{ onList }`.
    */
-  async toggle(ctx: ActionContext) {
+  async toggle(ctx: ActionContext<"/reading-list">) {
     const user = await requireUser(ctx);
     const form = await ctx.formData();
     const bookId = Number(form.get("bookId"));

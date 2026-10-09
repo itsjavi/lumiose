@@ -1,4 +1,4 @@
-import { actionData, fail, href, redirect, Title, url, type Action } from "lumen";
+import { actionData, fail, href, redirect, Title, url, type ActionContext } from "lumen";
 import { validateLogin } from "../../lib/validation.ts";
 import { auth, safeRedirectPath } from "../../server/auth.server.ts";
 
@@ -7,7 +7,7 @@ interface LoginFailure {
   errors: { email?: string; password?: string };
 }
 
-export const action: Action = async (ctx) => {
+export const action = async (ctx: ActionContext<"/login">) => {
   const form = await ctx.formData();
   const email = String(form.get("email") ?? "");
   const parsed = validateLogin(form);
@@ -19,7 +19,7 @@ export const action: Action = async (ctx) => {
 };
 
 export default function Login() {
-  return <LoginForm failed={actionData<LoginFailure>()} next={url().searchParams.get("next")} />;
+  return <LoginForm failed={actionData<typeof action>()} next={url().searchParams.get("next")} />;
 }
 
 function LoginForm(props: { failed: LoginFailure | undefined; next: string | null }) {

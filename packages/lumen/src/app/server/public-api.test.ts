@@ -161,7 +161,7 @@ export const middleware: Middleware = async (ctx, next) => {
   return res;
 };
 
-export const GET: Endpoint<RouteParams<"/api/posts/[id]">> = (ctx) => {
+export const GET: Endpoint<"/api/posts/[id]"> = (ctx) => {
   const id: string = ctx.params.id;
   // @ts-expect-error no such param
   ctx.params.slug;

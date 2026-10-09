@@ -11,7 +11,7 @@ interface Entry {
   lastmod?: string;
 }
 
-export const GET: Endpoint = () => {
+export const GET: Endpoint<"/sitemap.xml"> = () => {
   const posts = allPosts();
   const newest = posts[0]?.date;
   const pages = pageCount(posts.length, site.pageSize);

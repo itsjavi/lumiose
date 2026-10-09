@@ -44,20 +44,29 @@ until the new data arrives), or reloads the page (MPA). On client-routed (SPA) p
 (`result.data`, `actionData()`). Call `invalidate()` yourself when the page needs fresh
 server-rendered content; on MPA pages that reloads and resets `actionData()`.
 
+**Typed results.** Type an action's parameter with its page pattern,
+`(ctx: ActionContext<"/books/new">)`, and let TypeScript infer what it returns:
+`actionData<typeof actions>()` (or `typeof action`) is the union of the data the actions return
+and the data they pass to `fail()`, or `undefined` before a submission. `submit<typeof actions.create>(form)`
+resolves with `{ type: "success", data }` or `{ type: "failure", data }` typed from that action,
+so the two are told apart by `type`. An island that posts to another page's action imports the
+type only: `import type { actions } from "../routes/reading-list.stsx"`.
+
 ## API
 
-| API                                                          | Shape                                                                 |
-| ------------------------------------------------------------ | --------------------------------------------------------------------- |
-| `export const GET: Endpoint = (ctx) => Response`             | An endpoint method.                                                   |
-| `export const action: Action = (ctx) => …`                   | The default form action of a page.                                    |
-| `export const actions = { name: (ctx: ActionContext) => … }` | Named actions, posted to `?/name`.                                    |
-| `ctx.formData()`                                             | The request body as `FormData` (400 if it is not a form).             |
-| `fail(status, data?)`                                        | A failed action result.                                               |
-| `actionData<T>()`                                            | The last action's data (or `fail` data). Reactive in the browser.     |
-| `submit(target, { action?, method?, signal?, invalidate? })` | Post a form, submit event, `FormData`, `URLSearchParams` or a record. |
-| `submitting(name?)`                                          | Whether a submission (to `?/name`) is in flight.                      |
-| `invalidate()`                                               | Refresh the current page's server data.                               |
-| `fetchJSON<T>(url, init?)`, `isFetchError(e)`                | JSON fetch with typed errors.                                         |
+| API                                                                | Shape                                                                  |
+| ------------------------------------------------------------------ | ---------------------------------------------------------------------- |
+| `export const GET: Endpoint<"/api/x"> = (ctx) => Response`         | An endpoint method; `ctx.params` typed by the pattern.                 |
+| `export const action = async (ctx: ActionContext<"/x">) => …`      | The default form action of a page.                                     |
+| `export const actions = { name: (ctx: ActionContext<"/x">) => … }` | Named actions, posted to `?/name`.                                     |
+| `ctx.formData()`                                                   | The request body as `FormData` (400 if it is not a form).              |
+| `fail(status, data?)`                                              | A failed action result.                                                |
+| `actionData<typeof actions>()`                                     | The last action's data or `fail` data, typed by the actions. Reactive. |
+| `submit(target, { action?, method?, signal?, invalidate? })`       | Post a form, submit event, `FormData`, `URLSearchParams` or a record.  |
+| `submit<typeof actions.name>(…)`                                   | The same, resolving with that action's typed success and failure data. |
+| `submitting(name?)`                                                | Whether a submission (to `?/name`) is in flight.                       |
+| `invalidate()`                                                     | Refresh the current page's server data.                                |
+| `fetchJSON<T>(url, init?)`, `isFetchError(e)`                      | JSON fetch with typed errors.                                          |
 
 ## Example
 
@@ -67,7 +76,7 @@ import type { Endpoint } from "lumen";
 
 const books = [{ id: "1", title: "Dune" }];
 
-export const GET: Endpoint = ({ url }) => {
+export const GET: Endpoint<"/api/books"> = ({ url }) => {
   const q = url.searchParams.get("q")?.toLowerCase() ?? "";
   return Response.json(books.filter((book) => book.title.toLowerCase().includes(q)));
 };
@@ -84,7 +93,7 @@ interface Errors {
 export const mode = "server";
 
 export const actions = {
-  async create(ctx: ActionContext) {
+  async create(ctx: ActionContext<"/books/new">) {
     const form = await ctx.formData();
     const title = String(form.get("title") ?? "").trim();
     if (title === "") return fail(400, { title: "A title is required." } satisfies Errors);
@@ -97,7 +106,7 @@ export function NewBookForm() {
   return (
     <form method="post" action="?/create" onSubmit={submit}>
       <input name="title" />
-      <p class="error">{actionData<Errors>()?.title}</p>
+      <p class="error">{actionData<typeof actions>()?.title}</p>
       <button disabled={submitting("create")}>Add book</button>
     </form>
   );
@@ -153,6 +162,10 @@ export async function BookSearch({ q }: { q: string }) {
 - **Forms without `method="post"`.** Actions only run for POST; `submit()` refuses a form that does
   not say `method="post"`, as the no-JS form would not post either.
 - **Throwing for validation errors.** A thrown error renders `_error`. Return `fail(400, data)`.
+- **Casting action data.** `actionData<{ errors: … }>()` is a type error: pass `typeof actions`.
+  Annotating the export with `Action` (`export const action: Action = …`) hides what it returns,
+  so annotate the parameter instead, or check it with `satisfies Action<"/x">`. Add
+  `satisfies YourFailure` to `fail()` data whose string literals should stay literal.
 - **Disabling the Origin check to make a cross-site form work.** Allow the specific origin instead
   (`csrf.allowedOrigins` in the request handler options).
 

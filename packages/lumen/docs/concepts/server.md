@@ -51,7 +51,7 @@ that reaches the browser is `LUM4003`.
 
 | API                                                                      | Use                                                                    |
 | ------------------------------------------------------------------------ | ---------------------------------------------------------------------- |
-| `RequestContext` (`ctx`)                                                 | `{ request, url, params, locals, cookies, env }`.                      |
+| `RequestContext<P>` (`ctx`)                                              | `{ request, url, params, locals, cookies, env }`.                      |
 | `Middleware`                                                             | `(ctx, next) => Response \| Promise<Response>`.                        |
 | `request()`, `url()`, `params<P>()`, `route()`, `locals()`, `cookies()`  | Request APIs during a server render.                                   |
 | `response()`                                                             | `{ status, setStatus, getHeader, setHeader }` until the shell is sent. |

@@ -40,10 +40,12 @@ component lets it escape, the page renders `_error` (or `_404`) with the same st
 ### submit
 
 ```ts
-function submit<Data = unknown, Failure = unknown>(
+function submit(target: SubmitTarget, options?: SubmitOptions): Promise<ActionResult>;
+// Typed by the action it posts to: submit<typeof actions.save>(event)
+function submit<A extends ActionsExport>(
   target: SubmitTarget,
   options?: SubmitOptions,
-): Promise<ActionResult<Data, Failure>>;
+): Promise<ActionResult<ActionSuccessData<A>, ActionFailureData<A>>>;
 
 type SubmitTarget =
   | HTMLFormElement
@@ -89,10 +91,20 @@ Whether a `submit()` is in flight; with a name, one to that named action (`?/nam
 ### actionData
 
 ```ts
-function actionData<T = unknown>(): T | undefined;
+function actionData(): unknown;
+// Typed by the page's actions: actionData<typeof actions>() or actionData<typeof action>()
+function actionData<A extends ActionsExport>():
+  | ActionSuccessData<A> // what the actions return (not fail() or a Response); void → undefined
+  | ActionFailureData<A> // the data they pass to fail()
+  | undefined;
+// typeof action, typeof actions or typeof actions.name
+type ActionsExport =
+  | ((ctx: never) => unknown)
+  | { readonly [name: string]: (ctx: never) => unknown };
 ```
 
-The data of the last action result: what the action returned, or its `fail()` data. Reactive in
+The data of the last action result: what the action returned, or its `fail()` data. The type
+argument is the actions export itself, never a data type: the result types are inferred from it. Reactive in
 the browser; after a no-JS form post it starts with the data the page was rendered with. On the
 server: the current request's action result while the page re-renders after a post.
 
@@ -146,9 +158,14 @@ root-relative.
 
 ```ts
 interface RouteMap {}                  // augmented by .lumen/types/routes.d.ts (typegen)
+interface LayoutMap {}                 // the same, for layouts (by the URL scope of their folder)
 type Routes = /* every route pattern, or string before typegen */;
 type RouteParams<P extends Routes>;    // { slug: string } for "/blog/[slug]"
-interface RouteProps<P extends Routes> { params: RouteParams<P> }
+interface PageProps<P extends /* a page pattern */> { params: RouteParams<P> }
+interface LayoutProps<P extends /* a layout pattern */> {
+  params: /* the params of the layout's scope */;
+  children: JSX.Element;
+}
 ```
 
 ## Control flow
@@ -231,23 +248,30 @@ interface SignedCookie {
 ## Context types
 
 ```ts
-interface RequestContext<Params = Record<string, string>> {
+// P is a route pattern ("/books/[isbn]"); without one, params is Record<string, string>.
+interface RequestContext<P extends Routes = never> {
   request: Request;
   url: URL;
-  params: Params;
+  params: RouteParams<P>;
   locals: Locals;
   cookies: Cookies;
   env: ServerEnv; // Readonly<Record<string, string | undefined>>
 }
-interface ActionContext<Params> extends RequestContext<Params> {
+interface ActionContext<P extends /* a page pattern */ = never> extends RequestContext<P> {
   formData(): Promise<FormData>; // parsed once; 400 if the body is not a form
 }
 type Middleware = (
   ctx: RequestContext,
   next: () => Promise<Response>,
 ) => Response | Promise<Response>;
-type Endpoint<Params> = (ctx: RequestContext<Params>) => Response | Promise<Response>;
-type Action<Params, Result> = (ctx: ActionContext<Params>) => Result | Promise<Result>;
+type Endpoint<P extends /* an endpoint pattern */ = never> = (
+  ctx: RequestContext<P>,
+) => Response | Promise<Response>;
+// Annotating with Action hides the result from actionData<typeof action>(): type the parameter
+// with ActionContext<P> instead, or use `satisfies Action<P>`.
+type Action<P extends /* a page pattern */ = never, Result = unknown> = (
+  ctx: ActionContext<P>,
+) => Result | Promise<Result>;
 type HttpMethod = "GET" | "HEAD" | "POST" | "PUT" | "PATCH" | "DELETE" | "OPTIONS";
 interface ErrorPageProps {
   status: number;
@@ -269,10 +293,10 @@ import { isHttpError, type Endpoint } from "lumen";
 // Per request: it reads cookies and accepts POST, so it cannot be prerendered (LUM5005).
 export const mode = "server";
 
-export const GET: Endpoint = ({ cookies }) =>
+export const GET: Endpoint<"/api/session"> = ({ cookies }) =>
   Response.json({ theme: cookies.get("theme") ?? "light" });
 
-export const POST: Endpoint = async ({ request, cookies }) => {
+export const POST: Endpoint<"/api/session"> = async ({ request, cookies }) => {
   try {
     const { theme } = (await request.json()) as { theme: string };
     cookies.set("theme", theme, { maxAge: 60 * 60 * 24 * 365 });

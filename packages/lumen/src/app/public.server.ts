@@ -6,7 +6,14 @@ export { fail, type ActionFailure, type ActionResult } from "./actions/protocol.
 export { isFetchError, type FetchError } from "./fetch-json.ts";
 export { fetchJSON } from "./server/fetch-json.ts";
 export { href, type HrefArgs } from "./routes/href.ts";
-export type { RouteMap, RouteParams, RouteProps, Routes } from "./routes/registry.ts";
+export type {
+  LayoutMap,
+  LayoutProps,
+  PageProps,
+  RouteMap,
+  RouteParams,
+  Routes,
+} from "./routes/registry.ts";
 export {
   error,
   isHttpError,

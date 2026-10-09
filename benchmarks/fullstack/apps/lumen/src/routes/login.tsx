@@ -1,5 +1,5 @@
 // Login by username (doc-4 §2): the action sets the `uid` cookie and redirects to the dashboard.
-import { Title, actionData, fail, redirect, type Action } from "lumen";
+import { Title, actionData, fail, redirect, type ActionContext } from "lumen";
 import { LoginFields } from "../components/forms.tsx";
 import { ReadyScript } from "../components/layout.tsx";
 import { validateLogin } from "../server/data.ts";
@@ -10,7 +10,7 @@ interface Failure {
   error: string;
 }
 
-export const action: Action = async (ctx) => {
+export const action = async (ctx: ActionContext<"/login">) => {
   const username = (await ctx.formData()).get("username");
   const parsed = validateLogin(username);
   if (!parsed.ok) {
@@ -24,7 +24,7 @@ export const action: Action = async (ctx) => {
 };
 
 export default function LoginPage() {
-  const failure = actionData<Failure>();
+  const failure = actionData<typeof action>();
   return (
     <>
       <Title>Log in · Tracker</Title>

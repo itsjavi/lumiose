@@ -398,7 +398,7 @@ describe("actionData() on the server", () => {
     expect(actionData()).toBeUndefined();
     const { fetch } = app({
       "src/routes/index.stsx": {
-        default: () => String((actionData<number>() ?? 0) + 1),
+        default: () => String(((actionData() as number | undefined) ?? 0) + 1),
         action: () => 41,
       },
     });

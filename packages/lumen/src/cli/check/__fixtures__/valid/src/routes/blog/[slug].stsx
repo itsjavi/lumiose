@@ -1,6 +1,6 @@
-import type { RouteProps } from "lumen";
+import type { PageProps } from "lumen";
 
-export default function Post(props: RouteProps<"/blog/[slug]">) {
+export default function Post(props: PageProps<"/blog/[slug]">) {
   return (
     <article>
       <h1>{props.params.slug}</h1>

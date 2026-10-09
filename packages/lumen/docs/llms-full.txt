@@ -1349,11 +1349,17 @@ src/
   as 500.
 
 **Typed routes.** `lumen typegen` (run by `lumen check` and the dev server) writes
-`.lumen/types/routes.d.ts`, which augments `RouteMap`. Then:
+`.lumen/types/routes.d.ts`, which augments `RouteMap` (pages and endpoints) and `LayoutMap`
+(layouts). Every route-bound type then takes the route pattern as a string literal, checked
+against that table: an unknown or stale pattern is a type error, and editors complete it.
 
 - `href("/blog/[slug]", { slug })` builds a URL and type-checks the pattern and params; the URL
   includes Vite's `base` and follows `trailingSlash` ([reference](../reference/app.md#href));
-- `params<"/blog/[slug]">()` and `RouteProps<"/blog/[slug]">` type the params.
+- `PageProps<"/blog/[slug]">` types a page's props, `LayoutProps<"/blog">` a layout's
+  (`{ params, children }`, with the params of the layout's URL scope; route groups such as `(app)`
+  add nothing to it), and `params<"/blog/[slug]">()` the params anywhere on the server;
+- `RequestContext<P>`, `ActionContext<P>` and `Endpoint<P>` type `ctx.params` of middleware
+  helpers, actions and endpoints (see [Data and actions](data-and-actions.md)).
 
 **Navigation.** Routes are MPA by default: links load the next document. Two `lumen()` options in
 `vite.config.ts` make these navigations smooth ([reference](../reference/vite.md#lumen)); both are
@@ -1408,10 +1414,11 @@ Routes with `mode = "spa"` use the client router `lumen/router` ([reference](../
 
 | API                                                              | Use                                                    |
 | ---------------------------------------------------------------- | ------------------------------------------------------ |
-| `export default function Page(props: RouteProps<"/x/[id]">)`     | A page component.                                      |
+| `export default function Page(props: PageProps<"/x/[id]">)`      | A page component.                                      |
+| `export default function Layout(props: LayoutProps<"/x">)`       | A layout: `{ params, children }`.                      |
 | `params<"/x/[id]">()`                                            | The matched route's params, typed by pattern (server). |
 | `href(pattern, params?)`                                         | Build a URL from a typed route pattern.                |
-| `Routes`, `RouteParams<P>`, `RouteProps<P>`, `RouteMap`          | Route types.                                           |
+| `Routes`, `RouteParams<P>`, `RouteMap`, `LayoutMap`              | Route types.                                           |
 | `ErrorPageProps`                                                 | Props of `_404` and `_error`.                          |
 | `notFound()`, `error(status, message?)`, `redirect(to, status?)` | Stop rendering; see [Server](server.md).               |
 | `lumen/router`: `Link`, `navigate`, `navigating`, `search`       | SPA routes ([reference](../reference/router.md)).      |
@@ -1420,9 +1427,9 @@ Routes with `mode = "spa"` use the client router `lumen/router` ([reference](../
 
 ```stsx check file=routes/_layout.stsx
 // src/routes/_layout.stsx
-import { href } from "lumen";
+import { href, type LayoutProps } from "lumen";
 
-export default function Layout(props: { children?: JSX.Element }) {
+export default function Layout(props: LayoutProps<"/">) {
   return (
     <div class="app">
       <nav>
@@ -1441,13 +1448,13 @@ export default function Layout(props: { children?: JSX.Element }) {
 
 ```stsx check file=routes/blog/[slug].stsx
 // src/routes/blog/[slug].stsx
-import { Title, notFound, type RouteProps } from "lumen";
+import { Title, notFound, type PageProps } from "lumen";
 
 const posts: Record<string, string> = { "hello-world": "Hello, world" };
 
 export const mode = "server";
 
-export default function Post({ params }: RouteProps<"/blog/[slug]">) {
+export default function Post({ params }: PageProps<"/blog/[slug]">) {
   // A function, so the JSX re-reads it when the params change (a plain const would be LUM2001).
   const title = () => posts[params.slug] ?? notFound();
 
@@ -1552,20 +1559,29 @@ until the new data arrives), or reloads the page (MPA). On client-routed (SPA) p
 (`result.data`, `actionData()`). Call `invalidate()` yourself when the page needs fresh
 server-rendered content; on MPA pages that reloads and resets `actionData()`.
 
+**Typed results.** Type an action's parameter with its page pattern,
+`(ctx: ActionContext<"/books/new">)`, and let TypeScript infer what it returns:
+`actionData<typeof actions>()` (or `typeof action`) is the union of the data the actions return
+and the data they pass to `fail()`, or `undefined` before a submission. `submit<typeof actions.create>(form)`
+resolves with `{ type: "success", data }` or `{ type: "failure", data }` typed from that action,
+so the two are told apart by `type`. An island that posts to another page's action imports the
+type only: `import type { actions } from "../routes/reading-list.stsx"`.
+
 ## API
 
-| API                                                          | Shape                                                                 |
-| ------------------------------------------------------------ | --------------------------------------------------------------------- |
-| `export const GET: Endpoint = (ctx) => Response`             | An endpoint method.                                                   |
-| `export const action: Action = (ctx) => …`                   | The default form action of a page.                                    |
-| `export const actions = { name: (ctx: ActionContext) => … }` | Named actions, posted to `?/name`.                                    |
-| `ctx.formData()`                                             | The request body as `FormData` (400 if it is not a form).             |
-| `fail(status, data?)`                                        | A failed action result.                                               |
-| `actionData<T>()`                                            | The last action's data (or `fail` data). Reactive in the browser.     |
-| `submit(target, { action?, method?, signal?, invalidate? })` | Post a form, submit event, `FormData`, `URLSearchParams` or a record. |
-| `submitting(name?)`                                          | Whether a submission (to `?/name`) is in flight.                      |
-| `invalidate()`                                               | Refresh the current page's server data.                               |
-| `fetchJSON<T>(url, init?)`, `isFetchError(e)`                | JSON fetch with typed errors.                                         |
+| API                                                                | Shape                                                                  |
+| ------------------------------------------------------------------ | ---------------------------------------------------------------------- |
+| `export const GET: Endpoint<"/api/x"> = (ctx) => Response`         | An endpoint method; `ctx.params` typed by the pattern.                 |
+| `export const action = async (ctx: ActionContext<"/x">) => …`      | The default form action of a page.                                     |
+| `export const actions = { name: (ctx: ActionContext<"/x">) => … }` | Named actions, posted to `?/name`.                                     |
+| `ctx.formData()`                                                   | The request body as `FormData` (400 if it is not a form).              |
+| `fail(status, data?)`                                              | A failed action result.                                                |
+| `actionData<typeof actions>()`                                     | The last action's data or `fail` data, typed by the actions. Reactive. |
+| `submit(target, { action?, method?, signal?, invalidate? })`       | Post a form, submit event, `FormData`, `URLSearchParams` or a record.  |
+| `submit<typeof actions.name>(…)`                                   | The same, resolving with that action's typed success and failure data. |
+| `submitting(name?)`                                                | Whether a submission (to `?/name`) is in flight.                       |
+| `invalidate()`                                                     | Refresh the current page's server data.                                |
+| `fetchJSON<T>(url, init?)`, `isFetchError(e)`                      | JSON fetch with typed errors.                                          |
 
 ## Example
 
@@ -1575,7 +1591,7 @@ import type { Endpoint } from "lumen";
 
 const books = [{ id: "1", title: "Dune" }];
 
-export const GET: Endpoint = ({ url }) => {
+export const GET: Endpoint<"/api/books"> = ({ url }) => {
   const q = url.searchParams.get("q")?.toLowerCase() ?? "";
   return Response.json(books.filter((book) => book.title.toLowerCase().includes(q)));
 };
@@ -1592,7 +1608,7 @@ interface Errors {
 export const mode = "server";
 
 export const actions = {
-  async create(ctx: ActionContext) {
+  async create(ctx: ActionContext<"/books/new">) {
     const form = await ctx.formData();
     const title = String(form.get("title") ?? "").trim();
     if (title === "") return fail(400, { title: "A title is required." } satisfies Errors);
@@ -1605,7 +1621,7 @@ export function NewBookForm() {
   return (
     <form method="post" action="?/create" onSubmit={submit}>
       <input name="title" />
-      <p class="error">{actionData<Errors>()?.title}</p>
+      <p class="error">{actionData<typeof actions>()?.title}</p>
       <button disabled={submitting("create")}>Add book</button>
     </form>
   );
@@ -1661,6 +1677,10 @@ export async function BookSearch({ q }: { q: string }) {
 - **Forms without `method="post"`.** Actions only run for POST; `submit()` refuses a form that does
   not say `method="post"`, as the no-JS form would not post either.
 - **Throwing for validation errors.** A thrown error renders `_error`. Return `fail(400, data)`.
+- **Casting action data.** `actionData<{ errors: … }>()` is a type error: pass `typeof actions`.
+  Annotating the export with `Action` (`export const action: Action = …`) hides what it returns,
+  so annotate the parameter instead, or check it with `satisfies Action<"/x">`. Add
+  `satisfies YourFailure` to `fail()` data whose string literals should stay literal.
 - **Disabling the Origin check to make a cross-site form work.** Allow the specific origin instead
   (`csrf.allowedOrigins` in the request handler options).
 
@@ -1727,7 +1747,7 @@ that reaches the browser is `LUM4003`.
 
 | API                                                                      | Use                                                                    |
 | ------------------------------------------------------------------------ | ---------------------------------------------------------------------- |
-| `RequestContext` (`ctx`)                                                 | `{ request, url, params, locals, cookies, env }`.                      |
+| `RequestContext<P>` (`ctx`)                                              | `{ request, url, params, locals, cookies, env }`.                      |
 | `Middleware`                                                             | `(ctx, next) => Response \| Promise<Response>`.                        |
 | `request()`, `url()`, `params<P>()`, `route()`, `locals()`, `cookies()`  | Request APIs during a server render.                                   |
 | `response()`                                                             | `{ status, setStatus, getHeader, setHeader }` until the shell is sent. |
@@ -1932,7 +1952,7 @@ export default function Stats() {
 
 ```tsx check file=routes/docs/[slug].tsx
 // src/routes/docs/[slug].tsx: prerendered for each slug
-import type { RouteProps } from "lumen";
+import type { PageProps } from "lumen";
 
 const pages = { intro: "Introduction", setup: "Setup" } as const;
 
@@ -1940,7 +1960,7 @@ export async function staticPaths() {
   return Object.keys(pages).map((slug) => ({ params: { slug } }));
 }
 
-export default function Doc({ params }: RouteProps<"/docs/[slug]">) {
+export default function Doc({ params }: PageProps<"/docs/[slug]">) {
   return <h1>{pages[params.slug as keyof typeof pages]}</h1>;
 }
 ```
@@ -3028,10 +3048,12 @@ component lets it escape, the page renders `_error` (or `_404`) with the same st
 ### submit
 
 ```ts
-function submit<Data = unknown, Failure = unknown>(
+function submit(target: SubmitTarget, options?: SubmitOptions): Promise<ActionResult>;
+// Typed by the action it posts to: submit<typeof actions.save>(event)
+function submit<A extends ActionsExport>(
   target: SubmitTarget,
   options?: SubmitOptions,
-): Promise<ActionResult<Data, Failure>>;
+): Promise<ActionResult<ActionSuccessData<A>, ActionFailureData<A>>>;
 
 type SubmitTarget =
   | HTMLFormElement
@@ -3077,10 +3099,20 @@ Whether a `submit()` is in flight; with a name, one to that named action (`?/nam
 ### actionData
 
 ```ts
-function actionData<T = unknown>(): T | undefined;
+function actionData(): unknown;
+// Typed by the page's actions: actionData<typeof actions>() or actionData<typeof action>()
+function actionData<A extends ActionsExport>():
+  | ActionSuccessData<A> // what the actions return (not fail() or a Response); void → undefined
+  | ActionFailureData<A> // the data they pass to fail()
+  | undefined;
+// typeof action, typeof actions or typeof actions.name
+type ActionsExport =
+  | ((ctx: never) => unknown)
+  | { readonly [name: string]: (ctx: never) => unknown };
 ```
 
-The data of the last action result: what the action returned, or its `fail()` data. Reactive in
+The data of the last action result: what the action returned, or its `fail()` data. The type
+argument is the actions export itself, never a data type: the result types are inferred from it. Reactive in
 the browser; after a no-JS form post it starts with the data the page was rendered with. On the
 server: the current request's action result while the page re-renders after a post.
 
@@ -3134,9 +3166,14 @@ root-relative.
 
 ```ts
 interface RouteMap {}                  // augmented by .lumen/types/routes.d.ts (typegen)
+interface LayoutMap {}                 // the same, for layouts (by the URL scope of their folder)
 type Routes = /* every route pattern, or string before typegen */;
 type RouteParams<P extends Routes>;    // { slug: string } for "/blog/[slug]"
-interface RouteProps<P extends Routes> { params: RouteParams<P> }
+interface PageProps<P extends /* a page pattern */> { params: RouteParams<P> }
+interface LayoutProps<P extends /* a layout pattern */> {
+  params: /* the params of the layout's scope */;
+  children: JSX.Element;
+}
 ```
 
 ## Control flow
@@ -3219,23 +3256,30 @@ interface SignedCookie {
 ## Context types
 
 ```ts
-interface RequestContext<Params = Record<string, string>> {
+// P is a route pattern ("/books/[isbn]"); without one, params is Record<string, string>.
+interface RequestContext<P extends Routes = never> {
   request: Request;
   url: URL;
-  params: Params;
+  params: RouteParams<P>;
   locals: Locals;
   cookies: Cookies;
   env: ServerEnv; // Readonly<Record<string, string | undefined>>
 }
-interface ActionContext<Params> extends RequestContext<Params> {
+interface ActionContext<P extends /* a page pattern */ = never> extends RequestContext<P> {
   formData(): Promise<FormData>; // parsed once; 400 if the body is not a form
 }
 type Middleware = (
   ctx: RequestContext,
   next: () => Promise<Response>,
 ) => Response | Promise<Response>;
-type Endpoint<Params> = (ctx: RequestContext<Params>) => Response | Promise<Response>;
-type Action<Params, Result> = (ctx: ActionContext<Params>) => Result | Promise<Result>;
+type Endpoint<P extends /* an endpoint pattern */ = never> = (
+  ctx: RequestContext<P>,
+) => Response | Promise<Response>;
+// Annotating with Action hides the result from actionData<typeof action>(): type the parameter
+// with ActionContext<P> instead, or use `satisfies Action<P>`.
+type Action<P extends /* a page pattern */ = never, Result = unknown> = (
+  ctx: ActionContext<P>,
+) => Result | Promise<Result>;
 type HttpMethod = "GET" | "HEAD" | "POST" | "PUT" | "PATCH" | "DELETE" | "OPTIONS";
 interface ErrorPageProps {
   status: number;
@@ -3257,10 +3301,10 @@ import { isHttpError, type Endpoint } from "lumen";
 // Per request: it reads cookies and accepts POST, so it cannot be prerendered (LUM5005).
 export const mode = "server";
 
-export const GET: Endpoint = ({ cookies }) =>
+export const GET: Endpoint<"/api/session"> = ({ cookies }) =>
   Response.json({ theme: cookies.get("theme") ?? "light" });
 
-export const POST: Endpoint = async ({ request, cookies }) => {
+export const POST: Endpoint<"/api/session"> = async ({ request, cookies }) => {
   try {
     const { theme } = (await request.json()) as { theme: string };
     cookies.set("theme", theme, { maxAge: 60 * 60 * 24 * 365 });
@@ -3628,12 +3672,12 @@ the new page is on screen.
 
 ```tsx check file=routes/music/_layout.tsx
 // src/routes/music/_layout.tsx: an SPA under /music, with a persistent layout
-import { href } from "lumen";
+import { href, type LayoutProps } from "lumen";
 import { Link, navigating } from "lumen/router";
 
 export const mode = "spa";
 
-export default function Layout(props: { children?: JSX.Element }) {
+export default function Layout(props: LayoutProps<"/music">) {
   return (
     <div class="app">
       <nav>

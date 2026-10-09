@@ -1,8 +1,8 @@
-import { signal } from "lumen";
+import { signal, type LayoutProps } from "lumen";
 import { Link, navigating, url } from "lumen/router";
 
 // The persistent root layout: its counter keeps its value across client navigations.
-export default function Layout(props: { children?: JSX.Element }) {
+export default function Layout(props: LayoutProps<"/">) {
   const count = signal(0);
   return (
     <div>

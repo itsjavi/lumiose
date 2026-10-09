@@ -14,14 +14,14 @@ import {
   text,
   weight,
 } from "@lumen/site-kit/tokens";
-import { Meta, notFound, Title, type RouteProps } from "lumen";
+import { Meta, notFound, Title, type PageProps } from "lumen";
 import { adjacentDocs, docPages, findDoc, type DocPage } from "../../content/docs.ts";
 
 export function staticPaths() {
   return docPages().map((page) => ({ params: { path: page.path } }));
 }
 
-export default function DocsPage(props: RouteProps<"/docs/[...path]">) {
+export default function DocsPage(props: PageProps<"/docs/[...path]">) {
   return <DocView page={findDoc(props.params.path) ?? notFound(`No docs page "${props.params.path}".`)} />;
 }
 

@@ -35,11 +35,17 @@ src/
   as 500.
 
 **Typed routes.** `lumen typegen` (run by `lumen check` and the dev server) writes
-`.lumen/types/routes.d.ts`, which augments `RouteMap`. Then:
+`.lumen/types/routes.d.ts`, which augments `RouteMap` (pages and endpoints) and `LayoutMap`
+(layouts). Every route-bound type then takes the route pattern as a string literal, checked
+against that table: an unknown or stale pattern is a type error, and editors complete it.
 
 - `href("/blog/[slug]", { slug })` builds a URL and type-checks the pattern and params; the URL
   includes Vite's `base` and follows `trailingSlash` ([reference](../reference/app.md#href));
-- `params<"/blog/[slug]">()` and `RouteProps<"/blog/[slug]">` type the params.
+- `PageProps<"/blog/[slug]">` types a page's props, `LayoutProps<"/blog">` a layout's
+  (`{ params, children }`, with the params of the layout's URL scope; route groups such as `(app)`
+  add nothing to it), and `params<"/blog/[slug]">()` the params anywhere on the server;
+- `RequestContext<P>`, `ActionContext<P>` and `Endpoint<P>` type `ctx.params` of middleware
+  helpers, actions and endpoints (see [Data and actions](data-and-actions.md)).
 
 **Navigation.** Routes are MPA by default: links load the next document. Two `lumen()` options in
 `vite.config.ts` make these navigations smooth ([reference](../reference/vite.md#lumen)); both are
@@ -94,10 +100,11 @@ Routes with `mode = "spa"` use the client router `lumen/router` ([reference](../
 
 | API                                                              | Use                                                    |
 | ---------------------------------------------------------------- | ------------------------------------------------------ |
-| `export default function Page(props: RouteProps<"/x/[id]">)`     | A page component.                                      |
+| `export default function Page(props: PageProps<"/x/[id]">)`      | A page component.                                      |
+| `export default function Layout(props: LayoutProps<"/x">)`       | A layout: `{ params, children }`.                      |
 | `params<"/x/[id]">()`                                            | The matched route's params, typed by pattern (server). |
 | `href(pattern, params?)`                                         | Build a URL from a typed route pattern.                |
-| `Routes`, `RouteParams<P>`, `RouteProps<P>`, `RouteMap`          | Route types.                                           |
+| `Routes`, `RouteParams<P>`, `RouteMap`, `LayoutMap`              | Route types.                                           |
 | `ErrorPageProps`                                                 | Props of `_404` and `_error`.                          |
 | `notFound()`, `error(status, message?)`, `redirect(to, status?)` | Stop rendering; see [Server](server.md).               |
 | `lumen/router`: `Link`, `navigate`, `navigating`, `search`       | SPA routes ([reference](../reference/router.md)).      |
@@ -106,9 +113,9 @@ Routes with `mode = "spa"` use the client router `lumen/router` ([reference](../
 
 ```stsx check file=routes/_layout.stsx
 // src/routes/_layout.stsx
-import { href } from "lumen";
+import { href, type LayoutProps } from "lumen";
 
-export default function Layout(props: { children?: JSX.Element }) {
+export default function Layout(props: LayoutProps<"/">) {
   return (
     <div class="app">
       <nav>
@@ -127,13 +134,13 @@ export default function Layout(props: { children?: JSX.Element }) {
 
 ```stsx check file=routes/blog/[slug].stsx
 // src/routes/blog/[slug].stsx
-import { Title, notFound, type RouteProps } from "lumen";
+import { Title, notFound, type PageProps } from "lumen";
 
 const posts: Record<string, string> = { "hello-world": "Hello, world" };
 
 export const mode = "server";
 
-export default function Post({ params }: RouteProps<"/blog/[slug]">) {
+export default function Post({ params }: PageProps<"/blog/[slug]">) {
   // A function, so the JSX re-reads it when the params change (a plain const would be LUM2001).
   const title = () => posts[params.slug] ?? notFound();
 

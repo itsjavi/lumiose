@@ -5,7 +5,7 @@ import { allPosts } from "../content.ts";
 import { escapeXml, rssDate } from "../lib/format.ts";
 import { absoluteUrl, site } from "../lib/site.ts";
 
-export const GET: Endpoint = async () => {
+export const GET: Endpoint<"/rss.xml"> = async () => {
   const posts = allPosts();
   const bodies = await Promise.all(posts.map((post) => renderToString(post.Content)));
   const items = posts.map((post, index) => {

@@ -157,12 +157,12 @@ the new page is on screen.
 
 ```tsx check file=routes/music/_layout.tsx
 // src/routes/music/_layout.tsx: an SPA under /music, with a persistent layout
-import { href } from "lumen";
+import { href, type LayoutProps } from "lumen";
 import { Link, navigating } from "lumen/router";
 
 export const mode = "spa";
 
-export default function Layout(props: { children?: JSX.Element }) {
+export default function Layout(props: LayoutProps<"/music">) {
   return (
     <div class="app">
       <nav>

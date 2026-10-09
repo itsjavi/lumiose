@@ -4,7 +4,7 @@ import type { Endpoint } from "lumen";
 
 export const mode = "server";
 
-export const GET: Endpoint = (ctx) =>
+export const GET: Endpoint<"/api/me"> = (ctx) =>
   Response.json(
     { user: ctx.locals.user ?? null },
     { headers: { "cache-control": "private, no-store" } },

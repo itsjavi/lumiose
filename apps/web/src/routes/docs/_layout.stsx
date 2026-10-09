@@ -2,12 +2,12 @@
 // folds into a closed disclosure above the page, so the content comes first on phones; on wide
 // screens CSS shows the disclosure's content without its summary.
 import { bp, color, font, layout, radius, space, text, weight } from "@lumen/site-kit/tokens";
-import { href, url } from "lumen";
+import { href, url, type LayoutProps } from "lumen";
 import { docNav, findDoc } from "../../content/docs.ts";
 import { DocsSearch } from "../../islands/DocsSearch.stsx";
 import { sitePath } from "../../lib/site.ts";
 
-export default function DocsLayout(props: { children?: JSX.Element }) {
+export default function DocsLayout(props: LayoutProps<"/docs">) {
   const path = sitePath(url().pathname).replace(/^\/docs\/?|\/$/g, "");
   const current = findDoc(path);
 
