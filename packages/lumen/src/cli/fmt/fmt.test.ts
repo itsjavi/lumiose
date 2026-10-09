@@ -1,7 +1,9 @@
 // `lumen fmt` (TASK-31): real oxfmt and the real scanner.
+import { spawnSync } from "node:child_process";
 import { mkdir, mkdtemp, readFile, realpath, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { dirname, join } from "node:path";
+import { dirname, join, relative, sep } from "node:path";
+import { fileURLToPath } from "node:url";
 import { format as oxfmt } from "oxfmt";
 import { afterAll, describe, expect, it } from "vitest";
 import { main } from "../main.ts";
@@ -236,6 +238,25 @@ describe.skipIf(!binding)("lumen fmt", () => {
       code: 0,
       out: "All 1 .stsx file formatted.\n",
     });
+  });
+
+  it("checks several projects with scripts/fmt-examples.ts, one summary each (CI)", async () => {
+    const clean = await project({ "src/A.stsx": "export const A = () => <p>a</p>;\n" });
+    const messy = await project({ "src/B.stsx": "export const B=()=><p>b</p>\n" });
+    const script = join(
+      dirname(fileURLToPath(import.meta.url)),
+      "../../../../../scripts/fmt-examples.ts",
+    );
+    const result = spawnSync(process.execPath, [script, clean, messy], { encoding: "utf8" });
+    expect(result.status).toBe(1);
+    const name = (dir: string) => relative(join(script, "../.."), dir).split(sep).join("/");
+    expect(result.stdout).toBe(
+      `${name(clean)}: All 1 .stsx file formatted.\n` +
+        `${name(messy)}: src/B.stsx\n` +
+        `${name(messy)}: 1 file not formatted (of 1 .stsx file). Run \`lumen fmt\`.\n`,
+    );
+    expect(result.stderr).toBe("fmt:examples: 1 of 2 projects need `lumen fmt`.\n");
+    expect(`${result.stdout}${result.stderr}`).not.toContain("undefined");
   });
 
   it("rejects --check outside fmt", async () => {
