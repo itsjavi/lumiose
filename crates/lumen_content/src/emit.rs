@@ -4,6 +4,7 @@ use std::fmt::Write as _;
 
 use html5ever::{Attribute, ns};
 
+use crate::assets::Assets;
 use crate::dom::{Data, Handle};
 use crate::{Component, Script};
 
@@ -46,6 +47,7 @@ struct Emitter {
     /// Markdown drops `<script>` elements (an error, reported by the caller).
     markdown: bool,
     jsx: String,
+    assets: Assets,
     /// File-level style blocks: (global, css).
     blocks: Vec<(bool, String)>,
     scripts: Vec<Script>,
@@ -83,6 +85,7 @@ pub(crate) fn module(input: Input) -> Component {
         jsx,
         blocks,
         scripts,
+        assets,
         ..
     } = emitter;
 
@@ -98,6 +101,7 @@ pub(crate) fn module(input: Input) -> Component {
             js_string(&format!("./{name}?lumen-frontmatter"))
         );
     }
+    out.push_str(&assets.imports());
     if !scripts.is_empty() {
         // An island without props: pages load the scripts the way they load island modules.
         let _ = writeln!(
@@ -209,7 +213,12 @@ impl Emitter {
             let _ = writeln!(self.jsx, "{global}>{css}</style>");
             return;
         }
-        attributes(&mut self.jsx, &attrs);
+        attributes(
+            &mut self.jsx,
+            &mut self.assets,
+            html.then_some(local),
+            &attrs,
+        );
         if name.ns == ns!(svg) && local == "style" {
             // Native SVG CSS: raw text, which the `.stsx` scanner keeps verbatim.
             let mut css = String::new();
@@ -275,7 +284,8 @@ impl Emitter {
 
 /// Writes ` name="value"` for each attribute, and a spread object for the names JSX cannot
 /// write or the compiler reads itself (`@click`, `x-on:click.prevent`, `key`).
-fn attributes(out: &mut String, attrs: &[Attribute]) {
+/// The relative URLs of an HTML `element`'s URL attributes are imported through `assets`.
+fn attributes(out: &mut String, assets: &mut Assets, element: Option<&str>, attrs: &[Attribute]) {
     let mut spread = Vec::new();
     for attr in attrs {
         let local: &str = &attr.name.local;
@@ -288,7 +298,11 @@ fn attributes(out: &mut String, attrs: &[Attribute]) {
         };
         let value: &str = &attr.value;
         if is_jsx_attribute(&name) {
-            if value.contains(['"', '&', '\n', '\r']) {
+            if let Some(expression) =
+                element.and_then(|element| assets.expression(element, &name, value))
+            {
+                let _ = write!(out, " {name}={{{expression}}}");
+            } else if value.contains(['"', '&', '\n', '\r']) {
                 let _ = write!(out, " {name}={{{}}}", js_string(value));
             } else {
                 let _ = write!(out, " {name}=\"{value}\"");

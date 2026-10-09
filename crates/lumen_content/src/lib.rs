@@ -34,7 +34,10 @@
 //!   text elements (`<noscript>`, `<xmp>`, `<iframe>`…).
 //! - Comments and the doctype are dropped. Attributes JSX cannot write (`@click`) are passed
 //!   through a spread object.
+//! - Relative asset URLs (`<img src="./photo.jpg">`, `srcset`, `<a href="./report.pdf">`) become
+//!   `?url` imports of the files, which the host bundles; in Markdown too.
 
+mod assets;
 mod dom;
 mod emit;
 mod markdown;

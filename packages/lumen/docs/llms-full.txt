@@ -2120,6 +2120,15 @@ component.
   `<noscript>`. Comments and the doctype are dropped.
 - **Attributes** are kept as written, including inline handlers (`onclick="…"`) and names JSX
   cannot write (`@click`, `x-on:click.prevent`), which are passed through a spread.
+- **Asset URLs.** Relative URLs in `<img src>` and `srcset`, `<source src>` and `srcset`,
+  `<video src>` and `poster`, `<audio src>`, `<track src>`, and `<a href>` to a file (an extension
+  other than `.html` or `.md`) are bundled. They resolve against the `.md` or `.html` file, as
+  `import url from "./photo.jpg?url"` does in a `.stsx` module: Vite serves them in dev and
+  fingerprints them in builds (`/assets/photo-[hash].jpg`, or a data URL under its inline limit).
+  Markdown images and links render as these elements, so their relative URLs are bundled too.
+  Absolute paths (`/logo.svg`, from `public/`), URLs with a scheme or a query, fragments (`#top`)
+  and links to pages (`./about`, `./next.md`) are kept as written. A missing file fails the
+  build.
 
 Raw `<style>` in Markdown follows the same rules. Raw `<script>` in Markdown is an error, with
 the file and line ([LUM1008](../errors/LUM1008.md)); scripts belong in `.html` imports.
@@ -2131,8 +2140,7 @@ client render, the scripts load with the component's module. An edit to such a f
 page in dev, since scripts such as `customElements.define` cannot run twice.
 
 > **Status:** available in `lumen dev` and builds, with HMR: an edit re-renders the content and
-> hot-updates its CSS. Relative `src`/`href` URLs in the markup (`<img src="./photo.jpg">`) are
-> not bundled yet: put assets in `public/` or import them from a `.stsx` component.
+> hot-updates its CSS.
 
 ## API
 
@@ -2257,8 +2265,11 @@ its light-DOM rule is scoped to the file.
 - **Expecting a script per use.** A file's scripts run once per page, not once per rendered
   component. Query the elements they work on (`document.querySelectorAll`) or use a custom
   element, which runs its code for every instance.
-- **Relative asset URLs.** `<img src="./photo.jpg">` is not bundled yet and resolves against the
-  page URL. Put the file in `public/` and use an absolute URL.
+- **Linking to a file that is not there.** A relative asset URL (`<img src="./photo.jpg">`) is an import:
+  a typo or a missing file fails the build. Files meant to be served as they are belong in
+  `public/`, with an absolute URL (`/downloads/app.zip`).
+- **Relative links between pages.** A Markdown link to `./next-post` is kept as written, so it resolves
+  against the page's URL, not the file's. Link to the route's URL instead (`/blog/next-post`).
 
 ## Related diagnostics
 

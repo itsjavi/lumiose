@@ -6,7 +6,7 @@ import { mkdirSync, mkdtempSync, realpathSync, rmSync, symlinkSync, writeFileSyn
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { createLogger, createServer, type ViteDevServer } from "vite";
+import { build, createLogger, createServer, type Rollup, type ViteDevServer } from "vite";
 import lumen from "./index.ts";
 import { contentOf, contentOptionsOf, toJs } from "./content.ts";
 import { Packages } from "./packages.ts";
@@ -22,6 +22,8 @@ tags: [docs, md]
 # Hello, Lumen
 
 Some *Markdown* with <span class="note">raw HTML</span>.
+
+![A photo](./photo.png) and [the report](./files/report.pdf#page=2).
 
 <style>
   .note { color: tomato; }
@@ -39,6 +41,9 @@ Some *Markdown* with <span class="note">raw HTML</span>.
   <script src="./extra.js"></script>
 </body></html>
 `,
+  // Above Vite's 4 kB inline limit, so builds emit them as files.
+  "content/photo.png": "p".repeat(5000),
+  "content/files/report.pdf": "r".repeat(5000),
   "components/define.js": `export function define() {}\n`,
   "components/extra.js": `globalThis.extra = true;\n`,
   "index.html": `<!doctype html><script type="module" src="/main.ts"></script>\n`,
@@ -172,6 +177,9 @@ describe.skipIf(!binding)(".md and .html imports", () => {
     expect(html).toContain("<h2>Hello, Lumen</h2>");
     expect(html).toMatch(/<h1 id=hello-lumen data-l-\w+>Hello, Lumen<\/h1>/);
     expect(html).toMatch(/<span class=note data-l-\w+>raw HTML<\/span>/);
+    // Relative asset URLs are imported, so they resolve against the file, not the page.
+    expect(html).toMatch(/<img alt="A photo" data-l-\w+ src="\/content\/photo.png">/);
+    expect(html).toMatch(/<a data-l-\w+ href="\/content\/files\/report.pdf#page=2">/);
     // The template's content is verbatim (not scoped), the scripts are gone from the markup.
     expect(html).toMatch(
       /<template id=card data-l-\w+><style>:host \{ color: red; \}<\/style><slot><\/slot><\/template>/,
@@ -197,6 +205,34 @@ describe.skipIf(!binding)(".md and .html imports", () => {
     );
     expect(ssr!.code).not.toContain("extra.js");
     expect(ssr!.code).toContain("function Script()");
+  });
+
+  it("fingerprints the assets in client and server builds", async () => {
+    for (const ssr of [false, true]) {
+      const result = (await build({
+        root,
+        configFile: false,
+        logLevel: "silent",
+        plugins: [lumen({ md: true, html: true })],
+        build: {
+          write: false,
+          ssr: ssr ? "render.tsx" : false,
+          emitAssets: true,
+          // Keeps `render` (app builds drop the exports of their entries).
+          rolldownOptions: ssr
+            ? {}
+            : { input: join(root, "render.tsx"), preserveEntrySignatures: "exports-only" },
+        },
+      })) as Rollup.RollupOutput;
+      const files = result.output.map((file) => file.fileName);
+      const photo = files.find((name) => /^assets\/photo-[\w-]+\.png$/.test(name));
+      const report = files.find((name) => /^assets\/report-[\w-]+\.pdf$/.test(name));
+      expect(photo, files.join()).toBeDefined();
+      expect(report, files.join()).toBeDefined();
+      const code = result.output.flatMap((file) => (file.type === "chunk" ? [file.code] : []));
+      expect(code.join()).toContain(`/${photo}`);
+      expect(code.join()).toContain(`/${report}`);
+    }
   });
 
   it("watches the source file, so an edit reaches the module", async () => {
