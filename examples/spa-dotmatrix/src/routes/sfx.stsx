@@ -1,14 +1,18 @@
 // SFX gallery and maker: original sound effects as pads; pick one, bend it with a few sliders, see
 // its waveform and the driver code it becomes, and save it as a WAV file.
-import { computed, onCleanup, onMount, signal, store } from "lumen";
+import { computed, effect, onCleanup, onMount, signal, store } from "lumen";
 import { FPS, sfxData, sfxFrames } from "../audio/driver.ts";
-import { monoWav, playOnce } from "../audio/player.ts";
+import { monoWav, playPcm } from "../audio/player.ts";
+import { renderPcm } from "../audio/renderer.ts";
 import { onSpace } from "../keys.ts";
 import { DUTY_NAMES } from "../model/instruments.ts";
 import { NO_MODS, SFX, applyMods, listing, sfxById, type SfxMods } from "../model/sfx.ts";
-import { say } from "../state.ts";
+import { prefs, say } from "../state.ts";
 import { tokens } from "../tokens.ts";
 import { download } from "../ui/Transport.stsx";
+
+const ms = (frames: number) => `${Math.round((frames / FPS) * 1000)} ms`;
+const rand = (lo: number, hi: number) => lo + Math.round(Math.random() * (hi - lo));
 
 export default function SfxPage() {
   const selected = signal(SFX[0]!.id);
@@ -19,11 +23,13 @@ export default function SfxPage() {
   let canvas: HTMLCanvasElement | undefined;
   let timer: ReturnType<typeof setTimeout> | undefined;
 
-  async function fire() {
+  /** Renders the current sound, draws it, and plays it (unless `play` is false). */
+  async function fire(play = true) {
     try {
-      const data = await playOnce(sfxData(current()));
+      const data = await renderPcm(sfxData(current()), { mono: true });
       pcm.set(data);
       draw(data);
+      if (play) await playPcm(data);
     } catch (error) {
       say(`Audio failed: ${String(error)}`);
     }
@@ -65,13 +71,12 @@ export default function SfxPage() {
   }
 
   function surprise() {
-    const r = (lo: number, hi: number) => lo + Math.round(Math.random() * (hi - lo));
     Object.assign(mods, {
-      pitch: r(-7, 7),
-      length: [0.6, 0.8, 1, 1.25, 1.5][r(0, 4)]!,
-      sweep: r(-1, 1) === 0 ? 0 : r(-6, 6),
-      duty: r(-1, 3),
-      tone: r(-2, 2),
+      pitch: rand(-7, 7),
+      length: [0.6, 0.8, 1, 1.25, 1.5][rand(0, 4)]!,
+      sweep: rand(-1, 1) === 0 ? 0 : rand(-6, 6),
+      duty: rand(-1, 3),
+      tone: rand(-2, 2),
       volume: 1,
     });
     void fire();
@@ -79,7 +84,7 @@ export default function SfxPage() {
 
   async function save() {
     try {
-      const data = pcm() ?? (await playOnce(sfxData(current())));
+      const data = pcm() ?? (await renderPcm(sfxData(current()), { mono: true }));
       const blob = await monoWav(data);
       download(blob, `${current().id}.wav`);
       say(`Saved ${current().id}.wav`);
@@ -88,13 +93,23 @@ export default function SfxPage() {
     }
   }
 
-  onMount(() => onSpace(() => void fire()));
+  // Redraw the last waveform in the new colors when the palette or theme changes.
+  effect(() => {
+    void prefs.lcd;
+    void prefs.theme;
+    const data = pcm.peek();
+    if (data) requestAnimationFrame(() => draw(data));
+  });
+
+  onMount(() => {
+    onSpace(() => void fire());
+    void fire(false);
+  });
   onCleanup(() => {
     onSpace(undefined);
     clearTimeout(timer);
   });
 
-  const ms = (frames: number) => `${Math.round((frames / FPS) * 1000)} ms`;
   const hasPulse1 = () => sfxById(selected())!.voices.some((v) => v.channel === 0);
   const hasPulse = () => sfxById(selected())!.voices.some((v) => v.channel !== 3);
   const hasNoise = () => sfxById(selected())!.voices.some((v) => v.channel === 3);

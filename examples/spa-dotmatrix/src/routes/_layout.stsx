@@ -4,8 +4,9 @@ import "@fontsource/silkscreen/400.css";
 import "@fontsource-variable/space-grotesk/index.css";
 import { effect, href, onMount } from "lumen";
 import { Link } from "lumen/router";
+import { position } from "../audio/player.ts";
 import { onKeyDown } from "../keys.ts";
-import { prefs, type Prefs } from "../state.ts";
+import { plainSong, prefs, type Prefs } from "../state.ts";
 import { tokens } from "../tokens.ts";
 import { Shortcuts } from "../ui/Shortcuts.stsx";
 
@@ -28,6 +29,9 @@ function nextTheme(theme: Prefs["theme"]): Prefs["theme"] {
     theme === "dark" || (theme === "system" && matchMedia("(prefers-color-scheme: dark)").matches);
   return dark ? "light" : "dark";
 }
+
+// A small handle for the e2e tests and the curious: the playhead and the open song.
+Object.assign(globalThis, { dotmatrix: { position, song: plainSong } });
 
 export default function Layout(props: { children?: JSX.Element }) {
   effect(() => {

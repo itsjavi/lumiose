@@ -6,7 +6,7 @@ import { computed, effect, onCleanup, signal, untrack } from "lumen";
 import { noteData } from "../audio/driver.ts";
 import { nowPlaying, playOnce, playStep } from "../audio/player.ts";
 import { setGridFocused } from "../keys.ts";
-import { DRUMS } from "../model/instruments.ts";
+import { DRUMS, presetFor } from "../model/instruments.ts";
 import { noteName, scaleRows } from "../model/music.ts";
 import { noteAt, placeNote, removeNote } from "../model/song.ts";
 import { CHANNELS, STEPS_PER_BAR, type ChannelIndex, type Note } from "../model/types.ts";
@@ -21,11 +21,13 @@ export function audition(ch: ChannelIndex, pitch: number, steps: number): void {
   void playOnce(noteData(song.tracks[ch], ch, pitch, Math.min(steps, 8), song.bpm)).catch(() => {});
 }
 
+const ch = () => editor.channel;
+const total = () => doc.song.bars * STEPS_PER_BAR;
+const playing = () => nowPlaying() === "editor" && playStep() >= 0;
+
 export function PianoRoll() {
-  const ch = () => editor.channel;
   const kind = () => CHANNELS[ch()].kind;
   const track = () => doc.song.tracks[ch()];
-  const total = () => doc.song.bars * STEPS_PER_BAR;
 
   const rows = computed((): number[] => {
     if (kind() === "noise") return DRUMS.map((_, i) => i);
@@ -47,14 +49,18 @@ export function PianoRoll() {
     );
   });
 
-  const playing = () => nowPlaying() === "editor" && playStep() >= 0;
   const focused = signal(false);
   const live = signal("");
 
   let lane: HTMLDivElement | undefined;
   let roll: HTMLDivElement | undefined;
 
-  const cellW = () => (matchMedia("(width < 720px)").matches ? 26 : 22);
+  const narrow = matchMedia("(width < 720px)");
+  const wide = signal(!narrow.matches);
+  const onWidth = () => wide.set(!narrow.matches);
+  narrow.addEventListener("change", onWidth);
+  onCleanup(() => narrow.removeEventListener("change", onWidth));
+  const cellW = () => (wide() ? 22 : 26);
   const cellH = 18;
 
   function cellAt(event: PointerEvent): { step: number; row: number } {
@@ -245,7 +251,7 @@ export function PianoRoll() {
         <div class="lcd">
           <div class="status" aria-hidden="true">
             <span class="chan">{CHANNELS[ch()].short}</span>
-            <span>{track().inst.preset.toUpperCase()}</span>
+            <span>{presetFor(kind(), track().inst.preset).name.toUpperCase()}</span>
             <span class="grow" />
             <span>
               BAR{" "}
@@ -271,12 +277,14 @@ export function PianoRoll() {
               <div class="ruler" aria-hidden="true">
                 {Array.from({ length: doc.song.bars }, (_, bar) => (
                   <span
-                    class={["barno", { loop: bar === doc.song.loop, picked: bar === editor.bar }]}
+                    class={["barno", { picked: bar === editor.bar }]}
                     style={{ "--b": String(bar) }}
                     onClick={() => (editor.bar = bar)}
                   >
-                    {bar === doc.song.loop ? "▸" : ""}
                     {bar + 1}
+                    {bar === doc.song.loop && doc.song.loop > 0 ? (
+                      <span class="flag">LOOP</span>
+                    ) : null}
                   </span>
                 ))}
               </div>
@@ -446,9 +454,11 @@ export function PianoRoll() {
         .barno.picked {
           background: var(--l1);
         }
-        .barno.loop {
-          color: var(--l0);
+        .flag {
+          margin-inline-start: 6px;
+          padding: 0 4px;
           background: var(--l3);
+          color: var(--l0);
         }
         .keys {
           position: sticky;

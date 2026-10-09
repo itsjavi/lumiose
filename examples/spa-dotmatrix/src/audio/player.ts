@@ -173,9 +173,9 @@ function stopVoice(voice: Voice | undefined, when: number): void {
   }
 }
 
-/** Mute, solo and pan, applied without re-rendering. */
-export function applyMix(song: Song): void {
-  if (!ctx) return;
+/** Mute, solo and pan of the song playing as `tag`, applied without re-rendering. */
+export function applyMix(song: Song, tag: string): void {
+  if (!ctx || session?.tag !== tag) return;
   const t = ctx.currentTime;
   song.tracks.forEach((track, ch) => {
     const lane = lanes[ch]!;
@@ -208,7 +208,7 @@ export async function play(song: Song, tag: string, from = 0): Promise<void> {
     };
     s.voices = CHANNELS.map((ch) => startVoice(s, ch, keys[ch]!, buffers[ch]!, when, from));
     session = s;
-    applyMix(song);
+    applyMix(song, tag);
     nowPlaying.set(tag);
     tick();
   } finally {
@@ -231,7 +231,7 @@ export function stop(): void {
 export async function update(song: Song, tag: string): Promise<void> {
   const s = session;
   if (!s || s.tag !== tag || !ctx) return;
-  applyMix(song);
+  applyMix(song, tag);
   const before = s.song;
   s.song = song;
   const retimed = before.bpm !== song.bpm || before.bars !== song.bars || before.loop !== song.loop;
@@ -320,7 +320,12 @@ let shot: AudioBufferSourceNode | undefined;
 /** Renders and plays a short sound (a note preview, an SFX). Resolves with its PCM. */
 export async function playOnce(data: EngineAudioData): Promise<Float32Array> {
   await unlock();
-  const pcm = await renderPcm(data, { mono: true });
+  return playPcm(await renderPcm(data, { mono: true }));
+}
+
+/** Plays already rendered mono PCM once, cutting off the previous one-shot. */
+export async function playPcm(pcm: Float32Array): Promise<Float32Array> {
+  await unlock();
   const buffer = toBuffer(pcm);
   try {
     shot?.stop();

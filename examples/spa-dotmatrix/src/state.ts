@@ -84,7 +84,7 @@ function changed(): void {
     if (!saveCurrent(plainSong())) say("Could not autosave: browser storage is unavailable");
   }, 400);
   // Mix changes apply at once; note edits re-render after a short pause (dragging stays smooth).
-  player.applyMix(plainSong());
+  player.applyMix(plainSong(), "editor");
   clearTimeout(audioTimer);
   audioTimer = setTimeout(() => void player.update(plainSong(), "editor"), 60);
 }

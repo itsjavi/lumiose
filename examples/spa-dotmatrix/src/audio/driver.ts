@@ -107,7 +107,7 @@ export function normalizeNotes(notes: readonly Note[], total: number, loopStep: 
   const sorted = notes
     .filter((n) => n.s >= 0 && n.s < total && n.l > 0)
     .map((n) => ({ s: n.s, l: Math.min(n.l, total - n.s), p: n.p }))
-    .sort((a, b) => a.s - b.s);
+    .toSorted((a, b) => a.s - b.s);
   const mono: Note[] = [];
   for (const note of sorted) {
     const last = mono.at(-1);
@@ -234,7 +234,7 @@ function toCommands(
   total: number,
   loopAt: number | null,
 ): { commands: EngineAudioCommand[]; loopStartCommandIndex?: number } {
-  const sorted = events.map((e, i) => ({ ...e, i })).sort((a, b) => a.t - b.t || a.i - b.i);
+  const sorted = events.map((e, i) => ({ ...e, i })).toSorted((a, b) => a.t - b.t || a.i - b.i);
   const commands: EngineAudioCommand[] = [];
   let cursor = 0;
   let loopIndex: number | undefined;

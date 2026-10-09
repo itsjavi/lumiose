@@ -49,6 +49,13 @@ function length(song: Song): string {
   return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
 }
 
+function open(song: Song, label: string) {
+  if (nowPlaying()?.startsWith("demo:")) stop();
+  openSong(song, label);
+  say(`Opened “${song.title}”. Undo brings back your previous song.`);
+  void navigate(href("/"));
+}
+
 export default function Songs() {
   const shelf = signal<SavedSong[]>(loadShelf());
   const songs = new Map(DEMOS.map((d) => [d.id, d.song()]));
@@ -57,12 +64,6 @@ export default function Songs() {
     const tag = `demo:${demo.id}`;
     if (nowPlaying() === tag) stop();
     else void play(songs.get(demo.id)!, tag);
-  }
-
-  function open(song: Song, label: string) {
-    openSong(song, label);
-    say(`Opened “${song.title}”. Undo brings back your previous song.`);
-    void navigate(href("/"));
   }
 
   function saveCurrent() {

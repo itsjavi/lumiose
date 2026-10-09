@@ -15,7 +15,9 @@ describe("vendored gbapu", () => {
 
   for (const [, hash, file] of lines) {
     it(`${file} is unchanged`, () => {
-      const actual = createHash("sha256").update(readFileSync(new URL(file!, root))).digest("hex");
+      const actual = createHash("sha256")
+        .update(readFileSync(new URL(file!, root)))
+        .digest("hex");
       expect(actual).toBe(hash);
     });
   }

@@ -8,7 +8,6 @@ import { WAVES } from "../audio/tables.ts";
 import { DRUMS, DUTY_NAMES, instrument } from "../model/instruments.ts";
 import type { ChannelIndex, Instrument, Sfx, SfxNote, Track, WaveShape } from "../model/types.ts";
 import { say } from "../state.ts";
-import { tokens } from "../tokens.ts";
 
 const note = (fields: Partial<SfxNote>): SfxNote => ({
   frames: 30,
@@ -230,6 +229,7 @@ export default function Learn() {
           display: grid;
           gap: 16px;
           max-inline-size: 920px;
+          margin-inline: auto;
         }
         .intro h1 {
           font-size: 24px;

@@ -32,8 +32,30 @@ function envLabel(env: number): string {
   return env > 0 ? `Fade ${env}` : `Swell ${-env}`;
 }
 
+const ch = () => editor.channel;
+
+const range = (
+  label: string,
+  value: () => number,
+  min: number,
+  max: number,
+  onInput: (v: number) => void,
+  show?: () => string,
+) => (
+  <label class="field">
+    <span class="label">{label}</span>
+    <input
+      type="range"
+      min={min}
+      max={max}
+      value={value()}
+      onInput={(event) => onInput(event.currentTarget.valueAsNumber)}
+    />
+    <output>{show ? show() : String(value())}</output>
+  </label>
+);
+
 export function InstrumentPanel() {
-  const ch = () => editor.channel;
   const kind = () => CHANNELS[ch()].kind;
   const inst = () => doc.song.tracks[ch()].inst;
 
@@ -60,27 +82,6 @@ export function InstrumentPanel() {
     );
     audition(c, kind() === "noise" ? 6 : kind() === "wave" ? 45 : 72, 4);
   }
-
-  const range = (
-    label: string,
-    value: () => number,
-    min: number,
-    max: number,
-    onInput: (v: number) => void,
-    show?: () => string,
-  ) => (
-    <label class="field">
-      <span class="label">{label}</span>
-      <input
-        type="range"
-        min={min}
-        max={max}
-        value={value()}
-        onInput={(event) => onInput(event.currentTarget.valueAsNumber)}
-      />
-      <output>{show ? show() : String(value())}</output>
-    </label>
-  );
 
   return (
     <section class="panel sound" aria-labelledby="sound-title">

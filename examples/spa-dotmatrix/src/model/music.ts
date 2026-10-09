@@ -49,5 +49,5 @@ export function scaleRows(
   const rows = new Set<number>();
   for (let m = low; m <= high; m++) if (inScale(m, key, scale)) rows.add(m);
   for (const m of used) rows.add(m);
-  return [...rows].sort((a, b) => b - a);
+  return [...rows].toSorted((a, b) => b - a);
 }

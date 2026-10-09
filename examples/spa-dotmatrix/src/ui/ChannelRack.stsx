@@ -4,7 +4,7 @@ import { effect, onCleanup } from "lumen";
 import { nowPlaying, scope } from "../audio/player.ts";
 import { presetFor } from "../model/instruments.ts";
 import { CHANNELS, type ChannelIndex, type Pan } from "../model/types.ts";
-import { doc, editor, mix } from "../state.ts";
+import { doc, editor, mix, prefs } from "../state.ts";
 import { tokens } from "../tokens.ts";
 
 const ICONS: Record<string, string> = {
@@ -32,14 +32,17 @@ function Scope(props: { ch: ChannelIndex }) {
     // A dot-matrix trace: one 2×2 dot per column.
     for (let x = 0; x < w; x += 2) {
       const s = samples[Math.floor((x / w) * samples.length)]!;
-      const y = Math.round(h / 2 - s * h * 1.6);
+      const y = Math.round(h / 2 - s * h * 2.6);
       g.fillRect(x, Math.min(h - 2, Math.max(0, y)), 2, 2);
     }
     if (nowPlaying()) frame = requestAnimationFrame(draw);
   }
 
+  // Draw while playing, and once more when playback stops or the screen palette changes.
   effect(() => {
     nowPlaying();
+    void prefs.lcd;
+    void prefs.theme;
     cancelAnimationFrame(frame);
     frame = requestAnimationFrame(draw);
   });
@@ -52,9 +55,9 @@ function Scope(props: { ch: ChannelIndex }) {
 
 const INDICES: ChannelIndex[] = [0, 1, 2, 3];
 
-export function ChannelRack() {
-  const setPan = (ch: ChannelIndex, pan: Pan) => mix((song) => (song.tracks[ch].pan = pan));
+const setPan = (ch: ChannelIndex, pan: Pan) => mix((song) => (song.tracks[ch].pan = pan));
 
+export function ChannelRack() {
   return (
     <div class="rack" role="radiogroup" aria-label="Channels">
       {INDICES.map((ch) => {
@@ -271,18 +274,11 @@ export function ChannelRack() {
           }
         }
         @media (width < 560px) {
-          .rack {
-            grid-template-columns: minmax(0, 1fr);
-          }
           .card:not(.active) .controls {
             display: none;
           }
-          .rack {
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-          }
           .card.active {
             grid-column: 1 / -1;
-            order: -1;
           }
         }
       </style>

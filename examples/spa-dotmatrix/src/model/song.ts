@@ -106,7 +106,7 @@ export function sanitizeSong(input: unknown): Song {
     };
     const range = kind === "noise" ? [0, 7] : kind === "wave" ? [24, 96] : [36, 96];
     const notes = (Array.isArray(t?.notes) ? t.notes : [])
-      .filter((n): n is Note => !!n && typeof n === "object")
+      .filter((n): n is Note => !!n && typeof n === "object" && Number(n.s) < total)
       .map((n) => ({
         s: clamp(n.s, 0, total - 1, 0),
         l: kind === "noise" ? 1 : clamp(n.l, 1, total, 1),
@@ -145,7 +145,7 @@ export function tidy(notes: readonly Note[], total: number): Note[] {
   const sorted = notes
     .filter((n) => n.s >= 0 && n.s < total)
     .map((n) => ({ ...n, l: Math.max(1, Math.min(n.l, total - n.s)) }))
-    .sort((a, b) => a.s - b.s);
+    .toSorted((a, b) => a.s - b.s);
   const out: Note[] = [];
   for (const note of sorted) {
     const last = out.at(-1);

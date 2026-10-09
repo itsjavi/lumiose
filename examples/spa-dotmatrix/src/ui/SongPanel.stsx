@@ -3,7 +3,13 @@
 import { signal } from "lumen";
 import { KEYS, SCALES } from "../model/music.ts";
 import { clearBars, copyBars, emptySong, tidy } from "../model/song.ts";
-import { MAX_BARS, STEPS_PER_BAR, type ChannelIndex, type ScaleId } from "../model/types.ts";
+import {
+  CHANNELS,
+  MAX_BARS,
+  STEPS_PER_BAR,
+  type ChannelIndex,
+  type ScaleId,
+} from "../model/types.ts";
 import { doc, edit, editor, openSong, prefs, say } from "../state.ts";
 import { tokens } from "../tokens.ts";
 
@@ -27,9 +33,9 @@ function setBars(bars: number) {
   editor.bar = Math.min(editor.bar, next - 1);
 }
 
-export function SongPanel() {
-  const bar = () => editor.bar;
+const bar = () => editor.bar;
 
+export function SongPanel() {
   return (
     <section class="panel song" aria-labelledby="song-title-h">
       <h2 id="song-title-h">Song</h2>
@@ -178,6 +184,16 @@ export function SongPanel() {
             type="button"
             class="btn"
             onClick={() => {
+              const ch = editor.channel as ChannelIndex;
+              edit(`Clear ${CHANNELS[ch].name}`, (song) => (song.tracks[ch].notes = []));
+            }}
+          >
+            Clear channel
+          </button>
+          <button
+            type="button"
+            class="btn"
+            onClick={() => {
               openSong(emptySong(), "New song");
               say("New empty song. Undo brings the old one back.");
             }}
@@ -186,8 +202,8 @@ export function SongPanel() {
           </button>
         </div>
         <p class="hint">
-          Click a bar number above the grid to pick a bar. Clear bar only clears the selected
-          channel.
+          Click a bar number above the grid to pick a bar. Clearing only touches the selected
+          channel, and undo brings the notes back.
         </p>
       </div>
       <style>
