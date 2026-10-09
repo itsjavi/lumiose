@@ -363,7 +363,13 @@ interface TextFallback {
  * the text node, which stays empty from then on. Under hydration the template walk has claimed the
  * text node; a fallback region claims the server's block instead.
  */
-export function insertText(node: Text, value: Renderable): void {
+export function insertText(node: Text & { $$t?: TextFallback }, value: Renderable): void {
+  if (hydrator?.block(node)) {
+    // The server rendered a block here (a node, not text): open its region before the value is
+    // evaluated, so what the value claims while it renders (a router outlet's range, a component)
+    // comes from that block, as with `insert` (TASK-144).
+    node.$$t = { r: createRegion(node.parentNode!, node), o: undefined };
+  }
   if (typeof value === "function") {
     renderEffect(node, value, applyText);
   } else {

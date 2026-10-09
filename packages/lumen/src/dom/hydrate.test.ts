@@ -6,6 +6,7 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { compile } from "@lumen/compiler";
+import type { Renderable } from "../contract/client.ts";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { flushSync } from "../core/index.ts";
 import { island, renderToStream, renderToString } from "../server/index.ts";
@@ -258,7 +259,9 @@ describe("hydrate", () => {
         s.insert(
           s.createComponent(Box, {
             get children() {
-              return s.list(props.items, (item: string) => s.ssr(["<s>", "</s>"], s.insertText(item)));
+              return s.list(props.items, (item: string) =>
+                s.ssr(["<s>", "</s>"], s.insertText(item)),
+              );
             },
           }),
         ),
@@ -315,6 +318,44 @@ describe("hydrate", () => {
     expect(api.calls).toEqual(["a", "c"]);
     expect(document.querySelector("section")!.textContent).toBe("name-leadname-aname-c");
     expect(document.querySelector("p")).toBe(null);
+  });
+
+  it("opens an insertText fallback before its value claims, as router outlets do (TASK-144)", async () => {
+    // Like lumen/router: a layout's children getter renders the next level into a range that
+    // claims the rest of the enclosing region (mode 3) when it is read.
+    const { client, server } = await load(`
+      export async function Page(props: { id: string }) {
+        const m = await (globalThis as any).api.member(props.id);
+        return <article><h1 id="user">{m.name}</h1><button>refresh</button></article>;
+      }
+      function Inner(props: { children?: any }) {
+        return <section><button>users</button><p>param</p>{props.children}</section>;
+      }
+      function Outer(props: { children?: any }) {
+        return <div><nav>nav</nav><p id="url">url</p><main>{props.children}</main></div>;
+      }
+      const outlet = (render: () => any) => (globalThis as any).outlet(render);
+      export function Shell(props: { id: string }) {
+        return (
+          <Outer>
+            {outlet(() => <Inner>{outlet(() => <Page id={props.id} />)}</Inner>)}
+          </Outer>
+        );
+      }`);
+    (globalThis as any).outlet = (render: () => unknown) => render();
+    await serve(server, [["Shell", { id: "a" }]]);
+    const h1 = document.querySelector("h1")!;
+    expect(h1.textContent).toBe("name-a");
+    const { renderRange } = await import("./insert.ts");
+    (globalThis as any).outlet = (render: () => Renderable) => renderRange(render, 3);
+    await hydrateAll(client);
+    expect(warn).not.toHaveBeenCalled();
+    expect(api.calls).toEqual([]);
+    expect(document.querySelector("h1")).toBe(h1);
+    expect(visible()).toBe(
+      '<div><nav>nav</nav><p id="url">url</p><main><section><button>users</button><p>param</p>' +
+        '<article><h1 id="user">name-a</h1><button>refresh</button></article></section></main></div>',
+    );
   });
 
   it("renders a server-rendered ErrorBoundary fallback afresh", async () => {

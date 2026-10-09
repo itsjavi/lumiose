@@ -261,6 +261,10 @@ class Cursor implements Hydrator {
     return h;
   }
 
+  block(marker: Node): boolean {
+    return this.s.some((h) => h.m === marker);
+  }
+
   branch(nodes: Node[], on: boolean): void {
     if ((nodes as Hole).n === on) {
       fail(this.x);

@@ -19,6 +19,11 @@ export interface Hydrator {
    * Reconciliation then keeps the claimed nodes in place and removes the others.
    */
   region(parent: Node, marker: Node | null): Node[];
+  /**
+   * Whether the server rendered a block whose region `region` would open at `marker`: an
+   * `insertText` whose server value was not text (TASK-144).
+   */
+  block(marker: Node): boolean;
   /** Closes the scope `region` opened, after the region's first render. */
   end(nodes: Node[]): void;
   /** Checks that a branch's adopted region shows the same side (`on`) as the server rendered. */
