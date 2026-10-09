@@ -34,7 +34,7 @@ export const APPS: App[] = [
     serverOutput: ["dist/server"],
     hmr: {
       file: join(FULLSTACK, "apps/lumen/src/components/Layout.stsx"),
-      find: "Tracker benchmark",
+      find: "fullstack comparison benchmark",
     },
   },
   {
@@ -44,7 +44,10 @@ export const APPS: App[] = [
     port: 4102,
     clientOutput: ["build/client"],
     serverOutput: ["build/server"],
-    hmr: { file: join(FULLSTACK, "packages/react-ui/src/Layout.tsx"), find: "Tracker benchmark" },
+    hmr: {
+      file: join(FULLSTACK, "packages/react-ui/src/layout.tsx"),
+      find: "fullstack comparison benchmark",
+    },
   },
   {
     id: "next",
@@ -53,7 +56,10 @@ export const APPS: App[] = [
     port: 4103,
     clientOutput: [".next/static"],
     serverOutput: [".next/server"],
-    hmr: { file: join(FULLSTACK, "packages/react-ui/src/Layout.tsx"), find: "Tracker benchmark" },
+    hmr: {
+      file: join(FULLSTACK, "packages/react-ui/src/layout.tsx"),
+      find: "fullstack comparison benchmark",
+    },
   },
 ];
 
@@ -222,7 +228,7 @@ export async function sampleRoutes(
   const project = `/projects/${slug?.[1] ?? slug?.[2]}`;
   const list = await (await fetch(`${baseUrl(app)}${project}`)).text();
   const id =
-    /data-testid="issue-row"[^>]*data-id="(\d+)"|data-id="(\d+)"[^>]*data-testid="issue-row"/.exec(
+    /data-testid="issue-row"[^>]*data-issue-id="(\d+)"|data-issue-id="(\d+)"[^>]*data-testid="issue-row"/.exec(
       list,
     );
   if (slug === null || id === null)
