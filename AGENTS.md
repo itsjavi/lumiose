@@ -203,10 +203,11 @@ work remains.
   | Lux    | Root configs, `pnpm-lock.yaml`, `packages/lumen/package.json`, `src/index*.ts`, the contract, the backlog leftovers                                                                                                   |
   | Photon | `crates/**` (except `crates/lumen_{css,svg,content}/**`), `packages/compiler/**`, `packages/lumen/src/vite/**`                                                                                                        |
   | Halo   | `crates/lumen_{css,svg,content}/**`, `packages/site-kit/**`                                                                                                                                                           |
-  | Spark  | `packages/lumen/src/{core,dom}/**`, `packages/lumen/src/app/router/**`, `benchmarks/js-framework-benchmark/**`, `examples/spa-*`, `examples/islands-e2e/**`                                                           |
+  | Spark  | `packages/lumen/src/{core,dom}/**`, `packages/lumen/src/app/router/**`, `benchmarks/js-framework-benchmark/**`, `examples/spa-*` (except `spa-dotmatrix`), `examples/islands-e2e/**`                                  |
   | Nova   | `packages/lumen/src/{app,server}/**` (except `app/router/**`), `packages/adapter-node/**`, `benchmarks/ssr/**`, `benchmarks/fullstack/{apps/lumen,e2e,harness,results,viewer}/**`, `examples/ssr-*`, `examples/ssg-*` |
   | Beacon | `packages/lumen/src/{cli,jsx}/**`, `packages/lumen/docs/**`, `apps/{web,playground}/**`, `packages/{language-server,vscode,create,testing,eslint-plugin,prettier-plugin}/**`                                          |
   | Quasar | `benchmarks/fullstack/{packages,apps/react-router,apps/next}/**`                                                                                                                                                      |
+  | Chime  | `examples/spa-dotmatrix/**`                                                                                                                                                                                           |
 
 - **Dependencies.**
   - Before editing dependencies in any `package.json` or `Cargo.toml`, or running `pnpm install` / `cargo add`, create `.local/coordination/deps.lock/` atomically (`mkdir`), and remove it afterwards.

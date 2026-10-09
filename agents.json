@@ -40,6 +40,11 @@
       "role": "Comparison-app engineer (React). Owns the React Router and Next.js implementations of the fullstack comparison benchmark (doc-4) and its shared data, CSS and React UI packages.",
       "canWrite": true,
       "canCommit": true
+    },
+    "Chime": {
+      "role": "Sample-app engineer for the Game Boy chiptune SPA (examples/spa-dotmatrix): UI, audio integration with the gbapu engine, and original demo songs and SFX.",
+      "canWrite": true,
+      "canCommit": true
     }
   }
 }
