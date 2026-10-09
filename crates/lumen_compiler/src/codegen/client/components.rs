@@ -156,7 +156,13 @@ impl<'a> Codegen<'a, '_> {
                     if compiled.setup.is_empty() && literal(&compiled.value).is_some() {
                         self.ast.property(span, "children", compiled.value)
                     } else if memoize {
-                        self.memo_getter(span, "children", compiled.setup, compiled.value, &mut memo)
+                        self.memo_getter(
+                            span,
+                            "children",
+                            compiled.setup,
+                            compiled.value,
+                            &mut memo,
+                        )
                     } else {
                         self.ast
                             .getter(span, "children", compiled.setup, compiled.value)

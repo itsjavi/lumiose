@@ -6,7 +6,9 @@ use lumen_content::markdown;
 /// The `headings` export of a file's module.
 fn headings(source: &str) -> String {
     let module = markdown(source, "a.md").source;
-    let start = module.find("export const headings = ").expect("a headings export");
+    let start = module
+        .find("export const headings = ")
+        .expect("a headings export");
     let end = start + module[start..].find("];").expect("the end of the array") + 2;
     module[start..end].to_owned()
 }
