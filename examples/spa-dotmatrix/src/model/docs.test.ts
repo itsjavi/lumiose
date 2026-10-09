@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 import { freqReg } from "../audio/driver.ts";
 import { parseNote } from "./music.ts";
 import { length } from "./notation.ts";
+import { parseSong } from "./songcode.ts";
 
 const guide = readFileSync(new URL("../../docs/composing.md", import.meta.url), "utf8");
 
@@ -18,5 +19,11 @@ describe("docs/composing.md", () => {
   it("has a melody example whose bars add up", () => {
     const src = /melody\("([^"]+)"\)/.exec(guide)![1]!;
     expect(length(src)).toBe(64);
+  });
+
+  it("has a song-code example that parses", () => {
+    const block = /```asm\n(; Dotmatrix song[\s\S]*?)```/.exec(guide)![1]!;
+    const result = parseSong(block);
+    expect("song" in result && result.song.title).toBe("Little March");
   });
 });

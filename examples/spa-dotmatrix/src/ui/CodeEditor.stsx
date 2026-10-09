@@ -1,13 +1,14 @@
-// The driver-code view of the SFX and Creatures makers: read the sound as code, or edit it,
-// paste code or import a .txt/.asm file. Code that parses plays at once and can be saved to My
-// sounds / My voices; errors are listed by line, and clicking one selects that line.
+// The driver-code view of the SFX and Creatures makers. Built-in sounds show their code read-only
+// (a learning view) with a button to copy them into My sounds / My voices. Saved sounds can be
+// edited, replaced by pasted code or by a .txt/.asm file: code that parses plays at once and saves
+// over the saved sound; errors are listed by line, and clicking one selects that line.
 import { signal } from "lumen";
 import { sfxData } from "../audio/driver.ts";
 import { playPcm } from "../audio/player.ts";
 import { parseCode, type CodeError } from "../model/code.ts";
 import { sfxToSheet } from "../model/sheet.ts";
 import type { Sfx, SoundSheet } from "../model/types.ts";
-import { keepSound, renderSound } from "../sounds.ts";
+import { renderSound, updateSound } from "../sounds.ts";
 import { say } from "../state.ts";
 import { tokens } from "../tokens.ts";
 
@@ -19,7 +20,11 @@ export function CodeEditor(props: {
   title: string;
   /** A parsed sound was rendered: show its waveform. */
   onPcm: (pcm: Float32Array) => void;
-  /** A parsed sound was saved to My sounds / My voices. */
+  /** The saved sound being shown (editable), or undefined for a built-in one (read-only). */
+  customId?: string;
+  /** Copies the built-in sound into My sounds / My voices (it becomes editable there). */
+  onCopy: () => void;
+  /** The saved sound was updated from code. */
   onSaved: (id: string) => void;
 }) {
   const editing = signal(false);
@@ -36,7 +41,7 @@ export function CodeEditor(props: {
     draft.set(text);
     errors.set([]);
     parsed.set(null);
-    name.set(`${props.title} (edited)`);
+    name.set(props.title);
     editing.set(true);
   }
 
@@ -64,13 +69,14 @@ export function CodeEditor(props: {
   }
 
   async function save() {
+    const id = props.customId;
+    if (!id) return;
     const sfx = parsed() ?? (await run());
     if (!sfx) return;
     const sheet = sfxToSheet({ ...sfx, name: name() || sfx.name }, props.kind);
     if ("reasons" in sheet) return say(`Cannot save: ${sheet.reasons.join(", ")}`);
-    const id = keepSound(sheet.song);
-    if (!id) return;
-    say(`Saved “${sheet.song.sheet!.name}” to ${shelf()}`);
+    if (!updateSound(id, sheet.song)) return;
+    say(`Saved “${sheet.song.sheet!.name}” in ${shelf()}`);
     editing.set(false);
     props.onSaved(id);
   }
@@ -139,7 +145,7 @@ export function CodeEditor(props: {
               Play code
             </button>
             <button type="button" class="btn primary" onClick={() => void save()}>
-              Save to {shelf()}
+              Save
             </button>
             <button type="button" class="btn" onClick={() => editing.set(false)}>
               Cancel
@@ -151,34 +157,44 @@ export function CodeEditor(props: {
           {props.code === null ? (
             <p class="none">
               This sound uses studio-only features, so it has no driver code. Paste or import code
-              to make a new one.
+              to replace it.
             </p>
           ) : (
             <pre>{props.code}</pre>
           )}
-          <div class="row">
-            <button type="button" class="btn" onClick={() => edit()}>
-              {props.code === null ? "Write code" : "Edit code"}
-            </button>
-            <button type="button" class="btn" onClick={() => edit("")}>
-              Paste new code
-            </button>
-          </div>
+          {props.customId ? (
+            <div class="row">
+              <button type="button" class="btn" onClick={() => edit()}>
+                {props.code === null ? "Write code" : "Edit code"}
+              </button>
+              <button type="button" class="btn" onClick={() => edit("")}>
+                Paste code
+              </button>
+              <button type="button" class="btn" onClick={() => file?.click()}>
+                Import file…
+              </button>
+              <input
+                ref={(el) => (file = el)}
+                type="file"
+                accept=".txt,.asm,.s,.inc,text/plain"
+                hidden
+                aria-label="Import driver code"
+                onChange={(event) => void importFile(event)}
+              />
+            </div>
+          ) : (
+            <div class="row">
+              <p class="none">
+                Built-in sounds are read-only. Copy this one to {shelf()} to edit its code, paste
+                code or import a file.
+              </p>
+              <button type="button" class="btn" onClick={() => props.onCopy()}>
+                Copy to {shelf()}
+              </button>
+            </div>
+          )}
         </>
       )}
-      <div class="row">
-        <button type="button" class="btn" onClick={() => file?.click()}>
-          Import file…
-        </button>
-        <input
-          ref={(el) => (file = el)}
-          type="file"
-          accept=".txt,.asm,.s,.inc,text/plain"
-          hidden
-          aria-label="Import driver code"
-          onChange={(event) => void importFile(event)}
-        />
-      </div>
       <style>
         .code {
           display: grid;

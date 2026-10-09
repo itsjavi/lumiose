@@ -74,6 +74,20 @@ export function keepSound(song: Song): string | undefined {
   return entry.id;
 }
 
+/** Replaces a saved sound's content (code edited in the maker), keeping its id. */
+export function updateSound(id: string, song: Song): boolean {
+  if (!song.sheet) return false;
+  const next = mySounds().map((s) =>
+    s.id === id ? { ...s, name: song.sheet!.name, updated: Date.now(), song } : s,
+  );
+  if (!saveSounds(next)) {
+    say("Could not save: browser storage is unavailable");
+    return false;
+  }
+  mySounds.set(next);
+  return true;
+}
+
 export function forgetSound(id: string): void {
   const next = mySounds().filter((s) => s.id !== id);
   if (saveSounds(next)) mySounds.set(next);

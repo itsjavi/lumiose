@@ -1,0 +1,201 @@
+// The toolbar under the screen: actions on the picked bar and channel, a new song, and, for a sound
+// sheet, saving it back to its gallery. Click a bar number above the grid to pick a bar.
+import { href, signal } from "lumen";
+import { navigate } from "lumen/router";
+import { clearBars, copyBars, emptySong } from "../model/song.ts";
+import { CHANNELS, MAX_BARS, STEPS_PER_BAR, type ChannelIndex } from "../model/types.ts";
+import { keepSound } from "../sounds.ts";
+import { doc, edit, editor, openSong, plainSong, say } from "../state.ts";
+import { tokens } from "../tokens.ts";
+
+const clipboard = signal<number | null>(null);
+const bar = () => editor.bar;
+const channel = () => editor.channel as ChannelIndex;
+
+const galleryHref = () => (doc.song.sheet?.kind === "voice" ? href("/creatures") : href("/sfx"));
+
+/** Keeps the studio's sound sheet in My sounds and shows it in its gallery. */
+function saveBack() {
+  const song = plainSong();
+  song.sheet = { ...song.sheet!, name: song.title || song.sheet!.name };
+  const id = keepSound(song);
+  if (!id) return;
+  say(`Saved “${song.sheet.name}”`);
+  void navigate(`${galleryHref()}?sound=${id}`);
+}
+
+function duplicate() {
+  const b = bar();
+  edit(`Duplicate bar ${b + 1}`, (song) => {
+    const start = (b + 1) * STEPS_PER_BAR;
+    song.bars += 1;
+    for (const track of song.tracks) {
+      track.notes = track.notes.map((n) => (n.s >= start ? { ...n, s: n.s + STEPS_PER_BAR } : n));
+    }
+    song.tracks = copyBars(song, b, 1, b + 1);
+    if (song.loop > b) song.loop += 1;
+  });
+  editor.bar = b + 1;
+}
+
+export function GridTools() {
+  return (
+    <div class="gridtools">
+      {doc.song.sheet ? (
+        <div class="sheet" role="note">
+          <p>
+            <b>{doc.song.sheet.kind === "voice" ? "Creature voice" : "Sound effect"}</b> “
+            {doc.song.sheet.name}”: one step is{" "}
+            {doc.song.sheet.ticks === 1 ? "one frame" : `${doc.song.sheet.ticks} frames`}; notes
+            with a notch keep their own settings.
+          </p>
+          <button type="button" class="btn primary" onClick={saveBack}>
+            Save to {doc.song.sheet.kind === "voice" ? "My voices" : "My sounds"}
+          </button>
+          <button type="button" class="btn" onClick={() => void navigate(galleryHref())}>
+            Back to {doc.song.sheet.kind === "voice" ? "Creatures" : "SFX"}
+          </button>
+        </div>
+      ) : null}
+      <div class="toolbar" role="toolbar" aria-label="Bar and channel tools">
+        <span class="group" role="group" aria-label={`Bar ${bar() + 1}`}>
+          <span class="tag" aria-hidden="true">
+            Bar {bar() + 1}
+          </span>
+          <button
+            type="button"
+            class="tool"
+            onClick={() => {
+              clipboard.set(bar());
+              say(`Copied bar ${bar() + 1}: pick another bar and paste`);
+            }}
+          >
+            Copy
+          </button>
+          <button
+            type="button"
+            class="tool"
+            disabled={clipboard() === null || clipboard() === bar()}
+            onClick={() => {
+              const from = clipboard()!;
+              const to = bar();
+              edit(
+                `Paste bar ${from + 1} onto bar ${to + 1}`,
+                (song) => (song.tracks = copyBars(song, from, 1, to)),
+              );
+            }}
+          >
+            Paste
+          </button>
+          <button
+            type="button"
+            class="tool"
+            disabled={doc.song.bars >= MAX_BARS}
+            onClick={duplicate}
+          >
+            Duplicate
+          </button>
+          <button
+            type="button"
+            class="tool"
+            aria-label={`Clear bar ${bar() + 1} on ${CHANNELS[channel()].name}`}
+            onClick={() => {
+              const b = bar();
+              const ch = channel();
+              edit(`Clear bar ${b + 1}`, (song) => (song.tracks = clearBars(song, b, 1, [ch])));
+            }}
+          >
+            Clear bar
+          </button>
+        </span>
+        <span class="group" role="group" aria-label={CHANNELS[channel()].name}>
+          <span class="tag" aria-hidden="true">
+            {CHANNELS[channel()].short}
+          </span>
+          <button
+            type="button"
+            class="tool"
+            aria-label={`Clear ${CHANNELS[channel()].name}`}
+            onClick={() => {
+              const ch = channel();
+              edit(`Clear ${CHANNELS[ch].name}`, (song) => (song.tracks[ch].notes = []));
+            }}
+          >
+            Clear channel
+          </button>
+        </span>
+        <button
+          type="button"
+          class="tool new"
+          onClick={() => {
+            openSong(emptySong(), "New song");
+            say("New empty song. Undo brings the old one back.");
+          }}
+        >
+          New song
+        </button>
+      </div>
+      <style>
+        .gridtools {
+          display: grid;
+          gap: 8px;
+        }
+        .sheet {
+          display: flex;
+          flex-wrap: wrap;
+          align-items: center;
+          gap: 8px 10px;
+          padding: 10px 12px;
+          border-radius: 14px;
+          background: color-mix(in srgb, var(--indigo) 10%, var(--shell));
+        }
+        .sheet p {
+          flex: 1 1 260px;
+          margin: 0;
+          font-size: 13px;
+        }
+        .toolbar {
+          display: flex;
+          flex-wrap: wrap;
+          align-items: center;
+          gap: 8px 14px;
+        }
+        .group {
+          display: inline-flex;
+          flex-wrap: wrap;
+          align-items: center;
+          gap: 4px;
+        }
+        .tag {
+          padding: 3px 7px;
+          border-radius: 6px;
+          background: var(--bezel);
+          color: var(--l0);
+          font-family: $tokens.font.pixel;
+          font-size: 10px;
+        }
+        .tool {
+          padding: 5px 10px;
+          border: 0;
+          border-radius: 999px;
+          background: var(--shell);
+          color: var(--ink);
+          font-family: $tokens.font.pixel;
+          font-size: 11px;
+          cursor: pointer;
+          box-shadow: inset 0 -2px 0 rgb(0 0 0 / 0.12);
+        }
+        .tool:hover:not(:disabled) {
+          background: var(--groove);
+        }
+        .tool:disabled {
+          opacity: 0.45;
+          cursor: default;
+        }
+        .new {
+          margin-inline-start: auto;
+        }
+      </style>
+    </div>
+  );
+}

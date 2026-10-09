@@ -7,6 +7,12 @@ async function shot(page: Page, name: string, project: string) {
   if (SHOTS && project === "dev") await page.screenshot({ path: `${SHOTS}/task-133-${name}.png` });
 }
 
+// Screenshots for TASK-157 use their own prefix.
+async function shot157(page: Page, name: string, project: string) {
+  if (SHOTS && project === "dev")
+    await page.screenshot({ path: `${SHOTS}/task-157-${name}.png`, fullPage: true });
+}
+
 // Screenshots for TASK-156 use their own prefix.
 async function shot156(page: Page, name: string, project: string) {
   if (SHOTS && project === "dev")
@@ -404,12 +410,22 @@ const LASER = (typo: boolean) =>
     "  sound_ret",
   ].join("\n");
 
-test("pasted driver code shows line errors, then plays and saves to My sounds", async ({
-  page,
-}, info) => {
+test("built-in sounds show read-only code with a copy button", async ({ page }) => {
   await page.goto("/sfx");
   await page.getByRole("button", { name: "Show code" }).click();
-  await page.getByRole("button", { name: "Paste new code" }).click();
+  await expect(page.locator(".code pre")).toContainText("square_note");
+  await expect(page.getByRole("button", { name: "Edit code" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Import file…" })).toHaveCount(0);
+  await page.getByRole("button", { name: "Copy to My sounds" }).click();
+  await expect(page.locator(".mine li.on")).toHaveText(/Select copy/);
+  await expect(page.getByRole("button", { name: "Edit code" })).toBeVisible();
+});
+
+test("pasted driver code shows line errors, then plays and saves", async ({ page }, info) => {
+  await page.goto("/sfx");
+  await page.getByRole("button", { name: "Show code" }).click();
+  await page.getByRole("button", { name: "Copy to My sounds" }).click();
+  await page.getByRole("button", { name: "Paste code" }).click();
   const draft = page.getByLabel("Driver code", { exact: true });
   await draft.fill(LASER(true));
   await page.getByRole("button", { name: "Play code" }).click();
@@ -417,37 +433,39 @@ test("pasted driver code shows line errors, then plays and saves to My sounds", 
   await expect(draft).toHaveAttribute("aria-invalid", "true");
   await page.locator(".errors button").click();
   await expect(draft).toBeFocused();
-  await shot155(page, "code-error", info.project.name);
+  await shot157(page, "maker-code-error", info.project.name);
   await draft.fill(LASER(false));
   await page.getByRole("button", { name: "Play code" }).click();
   await expect(page.locator(".errors li")).toHaveCount(0);
   await page.getByLabel("Name", { exact: true }).fill("Laser beam");
-  await page.getByRole("button", { name: "Save to My sounds" }).click();
+  await page.getByRole("button", { name: "Save", exact: true }).click();
+  await expect(page.locator(".mine li")).toHaveCount(1);
   await expect(page.locator(".mine li.on")).toHaveText(/Laser beam/);
   await expect(page.locator("#maker-title")).toHaveText("Laser beam");
-  // Back as a plain sound: its code is the code that was pasted.
   await expect(page.locator(".code pre")).toContainText("duty_cycle_pattern 0, 0, 3, 3");
   await expect(page.locator(".code pre")).toContainText("slides -12/frame");
 });
 
-test("a creature's code is edited and saved as a new voice", async ({ page }) => {
+test("a creature's voice is copied, its code edited and saved", async ({ page }) => {
   await page.goto("/creatures");
   await page.getByRole("button", { name: "Chirrup" }).click();
   await page.getByRole("button", { name: "Show code" }).click();
+  await expect(page.locator(".code pre")).toContainText('; base voice "Warble"');
+  await page.getByRole("button", { name: "Copy to My voices" }).click();
+  await expect(page.locator(".mine li.on")).toHaveText(/Chirrup copy/);
   await page.getByRole("button", { name: "Edit code" }).click();
   const draft = page.getByLabel("Driver code", { exact: true });
   const code = await draft.inputValue();
-  expect(code).toContain('; base voice "Warble"');
   // Make every pulse 1 note of the trill louder.
   await draft.fill(code.replace(/square_note 1, 12, 0,/g, "square_note 1, 15, 0,"));
-  await page.getByRole("button", { name: "Save to My voices" }).click();
-  await expect(page.locator(".mine li.on")).toHaveText(/Chirrup \(edited\)/);
+  await page.getByRole("button", { name: "Save", exact: true }).click();
   await expect(page.locator(".code pre")).toContainText("square_note 1, 15, 0,");
 });
 
-test("driver code imports from a file", async ({ page }) => {
+test("driver code imports from a file into a saved sound", async ({ page }) => {
   await page.goto("/sfx");
   await page.getByRole("button", { name: "Show code" }).click();
+  await page.getByRole("button", { name: "Copy to My sounds" }).click();
   await page.getByLabel("Import driver code").setInputFiles({
     name: "zap-trap.asm",
     mimeType: "text/plain",
@@ -455,8 +473,102 @@ test("driver code imports from a file", async ({ page }) => {
   });
   await expect(page.getByLabel("Name", { exact: true })).toHaveValue("zap-trap");
   await expect(page.locator(".errors li")).toHaveCount(0);
-  await page.getByRole("button", { name: "Save to My sounds" }).click();
+  await page.getByRole("button", { name: "Save", exact: true }).click();
   await expect(page.locator(".mine li.on")).toHaveText(/zap-trap/);
+});
+
+test("the studio shows the song as code, applies edits and reports errors", async ({
+  page,
+}, info) => {
+  await page.goto("/");
+  await page.getByRole("radio", { name: "Code" }).click();
+  const code = page.getByLabel("Song code", { exact: true });
+  await expect(code).toHaveValue(/song_title "First Steps"/);
+  const text = await code.inputValue();
+  await code.fill(
+    text
+      .replace("tempo 112", "tempo 100")
+      .replace('song_title "First Steps"', 'song_title "Second Steps"'),
+  );
+  await code.press("ControlOrMeta+Enter");
+  await expect(page.locator("#song-title")).toHaveValue("Second Steps");
+  await expect(page.getByLabel("Tempo in BPM")).toHaveValue("100");
+  // A typo: the error names its line; Revert restores the song's code.
+  await code.fill(text.replace("note C_, 4", "note H_, 4"));
+  await page.getByRole("button", { name: "Apply" }).click();
+  await expect(page.locator(".errors li").first()).toContainText("is not a note name");
+  await shot157(page, "studio-code", info.project.name);
+  await page.getByRole("button", { name: "Revert" }).click();
+  await expect(page.locator(".errors li")).toHaveCount(0);
+  // Undo goes back to before the applied code.
+  await page.getByRole("radio", { name: "Grid" }).click();
+  await page.keyboard.press("ControlOrMeta+z");
+  await expect(page.locator("#song-title")).toHaveValue("First Steps");
+  await expect(page.locator(".lane .note").first()).toBeVisible();
+});
+
+test("the studio imports a song from a code file", async ({ page }) => {
+  await page.goto("/songs");
+  await page.getByRole("button", { name: "Open Maple Hollow in the studio" }).click();
+  await page.getByRole("radio", { name: "Code" }).click();
+  const text = await page.getByLabel("Song code", { exact: true }).inputValue();
+  await page.goto("/");
+  await page.getByRole("radio", { name: "Code" }).click();
+  await page.getByLabel("Import code file").setInputFiles({
+    name: "maple.asm",
+    mimeType: "text/plain",
+    buffer: Buffer.from(
+      text.replace('song_title "Maple Hollow"', 'song_title "Maple Hollow (imported)"'),
+    ),
+  });
+  await expect(page.locator("#song-title")).toHaveValue("Maple Hollow (imported)");
+});
+
+test("a sound sheet shows its SFX code in the studio and applies edits", async ({ page }) => {
+  await page.goto("/sfx");
+  await page.getByRole("button", { name: /^Jump/ }).click();
+  await page.getByRole("button", { name: "Open in studio" }).click();
+  await page.getByRole("radio", { name: "Code" }).click();
+  const code = page.getByLabel("Sound code", { exact: true });
+  await expect(code).toHaveValue(/pitch_sweep 2, 4/);
+  await code.fill((await code.inputValue()).replace("square_note 16, 12,", "square_note 16, 9,"));
+  await page.getByRole("button", { name: "Apply" }).click();
+  await expect(page.locator(".errors li")).toHaveCount(0);
+  const song = await page.evaluate(
+    () =>
+      dotmatrix.song() as unknown as {
+        sheet?: { name: string };
+        tracks: { inst: { volume: number } }[];
+      },
+  );
+  expect(song.sheet?.name).toBe("Jump");
+  expect(song.tracks[0]!.inst.volume).toBe(9);
+});
+
+test("the song card holds settings; bar tools sit under the screen", async ({ page }, info) => {
+  await page.goto("/");
+  const card = page.locator(".panel.song");
+  // Only settings: the bar stepper's two buttons and the four new-note lengths.
+  await expect(card.getByRole("button")).toHaveCount(2);
+  await expect(card.getByRole("radio")).toHaveCount(4);
+  const tools = page.getByRole("toolbar", { name: "Bar and channel tools" });
+  await page.locator(".barno").nth(1).click();
+  await tools.getByRole("button", { name: "Copy" }).click();
+  await page.locator(".barno").nth(2).click();
+  await tools.getByRole("button", { name: "Paste" }).click();
+  const pitches = (from: number) =>
+    page.evaluate(
+      (f) =>
+        dotmatrix
+          .song()
+          .tracks[0]!.notes.filter((n) => n.s >= f && n.s < f + 16)
+          .map((n) => n.p),
+      from,
+    );
+  expect(await pitches(32)).toEqual(await pitches(16));
+  await card.getByLabel("Loop from").selectOption("1");
+  await expect(page.locator(".flag")).toHaveText("LOOP");
+  await shot157(page, "studio", info.project.name);
 });
 
 test("the creature and base-voice grids fill complete rows", async ({ page }, info) => {

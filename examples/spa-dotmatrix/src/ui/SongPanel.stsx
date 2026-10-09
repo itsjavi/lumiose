@@ -1,19 +1,9 @@
-// Song settings and bar tools: length, loop bar, key and scale (which decide the grid rows), the
-// length of new notes, and copying or clearing whole bars.
-import { signal } from "lumen";
+// Song settings: length, key and scale (which decide the grid rows), the length of new notes and
+// the loop point. Bar and channel actions live in the toolbar under the screen (GridTools).
 import { KEYS, SCALES } from "../model/music.ts";
-import { clearBars, copyBars, emptySong, tidy } from "../model/song.ts";
-import {
-  CHANNELS,
-  MAX_BARS,
-  STEPS_PER_BAR,
-  type ChannelIndex,
-  type ScaleId,
-} from "../model/types.ts";
-import { href } from "lumen";
-import { navigate } from "lumen/router";
-import { keepSound } from "../sounds.ts";
-import { doc, edit, editor, openSong, plainSong, prefs, say } from "../state.ts";
+import { tidy } from "../model/song.ts";
+import { MAX_BARS, STEPS_PER_BAR, type ScaleId } from "../model/types.ts";
+import { doc, edit, editor, prefs } from "../state.ts";
 import { tokens } from "../tokens.ts";
 
 const LENGTHS = [
@@ -22,8 +12,6 @@ const LENGTHS = [
   { steps: 4, name: "1/4" },
   { steps: 8, name: "1/2" },
 ];
-
-const clipboard = signal<number | null>(null);
 
 function setBars(bars: number) {
   const next = Math.min(MAX_BARS, Math.max(1, bars));
@@ -36,46 +24,10 @@ function setBars(bars: number) {
   editor.bar = Math.min(editor.bar, next - 1);
 }
 
-const bar = () => editor.bar;
-
-const galleryHref = () => (doc.song.sheet?.kind === "voice" ? href("/creatures") : href("/sfx"));
-
-/** Keeps the studio's sound sheet in My sounds and shows it in its gallery. */
-function saveBack() {
-  const song = plainSong();
-  song.sheet = { ...song.sheet!, name: song.title || song.sheet!.name };
-  const id = keepSound(song);
-  if (!id) return;
-  say(`Saved “${song.sheet.name}”`);
-  void navigate(`${galleryHref()}?sound=${id}`);
-}
-
 export function SongPanel() {
   return (
     <section class="panel song" aria-labelledby="song-title-h">
-      {doc.song.sheet ? (
-        <div class="sheet-note" role="note">
-          <h2 id="song-title-h">
-            {doc.song.sheet.kind === "voice" ? "Creature voice" : "Sound effect"}
-          </h2>
-          <p>
-            “{doc.song.sheet.name}” on a frame grid: one step is{" "}
-            {doc.song.sheet.ticks === 1 ? "one frame" : `${doc.song.sheet.ticks} frames`} (1/60 s).
-            Notes with a notch keep their own volume, envelope, duty, sweep or tuning from the
-            sound.
-          </p>
-          <div class="tools">
-            <button type="button" class="btn primary" onClick={saveBack}>
-              Save to {doc.song.sheet.kind === "voice" ? "My voices" : "My sounds"}
-            </button>
-            <button type="button" class="btn" onClick={() => void navigate(galleryHref())}>
-              Back to {doc.song.sheet.kind === "voice" ? "Creatures" : "SFX"}
-            </button>
-          </div>
-        </div>
-      ) : (
-        <h2 id="song-title-h">Song</h2>
-      )}
+      <h2 id="song-title-h">{doc.song.sheet ? "Sound sheet" : "Song"}</h2>
       <div class="rows">
         <div class="field">
           <span class="label">Bars</span>
@@ -140,114 +92,25 @@ export function SongPanel() {
             ))}
           </div>
         </div>
-      </div>
-      <div class="bartools">
-        <span class="label">
-          Bar {bar() + 1}{" "}
-          {doc.song.sheet
-            ? ""
-            : bar() === doc.song.loop
-              ? "· loop starts here"
-              : bar() < doc.song.loop
-                ? "· intro"
-                : ""}
-        </span>
-        <div class="tools">
-          <button
-            type="button"
-            class={["btn", { hidden: !!doc.song.sheet }]}
-            disabled={bar() === doc.song.loop}
-            onClick={() => {
-              const b = bar();
-              edit(`Loop from bar ${b + 1}`, (song) => (song.loop = b));
-            }}
-          >
-            Loop from here
-          </button>
-          <button
-            type="button"
-            class="btn"
-            onClick={() => {
-              clipboard.set(bar());
-              say(`Copied bar ${bar() + 1}: pick another bar and paste`);
-            }}
-          >
-            Copy bar
-          </button>
-          <button
-            type="button"
-            class="btn"
-            disabled={clipboard() === null || clipboard() === bar()}
-            onClick={() => {
-              const from = clipboard()!;
-              const to = bar();
-              edit(
-                `Paste bar ${from + 1} onto bar ${to + 1}`,
-                (song) => (song.tracks = copyBars(song, from, 1, to)),
-              );
-            }}
-          >
-            Paste
-          </button>
-          <button
-            type="button"
-            class="btn"
-            disabled={doc.song.bars >= MAX_BARS}
-            onClick={() => {
-              const b = bar();
-              edit(`Duplicate bar ${b + 1}`, (song) => {
-                const shift = STEPS_PER_BAR;
-                song.bars += 1;
-                const start = (b + 1) * shift;
-                for (const track of song.tracks) {
-                  track.notes = track.notes.map((n) =>
-                    n.s >= start ? { ...n, s: n.s + shift } : n,
-                  );
-                }
-                song.tracks = copyBars(song, b, 1, b + 1);
-                if (song.loop > b) song.loop += 1;
-              });
-              editor.bar = b + 1;
-            }}
-          >
-            Duplicate
-          </button>
-          <button
-            type="button"
-            class="btn"
-            onClick={() => {
-              const b = bar();
-              const ch = editor.channel as ChannelIndex;
-              edit(`Clear bar ${b + 1}`, (song) => (song.tracks = clearBars(song, b, 1, [ch])));
-            }}
-          >
-            Clear bar
-          </button>
-          <button
-            type="button"
-            class="btn"
-            onClick={() => {
-              const ch = editor.channel as ChannelIndex;
-              edit(`Clear ${CHANNELS[ch].name}`, (song) => (song.tracks[ch].notes = []));
-            }}
-          >
-            Clear channel
-          </button>
-          <button
-            type="button"
-            class="btn"
-            onClick={() => {
-              openSong(emptySong(), "New song");
-              say("New empty song. Undo brings the old one back.");
-            }}
-          >
-            New song
-          </button>
-        </div>
-        <p class="hint">
-          Click a bar number above the grid to pick a bar. Clearing only touches the selected
-          channel, and undo brings the notes back.
-        </p>
+        {doc.song.sheet ? null : (
+          <label class="field">
+            <span class="label">Loop from</span>
+            <select
+              value={String(doc.song.loop)}
+              onChange={(event) => {
+                const loop = Number(event.currentTarget.value);
+                edit(`Loop from bar ${loop + 1}`, (song) => (song.loop = loop));
+              }}
+            >
+              {Array.from({ length: doc.song.bars }, (_, b) => (
+                <option value={String(b)} selected={doc.song.loop === b}>
+                  Bar {b + 1}
+                  {b === 0 ? " (no intro)" : ""}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
       </div>
       <style>
         .song {
@@ -308,34 +171,6 @@ export function SongPanel() {
         }
         .seg button[aria-checked="true"] {
           border-color: var(--accent);
-        }
-        .hidden {
-          display: none;
-        }
-        .sheet-note {
-          display: grid;
-          gap: 8px;
-          padding: 12px;
-          border-radius: 14px;
-          background: color-mix(in srgb, var(--indigo) 10%, var(--shell-low));
-        }
-        .sheet-note p {
-          margin: 0;
-          font-size: 13px;
-        }
-        .bartools {
-          display: grid;
-          gap: 8px;
-        }
-        .tools {
-          display: flex;
-          flex-wrap: wrap;
-          gap: 6px;
-        }
-        .hint {
-          margin: 0;
-          font-size: 12px;
-          color: var(--dim);
         }
       </style>
     </section>

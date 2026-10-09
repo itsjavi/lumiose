@@ -17,6 +17,7 @@ import {
 import { listing } from "../model/sfx.ts";
 import { sfxToSheet, sheetToSfx } from "../model/sheet.ts";
 import {
+  keepSound,
   mySounds,
   openInStudio,
   openInStudioSheet,
@@ -263,6 +264,17 @@ export default function Creatures() {
           }
           kind="voice"
           onPcm={(rendered) => pcm.set(rendered)}
+          customId={picked().custom ? picked().id : undefined}
+          onCopy={() => {
+            const sfx = current();
+            if (!sfx) return;
+            const sheet = sfxToSheet({ ...sfx, name: `${name()} copy` }, "voice");
+            if ("reasons" in sheet) return say(`Cannot copy: ${sheet.reasons.join(", ")}`);
+            const id = keepSound(sheet.song);
+            if (!id) return;
+            picked.set({ custom: true, id });
+            void fire(false);
+          }}
           onSaved={(id) => {
             picked.set({ custom: true, id });
             void fire(false);

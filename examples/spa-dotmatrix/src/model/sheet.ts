@@ -21,9 +21,13 @@ export type SheetResult = { song: Song } | { reasons: string[] };
 const voiceFrames = (notes: readonly SfxNote[]) => notes.reduce((sum, n) => sum + n.frames, 0);
 
 /** An SFX (or voice) as a studio song on a frame grid. */
-export function sfxToSheet(sfx: Sfx, kind: SoundSheet["kind"]): SheetResult {
+export function sfxToSheet(sfx: Sfx, kind: SoundSheet["kind"], wantTicks = 1): SheetResult {
+  // A coarser grid (several frames per step) only when every note and rest fits it exactly.
+  const ticks = sfx.voices.every((v) => v.notes.every((n) => n.frames % wantTicks === 0))
+    ? wantTicks
+    : 1;
   const frames = Math.max(1, ...sfx.voices.map((v) => voiceFrames(v.notes)));
-  const bars = Math.ceil(frames / STEPS_PER_BAR);
+  const bars = Math.ceil(frames / ticks / STEPS_PER_BAR);
   if (bars > MAX_BARS)
     return {
       reasons: [`it is ${frames} frames long; the studio holds ${MAX_BARS * STEPS_PER_BAR}`],
@@ -48,7 +52,7 @@ export function sfxToSheet(sfx: Sfx, kind: SoundSheet["kind"]): SheetResult {
       { preset: "custom", tweak: { preset: "custom", env: 0, tone: 0 } },
     ],
   });
-  song.sheet = { kind, name: sfx.name, ticks: 1 };
+  song.sheet = { kind, name: sfx.name, ticks };
   for (const voice of sfx.voices) {
     const track = song.tracks[voice.channel];
     const first = voice.notes.find((n) => n.volume > 0);
@@ -60,8 +64,8 @@ export function sfxToSheet(sfx: Sfx, kind: SoundSheet["kind"]): SheetResult {
       if (n.volume > 0) {
         const note: Note =
           voice.channel === 3
-            ? { s: at, l: n.frames, p: n.noise }
-            : { s: at, l: n.frames, p: Math.round(n.pitch) };
+            ? { s: at, l: n.frames / ticks, p: n.noise }
+            : { s: at, l: n.frames / ticks, p: Math.round(n.pitch) };
         if (n.volume !== track.inst.volume) note.v = n.volume;
         if (n.env !== track.inst.env) note.e = n.env;
         if (voice.channel !== 3) {
@@ -74,7 +78,7 @@ export function sfxToSheet(sfx: Sfx, kind: SoundSheet["kind"]): SheetResult {
         }
         notes.push(note);
       }
-      at += n.frames;
+      at += n.frames / ticks;
     }
     track.notes = notes;
   }

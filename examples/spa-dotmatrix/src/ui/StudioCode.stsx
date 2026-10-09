@@ -1,0 +1,220 @@
+// The Studio's Code view, on the screen in place of the grid: the open song (or sound sheet) as
+// driver code. Edit it, paste or import code, then Apply: it replaces the song as one undoable
+// step. Errors are listed by line; click one to select the line.
+import { computed, effect, signal, untrack } from "lumen";
+import { readStudioCode, studioCode } from "../model/studiocode.ts";
+import type { CodeError } from "../model/code.ts";
+import { doc, openSong, plainSong, say } from "../state.ts";
+import { tokens } from "../tokens.ts";
+
+/** The song, read so the computed follows every change to it. */
+function plainSongTracked() {
+  void JSON.stringify(doc.song);
+  return untrack(plainSong);
+}
+
+export function StudioCode() {
+  const code = computed(() => studioCode(plainSongTracked()));
+  const reasons = () => {
+    const c = code();
+    return "reasons" in c ? c.reasons : null;
+  };
+  const draft = signal("");
+  const dirty = signal(false);
+  const errors = signal<CodeError[]>([]);
+  let area: HTMLTextAreaElement | undefined;
+  let file: HTMLInputElement | undefined;
+
+  // Follow the song (undo, grid edits elsewhere) until the draft has its own changes.
+  effect(() => {
+    const c = code();
+    if (untrack(dirty)) return;
+    draft.set("text" in c ? c.text : "");
+    errors.set([]);
+  });
+
+  function apply() {
+    const result = readStudioCode(draft(), plainSong());
+    if ("errors" in result) {
+      errors.set(result.errors);
+      say(
+        `The code has ${result.errors.length === 1 ? "an error" : `${result.errors.length} errors`}`,
+      );
+      return;
+    }
+    errors.set([]);
+    dirty.set(false);
+    openSong(result.song, "Edit code");
+    say("Code applied. Undo brings back the song as it was.");
+  }
+
+  function revert() {
+    dirty.set(false);
+    const c = code();
+    draft.set("text" in c ? c.text : "");
+    errors.set([]);
+  }
+
+  async function importFile(event: Event) {
+    const input = event.currentTarget as HTMLInputElement;
+    const picked = input.files?.[0];
+    input.value = "";
+    if (!picked) return;
+    if (picked.size > 400_000) return say(`${picked.name} is too large for driver code`);
+    draft.set(await picked.text());
+    dirty.set(true);
+    apply();
+  }
+
+  function selectLine(line: number) {
+    if (!area) return;
+    const lines = draft().split("\n");
+    const start = lines.slice(0, line - 1).reduce((sum, l) => sum + l.length + 1, 0);
+    area.focus();
+    area.setSelectionRange(start, start + (lines[line - 1]?.length ?? 0));
+  }
+
+  return (
+    <div class="studio-code">
+      {reasons() && !dirty() ? (
+        <p class="none">
+          This sound sheet uses studio-only features ({reasons()!.join(", ")}), which the
+          sound-effect format cannot write. Paste or import code to replace it.
+        </p>
+      ) : null}
+      <label class="sr-only" for="studio-code">
+        {doc.song.sheet ? "Sound code" : "Song code"}
+      </label>
+      <textarea
+        id="studio-code"
+        ref={(el) => (area = el)}
+        spellcheck={false}
+        aria-invalid={errors().length > 0}
+        aria-describedby="studio-code-errors"
+        value={draft()}
+        onInput={(event) => {
+          draft.set(event.currentTarget.value);
+          dirty.set(true);
+        }}
+        onKeyDown={(event) => {
+          if ((event.ctrlKey || event.metaKey) && event.key === "Enter") {
+            event.preventDefault();
+            apply();
+          }
+        }}
+      />
+      <ol id="studio-code-errors" class="errors" aria-live="polite">
+        {errors().map((e) => (
+          <li>
+            <button type="button" onClick={() => selectLine(e.line)}>
+              Line {e.line}: {e.message}
+            </button>
+          </li>
+        ))}
+      </ol>
+      <div class="bar">
+        <button
+          type="button"
+          class="key"
+          disabled={!dirty()}
+          onClick={apply}
+          title="Apply the code (Ctrl/⌘ Enter)"
+        >
+          Apply
+        </button>
+        <button type="button" class="key" disabled={!dirty()} onClick={revert}>
+          Revert
+        </button>
+        <button type="button" class="key" onClick={() => file?.click()}>
+          Import file…
+        </button>
+        <input
+          ref={(el) => (file = el)}
+          type="file"
+          accept=".txt,.asm,.s,.inc,text/plain"
+          hidden
+          aria-label="Import code file"
+          onChange={(event) => void importFile(event)}
+        />
+        <span class="hint">{dirty() ? "Edited: Apply to hear it" : "In sync with the grid"}</span>
+      </div>
+      <style>
+        .studio-code {
+          display: grid;
+          gap: 6px;
+          padding: 8px;
+        }
+        .none {
+          margin: 0;
+          font-size: 12px;
+        }
+        textarea {
+          inline-size: 100%;
+          min-block-size: 320px;
+          max-block-size: min(56vh, 520px);
+          padding: 8px 10px;
+          border: 2px solid var(--l1);
+          border-radius: 3px;
+          background: var(--l0);
+          color: var(--l3);
+          font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+          font-size: 12px;
+          line-height: 1.45;
+          resize: vertical;
+          white-space: pre;
+        }
+        textarea:focus-visible {
+          outline: 2px solid var(--l3);
+          outline-offset: 0;
+        }
+        textarea[aria-invalid="true"] {
+          border-color: var(--l3);
+          border-style: dashed;
+        }
+        .errors {
+          display: grid;
+          gap: 2px;
+          margin: 0;
+          padding: 0;
+          list-style: none;
+        }
+        .errors button {
+          padding: 3px 8px;
+          border: 0;
+          background: var(--l3);
+          color: var(--l0);
+          font-size: 12px;
+          text-align: start;
+          cursor: pointer;
+        }
+        .bar {
+          display: flex;
+          flex-wrap: wrap;
+          align-items: center;
+          gap: 6px;
+        }
+        .key {
+          padding: 4px 10px;
+          border: 2px solid var(--l3);
+          background: var(--l0);
+          color: var(--l3);
+          font-family: $tokens.font.pixel;
+          font-size: 11px;
+          cursor: pointer;
+        }
+        .key:disabled {
+          opacity: 0.45;
+          cursor: default;
+        }
+        .key:not(:disabled):hover {
+          background: var(--l1);
+        }
+        .hint {
+          margin-inline-start: auto;
+          font-family: $tokens.font.pixel;
+          font-size: 10px;
+        }
+      </style>
+    </div>
+  );
+}

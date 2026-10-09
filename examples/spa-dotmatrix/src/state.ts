@@ -34,6 +34,8 @@ export const editor = store({
   bar: 0,
   /** Lowest visible pitch per channel (the view spans two octaves and a bit). */
   low: [64, 55, 33, 0] as number[],
+  /** The screen shows the note grid or the driver code. */
+  view: "grid" as "grid" | "code",
 });
 
 export interface Prefs {

@@ -18,6 +18,7 @@ import {
 } from "../model/types.ts";
 import { doc, edit, editor, plainSong, prefs } from "../state.ts";
 import { tokens } from "../tokens.ts";
+import { StudioCode } from "./StudioCode.stsx";
 
 const SPAN = 24;
 
@@ -272,127 +273,148 @@ export function PianoRoll() {
     <section class="screen" aria-label="Piano roll">
       <div class="bezel">
         <div class="lcd">
-          <div class="status" aria-hidden="true">
-            <span class="chan">{CHANNELS[ch()].short}</span>
-            <span>{presetName(kind(), track().inst.preset).toUpperCase()}</span>
-            <span class="grow" />
-            {doc.song.sheet ? (
-              <span>
-                FRAME{" "}
+          <div class="top">
+            <div class="status" aria-hidden="true">
+              <span class="chan">{CHANNELS[ch()].short}</span>
+              <span>{presetName(kind(), track().inst.preset).toUpperCase()}</span>
+              <span class="grow" />
+              {doc.song.sheet ? (
+                <span>
+                  FRAME{" "}
+                  {String(
+                    Math.max(0, playing() ? playStep() : editor.cursor.step) * ticks(),
+                  ).padStart(3, "0")}
+                </span>
+              ) : null}
+              <span class={{ hidden: !!doc.song.sheet }}>
+                BAR{" "}
                 {String(
-                  Math.max(0, playing() ? playStep() : editor.cursor.step) * ticks(),
-                ).padStart(3, "0")}
+                  Math.floor(
+                    Math.max(0, playing() ? playStep() : editor.cursor.step) / STEPS_PER_BAR,
+                  ) + 1,
+                ).padStart(2, "0")}
+                /{String(doc.song.bars).padStart(2, "0")}
               </span>
-            ) : null}
-            <span class={{ hidden: !!doc.song.sheet }}>
-              BAR{" "}
-              {String(
-                Math.floor(
-                  Math.max(0, playing() ? playStep() : editor.cursor.step) / STEPS_PER_BAR,
-                ) + 1,
-              ).padStart(2, "0")}
-              /{String(doc.song.bars).padStart(2, "0")}
-            </span>
-            <span>{doc.song.sheet ? `${ticks()} F/STEP` : `${doc.song.bpm} BPM`}</span>
-          </div>
-          <div
-            class="roll"
-            ref={(el) => (roll = el)}
-            style={{ "--cw": `${cellW()}px`, "--chh": `${cellH}px` }}
-          >
-            <div
-              class="sheet"
-              style={{ "--steps": String(total()), "--rows": String(rows().length) }}
-            >
-              <div class="corner" />
-              <div class="ruler" aria-hidden="true">
-                {Array.from({ length: doc.song.bars }, (_, bar) => (
-                  <span
-                    class={["barno", { picked: bar === editor.bar }]}
-                    style={{ "--b": String(bar) }}
-                    onClick={() => (editor.bar = bar)}
-                  >
-                    {doc.song.sheet ? `${bar * STEPS_PER_BAR * ticks()}f` : bar + 1}
-                    {bar === doc.song.loop && doc.song.loop > 0 ? (
-                      <span class="flag">LOOP</span>
-                    ) : null}
-                  </span>
-                ))}
-              </div>
-              <div class="keys" aria-hidden="true">
-                {rows().map((p) => (
-                  <span class={["key", { root: isRoot(p) }]}>{rowLabel(p)}</span>
-                ))}
-              </div>
-              <div
-                class={["lane", kind()]}
-                ref={(el) => (lane = el)}
-                tabindex="0"
-                role="application"
-                aria-roledescription="piano roll"
-                aria-label={`${CHANNELS[ch()].name} notes. Arrow keys move, Enter adds or removes a note, Shift with arrows changes its length.`}
-                onPointerDown={onPointerDown}
-                onPointerMove={onPointerMove}
-                onPointerUp={onPointerUp}
-                onPointerCancel={onPointerUp}
-                onKeyDown={onKeyDown}
-                on:focus={() => {
-                  focused.set(true);
-                  setGridFocused(true);
-                  describe();
-                }}
-                on:blur={() => {
-                  focused.set(false);
-                  setGridFocused(false);
-                }}
-              >
-                {rows().map((p, i) => (
-                  <div class={["row", { root: isRoot(p) }]} style={{ "--r": String(i) }} />
-                ))}
-                {doc.song.loop > 0 ? (
-                  <div class="intro" style={{ "--w": String(doc.song.loop * STEPS_PER_BAR) }}>
-                    <span>INTRO</span>
-                  </div>
-                ) : null}
-                <div class="picked-bar" style={{ "--b": String(editor.bar) }} />
-                {ghosts().map((g) => (
-                  <div
-                    class={["ghost", `c${g.c}`]}
-                    style={{ "--s": String(g.n.s), "--l": String(g.n.l), "--r": String(g.row) }}
-                  />
-                ))}
-                {track().notes.map((n) => (
-                  <div
-                    class={[
-                      "note",
-                      {
-                        drum: drums(),
-                        own: hasOwn(n),
-                        lit: playing() && n.s <= playStep() && playStep() < n.s + n.l,
-                      },
-                    ]}
-                    data-step={n.s}
-                    data-pitch={n.p}
-                    style={{
-                      "--s": String(n.s),
-                      "--l": String(n.l),
-                      "--r": String(rowOf().get(n.p) ?? 0),
-                    }}
-                  />
-                ))}
-                {focused() ? (
-                  <div
-                    class="cursor"
-                    style={{
-                      "--s": String(editor.cursor.step),
-                      "--r": String(rowOf().get(editor.cursor.pitch) ?? 0),
-                    }}
-                  />
-                ) : null}
-                {playing() ? <div class="playhead" style={{ "--s": String(playStep()) }} /> : null}
-              </div>
+              <span>{doc.song.sheet ? `${ticks()} F/STEP` : `${doc.song.bpm} BPM`}</span>
+            </div>
+            <div class="views" role="radiogroup" aria-label="Screen view">
+              {(["grid", "code"] as const).map((v) => (
+                <button
+                  type="button"
+                  role="radio"
+                  class="view"
+                  aria-checked={editor.view === v}
+                  onClick={() => (editor.view = v)}
+                >
+                  {v === "grid" ? "Grid" : "Code"}
+                </button>
+              ))}
             </div>
           </div>
+          {editor.view === "code" ? (
+            <StudioCode />
+          ) : (
+            <div
+              class="roll"
+              ref={(el) => (roll = el)}
+              style={{ "--cw": `${cellW()}px`, "--chh": `${cellH}px` }}
+            >
+              <div
+                class="sheet"
+                style={{ "--steps": String(total()), "--rows": String(rows().length) }}
+              >
+                <div class="corner" />
+                <div class="ruler" aria-hidden="true">
+                  {Array.from({ length: doc.song.bars }, (_, bar) => (
+                    <span
+                      class={["barno", { picked: bar === editor.bar }]}
+                      style={{ "--b": String(bar) }}
+                      onClick={() => (editor.bar = bar)}
+                    >
+                      {doc.song.sheet ? `${bar * STEPS_PER_BAR * ticks()}f` : bar + 1}
+                      {bar === doc.song.loop && doc.song.loop > 0 ? (
+                        <span class="flag">LOOP</span>
+                      ) : null}
+                    </span>
+                  ))}
+                </div>
+                <div class="keys" aria-hidden="true">
+                  {rows().map((p) => (
+                    <span class={["key", { root: isRoot(p) }]}>{rowLabel(p)}</span>
+                  ))}
+                </div>
+                <div
+                  class={["lane", kind()]}
+                  ref={(el) => (lane = el)}
+                  tabindex="0"
+                  role="application"
+                  aria-roledescription="piano roll"
+                  aria-label={`${CHANNELS[ch()].name} notes. Arrow keys move, Enter adds or removes a note, Shift with arrows changes its length.`}
+                  onPointerDown={onPointerDown}
+                  onPointerMove={onPointerMove}
+                  onPointerUp={onPointerUp}
+                  onPointerCancel={onPointerUp}
+                  onKeyDown={onKeyDown}
+                  on:focus={() => {
+                    focused.set(true);
+                    setGridFocused(true);
+                    describe();
+                  }}
+                  on:blur={() => {
+                    focused.set(false);
+                    setGridFocused(false);
+                  }}
+                >
+                  {rows().map((p, i) => (
+                    <div class={["row", { root: isRoot(p) }]} style={{ "--r": String(i) }} />
+                  ))}
+                  {doc.song.loop > 0 ? (
+                    <div class="intro" style={{ "--w": String(doc.song.loop * STEPS_PER_BAR) }}>
+                      <span>INTRO</span>
+                    </div>
+                  ) : null}
+                  <div class="picked-bar" style={{ "--b": String(editor.bar) }} />
+                  {ghosts().map((g) => (
+                    <div
+                      class={["ghost", `c${g.c}`]}
+                      style={{ "--s": String(g.n.s), "--l": String(g.n.l), "--r": String(g.row) }}
+                    />
+                  ))}
+                  {track().notes.map((n) => (
+                    <div
+                      class={[
+                        "note",
+                        {
+                          drum: drums(),
+                          own: hasOwn(n),
+                          lit: playing() && n.s <= playStep() && playStep() < n.s + n.l,
+                        },
+                      ]}
+                      data-step={n.s}
+                      data-pitch={n.p}
+                      style={{
+                        "--s": String(n.s),
+                        "--l": String(n.l),
+                        "--r": String(rowOf().get(n.p) ?? 0),
+                      }}
+                    />
+                  ))}
+                  {focused() ? (
+                    <div
+                      class="cursor"
+                      style={{
+                        "--s": String(editor.cursor.step),
+                        "--r": String(rowOf().get(editor.cursor.pitch) ?? 0),
+                      }}
+                    />
+                  ) : null}
+                  {playing() ? (
+                    <div class="playhead" style={{ "--s": String(playStep()) }} />
+                  ) : null}
+                </div>
+              </div>
+            </div>
+          )}
         </div>
         <div class="led-row" aria-hidden="true">
           <span class={["led", { on: playing() }]} />
@@ -424,6 +446,35 @@ export function PianoRoll() {
             inset 0 0 0 2px var(--l1),
             inset 0 6px 14px -8px rgb(0 0 0 / 0.5);
           overflow: hidden;
+        }
+        .top {
+          display: flex;
+          align-items: stretch;
+          border-block-end: 2px solid var(--l1);
+        }
+        .top .status {
+          flex: 1;
+          min-inline-size: 0;
+          border-block-end: 0;
+        }
+        .views {
+          display: flex;
+          gap: 2px;
+          padding: 3px 6px;
+          border-inline-start: 2px solid var(--l1);
+        }
+        .view {
+          padding: 0 8px;
+          border: 0;
+          background: transparent;
+          color: var(--l2);
+          font-family: $tokens.font.pixel;
+          font-size: 11px;
+          cursor: pointer;
+        }
+        .view[aria-checked="true"] {
+          background: var(--l3);
+          color: var(--l0);
         }
         .status {
           display: flex;

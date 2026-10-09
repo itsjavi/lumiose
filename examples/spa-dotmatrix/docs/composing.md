@@ -11,6 +11,7 @@ written for this guide or for Dotmatrix; none comes from a game.
 - [Sound effects](#sound-effects)
 - [Creature voices](#creature-voices)
 - [Editing, pasting and importing code](#editing-pasting-and-importing-code)
+- [Songs as code](#songs-as-code)
 - [Checklist](#checklist)
 
 ## The four channels
@@ -239,15 +240,16 @@ and length variants of one base voice sound like a family: use them for creature
 
 ## Editing, pasting and importing code
 
-The code view is not only for reading. In **SFX** or **Creatures**, press **Show code**, then:
+In **SFX** or **Creatures**, **Show code** shows a sound as driver code. Built-in sounds are
+read-only, a learning view: press **Copy to My sounds** (or **My voices**) to get your own copy.
+On a saved sound:
 
-- **Edit code** opens the current sound's code in an editor. Change numbers, add or remove lines,
-  then **Play code**: it plays at once and its waveform appears.
-- **Paste new code** starts from an empty editor: paste code from this guide, a text file or a
-  friend.
+- **Edit code** opens its code in an editor. Change numbers, add or remove lines, then **Play
+  code**: it plays at once and its waveform appears.
+- **Paste code** starts from an empty editor: paste code from this guide, a text file or a friend.
 - **Import file…** reads a `.txt` or `.asm` file, names the sound after the file and plays it.
-- **Save to My sounds** (or **My voices**) keeps it, under the name you give it. It then behaves
-  like any saved sound: the sliders, Open in studio and Export WAV all work.
+- **Save** writes the code over the saved sound, under the name you give it. The sliders, Open in
+  studio and Export WAV all work on it.
 
 The editor reads everything the code view writes:
 
@@ -282,6 +284,74 @@ An original example to paste:
 
 Every built-in sound effect and creature voice exports to code and imports back identically:
 `src/model/code.test.ts` checks that the register writes match.
+
+## Songs as code
+
+In the **Studio**, the screen has a **Grid | Code** switch. **Code** shows what is open as driver
+code: a sound sheet in the format above, a song as music macros. Edit it, paste over it or
+**Import file…**, then **Apply** (or Ctrl/⌘ Enter): the song is replaced as one step that Undo
+reverts. Errors are listed by line, as in the makers. While the code has no edits of its own it
+follows the grid; **Revert** drops your edits.
+
+A song starts with a header, then one section per channel:
+
+```asm
+; Dotmatrix song: music macros, one section per channel
+song_title "Little March"
+song_author "you"
+tempo 112  ; quarter notes per minute
+bars 2
+key G, major
+; pulse 1
+  instrument hero                 ; the preset it starts from
+  note_type 1, 11, 7              ; step unit, volume, fade
+  duty_cycle 2
+  vibrato 14, 3, 3                ; delay (frames), depth, rate
+  pitch_glide 0
+  arpeggio off
+  shimmer off
+  note_length normal              ; legato, normal or short
+  stereo_panning center
+.mainloop:                        ; the loop starts here (a bar line)
+  octave 4
+  note G_, 4                      ; note name and length in steps
+  note B_, 4
+  octave 5
+  note D_, 8
+  note C_, 4
+  octave 4
+  note B_, 4
+  note A_, 8
+  sound_loop 0, .mainloop
+; noise
+  instrument kit
+  note_type 1, 10, 0
+  drum_tone 0
+  stereo_panning center
+.mainloop:
+  drum_note 7, 1  ; Kick
+  rest 3
+  drum_note 6, 1  ; Snare
+  rest 27
+  sound_loop 0, .mainloop
+```
+
+| Line                                                                                                                                      | Meaning                                                                                                                  |
+| ----------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| `song_title`, `song_author`                                                                                                               | Text in quotes.                                                                                                          |
+| `tempo n`                                                                                                                                 | Quarter notes per minute, 50–240 (a step is a 16th note).                                                                |
+| `bars n`, `key K, scale`                                                                                                                  | Length (1–32 bars); key (C … B) and scale (major, minor, harmonicMinor, dorian, pentatonic, minorPentatonic, chromatic). |
+| `; pulse 1` … `; noise`                                                                                                                   | A channel section. Missing channels are silent.                                                                          |
+| `instrument id`                                                                                                                           | Start from a preset (`hero`, `reed`, `round`, `kit`…), then change it below.                                             |
+| `note_type unit, volume, fade`                                                                                                            | Steps per length unit (1 = a 16th), the start volume and the fade.                                                       |
+| `duty_cycle`, `vibrato`, `pitch_glide`, `arpeggio`, `shimmer`, `note_length`, `wave_shape`, `drum_tone`, `stereo_panning`, `mute`, `solo` | The instrument and mixer settings of the Fine-tune drawer and channel cards.                                             |
+| `octave n`, `note C_ … B_, length`                                                                                                        | Notes (`C#`, `D_` … `B_`), length in units.                                                                              |
+| `rest length`                                                                                                                             | Silence.                                                                                                                 |
+| `drum_note n, length`                                                                                                                     | Noise channel: drum 0–7 (crash, open hat, hi-hat, shaker, high tom, low tom, snare, kick).                               |
+| `.mainloop:` … `sound_loop 0, .mainloop`                                                                                                  | The loop: the label sits on the bar the song loops back to.                                                              |
+
+Every demo song exports to code and reads back as the identical song with identical register
+writes (`src/model/songcode.test.ts`).
 
 ## Checklist
 

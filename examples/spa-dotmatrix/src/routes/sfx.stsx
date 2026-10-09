@@ -10,6 +10,7 @@ import { DUTY_NAMES } from "../model/instruments.ts";
 import { NO_MODS, SFX, applyMods, listing, sfxById, type SfxMods } from "../model/sfx.ts";
 import { sfxToSheet, sheetToSfx } from "../model/sheet.ts";
 import {
+  keepSound,
   mySounds,
   openInStudio,
   openInStudioSheet,
@@ -92,6 +93,16 @@ export default function SfxPage() {
       volume: 1,
     });
     void fire();
+  }
+
+  /** Copies the shown built-in sound (with the sliders applied) into My sounds. */
+  function copyToMine() {
+    const sfx = current();
+    if (!sfx) return;
+    const copy = sfxToSheet({ ...sfx, name: `${sfx.name} copy` }, "sfx");
+    if ("reasons" in copy) return say(`Cannot copy: ${copy.reasons.join(", ")}`);
+    const id = keepSound(copy.song);
+    if (id) pick({ custom: true, id });
   }
 
   function openStudio() {
@@ -239,6 +250,8 @@ export default function SfxPage() {
           code={current() ? listing(current()!) : null}
           kind="sfx"
           onPcm={(rendered) => pcm.set(rendered)}
+          customId={selected().custom ? selected().id : undefined}
+          onCopy={copyToMine}
           onSaved={(id) => pick({ custom: true, id })}
           codeNote="The same sound as sound-driver macros: square_note frames, volume, fade, frequency. Fade 1–7 fades out (1 fastest), 9–15 fades in (9 fastest)."
           actions={[

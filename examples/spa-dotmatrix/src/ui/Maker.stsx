@@ -40,7 +40,11 @@ export function Maker(props: {
   kind: SoundSheet["kind"];
   /** Code from the code view was played: show its waveform. */
   onPcm: (pcm: Float32Array) => void;
-  /** Code from the code view was saved under this My sounds id. */
+  /** The saved sound on show (its code is editable), or undefined for a built-in one. */
+  customId?: string;
+  /** Copies the built-in sound into My sounds / My voices. */
+  onCopy: () => void;
+  /** Code from the code view was saved over this My sounds id. */
   onSaved: (id: string) => void;
   children?: JSX.Element;
 }) {
@@ -115,6 +119,8 @@ export function Maker(props: {
           kind={props.kind}
           title={props.title}
           onPcm={(pcm) => props.onPcm(pcm)}
+          customId={props.customId}
+          onCopy={() => props.onCopy()}
           onSaved={(id) => props.onSaved(id)}
         />
       ) : null}

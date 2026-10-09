@@ -70,9 +70,11 @@ To save the e2e screenshots, set `DOTMATRIX_SHOTS=<dir>`. The task screenshots a
   and each creature adds a pitch (added to every square note's frequency register) and a length (a
   tempo for the square notes; noise keeps its timing). Change the base voice, pitch and length, roll
   a new creature with "Surprise me", read the driver code and export a WAV.
-- **Driver code** (SFX and Creatures): "Show code" shows the sound in the sound-driver format; edit
-  it, paste new code or import a `.txt`/`.asm` file, and it plays at once and saves to My sounds or
-  My voices. Errors are listed by line. See the [composing guide](docs/composing.md#editing-pasting-and-importing-code).
+- **Driver code**: in SFX and Creatures, "Show code" shows a sound in the sound-driver format
+  (read-only for built-ins, with "Copy to My sounds"); saved sounds can be edited, pasted over or
+  imported from a `.txt`/`.asm` file. In the Studio, the screen's **Grid | Code** switch shows the
+  song as music macros (or a sound sheet as SFX code) and applies edits, pastes and imports as one
+  undoable step. Errors are listed by line. See the [composing guide](docs/composing.md#songs-as-code).
 - **Open in studio** (SFX and Creatures): the sound opens in the studio as a _sound sheet_, a
   song on a frame grid (one step per video frame, played once). Per-note settings the grid does not
   draw (volume, envelope, duty, hardware sweep, fine tuning) travel with each note, shown by a

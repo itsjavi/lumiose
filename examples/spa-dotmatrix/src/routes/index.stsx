@@ -6,6 +6,7 @@ import { onSpace } from "../keys.ts";
 import { decodeSong } from "../model/share.ts";
 import { openSong, say } from "../state.ts";
 import { ChannelRack } from "../ui/ChannelRack.stsx";
+import { GridTools } from "../ui/GridTools.stsx";
 import { InstrumentPanel } from "../ui/InstrumentPanel.stsx";
 import { PianoRoll } from "../ui/PianoRoll.stsx";
 import { SongPanel } from "../ui/SongPanel.stsx";
@@ -33,6 +34,7 @@ export default function Studio() {
         <ChannelRack />
         <div class="center">
           <PianoRoll />
+          <GridTools />
           <div class="below">
             <InstrumentPanel />
             <SongPanel />
