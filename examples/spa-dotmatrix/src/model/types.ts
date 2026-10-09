@@ -27,7 +27,22 @@ export interface Note {
   /** Length in steps. */
   l: number;
   p: number;
+  // Per-note settings that override the track's instrument. Only sound sheets (sound effects and
+  // creature voices opened in the studio) carry them, so a sound keeps every detail.
+  /** Start volume, 0–15. */
+  v?: number;
+  /** Envelope, as Instrument.env. */
+  e?: number;
+  /** Pulse duty, 0–3. */
+  d?: number;
+  /** Pulse 1 hardware sweep, as SfxNote.sweep. */
+  w?: number;
+  /** Fine tuning in semitones (-0.5…0.5): sounds can sit between the grid's rows. */
+  t?: number;
 }
+
+/** The note settings that override the instrument. */
+export const NOTE_OVERRIDES = ["v", "e", "d", "w", "t"] as const;
 
 export type ArpId = "off" | "major" | "minor" | "fifth" | "octave";
 export type WaveShape = "soft" | "triangle" | "saw" | "square" | "organ" | "hollow";
@@ -93,6 +108,19 @@ export interface Song {
   key: number;
   scale: ScaleId;
   tracks: [Track, Track, Track, Track];
+  /**
+   * Set when the song is a sound sheet: a sound effect or creature voice opened in the studio. Its
+   * steps are `ticks` video frames long (not 16th notes at `bpm`), it plays once, and on the noise
+   * channel `p` is the raw noise setting (NR43) instead of a drum.
+   */
+  sheet?: SoundSheet;
+}
+
+export interface SoundSheet {
+  kind: "sfx" | "voice";
+  name: string;
+  /** Video frames per step. */
+  ticks: number;
 }
 
 // --- SFX ---

@@ -1,15 +1,22 @@
 // Share links: the song travels in the URL itself (`/?song=…`): compact JSON, deflated with the
 // browser's CompressionStream and base64url-encoded. Nothing is uploaded anywhere.
 import { sanitizeSong } from "./song.ts";
-import type { Song } from "./types.ts";
+import type { Note, Song } from "./types.ts";
 
 const VERSION = "1";
 
-/** Notes become flat [step, length, pitch, …] arrays: about a third of the size. */
+/**
+ * Notes become flat [step, length, pitch, …] arrays, about a third of the size. Tracks whose notes
+ * carry per-note settings (sound sheets) keep their note objects.
+ */
 function compact(song: Song): unknown {
+  const plain = (n: Note) => Object.keys(n).length === 3;
   return {
     ...song,
-    tracks: song.tracks.map((t) => ({ ...t, notes: t.notes.flatMap((n) => [n.s, n.l, n.p]) })),
+    tracks: song.tracks.map((t) => ({
+      ...t,
+      notes: t.notes.every(plain) ? t.notes.flatMap((n) => [n.s, n.l, n.p]) : t.notes,
+    })),
   };
 }
 
@@ -18,6 +25,7 @@ function expand(data: { tracks?: { notes?: unknown }[] }): unknown {
   return {
     ...data,
     tracks: data.tracks.map((t) => {
+      if (Array.isArray(t?.notes) && typeof t.notes[0] === "object") return t;
       const flat = Array.isArray(t?.notes) ? (t.notes as number[]) : [];
       const notes = [];
       for (let i = 0; i + 2 < flat.length; i += 3)

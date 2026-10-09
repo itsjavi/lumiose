@@ -6,7 +6,7 @@ import { DUTY_NAMES } from "./instruments.ts";
 import { noteName, parseNote } from "./music.ts";
 import type { Sfx, SfxNote, SfxVoice } from "./types.ts";
 
-function sq(
+export function sq(
   frames: number,
   volume: number,
   env: number,
@@ -18,16 +18,23 @@ function sq(
   return { frames, volume, env, pitch, duty, sweep, noise: 0 };
 }
 
-const rest = (frames: number): SfxNote => sq(frames, 0, 0, 60);
+export const rest = (frames: number): SfxNote => sq(frames, 0, 0, 60);
 
 /** A noise note: NR43 from clock shift `s`, divisor `r`, and 7-bit (metallic) mode `w`. */
-function nz(frames: number, volume: number, env: number, s: number, r: number, w = 0): SfxNote {
+export function nz(
+  frames: number,
+  volume: number,
+  env: number,
+  s: number,
+  r: number,
+  w = 0,
+): SfxNote {
   return { frames, volume, env, pitch: 0, duty: 0, sweep: 0, noise: (s << 4) | (w << 3) | r };
 }
 
-const p1 = (...notes: SfxNote[]): SfxVoice => ({ channel: 0, notes });
-const p2 = (...notes: SfxNote[]): SfxVoice => ({ channel: 1, notes });
-const ns = (...notes: SfxNote[]): SfxVoice => ({ channel: 3, notes });
+export const p1 = (...notes: SfxNote[]): SfxVoice => ({ channel: 0, notes });
+export const p2 = (...notes: SfxNote[]): SfxVoice => ({ channel: 1, notes });
+export const ns = (...notes: SfxNote[]): SfxVoice => ({ channel: 3, notes });
 
 export const SFX: Sfx[] = [
   {
@@ -207,7 +214,7 @@ export function applyMods(sfx: Sfx, mods: SfxMods): Sfx {
           ...n,
           frames,
           volume,
-          pitch: Math.min(96, Math.max(36, n.pitch + mods.pitch)),
+          pitch: Math.min(120, Math.max(36, n.pitch + mods.pitch)),
           duty: mods.duty >= 0 ? mods.duty : n.duty,
           sweep: voice.channel === 0 && mods.sweep !== 0 ? mods.sweep : n.sweep,
         };

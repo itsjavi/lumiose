@@ -6,7 +6,7 @@ import { signal } from "lumen";
 import type { EngineAudioData } from "../../vendor/gbapu/dist/index.js";
 import { isAudible } from "../model/song.ts";
 import type { ChannelIndex, Song } from "../model/types.ts";
-import { loopSeconds, songData, songSeconds } from "./driver.ts";
+import { loopSeconds, loops, songData, songSeconds, stepSeconds } from "./driver.ts";
 import { SAMPLE_RATE } from "./protocol.ts";
 import { encodeWav, renderPcm } from "./renderer.ts";
 
@@ -65,7 +65,7 @@ const STEM_CACHE = 24;
 
 function stemKey(song: Song, ch: ChannelIndex): string {
   const t = song.tracks[ch];
-  return JSON.stringify([song.bpm, song.bars, song.loop, ch, t.inst, t.notes]);
+  return JSON.stringify([song.bpm, song.bars, song.loop, song.sheet, ch, t.inst, t.notes]);
 }
 
 function toBuffer(pcm: Float32Array): AudioBuffer {
@@ -131,7 +131,7 @@ function timing(song: Song) {
 function positionAt(s: Session, t: number): number | undefined {
   const raw = s.anchor.pos + (t - s.anchor.time);
   if (raw < s.songSec) return Math.max(0, raw);
-  if (!looping.peek()) return undefined;
+  if (!looping.peek() || !loops(s.song)) return undefined;
   const body = s.songSec - s.loopSec;
   return body > 0 ? s.loopSec + ((raw - s.loopSec) % body) : 0;
 }
@@ -152,7 +152,7 @@ function startVoice(
 ): Voice {
   const source = new AudioBufferSourceNode(ctx!, {
     buffer,
-    loop: looping.peek() && s.songSec > s.loopSec,
+    loop: looping.peek() && loops(s.song) && s.songSec > s.loopSec,
     loopStart: s.loopSec,
     loopEnd: s.songSec,
   });
@@ -234,7 +234,11 @@ export async function update(song: Song, tag: string): Promise<void> {
   applyMix(song, tag);
   const before = s.song;
   s.song = song;
-  const retimed = before.bpm !== song.bpm || before.bars !== song.bars || before.loop !== song.loop;
+  const retimed =
+    before.bpm !== song.bpm ||
+    before.bars !== song.bars ||
+    before.loop !== song.loop ||
+    before.sheet?.ticks !== song.sheet?.ticks;
   const changed = CHANNELS.filter((ch) => retimed || s.voices[ch]?.key !== stemKey(song, ch));
   if (changed.length === 0) return;
   const versions = changed.map((ch) => ++s.versions[ch]!);
@@ -245,9 +249,9 @@ export async function update(song: Song, tag: string): Promise<void> {
   const when = ctx.currentTime + 0.03;
   if (retimed) {
     const pos = positionAt(s, when) ?? 0;
-    const oldStep = (pos * before.bpm) / 15;
+    const oldStep = pos / stepSeconds(before);
     Object.assign(s, timing(song));
-    const next = (oldStep * 15) / song.bpm;
+    const next = oldStep * stepSeconds(song);
     s.anchor = { time: when, pos: next < s.songSec ? next : s.loopSec };
   }
   const offset = positionAt(s, when);
@@ -278,7 +282,7 @@ export function setLooping(on: boolean): void {
     const pos = positionAt(s, ctx.currentTime) ?? 0;
     s.anchor = { time: ctx.currentTime, pos };
   }
-  for (const v of s.voices) if (v) v.source.loop = on && s.songSec > s.loopSec;
+  for (const v of s.voices) if (v) v.source.loop = on && loops(s.song) && s.songSec > s.loopSec;
 }
 
 function tick(): void {
@@ -289,7 +293,7 @@ function tick(): void {
     stop();
     return;
   }
-  const step = Math.floor((pos * s.song.bpm) / 15);
+  const step = Math.floor(pos / stepSeconds(s.song));
   if (step !== playStep.peek()) playStep.set(step);
   frame = requestAnimationFrame(tick);
 }

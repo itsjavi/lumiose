@@ -10,6 +10,7 @@ import {
   type Pan,
   type ScaleId,
   type Song,
+  type SoundSheet,
   type Track,
 } from "./types.ts";
 
@@ -78,6 +79,7 @@ export function sanitizeSong(input: unknown): Song {
   if (!Array.isArray(raw.tracks) || raw.tracks.length !== 4)
     throw new Error("A song has four tracks");
   const bars = clamp(raw.bars, 1, MAX_BARS, 4);
+  const sheet = sanitizeSheet(raw.sheet);
   const total = bars * STEPS_PER_BAR;
   const tracks = raw.tracks.map((t, ch): Track => {
     const kind = CHANNELS[ch]!.kind;
@@ -104,14 +106,31 @@ export function sanitizeSong(input: unknown): Song {
         ) ?? fallback.shape,
       tone: clamp(i.tone, -3, 3, fallback.tone),
     };
-    const range = kind === "noise" ? [0, 7] : kind === "wave" ? [24, 96] : [36, 96];
+    // On a sound sheet, noise notes are raw noise settings (0–255) and may be longer than a step.
+    const drums = kind === "noise" && !sheet;
+    const range = drums
+      ? [0, 7]
+      : kind === "noise"
+        ? [0, 255]
+        : kind === "wave"
+          ? [24, 108]
+          : [36, 120];
     const notes = (Array.isArray(t?.notes) ? t.notes : [])
       .filter((n): n is Note => !!n && typeof n === "object" && Number(n.s) < total)
-      .map((n) => ({
-        s: clamp(n.s, 0, total - 1, 0),
-        l: kind === "noise" ? 1 : clamp(n.l, 1, total, 1),
-        p: clamp(n.p, range[0]!, range[1]!, range[0]!),
-      }))
+      .map((n) => {
+        const note: Note = {
+          s: clamp(n.s, 0, total - 1, 0),
+          l: drums ? 1 : clamp(n.l, 1, total, 1),
+          p: clamp(n.p, range[0]!, range[1]!, range[0]!),
+        };
+        if (n.v !== undefined) note.v = clamp(n.v, 0, 15, 12);
+        if (n.e !== undefined) note.e = clamp(n.e, -7, 7, 0);
+        if (n.d !== undefined) note.d = clamp(n.d, 0, 3, 2);
+        if (n.w !== undefined) note.w = clamp(n.w, -7, 7, 0);
+        if (typeof n.t === "number" && Number.isFinite(n.t))
+          note.t = Math.min(0.5, Math.max(-0.5, n.t));
+        return note;
+      })
       .slice(0, 2048);
     const pan = (["L", "C", "R"] as const).find((p) => p === t?.pan) ?? "C";
     return { inst, notes: tidy(notes, total), mute: t?.mute === true, solo: t?.solo === true, pan };
@@ -137,6 +156,17 @@ export function sanitizeSong(input: unknown): Song {
         ] as const
       ).find((s) => s === raw.scale) ?? "major",
     tracks,
+    ...(sheet ? { sheet } : {}),
+  };
+}
+
+function sanitizeSheet(input: unknown): SoundSheet | undefined {
+  if (!input || typeof input !== "object") return undefined;
+  const raw = input as Partial<SoundSheet>;
+  return {
+    kind: raw.kind === "voice" ? "voice" : "sfx",
+    name: typeof raw.name === "string" ? raw.name.slice(0, 60) : "Sound",
+    ticks: clamp(raw.ticks, 1, 8, 1),
   };
 }
 

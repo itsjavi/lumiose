@@ -59,7 +59,7 @@ describe("songs", () => {
     expect(song).toMatchObject({ title: "Untitled", bpm: 240, bars: 2, loop: 1 });
     expect(song.tracks[0].inst.duty).toBe(3);
     // The note past the end is dropped; the overlong one is cut at the end.
-    expect(song.tracks[0].notes).toEqual([{ s: 0, l: 32, p: 96 }]);
+    expect(song.tracks[0].notes).toEqual([{ s: 0, l: 32, p: 120 }]);
     expect(song.tracks[3].notes).toEqual([{ s: 1, l: 1, p: 2 }]);
     expect(() => sanitizeSong({ tracks: [] })).toThrow();
   });

@@ -39,8 +39,16 @@ interface TimedWrites {
 /** CPU cycles per 16th-note step. */
 export const stepCycles = (bpm: number): number => (CPU_HZ * 15) / bpm;
 export const songSteps = (song: Song): number => song.bars * STEPS_PER_BAR;
-export const songSeconds = (song: Song): number => (songSteps(song) * 15) / song.bpm;
-export const loopSeconds = (song: Song): number => (song.loop * STEPS_PER_BAR * 15) / song.bpm;
+/** CPU cycles per step of a song: a 16th note, or `ticks` frames on a sound sheet. */
+export const songStepCycles = (song: Pick<Song, "bpm" | "sheet">): number =>
+  song.sheet ? song.sheet.ticks * FRAME : stepCycles(song.bpm);
+export const stepSeconds = (song: Pick<Song, "bpm" | "sheet">): number =>
+  songStepCycles(song) / CPU_HZ;
+export const songSeconds = (song: Song): number => songSteps(song) * stepSeconds(song);
+/** Where the loop starts; sound sheets play once and have no loop. */
+export const loopSeconds = (song: Song): number =>
+  song.sheet ? 0 : song.loop * STEPS_PER_BAR * stepSeconds(song);
+export const loops = (song: Song): boolean => !song.sheet;
 
 // --- Register values ---
 
@@ -106,7 +114,7 @@ export function framePitch(inst: Instrument, pitch: number, f: number, from?: nu
 export function normalizeNotes(notes: readonly Note[], total: number, loopStep: number): Note[] {
   const sorted = notes
     .filter((n) => n.s >= 0 && n.s < total && n.l > 0)
-    .map((n) => ({ s: n.s, l: Math.min(n.l, total - n.s), p: n.p }))
+    .map((n) => ({ ...n, l: Math.min(n.l, total - n.s) }))
     .toSorted((a, b) => a.s - b.s);
   const mono: Note[] = [];
   for (const note of sorted) {
@@ -119,8 +127,8 @@ export function normalizeNotes(notes: readonly Note[], total: number, loopStep: 
   return mono.flatMap((n) =>
     n.s < loopStep && n.s + n.l > loopStep
       ? [
-          { s: n.s, l: loopStep - n.s, p: n.p },
-          { s: loopStep, l: n.s + n.l - loopStep, p: n.p },
+          { ...n, l: loopStep - n.s },
+          { ...n, s: loopStep, l: n.s + n.l - loopStep },
         ]
       : [n],
   );
@@ -135,17 +143,32 @@ const PULSE_REGS = {
 function trackWrites(
   track: Track,
   ch: ChannelIndex,
-  bpm: number,
+  sc: number,
   total: number,
   loopStep: number,
+  sheet: boolean,
 ): TimedWrites[] {
   const kind = CHANNELS[ch].kind;
   const inst = track.inst;
-  const sc = stepCycles(bpm);
   const end = total * sc;
   const notes = normalizeNotes(track.notes, total, loopStep);
   const out: TimedWrites[] = [];
   const at = (t: number, ...writes: Write[]) => out.push({ t: Math.min(t, end - 1), writes });
+
+  if (kind === "noise" && sheet) {
+    // On a sound sheet a noise note is one raw noise setting, held until the next note.
+    notes.forEach((note, i) => {
+      const next = notes[i + 1];
+      at(
+        note.s * sc,
+        ["n21", envByte(note.v ?? inst.volume, note.e ?? inst.env)],
+        ["n22", note.p & 0xff],
+        ["n23", 0x80],
+      );
+      if (!next || next.s > note.s + note.l) at((note.s + note.l) * sc, ["n21", 0]);
+    });
+    return out;
+  }
 
   if (kind === "noise") {
     notes.forEach((note, i) => {
@@ -180,7 +203,6 @@ function trackWrites(
     if (ch === 0) at(0, ["n10", 0]);
     at(0, [pulse.env, 0]);
   }
-  const shimmer = [inst.duty, inst.duty, inst.duty === 2 ? 1 : 2, inst.duty === 2 ? 1 : 2];
   const startLevel = waveLevel(inst.volume);
   const gate = GATES[inst.gate];
 
@@ -190,35 +212,45 @@ function trackWrites(
     const t0 = note.s * sc;
     const t1 = (note.s + note.l) * sc;
     const touchesNext = next !== undefined && next.s === note.s + note.l;
-    const from = prev && prev.s + prev.l === note.s && note.s !== loopStep ? prev.p : undefined;
+    const from =
+      prev && prev.s + prev.l === note.s && note.s !== loopStep
+        ? prev.p + (prev.t ?? 0)
+        : undefined;
+    const pitch = note.p + (note.t ?? 0);
+    const volume = note.v ?? inst.volume;
+    const env = note.e ?? inst.env;
+    const base = note.d ?? inst.duty;
+    const pattern = [base, base, base === 2 ? 1 : 2, base === 2 ? 1 : 2];
     const release = gate === 1 && touchesNext ? undefined : t0 + Math.max(FRAME, (t1 - t0) * gate);
     const until = release ?? t1;
 
-    let x = freqReg(framePitch(inst, note.p, 0, from), wave);
-    let duty = inst.shimmer ? shimmer[0]! : inst.duty;
-    let level = inst.env < 0 && startLevel !== 0 ? 3 : startLevel;
+    let x = freqReg(framePitch(inst, pitch, 0, from), wave);
+    let duty = base;
+    const top = note.v === undefined ? startLevel : waveLevel(note.v);
+    let level = env < 0 && top !== 0 ? 3 : top;
     if (wave) at(t0, ["n1c", level << 5], ...freq(x, true));
     else
       at(
         t0,
+        ...(ch === 0 ? [["n10", sweepByte(note.w ?? 0)] as Write] : []),
         [pulse.duty, duty << 6],
-        [pulse.env, envByte(inst.volume, inst.env)],
+        [pulse.env, envByte(volume, env)],
         ...freq(x, true),
       );
 
     for (let f = 1; t0 + f * FRAME < until; f++) {
       const writes: Write[] = [];
-      const nx = freqReg(framePitch(inst, note.p, f, from), wave);
-      if (nx !== x) writes.push(...freq((x = nx), false));
-      if (!wave && inst.shimmer && shimmer[f % 4] !== duty) {
-        duty = shimmer[f % 4]!;
+      const nx = freqReg(framePitch(inst, pitch, f, from), wave);
+      // A hardware sweep moves the frequency itself: the driver leaves it alone.
+      if (nx !== x && !note.w) writes.push(...freq((x = nx), false));
+      if (!wave && inst.shimmer && pattern[f % 4] !== duty) {
+        duty = pattern[f % 4]!;
         writes.push([pulse.duty, duty << 6]);
       }
-      if (wave && inst.env !== 0 && level !== 0) {
+      if (wave && env !== 0 && level !== 0) {
         // The wave channel has no envelope: the driver steps its output level instead.
-        const every = (8 - Math.min(7, Math.abs(inst.env))) * 3;
-        const stepped =
-          inst.env > 0 ? (level === 3 ? 0 : level + 1) : Math.max(startLevel, level - 1);
+        const every = (8 - Math.min(7, Math.abs(env))) * 3;
+        const stepped = env > 0 ? (level === 3 ? 0 : level + 1) : Math.max(top, level - 1);
         if (f % every === 0 && stepped !== level) writes.push(["n1c", (level = stepped) << 5]);
       }
       if (writes.length) at(t0 + f * FRAME, ...writes);
@@ -274,11 +306,11 @@ export function channelData(
   options: StemOptions = {},
 ): EngineAudioChannelData {
   const total = songSteps(song);
-  const loopStep = Math.min(song.loop, song.bars - 1) * STEPS_PER_BAR;
-  const sc = stepCycles(song.bpm);
+  const loopStep = loops(song) ? Math.min(song.loop, song.bars - 1) * STEPS_PER_BAR : 0;
+  const sc = songStepCycles(song);
   const totalCycles = Math.round(total * sc);
-  const events = trackWrites(song.tracks[ch], ch, song.bpm, total, loopStep);
-  const loopAt = options.loop ? Math.round(loopStep * sc) : null;
+  const events = trackWrites(song.tracks[ch], ch, sc, total, loopStep, !!song.sheet);
+  const loopAt = options.loop && loops(song) ? Math.round(loopStep * sc) : null;
   return {
     id: CHANNELS[ch].hw,
     label: CHANNELS[ch].name,
@@ -306,13 +338,15 @@ export function noteData(
   ch: ChannelIndex,
   pitch: number,
   steps: number,
-  bpm: number,
+  timing: Pick<Song, "bpm" | "sheet">,
 ): EngineAudioData {
-  const len = CHANNELS[ch].kind === "noise" ? 1 : steps;
-  const total = Math.max(len, CHANNELS[ch].kind === "noise" ? 4 : len);
+  const sc = songStepCycles(timing);
+  const drum = CHANNELS[ch].kind === "noise" && !timing.sheet;
+  // Short steps (a frame on a sheet) would make an inaudible preview: hold it for ~0.2 s.
+  const len = drum ? 1 : Math.max(steps, Math.ceil((0.2 * CPU_HZ) / sc));
+  const total = Math.max(len, drum ? 4 : len);
   const single: Track = { ...track, notes: [{ s: 0, l: len, p: pitch }] };
-  const sc = stepCycles(bpm);
-  const events = trackWrites(single, ch, bpm, total, 0);
+  const events = trackWrites(single, ch, sc, total, 0, !!timing.sheet);
   return {
     id: "dotmatrix:note",
     name: "note",
@@ -344,7 +378,11 @@ export function sfxData(sfx: Sfx): EngineAudioData {
       const events: TimedWrites[] = [];
       let t = 0;
       for (const note of voice.notes) {
-        if (voice.channel === 3) {
+        if (note.volume === 0) {
+          // A rest silences the channel without retriggering it.
+          const env = voice.channel === 3 ? "n21" : PULSE_REGS[voice.channel === 0 ? 1 : 2].env;
+          events.push({ t, writes: [[env, 0]] });
+        } else if (voice.channel === 3) {
           events.push({
             t,
             writes: [

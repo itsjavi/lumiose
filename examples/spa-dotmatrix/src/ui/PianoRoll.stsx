@@ -18,7 +18,7 @@ let gesture = 0;
 
 export function audition(ch: ChannelIndex, pitch: number, steps: number): void {
   const song = plainSong();
-  void playOnce(noteData(song.tracks[ch], ch, pitch, Math.min(steps, 8), song.bpm)).catch(() => {});
+  void playOnce(noteData(song.tracks[ch], ch, pitch, Math.min(steps, 8), song)).catch(() => {});
 }
 
 const ch = () => editor.channel;

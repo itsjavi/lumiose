@@ -131,6 +131,11 @@ export const PRESETS: Record<ChannelKind, Preset[]> = {
   ],
 };
 
+/** The preset's name, or "Custom" for instruments that came from a sound sheet. */
+export function presetName(kind: ChannelKind, id: string): string {
+  return PRESETS[kind].find((p) => p.id === id)?.name ?? "Custom";
+}
+
 export function presetFor(kind: ChannelKind, id: string): Preset {
   return PRESETS[kind].find((p) => p.id === id) ?? PRESETS[kind][0]!;
 }

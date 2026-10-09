@@ -27,7 +27,7 @@ function hearSfx(notes: SfxNote[]) {
 
 function hearTrack(ch: ChannelIndex, inst: Instrument, pitch: number, steps: number) {
   const track: Track = { inst, notes: [], mute: false, solo: false, pan: "C" };
-  void playOnce(noteData(track, ch, pitch, steps, 120)).catch((error: unknown) =>
+  void playOnce(noteData(track, ch, pitch, steps, { bpm: 120 })).catch((error: unknown) =>
     say(`Audio failed: ${String(error)}`),
   );
 }
