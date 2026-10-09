@@ -32,7 +32,11 @@ src/
   [Rendering modes](rendering-modes.md) and [Data and actions](data-and-actions.md)).
 - **Error pages:** `_404` renders unmatched URLs and `notFound()`; `_error` renders thrown errors
   and `error(status)`. Both receive `{ status, error }`. Outside dev, unexpected errors are masked
-  as 500.
+  as 500. An error page renders inside the layouts of its folder, like a page there: the root
+  `_404` gets the root `_layout` (header, navigation), so it only renders its own content. If a
+  layout itself fails, the error page renders without layouts. To give errors a different frame,
+  move the regular pages into a group with their own layout (`(app)/_layout.stsx`) and keep the
+  error page outside it.
 
 **Typed routes.** `lumen typegen` (run by `lumen check` and the dev server) writes
 `.lumen/types/routes.d.ts`, which augments `RouteMap` (pages and endpoints) and `LayoutMap`
@@ -154,7 +158,8 @@ export default function Post({ params }: PageProps<"/blog/[slug]">) {
 ```
 
 ```tsx check file=routes/_404.tsx
-// src/routes/_404.tsx
+// src/routes/_404.tsx: renders inside routes/_layout.stsx above (its nav and styles), so only
+// the page content goes here
 import type { ErrorPageProps } from "lumen";
 
 export default function NotFound({ status, error }: ErrorPageProps) {

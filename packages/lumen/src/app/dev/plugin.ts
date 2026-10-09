@@ -11,7 +11,8 @@
 //   middleware or the document is added, removed or changed; typegen rewrites
 //   `.lumen/types/routes.d.ts` on the way. A structural change reloads the browser.
 // - HMR: edits invalidate the module runner's cache (Vite's ssr full-reload), so the next request
-//   re-imports the changed server modules. A module in the server graph reloads the page; when
+//   re-imports the changed server modules. A module in the server graph reloads the page (once per
+//   burst of file events, so a save reported as two changes reloads once); when
 //   every changed module is a stylesheet, linked styles are swapped in place instead.
 // - Errors: unexpected render errors and compiler diagnostics (LUMxxxx, with Vite's code frame)
 //   are logged and open Vite's error overlay on the page that hit them, on top of the dev
@@ -46,6 +47,9 @@ import { sendWebResponse, toWebRequest } from "../server/node-http.ts";
 import { typegen } from "../typegen/index.ts";
 import { formatError, overlayError, overlayScript, type OverlayError } from "./errors.ts";
 import { hasSpa, SPA_ENTRY_ID, spaEntryCode } from "../router/entry.ts";
+
+/** How long a burst of file events may last and still reload the browser once. */
+const RELOAD_DEBOUNCE_MS = 30;
 
 export interface LumenDevOptions {
   /** Project-relative routes directory. Default `src/routes`. */
@@ -102,6 +106,20 @@ export function lumenDev(options: LumenDevOptions = {}): Plugin {
   let scanning: Promise<void> | undefined;
   let rescan = false;
   let cached: { runtime: AppServerModule; app: AppFiles; handler: RequestHandler } | undefined;
+  let reloadTimer: ReturnType<typeof setTimeout> | undefined;
+
+  /**
+   * Reloads the browser once for a burst of file events. One save can reach the watcher as
+   * several `change` events (a truncate, then the write; editors that write twice), and each would
+   * otherwise send its own full reload: the page reloads twice (TASK-139).
+   */
+  function scheduleReload(): void {
+    clearTimeout(reloadTimer);
+    reloadTimer = setTimeout(() => {
+      reloadTimer = undefined;
+      server.environments.client.hot.send({ type: "full-reload", path: "*" });
+    }, RELOAD_DEBOUNCE_MS);
+  }
   // Errors reported while handling a request (including in-process fetches and streamed boundaries).
   const requestErrors = new AsyncLocalStorage<OverlayError[]>();
 
@@ -345,7 +363,7 @@ export function lumenDev(options: LumenDevOptions = {}): Plugin {
             })),
           });
         } else {
-          client.send({ type: "full-reload", path: "*" });
+          scheduleReload();
         }
         return [];
       },

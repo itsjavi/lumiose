@@ -274,6 +274,22 @@ describe.skipIf(!binding)("lumen dev", () => {
     await eventually(async () => (await get("/")).status === 200);
   });
 
+  it("reloads the browser once when one save reaches the watcher as several changes", async () => {
+    const file = "src/routes/index.stsx";
+    const source = FILES[file]!;
+    write(file, source.replace("<h1>Home</h1>", "<h1>Twice</h1>"));
+    await eventually(async () => (await (await get("/")).text()).includes("<h1>Twice</h1>"));
+    await settle();
+    // One save seen as a burst of events (a truncate, then the write; an editor that writes
+    // twice). Emitted directly, so no late event of the real file system joins the count.
+    for (let i = 0; i < 3; i++) dev.vite.watcher.emit("change", join(root, file));
+    await eventually(() => sent.length > 0);
+    await new Promise((done) => setTimeout(done, 200));
+    expect(sent.filter((payload) => payload.type === "full-reload")).toHaveLength(1);
+    write(file, source);
+    await eventually(async () => (await (await get("/")).text()).includes("<h1>Home</h1>"));
+  });
+
   it("swaps stylesheets in place when only CSS changed", async () => {
     await get("/");
     await settle();

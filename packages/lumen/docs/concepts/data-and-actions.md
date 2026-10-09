@@ -20,7 +20,10 @@ the page request's cookies, without a network round-trip.
 
 **Mutations: form actions.** A page exports `action(ctx)` or named `actions = { name(ctx) }`. A
 `<form method="post">` posts to the page (or to `?/name` for a named action) and works without
-JavaScript. An action receives `ctx.formData()` and returns:
+JavaScript. A named action's URL may keep the page's other query parameters: the action is the
+parameter that starts with `/`, wherever it is, so `?status=open&/close` runs `close`, and
+`ctx.url` still has `status=open` (useful to redirect back to a filtered list). An action receives
+`ctx.formData()` and returns:
 
 | Return                         | Result                                                                                          |
 | ------------------------------ | ----------------------------------------------------------------------------------------------- |
@@ -142,6 +145,34 @@ export async function BookSearch({ q }: { q: string }) {
     if (isFetchError(error) && error.status === 404) return <p>No books.</p>;
     throw error;
   }
+}
+```
+
+Keeping the page's filters through a named action:
+
+```stsx check file=routes/issues.stsx
+// src/routes/issues.stsx: the list is filtered by ?status=; "Close" keeps the filter
+import { redirect, url, type ActionContext } from "lumen";
+
+export const mode = "server";
+
+export const actions = {
+  async close(ctx: ActionContext) {
+    // await db.issues.close((await ctx.formData()).getAll("ids"));
+    const back = new URL(ctx.url);
+    back.searchParams.delete("/close"); // the action key; the filters stay
+    redirect(back.pathname + back.search);
+  },
+};
+
+export default function Issues() {
+  const search = url().search; // "?status=open", or ""
+  return (
+    <form method="post" action={`${search === "" ? "?" : `${search}&`}/close`}>
+      {/* rows with <input type="checkbox" name="ids" value={id} /> */}
+      <button>Close selected</button>
+    </form>
+  );
 }
 ```
 

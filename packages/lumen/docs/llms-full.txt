@@ -1348,7 +1348,11 @@ src/
   [Rendering modes](rendering-modes.md) and [Data and actions](data-and-actions.md)).
 - **Error pages:** `_404` renders unmatched URLs and `notFound()`; `_error` renders thrown errors
   and `error(status)`. Both receive `{ status, error }`. Outside dev, unexpected errors are masked
-  as 500.
+  as 500. An error page renders inside the layouts of its folder, like a page there: the root
+  `_404` gets the root `_layout` (header, navigation), so it only renders its own content. If a
+  layout itself fails, the error page renders without layouts. To give errors a different frame,
+  move the regular pages into a group with their own layout (`(app)/_layout.stsx`) and keep the
+  error page outside it.
 
 **Typed routes.** `lumen typegen` (run by `lumen check` and the dev server) writes
 `.lumen/types/routes.d.ts`, which augments `RouteMap` (pages and endpoints) and `LayoutMap`
@@ -1470,7 +1474,8 @@ export default function Post({ params }: PageProps<"/blog/[slug]">) {
 ```
 
 ```tsx check file=routes/_404.tsx
-// src/routes/_404.tsx
+// src/routes/_404.tsx: renders inside routes/_layout.stsx above (its nav and styles), so only
+// the page content goes here
 import type { ErrorPageProps } from "lumen";
 
 export default function NotFound({ status, error }: ErrorPageProps) {
@@ -1537,7 +1542,10 @@ the page request's cookies, without a network round-trip.
 
 **Mutations: form actions.** A page exports `action(ctx)` or named `actions = { name(ctx) }`. A
 `<form method="post">` posts to the page (or to `?/name` for a named action) and works without
-JavaScript. An action receives `ctx.formData()` and returns:
+JavaScript. A named action's URL may keep the page's other query parameters: the action is the
+parameter that starts with `/`, wherever it is, so `?status=open&/close` runs `close`, and
+`ctx.url` still has `status=open` (useful to redirect back to a filtered list). An action receives
+`ctx.formData()` and returns:
 
 | Return                         | Result                                                                                          |
 | ------------------------------ | ----------------------------------------------------------------------------------------------- |
@@ -1659,6 +1667,34 @@ export async function BookSearch({ q }: { q: string }) {
     if (isFetchError(error) && error.status === 404) return <p>No books.</p>;
     throw error;
   }
+}
+```
+
+Keeping the page's filters through a named action:
+
+```stsx check file=routes/issues.stsx
+// src/routes/issues.stsx: the list is filtered by ?status=; "Close" keeps the filter
+import { redirect, url, type ActionContext } from "lumen";
+
+export const mode = "server";
+
+export const actions = {
+  async close(ctx: ActionContext) {
+    // await db.issues.close((await ctx.formData()).getAll("ids"));
+    const back = new URL(ctx.url);
+    back.searchParams.delete("/close"); // the action key; the filters stay
+    redirect(back.pathname + back.search);
+  },
+};
+
+export default function Issues() {
+  const search = url().search; // "?status=open", or ""
+  return (
+    <form method="post" action={`${search === "" ? "?" : `${search}&`}/close`}>
+      {/* rows with <input type="checkbox" name="ids" value={id} /> */}
+      <button>Close selected</button>
+    </form>
+  );
 }
 ```
 
