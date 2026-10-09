@@ -2,6 +2,16 @@ import { readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { expect, test } from "@playwright/test";
 
+/**
+ * Writes a watched source file. Vite's watcher (chokidar) drops a change that comes within 50 ms of
+ * the previous one for the same file, which a fast CI runner reaches when a test restores a file
+ * right after its edit was applied; real edits are never that close.
+ */
+async function edit(file: string, content: string): Promise<void> {
+  await new Promise((resolve) => setTimeout(resolve, 100));
+  writeFileSync(file, content);
+}
+
 test("the counter counts and resets", async ({ page }) => {
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
@@ -49,13 +59,13 @@ test("an edited component re-mounts the app without a reload", async ({ page }, 
   await page.evaluate(() => ((window as unknown as { marker: number }).marker = 1));
   await expect(page.getByRole("button", { name: /Clicked/ })).toHaveText("Clicked 0 times");
   try {
-    writeFileSync(file, source.replace("Clicked {count()} times", "Pressed {count()} times"));
+    await edit(file, source.replace("Clicked {count()} times", "Pressed {count()} times"));
     await expect(page.getByRole("button", { name: /Pressed/ })).toHaveText("Pressed 0 times");
     // One app root (the previous one was disposed) and the same page (no full reload).
     await expect(page.locator("main")).toHaveCount(1);
     expect(await page.evaluate(() => (window as unknown as { marker: number }).marker)).toBe(1);
   } finally {
-    writeFileSync(file, source);
+    await edit(file, source);
   }
   await expect(page.getByRole("button", { name: /Clicked/ })).toHaveText("Clicked 0 times");
 });
@@ -75,13 +85,13 @@ test("an edited component re-renders alone: its siblings keep their state (TASK-
   const heading = page.getByRole("heading", { name: "Lumen + Vite" });
   const before = await heading.elementHandle();
   try {
-    writeFileSync(file, source.replace("Clicked {count()} times", "Pressed {count()} times"));
+    await edit(file, source.replace("Clicked {count()} times", "Pressed {count()} times"));
     // The Counter re-renders (its own state starts over); the Todos and the App keep theirs.
     await expect(page.getByRole("button", { name: /Pressed/ })).toHaveText("Pressed 0 times");
     await expect(page.getByText("Survive the edit")).toBeVisible();
     expect(await before!.evaluate((el) => el.isConnected)).toBe(true);
   } finally {
-    writeFileSync(file, source);
+    await edit(file, source);
   }
   await expect(page.getByRole("button", { name: /Clicked/ })).toHaveText("Clicked 0 times");
   await expect(page.getByText("Survive the edit")).toBeVisible();
@@ -94,7 +104,7 @@ test("compiler errors show in the dev overlay with a code frame", async ({ page 
   await page.goto("/");
   await expect(page.getByRole("button", { name: /Clicked/ })).toBeVisible();
   try {
-    writeFileSync(file, source.replace("<h2>Counter</h2>", "<h2>Counter</h3>"));
+    await edit(file, source.replace("<h2>Counter</h2>", "<h2>Counter</h3>"));
     const overlay = page.locator("vite-error-overlay");
     await expect(overlay.locator(".message")).toContainText("LUM1001");
     await expect(overlay.locator(".plugin")).toContainText("lumen");
@@ -103,7 +113,7 @@ test("compiler errors show in the dev overlay with a code frame", async ({ page 
       await page.screenshot({ path: `${process.env.LUMEN_SCREENSHOTS}/vite-overlay.png` });
     }
   } finally {
-    writeFileSync(file, source);
+    await edit(file, source);
   }
   await expect(page.locator("vite-error-overlay")).toHaveCount(0);
   await expect(page.getByRole("button", { name: /Clicked/ })).toHaveText("Clicked 0 times");
@@ -155,7 +165,7 @@ test("style edits hot-update the CSS without re-running components", async ({ pa
   const heading = page.locator(".counter h2");
   try {
     // A style block edit: only the CSS module updates, so the count survives.
-    writeFileSync(
+    await edit(
       file,
       source.replace(
         "h2 {\n          color: $theme.accent;\n        }",
@@ -165,7 +175,7 @@ test("style edits hot-update the CSS without re-running components", async ({ pa
     await expect(heading).toHaveCSS("color", "rgb(1, 2, 3)");
     await expect(counter).toHaveText("Clicked 2 times");
     // A token edit: the CSS of every file reading it updates.
-    writeFileSync(tokens, tokensSource.replace('accent: "#4f46e5"', 'accent: "#059669"'));
+    await edit(tokens, tokensSource.replace('accent: "#4f46e5"', 'accent: "#059669"'));
     await expect(page.locator("h1")).toHaveCSS("color", "rgb(5, 150, 105)");
     await expect(counter).toHaveCSS("background-color", "rgb(5, 150, 105)");
     await expect(counter).toHaveText("Clicked 2 times");
@@ -176,8 +186,8 @@ test("style edits hot-update the CSS without re-running components", async ({ pa
       });
     }
   } finally {
-    writeFileSync(file, source);
-    writeFileSync(tokens, tokensSource);
+    await edit(file, source);
+    await edit(tokens, tokensSource);
   }
   await expect(heading).toHaveCSS("color", ACCENT);
   await expect(counter).toHaveText("Clicked 2 times");
