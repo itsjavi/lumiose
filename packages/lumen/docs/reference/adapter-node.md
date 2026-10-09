@@ -97,7 +97,7 @@ which skips on-the-fly compression for that response, or turn compression off wi
 **Malformed requests** never reach the app and are not logged: a request target that is not a
 path (`http://other/x`, `//host` is a path) or an invalid `Host` header gets `400`, `TRACE`/`TRACK`
 `405`, `CONNECT` `501`. Request bodies are bounded by the app's limits (1 MB, 10 MB for
-uploads, `lumen({ limits })`; see [Security](../concepts/security.md#request-body-limits)).
+uploads, `lumen({ limits })`; see [Security](../concepts/security.md)).
 
 **Timeouts.** The server keeps Node's defaults (`headersTimeout` 60 s, `requestTimeout` 300 s,
 `keepAliveTimeout` 5 s), which bound slow clients. On the open internet, put a reverse proxy

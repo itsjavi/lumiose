@@ -63,7 +63,7 @@ to remove one (`_headers` gets `! name`).
 **Body limits** (`limits`). `body` caps URL-encoded forms, JSON and any other non-multipart
 request body (default `"1mb"`), `upload` caps `multipart/form-data` bodies (default `"10mb"`). A
 route's `export const limits = { upload: "100mb" }` overrides them for its requests. See
-[Security](../concepts/security.md#request-body-limits).
+[Security](../concepts/security.md).
 
 ```ts
 lumen({
