@@ -7,6 +7,12 @@ async function shot(page: Page, name: string, project: string) {
   if (SHOTS && project === "dev") await page.screenshot({ path: `${SHOTS}/task-133-${name}.png` });
 }
 
+// Screenshots for TASK-160 use their own prefix.
+async function shot160(page: Page, name: string, project: string) {
+  if (SHOTS && project === "dev")
+    await page.screenshot({ path: `${SHOTS}/task-160-${name}.png`, fullPage: true });
+}
+
 // Screenshots for TASK-159 use their own prefix.
 async function shot159(page: Page, name: string, project: string) {
   if (SHOTS && project === "dev")
@@ -638,4 +644,60 @@ test("a built-in sound exports code that a saved sound imports back identically"
   await page.getByRole("button", { name: "Save", exact: true }).click();
   await expect(page.locator(".mine li.on")).toHaveText(/jump/);
   await expect(page.locator(".code pre")).toHaveText(shown!);
+});
+
+test("the studio opens cry and SFX files as sound sheets and song files as songs", async ({
+  page,
+}, info) => {
+  // Export a creature voice and a sound effect from their makers.
+  await page.goto("/creatures");
+  await page.getByRole("button", { name: "Wispet" }).click();
+  await page.getByRole("button", { name: "Show code" }).click();
+  const cry = await readDownload(page, () =>
+    page.getByRole("button", { name: "Export code" }).click(),
+  );
+  expect(cry.name).toBe("wispet.asm");
+  await page.goto("/sfx");
+  await page.getByRole("button", { name: /^Laser/ }).click();
+  await page.getByRole("button", { name: "Show code" }).click();
+  const sfx = await readDownload(page, () =>
+    page.getByRole("button", { name: "Export code" }).click(),
+  );
+
+  // With a song open, the cry opens as a voice sheet (undoable), the SFX as a sound-effect sheet.
+  await page.goto("/");
+  await page.getByRole("radio", { name: "Code" }).click();
+  const songCode = await page.getByLabel("Song code", { exact: true }).inputValue();
+  await page
+    .getByLabel("Import code file")
+    .setInputFiles({ name: cry.name, mimeType: "text/plain", buffer: cry.data });
+  await expect(page.locator(".errors li")).toHaveCount(0);
+  await expect(page.locator(".status")).toContainText("F/STEP");
+  await expect(page.getByRole("button", { name: "Save to My voices" })).toBeVisible();
+  await shot160(page, "cry-sheet", info.project.name);
+  await page.getByRole("button", { name: "Undo" }).click();
+  await expect(page.locator("#song-title")).toHaveValue("First Steps");
+  await page
+    .getByLabel("Import code file")
+    .setInputFiles({ name: "laser.asm", mimeType: "text/plain", buffer: sfx.data });
+  await expect(page.getByRole("button", { name: "Save to My sounds" })).toBeVisible();
+  await expect(page.locator("#song-title")).toHaveValue("laser");
+
+  // With that sound sheet open, a song file opens as a song again.
+  await page.getByLabel("Import code file").setInputFiles({
+    name: "first-steps.asm",
+    mimeType: "text/plain",
+    buffer: Buffer.from(songCode),
+  });
+  await expect(page.locator("#song-title")).toHaveValue("First Steps");
+  await expect(page.locator(".status")).toContainText("BPM");
+
+  // A file mixing both kinds is one clear error.
+  await page.getByLabel("Import code file").setInputFiles({
+    name: "mixed.asm",
+    mimeType: "text/plain",
+    buffer: Buffer.from(`${songCode}\n; pulse 2\n  square_note 4, 12, 1, $700\n`),
+  });
+  await expect(page.locator(".errors li")).toHaveCount(1);
+  await expect(page.locator(".errors li")).toContainText("mixes song commands (note");
 });

@@ -42,7 +42,88 @@ function parseNumber(text: string): number | undefined {
   return undefined;
 }
 
+const SFX_COMMANDS = new Set(["square_note", "noise_note", "duty_cycle_pattern", "pitch_sweep"]);
+const SONG_COMMANDS = new Set([
+  "note",
+  "note_type",
+  "octave",
+  "rest",
+  "drum_note",
+  "tempo",
+  "bars",
+  "key",
+  "song_title",
+  "song_author",
+  "instrument",
+  "vibrato",
+  "pitch_glide",
+  "arpeggio",
+  "shimmer",
+  "note_length",
+  "wave_shape",
+  "drum_tone",
+  "stereo_panning",
+  "mute",
+  "solo",
+  "sound_loop",
+  ".mainloop:",
+]);
+
+// The most telling commands first: SONG_COMMANDS and SFX_COMMANDS are in that order.
+const list = (m: Map<string, number>, order: Set<string>) =>
+  [...order]
+    .filter((w) => m.has(w))
+    .slice(0, 3)
+    .join(", ");
+
+export type Dialect =
+  | { kind: "sfx"; voice: boolean }
+  | { kind: "song" }
+  | { kind: "mixed"; error: CodeError }
+  | { kind: "unknown" };
+
+/**
+ * Which kind of code a text is: sound-effect / cry code (square_note, noise_note…), song code
+ * (note, note_type…), both (an error), or neither. `duty_cycle` and `sound_ret` belong to both.
+ */
+export function codeDialect(text: string): Dialect {
+  const sfx = new Map<string, number>();
+  const song = new Map<string, number>();
+  let voice = false;
+  text.split(/\r?\n/).forEach((raw, i) => {
+    const semi = raw.indexOf(";");
+    const code = (semi < 0 ? raw : raw.slice(0, semi)).trim();
+    if (!code) {
+      if (/^;\s*base voice "/.test(raw.trim())) voice = true;
+      return;
+    }
+    const word = code.split(/\s+/)[0]!;
+    if (SFX_COMMANDS.has(word) && !sfx.has(word)) sfx.set(word, i + 1);
+    if (SONG_COMMANDS.has(word) && !song.has(word)) song.set(word, i + 1);
+  });
+  if (sfx.size && song.size) {
+    return {
+      kind: "mixed",
+      error: {
+        line: Math.max(Math.min(...sfx.values()), Math.min(...song.values())),
+        message: `This file mixes song commands (${list(song, SONG_COMMANDS)}) and sound-effect commands (${list(sfx, SFX_COMMANDS)}); Dotmatrix opens one kind per file`,
+      },
+    };
+  }
+  if (sfx.size) return { kind: "sfx", voice };
+  if (song.size) return { kind: "song" };
+  return { kind: "unknown" };
+}
+
 export function parseCode(text: string, name = "Pasted sound"): CodeResult {
+  const dialect = codeDialect(text);
+  if (dialect.kind === "mixed") return { errors: [dialect.error] };
+  if (dialect.kind === "song")
+    return {
+      errors: [
+        { line: 1, message: "This is song code: open it in the Studio (Code, then Import file…)" },
+      ],
+    };
   const errors: CodeError[] = [];
   const voices: SfxVoice[] = [];
   let voice: SfxVoice | undefined;

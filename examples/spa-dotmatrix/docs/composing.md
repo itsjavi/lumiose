@@ -12,6 +12,7 @@ written for this guide or for Dotmatrix; none comes from a game.
 - [Creature voices](#creature-voices)
 - [Editing, pasting and importing code](#editing-pasting-and-importing-code)
 - [Songs as code](#songs-as-code)
+- [Two dialects](#two-dialects)
 - [Checklist](#checklist)
 
 ## The four channels
@@ -355,6 +356,21 @@ key G, major
 
 Every demo song exports to code and reads back as the identical song with identical register
 writes (`src/model/songcode.test.ts`).
+
+## Two dialects
+
+Dotmatrix code comes in two kinds, and each file holds one of them:
+
+| Dialect                | For                          | Telling commands                                                          | Lengths and pitches                         |
+| ---------------------- | ---------------------------- | ------------------------------------------------------------------------- | ------------------------------------------- |
+| Sound-effect (and cry) | SFX, creature voices, sheets | `square_note`, `noise_note`, `duty_cycle_pattern`, `pitch_sweep`          | Frames, raw frequency registers (`$7C1`)    |
+| Song (music macros)    | Songs                        | `note_type`, `octave`, `note`, `rest`, `drum_note`, `tempo`, `instrument` | Steps (16th notes), note names (`C_`, `F#`) |
+
+`duty_cycle`, `sound_ret` and comments belong to both. The Studio reads either: **Import file…**,
+pasting or **Apply** opens sound-effect or cry code as a sound sheet and song code as a song,
+switching the Studio between the two as needed (Undo switches back). A file that mixes both kinds
+gets a single error naming the commands of each, rather than a list of unknown ones. The SFX and
+Creatures makers read the sound-effect dialect only, and point song code to the Studio.
 
 ## Checklist
 

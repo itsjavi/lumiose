@@ -34,8 +34,13 @@ export function StudioCode() {
     errors.set([]);
   });
 
-  function apply() {
-    const result = readStudioCode(draft(), plainSong());
+  /** Reads the draft (a fresh import names a new sheet after its file) and opens the result. */
+  function apply(fromFile?: string) {
+    const result = readStudioCode(
+      draft(),
+      plainSong(),
+      fromFile ? { name: fromFile, fresh: true } : {},
+    );
     if ("errors" in result) {
       errors.set(result.errors);
       say(
@@ -45,8 +50,16 @@ export function StudioCode() {
     }
     errors.set([]);
     dirty.set(false);
-    openSong(result.song, "Edit code");
-    say("Code applied. Undo brings back the song as it was.");
+    const was = doc.song.sheet ? "sheet" : "song";
+    const now = result.song.sheet ? "sheet" : "song";
+    openSong(result.song, fromFile ? `Import ${fromFile}` : "Edit code");
+    say(
+      was === now
+        ? "Code applied. Undo brings back what was open."
+        : now === "sheet"
+          ? `Opened “${result.song.sheet!.name}” as a sound sheet (sound-effect code). Undo brings the song back.`
+          : "Opened as a song (song code). Undo brings the sound sheet back.",
+    );
   }
 
   function revert() {
@@ -64,7 +77,7 @@ export function StudioCode() {
     if (picked.size > 400_000) return say(`${picked.name} is too large for driver code`);
     draft.set(await picked.text());
     dirty.set(true);
-    apply();
+    apply(picked.name.replace(/\.(asm|txt|s|inc)$/i, ""));
   }
 
   async function copy() {
@@ -131,7 +144,7 @@ export function StudioCode() {
           type="button"
           class="key"
           disabled={!dirty()}
-          onClick={apply}
+          onClick={() => apply()}
           title="Apply the code (Ctrl/⌘ Enter)"
         >
           Apply
