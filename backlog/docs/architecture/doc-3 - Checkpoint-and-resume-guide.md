@@ -3,52 +3,49 @@ id: doc-3
 title: Checkpoint and resume guide
 type: guide
 created_date: '2026-10-08 16:56'
-updated_date: '2026-10-09 04:12'
+updated_date: '2026-10-09 12:37'
 tags:
   - checkpoint
   - resume
 ---
-# Checkpoint and resume guide (2026-10-09)
+# Checkpoint and resume guide (2026-10-09, evening)
 
-**Checkpoint.** All agents are stopped and all work is committed on `main`. No claims or locks are held. Last agent reports: `pnpm typecheck`, `pnpm lint` and `pnpm test` (1072 passed) green; `cargo test`/clippy/fmt green for the touched crates. `pnpm --filter lumen size:apps` is a report (examples have no size budget, TASK-106); `size` enforces the runtime cap.
+**State.** Work is committed on `main` and pushed to `origin` (github.com/itsjavi/lumen, private). The website deploys through GitHub Actions to **https://itsjavi.com/lumen/** (site, docs, playground, `/examples` "Made with Lumen", `/benchmarks`). CI (Linux/macOS/Windows) and native-binary workflows exist (TASK-161, Photon, may still be stabilising). Workers were told to checkpoint with RESUME notes on their tasks; read `backlog task list -s "In Progress" --plain` first.
 
-**Sources of truth:** spec doc-1, contract doc-2, decisions 1–25 in `backlog/decisions/`, `AGENTS.md` (workflow, ownership), `agents.json` (Lux, Prism, Photon, Halo, Spark, Nova, Beacon).
+**Sources of truth:** spec doc-1, contract doc-2, fullstack benchmark doc-4, decisions 1–29, `AGENTS.md` (ownership, commits, lock rules), `agents.json` (Lux, Prism, Photon, Halo, Spark, Nova, Beacon, Quasar, Chime). License: MIT (root `LICENSE`).
 
-## Where we are
+## Done since the last checkpoint (highlights)
 
-- **M1 core, M2 SSR/islands, M3 app layer, M4 tooling: done.**
-- **M5 docs/agent DX:** docs, create-lumen, `lumen mcp` (TASK-34), website `apps/web` (TASK-57), playground `apps/playground` (TASK-58) done. Open: GitHub Pages deploy (TASK-60; CI needs the `wasm32-unknown-unknown` target and `wasm-bindgen-cli@0.2.129`, see the TASK-58 note).
-- **M6 samples:** spa-chiptune, ssr-bookshelf, ssg-travel-journal done with e2e. Open: Prism DX review (TASK-38).
-- **Latest work (2026-10-09):** SVGO replaces OXVG (TASK-96, native binary 18.1 → 12.9 MB incl. `.md`/`.html`); `.md`/`.html` imports via `crates/lumen_content` (TASK-69, Halo owns it); runtime chunking and size check (TASK-91); `insertText` (TASK-90); class scope forwarding (TASK-92); subtree scopes in lumen_css (TASK-88); `href()` base/trailingSlash (TASK-101); island records with custom documents (TASK-103); auto-invalidate after `submit()` (TASK-105); LUM2001 server reads (TASK-86); LUM6001 (TASK-53).
+- Benchmarks: fullstack comparison (doc-4, m-8) with harness, conformance suite and viewer (dev/build/prod labelled); quiet full runs committed. Lumen leads req/s on every route, JS payload, interactivity, build and dev start; loses on production dependency count (fixed by the package split). js-framework-benchmark: Lumen 1.047 (projected 1.086) vs Solid 1.124, Vue Vapor 1.084, Svelte 1.150, React 1.543, Remix 3 1.564.
+- Performance: server props evaluated once (decision-28), static index / memoized imports (+41–88% req/s on light routes), hydration adopts nodes in place (LCP = FCP), insertText codegen, minified server output.
+- Security (TASK-162 review → TASK-164..171, decision-29 defaults): //host URL fix, body limits `lumen({ limits })`, unsafe URL blocking (LUM4009), ErrorBoundary production sanitisation, CSP strict mode with automatic nonces (decision-27), adapter-node hardening, MCP boundaries, client navigation scheme allowlist.
+- DX: route-literal types and inferred action types (decision-26), route(), .md headings, lumen({ headers }), create-lumen --mcp (Claude Code + Codex), ESLint/oxlint and Prettier plugins, island hot-swap in dev (TASK-147).
+- Samples: Dotmatrix (Game Boy chiptune studio on the user's gbapu engine: 12 songs, 20 SFX, 20 creatures, code editor/export) and chiptune on GitHub Pages with a first-party COOP/COEP service worker.
 
-## Open tasks
+## Open work (owner → task)
 
-| Task | Owner | Note |
+| Owner | Task | Note |
 |---|---|---|
-| TASK-85 (HIGH) `.stsx` stylesheet links in `lumen dev` | Photon | Not started |
-| TASK-65 compiled rows | Photon | In Progress; codegen rule for `insertText` is in the notes (from Spark) |
-| TASK-62, TASK-63 | Photon | Not started; were waiting on Halo's lumen_napi/vite edits, now committed |
-| TASK-104 flaky css-manifest test | Photon | |
-| TASK-107 relative asset URLs in `.md`/`.html` | Halo | |
-| TASK-106 SPA size budget | Lux/user | See open decisions |
-| TASK-68 Remix 3 benchmark rerun | Spark | Run on a quiet machine only (~35 min) |
-| TASK-60 deploy, TASK-38 DX review | Lux, Prism | |
-| TASK-39/40/41/64 | various | Low priority |
+| Photon | TASK-161 CI + native binaries | check `gh run list`; RESUME note on task |
+| Photon | TASK-170 scanner/oxc depth limits, LUM4003 bypasses, PUBLIC_ env prefix, dev fs.deny | high, security |
+| Photon | TASK-146 component-level HMR | approved, after 170 |
+| Halo | TASK-169 SVG sanitizer allowlist, CSS/SVG depth limits, CSS `$` breakout, md/html quadratic parsing | high, security; LUM3021 docs may be uncommitted |
+| Spark | TASK-176 runtime headroom (every-export 9.97 kB vs 10 kB cap) | |
+| Quasar | TASK-154 harness interleaving, then TASK-40 agent eval suite | smoke run (5 tasks × 1 run × 4 models via local `claude -p` / `codex exec`) needs Lux's review of time/quota cost before the full matrix |
+| Nova | TASK-175 adapters (Cloudflare, Vercel, Netlify) + deploy docs | waits for the adapter API decision |
+| Lux | TASK-39 package names and split | waits for the user |
+| — | TASK-148 HMR DOM morphing | deferred |
+| — | TASK-64 Lightning CSS upgrade | waits for upstream release |
 
-## Open decisions
+## Decisions pending from the user
 
-**For the user (DX):**
-- TASK-106: spa-chiptune ships 11.18 kB framework JS (router 3.69 kB) against the 10 kB cap. Options: a separate SPA budget that counts the router, or slim the router (History fallback on demand saves ~0.4 kB, not enough alone). The spec's cap (doc-1 §6) does not name the router.
-- TASK-105 side effect: on MPA pages `invalidate()` reloads, so a successful `submit()` reloads and loses `actionData()`. Alternative: re-run island async components without a reload (needs a `dom/async.ts` change).
-- TASK-69 semantics Halo chose, to confirm: head `<style>`/scripts kept for full `.html` documents; a nested `<style>` scopes to its element's subtree (decision-23); `<script>` in Markdown follows the `.html` rule; frontmatter typed by merging into a `Frontmatter` interface.
-
-**For Lux:**
-- TASK-86 follow-up: a server page deriving from its own props (`params.slug.toUpperCase()`) still warns LUM2001; fixing it needs the route mode in Vite/`lumen check`.
+1. **Package names:** whether the `@lumen` npm org is free (check by creating it on npmjs.com) and the unscoped runtime package: `lumen-jsx` (recommended; `create-lumen-jsx` also free) or `lumenx`. Proposed layout: runtime only in the unscoped package (`x`, `x/dom`, `x/server`, `x/router`); scoped `@lumen/vite`, `@lumen/cli`, `@lumen/compiler(-<platform>)`, `@lumen/adapter-*`, `@lumen/create`, `@lumen/language-server`, `@lumen/eslint-plugin`, `@lumen/prettier-plugin`, `@lumen/testing`. The split also ships prebuilt JS (lets Node servers keep the runtime external) and drops MCP SDK/svgo/yaml from production installs.
+2. **Adapter API (TASK-175):** A `lumen({ adapter: cloudflare() })` (recommended, matches the spec) or B post-build commands.
+3. **Composition check:** whether Chime should recompose Rival Clash, Last Stand, Lantern Night, Bumbling Along and Roll the Credits.
 
 ## How to resume
 
-1. Start an orchestrator session (Lux). Read `AGENTS.md`, `agents.json`, this guide and `backlog task list -s "In Progress" --plain`.
-2. Rebuild the native compiler after pulling: `pnpm build:compiler`; run everything with `pnpm check`.
-3. Spawn the fewest workers that keep the critical path moving (suggested: Photon on TASK-85 → 62/63 → 65; Halo on TASK-107; then TASK-60 and TASK-38).
-
-**Caveats:** benchmarks are noisy while agents run; agents remove only locks they created; pnpm 11 enforces a minimum release age for new dependencies.
+1. Start an orchestrator session (Lux). Read `AGENTS.md`, `agents.json`, this guide, then `backlog task list -s "In Progress" --plain` and each task's RESUME note.
+2. `git pull`; rebuild the native compiler (`pnpm build:compiler`); run `pnpm check`.
+3. Check CI: `gh run list --limit 10`.
+4. Restart workers with their nickname and task ids (Opus; effort medium/high by complexity). Avoid running benchmarks while agents are active.
