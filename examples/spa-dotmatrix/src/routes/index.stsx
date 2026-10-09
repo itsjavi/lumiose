@@ -1,0 +1,75 @@
+// The studio: transport, channels, the piano roll screen and the sound of the selected channel.
+// A share link (`/?song=…`) opens its song here; undo brings back the song that was open.
+import { onMount } from "lumen";
+import { search } from "lumen/router";
+import { onSpace } from "../keys.ts";
+import { decodeSong } from "../model/share.ts";
+import { openSong, say } from "../state.ts";
+import { ChannelRack } from "../ui/ChannelRack.stsx";
+import { InstrumentPanel } from "../ui/InstrumentPanel.stsx";
+import { PianoRoll } from "../ui/PianoRoll.stsx";
+import { SongPanel } from "../ui/SongPanel.stsx";
+import { Transport } from "../ui/Transport.stsx";
+
+export default function Studio() {
+  onMount(() => {
+    onSpace(undefined);
+    const code = search().get("song");
+    if (code) {
+      decodeSong(code)
+        .then((song) => {
+          openSong(song, "Open shared song");
+          say(`Opened the shared song “${song.title}”`);
+        })
+        .catch(() => say("That share link could not be read"))
+        .finally(() => void search.set({ song: null }, { replace: true }));
+    }
+  });
+
+  return (
+    <div class="studio">
+      <Transport />
+      <div class="deck">
+        <ChannelRack />
+        <div class="center">
+          <PianoRoll />
+          <div class="below">
+            <InstrumentPanel />
+            <SongPanel />
+          </div>
+        </div>
+      </div>
+      <style>
+        .studio {
+          display: grid;
+          gap: 14px;
+        }
+        .deck {
+          display: grid;
+          grid-template-columns: 290px minmax(0, 1fr);
+          gap: 14px;
+          align-items: start;
+        }
+        .center {
+          display: grid;
+          gap: 14px;
+          min-inline-size: 0;
+        }
+        .below {
+          display: grid;
+          grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+          gap: 14px;
+          align-items: start;
+        }
+        @media (width < 1100px) {
+          .deck {
+            grid-template-columns: minmax(0, 1fr);
+          }
+          .below {
+            grid-template-columns: minmax(0, 1fr);
+          }
+        }
+      </style>
+    </div>
+  );
+}

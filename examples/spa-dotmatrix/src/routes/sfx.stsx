@@ -1,0 +1,447 @@
+// SFX gallery and maker: original sound effects as pads; pick one, bend it with a few sliders, see
+// its waveform and the driver code it becomes, and save it as a WAV file.
+import { computed, onCleanup, onMount, signal, store } from "lumen";
+import { FPS, sfxData, sfxFrames } from "../audio/driver.ts";
+import { monoWav, playOnce } from "../audio/player.ts";
+import { onSpace } from "../keys.ts";
+import { DUTY_NAMES } from "../model/instruments.ts";
+import { NO_MODS, SFX, applyMods, listing, sfxById, type SfxMods } from "../model/sfx.ts";
+import { say } from "../state.ts";
+import { tokens } from "../tokens.ts";
+import { download } from "../ui/Transport.stsx";
+
+export default function SfxPage() {
+  const selected = signal(SFX[0]!.id);
+  const mods = store<SfxMods>({ ...NO_MODS });
+  const current = computed(() => applyMods(sfxById(selected())!, { ...mods }));
+  const pcm = signal<Float32Array | null>(null);
+  const showCode = signal(false);
+  let canvas: HTMLCanvasElement | undefined;
+  let timer: ReturnType<typeof setTimeout> | undefined;
+
+  async function fire() {
+    try {
+      const data = await playOnce(sfxData(current()));
+      pcm.set(data);
+      draw(data);
+    } catch (error) {
+      say(`Audio failed: ${String(error)}`);
+    }
+  }
+
+  function draw(data: Float32Array) {
+    const c = canvas;
+    if (!c) return;
+    const g = c.getContext("2d")!;
+    const style = getComputedStyle(c);
+    const { width: w, height: h } = c;
+    g.fillStyle = style.getPropertyValue("--l0");
+    g.fillRect(0, 0, w, h);
+    g.fillStyle = style.getPropertyValue("--l1");
+    for (let x = 0; x < w; x += 4) for (let y = 0; y < h; y += 4) g.fillRect(x, y, 1, 1);
+    g.fillStyle = style.getPropertyValue("--l3");
+    const per = Math.max(1, Math.floor(data.length / (w / 2)));
+    for (let x = 0; x < w; x += 2) {
+      let peak = 0;
+      const from = Math.floor((x / w) * data.length);
+      for (let i = from; i < from + per && i < data.length; i++)
+        peak = Math.max(peak, Math.abs(data[i]!));
+      const half = Math.max(1, Math.round(peak * h * 1.8));
+      for (let y = h / 2 - half; y < h / 2 + half; y += 2) g.fillRect(x, Math.round(y), 2, 1.5);
+    }
+  }
+
+  function pick(id: string) {
+    selected.set(id);
+    Object.assign(mods, NO_MODS);
+    void fire();
+  }
+
+  /** Sliders replay the sound shortly after they stop moving. */
+  function tweak(field: keyof SfxMods, value: number) {
+    mods[field] = value;
+    clearTimeout(timer);
+    timer = setTimeout(() => void fire(), 140);
+  }
+
+  function surprise() {
+    const r = (lo: number, hi: number) => lo + Math.round(Math.random() * (hi - lo));
+    Object.assign(mods, {
+      pitch: r(-7, 7),
+      length: [0.6, 0.8, 1, 1.25, 1.5][r(0, 4)]!,
+      sweep: r(-1, 1) === 0 ? 0 : r(-6, 6),
+      duty: r(-1, 3),
+      tone: r(-2, 2),
+      volume: 1,
+    });
+    void fire();
+  }
+
+  async function save() {
+    try {
+      const data = pcm() ?? (await playOnce(sfxData(current())));
+      const blob = await monoWav(data);
+      download(blob, `${current().id}.wav`);
+      say(`Saved ${current().id}.wav`);
+    } catch (error) {
+      say(`WAV export failed: ${String(error)}`);
+    }
+  }
+
+  onMount(() => onSpace(() => void fire()));
+  onCleanup(() => {
+    onSpace(undefined);
+    clearTimeout(timer);
+  });
+
+  const ms = (frames: number) => `${Math.round((frames / FPS) * 1000)} ms`;
+  const hasPulse1 = () => sfxById(selected())!.voices.some((v) => v.channel === 0);
+  const hasPulse = () => sfxById(selected())!.voices.some((v) => v.channel !== 3);
+  const hasNoise = () => sfxById(selected())!.voices.some((v) => v.channel === 3);
+
+  const slider = (
+    label: string,
+    field: keyof SfxMods,
+    min: number,
+    max: number,
+    step: number,
+    show: () => string,
+    enabled: () => boolean = () => true,
+  ) => (
+    <label class={["field", { off: !enabled() }]}>
+      <span class="label">{label}</span>
+      <input
+        type="range"
+        min={min}
+        max={max}
+        step={step}
+        value={mods[field]}
+        disabled={!enabled()}
+        onInput={(event) => tweak(field, event.currentTarget.valueAsNumber)}
+      />
+      <output>{show()}</output>
+    </label>
+  );
+
+  return (
+    <div class="sfx">
+      <header class="intro">
+        <h1>Sound effects</h1>
+        <p>
+          Each sound is a few square or noise notes, a handful of frames long, exactly how handheld
+          RPGs wrote them. Tap a pad, then bend it.
+        </p>
+      </header>
+      <div class="layout">
+        <ul class="pads" aria-label="Sound effects">
+          {SFX.map((sfx) => (
+            <li>
+              <button
+                type="button"
+                class="pad"
+                aria-pressed={selected() === sfx.id}
+                onClick={() => pick(sfx.id)}
+              >
+                <span class="name">{sfx.name}</span>
+                <span class="len">{ms(sfxFrames(sfx))}</span>
+              </button>
+            </li>
+          ))}
+        </ul>
+        <section class="panel maker" aria-labelledby="maker-title">
+          <div class="maker-head">
+            <div>
+              <h2 id="maker-title">{sfxById(selected())!.name}</h2>
+              <p class="blurb">{sfxById(selected())!.blurb}</p>
+            </div>
+            <button
+              type="button"
+              class="fire"
+              aria-label={`Play ${sfxById(selected())!.name}`}
+              onClick={() => void fire()}
+            >
+              <svg viewBox="0 0 10 10" aria-hidden="true">
+                <path d="M3 1.5v7l5.5-3.5z" />
+              </svg>
+            </button>
+          </div>
+          <div class="wave">
+            <canvas
+              width="560"
+              height="96"
+              ref={(el) => (canvas = el)}
+              aria-label="Waveform of the last play"
+              role="img"
+            />
+            <span class="dur">{ms(sfxFrames(current()))}</span>
+          </div>
+          <div class="sliders">
+            {slider(
+              "Pitch",
+              "pitch",
+              -12,
+              12,
+              1,
+              () => (mods.pitch > 0 ? `+${mods.pitch}` : String(mods.pitch)),
+              hasPulse,
+            )}
+            {slider("Length", "length", 0.5, 2, 0.05, () => `${Math.round(mods.length * 100)}%`)}
+            {slider(
+              "Sweep",
+              "sweep",
+              -7,
+              7,
+              1,
+              () =>
+                mods.sweep === 0
+                  ? "Preset"
+                  : mods.sweep > 0
+                    ? `Up ${mods.sweep}`
+                    : `Down ${-mods.sweep}`,
+              hasPulse1,
+            )}
+            {slider(
+              "Duty",
+              "duty",
+              -1,
+              3,
+              1,
+              () => (mods.duty < 0 ? "Preset" : DUTY_NAMES[mods.duty]!),
+              hasPulse,
+            )}
+            {slider(
+              "Noise tone",
+              "tone",
+              -3,
+              3,
+              1,
+              () =>
+                mods.tone === 0
+                  ? "Preset"
+                  : mods.tone > 0
+                    ? `Bright ${mods.tone}`
+                    : `Dark ${-mods.tone}`,
+              hasNoise,
+            )}
+            {slider("Volume", "volume", 0.25, 1, 0.05, () => `${Math.round(mods.volume * 100)}%`)}
+          </div>
+          <div class="actions">
+            <button type="button" class="btn" onClick={surprise}>
+              Surprise me
+            </button>
+            <button
+              type="button"
+              class="btn"
+              onClick={() => {
+                Object.assign(mods, NO_MODS);
+                void fire();
+              }}
+            >
+              Reset
+            </button>
+            <button
+              type="button"
+              class="btn"
+              aria-expanded={showCode()}
+              onClick={() => showCode.set(!showCode())}
+            >
+              {showCode() ? "Hide code" : "Show code"}
+            </button>
+            <button type="button" class="btn primary" onClick={() => void save()}>
+              Export WAV
+            </button>
+          </div>
+          {showCode() ? (
+            <div class="code">
+              <p>
+                The same sound as sound-driver macros:{" "}
+                <code>square_note frames, volume, fade, frequency</code>. Fade 1–7 fades out (1
+                fastest), 9–15 fades in (9 fastest).
+              </p>
+              <pre>{listing(current())}</pre>
+            </div>
+          ) : null}
+        </section>
+      </div>
+      <style>
+        .sfx {
+          display: grid;
+          gap: 18px;
+        }
+        .intro h1 {
+          font-size: 24px;
+          color: var(--indigo);
+        }
+        .intro p {
+          max-inline-size: 70ch;
+          margin: 6px 0 0;
+          color: var(--dim);
+        }
+        .layout {
+          display: grid;
+          grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr);
+          gap: 18px;
+          align-items: start;
+        }
+        .pads {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+          gap: 10px;
+          margin: 0;
+          padding: 0;
+          list-style: none;
+        }
+        .pad {
+          display: grid;
+          gap: 4px;
+          inline-size: 100%;
+          min-block-size: 76px;
+          padding: 12px;
+          border: 0;
+          border-radius: 14px;
+          background: var(--shell);
+          text-align: start;
+          cursor: pointer;
+          box-shadow:
+            inset 0 -4px 0 rgb(0 0 0 / 0.12),
+            0 6px 14px -10px rgb(0 0 0 / 0.5);
+        }
+        .pad:active {
+          transform: translateY(2px);
+          box-shadow: inset 0 2px 0 rgb(0 0 0 / 0.12);
+        }
+        .pad[aria-pressed="true"] {
+          background: var(--accent);
+          color: var(--accent-ink);
+        }
+        .pad[aria-pressed="true"] .len {
+          color: inherit;
+          opacity: 0.8;
+        }
+        .name {
+          font-family: $tokens.font.pixel;
+          font-size: 13px;
+        }
+        .len {
+          font-size: 12px;
+          color: var(--dim);
+        }
+        .maker {
+          display: grid;
+          gap: 14px;
+        }
+        .maker-head {
+          display: flex;
+          gap: 12px;
+          justify-content: space-between;
+          align-items: start;
+        }
+        .maker h2 {
+          font-size: 20px;
+          color: var(--indigo);
+        }
+        .blurb {
+          margin: 4px 0 0;
+          color: var(--dim);
+        }
+        .fire {
+          flex: none;
+          display: grid;
+          place-items: center;
+          inline-size: 54px;
+          block-size: 54px;
+          border: 0;
+          border-radius: 50%;
+          background: var(--accent);
+          color: var(--accent-ink);
+          cursor: pointer;
+          box-shadow:
+            inset 0 -4px 0 rgb(0 0 0 / 0.25),
+            0 4px 10px -4px rgb(0 0 0 / 0.5);
+        }
+        .fire svg {
+          inline-size: 22px;
+          fill: currentColor;
+        }
+        .wave {
+          position: relative;
+          padding: 10px;
+          background: var(--bezel);
+          border-radius: 10px 10px 26px 10px;
+        }
+        .wave canvas {
+          display: block;
+          inline-size: 100%;
+          block-size: auto;
+          aspect-ratio: 560 / 96;
+          border-radius: 3px;
+          image-rendering: pixelated;
+          background: var(--l0);
+        }
+        .dur {
+          position: absolute;
+          inset-block-start: 14px;
+          inset-inline-end: 16px;
+          font-family: $tokens.font.pixel;
+          font-size: 11px;
+          color: var(--l3);
+        }
+        .sliders {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+          gap: 12px 18px;
+        }
+        .actions {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 8px;
+        }
+        .code p {
+          margin: 0 0 8px;
+          font-size: 13px;
+          color: var(--dim);
+        }
+        pre {
+          margin: 0;
+          padding: 12px 14px;
+          max-block-size: 300px;
+          overflow: auto;
+          border-radius: 10px;
+          background: var(--l3);
+          color: var(--l0);
+          font-size: 12px;
+          line-height: 1.5;
+        }
+        @media (width < 900px) {
+          .layout {
+            grid-template-columns: minmax(0, 1fr);
+          }
+          .pads {
+            grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+          }
+        }
+      </style>
+    </div>
+  );
+}
+
+<style>
+  .field {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 4px 8px;
+    align-items: center;
+  }
+  .field .label {
+    grid-column: 1 / -1;
+  }
+  .field.off {
+    opacity: 0.45;
+  }
+  output {
+    min-inline-size: 6ch;
+    text-align: end;
+    font-size: 12px;
+    color: var(--dim);
+  }
+</style>

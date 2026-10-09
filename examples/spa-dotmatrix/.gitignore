@@ -1,0 +1,5 @@
+test-results/
+playwright-report/
+.lumen/
+# The vendored engine ships its compiled dist/ (the repository ignores dist/ folders).
+!vendor/gbapu/dist/

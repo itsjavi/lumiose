@@ -1,0 +1,396 @@
+// The sound of the selected channel: friendly presets first, then a "Fine-tune" drawer with the
+// Game Boy's own controls (duty cycle, envelope, vibrato, glide, arpeggio, wave shape).
+import { audition } from "./PianoRoll.stsx";
+import { WAVES } from "../audio/tables.ts";
+import { DUTY_NAMES, PRESETS, instrument } from "../model/instruments.ts";
+import { CHANNELS, type ArpId, type Instrument, type WaveShape } from "../model/types.ts";
+import { doc, edit, editor } from "../state.ts";
+import { tokens } from "../tokens.ts";
+
+const ARPS: { id: ArpId; name: string }[] = [
+  { id: "off", name: "Off" },
+  { id: "major", name: "Major" },
+  { id: "minor", name: "Minor" },
+  { id: "fifth", name: "Fifth" },
+  { id: "octave", name: "Octave" },
+];
+
+const GATES = ["Legato", "Normal", "Short"] as const;
+
+/** A tiny SVG of one duty cycle period. */
+function dutyPath(duty: number): string {
+  const high = [2, 4, 8, 12][duty]!;
+  return `M0 14H2V2H${2 + high}V14H18`;
+}
+
+function wavePath(shape: WaveShape): string {
+  return WAVES[shape].samples.map((s, i) => `${i === 0 ? "M" : "L"}${i * 0.6} ${15 - s}`).join("");
+}
+
+function envLabel(env: number): string {
+  if (env === 0) return "Hold";
+  return env > 0 ? `Fade ${env}` : `Swell ${-env}`;
+}
+
+export function InstrumentPanel() {
+  const ch = () => editor.channel;
+  const kind = () => CHANNELS[ch()].kind;
+  const inst = () => doc.song.tracks[ch()].inst;
+
+  function set<K extends keyof Instrument>(field: K, value: Instrument[K], label: string) {
+    const c = ch();
+    edit(label, (song) => (song.tracks[c].inst[field] = value), `inst:${c}:${String(field)}`);
+  }
+
+  function setVibrato(field: "delay" | "depth" | "rate", value: number) {
+    const c = ch();
+    edit(
+      "Change vibrato",
+      (song) => (song.tracks[c].inst.vibrato[field] = value),
+      `inst:${c}:vib:${field}`,
+    );
+  }
+
+  function pick(id: string) {
+    const c = ch();
+    const next = instrument(kind(), id);
+    edit(
+      `Preset: ${PRESETS[kind()].find((p) => p.id === id)?.name ?? id}`,
+      (song) => (song.tracks[c].inst = next),
+    );
+    audition(c, kind() === "noise" ? 6 : kind() === "wave" ? 45 : 72, 4);
+  }
+
+  const range = (
+    label: string,
+    value: () => number,
+    min: number,
+    max: number,
+    onInput: (v: number) => void,
+    show?: () => string,
+  ) => (
+    <label class="field">
+      <span class="label">{label}</span>
+      <input
+        type="range"
+        min={min}
+        max={max}
+        value={value()}
+        onInput={(event) => onInput(event.currentTarget.valueAsNumber)}
+      />
+      <output>{show ? show() : String(value())}</output>
+    </label>
+  );
+
+  return (
+    <section class="panel sound" aria-labelledby="sound-title">
+      <header class="head">
+        <h2 id="sound-title">
+          Sound <span class="for">· {CHANNELS[ch()].name}</span>
+        </h2>
+        <p class="hint">Pick a preset, then press a note to hear it.</p>
+      </header>
+      <div class="presets" role="radiogroup" aria-label="Presets">
+        {PRESETS[kind()].map((p) => (
+          <button
+            type="button"
+            role="radio"
+            class="preset"
+            aria-checked={inst().preset === p.id}
+            onClick={() => pick(p.id)}
+          >
+            <span class="pname">{p.name}</span>
+            <span class="phint">{p.hint}</span>
+          </button>
+        ))}
+      </div>
+      <details class="fine">
+        <summary>Fine-tune</summary>
+        <div class="grid">
+          {kind() === "pulse" ? (
+            <div class="field wide">
+              <span class="label">Duty cycle</span>
+              <div class="seg" role="radiogroup" aria-label="Duty cycle">
+                {[0, 1, 2, 3].map((d) => (
+                  <button
+                    type="button"
+                    role="radio"
+                    aria-checked={inst().duty === d}
+                    aria-label={DUTY_NAMES[d]}
+                    onClick={() => set("duty", d, "Change duty cycle")}
+                  >
+                    <svg viewBox="0 0 18 16" aria-hidden="true">
+                      <path d={dutyPath(d)} />
+                    </svg>
+                    {DUTY_NAMES[d]}
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : null}
+          {kind() === "wave" ? (
+            <div class="field wide">
+              <span class="label">Wave shape</span>
+              <div class="seg" role="radiogroup" aria-label="Wave shape">
+                {(Object.keys(WAVES) as WaveShape[]).map((shape) => (
+                  <button
+                    type="button"
+                    role="radio"
+                    aria-checked={inst().shape === shape}
+                    aria-label={WAVES[shape].name}
+                    title={WAVES[shape].name}
+                    onClick={() => set("shape", shape, "Change wave shape")}
+                  >
+                    <svg viewBox="-1 -1 21 18" aria-hidden="true">
+                      <path d={wavePath(shape)} />
+                    </svg>
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : null}
+          {range(
+            "Volume",
+            () => inst().volume,
+            0,
+            15,
+            (v) => set("volume", v, "Change volume"),
+            () =>
+              kind() === "wave"
+                ? ["Mute", "100%", "50%", "25%"][
+                    inst().volume >= 12 ? 1 : inst().volume >= 6 ? 2 : inst().volume >= 1 ? 3 : 0
+                  ]!
+                : String(inst().volume),
+          )}
+          {kind() === "noise"
+            ? range(
+                "Drum tone",
+                () => inst().tone,
+                -3,
+                3,
+                (v) => set("tone", v, "Change drum tone"),
+                () =>
+                  inst().tone === 0
+                    ? "Normal"
+                    : inst().tone > 0
+                      ? `Bright ${inst().tone}`
+                      : `Dark ${-inst().tone}`,
+              )
+            : range(
+                "Envelope",
+                () => inst().env,
+                -7,
+                7,
+                (v) => set("env", v, "Change envelope"),
+                () => envLabel(inst().env),
+              )}
+          {kind() !== "noise" ? (
+            <>
+              {range(
+                "Vibrato depth",
+                () => inst().vibrato.depth,
+                0,
+                8,
+                (v) => setVibrato("depth", v),
+              )}
+              {range(
+                "Vibrato delay",
+                () => inst().vibrato.delay,
+                0,
+                40,
+                (v) => setVibrato("delay", v),
+                () => `${inst().vibrato.delay} frames`,
+              )}
+              {range(
+                "Vibrato speed",
+                () => 9 - inst().vibrato.rate,
+                1,
+                8,
+                (v) => setVibrato("rate", 9 - v),
+              )}
+              {range(
+                "Glide",
+                () => inst().glide,
+                0,
+                16,
+                (v) => set("glide", v, "Change glide"),
+                () => (inst().glide === 0 ? "Off" : `${inst().glide} frames`),
+              )}
+              <label class="field">
+                <span class="label">Arpeggio</span>
+                <select
+                  value={inst().arp}
+                  onChange={(event) =>
+                    set("arp", event.currentTarget.value as ArpId, "Change arpeggio")
+                  }
+                >
+                  {ARPS.map((a) => (
+                    <option value={a.id} selected={inst().arp === a.id}>
+                      {a.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <div class="field">
+                <span class="label">Note length</span>
+                <div class="seg small" role="radiogroup" aria-label="Note length feel">
+                  {GATES.map((name, g) => (
+                    <button
+                      type="button"
+                      role="radio"
+                      aria-checked={inst().gate === g}
+                      onClick={() =>
+                        set("gate", g as Instrument["gate"], "Change note length feel")
+                      }
+                    >
+                      {name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              {kind() === "pulse" ? (
+                <label class="field check">
+                  <input
+                    type="checkbox"
+                    checked={inst().shimmer}
+                    onChange={(event) =>
+                      set("shimmer", event.currentTarget.checked, "Toggle shimmer")
+                    }
+                  />
+                  <span>Shimmer (duty cycle pattern)</span>
+                </label>
+              ) : null}
+            </>
+          ) : null}
+        </div>
+      </details>
+      <style>
+        .sound {
+          display: grid;
+          gap: 12px;
+          align-content: start;
+        }
+        .head {
+          display: grid;
+          gap: 2px;
+        }
+        h2 {
+          font-size: 15px;
+          color: var(--indigo);
+        }
+        .for {
+          color: var(--dim);
+        }
+        .hint {
+          margin: 0;
+          font-size: 13px;
+          color: var(--dim);
+        }
+        .presets {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+          gap: 8px;
+        }
+        .preset {
+          display: grid;
+          gap: 2px;
+          padding: 9px 11px;
+          border: 2px solid transparent;
+          border-radius: 12px;
+          background: var(--shell-low);
+          text-align: start;
+          cursor: pointer;
+        }
+        .preset:hover {
+          border-color: var(--edge);
+        }
+        .preset[aria-checked="true"] {
+          border-color: var(--accent);
+          background: color-mix(in srgb, var(--accent) 9%, var(--shell));
+        }
+        .pname {
+          font-family: $tokens.font.pixel;
+          font-size: 12px;
+        }
+        .phint {
+          font-size: 12px;
+          line-height: 1.3;
+          color: var(--dim);
+        }
+        .fine summary {
+          cursor: pointer;
+          font-family: $tokens.font.pixel;
+          font-size: 12px;
+          color: var(--indigo);
+          padding: 4px 0;
+        }
+        .grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+          gap: 12px 16px;
+          padding-block-start: 10px;
+        }
+        .seg {
+          grid-column: 1 / -1;
+          display: flex;
+          flex-wrap: wrap;
+          gap: 4px;
+        }
+        .seg button {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          padding: 5px 9px;
+          border: 2px solid transparent;
+          border-radius: 9px;
+          background: var(--shell-low);
+          font-size: 12px;
+          cursor: pointer;
+        }
+        .seg button[aria-checked="true"] {
+          border-color: var(--accent);
+        }
+        .seg svg {
+          inline-size: 22px;
+          block-size: 18px;
+          fill: none;
+          stroke: currentColor;
+          stroke-width: 1.5;
+        }
+      </style>
+    </section>
+  );
+}
+
+<style>
+  .field {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 4px 8px;
+    align-items: center;
+  }
+  .field .label {
+    grid-column: 1 / -1;
+  }
+  .field input[type="range"] {
+    grid-column: 1;
+  }
+  .field.wide {
+    grid-column: 1 / -1;
+  }
+  .field.check {
+    display: flex;
+    gap: 8px;
+    font-size: 13px;
+  }
+  select {
+    grid-column: 1 / -1;
+  }
+  output {
+    min-inline-size: 5.5ch;
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
+    color: var(--dim);
+    text-align: end;
+  }
+</style>

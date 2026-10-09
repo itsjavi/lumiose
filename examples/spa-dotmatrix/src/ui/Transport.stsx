@@ -1,0 +1,316 @@
+// The transport strip: the big play button, title, tempo, loop, undo/redo, share and export.
+import { href, signal } from "lumen";
+import { looping, rendering, setLooping } from "../audio/player.ts";
+import * as player from "../audio/player.ts";
+import { encodeSong } from "../model/share.ts";
+import {
+  canRedo,
+  canUndo,
+  doc,
+  edit,
+  editorPlaying,
+  message,
+  plainSong,
+  redo,
+  say,
+  togglePlay,
+  undo,
+} from "../state.ts";
+import { tokens } from "../tokens.ts";
+
+export const exporting = signal(false);
+
+export const slug = (title: string): string =>
+  title
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "") || "song";
+
+export function download(blob: Blob, name: string): void {
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = name;
+  link.click();
+  setTimeout(() => URL.revokeObjectURL(url), 10_000);
+}
+
+async function exportWav() {
+  if (exporting()) return;
+  exporting.set(true);
+  say("Rendering WAV…");
+  try {
+    const song = plainSong();
+    const blob = await player.songWav(song);
+    download(blob, `${slug(song.title)}.wav`);
+    say(
+      `Saved ${slug(song.title)}.wav (${(blob.size / 1024 / 1024).toFixed(1)} MB, loop points included)`,
+    );
+  } catch (error) {
+    say(`WAV export failed: ${error instanceof Error ? error.message : String(error)}`);
+  } finally {
+    exporting.set(false);
+  }
+}
+
+export const shareUrl = signal("");
+
+async function share() {
+  const code = await encodeSong(plainSong());
+  const url = new URL(href("/"), location.href);
+  url.search = `?song=${code}`;
+  shareUrl.set(url.href);
+  try {
+    await navigator.clipboard.writeText(url.href);
+    say("Share link copied: anyone who opens it gets this song");
+  } catch {
+    say("Share link ready: copy it from the box below");
+  }
+}
+
+function setBpm(value: number) {
+  if (!Number.isFinite(value)) return;
+  const bpm = Math.min(240, Math.max(50, Math.round(value)));
+  edit("Change tempo", (song) => (song.bpm = bpm), "bpm");
+}
+
+export function Transport() {
+  return (
+    <section class="transport panel" aria-label="Transport">
+      <button
+        type="button"
+        class={["play", { on: editorPlaying() }]}
+        aria-label={editorPlaying() ? "Stop" : "Play song"}
+        title="Play or stop (Space)"
+        onClick={togglePlay}
+      >
+        {editorPlaying() ? (
+          <svg viewBox="0 0 10 10" aria-hidden="true">
+            <rect x="2" y="2" width="6" height="6" />
+          </svg>
+        ) : (
+          <svg viewBox="0 0 10 10" aria-hidden="true">
+            <path d="M3 1.5v7l5.5-3.5z" />
+          </svg>
+        )}
+      </button>
+      <div class="title">
+        <label class="sr-only" for="song-title">
+          Song title
+        </label>
+        <input
+          id="song-title"
+          type="text"
+          maxlength={60}
+          value={doc.song.title}
+          onChange={(event) => {
+            const value = event.currentTarget.value.slice(0, 60);
+            edit("Rename song", (song) => (song.title = value));
+          }}
+        />
+        <span class="state" aria-live="polite">
+          {rendering() ? "Rendering…" : editorPlaying() ? "Playing" : "Ready"}
+          {message() ? ` · ${message()}` : ""}
+        </span>
+      </div>
+      <div class="tempo">
+        <span class="label">Tempo</span>
+        <button
+          type="button"
+          class="step"
+          aria-label="Slower"
+          onClick={() => setBpm(doc.song.bpm - 4)}
+        >
+          −
+        </button>
+        <input
+          type="number"
+          aria-label="Tempo in BPM"
+          min={50}
+          max={240}
+          value={doc.song.bpm}
+          onChange={(event) => setBpm(event.currentTarget.valueAsNumber)}
+        />
+        <button
+          type="button"
+          class="step"
+          aria-label="Faster"
+          onClick={() => setBpm(doc.song.bpm + 4)}
+        >
+          +
+        </button>
+      </div>
+      <div class="buttons">
+        <button
+          type="button"
+          class={["btn", { lit: looping() }]}
+          aria-pressed={looping()}
+          title="Loop back to the loop bar (L)"
+          onClick={() => setLooping(!looping())}
+        >
+          Loop
+        </button>
+        <button
+          type="button"
+          class="btn"
+          disabled={!canUndo()}
+          onClick={undo}
+          title="Undo (Ctrl/⌘ Z)"
+        >
+          Undo
+        </button>
+        <button
+          type="button"
+          class="btn"
+          disabled={!canRedo()}
+          onClick={redo}
+          title="Redo (Ctrl/⌘ Shift Z)"
+        >
+          Redo
+        </button>
+        <button type="button" class="btn" onClick={() => void share()}>
+          Share
+        </button>
+        <button
+          type="button"
+          class="btn primary"
+          disabled={exporting()}
+          onClick={() => void exportWav()}
+        >
+          {exporting() ? "Rendering…" : "Export WAV"}
+        </button>
+      </div>
+      {shareUrl() ? (
+        <div class="share">
+          <label class="label" for="share-url">
+            Share link
+          </label>
+          <input
+            id="share-url"
+            type="url"
+            readonly
+            value={shareUrl()}
+            on:focus={(event) => event.currentTarget.select()}
+          />
+          <button type="button" class="btn" onClick={() => shareUrl.set("")}>
+            Close
+          </button>
+        </div>
+      ) : null}
+      <style>
+        .transport {
+          display: flex;
+          flex-wrap: wrap;
+          align-items: center;
+          gap: 12px 18px;
+          padding: 12px 16px;
+        }
+        .play {
+          display: grid;
+          place-items: center;
+          inline-size: 58px;
+          block-size: 58px;
+          border: 0;
+          border-radius: 50%;
+          background: var(--accent);
+          color: var(--accent-ink);
+          cursor: pointer;
+          box-shadow:
+            inset 0 -4px 0 rgb(0 0 0 / 0.25),
+            inset 0 2px 0 rgb(255 255 255 / 0.25),
+            0 4px 10px -4px rgb(0 0 0 / 0.5);
+        }
+        .play:active {
+          transform: translateY(2px);
+          box-shadow: inset 0 3px 0 rgb(0 0 0 / 0.25);
+        }
+        .play svg {
+          inline-size: 24px;
+          fill: currentColor;
+        }
+        .play.on {
+          background: var(--indigo);
+          color: var(--shell);
+        }
+        .title {
+          display: grid;
+          gap: 2px;
+          flex: 1 1 220px;
+          min-inline-size: 0;
+        }
+        .title input {
+          min-block-size: 0;
+          padding: 0;
+          border: 0;
+          background: none;
+          font-family: $tokens.font.pixel;
+          font-size: 20px;
+          color: var(--ink);
+          text-overflow: ellipsis;
+        }
+        .title input:hover {
+          box-shadow: 0 2px 0 var(--edge);
+        }
+        .state {
+          font-size: 13px;
+          color: var(--dim);
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+        .tempo {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+        }
+        .tempo .label {
+          margin-inline-end: 4px;
+        }
+        .tempo input {
+          inline-size: 4.6rem;
+          text-align: center;
+          font-variant-numeric: tabular-nums;
+        }
+        .step {
+          inline-size: 30px;
+          block-size: 30px;
+          border: 0;
+          border-radius: 50%;
+          background: var(--shell-low);
+          font-size: 18px;
+          line-height: 1;
+          cursor: pointer;
+        }
+        .buttons {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 6px;
+        }
+        .btn.lit {
+          background: color-mix(in srgb, var(--indigo) 18%, var(--shell-low));
+          color: var(--indigo);
+        }
+        .share {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          flex-basis: 100%;
+        }
+        .share input {
+          flex: 1;
+          min-inline-size: 0;
+          font-size: 13px;
+        }
+        @media (width < 720px) {
+          .play {
+            inline-size: 50px;
+            block-size: 50px;
+          }
+          .title input {
+            font-size: 16px;
+          }
+        }
+      </style>
+    </section>
+  );
+}

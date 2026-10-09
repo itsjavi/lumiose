@@ -1,0 +1,31 @@
+// Unknown URLs.
+import { href, type ErrorPageProps } from "lumen";
+import { Link } from "lumen/router";
+
+export default function NotFound(props: ErrorPageProps) {
+  return (
+    <section class="panel lost">
+      <h1>{props.status} · No cartridge here</h1>
+      <p>This page does not exist. The studio is a click away.</p>
+      <Link class="btn primary" href={href("/")}>
+        Back to the studio
+      </Link>
+      <style>
+        .lost {
+          display: grid;
+          gap: 12px;
+          justify-items: start;
+          max-inline-size: 60ch;
+        }
+        h1 {
+          font-size: 20px;
+          color: var(--indigo);
+        }
+        p {
+          margin: 0;
+          color: var(--dim);
+        }
+      </style>
+    </section>
+  );
+}

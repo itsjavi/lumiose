@@ -1,0 +1,347 @@
+// The song gallery: original demo songs to listen to and open in the studio, and the songs saved
+// in this browser ("My songs").
+import { computed, href, signal } from "lumen";
+import { navigate } from "lumen/router";
+import { nowPlaying, play, playStep, rendering, stop } from "../audio/player.ts";
+import { songSeconds } from "../audio/driver.ts";
+import { loadShelf, newId, saveShelf, type SavedSong } from "../model/library.ts";
+import { DEMOS, type Demo } from "../model/songs/index.ts";
+import { STEPS_PER_BAR, type Song } from "../model/types.ts";
+import { openSong, plainSong, say } from "../state.ts";
+import { tokens } from "../tokens.ts";
+
+/** A thumbnail of a song: each channel's notes in its own band of a tiny screen. */
+function Thumb(props: { song: Song }) {
+  const shapes = computed(() => {
+    const song = props.song;
+    const total = song.bars * STEPS_PER_BAR;
+    const bands = [
+      [2, 20],
+      [16, 34],
+      [34, 50],
+      [52, 58],
+    ] as const;
+    return song.tracks.flatMap((track, ch) => {
+      const [top, bottom] = bands[ch]!;
+      const pitches = track.notes.map((n) => n.p);
+      const lo = Math.min(...pitches);
+      const hi = Math.max(...pitches, lo + 1);
+      return track.notes.map((n) => ({
+        x: (n.s / total) * 200,
+        w: Math.max(1, (n.l / total) * 200 - 0.4),
+        y: ch === 3 ? top + (n.p % 3) * 2 : bottom - ((n.p - lo) / (hi - lo)) * (bottom - top),
+        c: ch,
+      }));
+    });
+  });
+  return (
+    <svg class="thumb" viewBox="0 0 200 60" preserveAspectRatio="none" aria-hidden="true">
+      <rect width="200" height="60" class="bg" />
+      {shapes().map((s) => (
+        <rect x={s.x} y={s.y} width={s.w} height="1.6" class={`n${s.c}`} />
+      ))}
+    </svg>
+  );
+}
+
+function length(song: Song): string {
+  const s = Math.round(songSeconds(song));
+  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
+}
+
+export default function Songs() {
+  const shelf = signal<SavedSong[]>(loadShelf());
+  const songs = new Map(DEMOS.map((d) => [d.id, d.song()]));
+
+  function listen(demo: Demo) {
+    const tag = `demo:${demo.id}`;
+    if (nowPlaying() === tag) stop();
+    else void play(songs.get(demo.id)!, tag);
+  }
+
+  function open(song: Song, label: string) {
+    openSong(song, label);
+    say(`Opened “${song.title}”. Undo brings back your previous song.`);
+    void navigate(href("/"));
+  }
+
+  function saveCurrent() {
+    const song = plainSong();
+    const next = [{ id: newId(), title: song.title, updated: Date.now(), song }, ...shelf()].slice(
+      0,
+      50,
+    );
+    if (saveShelf(next)) {
+      shelf.set(next);
+      say(`Saved “${song.title}” to My songs`);
+    } else say("Could not save: browser storage is unavailable");
+  }
+
+  function remove(entry: SavedSong) {
+    const next = shelf().filter((e) => e.id !== entry.id);
+    if (saveShelf(next)) shelf.set(next);
+  }
+
+  const progress = (demo: Demo) => {
+    const song = songs.get(demo.id)!;
+    return nowPlaying() === `demo:${demo.id}`
+      ? Math.max(0, playStep()) / (song.bars * STEPS_PER_BAR)
+      : 0;
+  };
+
+  return (
+    <div class="songs">
+      <header class="intro">
+        <h1>Song gallery</h1>
+        <p>
+          Original tunes in the style of a late-90s handheld RPG. Listen, then open one in the
+          studio and change it: every note and sound is editable.
+        </p>
+      </header>
+      <ul class="grid" aria-label="Demo songs">
+        {DEMOS.map((demo) => (
+          <li class={["cart", { live: nowPlaying() === `demo:${demo.id}` }]}>
+            <div class="label">
+              <span class="mood">{demo.mood}</span>
+              <div class="screen" style={{ "--p": String(progress(demo)) }}>
+                <Thumb song={songs.get(demo.id)!} />
+              </div>
+            </div>
+            <h2>{demo.title}</h2>
+            <p class="facts">
+              {songs.get(demo.id)!.bpm} BPM · {songs.get(demo.id)!.bars} bars ·{" "}
+              {length(songs.get(demo.id)!)}
+            </p>
+            <p class="blurb">{demo.blurb}</p>
+            <ul class="tips">
+              {demo.tips.map((tip) => (
+                <li>{tip}</li>
+              ))}
+            </ul>
+            <div class="actions">
+              <button
+                type="button"
+                class="btn"
+                aria-label={`${nowPlaying() === `demo:${demo.id}` ? "Stop" : "Listen to"} ${demo.title}`}
+                onClick={() => listen(demo)}
+              >
+                {nowPlaying() === `demo:${demo.id}` ? "■ Stop" : rendering() ? "…" : "▶ Listen"}
+              </button>
+              <button
+                type="button"
+                class="btn primary"
+                aria-label={`Open ${demo.title} in the studio`}
+                onClick={() => open(demo.song(), `Open demo ${demo.title}`)}
+              >
+                Open in studio
+              </button>
+            </div>
+          </li>
+        ))}
+      </ul>
+      <section class="panel mine" aria-labelledby="mine-title">
+        <div class="mine-head">
+          <h2 id="mine-title">My songs</h2>
+          <button type="button" class="btn" onClick={saveCurrent}>
+            Save the studio's song here
+          </button>
+        </div>
+        {shelf().length === 0 ? (
+          <p class="empty">
+            Nothing saved yet. The studio autosaves the song you are working on; save copies here to
+            keep them.
+          </p>
+        ) : (
+          <ul class="list">
+            {shelf().map((entry) => (
+              <li>
+                <span class="t">{entry.title}</span>
+                <span class="when">{new Date(entry.updated).toLocaleString()}</span>
+                <button
+                  type="button"
+                  class="btn"
+                  onClick={() => open(entry.song, `Open ${entry.title}`)}
+                >
+                  Open
+                </button>
+                <button
+                  type="button"
+                  class="btn"
+                  aria-label={`Delete ${entry.title}`}
+                  onClick={() => remove(entry)}
+                >
+                  Delete
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+      <style>
+        .songs {
+          display: grid;
+          gap: 18px;
+        }
+        .intro h1 {
+          font-size: 24px;
+          color: var(--indigo);
+        }
+        .intro p {
+          max-inline-size: 70ch;
+          margin: 6px 0 0;
+          color: var(--dim);
+        }
+        .grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+          gap: 16px;
+          margin: 0;
+          padding: 0;
+          list-style: none;
+        }
+        .cart {
+          display: grid;
+          grid-template-rows: auto auto auto auto 1fr auto;
+          gap: 8px;
+          padding: 14px 16px 16px;
+          background: var(--shell);
+          border-radius: 10px 30px 14px 14px;
+          box-shadow:
+            inset 0 1px 0 rgb(255 255 255 / 0.3),
+            inset 0 -4px 0 rgb(0 0 0 / 0.1),
+            0 12px 26px -16px rgb(0 0 0 / 0.55);
+        }
+        .cart.live {
+          box-shadow:
+            inset 0 0 0 2px var(--accent),
+            0 12px 26px -16px rgb(0 0 0 / 0.55);
+        }
+        .label {
+          display: grid;
+          gap: 8px;
+          padding: 10px;
+          background: var(--shell-low);
+          border-radius: 8px;
+          background-image: repeating-linear-gradient(
+            0deg,
+            transparent 0 5px,
+            var(--groove) 5px 6px
+          );
+        }
+        .mood {
+          justify-self: start;
+          padding: 2px 8px;
+          border-radius: 999px;
+          background: var(--indigo);
+          color: var(--shell);
+          font-family: $tokens.font.pixel;
+          font-size: 11px;
+        }
+        .screen {
+          position: relative;
+          padding: 6px;
+          background: var(--bezel);
+          border-radius: 4px 4px 14px 4px;
+        }
+        .screen::after {
+          content: "";
+          position: absolute;
+          inset-block: 6px;
+          inset-inline-start: calc(6px + (100% - 12px) * var(--p));
+          inline-size: 2px;
+          background: var(--l3);
+          opacity: calc(var(--p) * 1000);
+        }
+        h2 {
+          font-size: 18px;
+        }
+        .facts {
+          margin: 0;
+          font-size: 12px;
+          color: var(--dim);
+          font-variant-numeric: tabular-nums;
+        }
+        .blurb {
+          margin: 0;
+        }
+        .tips {
+          margin: 0;
+          padding-inline-start: 18px;
+          font-size: 13px;
+          color: var(--dim);
+        }
+        .actions {
+          display: flex;
+          gap: 8px;
+          flex-wrap: wrap;
+        }
+        .mine {
+          display: grid;
+          gap: 12px;
+        }
+        .mine-head {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 10px;
+          align-items: center;
+          justify-content: space-between;
+        }
+        .mine h2 {
+          color: var(--indigo);
+          font-size: 16px;
+        }
+        .empty {
+          margin: 0;
+          color: var(--dim);
+        }
+        .list {
+          display: grid;
+          gap: 6px;
+          margin: 0;
+          padding: 0;
+          list-style: none;
+        }
+        .list li {
+          display: flex;
+          flex-wrap: wrap;
+          align-items: center;
+          gap: 8px 12px;
+          padding: 8px 10px;
+          border-radius: 12px;
+          background: var(--shell-low);
+        }
+        .t {
+          font-weight: 600;
+          flex: 1;
+        }
+        .when {
+          font-size: 12px;
+          color: var(--dim);
+        }
+      </style>
+    </div>
+  );
+}
+
+<style>
+  .thumb {
+    display: block;
+    inline-size: 100%;
+    block-size: 64px;
+  }
+  .bg {
+    fill: var(--l0);
+  }
+  .n0 {
+    fill: var(--l3);
+  }
+  .n1 {
+    fill: var(--l2);
+  }
+  .n2 {
+    fill: var(--l2);
+  }
+  .n3 {
+    fill: var(--l1);
+  }
+</style>

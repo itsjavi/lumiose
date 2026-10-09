@@ -1,0 +1,479 @@
+// The root layout: the console's header (logo, views, screen palette, theme) around every page.
+// Audio, the open song and its history live in modules, so playback carries on across views.
+import "@fontsource/silkscreen/400.css";
+import "@fontsource-variable/space-grotesk/index.css";
+import { effect, href, onMount } from "lumen";
+import { Link } from "lumen/router";
+import { onKeyDown } from "../keys.ts";
+import { prefs, type Prefs } from "../state.ts";
+import { tokens } from "../tokens.ts";
+import { Shortcuts } from "../ui/Shortcuts.stsx";
+
+const VIEWS = [
+  { href: href("/"), label: "Studio" },
+  { href: href("/songs"), label: "Songs" },
+  { href: href("/sfx"), label: "SFX" },
+  { href: href("/learn"), label: "Learn" },
+];
+
+const PALETTES: { id: Prefs["lcd"]; name: string }[] = [
+  { id: "pea", name: "Pea soup" },
+  { id: "pocket", name: "Pocket" },
+  { id: "dusk", name: "Dusk" },
+  { id: "ice", name: "Ice" },
+];
+
+function nextTheme(theme: Prefs["theme"]): Prefs["theme"] {
+  const dark =
+    theme === "dark" || (theme === "system" && matchMedia("(prefers-color-scheme: dark)").matches);
+  return dark ? "light" : "dark";
+}
+
+export default function Layout(props: { children?: JSX.Element }) {
+  effect(() => {
+    const root = document.documentElement;
+    if (prefs.theme === "system") delete root.dataset.theme;
+    else root.dataset.theme = prefs.theme;
+    root.dataset.lcd = prefs.lcd;
+  });
+
+  onMount(() => {
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
+  });
+
+  return (
+    <div class="page">
+      <header class="bar">
+        <Link href={href("/")} class="brand" aria-label="Dotmatrix studio">
+          <span class="badge" aria-hidden="true">
+            <span class="dots" />
+          </span>
+          <span class="word">
+            Dotmatrix
+            <small>pocket chiptune studio</small>
+          </span>
+        </Link>
+        <nav class="views" aria-label="Views">
+          {VIEWS.map((view) => (
+            <Link href={view.href} class="view">
+              {view.label}
+            </Link>
+          ))}
+        </nav>
+        <div class="tools">
+          <div class="palettes" role="radiogroup" aria-label="Screen palette">
+            {PALETTES.map((p) => (
+              <button
+                type="button"
+                role="radio"
+                class={["swatch", p.id]}
+                aria-checked={prefs.lcd === p.id}
+                aria-label={p.name}
+                title={`Screen: ${p.name}`}
+                onClick={() => (prefs.lcd = p.id)}
+              />
+            ))}
+          </div>
+          <button
+            type="button"
+            class="theme"
+            aria-label="Switch light or dark theme"
+            title="Light or dark"
+            onClick={() => (prefs.theme = nextTheme(prefs.theme))}
+          >
+            <svg viewBox="0 0 8 8" aria-hidden="true" shape-rendering="crispEdges">
+              <path d="M3 0h2v1H3zM1 1h1v1H1zM6 1h1v1H6zM2 2h4v4H2zM0 3h1v2H0zM7 3h1v2H7zM1 6h1v1H1zM6 6h1v1H6zM3 7h2v1H3z" />
+            </svg>
+          </button>
+        </div>
+      </header>
+      <main class="main">{props.children}</main>
+      <footer class="foot">
+        <span>
+          Built with Lumen. Sound by the gbapu Game Boy APU engine (see{" "}
+          <Link href={href("/learn")}>Learn</Link> for credits).
+        </span>
+        <span class="keys">
+          Press <kbd>?</kbd> for shortcuts
+        </span>
+      </footer>
+      <Shortcuts />
+    </div>
+  );
+}
+
+<style>
+  .page {
+    display: grid;
+    grid-template-rows: auto 1fr auto;
+    min-block-size: 100dvh;
+    max-inline-size: 1480px;
+    margin-inline: auto;
+    padding: 14px clamp(10px, 2.4vw, 28px) 10px;
+    gap: 14px;
+  }
+  .bar {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    flex-wrap: wrap;
+  }
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .badge {
+    display: grid;
+    place-items: center;
+    inline-size: 46px;
+    block-size: 36px;
+    padding: 5px;
+    background: var(--bezel);
+    border-radius: 6px 6px 14px 6px;
+    box-shadow: inset 0 -2px 0 rgb(0 0 0 / 0.25);
+  }
+  .dots {
+    inline-size: 100%;
+    block-size: 100%;
+    background-color: var(--l0);
+    background-image: radial-gradient(var(--l3) 45%, transparent 50%);
+    background-size: 4px 4px;
+    box-shadow: inset 0 0 0 1px var(--l1);
+  }
+  .word {
+    display: grid;
+    font-family: $tokens.font.pixel;
+    font-size: 22px;
+    line-height: 1;
+    letter-spacing: 0.04em;
+    color: var(--indigo);
+  }
+  .word small {
+    font-family: $tokens.font.body;
+    font-size: 12px;
+    letter-spacing: 0.02em;
+    color: var(--dim);
+    margin-block-start: 3px;
+  }
+  .views {
+    display: flex;
+    gap: 4px;
+    padding: 4px;
+    background: var(--shell-low);
+    border-radius: 999px;
+    box-shadow: inset 0 1px 2px rgb(0 0 0 / 0.15);
+  }
+  .view {
+    padding: 7px 14px;
+    border-radius: 999px;
+    font-family: $tokens.font.pixel;
+    font-size: 13px;
+    color: var(--dim);
+    text-decoration: none;
+  }
+  .view:hover {
+    color: var(--ink);
+  }
+  .view[aria-current="page"] {
+    background: var(--shell);
+    color: var(--accent);
+    box-shadow:
+      0 1px 0 var(--edge),
+      0 2px 6px rgb(0 0 0 / 0.12);
+  }
+  .tools {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-inline-start: auto;
+  }
+  .palettes {
+    display: flex;
+    gap: 5px;
+  }
+  .swatch {
+    inline-size: 22px;
+    block-size: 22px;
+    padding: 0;
+    border: 2px solid var(--edge);
+    border-radius: 5px;
+    cursor: pointer;
+  }
+  .swatch[aria-checked="true"] {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px var(--shell);
+  }
+  .swatch.pea {
+    background: linear-gradient(135deg, $tokens.lcd.pea.l0 50%, $tokens.lcd.pea.l2 50%);
+  }
+  .swatch.pocket {
+    background: linear-gradient(135deg, $tokens.lcd.pocket.l0 50%, $tokens.lcd.pocket.l2 50%);
+  }
+  .swatch.dusk {
+    background: linear-gradient(135deg, $tokens.lcd.dusk.l0 50%, $tokens.lcd.dusk.l2 50%);
+  }
+  .swatch.ice {
+    background: linear-gradient(135deg, $tokens.lcd.ice.l0 50%, $tokens.lcd.ice.l2 50%);
+  }
+  .theme {
+    display: grid;
+    place-items: center;
+    inline-size: 36px;
+    block-size: 36px;
+    padding: 8px;
+    border: 0;
+    border-radius: 50%;
+    background: var(--shell-low);
+    color: var(--ink);
+    cursor: pointer;
+  }
+  .theme svg {
+    inline-size: 16px;
+    block-size: 16px;
+    fill: currentColor;
+  }
+  .main {
+    min-inline-size: 0;
+  }
+  .foot {
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
+    font-size: 12px;
+    color: var(--dim);
+  }
+  kbd {
+    font-family: $tokens.font.pixel;
+    font-size: 11px;
+    padding: 1px 5px;
+    border-radius: 4px;
+    background: var(--shell-low);
+    border: 1px solid var(--edge);
+  }
+  @media (width < 720px) {
+    .bar {
+      gap: 10px;
+    }
+    .views {
+      order: 3;
+      inline-size: 100%;
+      justify-content: space-between;
+    }
+    .view {
+      flex: 1;
+      text-align: center;
+      padding-inline: 6px;
+    }
+    .word small,
+    .keys {
+      display: none;
+    }
+  }
+</style>
+
+<style global>
+  :root {
+    --page: $tokens.light.page;
+    --shell: $tokens.light.shell;
+    --shell-low: $tokens.light.shellLow;
+    --edge: $tokens.light.edge;
+    --ink: $tokens.light.ink;
+    --dim: $tokens.light.dim;
+    --accent: $tokens.light.accent;
+    --accent-ink: $tokens.light.accentInk;
+    --indigo: $tokens.light.indigo;
+    --bezel: $tokens.light.bezel;
+    --groove: $tokens.light.groove;
+    --l0: $tokens.lcd.pea.l0;
+    --l1: $tokens.lcd.pea.l1;
+    --l2: $tokens.lcd.pea.l2;
+    --l3: $tokens.lcd.pea.l3;
+    --c0: $tokens.channel.p1;
+    --c1: $tokens.channel.p2;
+    --c2: $tokens.channel.wave;
+    --c3: $tokens.channel.noise;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --page: $tokens.dark.page;
+      --shell: $tokens.dark.shell;
+      --shell-low: $tokens.dark.shellLow;
+      --edge: $tokens.dark.edge;
+      --ink: $tokens.dark.ink;
+      --dim: $tokens.dark.dim;
+      --accent: $tokens.dark.accent;
+      --accent-ink: $tokens.dark.accentInk;
+      --indigo: $tokens.dark.indigo;
+      --bezel: $tokens.dark.bezel;
+      --groove: $tokens.dark.groove;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --page: $tokens.dark.page;
+    --shell: $tokens.dark.shell;
+    --shell-low: $tokens.dark.shellLow;
+    --edge: $tokens.dark.edge;
+    --ink: $tokens.dark.ink;
+    --dim: $tokens.dark.dim;
+    --accent: $tokens.dark.accent;
+    --accent-ink: $tokens.dark.accentInk;
+    --indigo: $tokens.dark.indigo;
+    --bezel: $tokens.dark.bezel;
+    --groove: $tokens.dark.groove;
+    color-scheme: dark;
+  }
+  :root[data-lcd="pocket"] {
+    --l0: $tokens.lcd.pocket.l0;
+    --l1: $tokens.lcd.pocket.l1;
+    --l2: $tokens.lcd.pocket.l2;
+    --l3: $tokens.lcd.pocket.l3;
+  }
+  :root[data-lcd="dusk"] {
+    --l0: $tokens.lcd.dusk.l0;
+    --l1: $tokens.lcd.dusk.l1;
+    --l2: $tokens.lcd.dusk.l2;
+    --l3: $tokens.lcd.dusk.l3;
+  }
+  :root[data-lcd="ice"] {
+    --l0: $tokens.lcd.ice.l0;
+    --l1: $tokens.lcd.ice.l1;
+    --l2: $tokens.lcd.ice.l2;
+    --l3: $tokens.lcd.ice.l3;
+  }
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
+  html,
+  body {
+    margin: 0;
+  }
+  body {
+    background: var(--page);
+    color: var(--ink);
+    font-family: $tokens.font.body;
+    font-size: 15px;
+    line-height: 1.45;
+    -webkit-font-smoothing: antialiased;
+  }
+  h1,
+  h2,
+  h3 {
+    margin: 0;
+    font-family: $tokens.font.pixel;
+    font-weight: 400;
+    letter-spacing: 0.02em;
+  }
+  button,
+  input,
+  select,
+  textarea {
+    font: inherit;
+    color: inherit;
+  }
+  /* Pill buttons, like a handheld's start and select. */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    min-block-size: 36px;
+    padding: 6px 14px;
+    border: 0;
+    border-radius: 999px;
+    background: var(--shell-low);
+    color: var(--ink);
+    font-family: $tokens.font.pixel;
+    font-size: 12px;
+    text-decoration: none;
+    cursor: pointer;
+    box-shadow:
+      inset 0 -2px 0 rgb(0 0 0 / 0.14),
+      0 1px 0 rgb(255 255 255 / 0.06);
+  }
+  .btn:hover {
+    filter: brightness(1.04);
+    background: var(--groove);
+  }
+  .btn:active {
+    box-shadow: inset 0 2px 0 rgb(0 0 0 / 0.16);
+    transform: translateY(1px);
+  }
+  .btn:disabled {
+    opacity: 0.45;
+    cursor: default;
+    transform: none;
+  }
+  .btn.primary {
+    background: var(--accent);
+    color: var(--accent-ink);
+  }
+  .btn.primary:hover {
+    filter: brightness(1.08);
+  }
+  .btn svg {
+    inline-size: 14px;
+    block-size: 14px;
+    fill: currentColor;
+  }
+  /* Panels: the console's moulded plastic. */
+  .panel {
+    background: var(--shell);
+    border-radius: $tokens.radius.lg;
+    padding: 16px;
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.35),
+      inset 0 -3px 0 rgb(0 0 0 / 0.08),
+      0 10px 24px -14px rgb(0 0 0 / 0.45);
+  }
+  .label {
+    font-family: $tokens.font.pixel;
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    color: var(--dim);
+    text-transform: uppercase;
+  }
+  input[type="range"] {
+    accent-color: var(--accent);
+    inline-size: 100%;
+  }
+  select,
+  input[type="text"],
+  input[type="number"],
+  input[type="url"] {
+    min-block-size: 34px;
+    padding: 4px 10px;
+    border: 2px solid var(--edge);
+    border-radius: 10px;
+    background: var(--shell-low);
+  }
+  :focus {
+    outline: none;
+  }
+  :focus-visible {
+    outline: 3px solid var(--indigo);
+    outline-offset: 2px;
+  }
+  .sr-only {
+    position: absolute;
+    inline-size: 1px;
+    block-size: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    * {
+      transition: none !important;
+      animation: none !important;
+    }
+  }
+</style>

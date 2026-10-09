@@ -1,0 +1,266 @@
+// Song settings and bar tools: length, loop bar, key and scale (which decide the grid rows), the
+// length of new notes, and copying or clearing whole bars.
+import { signal } from "lumen";
+import { KEYS, SCALES } from "../model/music.ts";
+import { clearBars, copyBars, emptySong, tidy } from "../model/song.ts";
+import { MAX_BARS, STEPS_PER_BAR, type ChannelIndex, type ScaleId } from "../model/types.ts";
+import { doc, edit, editor, openSong, prefs, say } from "../state.ts";
+import { tokens } from "../tokens.ts";
+
+const LENGTHS = [
+  { steps: 1, name: "1/16" },
+  { steps: 2, name: "1/8" },
+  { steps: 4, name: "1/4" },
+  { steps: 8, name: "1/2" },
+];
+
+const clipboard = signal<number | null>(null);
+
+function setBars(bars: number) {
+  const next = Math.min(MAX_BARS, Math.max(1, bars));
+  if (next === doc.song.bars) return;
+  edit(next > doc.song.bars ? "Add a bar" : "Remove the last bar", (song) => {
+    song.bars = next;
+    song.loop = Math.min(song.loop, next - 1);
+    for (const track of song.tracks) track.notes = tidy(track.notes, next * STEPS_PER_BAR);
+  });
+  editor.bar = Math.min(editor.bar, next - 1);
+}
+
+export function SongPanel() {
+  const bar = () => editor.bar;
+
+  return (
+    <section class="panel song" aria-labelledby="song-title-h">
+      <h2 id="song-title-h">Song</h2>
+      <div class="rows">
+        <div class="field">
+          <span class="label">Bars</span>
+          <div class="stepper">
+            <button
+              type="button"
+              aria-label="Remove the last bar"
+              onClick={() => setBars(doc.song.bars - 1)}
+            >
+              −
+            </button>
+            <output aria-live="polite">{doc.song.bars}</output>
+            <button type="button" aria-label="Add a bar" onClick={() => setBars(doc.song.bars + 1)}>
+              +
+            </button>
+          </div>
+        </div>
+        <label class="field">
+          <span class="label">Key</span>
+          <select
+            value={String(doc.song.key)}
+            onChange={(event) => {
+              const key = Number(event.currentTarget.value);
+              edit("Change key", (song) => (song.key = key));
+            }}
+          >
+            {KEYS.map((name, i) => (
+              <option value={String(i)} selected={doc.song.key === i}>
+                {name}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label class="field">
+          <span class="label">Scale</span>
+          <select
+            value={doc.song.scale}
+            onChange={(event) => {
+              const scale = event.currentTarget.value as ScaleId;
+              edit("Change scale", (song) => (song.scale = scale));
+            }}
+          >
+            {(Object.keys(SCALES) as ScaleId[]).map((id) => (
+              <option value={id} selected={doc.song.scale === id}>
+                {SCALES[id].name}
+              </option>
+            ))}
+          </select>
+        </label>
+        <div class="field">
+          <span class="label">New notes</span>
+          <div class="seg" role="radiogroup" aria-label="Length of new notes">
+            {LENGTHS.map((l) => (
+              <button
+                type="button"
+                role="radio"
+                aria-checked={prefs.noteLength === l.steps}
+                onClick={() => (prefs.noteLength = l.steps)}
+              >
+                {l.name}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+      <div class="bartools">
+        <span class="label">
+          Bar {bar() + 1}{" "}
+          {bar() === doc.song.loop ? "· loop starts here" : bar() < doc.song.loop ? "· intro" : ""}
+        </span>
+        <div class="tools">
+          <button
+            type="button"
+            class="btn"
+            disabled={bar() === doc.song.loop}
+            onClick={() => {
+              const b = bar();
+              edit(`Loop from bar ${b + 1}`, (song) => (song.loop = b));
+            }}
+          >
+            Loop from here
+          </button>
+          <button
+            type="button"
+            class="btn"
+            onClick={() => {
+              clipboard.set(bar());
+              say(`Copied bar ${bar() + 1}: pick another bar and paste`);
+            }}
+          >
+            Copy bar
+          </button>
+          <button
+            type="button"
+            class="btn"
+            disabled={clipboard() === null || clipboard() === bar()}
+            onClick={() => {
+              const from = clipboard()!;
+              const to = bar();
+              edit(
+                `Paste bar ${from + 1} onto bar ${to + 1}`,
+                (song) => (song.tracks = copyBars(song, from, 1, to)),
+              );
+            }}
+          >
+            Paste
+          </button>
+          <button
+            type="button"
+            class="btn"
+            disabled={doc.song.bars >= MAX_BARS}
+            onClick={() => {
+              const b = bar();
+              edit(`Duplicate bar ${b + 1}`, (song) => {
+                const shift = STEPS_PER_BAR;
+                song.bars += 1;
+                const start = (b + 1) * shift;
+                for (const track of song.tracks) {
+                  track.notes = track.notes.map((n) =>
+                    n.s >= start ? { ...n, s: n.s + shift } : n,
+                  );
+                }
+                song.tracks = copyBars(song, b, 1, b + 1);
+                if (song.loop > b) song.loop += 1;
+              });
+              editor.bar = b + 1;
+            }}
+          >
+            Duplicate
+          </button>
+          <button
+            type="button"
+            class="btn"
+            onClick={() => {
+              const b = bar();
+              const ch = editor.channel as ChannelIndex;
+              edit(`Clear bar ${b + 1}`, (song) => (song.tracks = clearBars(song, b, 1, [ch])));
+            }}
+          >
+            Clear bar
+          </button>
+          <button
+            type="button"
+            class="btn"
+            onClick={() => {
+              openSong(emptySong(), "New song");
+              say("New empty song. Undo brings the old one back.");
+            }}
+          >
+            New song
+          </button>
+        </div>
+        <p class="hint">
+          Click a bar number above the grid to pick a bar. Clear bar only clears the selected
+          channel.
+        </p>
+      </div>
+      <style>
+        .song {
+          display: grid;
+          gap: 14px;
+          align-content: start;
+        }
+        h2 {
+          font-size: 15px;
+          color: var(--indigo);
+        }
+        .rows {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+          gap: 12px;
+        }
+        .field {
+          display: grid;
+          gap: 4px;
+          align-content: start;
+        }
+        .stepper {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+        }
+        .stepper button {
+          inline-size: 32px;
+          block-size: 32px;
+          border: 0;
+          border-radius: 50%;
+          background: var(--shell-low);
+          font-size: 18px;
+          cursor: pointer;
+        }
+        .stepper output {
+          min-inline-size: 2.5ch;
+          text-align: center;
+          font-family: $tokens.font.pixel;
+          font-size: 16px;
+        }
+        .seg {
+          display: flex;
+          gap: 3px;
+        }
+        .seg button {
+          flex: 1;
+          padding: 6px 4px;
+          border: 2px solid transparent;
+          border-radius: 9px;
+          background: var(--shell-low);
+          font-size: 12px;
+          cursor: pointer;
+        }
+        .seg button[aria-checked="true"] {
+          border-color: var(--accent);
+        }
+        .bartools {
+          display: grid;
+          gap: 8px;
+        }
+        .tools {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 6px;
+        }
+        .hint {
+          margin: 0;
+          font-size: 12px;
+          color: var(--dim);
+        }
+      </style>
+    </section>
+  );
+}

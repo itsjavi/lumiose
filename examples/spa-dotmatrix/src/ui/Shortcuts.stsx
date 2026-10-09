@@ -1,0 +1,91 @@
+// The keyboard shortcuts sheet, opened with "?".
+import { effect } from "lumen";
+import { shortcutsOpen } from "../keys.ts";
+
+const ROWS: [string, string][] = [
+  ["Space", "Play or stop"],
+  ["Ctrl/⌘ Z", "Undo"],
+  ["Ctrl/⌘ Shift Z, Ctrl Y", "Redo"],
+  ["1 – 4", "Pick a channel"],
+  ["L", "Loop on or off"],
+  ["Esc", "Stop"],
+  ["Arrows", "Move the grid cursor (when the grid has focus)"],
+  ["Enter", "Add or remove a note at the cursor"],
+  ["Shift ← →", "Shorten or lengthen the note at the cursor"],
+  ["Delete", "Remove the note at the cursor"],
+  ["?", "Show or hide this sheet"],
+];
+
+export function Shortcuts() {
+  let dialog: HTMLDialogElement | undefined;
+  effect(() => {
+    if (!dialog) return;
+    if (shortcutsOpen() && !dialog.open) dialog.showModal();
+    if (!shortcutsOpen() && dialog.open) dialog.close();
+  });
+  return (
+    <dialog
+      class="sheet"
+      ref={(el) => (dialog = el)}
+      aria-labelledby="shortcuts-title"
+      onClose={() => shortcutsOpen.set(false)}
+    >
+      <h2 id="shortcuts-title">Keyboard shortcuts</h2>
+      <dl>
+        {ROWS.map(([keys, what]) => (
+          <div class="row">
+            <dt>
+              <kbd>{keys}</kbd>
+            </dt>
+            <dd>{what}</dd>
+          </div>
+        ))}
+      </dl>
+      <button type="button" class="btn primary" onClick={() => shortcutsOpen.set(false)}>
+        Got it
+      </button>
+      <style>
+        .sheet {
+          inline-size: min(460px, calc(100vw - 32px));
+          padding: 22px;
+          border: 0;
+          border-radius: 20px;
+          background: var(--shell);
+          color: var(--ink);
+          box-shadow: 0 24px 60px -20px rgb(0 0 0 / 0.6);
+        }
+        .sheet::backdrop {
+          background: rgb(10 10 20 / 0.45);
+        }
+        h2 {
+          font-size: 16px;
+          color: var(--indigo);
+        }
+        dl {
+          display: grid;
+          gap: 6px;
+          margin: 16px 0;
+        }
+        .row {
+          display: grid;
+          grid-template-columns: 11rem 1fr;
+          gap: 10px;
+          align-items: baseline;
+        }
+        dd {
+          margin: 0;
+          color: var(--dim);
+        }
+        kbd {
+          font-family: inherit;
+          font-size: 12px;
+          font-weight: 600;
+          padding: 2px 6px;
+          border-radius: 5px;
+          background: var(--shell-low);
+          border: 1px solid var(--edge);
+        }
+      </style>
+    </dialog>
+  );
+}
