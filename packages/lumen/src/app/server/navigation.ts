@@ -13,9 +13,11 @@
 //   `data-l-prefetch` marker. The rules of a page with marked links group them by level: the
 //   project default's rule skips links marked with another level, each other level gets a rule
 //   for its marked links, and `none` gets none. Pages without marked links keep the plain rules.
-//   The marker is found in the shell; a streamed page may still render marked links, so its head
-//   gets the marked rules, or, with `prefetch: "none"` (no rules otherwise), the rules follow the
-//   stream once a streamed boundary has a marked link.
+//   The server `<Link>` notes its marker in the request scope (`notePrefetchLink()`), so the
+//   handler knows without searching the HTML (TASK-150): a marker in the shell picks the marked
+//   rules; a streamed page may still render marked links, so its head gets the marked rules, or,
+//   with `prefetch: "none"` (no rules otherwise), the rules follow the stream when a streamed
+//   boundary rendered a marked link.
 
 import { jsonForScript } from "../../server/node.ts";
 import type { Prefetch } from "../router/link.ts";
@@ -42,7 +44,6 @@ export interface MpaRules {
 /** The attribute `<Link prefetch>` marks its `<a>` with on MPA pages. */
 export const PREFETCH_MARKER = "data-l-prefetch";
 /** What a marked link's HTML contains. */
-const MARKED = `${PREFETCH_MARKER}=`;
 
 const VIEW_TRANSITIONS =
   "<style>@media (prefers-reduced-motion:no-preference){@view-transition{navigation:auto}}</style>";
@@ -72,35 +73,31 @@ function mpaRules(prefetch: Prefetch, routes: readonly RouteEntry[], base: strin
 
 /**
  * The speculation rules of one MPA document: `head` for its `<head>`, and `stream` with the rules
- * appended when they wait for a marked link in the streamed boundaries.
+ * appended when they wait for a marked link in the streamed boundaries. `marked()` tells whether
+ * the page rendered a marked link so far (the request scope's flag).
  */
 export function documentRules(
   rules: MpaRules,
-  shellBody: string,
+  marked: () => boolean,
   stream: ReadableStream<string | Uint8Array> | null,
 ): { head: string; stream: ReadableStream<string | Uint8Array> | null } {
-  const marked = shellBody.includes(MARKED);
-  if (marked || stream === null) return { head: marked ? rules.marked : rules.plain, stream };
+  const inShell = marked();
+  if (inShell || stream === null) return { head: inShell ? rules.marked : rules.plain, stream };
   // Streamed boundaries may still render marked links.
   if (rules.prefetch !== "none") return { head: rules.marked, stream };
-  return { head: "", stream: appendIfMarked(stream, rules.marked) };
+  return { head: "", stream: appendIfMarked(stream, rules.marked, marked) };
 }
 
-/** `stream`, followed by `html` when one of its chunks has a marked link. */
+/** `stream`, followed by `html` when a marked link rendered by the time it ends. */
 function appendIfMarked(
   stream: ReadableStream<string | Uint8Array>,
   html: string,
+  marked: () => boolean,
 ): ReadableStream<string | Uint8Array> {
-  let marked = false;
   return stream.pipeThrough(
     new TransformStream<string | Uint8Array, string | Uint8Array>({
-      transform(chunk, controller) {
-        // Lumen's renderer streams strings; a custom renderer's bytes are not searched.
-        if (typeof chunk === "string" && chunk.includes(MARKED)) marked = true;
-        controller.enqueue(chunk);
-      },
       flush(controller) {
-        if (marked) controller.enqueue(html);
+        if (marked()) controller.enqueue(html);
       },
     }),
   );

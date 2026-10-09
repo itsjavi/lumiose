@@ -62,18 +62,25 @@ export function dbPath(): string {
   return resolve(/*turbopackIgnore: true*/ process.env.TRACKER_DB ?? ".data/tracker.db");
 }
 
-let current: { path: string; db: DatabaseSync } | undefined;
+let current: { env: string | undefined; path: string; db: DatabaseSync } | undefined;
 
 /** The shared connection, opened lazily. Throws if the database has not been seeded. */
 export function db(): DatabaseSync {
+  // The hot path of every query: the open connection for the same TRACKER_DB value, without
+  // resolving the path again (TASK-150).
+  const env = process.env.TRACKER_DB;
+  if (current !== undefined && current.env === env && current.db.isOpen) return current.db;
   const path = dbPath();
-  if (current?.path === path && current.db.isOpen) return current.db;
+  if (current?.path === path && current.db.isOpen) {
+    current.env = env;
+    return current.db;
+  }
   if (!existsSync(path)) {
     throw new Error(`Tracker database not found at ${path}. Run the app's "seed" script first.`);
   }
   const conn = new DatabaseSync(path);
   conn.exec("PRAGMA journal_mode = WAL; PRAGMA synchronous = NORMAL; PRAGMA foreign_keys = ON;");
-  current = { path, db: conn };
+  current = { env, path, db: conn };
   return conn;
 }
 

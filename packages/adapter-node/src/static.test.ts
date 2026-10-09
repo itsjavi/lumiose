@@ -54,6 +54,17 @@ async function serve(config: Partial<BuiltAppConfig> = {}) {
 }
 
 describe("createStaticHandler", () => {
+  it("indexes the directory when created: files written later are not served", async () => {
+    const get = await serve();
+    writeFileSync(join(dir, "late.txt"), "late");
+    try {
+      expect((await get("/late.txt")).status).toBe(418);
+      expect((await (await serve())("/late.txt")).status).toBe(200);
+    } finally {
+      rmSync(join(dir, "late.txt"));
+    }
+  });
+
   it("serves files with their type; hashed assets are immutable, the rest revalidates", async () => {
     const get = await serve();
     const page = await get("/about/");

@@ -354,6 +354,7 @@ const { createAppHandler } = await import(${JSON.stringify(APP_RUNTIME)});
 const modules = {
 ${modules.join("\n")}
 };
+const loadedModules = new Map();
 
 /** Options adapters need to serve dist/client next to the handler. */
 export const config = ${JSON.stringify(appConfig)};
@@ -364,10 +365,16 @@ export const app = {
   stylesheets,
   styleTags: ${JSON.stringify(STYLE_TAGS_PLACEHOLDER)},
   loadModule(file) {
-    const load = modules[file];
-    return load === undefined
-      ? Promise.reject(new Error(\`\${file} is not part of this build.\`))
-      : load();
+    // One import() per module for the server's lifetime, not one per request (TASK-150).
+    let loaded = loadedModules.get(file);
+    if (loaded === undefined) {
+      const load = modules[file];
+      loaded = load === undefined
+        ? Promise.reject(new Error(\`\${file} is not part of this build.\`))
+        : load();
+      loadedModules.set(file, loaded);
+    }
+    return loaded;
   },
 };
 

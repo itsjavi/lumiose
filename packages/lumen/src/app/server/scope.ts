@@ -41,6 +41,8 @@ export interface RequestScope {
   fetch?: (request: Request) => Promise<Response>;
   /** The response's CSP nonce, with `lumen({ csp: "strict" })` (./csp.ts). */
   nonce?: string;
+  /** Set when the page rendered a `<Link prefetch>` marker (./navigation.ts). */
+  prefetchLinks?: boolean;
 }
 
 export interface ActionState {
@@ -54,6 +56,12 @@ const storage = new AsyncLocalStorage<RequestScope>();
 
 export function runInRequestScope<T>(scope: RequestScope, fn: () => T): T {
   return storage.run(scope, fn);
+}
+
+/** Notes that the current page renders a `data-l-prefetch` marker (`<Link prefetch>`). */
+export function notePrefetchLink(): void {
+  const scope = storage.getStore();
+  if (scope !== undefined) scope.prefetchLinks = true;
 }
 
 /**

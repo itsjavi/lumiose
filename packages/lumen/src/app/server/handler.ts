@@ -471,7 +471,7 @@ export function createRequestHandler(options: RequestHandlerOptions): RequestHan
     const mpa = nonce === undefined ? navigation.mpa : nonceRules(navigation.mpa, nonce);
     const rules = spa
       ? { head: "", stream: shell.stream }
-      : documentRules(mpa, shell.body, shell.stream);
+      : documentRules(mpa, () => scope.prefetchLinks === true, shell.stream);
     try {
       const assets = addNonce(
         options.headAssets === undefined ? "" : await options.headAssets(files, spa),

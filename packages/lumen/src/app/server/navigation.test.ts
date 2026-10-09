@@ -7,6 +7,7 @@ import { app as appOf, page } from "./__fixtures__/app.ts";
 import { testDefer } from "./__fixtures__/string-renderer.ts";
 import { createRequestHandler, type ModuleExports, type RequestHandlerOptions } from "./handler.ts";
 import { speculationRules, urlPattern } from "./navigation.ts";
+import { notePrefetchLink } from "./scope.ts";
 
 type Props = any;
 
@@ -112,14 +113,20 @@ describe("MPA navigation options", () => {
 const html = async (fetch: (path: string) => Promise<Response>, path: string) =>
   (await fetch(path)).text();
 
-// `<Link prefetch>` on MPA pages (decision-24 amendment): an `<a>` with a `data-l-prefetch` marker.
+// `<Link prefetch>` on MPA pages (decision-24 amendment): an `<a>` with a `data-l-prefetch` marker,
+// which the server `<Link>` notes in the request scope (TASK-150).
 describe("per-link prefetch", () => {
-  const LINKS =
+  const MARKUP =
     '<a href="/a" data-l-prefetch="none">a</a><a href="/b" data-l-prefetch="viewport">b</a>';
+  /** What two server `<Link prefetch>` render: the markup, and the scope's note. */
+  const links = () => {
+    notePrefetchLink();
+    return MARKUP;
+  };
   const FEED = { GET: () => new Response("<feed/>") };
   const scope = [{ href_matches: "/*" }, { not: { href_matches: ["/feed.xml{/}?"] } }];
   const modules = {
-    "src/routes/index.stsx": page(() => LINKS),
+    "src/routes/index.stsx": page(links),
     "src/routes/plain.stsx": page(() => '<a href="/a">a</a>'),
     "src/routes/feed.xml.ts": FEED,
   };
@@ -168,7 +175,13 @@ describe("per-link prefetch", () => {
 
   it("covers the marked links of streamed Suspense boundaries", async () => {
     const streamed = {
-      "src/routes/index.stsx": page(() => `<h1>shell</h1>${testDefer(async () => LINKS)}`),
+      "src/routes/index.stsx": page(
+        () =>
+          `<h1>shell</h1>${testDefer(async () => {
+            await new Promise((done) => setTimeout(done, 10)); // renders after the shell
+            return links();
+          })}`,
+      ),
       "src/routes/plain.stsx": page(() => `<h1>shell</h1>${testDefer(async () => "<p>late</p>")}`),
     };
     // A default level: the head gets the marked rules, since a boundary may have marked links.

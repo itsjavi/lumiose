@@ -197,6 +197,9 @@ describe.skipIf(!binding)("lumen build", () => {
 
     // dist/server/entry.js: `export default { fetch }` serves every route.
     const entry = await entryOf(root);
+    // Route modules are imported once for the server's lifetime, not per request (TASK-150).
+    const first = entry.app.loadModule("src/routes/index.stsx");
+    expect(entry.app.loadModule("src/routes/index.stsx")).toBe(first);
     const live = await entry.default.fetch(
       new Request("http://app.test/live?q=1", { headers: { cookie: "a=b" } }),
     );

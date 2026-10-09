@@ -7,6 +7,7 @@ import { restProps } from "../../server/ssr.ts";
 import type { RouteParams, Routes } from "../routes/registry.ts";
 import type { RouteParamValues } from "../server/context.ts";
 import {
+  notePrefetchLink,
   params as requestParams,
   route as requestRoute,
   url as requestUrl,
@@ -42,6 +43,8 @@ export function Link(props: LinkProps): Renderable {
   // Getters stay getters: children render inside the element, as on the client.
   others.component = "a";
   others[PREFETCH_MARKER] = props.prefetch;
+  // The handler picks the page's speculation rules from this, without searching the HTML.
+  if (props.prefetch !== undefined) notePrefetchLink();
   others["aria-current"] = current ? "page" : undefined;
   return Dynamic(others as LinkProps & { component: "a" }) as Renderable;
 }

@@ -5,11 +5,12 @@
 // copy of a file when there is one (`Vary: Accept-Encoding`).
 // Page URLs follow the build's `trailingSlash`: `/about` serves `about/index.html` (`ignore`),
 // redirects to `/about/` (`always`), or serves `about.html` (`never`, which redirects `/about/`).
+// The directory is a build output, immutable while the server runs: it is indexed once, when the
+// handler is created, so a request that no file answers (every page) costs no file system call.
 
-import { createReadStream, type Stats } from "node:fs";
-import { stat } from "node:fs/promises";
+import { createReadStream, readdirSync, statSync, type Stats } from "node:fs";
 import type { IncomingMessage, ServerResponse } from "node:http";
-import { extname, join } from "node:path";
+import { extname, join, relative, sep } from "node:path";
 import type { BuiltAppConfig } from "lumen/build";
 import { acceptedEncodings, varyOnEncoding } from "./compress.ts";
 
@@ -64,6 +65,8 @@ export function createStaticHandler(
 ): StaticHandler {
   const compress = options.compress !== false;
   const assetsPrefix = `${config.assetsDir.replace(/^\/+|\/+$/g, "")}/`;
+  const files = indexFiles(dir);
+  const fileStats = (path: string): FileInfo | undefined => files.get(path);
 
   return async (req, res) => {
     if (req.method !== "GET" && req.method !== "HEAD") return false;
@@ -72,9 +75,9 @@ export function createStaticHandler(
     if (path === undefined) return false;
 
     if (path === "" || path.endsWith("/")) {
-      const index = await fileStats(dir, `${path}index.html`);
+      const index = fileStats(`${path}index.html`);
       if (path !== "" && config.trailingSlash === "never") {
-        const page = await fileStats(dir, `${path.slice(0, -1)}.html`);
+        const page = fileStats(`${path.slice(0, -1)}.html`);
         if (page !== undefined || index !== undefined) {
           return redirect(res, `${url.pathname.replace(/\/+$/, "")}${url.search}`);
         }
@@ -83,15 +86,15 @@ export function createStaticHandler(
         ? false
         : send(req, res, index, `${path}index.html`, false, compress);
     }
-    const file = await fileStats(dir, path);
+    const file = fileStats(path);
     if (file !== undefined) {
       return send(req, res, file, path, path.startsWith(assetsPrefix), compress);
     }
     if (config.trailingSlash !== "always") {
-      const page = await fileStats(dir, `${path}.html`);
+      const page = fileStats(`${path}.html`);
       if (page !== undefined) return send(req, res, page, `${path}.html`, false, compress);
     }
-    const index = await fileStats(dir, `${path}/index.html`);
+    const index = fileStats(`${path}/index.html`);
     if (index === undefined) return false;
     if (config.trailingSlash === "always") return redirect(res, `${url.pathname}/${url.search}`);
     return send(req, res, index, `${path}/index.html`, false, compress);
@@ -124,16 +127,39 @@ function relativePath(pathname: string, base: string): string | undefined {
 interface FileInfo {
   absolute: string;
   stats: Stats;
+  /** The build's precompressed copies (`file.br`, `file.gz`). */
+  br?: FileInfo;
+  gzip?: FileInfo;
 }
 
-async function fileStats(dir: string, path: string): Promise<FileInfo | undefined> {
-  const absolute = join(dir, path);
+/** Every file below `dir` (symbolic links followed) by its `/`-separated relative path. */
+function indexFiles(dir: string): Map<string, FileInfo> {
+  const files = new Map<string, FileInfo>();
+  let entries;
   try {
-    const stats = await stat(absolute);
-    return stats.isFile() ? { absolute, stats } : undefined;
+    entries = readdirSync(dir, { recursive: true, withFileTypes: true });
   } catch {
-    return undefined;
+    return files; // no dist/client: nothing static
   }
+  for (const entry of entries) {
+    if (!entry.isFile() && !entry.isSymbolicLink()) continue;
+    const absolute = join(entry.parentPath, entry.name);
+    let stats: Stats;
+    try {
+      stats = statSync(absolute);
+    } catch {
+      continue; // a dangling link
+    }
+    if (stats.isFile())
+      files.set(relative(dir, absolute).split(sep).join("/"), { absolute, stats });
+  }
+  for (const [path, file] of files) {
+    const br = files.get(`${path}.br`);
+    const gzip = files.get(`${path}.gz`);
+    if (br !== undefined) file.br = br;
+    if (gzip !== undefined) file.gzip = gzip;
+  }
+  return files;
 }
 
 function redirect(res: ServerResponse, location: string): true {
@@ -142,31 +168,18 @@ function redirect(res: ServerResponse, location: string): true {
   return true;
 }
 
-const PRECOMPRESSED: Record<string, string> = { br: ".br", gzip: ".gz" };
-
 /** The precompressed copy of a file for the client's encoding, if the build wrote one. */
-async function variantOf(
+function variantOf(
   req: IncomingMessage,
   file: FileInfo,
-): Promise<{ encoding: string; file: FileInfo } | undefined> {
+): { encoding: string; file: FileInfo } | undefined {
+  if (file.br === undefined && file.gzip === undefined) return undefined;
   // br first, then gzip: a client that accepts both but finds no .br still gets the .gz.
   for (const encoding of acceptedEncodings(req.headers["accept-encoding"])) {
-    const path = `${file.absolute}${PRECOMPRESSED[encoding]}`;
-    try {
-      const stats = await stat(path);
-      if (stats.isFile()) return { encoding, file: { absolute: path, stats } };
-    } catch {}
+    const copy = file[encoding];
+    if (copy !== undefined) return { encoding, file: copy };
   }
   return undefined;
-}
-
-async function hasVariants(file: FileInfo): Promise<boolean> {
-  for (const suffix of Object.values(PRECOMPRESSED)) {
-    try {
-      if ((await stat(`${file.absolute}${suffix}`)).isFile()) return true;
-    } catch {}
-  }
-  return false;
 }
 
 async function send(
@@ -177,7 +190,7 @@ async function send(
   immutable: boolean,
   compress: boolean,
 ): Promise<true> {
-  const variant = compress ? await variantOf(req, original) : undefined;
+  const variant = compress ? variantOf(req, original) : undefined;
   const { absolute, stats } = variant?.file ?? original;
   const tag = `${stats.size.toString(16)}-${Math.floor(stats.mtimeMs).toString(16)}`;
   const etag = `W/"${variant === undefined ? tag : `${tag}-${variant.encoding}`}"`;
@@ -187,7 +200,7 @@ async function send(
     etag,
     "last-modified": lastModified,
   };
-  if (variant !== undefined || (compress && (await hasVariants(original)))) {
+  if (compress && (original.br !== undefined || original.gzip !== undefined)) {
     headers.vary = varyOnEncoding(undefined);
   }
   if (notModified(req, etag, stats.mtime)) {

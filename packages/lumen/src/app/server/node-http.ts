@@ -9,6 +9,11 @@ import type { TLSSocket } from "node:tls";
 export { headersFor, pathBelowBase, type HeadersOption } from "../headers.ts";
 
 /**
+ * Measured in TASK-150 (not changed): building the `Request` costs ~5-13 µs per request on an M1
+ * Max (noisy), about a third of it for the abort signal; a lazily created signal or header pairs
+ * would save ~1-2% of a page request and 2-3% of a tiny JSON endpoint, but break `new
+ * Request(request)` and `clone()` following the disconnect signal. Not worth it for now.
+ *
  * A web `Request` for an incoming Node request. The URL comes from `origin` (or the `Host` header
  * and the socket's protocol) and `originalUrl` (connect) or `url`. The body streams; the signal
  * aborts when the client disconnects before the response finished.

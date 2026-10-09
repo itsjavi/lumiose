@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { mkdtempSync, readFileSync, realpathSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { DatabaseSync } from "node:sqlite";
@@ -346,5 +346,22 @@ describe("format helpers", () => {
 
   it("listLabels", () => {
     expect(listLabels()).toHaveLength(15);
+  });
+});
+
+describe("db()", () => {
+  it("reuses the connection while TRACKER_DB is unchanged, and follows a new value", async () => {
+    const { db } = await import("../src/db.ts");
+    const other = join(dir, "other.db");
+    seed(other); // seeding closes the shared connection
+    const first = db();
+    expect(db()).toBe(first);
+    process.env.TRACKER_DB = other;
+    try {
+      expect(db()).not.toBe(first);
+    } finally {
+      process.env.TRACKER_DB = path;
+    }
+    expect(realpathSync(db().location()!)).toBe(realpathSync(path));
   });
 });

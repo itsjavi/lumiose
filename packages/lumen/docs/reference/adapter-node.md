@@ -106,6 +106,9 @@ follow the build's `trailingSlash`: `/about` serves `about/index.html` (`"ignore
 `..` or dot files (other than `.well-known`) are never served. `config` is the build entry's
 `config` export. With `compress`, a client that accepts brotli (else gzip) gets the file's `.br`
 (else `.gz`) copy when the build wrote one, with `Content-Encoding` and `Vary: Accept-Encoding`.
+`dir` is indexed once, when the handler is created: a build output does not change while it is
+served, and requests no file answers (every page) cost no file system call. Files written into
+`dir` later are not served until the server restarts.
 
 ## Example
 

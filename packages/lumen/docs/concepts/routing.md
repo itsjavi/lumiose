@@ -62,7 +62,9 @@ progressive, so browsers without support navigate normally:
 - **Per link**, `<Link prefetch>` from `lumen/router` overrides the default on MPA pages too. There
   it renders a plain `<a>` (no JavaScript, no router) with a `data-l-prefetch` marker, and the
   rules prefetch it at its own level: `"none"` opts the link out, `"viewport"` prefetches it early,
-  `"hover"` on hover. `<Link>` without `prefetch`, like a plain `<a>`, follows the default.
+  `"hover"` on hover. `<Link>` without `prefetch`, like a plain `<a>`, follows the default. The
+  server `<Link>` tells the page it rendered a marker as it renders; a hand-written
+  `data-l-prefetch` attribute on a plain `<a>` does not change the page's rules.
 - **View Transitions** (`viewTransitions: true`, off by default). Every page opts into
   cross-document View Transitions (`@view-transition { navigation: auto }`), except for readers who
   prefer reduced motion: the old page cross-fades into the new one. An element morphs into its
