@@ -120,6 +120,27 @@ describe.skipIf(!binding)("@lumen/compiler native compile", () => {
     expect(text.slice(start, end)).toBe("A()");
   });
 
+  it("reports execution contracts with UTF-16 spans, on request", () => {
+    const text =
+      'import { signal } from "lumen";\n// 🎉\nexport function A() {\n  const n = signal(0);\n' +
+      "  return <p title={n()} onClick={() => n.set(1)}>{n()}</p>;\n}\n";
+    expect(compile(text, "/src/a.tsx").meta.contract).toBeUndefined();
+    const contract = compile(text, "/src/a.tsx", { contract: true }).meta.contract!;
+    const rows = contract.map((entry) => [
+      text.slice(entry.span.start, entry.span.end),
+      entry.kind,
+      entry.site,
+      entry.via,
+      entry.component,
+      entry.reads.map((read) => text.slice(read.start, read.end)),
+    ]);
+    expect(rows).toEqual([
+      ["n()", "tracked", "attribute", "setAttr", "A", ["n()"]],
+      ["() => n.set(1)", "deferred", "event", "delegateEvents", "A", []],
+      ["n()", "tracked", "child", "insert", "A", ["n()"]],
+    ]);
+  });
+
   it("reports syntax errors and compiles the server target", () => {
     expect(compile("export const = ;", "/src/x.tsx").diagnostics[0]).toMatchObject({
       code: "LUM1001",

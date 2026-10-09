@@ -331,6 +331,8 @@ pub struct CompileOptions {
     pub packages: Option<Vec<PackageRoot>>,
     /// Modules answering earlier `moduleRequests`.
     pub modules: Option<Vec<HostModule>>,
+    /// Fill `meta.contract` (execution contracts, for hovers). Default `false`.
+    pub contract: Option<bool>,
 }
 
 /// A package outside the project root (see `CompileOptions.packages`).
@@ -435,6 +437,44 @@ pub struct CustomPropertiesMeta {
     pub read: Vec<String>,
 }
 
+/// How the client runs an expression.
+#[napi(string_enum = "lowercase")]
+pub enum ContractKind {
+    Tracked,
+    Untracked,
+    Once,
+    Deferred,
+}
+
+/// Where an expression sits.
+#[napi(string_enum = "lowercase")]
+pub enum ContractSite {
+    Child,
+    Attribute,
+    Property,
+    Class,
+    Style,
+    Prop,
+    Event,
+    Ref,
+    Spread,
+    Await,
+}
+
+/// The execution contract of one expression (spec §5.1).
+#[napi(object)]
+pub struct ContractEntry {
+    pub span: Span,
+    pub kind: ContractKind,
+    pub site: ContractSite,
+    /// The component it belongs to.
+    pub component: Option<String>,
+    /// The runtime helper or mechanism that runs it (`insert`, `setAttr`, `getter`, …).
+    pub via: Option<String>,
+    /// The reactive reads that make it tracked.
+    pub reads: Vec<Span>,
+}
+
 #[napi(object)]
 pub struct CompileMeta {
     pub components: Vec<ComponentMeta>,
@@ -449,6 +489,9 @@ pub struct CompileMeta {
     pub islands: Vec<IslandMeta>,
     /// Custom properties set in `style` props and read by the file's CSS.
     pub custom_properties: CustomPropertiesMeta,
+    /// With `contract: true`: the execution contract of each JSX expression and `await`, by
+    /// start offset (entries nest; hovers take the innermost).
+    pub contract: Option<Vec<ContractEntry>>,
 }
 
 #[napi(object)]
@@ -526,6 +569,7 @@ pub fn compile(
                             }),
                     })
                     .collect(),
+                contract: o.contract.unwrap_or(defaults.contract),
             }
         }
     };
@@ -648,8 +692,39 @@ pub fn compile(
                     .collect(),
                 read: meta.custom_properties.read,
             },
+            contract: meta
+                .contract
+                .map(|entries| entries.into_iter().map(convert_contract_entry).collect()),
         },
     })
+}
+
+fn convert_contract_entry(entry: lumen_compiler::ContractEntry) -> ContractEntry {
+    use lumen_compiler::{ContractKind as K, ContractSite as S};
+    ContractEntry {
+        span: span(entry.span),
+        kind: match entry.kind {
+            K::Tracked => ContractKind::Tracked,
+            K::Untracked => ContractKind::Untracked,
+            K::Once => ContractKind::Once,
+            K::Deferred => ContractKind::Deferred,
+        },
+        site: match entry.site {
+            S::Child => ContractSite::Child,
+            S::Attribute => ContractSite::Attribute,
+            S::Property => ContractSite::Property,
+            S::Class => ContractSite::Class,
+            S::Style => ContractSite::Style,
+            S::Prop => ContractSite::Prop,
+            S::Event => ContractSite::Event,
+            S::Ref => ContractSite::Ref,
+            S::Spread => ContractSite::Spread,
+            S::Await => ContractSite::Await,
+        },
+        component: entry.component,
+        via: entry.via,
+        reads: entry.reads.into_iter().map(span).collect(),
+    }
 }
 
 /// The kind of a content file (`lumen({ md, html })`).
@@ -779,6 +854,7 @@ pub fn compile_svg(
             root: options.root,
             packages: None,
             modules: None,
+            contract: None,
         }),
     )
 }

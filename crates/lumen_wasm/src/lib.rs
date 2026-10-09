@@ -85,6 +85,7 @@ struct CompileOptions {
     root: Option<String>,
     packages: Vec<PackageRoot>,
     modules: Vec<HostModule>,
+    contract: Option<bool>,
 }
 
 #[derive(Deserialize)]
@@ -200,6 +201,7 @@ fn compiler_options(options: CompileOptions) -> lumen_compiler::CompileOptions {
                     }),
             })
             .collect(),
+        contract: options.contract.unwrap_or(defaults.contract),
     }
 }
 

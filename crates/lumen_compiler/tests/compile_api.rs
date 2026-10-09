@@ -526,3 +526,70 @@ fn metadata_lists_custom_properties_set_in_style_props_and_read_by_the_css() {
         ["--fallback", "--fill", "--theme-fg"]
     );
 }
+
+#[test]
+fn contract_meta_classifies_each_jsx_expression() {
+    let source = r#"import { signal, untrack } from "lumen";
+import { Card } from "./Card.tsx";
+export async function Panel({ title }: { title: string }) {
+  const count = signal(0);
+  const label = "x";
+  const data = await load();
+  return (
+    <section class={count() > 1 ? "big" : "small"} id={label} onClick={() => count.set(1)}>
+      {title}
+      {untrack(count)}
+      {label}
+      {count() > 0 && <p>positive</p>}
+      <Card heading={title} size={2} ref={(el) => el} />
+    </section>
+  );
+}
+"#;
+    let options = CompileOptions {
+        contract: true,
+        ..CompileOptions::default()
+    };
+    let result = compile(source, "/src/Panel.tsx", &options);
+    assert!(result.diagnostics.is_empty(), "{:?}", result.diagnostics);
+    let contract = result
+        .meta
+        .contract
+        .expect("contract with `contract: true`");
+    let rows: Vec<String> = contract
+        .iter()
+        .map(|entry| {
+            let text = &source[entry.span.start as usize..entry.span.end as usize];
+            let reads: Vec<&str> = entry
+                .reads
+                .iter()
+                .map(|r| &source[r.start as usize..r.end as usize])
+                .collect();
+            format!(
+                "{text} | {:?} {:?} via {} in {} reads {reads:?}",
+                entry.kind,
+                entry.site,
+                entry.via.as_deref().unwrap_or("-"),
+                entry.component.as_deref().unwrap_or("-"),
+            )
+        })
+        .collect();
+    assert_eq!(
+        rows,
+        [
+            "await load() | Once Await via $await in Panel reads []",
+            r#"count() > 1 ? "big" : "small" | Tracked Class via setClass in Panel reads ["count()"]"#,
+            "label | Once Attribute via setAttr in Panel reads []",
+            "() => count.set(1) | Deferred Event via delegateEvents in Panel reads []",
+            r#"title | Tracked Child via insert in Panel reads ["title"]"#,
+            "untrack(count) | Untracked Child via insert in Panel reads []",
+            "label | Once Child via insert in Panel reads []",
+            r#"count() > 0 && <p>positive</p> | Tracked Child via branch in Panel reads ["count()"]"#,
+            r#"title | Tracked Prop via getter in Panel reads ["title"]"#,
+            "2 | Once Prop via - in Panel reads []",
+            "(el) => el | Once Prop via - in Panel reads []",
+        ]
+    );
+    let without = compile(source, "/src/Panel.tsx", &CompileOptions::default());
+    assert!(without.meta.contract.is_none());
+}

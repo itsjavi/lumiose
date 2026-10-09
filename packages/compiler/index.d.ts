@@ -34,6 +34,11 @@ export interface CompileMeta {
   islands: Array<IslandMeta>;
   /** Custom properties set in `style` props and read by the file's CSS. */
   customProperties: CustomPropertiesMeta;
+  /**
+   * With `contract: true`: the execution contract of each JSX expression and `await`, by
+   * start offset (entries nest; hovers take the innermost).
+   */
+  contract?: Array<ContractEntry>;
 }
 
 export interface CompileOptions {
@@ -65,6 +70,8 @@ export interface CompileOptions {
   packages?: Array<PackageRoot>;
   /** Modules answering earlier `moduleRequests`. */
   modules?: Array<HostModule>;
+  /** Fill `meta.contract` (execution contracts, for hovers). Default `false`. */
+  contract?: boolean;
 }
 
 export interface CompileResult {
@@ -141,6 +148,35 @@ export interface ContentSource {
   /** Errors in the file (`LUM1008`: a `<script>` in Markdown); spans are in the file's source. */
   diagnostics: Array<Diagnostic>;
 }
+
+/** The execution contract of one expression (spec §5.1). */
+export interface ContractEntry {
+  span: Span;
+  kind: ContractKind;
+  site: ContractSite;
+  /** The component it belongs to. */
+  component?: string;
+  /** The runtime helper or mechanism that runs it (`insert`, `setAttr`, `getter`, …). */
+  via?: string;
+  /** The reactive reads that make it tracked. */
+  reads: Array<Span>;
+}
+
+/** How the client runs an expression. */
+export type ContractKind = "tracked" | "untracked" | "once" | "deferred";
+
+/** Where an expression sits. */
+export type ContractSite =
+  | "child"
+  | "attribute"
+  | "property"
+  | "class"
+  | "style"
+  | "prop"
+  | "event"
+  | "ref"
+  | "spread"
+  | "await";
 
 /** Custom properties of a file, for a project-wide `LUM3012` check. */
 export interface CustomPropertiesMeta {

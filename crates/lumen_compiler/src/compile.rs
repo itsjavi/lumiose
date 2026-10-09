@@ -18,7 +18,7 @@ use oxc_span::SourceType;
 
 use crate::analyze;
 use crate::codegen::ast::Ast;
-use crate::codegen::client::{self, ScopeTokens, TransformOptions};
+use crate::codegen::client::{self, ContractEntry, ScopeTokens, TransformOptions};
 use crate::css::{self, CssOptions, ScopePlan};
 use crate::custom_properties::{self, CustomPropertySet};
 use crate::diagnostics::{Code, Diagnostic};
@@ -63,6 +63,8 @@ pub struct CompileOptions {
     /// Modules the host loaded for folding imported `$name` constants, answering earlier
     /// [`CompileResult::module_requests`].
     pub modules: Vec<HostModule>,
+    /// Fill [`CompileMeta::contract`] (the language server's hovers).
+    pub contract: bool,
 }
 
 impl Default for CompileOptions {
@@ -76,6 +78,7 @@ impl Default for CompileOptions {
             root: None,
             packages: Vec::new(),
             modules: Vec::new(),
+            contract: false,
         }
     }
 }
@@ -142,6 +145,9 @@ pub struct CompileMeta {
     /// Custom properties the file sets in `style` props and reads in its CSS, for a
     /// project-wide `LUM3012` check (another file's CSS may read what this one sets).
     pub custom_properties: CustomPropertiesMeta,
+    /// The execution contract of each JSX expression and `await` (spec §5.1), with
+    /// [`CompileOptions::contract`].
+    pub contract: Option<Vec<ContractEntry>>,
 }
 
 /// The custom properties of a file (`LUM3012`, TASK-62).
@@ -245,13 +251,20 @@ pub fn compile(source: &str, filename: &str, options: &CompileOptions) -> Compil
         .build(&program)
         .semantic
         .into_scoping();
+    let is_server_only = |specifier: &str| {
+        module_id::is_server_only_import(specifier, filename, options.root.as_deref())
+    };
     let analysis = analyze::analyze(
         &program,
         &scoping,
         &scan.blocks,
         &scan.diagnostics,
-        |specifier| module_id::is_server_only_import(specifier, filename, options.root.as_deref()),
+        is_server_only,
     );
+    let contract = options.contract.then(|| {
+        let server_only = analyze::reactivity::server_only_imports(&program, is_server_only);
+        client::execution_contract(&program, &scoping, &analysis, &server_only)
+    });
     diagnostics.extend(analysis.diagnostics.iter().cloned());
 
     let scopes = ScopePlan::new(
@@ -348,6 +361,7 @@ pub fn compile(source: &str, filename: &str, options: &CompileOptions) -> Compil
                 set: custom_properties_set,
                 read: custom_properties_read,
             },
+            contract,
         },
     }
 }
@@ -395,6 +409,12 @@ impl CompileResult {
         }
         for set in &mut self.meta.custom_properties.set {
             set.span = set.span.map(f);
+        }
+        for entry in self.meta.contract.iter_mut().flatten() {
+            entry.span = entry.span.map(f);
+            for read in &mut entry.reads {
+                *read = read.map(f);
+            }
         }
         for subtree in self.meta.scope_tokens.components.values_mut().flatten() {
             subtree.span = subtree.span.map(f);

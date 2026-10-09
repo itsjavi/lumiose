@@ -15,6 +15,7 @@ mod asyncs;
 mod children;
 mod class_flow;
 mod components;
+mod contract;
 mod element;
 mod events;
 mod html;
@@ -35,6 +36,7 @@ use oxc_span::{GetSpan, Span};
 use oxc_syntax::scope::{ScopeFlags, ScopeId};
 use oxc_syntax::symbol::SymbolId;
 
+pub use contract::{ContractEntry, ContractKind, ContractSite, execution_contract};
 pub use element::{is_intrinsic, tag_name};
 
 use crate::analyze::{Analysis, is_jsx_like};
@@ -596,9 +598,7 @@ impl<'a> Codegen<'a, '_> {
     /// a tagged template or JSX outside nested functions (`untrack(…)` opts out). Expressions with
     /// `await`/`yield` are evaluated in place.
     pub fn is_dynamic(&self, expr: &Expression<'a>) -> bool {
-        let mut finder = DynamicFinder::default();
-        finder.visit_expression(expr);
-        finder.dynamic && !finder.suspends
+        is_dynamic_expression(expr)
     }
 
     /// Compiles any JSX-ish value in a renderable position (component children, props, branch
@@ -687,6 +687,18 @@ impl<'a> Codegen<'a, '_> {
             Expression::JSXElement(_) | Expression::JSXFragment(_)
         )
     }
+}
+
+/// [`Codegen::is_dynamic`] without a codegen: `(dynamic, suspends)`.
+pub(super) fn dynamic_and_suspends(expr: &Expression<'_>) -> (bool, bool) {
+    let mut finder = DynamicFinder::default();
+    finder.visit_expression(expr);
+    (finder.dynamic, finder.suspends)
+}
+
+fn is_dynamic_expression(expr: &Expression<'_>) -> bool {
+    let (dynamic, suspends) = dynamic_and_suspends(expr);
+    dynamic && !suspends
 }
 
 #[derive(Default)]

@@ -110,11 +110,24 @@ pub fn first_reactive_read(
     server_only: &HashSet<SymbolId>,
     expr: &Expression<'_>,
 ) -> Option<Span> {
+    reactive_reads(scoping, props, server_only, expr)
+        .first()
+        .copied()
+}
+
+/// Every reactive read in `expr` (outside nested functions), outermost first; a read inside
+/// another one (`props.items` in `props.items()`) is left out.
+pub fn reactive_reads(
+    scoping: &Scoping,
+    props: &PropsSymbols,
+    server_only: &HashSet<SymbolId>,
+    expr: &Expression<'_>,
+) -> Vec<Span> {
     let mut finder = ReadFinder {
         scoping,
         props,
         server_only,
-        found: None,
+        found: Vec::new(),
     };
     finder.visit_expression(expr);
     finder.found
@@ -124,13 +137,17 @@ struct ReadFinder<'s> {
     scoping: &'s Scoping,
     props: &'s PropsSymbols,
     server_only: &'s HashSet<SymbolId>,
-    found: Option<Span>,
+    found: Vec<Span>,
 }
 
 impl ReadFinder<'_> {
     fn hit(&mut self, span: oxc_span::Span) {
-        if self.found.is_none() {
-            self.found = Some(span.into());
+        let inside = self
+            .found
+            .last()
+            .is_some_and(|last| last.start <= span.start && span.end <= last.end);
+        if !inside {
+            self.found.push(span.into());
         }
     }
 }
