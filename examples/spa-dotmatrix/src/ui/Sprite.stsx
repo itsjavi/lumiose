@@ -1,0 +1,38 @@
+// A 12×12 creature sprite in the screen's four shades.
+import { computed } from "lumen";
+
+export function Sprite(props: { rows: string[]; label: string; class?: string }) {
+  const pixels = computed(() =>
+    props.rows.flatMap((row, y) =>
+      [...row].flatMap((c, x) => (c === "." ? [] : [{ x, y, shade: c }])),
+    ),
+  );
+  return (
+    <svg
+      class={["sprite", props.class]}
+      viewBox="0 0 12 12"
+      shape-rendering="crispEdges"
+      role="img"
+      aria-label={props.label}
+    >
+      {pixels().map((p) => (
+        <rect x={p.x} y={p.y} width="1" height="1" class={`s${p.shade}`} />
+      ))}
+    </svg>
+  );
+}
+
+<style>
+  .sprite {
+    display: block;
+  }
+  .sa {
+    fill: var(--l1);
+  }
+  .sb {
+    fill: var(--l2);
+  }
+  .sc {
+    fill: var(--l3);
+  }
+</style>

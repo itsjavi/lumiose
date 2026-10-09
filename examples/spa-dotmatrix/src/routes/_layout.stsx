@@ -14,6 +14,7 @@ const VIEWS = [
   { href: href("/"), label: "Studio" },
   { href: href("/songs"), label: "Songs" },
   { href: href("/sfx"), label: "SFX" },
+  { href: href("/creatures"), label: "Creatures" },
   { href: href("/learn"), label: "Learn" },
 ];
 
@@ -271,7 +272,8 @@ export default function Layout(props: { children?: JSX.Element }) {
     .view {
       flex: 1;
       text-align: center;
-      padding-inline: 6px;
+      padding-inline: 4px;
+      font-size: 11px;
     }
     .word small,
     .keys {

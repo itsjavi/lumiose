@@ -62,6 +62,18 @@ To save the e2e screenshots, set `DOTMATRIX_SHOTS=<dir>`. The task screenshots a
   hit, bump, door, pickup, heal, save, item get, level up, warp). Bend one with the pitch, length,
   sweep, duty, noise tone and volume sliders, read it as sound-driver macros (`square_note`,
   `noise_note`, `pitch_sweep`) and export it as WAV.
+- **Creatures** (`/creatures`): thirteen original creatures and their voices ("cries"), built
+  the way handheld RPGs built them: seven base voices on the two pulses and the noise channel, and
+  each creature adds a pitch (added to every square note's frequency register) and a length (a
+  tempo for the square notes; noise keeps its timing). Change the base voice, pitch and length, roll
+  a new creature with "Surprise me", read the driver code and export a WAV.
+- **Open in studio** (SFX and Creatures): the sound opens in the studio as a _sound sheet_, a
+  song on a frame grid (one step per video frame, played once). Per-note settings the grid does not
+  draw (volume, envelope, duty, hardware sweep, fine tuning) travel with each note, shown by a
+  notch, so nothing is lost; on the noise channel the rows are raw noise settings. "Save to My
+  sounds" brings it back to its gallery. If the sheet uses studio-only features (vibrato, glide,
+  arpeggio, shimmer, short notes, the wave channel), the maker says which and keeps its sliders off;
+  the sound still plays, exports and reopens in the studio.
 - **Learn** (`/learn`): the four channels, each trick with a button to hear it, and the credits.
 
 ## How it works
@@ -71,6 +83,8 @@ To save the e2e screenshots, set `DOTMATRIX_SHOTS=<dir>`. The task screenshots a
   steps, and once per video frame (70,224 cycles) it updates vibrato, glides, arpeggios, duty cycle
   patterns and the wave channel's volume steps. Noise drums are short programs of noise settings
   (`src/audio/tables.ts`), and SFX are runs of `square_note`/`noise_note`-style steps.
+- `src/model/sheet.ts` converts sounds to sound sheets and back; `src/model/sheet.test.ts` renders
+  every SFX and creature voice both ways on the real engine and compares them.
 - `src/audio/render.worker.ts` runs the vendored engine offline. Each channel renders to its own
   mono stem; `src/audio/player.ts` plays the four stems in sync with Web Audio, loops the part after
   the loop bar, and mixes mute, solo and panning without re-rendering. An edit re-renders only the

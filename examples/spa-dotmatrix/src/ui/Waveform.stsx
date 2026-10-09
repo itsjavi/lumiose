@@ -1,0 +1,75 @@
+// A sound's waveform on a small dot-matrix screen; redrawn when the sound or the palette changes.
+import { effect, onCleanup } from "lumen";
+import { prefs } from "../state.ts";
+import { tokens } from "../tokens.ts";
+
+function draw(c: HTMLCanvasElement, data: Float32Array | null) {
+  const g = c.getContext("2d")!;
+  const style = getComputedStyle(c);
+  const { width: w, height: h } = c;
+  g.fillStyle = style.getPropertyValue("--l0");
+  g.fillRect(0, 0, w, h);
+  g.fillStyle = style.getPropertyValue("--l1");
+  for (let x = 0; x < w; x += 4) for (let y = 0; y < h; y += 4) g.fillRect(x, y, 1, 1);
+  if (!data || data.length === 0) return;
+  g.fillStyle = style.getPropertyValue("--l3");
+  const per = Math.max(1, Math.floor(data.length / (w / 2)));
+  for (let x = 0; x < w; x += 2) {
+    let peak = 0;
+    const from = Math.floor((x / w) * data.length);
+    for (let i = from; i < from + per && i < data.length; i++)
+      peak = Math.max(peak, Math.abs(data[i]!));
+    const half = Math.max(1, Math.round(peak * h * 1.8));
+    for (let y = h / 2 - half; y < h / 2 + half; y += 2) g.fillRect(x, Math.round(y), 2, 1.5);
+  }
+}
+
+export function Waveform(props: { pcm: Float32Array | null; label: string; caption?: string }) {
+  let canvas: HTMLCanvasElement | undefined;
+  let frame = 0;
+  effect(() => {
+    const data = props.pcm;
+    void prefs.lcd;
+    void prefs.theme;
+    cancelAnimationFrame(frame);
+    frame = requestAnimationFrame(() => canvas && draw(canvas, data));
+  });
+  onCleanup(() => cancelAnimationFrame(frame));
+  return (
+    <div class="wave">
+      <canvas
+        width="560"
+        height="96"
+        ref={(el) => (canvas = el)}
+        aria-label={props.label}
+        role="img"
+      />
+      {props.caption ? <span class="dur">{props.caption}</span> : null}
+      <style>
+        .wave {
+          position: relative;
+          padding: 10px;
+          background: var(--bezel);
+          border-radius: 10px 10px 26px 10px;
+        }
+        canvas {
+          display: block;
+          inline-size: 100%;
+          block-size: auto;
+          aspect-ratio: 560 / 96;
+          border-radius: 3px;
+          image-rendering: pixelated;
+          background: var(--l0);
+        }
+        .dur {
+          position: absolute;
+          inset-block-start: 14px;
+          inset-inline-end: 16px;
+          font-family: $tokens.font.pixel;
+          font-size: 11px;
+          color: var(--l3);
+        }
+      </style>
+    </div>
+  );
+}

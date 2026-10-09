@@ -458,9 +458,10 @@ export const creatureSfx = (c: Creature): Sfx => ({
   id: c.id,
 });
 
+const hex = (n: number, d: number) =>
+  `$${(n & (16 ** d - 1)).toString(16).toUpperCase().padStart(d, "0")}`;
+
 /** The voice's header line, in the original drivers' terms. */
 export function cryHeader(base: BaseVoice, pitch: number, length: number): string {
-  const hex = (n: number, d: number) =>
-    `$${(n & (16 ** d - 1)).toString(16).toUpperCase().padStart(d, "0")}`;
   return `; base voice "${base.name}", pitch ${hex(Math.round(pitch), 4)}, length ${hex(Math.round(length * 256), 4)}`;
 }

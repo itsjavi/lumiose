@@ -1,0 +1,412 @@
+// Creature voices: a dozen original creatures, each one of a few base voices with its own pitch
+// and length, the way handheld RPGs gave every creature a cry. Pick one, change its base voice,
+// pitch and length (or roll a new creature), export it, or open it in the studio.
+import { computed, onCleanup, onMount, signal } from "lumen";
+import { search } from "lumen/router";
+import { FPS, sfxData, sfxFrames, songSeconds } from "../audio/driver.ts";
+import { playPcm } from "../audio/player.ts";
+import { onSpace } from "../keys.ts";
+import {
+  BASES,
+  CREATURES,
+  baseById,
+  creatureById,
+  cryHeader,
+  voiceSfx,
+} from "../model/creatures.ts";
+import { listing } from "../model/sfx.ts";
+import { sfxToSheet, sheetToSfx } from "../model/sheet.ts";
+import {
+  mySounds,
+  openInStudio,
+  openInStudioSheet,
+  renderSound,
+  saveWav,
+  sheetData,
+} from "../sounds.ts";
+import { say } from "../state.ts";
+import { tokens } from "../tokens.ts";
+import { Maker, type Slider } from "../ui/Maker.stsx";
+import { MySounds } from "../ui/MySounds.stsx";
+import { Sprite } from "../ui/Sprite.stsx";
+
+const ms = (frames: number) => `${Math.round((frames / FPS) * 1000)} ms`;
+const rand = (lo: number, hi: number) => lo + Math.round(Math.random() * (hi - lo));
+const signed = (n: number) => (n > 0 ? `+${n}` : String(n));
+
+/** A sprite for creatures rolled with "Surprise me": a blob with eyes. */
+const MYSTERY = [
+  "............",
+  "....cccc....",
+  "..ccaaaacc..",
+  ".caaaaaaaac.",
+  ".caccaaccac.",
+  ".caaaaaaaac.",
+  ".caaabbaaac.",
+  ".caaaaaaaac.",
+  "..caaaaaac..",
+  "...cccccc...",
+  "..cc....cc..",
+  "............",
+];
+
+export default function Creatures() {
+  /** The creature (or saved voice) picked; base, pitch and length start from it. */
+  const picked = signal<{ custom: boolean; id: string }>({ custom: false, id: CREATURES[0]!.id });
+  const voice = signal({
+    base: CREATURES[0]!.base,
+    pitch: CREATURES[0]!.pitch,
+    length: CREATURES[0]!.length,
+  });
+  const pcm = signal<Float32Array | null>(null);
+  let timer: ReturnType<typeof setTimeout> | undefined;
+
+  const creature = () => (picked().custom ? undefined : creatureById(picked().id));
+  const entry = computed(() =>
+    picked().custom ? mySounds().find((s) => s.id === picked().id) : undefined,
+  );
+  /** Changing a creature's voice makes a remix of it (it keeps its sprite). */
+  const remixed = () => {
+    const c = creature();
+    const v = voice();
+    return !!c && (c.base !== v.base || c.pitch !== v.pitch || c.length !== v.length);
+  };
+  const name = () => {
+    const c = creature();
+    if (c) return remixed() ? `${c.name} (remix)` : c.name;
+    return entry()?.name ?? "Mystery creature";
+  };
+  /** A saved voice plays as it was saved (the base, pitch and length sliders apply to creatures). */
+  const savedSfx = computed(() => {
+    const saved = entry();
+    return saved ? sheetToSfx(saved.song, saved.id) : undefined;
+  });
+  const current = computed(() => {
+    if (entry()) {
+      const s = savedSfx();
+      return s && "sfx" in s ? s.sfx : null;
+    }
+    const v = voice();
+    return {
+      ...voiceSfx(baseById(v.base), v.pitch, v.length, name()),
+      id: creature()?.id ?? "mystery",
+    };
+  });
+
+  function data() {
+    const sfx = current();
+    return sfx ? sfxData(sfx) : sheetData(entry()!.song);
+  }
+
+  async function fire(play = true) {
+    try {
+      const rendered = await renderSound(data());
+      pcm.set(rendered);
+      if (play) await playPcm(rendered);
+    } catch (error) {
+      say(`Audio failed: ${String(error)}`);
+    }
+  }
+
+  function choose(id: string) {
+    const c = creatureById(id)!;
+    picked.set({ custom: false, id });
+    voice.set({ base: c.base, pitch: c.pitch, length: c.length });
+    void fire();
+  }
+
+  function change(next: Partial<{ base: string; pitch: number; length: number }>, delay = 140) {
+    if (picked().custom) picked.set({ custom: false, id: "mystery" });
+    // A remix keeps the creature it started from.
+    voice.update((v) => ({ ...v, ...next }));
+    clearTimeout(timer);
+    timer = setTimeout(() => void fire(), delay);
+  }
+
+  function surprise() {
+    picked.set({ custom: false, id: "mystery" });
+    voice.set({
+      base: BASES[rand(0, BASES.length - 1)]!.id,
+      pitch: rand(-12, 12) * 16,
+      length: [0.6, 0.8, 1, 1.2, 1.5, 1.8][rand(0, 5)]!,
+    });
+    void fire();
+  }
+
+  onMount(() => {
+    onSpace(() => void fire());
+    const id = search().get("sound");
+    if (id && mySounds().some((s) => s.id === id)) picked.set({ custom: true, id });
+    void fire(false);
+  });
+  onCleanup(() => {
+    onSpace(undefined);
+    clearTimeout(timer);
+  });
+
+  const tunable = () => !picked().custom;
+  const sliders: Slider[] = [
+    {
+      label: "Pitch",
+      value: () => voice().pitch,
+      min: -256,
+      max: 256,
+      step: 8,
+      show: () => signed(voice().pitch),
+      enabled: tunable,
+      onInput: (v) => change({ pitch: v }),
+    },
+    {
+      label: "Length",
+      value: () => voice().length,
+      min: 0.5,
+      max: 2,
+      step: 0.05,
+      show: () => `${Math.round(voice().length * 100)}%`,
+      enabled: tunable,
+      onInput: (v) => change({ length: v }),
+    },
+  ];
+
+  const studioLimit = () => {
+    const sfx = current();
+    if (!sfx) return "";
+    const s = sfxToSheet(sfx, "voice");
+    return "reasons" in s ? `Cannot open in the studio: ${s.reasons.join(", ")}` : "";
+  };
+  const notice = () => {
+    if (!picked().custom) return undefined;
+    const s = savedSfx();
+    const why =
+      s && "reasons" in s ? ` Some of it only the studio can play (${s.reasons.join(", ")}).` : "";
+    return `Your voice from the studio: it plays as you saved it, so the base voice, pitch and length are off.${why}`;
+  };
+
+  return (
+    <div class="creatures">
+      <header class="intro">
+        <h1>Creature voices</h1>
+        <p>
+          In handheld RPGs every creature has a cry, and most share a handful of base voices: each
+          creature just changes the pitch and the length. These thirteen are originals. Meet them,
+          then make your own.
+        </p>
+      </header>
+      <div class="layout">
+        <div class="side">
+          <ul class="roster" aria-label="Creatures">
+            {CREATURES.map((c) => (
+              <li>
+                <button
+                  type="button"
+                  class="critter"
+                  aria-pressed={!picked().custom && picked().id === c.id}
+                  onClick={() => choose(c.id)}
+                >
+                  <span class="frame">
+                    <Sprite rows={c.sprite} label="" class="mini" />
+                  </span>
+                  <span class="name">{c.name}</span>
+                </button>
+              </li>
+            ))}
+          </ul>
+          <section class="bases" aria-labelledby="bases-title">
+            <h2 id="bases-title">Base voice</h2>
+            <div class="chips" role="radiogroup" aria-label="Base voice">
+              {BASES.map((b) => (
+                <button
+                  type="button"
+                  role="radio"
+                  aria-checked={!picked().custom && voice().base === b.id}
+                  onClick={() => change({ base: b.id }, 0)}
+                >
+                  <span class="bname">{b.name}</span>
+                  <span class="bhint">{b.hint}</span>
+                </button>
+              ))}
+            </div>
+          </section>
+          <MySounds
+            kind="voice"
+            selected={picked().custom ? picked().id : null}
+            onPick={(saved) => {
+              picked.set({ custom: true, id: saved.id });
+              void fire();
+            }}
+          />
+        </div>
+        <Maker
+          title={name()}
+          blurb={
+            creature()?.blurb ??
+            (picked().custom
+              ? "Your own voice, made in the studio."
+              : "A creature nobody has met yet.")
+          }
+          caption={
+            current()
+              ? ms(sfxFrames(current()!))
+              : `${Math.round(songSeconds(entry()!.song) * 1000)} ms`
+          }
+          pcm={pcm()}
+          onFire={() => void fire()}
+          sliders={sliders}
+          notice={notice()}
+          code={
+            current() && !picked().custom
+              ? `${cryHeader(baseById(voice().base), voice().pitch, voice().length)}\n${listing(current()!)}`
+              : current()
+                ? listing(current()!)
+                : null
+          }
+          codeNote="A cry is a base voice plus two numbers: pitch is added to every square note's frequency register, and length scales the square notes like a tempo ($0100 is as written). Noise keeps its own timing."
+          actions={[
+            { label: "Surprise me", onClick: surprise },
+            {
+              label: "Open in studio",
+              onClick: () => {
+                const sfx = current();
+                if (sfx) openInStudio(sfx, "voice");
+                else openInStudioSheet(entry()!.song, `Open ${entry()!.name} in the studio`);
+              },
+              disabled: () => studioLimit() !== "",
+              title: () => studioLimit() || "Edit this voice on the studio's note grid",
+            },
+            {
+              label: "Export WAV",
+              primary: true,
+              onClick: () =>
+                void (async () => saveWav(pcm() ?? (await renderSound(data())), name()))(),
+            },
+          ]}
+        >
+          <span class="portrait">
+            <Sprite rows={creature()?.sprite ?? MYSTERY} label={name()} class="big" />
+          </span>
+        </Maker>
+      </div>
+      <style>
+        .creatures {
+          display: grid;
+          gap: 18px;
+        }
+        .intro h1 {
+          font-size: 24px;
+          color: var(--indigo);
+        }
+        .intro p {
+          max-inline-size: 72ch;
+          margin: 6px 0 0;
+          color: var(--dim);
+        }
+        .layout {
+          display: grid;
+          grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr);
+          gap: 18px;
+          align-items: start;
+        }
+        .side {
+          display: grid;
+          gap: 18px;
+        }
+        .roster {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(min(104px, 100%), 1fr));
+          gap: 10px;
+          margin: 0;
+          padding: 0;
+          list-style: none;
+        }
+        .critter {
+          display: grid;
+          justify-items: center;
+          gap: 6px;
+          inline-size: 100%;
+          padding: 10px 8px 12px;
+          border: 0;
+          border-radius: 14px;
+          background: var(--shell);
+          cursor: pointer;
+          box-shadow:
+            inset 0 -4px 0 rgb(0 0 0 / 0.12),
+            0 6px 14px -10px rgb(0 0 0 / 0.5);
+        }
+        .critter[aria-pressed="true"] {
+          background: var(--accent);
+          color: var(--accent-ink);
+        }
+        .frame {
+          display: grid;
+          place-items: center;
+          inline-size: 64px;
+          block-size: 64px;
+          border-radius: 8px;
+          background: var(--l0);
+          box-shadow: inset 0 0 0 3px var(--bezel);
+        }
+        .mini {
+          inline-size: 48px;
+          block-size: 48px;
+        }
+        .name {
+          font-family: $tokens.font.pixel;
+          font-size: 11px;
+        }
+        .portrait {
+          display: grid;
+          place-items: center;
+          flex: none;
+          inline-size: 84px;
+          block-size: 84px;
+          border-radius: 10px 10px 22px 10px;
+          background: var(--l0);
+          box-shadow: inset 0 0 0 5px var(--bezel);
+        }
+        .big {
+          inline-size: 60px;
+          block-size: 60px;
+        }
+        .bases {
+          display: grid;
+          gap: 10px;
+        }
+        .bases h2 {
+          font-size: 15px;
+          color: var(--indigo);
+        }
+        .chips {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(min(150px, 100%), 1fr));
+          gap: 8px;
+        }
+        .chips button {
+          display: grid;
+          gap: 2px;
+          padding: 9px 11px;
+          border: 2px solid transparent;
+          border-radius: 12px;
+          background: var(--shell-low);
+          text-align: start;
+          cursor: pointer;
+        }
+        .chips button[aria-checked="true"] {
+          border-color: var(--accent);
+        }
+        .bname {
+          font-family: $tokens.font.pixel;
+          font-size: 12px;
+        }
+        .bhint {
+          font-size: 12px;
+          color: var(--dim);
+        }
+        @media (width < 900px) {
+          .layout {
+            grid-template-columns: minmax(0, 1fr);
+          }
+        }
+      </style>
+    </div>
+  );
+}

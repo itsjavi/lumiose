@@ -56,6 +56,7 @@ const range = (
 );
 
 export function InstrumentPanel() {
+  const rawNoise = () => kind() === "noise" && !!doc.song.sheet;
   const kind = () => CHANNELS[ch()].kind;
   const inst = () => doc.song.tracks[ch()].inst;
 
@@ -89,9 +90,15 @@ export function InstrumentPanel() {
         <h2 id="sound-title">
           Sound <span class="for">· {CHANNELS[ch()].name}</span>
         </h2>
-        <p class="hint">Pick a preset, then press a note to hear it.</p>
+        <p class="hint">
+          {rawNoise()
+            ? "On a sound sheet each noise row is a raw noise setting. Volume and envelope below are for new notes."
+            : doc.song.sheet
+              ? "Notes with a notch keep their own settings from the sound; new notes use this sound."
+              : "Pick a preset, then press a note to hear it."}
+        </p>
       </header>
-      <div class="presets" role="radiogroup" aria-label="Presets">
+      <div class={["presets", { hidden: rawNoise() }]} role="radiogroup" aria-label="Presets">
         {PRESETS[kind()].map((p) => (
           <button
             type="button"
@@ -163,7 +170,7 @@ export function InstrumentPanel() {
                   ]!
                 : String(inst().volume),
           )}
-          {kind() === "noise"
+          {kind() === "noise" && !rawNoise()
             ? range(
                 "Drum tone",
                 () => inst().tone,
@@ -286,6 +293,9 @@ export function InstrumentPanel() {
           margin: 0;
           font-size: 13px;
           color: var(--dim);
+        }
+        .hidden {
+          display: none;
         }
         .presets {
           display: grid;

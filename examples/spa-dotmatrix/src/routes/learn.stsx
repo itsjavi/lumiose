@@ -176,6 +176,19 @@ export default function Learn() {
       </section>
 
       <section class="panel card">
+        <h2>Creature voices</h2>
+        <p>
+          A creature's cry is a short sound effect on the two pulses and the noise channel. Games
+          kept only a few base voices and gave each creature two numbers: a pitch added to every
+          note's frequency register, and a length that stretches the notes. Meet a dozen in the{" "}
+          <Link class="link" href={href("/creatures")}>
+            Creatures
+          </Link>{" "}
+          room, then remix them.
+        </p>
+      </section>
+
+      <section class="panel card">
         <h2>From notes to a song</h2>
         <ul>
           <li>
@@ -214,8 +227,8 @@ export default function Learn() {
           </li>
           <li>
             The sound driver (notes, vibrato, slides, arpeggios, drums), the instrument presets,
-            wave tables, drum kit, demo songs and sound effects were written for this sample. No
-            game music, sound effects or data are used.
+            wave tables, drum kit, demo songs, sound effects, base voices and creatures were written
+            for this sample. No game music, sound effects or data are used.
           </li>
           <li>
             Fonts: Silkscreen by Jason Kottke and Space Grotesk by Florian Karsten, both under the

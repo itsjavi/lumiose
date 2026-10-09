@@ -63,3 +63,39 @@ export function saveShelf(entries: SavedSong[]): boolean {
 }
 
 export const newId = (): string => Math.random().toString(36).slice(2, 10);
+
+// --- My sounds: sound sheets saved from the studio ---
+
+const SOUNDS = "dotmatrix.sounds";
+
+export interface SavedSound {
+  id: string;
+  kind: "sfx" | "voice";
+  name: string;
+  updated: number;
+  song: Song;
+}
+
+export function loadSounds(): SavedSound[] {
+  const data = read(SOUNDS);
+  if (!Array.isArray(data)) return [];
+  return data.flatMap((entry: Partial<SavedSound>) => {
+    try {
+      const song = sanitizeSong(entry.song);
+      if (!song.sheet) return [];
+      return [
+        {
+          id: String(entry.id),
+          kind: song.sheet.kind,
+          name: song.sheet.name,
+          updated: Number(entry.updated) || 0,
+          song,
+        },
+      ];
+    } catch {
+      return [];
+    }
+  });
+}
+
+export const saveSounds = (entries: SavedSound[]): boolean => write(SOUNDS, entries);

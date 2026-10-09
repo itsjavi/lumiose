@@ -2,7 +2,7 @@
 // its scope while the song plays.
 import { effect, onCleanup } from "lumen";
 import { nowPlaying, scope } from "../audio/player.ts";
-import { presetFor } from "../model/instruments.ts";
+import { presetName } from "../model/instruments.ts";
 import { CHANNELS, type ChannelIndex, type Pan } from "../model/types.ts";
 import { doc, editor, mix, prefs } from "../state.ts";
 import { tokens } from "../tokens.ts";
@@ -81,7 +81,7 @@ export function ChannelRack() {
               <span class="names">
                 <span class="name">{info.name}</span>
                 <span class="role">
-                  {info.role} · {presetFor(info.kind, track().inst.preset).name}
+                  {info.role} · {presetName(info.kind, track().inst.preset)}
                 </span>
               </span>
               <kbd aria-hidden="true">{ch + 1}</kbd>

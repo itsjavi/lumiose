@@ -5,12 +5,13 @@ import type { Note, Song } from "./types.ts";
 
 const VERSION = "1";
 
+const plain = (n: Note) => Object.keys(n).length === 3;
+
 /**
  * Notes become flat [step, length, pitch, …] arrays, about a third of the size. Tracks whose notes
  * carry per-note settings (sound sheets) keep their note objects.
  */
 function compact(song: Song): unknown {
-  const plain = (n: Note) => Object.keys(n).length === 3;
   return {
     ...song,
     tracks: song.tracks.map((t) => ({

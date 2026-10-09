@@ -237,7 +237,7 @@ export function listing(sfx: Sfx): string {
   for (const voice of sfx.voices) {
     lines.push(`; ${voice.channel === 3 ? "noise" : `pulse ${voice.channel + 1}`}`);
     let duty = -1;
-    let sweep = -1;
+    let sweep = 0;
     for (const n of voice.notes) {
       if (voice.channel === 3) {
         lines.push(`  noise_note ${n.frames}, ${n.volume}, ${fadeArg(n.env)}, ${hex(n.noise, 2)}`);

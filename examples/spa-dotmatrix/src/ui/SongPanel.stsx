@@ -10,7 +10,10 @@ import {
   type ChannelIndex,
   type ScaleId,
 } from "../model/types.ts";
-import { doc, edit, editor, openSong, prefs, say } from "../state.ts";
+import { href } from "lumen";
+import { navigate } from "lumen/router";
+import { keepSound } from "../sounds.ts";
+import { doc, edit, editor, openSong, plainSong, prefs, say } from "../state.ts";
 import { tokens } from "../tokens.ts";
 
 const LENGTHS = [
@@ -35,10 +38,44 @@ function setBars(bars: number) {
 
 const bar = () => editor.bar;
 
+const galleryHref = () => (doc.song.sheet?.kind === "voice" ? href("/creatures") : href("/sfx"));
+
+/** Keeps the studio's sound sheet in My sounds and shows it in its gallery. */
+function saveBack() {
+  const song = plainSong();
+  song.sheet = { ...song.sheet!, name: song.title || song.sheet!.name };
+  const id = keepSound(song);
+  if (!id) return;
+  say(`Saved “${song.sheet.name}”`);
+  void navigate(`${galleryHref()}?sound=${id}`);
+}
+
 export function SongPanel() {
   return (
     <section class="panel song" aria-labelledby="song-title-h">
-      <h2 id="song-title-h">Song</h2>
+      {doc.song.sheet ? (
+        <div class="sheet-note" role="note">
+          <h2 id="song-title-h">
+            {doc.song.sheet.kind === "voice" ? "Creature voice" : "Sound effect"}
+          </h2>
+          <p>
+            “{doc.song.sheet.name}” on a frame grid: one step is{" "}
+            {doc.song.sheet.ticks === 1 ? "one frame" : `${doc.song.sheet.ticks} frames`} (1/60 s).
+            Notes with a notch keep their own volume, envelope, duty, sweep or tuning from the
+            sound.
+          </p>
+          <div class="tools">
+            <button type="button" class="btn primary" onClick={saveBack}>
+              Save to {doc.song.sheet.kind === "voice" ? "My voices" : "My sounds"}
+            </button>
+            <button type="button" class="btn" onClick={() => void navigate(galleryHref())}>
+              Back to {doc.song.sheet.kind === "voice" ? "Creatures" : "SFX"}
+            </button>
+          </div>
+        </div>
+      ) : (
+        <h2 id="song-title-h">Song</h2>
+      )}
       <div class="rows">
         <div class="field">
           <span class="label">Bars</span>
@@ -107,12 +144,18 @@ export function SongPanel() {
       <div class="bartools">
         <span class="label">
           Bar {bar() + 1}{" "}
-          {bar() === doc.song.loop ? "· loop starts here" : bar() < doc.song.loop ? "· intro" : ""}
+          {doc.song.sheet
+            ? ""
+            : bar() === doc.song.loop
+              ? "· loop starts here"
+              : bar() < doc.song.loop
+                ? "· intro"
+                : ""}
         </span>
         <div class="tools">
           <button
             type="button"
-            class="btn"
+            class={["btn", { hidden: !!doc.song.sheet }]}
             disabled={bar() === doc.song.loop}
             onClick={() => {
               const b = bar();
@@ -265,6 +308,20 @@ export function SongPanel() {
         }
         .seg button[aria-checked="true"] {
           border-color: var(--accent);
+        }
+        .hidden {
+          display: none;
+        }
+        .sheet-note {
+          display: grid;
+          gap: 8px;
+          padding: 12px;
+          border-radius: 14px;
+          background: color-mix(in srgb, var(--indigo) 10%, var(--shell-low));
+        }
+        .sheet-note p {
+          margin: 0;
+          font-size: 13px;
         }
         .bartools {
           display: grid;

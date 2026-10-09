@@ -2,6 +2,7 @@
 import { href, signal } from "lumen";
 import { looping, rendering, setLooping } from "../audio/player.ts";
 import * as player from "../audio/player.ts";
+import { download, slug } from "../files.ts";
 import { encodeSong } from "../model/share.ts";
 import {
   canRedo,
@@ -19,21 +20,6 @@ import {
 import { tokens } from "../tokens.ts";
 
 export const exporting = signal(false);
-
-export const slug = (title: string): string =>
-  title
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-|-$/g, "") || "song";
-
-export function download(blob: Blob, name: string): void {
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = name;
-  link.click();
-  setTimeout(() => URL.revokeObjectURL(url), 10_000);
-}
 
 async function exportWav() {
   if (exporting()) return;
@@ -113,39 +99,59 @@ export function Transport() {
           {message() ? ` · ${message()}` : ""}
         </span>
       </div>
-      <div class="tempo">
-        <span class="label">Tempo</span>
-        <button
-          type="button"
-          class="step"
-          aria-label="Slower"
-          onClick={() => setBpm(doc.song.bpm - 4)}
-        >
-          −
-        </button>
-        <input
-          type="number"
-          aria-label="Tempo in BPM"
-          min={50}
-          max={240}
-          value={doc.song.bpm}
-          onChange={(event) => setBpm(event.currentTarget.valueAsNumber)}
-        />
-        <button
-          type="button"
-          class="step"
-          aria-label="Faster"
-          onClick={() => setBpm(doc.song.bpm + 4)}
-        >
-          +
-        </button>
-      </div>
+      {doc.song.sheet ? (
+        <div class="tempo" role="radiogroup" aria-label="Frames per step">
+          <span class="label">Frames per step</span>
+          {[1, 2, 3, 4].map((t) => (
+            <button
+              type="button"
+              role="radio"
+              class={["step", { on: doc.song.sheet?.ticks === t }]}
+              aria-checked={doc.song.sheet?.ticks === t}
+              onClick={() =>
+                edit("Change frames per step", (song) => song.sheet && (song.sheet.ticks = t))
+              }
+            >
+              {t}
+            </button>
+          ))}
+        </div>
+      ) : (
+        <div class="tempo">
+          <span class="label">Tempo</span>
+          <button
+            type="button"
+            class="step"
+            aria-label="Slower"
+            onClick={() => setBpm(doc.song.bpm - 4)}
+          >
+            −
+          </button>
+          <input
+            type="number"
+            aria-label="Tempo in BPM"
+            min={50}
+            max={240}
+            value={doc.song.bpm}
+            onChange={(event) => setBpm(event.currentTarget.valueAsNumber)}
+          />
+          <button
+            type="button"
+            class="step"
+            aria-label="Faster"
+            onClick={() => setBpm(doc.song.bpm + 4)}
+          >
+            +
+          </button>
+        </div>
+      )}
       <div class="buttons">
         <button
           type="button"
-          class={["btn", { lit: looping() }]}
-          aria-pressed={looping()}
-          title="Loop back to the loop bar (L)"
+          class={["btn", { lit: looping() && !doc.song.sheet }]}
+          aria-pressed={looping() && !doc.song.sheet}
+          disabled={!!doc.song.sheet}
+          title={doc.song.sheet ? "Sounds play once" : "Loop back to the loop bar (L)"}
           onClick={() => setLooping(!looping())}
         >
           Loop
@@ -271,6 +277,10 @@ export function Transport() {
           inline-size: 4.6rem;
           text-align: center;
           font-variant-numeric: tabular-nums;
+        }
+        .step.on {
+          background: var(--accent);
+          color: var(--accent-ink);
         }
         .step {
           inline-size: 30px;

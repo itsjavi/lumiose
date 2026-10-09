@@ -1,0 +1,94 @@
+// "My sounds": sound sheets saved from the studio, for one gallery (SFX or creature voices).
+import type { SavedSound } from "../model/library.ts";
+import { forgetSound, mySounds } from "../sounds.ts";
+import { tokens } from "../tokens.ts";
+
+export function MySounds(props: {
+  kind: "sfx" | "voice";
+  selected: string | null;
+  onPick: (entry: SavedSound) => void;
+}) {
+  const list = () => mySounds().filter((s) => s.kind === props.kind);
+  return (
+    <section class="mine" aria-labelledby={`mine-${props.kind}`}>
+      <h2 id={`mine-${props.kind}`}>{props.kind === "sfx" ? "My sounds" : "My voices"}</h2>
+      {list().length === 0 ? (
+        <p class="empty">
+          Open a sound in the studio, change it on the note grid, then press “Save to My sounds”
+          there. It comes back here.
+        </p>
+      ) : (
+        <ul>
+          {list().map((entry) => (
+            <li class={{ on: props.selected === entry.id }}>
+              <button
+                type="button"
+                class="pick"
+                aria-pressed={props.selected === entry.id}
+                onClick={() => props.onPick(entry)}
+              >
+                {entry.name}
+              </button>
+              <button
+                type="button"
+                class="x"
+                aria-label={`Delete ${entry.name}`}
+                onClick={() => forgetSound(entry.id)}
+              >
+                ×
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+      <style>
+        .mine {
+          display: grid;
+          gap: 8px;
+          align-content: start;
+        }
+        h2 {
+          font-size: 14px;
+          color: var(--indigo);
+        }
+        .empty {
+          margin: 0;
+          font-size: 13px;
+          color: var(--dim);
+        }
+        ul {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 6px;
+          margin: 0;
+          padding: 0;
+          list-style: none;
+        }
+        li {
+          display: flex;
+          align-items: center;
+          border-radius: 999px;
+          background: var(--shell);
+          box-shadow: inset 0 -2px 0 rgb(0 0 0 / 0.1);
+        }
+        li.on {
+          background: var(--accent);
+          color: var(--accent-ink);
+        }
+        .pick,
+        .x {
+          border: 0;
+          background: none;
+          cursor: pointer;
+          font-family: $tokens.font.pixel;
+          font-size: 12px;
+          padding: 8px 4px 8px 12px;
+        }
+        .x {
+          padding: 8px 12px 8px 6px;
+          font-size: 14px;
+        }
+      </style>
+    </section>
+  );
+}
