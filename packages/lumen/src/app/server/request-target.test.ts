@@ -7,6 +7,7 @@ import { connect } from "node:net";
 import { afterEach, describe, expect, it } from "vitest";
 import { pathBelowBase } from "../headers.ts";
 import { DEFAULT_LIMITS } from "./body.ts";
+import { redirect } from "./control.ts";
 import { url } from "./scope.ts";
 import { app } from "./__fixtures__/app.ts";
 import { RejectedRequest, sendWebResponse, toWebRequest } from "./node-http.ts";
@@ -257,5 +258,34 @@ describe("request bodies and malformed requests", () => {
   it("matches path-scoped header rules on the normalized pathname", () => {
     expect(pathBelowBase("/x/../admin/page?q=1", "/")).toBe("/admin/page");
     expect(pathBelowBase("/docs/x/%2e%2e/admin", "/docs/")).toBe("/admin");
+  });
+});
+
+describe("trailing-slash redirects (TASK-165)", () => {
+  it("never redirect to a protocol-relative URL", async () => {
+    const pages = { "src/routes/[slug].stsx": { default: () => "<p>page</p>" } };
+    const never = app(pages, { trailingSlash: "never" });
+    const response = await never.handle(new Request("https://lumen.test//evil.com/"));
+    expect(response.status).toBe(308);
+    expect(response.headers.get("location")).toBe("/evil.com");
+    const always = app(pages, { trailingSlash: "always" });
+    const added = await always.handle(new Request("https://lumen.test//evil.com"));
+    expect(added.headers.get("location")).toBe("/evil.com/");
+  });
+});
+
+describe("redirect() (TASK-165)", () => {
+  it("accepts paths and http(s) URLs only", () => {
+    for (const bad of [
+      "javascript:alert(1)",
+      " JavaScript:alert(1)",
+      "java\tscript:x",
+      "data:text/html,x",
+    ]) {
+      expect(() => redirect(bad), bad).toThrow(TypeError);
+    }
+    for (const good of ["/next", "next?x=1", "https://example.com/", "//example.com/a"]) {
+      expect(() => redirect(good), good).toThrow(expect.objectContaining({ location: good }));
+    }
   });
 });

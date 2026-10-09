@@ -82,3 +82,13 @@ describe("href below the base, with the trailing-slash policy (TASK-101)", () =>
     expect(normalizeBase("docs")).toBe("/docs/");
   });
 });
+
+describe("dot segments (TASK-165)", () => {
+  it("refuses '.' and '..' params, which would resolve into another path", () => {
+    expect(() => fillPattern("/files/[name]", { name: ".." })).toThrow(/cannot be "\.\."/);
+    expect(() => fillPattern("/files/[name]", { name: "." })).toThrow(/cannot be "\."/);
+    expect(() => fillPattern("/docs/[...path]", { path: "a/../../admin" })).toThrow(/\.\./);
+    expect(fillPattern("/files/[name]", { name: "..a" })).toBe("/files/..a");
+    expect(fillPattern("/files/[name]", { name: "a/../b" })).toBe("/files/a%2F..%2Fb");
+  });
+});

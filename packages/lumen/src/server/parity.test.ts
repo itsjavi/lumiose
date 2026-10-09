@@ -187,6 +187,14 @@ describe("unsafe URL parity (TASK-168, decision-29)", () => {
     }
   });
 
+  it("drops lowercase on* keys of spread props on both sides (TASK-165)", () => {
+    const props = { onclick: "alert(1)", ONMOUSEOVER: "alert(2)", title: "kept" };
+    const el = document.createElement("a");
+    mount(() => (spread(el, () => props), el), document.createElement("main"));
+    expect(parsed(`<a${spreadAttrs(props)}></a>`)).toBe(written(el));
+    expect(spreadAttrs(props)).toBe(' title="kept"');
+  });
+
   it("blocks them in spread props too, and leaves other attributes alone", () => {
     const props = { href: "javascript:alert(1)", title: "javascript:alert(1)", src: "/ok.png" };
     const el = document.createElement("a");

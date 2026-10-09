@@ -35,14 +35,21 @@ export function noncePolicy(nonce: string): string {
   ].join("; ");
 }
 
-/** The policy of a prerendered page: its inline scripts and styles by hash. */
-export function hashPolicy(html: string): string {
+/**
+ * The policy of a prerendered page: by hash, the inline scripts and styles that carry `marker` as
+ * their nonce, which are those Lumen and JSX emitted while prerendering (decision-27). Other inline
+ * scripts and styles (raw HTML strings) are not allowed, as with a per-request nonce (TASK-165).
+ */
+export function hashPolicy(html: string, marker: string): string {
   const scripts = new Set<string>();
   const styles = new Set<string>();
+  const marked = (attributes: string) => attributes.includes(` nonce="${marker}"`);
   for (const match of html.matchAll(INLINE_SCRIPT)) {
-    if (isExecutable(match[1]!)) scripts.add(hash(match[2]!));
+    if (marked(match[1]!) && isExecutable(match[1]!)) scripts.add(hash(match[2]!));
   }
-  for (const match of html.matchAll(INLINE_STYLE)) styles.add(hash(match[1]!));
+  for (const match of html.matchAll(INLINE_STYLE)) {
+    if (marked(match[1]!)) styles.add(hash(match[2]!));
+  }
   return [
     ["script-src 'self'", ...scripts].join(" "),
     ["style-src 'self'", ...styles].join(" "),
@@ -52,13 +59,15 @@ export function hashPolicy(html: string): string {
 }
 
 /**
- * A prerendered document with its hash policy first in `<head>` (after `<meta charset>`), so it
- * covers every inline script and style after it.
+ * A prerendered document with its hash policy first in `<head>` (after `<meta charset>`), and the
+ * `marker` nonces it was rendered with removed: a file served to everyone has no nonce.
  */
-export function withHashPolicy(html: string): string {
+export function withHashPolicy(html: string, marker: string): string {
+  const policy = hashPolicy(html, marker);
+  html = html.replaceAll(` nonce="${marker}"`, "");
   const head = /<head(?:\s[^>]*)?>/i.exec(html);
   if (head === null) return html;
-  const meta = `<meta http-equiv="Content-Security-Policy" content="${hashPolicy(html)}">`;
+  const meta = `<meta http-equiv="Content-Security-Policy" content="${policy}">`;
   let at = head.index + head[0].length;
   // After a leading `<meta charset>`, which must come early.
   at += /^\s*<meta\s+charset\b[^>]*>/i.exec(html.slice(at))?.[0].length ?? 0;
@@ -86,7 +95,7 @@ export function nonceMeta(nonce: string): string {
 
 const NONCE_TARGET = /<(script|style|link)\b[^>]*>/gi;
 const INLINE_SCRIPT = /<script((?:\s[^>]*)?)>([\s\S]*?)<\/script>/gi;
-const INLINE_STYLE = /<style(?:\s[^>]*)?>([\s\S]*?)<\/style>/gi;
+const INLINE_STYLE = /<style((?:\s[^>]*)?)>([\s\S]*?)<\/style>/gi;
 
 /** Whether a `<script>` with these attributes runs: no `src`, and not a data block. */
 function isExecutable(attributes: string): boolean {

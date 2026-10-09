@@ -53,7 +53,16 @@ export function redirect(location: string | URL, status?: RedirectStatus): never
   if (status !== undefined && !REDIRECT_STATUSES.includes(status)) {
     throw new RangeError(`redirect(): status must be 301, 302, 303, 307 or 308, got ${status}.`);
   }
-  throw new Redirect(String(location), status);
+  const target = String(location);
+  // Only paths and http(s) URLs: a `javascript:` or `data:` Location from user input (`?next=`)
+  // would run script in browsers that follow it (TASK-165). Control characters are stripped the
+  // way URL parsers do before the scheme is read.
+  // oxlint-disable-next-line no-control-regex -- stripping control characters is the point
+  const scheme = /^([a-z][a-z\d+.-]*):/i.exec(target.replace(/[\u0000-\u0020]/g, ""))?.[1];
+  if (scheme !== undefined && !/^https?$/i.test(scheme)) {
+    throw new TypeError(`redirect(): only paths and http(s) URLs are allowed, got "${scheme}:".`);
+  }
+  throw new Redirect(target, status);
 }
 
 /** Stops rendering and renders the nearest `_404` page with status 404. */

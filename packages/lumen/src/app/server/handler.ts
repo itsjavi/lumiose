@@ -462,7 +462,6 @@ export function createRequestHandler(options: RequestHandlerOptions): RequestHan
     spa = false,
   ): Promise<Response> {
     const { request } = scope.ctx;
-    const { nonce } = scope;
     // A policy configured with `lumen({ headers })` for this path replaces Lumen's.
     const ownPolicy =
       options.csp === "strict" &&
@@ -471,6 +470,11 @@ export function createRequestHandler(options: RequestHandlerOptions): RequestHan
         "content-security-policy" in
           headersFor(options.headers, routePath(scope.ctx.url.pathname, base) ?? "/")
       );
+    // Per request: the response's nonce. Prerendering: a marker nonce that tags what Lumen and JSX
+    // emit, so only those are hashed (and the marker removed) — never injected markup (TASK-165).
+    const hashMarker =
+      prerendering && ownPolicy && scope.nonce === undefined ? createNonce() : undefined;
+    const nonce = scope.nonce ?? hashMarker;
     const document =
       options.document === undefined
         ? undefined
@@ -506,14 +510,14 @@ export function createRequestHandler(options: RequestHandlerOptions): RequestHan
         scope.action === undefined || scope.action.data === undefined
           ? ""
           : `<script type="application/json" data-l-action>${jsonForScript(scope.action.encoded)}</script>`;
-      const meta = nonce === undefined ? "" : nonceMeta(nonce);
+      const meta = scope.nonce === undefined ? "" : nonceMeta(scope.nonce);
       const pages = addNonce(navigation.pages, nonce);
       const head = meta + shell.head + assets + pages + rules.head + action;
       const parts = documentParts(shell.body, head, document !== undefined);
       body = documentBody(parts, rules.stream, (error) => onError(error, request));
       // A prerendered page is a file: its inline scripts and styles are allowed by hash.
-      if (ownPolicy && prerendering && typeof body === "string") {
-        body = withHashPolicy(body);
+      if (hashMarker !== undefined && typeof body === "string") {
+        body = withHashPolicy(body, hashMarker);
       }
     } catch (error) {
       await rules.stream?.cancel(error);
@@ -521,8 +525,13 @@ export function createRequestHandler(options: RequestHandlerOptions): RequestHan
     }
     const headers = new Headers(state.headers);
     if (!headers.has("content-type")) headers.set("content-type", "text/html; charset=utf-8");
-    if (ownPolicy && nonce !== undefined && !dev && !headers.has("content-security-policy")) {
-      headers.set("content-security-policy", noncePolicy(nonce));
+    if (ownPolicy && scope.nonce !== undefined && !dev && !headers.has("content-security-policy")) {
+      headers.set("content-security-policy", noncePolicy(scope.nonce));
+    }
+    // A nonce is only secret while the HTML stays private to this response: a shared cache that
+    // served it to others would let injected markup reuse it (TASK-165). The app's own value wins.
+    if (scope.nonce !== undefined && !headers.has("cache-control")) {
+      headers.set("cache-control", "private, no-store");
     }
     if (request.method === "HEAD") {
       if (typeof body !== "string") await body.cancel();
@@ -709,8 +718,11 @@ function trailingSlashRedirect(
   if (policy === "ignore" || pathname === "/") return undefined;
   if (request.method !== "GET" && request.method !== "HEAD") return undefined;
   const slash = url.pathname.endsWith("/");
-  if (policy === "always" && !slash) return `${url.pathname}/${url.search}`;
-  if (policy === "never" && slash) return `${url.pathname.replace(/\/+$/, "")}${url.search}`;
+  // A path, never a protocol-relative URL: `/a/..//evil.com/` must not redirect to `//evil.com`
+  // (TASK-165), so leading slashes collapse to one.
+  const path = url.pathname.replace(/^\/{2,}/, "/");
+  if (policy === "always" && !slash) return `${path}/${url.search}`;
+  if (policy === "never" && slash) return `${path.replace(/\/+$/, "")}${url.search}`;
   return undefined;
 }
 

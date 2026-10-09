@@ -137,6 +137,18 @@ describe('lumen({ csp: "strict" })', () => {
     expect(prerendered).toContain(sha("rect{fill:teal}"));
   });
 
+  it("keeps nonce'd pages out of shared caches unless the page sets Cache-Control (TASK-165)", async () => {
+    const fetch = app({
+      "src/routes/index.stsx": page,
+      "src/routes/cached.stsx": {
+        ...page,
+        headers: () => ({ "cache-control": "public, max-age=60" }),
+      },
+    });
+    expect((await fetch("/")).headers.get("cache-control")).toBe("private, no-store");
+    expect((await fetch("/cached")).headers.get("cache-control")).toBe("public, max-age=60");
+  });
+
   it("leaves the policy to a page or middleware that sets one", async () => {
     const fetch = app(
       { "src/routes/index.stsx": page, "src/middleware.ts": { default: ownPolicy } },
@@ -202,11 +214,24 @@ describe("csp helpers", () => {
 
   it("hashes executable inline scripts and styles, not data blocks or external scripts", () => {
     const policy = hashPolicy(
-      '<script type="application/json">{}</script><script src="/x.js"></script><script type="speculationrules">{}</script><style>a{}</style>',
+      '<script nonce="m" type="application/json">{}</script><script nonce="m" src="/x.js"></script><script nonce="m" type="speculationrules">{}</script><style nonce="m">a{}</style>',
+      "m",
     );
     const directives = policy.split("; ");
     expect(directives[0]!.split(" ")).toHaveLength(3);
     expect(directives[1]!.split(" ")).toHaveLength(3);
-    expect(withHashPolicy("<p>no head</p>")).toBe("<p>no head</p>");
+    expect(withHashPolicy('<p nonce="m">no head</p>', "m")).toBe("<p>no head</p>");
+  });
+
+  it("hashes only what carries the marker: injected markup stays blocked (TASK-165)", () => {
+    const html = withHashPolicy(
+      '<html><head><script nonce="m">ok()</script></head><body><div><script>evil()</script><style>x{}</style></div></body></html>',
+      "m",
+    );
+    expect(html).not.toContain("nonce=");
+    const policy = /content="([^"]+)"/.exec(html)![1]!;
+    expect(policy).toContain(sha("ok()"));
+    expect(policy).not.toContain(sha("evil()"));
+    expect(policy).not.toContain(sha("x{}"));
   });
 });

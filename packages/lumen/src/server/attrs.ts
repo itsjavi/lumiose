@@ -75,7 +75,7 @@ function isClassList(value: string): boolean {
     if (code > 32 && code < 127) continue;
     if (code !== 32 || i === start || ++tokens > 8) return false;
     // The token [start, i) against each earlier one.
-    for (let other = 0; other < start; ) {
+    for (let other = 0; other < start;) {
       const end = value.indexOf(" ", other);
       if (end - other === i - start && sameChars(value, other, start, i - start)) return false;
       other = end + 1;
@@ -157,9 +157,10 @@ const SKIPPED = new Set([
   "attach",
   "$$scope",
 ]);
-// Event handlers (`onClick`, `on:custom`) and directives. Other namespaced names (`xlink:href`,
-// `xml:lang`) are attributes, as on the client.
-const NOT_ATTRIBUTE = /^(?:on[A-Z]|on:|bind:|client:)/;
+// Event handlers (`onClick`, `on:custom`), lowercase `on*` names (an inline handler attribute is a
+// script sink: dropped, as on the client and in React, TASK-165) and directives. Other namespaced
+// names (`xlink:href`, `xml:lang`) are attributes, as on the client.
+const NOT_ATTRIBUTE = /^on|^(?:bind|client):/i;
 // A valid attribute name with nothing that could close the tag or start another attribute.
 const ATTRIBUTE_NAME = /^[^\s"'<>/=\p{Cc}]+$/u;
 

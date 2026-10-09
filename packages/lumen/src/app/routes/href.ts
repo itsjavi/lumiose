@@ -26,7 +26,8 @@ export type HrefArgs<P extends Routes> =
 /**
  * Builds the URL path of a route from its pattern, encoding each param: below Vite's `base`, with
  * a trailing slash when `trailingSlash` is `"always"`. A `[...rest]` param keeps its "/"
- * separators and may be empty. Throws on a missing or empty `[param]`.
+ * separators and may be empty. Throws on a missing or empty `[param]`, and on a `.` or `..`
+ * segment, which a browser would resolve into another path (TASK-165).
  */
 export function href<P extends Routes>(pattern: P, ...args: HrefArgs<P>): string {
   const path = fillPattern(pattern, (args[0] ?? {}) as Record<string, unknown>);
@@ -51,15 +52,13 @@ export function fillPattern(pattern: string, params: Record<string, unknown>): s
       throw new TypeError(`href("${pattern}"): missing value for param "${name}".`);
     }
     const text = String(value);
-    if (rest) {
-      parts.push(
-        ...text
-          .split("/")
-          .filter((part) => part !== "")
-          .map(encodeURIComponent),
-      );
-    } else {
-      parts.push(encodeURIComponent(text));
+    const pieces = rest ? text.split("/").filter((part) => part !== "") : [text];
+    for (const piece of pieces) {
+      // encodeURIComponent keeps dots: `..` would climb out of the route once resolved.
+      if (piece === "." || piece === "..") {
+        throw new TypeError(`href("${pattern}"): param "${name}" cannot be "${piece}".`);
+      }
+      parts.push(encodeURIComponent(piece));
     }
   }
   return `/${parts.join("/")}`;
