@@ -46,14 +46,14 @@ let root: string;
 
 beforeAll(() => {
   if (!binding) return;
-  base = realpathSync(mkdtempSync(join(tmpdir(), "lumen-server-only-")));
+  base = realpathSync.native(mkdtempSync(join(tmpdir(), "lumen-server-only-")));
   root = join(base, "app");
   for (const [name, code] of Object.entries(FILES)) {
     mkdirSync(dirname(join(root, name)), { recursive: true });
     writeFileSync(join(root, name), code);
   }
   mkdirSync(join(root, "node_modules"));
-  symlinkSync(lumenRoot, join(root, "node_modules/lumen"), "dir");
+  symlinkSync(lumenRoot, join(root, "node_modules/lumen"), "junction");
   // A sibling workspace folder outside the Vite root, and a symlink to a server-only file.
   mkdirSync(join(base, "shared/src/server"), { recursive: true });
   writeFileSync(join(base, "shared/package.json"), `{ "name": "shared" }\n`);

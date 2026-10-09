@@ -69,12 +69,12 @@ afterAll(() => {
 
 describe.skipIf(!binding)("lumen/vite in Vitest", () => {
   it("gives DOM tests the browser entry and node tests the server entry", () => {
-    root = realpathSync(mkdtempSync(join(tmpdir(), "lumen-vitest-")));
+    root = realpathSync.native(mkdtempSync(join(tmpdir(), "lumen-vitest-")));
     for (const [name, code] of Object.entries(FILES)) writeFileSync(join(root, name), code);
     mkdirSync(join(root, "node_modules"));
-    symlinkSync(lumenRoot, join(root, "node_modules/lumen"), "dir");
-    symlinkSync(vitestRoot, join(root, "node_modules/vitest"), "dir");
-    symlinkSync(happyDomRoot, join(root, "node_modules/happy-dom"), "dir");
+    symlinkSync(lumenRoot, join(root, "node_modules/lumen"), "junction");
+    symlinkSync(vitestRoot, join(root, "node_modules/vitest"), "junction");
+    symlinkSync(happyDomRoot, join(root, "node_modules/happy-dom"), "junction");
     // A clean environment: the outer run's VITEST_* variables would change the inner one.
     const env = Object.fromEntries(
       Object.entries(process.env).filter(([name]) => !name.startsWith("VITEST")),

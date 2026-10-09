@@ -127,7 +127,7 @@ const warnings: string[] = [];
 
 beforeAll(async () => {
   if (!binding) return;
-  base = realpathSync(mkdtempSync(join(tmpdir(), "lumen-vite-")));
+  base = realpathSync.native(mkdtempSync(join(tmpdir(), "lumen-vite-")));
   root = join(base, "app");
   kit = join(base, "kit");
   for (const [dir, files] of [
@@ -139,10 +139,10 @@ beforeAll(async () => {
       writeFileSync(join(dir, name), code);
     }
     mkdirSync(join(dir, "node_modules"));
-    symlinkSync(lumenRoot, join(dir, "node_modules/lumen"), "dir");
+    symlinkSync(lumenRoot, join(dir, "node_modules/lumen"), "junction");
   }
   mkdirSync(join(root, "node_modules/@acme"));
-  symlinkSync(kit, join(root, "node_modules/@acme/kit"), "dir");
+  symlinkSync(kit, join(root, "node_modules/@acme/kit"), "junction");
   const logger = createLogger("silent");
   logger.warn = (message) => void warnings.push(message);
   server = await createServer({

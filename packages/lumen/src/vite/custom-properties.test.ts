@@ -43,13 +43,13 @@ afterAll(() => {
 
 describe.skipIf(!binding)("LUM3012 in lumen build", () => {
   it("reports only the custom properties no stylesheet of the project reads", async () => {
-    root = realpathSync(mkdtempSync(join(tmpdir(), "lumen-custom-properties-")));
+    root = realpathSync.native(mkdtempSync(join(tmpdir(), "lumen-custom-properties-")));
     for (const [name, code] of Object.entries(FILES)) {
       mkdirSync(dirname(join(root, name)), { recursive: true });
       writeFileSync(join(root, name), code);
     }
     mkdirSync(join(root, "node_modules"));
-    symlinkSync(lumenRoot, join(root, "node_modules/lumen"), "dir");
+    symlinkSync(lumenRoot, join(root, "node_modules/lumen"), "junction");
     const warnings: Rollup.RollupLog[] = [];
     await build({
       root,

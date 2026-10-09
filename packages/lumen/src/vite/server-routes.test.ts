@@ -41,13 +41,13 @@ const warnings: string[] = [];
 
 beforeAll(async () => {
   if (!binding) return;
-  root = realpathSync(mkdtempSync(join(tmpdir(), "lumen-server-routes-")));
+  root = realpathSync.native(mkdtempSync(join(tmpdir(), "lumen-server-routes-")));
   for (const [name, code] of Object.entries(FILES)) {
     mkdirSync(dirname(join(root, name)), { recursive: true });
     writeFileSync(join(root, name), code);
   }
   mkdirSync(join(root, "node_modules"));
-  symlinkSync(lumenRoot, join(root, "node_modules/lumen"), "dir");
+  symlinkSync(lumenRoot, join(root, "node_modules/lumen"), "junction");
   const logger = createLogger("silent");
   logger.warn = (message) => void warnings.push(message);
   server = await createServer({

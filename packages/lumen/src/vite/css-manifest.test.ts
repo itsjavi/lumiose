@@ -120,13 +120,13 @@ function files(directory: string): string[] {
 
 beforeAll(async () => {
   if (!binding) return;
-  root = realpathSync(mkdtempSync(join(tmpdir(), "lumen-css-manifest-")));
+  root = realpathSync.native(mkdtempSync(join(tmpdir(), "lumen-css-manifest-")));
   for (const [name, code] of Object.entries(FILES)) {
     mkdirSync(dirname(join(root, name)), { recursive: true });
     writeFileSync(join(root, name), code);
   }
   mkdirSync(join(root, "node_modules"));
-  symlinkSync(lumenRoot, join(root, "node_modules/lumen"), "dir");
+  symlinkSync(lumenRoot, join(root, "node_modules/lumen"), "junction");
   const logger = createLogger("silent");
   logger.warn = (message) => void warnings.push(message);
   // A config file is resolved again per environment: the plugin instance must still be shared.
