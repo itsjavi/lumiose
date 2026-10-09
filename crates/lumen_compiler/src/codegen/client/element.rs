@@ -96,6 +96,30 @@ pub(super) fn is_property(name: &str) -> bool {
     )
 }
 
+/// Attributes whose boolean values are written as "true"/"false" instead of present/absent:
+/// `aria-*` and the enumerated (`Booleanish`) attributes of HTML, SVG and MathML. The runtime's
+/// `BOOLEANISH` (lumen/dom `setAttr`, lumen/server `attr`), so static folding agrees with it.
+pub(super) fn is_booleanish(name: &str) -> bool {
+    name.starts_with("aria-")
+        || matches!(
+            name,
+            "contenteditable"
+                | "draggable"
+                | "spellcheck"
+                | "writingsuggestions"
+                | "preserveAlpha"
+                | "displaystyle"
+                | "accent"
+                | "accentunder"
+                | "fence"
+                | "largeop"
+                | "movablelimits"
+                | "separator"
+                | "stretchy"
+                | "symmetric"
+        )
+}
+
 /// Properties without an attribute form: always assigned.
 pub(super) fn is_property_only(name: &str) -> bool {
     matches!(
@@ -382,6 +406,9 @@ impl<'a> Codegen<'a, '_> {
             Literal::Str(value) => template
                 .element_attrs_mut(node)
                 .push((name.to_owned(), Some(value))),
+            Literal::Bool(value) if is_booleanish(name) => template
+                .element_attrs_mut(node)
+                .push((name.to_owned(), Some(value.to_string()))),
             Literal::Bool(true) => template
                 .element_attrs_mut(node)
                 .push((name.to_owned(), None)),

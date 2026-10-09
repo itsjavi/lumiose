@@ -255,6 +255,18 @@ const TEXT_CHILDREN = `
     );
   }`;
 
+// Static booleans fold like the runtime writes dynamic ones (TASK-117): the two spans match.
+const BOOLEANISH = `
+  export function Flags(props: { on: boolean; off: boolean }) {
+    return (
+      <p>
+        <span aria-pressed={false} aria-hidden spellcheck={false} draggable={true} contenteditable={false} hidden={false} inert={true} />
+        <span aria-pressed={props.off} aria-hidden={props.on} spellcheck={props.off} draggable={props.on} contenteditable={props.off} hidden={props.off} inert={props.on} />
+      </p>
+    );
+  }
+`;
+
 const ATTRIBUTES = `
   import { signal } from "lumen";
   const name = signal('Ada "the" <first>');
@@ -554,6 +566,18 @@ describe.skipIf(!binding)("client/server parity", () => {
       ["Texts", { a: "" }],
     ]));
   it("attributes and properties", () => expectParity(ATTRIBUTES, [["Attributes", { size: 3 }]]));
+  it("booleanish and ARIA attributes, static and dynamic (TASK-117)", async () => {
+    await expectParity(BOOLEANISH, [["Flags", { on: true, off: false }]]);
+    const app = mountClient((await load(BOOLEANISH, "client")).module, "Flags", {
+      on: true,
+      off: false,
+    });
+    const [folded, dynamic] = app.querySelectorAll("span");
+    expect(normalized(folded!.parentElement!)).toContain(
+      '<span aria-hidden="true" aria-pressed="false" contenteditable="false" draggable="true" inert="" spellcheck="false"></span>',
+    );
+    expect(folded!.outerHTML).toBe(dynamic!.outerHTML);
+  });
   it("table rows and select values", () =>
     // A string value: happy-dom's select.value setter does not convert numbers.
     expectParity(TABLE_SELECT, [

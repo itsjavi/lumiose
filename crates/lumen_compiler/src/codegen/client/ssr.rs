@@ -510,6 +510,9 @@ impl<'a> Codegen<'a, '_> {
             Literal::Str(value) => open
                 .head
                 .push(Piece::Html(attribute_html(name, Some(&value)))),
+            Literal::Bool(value) if super::element::is_booleanish(name) => open
+                .head
+                .push(Piece::Html(attribute_html(name, Some(&value.to_string())))),
             Literal::Bool(true) => open.head.push(Piece::Html(attribute_html(name, None))),
             Literal::Bool(false) | Literal::Nullish => {}
         }
