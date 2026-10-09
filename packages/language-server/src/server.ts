@@ -807,13 +807,10 @@ export function startServer(connection: Connection, options: ServerOptions = {})
       ),
     );
     const lumen = [...snapshot.scan.diagnostics, ...(await provided(file, snapshot.scan))];
-    return [
-      ...typescript,
-      ...withoutSuperseded(snapshot.document, lumen, typescript).map((diagnostic) =>
-        toLspDiagnostic(snapshot.document, diagnostic),
-      ),
-      ...cssDiagnostics(snapshot),
-    ];
+    const lumenLsp = withoutSuperseded(snapshot.document, lumen, typescript).map((diagnostic) =>
+      toLspDiagnostic(snapshot.document, diagnostic),
+    );
+    return [...typescript, ...lumenLsp, ...cssDiagnostics(snapshot, lumenLsp)];
   }
 
   /**

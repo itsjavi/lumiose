@@ -147,17 +147,37 @@ describe("language server (pull diagnostics)", () => {
       { source: "ts", code: 2304, range: rangeOf(broken, "$missing", 1) },
       // The compiler's LUM3008 on `$missing` is superseded by TypeScript's 2304.
       { source: "lumen", code: "LUM3005", range: rangeOf(broken, ".oops") },
-      // LUM3017 (TASK-120) and the CSS service both report the empty value (TASK-132).
+      // LUM3017 (TASK-120) reports the empty value; the CSS service's duplicate is dropped (TASK-132).
       { source: "lumen", code: "LUM3017", range: rangeOf(broken, "color: ;", 0, 5) },
-      {
-        source: "css",
-        code: "css-propertyvalueexpected",
-        range: rangeOf(broken, "color: ;", 7, 1),
-      },
     ]);
     expect(report.items.find((d: Diagnostic) => d.code === 2304)?.message).toBe(
       "Cannot find name 'missing'.",
     );
+  });
+
+  it("drops CSS service problems that Lumen's CSS diagnostics report (TASK-132)", async () => {
+    const text = [
+      "export function Dupes() {",
+      "  return (",
+      '    <div class="dupes">',
+      "      <style>",
+      "        .dupes { colr: red; }",
+      "        .open { color: blue;",
+      "      </style>",
+      "    </div>",
+      "  );",
+      "}",
+      "",
+    ].join("\n");
+    await server.open("src/components/Dupes.stsx", text);
+    const report = await server.request<FullDocumentDiagnosticReport>(
+      "textDocument/diagnostic",
+      doc("src/components/Dupes.stsx"),
+    );
+    const codes = report.items.map((d) => String(d.code));
+    expect(codes).toEqual(expect.arrayContaining(["LUM3020", "LUM3014"]));
+    expect(codes).not.toContain("unknownProperties");
+    expect(codes).not.toContain("css-rcurlyexpected");
   });
 
   it("sends unsaved buffers to TypeScript as masked text", async () => {
@@ -725,7 +745,7 @@ describe("language server (push diagnostics)", () => {
       if (!diagnostics) await new Promise((resolve) => setTimeout(resolve, 50));
     }
     expect(diagnostics?.map((d) => d.code).toSorted()).toEqual(
-      ["LUM1005", "LUM3005", "LUM3017", 2304, 2322, 6133, "css-propertyvalueexpected"].toSorted(),
+      ["LUM1005", "LUM3005", "LUM3017", 2304, 2322, 6133].toSorted(),
     );
   });
 });
