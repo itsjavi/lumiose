@@ -339,6 +339,9 @@ pub struct CompileOptions {
     /// `lumen({ csp: "strict" })`: no baked `style="…"` strings, nonces on JSX `<script>`/`<style>`.
     /// Default `false`.
     pub strict_csp: Option<bool>,
+    /// Dev client builds: register components for component-level hot updates (`lumen/dom`'s
+    /// `$hot`). Default `false`.
+    pub hot: Option<bool>,
 }
 
 /// A package outside the project root (see `CompileOptions.packages`).
@@ -590,6 +593,7 @@ pub fn compile(
                 contract: o.contract.unwrap_or(defaults.contract),
                 server_route: o.server_route.unwrap_or(defaults.server_route),
                 strict_csp: o.strict_csp.unwrap_or(defaults.strict_csp),
+                hot: o.hot.unwrap_or(defaults.hot),
             }
         }
     };
@@ -908,6 +912,7 @@ pub fn compile_svg(
             contract: None,
             server_route: None,
             strict_csp: None,
+            hot: None,
         }),
     )
 }

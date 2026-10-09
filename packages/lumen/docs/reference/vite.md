@@ -123,9 +123,15 @@ What it does:
   `frontmatter` from `<file>.md?lumen-frontmatter`, `headings`, relative asset URLs as `?url`
   imports, and client scripts loaded by an island from `<file>.html?lumen-script`. HTML entries (`index.html`, HTML build inputs) and `public/` files
   stay Vite's. See [Markdown and HTML imports](../concepts/content.md).
-- Hot updates: a client module that imports `mount` from `lumen/dom` (an app entry) accepts updates
-  of every module it reaches and re-mounts the app into the same container. Component state resets;
-  module-level signals of unchanged modules survive.
+- Hot updates: an edited component re-renders in place, in every instance, and the rest of the page
+  keeps its DOM and state (`lumen dev` registers each named component of client code with
+  `lumen/dom/hot`). Only the components whose code changed re-render; an edit outside every
+  component of the file (a constant, a helper) re-renders all of the file's components. A module
+  whose exports are not all such components (a constant or signal export, a changed export list,
+  an async or anonymous default component), or a component hydrated in an island or the SPA's first
+  page, falls back to the app entry: a client module that imports `mount` from `lumen/dom` accepts
+  updates of every module it reaches and re-mounts the app into the same container (component
+  state resets; module-level signals of unchanged modules survive), else the page reloads.
 - Style blocks become `<file>?lumen&type=style&lang.css` modules handled by Vite's CSS pipeline.
   Modules that `$` references import constants from are tracked as dependencies of that CSS module.
   A style-only edit, or an edit to such a constants module, hot-updates the CSS without remounting.

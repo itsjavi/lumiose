@@ -74,6 +74,9 @@ pub struct CompileOptions {
     /// through `setStyle`/`styleAttr` instead of baked `style="…"` attributes, and JSX
     /// `<script>`/`<style>` elements get the CSP nonce (`setNonce`/`nonceAttr()`).
     pub strict_csp: bool,
+    /// Dev client builds: register components for component-level hot updates (TASK-146, see
+    /// `hot.rs`). Ignored for the server target.
+    pub hot: bool,
 }
 
 impl Default for CompileOptions {
@@ -90,6 +93,7 @@ impl Default for CompileOptions {
             contract: false,
             server_route: false,
             strict_csp: false,
+            hot: false,
         }
     }
 }
@@ -314,6 +318,13 @@ pub fn compile(source: &str, filename: &str, options: &CompileOptions) -> Compil
         Vec::new()
     };
 
+    let hot = (options.hot && options.target == Target::Client)
+        .then(|| crate::hot::HotPlan::new(&program, &analysis, source, &scan.blocks))
+        .flatten();
+    if let Some(hot) = &hot {
+        hot.apply(&mut program);
+    }
+
     let custom_properties_set = custom_properties::set_in_style_props(&program);
     let module_imports = imports::imports(&program);
 
@@ -344,7 +355,13 @@ pub fn compile(source: &str, filename: &str, options: &CompileOptions) -> Compil
         source_map_path: options.source_map.then(|| filename.into()),
         ..CodegenOptions::default()
     };
-    let printed = Codegen::new().with_options(codegen_options).build(&program);
+    let mut printed = Codegen::new().with_options(codegen_options).build(&program);
+    // After the printed code: its source map is unaffected.
+    if let Some(hot) = &hot
+        && !printed.code.is_empty()
+    {
+        printed.code.push_str(&hot.footer());
+    }
 
     let mut custom_properties_read = Vec::new();
     let (css, css_map) = if emit_css {

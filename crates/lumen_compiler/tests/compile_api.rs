@@ -769,3 +769,64 @@ fn strict_csp_applies_static_styles_through_the_cssom_and_nonces_inline_elements
     let plain = compile(source, "/src/Logo.tsx", &CompileOptions::default()).code;
     assert!(plain.contains("style=\"color: red\"") && !plain.contains("setNonce"));
 }
+
+#[test]
+fn hot_registers_components_with_versions_that_ignore_styles_and_other_components() {
+    let source = r#"const label = "count";
+export function Counter() {
+  return <p class="c">{label}<style>.c { color: red; }</style></p>;
+}
+export const Other = () => <i>other</i>;
+export default async function Page() {
+  await Promise.resolve();
+  return <main />;
+}
+"#;
+    let hot = |source: &str| {
+        let options = CompileOptions {
+            hot: true,
+            ..CompileOptions::default()
+        };
+        compile(source, "/src/Counter.stsx", &options).code
+    };
+    let version = |code: &str, name: &str| -> String {
+        let marker = format!("{name} = $$lumenHot(import.meta.hot, {name:?}, {name}, \"");
+        let start = code.find(&marker).expect(name) + marker.len();
+        code[start..start + 16].to_owned()
+    };
+    let code = hot(source);
+    assert!(code.contains("export let Other = "), "{code}");
+    assert!(
+        code.contains(
+            r#"$$lumenHotAccept(import.meta.hot, ["Counter", "Other", "default"], next)"#
+        )
+    );
+    // Async components keep their `$async` mark: not registered (the module falls back).
+    assert!(!code.contains("\"Page\""));
+    // A style-only edit changes no version; an edit inside a component changes only its own;
+    // an edit outside every component changes all of them.
+    let styled = hot(&source.replace("color: red;", "color: blue; margin: 0;"));
+    assert_eq!(version(&styled, "Counter"), version(&code, "Counter"));
+    let edited = hot(&source.replace("<i>other</i>", "<i>changed</i>"));
+    assert_eq!(version(&edited, "Counter"), version(&code, "Counter"));
+    assert_ne!(version(&edited, "Other"), version(&code, "Other"));
+    let shared = hot(&source.replace("\"count\"", "\"total\""));
+    assert_ne!(version(&shared, "Counter"), version(&code, "Counter"));
+    assert_ne!(version(&shared, "Other"), version(&code, "Other"));
+    // Off by default, and never for the server target.
+    assert!(
+        !compile(source, "/src/Counter.stsx", &CompileOptions::default())
+            .code
+            .contains("lumenHot")
+    );
+    let server = CompileOptions {
+        hot: true,
+        target: Target::Server,
+        ..CompileOptions::default()
+    };
+    assert!(
+        !compile(source, "/src/Counter.stsx", &server)
+            .code
+            .contains("lumenHot")
+    );
+}

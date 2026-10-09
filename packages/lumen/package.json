@@ -22,6 +22,7 @@
     "./dom": "./src/dom/index.ts",
     "./dom/hydrate": "./src/dom/hydrate.ts",
     "./dom/loader": "./src/dom/loader.ts",
+    "./dom/hot": "./src/dom/hot.ts",
     "./server": "./src/server/index.ts",
     "./router": {
       "types": "./src/app/router/index.ts",

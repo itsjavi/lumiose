@@ -60,6 +60,33 @@ test("an edited component re-mounts the app without a reload", async ({ page }, 
   await expect(page.getByRole("button", { name: /Clicked/ })).toHaveText("Clicked 0 times");
 });
 
+test("an edited component re-renders alone: its siblings keep their state (TASK-146)", async ({
+  page,
+}, info) => {
+  test.skip(info.project.name !== "dev", "HMR only exists in dev");
+  const file = resolve(import.meta.dirname, "../src/Counter.stsx");
+  const source = readFileSync(file, "utf8");
+  await page.goto("/");
+  await page.getByRole("textbox", { name: "What needs doing?" }).fill("Survive the edit");
+  await page.getByRole("button", { name: "Add" }).click();
+  await expect(page.getByText("Survive the edit")).toBeVisible();
+  await page.getByRole("button", { name: /Clicked/ }).click();
+  await expect(page.getByRole("button", { name: /Clicked/ })).toHaveText("Clicked 1 times");
+  const heading = page.getByRole("heading", { name: "Lumen + Vite" });
+  const before = await heading.elementHandle();
+  try {
+    writeFileSync(file, source.replace("Clicked {count()} times", "Pressed {count()} times"));
+    // The Counter re-renders (its own state starts over); the Todos and the App keep theirs.
+    await expect(page.getByRole("button", { name: /Pressed/ })).toHaveText("Pressed 0 times");
+    await expect(page.getByText("Survive the edit")).toBeVisible();
+    expect(await before!.evaluate((el) => el.isConnected)).toBe(true);
+  } finally {
+    writeFileSync(file, source);
+  }
+  await expect(page.getByRole("button", { name: /Clicked/ })).toHaveText("Clicked 0 times");
+  await expect(page.getByText("Survive the edit")).toBeVisible();
+});
+
 test("compiler errors show in the dev overlay with a code frame", async ({ page }, info) => {
   test.skip(info.project.name !== "dev", "the overlay only exists in dev");
   const file = resolve(import.meta.dirname, "../src/Counter.stsx");

@@ -187,10 +187,40 @@ export interface ClientRuntime {
   $leave(): void;
   /** Wraps an async component definition (emitted by the compiler) so `createComponent` takes the async path without bundling it otherwise. */
   $async<C extends Component<any>>(component: C): C;
+
 }
 
 /** Minimal writable signal shape used by `bind:*` (matches `signal()` from `lumen`). */
 export interface WritableSource<T> {
   (): T;
   set(value: T): void;
+}
+
+/**
+ * `lumen/dom/hot`: emitted by the compiler in `lumen dev` only (compile option `hot`), so it is
+ * not part of `lumen/dom` (TASK-146).
+ */
+export interface ClientHotRuntime {
+  /**
+   * Emitted in `lumen dev` only (compile option `hot`) after each named component:
+   * `Name = $hot(import.meta.hot, "Name", Name, version)`. Returns a stable wrapper per component
+   * (kept in `import.meta.hot.data`) whose instances re-render in place when a later module
+   * version registers another `version`; `component` itself without `hot`.
+   */
+  $hot<C extends Component<any>>(
+    hot: { data: Record<string, unknown>; invalidate(message?: string): void } | undefined,
+    name: string,
+    component: C,
+    version: string,
+  ): C;
+  /**
+   * Emitted with `$hot`: records the module's export names when it runs, and from the module's
+   * accept handler (`next`) invalidates the update unless the exports kept their names and are all
+   * registered components (`exports` is `null` with `export *`).
+   */
+  $hotAccept(
+    hot: { data: Record<string, unknown>; invalidate(message?: string): void },
+    exports: readonly string[] | null,
+    next?: Record<string, unknown>,
+  ): void;
 }

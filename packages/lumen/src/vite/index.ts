@@ -88,6 +88,7 @@ const LUMEN_ENTRIES = [
   "lumen",
   "lumen/dom",
   "lumen/dom/hydrate",
+  "lumen/dom/hot",
   "lumen/server",
   "lumen/router",
   "@lumen/compiler",
@@ -144,6 +145,9 @@ export default function lumen(options: LumenOptions = {}): Plugin<LumenPluginApi
     packages: packages.for(cleanId(file)),
     // Static `style` strings through the CSSOM, nonces on JSX scripts and styles (TASK-142).
     ...(api.options.csp === "strict" ? { strictCsp: true } : {}),
+    // Component-level hot updates in dev (TASK-146; the compiler applies it to client code), not
+    // under Vitest, whose modules are not hot-updated.
+    ...(serve && process.env["VITEST"] === undefined ? { hot: true } : {}),
   });
   const isLumenFile = (file: string): boolean => include.test(file) && !exclude.test(file);
   // Server-rendered route modules (./server-routes.ts), scanned once and again after a route

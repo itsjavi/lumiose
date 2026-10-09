@@ -430,6 +430,27 @@ describe.skipIf(!binding)("lumen/vite", () => {
     writeFileSync(tokens, source);
   });
 
+  it("registers components for component-level hot updates in dev, client code only (TASK-146)", async () => {
+    // Vitest's own modules are not hot-updated, so the plugin leaves `hot` off under it.
+    const vitest = process.env["VITEST"];
+    delete process.env["VITEST"];
+    try {
+      const file = join(root, "Hot.tsx");
+      writeFileSync(
+        file,
+        `export function Hot() {\n  return <b>hot</b>;\n}\nexport const Arrow = () => <i>arrow</i>;\n`,
+      );
+      const client = await server.environments.client.transformRequest("/Hot.tsx");
+      expect(client!.code).toContain('Hot = $$lumenHot(import.meta.hot, "Hot", Hot, ');
+      expect(client!.code).toContain("export let Arrow = ");
+      expect(client!.code).toContain('$$lumenHotAccept(import.meta.hot, ["Arrow", "Hot"], next)');
+      const ssr = await server.environments.ssr.transformRequest("/Hot.tsx");
+      expect(ssr!.code).not.toContain("lumenHot");
+    } finally {
+      process.env["VITEST"] = vitest;
+    }
+  });
+
   it("makes app entries HMR boundaries that re-mount through the wrapper", async () => {
     const result = await server.environments.client.transformRequest("/main.tsx");
     expect(result!.code).toContain("lumen:hmr-dom");

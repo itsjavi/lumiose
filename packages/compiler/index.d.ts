@@ -84,6 +84,11 @@ export interface CompileOptions {
    * Default `false`.
    */
   strictCsp?: boolean;
+  /**
+   * Dev client builds: register components for component-level hot updates (`lumen/dom`'s
+   * `$hot`). Default `false`.
+   */
+  hot?: boolean;
 }
 
 export interface CompileResult {
