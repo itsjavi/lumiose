@@ -257,7 +257,7 @@ export function seed(path: string, seedValue = 20261009): void {
     // Issues are numbered in creation order.
     const issues = Array.from({ length: SEED_COUNTS.issues }, () => {
       const createdAt = SEED_NOW - 1 - g.int(365 * DAY);
-      const updatedAt = Math.min(SEED_NOW - 1, createdAt + g.int(60 * DAY));
+      const updatedAt = createdAt + g.int(Math.min(60 * DAY, SEED_NOW - 1 - createdAt));
       return { createdAt, updatedAt };
     }).toSorted((a, b) => a.createdAt - b.createdAt);
 

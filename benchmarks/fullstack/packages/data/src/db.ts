@@ -50,6 +50,8 @@ export const INDEXES = `
 CREATE INDEX issues_project_updated ON issues(project_id, updated_at);
 CREATE INDEX issues_updated ON issues(updated_at);
 CREATE INDEX issues_status ON issues(status);
+-- Covers the dashboard aggregate and the sidebar's open counts.
+CREATE INDEX issues_project_status_priority ON issues(project_id, status, priority);
 CREATE INDEX issue_labels_label ON issue_labels(label_id);
 CREATE INDEX comments_issue ON comments(issue_id, created_at);
 `;

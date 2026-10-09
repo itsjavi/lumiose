@@ -107,33 +107,36 @@ const escapeLike = (q: string) => `%${q.replace(/[\\%_]/g, (c) => `\\${c}`)}%`;
 
 export function getDashboard(): Dashboard {
   const byStatus: Record<Status, number> = { open: 0, in_progress: 0, closed: 0 };
-  for (const row of all("SELECT status, count(*) AS n FROM issues GROUP BY status")) {
-    byStatus[row.status as Status] = Number(row.n);
-  }
   const byPriority: Record<Priority, number> = { low: 0, medium: 0, high: 0, urgent: 0 };
+  const projects = new Map<number, ProjectStats>(
+    all("SELECT id, slug, name FROM projects ORDER BY name").map((row) => [
+      Number(row.id),
+      {
+        slug: String(row.slug),
+        name: String(row.name),
+        open: 0,
+        inProgress: 0,
+        closed: 0,
+        total: 0,
+      },
+    ]),
+  );
+  // One pass over the covering (project_id, status, priority) index feeds every counter.
   for (const row of all(
-    "SELECT priority, count(*) AS n FROM issues WHERE status != 'closed' GROUP BY priority",
+    "SELECT project_id, status, priority, count(*) AS n FROM issues GROUP BY project_id, status, priority",
   )) {
-    byPriority[row.priority as Priority] = Number(row.n);
+    const n = Number(row.n);
+    const status = row.status as Status;
+    byStatus[status] += n;
+    if (status !== "closed") byPriority[row.priority as Priority] += n;
+    const project = projects.get(Number(row.project_id))!;
+    project.total += n;
+    if (status === "open") project.open += n;
+    else if (status === "in_progress") project.inProgress += n;
+    else project.closed += n;
   }
-  const projects: ProjectStats[] = all(
-    `SELECT p.slug, p.name,
-       count(i.id) AS total,
-       coalesce(sum(i.status = 'open'), 0) AS open,
-       coalesce(sum(i.status = 'in_progress'), 0) AS in_progress,
-       coalesce(sum(i.status = 'closed'), 0) AS closed
-     FROM projects p LEFT JOIN issues i ON i.project_id = p.id
-     GROUP BY p.id ORDER BY p.name`,
-  ).map((row) => ({
-    slug: String(row.slug),
-    name: String(row.name),
-    open: Number(row.open),
-    inProgress: Number(row.in_progress),
-    closed: Number(row.closed),
-    total: Number(row.total),
-  }));
   const recent = summaries(all(`${SUMMARY_SELECT} ORDER BY i.updated_at DESC, i.id DESC LIMIT 10`));
-  return { byStatus, byPriority, projects, recent };
+  return { byStatus, byPriority, projects: [...projects.values()], recent };
 }
 
 const PROJECT_SELECT = `

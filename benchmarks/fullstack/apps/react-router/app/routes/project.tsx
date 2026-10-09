@@ -1,14 +1,6 @@
-import {
-  PAGE_SIZE,
-  closeIssues,
-  getProject,
-  issueListHref,
-  listIssues,
-  listLabels,
-  parseIssueFilters,
-} from "@bench/data";
-import { plural } from "@bench/data/format";
-import type { IssueSummary } from "@bench/data/format";
+import { closeIssues, getProject, listIssues, listLabels, parseIssueFilters } from "@bench/data";
+// The component uses these too: import them from the DB-free entry so the client bundle stays clean.
+import { PAGE_SIZE, issueListHref, plural, type IssueSummary } from "@bench/data/format";
 import { BulkBar, FilterFields, IssueTable, PageTitle, Pagination } from "@bench/react-ui";
 import { useState } from "react";
 import { Form, useFetcher, useLocation } from "react-router";
