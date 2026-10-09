@@ -2,6 +2,8 @@
 // Effects and runs are owners too; they also carry graph links, released on disposal.
 import { currentOwner, releaseDeps, setActiveSub, setCurrentOwner } from "./reactive.ts";
 import type { ReactiveNode } from "./system.ts";
+// Dev-only error detail; production builds drop it.
+import { DEV } from "../dom/dev.ts";
 
 export type Cleanup = () => void;
 
@@ -286,7 +288,11 @@ export function resetOwner(owner: Owner): void {
 export function lifetime(): AbortSignal {
   const owner = getOwner();
   if (owner === undefined) {
-    throw new Error("lifetime() must be called inside a component, an effect or another owner.");
+    throw new Error(
+      DEV
+        ? "lifetime() must be called inside a component, an effect or another owner."
+        : "lifetime(): no owner",
+    );
   }
   return lifetimeOf(owner);
 }
@@ -313,7 +319,9 @@ export function abortLifetime(owner: Owner): void {
 export function provideContext(key: symbol, value: unknown): void {
   const owner = getOwner();
   if (owner === undefined) {
-    throw new Error("provide() must be called inside a component or another owner.");
+    throw new Error(
+      DEV ? "provide() must be called inside a component or another owner." : "provide(): no owner",
+    );
   }
   (owner.context ??= {})[key] = value;
 }

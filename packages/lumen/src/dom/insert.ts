@@ -411,10 +411,11 @@ export function renderRange(value: Renderable, mode?: number): RangeStart {
 // ---- branch --------------------------------------------------------------------------------------
 
 interface BranchState extends Region {
-  whenTrue: () => Renderable;
-  whenFalse: (() => Renderable) | undefined;
+  /** `whenTrue`, `whenFalse` (short internal names keep the runtime small, TASK-176). */
+  t: () => Renderable;
+  f: (() => Renderable) | undefined;
   /** Owner of the active branch. */
-  view: Owner | undefined;
+  w: Owner | undefined;
 }
 
 let branchState: BranchState | undefined;
@@ -430,15 +431,15 @@ function runBranch(): void {
 function applyBranch(state: BranchState, on: boolean): void {
   // Under hydration, the server must have rendered the same side.
   hydrator?.branch(state.nodes, on);
-  const prev = state.view;
+  const prev = state.w;
   if (prev !== undefined) {
-    state.view = undefined;
+    state.w = undefined;
     disposeOwner(prev);
   }
   state.owner = undefined;
   branchState = state;
-  branchView = on ? state.whenTrue : state.whenFalse;
-  state.view = runWithLazyOwner(getOwner(), runBranch);
+  branchView = on ? state.t : state.f;
+  state.w = runWithLazyOwner(getOwner(), runBranch);
   branchState = branchView = undefined;
 }
 
@@ -453,9 +454,9 @@ export function branch(
   const h = hydrator;
   const state = createRegion(parent, marker) as BranchState;
   const adopted = state.nodes;
-  state.whenTrue = whenTrue;
-  state.whenFalse = whenFalse;
-  state.view = undefined;
+  state.t = whenTrue;
+  state.f = whenFalse;
+  state.w = undefined;
   renderEffect(state, () => !!cond(), applyBranch);
   h?.end(adopted);
 }

@@ -46,34 +46,35 @@ import { createRange, renderInto, type RangeStart, type Region } from "./insert.
 type AsyncComponent = (props: any) => Promise<Renderable>;
 
 interface Instance {
-  component: AsyncComponent;
-  props: unknown;
-  /** Parent of the runs; provides the in-flight flag to `pending()`. */
+  /** The component, its props and owner (short internal names keep the runtime small, TASK-176). */
+  c: AsyncComponent;
+  q: unknown;
   owner: Owner;
-  /** The content between the range's markers. */
-  region: Region;
-  pending: Signal<boolean>;
-  /** Releases the Suspense registration once the first content settles. */
-  release: () => void;
-  /** The SPA router's revision, read by every run so that `invalidate()` re-runs it. */
-  revision: (() => number) | undefined;
-  /** The run whose UI is on screen. */
-  shown: AsyncRun | undefined;
-  latest: AsyncRun | undefined;
+  /** The region it renders into. */
+  g: Region;
+  /** `pending()` of the instance. */
+  p: Signal<boolean>;
+  /** Ends the instance's hold on its Suspense boundary. */
+  r: () => void;
+  /** The router's revision, re-read by each run. */
+  v: (() => number) | undefined;
+  /** The run on screen, and the latest run. */
+  s: AsyncRun | undefined;
+  l: AsyncRun | undefined;
 }
 
 interface AsyncRun extends Run {
-  instance: Instance;
-  /** Instance-path frame; only the first run of an instance in a hydrating island has one. */
+  /** Its instance. */
+  i: Instance;
   frame: Frame | undefined;
-  prevRun: AsyncRun | undefined;
-  prevFrame: Frame | undefined;
-  /** Ends the run's `busy()` registration. */
-  done: () => void;
-  /** Pending content created by the run, which holds its swap. */
-  waiting: number;
-  /** The body's resolved output, kept while `waiting` content settles. */
-  output: { value: Renderable } | undefined;
+  /** The run and frame it replaced while active (`resume`/`pause`). */
+  u: AsyncRun | undefined;
+  y: Frame | undefined;
+  /** Ends its `busy()` count. */
+  d: () => void;
+  /** Suspense content still pending below it, and its value waiting for that. */
+  w: number;
+  o: { value: Renderable } | undefined;
 }
 
 /** The run whose body is executing now (between a resume and a pause). */
@@ -82,8 +83,8 @@ let currentRun: AsyncRun | undefined;
 function resume(run: AsyncRun): void {
   if (!run.active) {
     resumeRun(run);
-    run.prevRun = currentRun;
-    run.prevFrame = setFrame(run.frame);
+    run.u = currentRun;
+    run.y = setFrame(run.frame);
     currentRun = run;
   }
 }
@@ -91,9 +92,9 @@ function resume(run: AsyncRun): void {
 function pause(run: AsyncRun): void {
   if (run.active) {
     pauseRun(run);
-    currentRun = run.prevRun;
-    setFrame(run.prevFrame);
-    run.prevRun = run.prevFrame = undefined;
+    currentRun = run.u;
+    setFrame(run.y);
+    run.u = run.y = undefined;
   }
 }
 
@@ -111,24 +112,24 @@ export function createAsync(component: AsyncComponent, props: unknown): RangeSta
   // content with a cursor of its own (carried by its frame), after its awaits replay.
   const claimed = hydrator?.fork(start);
   const instance: Instance = {
-    component,
-    props,
+    c: component,
+    q: props,
     owner,
-    region: {
+    g: {
       parent: end.parentNode!,
       marker: end,
       nodes: claimed === undefined ? [] : claimed[0],
       owner: undefined,
       value: undefined,
     },
-    pending: flag,
-    release: suspend(owner),
-    revision: lookupContext(owner, REVISION, undefined) as (() => number) | undefined,
-    shown: undefined,
-    latest: undefined,
+    p: flag,
+    r: suspend(owner),
+    v: lookupContext(owner, REVISION, undefined) as (() => number) | undefined,
+    s: undefined,
+    l: undefined,
   };
   (owner.context ??= {})[PENDING] = flag;
-  addCleanup(owner, instance.release);
+  addCleanup(owner, instance.r);
   const parentFrame = frame;
   startRun(instance, parentFrame === undefined ? undefined : childFrame(parentFrame, claimed?.[1]));
   return start;
@@ -136,21 +137,21 @@ export function createAsync(component: AsyncComponent, props: unknown): RangeSta
 
 function startRun(instance: Instance, runFrame: Frame | undefined): void {
   const run = createRun(invalidate, instance.owner) as AsyncRun;
-  run.instance = instance;
+  run.i = instance;
   run.frame = runFrame;
-  run.prevRun = run.prevFrame = undefined;
-  run.waiting = 0;
-  run.output = undefined;
-  addCleanup(run, (run.done = beginBusy()));
+  run.u = run.y = undefined;
+  run.w = 0;
+  run.o = undefined;
+  addCleanup(run, (run.d = beginBusy()));
   (run.context ??= {})[SUSPENSE] = {
     update: (fn) => hold(run, fn),
   } satisfies Boundary;
-  instance.latest = run;
+  instance.l = run;
   resume(run);
   let result: Promise<Renderable>;
   try {
-    instance.revision?.();
-    result = instance.component(instance.props);
+    instance.v?.();
+    result = instance.c(instance.q);
   } catch (error) {
     result = Promise.reject(error);
   } finally {
@@ -165,19 +166,19 @@ function startRun(instance: Instance, runFrame: Frame | undefined): void {
 
 /** Called during a flush when something the run read changed: start the next run. */
 function invalidate(superseded: Run): void {
-  const instance = (superseded as AsyncRun).instance;
-  if (superseded !== instance.shown) {
+  const instance = (superseded as AsyncRun).i;
+  if (superseded !== instance.s) {
     disposeOwner(superseded);
   }
-  if (instance.shown !== undefined) {
-    instance.pending.set(true);
+  if (instance.s !== undefined) {
+    instance.p.set(true);
   }
   startRun(instance, undefined);
 }
 
 /** Whether `run` lost to a newer run or was disposed; its outcome is then dropped. */
 function dropped(run: AsyncRun): boolean {
-  if (run === run.instance.latest && !(run.state & DISPOSED)) {
+  if (run === run.i.l && !(run.state & DISPOSED)) {
     return false;
   }
   disposeOwner(run);
@@ -186,23 +187,23 @@ function dropped(run: AsyncRun): boolean {
 
 /** The run's boundary: counts content it is waiting for; once shown, forwards to the one above. */
 function hold(run: AsyncRun, fn: (count: number) => number): void {
-  const instance = run.instance;
-  if (instance.shown === run) {
+  const instance = run.i;
+  if (instance.s === run) {
     (lookupContext(instance.owner, SUSPENSE, undefined) as Boundary | undefined)?.update(fn);
     return;
   }
-  run.waiting = fn(run.waiting);
-  const output = run.output;
-  if (run.waiting === 0 && output !== undefined) {
-    run.output = undefined;
+  run.w = fn(run.w);
+  const output = run.o;
+  if (run.w === 0 && output !== undefined) {
+    run.o = undefined;
     show(run, output.value);
   }
 }
 
 function settle(run: AsyncRun, value: Renderable): void {
-  run.done();
-  if (run.waiting > 0 && !(run.state & DISPOSED)) {
-    run.output = { value };
+  run.d();
+  if (run.w > 0 && !(run.state & DISPOSED)) {
+    run.o = { value };
   } else {
     show(run, value);
   }
@@ -212,39 +213,39 @@ function show(run: AsyncRun, value: Renderable): void {
   if (dropped(run)) {
     return;
   }
-  const instance = run.instance;
-  const prev = instance.shown;
+  const instance = run.i;
+  const prev = instance.s;
   try {
     // The atomic swap: the old run's owner goes in the same step as its nodes. It is disposed
     // while still shown, so what it registered with the boundary above is released there.
     if (prev !== undefined) {
       disposeOwner(prev);
     }
-    instance.shown = run;
+    instance.s = run;
     // A hydrating first run renders with its frame, so content created lazily still claims.
     const prevFrame = setFrame(run.frame);
     try {
-      runWithOwner(run, () => renderInto(instance.region, value));
+      runWithOwner(run, () => renderInto(instance.g, value));
     } finally {
       setFrame(prevFrame);
     }
   } catch (error) {
     handleError(instance.owner, error);
   } finally {
-    instance.pending.set(false);
-    instance.release();
+    instance.p.set(false);
+    instance.r();
   }
 }
 
 function fail(run: AsyncRun, error: unknown): void {
-  run.done();
+  run.d();
   if (dropped(run)) {
     return;
   }
   // The failed run keeps tracking what it read, so a change to its inputs retries it.
-  const instance = run.instance;
-  instance.pending.set(false);
-  instance.release();
+  const instance = run.i;
+  instance.p.set(false);
+  instance.r();
   handleError(instance.owner, error);
 }
 

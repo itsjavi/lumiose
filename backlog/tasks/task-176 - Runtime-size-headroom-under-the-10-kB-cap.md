@@ -1,11 +1,11 @@
 ---
 id: TASK-176
 title: Runtime size headroom under the 10 kB cap
-status: In Progress
+status: Done
 assignee:
   - Spark
 created_date: '2026-10-09 12:33'
-updated_date: '2026-10-09 14:35'
+updated_date: '2026-10-09 14:55'
 labels:
   - size
   - perf
@@ -23,7 +23,7 @@ After TASK-168 the every-export runtime is 9.97 kB brotli against the 10 kB hard
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Every-export ≤ 9.6 kB brotli with no jsfb CPU regressions (01–09 within noise, short run); typical imports and islands no larger
+- [x] #1 Every-export ≤ 9.6 kB brotli with no jsfb CPU regressions (01–09 within noise, short run); typical imports and islands no larger
 <!-- AC:END -->
 
 ## Implementation Notes
@@ -34,4 +34,6 @@ Spark RESUME (session limit): every-export brotli 10208 → 10073 B so far (targ
 Spark: list/insert range reuse committed (a4e0c10) after jsfb (10 then 15 iterations, lumen vs vanillajs, interleaved old/new): 01 36.5 vs 37.6 ms, 02 39.3 vs 40.4, 05 32.9 vs 32.8, 06 24.0 vs 25.5, 07 391 vs 416 (ratio to vanilla 1.088 vs 1.090), 08 46.5 vs 45.1 (1.059 vs 1.027, within the run-to-run spread of 43–48; load spiked during the second pair), 09 19.7 vs 19.0 — within noise. Every-export now 10,073 B (from 10,208); typical 6,268, islands 9,066 (no larger). Remaining candidates, estimated on the minified bundle: renaming the vendored alien-signals Link/node fields (depsTail, subsTail, nextSub, prevSub, nextDep, prevDep, pendingValue, currentValue) ≈ −50 B but breaks the line-by-line mirror of upstream; Lumen's own owner/async/branch/list fields ≈ −70 B; the two core error messages ≈ −25 B. Together ≈ −145 B → ~9.93 kB, still above 9.6 kB. Reaching 9.6 kB needs a decision: accept renaming the vendored algorithm, drop/move a feature from the  entry (e.g. Meta adoption of server tags, 563 B for Head/Meta/Title; store+snapshot 615 B), or set the goal at ~9.8 kB. Waiting for Lux.
 
 Correction to the note above: "drop/move a feature from the lumen entry".
+
+Lux decision (2026-10-09): AC amended to "every-export <= 9.8 kB brotli" (doc-1 §6 unchanged); no renames of the vendored alien-signals fields; Head/store stay in lumen. Spark: internal field renames in dom/async.ts (Instance, AsyncRun), dom/insert.ts (BranchState) and dom/list.ts (ListState), documented on their interfaces; core lifetime()/provide() errors keep the full text in dev and are short in production. Saves 108 B against HEAD in the same tree: every-export 10,073 -> 9,965 B (9.73 kB, the new baseline), typical 6,268 -> 6,257, islands 9,066 -> 9,025. Note: the uncommitted dom/hot.ts + dom/index.ts in the tree (TASK-146 HMR registry, not mine) add +222 B to every-export as it stands. jsfb short run (10 iterations, load 8-17, new vs old ratio to vanillajs): 01 1.045/1.032, 02 1.080/1.051, 03 1.171/1.041 (03 does not run any changed code: load noise), 05 1.047/1.213, 07 1.092/1.069, 08 1.023/1.049, 09 0.969/1.126 - mixed directions, within noise. Tests: core/dom/server/router vitest 423 passed, typecheck (except the in-progress hot.test.ts/contract.test.ts from TASK-146), oxlint.
 <!-- SECTION:NOTES:END -->

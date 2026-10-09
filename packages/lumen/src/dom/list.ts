@@ -33,10 +33,13 @@ interface Row<T> {
 interface ListState<T> {
   parent: Node;
   marker: Node | null;
-  rows: Row<T>[];
-  render: (item: T, index: () => number) => Renderable;
+  /** The rows. Short internal names (`r`, `f`, `x`) keep the runtime small (TASK-176). */
+  r: Row<T>[];
+  /** The row render function. */
+  f: (item: T, index: () => number) => Renderable;
   key: ((item: T) => unknown) | undefined;
-  indexed: boolean;
+  /** Whether `f` takes the index. */
+  x: boolean;
   /** The list's binding: the parent of the row owners. */
   owner: Owner | undefined;
 }
@@ -55,14 +58,14 @@ function renderRow(): void {
   const index = rowIndex;
   const value =
     index === undefined
-      ? (state.render as (item: unknown) => Renderable)(rowItem)
-      : state.render(rowItem, index);
+      ? (state.f as (item: unknown) => Renderable)(rowItem)
+      : state.f(rowItem, index);
   // One node, or a range (an async component); several nodes, text or dynamic content get a range.
   rowNode = value instanceof Node && value.nodeType !== 11 ? value : renderRange(value);
 }
 
 function createRow<T>(state: ListState<T>, item: T, key: unknown, i: number): Row<T> {
-  const index = state.indexed ? signal(i) : undefined;
+  const index = state.x ? signal(i) : undefined;
   rowState = state;
   rowItem = item;
   rowIndex = index;
@@ -167,14 +170,14 @@ export function longestIncreasingSubsequence(sources: Int32Array): number[] {
 }
 
 function reconcile<T>(state: ListState<T>, items: readonly T[]): void {
-  const a = state.rows;
+  const a = state.r;
   const aLen = a.length;
   const bLen = items.length;
   const marker = state.marker;
   const parent = marker?.parentNode ?? state.parent;
   if (bLen === 0) {
     if (aLen !== 0) {
-      state.rows = [];
+      state.r = [];
       clearAll(parent, a, marker);
     }
     return;
@@ -185,7 +188,7 @@ function reconcile<T>(state: ListState<T>, items: readonly T[]): void {
   const keys: readonly unknown[] = keyOf === undefined ? items : items.map(keyOf);
   const b: Row<T>[] = [];
   b.length = bLen;
-  state.rows = b;
+  state.r = b;
   if (aLen === 0) {
     // Under hydration, rows that claimed their server nodes are already in place.
     const hydrating = hydrator !== undefined;
@@ -250,7 +253,7 @@ function reconcile<T>(state: ListState<T>, items: readonly T[]): void {
       }
     }
   }
-  if (state.indexed) {
+  if (state.x) {
     for (let j = 0; j < bLen; j++) {
       b[j]!.index!.set(j);
     }
@@ -360,10 +363,10 @@ export function list<T>(
   const state: ListState<T> = {
     parent,
     marker,
-    rows: [],
-    render,
+    r: [],
+    f: render,
     key,
-    indexed: render.length > 1,
+    x: render.length > 1,
     owner: undefined,
   };
   const h = hydrator;
@@ -371,7 +374,7 @@ export function list<T>(
   // The copy tracks every index of store arrays and makes in-place mutations visible.
   renderEffect(state, () => copyItems(source()), reconcile);
   if (adopted !== undefined) {
-    removeUnclaimed(adopted, state.rows);
+    removeUnclaimed(adopted, state.r);
     h!.end(adopted);
   }
 }
