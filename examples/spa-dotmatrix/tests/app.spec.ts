@@ -7,6 +7,18 @@ async function shot(page: Page, name: string, project: string) {
   if (SHOTS && project === "dev") await page.screenshot({ path: `${SHOTS}/task-133-${name}.png` });
 }
 
+// Screenshots for TASK-156 use their own prefix.
+async function shot156(page: Page, name: string, project: string) {
+  if (SHOTS && project === "dev")
+    await page.screenshot({ path: `${SHOTS}/task-156-${name}.png`, fullPage: true });
+}
+
+// Screenshots for TASK-155 use their own prefix.
+async function shot155(page: Page, name: string, project: string) {
+  if (SHOTS && project === "dev")
+    await page.screenshot({ path: `${SHOTS}/task-155-${name}.png`, fullPage: true });
+}
+
 // Screenshots for TASK-153 use their own prefix.
 async function shot153(page: Page, name: string, project: string) {
   if (SHOTS && project === "dev")
@@ -124,7 +136,8 @@ test("changes a preset and fine-tunes it", async ({ page }) => {
 
 test("plays a demo from the gallery and opens it in the studio", async ({ page }, info) => {
   await page.goto("/songs");
-  await expect(page.locator(".cart")).toHaveCount(5);
+  await expect(page.locator(".cart")).toHaveCount(12);
+  await shot156(page, "songs", info.project.name);
   await page.getByRole("button", { name: "Listen to Rival Clash" }).click();
   await expect(page.getByRole("button", { name: "Stop Rival Clash" })).toBeVisible();
   await expect.poll(() => page.evaluate(() => dotmatrix.position())).toBeGreaterThan(0.5);
@@ -180,7 +193,8 @@ test("shares a song through its URL", async ({ page, browser }) => {
 
 test("SFX gallery: plays, bends, shows code and exports", async ({ page }, info) => {
   await page.goto("/sfx");
-  await expect(page.locator(".pad")).toHaveCount(15);
+  await expect(page.locator(".pad")).toHaveCount(20);
+  await shot156(page, "sfx", info.project.name);
   await page.getByRole("button", { name: /^Jump/ }).click();
   await expect(page.locator("#maker-title")).toHaveText("Jump");
   await page.getByRole("button", { name: "Show code" }).click();
@@ -263,7 +277,7 @@ test("no control sticks out of its panel at desktop, tablet and phone widths", a
 
 test("creature voices: pick, bend, read the code and export", async ({ page }, info) => {
   await page.goto("/creatures");
-  await expect(page.locator(".critter")).toHaveCount(13);
+  await expect(page.locator(".critter")).toHaveCount(20);
   await page.getByRole("button", { name: "Wispet" }).click();
   await expect(page.locator("#maker-title")).toHaveText("Wispet");
   await page.getByRole("button", { name: "Show code" }).click();
@@ -340,7 +354,8 @@ test("a sound with studio-only features stays a sheet and says why", async ({ pa
   await expect(page).toHaveURL(/\/sfx\?sound=/);
   await expect(page.locator(".notice")).toContainText("Pulse 1 has vibrato");
   await expect(page.locator(".maker input[type=range]").first()).toBeDisabled();
-  await expect(page.getByRole("button", { name: "Show code" })).toBeDisabled();
+  await page.getByRole("button", { name: "Show code" }).click();
+  await expect(page.locator(".code .none")).toContainText("no driver code");
   // It still plays and opens in the studio as it is.
   await page.getByRole("button", { name: "Play Jump" }).click();
   await page.getByRole("button", { name: "Open in studio" }).click();
@@ -375,4 +390,84 @@ test("the composing guide opens from Learn", async ({ page }) => {
   await expect(page.locator(".guide table").first()).toBeVisible();
   await expect(page.locator(".guide pre").first()).toContainText("square_note");
   await shot153(page, "guide", test.info().project.name);
+});
+
+const LASER = (typo: boolean) =>
+  [
+    "; pulse 1",
+    "  duty_cycle_pattern 0, 0, 3, 3",
+    `  ${typo ? "sqare_note" : "square_note"} 3, 15, 1, $7C6  ; slides -12/frame`,
+    "  square_note 12, 12, 3, $7A0",
+    "  sound_ret",
+    "; noise",
+    "  noise_note 4, 9, 2, $11",
+    "  sound_ret",
+  ].join("\n");
+
+test("pasted driver code shows line errors, then plays and saves to My sounds", async ({
+  page,
+}, info) => {
+  await page.goto("/sfx");
+  await page.getByRole("button", { name: "Show code" }).click();
+  await page.getByRole("button", { name: "Paste new code" }).click();
+  const draft = page.getByLabel("Driver code", { exact: true });
+  await draft.fill(LASER(true));
+  await page.getByRole("button", { name: "Play code" }).click();
+  await expect(page.locator(".errors li")).toHaveText(["Line 3: Unknown command “sqare_note”"]);
+  await expect(draft).toHaveAttribute("aria-invalid", "true");
+  await page.locator(".errors button").click();
+  await expect(draft).toBeFocused();
+  await shot155(page, "code-error", info.project.name);
+  await draft.fill(LASER(false));
+  await page.getByRole("button", { name: "Play code" }).click();
+  await expect(page.locator(".errors li")).toHaveCount(0);
+  await page.getByLabel("Name", { exact: true }).fill("Laser beam");
+  await page.getByRole("button", { name: "Save to My sounds" }).click();
+  await expect(page.locator(".mine li.on")).toHaveText(/Laser beam/);
+  await expect(page.locator("#maker-title")).toHaveText("Laser beam");
+  // Back as a plain sound: its code is the code that was pasted.
+  await expect(page.locator(".code pre")).toContainText("duty_cycle_pattern 0, 0, 3, 3");
+  await expect(page.locator(".code pre")).toContainText("slides -12/frame");
+});
+
+test("a creature's code is edited and saved as a new voice", async ({ page }) => {
+  await page.goto("/creatures");
+  await page.getByRole("button", { name: "Chirrup" }).click();
+  await page.getByRole("button", { name: "Show code" }).click();
+  await page.getByRole("button", { name: "Edit code" }).click();
+  const draft = page.getByLabel("Driver code", { exact: true });
+  const code = await draft.inputValue();
+  expect(code).toContain('; base voice "Warble"');
+  // Make every pulse 1 note of the trill louder.
+  await draft.fill(code.replace(/square_note 1, 12, 0,/g, "square_note 1, 15, 0,"));
+  await page.getByRole("button", { name: "Save to My voices" }).click();
+  await expect(page.locator(".mine li.on")).toHaveText(/Chirrup \(edited\)/);
+  await expect(page.locator(".code pre")).toContainText("square_note 1, 15, 0,");
+});
+
+test("driver code imports from a file", async ({ page }) => {
+  await page.goto("/sfx");
+  await page.getByRole("button", { name: "Show code" }).click();
+  await page.getByLabel("Import driver code").setInputFiles({
+    name: "zap-trap.asm",
+    mimeType: "text/plain",
+    buffer: Buffer.from(LASER(false)),
+  });
+  await expect(page.getByLabel("Name", { exact: true })).toHaveValue("zap-trap");
+  await expect(page.locator(".errors li")).toHaveCount(0);
+  await page.getByRole("button", { name: "Save to My sounds" }).click();
+  await expect(page.locator(".mine li.on")).toHaveText(/zap-trap/);
+});
+
+test("the creature and base-voice grids fill complete rows", async ({ page }, info) => {
+  await page.goto("/creatures");
+  const columns = (selector: string) =>
+    page
+      .locator(selector)
+      .evaluate((el) => getComputedStyle(el).gridTemplateColumns.split(" ").length);
+  await expect(page.locator(".critter")).toHaveCount(20);
+  expect(await columns(".roster")).toBe(5);
+  await expect(page.locator(".chips button")).toHaveCount(20);
+  expect(20 % (await columns(".chips"))).toBe(0);
+  await shot155(page, "creatures", info.project.name);
 });

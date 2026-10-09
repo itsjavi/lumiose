@@ -1,4 +1,4 @@
-// Creature voices: a dozen original creatures, each one of a few base voices with its own pitch
+// Creature voices: twenty original creatures, each on its own base voice with its own pitch
 // and length, the way handheld RPGs gave every creature a cry. Pick one, change its base voice,
 // pitch and length (or roll a new creature), export it, or open it in the studio.
 import { computed, onCleanup, onMount, signal } from "lumen";
@@ -261,6 +261,12 @@ export default function Creatures() {
                 ? listing(current()!)
                 : null
           }
+          kind="voice"
+          onPcm={(rendered) => pcm.set(rendered)}
+          onSaved={(id) => {
+            picked.set({ custom: true, id });
+            void fire(false);
+          }}
           codeNote="A cry is a base voice plus two numbers: pitch is added to every square note's frequency register, and length scales the square notes like a tempo ($0100 is as written). Noise keeps its own timing."
           actions={[
             { label: "Surprise me", onClick: surprise },
@@ -313,7 +319,8 @@ export default function Creatures() {
         }
         .roster {
           display: grid;
-          grid-template-columns: repeat(auto-fill, minmax(min(104px, 100%), 1fr));
+          /* 20 creatures: four full rows of five. */
+          grid-template-columns: repeat(5, minmax(0, 1fr));
           gap: 10px;
           margin: 0;
           padding: 0;
@@ -340,19 +347,21 @@ export default function Creatures() {
         .frame {
           display: grid;
           place-items: center;
-          inline-size: 64px;
-          block-size: 64px;
+          inline-size: min(64px, 100%);
+          aspect-ratio: 1;
           border-radius: 8px;
           background: var(--l0);
           box-shadow: inset 0 0 0 3px var(--bezel);
         }
         .mini {
-          inline-size: 48px;
-          block-size: 48px;
+          inline-size: 75%;
+          block-size: 75%;
         }
         .name {
+          max-inline-size: 100%;
           font-family: $tokens.font.pixel;
-          font-size: 11px;
+          font-size: 10px;
+          overflow-wrap: anywhere;
         }
         .portrait {
           display: grid;
@@ -378,7 +387,8 @@ export default function Creatures() {
         }
         .chips {
           display: grid;
-          grid-template-columns: repeat(auto-fill, minmax(min(150px, 100%), 1fr));
+          /* 20 base voices: five full rows of four. */
+          grid-template-columns: repeat(4, minmax(0, 1fr));
           gap: 8px;
         }
         .chips button {
@@ -405,6 +415,18 @@ export default function Creatures() {
         @media (width < 900px) {
           .layout {
             grid-template-columns: minmax(0, 1fr);
+          }
+        }
+        @media (width < 560px) {
+          .roster {
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 6px;
+          }
+          .critter {
+            padding: 8px 4px 10px;
+          }
+          .chips {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
           }
         }
       </style>

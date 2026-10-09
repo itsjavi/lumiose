@@ -1,6 +1,8 @@
 // The maker panel shared by the SFX and Creatures pages: title, play button, waveform, sliders,
 // actions and the driver-code view.
 import { signal } from "lumen";
+import type { SoundSheet } from "../model/types.ts";
+import { CodeEditor } from "./CodeEditor.stsx";
 import { Waveform } from "./Waveform.stsx";
 
 export interface Slider {
@@ -34,6 +36,12 @@ export function Maker(props: {
   notice?: string;
   code: string | null;
   codeNote: string;
+  /** Which shelf code saved from the code view goes to. */
+  kind: SoundSheet["kind"];
+  /** Code from the code view was played: show its waveform. */
+  onPcm: (pcm: Float32Array) => void;
+  /** Code from the code view was saved under this My sounds id. */
+  onSaved: (id: string) => void;
   children?: JSX.Element;
 }) {
   const showCode = signal(false);
@@ -95,17 +103,20 @@ export function Maker(props: {
           type="button"
           class="btn"
           aria-expanded={showCode()}
-          disabled={props.code === null}
           onClick={() => showCode.set(!showCode())}
         >
           {showCode() ? "Hide code" : "Show code"}
         </button>
       </div>
-      {showCode() && props.code !== null ? (
-        <div class="code">
-          <p>{props.codeNote}</p>
-          <pre>{props.code}</pre>
-        </div>
+      {showCode() ? (
+        <CodeEditor
+          code={props.code}
+          note={props.codeNote}
+          kind={props.kind}
+          title={props.title}
+          onPcm={(pcm) => props.onPcm(pcm)}
+          onSaved={(id) => props.onSaved(id)}
+        />
       ) : null}
       <style>
         .maker {
@@ -186,22 +197,6 @@ export function Maker(props: {
           display: flex;
           flex-wrap: wrap;
           gap: 8px;
-        }
-        .code p {
-          margin: 0 0 8px;
-          font-size: 13px;
-          color: var(--dim);
-        }
-        pre {
-          margin: 0;
-          padding: 12px 14px;
-          max-block-size: 300px;
-          overflow: auto;
-          border-radius: 10px;
-          background: var(--l3);
-          color: var(--l0);
-          font-size: 12px;
-          line-height: 1.5;
         }
       </style>
     </section>

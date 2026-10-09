@@ -1,0 +1,259 @@
+// The driver-code view of the SFX and Creatures makers: read the sound as code, or edit it,
+// paste code or import a .txt/.asm file. Code that parses plays at once and can be saved to My
+// sounds / My voices; errors are listed by line, and clicking one selects that line.
+import { signal } from "lumen";
+import { sfxData } from "../audio/driver.ts";
+import { playPcm } from "../audio/player.ts";
+import { parseCode, type CodeError } from "../model/code.ts";
+import { sfxToSheet } from "../model/sheet.ts";
+import type { Sfx, SoundSheet } from "../model/types.ts";
+import { keepSound, renderSound } from "../sounds.ts";
+import { say } from "../state.ts";
+import { tokens } from "../tokens.ts";
+
+export function CodeEditor(props: {
+  /** The current sound as code, or null when it has none (studio-only features). */
+  code: string | null;
+  note: string;
+  kind: SoundSheet["kind"];
+  title: string;
+  /** A parsed sound was rendered: show its waveform. */
+  onPcm: (pcm: Float32Array) => void;
+  /** A parsed sound was saved to My sounds / My voices. */
+  onSaved: (id: string) => void;
+}) {
+  const editing = signal(false);
+  const draft = signal("");
+  const errors = signal<CodeError[]>([]);
+  const parsed = signal<Sfx | null>(null);
+  const name = signal("");
+  let area: HTMLTextAreaElement | undefined;
+  let file: HTMLInputElement | undefined;
+
+  const shelf = () => (props.kind === "voice" ? "My voices" : "My sounds");
+
+  function edit(text = props.code ?? "") {
+    draft.set(text);
+    errors.set([]);
+    parsed.set(null);
+    name.set(`${props.title} (edited)`);
+    editing.set(true);
+  }
+
+  /** Parses the draft; plays it when it is valid. */
+  async function run(): Promise<Sfx | null> {
+    const result = parseCode(draft(), name() || "My sound");
+    if ("errors" in result) {
+      errors.set(result.errors);
+      parsed.set(null);
+      say(
+        `The code has ${result.errors.length === 1 ? "an error" : `${result.errors.length} errors`}`,
+      );
+      return null;
+    }
+    errors.set([]);
+    parsed.set(result.sfx);
+    try {
+      const pcm = await renderSound(sfxData(result.sfx));
+      props.onPcm(pcm);
+      await playPcm(pcm);
+    } catch (error) {
+      say(`Audio failed: ${String(error)}`);
+    }
+    return result.sfx;
+  }
+
+  async function save() {
+    const sfx = parsed() ?? (await run());
+    if (!sfx) return;
+    const sheet = sfxToSheet({ ...sfx, name: name() || sfx.name }, props.kind);
+    if ("reasons" in sheet) return say(`Cannot save: ${sheet.reasons.join(", ")}`);
+    const id = keepSound(sheet.song);
+    if (!id) return;
+    say(`Saved “${sheet.song.sheet!.name}” to ${shelf()}`);
+    editing.set(false);
+    props.onSaved(id);
+  }
+
+  async function importFile(event: Event) {
+    const input = event.currentTarget as HTMLInputElement;
+    const picked = input.files?.[0];
+    input.value = "";
+    if (!picked) return;
+    if (picked.size > 200_000) return say(`${picked.name} is too large for driver code`);
+    edit(await picked.text());
+    name.set(picked.name.replace(/\.(txt|asm|s|inc)$/i, ""));
+    await run();
+  }
+
+  /** Selects a line of the draft (from an error). */
+  function selectLine(line: number) {
+    if (!area) return;
+    const lines = draft().split("\n");
+    const start = lines.slice(0, line - 1).reduce((sum, l) => sum + l.length + 1, 0);
+    area.focus();
+    area.setSelectionRange(start, start + (lines[line - 1]?.length ?? 0));
+  }
+
+  return (
+    <div class="code">
+      <p class="note">{props.note}</p>
+      {editing() ? (
+        <div class="editor">
+          <label class="sr-only" for="code-draft">
+            Driver code
+          </label>
+          <textarea
+            id="code-draft"
+            ref={(el) => (area = el)}
+            spellcheck={false}
+            rows={14}
+            aria-invalid={errors().length > 0}
+            aria-describedby="code-errors"
+            value={draft()}
+            onInput={(event) => {
+              draft.set(event.currentTarget.value);
+              parsed.set(null);
+            }}
+          />
+          <ol id="code-errors" class="errors" aria-live="polite">
+            {errors().map((e) => (
+              <li>
+                <button type="button" onClick={() => selectLine(e.line)}>
+                  Line {e.line}: {e.message}
+                </button>
+              </li>
+            ))}
+          </ol>
+          <div class="row">
+            <label class="name">
+              <span class="label">Name</span>
+              <input
+                type="text"
+                maxlength={40}
+                value={name()}
+                onInput={(event) => name.set(event.currentTarget.value)}
+              />
+            </label>
+            <button type="button" class="btn" onClick={() => void run()}>
+              Play code
+            </button>
+            <button type="button" class="btn primary" onClick={() => void save()}>
+              Save to {shelf()}
+            </button>
+            <button type="button" class="btn" onClick={() => editing.set(false)}>
+              Cancel
+            </button>
+          </div>
+        </div>
+      ) : (
+        <>
+          {props.code === null ? (
+            <p class="none">
+              This sound uses studio-only features, so it has no driver code. Paste or import code
+              to make a new one.
+            </p>
+          ) : (
+            <pre>{props.code}</pre>
+          )}
+          <div class="row">
+            <button type="button" class="btn" onClick={() => edit()}>
+              {props.code === null ? "Write code" : "Edit code"}
+            </button>
+            <button type="button" class="btn" onClick={() => edit("")}>
+              Paste new code
+            </button>
+          </div>
+        </>
+      )}
+      <div class="row">
+        <button type="button" class="btn" onClick={() => file?.click()}>
+          Import file…
+        </button>
+        <input
+          ref={(el) => (file = el)}
+          type="file"
+          accept=".txt,.asm,.s,.inc,text/plain"
+          hidden
+          aria-label="Import driver code"
+          onChange={(event) => void importFile(event)}
+        />
+      </div>
+      <style>
+        .code {
+          display: grid;
+          gap: 10px;
+        }
+        .note,
+        .none {
+          margin: 0;
+          font-size: 13px;
+          color: var(--dim);
+        }
+        pre,
+        textarea {
+          margin: 0;
+          padding: 12px 14px;
+          max-block-size: 300px;
+          overflow: auto;
+          border-radius: 10px;
+          background: var(--l3);
+          color: var(--l0);
+          font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+          font-size: 12px;
+          line-height: 1.5;
+        }
+        textarea {
+          inline-size: 100%;
+          min-block-size: 220px;
+          max-block-size: none;
+          border: 2px solid transparent;
+          resize: vertical;
+          white-space: pre;
+        }
+        textarea[aria-invalid="true"] {
+          border-color: var(--accent);
+        }
+        .editor {
+          display: grid;
+          gap: 8px;
+        }
+        .errors {
+          display: grid;
+          gap: 2px;
+          margin: 0;
+          padding: 0;
+          list-style: none;
+        }
+        .errors button {
+          padding: 4px 8px;
+          border: 0;
+          border-radius: 6px;
+          background: color-mix(in srgb, var(--accent) 14%, var(--shell-low));
+          color: var(--ink);
+          font-size: 13px;
+          text-align: start;
+          cursor: pointer;
+        }
+        .row {
+          display: flex;
+          flex-wrap: wrap;
+          align-items: end;
+          gap: 8px;
+        }
+        .name {
+          display: grid;
+          gap: 2px;
+          flex: 1 1 160px;
+          min-inline-size: 0;
+        }
+        .name input {
+          inline-size: 100%;
+        }
+        .label {
+          font-family: $tokens.font.pixel;
+        }
+      </style>
+    </div>
+  );
+}

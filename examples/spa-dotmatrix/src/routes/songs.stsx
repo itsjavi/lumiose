@@ -194,7 +194,8 @@ export default function Songs() {
         }
         .grid {
           display: grid;
-          grid-template-columns: repeat(auto-fill, minmax(min(260px, 100%), 1fr));
+          /* Twelve songs: complete rows of four, three, two or one. */
+          grid-template-columns: repeat(4, minmax(0, 1fr));
           gap: 16px;
           margin: 0;
           padding: 0;
@@ -318,6 +319,21 @@ export default function Songs() {
         .when {
           font-size: 12px;
           color: var(--dim);
+        }
+        @media (width < 1200px) {
+          .grid {
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+          }
+        }
+        @media (width < 900px) {
+          .grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+          }
+        }
+        @media (width < 600px) {
+          .grid {
+            grid-template-columns: minmax(0, 1fr);
+          }
         }
       </style>
     </div>

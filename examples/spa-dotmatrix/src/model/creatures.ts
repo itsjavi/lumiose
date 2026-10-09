@@ -183,6 +183,55 @@ const snore = [
   sqr(10, 5, 2, 848, { pattern: pat(3, 2, 2, 2) }),
 ];
 
+const boing = [0, 30, 60].flatMap((lift, i) => [
+  sqr(2, 13 - i * 2, 1, 1620 + lift, { pattern: pat(1, 1, 2, 2), slide: 46 }),
+  sqr(3, 10 - i * 2, 2, 1712 + lift, { pattern: pat(1, 1, 2, 2), slide: -30 }),
+  rest(2),
+]);
+
+const hissBody = [
+  sqr(30, 4, 0, 1880, { pattern: pat(0, 0, 0, 1), slide: 1 }),
+  sqr(10, 3, 3, 1910, { pattern: pat(0, 1, 0, 1) }),
+];
+
+const honk = [0, 30].flatMap((lift) => [
+  sqr(2, 14, 0, 1720 + lift, { pattern: pat(0, 1, 0, 1), slide: -10 }),
+  sqr(5, 13, 1, 1700 + lift, { pattern: pat(0, 1, 0, 1), slide: 6 }),
+  sqr(3, 9, 2, 1730 + lift, { pattern: pat(0, 1, 0, 1), slide: -12 }),
+  rest(3),
+]);
+
+const purrContour = [0, 3, 6, 9, 12, 15, 18, 21, 24, 21, 18, 15, 12, 9, 6, 3];
+const purr = [
+  ...purrContour.map((up, i) => sqr(1, i % 2 ? 5 : 11, 0, 980 + up, { pattern: pat(3, 3, 2, 2) })),
+  sqr(8, 8, 3, 990, { pattern: pat(3, 3, 2, 2) }),
+];
+
+const screech = [
+  sqr(2, 15, 0, 1996, { pattern: pat(0, 0, 3, 3) }),
+  ...Array.from({ length: 8 }, (_, i) =>
+    sqr(1, 14, 0, 1990 - i * 6 + (i % 2 ? 16 : 0), { pattern: pat(0, 0, 3, 3) }),
+  ),
+  sqr(18, 12, 3, 1938, { pattern: pat(0, 0, 3, 3), slide: -9 }),
+];
+
+const gloop = [
+  sqr(5, 5, 11, 1260, { pattern: pat(2, 2, 3, 3), slide: 12 }),
+  sqr(5, 11, 0, 1320, { pattern: pat(2, 2, 3, 3), slide: -14 }),
+  sqr(5, 11, 0, 1250, { pattern: pat(2, 2, 3, 3), slide: 14 }),
+  sqr(5, 10, 0, 1320, { pattern: pat(2, 2, 3, 3), slide: -14 }),
+  sqr(10, 9, 3, 1250, { pattern: pat(2, 3, 2, 3), slide: 4 }),
+];
+
+const grunts = [
+  rest(3),
+  sqr(3, 12, 1, 1100, { duty: 3, slide: -10 }),
+  rest(4),
+  sqr(3, 12, 1, 1080, { duty: 3, slide: -10 }),
+  rest(4),
+  sqr(5, 11, 2, 1060, { pattern: pat(3, 3, 2, 2), slide: -6 }),
+];
+
 export const BASES: BaseVoice[] = [
   {
     id: "squeak",
@@ -319,6 +368,86 @@ export const BASES: BaseVoice[] = [
       p1(...snore),
       p2(...follow(snore, { delay: 1, offset: -10, gain: 0.7 })),
       ns(hiss(24, 1, 13, 0x46), rest(6), hiss(30, 9, 4, 0x57)),
+    ],
+  },
+  {
+    id: "boing",
+    name: "Boing",
+    hint: "Three springy hops, each lower",
+    voices: [
+      p1(...boing),
+      p2(...follow(boing, { delay: 1, offset: -18, gain: 0.5 })),
+      ns(...[0, 1, 2].flatMap(() => [hiss(1, 7, 1, 0x20), rest(6)])),
+    ],
+  },
+  {
+    id: "hiss",
+    name: "Hiss",
+    hint: "A long hiss over a faint tone, then a rattle",
+    voices: [
+      p1(...hissBody),
+      p2(...follow(hissBody, { delay: 0, offset: 40, gain: 0.5 })),
+      ns(
+        hiss(24, 10, 6, 0x01),
+        ...Array.from({ length: 6 }, () => [hiss(1, 9, 1, 0x02), rest(1)]).flat(),
+      ),
+    ],
+  },
+  {
+    id: "honk",
+    name: "Honk",
+    hint: "Two nasal honks that dip and rise",
+    voices: [
+      p1(...honk),
+      p2(...follow(honk, { delay: 0, offset: 60, gain: 0.7, pattern: pat(1, 0, 1, 0) })),
+      ns(hiss(2, 5, 1, 0x24), rest(11), hiss(2, 5, 1, 0x24)),
+    ],
+  },
+  {
+    id: "purr",
+    name: "Purr",
+    hint: "A low rolling tremolo with a pulsing rumble",
+    voices: [
+      p1(...purr),
+      p2(...follow(purr, { delay: 0, offset: -12, gain: 0.6 })),
+      ns(...Array.from({ length: 10 }, () => [hiss(1, 6, 1, 0x56), rest(1)]).flat()),
+    ],
+  },
+  {
+    id: "screech",
+    name: "Screech",
+    hint: "A piercing, wavering cry that falls away",
+    voices: [
+      p1(...screech),
+      p2(...follow(screech, { delay: 2, offset: -30, gain: 0.5 })),
+      ns(hiss(4, 8, 1, 0x00), hiss(20, 5, 3, 0x11)),
+    ],
+  },
+  {
+    id: "gloop",
+    name: "Gloop",
+    hint: "A wobbly blob of low slides and a pop",
+    voices: [
+      p1(...gloop),
+      p2(...follow(gloop, { delay: 2, offset: -10, gain: 0.6 })),
+      ns(rest(26), hiss(3, 9, 1, 0x63)),
+    ],
+  },
+  {
+    id: "dig",
+    name: "Dig",
+    hint: "Scratchy digging and low grunts",
+    voices: [
+      p1(...grunts),
+      p2(...follow(grunts, { delay: 0, offset: -20, gain: 0.6 })),
+      ns(
+        ...Array.from({ length: 3 }, () => [
+          hiss(3, 11, 1, 0x13),
+          hiss(2, 6, 1, 0x14),
+          rest(2),
+        ]).flat(),
+        hiss(6, 8, 2, 0x35),
+      ),
     ],
   },
 ];
@@ -620,6 +749,160 @@ export const CREATURES: Creature[] = [
       ".caaaccaaac.",
       "..caaaaaac..",
       "...cccccc...",
+      "............",
+    ],
+  },
+  {
+    id: "hoppit",
+    name: "Hoppit",
+    blurb: "A pond hopper that never walks anywhere.",
+    base: "boing",
+    pitch: 0,
+    length: 1,
+    sprite: [
+      "...c....c...",
+      "..cac..cac..",
+      "..cac..cac..",
+      "...caaaac...",
+      "..caaaaaac..",
+      "..cacaacac..",
+      "..caaaaaac..",
+      "...cabbac...",
+      "..caaaaaac..",
+      ".caac..caac.",
+      ".ccc....ccc.",
+      "............",
+    ],
+  },
+  {
+    id: "hissket",
+    name: "Hissket",
+    blurb: "A coiled grass snake with a rattle it is proud of.",
+    base: "hiss",
+    pitch: 0,
+    length: 1,
+    sprite: [
+      "............",
+      "....cccc....",
+      "...caaaac...",
+      "...cacacc...",
+      "....caac.bb.",
+      ".....cc..b..",
+      "..cccaccc...",
+      ".caaaaaaac..",
+      "caccccccaac.",
+      "caaaaaaaaac.",
+      ".ccccccccc..",
+      "............",
+    ],
+  },
+  {
+    id: "honkle",
+    name: "Honkle",
+    blurb: "A goose who honks first and asks questions later.",
+    base: "honk",
+    pitch: 16,
+    length: 1,
+    sprite: [
+      "............",
+      "...ccc......",
+      "..cacac.....",
+      ".bbaaac.....",
+      "bbbcaac.....",
+      "....cac.....",
+      "....caccccc.",
+      "...caaaaaac.",
+      "...caaaaaaac",
+      "....caaaaac.",
+      ".....cc.cc..",
+      ".....bb.bb..",
+    ],
+  },
+  {
+    id: "purrl",
+    name: "Purrl",
+    blurb: "A sleepy cat. The purr starts before you touch it.",
+    base: "purr",
+    pitch: 0,
+    length: 1,
+    sprite: [
+      "............",
+      "..c.....c...",
+      "..cc...cc...",
+      "..caccccac..",
+      "..caaaaaac..",
+      "..cbcaacbc..",
+      "..caaaaaac..",
+      "...caccac...",
+      "..caaaaaacc.",
+      ".caaaaaaaac.",
+      ".cccccccccc.",
+      "............",
+    ],
+  },
+  {
+    id: "shrillwing",
+    name: "Shrillwing",
+    blurb: "A cliff hawk whose cry carries for miles.",
+    base: "screech",
+    pitch: 0,
+    length: 1.1,
+    sprite: [
+      "............",
+      ".....cc.....",
+      "....cacc....",
+      "c..caaab...c",
+      "cc.caaac..cc",
+      "cacaaaaacac.",
+      ".caaaaaaac..",
+      "..caaaaac...",
+      "...cacac....",
+      "...c.c.c....",
+      "............",
+      "............",
+    ],
+  },
+  {
+    id: "glorpo",
+    name: "Glorpo",
+    blurb: "A friendly slime. It wobbles when it talks.",
+    base: "gloop",
+    pitch: 0,
+    length: 1.2,
+    sprite: [
+      "........a...",
+      ".....c...a..",
+      "....cac.....",
+      "...caaac....",
+      "..caaaaac...",
+      ".cacaaacac..",
+      ".caaaaaaac..",
+      "caaabbbaaac.",
+      "caaaaaaaaac.",
+      ".cccccccccc.",
+      "............",
+      "............",
+    ],
+  },
+  {
+    id: "diggle",
+    name: "Diggle",
+    blurb: "A mole who grumbles while it digs.",
+    base: "dig",
+    pitch: 0,
+    length: 1,
+    sprite: [
+      "............",
+      "...cccccc...",
+      "..caaaaaac..",
+      ".cacaaaacac.",
+      ".caaabbaaac.",
+      ".caaaaaaaac.",
+      "cbcaaaaaacbc",
+      "cbbcaaaacbbc",
+      ".cc.cccc.cc.",
+      "............",
+      "bb.b..b.b.bb",
       "............",
     ],
   },

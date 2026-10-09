@@ -56,17 +56,23 @@ To save the e2e screenshots, set `DOTMATRIX_SHOTS=<dir>`. The task screenshots a
 - **Share** copies a link that carries the whole song in its URL (`/?song=…`, deflated and
   base64url-encoded); nothing is uploaded. **Export WAV** saves the intro and the loop twice, with
   RIFF `smpl` loop points on the second pass. The open song autosaves to `localStorage`.
-- **Songs** (`/songs`): five original demos (a town, a route, a battle, a night theme and the
-  four-bar starter) to listen to and open in the studio, and the songs you saved.
-- **SFX** (`/sfx`): fifteen original sound effects (select, cursor, back, text blip, error, jump,
-  hit, bump, door, pickup, heal, save, item get, level up, warp). Bend one with the pitch, length,
+- **Songs** (`/songs`): twelve original demos (a town, a route, three battles: a rival, a wild
+  encounter and a final battle, a night theme, a sacred hall, a cave, a goofy tune, a sad theme, the
+  credits and the four-bar starter) to listen to and open in the studio, and the songs you saved.
+- **SFX** (`/sfx`): twenty original sound effects (select, cursor, back, text blip, error, jump,
+  hit, bump, door, pickup, heal, save, item get, level up, warp, explosion, laser, splash, power
+  up, footsteps). Bend one with the pitch, length,
   sweep, duty, noise tone and volume sliders, read it as sound-driver macros (`square_note`,
   `noise_note`, `pitch_sweep`) and export it as WAV.
-- **Creatures** (`/creatures`): thirteen original creatures and their voices ("cries"), built
-  the way handheld RPGs built them: seven base voices on the two pulses and the noise channel, and
-  each creature adds a pitch (added to every square note's frequency register) and a length (a
+- **Creatures** (`/creatures`): twenty original creatures and their voices ("cries"), built
+  the way handheld RPGs built them: a base voice on the two pulses and the noise channel (twenty
+  base voices, one per creature: register glides, duty patterns, fades, a detuned twin and noise),
+  and each creature adds a pitch (added to every square note's frequency register) and a length (a
   tempo for the square notes; noise keeps its timing). Change the base voice, pitch and length, roll
   a new creature with "Surprise me", read the driver code and export a WAV.
+- **Driver code** (SFX and Creatures): "Show code" shows the sound in the sound-driver format; edit
+  it, paste new code or import a `.txt`/`.asm` file, and it plays at once and saves to My sounds or
+  My voices. Errors are listed by line. See the [composing guide](docs/composing.md#editing-pasting-and-importing-code).
 - **Open in studio** (SFX and Creatures): the sound opens in the studio as a _sound sheet_, a
   song on a frame grid (one step per video frame, played once). Per-note settings the grid does not
   draw (volume, envelope, duty, hardware sweep, fine tuning) travel with each note, shown by a

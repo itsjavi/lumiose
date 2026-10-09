@@ -6,6 +6,13 @@ import { lanternNight } from "./lantern-night.ts";
 import { mapleHollow } from "./maple-hollow.ts";
 import { overTheRidge } from "./over-the-ridge.ts";
 import { rivalClash } from "./rival-clash.ts";
+import { bumblingAlong } from "./bumbling-along.ts";
+import { echoCave } from "./echo-cave.ts";
+import { fadedLetters } from "./faded-letters.ts";
+import { lastStand } from "./last-stand.ts";
+import { rollCredits } from "./roll-credits.ts";
+import { sanctum } from "./sanctum.ts";
+import { wildEncounter } from "./wild-encounter.ts";
 
 export interface Demo {
   id: string;
@@ -55,6 +62,30 @@ export const DEMOS: Demo[] = [
     song: rivalClash,
   },
   {
+    id: "wild-encounter",
+    title: "Wild Encounter",
+    mood: "Battle",
+    blurb: "Something jumped out of the tall grass. Fight or run!",
+    tips: [
+      "Pulse 2 plays power chords: the Arp chords preset set to a fifth arpeggio.",
+      "One bar of octave-leaping stabs is the intro; the loop starts at bar 2.",
+      "The kick lands on the off-beat before beat 3: that push is the rock feel.",
+    ],
+    song: wildEncounter,
+  },
+  {
+    id: "last-stand",
+    title: "Last Stand",
+    mood: "Final battle",
+    blurb: "The last fight. Everything is on the line.",
+    tips: [
+      "Four bars of intro build the tension before the lead comes in.",
+      "Pulse 2 races in sixteenth-note arpeggios while the lead holds long notes.",
+      "The B natural of the harmonic minor makes every G chord pull back to C minor.",
+    ],
+    song: lastStand,
+  },
+  {
     id: "lantern-night",
     title: "Lantern Night",
     mood: "Night",
@@ -65,6 +96,66 @@ export const DEMOS: Demo[] = [
       "Music box pings on Pulse 2 fade out on their own: a fast envelope.",
     ],
     song: lanternNight,
+  },
+  {
+    id: "sanctum",
+    title: "Sanctum of Light",
+    mood: "Sacred",
+    blurb: "A quiet hall of light where something old and kind lives.",
+    tips: [
+      "The G# (a raised fourth: the Lydian mode) makes the E major chord over D float.",
+      "The lead is a mellow 25% reed; its vibrato waits for the long notes.",
+      "The organ is the wave channel at half volume, holding each chord.",
+    ],
+    song: sanctum,
+  },
+  {
+    id: "echo-cave",
+    title: "Echo Cave",
+    mood: "Dungeon",
+    blurb: "Damp walls, dripping water and something breathing in the dark.",
+    tips: [
+      "The drips are single music-box notes, scattered across the bar.",
+      "The B flat (a Phrygian second) gives the cave its unease.",
+      "The lead stays low and mellow, below the drips.",
+    ],
+    song: echoCave,
+  },
+  {
+    id: "bumbling-along",
+    title: "Bumbling Along",
+    mood: "Goofy",
+    blurb: "Someone is about to slip on a banana peel.",
+    tips: [
+      "A 12.5% duty with a deep, quick vibrato sounds like a kazoo.",
+      "Chromatic steps (G, G#, A) and a slide down at the end are the jokes.",
+      "Oom-pah: the bass on the beat, Pulse 2's chords off it.",
+    ],
+    song: bumblingAlong,
+  },
+  {
+    id: "faded-letters",
+    title: "Faded Letters",
+    mood: "Sad",
+    blurb: "Reading old letters from someone who is not coming back.",
+    tips: [
+      "Slow tempo and long notes; the vibrato only starts late in each note.",
+      "The noise channel plays a soft double kick: a heartbeat.",
+      "The C# in the last bar leads back to D minor for the loop.",
+    ],
+    song: fadedLetters,
+  },
+  {
+    id: "roll-credits",
+    title: "Roll the Credits",
+    mood: "Credits",
+    blurb: "The journey is over. Thank you for playing.",
+    tips: [
+      "The melody climbs higher in the second half, then settles on G.",
+      "Shimmer on Pulse 2 gives the broken chords a chorus-like glow.",
+      "A drum-only intro before the loop, like the start of a parade.",
+    ],
+    song: rollCredits,
   },
   {
     id: "first-steps",

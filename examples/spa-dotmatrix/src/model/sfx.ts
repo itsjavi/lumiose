@@ -36,6 +36,13 @@ export const p1 = (...notes: SfxNote[]): SfxVoice => ({ channel: 0, notes });
 export const p2 = (...notes: SfxNote[]): SfxVoice => ({ channel: 1, notes });
 export const ns = (...notes: SfxNote[]): SfxVoice => ({ channel: 3, notes });
 
+/** Duty pattern byte and per-frame slide for an SFX note. */
+const withFx = (note: SfxNote, extra: Pick<SfxNote, "pattern" | "slide">): SfxNote => ({
+  ...note,
+  ...extra,
+});
+const pat = (a: number, b: number, c: number, d: number) => (a << 6) | (b << 4) | (c << 2) | d;
+
 export const SFX: Sfx[] = [
   {
     id: "select",
@@ -174,6 +181,60 @@ export const SFX: Sfx[] = [
     name: "Warp",
     blurb: "A long falling sweep through a wash of noise.",
     voices: [p1(sq(42, 12, 1, "C7", 2, -2)), ns(nz(42, 7, 1, 1, 4))],
+  },
+  {
+    id: "explosion",
+    name: "Explosion",
+    blurb: "A bright crack, then a long dark roar of noise over a sinking rumble.",
+    voices: [
+      p1(withFx(sq(30, 13, 2, "C3", 3), { pattern: pat(3, 3, 2, 2), slide: -4 })),
+      ns(nz(2, 15, 0, 0, 1), nz(4, 15, 1, 3, 3), nz(40, 14, 2, 6, 5)),
+    ],
+  },
+  {
+    id: "laser",
+    name: "Laser",
+    blurb: "A thin 12.5% zap that falls fast, with a quieter echo.",
+    voices: [p1(sq(14, 13, 5, "C7", 0, -6)), p2(rest(3), sq(12, 6, 5, "G6", 0))],
+  },
+  {
+    id: "splash",
+    name: "Splash",
+    blurb: "A burst of white noise that washes away, with droplets on top.",
+    voices: [
+      p1(
+        rest(4),
+        withFx(sq(3, 8, 3, "G5", 1), { slide: 20 }),
+        withFx(sq(3, 7, 3, "C6", 1), { slide: 16 }),
+        withFx(sq(4, 6, 3, "E6", 1), { slide: 12 }),
+      ),
+      ns(nz(3, 10, 0, 1, 1), nz(20, 12, 2, 2, 2)),
+    ],
+  },
+  {
+    id: "powerup",
+    name: "Power up",
+    blurb: "A charge that rises with a shimmering duty pattern, then a bright ding.",
+    voices: [
+      p1(
+        withFx(sq(30, 11, 0, "C4", 2), { pattern: pat(2, 2, 1, 1), slide: 12 }),
+        sq(16, 13, 4, "C6", 1),
+      ),
+      p2(withFx(sq(30, 7, 0, "G3", 1), { slide: 12 }), sq(16, 7, 4, "G5", 1)),
+    ],
+  },
+  {
+    id: "footsteps",
+    name: "Footsteps",
+    blurb: "Four soft, dark steps on stone.",
+    voices: [
+      ns(
+        ...Array.from({ length: 4 }, (_, i) => [
+          nz(2, 8 - (i % 2), 1, 5, 1 + (i % 2)),
+          rest(8),
+        ]).flat(),
+      ),
+    ],
   },
 ];
 

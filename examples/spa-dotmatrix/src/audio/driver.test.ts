@@ -81,6 +81,24 @@ describe("demo songs", () => {
     });
   }
 
+  it("balances every demo: no channel drowns the lead, none is inaudible", () => {
+    for (const demo of DEMOS) {
+      const song = demo.song();
+      const rms = ([0, 1, 2, 3] as ChannelIndex[]).map((ch) => {
+        const { interleavedStereo } = renderEngineAudioToPcm(songData(song, [ch]), {
+          sampleRate: 16000,
+          tailMs: 0,
+        });
+        return stats(interleavedStereo).rms;
+      });
+      const lead = rms[0]!;
+      for (const [ch, level] of rms.entries()) {
+        expect(level / lead, `${demo.title} channel ${ch}`).toBeLessThan(2);
+        expect(level, `${demo.title} channel ${ch}`).toBeGreaterThan(0.004);
+      }
+    }
+  });
+
   it("marks the loop at the loop bar on every channel", () => {
     const song = DEMOS[1]!.song();
     const loopCycles = Math.round(song.loop * STEPS_PER_BAR * stepCycles(song.bpm));

@@ -180,7 +180,7 @@ export default function Learn() {
         <p>
           A creature's cry is a short sound effect on the two pulses and the noise channel. Games
           kept only a few base voices and gave each creature two numbers: a pitch added to every
-          note's frequency register, and a length that stretches the notes. Meet a dozen in the{" "}
+          note's frequency register, and a length that stretches the notes. Meet twenty in the{" "}
           <Link class="link" href={href("/creatures")}>
             Creatures
           </Link>{" "}

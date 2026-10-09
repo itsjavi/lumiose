@@ -10,6 +10,7 @@ written for this guide or for Dotmatrix; none comes from a game.
 - [Music](#music)
 - [Sound effects](#sound-effects)
 - [Creature voices](#creature-voices)
+- [Editing, pasting and importing code](#editing-pasting-and-importing-code)
 - [Checklist](#checklist)
 
 ## The four channels
@@ -185,21 +186,28 @@ each creature a base cry plus two numbers:
 
 **Archetypes** (the Dotmatrix creatures)
 
-| Creature    | Base voice | Gesture                                                                       |
-| ----------- | ---------- | ----------------------------------------------------------------------------- |
-| Pipsqueak   | Squeak     | Two tiny upward squeaks, high and thin (duty 25 %/12.5 % pattern).            |
-| Chirrup     | Warble     | 1-frame notes alternating ±40 units: a trill, then a settling note.           |
-| Zapling     | Crackle    | Buzzing 75/12.5 % pattern jumping up and down over bright on/off noise.       |
-| Wispet      | Moan       | Swells in from silence, sags slowly; the twin is 5 units off for a slow beat. |
-| Bubbloon    | Blub       | Short notes that each slide up fast, with gaps: bubbles.                      |
-| Gearbot     | Servo      | Deliberately stepped jumps of 128 units, grinding pattern, ticking noise.     |
-| Mossling    | Yawn       | A slow rise, a held sigh and a breath of noise.                               |
-| Emberkit    | Yip        | Two barks: loud/soft 1-frame alternation, then a fast drop.                   |
-| Boulderback | Rumble     | Very low registers, long notes, dark noise underneath.                        |
-| Glaciore    | Glint      | A glassy 12.5 % shiver, a rising glide, a metallic ring in the noise.         |
-| Lumoth      | Flutter    | Loud/soft every two frames (wing beats) drifting upward.                      |
-| Stormaw     | Roar       | A rough 75/12.5 % bellow over a long crash.                                   |
-| Snoozle     | Snore      | Noise swells in (inhale), a low grumble, noise fades out (exhale).            |
+| Creature    | Base voice | Gesture                                                                            |
+| ----------- | ---------- | ---------------------------------------------------------------------------------- |
+| Pipsqueak   | Squeak     | Two tiny upward squeaks, high and thin (duty 25 %/12.5 % pattern).                 |
+| Chirrup     | Warble     | 1-frame notes alternating ±40 units: a trill, then a settling note.                |
+| Zapling     | Crackle    | Buzzing 75/12.5 % pattern jumping up and down over bright on/off noise.            |
+| Wispet      | Moan       | Swells in from silence, sags slowly; the twin is 5 units off for a slow beat.      |
+| Bubbloon    | Blub       | Short notes that each slide up fast, with gaps: bubbles.                           |
+| Gearbot     | Servo      | Deliberately stepped jumps of 128 units, grinding pattern, ticking noise.          |
+| Mossling    | Yawn       | A slow rise, a held sigh and a breath of noise.                                    |
+| Emberkit    | Yip        | Two barks: loud/soft 1-frame alternation, then a fast drop.                        |
+| Boulderback | Rumble     | Very low registers, long notes, dark noise underneath.                             |
+| Glaciore    | Glint      | A glassy 12.5 % shiver, a rising glide, a metallic ring in the noise.              |
+| Lumoth      | Flutter    | Loud/soft every two frames (wing beats) drifting upward.                           |
+| Stormaw     | Roar       | A rough 75/12.5 % bellow over a long crash.                                        |
+| Snoozle     | Snore      | Noise swells in (inhale), a low grumble, noise fades out (exhale).                 |
+| Hoppit      | Boing      | Three springy hops: each note slides up fast, then down, a little lower each time. |
+| Hissket     | Hiss       | A long bright hiss over a faint tone, then a rattle of 1-frame noise ticks.        |
+| Honkle      | Honk       | Two nasal honks (12.5/25 % pattern) that dip and rise, the twin 60 units off.      |
+| Purrl       | Purr       | A low loud/soft tremolo every frame with a pulsing dark rumble.                    |
+| Shrillwing  | Screech    | A piercing high attack that wavers ±16 units and falls away.                       |
+| Glorpo      | Gloop      | Low slides that swing up and down (a wobble), then a dark pop.                     |
+| Diggle      | Dig        | Scratchy noise bursts with short, low, falling grunts in between.                  |
 
 **An original cry, in the format**: the start of Emberkit's bark (its own base voice, pitch $0018,
 length $00E6):
@@ -228,6 +236,52 @@ are off.
 **Making creatures distinct**: give each a different gesture first (squeak, trill, moan, bark,
 rumble…), then a different register range, then a different duty pattern and noise layer. Pitch
 and length variants of one base voice sound like a family: use them for creatures that are related.
+
+## Editing, pasting and importing code
+
+The code view is not only for reading. In **SFX** or **Creatures**, press **Show code**, then:
+
+- **Edit code** opens the current sound's code in an editor. Change numbers, add or remove lines,
+  then **Play code**: it plays at once and its waveform appears.
+- **Paste new code** starts from an empty editor: paste code from this guide, a text file or a
+  friend.
+- **Import file…** reads a `.txt` or `.asm` file, names the sound after the file and plays it.
+- **Save to My sounds** (or **My voices**) keeps it, under the name you give it. It then behaves
+  like any saved sound: the sliders, Open in studio and Export WAV all work.
+
+The editor reads everything the code view writes:
+
+| Line                                       | Read as                                                                 |
+| ------------------------------------------ | ----------------------------------------------------------------------- |
+| `; pulse 1`, `; pulse 2`, `; noise`        | Starts a channel section (each at most once). Required before any note. |
+| `duty_cycle 0–3`                           | The duty for the following square notes.                                |
+| `duty_cycle_pattern a, b, c, d`            | A duty pattern for the following square notes (replaces `duty_cycle`).  |
+| `pitch_sweep pace, ±shift`                 | Pulse 1 only; the sweeps Dotmatrix can play are listed if one is not.   |
+| `square_note frames, volume, fade, freq`   | Frames 1–255, volume 0–15 (0 is a rest), fade 0–15, register 0–2047.    |
+| `noise_note frames, volume, fade, setting` | The same for noise, with a noise setting 0–255.                         |
+| `; slides -12/frame` after a square note   | That note's per-frame slide (Dotmatrix's extension).                    |
+| `sound_ret`                                | Ends the section; anything after it needs a new section line.           |
+| `; base voice "…", pitch …, length …`      | A creature's header: a comment, kept for reading.                       |
+
+Numbers are decimal (`12`) or hex (`$0C`); everything else after `;` is a comment. Mistakes are
+listed by line, such as `Line 3: Unknown command “sqare_note”` or `Line 4: The volume must be 0–15,
+found 16`; click one to select that line. A sound can be up to 600 frames (10 s) long.
+
+An original example to paste:
+
+```asm
+; pulse 1
+  duty_cycle_pattern 0, 0, 3, 3
+  square_note 3, 15, 1, $7C6  ; slides -12/frame
+  square_note 12, 12, 3, $7A0
+  sound_ret
+; noise
+  noise_note 4, 9, 2, $11
+  sound_ret
+```
+
+Every built-in sound effect and creature voice exports to code and imports back identically:
+`src/model/code.test.ts` checks that the register writes match.
 
 ## Checklist
 

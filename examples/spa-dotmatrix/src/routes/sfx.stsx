@@ -237,6 +237,9 @@ export default function SfxPage() {
           sliders={sliders}
           notice={notice()}
           code={current() ? listing(current()!) : null}
+          kind="sfx"
+          onPcm={(rendered) => pcm.set(rendered)}
+          onSaved={(id) => pick({ custom: true, id })}
           codeNote="The same sound as sound-driver macros: square_note frames, volume, fade, frequency. Fade 1–7 fades out (1 fastest), 9–15 fades in (9 fastest)."
           actions={[
             { label: "Surprise me", onClick: surprise, disabled: () => !editable() },
