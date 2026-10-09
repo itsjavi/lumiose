@@ -11,13 +11,11 @@ const isolated = {
   "cross-origin-embedder-policy": "require-corp",
 };
 
-export default defineConfig(({ mode }) => ({
+export default defineConfig({
   plugins: [lumen({ mode: "spa", ssr: false })],
   server: { headers: isolated },
   // The AudioWorklet module is loaded with `?worker&url`: an ES module bundle of its own.
   worker: { format: "es" },
-  // Unit tests need the browser build of `lumen` (reactive computeds), which takes both the
-  // `browser` condition and a DOM environment. Browser e2e specs run with Playwright instead.
-  resolve: mode === "test" ? { conditions: ["browser"] } : {},
+  // Unit tests run in a DOM environment; browser e2e specs run with Playwright instead.
   test: { include: ["src/**/*.test.ts"], environment: "happy-dom" },
-}));
+});

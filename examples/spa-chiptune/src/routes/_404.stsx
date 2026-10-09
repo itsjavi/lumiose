@@ -11,9 +11,15 @@ export default function NotFound(props: ErrorPageProps) {
         Open the song library
       </Link>
       <style>
-        .not-found { max-inline-size: 60ch; }
-        p { color: var(--dim); }
-        .library { color: var(--cyan); }
+        .not-found {
+          max-inline-size: 60ch;
+        }
+        p {
+          color: var(--dim);
+        }
+        .library {
+          color: var(--cyan);
+        }
       </style>
     </section>
   );

@@ -1,6 +1,6 @@
 // Prerendered at build time for every genre (`staticPaths`): its top-rated books, with a link to
 // the full, filterable list (a `server` route).
-import { notFound, Title, type RouteProps } from "lumen";
+import { href, notFound, Title, type RouteProps } from "lumen";
 import { BookGrid } from "../../../components/BookCard.stsx";
 import { queries } from "../../../server/queries.server.ts";
 import * as theme from "../../../theme.ts";
@@ -16,9 +16,7 @@ export default function GenrePage(props: RouteProps<"/genres/[slug]">) {
   return (
     <GenreDetail
       genre={queries().getGenre(props.params.slug) ?? notFound(`No genre "${props.params.slug}".`)}
-      books={
-        queries().listBooks({ genre: props.params.slug, sort: "rating", pageSize: 12 }).items
-      }
+      books={queries().listBooks({ genre: props.params.slug, sort: "rating", pageSize: 12 }).items}
     />
   );
 }
@@ -28,12 +26,14 @@ function GenreDetail(props: { genre: Genre; books: BookSummary[] }) {
     <main>
       <Title>{props.genre.name} · Bookshelf</Title>
       <p class="crumbs">
-        <a href="/genres">Genres</a> /
+        <a href={href("/genres")}>Genres</a> /
       </p>
       <h1>{props.genre.name}</h1>
       <p class="lead">
         The top-rated {props.genre.name.toLowerCase()} books.{" "}
-        <a href={`/books?genre=${props.genre.slug}`}>Browse all {props.genre.bookCount} →</a>
+        <a href={`${href("/books")}?genre=${props.genre.slug}`}>
+          Browse all {props.genre.bookCount} →
+        </a>
       </p>
       <BookGrid books={props.books} />
     </main>

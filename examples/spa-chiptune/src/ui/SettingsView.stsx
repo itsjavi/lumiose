@@ -7,10 +7,22 @@ import { prefs } from "../state.ts";
 import { signal } from "lumen";
 
 export function SettingsView() {
-  const step = lens(() => prefs.step, (v) => (prefs.step = Math.min(16, Math.max(0, v || 0))));
-  const follow = lens(() => prefs.follow, (v) => (prefs.follow = v));
-  const record = lens(() => prefs.record, (v) => (prefs.record = v));
-  const perf = lens(() => prefs.perf, (v) => (prefs.perf = v));
+  const step = lens(
+    () => prefs.step,
+    (v) => (prefs.step = Math.min(16, Math.max(0, v || 0))),
+  );
+  const follow = lens(
+    () => prefs.follow,
+    (v) => (prefs.follow = v),
+  );
+  const record = lens(
+    () => prefs.record,
+    (v) => (prefs.record = v),
+  );
+  const perf = lens(
+    () => prefs.perf,
+    (v) => (prefs.perf = v),
+  );
   const stats = signal(frameStats());
   const isolated = globalThis.crossOriginIsolated === true;
 
@@ -19,7 +31,8 @@ export function SettingsView() {
       <section class="panel" aria-label="Editor">
         <h2>Editor</h2>
         <label class="check">
-          <input type="checkbox" bind:checked={record} /> Record mode (notes typed in the tracker are written)
+          <input type="checkbox" bind:checked={record} /> Record mode (notes typed in the tracker
+          are written)
         </label>
         <label class="check">
           <input type="checkbox" bind:checked={follow} /> Follow playback
@@ -76,7 +89,8 @@ export function SettingsView() {
           <dd>{stats().frames}</dd>
           <dt>Frame interval</dt>
           <dd>
-            {stats().avgInterval.toFixed(2)} ms avg · {stats().p95Interval.toFixed(2)} ms p95 · {stats().maxInterval.toFixed(1)} ms max
+            {stats().avgInterval.toFixed(2)} ms avg · {stats().p95Interval.toFixed(2)} ms p95 ·{" "}
+            {stats().maxInterval.toFixed(1)} ms max
           </dd>
           <dt>Frame work</dt>
           <dd>
@@ -103,7 +117,8 @@ export function SettingsView() {
         <h2>Effects</h2>
         <p class="note">
           0xy arpeggio · 1xx/2xx slide up/down · 3xx portamento · 4xy vibrato · Axy volume slide ·
-          Bxx jump · Dxx break · Fxx speed/BPM · Sxx cut · Vxx duty. Effects persist until set to 00.
+          Bxx jump · Dxx break · Fxx speed/BPM · Sxx cut · Vxx duty. Effects persist until set to
+          00.
         </p>
       </section>
       <style>
@@ -113,19 +128,62 @@ export function SettingsView() {
           gap: 10px;
           align-items: start;
         }
-        .panel { display: grid; gap: 10px; }
-        .check { display: flex; gap: 8px; align-items: center; }
-        .field { display: grid; gap: 4px; color: var(--dim); }
-        .field input { inline-size: 8ch; }
-        .themes { display: flex; gap: 6px; }
-        .themes .on { background: var(--yellow); color: var(--bg); }
-        dl { display: grid; grid-template-columns: max-content 1fr; gap: 4px 12px; margin: 0; }
-        dt { color: var(--dim); }
-        dd { margin: 0; }
-        table { border-collapse: collapse; }
-        th, td { text-align: start; padding: 3px 8px 3px 0; vertical-align: top; font-weight: normal; }
-        kbd { color: var(--yellow); font-family: inherit; }
-        .note { margin: 0; color: var(--dim); line-height: 1.5; }
+        .panel {
+          display: grid;
+          gap: 10px;
+        }
+        .check {
+          display: flex;
+          gap: 8px;
+          align-items: center;
+        }
+        .field {
+          display: grid;
+          gap: 4px;
+          color: var(--dim);
+        }
+        .field input {
+          inline-size: 8ch;
+        }
+        .themes {
+          display: flex;
+          gap: 6px;
+        }
+        .themes .on {
+          background: var(--yellow);
+          color: var(--bg);
+        }
+        dl {
+          display: grid;
+          grid-template-columns: max-content 1fr;
+          gap: 4px 12px;
+          margin: 0;
+        }
+        dt {
+          color: var(--dim);
+        }
+        dd {
+          margin: 0;
+        }
+        table {
+          border-collapse: collapse;
+        }
+        th,
+        td {
+          text-align: start;
+          padding: 3px 8px 3px 0;
+          vertical-align: top;
+          font-weight: normal;
+        }
+        kbd {
+          color: var(--yellow);
+          font-family: inherit;
+        }
+        .note {
+          margin: 0;
+          color: var(--dim);
+          line-height: 1.5;
+        }
       </style>
     </div>
   );

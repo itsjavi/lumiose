@@ -1,7 +1,14 @@
 // Songs: the open song's properties, the library in localStorage, files and export.
 import { signal } from "lumen";
 import { demoSong } from "../model/demo.ts";
-import { deleteSaved, library, loadSaved, newId, saveSong, type LibraryEntry } from "../model/library.ts";
+import {
+  deleteSaved,
+  library,
+  loadSaved,
+  newId,
+  saveSong,
+  type LibraryEntry,
+} from "../model/library.ts";
 import { emptyPattern, emptySong } from "../model/song.ts";
 import { exportJson, exportWav, exporting, importJson } from "../files.ts";
 import { lens } from "../lens.ts";
@@ -12,7 +19,12 @@ import { SongNumber } from "./Header.stsx";
 function textField(field: "title" | "author") {
   return lens(
     () => doc.song[field],
-    (value) => edit(field === "title" ? "Rename song" : "Change author", () => set([field], value.slice(0, 64)), field),
+    (value) =>
+      edit(
+        field === "title" ? "Rename song" : "Change author",
+        () => set([field], value.slice(0, 64)),
+        field,
+      ),
   );
 }
 
@@ -86,7 +98,8 @@ export function SongsView() {
           </label>
         </div>
         <p class="facts">
-          {doc.song.order.length} orders · {doc.song.patterns.length} patterns · {doc.song.instruments.length} instruments
+          {doc.song.order.length} orders · {doc.song.patterns.length} patterns ·{" "}
+          {doc.song.instruments.length} instruments
         </p>
         <div class="actions">
           <button onClick={() => (saveNow(), say("Saved"))}>Save</button>
@@ -120,7 +133,8 @@ export function SongsView() {
             <li class={{ open: entry.id === songId() }}>
               <span class="title">{entry.title}</span>
               <span class="meta">
-                {entry.author || "—"} · {entry.orders} orders · {new Date(entry.updated).toLocaleString()}
+                {entry.author || "—"} · {entry.orders} orders ·{" "}
+                {new Date(entry.updated).toLocaleString()}
               </span>
               <span class="buttons">
                 <button onClick={() => open(entry)} disabled={entry.id === songId()}>
@@ -154,14 +168,49 @@ export function SongsView() {
           gap: 10px;
           align-items: start;
         }
-        .current { display: grid; gap: 10px; }
-        label { display: grid; gap: 4px; font-size: 11px; color: var(--dim); text-transform: uppercase; }
-        .inline { display: inline-flex; align-items: center; gap: 4px; font-weight: 700; }
-        .row { display: flex; gap: 14px; flex-wrap: wrap; align-items: center; }
-        .facts { margin: 0; color: var(--dim); font-size: 12px; }
-        .actions { display: flex; gap: 6px; flex-wrap: wrap; }
-        .wav { background: var(--blue); }
-        ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+        .current {
+          display: grid;
+          gap: 10px;
+        }
+        label {
+          display: grid;
+          gap: 4px;
+          font-size: 11px;
+          color: var(--dim);
+          text-transform: uppercase;
+        }
+        .inline {
+          display: inline-flex;
+          align-items: center;
+          gap: 4px;
+          font-weight: 700;
+        }
+        .row {
+          display: flex;
+          gap: 14px;
+          flex-wrap: wrap;
+          align-items: center;
+        }
+        .facts {
+          margin: 0;
+          color: var(--dim);
+          font-size: 12px;
+        }
+        .actions {
+          display: flex;
+          gap: 6px;
+          flex-wrap: wrap;
+        }
+        .wav {
+          background: var(--blue);
+        }
+        ul {
+          list-style: none;
+          margin: 0;
+          padding: 0;
+          display: grid;
+          gap: 4px;
+        }
         li {
           display: grid;
           grid-template-columns: minmax(0, 1fr) auto;
@@ -170,11 +219,27 @@ export function SongsView() {
           background: var(--bg);
           border: 1px solid var(--line);
         }
-        li.open { border-color: var(--yellow); }
-        .title { font-weight: 700; }
-        .meta { grid-row: 2; color: var(--dim); font-size: 11px; }
-        .buttons { grid-row: 1 / 3; grid-column: 2; display: flex; gap: 4px; align-items: center; }
-        .danger { background: var(--red); }
+        li.open {
+          border-color: var(--yellow);
+        }
+        .title {
+          font-weight: 700;
+        }
+        .meta {
+          grid-row: 2;
+          color: var(--dim);
+          font-size: 11px;
+        }
+        .buttons {
+          grid-row: 1 / 3;
+          grid-column: 2;
+          display: flex;
+          gap: 4px;
+          align-items: center;
+        }
+        .danger {
+          background: var(--red);
+        }
       </style>
     </div>
   );

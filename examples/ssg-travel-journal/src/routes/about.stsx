@@ -36,13 +36,13 @@ export default function About() {
           endpoints, written to files at build time.
         </li>
         <li>
-          <strong>Styles</strong>: global styles in the root layout, scoped <code>&lt;style&gt;</code>{" "}
-          blocks in every component, and design tokens from <code>theme.ts</code> read as{" "}
-          <code>$theme.*</code> and inlined at build time.
+          <strong>Styles</strong>: global styles in the root layout, scoped{" "}
+          <code>&lt;style&gt;</code> blocks in every component, and design tokens from{" "}
+          <code>theme.ts</code> read as <code>$theme.*</code> and inlined at build time.
         </li>
         <li>
-          <strong>Islands</strong>: only the search box and the theme toggle ship JavaScript.
-          Every other page is HTML and CSS.
+          <strong>Islands</strong>: only the search box and the theme toggle ship JavaScript. Every
+          other page is HTML and CSS.
         </li>
         <li>
           <strong>Navigation</strong>: ordinary links between pages, animated with cross-document

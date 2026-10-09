@@ -41,9 +41,15 @@ export function PixelLogo(props: { text: string; scale?: number }) {
       <path d={logo().d} transform="translate(1 1)" class="shadow" />
       <path d={logo().d} class="face" />
       <style>
-        .logo { display: block; }
-        .shadow { fill: #000; }
-        .face { fill: var(--yellow); }
+        .logo {
+          display: block;
+        }
+        .shadow {
+          fill: #000;
+        }
+        .face {
+          fill: var(--yellow);
+        }
       </style>
     </svg>
   );

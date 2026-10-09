@@ -1,3 +1,4 @@
+import { href } from "lumen";
 import * as theme from "../theme.ts";
 import type { User } from "../types.ts";
 
@@ -7,18 +8,18 @@ export function AccountLinks(props: { user: User | null }) {
     <div class="account">
       {props.user === null ? (
         <>
-          <a href="/login">Sign in</a>
-          <a class="register" href="/register">
+          <a href={href("/login")}>Sign in</a>
+          <a class="register" href={href("/register")}>
             Register
           </a>
         </>
       ) : (
         <>
-          <a href="/reading-list">Reading list</a>
-          <a href="/profile" title="Your profile">
+          <a href={href("/reading-list")}>Reading list</a>
+          <a href={href("/profile")} title="Your profile">
             {props.user.name}
           </a>
-          <form method="post" action="/logout">
+          <form method="post" action={href("/logout")}>
             <button class="sign-out">Sign out</button>
           </form>
         </>

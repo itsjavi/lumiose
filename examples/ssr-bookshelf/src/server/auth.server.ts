@@ -6,15 +6,7 @@
 
 import { createHash, randomBytes } from "node:crypto";
 import type { DatabaseSync } from "node:sqlite";
-import {
-  cookies as requestCookies,
-  locals as requestLocals,
-  redirect,
-  signedCookie,
-  url as requestUrl,
-  type Cookies,
-  type RequestContext,
-} from "lumen";
+import { cookies as requestCookies, href, locals as requestLocals, redirect, signedCookie, url as requestUrl, type Cookies, type RequestContext } from "lumen";
 import {
   normalizeEmail,
   validateRegistration,
@@ -273,7 +265,7 @@ export function requireUser(ctx?: AuthContext): Promise<User> {
 
 /** The login page URL that returns to `url` afterwards. */
 export function loginHref(url: URL): string {
-  return `/login?next=${encodeURIComponent(url.pathname + url.search)}`;
+  return `${href("/login")}?next=${encodeURIComponent(url.pathname + url.search)}`;
 }
 
 /**

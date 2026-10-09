@@ -1,4 +1,4 @@
-import { Title, type ErrorPageProps } from "lumen";
+import { href, Title, type ErrorPageProps } from "lumen";
 import "../styles.css";
 import { Footer, Header } from "../components/Header.stsx";
 
@@ -12,7 +12,7 @@ export default function ErrorPage(props: ErrorPageProps) {
         <h1>{props.status === 403 ? "Not allowed" : "Something went wrong"}</h1>
         <p>{props.error.message}</p>
         <p>
-          <a href="/">Back to the home page</a>
+          <a href={href("/")}>Back to the home page</a>
         </p>
       </main>
       <Footer />

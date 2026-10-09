@@ -24,8 +24,8 @@ export function Journal(props: { page: Page<Post>; path: string }) {
           <p class="kicker">{site.tagline}</p>
           <h1>Notes from the slow way between places.</h1>
           <p class="lead">
-            Night trains, mountain huts, foggy islands and morning markets. A journal for people
-            who would rather arrive late and see more.
+            Night trains, mountain huts, foggy islands and morning markets. A journal for people who
+            would rather arrive late and see more.
           </p>
         </section>
       ) : (

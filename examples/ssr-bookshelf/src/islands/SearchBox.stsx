@@ -1,7 +1,7 @@
 // Island (client:load): the header search. Without JavaScript it is a GET form to /books?q=;
 // once hydrated, typing shows live suggestions from /api/search (debounced, earlier requests
 // aborted). Arrow keys move through them, Enter opens the highlighted book, Escape closes them.
-import { fetchJSON, onCleanup, signal } from "lumen";
+import { fetchJSON, href, onCleanup, signal } from "lumen";
 import * as theme from "../theme.ts";
 
 interface Suggestion {
@@ -36,7 +36,7 @@ export function SearchBox(props: { q?: string }) {
       const controller = (pending = new AbortController());
       try {
         const data = await fetchJSON<{ results: Suggestion[] }>(
-          `/api/search?q=${encodeURIComponent(q)}`,
+          `${href("/api/search")}?q=${encodeURIComponent(q)}`,
           { signal: controller.signal },
         );
         results.set(data.results);
@@ -62,12 +62,12 @@ export function SearchBox(props: { q?: string }) {
       active.set(-1);
     } else if (event.key === "Enter" && open() && active() >= 0) {
       event.preventDefault();
-      location.assign(`/books/${results()[active()]!.isbn}`);
+      location.assign(href("/books/[isbn]", { isbn: results()[active()]!.isbn }));
     }
   }
 
   return (
-    <form class="search" method="get" action="/books" role="search">
+    <form class="search" method="get" action={href("/books")} role="search">
       <input
         type="search"
         name="q"
@@ -98,7 +98,7 @@ export function SearchBox(props: { q?: string }) {
             role="option"
             aria-selected={index === active() ? "true" : "false"}
           >
-            <a href={`/books/${book.isbn}`} tabindex="-1">
+            <a href={href("/books/[isbn]", { isbn: book.isbn })} tabindex="-1">
               <strong>{book.title}</strong>
               <span>{book.authors.join(", ")}</span>
             </a>

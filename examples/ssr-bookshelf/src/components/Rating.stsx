@@ -36,7 +36,11 @@ export function Rating(props: { rating: RatingSummary }) {
           display: inline-block;
           font-size: 1rem;
           letter-spacing: 1px;
-          background: linear-gradient(90deg, $theme.color.star var(--filled), $theme.color.starOff var(--filled));
+          background: linear-gradient(
+            90deg,
+            $theme.color.star var(--filled),
+            $theme.color.starOff var(--filled)
+          );
           background-clip: text;
           color: transparent;
         }

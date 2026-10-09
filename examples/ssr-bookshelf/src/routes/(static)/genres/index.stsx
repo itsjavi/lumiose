@@ -1,5 +1,5 @@
 // Prerendered at build time (a `static` route): the genre list with book counts.
-import { Title } from "lumen";
+import { href, Title } from "lumen";
 import { queries } from "../../../server/queries.server.ts";
 import * as theme from "../../../theme.ts";
 
@@ -13,7 +13,7 @@ export default function Genres() {
           .listGenres()
           .map((genre, index) => (
             <li style={{ "--hue": String((index * 31 + 12) % 360) }}>
-              <a href={`/genres/${genre.slug}`}>
+              <a href={href("/genres/[slug]", { slug: genre.slug })}>
                 <strong>{genre.name}</strong>
                 <span>{genre.bookCount} books</span>
               </a>

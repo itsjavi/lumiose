@@ -12,7 +12,9 @@ export function staticPaths() {
 }
 
 export default function PostPage(props: RouteProps<"/posts/[slug]">) {
-  return <PostView post={findPost(props.params.slug) ?? notFound(`No post "${props.params.slug}".`)} />;
+  return (
+    <PostView post={findPost(props.params.slug) ?? notFound(`No post "${props.params.slug}".`)} />
+  );
 }
 
 function PostView(props: { post: Post }) {
@@ -149,8 +151,8 @@ function PostView(props: { post: Post }) {
           color: inherit;
         }
 
-        /* The Markdown body is inserted as HTML, so its elements carry no scope token: style
-           them from the scoped .prose wrapper with :deep(). */
+        /* The Markdown body is inserted as HTML, so its elements carry no scope token: style */
+        /* them from the scoped .prose wrapper with :deep(). */
         .prose {
           font-size: 1.125rem;
           line-height: 1.75;

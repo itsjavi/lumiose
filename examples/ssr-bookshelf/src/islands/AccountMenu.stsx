@@ -1,6 +1,6 @@
 // Island (client:idle) for prerendered pages, which cannot know who is signed in: it renders the
 // sign-in links on the server, then asks /api/me in the browser and shows the reader's links.
-import { fetchJSON, onMount, signal } from "lumen";
+import { fetchJSON, href, onMount, signal } from "lumen";
 import { AccountLinks } from "../components/AccountLinks.stsx";
 import type { User } from "../types.ts";
 
@@ -9,7 +9,7 @@ export function AccountMenu() {
 
   onMount(() => {
     const controller = new AbortController();
-    fetchJSON<{ user: User | null }>("/api/me", { signal: controller.signal })
+    fetchJSON<{ user: User | null }>(href("/api/me"), { signal: controller.signal })
       .then((data) => user.set(data.user))
       .catch(() => {});
     return () => controller.abort();

@@ -14,9 +14,9 @@ export default function RootLayout(props: { children?: JSX.Element }) {
       <SiteFooter />
 
       <style global>
-        /* Cross-document View Transitions (lumen({ viewTransitions: true })): same-origin
-           navigations cross-fade, and elements with a shared view-transition-name (a post's
-           cover) morph between pages. Lumen turns them off for prefers-reduced-motion. */
+        /* Cross-document View Transitions (lumen({ viewTransitions: true })): same-origin */
+        /* navigations cross-fade, and elements with a shared view-transition-name (a post's */
+        /* cover) morph between pages. Lumen turns them off for prefers-reduced-motion. */
         :root {
           color-scheme: light dark;
           accent-color: $theme.color.accent;

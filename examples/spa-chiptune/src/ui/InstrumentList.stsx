@@ -40,7 +40,11 @@ export function InstrumentList(props: { compact?: boolean }) {
       <header>
         <h2>Instruments</h2>
         {props.compact && (
-          <button class="edit" onClick={() => showView("instruments")} title="Edit instruments (F2)">
+          <button
+            class="edit"
+            onClick={() => showView("instruments")}
+            title="Edit instruments (F2)"
+          >
             EDIT
           </button>
         )}
@@ -73,9 +77,20 @@ export function InstrumentList(props: { compact?: boolean }) {
         </div>
       )}
       <style>
-        .instruments { display: grid; grid-template-rows: auto 1fr auto; min-block-size: 0; }
-        header { display: flex; justify-content: space-between; align-items: center; }
-        .edit { font-size: 11px; padding: 1px 6px; }
+        .instruments {
+          display: grid;
+          grid-template-rows: auto 1fr auto;
+          min-block-size: 0;
+        }
+        header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+        }
+        .edit {
+          font-size: 11px;
+          padding: 1px 6px;
+        }
         .list {
           list-style: none;
           margin: 0;
@@ -96,11 +111,28 @@ export function InstrumentList(props: { compact?: boolean }) {
           justify-content: flex-start;
           font-family: $tokens.font.mono;
         }
-        .list button:hover { background: var(--raised); }
-        .list button.current { background: var(--raised); outline: 1px solid var(--cyan); outline-offset: -1px; }
-        .index { color: var(--cyan); }
-        .label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-        .tools { display: grid; grid-template-columns: repeat(3, 1fr); gap: 3px; padding-block-start: 6px; }
+        .list button:hover {
+          background: var(--raised);
+        }
+        .list button.current {
+          background: var(--raised);
+          outline: 1px solid var(--cyan);
+          outline-offset: -1px;
+        }
+        .index {
+          color: var(--cyan);
+        }
+        .label {
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+        .tools {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 3px;
+          padding-block-start: 6px;
+        }
       </style>
     </section>
   );

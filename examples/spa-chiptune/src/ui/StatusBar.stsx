@@ -14,14 +14,22 @@ export function StatusBar() {
         {message() || "Type notes with Z-M and Q-P · Space plays · F1-F4 switch views"}
       </span>
       <span>
-        {CHANNELS[cursor.channel]!.short} · {FIELDS[cursor.column]} · {COLUMNS[cursor.column]!.field}
+        {CHANNELS[cursor.channel]!.short} · {FIELDS[cursor.column]} ·{" "}
+        {COLUMNS[cursor.column]!.field}
       </span>
       <span>{history.size()} edits</span>
       <span title="How the audio thread reports levels and scopes">
-        {telemetryMode() === "shared" ? "SAB" : telemetryMode() === "message" ? "postMessage" : "idle"}
+        {telemetryMode() === "shared"
+          ? "SAB"
+          : telemetryMode() === "message"
+            ? "postMessage"
+            : "idle"}
       </span>
       {prefs.perf && (
-        <span class="perf" title="Frames per second · main-thread work per frame for meters, scopes and the playing row">
+        <span
+          class="perf"
+          title="Frames per second · main-thread work per frame for meters, scopes and the playing row"
+        >
           {fps()} FPS · {frameWork().toFixed(2)} ms
         </span>
       )}
@@ -36,8 +44,15 @@ export function StatusBar() {
           border-block-start: 2px solid var(--line);
           white-space: nowrap;
         }
-        .message { flex: 1; color: var(--text); overflow: hidden; text-overflow: ellipsis; }
-        .perf { color: var(--green); }
+        .message {
+          flex: 1;
+          color: var(--text);
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+        .perf {
+          color: var(--green);
+        }
       </style>
     </footer>
   );

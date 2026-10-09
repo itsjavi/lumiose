@@ -45,10 +45,22 @@ export function Todos(props: { class?: string }) {
         {remaining()} of {todos().length} left
       </p>
       <style>
-        ul { padding: 0; list-style: none; }
-        li { display: flex; gap: calc($theme.space * 2px); align-items: center; }
-        li.done label { text-decoration: line-through; opacity: 0.6; }
-        .remove { color: $theme.danger; }
+        ul {
+          padding: 0;
+          list-style: none;
+        }
+        li {
+          display: flex;
+          gap: calc($theme.space * 2px);
+          align-items: center;
+        }
+        li.done label {
+          text-decoration: line-through;
+          opacity: 0.6;
+        }
+        .remove {
+          color: $theme.danger;
+        }
       </style>
     </section>
   );

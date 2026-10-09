@@ -11,7 +11,9 @@ export function Counter({ start = 0, class: className }: { start?: number; class
       </button>
       <button onClick={() => count.set(start)}>Reset</button>
       <style>
-        h2 { color: $theme.accent; }
+        h2 {
+          color: $theme.accent;
+        }
         button {
           background: $theme.accent;
           color: white;
@@ -19,8 +21,12 @@ export function Counter({ start = 0, class: className }: { start?: number; class
           border-radius: calc($theme.radius * 1px);
           padding: calc($theme.space * 1px) calc($theme.space * 3px);
         }
-        button + button { margin-inline-start: calc($theme.space * 2px); }
-        .hot { background: $theme.danger; }
+        button + button {
+          margin-inline-start: calc($theme.space * 2px);
+        }
+        .hot {
+          background: $theme.danger;
+        }
       </style>
     </section>
   );

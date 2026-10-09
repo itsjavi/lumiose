@@ -27,13 +27,24 @@ export function OrderList() {
         ))}
       </ol>
       <div class="tools">
-        <button title="Previous pattern number" aria-label="Previous pattern number" onClick={() => ed.stepOrderPattern(-1)}>
+        <button
+          title="Previous pattern number"
+          aria-label="Previous pattern number"
+          onClick={() => ed.stepOrderPattern(-1)}
+        >
           −
         </button>
-        <button title="Next pattern number (past the last: a new pattern)" aria-label="Next pattern number" onClick={() => ed.stepOrderPattern(1)}>
+        <button
+          title="Next pattern number (past the last: a new pattern)"
+          aria-label="Next pattern number"
+          onClick={() => ed.stepOrderPattern(1)}
+        >
           +
         </button>
-        <button title="Insert this pattern again after the current position" onClick={() => ed.insertOrder(false)}>
+        <button
+          title="Insert this pattern again after the current position"
+          onClick={() => ed.insertOrder(false)}
+        >
           INS
         </button>
         <button title="Insert a new empty pattern" onClick={ed.newPatternOrder}>
@@ -53,9 +64,19 @@ export function OrderList() {
         </button>
       </div>
       <style>
-        .orders { display: grid; grid-template-rows: auto 1fr auto; min-block-size: 0; }
-        header { display: flex; justify-content: space-between; align-items: baseline; }
-        .count { color: var(--dim); }
+        .orders {
+          display: grid;
+          grid-template-rows: auto 1fr auto;
+          min-block-size: 0;
+        }
+        header {
+          display: flex;
+          justify-content: space-between;
+          align-items: baseline;
+        }
+        .count {
+          color: var(--dim);
+        }
         .list {
           list-style: none;
           margin: 0;
@@ -75,19 +96,38 @@ export function OrderList() {
           color: var(--text);
           justify-content: flex-start;
         }
-        .list button:hover { background: var(--raised); }
-        .pos { color: var(--dim); }
-        .pat { color: var(--cyan); }
-        .list button.current { background: var(--raised); outline: 1px solid var(--yellow); outline-offset: -1px; }
-        .list button.live .pos { color: var(--red); }
-        .list button.live::after { content: "◀"; color: var(--red); margin-inline-start: auto; }
+        .list button:hover {
+          background: var(--raised);
+        }
+        .pos {
+          color: var(--dim);
+        }
+        .pat {
+          color: var(--cyan);
+        }
+        .list button.current {
+          background: var(--raised);
+          outline: 1px solid var(--yellow);
+          outline-offset: -1px;
+        }
+        .list button.live .pos {
+          color: var(--red);
+        }
+        .list button.live::after {
+          content: "◀";
+          color: var(--red);
+          margin-inline-start: auto;
+        }
         .tools {
           display: grid;
           grid-template-columns: repeat(4, 1fr);
           gap: 3px;
           padding-block-start: 6px;
         }
-        .tools button { padding-inline: 0; font-size: 11px; }
+        .tools button {
+          padding-inline: 0;
+          font-size: 11px;
+        }
       </style>
     </section>
   );

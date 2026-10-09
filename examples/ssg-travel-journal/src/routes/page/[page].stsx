@@ -13,10 +13,7 @@ export function staticPaths() {
 
 export default function JournalPage(props: RouteProps<"/page/[page]">) {
   return (
-    <Journal
-      page={journalPage(props.params.page)}
-      path={pageHref(Number(props.params.page))}
-    />
+    <Journal page={journalPage(props.params.page)} path={pageHref(Number(props.params.page))} />
   );
 }
 

@@ -9,7 +9,9 @@ export function App() {
       <Counter start={0} class="panel" />
       <Todos class="panel" />
       <style>
-        h1 { color: $theme.accent; }
+        h1 {
+          color: $theme.accent;
+        }
       </style>
     </main>
   );

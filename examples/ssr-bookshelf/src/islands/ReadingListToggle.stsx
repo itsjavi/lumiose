@@ -3,10 +3,10 @@
 // once hydrated, it posts with submit() and updates itself from the result. This is an MPA page, so
 // submit() does not reload it (decision-20): the island owns its state, and on /reading-list it
 // removes its own entry (`removeClosest`) instead of asking for fresh server data.
-import { signal, submit } from "lumen";
+import { href, signal, submit } from "lumen";
 import * as theme from "../theme.ts";
 
-const TOGGLE_ACTION = "/reading-list?/toggle";
+const TOGGLE_ACTION = `${href("/reading-list")}?/toggle`;
 
 export function ReadingListToggle(props: {
   bookId: number;

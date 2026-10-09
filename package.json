@@ -9,9 +9,10 @@
     "lint": "oxlint",
     "fmt": "oxfmt .",
     "fmt:check": "oxfmt --check .",
+    "fmt:examples": "pnpm --filter \"./examples/*\" exec lumen fmt --check",
     "cargo:build": "cargo build --workspace",
     "cargo:test": "cargo test --workspace",
-    "check": "pnpm build:compiler && pnpm typecheck && pnpm lint && pnpm test && pnpm --filter lumen size && cargo test --workspace",
+    "check": "pnpm build:compiler && pnpm typecheck && pnpm lint && pnpm fmt:examples && pnpm test && pnpm --filter lumen size && cargo test --workspace",
     "build:compiler": "pnpm --filter @lumen/compiler build",
     "build:site": "node scripts/site.ts build",
     "preview:site": "node scripts/site.ts preview"

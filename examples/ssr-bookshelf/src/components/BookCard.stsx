@@ -1,3 +1,4 @@
+import { href } from "lumen";
 import { ReadingListToggle } from "../islands/ReadingListToggle.stsx";
 import * as theme from "../theme.ts";
 import type { BookSummary } from "../types.ts";
@@ -44,7 +45,7 @@ export function Cover(props: { book: Pick<BookSummary, "title" | "coverHue">; si
 export function BookCard(props: { book: BookSummary; toggle?: ToggleState | undefined }) {
   return (
     <article class="book-card">
-      <a href={`/books/${props.book.isbn}`}>
+      <a href={href("/books/[isbn]", { isbn: props.book.isbn })}>
         <Cover book={props.book} />
         <h3>{props.book.title}</h3>
       </a>

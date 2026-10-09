@@ -2,7 +2,15 @@
 // transport), the mixer and the status bar stay mounted while the views (the routes below) change,
 // so playback, meters and scopes keep running across navigation.
 import { effect, onMount, untrack } from "lumen";
-import { frameStats, playOrder, playRow, playing, refreshScopeColors, resetFrameStats, startFrameLoop } from "../frame.ts";
+import {
+  frameStats,
+  playOrder,
+  playRow,
+  playing,
+  refreshScopeColors,
+  resetFrameStats,
+  startFrameLoop,
+} from "../frame.ts";
 import { onKeyDown, onKeyUp } from "../keys.ts";
 import { cursor, prefs, readSong, restoreSession } from "../state.ts";
 import { tokens } from "../tokens.ts";
@@ -71,7 +79,10 @@ export default function Layout(props: { children?: JSX.Element }) {
     overflow: auto;
   }
   @media (width < 1100px) {
-    .body { grid-template-columns: minmax(0, 1fr); overflow: auto; }
+    .body {
+      grid-template-columns: minmax(0, 1fr);
+      overflow: auto;
+    }
   }
 </style>
 
@@ -111,8 +122,16 @@ export default function Layout(props: { children?: JSX.Element }) {
     --red: $tokens.dmg.red;
     --blue: $tokens.dmg.blue;
   }
-  *, *::before, *::after { box-sizing: border-box; }
-  html, body { margin: 0; block-size: 100%; }
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
+  html,
+  body {
+    margin: 0;
+    block-size: 100%;
+  }
   body {
     background: var(--bg);
     color: var(--text);
@@ -152,14 +171,22 @@ export default function Layout(props: { children?: JSX.Element }) {
       inset -2px -2px 0 0 rgb(0 0 0 / 0.45),
       inset 2px 2px 0 0 var(--light);
   }
-  button:hover { filter: brightness(1.15); }
+  button:hover {
+    filter: brightness(1.15);
+  }
   button:active {
     box-shadow:
       inset 2px 2px 0 0 rgb(0 0 0 / 0.45),
       inset -2px -2px 0 0 var(--light);
   }
-  button:disabled { opacity: 0.4; cursor: default; filter: none; }
-  input, select, textarea {
+  button:disabled {
+    opacity: 0.4;
+    cursor: default;
+    filter: none;
+  }
+  input,
+  select,
+  textarea {
     font: inherit;
     color: var(--text);
     background: var(--bg);
@@ -185,9 +212,14 @@ export default function Layout(props: { children?: JSX.Element }) {
     block-size: 12px;
     margin-block-start: -4px;
     background: var(--yellow);
-    box-shadow: inset -2px -2px 0 rgb(0 0 0 / 0.4), 0 0 0 2px #000;
+    box-shadow:
+      inset -2px -2px 0 rgb(0 0 0 / 0.4),
+      0 0 0 2px #000;
   }
-  input[type="range"]::-moz-range-track { background: var(--line); block-size: 4px; }
+  input[type="range"]::-moz-range-track {
+    background: var(--line);
+    block-size: 4px;
+  }
   input[type="range"]::-moz-range-thumb {
     inline-size: 12px;
     block-size: 12px;
@@ -195,19 +227,37 @@ export default function Layout(props: { children?: JSX.Element }) {
     border-radius: 0;
     background: var(--yellow);
   }
-  input[type="number"] { inline-size: 9ch; }
-  input[type="checkbox"] { accent-color: var(--yellow); }
+  input[type="number"] {
+    inline-size: 9ch;
+  }
+  input[type="checkbox"] {
+    accent-color: var(--yellow);
+  }
   /* One visible focus style everywhere, keyboard only. */
-  :focus { outline: none; }
+  :focus {
+    outline: none;
+  }
   :focus-visible {
     outline: 2px solid var(--yellow);
     outline-offset: 2px;
   }
-  ::selection { background: var(--blue); color: var(--text); }
-  ::-webkit-scrollbar { inline-size: 10px; block-size: 10px; }
-  ::-webkit-scrollbar-thumb { background: var(--line); }
-  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::selection {
+    background: var(--blue);
+    color: var(--text);
+  }
+  ::-webkit-scrollbar {
+    inline-size: 10px;
+    block-size: 10px;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--line);
+  }
+  ::-webkit-scrollbar-track {
+    background: var(--bg);
+  }
   @media (prefers-reduced-motion: reduce) {
-    * { transition: none !important; }
+    * {
+      transition: none !important;
+    }
   }
 </style>

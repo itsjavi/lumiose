@@ -20,7 +20,12 @@ export function TrackerView() {
           block-size: 100%;
           min-block-size: 0;
         }
-        .side { display: grid; grid-template-rows: 1fr 1fr; gap: 10px; min-block-size: 0; }
+        .side {
+          display: grid;
+          grid-template-rows: 1fr 1fr;
+          gap: 10px;
+          min-block-size: 0;
+        }
       </style>
     </div>
   );

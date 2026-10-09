@@ -1,4 +1,4 @@
-import { Title, url } from "lumen";
+import { href, Title, url } from "lumen";
 import { Pager } from "../../../components/Pager.stsx";
 import { parsePageParam } from "../../../lib/search-params.ts";
 import { queries } from "../../../server/queries.server.ts";
@@ -10,14 +10,12 @@ function authorsHref(q: string, page: number): string {
   if (q !== "") params.set("q", q);
   if (page > 1) params.set("page", String(page));
   const search = params.toString();
-  return search === "" ? "/authors" : `/authors?${search}`;
+  return search === "" ? href("/authors") : `${href("/authors")}?${search}`;
 }
 
 export default function Authors() {
   const filters = authorFilters(url().searchParams);
-  return (
-    <AuthorIndex q={filters.q} result={queries().listAuthors({ ...filters, pageSize: 30 })} />
-  );
+  return <AuthorIndex q={filters.q} result={queries().listAuthors({ ...filters, pageSize: 30 })} />;
 }
 
 function authorFilters(params: URLSearchParams): { q: string; page: number } {
@@ -29,7 +27,7 @@ function AuthorIndex(props: { q: string; result: Page<AuthorSummary> }) {
     <main>
       <Title>Authors · Bookshelf</Title>
       <h1>Authors</h1>
-      <form class="filter" method="get" action="/authors">
+      <form class="filter" method="get" action={href("/authors")}>
         <input
           type="search"
           name="q"
@@ -46,7 +44,7 @@ function AuthorIndex(props: { q: string; result: Page<AuthorSummary> }) {
       <ul class="authors">
         {props.result.items.map((author) => (
           <li>
-            <a href={`/authors/${author.slug}`}>
+            <a href={href("/authors/[slug]", { slug: author.slug })}>
               <span class="initial" aria-hidden="true">
                 {author.name.charAt(0)}
               </span>
@@ -60,11 +58,7 @@ function AuthorIndex(props: { q: string; result: Page<AuthorSummary> }) {
           </li>
         ))}
       </ul>
-      <Pager
-        info={props.result}
-        href={(page) => authorsHref(props.q, page)}
-        label="Author pages"
-      />
+      <Pager info={props.result} href={(page) => authorsHref(props.q, page)} label="Author pages" />
     </main>
   );
 }

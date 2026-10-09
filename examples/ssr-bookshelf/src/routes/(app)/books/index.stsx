@@ -1,4 +1,4 @@
-import { Title, url } from "lumen";
+import { href, Title, url } from "lumen";
 import { BookGrid } from "../../../components/BookCard.stsx";
 import { Pager } from "../../../components/Pager.stsx";
 import { BOOK_SORTS, bookFiltersToParams, parseBookFilters } from "../../../lib/search-params.ts";
@@ -17,7 +17,7 @@ const SORT_LABELS: Record<BookSort, string> = {
 
 function booksHref(filters: BookFilters): string {
   const search = bookFiltersToParams(filters).toString();
-  return search === "" ? "/books" : `/books?${search}`;
+  return search === "" ? href("/books") : `${href("/books")}?${search}`;
 }
 
 export default function Books() {
@@ -38,7 +38,7 @@ function BookList(props: { filters: BookFilters; result: Page<BookSummary>; genr
     <main>
       <Title>{props.filters.q ? `“${props.filters.q}” · Books` : "Books"} · Bookshelf</Title>
       <h1>Books</h1>
-      <form class="filters" method="get" action="/books">
+      <form class="filters" method="get" action={href("/books")}>
         <input
           type="search"
           name="q"
@@ -70,7 +70,7 @@ function BookList(props: { filters: BookFilters; result: Page<BookSummary>; genr
           {props.filters.q ? ` matching “${props.filters.q}”` : ""}
           {genreName() === undefined ? "" : ` in ${genreName()}`}
         </span>
-        {filtered() ? <a href="/books">Clear filters</a> : null}
+        {filtered() ? <a href={href("/books")}>Clear filters</a> : null}
       </p>
       {props.result.total === 0 ? (
         <p class="empty">No books match. Try fewer words, or another genre.</p>

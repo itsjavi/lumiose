@@ -4,6 +4,7 @@ import {
   actionData,
   error,
   fail,
+  href,
   locals,
   Meta,
   notFound,
@@ -25,14 +26,7 @@ import { LIMITS, validateReview, type ReviewInput } from "../../../lib/validatio
 import { loginHref, requireUser } from "../../../server/auth.server.ts";
 import { queries } from "../../../server/queries.server.ts";
 import * as theme from "../../../theme.ts";
-import type {
-  Book,
-  FieldErrors,
-  MutationResult,
-  Page,
-  Review,
-  User,
-} from "../../../types.ts";
+import type { Book, FieldErrors, MutationResult, Page, Review, User } from "../../../types.ts";
 
 type Context = ActionContext<RouteParams<"/books/[isbn]">>;
 
@@ -94,7 +88,7 @@ export const actions = {
       } satisfies ReviewFailure);
     }
     check(result);
-    redirect(`/books/${book.isbn}#your-review`);
+    redirect(`${href("/books/[isbn]", { isbn: book.isbn })}#your-review`);
   },
 
   async updateReview(ctx: Context) {
@@ -105,13 +99,13 @@ export const actions = {
       return fail(400, { form: "update", values: typedValues(form), errors: parsed.errors });
     }
     check(queries().updateReview(user.id, reviewId(form), parsed.value));
-    redirect(`/books/${ctx.params.isbn}#your-review`);
+    redirect(`${href("/books/[isbn]", { isbn: ctx.params.isbn })}#your-review`);
   },
 
   async deleteReview(ctx: Context) {
     const user = await requireUser(ctx);
     check(queries().deleteReview(user.id, reviewId(await ctx.formData())));
-    redirect(`/books/${ctx.params.isbn}#your-review`);
+    redirect(`${href("/books/[isbn]", { isbn: ctx.params.isbn })}#your-review`);
   },
 };
 
@@ -142,7 +136,9 @@ function BookDetail(props: {
         </div>
         <div class="info">
           <p class="genre">
-            <a href={`/genres/${props.book.genre.slug}`}>{props.book.genre.name}</a>
+            <a href={href("/genres/[slug]", { slug: props.book.genre.slug })}>
+              {props.book.genre.name}
+            </a>
           </p>
           <h1>{props.book.title}</h1>
           {props.book.subtitle === null ? null : <p class="subtitle">{props.book.subtitle}</p>}
@@ -151,7 +147,7 @@ function BookDetail(props: {
             {props.book.authors.map((author, index) => (
               <>
                 {index === 0 ? "" : ", "}
-                <a href={`/authors/${author.slug}`}>{author.name}</a>
+                <a href={href("/authors/[slug]", { slug: author.slug })}>{author.name}</a>
               </>
             ))}
           </p>
@@ -178,9 +174,7 @@ function BookDetail(props: {
       <YourReview
         book={props.book}
         user={props.user}
-        review={
-          props.user === null ? null : queries().getUserReview(props.user.id, props.book.id)
-        }
+        review={props.user === null ? null : queries().getUserReview(props.user.id, props.book.id)}
         failure={props.failure}
       />
       <Reviews
@@ -310,7 +304,9 @@ function Reviews(props: { isbn: string; reviews: Page<Review>; userId: number | 
       ))}
       <Pager
         info={props.reviews}
-        href={(page) => `/books/${props.isbn}${page > 1 ? `?page=${page}` : ""}#reviews`}
+        href={(page) =>
+          `${href("/books/[isbn]", { isbn: props.isbn })}${page > 1 ? `?page=${page}` : ""}#reviews`
+        }
         label="Review pages"
       />
     </section>
@@ -375,7 +371,11 @@ function Reviews(props: { isbn: string; reviews: Page<Review>; userId: number | 
   .bar {
     height: 0.6rem;
     border-radius: $theme.radius.pill;
-    background: linear-gradient(90deg, $theme.color.star var(--share), $theme.color.surface var(--share));
+    background: linear-gradient(
+      90deg,
+      $theme.color.star var(--share),
+      $theme.color.surface var(--share)
+    );
   }
   .count {
     color: $theme.color.muted;

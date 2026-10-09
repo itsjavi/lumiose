@@ -20,7 +20,11 @@ export function Team(props: { ids: string[]; children?: JSX.Element; extra?: JSX
   const showExtra = signal(false);
   return (
     <section class="team" ref={(el: HTMLElement) => (el.dataset.hydrated = "")}>
-      <ul class="members">{props.ids.map((id) => <Member id={id} />)}</ul>
+      <ul class="members">
+        {props.ids.map((id) => (
+          <Member id={id} />
+        ))}
+      </ul>
       <Suspense fallback={<p class="loading">Loading the slow member…</p>}>
         <ul class="slow">
           <Member id="slow" />

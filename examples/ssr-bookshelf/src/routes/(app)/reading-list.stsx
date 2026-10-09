@@ -1,5 +1,5 @@
 // The reader's list, plus the `toggle` action that every reading-list button posts to.
-import { error, notFound, redirect, Title, url, type ActionContext } from "lumen";
+import { error, href, notFound, redirect, Title, url, type ActionContext } from "lumen";
 import { BookCard } from "../../components/BookCard.stsx";
 import { Pager } from "../../components/Pager.stsx";
 import { formatDate } from "../../components/ReviewCard.stsx";
@@ -50,12 +50,13 @@ function ReadingList(props: { list: Page<ReadingListEntry> }) {
       <Title>Reading list · Bookshelf</Title>
       <h1>Your reading list</h1>
       <p class="byline">
-        {props.list.total === 1 ? "1 book" : `${props.list.total} books`}, most recently added first.
+        {props.list.total === 1 ? "1 book" : `${props.list.total} books`}, most recently added
+        first.
       </p>
       {props.list.total === 0 ? (
         <p class="empty">
-          Nothing here yet. <a href="/books">Browse the books</a> and add some with “+ Reading
-          list”.
+          Nothing here yet. <a href={href("/books")}>Browse the books</a> and add some with “+
+          Reading list”.
         </p>
       ) : null}
       <div class="entries">
@@ -75,7 +76,9 @@ function ReadingList(props: { list: Page<ReadingListEntry> }) {
       </div>
       <Pager
         info={props.list}
-        href={(page) => (page > 1 ? `/reading-list?page=${page}` : "/reading-list")}
+        href={(page) =>
+          page > 1 ? `${href("/reading-list")}?page=${page}` : href("/reading-list")
+        }
         label="Reading list pages"
       />
     </main>

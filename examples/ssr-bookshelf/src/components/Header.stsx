@@ -1,3 +1,4 @@
+import { href } from "lumen";
 import { AccountMenu } from "../islands/AccountMenu.stsx";
 import { SearchBox } from "../islands/SearchBox.stsx";
 import * as theme from "../theme.ts";
@@ -11,15 +12,15 @@ import { AccountLinks } from "./AccountLinks.stsx";
 export function Header(props: { user?: User | null }) {
   return (
     <header class="site-header">
-      <a class="brand" href="/">
+      <a class="brand" href={href("/")}>
         <span class="logo" aria-hidden="true" />
         Bookshelf
       </a>
       <nav aria-label="Main">
-        <a href="/books">Books</a>
-        <a href="/authors">Authors</a>
-        <a href="/genres">Genres</a>
-        <a href="/about">About</a>
+        <a href={href("/books")}>Books</a>
+        <a href={href("/authors")}>Authors</a>
+        <a href={href("/genres")}>Genres</a>
+        <a href={href("/about")}>About</a>
       </nav>
       <SearchBox client:load />
       {props.user === undefined ? <AccountMenu client:idle /> : <AccountLinks user={props.user} />}
@@ -46,7 +47,11 @@ export function Header(props: { user?: User | null }) {
           width: 0.9rem;
           height: 1.2rem;
           border-radius: 2px;
-          background: linear-gradient(90deg, $theme.color.accent 30%, color-mix(in srgb, $theme.color.accent 60%, white) 30%);
+          background: linear-gradient(
+            90deg,
+            $theme.color.accent 30%,
+            color-mix(in srgb, $theme.color.accent 60%, white) 30%
+          );
         }
         nav {
           display: flex;
@@ -70,7 +75,7 @@ export function Footer() {
     <footer class="site-footer">
       <p>
         Bookshelf is a sample app of the Lumen framework. Books, authors, readers and reviews are
-        generated. <a href="/about">How it is built</a>
+        generated. <a href={href("/about")}>How it is built</a>
       </p>
 
       <style>

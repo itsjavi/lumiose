@@ -64,7 +64,10 @@ export function MacroEditor(props: Props) {
   function setPoint(kind: "loop" | "release", index: number) {
     const m = macro();
     if (!m || index >= m.values.length) return;
-    write({ ...m, [kind]: m[kind] === index ? -1 : index }, kind === "loop" ? "Loop point" : "Release point");
+    write(
+      { ...m, [kind]: m[kind] === index ? -1 : index },
+      kind === "loop" ? "Loop point" : "Release point",
+    );
   }
 
   function resize(delta: number) {
@@ -72,7 +75,8 @@ export function MacroEditor(props: Props) {
     if (!m) return;
     const length = Math.min(64, Math.max(0, m.values.length + delta));
     const values = m.values.slice(0, length);
-    while (values.length < length) values.push(values[values.length - 1] ?? (props.kind === "volume" ? 15 : 0));
+    while (values.length < length)
+      values.push(values[values.length - 1] ?? (props.kind === "volume" ? 15 : 0));
     write(
       {
         values,
@@ -91,7 +95,11 @@ export function MacroEditor(props: Props) {
   }
 
   return (
-    <section class="macro" style={{ "--color": COLORS[props.kind], "--zero": zero() }} aria-label={`${props.label} macro`}>
+    <section
+      class="macro"
+      style={{ "--color": COLORS[props.kind], "--zero": zero() }}
+      aria-label={`${props.label} macro`}
+    >
       <header>
         <h3>{props.label}</h3>
         <span class="range">
@@ -122,7 +130,10 @@ export function MacroEditor(props: Props) {
               release: i === macro()?.release,
             }}
             style={{
-              "--v": i < (macro()?.values.length ?? 0) ? (macro()!.values[i]! - props.min) / range() : zero(),
+              "--v":
+                i < (macro()?.values.length ?? 0)
+                  ? (macro()!.values[i]! - props.min) / range()
+                  : zero(),
             }}
           />
         ))}
@@ -163,10 +174,27 @@ export function MacroEditor(props: Props) {
           background: var(--bg);
           border: calc($tokens.border * 1px) solid var(--line);
         }
-        header { display: flex; align-items: center; gap: 8px; }
-        h3 { margin: 0; flex: 1; font-size: 12px; color: var(--color); text-transform: uppercase; letter-spacing: 0.1em; }
-        .range, .length { font-size: 11px; color: var(--dim); }
-        header button { padding: 1px 8px; }
+        header {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+        }
+        h3 {
+          margin: 0;
+          flex: 1;
+          font-size: 12px;
+          color: var(--color);
+          text-transform: uppercase;
+          letter-spacing: 0.1em;
+        }
+        .range,
+        .length {
+          font-size: 11px;
+          color: var(--dim);
+        }
+        header button {
+          padding: 1px 8px;
+        }
         .bars {
           position: relative;
           display: grid;
@@ -176,10 +204,13 @@ export function MacroEditor(props: Props) {
           cursor: crosshair;
           touch-action: none;
           background:
-            linear-gradient(var(--line), var(--line)) 0 calc((1 - var(--zero)) * 100%) / 100% 1px no-repeat,
+            linear-gradient(var(--line), var(--line)) 0 calc((1 - var(--zero)) * 100%) / 100% 1px
+              no-repeat,
             var(--panel);
         }
-        .bar { position: relative; }
+        .bar {
+          position: relative;
+        }
         .bar::before {
           content: "";
           position: absolute;
@@ -189,9 +220,15 @@ export function MacroEditor(props: Props) {
           block-size: max(2px, calc(max(var(--v) - var(--zero), var(--zero) - var(--v)) * 100%));
           background: var(--faint);
         }
-        .bar.set::before { background: var(--color); }
-        .bar.loop { box-shadow: inset 2px 0 0 var(--yellow); }
-        .bar.release { box-shadow: inset -2px 0 0 var(--red); }
+        .bar.set::before {
+          background: var(--color);
+        }
+        .bar.loop {
+          box-shadow: inset 2px 0 0 var(--yellow);
+        }
+        .bar.release {
+          box-shadow: inset -2px 0 0 var(--red);
+        }
         .lanes {
           display: grid;
           grid-template-columns: repeat(var(--slots), 1fr);
@@ -203,10 +240,23 @@ export function MacroEditor(props: Props) {
           box-shadow: none;
           background: var(--faint);
         }
-        .mark.on { background: var(--yellow); }
-        .mark.rel.on { background: var(--red); }
-        .text { display: flex; gap: 8px; align-items: center; font-size: 11px; color: var(--dim); }
-        .text input { flex: 1; min-inline-size: 0; }
+        .mark.on {
+          background: var(--yellow);
+        }
+        .mark.rel.on {
+          background: var(--red);
+        }
+        .text {
+          display: flex;
+          gap: 8px;
+          align-items: center;
+          font-size: 11px;
+          color: var(--dim);
+        }
+        .text input {
+          flex: 1;
+          min-inline-size: 0;
+        }
       </style>
     </section>
   );

@@ -3,7 +3,15 @@
 // selection and the play bar are overlays positioned with custom properties, so moving them never
 // touches the cells; a cell's bindings re-run only when its own data changes.
 import { computed } from "lumen";
-import { COLUMNS, CELL_CH, ROWNUM_CH, moveRows, moveTo, selection, selectionBounds } from "../editor.ts";
+import {
+  COLUMNS,
+  CELL_CH,
+  ROWNUM_CH,
+  moveRows,
+  moveTo,
+  selection,
+  selectionBounds,
+} from "../editor.ts";
 import { playOrder, playRow, playing } from "../frame.ts";
 import { hex, hexDigit, noteName } from "../model/song.ts";
 import { CHANNELS, type Cell } from "../model/types.ts";
@@ -195,7 +203,9 @@ export function PatternEditor() {
     block-size: calc($tokens.row * 1px);
     background: var(--raised);
   }
-  .recording .band { background: color-mix(in srgb, var(--red) 28%, var(--raised)); }
+  .recording .band {
+    background: color-mix(in srgb, var(--red) 28%, var(--raised));
+  }
   .sheet {
     position: absolute;
     inset-block-start: 50%;
@@ -212,23 +222,58 @@ export function PatternEditor() {
     white-space: pre;
     position: relative;
   }
-  .row.beat { background: color-mix(in srgb, var(--faint) 55%, transparent); }
-  .row.bar { background: var(--faint); }
-  .num { color: var(--dim); text-align: center; }
-  .row.beat .num { color: var(--yellow); }
+  .row.beat {
+    background: color-mix(in srgb, var(--faint) 55%, transparent);
+  }
+  .row.bar {
+    background: var(--faint);
+  }
+  .num {
+    color: var(--dim);
+    text-align: center;
+  }
+  .row.beat .num {
+    color: var(--yellow);
+  }
   .cell {
     display: flex;
     gap: 1ch;
     padding-inline-start: 1ch;
     border-inline-start: 1px solid var(--line);
   }
-  .note { color: var(--text); inline-size: 3ch; }
-  .inst { color: var(--cyan); inline-size: 2ch; }
-  .vol { color: var(--green); inline-size: 1ch; }
-  .fx { color: var(--pink); inline-size: 1ch; margin-inline-end: -1ch; }
-  .param { color: var(--orange); inline-size: 2ch; }
-  .en .note, .ei .inst, .ev .vol, .ef .fx, .ef .param { color: var(--faint); }
-  .row.bar .en .note, .row.bar .ei .inst, .row.bar .ev .vol, .row.bar .ef .fx, .row.bar .ef .param {
+  .note {
+    color: var(--text);
+    inline-size: 3ch;
+  }
+  .inst {
+    color: var(--cyan);
+    inline-size: 2ch;
+  }
+  .vol {
+    color: var(--green);
+    inline-size: 1ch;
+  }
+  .fx {
+    color: var(--pink);
+    inline-size: 1ch;
+    margin-inline-end: -1ch;
+  }
+  .param {
+    color: var(--orange);
+    inline-size: 2ch;
+  }
+  .en .note,
+  .ei .inst,
+  .ev .vol,
+  .ef .fx,
+  .ef .param {
+    color: var(--faint);
+  }
+  .row.bar .en .note,
+  .row.bar .ei .inst,
+  .row.bar .ev .vol,
+  .row.bar .ef .fx,
+  .row.bar .ef .param {
     color: var(--line);
   }
   .cursor {
@@ -242,7 +287,10 @@ export function PatternEditor() {
     background: color-mix(in srgb, var(--yellow) 25%, transparent);
     z-index: 2;
   }
-  .viewport:focus-visible { outline: 2px solid var(--yellow); outline-offset: -2px; }
+  .viewport:focus-visible {
+    outline: 2px solid var(--yellow);
+    outline-offset: -2px;
+  }
   .selection {
     position: absolute;
     pointer-events: none;

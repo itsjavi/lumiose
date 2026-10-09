@@ -1,4 +1,4 @@
-import { lifetime, locals, Meta, Suspense, Title } from "lumen";
+import { href, lifetime, locals, Meta, Suspense, Title } from "lumen";
 import { BookGrid } from "../../components/BookCard.stsx";
 import { queries } from "../../server/queries.server.ts";
 import * as theme from "../../theme.ts";
@@ -31,20 +31,18 @@ export default function Home() {
         <h1>Find your next book</h1>
         <p>
           Browse {queries().listBooks({ pageSize: 1 }).total} books by{" "}
-          {queries().listAuthors({ pageSize: 1 }).total} authors, read what other readers think,
-          and keep a reading list.
+          {queries().listAuthors({ pageSize: 1 }).total} authors, read what other readers think, and
+          keep a reading list.
         </p>
         <p class="actions">
-          <a class="primary" href="/books">
+          <a class="primary" href={href("/books")}>
             Browse books
           </a>
-          <a href="/genres">Explore genres</a>
+          <a href={href("/genres")}>Explore genres</a>
         </p>
       </section>
       <section>
-        <h2>
-          {locals().user == null ? "Recommended" : `Picked for ${locals().user!.name}`}
-        </h2>
+        <h2>{locals().user == null ? "Recommended" : `Picked for ${locals().user!.name}`}</h2>
         <Suspense fallback={<Placeholder />}>
           <Recommendations userId={locals().user?.id ?? null} />
         </Suspense>
@@ -66,7 +64,11 @@ export default function Home() {
     padding: $theme.space.xl $theme.space.lg;
     border-radius: $theme.radius.md;
     background:
-      radial-gradient(circle at 85% 20%, color-mix(in srgb, $theme.color.accent 22%, transparent), transparent 55%),
+      radial-gradient(
+        circle at 85% 20%,
+        color-mix(in srgb, $theme.color.accent 22%, transparent),
+        transparent 55%
+      ),
       $theme.color.surface;
   }
   .hero h1 {

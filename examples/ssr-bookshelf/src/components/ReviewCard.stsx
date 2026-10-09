@@ -1,3 +1,4 @@
+import { href } from "lumen";
 import * as theme from "../theme.ts";
 import type { Review, UserReview } from "../types.ts";
 import { Stars } from "./Rating.stsx";
@@ -9,7 +10,11 @@ export function formatDate(iso: string): string {
 }
 
 /** One review. On a profile (`book` set) it links to the book; `own` marks the reader's review. */
-export function ReviewCard(props: { review: Review | UserReview; own?: boolean; showBook?: boolean }) {
+export function ReviewCard(props: {
+  review: Review | UserReview;
+  own?: boolean;
+  showBook?: boolean;
+}) {
   return (
     <article class={{ review: true, own: props.own === true }}>
       <header>
@@ -18,7 +23,10 @@ export function ReviewCard(props: { review: Review | UserReview; own?: boolean; 
       </header>
       {props.showBook === true && "book" in props.review ? (
         <p class="book">
-          on <a href={`/books/${props.review.book.isbn}`}>{props.review.book.title}</a>
+          on{" "}
+          <a href={href("/books/[isbn]", { isbn: props.review.book.isbn })}>
+            {props.review.book.title}
+          </a>
         </p>
       ) : null}
       <p class="byline">
