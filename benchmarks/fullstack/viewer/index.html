@@ -24,6 +24,10 @@
         --series-3: #1baf7a;
         --better: #1f7a3a;
         --worse: #b42318;
+        --dev: #8a4b00;
+        --dev-bg: #fdf1e1;
+        --prod: #1c5cab;
+        --prod-bg: #e7f0fb;
         --shadow: 0 1px 2px rgb(0 0 0 / 0.05), 0 4px 16px rgb(0 0 0 / 0.04);
       }
       @media (prefers-color-scheme: dark) {
@@ -43,6 +47,10 @@
           --series-3: #199e70;
           --better: #5cc37a;
           --worse: #f07a6e;
+          --dev: #f0b45c;
+          --dev-bg: #33260f;
+          --prod: #86b6ef;
+          --prod-bg: #1c2b3f;
           --shadow: none;
         }
       }
@@ -62,6 +70,10 @@
         --series-3: #199e70;
         --better: #5cc37a;
         --worse: #f07a6e;
+        --dev: #f0b45c;
+        --dev-bg: #33260f;
+        --prod: #86b6ef;
+        --prod-bg: #1c2b3f;
         --shadow: none;
       }
 
@@ -101,7 +113,22 @@
       .legend span { display: inline-flex; align-items: center; gap: 6px; }
       .swatch { width: 12px; height: 12px; border-radius: 3px; display: inline-block; }
 
-      nav.tabs { display: flex; gap: 4px; flex-wrap: wrap; margin: 18px 0 12px; border-bottom: 1px solid var(--line); }
+      nav.tabs { display: flex; gap: 8px 28px; flex-wrap: wrap; margin: 18px 0 12px; border-bottom: 1px solid var(--line); }
+      .cluster { display: grid; gap: 2px; }
+      .cluster-label { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-3); padding-left: 12px; }
+      .cluster-tabs { display: flex; flex-wrap: wrap; }
+      .badge { display: inline-block; font-size: 10px; font-weight: 700; letter-spacing: 0.06em; padding: 1px 6px; border-radius: 4px; margin-right: 8px; vertical-align: 1px; border: 1px solid currentColor; }
+      .cluster-label .badge { margin-right: 0; }
+      .badge.development { color: var(--dev); background: var(--dev-bg); }
+      .badge.production { color: var(--prod); background: var(--prod-bg); }
+      .badge.source { color: var(--text-2); background: var(--surface-2); }
+      .mode-banner { margin: 6px 0 14px; padding: 10px 14px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); font-size: 13px; color: var(--text-2); }
+      .mode-banner p { margin: 0; }
+      .mode-banner ul { margin: 6px 0 0; padding: 0; list-style: none; display: grid; gap: 3px; }
+      .mode-banner li .swatch { margin-right: 6px; vertical-align: -1px; }
+      .mode-banner.mode-development { border-left: 3px solid var(--dev); }
+      .mode-banner.mode-production { border-left: 3px solid var(--prod); }
+      code { font: 12px/1.4 ui-monospace, SFMono-Regular, Menlo, monospace; background: var(--surface-2); padding: 0 4px; border-radius: 4px; }
       nav.tabs button {
         font: inherit; background: none; border: 0; padding: 8px 12px; color: var(--text-2); cursor: pointer;
         border-bottom: 2px solid transparent; margin-bottom: -1px;
@@ -181,13 +208,45 @@
         { id: "react-router", name: "React Router", color: "var(--series-2)" },
         { id: "next", name: "Next.js", color: "var(--series-3)" },
       ];
-      const GROUPS = [
-        { id: "dev", label: "Dev" },
-        { id: "build", label: "Build & payload" },
-        { id: "load", label: "Page load" },
-        { id: "server", label: "Server" },
-        { id: "other", label: "Other" },
+      // Tabs by where a metric is measured (schema 2 `env`; derived for schema-1 files).
+      const envOf = (id, def) =>
+        def.env ??
+        (def.group === "dev"
+          ? "dev"
+          : def.group === "load" || def.group === "server" || id.startsWith("payload.")
+            ? "prod"
+            : "build");
+      const TABS = [
+        { id: "dev", label: "Dev server", mode: "development", match: (id, d) => envOf(id, d) === "dev" },
+        { id: "build", label: "Build", mode: "production", match: (id, d) => d.group === "build" && envOf(id, d) === "build" },
+        { id: "payload", label: "Payload", mode: "production", match: (id, d) => d.group === "build" && envOf(id, d) === "prod" },
+        { id: "load", label: "Page load", mode: "production", match: (id, d) => d.group === "load" },
+        { id: "server", label: "Server", mode: "production", match: (id, d) => d.group === "server" },
+        { id: "other", label: "Source & tooling", mode: "source", match: (id, d) => d.group === "other" },
       ];
+      const MODES = {
+        development: {
+          label: "Development",
+          badge: "DEV",
+          summary: "Each app's dev server (Vite or Turbopack): on-demand compilation, unbundled modules, HMR. Not representative of production speed.",
+        },
+        production: {
+          label: "Production",
+          badge: "PROD",
+          summary: "Production builds (after clean), served by each app's production server with NODE_ENV=production and HTTP compression off; payloads are compressed offline.",
+        },
+        source: {
+          label: "Source & tooling",
+          badge: "SRC",
+          summary: "Measured on the app's files and installed packages; the type check runs each app's typecheck script.",
+        },
+      };
+      // For schema-1 runs, which do not record how apps are served.
+      const SERVING = {
+        lumen: { dev: "`lumen dev` (Vite)", prod: "`node server.ts` on @lumen/adapter-node" },
+        "react-router": { dev: "`react-router dev` (Vite)", prod: "`node server.ts`: Express + @react-router/express" },
+        next: { dev: "`next dev` (Turbopack)", prod: "`next start`" },
+      };
       const $ = (id) => document.getElementById(id);
       const store = {
         get(key) { try { return localStorage.getItem(key); } catch { return null; } },
@@ -248,7 +307,7 @@
       let index;
       let run;
       let other;
-      let group = store.get("bench-group") ?? "dev";
+      let group = store.get("bench-tab") ?? "dev";
 
       function runLabel(entry) {
         const date = entry.date.slice(0, 16).replace("T", " ");
@@ -320,34 +379,71 @@
         const apps = appsIn();
         $("legend").innerHTML = apps.map((a) => `<span><i class="swatch" style="background:${a.color}"></i>${esc(a.name)}</span>`).join("") +
           (other ? `<span><i class="swatch" style="background:var(--text-3);opacity:.35"></i>Compared run (thin bar)</span>` : "");
-        const groups = GROUPS.filter((g) => Object.values(run.metrics).some((m) => m.group === g.id));
-        if (!groups.some((g) => g.id === group)) group = groups[0]?.id ?? "dev";
-        $("tabs").innerHTML = groups.map((g) => `<button role="tab" type="button" data-group="${g.id}" aria-selected="${g.id === group}">${esc(g.label)}</button>`).join("");
+        const tabs = TABS.filter((t) => Object.entries(run.metrics).some(([id, d]) => t.match(id, d)));
+        if (!tabs.some((t) => t.id === group)) group = tabs[0]?.id ?? "dev";
+        const clusters = Object.keys(MODES)
+          .map((mode) => [mode, tabs.filter((t) => t.mode === mode)])
+          .filter(([, list]) => list.length > 0);
+        $("tabs").innerHTML = clusters
+          .map(
+            ([mode, list]) => `<div class="cluster mode-${mode}"><span class="cluster-label"><span class="badge ${mode}">${MODES[mode].badge}</span>${esc(MODES[mode].label)}</span><div class="cluster-tabs">${list
+              .map((t) => `<button role="tab" type="button" data-group="${t.id}" aria-selected="${t.id === group}">${esc(t.label)}</button>`)
+              .join("")}</div></div>`,
+          )
+          .join("");
         for (const button of $("tabs").querySelectorAll("button")) {
           button.addEventListener("click", () => {
             group = button.dataset.group;
-            store.set("bench-group", group);
+            store.set("bench-tab", group);
             render();
           });
         }
         renderGroup(apps);
       }
 
+      /** One line per app on how it is served in the tab's mode. */
+      function modeBanner(tab, apps) {
+        const mode = MODES[tab.mode];
+        const servers = run.meta.servers;
+        const lines = tab.mode === "source" ? [] : apps.map((app) => {
+          const info = servers?.[app.id];
+          let text;
+          if (tab.mode === "development") {
+            text = info ? `${info.dev.description} (${info.dev.tool})` : SERVING[app.id]?.dev ?? "";
+          } else if (tab.id === "build") {
+            text = info?.build
+              ? `\`${info.build.command}\` after \`clean\`; output sizes on disk exclude precompressed .br/.gz copies`
+              : "the app's `build` script after `clean`";
+          } else {
+            text = info
+              ? `${info.prod.description} · NODE_ENV=${info.prod.nodeEnv ?? "?"} · compression ${info.prod.compression === null ? "?" : info.prod.compression ? "ON" : "off"} (checked)`
+              : SERVING[app.id]?.prod ?? "";
+          }
+          return `<li><i class="swatch" style="background:${app.color}"></i><strong>${esc(app.name)}</strong> ${code(text)}</li>`;
+        });
+        return `<div class="mode-banner mode-${tab.mode}"><p><span class="badge ${tab.mode}">${mode.badge}</span> <strong>${esc(mode.label)}.</strong> ${esc(mode.summary)}</p>${lines.length ? `<ul>${lines.join("")}</ul>` : ""}</div>`;
+      }
+
+      /** Escapes text and renders `backticked` parts as code. */
+      const code = (text) => esc(text).replace(/`([^`]+)`/g, "<code>$1</code>");
+
       function renderGroup(apps) {
+        const tab = TABS.find((t) => t.id === group) ?? TABS[0];
         const sections = new Map();
         for (const [id, def] of Object.entries(run.metrics)) {
-          if (def.group !== group) continue;
+          if (!tab.match(id, def)) continue;
           const key = def.section ?? "";
           if (!sections.has(key)) sections.set(key, []);
           sections.get(key).push([id, def]);
         }
-        const html = [];
+        const html = [modeBanner(tab, apps)];
+        const badge = `<span class="badge ${tab.mode}">${MODES[tab.mode].badge}</span>`;
         for (const [section, metrics] of sections) {
-          html.push(`<section class="card">${section ? `<h2>${esc(section)}</h2>` : ""}<div class="scroll"><table>
+          html.push(`<section class="card"><h2>${badge}${esc(section || tab.label)}</h2><div class="scroll"><table>
             <thead><tr><th>Metric</th>${apps.map((a) => `<th class="app-h" style="text-align:right"><i class="swatch" style="background:${a.color}"></i>${esc(a.name)}</th>`).join("")}<th class="chart-h">Chart</th></tr></thead>
             <tbody>${metrics.map(([id, def]) => row(id, def, apps)).join("")}</tbody></table></div></section>`);
         }
-        $("content").innerHTML = html.join("") || `<p class="empty">No metrics in this group for this run.</p>`;
+        $("content").innerHTML = sections.size ? html.join("") : `<p class="empty">No metrics in this group for this run.</p>`;
         bindTips();
       }
 

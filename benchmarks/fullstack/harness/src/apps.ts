@@ -26,6 +26,11 @@ export interface App {
   sharedSources: string[];
   /** Extra environment of every script the harness runs for this app. */
   env: Record<string, string>;
+  /** The dev server's bundler, and the package whose version names it (resolved `via` another). */
+  devTool: { name: string; pkg: string; via?: string };
+  /** How the dev server and the production server serve the app (viewer, results meta). */
+  devServer: string;
+  prodServer: string;
 }
 
 export const APPS: App[] = [
@@ -42,6 +47,11 @@ export const APPS: App[] = [
     },
     sharedSources: [],
     env: {},
+    devTool: { name: "Vite", pkg: "vite", via: "lumen" },
+    devServer:
+      "`lumen dev`: Vite in middleware mode, modules compiled on request, SSR through Vite's module runner",
+    prodServer:
+      "`node server.ts`: the `lumen build` output on @lumen/adapter-node (compress: false)",
   },
   {
     id: "react-router",
@@ -56,6 +66,10 @@ export const APPS: App[] = [
     },
     sharedSources: [join(FULLSTACK, "packages/react-ui")],
     env: {},
+    devTool: { name: "Vite", pkg: "vite" },
+    devServer: "`react-router dev`: Vite dev server, modules compiled on request",
+    prodServer:
+      "`node server.ts`: Express + @react-router/express on the `react-router build` output, no compression middleware",
   },
   {
     id: "next",
@@ -70,6 +84,10 @@ export const APPS: App[] = [
     },
     sharedSources: [join(FULLSTACK, "packages/react-ui")],
     env: { NEXT_TELEMETRY_DISABLED: "1" },
+    devTool: { name: "Turbopack", pkg: "next" },
+    devServer: "`next dev`: Turbopack dev server, routes compiled on first request",
+    prodServer:
+      "`next start`: Next's production server on the `next build` output (compress: false)",
   },
 ];
 
@@ -136,7 +154,14 @@ export async function startServer(
   const started = performance.now();
   const child: ChildProcess = spawn("pnpm", ["run", "--silent", script], {
     cwd: app.dir,
-    env: { ...process.env, ...app.env, PORT: String(app.port), ...env },
+    env: {
+      ...process.env,
+      ...app.env,
+      // Production servers run as production (verified with listenerEnv); dev servers set their own.
+      ...(script === "start" ? { NODE_ENV: "production" } : {}),
+      PORT: String(app.port),
+      ...env,
+    },
     stdio: ["ignore", "pipe", "pipe"],
     detached: true, // own process group, so stop() also ends the framework's child processes
   });
@@ -185,12 +210,45 @@ export async function startServer(
   return { app, startMs, stop, rssMb: () => listenerRssMb(app.port), output: () => output };
 }
 
-function listenerRssMb(port: number): number {
-  const pid = Number(
+function listenerPid(port: number): number {
+  return Number(
     execFileSync("lsof", ["-nP", `-iTCP:${port}`, "-sTCP:LISTEN", "-t"], {
       encoding: "utf8",
     }).split("\n")[0],
   );
+}
+
+/**
+ * An environment variable of the process listening on `port` (macOS/BSD `ps -E`), or null. A
+ * process that rewrites its title (`next-server`) also hides its environment from `ps`; then the
+ * nearest ancestor that shows one answers, since children inherit it.
+ */
+export function listenerEnv(port: number, name: string): string | null {
+  let pid = listenerPid(port);
+  for (let depth = 0; depth < 4 && pid > 1; depth++) {
+    const command = execFileSync("ps", ["-p", String(pid), "-wwE", "-o", "command="], {
+      encoding: "utf8",
+    });
+    if (/\s[A-Za-z_][A-Za-z0-9_]*=/.test(command)) {
+      return new RegExp(`(?:^|\\s)${name}=(\\S*)`).exec(command)?.[1] ?? null;
+    }
+    pid = Number(
+      execFileSync("ps", ["-o", "ppid=", "-p", String(pid)], { encoding: "utf8" }).trim(),
+    );
+  }
+  return null;
+}
+
+/** The command a package script runs (`pnpm run <name>`). */
+export function scriptOf(app: App, name: string): string {
+  const pkg = JSON.parse(readFileSync(join(app.dir, "package.json"), "utf8")) as {
+    scripts?: Record<string, string>;
+  };
+  return pkg.scripts?.[name] ?? "";
+}
+
+function listenerRssMb(port: number): number {
+  const pid = listenerPid(port);
   const table = execFileSync("ps", ["-A", "-o", "pid=,ppid=,rss="], { encoding: "utf8" })
     .trim()
     .split("\n")

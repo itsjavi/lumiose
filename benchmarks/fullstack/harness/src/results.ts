@@ -10,11 +10,20 @@ export const RESULTS_DIR = join(FULLSTACK, "results");
 
 export type Group = "dev" | "build" | "load" | "server" | "other";
 export const GROUPS: Group[] = ["dev", "build", "load", "server", "other"];
+/**
+ * Where a metric is measured: `dev` against the dev servers (Vite, Turbopack), `build` from the
+ * production build and the sources (build time, output size, type check, source size), `prod`
+ * against the built apps on their production servers (payload, page load, throughput).
+ */
+export type Env = "dev" | "build" | "prod";
+export const ENVS: Env[] = ["dev", "build", "prod"];
+
 export type Unit = "ms" | "bytes" | "MB" | "req/s" | "count" | "lines";
 
 export interface MetricDef {
   label: string;
   group: Group;
+  env: Env;
   better: "lower" | "higher";
   unit: Unit;
   /** Optional sub-heading inside the group, e.g. the route. */
@@ -29,8 +38,26 @@ export interface Summary {
   max: number;
 }
 
+/** How an app is served in each mode (schema 2). */
+export interface ServerInfo {
+  dev: { command: string; tool: string; description: string };
+  build: { command: string };
+  prod: {
+    command: string;
+    description: string;
+    /** NODE_ENV of the process listening on the app's port, checked during the run. */
+    nodeEnv: string | null;
+    /** Whether `/` came back compressed for a client accepting br and gzip. */
+    compression: boolean | null;
+  };
+}
+
+/**
+ * Schema 2 adds `env` to every metric and `meta.servers`. Schema 1 files have neither; readers
+ * derive `env` with {@link envOf}.
+ */
 export interface RunFile {
-  schema: 1;
+  schema: 2;
   meta: {
     date: string;
     host: string;
@@ -43,9 +70,17 @@ export interface RunFile {
     apps: string[];
     conformance: Record<string, "pass" | "fail" | "skipped">;
     notes: string[];
+    servers: Record<string, ServerInfo>;
   };
   results: Record<string, Record<string, Summary>>;
   metrics: Record<string, MetricDef>;
+}
+
+/** The env of a metric from its id and group (also how the viewer reads schema-1 files). */
+export function envOf(id: string, group: Group): Env {
+  if (group === "dev") return "dev";
+  if (group === "load" || group === "server" || id.startsWith("payload.")) return "prod";
+  return "build";
 }
 
 export function median(values: number[]): number {
@@ -60,8 +95,8 @@ export class Recorder {
   readonly metrics: Record<string, MetricDef> = {};
   private readonly samples: Record<string, Record<string, number[]>> = {};
 
-  add(app: string, id: string, def: MetricDef, value: number): void {
-    this.metrics[id] ??= def;
+  add(app: string, id: string, def: Omit<MetricDef, "env"> & { env?: Env }, value: number): void {
+    this.metrics[id] ??= { ...def, env: def.env ?? envOf(id, def.group) };
     ((this.samples[app] ??= {})[id] ??= []).push(value);
   }
 

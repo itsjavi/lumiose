@@ -3,7 +3,7 @@ id: doc-4
 title: Fullstack comparison benchmark
 type: specification
 created_date: '2026-10-09 04:07'
-updated_date: '2026-10-09 04:07'
+updated_date: '2026-10-09 05:27'
 ---
 # Fullstack comparison benchmark
 
@@ -71,9 +71,9 @@ benchmarks/fullstack/
   apps/lumen/           Lumen SSR        (Nova)
   apps/react-router/    React Router     (Quasar)
   apps/next/            Next.js 16       (Quasar)
-  e2e/                  conformance suite (Nova)
+  harness/e2e/          conformance suite (Nova; inside @bench/harness so it resolves @playwright/test)
   harness/              @bench/harness   runner, metrics, results writer (Nova)
-  results/              <date>-<host>.json, index.json (committed)
+  results/              <date>T<time>-<host>.json, index.json (committed)
   viewer/               static HTML viewer (Nova)
 ```
 
@@ -83,6 +83,14 @@ benchmarks/fullstack/
 ## 4. Metrics
 
 Median plus spread (min/max or p95) over N iterations; `--quick` runs one iteration for smoke tests.
+
+**Environment of each metric** (TASK-145). Dev servers (Vite, Turbopack) compile on request and differ a lot from production servers, so every metric says where it was measured:
+
+- `dev`: against each app's dev server (`lumen dev` and `react-router dev` on Vite, `next dev` on Turbopack). Only the **Dev** metrics below.
+- `build`: from the production build and the sources: build time, output size on disk (without precompressed `.br`/`.gz` copies), type check, source size, dependency footprint.
+- `prod`: against the built apps on their production servers (`start` script: Lumen `node server.ts` on adapter-node, React Router `node server.ts` = Express + @react-router/express, Next `next start`): client payload, page load and every server metric, req/s included.
+
+The harness runs every `start` with `NODE_ENV=production` and checks, on each app's first production start, that the process listening on the port has `NODE_ENV=production` (it stops otherwise) and that `/` is not compressed for a client accepting br and gzip. Each results file records the commands, the dev bundler and these checks.
 
 **Dev**
 - Dev server cold start: spawn → first `200` on `/`, caches cleared (`clean`). Warm start: second run without cleaning.
@@ -109,23 +117,30 @@ Median plus spread (min/max or p95) over N iterations; `--quick` runs one iterat
 
 ## 5. Conformance suite
 
-`benchmarks/fullstack/e2e`: one Playwright suite parameterised by base URL, run against each app in production mode. It checks every route, status codes, the shared markup landmarks (`data-testid` attributes defined here), filters and pagination, streamed comments, each action (with and without a session), validation errors, the redirect after creating an issue, the 404 page, the JSON endpoints, and each client interaction.
+`benchmarks/fullstack/harness/e2e`: one Playwright suite parameterised by base URL, run against each app in production mode. It checks every route, status codes, the shared markup landmarks (`data-testid` attributes defined here), filters and pagination, streamed comments, each action (with and without a session), validation errors, the redirect after creating an issue, the 404 page, the JSON endpoints, and each client interaction.
 
 ## 6. Results and viewer
 
-- `results/<YYYY-MM-DD>-<host>.json`:
+- `results/<YYYY-MM-DD>T<HHMMSS>-<host>.json` (UTC start of the run; every run gets its own file, `--quick` and `--only` runs never replace another one):
   ```json
   {
-    "schema": 1,
-    "meta": { "date": "…", "machine": { "cpu": "…", "cores": 0, "memoryGb": 0, "os": "…" }, "node": "…",
-              "versions": { "lumen": "<git sha>", "react": "…", "react-router": "…", "next": "…" },
-              "iterations": { "dev": 5, "build": 3, "load": 5, "server": 3 }, "quick": false },
+    "schema": 2,
+    "meta": { "date": "…", "host": "…", "machine": { "cpu": "…", "cores": 0, "memoryGb": 0, "os": "…" }, "node": "…",
+              "versions": { "lumen": "<git sha>", "react": "…", "react-router": "…", "next": "…", "vite": "…" },
+              "iterations": { "dev": 5, "build": 3, "load": 5, "server": 3 }, "quick": false,
+              "groups": ["dev", "…"], "apps": ["lumen", "…"], "conformance": { "lumen": "pass" }, "notes": ["…"],
+              "servers": { "lumen": { "dev": { "command": "lumen dev …", "tool": "Vite 8.3.4", "description": "…" },
+                                      "build": { "command": "lumen build" },
+                                      "prod": { "command": "NODE_ENV=production node server.ts", "description": "…",
+                                                "nodeEnv": "production", "compression": false } } } },
     "results": { "lumen": { "<metric-id>": { "unit": "ms", "values": [], "median": 0, "min": 0, "max": 0 } }, "react-router": {}, "next": {} },
-    "metrics": { "<metric-id>": { "label": "…", "group": "dev|build|load|server|other", "better": "lower|higher" } }
+    "metrics": { "<metric-id>": { "label": "…", "group": "dev|build|load|server|other", "env": "dev|build|prod",
+                                  "unit": "ms", "better": "lower|higher", "section": "…" } }
   }
   ```
+  Schema 1 files (before TASK-145) have no `env` and no `meta.servers`; readers derive `env` from the group (`dev` → dev; `load`, `server` and `payload.*` → prod; the rest → build).
 - `results/index.json` lists the files (newest first).
-- `viewer/index.html`: a static page with no build step. It loads `results/index.json`, lets you pick a run (and optionally compare two runs), and shows each metric group as a table and bar chart with the best value highlighted and ratios to the best. Served by `pnpm --filter @bench/harness view`.
+- `viewer/index.html`: a static page with no build step. It loads `results/index.json`, lets you pick a run (and optionally compare two runs). Tabs are grouped and badged by environment: **Development** (dev server), **Production** (build, payload, page load, server) and **Source & tooling**; each tab starts with a line per app on how it is served in that mode (command, bundler, NODE_ENV and compression as checked). Each section is a table and bar chart with the best value highlighted and ratios to the best. Served by `pnpm --filter @bench/harness view`.
 
 ## 7. Commands
 

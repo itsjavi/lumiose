@@ -13,9 +13,11 @@ import {
   type App,
   REPO,
   baseUrl,
+  listenerEnv,
   resolvedVersion,
   runScript,
   sampleRoutes,
+  scriptOf,
   startServer,
 } from "./apps.ts";
 import { args, selectApps } from "./cli.ts";
@@ -92,7 +94,7 @@ function def(
   unit: MetricDef["unit"],
   section?: string,
   better: MetricDef["better"] = "lower",
-): MetricDef {
+): Omit<MetricDef, "env"> {
   return section === undefined
     ? { label, group, unit, better }
     : { label, group, unit, better, section };
@@ -120,6 +122,23 @@ apps = apps.filter((app) => conformance[app.id] !== "fail");
 const browser: Browser = await chromium.launch();
 const routesOf = new Map<App, Record<Route, string>>();
 
+/** NODE_ENV and compression of each app's production server, checked on its first start. */
+const production = new Map<App, { nodeEnv: string | null; compression: boolean }>();
+
+async function checkProduction(app: App): Promise<void> {
+  if (production.has(app)) return;
+  const nodeEnv = listenerEnv(app.port, "NODE_ENV");
+  const response = await fetch(`${baseUrl(app)}/`, { headers: { "accept-encoding": "br, gzip" } });
+  await response.arrayBuffer();
+  const compression = response.headers.get("content-encoding") !== null;
+  production.set(app, { nodeEnv, compression });
+  if (nodeEnv !== "production") {
+    throw new Error(`${app.id}: the production server runs with NODE_ENV=${nodeEnv ?? "(unset)"}`);
+  }
+  if (compression)
+    notes.push(`${app.id}: the production server compresses responses (doc-4 wants it off).`);
+}
+
 async function withServer<T>(
   app: App,
   script: "dev" | "start",
@@ -127,6 +146,7 @@ async function withServer<T>(
 ): Promise<T> {
   const server = await startServer(app, script, env);
   try {
+    if (script === "start") await checkProduction(app);
     return await fn(server.startMs);
   } finally {
     await server.stop();
@@ -417,8 +437,31 @@ const versionOf = (pkg: string, id: App["id"]) => {
   const app = apps.find((a) => a.id === id) ?? anyApp;
   return app === undefined ? null : resolvedVersion(app, pkg);
 };
+const servers: RunFile["meta"]["servers"] = {};
+for (const app of apps) {
+  const checked = production.get(app);
+  const tool = resolvedVersion(app, app.devTool.pkg, app.devTool.via);
+  servers[app.id] = {
+    dev: {
+      command: scriptOf(app, "dev"),
+      tool:
+        tool === null
+          ? app.devTool.name
+          : `${app.devTool.name} ${app.devTool.pkg === "next" ? `(next ${tool})` : tool}`,
+      description: app.devServer,
+    },
+    build: { command: scriptOf(app, "build") },
+    prod: {
+      command: scriptOf(app, "start"),
+      description: app.prodServer,
+      nodeEnv: checked?.nodeEnv ?? null,
+      compression: checked?.compression ?? null,
+    },
+  };
+}
+
 const run: RunFile = {
-  schema: 1,
+  schema: 2,
   meta: {
     date: startedAt,
     host: shortHost(),
@@ -443,6 +486,7 @@ const run: RunFile = {
     groups,
     apps: apps.map((app) => app.id),
     conformance,
+    servers,
     notes: [
       ...(quick
         ? ["Quick run: one iteration and short load tests; numbers are noisy smoke values."]
