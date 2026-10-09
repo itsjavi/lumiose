@@ -3,99 +3,53 @@ id: doc-3
 title: Checkpoint and resume guide
 type: guide
 created_date: '2026-10-08 16:56'
-updated_date: '2026-10-08 16:56'
+updated_date: '2026-10-09 03:42'
 tags:
   - checkpoint
   - resume
 ---
-# Checkpoint and resume guide (2026-10-08)
+# Checkpoint and resume guide (2026-10-09)
 
-**Checkpoint.** All agents are stopped and all work is committed on `main`. At the checkpoint, every check passed:
-- `pnpm typecheck` was clean.
-- `pnpm test`: 892 passed, 7 skipped.
-- `pnpm lint` passed.
-- `cargo test --workspace` passed.
+**Checkpoint.** All agents are stopped and all work is committed on `main`. No claims or locks are held. Last agent reports: `pnpm typecheck`, `pnpm lint` and `pnpm test` (1072 passed) green; `cargo test`/clippy/fmt green for the touched crates. `pnpm --filter lumen size:apps` fails on purpose for spa-chiptune (TASK-106).
 
-Claims and locks are released.
-
-**Sources of truth:**
-- Architecture: spec doc-1.
-- Compiler-runtime contract: doc-2.
-- Decisions: `backlog/decisions/` (1–22).
-- Workflow and ownership: `AGENTS.md`.
-- Roster: `agents.json` (Lux, Prism, Photon, Halo, Spark, Nova, Beacon).
+**Sources of truth:** spec doc-1, contract doc-2, decisions 1–25 in `backlog/decisions/`, `AGENTS.md` (workflow, ownership), `agents.json` (Lux, Prism, Photon, Halo, Spark, Nova, Beacon).
 
 ## Where we are
 
-**M1 core: done.**
-- The compiler (scanner, client/server codegen, CSS via `lumen_css` and Lightning CSS, `$tokens`, placement scopes) is in place.
-- The runtime (signals, DOM, async + Suspense) is in place.
-- `lumen/vite`, the JSX types, the LSP and the VS Code extension are in place.
-- js-framework-benchmark: Lumen CPU 1.122 versus Solid 1.185 (TASK-12).
+- **M1 core, M2 SSR/islands, M3 app layer, M4 tooling: done.**
+- **M5 docs/agent DX:** docs, create-lumen, `lumen mcp` (TASK-34), website `apps/web` (TASK-57), playground `apps/playground` (TASK-58) done. Open: GitHub Pages deploy (TASK-60; CI needs the `wasm32-unknown-unknown` target and `wasm-bindgen-cli@0.2.129`, see the TASK-58 note).
+- **M6 samples:** spa-chiptune, ssr-bookshelf, ssg-travel-journal done with e2e. Open: Prism DX review (TASK-38).
+- **Latest work (2026-10-09):** SVGO replaces OXVG (TASK-96, native binary 18.1 → 12.9 MB incl. `.md`/`.html`); `.md`/`.html` imports via `crates/lumen_content` (TASK-69, Halo owns it); runtime chunking and size check (TASK-91); `insertText` (TASK-90); class scope forwarding (TASK-92); subtree scopes in lumen_css (TASK-88); `href()` base/trailingSlash (TASK-101); island records with custom documents (TASK-103); auto-invalidate after `submit()` (TASK-105); LUM2001 server reads (TASK-86); LUM6001 (TASK-53).
 
-**M2 SSR: done except TASK-18.**
-- Done: shell-first streaming, islands, server markers, and the CSS manifest.
-- TASK-18 (hydration plus the island loader) is still open, with its end-to-end test pending.
+## Open tasks
 
-**M3 app layer: mostly done.**
-- Done: routes and typegen, request handler, actions, `lumen dev`, `lumen build`/prerender, the node adapter, and SSR performance (1.6× faster).
-- Open: the SPA router (TASK-25) and `.md`/`.html` imports (TASK-69).
-
-**M4 tooling: done.** `lumen check`/`lint`/`fmt`, the LSP with TS 7 takeover, the VS Code `.vsix` bundle, and the CLI (TASK-28).
-
-**M5 docs: in progress.** The docs in the package are written. Still open: create-lumen (TASK-33), the MCP server (TASK-34), the website (TASK-57, TASK-59 done), the playground (TASK-58) and deploy (TASK-60).
-
-**M6 samples:**
-- Chiptune (TASK-35): playable, run with `cd examples/spa-chiptune && pnpm dev`.
-- Bookshelf (TASK-36): data layer and first pages are done.
-- SSG sample (TASK-37): not started.
-
-## In-progress tasks
-
-Each in-progress task has a RESUME note; read it with `backlog task view TASK-N --plain`.
-
-| Task | Owner | State |
+| Task | Owner | Note |
 |---|---|---|
-| TASK-18 hydration + loader | Spark | Implemented, with 12 tests. Next: the Playwright e2e in `examples/islands-e2e`. Size with hydration: 8.61 kB, under the 10 kB cap |
-| TASK-35 chiptune app | Spark | Playable. Next: e2e with screenshots, `vite build`, WAV export check, README and perf note |
-| TASK-36 bookshelf SSR app | Nova | Planned only. Data layer (TASK-46) and first pages (TASK-24) exist |
-| TASK-33 create-lumen | Beacon | Templates and `agents init` are written. Blocked on TASK-77 (`lumen({ mode })`) |
-| TASK-65 compiled-row memory | Photon | Row-data hoisting done (heap 2.09 → 1.89 MB). Needs AC #4 bench numbers and Lux's call on AC #2/#3 |
-| TASK-54 Vitest browser conditions | Photon | Fix is in. The integration test is skipped, and the docs are pending |
-| TASK-68 Remix 3 benchmark | Spark | Implementation passes the checks. Full rerun pending: `node scripts/jsfb.ts --count 10 --mem-count 3` (~35 min). **Run it with no other agents active** |
-| TASK-76 CSS value warnings | Halo | Investigation only. The design (LUM3017–3019, allowlist) is in the notes |
-
-## Recommended resume order
-
-1. **TASK-77** (Photon): `lumen({ mode, ssr, … })` plugin options. This unblocks TASK-33 and decision-21.
-2. **TASK-18** (Spark): finish hydration. Then **TASK-25** (Nova, SPA router), then **TASK-72**.
-3. **TASK-35** (Spark): finish the chiptune app. **TASK-36** (Nova): the bookshelf app, whose islands need TASK-18.
-4. **TASK-37** (Lux): the SSG sample. Then **TASK-38** (Prism): DX review of the three apps.
-5. Performance:
-   - TASK-65 and TASK-78 (Photon). TASK-78 needs a Lux decision on server prop evaluation timing.
-   - TASK-68: rerun the benchmark on a quiet machine.
-6. Website: TASK-73 and TASK-74 first, then TASK-57, TASK-58 and TASK-60.
-7. Halo: TASK-76, then TASK-67, then the TASK-70 SVG study, which produces a recommendation for the **user to decide** before implementation.
-8. Beacon: TASK-34 (MCP), TASK-53, and documentation follow-ups.
+| TASK-85 (HIGH) `.stsx` stylesheet links in `lumen dev` | Photon | Not started |
+| TASK-65 compiled rows | Photon | In Progress; codegen rule for `insertText` is in the notes (from Spark) |
+| TASK-62, TASK-63 | Photon | Not started; were waiting on Halo's lumen_napi/vite edits, now committed |
+| TASK-104 flaky css-manifest test | Photon | |
+| TASK-107 relative asset URLs in `.md`/`.html` | Halo | |
+| TASK-106 SPA size budget | Lux/user | See open decisions |
+| TASK-68 Remix 3 benchmark rerun | Spark | Run on a quiet machine only (~35 min) |
+| TASK-60 deploy, TASK-38 DX review | Lux, Prism | |
+| TASK-39/40/41/64 | various | Low priority |
 
 ## Open decisions
 
-**For the user:**
-- SVG import and sprite approach, after the TASK-70 study.
-- Final package names before publishing (TASK-39).
+**For the user (DX):**
+- TASK-106: spa-chiptune ships 11.18 kB framework JS (router 3.69 kB) against the 10 kB cap. Options: a separate SPA budget that counts the router, or slim the router (History fallback on demand saves ~0.4 kB, not enough alone). The spec's cap (doc-1 §6) does not name the router.
+- TASK-105 side effect: on MPA pages `invalidate()` reloads, so a successful `submit()` reloads and loses `actionData()`. Alternative: re-run island async components without a reload (needs a `dom/async.ts` change).
+- TASK-69 semantics Halo chose, to confirm: head `<style>`/scripts kept for full `.html` documents; a nested `<style>` scopes to its element's subtree (decision-23); `<script>` in Markdown follows the `.html` rule; frontmatter typed by merging into a `Frontmatter` interface.
 
 **For Lux:**
-- TASK-78: server-side prop evaluation order.
-- TASK-65: AC #2/#3.
-- Ownership of `examples/islands-e2e` (proposed: Spark).
+- TASK-86 follow-up: a server page deriving from its own props (`params.slug.toUpperCase()`) still warns LUM2001; fixing it needs the route mode in Vite/`lumen check`.
+- Add `size:apps` to CI once TASK-106 settles.
 
 ## How to resume
 
 1. Start an orchestrator session (Lux). Read `AGENTS.md`, `agents.json`, this guide and `backlog task list -s "In Progress" --plain`.
-2. Spawn workers with their nickname, the task IDs and the instruction to read the task's RESUME note first. Use the fewest workers that keep the critical path moving.
-3. Rebuild the native compiler after pulling: `pnpm build:compiler`. To run everything: `pnpm check`.
+2. Rebuild the native compiler after pulling: `pnpm build:compiler`; run everything with `pnpm check`.
+3. Spawn the fewest workers that keep the critical path moving (suggested: Photon on TASK-85 → 62/63 → 65; Halo on TASK-107; then TASK-60 and TASK-38).
 
-**Caveats:**
-- Benchmarks are noisy while agents are running.
-- Agents may hit API session limits. Resume them by message, which keeps their context.
-- pnpm 11 enforces a minimum release age, so new dependencies may need exclusions.
+**Caveats:** benchmarks are noisy while agents run; agents remove only locks they created; pnpm 11 enforces a minimum release age for new dependencies.

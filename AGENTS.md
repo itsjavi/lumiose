@@ -201,8 +201,8 @@ work remains.
   | Owner  | Area                                                                                                                                                                         |
   | ------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
   | Lux    | Root configs, `pnpm-lock.yaml`, `packages/lumen/package.json`, `src/index*.ts`, the contract, the backlog leftovers                                                          |
-  | Photon | `crates/**` (except `crates/lumen_css/**`, `crates/lumen_svg/**`), `packages/compiler/**`, `packages/lumen/src/vite/**`                                                      |
-  | Halo   | `crates/lumen_css/**`, `crates/lumen_svg/**`, `packages/site-kit/**`                                                                                                         |
+  | Photon | `crates/**` (except `crates/lumen_{css,svg,content}/**`), `packages/compiler/**`, `packages/lumen/src/vite/**`                                                               |
+  | Halo   | `crates/lumen_{css,svg,content}/**`, `packages/site-kit/**`                                                                                                                  |
   | Spark  | `packages/lumen/src/{core,dom}/**`, `packages/lumen/src/app/router/**`, `benchmarks/js-framework-benchmark/**`, `examples/spa-*`, `examples/islands-e2e/**`                  |
   | Nova   | `packages/lumen/src/{app,server}/**` (except `app/router/**`), `packages/adapter-node/**`, `benchmarks/ssr/**`, `examples/ssr-*`, `examples/ssg-*`                           |
   | Beacon | `packages/lumen/src/{cli,jsx}/**`, `packages/lumen/docs/**`, `apps/{web,playground}/**`, `packages/{language-server,vscode,create,testing,eslint-plugin,prettier-plugin}/**` |
