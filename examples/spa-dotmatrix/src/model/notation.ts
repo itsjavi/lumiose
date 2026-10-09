@@ -138,3 +138,28 @@ export function delay(notes: readonly Note[], steps: number, total: number): Not
 /** Shifts notes by `steps` (to place a phrase after an intro). */
 export const offset = (notes: readonly Note[], steps: number): Note[] =>
   notes.map((n) => ({ ...n, s: n.s + steps }));
+
+const pitchClass = (p: number) => ((p % 12) + 12) % 12;
+
+/**
+ * A harmony line a diatonic third below a melody: each note moves down to the note three or four
+ * semitones lower that belongs to the scale (`key` 0–11 and the scale's semitone steps). With a
+ * bass line, a note a minor second, tritone or major seventh away from the bass note under it gives
+ * way to the other third, or a fourth or sixth below.
+ */
+export function thirdsBelow(
+  notes: readonly Note[],
+  key: number,
+  steps: readonly number[],
+  bass: readonly Note[] = [],
+): Note[] {
+  const inScale = (p: number) => steps.includes(pitchClass(p - key));
+  return notes.map((n) => {
+    const under = bass.find((b) => b.s <= n.s && n.s < b.s + b.l);
+    const harsh = (p: number) => !!under && [1, 6, 11].includes(pitchClass(p - under.p));
+    // A third below; when both thirds grate on the bass, a fourth or a sixth below instead.
+    const options = [n.p - 3, n.p - 4, n.p - 5, n.p - 8, n.p - 9].filter(inScale);
+    const p = options.find((o) => !harsh(o)) ?? options[0] ?? n.p - 3;
+    return { ...n, p };
+  });
+}
