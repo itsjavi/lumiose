@@ -2078,11 +2078,30 @@ rendering an icon clones markup, on the server and in the browser alike. The ico
   `role="img"` and `aria-labelledby` pointing at it. The id comes from the file and the title
   text, so the server and the client agree without a counter. The file's own `<title>` is
   dropped: the prop is the label.
-- **What the build removes.** Scripts, event attributes (`onload`), `javascript:` URLs,
-  comments and editor metadata always, whatever the SVGO config; redundant markup when
-  optimising. Ids get a per-file prefix, and so do the references to them (`href="#id"`,
-  `url(#id)`, `<style>` selectors); class names get it too when the file has a `<style>`. Icons
-  never clash with each other or with the page.
+- **What the build keeps.** An allowlist, whatever the SVGO config, so an icon file can never
+  run script or act as HTML on your page:
+  - **Elements**: the SVG ones, spelled as SVG spells them (`linearGradient`, not
+    `lineargradient`): `svg`, `g`, `defs`, `symbol`, `use`, `switch`, `a`, `style`, the shapes
+    (`path`, `rect`, `circle`, `ellipse`, `line`, `polyline`, `polygon`), text (`text`, `tspan`,
+    `textPath`), `image`, paint servers, `clipPath`, `mask`, `marker`, `filter` and every `fe*`
+    primitive, and the SMIL animations `animate`, `animateMotion`, `animateTransform`, `set` and
+    `mpath`. Anything else is dropped with its content: `<script>`, `<foreignObject>` (and the
+    HTML in it), editor elements (`sodipodi:*`, `<rdf>`), unknown or invalid names.
+  - **Attributes**: the SVG presentation, geometry, link, text, gradient, filter and animation
+    attributes, `id`, `class`, `style`, `role`, `tabindex`, `aria-*` and `data-*`, as plain string
+    attributes. Event handlers (`onload`), DOM properties (`innerHTML`) and attributes of other
+    namespaces are dropped; so are `javascript:` URLs.
+  - **Animations** that target a link (`href`), a handler (`on…`) or `style`, in any letter case,
+    or whose `values`/`from`/`to`/`by` hold a `javascript:` URL, are dropped.
+  - **`<style>` text** keeps its CSS, with `<` and `&` written as CSS escapes (`\3c `, `\26 `):
+    in a page, an inline SVG's `<style>` is parsed as markup, where they could open a tag.
+  - Elements nested more than 128 levels deep make the file an error.
+
+  Comments and editor metadata go too, and redundant markup when optimising. Ids get a per-file
+  prefix, and so do the references to them (`href="#id"`, `url(#id)`, `<style>` selectors);
+  class names get it too when the file has a `<style>`. Icons never clash with each other or with
+  the page.
+
 - **Optimisation.** By default SVGO runs its `preset-default` plus `convertStyleToAttrs` (fewer
   `style` attributes, for strict CSPs). Pass your own SVGO config as `optimize` to choose the
   plugins (`{ plugins: [...] }`, `multipass`, `floatPrecision`), or `false` to skip SVGO.
@@ -2177,13 +2196,16 @@ receives the component's scope, so the scoped `.icon` rule applies.
 - **Hard-coded colours in an icon set.** If icons stay black whatever `color` says, the files
   hard-code a colour: use `lumen({ svg: { currentColor: true } })` for monochrome sets. It runs
   SVGO's `convertColors` before your own plugins, so with a custom config it still applies.
+- **Expecting `<foreignObject>` content.** HTML inside an icon is dropped; render it with a
+  component next to the icon.
 - **Removing `viewBox` in a custom SVGO config.** Without `viewBox` an icon no longer scales with
   `width`/`height`; SVGO's `preset-default` keeps it, `removeViewBox` drops it.
 
 ## Related diagnostics
 
 A file that is not well-formed SVG fails the build with its location
-(`icon.svg: invalid SVG: … at 3:12`), as does a file whose root element is not `<svg>`.
+(`icon.svg: invalid SVG: … at 3:12`), as does a file whose root element is not `<svg>` and one
+whose elements nest more than 128 levels deep.
 
 See also: [Styles](styles.md), [JSX](jsx.md), [reference: `lumen/vite`](../reference/vite.md), [reference: JSX types](../reference/jsx.md).
 

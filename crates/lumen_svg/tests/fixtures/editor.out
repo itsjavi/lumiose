@@ -17,9 +17,6 @@ export default function Svg({ title, children, ...rest }) {
         {"An editor export"}
       </desc>
       <metadata>
-        <rdf>
-          {"stuff"}
-        </rdf>
       </metadata>
       <style>.lfhwg65__cls-1 { fill: url(#lfhwg65__gradient); } .lfhwg65__cls-2 { opacity: .5 }</style>
       <defs>

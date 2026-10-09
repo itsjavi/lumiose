@@ -295,6 +295,13 @@ describe("lumen({ md, html })", () => {
     };
     // oxlint-disable-next-line no-eval -- checks that the code evaluates to the value
     expect((0, eval)(`(${toJs(value, "frontmatter")})`)).toEqual(value);
+    // `__proto__` stays an own property and sets no prototype (TASK-169).
+    const proto = JSON.parse('{"__proto__": {"polluted": true}, "a": 1}') as Record<string, unknown>;
+    // oxlint-disable-next-line no-eval -- checks what the code evaluates to
+    const copy = (0, eval)(`(${toJs(proto, "frontmatter")})`) as Record<string, unknown>;
+    expect(Object.getPrototypeOf(copy)).toBe(Object.prototype);
+    expect(Object.hasOwn(copy, "__proto__")).toBe(true);
+    expect((copy as { polluted?: boolean }).polluted).toBeUndefined();
     expect(() => toJs({ f: () => 1 }, "frontmatter")).toThrow(
       "frontmatter.f cannot be exported (a function)",
     );

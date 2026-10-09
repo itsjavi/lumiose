@@ -4,21 +4,28 @@ use std::fmt::Write as _;
 
 use roxmltree::{Document, Node};
 
+use crate::allow;
 use crate::prefix::Prefixer;
 use crate::{SvgError, parse_options, xml_error};
 
 const SVG: &str = "http://www.w3.org/2000/svg";
-const XHTML: &str = "http://www.w3.org/1999/xhtml";
 const XML: &str = "http://www.w3.org/XML/1998/namespace";
 const XLINK: &str = "http://www.w3.org/1999/xlink";
 
 /// Elements whose text is content: their whitespace is kept.
 const TEXT_CONTENT: [&str; 4] = ["text", "tspan", "textPath", "a"];
 
+/// Elements nested deeper than this make the file an error (no stack overflow on hostile input,
+/// here or in the compiler that compiles the component).
+pub(crate) const MAX_DEPTH: usize = 128;
+
 /// The `.stsx` module for `svg`; `prefix` makes its ids and the `<title>` id unique to the file.
 pub(crate) fn component(svg: &str, prefix: &str) -> Result<String, SvgError> {
+    // Before parsing: the XML parser recurses per nesting level too.
+    check_source_depth(svg)?;
     let document = Document::parse_with_options(svg, parse_options()).map_err(|e| xml_error(&e))?;
     let root = svg_root(&document)?;
+    check_depth(root)?;
     let prefixer = Prefixer::new(&document, prefix);
 
     let mut out = String::new();
@@ -68,9 +75,88 @@ pub(crate) fn svg_root<'a, 'input>(
     })
 }
 
-/// The attributes kept on an element, with their JSX names and prefixed ids: no event handlers,
-/// no `javascript:` URLs, no attributes of foreign namespaces; `xlink:href` becomes `href`
-/// and `xlink:show` `target`, other XLink attributes are dropped.
+/// An error when the markup of `svg` nests elements deeper than [`MAX_DEPTH`], found with a scan
+/// of its tags (comments, CDATA, processing instructions, declarations and quoted attribute values
+/// skipped).
+fn check_source_depth(svg: &str) -> Result<(), SvgError> {
+    let bytes = svg.as_bytes();
+    let mut depth = 0usize;
+    let mut at = 0;
+    let skip_to = |from: usize, end: &str| {
+        svg[from..]
+            .find(end)
+            .map_or(svg.len(), |i| from + i + end.len())
+    };
+    while let Some(found) = svg[at..].find('<') {
+        let start = at + found;
+        let rest = &svg[start..];
+        if rest.starts_with("<!--") {
+            at = skip_to(start + 4, "-->");
+        } else if rest.starts_with("<![CDATA[") {
+            at = skip_to(start + 9, "]]>");
+        } else if rest.starts_with("<?") {
+            at = skip_to(start + 2, "?>");
+        } else if rest.starts_with("<!") {
+            at = skip_to(start + 2, ">");
+        } else if rest.starts_with("</") {
+            depth = depth.saturating_sub(1);
+            at = skip_to(start + 2, ">");
+        } else {
+            // A start tag: to its `>`, outside quoted values.
+            let mut i = start + 1;
+            let mut quote = None;
+            while i < bytes.len() {
+                match (quote, bytes[i]) {
+                    (None, b'"' | b'\'') => quote = Some(bytes[i]),
+                    (Some(q), b) if b == q => quote = None,
+                    (None, b'>') => break,
+                    _ => {}
+                }
+                i += 1;
+            }
+            if i >= 1 && bytes.get(i.wrapping_sub(1)) != Some(&b'/') {
+                depth += 1;
+                if depth > MAX_DEPTH {
+                    let line = svg[..start].matches('\n').count() + 1;
+                    let column = start - svg[..start].rfind('\n').map_or(0, |n| n + 1) + 1;
+                    return Err(SvgError {
+                        message: format!("elements are nested deeper than {MAX_DEPTH} levels"),
+                        position: Some((
+                            u32::try_from(line).unwrap_or(u32::MAX),
+                            u32::try_from(column).unwrap_or(u32::MAX),
+                        )),
+                    });
+                }
+            }
+            at = (i + 1).min(svg.len());
+        }
+    }
+    Ok(())
+}
+
+/// An error when elements nest deeper than [`MAX_DEPTH`].
+fn check_depth(root: Node) -> Result<(), SvgError> {
+    let mut stack = vec![(root, 1)];
+    while let Some((node, depth)) = stack.pop() {
+        if depth > MAX_DEPTH {
+            let position = node.document().text_pos_at(node.range().start);
+            return Err(SvgError {
+                message: format!("elements are nested deeper than {MAX_DEPTH} levels"),
+                position: Some((position.row, position.col)),
+            });
+        }
+        stack.extend(
+            node.children()
+                .filter(Node::is_element)
+                .map(|child| (child, depth + 1)),
+        );
+    }
+    Ok(())
+}
+
+/// The attributes kept on an element, with their JSX names and prefixed ids: those of the
+/// allowlist ([`allow::attribute`]), no `javascript:` URLs, no attributes of foreign namespaces;
+/// `xlink:href` becomes `href` and `xlink:show` `target`, other XLink attributes are dropped.
 fn attributes(element: Node, prefixer: &Prefixer) -> Vec<(String, String)> {
     let has = |name: &str| {
         element
@@ -97,8 +183,7 @@ fn attributes(element: Node, prefixer: &Prefixer) -> Vec<(String, String)> {
                 }
                 Some(_) => return None,
             };
-            let event = local.len() > 2 && local[..2].eq_ignore_ascii_case("on");
-            (!event && !is_script_url(&value)).then(|| {
+            (allow::attribute(&name) && !is_script_url(&value)).then(|| {
                 let value = prefixer.attribute(&name, &value);
                 (name, value)
             })
@@ -120,17 +205,39 @@ fn is_script_url(value: &str) -> bool {
     })
 }
 
-/// Elements never emitted: scripts, the file's own `<title>` (`title` is a prop), and SMIL
-/// animations of a link target (`<set attributeName="href" to="javascript:…">`).
+/// Elements never emitted (with their content): those outside the allowlist ([`allow::element`]:
+/// scripts, `<foreignObject>` and the HTML in it, unknown names), the file's own `<title>`
+/// (`title` is a prop), and SMIL animations that could set a link or a handler.
 fn dropped(element: Node) -> bool {
-    let name = element.tag_name().name();
-    if name.eq_ignore_ascii_case("script") || name == "title" {
+    let tag = element.tag_name();
+    let name = tag.name();
+    if !matches!(tag.namespace(), None | Some(SVG)) || !allow::element(name) || name == "title" {
         return true;
     }
-    matches!(name, "set" | "animate")
-        && element
-            .attribute("attributeName")
-            .is_some_and(|target| target.to_ascii_lowercase().ends_with("href"))
+    allow::ANIMATIONS.contains(&name) && unsafe_animation(element)
+}
+
+/// An animation of an `href`, of an event handler or of a `style` (`attributeName`, in any case,
+/// as an HTML parser reads it), or one whose `values`/`from`/`to`/`by` hold a `javascript:` URL.
+fn unsafe_animation(element: Node) -> bool {
+    let value = |name: &str| {
+        element
+            .attributes()
+            .find(|a| a.name().eq_ignore_ascii_case(name))
+            .map(|a| a.value())
+    };
+    let target = value("attributeName")
+        .unwrap_or_default()
+        .trim()
+        .to_ascii_lowercase();
+    let target = target.rsplit(':').next().unwrap_or_default();
+    target.ends_with("href")
+        || target.starts_with("on")
+        || target == "style"
+        || ["values", "from", "to", "by"]
+            .into_iter()
+            .filter_map(value)
+            .any(|text| text.split(';').any(is_script_url))
 }
 
 fn node(out: &mut String, prefixer: &Prefixer, node: Node, depth: usize, text_content: bool) {
@@ -145,9 +252,8 @@ fn node(out: &mut String, prefixer: &Prefixer, node: Node, depth: usize, text_co
     if !node.is_element() {
         return;
     }
-    let tag = node.tag_name();
-    let name = tag.name();
-    if !matches!(tag.namespace(), None | Some(SVG) | Some(XHTML)) || dropped(node) {
+    let name = node.tag_name().name();
+    if dropped(node) {
         return;
     }
     let _ = write!(out, "{indent}<{name}");
@@ -162,7 +268,7 @@ fn node(out: &mut String, prefixer: &Prefixer, node: Node, depth: usize, text_co
         // Native SVG CSS: raw text, which the `.stsx` scanner keeps verbatim.
         let css: String = node.children().filter_map(|child| child.text()).collect();
         let css = prefixer.stylesheet(&css);
-        let _ = writeln!(out, ">{}</style>", css.replace("</", "<\\/"));
+        let _ = writeln!(out, ">{}</style>", style_text(&css));
         return;
     }
     out.push_str(">\n");
@@ -171,6 +277,13 @@ fn node(out: &mut String, prefixer: &Prefixer, node: Node, depth: usize, text_co
         self::node(out, prefixer, child, depth + 1, text_content);
     }
     let _ = writeln!(out, "{indent}</{name}>");
+}
+
+/// CSS text for a `<style>` inside an inline `<svg>`, which an HTML parser reads as markup
+/// (foreign content), not as raw text: `<` and `&` become CSS escapes (`\3c `, `\26 `), which mean
+/// the same in strings and identifiers but cannot open a tag or an entity.
+fn style_text(css: &str) -> String {
+    css.replace('<', "\\3c ").replace('&', "\\26 ")
 }
 
 /// `name="value"`, or `name={"value"}` when a JSX string could not hold the value as is

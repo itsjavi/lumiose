@@ -19,14 +19,6 @@ export default function Svg({ title, children, ...rest }) {
         </tspan>
         {" {braces}"}
       </text>
-      <foreignObject x="0" y="30" width="200" height="30">
-        <div>
-          {"HTML "}
-          <b>
-            {"inside"}
-          </b>
-        </div>
-      </foreignObject>
     </svg>
   );
 }

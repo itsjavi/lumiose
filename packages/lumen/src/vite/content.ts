@@ -361,8 +361,11 @@ export function toJs(value: unknown, path: string): string {
   }
   const prototype = Object.getPrototypeOf(value);
   if (typeof value === "object" && (prototype === Object.prototype || prototype === null)) {
+    // A `"__proto__": …` entry of an object literal would set its prototype: a computed key
+    // makes it an own property, as YAML and JSON.parse do.
     const entries = Object.entries(value).map(
-      ([key, item]) => `${JSON.stringify(key)}: ${toJs(item, `${path}.${key}`)}`,
+      ([key, item]) =>
+        `${key === "__proto__" ? `["__proto__"]` : JSON.stringify(key)}: ${toJs(item, `${path}.${key}`)}`,
     );
     return `{${entries.join(", ")}}`;
   }

@@ -32,6 +32,7 @@
 //! A `<style>` inside the file stays native SVG CSS and, once inlined, applies to the whole
 //! document like any inline SVG's; the prefixes keep its rules to this icon.
 
+mod allow;
 mod emit;
 mod prefix;
 
