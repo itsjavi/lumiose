@@ -1,11 +1,11 @@
 ---
 id: TASK-161
 title: 'CI on Linux, macOS and Windows; native binaries per platform'
-status: In Progress
+status: Done
 assignee:
   - '@Photon'
 created_date: '2026-10-09 11:53'
-updated_date: '2026-10-09 15:30'
+updated_date: '2026-10-09 15:40'
 labels:
   - ci
   - release
@@ -23,9 +23,9 @@ User 2026-10-09: drive production hardening. The repo now has a private GitHub r
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 CI workflow green on all three OSes (or remaining failures filed as tasks with owners); runs on push/PR to main
-- [ ] #2 Native binaries for the 6 targets and the wasm build produced as artifacts by a workflow, with a smoke test loading each where the runner allows
-- [ ] #3 Docs: a CONTRIBUTING/README section on CI and building binaries
+- [x] #1 CI workflow green on all three OSes (or remaining failures filed as tasks with owners); runs on push/PR to main
+- [x] #2 Native binaries for the 6 targets and the wasm build produced as artifacts by a workflow, with a smoke test loading each where the runner allows
+- [x] #3 Docs: a CONTRIBUTING/README section on CI and building binaries
 <!-- AC:END -->
 
 ## Implementation Notes
@@ -36,4 +36,12 @@ Photon — RESUME (checkpoint 2026-10-09, In Progress). Done and pushed: .github
 Beacon (2026-10-09): (3) Pages on a clean checkout: fixed in 472cbae (apps/playground/scripts/assets.ts writes .lumen/tsconfig.generated.json before its vite build); Pages has been green since (e.g. runs 37929224785, 37944851880). (4) 'undefined' after lumen fmt --check: printed by pnpm 11 itself whenever 'pnpm --filter … exec' runs a failing command (reproduced with exec node -e 'process.exitCode=1'), not by lumen. fmt:examples now runs scripts/fmt-examples.ts, which calls the CLI in-process per example with a prefixed summary line each and one failure summary (4207961, test in cli/fmt/fmt.test.ts). Note: examples/spa-chiptune/src/ui/TrackerView.stsx is currently modified and unformatted in the working tree (someone's WIP); fmt:examples will flag it if committed as is.
 
 Nova 2026-10-09 (run 37947716902): (1) Windows check — cause in my areas: temp roots from os.tmpdir() are 8.3 short paths (C:\Users\RUNNER~1) while Vite/Rolldown module ids are real long paths, so relative(root, id) left the project ('../..') and island chunks, SPA preloads and the CSS manifest came out empty; and the dev overlay's frame finder compared stack paths with '${root}/'. Fixes: build() and createDevServer() use realProjectRoot() (realpathSync.native: symlinks and short names resolved, also fixes projects under a symlinked path on every OS); app/dev/errors.ts reads file:// frames with fileURLToPath and compares paths separator- and drive-case-agnostically; tests use realpathSync.native for temp roots, build the /@fs/ URL from normalizePath, and skip the chmod-000 'unreadable directory' assertions on win32 (no POSIX permission bits). HALO: src/vite/content.test.ts (expects backslash paths for post.md.stsx ids, which are forward-slash Vite ids), svg tests (svg.dom.test 'hydrate inside an island', 'leaves .svg files of dependencies to Vite', '?url and ?raw', 'loads a project .svg', 'render inline…', 'sanitises with any SVGO config') are in your area. PHOTON: src/vite/plugin.test.ts (7 tests: island chunks, constants folding/HMR, linked packages, overlay locations, lumen export resolution), css-manifest.test.ts, custom-properties.test.ts, server-only.test.ts — same short-path/backslash pattern likely; realpathSync.native on the temp roots plus normalizePath on expected ids should fix most. (2) e2e ubuntu flake: in 4 runs the failing wait was always the client:idle Search island of a test's first page (the client:load ThemeToggle on the same page was hydrated), never reproducible on macOS (20/20). The loader called requestIdleCallback(start) without a timeout; headless Chromium on Linux CI may schedule no idle period for seconds, so the island stayed inert past the 5 s wait. Fix (dom/islands.ts, Spark's file, one change): requestIdleCallback(start, { timeout: 2000 }) — client:idle hydrates at the latest after 2 s, which also protects real pages whose main thread never idles; unit test dom/idle-trigger.test.ts; docs islands.md/dom.md; runtime size budgets OK.
+
+Photon (2026-10-09, resumed): status on run 37951517996 (1963ff1): check ubuntu + macos green, e2e macOS + Windows green; Binaries green for all 6 targets + wasm. Fixed since the checkpoint: Windows size script paths (c035e8d), islands-e2e /@fs loader URL (c035e8d), vite-counter Linux-only HMR failures = chokidar drops a change within 50 ms of the previous one for the same file, and the specs restored files right after an edit applied on fast runners (9399518: edits spaced 100 ms), my vite tests on Windows (native realpath + normalizePath temp roots, junctions, '/' expectations: 578d6fd, 1963ff1, 058b92e). CI diagnostics: inotify limits are fine (655360/1280). Remaining failures filed with owners: TASK-179 (Halo: content/svg tests on Windows), TASK-180 (Nova: adapter-node + app dev/build tests on Windows; ssg-travel-journal islands flake on Linux CI). Beacon fixed the CLI/tooling tests (46f5531).
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+CI (check + e2e on Linux/macOS/Windows) and Binaries (6 napi targets + wasm, smoke-tested) workflows run on push/PR to main; CONTRIBUTING.md documents them. Cross-platform fixes in my area landed; remaining Windows/Linux-CI failures filed as TASK-179 (Halo) and TASK-180 (Nova).
+<!-- SECTION:FINAL_SUMMARY:END -->
