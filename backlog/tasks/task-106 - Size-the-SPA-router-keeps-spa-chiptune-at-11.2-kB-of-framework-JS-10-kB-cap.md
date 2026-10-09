@@ -1,10 +1,11 @@
 ---
 id: TASK-106
-title: 'Size: the SPA router keeps spa-chiptune at 11.2 kB of framework JS (10 kB cap)'
+title: 'Size: sample apps have no budget; size:apps reports, router trims where cheap'
 status: To Do
 assignee:
   - Spark
 created_date: '2026-10-08 22:19'
+updated_date: '2026-10-09 04:03'
 labels:
   - size
   - runtime
@@ -22,6 +23,12 @@ Found in TASK-91. After the single runtime chunk, the CSR start without hydratio
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Lux decides the budget that applies to SPA apps (router included or separate)
-- [ ] #2 spa-chiptune fits the decided budget in pnpm --filter lumen size:apps
+- [ ] #1 pnpm --filter lumen size:apps reports per-app sizes and exits 0 (no per-app budget); the runtime cap stays enforced by pnpm --filter lumen size
+- [ ] #2 Router trims that cost no runtime speed or complexity are applied (e.g. History fallback loaded only without the Navigation API) with before/after numbers in the notes; docs and spec mention of size:apps match
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Lux 2026-10-09: user decision: examples get no size budget ('they are just examples, try to be optimal and that's it'). Spec doc-1 §6 now says the cap applies to the framework runtime measured by size; size:apps is a report. Do only trims that are clearly worth it.
+<!-- SECTION:NOTES:END -->

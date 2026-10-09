@@ -3,7 +3,7 @@ id: doc-1
 title: Lumen architecture specification
 type: specification
 created_date: '2026-10-08 10:28'
-updated_date: '2026-10-08 21:02'
+updated_date: '2026-10-09 04:03'
 tags:
   - architecture
   - spec
@@ -551,6 +551,7 @@ export const MemberCard = $component(async function MemberCard(props) {
 **Budgets.**
 - **Hard cap (set by the user, 2026-10-08):** the whole client runtime (core, DOM, lists, boundaries, hydration and loader) must stay **≤ 10 kB** min+brotli. Smaller is better, but CPU performance takes priority over shaving bytes.
 - **Soft targets:** a typical app import set ≤ 6 kB, and hydration plus loader ≤ 1.5 kB.
+- **Scope of the cap (user, 2026-10-09):** the cap and targets apply to the framework runtime, measured by `pnpm --filter lumen size`. Sample apps and examples have no size budget: `pnpm --filter lumen size:apps` reports their framework and app JS so regressions are visible, and stays as small as is reasonable, but it does not fail a build.
 - **js-framework-benchmark app bundle:** ≤ 8 kB.
 
 ### 6.1 Reactive core

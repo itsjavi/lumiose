@@ -35,3 +35,5 @@ The user wanted specific names, plus one summary state, so that UI like a global
 - Spec §4.3, §7.5 and §8 now use these names. TASK-23's `submitting()` and `submit()` already follow them.
 
 _Amended 2026-10-09 (user): after a successful `submit()`, Lumen automatically runs `invalidate()` for the current page. Its async components re-run, and the stale UI stays visible until the new data arrives. To opt out, pass `submit(form, { invalidate: false })`._
+
+_Amended 2026-10-09 (Lux, delegated by the user: "whatever causes less problems later and less complexity"): on MPA pages, `invalidate()` reloads the page, so a successful `submit()` reloads it too, like a native form's post/redirect/get. The reload re-renders every server part from fresh data, which partial island refreshes could not do without leaving server-rendered content stale, and it needs no extra runtime code. The success value of `actionData()` is not kept across the reload; failures never reload. Islands that need to keep local state or show the success data pass `{ invalidate: false }`._
