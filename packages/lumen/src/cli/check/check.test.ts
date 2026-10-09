@@ -548,6 +548,29 @@ describe.skipIf(!binding)("lumen check", () => {
     expect(await isServerRoute(root, join(root, "src/components/Card.tsx"))).toBe(false);
   });
 
+  it("reports browser globals at module scope of server-rendered modules, not of client entries (TASK-178)", async () => {
+    const root = await project("valid");
+    const theme = [
+      'const saved = localStorage.getItem("theme");',
+      "export function Theme() {",
+      "  return <b>{saved}</b>;",
+      "}",
+      "",
+    ].join("\n");
+    const entry = [
+      'import { mount } from "lumen/dom";',
+      'import { Theme } from "./components/Theme.tsx";',
+      'mount(() => <Theme />, document.getElementById("app")!);',
+      "",
+    ].join("\n");
+    await writeFile(join(root, "src/components/Theme.tsx"), theme);
+    await writeFile(join(root, "src/main.tsx"), entry);
+    const { report } = await checkJson(root);
+    expect(report.diagnostics.filter((d) => d.code === "LUM4004")).toEqual([
+      expect.objectContaining({ file: "src/components/Theme.tsx", line: 1, severity: "warning" }),
+    ]);
+  });
+
   it("resolves constants imported through tsconfig paths and re-exports for style diagnostics", async () => {
     const template = standaloneTsconfig();
     const root = await project("valid", {

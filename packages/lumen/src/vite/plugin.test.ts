@@ -249,6 +249,18 @@ describe.skipIf(!binding)("lumen/vite", () => {
     expect(error!.frame).toContain("export const Broken = () => <div>;");
   });
 
+  it("reports browser globals at module scope from the server compile only (LUM4004)", async () => {
+    writeFileSync(
+      join(root, "Saved.tsx"),
+      `const saved = localStorage.getItem("k");\nexport const Saved = () => <b>{saved}</b>;\n`,
+    );
+    const before = warnings.length;
+    await server.environments.client.transformRequest("/Saved.tsx");
+    expect(warnings.slice(before).some((w) => w.includes("LUM4004"))).toBe(false);
+    await server.environments.ssr.transformRequest("/Saved.tsx");
+    expect(warnings.slice(before).filter((w) => w.includes("LUM4004"))).toHaveLength(1);
+  });
+
   it("reports warnings", async () => {
     await server.environments.client.transformRequest("/Warning.tsx");
     expect(warnings.some((w) => w.includes("LUM2006") && w.includes("Warning.tsx"))).toBe(true);

@@ -2,6 +2,7 @@
 //! diagnostics that need the AST (LUM2001-LUM2005, plus `<style>` placement inside callbacks and
 //! conditionals, LUM3010, which the scanner cannot see).
 
+pub mod browser_globals;
 mod components;
 pub mod reactivity;
 

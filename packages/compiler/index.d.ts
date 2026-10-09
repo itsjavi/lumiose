@@ -89,6 +89,11 @@ export interface CompileOptions {
    * `$hot`). Default `false`.
    */
   hot?: boolean;
+  /**
+   * Report browser globals evaluated at module scope (LUM4004); always on for the server
+   * target. Default `false`.
+   */
+  browserGlobals?: boolean;
 }
 
 export interface CompileResult {

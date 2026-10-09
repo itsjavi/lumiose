@@ -77,6 +77,10 @@ pub struct CompileOptions {
     /// Dev client builds: register components for component-level hot updates (TASK-146, see
     /// `hot.rs`). Ignored for the server target.
     pub hot: bool,
+    /// Report browser globals evaluated at module scope (`LUM4004`), for modules of server
+    /// graphs: always on for the server target; `lumen check` and the language server turn it on
+    /// for client compiles of modules that server rendering loads.
+    pub browser_globals: bool,
 }
 
 impl Default for CompileOptions {
@@ -94,6 +98,7 @@ impl Default for CompileOptions {
             server_route: false,
             strict_csp: false,
             hot: false,
+            browser_globals: false,
         }
     }
 }
@@ -304,6 +309,11 @@ pub fn compile(source: &str, filename: &str, options: &CompileOptions) -> Compil
         client::execution_contract(&program, &scoping, &analysis, &server_only)
     });
     diagnostics.extend(analysis.diagnostics.iter().cloned());
+    if options.browser_globals || options.target == Target::Server {
+        diagnostics.extend(analyze::browser_globals::browser_globals(
+            &program, &scoping,
+        ));
+    }
 
     let scopes = ScopePlan::new(
         &scan.blocks,

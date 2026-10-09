@@ -38,6 +38,11 @@ export interface CompileDiagnosticsOptions {
    * `serverRouteFiles`): its default export's props are plain values (no LUM2001 for them).
    */
   serverRoute?: boolean;
+  /**
+   * The file only runs in the browser (an `spa` route with `export const ssr = false`): no LUM4004.
+   * Modules that import `lumen/dom` (client entries) are recognised on their own.
+   */
+  clientOnly?: boolean;
 }
 
 /**
@@ -94,15 +99,24 @@ async function compileChecked(
     sourceMap: false,
     ...(options.root === undefined ? {} : { root: options.root }),
     ...(options.serverRoute ? { serverRoute: true } : {}),
+    // LUM4004 as the server compile reports it (lumen/vite's ssr environment), for modules that
+    // server rendering may load.
+    browserGlobals: true,
   };
   const result =
     options.modules === undefined
       ? (await loadCompiler()).compile(text, filename, compileOptions)
       : await compileWithModules(text, filename, compileOptions, options.modules);
   const reported = new Set((options.reported ?? []).map(diagnosticKey));
+  // A client entry (it mounts with `lumen/dom`) or a client-only route never loads on the server.
+  const clientOnly =
+    options.clientOnly === true ||
+    (result.meta.imports ?? []).some((i) => i.specifier === "lumen/dom");
   const diagnostics = result.diagnostics.filter(
     (diagnostic) =>
-      !REPORTED_BY_TYPESCRIPT.has(diagnostic.code) && !reported.has(diagnosticKey(diagnostic)),
+      !REPORTED_BY_TYPESCRIPT.has(diagnostic.code) &&
+      !reported.has(diagnosticKey(diagnostic)) &&
+      !(clientOnly && diagnostic.code === "LUM4004"),
   );
   return { result, diagnostics };
 }
@@ -133,10 +147,22 @@ export const compilerDiagnostics: DiagnosticProvider = async ({
   const results: FileDiagnostics[] = [];
   const compiled = new Map<string, CompiledSource>();
   const serverRoutes = manifest === undefined ? new Set() : serverRouteFiles(root, manifest);
+  // `spa` routes rendered as client shells (`ssr = false`) never load on the server.
+  const clientOnly = new Set(
+    (manifest?.routes ?? [])
+      .filter((route) => route.kind === "page" && !route.ssr)
+      .map((route) => join(root, route.file).replaceAll("\\", "/")),
+  );
   for (const { file, text, reported } of sources) {
     const path = resolve(root, file);
-    const serverRoute = serverRoutes.has(path.replaceAll("\\", "/"));
-    const checked = await compileChecked(text, path, { root, reported, modules, serverRoute });
+    const key = path.replaceAll("\\", "/");
+    const checked = await compileChecked(text, path, {
+      root,
+      reported,
+      modules,
+      serverRoute: serverRoutes.has(key),
+      clientOnly: clientOnly.has(key),
+    });
     compiled.set(resolve(root, file), { text, result: checked.result });
     if (checked.diagnostics.length > 0) results.push({ file, diagnostics: checked.diagnostics });
   }

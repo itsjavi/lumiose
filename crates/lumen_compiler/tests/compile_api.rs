@@ -830,3 +830,37 @@ export default async function Page() {
             .contains("lumenHot")
     );
 }
+
+#[test]
+fn lum4004_reports_browser_globals_evaluated_at_module_scope_on_the_server() {
+    let source = r#"import { onMount, signal } from "lumen";
+const saved = localStorage.getItem("theme");
+const wide = window.innerWidth > 800;
+const guarded = typeof window !== "undefined" ? window.location.href : "/";
+if (typeof document !== "undefined") document.title = "x";
+const kind = typeof navigator;
+function document2(document: string) { return document; }
+class Store { width = window.innerWidth; }
+export function Theme() {
+  const theme = signal(saved);
+  onMount(() => theme.set(localStorage.getItem("theme")));
+  return <button onClick={() => alert(document.title)}>{theme()}{String(wide)}</button>;
+}
+"#;
+    let reported = |target: Target, browser_globals: bool| -> Vec<String> {
+        let options = CompileOptions {
+            target,
+            browser_globals,
+            ..CompileOptions::default()
+        };
+        compile(source, "/src/Theme.tsx", &options)
+            .diagnostics
+            .iter()
+            .filter(|d| d.code == Code::BrowserApiAtModuleScope)
+            .map(|d| source[d.span.start as usize..d.span.end as usize].to_owned())
+            .collect()
+    };
+    assert_eq!(reported(Target::Server, false), ["localStorage", "window"]);
+    assert_eq!(reported(Target::Client, true), ["localStorage", "window"]);
+    assert!(reported(Target::Client, false).is_empty());
+}
