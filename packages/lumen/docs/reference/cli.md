@@ -148,6 +148,50 @@ Formats `.stsx` files: the TSX with oxfmt (each block replaced by a placeholder)
 CSS separately with its `$` references protected, then re-indents and stitches the file together.
 With `--check`, a `formatted` file is one that is not formatted yet.
 
+## oxlint, ESLint and Prettier
+
+Projects that run the tools themselves add Lumen through plugins. The lint rules are thin
+adapters over the compiler: they report its `LUMxxxx` diagnostics (with help, the docs topic and
+fixes), so every tool agrees with `lumen check`. Project-wide checks (`LUM4003`, `LUM3012`) and the
+style diagnostics of `$` constants imported from other modules need the whole project: run
+`lumen check` for those.
+
+**oxlint** (JS plugins, alpha in oxlint): lints `.tsx` files; oxlint cannot parse `.stsx` yet, so
+`lumen lint` covers those.
+
+```json
+// .oxlintrc.json
+{
+  "jsPlugins": ["@lumen/eslint-plugin"],
+  "rules": { "lumen/compiler": "error", "lumen/compiler-warnings": "warn" }
+}
+```
+
+**ESLint 9** (flat config): the recommended config also lints `.stsx` files through a processor
+that hands ESLint the masked TSX (same offsets, so positions and fixes apply to the source). Parse
+TSX with a TypeScript parser, such as typescript-eslint's.
+
+```js
+// eslint.config.js
+import lumen from "@lumen/eslint-plugin";
+import tseslint from "typescript-eslint";
+
+export default [
+  ...lumen.configs.recommended,
+  { files: ["**/*.tsx", "**/*.stsx/*.tsx"], languageOptions: { parser: tseslint.parser } },
+];
+```
+
+**Prettier**: `@lumen/prettier-plugin` formats `.stsx` like `lumen fmt` (the TSX and each block's
+CSS with Prettier's printers, re-indented at their placement), following Prettier's options; a
+file with scanner or syntax errors is reported, not changed. oxfmt has no plugin API, so
+`lumen fmt` remains the way to format `.stsx` with oxfmt.
+
+```json
+// .prettierrc.json
+{ "plugins": ["@lumen/prettier-plugin"] }
+```
+
 ## lumen docs
 
 ```sh

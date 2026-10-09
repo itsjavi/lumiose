@@ -1,0 +1,22 @@
+{
+  "name": "@lumen/eslint-plugin",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Lumen's compiler diagnostics (LUMxxxx) as lint rules for oxlint (JS plugins) and ESLint, plus a .stsx processor for ESLint.",
+  "license": "MIT",
+  "files": [
+    "src"
+  ],
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./package.json": "./package.json"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@lumen/compiler": "workspace:*"
+  }
+}
