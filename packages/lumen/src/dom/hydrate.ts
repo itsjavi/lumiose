@@ -62,8 +62,8 @@ function skip(link: Link, to: Node): void {
 }
 
 /** Restores the DOM's own `firstChild`/`nextSibling` of a link that `skip` redirected. */
-function unskip(link: Link | undefined): void {
-  if (link !== undefined) delete (link[0] as unknown as Record<string, unknown>)[link[1]];
+function unskip(link: Link): void {
+  delete (link[0] as unknown as Record<string, unknown>)[link[1]];
 }
 
 /** Per island: whether claiming failed, and the client-render fallback. */
@@ -171,7 +171,7 @@ function walk(x: Island, t: Node, s: Node, holes: Hole[], links: Link[]): void {
       const data = (sc as Comment).data;
       const next = sc.nextSibling;
       if (data === "!") {
-        s.removeChild(sc);
+        (sc as ChildNode).remove();
         sc = next;
         continue;
       }
@@ -179,7 +179,7 @@ function walk(x: Island, t: Node, s: Node, holes: Hole[], links: Link[]): void {
         const close = closeOf(sc as Comment);
         const h = hole(entries(next, close), s, close, false, data === "[!");
         holes.push(h);
-        s.removeChild(sc);
+        (sc as ChildNode).remove();
         sc = close.nextSibling;
         if (tc !== null && next !== close) {
           // Content before a template node would derail the compiled walk: it steps over it.
@@ -190,7 +190,7 @@ function walk(x: Island, t: Node, s: Node, holes: Hole[], links: Link[]): void {
           align(close);
           tc = tc.nextSibling;
         } else {
-          s.removeChild(close);
+          close.remove();
           h.m = null;
           before = h;
         }
@@ -202,7 +202,7 @@ function walk(x: Island, t: Node, s: Node, holes: Hole[], links: Link[]): void {
     }
     if (tc.nodeType === 3 && (sc === null || sc.nodeType !== 3)) {
       // An empty dynamic text renders no server node.
-      sc = s.insertBefore(document.createTextNode(""), sc);
+      sc = s.insertBefore(new Text(), sc);
     }
     if (sc === null || sc.nodeName !== tc.nodeName) {
       fail(x);
@@ -233,8 +233,8 @@ function block(x: Island, h: Hole, start: Node, fresh: boolean): Hole {
   const parent = open.parentNode!;
   const failed = open.data === "[!";
   const content = hole(entries(open.nextSibling, close), parent, end, fresh && failed, failed);
-  parent.replaceChild(start, open);
-  parent.replaceChild(end, close);
+  open.replaceWith(start);
+  close.replaceWith(end);
   h[h.i++] = start;
   return content;
 }
@@ -277,11 +277,8 @@ class Cursor implements Hydrator {
       const h = s[k]!;
       if (h.m === marker && (marker !== null || h.p === parent)) {
         s.length = k + 1;
-        if (h.d !== undefined) {
-          // The compiled walk is past this block: the DOM's own links apply again.
-          unskip(h.d);
-          h.d = undefined;
-        }
+        // The compiled walk is past this block: the DOM's own links apply again.
+        if (h.d) unskip(h.d);
         return h;
       }
     }
@@ -384,15 +381,15 @@ function slot(name: string, sources: Record<string, SlotSource>): Renderable {
     }
     x!.splice(x!.i, 1, ...nodes);
     x!.i += nodes.length;
-    open.parentNode!.removeChild(open);
-    close.parentNode!.removeChild(close);
+    (open as Comment).remove();
+    close.remove();
     return nodes;
   }
   const source = sources[name];
-  if (source === undefined) return undefined;
-  if (source.c === undefined) {
+  if (!source) return undefined;
+  if (!source.c) {
     // First copy of an inline slot: made now, not for every hydration.
-    const copy = (source.c = document.createDocumentFragment());
+    const copy = (source.c = new DocumentFragment());
     for (const node of source.n!) copy.appendChild(node.cloneNode(true));
   }
   return source.c.cloneNode(true) as Renderable;
@@ -426,7 +423,7 @@ export function hydrate<P extends object>(
     el = start.nextSibling as Element
   ) {
     sources[el.getAttribute("data-l-slot")!] = { c: (el as HTMLTemplateElement).content };
-    parent.removeChild(el);
+    el.remove();
   }
   const walker = document.createTreeWalker(parent, 128);
   walker.currentNode = start;
@@ -434,7 +431,7 @@ export function hydrate<P extends object>(
     if (c.data.startsWith("l:s:")) {
       const close = closeOf(c);
       const source = (sources[c.data.slice(4)] ??= {});
-      if (source.c === undefined && source.n === undefined) {
+      if (!source.c && !source.n) {
         source.n = [];
         for (let node = c.nextSibling!; node !== close; node = node.nextSibling!) {
           source.n.push(node);
@@ -488,7 +485,7 @@ export function hydrate<P extends object>(
       island.d = true;
       disposeOwner(owner);
       while (start.nextSibling !== end) {
-        parent.removeChild(start.nextSibling!);
+        (start.nextSibling as ChildNode).remove();
       }
       if (DEV) {
         console.warn(
@@ -501,8 +498,7 @@ export function hydrate<P extends object>(
   if (fresh) {
     render(undefined);
   } else {
-    // Claiming replaces some markers around focused content: keep the focus where it was.
-    const focused = document.activeElement as HTMLElement | null;
+    // Claiming moves no server node (see `walk`, `slot`), so focus and selection stay put.
     try {
       render(new Cursor([hole(entries(start.nextSibling, end), parent, end)], island));
     } catch (error) {
@@ -515,8 +511,6 @@ export function hydrate<P extends object>(
     island.l = [];
     if (island.f) {
       island.r();
-    } else if (focused !== document.activeElement && focused?.isConnected) {
-      focused.focus({ preventScroll: true });
     }
   }
   return () => disposeOwner(owner);

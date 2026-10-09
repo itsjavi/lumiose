@@ -462,6 +462,26 @@ describe("hydrate", () => {
     );
   });
 
+  it("keeps the focus of an input that sits after a block and inside a slot (TASK-173)", async () => {
+    const { client, server } = await load(`
+      import { signal } from "lumen";
+      export function Form(props: { children?: any }) {
+        const n = signal(1);
+        return <form><b>{n()}</b>{props.children}<input id="own" /></form>;
+      }`);
+    const { ssr } = await import("../server/index.ts");
+    await serve(server, [["Form", {}, { children: () => ssr(['<input id="slotted">']) }]]);
+    for (const id of ["own", "slotted"]) {
+      const input = document.getElementById(id) as HTMLInputElement;
+      input.focus();
+      expect(document.activeElement).toBe(input);
+    }
+    (document.getElementById("own") as HTMLInputElement).focus();
+    await hydrateAll(client);
+    expect(warn).not.toHaveBeenCalled();
+    expect(document.activeElement).toBe(document.getElementById("own"));
+  });
+
   it("falls back to a client render on a mismatch, still replaying awaits (LUM4006)", async () => {
     const { client, server } = await load(`
       export async function Profile(props: { id: string }) {
