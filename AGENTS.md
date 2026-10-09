@@ -212,7 +212,7 @@ work remains.
   | Spark  | `packages/lumen/src/{core,dom}/**`, `packages/lumen/src/app/router/**`, `benchmarks/js-framework-benchmark/**`, `examples/spa-*` (except `spa-dotmatrix`), `examples/islands-e2e/**`                                  |
   | Nova   | `packages/lumen/src/{app,server}/**` (except `app/router/**`), `packages/adapter-node/**`, `benchmarks/ssr/**`, `benchmarks/fullstack/{apps/lumen,e2e,harness,results,viewer}/**`, `examples/ssr-*`, `examples/ssg-*` |
   | Beacon | `packages/lumen/src/{cli,jsx}/**`, `packages/lumen/docs/**`, `apps/{web,playground}/**`, `packages/{language-server,vscode,create,testing,eslint-plugin,prettier-plugin}/**`                                          |
-  | Quasar | `benchmarks/fullstack/{packages,apps/react-router,apps/next}/**`                                                                                                                                                      |
+  | Quasar | `benchmarks/fullstack/{packages,apps/react-router,apps/next}/**`, `evals/**`                                                                                                                                          |
   | Chime  | `examples/spa-dotmatrix/**`                                                                                                                                                                                           |
 
 - **Dependencies.**
