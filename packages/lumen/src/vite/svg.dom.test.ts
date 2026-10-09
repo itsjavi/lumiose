@@ -41,7 +41,8 @@ function write(code: string, target: Target, name: string): string {
 async function load(target: Target, components: string): Promise<Module> {
   const icon = write(compileSvg(HOME, "/src/home.svg", { target }).code, target, "home");
   const result = compile(
-    components.replace("./home.svg", icon),
+    // `/` separators: a Windows path in a JS string would read its `\` as escapes.
+    components.replace("./home.svg", icon.replaceAll("\\", "/")),
     // `.stsx` for components with style blocks.
     `/src/case.${components.includes("<style>") ? "stsx" : "tsx"}`,
     { target, styleImport: false, sourceMap: false },

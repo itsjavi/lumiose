@@ -6,7 +6,14 @@ import { mkdirSync, mkdtempSync, realpathSync, rmSync, symlinkSync, writeFileSyn
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { build, createLogger, createServer, type Rollup, type ViteDevServer } from "vite";
+import {
+  build,
+  createLogger,
+  createServer,
+  normalizePath,
+  type Rollup,
+  type ViteDevServer,
+} from "vite";
 import lumen from "./index.ts";
 import { contentOf, contentOptionsOf, toJs } from "./content.ts";
 import { Packages } from "./packages.ts";
@@ -79,13 +86,14 @@ async function devServer(options: Parameters<typeof lumen>[0]): Promise<ViteDevS
 
 beforeAll(async () => {
   if (!binding) return;
-  root = join(realpathSync(mkdtempSync(join(tmpdir(), "lumen-content-"))), "app");
+  // Native realpath (no 8.3 short names on Windows) and `/` separators, as Vite ids have.
+  root = `${normalizePath(realpathSync.native(mkdtempSync(join(tmpdir(), "lumen-content-"))))}/app`;
   for (const [name, code] of Object.entries(FILES)) {
-    mkdirSync(dirname(join(root, name)), { recursive: true });
-    writeFileSync(join(root, name), code);
+    mkdirSync(dirname(`${root}/${name}`), { recursive: true });
+    writeFileSync(`${root}/${name}`, code);
   }
-  mkdirSync(join(root, "node_modules"));
-  symlinkSync(lumenRoot, join(root, "node_modules/lumen"), "dir");
+  mkdirSync(`${root}/node_modules`);
+  symlinkSync(lumenRoot, `${root}/node_modules/lumen`, "junction");
   server = await devServer({
     html: true,
     md: {
@@ -106,22 +114,22 @@ afterAll(async () => {
 
 describe.skipIf(!binding)(".md and .html imports", () => {
   it("resolves imports to the files' Lumen modules, only when enabled", async () => {
-    const importer = join(root, "render.tsx");
+    const importer = `${root}/render.tsx`;
     const md = await server.environments.client.pluginContainer.resolveId(
       "./content/post.md",
       importer,
     );
-    expect(md!.id).toBe(join(root, "content/post.md.stsx"));
+    expect(md!.id).toBe(`${root}/content/post.md.stsx`);
     const html = await server.environments.ssr.pluginContainer.resolveId(
       "./components/card.html",
       importer,
     );
-    expect(html!.id).toBe(join(root, "components/card.html.stsx"));
+    expect(html!.id).toBe(`${root}/components/card.html.stsx`);
     const off = await plain.environments.client.pluginContainer.resolveId(
       "./content/post.md",
       importer,
     );
-    expect(off!.id).toBe(join(root, "content/post.md"));
+    expect(off!.id).toBe(`${root}/content/post.md`);
   });
 
   it("compiles a Markdown file to a static component with its CSS module", async () => {
@@ -169,8 +177,8 @@ describe.skipIf(!binding)(".md and .html imports", () => {
       );
     expect(failure!.message).toContain("LUM1008: `<script>` is not supported in Markdown");
     expect(failure!.message).toContain("help: Markdown is content only.");
-    expect(failure!.id).toBe(join(root, "content/scripted.md"));
-    expect(failure!.loc).toEqual({ file: join(root, "content/scripted.md"), line: 6, column: 2 });
+    expect(failure!.id).toBe(`${root}/content/scripted.md`);
+    expect(failure!.loc).toEqual({ file: `${root}/content/scripted.md`, line: 6, column: 2 });
   });
 
   it("server-renders the components, with the scripts as an island", async () => {
@@ -225,7 +233,7 @@ describe.skipIf(!binding)(".md and .html imports", () => {
           // Keeps `render` (app builds drop the exports of their entries).
           rolldownOptions: ssr
             ? {}
-            : { input: join(root, "render.tsx"), preserveEntrySignatures: "exports-only" },
+            : { input: `${root}/render.tsx`, preserveEntrySignatures: "exports-only" },
         },
       })) as Rollup.RollupOutput;
       const files = result.output.map((file) => file.fileName);
@@ -242,9 +250,9 @@ describe.skipIf(!binding)(".md and .html imports", () => {
   it("watches the source file, so an edit reaches the module", async () => {
     await server.environments.client.transformRequest("/content/post.md.stsx");
     const graph = server.environments.client.moduleGraph;
-    const watched = [...(graph.getModulesByFile(join(root, "content/post.md")) ?? [])];
+    const watched = [...(graph.getModulesByFile(`${root}/content/post.md`) ?? [])];
     const importers = watched.flatMap((mod) => [...mod.importers].map((m) => m.id));
-    expect(importers).toContain(join(root, "content/post.md.stsx"));
+    expect(importers).toContain(`${root}/content/post.md.stsx`);
   });
 
   it("scans content files for islands and styles, not HTML entries", () => {
@@ -256,12 +264,10 @@ describe.skipIf(!binding)(".md and .html imports", () => {
       new Packages(root, /node_modules/),
       content,
     );
-    const card = modules.find((m) => m.file === join(root, "components/card.html.stsx"));
+    const card = modules.find((m) => m.file === `${root}/components/card.html.stsx`);
     expect(card!.islands.map((i) => i.ref)).toEqual(["/components/card.html?lumen-script#Script"]);
     expect(card!.hasStyles).toBe(true);
-    expect(modules.find((m) => m.file === join(root, "content/post.md.stsx"))!.hasStyles).toBe(
-      true,
-    );
+    expect(modules.find((m) => m.file === `${root}/content/post.md.stsx`)!.hasStyles).toBe(true);
     // index.html is the app's page; it would only be skipped once Vite's config is known.
     expect(modules.some((m) => m.file.endsWith("index.html.stsx"))).toBe(true);
   });
@@ -296,7 +302,10 @@ describe("lumen({ md, html })", () => {
     // oxlint-disable-next-line no-eval -- checks that the code evaluates to the value
     expect((0, eval)(`(${toJs(value, "frontmatter")})`)).toEqual(value);
     // `__proto__` stays an own property and sets no prototype (TASK-169).
-    const proto = JSON.parse('{"__proto__": {"polluted": true}, "a": 1}') as Record<string, unknown>;
+    const proto = JSON.parse('{"__proto__": {"polluted": true}, "a": 1}') as Record<
+      string,
+      unknown
+    >;
     // oxlint-disable-next-line no-eval -- checks what the code evaluates to
     const copy = (0, eval)(`(${toJs(proto, "frontmatter")})`) as Record<string, unknown>;
     expect(Object.getPrototypeOf(copy)).toBe(Object.prototype);

@@ -5,7 +5,7 @@ import { mkdirSync, mkdtempSync, realpathSync, rmSync, symlinkSync, writeFileSyn
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { createLogger, createServer, type ViteDevServer } from "vite";
+import { createLogger, createServer, normalizePath, type ViteDevServer } from "vite";
 import lumen from "./index.ts";
 import { svgOptionsOf, svgoConfigOf } from "./svg.ts";
 
@@ -55,12 +55,13 @@ async function devServer(options: Parameters<typeof lumen>[0]): Promise<ViteDevS
 
 beforeAll(async () => {
   if (!binding) return;
-  root = join(realpathSync(mkdtempSync(join(tmpdir(), "lumen-svg-"))), "app");
+  // Native realpath (no 8.3 short names on Windows) and `/` separators, as Vite ids have.
+  root = `${normalizePath(realpathSync.native(mkdtempSync(join(tmpdir(), "lumen-svg-"))))}/app`;
   for (const [name, code] of Object.entries(FILES)) {
-    mkdirSync(dirname(join(root, name)), { recursive: true });
-    writeFileSync(join(root, name), code);
+    mkdirSync(dirname(`${root}/${name}`), { recursive: true });
+    writeFileSync(`${root}/${name}`, code);
   }
-  symlinkSync(lumenRoot, join(root, "node_modules/lumen"), "dir");
+  symlinkSync(lumenRoot, `${root}/node_modules/lumen`, "junction");
   server = await devServer({});
   plain = await devServer({ svg: false });
   custom = await devServer({ svg: { optimize: { plugins: [] }, currentColor: true } });
