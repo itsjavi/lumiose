@@ -225,7 +225,9 @@ function unitAssets(render: RenderState, unit: Unit): string {
     render.loaderSent = true;
     out += `<script type="module" async src="${escapeAttr(render.loaderUrl)}"${nonceAttr(render)}></script>`;
   }
-  for (const url of unit.preloads) out += `<link rel="modulepreload" href="${escapeAttr(url)}">`;
+  for (const url of unit.preloads) {
+    out += `<link rel="modulepreload" href="${escapeAttr(url)}"${nonceAttr(render)}>`;
+  }
   if (unit.styles.length > 0) out += `<style${nonceAttr(render)}>${unit.styles.join("")}</style>`;
   return out;
 }

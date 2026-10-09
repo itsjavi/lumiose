@@ -39,6 +39,8 @@ export interface RequestScope {
   action?: ActionState;
   /** Serves a same-origin request in-process, as part of this request (`fetchJSON()` in SSR). */
   fetch?: (request: Request) => Promise<Response>;
+  /** The response's CSP nonce, with `lumen({ csp: "strict" })` (./csp.ts). */
+  nonce?: string;
 }
 
 export interface ActionState {
@@ -169,6 +171,16 @@ export function params<P extends Routes = never>(): [P] extends [never]
   ? RouteParamValues
   : RouteParams<P> {
   return currentScope("params()").ctx.params as never;
+}
+
+/**
+ * The CSP nonce of the response being rendered, with `lumen({ csp: "strict" })`: put it on the
+ * app's own inline scripts and styles (`<script nonce={cspNonce()}>`). Undefined without strict
+ * CSP, outside a request, and while prerendering (prerendered pages allow their inline scripts
+ * and styles by hash instead).
+ */
+export function cspNonce(): string | undefined {
+  return storage.getStore()?.nonce;
 }
 
 /** The request's `locals`, set by middleware. */

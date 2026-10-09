@@ -27,6 +27,7 @@ export {
 } from "./server/control.ts";
 export {
   cookies,
+  cspNonce,
   env,
   locals,
   params,

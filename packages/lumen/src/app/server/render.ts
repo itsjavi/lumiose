@@ -37,6 +37,11 @@ export interface PageRenderOptions {
   onError?: (error: unknown) => void;
   /** Overrides the renderer's `loaderUrl` for this page (pages with an SPA load the SPA entry). */
   loaderUrl?: string;
+  /**
+   * `lumen({ csp: "strict" })`: `style` props render as rules of a `<style>` (spec §7.4), and the
+   * nonce, when the response has one, goes on every script, style and module preload.
+   */
+  csp?: { nonce: string | undefined };
 }
 
 /** The resolved shell (decision-19): everything outside `<Suspense>` plus the collected head. */
@@ -113,7 +118,7 @@ const rawHtml = (html: string) => new SSRHtml(html);
 
 /** The default `PageRenderer`: lumen/server's shell-first `renderToStream`. */
 export function createServerRenderer(options: ServerRendererOptions = {}): PageRenderer {
-  return async (tree, { signal, resolveAll, onError, loaderUrl }) => {
+  return async (tree, { signal, resolveAll, onError, loaderUrl, csp }) => {
     const { head, html, records, stream } = await renderShell(
       composePageTree(tree, createComponent, rawHtml),
       {
@@ -122,6 +127,8 @@ export function createServerRenderer(options: ServerRendererOptions = {}): PageR
         resolveAll,
         onError,
         ...(loaderUrl === undefined ? {} : { loaderUrl }),
+        ...(csp === undefined ? {} : { strictStyles: true }),
+        ...(csp?.nonce === undefined ? {} : { nonce: csp.nonce }),
       },
     );
     return { head, body: placeRecords(html, records, tree.document !== undefined), stream };

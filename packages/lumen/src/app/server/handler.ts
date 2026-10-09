@@ -27,6 +27,14 @@ import {
 import { HttpError, isHttpError, isRedirect, statusText, type Redirect } from "./control.ts";
 import { createCookieJar, type CookieJar } from "./cookies.ts";
 import { isSameOriginRequest, needsOriginCheck, type CsrfOptions } from "./csrf.ts";
+import {
+  addNonce,
+  createNonce,
+  nonceMeta,
+  noncePolicy,
+  withHashPolicy,
+  type CspOption,
+} from "./csp.ts";
 import { documentBody, documentParts, type DocumentComponent } from "./document.ts";
 import { documentRules, navigationHead, type Prefetch } from "./navigation.ts";
 import { createServerRenderer, type PageRenderer, type PageTree } from "./render.ts";
@@ -103,6 +111,12 @@ export interface RequestHandlerOptions {
    * here; `lumen dev` and `lumen build` default to `"hover"`.
    */
   prefetch?: Prefetch;
+  /**
+   * `lumen({ csp: "strict" })` (spec §7.4, ./csp.ts): pages get a per-response nonce on every
+   * inline script and style Lumen writes and a `Content-Security-Policy` header (outside dev,
+   * unless the page or middleware sets one); prerendered pages get a hash policy `<meta>`.
+   */
+  csp?: CspOption;
 }
 
 export type TrailingSlash = "ignore" | "always" | "never";
@@ -199,6 +213,7 @@ export function createRequestHandler(options: RequestHandlerOptions): RequestHan
       ...(match === null ? {} : { route: match.route.pattern }),
       response: createResponseState(),
       fetch: (inner) => fetchInProcess(inner, { cookies, locals: ctx.locals, depth }, request),
+      ...(options.csp === "strict" && !prerendering ? { nonce: createNonce() } : {}),
     };
 
     // Prerendering guards request APIs in routes, not in middleware (nested in-process requests
@@ -419,6 +434,7 @@ export function createRequestHandler(options: RequestHandlerOptions): RequestHan
     spa = false,
   ): Promise<Response> {
     const { request } = scope.ctx;
+    const { nonce } = scope;
     const document =
       options.document === undefined
         ? undefined
@@ -431,31 +447,45 @@ export function createRequestHandler(options: RequestHandlerOptions): RequestHan
         resolveAll,
         onError: (error) => onError(error, request),
         ...(spa && options.spaEntry !== undefined ? { loaderUrl: options.spaEntry } : {}),
+        ...(options.csp === undefined ? {} : { csp: { nonce } }),
       },
     );
     const state = scope.response;
     state.seal();
     let body: string | ReadableStream<Uint8Array>;
     // The speculation rules of MPA pages (the stream may carry them, see ./navigation.ts).
+    const mpa = nonce === undefined ? navigation.mpa : nonceRules(navigation.mpa, nonce);
     const rules = spa
       ? { head: "", stream: shell.stream }
-      : documentRules(navigation.mpa, shell.body, shell.stream);
+      : documentRules(mpa, shell.body, shell.stream);
     try {
-      const assets = options.headAssets === undefined ? "" : await options.headAssets(files, spa);
+      const assets = addNonce(
+        options.headAssets === undefined ? "" : await options.headAssets(files, spa),
+        nonce,
+      );
       // Islands read the same actionData() while hydrating as during SSR.
       const action =
         scope.action === undefined || scope.action.data === undefined
           ? ""
           : `<script type="application/json" data-l-action>${jsonForScript(scope.action.encoded)}</script>`;
-      const head = shell.head + assets + navigation.pages + rules.head + action;
+      const meta = nonce === undefined ? "" : nonceMeta(nonce);
+      const pages = addNonce(navigation.pages, nonce);
+      const head = meta + shell.head + assets + pages + rules.head + action;
       const parts = documentParts(shell.body, head, document !== undefined);
       body = documentBody(parts, rules.stream, (error) => onError(error, request));
+      // A prerendered page is a file: its inline scripts and styles are allowed by hash.
+      if (options.csp === "strict" && prerendering && typeof body === "string") {
+        body = withHashPolicy(body);
+      }
     } catch (error) {
       await rules.stream?.cancel(error);
       throw error;
     }
     const headers = new Headers(state.headers);
     if (!headers.has("content-type")) headers.set("content-type", "text/html; charset=utf-8");
+    if (nonce !== undefined && !dev && !headers.has("content-security-policy")) {
+      headers.set("content-security-policy", noncePolicy(nonce));
+    }
     if (request.method === "HEAD") {
       if (typeof body !== "string") await body.cancel();
       return new Response(null, { status: state.status, headers });
@@ -644,6 +674,11 @@ function componentOf<C = Component<any>>(module: ModuleExports, file: string): C
  * Cookies and response-context headers apply to every response, then both are sealed. The cookies
  * of an in-process request belong to its parent's response (`ownsCookies` false).
  */
+/** The speculation rules of MPA pages, with the response's nonce. */
+function nonceRules<T extends { plain: string; marked: string }>(rules: T, nonce: string): T {
+  return { ...rules, plain: addNonce(rules.plain, nonce), marked: addNonce(rules.marked, nonce) };
+}
+
 function finalize(response: Response, scope: RequestScope, ownsCookies: boolean): Response {
   const cookies = ownsCookies ? scope.cookies.headers() : [];
   if (ownsCookies) scope.cookies.seal();

@@ -35,6 +35,13 @@ export function route(): Routes | undefined {
   return serverOnly("route()", "Inside SPA routes, use route() from lumen/router.");
 }
 
+/** The page's CSP nonce (`<meta property="csp-nonce">`), with `lumen({ csp: "strict" })`. */
+export function cspNonce(): string | undefined {
+  if (typeof document === "undefined") return undefined;
+  const meta = document.querySelector<HTMLMetaElement>('meta[property="csp-nonce"]');
+  return meta?.nonce || undefined;
+}
+
 export function locals(): Locals {
   return serverOnly("locals()", CALL_ENDPOINT);
 }
