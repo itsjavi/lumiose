@@ -1,0 +1,7 @@
+{
+  "title": "Fix an island that imports server-only code",
+  "category": "islands",
+  "template": "ssr",
+  "minutes": 20,
+  "maxTurns": 70
+}

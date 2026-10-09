@@ -1,0 +1,22 @@
+import { Title } from "lumen";
+import { Button } from "../components/Button.stsx";
+
+export default function Home() {
+  return (
+    <main>
+      <Title>Welcome</Title>
+      <h1>Welcome</h1>
+      <p class="actions">
+        <Button class="cta">Sign up</Button>
+        <Button>Learn more</Button>
+      </p>
+
+      <style>
+        .cta {
+          background: #16a34a;
+          color: #ffffff;
+        }
+      </style>
+    </main>
+  );
+}

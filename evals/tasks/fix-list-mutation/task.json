@@ -1,0 +1,7 @@
+{
+  "title": "Fix a list that does not update when items are added",
+  "category": "reactivity",
+  "template": "minimal",
+  "minutes": 15,
+  "maxTurns": 60
+}

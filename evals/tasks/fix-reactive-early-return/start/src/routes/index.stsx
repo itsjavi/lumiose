@@ -1,0 +1,12 @@
+import { Title } from "lumen";
+import { Account } from "../components/Account.stsx";
+
+export default function Home() {
+  return (
+    <main>
+      <Title>Account</Title>
+      <h1>Account</h1>
+      <Account client:load />
+    </main>
+  );
+}

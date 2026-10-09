@@ -1,0 +1,7 @@
+{
+  "title": "Set up a Lumen app in an empty package",
+  "category": "scaffold",
+  "template": "none",
+  "minutes": 20,
+  "maxTurns": 80
+}

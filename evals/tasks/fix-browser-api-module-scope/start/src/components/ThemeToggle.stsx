@@ -1,0 +1,20 @@
+import { signal } from "lumen";
+
+const saved = localStorage.getItem("theme") ?? "light";
+
+export function ThemeToggle() {
+  const theme = signal(saved);
+  return (
+    <button
+      type="button"
+      class="theme"
+      onClick={() => {
+        const next = theme() === "light" ? "dark" : "light";
+        theme.set(next);
+        localStorage.setItem("theme", next);
+      }}
+    >
+      Theme: {theme()}
+    </button>
+  );
+}

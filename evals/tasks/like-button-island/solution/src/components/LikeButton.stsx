@@ -1,0 +1,15 @@
+import { signal } from "lumen";
+
+export function LikeButton({ count }: { count: number }) {
+  const liked = signal(false);
+  return (
+    <button type="button" class="like" aria-pressed={liked() ? "true" : "false"} onClick={() => liked.update((v) => !v)}>
+      ♥ {count + (liked() ? 1 : 0)}
+      <style>
+        .like {
+          border-radius: 999px;
+        }
+      </style>
+    </button>
+  );
+}

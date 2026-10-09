@@ -1,0 +1,17 @@
+import { Title } from "lumen";
+import { PriceEditor } from "../components/PriceEditor.stsx";
+
+export default function Home() {
+  return (
+    <main>
+      <Title>Pricing</Title>
+      <h1>Pricing</h1>
+      <PriceEditor
+        client:load
+        initial={9.5}
+        format={(value) => `${value.toFixed(2)} €`}
+        onChange={(value) => console.log("price", value)}
+      />
+    </main>
+  );
+}

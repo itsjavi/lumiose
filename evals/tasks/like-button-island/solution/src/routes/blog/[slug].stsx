@@ -1,0 +1,29 @@
+import { notFound, params, Title } from "lumen";
+import { LikeButton } from "../../components/LikeButton.stsx";
+import { findPost, posts } from "../../lib/posts.ts";
+
+/** The paths `lumen build` prerenders for this route. */
+export async function staticPaths() {
+  return posts.map((post) => ({ params: { slug: post.slug } }));
+}
+
+export default function BlogPost() {
+  const post = findPost(params<"/blog/[slug]">().slug);
+  if (!post) notFound();
+
+  return (
+    <article>
+      <Title>{post.title} · eval-app</Title>
+      <h1>{post.title}</h1>
+      <time>{post.date}</time>
+      <p>{post.body}</p>
+      <LikeButton client:idle count={post.likes} />
+
+      <style>
+        time {
+          color: #666;
+        }
+      </style>
+    </article>
+  );
+}

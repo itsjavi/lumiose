@@ -1,0 +1,21 @@
+export interface ButtonProps {
+  type?: "button" | "submit";
+  class?: string;
+  children?: JSX.Element;
+}
+
+export function Button(props: ButtonProps) {
+  return (
+    <button class={["btn", props.class]} type={props.type ?? "button"}>
+      {props.children}
+      <style>
+        .btn {
+          padding: 0.5rem 1rem;
+          border: 1px solid #d1d5db;
+          border-radius: 6px;
+          background: #ffffff;
+        }
+      </style>
+    </button>
+  );
+}

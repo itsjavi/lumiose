@@ -1,0 +1,20 @@
+export interface ButtonProps {
+  type?: "button" | "submit";
+  children?: JSX.Element;
+}
+
+export function Button({ type = "button", children }: ButtonProps) {
+  return (
+    <button class="btn" type={type}>
+      {children}
+      <style>
+        .btn {
+          padding: 0.5rem 1rem;
+          border: 1px solid #d1d5db;
+          border-radius: 6px;
+          background: #ffffff;
+        }
+      </style>
+    </button>
+  );
+}

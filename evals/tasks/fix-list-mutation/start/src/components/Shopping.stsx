@@ -1,0 +1,44 @@
+import { signal } from "lumen";
+
+export function Shopping({ initial = [] }: { initial?: string[] }) {
+  const items = signal<string[]>([...initial]);
+  const draft = signal("");
+
+  function add() {
+    const name = draft().trim();
+    if (name === "") return;
+    items().push(name);
+    items.set(items());
+    draft.set("");
+  }
+
+  function remove(index: number) {
+    items().splice(index, 1);
+    items.set(items());
+  }
+
+  return (
+    <section class="shopping">
+      <form
+        onSubmit={(event) => {
+          event.preventDefault();
+          add();
+        }}
+      >
+        <input bind:value={draft} placeholder="Add an item" />
+        <button>Add</button>
+      </form>
+      <ul>
+        {items().map((item, index) => (
+          <li>
+            {item}{" "}
+            <button type="button" class="remove" onClick={() => remove(index)}>
+              ×
+            </button>
+          </li>
+        ))}
+      </ul>
+      <p class="count">{items().length} items</p>
+    </section>
+  );
+}

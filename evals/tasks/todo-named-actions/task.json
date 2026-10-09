@@ -1,0 +1,7 @@
+{
+  "title": "A todo list with named form actions",
+  "category": "actions",
+  "template": "ssr",
+  "minutes": 20,
+  "maxTurns": 70
+}

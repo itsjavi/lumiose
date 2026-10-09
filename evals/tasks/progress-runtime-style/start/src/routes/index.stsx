@@ -1,0 +1,12 @@
+import { Title } from "lumen";
+import { ProgressBar } from "../components/ProgressBar.stsx";
+
+export default function Home() {
+  return (
+    <main>
+      <Title>Upload</Title>
+      <h1>Upload</h1>
+      <ProgressBar value={40} />
+    </main>
+  );
+}

@@ -1,0 +1,12 @@
+import { Title } from "lumen";
+import { Shopping } from "../components/Shopping.stsx";
+
+export default function Home() {
+  return (
+    <main>
+      <Title>Shopping</Title>
+      <h1>Shopping list</h1>
+      <Shopping client:load initial={["Bread", "Eggs"]} />
+    </main>
+  );
+}

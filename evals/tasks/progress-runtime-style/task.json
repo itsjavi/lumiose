@@ -1,0 +1,7 @@
+{
+  "title": "A progress bar styled from a runtime value",
+  "category": "styles",
+  "template": "minimal",
+  "minutes": 15,
+  "maxTurns": 60
+}

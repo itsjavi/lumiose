@@ -1,0 +1,7 @@
+{
+  "title": "Stop a component's styles from leaking to the whole site",
+  "category": "styles",
+  "template": "minimal",
+  "minutes": 15,
+  "maxTurns": 60
+}

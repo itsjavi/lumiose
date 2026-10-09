@@ -1,0 +1,7 @@
+{
+  "title": "Fix an island that receives function props",
+  "category": "islands",
+  "template": "minimal",
+  "minutes": 15,
+  "maxTurns": 60
+}

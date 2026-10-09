@@ -1,0 +1,51 @@
+import { actionData, fail, redirect, Title, type ActionContext } from "lumen";
+import { addTodo, listTodos, removeTodo, toggleTodo } from "../server/todos.server.ts";
+
+const id = async (ctx: ActionContext<"/todos">) => Number((await ctx.formData()).get("id"));
+
+export const actions = {
+  async add(ctx: ActionContext<"/todos">) {
+    const title = String((await ctx.formData()).get("title") ?? "").trim();
+    if (title === "") return fail(400, { error: "Title is required." });
+    addTodo(title);
+    redirect("/todos");
+  },
+  async toggle(ctx: ActionContext<"/todos">) {
+    toggleTodo(await id(ctx));
+    redirect("/todos");
+  },
+  async remove(ctx: ActionContext<"/todos">) {
+    removeTodo(await id(ctx));
+    redirect("/todos");
+  },
+};
+
+export default function Todos() {
+  const failed = actionData<typeof actions>();
+  return (
+    <main>
+      <Title>Todos</Title>
+      <h1>Todos</h1>
+      <form method="post" action="?/add">
+        <input name="title" />
+        <button>Add</button>
+      </form>
+      <p class="error">{failed?.error}</p>
+      <ul class="todos">
+        {listTodos().map((todo) => (
+          <li key={todo.id} data-id={todo.id} class={todo.done ? "done" : undefined}>
+            {todo.title}
+            <form method="post" action="?/toggle">
+              <input type="hidden" name="id" value={todo.id} />
+              <button>Toggle</button>
+            </form>
+            <form method="post" action="?/remove">
+              <input type="hidden" name="id" value={todo.id} />
+              <button>Remove</button>
+            </form>
+          </li>
+        ))}
+      </ul>
+    </main>
+  );
+}

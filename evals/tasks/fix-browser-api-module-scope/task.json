@@ -1,0 +1,7 @@
+{
+  "title": "Fix a component that touches localStorage during server rendering",
+  "category": "islands",
+  "template": "minimal",
+  "minutes": 15,
+  "maxTurns": 60
+}

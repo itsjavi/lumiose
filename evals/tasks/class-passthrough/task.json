@@ -1,0 +1,7 @@
+{
+  "title": "Let a component take a class that the caller's scoped styles reach",
+  "category": "styles",
+  "template": "minimal",
+  "minutes": 15,
+  "maxTurns": 60
+}

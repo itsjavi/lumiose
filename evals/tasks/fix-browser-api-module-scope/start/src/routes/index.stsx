@@ -1,0 +1,12 @@
+import { Title } from "lumen";
+import { ThemeToggle } from "../components/ThemeToggle.stsx";
+
+export default function Home() {
+  return (
+    <main>
+      <Title>Settings</Title>
+      <h1>Settings</h1>
+      <ThemeToggle client:load />
+    </main>
+  );
+}

@@ -9,7 +9,7 @@
 // then grading by the task's hidden tests. Results go to results/<date>T<time>-<host>.json;
 // transcripts and projects stay in .runs/ (git-ignored).
 import { execFileSync } from "node:child_process";
-import { cpSync, existsSync, mkdirSync, readFileSync, rmSync } from "node:fs";
+import { cpSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { cpus, hostname, release, tmpdir, totalmem, type } from "node:os";
 import { join } from "node:path";
 import { parseArgs } from "node:util";
@@ -60,6 +60,7 @@ async function validate(): Promise<void> {
     rmSync(join(dir, "eval-hidden"), { recursive: true, force: true });
     cpSync(join(task.dir, "solution"), dir, { recursive: true });
     for (const file of solutionRemovals(task)) rmSync(join(dir, file), { recursive: true, force: true });
+    mergeSolutionScripts(task, dir);
     const after = grade(task, dir);
     const ok = !before.success && after.success;
     if (!ok) failures++;
@@ -73,6 +74,16 @@ async function validate(): Promise<void> {
     if (!values.keep) rmSync(dir, { recursive: true, force: true });
   }
   if (failures > 0) process.exitCode = 1;
+}
+
+/** `solution.scripts.json`: package.json scripts the reference solution adds. */
+function mergeSolutionScripts(task: Task, dir: string): void {
+  const file = join(task.dir, "solution.scripts.json");
+  if (!existsSync(file)) return;
+  const path = join(dir, "package.json");
+  const manifest = JSON.parse(readFileSync(path, "utf8")) as { scripts?: Record<string, string> };
+  manifest.scripts = { ...manifest.scripts, ...(JSON.parse(readFileSync(file, "utf8")) as Record<string, string>) };
+  writeFileSync(path, `${JSON.stringify(manifest, null, 2)}\n`);
 }
 
 function solutionRemovals(task: Task): string[] {

@@ -1,0 +1,31 @@
+import { Title, url } from "lumen";
+import { searchProducts } from "../server/products.server.ts";
+
+async function Results({ q }: { q: string }) {
+  const products = await searchProducts(q);
+  if (products.length === 0) return <p>No products match “{q}”.</p>;
+  return (
+    <ul class="results">
+      {products.map((product) => (
+        <li key={product.sku}>
+          {product.name} — {product.price.toFixed(2)} €
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+export default function Search() {
+  const q = url().searchParams.get("q")?.trim() ?? "";
+  return (
+    <main>
+      <Title>Search</Title>
+      <h1>Search</h1>
+      <form action="/search">
+        <input name="q" value={q} />
+        <button>Search</button>
+      </form>
+      {q === "" ? <p>Type something to search.</p> : <Results q={q} />}
+    </main>
+  );
+}

@@ -1,0 +1,24 @@
+export function Notice({ title, children }: { title: string; children?: JSX.Element }) {
+  return (
+    <aside class="notice">
+      <strong>{title}</strong>
+      <p>{children}</p>
+
+      <style>
+        .notice {
+          border-left: 4px solid #b91c1c;
+          background: #fef2f2;
+          padding: 0.5rem 1rem;
+        }
+        strong {
+          display: block;
+          text-transform: uppercase;
+        }
+        p {
+          color: #b91c1c;
+          margin: 0.25rem 0 0;
+        }
+      </style>
+    </aside>
+  );
+}

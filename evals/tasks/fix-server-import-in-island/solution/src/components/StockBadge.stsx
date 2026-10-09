@@ -1,0 +1,17 @@
+import { fetchJSON, signal } from "lumen";
+
+export function StockBadge({ sku, initial }: { sku: string; initial: number }) {
+  const stock = signal(initial);
+  async function refresh() {
+    const data = await fetchJSON<{ stock: number }>(`/api/stock/${encodeURIComponent(sku)}`);
+    stock.set(data.stock);
+  }
+  return (
+    <p class="stock">
+      In stock: {stock()}{" "}
+      <button type="button" onClick={refresh}>
+        Refresh
+      </button>
+    </p>
+  );
+}

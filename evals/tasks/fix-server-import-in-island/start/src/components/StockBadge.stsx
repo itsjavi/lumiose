@@ -1,0 +1,14 @@
+import { signal } from "lumen";
+import { getStock } from "../server/stock.server.ts";
+
+export function StockBadge({ sku }: { sku: string }) {
+  const stock = signal(getStock(sku) ?? 0);
+  return (
+    <p class="stock">
+      In stock: {stock()}{" "}
+      <button type="button" onClick={() => stock.set(getStock(sku) ?? 0)}>
+        Refresh
+      </button>
+    </p>
+  );
+}

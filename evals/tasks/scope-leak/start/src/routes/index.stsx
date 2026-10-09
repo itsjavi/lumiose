@@ -1,0 +1,15 @@
+import { Title } from "lumen";
+import { Notice } from "../components/Notice.stsx";
+
+export default function Home() {
+  return (
+    <main>
+      <Title>Notices</Title>
+      <h1>Status</h1>
+      <p>
+        Everything is <strong>fine</strong>, mostly.
+      </p>
+      <Notice title="Heads up">The API will be down tonight.</Notice>
+    </main>
+  );
+}

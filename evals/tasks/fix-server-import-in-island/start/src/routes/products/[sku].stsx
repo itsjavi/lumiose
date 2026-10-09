@@ -1,0 +1,15 @@
+import { notFound, params, Title } from "lumen";
+import { StockBadge } from "../../components/StockBadge.stsx";
+import { hasProduct } from "../../server/stock.server.ts";
+
+export default function Product() {
+  const { sku } = params<"/products/[sku]">();
+  if (!hasProduct(sku)) notFound();
+  return (
+    <main>
+      <Title>{sku}</Title>
+      <h1>Product {sku}</h1>
+      <StockBadge client:load sku={sku} />
+    </main>
+  );
+}

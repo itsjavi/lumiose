@@ -1,0 +1,7 @@
+{
+  "title": "A like button island with server-provided props",
+  "category": "islands",
+  "template": "static",
+  "minutes": 15,
+  "maxTurns": 60
+}

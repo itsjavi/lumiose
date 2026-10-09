@@ -1,0 +1,30 @@
+import { signal } from "lumen";
+
+export function Account() {
+  const user = signal<string | null>(null);
+  const name = signal("");
+
+  return (
+    <>
+      {user() === null ? (
+        <form
+          class="login"
+          onSubmit={(event) => {
+            event.preventDefault();
+            if (name().trim() !== "") user.set(name().trim());
+          }}
+        >
+          <input bind:value={name} placeholder="Your name" />
+          <button>Sign in</button>
+        </form>
+      ) : (
+        <p class="welcome">
+          Signed in as {user()}.{" "}
+          <button type="button" onClick={() => user.set(null)}>
+            Sign out
+          </button>
+        </p>
+      )}
+    </>
+  );
+}

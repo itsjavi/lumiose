@@ -1,0 +1,23 @@
+import { signal } from "lumen";
+
+export interface PriceEditorProps {
+  initial: number;
+}
+
+const format = (value: number) => `${value.toFixed(2)} €`;
+
+export function PriceEditor({ initial }: PriceEditorProps) {
+  const price = signal(initial);
+  return (
+    <label class="price">
+      Price{" "}
+      <input
+        type="number"
+        step="0.01"
+        value={price()}
+        onInput={(event) => price.set(Number(event.currentTarget.value))}
+      />{" "}
+      <output>{format(price())}</output>
+    </label>
+  );
+}
