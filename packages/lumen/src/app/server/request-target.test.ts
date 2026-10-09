@@ -5,9 +5,11 @@ import { createServer, type Server } from "node:http";
 import type { AddressInfo } from "node:net";
 import { connect } from "node:net";
 import { afterEach, describe, expect, it } from "vitest";
+import { pathBelowBase } from "../headers.ts";
+import { FORM_LIMITS, MAX_BODY_BYTES } from "./body.ts";
 import { url } from "./scope.ts";
 import { app } from "./__fixtures__/app.ts";
-import { BadRequestTarget, sendWebResponse, toWebRequest } from "./node-http.ts";
+import { RejectedRequest, sendWebResponse, toWebRequest } from "./node-http.ts";
 
 let server: Server | undefined;
 
@@ -27,8 +29,8 @@ async function serve(
       try {
         request = toWebRequest(req, res, origin);
       } catch (error) {
-        if (!(error instanceof BadRequestTarget)) throw error;
-        res.writeHead(400).end();
+        if (!(error instanceof RejectedRequest)) throw error;
+        res.writeHead(error.status).end();
         return;
       }
       await sendWebResponse(res, await handle(request));
@@ -40,7 +42,7 @@ async function serve(
 
 /** Sends a raw HTTP/1.1 request; resolves to the status and the (unchunked) body. */
 function raw(port: number, head: string, body = ""): Promise<{ status: number; body: string }> {
-  return new Promise((resolve, reject) => {
+  return new Promise((resolve) => {
     const socket = connect(port, "127.0.0.1", () => {
       socket.write(
         `${head}\r\nContent-Length: ${Buffer.byteLength(body)}\r\nConnection: close\r\n\r\n${body}`,
@@ -48,8 +50,9 @@ function raw(port: number, head: string, body = ""): Promise<{ status: number; b
     });
     let out = "";
     socket.on("data", (chunk) => (out += chunk));
-    socket.on("error", reject);
-    socket.on("end", () => {
+    // A server that answers early (413) may close while the body is still being written.
+    socket.on("error", () => {});
+    socket.on("close", () => {
       const split = out.indexOf("\r\n\r\n");
       let rest = out.slice(split + 4);
       if (/^transfer-encoding: chunked$/im.test(out.slice(0, split))) {
@@ -114,5 +117,108 @@ describe("request targets", () => {
     const page = await raw(port, "GET //attacker.test/reset HTTP/1.1\r\nHost: victim.test");
     expect(page.body).toContain("victim.test //attacker.test/reset");
     expect(page.body).not.toContain("<p>attacker.test");
+  });
+});
+
+/**
+ * Sends a raw keep-alive request with a chunked body of `size` bytes, in 64 kB chunks, and resolves
+ * to the response status as soon as it arrives (the server may answer before the body ends).
+ */
+function rawChunked(port: number, head: string, size: number): Promise<number> {
+  return new Promise((resolve) => {
+    let out = "";
+    let done = false;
+    const socket = connect(port, "127.0.0.1", async () => {
+      socket.write(`${head}\r\nTransfer-Encoding: chunked\r\n\r\n`);
+      const chunk = "a".repeat(64 * 1024);
+      for (let sent = 0; sent < size; sent += chunk.length) {
+        if (done) break;
+        socket.write(`${chunk.length.toString(16)}\r\n${chunk}\r\n`);
+        await new Promise((next) => setImmediate(next));
+      }
+      if (!done) socket.write("0\r\n\r\n");
+    });
+    socket.on("data", (data) => {
+      out += data;
+      if (!done && out.includes("\r\n")) {
+        done = true;
+        resolve(Number(out.split(" ")[1]));
+        socket.destroy();
+      }
+    });
+    socket.on("error", () => {});
+  });
+}
+
+/** Sends only the head of a request declaring `length` bytes; resolves to the response status. */
+function declaredOnly(port: number, head: string, length: number): Promise<number> {
+  return new Promise((resolve) => {
+    const socket = connect(port, "127.0.0.1", () =>
+      socket.write(`${head}\r\nContent-Length: ${length}\r\nConnection: close\r\n\r\n`),
+    );
+    let out = "";
+    socket.on("data", (data) => {
+      out += data;
+      if (out.includes("\r\n\r\n")) socket.destroy();
+    });
+    socket.on("error", () => {});
+    socket.on("close", () => resolve(Number(out.split(" ")[1])));
+  });
+}
+
+/** A form action and an endpoint that reads its whole body. */
+function actionApp() {
+  const ran = { count: 0 };
+  const { handle } = app({
+    "src/routes/form.stsx": {
+      default: () => "<p>form</p>",
+      action: async (ctx: { formData(): Promise<FormData> }) => {
+        await ctx.formData();
+        ran.count++;
+        return { ok: true };
+      },
+    },
+    "src/routes/api/upload.ts": {
+      mode: "server",
+      POST: async (ctx: { request: Request }) =>
+        new Response(String((await ctx.request.arrayBuffer()).byteLength)),
+    },
+  });
+  return { handle, ran };
+}
+
+// Bounded bodies and malformed requests (TASK-167 H1, L1, L3).
+describe("request bodies and malformed requests", () => {
+  const form = "Content-Type: application/x-www-form-urlencoded";
+
+  it("refuses a form action body declared or streamed over the limit with 413", async () => {
+    const { handle, ran } = actionApp();
+    const port = await serve(handle, "http://victim.test");
+    const head = `POST /form HTTP/1.1\r\nHost: victim.test\r\nOrigin: http://victim.test\r\n${form}`;
+    expect(await declaredOnly(port, head, FORM_LIMITS.urlencoded + 1)).toBe(413);
+    expect(await rawChunked(port, head, FORM_LIMITS.urlencoded + 64 * 1024)).toBe(413);
+    expect(ran.count).toBe(0);
+    expect((await raw(port, head, "a=1")).status).toBe(200);
+    expect(ran.count).toBe(1);
+  });
+
+  it("caps every body through the bridge, endpoints included", async () => {
+    const { handle } = actionApp();
+    const port = await serve(handle, "http://victim.test");
+    const head =
+      "POST /api/upload HTTP/1.1\r\nHost: victim.test\r\nContent-Type: application/octet-stream";
+    expect((await raw(port, head, "x".repeat(1000))).body).toBe("1000");
+    expect(await rawChunked(port, head, MAX_BODY_BYTES + 64 * 1024)).toBe(413);
+    expect(await declaredOnly(port, head, MAX_BODY_BYTES + 1)).toBe(413);
+  });
+
+  it("answers forbidden methods with 405, not a server error", async () => {
+    const port = await serve(() => new Response("app"));
+    expect((await raw(port, "TRACE / HTTP/1.1\r\nHost: a.test")).status).toBe(405);
+  });
+
+  it("matches path-scoped header rules on the normalized pathname", () => {
+    expect(pathBelowBase("/x/../admin/page?q=1", "/")).toBe("/admin/page");
+    expect(pathBelowBase("/docs/x/%2e%2e/admin", "/docs/")).toBe("/admin");
   });
 });

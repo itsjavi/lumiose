@@ -8,9 +8,9 @@
 // The directory is a build output, immutable while the server runs: it is indexed once, when the
 // handler is created, so a request that no file answers (every page) costs no file system call.
 
-import { createReadStream, readdirSync, statSync, type Stats } from "node:fs";
+import { createReadStream, readdirSync, realpathSync, statSync, type Stats } from "node:fs";
 import type { IncomingMessage, ServerResponse } from "node:http";
-import { extname, join, relative, sep } from "node:path";
+import { extname, join, sep } from "node:path";
 import type { BuiltAppConfig } from "lumen/build";
 import { requestTarget } from "lumen/node";
 import { acceptedEncodings, varyOnEncoding } from "./compress.ts";
@@ -96,7 +96,7 @@ export function createStaticHandler(
     }
     const file = fileStats(path);
     if (file !== undefined) {
-      return send(req, res, file, path, path.startsWith(assetsPrefix), compress);
+      return send(req, res, file, path, path.startsWith(assetsPrefix) && isHashed(path), compress);
     }
     if (config.trailingSlash !== "always") {
       const page = fileStats(`${path}.html`);
@@ -140,26 +140,54 @@ interface FileInfo {
   gzip?: FileInfo;
 }
 
-/** Every file below `dir` (symbolic links followed) by its `/`-separated relative path. */
+/**
+ * Every file below `dir` by its `/`-separated relative path, following symbolic links. An entry
+ * that cannot be read is skipped (logged), never the whole index; links that lead outside `dir`
+ * are served but reported once at startup (TASK-167 L2).
+ */
 function indexFiles(dir: string): Map<string, FileInfo> {
   const files = new Map<string, FileInfo>();
-  let entries;
+  let root: string;
   try {
-    entries = readdirSync(dir, { recursive: true, withFileTypes: true });
+    root = realpathSync(dir);
   } catch {
     return files; // no dist/client: nothing static
   }
-  for (const entry of entries) {
-    if (!entry.isFile() && !entry.isSymbolicLink()) continue;
-    const absolute = join(entry.parentPath, entry.name);
-    let stats: Stats;
+  const escaping: string[] = [];
+  const visited = new Set<string>([root]);
+  const walk = (directory: string, prefix: string) => {
+    let entries;
     try {
-      stats = statSync(absolute);
-    } catch {
-      continue; // a dangling link
+      entries = readdirSync(directory, { withFileTypes: true });
+    } catch (error) {
+      console.warn(`[adapter-node] cannot read ${directory}: ${(error as Error).message}`);
+      return;
     }
-    if (stats.isFile())
-      files.set(relative(dir, absolute).split(sep).join("/"), { absolute, stats });
+    for (const entry of entries) {
+      const absolute = join(directory, entry.name);
+      const path = prefix + entry.name;
+      let stats: Stats;
+      try {
+        stats = statSync(absolute);
+        if (entry.isSymbolicLink()) {
+          const target = realpathSync(absolute);
+          if (target !== root && !target.startsWith(root + sep))
+            escaping.push(`${path} -> ${target}`);
+          if (stats.isDirectory() && visited.has(target)) continue; // a cycle
+          if (stats.isDirectory()) visited.add(target);
+        }
+      } catch {
+        continue; // a dangling link, or an entry removed meanwhile
+      }
+      if (stats.isDirectory()) walk(absolute, `${path}/`);
+      else if (stats.isFile()) files.set(path, { absolute, stats });
+    }
+  };
+  walk(root, "");
+  if (escaping.length > 0) {
+    console.warn(
+      `[adapter-node] ${dir} has symbolic links outside it, served as static files:\n  ${escaping.join("\n  ")}`,
+    );
   }
   for (const [path, file] of files) {
     const br = files.get(`${path}.br`);
@@ -167,7 +195,25 @@ function indexFiles(dir: string): Map<string, FileInfo> {
     if (br !== undefined) file.br = br;
     if (gzip !== undefined) file.gzip = gzip;
   }
+  // Precompressed copies are served for their file (Content-Encoding), not as files of their own,
+  // and `_headers` (rules for static hosts, TASK-125) is configuration (TASK-167 L6).
+  for (const path of [...files.keys()]) {
+    const original = path.replace(/\.(?:br|gz)$/, "");
+    if (original !== path && files.has(original)) files.delete(path);
+  }
+  files.delete("_headers");
   return files;
+}
+
+/**
+ * Whether a file name carries a build hash (Vite's `name-[hash].ext`: 8+ word characters with a digit or
+ * an uppercase letter), so its URL changes with its content and it can be cached for a
+ * year. Other files under the assets directory revalidate (TASK-167 L5).
+ */
+function isHashed(path: string): boolean {
+  const name = path.slice(path.lastIndexOf("/") + 1);
+  // A hash with a `-` inside fails the test: the file then revalidates, which is only slower.
+  return /[-.](?=\w*[\dA-Z])\w{8,}\.[^.]+$/.test(name);
 }
 
 function redirect(res: ServerResponse, location: string): true {

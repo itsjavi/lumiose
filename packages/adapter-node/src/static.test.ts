@@ -1,9 +1,9 @@
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { chmodSync, mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { createServer, type Server } from "node:http";
 import type { AddressInfo } from "node:net";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import type { BuiltAppConfig } from "lumen/build";
 import { createStaticHandler } from "./static.ts";
 
@@ -12,7 +12,11 @@ const FILES: Record<string, string> = {
   "about/index.html": "<h1>about</h1>",
   "contact.html": "<h1>contact</h1>",
   "sitemap.xml": "<urlset/>",
-  "assets/app-abc123.js": "console.log(1)",
+  "assets/app-B4x9QkZ2.js": "console.log(1)",
+  "assets/logo.svg": "<svg/>",
+  "assets/style.css": "a{}",
+  "assets/style.css.br": "br-bytes",
+  _headers: "/*\n  X-Test: 1\n",
   ".vite/manifest.json": "{}",
   ".well-known/security.txt": "Contact: x",
 };
@@ -72,12 +76,23 @@ describe("createStaticHandler", () => {
     expect(page.headers.get("content-type")).toBe("text/html; charset=utf-8");
     expect(page.headers.get("cache-control")).toBe("public, max-age=0, must-revalidate");
     expect(await page.text()).toBe("<h1>about</h1>");
-    const asset = await get("/assets/app-abc123.js");
+    const asset = await get("/assets/app-B4x9QkZ2.js");
     expect(asset.headers.get("content-type")).toBe("text/javascript; charset=utf-8");
     expect(asset.headers.get("cache-control")).toBe("public, max-age=31536000, immutable");
+    // Only hashed names are immutable: an unhashed file under assets/ revalidates (TASK-167 L5).
+    expect((await get("/assets/logo.svg")).headers.get("cache-control")).toBe(
+      "public, max-age=0, must-revalidate",
+    );
     expect((await get("/sitemap.xml")).headers.get("content-type")).toBe(
       "application/xml; charset=utf-8",
     );
+  });
+
+  it("does not serve _headers or a precompressed copy as files of their own", async () => {
+    const get = await serve();
+    expect((await get("/_headers")).status).toBe(418);
+    expect((await get("/assets/style.css.br")).status).toBe(418);
+    expect((await get("/assets/style.css")).status).toBe(200);
   });
 
   it("answers conditional requests with 304 and HEAD without a body", async () => {
@@ -128,5 +143,45 @@ describe("createStaticHandler", () => {
     expect(await (await get("/docs")).text()).toBe("<h1>home</h1>");
     expect(await (await get("/docs/about/")).text()).toBe("<h1>about</h1>");
     expect((await get("/about/")).status).toBe(418);
+  });
+});
+
+describe("the static index (TASK-167 L2)", () => {
+  it("skips unreadable entries, keeps the rest, and warns about links leaving the directory", async () => {
+    const root = mkdtempSync(join(tmpdir(), "lumen-index-"));
+    const outside = mkdtempSync(join(tmpdir(), "lumen-outside-"));
+    writeFileSync(join(root, "ok.txt"), "ok");
+    mkdirSync(join(root, "locked"));
+    writeFileSync(join(root, "locked", "secret.txt"), "secret");
+    chmodSync(join(root, "locked"), 0o000);
+    writeFileSync(join(outside, "shared.txt"), "shared");
+    symlinkSync(join(outside, "shared.txt"), join(root, "shared.txt"));
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    try {
+      const statics = createStaticHandler(root, {
+        base: "/",
+        trailingSlash: "ignore",
+        assetsDir: "assets",
+      });
+      const server = createServer((req, res) => {
+        void statics(req, res).then((served) => {
+          if (!served) res.writeHead(418).end();
+        });
+      });
+      servers.push(server);
+      await new Promise<void>((done) => server.listen(0, "127.0.0.1", done));
+      const origin = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
+      expect(await (await fetch(`${origin}/ok.txt`)).text()).toBe("ok");
+      expect((await fetch(`${origin}/locked/secret.txt`)).status).toBe(418);
+      expect(await (await fetch(`${origin}/shared.txt`)).text()).toBe("shared");
+      const warnings = warn.mock.calls.map((call) => String(call[0])).join("\n");
+      expect(warnings).toContain("cannot read");
+      expect(warnings).toContain("shared.txt ->");
+    } finally {
+      warn.mockRestore();
+      chmodSync(join(root, "locked"), 0o755);
+      rmSync(root, { recursive: true, force: true });
+      rmSync(outside, { recursive: true, force: true });
+    }
   });
 });

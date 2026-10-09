@@ -20,7 +20,7 @@ import { join, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import type { ServerEntryModule } from "lumen/build";
 import {
-  BadRequestTarget,
+  RejectedRequest,
   headersFor,
   pathBelowBase,
   requestTarget,
@@ -99,7 +99,7 @@ function nodeHandler(dir: string, entry: ServerEntryModule, options: HandlerOpti
     // Only `/path` targets (and `OPTIONS *`): `//host/…` must not become another origin (TASK-164).
     const target = requestTarget(req);
     if (target === undefined) {
-      badRequest(res);
+      reject(res, 400);
       return;
     }
     for (const [name, value] of headers) res.setHeader(name, value);
@@ -124,8 +124,10 @@ function nodeHandler(dir: string, entry: ServerEntryModule, options: HandlerOpti
           : response,
       );
     })().catch((error: unknown) => {
-      if (error instanceof BadRequestTarget) {
-        badRequest(res); // an invalid Host header: the client's fault, nothing to log
+      if (error instanceof RejectedRequest) {
+        // A malformed request (bad Host, forbidden method, body too large): the client's fault,
+        // answered with its status and nothing logged.
+        reject(res, error.status);
         return;
       }
       if (next !== undefined) {
@@ -143,13 +145,20 @@ function nodeHandler(dir: string, entry: ServerEntryModule, options: HandlerOpti
   };
 }
 
-function badRequest(res: ServerResponse): void {
+const STATUS_TEXT: Record<number, string> = {
+  400: "Bad Request",
+  405: "Method Not Allowed",
+  413: "Payload Too Large",
+  501: "Not Implemented",
+};
+
+function reject(res: ServerResponse, status: number): void {
   if (res.headersSent) {
     res.destroy();
     return;
   }
-  res.writeHead(400, { "content-type": "text/plain; charset=utf-8", connection: "close" });
-  res.end("Bad Request");
+  res.writeHead(status, { "content-type": "text/plain; charset=utf-8", connection: "close" });
+  res.end(STATUS_TEXT[status] ?? "Bad Request");
 }
 
 /** Starts an HTTP server for the build in `dir`; resolves once it listens. */

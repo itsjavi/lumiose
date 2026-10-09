@@ -10,6 +10,7 @@ import {
   type ActionResponseBody,
 } from "../actions/protocol.ts";
 import type { Action, ActionContext, RequestContext } from "./context.ts";
+import { readFormData } from "./body.ts";
 import { HttpError } from "./control.ts";
 
 type ModuleExports = Record<string, unknown>;
@@ -51,10 +52,8 @@ export async function runAction(
   ctx: RequestContext,
 ): Promise<Response | ActionOutcome> {
   let form: Promise<FormData> | undefined;
-  const formData = () =>
-    (form ??= ctx.request.formData().catch(() => {
-      throw new HttpError(400, "The request body is not form data.");
-    }));
+  // Bounded: 413 beyond the form limits, 400 for a body that is no form (./body.ts).
+  const formData = () => (form ??= readFormData(ctx.request));
   const result = await action({ ...ctx, formData } satisfies ActionContext);
   if (result instanceof Response) return result;
   if (isActionFailure(result)) return { type: "failure", status: result.status, data: result.data };

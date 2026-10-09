@@ -83,6 +83,28 @@ length, `HEAD`, `204`/`304` or marked `Cache-Control: no-transform` are sent as 
 compressible response gets `Vary: Accept-Encoding`. Pass `compress: false` when a proxy or CDN in
 front compresses, or to measure raw payloads.
 
+**Compression and secrets (BREACH).** A compressed response's size can leak a secret it contains
+(a CSRF token, a session value) when an attacker can make the victim's browser request pages that
+also reflect attacker-chosen text, and can observe the sizes. Lumen's form check uses the `Origin`
+header, not a token in the page, so it is not exposed; for pages that render a secret next to
+reflected input (a token in a form that also echoes a query parameter), send them with
+`Cache-Control: no-transform` (`response().setHeader("cache-control", "private, no-transform")`),
+which skips on-the-fly compression for that response, or turn compression off with
+`compress: false`.
+
+**Malformed requests** never reach the app and are not logged: a request target that is not a
+path (`http://other/x`, `//host` is a path) or an invalid `Host` header gets `400`, `TRACE`/`TRACK`
+`405`, `CONNECT` `501`. **Request bodies are bounded**: a body larger than 16 MB gets `413 Payload
+Too Large`, refused before reading when `Content-Length` says so, else as soon as the limit is
+passed while the app reads it (an endpoint's `request.arrayBuffer()` rejects with that `413`).
+Form actions read at most 1 MB of URL-encoded fields and 16 MB of multipart data (see
+[Security](../concepts/security.md)). These are fixed defaults for now.
+
+**Timeouts.** The server keeps Node's defaults (`headersTimeout` 60 s, `requestTimeout` 300 s,
+`keepAliveTimeout` 5 s), which bound slow clients. On the open internet, put a reverse proxy
+(nginx, Caddy, a load balancer) in front for TLS, connection limits and tighter timeouts, or set
+them on `createServer(…).server` (`server.requestTimeout = 30_000`).
+
 ## createStaticHandler
 
 ```ts
@@ -99,8 +121,9 @@ interface StaticOptions {
 ```
 
 Serves `GET` and `HEAD` requests below the app's `base` from `dir` (the build's `client/`), and
-resolves `false` when no file answers. Content-hashed files in the assets directory are cached for a
-year (`immutable`); everything else revalidates with `ETag` and `Last-Modified` (`304`). Page URLs
+resolves `false` when no file answers. Content-hashed files in the assets directory (Vite's
+`name-[hash].ext`) are cached for a year (`immutable`); everything else, other files under
+`assets/` included, revalidates with `ETag` and `Last-Modified` (`304`). Page URLs
 follow the build's `trailingSlash`: `/about` serves `about/index.html` (`"ignore"`), redirects to
 `/about/` (`"always"`), or serves `about.html` (`"never"`, which redirects `/about/`). Paths with
 `..` or dot files (other than `.well-known`) are never served. `config` is the build entry's
@@ -108,7 +131,9 @@ follow the build's `trailingSlash`: `/about` serves `about/index.html` (`"ignore
 (else `.gz`) copy when the build wrote one, with `Content-Encoding` and `Vary: Accept-Encoding`.
 `dir` is indexed once, when the handler is created: a build output does not change while it is
 served, and requests no file answers (every page) cost no file system call. Files written into
-`dir` later are not served until the server restarts.
+`dir` later are not served until the server restarts. An entry that cannot be read is skipped with a
+warning, and symbolic links that lead outside `dir` are served but listed in a warning at startup.
+`_headers` (rules for static hosts) and the `.br`/`.gz` copies are not served as files of their own.
 
 ## Example
 

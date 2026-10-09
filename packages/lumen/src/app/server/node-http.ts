@@ -4,6 +4,8 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { Readable } from "node:stream";
 import type { TLSSocket } from "node:tls";
+import { limitedStream, MAX_BODY_BYTES } from "./body.ts";
+import { HttpError } from "./control.ts";
 
 // For adapters: the `lumen({ headers })` of a request path (`config.headers` of the server entry).
 export { headersFor, pathBelowBase, type HeadersOption } from "../headers.ts";
@@ -20,22 +22,27 @@ export function requestTarget(req: IncomingMessage & { originalUrl?: string }): 
   return undefined;
 }
 
-/** A request target that cannot be served (`toWebRequest` throws it; answer 400). */
-export class BadRequestTarget extends Error {
-  override name = "BadRequestTarget";
-  readonly status = 400;
+/**
+ * A request `toWebRequest` refuses: a target or `Host` it cannot serve (400), or a body declared
+ * larger than the limit (413). Answer `status` without logging: it is the client's fault.
+ */
+export class RejectedRequest extends HttpError {
+  constructor(message: string, status = 400) {
+    super(status, message);
+    this.name = "RejectedRequest";
+  }
 }
 
 /**
  * The origin of a request: `origin` (normalized), else the socket's protocol and the `Host` header,
- * reduced to scheme, host and port so a header can add no path. Throws {@link BadRequestTarget}
+ * reduced to scheme, host and port so a header can add no path. Throws {@link RejectedRequest}
  * for a `Host` header that is no host.
  */
 function originOf(req: IncomingMessage, origin: string | undefined): string {
   try {
     return new URL(origin ?? `${protocolOf(req)}://${hostOf(req)}`).origin;
   } catch {
-    throw new BadRequestTarget(`Invalid Host header: ${JSON.stringify(hostOf(req))}`);
+    throw new RejectedRequest(`Invalid Host header: ${JSON.stringify(hostOf(req))}`);
   }
 }
 
@@ -47,7 +54,7 @@ function originOf(req: IncomingMessage, origin: string | undefined): string {
  *
  * A web `Request` for an incoming Node request. The URL comes from `origin` (or the `Host` header
  * and the socket's protocol) and the path of `originalUrl` (connect) or `url`, appended to that
- * origin as is: a target such as `//attacker.test/x` stays a path. Throws {@link BadRequestTarget}
+ * origin as is: a target such as `//attacker.test/x` stays a path. Throws {@link RejectedRequest}
  * for targets other than `/…` (and `*` with `OPTIONS`). The body streams; the signal aborts when
  * the client disconnects before the response finished.
  */
@@ -58,7 +65,7 @@ export function toWebRequest(
 ): Request {
   const target = requestTarget(req);
   if (target === undefined) {
-    throw new BadRequestTarget(`Unsupported request target: ${JSON.stringify(req.url)}`);
+    throw new RejectedRequest(`Unsupported request target: ${JSON.stringify(req.url)}`);
   }
   // Concatenated, not resolved: `new URL(target, base)` would read `//host/…` as a host.
   const url = new URL(originOf(req, origin) + target);
@@ -66,19 +73,38 @@ export function toWebRequest(
   const raw = req.rawHeaders;
   for (let i = 0; i < raw.length; i += 2) {
     // HTTP/2 pseudo-headers (`:method`, `:path`, …) are not valid header names.
-    if (!raw[i]!.startsWith(":")) headers.append(raw[i]!, raw[i + 1]!);
+    if (raw[i]!.startsWith(":")) continue;
+    try {
+      headers.append(raw[i]!, raw[i + 1]!);
+    } catch {
+      throw new RejectedRequest(`Invalid header ${JSON.stringify(raw[i])}`);
+    }
   }
   const controller = new AbortController();
   res.once("close", () => {
     if (!res.writableFinished) controller.abort();
   });
   const method = req.method ?? "GET";
+  // Methods fetch's Request forbids: answered here instead of failing as a server error.
+  if (/^(?:TRACE|TRACK)$/i.test(method))
+    throw new RejectedRequest(`${method} is not allowed.`, 405);
+  if (/^CONNECT$/i.test(method)) throw new RejectedRequest("CONNECT is not supported.", 501);
   const init: RequestInit & { duplex?: "half" } = { method, headers, signal: controller.signal };
   if (method !== "GET" && method !== "HEAD") {
-    init.body = Readable.toWeb(req) as ReadableStream<Uint8Array>;
+    // Bounded (TASK-167): a declared length above the cap is refused before reading; a longer
+    // streamed body errors with a 413 HttpError where the app reads it.
+    if (Number(req.headers["content-length"] ?? 0) > MAX_BODY_BYTES) {
+      throw new RejectedRequest(`The request body is larger than ${MAX_BODY_BYTES} bytes.`, 413);
+    }
+    init.body = limitedStream(Readable.toWeb(req) as ReadableStream<Uint8Array>, MAX_BODY_BYTES);
     init.duplex = "half";
   }
-  return new Request(url, init);
+  try {
+    return new Request(url, init);
+  } catch (error) {
+    // An invalid method or header value from the client.
+    throw new RejectedRequest(`Malformed request: ${(error as Error).message}`);
+  }
 }
 
 /**

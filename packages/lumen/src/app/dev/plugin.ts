@@ -43,7 +43,7 @@ import {
   type RouteMode,
 } from "../routes/manifest.ts";
 import type { RequestHandler, TrailingSlash } from "../server/handler.ts";
-import { BadRequestTarget, sendWebResponse, toWebRequest } from "../server/node-http.ts";
+import { RejectedRequest, sendWebResponse, toWebRequest } from "../server/node-http.ts";
 import { typegen } from "../typegen/index.ts";
 import { formatError, overlayError, overlayScript, type OverlayError } from "./errors.ts";
 import { hasSpa, SPA_ENTRY_ID, spaEntryCode } from "../router/entry.ts";
@@ -295,9 +295,12 @@ export function lumenDev(options: LumenDevOptions = {}): Plugin {
       try {
         request = toWebRequest(req, res);
       } catch (error) {
-        if (!(error instanceof BadRequestTarget)) throw error;
-        // `//host/…` and other non-path targets (TASK-164): the client's fault.
-        res.writeHead(400, { "content-type": "text/plain; charset=utf-8" }).end("Bad Request");
+        if (!(error instanceof RejectedRequest)) throw error;
+        // `//host/…` and other non-path targets (TASK-164), forbidden methods, bodies over the
+        // limit: the client's fault, answered with the error's status.
+        res
+          .writeHead(error.status, { "content-type": "text/plain; charset=utf-8" })
+          .end(error.message);
         return;
       }
       const errors = [...app.errors];

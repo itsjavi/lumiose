@@ -50,11 +50,21 @@ function matches(pattern: readonly string[], path: readonly string[]): boolean {
 
 /** The path of a request URL below `base` (`/sub/a?x` → `/a`); undefined outside it. */
 export function pathBelowBase(url: string, base: string): string | undefined {
-  const pathname = decodeURIComponentSafe(url.split(/[?#]/, 1)[0]!);
+  // The pathname the router sees: dot segments resolved, so `/x/../admin` matches `/admin` rules
+  // (TASK-167 L1).
+  const pathname = decodeURIComponentSafe(normalizePath(url.split(/[?#]/, 1)[0]!));
   if (base === "/" || base === "" || base === "./") return pathname;
   const prefix = base.endsWith("/") ? base.slice(0, -1) : base;
   if (pathname === prefix) return "/";
   return pathname.startsWith(`${prefix}/`) ? pathname.slice(prefix.length) : undefined;
+}
+
+function normalizePath(path: string): string {
+  try {
+    return new URL(`http://localhost${path.startsWith("/") ? path : `/${path}`}`).pathname;
+  } catch {
+    return path;
+  }
 }
 
 function decodeURIComponentSafe(path: string): string {

@@ -66,6 +66,12 @@ never see another host. Targets that are not a path (`http://other/x`, or `*` ot
 `OPTIONS`) and invalid `Host` headers get `400 Bad Request`. Behind a proxy that rewrites the
 host, set `ORIGIN` (or the adapter's `origin`) so a client cannot choose the origin through `Host`.
 
+**Request body limits.** `ctx.formData()` in a form action reads at most 1 MB of URL-encoded
+fields and 16 MB of multipart data, and every request body through `lumen dev`, `lumen preview`
+and `@lumen/adapter-node` at most 16 MB: a larger body gets `413 Payload Too Large`, refused before
+reading when its `Content-Length` says so, else as soon as the count passes the limit. Nothing
+buffers an unbounded body. (These defaults are fixed for now.)
+
 ## API
 
 | Option / export                   | Meaning                                                                     |
