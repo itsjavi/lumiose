@@ -19,15 +19,13 @@ import {
 } from "../core/internal.ts";
 import { signal, type Signal } from "../core/signal.ts";
 import { hydrator } from "./hydration.ts";
-import { createRange, insert, type RangeStart } from "./insert.ts";
+import { createRange, detach, lastOf, place, renderRange, type RangeStart } from "./insert.ts";
 
 interface Row<T> {
   item: T;
   key: unknown;
-  /** The row's node, or the start marker of a row that renders several nodes. */
+  /** The row's node, or the start of the range of a row that renders several nodes. */
   node: Node;
-  /** The end marker of a multi-node row. */
-  end: Node | undefined;
   owner: Owner | undefined;
   index: Signal<number> | undefined;
 }
@@ -51,7 +49,6 @@ let rowState: ListState<any> | undefined;
 let rowItem: unknown;
 let rowIndex: Signal<number> | undefined;
 let rowNode: Node | undefined;
-let rowEnd: Node | undefined;
 
 function renderRow(): void {
   const state = rowState!;
@@ -60,20 +57,8 @@ function renderRow(): void {
     index === undefined
       ? (state.render as (item: unknown) => Renderable)(rowItem)
       : state.render(rowItem, index);
-  if (value instanceof Node && value.nodeType !== 11) {
-    // One node, or a range (an async component), which already has its own markers.
-    rowNode = value;
-    rowEnd = (value as Partial<RangeStart>).$$end;
-  } else {
-    // Several nodes, text or dynamic content: a range between two empty text nodes.
-    const start = document.createTextNode("");
-    const end = document.createTextNode("");
-    const fragment = document.createDocumentFragment();
-    fragment.append(start, end);
-    insert(fragment, value, end);
-    rowNode = start;
-    rowEnd = end;
-  }
+  // One node, or a range (an async component); several nodes, text or dynamic content get a range.
+  rowNode = value instanceof Node && value.nodeType !== 11 ? value : renderRange(value);
 }
 
 function createRow<T>(state: ListState<T>, item: T, key: unknown, i: number): Row<T> {
@@ -82,44 +67,20 @@ function createRow<T>(state: ListState<T>, item: T, key: unknown, i: number): Ro
   rowItem = item;
   rowIndex = index;
   const owner = runWithLazyOwner(state.owner, renderRow);
-  const row: Row<T> = { item, key, node: rowNode!, end: rowEnd, owner, index };
-  rowState = rowItem = rowIndex = rowNode = rowEnd = undefined;
+  const row: Row<T> = { item, key, node: rowNode!, owner, index };
+  rowState = rowItem = rowIndex = rowNode = undefined;
   return row;
 }
 
 function insertRow(parent: Node, row: Row<unknown>, ref: Node | null): void {
-  const end = row.end;
-  if (end === undefined) {
-    parent.insertBefore(row.node, ref);
-  } else {
-    let node: Node | null = row.node;
-    while (node !== null) {
-      const next: Node | null = node === end ? null : node.nextSibling;
-      parent.insertBefore(node, ref);
-      node = next;
-    }
-  }
-}
-
-function removeNodes(parent: Node, row: Row<unknown>): void {
-  const end = row.end;
-  if (end === undefined) {
-    parent.removeChild(row.node);
-  } else {
-    let node: Node | null = row.node;
-    while (node !== null) {
-      const next: Node | null = node === end ? null : node.nextSibling;
-      parent.removeChild(node);
-      node = next;
-    }
-  }
+  place(parent, row.node, ref);
 }
 
 function removeRow(parent: Node, row: Row<unknown>): void {
   if (row.owner !== undefined) {
     disposeOwner(row.owner);
   }
-  removeNodes(parent, row);
+  detach(parent, row.node);
 }
 
 /** Whether row `i` is in `parent` right after row `i - 1` (hydration: a row that claimed its node). */
@@ -129,13 +90,13 @@ function inPlace(parent: Node, rows: Row<unknown>[], i: number): boolean {
     return false;
   }
   const prev = rows[i - 1];
-  return prev === undefined || (prev.end ?? prev.node).nextSibling === node;
+  return prev === undefined || lastOf(prev.node).nextSibling === node;
 }
 
 /** Whether the rows (and the marker, if any) are all of `parent`'s children. */
 function ownsParent(parent: Node, rows: Row<unknown>[], marker: Node | null): boolean {
   const last = rows[rows.length - 1]!;
-  const lastNode = last.end ?? last.node;
+  const lastNode = lastOf(last.node);
   return (
     parent.firstChild === rows[0]!.node &&
     (marker === null
@@ -163,7 +124,7 @@ function clearAll(parent: Node, rows: Row<unknown>[], marker: Node | null): void
     }
   } else {
     for (const row of rows) {
-      removeNodes(parent, row);
+      detach(parent, row.node);
     }
   }
 }
@@ -252,7 +213,7 @@ function reconcile<T>(state: ListState<T>, items: readonly T[]): void {
       aEnd--;
     } else if (aStart < aEnd && first.key === keys[bEnd] && last.key === keys[bStart]) {
       // Swap: the first and last rows crossed over.
-      const after = (last.end ?? last.node).nextSibling;
+      const after = lastOf(last.node).nextSibling;
       insertRow(parent, last, first.node);
       insertRow(parent, first, after);
       b[bStart++] = last;
@@ -373,7 +334,7 @@ function removeUnclaimed(adopted: Node[], rows: Row<unknown>[]): void {
   for (const row of rows) {
     for (let node: Node | null = row.node; node !== null; node = node.nextSibling) {
       claimed.add(node);
-      if (node === (row.end ?? row.node)) {
+      if (node === lastOf(row.node)) {
         break;
       }
     }

@@ -131,7 +131,7 @@ function isText(node: Node | undefined): node is Text {
 }
 
 /** The last node of `node`'s range, or `node` itself. */
-function lastOf(node: Node): Node {
+export function lastOf(node: Node): Node {
   return (node as Partial<RangeStart>).$$end ?? node;
 }
 
@@ -151,7 +151,7 @@ export function place(parent: Node, node: Node, ref: Node | null): void {
 }
 
 /** Removes `node`. A range moves into a fragment of its own, so it stays usable if kept alive. */
-function detach(parent: Node, node: Node): void {
+export function detach(parent: Node, node: Node): void {
   if ((node as Partial<RangeStart>).$$end === undefined) {
     parent.removeChild(node);
   } else {
