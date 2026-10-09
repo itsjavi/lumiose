@@ -3,7 +3,7 @@ id: doc-2
 title: Compiler-runtime contract
 type: specification
 created_date: '2026-10-08 12:27'
-updated_date: '2026-10-09 05:44'
+updated_date: '2026-10-09 08:45'
 tags:
   - architecture
   - contract
@@ -32,6 +32,7 @@ tags:
   - Static literal props are plain values.
   - Dynamic props become `get name() { return expr; }`.
   - `children` is always a getter.
+  - On the server, dynamic props are evaluated lazily and at most once per component instance: the first read runs the expression and caches it in a closure variable; unread props never run; a first read that throws is retried (decision-28, TASK-151). Client props stay reactive getters.
   - The hidden `$$scope` prop carries the caller's scope tokens when `class` is passed.
   - A component that passes its own `class` prop on to a child component forwards its caller's scope: `$$scope` is its own tokens plus `props.$$scope` (`"data-l-m1 " + (props.$$scope ?? "")`), or `props.$$scope` when it has no styles. Runtimes skip empty tokens (TASK-92).
 
