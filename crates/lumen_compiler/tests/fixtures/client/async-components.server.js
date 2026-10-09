@@ -1,7 +1,7 @@
 // Async components: only awaits whose nearest function is the component are rewritten (site
 // indices in source order); `for await` is lowered; every async component form is tagged.
 import { fetchJSON } from "lumen";
-import { ssr, text, insert, createComponent, $await, $leave, $async } from "lumen/server";
+import { ssr, text, insertText, createComponent, $await, $leave, $async } from "lumen/server";
 const _s0 = [
 	"<main><h1>",
 	"</h1><p>",
@@ -25,7 +25,7 @@ export default async function Page(props) {
 		} catch {
 			total = -1;
 		}
-		return ssr(_s0, insert(first.title), insert((await $await(() => load("inline"), 2))()), insert(total));
+		return ssr(_s0, insertText(first.title), insertText((await $await(() => load("inline"), 2))()), insertText(total));
 	} finally {
 		$leave();
 	}
@@ -58,7 +58,7 @@ export const Stream = /* @__PURE__ */ $async(async (props) => {
 });
 const Quick = /* @__PURE__ */ $async(async () => {
 	try {
-		return ssr(_s2, insert((await $await(() => Promise.resolve("quick"), 0))()));
+		return ssr(_s2, insertText((await $await(() => Promise.resolve("quick"), 0))()));
 	} finally {
 		$leave();
 	}

@@ -4,11 +4,11 @@
 // emits a `text()` hole there. Next to JSX text or another dynamic child, or when the value may
 // be a node, it stays an insert.
 import { signal } from "lumen";
-import { template, bind, setText, insert, list } from "lumen/dom";
+import { template, bind, setText, insert, insertText, list } from "lumen/dom";
 const _t0 = /* @__PURE__ */ template(`<div><h2>Total</h2> <b>static</b> <i></i> <hr> `);
-const _t1 = /* @__PURE__ */ template(`<li><span></span> <em>€`);
+const _t1 = /* @__PURE__ */ template(`<li><span> </span> <em>€`);
 const _t2 = /* @__PURE__ */ template(`<ul>`);
-const _t3 = /* @__PURE__ */ template(`<p>Clicked <!> times<br><br><!>`);
+const _t3 = /* @__PURE__ */ template(`<p>Clicked <!> times<br> <br><!>`);
 const count = signal(0);
 const items = signal([{
 	id: 1,
@@ -28,17 +28,17 @@ export function Rows() {
 	const _el3 = _t2();
 	list(_el3, null, items, (item) => {
 		const price = item.price.toFixed(2);
-		const _el2 = _t1(), _span = _el2.firstChild, _text5 = _span.nextSibling;
-		insert(_span, () => item.id);
-		_text5.data = price;
+		const _el2 = _t1(), _span = _el2.firstChild, _text5 = _span.firstChild, _text6 = _span.nextSibling;
+		insertText(_text5, () => item.id);
+		_text6.data = price;
 		return _el2;
 	});
 	return _el3;
 }
 export function Inserts(props) {
-	const _el4 = _t3(), _marker = _el4.firstChild.nextSibling, _br = _marker.nextSibling.nextSibling.nextSibling, _marker2 = _br.nextSibling;
+	const _el4 = _t3(), _marker = _el4.firstChild.nextSibling, _text7 = _marker.nextSibling.nextSibling.nextSibling, _marker2 = _text7.nextSibling.nextSibling;
 	insert(_el4, count, _marker);
-	insert(_el4, () => props.icon, _br);
+	insertText(_text7, () => props.icon);
 	insert(_el4, count, _marker2);
 	insert(_el4, () => count() + 1);
 	return _el4;

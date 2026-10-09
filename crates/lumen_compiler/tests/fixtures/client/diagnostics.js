@@ -3,8 +3,8 @@
 // twice, LUM2006 reactive index read in row setup.
 import { signal } from "lumen";
 import { Card } from "./Card.stsx";
-import { template, bind, setAttr, insert, list } from "lumen/dom";
-const _t0 = /* @__PURE__ */ template(`<div><!><!><span>`);
+import { template, bind, setAttr, insert, insertText, list } from "lumen/dom";
+const _t0 = /* @__PURE__ */ template(`<div><!><!><span> `);
 const _t1 = /* @__PURE__ */ template(`<li>: `);
 const _t2 = /* @__PURE__ */ template(`<ul>`);
 const _a0 = (el, v) => setAttr(el, "data-once", v);
@@ -18,23 +18,23 @@ export function Child(props) {
 	if (!props.name) {
 		return null;
 	}
-	const _el = _t0(), _marker = _el.firstChild, _marker2 = _marker.nextSibling, _span = _marker2.nextSibling;
+	const _el = _t0(), _marker = _el.firstChild, _marker2 = _marker.nextSibling, _span = _marker2.nextSibling, _text = _span.firstChild;
 	setAttr(_el, "title", upper);
 	setAttr(_el, "data-name", name);
 	bind(_el, once, _a0);
 	insert(_el, () => props.children, _marker);
 	insert(_el, () => props.children, _marker2);
 	insert(_el, () => Card({ title: "x" }), _span);
-	insert(_span, () => shared.set(2));
+	insertText(_text, () => shared.set(2));
 	return _el;
 }
 export function Rows(props) {
 	const _el3 = _t2();
 	list(_el3, null, () => props.items, (item, i) => {
 		const position = i();
-		const _el2 = _t1(), _text = _el2.firstChild;
+		const _el2 = _t1(), _text2 = _el2.firstChild;
 		bind(_el2, () => i(), _a1);
-		insert(_el2, position, _text);
+		insert(_el2, position, _text2);
 		insert(_el2, item);
 		return _el2;
 	});

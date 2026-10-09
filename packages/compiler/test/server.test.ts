@@ -510,7 +510,7 @@ describe.skipIf(!binding)("async components and islands (server)", () => {
         "<!--l:0--><div class=panel><!--[-->1+2<!--]-->" +
         "<!--[--><!--l:s:footer--><i>foot</i><!--/l:s--><!--]-->" +
         "<!--[--><!--l:s:children--><p>child</p><!--/l:s--><!--]--></div><!--/l:0-->" +
-        "<!--l:1--><!--[--><b><!--[-->42<!--]--></b><!--]--><!--/l:1-->" +
+        "<!--l:1--><!--[--><b>42</b><!--]--><!--/l:1-->" +
         "</main>",
     );
     const recorded = JSON.parse(records!.slice(0, records!.indexOf("</script>")));
@@ -523,7 +523,7 @@ describe.skipIf(!binding)("async components and islands (server)", () => {
 });
 
 describe.skipIf(!binding)("hydration markers are decided at runtime", () => {
-  it("inside an island, every client insert/list/branch position is one region", async () => {
+  it("inside an island, every client insert/list/branch position is one region, text nodes are text", async () => {
     const { module } = await load(STRUCTURE, "server");
     const island = (server as unknown as Record<string, Function>).island!;
     const html = await server.renderToString(() =>
@@ -532,16 +532,17 @@ describe.skipIf(!binding)("hydration markers are decided at runtime", () => {
     const [body] = html.split("<script");
     expect(body).toBe(
       '<!--l:0--><section id="s1" class="box">' +
-        "<h1><!--[-->Untitled<!--]--></h1>" +
+        // A child alone in its parent is a text node (insertText): no region for text values.
+        "<h1>Untitled</h1>" +
         "<p>before <!--[-->3<!--]--> middle <!--[-->yes<!--]--> after</p>" +
         "<!--[--><b>open</b><!--]--><!--[--><span>!</span><!--]-->" +
-        '<ul><!--[--><li data-index="0"><!--[-->a<!--]--></li>' +
-        '<li data-index="1"><!--[-->b<!--]--></li>' +
-        '<li data-index="2"><!--[-->c<!--]--></li><!--]--></ul>' +
-        "<ol><!--[--><li><!--[-->a<!--]--></li><li><!--[-->0<!--]--></li>" +
-        "<li><!--[-->b<!--]--></li><li><!--[-->1<!--]--></li>" +
-        "<li><!--[-->c<!--]--></li><li><!--[-->2<!--]--></li><!--]--></ol>" +
-        "<table><tbody><tr><td><!--[-->Untitled<!--]--></td></tr></tbody></table>" +
+        '<ul><!--[--><li data-index="0">a</li>' +
+        '<li data-index="1">b</li>' +
+        '<li data-index="2">c</li><!--]--></ul>' +
+        "<ol><!--[--><li>a</li><li>0</li>" +
+        "<li>b</li><li>1</li>" +
+        "<li>c</li><li>2</li><!--]--></ol>" +
+        "<table><tbody><tr><td>Untitled</td></tr></tbody></table>" +
         "text <!--[-->a<!--]--> <hr>" +
         "</section><!--/l:0-->",
     );

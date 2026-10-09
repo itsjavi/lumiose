@@ -1,4 +1,4 @@
-import { ssr, insert, classAttr, spreadAttrs, createComponent } from "lumen/server";
+import { ssr, insert, insertText, classAttr, spreadAttrs, createComponent } from "lumen/server";
 import "/src/class-forwarding.tsx?lumen&type=style&lang.css";
 const _s0 = [
 	"<span",
@@ -14,7 +14,7 @@ const _s3 = [
 	"</main>"
 ];
 function Inner(props) {
-	return ssr(_s0, classAttr(props.class), spreadAttrs({ $$scope: props.$$scope }), insert(props.label));
+	return ssr(_s0, classAttr(props.class), spreadAttrs({ $$scope: props.$$scope }), insertText(props.label));
 }
 // Styled: its own tokens plus the caller's.
 export function Middle(props) {

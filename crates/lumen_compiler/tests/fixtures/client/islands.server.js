@@ -3,7 +3,7 @@
 import { TeamPanel } from "./components/Team.stsx";
 import Chart from "../charts/Chart.tsx";
 import * as ui from "./ui.stsx";
-import { ssr, insert, createComponent, island } from "lumen/server";
+import { ssr, insert, insertText, createComponent, island } from "lumen/server";
 import "/src/islands.stsx?lumen&type=style&lang.css";
 const _s0 = ["<b>", "</b>"];
 const _s1 = ["<i></i>"];
@@ -20,7 +20,7 @@ const _s4 = [
 	"</main>"
 ];
 export function Local(props) {
-	return ssr(_s0, insert(props.n));
+	return ssr(_s0, insertText(props.n));
 }
 function Hidden() {
 	return ssr(_s1);

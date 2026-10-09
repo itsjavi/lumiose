@@ -496,7 +496,8 @@ the efficient form:
 | `item.id === selected()` inside `.map`              | An O(1) selector: a selection change touches two rows.                                                                                                                                                                                |
 | `{c() ? <A /> : <B />}`, `{c() && <A />}`           | A memoised branch: switches only when the condition flips.                                                                                                                                                                            |
 | `{count() * 2}`, ``{`#${id}`}``, `{String(x)}`      | Provably text: a text node of the template, updated with `setText` (written once when nothing reactive is read). Applies to sole children and to children between elements; a `const` initialised with such an expression counts too. |
-| `{fn()}` returning nodes, arrays or text            | A dynamic insert.                                                                                                                                                                                                                     |
+| `{row.label()}`, `{id}`, `{props.title}`            | Maybe text, alone between nodes (or the only child): also a text node of the template, written by `insertText`. Text values update the node in place; nodes, arrays and other values render in a region before it.                    |
+| `{fn()}` next to text or another `{…}`              | A dynamic insert (a region), since adjacent text nodes would merge when the HTML is parsed.                                                                                                                                           |
 
 **Elements.**
 

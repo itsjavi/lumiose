@@ -35,7 +35,7 @@ describe.skipIf(!binding)("@lumen/compiler native compile", () => {
       hasStyles: true,
       components: [{ name: "Counter", exported: true, isAsync: false, awaitSites: [] }],
     });
-    expect(result.meta.runtimeHelpers).toEqual(["template", "insert", "delegateEvents"]);
+    expect(result.meta.runtimeHelpers).toEqual(["template", "insertText", "delegateEvents"]);
   });
 
   it("resolves $ref bindings with UTF-16 spans", () => {
@@ -56,7 +56,7 @@ describe.skipIf(!binding)("@lumen/compiler native compile", () => {
     const token = result.meta.scopeTokens.components.Counter![0]!.attribute;
     expect(token).toMatch(/^data-l-[0-9a-z]{8}$/);
     expect(result.meta.scopeTokens.file).toBeUndefined();
-    expect(result.code).toContain(`template(\`<button class=card ${token}>\`)`);
+    expect(result.code).toContain(`template(\`<button class=card ${token}> \`)`);
     expect(result.code).not.toContain("lang.css");
     expect(result.map).toBeUndefined();
     expect(result.cssMap).toBeUndefined();

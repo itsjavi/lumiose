@@ -1,7 +1,7 @@
 // Row consts (TASK-65): `const`s of a `.map()` callback initialised from row data without calls
 // count as row data, so selectors and data-slot handlers see through them.
 import { signal } from "lumen";
-import { ssr, insert, classAttr, list, selector } from "lumen/server";
+import { ssr, insertText, classAttr, list, selector } from "lumen/server";
 const _s0 = [
 	"<tr",
 	"><td>",
@@ -22,6 +22,6 @@ export function RowData() {
 		const key = id;
 		const { name, label: text } = row;
 		const upper = row.name.toUpperCase();
-		return ssr(_s0, classAttr({ danger: _isSelected(key) }), insert(id), insert(name), insert(text()));
+		return ssr(_s0, classAttr({ danger: _isSelected(key) }), insertText(id), insertText(name), insertText(text()));
 	}));
 }

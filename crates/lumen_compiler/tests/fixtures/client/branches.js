@@ -1,11 +1,11 @@
 // Conditionals: a reactive test with a JSX arm compiles to a memoised branch; static tests are
 // evaluated once; a component returning a reactive conditional returns a tracked function.
 import { signal } from "lumen";
-import { template, insert, branch, branchValue } from "lumen/dom";
+import { template, insert, insertText, branch, branchValue } from "lumen/dom";
 const _t0 = /* @__PURE__ */ template(`<p>Open`);
 const _t1 = /* @__PURE__ */ template(`<p>Closed`);
 const _t2 = /* @__PURE__ */ template(`<span>Visible`);
-const _t3 = /* @__PURE__ */ template(`<b>`);
+const _t3 = /* @__PURE__ */ template(`<b> `);
 const _t4 = /* @__PURE__ */ template(`<i>A`);
 const _t5 = /* @__PURE__ */ template(`<i>B`);
 const _t6 = /* @__PURE__ */ template(`<i>C`);
@@ -21,8 +21,8 @@ export function Branches(props) {
 	branch(_el2, _marker, open, () => _t0(), () => _t1());
 	branch(_el2, _marker2, open, () => _t2());
 	branch(_el2, _marker3, () => props.user, () => {
-		const _el = _t3();
-		insert(_el, () => props.user.name);
+		const _el = _t3(), _text = _el.firstChild;
+		insertText(_text, () => props.user.name);
 		return _el;
 	});
 	branch(_el2, _marker4, () => props.mode === "a", () => _t4(), () => branchValue(() => props.mode === "b", () => _t5(), () => _t6()));

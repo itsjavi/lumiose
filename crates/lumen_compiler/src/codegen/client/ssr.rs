@@ -384,7 +384,8 @@ impl<'a> Codegen<'a, '_> {
     }
 
     /// The hole of a dynamic child, matching the client's `insert`/`list`/`branch`/text node: a
-    /// provably text value in an isolated position is a `text()` hole.
+    /// provably text value in an isolated position is a `text()` hole, any other value there an
+    /// `insertText()` hole.
     fn ssr_dynamic_child(&mut self, out: &mut Ssr<'a>, expression: Expression<'a>, isolated: bool) {
         let span = expression.span();
         let hole = if self.is_list(&expression) {
@@ -407,6 +408,9 @@ impl<'a> Codegen<'a, '_> {
             };
             let helper = if isolated && !compiled_jsx && self.is_text(&value) {
                 "text"
+            } else if isolated && !compiled_jsx {
+                // The client's `insertText`: text() for text values, insert() for the others.
+                "insertText"
             } else {
                 "insert"
             };

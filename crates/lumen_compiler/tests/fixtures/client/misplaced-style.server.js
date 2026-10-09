@@ -1,4 +1,4 @@
-import { ssr, insert } from "lumen/server";
+import { ssr, insert, insertText } from "lumen/server";
 import "/src/misplaced-style.stsx?lumen&type=style&lang.css";
 const _s0 = ["<li data-l-3y536f6d>", "</li>"];
 const _s1 = ["<footer data-l-snjkckt6></footer>"];
@@ -11,7 +11,7 @@ const _s3 = ["<p></p>"];
 // LUM3010 found on the AST: blocks inside .map() callbacks and nested functions (the scanner
 // cannot see these placements).
 export function List(props) {
-	const rows = props.items.map((item) => ssr(_s0, insert(item)));
+	const rows = props.items.map((item) => ssr(_s0, insertText(item)));
 	const renderFooter = () => ssr(_s1);
 	return ssr(_s2, insert(rows), insert(renderFooter()));
 }

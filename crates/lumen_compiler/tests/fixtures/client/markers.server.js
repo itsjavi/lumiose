@@ -2,7 +2,7 @@
 // static node is used as the marker otherwise; the last dynamic part appends.
 import { signal } from "lumen";
 import { Card } from "./Card.stsx";
-import { ssr, insert, createComponent } from "lumen/server";
+import { ssr, insert, insertText, createComponent } from "lumen/server";
 const _s0 = [
 	"<div><p>before ",
 	" after</p><p>",
@@ -19,5 +19,5 @@ const _s0 = [
 export function Markers() {
 	const a = signal("a");
 	const b = signal("b");
-	return ssr(_s0, insert(a()), insert(a()), insert(b()), insert(a()), insert(a()), insert(a()), insert(createComponent(Card, {})), insert(b()), insert(createComponent(Card, {})), insert(a()));
+	return ssr(_s0, insert(a()), insert(a()), insert(b()), insert(a()), insertText(a()), insert(a()), insert(createComponent(Card, {})), insert(b()), insert(createComponent(Card, {})), insertText(a()));
 }

@@ -1,11 +1,10 @@
 // Async components: only awaits whose nearest function is the component are rewritten (site
 // indices in source order); `for await` is lowered; every async component form is tagged.
 import { fetchJSON } from "lumen";
-import { template, bind, setText, insert, createComponent, delegateEvents, $await, $leave, $async } from "lumen/dom";
-const _t0 = /* @__PURE__ */ template(`<main><h1></h1><p></p><button>`);
+import { template, bind, setText, insertText, createComponent, delegateEvents, $await, $leave, $async } from "lumen/dom";
+const _t0 = /* @__PURE__ */ template(`<main><h1> </h1><p> </p><button> `);
 const _t1 = /* @__PURE__ */ template(`<pre> `);
-const _t2 = /* @__PURE__ */ template(`<p>`);
-const _t3 = /* @__PURE__ */ template(`<p> `);
+const _t2 = /* @__PURE__ */ template(`<p> `);
 $async(Page);
 $async(Disposing);
 async function load(id) {
@@ -21,11 +20,11 @@ export default async function Page(props) {
 		} catch {
 			total = -1;
 		}
-		const _el = _t0(), _h1 = _el.firstChild, _p = _h1.nextSibling, _button = _p.nextSibling;
-		insert(_h1, () => first.title);
-		insert(_p, (await $await(() => load("inline"), 2))());
+		const _el = _t0(), _h1 = _el.firstChild, _text = _h1.firstChild, _p = _h1.nextSibling, _text2 = _p.firstChild, _button = _p.nextSibling, _text3 = _button.firstChild;
+		insertText(_text, () => first.title);
+		insertText(_text2, (await $await(() => load("inline"), 2))());
 		_button.$$click = later;
-		insert(_button, total);
+		insertText(_text3, total);
 		return _el;
 	} finally {
 		$leave();
@@ -52,8 +51,8 @@ export const Stream = /* @__PURE__ */ $async(async (props) => {
 				if (_step && !_step.done && _iter.return) _iter.return();
 			}
 		}
-		const _el2 = _t1(), _text = _el2.firstChild;
-		bind(_text, () => lines.join("\n"), setText);
+		const _el2 = _t1(), _text4 = _el2.firstChild;
+		bind(_text4, () => lines.join("\n"), setText);
 		return _el2;
 	} finally {
 		$leave();
@@ -61,8 +60,8 @@ export const Stream = /* @__PURE__ */ $async(async (props) => {
 });
 const Quick = /* @__PURE__ */ $async(async () => {
 	try {
-		const _el3 = _t2();
-		insert(_el3, (await $await(() => Promise.resolve("quick"), 0))());
+		const _el3 = _t2(), _text5 = _el3.firstChild;
+		insertText(_text5, (await $await(() => Promise.resolve("quick"), 0))());
 		return _el3;
 	} finally {
 		$leave();
@@ -78,8 +77,8 @@ export const Anonymous = /* @__PURE__ */ $async(async function Anonymous() {
 export async function Disposing() {
 	try {
 		await using handle = (await $await(() => fetchJSON("/api/handle"), 0))();
-		const _el4 = _t3(), _text2 = _el4.firstChild;
-		bind(_text2, () => String(handle), setText);
+		const _el4 = _t2(), _text6 = _el4.firstChild;
+		bind(_text6, () => String(handle), setText);
 		return _el4;
 	} finally {
 		$leave();

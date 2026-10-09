@@ -3,7 +3,7 @@
 // twice, LUM2006 reactive index read in row setup.
 import { signal } from "lumen";
 import { Card } from "./Card.stsx";
-import { ssr, insert, attr, list } from "lumen/server";
+import { ssr, insert, insertText, attr, list } from "lumen/server";
 const _s0 = [
 	"<div",
 	"",
@@ -30,7 +30,7 @@ export function Child(props) {
 	if (!props.name) {
 		return null;
 	}
-	return ssr(_s0, attr("title", upper), attr("data-name", name), attr("data-once", once()), insert(props.children), insert(props.children), insert(Card({ title: "x" })), insert(shared.set(2)));
+	return ssr(_s0, attr("title", upper), attr("data-name", name), attr("data-once", once()), insert(props.children), insert(props.children), insert(Card({ title: "x" })), insertText(shared.set(2)));
 }
 export function Rows(props) {
 	return ssr(_s2, list(props.items, (item, i) => {

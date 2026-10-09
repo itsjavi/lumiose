@@ -240,7 +240,7 @@ describe("hydrate", () => {
       }`);
     const s = await import("../server/index.ts");
     const Box = (props: { children?: unknown }) =>
-      s.ssr(["<div>", "</div>"], s.insert(props.children));
+      s.ssr(["<div>", "</div>"], s.insertText(props.children));
     const Shelf = (props: { on: boolean; items: string[] }) =>
       s.ssr(
         ["<section>", "", "</section>"],
@@ -258,7 +258,7 @@ describe("hydrate", () => {
         s.insert(
           s.createComponent(Box, {
             get children() {
-              return s.list(props.items, (item: string) => s.ssr(["<s>", "</s>"], s.insert(item)));
+              return s.list(props.items, (item: string) => s.ssr(["<s>", "</s>"], s.insertText(item)));
             },
           }),
         ),

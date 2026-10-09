@@ -3,16 +3,16 @@
 import { TeamPanel } from "./components/Team.stsx";
 import Chart from "../charts/Chart.tsx";
 import * as ui from "./ui.stsx";
-import { template, insert, createComponent } from "lumen/dom";
+import { template, insert, insertText, createComponent } from "lumen/dom";
 import "/src/islands.stsx?lumen&type=style&lang.css";
-const _t0 = /* @__PURE__ */ template(`<b>`);
+const _t0 = /* @__PURE__ */ template(`<b> `);
 const _t1 = /* @__PURE__ */ template(`<i>`);
 const _t2 = /* @__PURE__ */ template(`<p data-l-k3v7p5ya>footer`);
 const _t3 = /* @__PURE__ */ template(`<svg data-l-k3v7p5ya>`);
 const _t4 = /* @__PURE__ */ template(`<main data-l-k3v7p5ya><!><!><!><!><!><!>`);
 export function Local(props) {
-	const _el = _t0();
-	insert(_el, () => props.n);
+	const _el = _t0(), _text = _el.firstChild;
+	insertText(_text, () => props.n);
 	return _el;
 }
 function Hidden() {

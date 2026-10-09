@@ -2,7 +2,7 @@
 // hoisting for both operand orders and !==, block-bodied callbacks, nested lists.
 import { signal } from "lumen";
 import { Row } from "./Row.stsx";
-import { ssr, text, insert, attr, classAttr, list, branchArm, selector, createComponent } from "lumen/server";
+import { ssr, text, insert, insertText, attr, classAttr, list, branchArm, selector, createComponent } from "lumen/server";
 const _s0 = [
 	"<li",
 	">",
@@ -43,8 +43,8 @@ export function Lists(props) {
 	return ssr(_s7, list(items(), (item, i) => ssr(_s0, classAttr({
 		active: _isSelected(item.id),
 		first: i() === 0
-	}), insert(i() + 1), insert(item.name))), list(items(), (item) => ssr(_s1, classAttr(!_isSelected2(item.id) ? "off" : "on"), insert(item.name))), list(props.items, function(item) {
+	}), insert(i() + 1), insert(item.name))), list(items(), (item) => ssr(_s1, classAttr(!_isSelected2(item.id) ? "off" : "on"), insertText(item.name))), list(props.items, function(item) {
 		const label = item.name.toUpperCase();
 		return ssr(_s1, attr("data-selected", _isSelected3(item.id)), text(label));
-	}), list(items(), (row) => ssr(_s3, list(row.tags, (tag) => ssr(_s2, insert(tag))))), text(items().map((item) => item.name).join(", ")), list(items(), (item) => createComponent(Row, { item })), list(items(), (item) => active() > 0 ? branchArm(true, ssr(_s4, insert(item.name))) : branchArm(false, ssr(_s5))), list(items(), (item, i) => ssr(_s6, insert(item.name), insert(i()))));
+	}), list(items(), (row) => ssr(_s3, list(row.tags, (tag) => ssr(_s2, insertText(tag))))), text(items().map((item) => item.name).join(", ")), list(items(), (item) => createComponent(Row, { item })), list(items(), (item) => active() > 0 ? branchArm(true, ssr(_s4, insertText(item.name))) : branchArm(false, ssr(_s5))), list(items(), (item, i) => ssr(_s6, insertText(item.name), insertText(i()))));
 }

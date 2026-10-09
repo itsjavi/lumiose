@@ -1,4 +1,4 @@
-import { ssr, insert, classAttr, spreadAttrs, createComponent } from "lumen/server";
+import { ssr, insert, insertText, classAttr, spreadAttrs, createComponent } from "lumen/server";
 import "/src/doc2-component-call.stsx?lumen&type=style&lang.css";
 const _s0 = [
 	"<article data-l-ar7z1gx1",
@@ -9,7 +9,7 @@ const _s0 = [
 ];
 const _s1 = ["<main data-l-qlayfokw>", "</main>"];
 export function Card(props) {
-	return ssr(_s0, classAttr(props.class), spreadAttrs({ $$scope: props.$$scope }), insert(props.title), insert(props.children));
+	return ssr(_s0, classAttr(props.class), spreadAttrs({ $$scope: props.$$scope }), insertText(props.title), insertText(props.children));
 }
 export function Page(props) {
 	return ssr(_s1, insert(createComponent(Card, {

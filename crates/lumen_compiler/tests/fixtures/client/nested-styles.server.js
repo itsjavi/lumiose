@@ -2,7 +2,7 @@
 // style-bearing element, stamped on that element and the JSX lexically inside it (children
 // passed to components included); call sites passing `class` pass the enclosing chain.
 import { Card, Panel } from "./ui.stsx";
-import { ssr, insert, list, createComponent, $await, $leave, $async } from "lumen/server";
+import { ssr, insert, insertText, list, createComponent, $await, $leave, $async } from "lumen/server";
 import "/src/nested-styles.stsx?lumen&type=style&lang.css";
 const _s0 = ["<section class=a data-l-nmviz5ch data-l-wepye2d9><div class=b1 data-l-nmviz5ch data-l-wepye2d9><p class=c1 data-l-nmviz5ch data-l-wepye2d9>one</p></div><div class=b2 data-l-nmviz5ch data-l-wepye2d9><p class=c2 data-l-nmviz5ch data-l-wepye2d9 data-l-44pntcw3>two</p></div></section>"];
 const _s1 = ["<p class=note data-l-nmviz5ch data-l-238shbm8>inside the subtree</p>"];
@@ -51,7 +51,7 @@ export function Siblings(props) {
 export async function Rows(props) {
 	try {
 		const items = (await $await(() => props.load(), 0))();
-		return ssr(_s5, list(items, (item) => ssr(_s3, insert(item))), list(items, (item) => ssr(_s4, insert(item))));
+		return ssr(_s5, list(items, (item) => ssr(_s3, insertText(item))), list(items, (item) => ssr(_s4, insertText(item))));
 	} finally {
 		$leave();
 	}

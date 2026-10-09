@@ -1,9 +1,9 @@
 // <select value> marks the matching <option> selected in SSR output (static options, options
 // from .map(), option text as value, optgroups, bind:value); the client sets the property.
 import { signal } from "lumen";
-import { template, bind, setProp, insert, list, bindValue } from "lumen/dom";
+import { template, bind, setProp, insertText, list, bindValue } from "lumen/dom";
 const _t0 = /* @__PURE__ */ template(`<select><option value=a>A</option><option value=b>B</option><option> Plain   text </option><option value=c selected>C</option><optgroup label=More><option value=d>D`);
-const _t1 = /* @__PURE__ */ template(`<option>`);
+const _t1 = /* @__PURE__ */ template(`<option> `);
 const _t2 = /* @__PURE__ */ template(`<select>`);
 const _t3 = /* @__PURE__ */ template(`<form><select><option value=a>A</option><option value=b>B`);
 const _a0 = (el, v) => setProp(el, "value", v);
@@ -20,9 +20,9 @@ export function Static() {
 export function Mapped(props) {
 	const _el3 = _t2();
 	list(_el3, null, items, (item) => {
-		const _el2 = _t1();
+		const _el2 = _t1(), _text = _el2.firstChild;
 		bind(_el2, () => item.id, _a0);
-		insert(_el2, () => item.label);
+		insertText(_text, () => item.label);
 		return _el2;
 	});
 	bind(_el3, () => props.selected, _a0);

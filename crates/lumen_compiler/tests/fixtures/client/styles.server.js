@@ -2,7 +2,7 @@
 // are dropped, imports used only by $refs are removed, every element of a scope carries its
 // token, and the CSS has the file scope first, then component blocks in source order.
 import { used } from "./tokens.ts";
-import { ssr, insert, list } from "lumen/server";
+import { ssr, insertText, list } from "lumen/server";
 import "/src/styles.stsx?lumen&type=style&lang.css";
 const _s0 = ["<span class=item data-l-ecz843t9 data-l-wjsvhj1q>", "</span>"];
 const _s1 = [
@@ -14,7 +14,7 @@ const _s1 = [
 const _s2 = ["<footer data-l-ecz843t9>Footer</footer>"];
 const gap = 4;
 export function Card(props) {
-	return ssr(_s1, insert(props.title), insert(used), list([1, 2], (n) => ssr(_s0, insert(n))));
+	return ssr(_s1, insertText(props.title), insertText(used), list([1, 2], (n) => ssr(_s0, insertText(n))));
 }
 export const Footer = () => ssr(_s2);
 

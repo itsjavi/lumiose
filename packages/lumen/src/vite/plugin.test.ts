@@ -303,7 +303,7 @@ describe.skipIf(!binding)("lumen/vite", () => {
     const team = chunks.find((chunk) => chunk.facadeModuleId?.endsWith("components/Team.tsx"))!;
     expect(team).toBeDefined();
     expect(manifest.code).toContain(`import(\`./${team.fileName.split("/").pop()}\`)`);
-    expect(team.code).toContain("`<li>`");
+    expect(team.code).toContain("`<li> `");
     expect(team.exports).toEqual(["TeamPanel"]);
     // A linked package's island, reached only through the server graph, with a stable ref.
     const nav = chunks.find((chunk) => chunk.facadeModuleId === `${kit}/src/Nav.stsx`)!;

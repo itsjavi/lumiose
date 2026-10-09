@@ -2,7 +2,7 @@
 // identifiers and functions, a lazy children getter, spreads through mergeProps.
 import { signal } from "lumen";
 import { Card, ui } from "./ui.stsx";
-import { ssr, insert, createComponent, mergeProps, island } from "lumen/server";
+import { ssr, insert, insertText, createComponent, mergeProps, island } from "lumen/server";
 const _s0 = ["Hello <b>", "</b>"];
 const _s1 = ["<p>Element only</p>"];
 const _s2 = ["<i>row</i>"];
@@ -31,7 +31,7 @@ export function App(props) {
 		size
 	})), insert(island("/src/ui.stsx#Card", Card, { get title() {
 		return user().name;
-	} }, "load", void 0, { children: () => ssr(_s0, insert(user().name)) })), insert(createComponent(Card, { get children() {
+	} }, "load", void 0, { children: () => ssr(_s0, insertText(user().name)) })), insert(createComponent(Card, { get children() {
 		return user().name;
 	} })), insert(createComponent(Card, { children: "Text only" })), insert(createComponent(Card, { get children() {
 		return ssr(_s1);

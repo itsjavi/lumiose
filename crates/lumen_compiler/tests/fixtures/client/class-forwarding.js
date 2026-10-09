@@ -1,14 +1,14 @@
-import { template, bind, setClass, insert, createComponent, applyScope } from "lumen/dom";
+import { template, bind, setClass, insert, insertText, createComponent, applyScope } from "lumen/dom";
 import "/src/class-forwarding.tsx?lumen&type=style&lang.css";
-const _t0 = /* @__PURE__ */ template(`<span>`);
+const _t0 = /* @__PURE__ */ template(`<span> `);
 const _t1 = /* @__PURE__ */ template(`<div data-l-xv47rtvg>`);
 const _t2 = /* @__PURE__ */ template(`<section data-l-h4k9s2t6>`);
 const _t3 = /* @__PURE__ */ template(`<main data-l-7mclcxns><!>`);
 function Inner(props) {
-	const _el = _t0();
+	const _el = _t0(), _text = _el.firstChild;
 	bind(_el, () => props.class, setClass);
 	applyScope(_el, props.$$scope);
-	insert(_el, () => props.label);
+	insertText(_text, () => props.label);
 	return _el;
 }
 // Styled: its own tokens plus the caller's.

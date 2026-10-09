@@ -1,7 +1,7 @@
 // Attribute bindings: dynamic attributes and properties bind with hoisted apply functions,
 // static expressions are written once, and `count()` of a stable binding is passed directly.
 import { signal, untrack } from "lumen";
-import { ssr, text, insert, attr, escape } from "lumen/server";
+import { ssr, text, insert, insertText, attr, escape } from "lumen/server";
 const _s0 = [
 	"<div",
 	"",
@@ -25,5 +25,5 @@ export function Bindings(props) {
 	const count = signal(0);
 	const label = () => `Count: ${count()}`;
 	mutable = signal("b");
-	return ssr(_s0, attr("title", title), attr("data-count", count()), attr("aria-label", label()), attr("data-m", mutable()), attr("href", props.href), attr("target", title + "x"), attr("value", count()), attr("checked", count() > 1), insert(count()), text(`n=${count()}`), text(title), insert(untrack(count)), insert(count() * 2), escape(label()));
+	return ssr(_s0, attr("title", title), attr("data-count", count()), attr("aria-label", label()), attr("data-m", mutable()), attr("href", props.href), attr("target", title + "x"), attr("value", count()), attr("checked", count() > 1), insertText(count()), text(`n=${count()}`), text(title), insertText(untrack(count)), insert(count() * 2), escape(label()));
 }

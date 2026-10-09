@@ -1,6 +1,6 @@
 // Contract doc-2 §5.2: keyed list, selector, data-slot event.
 import { signal } from "lumen";
-import { ssr, insert, classAttr, list, selector } from "lumen/server";
+import { ssr, insertText, classAttr, list, selector } from "lumen/server";
 import "/src/doc2-keyed-list.stsx?lumen&type=style&lang.css";
 const _s0 = [
 	"<tr data-l-tavixavi",
@@ -13,5 +13,5 @@ const selected = signal(0);
 const select = (id) => selected.set(id);
 export function Rows() {
 	const _isSelected = selector(selected);
-	return ssr(_s1, list(rows(), (row) => ssr(_s0, classAttr({ danger: _isSelected(row.id) }), insert(row.label()))));
+	return ssr(_s1, list(rows(), (row) => ssr(_s0, classAttr({ danger: _isSelected(row.id) }), insertText(row.label()))));
 }

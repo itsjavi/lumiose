@@ -2,8 +2,8 @@
 // identifiers and functions, a lazy children getter, spreads through mergeProps.
 import { signal } from "lumen";
 import { Card, ui } from "./ui.stsx";
-import { template, insert, createComponent, mergeProps } from "lumen/dom";
-const _t0 = /* @__PURE__ */ template(`Hello <b>`, 1);
+import { template, insert, insertText, createComponent, mergeProps } from "lumen/dom";
+const _t0 = /* @__PURE__ */ template(`Hello <b> `, 1);
 const _t1 = /* @__PURE__ */ template(`<p>Element only`);
 const _t2 = /* @__PURE__ */ template(`<i>row`);
 const _t3 = /* @__PURE__ */ template(`<div><!><!><!><!><!><!><!><!>`);
@@ -25,8 +25,8 @@ export function App(props) {
 			return user().name;
 		},
 		get children() {
-			const _nodes = _t0(), _b = _nodes[1];
-			insert(_b, () => user().name);
+			const _nodes = _t0(), _b = _nodes[1], _text = _b.firstChild;
+			insertText(_text, () => user().name);
 			return _nodes;
 		}
 	}), _marker2);

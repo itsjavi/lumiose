@@ -1,7 +1,7 @@
 // <select value> marks the matching <option> selected in SSR output (static options, options
 // from .map(), option text as value, optgroups, bind:value); the client sets the property.
 import { signal } from "lumen";
-import { ssr, insert, attr, list } from "lumen/server";
+import { ssr, insertText, attr, list } from "lumen/server";
 const _s0 = [
 	"<select><option value=a",
 	">A</option><option value=b",
@@ -32,7 +32,7 @@ export function Static() {
 }
 export function Mapped(props) {
 	const _selected2 = props.selected;
-	return ssr(_s2, list(items(), (item) => ssr(_s1, attr("value", item.id), attr("selected", String(_selected2) === String(item.id)), insert(item.label))));
+	return ssr(_s2, list(items(), (item) => ssr(_s1, attr("value", item.id), attr("selected", String(_selected2) === String(item.id)), insertText(item.label))));
 }
 export function Bound() {
 	const _selected3 = choice();

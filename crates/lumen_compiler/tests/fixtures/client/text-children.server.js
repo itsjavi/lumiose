@@ -4,7 +4,7 @@
 // emits a `text()` hole there. Next to JSX text or another dynamic child, or when the value may
 // be a node, it stays an insert.
 import { signal } from "lumen";
-import { ssr, text, insert, list } from "lumen/server";
+import { ssr, text, insert, insertText, list } from "lumen/server";
 const _s0 = [
 	"<div><h2>Total</h2>",
 	"<b>static</b>",
@@ -38,11 +38,11 @@ export function Isolated(props) {
 export function Rows() {
 	return ssr(_s2, list(items(), (item) => {
 		const price = item.price.toFixed(2);
-		return ssr(_s1, insert(item.id), text(price));
+		return ssr(_s1, insertText(item.id), text(price));
 	}));
 }
 export function Inserts(props) {
-	return ssr(_s3, insert(count()), insert(props.icon), insert(count()), insert(count() + 1));
+	return ssr(_s3, insert(count()), insertText(props.icon), insert(count()), insert(count() + 1));
 }
 
 // --- diagnostics ---

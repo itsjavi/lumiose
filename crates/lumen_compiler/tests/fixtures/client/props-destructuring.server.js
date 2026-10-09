@@ -1,4 +1,4 @@
-import { ssr, text, insert, attr, spreadAttrs, restProps, mergeProps } from "lumen/server";
+import { ssr, text, insertText, attr, spreadAttrs, restProps, mergeProps } from "lumen/server";
 const _s0 = [
 	"<section",
 	"><h1>",
@@ -30,17 +30,17 @@ export function Props(props) {
 		get "data-name"() {
 			return (props.user === void 0 ? {} : props.user).name === void 0 ? "anon" : (props.user === void 0 ? {} : props.user).name;
 		}
-	}, rest)), insert(props.title), text((props.count === void 0 ? 1 : props.count) * 2));
+	}, rest)), insertText(props.title), text((props.count === void 0 ? 1 : props.count) * 2));
 }
-export const Arrow = (props) => ssr(_s1, insert(props.label));
+export const Arrow = (props) => ssr(_s1, insertText(props.label));
 export function Conflict(_props) {
 	const props = { value: 1 };
-	return ssr(_s2, attr("title", _props.value), insert(props.value));
+	return ssr(_s2, attr("title", _props.value), insertText(props.value));
 }
 export function Reassigned({ value }) {
 	value = value.trim();
-	return ssr(_s3, insert(value));
+	return ssr(_s3, insertText(value));
 }
 export function Plain(attrs) {
-	return ssr(_s3, insert(attrs.value));
+	return ssr(_s3, insertText(attrs.value));
 }

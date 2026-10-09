@@ -36,7 +36,7 @@ fn server_target_imports_lumen_server() {
     assert!(!result.code.contains("onClick") && !result.code.contains("delegateEvents"));
     assert_eq!(
         result.meta.runtime_helpers,
-        ["ssr", "insert", "$await", "$leave", "$async"]
+        ["ssr", "insertText", "$await", "$leave", "$async"]
     );
     assert!(result.meta.delegated_events.is_empty());
     assert_eq!(result.meta.templates, 1);

@@ -1,6 +1,6 @@
-import { template, insert } from "lumen/dom";
+import { template, insert, insertText } from "lumen/dom";
 import "/src/misplaced-style.stsx?lumen&type=style&lang.css";
-const _t0 = /* @__PURE__ */ template(`<li data-l-3y536f6d>`);
+const _t0 = /* @__PURE__ */ template(`<li data-l-3y536f6d> `);
 const _t1 = /* @__PURE__ */ template(`<footer data-l-snjkckt6>`);
 const _t2 = /* @__PURE__ */ template(`<ul><!>`);
 const _t3 = /* @__PURE__ */ template(`<p>`);
@@ -8,8 +8,8 @@ const _t3 = /* @__PURE__ */ template(`<p>`);
 // cannot see these placements).
 export function List(props) {
 	const rows = props.items.map((item) => {
-		const _el = _t0();
-		insert(_el, item);
+		const _el = _t0(), _text = _el.firstChild;
+		insertText(_text, item);
 		return _el;
 	});
 	const renderFooter = () => _t1();

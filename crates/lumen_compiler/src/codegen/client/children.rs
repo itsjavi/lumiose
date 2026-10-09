@@ -227,8 +227,9 @@ impl<'a> Codegen<'a, '_> {
         }
     }
 
-    /// A dynamic child; `isolated` (see [`is_isolated`]) lets a provably text value be a text
-    /// node of the template: bound with `setText`, or written once when it is not reactive.
+    /// A dynamic child; `isolated` (see [`is_isolated`]) makes it a text node of the template: a
+    /// provably text value is bound with `setText` (or written once when it is not reactive), any
+    /// other value is written by `insertText`.
     fn dynamic_child(
         &mut self,
         template: &mut Template<'a>,
@@ -297,6 +298,19 @@ impl<'a> Codegen<'a, '_> {
             } else {
                 value
             };
+            if isolated && !compiled_jsx {
+                // Maybe text (`{id}`, `{row.label()}`): a template text node written by
+                // `insertText`, which falls back to `insert` in a region before it for other
+                // values (doc-2 §2, §3). No region or created node per row for text values.
+                let text = template.add(Some(parent), NodeKind::Text(" ".to_owned()), span);
+                template.push(Op::Call {
+                    span,
+                    helper: "insertText",
+                    node: text,
+                    args: vec![value],
+                });
+                return;
+            }
             Op::Insert {
                 span,
                 parent,
