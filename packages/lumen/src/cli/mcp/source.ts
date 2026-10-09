@@ -4,7 +4,7 @@
 
 import type { CompileMeta, CompileResult, Span } from "@lumen/compiler";
 import { existsSync } from "node:fs";
-import { readFile } from "node:fs/promises";
+import { readFile, realpath } from "node:fs/promises";
 import { isAbsolute, join, relative, resolve, sep } from "node:path";
 import {
   CheckFailure,
@@ -40,6 +40,7 @@ export async function loadSource(root: string, input: SourceInput): Promise<Load
   if (!/\.(?:stsx|tsx)$/.test(path)) {
     throw new CheckFailure(`${input.file} is not a .stsx or .tsx file.`);
   }
+  if (!within(root, path)) throw outside(input.file);
   let text = input.source;
   if (text === undefined) {
     if (!existsSync(path)) {
@@ -47,9 +48,23 @@ export async function loadSource(root: string, input: SourceInput): Promise<Load
         help: "Paths are relative to the project root; list the routes with the routes tool.",
       });
     }
+    // A symlink inside the root may point anywhere: the real path must stay inside too.
+    if (!within(await realpath(root), await realpath(path))) throw outside(input.file);
     text = await readFile(path, "utf8");
   }
   return { path, key: keyOf(root, path), text: new SourceText(text) };
+}
+
+/** Whether `path` is `root` itself or below it. */
+function within(root: string, path: string): boolean {
+  const rel = relative(root, path);
+  return rel === "" || (!rel.startsWith("..") && !isAbsolute(rel));
+}
+
+function outside(file: string | undefined): CheckFailure {
+  return new CheckFailure(`${file} is outside the project root.`, {
+    help: "The MCP tools only read files of the project; pass a path relative to its root.",
+  });
 }
 
 function keyOf(root: string, path: string): string {

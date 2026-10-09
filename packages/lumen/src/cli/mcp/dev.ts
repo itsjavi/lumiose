@@ -5,6 +5,7 @@
 
 import { stripVTControlCharacters } from "node:util";
 import type { Logger } from "vite";
+import { CheckFailure } from "../check/diagnostics.ts";
 import { writeLumenTsconfig } from "../check/layout.ts";
 import type { DevServer } from "../../app/dev/server.ts";
 
@@ -81,8 +82,22 @@ export class DevSession {
       strip?: boolean;
     } = {},
   ): Promise<RenderResult> {
+    // Only a path of this dev server: never an absolute URL or a `//host` (protocol-relative)
+    // one, which would send the request, with the caller's headers, to another origin.
+    if (!/^\/(?![/\\])/.test(path)) {
+      throw new CheckFailure(
+        `"${path}" is not a URL path: pass one that starts with a single "/".`,
+        {
+          help: 'For example "/" or "/blog/hello?page=2". Only the in-process dev server is requested.',
+        },
+      );
+    }
     const server = await this.server();
-    const url = new URL(path.startsWith("/") ? path.slice(1) : path, server.url);
+    const origin = new URL(server.url).origin;
+    const url = new URL(path, origin);
+    if (url.origin !== origin) {
+      throw new CheckFailure(`"${path}" does not resolve to the dev server (${origin}).`);
+    }
     const response = await fetch(url, {
       method: options.method ?? "GET",
       ...(options.headers === undefined ? {} : { headers: options.headers }),
