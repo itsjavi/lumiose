@@ -3,7 +3,7 @@ id: doc-2
 title: Compiler-runtime contract
 type: specification
 created_date: '2026-10-08 12:27'
-updated_date: '2026-10-09 03:41'
+updated_date: '2026-10-09 05:44'
 tags:
   - architecture
   - contract
@@ -42,6 +42,7 @@ tags:
 | `template(html, flags?)` | Parse once into `<template>`. The factory clones `content.firstChild`, or all roots when `flags & MultiRoot`. `Svg` and `MathMl` set the namespace. HTML is minified and may omit optional closing tags. `<!>` is a placeholder comment |
 | `bind(target, compute, apply)` | Tracked `compute`; calls `apply(target, value)` only when the value changes (`Object.is`). The first run applies immediately. Disposed with the owner |
 | `setText`, `setAttr`, `setProp`, `setClass`, `toggleClass`, `setStyle`, `setStyleProperty` | Pure DOM writers, usable as `apply` functions. For `setAttr`: nullish or `false` removes the attribute, `true` sets `""` |
+| `setNonce(el)` | Under `csp: "strict"` (compile option `strictCsp`), sets the page's nonce from `<meta property="csp-nonce">` on a JSX-authored `<script>`/`<style>` without an explicit `nonce` (decision-27); static `style="…"` strings are applied through the CSSOM instead of the attribute |
 | `insert(parent, value, marker?)` | Renders `Renderable` before `marker`. Functions and signals are tracked and reconciled. Arrays are flattened. Nodes are moved, not cloned. Strings become text nodes. `null`, `undefined` and booleans render nothing |
 | `insertText(node: Text, value)` | A child that may be text, at a template text node. Strings and numbers set its data; nullish values and booleans empty it; a function is bound once and its values are applied the same way. Other values (nodes, arrays, nested functions) render like `insert()` in a region before the text node (TASK-90) |
 | `list(parent, marker, source, render, key?)` | Keyed reconciliation (spec §6.3). `render.length > 1` means the index is used, so a per-row index signal is created. Each row's owner is created lazily |
@@ -75,6 +76,7 @@ tags:
 | `insert(v)` | Dynamic region. Inside islands it is wrapped as `<!--[-->…<!--]-->`; outside islands it is unwrapped |
 | `insertText(v)` | `text()` for text values (including nullish and booleans), `insert()` for objects. A maybe-text child alone between nodes (the provable-text rule) is a client template text node written by `insertText`; a non-text value renders as an `insert()` block inside islands, which the client claims as a region whose marker is the text node |
 | `attr`, `classAttr`, `styleAttr`, `spreadAttrs`, `escape` | Attribute serialization. `styleAttr` follows the CSP mode (spec §7.4) |
+| `nonceAttr()` | Under strict CSP, the ` nonce="…"` attribute with the current response's nonce for JSX-authored `<script>`/`<style>` (and native SVG `<style>`) without an explicit `nonce`; empty otherwise. Static `style="…"` strings render as nonce'd rules (decision-27) |
 | `list(source, render)` | Joins rows; inside islands, markers as on the client |
 | `branch(cond, a, b?)` | Inside islands it emits `<!--[-->` for the active branch or `<!--[!-->` for the inactive one |
 | `selector(source)` | Evaluated once |
