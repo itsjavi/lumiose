@@ -39,6 +39,8 @@ export interface CompileMeta {
    * start offset (entries nest; hovers take the innermost).
    */
   contract?: Array<ContractEntry>;
+  /** The module's imports, in source order. */
+  imports: Array<ImportMeta>;
 }
 
 export interface CompileOptions {
@@ -222,6 +224,15 @@ export interface HostModule {
   specifier: string;
   /** Omitted when the module cannot be resolved or read (reported as `LUM3008`). */
   resolved?: ResolvedModule;
+}
+
+/** An import of the module (type-only imports are stripped). */
+export interface ImportMeta {
+  specifier: string;
+  /** The specifier as written, without its quotes. */
+  span: Span;
+  /** `import("…")`. */
+  dynamic: boolean;
 }
 
 /** An island call site (`<X client:* />`). */

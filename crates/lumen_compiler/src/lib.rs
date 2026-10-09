@@ -7,6 +7,7 @@ mod compile;
 pub mod css;
 pub mod custom_properties;
 pub mod diagnostics;
+pub mod imports;
 mod module_id;
 pub mod prepare;
 pub mod scanner;
@@ -20,6 +21,7 @@ pub use compile::{
 pub use css::CssOptions;
 pub use custom_properties::CustomPropertySet;
 pub use diagnostics::{Code, Diagnostic, Severity};
+pub use imports::ImportMeta;
 pub use lumen_css::Targets as CssTargets;
 pub use module_id::PackageRoot;
 pub use prepare::{ConstValue, HostModule, ModuleRequest, ResolvedModule};

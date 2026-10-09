@@ -80,8 +80,8 @@ WAL and foreign keys.
 
 ## Modules
 
-Server-only code lives in `src/server/*.server.ts`. The compiler rejects imports of it from
-client code (LUM4003).
+Server-only code lives in `src/server/*.server.ts`. `lumen dev` and `lumen build` reject imports
+of it from client code, with the importer chain, and `lumen check` reports them (LUM4003).
 
 | Module               | Exports                                                                                            |
 | -------------------- | -------------------------------------------------------------------------------------------------- |

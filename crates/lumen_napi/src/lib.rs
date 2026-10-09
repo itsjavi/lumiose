@@ -437,6 +437,16 @@ pub struct CustomPropertiesMeta {
     pub read: Vec<String>,
 }
 
+/// An import of the module (type-only imports are stripped).
+#[napi(object)]
+pub struct ImportMeta {
+    pub specifier: String,
+    /// The specifier as written, without its quotes.
+    pub span: Span,
+    /// `import("…")`.
+    pub dynamic: bool,
+}
+
 /// How the client runs an expression.
 #[napi(string_enum = "lowercase")]
 pub enum ContractKind {
@@ -492,6 +502,8 @@ pub struct CompileMeta {
     /// With `contract: true`: the execution contract of each JSX expression and `await`, by
     /// start offset (entries nest; hovers take the innermost).
     pub contract: Option<Vec<ContractEntry>>,
+    /// The module's imports, in source order.
+    pub imports: Vec<ImportMeta>,
 }
 
 #[napi(object)]
@@ -692,6 +704,15 @@ pub fn compile(
                     .collect(),
                 read: meta.custom_properties.read,
             },
+            imports: meta
+                .imports
+                .into_iter()
+                .map(|import| ImportMeta {
+                    specifier: import.specifier,
+                    span: span(import.span),
+                    dynamic: import.dynamic,
+                })
+                .collect(),
             contract: meta
                 .contract
                 .map(|entries| entries.into_iter().map(convert_contract_entry).collect()),

@@ -422,6 +422,48 @@ describe.skipIf(!binding)("lumen check", () => {
     expect(exitCode).toBe(1);
   });
 
+  it("reports LUM4003 where client code imports a server-only module (TASK-116)", async () => {
+    const root = await project("valid");
+    await mkdir(join(root, "src/server"), { recursive: true });
+    await mkdir(join(root, "src/lib"), { recursive: true });
+    await writeFile(join(root, "src/server/secrets.ts"), 'export const SECRET = "s";\n');
+    await writeFile(join(root, "src/lib/db.server.ts"), "export const like = () => 1;\n");
+    const util =
+      'import { like } from "./db.server.ts";\nexport const likeTwice = () => like() + like();\n';
+    const likes = [
+      'import { likeTwice } from "../lib/util.ts";',
+      'import { SECRET } from "../server/secrets.ts";',
+      "export function Likes() {",
+      "  return <button onClick={likeTwice}>{SECRET}</button>;",
+      "}",
+      "",
+    ].join("\n");
+    // Server code may import server-only modules: the page itself is not reported.
+    const page = [
+      'import { like } from "../lib/db.server.ts";',
+      'import { Likes } from "../components/Likes.tsx";',
+      "export default function Page() {",
+      "  like();",
+      "  return <Likes client:load />;",
+      "}",
+      "",
+    ].join("\n");
+    await writeFile(join(root, "src/lib/util.ts"), util);
+    await writeFile(join(root, "src/components/Likes.tsx"), likes);
+    await mkdir(join(root, "src/routes"), { recursive: true });
+    await writeFile(join(root, "src/routes/likes.tsx"), page);
+    const { exitCode, report } = await checkJson(root);
+    const lum4003 = report.diagnostics.filter((d) => d.code === "LUM4003");
+    expect(lum4003).toEqual([
+      lumenAt("src/components/Likes.tsx", "LUM4003", likes, "../server/secrets.ts"),
+      lumenAt("src/lib/util.ts", "LUM4003", util, "./db.server.ts"),
+    ]);
+    expect(lum4003[1]!.message).toContain(
+      "(src/routes/likes.tsx → src/components/Likes.tsx → src/lib/util.ts)",
+    );
+    expect(exitCode).toBe(1);
+  });
+
   it("resolves constants imported through tsconfig paths and re-exports for style diagnostics", async () => {
     const template = standaloneTsconfig();
     const root = await project("valid", {

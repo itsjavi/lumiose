@@ -63,6 +63,7 @@ import {
   type Resolve,
   type Target,
 } from "./styles.ts";
+import { serverOnlyPlugin } from "./server-only.ts";
 import { svgOptionsOf, svgPlugin } from "./svg.ts";
 
 export type {
@@ -366,6 +367,8 @@ export default function lumen(options: LumenOptions = {}): Plugin<LumenPluginApi
         },
       },
     },
+    // LUM4003: server-only modules never enter a client graph (./server-only.ts).
+    serverOnlyPlugin(),
     // `.svg` imports as inline components (./svg.ts).
     ...(svg ? [svgPlugin(svg, exclude, () => root)] : []),
     // `.md` and `.html` imports as components (./content.ts).

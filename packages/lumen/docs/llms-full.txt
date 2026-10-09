@@ -1181,8 +1181,9 @@ already client-side.
 
 **Server-only boundaries.** `*.server.ts` files and everything under `src/server/` may not be
 imported from code that reaches the browser (`LUM4003`): keep database access, secrets and
-`env()` there. Server-only APIs (`request()`, `cookies()`, `env()`, …) throw `LUM4003` in the
-browser build; a build-time check of import graphs is planned.
+`env()` there. `lumen dev` and `lumen build` fail with the chain of importers when the client graph
+reaches one, and `lumen check` reports the import. Server-only APIs (`request()`, `cookies()`,
+`env()`, …) throw `LUM4003` in the browser build.
 
 **Awaited data** inside an island is recorded during SSR and replayed during hydration, so the
 browser does not fetch it again; it must be plain data (`LUM4007`), and it is visible in the page
@@ -5768,13 +5769,26 @@ form with `submit()`), or convert values to plain objects before passing them.
 
 > Server-only code is reachable from the browser.
 
-**Reported by:** the runtime: server-only APIs (`request()`, `cookies()`, `env()`, `renderToString()`, …) throw it in the browser build. The build-time check of import graphs is planned.
+**Reported by:** `lumen build` and `lumen dev` (`lumen/vite`), when the client graph reaches a
+server-only module: the build fails, and dev fails the module's request (the error overlay), with
+the chain of importers from the client entry. `lumen check` reports it at the import site, for the
+graphs of island components and of modules that import `lumen/dom`. At runtime, server-only APIs
+(`request()`, `cookies()`, `env()`, `renderToString()`, …) throw it in the browser build.
 
 ## What it means
 
-`*.server.ts` modules, everything under `src/server/`, and the request APIs only exist on the
-server. Importing them into code that reaches the browser (islands, SPA routes, their imports)
-would leak server code and secrets, or fail at runtime.
+`*.server.ts` modules (any `*.server.*` file of the project), everything under `src/server/`, and
+the request APIs only exist on the server. Importing them into code that reaches the browser
+(islands, SPA routes, client entries, and everything they import, directly or not) would ship
+server code and secrets in the client bundle, or fail at runtime. Server code (pages rendered on
+the server, endpoints, actions) imports them freely; stylesheets of `.server.stsx` files are fine.
+
+```text
+LUM4003: src/server/db.server.ts is server-only, but client code imports it:
+  src/components/Likes.stsx
+  → src/lib/likes.ts
+  → src/server/db.server.ts
+```
 
 ## Example
 

@@ -11,6 +11,7 @@ import type {
 import { readFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import type { DiagnosticProvider, FileDiagnostics } from "./index.ts";
+import { clientGraphDiagnostics } from "./client-graph.ts";
 import { ModuleHost } from "./modules.ts";
 import { listFiles, loadCompiler, SOURCE_DIR } from "./shadow.ts";
 
@@ -72,6 +73,15 @@ export async function compileDiagnostics(
   filename: string,
   options: CompileDiagnosticsOptions = {},
 ): Promise<CompilerDiagnostic[]> {
+  return (await compileChecked(text, filename, options)).diagnostics;
+}
+
+/** {@link compileDiagnostics} with the compile result (its meta). */
+async function compileChecked(
+  text: string,
+  filename: string,
+  options: CompileDiagnosticsOptions,
+): Promise<{ result: CompileResult; diagnostics: CompilerDiagnostic[] }> {
   const compileOptions: CompileOptions = {
     target: "client",
     sourceMap: false,
@@ -82,10 +92,11 @@ export async function compileDiagnostics(
       ? (await loadCompiler()).compile(text, filename, compileOptions)
       : await compileWithModules(text, filename, compileOptions, options.modules);
   const reported = new Set((options.reported ?? []).map(diagnosticKey));
-  return result.diagnostics.filter(
+  const diagnostics = result.diagnostics.filter(
     (diagnostic) =>
       !REPORTED_BY_TYPESCRIPT.has(diagnostic.code) && !reported.has(diagnosticKey(diagnostic)),
   );
+  return { result, diagnostics };
 }
 
 /**
@@ -107,13 +118,17 @@ export const compilerDiagnostics: DiagnosticProvider = async ({ root, project, f
   ];
   const modules = new ModuleHost({ root, ...(project === undefined ? {} : { project }) });
   const results: FileDiagnostics[] = [];
+  const compiled = new Map<string, CompileResult>();
   for (const { file, text, reported } of sources) {
-    const diagnostics = await compileDiagnostics(text, resolve(root, file), {
-      root,
-      reported,
-      modules,
-    });
-    if (diagnostics.length > 0) results.push({ file, diagnostics });
+    const checked = await compileChecked(text, resolve(root, file), { root, reported, modules });
+    compiled.set(resolve(root, file), checked.result);
+    if (checked.diagnostics.length > 0) results.push({ file, diagnostics: checked.diagnostics });
+  }
+  // LUM4003 needs the project's client graph (./client-graph.ts).
+  for (const found of await clientGraphDiagnostics(root, compiled, modules)) {
+    const existing = results.find((entry) => resolve(root, entry.file) === found.file);
+    if (existing === undefined) results.push(found);
+    else existing.diagnostics = [...existing.diagnostics, ...found.diagnostics];
   }
   return results;
 };

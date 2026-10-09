@@ -593,3 +593,39 @@ export async function Panel({ title }: { title: string }) {
     let without = compile(source, "/src/Panel.tsx", &CompileOptions::default());
     assert!(without.meta.contract.is_none());
 }
+
+#[test]
+fn metadata_lists_imports_without_type_only_ones() {
+    let source = r#"import { signal } from "lumen";
+import type { Row } from "./types.ts";
+import { type Db, open } from "../server/db.server.ts";
+export { helper } from "./helper.ts";
+export * from "./all.ts";
+export const lazy = () => import("./Lazy.stsx");
+export function A(props: { rows: Row[]; db: Db }) {
+  open();
+  return <p>{signal(props.rows.length)()}</p>;
+}
+"#;
+    let result = compile(source, "/src/A.tsx", &CompileOptions::default());
+    assert!(result.diagnostics.is_empty(), "{:?}", result.diagnostics);
+    let imports: Vec<(&str, &str, bool)> = result
+        .meta
+        .imports
+        .iter()
+        .map(|import| {
+            let written = &source[import.span.start as usize..import.span.end as usize];
+            (import.specifier.as_str(), written, import.dynamic)
+        })
+        .collect();
+    assert_eq!(
+        imports,
+        [
+            ("lumen", "lumen", false),
+            ("../server/db.server.ts", "../server/db.server.ts", false),
+            ("./helper.ts", "./helper.ts", false),
+            ("./all.ts", "./all.ts", false),
+            ("./Lazy.stsx", "./Lazy.stsx", true),
+        ]
+    );
+}

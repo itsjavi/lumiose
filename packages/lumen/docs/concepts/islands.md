@@ -49,8 +49,9 @@ already client-side.
 
 **Server-only boundaries.** `*.server.ts` files and everything under `src/server/` may not be
 imported from code that reaches the browser (`LUM4003`): keep database access, secrets and
-`env()` there. Server-only APIs (`request()`, `cookies()`, `env()`, …) throw `LUM4003` in the
-browser build; a build-time check of import graphs is planned.
+`env()` there. `lumen dev` and `lumen build` fail with the chain of importers when the client graph
+reaches one, and `lumen check` reports the import. Server-only APIs (`request()`, `cookies()`,
+`env()`, …) throw `LUM4003` in the browser build.
 
 **Awaited data** inside an island is recorded during SSR and replayed during hydration, so the
 browser does not fetch it again; it must be plain data (`LUM4007`), and it is visible in the page

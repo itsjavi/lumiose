@@ -22,6 +22,7 @@ use crate::codegen::client::{self, ContractEntry, ScopeTokens, TransformOptions}
 use crate::css::{self, CssOptions, ScopePlan};
 use crate::custom_properties::{self, CustomPropertySet};
 use crate::diagnostics::{Code, Diagnostic};
+use crate::imports::{self, ImportMeta};
 use crate::module_id::{self, PackageRoot};
 use crate::prepare::{self, HostModule, ModuleRequest, ResolvedStyleRef};
 use crate::scanner::{self, FileKind};
@@ -148,6 +149,8 @@ pub struct CompileMeta {
     /// The execution contract of each JSX expression and `await` (spec §5.1), with
     /// [`CompileOptions::contract`].
     pub contract: Option<Vec<ContractEntry>>,
+    /// The module's imports (type-only ones are stripped), in source order.
+    pub imports: Vec<ImportMeta>,
 }
 
 /// The custom properties of a file (`LUM3012`, TASK-62).
@@ -281,6 +284,7 @@ pub fn compile(source: &str, filename: &str, options: &CompileOptions) -> Compil
     };
 
     let custom_properties_set = custom_properties::set_in_style_props(&program);
+    let module_imports = imports::imports(&program);
 
     let transform_options = TransformOptions {
         target: options.target,
@@ -362,6 +366,7 @@ pub fn compile(source: &str, filename: &str, options: &CompileOptions) -> Compil
                 read: custom_properties_read,
             },
             contract,
+            imports: module_imports,
         },
     }
 }
@@ -409,6 +414,9 @@ impl CompileResult {
         }
         for set in &mut self.meta.custom_properties.set {
             set.span = set.span.map(f);
+        }
+        for import in &mut self.meta.imports {
+            import.span = import.span.map(f);
         }
         for entry in self.meta.contract.iter_mut().flatten() {
             entry.span = entry.span.map(f);
