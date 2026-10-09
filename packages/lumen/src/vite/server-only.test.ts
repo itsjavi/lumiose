@@ -75,6 +75,14 @@ function clientBuild(input: string) {
   });
 }
 
+/** The error message of a client build of `input` ("built" when it succeeds). */
+function failure(input: string): Promise<string> {
+  return clientBuild(input).then(
+    () => "built",
+    (thrown: unknown) => (thrown as Error).message,
+  );
+}
+
 describe.skipIf(!binding)("LUM4003", () => {
   it("fails a client build that reaches server-only code, with the importer chain", async () => {
     const error = await clientBuild("src/main.tsx").then(
@@ -91,11 +99,6 @@ describe.skipIf(!binding)("LUM4003", () => {
   }, 30_000);
 
   it("closes the bypasses: new URL, workers, ?raw, packages outside the root, symlinks (TASK-170)", async () => {
-    const failure = (input: string) =>
-      clientBuild(input).then(
-        () => "built",
-        (thrown: unknown) => (thrown as Error).message,
-      );
     expect(await failure("src/asset.ts")).toContain(
       'LUM4003: src/server/secrets.ts is server-only, but client code references it with new URL("./server/secrets.ts", import.meta.url)',
     );
@@ -167,7 +170,12 @@ describe.skipIf(!binding)("decision-29 defaults", () => {
     const defaults = await config({});
     expect(defaults.envPrefix).toBe("PUBLIC_");
     expect(defaults.server.fs.deny).toEqual(
-      expect.arrayContaining([".env", "**/.git/**", `${root}/**/*.server.*`, `${root}/src/server/**`]),
+      expect.arrayContaining([
+        ".env",
+        "**/.git/**",
+        `${root}/**/*.server.*`,
+        `${root}/src/server/**`,
+      ]),
     );
     const own = await config({ envPrefix: "APP_", server: { fs: { deny: [".env"] } } });
     expect(own.envPrefix).toBe("APP_");
