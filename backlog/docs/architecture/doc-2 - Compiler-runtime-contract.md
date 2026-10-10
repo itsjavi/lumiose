@@ -64,7 +64,7 @@ tags:
 **Components and helpers that compiled code reaches through `lumiose` (public):**
 - `Suspense`, `ErrorBoundary`, `Portal`, `Dynamic`;
 - `signal`, `computed` and the rest of the reactive core;
-- `lifetime`, `pending`, `fetchJSON`.
+- `getAbortSignal`, `isPending`, `fetchJSON`.
 
 ### 2.1 Dev-only hot runtime (`lumiose/dom/hot`)
 
@@ -142,7 +142,7 @@ Inside `<!--l:ID-->…<!--/l:ID-->`, the server marks every range the client cla
 - **Client semantics** (spec §4.4):
   - Each run gets a fresh run subscriber.
   - `$await` pauses it before awaiting and resumes it after, with the owner and context restored.
-  - A superseded run's `lifetime()` aborts.
+  - A superseded run's `getAbortSignal()` aborts.
   - The new UI swaps the old range atomically, and the old owner is disposed at that point.
 - **Replay key.** `instancePath:site:occurrence`.
   - `instancePath` is the island-relative creation index path of component instances.

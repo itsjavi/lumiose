@@ -33,7 +33,7 @@ Lumiose is a TypeScript 7-first web framework.
 
 ```tsx
 // src/components/Team.stsx — two components with private styles, plus shared file styles
-import { signal, lifetime, Suspense } from "lumiose";
+import { signal, getAbortSignal, Suspense } from "lumiose";
 import { fetchJSON } from "lumiose";
 import { radius, BREAKPOINT } from "../design/tokens.ts";
 import type { Member } from "../types.ts";
@@ -66,7 +66,7 @@ export function TeamPanel({ ids }: { ids: string[] }) {
 }
 
 export async function MemberCard({ id }: { id: string }) {
-  const member = await fetchJSON<Member>(`/api/members/${id}`, { signal: lifetime() });
+  const member = await fetchJSON<Member>(`/api/members/${id}`, { signal: getAbortSignal() });
   const kudos = signal(member.kudos);
 
   return (
@@ -269,15 +269,15 @@ The scanner produces both, so non-ASCII CSS (`content: "→"`) keeps both views 
 | `computed(fn)` | `c()`. Lazy, cached and glitch-free |
 | `effect(fn)` | Returns a disposer. Runs after DOM updates; `fn` may return a cleanup |
 | `store(obj)` | Deep reactive proxy that you mutate directly |
-| `untrack(fn)`, `batch(fn)`, `flushSync()` | |
+| `untrack(fn)`, `batch(fn)`, `flush()` | |
 | `onMount(fn)`, `onCleanup(fn)` | Owner-scoped |
-| `lifetime()` | An `AbortSignal`. Aborted when the run is superseded or the owner is disposed. On the server, it is the request's signal |
-| `pending()` | Inside an async component: whether its own re-run is in flight |
-| `submitting(name?)`, `navigating()`, `busy()` | Form submissions in flight; SPA navigation in flight; app-wide summary of everything in flight (decision-20) |
-| `createContext(d)`, `provide(ctx, v)`, `inject(ctx)` | Work across `await` |
+| `getAbortSignal()` | An `AbortSignal`. Aborted when the run is superseded or the owner is disposed. On the server, it is the request's signal |
+| `isPending()` | Inside an async component: whether its own re-run is in flight |
+| `isSubmitting(name?)`, `isNavigating()`, `isBusy()` | Form submissions in flight; SPA navigation in flight; app-wide summary of everything in flight (decision-20) |
+| `createContext(d)`, `<Ctx value={v}>`, `useContext(ctx)` | Work across `await` |
 | `resource(fetcher)` | Low-level on-demand loading |
 | `fetchJSON<T>(url, init?)` | Isomorphic and data-only. Same-origin requests are served in-process during SSR |
-| `<Suspense fallback>`, `<ErrorBoundary fallback={(err, retry) => …}>`, `<Portal mount>`, `<Dynamic component>` | Components |
+| `<Suspense fallback>`, `<ErrorBoundary fallback={(err, reset) => …}>`, `<Portal mount>`, `<Dynamic component>` | Components |
 
 ### 4.4 Async components (decision-13)
 
@@ -301,9 +301,9 @@ Replay validates the key. On a mismatch, it evaluates `e`, and reports `LUM4006`
 
 **Re-runs.**
 - Props and signals read in the body, including after awaits, are tracked. A change re-runs the component.
-- When a run is superseded, the previous run's `lifetime()` aborts. Its UI stays live until the new run resolves. The old owner is then disposed at the moment the range swaps atomically.
+- When a run is superseded, the previous run's `getAbortSignal()` aborts. Its UI stays live until the new run resolves. The old owner is then disposed at the moment the range swaps atomically.
 - Signals created in the body reset on each re-run.
-- `pending()` is true while a re-run is in flight.
+- `isPending()` is true while a re-run is in flight.
 - `LUM2007` warns when a component reads its own signals in the body.
 - `LUM2001` (stale derived value) does not apply to async components.
 
@@ -494,7 +494,7 @@ const _t0 = /*#__PURE__*/ template(`<article class=card data-l-k3x9a2 data-l-f81
 const _a0 = (el, v) => (el.data = v);                          // hoisted apply fns (memory)
 
 export const MemberCard = $component(async function MemberCard(props) {
-  const member = (await $await(() => fetchJSON(`/api/members/${props.id}`, { signal: lifetime() }), 0))();
+  const member = (await $await(() => fetchJSON(`/api/members/${props.id}`, { signal: getAbortSignal() }), 0))();
   const kudos = signal(member.kudos);
   const _el = _t0(), _h3 = _el.firstChild, _btn = _h3.nextSibling;
   _h3.firstChild.data = member.name;                           // static after await → one-time write
@@ -511,9 +511,9 @@ delegateEvents(["click"]);
 ### 5.3 Server output (illustrative)
 
 ```js
-import { ssr, escape, $await, $component, signal, lifetime } from "lumiose/server";
+import { ssr, escape, $await, $component, signal, getAbortSignal } from "lumiose/server";
 export const MemberCard = $component(async function MemberCard(props) {
-  const member = (await $await(() => fetchJSON(`/api/members/${props.id}`, { signal: lifetime() }), 0))();
+  const member = (await $await(() => fetchJSON(`/api/members/${props.id}`, { signal: getAbortSignal() }), 0))();
   const kudos = signal(member.kudos);
   return ssr(_s0, escape(member.name), escape(kudos()));   // _s0: hoisted static string parts
 });
@@ -568,7 +568,7 @@ export const MemberCard = $component(async function MemberCard(props) {
 ### 6.2 Scheduling
 
 - Reads are synchronous.
-- Writes inside a delegated handler are batched for the duration of that handler. Any other write schedules a microtask flush. `flushSync()` flushes immediately.
+- Writes inside a delegated handler are batched for the duration of that handler. Any other write schedules a microtask flush. `flush()` flushes immediately.
 - Flush order:
   1. computeds are pulled;
   2. render bindings run, by owner depth, using a depth-bucketed queue only when more than one depth is dirty;
@@ -661,7 +661,7 @@ export const MemberCard = $component(async function MemberCard(props) {
 - **`lumiose/router`** is active inside `spa` subtrees and built on the Navigation API.
   - `<Link href prefetch="hover|viewport|none">`.
   - `navigate(href, { replace })`.
-  - Reactive `params()`, `search()` (with a setter), `url()` and `navigating()`.
+  - Reactive `params()`, `searchParams()` (with a setter), `url()` and `isNavigating()`.
   - Nested layouts persist across navigations (a layout's `children` is the outlet).
   - Scroll restoration, focus management and a client-side `_404`.
   - Navigation holds the old page until async content is ready (§4.4).
@@ -702,7 +702,7 @@ src/
   - `fail(status, data)`.
 - Forms post to the page, or to `?/name` for named actions.
 - An Origin/CSRF check is on by default.
-- Islands enhance forms with `submit(form | data, { action })`, which resolves to a success or failure result and rejects only on unexpected errors, plus `submitting()` and `invalidate()` (decision-20).
+- Islands enhance forms with `submit(form | data, { action })`, which resolves to a success or failure result and rejects only on unexpected errors, plus `isSubmitting()` and `invalidate()` (decision-20).
 
 ### Context
 
