@@ -114,7 +114,9 @@ impl Assets {
         self.specifiers
             .iter()
             .enumerate()
-            .map(|(i, specifier)| format!("import lumioseAsset{i} from {};\n", js_string(specifier)))
+            .map(|(i, specifier)| {
+                format!("import lumioseAsset{i} from {};\n", js_string(specifier))
+            })
             .collect()
     }
 }

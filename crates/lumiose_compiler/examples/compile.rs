@@ -14,7 +14,9 @@ fn main() {
         let start = Instant::now();
         let mut bytes = 0;
         for _ in 0..runs {
-            bytes = lumiose_compiler::compile(&source, &path, &options).code.len();
+            bytes = lumiose_compiler::compile(&source, &path, &options)
+                .code
+                .len();
         }
         eprintln!(
             "{} lines, {} bytes in, {bytes} bytes out: {:?} per compile",

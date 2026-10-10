@@ -552,8 +552,8 @@ pub fn compile(
             let targets = match o.css_targets {
                 Some(queries) if !queries.is_empty() => lumiose_css::browserslist_targets(&queries)
                     .map_err(|error| {
-                    napi::Error::from_reason(format!("invalid cssTargets: {error}"))
-                })?,
+                        napi::Error::from_reason(format!("invalid cssTargets: {error}"))
+                    })?,
                 _ => lumiose_compiler::CssTargets::default(),
             };
             lumiose_compiler::CompileOptions {
@@ -585,12 +585,12 @@ pub fn compile(
                     .map(|module| lumiose_compiler::HostModule {
                         importer: module.importer,
                         specifier: module.specifier,
-                        resolved: module
-                            .resolved
-                            .map(|resolved| lumiose_compiler::ResolvedModule {
+                        resolved: module.resolved.map(|resolved| {
+                            lumiose_compiler::ResolvedModule {
                                 id: resolved.id,
                                 source: resolved.source,
-                            }),
+                            }
+                        }),
                     })
                     .collect(),
                 contract: o.contract.unwrap_or(defaults.contract),
