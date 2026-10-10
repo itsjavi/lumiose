@@ -134,6 +134,9 @@ export function SiteHeader() {
   );
 }
 
+/** The Lumiose website, when this app is published on it (scripts/site.ts sets the variable). */
+const LUMIOSE_SITE: string | undefined = import.meta.env.PUBLIC_LUMIOSE_SITE;
+
 export function SiteFooter() {
   return (
     <footer class="site-footer">
@@ -145,6 +148,7 @@ export function SiteFooter() {
         <a href={href("/rss.xml")}>RSS feed</a>
         <a href={href("/sitemap.xml")}>Sitemap</a>
         <a href={href("/about")}>How it is built</a>
+        {LUMIOSE_SITE && <a href={LUMIOSE_SITE}>Made with Lumiose</a>}
       </p>
 
       <style>

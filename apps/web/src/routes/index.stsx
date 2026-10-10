@@ -29,7 +29,7 @@ import {
   counterSource,
   createCommands,
 } from "../content/samples.ts";
-import { link, site } from "../lib/site.ts";
+import { link, REPOSITORY, site } from "../lib/site.ts";
 
 const fixed = (digits: number) => (value: number) => value.toFixed(digits);
 
@@ -89,6 +89,9 @@ export default function Home() {
           </LinkButton>
           <LinkButton href={link("/playground")} variant="ghost" size="lg">
             Playground
+          </LinkButton>
+          <LinkButton href={REPOSITORY} variant="ghost" size="lg" external>
+            GitHub
           </LinkButton>
         </div>
         <div class="install">

@@ -30,3 +30,6 @@ export const footerColumns: FooterColumn[] = siteFooterColumns.map((column) => (
   ...column,
   links: column.links.map((link) => ({ ...link, href: siteLink(link.href) })),
 }));
+
+/** The source repository. */
+export const REPOSITORY = "https://github.com/itsjavi/lumiose";

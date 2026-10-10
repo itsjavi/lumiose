@@ -26,7 +26,7 @@ pnpm build:site --base /lumiose/   # served below a path, e.g. a GitHub project 
 pnpm preview:site --base /lumiose/ # serves dist/site at http://localhost:4173/lumiose/
 ```
 
-`--skip-compiler` reuses an existing native compiler build. GitHub Pages answers every missing path with the root `404.html`; below an example that has its own `404.html` (the SPA shell of spa-chiptune, the journal's 404 page), that page renders the example's instead, so deep links work. The playground also builds the WebAssembly compiler, which needs `rustup target add wasm32-unknown-unknown` and `cargo install wasm-bindgen-cli --version 0.2.129 --locked` (the version must match the workspace's `wasm-bindgen` pin).
+`--skip-compiler` reuses an existing native compiler build. Each example gets `PUBLIC_LUMIOSE_SITE` (the site's base) and shows a small "Made with Lumiose" link back to the site when it is set; the static benchmark viewers get the same link. GitHub Pages answers every missing path with the root `404.html`; below an example that has its own `404.html` (the SPA shell of spa-chiptune, the journal's 404 page), that page renders the example's instead, so deep links work. The playground also builds the WebAssembly compiler, which needs `rustup target add wasm32-unknown-unknown` and `cargo install wasm-bindgen-cli --version 0.2.129 --locked` (the version must match the workspace's `wasm-bindgen` pin).
 
 `.github/workflows/pages.yml` runs the same build on every push to `main` (or manually) and deploys `dist/site` to GitHub Pages, with the base taken from the Pages configuration. To enable it, set **Settings > Pages > Source** to **GitHub Actions** on the repository.
 

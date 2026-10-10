@@ -16,6 +16,7 @@ export { CopyButton } from "./CopyButton.stsx";
 export type { CopyButtonProps } from "./CopyButton.stsx";
 export { Footer, siteFooterColumns } from "./Footer.stsx";
 export type { FooterColumn, FooterProps } from "./Footer.stsx";
+export { GitHubLink } from "./GitHubLink.stsx";
 export { Logo } from "./Logo.stsx";
 export { SiteHeader, siteLinks } from "./SiteHeader.stsx";
 export type { SiteHeaderProps } from "./SiteHeader.stsx";

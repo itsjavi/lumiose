@@ -5,6 +5,8 @@ import { fps, frameWork } from "../frame.ts";
 import { CHANNELS } from "../model/types.ts";
 import { cursor, history, message, prefs } from "../state.ts";
 
+/** The Lumiose website, when this app is published on it (scripts/site.ts sets the variable). */
+const LUMIOSE_SITE: string | undefined = import.meta.env.PUBLIC_LUMIOSE_SITE;
 const FIELDS = ["Note", "Instrument", "Instrument", "Volume", "Effect", "Parameter", "Parameter"];
 
 export function StatusBar() {
@@ -33,6 +35,11 @@ export function StatusBar() {
           {fps()} FPS · {frameWork().toFixed(2)} ms
         </span>
       )}
+      {LUMIOSE_SITE && (
+        <a class="site" href={LUMIOSE_SITE} title="The Lumiose framework">
+          Made with Lumiose
+        </a>
+      )}
       <style>
         .status {
           display: flex;
@@ -52,6 +59,14 @@ export function StatusBar() {
         }
         .perf {
           color: var(--green);
+        }
+        .site {
+          color: var(--dim);
+          text-decoration: none;
+        }
+        .site:hover {
+          color: var(--text);
+          text-decoration: underline;
         }
       </style>
     </footer>

@@ -99,6 +99,8 @@ function build(): void {
     pnpm(["--filter", `@lumiose-examples/${name}`, "build"], {
       LUMIOSE_BASE: `${base}examples/${name}/`,
       LUMIOSE_PAGES: "1",
+      // The website's root, for each demo's "Made with Lumiose" link.
+      PUBLIC_LUMIOSE_SITE: base,
     });
   }
   pnpm(["--filter", "@lumiose/bench-jsfb", "build"]);
@@ -111,6 +113,11 @@ function build(): void {
   }
   const fullstack = join(repo, "benchmarks/fullstack");
   copyBuild(join(fullstack, "viewer"), join(out, "benchmarks/fullstack"));
+  const viewer = join(out, "benchmarks/fullstack/index.html");
+  writeFileSync(
+    viewer,
+    readFileSync(viewer, "utf8").replace("data-lumiose-site hidden", `href="${base}"`),
+  );
   mkdirSync(join(out, "benchmarks/fullstack/results"), { recursive: true });
   for (const file of readdirSync(join(fullstack, "results"))) {
     if (file.endsWith(".json")) {

@@ -2,14 +2,29 @@ import { Counter } from "./Counter.stsx";
 import { Todos } from "./Todos.stsx";
 import { theme } from "./tokens.ts";
 
+/** The Lumiose website, when this app is published on it (scripts/site.ts sets the variable). */
+const LUMIOSE_SITE: string | undefined = import.meta.env.PUBLIC_LUMIOSE_SITE;
+
 export function App() {
   return (
     <main>
       <h1>Lumiose + Vite</h1>
       <Counter start={0} class="panel" />
       <Todos class="panel" />
+      {LUMIOSE_SITE && (
+        <footer>
+          Made with <a href={LUMIOSE_SITE}>Lumiose</a>
+        </footer>
+      )}
       <style>
         h1 {
+          color: $theme.accent;
+        }
+        footer {
+          font-size: 0.875rem;
+          color: #666;
+        }
+        footer a {
           color: $theme.accent;
         }
       </style>

@@ -1,10 +1,9 @@
 // The example apps and benchmark pages the site publishes (TASK-163). scripts/site.ts builds the
 // examples below /examples/<name>/ and the benchmark UIs below /benchmarks/; these entries
 // describe and link them. ssr-bookshelf needs a server, so it links its code and a screenshot.
-import { link } from "../lib/site.ts";
+import { link, REPOSITORY } from "../lib/site.ts";
 
-/** The repository, for links to the source of the examples and benchmarks. */
-export const REPOSITORY = "https://github.com/itsjavi/lumiose";
+export { REPOSITORY };
 
 export interface Showcase {
   name: string;

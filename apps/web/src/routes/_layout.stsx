@@ -1,10 +1,10 @@
 // Root layout: the site header (with the theme toggle), the page and the footer, all from
 // @lumiose/site-kit. Every route is prerendered (`lumiose({ mode: "static" })`), so the site deploys
 // as plain files.
-import { Footer, SiteHeader } from "@lumiose/site-kit";
+import { Footer, GitHubLink, SiteHeader } from "@lumiose/site-kit";
 import { color, radius, space } from "@lumiose/site-kit/tokens";
 import { href, url, type LayoutProps } from "lumiose";
-import { footerColumns, link, navLinks, sitePath, site } from "../lib/site.ts";
+import { footerColumns, link, navLinks, REPOSITORY, sitePath, site } from "../lib/site.ts";
 
 export default function RootLayout(props: LayoutProps<"/">) {
   const current = link(sitePath(url().pathname));
@@ -14,7 +14,12 @@ export default function RootLayout(props: LayoutProps<"/">) {
       <a class="skip" href="#content">
         Skip to content
       </a>
-      <SiteHeader links={navLinks} current={current} home={href("/")} />
+      <SiteHeader
+        links={navLinks}
+        current={current}
+        home={href("/")}
+        actions={<GitHubLink href={REPOSITORY} />}
+      />
       <main id="content">{props.children}</main>
       <Footer columns={footerColumns} tagline={site.tagline}>
         <p>MIT licensed. This site is a static Lumiose app built with @lumiose/site-kit.</p>

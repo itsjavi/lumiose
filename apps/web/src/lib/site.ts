@@ -20,6 +20,9 @@ export function sitePath(pathname: string): string {
   return pathname.startsWith(BASE) ? `/${pathname.slice(BASE.length)}` : pathname;
 }
 
+/** The source repository. */
+export const REPOSITORY = "https://github.com/itsjavi/lumiose";
+
 export const site = {
   name: "Lumiose",
   tagline: "Signals, islands and scoped styles, compiled. Light by default.",
@@ -67,6 +70,7 @@ export const footerColumns: FooterColumn[] = [
       { href: href("/llms.txt"), label: "llms.txt" },
       { href: href("/llms-full.txt"), label: "llms-full.txt" },
       { href: link("/playground"), label: "Playground" },
+      { href: REPOSITORY, label: "GitHub" },
     ],
   },
 ];
