@@ -80,6 +80,30 @@ test("invalidate() re-runs the page's async components", async ({ page }) => {
   await expect(page.locator("#user")).toHaveText("User 1");
 });
 
+test("hydrates from the server's entry; invalidate(url) refetches it; back shows it at once", async ({
+  page,
+}) => {
+  const requests: string[] = [];
+  page.on("request", (request) => {
+    if (new URL(request.url()).pathname.startsWith("/api/")) requests.push(request.url());
+  });
+  await page.goto("/users/1");
+  await ready(page);
+  // The SPA hydrated from the server's cache entry, without fetching it again.
+  expect(requests).toEqual([]);
+  const before = Number((await page.locator("#hits").textContent())!.slice(5));
+  await page.locator("#refetch").click();
+  await expect(page.locator("#hits")).toHaveText(`load ${before + 1}`);
+  expect(requests.map((url) => new URL(url).pathname)).toEqual(["/api/users/1"]);
+  // Away and back: the cached user shows at once, then the background refetch updates it.
+  await page.locator("a[href='/']").first().click();
+  await expect(page.locator("#url")).toHaveText("/");
+  await page.goBack();
+  await expect(page.locator("#user")).toHaveText("User 1");
+  await expect(page.locator("#hits")).toHaveText(`load ${before + 2}`);
+  expect(await sameDocument(page)).toBe(true);
+});
+
 test("back and forward restore pages and scroll positions", async ({ page }) => {
   await page.goto("/long");
   await ready(page);
