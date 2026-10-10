@@ -1,12 +1,12 @@
 // @vitest-environment happy-dom
-import { flushSync } from "lumiose";
-import { mount } from "lumiose/dom";
+import { flush } from "lumiose";
+import { render } from "lumiose/dom";
 import { expect, it } from "vitest";
 import { Shopping } from "../src/components/Shopping.stsx";
 
 it("adds and removes items", () => {
   const container = document.body.appendChild(document.createElement("div"));
-  const dispose = mount(() => <Shopping initial={["Bread", "Eggs"]} />, container);
+  const dispose = render(() => <Shopping initial={["Bread", "Eggs"]} />, container);
   const list = () =>
     [...container.querySelectorAll("li")].map((li) => li.firstChild!.textContent!.trim());
   const count = () => container.querySelector(".count")!.textContent!.trim();
@@ -18,13 +18,13 @@ it("adds and removes items", () => {
   container
     .querySelector("form")!
     .dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
-  flushSync();
+  flush();
   expect(list()).toEqual(["Bread", "Eggs", "Milk"]);
   expect(count()).toBe("3 items");
   expect(input.value).toBe("");
 
   container.querySelectorAll<HTMLButtonElement>(".remove")[0]!.click();
-  flushSync();
+  flush();
   expect(list()).toEqual(["Eggs", "Milk"]);
   expect(count()).toBe("2 items");
   dispose();

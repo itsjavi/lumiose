@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
-import { flushSync, signal } from "lumiose";
-import { mount } from "lumiose/dom";
+import { flush, signal } from "lumiose";
+import { render } from "lumiose/dom";
 import { afterEach, expect, it } from "vitest";
 import { ProgressBar } from "../src/components/ProgressBar.stsx";
 
@@ -23,20 +23,20 @@ function custom(container: HTMLElement): string | undefined {
 it("sets --progress and aria-valuenow from the value, live and clamped", () => {
   const container = document.body.appendChild(document.createElement("div"));
   const value = signal(40);
-  dispose = mount(() => <ProgressBar value={value()} />, container);
+  dispose = render(() => <ProgressBar value={value()} />, container);
   const bar = () => container.querySelector('[role="progressbar"]')!;
   expect(custom(container)).toBe("40%");
   expect(bar().getAttribute("aria-valuenow")).toBe("40");
   value.set(75);
-  flushSync();
+  flush();
   expect(custom(container)).toBe("75%");
   expect(bar().getAttribute("aria-valuenow")).toBe("75");
   value.set(130);
-  flushSync();
+  flush();
   expect(custom(container)).toBe("100%");
   expect(bar().getAttribute("aria-valuenow")).toBe("100");
   value.set(-5);
-  flushSync();
+  flush();
   expect(custom(container)).toBe("0%");
   expect(bar().getAttribute("aria-valuenow")).toBe("0");
 });

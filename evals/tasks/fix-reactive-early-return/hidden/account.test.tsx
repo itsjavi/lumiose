@@ -1,12 +1,12 @@
 // @vitest-environment happy-dom
-import { flushSync } from "lumiose";
-import { mount } from "lumiose/dom";
+import { flush } from "lumiose";
+import { render } from "lumiose/dom";
 import { expect, it } from "vitest";
 import { Account } from "../src/components/Account.stsx";
 
 it("signs in and out repeatedly", () => {
   const container = document.body.appendChild(document.createElement("div"));
-  const dispose = mount(() => <Account />, container);
+  const dispose = render(() => <Account />, container);
   const signIn = (name: string) => {
     const input = container.querySelector<HTMLInputElement>(".login input")!;
     input.value = name;
@@ -14,7 +14,7 @@ it("signs in and out repeatedly", () => {
     container
       .querySelector(".login")!
       .dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
-    flushSync();
+    flush();
   };
   const welcome = () =>
     container.querySelector(".welcome")?.textContent?.replace(/\s+/g, " ").trim();
@@ -24,7 +24,7 @@ it("signs in and out repeatedly", () => {
   expect(container.querySelector(".login")).toBeNull();
   expect(welcome()).toMatch(/^Signed in as Ada\./);
   container.querySelector<HTMLButtonElement>(".welcome button")!.click();
-  flushSync();
+  flush();
   expect(container.querySelector(".welcome")).toBeNull();
   expect(container.querySelector(".login")).not.toBeNull();
   signIn("Grace");
