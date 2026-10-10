@@ -1,4 +1,4 @@
-project_name: "Lumen"
+project_name: "Lumiose"
 default_status: "To Do"
 statuses: ["To Do", "In Progress", "Done"]
 labels: ["needs-review", "needs-decision", "needs-refinement", "needs-planning"]

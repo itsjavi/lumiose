@@ -3,13 +3,13 @@ id: doc-4
 title: Fullstack comparison benchmark
 type: specification
 created_date: '2026-10-09 04:07'
-updated_date: '2026-10-09 12:19'
+updated_date: '2026-10-10 00:23'
 ---
 # Fullstack comparison benchmark
 
 **Status:** requested by the user on 2026-10-09. Spec by Lux. Tasks: TASK-110 to TASK-115 (milestone m-8).
 
-**Goal.** Implement the same non-trivial fullstack app three times — **Lumen SSR**, **React Router (framework mode, SSR)** and **Next.js 16 (App Router)** — and compare dev and production metrics with a reproducible harness. Results are stored as JSON and browsed in a static HTML viewer.
+**Goal.** Implement the same non-trivial fullstack app three times — **Lumiose SSR**, **React Router (framework mode, SSR)** and **Next.js 16 (App Router)** — and compare dev and production metrics with a reproducible harness. Results are stored as JSON and browsed in a static HTML viewer.
 
 ## 1. Fairness rules
 
@@ -17,11 +17,11 @@ updated_date: '2026-10-09 12:19'
 - **Same CSS.** All apps import one shared plain stylesheet (`@bench/ui-css`). No CSS Modules, Tailwind or scoped styles, so CSS bytes are identical and the comparison measures the framework.
 - **Same data layer.** All apps call the shared `@bench/data` package (`node:sqlite`, deterministic seed). No ORM, no framework data cache.
 - **Idiomatic framework code.** Each app uses its framework's recommended primitives:
-  - Lumen: route mode `server`, async components + `Suspense`, form actions, islands (`client:*`) for interactive parts.
+  - Lumiose: route mode `server`, async components + `Suspense`, form actions, islands (`client:*`) for interactive parts.
   - React Router: loaders/actions, `<Form>`/`useFetcher`, a loader promise + `<Await>` inside `<Suspense>` for streamed data. The whole page hydrates (that is how React Router works).
   - Next.js: server components, server actions, `"use client"` components for interactive parts, async server component inside `<Suspense>`.
-- **Dynamic rendering everywhere.** Every page renders on each request. No full-page or data caching (Next: no static prerendering of these routes, no `use cache`; React Router: no prerender; Lumen: mode `server`).
-- **Production servers as shipped,** with HTTP compression **off** in all three (Next `compress: false`; React Router served by `@react-router/serve` or an equivalent minimal Node server with compression off; Lumen `adapter-node`). Payload sizes are measured offline with gzip and brotli.
+- **Dynamic rendering everywhere.** Every page renders on each request. No full-page or data caching (Next: no static prerendering of these routes, no `use cache`; React Router: no prerender; Lumiose: mode `server`).
+- **Production servers as shipped,** with HTTP compression **off** in all three (Next `compress: false`; React Router served by `@react-router/serve` or an equivalent minimal Node server with compression off; Lumiose `adapter-node`). Payload sizes are measured offline with gzip and brotli.
 - **Type checking is measured separately**, not inside build time (Next: `typescript.ignoreBuildErrors: true` for the timed build).
 - **Latest stable versions** at implementation time (Next.js 16.x, React 19.x, React Router latest stable); exact versions are pinned and recorded in every results file. Node is the repo's Node (≥ 24).
 - **Same machine, sequential runs,** nothing else heavy running. Every results file records the machine.
@@ -68,7 +68,7 @@ benchmarks/fullstack/
   packages/data/        @bench/data      (Quasar)
   packages/ui-css/      @bench/ui-css    (Quasar)
   packages/react-ui/    @bench/react-ui  shared presentational React components (Quasar)
-  apps/lumen/           Lumen SSR        (Nova)
+  apps/lumiose/           Lumiose SSR        (Nova)
   apps/react-router/    React Router     (Quasar)
   apps/next/            Next.js 16       (Quasar)
   harness/e2e/          conformance suite (Nova; inside @bench/harness so it resolves @playwright/test)
@@ -77,8 +77,8 @@ benchmarks/fullstack/
   viewer/               static HTML viewer (Nova)
 ```
 
-- Ports: Lumen 4101, React Router 4102, Next 4103 (dev and prod).
-- Each app exposes the same scripts: `seed`, `dev`, `build`, `start`, `typecheck`, `clean` (removes build output and framework caches: `.next`, `node_modules/.vite`, `build`, `dist`, `.react-router`, `.lumen`).
+- Ports: Lumiose 4101, React Router 4102, Next 4103 (dev and prod).
+- Each app exposes the same scripts: `seed`, `dev`, `build`, `start`, `typecheck`, `clean` (removes build output and framework caches: `.next`, `node_modules/.vite`, `build`, `dist`, `.react-router`, `.lumiose`).
 
 ## 4. Metrics
 
@@ -86,9 +86,9 @@ Median plus spread (min and max; the viewer draws them as whiskers and highlight
 
 **Environment of each metric** (TASK-145). Dev servers (Vite, Turbopack) compile on request and differ a lot from production servers, so every metric says where it was measured:
 
-- `dev`: against each app's dev server (`lumen dev` and `react-router dev` on Vite, `next dev` on Turbopack). Only the **Dev** metrics below.
+- `dev`: against each app's dev server (`lumiose dev` and `react-router dev` on Vite, `next dev` on Turbopack). Only the **Dev** metrics below.
 - `build`: from the production build and the sources: build time, output size on disk (without precompressed `.br`/`.gz` copies), type check, source size, dependency footprint.
-- `prod`: against the built apps on their production servers (`start` script: Lumen `node server.ts` on adapter-node, React Router `node server.ts` = Express + @react-router/express, Next `next start`): client payload, page load and every server metric, req/s included.
+- `prod`: against the built apps on their production servers (`start` script: Lumiose `node server.ts` on adapter-node, React Router `node server.ts` = Express + @react-router/express, Next `next start`): client payload, page load and every server metric, req/s included.
 
 The harness runs every `start` with `NODE_ENV=production` and checks, on each app's first production start, that the process listening on the port has `NODE_ENV=production` (it stops otherwise) and that `/` is not compressed for a client accepting br and gzip. Each results file records the commands, the dev bundler and these checks.
 
@@ -112,7 +112,7 @@ The harness runs every `start` with `NODE_ENV=production` and checks, on each ap
 - Server RSS after the load test.
 
 **Other**
-- Type check time (`lumen check` with TS 7 vs `tsc --noEmit` / `next typegen && tsc`).
+- Type check time (`lumiose check` with TS 7 vs `tsc --noEmit` / `next typegen && tsc`).
 - Source size: lines of code per app (excluding shared packages), files.
 - Dependency footprint: number of packages in each app's production dependency tree.
 
@@ -127,14 +127,14 @@ The harness runs every `start` with `NODE_ENV=production` and checks, on each ap
   {
     "schema": 2,
     "meta": { "date": "…", "host": "…", "machine": { "cpu": "…", "cores": 0, "memoryGb": 0, "os": "…" }, "node": "…",
-              "versions": { "lumen": "<git sha>", "react": "…", "react-router": "…", "next": "…", "vite": "…" },
+              "versions": { "lumiose": "<git sha>", "react": "…", "react-router": "…", "next": "…", "vite": "…" },
               "iterations": { "dev": 5, "build": 3, "load": 5, "server": 3 }, "quick": false,
-              "groups": ["dev", "…"], "apps": ["lumen", "…"], "conformance": { "lumen": "pass" }, "notes": ["…"],
-              "servers": { "lumen": { "dev": { "command": "lumen dev …", "tool": "Vite 8.3.4", "description": "…" },
-                                      "build": { "command": "lumen build" },
+              "groups": ["dev", "…"], "apps": ["lumiose", "…"], "conformance": { "lumiose": "pass" }, "notes": ["…"],
+              "servers": { "lumiose": { "dev": { "command": "lumiose dev …", "tool": "Vite 8.3.4", "description": "…" },
+                                      "build": { "command": "lumiose build" },
                                       "prod": { "command": "NODE_ENV=production node server.ts", "description": "…",
                                                 "nodeEnv": "production", "compression": false } } } },
-    "results": { "lumen": { "<metric-id>": { "unit": "ms", "values": [], "median": 0, "min": 0, "max": 0 } }, "react-router": {}, "next": {} },
+    "results": { "lumiose": { "<metric-id>": { "unit": "ms", "values": [], "median": 0, "min": 0, "max": 0 } }, "react-router": {}, "next": {} },
     "metrics": { "<metric-id>": { "label": "…", "group": "dev|build|load|server|other", "env": "dev|build|prod",
                                   "unit": "ms", "better": "lower|higher", "section": "…" } }
   }
@@ -145,7 +145,7 @@ The harness runs every `start` with `NODE_ENV=production` and checks, on each ap
 
 ## 7. Commands
 
-- `pnpm --filter @bench/harness bench [--quick] [--only lumen,next] [--metrics dev,build,load,server,other]`
+- `pnpm --filter @bench/harness bench [--quick] [--only lumiose,next] [--metrics dev,build,load,server,other]`
 - `pnpm --filter @bench/harness conformance`
 - `pnpm --filter @bench/harness run view`
 

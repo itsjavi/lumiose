@@ -3,7 +3,7 @@ id: doc-2
 title: Compiler-runtime contract
 type: specification
 created_date: '2026-10-08 12:27'
-updated_date: '2026-10-09 15:40'
+updated_date: '2026-10-10 00:23'
 tags:
   - architecture
   - contract
@@ -13,17 +13,17 @@ tags:
 > **Owner:** Lux. **Task:** TASK-6. **Consumers:** Photon (compiler, TASK-9/10/14/15) and Spark (runtime, TASK-13/16/17/18).
 >
 > **Typed source of truth:**
-> - `packages/lumen/src/contract/client.ts` (`ClientRuntime`, from `lumen/dom`)
-> - `packages/lumen/src/contract/server.ts` (`ServerRuntime`, from `lumen/server`)
+> - `packages/lumiose/src/contract/client.ts` (`ClientRuntime`, from `lumiose/dom`)
+> - `packages/lumiose/src/contract/server.ts` (`ServerRuntime`, from `lumiose/server`)
 >
 > This doc gives the semantics and golden examples. **Change process:** propose a change in your task notes, then Lux updates this doc and the typed files, and both sides adapt in the same milestone.
 
 ## 1. Principles
 
-- **Imports.** Compiled output imports runtime helpers only from `lumen/dom` (client) or `lumen/server` (server), plus public APIs from `lumen` that the user's own code already imports.
+- **Imports.** Compiled output imports runtime helpers only from `lumiose/dom` (client) or `lumiose/server` (server), plus public APIs from `lumiose` that the user's own code already imports.
 - **One client walk.**
   - The compiler emits a single client code path: clone, then walk with `firstChild`/`nextSibling`.
-  - Hydration is pluggable. Importing `lumen/dom/hydrate` (done by the island loader and by SPA hydrate entries) installs a claim cursor. While the cursor is active, `template()` factories and the `insert`, `list` and `branch` helpers adopt existing DOM instead of creating it.
+  - Hydration is pluggable. Importing `lumiose/dom/hydrate` (done by the island loader and by SPA hydrate entries) installs a claim cursor. While the cursor is active, `template()` factories and the `insert`, `list` and `branch` helpers adopt existing DOM instead of creating it.
   - Bundles without islands or SSR never contain the hydration code.
   - This amends spec v0.3 §5.2, which described a separate `_tN.h` walk: equal tree-shaking, simpler codegen.
 - **Hoisting.** The compiler hoists everything static to module scope: templates, `apply` functions, static SSR string parts, selector setup where possible, and delegated event name lists.
@@ -36,7 +36,7 @@ tags:
   - The hidden `$$scope` prop carries the caller's scope tokens when `class` is passed.
   - A component that passes its own `class` prop on to a child component forwards its caller's scope: `$$scope` is its own tokens plus `props.$$scope` (`"data-l-m1 " + (props.$$scope ?? "")`), or `props.$$scope` when it has no styles. Runtimes skip empty tokens (TASK-92).
 
-## 2. Client runtime (`lumen/dom`)
+## 2. Client runtime (`lumiose/dom`)
 
 | Name | Contract |
 |---|---|
@@ -61,20 +61,20 @@ tags:
 | `useRef(el, ref)` | Calls `ref(el)` synchronously after the element is created |
 | `$await(thunk, site)`, `$leave()` | §4 |
 
-**Components and helpers that compiled code reaches through `lumen` (public):**
+**Components and helpers that compiled code reaches through `lumiose` (public):**
 - `Suspense`, `ErrorBoundary`, `Portal`, `Dynamic`;
 - `signal`, `computed` and the rest of the reactive core;
 - `lifetime`, `pending`, `fetchJSON`.
 
-### 2.1 Dev-only hot runtime (`lumen/dom/hot`)
+### 2.1 Dev-only hot runtime (`lumiose/dom/hot`)
 
-Imported only by code compiled with the `hot` option in `lumen dev`; never part of production bundles (0 B).
+Imported only by code compiled with the `hot` option in `lumiose dev`; never part of production bundles (0 B).
 
 | Name | Contract |
 |---|---|
 | `$hot(hot, name, component, version)` | Emitted after each named component: `Name = $hot(import.meta.hot, "Name", Name, version)`. Returns a stable wrapper per component (kept in `import.meta.hot.data`) whose instances re-render in place when a later module version registers a different `version`; returns `component` itself when `hot` is undefined. Modules whose exports change shape fall back to the re-mount/reload path (TASK-146) |
 
-## 3. Server runtime (`lumen/server`)
+## 3. Server runtime (`lumiose/server`)
 
 **`SSRNode`.** `SSRNode = { t: string }` is escaped HTML. A plain string hole is always escaped as text.
 
@@ -94,7 +94,7 @@ Imported only by code compiled with the `hot` option in `lumen dev`; never part 
 | `island(ref, C, props, strategy, strategyValue?, slots?)` | Emits island markers, inline slot markers for the slots the island renders, `<template data-l-slot>` for the others, the serialized record, and the `modulepreload` hint for `load` |
 | `$await(thunk, site)`, `$leave()` | Same shape as the client (§4). Awaits. Inside an island it records `{ [instancePath:site:occurrence]: value }`, which must be plain data or it raises `LUM4007` |
 
-**Public server variants** come from `lumen` under the `node` condition, with the same names: `renderToStream`, `renderToString`, `Suspense`, `ErrorBoundary`, `Head`/`Title`/`Meta`, and request accessors.
+**Public server variants** come from `lumiose` under the `node` condition, with the same names: `renderToStream`, `renderToString`, `Suspense`, `ErrorBoundary`, `Head`/`Title`/`Meta`, and request accessors.
 
 ### 3.1 Hydration markers (inside islands only)
 
@@ -120,20 +120,20 @@ Inside `<!--l:ID-->…<!--/l:ID-->`, the server marks every range the client cla
 - **Server props** (Lux, TASK-78): on the server target, dynamic props whose expression is trivially safe compile to plain data properties instead of getters. Trivially safe means a literal, a template literal of safe parts, a local identifier, or a single-level `props.x` read. Every other expression, plus all JSX-valued props and `children`, stays a lazy getter. This keeps evaluation semantics identical to the client: nothing can throw or run earlier than it would there.
 
 **Hydration entry points** (Spark, TASK-18):
-- `lumen/dom/hydrate` exports `hydrate(C, props, start, end, awaits?, slots?, fresh?)`. It hydrates an island's root region between its start and end markers, replays awaits by `instancePath:site:occurrence` (decoded with `decodeData`), adopts inline slots, and inserts `<template data-l-slot>` slots later. On a mismatch it disposes, clears the range and renders on the client, reporting LUM4006 in dev.
+- `lumiose/dom/hydrate` exports `hydrate(C, props, start, end, awaits?, slots?, fresh?)`. It hydrates an island's root region between its start and end markers, replays awaits by `instancePath:site:occurrence` (decoded with `decodeData`), adopts inline slots, and inserts `<template data-l-slot>` slots later. On a mismatch it disposes, clears the range and renders on the client, reporting LUM4006 in dev.
 - Replayed awaits still evaluate the await expression for tracking, with fetch held off, so reactive inputs such as `props.id` stay tracked.
-- `lumen/dom/loader` is the island loader client entry (≈0.74 kB), and imports `virtual:lumen/islands`. It:
+- `lumiose/dom/loader` is the island loader client entry (≈0.74 kB), and imports `virtual:lumiose/islands`. It:
   - watches for new `data-l-islands` records with a MutationObserver;
   - runs one TreeWalker pass per batch, finding comment and ProcessingInstruction placeholders (Chromium applies `<template for>` natively);
   - handles the `load`/`idle`/`visible`/`media`/`only` triggers;
   - waits for streamed placeholders inside a range;
   - captures and replays `click`/`input`/`submit`/`keydown`.
-- The server emits it as `<script type="module" async src=…>`; `lumen dev`/`build` pass `loaderUrl`.
+- The server emits it as `<script type="module" async src=…>`; `lumiose dev`/`build` pass `loaderUrl`.
 - Range modes used by the hydrator: `0` region, `1` parentless value (`branchValue`/`listValue`), `2` ErrorBoundary, `3` Suspense content.
 
 ## 4. Async components (both sides)
 
-- **Async marking.** The compiler wraps every async component definition as `export const X = $async(async function X(props) { … })`, using `$async` from `lumen/dom` or `lumen/server`. `createComponent` dispatches on the `$async` tag, so bundles without async components tree-shake the async path (about 0.7 kB, measured by Spark in TASK-17). `instanceof AsyncFunction` remains only as a dev-mode fallback: an untagged async component, such as one from a library compiled without Lumen, gets a warning and still works.
+- **Async marking.** The compiler wraps every async component definition as `export const X = $async(async function X(props) { … })`, using `$async` from `lumiose/dom` or `lumiose/server`. `createComponent` dispatches on the `$async` tag, so bundles without async components tree-shake the async path (about 0.7 kB, measured by Spark in TASK-17). `instanceof AsyncFunction` remains only as a dev-mode fallback: an untagged async component, such as one from a library compiled without Lumiose, gets a warning and still works.
 - **Rewrite.** Only awaits whose nearest enclosing function is the component are rewritten:
   - `await e` becomes `(await $await(() => e, N))()`, where `N` is the 0-based static site index in source order. `$await` pauses the run synchronously and resolves to a resume function. Calling it in the component's own continuation restores the run and returns the value. Resuming inside the runtime's `.then` would be unsound, because another run's continuation can interleave (found by Spark in TASK-7).
   - The whole body is wrapped as `try { … } finally { $leave(); }`, so the run is paused synchronously when the body returns or throws.
@@ -156,7 +156,7 @@ These are illustrative: exact variable names are free, but the structure and the
 
 ```tsx
 // Counter.stsx
-import { signal } from "lumen";
+import { signal } from "lumiose";
 export function Counter({ start = 0 }: { start?: number }) {
   const count = signal(start);
   return (
@@ -170,9 +170,9 @@ export function Counter({ start = 0 }: { start?: number }) {
 
 ```js
 // client
-import { signal } from "lumen";
-import { template, bind, toggleClass, insert, delegateEvents } from "lumen/dom";
-import "/src/Counter.stsx?lumen&type=style&lang.css";
+import { signal } from "lumiose";
+import { template, bind, toggleClass, insert, delegateEvents } from "lumiose/dom";
+import "/src/Counter.stsx?lumiose&type=style&lang.css";
 const _t0 = template(`<button data-l-c1>Clicked <!> times`);
 const _a0 = (el, v) => toggleClass(el, "hot", v);
 export function Counter(props) {
@@ -188,8 +188,8 @@ delegateEvents(["click"]);
 
 ```js
 // server
-import { signal } from "lumen";
-import { ssr, classAttr, insert } from "lumen/server";
+import { signal } from "lumiose";
+import { ssr, classAttr, insert } from "lumiose/server";
 const _s0 = ["<button data-l-c1", ">Clicked ", " times</button>"];
 export function Counter(props) {
   const count = signal(props.start === undefined ? 0 : props.start);
@@ -285,4 +285,4 @@ On the client build, `client:*` is removed, and the component is referenced only
 | `LUM4006` | Hydration mismatch, at runtime in dev |
 | `LUM4008` | Module-scope signal written during SSR, at runtime in dev |
 
-Runtime errors include the code plus a docs URL (`https://lumen.dev/errors/LUMxxxx`; the URL is a placeholder until publishing).
+Runtime errors include the code plus a docs URL (`https://lumiose.dev/errors/LUMxxxx`; the URL is a placeholder until publishing).

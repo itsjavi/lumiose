@@ -1,20 +1,20 @@
 ---
 id: doc-1
-title: Lumen architecture specification
+title: Lumiose architecture specification
 type: specification
 created_date: '2026-10-08 10:28'
-updated_date: '2026-10-09 05:12'
+updated_date: '2026-10-10 00:23'
 tags:
   - architecture
   - spec
 ---
-# Lumen architecture specification
+# Lumiose architecture specification
 
 > **Status:** v0.3, the implementation baseline. Owner: Lux (architect). Milestone: m-0. Tracking task: TASK-3.
 >
 > **Decisions:** 3–19 are accepted. Decisions 1 and 2 are superseded by 11 and 12. Syntax and DX decisions were approved by the user; other technical decisions were made by the architect under decision-16.
 >
-> **Naming:** the product is called Lumen. The working package name is `lumen` (decision-15), and it gets renamed before publishing.
+> **Naming:** the product is called Lumiose. The working package name is `lumiose` (decision-15), and it gets renamed before publishing.
 >
 > **Normative terms:** **must**, **should** and **may** are used in their usual specification sense. Code samples are normative for API shape, not for internals.
 >
@@ -22,7 +22,7 @@ tags:
 
 ## 0. Summary
 
-Lumen is a TypeScript 7-first web framework.
+Lumiose is a TypeScript 7-first web framework.
 
 - **Authoring.** Components live in `.stsx` files ("styled TSX"): TSX plus raw-CSS `<style>` blocks. Plain `.tsx` files work too.
 - **Styles.** Styles are plain CSS. A block applies to whatever encloses it: a component, the file, or the whole app with `<style global>`. CSS can read JS constants as `$name`, inlined at build time.
@@ -33,8 +33,8 @@ Lumen is a TypeScript 7-first web framework.
 
 ```tsx
 // src/components/Team.stsx — two components with private styles, plus shared file styles
-import { signal, lifetime, Suspense } from "lumen";
-import { fetchJSON } from "lumen";
+import { signal, lifetime, Suspense } from "lumiose";
+import { fetchJSON } from "lumiose";
 import { radius, BREAKPOINT } from "../design/tokens.ts";
 import type { Member } from "../types.ts";
 
@@ -133,7 +133,7 @@ export default async function Home() {
 
 ### 1.1 Positioning
 
-| Framework | Gap Lumen fills |
+| Framework | Gap Lumiose fills |
 |---|---|
 | Solid 2 | First-class scoped CSS; server-first islands |
 | Svelte 5 / Vue Vapor | TSX instead of SFCs; TS 7 without Volar; several components per file, each with its own style scope |
@@ -161,14 +161,14 @@ export default async function Home() {
 ```
        authoring: .stsx (TSX + raw-CSS <style>) · .tsx · .ts
                │                                   │
-   Vite 8 ─ lumen/vite (JS plugin, pre) ─┐         ├─ shadow TSX (.lumen/shadow, same UTF-16 offsets) → stock tsc
-   napi ─ @lumen/compiler (Rust)         │         ├─ @lumen/language-server: takeover proxy over TS 7 LSP + CSS LS
-     lumen_compiler: scan/mask → OXC parse → semantic → analyze → codegen(client|server)
-     lumen_css: $ref substitution → Lightning CSS → placement scopes → targets/minify
+   Vite 8 ─ lumiose/vite (JS plugin, pre) ─┐         ├─ shadow TSX (.lumiose/shadow, same UTF-16 offsets) → stock tsc
+   napi ─ @lumiose/compiler (Rust)         │         ├─ @lumiose/language-server: takeover proxy over TS 7 LSP + CSS LS
+     lumiose_compiler: scan/mask → OXC parse → semantic → analyze → codegen(client|server)
+     lumiose_css: $ref substitution → Lightning CSS → placement scopes → targets/minify
                │                    │                      │
-     lumen/dom (client)    lumen/server (SSR, streaming)   CSS assets (built in the client env) + module→CSS manifest
-               └──────── lumen app layer: routes · document · endpoints · actions · router · prerender · adapters
-   CLI `lumen`: dev · build · preview · check · lint · fmt · typegen · routes · docs · explain · mcp
+     lumiose/dom (client)    lumiose/server (SSR, streaming)   CSS assets (built in the client env) + module→CSS manifest
+               └──────── lumiose app layer: routes · document · endpoints · actions · router · prerender · adapters
+   CLI `lumiose`: dev · build · preview · check · lint · fmt · typegen · routes · docs · explain · mcp
 ```
 
 ### 3.1 Repository layout
@@ -176,18 +176,18 @@ export default async function Home() {
 ```
 Cargo.toml (workspace)        pnpm-workspace.yaml        tsconfig.base.json (TS 7)
 crates/
-  lumen_compiler/  stsx scanner + masking (UTF-8 & UTF-16), analysis, client/server/hydrate codegen, diagnostics
-  lumen_css/       Lightning CSS: $ref substitution, placement scopes, keyframes
-  lumen_napi/      napi-rs v3 bindings (+ wasm32-wasip1-threads fallback)
-  lumen_wasm/      wasm-bindgen build for the playground
+  lumiose_compiler/  stsx scanner + masking (UTF-8 & UTF-16), analysis, client/server/hydrate codegen, diagnostics
+  lumiose_css/       Lightning CSS: $ref substitution, placement scopes, keyframes
+  lumiose_napi/      napi-rs v3 bindings (+ wasm32-wasip1-threads fallback)
+  lumiose_wasm/      wasm-bindgen build for the playground
 packages/
-  lumen/           the package users install
+  lumiose/           the package users install
     src/core/      signals, owners, context, scheduling, boundaries (isomorphic)
     src/dom/       client renderer: templates, bindings, events, lists, branches, hydrate walk
     src/server/    string SSR, shell + Suspense streaming, island records
     src/app/       routes, document, endpoints, actions, middleware, router (SPA), prerender, adapter API
     src/vite/      Vite plugin
-    src/cli/       `lumen` binary
+    src/cli/       `lumiose` binary
     src/jsx/       JSX types (jsx-runtime)
     docs/          version-matched docs
   language-server/ · vscode/ · eslint-plugin/ · prettier-plugin/ · create/ · testing/ · adapter-node/
@@ -196,7 +196,7 @@ examples/          spa-*/ · ssr-*/ · ssg-*/   (the three sample apps)
 benchmarks/        js-framework-benchmark/ · ssr/ · agent-evals/
 ```
 
-Users install `lumen`. It provides the subpaths `lumen`, `lumen/dom`, `lumen/server`, `lumen/router`, `lumen/jsx-runtime` and `lumen/vite`, plus the `lumen` binary.
+Users install `lumiose`. It provides the subpaths `lumiose`, `lumiose/dom`, `lumiose/server`, `lumiose/router`, `lumiose/jsx-runtime` and `lumiose/vite`, plus the `lumiose` binary.
 
 ## 4. Authoring model
 
@@ -429,28 +429,28 @@ Use `style={{ "--progress": pct() }}` together with `var(--progress)`.
 {
   "compilerOptions": {
     "jsx": "preserve",
-    "jsxImportSource": "lumen",
+    "jsxImportSource": "lumiose",
     "module": "preserve",
     "moduleResolution": "bundler",
     "allowImportingTsExtensions": true,
     "noEmit": true,
     "strict": true,
-    "rootDirs": ["src", ".lumen/shadow/src"],
-    "types": ["lumen/env"]
+    "rootDirs": ["src", ".lumiose/shadow/src"],
+    "types": ["lumiose/env"]
   },
-  "include": ["src", ".lumen/shadow", ".lumen/types"]
+  "include": ["src", ".lumiose/shadow", ".lumiose/types"]
 }
 ```
 
 **JSX types.**
-- `lumen/jsx-runtime` exports `JSX`, which is also declared globally by `lumen/env`.
-- `IntrinsicElements` cover the DOM and SVG maps with Lumen props: `on*` / `on:*` events, `class`, `style`, `bind:*` and `key`. `style` is **omitted**, so writing `<style>` in a `.tsx` file is a type error.
+- `lumiose/jsx-runtime` exports `JSX`, which is also declared globally by `lumiose/env`.
+- `IntrinsicElements` cover the DOM and SVG maps with Lumiose props: `on*` / `on:*` events, `class`, `style`, `bind:*` and `key`. `style` is **omitted**, so writing `<style>` in a `.tsx` file is a type error.
 - `IntrinsicAttributes` add `key` and `client:*`.
 - `ElementType` accepts sync and async components (verified on TS 7.0.2).
 
 **Shadow files.**
 - Shadow files are deleted when their source is deleted.
-- Bare `tsc` needs `lumen typegen` to have run first. `lumen check` runs it for you.
+- Bare `tsc` needs `lumiose typegen` to have run first. `lumiose check` runs it for you.
 
 ## 5. Compiler (decision-5)
 
@@ -459,7 +459,7 @@ Use `style={{ "--progress": pct() }}` together with `var(--progress)`.
 ```
 .stsx → scanner (blocks, placements, $refs, masked UTF-8 + UTF-16) → oxc_parser(masked) → oxc_semantic
       → analyze (components, scopes, props, idioms, await sites, islands, $ref resolution incl. imports)
-      → lumen_css ($ref substitution → Lightning CSS → scope visitor → targets/minify → css + map)
+      → lumiose_css ($ref substitution → Lightning CSS → scope visitor → targets/minify → css + map)
       → codegen(client | server) → oxc_codegen + sourcemap → { code (JS), map, css, cssDeps, diagnostics, meta }
 .tsx  → same pipeline without the scanner
 ```
@@ -473,7 +473,7 @@ Use `style={{ "--progress": pct() }}` together with `var(--progress)`.
 **Output.**
 - The compiler outputs **JS for both `.stsx` and `.tsx`**, with types stripped by OXC.
 - The Vite plugin returns `moduleType: "js"`.
-- Vite's own OXC JSX transform is disabled for Lumen files.
+- Vite's own OXC JSX transform is disabled for Lumiose files.
 - `node_modules` is excluded unless a package opts in.
 
 **Engineering rules:**
@@ -486,9 +486,9 @@ Use `style={{ "--progress": pct() }}` together with `var(--progress)`.
 ### 5.2 Client output (illustrative)
 
 ```js
-import { signal } from "lumen";
-import { template, insert, delegateEvents, $await, $component } from "lumen/dom";
-import "/src/components/Team.stsx?lumen&type=style&lang.css";
+import { signal } from "lumiose";
+import { template, insert, delegateEvents, $await, $component } from "lumiose/dom";
+import "/src/components/Team.stsx?lumiose&type=style&lang.css";
 
 const _t0 = /*#__PURE__*/ template(`<article class=card data-l-k3x9a2 data-l-f81c0q><h3 data-l-k3x9a2 data-l-f81c0q> </h3><button data-l-k3x9a2 data-l-f81c0q>👏 <!>`);
 const _a0 = (el, v) => (el.data = v);                          // hoisted apply fns (memory)
@@ -505,13 +505,13 @@ export const MemberCard = $component(async function MemberCard(props) {
 delegateEvents(["click"]);
 ```
 
-- **Hydration** is pluggable: compiled code has a single walk. Importing `lumen/dom/hydrate` (done by the island loader and SPA hydrate entries) installs a claim cursor that `template()`, `insert`, `list` and `branch` honour, so bundles without hydration never contain that code (contract doc-2 §1).
+- **Hydration** is pluggable: compiled code has a single walk. Importing `lumiose/dom/hydrate` (done by the island loader and SPA hydrate entries) installs a claim cursor that `template()`, `insert`, `list` and `branch` honour, so bundles without hydration never contain that code (contract doc-2 §1).
 - **CSS** is emitted in order: the file scope first, then component scopes.
 
 ### 5.3 Server output (illustrative)
 
 ```js
-import { ssr, escape, $await, $component, signal, lifetime } from "lumen/server";
+import { ssr, escape, $await, $component, signal, lifetime } from "lumiose/server";
 export const MemberCard = $component(async function MemberCard(props) {
   const member = (await $await(() => fetchJSON(`/api/members/${props.id}`, { signal: lifetime() }), 0))();
   const kudos = signal(member.kudos);
@@ -528,7 +528,7 @@ export const MemberCard = $component(async function MemberCard(props) {
 
 **Islands.** `<X client:visible …/>` compiles to `island(ref, X, props, strategy, slot)` on the server, where `ref` is the module specifier plus `#export`. On the client, `client:*` is type-only.
 
-**Diagnostics.** Each diagnostic has the shape `{ code, severity, message, span, labels, help, fix?, docs }`. Codes are stable forever and are listed in `crates/lumen_compiler/src/diagnostics/registry.rs` (the single source of truth), which generates the docs pages.
+**Diagnostics.** Each diagnostic has the shape `{ code, severity, message, span, labels, help, fix?, docs }`. Codes are stable forever and are listed in `crates/lumiose_compiler/src/diagnostics/registry.rs` (the single source of truth), which generates the docs pages.
 
 | Range | Codes |
 |---|---|
@@ -536,13 +536,13 @@ export const MemberCard = $component(async function MemberCard(props) {
 | 2xxx reactivity | 2001 stale derived value · 2002 write during render · 2003 reactive early return · 2004 component called as a function · 2005 children inserted twice · 2006 reactive index escapes · 2007 own signal read in an async body |
 | 3xxx styles | 3005 unused selector · 3008 non-constant `$ref` · 3009 hyphenated `$ref` · 3010 misplaced `<style>` · 3011 `<style>` as root or in an expression · 3012 custom property set but never read · 3013 `$ref` before its declaration · 3014 CSS syntax error · 3015 invalid CSS ignored · 3016 invalid scope selector (`:global`/`:deep` misuse) |
 | 4xxx islands / boundaries | 4001 non-exported island · 4002 non-serializable island prop · 4003 server-only module in a client graph · 4004 browser API at module scope · 4006 hydration mismatch · 4007 non-serializable awaited value · 4008 module-scope signal written during SSR |
-| 6xxx tooling / config | 6001 tsconfig missing options required by Lumen |
+| 6xxx tooling / config | 6001 tsconfig missing options required by Lumiose |
 | 5xxx routing / server | 5001 request API used during prerender (use `mode = "server"`) · 5002 invalid route file · 5003 duplicate route · 5004 head or status change inside a streamed boundary · 5005 non-GET export in a static endpoint |
 
 ### 5.5 Distribution
 
-- The napi-rs v3 platform packages are named `@lumen/compiler-<platform>`, with a wasm fallback.
-- The plugin `lumen/vite` runs `enforce: "pre"` with a Rust-side filter on `/\.(stsx|tsx)$/`.
+- The napi-rs v3 platform packages are named `@lumiose/compiler-<platform>`, with a wasm fallback.
+- The plugin `lumiose/vite` runs `enforce: "pre"` with a Rust-side filter on `/\.(stsx|tsx)$/`.
 - It serves the CSS virtual modules, the CSS manifest and the island manifest.
 - HMR remounts instances. Edits that touch only CSS stay CSS-only.
 
@@ -551,7 +551,7 @@ export const MemberCard = $component(async function MemberCard(props) {
 **Budgets.**
 - **Hard cap (set by the user, 2026-10-08; scope clarified by Lux, 2026-10-09):** the client framework JS that any one page can ship must stay **≤ 10 kB** min+brotli: every public client export, and a typical import set plus hydration and the island loader. The sum of all client code (12.35 kB today) is reported but not capped, because no page ships the SPA router and island hydration together. Smaller is better, but CPU performance takes priority over shaving bytes.
 - **Soft targets (revised 2026-10-09 to today's sizes, to hold the line):** a typical app import set ≤ 6.25 kB, and hydration plus loader ≤ 2.75 kB. They ratchet down whenever a trim lands.
-- **Scope of the cap (user, 2026-10-09):** the cap and targets apply to the framework runtime, measured by `pnpm --filter lumen size`. Sample apps and examples have no size budget: `pnpm --filter lumen size:apps` reports their framework and app JS so regressions are visible, and stays as small as is reasonable, but it does not fail a build.
+- **Scope of the cap (user, 2026-10-09):** the cap and targets apply to the framework runtime, measured by `pnpm --filter lumiose size`. Sample apps and examples have no size budget: `pnpm --filter lumiose size:apps` reports their framework and app JS so regressions are visible, and stays as small as is reasonable, but it does not fail a build.
 - **js-framework-benchmark app bundle:** ≤ 8 kB.
 
 ### 6.1 Reactive core
@@ -603,7 +603,7 @@ export const MemberCard = $component(async function MemberCard(props) {
 
 ### 7.1 Route modes
 
-- Routes export `mode = "static" | "server" | "spa"`, inherited from layouts. The project default comes from `lumen({ mode, ssr })` in `vite.config.ts` (decision-21); **when unset it is `static`** (server-first). For example, `lumen({ mode: "spa", ssr: false })` makes the whole project a client-rendered SPA.
+- Routes export `mode = "static" | "server" | "spa"`, inherited from layouts. The project default comes from `lumiose({ mode, ssr })` in `vite.config.ts` (decision-21); **when unset it is `static`** (server-first). For example, `lumiose({ mode: "spa", ssr: false })` makes the whole project a client-rendered SPA.
 - Touching a request API while prerendering is `LUM5001`, and the fix sets `mode = "server"`.
 - `export const ssr = false` applies to `spa` routes: the build emits a static shell and renders on the client.
 
@@ -651,14 +651,14 @@ export const MemberCard = $component(async function MemberCard(props) {
 - On a mismatch, development reports `LUM4006`. Production client-renders the range instead.
 
 **CSP.** `csp: "strict"` (TASK-138):
-- Pages rendered per request get a fresh nonce per response on every inline `<script>`/`<style>` and module preload Lumen writes (inlined page CSS, `style`-prop rules, the loader, `$swap` scripts, speculation rules, the View Transitions opt-in), `<meta property="csp-nonce">` for the client's preload helper, and `Content-Security-Policy: script-src 'nonce-…' 'strict-dynamic'; style-src 'self' 'nonce-…'; object-src 'none'; base-uri 'self'` unless the page, middleware or `lumen({ headers })` sets one. `lumen dev` writes nonces but sends no policy (Vite injects its own styles).
+- Pages rendered per request get a fresh nonce per response on every inline `<script>`/`<style>` and module preload Lumiose writes (inlined page CSS, `style`-prop rules, the loader, `$swap` scripts, speculation rules, the View Transitions opt-in), `<meta property="csp-nonce">` for the client's preload helper, and `Content-Security-Policy: script-src 'nonce-…' 'strict-dynamic'; style-src 'self' 'nonce-…'; object-src 'none'; base-uri 'self'` unless the page, middleware or `lumiose({ headers })` sets one. `lumiose dev` writes nonces but sends no policy (Vite injects its own styles).
 - Prerendered pages cannot carry a per-visitor nonce: they get the policy as a `<meta http-equiv>` first in `<head>`, with SHA-256 hashes of their inline scripts and styles and `'self'` for external ones.
 - `style` props render as `data-l-v` rules of a nonce'd/hashed `<style>`; the client sets styles through the CSSOM. `cspNonce()` gives the app the nonce for its own inline elements.
 
 ### 7.5 Navigation and the SPA router
 
 - **MPA by default**, with cross-document View Transitions and speculation-rules prefetch.
-- **`lumen/router`** is active inside `spa` subtrees and built on the Navigation API.
+- **`lumiose/router`** is active inside `spa` subtrees and built on the Navigation API.
   - `<Link href prefetch="hover|viewport|none">`.
   - `navigate(href, { replace })`.
   - Reactive `params()`, `search()` (with a setter), `url()` and `navigating()`.
@@ -709,7 +709,7 @@ src/
 - `ctx` has the shape `{ request, url, params, locals, cookies, env }`.
 - Cookies: `cookies.get`, `cookies.set` and `cookies.delete`, plus `signedCookie()`.
 - Error helpers: `redirect()`, `notFound()` and `error(status, msg)` throw and are handled by the framework.
-- `locals` is typed through `declare module "lumen" { interface Locals { … } }`.
+- `locals` is typed through `declare module "lumiose" { interface Locals { … } }`.
 
 ### Env
 
@@ -718,11 +718,11 @@ src/
 
 ### Document
 
-- Lumen renders `<html>`, `<head>` and `<body>` by default. `document.stsx` can customise them.
+- Lumiose renders `<html>`, `<head>` and `<body>` by default. `document.stsx` can customise them.
 - `<Head>`, `<Title>` and `<Meta>` collect into `<head>` while the shell is rendering.
 - There is no `meta` export; `<Title>` and `<Meta>` are the one way to set head content.
 
-### Build (`lumen build`)
+### Build (`lumiose build`)
 
 1. Client environment build: islands, the SPA, and all CSS plus the manifests.
 2. Server environment build.
@@ -732,12 +732,12 @@ Output:
 - `dist/client`, holding static assets and prerendered HTML as `path/index.html`. The trailing-slash setting is configurable and `base` follows Vite.
 - `dist/client/404.html`.
 - `dist/server/entry.js`, which exports `export default { fetch }`.
-- Adapters take it from there. `@lumen/adapter-node` ships first; `static` is used for fully static sites.
+- Adapters take it from there. `@lumiose/adapter-node` ships first; `static` is used for fully static sites.
 
 ### Dev and config
 
-- `lumen dev` runs Vite with the client and SSR environments.
-- Configuration is `vite.config.ts` with `lumen({ adapter, css, csp, trailingSlash, viewTransitions, prefetch })`.
+- `lumiose dev` runs Vite with the client and SSR environments.
+- Configuration is `vite.config.ts` with `lumiose({ adapter, css, csp, trailingSlash, viewTransitions, prefetch })`.
 
 ### Content
 
@@ -748,14 +748,14 @@ Markdown and other content come in through Vite: `import.meta.glob` with `?raw` 
 ### 9.1 Type checking
 
 **Shadow files.**
-- `.lumen/shadow/<path>.stsx.tsx` contains the masked UTF-16 text.
-- Shadow files are written by the dev server, the language server, `lumen check` and `lumen typegen`.
+- `.lumiose/shadow/<path>.stsx.tsx` contains the masked UTF-16 text.
+- Shadow files are written by the dev server, the language server, `lumiose check` and `lumiose typegen`.
 
 **Resolution.**
 - With `rootDirs`, `import "./X.stsx"` resolves to the shadow file. Verified on TS 7.0.2: TS tries `X.stsx.ts`, then `X.stsx.tsx`.
 - Route shadows are covered by `include`.
 
-**`lumen check`**
+**`lumiose check`**
 1. Runs typegen.
 2. Runs `tsc --noEmit`, mapping shadow paths back to the source files at the same line and column. TypeScript reports columns in UTF-16, which matches the editor.
 3. Adds compiler diagnostics and lint results.
@@ -763,7 +763,7 @@ Markdown and other content come in through Vite: `import.meta.glob` with `?raw` 
 
 ### 9.2 Editor
 
-**Takeover mode.** The Lumen language server sits in front of **one** TS 7 native LSP for `.ts`, `.tsx` and `.stsx`.
+**Takeover mode.** The Lumiose language server sits in front of **one** TS 7 native LSP for `.ts`, `.tsx` and `.stsx`.
 - The VS Code extension asks to disable the built-in TS extension for the workspace, as Volar does.
 - The proxy rewrites shadow URIs in every request, response and workspace edit, so go-to-definition and rename always land in source files.
 - Unsaved `.stsx` buffers are sent to TypeScript as their masked text.
@@ -782,43 +782,43 @@ Markdown and other content come in through Vite: `import.meta.glob` with `?raw` 
 
 ### 9.3 Lint, format, test
 
-**`lumen lint`.**
+**`lumiose lint`.**
 - Runs oxlint on the shadow TSX.
 - Drops diagnostics that fall inside block ranges, such as `no-unused-expressions` on `;ref` statements.
 - Optionally runs stylelint on the CSS, with references replaced by identifiers.
 
-**`eslint-plugin-lumen`.** Provides lint rules and a `.stsx` processor.
+**`eslint-plugin-lumiose`.** Provides lint rules and a `.stsx` processor.
 
-**`lumen fmt`.**
+**`lumiose fmt`.**
 1. Formats the TSX with oxfmt, with each block replaced by a placeholder.
 2. Formats each block's CSS separately, protecting the `$` references.
 3. Re-indents the blocks and stitches the file back together.
 
-**`prettier-plugin-lumen`.** Formats `.stsx` files in Prettier.
+**`prettier-plugin-lumiose`.** Formats `.stsx` files in Prettier.
 
 **Testing.**
 - Vitest through the Vite plugin.
-- `@lumen/testing` provides `render()` and Testing Library helpers.
+- `@lumiose/testing` provides `render()` and Testing Library helpers.
 - Vitest browser mode and a few Playwright e2e tests.
 
 ## 10. Agent-first DX (decision-10)
 
 1. **Small, familiar surface.**
 2. **Docs in the package.**
-   - `node_modules/lumen/docs`.
-   - `create-lumen` writes `AGENTS.md`, plus a `CLAUDE.md` that references it.
-   - `lumen docs <topic>` prints a topic.
+   - `node_modules/lumiose/docs`.
+   - `create-lumiose` writes `AGENTS.md`, plus a `CLAUDE.md` that references it.
+   - `lumiose docs <topic>` prints a topic.
    - `llms.txt` is published.
 3. **One doc pattern per concept.**
 4. **Diagnostics.**
    - Stable codes, generated from the registry.
-   - `lumen explain <code>`.
+   - `lumiose explain <code>`.
    - JSON output everywhere.
-5. **MCP server (`lumen mcp`).** Provides `docs_search`, `docs_get`, `check`, `routes`, `components`, `compile`, `render` and `dev_logs`.
+5. **MCP server (`lumiose mcp`).** Provides `docs_search`, `docs_get`, `check`, `routes`, `components`, `compile`, `render` and `dev_logs`.
 6. **Agent eval suite.** Runs on release candidates, and any regression blocks the release.
 7. **Skill bundle.**
 8. **Deterministic output.**
-9. **Codemods** through `lumen upgrade`.
+9. **Codemods** through `lumiose upgrade`.
 
 ## 11. Performance model
 
@@ -864,7 +864,7 @@ js-framework-benchmark, Chrome 154, keyed, 2026-10-04, M4 (lower is better):
 
 ### Regression gate
 
-- js-framework-benchmark (Lumen versus Solid, Svelte, Vue Vapor, Marko and React) and the SSR suite run in CI from M1.
+- js-framework-benchmark (Lumiose versus Solid, Svelte, Vue Vapor, Marko and React) and the SSR suite run in CI from M1.
 - A change fails the gate when it regresses by more than 3% **at 95% confidence over at least 10 runs**.
 
 ## 12. Compatibility
@@ -872,14 +872,14 @@ js-framework-benchmark, Chrome 154, keyed, 2026-10-04, M4 (lower is better):
 | Tool | Status |
 |---|---|
 | TS 7 / TS 6 | ✅ shadow TSX + stock `tsc`; takeover LSP |
-| Vite 8 / Rolldown | ✅ `lumen/vite` |
+| Vite 8 / Rolldown | ✅ `lumiose/vite` |
 | Vitest | ✅ |
-| oxlint | ✅ via `lumen lint` |
+| oxlint | ✅ via `lumiose lint` |
 | ESLint | ✅ plugin + processor |
-| oxfmt / Prettier | ✅ via `lumen fmt` / plugin |
+| oxfmt / Prettier | ✅ via `lumiose fmt` / plugin |
 | stylelint | ✅ optional |
 | Tailwind v4, PostCSS, CSS Modules, `.scss` imports | ✅ (no Sass inside `<style>`) |
-| Testing Library | ✅ `@lumen/testing` |
+| Testing Library | ✅ `@lumiose/testing` |
 | Web components | ✅ `on:` for custom events |
 | GitHub | ⚠️ `.gitattributes` |
 | React components | ❌ v1 |
@@ -926,7 +926,7 @@ None block implementation.
 | 12 | Raw CSS, `$name` constants, no reactive CSS | accepted |
 | 13 | Async components + Suspense / ErrorBoundary | accepted |
 | 14 | Style scope by placement | accepted |
-| 15 | Working package name `lumen` | accepted |
+| 15 | Working package name `lumiose` | accepted |
 | 16 | Backlog workflow; approval rules | accepted |
 | 17 | Events: delegated `onX`, native `on:x` | accepted |
 | 18 | Data: async components, endpoints, form actions; no loaders | accepted |
