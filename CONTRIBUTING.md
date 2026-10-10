@@ -10,6 +10,7 @@ pnpm install
 pnpm build:compiler   # the native compiler (crates/lumiose_napi) into packages/compiler
 pnpm check            # what CI runs: build, typecheck, lint, example formatting, tests, size, cargo test
 pnpm pack:check       # pack the publishable packages and check the tarballs (--smoke: build an app with them)
+pnpm release:version 0.2.0 --dry-run   # what a release would change (see Releases)
 ```
 
 ## Continuous integration
@@ -85,3 +86,28 @@ node ../../.github/scripts/smoke-napi.mjs
 The WebAssembly compiler: `cargo build -p lumiose_wasm --release --target wasm32-unknown-unknown`,
 then `wasm-bindgen --target web` (what the playground loads) or `--target nodejs`, with the
 `wasm-bindgen-cli` version pinned in `Cargo.toml`.
+
+## Releases
+
+All published packages, the `@lumiose/compiler-<platform>` packages and the Cargo workspace share
+one version (lockstep); nothing is bumped by hand.
+
+1. `pnpm release:version <x.y.z> --dry-run` prints the files it would change and the changelog
+   section. Without `--dry-run`, on a clean working tree, `scripts/release.ts` sets the version of
+   every published package and of `[workspace.package]` in `Cargo.toml` (and `Cargo.lock`), pins
+   internal dependencies that are not `workspace:` to it (pnpm pins `workspace:*` when packing),
+   prepends the release to `CHANGELOG.md` from the Conventional Commits since the last `v*` tag
+   (breaking changes, `feat`, `fix`, `perf`; `--since <rev>` picks another start), commits
+   `chore(release): vX.Y.Z` and creates the annotated tag `vX.Y.Z`. It pushes nothing.
+2. `git push origin HEAD vX.Y.Z` starts `.github/workflows/release.yml`: the Binaries workflow
+   builds and smoke-tests every compiler binary, then `scripts/publish.ts` packs every package,
+   puts each binary into its platform package, checks that the tag names the packages' version,
+   and publishes with npm provenance in dependency order (platform packages, `@lumiose/compiler`,
+   `lumiose`, then the tooling). Prereleases (`x.y.z-rc.1`) go to the `next` dist-tag.
+3. Until the repository variable `LUMIOSE_PUBLISH` is `true` (with npm trusted publishing set up
+   for the packages, or an `NPM_TOKEN` secret), the workflow is a dry run (`npm publish --dry-run`)
+   and publishes nothing. A manual run (workflow_dispatch) is always a dry run.
+
+CI exercises the same path without publishing: the `pack` job's `pnpm pack:check` runs
+`npm publish --dry-run` in publish order, and `node --test scripts/*.test.ts` covers
+`release:version` (dry run and a real run in a scratch repository).

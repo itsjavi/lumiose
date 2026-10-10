@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, it } from "node:test";
-import { publishable, tarballProblems, type Manifest } from "./pack.ts";
+import { distTag, publishable, publishOrder, tarballProblems, type Manifest } from "./pack.ts";
 
 const manifest = (fields: Partial<Manifest> = {}): Manifest => ({
   name: "@lumiose/example",
@@ -17,7 +17,14 @@ const manifest = (fields: Partial<Manifest> = {}): Manifest => ({
   dependencies: { lumiose: "1.2.3" },
   ...fields,
 });
-const FILES = ["package.json", "dist/index.js", "dist/index.d.ts", "dist/bin.js", "dist/a/b.js"];
+const FILES = [
+  "LICENSE",
+  "package.json",
+  "dist/index.js",
+  "dist/index.d.ts",
+  "dist/bin.js",
+  "dist/a/b.js",
+];
 
 describe("tarballProblems", () => {
   it("accepts built files with every export and bin", () => {
@@ -55,6 +62,17 @@ describe("tarballProblems", () => {
       "export or bin ./dist/index.d.ts: missing",
       "export or bin ./src/bin.ts: missing",
       "export or bin ./src/bin.ts: TypeScript source",
+    ]);
+  });
+
+  it("reports a missing LICENSE and main", () => {
+    const problems = tarballProblems(
+      manifest({ main: "compiler.linux-x64-gnu.node" }),
+      FILES.filter((file) => file !== "LICENSE"),
+    );
+    assert.deepEqual(problems, [
+      "no LICENSE",
+      "export or bin compiler.linux-x64-gnu.node: missing",
     ]);
   });
 
@@ -104,5 +122,50 @@ describe("publishable", () => {
         );
       }
     }
+  });
+});
+
+const item = (name: string, fields: Partial<Manifest> = {}) => ({
+  manifest: { name, version: "1.0.0", ...fields },
+});
+
+describe("publishOrder", () => {
+  it("publishes each package after the internal packages it depends on", () => {
+    const order = publishOrder([
+      item("create-lumiose", { dependencies: { "@lumiose/cli": "1.0.0", lumiose: "1.0.0" } }),
+      item("@lumiose/cli", { dependencies: { "@lumiose/vite": "1.0.0", commander: "1" } }),
+      item("@lumiose/vite", { dependencies: { "@lumiose/compiler": "1.0.0", lumiose: "1.0.0" } }),
+      item("lumiose"),
+      item("@lumiose/compiler", {
+        optionalDependencies: { "@lumiose/compiler-linux-x64-gnu": "1.0.0" },
+      }),
+      item("@lumiose/compiler-linux-x64-gnu"),
+    ]).map((p) => p.manifest.name);
+    assert.deepEqual(order, [
+      "@lumiose/compiler-linux-x64-gnu",
+      "@lumiose/compiler",
+      "lumiose",
+      "@lumiose/vite",
+      "@lumiose/cli",
+      "create-lumiose",
+    ]);
+  });
+
+  it("rejects dependency cycles", () => {
+    assert.throws(
+      () =>
+        publishOrder([
+          item("a", { dependencies: { b: "1.0.0" } }),
+          item("b", { peerDependencies: { a: "1.0.0" } }),
+        ]),
+      /dependency cycle/,
+    );
+  });
+});
+
+describe("distTag", () => {
+  it("tags prereleases next and releases latest", () => {
+    assert.equal(distTag("0.1.0"), "latest");
+    assert.equal(distTag("0.2.0-rc.1"), "next");
   });
 });

@@ -1,8 +1,9 @@
 // `pnpm pack:check`: packs every publishable package (each `prepack` builds its dist/) and checks
 // the tarballs as npm would publish them: built files only (no sources, tests or fixtures), every
-// export and bin present, no `workspace:` specifiers left, and `npm publish --dry-run` accepts them.
-// With `--smoke`, it also creates an app with the packed create-lumiose, installs the packed
-// packages into it from the tarballs, and runs `lumiose check` and `lumiose build` there. Nothing is
+// export and bin present, no `workspace:` specifiers left, one shared version, and `npm publish
+// --dry-run` accepts them in publish order (the path scripts/publish.ts takes for real). With
+// `--smoke`, it also creates an app with the packed create-lumiose, installs the packed packages
+// into it from the tarballs, and runs `lumiose check` and `lumiose build` there. Nothing is
 // published.
 //
 //   node scripts/pack.ts [--out <dir>] [--smoke] [--skip-npm]
@@ -19,7 +20,7 @@ import {
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
-import { join, resolve } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
 
@@ -67,6 +68,7 @@ export function tarballProblems(manifest: Manifest, files: string[]): string[] {
   const problems: string[] = [];
   const has = new Set(files);
   if (manifest.private) problems.push("is private");
+  if (!has.has("LICENSE")) problems.push("no LICENSE");
   for (const file of files) {
     if (FORBIDDEN.some((pattern) => pattern.test(file))) problems.push(`ships ${file}`);
   }
@@ -145,9 +147,10 @@ function run(command: string, args: string[], cwd: string): string {
   });
 }
 
-interface Packed {
+export interface Packed {
   name: string;
   tarball: string;
+  manifest: Manifest;
 }
 
 function pack(dir: string, out: string): Packed {
@@ -168,7 +171,7 @@ function pack(dir: string, out: string): Packed {
     throw new Error(`${manifest.name}:\n${problems.map((p) => `  - ${p}`).join("\n")}`);
   }
   console.log(`${manifest.name}@${manifest.version}: ${files.length} files`);
-  return { name: manifest.name, tarball };
+  return { name: manifest.name, tarball, manifest };
 }
 
 /** Creates an app with the packed create-lumiose and builds it with the packed packages. */
@@ -225,6 +228,95 @@ function smoke(packed: Packed[], out: string): void {
   }
 }
 
+/**
+ * Packs every publishable package into `out`. Platform packages whose binary is not built here are
+ * skipped, or reported when `allBinaries` (a release needs every one).
+ */
+export function packAll(
+  out: string,
+  allBinaries = false,
+): { packed: Packed[]; failures: string[] } {
+  rmSync(out, { recursive: true, force: true });
+  mkdirSync(out, { recursive: true });
+  const packed: Packed[] = [];
+  const failures: string[] = [];
+  const ready = stageBinaries();
+  const platforms = platformPackages();
+  for (const dir of publishable()) {
+    if (platforms.includes(dir) && !ready.has(dir)) {
+      const message = `${readManifest(dir).name}: its binary is not built here`;
+      if (allBinaries) failures.push(message);
+      else console.log(`${message} (skipped)`);
+      continue;
+    }
+    try {
+      packed.push(pack(dir, out));
+    } catch (error) {
+      failures.push((error as Error).message);
+    }
+  }
+  const versions = new Set(packed.map((p) => p.manifest.version));
+  if (versions.size > 1)
+    failures.push(`the packages do not share one version: ${[...versions].join(", ")}`);
+  return { packed, failures };
+}
+
+/** The names of the internal packages `manifest` depends on (any dependency field). */
+function internalDependencies(manifest: Manifest, names: Set<string>): string[] {
+  const fields = [manifest.dependencies, manifest.optionalDependencies, manifest.peerDependencies];
+  return fields.flatMap((deps) => Object.keys(deps ?? {})).filter((name) => names.has(name));
+}
+
+/** `packages` ordered so each comes after the internal packages it depends on (then by name). */
+export function publishOrder<T extends { manifest: Manifest }>(packages: T[]): T[] {
+  const names = new Set(packages.map((p) => p.manifest.name));
+  const byName = new Map(packages.map((p) => [p.manifest.name, p]));
+  const order: T[] = [];
+  const state = new Map<string, "visiting" | "done">();
+  const visit = (item: T): void => {
+    const name = item.manifest.name;
+    if (state.get(name) === "done") return;
+    if (state.get(name) === "visiting") throw new Error(`dependency cycle through ${name}`);
+    state.set(name, "visiting");
+    for (const dependency of internalDependencies(item.manifest, names).toSorted()) {
+      visit(byName.get(dependency)!);
+    }
+    state.set(name, "done");
+    order.push(item);
+  };
+  for (const item of packages.toSorted((a, b) => (a.manifest.name < b.manifest.name ? -1 : 1))) {
+    visit(item);
+  }
+  return order;
+}
+
+/** The npm dist-tag of `version`: `next` for prereleases, else `latest`. */
+export function distTag(version: string): string {
+  return version.includes("-") ? "next" : "latest";
+}
+
+/**
+ * `npm publish` of each tarball in publish order (platform packages before @lumiose/compiler, the
+ * runtime before the tooling). `dryRun` publishes nothing; a real run asks npm for provenance.
+ */
+export function publishTarballs(packed: Packed[], options: { dryRun: boolean }): string[] {
+  const failures: string[] = [];
+  for (const { name, tarball, manifest } of publishOrder(packed)) {
+    const args = ["publish", tarball, "--access", "public", "--tag", distTag(manifest.version)];
+    args.push(options.dryRun ? "--dry-run" : "--provenance");
+    try {
+      run("npm", args, dirname(tarball));
+      console.log(`${options.dryRun ? "would publish" : "published"} ${name}@${manifest.version}`);
+    } catch (error) {
+      const { stderr } = error as { stderr?: string };
+      failures.push(`${name}: npm ${args.join(" ")} failed\n${stderr ?? ""}`);
+      // Later packages depend on this one: stop at the first failure.
+      break;
+    }
+  }
+  return failures;
+}
+
 if (import.meta.main) {
   const { values } = parseArgs({
     options: {
@@ -234,31 +326,9 @@ if (import.meta.main) {
     },
   });
   const out = resolve(values.out ?? join(REPO, ".local/pack"));
-  rmSync(out, { recursive: true, force: true });
-  mkdirSync(out, { recursive: true });
-  const packed: Packed[] = [];
-  const failures: string[] = [];
-  const ready = stageBinaries();
-  for (const dir of publishable()) {
-    if (platformPackages().includes(dir) && !ready.has(dir)) {
-      console.log(`${readManifest(dir).name}: skipped (its binary is not built here)`);
-      continue;
-    }
-    try {
-      packed.push(pack(dir, out));
-    } catch (error) {
-      failures.push((error as Error).message);
-    }
-  }
+  const { packed, failures } = packAll(out);
   if (failures.length === 0 && !values["skip-npm"]) {
-    for (const { name, tarball } of packed) {
-      try {
-        run("npm", ["publish", "--dry-run", "--access", "public", "--tag", "next", tarball], out);
-      } catch (error) {
-        const { stderr } = error as { stderr?: string };
-        failures.push(`${name}: npm publish --dry-run failed\n${stderr ?? ""}`);
-      }
-    }
+    failures.push(...publishTarballs(packed, { dryRun: true }));
   }
   if (failures.length === 0 && values.smoke) {
     try {
