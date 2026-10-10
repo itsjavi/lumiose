@@ -5,7 +5,7 @@ status: Done
 assignee:
   - Spark
 created_date: '2026-10-10 03:33'
-updated_date: '2026-10-10 18:55'
+updated_date: '2026-10-10 18:56'
 labels:
   - state
   - data
@@ -35,6 +35,8 @@ doc-6 §E. New optional package packages/query with the names of @tanstack/solid
 2026-10-10 Names approved (decision-35): package @lumiose/query; exports useQuery, useMutation, useQueryClient, QueryClientProvider (TanStack Solid v5 names) instead of createQuery/createMutation.
 
 2026-10-10 Spark (query): packages/query landed (bf0724a) with the example (afe0691). @tanstack/query-core pinned to 5.104.0 (2026-09-26). Design: observers write into a store; data is copied with snapshot() and patched with reconcile() (default key "id"; solid-query's `reconcile` option: key | false | fn), query-core structuralSharing off. The copy matters: a store writes into the object it wraps, and the cache's data is shared by every observer. Options are tracked by one effect (setOptions); a second, untracked effect subscribes and returns the unsubscribe, so observers unsubscribe with their owner and never subscribe on the server (effects don't run there): SSR renders the cached data or pending, no fetch, no dehydration. QueryClientProvider renders the context provider and calls client.mount()/unmount() in onMount. Re-exports all of query-core, like solid-query. Validation: 13 package tests (happy-dom + server), typecheck, lint, docs:gen/check + cli docs tests, pack:check (would publish @lumiose/query@0.1.0), node --test scripts/release.test.ts scripts/pack.test.ts (22 pass), spa-router-e2e Playwright 24/24 (dev + build). Release scripts needed no change: publishable() discovers non-private packages/*.
+
+2026-10-10 Lux: lumiose moved to peerDependencies (workspace:^, dev workspace:*) so an app never bundles two runtimes (two signal graphs and context registries would break reactivity); ReconcileOption export dropped (coined name, decision-35). Re-export of all of @tanstack/query-core kept, as solid-query does.
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary
