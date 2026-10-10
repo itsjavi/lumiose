@@ -45,9 +45,7 @@
       "styled-badge",
       "todo-named-actions"
     ],
-    "ablations": [
-      "baseline"
-    ],
+    "ablations": ["baseline"],
     "runs": 1,
     "complete": true,
     "notes": [
@@ -1115,9 +1113,7 @@
         "llmsReads": 1,
         "mcpCalls": 0,
         "mcpTools": [],
-        "skills": [
-          "lumiose"
-        ]
+        "skills": ["lumiose"]
       },
       "exit": {
         "code": 0,
@@ -1292,9 +1288,7 @@
         "llmsReads": 1,
         "mcpCalls": 0,
         "mcpTools": [],
-        "skills": [
-          "lumiose"
-        ]
+        "skills": ["lumiose"]
       },
       "exit": {
         "code": 0,
@@ -1613,9 +1607,7 @@
         "llmsReads": 1,
         "mcpCalls": 0,
         "mcpTools": [],
-        "skills": [
-          "lumiose"
-        ]
+        "skills": ["lumiose"]
       },
       "exit": {
         "code": 0,
@@ -1710,9 +1702,7 @@
         "llmsReads": 1,
         "mcpCalls": 0,
         "mcpTools": [],
-        "skills": [
-          "lumiose"
-        ]
+        "skills": ["lumiose"]
       },
       "exit": {
         "code": 0,
@@ -1807,9 +1797,7 @@
         "llmsReads": 0,
         "mcpCalls": 0,
         "mcpTools": [],
-        "skills": [
-          "lumiose"
-        ]
+        "skills": ["lumiose"]
       },
       "exit": {
         "code": 0,
@@ -2144,9 +2132,7 @@
         "llmsReads": 1,
         "mcpCalls": 0,
         "mcpTools": [],
-        "skills": [
-          "lumiose"
-        ]
+        "skills": ["lumiose"]
       },
       "exit": {
         "code": 0,
@@ -2647,9 +2633,7 @@
         "llmsReads": 1,
         "mcpCalls": 0,
         "mcpTools": [],
-        "skills": [
-          "lumiose"
-        ]
+        "skills": ["lumiose"]
       },
       "exit": {
         "code": 0,
@@ -3150,9 +3134,7 @@
         "llmsReads": 1,
         "mcpCalls": 0,
         "mcpTools": [],
-        "skills": [
-          "lumiose"
-        ]
+        "skills": ["lumiose"]
       },
       "exit": {
         "code": 0,
@@ -3677,9 +3659,7 @@
         "llmsReads": 1,
         "mcpCalls": 0,
         "mcpTools": [],
-        "skills": [
-          "lumiose"
-        ]
+        "skills": ["lumiose"]
       },
       "exit": {
         "code": 0,
@@ -3765,9 +3745,7 @@
         "edits": 0,
         "checkRuns": 2,
         "firstCheckOk": false,
-        "lumCodes": [
-          "LUM4002"
-        ],
+        "lumCodes": ["LUM4002"],
         "docsReads": 3,
         "llmsReads": 0,
         "mcpCalls": 0,
@@ -3858,9 +3836,7 @@
         "edits": 0,
         "checkRuns": 2,
         "firstCheckOk": true,
-        "lumCodes": [
-          "LUM4002"
-        ],
+        "lumCodes": ["LUM4002"],
         "docsReads": 0,
         "llmsReads": 0,
         "mcpCalls": 0,
@@ -4190,16 +4166,12 @@
         "edits": 2,
         "checkRuns": 2,
         "firstCheckOk": false,
-        "lumCodes": [
-          "LUM4002"
-        ],
+        "lumCodes": ["LUM4002"],
         "docsReads": 1,
         "llmsReads": 0,
         "mcpCalls": 0,
         "mcpTools": [],
-        "skills": [
-          "lumiose"
-        ]
+        "skills": ["lumiose"]
       },
       "exit": {
         "code": 0,
@@ -4652,9 +4624,7 @@
         "llmsReads": 0,
         "mcpCalls": 0,
         "mcpTools": [],
-        "skills": [
-          "lumiose"
-        ]
+        "skills": ["lumiose"]
       },
       "exit": {
         "code": 0,
@@ -5131,9 +5101,7 @@
         "llmsReads": 0,
         "mcpCalls": 0,
         "mcpTools": [],
-        "skills": [
-          "lumiose"
-        ]
+        "skills": ["lumiose"]
       },
       "exit": {
         "code": 0,
@@ -5658,9 +5626,7 @@
         "llmsReads": 0,
         "mcpCalls": 0,
         "mcpTools": [],
-        "skills": [
-          "lumiose"
-        ]
+        "skills": ["lumiose"]
       },
       "exit": {
         "code": 0,
@@ -6161,9 +6127,7 @@
         "llmsReads": 0,
         "mcpCalls": 0,
         "mcpTools": [],
-        "skills": [
-          "lumiose"
-        ]
+        "skills": ["lumiose"]
       },
       "exit": {
         "code": 0,
@@ -6808,9 +6772,7 @@
         "llmsReads": 1,
         "mcpCalls": 0,
         "mcpTools": [],
-        "skills": [
-          "lumiose"
-        ]
+        "skills": ["lumiose"]
       },
       "exit": {
         "code": 0,
@@ -7311,9 +7273,7 @@
         "llmsReads": 1,
         "mcpCalls": 0,
         "mcpTools": [],
-        "skills": [
-          "lumiose"
-        ]
+        "skills": ["lumiose"]
       },
       "exit": {
         "code": 0,
@@ -7399,13 +7359,7 @@
         "edits": 1,
         "checkRuns": 2,
         "firstCheckOk": true,
-        "lumCodes": [
-          "LUM3008",
-          "LUM3012",
-          "LUM3017",
-          "LUM3018",
-          "LUM3020"
-        ],
+        "lumCodes": ["LUM3008", "LUM3012", "LUM3017", "LUM3018", "LUM3020"],
         "docsReads": 3,
         "llmsReads": 0,
         "mcpCalls": 0,
@@ -7815,22 +7769,12 @@
         "edits": 1,
         "checkRuns": 3,
         "firstCheckOk": false,
-        "lumCodes": [
-          "LUM3008",
-          "LUM3009",
-          "LUM3012",
-          "LUM3013",
-          "LUM3015",
-          "LUM3018",
-          "LUM3019"
-        ],
+        "lumCodes": ["LUM3008", "LUM3009", "LUM3012", "LUM3013", "LUM3015", "LUM3018", "LUM3019"],
         "docsReads": 3,
         "llmsReads": 0,
         "mcpCalls": 0,
         "mcpTools": [],
-        "skills": [
-          "lumiose"
-        ]
+        "skills": ["lumiose"]
       },
       "exit": {
         "code": 0,
@@ -8832,9 +8776,7 @@
         "llmsReads": 0,
         "mcpCalls": 0,
         "mcpTools": [],
-        "skills": [
-          "lumiose"
-        ]
+        "skills": ["lumiose"]
       },
       "exit": {
         "code": 0,
@@ -9032,9 +8974,7 @@
         "llmsReads": 0,
         "mcpCalls": 0,
         "mcpTools": [],
-        "skills": [
-          "lumiose"
-        ]
+        "skills": ["lumiose"]
       },
       "exit": {
         "code": 0,
@@ -9476,9 +9416,7 @@
         "llmsReads": 0,
         "mcpCalls": 0,
         "mcpTools": [],
-        "skills": [
-          "lumiose"
-        ]
+        "skills": ["lumiose"]
       },
       "exit": {
         "code": 0,
@@ -10047,9 +9985,7 @@
         "edits": 2,
         "checkRuns": 2,
         "firstCheckOk": true,
-        "lumCodes": [
-          "LUM2001"
-        ],
+        "lumCodes": ["LUM2001"],
         "docsReads": 3,
         "llmsReads": 2,
         "mcpCalls": 0,
@@ -10130,9 +10066,7 @@
         "llmsReads": 0,
         "mcpCalls": 0,
         "mcpTools": [],
-        "skills": [
-          "lumiose"
-        ]
+        "skills": ["lumiose"]
       },
       "exit": {
         "code": 0,
@@ -10322,9 +10256,7 @@
         "llmsReads": 0,
         "mcpCalls": 0,
         "mcpTools": [],
-        "skills": [
-          "lumiose"
-        ]
+        "skills": ["lumiose"]
       },
       "exit": {
         "code": 0,

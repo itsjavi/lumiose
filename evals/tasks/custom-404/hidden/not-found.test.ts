@@ -8,7 +8,10 @@ beforeAll(async () => {
 afterAll(() => dev?.stop());
 
 const anchors = (html: string) =>
-  [...html.matchAll(/<a\b[^>]*href="?([^"\s>]+)"?[^>]*>([\s\S]*?)<\/a>/g)].map((m) => ({ href: m[1], text: text(m[2]!) }));
+  [...html.matchAll(/<a\b[^>]*href="?([^"\s>]+)"?[^>]*>([\s\S]*?)<\/a>/g)].map((m) => ({
+    href: m[1],
+    text: text(m[2]!),
+  }));
 
 describe("not-found page", () => {
   for (const path of ["/nope", "/a/b/c"]) {

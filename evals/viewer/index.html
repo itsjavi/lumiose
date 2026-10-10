@@ -4,7 +4,10 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Agent evals</title>
-    <meta name="description" content="Coding agents solving Lumiose tasks, graded by hidden tests (TASK-40)." />
+    <meta
+      name="description"
+      content="Coding agents solving Lumiose tasks, graded by hidden tests (TASK-40)."
+    />
     <style>
       /* Tokens: surfaces and text, plus one categorical hue per app (fixed order: Lumiose, React Router,
          Next.js), validated for both modes. Text never wears a series color. */
@@ -82,13 +85,13 @@
         --series-1: #3987e5;
         --series-2: #d95926;
         --series-3: #199e70;
-          --series-4: #a78bfa;
-          --series-5: #f97316;
-          --series-6: #22b8cf;
-          --pass: #5cc37a;
-          --pass-bg: #18311f;
-          --fail: #f07a6e;
-          --fail-bg: #3a1c19;
+        --series-4: #a78bfa;
+        --series-5: #f97316;
+        --series-6: #22b8cf;
+        --pass: #5cc37a;
+        --pass-bg: #18311f;
+        --fail: #f07a6e;
+        --fail-bg: #3a1c19;
         --better: #5cc37a;
         --worse: #f07a6e;
         --dev: #f0b45c;
@@ -98,118 +101,447 @@
         --shadow: none;
       }
 
-      * { box-sizing: border-box; }
+      * {
+        box-sizing: border-box;
+      }
       body {
         margin: 0;
         background: var(--bg);
         color: var(--text);
-        font: 14px/1.5 ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+        font:
+          14px/1.5 ui-sans-serif,
+          system-ui,
+          -apple-system,
+          "Segoe UI",
+          sans-serif;
         -webkit-font-smoothing: antialiased;
       }
-      .wrap { max-width: 1180px; margin: 0 auto; padding: 24px 16px 64px; }
-      header.top { display: flex; flex-wrap: wrap; gap: 16px 24px; align-items: end; justify-content: space-between; }
-      h1 { margin: 0; font-size: 22px; letter-spacing: -0.01em; }
-      .subtitle { margin: 2px 0 0; color: var(--text-2); }
-      .controls { display: flex; flex-wrap: wrap; gap: 12px; align-items: end; }
-      label.ctl { display: grid; gap: 4px; font-size: 12px; color: var(--text-2); }
-      select, button.theme {
-        font: inherit; color: var(--text); background: var(--surface);
-        border: 1px solid var(--line); border-radius: 8px; padding: 6px 10px; min-height: 34px;
+      .wrap {
+        max-width: 1180px;
+        margin: 0 auto;
+        padding: 24px 16px 64px;
       }
-      select { max-width: 100%; }
-      button.theme { cursor: pointer; }
+      header.top {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 16px 24px;
+        align-items: end;
+        justify-content: space-between;
+      }
+      h1 {
+        margin: 0;
+        font-size: 22px;
+        letter-spacing: -0.01em;
+      }
+      .subtitle {
+        margin: 2px 0 0;
+        color: var(--text-2);
+      }
+      .controls {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        align-items: end;
+      }
+      label.ctl {
+        display: grid;
+        gap: 4px;
+        font-size: 12px;
+        color: var(--text-2);
+      }
+      select,
+      button.theme {
+        font: inherit;
+        color: var(--text);
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 6px 10px;
+        min-height: 34px;
+      }
+      select {
+        max-width: 100%;
+      }
+      button.theme {
+        cursor: pointer;
+      }
 
       .meta {
-        margin-top: 20px; padding: 14px 16px; background: var(--surface); border: 1px solid var(--line);
-        border-radius: 12px; box-shadow: var(--shadow); display: grid; gap: 8px;
+        margin-top: 20px;
+        padding: 14px 16px;
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        box-shadow: var(--shadow);
+        display: grid;
+        gap: 8px;
       }
-      .meta dl { margin: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 8px 16px; }
-      .meta dt { font-size: 12px; color: var(--text-3); }
-      .meta dd { margin: 0; overflow-wrap: anywhere; }
-      .notes { margin: 0; padding-left: 18px; color: var(--text-2); font-size: 13px; }
-      .pill { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: 12px; border: 1px solid var(--line); background: var(--surface-2); color: var(--text-2); }
-      .pill.quick { border-color: var(--worse); color: var(--worse); }
+      .meta dl {
+        margin: 0;
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+        gap: 8px 16px;
+      }
+      .meta dt {
+        font-size: 12px;
+        color: var(--text-3);
+      }
+      .meta dd {
+        margin: 0;
+        overflow-wrap: anywhere;
+      }
+      .notes {
+        margin: 0;
+        padding-left: 18px;
+        color: var(--text-2);
+        font-size: 13px;
+      }
+      .pill {
+        display: inline-block;
+        padding: 1px 8px;
+        border-radius: 999px;
+        font-size: 12px;
+        border: 1px solid var(--line);
+        background: var(--surface-2);
+        color: var(--text-2);
+      }
+      .pill.quick {
+        border-color: var(--worse);
+        color: var(--worse);
+      }
 
-      .legend { display: flex; flex-wrap: wrap; gap: 16px; margin: 18px 0 6px; color: var(--text-2); }
-      .legend span { display: inline-flex; align-items: center; gap: 6px; }
-      .swatch { width: 12px; height: 12px; border-radius: 3px; display: inline-block; }
+      .legend {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 16px;
+        margin: 18px 0 6px;
+        color: var(--text-2);
+      }
+      .legend span {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .swatch {
+        width: 12px;
+        height: 12px;
+        border-radius: 3px;
+        display: inline-block;
+      }
 
-      nav.tabs { display: flex; gap: 8px 28px; flex-wrap: wrap; margin: 18px 0 12px; border-bottom: 1px solid var(--line); }
-      .cluster { display: grid; gap: 2px; }
-      .cluster-label { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-3); padding-left: 12px; }
-      .cluster-tabs { display: flex; flex-wrap: wrap; }
-      .badge { display: inline-block; font-size: 10px; font-weight: 700; letter-spacing: 0.06em; padding: 1px 6px; border-radius: 4px; margin-right: 8px; vertical-align: 1px; border: 1px solid currentColor; }
-      .cluster-label .badge { margin-right: 0; }
-      .badge.development { color: var(--dev); background: var(--dev-bg); }
-      .badge.production { color: var(--prod); background: var(--prod-bg); }
-      .badge.source { color: var(--text-2); background: var(--surface-2); }
-      .mode-banner { margin: 6px 0 14px; padding: 10px 14px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); font-size: 13px; color: var(--text-2); }
-      .mode-banner p { margin: 0; }
-      .mode-banner ul { margin: 6px 0 0; padding: 0; list-style: none; display: grid; gap: 3px; }
-      .mode-banner li .swatch { margin-right: 6px; vertical-align: -1px; }
-      .mode-banner.mode-development { border-left: 3px solid var(--dev); }
-      .mode-banner.mode-production { border-left: 3px solid var(--prod); }
-      code { font: 12px/1.4 ui-monospace, SFMono-Regular, Menlo, monospace; background: var(--surface-2); padding: 0 4px; border-radius: 4px; }
+      nav.tabs {
+        display: flex;
+        gap: 8px 28px;
+        flex-wrap: wrap;
+        margin: 18px 0 12px;
+        border-bottom: 1px solid var(--line);
+      }
+      .cluster {
+        display: grid;
+        gap: 2px;
+      }
+      .cluster-label {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 12px;
+        color: var(--text-3);
+        padding-left: 12px;
+      }
+      .cluster-tabs {
+        display: flex;
+        flex-wrap: wrap;
+      }
+      .badge {
+        display: inline-block;
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 0.06em;
+        padding: 1px 6px;
+        border-radius: 4px;
+        margin-right: 8px;
+        vertical-align: 1px;
+        border: 1px solid currentColor;
+      }
+      .cluster-label .badge {
+        margin-right: 0;
+      }
+      .badge.development {
+        color: var(--dev);
+        background: var(--dev-bg);
+      }
+      .badge.production {
+        color: var(--prod);
+        background: var(--prod-bg);
+      }
+      .badge.source {
+        color: var(--text-2);
+        background: var(--surface-2);
+      }
+      .mode-banner {
+        margin: 6px 0 14px;
+        padding: 10px 14px;
+        border-radius: 10px;
+        border: 1px solid var(--line);
+        background: var(--surface);
+        font-size: 13px;
+        color: var(--text-2);
+      }
+      .mode-banner p {
+        margin: 0;
+      }
+      .mode-banner ul {
+        margin: 6px 0 0;
+        padding: 0;
+        list-style: none;
+        display: grid;
+        gap: 3px;
+      }
+      .mode-banner li .swatch {
+        margin-right: 6px;
+        vertical-align: -1px;
+      }
+      .mode-banner.mode-development {
+        border-left: 3px solid var(--dev);
+      }
+      .mode-banner.mode-production {
+        border-left: 3px solid var(--prod);
+      }
+      code {
+        font:
+          12px/1.4 ui-monospace,
+          SFMono-Regular,
+          Menlo,
+          monospace;
+        background: var(--surface-2);
+        padding: 0 4px;
+        border-radius: 4px;
+      }
       nav.tabs button {
-        font: inherit; background: none; border: 0; padding: 8px 12px; color: var(--text-2); cursor: pointer;
-        border-bottom: 2px solid transparent; margin-bottom: -1px;
+        font: inherit;
+        background: none;
+        border: 0;
+        padding: 8px 12px;
+        color: var(--text-2);
+        cursor: pointer;
+        border-bottom: 2px solid transparent;
+        margin-bottom: -1px;
       }
-      nav.tabs button[aria-selected="true"] { color: var(--text); border-bottom-color: var(--accent); font-weight: 600; }
+      nav.tabs button[aria-selected="true"] {
+        color: var(--text);
+        border-bottom-color: var(--accent);
+        font-weight: 600;
+      }
 
       section.card {
-        background: var(--surface); border: 1px solid var(--line); border-radius: 12px; box-shadow: var(--shadow);
-        margin: 14px 0; overflow: hidden;
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        box-shadow: var(--shadow);
+        margin: 14px 0;
+        overflow: hidden;
       }
-      section.card h2 { margin: 0; padding: 12px 16px; font-size: 15px; border-bottom: 1px solid var(--line); }
-      .scroll { overflow-x: auto; }
-      table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
-      th, td { padding: 8px 12px; text-align: left; vertical-align: middle; border-bottom: 1px solid var(--line); }
-      tr:last-child td { border-bottom: 0; }
-      thead th { font-size: 12px; font-weight: 600; color: var(--text-2); background: var(--surface-2); white-space: nowrap; }
-      th.app-h .swatch { margin-right: 6px; vertical-align: -1px; }
-      td.metric { min-width: 180px; }
-      td.metric .hint { display: block; font-size: 12px; color: var(--text-3); }
-      td.val { white-space: nowrap; text-align: right; }
-      td.val.best { background: var(--best-bg); font-weight: 600; }
-      td.val .ratio { display: block; font-size: 12px; font-weight: 400; color: var(--text-3); }
-      td.val .range { display: block; font-size: 11px; font-weight: 400; color: var(--text-3); }
-      td.val .delta { display: block; font-size: 12px; font-weight: 500; }
-      .delta.better { color: var(--better); }
-      .delta.worse { color: var(--worse); }
-      td.val.missing { color: var(--text-3); text-align: center; }
-      td.chart { width: 34%; min-width: 200px; }
-      .bars { display: grid; gap: 3px; }
-      .bar-row { display: grid; grid-template-columns: 1fr; height: 10px; position: relative; }
-      .bar { height: 10px; border-radius: 0 4px 4px 0; min-width: 2px; }
-      .bar.compare { opacity: 0.35; height: 6px; margin-top: 2px; }
+      section.card h2 {
+        margin: 0;
+        padding: 12px 16px;
+        font-size: 15px;
+        border-bottom: 1px solid var(--line);
+      }
+      .scroll {
+        overflow-x: auto;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        font-variant-numeric: tabular-nums;
+      }
+      th,
+      td {
+        padding: 8px 12px;
+        text-align: left;
+        vertical-align: middle;
+        border-bottom: 1px solid var(--line);
+      }
+      tr:last-child td {
+        border-bottom: 0;
+      }
+      thead th {
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--text-2);
+        background: var(--surface-2);
+        white-space: nowrap;
+      }
+      th.app-h .swatch {
+        margin-right: 6px;
+        vertical-align: -1px;
+      }
+      td.metric {
+        min-width: 180px;
+      }
+      td.metric .hint {
+        display: block;
+        font-size: 12px;
+        color: var(--text-3);
+      }
+      td.val {
+        white-space: nowrap;
+        text-align: right;
+      }
+      td.val.best {
+        background: var(--best-bg);
+        font-weight: 600;
+      }
+      td.val .ratio {
+        display: block;
+        font-size: 12px;
+        font-weight: 400;
+        color: var(--text-3);
+      }
+      td.val .range {
+        display: block;
+        font-size: 11px;
+        font-weight: 400;
+        color: var(--text-3);
+      }
+      td.val .delta {
+        display: block;
+        font-size: 12px;
+        font-weight: 500;
+      }
+      .delta.better {
+        color: var(--better);
+      }
+      .delta.worse {
+        color: var(--worse);
+      }
+      td.val.missing {
+        color: var(--text-3);
+        text-align: center;
+      }
+      td.chart {
+        width: 34%;
+        min-width: 200px;
+      }
+      .bars {
+        display: grid;
+        gap: 3px;
+      }
+      .bar-row {
+        display: grid;
+        grid-template-columns: 1fr;
+        height: 10px;
+        position: relative;
+      }
+      .bar {
+        height: 10px;
+        border-radius: 0 4px 4px 0;
+        min-width: 2px;
+      }
+      .bar.compare {
+        opacity: 0.35;
+        height: 6px;
+        margin-top: 2px;
+      }
       /* min–max spread drawn over the median bar */
-      .whisker { position: absolute; top: 4px; height: 2px; background: var(--text-2); opacity: 0.7; }
-      .whisker::before, .whisker::after { content: ""; position: absolute; top: -3px; width: 1px; height: 8px; background: inherit; }
-      .whisker::before { left: 0; }
-      .whisker::after { right: 0; }
-      td.val .range.wide { color: var(--warn, #b45309); font-weight: 600; }
-      .bar-row:hover .bar { filter: brightness(1.1); }
-      .empty { padding: 40px 16px; text-align: center; color: var(--text-2); }
+      .whisker {
+        position: absolute;
+        top: 4px;
+        height: 2px;
+        background: var(--text-2);
+        opacity: 0.7;
+      }
+      .whisker::before,
+      .whisker::after {
+        content: "";
+        position: absolute;
+        top: -3px;
+        width: 1px;
+        height: 8px;
+        background: inherit;
+      }
+      .whisker::before {
+        left: 0;
+      }
+      .whisker::after {
+        right: 0;
+      }
+      td.val .range.wide {
+        color: var(--warn, #b45309);
+        font-weight: 600;
+      }
+      .bar-row:hover .bar {
+        filter: brightness(1.1);
+      }
+      .empty {
+        padding: 40px 16px;
+        text-align: center;
+        color: var(--text-2);
+      }
       .tip {
-        position: fixed; pointer-events: none; z-index: 10; background: var(--surface); color: var(--text);
-        border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; font-size: 12px;
-        box-shadow: 0 4px 16px rgb(0 0 0 / 0.15); max-width: 280px; display: none;
+        position: fixed;
+        pointer-events: none;
+        z-index: 10;
+        background: var(--surface);
+        color: var(--text);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 8px 10px;
+        font-size: 12px;
+        box-shadow: 0 4px 16px rgb(0 0 0 / 0.15);
+        max-width: 280px;
+        display: none;
       }
-      .tip strong { display: block; margin-bottom: 2px; }
-      .tip .muted { color: var(--text-3); }
-      footer.foot { margin-top: 24px; color: var(--text-3); font-size: 12px; }
+      .tip strong {
+        display: block;
+        margin-bottom: 2px;
+      }
+      .tip .muted {
+        color: var(--text-3);
+      }
+      footer.foot {
+        margin-top: 24px;
+        color: var(--text-3);
+        font-size: 12px;
+      }
       @media (max-width: 640px) {
-        td.chart { display: none; }
-        th.chart-h { display: none; }
+        td.chart {
+          display: none;
+        }
+        th.chart-h {
+          display: none;
+        }
       }
-    
-      td.cell { text-align: center; white-space: nowrap; font-weight: 600; }
-      td.cell.all { background: var(--pass-bg); color: var(--pass); }
-      td.cell.none { background: var(--fail-bg); color: var(--fail); }
-      td.cell.some { background: var(--surface-2); }
-      td.small, th.small { font-size: 12px; color: var(--text-2); }
-      .ok { color: var(--pass); font-weight: 600; }
-      .no { color: var(--fail); font-weight: 600; }
+
+      td.cell {
+        text-align: center;
+        white-space: nowrap;
+        font-weight: 600;
+      }
+      td.cell.all {
+        background: var(--pass-bg);
+        color: var(--pass);
+      }
+      td.cell.none {
+        background: var(--fail-bg);
+        color: var(--fail);
+      }
+      td.cell.some {
+        background: var(--surface-2);
+      }
+      td.small,
+      th.small {
+        font-size: 12px;
+        color: var(--text-2);
+      }
+      .ok {
+        color: var(--pass);
+        font-weight: 600;
+      }
+      .no {
+        color: var(--fail);
+        font-weight: 600;
+      }
     </style>
   </head>
   <body>
@@ -217,26 +549,56 @@
       <header class="top">
         <div>
           <h1>Agent evals</h1>
-          <p class="subtitle">Coding agents solving Lumiose tasks through their CLIs, graded by hidden tests and <code>lumiose check</code>.</p>
+          <p class="subtitle">
+            Coding agents solving Lumiose tasks through their CLIs, graded by hidden tests and
+            <code>lumiose check</code>.
+          </p>
         </div>
         <div class="controls">
-          <label class="ctl">Run <select id="run"></select></label>
-          <label class="ctl">Ablation <select id="ablation"><option value="">All</option></select></label>
-          <button class="theme" id="theme" type="button" title="Switch the color theme">Theme: auto</button>
+          <label class="ctl"
+            >Run
+            <select id="run"></select
+          ></label>
+          <label class="ctl"
+            >Ablation
+            <select id="ablation">
+              <option value="">All</option>
+            </select></label
+          >
+          <button class="theme" id="theme" type="button" title="Switch the color theme">
+            Theme: auto
+          </button>
         </div>
       </header>
       <div id="meta"></div>
       <div class="legend" id="legend"></div>
       <div id="content"><p class="empty">Loading results…</p></div>
-      <footer class="foot">Results: <code>evals/results/*.json</code>. Medians unless noted. Cost is the list-price USD that Claude Code reports, a proxy for subscription quota; Codex reports tokens only.</footer>
+      <footer class="foot">
+        Results: <code>evals/results/*.json</code>. Medians unless noted. Cost is the list-price USD
+        that Claude Code reports, a proxy for subscription quota; Codex reports tokens only.
+      </footer>
     </div>
     <div class="tip" id="tip" role="tooltip"></div>
     <script type="module">
       const $ = (id) => document.getElementById(id);
-      const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+      const esc = (s) =>
+        String(s ?? "").replace(
+          /[&<>"']/g,
+          (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c],
+        );
       const store = {
-        get: (k) => { try { return localStorage.getItem(k); } catch { return null; } },
-        set: (k, v) => { try { localStorage.setItem(k, v); } catch {} },
+        get: (k) => {
+          try {
+            return localStorage.getItem(k);
+          } catch {
+            return null;
+          }
+        },
+        set: (k, v) => {
+          try {
+            localStorage.setItem(k, v);
+          } catch {}
+        },
       };
       const median = (values) => {
         const v = values.filter((x) => typeof x === "number").toSorted((a, b) => a - b);
@@ -244,10 +606,20 @@
         const m = v.length >> 1;
         return v.length % 2 ? v[m] : (v[m - 1] + v[m]) / 2;
       };
-      const mean = (values) => { const v = values.filter((x) => typeof x === "number"); return v.length ? v.reduce((a, b) => a + b, 0) / v.length : undefined; };
-      const sum = (values) => values.filter((x) => typeof x === "number").reduce((a, b) => a + b, 0);
+      const mean = (values) => {
+        const v = values.filter((x) => typeof x === "number");
+        return v.length ? v.reduce((a, b) => a + b, 0) / v.length : undefined;
+      };
+      const sum = (values) =>
+        values.filter((x) => typeof x === "number").reduce((a, b) => a + b, 0);
       const pct = (n, d) => (d ? (n / d) * 100 : undefined);
-      const num = (v, digits = 0) => (v === undefined ? "–" : v.toLocaleString("en-US", { maximumFractionDigits: digits, minimumFractionDigits: digits }));
+      const num = (v, digits = 0) =>
+        v === undefined
+          ? "–"
+          : v.toLocaleString("en-US", {
+              maximumFractionDigits: digits,
+              minimumFractionDigits: digits,
+            });
 
       // Theme
       let theme = store.get("evals-theme") ?? "auto";
@@ -264,21 +636,34 @@
       applyTheme();
 
       let file;
-      const index = await fetch("results/index.json").then((r) => (r.ok ? r.json() : { runs: [] })).catch(() => ({ runs: [] }));
+      const index = await fetch("results/index.json")
+        .then((r) => (r.ok ? r.json() : { runs: [] }))
+        .catch(() => ({ runs: [] }));
       if (!index.runs.length) {
-        $("content").innerHTML = `<p class="empty">No results yet. Run <code>pnpm --filter @lumiose/evals eval --agents …</code>.</p>`;
+        $("content").innerHTML =
+          `<p class="empty">No results yet. Run <code>pnpm --filter @lumiose/evals eval --agents …</code>.</p>`;
       } else {
-        $("run").innerHTML = index.runs.map((r) => `<option value="${esc(r.file)}">${esc(r.date.slice(0, 16).replace("T", " "))} · ${esc(r.host)} · ${r.runs} runs${r.complete ? "" : " (incomplete)"}</option>`).join("");
+        $("run").innerHTML = index.runs
+          .map(
+            (r) =>
+              `<option value="${esc(r.file)}">${esc(r.date.slice(0, 16).replace("T", " "))} · ${esc(r.host)} · ${r.runs} runs${r.complete ? "" : " (incomplete)"}</option>`,
+          )
+          .join("");
         const saved = store.get("evals-run");
         if (saved && index.runs.some((r) => r.file === saved)) $("run").value = saved;
-        $("run").addEventListener("change", () => { store.set("evals-run", $("run").value); load(); });
+        $("run").addEventListener("change", () => {
+          store.set("evals-run", $("run").value);
+          load();
+        });
         $("ablation").addEventListener("change", render);
         await load();
       }
 
       async function load() {
         file = await fetch(`results/${$("run").value}`).then((r) => r.json());
-        $("ablation").innerHTML = `<option value="">All</option>` + file.meta.ablations.map((a) => `<option>${esc(a)}</option>`).join("");
+        $("ablation").innerHTML =
+          `<option value="">All</option>` +
+          file.meta.ablations.map((a) => `<option>${esc(a)}</option>`).join("");
         render();
       }
 
@@ -290,41 +675,163 @@
           <div><dt>Date</dt><dd>${esc(m.date.replace("T", " ").slice(0, 19))} UTC ${m.complete ? "" : '<span class="pill quick">incomplete</span>'}</dd></div>
           <div><dt>Machine</dt><dd>${esc(m.machine.cpu)}, ${m.machine.cores} cores, ${m.machine.memoryGb} GB · ${esc(m.machine.os)}</dd></div>
           <div><dt>Lumiose</dt><dd>${esc(m.lumiose)} · Node ${esc(m.node)}</dd></div>
-          <div><dt>CLIs</dt><dd>${Object.entries(m.clis).map(([k, v]) => `${esc(k)} ${esc(v ?? "–")}`).join("<br>")}</dd></div>
+          <div><dt>CLIs</dt><dd>${Object.entries(m.clis)
+            .map(([k, v]) => `${esc(k)} ${esc(v ?? "–")}`)
+            .join("<br>")}</dd></div>
           <div><dt>Matrix</dt><dd>${m.tasks.length} tasks × ${m.agents.length} agents × ${m.ablations.length} ablations × ${m.runs} runs</dd></div>
           <div><dt>Ablations</dt><dd>${m.ablations.map(esc).join(", ")}</dd></div>
         </dl>${m.notes?.length ? `<ul class="notes">${m.notes.map((n) => `<li>${esc(n)}</li>`).join("")}</ul>` : ""}</div>`;
         const agents = [...new Set(runs.map((r) => r.agent))];
         const color = (i) => `var(--series-${(i % 6) + 1})`;
-        $("legend").innerHTML = agents.map((a, i) => `<span><i class="swatch" style="background:${color(i)}"></i>${esc(a)}</span>`).join("");
-        if (!runs.length) { $("content").innerHTML = `<p class="empty">No runs for this filter.</p>`; return; }
+        $("legend").innerHTML = agents
+          .map(
+            (a, i) => `<span><i class="swatch" style="background:${color(i)}"></i>${esc(a)}</span>`,
+          )
+          .join("");
+        if (!runs.length) {
+          $("content").innerHTML = `<p class="empty">No runs for this filter.</p>`;
+          return;
+        }
         const by = (agent) => runs.filter((r) => r.agent === agent);
         const head = `<thead><tr><th>Metric</th>${agents.map((a, i) => `<th style="text-align:right"><i class="swatch" style="background:${color(i)}"></i> ${esc(a)}</th>`).join("")}<th class="chart-h">Chart</th></tr></thead>`;
 
         // [label, hint, better, (runs) => value, format]
         const metrics = [
-          ["Success rate", "hidden tests pass and lumiose check is clean", "higher", (rs) => pct(rs.filter((r) => r.success).length, rs.length), (v, rs) => `${num(v)}% <span class="ratio">${rs.filter((r) => r.success).length}/${rs.length}</span>`],
-          ["Hidden tests passed", "mean share of a run's tests", "higher", (rs) => mean(rs.map((r) => (r.grade.tests.total ? (r.grade.tests.passed / r.grade.tests.total) * 100 : 0))), (v) => `${num(v)}%`],
-          ["First lumiose check passed", "of runs that ran one", "higher", (rs) => { const c = rs.filter((r) => r.metrics.firstCheckOk !== null); return pct(c.filter((r) => r.metrics.firstCheckOk).length, c.length); }, (v, rs) => `${num(v)}% <span class="ratio">${rs.filter((r) => r.metrics.firstCheckOk !== null).length} ran a check</span>`],
-          ["Wall time", "per run", "lower", (rs) => median(rs.map((r) => r.wallMs / 1000)), (v) => `${num(v)} s`],
-          ["Turns", "Claude: model requests; Codex: messages and tool calls", "lower", (rs) => median(rs.map((r) => r.metrics.turns)), (v) => num(v)],
-          ["Tool calls", "commands, reads, edits, searches, MCP", "lower", (rs) => median(rs.map((r) => r.metrics.steps)), (v) => num(v)],
-          ["Output tokens", "reasoning included where reported", "lower", (rs) => median(rs.map((r) => r.tokens.output)), (v) => num(v)],
-          ["Input tokens", "uncached + cache reads + cache writes", "lower", (rs) => median(rs.map((r) => r.tokens.input + r.tokens.cacheRead + r.tokens.cacheWrite)), (v) => num(v)],
-          ["Cost per run", "list-price USD (Claude only)", "lower", (rs) => median(rs.map((r) => r.costUsd)), (v, rs) => (v === undefined ? "–" : `$${num(v, 3)} <span class="ratio">total $${num(sum(rs.map((r) => r.costUsd)), 2)}</span>`)],
-          ["Docs reads", "mean per run (files, lumiose docs/explain, MCP docs)", "higher", (rs) => mean(rs.map((r) => r.metrics.docsReads)), (v) => num(v, 1)],
-          ["llms.txt reads", "mean per run", "higher", (rs) => mean(rs.map((r) => r.metrics.llmsReads)), (v) => num(v, 1)],
-          ["MCP calls", "mean per run", "higher", (rs) => mean(rs.map((r) => r.metrics.mcpCalls)), (v) => num(v, 1)],
-          ["Used the lumiose skill", "share of runs", "higher", (rs) => pct(rs.filter((r) => r.metrics.skills?.includes("lumiose")).length, rs.length), (v) => `${num(v)}%`],
-          ["Timeouts and CLI errors", "count", "lower", (rs) => rs.filter((r) => r.exit.timedOut || r.exit.error).length, (v) => num(v)],
+          [
+            "Success rate",
+            "hidden tests pass and lumiose check is clean",
+            "higher",
+            (rs) => pct(rs.filter((r) => r.success).length, rs.length),
+            (v, rs) =>
+              `${num(v)}% <span class="ratio">${rs.filter((r) => r.success).length}/${rs.length}</span>`,
+          ],
+          [
+            "Hidden tests passed",
+            "mean share of a run's tests",
+            "higher",
+            (rs) =>
+              mean(
+                rs.map((r) =>
+                  r.grade.tests.total ? (r.grade.tests.passed / r.grade.tests.total) * 100 : 0,
+                ),
+              ),
+            (v) => `${num(v)}%`,
+          ],
+          [
+            "First lumiose check passed",
+            "of runs that ran one",
+            "higher",
+            (rs) => {
+              const c = rs.filter((r) => r.metrics.firstCheckOk !== null);
+              return pct(c.filter((r) => r.metrics.firstCheckOk).length, c.length);
+            },
+            (v, rs) =>
+              `${num(v)}% <span class="ratio">${rs.filter((r) => r.metrics.firstCheckOk !== null).length} ran a check</span>`,
+          ],
+          [
+            "Wall time",
+            "per run",
+            "lower",
+            (rs) => median(rs.map((r) => r.wallMs / 1000)),
+            (v) => `${num(v)} s`,
+          ],
+          [
+            "Turns",
+            "Claude: model requests; Codex: messages and tool calls",
+            "lower",
+            (rs) => median(rs.map((r) => r.metrics.turns)),
+            (v) => num(v),
+          ],
+          [
+            "Tool calls",
+            "commands, reads, edits, searches, MCP",
+            "lower",
+            (rs) => median(rs.map((r) => r.metrics.steps)),
+            (v) => num(v),
+          ],
+          [
+            "Output tokens",
+            "reasoning included where reported",
+            "lower",
+            (rs) => median(rs.map((r) => r.tokens.output)),
+            (v) => num(v),
+          ],
+          [
+            "Input tokens",
+            "uncached + cache reads + cache writes",
+            "lower",
+            (rs) =>
+              median(rs.map((r) => r.tokens.input + r.tokens.cacheRead + r.tokens.cacheWrite)),
+            (v) => num(v),
+          ],
+          [
+            "Cost per run",
+            "list-price USD (Claude only)",
+            "lower",
+            (rs) => median(rs.map((r) => r.costUsd)),
+            (v, rs) =>
+              v === undefined
+                ? "–"
+                : `$${num(v, 3)} <span class="ratio">total $${num(sum(rs.map((r) => r.costUsd)), 2)}</span>`,
+          ],
+          [
+            "Docs reads",
+            "mean per run (files, lumiose docs/explain, MCP docs)",
+            "higher",
+            (rs) => mean(rs.map((r) => r.metrics.docsReads)),
+            (v) => num(v, 1),
+          ],
+          [
+            "llms.txt reads",
+            "mean per run",
+            "higher",
+            (rs) => mean(rs.map((r) => r.metrics.llmsReads)),
+            (v) => num(v, 1),
+          ],
+          [
+            "MCP calls",
+            "mean per run",
+            "higher",
+            (rs) => mean(rs.map((r) => r.metrics.mcpCalls)),
+            (v) => num(v, 1),
+          ],
+          [
+            "Used the lumiose skill",
+            "share of runs",
+            "higher",
+            (rs) => pct(rs.filter((r) => r.metrics.skills?.includes("lumiose")).length, rs.length),
+            (v) => `${num(v)}%`,
+          ],
+          [
+            "Timeouts and CLI errors",
+            "count",
+            "lower",
+            (rs) => rs.filter((r) => r.exit.timedOut || r.exit.error).length,
+            (v) => num(v),
+          ],
         ];
         const rows = metrics.map(([label, hint, better, value, format]) => {
           const values = agents.map((a) => value(by(a)));
           const present = values.filter((v) => typeof v === "number");
-          const best = present.length > 1 ? (better === "higher" ? Math.max(...present) : Math.min(...present)) : undefined;
+          const best =
+            present.length > 1
+              ? better === "higher"
+                ? Math.max(...present)
+                : Math.min(...present)
+              : undefined;
           const max = Math.max(...present, 0);
-          const cells = agents.map((a, i) => `<td class="val${values[i] === best ? " best" : ""}">${format(values[i], by(a))}</td>`).join("");
-          const bars = agents.map((a, i) => `<div class="bar-row" data-tip="${esc(`${a}|${typeof values[i] === "number" ? num(values[i], 2) : "–"}`)}">${typeof values[i] === "number" ? `<div class="bar" style="width:${max > 0 ? Math.max(0.5, (values[i] / max) * 100) : 0}%;background:${color(i)}"></div>` : ""}</div>`).join("");
+          const cells = agents
+            .map(
+              (a, i) =>
+                `<td class="val${values[i] === best ? " best" : ""}">${format(values[i], by(a))}</td>`,
+            )
+            .join("");
+          const bars = agents
+            .map(
+              (a, i) =>
+                `<div class="bar-row" data-tip="${esc(`${a}|${typeof values[i] === "number" ? num(values[i], 2) : "–"}`)}">${typeof values[i] === "number" ? `<div class="bar" style="width:${max > 0 ? Math.max(0.5, (values[i] / max) * 100) : 0}%;background:${color(i)}"></div>` : ""}</div>`,
+            )
+            .join("");
           return `<tr><td class="metric">${esc(label)}<span class="hint">${esc(hint)}${better === "higher" ? " · higher is better" : ""}</span></td>${cells}<td class="chart"><div class="bars">${bars}</div></td></tr>`;
         });
 
@@ -333,14 +840,34 @@
           if (!rs.length) return `<td class="cell small">–</td>`;
           const ok = rs.filter((r) => r.success).length;
           const cls = ok === rs.length ? "all" : ok === 0 ? "none" : "some";
-          const failures = rs.filter((r) => !r.success).map((r) => `${r.task}${r.ablation === "baseline" ? "" : ` (${r.ablation})`}: ${r.exit.timedOut ? "timed out; " : ""}${r.grade.tests.results.filter((t) => !t.ok).map((t) => t.name).join("; ") || (r.grade.check.ok ? "" : `lumiose check: ${r.grade.check.codes.join(", ")}`)}`);
+          const failures = rs
+            .filter((r) => !r.success)
+            .map(
+              (r) =>
+                `${r.task}${r.ablation === "baseline" ? "" : ` (${r.ablation})`}: ${r.exit.timedOut ? "timed out; " : ""}${
+                  r.grade.tests.results
+                    .filter((t) => !t.ok)
+                    .map((t) => t.name)
+                    .join("; ") ||
+                  (r.grade.check.ok ? "" : `lumiose check: ${r.grade.check.codes.join(", ")}`)
+                }`,
+            );
           return `<td class="cell ${cls}"${failures.length ? ` data-tip="${esc(`Failed|${failures.join(" · ").slice(0, 600)}`)}"` : ""}>${ok}/${rs.length}</td>`;
         };
-        const categoryRows = categories.map((c) => `<tr><td>${esc(c)}</td>${agents.map((a) => cell(by(a).filter((r) => r.category === c))).join("")}</tr>`);
+        const categoryRows = categories.map(
+          (c) =>
+            `<tr><td>${esc(c)}</td>${agents.map((a) => cell(by(a).filter((r) => r.category === c))).join("")}</tr>`,
+        );
         const tasks = [...new Set(runs.map((r) => r.task))].toSorted();
-        const taskRows = tasks.map((t) => `<tr><td>${esc(t)}</td>${agents.map((a) => cell(by(a).filter((r) => r.task === t))).join("")}</tr>`);
+        const taskRows = tasks.map(
+          (t) =>
+            `<tr><td>${esc(t)}</td>${agents.map((a) => cell(by(a).filter((r) => r.task === t))).join("")}</tr>`,
+        );
         const shortHead = `<thead><tr><th></th>${agents.map((a, i) => `<th style="text-align:center"><i class="swatch" style="background:${color(i)}"></i> ${esc(a)}</th>`).join("")}</tr></thead>`;
-        const runRows = runs.map((r) => `<tr><td>${esc(r.task)}</td><td>${esc(r.agent)}</td><td>${esc(r.ablation)}</td><td class="${r.success ? "ok" : "no"}">${r.success ? "pass" : "fail"}${r.exit.timedOut ? " (timeout)" : ""}</td><td class="small">${r.grade.tests.passed}/${r.grade.tests.total} · check ${r.grade.check.ok ? "ok" : esc(r.grade.check.codes.join(","))}</td><td class="val">${num(r.wallMs / 1000)} s</td><td class="val">${num(r.metrics.turns)}</td><td class="val">${num(r.tokens.output)}</td><td class="val">${r.costUsd === null ? "–" : `$${num(r.costUsd, 3)}`}</td><td class="small">${esc(r.metrics.lumCodes.join(", "))}</td></tr>`);
+        const runRows = runs.map(
+          (r) =>
+            `<tr><td>${esc(r.task)}</td><td>${esc(r.agent)}</td><td>${esc(r.ablation)}</td><td class="${r.success ? "ok" : "no"}">${r.success ? "pass" : "fail"}${r.exit.timedOut ? " (timeout)" : ""}</td><td class="small">${r.grade.tests.passed}/${r.grade.tests.total} · check ${r.grade.check.ok ? "ok" : esc(r.grade.check.codes.join(","))}</td><td class="val">${num(r.wallMs / 1000)} s</td><td class="val">${num(r.metrics.turns)}</td><td class="val">${num(r.tokens.output)}</td><td class="val">${r.costUsd === null ? "–" : `$${num(r.costUsd, 3)}`}</td><td class="small">${esc(r.metrics.lumCodes.join(", "))}</td></tr>`,
+        );
         $("content").innerHTML = `
           <section class="card"><h2>Summary</h2><div class="scroll"><table>${head}<tbody>${rows.join("")}</tbody></table></div></section>
           <section class="card"><h2>Success by category</h2><div class="scroll"><table>${shortHead}<tbody>${categoryRows.join("")}</tbody></table></div></section>

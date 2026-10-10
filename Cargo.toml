@@ -32,7 +32,10 @@ oxc_transformer = "=0.153.0"
 serde = { version = "=1.0.229", features = ["derive"] }
 
 # CSS (lumiose_css): parcel_sourcemap is the map type Lightning CSS prints into.
-lightningcss = { version = "=1.0.0-alpha.72", default-features = false, features = ["sourcemap", "visitor"] }
+lightningcss = { version = "=1.0.0-alpha.72", default-features = false, features = [
+  "sourcemap",
+  "visitor",
+] }
 parcel_sourcemap = { version = "=2.1.1", features = ["json"] }
 
 # SVG imports (lumiose_svg): the XML parser, and the CSS tokenizer Lightning CSS already ships

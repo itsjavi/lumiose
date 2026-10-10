@@ -9,7 +9,9 @@ afterAll(() => dev?.stop());
 
 const results = (html: string) => {
   const list = /<ul\b[^>]*class="?results"?[^>]*>([\s\S]*?)<\/ul>/.exec(html)?.[1];
-  return list === undefined ? null : [...list.matchAll(/<li\b[^>]*>([\s\S]*?)<\/li>/g)].map((m) => text(m[1]!));
+  return list === undefined
+    ? null
+    : [...list.matchAll(/<li\b[^>]*>([\s\S]*?)<\/li>/g)].map((m) => text(m[1]!));
 };
 
 describe("search page", () => {
@@ -17,8 +19,14 @@ describe("search page", () => {
     const response = await dev.get("/search?q=tea");
     expect(response.status).toBe(200);
     const html = await response.text();
-    expect(results(html)).toEqual(["Green tea — 4.50 €", "Black tea — 3.90 €", "Tea mug — 12.00 €"]);
-    expect(html).toMatch(/<input\b[^>]*name="?q"?[^>]*value="?tea"?|<input\b[^>]*value="?tea"?[^>]*name="?q"?/);
+    expect(results(html)).toEqual([
+      "Green tea — 4.50 €",
+      "Black tea — 3.90 €",
+      "Tea mug — 12.00 €",
+    ]);
+    expect(html).toMatch(
+      /<input\b[^>]*name="?q"?[^>]*value="?tea"?|<input\b[^>]*value="?tea"?[^>]*name="?q"?/,
+    );
   });
 
   it("has a GET form to /search", async () => {

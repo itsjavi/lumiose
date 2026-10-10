@@ -21,7 +21,9 @@ describe("GET /api/books", () => {
 
   it("returns whole book objects", async () => {
     const response = await dev.get("/api/books?q=hyperion");
-    expect(await response.json()).toEqual([{ id: 4, title: "Hyperion", author: "Dan Simmons", year: 1989 }]);
+    expect(await response.json()).toEqual([
+      { id: 4, title: "Hyperion", author: "Dan Simmons", year: 1989 },
+    ]);
   });
 
   it("filters by title or author, case-insensitively", async () => {

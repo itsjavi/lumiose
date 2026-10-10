@@ -21,16 +21,8 @@
       "codex:gpt-6-astra:medium",
       "codex:gpt-6.1-sol:medium"
     ],
-    "tasks": [
-      "about-page",
-      "contact-form",
-      "counter-island",
-      "fix-stale-total",
-      "styled-badge"
-    ],
-    "ablations": [
-      "baseline"
-    ],
+    "tasks": ["about-page", "contact-form", "counter-island", "fix-stale-total", "styled-badge"],
+    "ablations": ["baseline"],
     "runs": 1,
     "complete": true,
     "notes": [
@@ -571,9 +563,7 @@
         "llmsReads": 0,
         "mcpCalls": 0,
         "mcpTools": [],
-        "skills": [
-          "lumiose"
-        ]
+        "skills": ["lumiose"]
       },
       "exit": {
         "code": 0,

@@ -38,7 +38,9 @@ describe("about page", () => {
   });
 
   it("builds the navigation URLs with href()", () => {
-    const files = execSync("git ls-files --cached --others --exclude-standard src", { encoding: "utf8" })
+    const files = execSync("git ls-files --cached --others --exclude-standard src", {
+      encoding: "utf8",
+    })
       .split("\n")
       .filter(Boolean);
     const all = files.map((file) => source(file)).join("\n");

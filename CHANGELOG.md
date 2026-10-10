@@ -146,7 +146,7 @@ All Lumiose packages share one version.
 - **size,examples:** forward-slash paths for Windows in the size entry and the islands-e2e loader URL (TASK-161) (c035e8d)
 - **ci:** fmt:examples runs lumen fmt --check in-process per example (pnpm exec printed a stray 'undefined' on failure) (TASK-161) (4207961)
 - **css,content:** nesting limits, unsafe $ constant values and linear $ lookups (TASK-169) (10a8d67)
-- **svg,content:** SVG element/attribute allowlist, depth limit and style escaping; frontmatter __proto__ stays data (TASK-169) (d4465d9)
+- **svg,content:** SVG element/attribute allowlist, depth limit and style escaping; frontmatter **proto** stays data (TASK-169) (d4465d9)
 - **vite:** LUM4003 matches real paths case-insensitively, packages outside the root, ?raw/?url queries, new URL(…, import.meta.url) and emitted assets (TASK-170, partial) (0b4fe45)
 - **compiler:** LUM1010 for bracket nesting past 1000 levels; napi compiles on a 256 MB-stack thread (TASK-170) (d784d8a)
 - **security:** no open redirect via trailing slashes, marker-only CSP hashes, href() dot params, private no-store with nonces, spread drops on*, redirect() schemes (TASK-165) (0156c23)

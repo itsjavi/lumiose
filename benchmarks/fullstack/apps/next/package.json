@@ -3,12 +3,6 @@
   "version": "0.0.0",
   "private": true,
   "description": "The Tracker app (doc-4) in Next.js 16 (App Router).",
-  "demo": {
-    "name": "tracker-next",
-    "title": "Tracker in Next.js (fullstack bench)",
-    "kind": "benchmark",
-    "setup": ["seed"]
-  },
   "license": "MIT",
   "type": "module",
   "scripts": {
@@ -32,5 +26,13 @@
     "@types/react": "19.3.0",
     "@types/react-dom": "19.3.0",
     "typescript": "7.0.2"
+  },
+  "demo": {
+    "name": "tracker-next",
+    "title": "Tracker in Next.js (fullstack bench)",
+    "kind": "benchmark",
+    "setup": [
+      "seed"
+    ]
   }
 }

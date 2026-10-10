@@ -45,12 +45,17 @@ describe("contact form", () => {
   });
 
   it("stores a valid message and redirects to the thanks page", async () => {
-    const response = await dev.post(await formAction(), { email: "ada@example.com", message: "Hi!" });
+    const response = await dev.post(await formAction(), {
+      email: "ada@example.com",
+      message: "Hi!",
+    });
     expect([301, 302, 303]).toContain(response.status);
     expect(new URL(response.headers.get("location")!, dev.url).pathname).toBe("/contact/thanks");
     const messages = await (await dev.get("/api/messages")).json();
     expect(messages).toContainEqual({ email: "ada@example.com", message: "Hi!" });
     const thanks = await (await dev.get("/contact/thanks")).text();
-    expect(text(/<h1[^>]*>([\s\S]*?)<\/h1>/.exec(thanks)?.[1] ?? "")).toBe("Thanks for your message");
+    expect(text(/<h1[^>]*>([\s\S]*?)<\/h1>/.exec(thanks)?.[1] ?? "")).toBe(
+      "Thanks for your message",
+    );
   });
 });

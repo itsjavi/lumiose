@@ -13,9 +13,7 @@
         "claude:claude-haiku-5-5:medium"
       ],
       "tasks": 20,
-      "ablations": [
-        "baseline"
-      ],
+      "ablations": ["baseline"],
       "runs": 120,
       "complete": true
     },
@@ -30,9 +28,7 @@
         "codex:gpt-6.1-sol:medium"
       ],
       "tasks": 5,
-      "ablations": [
-        "baseline"
-      ],
+      "ablations": ["baseline"],
       "runs": 20,
       "complete": true
     }

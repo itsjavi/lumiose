@@ -4,7 +4,10 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Fullstack benchmark</title>
-    <meta name="description" content="Lumiose, React Router and Next.js running the same Tracker app (doc-4): dev, build, page load and server metrics." />
+    <meta
+      name="description"
+      content="Lumiose, React Router and Next.js running the same Tracker app (doc-4): dev, build, page load and server metrics."
+    />
     <style>
       /* Tokens: surfaces and text, plus one categorical hue per app (fixed order: Lumiose, React Router,
          Next.js), validated for both modes. Text never wears a series color. */
@@ -77,110 +80,421 @@
         --shadow: none;
       }
 
-      * { box-sizing: border-box; }
+      * {
+        box-sizing: border-box;
+      }
       body {
         margin: 0;
         background: var(--bg);
         color: var(--text);
-        font: 14px/1.5 ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+        font:
+          14px/1.5 ui-sans-serif,
+          system-ui,
+          -apple-system,
+          "Segoe UI",
+          sans-serif;
         -webkit-font-smoothing: antialiased;
       }
-      .wrap { max-width: 1180px; margin: 0 auto; padding: 24px 16px 64px; }
-      header.top { display: flex; flex-wrap: wrap; gap: 16px 24px; align-items: end; justify-content: space-between; }
-      h1 { margin: 0; font-size: 22px; letter-spacing: -0.01em; }
-      .subtitle { margin: 2px 0 0; color: var(--text-2); }
-      .controls { display: flex; flex-wrap: wrap; gap: 12px; align-items: end; }
-      label.ctl { display: grid; gap: 4px; font-size: 12px; color: var(--text-2); }
-      select, button.theme {
-        font: inherit; color: var(--text); background: var(--surface);
-        border: 1px solid var(--line); border-radius: 8px; padding: 6px 10px; min-height: 34px;
+      .wrap {
+        max-width: 1180px;
+        margin: 0 auto;
+        padding: 24px 16px 64px;
       }
-      select { max-width: 100%; }
-      button.theme { cursor: pointer; }
+      header.top {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 16px 24px;
+        align-items: end;
+        justify-content: space-between;
+      }
+      h1 {
+        margin: 0;
+        font-size: 22px;
+        letter-spacing: -0.01em;
+      }
+      .subtitle {
+        margin: 2px 0 0;
+        color: var(--text-2);
+      }
+      .controls {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        align-items: end;
+      }
+      label.ctl {
+        display: grid;
+        gap: 4px;
+        font-size: 12px;
+        color: var(--text-2);
+      }
+      select,
+      button.theme {
+        font: inherit;
+        color: var(--text);
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 6px 10px;
+        min-height: 34px;
+      }
+      select {
+        max-width: 100%;
+      }
+      button.theme {
+        cursor: pointer;
+      }
 
       .meta {
-        margin-top: 20px; padding: 14px 16px; background: var(--surface); border: 1px solid var(--line);
-        border-radius: 12px; box-shadow: var(--shadow); display: grid; gap: 8px;
+        margin-top: 20px;
+        padding: 14px 16px;
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        box-shadow: var(--shadow);
+        display: grid;
+        gap: 8px;
       }
-      .meta dl { margin: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 8px 16px; }
-      .meta dt { font-size: 12px; color: var(--text-3); }
-      .meta dd { margin: 0; overflow-wrap: anywhere; }
-      .notes { margin: 0; padding-left: 18px; color: var(--text-2); font-size: 13px; }
-      .pill { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: 12px; border: 1px solid var(--line); background: var(--surface-2); color: var(--text-2); }
-      .pill.quick { border-color: var(--worse); color: var(--worse); }
+      .meta dl {
+        margin: 0;
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+        gap: 8px 16px;
+      }
+      .meta dt {
+        font-size: 12px;
+        color: var(--text-3);
+      }
+      .meta dd {
+        margin: 0;
+        overflow-wrap: anywhere;
+      }
+      .notes {
+        margin: 0;
+        padding-left: 18px;
+        color: var(--text-2);
+        font-size: 13px;
+      }
+      .pill {
+        display: inline-block;
+        padding: 1px 8px;
+        border-radius: 999px;
+        font-size: 12px;
+        border: 1px solid var(--line);
+        background: var(--surface-2);
+        color: var(--text-2);
+      }
+      .pill.quick {
+        border-color: var(--worse);
+        color: var(--worse);
+      }
 
-      .legend { display: flex; flex-wrap: wrap; gap: 16px; margin: 18px 0 6px; color: var(--text-2); }
-      .legend span { display: inline-flex; align-items: center; gap: 6px; }
-      .swatch { width: 12px; height: 12px; border-radius: 3px; display: inline-block; }
+      .legend {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 16px;
+        margin: 18px 0 6px;
+        color: var(--text-2);
+      }
+      .legend span {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .swatch {
+        width: 12px;
+        height: 12px;
+        border-radius: 3px;
+        display: inline-block;
+      }
 
-      nav.tabs { display: flex; gap: 8px 28px; flex-wrap: wrap; margin: 18px 0 12px; border-bottom: 1px solid var(--line); }
-      .cluster { display: grid; gap: 2px; }
-      .cluster-label { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-3); padding-left: 12px; }
-      .cluster-tabs { display: flex; flex-wrap: wrap; }
-      .badge { display: inline-block; font-size: 10px; font-weight: 700; letter-spacing: 0.06em; padding: 1px 6px; border-radius: 4px; margin-right: 8px; vertical-align: 1px; border: 1px solid currentColor; }
-      .cluster-label .badge { margin-right: 0; }
-      .badge.development { color: var(--dev); background: var(--dev-bg); }
-      .badge.production { color: var(--prod); background: var(--prod-bg); }
-      .badge.source { color: var(--text-2); background: var(--surface-2); }
-      .mode-banner { margin: 6px 0 14px; padding: 10px 14px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); font-size: 13px; color: var(--text-2); }
-      .mode-banner p { margin: 0; }
-      .mode-banner ul { margin: 6px 0 0; padding: 0; list-style: none; display: grid; gap: 3px; }
-      .mode-banner li .swatch { margin-right: 6px; vertical-align: -1px; }
-      .mode-banner.mode-development { border-left: 3px solid var(--dev); }
-      .mode-banner.mode-production { border-left: 3px solid var(--prod); }
-      code { font: 12px/1.4 ui-monospace, SFMono-Regular, Menlo, monospace; background: var(--surface-2); padding: 0 4px; border-radius: 4px; }
+      nav.tabs {
+        display: flex;
+        gap: 8px 28px;
+        flex-wrap: wrap;
+        margin: 18px 0 12px;
+        border-bottom: 1px solid var(--line);
+      }
+      .cluster {
+        display: grid;
+        gap: 2px;
+      }
+      .cluster-label {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 12px;
+        color: var(--text-3);
+        padding-left: 12px;
+      }
+      .cluster-tabs {
+        display: flex;
+        flex-wrap: wrap;
+      }
+      .badge {
+        display: inline-block;
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 0.06em;
+        padding: 1px 6px;
+        border-radius: 4px;
+        margin-right: 8px;
+        vertical-align: 1px;
+        border: 1px solid currentColor;
+      }
+      .cluster-label .badge {
+        margin-right: 0;
+      }
+      .badge.development {
+        color: var(--dev);
+        background: var(--dev-bg);
+      }
+      .badge.production {
+        color: var(--prod);
+        background: var(--prod-bg);
+      }
+      .badge.source {
+        color: var(--text-2);
+        background: var(--surface-2);
+      }
+      .mode-banner {
+        margin: 6px 0 14px;
+        padding: 10px 14px;
+        border-radius: 10px;
+        border: 1px solid var(--line);
+        background: var(--surface);
+        font-size: 13px;
+        color: var(--text-2);
+      }
+      .mode-banner p {
+        margin: 0;
+      }
+      .mode-banner ul {
+        margin: 6px 0 0;
+        padding: 0;
+        list-style: none;
+        display: grid;
+        gap: 3px;
+      }
+      .mode-banner li .swatch {
+        margin-right: 6px;
+        vertical-align: -1px;
+      }
+      .mode-banner.mode-development {
+        border-left: 3px solid var(--dev);
+      }
+      .mode-banner.mode-production {
+        border-left: 3px solid var(--prod);
+      }
+      code {
+        font:
+          12px/1.4 ui-monospace,
+          SFMono-Regular,
+          Menlo,
+          monospace;
+        background: var(--surface-2);
+        padding: 0 4px;
+        border-radius: 4px;
+      }
       nav.tabs button {
-        font: inherit; background: none; border: 0; padding: 8px 12px; color: var(--text-2); cursor: pointer;
-        border-bottom: 2px solid transparent; margin-bottom: -1px;
+        font: inherit;
+        background: none;
+        border: 0;
+        padding: 8px 12px;
+        color: var(--text-2);
+        cursor: pointer;
+        border-bottom: 2px solid transparent;
+        margin-bottom: -1px;
       }
-      nav.tabs button[aria-selected="true"] { color: var(--text); border-bottom-color: var(--accent); font-weight: 600; }
+      nav.tabs button[aria-selected="true"] {
+        color: var(--text);
+        border-bottom-color: var(--accent);
+        font-weight: 600;
+      }
 
       section.card {
-        background: var(--surface); border: 1px solid var(--line); border-radius: 12px; box-shadow: var(--shadow);
-        margin: 14px 0; overflow: hidden;
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        box-shadow: var(--shadow);
+        margin: 14px 0;
+        overflow: hidden;
       }
-      section.card h2 { margin: 0; padding: 12px 16px; font-size: 15px; border-bottom: 1px solid var(--line); }
-      .scroll { overflow-x: auto; }
-      table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
-      th, td { padding: 8px 12px; text-align: left; vertical-align: middle; border-bottom: 1px solid var(--line); }
-      tr:last-child td { border-bottom: 0; }
-      thead th { font-size: 12px; font-weight: 600; color: var(--text-2); background: var(--surface-2); white-space: nowrap; }
-      th.app-h .swatch { margin-right: 6px; vertical-align: -1px; }
-      td.metric { min-width: 180px; }
-      td.metric .hint { display: block; font-size: 12px; color: var(--text-3); }
-      td.val { white-space: nowrap; text-align: right; }
-      td.val.best { background: var(--best-bg); font-weight: 600; }
-      td.val .ratio { display: block; font-size: 12px; font-weight: 400; color: var(--text-3); }
-      td.val .range { display: block; font-size: 11px; font-weight: 400; color: var(--text-3); }
-      td.val .delta { display: block; font-size: 12px; font-weight: 500; }
-      .delta.better { color: var(--better); }
-      .delta.worse { color: var(--worse); }
-      td.val.missing { color: var(--text-3); text-align: center; }
-      td.chart { width: 34%; min-width: 200px; }
-      .bars { display: grid; gap: 3px; }
-      .bar-row { display: grid; grid-template-columns: 1fr; height: 10px; position: relative; }
-      .bar { height: 10px; border-radius: 0 4px 4px 0; min-width: 2px; }
-      .bar.compare { opacity: 0.35; height: 6px; margin-top: 2px; }
+      section.card h2 {
+        margin: 0;
+        padding: 12px 16px;
+        font-size: 15px;
+        border-bottom: 1px solid var(--line);
+      }
+      .scroll {
+        overflow-x: auto;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        font-variant-numeric: tabular-nums;
+      }
+      th,
+      td {
+        padding: 8px 12px;
+        text-align: left;
+        vertical-align: middle;
+        border-bottom: 1px solid var(--line);
+      }
+      tr:last-child td {
+        border-bottom: 0;
+      }
+      thead th {
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--text-2);
+        background: var(--surface-2);
+        white-space: nowrap;
+      }
+      th.app-h .swatch {
+        margin-right: 6px;
+        vertical-align: -1px;
+      }
+      td.metric {
+        min-width: 180px;
+      }
+      td.metric .hint {
+        display: block;
+        font-size: 12px;
+        color: var(--text-3);
+      }
+      td.val {
+        white-space: nowrap;
+        text-align: right;
+      }
+      td.val.best {
+        background: var(--best-bg);
+        font-weight: 600;
+      }
+      td.val .ratio {
+        display: block;
+        font-size: 12px;
+        font-weight: 400;
+        color: var(--text-3);
+      }
+      td.val .range {
+        display: block;
+        font-size: 11px;
+        font-weight: 400;
+        color: var(--text-3);
+      }
+      td.val .delta {
+        display: block;
+        font-size: 12px;
+        font-weight: 500;
+      }
+      .delta.better {
+        color: var(--better);
+      }
+      .delta.worse {
+        color: var(--worse);
+      }
+      td.val.missing {
+        color: var(--text-3);
+        text-align: center;
+      }
+      td.chart {
+        width: 34%;
+        min-width: 200px;
+      }
+      .bars {
+        display: grid;
+        gap: 3px;
+      }
+      .bar-row {
+        display: grid;
+        grid-template-columns: 1fr;
+        height: 10px;
+        position: relative;
+      }
+      .bar {
+        height: 10px;
+        border-radius: 0 4px 4px 0;
+        min-width: 2px;
+      }
+      .bar.compare {
+        opacity: 0.35;
+        height: 6px;
+        margin-top: 2px;
+      }
       /* min–max spread drawn over the median bar */
-      .whisker { position: absolute; top: 4px; height: 2px; background: var(--text-2); opacity: 0.7; }
-      .whisker::before, .whisker::after { content: ""; position: absolute; top: -3px; width: 1px; height: 8px; background: inherit; }
-      .whisker::before { left: 0; }
-      .whisker::after { right: 0; }
-      td.val .range.wide { color: var(--warn, #b45309); font-weight: 600; }
-      .bar-row:hover .bar { filter: brightness(1.1); }
-      .empty { padding: 40px 16px; text-align: center; color: var(--text-2); }
-      .tip {
-        position: fixed; pointer-events: none; z-index: 10; background: var(--surface); color: var(--text);
-        border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; font-size: 12px;
-        box-shadow: 0 4px 16px rgb(0 0 0 / 0.15); max-width: 280px; display: none;
+      .whisker {
+        position: absolute;
+        top: 4px;
+        height: 2px;
+        background: var(--text-2);
+        opacity: 0.7;
       }
-      .tip strong { display: block; margin-bottom: 2px; }
-      .tip .muted { color: var(--text-3); }
-      footer.foot { margin-top: 24px; color: var(--text-3); font-size: 12px; }
-      footer.foot .site { display: block; margin-top: 8px; color: inherit; }
+      .whisker::before,
+      .whisker::after {
+        content: "";
+        position: absolute;
+        top: -3px;
+        width: 1px;
+        height: 8px;
+        background: inherit;
+      }
+      .whisker::before {
+        left: 0;
+      }
+      .whisker::after {
+        right: 0;
+      }
+      td.val .range.wide {
+        color: var(--warn, #b45309);
+        font-weight: 600;
+      }
+      .bar-row:hover .bar {
+        filter: brightness(1.1);
+      }
+      .empty {
+        padding: 40px 16px;
+        text-align: center;
+        color: var(--text-2);
+      }
+      .tip {
+        position: fixed;
+        pointer-events: none;
+        z-index: 10;
+        background: var(--surface);
+        color: var(--text);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 8px 10px;
+        font-size: 12px;
+        box-shadow: 0 4px 16px rgb(0 0 0 / 0.15);
+        max-width: 280px;
+        display: none;
+      }
+      .tip strong {
+        display: block;
+        margin-bottom: 2px;
+      }
+      .tip .muted {
+        color: var(--text-3);
+      }
+      footer.foot {
+        margin-top: 24px;
+        color: var(--text-3);
+        font-size: 12px;
+      }
+      footer.foot .site {
+        display: block;
+        margin-top: 8px;
+        color: inherit;
+      }
       @media (max-width: 640px) {
-        td.chart { display: none; }
-        th.chart-h { display: none; }
+        td.chart {
+          display: none;
+        }
+        th.chart-h {
+          display: none;
+        }
       }
     </style>
   </head>
@@ -189,12 +503,26 @@
       <header class="top">
         <div>
           <h1>Fullstack benchmark</h1>
-          <p class="subtitle">The same Tracker app in Lumiose, React Router and Next.js (doc-4). Medians with the min–max range (whiskers on the bars; a range wider than 25% of the median is highlighted); lower is better unless noted.</p>
+          <p class="subtitle">
+            The same Tracker app in Lumiose, React Router and Next.js (doc-4). Medians with the
+            min–max range (whiskers on the bars; a range wider than 25% of the median is
+            highlighted); lower is better unless noted.
+          </p>
         </div>
         <div class="controls">
-          <label class="ctl">Run <select id="run"></select></label>
-          <label class="ctl">Compare with <select id="compare"><option value="">None</option></select></label>
-          <button class="theme" id="theme" type="button" title="Switch the color theme">Theme: auto</button>
+          <label class="ctl"
+            >Run
+            <select id="run"></select
+          ></label>
+          <label class="ctl"
+            >Compare with
+            <select id="compare">
+              <option value="">None</option>
+            </select></label
+          >
+          <button class="theme" id="theme" type="button" title="Switch the color theme">
+            Theme: auto
+          </button>
         </div>
       </header>
       <div id="meta"></div>
@@ -202,8 +530,8 @@
       <nav class="tabs" id="tabs" role="tablist"></nav>
       <div id="content"><p class="empty">Loading results…</p></div>
       <footer class="foot">
-        Best value per metric is highlighted; ratios are relative to the best app. In comparison mode, the
-        delta shows the change from the compared run to the selected run. Generated by
+        Best value per metric is highlighted; ratios are relative to the best app. In comparison
+        mode, the delta shows the change from the compared run to the selected run. Generated by
         <code>pnpm --filter @bench/harness bench</code>.
         <!-- On the Lumiose website, scripts/site.ts turns this into a link to the site. -->
         <a class="site" data-lumiose-site hidden>Made with Lumiose</a>
@@ -226,56 +554,112 @@
             ? "prod"
             : "build");
       const TABS = [
-        { id: "dev", label: "Dev server", mode: "development", match: (id, d) => envOf(id, d) === "dev" },
-        { id: "build", label: "Build", mode: "production", match: (id, d) => d.group === "build" && envOf(id, d) === "build" },
-        { id: "payload", label: "Payload", mode: "production", match: (id, d) => d.group === "build" && envOf(id, d) === "prod" },
-        { id: "load", label: "Page load", mode: "production", match: (id, d) => d.group === "load" },
-        { id: "server", label: "Server", mode: "production", match: (id, d) => d.group === "server" },
-        { id: "other", label: "Source & tooling", mode: "source", match: (id, d) => d.group === "other" },
+        {
+          id: "dev",
+          label: "Dev server",
+          mode: "development",
+          match: (id, d) => envOf(id, d) === "dev",
+        },
+        {
+          id: "build",
+          label: "Build",
+          mode: "production",
+          match: (id, d) => d.group === "build" && envOf(id, d) === "build",
+        },
+        {
+          id: "payload",
+          label: "Payload",
+          mode: "production",
+          match: (id, d) => d.group === "build" && envOf(id, d) === "prod",
+        },
+        {
+          id: "load",
+          label: "Page load",
+          mode: "production",
+          match: (id, d) => d.group === "load",
+        },
+        {
+          id: "server",
+          label: "Server",
+          mode: "production",
+          match: (id, d) => d.group === "server",
+        },
+        {
+          id: "other",
+          label: "Source & tooling",
+          mode: "source",
+          match: (id, d) => d.group === "other",
+        },
       ];
       const MODES = {
         development: {
           label: "Development",
           badge: "DEV",
-          summary: "Each app's dev server (Vite or Turbopack): on-demand compilation, unbundled modules, HMR. Not representative of production speed.",
+          summary:
+            "Each app's dev server (Vite or Turbopack): on-demand compilation, unbundled modules, HMR. Not representative of production speed.",
         },
         production: {
           label: "Production",
           badge: "PROD",
-          summary: "Production builds (after clean), served by each app's production server with NODE_ENV=production and HTTP compression off; payloads are compressed offline.",
+          summary:
+            "Production builds (after clean), served by each app's production server with NODE_ENV=production and HTTP compression off; payloads are compressed offline.",
         },
         source: {
           label: "Source & tooling",
           badge: "SRC",
-          summary: "Measured on the app's files and installed packages; the type check runs each app's typecheck script.",
+          summary:
+            "Measured on the app's files and installed packages; the type check runs each app's typecheck script.",
         },
       };
       // For schema-1 runs, which do not record how apps are served.
       const SERVING = {
         lumiose: { dev: "`lumiose dev` (Vite)", prod: "`node server.ts` on @lumiose/adapter-node" },
-        "react-router": { dev: "`react-router dev` (Vite)", prod: "`node server.ts`: Express + @react-router/express" },
+        "react-router": {
+          dev: "`react-router dev` (Vite)",
+          prod: "`node server.ts`: Express + @react-router/express",
+        },
         next: { dev: "`next dev` (Turbopack)", prod: "`next start`" },
       };
       const $ = (id) => document.getElementById(id);
       const store = {
-        get(key) { try { return localStorage.getItem(key); } catch { return null; } },
-        set(key, value) { try { localStorage.setItem(key, value); } catch {} },
+        get(key) {
+          try {
+            return localStorage.getItem(key);
+          } catch {
+            return null;
+          }
+        },
+        set(key, value) {
+          try {
+            localStorage.setItem(key, value);
+          } catch {}
+        },
       };
-      const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+      const esc = (s) =>
+        String(s).replace(
+          /[&<>"]/g,
+          (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c],
+        );
 
       function fmt(value, unit) {
         if (value === undefined || value === null || Number.isNaN(value)) return "–";
-        const n = (v, d) => v.toLocaleString("en-US", { maximumFractionDigits: d, minimumFractionDigits: 0 });
+        const n = (v, d) =>
+          v.toLocaleString("en-US", { maximumFractionDigits: d, minimumFractionDigits: 0 });
         switch (unit) {
-          case "ms": return value >= 1000 ? `${n(value / 1000, 2)} s` : `${n(value, value < 10 ? 1 : 0)} ms`;
+          case "ms":
+            return value >= 1000 ? `${n(value / 1000, 2)} s` : `${n(value, value < 10 ? 1 : 0)} ms`;
           case "bytes":
             if (value >= 1024 * 1024) return `${n(value / 1024 / 1024, 2)} MB`;
             if (value >= 1024) return `${n(value / 1024, 1)} kB`;
             return `${n(value, 0)} B`;
-          case "MB": return `${n(value, 0)} MB`;
-          case "req/s": return `${n(value, 0)} req/s`;
-          case "lines": return `${n(value, 0)} lines`;
-          default: return n(value, 1);
+          case "MB":
+            return `${n(value, 0)} MB`;
+          case "req/s":
+            return `${n(value, 0)} req/s`;
+          case "lines":
+            return `${n(value, 0)} lines`;
+          default:
+            return n(value, 1);
         }
       }
 
@@ -327,15 +711,22 @@
         try {
           index = await loadIndex();
         } catch {
-          $("content").innerHTML = `<p class="empty">No results yet. Run <code>pnpm --filter @bench/harness bench --quick</code>.</p>`;
+          $("content").innerHTML =
+            `<p class="empty">No results yet. Run <code>pnpm --filter @bench/harness bench --quick</code>.</p>`;
           return;
         }
         if (index.runs.length === 0) {
           $("content").innerHTML = `<p class="empty">No results yet.</p>`;
           return;
         }
-        $("run").innerHTML = index.runs.map((r) => `<option value="${esc(r.file)}">${esc(runLabel(r))}</option>`).join("");
-        $("compare").innerHTML = `<option value="">None</option>` + index.runs.map((r) => `<option value="${esc(r.file)}">${esc(runLabel(r))}</option>`).join("");
+        $("run").innerHTML = index.runs
+          .map((r) => `<option value="${esc(r.file)}">${esc(runLabel(r))}</option>`)
+          .join("");
+        $("compare").innerHTML =
+          `<option value="">None</option>` +
+          index.runs
+            .map((r) => `<option value="${esc(r.file)}">${esc(runLabel(r))}</option>`)
+            .join("");
         const params = new URLSearchParams(location.search);
         if (params.get("run")) $("run").value = params.get("run");
         if (params.get("compare")) $("compare").value = params.get("compare");
@@ -344,7 +735,11 @@
         await update();
       }
       async function fetchRun(file) {
-        if (!cache.has(file)) cache.set(file, fetch(`${resultsBase}${file}`).then((r) => r.json()));
+        if (!cache.has(file))
+          cache.set(
+            file,
+            fetch(`${resultsBase}${file}`).then((r) => r.json()),
+          );
         return cache.get(file);
       }
 
@@ -362,9 +757,17 @@
 
       function renderMeta() {
         const m = run.meta;
-        const versions = Object.entries(m.versions).filter(([, v]) => v).map(([k, v]) => `${k} ${v}`).join(" · ");
-        const conformance = Object.entries(m.conformance ?? {}).map(([app, s]) => `${app}: ${s}`).join(" · ") || "–";
-        const iterations = Object.entries(m.iterations).map(([k, v]) => `${k} ×${v}`).join(", ");
+        const versions = Object.entries(m.versions)
+          .filter(([, v]) => v)
+          .map(([k, v]) => `${k} ${v}`)
+          .join(" · ");
+        const conformance =
+          Object.entries(m.conformance ?? {})
+            .map(([app, s]) => `${app}: ${s}`)
+            .join(" · ") || "–";
+        const iterations = Object.entries(m.iterations)
+          .map(([k, v]) => `${k} ×${v}`)
+          .join(", ");
         $("meta").innerHTML = `
           <div class="meta">
             <dl>
@@ -386,18 +789,32 @@
       function render() {
         renderMeta();
         const apps = appsIn();
-        $("legend").innerHTML = apps.map((a) => `<span><i class="swatch" style="background:${a.color}"></i>${esc(a.name)}</span>`).join("") +
-          (other ? `<span><i class="swatch" style="background:var(--text-3);opacity:.35"></i>Compared run (thin bar)</span>` : "");
-        const tabs = TABS.filter((t) => Object.entries(run.metrics).some(([id, d]) => t.match(id, d)));
+        $("legend").innerHTML =
+          apps
+            .map(
+              (a) =>
+                `<span><i class="swatch" style="background:${a.color}"></i>${esc(a.name)}</span>`,
+            )
+            .join("") +
+          (other
+            ? `<span><i class="swatch" style="background:var(--text-3);opacity:.35"></i>Compared run (thin bar)</span>`
+            : "");
+        const tabs = TABS.filter((t) =>
+          Object.entries(run.metrics).some(([id, d]) => t.match(id, d)),
+        );
         if (!tabs.some((t) => t.id === group)) group = tabs[0]?.id ?? "dev";
         const clusters = Object.keys(MODES)
           .map((mode) => [mode, tabs.filter((t) => t.mode === mode)])
           .filter(([, list]) => list.length > 0);
         $("tabs").innerHTML = clusters
           .map(
-            ([mode, list]) => `<div class="cluster mode-${mode}"><span class="cluster-label"><span class="badge ${mode}">${MODES[mode].badge}</span>${esc(MODES[mode].label)}</span><div class="cluster-tabs">${list
-              .map((t) => `<button role="tab" type="button" data-group="${t.id}" aria-selected="${t.id === group}">${esc(t.label)}</button>`)
-              .join("")}</div></div>`,
+            ([mode, list]) =>
+              `<div class="cluster mode-${mode}"><span class="cluster-label"><span class="badge ${mode}">${MODES[mode].badge}</span>${esc(MODES[mode].label)}</span><div class="cluster-tabs">${list
+                .map(
+                  (t) =>
+                    `<button role="tab" type="button" data-group="${t.id}" aria-selected="${t.id === group}">${esc(t.label)}</button>`,
+                )
+                .join("")}</div></div>`,
           )
           .join("");
         for (const button of $("tabs").querySelectorAll("button")) {
@@ -414,22 +831,27 @@
       function modeBanner(tab, apps) {
         const mode = MODES[tab.mode];
         const servers = run.meta.servers;
-        const lines = tab.mode === "source" ? [] : apps.map((app) => {
-          const info = servers?.[app.id];
-          let text;
-          if (tab.mode === "development") {
-            text = info ? `${info.dev.description} (${info.dev.tool})` : SERVING[app.id]?.dev ?? "";
-          } else if (tab.id === "build") {
-            text = info?.build
-              ? `\`${info.build.command}\` after \`clean\`; output sizes on disk exclude precompressed .br/.gz copies`
-              : "the app's `build` script after `clean`";
-          } else {
-            text = info
-              ? `${info.prod.description} · NODE_ENV=${info.prod.nodeEnv ?? "?"} · compression ${info.prod.compression === null ? "?" : info.prod.compression ? "ON" : "off"} (checked)`
-              : SERVING[app.id]?.prod ?? "";
-          }
-          return `<li><i class="swatch" style="background:${app.color}"></i><strong>${esc(app.name)}</strong> ${code(text)}</li>`;
-        });
+        const lines =
+          tab.mode === "source"
+            ? []
+            : apps.map((app) => {
+                const info = servers?.[app.id];
+                let text;
+                if (tab.mode === "development") {
+                  text = info
+                    ? `${info.dev.description} (${info.dev.tool})`
+                    : (SERVING[app.id]?.dev ?? "");
+                } else if (tab.id === "build") {
+                  text = info?.build
+                    ? `\`${info.build.command}\` after \`clean\`; output sizes on disk exclude precompressed .br/.gz copies`
+                    : "the app's `build` script after `clean`";
+                } else {
+                  text = info
+                    ? `${info.prod.description} · NODE_ENV=${info.prod.nodeEnv ?? "?"} · compression ${info.prod.compression === null ? "?" : info.prod.compression ? "ON" : "off"} (checked)`
+                    : (SERVING[app.id]?.prod ?? "");
+                }
+                return `<li><i class="swatch" style="background:${app.color}"></i><strong>${esc(app.name)}</strong> ${code(text)}</li>`;
+              });
         return `<div class="mode-banner mode-${tab.mode}"><p><span class="badge ${tab.mode}">${mode.badge}</span> <strong>${esc(mode.label)}.</strong> ${esc(mode.summary)}</p>${lines.length ? `<ul>${lines.join("")}</ul>` : ""}</div>`;
       }
 
@@ -452,7 +874,9 @@
             <thead><tr><th>Metric</th>${apps.map((a) => `<th class="app-h" style="text-align:right"><i class="swatch" style="background:${a.color}"></i>${esc(a.name)}</th>`).join("")}<th class="chart-h">Chart</th></tr></thead>
             <tbody>${metrics.map(([id, def]) => row(id, def, apps)).join("")}</tbody></table></div></section>`);
         }
-        $("content").innerHTML = sections.size ? html.join("") : `<p class="empty">No metrics in this group for this run.</p>`;
+        $("content").innerHTML = sections.size
+          ? html.join("")
+          : `<p class="empty">No metrics in this group for this run.</p>`;
         bindTips();
       }
 
@@ -461,10 +885,19 @@
         const medians = apps.map((app) => value(run, app)?.median);
         const present = medians.filter((v) => typeof v === "number");
         const higher = def.better === "higher";
-        const best = present.length ? (higher ? Math.max(...present) : Math.min(...present)) : undefined;
+        const best = present.length
+          ? higher
+            ? Math.max(...present)
+            : Math.min(...present)
+          : undefined;
         const otherMedians = apps.map((app) => value(other, app)?.median);
         const maxes = apps.map((app) => value(run, app)?.max).filter((v) => typeof v === "number");
-        const scaleMax = Math.max(...present, ...maxes, ...(other ? otherMedians.filter((v) => typeof v === "number") : []), 0);
+        const scaleMax = Math.max(
+          ...present,
+          ...maxes,
+          ...(other ? otherMedians.filter((v) => typeof v === "number") : []),
+          0,
+        );
         const cells = apps.map((app, i) => {
           const s = value(run, app);
           if (!s) return `<td class="val missing">–</td>`;
@@ -475,7 +908,8 @@
             else if (!higher && best > 0) ratio = `${(s.median / best).toFixed(2)}×`;
             else if (!higher && best === 0 && s.median > 0) ratio = "vs 0";
           }
-          const range = s.values.length > 1 ? `${fmt(s.min, def.unit)} – ${fmt(s.max, def.unit)}` : "";
+          const range =
+            s.values.length > 1 ? `${fmt(s.min, def.unit)} – ${fmt(s.max, def.unit)}` : "";
           // A spread over 25% of the median marks a noisy metric (a load spike, a cold cache…).
           const wide = s.values.length > 1 && s.median > 0 && (s.max - s.min) / s.median > 0.25;
           let delta = "";
@@ -484,15 +918,20 @@
             const change = o === 0 ? (s.median === 0 ? 0 : Infinity) : ((s.median - o) / o) * 100;
             const improved = higher ? s.median > o : s.median < o;
             const same = Math.abs(change) < 1;
-            const text = Number.isFinite(change) ? `${change > 0 ? "+" : ""}${change.toFixed(0)}%` : "new";
+            const text = Number.isFinite(change)
+              ? `${change > 0 ? "+" : ""}${change.toFixed(0)}%`
+              : "new";
             delta = `<span class="delta ${same ? "" : improved ? "better" : "worse"}">${same ? "≈ same" : `${improved ? "▲ better" : "▼ worse"} ${text}`}</span>`;
           }
           return `<td class="val${isBest ? " best" : ""}">${esc(fmt(s.median, def.unit))}${isBest ? ' <span class="ratio">best</span>' : ratio ? `<span class="ratio">${ratio}</span>` : ""}${range ? `<span class="range${wide ? " wide" : ""}" title="min – max of ${s.values.length} samples${wide ? "; spread over 25% of the median" : ""}">${esc(range)}</span>` : ""}${delta}</td>`;
         });
         const bars = apps.map((app, i) => {
           const s = value(run, app);
-          const width = (v) => (scaleMax > 0 && typeof v === "number" ? Math.max(0.5, (v / scaleMax) * 100) : 0);
-          const tip = s ? `${app.name}|${fmt(s.median, def.unit)}|${s.values.length > 1 ? `min ${fmt(s.min, def.unit)}, max ${fmt(s.max, def.unit)}, n=${s.values.length}` : "1 sample"}${other && typeof otherMedians[i] === "number" ? `|compared run: ${fmt(otherMedians[i], def.unit)}` : ""}` : `${app.name}|no data`;
+          const width = (v) =>
+            scaleMax > 0 && typeof v === "number" ? Math.max(0.5, (v / scaleMax) * 100) : 0;
+          const tip = s
+            ? `${app.name}|${fmt(s.median, def.unit)}|${s.values.length > 1 ? `min ${fmt(s.min, def.unit)}, max ${fmt(s.max, def.unit)}, n=${s.values.length}` : "1 sample"}${other && typeof otherMedians[i] === "number" ? `|compared run: ${fmt(otherMedians[i], def.unit)}` : ""}`
+            : `${app.name}|no data`;
           return `<div class="bar-row" data-tip="${esc(tip)}">
               ${s ? `<div class="bar" style="width:${width(s.median)}%;background:${app.color}"></div>` : ""}
               ${s && s.values.length > 1 ? `<div class="whisker" style="left:${width(s.min)}%;width:${Math.max(0, width(s.max) - width(s.min))}%"></div>` : ""}

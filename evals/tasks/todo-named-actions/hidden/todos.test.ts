@@ -23,7 +23,9 @@ function forms(html: string): Form[] {
       const value = /value="?([^"\s>]*)"?/.exec(input[0])?.[1] ?? "";
       if (name) fields[name] = value;
     }
-    const buttons = [...m[2]!.matchAll(/<button\b[^>]*>([\s\S]*?)<\/button>/g)].map((b) => text(b[1]!));
+    const buttons = [...m[2]!.matchAll(/<button\b[^>]*>([\s\S]*?)<\/button>/g)].map((b) =>
+      text(b[1]!),
+    );
     return { action: url.pathname + url.search, fields, buttons };
   });
 }
@@ -40,8 +42,13 @@ const items = (html: string) =>
 const page = async () => (await dev.get("/todos")).text();
 
 function formWith(html: string, button: string, id?: number): Form {
-  const found = forms(html).find((f) => f.buttons.includes(button) && (id === undefined || f.fields.id === String(id)));
-  expect(found, `a form with a "${button}" button${id === undefined ? "" : ` for todo ${id}`}`).toBeDefined();
+  const found = forms(html).find(
+    (f) => f.buttons.includes(button) && (id === undefined || f.fields.id === String(id)),
+  );
+  expect(
+    found,
+    `a form with a "${button}" button${id === undefined ? "" : ` for todo ${id}`}`,
+  ).toBeDefined();
   return found!;
 }
 
@@ -77,7 +84,9 @@ describe("todos", () => {
 
     const toggled = await submit(formWith(await page(), "Toggle", created!.id));
     expect([302, 303]).toContain(toggled.status);
-    expect(items(await page()).find((item) => item.id === created!.id)).toMatchObject({ done: true });
+    expect(items(await page()).find((item) => item.id === created!.id)).toMatchObject({
+      done: true,
+    });
 
     const removed = await submit(formWith(await page(), "Remove", created!.id));
     expect([302, 303]).toContain(removed.status);

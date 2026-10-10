@@ -8,10 +8,12 @@ beforeAll(async () => {
 afterAll(() => dev?.stop());
 
 const badges = (html: string) =>
-  [...html.matchAll(/<span\b[^>]*class="?([^">]*\bbadge\b[^">]*)"?[^>]*>([\s\S]*?)<\/span>/g)].map((m) => ({
-    classes: m[1]!.split(/\s+/).filter(Boolean).toSorted(),
-    text: text(m[2]!),
-  }));
+  [...html.matchAll(/<span\b[^>]*class="?([^">]*\bbadge\b[^">]*)"?[^>]*>([\s\S]*?)<\/span>/g)].map(
+    (m) => ({
+      classes: m[1]!.split(/\s+/).filter(Boolean).toSorted(),
+      text: text(m[2]!),
+    }),
+  );
 
 describe("Badge", () => {
   it("renders three badges on the home page", async () => {
@@ -26,7 +28,8 @@ describe("Badge", () => {
     const badge = source("src/components/Badge.stsx");
     expect(badge).toMatch(/export\s+(function|const)\s+Badge\b/);
     expect(badge).toMatch(/tokens/);
-    for (const hex of ["#2563eb", "#d97706", "#dc2626"]) expect(badge.toLowerCase()).not.toContain(hex);
+    for (const hex of ["#2563eb", "#d97706", "#dc2626"])
+      expect(badge.toLowerCase()).not.toContain(hex);
     expect(badge).toMatch(/\$colors\.|\$tokens\.colors\.|\$radius|\$tokens\.radius/);
   });
 
