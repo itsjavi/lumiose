@@ -1,11 +1,11 @@
 ---
 id: TASK-191
 title: Apply the approved API renames
-status: In Progress
+status: Done
 assignee:
   - Lux
 created_date: '2026-10-10 03:33'
-updated_date: '2026-10-10 18:18'
+updated_date: '2026-10-10 18:50'
 labels:
   - api
   - dx
@@ -23,8 +23,8 @@ Implement the renames the user approves from TASK-190 across the runtime, compil
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Every approved rename applied; old names removed or aliased as approved, with a changelog entry
-- [ ] #2 Docs, examples and diagnostics updated in the same commits; pnpm check green
+- [x] #1 Every approved rename applied; old names removed or aliased as approved, with a changelog entry
+- [x] #2 Docs, examples and diagnostics updated in the same commits; pnpm check green
 <!-- AC:END -->
 
 ## Implementation Notes
@@ -32,3 +32,9 @@ Implement the renames the user approves from TASK-190 across the runtime, compil
 <!-- SECTION:NOTES:BEGIN -->
 2026-10-10 Lux: split into TASK-191.1 (runtime, Vite plugin, lumiose docs, provider; Spark) and TASK-191.2 (consumer sweep; Beacon, after 191.1).
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Applied every decision-35 rename outright (no aliases): runtime, Vite HMR detection, compiler tests, diagnostics and docs in TASK-191.1 (c07d91e, with the <Ctx value> provider and docs/upgrading.md migration table); consumers in TASK-191.2 (examples, benchmarks, evals, tooling). Breaking commits use '!' so the release changelog lists them. pnpm typecheck/test green; size 9.95 kB under the 10 kB cap.
+<!-- SECTION:FINAL_SUMMARY:END -->
