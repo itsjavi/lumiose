@@ -165,4 +165,4 @@ export default function Post() {
 - [LUM4006](../errors/LUM4006.md): hydration mismatch.
 - [LUM4007](../errors/LUM4007.md): non-serializable awaited value.
 
-See also: [Rendering modes](rendering-modes.md), [Async components](async.md).
+See also: [Rendering modes](rendering-modes.md), [Async components](async.md), [Sharing state](state.md) (state shared by islands).

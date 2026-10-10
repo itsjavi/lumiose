@@ -105,4 +105,4 @@ function ThemeLabel() {
 - [LUM2007](../errors/LUM2007.md): own signal read in an async body.
 - [LUM4008](../errors/LUM4008.md): module-scope signal written during SSR.
 
-See also: [reference: reactivity](../reference/reactivity.md), [JSX bindings](jsx.md).
+See also: [reference: reactivity](../reference/reactivity.md), [JSX bindings](jsx.md), [Sharing state](state.md).
