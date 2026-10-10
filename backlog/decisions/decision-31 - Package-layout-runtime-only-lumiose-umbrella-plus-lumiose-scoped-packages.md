@@ -10,8 +10,8 @@ Today one `lumen` package carries the runtime and all tooling, so a production i
 
 ## Decision
 
-- **`lumiose`** (unscoped umbrella): the runtime only — core (`lumiose`), `lumiose/dom` (+ dev-only `lumiose/dom/hot`), `lumiose/server`, `lumiose/router`, the app runtime, `lumiose/jsx-runtime`, `lumiose/env`. Almost no dependencies. Ships prebuilt JS + `.d.ts`, so Node servers can keep it external. The runtime stays in one package (no `@lumiose/core` + `@lumiose/dom` split) to avoid duplicate signal-graph instances.
-- **Scoped, optional or dev-time:** `@lumiose/vite` (plugin), `@lumiose/cli` (check, lint, fmt, docs, mcp, build/dev/preview commands), `@lumiose/compiler` (+ `@lumiose/compiler-<platform>` optional dependencies with the napi binaries, and the wasm build), `@lumiose/adapter-node` (and later cloudflare/vercel/netlify), `@lumiose/language-server`, `@lumiose/eslint-plugin`, `@lumiose/prettier-plugin`, `@lumiose/testing`, `create-lumiose`.
+- **`lumiose`** (unscoped umbrella): the runtime only — core (`lumiose`), `lumiose/dom` (+ dev-only `lumiose/dom/hot`), `lumiose/server`, `lumiose/router`, the app runtime, `lumiose/jsx-runtime`, `lumiose/env`. No dependencies. Also keeps `lumiose/node` (the Node HTTP bridge) and an undocumented `lumiose/internal` subpath that only Lumiose's own tooling imports. Ships prebuilt JS + `.d.ts`, so Node servers can keep it external. The runtime stays in one package (no `@lumiose/core` + `@lumiose/dom` split) to avoid duplicate signal-graph instances.
+- **Scoped, optional or dev-time:** `@lumiose/vite` (plugin), `@lumiose/cli` (check, lint, fmt, docs, mcp, build/dev/preview commands), `@lumiose/compiler` (+ `@lumiose/compiler-<platform>` optional dependencies with the napi binaries, and the wasm build), `@lumiose/adapter-node` (and later cloudflare/vercel/netlify), `@lumiose/language-server`, `@lumiose/eslint-plugin`, `@lumiose/prettier-plugin`, `create-lumiose` (`@lumiose/testing` later, once a testing package exists).
 - New projects depend on `lumiose` at runtime and on `@lumiose/vite` and `@lumiose/cli` as dev dependencies.
 
 ## Consequences
