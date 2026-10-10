@@ -26,6 +26,7 @@ import {
   addCleanup,
   beginBusy,
   createTrigger,
+  getOwner,
   isRun,
   lifetimeOf,
   runWithOwner,
@@ -34,6 +35,7 @@ import {
   type Run,
   type TriggerNode,
 } from "../../core/internal.ts";
+import { getAbortSignal } from "../../core/owner.ts";
 import { untrack } from "../../core/reactive.ts";
 import { generation } from "../../core/state.ts";
 import { DEV } from "../../dom/dev.ts";
@@ -46,6 +48,7 @@ import {
   matchKey,
   startFlight,
   type Flight,
+  type QueryFunctionContext,
   type QueryKey,
 } from "./shared.ts";
 
@@ -279,17 +282,29 @@ export function settled(): Promise<void> {
 
 /**
  * `await query(key, fn)` in the browser: inside an async component, cached under `key`, else
- * `fn()` itself.
+ * `fn()` itself. `fn` gets `{ signal, queryKey }`.
  */
-export function query<T>(key: QueryKey, fn: () => T | PromiseLike<T>): Promise<T> {
+export function query<T, const TKey extends QueryKey = QueryKey>(
+  key: TKey,
+  fn: (context: QueryFunctionContext<TKey>) => T | PromiseLike<T>,
+): Promise<T> {
   if (!inRun()) {
+    // Not cached: the current owner's signal, if any (one that never aborts otherwise).
+    const owner = getOwner();
+    const signal = owner === undefined ? new AbortController().signal : lifetimeOf(owner);
     try {
-      return Promise.resolve(fn());
+      return Promise.resolve(fn({ signal, queryKey: key }));
     } catch (error) {
       return Promise.reject(error);
     }
   }
-  return cached<T>(hashKey(key), key, fn, runSignal());
+  // `fn` runs under the flight's owner: `getAbortSignal()` is the shared request's signal.
+  return cached<T>(
+    hashKey(key),
+    key,
+    () => fn({ signal: getAbortSignal(), queryKey: key }),
+    runSignal(),
+  );
 }
 
 /**

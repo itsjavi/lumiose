@@ -20,6 +20,8 @@ export type { ReconcileOptions } from "./reconcile.ts";
 export { createContext, useContext } from "./context.ts";
 export { onCleanup } from "./owner.ts";
 export { defineState } from "../server/state.ts";
+/** `true` on the server, `false` in the browser: a constant, so client builds drop server branches. */
+export const isServer: boolean = true;
 
 interface Cell<T> extends Signal<T> {
   value: T;

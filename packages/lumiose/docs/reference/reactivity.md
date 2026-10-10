@@ -213,7 +213,7 @@ returns the same instance after that.
 The factory runs outside the component tree: it sees no context and its reads are not tracked; in
 the browser its effects live as long as the page. On the server it may read request APIs
 (`cookies()`, `locals()`, …), which do not exist in the browser: guard them with
-`import.meta.env.SSR`. Calling an accessor on the server outside a request or render (at module
+[`isServer`](#isserver). Calling an accessor on the server outside a request or render (at module
 scope) throws.
 
 **Sent to the browser.** When islands or SPA routes import the state, a page that created it
@@ -230,14 +230,30 @@ Define states at module scope with `export const x = defineState(…)` (or expor
 created elsewhere (inside a function) are never sent.
 
 ```ts
-import { computed, cookies, defineState, signal } from "lumiose";
+import { computed, cookies, defineState, isServer, signal } from "lumiose";
 
 export const prefs = defineState(() => {
-  const theme = signal(import.meta.env.SSR ? (cookies().get("theme") ?? "light") : "light");
+  const theme = signal(isServer ? (cookies().get("theme") ?? "light") : "light");
   return { theme, dark: computed(() => theme() === "dark") };
 });
 // prefs().theme(), prefs().dark(), prefs().theme.set("dark")
 ```
+
+## isServer
+
+```ts
+const isServer: boolean;
+```
+
+`true` in the server entry of `lumiose` (the `node` condition), `false` in the browser entry
+(Solid's name). Use it to guard code that runs on both sides, such as a `defineState` factory that
+reads request APIs: `signal(isServer ? locals().user : null)`. The guard stays explicit: request
+APIs called in the browser still throw [LUM4003](../errors/LUM4003.md).
+
+It is a constant, so production client builds fold it: `if (isServer) { … }` and
+`isServer ? a : b` lose their server branch, and server-only strings in it never reach the
+bundle. The server branch must still type-check and import only what client code may import;
+server-only modules stay out of client graphs ([LUM4003](../errors/LUM4003.md)).
 
 ## isPending
 

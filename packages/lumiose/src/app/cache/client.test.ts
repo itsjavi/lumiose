@@ -5,6 +5,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { Renderable } from "../../contract/client.ts";
 import { flush, isPending, signal } from "../../core/index.ts";
+import { getAbortSignal } from "../../core/owner.ts";
 import { resetStates } from "../../core/state.ts";
 import { Suspense } from "../../dom/boundaries.ts";
 import { $async, $await, $leave, createComponent, render } from "../../dom/index.ts";
@@ -151,6 +152,56 @@ describe("deduplication", () => {
     const Again = view("b", () => fetchJSON("https://api.test/x", { method: "post" }));
     mount(() => [createComponent(Post, {}), createComponent(Again, {})]);
     expect(calls.map((call) => call.method)).toEqual(["GET", "GET", "POST", "POST"]);
+  });
+});
+
+describe("query() function context and cache: no-store", () => {
+  it("passes { signal, queryKey }: the shared request's signal, aborted once no run waits", async () => {
+    const contexts: { signal: AbortSignal; queryKey: readonly unknown[]; own: AbortSignal }[] = [];
+    const fn = vi.fn((context: { signal: AbortSignal; queryKey: readonly unknown[] }) => {
+      contexts.push({ ...context, own: getAbortSignal() });
+      return new Promise<never>(() => {});
+    });
+    const A = view("a", () => query(["books", { page: 2 }], fn));
+    const B = view("b", () => query(["books", { page: 2 }], fn));
+    const dispose = mount(() => [createComponent(A, {}), createComponent(B, {})]);
+    expect(fn).toHaveBeenCalledTimes(1);
+    const [context] = contexts;
+    expect(context!.queryKey).toEqual(["books", { page: 2 }]);
+    expect(context!.signal).toBe(context!.own);
+    expect(context!.signal.aborted).toBe(false);
+    dispose();
+    expect(context!.signal.aborted).toBe(true);
+    // Outside a component, a signal is still passed.
+    await query(["outside"], (outside) => {
+      expect(outside.signal).toBeInstanceOf(AbortSignal);
+      expect(outside.queryKey).toEqual(["outside"]);
+    });
+  });
+
+  it("makes a GET with cache: no-store a plain request: not deduped, not cached", async () => {
+    const Live = (name: string) =>
+      view(name, () => fetchJSON("https://api.test/live", { cache: "no-store" }));
+    mount(() => [createComponent(Live("a"), {}), createComponent(Live("b"), {})]);
+    expect(urls()).toEqual(["https://api.test/live", "https://api.test/live"]);
+    calls[0]!.respond({ n: 1 });
+    calls[1]!.respond({ n: 2 });
+    await settle();
+    expect([text("a"), text("b")]).toEqual(['{"n":1}', '{"n":2}']);
+    // A later instance fetches again: nothing was cached.
+    mount(() => createComponent(Live("c"), {}));
+    expect(calls).toHaveLength(3);
+    calls[2]!.respond({ n: 3 });
+    await settle();
+    expect(text("c")).toBe('{"n":3}');
+    // The default GET of the same URL has an entry of its own.
+    mount(() =>
+      createComponent(
+        view("d", () => fetchJSON("https://api.test/live")),
+        {},
+      ),
+    );
+    expect(calls).toHaveLength(4);
   });
 });
 

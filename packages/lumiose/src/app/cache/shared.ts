@@ -10,6 +10,15 @@ import { createOwner, disposeOwner, lifetimeOf, type Owner } from "../../core/in
 /** A `query()` key: an array of JSON-serializable values (TanStack Query's `queryKey`). */
 export type QueryKey = readonly unknown[];
 
+/**
+ * What `query(key, fn)` passes to `fn` (TanStack Query's `QueryFunctionContext`): `signal` is the
+ * shared request's, the one `getAbortSignal()` returns inside `fn`; `queryKey` is `key`.
+ */
+export interface QueryFunctionContext<TKey extends QueryKey = QueryKey> {
+  signal: AbortSignal;
+  queryKey: TKey;
+}
+
 const isPlainObject = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" &&
   value !== null &&

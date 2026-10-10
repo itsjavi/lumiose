@@ -6,7 +6,7 @@
 import { getAbortSignal } from "../../core/server.ts";
 import { inAsyncRun } from "../../server/frame.ts";
 import { cached, canCache } from "../cache/server.ts";
-import { isGet, jsonRequest, requestJSON } from "../fetch-json.ts";
+import { isCacheable, jsonRequest, requestJSON } from "../fetch-json.ts";
 import { getRequestScope } from "./scope.ts";
 
 const REDIRECTS = new Set([301, 302, 303, 307, 308]);
@@ -17,7 +17,8 @@ const MAX_REDIRECTS = 20;
  * non-2xx responses. Returns plain data, so values awaited inside islands stay serializable.
  * During SSR, same-origin URLs are served in-process, with the page request's cookies. Awaited in
  * an async component, a GET is cached for the rest of the request by its absolute URL (islands get
- * it with the page); the signal then defaults to `getAbortSignal()` (the render's).
+ * it with the page), unless `init.cache` is `"no-store"`; the signal then defaults to
+ * `getAbortSignal()` (the render's).
  */
 export function fetchJSON<T = unknown>(input: string | URL, init?: RequestInit): Promise<T> {
   try {
@@ -41,7 +42,7 @@ export function fetchJSON<T = unknown>(input: string | URL, init?: RequestInit):
     if (!inAsyncRun()) return send(undefined);
     // Inside an async component, the render's lifetime: the fetch stops when the render is aborted.
     const signal = init?.signal === undefined ? getAbortSignal() : init.signal;
-    if (!isGet(init) || !canCache()) return send(signal);
+    if (!isCacheable(init) || !canCache()) return send(signal);
     // Same-origin URLs travel in the page payload as `/path?query`: the browser's origin may differ.
     const wire =
       base !== undefined && target.origin === base.origin

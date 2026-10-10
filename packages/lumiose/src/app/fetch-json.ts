@@ -75,9 +75,12 @@ export async function readBody(response: Response): Promise<unknown> {
   return text;
 }
 
-/** Whether `init` makes a GET request: only those are cached. */
-export function isGet(init: RequestInit | undefined): boolean {
-  return init?.method === undefined || init.method.toUpperCase() === "GET";
+/** Whether `init` makes a GET request that may be cached: not one with `cache: "no-store"`. */
+export function isCacheable(init: RequestInit | undefined): boolean {
+  return (
+    (init?.method === undefined || init.method.toUpperCase() === "GET") &&
+    init?.cache !== "no-store"
+  );
 }
 
 /**
@@ -86,7 +89,8 @@ export function isGet(init: RequestInit | undefined): boolean {
  * During SSR, same-origin URLs are served in-process, with the page request's cookies.
  * Awaited in an async component, a GET is cached by its absolute URL: components awaiting the same
  * URL share one request, cached data shows at once and revalidates in the background, and
- * `invalidate(url)` refetches it. Elsewhere (event handlers, actions), it is a plain request.
+ * `invalidate(url)` refetches it; `cache: "no-store"` opts out (a plain request). Elsewhere (event
+ * handlers, actions), it is a plain request.
  * Inside an async component, the signal defaults to `getAbortSignal()`: a superseded run stops
  * waiting, and a request no component waits for anymore is cancelled (pass `signal` to choose
  * another, or `null` for none).
@@ -99,7 +103,7 @@ export function fetchJSON<T = unknown>(input: string | URL, init?: RequestInit):
     if (!inRun()) return requestJSON(send, jsonRequest(url, init));
     // Called by an async component's run (`await fetchJSON(…)`): a superseded run stops waiting.
     const signal = init?.signal === undefined ? runSignal() : init.signal;
-    if (!isGet(init)) return requestJSON(send, jsonRequest(url, { ...init, signal }));
+    if (!isCacheable(init)) return requestJSON(send, jsonRequest(url, { ...init, signal }));
     return cached<T>(
       url.href,
       undefined,

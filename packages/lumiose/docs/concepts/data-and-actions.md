@@ -18,8 +18,9 @@ serializable inside islands. Non-2xx responses throw a `FetchError` (an `HttpErr
 `_error` (or `_404`) with that status. **During SSR, same-origin URLs are served in-process**, with
 the page request's cookies, without a network round-trip. **Awaited in an async component, a GET
 is cached by URL**: components awaiting the same URL share one request, and in the browser cached
-data shows at once and revalidates in the background. `query(key, fn)` caches other data under an
-array key. See [Async components](async.md) and [reference: query](../reference/app.md#query).
+data shows at once and revalidates in the background; `{ cache: "no-store" }` opts a request out.
+`query(key, fn)` caches other data under an array key, and passes `fn` TanStack's
+`{ signal, queryKey }`. See [Async components](async.md) and [reference: query](../reference/app.md#query).
 
 **Mutations: form actions.** A page exports `action(ctx)` or named `actions = { name(ctx) }`. A
 `<form method="post">` posts to the page (or to `?/name` for a named action) and works without

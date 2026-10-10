@@ -128,7 +128,7 @@ server seeds it from the request; the islands start from the server's values and
 instance in the browser.
 
 ```ts check file=lib/cart.ts
-import { computed, cookies, defineState, store } from "lumiose";
+import { computed, cookies, defineState, isServer, store } from "lumiose";
 
 export interface CartItem {
   id: string;
@@ -137,7 +137,7 @@ export interface CartItem {
 
 export const cart = defineState(() => {
   // Request APIs exist only on the server; the browser gets the server's values instead.
-  const saved = import.meta.env.SSR ? cookies().get("cart") : undefined;
+  const saved = isServer ? cookies().get("cart") : undefined;
   const state = store({ items: saved ? (JSON.parse(saved) as CartItem[]) : [] });
   return {
     state, // sent to the browser (a store)
@@ -328,7 +328,7 @@ Derive slices with `computed(() => state().bears)`.
   provide the context inside the island, or share scoped state (`defineState`).
 - **Calling request APIs in a state's factory without a guard.** The factory also runs in the
   browser, where `cookies()` and `locals()` throw `LUM4003`. Read them only on the server
-  (`import.meta.env.SSR ? cookies().get("cart") : undefined`); the server's values arrive anyway.
+  (`isServer ? cookies().get("cart") : undefined`); the server's values arrive anyway.
 - **Putting secrets or class instances in a state that islands use.** Its signals and stores are
   sent with the page, readable by anyone, and must hold plain data (`LUM4011`). Keep secrets in
   server-only modules; keep other values in computeds or functions, which are not sent.

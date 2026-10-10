@@ -27,18 +27,34 @@ cache's behaviour): components awaiting the same URL share one request. The firs
 waits for it. Elsewhere (event handlers, middleware, endpoints, actions) and for other methods it is
 a plain request.
 
+`fetchJSON(url, { cache: "no-store" })` opts a component-level GET out of the cache: a plain
+request, not deduped with other components, not kept, and not sent with the page payload (inside an
+island, its value is still recorded for hydration like any other await). Other `cache` values keep
+the default behaviour; `init` always reaches `fetch` as given.
+
 ### query
 
 ```ts
-function query<T>(key: readonly unknown[], fn: () => T | PromiseLike<T>): Promise<T>;
+function query<T, const TKey extends readonly unknown[]>(
+  key: TKey,
+  fn: (context: QueryFunctionContext<TKey>) => T | PromiseLike<T>,
+): Promise<T>;
+
+interface QueryFunctionContext<TKey extends readonly unknown[] = readonly unknown[]> {
+  signal: AbortSignal; // the shared request's signal
+  queryKey: TKey; // `key`
+}
 ```
 
 Awaited in an async component, caches what `fn` resolves to under `key`, an array of
 JSON-serializable values hashed stably (object key order does not matter), as TanStack Query's
 `queryKey`. Use it for data that does not come from `fetchJSON`: a database call in a server
-component, a third-party SDK. `fn` runs outside the component, so `getAbortSignal()` inside it is
-the shared request's, aborted once no component waits for it. Outside an async component it calls
-`fn()` without caching.
+component, a third-party SDK. `fn` receives `{ signal, queryKey }`, TanStack Query's
+`QueryFunctionContext`: `fn` runs outside the component, so `signal` is the shared request's
+(the same one `getAbortSignal()` returns inside `fn`), aborted once no component waits for it.
+Pass it on to `fetch` or an SDK: `query(["user", id], ({ signal }) => sdk.getUser(id, { signal }))`.
+Outside an async component it calls `fn` without caching, with the current owner's signal (one that
+never aborts when there is no owner).
 
 The cache behind `fetchJSON` and `query`:
 

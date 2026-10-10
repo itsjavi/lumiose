@@ -42,7 +42,9 @@ changes, the component **re-runs**:
 
 - A GET `await fetchJSON(url)` is keyed by its absolute URL, so it needs no key.
 - `await query(key, fn)` caches anything else (a database call, an SDK) under a TanStack-style
-  array key such as `["stats", "books"]`: JSON-serializable values, hashed stably.
+  array key such as `["stats", "books"]`: JSON-serializable values, hashed stably. `fn` receives
+  `{ signal, queryKey }` (TanStack's query function context); pass `signal` on to cancel the work
+  once no component waits for it.
 - Components awaiting the same entry share one request: per request on the server, per page in the
   browser (every island and the SPA tree, kept across client navigations).
 - In the browser, a cached entry shows at once (no `<Suspense>` fallback for a new component) and
@@ -52,7 +54,9 @@ changes, the component **re-runs**:
   whose key starts with `["stats"]`. Only the components that awaited them re-run, keeping their
   UI until the new data arrives. `invalidate()` with no target refreshes the whole page.
 - Only awaits in async component bodies are cached. `fetchJSON` in event handlers, middleware,
-  endpoints and actions is a plain request, and so are non-GET requests.
+  endpoints and actions is a plain request, and so are non-GET requests and
+  `fetchJSON(url, { cache: "no-store" })`, the opt-out for data that must always be fresh: never
+  deduped, kept or sent with the page payload.
 - Errors are never cached: the next await tries again. Aborting one component's wait (a superseded
   run) never cancels a request another component still awaits.
 

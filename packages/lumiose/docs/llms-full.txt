@@ -704,7 +704,7 @@ server seeds it from the request; the islands start from the server's values and
 instance in the browser.
 
 ```ts check file=lib/cart.ts
-import { computed, cookies, defineState, store } from "lumiose";
+import { computed, cookies, defineState, isServer, store } from "lumiose";
 
 export interface CartItem {
   id: string;
@@ -713,7 +713,7 @@ export interface CartItem {
 
 export const cart = defineState(() => {
   // Request APIs exist only on the server; the browser gets the server's values instead.
-  const saved = import.meta.env.SSR ? cookies().get("cart") : undefined;
+  const saved = isServer ? cookies().get("cart") : undefined;
   const state = store({ items: saved ? (JSON.parse(saved) as CartItem[]) : [] });
   return {
     state, // sent to the browser (a store)
@@ -904,7 +904,7 @@ Derive slices with `computed(() => state().bears)`.
   provide the context inside the island, or share scoped state (`defineState`).
 - **Calling request APIs in a state's factory without a guard.** The factory also runs in the
   browser, where `cookies()` and `locals()` throw `LUM4003`. Read them only on the server
-  (`import.meta.env.SSR ? cookies().get("cart") : undefined`); the server's values arrive anyway.
+  (`isServer ? cookies().get("cart") : undefined`); the server's values arrive anyway.
 - **Putting secrets or class instances in a state that islands use.** Its signals and stores are
   sent with the page, readable by anyone, and must hold plain data (`LUM4011`). Keep secrets in
   server-only modules; keep other values in computeds or functions, which are not sent.
@@ -1511,7 +1511,9 @@ changes, the component **re-runs**:
 
 - A GET `await fetchJSON(url)` is keyed by its absolute URL, so it needs no key.
 - `await query(key, fn)` caches anything else (a database call, an SDK) under a TanStack-style
-  array key such as `["stats", "books"]`: JSON-serializable values, hashed stably.
+  array key such as `["stats", "books"]`: JSON-serializable values, hashed stably. `fn` receives
+  `{ signal, queryKey }` (TanStack's query function context); pass `signal` on to cancel the work
+  once no component waits for it.
 - Components awaiting the same entry share one request: per request on the server, per page in the
   browser (every island and the SPA tree, kept across client navigations).
 - In the browser, a cached entry shows at once (no `<Suspense>` fallback for a new component) and
@@ -1521,7 +1523,9 @@ changes, the component **re-runs**:
   whose key starts with `["stats"]`. Only the components that awaited them re-run, keeping their
   UI until the new data arrives. `invalidate()` with no target refreshes the whole page.
 - Only awaits in async component bodies are cached. `fetchJSON` in event handlers, middleware,
-  endpoints and actions is a plain request, and so are non-GET requests.
+  endpoints and actions is a plain request, and so are non-GET requests and
+  `fetchJSON(url, { cache: "no-store" })`, the opt-out for data that must always be fresh: never
+  deduped, kept or sent with the page payload.
 - Errors are never cached: the next await tries again. Aborting one component's wait (a superseded
   run) never cancels a request another component still awaits.
 
@@ -2084,8 +2088,9 @@ serializable inside islands. Non-2xx responses throw a `FetchError` (an `HttpErr
 `_error` (or `_404`) with that status. **During SSR, same-origin URLs are served in-process**, with
 the page request's cookies, without a network round-trip. **Awaited in an async component, a GET
 is cached by URL**: components awaiting the same URL share one request, and in the browser cached
-data shows at once and revalidates in the background. `query(key, fn)` caches other data under an
-array key. See [Async components](async.md) and [reference: query](../reference/app.md#query).
+data shows at once and revalidates in the background; `{ cache: "no-store" }` opts a request out.
+`query(key, fn)` caches other data under an array key, and passes `fn` TanStack's
+`{ signal, queryKey }`. See [Async components](async.md) and [reference: query](../reference/app.md#query).
 
 **Mutations: form actions.** A page exports `action(ctx)` or named `actions = { name(ctx) }`. A
 `<form method="post">` posts to the page (or to `?/name` for a named action) and works without
@@ -3765,7 +3770,7 @@ returns the same instance after that.
 The factory runs outside the component tree: it sees no context and its reads are not tracked; in
 the browser its effects live as long as the page. On the server it may read request APIs
 (`cookies()`, `locals()`, …), which do not exist in the browser: guard them with
-`import.meta.env.SSR`. Calling an accessor on the server outside a request or render (at module
+[`isServer`](#isserver). Calling an accessor on the server outside a request or render (at module
 scope) throws.
 
 **Sent to the browser.** When islands or SPA routes import the state, a page that created it
@@ -3782,14 +3787,30 @@ Define states at module scope with `export const x = defineState(…)` (or expor
 created elsewhere (inside a function) are never sent.
 
 ```ts
-import { computed, cookies, defineState, signal } from "lumiose";
+import { computed, cookies, defineState, isServer, signal } from "lumiose";
 
 export const prefs = defineState(() => {
-  const theme = signal(import.meta.env.SSR ? (cookies().get("theme") ?? "light") : "light");
+  const theme = signal(isServer ? (cookies().get("theme") ?? "light") : "light");
   return { theme, dark: computed(() => theme() === "dark") };
 });
 // prefs().theme(), prefs().dark(), prefs().theme.set("dark")
 ```
+
+## isServer
+
+```ts
+const isServer: boolean;
+```
+
+`true` in the server entry of `lumiose` (the `node` condition), `false` in the browser entry
+(Solid's name). Use it to guard code that runs on both sides, such as a `defineState` factory that
+reads request APIs: `signal(isServer ? locals().user : null)`. The guard stays explicit: request
+APIs called in the browser still throw [LUM4003](../errors/LUM4003.md).
+
+It is a constant, so production client builds fold it: `if (isServer) { … }` and
+`isServer ? a : b` lose their server branch, and server-only strings in it never reach the
+bundle. The server branch must still type-check and import only what client code may import;
+server-only modules stay out of client graphs ([LUM4003](../errors/LUM4003.md)).
 
 ## isPending
 
@@ -4064,18 +4085,34 @@ cache's behaviour): components awaiting the same URL share one request. The firs
 waits for it. Elsewhere (event handlers, middleware, endpoints, actions) and for other methods it is
 a plain request.
 
+`fetchJSON(url, { cache: "no-store" })` opts a component-level GET out of the cache: a plain
+request, not deduped with other components, not kept, and not sent with the page payload (inside an
+island, its value is still recorded for hydration like any other await). Other `cache` values keep
+the default behaviour; `init` always reaches `fetch` as given.
+
 ### query
 
 ```ts
-function query<T>(key: readonly unknown[], fn: () => T | PromiseLike<T>): Promise<T>;
+function query<T, const TKey extends readonly unknown[]>(
+  key: TKey,
+  fn: (context: QueryFunctionContext<TKey>) => T | PromiseLike<T>,
+): Promise<T>;
+
+interface QueryFunctionContext<TKey extends readonly unknown[] = readonly unknown[]> {
+  signal: AbortSignal; // the shared request's signal
+  queryKey: TKey; // `key`
+}
 ```
 
 Awaited in an async component, caches what `fn` resolves to under `key`, an array of
 JSON-serializable values hashed stably (object key order does not matter), as TanStack Query's
 `queryKey`. Use it for data that does not come from `fetchJSON`: a database call in a server
-component, a third-party SDK. `fn` runs outside the component, so `getAbortSignal()` inside it is
-the shared request's, aborted once no component waits for it. Outside an async component it calls
-`fn()` without caching.
+component, a third-party SDK. `fn` receives `{ signal, queryKey }`, TanStack Query's
+`QueryFunctionContext`: `fn` runs outside the component, so `signal` is the shared request's
+(the same one `getAbortSignal()` returns inside `fn`), aborted once no component waits for it.
+Pass it on to `fetch` or an SDK: `query(["user", id], ({ signal }) => sdk.getUser(id, { signal }))`.
+Outside an async component it calls `fn` without caching, with the current owner's signal (one that
+never aborts when there is no owner).
 
 The cache behind `fetchJSON` and `query`:
 
@@ -7640,6 +7677,10 @@ For the current URL, params and route in client code, import `url()`, `params()`
 and throw this error in the browser; those of `lumiose/router` are reactive, follow client
 navigations, and also work during server rendering.
 
+Code that runs on both sides, such as a `defineState()` factory, may read request APIs only on the
+server: guard them with `isServer` (`signal(isServer ? locals().user : null)`). The browser
+receives the server's values. `isServer` is a constant, so client builds drop the guarded branch.
+
 ## Related
 
 - [Islands](../concepts/islands.md)
@@ -7821,11 +7862,11 @@ Define state that the page or its islands share with `defineState()`: its factor
 request on the server (and once per page in the browser), and islands receive the server's values.
 
 ```ts
-import { defineState, locals, signal } from "lumiose";
+import { defineState, isServer, locals, signal } from "lumiose";
 
 // Seeded from the request on the server; the browser gets the server's value.
 export const currentUser = defineState(() => ({
-  name: signal<string | null>(import.meta.env.SSR ? (locals().user ?? null) : null),
+  name: signal<string | null>(isServer ? (locals().user ?? null) : null),
 }));
 ```
 
@@ -7976,17 +8017,17 @@ be.
 
 ```ts
 // lib/session.ts, imported by an island
-import { defineState, locals, signal } from "lumiose";
+import { defineState, isServer, locals, signal } from "lumiose";
 
 export const session = defineState(() => ({
   // A class instance from the auth library: not plain data
-  user: signal(import.meta.env.SSR ? locals().user : null),
+  user: signal(isServer ? locals().user : null),
 }));
 ```
 
 ## How to fix it
 
-- Keep plain data in the state's signals and stores: `signal(import.meta.env.SSR ? { id: user.id, name: user.name } : null)`.
+- Keep plain data in the state's signals and stores: `signal(isServer ? { id: user.id, name: user.name } : null)`.
 - Derive the rest: computeds and functions the factory returns are not sent; they are created again
   when the factory runs in the browser.
 - State that only server code uses belongs in a module that no island imports, or in a server-only

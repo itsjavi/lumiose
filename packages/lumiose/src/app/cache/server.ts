@@ -11,12 +11,20 @@
 //   starts with them, so islands reuse the server's data without fetching it again. The island's
 //   await records hold a marker instead of the value (`cachedValues`, ../../server/frame.ts), so
 //   the data is not sent twice. Entries only server components awaited never reach the browser.
+import { getOwner } from "../../core/owner.ts";
 import { getAbortSignal } from "../../core/server.ts";
 import { LUM_AWAIT_VALUE, LumioseError } from "../diagnostics.ts";
 import { cachedValues, currentFrame, detached, inAsyncRun } from "../../server/frame.ts";
 import { encodeData } from "../../server/serialize.ts";
 import { currentStateScope } from "../../server/state.ts";
-import { hashKey, join, startFlight, type Flight, type QueryKey } from "./shared.ts";
+import {
+  hashKey,
+  join,
+  startFlight,
+  type Flight,
+  type QueryFunctionContext,
+  type QueryKey,
+} from "./shared.ts";
 
 /** A server cache entry: data once `h`, the request in flight, and whether islands awaited it. */
 export interface ServerEntry {
@@ -86,12 +94,28 @@ export function cached<T>(
   return promise;
 }
 
-/** `await query(key, fn)` on the server: inside an async component, cached under `key`. */
-export function query<T>(key: QueryKey, fn: () => T | PromiseLike<T>): Promise<T> {
+/**
+ * `await query(key, fn)` on the server: inside an async component, cached under `key`. `fn` gets
+ * `{ signal, queryKey }`.
+ */
+export function query<T, const TKey extends QueryKey = QueryKey>(
+  key: TKey,
+  fn: (context: QueryFunctionContext<TKey>) => T | PromiseLike<T>,
+): Promise<T> {
   try {
-    if (!canCache()) return Promise.resolve(fn());
+    if (!canCache()) {
+      // Not cached: the request's signal, if any (one that never aborts otherwise).
+      const signal = getOwner() === undefined ? new AbortController().signal : getAbortSignal();
+      return Promise.resolve(fn({ signal, queryKey: key }));
+    }
     const hash = hashKey(key);
-    return cached<T>(hash, hash, fn, getAbortSignal());
+    // `fn` runs under the flight's owner: `getAbortSignal()` is the shared request's signal.
+    return cached<T>(
+      hash,
+      hash,
+      () => fn({ signal: getAbortSignal(), queryKey: key }),
+      getAbortSignal(),
+    );
   } catch (error) {
     return Promise.reject(error);
   }

@@ -5,6 +5,7 @@ export type { SubmitOptions, SubmitTarget } from "./actions/client.ts";
 export { fail, type ActionFailure, type ActionResult } from "./actions/protocol.ts";
 export type { ActionData } from "./actions/types.ts";
 export { query } from "./cache/server.ts";
+export type { QueryFunctionContext } from "./cache/shared.ts";
 export { isFetchError, type FetchError } from "./fetch-json.ts";
 export { fetchJSON } from "./server/fetch-json.ts";
 export { href, type HrefArgs } from "./routes/href.ts";

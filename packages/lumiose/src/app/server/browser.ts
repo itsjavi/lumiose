@@ -9,9 +9,10 @@ import type { Locals, ResponseContext, RouteParamValues, ServerEnv } from "./con
 import type { Cookies, SignedCookie, SignedCookieOptions } from "./cookies.ts";
 
 function serverOnly(api: string, hint: string): never {
+  // Code that runs on both sides (a defineState() factory) needs the explicit guard (decision-36).
   throw new LumioseError(
     LUM_SERVER_ONLY,
-    `${api} is server-only and cannot run in the browser. ${hint}`,
+    `${api} is server-only and cannot run in the browser. ${hint} In code that also runs in the browser, such as a defineState() factory, guard the call with isServer: isServer ? ${api} : fallback.`,
   );
 }
 

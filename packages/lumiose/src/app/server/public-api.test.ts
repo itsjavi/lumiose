@@ -37,6 +37,8 @@ describe("public app API", () => {
     ]) {
       expect(call).toThrow(/is server-only.*LUM4003/);
     }
+    // The hint points code that runs on both sides (a defineState() factory) to the isServer guard.
+    expect(() => browser.locals()).toThrow(/defineState\(\) factory.*isServer \? locals\(\) :/);
   });
 
   it("renders browser-side action state during SSR and keeps submit()/invalidate() in the browser", async () => {

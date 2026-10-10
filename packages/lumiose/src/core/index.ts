@@ -9,4 +9,6 @@ export { onCleanup, getAbortSignal } from "./owner.ts";
 export { createContext, useContext, type Context } from "./context.ts";
 export { isBusy, isPending, resource, type Resource } from "./async.ts";
 export { defineState } from "./state.ts";
+/** `true` on the server, `false` in the browser: a constant, so client builds drop server branches. */
+export const isServer: boolean = false;
 export { optimistic, type Optimistic } from "./optimistic.ts";

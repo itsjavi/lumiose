@@ -10,6 +10,7 @@ import {
   ssr,
   text,
 } from "../../server/index.ts";
+import { getAbortSignal } from "../../core/server.ts";
 import { decodeData } from "../../server/serialize.ts";
 import { runInRequestScope, type RequestScope } from "../server/scope.ts";
 import { fetchJSON } from "../server/fetch-json.ts";
@@ -162,6 +163,49 @@ describe("server cache", () => {
       ]);
     });
     expect(requests).toHaveLength(2);
+  });
+});
+
+describe("query() function context and cache: no-store", () => {
+  it("passes { signal, queryKey } to the query function: the shared request's signal", async () => {
+    const contexts: { signal: AbortSignal; queryKey: unknown; own: AbortSignal }[] = [];
+    const fn = vi.fn(async (context: { signal: AbortSignal; queryKey: readonly unknown[] }) => {
+      contexts.push({ ...context, own: getAbortSignal() });
+      return context.queryKey.length;
+    });
+    await renderToStream(() => [
+      show(() => query(["books", { page: 2 }], fn)),
+      show(() => query(["books", { page: 2 }], fn)),
+    ]);
+    expect(fn).toHaveBeenCalledTimes(1);
+    expect(contexts[0]!.queryKey).toEqual(["books", { page: 2 }]);
+    expect(contexts[0]!.signal).toBeInstanceOf(AbortSignal);
+    expect(contexts[0]!.signal).toBe(contexts[0]!.own);
+    // Outside a component (a handler), a signal is still passed.
+    await runInRequestScope(request(), () =>
+      query(["handler"], (context) => {
+        expect(context.signal).toBeInstanceOf(AbortSignal);
+        expect(context.queryKey).toEqual(["handler"]);
+      }),
+    );
+  });
+
+  it("makes a GET with cache: no-store a plain request: not deduped, not in the payload", async () => {
+    stubFetch();
+    const fresh = () => fetchJSON("https://api.test/live", { cache: "no-store" });
+    const html = (
+      await renderToStream(() =>
+        island("/src/A.stsx#A", () => [show(fresh), show(fresh)], {}, "load"),
+      )
+    ).body;
+    expect(requests).toHaveLength(2);
+    expect(requests.every((r) => r.cache === "no-store")).toBe(true);
+    expect(cachePayloads(html)).toEqual([]);
+    // The island replays the awaited values from its own await records instead.
+    expect(islandRecords(html)[0]!.awaits).toEqual({
+      "0.0:0:0": { name: "live", n: 1 },
+      "0.1:0:0": { name: "live", n: 2 },
+    });
   });
 });
 

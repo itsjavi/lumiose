@@ -12,6 +12,7 @@ export {
 export { fail, type ActionFailure, type ActionResult } from "./actions/protocol.ts";
 export type { ActionData } from "./actions/types.ts";
 export { query } from "./cache/client.ts";
+export type { QueryFunctionContext } from "./cache/shared.ts";
 export { fetchJSON, isFetchError, type FetchError } from "./fetch-json.ts";
 export { href, type HrefArgs } from "./routes/href.ts";
 export type {
