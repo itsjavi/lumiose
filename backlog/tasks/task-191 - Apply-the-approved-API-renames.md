@@ -1,10 +1,11 @@
 ---
 id: TASK-191
 title: Apply the approved API renames
-status: To Do
+status: In Progress
 assignee:
   - Lux
 created_date: '2026-10-10 03:33'
+updated_date: '2026-10-10 18:18'
 labels:
   - api
   - dx
@@ -25,3 +26,9 @@ Implement the renames the user approves from TASK-190 across the runtime, compil
 - [ ] #1 Every approved rename applied; old names removed or aliased as approved, with a changelog entry
 - [ ] #2 Docs, examples and diagnostics updated in the same commits; pnpm check green
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+2026-10-10 Lux: split into TASK-191.1 (runtime, Vite plugin, lumiose docs, provider; Spark) and TASK-191.2 (consumer sweep; Beacon, after 191.1).
+<!-- SECTION:NOTES:END -->
