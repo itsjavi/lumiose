@@ -84,7 +84,7 @@ function resume(run: AsyncRun): void {
   if (!run.active) {
     resumeRun(run);
     run.u = currentRun;
-    run.y = setFrame(run.frame);
+    run.y = setFrame?.(run.frame);
     currentRun = run;
   }
 }
@@ -93,7 +93,7 @@ function pause(run: AsyncRun): void {
   if (run.active) {
     pauseRun(run);
     currentRun = run.u;
-    setFrame(run.y);
+    setFrame?.(run.y);
     run.u = run.y = undefined;
   }
 }
@@ -223,11 +223,11 @@ function show(run: AsyncRun, value: Renderable): void {
     }
     instance.s = run;
     // A hydrating first run renders with its frame, so content created lazily still claims.
-    const prevFrame = setFrame(run.frame);
+    const prevFrame = setFrame?.(run.frame);
     try {
       runWithOwner(run, () => renderInto(instance.g, value));
     } finally {
-      setFrame(prevFrame);
+      setFrame?.(prevFrame);
     }
   } catch (error) {
     handleError(instance.owner, error);
@@ -261,9 +261,10 @@ export function $await<T>(
   site: number,
 ): Promise<() => Awaited<T>> {
   const run = currentRun;
-  const runFrame = run?.frame;
+  // While the run is active, the current frame is its frame (`resume`).
+  const runFrame = frame;
   let recorded: { value: unknown } | undefined;
-  if (runFrame !== undefined) {
+  if (runFrame !== undefined && run !== undefined) {
     const occurrences = (runFrame.occurrences ??= []);
     const occurrence = occurrences[site] ?? 0;
     occurrences[site] = occurrence + 1;

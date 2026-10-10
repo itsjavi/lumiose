@@ -6,7 +6,8 @@
 // including those created after an `await` (the run restores its frame). The first run of an async
 // instance then looks up `instancePath:site:occurrence` in the island's recorded awaits instead of
 // evaluating the awaited expression. Outside hydration no frame exists, and `createComponent`
-// pays a single `undefined` check.
+// pays a single `undefined` check; bundles without islands hydration contain no frame code at all
+// (see `setFrame`).
 //
 // Frames also carry the hydration cursor (./hydration.ts): `lumiose/dom/hydrate` hooks `setFrame` to
 // install it, so an async run's continuation claims nodes from its own server block after each
@@ -40,13 +41,13 @@ export function setFrameHook(hook: (next: Frame | undefined) => void): void {
   onFrame = hook;
 }
 
-/** Sets the current frame (installing its cursor under hydration); returns the previous one. */
-export function setFrame(next: Frame | undefined): Frame | undefined {
-  const prev = frame;
-  frame = next;
-  onFrame?.(next);
-  return prev;
-}
+/**
+ * Sets the current frame (installing its cursor under hydration); returns the previous one.
+ * Installed by the first `withIsland`, the only source of frames, so callers use `setFrame?.()`:
+ * bundles without islands hydration never assign `frame` nor `setFrame`, and bundlers fold both to
+ * `undefined` and drop instance paths and await replay.
+ */
+export let setFrame: ((next: Frame | undefined) => Frame | undefined) | undefined;
 
 /** The frame of the next component instance created under `parent`; `h` overrides its cursor. */
 export function childFrame(parent: Frame, h: Hydrator | undefined = parent.h): Frame {
@@ -65,10 +66,16 @@ export function childFrame(parent: Frame, h: Hydrator | undefined = parent.h): F
  * claim cursor `h` on. The first component created inside gets path `0`.
  */
 export function withIsland<T>(replay: AwaitReplay, h: Hydrator | undefined, fn: () => T): T {
-  const prev = setFrame({ path: "", children: 0, replay, occurrences: undefined, h });
+  const set = (setFrame ??= (next) => {
+    const prev = frame;
+    frame = next;
+    onFrame?.(next);
+    return prev;
+  });
+  const prev = set({ path: "", children: 0, replay, occurrences: undefined, h });
   try {
     return fn();
   } finally {
-    setFrame(prev);
+    set(prev);
   }
 }

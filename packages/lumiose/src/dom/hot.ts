@@ -65,11 +65,11 @@ export function $hot<C extends Component>(
       hydrating = undefined;
       return untrack(() => {
         if (instanceFrame === undefined) return fn(props);
-        const prev = setFrame(instanceFrame);
+        const prev = setFrame!(instanceFrame);
         try {
           return fn(props);
         } finally {
-          setFrame(prev);
+          setFrame!(prev);
         }
       });
     };

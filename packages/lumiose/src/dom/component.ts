@@ -49,14 +49,14 @@ export function createComponent<P>(component: Component<P>, props: P): Renderabl
   // Instance paths exist only while an island hydrates (./frame.ts).
   const prevFrame = frame;
   if (prevFrame !== undefined) {
-    setFrame(childFrame(prevFrame));
+    setFrame!(childFrame(prevFrame));
   }
   try {
     runWithLazyOwner(currentOwner, runComponent);
   } finally {
     setActiveSub(prevSub);
     if (prevFrame !== undefined) {
-      setFrame(prevFrame);
+      setFrame!(prevFrame);
     }
   }
   const result = componentResult;
