@@ -1,10 +1,11 @@
 ---
 id: TASK-190
 title: API naming audit against React and Solid vocabulary
-status: To Do
+status: In Progress
 assignee:
   - Prism
 created_date: '2026-10-10 03:33'
+updated_date: '2026-10-10 03:47'
 labels:
   - api
   - dx
@@ -26,3 +27,13 @@ User 2026-10-10: the API is not intuitive because similar patterns use different
 - [ ] #3 Names proposed for doc-6 primitives; migration notes (pre-1.0: rename outright or keep deprecated aliases for a release)
 - [ ] #4 User approves the renames before TASK-191 starts
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+2026-10-10 Lux: started Prism (read-only) on the audit; Lux records the proposal and asks the user.
+
+2026-10-10 User: approved renames ship outright (breaking 0.x change with a changelog migration table, no deprecated aliases). No prior leaning on primitive names: the audit recommends the family.
+
+2026-10-10 Lux: Prism's audit recorded as doc-7 (proposal). Waiting for the user's approval.
+<!-- SECTION:NOTES:END -->
