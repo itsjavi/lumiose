@@ -1,11 +1,11 @@
 ---
 id: TASK-39
 title: 'Package split: runtime-only lumiose + @lumiose scoped packages (decision-31)'
-status: To Do
+status: Done
 assignee:
   - '@Photon'
 created_date: '2026-10-08 12:21'
-updated_date: '2026-10-10 00:24'
+updated_date: '2026-10-10 01:56'
 labels: []
 milestone: m-7
 dependencies: []
@@ -23,8 +23,8 @@ Decision-15 keeps the working name lumen, which is taken on npm, until publishin
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 The user approves final npm, crates and extension names (a naming and DX decision)
-- [ ] #2 A one-pass rename is applied across packages, crates, docs and examples; nothing has been published before the rename
+- [x] #1 The user approves final npm, crates and extension names (a naming and DX decision)
+- [x] #2 A one-pass rename is applied across packages, crates, docs and examples; nothing has been published before the rename
 <!-- AC:END -->
 
 ## Implementation Notes
@@ -56,4 +56,16 @@ CI: new job `pack` (ubuntu): build all publishable packages, `pnpm -r pack --pac
 Order: (a) move modules + internal subpath, keep everything green (vitest, check); (b) new packages + deps; (c) build/pack + CI job; (d) templates/examples/docs; commit per step. Open questions for Lux: @lumiose/testing content; whether `lumiose/node` (node-http adapter helper) stays in the runtime (plan: yes, it's runtime and dep-free).
 
 Photon (2026-10-10): Lux approved the plan, lumiose/internal (undocumented, tooling only) and prebuilt dist via publishConfig. @lumiose/testing is out of scope (dropped from the layout); lumiose/node stays in the runtime package. Waiting for Lux's go after TASK-182 lands.
+
+Quasar → Photon (TASK-184): every HTML-serving package now has a small `demo` field in package.json ({title, kind, name?, setup?}); please keep it when you move or rewrite package.json files. scripts/demo.ts finds packages through pnpm-workspace.yaml globs and their dev/view/start/serve/preview scripts, so moved packages keep working as long as those scripts exist.
+
+Photon (2026-10-10): step 1 done, 8b13833 + docs 10d159b. Tooling moved to packages/vite (@lumiose/vite: plugin, /dev, /build, typegen, layout) and packages/cli (@lumiose/cli: bin, check/lint/fmt, docs, mcp, /tooling, /agents); lumiose has no dependencies (svgo, yaml, MCP SDK, zod moved). Cross-package imports use <pkg>/internal/*. Runtime entries the plugin names by path resolve through lumiose/internal (packages/vite/src/runtime-files.ts). Linked-package scans skip lumiose/@lumiose/{vite,cli,compiler}. Consumers (examples, apps, benchmarks, evals, create-lumiose templates) depend on lumiose + @lumiose/vite + @lumiose/cli (dev). Root check runs node --test scripts/*.test.ts (Lux). demo fields kept (oxfmt moved them to the end). Validation: full vitest 1424 passed, typecheck, oxlint, docs:check, fmt:examples, size, node --test, builds of ssr-bookshelf/vite-counter/spa-router-e2e/apps/web, e2e vite-counter/islands-e2e/spa-router-e2e. GitHub Actions did not start any job (account billing / spending limit), so CI, Binaries and Pages cannot be confirmed remotely. AGENTS.md ownership table still lists packages/lumiose/src/vite/** and src/cli/** (Lux's file): now packages/vite/** and packages/cli/**.
+
+Photon (2026-10-10): step 2 8114264 (dist build via scripts/build-package.ts + tsconfig.build.json, publishConfig exports/bin -> dist, pnpm pack:check with npm publish --dry-run and a create-lumiose smoke app, CI pack job), evals vendoring ad5b6a1, compiler platform packages b1a7ef0 (packages/compiler/npm/<platform> as workspace packages, optionalDependencies workspace:*, musl + wasm32-wasi targets, napi-wasi Binaries job, CI/Binaries paths-ignore backlog/**), 983cc10 (os/cpu/libc in publishConfig: pnpm printed Unsupported platform warnings that broke the e2e Playwright version step). CI, Binaries and Pages green on b1a7ef0 except that e2e step, fixed in 983cc10 (e2e green on all three OSes). Remote checks resumed once Actions billing was fixed.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+lumiose is the runtime only (no dependencies); @lumiose/vite holds the plugin, dev server, build and typegen; @lumiose/cli holds the lumiose command, check/lint/fmt, docs, MCP, /tooling and /agents. Packages reach each other through the undocumented <pkg>/internal/*.ts subpath. Published packages ship a prebuilt dist/ (publishConfig), checked by pnpm pack:check (tarball contents, exports, npm publish --dry-run in publish order, smoke app from the tarballs) in CI. @lumiose/compiler ships its loader; binaries come from @lumiose/compiler-<platform> optional dependencies (7 targets incl. musl and WASI). Templates, examples, apps, benchmarks and evals depend on lumiose + @lumiose/vite + @lumiose/cli; docs updated. Follow-up for Lux: AGENTS.md ownership table still names packages/lumiose/src/vite/** and src/cli/** (now packages/vite/** and packages/cli/**).
+<!-- SECTION:FINAL_SUMMARY:END -->

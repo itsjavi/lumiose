@@ -10,7 +10,7 @@
 
 import { execFileSync } from "node:child_process";
 import { existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
-import { join, relative } from "node:path";
+import { join, relative, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
 import { publishable, readManifest } from "./pack.ts";
@@ -237,7 +237,7 @@ export function release(repo: string, version: string, options: ReleaseOptions =
   }
   if (git(repo, ["tag", "--list", tag]) !== "") throw new Error(`the tag ${tag} already exists`);
   const plan = planRelease(repo, version, options);
-  const paths = [...plan.files.keys()].map((path) => relative(repo, path));
+  const paths = [...plan.files.keys()].map((path) => relative(repo, path).split(sep).join("/"));
   log(`${options.dryRun ? "dry run: " : ""}${plan.current} -> ${version}`);
   for (const path of paths) log(`  ${path}`);
   log("");

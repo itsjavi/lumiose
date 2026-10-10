@@ -1,10 +1,11 @@
 ---
 id: TASK-183
 title: Lockstep versioning and release tooling
-status: To Do
+status: Done
 assignee:
   - Photon
 created_date: '2026-10-10 00:25'
+updated_date: '2026-10-10 01:56'
 labels:
   - release
   - ci
@@ -23,6 +24,18 @@ User 2026-10-10: same version for all packages, with helpers so nothing is bumpe
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 release:version script with a --dry-run mode and tests (bumps, internal deps, changelog, commit/tag only when run for real)
-- [ ] #2 release.yml publishes on tags in the right order with provenance (dry-run path exercised in CI); CONTRIBUTING documents the release flow
+- [x] #1 release:version script with a --dry-run mode and tests (bumps, internal deps, changelog, commit/tag only when run for real)
+- [x] #2 release.yml publishes on tags in the right order with provenance (dry-run path exercised in CI); CONTRIBUTING documents the release flow
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Photon (2026-10-10): 20c0415. scripts/release.ts (pnpm release:version <x.y.z> [--dry-run] [--since]) with scripts/release.test.ts; scripts/publish.ts; release.yml (v* tags; calls Binaries via workflow_call; dry run unless vars.LUMIOSE_PUBLISH == 'true'; workflow_dispatch always dry run; needs npm trusted publishing or NPM_TOKEN when enabled). Verified: node --test scripts/*.test.ts, pnpm release:version 0.1.0 --dry-run on the repo, and a dispatched Release run (38014636970): all 7 platform binaries packed and npm publish --dry-run in order, platform packages before @lumiose/compiler. Windows path fix in release.ts output after the first CI run. Not done (user's call): no tag, no real publish; the first real release is pnpm release:version 0.1.0 then git push origin HEAD v0.1.0 with LUMIOSE_PUBLISH set. The vscode extension (private) stays out of the lockstep set.
+<!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Lockstep release tooling: release:version bumps every published package, the platform packages and the Cargo workspace to one version, pins non-workspace internal deps, writes CHANGELOG.md from Conventional Commits since the last v* tag, commits and tags (never pushes). release.yml publishes on v* tags in dependency order with provenance, as a dry run until LUMIOSE_PUBLISH is true. CONTRIBUTING documents the flow.
+<!-- SECTION:FINAL_SUMMARY:END -->
