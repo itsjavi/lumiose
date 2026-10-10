@@ -29,7 +29,8 @@ selectors and re-render tuning are not needed. What the popular libraries offer 
 | `zustand/vanilla`, a Jotai store, Redux              | the external store recipe below                                                   |
 
 **Islands.** Each [island](islands.md) hydrates as its own root, so context provided by the page
-does not reach an island in the browser, and one island cannot provide to another. Islands share
+does not reach an island, and one island cannot provide to another. The server renders islands
+the same way, so their HTML matches. Islands share
 the Lumiose runtime and the modules they import, so module-scope state is how islands share state.
 
 ## API
@@ -274,10 +275,10 @@ Derive slices with `computed(() => state().bears)`.
 - **Writing module-scope state during SSR.** A module-scope signal written in a component body or
   a server path leaks one request's state into the next (`LUM4008`). Write it in handlers and
   effects, or keep it in context.
-- **Injecting page context inside an island.** On the server the island renders inside the page
-  and sees the page's value; in the browser it hydrates as its own root and gets the context's
-  default, so its HTML and its hydrated state disagree. Pass the value as a prop, or share
-  module-scope state.
+- **Injecting page context inside an island.** Each island starts a new context root, on the
+  server as in the browser, so `inject()` inside it does not see what the page provided outside
+  it and returns the context's default (`LUM4010` warns in dev). Pass the value as an island prop,
+  provide the context inside the island, or share module-scope state.
 - **Reading `localStorage` in setup in a server-rendered component.** The server cannot read it,
   so the first browser render differs from the HTML (`LUM4006`). Load it in `onMount`, as the
   persisted recipe does.

@@ -531,7 +531,8 @@ selectors and re-render tuning are not needed. What the popular libraries offer 
 | `zustand/vanilla`, a Jotai store, Redux              | the external store recipe below                                                   |
 
 **Islands.** Each [island](islands.md) hydrates as its own root, so context provided by the page
-does not reach an island in the browser, and one island cannot provide to another. Islands share
+does not reach an island, and one island cannot provide to another. The server renders islands
+the same way, so their HTML matches. Islands share
 the Lumiose runtime and the modules they import, so module-scope state is how islands share state.
 
 ## API
@@ -776,10 +777,10 @@ Derive slices with `computed(() => state().bears)`.
 - **Writing module-scope state during SSR.** A module-scope signal written in a component body or
   a server path leaks one request's state into the next (`LUM4008`). Write it in handlers and
   effects, or keep it in context.
-- **Injecting page context inside an island.** On the server the island renders inside the page
-  and sees the page's value; in the browser it hydrates as its own root and gets the context's
-  default, so its HTML and its hydrated state disagree. Pass the value as a prop, or share
-  module-scope state.
+- **Injecting page context inside an island.** Each island starts a new context root, on the
+  server as in the browser, so `inject()` inside it does not see what the page provided outside
+  it and returns the context's default (`LUM4010` warns in dev). Pass the value as an island prop,
+  provide the context inside the island, or share module-scope state.
 - **Reading `localStorage` in setup in a server-rendered component.** The server cannot read it,
   so the first browser render differs from the HTML (`LUM4006`). Load it in `onMount`, as the
   persisted recipe does.
@@ -1522,6 +1523,16 @@ before hydrating.
 **Nested directives.** A `client:*` inside an island's own render is just a component: it is
 already client-side.
 
+**Context starts at the island.** An island hydrates as its own root, so context the page provided
+outside it (`provide()` in a layout or page) does not reach it, and the server renders it the same
+way: `inject()` inside an island returns the context's default, unless the island or a component
+inside it provides the value. Contexts provided inside the island work on both sides. To hand page
+data to an island, pass it as a prop; to share state between islands, use module-scope state
+([Sharing state](state.md)). In dev, an island that injects a context the page provided warns
+`LUM4010`. Slots are page content, so they keep seeing the page's context. `<Suspense>`,
+`<ErrorBoundary>`, request APIs (`locals()`, `cookies()`, …) and `lifetime()` work inside islands
+during SSR as everywhere else.
+
 **Server-only boundaries.** `*.server.ts` files and everything under `src/server/` may not be
 imported from code that reaches the browser (`LUM4003`): keep database access, secrets and
 `env()` there. `lumiose dev` and `lumiose build` fail with the chain of importers when the client graph
@@ -1623,6 +1634,11 @@ export default function Post() {
   island's graph is `LUM4003`. Call an endpoint with `fetchJSON` instead.
 - **Touching `window` or `document` at module scope** in a module that also runs on the server.
   Move it into `onMount` or an effect (`LUM4004`).
+- **Injecting page context inside an island.** An island hydrates as its own root, so it does not
+  see values the page provided outside it with `provide()`, and it renders the same way on the
+  server: `inject()` returns the context's default unless the island (or a component inside it)
+  provides the value. Pass the value as a prop, or share module-scope state
+  ([Sharing state](state.md)); dev warns with `LUM4010` when the page did provide it.
 - **Different output on server and client**, for example from `Math.random()` or `Date.now()` in
   render. Hydration reports `LUM4006` in dev and client-renders the range in production.
 - **Expecting `submit()` to refresh the page.** On MPA pages a successful `submit()` does not
@@ -1639,6 +1655,7 @@ export default function Post() {
 - [LUM4004](../errors/LUM4004.md): browser API at module scope.
 - [LUM4006](../errors/LUM4006.md): hydration mismatch.
 - [LUM4007](../errors/LUM4007.md): non-serializable awaited value.
+- [LUM4010](../errors/LUM4010.md): island injects context provided by the page.
 
 See also: [Rendering modes](rendering-modes.md), [Async components](async.md), [Sharing state](state.md) (state shared by islands).
 
@@ -3386,22 +3403,6 @@ const song = store({ title: "Demo", rows: [] as number[][] });
 worker.postMessage({ type: "song", song: snapshot(song) });
 ```
 
-## createContext, provide, inject
-
-```ts
-function createContext<T>(defaultValue: T): Context<T>;
-function createContext<T>(): Context<T | undefined>;
-function provide<T>(context: Context<T>, value: T): void;
-function inject<T>(context: Context<T>): T;
-interface Context<T> {
-  readonly id: symbol;
-  readonly defaultValue: T;
-}
-```
-
-`provide` sets a value on the current owner for everything created below it; `inject` returns the
-nearest provided value, or the default. Context survives `await` in async components.
-
 ## reconcile
 
 ```ts
@@ -3436,6 +3437,22 @@ reconcile(books, (await (await fetch("/api/books")).json()) as Book[]);
 const page = store({ rows: [{ slug: "intro", views: 1 }] });
 reconcile(page.rows, [{ slug: "intro", views: 2 }], { key: "slug" });
 ```
+
+## createContext, provide, inject
+
+```ts
+function createContext<T>(defaultValue: T): Context<T>;
+function createContext<T>(): Context<T | undefined>;
+function provide<T>(context: Context<T>, value: T): void;
+function inject<T>(context: Context<T>): T;
+interface Context<T> {
+  readonly id: symbol;
+  readonly defaultValue: T;
+}
+```
+
+`provide` sets a value on the current owner for everything created below it; `inject` returns the
+nearest provided value, or the default. Context survives `await` in async components.
 
 ## pending
 
@@ -7241,6 +7258,63 @@ export function Profile(props: { website: string }) {
 
 - [Security](../concepts/security.md)
 
+<!-- source: errors/LUM4010.md -->
+
+<!-- Generated from crates/lumiose_compiler/src/diagnostics/registry.rs by packages/lumiose/scripts/gen-error-docs.ts. Edit the explanation below the end marker. -->
+
+# LUM4010: Island injects context provided by the page
+
+**Severity:** warning · **Category:** islands and boundaries (4xxx)
+
+<!-- end of generated header -->
+
+> An island calls `inject()` for a context that the page provides outside the island, so it gets
+> the context's default value.
+
+**Reported by:** the server runtime (`lumiose/server`), as a console warning in development, once
+per island.
+
+## What it means
+
+Each [island](../concepts/islands.md) hydrates in the browser as its own root: nothing the page
+rendered around it exists there, including the values the page passed down with `provide()`. So
+that the server HTML and the hydrated island agree, the island starts from a fresh root on the
+server too. Its `inject()` calls see only values provided inside the island, and otherwise the
+context's default.
+
+This warning means the page did provide the context above the island. The island does not see that
+value, on the server or in the browser.
+
+## Example
+
+```tsx
+const Theme = createContext("light");
+
+export default function Page() {
+  provide(Theme, "dark");
+  return <ThemeToggle client:load />;
+}
+
+export function ThemeToggle() {
+  const theme = inject(Theme); // "light": the page's "dark" stays outside the island
+  return <button>{theme}</button>;
+}
+```
+
+## How to fix it
+
+- Pass the value as an island prop: `<ThemeToggle client:load theme="dark" />`. Props are sent to
+  the browser, so they must be plain data (`LUM4002`).
+- Provide the context inside the island, in the island component or a component it renders.
+- Share state between islands from a module (see [Sharing state](../concepts/state.md)).
+
+Contexts provided inside the island work as usual on both sides.
+
+## Related
+
+- [Islands](../concepts/islands.md)
+- [Sharing state](../concepts/state.md)
+
 <!-- source: errors/LUM5001.md -->
 
 <!-- Generated from crates/lumiose_compiler/src/diagnostics/registry.rs by packages/lumiose/scripts/gen-error-docs.ts. Edit the explanation below the end marker. -->
@@ -7571,16 +7645,17 @@ fix?, docs }`; `lumiose check --format json` prints them.
 
 ## Islands and boundaries (4xxx)
 
-| Code                  | Severity | Title                                  |
-| --------------------- | -------- | -------------------------------------- |
-| [LUM4001](LUM4001.md) | error    | Island component is not exported       |
-| [LUM4002](LUM4002.md) | error    | Non-serializable island prop           |
-| [LUM4003](LUM4003.md) | error    | Server-only module in a client graph   |
-| [LUM4004](LUM4004.md) | warning  | Browser API at module scope            |
-| [LUM4006](LUM4006.md) | error    | Hydration mismatch                     |
-| [LUM4007](LUM4007.md) | error    | Non-serializable awaited value         |
-| [LUM4008](LUM4008.md) | warning  | Module-scope signal written during SSR |
-| [LUM4009](LUM4009.md) | warning  | Unsafe URL blocked in a URL attribute  |
+| Code                  | Severity | Title                                       |
+| --------------------- | -------- | ------------------------------------------- |
+| [LUM4001](LUM4001.md) | error    | Island component is not exported            |
+| [LUM4002](LUM4002.md) | error    | Non-serializable island prop                |
+| [LUM4003](LUM4003.md) | error    | Server-only module in a client graph        |
+| [LUM4004](LUM4004.md) | warning  | Browser API at module scope                 |
+| [LUM4006](LUM4006.md) | error    | Hydration mismatch                          |
+| [LUM4007](LUM4007.md) | error    | Non-serializable awaited value              |
+| [LUM4008](LUM4008.md) | warning  | Module-scope signal written during SSR      |
+| [LUM4009](LUM4009.md) | warning  | Unsafe URL blocked in a URL attribute       |
+| [LUM4010](LUM4010.md) | warning  | Island injects context provided by the page |
 
 ## Routing and server (5xxx)
 
