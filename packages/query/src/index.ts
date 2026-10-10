@@ -6,7 +6,6 @@ export type {
   DefinedUseQueryResult,
   MutationOptions,
   QueryOptions,
-  ReconcileOption,
   UndefinedInitialDataOptions,
   UseMutateAsyncFunction,
   UseMutateFunction,

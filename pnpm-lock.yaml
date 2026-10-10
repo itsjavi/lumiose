@@ -697,6 +697,7 @@ importers:
       '@tanstack/query-core':
         specifier: 5.104.0
         version: 5.104.0
+    devDependencies:
       lumiose:
         specifier: workspace:*
         version: link:../lumiose

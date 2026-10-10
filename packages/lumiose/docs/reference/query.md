@@ -153,7 +153,7 @@ Everything `@tanstack/query-core` exports is re-exported, as by `@tanstack/solid
 and so on. The adapter's own types: `QueryOptions`, `UseQueryOptions`, `UseQueryResult`,
 `DefinedUseQueryResult`, `UndefinedInitialDataOptions`, `DefinedInitialDataOptions`,
 `MutationOptions`, `UseMutationOptions`, `UseMutationResult`, `UseMutateFunction`,
-`UseMutateAsyncFunction`, `ReconcileOption` and `QueryClientProviderProps`. With `initialData`,
+`UseMutateAsyncFunction` and `QueryClientProviderProps`. With `initialData`,
 `useQuery`'s result is typed `DefinedUseQueryResult`: `data` is never `undefined`.
 
 ## Server rendering
