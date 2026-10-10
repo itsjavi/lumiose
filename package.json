@@ -13,13 +13,14 @@
     "fmt:examples": "node scripts/fmt-examples.ts",
     "cargo:build": "cargo build --workspace",
     "cargo:test": "cargo test --workspace",
-    "check": "pnpm build:compiler && pnpm typecheck && pnpm lint && pnpm fmt:examples && pnpm test && pnpm --filter lumiose size && cargo test --workspace",
+    "check": "pnpm build:compiler && pnpm typecheck && pnpm lint && pnpm fmt:examples && pnpm test && node --test scripts/*.test.ts && pnpm --filter lumiose size && cargo test --workspace",
     "build:compiler": "pnpm --filter @lumiose/compiler build",
     "build:site": "node scripts/site.ts build",
     "preview:site": "node scripts/site.ts preview",
     "demo": "node scripts/demo.ts"
   },
   "devDependencies": {
+    "@lumiose/cli": "workspace:*",
     "@types/node": "^24.0.0",
     "happy-dom": "^20.14.5",
     "oxfmt": "^0.72.0",

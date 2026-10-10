@@ -18,5 +18,4 @@ export { createRouteMatcher, matchSegments, splitPathname } from "./match.ts";
 export type { RouteMatch, RouteMatcher, RouteParamValues } from "./match.ts";
 export { readRouteModuleMeta } from "./meta.ts";
 export type { ReadRouteModuleMeta, RouteModuleMeta } from "./meta.ts";
-export { scanRoutes } from "./scan.ts";
 export type { RouteSegment } from "./segments.ts";

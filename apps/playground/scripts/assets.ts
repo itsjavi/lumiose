@@ -13,7 +13,7 @@ import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { writeLumioseTsconfig } from "lumiose/tooling";
+import { writeLumioseTsconfig } from "@lumiose/cli/tooling";
 import { build } from "vite";
 
 const app = fileURLToPath(new URL("..", import.meta.url));

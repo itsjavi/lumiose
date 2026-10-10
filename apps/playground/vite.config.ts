@@ -1,5 +1,5 @@
 /// <reference types="vitest/config" />
-import lumiose from "lumiose/vite";
+import lumiose from "@lumiose/vite";
 import { defineConfig } from "vite";
 
 // The playground is part of the website, served below it at /playground/. LUMIOSE_BASE is the site's

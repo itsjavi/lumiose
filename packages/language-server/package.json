@@ -20,6 +20,7 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@lumiose/cli": "workspace:*",
     "@lumiose/compiler": "workspace:*",
     "lumiose": "workspace:*",
     "typescript": "^7.0.2",

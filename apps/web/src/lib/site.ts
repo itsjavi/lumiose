@@ -48,7 +48,7 @@ export const footerColumns: FooterColumn[] = [
     title: "Reference",
     links: [
       { href: href("/docs/[...path]", { path: "reference/cli" }), label: "CLI" },
-      { href: href("/docs/[...path]", { path: "reference/vite" }), label: "lumiose/vite" },
+      { href: href("/docs/[...path]", { path: "reference/vite" }), label: "@lumiose/vite" },
       { href: href("/docs/[...path]", { path: "errors" }), label: "Diagnostics" },
     ],
   },

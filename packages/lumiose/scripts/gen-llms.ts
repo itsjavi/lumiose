@@ -8,8 +8,8 @@ import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import pkg from "../package.json" with { type: "json" };
-import { generateLlms } from "../src/cli/docs/generate.ts";
-import { loadDocs } from "../src/cli/docs/index.ts";
+import { generateLlms } from "@lumiose/cli/internal/docs/generate.ts";
+import { loadDocs } from "@lumiose/cli/internal/docs/index.ts";
 
 const docs = fileURLToPath(new URL("../docs/", import.meta.url));
 const check = process.argv.includes("--check");

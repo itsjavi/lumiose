@@ -1,0 +1,37 @@
+{
+  "name": "@lumiose/cli",
+  "version": "0.0.0",
+  "private": true,
+  "description": "The lumiose command: dev, build, preview, check, lint, fmt, docs and the MCP server.",
+  "license": "MIT",
+  "bin": {
+    "lumiose": "./src/bin.ts"
+  },
+  "files": [
+    "src"
+  ],
+  "type": "module",
+  "exports": {
+    "./tooling": "./src/tooling.ts",
+    "./agents": "./src/agents/index.ts",
+    "./internal/*": "./src/*",
+    "./package.json": "./package.json"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@lumiose/compiler": "workspace:*",
+    "@lumiose/vite": "workspace:*",
+    "@modelcontextprotocol/sdk": "^1.32.1",
+    "lumiose": "workspace:*",
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "vite": "^8.3.4"
+  },
+  "peerDependencies": {
+    "vite": "^8.3.0"
+  }
+}

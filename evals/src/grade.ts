@@ -34,7 +34,7 @@ export function grade(task: Task, dir: string): Grade {
   cpSync(join(EVALS, "grader/helpers.ts"), join(target, "helpers.ts"));
   writeFileSync(
     join(target, "vitest.config.ts"),
-    `import lumiose from "lumiose/vite";
+    `import lumiose from "@lumiose/vite";
 import { defineConfig } from "vite";
 
 export default defineConfig({
@@ -110,7 +110,7 @@ export default defineConfig({
 function runCheck(dir: string): Grade["check"] {
   const result = spawnSync(
     process.execPath,
-    [join(dir, "node_modules/lumiose/src/cli/bin.ts"), "check", "--format", "json"],
+    [join(dir, "node_modules/@lumiose/cli/src/bin.ts"), "check", "--format", "json"],
     {
       cwd: dir,
       encoding: "utf8",

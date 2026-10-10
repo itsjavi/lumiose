@@ -30,6 +30,8 @@ const PACKAGES = join(REPO, "packages");
 /** The Lumiose packages a project can link, by package name. */
 const VENDORED = {
   lumiose: "lumiose",
+  "@lumiose/vite": "vite",
+  "@lumiose/cli": "cli",
   "@lumiose/adapter-node": "adapter-node",
   "@lumiose/compiler": "compiler",
 };
@@ -149,8 +151,8 @@ export function vendor(cacheDir: string, ablation: Ablation): string {
         "dir",
       );
     }
-    // lumiose's peer: the same Vite the repo builds with.
-    if (folder === "lumiose") {
+    // The tooling packages' peer: the same Vite the repo builds with.
+    if (folder === "vite" || folder === "cli") {
       symlinkSync(realpathSync(join(installed, "node_modules/vite")), join(modules, "vite"), "dir");
     }
   }
@@ -245,6 +247,9 @@ function writePackageJson(dir: string, vendorDir: string): void {
     }
   }
   dependencies.lumiose = link("lumiose");
+  for (const name of ["@lumiose/vite", "@lumiose/cli"] as const) {
+    if (!(name in dependencies)) devDependencies[name] = link(name);
+  }
   for (const name of ["typescript", "vite", "vitest", "happy-dom", "@types/node"] as const) {
     if (!(name in dependencies)) devDependencies[name] = tools[name]!;
   }

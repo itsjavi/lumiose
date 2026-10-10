@@ -18,7 +18,7 @@ import type { AddressInfo } from "node:net";
 import { existsSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
-import type { ServerEntryModule } from "lumiose/build";
+import type { ServerEntryModule } from "@lumiose/vite/build";
 import {
   RejectedRequest,
   headersFor,

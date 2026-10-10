@@ -6,7 +6,7 @@ import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 
 export const root = process.cwd();
-const lumioseBin = join(root, "node_modules/lumiose/src/cli/bin.ts");
+const lumioseBin = join(root, "node_modules/@lumiose/cli/src/bin.ts");
 
 /** Runs the project's `lumiose` CLI with `--format json` and returns the parsed report. */
 export function lumiose(args: string[]): {

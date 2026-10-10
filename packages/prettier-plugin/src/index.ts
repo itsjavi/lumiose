@@ -9,7 +9,7 @@
 //
 // oxfmt (which `lumiose fmt` uses) has no plugin API, so this is the way to keep Prettier for `.stsx`.
 
-import { formatStsx, type FormatConfig, type Formatter } from "lumiose/tooling";
+import { formatStsx, type FormatConfig, type Formatter } from "@lumiose/cli/tooling";
 import { format, type Plugin } from "prettier";
 
 /** The Prettier options that shape TSX and CSS output, passed on to both printers. */

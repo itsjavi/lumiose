@@ -1,11 +1,12 @@
 // The adapter on a real `lumiose build` output: statics first, then the app's fetch handler.
-import { mkdirSync, mkdtempSync, realpathSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, realpathSync, rmSync, writeFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { build } from "lumiose/build";
+import { build } from "@lumiose/vite/build";
+import { linkLumiose } from "@lumiose/vite/internal/test-links.ts";
 import { createServer, type LumioseServer } from "./server.ts";
 
 const lumioseRoot = resolve(import.meta.dirname, "../../lumiose");
@@ -60,8 +61,7 @@ beforeAll(async () => {
     mkdirSync(dirname(join(root, name)), { recursive: true });
     writeFileSync(join(root, name), code);
   }
-  mkdirSync(join(root, "node_modules"));
-  symlinkSync(lumioseRoot, join(root, "node_modules/lumiose"), "dir");
+  linkLumiose(root);
   await build({ root, logLevel: "silent" });
   server = await createServer({ dir: join(root, "dist"), port: 0, host: "127.0.0.1" });
 });
@@ -139,7 +139,7 @@ describe.skipIf(!binding)("@lumiose/adapter-node", () => {
     const files: Record<string, string> = {
       "src/routes/index.stsx": "export default function Home() { return <h1>Home</h1>; }\n",
       "src/routes/embed.stsx": FILES["src/routes/embed.stsx"]!,
-      "vite.config.ts": `import lumiose from "lumiose/vite";
+      "vite.config.ts": `import lumiose from "@lumiose/vite";
 export default {
   plugins: [
     lumiose({
@@ -156,8 +156,7 @@ export default {
       mkdirSync(dirname(join(app, name)), { recursive: true });
       writeFileSync(join(app, name), code);
     }
-    mkdirSync(join(app, "node_modules"));
-    symlinkSync(lumioseRoot, join(app, "node_modules/lumiose"), "dir");
+    linkLumiose(app);
     await build({ root: app, logLevel: "silent" });
     const configured = await createServer({ dir: join(app, "dist"), port: 0, host: "127.0.0.1" });
     try {

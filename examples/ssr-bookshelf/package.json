@@ -3,10 +3,6 @@
   "version": "0.0.0",
   "private": true,
   "description": "Lumiose sample: a multi-page, server-rendered bookshelf backed by node:sqlite.",
-  "demo": {
-    "title": "Bookshelf (server-rendered, node:sqlite)",
-    "kind": "example"
-  },
   "license": "MIT",
   "type": "module",
   "scripts": {
@@ -24,6 +20,12 @@
     "lumiose": "workspace:*"
   },
   "devDependencies": {
+    "@lumiose/cli": "workspace:*",
+    "@lumiose/vite": "workspace:*",
     "@playwright/test": "1.63.0"
+  },
+  "demo": {
+    "title": "Bookshelf (server-rendered, node:sqlite)",
+    "kind": "example"
   }
 }

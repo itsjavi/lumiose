@@ -5,7 +5,7 @@ import { describe, expect, it, vi } from "vitest";
 import { createComponent, insert, ssr } from "../../server/index.ts";
 import { createRouteManifest, type RouteManifest } from "../routes/manifest.ts";
 import { createRequestHandler, type ModuleExports } from "../server/handler.ts";
-import { hasSpa, spaEntryCode } from "./entry.ts";
+import { hasSpa, spaEntryCode } from "@lumiose/vite/internal/app/router/entry.ts";
 import { Link } from "./index.server.ts";
 import { clientTable, spaErrorPart, spaHydrates, spaPagePart } from "./table.ts";
 

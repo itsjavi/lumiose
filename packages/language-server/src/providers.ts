@@ -5,7 +5,7 @@ import {
   compileWithModules,
   isServerRoute,
   ProjectChecks,
-} from "lumiose/tooling";
+} from "@lumiose/cli/tooling";
 import type { LumioseDiagnosticProvider, ProjectDiagnosticsFactory } from "./server.ts";
 
 /**

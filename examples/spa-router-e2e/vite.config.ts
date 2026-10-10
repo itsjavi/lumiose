@@ -1,5 +1,5 @@
 /// <reference types="vitest/config" />
-import lumiose from "lumiose/vite";
+import lumiose from "@lumiose/vite";
 import { defineConfig } from "vite";
 
 // The whole app is one SPA, rendered on the server and hydrated; `src/routes/csr` opts out of SSR.

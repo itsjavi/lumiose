@@ -7,7 +7,7 @@
 import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { generateErrorDocs, REGISTRY_PATH } from "../src/cli/docs/generate.ts";
+import { generateErrorDocs, REGISTRY_PATH } from "@lumiose/cli/internal/docs/generate.ts";
 
 const repo = fileURLToPath(new URL("../../../", import.meta.url));
 const docs = fileURLToPath(new URL("../docs/", import.meta.url));

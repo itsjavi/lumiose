@@ -14,7 +14,7 @@ import {
   islandPropProblem,
   islandPropRange,
   LUM_ISLAND_PROP,
-} from "lumiose/tooling";
+} from "@lumiose/cli/tooling";
 
 /** Converts a compiler-shaped diagnostic (UTF-16 span) of `document` to an LSP diagnostic. */
 export function toLspDiagnostic(

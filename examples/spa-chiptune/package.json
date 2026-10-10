@@ -3,10 +3,6 @@
   "version": "0.0.0",
   "private": true,
   "description": "Lumiose sample: a chiptune tracker, composer and mixer with an AudioWorklet NES-style synth, as a client-rendered SPA on file routes and lumiose/router.",
-  "demo": {
-    "title": "Chiptune tracker (SPA)",
-    "kind": "example"
-  },
   "license": "MIT",
   "type": "module",
   "scripts": {
@@ -23,8 +19,14 @@
     "lumiose": "workspace:*"
   },
   "devDependencies": {
+    "@lumiose/cli": "workspace:*",
+    "@lumiose/vite": "workspace:*",
     "@playwright/test": "1.63.0",
     "@types/node": "^24.0.0",
     "vite": "^8.3.4"
+  },
+  "demo": {
+    "title": "Chiptune tracker (SPA)",
+    "kind": "example"
   }
 }

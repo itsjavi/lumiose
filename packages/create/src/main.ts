@@ -6,7 +6,7 @@
 import { createInterface } from "node:readline/promises";
 import { relative, resolve } from "node:path";
 import { parseArgs } from "node:util";
-import { mcpCommand, mcpNote, type PackageManager } from "lumiose/agents";
+import { mcpCommand, mcpNote, type PackageManager } from "@lumiose/cli/agents";
 import pkg from "../package.json" with { type: "json" };
 import {
   DEFAULT_TEMPLATE,

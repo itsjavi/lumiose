@@ -8,6 +8,9 @@ importers:
 
   .:
     devDependencies:
+      '@lumiose/cli':
+        specifier: workspace:*
+        version: link:packages/cli
       '@types/node':
         specifier: ^24.0.0
         version: 24.19.1
@@ -66,9 +69,15 @@ importers:
         specifier: workspace:*
         version: link:../../packages/lumiose
     devDependencies:
+      '@lumiose/cli':
+        specifier: workspace:*
+        version: link:../../packages/cli
       '@lumiose/compiler':
         specifier: workspace:*
         version: link:../../packages/compiler
+      '@lumiose/vite':
+        specifier: workspace:*
+        version: link:../../packages/vite
       '@playwright/test':
         specifier: 1.63.0
         version: 1.63.0
@@ -94,9 +103,15 @@ importers:
         specifier: ^18.0.14
         version: 18.1.0
     devDependencies:
+      '@lumiose/cli':
+        specifier: workspace:*
+        version: link:../../packages/cli
       '@lumiose/compiler':
         specifier: workspace:*
         version: link:../../packages/compiler
+      '@lumiose/vite':
+        specifier: workspace:*
+        version: link:../../packages/vite
       '@playwright/test':
         specifier: 1.63.0
         version: 1.63.0
@@ -125,6 +140,12 @@ importers:
         specifier: workspace:*
         version: link:../../../../packages/lumiose
     devDependencies:
+      '@lumiose/cli':
+        specifier: workspace:*
+        version: link:../../../../packages/cli
+      '@lumiose/vite':
+        specifier: workspace:*
+        version: link:../../../../packages/vite
       '@types/node':
         specifier: 24.19.1
         version: 24.19.1
@@ -263,6 +284,12 @@ importers:
         specifier: workspace:*
         version: link:../../packages/lumiose
     devDependencies:
+      '@lumiose/cli':
+        specifier: workspace:*
+        version: link:../../packages/cli
+      '@lumiose/vite':
+        specifier: workspace:*
+        version: link:../../packages/vite
       vite:
         specifier: ^8.3.4
         version: 8.3.4(@types/node@24.19.1)(yaml@2.9.1)
@@ -313,6 +340,12 @@ importers:
         specifier: workspace:*
         version: link:../packages/lumiose
     devDependencies:
+      '@lumiose/cli':
+        specifier: workspace:*
+        version: link:../packages/cli
+      '@lumiose/vite':
+        specifier: workspace:*
+        version: link:../packages/vite
       '@types/node':
         specifier: 24.19.1
         version: 24.19.1
@@ -323,6 +356,12 @@ importers:
         specifier: workspace:*
         version: link:../../packages/lumiose
     devDependencies:
+      '@lumiose/cli':
+        specifier: workspace:*
+        version: link:../../packages/cli
+      '@lumiose/vite':
+        specifier: workspace:*
+        version: link:../../packages/vite
       '@playwright/test':
         specifier: 1.63.0
         version: 1.63.0
@@ -342,6 +381,12 @@ importers:
         specifier: workspace:*
         version: link:../../packages/lumiose
     devDependencies:
+      '@lumiose/cli':
+        specifier: workspace:*
+        version: link:../../packages/cli
+      '@lumiose/vite':
+        specifier: workspace:*
+        version: link:../../packages/vite
       '@playwright/test':
         specifier: 1.63.0
         version: 1.63.0
@@ -367,6 +412,12 @@ importers:
         specifier: workspace:*
         version: link:../../packages/lumiose
     devDependencies:
+      '@lumiose/cli':
+        specifier: workspace:*
+        version: link:../../packages/cli
+      '@lumiose/vite':
+        specifier: workspace:*
+        version: link:../../packages/vite
       '@playwright/test':
         specifier: 1.63.0
         version: 1.63.0
@@ -383,6 +434,12 @@ importers:
         specifier: workspace:*
         version: link:../../packages/lumiose
     devDependencies:
+      '@lumiose/cli':
+        specifier: workspace:*
+        version: link:../../packages/cli
+      '@lumiose/vite':
+        specifier: workspace:*
+        version: link:../../packages/vite
       '@playwright/test':
         specifier: 1.63.0
         version: 1.63.0
@@ -399,6 +456,12 @@ importers:
         specifier: workspace:*
         version: link:../../packages/lumiose
     devDependencies:
+      '@lumiose/cli':
+        specifier: workspace:*
+        version: link:../../packages/cli
+      '@lumiose/vite':
+        specifier: workspace:*
+        version: link:../../packages/vite
       '@playwright/test':
         specifier: 1.63.0
         version: 1.63.0
@@ -418,6 +481,12 @@ importers:
         specifier: workspace:*
         version: link:../../packages/lumiose
     devDependencies:
+      '@lumiose/cli':
+        specifier: workspace:*
+        version: link:../../packages/cli
+      '@lumiose/vite':
+        specifier: workspace:*
+        version: link:../../packages/vite
       '@playwright/test':
         specifier: 1.63.0
         version: 1.63.0
@@ -428,6 +497,12 @@ importers:
         specifier: workspace:*
         version: link:../../packages/lumiose
     devDependencies:
+      '@lumiose/cli':
+        specifier: workspace:*
+        version: link:../../packages/cli
+      '@lumiose/vite':
+        specifier: workspace:*
+        version: link:../../packages/vite
       '@playwright/test':
         specifier: 1.63.0
         version: 1.63.0
@@ -443,6 +518,32 @@ importers:
       lumiose:
         specifier: workspace:*
         version: link:../lumiose
+    devDependencies:
+      '@lumiose/vite':
+        specifier: workspace:*
+        version: link:../vite
+
+  packages/cli:
+    dependencies:
+      '@lumiose/compiler':
+        specifier: workspace:*
+        version: link:../compiler
+      '@lumiose/vite':
+        specifier: workspace:*
+        version: link:../vite
+      '@modelcontextprotocol/sdk':
+        specifier: ^1.32.1
+        version: 1.32.1(supports-color@7.2.0)(zod@4.6.5)
+      lumiose:
+        specifier: workspace:*
+        version: link:../lumiose
+      zod:
+        specifier: ^4.6.5
+        version: 4.6.5
+    devDependencies:
+      vite:
+        specifier: ^8.3.4
+        version: 8.3.4(@types/node@24.19.1)(yaml@2.9.1)
 
   packages/compiler:
     dependencies:
@@ -465,6 +566,9 @@ importers:
 
   packages/create:
     dependencies:
+      '@lumiose/cli':
+        specifier: workspace:*
+        version: link:../cli
       lumiose:
         specifier: workspace:*
         version: link:../lumiose
@@ -487,6 +591,9 @@ importers:
 
   packages/language-server:
     dependencies:
+      '@lumiose/cli':
+        specifier: workspace:*
+        version: link:../cli
       '@lumiose/compiler':
         specifier: workspace:*
         version: link:../compiler
@@ -507,29 +614,25 @@ importers:
         version: 1.0.15
 
   packages/lumiose:
-    dependencies:
+    devDependencies:
+      '@lumiose/cli':
+        specifier: workspace:*
+        version: link:../cli
       '@lumiose/compiler':
         specifier: workspace:*
         version: link:../compiler
-      '@modelcontextprotocol/sdk':
-        specifier: ^1.32.1
-        version: 1.32.1(supports-color@7.2.0)(zod@4.6.5)
-      svgo:
-        specifier: ^4.1.0
-        version: 4.1.0
-      yaml:
-        specifier: ^2.9.1
-        version: 2.9.1
-      zod:
-        specifier: ^4.6.5
-        version: 4.6.5
-    devDependencies:
+      '@lumiose/vite':
+        specifier: workspace:*
+        version: link:../vite
       vite:
         specifier: ^8.3.4
         version: 8.3.4(@types/node@24.19.1)(yaml@2.9.1)
 
   packages/prettier-plugin:
     dependencies:
+      '@lumiose/cli':
+        specifier: workspace:*
+        version: link:../cli
       lumiose:
         specifier: workspace:*
         version: link:../lumiose
@@ -547,12 +650,37 @@ importers:
         specifier: workspace:*
         version: link:../lumiose
     devDependencies:
+      '@lumiose/cli':
+        specifier: workspace:*
+        version: link:../cli
+      '@lumiose/vite':
+        specifier: workspace:*
+        version: link:../vite
       '@playwright/test':
         specifier: 1.63.0
         version: 1.63.0
       '@types/node':
         specifier: ^24.0.0
         version: 24.19.1
+      vite:
+        specifier: ^8.3.4
+        version: 8.3.4(@types/node@24.19.1)(yaml@2.9.1)
+
+  packages/vite:
+    dependencies:
+      '@lumiose/compiler':
+        specifier: workspace:*
+        version: link:../compiler
+      lumiose:
+        specifier: workspace:*
+        version: link:../lumiose
+      svgo:
+        specifier: ^4.1.0
+        version: 4.1.0
+      yaml:
+        specifier: ^2.9.1
+        version: 2.9.1
+    devDependencies:
       vite:
         specifier: ^8.3.4
         version: 8.3.4(@types/node@24.19.1)(yaml@2.9.1)

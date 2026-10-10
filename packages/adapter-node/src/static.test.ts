@@ -4,7 +4,7 @@ import type { AddressInfo } from "node:net";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
-import type { BuiltAppConfig } from "lumiose/build";
+import type { BuiltAppConfig } from "@lumiose/vite/build";
 import { createStaticHandler } from "./static.ts";
 
 const FILES: Record<string, string> = {

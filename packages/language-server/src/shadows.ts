@@ -6,4 +6,4 @@ export {
   sourcePathForShadow,
   syncShadows,
   type ShadowLayout,
-} from "lumiose/tooling";
+} from "@lumiose/cli/tooling";

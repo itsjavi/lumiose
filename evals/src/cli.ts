@@ -227,7 +227,7 @@ async function runOne(
 ): Promise<RunRecord> {
   const dir = await project(task, ablation, name);
   const logFile = join(logs, `${name}.jsonl`);
-  const lumiose = join(dir, "node_modules/lumiose/src/cli/bin.ts");
+  const lumiose = join(dir, "node_modules/@lumiose/cli/src/bin.ts");
   const result = await runAgent(agent, {
     dir,
     prompt: task.prompt,

@@ -18,9 +18,9 @@ import { join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 import { brotliCompressSync, constants } from "node:zlib";
 import { loadConfigFromFile, minifySync, type Plugin, type Rollup, type UserConfig } from "vite";
-import { build } from "../src/app/production/build.ts";
-import { findViteConfig } from "../src/app/project.ts";
-import lumiose from "../src/vite/index.ts";
+import { build } from "@lumiose/vite/internal/app/production/build.ts";
+import { findViteConfig } from "@lumiose/vite/internal/app/project.ts";
+import lumiose from "@lumiose/vite/internal/index.ts";
 
 const APPS = ["ssr-bookshelf", "ssg-travel-journal", "spa-chiptune"];
 const examples = fileURLToPath(new URL("../../../examples/", import.meta.url));

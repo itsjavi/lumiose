@@ -8,7 +8,7 @@
 import { existsSync, readdirSync } from "node:fs";
 import { join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { main } from "../packages/lumiose/src/cli/main.ts";
+import { main } from "@lumiose/cli/internal/main.ts";
 
 const repo = fileURLToPath(new URL("..", import.meta.url));
 const args = process.argv.slice(2);

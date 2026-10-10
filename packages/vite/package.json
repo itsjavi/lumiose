@@ -1,0 +1,34 @@
+{
+  "name": "@lumiose/vite",
+  "version": "0.0.0",
+  "private": true,
+  "description": "The Lumiose Vite plugin, dev server and build pipeline.",
+  "license": "MIT",
+  "files": [
+    "src"
+  ],
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./dev": "./src/app/dev/index.ts",
+    "./build": "./src/app/production/index.ts",
+    "./internal/*": "./src/*",
+    "./package.json": "./package.json"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@lumiose/compiler": "workspace:*",
+    "lumiose": "workspace:*",
+    "svgo": "^4.1.0",
+    "yaml": "^2.9.1"
+  },
+  "devDependencies": {
+    "vite": "^8.3.4"
+  },
+  "peerDependencies": {
+    "vite": "^8.3.0"
+  }
+}

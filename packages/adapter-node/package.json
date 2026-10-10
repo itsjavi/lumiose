@@ -18,5 +18,8 @@
   },
   "dependencies": {
     "lumiose": "workspace:*"
+  },
+  "devDependencies": {
+    "@lumiose/vite": "workspace:*"
   }
 }

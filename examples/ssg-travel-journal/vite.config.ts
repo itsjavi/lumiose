@@ -1,6 +1,6 @@
 /// <reference types="vitest/config" />
 import { readFileSync } from "node:fs";
-import lumiose from "lumiose/vite";
+import lumiose from "@lumiose/vite";
 import { defineConfig } from "vite";
 import { postFrontmatter } from "./src/frontmatter.ts";
 

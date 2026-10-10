@@ -7,9 +7,10 @@ import { existsSync } from "node:fs";
 import { mkdir, readdir, readFile, writeFile } from "node:fs/promises";
 import { basename, dirname, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
-import { agentsInit, type AgentFile, type PackageManager } from "lumiose/agents";
+import { agentsInit, type AgentFile, type PackageManager } from "@lumiose/cli/agents";
+import cliPackage from "@lumiose/cli/package.json" with { type: "json" };
 import lumiosePackage from "lumiose/package.json" with { type: "json" };
-import { formatTsconfig } from "lumiose/tooling";
+import { formatTsconfig } from "@lumiose/cli/tooling";
 
 export type TemplateName = "minimal" | "static" | "ssr" | "spa";
 
@@ -44,10 +45,10 @@ export const DEFAULT_TEMPLATE: TemplateName = "static";
 
 const TEMPLATES_DIR = fileURLToPath(new URL("../templates/", import.meta.url));
 
-/** Tool versions the generated package.json asks for (lumiose and its adapter share a version). */
+/** Tool versions the generated package.json asks for (the Lumiose packages share a version). */
 const VERSIONS = {
   lumiose: `^${lumiosePackage.version}`,
-  vite: lumiosePackage.peerDependencies.vite,
+  vite: cliPackage.peerDependencies.vite,
   typescript: "^7.0.2",
   oxlint: "^1.87.0",
   oxfmt: "^0.72.0",
@@ -162,6 +163,8 @@ function packageJson(name: string, template: Template): string {
     dependencies: { ...(server ? adapter : {}), lumiose: VERSIONS.lumiose },
     devDependencies: {
       ...(server ? {} : adapter),
+      "@lumiose/cli": VERSIONS.lumiose,
+      "@lumiose/vite": VERSIONS.lumiose,
       oxfmt: VERSIONS.oxfmt,
       oxlint: VERSIONS.oxlint,
       typescript: VERSIONS.typescript,
@@ -173,7 +176,7 @@ function packageJson(name: string, template: Template): string {
 }
 
 function viteConfig(template: Template): string {
-  return `import lumiose from "lumiose/vite";
+  return `import lumiose from "@lumiose/vite";
 import { defineConfig } from "vite";
 
 export default defineConfig({

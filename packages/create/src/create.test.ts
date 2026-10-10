@@ -23,7 +23,7 @@ import { isValidPackageName, packageName, TEMPLATES } from "./scaffold.ts";
 const here = dirname(fileURLToPath(import.meta.url));
 const createBin = join(here, "bin.ts");
 const packagesDir = join(here, "../..");
-const lumioseBin = join(packagesDir, "lumiose/src/cli/bin.ts");
+const lumioseBin = join(packagesDir, "cli/src/bin.ts");
 // The compiler binding is lumiose's dependency; templates are only built when it is available.
 const binding = await import(
   createRequire(join(packagesDir, "lumiose/package.json")).resolve("@lumiose/compiler")
@@ -56,11 +56,9 @@ function run(bin: string, args: string[], cwd: string) {
 function link(root: string) {
   mkdirSync(join(root, "node_modules/@lumiose"), { recursive: true });
   symlinkSync(join(packagesDir, "lumiose"), join(root, "node_modules/lumiose"), "dir");
-  symlinkSync(
-    join(packagesDir, "adapter-node"),
-    join(root, "node_modules/@lumiose/adapter-node"),
-    "dir",
-  );
+  for (const name of ["adapter-node", "vite", "cli", "compiler"]) {
+    symlinkSync(join(packagesDir, name), join(root, `node_modules/@lumiose/${name}`), "dir");
+  }
   for (const name of ["typescript", "vite"]) {
     symlinkSync(
       realpathSync(join(here, "../node_modules", name)),

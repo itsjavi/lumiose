@@ -1,4 +1,4 @@
-import lumiose from "lumiose/vite";
+import lumiose from "@lumiose/vite";
 
 export default {
   // A strict Content Security Policy: pages rendered per request get a nonce on every inline

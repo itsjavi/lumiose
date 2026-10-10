@@ -1,6 +1,6 @@
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
-import { scanRoutes } from "./scan.ts";
+import { scanRoutes } from "@lumiose/vite/internal/app/routes/scan.ts";
 
 const BASIC = fileURLToPath(new URL("./__fixtures__/basic", import.meta.url));
 

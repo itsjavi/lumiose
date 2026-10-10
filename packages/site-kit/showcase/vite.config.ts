@@ -1,4 +1,4 @@
-import lumiose from "lumiose/vite";
+import lumiose from "@lumiose/vite";
 import { defineConfig } from "vite";
 
 // The showcase: a client-rendered page with every site-kit component (`pnpm --filter

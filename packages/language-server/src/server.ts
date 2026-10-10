@@ -27,7 +27,7 @@ import type {
   ContractEntry,
 } from "@lumiose/compiler";
 import { scan } from "@lumiose/compiler";
-import { ModuleHost, SUPERSEDED_BY_TYPESCRIPT, type ModuleChange } from "lumiose/tooling";
+import { ModuleHost, SUPERSEDED_BY_TYPESCRIPT, type ModuleChange } from "@lumiose/cli/tooling";
 import { existsSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { join, relative, sep } from "node:path";

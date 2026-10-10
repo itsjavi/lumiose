@@ -1,4 +1,4 @@
-import lumiose from "lumiose/vite";
+import lumiose from "@lumiose/vite";
 import { defineConfig } from "vite";
 
 // Production builds of the benchmark app, one minified ES module each, which krausest's layout

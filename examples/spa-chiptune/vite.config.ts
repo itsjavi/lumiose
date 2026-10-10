@@ -1,5 +1,5 @@
 /// <reference types="vitest/config" />
-import lumiose from "lumiose/vite";
+import lumiose from "@lumiose/vite";
 import { defineConfig } from "vite";
 
 // A client-rendered SPA: every route renders in the browser, inside the persistent root layout,

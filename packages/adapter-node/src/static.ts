@@ -11,7 +11,7 @@
 import { createReadStream, readdirSync, realpathSync, statSync, type Stats } from "node:fs";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { extname, join, sep } from "node:path";
-import type { BuiltAppConfig } from "lumiose/build";
+import type { BuiltAppConfig } from "@lumiose/vite/build";
 import { requestTarget } from "lumiose/node";
 import { acceptedEncodings, varyOnEncoding } from "./compress.ts";
 

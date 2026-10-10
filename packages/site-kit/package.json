@@ -3,10 +3,6 @@
   "version": "0.0.0",
   "private": true,
   "description": "The design system of the Lumiose websites (landing page, docs, playground): tokens, a base stylesheet and .stsx components.",
-  "demo": {
-    "title": "Site kit showcase",
-    "kind": "site"
-  },
   "license": "MIT",
   "type": "module",
   "exports": {
@@ -26,8 +22,14 @@
     "lumiose": "workspace:*"
   },
   "devDependencies": {
+    "@lumiose/cli": "workspace:*",
+    "@lumiose/vite": "workspace:*",
     "@playwright/test": "1.63.0",
     "@types/node": "^24.0.0",
     "vite": "^8.3.4"
+  },
+  "demo": {
+    "title": "Site kit showcase",
+    "kind": "site"
   }
 }

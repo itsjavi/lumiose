@@ -1,5 +1,5 @@
 /// <reference types="vitest/config" />
-import lumiose from "lumiose/vite";
+import lumiose from "@lumiose/vite";
 import { defineConfig } from "vite";
 
 export default defineConfig({

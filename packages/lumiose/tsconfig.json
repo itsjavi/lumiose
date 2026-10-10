@@ -1,6 +1,7 @@
 {
   "extends": "../../tsconfig.base.json",
-  "compilerOptions": { "types": ["node"] },
-  "include": ["src"],
-  "exclude": ["src/cli/check/__fixtures__"]
+  "compilerOptions": {
+    "types": ["node"]
+  },
+  "include": ["src"]
 }
