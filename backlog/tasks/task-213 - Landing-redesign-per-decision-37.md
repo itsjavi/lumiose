@@ -5,6 +5,7 @@ status: To Do
 assignee:
   - Beacon
 created_date: '2026-10-10 22:41'
+updated_date: '2026-10-10 22:51'
 labels:
   - landing
   - positioning
@@ -18,6 +19,8 @@ dependencies:
   - TASK-207
   - TASK-211
   - TASK-212
+  - TASK-214
+  - TASK-215
 priority: high
 ordinal: 215000
 ---
@@ -34,3 +37,9 @@ decision-37 (positioning, approved by the user 2026-10-11; notes in .local/posit
 - [ ] #2 Every number and table cell comes from committed results through content modules checked by tests; no 'not measured' cells
 - [ ] #3 The page meets the site's accessibility and payload budgets, with screenshots in backlog/assets linked from this task
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+User 2026-10-11 (decision-37 amendment: lean landing and site IA): keep the landing lean. Landing = hero (pre-release as a badge), the stack table, four short sections (one sentence, one visual, one link each: Familiar to write, Every rendering mode, Light and fast, Explicit for you and your agent) and a closing CTA. Depth moves out: performance charts to /benchmarks, mode cards and the examples grid to /showcase, tooling, security and toolchain to the docs and the footer. Visual direction comes from the design spike in .local/design-spike/ once the user picks one.
+<!-- SECTION:NOTES:END -->

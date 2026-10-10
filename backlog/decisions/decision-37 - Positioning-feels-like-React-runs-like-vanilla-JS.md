@@ -87,7 +87,31 @@ Approved by the user on 2026-10-11.
 - **Local models.** A pilot with local models (`qwen3.5:9b`, `gpt-oss:20b`) runs before any full local matrix.
 - **No component catalog.**
 
+**Amendment, 2026-10-11 (user): a lean landing and the site's structure.**
+
+- **The landing stays lean:**
+  - the hero, with the pre-release note as a badge
+  - the stack table
+  - four short sections, each with one sentence, one visual and one link: familiar to write, every rendering mode, light and fast, explicit for you and your agent
+  - a closing CTA
+- **Depth moves to other pages:**
+  - performance charts to `/benchmarks`
+  - mode cards and the examples grid to `/showcase`
+  - tooling, security and the toolchain to the docs and the footer
+- **The playground becomes a route of the main site** (`/playground`), with the site's header.
+- **Real apps live under `/showcase/<slug>/` and are indexed:**
+  - `/showcase/chiptune-tracker/`
+  - `/showcase/dotmatrix/`
+- **Samples with dummy content live under `/demos/<slug>/`,** with `noindex` and no sitemap entries:
+  - `/demos/travel-journal/`
+  - `/demos/counter/`
+- **Repository folders keep their names.**
+- **Old `/examples/...` URLs redirect without loss.** The publicly shared Dotmatrix links carry songs in `?song=…`, so the redirect keeps the path, query and hash.
+- **The showcase apps get a real first render** through build-time SPA prerendering (decision-38).
+
 ## Consequences
+
+- The amendment adds TASK-214 (playground move), TASK-215 (URLs and redirects), and TASK-216 to TASK-218 (prerendering).
 
 - Tasks:
   - Fullstack ports: TASK-202 (SolidStart), TASK-203 (SvelteKit), TASK-204 (Nuxt), TASK-205 (Remix 3).
