@@ -775,6 +775,63 @@ describe("scoped state (TASK-193)", () => {
   });
 });
 
+describe("hydrate: the async cache (TASK-195)", () => {
+  let requests: string[];
+  let served: number;
+  const realFetch = globalThis.fetch;
+  beforeEach(() => {
+    resetStates(); // a fresh browser cache
+    requests = [];
+    served = 0;
+    globalThis.fetch = (async (req: Request) => {
+      requests.push(req.url);
+      const n = ++served;
+      return new Response(JSON.stringify({ title: `${req.url.split("/").pop()} v${n}` }), {
+        headers: { "content-type": "application/json" },
+      });
+    }) as typeof fetch;
+  });
+  afterEach(() => {
+    globalThis.fetch = realFetch;
+  });
+
+  const BOOK = `
+    import { fetchJSON } from "lumiose";
+    export async function Book(props: { id: string }) {
+      const book = await fetchJSON<{ title: string }>(\`https://api.test/books/\${props.id}\`);
+      return <h3>{book.title}</h3>;
+    }`;
+
+  it("sends an entry islands awaited once; islands hydrate from it without fetching", async () => {
+    const { client, server } = await load(BOOK);
+    const html = await renderToString(() => [
+      island("/src/case#Book", server.Book, { id: "1" }, "load"),
+      island("/src/case#Book", server.Book, { id: "1" }, "load"),
+    ]);
+    // One request on the server, one payload entry, markers instead of await records.
+    expect(requests).toEqual(["https://api.test/books/1"]);
+    expect(html.match(/1 v1/g)).toHaveLength(3); // two headings, one payload entry
+    expect(html).toContain('"awaits":{"c:0:0:0":1}');
+    document.body.innerHTML = html;
+    const heads = [...document.querySelectorAll("h3")];
+    requests = [];
+    await hydrateAll(client);
+    expect(warn).not.toHaveBeenCalled();
+    expect(requests).toEqual([]);
+    expect([...document.querySelectorAll("h3")]).toEqual(heads);
+    // Both islands awaited the entry: invalidating its URL refetches once and re-runs both.
+    const { invalidate } = await import("../app/actions/client.ts");
+    await invalidate("https://api.test/books/1");
+    await settle();
+    expect(requests).toEqual(["https://api.test/books/1"]);
+    expect(heads.map((h) => h.isConnected)).toEqual([false, false]);
+    expect([...document.querySelectorAll("h3")].map((h) => h.textContent)).toEqual([
+      "1 v2",
+      "1 v2",
+    ]);
+  });
+});
+
 /** Appends a streamed chunk to the body and runs its inline scripts (`$swap`). */
 function appendChunk(html: string): void {
   const before = document.body.lastChild;

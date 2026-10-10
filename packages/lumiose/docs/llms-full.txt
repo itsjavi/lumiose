@@ -1507,13 +1507,34 @@ changes, the component **re-runs**:
 | `isNavigating()`      | an SPA navigation is in flight. See [Routing](routing.md).                                             |
 | `isBusy()`            | anything above is in flight, or any `<Suspense>` shows its fallback. Use it for a global progress bar. |
 
+**Caching.** Component-level awaits of `fetchJSON` and `query` go through a keyed cache:
+
+- A GET `await fetchJSON(url)` is keyed by its absolute URL, so it needs no key.
+- `await query(key, fn)` caches anything else (a database call, an SDK) under a TanStack-style
+  array key such as `["stats", "books"]`: JSON-serializable values, hashed stably.
+- Components awaiting the same entry share one request: per request on the server, per page in the
+  browser (every island and the SPA tree, kept across client navigations).
+- In the browser, a cached entry shows at once (no `<Suspense>` fallback for a new component) and
+  refetches in the background (stale-while-revalidate, TanStack defaults: `staleTime` 0, `gcTime`
+  5 minutes). If the data changed, the components that awaited it re-run.
+- `invalidate("/api/books/1")` refetches that URL's entry and `invalidate(["stats"])` the entries
+  whose key starts with `["stats"]`. Only the components that awaited them re-run, keeping their
+  UI until the new data arrives. `invalidate()` with no target refreshes the whole page.
+- Only awaits in async component bodies are cached. `fetchJSON` in event handlers, middleware,
+  endpoints and actions is a plain request, and so are non-GET requests.
+- Errors are never cached: the next await tries again. Aborting one component's wait (a superseded
+  run) never cancels a request another component still awaits.
+
 **Islands.** Inside an [island](islands.md), each awaited value is recorded during SSR and
-replayed during hydration, so the client does not fetch it again. Those values must be plain data
-(`LUM4007`), and **everything awaited inside an island is sent to the browser**.
+replayed during hydration, so the client does not fetch it again. Cached values (`fetchJSON`,
+`query`) are sent once per page instead, however many islands await them, and fill the browser
+cache. Those values must be plain data (`LUM4007`), and **everything awaited inside an island is
+sent to the browser**.
 
 > **Status:** async components, the `await` rewrite, re-runs, `<Suspense>`, `<ErrorBoundary>`,
-> `isPending()`, `isBusy()` and server streaming are available, and so is replaying awaited values when
-> an island hydrates (see [Islands](islands.md)).
+> `isPending()`, `isBusy()`, server streaming and the keyed cache (`fetchJSON`, `query`,
+> `invalidate(...targets)`) are available, and so is replaying awaited values when an island
+> hydrates (see [Islands](islands.md)).
 
 ## API
 
@@ -1525,7 +1546,9 @@ replayed during hydration, so the client does not fetch it again. Those values m
 | `isPending()`                                                    | Whether this component's re-run is in flight.                                                              |
 | `isBusy()`                                                       | Whether anything in the app is in flight.                                                                  |
 | `getAbortSignal()`                                               | `AbortSignal` of the current run; aborted when superseded or disposed.                                     |
-| `fetchJSON<T>(url, init?)`                                       | Isomorphic JSON fetch that returns plain data. See [Data and actions](data-and-actions.md).                |
+| `fetchJSON<T>(url, init?)`                                       | Isomorphic JSON fetch that returns plain data; cached by URL when awaited in a component.                  |
+| `query(key, fn)`                                                 | Awaited in a component, caches what `fn` resolves to under `key` (an array).                               |
+| `invalidate(...targets)`                                         | Refetches the entries of URLs and key prefixes, re-running their components; no target: the whole page.    |
 
 ## Example
 
@@ -1578,7 +1601,35 @@ export function BookPage({ ids }: { ids: string[] }) {
 ```
 
 Clicking another id re-runs `BookDetails`: the old book stays (dimmed through `isPending()`) until
-the new one arrives; `<Suspense>` only showed its fallback for the first load.
+the new one arrives; `<Suspense>` only showed its fallback for the first load. Going back to a book
+already seen shows it at once from the cache, then revalidates it.
+
+Data that does not come from `fetchJSON` goes through `query`, and a mutation refreshes only what it
+changed:
+
+```tsx check
+import { invalidate, query } from "lumiose";
+
+declare const db: { stats(): Promise<{ total: number }>; addBook(title: string): Promise<void> };
+
+export async function Stats() {
+  const stats = await query(["stats", "books"], () => db.stats());
+  return <p>{stats.total} books</p>;
+}
+
+export function AddBook() {
+  return (
+    <button
+      onClick={async () => {
+        await db.addBook("Dune");
+        await invalidate(["stats"], "/api/books"); // re-runs Stats and the components of /api/books
+      }}
+    >
+      Add
+    </button>
+  );
+}
+```
 
 ## Common mistakes
 
@@ -1587,6 +1638,12 @@ the new one arrives; `<Suspense>` only showed its fallback for the first load.
   (`LUM2007`).
 - **Not passing `getAbortSignal()` to fetches.** Without it, a superseded run's request keeps going. Pass
   `{ signal: getAbortSignal() }`.
+- **Passing a key as a string to `invalidate()`.** A string is a URL: `invalidate("stats")` matches
+  no `query()` entry (development builds warn). Pass the key array: `invalidate(["stats"])`.
+- **Mutating cached data.** Every component that awaited an entry gets the same object. Copy it
+  before changing it, or keep editable state in a signal or `store`.
+- **Expecting `fetchJSON` in an event handler to use the cache.** Only component-level awaits are
+  cached; a handler's call is a plain request (call `invalidate(url)` after a mutation instead).
 - **Awaiting a `Response` inside an island.** `await fetch(url)` gives a non-serializable value.
   Use `await fetchJSON(url)` (`LUM4007`).
 - **Putting secrets in awaited values inside islands.** They are serialized into the HTML. Fetch
@@ -1675,7 +1732,8 @@ reaches one, and `lumiose check` reports the import. Server-only APIs (`request(
 
 **Awaited data** inside an island is recorded during SSR and replayed during hydration, so the
 browser does not fetch it again; it must be plain data (`LUM4007`), and it is visible in the page
-source. So are the values of scoped state that islands import (`defineState`, `LUM4011`): the page
+source. Cached awaits (`fetchJSON`, `query`) are sent once per page however many islands await
+them, and fill the browser cache, so later awaits and `invalidate(url)` start from them. So are the values of scoped state that islands import (`defineState`, `LUM4011`): the page
 sends them once, before the islands that read them hydrate. The loader and `hydrate()` are described in [`lumiose/dom`](../reference/dom.md).
 
 **The loader script.** `lumiose dev` and `lumiose build` add the loader to every page that renders an
@@ -2024,7 +2082,10 @@ methods: `GET`, `POST`, `PUT`, `PATCH`, `DELETE` (and `HEAD`, `OPTIONS`), each
 serializable inside islands. Non-2xx responses throw a `FetchError` (an `HttpError` with `status`,
 `url` and the parsed body as `data`); if a server component lets it escape, the page renders
 `_error` (or `_404`) with that status. **During SSR, same-origin URLs are served in-process**, with
-the page request's cookies, without a network round-trip.
+the page request's cookies, without a network round-trip. **Awaited in an async component, a GET
+is cached by URL**: components awaiting the same URL share one request, and in the browser cached
+data shows at once and revalidates in the background. `query(key, fn)` caches other data under an
+array key. See [Async components](async.md) and [reference: query](../reference/app.md#query).
 
 **Mutations: form actions.** A page exports `action(ctx)` or named `actions = { name(ctx) }`. A
 `<form method="post">` posts to the page (or to `?/name` for a named action) and works without
@@ -2054,6 +2115,13 @@ until the new data arrives), or reloads the page (MPA). On client-routed (SPA) p
 `submit()` never reloads: an island owns only its own state, so it updates itself from the result
 (`result.data`, `actionData()`). Call `invalidate()` yourself when the page needs fresh
 server-rendered content; on MPA pages that reloads and resets `actionData()`.
+
+**Refreshing only what changed.** `invalidate(...targets)` refetches cache entries and re-runs only
+the async components that awaited them, on SPA and MPA pages alike (islands included, no reload):
+a string is a URL (the `fetchJSON` entry of that URL), an array a `query()` key prefix.
+`submit(form, { invalidate: ["/api/books/1", ["stats"]] })` does the same after a successful
+submission, instead of refreshing the whole page. Components rendered only on the server (outside
+islands) are not re-run by a target: use `invalidate()` for those.
 
 **Optimistic updates.** `optimistic(source)` follows `source` (a getter such as `() => props.likes`,
 or a signal) and shows an overlay while a promise is pending: `likes.update((n) => n + 1,
@@ -2087,11 +2155,14 @@ type only: `import type { actions } from "../routes/reading-list.stsx"`.
 | `fail(status, data?)`                                                | A failed action result.                                                |
 | `actionData<typeof actions>()`                                       | The last action's data or `fail` data, typed by the actions. Reactive. |
 | `submit(target, { action?, method?, signal?, invalidate? })`         | Post a form, submit event, `FormData`, `URLSearchParams` or a record.  |
+| `submit(target, { invalidate: [url, key] })`                         | The same, refetching only those cache entries after a success.         |
 | `submit<typeof actions.name>(…)`                                     | The same, resolving with that action's typed success and failure data. |
 | `isSubmitting(name?)`                                                | Whether a submission (to `?/name`) is in flight.                       |
 | `invalidate()`                                                       | Refresh the current page's server data.                                |
+| `invalidate(...targets)`                                             | Refetch the entries of URLs and `query()` key prefixes.                |
+| `query(key, fn)`                                                     | Awaited in a component, cache what `fn` resolves to under `key`.       |
 | `optimistic(source)`, `.set(value, promise)`, `.update(fn, promise)` | A value with overlays held while their promises are pending.           |
-| `fetchJSON<T>(url, init?)`, `isFetchError(e)`                        | JSON fetch with typed errors.                                          |
+| `fetchJSON<T>(url, init?)`, `isFetchError(e)`                        | JSON fetch with typed errors; cached by URL in components.             |
 
 ## Example
 
@@ -2246,6 +2317,10 @@ export default function Issues() {
   `{ type: "failure" }`; only unexpected errors reject.
 - **Calling `invalidate()` after a successful `submit()` on an SPA page.** `submit()` already did;
   a second call refreshes twice.
+- **Reaching for a client cache library first.** `fetchJSON` and `query` already dedupe, cache and
+  revalidate component awaits on the server and in the browser. Use
+  [`@lumiose/query`](../reference/query.md) for client data that needs polling, refetching on focus,
+  retries or per-query stale times.
 - **Expecting an MPA page to refresh after `submit()`.** On MPA pages `submit()` never reloads.
   Update the island from the result (a toggle sets its own state, a list removes its own row), or
   call `invalidate()` explicitly if the page must show fresh server HTML.
@@ -3733,7 +3808,8 @@ function isBusy(): boolean;
 ```
 
 App-wide: whether anything is in flight: an async component run, a `<Suspense>` showing its
-fallback, a form submission (`submit()`) or an SPA navigation. Reactive. Always `false` on the
+fallback, a form submission (`submit()`), an SPA navigation or a request of the async cache
+(`fetchJSON`, `query`), background refetches included. Reactive. Always `false` on the
 server.
 
 ## resource
@@ -3981,6 +4057,44 @@ Fetches and parses JSON (`Accept: application/json` unless `init` sets it); an e
 in-process through the request handler, with the page request's cookies and headers. Returns plain
 data, so awaited results stay serializable in islands.
 
+Awaited in an async component, a GET is **cached by its absolute URL** (see [query](#query) for the
+cache's behaviour): components awaiting the same URL share one request. The first caller's `init`
+(headers, credentials) makes the request. Inside an async component the signal defaults to
+`getAbortSignal()`: a superseded run stops waiting, and the request is cancelled once no component
+waits for it. Elsewhere (event handlers, middleware, endpoints, actions) and for other methods it is
+a plain request.
+
+### query
+
+```ts
+function query<T>(key: readonly unknown[], fn: () => T | PromiseLike<T>): Promise<T>;
+```
+
+Awaited in an async component, caches what `fn` resolves to under `key`, an array of
+JSON-serializable values hashed stably (object key order does not matter), as TanStack Query's
+`queryKey`. Use it for data that does not come from `fetchJSON`: a database call in a server
+component, a third-party SDK. `fn` runs outside the component, so `getAbortSignal()` inside it is
+the shared request's, aborted once no component waits for it. Outside an async component it calls
+`fn()` without caching.
+
+The cache behind `fetchJSON` and `query`:
+
+- **Scope:** one per request on the server; one per page in the browser, shared by every island and
+  the SPA tree and kept across client navigations.
+- **Deduplication:** components awaiting the same entry share one request.
+- **Stale-while-revalidate:** in the browser, an entry with data returns it at once (a new
+  component shows it without a `<Suspense>` fallback) and refetches in the background; when the
+  data changed, the components that awaited it re-run. Defaults follow TanStack Query: `staleTime`
+  0, `gcTime` 5 minutes after the last component that awaited it is gone.
+- **Invalidation:** [`invalidate(target)`](#invalidate) re-runs only the components that awaited the
+  matching entries; their re-runs wait for the refetch, keeping their UI meanwhile.
+- **Islands:** entries awaited inside an island (or an SPA page) during SSR are sent once with the
+  page, so the browser cache starts with them and islands hydrate without fetching. Their values
+  must be plain data (`LUM4007`); entries only server components awaited are never sent.
+- **Errors** are never cached: the next await fetches again. A failed background refetch keeps the
+  old data.
+- Cached data is shared, not copied: treat it as read-only.
+
 ### FetchError, isFetchError
 
 ```ts
@@ -4022,9 +4136,10 @@ interface SubmitOptions {
   /** Default POST. A form must say method="post". */
   method?: string;
   signal?: AbortSignal;
-  /** Client-routed (SPA) pages: after a success, refresh the page's data with invalidate().
-   *  Default true. MPA pages never invalidate on their own. */
-  invalidate?: boolean;
+  /** After a success: true (default) refreshes the whole page with invalidate() on client-routed
+   *  (SPA) pages, false keeps the page, and a list of targets (URLs, query() keys) refetches only
+   *  those, on SPA and MPA pages. MPA pages never refresh as a whole on their own. */
+  invalidate?: boolean | readonly (string | readonly unknown[])[];
 }
 
 type ActionResult<Data = unknown, Failure = unknown> =
@@ -4035,8 +4150,10 @@ type ActionResult<Data = unknown, Failure = unknown> =
 
 Posts without a page load. `success` and `failure` set `actionData()`; `redirect` navigates.
 On client-routed (SPA) pages, after a `success`, `submit()` runs [`invalidate()`](#invalidate) and
-resolves once the page's data is fresh (decision-20); `{ invalidate: false }` skips it. On MPA pages
-it never reloads: the island updates itself from the result, or calls `invalidate()` explicitly.
+resolves once the page's data is fresh (decision-20); `{ invalidate: false }` skips it, and
+`{ invalidate: ["/api/books/1", ["stats"]] }` refetches only those targets instead, on SPA and MPA
+pages alike. On MPA pages it never reloads: the island updates itself from the result, refetches
+targets, or calls `invalidate()` explicitly.
 Failures, redirects and errors do not invalidate. Rejects only for unexpected errors (the action throws, an error response, a network
 failure) with a `FetchError`, and with a `TypeError` for a redirect to a URL that is not `http(s)`
 (a `javascript:` location never runs). Browser only: rejects on the server.
@@ -4086,14 +4203,26 @@ JavaScript the page re-renders with `status`; `submit()` resolves with `{ type: 
 ### invalidate
 
 ```ts
-function invalidate(): Promise<void>;
+function invalidate(...targets: (string | readonly unknown[])[]): Promise<void>;
 ```
 
-Refreshes the current page's server data after a mutation: re-runs the page's async components in
-SPA routes (their UI stays until the new data arrives), reloads the page otherwise (that promise
-never settles, as the page is going away). A successful
-`submit()` calls it for you on SPA pages only; on MPA pages call it yourself when the page needs
-fresh server HTML. Browser only.
+With targets, refetches only the matching [cache](#query) entries and re-runs the async components
+that awaited them, on SPA and MPA pages alike; their UI stays until the new data arrives. A string
+is a URL (resolved against the page) and matches the `fetchJSON()` entry of that exact URL; an
+array matches the `query()` entries whose key starts with it, as TanStack Query's
+`invalidateQueries`: `invalidate(["books"])` matches `["books"]`, `["books", 1]` and
+`["books", { page: 2 }]`. In development, a string that does not look like a URL (`/…`, `./…`,
+`../…`, `http(s):…`) logs a warning: `invalidate("stats")` was probably meant as
+`invalidate(["stats"])`.
+
+Without targets, refreshes the whole page after a mutation: re-runs the page's async components in
+SPA routes, refetching every cache entry (their UI stays until the new data arrives), and reloads
+the page otherwise (that promise never settles, as the page is going away). A successful `submit()`
+calls it for you on SPA pages only; on MPA pages call it yourself when the page needs fresh server
+HTML.
+
+Resolves once nothing is in flight anymore (`isBusy()` is false). Browser only: rejects on the
+server.
 
 ## Routing
 
@@ -5627,17 +5756,19 @@ apply as written. Concepts: [Signals and reactivity](../concepts/signals.md),
 ## When to use it
 
 Lumiose reads data without a library: async components `await` it, [`fetchJSON`](app.md#fetchjson)
-fetches JSON, and `invalidate()` and `submit()` refresh what a page shows. A keyed cache for those
-awaits, `query(key, fn)`, is planned. Prefer the built-in primitives when:
+fetches JSON, and `invalidate()` and `submit()` refresh what a page shows. Those awaits are cached:
+[`fetchJSON`](app.md#fetchjson) by URL and [`query(key, fn)`](app.md#query) by key, deduplicated,
+stale-while-revalidate, invalidated by URL or key prefix, and sent from the server to islands with
+the page. Prefer the built-in primitives when:
 
-- data is read by async components and refreshed by form actions,
+- data is read by async components and refreshed by form actions or `invalidate(target)`,
 - pages render on the server (`@lumiose/query` does not fetch there, see [Server rendering](#server-rendering)).
 
 Use `@lumiose/query` for client-side data (`spa` routes and islands) that needs what a client cache
 gives you:
 
 - many components reading the same data, fetched once and kept in sync,
-- stale-while-revalidate, polling (`refetchInterval`), refetching on window focus and reconnect,
+- polling (`refetchInterval`), refetching on window focus and reconnect, per-query `staleTime`,
 - retries, pagination with `placeholderData: keepPreviousData`, dependent queries (`enabled`),
 - mutations with optimistic updates and rollback (`onMutate`, `onError`),
 - a team or code that already knows TanStack Query.
@@ -7629,8 +7760,9 @@ effects, or compute them on the server and pass them as props. Keep awaits in a 
 ## What it means
 
 Values awaited in an island's async components are recorded during SSR and replayed during
-hydration, so they are serialized into the page. A `Response`, a class instance, a function or a
-stream cannot be.
+hydration, so they are serialized into the page. A cached value (`fetchJSON`, `query(key, fn)`)
+that an island awaited is sent once with the page, for the browser cache. A `Response`, a class
+instance, a function or a stream cannot be.
 
 ## Example
 
@@ -7644,8 +7776,9 @@ export async function Stock({ sku }: { sku: string }) {
 
 ## How to fix it
 
-Await plain data: `const data = await fetchJSON<Stock>(`/api/stock/${sku}`)`. Remember that every
-value awaited inside an island ends up in the HTML; never await secrets there.
+Await plain data: `const data = await fetchJSON<Stock>(`/api/stock/${sku}`)`. For `query()`, map
+the result to plain objects inside its function. Remember that every value awaited inside an
+island ends up in the HTML; never await secrets there.
 
 ## Related
 

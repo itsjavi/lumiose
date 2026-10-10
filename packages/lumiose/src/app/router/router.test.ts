@@ -7,7 +7,9 @@ import type { Component, Renderable } from "../../contract/client.ts";
 import { isBusy, effect, onCleanup, signal } from "../../core/index.ts";
 import { $async, $await, $leave, createComponent, insert, render } from "../../dom/index.ts";
 import { Suspense } from "../../dom/boundaries.ts";
+import { resetStates } from "../../core/state.ts";
 import { invalidate as appInvalidate } from "../actions/client.ts";
+import { query } from "../cache/client.ts";
 import { notFound, redirect } from "../server/control.ts";
 import { href } from "../routes/href.ts";
 import type { RouteSegment } from "../routes/segments.ts";
@@ -77,6 +79,24 @@ const User = $async(async function User(props: { params: { id: string } }) {
   }
 });
 
+// A page cached by `query()` (TASK-195): `bookData` answers its loads.
+const bookLoads: string[] = [];
+let bookData: Record<string, Deferred<string> | string> = {};
+const Book = $async(async function Book(props: { params: { id: string } }) {
+  try {
+    const id = props.params.id;
+    const load = () => {
+      bookLoads.push(id);
+      const data = bookData[id] ?? `book ${id}`;
+      return typeof data === "string" ? data : data.promise;
+    };
+    const name = (await $await(() => query(["book", id], load), 0))();
+    return el("h1", () => name);
+  } finally {
+    $leave();
+  }
+});
+
 const Search: Component<object> = () => el("p", () => `q=${searchParams().get("q") ?? ""}`);
 
 const Old: Component<object> = () => redirect("/search?q=moved");
@@ -111,6 +131,7 @@ const modules: Record<string, Component<any>> = {
   "src/routes/index.tsx": Home,
   "src/routes/users/_layout.tsx": Users,
   "src/routes/users/[id].tsx": User,
+  "src/routes/books/[id].tsx": Book,
   "src/routes/search.tsx": Search,
   "src/routes/old.tsx": Old,
   "src/routes/slow.tsx": SuspensePage,
@@ -130,6 +151,7 @@ function config(base = "/"): SpaConfig {
       { segments: [s("old")], app: APP, levels: [APP, "src/routes/old.tsx"] },
       { segments: [s("slow")], app: APP, levels: [APP, "src/routes/slow.tsx"] },
       { segments: [s("static")] },
+      { segments: [s("books"), param("id")], app: APP, levels: [APP, "src/routes/books/[id].tsx"] },
       {
         segments: [s("users"), param("id")],
         app: APP,
@@ -171,6 +193,9 @@ beforeEach(() => {
   rootMounts = usersMounts = 0;
   loads.length = 0;
   userData = {};
+  bookLoads.length = 0;
+  bookData = {};
+  resetStates();
 });
 
 afterEach(() => {
@@ -350,6 +375,30 @@ describe("lumiose/router", () => {
     userData["1"] = "third";
     await appInvalidate();
     expect(text()).toBe("path /users/1users of 1third");
+  });
+
+  it("keeps cached entries across navigations: going back shows them at once (TASK-195)", async () => {
+    await boot("/books/1", "src/routes/books/[id].tsx");
+    expect(text()).toBe("path /books/1book 1");
+    await navigate("/");
+    expect(text()).toBe("path /home");
+    await settled();
+    // Back: the page commits with the cached data while its refetch is still in flight.
+    const refetch = (bookData["1"] = deferred<string>());
+    await navigate("/books/1");
+    expect(text()).toBe("path /books/1book 1");
+    expect(bookLoads).toEqual(["1", "1"]);
+    refetch.resolve("book 1, 2nd edition");
+    await settled();
+    expect(text()).toBe("path /books/1book 1, 2nd edition");
+    // A page never visited still waits for its data.
+    const other = (bookData["2"] = deferred<string>());
+    const going = navigate("/books/2");
+    await settled();
+    expect(text()).toBe("path /books/1book 1, 2nd edition");
+    other.resolve("book 2");
+    await going;
+    expect(text()).toBe("path /books/2book 2");
   });
 
   it("<Link> marks the current page and prefetches its route", async () => {

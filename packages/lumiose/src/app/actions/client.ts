@@ -6,6 +6,7 @@
 import { beginBusy } from "../../core/internal.ts";
 import { signal, type Signal } from "../../core/signal.ts";
 import { decodeData } from "../../server/serialize.ts";
+import { invalidateEntries, settled } from "../cache/client.ts";
 import { fetchError, FetchError, readBody } from "../fetch-json.ts";
 import { navigation } from "./navigation.ts";
 import {
@@ -35,11 +36,13 @@ export interface SubmitOptions {
   /** Aborts the request. */
   signal?: AbortSignal;
   /**
-   * On client-routed (SPA) pages, after a `success` result, refresh the page's data with
-   * `invalidate()` before resolving (decision-20). Default `true`; `false` keeps the page as it
-   * is. MPA pages never invalidate on their own (that would reload): call `invalidate()` yourself.
+   * What to refresh after a `success` result, before resolving (decision-20): `true` (the default)
+   * refreshes the whole page with `invalidate()` on client-routed (SPA) pages, `false` keeps the
+   * page as it is, and a list of targets (URLs and `query()` keys, as for `invalidate()`) refetches
+   * only those, on SPA and MPA pages alike. MPA pages never refresh as a whole on their own (that
+   * would reload): call `invalidate()` yourself.
    */
-  invalidate?: boolean;
+  invalidate?: boolean | readonly (string | readonly unknown[])[];
 }
 
 export { setClientNavigation, type ClientNavigation } from "./navigation.ts";
@@ -135,10 +138,15 @@ export async function submit(
     endBusy();
     inFlight.update((names) => names.toSpliced(names.indexOf(name), 1));
   }
-  // After the submission left isBusy(): the SPA's invalidate() resolves once nothing is in flight.
+  // After the submission left isBusy(): invalidate() resolves once nothing is in flight.
   // MPA pages only reload on an explicit invalidate() (decision-20 amendment).
-  if (result.type === "success" && navigation.clientRouted && options.invalidate !== false) {
-    await invalidate();
+  const targets = options.invalidate;
+  if (result.type === "success") {
+    if (Array.isArray(targets)) {
+      if (targets.length > 0) await invalidate(...targets);
+    } else if (navigation.clientRouted && targets !== false) {
+      await invalidate();
+    }
   }
   return result;
 }
@@ -155,8 +163,19 @@ function networkError(error: unknown, url: string): unknown {
   return failure;
 }
 
-/** Refreshes the current page's server data after a mutation. MPA: reloads the page. */
-export async function invalidate(): Promise<void> {
+/**
+ * Refreshes data after a mutation. With targets, refetches only the matching cache entries and
+ * re-runs the async components that awaited them: a URL string matches the `fetchJSON()` entry of
+ * that URL, a key array the `query()` entries whose key starts with it (`invalidate(["books"])`
+ * matches `["books", 1]`). Without targets, refreshes the whole page: client-routed (SPA) pages
+ * re-run every async component, MPA pages reload. Resolves once nothing is in flight anymore.
+ */
+export async function invalidate(...targets: (string | readonly unknown[])[]): Promise<void> {
+  if (targets.length > 0) {
+    invalidateEntries(targets);
+    return settled();
+  }
+  invalidateEntries(undefined);
   await navigation.invalidate();
 }
 

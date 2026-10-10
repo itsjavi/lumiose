@@ -256,7 +256,8 @@ function isBusy(): boolean;
 ```
 
 App-wide: whether anything is in flight: an async component run, a `<Suspense>` showing its
-fallback, a form submission (`submit()`) or an SPA navigation. Reactive. Always `false` on the
+fallback, a form submission (`submit()`), an SPA navigation or a request of the async cache
+(`fetchJSON`, `query`), background refetches included. Reactive. Always `false` on the
 server.
 
 ## resource

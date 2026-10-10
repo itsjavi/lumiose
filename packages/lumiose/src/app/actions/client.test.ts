@@ -258,6 +258,38 @@ describe("submit() refreshes client-routed pages after a success (decision-20, T
     expect(navigation.invalidate).toHaveBeenCalledTimes(1);
   });
 
+  it("refetches only the targets of { invalidate: [...] }, on SPA and MPA pages (TASK-195)", async () => {
+    const dom = await import("../../dom/index.ts");
+    const { query } = await import("../cache/client.ts");
+    const stats = vi.fn(async () => stats.mock.calls.length);
+    const users = vi.fn(async () => "users");
+    const View = dom.$async(async function View(props: { k: string; fn: () => Promise<unknown> }) {
+      try {
+        return String((await dom.$await(() => query([props.k], props.fn), 0))());
+      } finally {
+        dom.$leave();
+      }
+    });
+    const box = document.createElement("div");
+    const dispose = dom.render(
+      () => [
+        dom.createComponent(View, { k: "stats", fn: stats }),
+        dom.createComponent(View, { k: "users", fn: users }),
+      ],
+      box,
+    );
+    await vi.waitFor(() => expect(box.textContent).toBe("1users"));
+    serve(() => actionResult({ type: "success", status: 200, data: "saved" }));
+    await client.submit({}, { invalidate: [["stats"]] });
+    expect(box.textContent).toBe("2users");
+    navigation.clientRouted = false;
+    await client.submit({}, { invalidate: ["/api/none", ["stats"]] });
+    expect(box.textContent).toBe("3users");
+    expect(navigation.invalidate).not.toHaveBeenCalled();
+    expect(users).toHaveBeenCalledTimes(1);
+    dispose();
+  });
+
   it("never invalidates on its own on MPA pages; an explicit invalidate() still does (TASK-118)", async () => {
     navigation.clientRouted = false;
     serve(() => actionResult({ type: "success", status: 200, data: "saved" }));

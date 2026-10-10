@@ -16,7 +16,10 @@ methods: `GET`, `POST`, `PUT`, `PATCH`, `DELETE` (and `HEAD`, `OPTIONS`), each
 serializable inside islands. Non-2xx responses throw a `FetchError` (an `HttpError` with `status`,
 `url` and the parsed body as `data`); if a server component lets it escape, the page renders
 `_error` (or `_404`) with that status. **During SSR, same-origin URLs are served in-process**, with
-the page request's cookies, without a network round-trip.
+the page request's cookies, without a network round-trip. **Awaited in an async component, a GET
+is cached by URL**: components awaiting the same URL share one request, and in the browser cached
+data shows at once and revalidates in the background. `query(key, fn)` caches other data under an
+array key. See [Async components](async.md) and [reference: query](../reference/app.md#query).
 
 **Mutations: form actions.** A page exports `action(ctx)` or named `actions = { name(ctx) }`. A
 `<form method="post">` posts to the page (or to `?/name` for a named action) and works without
@@ -46,6 +49,13 @@ until the new data arrives), or reloads the page (MPA). On client-routed (SPA) p
 `submit()` never reloads: an island owns only its own state, so it updates itself from the result
 (`result.data`, `actionData()`). Call `invalidate()` yourself when the page needs fresh
 server-rendered content; on MPA pages that reloads and resets `actionData()`.
+
+**Refreshing only what changed.** `invalidate(...targets)` refetches cache entries and re-runs only
+the async components that awaited them, on SPA and MPA pages alike (islands included, no reload):
+a string is a URL (the `fetchJSON` entry of that URL), an array a `query()` key prefix.
+`submit(form, { invalidate: ["/api/books/1", ["stats"]] })` does the same after a successful
+submission, instead of refreshing the whole page. Components rendered only on the server (outside
+islands) are not re-run by a target: use `invalidate()` for those.
 
 **Optimistic updates.** `optimistic(source)` follows `source` (a getter such as `() => props.likes`,
 or a signal) and shows an overlay while a promise is pending: `likes.update((n) => n + 1,
@@ -79,11 +89,14 @@ type only: `import type { actions } from "../routes/reading-list.stsx"`.
 | `fail(status, data?)`                                                | A failed action result.                                                |
 | `actionData<typeof actions>()`                                       | The last action's data or `fail` data, typed by the actions. Reactive. |
 | `submit(target, { action?, method?, signal?, invalidate? })`         | Post a form, submit event, `FormData`, `URLSearchParams` or a record.  |
+| `submit(target, { invalidate: [url, key] })`                         | The same, refetching only those cache entries after a success.         |
 | `submit<typeof actions.name>(…)`                                     | The same, resolving with that action's typed success and failure data. |
 | `isSubmitting(name?)`                                                | Whether a submission (to `?/name`) is in flight.                       |
 | `invalidate()`                                                       | Refresh the current page's server data.                                |
+| `invalidate(...targets)`                                             | Refetch the entries of URLs and `query()` key prefixes.                |
+| `query(key, fn)`                                                     | Awaited in a component, cache what `fn` resolves to under `key`.       |
 | `optimistic(source)`, `.set(value, promise)`, `.update(fn, promise)` | A value with overlays held while their promises are pending.           |
-| `fetchJSON<T>(url, init?)`, `isFetchError(e)`                        | JSON fetch with typed errors.                                          |
+| `fetchJSON<T>(url, init?)`, `isFetchError(e)`                        | JSON fetch with typed errors; cached by URL in components.             |
 
 ## Example
 
@@ -238,6 +251,10 @@ export default function Issues() {
   `{ type: "failure" }`; only unexpected errors reject.
 - **Calling `invalidate()` after a successful `submit()` on an SPA page.** `submit()` already did;
   a second call refreshes twice.
+- **Reaching for a client cache library first.** `fetchJSON` and `query` already dedupe, cache and
+  revalidate component awaits on the server and in the browser. Use
+  [`@lumiose/query`](../reference/query.md) for client data that needs polling, refetching on focus,
+  retries or per-query stale times.
 - **Expecting an MPA page to refresh after `submit()`.** On MPA pages `submit()` never reloads.
   Update the island from the result (a toggle sets its own state, a list removes its own row), or
   call `invalidate()` explicitly if the page must show fresh server HTML.

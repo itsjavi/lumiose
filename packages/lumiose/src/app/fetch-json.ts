@@ -2,7 +2,8 @@
 // `FetchError` for non-2xx responses. This is the browser version; under the node condition,
 // ./server/fetch-json.ts serves same-origin URLs in-process through the request handler.
 
-import { activeSub, isRun, lifetimeOf, type Run } from "../core/internal.ts";
+import { getAbortSignal } from "../core/owner.ts";
+import { cached, inRun, runSignal } from "./cache/client.ts";
 import { HttpError, statusText } from "./server/control.ts";
 
 /**
@@ -74,20 +75,38 @@ export async function readBody(response: Response): Promise<unknown> {
   return text;
 }
 
+/** Whether `init` makes a GET request: only those are cached. */
+export function isGet(init: RequestInit | undefined): boolean {
+  return init?.method === undefined || init.method.toUpperCase() === "GET";
+}
+
 /**
  * Fetches JSON: `const post = await fetchJSON<Post>("/api/posts/1")`. Throws a `FetchError` for
  * non-2xx responses. Returns plain data, so values awaited inside islands stay serializable.
  * During SSR, same-origin URLs are served in-process, with the page request's cookies.
- * Inside an async component, the signal defaults to `getAbortSignal()`: a superseded run cancels its
- * fetch (pass `signal` to choose another, or `null` for none).
+ * Awaited in an async component, a GET is cached by its absolute URL: components awaiting the same
+ * URL share one request, cached data shows at once and revalidates in the background, and
+ * `invalidate(url)` refetches it. Elsewhere (event handlers, actions), it is a plain request.
+ * Inside an async component, the signal defaults to `getAbortSignal()`: a superseded run stops
+ * waiting, and a request no component waits for anymore is cancelled (pass `signal` to choose
+ * another, or `null` for none).
  */
-export async function fetchJSON<T = unknown>(input: string | URL, init?: RequestInit): Promise<T> {
-  const base = typeof document === "undefined" ? globalThis.location?.href : document.baseURI;
-  // Called by an async component's run (`await fetchJSON(…)`): a superseded run aborts its fetch.
-  const signal =
-    init?.signal === undefined && isRun(activeSub) ? lifetimeOf(activeSub as Run) : undefined;
-  return requestJSON(
-    (request) => globalThis.fetch(request),
-    jsonRequest(new URL(input, base), signal === undefined ? init : { ...init, signal }),
-  );
+export function fetchJSON<T = unknown>(input: string | URL, init?: RequestInit): Promise<T> {
+  try {
+    const base = typeof document === "undefined" ? globalThis.location?.href : document.baseURI;
+    const url = new URL(input, base);
+    const send = (request: Request) => globalThis.fetch(request);
+    if (!inRun()) return requestJSON(send, jsonRequest(url, init));
+    // Called by an async component's run (`await fetchJSON(…)`): a superseded run stops waiting.
+    const signal = init?.signal === undefined ? runSignal() : init.signal;
+    if (!isGet(init)) return requestJSON(send, jsonRequest(url, { ...init, signal }));
+    return cached<T>(
+      url.href,
+      undefined,
+      () => requestJSON(send, jsonRequest(url, { ...init, signal: getAbortSignal() })),
+      signal,
+    );
+  } catch (error) {
+    return Promise.reject(error);
+  }
 }

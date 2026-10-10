@@ -456,7 +456,9 @@ export function hydrate<P extends object>(
       track(thunk);
       return { value: decodeData(awaits[key]) };
     }
-    if (DEV && !fresh) {
+    // `c:<key>`: the server awaited a cached value, which the client cache now serves from the
+    // page payload (app/cache/client.ts).
+    if (DEV && !fresh && !(awaits && Object.hasOwn(awaits, `c:${key}`))) {
       console.warn(
         `Lumiose: LUM4006: island ${name} has no recorded await ${key}, so the client awaits it again. Keep awaits in the same order on the server and the client (run \`lumiose docs LUM4006\`).`,
       );

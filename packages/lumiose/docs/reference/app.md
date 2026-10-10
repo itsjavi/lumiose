@@ -20,6 +20,44 @@ Fetches and parses JSON (`Accept: application/json` unless `init` sets it); an e
 in-process through the request handler, with the page request's cookies and headers. Returns plain
 data, so awaited results stay serializable in islands.
 
+Awaited in an async component, a GET is **cached by its absolute URL** (see [query](#query) for the
+cache's behaviour): components awaiting the same URL share one request. The first caller's `init`
+(headers, credentials) makes the request. Inside an async component the signal defaults to
+`getAbortSignal()`: a superseded run stops waiting, and the request is cancelled once no component
+waits for it. Elsewhere (event handlers, middleware, endpoints, actions) and for other methods it is
+a plain request.
+
+### query
+
+```ts
+function query<T>(key: readonly unknown[], fn: () => T | PromiseLike<T>): Promise<T>;
+```
+
+Awaited in an async component, caches what `fn` resolves to under `key`, an array of
+JSON-serializable values hashed stably (object key order does not matter), as TanStack Query's
+`queryKey`. Use it for data that does not come from `fetchJSON`: a database call in a server
+component, a third-party SDK. `fn` runs outside the component, so `getAbortSignal()` inside it is
+the shared request's, aborted once no component waits for it. Outside an async component it calls
+`fn()` without caching.
+
+The cache behind `fetchJSON` and `query`:
+
+- **Scope:** one per request on the server; one per page in the browser, shared by every island and
+  the SPA tree and kept across client navigations.
+- **Deduplication:** components awaiting the same entry share one request.
+- **Stale-while-revalidate:** in the browser, an entry with data returns it at once (a new
+  component shows it without a `<Suspense>` fallback) and refetches in the background; when the
+  data changed, the components that awaited it re-run. Defaults follow TanStack Query: `staleTime`
+  0, `gcTime` 5 minutes after the last component that awaited it is gone.
+- **Invalidation:** [`invalidate(target)`](#invalidate) re-runs only the components that awaited the
+  matching entries; their re-runs wait for the refetch, keeping their UI meanwhile.
+- **Islands:** entries awaited inside an island (or an SPA page) during SSR are sent once with the
+  page, so the browser cache starts with them and islands hydrate without fetching. Their values
+  must be plain data (`LUM4007`); entries only server components awaited are never sent.
+- **Errors** are never cached: the next await fetches again. A failed background refetch keeps the
+  old data.
+- Cached data is shared, not copied: treat it as read-only.
+
 ### FetchError, isFetchError
 
 ```ts
@@ -61,9 +99,10 @@ interface SubmitOptions {
   /** Default POST. A form must say method="post". */
   method?: string;
   signal?: AbortSignal;
-  /** Client-routed (SPA) pages: after a success, refresh the page's data with invalidate().
-   *  Default true. MPA pages never invalidate on their own. */
-  invalidate?: boolean;
+  /** After a success: true (default) refreshes the whole page with invalidate() on client-routed
+   *  (SPA) pages, false keeps the page, and a list of targets (URLs, query() keys) refetches only
+   *  those, on SPA and MPA pages. MPA pages never refresh as a whole on their own. */
+  invalidate?: boolean | readonly (string | readonly unknown[])[];
 }
 
 type ActionResult<Data = unknown, Failure = unknown> =
@@ -74,8 +113,10 @@ type ActionResult<Data = unknown, Failure = unknown> =
 
 Posts without a page load. `success` and `failure` set `actionData()`; `redirect` navigates.
 On client-routed (SPA) pages, after a `success`, `submit()` runs [`invalidate()`](#invalidate) and
-resolves once the page's data is fresh (decision-20); `{ invalidate: false }` skips it. On MPA pages
-it never reloads: the island updates itself from the result, or calls `invalidate()` explicitly.
+resolves once the page's data is fresh (decision-20); `{ invalidate: false }` skips it, and
+`{ invalidate: ["/api/books/1", ["stats"]] }` refetches only those targets instead, on SPA and MPA
+pages alike. On MPA pages it never reloads: the island updates itself from the result, refetches
+targets, or calls `invalidate()` explicitly.
 Failures, redirects and errors do not invalidate. Rejects only for unexpected errors (the action throws, an error response, a network
 failure) with a `FetchError`, and with a `TypeError` for a redirect to a URL that is not `http(s)`
 (a `javascript:` location never runs). Browser only: rejects on the server.
@@ -125,14 +166,26 @@ JavaScript the page re-renders with `status`; `submit()` resolves with `{ type: 
 ### invalidate
 
 ```ts
-function invalidate(): Promise<void>;
+function invalidate(...targets: (string | readonly unknown[])[]): Promise<void>;
 ```
 
-Refreshes the current page's server data after a mutation: re-runs the page's async components in
-SPA routes (their UI stays until the new data arrives), reloads the page otherwise (that promise
-never settles, as the page is going away). A successful
-`submit()` calls it for you on SPA pages only; on MPA pages call it yourself when the page needs
-fresh server HTML. Browser only.
+With targets, refetches only the matching [cache](#query) entries and re-runs the async components
+that awaited them, on SPA and MPA pages alike; their UI stays until the new data arrives. A string
+is a URL (resolved against the page) and matches the `fetchJSON()` entry of that exact URL; an
+array matches the `query()` entries whose key starts with it, as TanStack Query's
+`invalidateQueries`: `invalidate(["books"])` matches `["books"]`, `["books", 1]` and
+`["books", { page: 2 }]`. In development, a string that does not look like a URL (`/…`, `./…`,
+`../…`, `http(s):…`) logs a warning: `invalidate("stats")` was probably meant as
+`invalidate(["stats"])`.
+
+Without targets, refreshes the whole page after a mutation: re-runs the page's async components in
+SPA routes, refetching every cache entry (their UI stays until the new data arrives), and reloads
+the page otherwise (that promise never settles, as the page is going away). A successful `submit()`
+calls it for you on SPA pages only; on MPA pages call it yourself when the page needs fresh server
+HTML.
+
+Resolves once nothing is in flight anymore (`isBusy()` is false). Browser only: rejects on the
+server.
 
 ## Routing
 

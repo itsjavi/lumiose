@@ -22,7 +22,7 @@ export function submit(_target: SubmitTarget, _options?: SubmitOptions): Promise
   return Promise.reject(browserOnly("submit()"));
 }
 
-export function invalidate(): Promise<void> {
+export function invalidate(..._targets: (string | readonly unknown[])[]): Promise<void> {
   return Promise.reject(browserOnly("invalidate()"));
 }
 

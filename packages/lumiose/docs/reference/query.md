@@ -11,17 +11,19 @@ apply as written. Concepts: [Signals and reactivity](../concepts/signals.md),
 ## When to use it
 
 Lumiose reads data without a library: async components `await` it, [`fetchJSON`](app.md#fetchjson)
-fetches JSON, and `invalidate()` and `submit()` refresh what a page shows. A keyed cache for those
-awaits, `query(key, fn)`, is planned. Prefer the built-in primitives when:
+fetches JSON, and `invalidate()` and `submit()` refresh what a page shows. Those awaits are cached:
+[`fetchJSON`](app.md#fetchjson) by URL and [`query(key, fn)`](app.md#query) by key, deduplicated,
+stale-while-revalidate, invalidated by URL or key prefix, and sent from the server to islands with
+the page. Prefer the built-in primitives when:
 
-- data is read by async components and refreshed by form actions,
+- data is read by async components and refreshed by form actions or `invalidate(target)`,
 - pages render on the server (`@lumiose/query` does not fetch there, see [Server rendering](#server-rendering)).
 
 Use `@lumiose/query` for client-side data (`spa` routes and islands) that needs what a client cache
 gives you:
 
 - many components reading the same data, fetched once and kept in sync,
-- stale-while-revalidate, polling (`refetchInterval`), refetching on window focus and reconnect,
+- polling (`refetchInterval`), refetching on window focus and reconnect, per-query `staleTime`,
 - retries, pagination with `placeholderData: keepPreviousData`, dependent queries (`enabled`),
 - mutations with optimistic updates and rollback (`onMutate`, `onError`),
 - a team or code that already knows TanStack Query.

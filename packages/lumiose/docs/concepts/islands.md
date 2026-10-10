@@ -66,7 +66,8 @@ reaches one, and `lumiose check` reports the import. Server-only APIs (`request(
 
 **Awaited data** inside an island is recorded during SSR and replayed during hydration, so the
 browser does not fetch it again; it must be plain data (`LUM4007`), and it is visible in the page
-source. So are the values of scoped state that islands import (`defineState`, `LUM4011`): the page
+source. Cached awaits (`fetchJSON`, `query`) are sent once per page however many islands await
+them, and fill the browser cache, so later awaits and `invalidate(url)` start from them. So are the values of scoped state that islands import (`defineState`, `LUM4011`): the page
 sends them once, before the islands that read them hydrate. The loader and `hydrate()` are described in [`lumiose/dom`](../reference/dom.md).
 
 **The loader script.** `lumiose dev` and `lumiose build` add the loader to every page that renders an

@@ -5,7 +5,8 @@
 
 import { getAbortSignal } from "../../core/server.ts";
 import { inAsyncRun } from "../../server/frame.ts";
-import { jsonRequest, requestJSON } from "../fetch-json.ts";
+import { cached, canCache } from "../cache/server.ts";
+import { isGet, jsonRequest, requestJSON } from "../fetch-json.ts";
 import { getRequestScope } from "./scope.ts";
 
 const REDIRECTS = new Set([301, 302, 303, 307, 308]);
@@ -14,30 +15,42 @@ const MAX_REDIRECTS = 20;
 /**
  * Fetches JSON: `const post = await fetchJSON<Post>("/api/posts/1")`. Throws a `FetchError` for
  * non-2xx responses. Returns plain data, so values awaited inside islands stay serializable.
- * During SSR, same-origin URLs are served in-process, with the page request's cookies. Inside an
- * async component, the signal defaults to `getAbortSignal()` (the render's).
+ * During SSR, same-origin URLs are served in-process, with the page request's cookies. Awaited in
+ * an async component, a GET is cached for the rest of the request by its absolute URL (islands get
+ * it with the page); the signal then defaults to `getAbortSignal()` (the render's).
  */
-export async function fetchJSON<T = unknown>(input: string | URL, init?: RequestInit): Promise<T> {
-  const scope = getRequestScope();
-  const base = scope?.ctx.url;
-  let target: URL;
+export function fetchJSON<T = unknown>(input: string | URL, init?: RequestInit): Promise<T> {
   try {
-    target = new URL(input, base);
-  } catch {
-    throw new TypeError(
-      `fetchJSON(${String(input)}): relative URLs need a current request to resolve against; pass an absolute URL.`,
-    );
+    const scope = getRequestScope();
+    const base = scope?.ctx.url;
+    let target: URL;
+    try {
+      target = new URL(input, base);
+    } catch {
+      throw new TypeError(
+        `fetchJSON(${String(input)}): relative URLs need a current request to resolve against; pass an absolute URL.`,
+      );
+    }
+    const inProcess = scope?.fetch;
+    const send = (signal: AbortSignal | null | undefined): Promise<T> => {
+      const request = jsonRequest(target, signal === undefined ? init : { ...init, signal });
+      return inProcess !== undefined && target.origin === base!.origin
+        ? requestJSON((first) => followInProcess(inProcess, first), request)
+        : requestJSON((outgoing) => globalThis.fetch(outgoing), request);
+    };
+    if (!inAsyncRun()) return send(undefined);
+    // Inside an async component, the render's lifetime: the fetch stops when the render is aborted.
+    const signal = init?.signal === undefined ? getAbortSignal() : init.signal;
+    if (!isGet(init) || !canCache()) return send(signal);
+    // Same-origin URLs travel in the page payload as `/path?query`: the browser's origin may differ.
+    const wire =
+      base !== undefined && target.origin === base.origin
+        ? target.pathname + target.search
+        : target.href;
+    return cached<T>(target.href, wire, () => send(getAbortSignal()), signal);
+  } catch (error) {
+    return Promise.reject(error);
   }
-  // Inside an async component, the render's lifetime: the fetch stops when the render is aborted.
-  const request = jsonRequest(
-    target,
-    init?.signal === undefined && inAsyncRun() ? { ...init, signal: getAbortSignal() } : init,
-  );
-  const inProcess = scope?.fetch;
-  if (inProcess !== undefined && target.origin === base!.origin) {
-    return requestJSON((first) => followInProcess(inProcess, first), request);
-  }
-  return requestJSON((outgoing) => globalThis.fetch(outgoing), request);
 }
 
 /**

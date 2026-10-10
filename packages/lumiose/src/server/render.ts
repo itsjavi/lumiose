@@ -10,7 +10,7 @@
 //   each chunk   [<script type="module" async src="loader">][<link rel="modulepreload" href>…]
 //                [<style>rules</style>]
 //                <template for="lb3">HTML</template><script>$swap("lb3")</script>
-//                [<script type="application/json" data-l-payload>{"s":{…}}</script>]
+//                [<script type="application/json" data-l-payload>{"s":{…},"c":{…}}</script>]
 //                [<script type="application/json" data-l-islands>[records]</script>]
 // Browsers with declarative partial updates apply `<template for>` natively and `$swap` finds
 // nothing to do; elsewhere the `<?start>`/`<?end>` processing instructions parse as comments and
@@ -18,8 +18,9 @@
 // only after its parent, so its placeholder always exists when its chunk arrives.
 //
 // The page payload (decision-33) precedes the island records of the shell and of each chunk: the
-// scoped states (./state.ts) created so far and not sent yet, once the page has islands, so the
-// browser has them before any island in that chunk hydrates.
+// scoped states (./state.ts) created so far and not sent yet, and the async cache entries that
+// islands awaited (../app/cache/server.ts), once the page has islands, so the browser has them
+// before any island in that chunk hydrates.
 
 import { createOwner, disposeOwner } from "../core/internal.ts";
 import { LUM_AFTER_SHELL, LumioseError } from "../app/diagnostics.ts";
@@ -40,6 +41,7 @@ import {
 import { escapeAttr, jsonForScript, type Html } from "./node.ts";
 import type { RenderedShell, RenderToStreamOptions } from "./render-types.ts";
 import { createStateScope, currentStateScope, encodeStates, runInStateScope } from "./state.ts";
+import { encodeCache } from "../app/cache/server.ts";
 
 export type { RenderedShell, RenderToStreamOptions };
 
@@ -117,6 +119,7 @@ export function renderShell(root: () => unknown, options: ShellOptions = {}): Pr
     swapSent: false,
     states,
     sentStates: new Set(),
+    sentCache: new Set(),
     isClientState: options.isClientState,
     hydrates: false,
   };
@@ -351,15 +354,17 @@ function drop(render: RenderState, unit: Unit): void {
 }
 
 /**
- * The page payload of a chunk (decision-33): the scoped states created so far and not sent yet,
- * once the page has islands (nothing in the browser reads them before). Throws LUM4011.
+ * The page payload of a chunk (decision-33): the scoped states created so far and not sent yet
+ * (`s`), and the async cache entries islands awaited (`c`), once the page has islands (nothing in
+ * the browser reads them before). Throws LUM4011 and LUM4007.
  */
 function statePayload(render: RenderState, unit: Unit): string {
   if (unit.islands.length > 0) render.hydrates = true;
   if (!render.hydrates) return "";
   const states = encodeStates(render.states, render.sentStates, render.isClientState);
-  if (states === undefined) return "";
-  return `<script type="application/json" data-l-payload>${jsonForScript({ s: states })}</script>`;
+  const cache = encodeCache(render.states.cache, render.sentCache);
+  if (states === undefined && cache === undefined) return "";
+  return `<script type="application/json" data-l-payload>${jsonForScript({ s: states, c: cache })}</script>`;
 }
 
 function islandRecords(unit: Unit): string {

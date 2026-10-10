@@ -19,6 +19,7 @@ import {
 } from "../core/internal.ts";
 import { setCurrentOwner } from "../core/reactive.ts";
 import { LUM_AWAIT_VALUE, LumioseError } from "../app/diagnostics.ts";
+import type { ServerEntry } from "../app/cache/server.ts";
 import { encodeData } from "./serialize.ts";
 import { escapeText, html, isThenable, join, SSRHtml, type Html } from "./node.ts";
 
@@ -31,6 +32,8 @@ export interface StateAccessor {
 /** The scoped state instances of one request (or render), in creation order (./state.ts). */
 export interface StateScope {
   readonly values: Map<StateAccessor, unknown>;
+  /** The request's async cache entries (../app/cache/server.ts), by URL or key hash. */
+  cache?: Map<string, ServerEntry>;
 }
 
 /** A server component as compiled: getter props in, renderable content out. */
@@ -115,6 +118,8 @@ export interface RenderState {
   /** The scoped states of the request (./state.ts) and those the page payload already sent. */
   readonly states: StateScope;
   readonly sentStates: Set<StateAccessor>;
+  /** The async cache entries the page payload already sent. */
+  readonly sentCache: Set<string>;
   readonly isClientState: ((ref: string) => boolean) | undefined;
   /** A chunk with island records was sent: from then on, chunks carry the payload. */
   hydrates: boolean;
@@ -342,11 +347,31 @@ export function block(inner: string): string {
 
 /**
  * Whether an async component run is executing (between a resume and a pause): `fetchJSON()`
- * then defaults its signal to `getAbortSignal()`.
+ * then defaults its signal to `getAbortSignal()` and uses the async cache.
  */
 export function inAsyncRun(): boolean {
   return currentRun?.active === true;
 }
+
+/**
+ * Runs `fn` outside any async run, frame or owner but `owner`: the async cache's loaders, shared by
+ * several runs (their own `fetchJSON` calls are plain requests).
+ */
+export function detached<T>(owner: Owner, fn: () => T): T {
+  const run = currentRun;
+  currentRun = undefined;
+  try {
+    return withFrame(undefined, owner, fn);
+  } finally {
+    currentRun = run;
+  }
+}
+
+/**
+ * Promises the async cache returned (../app/cache/server.ts). Awaited directly inside an island,
+ * their value travels in the page payload, so the await record only holds a marker: `c:<key>`.
+ */
+export const cachedValues: WeakSet<object> = new WeakSet();
 
 /**
  * `await e` in an async component compiles to `(await $await(() => e, site))()`. Evaluates the
@@ -371,12 +396,15 @@ export function $await<T>(
   // A synchronous throw leaves the run active: it propagates in the body, whose `$leave` pauses it.
   const value = thunk();
   if (run !== undefined) pause(run);
+  // A cached value is sent once in the page payload; the client awaits the cache again.
+  const cached = key !== undefined && cachedValues.has(value as object);
   return Promise.resolve(value).then(
     (resolved) => {
       let failure: unknown;
       if (key !== undefined) {
         try {
-          recordAwait(frame!, key, resolved);
+          if (cached) recordAwait(frame!, `c:${key}`, 1);
+          else recordAwait(frame!, key, resolved);
         } catch (error) {
           failure = error;
         }
