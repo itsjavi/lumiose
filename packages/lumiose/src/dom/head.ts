@@ -77,14 +77,14 @@ const metas = new Map<string, Entry<Attributes>[]>();
 const metaElements = new Map<string, Element>();
 let unkeyed = 0;
 
-/** The dedupe key of a meta, or `undefined` when it has none. */
-function metaKey(props: Attributes): string | undefined {
-  const name = META_KEYS.find((key) => props[key] != null);
+/** The dedupe key of a meta (read through `get`: props or an element), or `undefined` when it has none. */
+function metaKey(get: (name: string) => unknown): string | undefined {
+  const name = META_KEYS.find((key) => get(key) != null);
   return name === undefined
     ? undefined
     : name === "charset"
       ? name
-      : `${name}:${String(props[name])}`;
+      : `${name}:${String(get(name))}`;
 }
 
 function setAttributes(el: Element, attributes: Attributes): void {
@@ -106,9 +106,7 @@ function adoptMeta(key: string, attributes: Attributes): Element | undefined {
   for (const el of document.head.querySelectorAll("meta")) {
     if (
       !managed.has(el) &&
-      (key[0] === "#"
-        ? el.isEqualNode(probe)
-        : metaKey(Object.fromEntries(Array.from(el.attributes, (a) => [a.name, a.value]))) === key)
+      (key[0] === "#" ? el.isEqualNode(probe) : metaKey((name) => el.getAttribute(name)) === key)
     ) {
       return el;
     }
@@ -134,7 +132,7 @@ function updateMeta(key: string): void {
 
 /** Adds or updates a `<meta>` in `<head>`; removed (or the next deepest restored) on disposal. */
 export function Meta(props: Attributes): Renderable {
-  const key = metaKey(props) ?? `#${unkeyed++}`;
+  const key = metaKey((name) => props[name]) ?? `#${unkeyed++}`;
   let entries = metas.get(key);
   if (entries === undefined) {
     metas.set(key, (entries = []));

@@ -58,14 +58,7 @@ export function isBusy(): boolean {
 
 /** Registers something in flight with `isBusy()`; returns the function (idempotent) that ends it. */
 export function beginBusy(): () => void {
-  inFlight.update((n) => n + 1);
-  let done = false;
-  return () => {
-    if (!done) {
-      done = true;
-      inFlight.update((n) => n - 1);
-    }
-  };
+  return hold(inFlight);
 }
 
 /**
@@ -82,15 +75,17 @@ export interface Boundary {
  */
 export function suspend(owner: Owner | undefined): () => void {
   const boundary = lookupContext(owner, SUSPENSE, undefined) as Boundary | undefined;
-  if (boundary === undefined) {
-    return noop;
-  }
-  boundary.update((n) => n + 1);
+  return boundary === undefined ? noop : hold(boundary);
+}
+
+/** Adds one to `count`; returns the function (idempotent) that takes it back. */
+function hold(count: Boundary): () => void {
+  count.update((n) => n + 1);
   let done = false;
   return () => {
     if (!done) {
       done = true;
-      boundary.update((n) => n - 1);
+      count.update((n) => n - 1);
     }
   };
 }
@@ -163,7 +158,7 @@ export function resource<T>(fetcher: (signal: AbortSignal) => T | PromiseLike<T>
 
   load();
   if (owner !== undefined) {
-    addCleanup(owner, () => release());
+    addCleanup(owner, release);
   }
   const read = (() => value()) as Resource<T>;
   read.loading = loading;
