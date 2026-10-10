@@ -11,11 +11,13 @@
   "files": [
     "compiler.darwin-x64.node"
   ],
-  "os": [
-    "darwin"
-  ],
-  "cpu": [
-    "x64"
-  ],
-  "main": "compiler.darwin-x64.node"
+  "main": "compiler.darwin-x64.node",
+  "publishConfig": {
+    "os": [
+      "darwin"
+    ],
+    "cpu": [
+      "x64"
+    ]
+  }
 }

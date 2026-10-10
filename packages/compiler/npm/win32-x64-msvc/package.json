@@ -11,11 +11,13 @@
   "files": [
     "compiler.win32-x64-msvc.node"
   ],
-  "os": [
-    "win32"
-  ],
-  "cpu": [
-    "x64"
-  ],
-  "main": "compiler.win32-x64-msvc.node"
+  "main": "compiler.win32-x64-msvc.node",
+  "publishConfig": {
+    "os": [
+      "win32"
+    ],
+    "cpu": [
+      "x64"
+    ]
+  }
 }

@@ -72,6 +72,7 @@ describe("tarballProblems", () => {
     );
     assert.deepEqual(problems, [
       "no LICENSE",
+      "a native binary without os and cpu",
       "export or bin compiler.linux-x64-gnu.node: missing",
     ]);
   });

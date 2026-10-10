@@ -11,14 +11,16 @@
   "files": [
     "compiler.linux-x64-gnu.node"
   ],
-  "os": [
-    "linux"
-  ],
-  "cpu": [
-    "x64"
-  ],
-  "libc": [
-    "glibc"
-  ],
-  "main": "compiler.linux-x64-gnu.node"
+  "main": "compiler.linux-x64-gnu.node",
+  "publishConfig": {
+    "os": [
+      "linux"
+    ],
+    "cpu": [
+      "x64"
+    ],
+    "libc": [
+      "glibc"
+    ]
+  }
 }

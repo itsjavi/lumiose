@@ -32,6 +32,8 @@ export interface Manifest {
   private?: boolean;
   main?: string;
   files?: string[];
+  os?: string[];
+  cpu?: string[];
   exports?: Record<string, unknown>;
   bin?: Record<string, string>;
   dependencies?: Record<string, string>;
@@ -69,6 +71,13 @@ export function tarballProblems(manifest: Manifest, files: string[]): string[] {
   const has = new Set(files);
   if (manifest.private) problems.push("is private");
   if (!has.has("LICENSE")) problems.push("no LICENSE");
+  // Platform packages carry os/cpu (publishConfig, so the workspace installs them everywhere).
+  if (
+    manifest.main?.endsWith(".node") &&
+    (manifest.os === undefined || manifest.cpu === undefined)
+  ) {
+    problems.push("a native binary without os and cpu");
+  }
   for (const file of files) {
     if (FORBIDDEN.some((pattern) => pattern.test(file))) problems.push(`ships ${file}`);
   }

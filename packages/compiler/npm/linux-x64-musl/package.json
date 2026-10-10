@@ -11,14 +11,16 @@
   "files": [
     "compiler.linux-x64-musl.node"
   ],
-  "os": [
-    "linux"
-  ],
-  "cpu": [
-    "x64"
-  ],
-  "libc": [
-    "musl"
-  ],
-  "main": "compiler.linux-x64-musl.node"
+  "main": "compiler.linux-x64-musl.node",
+  "publishConfig": {
+    "os": [
+      "linux"
+    ],
+    "cpu": [
+      "x64"
+    ],
+    "libc": [
+      "musl"
+    ]
+  }
 }
