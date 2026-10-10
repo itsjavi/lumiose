@@ -136,7 +136,7 @@ export function resolveTopic(query: string, docs: readonly Doc[] = loadDocs()): 
 export interface ExportSection {
   /** The reference page, such as `reference/reactivity`. */
   topic: string;
-  /** The section heading, such as `createContext, provide, inject`. */
+  /** The section heading, such as `createContext, useContext`. */
   heading: string;
   /** The section's Markdown, from its heading to the next heading of the same or a higher level. */
   content: string;

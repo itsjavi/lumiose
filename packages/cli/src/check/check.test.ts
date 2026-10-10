@@ -564,9 +564,9 @@ describe.skipIf(!binding)("lumiose check", () => {
       "",
     ].join("\n");
     const entry = [
-      'import { mount } from "lumiose/dom";',
+      'import { render } from "lumiose/dom";',
       'import { Theme } from "./components/Theme.tsx";',
-      'mount(() => <Theme />, document.getElementById("app")!);',
+      'render(() => <Theme />, document.getElementById("app")!);',
       "",
     ].join("\n");
     await writeFile(join(root, "src/components/Theme.tsx"), theme);

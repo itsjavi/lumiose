@@ -1,4 +1,4 @@
-import { mount } from "lumiose/dom";
+import { render } from "lumiose/dom";
 import { Showcase } from "./Showcase.stsx";
 
-mount(() => <Showcase />, document.getElementById("app")!);
+render(() => <Showcase />, document.getElementById("app")!);

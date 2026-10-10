@@ -106,8 +106,8 @@ addEventListener("message", async (event) => {
       await import(
         moduleUrl(
           \`import { \${program.mount === "default" ? "default" : program.mount} as App } from "\${app}";\\n\` +
-            \`import { createComponent, mount } from "\${modules["lumiose/dom"]}";\\n\` +
-            \`mount(() => createComponent(App, {}), document.getElementById("app"));\`,
+            \`import { createComponent, render } from "\${modules["lumiose/dom"]}";\\n\` +
+            \`render(() => createComponent(App, {}), document.getElementById("app"));\`,
         )
       );
     }
