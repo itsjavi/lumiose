@@ -1,5 +1,5 @@
 // `@lumiose/prettier-plugin` (TASK-41): Prettier formats `.stsx` files the way `lumiose fmt` does, with
-// Prettier's own printers. `lumiose fmt`'s algorithm (lumiose/tooling `formatStsx`) does the work:
+// Prettier's own printers. `lumiose fmt`'s algorithm (@lumiose/cli/tooling `formatStsx`) does the work:
 // the TSX with every style block replaced by a placeholder goes through Prettier's TypeScript
 // printer, each block's CSS through its CSS printer (`$` references protected), and the blocks are
 // re-indented at their placement. Files with scanner or syntax errors are reported, not changed.

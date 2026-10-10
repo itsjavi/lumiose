@@ -1,5 +1,5 @@
 // `createDevServer()`: the programmatic `lumiose dev` (spec §8 "Dev and config"). Vite 8 with the
-// project's Vite config (which adds `lumiose()` from lumiose/vite) plus the app plugin; without a
+// project's Vite config (which adds `lumiose()` from @lumiose/vite) plus the app plugin; without a
 // config file, `lumiose()` is added here.
 
 import {

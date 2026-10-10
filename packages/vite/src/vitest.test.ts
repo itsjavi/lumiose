@@ -1,4 +1,4 @@
-// `lumiose/vite` under Vitest (TASK-54): with only `plugins: [lumiose()]`, component tests in a DOM
+// `@lumiose/vite` under Vitest (TASK-54): with only `plugins: [lumiose()]`, component tests in a DOM
 // environment (happy-dom) get the browser entry of `lumiose` (reactive updates), while tests in the
 // node environment keep the node entry (server rendering). Runs the Vitest CLI on a fixture in a
 // temp dir whose node_modules link to this package, Vitest and happy-dom.
@@ -71,7 +71,7 @@ afterAll(() => {
   if (root) rmSync(root, { recursive: true, force: true });
 });
 
-describe.skipIf(!binding)("lumiose/vite in Vitest", () => {
+describe.skipIf(!binding)("@lumiose/vite in Vitest", () => {
   it("gives DOM tests the browser entry and node tests the server entry", () => {
     root = normalizePath(realpathSync.native(mkdtempSync(join(tmpdir(), "lumiose-vitest-"))));
     for (const [name, code] of Object.entries(FILES)) writeFileSync(join(root, name), code);

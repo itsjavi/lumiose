@@ -1,6 +1,6 @@
 // The route modules rendered only on the server (TASK-109): pages and layouts whose route mode is
 // `static` or `server`. Their default export's props are plain values (no reactive reads), which
-// the compiler needs to know (`compile(…, { serverRoute })`) for LUM2001/LUM2003. lumiose/vite,
+// the compiler needs to know (`compile(…, { serverRoute })`) for LUM2001/LUM2003. @lumiose/vite,
 // `lumiose check` and the language server share this so they report the same diagnostics.
 
 import { join } from "node:path";

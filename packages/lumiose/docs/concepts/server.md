@@ -39,7 +39,7 @@ a page may export `headers(ctx)`. They are writable **until the shell is sent** 
 `LUM5004`.
 
 **Env.** `env("NAME")` reads server env variables (the adapter's env, else `process.env`) in
-server-only code. Only `import.meta.env.PUBLIC_*` reaches client code (`lumiose/vite` sets Vite's
+server-only code. Only `import.meta.env.PUBLIC_*` reaches client code (`@lumiose/vite` sets Vite's
 `envPrefix` to `"PUBLIC_"` unless the config sets its own); `publicEnv()` returns that subset.
 
 **Server-only code** lives in `*.server.ts` modules and under `src/server/`. Importing it from code

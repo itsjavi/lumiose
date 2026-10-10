@@ -36,8 +36,21 @@ The rest of this page sets a project up by hand, step by step.
 
 ```sh
 pnpm add lumiose
-pnpm add -D vite typescript
+pnpm add -D @lumiose/vite @lumiose/cli vite typescript
 ```
+
+Lumiose ships as three packages that share one version:
+
+- `lumiose`: the runtime your app imports (signals, the DOM and server renderers, the router, the
+  app runtime). It has no dependencies.
+- `@lumiose/vite`: the Vite plugin, plus the dev server and the production build behind
+  `lumiose dev` and `lumiose build`.
+- `@lumiose/cli`: the `lumiose` command (`dev`, `build`, `preview`, `check`, `lint`, `fmt`, `docs`,
+  `mcp`, …).
+
+`@lumiose/compiler` (the native compiler) comes with them. Add
+[`@lumiose/adapter-node`](reference/adapter-node.md) to preview a build (`lumiose preview`) and to
+serve it on Node in production.
 
 ## 2. Configure TypeScript
 
@@ -68,7 +81,7 @@ highlights `.stsx` files.
 
 ```ts
 // vite.config.ts
-import lumiose from "lumiose/vite";
+import lumiose from "@lumiose/vite";
 import { defineConfig } from "vite";
 
 export default defineConfig({

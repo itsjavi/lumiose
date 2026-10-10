@@ -1,5 +1,5 @@
 // Fewer render-blocking stylesheets in builds (TASK-121; owner: Halo). The client build emits one
-// CSS file per stylesheet module (lumiose/vite's CSS manifest), and a page links every one its
+// CSS file per stylesheet module (@lumiose/vite's CSS manifest), and a page links every one its
 // document, layouts and route reach: 4 to 11 files of 0.2–3 kB in the sample apps. `lumiose build`
 // regroups them once the server graph is known:
 //

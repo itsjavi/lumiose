@@ -2,7 +2,7 @@
 // from code that reaches the browser, reported at the import site. The client graph here starts at
 // the modules that are client code by construction: island components (`client:*` call sites)
 // and modules that import `lumiose/dom` (client entries), and follows their imports. `lumiose dev`
-// and `lumiose build` enforce the rule on the real client graph (lumiose/vite's server-only.ts).
+// and `lumiose build` enforce the rule on the real client graph (@lumiose/vite's server-only.ts).
 
 import type {
   CompileResult,

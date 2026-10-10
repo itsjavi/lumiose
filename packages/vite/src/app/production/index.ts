@@ -1,4 +1,4 @@
-// `lumiose/build` (owner: Nova): the production build and prerendering (spec §8 Build). Server-only.
+// `@lumiose/vite/build` (owner: Nova): the production build and prerendering (spec §8 Build). Server-only.
 export { build, BuildError } from "./build.ts";
 export type { BuildOptions, BuildResult } from "./build.ts";
 export { PrerenderError } from "./prerender.ts";

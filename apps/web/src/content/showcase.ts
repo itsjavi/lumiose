@@ -57,7 +57,7 @@ export function examples(): Showcase[] {
       name: "vite-counter",
       title: "Vite counter",
       description:
-        "The smallest setup: lumiose/vite in a plain Vite app, with a counter and a todo list built from signals and scoped styles.",
+        "The smallest setup: @lumiose/vite in a plain Vite app, with a counter and a todo list built from signals and scoped styles.",
       tags: ["@lumiose/vite", "signals", ".stsx"],
       demo: link("/examples/vite-counter/"),
       source: `${REPOSITORY}/tree/main/examples/vite-counter`,

@@ -8,7 +8,7 @@ measurement), krausest commit `bf894b6`, headless Chrome.
 - Machine: Apple M1 Max (10 cores), darwin 27.0.0
 - Browser: Google Chrome 154.0.8037.99
 - Iterations: 10 per CPU benchmark, 3 per memory benchmark (medians shown)
-- lumiose: src/App.stsx compiled by lumiose/vite; lumiose-hand: the same app hand-compiled from the
+- lumiose: src/App.stsx compiled by @lumiose/vite; lumiose-hand: the same app hand-compiled from the
   compiler-runtime contract (src/hand-compiled.js), the target for the compiler's output
 - remix-v3: frameworks/keyed/remix-v3, remix@3.0.0 (remix/component 1.0) bundled and minified
   by esbuild like the Remix team's own benchmark app; krausest has no Remix 3 entry, so it has

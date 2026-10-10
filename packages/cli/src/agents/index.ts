@@ -1,7 +1,7 @@
 // Agent setup files (spec §10, decision-10): `AGENTS.md` (a Lumiose section between markers),
 // `CLAUDE.md` referencing it, the `lumiose` skill, the `.gitattributes` line for `.stsx` and, when
 // missing, a `tsconfig.json` that extends the generated one (decision-25). Written by
-// `lumiose agents init` for existing projects and by create-lumiose for new ones (`lumiose/agents`).
+// `lumiose agents init` for existing projects and by create-lumiose for new ones (`@lumiose/cli/agents`).
 // Re-running updates Lumiose's parts and leaves everything else in these files alone.
 
 import { existsSync } from "node:fs";

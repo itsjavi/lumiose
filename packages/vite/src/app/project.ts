@@ -54,7 +54,7 @@ export function findAppFile(root: string, files: readonly string[]): string | un
 
 /**
  * Project options of `lumiose({ … })` (decision-21, spec §8 "Dev and config"), which the `lumiose`
- * compiler plugin (lumiose/vite) exposes as `api.options`. Options it does not expose are unset.
+ * compiler plugin (@lumiose/vite) exposes as `api.options`. Options it does not expose are unset.
  */
 export interface ProjectOptions {
   mode?: RouteMode;

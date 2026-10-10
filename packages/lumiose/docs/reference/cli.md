@@ -2,6 +2,8 @@
 
 > The `lumiose` command: `dev`, `build`, `preview`, `check`, `typegen`, `routes`, `lint`, `fmt`, `docs`, `explain`, `agents init` and `mcp`, each with help, `--format json` and stable exit codes.
 
+The command comes with the `@lumiose/cli` package (`pnpm add -D @lumiose/cli`).
+
 ```sh
 lumiose <command> [options]
 lumiose <command> --help        # usage, options, exit codes and examples

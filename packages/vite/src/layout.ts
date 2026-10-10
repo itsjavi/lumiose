@@ -28,7 +28,7 @@ export const SOURCE_DIR = "src";
  */
 export const LUMIOSE_TSCONFIG = ".lumiose/tsconfig.generated.json";
 
-/** Linked packages under `node_modules` are not Lumiose sources (lumiose/vite's default exclude). */
+/** Linked packages under `node_modules` are not Lumiose sources (@lumiose/vite's default exclude). */
 const NODE_MODULES = /[\\/]node_modules[\\/]/;
 
 export interface ShadowLayout {
@@ -86,7 +86,7 @@ export function shadowPair(
 
 /**
  * The Lumiose packages a project uses, as directories: the linked dependencies that list `lumiose` as
- * a dependency, transitively from the nearest `package.json` (the packages lumiose/vite scans; see
+ * a dependency, transitively from the nearest `package.json` (the packages @lumiose/vite scans; see
  * vite/packages.ts) and, for a project without its own `package.json` (a showcase inside a
  * library), that enclosing package when it uses Lumiose.
  */

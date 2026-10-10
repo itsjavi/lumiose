@@ -1,4 +1,4 @@
-// `lumiose/dev` (owner: Nova): the dev server (spec §8 "Dev and config"). Server-only.
+// `@lumiose/vite/dev` (owner: Nova): the dev server (spec §8 "Dev and config"). Server-only.
 export { createDevServer } from "./server.ts";
 export type { DevServer, DevServerOptions } from "./server.ts";
 export { lumioseDev } from "./plugin.ts";

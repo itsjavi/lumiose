@@ -8,7 +8,7 @@
 //   runtime goes to one chunk, with a smaller preload helper (./client-runtime.ts).
 // - ssr → `dist/server/entry.js` (`virtual:lumiose/server-entry`): the route manifest, a lazy
 //   import per route module, the middleware and the document, the island and loader URLs of the
-//   client build, the stylesheets of each module (`virtual:lumiose/css-manifest`, lumiose/vite) and
+//   client build, the stylesheets of each module (`virtual:lumiose/css-manifest`, @lumiose/vite) and
 //   `export default { fetch }` from `createAppHandler()`. Assets that only server-rendered modules
 //   import (`import photo from "./photo.png"`, a relative `<img src>` in a `.md` import) are
 //   emitted by this build and moved to `dist/client`, where their URLs point (TASK-126).
@@ -173,7 +173,7 @@ function lumioseBuildEnvironments(state: BuildState): Plugin {
       },
     },
 
-    // lumiose/vite builds every stylesheet as an entry of the client build (its CSS manifest). When
+    // @lumiose/vite builds every stylesheet as an entry of the client build (its CSS manifest). When
     // an island imports one too, Rolldown moves the stylesheet to a shared chunk and gives the entry
     // a facade chunk that only imports it; Vite then drops the pure-CSS chunk and blanks the import
     // (`/* empty css */`). Nothing loads the facade, so it is not written either (TASK-94).
@@ -277,7 +277,7 @@ function pageStylesheets(
 /**
  * Moves the server build's emitted assets to the client output: files under `assetsDir`, named by
  * content hash as in the client build, so one the client build already wrote is identical and
- * kept. Stylesheets are dropped: the client build emits every stylesheet (lumiose/vite's CSS
+ * kept. Stylesheets are dropped: the client build emits every stylesheet (@lumiose/vite's CSS
  * manifest), and pages link those.
  */
 async function moveServerAssets(

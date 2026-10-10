@@ -1,6 +1,6 @@
 // Imported `$name` constants in tooling (spec §5.1). `compile()` cannot read files: it returns
 // `moduleRequests`, and the host resolves and reads them and compiles again with `modules`.
-// lumiose/vite answers with Vite's resolver; `lumiose check` and the language server answer with a
+// @lumiose/vite answers with Vite's resolver; `lumiose check` and the language server answer with a
 // {@link ModuleHost}: TypeScript-compatible resolution (`moduleResolution: "bundler"`) of
 // relative paths, tsconfig `paths` and package `exports`/`imports`, with cached resolutions and
 // sources, and the modules each compiled file read, so an edit to a constants module re-checks

@@ -149,7 +149,7 @@ to reflected input, see BREACH in the [adapter reference](../reference/adapter-n
 
 ```ts
 // vite.config.ts
-import lumiose from "lumiose/vite";
+import lumiose from "@lumiose/vite";
 
 export default { plugins: [lumiose({ csp: "strict" })] };
 ```
@@ -197,4 +197,4 @@ A CSP violation shows in the browser console, with the refused element. For file
 nested too deeply), [LUM3021](../errors/LUM3021.md) (a `$` constant that would break out of its
 value).
 
-See also: [Head and document](head.md), [Styles](styles.md), [Rendering modes](rendering-modes.md), [reference: `lumiose/vite`](../reference/vite.md), [reference: app APIs](../reference/app.md).
+See also: [Head and document](head.md), [Styles](styles.md), [Rendering modes](rendering-modes.md), [reference: `@lumiose/vite`](../reference/vite.md), [reference: app APIs](../reference/app.md).

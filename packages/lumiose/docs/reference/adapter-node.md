@@ -71,7 +71,7 @@ alike: the place for headers that middleware cannot add to static files, such as
 They are set first, so a response's own header of the same name wins: a static file's
 `cache-control`, a page's `response().setHeader()`, a middleware's response. `lumiose preview` passes
 Vite's `preview.headers`, which default to `server.headers`. The build's `lumiose({ headers })`
-([lumiose/vite](./vite.md#lumiose)) apply too, by path, after these: prefer them, so dev, preview,
+([@lumiose/vite](./vite.md#lumiose)) apply too, by path, after these: prefer them, so dev, preview,
 this adapter and static hosts send the same headers.
 
 **Compression** is on by default. Static files are served from the `.br` and `.gz` copies that

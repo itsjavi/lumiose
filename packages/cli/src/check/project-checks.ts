@@ -1,7 +1,7 @@
 // Project-wide diagnostics (TASK-137): checks that need every module of the project, not one file.
 // - LUM4003: a server-only module in the client graph (./client-graph.ts).
 // - LUM3012: a custom property set in a `style` prop that no stylesheet reads (the check
-//   `lumiose build` runs, lumiose/vite's custom-properties.ts).
+//   `lumiose build` runs, @lumiose/vite's custom-properties.ts).
 // `lumiose check` runs them over its compiled sources; the language server keeps a ProjectChecks per
 // project root, which compiles only the files that changed since the last run.
 

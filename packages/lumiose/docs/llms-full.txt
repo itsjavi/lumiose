@@ -56,7 +56,7 @@ mistakes** and **Related diagnostics**. Reference pages list every export with i
 - [`lumiose`: server rendering](reference/server.md): `renderToStream`, `renderToString` and the `lumiose/server` subpath.
 - [`lumiose/dom`](reference/dom.md): `mount`, the compiler-runtime contract, `hydrate` (`lumiose/dom/hydrate`) and the island loader (`lumiose/dom/loader`).
 - [`lumiose/router`](reference/router.md): The SPA router: `Link`, `navigate`, `navigating` and reactive route state.
-- [`lumiose/vite`](reference/vite.md): The Vite plugin and its options.
+- [`@lumiose/vite`](reference/vite.md): The Vite plugin and its options.
 - [JSX types and tsconfig](reference/jsx.md): `lumiose/jsx-runtime`, `lumiose/env` and the required `tsconfig.json`.
 - [CLI](reference/cli.md): `lumiose dev`, `build`, `preview`, `check`, `typegen`, `routes`, `lint`, `fmt`, `docs`, `explain`, `agents init` and `mcp`; `--format json` and exit codes.
 - [MCP server](reference/mcp.md): `lumiose mcp` for coding agents: docs, `check` with fixes, routes, components, compiler output, rendered HTML and dev logs.
@@ -125,8 +125,21 @@ The rest of this page sets a project up by hand, step by step.
 
 ```sh
 pnpm add lumiose
-pnpm add -D vite typescript
+pnpm add -D @lumiose/vite @lumiose/cli vite typescript
 ```
+
+Lumiose ships as three packages that share one version:
+
+- `lumiose`: the runtime your app imports (signals, the DOM and server renderers, the router, the
+  app runtime). It has no dependencies.
+- `@lumiose/vite`: the Vite plugin, plus the dev server and the production build behind
+  `lumiose dev` and `lumiose build`.
+- `@lumiose/cli`: the `lumiose` command (`dev`, `build`, `preview`, `check`, `lint`, `fmt`, `docs`,
+  `mcp`, …).
+
+`@lumiose/compiler` (the native compiler) comes with them. Add
+[`@lumiose/adapter-node`](reference/adapter-node.md) to preview a build (`lumiose preview`) and to
+serve it on Node in production.
 
 ## 2. Configure TypeScript
 
@@ -157,7 +170,7 @@ highlights `.stsx` files.
 
 ```ts
 // vite.config.ts
-import lumiose from "lumiose/vite";
+import lumiose from "@lumiose/vite";
 import { defineConfig } from "vite";
 
 export default defineConfig({
@@ -684,7 +697,7 @@ a +0,1,0 specificity bump. Dynamic classes always work, because no element is pr
 **Blocks are plain CSS:** no Sass, no `lang`, `media` or other attributes (only `global`). CSS
 imports, CSS Modules, Tailwind v4 and `.scss` imports still work through Vite.
 
-> **Status:** available. `lumiose/vite` serves each file's CSS as a CSS module, and style-only or
+> **Status:** available. `@lumiose/vite` serves each file's CSS as a CSS module, and style-only or
 > constant-only edits hot-update the CSS without remounting. `LUM3012` (a custom property set in a
 > `style` prop that no stylesheet reads) is reported by `lumiose build` only.
 
@@ -1791,7 +1804,7 @@ a page may export `headers(ctx)`. They are writable **until the shell is sent** 
 `LUM5004`.
 
 **Env.** `env("NAME")` reads server env variables (the adapter's env, else `process.env`) in
-server-only code. Only `import.meta.env.PUBLIC_*` reaches client code (`lumiose/vite` sets Vite's
+server-only code. Only `import.meta.env.PUBLIC_*` reaches client code (`@lumiose/vite` sets Vite's
 `envPrefix` to `"PUBLIC_"` unless the config sets its own); `publicEnv()` returns that subset.
 
 **Server-only code** lives in `*.server.ts` modules and under `src/server/`. Importing it from code
@@ -1972,7 +1985,7 @@ handler) or `lumiose preview`. A site whose every route is prerendered (no `serv
 server-rendered `spa` route, no form action; `ssr = false` routes with params need a `404.html`
 shell) builds no `dist/server`: deploy `dist/client` to any static host, and `lumiose preview` serves
 it without the adapter. Set response headers once with `lumiose({ headers })`
-([lumiose/vite](../reference/vite.md#lumiose)).
+([@lumiose/vite](../reference/vite.md#lumiose)).
 
 > **Status:** `lumiose dev`, `lumiose build`, prerendering,
 > [`@lumiose/adapter-node`](../reference/adapter-node.md), CSS links in built pages, the island
@@ -2137,7 +2150,7 @@ The types come with `lumiose/env` (`"types": ["lumiose/env"]` in `tsconfig.json`
 ```ts
 // vite.config.ts: your own SVGO plugins (optional)
 import { defineConfig } from "vite";
-import lumiose from "lumiose/vite";
+import lumiose from "@lumiose/vite";
 
 export default defineConfig({
   plugins: [
@@ -2209,7 +2222,7 @@ A file that is not well-formed SVG fails the build with its location
 (`icon.svg: invalid SVG: … at 3:12`), as does a file whose root element is not `<svg>` and one
 whose elements nest more than 128 levels deep.
 
-See also: [Styles](styles.md), [JSX](jsx.md), [reference: `lumiose/vite`](../reference/vite.md), [reference: JSX types](../reference/jsx.md).
+See also: [Styles](styles.md), [JSX](jsx.md), [reference: `@lumiose/vite`](../reference/vite.md), [reference: JSX types](../reference/jsx.md).
 
 <!-- source: concepts/content.md -->
 
@@ -2309,7 +2322,7 @@ The types come with `lumiose/env` (`"types": ["lumiose/env"]` in `tsconfig.json`
 ```ts
 // vite.config.ts: Markdown with validated frontmatter, and HTML imports
 import { defineConfig } from "vite";
-import lumiose from "lumiose/vite";
+import lumiose from "@lumiose/vite";
 import * as z from "zod";
 
 const Post = z.object({
@@ -2437,7 +2450,7 @@ for example [LUM3005](../errors/LUM3005.md) for a selector that matches nothing.
 [LUM1008](../errors/LUM1008.md) reports a `<script>` in a Markdown file. A frontmatter
 block that is not a mapping, or a hook that throws, fails the build with the file's name.
 
-See also: [Styles](styles.md), [Islands](islands.md), [SVG imports](svg.md), [reference: `lumiose/vite`](../reference/vite.md), [reference: JSX types](../reference/jsx.md).
+See also: [Styles](styles.md), [Islands](islands.md), [SVG imports](svg.md), [reference: `@lumiose/vite`](../reference/vite.md), [reference: JSX types](../reference/jsx.md).
 
 <!-- source: concepts/head.md -->
 
@@ -2597,7 +2610,7 @@ are not used.
 | `lumiose check [--format json]`       | Type-check and report diagnostics; exit 1 on errors. |
 | `lumiose explain <code>`              | Print a diagnostic's explanation.                    |
 | `lumiose docs <topic>`                | Print or search these docs.                          |
-| `lumiose/vite`                        | The plugin that runs the compiler in Vite.           |
+| `@lumiose/vite`                       | The plugin that runs the compiler in Vite.           |
 | `.lumiose/shadow/`, `.lumiose/types/` | Generated shadow TSX and route types (git-ignored).  |
 
 ## Example
@@ -2686,7 +2699,7 @@ file without a DOM environment, in the same project.
 
 ```ts
 // vitest.config.ts
-import lumiose from "lumiose/vite";
+import lumiose from "@lumiose/vite";
 import { defineConfig } from "vite";
 
 export default defineConfig({
@@ -2891,7 +2904,7 @@ to reflected input, see BREACH in the [adapter reference](../reference/adapter-n
 
 ```ts
 // vite.config.ts
-import lumiose from "lumiose/vite";
+import lumiose from "@lumiose/vite";
 
 export default { plugins: [lumiose({ csp: "strict" })] };
 ```
@@ -2939,7 +2952,7 @@ A CSP violation shows in the browser console, with the refused element. For file
 nested too deeply), [LUM3021](../errors/LUM3021.md) (a `$` constant that would break out of its
 value).
 
-See also: [Head and document](head.md), [Styles](styles.md), [Rendering modes](rendering-modes.md), [reference: `lumiose/vite`](../reference/vite.md), [reference: app APIs](../reference/app.md).
+See also: [Head and document](head.md), [Styles](styles.md), [Rendering modes](rendering-modes.md), [reference: `@lumiose/vite`](../reference/vite.md), [reference: app APIs](../reference/app.md).
 
 <!-- source: reference/reactivity.md -->
 
@@ -3795,7 +3808,7 @@ the island loader and hydrating entries import it; bundles that never hydrate do
 The island loader: a client entry, with no exports, that `lumiose dev` and `lumiose build` add to every
 page that renders an island (`<script type="module" async>`, see [Islands](../concepts/islands.md));
 with your own server, pass its URL as `renderToStream(root, { loaderUrl })`. It imports the app's
-island manifest (`virtual:lumiose/islands`, from `lumiose/vite`), and:
+island manifest (`virtual:lumiose/islands`, from `@lumiose/vite`), and:
 
 - reads the island records (`<script type="application/json" data-l-islands>`) as each streamed
   chunk arrives, and finds each island's range;
@@ -4039,14 +4052,16 @@ See also: [Routing](../concepts/routing.md), [Rendering modes](../concepts/rende
 
 <!-- source: reference/vite.md -->
 
-# `lumiose/vite`
+# `@lumiose/vite`
 
 > The Vite 8 plugin: compiles `.stsx` and `.tsx` with the Lumiose compiler, picks the `lumiose` entry per Vite environment, reports diagnostics in the overlay and reloads on edit.
+
+Install it next to `lumiose` and Vite: `pnpm add -D @lumiose/vite vite`.
 
 ## lumiose()
 
 ```ts
-import lumiose from "lumiose/vite";
+import lumiose from "@lumiose/vite";
 
 function lumiose(options?: LumioseOptions): Plugin[];
 
@@ -4184,7 +4199,7 @@ What it does:
 
 ```ts
 // vite.config.ts
-import lumiose from "lumiose/vite";
+import lumiose from "@lumiose/vite";
 import { defineConfig } from "vite";
 
 export default defineConfig({
@@ -4213,7 +4228,7 @@ what `create-lumiose` writes, what `lumiose agents init` writes when the file is
 ```
 
 Add your own `compilerOptions` next to `extends`; they override the generated ones. `lumiose check`,
-`lumiose typegen`, `lumiose dev`/`build`, `lumiose/vite` and the language server write
+`lumiose typegen`, `lumiose dev`/`build`, `@lumiose/vite` and the language server write
 `.lumiose/tsconfig.generated.json`, so it follows the installed Lumiose version and the workspace
 layout. `.lumiose/` is not committed: in a fresh clone, run `lumiose typegen` (or `lumiose check`) before
 a bare `tsc`.
@@ -4403,6 +4418,8 @@ modules in Lumiose components.
 # CLI
 
 > The `lumiose` command: `dev`, `build`, `preview`, `check`, `typegen`, `routes`, `lint`, `fmt`, `docs`, `explain`, `agents init` and `mcp`, each with help, `--format json` and stable exit codes.
+
+The command comes with the `@lumiose/cli` package (`pnpm add -D @lumiose/cli`).
 
 ```sh
 lumiose <command> [options]
@@ -4855,7 +4872,7 @@ alike: the place for headers that middleware cannot add to static files, such as
 They are set first, so a response's own header of the same name wins: a static file's
 `cache-control`, a page's `response().setHeader()`, a middleware's response. `lumiose preview` passes
 Vite's `preview.headers`, which default to `server.headers`. The build's `lumiose({ headers })`
-([lumiose/vite](./vite.md#lumiose)) apply too, by path, after these: prefer them, so dev, preview,
+([@lumiose/vite](./vite.md#lumiose)) apply too, by path, after these: prefer them, so dev, preview,
 this adapter and static hosts send the same headers.
 
 **Compression** is on by default. Static files are served from the `.br` and `.gz` copies that
@@ -5358,7 +5375,7 @@ levels are plenty.
 
 > Brackets in a `.stsx`/`.tsx` file are nested more than 1000 levels deep, so the compiler refuses the file.
 
-**Reported by:** the compiler, in `lumiose/vite`, `lumiose check` and the language server. An error.
+**Reported by:** the compiler, in `@lumiose/vite`, `lumiose check` and the language server. An error.
 
 ## What it means
 
@@ -5426,7 +5443,7 @@ const featured = queries().featuredBooks(6);
 
 Pages and layouts whose route mode is `static` or `server` render once per request (or build), so
 their own props are plain values too: deriving from them is fine. Routes in `spa` mode, islands
-and other components re-render with new props and still get the warning. `lumiose/vite`,
+and other components re-render with new props and still get the warning. `@lumiose/vite`,
 `lumiose check` and the language server read the route modes the same way (`export const mode`,
 the nearest layout's, then `lumiose({ mode })`).
 
@@ -5759,7 +5776,7 @@ value should survive re-runs, create the signal in a parent and pass it down.
 
 > A selector in a scoped `<style>` block matches no element of its scope.
 
-**Reported by:** the CSS compiler (`lumiose_css`), in `lumiose/vite`, `lumiose check` and the language server. A warning.
+**Reported by:** the CSS compiler (`lumiose_css`), in `@lumiose/vite`, `lumiose check` and the language server. A warning.
 
 ## What it means
 
@@ -5825,7 +5842,7 @@ or write the `<label>` inside the `<form>` instead of returning it from a helper
 
 > A `$name` reference in CSS does not resolve to a build-time constant.
 
-**Reported by:** the compiler, in `lumiose/vite`, `lumiose check` and the language server. The
+**Reported by:** the compiler, in `@lumiose/vite`, `lumiose check` and the language server. The
 reference is left in the CSS as written, which browsers ignore.
 
 ## What it means
@@ -5887,7 +5904,7 @@ named keys instead of an array (`$sizes.sm`), and constant math instead of a cal
 
 > A `$` reference is followed by a hyphen, as if the name contained one.
 
-**Reported by:** the CSS compiler (`lumiose_css`), in `lumiose/vite`, `lumiose check` and the language server.
+**Reported by:** the CSS compiler (`lumiose_css`), in `@lumiose/vite`, `lumiose check` and the language server.
 The `$brand` part is not substituted either.
 
 ## What it means
@@ -6034,7 +6051,7 @@ in a layout:
 
 > A custom property is set in a component's `style` prop but no CSS reads it.
 
-**Reported by:** `lumiose build` (`lumiose/vite`), once every module is compiled, `lumiose check` and
+**Reported by:** `lumiose build` (`@lumiose/vite`), once every module is compiled, `lumiose check` and
 the language server: another file's CSS may read the property, so the check is project-wide. Not
 reported in dev. A warning. `lumiose check` and the editor count the style blocks of the project's
 modules, the stylesheets under `src/` and the stylesheets and Lumiose modules that the project's
@@ -6127,7 +6144,7 @@ of the file.
 
 > Lightning CSS could not parse a `<style>` block, or could not minify or print it.
 
-**Reported by:** the CSS compiler (`lumiose_css`), in `lumiose/vite`, `lumiose check` and the language server.
+**Reported by:** the CSS compiler (`lumiose_css`), in `@lumiose/vite`, `lumiose check` and the language server.
 
 ## What it means
 
@@ -6178,7 +6195,7 @@ is not CSS; `$name` only reads JS constants. CSS nesting is supported.
 
 > Lightning CSS dropped an invalid rule, declaration or selector from a `<style>` block.
 
-**Reported by:** the CSS compiler (`lumiose_css`), in `lumiose/vite`, `lumiose check` and the language server. A warning.
+**Reported by:** the CSS compiler (`lumiose_css`), in `@lumiose/vite`, `lumiose check` and the language server. A warning.
 
 ## What it means
 
@@ -6216,7 +6233,7 @@ purpose, check the configured browser targets.
 
 > A `:global()` or `:deep()` selector is malformed.
 
-**Reported by:** the CSS compiler (`lumiose_css`), in `lumiose/vite`, `lumiose check` and the language server.
+**Reported by:** the CSS compiler (`lumiose_css`), in `@lumiose/vite`, `lumiose check` and the language server.
 
 ## What it means
 
@@ -6254,7 +6271,7 @@ selector (`.list :deep(.item .icon)`). For app-wide CSS, prefer a `<style global
 
 > A declaration's value does not parse for its property, so browsers ignore the whole declaration.
 
-**Reported by:** the CSS compiler (`lumiose_css`), in `lumiose/vite`, `lumiose check` and the language server. A warning; the CSS is emitted unchanged.
+**Reported by:** the CSS compiler (`lumiose_css`), in `@lumiose/vite`, `lumiose check` and the language server. A warning; the CSS is emitted unchanged.
 
 ## What it means
 
@@ -6313,7 +6330,7 @@ reported, check the configured browser targets.
 
 > A `$` reference resolves to a plain number where the property needs a length, angle or time.
 
-**Reported by:** the CSS compiler (`lumiose_css`), in `lumiose/vite`, `lumiose check` and the language server. A warning; the CSS is emitted unchanged.
+**Reported by:** the CSS compiler (`lumiose_css`), in `@lumiose/vite`, `lumiose check` and the language server. A warning; the CSS is emitted unchanged.
 
 ## What it means
 
@@ -6374,7 +6391,7 @@ Or keep the unit in the constant: `const gap = "8px"`, or `` `${space}px` `` fro
 
 > A unit is written after a numeric `$` reference with whitespace in between, so it does not attach to the number.
 
-**Reported by:** the CSS compiler (`lumiose_css`), in `lumiose/vite`, `lumiose check` and the language server. A warning; the CSS is emitted unchanged.
+**Reported by:** the CSS compiler (`lumiose_css`), in `@lumiose/vite`, `lumiose check` and the language server. A warning; the CSS is emitted unchanged.
 
 ## What it means
 
@@ -6419,7 +6436,7 @@ function, multiply in place: `calc($gap * 1px + 1px)`. Or keep the unit in the c
 
 > A declaration's property is not a CSS property, so browsers ignore the declaration.
 
-**Reported by:** the CSS compiler (`lumiose_css`), in `lumiose/vite`, `lumiose check` and the language server. A warning; the CSS is emitted unchanged.
+**Reported by:** the CSS compiler (`lumiose_css`), in `@lumiose/vite`, `lumiose check` and the language server. A warning; the CSS is emitted unchanged.
 
 ## What it means
 
@@ -6466,7 +6483,7 @@ newer than Lumiose's list, the warning is safe to ignore; report it so the list 
 
 > A `$` constant used in a style block holds text that could end its declaration, its rule or the `<style>` element.
 
-**Reported by:** the CSS compiler (`lumiose_css`), in `lumiose/vite`, `lumiose check` and the language server. An error; the constant is not inserted.
+**Reported by:** the CSS compiler (`lumiose_css`), in `@lumiose/vite`, `lumiose check` and the language server. An error; the constant is not inserted.
 
 ## What it means
 
@@ -6613,7 +6630,7 @@ form with `submit()`), or convert values to plain objects before passing them.
 
 > Server-only code is reachable from the browser.
 
-**Reported by:** `lumiose build` and `lumiose dev` (`lumiose/vite`), when the client graph reaches a
+**Reported by:** `lumiose build` and `lumiose dev` (`@lumiose/vite`), when the client graph reaches a
 server-only module: the build fails, and dev fails the module's request (the error overlay), with
 the chain of importers from the client entry. `lumiose check` and the language server report it at
 the import site, for the graphs of island components and of modules that import `lumiose/dom` (the
@@ -6675,7 +6692,7 @@ call it with `fetchJSON` or `submit()` from the island. In client code, read pub
 
 > A module that runs on the server uses a browser API at module scope.
 
-**Reported by:** the compiler, for `.stsx`/`.tsx` modules: `lumiose/vite` when it compiles a
+**Reported by:** the compiler, for `.stsx`/`.tsx` modules: `@lumiose/vite` when it compiles a
 module for the server (`lumiose dev` and `lumiose build` print the warning), and `lumiose check` and the
 language server for every module except client entries (modules that import `lumiose/dom`) and `spa`
 routes with `export const ssr = false`. A warning.

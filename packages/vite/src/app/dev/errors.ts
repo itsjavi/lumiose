@@ -1,5 +1,5 @@
 // Dev error reporting: SSR failures shown in Vite's error overlay, with a code frame of the user's
-// source. Compiler diagnostics already carry Vite's `loc`/`frame` (lumiose/vite's `this.error`);
+// source. Compiler diagnostics already carry Vite's `loc`/`frame` (@lumiose/vite's `this.error`);
 // runtime errors get a frame from the first stack frame in the project (stacks of modules run by
 // Vite's module runner are source-mapped).
 

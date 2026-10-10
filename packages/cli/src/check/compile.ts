@@ -99,7 +99,7 @@ async function compileChecked(
     sourceMap: false,
     ...(options.root === undefined ? {} : { root: options.root }),
     ...(options.serverRoute ? { serverRoute: true } : {}),
-    // LUM4004 as the server compile reports it (lumiose/vite's ssr environment), for modules that
+    // LUM4004 as the server compile reports it (@lumiose/vite's ssr environment), for modules that
     // server rendering may load.
     browserGlobals: true,
   };

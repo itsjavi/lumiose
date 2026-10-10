@@ -1,7 +1,7 @@
 // Writes a new Lumiose project: a template's `src/` (and extras), the generated package.json,
 // tsconfig.json (extending the generated one, decision-25), vite.config.ts with the template's `lumiose({ mode })` (decision-21),
 // .gitignore and README, then the agent files (AGENTS.md, CLAUDE.md, the lumiose skill,
-// .gitattributes) from `lumiose/agents`, shared with `lumiose agents init`.
+// .gitattributes) from `@lumiose/cli/agents`, shared with `lumiose agents init`.
 
 import { existsSync } from "node:fs";
 import { mkdir, readdir, readFile, writeFile } from "node:fs/promises";

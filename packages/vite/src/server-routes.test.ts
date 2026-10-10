@@ -1,5 +1,5 @@
 // TASK-109: pages and layouts rendered only on the server read their own props as plain values
-// (no LUM2001); spa routes and islands still get it. lumiose/vite compiles with the route mode.
+// (no LUM2001); spa routes and islands still get it. @lumiose/vite compiles with the route mode.
 import { linkLumiose } from "./test-links.ts";
 import { mkdirSync, mkdtempSync, realpathSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";

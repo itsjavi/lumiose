@@ -548,7 +548,7 @@ describe.skipIf(!binding)("lumiose check", () => {
         "title = props.params.slug.toUpperCase()",
       ),
     ]);
-    // The language server asks per file (lumiose/tooling).
+    // The language server asks per file (@lumiose/cli/tooling).
     expect(await isServerRoute(root, join(root, "src/routes/books/[slug].tsx"))).toBe(true);
     expect(await isServerRoute(root, join(root, "src/routes/app/[slug].tsx"))).toBe(false);
     expect(await isServerRoute(root, join(root, "src/components/Card.tsx"))).toBe(false);

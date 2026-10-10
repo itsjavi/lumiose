@@ -35,7 +35,7 @@ file without a DOM environment, in the same project.
 
 ```ts
 // vitest.config.ts
-import lumiose from "lumiose/vite";
+import lumiose from "@lumiose/vite";
 import { defineConfig } from "vite";
 
 export default defineConfig({

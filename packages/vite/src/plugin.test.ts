@@ -1,4 +1,4 @@
-// `lumiose/vite` against a real Vite 8 dev server (client and ssr environments). The fixture app is
+// `@lumiose/vite` against a real Vite 8 dev server (client and ssr environments). The fixture app is
 // written to a temp dir whose node_modules/lumiose links to this package; node_modules/@acme/kit
 // links a workspace package next to the app (outside the Vite root) with an island.
 import { linkLumiose, LUMIOSE_ROOT } from "./test-links.ts";

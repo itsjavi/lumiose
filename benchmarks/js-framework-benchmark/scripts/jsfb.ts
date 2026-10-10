@@ -190,7 +190,7 @@ function installLocal(name: string, dest: string): void {
 
 /** Lumiose's krausest implementations: directory name → Vite build mode and output directory. */
 const LUMIOSE: Record<string, { mode: string; outDir: string }> = {
-  // src/App.stsx compiled by lumiose/vite: the implementation.
+  // src/App.stsx compiled by @lumiose/vite: the implementation.
   lumiose: { mode: "production", outDir: "dist" },
   // The hand-compiled reference written from the compiler-runtime contract (src/hand-compiled.js).
   "lumiose-hand": { mode: "hand", outDir: "dist-hand" },
@@ -483,7 +483,7 @@ function summarize(names: Map<string, string>): string {
     `- Machine: ${cpus()[0]?.model ?? "unknown CPU"} (${cpus().length} cores), ${platform()} ${release()}`,
     `- Browser: ${chromeVersion()}`,
     `- Iterations: ${sample ?? "?"} per CPU benchmark, ${memorySample ?? "?"} per memory benchmark (medians shown)`,
-    "- lumiose: src/App.stsx compiled by lumiose/vite; lumiose-hand: the same app hand-compiled from the",
+    "- lumiose: src/App.stsx compiled by @lumiose/vite; lumiose-hand: the same app hand-compiled from the",
     "  compiler-runtime contract (src/hand-compiled.js), the target for the compiler's output",
     ...(columns.includes("remix-v3")
       ? [

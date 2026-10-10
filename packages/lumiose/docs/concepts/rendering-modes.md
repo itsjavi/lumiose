@@ -85,7 +85,7 @@ handler) or `lumiose preview`. A site whose every route is prerendered (no `serv
 server-rendered `spa` route, no form action; `ssr = false` routes with params need a `404.html`
 shell) builds no `dist/server`: deploy `dist/client` to any static host, and `lumiose preview` serves
 it without the adapter. Set response headers once with `lumiose({ headers })`
-([lumiose/vite](../reference/vite.md#lumiose)).
+([@lumiose/vite](../reference/vite.md#lumiose)).
 
 > **Status:** `lumiose dev`, `lumiose build`, prerendering,
 > [`@lumiose/adapter-node`](../reference/adapter-node.md), CSS links in built pages, the island

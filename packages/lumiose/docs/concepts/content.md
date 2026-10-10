@@ -94,7 +94,7 @@ The types come with `lumiose/env` (`"types": ["lumiose/env"]` in `tsconfig.json`
 ```ts
 // vite.config.ts: Markdown with validated frontmatter, and HTML imports
 import { defineConfig } from "vite";
-import lumiose from "lumiose/vite";
+import lumiose from "@lumiose/vite";
 import * as z from "zod";
 
 const Post = z.object({
@@ -222,4 +222,4 @@ for example [LUM3005](../errors/LUM3005.md) for a selector that matches nothing.
 [LUM1008](../errors/LUM1008.md) reports a `<script>` in a Markdown file. A frontmatter
 block that is not a mapping, or a hook that throws, fails the build with the file's name.
 
-See also: [Styles](styles.md), [Islands](islands.md), [SVG imports](svg.md), [reference: `lumiose/vite`](../reference/vite.md), [reference: JSX types](../reference/jsx.md).
+See also: [Styles](styles.md), [Islands](islands.md), [SVG imports](svg.md), [reference: `@lumiose/vite`](../reference/vite.md), [reference: JSX types](../reference/jsx.md).

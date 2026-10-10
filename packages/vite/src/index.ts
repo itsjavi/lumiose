@@ -1,4 +1,4 @@
-// `lumiose/vite`: the Vite 8 plugin (owner: Photon; spec §5.5, decision-5).
+// `@lumiose/vite`: the Vite 8 plugin (owner: Photon; spec §5.5, decision-5).
 //
 // - Compiles `.stsx` and `.tsx` modules (outside node_modules) with the native Lumiose compiler,
 //   before Vite's own OXC transform, which is told to skip them. The target follows the Vite

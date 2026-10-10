@@ -79,7 +79,7 @@ The types come with `lumiose/env` (`"types": ["lumiose/env"]` in `tsconfig.json`
 ```ts
 // vite.config.ts: your own SVGO plugins (optional)
 import { defineConfig } from "vite";
-import lumiose from "lumiose/vite";
+import lumiose from "@lumiose/vite";
 
 export default defineConfig({
   plugins: [
@@ -151,4 +151,4 @@ A file that is not well-formed SVG fails the build with its location
 (`icon.svg: invalid SVG: … at 3:12`), as does a file whose root element is not `<svg>` and one
 whose elements nest more than 128 levels deep.
 
-See also: [Styles](styles.md), [JSX](jsx.md), [reference: `lumiose/vite`](../reference/vite.md), [reference: JSX types](../reference/jsx.md).
+See also: [Styles](styles.md), [JSX](jsx.md), [reference: `@lumiose/vite`](../reference/vite.md), [reference: JSX types](../reference/jsx.md).

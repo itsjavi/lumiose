@@ -58,7 +58,7 @@ are not used.
 | `lumiose check [--format json]`       | Type-check and report diagnostics; exit 1 on errors. |
 | `lumiose explain <code>`              | Print a diagnostic's explanation.                    |
 | `lumiose docs <topic>`                | Print or search these docs.                          |
-| `lumiose/vite`                        | The plugin that runs the compiler in Vite.           |
+| `@lumiose/vite`                       | The plugin that runs the compiler in Vite.           |
 | `.lumiose/shadow/`, `.lumiose/types/` | Generated shadow TSX and route types (git-ignored).  |
 
 ## Example

@@ -67,7 +67,7 @@ export class CustomPropertyCheck {
   }
 }
 
-/** The `LUM3012` message (as `lumiose/vite` prints diagnostics: code, message, help). */
+/** The `LUM3012` message (as `@lumiose/vite` prints diagnostics: code, message, help). */
 export function unreadMessage(name: string): string {
   return (
     `LUM3012: \`${name}\` is set in a \`style\` prop, but no stylesheet of the project reads it ` +

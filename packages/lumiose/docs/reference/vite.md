@@ -1,11 +1,13 @@
-# `lumiose/vite`
+# `@lumiose/vite`
 
 > The Vite 8 plugin: compiles `.stsx` and `.tsx` with the Lumiose compiler, picks the `lumiose` entry per Vite environment, reports diagnostics in the overlay and reloads on edit.
+
+Install it next to `lumiose` and Vite: `pnpm add -D @lumiose/vite vite`.
 
 ## lumiose()
 
 ```ts
-import lumiose from "lumiose/vite";
+import lumiose from "@lumiose/vite";
 
 function lumiose(options?: LumioseOptions): Plugin[];
 
@@ -143,7 +145,7 @@ What it does:
 
 ```ts
 // vite.config.ts
-import lumiose from "lumiose/vite";
+import lumiose from "@lumiose/vite";
 import { defineConfig } from "vite";
 
 export default defineConfig({

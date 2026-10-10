@@ -17,7 +17,7 @@ what `create-lumiose` writes, what `lumiose agents init` writes when the file is
 ```
 
 Add your own `compilerOptions` next to `extends`; they override the generated ones. `lumiose check`,
-`lumiose typegen`, `lumiose dev`/`build`, `lumiose/vite` and the language server write
+`lumiose typegen`, `lumiose dev`/`build`, `@lumiose/vite` and the language server write
 `.lumiose/tsconfig.generated.json`, so it follows the installed Lumiose version and the workspace
 layout. `.lumiose/` is not committed: in a fresh clone, run `lumiose typegen` (or `lumiose check`) before
 a bare `tsc`.

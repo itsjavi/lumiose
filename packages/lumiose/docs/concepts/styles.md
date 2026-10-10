@@ -58,7 +58,7 @@ a +0,1,0 specificity bump. Dynamic classes always work, because no element is pr
 **Blocks are plain CSS:** no Sass, no `lang`, `media` or other attributes (only `global`). CSS
 imports, CSS Modules, Tailwind v4 and `.scss` imports still work through Vite.
 
-> **Status:** available. `lumiose/vite` serves each file's CSS as a CSS module, and style-only or
+> **Status:** available. `@lumiose/vite` serves each file's CSS as a CSS module, and style-only or
 > constant-only edits hot-update the CSS without remounting. `LUM3012` (a custom property set in a
 > `style` prop that no stylesheet reads) is reported by `lumiose build` only.
 

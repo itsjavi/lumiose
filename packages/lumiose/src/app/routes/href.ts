@@ -2,7 +2,7 @@
 // and in the form of the project's `trailingSlash` policy.
 //
 // Both come from `import.meta.env`, which Vite fills in in every environment: `lumiose` is never
-// external or pre-bundled (lumiose/vite), so server and client code alike see `BASE_URL` and
+// external or pre-bundled (@lumiose/vite), so server and client code alike see `BASE_URL` and
 // `LUMIOSE_TRAILING_SLASH` (defined by `lumiose dev` and `lumiose build` from `lumiose({ trailingSlash })`).
 // Outside Vite both are unset: paths stay root-relative.
 
