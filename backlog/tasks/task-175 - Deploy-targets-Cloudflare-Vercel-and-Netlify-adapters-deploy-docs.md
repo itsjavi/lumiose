@@ -5,7 +5,7 @@ status: To Do
 assignee:
   - Nova
 created_date: '2026-10-09 12:12'
-updated_date: '2026-10-09 12:31'
+updated_date: '2026-10-10 02:29'
 labels:
   - adapter
   - docs
@@ -34,4 +34,6 @@ Nova 2026-10-09: PROPOSAL, not started (adapter package APIs are public API shap
 (B) no config change: each package ships a post-build bin ("build": "lumen build && lumen-vercel") reading dist/. Less integrated, nothing new in lumen().
 Runtime notes for edge targets: the server runtime imports node:async_hooks (AsyncLocalStorage: Workers nodejs_compat, Vercel Edge and Netlify Edge support it) and node:crypto (createNonce/createHash in csp.ts: would move to Web Crypto for edge targets); node:http/stream/tls are only in lumen/node (adapter-node/dev), not in the server entry.
 Docs-only targets (Bun, Deno, Node hosts, static hosts, Lambda) need no API decision but a docs section: proposed docs/deploy/<target>.md pages plus a 'Deploy' section in docs/README.md (docs structure is Beacon's).
+
+Blocked: waits for the user's adapter API choice (A: lumiose({ adapter }) recommended; B: post-build command).
 <!-- SECTION:NOTES:END -->

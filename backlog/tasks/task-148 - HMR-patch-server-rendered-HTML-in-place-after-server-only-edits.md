@@ -5,7 +5,7 @@ status: To Do
 assignee:
   - Nova
 created_date: '2026-10-09 05:24'
-updated_date: '2026-10-09 12:12'
+updated_date: '2026-10-10 02:29'
 labels:
   - dev
   - hmr
@@ -31,4 +31,6 @@ Planned only (user 2026-10-09: 'plan only') — do not start without the user's 
 
 <!-- SECTION:NOTES:BEGIN -->
 Lux 2026-10-09: deferred (user accepted the pushback): DOM morphing after server edits risks unexpected behaviour; keep the full reload.
+
+Status: deferred (user accepted, 2026-10-09). Not planned.
 <!-- SECTION:NOTES:END -->
