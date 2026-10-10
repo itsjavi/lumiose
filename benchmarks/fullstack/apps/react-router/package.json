@@ -3,6 +3,11 @@
   "version": "0.0.0",
   "private": true,
   "description": "The Tracker app (doc-4) in React Router framework mode with SSR.",
+  "demo": {
+    "name": "tracker-react-router",
+    "title": "Tracker in React Router (fullstack bench)",
+    "kind": "benchmark"
+  },
   "license": "MIT",
   "type": "module",
   "scripts": {

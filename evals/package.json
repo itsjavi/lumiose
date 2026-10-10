@@ -3,6 +3,11 @@
   "version": "0.0.0",
   "private": true,
   "description": "Agent eval suite (TASK-40): Lumiose tasks solved by local coding-agent CLIs, graded by hidden tests.",
+  "demo": {
+    "name": "eval-viewer",
+    "title": "Agent eval results viewer",
+    "kind": "eval"
+  },
   "license": "MIT",
   "type": "module",
   "scripts": {

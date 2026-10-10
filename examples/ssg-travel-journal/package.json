@@ -3,6 +3,10 @@
   "version": "0.0.0",
   "private": true,
   "description": "Lumiose sample: a static, multi-page travel journal built from Markdown, with tags, pagination, RSS, a sitemap and two islands.",
+  "demo": {
+    "title": "Travel journal (static)",
+    "kind": "example"
+  },
   "license": "MIT",
   "type": "module",
   "scripts": {

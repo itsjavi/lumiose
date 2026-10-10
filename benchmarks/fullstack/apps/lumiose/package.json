@@ -3,6 +3,11 @@
   "version": "0.0.0",
   "private": true,
   "description": "The Tracker app of the fullstack comparison benchmark (doc-4) in Lumiose: server routes, async components with Suspense, form actions and islands.",
+  "demo": {
+    "name": "tracker-lumiose",
+    "title": "Tracker in Lumiose (fullstack bench)",
+    "kind": "benchmark"
+  },
   "license": "MIT",
   "type": "module",
   "scripts": {

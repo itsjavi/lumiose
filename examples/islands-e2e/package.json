@@ -3,6 +3,10 @@
   "version": "0.0.0",
   "private": true,
   "description": "Lumiose fixture: server-rendered islands hydrating in Chromium, served by Vite in middleware mode (TASK-18 end-to-end test).",
+  "demo": {
+    "title": "Islands e2e fixture",
+    "kind": "e2e"
+  },
   "license": "MIT",
   "type": "module",
   "scripts": {

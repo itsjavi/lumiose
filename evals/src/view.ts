@@ -6,7 +6,9 @@ import { extname, join, normalize } from "node:path";
 import { parseArgs } from "node:util";
 import { EVALS } from "./workspace.ts";
 
-const { values } = parseArgs({ options: { port: { type: "string", default: "4110" } } });
+const { values } = parseArgs({
+  options: { port: { type: "string", default: process.env.PORT ?? "4110" } },
+});
 const TYPES: Record<string, string> = {
   ".html": "text/html; charset=utf-8",
   ".json": "application/json; charset=utf-8",

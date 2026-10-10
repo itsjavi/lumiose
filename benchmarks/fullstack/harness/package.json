@@ -3,6 +3,11 @@
   "version": "0.0.0",
   "private": true,
   "description": "Fullstack comparison benchmark (doc-4): runs the Tracker apps, measures them and writes results/*.json for the viewer.",
+  "demo": {
+    "name": "bench-viewer",
+    "title": "Fullstack benchmark results viewer",
+    "kind": "benchmark"
+  },
   "license": "MIT",
   "type": "module",
   "scripts": {

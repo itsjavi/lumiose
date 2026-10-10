@@ -3,6 +3,10 @@
   "version": "0.0.0",
   "private": true,
   "description": "Lumiose sample: a client-rendered counter and todo list on Vite 8 with lumiose/vite.",
+  "demo": {
+    "title": "Counter on plain Vite",
+    "kind": "example"
+  },
   "license": "MIT",
   "type": "module",
   "scripts": {

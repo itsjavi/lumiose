@@ -3,6 +3,10 @@
   "version": "0.0.0",
   "private": true,
   "description": "Lumiose sample: Dotmatrix, a beginner-friendly Game Boy chiptune studio and SFX maker on the gbapu engine, as a client-rendered SPA on file routes and lumiose/router.",
+  "demo": {
+    "title": "Dotmatrix chiptune studio (SPA)",
+    "kind": "example"
+  },
   "license": "MIT",
   "type": "module",
   "scripts": {

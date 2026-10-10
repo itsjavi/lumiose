@@ -3,6 +3,10 @@
   "version": "0.0.0",
   "private": true,
   "description": "Lumiose fixture: an spa-mode app on file routes and lumiose/router, tested in Chromium under lumiose dev and a production build (TASK-25 end-to-end test).",
+  "demo": {
+    "title": "SPA router e2e fixture",
+    "kind": "e2e"
+  },
   "license": "MIT",
   "type": "module",
   "scripts": {

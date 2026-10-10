@@ -3,6 +3,10 @@
   "version": "0.0.0",
   "private": true,
   "description": "The Lumiose website: the landing page at / and the docs at /docs. A static Lumiose site built with @lumiose/site-kit.",
+  "demo": {
+    "title": "Lumiose website",
+    "kind": "site"
+  },
   "license": "MIT",
   "type": "module",
   "scripts": {

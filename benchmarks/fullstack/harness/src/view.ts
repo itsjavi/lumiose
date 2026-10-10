@@ -7,7 +7,7 @@ import { FULLSTACK } from "./apps.ts";
 import { args } from "./cli.ts";
 import { writeIndex } from "./results.ts";
 
-const values = args({ port: { type: "string", default: "4100" } });
+const values = args({ port: { type: "string", default: process.env.PORT ?? "4100" } });
 const TYPES: Record<string, string> = {
   ".html": "text/html; charset=utf-8",
   ".json": "application/json; charset=utf-8",
