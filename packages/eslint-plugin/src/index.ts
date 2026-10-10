@@ -82,7 +82,7 @@ function compilerRule(severities: ReadonlySet<Diagnostic["severity"]>, descripti
       type: "problem" as const,
       docs: {
         description,
-        url: "https://github.com/itsjavi/lumen/tree/main/packages/lumiose/docs/errors",
+        url: "https://github.com/itsjavi/lumiose/tree/main/packages/lumiose/docs/errors",
       },
       fixable: "code" as const,
       schema: [],

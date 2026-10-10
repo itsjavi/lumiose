@@ -3,14 +3,14 @@ id: doc-3
 title: Checkpoint and resume guide
 type: guide
 created_date: '2026-10-08 16:56'
-updated_date: '2026-10-10 00:23'
+updated_date: '2026-10-10 00:54'
 tags:
   - checkpoint
   - resume
 ---
 # Checkpoint and resume guide (2026-10-09, night)
 
-**State.** `main` is pushed to `origin` (github.com/itsjavi/lumen, private). The site deploys via GitHub Actions to **https://itsjavi.com/lumen/** (the Pages path follows the repository name: /lumiose/ once the repo is renamed to `lumiose`) (site, docs, playground, `/examples` "Made with Lumiose" incl. Dotmatrix and chiptune with a COOP/COEP service worker, `/benchmarks`). Workers were told to checkpoint with RESUME notes; read `backlog task list -s "In Progress" --plain` and each note first.
+**State.** `main` is pushed to `origin` (github.com/itsjavi/lumiose, private; renamed from lumen, old URLs redirect). The site deploys via GitHub Actions to **https://itsjavi.com/lumiose/** (the Pages path follows the repository name) (site, docs, playground, `/examples` "Made with Lumiose" incl. Dotmatrix and chiptune with a COOP/COEP service worker, `/benchmarks`). Workers were told to checkpoint with RESUME notes; read `backlog task list -s "In Progress" --plain` and each note first.
 
 **Sources of truth:** doc-1 spec, doc-2 contract (incl. §2.1 dev-only `lumiose/dom/hot`), doc-4 fullstack benchmark, doc-5 eval suite, decisions 1–29, `AGENTS.md`, `agents.json`. License MIT.
 

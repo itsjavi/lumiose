@@ -4,7 +4,7 @@
 import { link } from "../lib/site.ts";
 
 /** The repository, for links to the source of the examples and benchmarks. */
-export const REPOSITORY = "https://github.com/itsjavi/lumen";
+export const REPOSITORY = "https://github.com/itsjavi/lumiose";
 
 export interface Showcase {
   name: string;
