@@ -5,6 +5,7 @@ status: To Do
 assignee:
   - Spark
 created_date: '2026-10-10 03:33'
+updated_date: '2026-10-10 18:14'
 labels:
   - state
   - data
@@ -27,3 +28,9 @@ doc-6 §E. New optional package packages/query with the names of @tanstack/solid
 - [ ] #2 Tests with query-core (dedupe, invalidation, mutations, cleanup); an example in an SPA example app
 - [ ] #3 Package README and a docs page; publishable through pnpm release:version
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+2026-10-10 Names approved (decision-35): package @lumiose/query; exports useQuery, useMutation, useQueryClient, QueryClientProvider (TanStack Solid v5 names) instead of createQuery/createMutation.
+<!-- SECTION:NOTES:END -->

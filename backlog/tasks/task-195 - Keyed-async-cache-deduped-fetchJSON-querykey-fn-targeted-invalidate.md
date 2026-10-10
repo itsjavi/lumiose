@@ -5,6 +5,7 @@ status: To Do
 assignee:
   - Nova
 created_date: '2026-10-10 03:33'
+updated_date: '2026-10-10 18:14'
 labels:
   - state
   - data
@@ -27,3 +28,9 @@ doc-6 §B, decision-34. Component-level GET fetchJSON calls dedupe and cache by 
 - [ ] #3 Islands reuse server-fetched entries without refetching; tests cover SSR, hydration, SPA navigation, aborts and errors
 - [ ] #4 Docs: async, data-and-actions and reference pages updated
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+2026-10-10 Syntax approved (decision-35): await query(key, fn); invalidate(...targets) with URL strings or key arrays (variadic), no args = whole page; submit(form, { invalidate: true | Target[] }); dev warning for string targets that don't look like URLs.
+<!-- SECTION:NOTES:END -->

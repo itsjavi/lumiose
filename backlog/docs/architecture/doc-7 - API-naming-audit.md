@@ -7,7 +7,7 @@ created_date: '2026-10-10 03:46'
 
 # API naming audit
 
-Status (2026-10-10): **proposal**, waiting for the user's approval (TASK-190 AC #4). Audit by Prism, recorded by Lux. Rule: decision-32. The user already decided that approved renames ship outright: a breaking 0.x change with a changelog migration table and no deprecated aliases.
+Status (2026-10-10): **approved** by the user (decision-35), with one change: the TanStack adapter package stays `@lumiose/query`. Audit by Prism, recorded by Lux. Rule: decision-32. The user already decided that approved renames ship outright: a breaking 0.x change with a changelog migration table and no deprecated aliases.
 
 Library abbreviations: R = React 19, S1 = Solid 1.9, S2 = Solid 2.0 RC, SR = Solid Router, RR = React Router 7, TQ = TanStack Query v5, SK = SvelteKit.
 
@@ -63,7 +63,7 @@ Everything else keeps its name and already matches known vocabulary: `signal`, `
   - A dev warning when a string target doesn't look like a URL (`/…`, `./…`, `http(s):`). It catches `{ invalidate: ["stats"] }`, which is meant as a key but reads as a URL.
 - **C. `reconcile(store, data, { key: "id" })`:** the S1/S2 name and default key. The store comes first because we have no setter.
 - **D. Optimistic:** `optimistic(source)`, after R `useOptimistic` and S2 `createOptimistic`. It writes with the signal verbs plus a required promise, replacing the coined `.during()`: `likes.update((n) => n + 1, submit(event))`, `likes.set(v, promise)`. The overlay holds until the promise settles.
-- **E. TanStack adapter:** TanStack's current Solid names: `useQuery`, `useMutation`, `useQueryClient`, and a `QueryClientProvider`. Solid Query v5 itself uses `use*`, so these are known names, not coined ones. Package name: `@lumiose/tanstack-query`, so it isn't confused with the core `query()`.
+- **E. TanStack adapter:** TanStack's current Solid names: `useQuery`, `useMutation`, `useQueryClient`, and a `QueryClientProvider`. Solid Query v5 itself uses `use*`, so these are known names, not coined ones. Package name: `@lumiose/query` (the user kept it).
 
 ## Where the renames land
 

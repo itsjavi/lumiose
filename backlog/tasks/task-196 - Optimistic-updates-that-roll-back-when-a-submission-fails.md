@@ -5,6 +5,7 @@ status: To Do
 assignee:
   - Spark
 created_date: '2026-10-10 03:33'
+updated_date: '2026-10-10 18:14'
 labels:
   - state
   - data
@@ -26,3 +27,9 @@ doc-6 §D. A value that follows a source plus an overlay held while a promise is
 - [ ] #2 Works with submit() on SPA and MPA pages (success refresh, failure rollback); tests for both
 - [ ] #3 Docs: data-and-actions page and reference
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+2026-10-10 Names approved (decision-35): optimistic(source) with .set(value, promise) and .update(fn, promise); the overlay holds until the promise settles. No .during().
+<!-- SECTION:NOTES:END -->

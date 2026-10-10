@@ -5,6 +5,7 @@ status: To Do
 assignee:
   - Spark
 created_date: '2026-10-10 03:33'
+updated_date: '2026-10-10 18:14'
 labels:
   - state
   - core
@@ -28,3 +29,9 @@ doc-6 §A, decision-33. A factory-defined state that runs lazily once per scope:
 - [ ] #3 Streaming: a state first used in a late boundary arrives with that chunk; tests cover SSR, hydration, islands, SPA and per-test isolation
 - [ ] #4 Docs: Sharing state page and reference updated (security note: sent state is public); LUM4008 guidance points to it
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+2026-10-10 Name approved (decision-35): defineState(factory) returns an accessor (no use prefix).
+<!-- SECTION:NOTES:END -->

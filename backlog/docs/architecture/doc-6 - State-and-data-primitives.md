@@ -7,7 +7,7 @@ updated_date: '2026-10-10 03:32'
 ---
 # State and data primitives
 
-Status (2026-10-10): the user approved the direction of A–E below ("for the rest I'd go with your recommendations"). Every name in this doc is **provisional** until the API naming audit (TASK-190, decision-32) settles the vocabulary; the user approves final names and syntax. B's call syntax also waits for the user's confirmation.
+Status (2026-10-10): the user approved the direction of A–E below ("for the rest I'd go with your recommendations"). Names and call syntax were approved on 2026-10-10 (TASK-190, doc-7, decision-35): `defineState`, `query`, `invalidate(...targets)`, `submit({ invalidate })`, `reconcile`, `optimistic(source)` with `.set(value, promise)` / `.update(fn, promise)`, and `@lumiose/query` with TanStack's `useQuery`/`useMutation`/`useQueryClient`/`QueryClientProvider`. Examples below use the approved names (`useContext`, `getAbortSignal`, …).
 
 ## Why
 
@@ -75,14 +75,14 @@ Solid's `reconcile`, applied to our mutable stores: unchanged items keep their i
 
 ```tsx
 const likes = optimistic(() => props.likes);
-likes.during(submit(event), (n) => n + 1);
+likes.update((n) => n + 1, submit(event));
 ```
 
 The overlay holds while the promise is pending. On success the refreshed source shows; on failure the overlay drops, which rolls back. Prior art: React `useOptimistic`, Solid 2 `createOptimistic`. Works with any promise, not only `submit()`.
 
 ## E. `@lumiose/query`
 
-An optional package: a thin adapter over `@tanstack/query-core`, with the names of `@tanstack/solid-query` (`createQuery`, `createMutation`, …) since it is the signal-based adapter users know. Observers write into a store through C; the client is provided through context or A. Browser first (SPA and islands); SSR dehydration later. A TanStack DB adapter can follow the same pattern.
+An optional package: a thin adapter over `@tanstack/query-core`, with the names of `@tanstack/solid-query` v5 (`useQuery`, `useMutation`, `useQueryClient`, `QueryClientProvider`) since it is the signal-based adapter users know. Observers write into a store through C; the client is provided through context or A. Browser first (SPA and islands); SSR dehydration later. A TanStack DB adapter can follow the same pattern.
 
 ## Order
 
