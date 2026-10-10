@@ -689,6 +689,15 @@ importers:
         specifier: ^3.9.9
         version: 3.9.9
 
+  packages/query:
+    dependencies:
+      '@tanstack/query-core':
+        specifier: 5.104.0
+        version: 5.104.0
+      lumiose:
+        specifier: workspace:*
+        version: link:../lumiose
+
   packages/site-kit:
     dependencies:
       lumiose:
@@ -2301,6 +2310,9 @@ packages:
 
   '@swc/helpers@0.5.23':
     resolution: {integrity: sha512-5lSsMOTXURePglDfvuAQUqkGek9Hg2kksOYay2m0+XR++b2NWYL/4sWyuvVBIs8oKnJaxkdi9whaL/sqN13afw==}
+
+  '@tanstack/query-core@5.104.0':
+    resolution: {integrity: sha512-JrC2r/JQlXt7khBSdUpsgxNvybzOg+aITa+ARRMlP2AFo93Y8vIqz077rp+e61mJetSZ0T6AJbwW1JHer1vrPQ==}
 
   '@tybys/wasm-util@0.10.4':
     resolution: {integrity: sha512-W3c4gRigFS0T/Ma4qIYF3GDAc5AQdHb1yL5znJT1Zv1YaD9Kitx656wBjvr19qbiosmZT8lWDM5BEMynUqX65A==}
@@ -5444,6 +5456,8 @@ snapshots:
   '@swc/helpers@0.5.23':
     dependencies:
       tslib: 2.8.1
+
+  '@tanstack/query-core@5.104.0': {}
 
   '@tybys/wasm-util@0.10.4':
     dependencies:

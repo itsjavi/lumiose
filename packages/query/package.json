@@ -1,0 +1,38 @@
+{
+  "name": "@lumiose/query",
+  "version": "0.1.0",
+  "description": "TanStack Query for Lumiose: useQuery, useMutation and QueryClientProvider over @tanstack/query-core, with results in reactive stores.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/itsjavi/lumiose.git",
+    "directory": "packages/query"
+  },
+  "files": [
+    "dist"
+  ],
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./package.json": "./package.json"
+  },
+  "publishConfig": {
+    "exports": {
+      ".": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "./package.json": "./package.json"
+    }
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "vitest run",
+    "build": "node ../../scripts/build-package.ts",
+    "prepack": "pnpm run build"
+  },
+  "dependencies": {
+    "@tanstack/query-core": "5.104.0",
+    "lumiose": "workspace:*"
+  }
+}
