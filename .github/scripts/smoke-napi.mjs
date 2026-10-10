@@ -1,6 +1,7 @@
 // Loads @lumiose/compiler's native binding through its loader and compiles a component: the binary
-// for this platform must be the one that loads (not the WASI fallback) and must work.
-//   node .github/scripts/smoke-napi.mjs
+// for this platform must be the one that loads (not the WASI fallback) and must work. With `--wasi`
+// (and NAPI_RS_FORCE_WASI=error), the WASI build must be the one that loads instead.
+//   node .github/scripts/smoke-napi.mjs [--wasi]
 import { compile, __napiBindingTarget } from "../../packages/compiler/index.js";
 
 const result = compile(
@@ -8,9 +9,10 @@ const result = compile(
   "/src/Hello.stsx",
   { target: "client" },
 );
+const expected = process.argv.includes("--wasi") ? "wasm32-wasi" : "native";
 const problems = [];
-if (__napiBindingTarget !== "native")
-  problems.push(`loaded ${__napiBindingTarget}, not the native binary`);
+if (__napiBindingTarget !== expected)
+  problems.push(`loaded ${__napiBindingTarget}, not the ${expected} binary`);
 if (!result.code.includes("template(")) problems.push("no template in the compiled code");
 if (!result.css?.includes("color: teal")) problems.push("no CSS");
 if (result.diagnostics.length > 0) problems.push(JSON.stringify(result.diagnostics));
@@ -21,5 +23,5 @@ if (problems.length > 0) {
   process.exit(1);
 }
 console.log(
-  `ok: ${process.platform}-${process.arch} (${process.report?.getReport?.().header?.glibcVersionRuntime ?? "no glibc"})`,
+  `ok: ${expected === "native" ? "" : "wasm32-wasi on "}${process.platform}-${process.arch} (${process.report?.getReport?.().header?.glibcVersionRuntime ?? "no glibc"})`,
 );

@@ -9,6 +9,7 @@
 
 import { execFileSync } from "node:child_process";
 import {
+  copyFileSync,
   existsSync,
   mkdirSync,
   mkdtempSync,
@@ -28,6 +29,8 @@ export interface Manifest {
   name: string;
   version: string;
   private?: boolean;
+  main?: string;
+  files?: string[];
   exports?: Record<string, unknown>;
   bin?: Record<string, string>;
   dependencies?: Record<string, string>;
@@ -67,7 +70,11 @@ export function tarballProblems(manifest: Manifest, files: string[]): string[] {
   for (const file of files) {
     if (FORBIDDEN.some((pattern) => pattern.test(file))) problems.push(`ships ${file}`);
   }
-  const named = [...targets(manifest.exports), ...Object.values(manifest.bin ?? {})];
+  const named = [
+    ...targets(manifest.exports),
+    ...Object.values(manifest.bin ?? {}),
+    ...(manifest.main === undefined ? [] : [manifest.main]),
+  ];
   for (const target of named) {
     const path = target.replace(/^\.\//, "");
     if (path.includes("*")) {
@@ -86,17 +93,46 @@ export function tarballProblems(manifest: Manifest, files: string[]): string[] {
   return problems;
 }
 
+/** The directories of the per-platform compiler packages (`@lumiose/compiler-<platform>`). */
+export function platformPackages(repo = REPO): string[] {
+  const dir = join(repo, "packages/compiler/npm");
+  if (!existsSync(dir)) return [];
+  return readdirSync(dir)
+    .filter((name) => existsSync(join(dir, name, "package.json")))
+    .map((name) => join(dir, name))
+    .toSorted();
+}
+
 /** The workspace packages that are published (not private), as directories. */
 export function publishable(repo = REPO): string[] {
   const dir = join(repo, "packages");
-  return readdirSync(dir)
+  const packages = readdirSync(dir)
     .filter((name) => existsSync(join(dir, name, "package.json")))
-    .filter(
-      (name) =>
-        !(JSON.parse(readFileSync(join(dir, name, "package.json"), "utf8")) as Manifest).private,
-    )
-    .map((name) => join(dir, name))
-    .toSorted();
+    .filter((name) => !readManifest(join(dir, name)).private)
+    .map((name) => join(dir, name));
+  return [...packages, ...platformPackages(repo)].toSorted();
+}
+
+export function readManifest(dir: string): Manifest {
+  return JSON.parse(readFileSync(join(dir, "package.json"), "utf8")) as Manifest;
+}
+
+/**
+ * Copies the compiler binaries built in packages/compiler (`pnpm build:compiler`, `build:wasm`)
+ * into their platform packages, and returns the platform packages whose files are all there: the
+ * others (binaries of other platforms, which the Binaries workflow builds) are not packed here.
+ */
+export function stageBinaries(repo = REPO): Set<string> {
+  const compiler = join(repo, "packages/compiler");
+  const ready = new Set<string>();
+  for (const dir of platformPackages(repo)) {
+    const files = readManifest(dir).files ?? [];
+    for (const file of files) {
+      if (existsSync(join(compiler, file))) copyFileSync(join(compiler, file), join(dir, file));
+    }
+    if (files.every((file) => existsSync(join(dir, file)))) ready.add(dir);
+  }
+  return ready;
 }
 
 function run(command: string, args: string[], cwd: string): string {
@@ -202,7 +238,12 @@ if (import.meta.main) {
   mkdirSync(out, { recursive: true });
   const packed: Packed[] = [];
   const failures: string[] = [];
+  const ready = stageBinaries();
   for (const dir of publishable()) {
+    if (platformPackages().includes(dir) && !ready.has(dir)) {
+      console.log(`${readManifest(dir).name}: skipped (its binary is not built here)`);
+      continue;
+    }
     try {
       packed.push(pack(dir, out));
     } catch (error) {

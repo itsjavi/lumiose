@@ -1,5 +1,7 @@
 packages:
   - packages/*
+  # @lumiose/compiler-<platform>: the per-platform compiler binaries (napi create-npm-dirs).
+  - packages/compiler/npm/*
   - apps/*
   - examples/*
   - benchmarks/*

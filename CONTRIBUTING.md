@@ -60,12 +60,17 @@ each supported platform and the WebAssembly compiler, and uploads them as workfl
 | `compiler-aarch64-unknown-linux-gnu`     | Ubuntu 22.04 on arm64       | native                               |
 | `compiler-x86_64-unknown-linux-musl`     | Ubuntu, with cargo-zigbuild | `node:24-alpine` container           |
 | `compiler-x86_64-pc-windows-msvc`        | Windows                     | native                               |
+| `compiler-wasm32-wasip1-threads`         | Ubuntu                      | `NAPI_RS_FORCE_WASI=error`           |
 | `lumiose-wasm` (`wasm-web`, `wasm-node`) | Ubuntu                      | Node, `wasm-bindgen --target nodejs` |
 
 The smoke test (`.github/scripts/smoke-napi.mjs`) loads the binary through the package's loader,
 checks that the native binary (not the WASI fallback) loaded and compiles a component. Download
-the artifacts from the workflow run (`gh run download <run-id>`). Publishing them to npm waits for
-the package names.
+the artifacts from the workflow run (`gh run download <run-id>`). Each napi artifact is the binary of
+one `@lumiose/compiler-<platform>` package (`packages/compiler/npm/<platform>`, created by
+`napi create-npm-dirs` from the `napi.targets` of `packages/compiler/package.json`), which
+`@lumiose/compiler` lists as optional dependencies, so npm installs only the one that fits; the
+WASI build (`@lumiose/compiler-wasm32-wasi`) is the fallback where none fits. In this workspace the
+loader finds the binary that `pnpm build:compiler` writes into `packages/compiler` first.
 
 To build one target locally, from `packages/compiler`:
 

@@ -6,8 +6,10 @@ name: CI
 on:
   push:
     branches: [main]
+    paths-ignore: ["backlog/**"]
   pull_request:
     branches: [main]
+    paths-ignore: ["backlog/**"]
   workflow_dispatch:
 
 permissions:

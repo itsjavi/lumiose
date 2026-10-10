@@ -132,6 +132,9 @@ export function vendor(cacheDir: string, ablation: Ablation): string {
     // Published packages ship a built dist/ (TASK-39); the vendor links the sources instead, which
     // the workspace exports point at.
     const entries = (manifest.files ?? []).map((entry) => (entry === "dist" ? "src" : entry));
+    // The compiler's binary for this machine, built by source(); published, it comes from its
+    // platform package (@lumiose/compiler-<platform>).
+    if (folder === "compiler") entries.push("*.node");
     for (const entry of [...entries, "package.json"]) {
       for (const name of readdirSync(from)) {
         if (!matches(name, entry)) continue;

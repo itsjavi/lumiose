@@ -546,6 +546,56 @@ importers:
         version: 8.3.4(@types/node@24.19.1)(yaml@2.9.1)
 
   packages/compiler:
+    devDependencies:
+      '@emnapi/core':
+        specifier: 2.0.0-alpha.5
+        version: 2.0.0-alpha.5
+      '@emnapi/runtime':
+        specifier: 2.0.0-alpha.5
+        version: 2.0.0-alpha.5
+      '@napi-rs/cli':
+        specifier: ^3.10.0
+        version: 3.10.8(@emnapi/core@2.0.0-alpha.5)(@emnapi/runtime@2.0.0-alpha.5)(@types/node@24.19.1)(emnapi@2.0.0-alpha.5)(supports-color@7.2.0)
+      '@napi-rs/wasm-runtime':
+        specifier: 1.2.4
+        version: 1.2.4(@emnapi/core@2.0.0-alpha.5)(@emnapi/runtime@2.0.0-alpha.5)
+      emnapi:
+        specifier: 2.0.0-alpha.5
+        version: 2.0.0-alpha.5
+    optionalDependencies:
+      '@lumiose/compiler-darwin-arm64':
+        specifier: workspace:*
+        version: link:npm/darwin-arm64
+      '@lumiose/compiler-darwin-x64':
+        specifier: workspace:*
+        version: link:npm/darwin-x64
+      '@lumiose/compiler-linux-arm64-gnu':
+        specifier: workspace:*
+        version: link:npm/linux-arm64-gnu
+      '@lumiose/compiler-linux-x64-gnu':
+        specifier: workspace:*
+        version: link:npm/linux-x64-gnu
+      '@lumiose/compiler-linux-x64-musl':
+        specifier: workspace:*
+        version: link:npm/linux-x64-musl
+      '@lumiose/compiler-wasm32-wasi':
+        specifier: workspace:*
+        version: link:npm/wasm32-wasi
+      '@lumiose/compiler-win32-x64-msvc':
+        specifier: workspace:*
+        version: link:npm/win32-x64-msvc
+
+  packages/compiler/npm/darwin-arm64: {}
+
+  packages/compiler/npm/darwin-x64: {}
+
+  packages/compiler/npm/linux-arm64-gnu: {}
+
+  packages/compiler/npm/linux-x64-gnu: {}
+
+  packages/compiler/npm/linux-x64-musl: {}
+
+  packages/compiler/npm/wasm32-wasi:
     dependencies:
       '@emnapi/core':
         specifier: 2.0.0-alpha.5
@@ -554,15 +604,10 @@ importers:
         specifier: 2.0.0-alpha.5
         version: 2.0.0-alpha.5
       '@napi-rs/wasm-runtime':
-        specifier: 1.2.4
-        version: 1.2.4(@emnapi/core@2.0.0-alpha.5)(@emnapi/runtime@2.0.0-alpha.5)
-    devDependencies:
-      '@napi-rs/cli':
-        specifier: ^3.10.0
-        version: 3.10.8(@emnapi/core@2.0.0-alpha.5)(@emnapi/runtime@2.0.0-alpha.5)(@types/node@24.19.1)(emnapi@2.0.0-alpha.5)(supports-color@7.2.0)
-      emnapi:
-        specifier: 2.0.0-alpha.5
-        version: 2.0.0-alpha.5
+        specifier: ~1.2.5
+        version: 1.2.5(@emnapi/core@2.0.0-alpha.5)(@emnapi/runtime@2.0.0-alpha.5)
+
+  packages/compiler/npm/win32-x64-msvc: {}
 
   packages/create:
     dependencies:
@@ -4988,6 +5033,12 @@ snapshots:
       '@emnapi/runtime': 1.9.2
       '@tybys/wasm-util': 0.10.4
     optional: true
+
+  '@napi-rs/wasm-runtime@1.2.5(@emnapi/core@2.0.0-alpha.5)(@emnapi/runtime@2.0.0-alpha.5)':
+    dependencies:
+      '@emnapi/core': 2.0.0-alpha.5
+      '@emnapi/runtime': 2.0.0-alpha.5
+      '@tybys/wasm-util': 0.10.4
 
   '@napi-rs/wasm-tools-android-arm-eabi@1.1.0':
     optional: true

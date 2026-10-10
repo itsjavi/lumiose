@@ -1,0 +1,31 @@
+{
+  "name": "@lumiose/compiler-wasm32-wasi",
+  "version": "0.0.0",
+  "description": "Native bindings (napi-rs) of the Lumiose Rust compiler, with a WebAssembly (WASI) fallback.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/itsjavi/lumiose.git",
+    "directory": "packages/compiler"
+  },
+  "files": [
+    "compiler.wasm32-wasi.wasm",
+    "compiler.wasi.cjs",
+    "compiler.wasi.d.cts",
+    "compiler.wasi-browser.js",
+    "wasi-worker.mjs",
+    "wasi-worker-browser.mjs"
+  ],
+  "type": "module",
+  "main": "compiler.wasi.cjs",
+  "browser": "compiler.wasi-browser.js",
+  "types": "compiler.wasi.d.cts",
+  "dependencies": {
+    "@emnapi/core": "2.0.0-alpha.5",
+    "@emnapi/runtime": "2.0.0-alpha.5",
+    "@napi-rs/wasm-runtime": "~1.2.5"
+  },
+  "engines": {
+    "node": "^20.19.0 || ^22.13.0 || >=23.5.0"
+  }
+}

@@ -1,0 +1,24 @@
+{
+  "name": "@lumiose/compiler-linux-arm64-gnu",
+  "version": "0.0.0",
+  "description": "Native bindings (napi-rs) of the Lumiose Rust compiler, with a WebAssembly (WASI) fallback.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/itsjavi/lumiose.git",
+    "directory": "packages/compiler"
+  },
+  "files": [
+    "compiler.linux-arm64-gnu.node"
+  ],
+  "os": [
+    "linux"
+  ],
+  "cpu": [
+    "arm64"
+  ],
+  "libc": [
+    "glibc"
+  ],
+  "main": "compiler.linux-arm64-gnu.node"
+}
