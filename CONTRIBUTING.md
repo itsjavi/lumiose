@@ -44,7 +44,8 @@ published.
 
 `pnpm pack:check` packs every public package into `.local/pack/` and fails when a tarball ships
 sources, tests or fixtures, misses a file an export or bin names, keeps a `workspace:` specifier,
-or is rejected by `npm publish --dry-run`. With `--smoke` it also creates an app with the packed
+or is rejected by `npm publish --dry-run` (skipped for versions npm already has, which it refuses
+even as a dry run). With `--smoke` it also creates an app with the packed
 create-lumiose (`--template ssr`), installs the tarballs into it, and runs `lumiose check` and
 `lumiose build`. Nothing is published.
 
@@ -94,7 +95,9 @@ one version (lockstep); nothing is bumped by hand.
 
 1. `pnpm release:version <x.y.z> --dry-run` prints the files it would change and the changelog
    section. Without `--dry-run`, on a clean working tree, `scripts/release.ts` sets the version of
-   every published package and of `[workspace.package]` in `Cargo.toml` (and `Cargo.lock`), pins
+   every published package and of `[workspace.package]` in `Cargo.toml` (and `Cargo.lock`), the
+   version the napi loader (`packages/compiler/index.js`) expects of its platform packages and the
+   one the generated `llms.txt`/`llms-full.txt` name, pins
    internal dependencies that are not `workspace:` to it (pnpm pins `workspace:*` when packing),
    prepends the release to `CHANGELOG.md` from the Conventional Commits since the last `v*` tag
    (breaking changes, `feat`, `fix`, `perf`; `--since <rev>` picks another start), commits

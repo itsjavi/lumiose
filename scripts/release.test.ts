@@ -14,6 +14,8 @@ import {
   renderChangelog,
   setCargoLockVersions,
   setCargoVersion,
+  setDocsVersion,
+  setLoaderVersion,
   setPackageVersion,
 } from "./release.ts";
 
@@ -75,6 +77,24 @@ describe("versions", () => {
     const next = setCargoLockVersions(lock, new Set(["lumiose_compiler", "oxc"]), "0.1.0");
     assert.match(next, /name = "lumiose_compiler"\nversion = "0\.1\.0"/);
     assert.match(next, /name = "oxc"\nversion = "0\.0\.0"/);
+  });
+});
+
+describe("versioned files", () => {
+  it("updates the napi loader's version check and the llms docs", () => {
+    const loader = [
+      'if (bindingPackageVersion !== "0.1.0" && process.env.X) {',
+      "  throw new Error(`Native binding package version mismatch, expected 0.1.0 but got ${v}.`);",
+      "}",
+    ].join("\n");
+    const next = setLoaderVersion(loader, "0.1.0", "0.2.0");
+    assert.match(next, /!== "0\.2\.0"/);
+    assert.match(next, /expected 0\.2\.0 but/);
+    assert.doesNotMatch(next, /0\.1\.0/);
+    assert.equal(
+      setDocsVersion("These docs match lumiose 0.1.0. Installed", "0.1.0", "0.2.0"),
+      "These docs match lumiose 0.2.0. Installed",
+    );
   });
 });
 
@@ -161,6 +181,8 @@ function fixture(): string {
   });
   write("packages/site/package.json", { name: "site", version: "0.0.0", private: true });
   write("Cargo.toml", '[workspace.package]\nversion = "0.0.0"\n');
+  write("packages/compiler/index.js", 'if (bindingPackageVersion !== "0.0.0") {}\n');
+  write("packages/lumiose/docs/llms.txt", "These docs match lumiose 0.0.0. More.\n");
   write("crates/lumiose_compiler/Cargo.toml", '[package]\nname = "lumiose_compiler"\n');
   write("Cargo.lock", 'version = 4\n\n[[package]]\nname = "lumiose_compiler"\nversion = "0.0.0"\n');
   const git = (...args: string[]) =>
@@ -208,6 +230,11 @@ describe("release", () => {
     }
     assert.equal(version(repo, "packages/site/package.json"), "0.0.0");
     assert.match(readFileSync(join(repo, "Cargo.toml"), "utf8"), /version = "0\.1\.0"/);
+    assert.match(readFileSync(join(repo, "packages/compiler/index.js"), "utf8"), /!== "0\.1\.0"/);
+    assert.match(
+      readFileSync(join(repo, "packages/lumiose/docs/llms.txt"), "utf8"),
+      /match lumiose 0\.1\.0\./,
+    );
     assert.match(readFileSync(join(repo, "Cargo.lock"), "utf8"), /version = "0\.1\.0"/);
     assert.match(readFileSync(join(repo, "CHANGELOG.md"), "utf8"), /## 0\.1\.0 \(2026-10-10\)/);
     assert.equal(git(repo, "log", "-1", "--format=%s"), "chore(release): v0.1.0");

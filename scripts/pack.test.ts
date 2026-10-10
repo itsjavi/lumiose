@@ -3,7 +3,14 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, it } from "node:test";
-import { distTag, publishable, publishOrder, tarballProblems, type Manifest } from "./pack.ts";
+import {
+  distTag,
+  publishable,
+  publishOrder,
+  publishTarballs,
+  tarballProblems,
+  type Manifest,
+} from "./pack.ts";
 
 const manifest = (fields: Partial<Manifest> = {}): Manifest => ({
   name: "@lumiose/example",
@@ -168,5 +175,21 @@ describe("distTag", () => {
   it("tags prereleases next and releases latest", () => {
     assert.equal(distTag("0.1.0"), "latest");
     assert.equal(distTag("0.2.0-rc.1"), "next");
+  });
+});
+
+describe("publishTarballs", () => {
+  it("skips versions npm already has, without calling npm publish", () => {
+    const asked: string[] = [];
+    const packed = [
+      item("lumiose"),
+      item("@lumiose/vite", { dependencies: { lumiose: "1.0.0" } }),
+    ].map((p) => ({ ...p, name: p.manifest.name, tarball: "/nonexistent.tgz" }));
+    const failures = publishTarballs(packed, {
+      dryRun: true,
+      published: (name, version) => (asked.push(`${name}@${version}`), true),
+    });
+    assert.deepEqual(failures, []);
+    assert.deepEqual(asked, ["lumiose@1.0.0", "@lumiose/vite@1.0.0"]);
   });
 });

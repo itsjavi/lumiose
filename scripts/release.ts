@@ -1,6 +1,6 @@
 // `pnpm release:version <x.y.z>`: moves every Lumiose package to one new version (lockstep). It
 // sets the version of each published package (the @lumiose/compiler-<platform> packages included)
-// and of the Cargo workspace, pins internal dependencies that are not `workspace:` to it (pnpm pins
+// and of the Cargo workspace (plus the napi loader's version check and the llms docs), pins internal dependencies that are not `workspace:` to it (pnpm pins
 // `workspace:*` itself when packing), prepends the release's section to CHANGELOG.md from the
 // Conventional Commits since the last `v*` tag, then commits `chore(release): vX.Y.Z` and creates
 // the tag vX.Y.Z. It pushes nothing: pushing the tag starts the release workflow.
@@ -116,6 +116,28 @@ export function pinInternalDependencies(text: string, names: Set<string>, versio
   return next;
 }
 
+/** `text` (packages/compiler/index.js) expecting platform packages at `version`. */
+export function setLoaderVersion(text: string, current: string, version: string): string {
+  const v = escapeRegExp(current);
+  return text
+    .replace(new RegExp(`(bindingPackageVersion !== )"${v}"`, "g"), `$1"${version}"`)
+    .replace(new RegExp(`expected ${v} but`, "g"), `expected ${version} but`);
+}
+
+/** `text` (llms.txt, llms-full.txt) naming `version` as the version its docs match. */
+export function setDocsVersion(text: string, current: string, version: string): string {
+  return text.replace(
+    new RegExp(`These docs match lumiose ${escapeRegExp(current)}\\.`, "g"),
+    `These docs match lumiose ${version}.`,
+  );
+}
+
+const VERSIONED_FILES: [string, (text: string, current: string, version: string) => string][] = [
+  ["packages/compiler/index.js", setLoaderVersion],
+  ["packages/lumiose/docs/llms.txt", setDocsVersion],
+  ["packages/lumiose/docs/llms-full.txt", setDocsVersion],
+];
+
 /** Cargo.toml with `[workspace.package] version` set. */
 export function setCargoVersion(text: string, version: string): string {
   const next = text.replace(/(\[workspace\.package\][^[]*?\nversion = )"[^"]*"/, `$1"${version}"`);
@@ -208,6 +230,12 @@ export function planRelease(
     const path = join(dir, "package.json");
     const text = readFileSync(path, "utf8");
     files.set(path, pinInternalDependencies(setPackageVersion(text, version), names, version));
+  }
+  // Files that spell the version out: the napi loader checks its platform packages' version, and
+  // the generated llms docs name it (docs:check fails when they are stale).
+  for (const [path, update] of VERSIONED_FILES) {
+    const file = join(repo, path);
+    if (existsSync(file)) files.set(file, update(readFileSync(file, "utf8"), current, version));
   }
   const cargo = join(repo, "Cargo.toml");
   if (existsSync(cargo)) files.set(cargo, setCargoVersion(readFileSync(cargo, "utf8"), version));

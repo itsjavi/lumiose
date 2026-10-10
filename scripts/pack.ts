@@ -1,7 +1,8 @@
 // `pnpm pack:check`: packs every publishable package (each `prepack` builds its dist/) and checks
 // the tarballs as npm would publish them: built files only (no sources, tests or fixtures), every
 // export and bin present, no `workspace:` specifiers left, one shared version, and `npm publish
-// --dry-run` accepts them in publish order (the path scripts/publish.ts takes for real). With
+// --dry-run` accepts them in publish order (the path scripts/publish.ts takes for real; versions
+// already on npm are skipped there, the tarballs are still checked and smoke-tested). With
 // `--smoke`, it also creates an app with the packed create-lumiose, installs the packed packages
 // into it from the tarballs, and runs `lumiose check` and `lumiose build` there. Nothing is
 // published.
@@ -304,13 +305,32 @@ export function distTag(version: string): string {
   return version.includes("-") ? "next" : "latest";
 }
 
+/** Whether npm already has `name@version` (npm refuses to publish over it, even as a dry run). */
+export function isPublished(name: string, version: string): boolean {
+  try {
+    return run("npm", ["view", `${name}@${version}`, "version"], REPO).trim() === version;
+  } catch {
+    return false;
+  }
+}
+
 /**
  * `npm publish` of each tarball in publish order (platform packages before @lumiose/compiler, the
  * runtime before the tooling). `dryRun` publishes nothing; a real run asks npm for provenance.
+ * Versions npm already has are skipped, so the check passes on a released version and a release
+ * that stopped halfway can be run again.
  */
-export function publishTarballs(packed: Packed[], options: { dryRun: boolean }): string[] {
+export function publishTarballs(
+  packed: Packed[],
+  options: { dryRun: boolean; published?: (name: string, version: string) => boolean },
+): string[] {
+  const published = options.published ?? isPublished;
   const failures: string[] = [];
   for (const { name, tarball, manifest } of publishOrder(packed)) {
+    if (published(name, manifest.version)) {
+      console.log(`${name}@${manifest.version} is already on npm (skipped)`);
+      continue;
+    }
     const args = ["publish", tarball, "--access", "public", "--tag", distTag(manifest.version)];
     args.push(options.dryRun ? "--dry-run" : "--provenance");
     try {
