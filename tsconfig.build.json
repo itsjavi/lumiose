@@ -1,0 +1,18 @@
+{
+  // Shared by each publishable package's tsconfig.build.json (scripts/build-package.ts): emits
+  // JavaScript and declarations to dist/, rewriting relative `.ts` imports to `.js`. Tests, fixtures
+  // and test helpers stay out of the published files.
+  "compilerOptions": {
+    "noEmit": false,
+    "declaration": true,
+    "rewriteRelativeImportExtensions": true
+  },
+  "exclude": [
+    "**/*.test.ts",
+    "**/__fixtures__",
+    "**/__tests__",
+    "**/.fixtures",
+    "**/test-links.ts",
+    "**/test-client.ts"
+  ]
+}

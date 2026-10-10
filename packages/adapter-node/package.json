@@ -1,20 +1,35 @@
 {
   "name": "@lumiose/adapter-node",
   "version": "0.0.0",
-  "private": true,
   "description": "Serve a Lumiose build with Node: dist/client statics with caching headers, then the app's fetch handler.",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/itsjavi/lumiose.git",
+    "directory": "packages/adapter-node"
+  },
   "files": [
-    "src"
+    "dist"
   ],
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
     "./package.json": "./package.json"
   },
+  "publishConfig": {
+    "exports": {
+      ".": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "./package.json": "./package.json"
+    }
+  },
   "scripts": {
     "typecheck": "tsc -p tsconfig.json",
-    "test": "vitest run"
+    "test": "vitest run",
+    "build": "node ../../scripts/build-package.ts",
+    "prepack": "pnpm run build"
   },
   "dependencies": {
     "lumiose": "workspace:*"

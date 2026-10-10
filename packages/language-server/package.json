@@ -1,23 +1,41 @@
 {
   "name": "@lumiose/language-server",
   "version": "0.0.0",
-  "private": true,
   "description": "The Lumiose language server: a TypeScript 7 takeover proxy for .ts/.tsx/.stsx plus CSS features for .stsx style blocks.",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/itsjavi/lumiose.git",
+    "directory": "packages/language-server"
+  },
   "bin": {
     "lumiose-language-server": "./src/bin.ts"
   },
   "files": [
-    "src"
+    "dist"
   ],
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
     "./package.json": "./package.json"
   },
+  "publishConfig": {
+    "bin": {
+      "lumiose-language-server": "./dist/bin.js"
+    },
+    "exports": {
+      ".": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "./package.json": "./package.json"
+    }
+  },
   "scripts": {
     "typecheck": "tsc -p tsconfig.json",
-    "test": "vitest run"
+    "test": "vitest run",
+    "build": "node ../../scripts/build-package.ts",
+    "prepack": "pnpm run build"
   },
   "dependencies": {
     "@lumiose/cli": "workspace:*",

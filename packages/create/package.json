@@ -1,20 +1,31 @@
 {
   "name": "create-lumiose",
   "version": "0.0.0",
-  "private": true,
   "description": "Create a Lumiose app: `pnpm create lumiose my-app --template ssr`. Every project starts agent-ready (AGENTS.md, CLAUDE.md, the lumiose skill).",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/itsjavi/lumiose.git",
+    "directory": "packages/create"
+  },
   "bin": {
     "create-lumiose": "./src/bin.ts"
   },
   "files": [
-    "src",
+    "dist",
     "templates"
   ],
   "type": "module",
+  "publishConfig": {
+    "bin": {
+      "create-lumiose": "./dist/bin.js"
+    }
+  },
   "scripts": {
     "typecheck": "tsc -p tsconfig.json",
-    "test": "vitest run"
+    "test": "vitest run",
+    "build": "node ../../scripts/build-package.ts",
+    "prepack": "pnpm run build"
   },
   "dependencies": {
     "@lumiose/cli": "workspace:*",

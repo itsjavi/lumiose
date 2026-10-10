@@ -9,6 +9,7 @@ Node ≥ 24, pnpm (the version in `package.json`'s `packageManager`) and Rust (t
 pnpm install
 pnpm build:compiler   # the native compiler (crates/lumiose_napi) into packages/compiler
 pnpm check            # what CI runs: build, typecheck, lint, example formatting, tests, size, cargo test
+pnpm pack:check       # pack the publishable packages and check the tarballs (--smoke: build an app with them)
 ```
 
 ## Continuous integration
@@ -17,13 +18,34 @@ pnpm check            # what CI runs: build, typecheck, lint, example formatting
 Windows:
 
 - **check**: `pnpm build:compiler`, `pnpm typecheck`, `pnpm lint`, `pnpm fmt:examples`,
-  `pnpm --filter lumiose size`, `pnpm test` (Vitest), and `cargo fmt --check`, `cargo clippy`
-  (warnings are errors) and `cargo test` for the workspace.
+  `pnpm --filter lumiose size`, `pnpm test` (Vitest), `node --test scripts/*.test.ts`, and
+  `cargo fmt --check`, `cargo clippy` (warnings are errors) and `cargo test` for the workspace.
 - **e2e**: the Playwright suites (Chromium). Linux runs every suite (`examples/*` and `apps/*`
   with a `playwright.config.ts`); macOS and Windows run a smoke subset (`examples/vite-counter`,
   `examples/islands-e2e`). Failed runs upload the `test-results` folders.
 
+- **pack** (Linux): `pnpm pack:check --smoke`, below.
+
 pnpm's store, Cargo's registry and `target/`, and the Playwright browsers are cached.
+
+## Packages
+
+The published packages share one version: `lumiose` (the runtime, no dependencies),
+`@lumiose/vite` (the Vite plugin, dev server and build), `@lumiose/cli` (the `lumiose` command),
+`@lumiose/compiler`, `@lumiose/adapter-node`, `@lumiose/language-server`, `@lumiose/eslint-plugin`,
+`@lumiose/prettier-plugin` and `create-lumiose`. In the workspace their `exports` point at the
+TypeScript sources, which Node runs directly. Published, they point at `dist/` instead
+(`publishConfig`, applied by `pnpm pack`): `pnpm build` in a package (also its `prepack`) runs
+`scripts/build-package.ts`, which compiles `src/` with the package's `tsconfig.build.json`
+(JavaScript and declarations, tests and fixtures excluded). Our packages import each other's
+modules through the undocumented `<package>/internal/*.ts` subpath, which maps to `dist/*.js` once
+published.
+
+`pnpm pack:check` packs every public package into `.local/pack/` and fails when a tarball ships
+sources, tests or fixtures, misses a file an export or bin names, keeps a `workspace:` specifier,
+or is rejected by `npm publish --dry-run`. With `--smoke` it also creates an app with the packed
+create-lumiose (`--template ssr`), installs the tarballs into it, and runs `lumiose check` and
+`lumiose build`. Nothing is published.
 
 ## Compiler binaries
 

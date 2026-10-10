@@ -1,20 +1,35 @@
 {
   "name": "@lumiose/eslint-plugin",
   "version": "0.0.0",
-  "private": true,
   "description": "Lumiose's compiler diagnostics (LUMxxxx) as lint rules for oxlint (JS plugins) and ESLint, plus a .stsx processor for ESLint.",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/itsjavi/lumiose.git",
+    "directory": "packages/eslint-plugin"
+  },
   "files": [
-    "src"
+    "dist"
   ],
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
     "./package.json": "./package.json"
   },
+  "publishConfig": {
+    "exports": {
+      ".": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "./package.json": "./package.json"
+    }
+  },
   "scripts": {
     "typecheck": "tsc -p tsconfig.json",
-    "test": "vitest run"
+    "test": "vitest run",
+    "build": "node ../../scripts/build-package.ts",
+    "prepack": "pnpm run build"
   },
   "dependencies": {
     "@lumiose/compiler": "workspace:*"
