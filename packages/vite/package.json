@@ -1,6 +1,6 @@
 {
   "name": "@lumiose/vite",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "The Lumiose Vite plugin, dev server and build pipeline.",
   "license": "MIT",
   "repository": {

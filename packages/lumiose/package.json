@@ -1,6 +1,6 @@
 {
   "name": "lumiose",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Lumiose runtime: signals, the DOM and server renderers, the router and the app runtime.",
   "license": "MIT",
   "repository": {
