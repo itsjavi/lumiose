@@ -55,7 +55,7 @@
 //     );
 //   }
 //
-//   mount(() => <App />, document.getElementById("main")!);
+//   render(() => <App />, document.getElementById("main")!);
 
 /* eslint-disable no-underscore-dangle -- compiled names (_t0, _el, …) follow the compiler's output */
 import { signal } from "lumiose";
@@ -64,7 +64,7 @@ import {
   createComponent,
   delegateEvents,
   list,
-  mount,
+  render,
   selector,
   setText,
   template,
@@ -186,4 +186,4 @@ export function App() {
 }
 delegateEvents(["click"]);
 
-mount(() => createComponent(App, {}), document.getElementById("main"));
+render(() => createComponent(App, {}), document.getElementById("main"));

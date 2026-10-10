@@ -2,7 +2,7 @@
 // rows ship no JS and no data); the island owns the surrounding form, counts the checked rows,
 // handles "select all" and posts the `close` action with `submit`; the action redirects back to
 // the list, filters included, so it shows the change.
-import { onMount, ref, signal, submit, submitting } from "lumiose";
+import { onMount, ref, signal, submit, isSubmitting } from "lumiose";
 import { markReady } from "../lib/ready.ts";
 
 /** `action`: the list URL with its filters plus the `/close` action key (`?status=open&/close`). */
@@ -48,9 +48,9 @@ export function BulkSelect(props: { action: string; children?: JSX.Element }) {
           type="submit"
           class="btn btn-danger"
           data-testid="close-selected"
-          disabled={count() === 0 || submitting("close")}
+          disabled={count() === 0 || isSubmitting("close")}
         >
-          {submitting("close") ? "Closing…" : "Close selected"}
+          {isSubmitting("close") ? "Closing…" : "Close selected"}
         </button>
       </div>
     </form>

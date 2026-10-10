@@ -1,7 +1,7 @@
 // Island: the comment form with a live character count. `submit` posts it to the page's `comment`
 // action without a page load; the action redirects back to the issue, so the new comment appears.
 import { COMMENT_MAX } from "@bench/data/format";
-import { actionData, onMount, signal, submit, submitting } from "lumiose";
+import { actionData, onMount, signal, submit, isSubmitting } from "lumiose";
 import { markReady } from "../lib/ready.ts";
 import type { actions } from "../routes/issues/[id].tsx";
 
@@ -40,9 +40,9 @@ export function CommentComposer() {
           type="submit"
           class="btn btn-primary"
           data-testid="comment-submit"
-          disabled={submitting("comment") || body().trim().length === 0}
+          disabled={isSubmitting("comment") || body().trim().length === 0}
         >
-          {submitting("comment") ? "Posting…" : "Comment"}
+          {isSubmitting("comment") ? "Posting…" : "Comment"}
         </button>
       </div>
     </form>
