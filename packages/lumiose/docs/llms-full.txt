@@ -3848,7 +3848,7 @@ promise settles, either way: on success the (refreshed) source shows, on failure
 back. Concurrent overlays apply in call order over the latest source value, so an `update` is
 re-applied when the source changes. A rejection is not re-thrown; await the promise itself to
 handle it. Writes stop when the owner is disposed. On the server it reads `source()` and `set`/`update`
-do nothing. See [optimistic updates](../concepts/data-and-actions.md#optimistic-updates).
+do nothing. See [optimistic updates](../concepts/data-and-actions.md) in Data and actions.
 
 ## Example
 
