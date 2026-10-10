@@ -16,7 +16,8 @@
     "check": "pnpm build:compiler && pnpm typecheck && pnpm lint && pnpm fmt:examples && pnpm test && pnpm --filter lumiose size && cargo test --workspace",
     "build:compiler": "pnpm --filter @lumiose/compiler build",
     "build:site": "node scripts/site.ts build",
-    "preview:site": "node scripts/site.ts preview"
+    "preview:site": "node scripts/site.ts preview",
+    "demo": "node scripts/demo.ts"
   },
   "devDependencies": {
     "@types/node": "^24.0.0",

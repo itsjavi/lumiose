@@ -6,7 +6,8 @@
   "demo": {
     "name": "tracker-lumiose",
     "title": "Tracker in Lumiose (fullstack bench)",
-    "kind": "benchmark"
+    "kind": "benchmark",
+    "setup": ["seed"]
   },
   "license": "MIT",
   "type": "module",

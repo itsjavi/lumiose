@@ -6,7 +6,8 @@
   "demo": {
     "name": "tracker-react-router",
     "title": "Tracker in React Router (fullstack bench)",
-    "kind": "benchmark"
+    "kind": "benchmark",
+    "setup": ["seed"]
   },
   "license": "MIT",
   "type": "module",

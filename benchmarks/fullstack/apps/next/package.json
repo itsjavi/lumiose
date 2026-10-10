@@ -6,7 +6,8 @@
   "demo": {
     "name": "tracker-next",
     "title": "Tracker in Next.js (fullstack bench)",
-    "kind": "benchmark"
+    "kind": "benchmark",
+    "setup": ["seed"]
   },
   "license": "MIT",
   "type": "module",

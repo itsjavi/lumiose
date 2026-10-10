@@ -2,6 +2,20 @@
 
 A TypeScript-first web framework: `.stsx` components, signals, islands and scoped styles, compiled by a Rust compiler. The framework docs live in [`packages/lumiose/docs/`](packages/lumiose/docs/).
 
+## Run anything: `pnpm demo`
+
+Every package in the repo that serves HTML (the examples, the website and playground, the site-kit showcase, the benchmark apps and results viewers, the eval results viewer and the e2e test apps) can be started from the root:
+
+```sh
+pnpm demo                          # pick one from a list grouped by kind
+pnpm demo chip                     # fuzzy name: starts spa-chiptune in dev
+pnpm demo bookshelf --prod         # build, then its production server (preview, start or serve)
+pnpm demo web --port 5000 --open   # choose the port, open the browser when it answers
+pnpm demo --list                   # list without starting (--json for tools)
+```
+
+It prints the URL once the server answers; Ctrl+C stops the server and everything it started. Entries come from the workspace packages that have a `dev`, `view`, `start`, `serve` or `preview` script, so new apps appear on their own. A package can describe itself with a `demo` field in its `package.json`: `"demo": { "title": "Chiptune tracker (SPA)", "kind": "example" }` (`kind`: `example`, `site`, `benchmark`, `eval` or `e2e`; optional `name`, `setup` scripts to run first such as `["seed"]`, `port: "flag" | "env"`, or `"demo": false` to hide it). Details: [`scripts/demo.ts`](scripts/demo.ts); tests: `node --test scripts/demo.test.ts`.
+
 ## Website
 
 The website is assembled into one static site: `apps/web` (the landing page at `/`, the docs at `/docs`, and the `/examples` and `/benchmarks` pages), `apps/playground` (at `/playground`), the example apps that need no server (`examples/spa-chiptune`, `spa-dotmatrix`, `ssg-travel-journal` and `vite-counter`, at `/examples/<name>/`), the fullstack benchmark's results viewer with the committed results (`/benchmarks/fullstack/`) and the Lumiose js-framework-benchmark app (`/benchmarks/js-framework-benchmark/app/`).
