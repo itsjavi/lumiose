@@ -61,6 +61,13 @@ submit(form, { invalidate: ["/api/books/1", ["stats"]] });
 - Only component-level awaits are cached; `fetchJSON` in handlers stays a plain request. Non-GET requests are never cached.
 - Scope: per request on the server, per page/app in the browser. Islands read server results from the page payload (as A), shared instead of replayed per island.
 - A cached key returns at once (no `<Suspense>` fallback) and revalidates in the background. Defaults follow TanStack (`staleTime: 0`, `gcTime: 5 min`).
+- Revalidation rules, as implemented in TASK-195:
+  - Background refetches skip data that arrived in the current task and awaits from hydrating islands.
+  - Refetched data is structurally shared (`replaceEqualDeep`), so runs re-run only when something changed.
+  - After `invalidate(target)`, the matching runs wait for the refetch, keeping the old UI with `isPending()` true. A newly mounted component shows the stale data while it refetches.
+  - Errors are never cached, and a failed background refetch keeps the old data.
+  - Each entry has one shared request. A caller that aborts only ends its own wait; the request is cancelled when the last waiter leaves.
+  - `fn` receives `{ signal, queryKey }`, and `fetchJSON(url, { cache: "no-store" })` bypasses the cache (decision-36).
 
 ## C. `reconcile`
 
