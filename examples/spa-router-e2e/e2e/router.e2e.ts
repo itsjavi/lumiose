@@ -130,7 +130,7 @@ test("unknown URLs render the _404 page inside the SPA", async ({ page }) => {
   expect(await sameDocument(page)).toBe(true);
 });
 
-test("search() follows the query and search.set() changes it", async ({ page }) => {
+test("searchParams() follows the query and searchParams.set() changes it", async ({ page }) => {
   await page.goto("/");
   await ready(page);
   await page.getByRole("link", { name: "Search" }).click();

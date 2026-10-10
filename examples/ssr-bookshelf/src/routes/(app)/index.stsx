@@ -1,11 +1,11 @@
-import { href, lifetime, locals, Meta, Suspense, Title } from "lumiose";
+import { href, getAbortSignal, locals, Meta, Suspense, Title } from "lumiose";
 import { BookGrid } from "../../components/BookCard.stsx";
 import { queries } from "../../server/queries.server.ts";
 import * as theme from "../../theme.ts";
 
 /** Slow on purpose (BOOKSHELF_SLOW_MS): the shell is sent first and this streams in. */
 async function Recommendations(props: { userId: number | null }) {
-  const books = await queries().recommendationsFor(props.userId, { signal: lifetime() });
+  const books = await queries().recommendationsFor(props.userId, { signal: getAbortSignal() });
   return <BookGrid books={books} />;
 }
 

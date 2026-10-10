@@ -2,7 +2,7 @@
 // and length, the way handheld RPGs gave every creature a cry. Pick one, change its base voice,
 // pitch and length (or roll a new creature), export it, or open it in the studio.
 import { computed, onCleanup, onMount, signal } from "lumiose";
-import { search } from "lumiose/router";
+import { searchParams } from "lumiose/router";
 import { FPS, sfxData, sfxFrames, songSeconds } from "../audio/driver.ts";
 import { playPcm } from "../audio/player.ts";
 import { onSpace } from "../keys.ts";
@@ -136,7 +136,7 @@ export default function Creatures() {
 
   onMount(() => {
     onSpace(() => void fire());
-    const id = search().get("sound");
+    const id = searchParams().get("sound");
     if (id && mySounds().some((s) => s.id === id)) picked.set({ custom: true, id });
     void fire(false);
   });

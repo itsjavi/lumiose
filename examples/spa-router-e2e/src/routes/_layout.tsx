@@ -1,5 +1,5 @@
 import { signal, type LayoutProps } from "lumiose";
-import { Link, navigating, url } from "lumiose/router";
+import { Link, isNavigating, url } from "lumiose/router";
 
 // The persistent root layout: its counter keeps its value across client navigations.
 export default function Layout(props: LayoutProps<"/">) {
@@ -23,7 +23,7 @@ export default function Layout(props: LayoutProps<"/">) {
       <button id="root-count" onClick={() => count.update((n) => n + 1)}>
         root {count()}
       </button>
-      <p id="status">{navigating() ? "navigating" : "idle"}</p>
+      <p id="status">{isNavigating() ? "navigating" : "idle"}</p>
       <p id="url">{url().pathname}</p>
       <main>{props.children}</main>
     </div>

@@ -1,7 +1,7 @@
 // The studio: transport, channels, the piano roll screen and the sound of the selected channel.
 // A share link (`/?song=…`) opens its song here; undo brings back the song that was open.
 import { onMount } from "lumiose";
-import { search } from "lumiose/router";
+import { searchParams } from "lumiose/router";
 import { onSpace } from "../keys.ts";
 import { decodeSong } from "../model/share.ts";
 import { openSong, say } from "../state.ts";
@@ -15,7 +15,7 @@ import { Transport } from "../ui/Transport.stsx";
 export default function Studio() {
   onMount(() => {
     onSpace(undefined);
-    const code = search().get("song");
+    const code = searchParams().get("song");
     if (code) {
       decodeSong(code)
         .then((song) => {
@@ -23,7 +23,7 @@ export default function Studio() {
           say(`Opened the shared song “${song.title}”`);
         })
         .catch(() => say("That share link could not be read"))
-        .finally(() => void search.set({ song: null }, { replace: true }));
+        .finally(() => void searchParams.set({ song: null }, { replace: true }));
     }
   });
 

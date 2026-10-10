@@ -1,4 +1,4 @@
-import { mount } from "lumiose/dom";
+import { render } from "lumiose/dom";
 import { App } from "./App.stsx";
 
-mount(() => <App />, document.getElementById("app")!);
+render(() => <App />, document.getElementById("app")!);

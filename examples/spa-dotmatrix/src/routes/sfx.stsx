@@ -2,7 +2,7 @@
 // its waveform and the driver code it becomes, save it as a WAV file, or open it in the studio to
 // edit it note by note. Sounds saved from the studio come back under "My sounds".
 import { computed, onCleanup, onMount, signal, store } from "lumiose";
-import { search } from "lumiose/router";
+import { searchParams } from "lumiose/router";
 import { FPS, sfxData, sfxFrames, songSeconds } from "../audio/driver.ts";
 import { playPcm } from "../audio/player.ts";
 import { onSpace } from "../keys.ts";
@@ -113,7 +113,7 @@ export default function SfxPage() {
 
   onMount(() => {
     onSpace(() => void fire());
-    const id = search().get("sound");
+    const id = searchParams().get("sound");
     if (id && mySounds().some((s) => s.id === id)) selected.set({ custom: true, id });
     void fire(false);
   });
