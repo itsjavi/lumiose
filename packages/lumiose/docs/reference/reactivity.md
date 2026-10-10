@@ -1,6 +1,6 @@
 # `lumiose`: reactivity
 
-> Signatures and behavior of the reactive core exported by `lumiose`: signals, computeds, effects, stores, owners, context and in-flight state.
+> Signatures and behavior of the reactive core exported by `lumiose`: signals, computeds, effects, stores, owners, context, scoped state and in-flight state.
 
 All of these are exported by `lumiose` in the browser and on the server. On the server (the `node`
 entry) signals are plain cells, computeds evaluate once per request, and `effect`/`onMount` never
@@ -193,6 +193,50 @@ const Count = createContext(signal(0));
     <Toolbar /> {/* useContext(Theme) is "dark"; useContext(Count)() is reactive */}
   </Count>
 </Theme>;
+```
+
+## defineState
+
+```ts
+function defineState<T>(factory: () => T): () => T;
+```
+
+Scoped state: returns an accessor whose `factory` runs on the first call, once per scope, and
+returns the same instance after that.
+
+| Scope          | One instance per                                                                       |
+| -------------- | -------------------------------------------------------------------------------------- |
+| Browser        | page: shared by every island and the SPA tree                                          |
+| Server         | request: middleware, endpoints, actions and the render share it; never across requests |
+| Tests (Vitest) | test: `@lumiose/vite` resets scoped state before each test                             |
+
+The factory runs outside the component tree: it sees no context and its reads are not tracked; in
+the browser its effects live as long as the page. On the server it may read request APIs
+(`cookies()`, `locals()`, …), which do not exist in the browser: guard them with
+`import.meta.env.SSR`. Calling an accessor on the server outside a request or render (at module
+scope) throws.
+
+**Sent to the browser.** When islands or SPA routes import the state, a page that created it
+sends what the factory returned that the browser cannot rebuild: the returned signal or store
+itself, or the top-level signals and stores of the returned object. Computeds and functions are
+not sent; the factory runs again in the browser and the server values replace its signals and
+stores before any island reads them, so hydration matches. Values go once per page, in the chunk
+(shell or streamed boundary) where the state was first used, and must be plain data like island
+props ([LUM4011](../errors/LUM4011.md)). States that only server code imports are never sent.
+Everything a sent state holds is public: never put secrets in it.
+
+Define states at module scope with `export const x = defineState(…)` (or export the binding):
+`@lumiose/vite` names each one after its module and export, the way it names islands. States
+created elsewhere (inside a function) are never sent.
+
+```ts
+import { computed, cookies, defineState, signal } from "lumiose";
+
+export const prefs = defineState(() => {
+  const theme = signal(import.meta.env.SSR ? (cookies().get("theme") ?? "light") : "light");
+  return { theme, dark: computed(() => theme() === "dark") };
+});
+// prefs().theme(), prefs().dark(), prefs().theme.set("dark")
 ```
 
 ## isPending

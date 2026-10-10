@@ -130,6 +130,11 @@ client code fail `lumiose dev`/`lumiose build` (`LUM4003`), `lumiose dev` refuse
 (`server.fs.deny`), and only `import.meta.env.PUBLIC_*` variables reach client code (`envPrefix`).
 See [Server](server.md).
 
+**What the page sends.** Island props, values awaited inside islands and the scoped state islands
+use (`defineState`) are serialized into the page as plain data (JSON in
+`<script type="application/json">`, escaped so it cannot end the element): anyone who loads the
+page can read them. Never pass a secret there; keep it in server-only modules.
+
 **Secrets.** `signedCookie()` needs a secret of at least 32 bytes in production
 (`LUMIOSE_SECRET`); a shorter one throws when the cookie is used (in development it warns).
 `{ allowWeakSecret: true }` opts out.

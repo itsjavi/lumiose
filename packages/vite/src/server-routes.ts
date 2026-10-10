@@ -23,6 +23,22 @@ export function serverRouteFiles(root: string, manifest: RouteManifest): Set<str
   return files;
 }
 
+/**
+ * Absolute files (`/` separators) of the client-rendered pages and layouts of `manifest` (route
+ * mode `spa`): client code, like island modules (scoped state, ./states.ts).
+ */
+export function spaRouteFiles(root: string, manifest: RouteManifest): Set<string> {
+  const path = (file: string) => join(root, file).replaceAll("\\", "/");
+  const files = new Set<string>();
+  for (const route of manifest.routes) {
+    if (route.kind === "page" && route.mode === "spa") files.add(path(route.file));
+  }
+  for (const layout of manifest.layouts) {
+    if (layout.mode === "spa") files.add(path(layout.file));
+  }
+  return files;
+}
+
 /** Scans the project's routes; an unreadable routes directory has no server routes. */
 export async function scanServerRoutes(
   root: string,

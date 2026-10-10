@@ -51,8 +51,9 @@ already client-side.
 outside it (a `<Ctx value>` provider in a layout or page) does not reach it, and the server renders it the same
 way: `useContext()` inside an island returns the context's default, unless the island or a component
 inside it provides the value. Contexts provided inside the island work on both sides. To hand page
-data to an island, pass it as a prop; to share state between islands, use module-scope state
-([Sharing state](state.md)). In dev, an island that reads a context the page provided warns
+data to an island, pass it as a prop; to share state between islands, use scoped state
+(`defineState`, [Sharing state](state.md)): one instance per page, seeded on the server and sent
+with the page. In dev, an island that reads a context the page provided warns
 `LUM4010`. Slots are page content, so they keep seeing the page's context. `<Suspense>`,
 `<ErrorBoundary>`, request APIs (`locals()`, `cookies()`, …) and `getAbortSignal()` work inside islands
 during SSR as everywhere else.
@@ -65,7 +66,8 @@ reaches one, and `lumiose check` reports the import. Server-only APIs (`request(
 
 **Awaited data** inside an island is recorded during SSR and replayed during hydration, so the
 browser does not fetch it again; it must be plain data (`LUM4007`), and it is visible in the page
-source. The loader and `hydrate()` are described in [`lumiose/dom`](../reference/dom.md).
+source. So are the values of scoped state that islands import (`defineState`, `LUM4011`): the page
+sends them once, before the islands that read them hydrate. The loader and `hydrate()` are described in [`lumiose/dom`](../reference/dom.md).
 
 **The loader script.** `lumiose dev` and `lumiose build` add the loader to every page that renders an
 island, once, as `<script type="module" async>`: in the `<head>` when the shell has islands,
@@ -161,8 +163,8 @@ export default function Post() {
 - **Reading page context inside an island.** An island hydrates as its own root, so it does not
   see values the page provided outside it with a `<Ctx value>` provider, and it renders the same way on the
   server: `useContext()` returns the context's default unless the island (or a component inside it)
-  provides the value. Pass the value as a prop, or share module-scope state
-  ([Sharing state](state.md)); dev warns with `LUM4010` when the page did provide it.
+  provides the value. Pass the value as a prop, or share scoped state (`defineState`,
+  [Sharing state](state.md)); dev warns with `LUM4010` when the page did provide it.
 - **Different output on server and client**, for example from `Math.random()` or `Date.now()` in
   render. Hydration reports `LUM4006` in dev and client-renders the range in production.
 - **Expecting `submit()` to refresh the page.** On MPA pages a successful `submit()` does not
@@ -180,5 +182,6 @@ export default function Post() {
 - [LUM4006](../errors/LUM4006.md): hydration mismatch.
 - [LUM4007](../errors/LUM4007.md): non-serializable awaited value.
 - [LUM4010](../errors/LUM4010.md): island reads context provided by the page.
+- [LUM4011](../errors/LUM4011.md): non-serializable scoped state value.
 
 See also: [Rendering modes](rendering-modes.md), [Async components](async.md), [Sharing state](state.md) (state shared by islands).

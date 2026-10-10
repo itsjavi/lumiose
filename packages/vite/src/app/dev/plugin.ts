@@ -30,6 +30,7 @@ import {
   DOCUMENT_FILES,
   findAppFile,
   hrefDefine,
+  isClientState,
   islandModules,
   MIDDLEWARE_FILES,
   navigationOptions,
@@ -52,6 +53,7 @@ import { typegen } from "../typegen/index.ts";
 import { formatError, overlayError, overlayScript, type OverlayError } from "./errors.ts";
 import { hasSpa, SPA_ENTRY_ID, spaEntryCode } from "../router/entry.ts";
 import { ISLANDS_ID } from "../../islands.ts";
+import { spaRouteFiles } from "../../server-routes.ts";
 import { headersFor, pathBelowBase } from "lumiose/internal/app/headers.ts";
 
 /** How long a burst of file events may last and still reload the browser once. */
@@ -209,12 +211,15 @@ export function lumioseDev(options: LumioseDevOptions = {}): Plugin {
     if (cached?.runtime === runtime && cached.app === app) return cached.handler;
     const current = app;
     const base = server.config.base;
+    const spaRoutes = spaRouteFiles(root, current.manifest);
     const handler = runtime.createRequestHandler({
       manifest: current.manifest,
       loadModule: (file) => ssr.runner.import(`/${file}`),
       render: runtime.createServerRenderer({
         islandUrl: (specifier) => islandModuleUrl(base, specifier, server),
         loaderUrl: virtualUrl(base, LOADER_ID),
+        // Scoped state the page sends: only what islands and SPA routes reach (decision-33).
+        isClientState: (ref) => isClientState(server.config, ref, spaRoutes),
       }),
       ...(hasSpa(current.manifest) ? { spaEntry: virtualUrl(base, SPA_ENTRY_ID) } : {}),
       ...(current.middleware === undefined ? {} : { middleware: current.middleware }),

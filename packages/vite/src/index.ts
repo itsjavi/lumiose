@@ -30,10 +30,14 @@
 //   generated from the file (`content.source`, also for their CSS modules and the build scan).
 // - Project options (`mode`, `ssr`, `trailingSlash`, `csrf`; decision-21) are validated here and
 //   exposed as the plugin's `api.options` for `lumiose dev`/`build` and the CLI (./options.ts).
+// - Scoped state (`defineState`, decision-33): module-scope states get their id
+//   (`<module>#<export>`) where client code reaches them (./states.ts); `api.isClientState` answers
+//   that for `lumiose dev`. Under Vitest a setup file makes them fresh in each test.
 
 import { readFileSync } from "node:fs";
 import { readFile } from "node:fs/promises";
-import { dirname, join, resolve } from "node:path";
+import { dirname, extname, join, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import type { Diagnostic } from "@lumiose/compiler";
 import { writeLumioseTsconfig } from "./layout.ts";
 import {
@@ -65,6 +69,7 @@ import {
   type Target,
 } from "./styles.ts";
 import { serverOnlyPlugin } from "./server-only.ts";
+import { StateRegistry, stableModuleId, statePlugin } from "./states.ts";
 import { scanServerRoutes } from "./server-routes.ts";
 import { svgOptionsOf, svgPlugin } from "./svg.ts";
 
@@ -109,6 +114,10 @@ const VITE_FS_DENY = [
   ".yarnrc.yml",
   "**/.git/**",
 ];
+/** Resets scoped state before each test (./vitest-setup.ts, `.js` once built). */
+const VITEST_SETUP = fileURLToPath(
+  new URL(`./vitest-setup${extname(fileURLToPath(import.meta.url))}`, import.meta.url),
+);
 const HMR_DOM = "virtual:lumiose/hmr-dom";
 const HMR_DOM_ID = "\0lumiose:hmr-dom";
 // The compiler prints user imports verbatim, normalized by the code printer.
@@ -119,6 +128,18 @@ export default function lumiose(options: LumioseOptions = {}): Plugin<LumiosePlu
     options: Object.freeze(projectOptionsOf(options)),
     islandModules: () => islands.modules(),
     cssManifest: (context) => cssManifest.manifest(context, root),
+    isClientState(ref, spaRoutes) {
+      const graph = devServer?.environments.ssr?.moduleGraph;
+      // Builds give ids only to states that client code reaches.
+      if (graph === undefined) return true;
+      const islandModules = islands.modules();
+      return states.reachable(
+        ref,
+        graph,
+        (file) =>
+          spaRoutes.has(file) || islandModules.has(stableModuleId(file, root, packages.for(file))),
+      );
+    },
   };
   const svg = svgOptionsOf(options.svg);
   const include = options.include ?? LUMIOSE_MODULE;
@@ -130,6 +151,7 @@ export default function lumiose(options: LumioseOptions = {}): Plugin<LumiosePlu
   let root = process.cwd();
   let devServer: ViteDevServer | undefined;
   const islands = new IslandRegistry();
+  const states = new StateRegistry();
   const styles = new StyleCache();
   const cssManifest = new CssManifest();
   const customProperties = new CustomPropertyCheck();
@@ -174,7 +196,9 @@ export default function lumiose(options: LumioseOptions = {}): Plugin<LumiosePlu
 
       config(config, env) {
         serve = env.command === "serve";
-        const out: UserConfig = {};
+        const out: UserConfig & { test?: { setupFiles: string[] } } = {};
+        // Scoped state is fresh in each test (Vitest merges the list with the project's).
+        if (process.env["VITEST"] !== undefined) out.test = { setupFiles: [VITEST_SETUP] };
         // decision-29: only `PUBLIC_` variables reach client code through `import.meta.env`.
         if (config.envPrefix === undefined) out.envPrefix = "PUBLIC_";
         // decision-29: the dev server does not serve server-only files over HTTP (`/@fs/`, `?raw`);
@@ -425,6 +449,13 @@ export default function lumiose(options: LumioseOptions = {}): Plugin<LumiosePlu
     },
     // LUM4003: server-only modules never enter a client graph (./server-only.ts).
     serverOnlyPlugin(),
+    // Scoped state ids (./states.ts), after TypeScript and Lumiose compilation.
+    statePlugin({
+      registry: states,
+      root: () => root,
+      packages: () => packages,
+      serve: () => serve,
+    }),
     // `.svg` imports as inline components (./svg.ts).
     ...(svg ? [svgPlugin(svg, exclude, () => root)] : []),
     // `.md` and `.html` imports as components (./content.ts).

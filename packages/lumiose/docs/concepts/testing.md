@@ -20,6 +20,11 @@ before asserting. Delegated events (`onClick`) need the element to be attached t
 Server rendering is tested with `renderToString(() => <Page />)` under the `node` entry: a test
 file without a DOM environment, in the same project.
 
+**Scoped state is fresh in each test.** `lumiose()` adds a Vitest setup file that resets
+`defineState` instances before each test, so one test's cart never leaks into the next. In server
+tests, a state's accessor called outside a render (to seed or inspect it) uses one instance per
+test, which `renderToString` then shares.
+
 > **Status:** `@lumiose/testing` (a `render()` helper and Testing Library integration) is planned.
 > Until then, use `render` from `lumiose/dom` as shown here.
 

@@ -113,6 +113,11 @@ What it does:
   the runtime share one module instance. Under Vitest, tests in a DOM environment (`happy-dom`,
   `jsdom`) get the `browser` entry too (see [Testing](../concepts/testing.md)).
 - Turns compiler diagnostics into Vite warnings and errors with code frames (the dev overlay).
+- Names scoped state: each module-scope `defineState()` binding imported from `lumiose` gets an id
+  after its module and export (`/src/lib/cart.ts#cart`), as island refs do, where client code
+  (islands, SPA routes) reaches it; pages send only those states' values
+  ([`defineState`](reactivity.md#definestate)). Under Vitest it adds a setup file that resets
+  scoped state before each test.
 - Loads project `.svg` files (`./icon.svg`, `./icon.svg?inline`) as inline components for the
   environment's target, optimised with SVGO (`optimize`: `true` for Lumiose's defaults,
   `preset-default` plus `convertStyleToAttrs`; your SVGO config; or `false`). Scripts, event

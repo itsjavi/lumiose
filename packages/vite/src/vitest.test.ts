@@ -1,6 +1,7 @@
 // `@lumiose/vite` under Vitest (TASK-54): with only `plugins: [lumiose()]`, component tests in a DOM
 // environment (happy-dom) get the browser entry of `lumiose` (reactive updates), while tests in the
-// node environment keep the node entry (server rendering). Runs the Vitest CLI on a fixture in a
+// node environment keep the node entry (server rendering), and scoped state is fresh in each test
+// (TASK-193). Runs the Vitest CLI on a fixture in a
 // temp dir whose node_modules link to this package, Vitest and happy-dom.
 import { linkLumiose } from "./test-links.ts";
 import { spawnSync } from "node:child_process";
@@ -33,7 +34,8 @@ const happyDomRoot = dirname(
 const FILES: Record<string, string> = {
   "package.json": `{ "type": "module" }\n`,
   "vitest.config.ts": `import lumiose from "@lumiose/vite";
-export default { plugins: [lumiose()], test: { include: ["*.test.ts"] } };
+// The packages are linked from outside this temp dir; an installed @lumiose/vite sits inside it.
+export default { plugins: [lumiose()], server: { fs: { strict: false } }, test: { include: ["*.test.ts"] } };
 `,
   "Counter.tsx": `import { signal } from "lumiose";
 export function Counter() {
@@ -53,6 +55,31 @@ it("updates a mounted component", () => {
   app.querySelector("button")!.click();
   flush();
   expect(app.textContent).toBe("Clicked 1 times");
+});
+`,
+  "counter.ts": `import { defineState, signal } from "lumiose";
+export const counter = defineState(() => signal(0));
+`,
+  // Scoped state is fresh in each test (TASK-193): the plugin's Vitest setup file.
+  "state.test.ts": `// @vitest-environment happy-dom
+import { expect, it } from "vitest";
+import { counter } from "./counter.ts";
+it("first", () => {
+  counter().update((n) => n + 1);
+  expect(counter()()).toBe(1);
+});
+it("second", () => {
+  expect(counter()()).toBe(0);
+});
+`,
+  "server-state.test.ts": `import { expect, it } from "vitest";
+import { counter } from "./counter.ts";
+it("first", () => {
+  counter().set(5);
+  expect(counter()()).toBe(5);
+});
+it("second", () => {
+  expect(counter()()).toBe(0);
 });
 `,
   "server.test.ts": `import { expect, it } from "vitest";
@@ -103,6 +130,11 @@ describe.skipIf(!binding)("@lumiose/vite in Vitest", () => {
         file.assertionResults.map((test) => test.failureMessages.join("\n") || test.status),
       ]),
     );
-    expect(results).toEqual({ "dom.test.ts": ["passed"], "server.test.ts": ["passed"] });
+    expect(results).toEqual({
+      "dom.test.ts": ["passed"],
+      "server.test.ts": ["passed"],
+      "state.test.ts": ["passed", "passed"],
+      "server-state.test.ts": ["passed", "passed"],
+    });
   }, 60_000);
 });

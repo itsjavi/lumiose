@@ -136,6 +136,13 @@ export interface LumiosePluginApi {
    * page's stylesheets with it.
    */
   cssManifest(context: Rollup.PluginContext): Readonly<Record<string, readonly string[]>>;
+  /**
+   * Dev: whether client code reaches the scoped state `ref` (`<module>#<export>`), so pages send
+   * it (decision-33): its module reaches an island module or one of `spaRoutes` (absolute files of
+   * SPA pages and layouts) through the ssr module graph. True outside dev, where only such states
+   * have an id. `lumiose dev` passes it to the renderer.
+   */
+  isClientState(ref: string, spaRoutes: ReadonlySet<string>): boolean;
 }
 
 const ROUTE_MODES: readonly RouteMode[] = ["static", "server", "spa"];

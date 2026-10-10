@@ -1,16 +1,17 @@
 # Sharing state
 
-> Signals already do what Jotai, Zustand and Valtio do: keep state in a component, pass it down with context, or share it from a module. This page shows where state should live, with recipes for stores with actions, families, persistence, external stores and state shared by islands.
+> Signals already do what Jotai, Zustand and Valtio do: keep state in a component, pass it down with context, or share it with `defineState`: one instance per page in the browser, one per request on the server, sent to the islands. This page shows where state should live, with recipes for stores with actions, families, persistence, external stores and state shared by islands.
 
 ## Concept
 
 **Pick the narrowest place that works.**
 
-| Where                                      | Lives as long as          | Shared with                                | On the server                              |
-| ------------------------------------------ | ------------------------- | ------------------------------------------ | ------------------------------------------ |
-| A component (`signal`, `store` in setup)   | the component             | its children, through props                | one per request: safe                      |
-| Context (`<Ctx value>` / `useContext`)     | the provider              | everything rendered inside it              | one per request: safe                      |
-| Module scope (`export const s = signal()`) | the page (in the browser) | every component and island that imports it | one per process: never write it during SSR |
+| Where                                            | Lives as long as          | Shared with                                 | On the server                              |
+| ------------------------------------------------ | ------------------------- | ------------------------------------------- | ------------------------------------------ |
+| A component (`signal`, `store` in setup)         | the component             | its children, through props                 | one per request: safe                      |
+| Context (`<Ctx value>` / `useContext`)           | the provider              | everything rendered inside it               | one per request: safe                      |
+| Scoped state (`export const s = defineState(…)`) | the page (in the browser) | every component and island that calls `s()` | one per request, sent to the islands: safe |
+| Module scope (`export const s = signal()`)       | the page (in the browser) | every component and island that imports it  | one per process: never write it during SSR |
 
 **No state library needed.** Only the code that reads a signal (or a store property) re-runs, so
 selectors and re-render tuning are not needed. What the popular libraries offer maps to:
@@ -30,8 +31,22 @@ selectors and re-render tuning are not needed. What the popular libraries offer 
 
 **Islands.** Each [island](islands.md) hydrates as its own root, so context provided by the page
 does not reach an island, and one island cannot provide to another. The server renders islands
-the same way, so their HTML matches. Islands share
-the Lumiose runtime and the modules they import, so module-scope state is how islands share state.
+the same way, so their HTML matches. Islands share the Lumiose runtime and the modules they import,
+so islands share state through **scoped state**: `defineState(factory)` returns an accessor whose
+factory runs on first use, once per page in the browser and once per request on the server.
+
+**Scoped state on the server.** The factory runs per request, so it can seed itself from the
+request (`cookies()`, `locals()`, …); there is no separate seed API. When islands (or SPA routes)
+import a state, the page sends its server values: the signals and stores the factory returned,
+once per page, in the chunk where the state was first used. In the browser the factory runs again
+(rebuilding computeds and functions) and the server values replace its signals and stores before
+any island reads them, so hydration matches. A state that only server code imports is never sent.
+Sent values must be plain data, like island props (`LUM4011`), and they are **public**: everyone
+who can load the page can read them in its source. Never put secrets in a state that islands use.
+
+**Scoped state in tests.** Under Vitest, `@lumiose/vite` resets scoped state before each test: each
+test starts with fresh instances, in DOM tests and in server tests (where calls outside a render
+share one instance per test).
 
 ## API
 
@@ -39,6 +54,7 @@ the Lumiose runtime and the modules they import, so module-scope state is how is
 | ---------------------------------------------------------- | -------------------------------------------------------------------- |
 | `signal(v)`, `computed(fn)`, `store(obj)`                  | The state itself and what derives from it.                           |
 | `createContext<T>()`, `<Ctx value={v}>`, `useContext(ctx)` | One instance per subtree (and per request on the server).            |
+| `defineState(factory)`                                     | One instance per page, per request on the server; shared by islands. |
 | `effect(fn)`, `onMount(fn)`                                | Syncing with the outside world (storage, logging); browser only.     |
 | `onCleanup(fn)`                                            | Ending a subscription when its owner is disposed.                    |
 | `snapshot(value)`                                          | A plain copy of a store, to save or send. Its reads are not tracked. |
@@ -105,32 +121,55 @@ function CartCount() {
 }
 ```
 
-### State shared by islands
+### State shared by islands (defineState)
 
-Put the signal in a module that the islands import. In the browser there is one value per page.
-On the server the module is shared by every request, so write it only in handlers and effects,
-which never run there.
+Define the state at module scope with `defineState` and call its accessor wherever it is used. The
+server seeds it from the request; the islands start from the server's values and share one
+instance in the browser.
 
-```ts check file=lib/cart-count.ts
-import { signal } from "lumiose";
+```ts check file=lib/cart.ts
+import { computed, cookies, defineState, store } from "lumiose";
 
-export const cartCount = signal(0);
+export interface CartItem {
+  id: string;
+  qty: number;
+}
+
+export const cart = defineState(() => {
+  // Request APIs exist only on the server; the browser gets the server's values instead.
+  const saved = import.meta.env.SSR ? cookies().get("cart") : undefined;
+  const state = store({ items: saved ? (JSON.parse(saved) as CartItem[]) : [] });
+  return {
+    state, // sent to the browser (a store)
+    count: computed(() => state.items.reduce((n, item) => n + item.qty, 0)), // derived again
+    add(id: string) {
+      const item = state.items.find((item) => item.id === id);
+      if (item) item.qty += 1;
+      else state.items.push({ id, qty: 1 });
+    },
+  };
+});
 ```
 
 ```stsx check file=components/CartIslands.stsx
-import { cartCount } from "../lib/cart-count.ts";
+import { cart } from "../lib/cart.ts";
 
-export function AddToCart() {
-  return <button onClick={() => cartCount.update((n) => n + 1)}>Add to cart</button>;
+export function AddToCart(props: { id: string }) {
+  const { add } = cart();
+  return <button onClick={() => add(props.id)}>Add to cart</button>;
 }
 
 export function CartBadge() {
-  return <span class="badge">{cartCount()}</span>;
+  const { count } = cart();
+  return <span class="badge">{count()}</span>;
 }
 ```
 
 ```stsx check file=routes/shop-islands.stsx
 import { AddToCart, CartBadge } from "../components/CartIslands.stsx";
+import { cart } from "../lib/cart.ts";
+
+export const mode = "server";
 
 export default function ShopPage() {
   return (
@@ -138,11 +177,18 @@ export default function ShopPage() {
       <header>
         Cart <CartBadge client:idle />
       </header>
-      <AddToCart client:visible />
+      <p>{cart().count()} items, rendered on the server for this request</p>
+      <AddToCart client:visible id="pen" />
     </main>
   );
 }
 ```
+
+What the page sends is `cart`'s store (`{ items: [...] }`): `count` and `add` are created again in
+the browser. `@lumiose/vite` names each state after its module and export
+(`/src/lib/cart.ts#cart`), the way it names islands, so define states at module scope and export
+them (or the binding). For state that lives only in the browser, a module-scope `signal` works too,
+as long as it is written only in handlers and effects, which never run on the server.
 
 ### Families (atomFamily)
 
@@ -274,12 +320,22 @@ Derive slices with `computed(() => state().bears)`.
 ## Common mistakes
 
 - **Writing module-scope state during SSR.** A module-scope signal written in a component body or
-  a server path leaks one request's state into the next (`LUM4008`). Write it in handlers and
-  effects, or keep it in context.
+  a server path leaks one request's state into the next (`LUM4008`). Use `defineState`, whose
+  factory runs once per request, or keep it in context.
 - **Reading page context inside an island.** Each island starts a new context root, on the
   server as in the browser, so `useContext()` inside it does not see what the page provided outside
   it and returns the context's default (`LUM4010` warns in dev). Pass the value as an island prop,
-  provide the context inside the island, or share module-scope state.
+  provide the context inside the island, or share scoped state (`defineState`).
+- **Calling request APIs in a state's factory without a guard.** The factory also runs in the
+  browser, where `cookies()` and `locals()` throw `LUM4003`. Read them only on the server
+  (`import.meta.env.SSR ? cookies().get("cart") : undefined`); the server's values arrive anyway.
+- **Putting secrets or class instances in a state that islands use.** Its signals and stores are
+  sent with the page, readable by anyone, and must hold plain data (`LUM4011`). Keep secrets in
+  server-only modules; keep other values in computeds or functions, which are not sent.
+- **Calling a state's accessor at module scope on the server.** There is no request there, so it
+  throws. Call it in components, middleware, endpoints or actions.
+- **Creating a state inside a function.** Only module-scope states get an id, so a state created
+  in a component or helper is never sent and the browser starts from the factory's values.
 - **Reading `localStorage` in setup in a server-rendered component.** The server cannot read it,
   so the first browser render differs from the HTML (`LUM4006`). Load it in `onMount`, as the
   persisted recipe does.
@@ -295,6 +351,8 @@ Derive slices with `computed(() => state().bears)`.
 ## Related diagnostics
 
 - [LUM4008](../errors/LUM4008.md): module-scope signal written during SSR.
+- [LUM4011](../errors/LUM4011.md): non-serializable scoped state value.
+- [LUM4010](../errors/LUM4010.md): island reads context provided by the page.
 - [LUM4006](../errors/LUM4006.md): hydration mismatch.
 - [LUM2002](../errors/LUM2002.md): signal write during render.
 

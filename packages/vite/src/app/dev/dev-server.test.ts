@@ -77,6 +77,26 @@ export default function IslandPage() {
   return <main><Counter client:load start={3} /></main>;
 }
 `,
+  "src/lib/visits.ts": `import { defineState, signal } from "lumiose";
+export const visits = defineState(() => ({ count: signal(import.meta.env.SSR ? 7 : 0) }));
+`,
+  "src/lib/note.ts": `import { defineState, signal } from "lumiose";
+export const note = defineState(() => ({ text: signal("server only") }));
+`,
+  "src/components/Visits.stsx": `import { visits } from "../lib/visits.ts";
+export function Visits() {
+  const { count } = visits();
+  return <b onClick={() => count.update((n) => n + 1)}>{count()} visits</b>;
+}
+`,
+  "src/routes/state.stsx": `import { Visits } from "../components/Visits.stsx";
+import { note } from "../lib/note.ts";
+import { visits } from "../lib/visits.ts";
+export const mode = "server";
+export default function StatePage() {
+  return <main><p>{note().text()} {visits().count()}</p><Visits client:load /></main>;
+}
+`,
   "src/routes/boom.stsx": `export const mode = "server";
 export default function Boom() {
   throw new Error("Boom from the page");
@@ -187,6 +207,17 @@ describe.skipIf(!binding)("lumiose dev", () => {
     expect(response.headers.get("content-type")).toMatch(/javascript/);
     expect(code).toContain("/packages/lumiose/src/dom/index.ts");
     expect(code).not.toContain("lumiose/server");
+  });
+
+  it("sends the scoped state islands reach, not the server-only state (TASK-193)", async () => {
+    const html = await (await get("/state")).text();
+    expect(html).toContain("<p>server only 7</p>");
+    const payload = /<script type="application\/json" data-l-payload>(.*?)<\/script>/.exec(html);
+    expect(JSON.parse(payload![1]!)).toEqual({ s: { "/src/lib/visits.ts#visits": { count: 7 } } });
+    expect(html.indexOf(payload![0])).toBeLessThan(html.indexOf("data-l-islands"));
+    // The browser's module carries the same id.
+    const client = await (await get("/src/lib/visits.ts")).text();
+    expect(client).toContain('visits.$$id = "/src/lib/visits.ts#visits";');
   });
 
   it("renders islands with their records and dev module URLs", async () => {

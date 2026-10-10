@@ -89,6 +89,22 @@ export function islandModules(config: ResolvedConfig): ReadonlyMap<string, strin
   return api?.islandModules?.() ?? new Map();
 }
 
+/**
+ * Dev: whether client code reaches the scoped state `ref` (`api.isClientState()` of the `lumiose`
+ * plugin, decision-33), given the SPA route files. True without the plugin.
+ */
+export function isClientState(
+  config: ResolvedConfig,
+  ref: string,
+  spaRoutes: ReadonlySet<string>,
+): boolean {
+  const compiler = config.plugins.find((plugin) => plugin.name === "lumiose");
+  const api = compiler?.api as
+    | { isClientState?: (ref: string, spaRoutes: ReadonlySet<string>) => boolean }
+    | undefined;
+  return api?.isClientState?.(ref, spaRoutes) ?? true;
+}
+
 /** The `define` that hands `trailingSlash` to `href()` in every environment (./routes/href.ts). */
 export function hrefDefine(trailingSlash: TrailingSlash): Record<string, string> {
   return { [TRAILING_SLASH_DEFINE]: JSON.stringify(trailingSlash) };

@@ -214,6 +214,48 @@ describe.skipIf(!binding)("lumiose build", () => {
     expect(entry.config).toEqual({ base: "/", trailingSlash: "ignore", assetsDir: "assets" });
   });
 
+  it("sends the scoped state islands reach, by the ids the client build assigned (TASK-193)", async () => {
+    const root = project({
+      "src/lib/visits.ts": `import { defineState, signal } from "lumiose";
+export const visits = defineState(() => ({ count: signal(import.meta.env.SSR ? 7 : 0) }));
+`,
+      "src/lib/note.ts": `import { defineState, signal } from "lumiose";
+export const note = defineState(() => ({ text: signal("server only") }));
+`,
+      "src/components/Visits.stsx": `import { visits } from "../lib/visits.ts";
+export function Visits() {
+  const { count } = visits();
+  return <b onClick={() => count.update((n) => n + 1)}>{count()} visits</b>;
+}
+`,
+      "src/routes/index.stsx": `import { Visits } from "../components/Visits.stsx";
+import { note } from "../lib/note.ts";
+import { visits } from "../lib/visits.ts";
+export const mode = "server";
+export default function Home() {
+  return <main><p>{note().text()} {visits().count()}</p><Visits client:load /></main>;
+}
+`,
+    });
+    await build({ root, ...quiet() });
+    const html = await (
+      await (await entryOf(root)).default.fetch(new Request("http://app.test/"))
+    ).text();
+    expect(html).toContain("<p>server only 7</p>");
+    const payload = /<script type="application\/json" data-l-payload>(.*?)<\/script>/.exec(html);
+    expect(JSON.parse(payload![1]!)).toEqual({ s: { "/src/lib/visits.ts#visits": { count: 7 } } });
+    // The client chunk restores it under the same id; the server-only state has none.
+    const chunks = readdirSync(join(root, "dist/client/assets")).map((file) =>
+      read(root, `assets/${file}`),
+    );
+    expect(chunks.some((code) => code.includes("/src/lib/visits.ts#visits"))).toBe(true);
+    const server = readdirSync(join(root, "dist/server"), { recursive: true, encoding: "utf8" })
+      .filter((file) => file.endsWith(".js"))
+      .map((file) => readFileSync(join(root, "dist/server", file), "utf8"));
+    expect(server.some((code) => code.includes("/src/lib/visits.ts#visits"))).toBe(true);
+    expect([...server, ...chunks].join("")).not.toContain("#note");
+  });
+
   it("applies Vite's base and trailingSlash: never", async () => {
     const root = project({
       ...SITE,
