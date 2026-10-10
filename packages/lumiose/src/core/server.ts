@@ -5,6 +5,7 @@
 import type { Resource } from "./async.ts";
 import type { EffectFn } from "./effect.ts";
 import { getOwner, lifetimeOf, type Owner } from "./owner.ts";
+import { reconcileInto, type ReconcileOptions } from "./reconcile.ts";
 import { copyPlain } from "./snapshot.ts";
 import type { Computed, Signal, SignalOptions } from "./signal.ts";
 
@@ -12,6 +13,7 @@ export type { Computed, Signal, SignalOptions } from "./signal.ts";
 export type { EffectFn } from "./effect.ts";
 export type { Resource } from "./async.ts";
 export type { Context } from "./context.ts";
+export type { ReconcileOptions } from "./reconcile.ts";
 export { createContext, provide, inject } from "./context.ts";
 export { onCleanup } from "./owner.ts";
 
@@ -71,6 +73,11 @@ export function store<T extends object>(value: T): T {
 /** Server `snapshot()`: stores are the plain objects themselves, so this is a deep plain copy. */
 export function snapshot<T>(value: T): T {
   return copyPlain(value, (raw) => raw);
+}
+
+/** Server `reconcile()`: stores are plain objects, so the data is patched in without notifying. */
+export function reconcile<T extends object>(target: T, data: T, options?: ReconcileOptions): void {
+  reconcileInto(target, data, options, (raw) => raw);
 }
 
 export function untrack<T>(fn: () => T): T {

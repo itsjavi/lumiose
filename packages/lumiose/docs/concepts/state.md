@@ -25,6 +25,7 @@ selectors and re-render tuning are not needed. What the popular libraries offer 
 | Zustand `immer` middleware                           | `store()`: mutate it directly                                                     |
 | Zustand `devtools`                                   | `effect(() => console.debug(JSON.stringify(state)))` (tracks every property read) |
 | Valtio `proxy`, `snapshot`                           | `store`, `snapshot`                                                               |
+| Solid `reconcile`, TanStack structural sharing       | `reconcile(store, data)`: patch fresh data in, keeping unchanged items            |
 | `zustand/vanilla`, a Jotai store, Redux              | the external store recipe below                                                   |
 
 **Islands.** Each [island](islands.md) hydrates as its own root, so context provided by the page
@@ -40,6 +41,7 @@ the Lumiose runtime and the modules they import, so module-scope state is how is
 | `effect(fn)`, `onMount(fn)`                            | Syncing with the outside world (storage, logging); browser only.     |
 | `onCleanup(fn)`                                        | Ending a subscription when its owner is disposed.                    |
 | `snapshot(value)`                                      | A plain copy of a store, to save or send. Its reads are not tracked. |
+| `reconcile(store, data, { key })`                      | Patching fresh data into a store, keeping unchanged items as is.     |
 
 See [Signals and reactivity](signals.md) for each API.
 
@@ -176,6 +178,32 @@ export const drafts = family((_postId: string) => "");
 // drafts.get("post-1").set("Hello"); drafts.get("post-1")()
 ```
 
+### Fresh data into a store (reconcile)
+
+Replacing a store's array with a new fetch result (`state.books = fresh`) gives every row a new
+object, so a list re-renders every row and loses its local state. `reconcile` patches the data in
+instead: rows are matched by `id` (or by `{ key }`), unchanged rows keep their identity, and only
+the fields that changed notify.
+
+```ts check
+import { reconcile, store } from "lumiose";
+
+interface Book {
+  id: number;
+  title: string;
+}
+
+export const books = store<Book[]>([]);
+
+export async function refresh(): Promise<void> {
+  const fresh = (await (await fetch("/api/books")).json()) as Book[];
+  reconcile(books, fresh); // only changed titles and added or removed rows update the page
+}
+```
+
+It works on a part of a store too: `reconcile(state.books, fresh)`. Keys missing from the new
+data are deleted, nested objects are merged, and other values are replaced.
+
 ### A persisted signal (atomWithStorage, persist)
 
 Call it in a component. The saved value loads in `onMount`, after hydration, so the server HTML
@@ -257,6 +285,8 @@ Derive slices with `computed(() => state().bears)`.
   staleness. Derive with `computed`, or keep one source of truth.
 - **Expecting `snapshot()` in an effect to track.** Its reads are not tracked. To log every change,
   read through the store (`JSON.stringify(state)`).
+- **Assigning a fresh fetch result over a store's array.** `state.rows = await res.json()` replaces
+  every row, so lists re-create their rows and lose row state. Use `reconcile(state.rows, data)`.
 - **Wrapping a class instance, `Map` or `Set` in `store()`.** Only plain objects and arrays become
   reactive. Use a record keyed by id, or the family recipe.
 

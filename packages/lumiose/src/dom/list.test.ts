@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 import { describe, expect, it } from "vitest";
 import type { Renderable } from "../contract/client.ts";
-import { flushSync, onCleanup, signal, store, type Signal } from "../core/index.ts";
+import { flushSync, onCleanup, reconcile, signal, store, type Signal } from "../core/index.ts";
 import { createOwner, disposeOwner, runWithOwner, type Owner } from "../core/internal.ts";
 import { bind, list, setText, template } from "./index.ts";
 import { longestIncreasingSubsequence } from "./list.ts";
@@ -309,6 +309,59 @@ describe("list", () => {
     state.rows[0] = { id: 9 };
     flushSync();
     expect(text(ol)).toEqual(["9", "2", "3"]);
+  });
+
+  it("keeps keyed rows, their DOM and their local state across a reconcile", () => {
+    const ul = document.createElement("ul");
+    const books = store([
+      { id: 1, title: "Dune" },
+      { id: 2, title: "Emma" },
+    ]);
+    const counters: Signal<number>[] = [];
+    let renders = 0;
+    root(() =>
+      list(
+        ul,
+        null,
+        () => books,
+        (book) => {
+          renders++;
+          const li = tLi();
+          const count = signal(0);
+          counters.push(count);
+          bind(li.firstChild as Text, () => `${book.title}:${count()}`, setText);
+          return li;
+        },
+      ),
+    );
+    const [li1, li2] = [ul.children[0], ul.children[1]];
+    counters[1]!.set(5);
+    flushSync();
+    const mutations = spyMutations(ul);
+
+    // Fresh objects from the server: equal row 1, a changed title on row 2.
+    reconcile(books, [
+      { id: 1, title: "Dune" },
+      { id: 2, title: "Emma (2nd ed.)" },
+    ]);
+    flushSync();
+    expect(renders).toBe(2);
+    expect(ul.children[0]).toBe(li1);
+    expect(ul.children[1]).toBe(li2);
+    expect(text(ul)).toEqual(["Dune:0", "Emma (2nd ed.):5"]);
+    expect(mutations).toEqual({ inserts: 0, removes: 0, clears: 0 });
+
+    // A keyed move reorders the same nodes, and a new row renders once.
+    reconcile(books, [
+      { id: 3, title: "Ulysses" },
+      { id: 2, title: "Emma (2nd ed.)" },
+      { id: 1, title: "Dune" },
+    ]);
+    flushSync();
+    expect(renders).toBe(3);
+    expect(ul.children[1]).toBe(li2);
+    expect(ul.children[2]).toBe(li1);
+    expect(text(ul)).toEqual(["Ulysses:0", "Emma (2nd ed.):5", "Dune:0"]);
   });
 
   it("disposes every row with the list's owner", () => {

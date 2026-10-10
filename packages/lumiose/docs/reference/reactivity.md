@@ -125,6 +125,41 @@ const song = store({ title: "Demo", rows: [] as number[][] });
 worker.postMessage({ type: "song", song: snapshot(song) });
 ```
 
+## reconcile
+
+```ts
+function reconcile<T extends object>(target: T, data: T, options?: ReconcileOptions): void;
+
+interface ReconcileOptions {
+  key?: string; // identifies array items, default "id"
+}
+```
+
+Patches fresh `data` (a fetch result, a server payload) into a store, or into an object or array
+inside one (`reconcile(state.books, fresh)`), in place, with Solid's `reconcile` semantics:
+
+- Array items are matched by reference, or by `key` when the new item has it. Items without the
+  key are merged into the item at the same index when that item has no key either; unmatched
+  items are inserted as new values, and leftovers are removed. Keys should be unique: new items
+  that share a key end up as the same store item.
+- Matched objects are merged deeply; an object whose `key` differs from the old one is replaced.
+- Keys missing from `data` are deleted. Primitives and other values (`Date`s, `Map`s, class
+  instances) are replaced.
+
+Unchanged items keep their identity, so keyed list rows, their DOM and their local state survive,
+and only properties whose value changed notify, all in one batch. Reads are not tracked, so it is
+safe in an effect. `target` and `data` must be the same kind (both arrays or both plain objects),
+otherwise it throws a `TypeError` in development. Pass the store, not plain data: a plain object is patched
+without notifying anything (that is what happens on the server, where stores are plain objects).
+
+```ts
+const books = store<Book[]>([]);
+reconcile(books, (await (await fetch("/api/books")).json()) as Book[]);
+
+const page = store({ rows: [{ slug: "intro", views: 1 }] });
+reconcile(page.rows, [{ slug: "intro", views: 2 }], { key: "slug" });
+```
+
 ## createContext, provide, inject
 
 ```ts

@@ -4,14 +4,17 @@
 // property gets a trigger node on its first tracked read; writes fire the node
 // only when the value changed. Adding or deleting keys (and array length
 // changes) also fires a per-object KEYS node, which `ownKeys` tracks.
+import { batch } from "./effect.ts";
 import {
   activeSub,
   createTrigger,
   setActiveSub,
   track,
   trigger,
+  untrack,
   type TriggerNode,
 } from "./reactive.ts";
+import { isPlain, reconcileInto, type ReconcileOptions } from "./reconcile.ts";
 import { copyPlain } from "./snapshot.ts";
 
 type Key = string | symbol;
@@ -22,19 +25,7 @@ const raws = new WeakMap<object, object>();
 const nodeMaps = new WeakMap<object, Record<Key, TriggerNode>>();
 
 function isWrappable(value: unknown): value is object {
-  if (
-    value === null ||
-    typeof value !== "object" ||
-    raws.has(value) ||
-    !Object.isExtensible(value)
-  ) {
-    return false;
-  }
-  if (Array.isArray(value)) {
-    return true;
-  }
-  const proto: unknown = Object.getPrototypeOf(value);
-  return proto === Object.prototype || proto === null;
+  return isPlain(value) && !raws.has(value);
 }
 
 function wrap<T extends object>(target: T): T {
@@ -209,4 +200,15 @@ export function store<T extends object>(value: T): T {
  */
 export function snapshot<T>(value: T): T {
   return copyPlain(value, toRaw);
+}
+
+/**
+ * Patches fresh `data` into a store (or into an object or array inside one) in place, as Solid's
+ * `reconcile`: array items are matched by reference or by `options.key` (default `"id"`), and
+ * items without the key by index; matched objects are merged deeply, keys missing from `data` are
+ * deleted, and other values are replaced. Unchanged items keep their identity, and only changed
+ * properties notify, in one batch. Reads are not tracked.
+ */
+export function reconcile<T extends object>(target: T, data: T, options?: ReconcileOptions): void {
+  batch(() => untrack(() => reconcileInto(target, data, options, toRaw)));
 }
