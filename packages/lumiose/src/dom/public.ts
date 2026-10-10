@@ -10,7 +10,7 @@ import { createComponent, restProps } from "./component.ts";
 import { DEV } from "./dev.ts";
 import { insert } from "./insert.ts";
 import { spread } from "./spread.ts";
-import type { RenderedShell, RenderToStreamOptions } from "../server/render.ts";
+import type { RenderedShell, RenderToStreamOptions } from "../server/render-types.ts";
 
 export { ErrorBoundary, Suspense } from "./boundaries.ts";
 export type { ErrorBoundaryProps, SuspenseProps } from "./boundaries.ts";

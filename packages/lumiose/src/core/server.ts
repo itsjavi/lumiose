@@ -6,9 +6,10 @@ import type { Resource } from "./async.ts";
 import type { EffectFn } from "./effect.ts";
 import type { Optimistic } from "./optimistic.ts";
 import { getOwner, lifetimeOf, type Owner } from "./owner.ts";
-import { reconcileInto, type ReconcileOptions } from "./reconcile.ts";
+import { isPlain, reconcileInto, type ReconcileOptions } from "./reconcile.ts";
 import { copyPlain } from "./snapshot.ts";
 import type { Computed, Signal, SignalOptions } from "./signal.ts";
+import { serverStores } from "../server/state.ts";
 
 export type { Computed, Signal, SignalOptions } from "./signal.ts";
 export type { EffectFn } from "./effect.ts";
@@ -18,6 +19,7 @@ export type { Context } from "./context.ts";
 export type { ReconcileOptions } from "./reconcile.ts";
 export { createContext, useContext } from "./context.ts";
 export { onCleanup } from "./owner.ts";
+export { defineState } from "../server/state.ts";
 
 interface Cell<T> extends Signal<T> {
   value: T;
@@ -68,7 +70,9 @@ export function effect(_fn: EffectFn): () => void {
 
 export function onMount(_fn: EffectFn): void {}
 
+/** The object itself (no reactive graph); what the browser would wrap is marked for scoped state. */
 export function store<T extends object>(value: T): T {
+  if (isPlain(value)) serverStores.add(value);
   return value;
 }
 

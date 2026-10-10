@@ -114,6 +114,11 @@ export interface ServerRendererOptions {
   islandUrl?: (specifier: string) => string;
   /** URL of the island loader script, added to pages with islands (`lumiose/dom/loader`). */
   loaderUrl?: string;
+  /**
+   * Dev: whether client code reaches the scoped state `ref`, so the page sends it (decision-33).
+   * Builds give ids only to such states and leave this unset.
+   */
+  isClientState?: (ref: string) => boolean;
 }
 
 const rawHtml = (html: string) => new SSRHtml(html);

@@ -68,6 +68,7 @@ fix?, docs }`; `lumiose check --format json` prints them.
 | [LUM4008](LUM4008.md) | warning  | Module-scope signal written during SSR    |
 | [LUM4009](LUM4009.md) | warning  | Unsafe URL blocked in a URL attribute     |
 | [LUM4010](LUM4010.md) | warning  | Island reads context provided by the page |
+| [LUM4011](LUM4011.md) | error    | Non-serializable scoped state value       |
 
 ## Routing and server (5xxx)
 

@@ -6,6 +6,7 @@
 import type { ActionData, ActionsExport } from "../actions/types.ts";
 import type { BodyLimits } from "./body.ts";
 import { AsyncLocalStorage } from "node:async_hooks";
+import { createStateScope, runInStateScope } from "../../server/state.ts";
 import type { Routes, RouteParams } from "../routes/registry.ts";
 import { LUM_AFTER_SHELL, LUM_PRERENDER_REQUEST, LumioseError } from "../diagnostics.ts";
 import type {
@@ -57,8 +58,9 @@ export interface ActionState {
 
 const storage = new AsyncLocalStorage<RequestScope>();
 
+/** Runs `fn` for one request: request APIs read `scope`, and scoped state starts fresh (decision-33). */
 export function runInRequestScope<T>(scope: RequestScope, fn: () => T): T {
-  return storage.run(scope, fn);
+  return storage.run(scope, () => runInStateScope(createStateScope(), fn));
 }
 
 /** Notes that the current page renders a `data-l-prefetch` marker (`<Link prefetch>`). */

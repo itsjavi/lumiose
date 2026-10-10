@@ -3,6 +3,8 @@
 // without the island loader and renders the router's root component before its closing marker.
 import { afterEach, describe, expect, it } from "vitest";
 import type { Component } from "../../contract/client.ts";
+import { defineState, signal } from "../../core/index.ts";
+import { resetStates } from "../../core/state.ts";
 import { insert } from "../../dom/index.ts";
 import { startCsr } from "./csr.ts";
 import { navigate, url } from "./index.ts";
@@ -24,6 +26,12 @@ const Layout: Component<{ children?: unknown }> = (props) => {
 };
 const Home: Component<object> = () => el("h1", () => "home");
 const About: Component<object> = () => el("h1", () => "about");
+// A scoped state as @lumiose/vite leaves it in a client module (TASK-193).
+const viewer = Object.assign(
+  defineState(() => ({ name: signal("nobody") })),
+  { $$id: "/src/lib/viewer.ts#viewer" },
+);
+const Me: Component<object> = () => el("h1", () => `me: ${viewer().name()}`);
 const NotFound: Component<{ status: number; error: Error }> = (props) =>
   el("h1", () => `${props.status} ${props.error.message}`);
 
@@ -31,6 +39,7 @@ const modules: Record<string, Component<any>> = {
   [APP]: Layout,
   "src/routes/index.tsx": Home,
   "src/routes/about.tsx": About,
+  "src/routes/me.tsx": Me,
   "src/routes/_404.tsx": NotFound,
 };
 
@@ -43,6 +52,7 @@ const config: SpaConfig = {
       app: APP,
       levels: [APP, "src/routes/about.tsx"],
     },
+    { segments: [{ kind: "static", value: "me" }], app: APP, levels: [APP, "src/routes/me.tsx"] },
   ],
   notFoundPages: [{ file: "src/routes/_404.tsx", dir: "", segments: [] }],
   pages: { "src/routes/_404.tsx": { app: APP, levels: [APP, "src/routes/_404.tsx"] } },
@@ -67,6 +77,7 @@ function shell(leaf: string, props: object = {}): void {
 
 afterEach(() => {
   resetRouter();
+  resetStates();
   document.head.innerHTML = document.body.innerHTML = "";
 });
 
@@ -83,6 +94,19 @@ describe("startCsr", () => {
     expect(document.querySelector("main")!.compareDocumentPosition(end)).toBe(4);
     await navigate("/about");
     expect(document.body.textContent).toBe("siteat /about: aboutend");
+  });
+
+  it("restores scoped state from the shell's payload before the first render", async () => {
+    history.replaceState(null, "", "/me");
+    shell("src/routes/me.tsx");
+    const payload = document.createElement("script");
+    payload.type = "application/json";
+    payload.dataset.lPayload = "";
+    payload.textContent = JSON.stringify({ s: { "/src/lib/viewer.ts#viewer": { name: "ada" } } });
+    document.head.prepend(payload);
+    startCsr(config);
+    await settled();
+    expect(document.body.textContent).toBe("siteat /me: me: adaend");
   });
 
   it("renders the error page the shell names, with its status", async () => {

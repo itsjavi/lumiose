@@ -122,7 +122,7 @@ function warnPageContext(ref: string): void {
   if (warned.has(ref)) return;
   warned.add(ref);
   console.warn(
-    `Lumiose: ${LUM_ISLAND_PAGE_CONTEXT}: island ${nameOf(ref)} (${ref}) calls useContext() for a context that the page provides outside the island. Islands hydrate as their own root, so the island gets the context's default value, on the server as in the browser. Pass the value as an island prop, provide it inside the island, or share module-scope state (run \`lumiose docs ${LUM_ISLAND_PAGE_CONTEXT}\`).`,
+    `Lumiose: ${LUM_ISLAND_PAGE_CONTEXT}: island ${nameOf(ref)} (${ref}) calls useContext() for a context that the page provides outside the island. Islands hydrate as their own root, so the island gets the context's default value, on the server as in the browser. Pass the value as an island prop, provide it inside the island, or share scoped state with defineState() (run \`lumiose docs ${LUM_ISLAND_PAGE_CONTEXT}\`).`,
   );
 }
 

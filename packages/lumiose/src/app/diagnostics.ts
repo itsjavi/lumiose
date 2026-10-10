@@ -26,6 +26,8 @@ export const LUM_SERVER_ONLY = "LUM4003";
 export const LUM_AWAIT_VALUE = "LUM4007";
 /** An island read a context the page provided outside it (dev warning, TASK-194). */
 export const LUM_ISLAND_PAGE_CONTEXT = "LUM4010";
+/** A value of a scoped state sent to the browser is not plain data (decision-33). */
+export const LUM_STATE_VALUE = "LUM4011";
 /** Status, headers, cookies or head changed after the SSR shell was sent (decision-19). */
 export const LUM_AFTER_SHELL = "LUM5004";
 /** A static endpoint exports a method other than GET (it is prerendered to a file). */

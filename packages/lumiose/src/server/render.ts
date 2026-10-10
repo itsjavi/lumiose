@@ -10,11 +10,16 @@
 //   each chunk   [<script type="module" async src="loader">][<link rel="modulepreload" href>…]
 //                [<style>rules</style>]
 //                <template for="lb3">HTML</template><script>$swap("lb3")</script>
+//                [<script type="application/json" data-l-payload>{"s":{…}}</script>]
 //                [<script type="application/json" data-l-islands>[records]</script>]
 // Browsers with declarative partial updates apply `<template for>` natively and `$swap` finds
 // nothing to do; elsewhere the `<?start>`/`<?end>` processing instructions parse as comments and
 // `$swap` moves the template content into that range. A boundary nested in another one flushes
 // only after its parent, so its placeholder always exists when its chunk arrives.
+//
+// The page payload (decision-33) precedes the island records of the shell and of each chunk: the
+// scoped states (./state.ts) created so far and not sent yet, once the page has islands, so the
+// browser has them before any island in that chunk hydrates.
 
 import { createOwner, disposeOwner } from "../core/internal.ts";
 import { LUM_AFTER_SHELL, LumioseError } from "../app/diagnostics.ts";
@@ -33,41 +38,18 @@ import {
   type Unit,
 } from "./frame.ts";
 import { escapeAttr, jsonForScript, type Html } from "./node.ts";
+import type { RenderedShell, RenderToStreamOptions } from "./render-types.ts";
+import { createStateScope, currentStateScope, encodeStates, runInStateScope } from "./state.ts";
 
-export interface RenderToStreamOptions {
-  /** Aborts the render: rejects a pending shell, ends the stream and aborts `getAbortSignal()`. */
-  signal?: AbortSignal;
-  /** SSG/prerender: render every Suspense boundary into the shell; no fallbacks, no stream. */
-  resolveAll?: boolean;
-  /** CSP nonce for the `$swap` scripts and strict-mode `<style>` rules. */
-  nonce?: string;
-  /** CSP strict mode (spec §7.4): `style` props become nonce'd `<style>` rules. */
-  strictStyles?: boolean;
-  /** Maps an island module specifier to its URL for `modulepreload` hints. Default: unchanged. */
-  islandUrl?: (specifier: string) => string;
-  /**
-   * URL of the island loader (`lumiose/dom/loader`). A page with islands gets it once, as an async
-   * module script: in the head when the shell has islands, else before the first streamed chunk
-   * with island records. Default: no loader (islands render but do not hydrate).
-   */
-  loaderUrl?: string;
-  /** Receives errors of streamed boundaries that no `<ErrorBoundary>` handled. Default: console.error. */
-  onError?: (error: unknown) => void;
-  /**
-   * Production (decision-29): an `<ErrorBoundary>` fallback receives a generic error with a short
-   * `digest` instead of an error that is not an `HttpError`, and the original error goes to
-   * `onError` with the same `digest`. Default: false (the fallback gets the error itself).
-   */
-  sanitizeErrors?: boolean;
-}
+export type { RenderedShell, RenderToStreamOptions };
 
-export interface RenderedShell {
-  /** Collected `<Title>`/`<Meta>`/`<Head>` HTML, plus modulepreload hints and strict-mode styles. */
-  head: string;
-  /** The shell's HTML, followed by the island records of the shell. */
-  body: string;
-  /** Streamed boundary chunks to append inside `<body>`; null when nothing is pending. */
-  stream: ReadableStream<string> | null;
+/** `renderShell` options of the app layer (not public). */
+export interface ShellOptions extends RenderToStreamOptions {
+  /**
+   * Dev (`lumiose dev`): whether client code reaches the scoped state `ref` (`<module>#<export>`).
+   * Builds give ids only to such states, so they need no check.
+   */
+  isClientState?: (ref: string) => boolean;
 }
 
 /** A rendered shell whose island records are kept apart from its HTML (see `renderShell`). */
@@ -104,12 +86,12 @@ export function renderToStream(
  * `renderToStream` for callers that place the records themselves: with a custom document the
  * shell is the whole document, so the records go before its body ends, not after `</html>`.
  */
-export function renderShell(
-  root: () => unknown,
-  options: RenderToStreamOptions = {},
-): Promise<ShellParts> {
+export function renderShell(root: () => unknown, options: ShellOptions = {}): Promise<ShellParts> {
   const { signal } = options;
   if (signal?.aborted) return Promise.reject(signal.reason);
+  // The request's state scope; a render outside a request gets one of its own.
+  const active = currentStateScope();
+  const states = active ?? createStateScope();
   const render: RenderState = {
     resolveAll: options.resolveAll === true,
     nonce: options.nonce,
@@ -133,6 +115,10 @@ export function renderShell(
     emit: undefined,
     close: undefined,
     swapSent: false,
+    states,
+    sentStates: new Set(),
+    isClientState: options.isClientState,
+    hydrates: false,
   };
   const frame: Frame = {
     render,
@@ -144,8 +130,9 @@ export function renderShell(
     streamed: false,
   };
   let body: Html;
+  const run = (): Html => withFrame(frame, render.owner, () => content(root()));
   try {
-    body = withFrame(frame, render.owner, () => content(root()));
+    body = active === undefined ? runInStateScope(states, run) : run();
   } catch (error) {
     finish(render);
     return Promise.reject(error);
@@ -159,7 +146,13 @@ export function renderShell(
     Promise.resolve(body).then(
       (html) => {
         signal?.removeEventListener("abort", abort);
-        resolve(completeShell(render, html, signal));
+        try {
+          resolve(completeShell(render, html, signal));
+        } catch (error) {
+          // LUM4011: a scoped state the page sends holds a value that is not plain data.
+          finish(render);
+          reject(error);
+        }
       },
       (error: unknown) => {
         signal?.removeEventListener("abort", abort);
@@ -182,7 +175,7 @@ function completeShell(render: RenderState, html: string, signal?: AbortSignal):
   render.shellDone = true;
   const shell = render.shell;
   const head = headHtml(render) + unitAssets(render, shell);
-  const records = islandRecords(shell);
+  const records = statePayload(render, shell) + islandRecords(shell);
   if (render.pending === 0) {
     finish(render);
     return { head, html, records, stream: null };
@@ -312,6 +305,15 @@ export function streamBoundary(render: RenderState, unit: Unit, html: Promise<st
 }
 
 function flush(render: RenderState, unit: Unit): void {
+  let payload: string;
+  try {
+    payload = statePayload(render, unit);
+  } catch (error) {
+    // LUM4011: the boundary keeps its fallback, as when its content fails.
+    render.onError(error);
+    drop(render, unit);
+    return;
+  }
   let chunk = "";
   if (!render.swapSent) {
     render.swapSent = true;
@@ -322,6 +324,7 @@ function flush(render: RenderState, unit: Unit): void {
     unitAssets(render, unit) +
     `<template for="${name}">${unit.html}</template>` +
     script(render, `$swap("${name}")`) +
+    payload +
     islandRecords(unit);
   unit.state = FLUSHED;
   unit.html = "";
@@ -345,6 +348,18 @@ function drop(render: RenderState, unit: Unit): void {
   unit.waiting = [];
   for (const child of waiting) drop(render, child);
   if (render.pending === 0 && render.emit !== undefined) render.close?.();
+}
+
+/**
+ * The page payload of a chunk (decision-33): the scoped states created so far and not sent yet,
+ * once the page has islands (nothing in the browser reads them before). Throws LUM4011.
+ */
+function statePayload(render: RenderState, unit: Unit): string {
+  if (unit.islands.length > 0) render.hydrates = true;
+  if (!render.hydrates) return "";
+  const states = encodeStates(render.states, render.sentStates, render.isClientState);
+  if (states === undefined) return "";
+  return `<script type="application/json" data-l-payload>${jsonForScript({ s: states })}</script>`;
 }
 
 function islandRecords(unit: Unit): string {

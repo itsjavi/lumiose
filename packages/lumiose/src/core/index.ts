@@ -8,4 +8,5 @@ export type { ReconcileOptions } from "./reconcile.ts";
 export { onCleanup, getAbortSignal } from "./owner.ts";
 export { createContext, useContext, type Context } from "./context.ts";
 export { isBusy, isPending, resource, type Resource } from "./async.ts";
+export { defineState } from "./state.ts";
 export { optimistic, type Optimistic } from "./optimistic.ts";

@@ -91,6 +91,7 @@ registry! {
     ModuleSignalWrittenDuringSsr = "LUM4008", Warning, "Module-scope signal written during SSR";
     UnsafeUrlBlocked = "LUM4009", Warning, "Unsafe URL blocked in a URL attribute";
     IslandPageContext = "LUM4010", Warning, "Island reads context provided by the page";
+    NonSerializableStateValue = "LUM4011", Error, "Non-serializable scoped state value";
     // 5xxx routing and server
     RequestApiDuringPrerender = "LUM5001", Error, "Request API used during prerender";
     InvalidRouteFile = "LUM5002", Error, "Invalid route file";

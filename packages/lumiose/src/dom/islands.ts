@@ -12,6 +12,9 @@
 //   element of the range intersects the viewport (the value is the `rootMargin`), `media` when the
 //   query matches. An island whose range still holds a streamed `<Suspense>` placeholder waits
 //   for its content (and the await records sent with it).
+// - Payload: a chunk's `<script type="application/json" data-l-payload>` comes before its records;
+//   it holds the server values of scoped states (./state.ts), read in document order, so they are
+//   in place before the chunk's islands hydrate.
 // - Hydration: the component comes from the manifest (`ref` → lazy import), then `hydrate()`.
 // - Events: `click`, `input`, `submit` and `keydown` targeting an island that is not hydrated yet
 //   are stopped (clicks and submits also held back), hydrate it at once, and are dispatched again
@@ -20,6 +23,7 @@ import type { Component } from "../contract/client.ts";
 import { decodeData } from "../server/serialize.ts";
 import { DEV } from "./dev.ts";
 import { hydrate } from "./hydrate.ts";
+import { receivePayload, type Payload } from "./state.ts";
 
 /** `client:idle`: the latest moment an idle island hydrates, in ms, when the browser never idles. */
 export const IDLE_TIMEOUT = 2000;
@@ -88,11 +92,13 @@ export function loadIslands(manifest: IslandManifest): () => void {
 
   const scan = (): void => {
     let added = false;
-    for (const script of document.querySelectorAll("script[data-l-islands]")) {
+    for (const script of document.querySelectorAll(
+      "script[data-l-islands],script[data-l-payload]",
+    )) {
       if ((script as { $$l?: boolean }).$$l) {
         continue;
       }
-      let records: Island[];
+      let records: Island[] | Payload;
       try {
         records = JSON.parse(script.textContent!);
       } catch {
@@ -100,6 +106,10 @@ export function loadIslands(manifest: IslandManifest): () => void {
         continue;
       }
       (script as { $$l?: boolean }).$$l = added = true;
+      if (!Array.isArray(records)) {
+        receivePayload(records);
+        continue;
+      }
       for (const record of records) {
         const known = islands[record.id];
         if (known === undefined) {

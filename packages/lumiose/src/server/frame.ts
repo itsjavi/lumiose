@@ -22,6 +22,17 @@ import { LUM_AWAIT_VALUE, LumioseError } from "../app/diagnostics.ts";
 import { encodeData } from "./serialize.ts";
 import { escapeText, html, isThenable, join, SSRHtml, type Html } from "./node.ts";
 
+/** A scoped state accessor as compiled: `$$id` is set when the state can reach the browser. */
+export interface StateAccessor {
+  (): unknown;
+  $$id?: string;
+}
+
+/** The scoped state instances of one request (or render), in creation order (./state.ts). */
+export interface StateScope {
+  readonly values: Map<StateAccessor, unknown>;
+}
+
 /** A server component as compiled: getter props in, renderable content out. */
 export type ServerComponent<P> = (props: P) => unknown;
 
@@ -101,6 +112,12 @@ export interface RenderState {
   emit: ((chunk: string) => void) | undefined;
   close: (() => void) | undefined;
   swapSent: boolean;
+  /** The scoped states of the request (./state.ts) and those the page payload already sent. */
+  readonly states: StateScope;
+  readonly sentStates: Set<StateAccessor>;
+  readonly isClientState: ((ref: string) => boolean) | undefined;
+  /** A chunk with island records was sent: from then on, chunks carry the payload. */
+  hydrates: boolean;
 }
 
 export interface Frame {

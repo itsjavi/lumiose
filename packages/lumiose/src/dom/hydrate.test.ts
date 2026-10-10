@@ -8,7 +8,9 @@ import { join, resolve } from "node:path";
 import { compile } from "@lumiose/compiler";
 import type { Renderable } from "../contract/client.ts";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { runInRequestScope, type RequestScope } from "../app/server/scope.ts";
 import { flush } from "../core/index.ts";
+import { resetStates } from "../core/state.ts";
 import { createComponent, island, renderToStream, renderToString } from "../server/index.ts";
 import { loadIslands } from "./islands.ts";
 
@@ -28,7 +30,7 @@ type Module = Record<string, any>;
 /** Compiles `source` for both targets and imports the two modules. */
 async function load(
   source: string,
-  options: { hot?: boolean } = {},
+  options: { hot?: boolean; states?: string[] } = {},
 ): Promise<{ client: Module; server: Module }> {
   const id = counter++;
   const modules: Record<string, Module> = {};
@@ -46,6 +48,8 @@ async function load(
     }
     // Hot cases: a stand-in for Vite's `import.meta.hot` (`globalThis.hot`).
     if (options.hot) code = code.replaceAll("import.meta.hot", "globalThis.hot");
+    // Scoped state ids, as @lumiose/vite appends them to modules that client code reaches.
+    for (const name of options.states ?? []) code += `\n${name}.$$id = "/src/case#${name}";`;
     const path = join(out, `case${id}-${Date.now()}.${target}.js`);
     writeFileSync(path, code);
     modules[target] = (await import(/* @vite-ignore */ path)) as Module;
@@ -653,6 +657,121 @@ describe("hydrate", () => {
     expect(visible()).toBe(
       "<div><i>outer:2</i><b>closed</b><i>inner:2</i><i>inner:21</i><i>inner:22</i><i>inner:23</i><i>default:0</i></div>",
     );
+  });
+});
+
+const request = (user: string) => ({ ctx: { locals: { user } } }) as unknown as RequestScope;
+
+describe("scoped state (TASK-193)", () => {
+  // Server-only reads in the factory: the browser gets the server's values from the payload.
+  const SESSION = `
+    import { computed, defineState, locals, signal, store } from "lumiose";
+    export const session = defineState(() => {
+      const user = signal((globalThis as any).serverSide ? locals().user : "nobody");
+      const cart = store({ items: (globalThis as any).serverSide ? ["book"] : [] as string[] });
+      return {
+        user,
+        cart,
+        count: computed(() => cart.items.length),
+        add: (item: string) => cart.items.push(item),
+      };
+    });`;
+
+  afterEach(() => {
+    (globalThis as any).serverSide = false;
+    resetStates(); // what the Vitest setup of @lumiose/vite does between tests
+  });
+
+  it("restores server values before islands hydrate, one instance shared by every island", async () => {
+    const { client, server } = await load(
+      `${SESSION}
+      export function Add() {
+        const { add, user } = session();
+        return <button onClick={() => add("pen")}>{user()} adds</button>;
+      }
+      export function Count() {
+        const s = session();
+        return <p>{s.user()}: {s.count()} ({s.cart.items.join(",")})</p>;
+      }`,
+      { states: ["session"] },
+    );
+    (globalThis as any).serverSide = true;
+    document.body.innerHTML = await runInRequestScope(request("ada"), () =>
+      renderToString(() => [
+        island("/src/case#Add", server.Add, {}, "load"),
+        island("/src/case#Count", server.Count, {}, "load"),
+      ]),
+    );
+    (globalThis as any).serverSide = false;
+    expect(visible()).toBe("<button>ada adds</button><p>ada: 1 (book)</p>");
+    const p = document.querySelector("p")!;
+    await hydrateAll(client);
+    expect(warn).not.toHaveBeenCalled();
+    expect(document.querySelector("p")).toBe(p);
+    expect(client.session().user()).toBe("ada");
+    document.querySelector("button")!.click();
+    flush();
+    expect(visible()).toBe("<button>ada adds</button><p>ada: 2 (book,pen)</p>");
+  });
+
+  it("sends a state first used in a streamed boundary with its chunk, before its island hydrates", async () => {
+    const { client, server } = await load(
+      `${SESSION}
+      import { Suspense } from "lumiose";
+      export async function Slow() {
+        await (globalThis as any).api.slow("x");
+        return <h3>{session().user()} has {session().count()}</h3>;
+      }
+      export function Feed() {
+        return <section><Suspense fallback={<p>loading</p>}><Slow /></Suspense></section>;
+      }
+      export function Clock() {
+        return <time>now</time>;
+      }`,
+      { states: ["session"] },
+    );
+    const slow = deferred<void>();
+    (api as unknown as Record<string, unknown>).slow = () => slow.promise;
+    (globalThis as any).serverSide = true;
+    const shell = await runInRequestScope(request("bob"), () =>
+      renderToStream(() => [
+        island("/src/case#Clock", server.Clock, {}, "load"),
+        island("/src/case#Feed", server.Feed, {}, "load"),
+      ]),
+    );
+    expect(shell.body).not.toContain("data-l-payload");
+    document.body.innerHTML = shell.body;
+    const scan = loadIslands({
+      "/src/case#Clock": () => Promise.resolve(client.Clock),
+      "/src/case#Feed": () => Promise.resolve(client.Feed),
+    });
+    await settle();
+    slow.resolve();
+    const reader = shell.stream!.getReader();
+    for (let chunk = await reader.read(); !chunk.done; chunk = await reader.read()) {
+      expect(chunk.value).toMatch(/data-l-payload>.*data-l-islands>/);
+      appendChunk(chunk.value);
+    }
+    (globalThis as any).serverSide = false;
+    const h3 = document.querySelector("h3")!;
+    expect(h3.textContent).toBe("bob has 1");
+    scan();
+    await settle();
+    expect(warn).not.toHaveBeenCalled();
+    expect(document.querySelector("h3")).toBe(h3);
+    expect(client.session().cart.items).toEqual(["book"]);
+  });
+
+  it("writes values that arrive after the state was created into it", async () => {
+    const { client } = await load(SESSION, { states: ["session"] });
+    const instance = client.session();
+    expect(instance.user()).toBe("nobody");
+    document.body.innerHTML = `<script type="application/json" data-l-payload>${JSON.stringify({
+      s: { "/src/case#session": { user: "eve", cart: { items: ["map"] } } },
+    })}</script>`;
+    loadIslands({});
+    expect(client.session()).toBe(instance);
+    expect([instance.user(), instance.count()]).toEqual(["eve", 1]);
   });
 });
 

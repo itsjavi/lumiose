@@ -4,6 +4,7 @@
 import { createOwner, runWithOwner } from "../../core/internal.ts";
 import { createComponent } from "../../dom/component.ts";
 import { insert } from "../../dom/insert.ts";
+import { receivePayload } from "../../dom/state.ts";
 import { createRouter, prepareRoot, type SpaConfig } from "./router.ts";
 import { CSR_REF } from "./table.ts";
 
@@ -25,6 +26,10 @@ export function leavesOf(config: SpaConfig): Record<string, string> {
 export function startCsr(config: SpaConfig): void {
   const leaves = leavesOf(config);
   const start = (): void => {
+    // Scoped state values from the server (decision-33), before the SPA's first render.
+    for (const script of document.querySelectorAll("script[data-l-payload]")) {
+      receivePayload(JSON.parse(script.textContent!));
+    }
     for (const script of document.querySelectorAll("script[data-l-islands]")) {
       for (const record of JSON.parse(script.textContent!) as {
         id: number;
