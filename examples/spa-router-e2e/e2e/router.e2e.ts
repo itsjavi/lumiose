@@ -165,6 +165,28 @@ test("ssr = false pages are client-rendered shells", async ({ page }) => {
   expect(await sameDocument(page)).toBe(true);
 });
 
+test("@lumiose/query: shared query, reactive key and a mutation that invalidates", async ({
+  page,
+}) => {
+  const html = await (await page.request.get("/query")).text();
+  expect(html).toMatch(/<p id="?query-a"?>(<!--\[-->)?loading/);
+  await page.goto("/query");
+  await ready(page);
+  await expect(page.locator("#query-a")).toHaveText(/^User 1 · load \d+$/);
+  // Two cards with the same key: one fetch, so both show the same load.
+  const first = await page.locator("#query-a").textContent();
+  await expect(page.locator("#query-b")).toHaveText(first!);
+  await page.locator("#query-user-2").click();
+  await expect(page.locator("#query-a")).toHaveText(/^User 2 · load \d+$/);
+  await expect(page.locator("#query-b")).toHaveText(/^User 2 /);
+  const before = Number((await page.locator("#query-a").textContent())!.split("load ")[1]);
+  await page.locator("#query-reload").click();
+  await expect(page.locator("#query-a")).not.toHaveText(`User 2 · load ${before}`);
+  const after = await page.locator("#query-a").textContent();
+  expect(Number(after!.split("load ")[1])).toBeGreaterThan(before);
+  await expect(page.locator("#query-b")).toHaveText(after!);
+});
+
 test.describe("without the Navigation API", () => {
   test.beforeEach(async ({ page }) => {
     await page.addInitScript(() => {

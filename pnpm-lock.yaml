@@ -430,6 +430,9 @@ importers:
 
   examples/spa-router-e2e:
     dependencies:
+      '@lumiose/query':
+        specifier: workspace:*
+        version: link:../../packages/query
       lumiose:
         specifier: workspace:*
         version: link:../../packages/lumiose

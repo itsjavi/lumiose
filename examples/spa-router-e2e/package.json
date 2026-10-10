@@ -13,6 +13,7 @@
     "test:e2e": "playwright test"
   },
   "dependencies": {
+    "@lumiose/query": "workspace:*",
     "lumiose": "workspace:*"
   },
   "devDependencies": {
