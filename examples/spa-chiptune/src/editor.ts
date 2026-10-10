@@ -1,5 +1,5 @@
 // Pattern editor commands: cursor movement, selection and every cell edit, all undoable.
-import { batch, signal } from "lumen";
+import { batch, signal } from "lumiose";
 import * as engine from "./audio/engine.ts";
 import { clone, emptyCell, emptyPattern } from "./model/song.ts";
 import {

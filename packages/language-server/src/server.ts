@@ -1,7 +1,7 @@
-// The Lumen language server (spec §9.2, decisions 6 and 11).
+// The Lumiose language server (spec §9.2, decisions 6 and 11).
 //
 // Takeover proxy: one TypeScript 7 native LSP (`tsc --lsp --stdio`) serves `.ts`, `.tsx` and
-// `.stsx`. An `.stsx` document reaches TypeScript as its shadow (`.lumen/shadow/<path>.stsx.tsx`)
+// `.stsx`. An `.stsx` document reaches TypeScript as its shadow (`.lumiose/shadow/<path>.stsx.tsx`)
 // holding the masked TSX, which is offset-identical to the source in UTF-16, so positions pass
 // through unchanged and only URIs are rewritten (source → shadow on the way in, shadow → source
 // in every response, server request, notification and workspace edit). Unopened `.stsx` files
@@ -12,7 +12,7 @@
 // attributes and selectors, scoped by placement (decision-23: a nested block covers its enclosing
 // element's subtree), plus the project's global classes (`<style global>` blocks and imported
 // `.css` files) and custom properties, `$ref` hovers with the folded value, `<style>` tag
-// completion and hovers, snippets, CSS document symbols, and Lumen diagnostics (scanner and
+// completion and hovers, snippets, CSS document symbols, and Lumiose diagnostics (scanner and
 // diagnostic providers, e.g. the compiler's, also for `.tsx`). Diagnostic providers get a per-project `ModuleHost` that
 // reads open documents before the disk, so the compiler sees constants imported by `$` references
 // as edited; a change to such a module (in an editor or on disk) re-runs its dependents' providers.
@@ -25,9 +25,9 @@ import type {
   StyleBlock,
   StyleRef,
   ContractEntry,
-} from "@lumen/compiler";
-import { scan } from "@lumen/compiler";
-import { ModuleHost, SUPERSEDED_BY_TYPESCRIPT, type ModuleChange } from "lumen/tooling";
+} from "@lumiose/compiler";
+import { scan } from "@lumiose/compiler";
+import { ModuleHost, SUPERSEDED_BY_TYPESCRIPT, type ModuleChange } from "lumiose/tooling";
 import { existsSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { join, relative, sep } from "node:path";
@@ -86,7 +86,7 @@ import {
 import {
   filterBlockDiagnostics,
   islandPropDiagnostics,
-  lumenQuickFixes,
+  lumioseQuickFixes,
   toLspDiagnostic,
   touchesBlock,
 } from "./diagnostics.ts";
@@ -114,7 +114,7 @@ import {
 } from "./typescript.ts";
 import { fileKey, isStsx, pathToUri, Projects, uriToPath } from "./workspace.ts";
 
-export interface LumenFile {
+export interface LumioseFile {
   uri: string;
   path: string;
   /** The file's project root. */
@@ -129,15 +129,15 @@ export interface LumenFile {
 }
 
 /**
- * Extra Lumen diagnostics (e.g. the compiler's) for an open `.stsx` or `.tsx` document, as UTF-16
+ * Extra Lumiose diagnostics (e.g. the compiler's) for an open `.stsx` or `.tsx` document, as UTF-16
  * spans. Called at most once per document version.
  */
-export type LumenDiagnosticProvider = (
-  file: LumenFile,
+export type LumioseDiagnosticProvider = (
+  file: LumioseFile,
 ) => readonly CompilerDiagnostic[] | Promise<readonly CompilerDiagnostic[]>;
 
 /**
- * Project-wide Lumen diagnostics (LUM4003, LUM3012; TASK-137): for a project root and its module
+ * Project-wide Lumiose diagnostics (LUM4003, LUM3012; TASK-137): for a project root and its module
  * host (open documents win over the disk), a function that checks the whole project, by absolute
  * file. Called again after files change; it should only redo the work for what changed.
  */
@@ -147,10 +147,10 @@ export type ProjectDiagnosticsFactory = (
 ) => () => Promise<ReadonlyMap<string, readonly CompilerDiagnostic[]>>;
 
 export interface ServerOptions {
-  diagnosticProviders?: readonly LumenDiagnosticProvider[];
+  diagnosticProviders?: readonly LumioseDiagnosticProvider[];
   projectDiagnostics?: ProjectDiagnosticsFactory;
   /**
-   * Path of the TypeScript 7 native binary. Default: `initializationOptions.lumen.typescript`, else
+   * Path of the TypeScript 7 native binary. Default: `initializationOptions.lumiose.typescript`, else
    * resolved from the project's `typescript` package, else from this package's.
    */
   typescript?: string;
@@ -203,7 +203,7 @@ const TS_EXTENSION = /\.(?:[cm]?[jt]s|[jt]sx)$/i;
 const CSS_TRIGGERS = [":", "-", "$"];
 const DIAGNOSTICS_DELAY = 200;
 
-/** Wires the Lumen language server onto `connection` and starts listening. */
+/** Wires the Lumiose language server onto `connection` and starts listening. */
 export function startServer(connection: Connection, options: ServerOptions = {}): void {
   const files = new Map<string, OpenFile>();
   /** Shadow URI key → source URI of open `.stsx` documents (also covers non-file schemes). */
@@ -330,15 +330,15 @@ export function startServer(connection: Connection, options: ServerOptions = {})
     const delay = RESTART_DELAYS[restartAttempts];
     if (delay === undefined || !tsExecutable) {
       const message = `TypeScript features are unavailable: the TypeScript language server failed ${restartAttempts + 1} times in a row.`;
-      connection.console.error(`Lumen: ${message}`);
+      connection.console.error(`Lumiose: ${message}`);
       void connection.window.showErrorMessage(
-        `Lumen: ${message} Restart the Lumen language server to try again.`,
+        `Lumiose: ${message} Restart the Lumiose language server to try again.`,
       );
       return;
     }
     restartAttempts++;
     log(
-      `Lumen: restarting TypeScript in ${delay} ms (attempt ${restartAttempts} of ${RESTART_DELAYS.length}).`,
+      `Lumiose: restarting TypeScript in ${delay} ms (attempt ${restartAttempts} of ${RESTART_DELAYS.length}).`,
     );
     const executable = tsExecutable;
     restartTimer = setTimeout(() => void restartTypeScript(executable), delay);
@@ -349,7 +349,7 @@ export function startServer(connection: Connection, options: ServerOptions = {})
     try {
       tsCapabilities = (await startTypeScript(executable)).capabilities;
     } catch (error) {
-      connection.console.error(`Lumen: TypeScript failed to restart: ${errorMessage(error)}`);
+      connection.console.error(`Lumiose: TypeScript failed to restart: ${errorMessage(error)}`);
       if (!shuttingDown) scheduleRestart();
       return;
     }
@@ -361,7 +361,7 @@ export function startServer(connection: Connection, options: ServerOptions = {})
       reopened++;
     }
     log(
-      `Lumen: TypeScript language server restarted (pid ${ts?.process.pid}); ${reopened} open document(s) re-sent.`,
+      `Lumiose: TypeScript language server restarted (pid ${ts?.process.pid}); ${reopened} open document(s) re-sent.`,
     );
     refreshClient();
   }
@@ -434,7 +434,7 @@ export function startServer(connection: Connection, options: ServerOptions = {})
       if (ts !== server) return;
       ts = undefined;
       if (shuttingDown) return;
-      connection.console.error(`Lumen: ${reason}`);
+      connection.console.error(`Lumiose: ${reason}`);
       if (Date.now() - server.startedAt >= RESTART_RESET_AFTER) restartAttempts = 0;
       scheduleRestart();
     };
@@ -472,8 +472,8 @@ export function startServer(connection: Connection, options: ServerOptions = {})
     projects = new Projects(folders);
     const root = folders[0] ?? process.cwd();
 
-    const { lumen, ...initializationOptions } = (params.initializationOptions ?? {}) as {
-      lumen?: { typescript?: string };
+    const { lumiose, ...initializationOptions } = (params.initializationOptions ?? {}) as {
+      lumiose?: { typescript?: string };
     };
     tsRoot = root;
     tsInitialize = {
@@ -483,18 +483,18 @@ export function startServer(connection: Connection, options: ServerOptions = {})
       initializationOptions,
     };
     try {
-      const custom = options.typescript ?? lumen?.typescript;
+      const custom = options.typescript ?? lumiose?.typescript;
       const executable = custom
         ? { path: custom, version: "custom" }
         : await resolveTypeScript(root);
       tsCapabilities = (await startTypeScript(executable)).capabilities;
       tsExecutable = executable;
       log(
-        `Lumen: TypeScript ${executable.version} language server (${executable.path}, pid ${ts?.process.pid}).`,
+        `Lumiose: TypeScript ${executable.version} language server (${executable.path}, pid ${ts?.process.pid}).`,
       );
     } catch (error) {
       tsFailure = errorMessage(error);
-      connection.console.error(`Lumen: TypeScript features are unavailable: ${tsFailure}`);
+      connection.console.error(`Lumiose: TypeScript features are unavailable: ${tsFailure}`);
     }
 
     await Promise.all(
@@ -502,7 +502,7 @@ export function startServer(connection: Connection, options: ServerOptions = {})
     );
     return {
       capabilities: serverCapabilities(tsCapabilities),
-      serverInfo: { name: "lumen-language-server", version: "0.0.0" },
+      serverInfo: { name: "lumiose-language-server", version: "0.0.0" },
     };
   });
 
@@ -521,7 +521,7 @@ export function startServer(connection: Connection, options: ServerOptions = {})
       });
     }
     if (tsFailure !== undefined) {
-      void connection.window.showErrorMessage(`Lumen: ${tsFailure}`);
+      void connection.window.showErrorMessage(`Lumiose: ${tsFailure}`);
     }
   });
 
@@ -554,7 +554,7 @@ export function startServer(connection: Connection, options: ServerOptions = {})
         if (!files.has(fileKey(module.path))) styles.updateModule(module.path, root, module.text);
       }
     } catch (error) {
-      connection.console.error(`Lumen: shadow sync failed in ${root}: ${String(error)}`);
+      connection.console.error(`Lumiose: shadow sync failed in ${root}: ${String(error)}`);
     }
   }
 
@@ -599,7 +599,7 @@ export function startServer(connection: Connection, options: ServerOptions = {})
           if (!found.has(fileKey(path)) && !files.has(fileKey(path))) styles.delete(path);
         }
       } catch (error) {
-        connection.console.error(`Lumen: shadow sync failed in ${root}: ${String(error)}`);
+        connection.console.error(`Lumiose: shadow sync failed in ${root}: ${String(error)}`);
         continue;
       }
       notifyTs("workspace/didChangeWatchedFiles", {
@@ -818,14 +818,14 @@ export function startServer(connection: Connection, options: ServerOptions = {})
       const { document } = file;
       const scanned = scan(document.getText(), uriToPath(file.uri) ?? file.uri);
       const kept = filterBlockDiagnostics(document, scanned.blocks, typescript);
-      const lumen = [
+      const lumiose = [
         ...scanned.diagnostics,
         ...(await provided(file, scanned)),
         ...(await projectFindings(file)),
       ];
       return [
         ...kept,
-        ...withoutSuperseded(document, lumen, kept).map((d) => toLspDiagnostic(document, d)),
+        ...withoutSuperseded(document, lumiose, kept).map((d) => toLspDiagnostic(document, d)),
       ];
     }
     const snapshot = snapshotOf(file);
@@ -839,15 +839,15 @@ export function startServer(connection: Connection, options: ServerOptions = {})
         ),
       ),
     );
-    const lumen = [
+    const lumiose = [
       ...snapshot.scan.diagnostics,
       ...(await provided(file, snapshot.scan)),
       ...(await projectFindings(file)),
     ];
-    const lumenLsp = withoutSuperseded(snapshot.document, lumen, typescript).map((diagnostic) =>
+    const lumioseLsp = withoutSuperseded(snapshot.document, lumiose, typescript).map((diagnostic) =>
       toLspDiagnostic(snapshot.document, diagnostic),
     );
-    return [...typescript, ...lumenLsp, ...cssDiagnostics(snapshot, lumenLsp)];
+    return [...typescript, ...lumioseLsp, ...cssDiagnostics(snapshot, lumioseLsp)];
   }
 
   /**
@@ -869,7 +869,7 @@ export function startServer(connection: Connection, options: ServerOptions = {})
       const current = state;
       current.generation = changeGeneration;
       result = current.run().catch((error: unknown) => {
-        connection.console.error(`Lumen: the project checks failed: ${errorMessage(error)}`);
+        connection.console.error(`Lumiose: the project checks failed: ${errorMessage(error)}`);
         return new Map();
       });
       current.result = result;
@@ -908,7 +908,7 @@ export function startServer(connection: Connection, options: ServerOptions = {})
     if (file.provided?.version === version) return file.provided.diagnostics;
     const path = uriToPath(file.uri);
     const root = path === undefined ? tsRoot : projects.rootFor(path);
-    const lumenFile: LumenFile = {
+    const lumioseFile: LumioseFile = {
       uri: file.uri,
       path: path ?? file.uri,
       root,
@@ -920,9 +920,11 @@ export function startServer(connection: Connection, options: ServerOptions = {})
       const results = await Promise.all(
         (options.diagnosticProviders ?? []).map(async (provider) => {
           try {
-            return await provider(lumenFile);
+            return await provider(lumioseFile);
           } catch (error) {
-            connection.console.error(`Lumen: a diagnostic provider failed: ${errorMessage(error)}`);
+            connection.console.error(
+              `Lumiose: a diagnostic provider failed: ${errorMessage(error)}`,
+            );
             return [];
           }
         }),
@@ -956,7 +958,9 @@ export function startServer(connection: Connection, options: ServerOptions = {})
         void diagnosticsFor(file).then(
           (diagnostics) => connection.sendDiagnostics({ uri: file.uri, version, diagnostics }),
           (error: unknown) =>
-            connection.console.error(`Lumen: diagnostics failed for ${file.uri}: ${String(error)}`),
+            connection.console.error(
+              `Lumiose: diagnostics failed for ${file.uri}: ${String(error)}`,
+            ),
         );
       }
     }, DIAGNOSTICS_DELAY);
@@ -989,7 +993,7 @@ export function startServer(connection: Connection, options: ServerOptions = {})
     const list = Array.isArray(result) ? { isIncomplete: false, items: result } : result;
     // Default data is folded into the items: a wrapped item no longer inherits it.
     const defaults: unknown = list.itemDefaults?.data;
-    for (const item of list.items) item.data = { lumen: tag, data: item.data ?? defaults };
+    for (const item of list.items) item.data = { lumiose: tag, data: item.data ?? defaults };
     if (list.itemDefaults) delete list.itemDefaults.data;
     return list;
   }
@@ -1040,7 +1044,7 @@ export function startServer(connection: Connection, options: ServerOptions = {})
           range,
           newText: slot.kind === "key" && !isIdentifier(name) ? JSON.stringify(name) : name,
         },
-        data: { lumen: "class" satisfies Tag },
+        data: { lumiose: "class" satisfies Tag },
       });
     };
     // Ranks: enclosing subtrees (the innermost, i.e. the smallest, first), file, global.
@@ -1150,7 +1154,7 @@ export function startServer(connection: Connection, options: ServerOptions = {})
         newText: colon ? (snippets ? `${name}: $0;` : `${name}: `) : name,
       },
       ...(colon && snippets ? { insertTextFormat: InsertTextFormat.Snippet } : {}),
-      data: { lumen: "css" satisfies Tag },
+      data: { lumiose: "css" satisfies Tag },
     }));
     // The CSS service's own custom properties are the current block's only: replaced.
     const kept = base.items.filter(
@@ -1183,7 +1187,7 @@ export function startServer(connection: Connection, options: ServerOptions = {})
           detail: "app-wide, unscoped CSS",
           documentation: { kind: MarkupKind.Markdown, value: GLOBAL_DOC },
           textEdit: { range: rangeOf(snapshot, start, end), newText: "global" },
-          data: { lumen: "style" satisfies Tag },
+          data: { lumiose: "style" satisfies Tag },
         },
       ],
     };
@@ -1232,15 +1236,15 @@ export function startServer(connection: Connection, options: ServerOptions = {})
   });
 
   connection.onCompletionResolve(async (item, token) => {
-    const data = item.data as { lumen?: Tag; data?: unknown } | undefined;
-    if (data?.lumen !== "ts") return item;
+    const data = item.data as { lumiose?: Tag; data?: unknown } | undefined;
+    if (data?.lumiose !== "ts") return item;
     const resolved = await forward<CompletionItem>(
       "completionItem/resolve",
       { ...item, data: data.data },
       token,
     );
     if (!resolved) return item;
-    // Lumen attributes TypeScript cannot document (`on:x`, `key`).
+    // Lumiose attributes TypeScript cannot document (`on:x`, `key`).
     const doc =
       resolved.detail && !hasText(resolved.documentation) && attributeDoc(resolved.detail);
     return {
@@ -1265,7 +1269,7 @@ export function startServer(connection: Connection, options: ServerOptions = {})
     const value = foldedValue(markdown);
     const header =
       value === undefined
-        ? `\`${name}\`: Lumen constant reference (not statically resolved)`
+        ? `\`${name}\`: Lumiose constant reference (not statically resolved)`
         : `\`${name}\` → \`${value}\``;
     return {
       contents: {
@@ -1483,7 +1487,7 @@ export function startServer(connection: Connection, options: ServerOptions = {})
 
   // --- Forwarded with `.stsx` adjustments --------------------------------------------------
 
-  /** Formatting the masked TSX must not touch style blocks (blank there; `lumen fmt` formats CSS). */
+  /** Formatting the masked TSX must not touch style blocks (blank there; `lumiose fmt` formats CSS). */
   function formatting(method: string) {
     return async (params: { textDocument: { uri: string } }, token: CancellationToken) => {
       const edits = await forward<TextEdit[]>(method, params, token, true);
@@ -1519,8 +1523,8 @@ export function startServer(connection: Connection, options: ServerOptions = {})
       [];
     if (!snapshot) return actions;
     const file = files.get(fileKey(params.textDocument.uri))!;
-    const lumen = [...snapshot.scan.diagnostics, ...(await provided(file, snapshot.scan))];
-    return [...lumenQuickFixes(snapshot.document, lumen, params.range), ...actions];
+    const lumiose = [...snapshot.scan.diagnostics, ...(await provided(file, snapshot.scan))];
+    return [...lumioseQuickFixes(snapshot.document, lumiose, params.range), ...actions];
   });
 
   // --- Everything else goes to TypeScript --------------------------------------------------
@@ -1544,18 +1548,18 @@ function isTsx(uri: string): boolean {
 }
 
 /**
- * Drops Lumen diagnostics that a TypeScript error inside their span supersedes (an unknown `$`
- * reference: TypeScript's "Cannot find name" is the actionable one), as `lumen check` does.
+ * Drops Lumiose diagnostics that a TypeScript error inside their span supersedes (an unknown `$`
+ * reference: TypeScript's "Cannot find name" is the actionable one), as `lumiose check` does.
  */
 function withoutSuperseded(
   document: TextDocument,
-  lumen: readonly CompilerDiagnostic[],
+  lumiose: readonly CompilerDiagnostic[],
   typescript: readonly Diagnostic[],
 ): CompilerDiagnostic[] {
   const errors = typescript
     .filter((d) => d.severity === DiagnosticSeverity.Error)
     .map((d) => document.offsetAt(d.range.start));
-  return lumen.filter(
+  return lumiose.filter(
     (d) =>
       !SUPERSEDED_BY_TYPESCRIPT.has(d.code) ||
       !errors.some((offset) => d.span.start <= offset && offset < d.span.end),
@@ -1628,7 +1632,7 @@ function styleTagHover(at: StsxAt, block: StyleBlock): Hover | null {
   };
 }
 
-/** Adds the description of a Lumen attribute TypeScript leaves undocumented (`on:x`, `key`). */
+/** Adds the description of a Lumiose attribute TypeScript leaves undocumented (`on:x`, `key`). */
 function withAttributeDoc(hover: Hover | null, text: string, offset: number): Hover | null {
   if (!hover) return hover;
   const markdown = hoverMarkdown(hover.contents);
@@ -1718,7 +1722,7 @@ function serverCapabilities(ts: ServerCapabilities): ServerCapabilities {
       codeActionKinds: [...new Set([...(codeActions.codeActionKinds ?? []), "quickfix"])],
     },
     diagnosticProvider: {
-      identifier: "lumen",
+      identifier: "lumiose",
       interFileDependencies: true,
       workspaceDiagnostics: false,
     },

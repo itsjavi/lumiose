@@ -1,12 +1,21 @@
 // Accounts and sessions. Passwords are scrypt hashes (password.server.ts). A session is a random
-// token kept in an HMAC-signed, HttpOnly cookie (Lumen's `signedCookie`, secret `LUMEN_SECRET`);
+// token kept in an HMAC-signed, HttpOnly cookie (Lumiose's `signedCookie`, secret `LUMIOSE_SECRET`);
 // the `sessions` table stores the token's SHA-256 with an expiry, so logging out or revoking a
 // row ends the session server-side. Sessions slide: past half their lifetime, a request renews
 // them.
 
 import { createHash, randomBytes } from "node:crypto";
 import type { DatabaseSync } from "node:sqlite";
-import { cookies as requestCookies, href, locals as requestLocals, redirect, signedCookie, url as requestUrl, type Cookies, type RequestContext } from "lumen";
+import {
+  cookies as requestCookies,
+  href,
+  locals as requestLocals,
+  redirect,
+  signedCookie,
+  url as requestUrl,
+  type Cookies,
+  type RequestContext,
+} from "lumiose";
 import {
   normalizeEmail,
   validateRegistration,
@@ -22,7 +31,7 @@ import {
   type ScryptParams,
 } from "./password.server.ts";
 
-declare module "lumen" {
+declare module "lumiose" {
   interface Locals {
     /** Set by the middleware from the session cookie: the signed-in user or `null`. */
     user?: User | null;
@@ -33,7 +42,7 @@ export const SESSION_COOKIE = "bookshelf_session";
 export const SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000;
 
 export interface AuthOptions {
-  /** HMAC secret(s) of the session cookie. Default: the `LUMEN_SECRET` env variable. */
+  /** HMAC secret(s) of the session cookie. Default: the `LUMIOSE_SECRET` env variable. */
   secret?: string | readonly string[];
   cookieName?: string;
   /** Session lifetime. Default 30 days. */

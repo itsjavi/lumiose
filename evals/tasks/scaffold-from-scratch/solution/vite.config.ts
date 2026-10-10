@@ -1,6 +1,6 @@
-import lumen from "lumen/vite";
+import lumiose from "lumiose/vite";
 import { defineConfig } from "vite";
 
 export default defineConfig({
-  plugins: [lumen({ mode: "static" })],
+  plugins: [lumiose({ mode: "static" })],
 });

@@ -11,7 +11,7 @@
     },
     "node": "v26.8.1",
     "versions": {
-      "lumen": "b836aa8",
+      "lumiose": "b836aa8",
       "react": "19.3.0",
       "react-dom": "19.3.0",
       "react-router": "8.4.0",
@@ -29,28 +29,28 @@
       "server"
     ],
     "apps": [
-      "lumen",
+      "lumiose",
       "react-router",
       "next"
     ],
     "conformance": {
-      "lumen": "skipped",
+      "lumiose": "skipped",
       "react-router": "skipped",
       "next": "skipped"
     },
     "servers": {
-      "lumen": {
+      "lumiose": {
         "dev": {
-          "command": "lumen dev --port 4101 --host 127.0.0.1",
+          "command": "lumiose dev --port 4101 --host 127.0.0.1",
           "tool": "Vite 8.3.4",
-          "description": "`lumen dev`: Vite in middleware mode, modules compiled on request, SSR through Vite's module runner"
+          "description": "`lumiose dev`: Vite in middleware mode, modules compiled on request, SSR through Vite's module runner"
         },
         "build": {
-          "command": "lumen build"
+          "command": "lumiose build"
         },
         "prod": {
           "command": "NODE_ENV=production node server.ts",
-          "description": "`node server.ts`: the `lumen build` output on @lumen/adapter-node (compress: false)",
+          "description": "`node server.ts`: the `lumiose build` output on @lumiose/adapter-node (compress: false)",
           "nodeEnv": "production",
           "compression": false
         }
@@ -94,7 +94,7 @@
     ]
   },
   "results": {
-    "lumen": {
+    "lumiose": {
       "server.cold-start": {
         "unit": "ms",
         "values": [

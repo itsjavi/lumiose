@@ -1,7 +1,7 @@
 // Island (client:visible): the star picker of the review form. It is a radio group, so without
 // JavaScript it still posts `rating`; once hydrated, stars light up on hover and selection, and
 // the form checks the rating with the same validateReview() the action runs before posting.
-import { onMount, ref, signal } from "lumen";
+import { onMount, ref, signal } from "lumiose";
 import { validateReview } from "../lib/validation.ts";
 import * as theme from "../theme.ts";
 

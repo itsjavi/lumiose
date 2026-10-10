@@ -1,5 +1,5 @@
 // One page per tag (`staticPaths`): its posts, newest first.
-import { href, Meta, notFound, Title, type PageProps } from "lumen";
+import { href, Meta, notFound, Title, type PageProps } from "lumiose";
 import { PostGrid } from "../../components/PostCard.stsx";
 import { allTags, postsTagged, type Post } from "../../content.ts";
 import { tagLabel } from "../../lib/format.ts";

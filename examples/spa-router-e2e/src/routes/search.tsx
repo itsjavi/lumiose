@@ -1,4 +1,4 @@
-import { search } from "lumen/router";
+import { search } from "lumiose/router";
 
 const q = () => search().get("q") ?? "";
 

@@ -8,7 +8,7 @@ import ssrResults from "../../../../benchmarks/ssr/RESULTS.md?raw";
 export interface Bar {
   label: string;
   value: number;
-  /** Lumen's own bar. */
+  /** Lumiose's own bar. */
   self: boolean;
 }
 
@@ -29,7 +29,7 @@ export interface Evidence {
 
 /** Display names of the benchmark's framework columns. */
 const NAMES: Record<string, string> = {
-  lumen: "Lumen",
+  lumiose: "Lumiose",
   vanillajs: "Vanilla JS",
   solid: "Solid",
   svelte: "Svelte",
@@ -87,7 +87,7 @@ function bars(table: Table, cells: string[]): Bar[] {
     const label = NAMES[column];
     return label === undefined
       ? []
-      : [{ label, value: number(cells[index + 1]!), self: column === "lumen" }];
+      : [{ label, value: number(cells[index + 1]!), self: column === "lumiose" }];
   });
 }
 
@@ -120,7 +120,11 @@ export function readEvidence(jsfb: string, ssr: string): Evidence {
     firstPaint: bars(sizeTable, row(sizeTable, "43_first-paint")),
     ssr: ssrTable.rows
       .filter((cells) => !cells[0]!.includes("("))
-      .map((cells) => ({ label: cells[0]!, value: number(cells[2]!), self: cells[0] === "Lumen" })),
+      .map((cells) => ({
+        label: cells[0]!,
+        value: number(cells[2]!),
+        self: cells[0] === "Lumiose",
+      })),
     clientRun: [date, machine, browser].filter(Boolean).join(" · "),
     serverRun,
   };

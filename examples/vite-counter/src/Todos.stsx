@@ -1,4 +1,4 @@
-import { signal, type Signal } from "lumen";
+import { signal, type Signal } from "lumiose";
 import { theme } from "./tokens.ts";
 
 interface Todo {

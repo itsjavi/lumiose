@@ -1,7 +1,7 @@
-import { notFound, params, Title } from "lumen";
+import { notFound, params, Title } from "lumiose";
 import { findPost, posts } from "../../lib/posts.ts";
 
-/** The paths `lumen build` prerenders for this route. */
+/** The paths `lumiose build` prerenders for this route. */
 export async function staticPaths() {
   return posts.map((post) => ({ params: { slug: post.slug } }));
 }

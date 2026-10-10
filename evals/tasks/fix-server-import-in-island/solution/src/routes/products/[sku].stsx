@@ -1,4 +1,4 @@
-import { notFound, params, Title } from "lumen";
+import { notFound, params, Title } from "lumiose";
 import { StockBadge } from "../../components/StockBadge.stsx";
 import { getStock } from "../../server/stock.server.ts";
 

@@ -1,17 +1,17 @@
 {
-  // The generated Lumen tsconfig pairs the workspace with `.lumen/shadow`, so the `.stsx` modules
-  // of @lumen/site-kit type-check with the site (`lumen check`).
-  "extends": ["../../tsconfig.base.json", "./.lumen/tsconfig.generated.json"],
+  // The generated Lumiose tsconfig pairs the workspace with `.lumiose/shadow`, so the `.stsx` modules
+  // of @lumiose/site-kit type-check with the site (`lumiose check`).
+  "extends": ["../../tsconfig.base.json", "./.lumiose/tsconfig.generated.json"],
   "compilerOptions": {
     // `vite/client` types `import.meta.glob` and `?raw` imports in src/content.
-    "types": ["node", "lumen/env", "vite/client"]
+    "types": ["node", "lumiose/env", "vite/client"]
   },
   "include": [
     "src",
     "e2e",
     "vite.config.ts",
     "playwright.config.ts",
-    ".lumen/shadow",
-    ".lumen/types"
+    ".lumiose/shadow",
+    ".lumiose/types"
   ]
 }

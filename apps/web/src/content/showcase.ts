@@ -25,7 +25,7 @@ export function examples(): Showcase[] {
   return [
     {
       name: "spa-chiptune",
-      title: "Lumen Chip",
+      title: "Lumiose Chip",
       description:
         "A chiptune tracker in the browser: an SPA with a persistent layout, an AudioWorklet engine, keyboard-driven editing and a strict Content Security Policy.",
       tags: ["mode = spa", "router", "signals", "CSP"],
@@ -57,8 +57,8 @@ export function examples(): Showcase[] {
       name: "vite-counter",
       title: "Vite counter",
       description:
-        "The smallest setup: lumen/vite in a plain Vite app, with a counter and a todo list built from signals and scoped styles.",
-      tags: ["lumen/vite", "signals", ".stsx"],
+        "The smallest setup: lumiose/vite in a plain Vite app, with a counter and a todo list built from signals and scoped styles.",
+      tags: ["lumiose/vite", "signals", ".stsx"],
       demo: link("/examples/vite-counter/"),
       source: `${REPOSITORY}/tree/main/examples/vite-counter`,
       image: link("/examples/vite-counter.png"),
@@ -81,7 +81,7 @@ export function benchmarks(): Showcase[] {
       name: "js-framework-benchmark",
       title: "js-framework-benchmark",
       description:
-        "krausest's keyed benchmark, run with his own runner against Vanilla JS, Solid, Svelte, Vue Vapor and React: CPU, script time and memory. Try the Lumen app in your browser.",
+        "krausest's keyed benchmark, run with his own runner against Vanilla JS, Solid, Svelte, Vue Vapor and React: CPU, script time and memory. Try the Lumiose app in your browser.",
       tags: ["client", "CPU", "memory"],
       demo: link("/benchmarks/js-framework-benchmark/"),
       source: `${REPOSITORY}/tree/main/benchmarks/js-framework-benchmark`,
@@ -90,7 +90,7 @@ export function benchmarks(): Showcase[] {
       name: "fullstack",
       title: "Fullstack comparison",
       description:
-        "The same issue tracker built with Lumen, React Router and Next.js, measured end to end: dev server, build, page load and server throughput, in an interactive results viewer.",
+        "The same issue tracker built with Lumiose, React Router and Next.js, measured end to end: dev server, build, page load and server throughput, in an interactive results viewer.",
       tags: ["dev", "build", "page load", "server"],
       demo: link("/benchmarks/fullstack/"),
       source: `${REPOSITORY}/tree/main/benchmarks/fullstack`,

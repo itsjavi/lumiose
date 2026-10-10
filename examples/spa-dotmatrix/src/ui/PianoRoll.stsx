@@ -2,7 +2,7 @@
 // drum kit on the noise channel), columns are 16th-note steps. Click an empty cell to add a note
 // (drag to make it longer), click a note to remove it, drag a note's row to resize it. With focus,
 // the arrow keys move a cursor and Enter adds or removes a note.
-import { computed, effect, onCleanup, signal, untrack } from "lumen";
+import { computed, effect, onCleanup, signal, untrack } from "lumiose";
 import { noteData } from "../audio/driver.ts";
 import { nowPlaying, playOnce, playStep } from "../audio/player.ts";
 import { setGridFocused } from "../keys.ts";

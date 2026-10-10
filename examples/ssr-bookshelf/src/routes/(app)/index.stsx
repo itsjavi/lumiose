@@ -1,4 +1,4 @@
-import { href, lifetime, locals, Meta, Suspense, Title } from "lumen";
+import { href, lifetime, locals, Meta, Suspense, Title } from "lumiose";
 import { BookGrid } from "../../components/BookCard.stsx";
 import { queries } from "../../server/queries.server.ts";
 import * as theme from "../../theme.ts";

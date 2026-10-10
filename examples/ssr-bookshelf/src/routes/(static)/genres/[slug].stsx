@@ -1,6 +1,6 @@
 // Prerendered at build time for every genre (`staticPaths`): its top-rated books, with a link to
 // the full, filterable list (a `server` route).
-import { href, notFound, Title, type PageProps } from "lumen";
+import { href, notFound, Title, type PageProps } from "lumiose";
 import { BookGrid } from "../../../components/BookCard.stsx";
 import { queries } from "../../../server/queries.server.ts";
 import * as theme from "../../../theme.ts";

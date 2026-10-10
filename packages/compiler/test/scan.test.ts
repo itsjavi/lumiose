@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
 
-// The addon exists only after `pnpm --filter @lumen/compiler build`.
+// The addon exists only after `pnpm --filter @lumiose/compiler build`.
 const binding = await import("../index.js").catch(() => undefined);
 
-describe.skipIf(!binding)("@lumen/compiler native scan", () => {
+describe.skipIf(!binding)("@lumiose/compiler native scan", () => {
   const { scan, version } = binding!;
 
   const source = [

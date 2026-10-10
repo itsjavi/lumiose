@@ -1,10 +1,10 @@
-import { Title } from "lumen";
+import { Title } from "lumiose";
 
 export default function Home() {
   return (
     <main>
       <Title>Hello</Title>
-      <h1>Hello Lumen</h1>
+      <h1>Hello Lumiose</h1>
     </main>
   );
 }

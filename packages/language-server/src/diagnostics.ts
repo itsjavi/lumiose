@@ -1,6 +1,6 @@
-// Lumen diagnostics as LSP diagnostics, and filtering of TypeScript diagnostics on the shadow.
+// Lumiose diagnostics as LSP diagnostics, and filtering of TypeScript diagnostics on the shadow.
 
-import type { Diagnostic as CompilerDiagnostic, StyleBlock } from "@lumen/compiler";
+import type { Diagnostic as CompilerDiagnostic, StyleBlock } from "@lumiose/compiler";
 import {
   CodeActionKind,
   DiagnosticSeverity,
@@ -14,7 +14,7 @@ import {
   islandPropProblem,
   islandPropRange,
   LUM_ISLAND_PROP,
-} from "lumen/tooling";
+} from "lumiose/tooling";
 
 /** Converts a compiler-shaped diagnostic (UTF-16 span) of `document` to an LSP diagnostic. */
 export function toLspDiagnostic(
@@ -30,7 +30,7 @@ export function toLspDiagnostic(
           ? DiagnosticSeverity.Warning
           : DiagnosticSeverity.Hint,
     code: diagnostic.code,
-    source: "lumen",
+    source: "lumiose",
     message:
       diagnostic.help === undefined
         ? diagnostic.message
@@ -47,7 +47,7 @@ export function toLspDiagnostic(
 }
 
 /** Quick fixes for compiler diagnostics that carry a fix and overlap `range`. */
-export function lumenQuickFixes(
+export function lumioseQuickFixes(
   document: TextDocument,
   diagnostics: readonly CompilerDiagnostic[],
   range: Range,
@@ -95,7 +95,7 @@ export function filterBlockDiagnostics<T extends { range: Range }>(
 
 /**
  * TypeScript errors on island call sites (a function or another value that cannot be serialized
- * passed with a `client:*` directive) as LUM4002 on the prop, as `lumen check` reports them.
+ * passed with a `client:*` directive) as LUM4002 on the prop, as `lumiose check` reports them.
  */
 export function islandPropDiagnostics<T extends Diagnostic>(
   document: TextDocument,
@@ -115,7 +115,7 @@ export function islandPropDiagnostics<T extends Diagnostic>(
       ...diagnostic,
       range: span ? spanRange(document, span) : diagnostic.range,
       code: LUM_ISLAND_PROP,
-      source: "lumen",
+      source: "lumiose",
       message: `${message}\n${help}`,
     };
   });

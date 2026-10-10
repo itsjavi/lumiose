@@ -1,8 +1,8 @@
 {
-  "name": "@lumen/compiler",
+  "name": "@lumiose/compiler",
   "version": "0.0.0",
   "private": true,
-  "description": "Native bindings (napi-rs) of the Lumen Rust compiler, with a WebAssembly (WASI) fallback.",
+  "description": "Native bindings (napi-rs) of the Lumiose Rust compiler, with a WebAssembly (WASI) fallback.",
   "license": "MIT",
   "files": [
     "index.js",
@@ -24,9 +24,9 @@
     "./package.json": "./package.json"
   },
   "scripts": {
-    "build": "napi build --platform --release --esm --no-const-enum --manifest-path ../../crates/lumen_napi/Cargo.toml --output-dir . && oxfmt index.js index.d.ts",
-    "build:debug": "napi build --platform --esm --no-const-enum --manifest-path ../../crates/lumen_napi/Cargo.toml --output-dir . && oxfmt index.js index.d.ts",
-    "build:wasm": "napi build --platform --release --esm --no-const-enum --target wasm32-wasip1-threads --manifest-path ../../crates/lumen_napi/Cargo.toml --output-dir . && oxfmt index.js index.d.ts",
+    "build": "napi build --platform --release --esm --no-const-enum --manifest-path ../../crates/lumiose_napi/Cargo.toml --output-dir . && oxfmt index.js index.d.ts",
+    "build:debug": "napi build --platform --esm --no-const-enum --manifest-path ../../crates/lumiose_napi/Cargo.toml --output-dir . && oxfmt index.js index.d.ts",
+    "build:wasm": "napi build --platform --release --esm --no-const-enum --target wasm32-wasip1-threads --manifest-path ../../crates/lumiose_napi/Cargo.toml --output-dir . && oxfmt index.js index.d.ts",
     "typecheck": "tsc -p tsconfig.json",
     "test": "vitest run"
   },

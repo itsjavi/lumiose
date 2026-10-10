@@ -1,5 +1,5 @@
 // Songs: the open song's properties, the library in localStorage, files and export.
-import { signal } from "lumen";
+import { signal } from "lumiose";
 import { demoSong } from "../model/demo.ts";
 import {
   deleteSaved,

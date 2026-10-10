@@ -1,4 +1,4 @@
-import { href } from "lumen";
+import { href } from "lumiose";
 import { tagLabel } from "../lib/format.ts";
 import * as theme from "../theme.ts";
 

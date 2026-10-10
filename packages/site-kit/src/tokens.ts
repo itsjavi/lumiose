@@ -1,4 +1,4 @@
-// Design tokens of the Lumen websites. Style blocks read them as `$color.text`, `$space.md`,
+// Design tokens of the Lumiose websites. Style blocks read them as `$color.text`, `$space.md`,
 // `@media (width < $bp.md)`, …; the compiler inlines the values at build time, so no runtime import
 // remains. Every text/background pair below meets WCAG AA (body text AAA) in both themes.
 
@@ -130,7 +130,7 @@ export const syntax = {
   punct: "var(--lm-syn-punct)",
 } as const;
 
-/** The brand gradient: the "light" of Lumen, for accents, glows and highlights. */
+/** The brand gradient: the "light" of Lumiose, for accents, glows and highlights. */
 export const gradient = {
   brand: "linear-gradient(120deg, var(--lm-glow-a), var(--lm-glow-b))",
   /** For gradient text (`background-clip: text`): both ends meet AA contrast on `bg`. */

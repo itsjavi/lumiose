@@ -1,5 +1,5 @@
 // Conformance suite of the Tracker app (doc-4 §5). It runs against one production server, chosen by
-// BENCH_BASE_URL (default the Lumen app on :4101), and only uses the landmarks of landmarks.ts, so
+// BENCH_BASE_URL (default the Lumiose app on :4101), and only uses the landmarks of landmarks.ts, so
 // every app must pass it unchanged. Tests that mutate data create their own issue or pick open
 // issues, so they do not depend on each other. Set BENCH_EXPECT_STREAMING=1 when the server runs
 // with COMMENTS_DELAY_MS > 0 to also check that comments stream after the shell.
@@ -277,7 +277,7 @@ test.describe("issue page", () => {
 
     if (process.env.BENCH_EXPECT_STREAMING === "1") {
       const html = await (await request.get(href)).text();
-      // Attribute quotes are optional in HTML (Lumen omits them where it can).
+      // Attribute quotes are optional in HTML (Lumiose omits them where it can).
       const fallback = html.search(/data-testid=["']?comments-loading\b/);
       expect(fallback, "the comments fallback is in the shell").toBeGreaterThan(-1);
       expect(html.search(/data-testid=["']?comment-list\b/)).toBeGreaterThan(fallback);

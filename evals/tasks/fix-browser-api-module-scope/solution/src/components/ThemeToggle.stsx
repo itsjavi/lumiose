@@ -1,4 +1,4 @@
-import { onMount, signal } from "lumen";
+import { onMount, signal } from "lumiose";
 
 export function ThemeToggle() {
   const theme = signal("light");

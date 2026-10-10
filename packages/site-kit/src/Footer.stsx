@@ -9,7 +9,7 @@ export interface FooterColumn {
   links: NavLink[];
 }
 
-/** The footer columns of the Lumen websites. */
+/** The footer columns of the Lumiose websites. */
 export const siteFooterColumns: FooterColumn[] = [
   {
     title: "Learn",
@@ -69,7 +69,7 @@ export function Footer(props: FooterProps) {
         ))}
       </div>
       <div class="bottom">
-        <p>{props.children ?? "MIT licensed. Built with Lumen."}</p>
+        <p>{props.children ?? "MIT licensed. Built with Lumiose."}</p>
       </div>
 
       <style>

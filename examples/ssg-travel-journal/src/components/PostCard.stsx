@@ -1,4 +1,4 @@
-import { href } from "lumen";
+import { href } from "lumiose";
 import type { Post } from "../content.ts";
 import { asset } from "../lib/site.ts";
 import { formatDate } from "../lib/format.ts";

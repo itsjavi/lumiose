@@ -1,10 +1,10 @@
 // Builds the playground's generated assets into public/generated/ (git-ignored), before
-// `lumen dev` and `lumen build`:
+// `lumiose dev` and `lumiose build`:
 //
-// - wasm/: the WebAssembly compiler, crates/lumen_wasm built for wasm32-unknown-unknown and bound
+// - wasm/: the WebAssembly compiler, crates/lumiose_wasm built for wasm32-unknown-unknown and bound
 //   with wasm-bindgen (`--target web`). Needs the Rust target and the wasm-bindgen CLI at the
 //   version the workspace pins (see the error below).
-// - runtime.js: `lumen` and `lumen/dom` bundled into one module (src/preview/runtime.ts) for the
+// - runtime.js: `lumiose` and `lumiose/dom` bundled into one module (src/preview/runtime.ts) for the
 //   preview iframe.
 //
 //   node scripts/assets.ts
@@ -13,7 +13,7 @@ import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { writeLumenTsconfig } from "lumen/tooling";
+import { writeLumioseTsconfig } from "lumiose/tooling";
 import { build } from "vite";
 
 const app = fileURLToPath(new URL("..", import.meta.url));
@@ -36,13 +36,13 @@ const bindgen = /^wasm-bindgen = "=([^"]+)"/m.exec(
   readFileSync(join(repo, "Cargo.toml"), "utf8"),
 )?.[1];
 
-const SETUP = `The playground's compiler is crates/lumen_wasm, built for the browser. Install once:
+const SETUP = `The playground's compiler is crates/lumiose_wasm, built for the browser. Install once:
   rustup target add wasm32-unknown-unknown
   cargo install wasm-bindgen-cli --version ${bindgen ?? "<the workspace's wasm-bindgen>"} --locked`;
 
 run(
   "cargo",
-  ["build", "-p", "lumen_wasm", "--release", "--target", "wasm32-unknown-unknown"],
+  ["build", "-p", "lumiose_wasm", "--release", "--target", "wasm32-unknown-unknown"],
   repo,
 );
 run(
@@ -53,14 +53,14 @@ run(
     "--no-typescript",
     "--out-dir",
     join(out, "wasm"),
-    join(repo, "target/wasm32-unknown-unknown/release/lumen_wasm.wasm"),
+    join(repo, "target/wasm32-unknown-unknown/release/lumiose_wasm.wasm"),
   ],
   repo,
 );
 
 // The bundle is transformed with the app's tsconfig, which extends the generated one: write it
-// first, since a fresh checkout (CI) has no .lumen/ yet.
-await writeLumenTsconfig(app);
+// first, since a fresh checkout (CI) has no .lumiose/ yet.
+await writeLumioseTsconfig(app);
 
 await build({
   configFile: false,

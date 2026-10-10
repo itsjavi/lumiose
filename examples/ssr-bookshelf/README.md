@@ -1,12 +1,12 @@
-# Bookshelf: a server-rendered Lumen sample
+# Bookshelf: a server-rendered Lumiose sample
 
 A multi-page book catalog with search, reviews, reading lists and accounts, backed by
-`node:sqlite`. It shows Lumen's `server` and `static` route modes, form actions, cookie sessions,
+`node:sqlite`. It shows Lumiose's `server` and `static` route modes, form actions, cookie sessions,
 islands and `<Suspense>` streaming.
 
 Every page works without JavaScript; four islands enhance the search box, the reading-list
-buttons, the star rating input and the account menu of prerendered pages. It runs on `lumen dev`
-and in production with `lumen build` and `@lumen/adapter-node`.
+buttons, the star rating input and the account menu of prerendered pages. It runs on `lumiose dev`
+and in production with `lumiose build` and `@lumiose/adapter-node`.
 
 ![Book page with the reader's review](../../backlog/assets/task-36-book.png)
 
@@ -15,20 +15,20 @@ and in production with `lumen build` and `@lumen/adapter-node`.
 Node 24 or later; `node:sqlite` is built in.
 
 ```sh
-pnpm --filter @lumen-examples/ssr-bookshelf dev        # seeds if empty, then lumen dev on :5173
-pnpm --filter @lumen-examples/ssr-bookshelf seed       # (re)creates data/bookshelf.db
-pnpm --filter @lumen-examples/ssr-bookshelf test       # Vitest, in-memory databases
-pnpm --filter @lumen-examples/ssr-bookshelf typecheck  # lumen check: .ts and .stsx
-pnpm --filter @lumen-examples/ssr-bookshelf build      # lumen build: dist/client + dist/server/entry.js
-pnpm --filter @lumen-examples/ssr-bookshelf preview    # lumen preview on :4173 (LUMEN_SECRET from the env)
-pnpm --filter @lumen-examples/ssr-bookshelf start      # node server.ts: @lumen/adapter-node on $PORT (3000)
-pnpm --filter @lumen-examples/ssr-bookshelf test:e2e   # Playwright, against the production build
+pnpm --filter @lumiose-examples/ssr-bookshelf dev        # seeds if empty, then lumiose dev on :5173
+pnpm --filter @lumiose-examples/ssr-bookshelf seed       # (re)creates data/bookshelf.db
+pnpm --filter @lumiose-examples/ssr-bookshelf test       # Vitest, in-memory databases
+pnpm --filter @lumiose-examples/ssr-bookshelf typecheck  # lumiose check: .ts and .stsx
+pnpm --filter @lumiose-examples/ssr-bookshelf build      # lumiose build: dist/client + dist/server/entry.js
+pnpm --filter @lumiose-examples/ssr-bookshelf preview    # lumiose preview on :4173 (LUMIOSE_SECRET from the env)
+pnpm --filter @lumiose-examples/ssr-bookshelf start      # node server.ts: @lumiose/adapter-node on $PORT (3000)
+pnpm --filter @lumiose-examples/ssr-bookshelf test:e2e   # Playwright, against the production build
 ```
 
-`lumen build` prerenders the `static` routes (`/about`, `/genres`, one page per genre and
+`lumiose build` prerenders the `static` routes (`/about`, `/genres`, one page per genre and
 `404.html`) into `dist/client`; the rest render per request through `dist/server/entry.js`.
 `server.ts` serves both: static files first, then the handler. In production, set
-`LUMEN_SECRET` (and `ORIGIN` behind a TLS proxy).
+`LUMIOSE_SECRET` (and `ORIGIN` behind a TLS proxy).
 
 The e2e tests (`e2e/bookshelf.e2e.ts`) build the app and run `server.ts` on a freshly seeded
 database of their own (`data/e2e.db`). They cover browsing, filters and paging, the static
@@ -38,16 +38,16 @@ same forms with JavaScript disabled. `BOOKSHELF_SCREENSHOTS=1` also saves the sc
 `backlog/assets/task-36-*.png`.
 
 `node src/server/seed.server.ts --if-empty` keeps an already seeded database; `dev` runs it first.
-In dev, `LUMEN_SECRET` comes from `.env.development` (a development-only value).
+In dev, `LUMIOSE_SECRET` comes from `.env.development` (a development-only value).
 
 Every seeded user has the password `bookshelf`. `reader@example.com` has reviews and a reading
 list, so it gets personal recommendations.
 
-| Env variable        | Default                   | Purpose                                                              |
-| ------------------- | ------------------------- | -------------------------------------------------------------------- |
-| `LUMEN_SECRET`      | (required)                | HMAC secret of the session cookie, read by Lumen's `signedCookie()`. |
-| `BOOKSHELF_DB`      | `data/bookshelf.db` (cwd) | Database file. `data/` is gitignored.                                |
-| `BOOKSHELF_SLOW_MS` | `1500`                    | Artificial delay of the recommendations, to make streaming visible.  |
+| Env variable        | Default                   | Purpose                                                                |
+| ------------------- | ------------------------- | ---------------------------------------------------------------------- |
+| `LUMIOSE_SECRET`    | (required)                | HMAC secret of the session cookie, read by Lumiose's `signedCookie()`. |
+| `BOOKSHELF_DB`      | `data/bookshelf.db` (cwd) | Database file. `data/` is gitignored.                                  |
+| `BOOKSHELF_SLOW_MS` | `1500`                    | Artificial delay of the recommendations, to make streaming visible.    |
 
 ## Data
 
@@ -80,8 +80,8 @@ WAL and foreign keys.
 
 ## Modules
 
-Server-only code lives in `src/server/*.server.ts`. `lumen dev` and `lumen build` reject imports
-of it from client code, with the importer chain, and `lumen check` reports them (LUM4003).
+Server-only code lives in `src/server/*.server.ts`. `lumiose dev` and `lumiose build` reject imports
+of it from client code, with the importer chain, and `lumiose check` reports them (LUM4003).
 
 | Module               | Exports                                                                                            |
 | -------------------- | -------------------------------------------------------------------------------------------------- |
@@ -127,7 +127,7 @@ These are the queries:
 
 `login(cookies, userId)` creates a random 256-bit token. It stores the token's SHA-256 in
 `sessions` and sets an HMAC-signed, HttpOnly, `SameSite=Lax` cookie (`bookshelf_session`) with
-Lumen's `signedCookie()`. Logging in also revokes any previous session in the cookie.
+Lumiose's `signedCookie()`. Logging in also revokes any previous session in the cookie.
 
 `currentUser(cookies)` checks the signature, then the session row:
 

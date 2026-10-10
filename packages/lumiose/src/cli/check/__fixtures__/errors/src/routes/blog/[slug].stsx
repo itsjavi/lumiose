@@ -1,0 +1,12 @@
+import type { PageProps } from "lumiose";
+
+export default function Post(props: PageProps<"/blog/[slug]">) {
+  return (
+    <article>
+      <h1>{props.params.id}</h1>
+      <style>
+        h1 { font-size: 2rem; }
+      </style>
+    </article>
+  );
+}

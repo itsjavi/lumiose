@@ -1,4 +1,4 @@
-// Frontmatter validation, run at build time for every `.md` import by the `lumen({ md })` hook in
+// Frontmatter validation, run at build time for every `.md` import by the `lumiose({ md })` hook in
 // vite.config.ts: a missing or invalid field fails the build with the file's name. It also adds
 // the reading time, from the file's body.
 

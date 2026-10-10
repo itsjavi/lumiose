@@ -2,7 +2,7 @@
 // stays in the middle and the sheet slides under it (one transform binding). The cursor, the
 // selection and the play bar are overlays positioned with custom properties, so moving them never
 // touches the cells; a cell's bindings re-run only when its own data changes.
-import { computed } from "lumen";
+import { computed } from "lumiose";
 import {
   COLUMNS,
   CELL_CH,

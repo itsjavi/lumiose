@@ -1,5 +1,5 @@
 // A JSON-RPC LSP client for protocol tests: copies a fixture workspace to a temp dir (with
-// `node_modules/lumen` and `node_modules/typescript` linked), spawns `src/bin.ts --stdio` and
+// `node_modules/lumiose` and `node_modules/typescript` linked), spawns `src/bin.ts --stdio` and
 // drives it like an editor would.
 
 import { spawn, type ChildProcess } from "node:child_process";
@@ -19,7 +19,7 @@ import {
 } from "vscode-languageserver/node";
 
 const here = dirname(fileURLToPath(import.meta.url));
-const lumenPackage = join(here, "../../lumen");
+const lumiosePackage = join(here, "../../lumiose");
 const typescriptPackage = dirname(
   createRequire(import.meta.url).resolve("typescript/package.json"),
 );
@@ -59,10 +59,10 @@ export async function startTestServer(
   fixture: string,
   capabilities: ClientCapabilities = CLIENT_CAPABILITIES,
 ): Promise<TestServer> {
-  const root = await realpath(await mkdtemp(join(tmpdir(), "lumen-ls-")));
+  const root = await realpath(await mkdtemp(join(tmpdir(), "lumiose-ls-")));
   await cp(join(here, "__fixtures__", fixture), root, { recursive: true });
   await mkdir(join(root, "node_modules"));
-  await symlink(lumenPackage, join(root, "node_modules/lumen"), "junction");
+  await symlink(lumiosePackage, join(root, "node_modules/lumiose"), "junction");
   await symlink(typescriptPackage, join(root, "node_modules/typescript"), "junction");
 
   const child: ChildProcess = spawn(process.execPath, [join(here, "bin.ts"), "--stdio"], {

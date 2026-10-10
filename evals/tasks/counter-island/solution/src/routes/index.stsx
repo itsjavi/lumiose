@@ -1,4 +1,4 @@
-import { href, Title } from "lumen";
+import { href, Title } from "lumiose";
 import { Counter } from "../components/Counter.stsx";
 import { posts } from "../lib/posts.ts";
 

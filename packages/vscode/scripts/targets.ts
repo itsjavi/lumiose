@@ -1,6 +1,6 @@
 // VS Code platform targets of the .vsix (`vsce package --target`) and the napi-rs platform suffix
 // of the native compiler binary each one ships (packages/compiler: compiler.<suffix>.node). Only
-// targets that @lumen/compiler builds for (its package.json "napi.targets") are listed.
+// targets that @lumiose/compiler builds for (its package.json "napi.targets") are listed.
 
 export const NAPI_PLATFORMS = {
   "darwin-arm64": "darwin-arm64",
@@ -20,7 +20,7 @@ function isTarget(value: string): value is Target {
 export function hostTarget(): Target {
   const target = `${process.platform}-${process.arch}`;
   if (isTarget(target)) return target;
-  console.error(`No Lumen compiler build for ${target}; pass --target.`);
+  console.error(`No Lumiose compiler build for ${target}; pass --target.`);
   process.exit(1);
 }
 

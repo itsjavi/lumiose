@@ -1,6 +1,6 @@
 // The maker panel shared by the SFX and Creatures pages: title, play button, waveform, sliders,
 // actions and the driver-code view.
-import { signal } from "lumen";
+import { signal } from "lumiose";
 import type { SoundSheet } from "../model/types.ts";
 import { CodeEditor } from "./CodeEditor.stsx";
 import { Waveform } from "./Waveform.stsx";

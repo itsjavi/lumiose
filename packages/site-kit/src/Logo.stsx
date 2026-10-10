@@ -1,4 +1,4 @@
-// The Lumen mark (a small orb of light) and wordmark. Pure CSS, so any number of instances can
+// The Lumiose mark (a small orb of light) and wordmark. Pure CSS, so any number of instances can
 // share a page without SVG id clashes.
 
 import { color, font, gradient, text, weight } from "./tokens.ts";
@@ -7,7 +7,7 @@ export function Logo(props: { wordmark?: boolean; class?: JSX.ClassValue }) {
   return (
     <span class={["logo", props.class]}>
       <span class="mark" aria-hidden="true" />
-      {props.wordmark !== false && <span class="word">Lumen</span>}
+      {props.wordmark !== false && <span class="word">Lumiose</span>}
 
       <style>
         .logo {

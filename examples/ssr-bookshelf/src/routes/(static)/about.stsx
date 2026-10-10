@@ -1,9 +1,9 @@
-import { Title } from "lumen";
+import { Title } from "lumiose";
 import * as theme from "../../theme.ts";
 
 const FEATURES = [
   ["Server routes", "Books, authors, your list and profile render per request from node:sqlite."],
-  ["Static routes", "This page and the genre pages are prerendered by lumen build."],
+  ["Static routes", "This page and the genre pages are prerendered by lumiose build."],
   ["Streaming", "The home page sends its shell first; slow recommendations stream in."],
   ["Form actions", "Sign-in, registration, reviews and the reading list post plain forms."],
   ["Islands", "Search suggestions, star ratings, reading-list buttons and the account menu."],
@@ -16,9 +16,9 @@ export default function About() {
       <Title>About · Bookshelf</Title>
       <h1>About this sample</h1>
       <p class="lead">
-        Bookshelf is a server-rendered Lumen app backed by <code>node:sqlite</code>. This page is a{" "}
-        <code>static</code> route: the build prerenders it, while the book pages render per request.
-        Every form works without JavaScript; islands enhance a few of them.
+        Bookshelf is a server-rendered Lumiose app backed by <code>node:sqlite</code>. This page is
+        a <code>static</code> route: the build prerenders it, while the book pages render per
+        request. Every form works without JavaScript; islands enhance a few of them.
       </p>
       <dl class="features">
         {FEATURES.map(([name, text]) => (

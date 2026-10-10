@@ -75,12 +75,12 @@ export function Showcase() {
 
       <main class="page">
         <section class="hero">
-          <p class="eyebrow">@lumen/site-kit</p>
+          <p class="eyebrow">@lumiose/site-kit</p>
           <h1>
             The <span class="lit">light</span> design system
           </h1>
           <p class="lead">
-            Tokens, a base stylesheet and <code>.stsx</code> components for the Lumen website, docs
+            Tokens, a base stylesheet and <code>.stsx</code> components for the Lumiose website, docs
             and playground. Everything below renders in the current theme; switch it with the toggle
             in the header.
           </p>
@@ -111,7 +111,7 @@ export function Showcase() {
             <ul class="type" role="list">
               {TYPE_SCALE.map((size) => (
                 <li style={{ "--size": text[size] }}>
-                  <span class="sample">Lumen</span>
+                  <span class="sample">Lumiose</span>
                   <code>$text.{size}</code>
                 </li>
               ))}

@@ -44,11 +44,11 @@ export interface CompileMeta {
 }
 
 export interface CompileOptions {
-  /** Default `"client"`: `lumen/dom` code; `"server"`: `lumen/server` code. */
+  /** Default `"client"`: `lumiose/dom` code; `"server"`: `lumiose/server` code. */
   target?: CompileTarget;
   /** Source maps for the JS and the CSS. Default `true`. */
   sourceMap?: boolean;
-  /** Import `<id>?lumen&type=style&lang.css` when the file has style blocks. Default `true`. */
+  /** Import `<id>?lumiose&type=style&lang.css` when the file has style blocks. Default `true`. */
   styleImport?: boolean;
   /** Compile the style blocks into `css`. Default `true`. */
   emitCss?: boolean;
@@ -80,12 +80,12 @@ export interface CompileOptions {
    */
   serverRoute?: boolean;
   /**
-   * `lumen({ csp: "strict" })`: no baked `style="…"` strings, nonces on JSX `<script>`/`<style>`.
+   * `lumiose({ csp: "strict" })`: no baked `style="…"` strings, nonces on JSX `<script>`/`<style>`.
    * Default `false`.
    */
   strictCsp?: boolean;
   /**
-   * Dev client builds: register components for component-level hot updates (`lumen/dom`'s
+   * Dev client builds: register components for component-level hot updates (`lumiose/dom`'s
    * `$hot`). Default `false`.
    */
   hot?: boolean;
@@ -117,7 +117,7 @@ export interface CompileResult {
 }
 
 /**
- * Compiles an `.svg` file to the module of an inline component (`lumen_svg`, TASK-70): the
+ * Compiles an `.svg` file to the module of an inline component (`lumiose_svg`, TASK-70): the
  * default export renders the SVG, takes SVG props and `title`. Scripts, event handlers and
  * `javascript:` URLs are removed and ids get a per-file prefix; optimising is the host's job
  * (the Vite plugin runs SVGO first). Throws when the file is not a well-formed SVG document.
@@ -139,7 +139,7 @@ export interface ComponentMeta {
   awaitSites: Array<Span>;
 }
 
-/** The kind of a content file (`lumen({ md, html })`). */
+/** The kind of a content file (`lumiose({ md, html })`). */
 export type ContentKind = "md" | "html";
 
 /** A client script of an HTML or Markdown file: `src` as written, or inline `code`. */
@@ -149,7 +149,7 @@ export interface ContentScript {
 }
 
 /**
- * The `.stsx` source of the component a `.md` or `.html` file imports as (`lumen_content`,
+ * The `.stsx` source of the component a `.md` or `.html` file imports as (`lumiose_content`,
  * TASK-69): a static component of the file's content, with its top-level `<style>` elements as
  * file-level blocks and its scripts loaded by an island.
  */
@@ -165,7 +165,7 @@ export interface ContentSource {
   code: string;
   /** The raw YAML frontmatter of a Markdown file. */
   frontmatter?: string;
-  /** The client scripts, in document order, which `./<name>?lumen-script` imports. */
+  /** The client scripts, in document order, which `./<name>?lumiose-script` imports. */
   scripts: Array<ContentScript>;
   /** Errors in the file (`LUM1008`: a `<script>` in Markdown); spans are in the file's source. */
   diagnostics: Array<Diagnostic>;
@@ -225,7 +225,7 @@ export interface Diagnostic {
   labels: Array<Label>;
   help?: string;
   fix?: Fix;
-  /** Docs topic, e.g. `errors/LUM1004` (`lumen docs errors/LUM1004`). */
+  /** Docs topic, e.g. `errors/LUM1004` (`lumiose docs errors/LUM1004`). */
   docs: string;
 }
 

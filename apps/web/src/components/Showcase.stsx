@@ -1,7 +1,7 @@
 // A grid of example apps or benchmark pages (content/showcase.ts): what each one shows, its tags,
 // and links to the running app on this site and to its source.
-import { LinkButton } from "@lumen/site-kit";
-import { bp, color, radius, space, text, weight } from "@lumen/site-kit/tokens";
+import { LinkButton } from "@lumiose/site-kit";
+import { bp, color, radius, space, text, weight } from "@lumiose/site-kit/tokens";
 import type { Showcase } from "../content/showcase.ts";
 
 export function ShowcaseGrid(props: { items: Showcase[]; open?: string }) {

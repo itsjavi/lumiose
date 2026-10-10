@@ -1,5 +1,5 @@
 // The sitemap: every prerendered page, as a static GET endpoint (dist/client/sitemap.xml).
-import { href, type Endpoint } from "lumen";
+import { href, type Endpoint } from "lumiose";
 import { allPosts, allTags, postsTagged } from "../content.ts";
 import { escapeXml } from "../lib/format.ts";
 import { pageCount, pageHref } from "../lib/paginate.ts";

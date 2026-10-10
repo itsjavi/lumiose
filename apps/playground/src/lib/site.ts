@@ -1,8 +1,8 @@
 // The playground's URLs. It is served at `<site>playground/` (vite.config.ts), so links to the rest
 // of the website go through `siteLink()`, and its own files through `BASE`.
-import { siteFooterColumns, siteLinks, type FooterColumn, type NavLink } from "@lumen/site-kit";
+import { siteFooterColumns, siteLinks, type FooterColumn, type NavLink } from "@lumiose/site-kit";
 
-/** The playground's base URL, with a trailing slash (`/playground/`, `/lumen/playground/`). */
+/** The playground's base URL, with a trailing slash (`/playground/`, `/lumiose/playground/`). */
 export const BASE = import.meta.env.BASE_URL.endsWith("/")
   ? import.meta.env.BASE_URL
   : `${import.meta.env.BASE_URL}/`;

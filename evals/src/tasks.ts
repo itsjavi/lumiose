@@ -11,7 +11,7 @@ export interface Task {
   id: string;
   title: string;
   category: Category;
-  /** create-lumen template to start from, or "none" for an empty package. */
+  /** create-lumiose template to start from, or "none" for an empty package. */
   template: "minimal" | "static" | "ssr" | "spa" | "none";
   /** Files of the template to delete before the run. */
   remove?: string[];
@@ -27,15 +27,15 @@ export interface Task {
 /** Which agent-facing aids a run gets (decision: ablations of TASK-40). */
 export interface Ablation {
   id: string;
-  /** AGENTS.md, CLAUDE.md and the lumen skill from create-lumen. */
+  /** AGENTS.md, CLAUDE.md and the lumiose skill from create-lumiose. */
   agents: boolean;
-  /** llms.txt and llms-full.txt in node_modules/lumen/docs. */
+  /** llms.txt and llms-full.txt in node_modules/lumiose/docs. */
   llms: boolean;
-  /** The `lumen mcp` server registered with the agent. */
+  /** The `lumiose mcp` server registered with the agent. */
   mcp: boolean;
 }
 
-/** Baseline = what `create-lumen` gives a project by default (no MCP); the others drop or add one aid. */
+/** Baseline = what `create-lumiose` gives a project by default (no MCP); the others drop or add one aid. */
 export const ABLATIONS: Record<string, Ablation> = {
   baseline: { id: "baseline", agents: true, llms: true, mcp: false },
   mcp: { id: "mcp", agents: true, llms: true, mcp: true },
@@ -55,7 +55,10 @@ export function loadTasks(): Task[] {
 
 export function loadTask(id: string): Task {
   const dir = join(TASKS_DIR, id);
-  const meta = JSON.parse(readFileSync(join(dir, "task.json"), "utf8")) as Omit<Task, "id" | "dir" | "prompt">;
+  const meta = JSON.parse(readFileSync(join(dir, "task.json"), "utf8")) as Omit<
+    Task,
+    "id" | "dir" | "prompt"
+  >;
   return { ...meta, id, dir, prompt: readFileSync(join(dir, "prompt.md"), "utf8").trim() };
 }
 
@@ -63,6 +66,7 @@ export function selectTasks(only: string | undefined): Task[] {
   const all = loadTasks();
   if (only === undefined) return all;
   const ids = only.split(",").map((id) => id.trim());
-  for (const id of ids) if (!all.some((task) => task.id === id)) throw new Error(`unknown task ${id}`);
+  for (const id of ids)
+    if (!all.some((task) => task.id === id)) throw new Error(`unknown task ${id}`);
   return all.filter((task) => ids.includes(task.id));
 }

@@ -1,11 +1,11 @@
 /// <reference types="vitest/config" />
-import lumen from "lumen/vite";
+import lumiose from "lumiose/vite";
 import { defineConfig } from "vite";
 
-// The Lumen website: every route is prerendered by `lumen build` into dist/client, a static site.
-// LUMEN_BASE serves it below a path (GitHub Pages: LUMEN_BASE=/lumen/ lumen build).
+// The Lumiose website: every route is prerendered by `lumiose build` into dist/client, a static site.
+// LUMIOSE_BASE serves it below a path (GitHub Pages: LUMIOSE_BASE=/lumiose/ lumiose build).
 export default defineConfig({
-  base: process.env["LUMEN_BASE"] ?? "/",
-  plugins: [lumen({ mode: "static" })],
+  base: process.env["LUMIOSE_BASE"] ?? "/",
+  plugins: [lumiose({ mode: "static" })],
   test: { include: ["src/**/*.test.ts"] },
 });

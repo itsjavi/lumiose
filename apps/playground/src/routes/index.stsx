@@ -1,20 +1,20 @@
-// The playground page, prerendered: the site header and footer from @lumen/site-kit around the
+// The playground page, prerendered: the site header and footer from @lumiose/site-kit around the
 // Playground island, which loads the WebAssembly compiler and the editor in the browser.
-import { Footer, SiteHeader } from "@lumen/site-kit";
-import { Title } from "lumen";
+import { Footer, SiteHeader } from "@lumiose/site-kit";
+import { Title } from "lumiose";
 import { Playground } from "../islands/Playground.stsx";
 import { BASE, footerColumns, navLinks, SITE, siteLink } from "../lib/site.ts";
 
 export default function PlaygroundPage() {
   return (
     <div class="page">
-      <Title>Playground · Lumen</Title>
+      <Title>Playground · Lumiose</Title>
       <SiteHeader links={navLinks} current={siteLink("/playground")} home={siteLink("/")} />
       <main id="content">
         <Playground client:load base={BASE} site={SITE} />
       </main>
       <Footer columns={footerColumns}>
-        <p>MIT licensed. The playground compiles in your browser with Lumen's WebAssembly build.</p>
+        <p>MIT licensed. The playground compiles in your browser with Lumiose's WebAssembly build.</p>
       </Footer>
 
       <style>

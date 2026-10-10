@@ -4,9 +4,9 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Fullstack benchmark</title>
-    <meta name="description" content="Lumen, React Router and Next.js running the same Tracker app (doc-4): dev, build, page load and server metrics." />
+    <meta name="description" content="Lumiose, React Router and Next.js running the same Tracker app (doc-4): dev, build, page load and server metrics." />
     <style>
-      /* Tokens: surfaces and text, plus one categorical hue per app (fixed order: Lumen, React Router,
+      /* Tokens: surfaces and text, plus one categorical hue per app (fixed order: Lumiose, React Router,
          Next.js), validated for both modes. Text never wears a series color. */
       :root {
         color-scheme: light;
@@ -188,7 +188,7 @@
       <header class="top">
         <div>
           <h1>Fullstack benchmark</h1>
-          <p class="subtitle">The same Tracker app in Lumen, React Router and Next.js (doc-4). Medians with the min–max range (whiskers on the bars; a range wider than 25% of the median is highlighted); lower is better unless noted.</p>
+          <p class="subtitle">The same Tracker app in Lumiose, React Router and Next.js (doc-4). Medians with the min–max range (whiskers on the bars; a range wider than 25% of the median is highlighted); lower is better unless noted.</p>
         </div>
         <div class="controls">
           <label class="ctl">Run <select id="run"></select></label>
@@ -210,7 +210,7 @@
 
     <script type="module">
       const APPS = [
-        { id: "lumen", name: "Lumen", color: "var(--series-1)" },
+        { id: "lumiose", name: "Lumiose", color: "var(--series-1)" },
         { id: "react-router", name: "React Router", color: "var(--series-2)" },
         { id: "next", name: "Next.js", color: "var(--series-3)" },
       ];
@@ -249,7 +249,7 @@
       };
       // For schema-1 runs, which do not record how apps are served.
       const SERVING = {
-        lumen: { dev: "`lumen dev` (Vite)", prod: "`node server.ts` on @lumen/adapter-node" },
+        lumiose: { dev: "`lumiose dev` (Vite)", prod: "`node server.ts` on @lumiose/adapter-node" },
         "react-router": { dev: "`react-router dev` (Vite)", prod: "`node server.ts`: Express + @react-router/express" },
         next: { dev: "`next dev` (Turbopack)", prod: "`next start`" },
       };

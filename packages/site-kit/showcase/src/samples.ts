@@ -1,7 +1,7 @@
 // Code samples shown by the showcase.
 
-export const counterSample = `import { signal } from "lumen";
-import { color, radius, space } from "@lumen/site-kit/tokens";
+export const counterSample = `import { signal } from "lumiose";
+import { color, radius, space } from "@lumiose/site-kit/tokens";
 
 export function Counter(props: { start?: number }) {
   const count = signal(props.start ?? 0);
@@ -35,8 +35,8 @@ export const cssSample = `:root {
 `;
 
 export const installSamples = {
-  pnpm: "pnpm add lumen\npnpm lumen dev",
-  npm: "npm install lumen\nnpx lumen dev",
-  yarn: "yarn add lumen\nyarn lumen dev",
-  bun: "bun add lumen\nbunx lumen dev",
+  pnpm: "pnpm add lumiose\npnpm lumiose dev",
+  npm: "npm install lumiose\nnpx lumiose dev",
+  yarn: "yarn add lumiose\nyarn lumiose dev",
+  bun: "bun add lumiose\nbunx lumiose dev",
 } as const;

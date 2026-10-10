@@ -1,8 +1,16 @@
 {
-  // Lumen's options (JSX, rootDirs for the shadow TSX) come from the generated config.
-  "extends": ["../../tsconfig.base.json", "./.lumen/tsconfig.generated.json"],
+  // Lumiose's options (JSX, rootDirs for the shadow TSX) come from the generated config.
+  "extends": ["../../tsconfig.base.json", "./.lumiose/tsconfig.generated.json"],
   "compilerOptions": {
-    "types": ["node", "lumen/env"]
+    "types": ["node", "lumiose/env"]
   },
-  "include": ["src", "e2e", "server.ts", "vite.config.ts", "playwright.config.ts", ".lumen/shadow", ".lumen/types"]
+  "include": [
+    "src",
+    "e2e",
+    "server.ts",
+    "vite.config.ts",
+    "playwright.config.ts",
+    ".lumiose/shadow",
+    ".lumiose/types"
+  ]
 }

@@ -1,26 +1,26 @@
 {
-  "name": "@lumen/web",
+  "name": "@lumiose/web",
   "version": "0.0.0",
   "private": true,
-  "description": "The Lumen website: the landing page at / and the docs at /docs. A static Lumen site built with @lumen/site-kit.",
+  "description": "The Lumiose website: the landing page at / and the docs at /docs. A static Lumiose site built with @lumiose/site-kit.",
   "license": "MIT",
   "type": "module",
   "scripts": {
-    "dev": "lumen dev",
-    "build": "lumen build",
-    "preview": "lumen preview",
-    "typecheck": "lumen check",
+    "dev": "lumiose dev",
+    "build": "lumiose build",
+    "preview": "lumiose preview",
+    "typecheck": "lumiose check",
     "test": "vitest run",
     "test:e2e": "playwright test",
     "screenshots": "SCREENSHOTS=1 playwright test -g screenshots"
   },
   "dependencies": {
-    "@lumen/site-kit": "workspace:*",
-    "lumen": "workspace:*",
+    "@lumiose/site-kit": "workspace:*",
+    "lumiose": "workspace:*",
     "marked": "^18.0.14"
   },
   "devDependencies": {
-    "@lumen/compiler": "workspace:*",
+    "@lumiose/compiler": "workspace:*",
     "@playwright/test": "1.63.0",
     "@types/node": "^24.0.0",
     "vite": "^8.3.4",

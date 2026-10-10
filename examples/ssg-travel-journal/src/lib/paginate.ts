@@ -1,6 +1,6 @@
 // Pagination of the journal: page 1 is `/`, the others `/page/2`, `/page/3`, …
 
-import { href } from "lumen";
+import { href } from "lumiose";
 
 export interface Page<T> {
   /** 1-based. */

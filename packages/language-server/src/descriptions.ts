@@ -1,10 +1,10 @@
-// Descriptions of Lumen syntax that TypeScript cannot document: `<style>` blocks (masked out of
+// Descriptions of Lumiose syntax that TypeScript cannot document: `<style>` blocks (masked out of
 // the TSX TypeScript sees) and the JSX attributes whose JSDoc TypeScript does not show (the
-// `on:` members of a mapped type, and `key`, merged from two declarations). The other Lumen
+// `on:` members of a mapped type, and `key`, merged from two declarations). The other Lumiose
 // attributes (`client:*`, `bind:*`, `ref`, `attach`) are documented by JSDoc in the JSX types.
 
 export const STYLE_DOC = [
-  "**`<style>`**: a Lumen style block of plain CSS. Where it sits decides its scope:",
+  "**`<style>`**: a Lumiose style block of plain CSS. Where it sits decides its scope:",
   "",
   "- inside JSX: its enclosing element and everything written inside that element;",
   "- at the file top level: every template in the file;",
@@ -31,7 +31,7 @@ export const KEY_DOC = [
 ].join("\n");
 
 /**
- * The description of a Lumen JSX attribute from TypeScript's hover or completion detail
+ * The description of a Lumiose JSX attribute from TypeScript's hover or completion detail
  * (`(property) "on:click"?: …`, `(property) key?: unknown`), for those TypeScript leaves
  * undocumented.
  */
@@ -39,7 +39,7 @@ export function attributeDoc(signature: string): string | undefined {
   const line = signature.trim().split("\n")[0]!;
   if (/^\(property\) "on:[^"]+"\??:/.test(line)) return NATIVE_EVENT_DOC;
   if (
-    /^\(property\) (?:JSX\.IntrinsicAttributes\.|LumenProps<[^>]*>\.)?key\?: unknown$/.test(line)
+    /^\(property\) (?:JSX\.IntrinsicAttributes\.|LumioseProps<[^>]*>\.)?key\?: unknown$/.test(line)
   ) {
     return KEY_DOC;
   }

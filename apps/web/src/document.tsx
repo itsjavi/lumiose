@@ -1,7 +1,7 @@
 // The HTML document around every page: head defaults, the favicon, and the theme script that
-// applies a stored light/dark choice before the first paint (@lumen/site-kit/theme).
-import { themeInitScript } from "@lumen/site-kit/theme";
-import { href, type DocumentProps } from "lumen";
+// applies a stored light/dark choice before the first paint (@lumiose/site-kit/theme).
+import { themeInitScript } from "@lumiose/site-kit/theme";
+import { href, type DocumentProps } from "lumiose";
 import { link, site } from "./lib/site.ts";
 
 export default function Document(props: DocumentProps) {

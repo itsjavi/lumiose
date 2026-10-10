@@ -1,23 +1,23 @@
 // @vitest-environment happy-dom
 // Server target: compile sources with `target: "server"`, render them with `renderToString` on the
-// real `lumen/server` runtime and compare the HTML; then compile the same sources for the client,
-// mount them on `lumen/dom` and check that the browser's parse of the server HTML is the client's
+// real `lumiose/server` runtime and compare the HTML; then compile the same sources for the client,
+// mount them on `lumiose/dom` and check that the browser's parse of the server HTML is the client's
 // DOM (parity, without the client's `<!>` placeholders, which only exist in templates).
 import { mkdirSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { afterEach, describe, expect, it } from "vitest";
 
-// The addon exists only after `pnpm --filter @lumen/compiler build`.
+// The addon exists only after `pnpm --filter @lumiose/compiler build`.
 const binding = await import("../index.js").catch(() => undefined);
 
 // happy-dom replaces the global `URL`, so paths are built with node:path.
-const src = resolve(import.meta.dirname, "../../lumen/src");
+const src = resolve(import.meta.dirname, "../../lumiose/src");
 const entries = {
-  "lumen/server": resolve(src, "server/index.ts"),
-  "lumen/dom": resolve(src, "dom/index.ts"),
-  lumenServer: resolve(src, "index.server.ts"),
-  lumenClient: resolve(src, "index.ts"),
+  "lumiose/server": resolve(src, "server/index.ts"),
+  "lumiose/dom": resolve(src, "dom/index.ts"),
+  lumioseServer: resolve(src, "index.server.ts"),
+  lumioseClient: resolve(src, "index.ts"),
 };
 const outDir = resolve(import.meta.dirname, "out");
 
@@ -31,8 +31,8 @@ type Dom = {
   mount: (code: () => unknown, container: Element) => () => void;
 };
 
-const server = (await import(/* @vite-ignore */ entries["lumen/server"])) as Server;
-const dom = (await import(/* @vite-ignore */ entries["lumen/dom"])) as Dom;
+const server = (await import(/* @vite-ignore */ entries["lumiose/server"])) as Server;
+const dom = (await import(/* @vite-ignore */ entries["lumiose/dom"])) as Dom;
 
 let counter = 0;
 
@@ -56,11 +56,11 @@ async function load(
   });
   const errors = result.diagnostics.filter((d) => d.severity === "error");
   expect(errors).toEqual([]);
-  const runtime = target === "server" ? "lumen/server" : "lumen/dom";
-  const lumen = target === "server" ? entries.lumenServer : entries.lumenClient;
+  const runtime = target === "server" ? "lumiose/server" : "lumiose/dom";
+  const lumiose = target === "server" ? entries.lumioseServer : entries.lumioseClient;
   const code = result.code
     .replaceAll(`from "${runtime}"`, `from ${JSON.stringify(entries[runtime])}`)
-    .replaceAll('from "lumen"', `from ${JSON.stringify(lumen)}`);
+    .replaceAll('from "lumiose"', `from ${JSON.stringify(lumiose)}`);
   mkdirSync(outDir, { recursive: true });
   const file = resolve(outDir, `ssr${counter++}.${target}.js`);
   writeFileSync(file, code);
@@ -155,7 +155,7 @@ afterEach(() => {
 });
 
 const COUNTER = `
-  import { signal } from "lumen";
+  import { signal } from "lumiose";
   export function Counter({ start = 0 }: { start?: number }) {
     const count = signal(start);
     return (
@@ -166,7 +166,7 @@ const COUNTER = `
   }`;
 
 const TABLE = `
-  import { signal } from "lumen";
+  import { signal } from "lumiose";
   const rows = signal([1, 2, 3].map((id) => ({ id, label: signal("row " + id) })));
   const selected = signal(2);
   const select = (id: number) => selected.set(id);
@@ -185,7 +185,7 @@ const TABLE = `
   }`;
 
 const CARD = `
-  import { signal } from "lumen";
+  import { signal } from "lumiose";
   const post = signal({ title: "One", body: "First <b>" });
   function Card(props: { title: string; class?: string; children?: unknown }) {
     return <article class={props.class}><h2>{props.title}</h2>{props.children}<style>h2 { margin: 0 }</style></article>;
@@ -233,7 +233,7 @@ const CLASS_FORWARDING = `
 // TASK-65: provably text children alone between nodes are text nodes (setText or a one-time
 // write) on the client and text() holes on the server; the others stay inserts.
 const TEXT_CHILDREN = `
-  import { signal } from "lumen";
+  import { signal } from "lumiose";
   const n = signal(3);
   export function Texts(props: { a: string; icon?: unknown }) {
     const label = String(props.a);
@@ -268,7 +268,7 @@ const BOOLEANISH = `
 `;
 
 const ATTRIBUTES = `
-  import { signal } from "lumen";
+  import { signal } from "lumiose";
   const name = signal('Ada "the" <first>');
   const on = signal(true);
   export function Attributes(props: { size: number }) {
@@ -289,7 +289,7 @@ const ATTRIBUTES = `
   }`;
 
 const STRUCTURE = `
-  import { signal } from "lumen";
+  import { signal } from "lumiose";
   const open = signal(true);
   const items = signal(["a", "b", "c"]);
   function Item(props: { label: string; index: number }) {
@@ -322,7 +322,7 @@ const STRUCTURE = `
   );`;
 
 const TABLE_SELECT = `
-  import { signal } from "lumen";
+  import { signal } from "lumiose";
   const items = signal([{ id: 1, label: "One" }, { id: 2, label: "Two" }]);
   const open = signal(true);
   export function Pick(props: { choice: number }) {
@@ -340,7 +340,7 @@ const TABLE_SELECT = `
     );
   }`;
 
-describe.skipIf(!binding)("server target renders on lumen/server", () => {
+describe.skipIf(!binding)("server target renders on lumiose/server", () => {
   it("counter (doc-2 §5.1)", async () => {
     const { module, code } = await load(COUNTER, "server");
     expect(code).toContain("ssr(_s0, classAttr({ hot: count() > 5 }), insert(count()))");

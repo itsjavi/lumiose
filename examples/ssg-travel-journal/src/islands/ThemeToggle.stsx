@@ -3,7 +3,7 @@
 // applies it before the first paint. The server renders the "system" state, and the stored
 // choice is read after hydration, so server and client markup match. Without JavaScript the
 // button stays invisible (its space is kept) and the system theme applies.
-import { onMount, signal } from "lumen";
+import { onMount, signal } from "lumiose";
 import * as theme from "../theme.ts";
 
 type Choice = "system" | "light" | "dark";

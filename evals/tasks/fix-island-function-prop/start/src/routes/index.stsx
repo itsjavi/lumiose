@@ -1,4 +1,4 @@
-import { Title } from "lumen";
+import { Title } from "lumiose";
 import { PriceEditor } from "../components/PriceEditor.stsx";
 
 export default function Home() {

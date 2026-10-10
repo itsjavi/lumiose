@@ -1,6 +1,6 @@
-// The URLs the runtime and compiler print (`https://lumen.dev/errors/LUM4006`) redirect to the
+// The URLs the runtime and compiler print (`https://lumiose.dev/errors/LUM4006`) redirect to the
 // diagnostic's docs page. Prerendered as static redirect pages (meta refresh plus a link).
-import { href, redirect, type PageProps } from "lumen";
+import { href, redirect, type PageProps } from "lumiose";
 import { diagnosticCodes } from "../../content/docs.ts";
 
 export function staticPaths() {

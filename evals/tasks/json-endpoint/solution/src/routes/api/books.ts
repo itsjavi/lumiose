@@ -1,4 +1,4 @@
-import type { Endpoint } from "lumen";
+import type { Endpoint } from "lumiose";
 import { books } from "../../lib/books.ts";
 
 export const GET: Endpoint<"/api/books"> = ({ url }) => {

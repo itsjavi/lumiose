@@ -1,0 +1,39 @@
+// @ref gap = 4
+// @ref inset = 7
+// @sourcemap
+// Math that reduces to a negative value in a property with a non-negative range clamps to
+// zero, as browsers clamp calc(). The pinned Lightning CSS folds it to a negative literal that
+// browsers drop (lightningcss#1000), so lumiose_css wraps it in max(0<unit>, …) (src/clamp.rs).
+// Upstream #1329 clamps the same way: after upgrading, remove the guard and this fixture must
+// still pass. Cases whose output depends on the Lightning CSS version (negative literals,
+// numbers for lengths, repeat() counts) are unit tests in src/clamp.rs instead.
+<style>
+  .clamped {
+    padding: calc($gap * 4px);
+    padding-left: calc($gap * 1px - $inset * 1px);
+    width: calc(2px - 7px);
+    max-height: min(-1px, 10px);
+    border: calc(1px - 3px) solid red;
+    border-top-left-radius: calc(2px - 4px);
+    gap: calc(10% - 20%) calc(1px - 2px);
+    font-size: calc(1rem - 2rem);
+    line-height: calc(1 - 2);
+    flex: calc(1 - 2) 1 calc(1px - 2px);
+    transition-duration: calc(100ms - 200ms);
+    -webkit-border-radius: calc(-1 * 4px);
+    grid-template-columns: minmax(calc(1px - 2px), 1fr) fit-content(calc(10vw - 20vw));
+    grid-template-rows: repeat(2, calc(1px - 2px));
+  }
+  @keyframes shrink {
+    to { width: calc(1px - 2px); }
+  }
+  /* Ranges that allow negatives, math that does not reduce, custom properties. */
+  .untouched {
+    padding-top: calc($gap * 2px - 1px);
+    padding-bottom: calc(50% - 10px);
+    min-width: calc(var(--w) - 7px);
+    margin-left: calc(2px - 7px);
+    inset: calc(2px - 7px);
+    --negative: calc(2px - 7px);
+  }
+</style>

@@ -1,6 +1,6 @@
 // A form that works without JavaScript: it posts to the `sign` action, which validates the input
 // and redirects back (or returns the errors, which the page reads with actionData()).
-import { actionData, fail, redirect, Title, type ActionContext } from "lumen";
+import { actionData, fail, redirect, Title, type ActionContext } from "lumiose";
 import { addEntry, listEntries } from "../server/guestbook.server.ts";
 
 interface Errors {

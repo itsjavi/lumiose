@@ -1,6 +1,6 @@
 // Global keyboard shortcuts. Typing in a field never triggers them, and Space never steals a
 // focused button's own Space.
-import { signal } from "lumen";
+import { signal } from "lumiose";
 import { stop, nowPlaying, looping, setLooping } from "./audio/player.ts";
 import { editor, redo, say, togglePlay, undo } from "./state.ts";
 import type { ChannelIndex } from "./model/types.ts";

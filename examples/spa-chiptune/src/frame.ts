@@ -1,7 +1,7 @@
 // The single requestAnimationFrame loop: reads the engine telemetry once per frame, updates the
 // transport signals (only when they change, so the pattern grid moves one row at a time), the
 // meter signals, and draws every registered oscilloscope canvas directly.
-import { batch, signal, type Signal } from "lumen";
+import { batch, signal, type Signal } from "lumiose";
 import { readTelemetry } from "./audio/engine.ts";
 import { HEADER, LEVELS, SCOPE_SIZE } from "./audio/synth.ts";
 

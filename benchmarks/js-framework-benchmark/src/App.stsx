@@ -1,6 +1,6 @@
-// Lumen's keyed js-framework-benchmark app (krausest rules: the vanillajs HTML, selection kept as
+// Lumiose's keyed js-framework-benchmark app (krausest rules: the vanillajs HTML, selection kept as
 // one id in state, no explicit event delegation or manual DOM work in app code).
-import { signal, type Signal } from "lumen";
+import { signal, type Signal } from "lumiose";
 
 interface Row {
   id: number;
@@ -63,7 +63,7 @@ export function App() {
       <div class="jumbotron">
         <div class="row">
           <div class="col-md-6">
-            <h1>Lumen</h1>
+            <h1>Lumiose</h1>
           </div>
           <div class="col-md-6">
             <div class="row">

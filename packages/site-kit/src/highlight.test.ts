@@ -45,8 +45,8 @@ describe("highlight", () => {
   });
 
   test("reads shell commands", () => {
-    expect(tokens("$ pnpm add lumen && npx lumen check --root . # done", "sh")).toBe(
-      "[punct:$] [fn:pnpm] add lumen [punct:&amp;&amp;] [fn:npx] lumen check [attr:--root] . [comment:# done]",
+    expect(tokens("$ pnpm add lumiose && npx lumiose check --root . # done", "sh")).toBe(
+      "[punct:$] [fn:pnpm] add lumiose [punct:&amp;&amp;] [fn:npx] lumiose check [attr:--root] . [comment:# done]",
     );
   });
 });

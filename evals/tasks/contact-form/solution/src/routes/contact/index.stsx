@@ -1,4 +1,4 @@
-import { actionData, fail, redirect, Title, type ActionContext } from "lumen";
+import { actionData, fail, redirect, Title, type ActionContext } from "lumiose";
 import { saveMessage } from "../../server/messages.server.ts";
 
 interface Failure {

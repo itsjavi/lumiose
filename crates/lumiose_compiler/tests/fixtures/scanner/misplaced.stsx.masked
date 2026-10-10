@@ -1,0 +1,50 @@
+import { Suspense } from "lumiose";
+
+export function InComponent() {
+  return (
+    <Suspense>
+                                      
+    </Suspense>
+  );
+}
+
+export function InContainer(props: { show: boolean; items: string[] }) {
+  return (
+    <div>
+      {props.show && <p>                                 </p>}
+      {props.items.map((item) => (
+        <li>
+          {item}
+                             {item}         
+        </li>
+      ))}
+    </div>
+  );
+}
+
+export function InTernary(props: { ok: boolean }) {
+  return props.ok ? (
+    <p>
+      ok                    
+    </p>
+  ) : null;
+}
+
+export function Returned() {
+  return null                            ;
+}
+
+export const Arrow = () => null                ;
+
+export const OnlyStyle = () => (
+  <>
+                        
+  </>
+);
+
+export function AsStatement() {
+  null                ;
+  return <div />;
+}
+
+export const InAttribute = () => <div title={null}               />;

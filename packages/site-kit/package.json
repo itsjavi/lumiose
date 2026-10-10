@@ -1,8 +1,8 @@
 {
-  "name": "@lumen/site-kit",
+  "name": "@lumiose/site-kit",
   "version": "0.0.0",
   "private": true,
-  "description": "The design system of the Lumen websites (landing page, docs, playground): tokens, a base stylesheet and .stsx components.",
+  "description": "The design system of the Lumiose websites (landing page, docs, playground): tokens, a base stylesheet and .stsx components.",
   "license": "MIT",
   "type": "module",
   "exports": {
@@ -12,14 +12,14 @@
     "./highlight": "./src/highlight.ts"
   },
   "scripts": {
-    "typecheck": "lumen check && lumen check --root showcase",
+    "typecheck": "lumiose check && lumiose check --root showcase",
     "dev": "vite showcase",
     "build": "vite build showcase",
     "test:e2e": "playwright test -c showcase/playwright.config.ts",
     "screenshots": "SCREENSHOTS=1 playwright test -c showcase/playwright.config.ts -g screenshots"
   },
   "dependencies": {
-    "lumen": "workspace:*"
+    "lumiose": "workspace:*"
   },
   "devDependencies": {
     "@playwright/test": "1.63.0",

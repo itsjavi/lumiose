@@ -113,7 +113,7 @@ export function dirSize(path: string): number {
   } catch {
     return 0;
   }
-  // Precompressed copies (`.br`, `.gz` from lumen build) are alternatives, not more output.
+  // Precompressed copies (`.br`, `.gz` from lumiose build) are alternatives, not more output.
   if (!stats.isDirectory()) return /\.(?:br|gz)$/.test(path) ? 0 : stats.size;
   return readdirSync(path).reduce((sum, entry) => sum + dirSize(join(path, entry)), 0);
 }

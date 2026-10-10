@@ -1,6 +1,6 @@
 // The signed-in reader for the account menu island of prerendered pages: `{ user }` or
 // `{ user: null }`. Private and never cached, since it depends on the session cookie.
-import type { Endpoint } from "lumen";
+import type { Endpoint } from "lumiose";
 
 export const mode = "server";
 

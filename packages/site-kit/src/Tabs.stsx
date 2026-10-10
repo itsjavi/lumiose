@@ -4,7 +4,7 @@
 // island (`<Tabs client:visible …>`): the panels are then a server-rendered slot, which Tabs
 // labels and shows or hides once it runs.
 
-import { effect, ref, signal } from "lumen";
+import { effect, ref, signal } from "lumiose";
 import { color, motion, radius, space, text, weight } from "./tokens.ts";
 
 export interface TabsProps {

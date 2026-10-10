@@ -4,7 +4,7 @@
 // its CSS by postMessage; the frame turns them into blob modules, mounts the component and reports
 // console output and errors.
 
-import type { CompileResult } from "@lumen/compiler";
+import type { CompileResult } from "@lumiose/compiler";
 
 /** What the frame runs. */
 export interface PreviewProgram {
@@ -17,17 +17,17 @@ export interface PreviewProgram {
 
 /** Messages from the frame. */
 export type PreviewMessage =
-  | { source: "lumen-preview"; type: "loaded" }
-  | { source: "lumen-preview"; type: "mounted" }
+  | { source: "lumiose-preview"; type: "loaded" }
+  | { source: "lumiose-preview"; type: "mounted" }
   | {
-      source: "lumen-preview";
+      source: "lumiose-preview";
       type: "console";
       level: "log" | "info" | "warn" | "error";
       text: string;
     }
-  | { source: "lumen-preview"; type: "error"; text: string };
+  | { source: "lumiose-preview"; type: "error"; text: string };
 
-const STYLE_IMPORT = /^import\s+["'][^"']*\?lumen&type=style[^"']*["'];?\n?/gm;
+const STYLE_IMPORT = /^import\s+["'][^"']*\?lumiose&type=style[^"']*["'];?\n?/gm;
 
 /** The program for a client compile: which component to mount, and the code without its CSS import. */
 export function previewProgram(client: CompileResult): PreviewProgram {
@@ -43,7 +43,7 @@ export function previewProgram(client: CompileResult): PreviewProgram {
 }
 
 /**
- * Points the module's `lumen` imports at the runtime modules; any other import is an error, since
+ * Points the module's `lumiose` imports at the runtime modules; any other import is an error, since
  * the playground has a single file. Runs in the frame too (its source is inlined there).
  */
 export function rewriteImports(code: string, modules: Record<string, string>): string {
@@ -54,7 +54,7 @@ export function rewriteImports(code: string, modules: Record<string, string>): s
       if (url !== undefined) return `${keyword}${quote}${url}${quote}`;
       if (specifier.startsWith("blob:")) return match;
       throw new Error(
-        `Cannot import "${specifier}" in the playground: it has one file, and only "lumen" and "lumen/dom" to import from.`,
+        `Cannot import "${specifier}" in the playground: it has one file, and only "lumiose" and "lumiose/dom" to import from.`,
       );
     },
   );
@@ -63,7 +63,7 @@ export function rewriteImports(code: string, modules: Record<string, string>): s
 /** The frame's script: everything it does, in one inline module. */
 function frameScript(): string {
   return `
-const send = (type, data = {}) => parent.postMessage({ source: "lumen-preview", type, ...data }, "*");
+const send = (type, data = {}) => parent.postMessage({ source: "lumiose-preview", type, ...data }, "*");
 const show = (value) => {
   if (typeof value === "string") return value;
   if (value instanceof Error) return value.stack || value.message;
@@ -82,7 +82,7 @@ const rewriteImports = ${rewriteImports.toString()};
 const moduleUrl = (text) => URL.createObjectURL(new Blob([text], { type: "text/javascript" }));
 const IDENTIFIER = /^[A-Za-z_$][\\w$]*$/;
 addEventListener("message", async (event) => {
-  if (event.source !== parent || event.data?.source !== "lumen-playground") return;
+  if (event.source !== parent || event.data?.source !== "lumiose-playground") return;
   const { runtime, program } = event.data;
   try {
     const runtimeUrl = moduleUrl(runtime);
@@ -95,7 +95,7 @@ addEventListener("message", async (event) => {
             .map((key) => \`export const \${key} = m.\${key};\`)
             .join("\\n"),
       );
-    const modules = { lumen: shim("lumen"), "lumen/dom": shim("dom") };
+    const modules = { lumiose: shim("lumiose"), "lumiose/dom": shim("dom") };
     const style = document.createElement("style");
     style.textContent = program.css;
     document.head.append(style);
@@ -106,7 +106,7 @@ addEventListener("message", async (event) => {
       await import(
         moduleUrl(
           \`import { \${program.mount === "default" ? "default" : program.mount} as App } from "\${app}";\\n\` +
-            \`import { createComponent, mount } from "\${modules["lumen/dom"]}";\\n\` +
+            \`import { createComponent, mount } from "\${modules["lumiose/dom"]}";\\n\` +
             \`mount(() => createComponent(App, {}), document.getElementById("app"));\`,
         )
       );

@@ -5,7 +5,7 @@
 //   node scripts/build.ts
 
 import { transformAsync } from "@babel/core";
-import { compile as compileLumen } from "@lumen/compiler";
+import { compile as compileLumiose } from "@lumiose/compiler";
 import { mkdir, readdir, readFile, rm, writeFile } from "node:fs/promises";
 import { basename, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -30,9 +30,9 @@ async function emit(framework: string, files: Record<string, string>): Promise<v
   for (const [name, code] of Object.entries(files)) await writeFile(join(dir, name), code);
 }
 
-async function buildLumen(): Promise<void> {
-  const file = join(src, "lumen/Page.stsx");
-  const result = compileLumen(await readFile(file, "utf8"), file, {
+async function buildLumiose(): Promise<void> {
+  const file = join(src, "lumiose/Page.stsx");
+  const result = compileLumiose(await readFile(file, "utf8"), file, {
     target: "server",
     sourceMap: false,
     styleImport: false,
@@ -42,10 +42,10 @@ async function buildLumen(): Promise<void> {
   const errors = result.diagnostics.filter((diagnostic) => diagnostic.severity === "error");
   if (errors.length > 0) throw new Error(errors.map((error) => error.message).join("\n"));
   for (const warning of result.diagnostics)
-    console.warn(`lumen: ${warning.code} ${warning.message}`);
-  await emit("lumen", {
+    console.warn(`lumiose: ${warning.code} ${warning.message}`);
+  await emit("lumiose", {
     "Page.js": rewriteImports(result.code),
-    "render.js": `import { createComponent, renderToString } from "lumen/server";
+    "render.js": `import { createComponent, renderToString } from "lumiose/server";
 import { Page } from "./Page.js";
 export const render = (data) => renderToString(() => createComponent(Page, { data }));
 `,
@@ -135,7 +135,7 @@ export const render = (data) => renderPage(Page, { props: { data } }).body;
 
 await rm(dist, { recursive: true, force: true });
 await Promise.all([
-  buildLumen(),
+  buildLumiose(),
   buildSolid("solid", false),
   buildSolid("solid-hydratable", true),
   buildReact(),

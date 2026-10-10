@@ -1,8 +1,8 @@
 // Every docs page (`staticPaths`: the index at /docs, the concept and reference pages, and the
-// diagnostics at /docs/errors/LUMxxxx), rendered from packages/lumen/docs: the page header, the
+// diagnostics at /docs/errors/LUMxxxx), rendered from packages/lumiose/docs: the page header, the
 // Markdown with the kit's CodeBlock for code, prev/next links and the table of contents.
-import { CodeBlock } from "@lumen/site-kit";
-import { highlight } from "@lumen/site-kit/highlight";
+import { CodeBlock } from "@lumiose/site-kit";
+import { highlight } from "@lumiose/site-kit/highlight";
 import {
   bp,
   color,
@@ -13,8 +13,8 @@ import {
   space,
   text,
   weight,
-} from "@lumen/site-kit/tokens";
-import { Meta, notFound, Title, type PageProps } from "lumen";
+} from "@lumiose/site-kit/tokens";
+import { Meta, notFound, Title, type PageProps } from "lumiose";
 import { adjacentDocs, docPages, findDoc, type DocPage } from "../../content/docs.ts";
 
 export function staticPaths() {
@@ -31,7 +31,7 @@ function DocView(props: { page: DocPage }) {
 
   return (
     <div class="doc">
-      <Title>{props.page.path === "" ? "Lumen docs" : `${props.page.title} · Lumen docs`}</Title>
+      <Title>{props.page.path === "" ? "Lumiose docs" : `${props.page.title} · Lumiose docs`}</Title>
       <Meta name="description" content={props.page.summary} />
       <Meta property="og:title" content={props.page.title} />
       <Meta property="og:description" content={props.page.summary} />

@@ -1,8 +1,8 @@
 // SFX gallery and maker: original sound effects as pads; pick one, bend it with a few sliders, see
 // its waveform and the driver code it becomes, save it as a WAV file, or open it in the studio to
 // edit it note by note. Sounds saved from the studio come back under "My sounds".
-import { computed, onCleanup, onMount, signal, store } from "lumen";
-import { search } from "lumen/router";
+import { computed, onCleanup, onMount, signal, store } from "lumiose";
+import { search } from "lumiose/router";
 import { FPS, sfxData, sfxFrames, songSeconds } from "../audio/driver.ts";
 import { playPcm } from "../audio/player.ts";
 import { onSpace } from "../keys.ts";

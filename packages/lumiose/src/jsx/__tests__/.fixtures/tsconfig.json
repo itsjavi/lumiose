@@ -1,0 +1,13 @@
+{
+  // Type tests for `lumiose/jsx-runtime` and `lumiose/env`, run by ../jsx-types.test.ts.
+  // `lumiose` resolves to this package through package self-reference (package.json "exports").
+  "extends": "../../../../../../tsconfig.base.json",
+  "compilerOptions": {
+    "jsx": "preserve",
+    "jsxImportSource": "lumiose",
+    "types": [],
+    "skipLibCheck": false,
+    "skipDefaultLibCheck": true
+  },
+  "include": ["*.ts", "*.tsx"]
+}

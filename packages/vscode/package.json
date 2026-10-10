@@ -1,22 +1,22 @@
 {
-  "name": "lumen-vscode",
-  "displayName": "Lumen",
+  "name": "lumiose-vscode",
+  "displayName": "Lumiose",
   "version": "0.0.0",
   "private": true,
-  "description": "Lumen .stsx support: TSX with embedded CSS style blocks and $ref highlighting, and the Lumen language server (TypeScript 7 takeover, CSS, project-wide classes and custom properties, snippets).",
+  "description": "Lumiose .stsx support: TSX with embedded CSS style blocks and $ref highlighting, and the Lumiose language server (TypeScript 7 takeover, CSS, project-wide classes and custom properties, snippets).",
   "categories": [
     "Programming Languages",
     "Snippets"
   ],
   "keywords": [
     "css",
-    "lumen",
+    "lumiose",
     "stsx",
     "tsx",
     "typescript"
   ],
   "license": "MIT",
-  "publisher": "lumen",
+  "publisher": "lumiose",
   "type": "module",
   "main": "./dist/extension.cjs",
   "scripts": {
@@ -110,20 +110,20 @@
     ],
     "commands": [
       {
-        "command": "lumen.restartServer",
+        "command": "lumiose.restartServer",
         "title": "Restart Language Server",
-        "category": "Lumen"
+        "category": "Lumiose"
       },
       {
-        "command": "lumen.setupTakeover",
+        "command": "lumiose.setupTakeover",
         "title": "Set Up Takeover Mode",
-        "category": "Lumen"
+        "category": "Lumiose"
       }
     ],
     "configuration": {
-      "title": "Lumen",
+      "title": "Lumiose",
       "properties": {
-        "lumen.takeover": {
+        "lumiose.takeover": {
           "type": "string",
           "enum": [
             "prompt",
@@ -131,27 +131,27 @@
             "off"
           ],
           "enumDescriptions": [
-            "Take over .ts/.tsx/.js/.jsx when the built-in TypeScript extension is disabled for the workspace, and offer to disable it in workspaces that use Lumen.",
+            "Take over .ts/.tsx/.js/.jsx when the built-in TypeScript extension is disabled for the workspace, and offer to disable it in workspaces that use Lumiose.",
             "Take over .ts/.tsx/.js/.jsx when the built-in TypeScript extension is disabled, without prompting.",
-            "Never take over: the Lumen language server handles .stsx files only, and no prompt is shown."
+            "Never take over: the Lumiose language server handles .stsx files only, and no prompt is shown."
           ],
           "default": "prompt",
           "scope": "resource",
-          "markdownDescription": "Takeover mode: one Lumen language server (in front of the TypeScript 7 native LSP) serves `.ts`, `.tsx` and `.stsx`, so types flow between them. It requires disabling the built-in **TypeScript and JavaScript Language Features** extension for the workspace."
+          "markdownDescription": "Takeover mode: one Lumiose language server (in front of the TypeScript 7 native LSP) serves `.ts`, `.tsx` and `.stsx`, so types flow between them. It requires disabling the built-in **TypeScript and JavaScript Language Features** extension for the workspace."
         },
-        "lumen.server.path": {
+        "lumiose.server.path": {
           "type": "string",
           "default": "",
           "scope": "machine-overridable",
-          "markdownDescription": "Path to the language server entry (`@lumen/language-server`'s `src/bin.ts` or a built `.js`/`.mjs`), absolute or relative to the first workspace folder. Empty: resolve `@lumen/language-server` from the workspace, then use the copy bundled with the extension."
+          "markdownDescription": "Path to the language server entry (`@lumiose/language-server`'s `src/bin.ts` or a built `.js`/`.mjs`), absolute or relative to the first workspace folder. Empty: resolve `@lumiose/language-server` from the workspace, then use the copy bundled with the extension."
         },
-        "lumen.server.runtime": {
+        "lumiose.server.runtime": {
           "type": "string",
           "default": "",
           "scope": "machine-overridable",
-          "markdownDescription": "The Node.js executable that runs the language server. Empty: VS Code's own Node.js for the server bundled with the extension, and `node` from `PATH` for a workspace or `lumen.server.path` server, which runs from TypeScript sources and needs Node ≥ 24."
+          "markdownDescription": "The Node.js executable that runs the language server. Empty: VS Code's own Node.js for the server bundled with the extension, and `node` from `PATH` for a workspace or `lumiose.server.path` server, which runs from TypeScript sources and needs Node ≥ 24."
         },
-        "lumen.trace.server": {
+        "lumiose.trace.server": {
           "type": "string",
           "enum": [
             "off",
@@ -160,14 +160,14 @@
           ],
           "default": "off",
           "scope": "window",
-          "description": "Traces the communication between VS Code and the Lumen language server."
+          "description": "Traces the communication between VS Code and the Lumiose language server."
         }
       }
     }
   },
   "activationEvents": [
     "workspaceContains:**/*.stsx",
-    "workspaceContains:node_modules/lumen/package.json"
+    "workspaceContains:node_modules/lumiose/package.json"
   ],
   "engines": {
     "vscode": "^1.100.0"

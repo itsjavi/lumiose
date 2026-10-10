@@ -1,5 +1,5 @@
 // Layout of the server-rendered routes: they show the signed-in user, so they render per request.
-import { locals, type LayoutProps } from "lumen";
+import { locals, type LayoutProps } from "lumiose";
 // Base styles first: component styles come after them in the cascade.
 import "../../styles.css";
 import { Footer, Header } from "../../components/Header.stsx";

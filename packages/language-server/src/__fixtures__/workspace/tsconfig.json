@@ -1,14 +1,14 @@
 {
   "compilerOptions": {
     "jsx": "preserve",
-    "jsxImportSource": "lumen",
+    "jsxImportSource": "lumiose",
     "module": "preserve",
     "moduleResolution": "bundler",
     "allowImportingTsExtensions": true,
     "noEmit": true,
     "strict": true,
-    "rootDirs": ["src", ".lumen/shadow/src"],
-    "types": ["lumen/env"]
+    "rootDirs": ["src", ".lumiose/shadow/src"],
+    "types": ["lumiose/env"]
   },
-  "include": ["src", ".lumen/shadow", ".lumen/types"]
+  "include": ["src", ".lumiose/shadow", ".lumiose/types"]
 }

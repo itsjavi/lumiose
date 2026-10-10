@@ -1,4 +1,4 @@
-import { Title } from "lumen";
+import { Title } from "lumiose";
 import { ThemeToggle } from "../components/ThemeToggle.stsx";
 
 export default function Home() {

@@ -71,7 +71,7 @@ test.describe("static output", () => {
     await islandsReady(page);
     expect(scripts.length).toBeGreaterThan(0);
     for (const script of scripts) expect(script).toMatch(/^\/assets\/[\w-]+\.js$/);
-    // Inline: the theme script of document.tsx, the speculation rules of lumen({ prefetch }) and
+    // Inline: the theme script of document.tsx, the speculation rules of lumiose({ prefetch }) and
     // the island records.
     const inline = await page
       .locator("script:not([src])")
@@ -163,14 +163,14 @@ test.describe("navigation", () => {
       }
     });
     await page.goto("/");
-    // lumen({ viewTransitions: true }): the document opts in (without reduced motion).
+    // lumiose({ viewTransitions: true }): the document opts in (without reduced motion).
     const optedIn = await page.evaluate(() =>
       [...document.styleSheets].some((sheet) =>
         [...sheet.cssRules].some((rule) => rule.cssText.includes("@view-transition")),
       ),
     );
     expect(optedIn).toBe(true);
-    // lumen({ prefetch: "hover" }), the default: speculation rules with moderate eagerness.
+    // lumiose({ prefetch: "hover" }), the default: speculation rules with moderate eagerness.
     await page.locator(".card.featured h2 a").hover();
     await expect.poll(() => prefetched).toEqual([`/posts/${NEWEST.slug}`]);
   });

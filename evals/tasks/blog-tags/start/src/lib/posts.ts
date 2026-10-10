@@ -10,18 +10,18 @@ export interface Post {
 
 export const posts: Post[] = [
   {
-    slug: "hello-lumen",
-    title: "Hello, Lumen",
+    slug: "hello-lumiose",
+    title: "Hello, Lumiose",
     date: "2026-10-01",
-    body: "This site is static: every page is HTML built by `lumen build`, with no JavaScript.",
-    tags: ["lumen", "intro"],
+    body: "This site is static: every page is HTML built by `lumiose build`, with no JavaScript.",
+    tags: ["lumiose", "intro"],
   },
   {
     slug: "adding-pages",
     title: "Adding pages",
     date: "2026-10-02",
     body: "Add a file under src/routes. Pages with params list their paths in staticPaths().",
-    tags: ["lumen", "routing"],
+    tags: ["lumiose", "routing"],
   },
   {
     slug: "styling",

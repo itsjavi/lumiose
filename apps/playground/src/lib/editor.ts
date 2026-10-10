@@ -1,5 +1,5 @@
 // CodeMirror 6 views: the `.stsx` editor and the read-only output panes (JavaScript, CSS). Colors
-// come from the site's theme custom properties (@lumen/site-kit), so both follow light and dark.
+// come from the site's theme custom properties (@lumiose/site-kit), so both follow light and dark.
 
 import { closeBrackets, closeBracketsKeymap } from "@codemirror/autocomplete";
 import { defaultKeymap, history, historyKeymap, indentWithTab } from "@codemirror/commands";

@@ -3,7 +3,7 @@
 // island records), then the `<Suspense>` boundary that waits for the slow member.
 //
 // The page loads the island loader as `<script type="module" async src>`: `async`, so islands
-// hydrate while the stream is still arriving. `lumen/dom/loader` is served from its file through
+// hydrate while the stream is still arriving. `lumiose/dom/loader` is served from its file through
 // `/@fs/`, which is how a dev server can reference it.
 import { createServer as createHttpServer, type ServerResponse } from "node:http";
 import { fileURLToPath } from "node:url";
@@ -12,7 +12,7 @@ import { createServer, isRunnableDevEnvironment, normalizePath } from "vite";
 const port = Number(process.env.PORT ?? 5193);
 // `/@fs/D:/…` on Windows, `/@fs/home/…` elsewhere.
 const loader = normalizePath(
-  fileURLToPath(new URL("./src/dom/loader.ts", import.meta.resolve("lumen/package.json"))),
+  fileURLToPath(new URL("./src/dom/loader.ts", import.meta.resolve("lumiose/package.json"))),
 ).replace(/^\/?/, "/");
 
 const vite = await createServer({

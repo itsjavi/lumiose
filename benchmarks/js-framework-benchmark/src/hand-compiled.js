@@ -1,13 +1,13 @@
-// Lumen's keyed js-framework-benchmark app, hand-compiled (krausest `lumen-hand`).
+// Lumiose's keyed js-framework-benchmark app, hand-compiled (krausest `lumiose-hand`).
 //
 // The output the compiler should emit for the component below, written by hand from the
 // compiler-runtime contract (doc-2 §2 and the golden examples in §5.2 and §5.4): hoisted templates
 // and apply functions, a hoisted selector, delegated events with data slots, a signal passed
 // directly as a binding source, and one-time writes for plain values (`id` is a const read from
-// row data). It is the reference for the compiled App.stsx (krausest `lumen`); RESULTS.md compares
+// row data). It is the reference for the compiled App.stsx (krausest `lumiose`); RESULTS.md compares
 // both.
 //
-//   import { signal } from "lumen";
+//   import { signal } from "lumiose";
 //
 //   const data = signal<Row[]>([]);
 //   const selected = signal(0);
@@ -18,7 +18,7 @@
 //       <div class="container">
 //         <div class="jumbotron">
 //           <div class="row">
-//             <div class="col-md-6"><h1>Lumen</h1></div>
+//             <div class="col-md-6"><h1>Lumiose</h1></div>
 //             <div class="col-md-6">
 //               <div class="row">
 //                 <div class="col-sm-6 smallpad">
@@ -58,7 +58,7 @@
 //   mount(() => <App />, document.getElementById("main")!);
 
 /* eslint-disable no-underscore-dangle -- compiled names (_t0, _el, …) follow the compiler's output */
-import { signal } from "lumen";
+import { signal } from "lumiose";
 import {
   bind,
   createComponent,
@@ -69,7 +69,7 @@ import {
   setText,
   template,
   toggleClass,
-} from "lumen/dom";
+} from "lumiose/dom";
 
 // ---- compiled templates and hoisted functions --------------------------------------------------
 
@@ -77,7 +77,7 @@ const _t0 = /* @__PURE__ */ template(
   `<tr><td class=col-md-1> <td class=col-md-4><a> </a><td class=col-md-1><a><span class="glyphicon glyphicon-remove" aria-hidden=true></span></a><td class=col-md-6>`,
 );
 const _t1 = /* @__PURE__ */ template(
-  `<div class=container><div class=jumbotron><div class=row><div class=col-md-6><h1>Lumen</h1></div><div class=col-md-6><div class=row><div class="col-sm-6 smallpad"><button type=button class="btn btn-primary btn-block" id=run>Create 1,000 rows</button></div><div class="col-sm-6 smallpad"><button type=button class="btn btn-primary btn-block" id=runlots>Create 10,000 rows</button></div><div class="col-sm-6 smallpad"><button type=button class="btn btn-primary btn-block" id=add>Append 1,000 rows</button></div><div class="col-sm-6 smallpad"><button type=button class="btn btn-primary btn-block" id=update>Update every 10th row</button></div><div class="col-sm-6 smallpad"><button type=button class="btn btn-primary btn-block" id=clear>Clear</button></div><div class="col-sm-6 smallpad"><button type=button class="btn btn-primary btn-block" id=swaprows>Swap Rows</button></div></div></div></div></div><table class="table table-hover table-striped test-data"><tbody></tbody></table><span class="preloadicon glyphicon glyphicon-remove" aria-hidden=true></span></div>`,
+  `<div class=container><div class=jumbotron><div class=row><div class=col-md-6><h1>Lumiose</h1></div><div class=col-md-6><div class=row><div class="col-sm-6 smallpad"><button type=button class="btn btn-primary btn-block" id=run>Create 1,000 rows</button></div><div class="col-sm-6 smallpad"><button type=button class="btn btn-primary btn-block" id=runlots>Create 10,000 rows</button></div><div class="col-sm-6 smallpad"><button type=button class="btn btn-primary btn-block" id=add>Append 1,000 rows</button></div><div class="col-sm-6 smallpad"><button type=button class="btn btn-primary btn-block" id=update>Update every 10th row</button></div><div class="col-sm-6 smallpad"><button type=button class="btn btn-primary btn-block" id=clear>Clear</button></div><div class="col-sm-6 smallpad"><button type=button class="btn btn-primary btn-block" id=swaprows>Swap Rows</button></div></div></div></div></div><table class="table table-hover table-striped test-data"><tbody></tbody></table><span class="preloadicon glyphicon glyphicon-remove" aria-hidden=true></span></div>`,
 );
 const _a0 = (el, v) => toggleClass(el, "danger", v);
 // `onClick={() => select(id)}` captures only row data: one shared handler plus a data slot.

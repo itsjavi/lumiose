@@ -1,5 +1,5 @@
 // The reader's list, plus the `toggle` action that every reading-list button posts to.
-import { error, href, notFound, redirect, Title, url, type ActionContext } from "lumen";
+import { error, href, notFound, redirect, Title, url, type ActionContext } from "lumiose";
 import { BookCard } from "../../components/BookCard.stsx";
 import { Pager } from "../../components/Pager.stsx";
 import { formatDate } from "../../components/ReviewCard.stsx";

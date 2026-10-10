@@ -1,4 +1,4 @@
-import { href, response, Title, url } from "lumen";
+import { href, response, Title, url } from "lumiose";
 import { Pager } from "../../components/Pager.stsx";
 import { formatDate, ReviewCard } from "../../components/ReviewCard.stsx";
 import { parsePageParam } from "../../lib/search-params.ts";

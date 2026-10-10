@@ -1,9 +1,9 @@
 # Dotmatrix
 
-A pocket chiptune studio built with Lumen as a client-rendered SPA: `lumen({ mode: "spa", ssr: false })`,
-file routes and [`lumen/router`](../../packages/lumen/docs/reference/router.md). It makes music and sound
+A pocket chiptune studio built with Lumiose as a client-rendered SPA: `lumiose({ mode: "spa", ssr: false })`,
+file routes and [`lumiose/router`](../../packages/lumiose/docs/reference/router.md). It makes music and sound
 effects for the four channels of the Game Boy sound chip, rendered by the gbapu APU engine in a Web Worker.
-It is the beginner-friendly sibling of [Lumen Chip](../spa-chiptune): a piano roll and presets instead
+It is the beginner-friendly sibling of [Lumiose Chip](../spa-chiptune): a piano roll and presets instead
 of a tracker and hex effect columns.
 
 ![The studio playing a demo song](../../backlog/assets/task-133-studio-demo.png)
@@ -25,17 +25,17 @@ Then:
 
 ```sh
 cd examples/spa-dotmatrix
-pnpm dev        # lumen dev; open the printed URL and press Play (or Space)
-pnpm build      # lumen build: static shells in dist/client, plus dist/server
-pnpm preview    # lumen preview: serves the build with @lumen/adapter-node
+pnpm dev        # lumiose dev; open the printed URL and press Play (or Space)
+pnpm build      # lumiose build: static shells in dist/client, plus dist/server
+pnpm preview    # lumiose preview: serves the build with @lumiose/adapter-node
 ```
 
 Checks:
 
 ```sh
-pnpm typecheck  # lumen check
+pnpm typecheck  # lumiose check
 pnpm test       # Vitest: the driver, the demo songs on the real engine, the vendored files' checksums
-pnpm test:e2e   # Playwright against `lumen dev` and against `lumen build` + `lumen preview`
+pnpm test:e2e   # Playwright against `lumiose dev` and against `lumiose build` + `lumiose preview`
 ```
 
 To save the e2e screenshots, set `DOTMATRIX_SHOTS=<dir>`. The task screenshots are made with
@@ -106,7 +106,7 @@ recipes and original examples.
   the loop bar, and mixes mute, solo and panning without re-rendering. An edit re-renders only the
   channels it changed (a channel of a 30-second song takes about 0.1 s) and swaps them in at the
   playing position, so playback continues while you edit.
-- Songs are plain JSON (`src/model/types.ts`). `src/state.ts` keeps the open song in a Lumen
+- Songs are plain JSON (`src/model/types.ts`). `src/state.ts` keeps the open song in a Lumiose
   `store`, with snapshot undo/redo and autosave; every incoming song (share links, storage) passes
   through `sanitizeSong`.
 - The demo songs are written in a small text notation (`src/model/notation.ts`), such as

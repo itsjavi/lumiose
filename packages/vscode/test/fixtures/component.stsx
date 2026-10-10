@@ -1,4 +1,4 @@
-import { signal } from "lumen";
+import { signal } from "lumiose";
 
 const gap = 8;
 

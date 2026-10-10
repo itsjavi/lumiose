@@ -1,4 +1,4 @@
-// "Lumen Quest": the bundled demo song. A minor, Am-F-C-G, 150 BPM at speed 6 (60 ticks/s).
+// "Lumiose Quest": the bundled demo song. A minor, Am-F-C-G, 150 BPM at speed 6 (60 ticks/s).
 import { defaultMixer, emptyPattern, instrument, macro } from "./song.ts";
 import { NOTE_OFF, type Cell, type Pattern, type Song } from "./types.ts";
 
@@ -176,7 +176,7 @@ export function demoSong(): Song {
   for (let row = 48; row < 64; row++) put(bridge, row, NOI, { vol: 6 + ((row - 48) >> 1) });
 
   return {
-    title: "Lumen Quest",
+    title: "Lumiose Quest",
     author: "Spark",
     bpm: 150,
     speed: 6,

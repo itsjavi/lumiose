@@ -2,7 +2,7 @@
 // menu (button + panel). It is the interactive part of SiteHeader, used as an island
 // (`<SiteNav client:load … />`), so its props are plain data.
 
-import { onMount, ref, signal } from "lumen";
+import { onMount, ref, signal } from "lumiose";
 import { bp, color, layout, motion, radius, shadow, space, text, weight, z } from "./tokens.ts";
 
 export interface NavLink {

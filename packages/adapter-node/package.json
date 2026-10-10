@@ -1,8 +1,8 @@
 {
-  "name": "@lumen/adapter-node",
+  "name": "@lumiose/adapter-node",
   "version": "0.0.0",
   "private": true,
-  "description": "Serve a Lumen build with Node: dist/client statics with caching headers, then the app's fetch handler.",
+  "description": "Serve a Lumiose build with Node: dist/client statics with caching headers, then the app's fetch handler.",
   "license": "MIT",
   "files": [
     "src"
@@ -17,6 +17,6 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "lumen": "workspace:*"
+    "lumiose": "workspace:*"
   }
 }

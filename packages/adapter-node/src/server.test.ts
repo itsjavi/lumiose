@@ -1,17 +1,17 @@
-// The adapter on a real `lumen build` output: statics first, then the app's fetch handler.
+// The adapter on a real `lumiose build` output: statics first, then the app's fetch handler.
 import { mkdirSync, mkdtempSync, realpathSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { build } from "lumen/build";
-import { createServer, type LumenServer } from "./server.ts";
+import { build } from "lumiose/build";
+import { createServer, type LumioseServer } from "./server.ts";
 
-const lumenRoot = resolve(import.meta.dirname, "../../lumen");
-// The build needs the native compiler binding (a dependency of lumen, not of this package).
+const lumioseRoot = resolve(import.meta.dirname, "../../lumiose");
+// The build needs the native compiler binding (a dependency of lumiose, not of this package).
 const binding = await import(
-  pathToFileURL(createRequire(join(lumenRoot, "package.json")).resolve("@lumen/compiler")).href
+  pathToFileURL(createRequire(join(lumioseRoot, "package.json")).resolve("@lumiose/compiler")).href
 ).catch(() => undefined);
 
 const FILES: Record<string, string> = {
@@ -19,13 +19,13 @@ const FILES: Record<string, string> = {
   "src/routes/index.stsx": `import { Counter } from "../components/Counter.stsx";
 export default function Home() { return <main><h1>Home</h1><Counter client:load start={1} /></main>; }
 `,
-  "src/components/Counter.stsx": `import { signal } from "lumen";
+  "src/components/Counter.stsx": `import { signal } from "lumiose";
 export function Counter(props: { start: number }) {
   const count = signal(props.start);
   return <button onClick={() => count.update((n) => n + 1)}>{count()}</button>;
 }
 `,
-  "src/routes/contact.stsx": `import { actionData, type Action } from "lumen";
+  "src/routes/contact.stsx": `import { actionData, type Action } from "lumiose";
 // A static page with a form action: GET is prerendered, POST reaches the server.
 export const action: Action = async (ctx) => ({ name: String((await ctx.formData()).get("name")) });
 export default function Contact() {
@@ -33,11 +33,11 @@ export default function Contact() {
   return <p class="result">{data === undefined ? "form" : \`thanks \${data.name}\`}</p>;
 }
 `,
-  "src/routes/account.stsx": `import { cookies } from "lumen";
+  "src/routes/account.stsx": `import { cookies } from "lumiose";
 export const mode = "server";
 export default function Account() { return <p>user {cookies().get("user") ?? "anonymous"}</p>; }
 `,
-  "src/routes/embed.stsx": `import { response } from "lumen";
+  "src/routes/embed.stsx": `import { response } from "lumiose";
 export const mode = "server";
 export default function Embed() {
   response().setHeader("cross-origin-embedder-policy", "credentialless");
@@ -51,17 +51,17 @@ export const GET = () => Response.json({ ok: true });
 };
 
 let root: string;
-let server: LumenServer;
+let server: LumioseServer;
 
 beforeAll(async () => {
   if (!binding) return;
-  root = realpathSync.native(mkdtempSync(join(tmpdir(), "lumen-adapter-")));
+  root = realpathSync.native(mkdtempSync(join(tmpdir(), "lumiose-adapter-")));
   for (const [name, code] of Object.entries(FILES)) {
     mkdirSync(dirname(join(root, name)), { recursive: true });
     writeFileSync(join(root, name), code);
   }
   mkdirSync(join(root, "node_modules"));
-  symlinkSync(lumenRoot, join(root, "node_modules/lumen"), "dir");
+  symlinkSync(lumioseRoot, join(root, "node_modules/lumiose"), "dir");
   await build({ root, logLevel: "silent" });
   server = await createServer({ dir: join(root, "dist"), port: 0, host: "127.0.0.1" });
 });
@@ -74,7 +74,7 @@ afterAll(async () => {
 const get = (path: string, init?: RequestInit) =>
   fetch(new URL(path.slice(1), server.url), { redirect: "manual", ...init });
 
-describe.skipIf(!binding)("@lumen/adapter-node", () => {
+describe.skipIf(!binding)("@lumiose/adapter-node", () => {
   it("listens on a URL with the app's base", () => {
     expect(server.url).toMatch(/^http:\/\/127\.0\.0\.1:\d+\/$/);
   });
@@ -134,15 +134,15 @@ describe.skipIf(!binding)("@lumen/adapter-node", () => {
     }
   });
 
-  it("sends the build's lumen({ headers }) by path; a response's own headers win (TASK-125)", async () => {
-    const app = realpathSync.native(mkdtempSync(join(tmpdir(), "lumen-adapter-headers-")));
+  it("sends the build's lumiose({ headers }) by path; a response's own headers win (TASK-125)", async () => {
+    const app = realpathSync.native(mkdtempSync(join(tmpdir(), "lumiose-adapter-headers-")));
     const files: Record<string, string> = {
       "src/routes/index.stsx": "export default function Home() { return <h1>Home</h1>; }\n",
       "src/routes/embed.stsx": FILES["src/routes/embed.stsx"]!,
-      "vite.config.ts": `import lumen from "lumen/vite";
+      "vite.config.ts": `import lumiose from "lumiose/vite";
 export default {
   plugins: [
-    lumen({
+    lumiose({
       headers: [
         { path: "/**", headers: { "cross-origin-embedder-policy": "require-corp" } },
         { path: "/embed", headers: { "x-embed": "1" } },
@@ -157,7 +157,7 @@ export default {
       writeFileSync(join(app, name), code);
     }
     mkdirSync(join(app, "node_modules"));
-    symlinkSync(lumenRoot, join(app, "node_modules/lumen"), "dir");
+    symlinkSync(lumioseRoot, join(app, "node_modules/lumiose"), "dir");
     await build({ root: app, logLevel: "silent" });
     const configured = await createServer({ dir: join(app, "dist"), port: 0, host: "127.0.0.1" });
     try {

@@ -58,7 +58,7 @@ test("the theme toggle switches, persists and follows the system", async ({ page
   await expect(html).toHaveAttribute("data-theme", "dark");
   await expect(toggle).toHaveAttribute("aria-pressed", "true");
   expect(await bodyBackground(page)).not.toBe(light);
-  expect(await page.evaluate(() => localStorage.getItem("lumen-theme"))).toBe("dark");
+  expect(await page.evaluate(() => localStorage.getItem("lumiose-theme"))).toBe("dark");
 
   await page.reload();
   await expect(html).toHaveAttribute("data-theme", "dark");
@@ -69,7 +69,7 @@ test("the theme toggle switches, persists and follows the system", async ({ page
   expect(await bodyBackground(page)).toBe(light);
 
   // Without a stored choice, the system preference applies.
-  await page.evaluate(() => localStorage.removeItem("lumen-theme"));
+  await page.evaluate(() => localStorage.removeItem("lumiose-theme"));
   await page.emulateMedia({ colorScheme: "dark" });
   await page.reload();
   await expect(html).not.toHaveAttribute("data-theme");
@@ -112,7 +112,7 @@ test("tabs follow the WAI-ARIA keyboard pattern", async ({ page }) => {
 
   await page.keyboard.press("End");
   await expect(tabs.nth(3)).toBeFocused();
-  await expect(page.getByRole("tabpanel", { name: "bun" })).toContainText("bunx lumen dev");
+  await expect(page.getByRole("tabpanel", { name: "bun" })).toContainText("bunx lumiose dev");
   await page.keyboard.press("ArrowRight");
   await expect(tabs.nth(0)).toBeFocused();
   await page.keyboard.press("ArrowLeft");
@@ -131,7 +131,7 @@ test("the copy button copies the code", async ({ page, context }) => {
   await block.getByRole("button", { name: "Copy code" }).click();
   await expect(block.getByRole("status")).toHaveText("Copied to the clipboard");
   const copied = await page.evaluate(() => navigator.clipboard.readText());
-  expect(copied).toContain('import { signal } from "lumen";');
+  expect(copied).toContain('import { signal } from "lumiose";');
 });
 
 test.describe("on a phone", () => {
@@ -165,7 +165,7 @@ test.describe("on a phone", () => {
   });
 });
 
-// `pnpm --filter @lumen/site-kit screenshots`: the evidence of TASK-59 (production build).
+// `pnpm --filter @lumiose/site-kit screenshots`: the evidence of TASK-59 (production build).
 test.describe("screenshots", () => {
   test.beforeEach(() => {
     test.skip(!process.env.SCREENSHOTS || test.info().project.name !== "preview");

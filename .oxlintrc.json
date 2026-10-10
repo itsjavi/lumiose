@@ -1,5 +1,5 @@
 {
   "$schema": "./node_modules/oxlint/configuration_schema.json",
   "categories": { "correctness": "error", "suspicious": "warn" },
-  "ignorePatterns": ["**/dist/**", "**/target/**", "**/.lumen/**", "backlog/**", "**/fixtures/**"]
+  "ignorePatterns": ["**/dist/**", "**/target/**", "**/.lumiose/**", "backlog/**", "**/fixtures/**"]
 }

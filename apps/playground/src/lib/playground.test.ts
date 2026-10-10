@@ -1,7 +1,7 @@
 // Unit tests of the playground's pieces that run outside the browser: shareable state, the
 // editor's style-block masking, the preview's module rewriting and the samples (compiled with the
 // native binding, which the wasm build mirrors option for option).
-import * as native from "@lumen/compiler";
+import * as native from "@lumiose/compiler";
 import { describe, expect, it } from "vitest";
 import { compileBoth, FILENAME, position, type WasmCompiler } from "./compiler.ts";
 import { previewProgram, rewriteImports } from "./preview.ts";
@@ -55,11 +55,11 @@ const program = (code: string) =>
   previewProgram(compiler.compile(code, FILENAME, { sourceMap: false, root: "/" }));
 
 describe("preview", () => {
-  it("rewrites lumen imports and rejects others", () => {
-    const modules = { lumen: "blob:a", "lumen/dom": "blob:b" };
+  it("rewrites lumiose imports and rejects others", () => {
+    const modules = { lumiose: "blob:a", "lumiose/dom": "blob:b" };
     expect(
       rewriteImports(
-        'import { signal } from "lumen";\nimport { template } from "lumen/dom";\n',
+        'import { signal } from "lumiose";\nimport { template } from "lumiose/dom";\n',
         modules,
       ),
     ).toBe('import { signal } from "blob:a";\nimport { template } from "blob:b";\n');
@@ -99,8 +99,8 @@ describe("compileBoth", () => {
     const source =
       'export default function A() {\n  return <p class="a"><style lang="scss">.a {}</style></p>;\n}\n';
     const result = compileBoth(compiler, source);
-    expect(result.client.code).toContain("lumen/dom");
-    expect(result.server.code).toContain("lumen/server");
+    expect(result.client.code).toContain("lumiose/dom");
+    expect(result.server.code).toContain("lumiose/server");
     expect(result.errors).toBe(1);
     expect(result.diagnostics).toEqual([
       expect.objectContaining({ code: "LUM1005", severity: "error", line: 2, column: 30 }),

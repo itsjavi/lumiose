@@ -1,8 +1,8 @@
 // The docs shell: search and the section navigation beside the page. Below $bp.lg the navigation
 // folds into a closed disclosure above the page, so the content comes first on phones; on wide
 // screens CSS shows the disclosure's content without its summary.
-import { bp, color, font, layout, radius, space, text, weight } from "@lumen/site-kit/tokens";
-import { href, url, type LayoutProps } from "lumen";
+import { bp, color, font, layout, radius, space, text, weight } from "@lumiose/site-kit/tokens";
+import { href, url, type LayoutProps } from "lumiose";
 import { docNav, findDoc } from "../../content/docs.ts";
 import { DocsSearch } from "../../islands/DocsSearch.stsx";
 import { sitePath } from "../../lib/site.ts";

@@ -1,8 +1,8 @@
 {
-  "name": "lumen-vscode-smoke",
+  "name": "lumiose-vscode-smoke",
   "private": true,
   "type": "module",
   "dependencies": {
-    "lumen": "*"
+    "lumiose": "*"
   }
 }

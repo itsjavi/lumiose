@@ -1,6 +1,6 @@
 // Journal pages 2 and up, one prerendered file each. `/page/1` is prerendered as a redirect to `/`
 // (a static build writes a redirect page for it).
-import { notFound, redirect, type PageProps } from "lumen";
+import { notFound, redirect, type PageProps } from "lumiose";
 import { Journal } from "../../components/Journal.stsx";
 import { allPosts } from "../../content.ts";
 import { pageCount, paginate, pageHref } from "../../lib/paginate.ts";

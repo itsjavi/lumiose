@@ -9,7 +9,7 @@ const status = (page: Page) => page.getByRole("status");
 
 async function open(page: Page, path = "/playground/") {
   await page.goto(path);
-  await expect(status(page)).toContainText("Compiled with lumen_wasm", { timeout: 20_000 });
+  await expect(status(page)).toContainText("Compiled with lumiose_wasm", { timeout: 20_000 });
 }
 
 /** Types `text` at the end of the line that contains `anchor`. */
@@ -27,9 +27,9 @@ test("compiles in the browser and runs the preview", async ({ page }) => {
   await expect(preview(page).getByText("Doubled: 2")).toBeVisible();
 
   await page.getByRole("tab", { name: "Client JS" }).click();
-  await expect(page.locator("#panel-client")).toContainText('from "lumen/dom"');
+  await expect(page.locator("#panel-client")).toContainText('from "lumiose/dom"');
   await page.getByRole("tab", { name: "Server JS" }).click();
-  await expect(page.locator("#panel-server")).toContainText('from "lumen/server"');
+  await expect(page.locator("#panel-server")).toContainText('from "lumiose/server"');
   await page.getByRole("tab", { name: "CSS" }).click();
   await expect(page.locator("#panel-css")).toContainText("[data-l-");
 });
@@ -71,7 +71,7 @@ test("keeps the state in a shareable URL", async ({ page, context }) => {
 });
 
 test("switches samples and works below the site's base path", async ({ page }) => {
-  await open(page, "/lumen/playground/");
+  await open(page, "/lumiose/playground/");
   await page.getByLabel("Sample").selectOption("todos");
   const frame = preview(page);
   await frame.getByRole("textbox", { name: "New todo" }).fill("Ship the playground");
@@ -79,7 +79,7 @@ test("switches samples and works below the site's base path", async ({ page }) =
   await expect(frame.getByText("2 left")).toBeVisible();
   await expect(page.getByRole("link", { name: "Docs" }).first()).toHaveAttribute(
     "href",
-    "/lumen/docs",
+    "/lumiose/docs",
   );
 });
 

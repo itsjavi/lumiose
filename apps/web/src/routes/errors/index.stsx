@@ -1,5 +1,5 @@
 // /errors redirects to the list of diagnostics.
-import { href, redirect } from "lumen";
+import { href, redirect } from "lumiose";
 
 export default function Errors() {
   return redirect(href("/docs/[...path]", { path: "errors" }), 301);

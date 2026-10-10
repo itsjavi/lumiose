@@ -10,7 +10,7 @@
       "os": "Darwin 27.0.0"
     },
     "node": "v26.8.1",
-    "lumen": "ed72928",
+    "lumiose": "ed72928",
     "clis": {
       "claude": "2.1.293 (Claude Code)",
       "codex": "codex-cli 0.161.0"
@@ -51,7 +51,7 @@
     "runs": 1,
     "complete": true,
     "notes": [
-      "Matrix approved by the user (option C): 20 tasks × 1 run × 6 configurations, all at medium effort, baseline ablation, Lumen pinned at ed72928 for every run.",
+      "Matrix approved by the user (option C): 20 tasks × 1 run × 6 configurations, all at medium effort, baseline ablation, Lumiose pinned at ed72928 for every run.",
       "gpt-6-luna and claude-haiku-5-5 first ran 4 runs at high effort by mistake; those were discarded and rerun at medium.",
       "Other agents were active on the machine: wall times are indicative only.",
       "The matrix was paused at 62/120 for Claude quota and resumed (--resume) at 15:51 UTC.",
@@ -1116,7 +1116,7 @@
         "mcpCalls": 0,
         "mcpTools": [],
         "skills": [
-          "lumen"
+          "lumiose"
         ]
       },
       "exit": {
@@ -1293,7 +1293,7 @@
         "mcpCalls": 0,
         "mcpTools": [],
         "skills": [
-          "lumen"
+          "lumiose"
         ]
       },
       "exit": {
@@ -1614,7 +1614,7 @@
         "mcpCalls": 0,
         "mcpTools": [],
         "skills": [
-          "lumen"
+          "lumiose"
         ]
       },
       "exit": {
@@ -1711,7 +1711,7 @@
         "mcpCalls": 0,
         "mcpTools": [],
         "skills": [
-          "lumen"
+          "lumiose"
         ]
       },
       "exit": {
@@ -1808,7 +1808,7 @@
         "mcpCalls": 0,
         "mcpTools": [],
         "skills": [
-          "lumen"
+          "lumiose"
         ]
       },
       "exit": {
@@ -2145,7 +2145,7 @@
         "mcpCalls": 0,
         "mcpTools": [],
         "skills": [
-          "lumen"
+          "lumiose"
         ]
       },
       "exit": {
@@ -2648,7 +2648,7 @@
         "mcpCalls": 0,
         "mcpTools": [],
         "skills": [
-          "lumen"
+          "lumiose"
         ]
       },
       "exit": {
@@ -3151,7 +3151,7 @@
         "mcpCalls": 0,
         "mcpTools": [],
         "skills": [
-          "lumen"
+          "lumiose"
         ]
       },
       "exit": {
@@ -3678,7 +3678,7 @@
         "mcpCalls": 0,
         "mcpTools": [],
         "skills": [
-          "lumen"
+          "lumiose"
         ]
       },
       "exit": {
@@ -4198,7 +4198,7 @@
         "mcpCalls": 0,
         "mcpTools": [],
         "skills": [
-          "lumen"
+          "lumiose"
         ]
       },
       "exit": {
@@ -4653,7 +4653,7 @@
         "mcpCalls": 0,
         "mcpTools": [],
         "skills": [
-          "lumen"
+          "lumiose"
         ]
       },
       "exit": {
@@ -5132,7 +5132,7 @@
         "mcpCalls": 0,
         "mcpTools": [],
         "skills": [
-          "lumen"
+          "lumiose"
         ]
       },
       "exit": {
@@ -5659,7 +5659,7 @@
         "mcpCalls": 0,
         "mcpTools": [],
         "skills": [
-          "lumen"
+          "lumiose"
         ]
       },
       "exit": {
@@ -6162,7 +6162,7 @@
         "mcpCalls": 0,
         "mcpTools": [],
         "skills": [
-          "lumen"
+          "lumiose"
         ]
       },
       "exit": {
@@ -6809,7 +6809,7 @@
         "mcpCalls": 0,
         "mcpTools": [],
         "skills": [
-          "lumen"
+          "lumiose"
         ]
       },
       "exit": {
@@ -6857,7 +6857,7 @@
               "ok": true
             },
             {
-              "name": "like button on post pages is an idle island with the likes of hello-lumen",
+              "name": "like button on post pages is an idle island with the likes of hello-lumiose",
               "ok": true
             },
             {
@@ -6948,7 +6948,7 @@
               "ok": true
             },
             {
-              "name": "like button on post pages is an idle island with the likes of hello-lumen",
+              "name": "like button on post pages is an idle island with the likes of hello-lumiose",
               "ok": true
             },
             {
@@ -7039,7 +7039,7 @@
               "ok": true
             },
             {
-              "name": "like button on post pages is an idle island with the likes of hello-lumen",
+              "name": "like button on post pages is an idle island with the likes of hello-lumiose",
               "ok": true
             },
             {
@@ -7115,7 +7115,7 @@
               "ok": true
             },
             {
-              "name": "like button on post pages is an idle island with the likes of hello-lumen",
+              "name": "like button on post pages is an idle island with the likes of hello-lumiose",
               "ok": true
             },
             {
@@ -7191,7 +7191,7 @@
               "ok": true
             },
             {
-              "name": "like button on post pages is an idle island with the likes of hello-lumen",
+              "name": "like button on post pages is an idle island with the likes of hello-lumiose",
               "ok": true
             },
             {
@@ -7267,7 +7267,7 @@
               "ok": true
             },
             {
-              "name": "like button on post pages is an idle island with the likes of hello-lumen",
+              "name": "like button on post pages is an idle island with the likes of hello-lumiose",
               "ok": true
             },
             {
@@ -7312,7 +7312,7 @@
         "mcpCalls": 0,
         "mcpTools": [],
         "skills": [
-          "lumen"
+          "lumiose"
         ]
       },
       "exit": {
@@ -7829,7 +7829,7 @@
         "mcpCalls": 0,
         "mcpTools": [],
         "skills": [
-          "lumen"
+          "lumiose"
         ]
       },
       "exit": {
@@ -8833,7 +8833,7 @@
         "mcpCalls": 0,
         "mcpTools": [],
         "skills": [
-          "lumen"
+          "lumiose"
         ]
       },
       "exit": {
@@ -9033,7 +9033,7 @@
         "mcpCalls": 0,
         "mcpTools": [],
         "skills": [
-          "lumen"
+          "lumiose"
         ]
       },
       "exit": {
@@ -9477,7 +9477,7 @@
         "mcpCalls": 0,
         "mcpTools": [],
         "skills": [
-          "lumen"
+          "lumiose"
         ]
       },
       "exit": {
@@ -10131,7 +10131,7 @@
         "mcpCalls": 0,
         "mcpTools": [],
         "skills": [
-          "lumen"
+          "lumiose"
         ]
       },
       "exit": {
@@ -10323,7 +10323,7 @@
         "mcpCalls": 0,
         "mcpTools": [],
         "skills": [
-          "lumen"
+          "lumiose"
         ]
       },
       "exit": {

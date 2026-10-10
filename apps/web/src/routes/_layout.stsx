@@ -1,9 +1,9 @@
 // Root layout: the site header (with the theme toggle), the page and the footer, all from
-// @lumen/site-kit. Every route is prerendered (`lumen({ mode: "static" })`), so the site deploys
+// @lumiose/site-kit. Every route is prerendered (`lumiose({ mode: "static" })`), so the site deploys
 // as plain files.
-import { Footer, SiteHeader } from "@lumen/site-kit";
-import { color, radius, space } from "@lumen/site-kit/tokens";
-import { href, url, type LayoutProps } from "lumen";
+import { Footer, SiteHeader } from "@lumiose/site-kit";
+import { color, radius, space } from "@lumiose/site-kit/tokens";
+import { href, url, type LayoutProps } from "lumiose";
 import { footerColumns, link, navLinks, sitePath, site } from "../lib/site.ts";
 
 export default function RootLayout(props: LayoutProps<"/">) {
@@ -17,7 +17,7 @@ export default function RootLayout(props: LayoutProps<"/">) {
       <SiteHeader links={navLinks} current={current} home={href("/")} />
       <main id="content">{props.children}</main>
       <Footer columns={footerColumns} tagline={site.tagline}>
-        <p>MIT licensed. This site is a static Lumen app built with @lumen/site-kit.</p>
+        <p>MIT licensed. This site is a static Lumiose app built with @lumiose/site-kit.</p>
       </Footer>
 
       <style>

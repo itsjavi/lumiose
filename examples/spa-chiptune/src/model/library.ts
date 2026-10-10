@@ -1,5 +1,5 @@
 // Save files and the song library in localStorage.
-import { signal } from "lumen";
+import { signal } from "lumiose";
 import {
   defaultMixer,
   emptyCell,
@@ -10,7 +10,7 @@ import {
 } from "./song.ts";
 import { CHANNEL_COUNT, type Cell, type Instrument, type Macro, type Song } from "./types.ts";
 
-export const FORMAT = "lumen-chiptune";
+export const FORMAT = "lumiose-chiptune";
 
 /** [row, channel, note, inst, vol, fx, param]: only non-empty cells are stored. */
 type SparseCell = [number, number, number, number, number, string, number];
@@ -60,7 +60,7 @@ function readMacro(value: unknown, lo: number, hi: number): Macro {
 /** Parses a save file, clamping every value into range. Throws on a file of another format. */
 export function deserialize(text: string): Song {
   const file = JSON.parse(text) as Partial<SongFile>;
-  if (file.format !== FORMAT || !file.song) throw new Error("Not a Lumen chiptune song file");
+  if (file.format !== FORMAT || !file.song) throw new Error("Not a Lumiose chiptune song file");
   const s = file.song;
   const base = emptySong();
   const length = int(s.patternLength, 8, 128, 64);

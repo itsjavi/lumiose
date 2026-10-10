@@ -1,16 +1,16 @@
 /// <reference types="vitest/config" />
-import lumen from "lumen/vite";
+import lumiose from "lumiose/vite";
 import { defineConfig } from "vite";
 
 // A client-rendered SPA: every route renders in the browser, inside the persistent root layout,
-// and `lumen build` emits static files only (no dist/server). The COOP/COEP headers make pages
-// cross-origin isolated (SharedArrayBuffer for the audio engine): `lumen({ headers })` sends them
-// in `lumen dev` and `lumen preview`, and writes them to dist/client/_headers for static hosts.
+// and `lumiose build` emits static files only (no dist/server). The COOP/COEP headers make pages
+// cross-origin isolated (SharedArrayBuffer for the audio engine): `lumiose({ headers })` sends them
+// in `lumiose dev` and `lumiose preview`, and writes them to dist/client/_headers for static hosts.
 export default defineConfig({
-  // Served below a path when LUMEN_BASE is set (the Lumen website: /lumen/examples/spa-chiptune/).
-  base: process.env["LUMEN_BASE"] ?? "/",
+  // Served below a path when LUMIOSE_BASE is set (the Lumiose website: /lumiose/examples/spa-chiptune/).
+  base: process.env["LUMIOSE_BASE"] ?? "/",
   plugins: [
-    lumen({
+    lumiose({
       mode: "spa",
       ssr: false,
       csp: "strict",
@@ -20,12 +20,12 @@ export default defineConfig({
       },
     }),
   ],
-  // GitHub Pages cannot send COOP/COEP: the site build (scripts/site.ts, which sets LUMEN_BASE)
+  // GitHub Pages cannot send COOP/COEP: the site build (scripts/site.ts, which sets LUMIOSE_BASE)
   // turns on the cross-origin-isolation service worker (src/isolation.ts, public/coi-sw.js).
-  // LUMEN_COI_SW=1 or 0 forces it on or off.
+  // LUMIOSE_COI_SW=1 or 0 forces it on or off.
   define: {
-    "import.meta.env.LUMEN_COI_SW": JSON.stringify(
-      (process.env["LUMEN_COI_SW"] ?? (process.env["LUMEN_BASE"] ? "1" : "0")) === "1",
+    "import.meta.env.LUMIOSE_COI_SW": JSON.stringify(
+      (process.env["LUMIOSE_COI_SW"] ?? (process.env["LUMIOSE_BASE"] ? "1" : "0")) === "1",
     ),
   },
   // The AudioWorklet module is loaded with `?worker&url`: an ES module bundle of its own.

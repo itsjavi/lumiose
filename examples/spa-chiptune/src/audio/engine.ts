@@ -1,6 +1,6 @@
 // The UI-side audio engine: owns the AudioContext and the worklet node, forwards song patches and
 // transport commands, and exposes the telemetry the synth publishes.
-import { signal } from "lumen";
+import { signal } from "lumiose";
 import type { Song } from "../model/types.ts";
 import type { FromEngine, ProcessorOptions, ToEngine } from "./protocol.ts";
 import { PROCESSOR } from "./protocol.ts";

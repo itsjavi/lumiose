@@ -1,4 +1,4 @@
-import { signal } from "lumen";
+import { signal } from "lumiose";
 
 /** A counter island; `data-hydrated` appears once the client claimed it. */
 export function Counter(props: { start: number; label: string }) {

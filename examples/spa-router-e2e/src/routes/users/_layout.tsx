@@ -1,5 +1,5 @@
-import { signal, type LayoutProps } from "lumen";
-import { params } from "lumen/router";
+import { signal, type LayoutProps } from "lumiose";
+import { params } from "lumiose/router";
 
 // A nested layout: it stays mounted while navigating between users.
 export default function UsersLayout(props: LayoutProps<"/users">) {

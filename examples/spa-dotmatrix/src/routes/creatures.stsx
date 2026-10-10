@@ -1,8 +1,8 @@
 // Creature voices: twenty original creatures, each on its own base voice with its own pitch
 // and length, the way handheld RPGs gave every creature a cry. Pick one, change its base voice,
 // pitch and length (or roll a new creature), export it, or open it in the studio.
-import { computed, onCleanup, onMount, signal } from "lumen";
-import { search } from "lumen/router";
+import { computed, onCleanup, onMount, signal } from "lumiose";
+import { search } from "lumiose/router";
 import { FPS, sfxData, sfxFrames, songSeconds } from "../audio/driver.ts";
 import { playPcm } from "../audio/player.ts";
 import { onSpace } from "../keys.ts";

@@ -1,5 +1,5 @@
 // The tracker, editing a song of the library: a deep link to it opens it.
-import { notFound, type PageProps } from "lumen";
+import { notFound, type PageProps } from "lumiose";
 import { loadSaved } from "../../model/library.ts";
 import { openSong, saveNow, songId } from "../../state.ts";
 import { TrackerView } from "../../ui/TrackerView.stsx";

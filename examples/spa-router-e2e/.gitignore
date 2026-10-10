@@ -1,5 +1,5 @@
 node_modules
 dist
-.lumen
+.lumiose
 test-results
 playwright-report

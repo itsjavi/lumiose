@@ -10,7 +10,7 @@
       "os": "Darwin 27.0.0"
     },
     "node": "v26.8.1",
-    "lumen": "afbc193 / 3c511a7",
+    "lumiose": "afbc193 / 3c511a7",
     "clis": {
       "claude": "2.1.293 (Claude Code)",
       "codex": "codex-cli 0.161.0"
@@ -36,7 +36,7 @@
     "notes": [
       "Smoke run: 5 tasks × 1 run × 4 models (medium effort), baseline ablation.",
       "The runs of counter-island and fix-stale-total were repeated at 14:51 UTC: in the first pass their DOM tests could not load (the vendor snapshot then copied the working tree, which held unfinished component-HMR code). Since then the snapshot is built from the committed revision.",
-      "Lumen revisions: the first pass used the working tree around afbc193; the repeated runs used HEAD at each run (the revision is pinned per invocation since)."
+      "Lumiose revisions: the first pass used the working tree around afbc193; the repeated runs used HEAD at each run (the revision is pinned per invocation since)."
     ]
   },
   "runs": [
@@ -572,7 +572,7 @@
         "mcpCalls": 0,
         "mcpTools": [],
         "skills": [
-          "lumen"
+          "lumiose"
         ]
       },
       "exit": {

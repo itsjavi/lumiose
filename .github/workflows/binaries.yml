@@ -1,5 +1,5 @@
-# Builds @lumen/compiler's native binary (crates/lumen_napi) for every supported platform and the
-# WebAssembly compiler (crates/lumen_wasm), as workflow artifacts. Each binary is loaded and run by
+# Builds @lumiose/compiler's native binary (crates/lumiose_napi) for every supported platform and the
+# WebAssembly compiler (crates/lumiose_wasm), as workflow artifacts. Each binary is loaded and run by
 # .github/scripts/smoke-napi.mjs on a matching runner (or under emulation). Publishing to npm waits
 # for the package names (TASK-39).
 name: Binaries
@@ -81,14 +81,14 @@ jobs:
           node-version: 24
           cache: pnpm
 
-      - run: pnpm install --frozen-lockfile --filter @lumen/compiler
+      - run: pnpm install --frozen-lockfile --filter @lumiose/compiler
 
       - name: Build
         shell: bash
         working-directory: packages/compiler
         run: >
           pnpm exec napi build --platform --release --esm --no-const-enum
-          --manifest-path ../../crates/lumen_napi/Cargo.toml --output-dir .
+          --manifest-path ../../crates/lumiose_napi/Cargo.toml --output-dir .
           --target ${{ matrix.target }} ${{ matrix.zig && '-x' || '' }}
 
       - name: Smoke test
@@ -143,8 +143,8 @@ jobs:
 
       - name: Build
         run: |
-          cargo build -p lumen_wasm --release --target wasm32-unknown-unknown
-          wasm=target/wasm32-unknown-unknown/release/lumen_wasm.wasm
+          cargo build -p lumiose_wasm --release --target wasm32-unknown-unknown
+          wasm=target/wasm32-unknown-unknown/release/lumiose_wasm.wasm
           # `web` is what the playground loads; `nodejs` is for Node and the smoke test.
           wasm-bindgen --target web --no-typescript --out-dir dist/wasm-web "$wasm"
           wasm-bindgen --target nodejs --out-dir dist/wasm-node "$wasm"
@@ -156,7 +156,7 @@ jobs:
 
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: lumen-wasm
+          name: lumiose-wasm
           path: |
             dist/wasm-web
             dist/wasm-node

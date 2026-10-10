@@ -1,6 +1,6 @@
 // The fields every post's frontmatter has: `postFrontmatter` (src/frontmatter.ts) validates them
-// at build time through `lumen({ md: { frontmatter } })` in vite.config.ts, and adds
-// `readingMinutes`. Merged into `lumen/env`'s `Frontmatter`, the type of a `.md` module's
+// at build time through `lumiose({ md: { frontmatter } })` in vite.config.ts, and adds
+// `readingMinutes`. Merged into `lumiose/env`'s `Frontmatter`, the type of a `.md` module's
 // `frontmatter` export. (Not named `content.d.ts`: TypeScript would take that file for the
 // declarations of content.ts and ignore it.)
 declare module "*.md" {

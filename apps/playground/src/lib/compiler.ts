@@ -1,6 +1,6 @@
-// The compiler in the browser: crates/lumen_wasm, loaded on demand from public/generated/wasm
+// The compiler in the browser: crates/lumiose_wasm, loaded on demand from public/generated/wasm
 // (scripts/assets.ts). Its `compile` takes the napi binding's options and returns the same
-// result shape, so the types of @lumen/compiler describe it.
+// result shape, so the types of @lumiose/compiler describe it.
 
 import type {
   CompileOptions,
@@ -8,7 +8,7 @@ import type {
   Diagnostic,
   ScanResult,
   SvgCompileOptions,
-} from "@lumen/compiler";
+} from "@lumiose/compiler";
 
 /** The wasm-bindgen module (`--target web`). */
 export interface WasmCompiler {
@@ -28,8 +28,8 @@ let loading: Promise<WasmCompiler> | undefined;
 export function loadCompiler(base: string): Promise<WasmCompiler> {
   loading ??= (async () => {
     const dir = `${base}generated/wasm/`;
-    const module = (await import(/* @vite-ignore */ `${dir}lumen_wasm.js`)) as WasmCompiler;
-    await module.default({ module_or_path: `${dir}lumen_wasm_bg.wasm` });
+    const module = (await import(/* @vite-ignore */ `${dir}lumiose_wasm.js`)) as WasmCompiler;
+    await module.default({ module_or_path: `${dir}lumiose_wasm_bg.wasm` });
     return module;
   })().catch((error: unknown) => {
     loading = undefined;

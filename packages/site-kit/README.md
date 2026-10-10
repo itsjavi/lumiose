@@ -1,13 +1,13 @@
-# @lumen/site-kit
+# @lumiose/site-kit
 
-The design system of the Lumen websites (landing page, docs, playground): design tokens, a global
+The design system of the Lumiose websites (landing page, docs, playground): design tokens, a global
 base stylesheet and `.stsx` components. Private workspace package.
 
 ## Use
 
 ```stsx
-import { Footer, SiteHeader } from "@lumen/site-kit";
-import { color, space, bp } from "@lumen/site-kit/tokens";
+import { Footer, SiteHeader } from "@lumiose/site-kit";
+import { color, space, bp } from "@lumiose/site-kit/tokens";
 
 export default function Layout(props: { children: JSX.Element }) {
   return (
@@ -24,19 +24,19 @@ export default function Layout(props: { children: JSX.Element }) {
 }
 ```
 
-- Importing `@lumen/site-kit` loads the base stylesheet (`src/Base.stsx`: theme custom properties,
+- Importing `@lumiose/site-kit` loads the base stylesheet (`src/Base.stsx`: theme custom properties,
   reset, typography, focus rings, code font) before any component CSS.
 - Style blocks read tokens as `$color.*`, `$space.*`, `$radius.*`, `$text.*`, `$bp.*`, … from
-  `@lumen/site-kit/tokens`; the compiler inlines them. Colors are `var(--lm-*)` references, so they
+  `@lumiose/site-kit/tokens`; the compiler inlines them. Colors are `var(--lm-*)` references, so they
   follow the theme.
-- Put `themeInitScript` (`@lumen/site-kit/theme`) in an inline `<script>` in the document head, so a
+- Put `themeInitScript` (`@lumiose/site-kit/theme`) in an inline `<script>` in the document head, so a
   stored theme applies before the first paint.
 
 ## Theme
 
 Without a stored choice the site follows the system (`prefers-color-scheme`). `data-theme="light"`
 or `"dark"` on `<html>` pins a theme (ThemeToggle sets it and stores it in localStorage under
-`lumen-theme`); on any other element it gives that subtree its own theme. Every color is a
+`lumiose-theme`); on any other element it gives that subtree its own theme. Every color is a
 `light-dark()` pair; text and background pairs meet WCAG AA in both themes.
 
 ## Components
@@ -55,7 +55,7 @@ or `"dark"` on `<html>` pins a theme (ThemeToggle sets it and stores it in local
 | `ThemeToggle`          | Island inside SiteHeader (`client:load`); the icon follows the theme through CSS.        |
 | `Logo`                 | The mark and wordmark.                                                                   |
 
-`highlight` (`@lumen/site-kit/highlight`) is a small highlighter for TS/TSX/`.stsx` (style blocks
+`highlight` (`@lumiose/site-kit/highlight`) is a small highlighter for TS/TSX/`.stsx` (style blocks
 as CSS, `$` references included), CSS, shell and JSON, producing `tok-*` spans that CodeBlock colors.
 
 ## Showcase
@@ -63,12 +63,12 @@ as CSS, `$` references included), CSS, shell and JSON, producing `tok-*` spans t
 `showcase/` is a client-rendered page with every component, in both themes:
 
 ```sh
-pnpm --filter @lumen/site-kit dev          # http://localhost:5173
-pnpm --filter @lumen/site-kit typecheck    # lumen check, kit and showcase
-pnpm --filter @lumen/site-kit test:e2e     # Playwright, dev and production build
-pnpm --filter @lumen/site-kit screenshots  # backlog/assets/task-59-*.png
+pnpm --filter @lumiose/site-kit dev          # http://localhost:5173
+pnpm --filter @lumiose/site-kit typecheck    # lumiose check, kit and showcase
+pnpm --filter @lumiose/site-kit test:e2e     # Playwright, dev and production build
+pnpm --filter @lumiose/site-kit screenshots  # backlog/assets/task-59-*.png
 ```
 
-A Lumen project that imports the kit (or, like the showcase, its `../../src` files) type-checks its
-`.stsx` modules when its tsconfig extends the generated `.lumen/tsconfig.generated.json` (see
-`showcase/tsconfig.json` and "Shadow TSX and tsconfig" in `lumen check`'s docs).
+A Lumiose project that imports the kit (or, like the showcase, its `../../src` files) type-checks its
+`.stsx` modules when its tsconfig extends the generated `.lumiose/tsconfig.generated.json` (see
+`showcase/tsconfig.json` and "Shadow TSX and tsconfig" in `lumiose check`'s docs).

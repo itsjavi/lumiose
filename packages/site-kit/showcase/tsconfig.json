@@ -1,16 +1,16 @@
 {
-  // The generated Lumen tsconfig pairs the kit's directory with `.lumen/shadow`, so the showcase's
-  // `.stsx` files may import `../../src/…` and the kit's `.stsx` modules type-check (`lumen check`).
-  "extends": ["../../../tsconfig.base.json", "./.lumen/tsconfig.generated.json"],
+  // The generated Lumiose tsconfig pairs the kit's directory with `.lumiose/shadow`, so the showcase's
+  // `.stsx` files may import `../../src/…` and the kit's `.stsx` modules type-check (`lumiose check`).
+  "extends": ["../../../tsconfig.base.json", "./.lumiose/tsconfig.generated.json"],
   "compilerOptions": {
-    "types": ["node", "lumen/env"]
+    "types": ["node", "lumiose/env"]
   },
   "include": [
     "src",
     "tests",
     "vite.config.ts",
     "playwright.config.ts",
-    ".lumen/shadow",
-    ".lumen/types"
+    ".lumiose/shadow",
+    ".lumiose/types"
   ]
 }

@@ -40,10 +40,10 @@ interface Framework {
 
 const FRAMEWORKS: Framework[] = [
   {
-    id: "lumen",
-    name: "Lumen",
-    pkg: "lumen",
-    mode: "`renderToString` (lumen/server), compiled `.stsx` (server target)",
+    id: "lumiose",
+    name: "Lumiose",
+    pkg: "lumiose",
+    mode: "`renderToString` (lumiose/server), compiled `.stsx` (server target)",
   },
   {
     id: "solid",
@@ -159,7 +159,7 @@ ${modes.join("\n")}
   \`node_modules\` with \`NODE_ENV=production\` (production builds of React and Vue).
 - \`scripts/run.ts\` renders once and checks the HTML, warms up for ${warmupMs} ms, then counts
   renders in back-to-back ${runMs} ms runs, with a full GC (\`--expose-gc\`) before each run.
-  Async renderers (Lumen, Vue) are awaited; sync ones (Solid, Svelte, React) are not.
+  Async renderers (Lumiose, Vue) are awaited; sync ones (Solid, Svelte, React) are not.
 - \`scripts/bench.ts\` runs every framework in a fresh process per round, interleaving the
   frameworks across rounds, and reports the mean and sample standard deviation of all runs.
 
@@ -167,14 +167,14 @@ ${modes.join("\n")}
 
 - Output size differs with each framework's markers and escaping: Svelte adds \`<!--[-->\`
   block markers and whitespace, Vue fragment markers, React \`<!-- -->\` text separators, Solid
-  (hydratable) \`data-hk\` keys. Lumen emits hydration markers only inside islands (none here)
-  and leaves attribute values unquoted when that is valid. Lumen, Solid and Svelte escape only
+  (hydratable) \`data-hk\` keys. Lumiose emits hydration markers only inside islands (none here)
+  and leaves attribute values unquoted when that is valid. Lumiose, Solid and Svelte escape only
   \`<\` and \`&\` in text (and \`"\` and \`&\` in attributes), which is valid HTML and cheaper than
   also escaping \`>\` and quotes.
-- Lumen's \`renderToString\` is \`renderToStream\` with \`resolveAll\`: the same path as
+- Lumiose's \`renderToString\` is \`renderToStream\` with \`resolveAll\`: the same path as
   prerendering and the streamed shell (lazy owners, async frames and the head collector
   included).
-- Lumen went from 338 to about 540 renders/s with TASK-71 (escaping with \`indexOf\` scans and
+- Lumiose went from 338 to about 540 renders/s with TASK-71 (escaping with \`indexOf\` scans and
   only the characters HTML requires, plain class strings memoized, owners created only when a
   component uses one), then to about 660 with TASK-78 in the code compiled for component calls:
   literal children and trivially safe server props (literals, local identifiers, single-level

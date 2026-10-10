@@ -1,6 +1,6 @@
 import { defineConfig, devices } from "@playwright/test";
 
-// The fixture under `lumen dev` and as a production build (`lumen build`, then `lumen preview`), in
+// The fixture under `lumiose dev` and as a production build (`lumiose build`, then `lumiose preview`), in
 // Chromium (Navigation API; one spec also runs the History API fallback).
 const DEV = 5197;
 const PREVIEW = 5198;
@@ -13,12 +13,12 @@ export default defineConfig({
   reporter: "list",
   webServer: [
     {
-      command: `pnpm exec lumen dev --port ${DEV}`,
+      command: `pnpm exec lumiose dev --port ${DEV}`,
       port: DEV,
       timeout: 60_000,
     },
     {
-      command: `pnpm exec lumen build && pnpm exec lumen preview --port ${PREVIEW}`,
+      command: `pnpm exec lumiose build && pnpm exec lumiose preview --port ${PREVIEW}`,
       port: PREVIEW,
       timeout: 120_000,
     },

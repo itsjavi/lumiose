@@ -1,6 +1,6 @@
-// The not-found page. `lumen build` writes it to dist/client/404.html, which static hosts serve
+// The not-found page. `lumiose build` writes it to dist/client/404.html, which static hosts serve
 // for unknown paths.
-import { href, Title, type ErrorPageProps } from "lumen";
+import { href, Title, type ErrorPageProps } from "lumiose";
 import { allPosts } from "../content.ts";
 import { site } from "../lib/site.ts";
 import * as theme from "../theme.ts";

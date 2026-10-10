@@ -1,6 +1,6 @@
 // The content layer: every post in content/posts/*.md, imported as a component at build time.
 //
-// `lumen({ md })` compiles each file to a static component, validates its frontmatter
+// `lumiose({ md })` compiles each file to a static component, validates its frontmatter
 // (src/frontmatter.ts, run by the hook in vite.config.ts) and lists its headings. This module
 // turns the modules into the `Post` API that pages, endpoints and tests use.
 //

@@ -1,4 +1,4 @@
-import { navigate } from "lumen/router";
+import { navigate } from "lumiose/router";
 
 export default function Home() {
   return (

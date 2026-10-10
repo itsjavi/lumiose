@@ -1,4 +1,4 @@
-import { Suspense } from "lumen";
+import { Suspense } from "lumiose";
 
 async function Slow() {
   await new Promise((resolve) => setTimeout(resolve, 600));

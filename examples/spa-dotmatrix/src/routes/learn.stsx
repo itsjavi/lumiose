@@ -1,7 +1,7 @@
 // Learn: the four channels and their tricks, each with buttons to hear it, then how songs are put
 // together, and credits.
-import { href } from "lumen";
-import { Link } from "lumen/router";
+import { href } from "lumiose";
+import { Link } from "lumiose/router";
 import { noteData, sfxData } from "../audio/driver.ts";
 import { playOnce } from "../audio/player.ts";
 import { WAVES } from "../audio/tables.ts";
@@ -240,7 +240,7 @@ export default function Learn() {
             Fonts: Silkscreen by Jason Kottke and Space Grotesk by Florian Karsten, both under the
             SIL Open Font License.
           </li>
-          <li>Built with Lumen, as a client-rendered single-page app.</li>
+          <li>Built with Lumiose, as a client-rendered single-page app.</li>
         </ul>
       </section>
       <style>

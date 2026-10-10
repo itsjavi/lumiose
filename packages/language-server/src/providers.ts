@@ -5,15 +5,15 @@ import {
   compileWithModules,
   isServerRoute,
   ProjectChecks,
-} from "lumen/tooling";
-import type { LumenDiagnosticProvider, ProjectDiagnosticsFactory } from "./server.ts";
+} from "lumiose/tooling";
+import type { LumioseDiagnosticProvider, ProjectDiagnosticsFactory } from "./server.ts";
 
 /**
  * The compiler's diagnostics (reactivity LUM2xxx, styles LUM3xxx, islands LUM4xxx) from a client
- * `compile()` of the document, as `lumen check` reports them; scanner diagnostics are not repeated.
+ * `compile()` of the document, as `lumiose check` reports them; scanner diagnostics are not repeated.
  * Constants imported by `$` references are read through the file's module host.
  */
-export const compilerDiagnostics: LumenDiagnosticProvider = async (file) =>
+export const compilerDiagnostics: LumioseDiagnosticProvider = async (file) =>
   compileDiagnostics(file.text, file.path, {
     root: file.root,
     reported: file.scan.diagnostics,
@@ -23,7 +23,7 @@ export const compilerDiagnostics: LumenDiagnosticProvider = async (file) =>
   });
 
 /**
- * Project-wide diagnostics (LUM4003 at import sites, LUM3012), as `lumen check` reports them: each
+ * Project-wide diagnostics (LUM4003 at import sites, LUM3012), as `lumiose check` reports them: each
  * run recompiles only the project files whose text changed.
  */
 export const projectDiagnostics: ProjectDiagnosticsFactory = (root, modules) => {

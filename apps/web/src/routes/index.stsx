@@ -1,8 +1,8 @@
-// The landing page: what Lumen is, with evidence. The benchmark numbers come from the committed
+// The landing page: what Lumiose is, with evidence. The benchmark numbers come from the committed
 // results (content/evidence.ts) and the compiled output from this version's compiler
 // (content/samples.ts, checked by its test).
-import { Callout, Card, CodeBlock, LinkButton, Tabs } from "@lumen/site-kit";
-import { highlight } from "@lumen/site-kit/highlight";
+import { Callout, Card, CodeBlock, LinkButton, Tabs } from "@lumiose/site-kit";
+import { highlight } from "@lumiose/site-kit/highlight";
 import {
   bp,
   color,
@@ -15,8 +15,8 @@ import {
   space,
   text,
   weight,
-} from "@lumen/site-kit/tokens";
-import { href, Meta, Title } from "lumen";
+} from "@lumiose/site-kit/tokens";
+import { href, Meta, Title } from "lumiose";
 import { BarChart } from "../components/BarChart.stsx";
 import { ShowcaseGrid } from "../components/Showcase.stsx";
 import { examples } from "../content/showcase.ts";
@@ -59,24 +59,24 @@ const ICONS = {
 
 export default function Home() {
   const results = evidence();
-  const lumenCpu = () => results.cpu.find((bar) => bar.self)?.value ?? 0;
-  const lumenSize = () => results.size.find((bar) => bar.self)?.value ?? 0;
-  const lumenSsr = () => results.ssr.find((bar) => bar.self)?.value ?? 0;
+  const lumioseCpu = () => results.cpu.find((bar) => bar.self)?.value ?? 0;
+  const lumioseSize = () => results.size.find((bar) => bar.self)?.value ?? 0;
+  const lumioseSsr = () => results.ssr.find((bar) => bar.self)?.value ?? 0;
 
   return (
     <div class="home">
-      <Title>Lumen: signals, islands and scoped styles, compiled</Title>
+      <Title>Lumiose: signals, islands and scoped styles, compiled</Title>
       <Meta name="description" content={site.description} />
-      <Meta property="og:title" content="Lumen" />
+      <Meta property="og:title" content="Lumiose" />
       <Meta property="og:description" content={site.description} />
 
       <section class="hero">
-        <p class="eyebrow">TypeScript 7 · .stsx · signals · islands</p>
+        <p class="eyebrow">TypeScript · .stsx · signals · islands</p>
         <h1>
           Web apps that ship <span class="lit">light</span>
         </h1>
         <p class="lead">
-          Lumen compiles <code>.stsx</code> components, TSX with plain CSS beside it, into direct DOM
+          Lumiose compiles <code>.stsx</code> components, TSX with plain CSS beside it, into direct DOM
           updates driven by signals. Pages render on the server, and only the parts that need to be
           interactive ship JavaScript.
         </p>
@@ -100,15 +100,15 @@ export default function Home() {
         </div>
         <ul class="facts" role="list">
           <li>
-            <strong>{fixed(2)(lumenCpu())}</strong>
+            <strong>{fixed(2)(lumioseCpu())}</strong>
             <span>weighted factor on js-framework-benchmark (1.00 is the fastest)</span>
           </li>
           <li>
-            <strong>{fixed(1)(lumenSize())} kB</strong>
+            <strong>{fixed(1)(lumioseSize())} kB</strong>
             <span>compressed, runtime and app, for the benchmark app</span>
           </li>
           <li>
-            <strong>{Math.round(lumenSsr())}/s</strong>
+            <strong>{Math.round(lumioseSsr())}/s</strong>
             <span>server renders of a 5,000-component page</span>
           </li>
         </ul>
@@ -199,7 +199,7 @@ export default function Home() {
           <h2 id="modes-title">Choose how each route renders</h2>
           <p>
             Static, server or SPA, per route, with islands where a page needs interaction. This site
-            is a static Lumen app: every page is prerendered, and the search box is an island.
+            is a static Lumiose app: every page is prerendered, and the search box is an island.
           </p>
         </header>
         <div class="cards">
@@ -243,7 +243,7 @@ export default function Home() {
           <p class="kicker">See it run</p>
           <h2 id="examples-title">Example apps</h2>
           <p>
-            Complete apps built with Lumen, running on this site. See all the{" "}
+            Complete apps built with Lumiose, running on this site. See all the{" "}
             <a href={href("/examples")}>examples</a>, and the{" "}
             <a href={href("/benchmarks")}>benchmarks</a> with their latest results.
           </p>
@@ -261,13 +261,14 @@ export default function Home() {
           </p>
           <ul class="points" role="list">
             <li>
-              <strong>Stock TypeScript 7.</strong> <code>lumen check</code> type-checks{" "}
+              <strong>TypeScript-first, compatible with TypeScript 7.</strong> Stock{" "}
+              <code>tsc</code>, no plugins: <code>lumiose check</code> type-checks{" "}
               <code>.stsx</code> through shadow files and maps every error back to your source.
             </li>
             <li>
-              <strong>Docs in the package.</strong> <code>lumen docs</code> and{" "}
-              <code>lumen explain</code> print the version you installed; agents read them from{" "}
-              <code>node_modules/lumen/docs</code>.
+              <strong>Docs in the package.</strong> <code>lumiose docs</code> and{" "}
+              <code>lumiose explain</code> print the version you installed; agents read them from{" "}
+              <code>node_modules/lumiose/docs</code>.
             </li>
             <li>
               <strong>Editor support.</strong> A language server and VS Code extension, with CSS
@@ -288,7 +289,7 @@ export default function Home() {
 
       <section class="section closing" aria-labelledby="start-title">
         <Callout kind="info" title="Pre-release">
-          Lumen is at 0.0.0. The docs mark what this version does not implement yet with a Status
+          Lumiose is at 0.0.0. The docs mark what this version does not implement yet with a Status
           note, and the APIs may still change.
         </Callout>
         <h2 id="start-title">Build something light</h2>

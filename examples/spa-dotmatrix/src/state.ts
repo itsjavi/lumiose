@@ -1,7 +1,7 @@
 // Application state: the song open in the studio (a deep store), its undo history, editor and
 // view preferences, and the status line. Every song edit goes through `edit`, which records undo,
 // autosaves and tells the player to re-render what changed.
-import { batch, computed, effect, signal, snapshot, store, untrack } from "lumen";
+import { batch, computed, effect, signal, snapshot, store, untrack } from "lumiose";
 import * as player from "./audio/player.ts";
 import { createHistory } from "./model/history.ts";
 import { loadCurrent, saveCurrent } from "./model/library.ts";

@@ -1,7 +1,7 @@
-// A small horizontal bar chart for benchmark results: one row per framework, Lumen's bar in the
+// A small horizontal bar chart for benchmark results: one row per framework, Lumiose's bar in the
 // brand gradient. Plain HTML and CSS (bar widths are custom properties), so it prerenders and
 // reads well without JavaScript; the values are in the text for screen readers.
-import { color, font, radius, space, text, weight } from "@lumen/site-kit/tokens";
+import { color, font, radius, space, text, weight } from "@lumiose/site-kit/tokens";
 import type { Bar } from "../content/evidence.ts";
 
 export interface BarChartProps {

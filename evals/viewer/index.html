@@ -4,9 +4,9 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Agent evals</title>
-    <meta name="description" content="Coding agents solving Lumen tasks, graded by hidden tests (TASK-40)." />
+    <meta name="description" content="Coding agents solving Lumiose tasks, graded by hidden tests (TASK-40)." />
     <style>
-      /* Tokens: surfaces and text, plus one categorical hue per app (fixed order: Lumen, React Router,
+      /* Tokens: surfaces and text, plus one categorical hue per app (fixed order: Lumiose, React Router,
          Next.js), validated for both modes. Text never wears a series color. */
       :root {
         color-scheme: light;
@@ -217,7 +217,7 @@
       <header class="top">
         <div>
           <h1>Agent evals</h1>
-          <p class="subtitle">Coding agents solving Lumen tasks through their CLIs, graded by hidden tests and <code>lumen check</code>.</p>
+          <p class="subtitle">Coding agents solving Lumiose tasks through their CLIs, graded by hidden tests and <code>lumiose check</code>.</p>
         </div>
         <div class="controls">
           <label class="ctl">Run <select id="run"></select></label>
@@ -266,7 +266,7 @@
       let file;
       const index = await fetch("results/index.json").then((r) => (r.ok ? r.json() : { runs: [] })).catch(() => ({ runs: [] }));
       if (!index.runs.length) {
-        $("content").innerHTML = `<p class="empty">No results yet. Run <code>pnpm --filter @lumen/evals eval --agents …</code>.</p>`;
+        $("content").innerHTML = `<p class="empty">No results yet. Run <code>pnpm --filter @lumiose/evals eval --agents …</code>.</p>`;
       } else {
         $("run").innerHTML = index.runs.map((r) => `<option value="${esc(r.file)}">${esc(r.date.slice(0, 16).replace("T", " "))} · ${esc(r.host)} · ${r.runs} runs${r.complete ? "" : " (incomplete)"}</option>`).join("");
         const saved = store.get("evals-run");
@@ -289,7 +289,7 @@
         $("meta").innerHTML = `<div class="meta"><dl>
           <div><dt>Date</dt><dd>${esc(m.date.replace("T", " ").slice(0, 19))} UTC ${m.complete ? "" : '<span class="pill quick">incomplete</span>'}</dd></div>
           <div><dt>Machine</dt><dd>${esc(m.machine.cpu)}, ${m.machine.cores} cores, ${m.machine.memoryGb} GB · ${esc(m.machine.os)}</dd></div>
-          <div><dt>Lumen</dt><dd>${esc(m.lumen)} · Node ${esc(m.node)}</dd></div>
+          <div><dt>Lumiose</dt><dd>${esc(m.lumiose)} · Node ${esc(m.node)}</dd></div>
           <div><dt>CLIs</dt><dd>${Object.entries(m.clis).map(([k, v]) => `${esc(k)} ${esc(v ?? "–")}`).join("<br>")}</dd></div>
           <div><dt>Matrix</dt><dd>${m.tasks.length} tasks × ${m.agents.length} agents × ${m.ablations.length} ablations × ${m.runs} runs</dd></div>
           <div><dt>Ablations</dt><dd>${m.ablations.map(esc).join(", ")}</dd></div>
@@ -303,19 +303,19 @@
 
         // [label, hint, better, (runs) => value, format]
         const metrics = [
-          ["Success rate", "hidden tests pass and lumen check is clean", "higher", (rs) => pct(rs.filter((r) => r.success).length, rs.length), (v, rs) => `${num(v)}% <span class="ratio">${rs.filter((r) => r.success).length}/${rs.length}</span>`],
+          ["Success rate", "hidden tests pass and lumiose check is clean", "higher", (rs) => pct(rs.filter((r) => r.success).length, rs.length), (v, rs) => `${num(v)}% <span class="ratio">${rs.filter((r) => r.success).length}/${rs.length}</span>`],
           ["Hidden tests passed", "mean share of a run's tests", "higher", (rs) => mean(rs.map((r) => (r.grade.tests.total ? (r.grade.tests.passed / r.grade.tests.total) * 100 : 0))), (v) => `${num(v)}%`],
-          ["First lumen check passed", "of runs that ran one", "higher", (rs) => { const c = rs.filter((r) => r.metrics.firstCheckOk !== null); return pct(c.filter((r) => r.metrics.firstCheckOk).length, c.length); }, (v, rs) => `${num(v)}% <span class="ratio">${rs.filter((r) => r.metrics.firstCheckOk !== null).length} ran a check</span>`],
+          ["First lumiose check passed", "of runs that ran one", "higher", (rs) => { const c = rs.filter((r) => r.metrics.firstCheckOk !== null); return pct(c.filter((r) => r.metrics.firstCheckOk).length, c.length); }, (v, rs) => `${num(v)}% <span class="ratio">${rs.filter((r) => r.metrics.firstCheckOk !== null).length} ran a check</span>`],
           ["Wall time", "per run", "lower", (rs) => median(rs.map((r) => r.wallMs / 1000)), (v) => `${num(v)} s`],
           ["Turns", "Claude: model requests; Codex: messages and tool calls", "lower", (rs) => median(rs.map((r) => r.metrics.turns)), (v) => num(v)],
           ["Tool calls", "commands, reads, edits, searches, MCP", "lower", (rs) => median(rs.map((r) => r.metrics.steps)), (v) => num(v)],
           ["Output tokens", "reasoning included where reported", "lower", (rs) => median(rs.map((r) => r.tokens.output)), (v) => num(v)],
           ["Input tokens", "uncached + cache reads + cache writes", "lower", (rs) => median(rs.map((r) => r.tokens.input + r.tokens.cacheRead + r.tokens.cacheWrite)), (v) => num(v)],
           ["Cost per run", "list-price USD (Claude only)", "lower", (rs) => median(rs.map((r) => r.costUsd)), (v, rs) => (v === undefined ? "–" : `$${num(v, 3)} <span class="ratio">total $${num(sum(rs.map((r) => r.costUsd)), 2)}</span>`)],
-          ["Docs reads", "mean per run (files, lumen docs/explain, MCP docs)", "higher", (rs) => mean(rs.map((r) => r.metrics.docsReads)), (v) => num(v, 1)],
+          ["Docs reads", "mean per run (files, lumiose docs/explain, MCP docs)", "higher", (rs) => mean(rs.map((r) => r.metrics.docsReads)), (v) => num(v, 1)],
           ["llms.txt reads", "mean per run", "higher", (rs) => mean(rs.map((r) => r.metrics.llmsReads)), (v) => num(v, 1)],
           ["MCP calls", "mean per run", "higher", (rs) => mean(rs.map((r) => r.metrics.mcpCalls)), (v) => num(v, 1)],
-          ["Used the lumen skill", "share of runs", "higher", (rs) => pct(rs.filter((r) => r.metrics.skills?.includes("lumen")).length, rs.length), (v) => `${num(v)}%`],
+          ["Used the lumiose skill", "share of runs", "higher", (rs) => pct(rs.filter((r) => r.metrics.skills?.includes("lumiose")).length, rs.length), (v) => `${num(v)}%`],
           ["Timeouts and CLI errors", "count", "lower", (rs) => rs.filter((r) => r.exit.timedOut || r.exit.error).length, (v) => num(v)],
         ];
         const rows = metrics.map(([label, hint, better, value, format]) => {
@@ -333,7 +333,7 @@
           if (!rs.length) return `<td class="cell small">–</td>`;
           const ok = rs.filter((r) => r.success).length;
           const cls = ok === rs.length ? "all" : ok === 0 ? "none" : "some";
-          const failures = rs.filter((r) => !r.success).map((r) => `${r.task}${r.ablation === "baseline" ? "" : ` (${r.ablation})`}: ${r.exit.timedOut ? "timed out; " : ""}${r.grade.tests.results.filter((t) => !t.ok).map((t) => t.name).join("; ") || (r.grade.check.ok ? "" : `lumen check: ${r.grade.check.codes.join(", ")}`)}`);
+          const failures = rs.filter((r) => !r.success).map((r) => `${r.task}${r.ablation === "baseline" ? "" : ` (${r.ablation})`}: ${r.exit.timedOut ? "timed out; " : ""}${r.grade.tests.results.filter((t) => !t.ok).map((t) => t.name).join("; ") || (r.grade.check.ok ? "" : `lumiose check: ${r.grade.check.codes.join(", ")}`)}`);
           return `<td class="cell ${cls}"${failures.length ? ` data-tip="${esc(`Failed|${failures.join(" · ").slice(0, 600)}`)}"` : ""}>${ok}/${rs.length}</td>`;
         };
         const categoryRows = categories.map((c) => `<tr><td>${esc(c)}</td>${agents.map((a) => cell(by(a).filter((r) => r.category === c))).join("")}</tr>`);

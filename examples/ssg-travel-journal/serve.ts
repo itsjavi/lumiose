@@ -1,6 +1,6 @@
 // A minimal static file server for dist/client, behaving like a typical static host: `/about`
 // and `/about/` serve `about/index.html`, other files are served as they are, and unknown paths
-// get `404.html` with status 404. No Lumen code runs: the build output is plain files.
+// get `404.html` with status 404. No Lumiose code runs: the build output is plain files.
 //
 //   pnpm build && pnpm serve        # PORT (4321) and HOST (127.0.0.1) are configurable
 import { createReadStream } from "node:fs";

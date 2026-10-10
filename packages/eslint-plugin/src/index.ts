@@ -1,17 +1,17 @@
-// `@lumen/eslint-plugin` (TASK-41): the Lumen compiler's diagnostics as lint rules. The compiler is
+// `@lumiose/eslint-plugin` (TASK-41): the Lumiose compiler's diagnostics as lint rules. The compiler is
 // the single source of truth: these rules only report what `compile()` reports (`LUMxxxx`, with
-// help and fixes), so oxlint, ESLint, `lumen check` and the editor agree.
+// help and fixes), so oxlint, ESLint, `lumiose check` and the editor agree.
 //
-// - oxlint (JS plugins): `"jsPlugins": ["@lumen/eslint-plugin"]` lints `.tsx` files. oxlint cannot
-//   parse `.stsx` (no custom file formats yet): `lumen lint` covers those.
+// - oxlint (JS plugins): `"jsPlugins": ["@lumiose/eslint-plugin"]` lints `.tsx` files. oxlint cannot
+//   parse `.stsx` (no custom file formats yet): `lumiose lint` covers those.
 // - ESLint 9 (flat config): `configs.recommended` also lints `.stsx` files through the `stsx`
 //   processor, which hands ESLint the scanner's masked TSX (offset-identical, so positions and
 //   fixes apply to the source). Parse `.tsx` with a TypeScript parser (typescript-eslint).
 //
 // Not covered: project-wide checks (LUM4003, LUM3012) and `$` constants imported from other
-// modules, whose style diagnostics need the module graph: `lumen check` reports those.
+// modules, whose style diagnostics need the module graph: `lumiose check` reports those.
 
-import { compile, scan, type Diagnostic } from "@lumen/compiler";
+import { compile, scan, type Diagnostic } from "@lumiose/compiler";
 
 /** The parts of ESLint's rule context the rules use (oxlint implements the same API). */
 interface RuleContext {
@@ -48,7 +48,7 @@ const REPORTED_BY_PARSERS = new Set(["LUM1001"]);
 const stsxSources = new Map<string, string>();
 
 /** The compiler's diagnostics for a `.stsx` or `.tsx` file (none for other files). */
-export function lumenDiagnostics(text: string, filename: string): Diagnostic[] {
+export function lumioseDiagnostics(text: string, filename: string): Diagnostic[] {
   if (!/\.(?:stsx|tsx)$/.test(filename)) return [];
   let diagnostics: Diagnostic[];
   try {
@@ -73,7 +73,7 @@ function position(text: string, offset: number): Position {
 /** `LUM2001: message`, then the help and the docs topic on a line of their own. */
 function message(diagnostic: Diagnostic): string {
   const help = diagnostic.help === undefined ? "" : `${diagnostic.help} `;
-  return `${diagnostic.code}: ${diagnostic.message}\n${help}(lumen docs ${diagnostic.docs})`;
+  return `${diagnostic.code}: ${diagnostic.message}\n${help}(lumiose docs ${diagnostic.docs})`;
 }
 
 function compilerRule(severities: ReadonlySet<Diagnostic["severity"]>, description: string) {
@@ -82,7 +82,7 @@ function compilerRule(severities: ReadonlySet<Diagnostic["severity"]>, descripti
       type: "problem" as const,
       docs: {
         description,
-        url: "https://github.com/itsjavi/lumen/tree/main/packages/lumen/docs/errors",
+        url: "https://github.com/itsjavi/lumen/tree/main/packages/lumiose/docs/errors",
       },
       fixable: "code" as const,
       schema: [],
@@ -92,7 +92,7 @@ function compilerRule(severities: ReadonlySet<Diagnostic["severity"]>, descripti
       const text = stsxSources.get(file) ?? context.sourceCode.text;
       return {
         Program() {
-          for (const diagnostic of lumenDiagnostics(text, file)) {
+          for (const diagnostic of lumioseDiagnostics(text, file)) {
             if (!severities.has(diagnostic.severity)) continue;
             const { fix } = diagnostic;
             context.report({
@@ -119,7 +119,7 @@ function compilerRule(severities: ReadonlySet<Diagnostic["severity"]>, descripti
 
 /** ESLint processor for `.stsx`: lint the masked TSX, which keeps every offset of the source. */
 const stsxProcessor = {
-  meta: { name: "lumen/stsx", version: "0.0.0" },
+  meta: { name: "lumiose/stsx", version: "0.0.0" },
   supportsAutofix: true,
   preprocess(text: string, filename: string) {
     stsxSources.set(filename, text);
@@ -132,14 +132,14 @@ const stsxProcessor = {
 };
 
 const plugin = {
-  meta: { name: "lumen", version: "0.0.0" },
+  meta: { name: "lumiose", version: "0.0.0" },
   rules: {
     /** The compiler's errors (reactivity, styles, islands, …). */
-    compiler: compilerRule(new Set(["error"]), "Lumen compiler errors (LUMxxxx)"),
+    compiler: compilerRule(new Set(["error"]), "Lumiose compiler errors (LUMxxxx)"),
     /** The compiler's warnings and hints. */
     "compiler-warnings": compilerRule(
       new Set(["warning", "hint"]),
-      "Lumen compiler warnings and hints (LUMxxxx)",
+      "Lumiose compiler warnings and hints (LUMxxxx)",
     ),
   },
   processors: { stsx: stsxProcessor },
@@ -148,11 +148,11 @@ const plugin = {
 
 /** ESLint 9 flat config: `.stsx` through the processor, compiler rules on `.tsx` and `.stsx`. */
 plugin.configs["recommended"] = [
-  { files: ["**/*.stsx"], plugins: { lumen: plugin }, processor: "lumen/stsx" },
+  { files: ["**/*.stsx"], plugins: { lumiose: plugin }, processor: "lumiose/stsx" },
   {
     files: ["**/*.tsx", "**/*.stsx/*.tsx"],
-    plugins: { lumen: plugin },
-    rules: { "lumen/compiler": "error", "lumen/compiler-warnings": "warn" },
+    plugins: { lumiose: plugin },
+    rules: { "lumiose/compiler": "error", "lumiose/compiler-warnings": "warn" },
   },
 ];
 

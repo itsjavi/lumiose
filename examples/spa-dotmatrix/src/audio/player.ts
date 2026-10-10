@@ -2,7 +2,7 @@
 // four stems in sync, loops the part after the loop bar, and mixes them with mute, solo and
 // panning. An edit re-renders only the channels it changed, and the new stem takes over at the
 // same position with a short crossfade, so playback continues while you edit.
-import { signal } from "lumen";
+import { signal } from "lumiose";
 import type { EngineAudioData } from "../../vendor/gbapu/dist/index.js";
 import { isAudible } from "../model/song.ts";
 import type { ChannelIndex, Song } from "../model/types.ts";

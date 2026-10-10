@@ -1,7 +1,7 @@
 // Layout of the prerendered routes. They cannot know who is signed in; the account menu island
 // in the header fills that in on the client.
 // Base styles first: component styles come after them in the cascade.
-import type { LayoutProps } from "lumen";
+import type { LayoutProps } from "lumiose";
 import "../../styles.css";
 import { Footer, Header } from "../../components/Header.stsx";
 

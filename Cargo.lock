@@ -840,10 +840,10 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f9f8bd3e56ce4dfc153cf470fffbfa98c7620958b312ca5c3a4b8d5181fd13c6"
 
 [[package]]
-name = "lumen_compiler"
+name = "lumiose_compiler"
 version = "0.0.0"
 dependencies = [
- "lumen_css",
+ "lumiose_css",
  "oxc_allocator",
  "oxc_ast",
  "oxc_ast_visit",
@@ -859,16 +859,16 @@ dependencies = [
 ]
 
 [[package]]
-name = "lumen_content"
+name = "lumiose_content"
 version = "0.0.0"
 dependencies = [
  "comrak",
  "html5ever",
- "lumen_compiler",
+ "lumiose_compiler",
 ]
 
 [[package]]
-name = "lumen_css"
+name = "lumiose_css"
 version = "0.0.0"
 dependencies = [
  "lightningcss",
@@ -876,35 +876,35 @@ dependencies = [
 ]
 
 [[package]]
-name = "lumen_napi"
+name = "lumiose_napi"
 version = "0.0.0"
 dependencies = [
- "lumen_compiler",
- "lumen_content",
- "lumen_css",
- "lumen_svg",
+ "lumiose_compiler",
+ "lumiose_content",
+ "lumiose_css",
+ "lumiose_svg",
  "napi",
  "napi-build",
  "napi-derive",
 ]
 
 [[package]]
-name = "lumen_svg"
+name = "lumiose_svg"
 version = "0.0.0"
 dependencies = [
  "cssparser",
- "lumen_compiler",
+ "lumiose_compiler",
  "roxmltree",
 ]
 
 [[package]]
-name = "lumen_wasm"
+name = "lumiose_wasm"
 version = "0.0.0"
 dependencies = [
  "getrandom 0.3.4",
- "lumen_compiler",
- "lumen_css",
- "lumen_svg",
+ "lumiose_compiler",
+ "lumiose_css",
+ "lumiose_svg",
  "serde",
  "serde-wasm-bindgen",
  "wasm-bindgen",

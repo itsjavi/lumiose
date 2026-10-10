@@ -1,4 +1,4 @@
-import { renderToString } from "lumen/server";
+import { renderToString } from "lumiose/server";
 import { describe, expect, it } from "vitest";
 import { adjacentPosts, allPosts, allTags, findPost, postsTagged } from "./content.ts";
 import { postFrontmatter } from "./frontmatter.ts";
@@ -43,7 +43,7 @@ describe("the posts in content/posts", () => {
   });
 });
 
-describe("postFrontmatter (the lumen({ md }) hook)", () => {
+describe("postFrontmatter (the lumiose({ md }) hook)", () => {
   const file = "/site/content/posts/sea-walk.md";
   const data = {
     title: " A walk: by the sea ",

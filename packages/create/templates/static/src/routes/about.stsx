@@ -1,4 +1,4 @@
-import { Title } from "lumen";
+import { Title } from "lumiose";
 
 export default function About() {
   return (
@@ -6,7 +6,7 @@ export default function About() {
       <Title>About · {{name}}</Title>
       <h1>About</h1>
       <p>
-        A static site made with Lumen. <code>lumen build</code> prerenders every page to HTML in
+        A static site made with Lumiose. <code>lumiose build</code> prerenders every page to HTML in
         <code> dist/client</code>, ready for any static host.
       </p>
     </main>

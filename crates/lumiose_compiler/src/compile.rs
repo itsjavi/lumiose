@@ -1,0 +1,496 @@
+//! `compile()`: the per-module pipeline (spec §5.1).
+//!
+//! ```text
+//! scan → oxc_parser(masked) → semantic → $ref bindings + constant folding → strip placeholders
+//!      → TypeScript strip → semantic → analyze → scope tokens + inventories
+//!      → client | server codegen → oxc_codegen + source map
+//!      → lumiose_css (blocks, folded refs, inventories) → css + map
+//! ```
+//!
+//! Spans everywhere are byte offsets into the original source: the masked text the parser sees
+//! has identical offsets, so mapping back is the identity.
+
+use oxc_allocator::Allocator;
+use oxc_codegen::{Codegen, CodegenOptions};
+use oxc_parser::Parser;
+use oxc_semantic::SemanticBuilder;
+use oxc_span::SourceType;
+
+use crate::analyze;
+use crate::codegen::ast::Ast;
+use crate::codegen::client::{self, ContractEntry, ScopeTokens, TransformOptions};
+use crate::css::{self, CssOptions, ScopePlan};
+use crate::custom_properties::{self, CustomPropertySet};
+use crate::diagnostics::{Code, Diagnostic};
+use crate::imports::{self, ImportMeta};
+use crate::module_id::{self, PackageRoot};
+use crate::prepare::{self, HostModule, ModuleRequest, ResolvedStyleRef};
+use crate::scanner::{self, FileKind};
+use crate::span::Span;
+
+/// The output environment.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize),
+    serde(rename_all = "lowercase")
+)]
+pub enum Target {
+    /// Browser code on `lumiose/dom`.
+    #[default]
+    Client,
+    /// SSR code on `lumiose/server`.
+    Server,
+}
+
+#[derive(Debug, Clone)]
+pub struct CompileOptions {
+    pub target: Target,
+    /// Produce source maps (for the JS and the CSS).
+    pub source_map: bool,
+    /// Import the file's CSS module (`<id>?lumiose&type=style&lang.css`) when it has style blocks.
+    pub style_import: bool,
+    /// Compile the style blocks into [`CompileResult::css`].
+    pub emit_css: bool,
+    pub css: CssOptions,
+    /// The project root (Vite's `root`). Island refs name modules inside it root-relatively
+    /// (`/src/components/Team.stsx#TeamPanel`) and scope tokens hash the root-relative path;
+    /// without it both use the module id as given.
+    pub root: Option<String>,
+    /// Packages outside `root` (linked workspace packages): island refs and scope tokens name
+    /// their modules package-relatively (`@acme/ui/src/Nav.stsx#Nav`), so neither depends on
+    /// where the package sits on disk. The innermost package containing a module wins.
+    pub packages: Vec<PackageRoot>,
+    /// Modules the host loaded for folding imported `$name` constants, answering earlier
+    /// [`CompileResult::module_requests`].
+    pub modules: Vec<HostModule>,
+    /// Fill [`CompileMeta::contract`] (the language server's hovers).
+    pub contract: bool,
+    /// The module is a route module rendered only on the server (route mode `server` or
+    /// `static`): its default export's props are plain values, so reading them is not a
+    /// reactive read (no `LUM2001`/`LUM2003` for them). The host knows the route mode.
+    pub server_route: bool,
+    /// `lumiose({ csp: "strict" })` (TASK-142, decision-27): static `style` strings are applied
+    /// through `setStyle`/`styleAttr` instead of baked `style="…"` attributes, and JSX
+    /// `<script>`/`<style>` elements get the CSP nonce (`setNonce`/`nonceAttr()`).
+    pub strict_csp: bool,
+    /// Dev client builds: register components for component-level hot updates (TASK-146, see
+    /// `hot.rs`). Ignored for the server target.
+    pub hot: bool,
+    /// Report browser globals evaluated at module scope (`LUM4004`), for modules of server
+    /// graphs: always on for the server target; `lumiose check` and the language server turn it on
+    /// for client compiles of modules that server rendering loads.
+    pub browser_globals: bool,
+}
+
+impl Default for CompileOptions {
+    fn default() -> Self {
+        Self {
+            target: Target::Client,
+            source_map: true,
+            style_import: true,
+            emit_css: true,
+            css: CssOptions::default(),
+            root: None,
+            packages: Vec::new(),
+            modules: Vec::new(),
+            contract: false,
+            server_route: false,
+            strict_csp: false,
+            hot: false,
+            browser_globals: false,
+        }
+    }
+}
+
+/// A component of the module.
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize),
+    serde(rename_all = "camelCase")
+)]
+pub struct ComponentMeta {
+    pub name: String,
+    pub span: Span,
+    pub exported: bool,
+    pub is_async: bool,
+    /// Spans of the `await`s the async rewrite (TASK-15) indexes as sites `0..n`.
+    pub await_sites: Vec<Span>,
+}
+
+/// An island call site (`<X client:* />`).
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize),
+    serde(rename_all = "camelCase")
+)]
+pub struct IslandMeta {
+    /// `<module>#<export>`, as passed to the server's `island()`.
+    #[cfg_attr(feature = "serde", serde(rename = "ref"))]
+    pub reference: String,
+    /// The module that exports the component (root-relative, an absolute id or a bare specifier).
+    pub module: String,
+    /// The export name (`default` for default exports).
+    pub export: String,
+    /// `load`, `idle`, `visible`, `media` or `only`.
+    pub strategy: String,
+    /// The component name in the JSX tag.
+    pub span: Span,
+}
+
+#[derive(Debug, Clone, Default, PartialEq)]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize),
+    serde(rename_all = "camelCase")
+)]
+pub struct CompileMeta {
+    pub components: Vec<ComponentMeta>,
+    /// Number of hoisted templates.
+    pub templates: usize,
+    /// Events registered with `delegateEvents`.
+    pub delegated_events: Vec<String>,
+    /// `lumiose/dom` (client) or `lumiose/server` (server) helpers the module imports.
+    pub runtime_helpers: Vec<String>,
+    /// Every `$name` style reference with its binding and folded value.
+    pub style_refs: Vec<ResolvedStyleRef>,
+    /// True when the module imports its CSS module.
+    pub has_styles: bool,
+    /// The `data-l-*` attributes stamped on the file's and its components' elements.
+    pub scope_tokens: ScopeTokens,
+    /// Island call sites, in source order (both targets).
+    pub islands: Vec<IslandMeta>,
+    /// Custom properties the file sets in `style` props and reads in its CSS, for a
+    /// project-wide `LUM3012` check (another file's CSS may read what this one sets).
+    pub custom_properties: CustomPropertiesMeta,
+    /// The execution contract of each JSX expression and `await` (spec §5.1), with
+    /// [`CompileOptions::contract`].
+    pub contract: Option<Vec<ContractEntry>>,
+    /// The module's imports (type-only ones are stripped), in source order.
+    pub imports: Vec<ImportMeta>,
+}
+
+/// The custom properties of a file (`LUM3012`, TASK-62).
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize),
+    serde(rename_all = "camelCase")
+)]
+pub struct CustomPropertiesMeta {
+    /// Set in `style` props (elements and components), in source order.
+    pub set: Vec<CustomPropertySet>,
+    /// Read through `var()` in the file's CSS, sorted. Empty when no CSS was compiled
+    /// ([`CompileResult::css`] is `None`).
+    pub read: Vec<String>,
+}
+
+#[derive(Debug, Clone, Default)]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize),
+    serde(rename_all = "camelCase")
+)]
+pub struct CompileResult {
+    /// JavaScript (types stripped). Empty when the source could not be parsed.
+    pub code: String,
+    /// Source map v3 JSON.
+    pub map: Option<String>,
+    /// The file's stylesheet: file-level blocks first, then component blocks in source order
+    /// (spec §4.6.2). `None` when the file has no style blocks, CSS is disabled, or
+    /// `module_requests` is not empty.
+    pub css: Option<String>,
+    /// Source map v3 JSON from `css` to the `.stsx` source.
+    pub css_map: Option<String>,
+    /// Ids of the modules imported constants were folded from: edits to them change `css`.
+    pub css_deps: Vec<String>,
+    /// Modules needed to fold imported `$name` constants. When not empty, `css` is withheld:
+    /// load each one and compile again with them in [`CompileOptions::modules`].
+    pub module_requests: Vec<ModuleRequest>,
+    pub diagnostics: Vec<Diagnostic>,
+    pub meta: CompileMeta,
+}
+
+impl CompileResult {
+    pub fn has_errors(&self) -> bool {
+        self.diagnostics.iter().any(Diagnostic::is_error)
+    }
+}
+
+/// Compiles one module. `filename` is the module id (also the source map's `sources` entry and
+/// the CSS module import base).
+pub fn compile(source: &str, filename: &str, options: &CompileOptions) -> CompileResult {
+    let scan = scanner::scan(source, filename);
+    let mut diagnostics = scan.diagnostics.clone();
+
+    // Deeper nesting would overflow the stack in oxc's recursive passes (TASK-170).
+    if let Some(span) = crate::depth::too_deep(scan.masked()) {
+        diagnostics.push(
+            Diagnostic::new(
+                Code::SourceNestedTooDeep,
+                span,
+                format!(
+                    "brackets are nested more than {} levels deep here; the file is not compiled",
+                    crate::depth::MAX_DEPTH
+                ),
+            )
+            .with_help("Split the expression into named parts (constants or functions)."),
+        );
+        sort(&mut diagnostics);
+        return CompileResult {
+            diagnostics,
+            ..CompileResult::default()
+        };
+    }
+
+    let allocator = Allocator::default();
+    let ast = Ast::new(&allocator);
+    let parsed = Parser::new(&allocator, scan.masked(), source_type(scan.kind, filename)).parse();
+    diagnostics.extend(
+        parsed
+            .diagnostics
+            .into_vec()
+            .iter()
+            .map(|d| prepare::from_oxc(Code::SyntaxError, d)),
+    );
+    if parsed.fatal_error {
+        sort(&mut diagnostics);
+        return CompileResult {
+            diagnostics,
+            ..CompileResult::default()
+        };
+    }
+    let mut program = parsed.program;
+
+    // Nodes are only needed to fold `$name` references (declarator lookups).
+    let has_refs = scan.blocks.iter().any(|block| !block.refs.is_empty());
+    let semantic = SemanticBuilder::new()
+        .with_enum_eval(true)
+        .with_build_nodes(has_refs)
+        .build(&program)
+        .semantic;
+    let style = prepare::resolve_style_refs(
+        &allocator,
+        &program,
+        &semantic,
+        filename,
+        &scan.blocks,
+        &options.modules,
+        &css::hyphenated_refs(source, &scan.blocks),
+    );
+    let scoping = semantic.into_scoping();
+    prepare::strip_style_artifacts(&ast, &mut program, &scan.blocks, &style);
+    diagnostics.extend(prepare::strip_types(
+        &allocator,
+        &mut program,
+        scoping,
+        filename,
+    ));
+
+    let scoping = SemanticBuilder::new()
+        .build(&program)
+        .semantic
+        .into_scoping();
+    let is_server_only = |specifier: &str| {
+        module_id::is_server_only_import(specifier, filename, options.root.as_deref())
+    };
+    let analysis = analyze::analyze(
+        &program,
+        &scoping,
+        &scan.blocks,
+        &scan.diagnostics,
+        is_server_only,
+        options.server_route,
+    );
+    let contract = options.contract.then(|| {
+        let server_only = analyze::reactivity::server_only_imports(&program, is_server_only);
+        client::execution_contract(&program, &scoping, &analysis, &server_only)
+    });
+    diagnostics.extend(analysis.diagnostics.iter().cloned());
+    if options.browser_globals || options.target == Target::Server {
+        diagnostics.extend(analyze::browser_globals::browser_globals(
+            &program, &scoping,
+        ));
+    }
+
+    let scopes = ScopePlan::new(
+        &scan.blocks,
+        &program,
+        &analysis,
+        &scope_path(filename, options.root.as_deref(), &options.packages),
+    );
+    let emit_css = options.emit_css && scopes.has_css() && style.is_complete();
+    let inventories = if emit_css {
+        css::inventories(&program, &analysis, &scopes)
+    } else {
+        Vec::new()
+    };
+
+    let hot = (options.hot && options.target == Target::Client)
+        .then(|| crate::hot::HotPlan::new(&program, &analysis, source, &scan.blocks))
+        .flatten();
+    if let Some(hot) = &hot {
+        hot.apply(&mut program);
+    }
+
+    let custom_properties_set = custom_properties::set_in_style_props(&program);
+    let module_imports = imports::imports(&program);
+
+    let transform_options = TransformOptions {
+        target: options.target,
+        root: options.root.as_deref(),
+        packages: &options.packages,
+        filename,
+        scope_tokens: &scopes.tokens,
+        style_import: options.style_import,
+        strict_csp: options.strict_csp,
+    };
+    let output = client::transform(
+        &ast,
+        &mut program,
+        &scoping,
+        &analysis,
+        source,
+        &scan.blocks,
+        &transform_options,
+    );
+    diagnostics.extend(output.diagnostics);
+
+    // Print against the original text: source map columns and `sourcesContent` then refer to
+    // the authored file (masked style regions are never printed).
+    program.source_text = source;
+    let codegen_options = CodegenOptions {
+        source_map_path: options.source_map.then(|| filename.into()),
+        ..CodegenOptions::default()
+    };
+    let mut printed = Codegen::new().with_options(codegen_options).build(&program);
+    // After the printed code: its source map is unaffected.
+    if let Some(hot) = &hot
+        && !printed.code.is_empty()
+    {
+        printed.code.push_str(&hot.footer());
+    }
+
+    let mut custom_properties_read = Vec::new();
+    let (css, css_map) = if emit_css {
+        let (output, css_diagnostics) = css::process(
+            source,
+            filename,
+            &scopes,
+            &style.refs,
+            &inventories,
+            &options.css,
+            options.source_map,
+        );
+        diagnostics.extend(css_diagnostics);
+        custom_properties_read = output.custom_properties_read;
+        (Some(output.css), output.map)
+    } else {
+        (None, None)
+    };
+    diagnostics.extend(style.diagnostics);
+    sort(&mut diagnostics);
+    let has_styles = options.style_import && scan.blocks.iter().any(|b| !b.svg);
+    CompileResult {
+        code: printed.code,
+        map: printed.map.map(|map| map.to_json_string()),
+        css,
+        css_map,
+        css_deps: style.deps,
+        module_requests: style.requests,
+        diagnostics,
+        meta: CompileMeta {
+            components: analysis
+                .components
+                .iter()
+                .map(|c| ComponentMeta {
+                    name: c.name.clone(),
+                    span: c.span,
+                    exported: c.exported,
+                    is_async: c.is_async,
+                    await_sites: c.await_sites.clone(),
+                })
+                .collect(),
+            templates: output.templates,
+            delegated_events: output.delegated_events,
+            runtime_helpers: output.runtime_helpers,
+            style_refs: style.refs,
+            has_styles,
+            scope_tokens: scopes.tokens,
+            islands: output.islands,
+            custom_properties: CustomPropertiesMeta {
+                set: custom_properties_set,
+                read: custom_properties_read,
+            },
+            contract,
+            imports: module_imports,
+        },
+    }
+}
+
+/// The module path that scope tokens hash: relative to `root` (without a leading `/`) when the
+/// module is inside it, package-relative inside a listed package, otherwise the id as given
+/// (without its query).
+fn scope_path(filename: &str, root: Option<&str>, packages: &[PackageRoot]) -> String {
+    let id = module_id::clean_id(filename);
+    match root.and_then(|root| module_id::within(&id, root)) {
+        Some(rest) => rest[1..].to_owned(),
+        None => module_id::package_relative(&id, packages).unwrap_or(id),
+    }
+}
+
+fn source_type(kind: FileKind, filename: &str) -> SourceType {
+    let path = filename.split(['?', '#']).next().unwrap_or(filename);
+    match kind {
+        FileKind::Stsx => SourceType::tsx(),
+        FileKind::Tsx if path.ends_with(".jsx") => SourceType::jsx(),
+        FileKind::Tsx => SourceType::tsx(),
+        FileKind::Script if path.ends_with(".ts") || path.ends_with(".mts") => SourceType::ts(),
+        FileKind::Script => SourceType::mjs(),
+    }
+}
+
+fn sort(diagnostics: &mut [Diagnostic]) {
+    diagnostics.sort_by_key(|d| (d.span.start, d.span.end));
+}
+
+impl CompileResult {
+    /// Applies an offset mapping (for example byte → UTF-16) to every span.
+    pub fn map_spans(&mut self, f: &impl Fn(u32) -> u32) {
+        for diagnostic in &mut self.diagnostics {
+            diagnostic.map_spans(f);
+        }
+        for component in &mut self.meta.components {
+            component.span = component.span.map(f);
+            for site in &mut component.await_sites {
+                *site = site.map(f);
+            }
+        }
+        for island in &mut self.meta.islands {
+            island.span = island.span.map(f);
+        }
+        for set in &mut self.meta.custom_properties.set {
+            set.span = set.span.map(f);
+        }
+        for import in &mut self.meta.imports {
+            import.span = import.span.map(f);
+        }
+        for entry in self.meta.contract.iter_mut().flatten() {
+            entry.span = entry.span.map(f);
+            for read in &mut entry.reads {
+                *read = read.map(f);
+            }
+        }
+        for subtree in self.meta.scope_tokens.components.values_mut().flatten() {
+            subtree.span = subtree.span.map(f);
+        }
+        for reference in &mut self.meta.style_refs {
+            reference.span = reference.span.map(f);
+            if let Some(binding) = &mut reference.binding {
+                binding.declaration = binding.declaration.map(f);
+            }
+        }
+    }
+}

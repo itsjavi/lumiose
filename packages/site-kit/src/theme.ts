@@ -5,7 +5,7 @@
 export type Theme = "light" | "dark";
 
 /** The localStorage key holding the explicit choice. */
-export const THEME_STORAGE_KEY = "lumen-theme";
+export const THEME_STORAGE_KEY = "lumiose-theme";
 
 /**
  * An inline script for the document `<head>` (before any stylesheet paints), so a stored choice

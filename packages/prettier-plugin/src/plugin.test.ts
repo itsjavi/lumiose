@@ -1,10 +1,10 @@
-// @lumen/prettier-plugin (TASK-41): Prettier formats .stsx like lumen fmt, with its own printers
+// @lumiose/prettier-plugin (TASK-41): Prettier formats .stsx like lumiose fmt, with its own printers
 // and options, keeps `$` references, is idempotent, and reports files it cannot format.
 import { format } from "prettier";
 import { describe, expect, it } from "vitest";
 import plugin from "./index.ts";
 
-const binding = await import("@lumen/compiler").catch(() => undefined);
+const binding = await import("@lumiose/compiler").catch(() => undefined);
 
 const MESSY = `import {tokens} from "./tokens.ts"
 const gap=8
@@ -26,7 +26,7 @@ export function Card(props:{title:string}){
 const prettier = (text: string, options: Record<string, unknown> = {}) =>
   format(text, { filepath: "/p/src/Card.stsx", plugins: [plugin], ...options });
 
-describe.skipIf(!binding)("@lumen/prettier-plugin", () => {
+describe.skipIf(!binding)("@lumiose/prettier-plugin", () => {
   it("formats the TSX and each block with Prettier's printers, re-indented at its placement", async () => {
     const once = await prettier(MESSY);
     expect(once).toBe(`import { tokens } from "./tokens.ts";

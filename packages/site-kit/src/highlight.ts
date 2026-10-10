@@ -1,4 +1,4 @@
-// A small syntax highlighter for the Lumen websites, used as CodeBlock's `highlight` hook. It knows
+// A small syntax highlighter for the Lumiose websites, used as CodeBlock's `highlight` hook. It knows
 // TS/TSX/JS/JSON, `.stsx` (TSX whose `<style>` blocks are highlighted as CSS, `$token` references
 // included), CSS and shell. It returns HTML made of escaped text and `<span class="tok-…">`
 // tokens, which CodeBlock colors with the theme's syntax tokens. Another highlighter (Shiki, …)

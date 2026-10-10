@@ -1,4 +1,4 @@
-import { href, url } from "lumen";
+import { href, url } from "lumiose";
 import { Search } from "../islands/Search.stsx";
 import { ThemeToggle } from "../islands/ThemeToggle.stsx";
 import { site } from "../lib/site.ts";
@@ -138,7 +138,7 @@ export function SiteFooter() {
   return (
     <footer class="site-footer">
       <p>
-        {site.title} is a sample site of the Lumen framework: Markdown posts, prerendered into
+        {site.title} is a sample site of the Lumiose framework: Markdown posts, prerendered into
         static HTML. The trips are real places; the journal is made up.
       </p>
       <p class="links">

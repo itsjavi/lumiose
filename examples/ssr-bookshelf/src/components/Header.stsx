@@ -1,4 +1,4 @@
-import { href } from "lumen";
+import { href } from "lumiose";
 import { AccountMenu } from "../islands/AccountMenu.stsx";
 import { SearchBox } from "../islands/SearchBox.stsx";
 import * as theme from "../theme.ts";
@@ -74,7 +74,7 @@ export function Footer() {
   return (
     <footer class="site-footer">
       <p>
-        Bookshelf is a sample app of the Lumen framework. Books, authors, readers and reviews are
+        Bookshelf is a sample app of the Lumiose framework. Books, authors, readers and reviews are
         generated. <a href={href("/about")}>How it is built</a>
       </p>
 

@@ -1,5 +1,5 @@
 // The root layout: in an `spa` app it stays mounted while the pages change.
-import { href, type LayoutProps } from "lumen";
+import { href, type LayoutProps } from "lumiose";
 
 export default function Layout(props: LayoutProps<"/">) {
   return (

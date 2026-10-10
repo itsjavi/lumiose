@@ -55,7 +55,7 @@ jobs:
       - run: pnpm typecheck
       - run: pnpm lint
       - run: pnpm fmt:examples
-      - run: pnpm --filter lumen size
+      - run: pnpm --filter lumiose size
       - run: pnpm test
 
       - run: cargo fmt --all --check
@@ -110,7 +110,7 @@ jobs:
       - name: Playwright version
         id: playwright
         shell: bash
-        run: echo "version=$(pnpm --filter @lumen-examples/vite-counter exec playwright --version | awk '{print $2}')" >> "$GITHUB_OUTPUT"
+        run: echo "version=$(pnpm --filter @lumiose-examples/vite-counter exec playwright --version | awk '{print $2}')" >> "$GITHUB_OUTPUT"
 
       - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         id: browsers
@@ -123,11 +123,11 @@ jobs:
 
       - name: Install Chromium
         if: steps.browsers.outputs.cache-hit != 'true'
-        run: pnpm --filter @lumen-examples/vite-counter exec playwright install --with-deps chromium
+        run: pnpm --filter @lumiose-examples/vite-counter exec playwright install --with-deps chromium
 
       - name: Chromium system dependencies
         if: steps.browsers.outputs.cache-hit == 'true' && runner.os == 'Linux'
-        run: pnpm --filter @lumen-examples/vite-counter exec playwright install-deps chromium
+        run: pnpm --filter @lumiose-examples/vite-counter exec playwright install-deps chromium
 
       - name: Playwright suites
         shell: bash
@@ -146,7 +146,7 @@ jobs:
             echo "::group::$suite"
             (cd "$suite" && pnpm exec playwright test --reporter=line) || failed="$failed $suite"
             # Dev servers a suite left running would keep watching files and ports.
-            ps -eo pid,args | grep -E "lumen|vite" | grep -vE "grep|playwright" || true
+            ps -eo pid,args | grep -E "lumiose|vite" | grep -vE "grep|playwright" || true
             echo "::endgroup::"
           done
           if [ -n "$failed" ]; then

@@ -1,5 +1,5 @@
 // The markup contract of the Tracker app (doc-4 §5). The reference markup is @bench/react-ui
-// (shared by the React Router and Next apps); the Lumen app renders the same elements, classes and
+// (shared by the React Router and Next apps); the Lumiose app renders the same elements, classes and
 // `data-testid`s. The conformance suite (tracker.e2e.ts) and the harness rely on these:
 //
 // Layout (every HTML page, the 404 page included)

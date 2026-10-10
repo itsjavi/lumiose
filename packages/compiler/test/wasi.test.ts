@@ -1,4 +1,4 @@
-// The WASI fallback (`pnpm --filter @lumen/compiler build:wasm`): same results as the native
+// The WASI fallback (`pnpm --filter @lumiose/compiler build:wasm`): same results as the native
 // addon. Skipped until the wasm artifact is built (it is not checked in).
 import { existsSync } from "node:fs";
 import { createRequire } from "node:module";
@@ -11,7 +11,7 @@ const native = await import("../index.js").catch(() => undefined);
 describe.skipIf(!existsSync(wasm) || !native)("WASI fallback", () => {
   it("compiles like the native addon", () => {
     const wasi = createRequire(import.meta.url)("../compiler.wasi.cjs") as typeof native;
-    const source = `import { signal } from "lumen";
+    const source = `import { signal } from "lumiose";
 export function Counter() {
   const count = signal(0);
   return <button onClick={() => count.set(count() + 1)}>Clicked {count()} times</button>;

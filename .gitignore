@@ -30,8 +30,8 @@ node_modules/
 target/
 *.node
 
-# Lumen generated
-.lumen/
+# Lumiose generated
+.lumiose/
 *.vsix
 
 # Test and benchmark artifacts

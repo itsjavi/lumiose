@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
-import { flushSync } from "lumen";
-import { mount } from "lumen/dom";
+import { flushSync } from "lumiose";
+import { mount } from "lumiose/dom";
 import { afterEach, expect, it } from "vitest";
 import { Cart } from "../src/components/Cart.stsx";
 

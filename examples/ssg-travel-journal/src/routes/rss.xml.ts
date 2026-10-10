@@ -1,6 +1,6 @@
-// The RSS 2.0 feed: a static GET endpoint, so `lumen build` writes it to dist/client/rss.xml.
-import { href, type Endpoint } from "lumen";
-import { renderToString } from "lumen/server";
+// The RSS 2.0 feed: a static GET endpoint, so `lumiose build` writes it to dist/client/rss.xml.
+import { href, type Endpoint } from "lumiose";
+import { renderToString } from "lumiose/server";
 import { allPosts } from "../content.ts";
 import { escapeXml, rssDate } from "../lib/format.ts";
 import { absoluteUrl, site } from "../lib/site.ts";

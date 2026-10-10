@@ -1,8 +1,8 @@
 {
-  "name": "@lumen/prettier-plugin",
+  "name": "@lumiose/prettier-plugin",
   "version": "0.0.0",
   "private": true,
-  "description": "Prettier support for Lumen .stsx files: the TSX with Prettier's TypeScript printer, each <style> block with its CSS printer, re-indented at its placement (like lumen fmt).",
+  "description": "Prettier support for Lumiose .stsx files: the TSX with Prettier's TypeScript printer, each <style> block with its CSS printer, re-indented at its placement (like lumiose fmt).",
   "license": "MIT",
   "files": [
     "src"
@@ -17,10 +17,10 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "lumen": "workspace:*"
+    "lumiose": "workspace:*"
   },
   "devDependencies": {
-    "@lumen/compiler": "workspace:*",
+    "@lumiose/compiler": "workspace:*",
     "prettier": "^3.9.9"
   },
   "peerDependencies": {

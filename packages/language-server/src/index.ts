@@ -1,9 +1,9 @@
-// `@lumen/language-server`: the Lumen language server (spec §9.2).
+// `@lumiose/language-server`: the Lumiose language server (spec §9.2).
 export {
   foldedValue,
   startServer,
-  type LumenDiagnosticProvider,
-  type LumenFile,
+  type LumioseDiagnosticProvider,
+  type LumioseFile,
   type ServerOptions,
 } from "./server.ts";
 export { compilerDiagnostics } from "./providers.ts";

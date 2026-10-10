@@ -1,10 +1,10 @@
 // Site-wide constants and the base path. The site may be served below a path (GitHub Pages:
-// `LUMEN_BASE=/lumen/`): route URLs come from `href()`, which adds the base; other site URLs
+// `LUMIOSE_BASE=/lumiose/`): route URLs come from `href()`, which adds the base; other site URLs
 // (public files, the playground app) go through `link()`.
-import type { FooterColumn, NavLink } from "@lumen/site-kit";
-import { href } from "lumen";
+import type { FooterColumn, NavLink } from "@lumiose/site-kit";
+import { href } from "lumiose";
 
-/** Vite's `base`, always with a trailing slash ("/" or "/lumen/"). */
+/** Vite's `base`, always with a trailing slash ("/" or "/lumiose/"). */
 export const BASE = import.meta.env.BASE_URL.endsWith("/")
   ? import.meta.env.BASE_URL
   : `${import.meta.env.BASE_URL}/`;
@@ -15,16 +15,16 @@ export function link(path: string): string {
   return BASE + path.slice(1);
 }
 
-/** A request path without the base: `/lumen/docs/x` → `/docs/x`. */
+/** A request path without the base: `/lumiose/docs/x` → `/docs/x`. */
 export function sitePath(pathname: string): string {
   return pathname.startsWith(BASE) ? `/${pathname.slice(BASE.length)}` : pathname;
 }
 
 export const site = {
-  name: "Lumen",
+  name: "Lumiose",
   tagline: "Signals, islands and scoped styles, compiled. Light by default.",
   description:
-    "Lumen is a TypeScript 7-first web framework: .stsx components (TSX plus plain CSS), fine-grained signals without a virtual DOM, and server-first rendering with islands.",
+    "Lumiose is a TypeScript-first web framework: .stsx components (TSX plus plain CSS), fine-grained signals without a virtual DOM, and server-first rendering with islands.",
 };
 
 export const navLinks: NavLink[] = [
@@ -48,7 +48,7 @@ export const footerColumns: FooterColumn[] = [
     title: "Reference",
     links: [
       { href: href("/docs/[...path]", { path: "reference/cli" }), label: "CLI" },
-      { href: href("/docs/[...path]", { path: "reference/vite" }), label: "lumen/vite" },
+      { href: href("/docs/[...path]", { path: "reference/vite" }), label: "lumiose/vite" },
       { href: href("/docs/[...path]", { path: "errors" }), label: "Diagnostics" },
     ],
   },

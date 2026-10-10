@@ -1,4 +1,4 @@
-import { Title } from "lumen";
+import { Title } from "lumiose";
 import { Badge } from "../components/Badge.stsx";
 
 export default function Home() {

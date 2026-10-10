@@ -4,7 +4,7 @@ import { frameStats } from "../frame.ts";
 import { SHORTCUTS } from "../keys.ts";
 import { lens } from "../lens.ts";
 import { prefs } from "../state.ts";
-import { signal } from "lumen";
+import { signal } from "lumiose";
 
 export function SettingsView() {
   const step = lens(

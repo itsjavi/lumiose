@@ -1,7 +1,7 @@
 // The studio: transport, channels, the piano roll screen and the sound of the selected channel.
 // A share link (`/?song=…`) opens its song here; undo brings back the song that was open.
-import { onMount } from "lumen";
-import { search } from "lumen/router";
+import { onMount } from "lumiose";
+import { search } from "lumiose/router";
 import { onSpace } from "../keys.ts";
 import { decodeSong } from "../model/share.ts";
 import { openSong, say } from "../state.ts";

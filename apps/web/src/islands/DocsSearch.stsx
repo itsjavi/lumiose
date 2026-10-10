@@ -1,8 +1,8 @@
 // Island (client:idle): search the docs as you type, over the prebuilt search.json index (fetched
 // once, on first focus). Arrow keys move through the results, Enter opens one, Escape closes the
 // list, and "/" focuses the box from anywhere on the page. Without JavaScript the input is inert.
-import { color, font, radius, shadow, space, text, weight } from "@lumen/site-kit/tokens";
-import { computed, fetchJSON, onMount, signal } from "lumen";
+import { color, font, radius, shadow, space, text, weight } from "@lumiose/site-kit/tokens";
+import { computed, fetchJSON, onMount, signal } from "lumiose";
 import { searchDocs, type SearchEntry } from "../lib/search.ts";
 
 export function DocsSearch(props: { index: string }) {

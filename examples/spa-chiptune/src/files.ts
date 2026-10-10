@@ -1,5 +1,5 @@
 // File import/export: JSON song files and WAV rendering.
-import { signal } from "lumen";
+import { signal } from "lumiose";
 import { renderWav } from "./audio/engine.ts";
 import { deserialize, serialize } from "./model/library.ts";
 import { clone } from "./model/song.ts";

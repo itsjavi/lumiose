@@ -1,5 +1,5 @@
 // Every tag, sized by how many posts use it.
-import { href, Meta, Title } from "lumen";
+import { href, Meta, Title } from "lumiose";
 import { allTags } from "../../content.ts";
 import { tagLabel } from "../../lib/format.ts";
 import { site } from "../../lib/site.ts";

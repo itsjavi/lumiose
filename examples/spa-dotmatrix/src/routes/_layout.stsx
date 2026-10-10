@@ -2,8 +2,8 @@
 // Audio, the open song and its history live in modules, so playback carries on across views.
 import "@fontsource/silkscreen/400.css";
 import "@fontsource-variable/space-grotesk/index.css";
-import { effect, href, onMount } from "lumen";
-import { Link } from "lumen/router";
+import { effect, href, onMount } from "lumiose";
+import { Link } from "lumiose/router";
 import { position } from "../audio/player.ts";
 import { onKeyDown } from "../keys.ts";
 import { plainSong, prefs, type Prefs } from "../state.ts";
@@ -96,7 +96,7 @@ export default function Layout(props: { children?: JSX.Element }) {
       <main class="main">{props.children}</main>
       <footer class="foot">
         <span>
-          Built with Lumen. Sound by the gbapu Game Boy APU engine (see{" "}
+          Built with Lumiose. Sound by the gbapu Game Boy APU engine (see{" "}
           <Link href={href("/learn")}>Learn</Link> for credits).
         </span>
         <span class="keys">

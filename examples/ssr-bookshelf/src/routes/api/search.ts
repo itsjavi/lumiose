@@ -1,5 +1,5 @@
 // Live search suggestions for the search island (TASK-36): the top 8 matches for `?q=`.
-import type { Endpoint } from "lumen";
+import type { Endpoint } from "lumiose";
 import { queries } from "../../server/queries.server.ts";
 
 export const mode = "server";

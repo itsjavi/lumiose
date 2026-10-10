@@ -1,5 +1,5 @@
 // Level meters (DOM, one style binding each) and oscilloscopes (canvas, drawn by the frame loop).
-import { onMount } from "lumen";
+import { onMount } from "lumiose";
 import { levels, registerScope } from "../frame.ts";
 import { tokens } from "../tokens.ts";
 

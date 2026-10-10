@@ -184,7 +184,7 @@ Before closing a worktree, integrate and verify its needed changes
 in the main working tree. Remove it only after confirming no needed
 work remains.
 
-## Lumen workspace
+## Lumiose workspace
 
 - **Layout.** A pnpm workspace (`packages/*`, `apps/*`, `examples/*`, `benchmarks/*`) plus a Cargo workspace (`crates/*`).
 - **Toolchain.**
@@ -204,24 +204,24 @@ work remains.
   - The compiler-runtime contract comes from TASK-6.
 - **Ownership.** Concurrent workers stay inside their own area. Ask the orchestrator before editing anywhere else.
 
-  | Owner  | Area                                                                                                                                                                                                                  |
-  | ------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-  | Lux    | Root configs, `pnpm-lock.yaml`, `packages/lumen/package.json`, `src/index*.ts`, the contract, the backlog leftovers                                                                                                   |
-  | Photon | `crates/**` (except `crates/lumen_{css,svg,content}/**`), `packages/compiler/**`, `packages/lumen/src/vite/**`                                                                                                        |
-  | Halo   | `crates/lumen_{css,svg,content}/**`, `packages/site-kit/**`                                                                                                                                                           |
-  | Spark  | `packages/lumen/src/{core,dom}/**`, `packages/lumen/src/app/router/**`, `benchmarks/js-framework-benchmark/**`, `examples/spa-*` (except `spa-dotmatrix`), `examples/islands-e2e/**`                                  |
-  | Nova   | `packages/lumen/src/{app,server}/**` (except `app/router/**`), `packages/adapter-node/**`, `benchmarks/ssr/**`, `benchmarks/fullstack/{apps/lumen,e2e,harness,results,viewer}/**`, `examples/ssr-*`, `examples/ssg-*` |
-  | Beacon | `packages/lumen/src/{cli,jsx}/**`, `packages/lumen/docs/**`, `apps/{web,playground}/**`, `packages/{language-server,vscode,create,testing,eslint-plugin,prettier-plugin}/**`                                          |
-  | Quasar | `benchmarks/fullstack/{packages,apps/react-router,apps/next}/**`, `evals/**`                                                                                                                                          |
-  | Chime  | `examples/spa-dotmatrix/**`                                                                                                                                                                                           |
+  | Owner  | Area                                                                                                                                                                                                                      |
+  | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+  | Lux    | Root configs, `pnpm-lock.yaml`, `packages/lumiose/package.json`, `src/index*.ts`, the contract, the backlog leftovers                                                                                                     |
+  | Photon | `crates/**` (except `crates/lumiose_{css,svg,content}/**`), `packages/compiler/**`, `packages/lumiose/src/vite/**`                                                                                                        |
+  | Halo   | `crates/lumiose_{css,svg,content}/**`, `packages/site-kit/**`                                                                                                                                                             |
+  | Spark  | `packages/lumiose/src/{core,dom}/**`, `packages/lumiose/src/app/router/**`, `benchmarks/js-framework-benchmark/**`, `examples/spa-*` (except `spa-dotmatrix`), `examples/islands-e2e/**`                                  |
+  | Nova   | `packages/lumiose/src/{app,server}/**` (except `app/router/**`), `packages/adapter-node/**`, `benchmarks/ssr/**`, `benchmarks/fullstack/{apps/lumiose,e2e,harness,results,viewer}/**`, `examples/ssr-*`, `examples/ssg-*` |
+  | Beacon | `packages/lumiose/src/{cli,jsx}/**`, `packages/lumiose/docs/**`, `apps/{web,playground}/**`, `packages/{language-server,vscode,create,testing,eslint-plugin,prettier-plugin}/**`                                          |
+  | Quasar | `benchmarks/fullstack/{packages,apps/react-router,apps/next}/**`, `evals/**`                                                                                                                                              |
+  | Chime  | `examples/spa-dotmatrix/**`                                                                                                                                                                                               |
 
 - **Dependencies.**
   - Before editing dependencies in any `package.json` or `Cargo.toml`, or running `pnpm install` / `cargo add`, create `.local/coordination/deps.lock/` atomically (`mkdir`), and remove it afterwards.
   - Pin Rust dependencies exactly, in `[workspace.dependencies]`.
-- **Docs.** Docs stay current with every change. A commit that changes user-facing API, syntax, behaviour, diagnostics or CLI output updates the affected pages in `packages/lumen/docs/` **in the same commit**, or at the latest in the next commit of the same task, before the task is marked Done.
+- **Docs.** Docs stay current with every change. A commit that changes user-facing API, syntax, behaviour, diagnostics or CLI output updates the affected pages in `packages/lumiose/docs/` **in the same commit**, or at the latest in the next commit of the same task, before the task is marked Done.
   - Write for both agents and humans.
   - Any agent may edit the doc pages for the features it implements. Beacon owns the docs structure, the generators and doc-wide consistency.
-  - Regenerate with `pnpm --filter lumen docs:gen`, and keep `pnpm --filter lumen docs:check` and the docs tests green.
+  - Regenerate with `pnpm --filter lumiose docs:gen`, and keep `pnpm --filter lumiose docs:check` and the docs tests green.
   - A task is not Done while its docs are stale.
 - **Commits.** Commit early and often, so the user can follow progress between requests. Do not leave long lists of pending changes.
   - Workers whose `agents.json` entry has `canCommit: true` commit their own work in small, coherent Conventional Commits whenever a meaningful step is green, e.g. "feat(dom): claim cursor for lists". Mention the task id.

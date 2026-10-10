@@ -1,4 +1,4 @@
-import { fetchJSON, signal } from "lumen";
+import { fetchJSON, signal } from "lumiose";
 
 export function StockBadge({ sku, initial }: { sku: string; initial: number }) {
   const stock = signal(initial);

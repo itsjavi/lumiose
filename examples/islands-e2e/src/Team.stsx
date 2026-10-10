@@ -1,4 +1,4 @@
-import { signal, Suspense } from "lumen";
+import { signal, Suspense } from "lumiose";
 import { getMember } from "./api.ts";
 
 export async function Member(props: { id: string }) {

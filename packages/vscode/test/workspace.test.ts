@@ -9,7 +9,7 @@ import {
   serverRuntime,
   shouldPromptTakeover,
   takeoverActive,
-  usesLumen,
+  usesLumiose,
   type ServerSource,
 } from "../src/workspace.ts";
 
@@ -19,7 +19,7 @@ afterEach(() => {
 });
 
 function project(files: Record<string, string>): string {
-  const root = realpathSync(mkdtempSync(join(tmpdir(), "lumen-vscode-test-")));
+  const root = realpathSync(mkdtempSync(join(tmpdir(), "lumiose-vscode-test-")));
   temps.push(root);
   for (const [path, content] of Object.entries(files)) {
     mkdirSync(join(root, path, ".."), { recursive: true });
@@ -29,13 +29,13 @@ function project(files: Record<string, string>): string {
 }
 
 const SERVER_MANIFEST = JSON.stringify({
-  name: "@lumen/language-server",
-  bin: { "lumen-language-server": "./src/bin.ts" },
+  name: "@lumiose/language-server",
+  bin: { "lumiose-language-server": "./src/bin.ts" },
   exports: { ".": "./src/index.ts", "./package.json": "./package.json" },
 });
 
 describe("resolveServerEntry", () => {
-  test("prefers the lumen.server.path setting, relative to the first folder", () => {
+  test("prefers the lumiose.server.path setting, relative to the first folder", () => {
     const root = project({ "tools/server.js": "" });
     expect(
       resolveServerEntry({ configured: "tools/server.js", folders: [root], extensionPath: "/x" }),
@@ -48,27 +48,27 @@ describe("resolveServerEntry", () => {
     ).toBeUndefined();
   });
 
-  test("resolves @lumen/language-server's bin from a workspace folder", () => {
+  test("resolves @lumiose/language-server's bin from a workspace folder", () => {
     const root = project({
       "package.json": "{}",
-      "node_modules/@lumen/language-server/package.json": SERVER_MANIFEST,
-      "node_modules/@lumen/language-server/src/bin.ts": "",
+      "node_modules/@lumiose/language-server/package.json": SERVER_MANIFEST,
+      "node_modules/@lumiose/language-server/src/bin.ts": "",
     });
     expect(resolveServerEntry({ folders: [root], extensionPath: "/x" })).toEqual({
-      path: join(root, "node_modules/@lumen/language-server/src/bin.ts"),
+      path: join(root, "node_modules/@lumiose/language-server/src/bin.ts"),
       source: "workspace",
     });
   });
 
-  test("resolves the server through the folder's lumen dependency", () => {
+  test("resolves the server through the folder's lumiose dependency", () => {
     const root = project({
       "package.json": "{}",
-      "node_modules/lumen/package.json": JSON.stringify({ name: "lumen" }),
-      "node_modules/lumen/node_modules/@lumen/language-server/package.json": SERVER_MANIFEST,
-      "node_modules/lumen/node_modules/@lumen/language-server/src/bin.ts": "",
+      "node_modules/lumiose/package.json": JSON.stringify({ name: "lumiose" }),
+      "node_modules/lumiose/node_modules/@lumiose/language-server/package.json": SERVER_MANIFEST,
+      "node_modules/lumiose/node_modules/@lumiose/language-server/src/bin.ts": "",
     });
     expect(resolveServerEntry({ folders: [root], extensionPath: "/x" })?.path).toBe(
-      join(root, "node_modules/lumen/node_modules/@lumen/language-server/src/bin.ts"),
+      join(root, "node_modules/lumiose/node_modules/@lumiose/language-server/src/bin.ts"),
     );
   });
 
@@ -98,7 +98,7 @@ describe("serverRuntime", () => {
     });
   });
 
-  test("lumen.server.runtime wins for every server", () => {
+  test("lumiose.server.runtime wins for every server", () => {
     expect(serverRuntime(entry("bundled"), "/opt/node24/bin/node")).toEqual({
       kind: "executable",
       command: "/opt/node24/bin/node",
@@ -110,59 +110,67 @@ describe("serverRuntime", () => {
   });
 });
 
-describe("usesLumen", () => {
-  test("a dependency, an installed package, or the lumen package itself", () => {
+describe("usesLumiose", () => {
+  test("a dependency, an installed package, or the lumiose package itself", () => {
     expect(
-      usesLumen(project({ "package.json": JSON.stringify({ devDependencies: { lumen: "^1" } }) })),
+      usesLumiose(
+        project({ "package.json": JSON.stringify({ devDependencies: { lumiose: "^1" } }) }),
+      ),
     ).toBe(true);
-    expect(usesLumen(project({ "node_modules/lumen/package.json": "{}" }))).toBe(true);
-    expect(usesLumen(project({ "package.json": JSON.stringify({ name: "lumen" }) }))).toBe(true);
+    expect(usesLumiose(project({ "node_modules/lumiose/package.json": "{}" }))).toBe(true);
+    expect(usesLumiose(project({ "package.json": JSON.stringify({ name: "lumiose" }) }))).toBe(
+      true,
+    );
     expect(
-      usesLumen(project({ "package.json": JSON.stringify({ dependencies: { react: "^19" } }) })),
+      usesLumiose(project({ "package.json": JSON.stringify({ dependencies: { react: "^19" } }) })),
     ).toBe(false);
-    expect(usesLumen(project({}))).toBe(false);
+    expect(usesLumiose(project({}))).toBe(false);
   });
 });
 
 describe("takeover", () => {
   test("is active when no TypeScript extension is enabled, unless turned off", () => {
     expect(
-      takeoverActive({ setting: "prompt", typescriptExtensionActive: false, usesLumen: true }),
+      takeoverActive({ setting: "prompt", typescriptExtensionActive: false, usesLumiose: true }),
     ).toBe(true);
     expect(
-      takeoverActive({ setting: "auto", typescriptExtensionActive: false, usesLumen: false }),
+      takeoverActive({ setting: "auto", typescriptExtensionActive: false, usesLumiose: false }),
     ).toBe(true);
     expect(
-      takeoverActive({ setting: "prompt", typescriptExtensionActive: true, usesLumen: true }),
+      takeoverActive({ setting: "prompt", typescriptExtensionActive: true, usesLumiose: true }),
     ).toBe(false);
     expect(
-      takeoverActive({ setting: "off", typescriptExtensionActive: false, usesLumen: true }),
+      takeoverActive({ setting: "off", typescriptExtensionActive: false, usesLumiose: true }),
     ).toBe(false);
   });
 
-  test("prompts only in Lumen workspaces with the TypeScript extension on and the setting at prompt", () => {
+  test("prompts only in Lumiose workspaces with the TypeScript extension on and the setting at prompt", () => {
     expect(
-      shouldPromptTakeover({ setting: "prompt", typescriptExtensionActive: true, usesLumen: true }),
+      shouldPromptTakeover({
+        setting: "prompt",
+        typescriptExtensionActive: true,
+        usesLumiose: true,
+      }),
     ).toBe(true);
     expect(
       shouldPromptTakeover({
         setting: "prompt",
         typescriptExtensionActive: true,
-        usesLumen: false,
+        usesLumiose: false,
       }),
     ).toBe(false);
     expect(
       shouldPromptTakeover({
         setting: "prompt",
         typescriptExtensionActive: false,
-        usesLumen: true,
+        usesLumiose: true,
       }),
     ).toBe(false);
     expect(
-      shouldPromptTakeover({ setting: "auto", typescriptExtensionActive: true, usesLumen: true }),
+      shouldPromptTakeover({ setting: "auto", typescriptExtensionActive: true, usesLumiose: true }),
     ).toBe(false);
     expect(
-      shouldPromptTakeover({ setting: "off", typescriptExtensionActive: true, usesLumen: true }),
+      shouldPromptTakeover({ setting: "off", typescriptExtensionActive: true, usesLumiose: true }),
     ).toBe(false);
   });
 

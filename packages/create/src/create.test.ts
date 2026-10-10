@@ -1,6 +1,6 @@
-// create-lumen (TASK-33): the CLI contract, then every template scaffolded by the bin into a temp
-// dir (node_modules linked to the workspace's lumen, adapter, TypeScript and Vite), checked with
-// `lumen check`, built with `lumen build` and served by `lumen dev`.
+// create-lumiose (TASK-33): the CLI contract, then every template scaffolded by the bin into a temp
+// dir (node_modules linked to the workspace's lumiose, adapter, TypeScript and Vite), checked with
+// `lumiose check`, built with `lumiose build` and served by `lumiose dev`.
 import { spawn } from "node:child_process";
 import {
   existsSync,
@@ -23,12 +23,12 @@ import { isValidPackageName, packageName, TEMPLATES } from "./scaffold.ts";
 const here = dirname(fileURLToPath(import.meta.url));
 const createBin = join(here, "bin.ts");
 const packagesDir = join(here, "../..");
-const lumenBin = join(packagesDir, "lumen/src/cli/bin.ts");
-// The compiler binding is lumen's dependency; templates are only built when it is available.
+const lumioseBin = join(packagesDir, "lumiose/src/cli/bin.ts");
+// The compiler binding is lumiose's dependency; templates are only built when it is available.
 const binding = await import(
-  createRequire(join(packagesDir, "lumen/package.json")).resolve("@lumen/compiler")
+  createRequire(join(packagesDir, "lumiose/package.json")).resolve("@lumiose/compiler")
 ).catch(() => undefined);
-const tmp = realpathSync(mkdtempSync(join(tmpdir(), "create-lumen-")));
+const tmp = realpathSync(mkdtempSync(join(tmpdir(), "create-lumiose-")));
 afterAll(() => rmSync(tmp, { recursive: true, force: true }));
 
 function io(cwd = tmp) {
@@ -54,11 +54,11 @@ function run(bin: string, args: string[], cwd: string) {
 
 /** Links what `pnpm install` would provide. */
 function link(root: string) {
-  mkdirSync(join(root, "node_modules/@lumen"), { recursive: true });
-  symlinkSync(join(packagesDir, "lumen"), join(root, "node_modules/lumen"), "dir");
+  mkdirSync(join(root, "node_modules/@lumiose"), { recursive: true });
+  symlinkSync(join(packagesDir, "lumiose"), join(root, "node_modules/lumiose"), "dir");
   symlinkSync(
     join(packagesDir, "adapter-node"),
-    join(root, "node_modules/@lumen/adapter-node"),
+    join(root, "node_modules/@lumiose/adapter-node"),
     "dir",
   );
   for (const name of ["typescript", "vite"]) {
@@ -70,7 +70,7 @@ function link(root: string) {
   }
 }
 
-describe("create-lumen CLI", () => {
+describe("create-lumiose CLI", () => {
   it("prints help and rejects misuse with exit code 2", async () => {
     const help = io();
     expect(await main(["--help"], help.io)).toBe(0);
@@ -113,15 +113,15 @@ describe("create-lumen CLI", () => {
       0,
     );
     expect(JSON.parse(readFileSync(join(dir, ".mcp.json"), "utf8"))).toEqual({
-      mcpServers: { lumen: { command: "npx", args: ["lumen", "mcp"] } },
+      mcpServers: { lumiose: { command: "npx", args: ["lumiose", "mcp"] } },
     });
     expect(readFileSync(join(dir, ".codex/config.toml"), "utf8")).toBe(
-      '[mcp_servers.lumen]\ncommand = "npx"\nargs = ["lumen", "mcp"]\n',
+      '[mcp_servers.lumiose]\ncommand = "npx"\nargs = ["lumiose", "mcp"]\n',
     );
     const report = JSON.parse(created.out.stdout);
     expect(report.files).toEqual(expect.arrayContaining([".mcp.json", ".codex/config.toml"]));
-    expect(report.mcp).toMatchObject({ command: "npx", args: ["lumen", "mcp"] });
-    expect(report.mcp.note).toContain("codex mcp add lumen -- npx lumen mcp");
+    expect(report.mcp).toMatchObject({ command: "npx", args: ["lumiose", "mcp"] });
+    expect(report.mcp.note).toContain("codex mcp add lumiose -- npx lumiose mcp");
 
     // Without --mcp nothing is registered; pnpm runs the project's binary with `pnpm exec`.
     const plain = join(tmp, "without-mcp");
@@ -130,13 +130,13 @@ describe("create-lumen CLI", () => {
     const pnpm = join(tmp, "pnpm-mcp");
     expect(await main([pnpm, "-t", "minimal", "-y", "--mcp"], io().io)).toBe(0);
     expect(readFileSync(join(pnpm, ".codex/config.toml"), "utf8")).toContain(
-      'command = "pnpm"\nargs = ["exec", "lumen", "mcp"]',
+      'command = "pnpm"\nargs = ["exec", "lumiose", "mcp"]',
     );
   });
 
   it("derives valid package names", () => {
     expect(packageName("My App!")).toBe("my-app");
-    expect(packageName("...")).toBe("lumen-app");
+    expect(packageName("...")).toBe("lumiose-app");
     expect(isValidPackageName("@scope/app")).toBe(true);
     expect(isValidPackageName("Bad Name")).toBe(false);
   });
@@ -169,26 +169,26 @@ describe.skipIf(!binding).each(TEMPLATES)("template $name", (template) => {
         ".gitattributes",
         "AGENTS.md",
         "CLAUDE.md",
-        ".claude/skills/lumen/SKILL.md",
+        ".claude/skills/lumiose/SKILL.md",
       ]),
     );
     const read = (file: string) => readFileSync(join(root, file), "utf8");
-    expect(read("vite.config.ts")).toContain(`lumen({ mode: "${template.mode}" })`);
-    expect(read("tsconfig.json")).toContain('"extends": "./.lumen/tsconfig.generated.json"');
+    expect(read("vite.config.ts")).toContain(`lumiose({ mode: "${template.mode}" })`);
+    expect(read("tsconfig.json")).toContain('"extends": "./.lumiose/tsconfig.generated.json"');
     expect(read(".gitattributes")).toBe("*.stsx linguist-language=TSX\n");
-    expect(read("AGENTS.md")).toContain("node_modules/lumen/docs");
+    expect(read("AGENTS.md")).toContain("node_modules/lumiose/docs");
     expect(read("CLAUDE.md")).toContain("@AGENTS.md");
-    expect(read(".claude/skills/lumen/SKILL.md")).toMatch(/^---\nname: lumen\n/);
+    expect(read(".claude/skills/lumiose/SKILL.md")).toMatch(/^---\nname: lumiose\n/);
     expect(read("src/routes/index.stsx")).not.toContain("{{name}}");
     link(root);
   });
 
-  it("passes lumen check and builds", async () => {
-    const check = await run(lumenBin, ["check", "--format", "json"], root);
+  it("passes lumiose check and builds", async () => {
+    const check = await run(lumioseBin, ["check", "--format", "json"], root);
     expect(JSON.parse(check.stdout), check.stderr).toMatchObject({ command: "check", ok: true });
-    const fmt = await run(lumenBin, ["fmt", "--check"], root);
+    const fmt = await run(lumioseBin, ["fmt", "--check"], root);
     expect(fmt.code, fmt.stdout).toBe(0);
-    const build = await run(lumenBin, ["build", "--format", "json"], root);
+    const build = await run(lumioseBin, ["build", "--format", "json"], root);
     expect(build.code, build.stderr).toBe(0);
     // Static pages are prerendered; server and spa routes render per request (spa shells: TASK-25).
     const { prerendered } = JSON.parse(build.stdout);
@@ -196,12 +196,12 @@ describe.skipIf(!binding).each(TEMPLATES)("template $name", (template) => {
   });
 
   it("routes use the template's default mode", async () => {
-    const routes = await run(lumenBin, ["routes", "--format", "json"], root);
+    const routes = await run(lumioseBin, ["routes", "--format", "json"], root);
     expect(JSON.parse(routes.stdout)).toMatchObject({ ok: true, defaultMode: template.mode });
   });
 
-  it("serves its home page with lumen dev", async () => {
-    const child = spawn(process.execPath, [lumenBin, "dev", "--format", "json", "--port", "0"], {
+  it("serves its home page with lumiose dev", async () => {
+    const child = spawn(process.execPath, [lumioseBin, "dev", "--format", "json", "--port", "0"], {
       cwd: root,
     });
     try {
@@ -211,7 +211,7 @@ describe.skipIf(!binding).each(TEMPLATES)("template $name", (template) => {
           stdout += chunk;
           if (stdout.includes("\n")) resolve(stdout.slice(0, stdout.indexOf("\n")));
         });
-        child.on("close", (code) => reject(new Error(`lumen dev exited with ${code}`)));
+        child.on("close", (code) => reject(new Error(`lumiose dev exited with ${code}`)));
       });
       const { url } = JSON.parse(line) as { url: string };
       const home = await fetch(url);

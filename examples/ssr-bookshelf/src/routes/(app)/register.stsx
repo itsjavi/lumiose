@@ -1,4 +1,4 @@
-import { actionData, fail, href, redirect, Title, url, type ActionContext } from "lumen";
+import { actionData, fail, href, redirect, Title, url, type ActionContext } from "lumiose";
 import { LIMITS } from "../../lib/validation.ts";
 import { auth, safeRedirectPath } from "../../server/auth.server.ts";
 import type { FieldErrors } from "../../types.ts";

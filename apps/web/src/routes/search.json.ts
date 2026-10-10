@@ -1,5 +1,5 @@
 // The search index of the DocsSearch island: a static GET endpoint (dist/client/search.json).
-import type { Endpoint } from "lumen";
+import type { Endpoint } from "lumiose";
 import { docPages } from "../content/docs.ts";
 import type { SearchEntry } from "../lib/search.ts";
 

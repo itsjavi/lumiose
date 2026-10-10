@@ -1,6 +1,6 @@
 // One page per post (`staticPaths`): cover, title, table of contents, the rendered Markdown, and
 // links to the next and previous posts.
-import { Head, href, Meta, notFound, Title, type PageProps } from "lumen";
+import { Head, href, Meta, notFound, Title, type PageProps } from "lumiose";
 import { TagLinks } from "../../components/TagLinks.stsx";
 import { adjacentPosts, allPosts, findPost, type Post } from "../../content.ts";
 import { formatDate } from "../../lib/format.ts";

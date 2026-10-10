@@ -3,7 +3,7 @@
 // interleaved across apps instead, with a cool-down and an idle check before each), then writes
 // results/<date>-<host>.json and results/index.json.
 //
-//   pnpm --filter @bench/harness bench [--quick] [--only lumen,next] [--metrics dev,build,load,server,other]
+//   pnpm --filter @bench/harness bench [--quick] [--only lumiose,next] [--metrics dev,build,load,server,other]
 //        [--network slow4g] [--comments-delay 0] [--skip-conformance] [--iterations dev=5,build=3,load=5,server=3]
 //
 // Apps that fail the conformance suite are not benchmarked. Full runs belong on a quiet machine.
@@ -179,7 +179,7 @@ try {
   if (groups.includes("other")) {
     for (const app of apps) {
       log(`${app.name}: source size, dependencies, type check`);
-      // React apps reuse @bench/react-ui; the Lumen app writes its own markup: totals count both.
+      // React apps reuse @bench/react-ui; the Lumiose app writes its own markup: totals count both.
       const size = sourceSize(app);
       const loc = (key: string, label: string, value: number, unit: "lines" | "count") =>
         recorder.add(app.id, key, def("other", label, unit, "Source size"), value);
@@ -508,7 +508,7 @@ const run: RunFile = {
     machine: machine(),
     node: process.version,
     versions: {
-      lumen: execFileSync("git", ["rev-parse", "--short", "HEAD"], {
+      lumiose: execFileSync("git", ["rev-parse", "--short", "HEAD"], {
         cwd: REPO,
         encoding: "utf8",
       }).trim(),
@@ -517,8 +517,8 @@ const run: RunFile = {
       "react-router": versionOf("react-router", "react-router"),
       next: versionOf("next", "next"),
       vite: (() => {
-        const lumenApp = apps.find((a) => a.id === "lumen");
-        return lumenApp === undefined ? null : resolvedVersion(lumenApp, "vite", "lumen");
+        const lumioseApp = apps.find((a) => a.id === "lumiose");
+        return lumioseApp === undefined ? null : resolvedVersion(lumioseApp, "vite", "lumiose");
       })(),
     },
     iterations,

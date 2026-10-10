@@ -1,8 +1,8 @@
 {
-  "name": "@lumen-examples/vite-counter",
+  "name": "@lumiose-examples/vite-counter",
   "version": "0.0.0",
   "private": true,
-  "description": "Lumen sample: a client-rendered counter and todo list on Vite 8 with lumen/vite.",
+  "description": "Lumiose sample: a client-rendered counter and todo list on Vite 8 with lumiose/vite.",
   "license": "MIT",
   "type": "module",
   "scripts": {
@@ -10,10 +10,10 @@
     "build": "vite build",
     "preview": "vite preview",
     "test:e2e": "playwright test",
-    "typecheck": "lumen check"
+    "typecheck": "lumiose check"
   },
   "dependencies": {
-    "lumen": "workspace:*"
+    "lumiose": "workspace:*"
   },
   "devDependencies": {
     "@playwright/test": "1.63.0",

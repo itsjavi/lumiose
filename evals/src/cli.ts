@@ -1,9 +1,9 @@
 // The eval runner (TASK-40).
 //
-//   pnpm --filter @lumen/evals eval --agents claude:claude-sonnet-5-5:medium,codex:gpt-6-astra:medium
+//   pnpm --filter @lumiose/evals eval --agents claude:claude-sonnet-5-5:medium,codex:gpt-6-astra:medium
 //        [--tasks a,b] [--runs 1] [--ablations baseline,mcp] [--keep]
-//   pnpm --filter @lumen/evals validate [--tasks a,b]     hidden tests fail on start/, pass on solution/
-//   pnpm --filter @lumen/evals eval --list                 tasks, agents and ablations
+//   pnpm --filter @lumiose/evals validate [--tasks a,b]     hidden tests fail on start/, pass on solution/
+//   pnpm --filter @lumiose/evals eval --list                 tasks, agents and ablations
 //
 // Every run: a fresh project in the temp directory, the agent CLI with a time and turn budget,
 // then grading by the task's hidden tests. Results go to results/<date>T<time>-<host>.json;
@@ -18,7 +18,7 @@ import { type Grade, grade } from "./grade.ts";
 import { type RunMetrics, metricsOf } from "./metrics.ts";
 import { resultsPath, writeResults, type ResultsFile, type RunRecord } from "./results.ts";
 import { ABLATIONS, type Ablation, selectTasks, type Task } from "./tasks.ts";
-import { EVALS, REPO, createProject, lumenRev, vendor } from "./workspace.ts";
+import { EVALS, REPO, createProject, lumioseRev, vendor } from "./workspace.ts";
 
 /** What the CLIs print when a subscription's usage limit is reached. */
 const QUOTA = /hit your (?:session |usage |weekly )?limit|usage limit|rate limit|quota/i;
@@ -37,12 +37,13 @@ const { values } = parseArgs({
   },
 });
 
-const CACHE = join(tmpdir(), "lumen-evals");
-const log = (message: string) => console.log(`[${new Date().toISOString().slice(11, 19)}] ${message}`);
-
+const CACHE = join(tmpdir(), "lumiose-evals");
+const log = (message: string) =>
+  console.log(`[${new Date().toISOString().slice(11, 19)}] ${message}`);
 
 function list(): void {
-  for (const task of selectTasks(undefined)) console.log(`${task.id.padEnd(32)} ${task.category.padEnd(11)} ${task.title}`);
+  for (const task of selectTasks(undefined))
+    console.log(`${task.id.padEnd(32)} ${task.category.padEnd(11)} ${task.title}`);
   console.log(`\nAblations: ${Object.keys(ABLATIONS).join(", ")}`);
   console.log("Agents: claude:<model>:<effort>, codex:<model>:<effort> (effort low|medium|high)");
 }
@@ -64,17 +65,22 @@ async function validate(): Promise<void> {
     const before = grade(task, dir);
     rmSync(join(dir, "eval-hidden"), { recursive: true, force: true });
     cpSync(join(task.dir, "solution"), dir, { recursive: true });
-    for (const file of solutionRemovals(task)) rmSync(join(dir, file), { recursive: true, force: true });
+    for (const file of solutionRemovals(task))
+      rmSync(join(dir, file), { recursive: true, force: true });
     mergeSolutionScripts(task, dir);
     const after = grade(task, dir);
     const ok = !before.success && after.success;
     if (!ok) failures++;
-    log(
-      `${ok ? "ok  " : "FAIL"} ${task.id}: start ${summary(before)}; solution ${summary(after)}`,
-    );
+    log(`${ok ? "ok  " : "FAIL"} ${task.id}: start ${summary(before)}; solution ${summary(after)}`);
     if (!after.success) {
-      for (const test of after.tests.results.filter((t) => !t.ok)) console.log(`     ✗ ${test.name}\n       ${(test.message ?? "").split("\n").slice(0, 6).join("\n       ")}`);
-      if (!after.check.ok) console.log(`     ✗ lumen check: ${after.check.errors} errors (${after.check.codes.join(", ")})`);
+      for (const test of after.tests.results.filter((t) => !t.ok))
+        console.log(
+          `     ✗ ${test.name}\n       ${(test.message ?? "").split("\n").slice(0, 6).join("\n       ")}`,
+        );
+      if (!after.check.ok)
+        console.log(
+          `     ✗ lumiose check: ${after.check.errors} errors (${after.check.codes.join(", ")})`,
+        );
     }
     if (!values.keep) rmSync(dir, { recursive: true, force: true });
   }
@@ -87,7 +93,10 @@ function mergeSolutionScripts(task: Task, dir: string): void {
   if (!existsSync(file)) return;
   const path = join(dir, "package.json");
   const manifest = JSON.parse(readFileSync(path, "utf8")) as { scripts?: Record<string, string> };
-  manifest.scripts = { ...manifest.scripts, ...(JSON.parse(readFileSync(file, "utf8")) as Record<string, string>) };
+  manifest.scripts = {
+    ...manifest.scripts,
+    ...(JSON.parse(readFileSync(file, "utf8")) as Record<string, string>),
+  };
   writeFileSync(path, `${JSON.stringify(manifest, null, 2)}\n`);
 }
 
@@ -99,9 +108,12 @@ function solutionRemovals(task: Task): string[] {
 const summary = (g: Grade) =>
   `${g.tests.passed}/${g.tests.total} tests, check ${g.check.ok ? "ok" : `${g.check.errors} errors`}`;
 
-/** Pins the evaluated Lumen revision for the whole invocation (other commits may land meanwhile). */
+/** Pins the evaluated Lumiose revision for the whole invocation (other commits may land meanwhile). */
 function pinRevision(): void {
-  process.env.LUMEN_EVAL_REV ??= execFileSync("git", ["rev-parse", "HEAD"], { cwd: REPO, encoding: "utf8" }).trim();
+  process.env.LUMIOSE_EVAL_REV ??= execFileSync("git", ["rev-parse", "HEAD"], {
+    cwd: REPO,
+    encoding: "utf8",
+  }).trim();
 }
 
 async function run(): Promise<void> {
@@ -121,8 +133,10 @@ async function run(): Promise<void> {
     values.resume === undefined
       ? undefined
       : (JSON.parse(readFileSync(join(EVALS, "results", values.resume), "utf8")) as ResultsFile);
-  if (resumed !== undefined && resumed.meta.lumen !== lumenRev()) {
-    throw new Error(`--resume: the file was measured at ${resumed.meta.lumen}; set LUMEN_EVAL_REV to it`);
+  if (resumed !== undefined && resumed.meta.lumiose !== lumioseRev()) {
+    throw new Error(
+      `--resume: the file was measured at ${resumed.meta.lumiose}; set LUMIOSE_EVAL_REV to it`,
+    );
   }
   const startedAt = resumed?.meta.date ?? new Date().toISOString();
   const stamp = `${startedAt.slice(0, 10)}T${startedAt.slice(11, 19).replaceAll(":", "")}`;
@@ -135,7 +149,9 @@ async function run(): Promise<void> {
     agents.some((agent) => agentId(agent) === r.agent),
   );
   const done = new Set(records.map((r) => key(r.task, r.agent, r.ablation, r.index)));
-  const host = hostname().replace(/\.local$/, "").toLowerCase();
+  const host = hostname()
+    .replace(/\.local$/, "")
+    .toLowerCase();
   const meta: ResultsFile["meta"] = {
     date: startedAt,
     host,
@@ -146,7 +162,7 @@ async function run(): Promise<void> {
       os: `${type()} ${release()}`,
     },
     node: process.version,
-    lumen: lumenRev(),
+    lumiose: lumioseRev(),
     clis: { claude: version("claude"), codex: version("codex") },
     agents: agents.map(agentId),
     tasks: tasks.map((task) => task.id),
@@ -155,7 +171,8 @@ async function run(): Promise<void> {
     complete: false,
     ...(resumed?.meta.notes ? { notes: resumed.meta.notes } : {}),
   };
-  const output = resumed === undefined ? resultsPath(stamp, host) : join(EVALS, "results", values.resume!);
+  const output =
+    resumed === undefined ? resultsPath(stamp, host) : join(EVALS, "results", values.resume!);
   const total = agents.length * tasks.length * ablations.length * runs;
   let n = 0;
   // Interleave agents inside each (task, run) so a slow period does not hit one agent only.
@@ -171,7 +188,9 @@ async function run(): Promise<void> {
           // A CLI out of quota fails instantly without working: stop instead of recording it, so
           // --resume can run the pair once the quota is back.
           if (record.tokens.output === 0 && QUOTA.test(record.exit.error ?? "")) {
-            log(`  stopped: ${record.exit.error} (not recorded; continue later with --resume ${basename(output)})`);
+            log(
+              `  stopped: ${record.exit.error} (not recorded; continue later with --resume ${basename(output)})`,
+            );
             process.exitCode = 3;
             return;
           }
@@ -208,18 +227,19 @@ async function runOne(
 ): Promise<RunRecord> {
   const dir = await project(task, ablation, name);
   const logFile = join(logs, `${name}.jsonl`);
-  const lumen = join(dir, "node_modules/lumen/src/cli/bin.ts");
+  const lumiose = join(dir, "node_modules/lumiose/src/cli/bin.ts");
   const result = await runAgent(agent, {
     dir,
     prompt: task.prompt,
-    mcp: ablation.mcp ? { command: process.execPath, args: [lumen, "mcp", "--root", dir] } : null,
+    mcp: ablation.mcp ? { command: process.execPath, args: [lumiose, "mcp", "--root", dir] } : null,
     maxTurns: task.maxTurns ?? 60,
     timeoutMs: (task.minutes ?? 15) * 60_000,
     logFile,
   });
   const graded = grade(task, dir);
   const metrics: RunMetrics = metricsOf(result.transcript);
-  if (values.keep) cpSync(dir, join(logs, name), { recursive: true, filter: (p) => !p.includes("/node_modules") });
+  if (values.keep)
+    cpSync(dir, join(logs, name), { recursive: true, filter: (p) => !p.includes("/node_modules") });
   rmSync(dir, { recursive: true, force: true });
   return {
     task: task.id,
@@ -240,7 +260,11 @@ async function runOne(
     exit: {
       code: result.exitCode,
       timedOut: result.timedOut,
-      error: result.transcript.error ?? (result.exitCode === 0 ? null : result.stderr.split("\n").filter(Boolean).at(-1) ?? `exit ${result.exitCode}`),
+      error:
+        result.transcript.error ??
+        (result.exitCode === 0
+          ? null
+          : (result.stderr.split("\n").filter(Boolean).at(-1) ?? `exit ${result.exitCode}`)),
     },
     usageInfo: result.transcript.usageInfo,
     log: `.runs/${logs.split("/.runs/")[1]}/${name}.jsonl`,

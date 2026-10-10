@@ -2,7 +2,7 @@
 // (a learning view) with a button to copy them into My sounds / My voices. Saved sounds can be
 // edited, replaced by pasted code or by a .txt/.asm file: code that parses plays at once and saves
 // over the saved sound; errors are listed by line, and clicking one selects that line.
-import { signal } from "lumen";
+import { signal } from "lumiose";
 import { sfxData } from "../audio/driver.ts";
 import { playPcm } from "../audio/player.ts";
 import { parseCode, type CodeError } from "../model/code.ts";

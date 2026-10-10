@@ -98,10 +98,10 @@ describe("language server (pull diagnostics)", () => {
 
   it("starts TypeScript 7 behind the proxy and writes shadows for unopened files", async () => {
     const capabilities = server.initialize.capabilities;
-    expect(capabilities.diagnosticProvider).toMatchObject({ identifier: "lumen" });
+    expect(capabilities.diagnosticProvider).toMatchObject({ identifier: "lumiose" });
     expect(capabilities.colorProvider).toBe(true);
     expect(capabilities.semanticTokensProvider).toBeDefined(); // passed through from TypeScript
-    const shadow = join(server.root, ".lumen/shadow", CARD + ".tsx");
+    const shadow = join(server.root, ".lumiose/shadow", CARD + ".tsx");
     expect(existsSync(shadow)).toBe(true);
     expect(await readFile(shadow, "utf8")).toHaveLength(card.length);
   });
@@ -129,7 +129,7 @@ describe("language server (pull diagnostics)", () => {
     ]);
   });
 
-  it("merges TypeScript, Lumen and CSS diagnostics with exact ranges", async () => {
+  it("merges TypeScript, Lumiose and CSS diagnostics with exact ranges", async () => {
     const report = await server.request<FullDocumentDiagnosticReport>(
       "textDocument/diagnostic",
       doc(BROKEN),
@@ -142,20 +142,20 @@ describe("language server (pull diagnostics)", () => {
     expect(summary).toEqual([
       { source: "ts", code: 2322, range: rangeOf(broken, "size") },
       { source: "ts", code: 6133, range: rangeOf(broken, "size") },
-      { source: "lumen", code: "LUM1005", range: rangeOf(broken, 'lang="scss"') },
+      { source: "lumiose", code: "LUM1005", range: rangeOf(broken, 'lang="scss"') },
       // A TypeScript error on a `$ref` inside a block is kept, at the reference's name.
       { source: "ts", code: 2304, range: rangeOf(broken, "$missing", 1) },
       // The compiler's LUM3008 on `$missing` is superseded by TypeScript's 2304.
-      { source: "lumen", code: "LUM3005", range: rangeOf(broken, ".oops") },
+      { source: "lumiose", code: "LUM3005", range: rangeOf(broken, ".oops") },
       // LUM3017 (TASK-120) reports the empty value; the CSS service's duplicate is dropped (TASK-132).
-      { source: "lumen", code: "LUM3017", range: rangeOf(broken, "color: ;", 0, 5) },
+      { source: "lumiose", code: "LUM3017", range: rangeOf(broken, "color: ;", 0, 5) },
     ]);
     expect(report.items.find((d: Diagnostic) => d.code === 2304)?.message).toBe(
       "Cannot find name 'missing'.",
     );
   });
 
-  it("drops CSS service problems that Lumen's CSS diagnostics report (TASK-132)", async () => {
+  it("drops CSS service problems that Lumiose's CSS diagnostics report (TASK-132)", async () => {
     const text = [
       "export function Dupes() {",
       "  return (",
@@ -332,7 +332,7 @@ describe("language server (pull diagnostics)", () => {
       "textDocument/diagnostic",
       doc("src/Raw.tsx"),
     );
-    expect(report.items.find((d) => d.source === "lumen")?.code).toBe("LUM1006");
+    expect(report.items.find((d) => d.source === "lumiose")?.code).toBe("LUM1006");
   });
 
   it("offers compiler quick fixes", async () => {
@@ -362,16 +362,16 @@ describe("language server (pull diagnostics)", () => {
       "",
     ].join("\n");
     await server.open("src/Calls.stsx", stsx);
-    const lumen = async (path: string) => {
+    const lumiose = async (path: string) => {
       const report = await server.request<FullDocumentDiagnosticReport>(
         "textDocument/diagnostic",
         doc(path),
       );
-      return sortRanges(report.items.filter((d) => d.source === "lumen")).map(
+      return sortRanges(report.items.filter((d) => d.source === "lumiose")).map(
         ({ code, severity, range }) => ({ code, severity, range }),
       );
     };
-    expect(await lumen("src/Calls.stsx")).toEqual([
+    expect(await lumiose("src/Calls.stsx")).toEqual([
       { code: "LUM2004", severity: 1, range: rangeOf(stsx, "{Inner()", 1) },
       { code: "LUM3008", severity: 1, range: rangeOf(stsx, "$width") },
     ]);
@@ -379,12 +379,12 @@ describe("language server (pull diagnostics)", () => {
     // An edit is compiled again (once per version).
     const fixed = stsx.replace("{Inner()}", "<Inner />");
     server.change("src/Calls.stsx", fixed);
-    expect((await lumen("src/Calls.stsx")).map((d) => d.code)).toEqual(["LUM3008"]);
+    expect((await lumiose("src/Calls.stsx")).map((d) => d.code)).toEqual(["LUM3008"]);
 
     const tsx =
       "function Inner() {\n  return <i />;\n}\nexport const A = () => <p>{Inner()}</p>;\n";
     await server.open("src/Calls.tsx", tsx);
-    expect(await lumen("src/Calls.tsx")).toEqual([
+    expect(await lumiose("src/Calls.tsx")).toEqual([
       { code: "LUM2004", severity: 1, range: rangeOf(tsx, "{Inner()", 1) },
     ]);
 
@@ -397,7 +397,7 @@ describe("language server (pull diagnostics)", () => {
       doc("src/Raw.tsx"),
     );
     expect(report.items.map(({ source, code }) => ({ source, code }))).toEqual([
-      { source: "lumen", code: "LUM1006" },
+      { source: "lumiose", code: "LUM1006" },
     ]);
   });
 
@@ -416,7 +416,7 @@ describe("language server (pull diagnostics)", () => {
         doc(path),
       );
       expect(report.items.map(({ source, code, range }) => ({ source, code, range }))).toEqual([
-        { source: "lumen", code: "LUM4002", range: rangeOf(islands, "onDone={() =>", 0, 6) },
+        { source: "lumiose", code: "LUM4002", range: rangeOf(islands, "onDone={() =>", 0, 6) },
       ]);
       expect(report.items[0]!.message).toMatch(/^Island prop `onDone` is not serializable/);
     }
@@ -478,7 +478,7 @@ describe("language server (pull diagnostics)", () => {
 
   it("shows the execution contract of JSX expressions in hovers (TASK-137)", async () => {
     const text = [
-      'import { signal } from "lumen";',
+      'import { signal } from "lumiose";',
       "export function Count() {",
       "  const n = signal(0);",
       '  return <p title={"fixed"} onClick={() => n.set(n() + 1)}>{n()}</p>;',
@@ -494,13 +494,13 @@ describe("language server (pull diagnostics)", () => {
       return (result?.contents as MarkupContent | undefined)?.value ?? "";
     };
     const child = await hover("{n()}", 1);
-    expect(child).toContain("**Lumen**: a child in `Count`");
+    expect(child).toContain("**Lumiose**: a child in `Count`");
     expect(child).toContain("**tracked**");
     expect(child).toContain("Reactive reads: `n()`");
     expect(await hover('"fixed"', 1)).toContain("**once**");
     expect(await hover("() => n.set", 0)).toContain("**deferred**");
     // Outside any expression: no contract.
-    expect(await hover("signal(0)", 0)).not.toContain("**Lumen**");
+    expect(await hover("signal(0)", 0)).not.toContain("**Lumiose**");
   });
 
   it("supplies imported constants to the compiler, from buffers and disk, re-checking dependents", async () => {
@@ -529,16 +529,16 @@ describe("language server (pull diagnostics)", () => {
       "",
     ].join("\n");
     await server.open(path, tokens);
-    const lumen = async () => {
+    const lumiose = async () => {
       const report = await server.request<FullDocumentDiagnosticReport>(
         "textDocument/diagnostic",
         doc(path),
       );
-      return sortRanges(report.items.filter((d) => d.source === "lumen")).map(
+      return sortRanges(report.items.filter((d) => d.source === "lumiose")).map(
         ({ code, range, message }) => ({ code, range, message }),
       );
     };
-    expect(await lumen()).toEqual([
+    expect(await lumiose()).toEqual([
       {
         code: "LUM3008",
         range: rangeOf(tokens, "$mutable"),
@@ -555,7 +555,7 @@ describe("language server (pull diagnostics)", () => {
     // An unsaved edit of the imported module re-checks the (unchanged) document.
     await server.open("src/theme.ts");
     server.change("src/theme.ts", 'export * from "./palette.ts";\nexport const mutable = "1px";\n');
-    expect((await lumen()).map((d) => d.range)).toEqual([
+    expect((await lumiose()).map((d) => d.range)).toEqual([
       rangeOf(tokens, "$acent"),
       rangeOf(tokens, ".oops"),
     ]);
@@ -568,7 +568,7 @@ describe("language server (pull diagnostics)", () => {
     await server.connection.sendNotification("workspace/didChangeWatchedFiles", {
       changes: [{ uri: server.uri("src/palette.ts"), type: 2 }],
     });
-    expect((await lumen()).map((d) => d.code)).toEqual(["LUM3005"]);
+    expect((await lumiose()).map((d) => d.code)).toEqual(["LUM3005"]);
   });
 
   it("offers and defines <style global> classes of other files", async () => {
@@ -612,7 +612,7 @@ describe("language server (pull diagnostics)", () => {
     server.change(CARD, card);
   });
 
-  describe("project styles and Lumen syntax (TASK-80)", () => {
+  describe("project styles and Lumiose syntax (TASK-80)", () => {
     const NESTED = "src/components/Nested.stsx";
     let nested: string;
     beforeAll(async () => {
@@ -729,7 +729,7 @@ describe("language server (pull diagnostics)", () => {
           .filter(
             (item) =>
               item.kind === CompletionItemKind.Snippet &&
-              (item.data as { lumen?: string } | undefined)?.lumen === "snippet",
+              (item.data as { lumiose?: string } | undefined)?.lumiose === "snippet",
           )
           .map((item) => item.label);
       expect(await snippets("\nco\n", 3)).toEqual(["comp", "acomp", "route"]);
@@ -745,8 +745,8 @@ describe("language server (pull diagnostics)", () => {
       server.change(NESTED, nested);
     });
 
-    it("describes Lumen attributes and <style> tags in hovers and completion", async () => {
-      const text = `import { signal } from "lumen";
+    it("describes Lumiose attributes and <style> tags in hovers and completion", async () => {
+      const text = `import { signal } from "lumiose";
 import { Card } from "./Card.stsx";
 
 const draft = signal("");

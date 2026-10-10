@@ -1,7 +1,7 @@
 // The Studio's Code view, on the screen in place of the grid: the open song (or sound sheet) as
 // driver code. Edit it, paste or import code, then Apply: it replaces the song as one undoable
 // step. Errors are listed by line; click one to select the line.
-import { computed, effect, signal, untrack } from "lumen";
+import { computed, effect, signal, untrack } from "lumiose";
 import { readStudioCode, studioCode } from "../model/studiocode.ts";
 import type { CodeError } from "../model/code.ts";
 import { doc, openSong, plainSong, say } from "../state.ts";

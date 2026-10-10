@@ -1,4 +1,4 @@
-import { isRedirect, type Locals } from "lumen";
+import { isRedirect, type Locals } from "lumiose";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import type { User } from "../types.ts";
 import {

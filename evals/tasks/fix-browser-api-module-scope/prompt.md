@@ -1,4 +1,4 @@
-This is a Lumen app. The home page crashes when it is rendered on the server (in `lumen dev` and in `lumen build`) because of `src/components/ThemeToggle.stsx`.
+This is a Lumiose app. The home page crashes when it is rendered on the server (in `lumiose dev` and in `lumiose build`) because of `src/components/ThemeToggle.stsx`.
 
 Fix `ThemeToggle` so that:
 
@@ -6,4 +6,4 @@ Fix `ThemeToggle` so that:
 - in the browser, once the component is mounted, it shows the theme saved in `localStorage` under the key `theme` (if any);
 - clicking it still toggles between `light` and `dark` and saves the new value in `localStorage`.
 
-When you are done, `lumen check` and `lumen build` must succeed.
+When you are done, `lumiose check` and `lumiose build` must succeed.

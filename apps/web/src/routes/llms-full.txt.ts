@@ -1,5 +1,5 @@
-// /llms-full.txt: every docs page in one file, for language models (packages/lumen/docs).
-import type { Endpoint } from "lumen";
+// /llms-full.txt: every docs page in one file, for language models (packages/lumiose/docs).
+import type { Endpoint } from "lumiose";
 import { llmsFullText } from "../content/llms.ts";
 
 export const GET: Endpoint = () =>

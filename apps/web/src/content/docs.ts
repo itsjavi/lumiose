@@ -1,5 +1,5 @@
-// The docs content layer: the version-matched Markdown of `packages/lumen/docs` (the single source
-// that `lumen docs` prints and the package ships), rendered for /docs.
+// The docs content layer: the version-matched Markdown of `packages/lumiose/docs` (the single source
+// that `lumiose docs` prints and the package ships), rendered for /docs.
 //
 // This is the only module that knows the docs are Markdown files read through Vite: it loads them
 // as raw strings with `import.meta.glob(…, { query: "?raw" })` and renders them with `marked`.
@@ -7,16 +7,16 @@
 // only changes this file. Server-only in practice: the search island gets the prebuilt
 // `search.json` index instead, so `marked` never reaches the browser.
 
-import { highlight } from "@lumen/site-kit/highlight";
-import { href as routeHref } from "lumen";
+import { highlight } from "@lumiose/site-kit/highlight";
+import { href as routeHref } from "lumiose";
 import { Marked, Renderer, type Token, type Tokens } from "marked";
 
-const sources = import.meta.glob<string>("../../../../packages/lumen/docs/**/*.md", {
+const sources = import.meta.glob<string>("../../../../packages/lumiose/docs/**/*.md", {
   query: "?raw",
   import: "default",
   eager: true,
 });
-const DOCS_DIR = "../../../../packages/lumen/docs/";
+const DOCS_DIR = "../../../../packages/lumiose/docs/";
 
 export interface DocHeading {
   depth: 2 | 3;

@@ -1,7 +1,7 @@
 // The song gallery: original demo songs to listen to and open in the studio, and the songs saved
 // in this browser ("My songs").
-import { computed, href, signal } from "lumen";
-import { navigate } from "lumen/router";
+import { computed, href, signal } from "lumiose";
+import { navigate } from "lumiose/router";
 import { nowPlaying, play, playStep, rendering, stop } from "../audio/player.ts";
 import { songSeconds } from "../audio/driver.ts";
 import { loadShelf, newId, saveShelf, type SavedSong } from "../model/library.ts";

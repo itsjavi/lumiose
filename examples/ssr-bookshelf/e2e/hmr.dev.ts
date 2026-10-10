@@ -1,4 +1,4 @@
-// `lumen dev` hot swap (TASK-147): editing an island's module re-renders its instances in place,
+// `lumiose dev` hot swap (TASK-147): editing an island's module re-renders its instances in place,
 // while the page, scroll position and the other islands keep their state; editing server-only
 // code still reloads the page.
 import { readFileSync, writeFileSync } from "node:fs";

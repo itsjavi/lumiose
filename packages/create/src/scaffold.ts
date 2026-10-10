@@ -1,27 +1,27 @@
-// Writes a new Lumen project: a template's `src/` (and extras), the generated package.json,
-// tsconfig.json (extending the generated one, decision-25), vite.config.ts with the template's `lumen({ mode })` (decision-21),
-// .gitignore and README, then the agent files (AGENTS.md, CLAUDE.md, the lumen skill,
-// .gitattributes) from `lumen/agents`, shared with `lumen agents init`.
+// Writes a new Lumiose project: a template's `src/` (and extras), the generated package.json,
+// tsconfig.json (extending the generated one, decision-25), vite.config.ts with the template's `lumiose({ mode })` (decision-21),
+// .gitignore and README, then the agent files (AGENTS.md, CLAUDE.md, the lumiose skill,
+// .gitattributes) from `lumiose/agents`, shared with `lumiose agents init`.
 
 import { existsSync } from "node:fs";
 import { mkdir, readdir, readFile, writeFile } from "node:fs/promises";
 import { basename, dirname, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
-import { agentsInit, type AgentFile, type PackageManager } from "lumen/agents";
-import lumenPackage from "lumen/package.json" with { type: "json" };
-import { formatTsconfig } from "lumen/tooling";
+import { agentsInit, type AgentFile, type PackageManager } from "lumiose/agents";
+import lumiosePackage from "lumiose/package.json" with { type: "json" };
+import { formatTsconfig } from "lumiose/tooling";
 
 export type TemplateName = "minimal" | "static" | "ssr" | "spa";
 
 export interface Template {
   name: TemplateName;
-  /** The project default route mode, `lumen({ mode })`. */
+  /** The project default route mode, `lumiose({ mode })`. */
   mode: "static" | "server" | "spa";
   description: string;
 }
 
 export const TEMPLATES: readonly Template[] = [
-  { name: "minimal", mode: "static", description: "One static page: the smallest Lumen app" },
+  { name: "minimal", mode: "static", description: "One static page: the smallest Lumiose app" },
   {
     name: "static",
     mode: "static",
@@ -44,10 +44,10 @@ export const DEFAULT_TEMPLATE: TemplateName = "static";
 
 const TEMPLATES_DIR = fileURLToPath(new URL("../templates/", import.meta.url));
 
-/** Tool versions the generated package.json asks for (lumen and its adapter share a version). */
+/** Tool versions the generated package.json asks for (lumiose and its adapter share a version). */
 const VERSIONS = {
-  lumen: `^${lumenPackage.version}`,
-  vite: lumenPackage.peerDependencies.vite,
+  lumiose: `^${lumiosePackage.version}`,
+  vite: lumiosePackage.peerDependencies.vite,
   typescript: "^7.0.2",
   oxlint: "^1.87.0",
   oxfmt: "^0.72.0",
@@ -67,7 +67,7 @@ export interface ScaffoldOptions {
   /** Write into a non-empty directory, overwriting files with the same names. */
   force?: boolean;
   /**
-   * Register `lumen mcp` for Claude Code (`.mcp.json`) and Codex (`.codex/config.toml`), run with
+   * Register `lumiose mcp` for Claude Code (`.mcp.json`) and Codex (`.codex/config.toml`), run with
    * this package manager.
    */
   mcp?: PackageManager;
@@ -106,7 +106,7 @@ export async function scaffold(options: ScaffoldOptions): Promise<ScaffoldResult
   files.set("package.json", packageJson(name, template));
   files.set("tsconfig.json", formatTsconfig());
   files.set("vite.config.ts", viteConfig(template));
-  files.set(".gitignore", "node_modules\ndist\n.lumen\n");
+  files.set(".gitignore", "node_modules\ndist\n.lumiose\n");
   files.set("README.md", readme(name, template));
 
   for (const [file, text] of files) {
@@ -133,7 +133,7 @@ export function packageName(text: string): string {
       .trim()
       .toLowerCase()
       .replace(/[^a-z0-9._~-]+/g, "-")
-      .replace(/^[-._]+|-+$/g, "") || "lumen-app"
+      .replace(/^[-._]+|-+$/g, "") || "lumiose-app"
   );
 }
 
@@ -143,23 +143,23 @@ export function isValidPackageName(name: string): boolean {
 
 function packageJson(name: string, template: Template): string {
   const server = template.mode === "server";
-  // The adapter serves `lumen preview` everywhere and is the production server of `ssr`.
-  const adapter = { "@lumen/adapter-node": VERSIONS.lumen };
+  // The adapter serves `lumiose preview` everywhere and is the production server of `ssr`.
+  const adapter = { "@lumiose/adapter-node": VERSIONS.lumiose };
   const manifest = {
     name,
     version: "0.0.0",
     private: true,
     type: "module",
     scripts: {
-      dev: "lumen dev",
-      build: "lumen build",
-      preview: "lumen preview",
+      dev: "lumiose dev",
+      build: "lumiose build",
+      preview: "lumiose preview",
       ...(server ? { start: "node server.ts" } : {}),
-      check: "lumen check",
-      lint: "lumen lint",
-      fmt: "lumen fmt",
+      check: "lumiose check",
+      lint: "lumiose lint",
+      fmt: "lumiose fmt",
     },
-    dependencies: { ...(server ? adapter : {}), lumen: VERSIONS.lumen },
+    dependencies: { ...(server ? adapter : {}), lumiose: VERSIONS.lumiose },
     devDependencies: {
       ...(server ? {} : adapter),
       oxfmt: VERSIONS.oxfmt,
@@ -173,13 +173,13 @@ function packageJson(name: string, template: Template): string {
 }
 
 function viteConfig(template: Template): string {
-  return `import lumen from "lumen/vite";
+  return `import lumiose from "lumiose/vite";
 import { defineConfig } from "vite";
 
 export default defineConfig({
   // The default mode of every route: "static" (built HTML), "server" (rendered per request) or
   // "spa" (rendered in the browser). A route or layout overrides it with \`export const mode\`.
-  plugins: [lumen({ mode: "${template.mode}" })],
+  plugins: [lumiose({ mode: "${template.mode}" })],
 });
 `;
 }
@@ -188,24 +188,24 @@ function readme(name: string, template: Template): string {
   const server = template.mode === "server";
   return `# ${name}
 
-${template.description}. Made with Lumen (\`create-lumen --template ${template.name}\`).
+${template.description}. Made with Lumiose (\`create-lumiose --template ${template.name}\`).
 
 ## Commands
 
 - \`pnpm dev\`: start the dev server with hot reload.
 - \`pnpm build\`: build into \`dist/\` and prerender the static routes.
-- \`pnpm preview\`: serve the build locally.${server ? "\n- `pnpm start`: serve the build in production (`server.ts`, `@lumen/adapter-node`)." : ""}
-- \`pnpm check\`: type-check and report Lumen diagnostics (\`--format json\` for tools).
+- \`pnpm preview\`: serve the build locally.${server ? "\n- `pnpm start`: serve the build in production (`server.ts`, `@lumiose/adapter-node`)." : ""}
+- \`pnpm check\`: type-check and report Lumiose diagnostics (\`--format json\` for tools).
 - \`pnpm lint\` and \`pnpm fmt\`: lint and format, \`.stsx\` files and \`<style>\` blocks included.
 
 ## Layout
 
 - \`src/routes/\`: pages (\`.stsx\`) and endpoints (\`.ts\`); the file path is the URL.
-- \`vite.config.ts\`: \`lumen({ mode: "${template.mode}" })\` sets the default route mode.
-- \`.lumen/\`: generated types and shadow files (git-ignored).
+- \`vite.config.ts\`: \`lumiose({ mode: "${template.mode}" })\` sets the default route mode.
+- \`.lumiose/\`: generated types and shadow files (git-ignored).
 
-\`.stsx\` files are TSX with raw-CSS \`<style>\` blocks. The docs for your Lumen version are in
-\`node_modules/lumen/docs\` (\`npx lumen docs <topic>\`). Coding agents: see \`AGENTS.md\`.
+\`.stsx\` files are TSX with raw-CSS \`<style>\` blocks. The docs for your Lumiose version are in
+\`node_modules/lumiose/docs\` (\`npx lumiose docs <topic>\`). Coding agents: see \`AGENTS.md\`.
 `;
 }
 

@@ -1,6 +1,6 @@
 // A macro editor: draw the per-tick values with the pointer, set loop/release points, or type the
 // sequence as text. A pointer stroke is one undo step (same-key edits merge).
-import { computed } from "lumen";
+import { computed } from "lumiose";
 import { formatMacro, parseMacro } from "../model/mml.ts";
 import type { Macro, MacroKind } from "../model/types.ts";
 import { doc, edit, history, prefs, set } from "../state.ts";

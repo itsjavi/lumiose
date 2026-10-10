@@ -1,7 +1,7 @@
 // Runs the conformance suite (e2e/tracker.e2e.ts) against each app in production mode: seed a fresh
 // database, build, start the server with slow comments (so streaming is visible), run Playwright.
 //
-//   pnpm --filter @bench/harness conformance [--only lumen,next] [--no-build]
+//   pnpm --filter @bench/harness conformance [--only lumiose,next] [--no-build]
 //   pnpm --filter @bench/harness conformance --url http://127.0.0.1:4101   (an already running server)
 import { spawn } from "node:child_process";
 import { fileURLToPath } from "node:url";

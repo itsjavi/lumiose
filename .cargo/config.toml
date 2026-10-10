@@ -1,4 +1,4 @@
 # getrandom (pulled in by Lightning CSS through ahash) reads `crypto.getRandomValues` in browser
-# builds of lumen_wasm (the playground); the backend is chosen with this cfg flag.
+# builds of lumiose_wasm (the playground); the backend is chosen with this cfg flag.
 [target.wasm32-unknown-unknown]
 rustflags = ["--cfg", 'getrandom_backend="wasm_js"']

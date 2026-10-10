@@ -7,7 +7,7 @@ import { evidence } from "./evidence.ts";
 import { llmsText } from "./llms.ts";
 import { COUNTER_FILE, counterCss, counterOutput, counterSource } from "./samples.ts";
 
-const binding = await import("@lumen/compiler").catch(() => undefined);
+const binding = await import("@lumiose/compiler").catch(() => undefined);
 
 describe("docs", () => {
   it("rewrites links between Markdown files to page URLs", () => {
@@ -23,12 +23,12 @@ describe("docs", () => {
     expect(slugify("Imports outside `src/` and `.stsx` from other packages")).toBe(
       "imports-outside-src-and-stsx-from-other-packages",
     );
-    expect(slugify("lumen check")).toBe("lumen-check");
+    expect(slugify("lumiose check")).toBe("lumiose-check");
   });
 
   it("orders pages by the index, then the diagnostics", () => {
     const pages = docPages();
-    expect(pages[0]).toMatchObject({ topic: "README", path: "", title: "Lumen docs" });
+    expect(pages[0]).toMatchObject({ topic: "README", path: "", title: "Lumiose docs" });
     expect(pages[1]?.topic).toBe("getting-started");
     expect(docNav().map((section) => section.title)).toEqual([
       "Start here",

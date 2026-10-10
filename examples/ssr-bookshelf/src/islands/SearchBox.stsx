@@ -1,7 +1,7 @@
 // Island (client:load): the header search. Without JavaScript it is a GET form to /books?q=;
 // once hydrated, typing shows live suggestions from /api/search (debounced, earlier requests
 // aborted). Arrow keys move through them, Enter opens the highlighted book, Escape closes them.
-import { fetchJSON, href, onCleanup, signal } from "lumen";
+import { fetchJSON, href, onCleanup, signal } from "lumiose";
 import * as theme from "../theme.ts";
 
 interface Suggestion {

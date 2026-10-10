@@ -1,14 +1,14 @@
 // `pnpm bench:jsfb`: runs krausest/js-framework-benchmark's own runner (webdriver-ts: Puppeteer,
-// Chrome trace timing, CPU throttling and memory measurement exactly as upstream) for Lumen and
+// Chrome trace timing, CPU throttling and memory measurement exactly as upstream) for Lumiose and
 // reference frameworks, then writes RESULTS.md.
 //
 // Steps: check out a pinned krausest commit (sparse, shallow) into .krausest/, install its server
 // and runner, build the reference frameworks and the local ones (frameworks/keyed/<name>: krausest
 // layout, copied into the checkout), build this package (Vite, production) into
-// .krausest/frameworks/keyed/lumen (and lumen-hand), start the krausest server, run the benchmarks, summarize.
+// .krausest/frameworks/keyed/lumiose (and lumiose-hand), start the krausest server, run the benchmarks, summarize.
 //
 // Options:
-//   --frameworks lumen,vanillajs,...  default: lumen, lumen-hand, every reference and local framework
+//   --frameworks lumiose,vanillajs,...  default: lumiose, lumiose-hand, every reference and local framework
 //   --benchmarks 01_,22_,40_          krausest id prefixes; default: all (CPU, memory, size)
 //   --count N                         iterations per CPU benchmark (krausest default: 15)
 //   --mem-count N                     iterations per memory benchmark (krausest default: 1)
@@ -85,8 +85,8 @@ const { values: options } = parseArgs({
   },
 });
 const frameworks = options.frameworks?.split(",") ?? [
-  "lumen",
-  "lumen-hand",
+  "lumiose",
+  "lumiose-hand",
   ...REFERENCE,
   ...LOCAL,
 ];
@@ -153,7 +153,7 @@ function install(): void {
       installLocal(name, dir);
       continue;
     }
-    if (name in LUMEN || !existsSync(dir)) {
+    if (name in LUMIOSE || !existsSync(dir)) {
       continue;
     }
     const pkg = readJSON(join(dir, "package.json"));
@@ -188,24 +188,24 @@ function installLocal(name: string, dest: string): void {
   sh("npm", ["run", "build-prod"], dest);
 }
 
-/** Lumen's krausest implementations: directory name → Vite build mode and output directory. */
-const LUMEN: Record<string, { mode: string; outDir: string }> = {
-  // src/App.stsx compiled by lumen/vite: the implementation.
-  lumen: { mode: "production", outDir: "dist" },
+/** Lumiose's krausest implementations: directory name → Vite build mode and output directory. */
+const LUMIOSE: Record<string, { mode: string; outDir: string }> = {
+  // src/App.stsx compiled by lumiose/vite: the implementation.
+  lumiose: { mode: "production", outDir: "dist" },
   // The hand-compiled reference written from the compiler-runtime contract (src/hand-compiled.js).
-  "lumen-hand": { mode: "hand", outDir: "dist-hand" },
+  "lumiose-hand": { mode: "hand", outDir: "dist-hand" },
 };
 
-/** Builds a Lumen app and lays it out as krausest's frameworks/keyed/<name>. */
-async function buildLumen(name: string): Promise<void> {
-  const { mode, outDir } = LUMEN[name]!;
+/** Builds a Lumiose app and lays it out as krausest's frameworks/keyed/<name>. */
+async function buildLumiose(name: string): Promise<void> {
+  const { mode, outDir } = LUMIOSE[name]!;
   await build({ root: PKG, configFile: join(PKG, "vite.config.ts"), mode, logLevel: "warn" });
   const dest = join(KRAUSEST, "frameworks/keyed", name);
   rmSync(dest, { recursive: true, force: true });
   mkdirSync(join(dest, "dist"), { recursive: true });
   copyFileSync(join(PKG, "index.html"), join(dest, "index.html"));
   copyFileSync(join(PKG, outDir, "main.js"), join(dest, "dist/main.js"));
-  const version = readJSON(join(PKG, "../../packages/lumen/package.json")).version as string;
+  const version = readJSON(join(PKG, "../../packages/lumiose/package.json")).version as string;
   const manifest = {
     name: `js-framework-benchmark-${name}`,
     version,
@@ -483,7 +483,7 @@ function summarize(names: Map<string, string>): string {
     `- Machine: ${cpus()[0]?.model ?? "unknown CPU"} (${cpus().length} cores), ${platform()} ${release()}`,
     `- Browser: ${chromeVersion()}`,
     `- Iterations: ${sample ?? "?"} per CPU benchmark, ${memorySample ?? "?"} per memory benchmark (medians shown)`,
-    "- lumen: src/App.stsx compiled by lumen/vite; lumen-hand: the same app hand-compiled from the",
+    "- lumiose: src/App.stsx compiled by lumiose/vite; lumiose-hand: the same app hand-compiled from the",
     "  compiler-runtime contract (src/hand-compiled.js), the target for the compiler's output",
     ...(columns.includes("remix-v3")
       ? [
@@ -525,7 +525,7 @@ function summarize(names: Map<string, string>): string {
     ...sizeRows,
     "",
   );
-  for (const [name, { outDir }] of Object.entries(LUMEN)) {
+  for (const [name, { outDir }] of Object.entries(LUMIOSE)) {
     const bundle = bundleSizes(join(PKG, outDir, "main.js"));
     if (bundle !== undefined) {
       lines.push(
@@ -550,8 +550,8 @@ function summarize(names: Map<string, string>): string {
 if (!options.summary) {
   checkout();
   install();
-  for (const name of frameworks.filter((f) => f in LUMEN)) {
-    await buildLumen(name);
+  for (const name of frameworks.filter((f) => f in LUMIOSE)) {
+    await buildLumiose(name);
   }
   if (options.build) {
     process.exit(0);

@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
-import { flushSync, signal } from "lumen";
-import { mount } from "lumen/dom";
+import { flushSync, signal } from "lumiose";
+import { mount } from "lumiose/dom";
 import { afterEach, expect, it } from "vitest";
 import { ProgressBar } from "../src/components/ProgressBar.stsx";
 

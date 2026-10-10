@@ -1,7 +1,7 @@
 // Copies a text to the clipboard. CodeBlock uses it as an island (`client:visible`), so its props
 // are plain data. A polite live region announces the result.
 
-import { onCleanup, signal } from "lumen";
+import { onCleanup, signal } from "lumiose";
 import { color, motion, radius, space, text } from "./tokens.ts";
 
 export interface CopyButtonProps {

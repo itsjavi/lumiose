@@ -1,5 +1,5 @@
 // TASK-25 end to end: an spa-mode app on file routes, server-rendered and hydrated, navigating on
-// the client with lumen/router. Each spec runs under `lumen dev` and against a production build.
+// the client with lumiose/router. Each spec runs under `lumiose dev` and against a production build.
 import { expect, test, type Page } from "@playwright/test";
 
 /** Waits until the SPA root is interactive, and marks the document to detect full page loads. */
@@ -19,7 +19,7 @@ function sameDocument(page: Page): Promise<boolean> {
 test("deep links render on the server and hydrate", async ({ page }) => {
   const html = await (await page.request.get("/users/2")).text();
   expect(html).toMatch(/<h1 id=user>(<!--\[-->)?User 2/);
-  expect(html).toContain("#lumen:spa");
+  expect(html).toContain("#lumiose:spa");
   await page.goto("/users/2");
   await ready(page);
   await expect(page.locator("#user")).toHaveText("User 2");
@@ -153,7 +153,7 @@ test("links outside the SPA load the document", async ({ page }) => {
 
 test("ssr = false pages are client-rendered shells", async ({ page }) => {
   const html = await (await page.request.get("/csr")).text();
-  expect(html).toContain("#lumen:csr");
+  expect(html).toContain("#lumiose:csr");
   expect(html).not.toContain("rendered in");
   await page.goto("/csr");
   await expect(page.locator("#csr")).toHaveText("rendered in the browser");

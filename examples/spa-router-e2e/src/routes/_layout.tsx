@@ -1,5 +1,5 @@
-import { signal, type LayoutProps } from "lumen";
-import { Link, navigating, url } from "lumen/router";
+import { signal, type LayoutProps } from "lumiose";
+import { Link, navigating, url } from "lumiose/router";
 
 // The persistent root layout: its counter keeps its value across client navigations.
 export default function Layout(props: LayoutProps<"/">) {

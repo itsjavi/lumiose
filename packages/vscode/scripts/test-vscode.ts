@@ -1,10 +1,10 @@
 // Smoke test in a real VS Code (not part of `pnpm test`; run through `pnpm test:vscode`, which
-// packages the .vsix for this platform first): unpacks lumen-vscode-<target>.vsix, copies
-// test/vscode/workspace to a temp dir with `lumen` and `typescript` linked into its node_modules,
+// packages the .vsix for this platform first): unpacks lumiose-vscode-<target>.vsix, copies
+// test/vscode/workspace to a temp dir with `lumiose` and `typescript` linked into its node_modules,
 // and runs test/vscode/suite.cjs in an isolated VS Code instance with the unpacked extension loaded
 // in development mode and the built-in TypeScript extension disabled (takeover mode). Two modes:
 //
-// - `workspace`: @lumen/language-server is installed in the workspace too, so the extension runs
+// - `workspace`: @lumiose/language-server is installed in the workspace too, so the extension runs
 //   it from its TypeScript sources with `node` (Node ≥ 24 on PATH);
 // - `bundled`: it is not, so the extension runs the server bundled in the .vsix (server/bin.mjs
 //   and the native compiler) on VS Code's own Node.js (TASK-51).
@@ -35,7 +35,7 @@ if (!existsSync(executable)) {
   process.exit(1);
 }
 
-const vsix = join(root, `lumen-vscode-${hostTarget()}.vsix`);
+const vsix = join(root, `lumiose-vscode-${hostTarget()}.vsix`);
 if (!existsSync(vsix)) {
   console.error(`${vsix} does not exist; run \`pnpm package\` first.`);
   process.exit(1);
@@ -73,30 +73,30 @@ for (const mode of modes) {
 process.exitCode = failed ? 1 : 0;
 
 async function runMode(mode: Mode, screenshot: string | undefined): Promise<number | null> {
-  const temp = await mkdtemp(join(tmpdir(), `lumen-vscode-${mode}-`));
+  const temp = await mkdtemp(join(tmpdir(), `lumiose-vscode-${mode}-`));
   // A .vsix is a zip whose `extension/` folder is the installed extension.
   execFileSync("unzip", ["-q", vsix, "extension/*", "-d", join(temp, "vsix")]);
   const extension = join(temp, "vsix", "extension");
   const workspace = join(temp, "workspace");
   await cp(join(root, "test/vscode/workspace"), workspace, { recursive: true });
-  await mkdir(join(workspace, "node_modules/@lumen"), { recursive: true });
-  await symlink(join(packages, "lumen"), join(workspace, "node_modules/lumen"), "dir");
+  await mkdir(join(workspace, "node_modules/@lumiose"), { recursive: true });
+  await symlink(join(packages, "lumiose"), join(workspace, "node_modules/lumiose"), "dir");
   await symlink(typescriptDir, join(workspace, "node_modules/typescript"), "dir");
   if (mode === "workspace") {
     await symlink(
       join(packages, "language-server"),
-      join(workspace, "node_modules/@lumen/language-server"),
+      join(workspace, "node_modules/@lumiose/language-server"),
       "dir",
     );
   }
 
-  const env: NodeJS.ProcessEnv = { ...process.env, LUMEN_SMOKE_EXPECT_SERVER: mode };
+  const env: NodeJS.ProcessEnv = { ...process.env, LUMIOSE_SMOKE_EXPECT_SERVER: mode };
   delete env["ELECTRON_RUN_AS_NODE"];
   let captured: Promise<void> = Promise.resolve();
   if (screenshot) {
     const signal = join(temp, "screenshot-signal");
-    env["LUMEN_SMOKE_SCREENSHOT_SIGNAL"] = signal;
-    if (screenshotView) env["LUMEN_SMOKE_SCREENSHOT_VIEW"] = screenshotView;
+    env["LUMIOSE_SMOKE_SCREENSHOT_SIGNAL"] = signal;
+    if (screenshotView) env["LUMIOSE_SMOKE_SCREENSHOT_VIEW"] = screenshotView;
     captured = captureWhenReady(signal, resolve(screenshot));
   }
   const code = await new Promise<number | null>((done) => {

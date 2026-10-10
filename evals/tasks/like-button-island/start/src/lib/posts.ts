@@ -11,10 +11,10 @@ export interface Post {
 
 export const posts: Post[] = [
   {
-    slug: "hello-lumen",
-    title: "Hello, Lumen",
+    slug: "hello-lumiose",
+    title: "Hello, Lumiose",
     date: "2026-10-01",
-    body: "This site is static: every page is HTML built by `lumen build`, with no JavaScript.",
+    body: "This site is static: every page is HTML built by `lumiose build`, with no JavaScript.",
     likes: 12,
   },
   {

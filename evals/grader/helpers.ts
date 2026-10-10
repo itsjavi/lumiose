@@ -1,16 +1,21 @@
 // Helpers for the hidden acceptance tests. The grader copies this file next to a task's hidden
 // tests into the run's project (`eval-hidden/`), and runs them with the project's own Vitest and
-// Lumen, from the project root.
+// Lumiose, from the project root.
 import { spawn, spawnSync } from "node:child_process";
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 
 export const root = process.cwd();
-const lumenBin = join(root, "node_modules/lumen/src/cli/bin.ts");
+const lumioseBin = join(root, "node_modules/lumiose/src/cli/bin.ts");
 
-/** Runs the project's `lumen` CLI with `--format json` and returns the parsed report. */
-export function lumen(args: string[]): { code: number | null; json: any; stdout: string; stderr: string } {
-  const result = spawnSync(process.execPath, [lumenBin, ...args, "--format", "json"], {
+/** Runs the project's `lumiose` CLI with `--format json` and returns the parsed report. */
+export function lumiose(args: string[]): {
+  code: number | null;
+  json: any;
+  stdout: string;
+  stderr: string;
+} {
+  const result = spawnSync(process.execPath, [lumioseBin, ...args, "--format", "json"], {
     cwd: root,
     encoding: "utf8",
     timeout: 180_000,
@@ -26,13 +31,17 @@ export interface Dev {
   url: string;
   get(path: string, init?: RequestInit): Promise<Response>;
   /** POSTs form fields as a same-origin form submission (redirects are not followed). */
-  post(path: string, fields: Record<string, string | string[]>, init?: RequestInit): Promise<Response>;
+  post(
+    path: string,
+    fields: Record<string, string | string[]>,
+    init?: RequestInit,
+  ): Promise<Response>;
   stop(): Promise<void>;
 }
 
-/** Starts `lumen dev` on a free port. */
+/** Starts `lumiose dev` on a free port. */
 export async function startDev(): Promise<Dev> {
-  const child = spawn(process.execPath, [lumenBin, "dev", "--format", "json", "--port", "0"], {
+  const child = spawn(process.execPath, [lumioseBin, "dev", "--format", "json", "--port", "0"], {
     cwd: root,
     stdio: ["ignore", "pipe", "pipe"],
   });
@@ -40,7 +49,10 @@ export async function startDev(): Promise<Dev> {
   child.stderr.on("data", (chunk) => (stderr += chunk));
   const url = await new Promise<string>((resolve, reject) => {
     let stdout = "";
-    const timer = setTimeout(() => reject(new Error(`lumen dev did not start\n${stderr}`)), 60_000);
+    const timer = setTimeout(
+      () => reject(new Error(`lumiose dev did not start\n${stderr}`)),
+      60_000,
+    );
     child.stdout.on("data", (chunk) => {
       stdout += chunk;
       const line = stdout.split("\n").find((l) => l.includes('"url"'));
@@ -49,7 +61,7 @@ export async function startDev(): Promise<Dev> {
         resolve((JSON.parse(line) as { url: string }).url);
       }
     });
-    child.on("close", (code) => reject(new Error(`lumen dev exited with ${code}\n${stderr}`)));
+    child.on("close", (code) => reject(new Error(`lumiose dev exited with ${code}\n${stderr}`)));
   });
   const origin = new URL(url).origin;
   return {
@@ -65,7 +77,11 @@ export async function startDev(): Promise<Dev> {
         body,
         redirect: "manual",
         ...init,
-        headers: { origin, "content-type": "application/x-www-form-urlencoded", ...(init?.headers as Record<string, string> | undefined) },
+        headers: {
+          origin,
+          "content-type": "application/x-www-form-urlencoded",
+          ...(init?.headers as Record<string, string> | undefined),
+        },
       });
     },
     stop: () =>
@@ -80,7 +96,10 @@ export async function startDev(): Promise<Dev> {
 /** Text content of an HTML document, tags removed and whitespace collapsed. */
 export function text(html: string): string {
   return html
-    .replace(/<script[\s\S]*?<\/script>|<style[\s\S]*?<\/style>|<template[\s\S]*?<\/template>/g, " ")
+    .replace(
+      /<script[\s\S]*?<\/script>|<style[\s\S]*?<\/style>|<template[\s\S]*?<\/template>/g,
+      " ",
+    )
     .replace(/<!--[\s\S]*?-->/g, "")
     .replace(/<[^>]+>/g, " ")
     .replace(/&amp;/g, "&")
@@ -92,10 +111,10 @@ export function text(html: string): string {
     .trim();
 }
 
-/** Builds the app (`lumen build`) and returns the CSS it emitted, concatenated. */
+/** Builds the app (`lumiose build`) and returns the CSS it emitted, concatenated. */
 export function buildCss(): string {
-  const build = lumen(["build"]);
-  if (build.code !== 0) throw new Error(`lumen build failed\n${build.stderr}${build.stdout}`);
+  const build = lumiose(["build"]);
+  if (build.code !== 0) throw new Error(`lumiose build failed\n${build.stderr}${build.stdout}`);
   let css = "";
   const walk = (dir: string) => {
     for (const name of readdirSync(dir)) {
@@ -103,11 +122,13 @@ export function buildCss(): string {
       if (statSync(path).isDirectory()) walk(path);
       else if (name.endsWith(".css")) css += readFileSync(path, "utf8");
       else if (name.endsWith(".html")) {
-        for (const match of readFileSync(path, "utf8").matchAll(/<style[^>]*>([\s\S]*?)<\/style>/g)) css += match[1];
+        for (const match of readFileSync(path, "utf8").matchAll(/<style[^>]*>([\s\S]*?)<\/style>/g))
+          css += match[1];
       }
     }
   };
-  for (const dir of ["dist/client", "dist"]) if (existsSync(join(root, dir))) return walk(join(root, dir)), css;
+  for (const dir of ["dist/client", "dist"])
+    if (existsSync(join(root, dir))) return (walk(join(root, dir)), css);
   return css;
 }
 
@@ -128,15 +149,17 @@ export interface IslandRecord {
 /** The island records of a server-rendered page. */
 export function islands(html: string): IslandRecord[] {
   const records: IslandRecord[] = [];
-  for (const match of html.matchAll(/<script type="application\/json" data-l-islands>([\s\S]*?)<\/script>/g)) {
+  for (const match of html.matchAll(
+    /<script type="application\/json" data-l-islands>([\s\S]*?)<\/script>/g,
+  )) {
     records.push(...(JSON.parse(match[1]!) as IslandRecord[]));
   }
   return records;
 }
 
-/** `lumen check` diagnostics codes for the project (or for one file). */
+/** `lumiose check` diagnostics codes for the project (or for one file). */
 export function checkCodes(file?: string): string[] {
-  const { json } = lumen(["check"]);
+  const { json } = lumiose(["check"]);
   const diagnostics = (json?.diagnostics ?? []) as { code: string; file: string }[];
   return diagnostics.filter((d) => file === undefined || d.file === file).map((d) => d.code);
 }

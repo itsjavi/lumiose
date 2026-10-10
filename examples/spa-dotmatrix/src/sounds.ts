@@ -1,7 +1,7 @@
 // Sounds shared by the SFX and Creatures pages and the studio: rendering a sound for its
 // waveform, opening it in the studio as a sound sheet, and the "My sounds" shelf.
-import { href, signal } from "lumen";
-import { navigate } from "lumen/router";
+import { href, signal } from "lumiose";
+import { navigate } from "lumiose/router";
 import type { EngineAudioData } from "../vendor/gbapu/dist/index.js";
 import { songData } from "./audio/driver.ts";
 import { monoWav } from "./audio/player.ts";

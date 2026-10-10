@@ -1,7 +1,7 @@
 // Application state: the open song (a deep store), the undo history, the editor cursor and
 // preferences. Every song write goes through `write`, which updates the store (and so the UI),
 // the audio engine and the autosave.
-import { batch, computed, effect, signal, store, untrack } from "lumen";
+import { batch, computed, effect, signal, store, untrack } from "lumiose";
 import * as engine from "./audio/engine.ts";
 import { demoSong } from "./model/demo.ts";
 import { createHistory } from "./model/history.ts";

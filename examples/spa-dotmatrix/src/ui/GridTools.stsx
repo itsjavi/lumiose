@@ -1,7 +1,7 @@
 // The toolbar under the screen: actions on the picked bar and channel, a new song, and, for a sound
 // sheet, saving it back to its gallery. Click a bar number above the grid to pick a bar.
-import { href, signal } from "lumen";
-import { navigate } from "lumen/router";
+import { href, signal } from "lumiose";
+import { navigate } from "lumiose/router";
 import { clearBars, copyBars, emptySong } from "../model/song.ts";
 import { CHANNELS, MAX_BARS, STEPS_PER_BAR, type ChannelIndex } from "../model/types.ts";
 import { keepSound } from "../sounds.ts";

@@ -1,6 +1,6 @@
-// @lumen/site-kit: the design system of the Lumen websites. Importing it loads the base stylesheet
+// @lumiose/site-kit: the design system of the Lumiose websites. Importing it loads the base stylesheet
 // (theme, reset, typography) first, then each component brings its own scoped CSS.
-// Tokens for style blocks: `@lumen/site-kit/tokens`; theme helpers: `@lumen/site-kit/theme`.
+// Tokens for style blocks: `@lumiose/site-kit/tokens`; theme helpers: `@lumiose/site-kit/theme`.
 
 import "./Base.stsx";
 

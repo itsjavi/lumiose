@@ -1,9 +1,9 @@
-# Lumen Chip
+# Lumiose Chip
 
-A chiptune tracker, composer and mixer built with Lumen as a client-rendered SPA:
-`lumen({ mode: "spa", ssr: false })`, file routes and [`lumen/router`](../../packages/lumen/docs/reference/router.md).
+A chiptune tracker, composer and mixer built with Lumiose as a client-rendered SPA:
+`lumiose({ mode: "spa", ssr: false })`, file routes and [`lumiose/router`](../../packages/lumiose/docs/reference/router.md).
 It has four NES-style voices synthesized in an AudioWorklet: two pulses, a triangle and noise. It
-ships with a demo song, "Lumen Quest".
+ships with a demo song, "Lumiose Quest".
 
 ![The tracker playing the demo song](../../backlog/assets/task-35-tracker-playing.png)
 
@@ -20,36 +20,36 @@ Then:
 
 ```sh
 cd examples/spa-chiptune
-pnpm dev        # lumen dev; open the printed URL and press PLAY (or Space)
-pnpm build      # lumen build: dist/client only (every route is a static shell or asset)
-pnpm preview    # lumen preview: serves dist/client as a static site
+pnpm dev        # lumiose dev; open the printed URL and press PLAY (or Space)
+pnpm build      # lumiose build: dist/client only (every route is a static shell or asset)
+pnpm preview    # lumiose preview: serves dist/client as a static site
 ```
 
 The pages are cross-origin isolated by COOP/COEP headers, declared once with
-`lumen({ headers })` in `vite.config.ts`: `lumen dev` and `lumen preview` send them, and
-`lumen build` writes them to `dist/client/_headers` for static hosts that read it (Netlify,
+`lumiose({ headers })` in `vite.config.ts`: `lumiose dev` and `lumiose preview` send them, and
+`lumiose build` writes them to `dist/client/_headers` for static hosts that read it (Netlify,
 Cloudflare Pages). The engine then publishes the playing row, the levels and the scope samples
 through a `SharedArrayBuffer`. Without isolation it falls back to `postMessage`, at about 60 Hz.
-`lumen build` writes each route's shell as a static file (`dist/client/index.html`,
+`lumiose build` writes each route's shell as a static file (`dist/client/index.html`,
 `songs/index.html`, … and `404.html`, which serves deep links such as `/songs/<id>` on a static
 host).
 
-**GitHub Pages** cannot send headers, so the Lumen website's build of this example (`pnpm
-build:site`, which sets `LUMEN_BASE`) adds a small first-party service worker,
+**GitHub Pages** cannot send headers, so the Lumiose website's build of this example (`pnpm
+build:site`, which sets `LUMIOSE_BASE`) adds a small first-party service worker,
 `public/coi-sw.js`. On the first visit, a page that is not cross-origin isolated registers it
 (`src/isolation.ts`) and reloads once; from then on the worker re-serves every same-origin response
 with COOP/COEP (and CORP), so the page is isolated and the engine uses the `SharedArrayBuffer`. The
 trade-off: one extra reload on the first visit, and isolation that depends on the service worker.
 Where it cannot run (a private window that blocks it, an insecure origin), the page stays as it is
 and the engine falls back to `postMessage`. Hosts that send the real headers never install the
-worker; `LUMEN_COI_SW=1` or `0` forces it on or off in any build.
+worker; `LUMIOSE_COI_SW=1` or `0` forces it on or off in any build.
 
 Checks:
 
 ```sh
-pnpm typecheck  # lumen check (.stsx through shadow TSX)
+pnpm typecheck  # lumiose check (.stsx through shadow TSX)
 pnpm test       # Vitest: synth, sequencer, history
-pnpm test:e2e   # Playwright against `lumen dev` and against `lumen build` + `lumen preview`
+pnpm test:e2e   # Playwright against `lumiose dev` and against `lumiose build` + `lumiose preview`
 pnpm test:e2e:pages  # the GitHub Pages build (build:site + preview:site, no headers): isolation
                      # through the service worker, deep links, and the fallback without it
 ```
@@ -95,10 +95,10 @@ Measured by `pnpm test:e2e`. The test plays the demo song for 5 s, with the foll
 every VU meter animating (one style binding each) and five canvas scopes redrawing every frame.
 The setup was headless Chromium 153 on an Apple M1 Max, at 1440 × 900.
 
-| Build                           | Frames | FPS  | Frame interval p95 | Frame work avg / p95     | Slow frames (> 25 ms) |
-| ------------------------------- | ------ | ---- | ------------------ | ------------------------ | --------------------- |
-| `lumen dev`                     | 300    | 60.0 | 16.67 ms           | 0.10–0.12 / 0.14–0.20 ms | 0                     |
-| `lumen build` + `lumen preview` | 300    | 60.0 | 16.67–16.70 ms     | 0.11–0.13 / 0.16–0.26 ms | 0                     |
+| Build                               | Frames | FPS  | Frame interval p95 | Frame work avg / p95     | Slow frames (> 25 ms) |
+| ----------------------------------- | ------ | ---- | ------------------ | ------------------------ | --------------------- |
+| `lumiose dev`                       | 300    | 60.0 | 16.67 ms           | 0.10–0.12 / 0.14–0.20 ms | 0                     |
+| `lumiose build` + `lumiose preview` | 300    | 60.0 | 16.67–16.70 ms     | 0.11–0.13 / 0.16–0.26 ms | 0                     |
 
 The ranges cover three or four runs of each.
 
@@ -107,5 +107,5 @@ telemetry, updating the signals and the DOM bindings they drive, and drawing the
 You can check it live in the status bar, or with **Measure last 600 frames** in the settings
 view.
 
-The production build is 114 kB of JS (41 kB gzip) for the app, the Lumen runtime and the router,
+The production build is 114 kB of JS (41 kB gzip) for the app, the Lumiose runtime and the router,
 split into a chunk per route, plus a 9 kB worklet bundle and 19 kB of CSS (4.3 kB gzip).

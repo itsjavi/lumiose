@@ -43,7 +43,9 @@ const level = (page: Page, channel: number) =>
 const noteAt = (page: Page, row: number, channel: number) =>
   page.locator(`.row[data-row="${row}"] .cell[data-ch="${channel}"] .note`);
 
-test("the pages are cross-origin isolated (COOP/COEP from lumen({ headers }))", async ({ page }) => {
+test("the pages are cross-origin isolated (COOP/COEP from lumiose({ headers }))", async ({
+  page,
+}) => {
   expect(await page.evaluate(() => globalThis.crossOriginIsolated)).toBe(true);
 });
 
@@ -144,7 +146,7 @@ test("exports the song as a WAV file", async ({ page }) => {
   const download = page.waitForEvent("download");
   await page.getByRole("button", { name: "WAV" }).click();
   const file = await download;
-  expect(file.suggestedFilename()).toBe("lumen-quest.wav");
+  expect(file.suggestedFilename()).toBe("lumiose-quest.wav");
   const data = readFileSync((await file.path())!);
   expect(data.subarray(0, 4).toString("ascii")).toBe("RIFF");
   expect(data.subarray(8, 12).toString("ascii")).toBe("WAVE");
@@ -250,7 +252,7 @@ test("views are routes: playback and the mixer persist, songs deep-link", async 
   await page.getByRole("button", { name: "New song" }).click();
   await expect(page.locator(".library li")).toHaveCount(2);
   await page.goto(demo);
-  await expect(page.locator(".header .title")).toHaveText("Lumen Quest");
+  await expect(page.locator(".header .title")).toHaveText("Lumiose Quest");
   await expect(page.locator(".row").first()).toBeVisible();
   // One that is not in this browser's library is a 404 inside the app.
   await page.goto("/songs/nope");

@@ -11,7 +11,7 @@ export const samples: Sample[] = [
   {
     id: "counter",
     label: "Counter",
-    code: `import { computed, signal } from "lumen";
+    code: `import { computed, signal } from "lumiose";
 
 // Module constants can be used in <style> blocks as $name.
 const accent = "#5546ff";
@@ -50,7 +50,7 @@ export default function Counter() {
   {
     id: "todos",
     label: "Todo list",
-    code: `import { computed, signal } from "lumen";
+    code: `import { computed, signal } from "lumiose";
 
 interface Todo {
   id: number;
@@ -126,7 +126,7 @@ export default function Todos() {
   {
     id: "scoped",
     label: "Scoped styles",
-    code: `import { signal } from "lumen";
+    code: `import { signal } from "lumiose";
 
 const theme = { gap: "0.75rem", radius: "12px", hue: "265deg" };
 

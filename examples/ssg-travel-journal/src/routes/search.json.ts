@@ -1,5 +1,5 @@
 // The search index of the Search island: a static GET endpoint (dist/client/search.json).
-import { href, type Endpoint } from "lumen";
+import { href, type Endpoint } from "lumiose";
 import { allPosts } from "../content.ts";
 import type { SearchEntry } from "../lib/search.ts";
 

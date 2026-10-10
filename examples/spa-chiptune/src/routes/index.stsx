@@ -1,5 +1,5 @@
 // `/` opens the tracker on the open song, whose URL names it.
-import { href, redirect } from "lumen";
+import { href, redirect } from "lumiose";
 import { songId } from "../state.ts";
 
 export default function Home() {

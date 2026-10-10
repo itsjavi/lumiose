@@ -1,4 +1,4 @@
-import { href, notFound, params, Title } from "lumen";
+import { href, notFound, params, Title } from "lumiose";
 import { posts } from "../../lib/posts.ts";
 
 export async function staticPaths() {

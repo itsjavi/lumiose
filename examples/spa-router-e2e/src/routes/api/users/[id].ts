@@ -1,4 +1,4 @@
-import type { RequestContext } from "lumen";
+import type { RequestContext } from "lumiose";
 
 let hits = 0;
 

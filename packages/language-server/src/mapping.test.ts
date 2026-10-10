@@ -1,6 +1,6 @@
 // Unit tests for the offset-preserving views and the URI mapping used by the proxy.
 
-import { scan } from "@lumen/compiler";
+import { scan } from "@lumiose/compiler";
 import { mkdir, mkdtemp, realpath, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -53,19 +53,19 @@ describe("filterBlockDiagnostics", () => {
 });
 
 describe("shadow URIs", () => {
-  const shadow = "file:///p/My%20App/.lumen/shadow/src/routes/%5Bslug%5D.stsx.tsx";
+  const shadow = "file:///p/My%20App/.lumiose/shadow/src/routes/%5Bslug%5D.stsx.tsx";
 
   it("maps shadows to sources keeping the URI encoding", () => {
     expect(isShadow(shadow)).toBe(true);
     expect(shadowToSource(shadow)).toBe("file:///p/My%20App/src/routes/%5Bslug%5D.stsx");
-    expect(shadowToSource("C:\\p\\.lumen\\shadow\\src\\A.stsx.tsx")).toBe("C:\\p\\src\\A.stsx");
+    expect(shadowToSource("C:\\p\\.lumiose\\shadow\\src\\A.stsx.tsx")).toBe("C:\\p\\src\\A.stsx");
     expect(shadowToSource("file:///p/src/A.tsx")).toBeUndefined();
   });
 
   it("rewrites embedded shadow paths in text", () => {
     expect(
       rewriteShadowText(
-        "See [A](file:///p/.lumen/shadow/src/A.stsx.tsx#L3) and /p/.lumen/shadow/src/B.stsx.tsx",
+        "See [A](file:///p/.lumiose/shadow/src/A.stsx.tsx#L3) and /p/.lumiose/shadow/src/B.stsx.tsx",
       ),
     ).toBe("See [A](file:///p/src/A.stsx#L3) and /p/src/B.stsx");
   });
@@ -89,18 +89,18 @@ describe("shadow URIs", () => {
 
 describe("shadow URIs below a wider mirror base (TASK-73)", () => {
   it("maps sources and shadows through the project's rootDirs pair", async () => {
-    const dir = await realpath(await mkdtemp(join(tmpdir(), "lumen-ls-layout-")));
+    const dir = await realpath(await mkdtemp(join(tmpdir(), "lumiose-ls-layout-")));
     try {
       const root = join(dir, "apps/web");
       await mkdir(join(root, "src"), { recursive: true });
       await writeFile(
         join(root, "tsconfig.json"),
-        '{ "compilerOptions": { "rootDirs": ["../..", ".lumen/shadow"] } }',
+        '{ "compilerOptions": { "rootDirs": ["../..", ".lumiose/shadow"] } }',
       );
       const projects = new Projects([root]);
       const source = pathToUri(join(root, "src/A.stsx"));
-      const shadow = pathToUri(join(root, ".lumen/shadow/apps/web/src/A.stsx.tsx"));
-      const packageShadow = join(root, ".lumen/shadow/packages/ui/src/B.stsx.tsx");
+      const shadow = pathToUri(join(root, ".lumiose/shadow/apps/web/src/A.stsx.tsx"));
+      const packageShadow = join(root, ".lumiose/shadow/packages/ui/src/B.stsx.tsx");
       expect(projects.shadowUri(source)).toBe(shadow);
       expect(projects.shadowToSource(shadow)).toBe(source);
       expect(projects.shadowToSource(packageShadow)).toBe(join(dir, "packages/ui/src/B.stsx"));

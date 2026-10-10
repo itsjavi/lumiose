@@ -1,28 +1,28 @@
 // @vitest-environment happy-dom
 // Execution tests: compile sources with the native compiler, then run the output against the real
-// `lumen/dom` runtime (packages/lumen) in happy-dom. A case is skipped when the compiled module
-// needs a runtime helper that `lumen/dom` does not export yet (the runtime is developed in
+// `lumiose/dom` runtime (packages/lumiose) in happy-dom. A case is skipped when the compiled module
+// needs a runtime helper that `lumiose/dom` does not export yet (the runtime is developed in
 // parallel), so this suite tracks the compiler-runtime contract as both sides grow.
 import { mkdirSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { afterEach, describe, expect, it } from "vitest";
 
-// The addon exists only after `pnpm --filter @lumen/compiler build`.
+// The addon exists only after `pnpm --filter @lumiose/compiler build`.
 const binding = await import("../index.js").catch(() => undefined);
 
 // happy-dom replaces the global `URL`, so paths are built with node:path.
-const lumenEntry = resolve(import.meta.dirname, "../../lumen/src/index.ts");
-const domEntry = resolve(import.meta.dirname, "../../lumen/src/dom/index.ts");
+const lumioseEntry = resolve(import.meta.dirname, "../../lumiose/src/index.ts");
+const domEntry = resolve(import.meta.dirname, "../../lumiose/src/dom/index.ts");
 const outDir = resolve(import.meta.dirname, "out");
 
 type Runtime = Record<string, unknown> & {
   mount: (code: () => unknown, container: Element) => () => void;
 };
-type Lumen = { flushSync: () => void; signal: <T>(v: T) => { (): T; set(v: T): void } };
+type Lumiose = { flushSync: () => void; signal: <T>(v: T) => { (): T; set(v: T): void } };
 
 const dom = (await import(/* @vite-ignore */ domEntry)) as Runtime;
-const lumen = (await import(/* @vite-ignore */ lumenEntry)) as Lumen;
+const lumiose = (await import(/* @vite-ignore */ lumioseEntry)) as Lumiose;
 
 let counter = 0;
 
@@ -37,8 +37,8 @@ async function load(source: string, options: Record<string, unknown> = {}) {
   expect(errors).toEqual([]);
   const missing = result.meta.runtimeHelpers.filter((name) => !(name in dom));
   const code = result.code
-    .replaceAll('from "lumen/dom"', `from ${JSON.stringify(domEntry)}`)
-    .replaceAll('from "lumen"', `from ${JSON.stringify(lumenEntry)}`);
+    .replaceAll('from "lumiose/dom"', `from ${JSON.stringify(domEntry)}`)
+    .replaceAll('from "lumiose"', `from ${JSON.stringify(lumioseEntry)}`);
   mkdirSync(outDir, { recursive: true });
   const file = resolve(outDir, `case${counter++}.js`);
   writeFileSync(file, code);
@@ -62,10 +62,10 @@ afterEach(() => {
   document.body.textContent = "";
 });
 
-describe.skipIf(!binding)("compiled output runs on lumen/dom", () => {
+describe.skipIf(!binding)("compiled output runs on lumiose/dom", () => {
   it("counter: dynamic text, delegated event, class object (doc-2 §5.1)", async (ctx) => {
     const { module, missing } = await load(`
-      import { signal } from "lumen";
+      import { signal } from "lumiose";
       export function Counter({ start = 0 }: { start?: number }) {
         const count = signal(start);
         return (
@@ -74,28 +74,28 @@ describe.skipIf(!binding)("compiled output runs on lumen/dom", () => {
           </button>
         );
       }`);
-    if (!module) return ctx.skip(`lumen/dom lacks ${missing.join(", ")}`);
+    if (!module) return ctx.skip(`lumiose/dom lacks ${missing.join(", ")}`);
     const app = render(module.Counter, { start: 4 });
     const button = app.querySelector("button")!;
     expect(button.textContent).toBe("Clicked 4 times");
     button.click();
-    lumen.flushSync();
+    lumiose.flushSync();
     expect(button.textContent).toBe("Clicked 5 times");
     expect(button.className).toBe("");
     button.click();
-    lumen.flushSync();
+    lumiose.flushSync();
     expect(button.className).toBe("hot");
   });
 
   it("text children alone between nodes are text nodes (TASK-65)", async (ctx) => {
     const { module, missing, result } = await load(`
-      import { signal } from "lumen";
+      import { signal } from "lumiose";
       export const n = signal(3);
       export function Texts(props: { a: string }) {
         const label = String(props.a);
         return <div><b>x</b>{n() * 2}<i />{label}<hr />{\`\${props.a}!\`}</div>;
       }`);
-    if (!module) return ctx.skip(`lumen/dom lacks ${missing.join(", ")}`);
+    if (!module) return ctx.skip(`lumiose/dom lacks ${missing.join(", ")}`);
     expect(result.code).toContain("setText");
     expect(result.code).not.toContain("insert(");
     const app = render(module.Texts, { a: "A" });
@@ -110,13 +110,13 @@ describe.skipIf(!binding)("compiled output runs on lumen/dom", () => {
     ]);
     expect(div.textContent).toBe("x6AA!");
     module.n.set(5);
-    lumen.flushSync();
+    lumiose.flushSync();
     expect(div.textContent).toBe("x10AA!");
   });
 
   it("keyed list, selector and data-slot events (doc-2 §5.2)", async (ctx) => {
     const { module, missing, result } = await load(`
-      import { signal } from "lumen";
+      import { signal } from "lumiose";
       export const rows = signal([1, 2, 3].map((id) => ({ id, label: signal("row " + id) })));
       const selected = signal(0);
       const select = (id: number) => selected.set(id);
@@ -133,17 +133,17 @@ describe.skipIf(!binding)("compiled output runs on lumen/dom", () => {
           </table>
         );
       }`);
-    if (!module) return ctx.skip(`lumen/dom lacks ${missing.join(", ")}`);
+    if (!module) return ctx.skip(`lumiose/dom lacks ${missing.join(", ")}`);
     expect(result.code).toContain("$$clickData = row");
     const app = render(module.Table);
     const anchors = () => Array.from(app.querySelectorAll("a"));
     expect(anchors().map((a) => a.textContent)).toEqual(["row 1", "row 2", "row 3"]);
     anchors()[1]!.click();
-    lumen.flushSync();
+    lumiose.flushSync();
     expect(app.querySelector("tr.danger")!.textContent).toBe("row 2");
     module.rows()[1].label.set("row 2 !");
     module.rows.set(module.rows().toReversed());
-    lumen.flushSync();
+    lumiose.flushSync();
     expect(anchors().map((a) => a.textContent)).toEqual(["row 3", "row 2 !", "row 1"]);
     expect(app.querySelector("tr.danger")!.textContent).toBe("row 2 !");
   });
@@ -151,7 +151,7 @@ describe.skipIf(!binding)("compiled output runs on lumen/dom", () => {
   it("components: getter props, children and class passthrough (doc-2 §5.3)", async (ctx) => {
     const { module, missing, result } = await load(
       `
-      import { signal } from "lumen";
+      import { signal } from "lumiose";
       export const post = signal({ title: "One", body: "First" });
       function Card(props: { title: string; class?: string; children?: unknown }) {
         return <article class={props.class}><h2>{props.title}</h2>{props.children}<style>h2 { margin: 0 }</style></article>;
@@ -160,7 +160,7 @@ describe.skipIf(!binding)("compiled output runs on lumen/dom", () => {
         return <main><Card title={post().title} class="featured">{post().body}</Card><style>.featured { color: teal }</style></main>;
       }`,
     );
-    if (!module) return ctx.skip(`lumen/dom lacks ${missing.join(", ")}`);
+    if (!module) return ctx.skip(`lumiose/dom lacks ${missing.join(", ")}`);
     const [Page, Card] = ["Page", "Card"].map(
       (name) => result.meta.scopeTokens.components[name]![0]!.attribute,
     );
@@ -173,13 +173,13 @@ describe.skipIf(!binding)("compiled output runs on lumen/dom", () => {
     expect(app.querySelector("main")!.hasAttribute(Card!)).toBe(false);
     expect(article.textContent).toBe("OneFirst");
     module.post.set({ title: "Two", body: "Second" });
-    lumen.flushSync();
+    lumiose.flushSync();
     expect(article.textContent).toBe("TwoSecond");
   });
 
   it("table rows go in the implicit tbody; a select value is set once its options exist", async (ctx) => {
     const { module, missing } = await load(`
-      import { signal } from "lumen";
+      import { signal } from "lumiose";
       // String values: happy-dom's select.value setter does not convert numbers.
       export const items = signal([{ id: "1", label: "One" }, { id: "2", label: "Two" }]);
       export const choice = signal("2");
@@ -191,22 +191,22 @@ describe.skipIf(!binding)("compiled output runs on lumen/dom", () => {
           </form>
         );
       }`);
-    if (!module) return ctx.skip(`lumen/dom lacks ${missing.join(", ")}`);
+    if (!module) return ctx.skip(`lumiose/dom lacks ${missing.join(", ")}`);
     const app = render(module.Pick);
     expect(app.querySelectorAll("table > tbody > tr")).toHaveLength(2);
     const select = app.querySelector("select")!;
     expect(select.value).toBe("2");
     module.choice.set("1");
-    lumen.flushSync();
+    lumiose.flushSync();
     expect(select.value).toBe("1");
     module.items.set([...module.items(), { id: "3", label: "Three" }]);
-    lumen.flushSync();
+    lumiose.flushSync();
     expect(app.querySelectorAll("table > tbody > tr")).toHaveLength(3);
   });
 
   it("props destructuring with defaults and rest", async (ctx) => {
     const { module, missing } = await load(`
-      import { signal } from "lumen";
+      import { signal } from "lumiose";
       export const label = signal<string | undefined>(undefined);
       function Field({ label = "Name", ...rest }: { label?: string; id?: string }) {
         return <label {...rest}>{label}</label>;
@@ -214,22 +214,22 @@ describe.skipIf(!binding)("compiled output runs on lumen/dom", () => {
       export function Form() {
         return <form><Field label={label()} id="f" /></form>;
       }`);
-    if (!module) return ctx.skip(`lumen/dom lacks ${missing.join(", ")}`);
+    if (!module) return ctx.skip(`lumiose/dom lacks ${missing.join(", ")}`);
     const app = render(module.Form);
     const label = app.querySelector("label")!;
     expect(label.id).toBe("f");
     expect(label.textContent).toBe("Name");
     module.label.set("Email");
-    lumen.flushSync();
+    lumiose.flushSync();
     expect(label.textContent).toBe("Email");
     module.label.set(undefined);
-    lumen.flushSync();
+    lumiose.flushSync();
     expect(label.textContent).toBe("Name");
   });
 
   it("branches, markers and fragments keep their positions", async (ctx) => {
     const { module, missing } = await load(`
-      import { signal } from "lumen";
+      import { signal } from "lumiose";
       export const open = signal(false);
       export const a = signal("a");
       export function View() {
@@ -244,7 +244,7 @@ describe.skipIf(!binding)("compiled output runs on lumen/dom", () => {
           </>
         );
       }`);
-    if (!module) return ctx.skip(`lumen/dom lacks ${missing.join(", ")}`);
+    if (!module) return ctx.skip(`lumiose/dom lacks ${missing.join(", ")}`);
     const app = render(module.View);
     expect(app.querySelector("p")!.textContent).toBe("before a after");
     const div = app.querySelector("div")!;
@@ -252,19 +252,19 @@ describe.skipIf(!binding)("compiled output runs on lumen/dom", () => {
     const off = div.querySelector("i");
     module.open.set(true);
     module.a.set("A");
-    lumen.flushSync();
+    lumiose.flushSync();
     expect(app.querySelector("p")!.textContent).toBe("before A after");
     expect(div.textContent).toBe("on!");
     expect(div.lastElementChild!.tagName).toBe("HR");
     module.open.set(false);
-    lumen.flushSync();
+    lumiose.flushSync();
     expect(div.textContent).toBe("off");
     expect(div.querySelector("i")).not.toBe(off);
   });
 
   it("list rows: components, fragments, reactive conditionals and the index", async (ctx) => {
     const { module, missing } = await load(`
-      import { signal } from "lumen";
+      import { signal } from "lumiose";
       export const items = signal([{ id: 1, n: "a" }, { id: 2, n: "b" }]);
       export const loud = signal(false);
       function Row(props: { item: { n: string } }) {
@@ -279,14 +279,14 @@ describe.skipIf(!binding)("compiled output runs on lumen/dom", () => {
           </div>
         );
       }`);
-    if (!module) return ctx.skip(`lumen/dom lacks ${missing.join(", ")}`);
+    if (!module) return ctx.skip(`lumiose/dom lacks ${missing.join(", ")}`);
     const app = render(module.Lists);
     expect(app.querySelector("ul")!.textContent).toBe("ab");
     expect(app.querySelector("dl")!.innerHTML).toBe("<dt>a</dt><dd>0</dd><dt>b</dt><dd>1</dd>");
     expect(app.querySelector("p")!.innerHTML).toBe("<i>a</i><i>b</i>");
     module.loud.set(true);
     module.items.set(module.items().toReversed());
-    lumen.flushSync();
+    lumiose.flushSync();
     expect(app.querySelector("ul")!.textContent).toBe("ba");
     expect(app.querySelector("dl")!.textContent).toBe("b0a1");
     expect(app.querySelector("p")!.innerHTML).toBe("<b>b</b><b>a</b>");
@@ -294,7 +294,7 @@ describe.skipIf(!binding)("compiled output runs on lumen/dom", () => {
 
   it("parentless branches and lists: children, fragments, nested ternaries, returns", async (ctx) => {
     const { module, missing, result } = await load(`
-      import { signal } from "lumen";
+      import { signal } from "lumiose";
       export const open = signal(false);
       export const mode = signal("a");
       export const items = signal([{ id: 1, n: "a" }, { id: 2, n: "b" }]);
@@ -324,7 +324,7 @@ describe.skipIf(!binding)("compiled output runs on lumen/dom", () => {
           </div>
         );
       }`);
-    if (!module) return ctx.skip(`lumen/dom lacks ${missing.join(", ")}`);
+    if (!module) return ctx.skip(`lumiose/dom lacks ${missing.join(", ")}`);
     expect(result.code).toContain("branchValue(");
     expect(result.code).toContain("listValue(");
     const app = render(module.View);
@@ -342,16 +342,16 @@ describe.skipIf(!binding)("compiled output runs on lumen/dom", () => {
 
     // Memoised on the condition: an unrelated write keeps the rendered branch.
     module.mode.set("b");
-    lumen.flushSync();
+    lumiose.flushSync();
     expect(p.innerHTML).toBe("<i>B</i>");
     expect(box!.firstElementChild).toBe(closed);
     module.mode.set("c");
-    lumen.flushSync();
+    lumiose.flushSync();
     expect(p.innerHTML).toBe("<u>C</u>");
 
     module.open.set(true);
     module.items.set(module.items().toReversed());
-    lumen.flushSync();
+    lumiose.flushSync();
     expect(box!.innerHTML).toBe("<b>open</b>");
     expect(app.querySelector("div > b:not(p b)")!.textContent).toBe("on");
     // Keyed: rows move instead of being re-created.
@@ -363,7 +363,7 @@ describe.skipIf(!binding)("compiled output runs on lumen/dom", () => {
 
   it("two-way bindings, refs, attachments and native listeners", async (ctx) => {
     const { module, missing } = await load(`
-      import { signal, ref } from "lumen";
+      import { signal, ref } from "lumiose";
       export const name = signal("Ada");
       export const input = ref<HTMLInputElement>();
       export const log: string[] = [];
@@ -374,9 +374,9 @@ describe.skipIf(!binding)("compiled output runs on lumen/dom", () => {
             onMouseEnter={() => log.push("enter")} on:custom-event={() => log.push("custom")} />
         );
       }`);
-    if (!module) return ctx.skip(`lumen/dom lacks ${missing.join(", ")}`);
+    if (!module) return ctx.skip(`lumiose/dom lacks ${missing.join(", ")}`);
     const app = render(module.Form);
-    lumen.flushSync(); // attachments run as effects, after mount
+    lumiose.flushSync(); // attachments run as effects, after mount
     const element = app.querySelector("input")!;
     expect(module.input()).toBe(element);
     expect(element.value).toBe("Ada");
@@ -390,10 +390,10 @@ describe.skipIf(!binding)("compiled output runs on lumen/dom", () => {
   });
 });
 
-describe.skipIf(!binding)("async components on lumen/dom", () => {
+describe.skipIf(!binding)("async components on lumiose/dom", () => {
   it("renders after the awaits resolve, with for await and try/catch", async (ctx) => {
     const { module, missing, result } = await load(`
-      import { signal } from "lumen";
+      import { signal } from "lumiose";
       export const id = signal("1");
       async function* parts() { yield "x"; yield "y"; }
       export async function Member(props: { id: string }) {
@@ -410,7 +410,7 @@ describe.skipIf(!binding)("async components on lumen/dom", () => {
       // Declarations stay hoisted: usable (and already tagged) before their position.
       export const early = Late;
       async function Late() { return <i />; }`);
-    if (!module) return ctx.skip(`lumen/dom lacks ${missing.join(", ")}`);
+    if (!module) return ctx.skip(`lumiose/dom lacks ${missing.join(", ")}`);
     expect(result.code).toContain("export async function Member(props)");
     expect(result.code).toContain("$async(Member);");
     expect(module.early).toBe(module.early);
@@ -418,17 +418,17 @@ describe.skipIf(!binding)("async components on lumen/dom", () => {
     const app = render(module.Page);
     for (let i = 0; i < 20 && !app.querySelector("h3"); i++) {
       await new Promise((done) => setTimeout(done, 1));
-      lumen.flushSync();
+      lumiose.flushSync();
     }
     const heading = app.querySelector("h3")!;
     expect(heading.textContent).toBe("Ada 1 xy");
     expect(heading.title).toBe("no");
     // A prop change re-runs the component; the new UI replaces the old one when it resolves.
     module.id.set("2");
-    lumen.flushSync();
+    lumiose.flushSync();
     for (let i = 0; i < 20 && app.querySelector("h3")?.textContent !== "Ada 2 xy"; i++) {
       await new Promise((done) => setTimeout(done, 1));
-      lumen.flushSync();
+      lumiose.flushSync();
     }
     expect(app.querySelectorAll("h3")).toHaveLength(1);
     expect(app.querySelector("h3")!.textContent).toBe("Ada 2 xy");

@@ -14,7 +14,7 @@ let server: Server;
 let port: number;
 
 beforeAll(async () => {
-  dir = mkdtempSync(join(tmpdir(), "lumen-target-"));
+  dir = mkdtempSync(join(tmpdir(), "lumiose-target-"));
   mkdirSync(join(dir, "server"), { recursive: true });
   mkdirSync(join(dir, "client"), { recursive: true });
   writeFileSync(join(dir, "client", "index.html"), "<h1>home</h1>");
@@ -55,7 +55,7 @@ describe("request targets", () => {
     expect(response.text).toContain("app https://victim.test//robots.txt");
   });
 
-  it("sends Lumen's default headers on static files and app responses (decision-29)", async () => {
+  it("sends Lumiose's default headers on static files and app responses (decision-29)", async () => {
     for (const path of ["/robots.txt", "/page"]) {
       const response = await raw(`GET ${path} HTTP/1.1`);
       expect(response.text).toMatch(/x-content-type-options: nosniff/i);

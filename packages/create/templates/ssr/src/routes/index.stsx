@@ -1,4 +1,4 @@
-import { Suspense, Title } from "lumen";
+import { Suspense, Title } from "lumiose";
 import { listEntries } from "../server/guestbook.server.ts";
 
 /** Slow data: the page is sent first and this part streams in when it resolves. */

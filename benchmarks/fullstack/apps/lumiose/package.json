@@ -1,0 +1,25 @@
+{
+  "name": "@bench/app-lumiose",
+  "version": "0.0.0",
+  "private": true,
+  "description": "The Tracker app of the fullstack comparison benchmark (doc-4) in Lumiose: server routes, async components with Suspense, form actions and islands.",
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "seed": "bench-seed",
+    "dev": "lumiose dev --port 4101 --host 127.0.0.1",
+    "build": "lumiose build",
+    "start": "NODE_ENV=production node server.ts",
+    "typecheck": "lumiose check",
+    "clean": "rm -rf dist .lumiose node_modules/.vite"
+  },
+  "dependencies": {
+    "@bench/data": "workspace:*",
+    "@bench/ui-css": "workspace:*",
+    "@lumiose/adapter-node": "workspace:*",
+    "lumiose": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "24.19.1"
+  }
+}

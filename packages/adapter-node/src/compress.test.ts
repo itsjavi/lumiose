@@ -120,7 +120,7 @@ describe("precompressed static files", () => {
   const servers: Server[] = [];
 
   beforeAll(() => {
-    dir = mkdtempSync(join(tmpdir(), "lumen-compress-"));
+    dir = mkdtempSync(join(tmpdir(), "lumiose-compress-"));
     const files: Record<string, string | Buffer> = {
       "assets/app-abc.js": BIG_JS,
       "assets/app-abc.js.br": brotliCompressSync(BIG_JS),

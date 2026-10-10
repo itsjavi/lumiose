@@ -11,7 +11,7 @@
     },
     "node": "v26.8.1",
     "versions": {
-      "lumen": "61f0be6",
+      "lumiose": "61f0be6",
       "react": "19.3.0",
       "react-dom": "19.3.0",
       "react-router": "8.4.0",
@@ -33,12 +33,12 @@
       "other"
     ],
     "apps": [
-      "lumen",
+      "lumiose",
       "react-router",
       "next"
     ],
     "conformance": {
-      "lumen": "pass",
+      "lumiose": "pass",
       "react-router": "pass",
       "next": "pass"
     },
@@ -49,7 +49,7 @@
     ]
   },
   "results": {
-    "lumen": {
+    "lumiose": {
       "other.loc": {
         "unit": "lines",
         "values": [

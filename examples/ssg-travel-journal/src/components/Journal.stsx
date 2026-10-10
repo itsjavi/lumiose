@@ -1,4 +1,4 @@
-import { Head, Meta, Title } from "lumen";
+import { Head, Meta, Title } from "lumiose";
 import type { Post } from "../content.ts";
 import type { Page } from "../lib/paginate.ts";
 import { absoluteUrl, site } from "../lib/site.ts";

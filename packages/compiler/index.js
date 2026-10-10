@@ -92,8 +92,9 @@ function requireNative() {
         loadErrors.push(e);
       }
       try {
-        const binding = require("@lumen/compiler-android-arm64");
-        const bindingPackageVersion = require("@lumen/compiler-android-arm64/package.json").version;
+        const binding = require("@lumiose/compiler-android-arm64");
+        const bindingPackageVersion =
+          require("@lumiose/compiler-android-arm64/package.json").version;
         if (
           bindingPackageVersion !== "0.0.0" &&
           process.env.NAPI_RS_ENFORCE_VERSION_CHECK &&
@@ -114,9 +115,9 @@ function requireNative() {
         loadErrors.push(e);
       }
       try {
-        const binding = require("@lumen/compiler-android-arm-eabi");
+        const binding = require("@lumiose/compiler-android-arm-eabi");
         const bindingPackageVersion =
-          require("@lumen/compiler-android-arm-eabi/package.json").version;
+          require("@lumiose/compiler-android-arm-eabi/package.json").version;
         if (
           bindingPackageVersion !== "0.0.0" &&
           process.env.NAPI_RS_ENFORCE_VERSION_CHECK &&
@@ -149,9 +150,9 @@ function requireNative() {
           loadErrors.push(e);
         }
         try {
-          const binding = require("@lumen/compiler-win32-x64-gnu");
+          const binding = require("@lumiose/compiler-win32-x64-gnu");
           const bindingPackageVersion =
-            require("@lumen/compiler-win32-x64-gnu/package.json").version;
+            require("@lumiose/compiler-win32-x64-gnu/package.json").version;
           if (
             bindingPackageVersion !== "0.0.0" &&
             process.env.NAPI_RS_ENFORCE_VERSION_CHECK &&
@@ -172,9 +173,9 @@ function requireNative() {
           loadErrors.push(e);
         }
         try {
-          const binding = require("@lumen/compiler-win32-x64-msvc");
+          const binding = require("@lumiose/compiler-win32-x64-msvc");
           const bindingPackageVersion =
-            require("@lumen/compiler-win32-x64-msvc/package.json").version;
+            require("@lumiose/compiler-win32-x64-msvc/package.json").version;
           if (
             bindingPackageVersion !== "0.0.0" &&
             process.env.NAPI_RS_ENFORCE_VERSION_CHECK &&
@@ -196,9 +197,9 @@ function requireNative() {
         loadErrors.push(e);
       }
       try {
-        const binding = require("@lumen/compiler-win32-ia32-msvc");
+        const binding = require("@lumiose/compiler-win32-ia32-msvc");
         const bindingPackageVersion =
-          require("@lumen/compiler-win32-ia32-msvc/package.json").version;
+          require("@lumiose/compiler-win32-ia32-msvc/package.json").version;
         if (
           bindingPackageVersion !== "0.0.0" &&
           process.env.NAPI_RS_ENFORCE_VERSION_CHECK &&
@@ -219,9 +220,9 @@ function requireNative() {
         loadErrors.push(e);
       }
       try {
-        const binding = require("@lumen/compiler-win32-arm64-msvc");
+        const binding = require("@lumiose/compiler-win32-arm64-msvc");
         const bindingPackageVersion =
-          require("@lumen/compiler-win32-arm64-msvc/package.json").version;
+          require("@lumiose/compiler-win32-arm64-msvc/package.json").version;
         if (
           bindingPackageVersion !== "0.0.0" &&
           process.env.NAPI_RS_ENFORCE_VERSION_CHECK &&
@@ -245,9 +246,9 @@ function requireNative() {
       loadErrors.push(e);
     }
     try {
-      const binding = require("@lumen/compiler-darwin-universal");
+      const binding = require("@lumiose/compiler-darwin-universal");
       const bindingPackageVersion =
-        require("@lumen/compiler-darwin-universal/package.json").version;
+        require("@lumiose/compiler-darwin-universal/package.json").version;
       if (
         bindingPackageVersion !== "0.0.0" &&
         process.env.NAPI_RS_ENFORCE_VERSION_CHECK &&
@@ -268,8 +269,8 @@ function requireNative() {
         loadErrors.push(e);
       }
       try {
-        const binding = require("@lumen/compiler-darwin-x64");
-        const bindingPackageVersion = require("@lumen/compiler-darwin-x64/package.json").version;
+        const binding = require("@lumiose/compiler-darwin-x64");
+        const bindingPackageVersion = require("@lumiose/compiler-darwin-x64/package.json").version;
         if (
           bindingPackageVersion !== "0.0.0" &&
           process.env.NAPI_RS_ENFORCE_VERSION_CHECK &&
@@ -290,8 +291,9 @@ function requireNative() {
         loadErrors.push(e);
       }
       try {
-        const binding = require("@lumen/compiler-darwin-arm64");
-        const bindingPackageVersion = require("@lumen/compiler-darwin-arm64/package.json").version;
+        const binding = require("@lumiose/compiler-darwin-arm64");
+        const bindingPackageVersion =
+          require("@lumiose/compiler-darwin-arm64/package.json").version;
         if (
           bindingPackageVersion !== "0.0.0" &&
           process.env.NAPI_RS_ENFORCE_VERSION_CHECK &&
@@ -316,8 +318,8 @@ function requireNative() {
         loadErrors.push(e);
       }
       try {
-        const binding = require("@lumen/compiler-freebsd-x64");
-        const bindingPackageVersion = require("@lumen/compiler-freebsd-x64/package.json").version;
+        const binding = require("@lumiose/compiler-freebsd-x64");
+        const bindingPackageVersion = require("@lumiose/compiler-freebsd-x64/package.json").version;
         if (
           bindingPackageVersion !== "0.0.0" &&
           process.env.NAPI_RS_ENFORCE_VERSION_CHECK &&
@@ -338,8 +340,9 @@ function requireNative() {
         loadErrors.push(e);
       }
       try {
-        const binding = require("@lumen/compiler-freebsd-arm64");
-        const bindingPackageVersion = require("@lumen/compiler-freebsd-arm64/package.json").version;
+        const binding = require("@lumiose/compiler-freebsd-arm64");
+        const bindingPackageVersion =
+          require("@lumiose/compiler-freebsd-arm64/package.json").version;
         if (
           bindingPackageVersion !== "0.0.0" &&
           process.env.NAPI_RS_ENFORCE_VERSION_CHECK &&
@@ -365,9 +368,9 @@ function requireNative() {
           loadErrors.push(e);
         }
         try {
-          const binding = require("@lumen/compiler-linux-x64-musl");
+          const binding = require("@lumiose/compiler-linux-x64-musl");
           const bindingPackageVersion =
-            require("@lumen/compiler-linux-x64-musl/package.json").version;
+            require("@lumiose/compiler-linux-x64-musl/package.json").version;
           if (
             bindingPackageVersion !== "0.0.0" &&
             process.env.NAPI_RS_ENFORCE_VERSION_CHECK &&
@@ -388,9 +391,9 @@ function requireNative() {
           loadErrors.push(e);
         }
         try {
-          const binding = require("@lumen/compiler-linux-x64-gnu");
+          const binding = require("@lumiose/compiler-linux-x64-gnu");
           const bindingPackageVersion =
-            require("@lumen/compiler-linux-x64-gnu/package.json").version;
+            require("@lumiose/compiler-linux-x64-gnu/package.json").version;
           if (
             bindingPackageVersion !== "0.0.0" &&
             process.env.NAPI_RS_ENFORCE_VERSION_CHECK &&
@@ -413,9 +416,9 @@ function requireNative() {
           loadErrors.push(e);
         }
         try {
-          const binding = require("@lumen/compiler-linux-arm64-musl");
+          const binding = require("@lumiose/compiler-linux-arm64-musl");
           const bindingPackageVersion =
-            require("@lumen/compiler-linux-arm64-musl/package.json").version;
+            require("@lumiose/compiler-linux-arm64-musl/package.json").version;
           if (
             bindingPackageVersion !== "0.0.0" &&
             process.env.NAPI_RS_ENFORCE_VERSION_CHECK &&
@@ -436,9 +439,9 @@ function requireNative() {
           loadErrors.push(e);
         }
         try {
-          const binding = require("@lumen/compiler-linux-arm64-gnu");
+          const binding = require("@lumiose/compiler-linux-arm64-gnu");
           const bindingPackageVersion =
-            require("@lumen/compiler-linux-arm64-gnu/package.json").version;
+            require("@lumiose/compiler-linux-arm64-gnu/package.json").version;
           if (
             bindingPackageVersion !== "0.0.0" &&
             process.env.NAPI_RS_ENFORCE_VERSION_CHECK &&
@@ -461,9 +464,9 @@ function requireNative() {
           loadErrors.push(e);
         }
         try {
-          const binding = require("@lumen/compiler-linux-arm-musleabihf");
+          const binding = require("@lumiose/compiler-linux-arm-musleabihf");
           const bindingPackageVersion =
-            require("@lumen/compiler-linux-arm-musleabihf/package.json").version;
+            require("@lumiose/compiler-linux-arm-musleabihf/package.json").version;
           if (
             bindingPackageVersion !== "0.0.0" &&
             process.env.NAPI_RS_ENFORCE_VERSION_CHECK &&
@@ -484,9 +487,9 @@ function requireNative() {
           loadErrors.push(e);
         }
         try {
-          const binding = require("@lumen/compiler-linux-arm-gnueabihf");
+          const binding = require("@lumiose/compiler-linux-arm-gnueabihf");
           const bindingPackageVersion =
-            require("@lumen/compiler-linux-arm-gnueabihf/package.json").version;
+            require("@lumiose/compiler-linux-arm-gnueabihf/package.json").version;
           if (
             bindingPackageVersion !== "0.0.0" &&
             process.env.NAPI_RS_ENFORCE_VERSION_CHECK &&
@@ -509,9 +512,9 @@ function requireNative() {
           loadErrors.push(e);
         }
         try {
-          const binding = require("@lumen/compiler-linux-loong64-musl");
+          const binding = require("@lumiose/compiler-linux-loong64-musl");
           const bindingPackageVersion =
-            require("@lumen/compiler-linux-loong64-musl/package.json").version;
+            require("@lumiose/compiler-linux-loong64-musl/package.json").version;
           if (
             bindingPackageVersion !== "0.0.0" &&
             process.env.NAPI_RS_ENFORCE_VERSION_CHECK &&
@@ -532,9 +535,9 @@ function requireNative() {
           loadErrors.push(e);
         }
         try {
-          const binding = require("@lumen/compiler-linux-loong64-gnu");
+          const binding = require("@lumiose/compiler-linux-loong64-gnu");
           const bindingPackageVersion =
-            require("@lumen/compiler-linux-loong64-gnu/package.json").version;
+            require("@lumiose/compiler-linux-loong64-gnu/package.json").version;
           if (
             bindingPackageVersion !== "0.0.0" &&
             process.env.NAPI_RS_ENFORCE_VERSION_CHECK &&
@@ -557,9 +560,9 @@ function requireNative() {
           loadErrors.push(e);
         }
         try {
-          const binding = require("@lumen/compiler-linux-riscv64-musl");
+          const binding = require("@lumiose/compiler-linux-riscv64-musl");
           const bindingPackageVersion =
-            require("@lumen/compiler-linux-riscv64-musl/package.json").version;
+            require("@lumiose/compiler-linux-riscv64-musl/package.json").version;
           if (
             bindingPackageVersion !== "0.0.0" &&
             process.env.NAPI_RS_ENFORCE_VERSION_CHECK &&
@@ -580,9 +583,9 @@ function requireNative() {
           loadErrors.push(e);
         }
         try {
-          const binding = require("@lumen/compiler-linux-riscv64-gnu");
+          const binding = require("@lumiose/compiler-linux-riscv64-gnu");
           const bindingPackageVersion =
-            require("@lumen/compiler-linux-riscv64-gnu/package.json").version;
+            require("@lumiose/compiler-linux-riscv64-gnu/package.json").version;
           if (
             bindingPackageVersion !== "0.0.0" &&
             process.env.NAPI_RS_ENFORCE_VERSION_CHECK &&
@@ -604,9 +607,9 @@ function requireNative() {
         loadErrors.push(e);
       }
       try {
-        const binding = require("@lumen/compiler-linux-ppc64-gnu");
+        const binding = require("@lumiose/compiler-linux-ppc64-gnu");
         const bindingPackageVersion =
-          require("@lumen/compiler-linux-ppc64-gnu/package.json").version;
+          require("@lumiose/compiler-linux-ppc64-gnu/package.json").version;
         if (
           bindingPackageVersion !== "0.0.0" &&
           process.env.NAPI_RS_ENFORCE_VERSION_CHECK &&
@@ -627,9 +630,9 @@ function requireNative() {
         loadErrors.push(e);
       }
       try {
-        const binding = require("@lumen/compiler-linux-s390x-gnu");
+        const binding = require("@lumiose/compiler-linux-s390x-gnu");
         const bindingPackageVersion =
-          require("@lumen/compiler-linux-s390x-gnu/package.json").version;
+          require("@lumiose/compiler-linux-s390x-gnu/package.json").version;
         if (
           bindingPackageVersion !== "0.0.0" &&
           process.env.NAPI_RS_ENFORCE_VERSION_CHECK &&
@@ -654,9 +657,9 @@ function requireNative() {
         loadErrors.push(e);
       }
       try {
-        const binding = require("@lumen/compiler-openharmony-arm64");
+        const binding = require("@lumiose/compiler-openharmony-arm64");
         const bindingPackageVersion =
-          require("@lumen/compiler-openharmony-arm64/package.json").version;
+          require("@lumiose/compiler-openharmony-arm64/package.json").version;
         if (
           bindingPackageVersion !== "0.0.0" &&
           process.env.NAPI_RS_ENFORCE_VERSION_CHECK &&
@@ -677,9 +680,9 @@ function requireNative() {
         loadErrors.push(e);
       }
       try {
-        const binding = require("@lumen/compiler-openharmony-x64");
+        const binding = require("@lumiose/compiler-openharmony-x64");
         const bindingPackageVersion =
-          require("@lumen/compiler-openharmony-x64/package.json").version;
+          require("@lumiose/compiler-openharmony-x64/package.json").version;
         if (
           bindingPackageVersion !== "0.0.0" &&
           process.env.NAPI_RS_ENFORCE_VERSION_CHECK &&
@@ -700,9 +703,9 @@ function requireNative() {
         loadErrors.push(e);
       }
       try {
-        const binding = require("@lumen/compiler-openharmony-arm");
+        const binding = require("@lumiose/compiler-openharmony-arm");
         const bindingPackageVersion =
-          require("@lumen/compiler-openharmony-arm/package.json").version;
+          require("@lumiose/compiler-openharmony-arm/package.json").version;
         if (
           bindingPackageVersion !== "0.0.0" &&
           process.env.NAPI_RS_ENFORCE_VERSION_CHECK &&
@@ -842,21 +845,22 @@ if (!nativeBinding || forceWasi) {
     let candidateError = null;
     let candidateFailed = false;
     try {
-      candidateError = __napiWasiResolveCandidate("@lumen/compiler-wasm32-wasi", true, undefined);
+      candidateError = __napiWasiResolveCandidate("@lumiose/compiler-wasm32-wasi", true, undefined);
       candidateFailed = candidateError !== null;
       if (!candidateFailed) {
         if (
           process.env.NAPI_RS_ENFORCE_VERSION_CHECK &&
           process.env.NAPI_RS_ENFORCE_VERSION_CHECK !== "0"
         ) {
-          const bindingPackageVersion = require("@lumen/compiler-wasm32-wasi/package.json").version;
+          const bindingPackageVersion =
+            require("@lumiose/compiler-wasm32-wasi/package.json").version;
           if (bindingPackageVersion !== "0.0.0") {
             throw new Error(
               `WASI binding package version mismatch, expected 0.0.0 but got ${bindingPackageVersion}. You can reinstall dependencies to fix this issue.`,
             );
           }
         }
-        wasiBinding = require("@lumen/compiler-wasm32-wasi");
+        wasiBinding = require("@lumiose/compiler-wasm32-wasi");
         nativeBinding = wasiBinding;
         __napiLoadedBindingTarget = "wasm32-wasi";
         wasiBindingLoaded = true;

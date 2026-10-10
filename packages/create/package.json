@@ -1,11 +1,11 @@
 {
-  "name": "create-lumen",
+  "name": "create-lumiose",
   "version": "0.0.0",
   "private": true,
-  "description": "Create a Lumen app: `pnpm create lumen my-app --template ssr`. Every project starts agent-ready (AGENTS.md, CLAUDE.md, the lumen skill).",
+  "description": "Create a Lumiose app: `pnpm create lumiose my-app --template ssr`. Every project starts agent-ready (AGENTS.md, CLAUDE.md, the lumiose skill).",
   "license": "MIT",
   "bin": {
-    "create-lumen": "./src/bin.ts"
+    "create-lumiose": "./src/bin.ts"
   },
   "files": [
     "src",
@@ -17,10 +17,10 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "lumen": "workspace:*"
+    "lumiose": "workspace:*"
   },
   "devDependencies": {
-    "@lumen/adapter-node": "workspace:*",
+    "@lumiose/adapter-node": "workspace:*",
     "typescript": "^7.0.2",
     "vite": "^8.3.4"
   },

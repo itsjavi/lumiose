@@ -44,9 +44,9 @@ test("todos are added, checked and removed", async ({ page }, info) => {
   await items.last().getByRole("button", { name: "Remove" }).click();
   await expect(items.locator("label")).toHaveText(["Write the compiler"]);
   await expect(page.locator(".remaining")).toHaveText("0 of 1 left");
-  if (process.env.LUMEN_SCREENSHOTS) {
+  if (process.env.LUMIOSE_SCREENSHOTS) {
     await page.screenshot({
-      path: `${process.env.LUMEN_SCREENSHOTS}/vite-counter-${info.project.name}.png`,
+      path: `${process.env.LUMIOSE_SCREENSHOTS}/vite-counter-${info.project.name}.png`,
     });
   }
 });
@@ -82,7 +82,7 @@ test("an edited component re-renders alone: its siblings keep their state (TASK-
   await expect(page.getByText("Survive the edit")).toBeVisible();
   await page.getByRole("button", { name: /Clicked/ }).click();
   await expect(page.getByRole("button", { name: /Clicked/ })).toHaveText("Clicked 1 times");
-  const heading = page.getByRole("heading", { name: "Lumen + Vite" });
+  const heading = page.getByRole("heading", { name: "Lumiose + Vite" });
   const before = await heading.elementHandle();
   try {
     await edit(file, source.replace("Clicked {count()} times", "Pressed {count()} times"));
@@ -107,10 +107,10 @@ test("compiler errors show in the dev overlay with a code frame", async ({ page 
     await edit(file, source.replace("<h2>Counter</h2>", "<h2>Counter</h3>"));
     const overlay = page.locator("vite-error-overlay");
     await expect(overlay.locator(".message")).toContainText("LUM1001");
-    await expect(overlay.locator(".plugin")).toContainText("lumen");
+    await expect(overlay.locator(".plugin")).toContainText("lumiose");
     await expect(overlay.locator(".frame")).toContainText("<h2>Counter</h3>");
-    if (process.env.LUMEN_SCREENSHOTS) {
-      await page.screenshot({ path: `${process.env.LUMEN_SCREENSHOTS}/vite-overlay.png` });
+    if (process.env.LUMIOSE_SCREENSHOTS) {
+      await page.screenshot({ path: `${process.env.LUMIOSE_SCREENSHOTS}/vite-overlay.png` });
     }
   } finally {
     await edit(file, source);
@@ -180,9 +180,9 @@ test("style edits hot-update the CSS without re-running components", async ({ pa
     await expect(counter).toHaveCSS("background-color", "rgb(5, 150, 105)");
     await expect(counter).toHaveText("Clicked 2 times");
     expect(await page.evaluate(() => (window as unknown as { marker: number }).marker)).toBe(1);
-    if (process.env.LUMEN_SCREENSHOTS) {
+    if (process.env.LUMIOSE_SCREENSHOTS) {
       await page.screenshot({
-        path: `${process.env.LUMEN_SCREENSHOTS}/vite-counter-style-hmr.png`,
+        path: `${process.env.LUMIOSE_SCREENSHOTS}/vite-counter-style-hmr.png`,
       });
     }
   } finally {

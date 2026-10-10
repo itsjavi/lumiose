@@ -1,5 +1,5 @@
 // The root layout: wraps every page.
-import { href, type LayoutProps } from "lumen";
+import { href, type LayoutProps } from "lumiose";
 
 export default function Layout(props: LayoutProps<"/">) {
   return (

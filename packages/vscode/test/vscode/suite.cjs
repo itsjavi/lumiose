@@ -10,7 +10,7 @@ const TIMEOUT = 60_000;
 async function run() {
   const folder = vscode.workspace.workspaceFolders?.[0];
   assert.ok(folder, "a workspace folder is open");
-  const extension = vscode.extensions.getExtension("lumen.lumen-vscode");
+  const extension = vscode.extensions.getExtension("lumiose.lumiose-vscode");
   assert.ok(extension, "the extension is loaded");
 
   const card = vscode.Uri.file(path.join(folder.uri.fsPath, "src/components/Card.stsx"));
@@ -20,9 +20,9 @@ async function run() {
   const api = await extension.activate();
   log("activated");
 
-  // Which server the extension launched: the workspace's @lumen/language-server (TS sources on
+  // Which server the extension launched: the workspace's @lumiose/language-server (TS sources on
   // `node`), or the one bundled in the .vsix on VS Code's own Node.js (scripts/test-vscode.ts).
-  const expected = process.env["LUMEN_SMOKE_EXPECT_SERVER"];
+  const expected = process.env["LUMIOSE_SMOKE_EXPECT_SERVER"];
   const server = api.server();
   assert.ok(server, "a language server was started");
   if (expected) assert.equal(server.source, expected, `the ${expected} server is used`);
@@ -43,7 +43,7 @@ async function run() {
   assert.match(scopesOf("Card"), /entity\.name\.function\.tsx/);
   log(`grammar: ${tokens.length} tokens`);
 
-  // LSP client → the Lumen language server → TypeScript 7 (the workspace's typescript).
+  // LSP client → the Lumiose language server → TypeScript 7 (the workspace's typescript).
   const text = document.getText();
   const refHover = await hoverText(card, document.positionAt(text.indexOf("$gap") + 2));
   assert.match(refHover, /\b8\b/, "hover on a $ref shows its folded value");
@@ -51,7 +51,7 @@ async function run() {
   assert.match(tsHover, /function Card/);
   log("hovers in .stsx: ok");
 
-  // Takeover mode: the Lumen server also serves .tsx (the built-in TS extension is disabled).
+  // Takeover mode: the Lumiose server also serves .tsx (the built-in TS extension is disabled).
   const main = vscode.Uri.file(path.join(folder.uri.fsPath, "src/main.tsx"));
   const mainDocument = await vscode.workspace.openTextDocument(main);
   const mainHover = await hoverText(
@@ -121,9 +121,9 @@ async function run() {
   log("auto-closing: ok");
   await vscode.commands.executeCommand("workbench.action.revertAndCloseActiveEditor");
 
-  const signal = process.env["LUMEN_SMOKE_SCREENSHOT_SIGNAL"];
+  const signal = process.env["LUMIOSE_SMOKE_SCREENSHOT_SIGNAL"];
   if (signal) {
-    const completion = process.env["LUMEN_SMOKE_SCREENSHOT_VIEW"] === "completion";
+    const completion = process.env["LUMIOSE_SMOKE_SCREENSHOT_VIEW"] === "completion";
     await pauseForScreenshot(signal, completion ? nested : card, completion);
   }
 }
@@ -208,7 +208,7 @@ async function hoverText(uri, position) {
 }
 
 function log(message) {
-  console.log(`[lumen-vscode smoke] ${message}`);
+  console.log(`[lumiose-vscode smoke] ${message}`);
 }
 
 module.exports = { run };

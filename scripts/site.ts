@@ -1,23 +1,23 @@
-// Builds the Lumen website into one static directory, as GitHub Pages serves it
+// Builds the Lumiose website into one static directory, as GitHub Pages serves it
 // (.github/workflows/pages.yml runs the same command):
 //
-//   pnpm build:site [--base /lumen/] [--out dist/site] [--skip-compiler]
-//   pnpm preview:site [--base /lumen/] [--out dist/site] [--port 4173]
+//   pnpm build:site [--base /lumiose/] [--out dist/site] [--skip-compiler]
+//   pnpm preview:site [--base /lumiose/] [--out dist/site] [--port 4173]
 //
 // - apps/web (/, /docs, /examples, /benchmarks) lands at the root of the output, apps/playground
 //   under playground/.
 // - The examples that need no server are built below examples/<name>/ (TASK-163). ssr-bookshelf
 //   needs a server: the website shows a screenshot and links its code instead.
 // - Benchmarks: the fullstack results viewer with the committed results at
-//   benchmarks/fullstack/, and the Lumen js-framework-benchmark app at
+//   benchmarks/fullstack/, and the Lumiose js-framework-benchmark app at
 //   benchmarks/js-framework-benchmark/app/ (the results page itself is apps/web's).
 // - GitHub Pages answers every missing path with the root 404.html, so that page gets a script
 //   that renders an example's own 404.html in place for paths below it: the SPA shell of
 //   spa-chiptune (deep links such as /examples/spa-chiptune/songs/3) or the journal's 404 page.
-// - The base is the URL path the site is served below (default "/"; also read from LUMEN_BASE).
+// - The base is the URL path the site is served below (default "/"; also read from LUMIOSE_BASE).
 //   A project page on GitHub Pages lives at https://<user>.github.io/<repo>/, so its base is
 //   /<repo>/. The output holds the files themselves, not a <base> folder.
-// - The native compiler (@lumen/compiler, napi) is built first, since `lumen build` compiles with
+// - The native compiler (@lumiose/compiler, napi) is built first, since `lumiose build` compiles with
 //   it; --skip-compiler reuses an existing build. The playground also builds the WebAssembly
 //   compiler (needs `rustup target add wasm32-unknown-unknown` and the pinned wasm-bindgen-cli,
 //   see apps/playground/scripts/assets.ts).
@@ -46,14 +46,14 @@ const repo = fileURLToPath(new URL("..", import.meta.url));
 const { positionals, values } = parseArgs({
   allowPositionals: true,
   options: {
-    base: { type: "string", default: process.env["LUMEN_BASE"] ?? "/" },
+    base: { type: "string", default: process.env["LUMIOSE_BASE"] ?? "/" },
     out: { type: "string", default: "dist/site" },
     port: { type: "string", default: "4173" },
     "skip-compiler": { type: "boolean", default: false },
   },
 });
 
-/** "/", "lumen", "/lumen" and "/lumen/" normalize to "/" and "/lumen/". */
+/** "/", "lumiose", "/lumiose" and "/lumiose/" normalize to "/" and "/lumiose/". */
 const base = `/${values.base.replace(/^\/+|\/+$/g, "")}/`.replace(/^\/\/$/, "/");
 const out = resolve(repo, values.out);
 
@@ -90,18 +90,18 @@ function copyBuild(from: string, to: string): void {
 
 function build(): void {
   if (!values["skip-compiler"]) pnpm(["build:compiler"]);
-  for (const app of ["@lumen/web", "@lumen/playground"]) {
-    pnpm(["--filter", app, "build"], { LUMEN_BASE: base });
+  for (const app of ["@lumiose/web", "@lumiose/playground"]) {
+    pnpm(["--filter", app, "build"], { LUMIOSE_BASE: base });
   }
   for (const { name } of EXAMPLES) {
-    // LUMEN_PAGES tells an example it is built for a static host without custom headers
+    // LUMIOSE_PAGES tells an example it is built for a static host without custom headers
     // (spa-chiptune's cross-origin isolation service worker, TASK-172).
-    pnpm(["--filter", `@lumen-examples/${name}`, "build"], {
-      LUMEN_BASE: `${base}examples/${name}/`,
-      LUMEN_PAGES: "1",
+    pnpm(["--filter", `@lumiose-examples/${name}`, "build"], {
+      LUMIOSE_BASE: `${base}examples/${name}/`,
+      LUMIOSE_PAGES: "1",
     });
   }
-  pnpm(["--filter", "@lumen/bench-jsfb", "build"]);
+  pnpm(["--filter", "@lumiose/bench-jsfb", "build"]);
 
   rmSync(out, { recursive: true, force: true });
   copyBuild(join(repo, "apps/web/dist/client"), out);

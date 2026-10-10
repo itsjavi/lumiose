@@ -2,7 +2,7 @@
 // server-rendered, and the icon follows the theme through CSS alone, so it is right before
 // hydration and never mismatches. The choice persists in localStorage (./theme.ts).
 
-import { onMount, signal } from "lumen";
+import { onMount, signal } from "lumiose";
 import { activeTheme, setTheme, storedTheme } from "./theme.ts";
 import { color, motion, radius, space } from "./tokens.ts";
 

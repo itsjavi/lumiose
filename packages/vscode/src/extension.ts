@@ -1,5 +1,5 @@
-// The Lumen VS Code extension (spec §9.2): the `stsx` language (contributed in package.json), the
-// language client for `@lumen/language-server`, and the takeover-mode prompt.
+// The Lumiose VS Code extension (spec §9.2): the `stsx` language (contributed in package.json), the
+// language client for `@lumiose/language-server`, and the takeover-mode prompt.
 
 import * as vscode from "vscode";
 import {
@@ -15,7 +15,7 @@ import {
   serverRuntime,
   shouldPromptTakeover,
   takeoverActive,
-  usesLumen,
+  usesLumiose,
   type ServerEntry,
   type TakeoverSetting,
   type TakeoverState,
@@ -36,21 +36,21 @@ let output: vscode.LogOutputChannel | undefined;
 let clientTakeover: boolean | undefined;
 
 /** What `activate` returns: read by the smoke test, and by other extensions. */
-export interface LumenExtensionApi {
+export interface LumioseExtensionApi {
   /** The language server in use: its entry, where it was found, and the runtime running it. */
   server(): (ServerEntry & { runtime: string }) | undefined;
 }
 
-export async function activate(context: vscode.ExtensionContext): Promise<LumenExtensionApi> {
-  output = vscode.window.createOutputChannel("Lumen Language Server", { log: true });
+export async function activate(context: vscode.ExtensionContext): Promise<LumioseExtensionApi> {
+  output = vscode.window.createOutputChannel("Lumiose Language Server", { log: true });
   context.subscriptions.push(
     output,
-    vscode.commands.registerCommand("lumen.restartServer", () => restart(context)),
-    vscode.commands.registerCommand("lumen.setupTakeover", () => showTakeoverSteps()),
+    vscode.commands.registerCommand("lumiose.restartServer", () => restart(context)),
+    vscode.commands.registerCommand("lumiose.setupTakeover", () => showTakeoverSteps()),
     vscode.workspace.onDidChangeConfiguration((event) => {
       if (
-        event.affectsConfiguration("lumen.server") ||
-        event.affectsConfiguration("lumen.takeover")
+        event.affectsConfiguration("lumiose.server") ||
+        event.affectsConfiguration("lumiose.takeover")
       ) {
         void restart(context);
       }
@@ -72,7 +72,7 @@ export async function deactivate(): Promise<void> {
 }
 
 async function start(context: vscode.ExtensionContext): Promise<void> {
-  const configuration = vscode.workspace.getConfiguration("lumen");
+  const configuration = vscode.workspace.getConfiguration("lumiose");
   const folders = (vscode.workspace.workspaceFolders ?? [])
     .filter((folder) => folder.uri.scheme === "file")
     .map((folder) => folder.uri.fsPath);
@@ -111,15 +111,15 @@ async function start(context: vscode.ExtensionContext): Promise<void> {
   output?.info(
     `Starting ${entry.path} (${entry.source}) with ${runtimeName}; takeover ${takeover ? "on" : "off"}.`,
   );
-  client = new LanguageClient("lumen", "Lumen Language Server", serverOptions, clientOptions);
+  client = new LanguageClient("lumiose", "Lumiose Language Server", serverOptions, clientOptions);
   try {
     await client.start();
   } catch (error) {
     output?.error(`The language server failed to start: ${String(error)}`);
     void vscode.window.showErrorMessage(
       runtime.kind === "vscode"
-        ? `Lumen: the bundled language server failed to start (${entry.path}). See the "Lumen Language Server" output.`
-        : `Lumen: the language server failed to start (${runtime.command} ${entry.path}). It needs Node.js ≥ 24; set "lumen.server.runtime" to a newer node.`,
+        ? `Lumiose: the bundled language server failed to start (${entry.path}). See the "Lumiose Language Server" output.`
+        : `Lumiose: the language server failed to start (${runtime.command} ${entry.path}). It needs Node.js ≥ 24; set "lumiose.server.runtime" to a newer node.`,
     );
   }
 }
@@ -139,15 +139,15 @@ async function restart(context: vscode.ExtensionContext): Promise<void> {
 
 function takeoverState(): TakeoverState {
   const setting = vscode.workspace
-    .getConfiguration("lumen")
+    .getConfiguration("lumiose")
     .get<TakeoverSetting>("takeover", "prompt");
   return {
     setting,
     typescriptExtensionActive: TYPESCRIPT_EXTENSIONS.some(
       (id) => vscode.extensions.getExtension(id) !== undefined,
     ),
-    usesLumen: (vscode.workspace.workspaceFolders ?? []).some(
-      (folder) => folder.uri.scheme === "file" && usesLumen(folder.uri.fsPath),
+    usesLumiose: (vscode.workspace.workspaceFolders ?? []).some(
+      (folder) => folder.uri.scheme === "file" && usesLumiose(folder.uri.fsPath),
     ),
   };
 }
@@ -158,7 +158,7 @@ async function promptTakeover(): Promise<void> {
   const enable = "Enable Takeover Mode";
   const never = "Don't Ask Again";
   const choice = await vscode.window.showInformationMessage(
-    "This workspace uses Lumen. In takeover mode, one TypeScript 7 server (through the Lumen language server) handles .ts, .tsx and .stsx files, so types and renames flow between them. It needs the built-in TypeScript extension disabled for this workspace.",
+    "This workspace uses Lumiose. In takeover mode, one TypeScript 7 server (through the Lumiose language server) handles .ts, .tsx and .stsx files, so types and renames flow between them. It needs the built-in TypeScript extension disabled for this workspace.",
     enable,
     never,
   );
@@ -166,7 +166,7 @@ async function promptTakeover(): Promise<void> {
   else if (choice === never) {
     // "auto" keeps takeover following the TypeScript extension's state, without prompting.
     await vscode.workspace
-      .getConfiguration("lumen")
+      .getConfiguration("lumiose")
       .update("takeover", "auto", vscode.ConfigurationTarget.Workspace);
   }
 }
@@ -176,7 +176,7 @@ async function showTakeoverSteps(): Promise<void> {
   const active = TYPESCRIPT_EXTENSIONS.filter((id) => vscode.extensions.getExtension(id));
   if (active.length === 0) {
     void vscode.window.showInformationMessage(
-      "Lumen takeover mode is already active: no TypeScript extension is enabled in this workspace.",
+      "Lumiose takeover mode is already active: no TypeScript extension is enabled in this workspace.",
     );
     return;
   }
@@ -194,10 +194,10 @@ async function showTakeoverSteps(): Promise<void> {
 
 async function reportMissingServer(configured: string | undefined): Promise<void> {
   const message = configured?.trim()
-    ? `Lumen: the language server at "${configured}" (lumen.server.path) does not exist.`
-    : `Lumen: ${SERVER_PACKAGE} was not found in this workspace, so .stsx files only get syntax highlighting. Install it as a dev dependency, or set "lumen.server.path".`;
+    ? `Lumiose: the language server at "${configured}" (lumiose.server.path) does not exist.`
+    : `Lumiose: ${SERVER_PACKAGE} was not found in this workspace, so .stsx files only get syntax highlighting. Install it as a dev dependency, or set "lumiose.server.path".`;
   const settings = "Open Settings";
   if ((await vscode.window.showWarningMessage(message, settings)) === settings) {
-    await vscode.commands.executeCommand("workbench.action.openSettings", "lumen.server");
+    await vscode.commands.executeCommand("workbench.action.openSettings", "lumiose.server");
   }
 }

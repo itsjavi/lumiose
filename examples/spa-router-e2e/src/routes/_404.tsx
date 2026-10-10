@@ -1,4 +1,4 @@
-import type { ErrorPageProps } from "lumen";
+import type { ErrorPageProps } from "lumiose";
 
 export default function NotFound(props: ErrorPageProps) {
   return (

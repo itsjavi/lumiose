@@ -29,12 +29,13 @@ export function parseAgent(spec: string): AgentConfig {
   return { cli, model, effort: effort as Effort };
 }
 
-export const agentId = (agent: AgentConfig): string => `${agent.cli}:${agent.model}:${agent.effort}`;
+export const agentId = (agent: AgentConfig): string =>
+  `${agent.cli}:${agent.model}:${agent.effort}`;
 
 /** One normalised tool call of the agent. */
 export interface Step {
   kind: "command" | "read" | "edit" | "search" | "mcp" | "other";
-  /** Tool name (`Bash`, `Read`, `mcp__lumen__check`, `command_execution`, …). */
+  /** Tool name (`Bash`, `Read`, `mcp__lumiose__check`, `command_execution`, …). */
   tool: string;
   /** The command, path or query. */
   input: string;
@@ -69,7 +70,7 @@ export interface Transcript {
 export interface RunOptions {
   dir: string;
   prompt: string;
-  /** Command line of the `lumen mcp` server, when the run registers it. */
+  /** Command line of the `lumiose mcp` server, when the run registers it. */
   mcp: { command: string; args: string[] } | null;
   maxTurns: number;
   timeoutMs: number;
@@ -161,10 +162,18 @@ function claudeCommand(agent: AgentConfig, options: RunOptions) {
     "--max-turns",
     String(options.maxTurns),
     "--allowedTools",
-    ["Bash", "Read", "Edit", "Write", "Glob", "Grep", ...(options.mcp ? ["mcp__lumen"] : [])].join(","),
+    [
+      "Bash",
+      "Read",
+      "Edit",
+      "Write",
+      "Glob",
+      "Grep",
+      ...(options.mcp ? ["mcp__lumiose"] : []),
+    ].join(","),
   ];
   if (options.mcp) {
-    args.push("--mcp-config", JSON.stringify({ mcpServers: { lumen: options.mcp } }));
+    args.push("--mcp-config", JSON.stringify({ mcpServers: { lumiose: options.mcp } }));
   }
   return { command: "claude", args, env: {}, stdin: options.prompt, cleanup: () => {} };
 }
@@ -193,10 +202,18 @@ function claudeStep(name: string, input: Json): Omit<Step, "output" | "failed"> 
   if (name === "Bash") return { kind: "command", tool: name, input: String(input.command ?? "") };
   if (name === "Read") return { kind: "read", tool: name, input: String(input.file_path ?? "") };
   if (name === "Edit" || name === "Write" || name === "MultiEdit" || name === "NotebookEdit") {
-    return { kind: "edit", tool: name, input: String(input.file_path ?? input.notebook_path ?? "") };
+    return {
+      kind: "edit",
+      tool: name,
+      input: String(input.file_path ?? input.notebook_path ?? ""),
+    };
   }
   if (name === "Grep" || name === "Glob") {
-    return { kind: "search", tool: name, input: `${input.pattern ?? ""} ${input.path ?? ""}`.trim() };
+    return {
+      kind: "search",
+      tool: name,
+      input: `${input.pattern ?? ""} ${input.path ?? ""}`.trim(),
+    };
   }
   if (name.startsWith("mcp__")) return { kind: "mcp", tool: name, input: JSON.stringify(input) };
   return { kind: "other", tool: name, input: JSON.stringify(input).slice(0, 500) };
@@ -222,7 +239,11 @@ export function parseClaude(stdout: string): Transcript {
         const call = pending.get(part.tool_use_id);
         if (!call) continue;
         pending.delete(part.tool_use_id);
-        steps.push({ ...call, output: textOf(part.content).slice(0, 20_000), failed: part.is_error === true });
+        steps.push({
+          ...call,
+          output: textOf(part.content).slice(0, 20_000),
+          failed: part.is_error === true,
+        });
       }
     }
     if (event.type === "result") result = event;
@@ -247,7 +268,8 @@ export function parseClaude(stdout: string): Transcript {
       result === undefined
         ? "no result event"
         : result.is_error
-          ? String(result.subtype ?? "error") + (result.result ? `: ${String(result.result).slice(0, 300)}` : "")
+          ? String(result.subtype ?? "error") +
+            (result.result ? `: ${String(result.result).slice(0, 300)}` : "")
           : null,
     usageInfo: result?.modelUsage ?? null,
   };
@@ -261,8 +283,11 @@ export function parseClaude(stdout: string): Transcript {
  * confined to the project, no network) and no approvals.
  */
 function codexCommand(agent: AgentConfig, options: RunOptions) {
-  const home = mkdtempSync(join(tmpdir(), "lumen-eval-codex-"));
-  symlinkSync(join(process.env.CODEX_HOME ?? join(homedir(), ".codex"), "auth.json"), join(home, "auth.json"));
+  const home = mkdtempSync(join(tmpdir(), "lumiose-eval-codex-"));
+  symlinkSync(
+    join(process.env.CODEX_HOME ?? join(homedir(), ".codex"), "auth.json"),
+    join(home, "auth.json"),
+  );
   const args = [
     "exec",
     "--json",
@@ -282,8 +307,8 @@ function codexCommand(agent: AgentConfig, options: RunOptions) {
     "sandbox_workspace_write.network_access=false",
   ];
   if (options.mcp) {
-    args.push("-c", `mcp_servers.lumen.command=${JSON.stringify(options.mcp.command)}`);
-    args.push("-c", `mcp_servers.lumen.args=${JSON.stringify(options.mcp.args)}`);
+    args.push("-c", `mcp_servers.lumiose.command=${JSON.stringify(options.mcp.command)}`);
+    args.push("-c", `mcp_servers.lumiose.args=${JSON.stringify(options.mcp.args)}`);
   }
   args.push("-");
   return {
@@ -336,7 +361,13 @@ export function parseCodex(stdout: string): Transcript {
       case "file_change":
         turns++;
         for (const change of item.changes ?? []) {
-          steps.push({ kind: "edit", tool: "file_change", input: String(change.path ?? ""), output: "", failed: item.status === "failed" });
+          steps.push({
+            kind: "edit",
+            tool: "file_change",
+            input: String(change.path ?? ""),
+            output: "",
+            failed: item.status === "failed",
+          });
         }
         break;
       case "mcp_tool_call":
@@ -350,7 +381,13 @@ export function parseCodex(stdout: string): Transcript {
         });
         break;
       case "web_search":
-        steps.push({ kind: "search", tool: "web_search", input: String(item.query ?? ""), output: "", failed: false });
+        steps.push({
+          kind: "search",
+          tool: "web_search",
+          input: String(item.query ?? ""),
+          output: "",
+          failed: false,
+        });
         break;
     }
   }

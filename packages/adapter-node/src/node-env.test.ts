@@ -13,7 +13,7 @@ declare global {
 
 /** A minimal build output whose entry records NODE_ENV when it is evaluated. */
 function fakeBuild(): string {
-  const dir = mkdtempSync(join(tmpdir(), "lumen-node-env-"));
+  const dir = mkdtempSync(join(tmpdir(), "lumiose-node-env-"));
   mkdirSync(join(dir, "server"), { recursive: true });
   mkdirSync(join(dir, "client"), { recursive: true });
   writeFileSync(

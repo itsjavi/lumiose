@@ -1,4 +1,4 @@
-import type { Endpoint } from "lumen";
+import type { Endpoint } from "lumiose";
 import { getStock } from "../../../server/stock.server.ts";
 
 export const GET: Endpoint<"/api/stock/[sku]"> = ({ params }) => {

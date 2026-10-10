@@ -10,7 +10,7 @@ import { fileURLToPath } from "node:url";
 export const FULLSTACK = fileURLToPath(new URL("../../", import.meta.url));
 export const REPO = fileURLToPath(new URL("../../../../", import.meta.url));
 
-export type AppId = "lumen" | "react-router" | "next";
+export type AppId = "lumiose" | "react-router" | "next";
 
 export interface App {
   id: AppId;
@@ -35,23 +35,23 @@ export interface App {
 
 export const APPS: App[] = [
   {
-    id: "lumen",
-    name: "Lumen",
-    dir: join(FULLSTACK, "apps/lumen"),
+    id: "lumiose",
+    name: "Lumiose",
+    dir: join(FULLSTACK, "apps/lumiose"),
     port: 4101,
     clientOutput: ["dist/client"],
     serverOutput: ["dist/server"],
     hmr: {
-      file: join(FULLSTACK, "apps/lumen/src/components/layout.tsx"),
+      file: join(FULLSTACK, "apps/lumiose/src/components/layout.tsx"),
       find: "fullstack comparison benchmark",
     },
     sharedSources: [],
     env: {},
-    devTool: { name: "Vite", pkg: "vite", via: "lumen" },
+    devTool: { name: "Vite", pkg: "vite", via: "lumiose" },
     devServer:
-      "`lumen dev`: Vite in middleware mode, modules compiled on request, SSR through Vite's module runner",
+      "`lumiose dev`: Vite in middleware mode, modules compiled on request, SSR through Vite's module runner",
     prodServer:
-      "`node server.ts`: the `lumen build` output on @lumen/adapter-node (compress: false)",
+      "`node server.ts`: the `lumiose build` output on @lumiose/adapter-node (compress: false)",
   },
   {
     id: "react-router",
@@ -274,7 +274,7 @@ export const sleep = (ms: number): Promise<void> =>
 export function resolvedVersion(app: App, pkg: string, via?: string): string | null {
   try {
     let base = join(app.dir, "package.json");
-    // A dependency of a dependency (`vite` via `lumen`): resolve from that package's directory.
+    // A dependency of a dependency (`vite` via `lumiose`): resolve from that package's directory.
     if (via !== undefined) base = createRequire(base).resolve(`${via}/package.json`);
     const require = createRequire(base);
     return (

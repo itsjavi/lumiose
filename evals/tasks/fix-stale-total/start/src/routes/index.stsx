@@ -1,4 +1,4 @@
-import { Title } from "lumen";
+import { Title } from "lumiose";
 import { Cart } from "../components/Cart.stsx";
 
 export default function Home() {

@@ -2,7 +2,7 @@
 import type { Path, Song } from "../model/types.ts";
 import type { PlayMode } from "./synth.ts";
 
-export const PROCESSOR = "lumen-chip";
+export const PROCESSOR = "lumiose-chip";
 
 export interface ProcessorOptions {
   song: Song;

@@ -1,5 +1,5 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { checkCodes, type Dev, lumen, startDev, text } from "./helpers.ts";
+import { checkCodes, type Dev, lumiose, startDev, text } from "./helpers.ts";
 
 let dev: Dev;
 beforeAll(async () => {
@@ -20,7 +20,7 @@ describe("theme toggle on the server", () => {
   });
 
   it("builds", () => {
-    const build = lumen(["build"]);
+    const build = lumiose(["build"]);
     expect(build.code, build.stderr).toBe(0);
   });
 });

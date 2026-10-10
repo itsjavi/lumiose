@@ -1,9 +1,9 @@
-# Long Way Round: a static Lumen site
+# Long Way Round: a static Lumiose site
 
-A travel journal built from Markdown files and prerendered by `lumen build` into plain HTML, CSS
+A travel journal built from Markdown files and prerendered by `lumiose build` into plain HTML, CSS
 and a little JavaScript. It deploys to any static host: `dist/client` is the whole site.
 
-It shows Lumen's `static` mode with dynamic routes (`staticPaths()`), static `GET` endpoints for
+It shows Lumiose's `static` mode with dynamic routes (`staticPaths()`), static `GET` endpoints for
 the RSS feed, the sitemap and a search index, global and scoped styles with `$tokens`, two islands
 and cross-document View Transitions.
 
@@ -12,17 +12,17 @@ and cross-document View Transitions.
 ## Run it
 
 ```sh
-pnpm --filter @lumen-examples/ssg-travel-journal dev        # lumen dev on :5173
-pnpm --filter @lumen-examples/ssg-travel-journal build      # lumen build: dist/client
-pnpm --filter @lumen-examples/ssg-travel-journal serve      # serve.ts: dist/client on :4321, as plain files
-pnpm --filter @lumen-examples/ssg-travel-journal typecheck  # lumen check: .ts and .stsx
-pnpm --filter @lumen-examples/ssg-travel-journal test       # Vitest: the content layer, pagination, search
-pnpm --filter @lumen-examples/ssg-travel-journal test:e2e   # Playwright, against the build served by serve.ts
+pnpm --filter @lumiose-examples/ssg-travel-journal dev        # lumiose dev on :5173
+pnpm --filter @lumiose-examples/ssg-travel-journal build      # lumiose build: dist/client
+pnpm --filter @lumiose-examples/ssg-travel-journal serve      # serve.ts: dist/client on :4321, as plain files
+pnpm --filter @lumiose-examples/ssg-travel-journal typecheck  # lumiose check: .ts and .stsx
+pnpm --filter @lumiose-examples/ssg-travel-journal test       # Vitest: the content layer, pagination, search
+pnpm --filter @lumiose-examples/ssg-travel-journal test:e2e   # Playwright, against the build served by serve.ts
 ```
 
 `serve.ts` is a tiny static file server that behaves like a typical static host (`/about` serves
-`about/index.html`, unknown paths get `404.html` with a 404 status). No Lumen code runs while it
-serves. `lumen build` also writes `dist/server`, which a static deploy does not need.
+`about/index.html`, unknown paths get `404.html` with a 404 status). No Lumiose code runs while it
+serves. `lumiose build` also writes `dist/server`, which a static deploy does not need.
 
 ## What is where
 
@@ -31,8 +31,8 @@ content/posts/*.md         the posts: YAML frontmatter + Markdown
 public/covers/*.svg        cover illustrations (copied to dist/client as they are)
 src/
   content.ts               the content layer: the posts as .md imports, sorted, by slug and tag
-  frontmatter.ts           frontmatter validation and reading time (the lumen({ md }) hook)
-  posts.d.ts               the frontmatter fields, merged into lumen/env's Frontmatter
+  frontmatter.ts           frontmatter validation and reading time (the lumiose({ md }) hook)
+  posts.d.ts               the frontmatter fields, merged into lumiose/env's Frontmatter
   theme.ts                 design tokens, read by style blocks as $theme.*
   document.tsx             <html>/<head>: RSS link, theme script
   lib/                     site settings, pagination, formatting, the search matcher
@@ -76,7 +76,7 @@ In February the sun barely clears the mountains…
 All five fields are required; tags are lowercase slugs. A missing or invalid field fails the
 build with the file name and the problem.
 
-The posts are native `.md` imports (`lumen({ md })` in `vite.config.ts`): each file compiles to a
+The posts are native `.md` imports (`lumiose({ md })` in `vite.config.ts`): each file compiles to a
 static component (GitHub-flavored Markdown, headings with ids) whose module also exports its
 `frontmatter` and `headings`. The plugin's `frontmatter` hook runs `postFrontmatter()`
 (`src/frontmatter.ts`) at build time: it validates the fields and adds the reading time, and
@@ -112,12 +112,12 @@ the current section.
 
 ## Navigation
 
-Pages are ordinary documents linked with `<a href>`. `lumen({ viewTransitions: true })` in
+Pages are ordinary documents linked with `<a href>`. `lumiose({ viewTransitions: true })` in
 `vite.config.ts` turns same-origin navigations into cross-document View Transitions in browsers
 that support them (not for readers who prefer reduced motion), and each post's cover has a
 `view-transition-name` shared by its card and its page, so it morphs into place. Links prefetch
-when the pointer rests on them: speculation rules from `lumen({ prefetch })`, `"hover"` by default.
-The pager sets its links apart with `<Link prefetch>` from `lumen/router`, which renders a plain
+when the pointer rests on them: speculation rules from `lumiose({ prefetch })`, `"hover"` by default.
+The pager sets its links apart with `<Link prefetch>` from `lumiose/router`, which renders a plain
 `<a>` on these MPA pages: "Newer"/"Older" prefetch early (`"viewport"`), the page numbers never
 (`"none"`). Both are progressive: other browsers navigate normally.
 
@@ -126,7 +126,7 @@ The pager sets its links apart with `<Link prefetch>` from `lumen/router`, which
 - `src/content.test.ts`: every post loads and renders, sort order, tags and neighbours, heading
   ids, frontmatter validation.
 - `src/lib/lib.test.ts`: pagination, date and XML formatting, the search matcher.
-- `e2e/journal.e2e.ts` (Playwright, against `lumen build` + `serve.ts`): prerendered files and the
+- `e2e/journal.e2e.ts` (Playwright, against `lumiose build` + `serve.ts`): prerendered files and the
   JavaScript a page loads, pagination, prefetch (on hover, and per `<Link prefetch>` in
   Chromium), post pages (table of contents, the Markdown body, the shared
   view-transition name, newer/older links), tags, the archive, 404, both islands (no `LUM4006`

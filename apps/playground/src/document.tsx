@@ -1,7 +1,7 @@
 // The HTML document of the playground page: the site's head defaults, its favicon and the theme
-// script that applies a stored light/dark choice before the first paint (@lumen/site-kit/theme).
-import { themeInitScript } from "@lumen/site-kit/theme";
-import type { DocumentProps } from "lumen";
+// script that applies a stored light/dark choice before the first paint (@lumiose/site-kit/theme).
+import { themeInitScript } from "@lumiose/site-kit/theme";
+import type { DocumentProps } from "lumiose";
 import { siteLink } from "./lib/site.ts";
 
 export default function Document(props: DocumentProps) {
@@ -13,7 +13,7 @@ export default function Document(props: DocumentProps) {
         <meta name="color-scheme" content="light dark" />
         <meta
           name="description"
-          content="Try Lumen in the browser: edit a .stsx component and see the compiled client and server code, the scoped CSS, the diagnostics and the running result."
+          content="Try Lumiose in the browser: edit a .stsx component and see the compiled client and server code, the scoped CSS, the diagnostics and the running result."
         />
         <link rel="icon" href={siteLink("/favicon.svg")} type="image/svg+xml" />
         <script innerHTML={themeInitScript} />

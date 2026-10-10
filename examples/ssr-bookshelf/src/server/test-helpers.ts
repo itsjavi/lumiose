@@ -1,6 +1,6 @@
 // Test fixtures: a seeded in-memory database and a fake cookie jar. Imported only by tests.
 
-import type { Cookies } from "lumen";
+import type { Cookies } from "lumiose";
 import { openDatabase, type DatabaseSync } from "./db.server.ts";
 import type { ScryptParams } from "./password.server.ts";
 import { seed } from "./seed.server.ts";

@@ -1,18 +1,18 @@
 // /examples: the example apps, built by scripts/site.ts below /examples/<name>/ (TASK-163).
-import { layout, space } from "@lumen/site-kit/tokens";
-import { href, Meta, Title } from "lumen";
+import { layout, space } from "@lumiose/site-kit/tokens";
+import { href, Meta, Title } from "lumiose";
 import { PageHead, ShowcaseGrid } from "../../components/Showcase.stsx";
 import { examples, REPOSITORY } from "../../content/showcase.ts";
 
 export default function Examples() {
   return (
     <div class="page">
-      <Title>Made with Lumen · Examples</Title>
-      <Meta name="description" content="Example apps built with Lumen, running on this site." />
-      <PageHead kicker="Examples" title="Made with Lumen">
+      <Title>Made with Lumiose · Examples</Title>
+      <Meta name="description" content="Example apps built with Lumiose, running on this site." />
+      <PageHead kicker="Examples" title="Made with Lumiose">
         <p>
           Complete apps from the <a href={`${REPOSITORY}/tree/main/examples`}>examples folder</a>,
-          each built with <code>lumen build</code> and published here as static files. Start your
+          each built with <code>lumiose build</code> and published here as static files. Start your
           own with the{" "}
           <a href={href("/docs/[...path]", { path: "getting-started" })}>getting started</a> guide.
         </p>

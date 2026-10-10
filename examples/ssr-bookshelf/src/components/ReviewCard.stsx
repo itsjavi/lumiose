@@ -1,4 +1,4 @@
-import { href } from "lumen";
+import { href } from "lumiose";
 import * as theme from "../theme.ts";
 import type { Review, UserReview } from "../types.ts";
 import { Stars } from "./Rating.stsx";

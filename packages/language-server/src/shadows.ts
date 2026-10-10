@@ -1,4 +1,4 @@
-// Shadow TSX paths and sync, shared with `lumen check` (TASK-27, spec §9.1).
+// Shadow TSX paths and sync, shared with `lumiose check` (TASK-27, spec §9.1).
 export {
   SHADOW_DIR,
   shadowLayout,
@@ -6,4 +6,4 @@ export {
   sourcePathForShadow,
   syncShadows,
   type ShadowLayout,
-} from "lumen/tooling";
+} from "lumiose/tooling";

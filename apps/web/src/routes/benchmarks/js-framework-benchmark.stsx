@@ -1,9 +1,9 @@
 // /benchmarks/js-framework-benchmark: the committed results (benchmarks/js-framework-benchmark/
-// RESULTS.md, rendered at build time) and a link to the Lumen benchmark app, which scripts/site.ts
+// RESULTS.md, rendered at build time) and a link to the Lumiose benchmark app, which scripts/site.ts
 // publishes below this page at app/ (TASK-163).
-import { LinkButton } from "@lumen/site-kit";
-import { color, font, layout, radius, space, text } from "@lumen/site-kit/tokens";
-import { Meta, Title } from "lumen";
+import { LinkButton } from "@lumiose/site-kit";
+import { color, font, layout, radius, space, text } from "@lumiose/site-kit/tokens";
+import { Meta, Title } from "lumiose";
 import { Marked } from "marked";
 import results from "../../../../../benchmarks/js-framework-benchmark/RESULTS.md?raw";
 import { PageHead } from "../../components/Showcase.stsx";
@@ -16,14 +16,14 @@ const html = new Marked({ gfm: true }).parse(results.replace(/^# .*\n/, ""), { a
 export default function JsFrameworkBenchmark() {
   return (
     <div class="page">
-      <Title>js-framework-benchmark results · Lumen</Title>
+      <Title>js-framework-benchmark results · Lumiose</Title>
       <Meta
         name="description"
-        content="Lumen in krausest's js-framework-benchmark: CPU, script time and memory, with the method."
+        content="Lumiose in krausest's js-framework-benchmark: CPU, script time and memory, with the method."
       />
       <PageHead kicker="Benchmarks" title="js-framework-benchmark">
         <p>
-          The keyed benchmark, run with krausest's own runner. Try the same Lumen app in your
+          The keyed benchmark, run with krausest's own runner. Try the same Lumiose app in your
           browser, or read how the numbers were measured.
         </p>
         <p class="actions">

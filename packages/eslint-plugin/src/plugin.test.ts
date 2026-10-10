@@ -1,4 +1,4 @@
-// @lumen/eslint-plugin (TASK-41): the rules report the compiler's diagnostics, the processor hands
+// @lumiose/eslint-plugin (TASK-41): the rules report the compiler's diagnostics, the processor hands
 // ESLint offset-identical masked TSX, and real oxlint loads the plugin through `jsPlugins`.
 import { execFileSync } from "node:child_process";
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
@@ -6,14 +6,14 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { afterAll, describe, expect, it } from "vitest";
-import plugin, { lumenDiagnostics } from "./index.ts";
+import plugin, { lumioseDiagnostics } from "./index.ts";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const repo = join(here, "../../..");
-const binding = await import("@lumen/compiler").catch(() => undefined);
+const binding = await import("@lumiose/compiler").catch(() => undefined);
 
 // A frozen read (LUM2001, a warning) and a component called as a function (LUM2004, an error).
-const FROZEN = `import { signal } from "lumen";
+const FROZEN = `import { signal } from "lumiose";
 function Inner() {
   return <i />;
 }
@@ -54,7 +54,7 @@ describe.skipIf(!binding)("rules", () => {
     expect(errors).toEqual([
       {
         loc: { start: at(FROZEN, "{Inner()}", 1), end: expect.any(Object) },
-        message: expect.stringMatching(/^LUM2004: [\s\S]*\(lumen docs errors\/LUM2004\)$/),
+        message: expect.stringMatching(/^LUM2004: [\s\S]*\(lumiose docs errors\/LUM2004\)$/),
       },
     ]);
     const warnings = run("compiler-warnings", FROZEN, "/p/src/Counter.tsx");
@@ -65,7 +65,7 @@ describe.skipIf(!binding)("rules", () => {
 
   it("ignores files the compiler does not handle and leaves syntax errors to the parser", () => {
     expect(run("compiler", FROZEN, "/p/src/counter.ts")).toEqual([]);
-    expect(lumenDiagnostics("export const = ;", "/p/src/Broken.tsx")).toEqual([]);
+    expect(lumioseDiagnostics("export const = ;", "/p/src/Broken.tsx")).toEqual([]);
   });
 });
 
@@ -80,22 +80,22 @@ describe.skipIf(!binding)("stsx processor", () => {
     // While the file is processed, the rule compiles the source, not the masked text.
     const reports = run("compiler", block!.text, file);
     expect(reports.map((report) => report.message.slice(0, 7))).toEqual(["LUM2004"]);
-    const messages = plugin.processors.stsx.postprocess([[{ ruleId: "lumen/compiler" }]], file);
-    expect(messages).toEqual([{ ruleId: "lumen/compiler" }]);
+    const messages = plugin.processors.stsx.postprocess([[{ ruleId: "lumiose/compiler" }]], file);
+    expect(messages).toEqual([{ ruleId: "lumiose/compiler" }]);
   });
 
   it("is wired by the recommended flat config", () => {
     const [stsx, tsx] = plugin.configs["recommended"] as { files: string[] }[];
-    expect(stsx).toMatchObject({ files: ["**/*.stsx"], processor: "lumen/stsx" });
+    expect(stsx).toMatchObject({ files: ["**/*.stsx"], processor: "lumiose/stsx" });
     expect(tsx).toMatchObject({
       files: ["**/*.tsx", "**/*.stsx/*.tsx"],
-      rules: { "lumen/compiler": "error", "lumen/compiler-warnings": "warn" },
+      rules: { "lumiose/compiler": "error", "lumiose/compiler-warnings": "warn" },
     });
   });
 });
 
 describe.skipIf(!binding)("oxlint", () => {
-  const dir = mkdtempSync(join(tmpdir(), "lumen-oxlint-"));
+  const dir = mkdtempSync(join(tmpdir(), "lumiose-oxlint-"));
   afterAll(() => rmSync(dir, { recursive: true, force: true }));
 
   it("loads the plugin through jsPlugins and reports compiler diagnostics in .tsx files", () => {
@@ -103,7 +103,7 @@ describe.skipIf(!binding)("oxlint", () => {
       join(dir, ".oxlintrc.json"),
       JSON.stringify({
         jsPlugins: [join(here, "index.ts")],
-        rules: { "lumen/compiler": "error", "lumen/compiler-warnings": "warn" },
+        rules: { "lumiose/compiler": "error", "lumiose/compiler-warnings": "warn" },
       }),
     );
     writeFileSync(join(dir, "Counter.tsx"), FROZEN);

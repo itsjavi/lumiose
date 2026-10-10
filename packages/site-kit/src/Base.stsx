@@ -1,6 +1,6 @@
-// The base stylesheet of the Lumen websites: theme custom properties, a small reset, typography,
+// The base stylesheet of the Lumiose websites: theme custom properties, a small reset, typography,
 // focus rings and code fonts. It is global (`<style global>`) and loads with the kit's entry
-// (`@lumen/site-kit`), before any component stylesheet.
+// (`@lumiose/site-kit`), before any component stylesheet.
 //
 // Theming: every color is `light-dark(<light>, <dark>)`, resolved against `color-scheme`. By default
 // the root follows the system (`prefers-color-scheme`); `<html data-theme="light|dark">` (set by

@@ -5,7 +5,7 @@ import { theme } from "./tokens.ts";
 export function App() {
   return (
     <main>
-      <h1>Lumen + Vite</h1>
+      <h1>Lumiose + Vite</h1>
       <Counter start={0} class="panel" />
       <Todos class="panel" />
       <style>

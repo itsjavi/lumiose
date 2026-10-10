@@ -127,7 +127,7 @@ export function snippetCompletions(
       },
       insertTextFormat: InsertTextFormat.Snippet,
       textEdit: { range, newText: body },
-      data: { lumen: "snippet" },
+      data: { lumiose: "snippet" },
     };
   });
 }

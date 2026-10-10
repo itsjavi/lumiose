@@ -1,7 +1,7 @@
 // The app's views are routes (src/routes): the URL of each view, the view the URL shows, and
 // navigation from keyboard shortcuts and buttons.
-import { href } from "lumen";
-import { navigate, route } from "lumen/router";
+import { href } from "lumiose";
+import { navigate, route } from "lumiose/router";
 import { songId } from "./state.ts";
 
 export type View = "tracker" | "instruments" | "songs" | "settings";

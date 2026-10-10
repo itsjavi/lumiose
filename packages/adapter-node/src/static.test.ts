@@ -4,7 +4,7 @@ import type { AddressInfo } from "node:net";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
-import type { BuiltAppConfig } from "lumen/build";
+import type { BuiltAppConfig } from "lumiose/build";
 import { createStaticHandler } from "./static.ts";
 
 const FILES: Record<string, string> = {
@@ -25,7 +25,7 @@ let dir: string;
 const servers: Server[] = [];
 
 beforeAll(() => {
-  dir = mkdtempSync(join(tmpdir(), "lumen-static-"));
+  dir = mkdtempSync(join(tmpdir(), "lumiose-static-"));
   for (const [name, content] of Object.entries(FILES)) {
     mkdirSync(dirname(join(dir, name)), { recursive: true });
     writeFileSync(join(dir, name), content);
@@ -148,8 +148,8 @@ describe("createStaticHandler", () => {
 
 describe("the static index (TASK-167 L2)", () => {
   it("skips unreadable entries, keeps the rest, and warns about links leaving the directory", async () => {
-    const root = mkdtempSync(join(tmpdir(), "lumen-index-"));
-    const outside = mkdtempSync(join(tmpdir(), "lumen-outside-"));
+    const root = mkdtempSync(join(tmpdir(), "lumiose-index-"));
+    const outside = mkdtempSync(join(tmpdir(), "lumiose-outside-"));
     writeFileSync(join(root, "ok.txt"), "ok");
     mkdirSync(join(root, "locked"));
     writeFileSync(join(root, "locked", "secret.txt"), "secret");

@@ -1,12 +1,12 @@
 // The website as a static host serves it: landing page, docs, search, theme, redirects, llms.txt,
-// the 404 page, and the same site below a base path (/lumen/, as on GitHub Pages).
+// the 404 page, and the same site below a base path (/lumiose/, as on GitHub Pages).
 import { expect, test, type Page } from "@playwright/test";
 
 /** Requests that failed or answered >= 400, except the known modulepreload 404s (TASK-98). */
 function watchFailures(page: Page): string[] {
   const failures: string[] = [];
   page.on("response", (response) => {
-    if (response.status() >= 400 && !response.url().includes("@lumen/site-kit")) {
+    if (response.status() >= 400 && !response.url().includes("@lumiose/site-kit")) {
       failures.push(`${response.status()} ${response.url()}`);
     }
   });
@@ -24,10 +24,10 @@ async function search(page: Page) {
   return page.getByRole("combobox", { name: "Search the docs" });
 }
 
-test("the landing page presents Lumen with benchmark evidence", async ({ page }) => {
+test("the landing page presents Lumiose with benchmark evidence", async ({ page }) => {
   const failures = watchFailures(page);
   await page.goto("/");
-  await expect(page).toHaveTitle(/Lumen/);
+  await expect(page).toHaveTitle(/Lumiose/);
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("Web apps that ship light");
   await expect(page.getByRole("link", { name: "Get started" }).first()).toHaveAttribute(
     "href",
@@ -35,13 +35,13 @@ test("the landing page presents Lumen with benchmark evidence", async ({ page })
   );
   const charts = page.locator("#performance figure");
   await expect(charts).toHaveCount(3);
-  await expect(charts.first().locator("li.self")).toContainText("Lumen");
+  await expect(charts.first().locator("li.self")).toContainText("Lumiose");
 
   // The install Tabs island switches panels.
   const install = page.getByRole("tablist", { name: "Package manager" });
   await install.getByRole("tab", { name: "npm", exact: true }).click();
-  await expect(page.getByText("npm create lumen@latest my-app")).toBeVisible();
-  await expect(page.getByText("pnpm create lumen my-app")).toBeHidden();
+  await expect(page.getByText("npm create lumiose@latest my-app")).toBeVisible();
+  await expect(page.getByText("pnpm create lumiose my-app")).toBeHidden();
   expect(failures).toEqual([]);
 });
 
@@ -99,7 +99,7 @@ test("llms.txt and llms-full.txt are served at the root", async ({ request }) =>
   expect(llms.ok()).toBe(true);
   expect(llms.headers()["content-type"]).toContain("text/plain");
   const text = await llms.text();
-  expect(text).toMatch(/^# Lumen/);
+  expect(text).toMatch(/^# Lumiose/);
   expect(text).toContain("](/docs/concepts/signals)");
   expect(text).not.toMatch(/\]\([^)]+\.md\)/);
   const full = await request.get("/llms-full.txt");
@@ -117,17 +117,17 @@ test("below a base path every URL keeps the base", async ({ page }) => {
   const outside: string[] = [];
   page.on("request", (request) => {
     const url = new URL(request.url());
-    if (url.host === "127.0.0.1:5194" && !url.pathname.startsWith("/lumen/")) {
-      if (!url.pathname.includes("@lumen/site-kit")) outside.push(url.pathname);
+    if (url.host === "127.0.0.1:5194" && !url.pathname.startsWith("/lumiose/")) {
+      if (!url.pathname.includes("@lumiose/site-kit")) outside.push(url.pathname);
     }
   });
-  await page.goto("/lumen/");
+  await page.goto("/lumiose/");
   await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
   await page.getByRole("link", { name: "Read the docs" }).click();
-  await expect(page).toHaveURL(/\/lumen\/docs\/?$/);
+  await expect(page).toHaveURL(/\/lumiose\/docs\/?$/);
   await (await search(page)).fill("islands");
   await page.getByRole("listbox", { name: "Docs pages" }).getByRole("option").first().click();
-  await expect(page).toHaveURL(/\/lumen\/docs\/.+/);
+  await expect(page).toHaveURL(/\/lumiose\/docs\/.+/);
   expect(outside).toEqual([]);
   expect(failures).toEqual([]);
 });

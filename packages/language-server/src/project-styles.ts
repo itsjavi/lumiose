@@ -6,7 +6,7 @@
 // `.css` files count when a module of the project imports them (`import "./app.css"`, not CSS
 // modules or `?inline`/`?url` imports), directly or through `@import`.
 
-import type { ScanResult } from "@lumen/compiler";
+import type { ScanResult } from "@lumiose/compiler";
 import { existsSync, readFileSync } from "node:fs";
 import { readdir, readFile } from "node:fs/promises";
 import { dirname, join, resolve, sep } from "node:path";

@@ -1,5 +1,5 @@
 // The transport strip: the big play button, title, tempo, loop, undo/redo, share and export.
-import { href, signal } from "lumen";
+import { href, signal } from "lumiose";
 import { looping, rendering, setLooping } from "../audio/player.ts";
 import * as player from "../audio/player.ts";
 import { download, slug } from "../files.ts";

@@ -1,17 +1,17 @@
 /// <reference types="vitest/config" />
 import { readFileSync } from "node:fs";
-import lumen from "lumen/vite";
+import lumiose from "lumiose/vite";
 import { defineConfig } from "vite";
 import { postFrontmatter } from "./src/frontmatter.ts";
 
 export default defineConfig({
-  // Served below a path when LUMEN_BASE is set (the Lumen website: /lumen/examples/ssg-travel-journal/).
-  base: process.env["LUMEN_BASE"] ?? "/",
-  // Every route is prerendered by `lumen build` ("static" is also the default). Page navigations
+  // Served below a path when LUMIOSE_BASE is set (the Lumiose website: /lumiose/examples/ssg-travel-journal/).
+  base: process.env["LUMIOSE_BASE"] ?? "/",
+  // Every route is prerendered by `lumiose build` ("static" is also the default). Page navigations
   // are cross-document View Transitions; links prefetch on hover (the `prefetch` default).
   // The posts are `.md` imports; the hook validates each one's frontmatter at build time.
   plugins: [
-    lumen({
+    lumiose({
       mode: "static",
       viewTransitions: true,
       // A strict Content Security Policy: prerendered pages allow their inline scripts and styles

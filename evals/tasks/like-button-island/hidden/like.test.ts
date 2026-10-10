@@ -8,7 +8,10 @@ beforeAll(async () => {
 afterAll(() => dev?.stop());
 
 describe("like button on post pages", () => {
-  for (const [slug, likes] of [["hello-lumen", 12], ["adding-pages", 3]] as const) {
+  for (const [slug, likes] of [
+    ["hello-lumiose", 12],
+    ["adding-pages", 3],
+  ] as const) {
     it(`is an idle island with the likes of ${slug}`, async () => {
       const html = await (await dev.get(`/blog/${slug}`)).text();
       const records = islands(html);

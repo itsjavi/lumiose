@@ -3,7 +3,7 @@
 // The native binary makes the package platform-specific, so each target is packaged on (or with a
 // binary built for) its platform; see README.md.
 //
-//   node scripts/package.ts [--target <vsce target>]   → lumen-vscode-<target>.vsix
+//   node scripts/package.ts [--target <vsce target>]   → lumiose-vscode-<target>.vsix
 
 import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
@@ -25,5 +25,5 @@ run("pnpm", [
   "--target",
   target,
   "--out",
-  `lumen-vscode-${target}.vsix`,
+  `lumiose-vscode-${target}.vsix`,
 ]);

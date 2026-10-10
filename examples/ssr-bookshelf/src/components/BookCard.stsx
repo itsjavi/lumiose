@@ -1,4 +1,4 @@
-import { href } from "lumen";
+import { href } from "lumiose";
 import { ReadingListToggle } from "../islands/ReadingListToggle.stsx";
 import * as theme from "../theme.ts";
 import type { BookSummary } from "../types.ts";

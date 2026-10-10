@@ -246,7 +246,7 @@ export function timestamp(date: Date = new Date()): string {
 }
 
 // One connection per process. Kept on globalThis so dev-server module reloads reuse it.
-const SHARED = Symbol.for("lumen-examples.ssr-bookshelf.db");
+const SHARED = Symbol.for("lumiose-examples.ssr-bookshelf.db");
 
 /** The app's shared database, opened (and migrated) on first use. */
 export function getDatabase(): DatabaseSync {

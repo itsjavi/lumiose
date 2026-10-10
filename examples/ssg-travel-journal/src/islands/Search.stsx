@@ -1,7 +1,7 @@
 // Island (client:idle): search as you type, over the prebuilt `/search.json` index (fetched once,
 // on first focus). Arrow keys move through the results, Enter opens one, Escape closes the list.
 // Without JavaScript it is a plain form that opens the archive, which lists every post.
-import { computed, fetchJSON, onMount, signal } from "lumen";
+import { computed, fetchJSON, onMount, signal } from "lumiose";
 import { formatShortDate } from "../lib/format.ts";
 import { searchEntries, type SearchEntry } from "../lib/search.ts";
 import * as theme from "../theme.ts";

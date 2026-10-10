@@ -2,7 +2,7 @@
 // the cursor, from the compiler's opt-in execution contract (`compile(…, { contract: true })`,
 // spec §5.1). Agents and people see whether an expression is reactive without reading the output.
 
-import { compile, type ContractEntry } from "@lumen/compiler";
+import { compile, type ContractEntry } from "@lumiose/compiler";
 
 /** The contract entries of a source, or none when it does not compile. */
 export function contractEntries(text: string, file: string): readonly ContractEntry[] {
@@ -57,7 +57,7 @@ const SITE: Record<ContractEntry["site"], string> = {
 export function contractMarkdown(entry: ContractEntry, text: string): string {
   const where = entry.component === undefined ? "" : ` in \`${entry.component}\``;
   const via = entry.via === undefined ? "" : `, through \`${entry.via}\``;
-  const lines = [`**Lumen**: ${SITE[entry.site]}${where}${via}. ${KIND[entry.kind]}.`];
+  const lines = [`**Lumiose**: ${SITE[entry.site]}${where}${via}. ${KIND[entry.kind]}.`];
   if (entry.reads.length > 0) {
     const reads = [...new Set(entry.reads.map((read) => text.slice(read.start, read.end)))];
     lines.push(`Reactive reads: ${reads.map((read) => `\`${read}\``).join(", ")}.`);

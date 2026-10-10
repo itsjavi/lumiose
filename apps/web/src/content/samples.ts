@@ -3,7 +3,7 @@
 
 export const COUNTER_FILE = "/app/src/Counter.stsx";
 
-export const counterSource = `import { signal } from "lumen";
+export const counterSource = `import { signal } from "lumiose";
 
 const gap = 8;
 const radius = { pill: "999px" };
@@ -26,9 +26,9 @@ export function Counter() {
 }
 `;
 
-export const counterOutput = `import { signal } from "lumen";
-import { template, bind, toggleClass, insert, delegateEvents } from "lumen/dom";
-import "/app/src/Counter.stsx?lumen&type=style&lang.css";
+export const counterOutput = `import { signal } from "lumiose";
+import { template, bind, toggleClass, insert, delegateEvents } from "lumiose/dom";
+import "/app/src/Counter.stsx?lumiose&type=style&lang.css";
 const _t0 = /* @__PURE__ */ template(\`<button data-l-agorgvta>Clicked <!> times\`);
 const _a0 = (el, v) => toggleClass(el, "hot", v);
 const gap = 8;
@@ -55,13 +55,13 @@ export const counterCss = `button[data-l-agorgvta] {
 `;
 
 export const createCommands = {
-  pnpm: "pnpm create lumen my-app\ncd my-app && pnpm dev",
-  npm: "npm create lumen@latest my-app\ncd my-app && npm run dev",
-  yarn: "yarn create lumen my-app\ncd my-app && yarn dev",
-  bun: "bun create lumen my-app\ncd my-app && bun run dev",
+  pnpm: "pnpm create lumiose my-app\ncd my-app && pnpm dev",
+  npm: "npm create lumiose@latest my-app\ncd my-app && npm run dev",
+  yarn: "yarn create lumiose my-app\ncd my-app && yarn dev",
+  bun: "bun create lumiose my-app\ncd my-app && bun run dev",
 } as const;
 
-export const checkSource = `import { signal } from "lumen";
+export const checkSource = `import { signal } from "lumiose";
 
 export function Counter() {
   const count = signal(1);
@@ -70,13 +70,13 @@ export function Counter() {
 }
 `;
 
-export const checkSample = `$ lumen check --format json
+export const checkSample = `$ lumiose check --format json
 {
   "command": "check",
   "ok": true,
   "diagnostics": [
     {
-      "source": "lumen",
+      "source": "lumiose",
       "code": "LUM2001",
       "severity": "warning",
       "file": "src/Counter.stsx",
@@ -90,4 +90,4 @@ export const checkSample = `$ lumen check --format json
   "summary": { "errors": 0, "warnings": 1, "hints": 0, "files": 1 }
 }
 
-$ lumen explain LUM2001   # the long form: cause, example, fix`;
+$ lumiose explain LUM2001   # the long form: cause, example, fix`;

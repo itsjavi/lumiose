@@ -13,7 +13,7 @@ test("a deep link becomes cross-origin isolated after one reload and plays in Sh
   page.on("pageerror", (error) => errors.push(error.message));
   await page.goto("settings");
   await expect.poll(() => page.evaluate(isolated), { timeout: 15_000 }).toBe(true);
-  await expect(page).toHaveURL(/\/lumen\/examples\/spa-chiptune\/settings\/?$/);
+  await expect(page).toHaveURL(/\/lumiose\/examples\/spa-chiptune\/settings\/?$/);
   await page.getByRole("button", { name: "Play song" }).click();
   await expect(page.locator(".engine")).toHaveText("AUDIO ON");
   await expect(page.getByText("SharedArrayBuffer (cross-origin isolated)")).toBeVisible();

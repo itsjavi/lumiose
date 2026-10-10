@@ -1,4 +1,4 @@
-import { signal } from "lumen";
+import { signal } from "lumiose";
 
 export function Counter(props: { start?: number }) {
   const count = signal(props.start ?? 0);

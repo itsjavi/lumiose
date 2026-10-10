@@ -1,8 +1,8 @@
-// `@lumen/adapter-node` (spec §8 Build, "Adapters"): serves a `lumen build` output with Node.
+// `@lumiose/adapter-node` (spec §8 Build, "Adapters"): serves a `lumiose build` output with Node.
 // Requests go to the static files of `dist/client` first (GET/HEAD), then to the app's
-// `export default { fetch }` from `dist/server/entry.js`, through lumen's Node bridge (streamed
+// `export default { fetch }` from `dist/server/entry.js`, through lumiose's Node bridge (streamed
 // responses, client disconnects abort the request). Configured `headers`, then the build's
-// `lumen({ headers })` for the path, go on every response first, so the static files' and the
+// `lumiose({ headers })` for the path, go on every response first, so the static files' and the
 // app's own headers win. Responses are compressed by default
 // (`compress: false` turns it off): static files from the build's precompressed `.br`/`.gz`
 // copies, the app's text responses on the fly (./compress.ts), streaming included.
@@ -18,7 +18,7 @@ import type { AddressInfo } from "node:net";
 import { existsSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
-import type { ServerEntryModule } from "lumen/build";
+import type { ServerEntryModule } from "lumiose/build";
 import {
   RejectedRequest,
   headersFor,
@@ -26,7 +26,7 @@ import {
   requestTarget,
   sendWebResponse,
   toWebRequest,
-} from "lumen/node";
+} from "lumiose/node";
 import { compressResponse, negotiateEncoding } from "./compress.ts";
 import { createStaticHandler } from "./static.ts";
 
@@ -45,12 +45,12 @@ export interface HandlerOptions {
    * Headers for every response, static files and the app's alike, such as
    * `Cross-Origin-Opener-Policy`/`Cross-Origin-Embedder-Policy` for `crossOriginIsolated`. A
    * response's own header of the same name wins (a page's `response().setHeader()`, a static
-   * file's `cache-control`). `lumen preview` passes Vite's `preview.headers` (else `server.headers`).
+   * file's `cache-control`). `lumiose preview` passes Vite's `preview.headers` (else `server.headers`).
    */
   headers?: OutgoingHttpHeaders;
   /**
    * Compress responses for clients that accept brotli or gzip: static files with the `.br`/`.gz`
-   * copies `lumen build` writes, the app's HTML, JSON and other text responses on the fly
+   * copies `lumiose build` writes, the app's HTML, JSON and other text responses on the fly
    * (brotli quality 4 or gzip 6; streamed HTML is flushed as it renders). Turn it off when a proxy
    * or CDN in front compresses. Default: true.
    */
@@ -77,7 +77,7 @@ export interface ServerOptions extends HandlerOptions {
   host?: string;
 }
 
-export interface LumenServer {
+export interface LumioseServer {
   readonly server: Server;
   /** The URL it listens on, e.g. `http://localhost:3000/` (with the app's `base`). */
   readonly url: string;
@@ -112,8 +112,8 @@ function nodeHandler(dir: string, entry: ServerEntryModule, options: HandlerOpti
       return;
     }
     for (const [name, value] of headers) res.setHeader(name, value);
-    // `lumen({ headers })` for this path (decision-26 §4); the files' and the app's headers win.
-    // Lumen's default headers (nosniff, referrer policy) are part of it (decision-29).
+    // `lumiose({ headers })` for this path (decision-26 §4); the files' and the app's headers win.
+    // Lumiose's default headers (nosniff, referrer policy) are part of it (decision-29).
     const path = pathBelowBase(target, entry.config.base);
     if (path !== undefined) {
       for (const [name, value] of Object.entries(headersFor(configured, path))) {
@@ -172,7 +172,7 @@ function refuse(res: ServerResponse, status: number): void {
 }
 
 /** Starts an HTTP server for the build in `dir`; resolves once it listens. */
-export async function createServer(options: ServerOptions = {}): Promise<LumenServer> {
+export async function createServer(options: ServerOptions = {}): Promise<LumioseServer> {
   const dir = outputDir(options.dir);
   const entry = await loadEntry(dir);
   const handler = nodeHandler(dir, entry, options);
@@ -209,7 +209,7 @@ async function loadEntry(dir: string): Promise<ServerEntryModule> {
     return (await import(pathToFileURL(file).href)) as ServerEntryModule;
   } catch (error) {
     if ((error as { code?: string }).code === "ERR_MODULE_NOT_FOUND" && !existsSync(file)) {
-      throw new Error(`No build in ${dir}: ${file} does not exist. Run \`lumen build\` first.`, {
+      throw new Error(`No build in ${dir}: ${file} does not exist. Run \`lumiose build\` first.`, {
         cause: error,
       });
     }

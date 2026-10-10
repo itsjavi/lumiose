@@ -42,34 +42,34 @@ export function cssHighlights(css: CssBlock, position: Position): DocumentHighli
 }
 
 /**
- * The CSS service's diagnostics for the style blocks, without those that a Lumen CSS diagnostic
- * (`lumen`, the compiler's) already reports: an unknown property (LUM3020), an empty value
+ * The CSS service's diagnostics for the style blocks, without those that a Lumiose CSS diagnostic
+ * (`lumiose`, the compiler's) already reports: an unknown property (LUM3020), an empty value
  * (LUM3017) on the same line, and a missing `}` (LUM3014) in the same block.
  */
 export function cssDiagnostics(
   snapshot: StsxSnapshot,
-  lumen: readonly Diagnostic[] = [],
+  lumiose: readonly Diagnostic[] = [],
 ): Diagnostic[] {
   return snapshot.cssBlocks.flatMap((css) => {
     const start = snapshot.document.positionAt(css.block.span.start).line;
     const end = snapshot.document.positionAt(css.block.span.end).line;
-    const inBlock = lumen.filter((d) => d.range.start.line >= start && d.range.start.line <= end);
+    const inBlock = lumiose.filter((d) => d.range.start.line >= start && d.range.start.line <= end);
     return (cssService.doValidation(css.document, css.stylesheet) as Diagnostic[])
       .filter((diagnostic) => {
-        const lumenCode = SUPERSEDED_BY_LUMEN[String(diagnostic.code)];
-        if (lumenCode === undefined) return true;
+        const lumioseCode = SUPERSEDED_BY_LUMIOSE[String(diagnostic.code)];
+        if (lumioseCode === undefined) return true;
         return !inBlock.some(
           (d) =>
-            d.code === lumenCode &&
-            (lumenCode === "LUM3014" || d.range.start.line === diagnostic.range.start.line),
+            d.code === lumioseCode &&
+            (lumioseCode === "LUM3014" || d.range.start.line === diagnostic.range.start.line),
         );
       })
       .map((diagnostic) => ({ ...diagnostic, source: "css" }));
   });
 }
 
-/** CSS service codes, and the Lumen CSS diagnostic that reports the same problem. */
-const SUPERSEDED_BY_LUMEN: Readonly<Record<string, string>> = {
+/** CSS service codes, and the Lumiose CSS diagnostic that reports the same problem. */
+const SUPERSEDED_BY_LUMIOSE: Readonly<Record<string, string>> = {
   unknownProperties: "LUM3020",
   "css-propertyvalueexpected": "LUM3017",
   "css-rcurlyexpected": "LUM3014",

@@ -1,5 +1,5 @@
 // The top bar (logo, views, history, files) and the transport bar.
-import { Link } from "lumen/router";
+import { Link } from "lumiose/router";
 import * as engine from "../audio/engine.ts";
 import { changeInstrument, changeOctave } from "../editor.ts";
 import { exportWav, exporting } from "../files.ts";
@@ -67,7 +67,7 @@ export function Header() {
   return (
     <header class="header">
       <div class="top">
-        <PixelLogo text="LUMEN CHIP" />
+        <PixelLogo text="LUMIOSE CHIP" />
         <nav class="tabs" aria-label="Views">
           {TABS.map((tab) => (
             <Link

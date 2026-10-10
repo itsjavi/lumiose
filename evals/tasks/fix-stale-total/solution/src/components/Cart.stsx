@@ -1,4 +1,4 @@
-import { computed, signal } from "lumen";
+import { computed, signal } from "lumiose";
 
 export interface CartProps {
   name: string;

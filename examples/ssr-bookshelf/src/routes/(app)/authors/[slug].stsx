@@ -1,4 +1,4 @@
-import { href, Meta, notFound, Title, url, type PageProps } from "lumen";
+import { href, Meta, notFound, Title, url, type PageProps } from "lumiose";
 import { BookGrid } from "../../../components/BookCard.stsx";
 import { Pager } from "../../../components/Pager.stsx";
 import { Rating } from "../../../components/Rating.stsx";

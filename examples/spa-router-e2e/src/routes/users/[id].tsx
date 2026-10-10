@@ -1,4 +1,4 @@
-import { fetchJSON, invalidate, Title, type PageProps } from "lumen";
+import { fetchJSON, invalidate, Title, type PageProps } from "lumiose";
 
 interface User {
   id: string;

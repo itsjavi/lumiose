@@ -1,7 +1,7 @@
-// File URIs, Lumen project roots and the source ↔ shadow mapping (spec §9.1):
-// `<root>/src/a/B.stsx` ↔ `<root>/.lumen/shadow/src/a/B.stsx.tsx`. A project whose tsconfig
-// extends the generated `.lumen/tsconfig.generated.json` mirrors a wider base instead (TASK-73), e.g.
-// `<base>/apps/web/src/B.stsx` ↔ `<base>/apps/web/.lumen/shadow/apps/web/src/B.stsx.tsx`.
+// File URIs, Lumiose project roots and the source ↔ shadow mapping (spec §9.1):
+// `<root>/src/a/B.stsx` ↔ `<root>/.lumiose/shadow/src/a/B.stsx.tsx`. A project whose tsconfig
+// extends the generated `.lumiose/tsconfig.generated.json` mirrors a wider base instead (TASK-73), e.g.
+// `<base>/apps/web/src/B.stsx` ↔ `<base>/apps/web/.lumiose/shadow/apps/web/src/B.stsx.tsx`.
 
 import { existsSync } from "node:fs";
 import { dirname, join, sep } from "node:path";
@@ -34,7 +34,7 @@ export function isStsx(uriOrPath: string): boolean {
   return /\.stsx$/i.test(uriOrPath);
 }
 
-const SHADOW_SEGMENT = /[/\\]\.lumen[/\\]shadow[/\\]/i;
+const SHADOW_SEGMENT = /[/\\]\.lumiose[/\\]shadow[/\\]/i;
 
 /** Whether a URI or path names a shadow file. */
 export function isShadow(uriOrPath: string): boolean {
@@ -42,7 +42,7 @@ export function isShadow(uriOrPath: string): boolean {
 }
 
 /**
- * The source of a shadow URI or path, by removing `/.lumen/shadow` and the `.tsx` suffix. This
+ * The source of a shadow URI or path, by removing `/.lumiose/shadow` and the `.tsx` suffix. This
  * is a pure string transform, so it keeps the URI's encoding and casing.
  */
 export function shadowToSource(uriOrPath: string): string | undefined {
@@ -52,21 +52,21 @@ export function shadowToSource(uriOrPath: string): string | undefined {
 
 /** Rewrites shadow URIs and paths embedded in text (hover markdown, diagnostic messages). */
 export function rewriteShadowText(text: string): string {
-  if (!/\.lumen[/\\]shadow/i.test(text)) return text;
+  if (!/\.lumiose[/\\]shadow/i.test(text)) return text;
   return text.replace(
-    /([/\\])\.lumen[/\\]shadow[/\\]([^\s"'`()<>[\]]*?\.stsx)\.tsx/gi,
+    /([/\\])\.lumiose[/\\]shadow[/\\]([^\s"'`()<>[\]]*?\.stsx)\.tsx/gi,
     (_, separator: string, rest: string) => separator + rest,
   );
 }
 
-/** A shadow path or URI: the project root before `/.lumen/shadow/`, and the rest. */
-const SHADOW_PATH = /^(.*?)[/\\]\.lumen[/\\]shadow[/\\](.*\.stsx)\.tsx$/i;
+/** A shadow path or URI: the project root before `/.lumiose/shadow/`, and the rest. */
+const SHADOW_PATH = /^(.*?)[/\\]\.lumiose[/\\]shadow[/\\](.*\.stsx)\.tsx$/i;
 
 /** Shadow paths embedded in text: a path or `file:` URI up to a delimiter. */
 const EMBEDDED_SHADOW =
-  /[^\s"'`()<>[\]]+?[/\\]\.lumen[/\\]shadow[/\\][^\s"'`()<>[\]]*?\.stsx\.tsx/gi;
+  /[^\s"'`()<>[\]]+?[/\\]\.lumiose[/\\]shadow[/\\][^\s"'`()<>[\]]*?\.stsx\.tsx/gi;
 
-/** Finds the Lumen project root of a file: the nearest directory with a tsconfig or package.json. */
+/** Finds the Lumiose project root of a file: the nearest directory with a tsconfig or package.json. */
 export class Projects {
   readonly folders: readonly string[];
   readonly #roots = new Map<string, string>();
@@ -148,7 +148,7 @@ export class Projects {
 
   /** Rewrites shadow URIs and paths embedded in text (hover markdown, diagnostic messages). */
   rewriteShadowText(text: string): string {
-    if (!/\.lumen[/\\]shadow/i.test(text)) return text;
+    if (!/\.lumiose[/\\]shadow/i.test(text)) return text;
     return text.replace(EMBEDDED_SHADOW, (match) => this.shadowToSource(match) ?? match);
   }
 }

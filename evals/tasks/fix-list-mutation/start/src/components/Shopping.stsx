@@ -1,4 +1,4 @@
-import { signal } from "lumen";
+import { signal } from "lumiose";
 
 export function Shopping({ initial = [] }: { initial?: string[] }) {
   const items = signal<string[]>([...initial]);

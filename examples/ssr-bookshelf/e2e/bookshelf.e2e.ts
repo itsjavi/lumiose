@@ -1,4 +1,4 @@
-// End-to-end tests of the built bookshelf served by @lumen/adapter-node (see playwright.config.ts):
+// End-to-end tests of the built bookshelf served by @lumiose/adapter-node (see playwright.config.ts):
 // prerendered and server pages, streaming, form actions with and without JavaScript, sessions and
 // the four islands. Tests that change data register a fresh reader, so they do not depend on
 // each other. BOOKSHELF_SCREENSHOTS=1 also saves screenshots to backlog/assets/task-36-*.png.
@@ -27,13 +27,13 @@ async function register(page: Page, next?: string): Promise<string> {
   return name;
 }
 
-/** Waits for an enhanced (island) form post: `submit()` sends the x-lumen-action header. */
+/** Waits for an enhanced (island) form post: `submit()` sends the x-lumiose-action header. */
 function enhancedPost(page: Page, action: string) {
   return page.waitForResponse(
     (response) =>
       response.request().method() === "POST" &&
       response.url().includes(action) &&
-      response.request().headers()["x-lumen-action"] === "1",
+      response.request().headers()["x-lumiose-action"] === "1",
   );
 }
 

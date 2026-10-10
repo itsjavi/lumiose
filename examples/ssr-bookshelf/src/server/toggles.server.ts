@@ -1,5 +1,5 @@
 // Reading-list toggle state for a page of books: one query for every card on the page.
-import { locals, url } from "lumen";
+import { locals, url } from "lumiose";
 import type { ToggleState } from "../components/BookCard.stsx";
 import type { BookSummary } from "../types.ts";
 import { queries } from "./queries.server.ts";

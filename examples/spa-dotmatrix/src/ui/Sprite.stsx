@@ -1,5 +1,5 @@
 // A 12×12 creature sprite in the screen's four shades.
-import { computed } from "lumen";
+import { computed } from "lumiose";
 
 export function Sprite(props: { rows: string[]; label: string; class?: string }) {
   const pixels = computed(() =>

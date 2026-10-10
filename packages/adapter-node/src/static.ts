@@ -11,8 +11,8 @@
 import { createReadStream, readdirSync, realpathSync, statSync, type Stats } from "node:fs";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { extname, join, sep } from "node:path";
-import type { BuiltAppConfig } from "lumen/build";
-import { requestTarget } from "lumen/node";
+import type { BuiltAppConfig } from "lumiose/build";
+import { requestTarget } from "lumiose/node";
 import { acceptedEncodings, varyOnEncoding } from "./compress.ts";
 
 /** Serves a request from the directory; resolves `false` when no file answers it. */

@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// `lumen-language-server --stdio` (also `--node-ipc`, `--socket=<port>`, `--pipe=<name>`).
+// `lumiose-language-server --stdio` (also `--node-ipc`, `--socket=<port>`, `--pipe=<name>`).
 // Runs from source on Node ≥ 24 via native type stripping.
 import { createConnection, ProposedFeatures } from "vscode-languageserver/node";
 import { compilerDiagnostics, projectDiagnostics } from "./providers.ts";

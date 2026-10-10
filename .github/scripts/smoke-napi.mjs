@@ -1,4 +1,4 @@
-// Loads @lumen/compiler's native binding through its loader and compiles a component: the binary
+// Loads @lumiose/compiler's native binding through its loader and compiles a component: the binary
 // for this platform must be the one that loads (not the WASI fallback) and must work.
 //   node .github/scripts/smoke-napi.mjs
 import { compile, __napiBindingTarget } from "../../packages/compiler/index.js";

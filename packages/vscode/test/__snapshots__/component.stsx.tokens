@@ -4,9 +4,9 @@
 1:17 "}" meta.import.tsx meta.block.tsx punctuation.definition.block.tsx
 1:19 "from" meta.import.tsx keyword.control.from.tsx
 1:24 "\"" meta.import.tsx string.quoted.double.tsx punctuation.definition.string.begin.tsx
-1:25 "lumen" meta.import.tsx string.quoted.double.tsx
-1:30 "\"" meta.import.tsx string.quoted.double.tsx punctuation.definition.string.end.tsx
-1:31 ";" punctuation.terminator.statement.tsx
+1:25 "lumiose" meta.import.tsx string.quoted.double.tsx
+1:32 "\"" meta.import.tsx string.quoted.double.tsx punctuation.definition.string.end.tsx
+1:33 ";" punctuation.terminator.statement.tsx
 3:1 "const" meta.var.expr.tsx storage.type.tsx
 3:7 "gap" meta.var.expr.tsx meta.var-single-variable.expr.tsx meta.definition.variable.tsx variable.other.constant.tsx
 3:11 "=" meta.var.expr.tsx keyword.operator.assignment.tsx

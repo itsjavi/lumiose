@@ -1,13 +1,13 @@
 import { describe, expect, it } from "vitest";
 
-// The addon exists only after `pnpm --filter @lumen/compiler build`.
+// The addon exists only after `pnpm --filter @lumiose/compiler build`.
 const binding = await import("../index.js").catch(() => undefined);
 
-describe.skipIf(!binding)("@lumen/compiler native compile", () => {
+describe.skipIf(!binding)("@lumiose/compiler native compile", () => {
   const { compile } = binding!;
 
   const source = [
-    'import { signal } from "lumen";',
+    'import { signal } from "lumiose";',
     'const radius = { lg: "12px" } as const;',
     "// Grüße 🎉",
     "export function Counter({ start = 0 }: { start?: number }) {",
@@ -25,8 +25,8 @@ describe.skipIf(!binding)("@lumen/compiler native compile", () => {
   it("returns JS, a source map and metadata", () => {
     const result = compile(source, "/src/Counter.stsx");
     expect(result.diagnostics).toEqual([]);
-    expect(result.code).toContain('from "lumen/dom"');
-    expect(result.code).toContain('import "/src/Counter.stsx?lumen&type=style&lang.css"');
+    expect(result.code).toContain('from "lumiose/dom"');
+    expect(result.code).toContain('import "/src/Counter.stsx?lumiose&type=style&lang.css"');
     expect(result.code).not.toContain("start?: number");
     expect(JSON.parse(result.map!)).toMatchObject({ version: 3, sources: ["/src/Counter.stsx"] });
     expect(result.meta).toMatchObject({
@@ -122,7 +122,7 @@ describe.skipIf(!binding)("@lumen/compiler native compile", () => {
 
   it("reports execution contracts with UTF-16 spans, on request", () => {
     const text =
-      'import { signal } from "lumen";\n// 🎉\nexport function A() {\n  const n = signal(0);\n' +
+      'import { signal } from "lumiose";\n// 🎉\nexport function A() {\n  const n = signal(0);\n' +
       "  return <p title={n()} onClick={() => n.set(1)}>{n()}</p>;\n}\n";
     expect(compile(text, "/src/a.tsx").meta.contract).toBeUndefined();
     const contract = compile(text, "/src/a.tsx", { contract: true }).meta.contract!;
@@ -176,7 +176,7 @@ describe.skipIf(!binding)("@lumen/compiler native compile", () => {
       severity: "error",
     });
     const server = compile(source, "/src/Counter.stsx", { target: "server" });
-    expect(server.code).toContain('from "lumen/server"');
+    expect(server.code).toContain('from "lumiose/server"');
     expect(server.meta.runtimeHelpers).toContain("ssr");
   });
 });

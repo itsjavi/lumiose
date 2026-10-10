@@ -1,7 +1,7 @@
 // Undo/redo as path patches. Every song edit is a list of { path, before, after } patches; undo
 // writes the befores back in reverse, redo the afters. The same writes keep the audio engine in sync,
 // because they all go through `write`.
-import { batch, computed, signal } from "lumen";
+import { batch, computed, signal } from "lumiose";
 import { clone } from "./song.ts";
 import type { Path } from "./types.ts";
 

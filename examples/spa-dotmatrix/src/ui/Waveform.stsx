@@ -1,5 +1,5 @@
 // A sound's waveform on a small dot-matrix screen; redrawn when the sound or the palette changes.
-import { effect, onCleanup } from "lumen";
+import { effect, onCleanup } from "lumiose";
 import { prefs } from "../state.ts";
 import { tokens } from "../tokens.ts";
 

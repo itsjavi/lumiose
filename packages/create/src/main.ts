@@ -1,12 +1,12 @@
-// `create-lumen [dir] [--template <name>]` (`pnpm create lumen`): asks for what is missing when run
+// `create-lumiose [dir] [--template <name>]` (`pnpm create lumiose`): asks for what is missing when run
 // in a terminal, or takes the defaults with --yes (and in non-interactive runs). Output follows the
-// lumen CLI contract: exit 0 created, 1 cannot create there, 2 misuse; `--format json` prints
+// lumiose CLI contract: exit 0 created, 1 cannot create there, 2 misuse; `--format json` prints
 // `{ command: "create", ok, ... }`.
 
 import { createInterface } from "node:readline/promises";
 import { relative, resolve } from "node:path";
 import { parseArgs } from "node:util";
-import { mcpCommand, mcpNote, type PackageManager } from "lumen/agents";
+import { mcpCommand, mcpNote, type PackageManager } from "lumiose/agents";
 import pkg from "../package.json" with { type: "json" };
 import {
   DEFAULT_TEMPLATE,
@@ -26,16 +26,16 @@ export interface CreateIO {
   userAgent?: string;
 }
 
-const USAGE = `Usage: create-lumen [dir] [options]
+const USAGE = `Usage: create-lumiose [dir] [options]
 
-Create a Lumen app in <dir> (asked for when missing in a terminal; default: lumen-app).
+Create a Lumiose app in <dir> (asked for when missing in a terminal; default: lumiose-app).
 
 Options:
   -t, --template <name>  ${TEMPLATES.map((template) => template.name).join(" | ")} (default: ${DEFAULT_TEMPLATE})
   --name <name>          Package name (default: from the directory name)
   -y, --yes              Ask nothing: use the defaults
   --force                Write into a non-empty directory (same-name files are overwritten)
-  --mcp                  Register the Lumen MCP server for Claude Code (.mcp.json) and Codex
+  --mcp                  Register the Lumiose MCP server for Claude Code (.mcp.json) and Codex
                          (.codex/config.toml), run with your package manager
   --format <format>      human (default) or json: { command: "create", ok, ... } on stdout
   -h, --help             Show this help
@@ -47,9 +47,9 @@ ${TEMPLATES.map((template) => `  ${template.name.padEnd(8)} ${template.descripti
 Exit codes: 0 created, 1 the directory cannot be used, 2 misuse.
 
 Examples:
-  pnpm create lumen my-app --template ssr
-  create-lumen my-site -t static --yes --format json
-  pnpm create lumen my-app --mcp
+  pnpm create lumiose my-app --template ssr
+  create-lumiose my-site -t static --yes --format json
+  pnpm create lumiose my-app --mcp
 `;
 
 export async function main(argv: string[], io: CreateIO = processIO()): Promise<number> {
@@ -58,8 +58,9 @@ export async function main(argv: string[], io: CreateIO = processIO()): Promise<
   );
   const usageError = (message: string) => {
     if (json) {
-      io.write(envelope(false, { failure: { message, help: 'Run "create-lumen --help".' } }));
-    } else io.writeError(`create-lumen: ${message}\nRun "create-lumen --help" for the options.\n`);
+      io.write(envelope(false, { failure: { message, help: 'Run "create-lumiose --help".' } }));
+    } else
+      io.writeError(`create-lumiose: ${message}\nRun "create-lumiose --help" for the options.\n`);
     return 2;
   };
   let parsed;
@@ -90,7 +91,7 @@ export async function main(argv: string[], io: CreateIO = processIO()): Promise<
     return 0;
   }
   if (values.version) {
-    io.write(json ? envelope(true, { version: pkg.version }) : `create-lumen ${pkg.version}\n`);
+    io.write(json ? envelope(true, { version: pkg.version }) : `create-lumiose ${pkg.version}\n`);
     return 0;
   }
   if (positionals.length > 1) return usageError(`Unexpected argument "${positionals[1]}".`);
@@ -102,8 +103,8 @@ export async function main(argv: string[], io: CreateIO = processIO()): Promise<
 
   const ask = values.yes || json ? undefined : io.ask;
   let dir = positionals[0];
-  if (dir === undefined && ask) dir = (await ask("Project directory (lumen-app): ")).trim();
-  dir ||= "lumen-app";
+  if (dir === undefined && ask) dir = (await ask("Project directory (lumiose-app): ")).trim();
+  dir ||= "lumiose-app";
   let template = values.template as TemplateName | undefined;
   if (template === undefined && ask) template = await askTemplate(ask);
   template ??= DEFAULT_TEMPLATE;
@@ -121,7 +122,7 @@ export async function main(argv: string[], io: CreateIO = processIO()): Promise<
   } catch (error) {
     if (!(error instanceof ScaffoldError)) throw error;
     if (json) io.write(envelope(false, { failure: { message: error.message } }));
-    else io.writeError(`create-lumen: ${error.message}\n`);
+    else io.writeError(`create-lumiose: ${error.message}\n`);
     return 1;
   }
 
@@ -147,9 +148,9 @@ export async function main(argv: string[], io: CreateIO = processIO()): Promise<
   } else {
     io.write(
       `\nCreated ${result.name} in ${result.dir} (template: ${result.template.name}, mode: ${result.template.mode}).\n` +
-        `Agent-ready: AGENTS.md, CLAUDE.md and the lumen skill (.claude/skills/lumen).\n` +
+        `Agent-ready: AGENTS.md, CLAUDE.md and the lumiose skill (.claude/skills/lumiose).\n` +
         (values.mcp
-          ? `MCP: .mcp.json (Claude Code) and .codex/config.toml (Codex) run the Lumen MCP server.\n${mcpNote(pm)}\n`
+          ? `MCP: .mcp.json (Claude Code) and .codex/config.toml (Codex) run the Lumiose MCP server.\n${mcpNote(pm)}\n`
           : "") +
         "\n" +
         `Next:\n${next.map((line) => `  ${line}\n`).join("")}`,
@@ -179,7 +180,7 @@ function envelope(ok: boolean, payload: object): string {
   return `${JSON.stringify({ command: "create", ok, ...payload }, null, 2)}\n`;
 }
 
-/** The package manager that runs us (`pnpm create lumen`, `npm create lumen`, …). */
+/** The package manager that runs us (`pnpm create lumiose`, `npm create lumiose`, …). */
 function packageManager(userAgent: string | undefined): PackageManager {
   const name = userAgent?.split("/")[0];
   return name === "npm" || name === "yarn" || name === "bun" ? name : "pnpm";

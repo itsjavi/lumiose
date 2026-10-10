@@ -1,0 +1,7 @@
+kind: Stsx
+block 0: jsx Intrinsic <div> at 11:7 span=264..367 content=271..359
+  ref $gap at 12:40 span=311..315 close=315
+  ref $accent at 13:25 span=343..350 close=350
+block 1: jsx Fragment <> at 22:5 span=494..563 content=501..555
+  ref $accent.dark at 23:34 span=535..547 close=547
+block 2: jsx Intrinsic <li> at 34:17 span=681..712 content=688..704

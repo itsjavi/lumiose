@@ -1,5 +1,5 @@
 // The keyboard shortcuts sheet, opened with "?".
-import { effect } from "lumen";
+import { effect } from "lumiose";
 import { shortcutsOpen } from "../keys.ts";
 
 const ROWS: [string, string][] = [

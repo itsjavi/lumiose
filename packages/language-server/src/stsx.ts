@@ -2,7 +2,7 @@
 // CSS document per block and the class index. Everything keeps the source's UTF-16 offsets, so
 // positions pass between the source, the shadow TSX and the virtual CSS unchanged (spec §4.1).
 
-import { scan, type ScanResult, type StyleBlock, type StyleRef } from "@lumen/compiler";
+import { scan, type ScanResult, type StyleBlock, type StyleRef } from "@lumiose/compiler";
 import type { Stylesheet } from "vscode-css-languageservice";
 import { TextDocument } from "vscode-languageserver-textdocument";
 import { classAttributes, selectorClasses, type ClassAttributes } from "./classes.ts";

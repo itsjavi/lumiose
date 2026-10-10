@@ -1,6 +1,6 @@
 // Root layout: header, page, footer, and the site's global styles. Every route is prerendered
-// (`lumen({ mode: "static" })` in vite.config.ts), so the site deploys as plain files.
-import type { LayoutProps } from "lumen";
+// (`lumiose({ mode: "static" })` in vite.config.ts), so the site deploys as plain files.
+import type { LayoutProps } from "lumiose";
 import { SiteFooter, SiteHeader } from "../components/Site.stsx";
 import * as theme from "../theme.ts";
 
@@ -15,9 +15,9 @@ export default function RootLayout(props: LayoutProps<"/">) {
       <SiteFooter />
 
       <style global>
-        /* Cross-document View Transitions (lumen({ viewTransitions: true })): same-origin
+        /* Cross-document View Transitions (lumiose({ viewTransitions: true })): same-origin
            navigations cross-fade, and elements with a shared view-transition-name (a post's
-           cover) morph between pages. Lumen turns them off for prefers-reduced-motion. */
+           cover) morph between pages. Lumiose turns them off for prefers-reduced-motion. */
         :root {
           color-scheme: light dark;
           accent-color: $theme.color.accent;

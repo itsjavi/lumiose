@@ -1,11 +1,11 @@
 // Workspace probes without the `vscode` API (unit-tested): where the language server lives and
-// whether a folder uses Lumen.
+// whether a folder uses Lumiose.
 
 import { existsSync, readFileSync, realpathSync } from "node:fs";
 import { basename, dirname, isAbsolute, join, resolve } from "node:path";
 
-export const SERVER_PACKAGE = "@lumen/language-server";
-const SERVER_BIN = "lumen-language-server";
+export const SERVER_PACKAGE = "@lumiose/language-server";
+const SERVER_BIN = "lumiose-language-server";
 
 export type ServerSource = "setting" | "workspace" | "bundled";
 
@@ -16,7 +16,7 @@ export interface ServerEntry {
 }
 
 export interface ResolveServerOptions {
-  /** The `lumen.server.path` setting: absolute, or relative to the first folder. */
+  /** The `lumiose.server.path` setting: absolute, or relative to the first folder. */
   configured?: string | undefined;
   /** Workspace folder paths. */
   folders: readonly string[];
@@ -25,8 +25,8 @@ export interface ResolveServerOptions {
 }
 
 /**
- * The language server to launch: the `lumen.server.path` setting, else `@lumen/language-server`
- * resolved from a workspace folder (directly or through its `lumen` dependency), else a server
+ * The language server to launch: the `lumiose.server.path` setting, else `@lumiose/language-server`
+ * resolved from a workspace folder (directly or through its `lumiose` dependency), else a server
  * bundled with the extension. `undefined` when none exists.
  */
 export function resolveServerEntry(options: ResolveServerOptions): ServerEntry | undefined {
@@ -51,7 +51,7 @@ export const BUNDLED_SERVER = "server/bin.mjs";
 export type ServerRuntime = { kind: "vscode" } | { kind: "executable"; command: string };
 
 /**
- * The `lumen.server.runtime` setting when set; otherwise VS Code's own Node.js for the bundled
+ * The `lumiose.server.runtime` setting when set; otherwise VS Code's own Node.js for the bundled
  * server (plain JS, nothing to install), and `node` from PATH for a workspace or configured server,
  * which runs from TypeScript sources and so needs Node ≥ 24.
  */
@@ -63,8 +63,8 @@ export function serverRuntime(entry: ServerEntry, configured: string | undefined
 
 function workspaceServer(folder: string): string | undefined {
   const bases = [folder];
-  const lumen = findPackageJson(folder, "lumen");
-  if (lumen !== undefined) bases.push(dirname(lumen));
+  const lumiose = findPackageJson(folder, "lumiose");
+  if (lumiose !== undefined) bases.push(dirname(lumiose));
   for (const base of bases) {
     const manifest = findPackageJson(base, SERVER_PACKAGE);
     if (manifest === undefined) continue;
@@ -77,15 +77,15 @@ function workspaceServer(folder: string): string | undefined {
   return undefined;
 }
 
-/** Whether the folder depends on `lumen` (declared in package.json or installed). */
-export function usesLumen(folder: string): boolean {
-  if (existsSync(join(folder, "node_modules", "lumen", "package.json"))) return true;
+/** Whether the folder depends on `lumiose` (declared in package.json or installed). */
+export function usesLumiose(folder: string): boolean {
+  if (existsSync(join(folder, "node_modules", "lumiose", "package.json"))) return true;
   const manifest = readJson(join(folder, "package.json"));
   if (manifest === undefined) return false;
-  if (manifest["name"] === "lumen") return true;
+  if (manifest["name"] === "lumiose") return true;
   return ["dependencies", "devDependencies", "peerDependencies"].some((field) => {
     const deps = manifest[field];
-    return typeof deps === "object" && deps !== null && "lumen" in deps;
+    return typeof deps === "object" && deps !== null && "lumiose" in deps;
   });
 }
 
@@ -95,8 +95,8 @@ export interface TakeoverState {
   setting: TakeoverSetting;
   /** Whether a TypeScript extension that would duplicate the server's features is enabled. */
   typescriptExtensionActive: boolean;
-  /** Whether any workspace folder uses Lumen. */
-  usesLumen: boolean;
+  /** Whether any workspace folder uses Lumiose. */
+  usesLumiose: boolean;
 }
 
 /** Whether the server also handles `.ts`/`.tsx`/`.js`/`.jsx` (takeover mode). */
@@ -106,7 +106,7 @@ export function takeoverActive(state: TakeoverState): boolean {
 
 /** Whether to offer to disable the built-in TypeScript extension. */
 export function shouldPromptTakeover(state: TakeoverState): boolean {
-  return state.setting === "prompt" && state.typescriptExtensionActive && state.usesLumen;
+  return state.setting === "prompt" && state.typescriptExtensionActive && state.usesLumiose;
 }
 
 /** The languages the client sends to the server. */

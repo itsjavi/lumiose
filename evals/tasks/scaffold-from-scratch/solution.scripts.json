@@ -1,1 +1,1 @@
-{ "dev": "lumen dev", "build": "lumen build", "check": "lumen check" }
+{ "dev": "lumiose dev", "build": "lumiose build", "check": "lumiose check" }

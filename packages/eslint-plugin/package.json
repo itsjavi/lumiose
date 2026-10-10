@@ -1,8 +1,8 @@
 {
-  "name": "@lumen/eslint-plugin",
+  "name": "@lumiose/eslint-plugin",
   "version": "0.0.0",
   "private": true,
-  "description": "Lumen's compiler diagnostics (LUMxxxx) as lint rules for oxlint (JS plugins) and ESLint, plus a .stsx processor for ESLint.",
+  "description": "Lumiose's compiler diagnostics (LUMxxxx) as lint rules for oxlint (JS plugins) and ESLint, plus a .stsx processor for ESLint.",
   "license": "MIT",
   "files": [
     "src"
@@ -17,6 +17,6 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@lumen/compiler": "workspace:*"
+    "@lumiose/compiler": "workspace:*"
   }
 }

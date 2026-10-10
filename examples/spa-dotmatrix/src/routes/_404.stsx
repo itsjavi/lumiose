@@ -1,6 +1,6 @@
 // Unknown URLs.
-import { href, type ErrorPageProps } from "lumen";
-import { Link } from "lumen/router";
+import { href, type ErrorPageProps } from "lumiose";
+import { Link } from "lumiose/router";
 
 export default function NotFound(props: ErrorPageProps) {
   return (

@@ -1,4 +1,4 @@
-// Grading: the task's hidden tests (plus `lumen check`) run in the project after the agent is
+// Grading: the task's hidden tests (plus `lumiose check`) run in the project after the agent is
 // done. Agents never see the tests; they are copied in only now.
 import { execFileSync, spawnSync } from "node:child_process";
 import { cpSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
@@ -13,7 +13,7 @@ export interface TestResult {
 }
 
 export interface Grade {
-  /** Hidden tests all pass and `lumen check` reports no errors. */
+  /** Hidden tests all pass and `lumiose check` reports no errors. */
   success: boolean;
   tests: { passed: number; failed: number; total: number; results: TestResult[] };
   check: { ok: boolean; errors: number; warnings: number; codes: string[] };
@@ -34,11 +34,11 @@ export function grade(task: Task, dir: string): Grade {
   cpSync(join(EVALS, "grader/helpers.ts"), join(target, "helpers.ts"));
   writeFileSync(
     join(target, "vitest.config.ts"),
-    `import lumen from "lumen/vite";
+    `import lumiose from "lumiose/vite";
 import { defineConfig } from "vite";
 
 export default defineConfig({
-  plugins: [lumen()],
+  plugins: [lumiose()],
   test: {
     root: ${JSON.stringify(dir)},
     include: ["${HIDDEN}/**/*.test.{ts,tsx}"],
@@ -52,7 +52,13 @@ export default defineConfig({
   const report = join(target, "report.json");
   spawnSync(
     join(dir, "node_modules/.bin/vitest"),
-    ["run", "--config", join(target, "vitest.config.ts"), "--reporter=json", `--outputFile=${report}`],
+    [
+      "run",
+      "--config",
+      join(target, "vitest.config.ts"),
+      "--reporter=json",
+      `--outputFile=${report}`,
+    ],
     { cwd: dir, encoding: "utf8", timeout: 600_000, env: { ...process.env, CI: "1" } },
   );
   const results: TestResult[] = [];
@@ -68,18 +74,28 @@ export default defineConfig({
     for (const file of json.testResults) {
       if (file.assertionResults.length === 0) {
         // A file that failed to load (syntax error, missing module the task asked for).
-        results.push({ name: file.name.replace(`${dir}/`, ""), ok: false, message: (file.message ?? "").slice(0, 2000) });
+        results.push({
+          name: file.name.replace(`${dir}/`, ""),
+          ok: false,
+          message: (file.message ?? "").slice(0, 2000),
+        });
       }
       for (const test of file.assertionResults) {
         results.push({
           name: test.fullName,
           ok: test.status === "passed",
-          ...(test.status === "passed" ? {} : { message: test.failureMessages.join("\n").slice(0, 2000) }),
+          ...(test.status === "passed"
+            ? {}
+            : { message: test.failureMessages.join("\n").slice(0, 2000) }),
         });
       }
     }
   } else {
-    results.push({ name: "vitest", ok: false, message: "the hidden tests did not run (no report)" });
+    results.push({
+      name: "vitest",
+      ok: false,
+      message: "the hidden tests did not run (no report)",
+    });
   }
   const passed = results.filter((r) => r.ok).length;
   return {
@@ -92,11 +108,15 @@ export default defineConfig({
 }
 
 function runCheck(dir: string): Grade["check"] {
-  const result = spawnSync(process.execPath, [join(dir, "node_modules/lumen/src/cli/bin.ts"), "check", "--format", "json"], {
-    cwd: dir,
-    encoding: "utf8",
-    timeout: 300_000,
-  });
+  const result = spawnSync(
+    process.execPath,
+    [join(dir, "node_modules/lumiose/src/cli/bin.ts"), "check", "--format", "json"],
+    {
+      cwd: dir,
+      encoding: "utf8",
+      timeout: 300_000,
+    },
+  );
   try {
     const json = JSON.parse(result.stdout) as {
       ok: boolean;
@@ -117,10 +137,14 @@ function runCheck(dir: string): Grade["check"] {
 /** What the agent changed, relative to the starting commit (new files included). */
 function diffStats(dir: string): Grade["diff"] {
   execFileSync("git", ["add", "-A"], { cwd: dir });
-  const numstat = execFileSync("git", ["diff", "--cached", "--numstat", "HEAD", "--", ".", ":!pnpm-lock.yaml"], {
-    cwd: dir,
-    encoding: "utf8",
-  });
+  const numstat = execFileSync(
+    "git",
+    ["diff", "--cached", "--numstat", "HEAD", "--", ".", ":!pnpm-lock.yaml"],
+    {
+      cwd: dir,
+      encoding: "utf8",
+    },
+  );
   let filesChanged = 0;
   let linesAdded = 0;
   let linesRemoved = 0;

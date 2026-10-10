@@ -1,5 +1,5 @@
-// `lumen({ csp: "strict" })` (TASK-138): the built SPA's pages carry a hash policy (they are static
-// shells) and nothing the app loads violates it, playing audio included; in dev, Lumen's inline
+// `lumiose({ csp: "strict" })` (TASK-138): the built SPA's pages carry a hash policy (they are static
+// shells) and nothing the app loads violates it, playing audio included; in dev, Lumiose's inline
 // scripts and styles carry a nonce (no policy is sent: Vite injects its own styles).
 import { expect, test } from "@playwright/test";
 

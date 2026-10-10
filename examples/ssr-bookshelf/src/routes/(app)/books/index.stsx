@@ -1,4 +1,4 @@
-import { href, Title, url } from "lumen";
+import { href, Title, url } from "lumiose";
 import { BookGrid } from "../../../components/BookCard.stsx";
 import { Pager } from "../../../components/Pager.stsx";
 import { BOOK_SORTS, bookFiltersToParams, parseBookFilters } from "../../../lib/search-params.ts";

@@ -2,8 +2,8 @@
 // panes); in the browser it loads the WebAssembly compiler and CodeMirror, compiles the source on
 // every edit for the client and the server, shows the output and the diagnostics, runs the client
 // output in a sandboxed preview frame and keeps the state in the URL hash (shareable links).
-import { bp, color, font, radius, space, text, weight } from "@lumen/site-kit/tokens";
-import { onMount, signal } from "lumen";
+import { bp, color, font, radius, space, text, weight } from "@lumiose/site-kit/tokens";
+import { onMount, signal } from "lumiose";
 import type { EditorView } from "@codemirror/view";
 import {
   compileBoth,
@@ -115,7 +115,7 @@ export function Playground(props: { base: string; site: string }) {
   }
 
   async function onFrameMessage(event: MessageEvent<PreviewMessage>) {
-    if (!frame || event.source !== frame.contentWindow || event.data?.source !== "lumen-preview") {
+    if (!frame || event.source !== frame.contentWindow || event.data?.source !== "lumiose-preview") {
       return;
     }
     const message = event.data;
@@ -129,7 +129,7 @@ export function Playground(props: { base: string; site: string }) {
         return;
       }
       if (id === run) {
-        frame.contentWindow?.postMessage({ source: "lumen-playground", runtime: code, program }, "*");
+        frame.contentWindow?.postMessage({ source: "lumiose-playground", runtime: code, program }, "*");
       }
     } else if (message.type === "console") {
       log(message.level, message.text);
@@ -256,7 +256,7 @@ export function Playground(props: { base: string; site: string }) {
               ? `The compiler could not load: ${failure()}`
               : errors() > 0
                 ? `${errors()} error${errors() === 1 ? "" : "s"}`
-                : `Compiled with lumen_wasm ${version()}`}
+                : `Compiled with lumiose_wasm ${version()}`}
         </p>
         <button type="button" class="share" onClick={() => void share()}>
           {copied() ? "Link copied" : "Copy link"}

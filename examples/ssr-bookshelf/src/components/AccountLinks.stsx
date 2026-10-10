@@ -1,4 +1,4 @@
-import { href } from "lumen";
+import { href } from "lumiose";
 import * as theme from "../theme.ts";
 import type { User } from "../types.ts";
 

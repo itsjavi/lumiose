@@ -42,7 +42,7 @@ export interface ResultsFile {
     host: string;
     machine: { cpu: string; cores: number; memoryGb: number; os: string };
     node: string;
-    lumen: string;
+    lumiose: string;
     clis: Record<string, string | null>;
     agents: string[];
     tasks: string[];
@@ -65,8 +65,19 @@ export function writeResults(file: ResultsFile, path: string): void {
   const runs = readdirSync(RESULTS_DIR)
     .filter((name) => name.endsWith(".json") && name !== "index.json")
     .map((name) => {
-      const { meta, runs: records } = JSON.parse(readFileSync(join(RESULTS_DIR, name), "utf8")) as ResultsFile;
-      return { file: name, date: meta.date, host: meta.host, agents: meta.agents, tasks: meta.tasks.length, ablations: meta.ablations, runs: records.length, complete: meta.complete };
+      const { meta, runs: records } = JSON.parse(
+        readFileSync(join(RESULTS_DIR, name), "utf8"),
+      ) as ResultsFile;
+      return {
+        file: name,
+        date: meta.date,
+        host: meta.host,
+        agents: meta.agents,
+        tasks: meta.tasks.length,
+        ablations: meta.ablations,
+        runs: records.length,
+        complete: meta.complete,
+      };
     })
     .toSorted((a, b) => b.date.localeCompare(a.date));
   writeFileSync(join(RESULTS_DIR, "index.json"), `${JSON.stringify({ runs }, null, 2)}\n`);

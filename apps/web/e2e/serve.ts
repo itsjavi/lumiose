@@ -1,15 +1,15 @@
 // A minimal static file server for the e2e tests, behaving like a static host (GitHub Pages):
 // `/docs/x` and `/docs/x/` serve `docs/x/index.html`, other files are served as they are, and unknown
-// paths get the mount's `404.html` with status 404. No Lumen code runs at request time.
+// paths get the mount's `404.html` with status 404. No Lumiose code runs at request time.
 //
-//   node e2e/serve.ts <port> <mount>=<dir> …     e.g. 5194 /lumen/=.lumen/e2e/base /=dist/client
+//   node e2e/serve.ts <port> <mount>=<dir> …     e.g. 5194 /lumiose/=.lumiose/e2e/base /=dist/client
 import { createReadStream } from "node:fs";
 import { stat } from "node:fs/promises";
 import { createServer } from "node:http";
 import { extname, join, normalize, resolve, sep } from "node:path";
 
 const [port = "5194", ...specs] = process.argv.slice(2);
-// Longest mount first, so `/lumen/` wins over `/`.
+// Longest mount first, so `/lumiose/` wins over `/`.
 const mounts = specs
   .map((spec) => {
     const [prefix = "/", dir = "dist/client"] = spec.split("=");

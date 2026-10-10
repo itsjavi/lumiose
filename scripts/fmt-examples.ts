@@ -1,14 +1,14 @@
-// `pnpm fmt:examples`: `lumen fmt --check` in every example (or in the project directories
+// `pnpm fmt:examples`: `lumiose fmt --check` in every example (or in the project directories
 // given as arguments), one summary line per project, exit 1 when any file is not formatted.
 // It calls the CLI in-process instead of `pnpm --filter … exec`, whose failure output adds a
-// stray "undefined" line (pnpm 11) that reads like a Lumen error.
+// stray "undefined" line (pnpm 11) that reads like a Lumiose error.
 //
 //   node scripts/fmt-examples.ts [dir...]
 
 import { existsSync, readdirSync } from "node:fs";
 import { join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { main } from "../packages/lumen/src/cli/main.ts";
+import { main } from "../packages/lumiose/src/cli/main.ts";
 
 const repo = fileURLToPath(new URL("..", import.meta.url));
 const args = process.argv.slice(2);
@@ -40,6 +40,8 @@ for (const dir of dirs) {
   if (code !== 0) failed++;
 }
 if (failed > 0) {
-  process.stderr.write(`fmt:examples: ${failed} of ${dirs.length} projects need \`lumen fmt\`.\n`);
+  process.stderr.write(
+    `fmt:examples: ${failed} of ${dirs.length} projects need \`lumiose fmt\`.\n`,
+  );
 }
 process.exitCode = failed > 0 ? 1 : 0;

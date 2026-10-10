@@ -1,6 +1,6 @@
 import { defineConfig, devices } from "@playwright/test";
 
-// The same tests run against `lumen dev` and against `lumen build` + `lumen preview`.
+// The same tests run against `lumiose dev` and against `lumiose build` + `lumiose preview`.
 const DEV = 5201;
 const PREVIEW = 5202;
 
@@ -18,9 +18,9 @@ export default defineConfig({
   reporter: "list",
   timeout: 60_000,
   webServer: [
-    { command: `pnpm exec lumen dev --port ${DEV}`, port: DEV },
+    { command: `pnpm exec lumiose dev --port ${DEV}`, port: DEV },
     {
-      command: `pnpm exec lumen build && pnpm exec lumen preview --port ${PREVIEW}`,
+      command: `pnpm exec lumiose build && pnpm exec lumiose preview --port ${PREVIEW}`,
       port: PREVIEW,
       timeout: 120_000,
     },

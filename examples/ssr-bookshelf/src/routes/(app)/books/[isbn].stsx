@@ -13,7 +13,7 @@ import {
   url,
   type ActionContext,
   type PageProps,
-} from "lumen";
+} from "lumiose";
 import { Cover } from "../../../components/BookCard.stsx";
 import { Pager } from "../../../components/Pager.stsx";
 import { Rating } from "../../../components/Rating.stsx";
