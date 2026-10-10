@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { batch, computed, effect, flushSync, onCleanup, onMount, signal } from "./index.ts";
+import { batch, computed, effect, flush, onCleanup, onMount, signal } from "./index.ts";
 import {
   createOwner,
   disposeOwner,
@@ -28,7 +28,7 @@ describe("effect", () => {
       log.push("run");
     });
     expect(log).toEqual([]);
-    flushSync();
+    flush();
     expect(log).toEqual(["run"]);
   });
 
@@ -56,9 +56,9 @@ describe("effect", () => {
       onCleanup(() => log.push(`onCleanup ${v}`));
       return () => log.push(`cleanup ${v}`);
     });
-    flushSync();
+    flush();
     s.set(1);
-    flushSync();
+    flush();
     dispose();
     expect(log).toEqual(["run 0", "cleanup 0", "onCleanup 0", "run 1", "cleanup 1", "onCleanup 1"]);
   });
@@ -74,11 +74,11 @@ describe("effect", () => {
         return () => log.push(`inner cleanup ${o}`);
       });
     });
-    flushSync();
+    flush();
     inner.set(1);
-    flushSync();
+    flush();
     outer.set(1);
-    flushSync();
+    flush();
     expect(log).toEqual([
       "inner 0/0",
       "inner cleanup 0",
@@ -95,16 +95,16 @@ describe("effect", () => {
       runs++;
       s();
     });
-    flushSync();
+    flush();
     s.set(1);
     dispose();
-    flushSync();
+    flush();
     expect(runs).toBe(1);
     const never = effect(() => {
       runs++;
     });
     never();
-    flushSync();
+    flush();
     expect(runs).toBe(1);
   });
 
@@ -118,10 +118,10 @@ describe("effect", () => {
         s();
       }),
     );
-    flushSync();
+    flush();
     disposeOwner(owner);
     s.set(1);
-    flushSync();
+    flush();
     expect(runs).toBe(1);
   });
 
@@ -132,11 +132,11 @@ describe("effect", () => {
       runs++;
       s.set(s() + 1);
     });
-    flushSync();
+    flush();
     expect(runs).toBe(1);
     expect(s()).toBe(1);
     s.set(10);
-    flushSync();
+    flush();
     expect(runs).toBe(2);
     expect(s()).toBe(11);
   });
@@ -149,10 +149,10 @@ describe("effect", () => {
       seen.push(double());
       if (s.peek() === 0) s.set(1);
     });
-    flushSync();
+    flush();
     expect(seen).toEqual([0]);
     s.set(5);
-    flushSync();
+    flush();
     expect(seen).toEqual([0, 10]);
   });
 
@@ -164,9 +164,9 @@ describe("effect", () => {
     effect(() => {
       seen.push(b());
     });
-    flushSync();
+    flush();
     a.set(1);
-    flushSync();
+    flush();
     expect(seen).toEqual([0, 2]);
   });
 
@@ -178,9 +178,9 @@ describe("effect", () => {
       runs++;
       positive();
     });
-    flushSync();
+    flush();
     s.set(2);
-    flushSync();
+    flush();
     expect(runs).toBe(1);
   });
 });
@@ -197,9 +197,9 @@ describe("onMount", () => {
       }),
     );
     expect(log).toEqual([]);
-    flushSync();
+    flush();
     s.set(1);
-    flushSync();
+    flush();
     expect(log).toEqual(["mount 0"]);
     disposeOwner(owner);
     expect(log).toEqual(["mount 0", "unmount"]);
@@ -214,7 +214,7 @@ describe("batch", () => {
     effect(() => {
       seen.push(`${a()},${b()}`);
     });
-    flushSync();
+    flush();
     const result = batch(() => {
       a.set(1);
       batch(() => b.set(1));
@@ -231,7 +231,7 @@ describe("batch", () => {
     effect(() => {
       seen.push(s());
     });
-    flushSync();
+    flush();
     startBatch();
     s.set(1);
     s.set(2);
@@ -240,7 +240,7 @@ describe("batch", () => {
     expect(seen).toEqual([0, 2]);
   });
 
-  it("flushSync inside a batch flushes immediately", () => {
+  it("flush inside a batch flushes immediately", () => {
     const s = signal(0);
     const seen: number[] = [];
     effect(() => {
@@ -248,7 +248,7 @@ describe("batch", () => {
     });
     batch(() => {
       s.set(1);
-      flushSync();
+      flush();
       expect(seen).toEqual([1]);
       s.set(2);
     });
@@ -278,12 +278,12 @@ describe("render effects", () => {
     expect(target.text).toBe("a");
     s.set("b");
     expect(target.text).toBe("a");
-    flushSync();
+    flush();
     expect(target.text).toBe("b");
     expect(calls).toEqual(["a", "b"]);
     disposeOwner(binding);
     s.set("c");
-    flushSync();
+    flush();
     expect(target.text).toBe("b");
   });
 
@@ -296,10 +296,10 @@ describe("render effects", () => {
       () => applies++,
     );
     s.set(2);
-    flushSync();
+    flush();
     expect(applies).toBe(1);
     s.set(-1);
-    flushSync();
+    flush();
     expect(applies).toBe(2);
   });
 
@@ -317,7 +317,7 @@ describe("render effects", () => {
       }),
     );
     show.set(false);
-    flushSync();
+    flush();
     disposeOwner(owner);
     expect(log).toEqual(["initial", "dispose true", "dispose false"]);
   });
@@ -333,10 +333,10 @@ describe("render effects", () => {
     });
     runWithOwner(deep, () => renderEffect(null, s, () => log.push("render depth 3")));
     runWithOwner(shallow, () => renderEffect(null, s, () => log.push("render depth 1")));
-    flushSync();
+    flush();
     log.length = 0;
     s.set(1);
-    flushSync();
+    flush();
     expect(log).toEqual(["render depth 1", "render depth 3", "user"]);
   });
 
@@ -373,7 +373,7 @@ describe("render effects", () => {
     effect(() => {
       seen.push(text.value);
     });
-    flushSync();
+    flush();
     expect(seen).toEqual(["1"]);
   });
 });
@@ -388,12 +388,12 @@ describe("errors", () => {
     effect(() => {
       log.push(`ran ${s()}`);
     });
-    flushSync();
+    flush();
     s.set(1);
-    expect(() => flushSync()).toThrow("boom");
+    expect(() => flush()).toThrow("boom");
     expect(log).toEqual(["ran 0", "ran 1"]);
     s.set(2);
-    flushSync();
+    flush();
     expect(log).toEqual(["ran 0", "ran 1", "ran 2"]);
   });
 
@@ -409,7 +409,7 @@ describe("errors", () => {
         }),
       );
     });
-    expect(() => flushSync()).not.toThrow();
+    expect(() => flush()).not.toThrow();
     expect(caught).toHaveLength(1);
     expect((caught[0] as Error).message).toBe("handled");
   });

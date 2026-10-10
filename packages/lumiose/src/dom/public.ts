@@ -80,7 +80,7 @@ function serverOnly(api: string): never {
     LUM_SERVER_ONLY,
     // The full hint in dev; production keeps the code, which `lumiose docs LUM4003` explains.
     DEV
-      ? `${api} is server-only and cannot run in the browser. Render on the server (the node condition of lumiose), or mount on the client`
+      ? `${api} is server-only and cannot run in the browser. Render on the server (the node condition of lumiose), or render on the client with render() from lumiose/dom`
       : `${api} is server-only`,
   );
 }

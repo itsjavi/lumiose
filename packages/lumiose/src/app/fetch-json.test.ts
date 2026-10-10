@@ -2,8 +2,8 @@
 // fetchJSON() in the browser: its default abort signal inside async components.
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { Renderable } from "../contract/client.ts";
-import { flushSync, signal } from "../core/index.ts";
-import { $async, $await, $leave, createComponent, mount } from "../dom/index.ts";
+import { flush, signal } from "../core/index.ts";
+import { $async, $await, $leave, createComponent, render } from "../dom/index.ts";
 import { fetchJSON } from "./fetch-json.ts";
 
 const requests: Request[] = [];
@@ -33,7 +33,7 @@ describe("fetchJSON() in the browser", () => {
         $leave();
       }
     });
-    const dispose = mount(
+    const dispose = render(
       () =>
         createComponent(User, {
           get id() {
@@ -46,7 +46,7 @@ describe("fetchJSON() in the browser", () => {
     expect(requests[0]!.signal.aborted).toBe(false);
     // A newer run supersedes the first one: its fetch is cancelled.
     id.set(2);
-    flushSync();
+    flush();
     expect(requests.map((request) => request.signal.aborted)).toEqual([true, false]);
     dispose();
     expect(requests[1]!.signal.aborted).toBe(true);
@@ -64,7 +64,7 @@ describe("fetchJSON() in the browser", () => {
         $leave();
       }
     });
-    const dispose = mount(() => createComponent(Component, {}), document.createElement("div"));
+    const dispose = render(() => createComponent(Component, {}), document.createElement("div"));
     dispose();
     expect(requests.map((request) => request.signal.aborted)).toEqual([false, false]);
     own.abort();

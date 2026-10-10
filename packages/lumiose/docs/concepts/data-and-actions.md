@@ -37,7 +37,7 @@ cross-site requests).
 **Enhancing forms.** Inside an island, `onSubmit={submit}` posts the form without a page load.
 `submit()` resolves to `{ type: "success", status, data }`, `{ type: "failure", status, data }` or
 follows a redirect, and sets `actionData()`. It rejects only for unexpected errors, with a
-`FetchError`. `submitting(name?)` is true while a submission is in flight.
+`FetchError`. `isSubmitting(name?)` is true while a submission is in flight.
 
 **Refreshing.** `invalidate()` re-runs the current page's async components (SPA; the stale UI stays
 until the new data arrives), or reloads the page (MPA). On client-routed (SPA) pages a successful
@@ -68,7 +68,7 @@ type only: `import type { actions } from "../routes/reading-list.stsx"`.
 | `actionData<typeof actions>()`                                     | The last action's data or `fail` data, typed by the actions. Reactive. |
 | `submit(target, { action?, method?, signal?, invalidate? })`       | Post a form, submit event, `FormData`, `URLSearchParams` or a record.  |
 | `submit<typeof actions.name>(…)`                                   | The same, resolving with that action's typed success and failure data. |
-| `submitting(name?)`                                                | Whether a submission (to `?/name`) is in flight.                       |
+| `isSubmitting(name?)`                                              | Whether a submission (to `?/name`) is in flight.                       |
 | `invalidate()`                                                     | Refresh the current page's server data.                                |
 | `fetchJSON<T>(url, init?)`, `isFetchError(e)`                      | JSON fetch with typed errors.                                          |
 
@@ -88,7 +88,7 @@ export const GET: Endpoint<"/api/books"> = ({ url }) => {
 
 ```stsx check file=routes/books/new.stsx
 // src/routes/books/new.stsx: a form that works without JS, enhanced when it hydrates
-import { actionData, fail, redirect, submit, submitting, type ActionContext } from "lumiose";
+import { actionData, fail, redirect, submit, isSubmitting, type ActionContext } from "lumiose";
 
 interface Errors {
   title?: string;
@@ -111,7 +111,7 @@ export function NewBookForm() {
     <form method="post" action="?/create" onSubmit={submit}>
       <input name="title" />
       <p class="error">{actionData<typeof actions>()?.title}</p>
-      <button disabled={submitting("create")}>Add book</button>
+      <button disabled={isSubmitting("create")}>Add book</button>
     </form>
   );
 }

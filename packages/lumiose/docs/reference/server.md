@@ -15,7 +15,7 @@ function renderToStream(
 ): Promise<RenderedShell>;
 
 interface RenderToStreamOptions {
-  /** Aborts the render: rejects a pending shell, ends the stream and aborts lifetime(). */
+  /** Aborts the render: rejects a pending shell, ends the stream and aborts getAbortSignal(). */
   signal?: AbortSignal;
   /** SSG/prerender: render every Suspense boundary into the shell; no fallbacks, no stream. */
   resolveAll?: boolean;

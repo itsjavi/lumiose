@@ -40,8 +40,8 @@ describe("public app API", () => {
   });
 
   it("renders browser-side action state during SSR and keeps submit()/invalidate() in the browser", async () => {
-    expect(server.submitting()).toBe(false);
-    expect(server.submitting("create")).toBe(false);
+    expect(server.isSubmitting()).toBe(false);
+    expect(server.isSubmitting("create")).toBe(false);
     expect(server.actionData()).toBeUndefined();
     await expect(server.submit(new FormData())).rejects.toThrow(/submit\(\) runs in the browser/);
     await expect(server.invalidate()).rejects.toThrow(/invalidate\(\) runs in the browser/);

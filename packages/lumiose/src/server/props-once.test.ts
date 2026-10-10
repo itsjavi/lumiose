@@ -6,7 +6,7 @@ import { mkdirSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { compile } from "@lumiose/compiler";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { mount } from "../dom/index.ts";
+import { render } from "../dom/index.ts";
 import { renderToString } from "./index.ts";
 
 const binding = await import("@lumiose/compiler").catch(() => undefined);
@@ -95,7 +95,7 @@ describe.skipIf(!binding)("server props (decision-28)", () => {
     const [server, client] = [await load(SOURCE, "server"), await load(SOURCE, "client")];
     const html = await renderToString(() => server.Page({}));
     const container = document.createElement("div");
-    mount(() => client.Page({}), container);
+    render(() => client.Page({}), container);
     const parsed = document.createElement("div");
     parsed.innerHTML = html;
     // Client inserts keep empty comment anchors; the elements and text are what must match.

@@ -19,7 +19,7 @@ import { copyPlain } from "./snapshot.ts";
 
 type Key = string | symbol;
 
-const KEYS: unique symbol = Symbol("lumiose.keys");
+const KEYS: unique symbol = Symbol();
 const proxies = new WeakMap<object, object>();
 const raws = new WeakMap<object, object>();
 const nodeMaps = new WeakMap<object, Record<Key, TriggerNode>>();

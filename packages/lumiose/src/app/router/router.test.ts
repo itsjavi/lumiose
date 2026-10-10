@@ -4,14 +4,14 @@
 // as `startSpa()` does through the island loader.
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { Component, Renderable } from "../../contract/client.ts";
-import { busy, effect, onCleanup, signal } from "../../core/index.ts";
-import { $async, $await, $leave, createComponent, insert, mount } from "../../dom/index.ts";
+import { isBusy, effect, onCleanup, signal } from "../../core/index.ts";
+import { $async, $await, $leave, createComponent, insert, render } from "../../dom/index.ts";
 import { Suspense } from "../../dom/boundaries.ts";
 import { invalidate as appInvalidate } from "../actions/client.ts";
 import { notFound, redirect } from "../server/control.ts";
 import { href } from "../routes/href.ts";
 import type { RouteSegment } from "../routes/segments.ts";
-import { Link, navigate, navigating, params, route, search, url } from "./index.ts";
+import { Link, navigate, isNavigating, params, route, searchParams, url } from "./index.ts";
 import { createRouter, invalidate, prepareRoot, resetRouter, type SpaConfig } from "./router.ts";
 
 interface Deferred<T> {
@@ -77,7 +77,7 @@ const User = $async(async function User(props: { params: { id: string } }) {
   }
 });
 
-const Search: Component<object> = () => el("p", () => `q=${search().get("q") ?? ""}`);
+const Search: Component<object> = () => el("p", () => `q=${searchParams().get("q") ?? ""}`);
 
 const Old: Component<object> = () => redirect("/search?q=moved");
 
@@ -161,7 +161,7 @@ async function boot(path: string, leaf = "src/routes/index.tsx", base?: string):
   const RootComponent = await prepareRoot(leaf, true);
   container = document.createElement("div");
   document.body.append(container);
-  dispose = mount(() => createComponent(RootComponent, {}), container);
+  dispose = render(() => createComponent(RootComponent, {}), container);
   await settled();
 }
 
@@ -208,15 +208,15 @@ describe("lumiose/router", () => {
     const user = (userData["3"] = deferred<string>());
     const done = navigate("/users/3");
     await settled();
-    expect(navigating()).toBe(true);
-    expect(busy()).toBe(true);
+    expect(isNavigating()).toBe(true);
+    expect(isBusy()).toBe(true);
     // The URL changed, the page and the URL signals did not.
     expect(location.pathname).toBe("/users/3");
     expect(text()).toBe("path /home");
     user.resolve("slow user");
     await done;
     expect(text()).toBe("path /users/3users of 3slow user");
-    expect(navigating()).toBe(false);
+    expect(isNavigating()).toBe(false);
   });
 
   it("drops a navigation that another one supersedes", async () => {
@@ -235,10 +235,10 @@ describe("lumiose/router", () => {
   it("commits a navigation that keeps every level at once", async () => {
     await boot("/search?q=a", "src/routes/search.tsx");
     expect(text()).toBe("path /searchq=a");
-    await search.set({ q: "b", empty: null });
+    await searchParams.set({ q: "b", empty: null });
     expect(location.search).toBe("?q=b");
     expect(text()).toBe("path /searchq=b");
-    expect(search().get("q")).toBe("b");
+    expect(searchParams().get("q")).toBe("b");
   });
 
   it("shows a page's own <Suspense> fallback instead of holding the old page", async () => {
@@ -364,7 +364,7 @@ describe("lumiose/router", () => {
     createRouter(withLoad, APP);
     const RootComponent = await prepareRoot("src/routes/index.tsx", true);
     let link!: HTMLAnchorElement;
-    dispose = mount(() => {
+    dispose = render(() => {
       const root = createComponent(RootComponent, {});
       link = createComponent(Link, {
         href: "/search?q=1",
@@ -408,7 +408,7 @@ describe("lumiose/router", () => {
   it("reads url() and params() outside the router as errors", () => {
     expect(() => params()).toThrow(/inside spa routes/);
     expect(() => route()).toThrow(/inside spa routes/);
-    expect(navigating()).toBe(false);
+    expect(isNavigating()).toBe(false);
     const count = signal(0);
     expect(count()).toBe(0);
   });

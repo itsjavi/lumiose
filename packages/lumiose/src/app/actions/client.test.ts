@@ -82,7 +82,7 @@ describe("submit()", () => {
     expect((await request!.formData()).get("title")).toBe("milk");
   });
 
-  it("tracks submissions in flight with submitting(), also per named action, and busy()", async () => {
+  it("tracks submissions in flight with isSubmitting(), also per named action, and isBusy()", async () => {
     let finish!: () => void;
     serve(
       () =>
@@ -91,20 +91,20 @@ describe("submit()", () => {
         }),
     );
     const seen: string[] = [];
-    const { effect, flushSync } = core;
-    const { busy } = await import("../../core/async.ts");
+    const { effect, flush } = core;
+    const { isBusy } = await import("../../core/async.ts");
     const stop = effect(() => {
       seen.push(
-        `${client.submitting()}/${client.submitting("add")}/${client.submitting("remove")} busy=${busy()}`,
+        `${client.isSubmitting()}/${client.isSubmitting("add")}/${client.isSubmitting("remove")} busy=${isBusy()}`,
       );
     });
-    flushSync();
+    flush();
     const pending = client.submit({ title: "milk" }, { action: "?/add" });
-    flushSync();
+    flush();
     await vi.waitFor(() => expect(requests).toHaveLength(1));
     finish();
     await pending;
-    flushSync();
+    flush();
     stop();
     expect(seen).toEqual([
       "false/false/false busy=false",
@@ -161,7 +161,7 @@ describe("submit()", () => {
     const denied = await client.submit({}).catch((caught: unknown) => caught);
     expect(fetchModule.isFetchError(denied)).toBe(true);
     expect(denied).toMatchObject({ status: 403, message: "Admins only" });
-    expect(client.submitting()).toBe(false);
+    expect(client.isSubmitting()).toBe(false);
 
     serve(() => new Response("Method Not Allowed", { status: 405 }));
     await expect(client.submit({})).rejects.toMatchObject({
@@ -181,15 +181,15 @@ describe("submit()", () => {
       url: "http://localhost:3000/todos",
       cause: offline,
     });
-    expect(client.submitting()).toBe(false);
+    expect(client.isSubmitting()).toBe(false);
 
     const abort = new DOMException("The operation was aborted.", "AbortError");
     serve(() => Promise.reject(abort));
     await expect(client.submit({})).rejects.toBe(abort);
-    expect(client.submitting()).toBe(false);
-    // Rejected submissions leave the busy() registry too.
-    const { busy } = await import("../../core/async.ts");
-    expect(busy()).toBe(false);
+    expect(client.isSubmitting()).toBe(false);
+    // Rejected submissions leave the isBusy() registry too.
+    const { isBusy } = await import("../../core/async.ts");
+    expect(isBusy()).toBe(false);
   });
 
   it("resolves responses outside the protocol as success with their body", async () => {
@@ -204,7 +204,7 @@ describe("submit()", () => {
   it("refuses forms that do not post", async () => {
     const form = render('<form><input name="q"></form>');
     await expect(client.submit(form)).rejects.toThrow(/needs method="post" \(got get\)/);
-    expect(client.submitting()).toBe(false);
+    expect(client.isSubmitting()).toBe(false);
   });
 
   it("sends records as form data, with repeated fields for arrays", async () => {
@@ -219,13 +219,13 @@ describe("submit()", () => {
 });
 
 describe("submit() refreshes client-routed pages after a success (decision-20, TASK-105)", () => {
-  it("runs invalidate() once the submission left busy(), and resolves after it", async () => {
+  it("runs invalidate() once the submission left isBusy(), and resolves after it", async () => {
     serve(() => actionResult({ type: "success", status: 200, data: "saved" }));
-    const { busy } = await import("../../core/async.ts");
+    const { isBusy } = await import("../../core/async.ts");
     const seen: string[] = [];
     let refreshed!: () => void;
     navigation.invalidate.mockImplementation(() => {
-      seen.push(`submitting=${client.submitting()} busy=${busy()} data=${client.actionData()}`);
+      seen.push(`submitting=${client.isSubmitting()} busy=${isBusy()} data=${client.actionData()}`);
       return new Promise<void>((resolve) => {
         refreshed = resolve;
       });
@@ -236,7 +236,7 @@ describe("submit() refreshes client-routed pages after a success (decision-20, T
       return result;
     });
     await vi.waitFor(() => expect(navigation.invalidate).toHaveBeenCalledTimes(1));
-    // The SPA's invalidate() waits for busy() to clear: the submission must not hold it.
+    // The SPA's invalidate() waits for isBusy() to clear: the submission must not hold it.
     expect(seen).toEqual(["submitting=false busy=false data=saved"]);
     await new Promise((resolve) => setTimeout(resolve, 0));
     expect(resolved).toBe(false);

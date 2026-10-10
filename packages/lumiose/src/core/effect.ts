@@ -108,7 +108,8 @@ function flushMicrotask(): void {
   flush();
 }
 
-function flush(): void {
+/** Runs pending effects now. Inside a running flush, it does nothing. */
+export function flush(): void {
   if (flushing) {
     return;
   }
@@ -251,11 +252,6 @@ export function endBatch(): void {
   if (--batchDepth === 0) {
     flush();
   }
-}
-
-/** Runs pending effects now. Inside a running flush, it does nothing. */
-export function flushSync(): void {
-  flush();
 }
 
 // --- User effects ------------------------------------------------------------

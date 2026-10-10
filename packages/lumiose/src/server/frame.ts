@@ -1,7 +1,7 @@
 // Context frames and async runs on the server (spec §6.4, contract doc-2 §3-4).
 //
 // There is no reactive graph on the server. Each component instance runs under its own owner (so
-// `provide`/`inject`, `onCleanup` and `lifetime()` work as on the client) and under a frame that
+// context providers, `useContext`, `onCleanup` and `getAbortSignal()` work as on the client) and under a frame that
 // carries the render-wide state: the request's render, the flush unit (shell or Suspense
 // boundary), the enclosing island and the instance path used for await replay keys.
 //
@@ -85,7 +85,7 @@ export interface RenderState {
   readonly onError: (error: unknown) => void;
   /** `<ErrorBoundary>` fallbacks get a generic error with a digest (production, decision-29). */
   readonly sanitizeErrors: boolean;
-  /** The request's root owner: disposed (aborting `lifetime()`) when the render ends. */
+  /** The request's root owner: disposed (aborting `getAbortSignal()`) when the render ends. */
   readonly owner: Owner;
   readonly shell: Unit;
   shellDone: boolean;
@@ -223,7 +223,7 @@ export function runComponent<P>(
     return runAsync(component, props, frame, createOwner(getOwner()));
   }
   // The hot path of every sync component. Its owner is lazy (as for client list rows): it exists
-  // only once the component provides context, registers a cleanup, reads `lifetime()` or awaits,
+  // only once the component provides context, registers a cleanup, reads `getAbortSignal()` or awaits,
   // so most server components allocate no owner and the render's disposal has nothing to walk.
   const prevFrame = current;
   current = frame;
@@ -325,7 +325,7 @@ export function block(inner: string): string {
 
 /**
  * Whether an async component run is executing (between a resume and a pause): `fetchJSON()`
- * then defaults its signal to `lifetime()`.
+ * then defaults its signal to `getAbortSignal()`.
  */
 export function inAsyncRun(): boolean {
   return currentRun?.active === true;

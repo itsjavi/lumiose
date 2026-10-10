@@ -11,7 +11,7 @@
 //   boundary that counts its pending async content (like an async run before it is shown), so the
 //   old page stays until the new one is ready; then, in one step, the URL signals change, the new
 //   content swaps in and the old content is disposed. A view with the same levels (another query)
-//   commits at once; props and `params()`/`url()`/`search()` are reactive.
+//   commits at once; props and `params()`/`url()`/`searchParams()` are reactive.
 // - Content created for a view reads that view (`params()`, `url()`, props) until it is shown,
 //   then the committed one.
 // - Navigation API: same-document navigations to URLs of this SPA are intercepted, so plain
@@ -23,7 +23,7 @@
 // - `invalidate()` bumps a revision that every async component run and resource below the SPA
 //   reads, so they re-run (holding their UI); `submit()` redirects navigate through the router.
 import type { Component, Renderable } from "../../contract/client.ts";
-import { busy } from "../../core/async.ts";
+import { isBusy } from "../../core/async.ts";
 import { batch, effect } from "../../core/effect.ts";
 import {
   beginBusy,
@@ -41,7 +41,7 @@ import {
   type Boundary,
   type Owner,
 } from "../../core/internal.ts";
-import { injectContext } from "../../core/owner.ts";
+import { readContext } from "../../core/owner.ts";
 import { untrack } from "../../core/reactive.ts";
 import { computed, signal, type Signal } from "../../core/signal.ts";
 import { createComponent } from "../../dom/component.ts";
@@ -88,7 +88,7 @@ interface Scope {
   params: () => Params;
   url: () => URL;
   route: () => string | undefined;
-  search: () => URLSearchParams;
+  searchParams: () => URLSearchParams;
 }
 
 /** A level's content in an outlet: its owner and range, and the outlet its `children` renders. */
@@ -139,7 +139,7 @@ interface Router {
 }
 
 const ROUTE: unique symbol = Symbol("lumiose.route");
-/** `navigation.navigate()` info of navigations that keep the scroll position (`search.set()`). */
+/** `navigation.navigate()` info of navigations that keep the scroll position (`searchParams.set()`). */
 const KEEP_SCROLL = "lumiose:keep-scroll";
 
 let router: Router | undefined;
@@ -173,7 +173,7 @@ function createScope(view: () => View): Scope {
     params,
     url: computed(() => view().url),
     route: computed(() => view().route),
-    search: computed(() => new URLSearchParams(search())),
+    searchParams: computed(() => new URLSearchParams(search())),
   };
 }
 
@@ -717,7 +717,7 @@ function routeOf(r: Router, url: URL): (() => Promise<void>) | undefined {
 
 /** The scope that content created now reads: its view's, else the committed one. */
 function scopeOf(api: string): Scope {
-  const found = injectContext(ROUTE, undefined) as Scope | undefined;
+  const found = readContext(ROUTE, undefined) as Scope | undefined;
   if (found !== undefined) return found;
   if (router?.root !== undefined) return router.scope;
   throw new Error(
@@ -742,24 +742,24 @@ export function currentRoute(): string | undefined {
   return scopeOf("route()").route();
 }
 
-/** `search()` of lumiose/router. */
-export function currentSearch(): URLSearchParams {
-  return scopeOf("search()").search();
+/** `searchParams()` of lumiose/router. */
+export function currentSearchParams(): URLSearchParams {
+  return scopeOf("searchParams()").searchParams();
 }
 
-/** Whether a navigation is in flight (decision-20; also counted by `busy()`). */
-export function navigating(): boolean {
+/** Whether a navigation is in flight (decision-20; also counted by `isBusy()`). */
+export function isNavigating(): boolean {
   return router?.navigating() ?? false;
 }
 
-export type SearchInit =
+export type SearchParamsInit =
   | URLSearchParams
   | string
   | Record<string, string | number | boolean | readonly string[] | null | undefined>;
 
 /** Replaces the query of the current URL, keeping the scroll position. */
-export function setSearch(
-  next: SearchInit | ((current: URLSearchParams) => SearchInit),
+export function setSearchParams(
+  next: SearchParamsInit | ((current: URLSearchParams) => SearchParamsInit),
   options: NavigateOptions = {},
 ): Promise<void> {
   const current = new URL(location.href);
@@ -768,7 +768,7 @@ export function setSearch(
   return navigateTo(current, options.replace === true, true);
 }
 
-function searchString(value: SearchInit): string {
+function searchString(value: SearchParamsInit): string {
   if (typeof value === "string" || value instanceof URLSearchParams) {
     return new URLSearchParams(value).toString();
   }
@@ -783,7 +783,7 @@ function searchString(value: SearchInit): string {
 
 /**
  * Re-runs the async components (and resources) of the SPA, which keep their UI until the new run
- * resolves. Resolves once nothing is in flight anymore (`busy()` is false).
+ * resolves. Resolves once nothing is in flight anymore (`isBusy()` is false).
  */
 export function invalidate(): Promise<void> {
   const r = router;
@@ -793,7 +793,7 @@ export function invalidate(): Promise<void> {
     let stop: (() => void) | undefined;
     let idle = false;
     stop = effect(() => {
-      if (!busy()) {
+      if (!isBusy()) {
         idle = true;
         stop?.();
         resolve();
@@ -806,7 +806,7 @@ export function invalidate(): Promise<void> {
 /** Whether `href` is the current URL's path (`<Link>`'s `aria-current="page"`). Reactive. */
 export function isCurrent(href: string): boolean {
   const found =
-    (injectContext(ROUTE, undefined) as Scope | undefined) ??
+    (readContext(ROUTE, undefined) as Scope | undefined) ??
     (router?.root === undefined ? undefined : router.scope);
   const current = found === undefined ? new URL(location.href) : found.url();
   const target = new URL(href, current);

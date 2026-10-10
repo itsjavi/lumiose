@@ -1,8 +1,8 @@
 // @vitest-environment happy-dom
 import { afterEach, describe, expect, it } from "vitest";
 import type { Renderable } from "../contract/client.ts";
-import { flushSync, onCleanup, signal } from "../core/index.ts";
-import { createComponent, insert, mount, template } from "./index.ts";
+import { flush, onCleanup, signal } from "../core/index.ts";
+import { createComponent, insert, render, template } from "./index.ts";
 import { Dynamic, Portal } from "./public.ts";
 
 afterEach(() => {
@@ -15,7 +15,7 @@ describe("Portal", () => {
     document.body.appendChild(target);
     const app = document.createElement("div");
     const label = signal("one");
-    const dispose = mount(
+    const dispose = render(
       () => [
         createComponent(Portal, {
           get children() {
@@ -31,7 +31,7 @@ describe("Portal", () => {
     const container = document.body.lastElementChild!;
     expect(container.textContent).toBe("one");
     label.set("two");
-    flushSync();
+    flush();
     expect(container.textContent).toBe("two");
     expect(target.innerHTML).toBe("<div><b>in target</b></div>");
     dispose();
@@ -57,7 +57,7 @@ describe("Dynamic", () => {
     const which = signal<unknown>(A);
     const label = signal("x");
     const app = document.createElement("div");
-    mount(
+    render(
       () =>
         createComponent(Dynamic, {
           get component() {
@@ -77,20 +77,20 @@ describe("Dynamic", () => {
     );
     expect(app.innerHTML).toBe("<i>x</i>");
     label.set("y");
-    flushSync();
+    flush();
     expect(app.innerHTML).toBe("<i>y</i>");
     which.set(B);
-    flushSync();
+    flush();
     expect(app.innerHTML).toBe("b");
     expect(log).toEqual(["A x", "A cleanup", "B"]);
     which.set("section");
-    flushSync();
+    flush();
     expect(app.innerHTML).toBe(`<section label="y" title="y">child</section>`);
     label.set("z");
-    flushSync();
+    flush();
     expect(app.innerHTML).toBe(`<section label="z" title="z">child</section>`);
     which.set(null);
-    flushSync();
+    flush();
     expect(app.innerHTML).toBe("");
   });
 });

@@ -35,7 +35,7 @@ import {
 import { escapeAttr, jsonForScript, type Html } from "./node.ts";
 
 export interface RenderToStreamOptions {
-  /** Aborts the render: rejects a pending shell, ends the stream and aborts `lifetime()`. */
+  /** Aborts the render: rejects a pending shell, ends the stream and aborts `getAbortSignal()`. */
   signal?: AbortSignal;
   /** SSG/prerender: render every Suspense boundary into the shell; no fallbacks, no stream. */
   resolveAll?: boolean;
@@ -202,12 +202,12 @@ function completeShell(render: RenderState, html: string, signal?: AbortSignal):
       finish(render);
     },
   });
-  // A disconnected client ends the stream quietly; `lifetime()` aborts pending work.
+  // A disconnected client ends the stream quietly; `getAbortSignal()` aborts pending work.
   signal?.addEventListener("abort", () => render.close?.(), { once: true });
   return { head, html, records, stream };
 }
 
-/** Ends the render: disposes the root owner (cleanups run, `lifetime()` aborts). */
+/** Ends the render: disposes the root owner (cleanups run, `getAbortSignal()` aborts). */
 function finish(render: RenderState): void {
   if (render.done) return;
   render.done = true;

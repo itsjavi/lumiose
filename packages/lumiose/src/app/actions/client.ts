@@ -1,5 +1,5 @@
 // Form action helpers for the browser (spec §8 Actions, decision-18). `submit()` posts to a page
-// action with the JSON protocol (./protocol.ts); `submitting()` and `actionData()` expose its
+// action with the JSON protocol (./protocol.ts); `isSubmitting()` and `actionData()` expose its
 // state as signals; `invalidate()` refreshes server data after a mutation. Navigation is MPA (a
 // full page load) unless the SPA router (TASK-25) installs its hooks with setClientNavigation().
 
@@ -74,7 +74,7 @@ export function actionData(): unknown {
 }
 
 /** Whether a `submit()` is in flight; with a name, one to that named action (`?/name`). Reactive. */
-export function submitting(name?: string): boolean {
+export function isSubmitting(name?: string): boolean {
   const names = inFlight();
   return name === undefined ? names.length > 0 : names.includes(name);
 }
@@ -116,7 +116,7 @@ export async function submit(
   );
   const name = actionName(url) ?? "";
   inFlight.update((names) => [...names, name]);
-  // Counts toward the app-wide busy() summary while in flight (decision-20).
+  // Counts toward the app-wide isBusy() summary while in flight (decision-20).
   const endBusy = beginBusy();
   let result: ActionResult;
   try {
@@ -135,7 +135,7 @@ export async function submit(
     endBusy();
     inFlight.update((names) => names.toSpliced(names.indexOf(name), 1));
   }
-  // After the submission left busy(): the SPA's invalidate() resolves once nothing is in flight.
+  // After the submission left isBusy(): the SPA's invalidate() resolves once nothing is in flight.
   // MPA pages only reload on an explicit invalidate() (decision-20 amendment).
   if (result.type === "success" && navigation.clientRouted && options.invalidate !== false) {
     await invalidate();

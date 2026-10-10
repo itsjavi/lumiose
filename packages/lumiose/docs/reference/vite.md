@@ -131,8 +131,8 @@ What it does:
   component of the file (a constant, a helper) re-renders all of the file's components. Components
   hydrated in an island or on the SPA's first page update the same way once hydrated. A module
   whose exports are not all such components (a constant or signal export, a changed export list,
-  an async or anonymous default component) falls back to the app entry: a client module that imports `mount` from `lumiose/dom` accepts
-  updates of every module it reaches and re-mounts the app into the same container (component
+  an async or anonymous default component) falls back to the app entry: a client module that imports `render` from `lumiose/dom` accepts
+  updates of every module it reaches and re-renders the app into the same container (component
   state resets; module-level signals of unchanged modules survive), else the page reloads.
 - Style blocks become `<file>?lumiose&type=style&lang.css` modules handled by Vite's CSS pipeline.
   Modules that `$` references import constants from are tracked as dependencies of that CSS module.

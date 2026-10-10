@@ -3,14 +3,14 @@
 // Hand-compiled versions of the golden examples of contract doc-2 §5 (the compiler is not ready),
 // run against the runtime as compiled code would.
 import { afterEach, describe, expect, it } from "vitest";
-import { flushSync, signal, type Signal } from "../core/index.ts";
+import { flush, signal, type Signal } from "../core/index.ts";
 import {
   bind,
   createComponent,
   delegateEvents,
   insert,
   list,
-  mount,
+  render,
   selector,
   setText,
   template,
@@ -42,7 +42,7 @@ describe("golden examples (doc-2 §5)", () => {
 
     const app = document.createElement("div");
     document.body.appendChild(app);
-    mount(() => createComponent(Counter, { start: 4 }), app);
+    render(() => createComponent(Counter, { start: 4 }), app);
     const button = app.firstElementChild as HTMLButtonElement;
     expect(button.innerHTML).toBe(`Clicked 4<!----> times`);
     expect(button.hasAttribute("data-l-c1")).toBe(true);
@@ -84,17 +84,17 @@ describe("golden examples (doc-2 §5)", () => {
 
     const app = document.createElement("div");
     document.body.appendChild(app);
-    mount(() => createComponent(Table, {}), app);
+    render(() => createComponent(Table, {}), app);
     const anchors = (): HTMLElement[] => Array.from(app.querySelectorAll("a"));
     expect(anchors().map((a) => a.textContent)).toEqual(["row 1", "row 2", "row 3"]);
     anchors()[1]!.click();
     expect(app.querySelectorAll("tr.danger")).toHaveLength(1);
     expect(app.querySelector("tr.danger")!.textContent).toBe("row 2");
     rows()[1]!.label.set("row 2 !!!");
-    flushSync();
+    flush();
     expect(anchors()[1]!.textContent).toBe("row 2 !!!");
     rows.set(rows().toReversed());
-    flushSync();
+    flush();
     expect(anchors().map((a) => a.textContent)).toEqual(["row 3", "row 2 !!!", "row 1"]);
     anchors()[0]!.click();
     expect(app.querySelector("tr.danger")!.textContent).toBe("row 3");

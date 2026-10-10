@@ -61,15 +61,15 @@ function onCleanup(fn: () => void): void;
 Registers `fn` on the current owner: it runs when the owner is disposed (or, for an effect, before
 its next run).
 
-## lifetime
+## getAbortSignal
 
 ```ts
-function lifetime(): AbortSignal;
+function getAbortSignal(): AbortSignal;
 ```
 
 An `AbortSignal` for the current owner. Aborted when the owner is disposed, when an effect re-runs,
 or when an async component run is superseded. On the server it is the request's signal. Throws
-outside an owner.
+outside an owner (with a message in development). Svelte has the same function.
 
 ## untrack
 
@@ -88,10 +88,10 @@ function batch<T>(fn: () => T): T;
 Defers dependents until `fn` returns, so they run once. Delegated event handlers are batched
 automatically.
 
-## flushSync
+## flush
 
 ```ts
-function flushSync(): void;
+function flush(): void;
 ```
 
 Runs pending computeds, DOM bindings and effects now, instead of in the next microtask.
@@ -102,9 +102,10 @@ Runs pending computeds, DOM bindings and effects now, instead of in the next mic
 function store<T extends object>(value: T): T;
 ```
 
-Wraps a plain object or array in a deep reactive proxy: reads track per property, writes notify
-only on change, array methods work. Class instances, `Map`s, `Set`s and frozen objects are returned
-as is.
+Wraps a plain object or array in a deep, **mutable** reactive proxy, like Valtio's `proxy`, Vue's
+`reactive` or Solid's `createMutable`: you write to it directly (`state.count++`,
+`state.items.push(item)`), with no setter. Reads track per property, writes notify only on change,
+array methods work. Class instances, `Map`s, `Set`s and frozen objects are returned as is.
 
 ## snapshot
 
@@ -160,36 +161,54 @@ const page = store({ rows: [{ slug: "intro", views: 1 }] });
 reconcile(page.rows, [{ slug: "intro", views: 2 }], { key: "slug" });
 ```
 
-## createContext, provide, inject
+## createContext, useContext
 
 ```ts
 function createContext<T>(defaultValue: T): Context<T>;
 function createContext<T>(): Context<T | undefined>;
-function provide<T>(context: Context<T>, value: T): void;
-function inject<T>(context: Context<T>): T;
+function useContext<T>(context: Context<T>): T;
 interface Context<T> {
+  (props: { value: T; children?: JSX.Element }): JSX.Element; // the provider component
   readonly id: symbol;
   readonly defaultValue: T;
 }
 ```
 
-`provide` sets a value on the current owner for everything created below it; `inject` returns the
-nearest provided value, or the default. Context survives `await` in async components.
+A context is also its provider component, as in React 19 and Solid 2: `<Theme value="dark">…</Theme>`
+provides `value` to everything rendered inside it, including content rendered later (conditionals,
+lists). `useContext` returns the value of the nearest provider above, or the default. A nested
+provider of the same context shadows the outer one for its subtree. Context survives `await` in
+async components. Islands start a new root ([LUM4010](../errors/LUM4010.md)).
 
-## pending
+The provider reads `value` once, when it renders, like Solid's provider and like every component
+prop read in a component body: components run once. To share state that changes, provide a signal,
+a store or an object with getters, and read it where it is used.
+
+```tsx
+const Theme = createContext("light");
+const Count = createContext(signal(0));
+
+<Theme value="dark">
+  <Count value={signal(5)}>
+    <Toolbar /> {/* useContext(Theme) is "dark"; useContext(Count)() is reactive */}
+  </Count>
+</Theme>;
+```
+
+## isPending
 
 ```ts
-function pending(): boolean;
+function isPending(): boolean;
 ```
 
 Inside an async component (its body or its UI): whether a **re-run** is in flight. The first load is
 not a re-run (`<Suspense>` covers it). Reading it in the body does not re-run the component.
 Always `false` on the server.
 
-## busy
+## isBusy
 
 ```ts
-function busy(): boolean;
+function isBusy(): boolean;
 ```
 
 App-wide: whether anything is in flight: an async component run, a `<Suspense>` showing its
@@ -217,7 +236,7 @@ stays loading. Prefer [async components](../concepts/async.md).
 ## Example
 
 ```tsx check
-import { batch, effect, lifetime, onCleanup, resource, signal, untrack } from "lumiose";
+import { batch, effect, getAbortSignal, onCleanup, resource, signal, untrack } from "lumiose";
 
 export function Clock() {
   const now = signal(new Date());
@@ -243,7 +262,7 @@ export function Clock() {
   return (
     <p onClick={rename}>
       {now().toLocaleTimeString()} · {user.loading() ? "…" : user()?.id}
-      {String(lifetime().aborted)}
+      {String(getAbortSignal().aborted)}
     </p>
   );
 }

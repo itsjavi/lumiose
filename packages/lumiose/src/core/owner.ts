@@ -27,7 +27,7 @@ export const DISPOSED = 1;
 export const SUBSCRIBER = 2;
 /** A run that was superseded: it no longer tracks, and its lifetime is aborted. */
 export const STALE = 4;
-/** `inject()` does not look past this owner (see `isolateOwner`). */
+/** `useContext()` does not look past this owner (see `isolateOwner`). */
 export const ISOLATED = 8;
 
 export function createOwner(parent: Owner | undefined): Owner {
@@ -287,16 +287,15 @@ export function resetOwner(owner: Owner): void {
  * An `AbortSignal` for the current owner: aborted when the owner is disposed,
  * when an effect re-runs, or when an async run is superseded.
  */
-export function lifetime(): AbortSignal {
+export function getAbortSignal(): AbortSignal {
   const owner = getOwner();
-  if (owner === undefined) {
+  // Production builds drop the check: without an owner, `lifetimeOf` throws a TypeError.
+  if (DEV && owner === undefined) {
     throw new Error(
-      DEV
-        ? "lifetime() must be called inside a component, an effect or another owner."
-        : "lifetime(): no owner",
+      "getAbortSignal() must be called inside a component, an effect or another owner.",
     );
   }
-  return lifetimeOf(owner);
+  return lifetimeOf(owner!);
 }
 
 export function lifetimeOf(owner: Owner): AbortSignal {
@@ -318,13 +317,9 @@ export function abortLifetime(owner: Owner): void {
 
 // --- Context -----------------------------------------------------------------
 
+/** Provides `value` on the current owner. Callers (providers, boundaries, the router) always run under one. */
 export function provideContext(key: symbol, value: unknown): void {
-  const owner = getOwner();
-  if (owner === undefined) {
-    throw new Error(
-      DEV ? "provide() must be called inside a component or another owner." : "provide(): no owner",
-    );
-  }
+  const owner = getOwner()!;
   (owner.context ??= {})[key] = value;
 }
 
@@ -338,18 +333,18 @@ export function lookupContext(owner: Owner | undefined, key: symbol, fallback: u
   return fallback;
 }
 
-export function injectContext(key: symbol, fallback: unknown): unknown {
+export function readContext(key: symbol, fallback: unknown): unknown {
   return lookupContext(lookupOwner(), key, fallback);
 }
 
 // An island rendered on the server runs under an isolated owner: the browser hydrates it as its
-// own root, so `inject()` must not see user context provided above it there either (TASK-194).
-// Internal lookups (`injectContext`, `lookupContext`) pass isolated owners.
+// own root, so `useContext()` must not see user context provided above it there either (TASK-194).
+// Internal lookups (`readContext`, `lookupContext`) pass isolated owners.
 const MISSING = Symbol();
 let pageContextHandlers: WeakMap<Owner, (key: symbol) => void> | undefined;
 
 /**
- * Makes `owner` a root for `inject()`. In dev, `onPageContext` is called when `inject()` stops
+ * Makes `owner` a root for `useContext()`. In dev, `onPageContext` is called when `useContext()` stops
  * at `owner` although an owner above it provides the context.
  */
 export function isolateOwner(owner: Owner, onPageContext?: (key: symbol) => void): void {
@@ -359,8 +354,8 @@ export function isolateOwner(owner: Owner, onPageContext?: (key: symbol) => void
   }
 }
 
-/** `inject()`: the nearest provided value up to an isolated owner, or `fallback`. */
-export function injectUserContext(key: symbol, fallback: unknown): unknown {
+/** `useContext()`: the nearest provided value up to an isolated owner, or `fallback`. */
+export function readUserContext(key: symbol, fallback: unknown): unknown {
   for (let owner = lookupOwner(); owner !== undefined; owner = owner.parent) {
     const context = owner.context;
     if (context !== undefined && key in context) {
@@ -378,7 +373,7 @@ export function injectUserContext(key: symbol, fallback: unknown): unknown {
 
 // --- Errors ------------------------------------------------------------------
 
-const ERROR_HANDLER = Symbol("lumiose.error");
+const ERROR_HANDLER = Symbol();
 
 /** Handles errors thrown by effects and runs in the current owner's subtree (error boundaries). */
 export function onError(handler: (error: unknown) => void): void {

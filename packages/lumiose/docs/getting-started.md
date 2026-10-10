@@ -124,10 +124,10 @@ export function Counter({ start = 0 }: { start?: number }) {
 
 ```tsx check file=main.tsx
 // src/main.tsx
-import { mount } from "lumiose/dom";
+import { render } from "lumiose/dom";
 import { Counter } from "./Counter.stsx";
 
-mount(() => <Counter start={1} />, document.getElementById("app")!);
+render(() => <Counter start={1} />, document.getElementById("app")!);
 ```
 
 Run `pnpm vite` and open the printed URL.

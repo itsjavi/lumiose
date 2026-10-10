@@ -1,7 +1,7 @@
 // Async state shared by async components, boundaries and resources (spec §4.3-4.4, decision-20).
 //
-// - `pending()` reads the in-flight flag that an async component instance provides on its owner.
-// - `busy()` is the app-wide summary: async runs, `<Suspense>` fallbacks, form submissions and SPA
+// - `isPending()` reads the in-flight flag that an async component instance provides on its owner.
+// - `isBusy()` is the app-wide summary: async runs, `<Suspense>` fallbacks, form submissions and SPA
 //   navigations register with it through `beginBusy()` while they are in flight.
 // - `suspend(owner)` registers new pending content (the first run of an async instance, the first
 //   load of a resource) with the nearest `<Suspense>`, whose count of pending content decides when
@@ -12,7 +12,7 @@ import {
   DISPOSED,
   disposeOwner,
   getOwner,
-  injectContext,
+  readContext,
   lifetimeOf,
   lookupContext,
   type Owner,
@@ -22,14 +22,14 @@ import { untrack } from "./reactive.ts";
 import { computed, signal, type Signal } from "./signal.ts";
 
 /** Context key of an async instance's in-flight flag. */
-export const PENDING: unique symbol = Symbol("lumiose.pending");
+export const PENDING: unique symbol = Symbol();
 /** Context key of a `<Suspense>` boundary's count of pending content. */
-export const SUSPENSE: unique symbol = Symbol("lumiose.suspense");
+export const SUSPENSE: unique symbol = Symbol();
 /**
  * Context key of a revision signal (the SPA router's): async component runs and resources below
  * it read it, so bumping it (`invalidate()`) re-runs them.
  */
-export const REVISION: unique symbol = Symbol("lumiose.revision");
+export const REVISION: unique symbol = Symbol();
 
 const noop = (): void => {};
 
@@ -38,25 +38,25 @@ const noop = (): void => {};
  * is not a re-run: `<Suspense>` covers it. Never tracked by the component's own run, so reading it
  * in the body does not re-run the component.
  */
-export function pending(): boolean {
-  const flag = injectContext(PENDING, undefined) as Signal<boolean> | undefined;
+export function isPending(): boolean {
+  const flag = readContext(PENDING, undefined) as Signal<boolean> | undefined;
   return flag === undefined ? false : isRun(activeSub) ? flag.peek() : flag();
 }
 
-// Pure: bundles that never read `busy()` or register work drop them.
+// Pure: bundles that never read `isBusy()` or register work drop them.
 const inFlight = /* @__PURE__ */ signal(0);
 const anyInFlight = /* @__PURE__ */ computed(() => inFlight() > 0);
 
 /**
  * App-wide: whether anything is in flight (decision-20): an async component run, a `<Suspense>`
- * showing its fallback, a form submission or an SPA navigation. Like `pending()`, it is never
+ * showing its fallback, a form submission or an SPA navigation. Like `isPending()`, it is never
  * tracked by an async component's own run.
  */
-export function busy(): boolean {
+export function isBusy(): boolean {
   return isRun(activeSub) ? untrack(anyInFlight) : anyInFlight();
 }
 
-/** Registers something in flight with `busy()`; returns the function (idempotent) that ends it. */
+/** Registers something in flight with `isBusy()`; returns the function (idempotent) that ends it. */
 export function beginBusy(): () => void {
   inFlight.update((n) => n + 1);
   let done = false;

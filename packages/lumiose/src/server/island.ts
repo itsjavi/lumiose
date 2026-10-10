@@ -11,8 +11,8 @@
 // are templates. An island inside another island's own render is rendered inline, with no record.
 //
 // The island renders under an isolated owner: the browser hydrates it as its own root, so its
-// `inject()` calls do not see context the page provided outside it here either (TASK-194). The
-// owner is still a child of the call site's, so `lifetime()`, cleanups and head depth follow the
+// `useContext()` calls do not see context the page provided outside it here either (TASK-194). The
+// owner is still a child of the call site's, so `getAbortSignal()`, cleanups and head depth follow the
 // page; Suspense, error boundaries and request APIs use the frame and the request scope instead.
 
 import { LUM_ISLAND_PAGE_CONTEXT, LUM_ISLAND_PROP, LumioseError } from "../app/diagnostics.ts";
@@ -122,7 +122,7 @@ function warnPageContext(ref: string): void {
   if (warned.has(ref)) return;
   warned.add(ref);
   console.warn(
-    `Lumiose: ${LUM_ISLAND_PAGE_CONTEXT}: island ${nameOf(ref)} (${ref}) calls inject() for a context that the page provides outside the island. Islands hydrate as their own root, so the island gets the context's default value, on the server as in the browser. Pass the value as an island prop, provide it inside the island, or share module-scope state (run \`lumiose docs ${LUM_ISLAND_PAGE_CONTEXT}\`).`,
+    `Lumiose: ${LUM_ISLAND_PAGE_CONTEXT}: island ${nameOf(ref)} (${ref}) calls useContext() for a context that the page provides outside the island. Islands hydrate as their own root, so the island gets the context's default value, on the server as in the browser. Pass the value as an island prop, provide it inside the island, or share module-scope state (run \`lumiose docs ${LUM_ISLAND_PAGE_CONTEXT}\`).`,
   );
 }
 

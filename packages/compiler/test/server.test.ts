@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 // Server target: compile sources with `target: "server"`, render them with `renderToString` on the
 // real `lumiose/server` runtime and compare the HTML; then compile the same sources for the client,
-// mount them on `lumiose/dom` and check that the browser's parse of the server HTML is the client's
+// render them with `lumiose/dom` and check that the browser's parse of the server HTML is the client's
 // DOM (parity, without the client's `<!>` placeholders, which only exist in templates).
 import { mkdirSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
@@ -28,7 +28,7 @@ type Server = {
 };
 type Dom = {
   createComponent: (c: unknown, p: unknown) => unknown;
-  mount: (code: () => unknown, container: Element) => () => void;
+  render: (code: () => unknown, container: Element) => () => void;
 };
 
 const server = (await import(/* @vite-ignore */ entries["lumiose/server"])) as Server;
@@ -82,10 +82,10 @@ async function renderServer(module: Module, name: string, props: Record<string, 
   return server.renderToString(() => server.createComponent(module[name], props));
 }
 
-function mountClient(module: Module, name: string, props: Record<string, unknown> = {}) {
+function renderClient(module: Module, name: string, props: Record<string, unknown> = {}) {
   const app = document.createElement("div");
   document.body.appendChild(app);
-  dom.mount(() => dom.createComponent(module[name], props), app);
+  dom.render(() => dom.createComponent(module[name], props), app);
   return app;
 }
 
@@ -145,7 +145,7 @@ async function expectParity(
   const clientModule = (await load(source, "client", options)).module;
   for (const [name, props = {}] of cases) {
     const html = await renderServer(serverModule, name, props);
-    const app = mountClient(clientModule, name, props);
+    const app = renderClient(clientModule, name, props);
     expect(parsed(html), name).toBe(normalized(app));
   }
 }
@@ -569,7 +569,7 @@ describe.skipIf(!binding)("client/server parity", () => {
   it("attributes and properties", () => expectParity(ATTRIBUTES, [["Attributes", { size: 3 }]]));
   it("booleanish and ARIA attributes, static and dynamic (TASK-117)", async () => {
     await expectParity(BOOLEANISH, [["Flags", { on: true, off: false }]]);
-    const app = mountClient((await load(BOOLEANISH, "client")).module, "Flags", {
+    const app = renderClient((await load(BOOLEANISH, "client")).module, "Flags", {
       on: true,
       off: false,
     });

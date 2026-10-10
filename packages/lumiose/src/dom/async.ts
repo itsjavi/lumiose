@@ -4,7 +4,7 @@
 // - Each run is a fresh core `Run`: the subscriber that tracks the body's reads (before and after
 //   awaits) and the owner of everything the body creates. `$await` pauses it synchronously and
 //   resolves to a resume function, which the compiled continuation calls to restore it.
-// - When something the shown run read changes, the run is superseded: its `lifetime()` aborts and
+// - When something the shown run read changes, the run is superseded: its `getAbortSignal()` aborts and
 //   a new run starts at once. The old UI stays until the new run resolves; then, in one step, the
 //   old run is disposed and the new content replaces it in the range. A run superseded before it
 //   resolved is disposed at once, and its result is dropped, so the latest run always wins.
@@ -12,8 +12,8 @@
 //   components, resources): it swaps in only once that content has settled too, so a re-run never
 //   reveals half-loaded UI nor triggers a `<Suspense>` fallback. Once shown, new pending content
 //   below it (a branch mounting an async component) goes to the boundary above.
-// - The first run is pending content for the nearest boundary; `pending()` is true while a later
-//   run is in flight, and every run in flight counts for `busy()`. Rejections go to the nearest
+// - The first run is pending content for the nearest boundary; `isPending()` is true while a later
+//   run is in flight, and every run in flight counts for `isBusy()`. Rejections go to the nearest
 //   error handler (`<ErrorBoundary>`).
 import type { Renderable } from "../contract/client.ts";
 import {
@@ -52,7 +52,7 @@ interface Instance {
   owner: Owner;
   /** The region it renders into. */
   g: Region;
-  /** `pending()` of the instance. */
+  /** `isPending()` of the instance. */
   p: Signal<boolean>;
   /** Ends the instance's hold on its Suspense boundary. */
   r: () => void;
@@ -70,7 +70,7 @@ interface AsyncRun extends Run {
   /** The run and frame it replaced while active (`resume`/`pause`). */
   u: AsyncRun | undefined;
   y: Frame | undefined;
-  /** Ends its `busy()` count. */
+  /** Ends its `isBusy()` count. */
   d: () => void;
   /** Suspense content still pending below it, and its value waiting for that. */
   w: number;

@@ -18,7 +18,7 @@ const BUDGETS: Record<string, { limit: number; hard: boolean }> = {
   "core + dom + islands (typical": { limit: HARD_CAP, hard: true },
 };
 
-const TYPICAL = `export { signal, computed, effect, batch, untrack, onCleanup, onMount } from "${src}core/index.ts"; export { template, bind, setText, setAttr, setClass, toggleClass, setStyle, insert, list, branch, selector, createComponent, delegateEvents, listen, mount } from "${src}dom/index.ts";`;
+const TYPICAL = `export { signal, computed, effect, batch, untrack, onCleanup, onMount } from "${src}core/index.ts"; export { template, bind, setText, setAttr, setClass, toggleClass, setStyle, insert, list, branch, selector, createComponent, delegateEvents, listen, render } from "${src}dom/index.ts";`;
 // The island loader's entry (dom/loader.ts) minus the manifest, which is app code.
 const ISLANDS = `export { loadIslands } from "${src}dom/islands.ts";`;
 
@@ -31,7 +31,7 @@ const entries: Record<string, string> = {
   // The same without the loader, to tell the loader's share from hydration's.
   "core + dom + hydrate (typical app imports, hydrate)": `${TYPICAL} export { hydrate } from "${src}dom/hydrate.ts";`,
   // What the js-framework-benchmark app needs (its bundle budget is 8 kB including app code).
-  "core + dom (benchmark imports)": `export { signal, batch } from "${src}core/index.ts"; export { template, bind, setText, toggleClass, list, selector, createComponent, delegateEvents, mount } from "${src}dom/index.ts";`,
+  "core + dom (benchmark imports)": `export { signal, batch } from "${src}core/index.ts"; export { template, bind, setText, toggleClass, list, selector, createComponent, delegateEvents, render } from "${src}dom/index.ts";`,
   "core + dom (every export)": `export * from "${src}core/index.ts"; export * from "${src}dom/index.ts"; export * from "${src}dom/public.ts";`,
   // Every export plus hydration and the loader: no page ships all of it (report-only, spec §6).
   "whole client runtime, report-only (every export, hydrate, loader)": `export * from "${src}core/index.ts"; export * from "${src}dom/index.ts"; export * from "${src}dom/public.ts"; export { hydrate } from "${src}dom/hydrate.ts"; ${ISLANDS}`,

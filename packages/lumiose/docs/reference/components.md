@@ -19,7 +19,7 @@ interface SuspenseProps {
 
 Shows `fallback` while **new** async content below it is pending: the first load, and async
 components or resources that a branch mounts later. Re-runs of revealed content keep their stale UI
-(`pending()` tells them apart). Hidden content stays alive. A shown fallback counts for `busy()`.
+(`isPending()` tells them apart). Hidden content stays alive. A shown fallback counts for `isBusy()`.
 On the server, a boundary marks content that streams after the shell; with prerendering it is
 resolved inline.
 
@@ -29,13 +29,13 @@ resolved inline.
 function ErrorBoundary(props: ErrorBoundaryProps): JSX.Element;
 interface ErrorBoundaryProps {
   /** Rendered instead of the children after an error. */
-  fallback?: JSX.Element | ((error: unknown, retry: () => void) => JSX.Element);
+  fallback?: JSX.Element | ((error: unknown, reset: () => void) => JSX.Element);
   children?: JSX.Element;
 }
 ```
 
 Renders `fallback` when its children throw while rendering, an effect below throws, or an async
-component below rejects. `retry()` disposes the fallback and mounts the children again. On the
+component below rejects. `reset()` disposes the fallback and renders the children again. On the
 server, an error in a streamed boundary renders the nearest `ErrorBoundary` in place.
 
 In production server rendering, a fallback receives a generic `Error` with a short `digest`
@@ -124,7 +124,7 @@ export function Dialog() {
   const button = ref<HTMLButtonElement>();
 
   return (
-    <ErrorBoundary fallback={(error, retry) => <button onClick={retry}>{String(error)}</button>}>
+    <ErrorBoundary fallback={(error, reset) => <button onClick={reset}>{String(error)}</button>}>
       <button ref={button} onClick={() => open.set(true)}>
         Open
       </button>

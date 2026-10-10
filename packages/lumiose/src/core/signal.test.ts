@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { computed, effect, flushSync, signal, untrack } from "./index.ts";
+import { computed, effect, flush, signal, untrack } from "./index.ts";
 import { disposeOwner, MUTABLE, renderEffect, track, type TriggerNode } from "./internal.ts";
 import { SIGNAL_NODE, type Signal } from "./signal.ts";
 
@@ -29,7 +29,7 @@ describe("signal", () => {
     s.set(5);
     expect(s()).toBe(5);
     expect(double()).toBe(10);
-    flushSync();
+    flush();
   });
 
   it("peek does not track", () => {
@@ -41,12 +41,12 @@ describe("signal", () => {
       a();
       b.peek();
     });
-    flushSync();
+    flush();
     b.set(2);
-    flushSync();
+    flush();
     expect(runs).toBe(1);
     a.set(2);
-    flushSync();
+    flush();
     expect(runs).toBe(2);
   });
 
@@ -57,9 +57,9 @@ describe("signal", () => {
       runs++;
       s();
     });
-    flushSync();
+    flush();
     s.set(Number.NaN);
-    flushSync();
+    flush();
     expect(runs).toBe(1);
     const z = signal(0);
     let zRuns = 0;
@@ -67,9 +67,9 @@ describe("signal", () => {
       zRuns++;
       z();
     });
-    flushSync();
+    flush();
     z.set(-0);
-    flushSync();
+    flush();
     expect(zRuns).toBe(2);
   });
 
@@ -81,13 +81,13 @@ describe("signal", () => {
       runs++;
       s();
     });
-    flushSync();
+    flush();
     s.set({ id: 1, label: "b" });
-    flushSync();
+    flush();
     expect(runs).toBe(1);
     expect(s()).toBe(first);
     s.set({ id: 2, label: "c" });
-    flushSync();
+    flush();
     expect(runs).toBe(2);
   });
 
@@ -99,10 +99,10 @@ describe("signal", () => {
       runs++;
       s();
     });
-    flushSync();
+    flush();
     list.push(2);
     s.set(list);
-    flushSync();
+    flush();
     expect(runs).toBe(2);
   });
 
@@ -113,10 +113,10 @@ describe("signal", () => {
       runs++;
       s();
     });
-    flushSync();
+    flush();
     s.set(2);
     s.set(1);
-    flushSync();
+    flush();
     expect(runs).toBe(1);
   });
 });
@@ -134,7 +134,7 @@ describe("computed", () => {
     effect(() => {
       seen = c();
     });
-    flushSync();
+    flush();
     expect(seen).toBe(2);
     expect(evaluations).toBe(1);
     expect(c()).toBe(2);
@@ -143,7 +143,7 @@ describe("computed", () => {
     s.set(2);
     expect(c()).toBe(4);
     expect(evaluations).toBe(2);
-    flushSync();
+    flush();
     expect(seen).toBe(4);
     expect(evaluations).toBe(2);
   });
@@ -161,9 +161,9 @@ describe("computed", () => {
     effect(() => {
       seen.push(sum());
     });
-    flushSync();
+    flush();
     s.set(2);
-    flushSync();
+    flush();
     expect(seen).toEqual([12, 23]);
     expect(evaluations).toBe(2);
   });
@@ -181,13 +181,13 @@ describe("computed", () => {
       runs++;
       label();
     });
-    flushSync();
+    flush();
     s.set(3);
-    flushSync();
+    flush();
     expect(downstream).toBe(1);
     expect(runs).toBe(1);
     s.set(4);
-    flushSync();
+    flush();
     expect(downstream).toBe(2);
     expect(runs).toBe(2);
   });
@@ -202,10 +202,10 @@ describe("computed", () => {
       runs++;
       sorted();
     });
-    flushSync();
+    flush();
     const first = sorted();
     s.set([2, 1]);
-    flushSync();
+    flush();
     expect(runs).toBe(1);
     expect(sorted()).toBe(first);
   });
@@ -214,9 +214,9 @@ describe("computed", () => {
     const s = signal(1);
     const history = computed<number[]>((prev) => [...(prev ?? []), s()]);
     effect(() => void history());
-    flushSync();
+    flush();
     s.set(2);
-    flushSync();
+    flush();
     expect(history()).toEqual([1, 2]);
   });
 
@@ -230,15 +230,15 @@ describe("computed", () => {
       return useA() ? a() : b();
     });
     effect(() => void picked());
-    flushSync();
+    flush();
     b.set("b2");
-    flushSync();
+    flush();
     expect(evaluations).toBe(1);
     useA.set(false);
-    flushSync();
+    flush();
     expect(picked()).toBe("b2");
     a.set("a2");
-    flushSync();
+    flush();
     expect(evaluations).toBe(2);
     expect(subscriberCount(a as Signal<unknown>)).toBe(0);
   });
@@ -251,7 +251,7 @@ describe("computed", () => {
       return s() + 1;
     });
     const dispose = effect(() => void c());
-    flushSync();
+    flush();
     expect(subscriberCount(s as Signal<unknown>)).toBe(1);
     dispose();
     expect(subscriberCount(s as Signal<unknown>)).toBe(0);
@@ -276,7 +276,7 @@ describe("computed", () => {
     const b = computed(() => a() + 1);
     const c = computed(() => b() + 1);
     const dispose = effect(() => void c());
-    flushSync();
+    flush();
     expect(subscriberCount(s as Signal<unknown>)).toBe(1);
     dispose();
     expect(subscriberCount(s as Signal<unknown>)).toBe(0);

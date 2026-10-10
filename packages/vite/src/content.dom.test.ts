@@ -6,7 +6,7 @@ import { mkdirSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { compile, contentSource } from "@lumiose/compiler";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { createComponent, mount } from "lumiose/internal/dom/index.ts";
+import { createComponent, render } from "lumiose/internal/dom/index.ts";
 import { loadIslands } from "lumiose/internal/dom/islands.ts";
 import { renderToString } from "lumiose/internal/server/index.ts";
 
@@ -90,7 +90,7 @@ afterEach(() => warn.mockRestore());
 describe("content components", () => {
   it("render Markdown on the client", async () => {
     const { default: Post } = await load("client", POST, "post.md");
-    mount(() => createComponent(Post, {}), document.body);
+    render(() => createComponent(Post, {}), document.body);
     const h1 = document.querySelector("h1")!;
     expect(h1.id).toBe("hello-world");
     expect(h1.textContent).toBe("Hello world");
@@ -104,7 +104,7 @@ describe("content components", () => {
 
   it("render HTML on the client, with the template's content verbatim", async () => {
     const { default: Card } = await load("client", CARD, "card.html");
-    mount(() => createComponent(Card, {}), document.body);
+    render(() => createComponent(Card, {}), document.body);
     const template = document.querySelector("template")!;
     expect(template.content.querySelector("style")!.textContent).toBe(":host { display: block; }");
     expect(template.content.querySelector("slot")).not.toBeNull();
@@ -126,7 +126,7 @@ describe("content components", () => {
       const server = await load("server", text, name);
       const html = await renderToString(() => server.default({}));
       document.body.innerHTML = "";
-      mount(() => createComponent(client.default, {}), document.body);
+      render(() => createComponent(client.default, {}), document.body);
       const parsed = document.createElement("div");
       parsed.innerHTML = html.replace(
         /<!--\/?l:\d+-->|<script[^>]*data-l-islands[^]*?<\/script>/g,

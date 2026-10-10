@@ -2,11 +2,10 @@ import { describe, expect, it } from "vitest";
 import {
   createContext,
   effect,
-  flushSync,
-  inject,
-  lifetime,
+  flush,
+  useContext,
+  getAbortSignal,
   onCleanup,
-  provide,
   signal,
 } from "./index.ts";
 import {
@@ -84,7 +83,7 @@ describe("owners", () => {
         runs++;
       }),
     );
-    flushSync();
+    flush();
     expect(runs).toBe(0);
   });
 
@@ -102,7 +101,7 @@ describe("owners", () => {
     });
     disposeOwner(root);
     s.set(1);
-    flushSync();
+    flush();
     expect(applies).toBe(2);
   });
 });
@@ -111,7 +110,7 @@ describe("lazy owners", () => {
   it("allocates nothing when nothing registers", () => {
     const parent = createOwner(undefined);
     const owner = runWithLazyOwner(parent, () => {
-      inject(createContext(0));
+      useContext(createContext(0));
     });
     expect(owner).toBeUndefined();
     expect(parent.firstChild).toBeUndefined();
@@ -138,10 +137,10 @@ describe("lazy owners", () => {
   it("resolves context through the parent without materializing", () => {
     const Theme = createContext("light");
     const parent = createOwner(undefined);
-    runWithOwner(parent, () => provide(Theme, "dark"));
+    runWithOwner(parent, () => Theme({ value: "dark" }));
     let seen = "";
     const owner = runWithLazyOwner(parent, () => {
-      seen = inject(Theme);
+      seen = useContext(Theme);
     });
     expect(seen).toBe("dark");
     expect(owner).toBeUndefined();
@@ -150,12 +149,12 @@ describe("lazy owners", () => {
   it("nests under a pending lazy owner without allocating", () => {
     const Theme = createContext("light");
     const parent = createOwner(undefined);
-    runWithOwner(parent, () => provide(Theme, "dark"));
+    runWithOwner(parent, () => Theme({ value: "dark" }));
     let seen = "";
     let inner: Owner | undefined = parent;
     const outer = runWithLazyOwner(parent, () => {
       inner = runWithLazyOwner(currentOwner, () => {
-        seen = inject(Theme);
+        seen = useContext(Theme);
       });
     });
     expect(seen).toBe("dark");
@@ -201,12 +200,12 @@ describe("lazy owners", () => {
 describe("lifetime", () => {
   it("aborts when the owner is disposed", () => {
     const owner = createOwner(undefined);
-    const signalA = runWithOwner(owner, lifetime);
-    expect(runWithOwner(owner, lifetime)).toBe(signalA);
+    const signalA = runWithOwner(owner, getAbortSignal);
+    expect(runWithOwner(owner, getAbortSignal)).toBe(signalA);
     expect(signalA.aborted).toBe(false);
     disposeOwner(owner);
     expect(signalA.aborted).toBe(true);
-    expect(runWithOwner(owner, lifetime).aborted).toBe(true);
+    expect(runWithOwner(owner, getAbortSignal).aborted).toBe(true);
   });
 
   it("aborts each effect run's signal when the effect re-runs", () => {
@@ -214,11 +213,11 @@ describe("lifetime", () => {
     const signals: AbortSignal[] = [];
     const dispose = effect(() => {
       s();
-      signals.push(lifetime());
+      signals.push(getAbortSignal());
     });
-    flushSync();
+    flush();
     s.set(1);
-    flushSync();
+    flush();
     expect(signals).toHaveLength(2);
     expect(signals[0]!.aborted).toBe(true);
     expect(signals[1]!.aborted).toBe(false);
@@ -227,34 +226,34 @@ describe("lifetime", () => {
   });
 
   it("throws outside an owner", () => {
-    expect(() => lifetime()).toThrow(/lifetime\(\)/);
+    expect(() => getAbortSignal()).toThrow(/getAbortSignal\(\)/);
   });
 });
 
 describe("context", () => {
   it("returns the default value without a provider", () => {
     const Ctx = createContext(42);
-    expect(inject(Ctx)).toBe(42);
-    expect(inject(createContext<string>())).toBeUndefined();
+    expect(useContext(Ctx)).toBe(42);
+    expect(useContext(createContext<string>())).toBeUndefined();
   });
 
-  it("injects the nearest provided value, with shadowing", () => {
+  it("reads the nearest provided value, with shadowing", () => {
     const Ctx = createContext("default");
     const root = createOwner(undefined);
     const mid = createOwner(root);
     const leaf = createOwner(mid);
-    runWithOwner(root, () => provide(Ctx, "root"));
-    expect(runWithOwner(leaf, () => inject(Ctx))).toBe("root");
-    runWithOwner(mid, () => provide(Ctx, "mid"));
-    expect(runWithOwner(leaf, () => inject(Ctx))).toBe("mid");
-    expect(runWithOwner(root, () => inject(Ctx))).toBe("root");
+    runWithOwner(root, () => Ctx({ value: "root" }));
+    expect(runWithOwner(leaf, () => useContext(Ctx))).toBe("root");
+    runWithOwner(mid, () => Ctx({ value: "mid" }));
+    expect(runWithOwner(leaf, () => useContext(Ctx))).toBe("mid");
+    expect(runWithOwner(root, () => useContext(Ctx))).toBe("root");
   });
 
   it("provides undefined values explicitly", () => {
     const Ctx = createContext<string | undefined>("default");
     const root = createOwner(undefined);
-    runWithOwner(root, () => provide(Ctx, undefined));
-    expect(runWithOwner(root, () => inject(Ctx))).toBeUndefined();
+    runWithOwner(root, () => Ctx({ value: undefined }));
+    expect(runWithOwner(root, () => useContext(Ctx))).toBeUndefined();
   });
 
   it("is visible inside effects created under the provider", () => {
@@ -262,12 +261,12 @@ describe("context", () => {
     const root = createOwner(undefined);
     let seen = -1;
     runWithOwner(root, () => {
-      provide(Ctx, 7);
+      Ctx({ value: 7 });
       effect(() => {
-        seen = inject(Ctx);
+        seen = useContext(Ctx);
       });
     });
-    flushSync();
+    flush();
     expect(seen).toBe(7);
   });
 
@@ -275,15 +274,11 @@ describe("context", () => {
     const Ctx = createContext("none");
     const root = createOwner(undefined);
     const result = await runWithOwner(root, async () => {
-      provide(Ctx, "provided");
+      Ctx({ value: "provided" });
       const owner = getOwner();
       await Promise.resolve();
-      return runWithOwner(owner, () => inject(Ctx));
+      return runWithOwner(owner, () => useContext(Ctx));
     });
     expect(result).toBe("provided");
-  });
-
-  it("provide without an owner throws", () => {
-    expect(() => provide(createContext(0), 1)).toThrow(/provide\(\)/);
   });
 });

@@ -16,9 +16,9 @@ const binding = await import("@lumiose/compiler").catch(() => undefined);
 
 const FILES: Record<string, string> = {
   "main.tsx": `import "./app.css";
-import { mount } from "lumiose/dom";
+import { render } from "lumiose/dom";
 import { Bar } from "./Bar.stsx";
-mount(() => <Bar pct={5} />, document.body);
+render(() => <Bar pct={5} />, document.body);
 `,
   "app.css": `body { color: var(--page-fg, black); }\n`,
   // --fill: its own CSS; --gap: the child's CSS; --page-fg: app.css; --progres: a typo.

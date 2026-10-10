@@ -1,7 +1,7 @@
 // Run subscribers: what `$await` builds on. A run is paused before each await and
 // resumed afterwards; reads before and after awaits track into the same node.
 import { describe, expect, it } from "vitest";
-import { createContext, flushSync, inject, lifetime, onCleanup, provide, signal } from "./index.ts";
+import { createContext, flush, getAbortSignal, onCleanup, signal, useContext } from "./index.ts";
 import {
   createOwner,
   createRun,
@@ -59,13 +59,13 @@ describe("runs", () => {
 
     after.set(20);
     expect(invalidations).toEqual([]);
-    flushSync();
+    flush();
     expect(invalidations).toEqual([run]);
     // Superseded: it no longer tracks anything.
     expect(hasSubscribers(before as Signal<unknown>)).toBe(false);
     expect(hasSubscribers(after as Signal<unknown>)).toBe(false);
     before.set(2);
-    flushSync();
+    flush();
     expect(invalidations).toHaveLength(1);
   });
 
@@ -76,23 +76,23 @@ describe("runs", () => {
     pauseRun(run);
     other();
     other.set(1);
-    flushSync();
+    flush();
     expect(hasSubscribers(other as Signal<unknown>)).toBe(false);
   });
 
   it("restores the owner and context on resume, and the previous ones on pause", () => {
     const Ctx = createContext("none");
     const parent = createOwner(undefined);
-    runWithOwner(parent, () => provide(Ctx, "parent"));
+    runWithOwner(parent, () => Ctx({ value: "parent" }));
     const run = createRun(() => {}, parent);
     const elsewhere = createOwner(undefined);
     runWithOwner(elsewhere, () => {
       resumeRun(run);
       expect(getOwner()).toBe(run);
-      expect(inject(Ctx)).toBe("parent");
+      expect(useContext(Ctx)).toBe("parent");
       pauseRun(run);
       expect(getOwner()).toBe(elsewhere);
-      expect(inject(Ctx)).toBe("none");
+      expect(useContext(Ctx)).toBe("none");
     });
   });
 
@@ -110,10 +110,10 @@ describe("runs", () => {
     outerDep();
     pauseRun(outer);
     innerDep.set(1);
-    flushSync();
+    flush();
     expect(log).toEqual(["inner"]);
     outerDep.set(1);
-    flushSync();
+    flush();
     expect(log).toEqual(["inner", "outer"]);
   });
 
@@ -123,17 +123,17 @@ describe("runs", () => {
     const run = createRun(() => log.push("invalidated"), undefined);
     resumeRun(run);
     s();
-    const signalOfRun = lifetime();
+    const signalOfRun = getAbortSignal();
     onCleanup(() => log.push("cleanup"));
     pauseRun(run);
     s.set(1);
-    flushSync();
+    flush();
     expect(signalOfRun.aborted).toBe(true);
     expect(log).toEqual(["invalidated"]);
     // A superseded run resumed later does not track, and its lifetime stays aborted.
     resumeRun(run);
     s();
-    expect(lifetime().aborted).toBe(true);
+    expect(getAbortSignal().aborted).toBe(true);
     pauseRun(run);
     expect(hasSubscribers(s as Signal<unknown>)).toBe(false);
     disposeOwner(run);
@@ -156,9 +156,9 @@ describe("runs", () => {
     };
     start();
     s.set(1);
-    flushSync();
+    flush();
     s.set(2);
-    flushSync();
+    flush();
     expect(runs).toHaveLength(3);
     expect(runs[0]).not.toBe(runs[1]);
     expect(runs.map((r) => r.state & 1)).toEqual([1, 1, 0]);

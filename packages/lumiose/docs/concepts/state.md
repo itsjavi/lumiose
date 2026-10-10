@@ -9,7 +9,7 @@
 | Where                                      | Lives as long as          | Shared with                                | On the server                              |
 | ------------------------------------------ | ------------------------- | ------------------------------------------ | ------------------------------------------ |
 | A component (`signal`, `store` in setup)   | the component             | its children, through props                | one per request: safe                      |
-| Context (`provide` / `inject`)             | the providing owner       | everything rendered below it               | one per request: safe                      |
+| Context (`<Ctx value>` / `useContext`)     | the provider              | everything rendered inside it              | one per request: safe                      |
 | Module scope (`export const s = signal()`) | the page (in the browser) | every component and island that imports it | one per process: never write it during SSR |
 
 **No state library needed.** Only the code that reads a signal (or a store property) re-runs, so
@@ -22,7 +22,7 @@ selectors and re-render tuning are not needed. What the popular libraries offer 
 | Jotai `atomWithStorage`, Zustand `persist`           | the persisted signal recipe below                                                 |
 | Jotai `Provider`, Zustand `createStore` with context | a store with actions, provided through context (recipe below)                     |
 | Zustand selectors, `subscribeWithSelector`           | not needed: `computed` for the slice, `effect` to react to it                     |
-| Zustand `immer` middleware                           | `store()`: mutate it directly                                                     |
+| Zustand `immer` middleware                           | `store()`: a mutable proxy, mutate it directly                                    |
 | Zustand `devtools`                                   | `effect(() => console.debug(JSON.stringify(state)))` (tracks every property read) |
 | Valtio `proxy`, `snapshot`                           | `store`, `snapshot`                                                               |
 | Solid `reconcile`, TanStack structural sharing       | `reconcile(store, data)`: patch fresh data in, keeping unchanged items            |
@@ -35,14 +35,14 @@ the Lumiose runtime and the modules they import, so module-scope state is how is
 
 ## API
 
-| API                                                    | Use it for                                                           |
-| ------------------------------------------------------ | -------------------------------------------------------------------- |
-| `signal(v)`, `computed(fn)`, `store(obj)`              | The state itself and what derives from it.                           |
-| `createContext<T>()`, `provide(ctx, v)`, `inject(ctx)` | One instance per subtree (and per request on the server).            |
-| `effect(fn)`, `onMount(fn)`                            | Syncing with the outside world (storage, logging); browser only.     |
-| `onCleanup(fn)`                                        | Ending a subscription when its owner is disposed.                    |
-| `snapshot(value)`                                      | A plain copy of a store, to save or send. Its reads are not tracked. |
-| `reconcile(store, data, { key })`                      | Patching fresh data into a store, keeping unchanged items as is.     |
+| API                                                        | Use it for                                                           |
+| ---------------------------------------------------------- | -------------------------------------------------------------------- |
+| `signal(v)`, `computed(fn)`, `store(obj)`                  | The state itself and what derives from it.                           |
+| `createContext<T>()`, `<Ctx value={v}>`, `useContext(ctx)` | One instance per subtree (and per request on the server).            |
+| `effect(fn)`, `onMount(fn)`                                | Syncing with the outside world (storage, logging); browser only.     |
+| `onCleanup(fn)`                                            | Ending a subscription when its owner is disposed.                    |
+| `snapshot(value)`                                          | A plain copy of a store, to save or send. Its reads are not tracked. |
+| `reconcile(store, data, { key })`                          | Patching fresh data into a store, keeping unchanged items as is.     |
 
 See [Signals and reactivity](signals.md) for each API.
 
@@ -55,7 +55,7 @@ instance through context: every component below shares it, each request on the s
 own, and tests call `createCart()` directly.
 
 ```tsx check
-import { computed, createContext, inject, provide, store } from "lumiose";
+import { computed, createContext, store, useContext } from "lumiose";
 
 export function createCart() {
   const state = store({ items: [] as { id: string; qty: number }[] });
@@ -77,29 +77,30 @@ export type Cart = ReturnType<typeof createCart>;
 
 const CartContext = createContext<Cart>();
 
-export function injectCart(): Cart {
-  const cart = inject(CartContext);
-  if (cart === undefined) throw new Error("injectCart() needs a <Shop> above it.");
+export function getCart(): Cart {
+  const cart = useContext(CartContext);
+  if (cart === undefined) throw new Error("getCart() needs a <Shop> above it.");
   return cart;
 }
 
 export function Shop() {
-  provide(CartContext, createCart());
   return (
-    <main>
-      <AddButton id="pen" />
-      <CartCount />
-    </main>
+    <CartContext value={createCart()}>
+      <main>
+        <AddButton id="pen" />
+        <CartCount />
+      </main>
+    </CartContext>
   );
 }
 
 function AddButton({ id }: { id: string }) {
-  const cart = injectCart();
+  const cart = getCart();
   return <button onClick={() => cart.add(id)}>Add {id}</button>;
 }
 
 function CartCount() {
-  const cart = injectCart();
+  const cart = getCart();
   return <p>{cart.count()} items</p>;
 }
 ```
@@ -275,8 +276,8 @@ Derive slices with `computed(() => state().bears)`.
 - **Writing module-scope state during SSR.** A module-scope signal written in a component body or
   a server path leaks one request's state into the next (`LUM4008`). Write it in handlers and
   effects, or keep it in context.
-- **Injecting page context inside an island.** Each island starts a new context root, on the
-  server as in the browser, so `inject()` inside it does not see what the page provided outside
+- **Reading page context inside an island.** Each island starts a new context root, on the
+  server as in the browser, so `useContext()` inside it does not see what the page provided outside
   it and returns the context's default (`LUM4010` warns in dev). Pass the value as an island prop,
   provide the context inside the island, or share module-scope state.
 - **Reading `localStorage` in setup in a server-rendered component.** The server cannot read it,

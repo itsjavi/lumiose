@@ -14,10 +14,10 @@ import {
 } from "../server/scope.ts";
 import { PREFETCH_MARKER } from "../server/navigation.ts";
 import type { LinkProps } from "./link.ts";
-import type { Search } from "./index.ts";
-import type { NavigateOptions, SearchInit } from "./router.ts";
+import type { SearchParams } from "./index.ts";
+import type { NavigateOptions, SearchParamsInit } from "./router.ts";
 
-export type { LinkProps, NavigateOptions, Search, SearchInit };
+export type { LinkProps, NavigateOptions, SearchParams, SearchParamsInit };
 export type { Prefetch } from "./link.ts";
 
 function browserOnly(api: string): never {
@@ -71,10 +71,14 @@ export function url(): URL {
   return requestUrl();
 }
 
-export function navigating(): boolean {
+export function isNavigating(): boolean {
   return false;
 }
 
-export const search: Search = Object.assign(() => new URLSearchParams(requestUrl().search), {
-  set: (_next: unknown, _options?: NavigateOptions): Promise<void> => browserOnly("search.set()"),
-});
+export const searchParams: SearchParams = Object.assign(
+  () => new URLSearchParams(requestUrl().search),
+  {
+    set: (_next: unknown, _options?: NavigateOptions): Promise<void> =>
+      browserOnly("searchParams.set()"),
+  },
+);

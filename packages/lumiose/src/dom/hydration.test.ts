@@ -2,7 +2,7 @@
 // The hydration hook point only (TASK-18 implements the cursor): with a hydrator installed,
 // templates claim instead of cloning and regions adopt the existing nodes they are given.
 import { afterEach, describe, expect, it } from "vitest";
-import { flushSync, signal } from "../core/index.ts";
+import { flush, signal } from "../core/index.ts";
 import { createOwner, runWithOwner } from "../core/internal.ts";
 import { setHydrator, type Hydrator } from "./hydration.ts";
 import { branch, insert, list, template } from "./index.ts";
@@ -54,7 +54,7 @@ describe("hydration hook", () => {
     expect(el.childNodes[1]).toBe(b);
     expect(el.childNodes[2]).toBe(stale);
     n.set(2);
-    flushSync();
+    flush();
     expect(el.childNodes[2]).toBe(stale);
     expect(stale!.textContent).toBe("n2");
   });
@@ -88,7 +88,7 @@ describe("hydration hook", () => {
     expect(Array.from(el.childNodes)).toEqual([li1, li2, listMarker, em, branchMarker]);
     expect(gone!.isConnected).toBe(false);
     rows.set([2]);
-    flushSync();
+    flush();
     expect(Array.from(el.childNodes)).toEqual([li2, listMarker, em, branchMarker]);
   });
 });

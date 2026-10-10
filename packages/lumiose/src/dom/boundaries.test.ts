@@ -2,7 +2,7 @@
 // <Suspense>, <ErrorBoundary> and resource() on the client (decision-13, spec §4.4).
 import { afterEach, describe, expect, it } from "vitest";
 import type { Renderable } from "../contract/client.ts";
-import { busy, effect, flushSync, pending, resource, signal } from "../core/index.ts";
+import { isBusy, effect, flush, isPending, resource, signal } from "../core/index.ts";
 import {
   $async,
   $await,
@@ -11,7 +11,7 @@ import {
   branch,
   createComponent,
   insert,
-  mount,
+  render as renderRoot,
   setText,
 } from "./index.ts";
 import { ErrorBoundary, Suspense } from "./boundaries.ts";
@@ -44,7 +44,7 @@ const disposers: (() => void)[] = [];
 
 function render(code: () => Renderable): HTMLElement {
   const container = document.createElement("div");
-  disposers.push(mount(code, container));
+  disposers.push(renderRoot(code, container));
   return container;
 }
 
@@ -63,7 +63,7 @@ function gated(gates: Map<string, Deferred<string>>) {
       gates.set(name, gate);
       const value = (await $await(() => gate.promise, 0))();
       const el = p(value);
-      insert(el, () => (pending() ? "…" : ""));
+      insert(el, () => (isPending() ? "…" : ""));
       return el;
     } finally {
       $leave();
@@ -147,7 +147,7 @@ describe("Suspense", () => {
     expect(container.textContent).toBe("a");
 
     name.set("b");
-    flushSync();
+    flush();
     await settled();
     expect(container.textContent).toBe("a…");
     gates.get("b")!.resolve("b");
@@ -156,7 +156,7 @@ describe("Suspense", () => {
     const shown = container.querySelector("p");
 
     more.set(true);
-    flushSync();
+    flush();
     await settled();
     expect(container.textContent).toBe("loading");
     gates.get("more")!.resolve("more");
@@ -221,10 +221,10 @@ describe("Suspense", () => {
     );
     expect(container.textContent).toBe("0");
     more.set(true);
-    flushSync();
+    flush();
     expect(container.textContent).toBe("loading");
     count.set(5);
-    flushSync();
+    flush();
     gates.get("x")!.resolve("x");
     await settled();
     expect(container.textContent).toBe("5x");
@@ -297,7 +297,7 @@ describe("runs as boundaries of the content they create", () => {
     expect(container.textContent).toBe("parent 1child 1");
 
     id.set("2");
-    flushSync();
+    flush();
     await settled();
     // The new run resolved, but its child has not: the stale UI stays, with no fallback.
     expect(container.textContent).toBe("parent 1child 1");
@@ -341,16 +341,16 @@ describe("runs as boundaries of the content they create", () => {
     await settled();
     expect(container.textContent).toBe("parent 1");
     more.set(true);
-    flushSync();
+    flush();
     expect(container.textContent).toBe("loading");
     // The re-run's own `more 2` holds its swap; the swap disposes the pending `more 1`.
     id.set("2");
-    flushSync();
+    flush();
     await settled();
     gates.get("more 2")!.resolve("more 2");
     await settled();
     expect(container.textContent).toBe("parent 2more 2");
-    expect(busy()).toBe(false);
+    expect(isBusy()).toBe(false);
   });
 });
 
@@ -382,7 +382,7 @@ describe("ErrorBoundary", () => {
     await settled();
     expect(container.textContent).toBe("failed: 503");
     retry();
-    flushSync();
+    flush();
     expect(attempts).toHaveLength(2);
     expect(container.textContent).toBe("");
     attempts[1]!.resolve("ok");
@@ -425,10 +425,10 @@ describe("ErrorBoundary", () => {
     expect(container.textContent).toBe("render");
     broken = false;
     retry();
-    flushSync();
+    flush();
     expect(container.textContent).toBe("1");
     value.set(2);
-    flushSync();
+    flush();
     expect(container.textContent).toBe("effect");
   });
 
@@ -466,11 +466,11 @@ describe("resource", () => {
     await settled();
     expect(container.textContent).toBe("one");
     id.set(2);
-    flushSync();
+    flush();
     expect(loads).toHaveLength(2);
     expect(container.textContent).toBe("one loading");
     id.set(3);
-    flushSync();
+    flush();
     expect(loads[1]!.signal.aborted).toBe(true);
     loads[1]!.resolve("two");
     loads[2]!.reject(new Error("gone"));
@@ -516,9 +516,9 @@ describe("busy", () => {
     const Reader = $async(async function Reader(): Promise<Renderable> {
       try {
         runs++;
-        busy();
+        isBusy();
         (await $await(() => Promise.resolve(), 0))();
-        busy();
+        isBusy();
         return null;
       } finally {
         $leave();
@@ -526,7 +526,7 @@ describe("busy", () => {
     });
     const seen: boolean[] = [];
     const stop = effect(() => {
-      seen.push(busy());
+      seen.push(isBusy());
     });
     render(() =>
       createComponent(Suspense, {
@@ -545,17 +545,17 @@ describe("busy", () => {
         },
       }),
     );
-    flushSync();
-    expect(busy()).toBe(true);
+    flush();
+    expect(isBusy()).toBe(true);
     gates.get("a")!.resolve("a");
     await settled();
-    expect(busy()).toBe(false);
+    expect(isBusy()).toBe(false);
     name.set("b");
-    flushSync();
-    expect(busy()).toBe(true);
+    flush();
+    expect(isBusy()).toBe(true);
     gates.get("b")!.resolve("b");
     await settled();
-    expect(busy()).toBe(false);
+    expect(isBusy()).toBe(false);
     expect(runs).toBe(1);
     expect(seen).toEqual([true, false, true, false]);
     stop();

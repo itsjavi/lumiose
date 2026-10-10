@@ -6,8 +6,8 @@ import { mkdirSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { compile, compileSvg } from "@lumiose/compiler";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { flushSync, signal } from "lumiose/internal/core/index.ts";
-import { createComponent, mount } from "lumiose/internal/dom/index.ts";
+import { flush, signal } from "lumiose/internal/core/index.ts";
+import { createComponent, render } from "lumiose/internal/dom/index.ts";
 import { loadIslands } from "lumiose/internal/dom/islands.ts";
 import { island, renderToString } from "lumiose/internal/server/index.ts";
 
@@ -92,7 +92,7 @@ describe(".svg components", () => {
   it("render inline on the client with labels or aria-hidden", async () => {
     const { Icons } = await load("client", COMPONENTS);
     const title = signal("Go home");
-    mount(
+    render(
       () =>
         createComponent(Icons, {
           get title() {
@@ -117,7 +117,7 @@ describe(".svg components", () => {
     expect(decorative!.namespaceURI).toBe("http://www.w3.org/2000/svg");
     // `title` is reactive; clearing it makes the icon decorative.
     title.set("");
-    flushSync();
+    flush();
     expect(labelled!.querySelector("title")).toBeNull();
     expect(labelled!.getAttribute("aria-hidden")).toBe("true");
     expect(labelled!.hasAttribute("role")).toBe(false);
@@ -127,7 +127,7 @@ describe(".svg components", () => {
     const client = await load("client", COMPONENTS);
     const server = await load("server", COMPONENTS);
     const html = await renderToString(() => server.Icons({ title: "Go home" }));
-    mount(() => createComponent(client.Icons, { title: "Go home" }), document.body);
+    render(() => createComponent(client.Icons, { title: "Go home" }), document.body);
     // Compared as parsed DOM: the server leaves simple values unquoted, the client has
     // placeholder comments.
     const parsed = document.createElement("div");
@@ -145,7 +145,7 @@ export function Nav() {
 }
 `,
     );
-    mount(() => createComponent(Nav, {}), document.body);
+    render(() => createComponent(Nav, {}), document.body);
     const link = document.querySelector("a")!;
     const scope = [...link.attributes].find((a) => a.name.startsWith("data-l-"))!.name;
     expect(svgs()[0]!.hasAttribute(scope)).toBe(true);
@@ -163,12 +163,12 @@ export function Nav() {
     const before = svgs()[0];
     loadIslands({ "/src/case#Toggle": () => Promise.resolve(client.Toggle) });
     for (let i = 0; i < 10; i++) await new Promise((done) => setTimeout(done, 0));
-    flushSync();
+    flush();
     // The server's <svg> is adopted, not re-created.
     expect(svgs()[0]).toBe(before);
     expect(warn.mock.calls.flat().join(" ")).not.toContain("LUM4006");
     document.querySelector("button")!.click();
-    flushSync();
+    flush();
     const [opened, always] = svgs();
     expect(opened!.querySelector("title")!.textContent).toBe("Open");
     expect(always).toBe(before);

@@ -18,9 +18,9 @@ describe("lumiose entry parity", () => {
     );
   });
 
-  it("gives the server busy(), pending() and resource() their request-time behavior", () => {
-    expect(server.busy()).toBe(false);
-    expect(server.pending()).toBe(false);
+  it("gives the server isBusy(), isPending() and resource() their request-time behavior", () => {
+    expect(server.isBusy()).toBe(false);
+    expect(server.isPending()).toBe(false);
     const r = server.resource(() => 1);
     expect([r(), r.loading(), r.error()]).toEqual([undefined, true, undefined]);
   });

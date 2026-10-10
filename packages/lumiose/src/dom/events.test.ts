@@ -1,8 +1,8 @@
 // @vitest-environment happy-dom
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { effect, flushSync, signal } from "../core/index.ts";
+import { effect, flush, signal } from "../core/index.ts";
 import { createOwner, disposeOwner, runWithOwner } from "../core/internal.ts";
-import { delegateEvents, listen, mount, template } from "./index.ts";
+import { delegateEvents, listen, render, template } from "./index.ts";
 import { Portal } from "./public.ts";
 
 type Slots = Record<string, unknown>;
@@ -21,7 +21,7 @@ function mountTree(): {
   const container = document.createElement("div");
   document.body.appendChild(container);
   let section!: Element;
-  const dispose = mount(() => (section = tTree()), container);
+  const dispose = render(() => (section = tTree()), container);
   const div = section.firstElementChild!;
   const button = div.firstElementChild as HTMLButtonElement;
   return { container, section, div, button, span: button.firstElementChild!, dispose };
@@ -109,7 +109,7 @@ describe("delegateEvents", () => {
     const runs: string[] = [];
     const owner = createOwner(undefined);
     runWithOwner(owner, () => effect(() => void runs.push(`${a()}-${b()}`)));
-    flushSync();
+    flush();
     slots(button).$$click = () => a.set(1);
     slots(div).$$click = () => {
       expect(runs).toEqual(["0-0"]);
@@ -130,7 +130,7 @@ describe("delegateEvents", () => {
     slots(inner).$$click = () => log.push("inner");
     const host = template(`<article>`)();
     slots(host).$$click = () => log.push("host");
-    const dispose = mount(() => {
+    const dispose = render(() => {
       host.appendChild(Portal({ children: inner }) as Node);
       return host;
     }, container);

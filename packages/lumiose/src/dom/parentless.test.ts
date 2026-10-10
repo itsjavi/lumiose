@@ -3,7 +3,7 @@
 // fragments and nested ternaries keep their memoisation and keyed reconciliation.
 import { describe, expect, it } from "vitest";
 import type { Renderable } from "../contract/client.ts";
-import { flushSync, onCleanup, signal } from "../core/index.ts";
+import { flush, onCleanup, signal } from "../core/index.ts";
 import { createOwner, disposeOwner, runWithOwner, type Owner } from "../core/internal.ts";
 import { branchValue, createComponent, insert, listValue, template } from "./index.ts";
 
@@ -48,10 +48,10 @@ describe("branchValue", () => {
     const { el, owner } = render(() => [p("a"), branchValue(n, view("yes"), view("no")), p("b")]);
     expect(texts(el)).toEqual(["a", "yes", "b"]);
     n.set(2);
-    flushSync();
+    flush();
     expect(views).toBe(1);
     n.set(0);
-    flushSync();
+    flush();
     expect(texts(el)).toEqual(["a", "no", "b"]);
     expect(log).toEqual(["dispose yes"]);
     disposeOwner(owner);
@@ -78,11 +78,11 @@ describe("branchValue", () => {
     );
     expect(texts(el)).toEqual(["a & b"]);
     b.set(false);
-    flushSync();
+    flush();
     expect(texts(el)).toEqual(["a only"]);
     expect(outer).toBe(1);
     a.set(false);
-    flushSync();
+    flush();
     expect(texts(el)).toEqual(["neither"]);
   });
 });
@@ -104,19 +104,19 @@ describe("listValue", () => {
     ]);
     expect(texts(el)).toEqual(["head", "tail"]);
     items.set([one, two, three]);
-    flushSync();
+    flush();
     expect(texts(el)).toEqual(["head", "#1", "#2", "#3", "tail"]);
     const second = el.children[2];
     items.set([three, two, one]);
-    flushSync();
+    flush();
     expect(texts(el)).toEqual(["head", "#3", "#2", "#1", "tail"]);
     expect(el.children[2]).toBe(second);
     items.set([three, one]);
-    flushSync();
+    flush();
     expect(texts(el)).toEqual(["head", "#3", "#1", "tail"]);
     expect(renders).toBe(3);
     items.set([]);
-    flushSync();
+    flush();
     expect(texts(el)).toEqual(["head", "tail"]);
   });
 
@@ -139,11 +139,11 @@ describe("listValue", () => {
     const section = el.firstElementChild!;
     expect(texts(section)).toEqual(["x", "y"]);
     items.set(["y", "z"]);
-    flushSync();
+    flush();
     expect(texts(section)).toEqual(["y", "z"]);
     expect(log).toEqual(["dispose x"]);
     show.set(false);
-    flushSync();
+    flush();
     expect(texts(section)).toEqual([]);
     expect(log.toSorted()).toEqual(["dispose x", "dispose y", "dispose z"]);
   });
@@ -164,7 +164,7 @@ describe("listValue", () => {
     );
     expect(texts(el)).toEqual(["g1", "a", "b", "g2", "c"]);
     groups.set([groups()[1]!, groups()[0]!]);
-    flushSync();
+    flush();
     expect(texts(el)).toEqual(["g2", "c", "g1", "a", "b"]);
   });
 });

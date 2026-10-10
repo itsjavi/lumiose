@@ -2,9 +2,9 @@
 // Component-level hot updates (TASK-146): `$hot` keeps one wrapper per component across module
 // versions, and only the instances of a changed component re-render.
 import { describe, expect, it, vi } from "vitest";
-import { flushSync, signal } from "../core/index.ts";
+import { flush, signal } from "../core/index.ts";
 import { $hot, $hotAccept } from "./hot.ts";
-import { bind, createComponent, mount } from "./index.ts";
+import { bind, createComponent, render } from "./index.ts";
 
 function hotContext() {
   return { data: {} as Record<string, unknown>, invalidate: vi.fn() };
@@ -35,7 +35,7 @@ describe("$hot", () => {
     };
     const Counter = $hot(hot, "Counter", version("v1"), "1");
     const app = document.body.appendChild(document.createElement("div"));
-    mount(
+    render(
       () => [
         createComponent(Counter, {}),
         createComponent(Counter, {}),
@@ -46,13 +46,13 @@ describe("$hot", () => {
     const input = app.querySelector("input")!;
     input.value = "edited by the user";
     app.querySelector("button")!.click();
-    flushSync();
+    flush();
     expect(app.querySelector("button")!.textContent).toBe("v1 1");
     expect(renders).toBe(2);
 
     // The module runs again with a changed Counter: the same wrapper comes back.
     expect($hot(hot, "Counter", version("v2"), "2")).toBe(Counter);
-    flushSync();
+    flush();
     expect([...app.querySelectorAll("button")].map((b) => b.textContent)).toEqual(["v2 0", "v2 0"]);
     expect(renders).toBe(4);
     expect(app.querySelector("input")).toBe(input);
@@ -60,7 +60,7 @@ describe("$hot", () => {
 
     // An unchanged version re-renders nothing.
     $hot(hot, "Counter", version("v3"), "2");
-    flushSync();
+    flush();
     expect(renders).toBe(4);
   });
 

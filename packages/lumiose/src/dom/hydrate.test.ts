@@ -8,8 +8,7 @@ import { join, resolve } from "node:path";
 import { compile } from "@lumiose/compiler";
 import type { Renderable } from "../contract/client.ts";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { flushSync } from "../core/index.ts";
-import { provide } from "../core/server.ts";
+import { flush } from "../core/index.ts";
 import { createComponent, island, renderToStream, renderToString } from "../server/index.ts";
 import { loadIslands } from "./islands.ts";
 
@@ -100,7 +99,7 @@ async function settle(): Promise<void> {
   for (let i = 0; i < 10; i++) {
     await new Promise((done) => setTimeout(done, 0));
   }
-  flushSync();
+  flush();
 }
 
 /** Body HTML without hydration markers and island records, for comparisons. */
@@ -135,7 +134,7 @@ describe("hydrate", () => {
     await hydrateAll(client);
     expect(document.querySelector("button")).toBe(button);
     button.click();
-    flushSync();
+    flush();
     expect(button.textContent).toBe("Clicked 6 times");
     expect(button.childNodes[1]).toBe(text);
     expect(button.className).toBe("hot");
@@ -177,7 +176,7 @@ describe("hydrate", () => {
     expect([...document.querySelectorAll("i")]).toEqual(cards);
     expect(cards[0]).toBe(document.querySelectorAll("i")[0]);
     (globalThis as any).set("z");
-    flushSync();
+    flush();
     expect(div.textContent).toBe("before z afterzzz trailingzleading zcard 1zcard 2zz");
     expect(document.querySelectorAll("i")[1]).toBe(cards[1]);
   });
@@ -197,10 +196,10 @@ describe("hydrate", () => {
     expect([...document.querySelectorAll("li")]).toEqual(rows);
     expect(rows.every((row, i) => row === document.querySelectorAll("li")[i])).toBe(true);
     rows[1]!.click();
-    flushSync();
+    flush();
     expect(document.querySelector("ul")!.textContent).toBe("ac");
     (globalThis as any).setItems(["c", "a", "d"]);
-    flushSync();
+    flush();
     expect(document.querySelector("ul")!.textContent).toBe("cad");
     expect(document.querySelectorAll("li")[0]).toBe(rows[2]);
   });
@@ -219,10 +218,10 @@ describe("hydrate", () => {
     expect(warn).not.toHaveBeenCalled();
     expect(document.querySelector("b")).toBe(b);
     (globalThis as any).toggle();
-    flushSync();
+    flush();
     expect(visible()).toBe("<section><i>no</i><p><em>off</em></p></section>");
     (globalThis as any).toggle();
-    flushSync();
+    flush();
     expect(document.querySelector("section")!.textContent).toBe("yeson");
   });
 
@@ -282,7 +281,7 @@ describe("hydrate", () => {
     expect(rows.every((row, i) => row === document.querySelectorAll("s")[i])).toBe(true);
     (globalThis as any).flip();
     (globalThis as any).setItems(["b", "c"]);
-    flushSync();
+    flush();
     expect(visible()).toBe("<section><div>inner no</div><div><s>b</s><s>c</s></div></section>");
     expect(document.querySelector("s")).toBe(rows[1]);
   });
@@ -320,7 +319,7 @@ describe("hydrate", () => {
     expect((globalThis as any).clicked).toBe("name-b");
     // Replayed runs still track what their await expressions read, and later runs fetch.
     (globalThis as any).setIds(["a", "c"]);
-    flushSync();
+    flush();
     await settle();
     expect(api.calls).toEqual(["a", "c"]);
     expect(document.querySelector("section")!.textContent).toBe("name-leadname-aname-c");
@@ -414,7 +413,7 @@ describe("hydrate", () => {
     expect(document.querySelector("p")).toBe(p);
     expect(document.querySelector("template")).toBe(null);
     document.querySelector("h2")!.click();
-    flushSync();
+    flush();
     expect(document.querySelector("aside")!.innerHTML).toBe("<em>extra</em>");
     expect(visible()).toBe(
       "<article><h2>T</h2><p>child <b>slot</b></p><aside><em>extra</em></aside></article>",
@@ -463,7 +462,7 @@ describe("hydrate", () => {
     expect(document.querySelector("table")).toBe(table);
     expect([...document.querySelectorAll("i")]).toEqual(cards);
     (globalThis as any).bump();
-    flushSync();
+    flush();
     expect(visible()).toBe(
       "<main><h1>T</h1><table><tbody><tr><td>row</td></tr></tbody></table><p><i>card 1</i>1<i>card 2</i></p><footer>1 selected</footer></main>",
     );
@@ -524,12 +523,12 @@ describe("hydrate", () => {
       expect(document.querySelector("section")).toBe(section);
       expect([...document.querySelectorAll("li")]).toEqual(items);
       (globalThis as any).pick();
-      flushSync();
+      flush();
       expect(section.querySelector("p")!.textContent).toBe("1");
 
       // An edit to Badge: only its instance re-renders; Team keeps its DOM and state.
       await load(source("v2"), { hot: true });
-      flushSync();
+      flush();
       expect(hot.invalidate).not.toHaveBeenCalled();
       expect(section.querySelector("b")!.textContent).toBe("v2 1");
       expect(document.querySelector("section")).toBe(section);
@@ -577,22 +576,27 @@ describe("hydrate", () => {
 
   it("gives an island the same context on both sides: not the page's, its own (TASK-194)", async () => {
     const { client, server } = await load(`
-      import { createContext, inject, provide, signal } from "lumiose";
+      import { createContext, signal, useContext } from "lumiose";
       export const Theme = createContext("default");
       function Label() {
-        return <i>{inject(Theme)}</i>;
+        return <i>{useContext(Theme)}</i>;
       }
       export function Themed() {
-        const own = inject(Theme);
-        provide(Theme, "island");
+        const own = useContext(Theme);
         const count = signal(0);
-        return <button onClick={() => count.set(count() + 1)}>{own} <Label /> {count()}</button>;
+        return (
+          <Theme value="island">
+            <button onClick={() => count.set(count() + 1)}>{own} <Label /> {count()}</button>
+          </Theme>
+        );
       }`);
     document.body.innerHTML = await renderToString(() =>
-      createComponent(() => {
-        provide(server.Theme, "page");
-        return island("/src/case#Themed", server.Themed, {}, "load");
-      }, {}),
+      createComponent(server.Theme, {
+        value: "page",
+        get children() {
+          return island("/src/case#Themed", server.Themed, {}, "load");
+        },
+      }),
     );
     expect(warn).toHaveBeenCalledWith(expect.stringContaining("LUM4010: island Themed"));
     const button = document.querySelector("button")!;
@@ -601,8 +605,54 @@ describe("hydrate", () => {
     expect(warn).not.toHaveBeenCalledWith(expect.stringContaining("LUM4006"));
     expect(document.querySelector("button")).toBe(button);
     button.click();
-    flushSync();
+    flush();
     expect(button.textContent).toBe("default island 1");
+  });
+
+  it("hydrates <Ctx value> providers: nested, shadowed, around conditional and list content", async () => {
+    const { client, server } = await load(`
+      import { createContext, signal, useContext } from "lumiose";
+      const Theme = createContext("default");
+      const Size = createContext(0);
+      function Label(props: { n?: number }) {
+        return <i>{useContext(Theme)}:{useContext(Size)}{props.n}</i>;
+      }
+      function Section(props: { children?: unknown }) {
+        return <Theme value="inner">{props.children}</Theme>;
+      }
+      export function App() {
+        const open = signal(true);
+        const items = signal([1, 2]);
+        return (
+          <div onClick={() => (open.set(!open()), items.set([...items(), items().length + 1]))}>
+            <Theme value="outer">
+              <Size value={2}>
+                <Label />
+                {open() ? <Label /> : <b>closed</b>}
+                <Section>
+                  <Label />
+                  {items().map((n) => <Label n={n} />)}
+                </Section>
+              </Size>
+            </Theme>
+            <Label />
+          </div>
+        );
+      }`);
+    await serve(server, [["App", {}]]);
+    const expected =
+      "<div><i>outer:2</i><i>outer:2</i><i>inner:2</i><i>inner:21</i><i>inner:22</i><i>default:0</i></div>";
+    expect(visible()).toBe(expected);
+    const first = document.querySelector("i")!;
+    await hydrateAll(client);
+    expect(warn).not.toHaveBeenCalledWith(expect.stringContaining("LUM4006"));
+    expect(visible()).toBe(expected);
+    expect(document.querySelector("i")).toBe(first);
+    document.querySelector("div")!.click();
+    flush();
+    expect(visible()).toBe(
+      "<div><i>outer:2</i><b>closed</b><i>inner:2</i><i>inner:21</i><i>inner:22</i><i>inner:23</i><i>default:0</i></div>",
+    );
   });
 });
 

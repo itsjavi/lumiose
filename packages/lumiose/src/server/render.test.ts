@@ -1,7 +1,7 @@
 // Shell-first rendering, Suspense streaming, ErrorBoundary, head and context frames, with
 // hand-compiled server components (contract doc-2 §4-5).
 import { describe, expect, it, vi } from "vitest";
-import { createContext, inject, lifetime, onCleanup, provide } from "../core/server.ts";
+import { createContext, getAbortSignal, onCleanup, useContext } from "../core/server.ts";
 import { redirect } from "../app/server/control.ts";
 import { ErrorBoundary, Head, Meta, Suspense, Title } from "./components.ts";
 import {
@@ -295,12 +295,12 @@ describe("Suspense streaming", () => {
     });
   });
 
-  it("aborting the request ends the stream and aborts lifetime()", async () => {
+  it("aborting the request ends the stream and aborts getAbortSignal()", async () => {
     const controller = new AbortController();
     let life: AbortSignal | undefined;
     async function Watch() {
       try {
-        life = lifetime();
+        life = getAbortSignal();
         (await $await(() => sleep(50), 0))();
         return ssr(["late"]);
       } finally {
@@ -410,20 +410,15 @@ describe("head", () => {
 describe("context frames", () => {
   const Theme = createContext("none");
 
-  function Provider(props: Props) {
-    provide(Theme, props.value);
-    return props.children;
-  }
-
   async function Reader(props: Props) {
     try {
       (await $await(() => sleep(props.ms), 0))();
-      const first = inject(Theme);
+      const first = useContext(Theme);
       let caught = "";
       try {
         (await $await(() => sleep(props.ms).then(() => Promise.reject(new Error("x"))), 1))();
       } catch {
-        caught = inject(Theme);
+        caught = useContext(Theme);
       }
       return ssr(["<i>", "|", "</i>", ""], text(first), text(caught), createComponent(Nested, {}));
     } finally {
@@ -434,16 +429,16 @@ describe("context frames", () => {
   async function Nested() {
     try {
       (await $await(() => sleep(1), 0))();
-      return ssr(["<b>", "</b>"], text(inject(Theme)));
+      return ssr(["<b>", "</b>"], text(useContext(Theme)));
     } finally {
       $leave();
     }
   }
 
   const app = (value: string, ms: number) => () =>
-    createComponent(Provider, {
+    createComponent(Theme, {
       value,
-      get children() {
+      get children(): any {
         return [createComponent(Reader, { ms }), createComponent(Reader, { ms: ms * 2 })];
       },
     });
@@ -452,17 +447,17 @@ describe("context frames", () => {
     const [a, b] = await Promise.all([renderToStream(app("a", 6)), renderToStream(app("b", 3))]);
     expect(a.body).toBe("<i>a|a</i><b>a</b><i>a|a</i><b>a</b>");
     expect(b.body).toBe("<i>b|b</i><b>b</b><i>b|b</i><b>b</b>");
-    expect(inject(Theme)).toBe("none");
+    expect(useContext(Theme)).toBe("none");
   });
 
-  it("disposes the render: cleanups run and lifetime() aborts", async () => {
+  it("disposes the render: cleanups run and getAbortSignal() aborts", async () => {
     const log: string[] = [];
     let life: AbortSignal | undefined;
     async function Comp() {
       try {
         onCleanup(() => log.push("cleanup"));
         (await $await(() => sleep(1), 0))();
-        life = lifetime();
+        life = getAbortSignal();
         return ssr(["x"]);
       } finally {
         $leave();

@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 import { describe, expect, it } from "vitest";
-import { effect, flushSync, signal } from "../core/index.ts";
+import { effect, flush, signal } from "../core/index.ts";
 import { createOwner, disposeOwner, runWithOwner, type Owner } from "../core/internal.ts";
 import { attach, bindChecked, bindValue, template, useRef } from "./index.ts";
 import { ref } from "./public.ts";
@@ -28,10 +28,10 @@ describe("bindValue", () => {
     expect(input.value).toBe("a");
     type(input, "typed");
     expect(text()).toBe("typed");
-    flushSync();
+    flush();
     expect(area.value).toBe("typed");
     text.set("set");
-    flushSync();
+    flush();
     expect(input.value).toBe("set");
   });
 
@@ -54,7 +54,7 @@ describe("bindValue", () => {
       type(input, "7");
       expect(n()).toBe(7);
       n.set(5);
-      flushSync();
+      flush();
       expect(input.valueAsNumber).toBe(5);
     }
     const asText = document.createElement("input");
@@ -86,7 +86,7 @@ describe("bindChecked", () => {
     input.dispatchEvent(new Event("change"));
     expect(on()).toBe(false);
     on.set(true);
-    flushSync();
+    flush();
     expect(input.checked).toBe(true);
   });
 });
@@ -110,10 +110,10 @@ describe("attach", () => {
       ]),
     );
     expect(log).toEqual([]);
-    flushSync();
+    flush();
     expect(log).toEqual(["a1 true", "b1"]);
     a.set(2);
-    flushSync();
+    flush();
     expect(log).toEqual(["a1 true", "b1", "a2 cleanup", "a2 true"]);
     disposeOwner(owner);
     expect(log.at(-1)).toBe("a2 cleanup");
@@ -135,9 +135,9 @@ describe("attach", () => {
           }),
       ]),
     );
-    flushSync();
+    flush();
     tooltip.set(true);
-    flushSync();
+    flush();
     expect(log).toEqual(["focus", "focus cleanup", "focus", "tooltip"]);
   });
 });
@@ -148,10 +148,10 @@ describe("refs", () => {
     const input = ref<HTMLInputElement>();
     const seen: (HTMLInputElement | undefined)[] = [];
     root(() => effect(() => void seen.push(input())));
-    flushSync();
+    flush();
     useRef(el, input as (el: Element) => void);
     useRef(el, undefined);
-    flushSync();
+    flush();
     expect(input()).toBe(el);
     expect(seen).toEqual([undefined, el]);
   });

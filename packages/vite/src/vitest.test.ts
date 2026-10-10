@@ -43,15 +43,15 @@ export function Counter() {
 `,
   "dom.test.ts": `// @vitest-environment happy-dom
 import { expect, it } from "vitest";
-import { flushSync } from "lumiose";
-import { createComponent, mount } from "lumiose/dom";
+import { flush } from "lumiose";
+import { createComponent, render } from "lumiose/dom";
 import { Counter } from "./Counter.tsx";
 
 it("updates a mounted component", () => {
   const app = document.body.appendChild(document.createElement("div"));
-  mount(() => createComponent(Counter, {}), app);
+  render(() => createComponent(Counter, {}), app);
   app.querySelector("button")!.click();
-  flushSync();
+  flush();
   expect(app.textContent).toBe("Clicked 1 times");
 });
 `,

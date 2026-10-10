@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { effect, flushSync, reconcile, snapshot, store } from "./index.ts";
+import { effect, flush, reconcile, snapshot, store } from "./index.ts";
 import { reconcile as serverReconcile } from "./server.ts";
 
 /** Counts the runs of an effect that reads `fn`. */
@@ -9,7 +9,7 @@ function runs(fn: () => unknown): () => number {
     fn();
     count++;
   });
-  flushSync();
+  flush();
   return () => count;
 }
 
@@ -35,7 +35,7 @@ describe("reconcile", () => {
       { id: 1, title: "Dune" },
       { id: 2, title: "Emma (2nd ed.)" },
     ]);
-    flushSync();
+    flush();
 
     expect(books[0]).toBe(first);
     expect(books[1]).toBe(second);
@@ -59,7 +59,7 @@ describe("reconcile", () => {
       { id: 4, title: "D" },
       { id: 1, title: "A" },
     ]);
-    flushSync();
+    flush();
     expect(books[0]).toBe(c);
     expect(books[2]).toBe(a);
     expect(snapshot(books)).toEqual([
@@ -71,7 +71,7 @@ describe("reconcile", () => {
     expect(keys()).toBe(1);
 
     reconcile(books, [{ id: 1, title: "A" }]);
-    flushSync();
+    flush();
     expect(books.length).toBe(1);
     expect(books[0]).toBe(a);
     expect(keys()).toBe(2);
@@ -105,7 +105,7 @@ describe("reconcile", () => {
     const hasExtra = runs(() => "extra" in state);
 
     reconcile(state, { user: { name: "Ada", address: { city: "Paris" } } });
-    flushSync();
+    flush();
 
     expect(state.user).toBe(user);
     expect(state.user.address).toBe(address);
@@ -127,7 +127,7 @@ describe("reconcile", () => {
     const n = runs(() => state.n);
     const oldItem = state.item;
     reconcile(state, { n: 1, s: null, when: date, item: { id: 2, title: "B" } });
-    flushSync();
+    flush();
     expect(n()).toBe(1);
     expect(state.s).toBeNull();
     expect(state.when).toBe(date);
@@ -145,7 +145,7 @@ describe("reconcile", () => {
     const x0 = runs(() => state.points[0]!.x);
     const tag1 = runs(() => state.tags[1]);
     reconcile(state, { points: [{ x: 1 }, { x: 3 }, { x: 4 }], tags: ["a", "c"] });
-    flushSync();
+    flush();
     expect(state.points[0]).toBe(p0);
     expect(state.points[1]).toBe(p1);
     expect(p1!.x).toBe(3);
@@ -179,11 +179,11 @@ describe("reconcile", () => {
       effectRuns++;
       reconcile(state, { a: 2 + fresh.n, b: 2 });
     });
-    flushSync();
+    flush();
     expect(seen).toEqual([4]);
     // The effect read nothing from `state`: writing to it does not re-run the effect.
     state.a = 10;
-    flushSync();
+    flush();
     expect(effectRuns).toBe(1);
   });
 

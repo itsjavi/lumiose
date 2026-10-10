@@ -1,7 +1,7 @@
 // End-to-end: the fetch handler with the default renderer (lumiose/server's renderToStream) and
 // hand-compiled server components (contract doc-2 §5), inside the default and custom documents.
 import { describe, expect, it, vi } from "vitest";
-import { createContext, inject, provide } from "../../core/server.ts";
+import { createContext, useContext } from "../../core/server.ts";
 import { $await, $leave, createComponent, insert, island, ssr, text } from "../../server/index.ts";
 import { ErrorBoundary, Meta, Suspense, Title } from "../../server/components.ts";
 import { SWAP_SCRIPT } from "../../server/render.ts";
@@ -110,21 +110,25 @@ async function Fails() {
 const Theme = createContext("light");
 
 function CustomDocument(props: Props) {
-  provide(Theme, "dark");
-  return ssr(
-    ['<html lang="es"><head>', "", "", '</head><body class="', '">', "</body></html>"],
-    createComponent(Meta, { name: "theme-color", content: "#000" }),
-    title("Docs"),
-    insert(props.head),
-    text(inject(Theme)),
-    insert(props.body),
-  );
+  return createComponent(Theme, {
+    value: "dark",
+    get children(): any {
+      return ssr(
+        ['<html lang="es"><head>', "", "", '</head><body class="', '">', "</body></html>"],
+        createComponent(Meta, { name: "theme-color", content: "#000" }),
+        title("Docs"),
+        insert(props.head),
+        text(useContext(Theme)),
+        insert(props.body),
+      );
+    },
+  });
 }
 
 async function ThemedPage() {
   try {
     (await $await(() => sleep(1), 0))();
-    return ssr(["", "<h1>", "</h1>"], title("Themed"), text(inject(Theme)));
+    return ssr(["", "<h1>", "</h1>"], title("Themed"), text(useContext(Theme)));
   } finally {
     $leave();
   }

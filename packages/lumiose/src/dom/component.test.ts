@@ -1,15 +1,7 @@
 // @vitest-environment happy-dom
 import { describe, expect, it, vi } from "vitest";
 import type { Renderable } from "../contract/client.ts";
-import {
-  createContext,
-  effect,
-  flushSync,
-  inject,
-  onCleanup,
-  provide,
-  signal,
-} from "../core/index.ts";
+import { createContext, effect, flush, useContext, onCleanup, signal } from "../core/index.ts";
 import { createOwner, disposeOwner, getOwner, runWithOwner, type Owner } from "../core/internal.ts";
 import {
   $async,
@@ -60,9 +52,9 @@ describe("createComponent", () => {
         );
       });
     });
-    flushSync();
+    flush();
     count.set(2);
-    flushSync();
+    flush();
     expect(runs).toBe(1);
     expect(out!).toBe("n=1");
     disposeOwner(tracker);
@@ -83,15 +75,16 @@ describe("createComponent", () => {
     const Theme = createContext("light");
     const seen: string[] = [];
     const Reader = (): Renderable => {
-      seen.push(inject(Theme));
+      seen.push(useContext(Theme));
       return null;
     };
-    const Provider = (props: { children: () => Renderable }): Renderable => {
-      provide(Theme, "dark");
-      return props.children();
-    };
     root(() => {
-      createComponent(Provider, { children: () => createComponent(Reader, {}) });
+      createComponent(Theme, {
+        value: "dark",
+        get children() {
+          return createComponent(Reader, {});
+        },
+      });
       createComponent(Reader, {});
     });
     expect(seen).toEqual(["dark", "light"]);
@@ -116,7 +109,7 @@ describe("createComponent", () => {
     expect(countChildren(listBinding!)).toBe(1);
     expect(countChildren(listBinding!.firstChild!)).toBe(1);
     rows.set(["a"]);
-    flushSync();
+    flush();
     expect(log).toEqual(["b"]);
   });
 
@@ -235,7 +228,7 @@ describe("spread", () => {
 
     readOnly.set(false);
     handler.set(undefined);
-    flushSync();
+    flush();
     expect(el.hasAttribute("readonly")).toBe(false);
     expect(el.className).toBe("");
     el.click();
@@ -243,10 +236,10 @@ describe("spread", () => {
     expect(refs).toEqual([el]);
 
     props.set({ title: "t" });
-    flushSync();
+    flush();
     expect(el.title).toBe("t");
     props.set({});
-    flushSync();
+    flush();
     expect(el.hasAttribute("title")).toBe(false);
   });
 });
@@ -292,7 +285,7 @@ describe("class passthrough (doc-2 §5.3)", () => {
       `<div data-l-card="" class="featured" data-l-p1=""><h2 data-l-card="">Hello</h2>World<!----></div>`,
     );
     post.set({ title: "Bye", body: "Now" });
-    flushSync();
+    flush();
     expect(host.textContent).toBe("ByeNow");
   });
 });

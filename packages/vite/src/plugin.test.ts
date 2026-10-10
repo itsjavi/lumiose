@@ -45,9 +45,9 @@ export function Counter() {
   );
 }
 `,
-  "main.tsx": `import { mount } from "lumiose/dom";
+  "main.tsx": `import { render } from "lumiose/dom";
 import { Counter } from "./Counter.stsx";
-mount(() => <Counter />, document.body);
+render(() => <Counter />, document.body);
 `,
   "Broken.tsx": `export const ok = 1;
 export const Broken = () => <div>;
@@ -467,7 +467,7 @@ describe.skipIf(!binding)("@lumiose/vite", () => {
     }
   });
 
-  it("makes app entries HMR boundaries that re-mount through the wrapper", async () => {
+  it("makes app entries HMR boundaries that re-render through the wrapper", async () => {
     const result = await server.environments.client.transformRequest("/main.tsx");
     expect(result!.code).toContain("lumiose:hmr-dom");
     expect(result!.code).toContain("import.meta.hot.accept()");

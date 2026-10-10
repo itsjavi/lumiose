@@ -17,9 +17,9 @@ const domEntry = resolve(import.meta.dirname, "../../lumiose/src/dom/index.ts");
 const outDir = resolve(import.meta.dirname, "out");
 
 type Runtime = Record<string, unknown> & {
-  mount: (code: () => unknown, container: Element) => () => void;
+  render: (code: () => unknown, container: Element) => () => void;
 };
-type Lumiose = { flushSync: () => void; signal: <T>(v: T) => { (): T; set(v: T): void } };
+type Lumiose = { flush: () => void; signal: <T>(v: T) => { (): T; set(v: T): void } };
 
 const dom = (await import(/* @vite-ignore */ domEntry)) as Runtime;
 const lumiose = (await import(/* @vite-ignore */ lumioseEntry)) as Lumiose;
@@ -51,7 +51,7 @@ async function load(source: string, options: Record<string, unknown> = {}) {
 function render(component: unknown, props: Record<string, unknown> = {}) {
   const app = document.createElement("div");
   document.body.appendChild(app);
-  dom.mount(
+  dom.render(
     () => (dom.createComponent as (c: unknown, p: unknown) => unknown)(component, props),
     app,
   );
@@ -79,11 +79,11 @@ describe.skipIf(!binding)("compiled output runs on lumiose/dom", () => {
     const button = app.querySelector("button")!;
     expect(button.textContent).toBe("Clicked 4 times");
     button.click();
-    lumiose.flushSync();
+    lumiose.flush();
     expect(button.textContent).toBe("Clicked 5 times");
     expect(button.className).toBe("");
     button.click();
-    lumiose.flushSync();
+    lumiose.flush();
     expect(button.className).toBe("hot");
   });
 
@@ -110,7 +110,7 @@ describe.skipIf(!binding)("compiled output runs on lumiose/dom", () => {
     ]);
     expect(div.textContent).toBe("x6AA!");
     module.n.set(5);
-    lumiose.flushSync();
+    lumiose.flush();
     expect(div.textContent).toBe("x10AA!");
   });
 
@@ -139,11 +139,11 @@ describe.skipIf(!binding)("compiled output runs on lumiose/dom", () => {
     const anchors = () => Array.from(app.querySelectorAll("a"));
     expect(anchors().map((a) => a.textContent)).toEqual(["row 1", "row 2", "row 3"]);
     anchors()[1]!.click();
-    lumiose.flushSync();
+    lumiose.flush();
     expect(app.querySelector("tr.danger")!.textContent).toBe("row 2");
     module.rows()[1].label.set("row 2 !");
     module.rows.set(module.rows().toReversed());
-    lumiose.flushSync();
+    lumiose.flush();
     expect(anchors().map((a) => a.textContent)).toEqual(["row 3", "row 2 !", "row 1"]);
     expect(app.querySelector("tr.danger")!.textContent).toBe("row 2 !");
   });
@@ -173,7 +173,7 @@ describe.skipIf(!binding)("compiled output runs on lumiose/dom", () => {
     expect(app.querySelector("main")!.hasAttribute(Card!)).toBe(false);
     expect(article.textContent).toBe("OneFirst");
     module.post.set({ title: "Two", body: "Second" });
-    lumiose.flushSync();
+    lumiose.flush();
     expect(article.textContent).toBe("TwoSecond");
   });
 
@@ -197,10 +197,10 @@ describe.skipIf(!binding)("compiled output runs on lumiose/dom", () => {
     const select = app.querySelector("select")!;
     expect(select.value).toBe("2");
     module.choice.set("1");
-    lumiose.flushSync();
+    lumiose.flush();
     expect(select.value).toBe("1");
     module.items.set([...module.items(), { id: "3", label: "Three" }]);
-    lumiose.flushSync();
+    lumiose.flush();
     expect(app.querySelectorAll("table > tbody > tr")).toHaveLength(3);
   });
 
@@ -220,10 +220,10 @@ describe.skipIf(!binding)("compiled output runs on lumiose/dom", () => {
     expect(label.id).toBe("f");
     expect(label.textContent).toBe("Name");
     module.label.set("Email");
-    lumiose.flushSync();
+    lumiose.flush();
     expect(label.textContent).toBe("Email");
     module.label.set(undefined);
-    lumiose.flushSync();
+    lumiose.flush();
     expect(label.textContent).toBe("Name");
   });
 
@@ -252,12 +252,12 @@ describe.skipIf(!binding)("compiled output runs on lumiose/dom", () => {
     const off = div.querySelector("i");
     module.open.set(true);
     module.a.set("A");
-    lumiose.flushSync();
+    lumiose.flush();
     expect(app.querySelector("p")!.textContent).toBe("before A after");
     expect(div.textContent).toBe("on!");
     expect(div.lastElementChild!.tagName).toBe("HR");
     module.open.set(false);
-    lumiose.flushSync();
+    lumiose.flush();
     expect(div.textContent).toBe("off");
     expect(div.querySelector("i")).not.toBe(off);
   });
@@ -286,7 +286,7 @@ describe.skipIf(!binding)("compiled output runs on lumiose/dom", () => {
     expect(app.querySelector("p")!.innerHTML).toBe("<i>a</i><i>b</i>");
     module.loud.set(true);
     module.items.set(module.items().toReversed());
-    lumiose.flushSync();
+    lumiose.flush();
     expect(app.querySelector("ul")!.textContent).toBe("ba");
     expect(app.querySelector("dl")!.textContent).toBe("b0a1");
     expect(app.querySelector("p")!.innerHTML).toBe("<b>b</b><b>a</b>");
@@ -342,16 +342,16 @@ describe.skipIf(!binding)("compiled output runs on lumiose/dom", () => {
 
     // Memoised on the condition: an unrelated write keeps the rendered branch.
     module.mode.set("b");
-    lumiose.flushSync();
+    lumiose.flush();
     expect(p.innerHTML).toBe("<i>B</i>");
     expect(box!.firstElementChild).toBe(closed);
     module.mode.set("c");
-    lumiose.flushSync();
+    lumiose.flush();
     expect(p.innerHTML).toBe("<u>C</u>");
 
     module.open.set(true);
     module.items.set(module.items().toReversed());
-    lumiose.flushSync();
+    lumiose.flush();
     expect(box!.innerHTML).toBe("<b>open</b>");
     expect(app.querySelector("div > b:not(p b)")!.textContent).toBe("on");
     // Keyed: rows move instead of being re-created.
@@ -376,7 +376,7 @@ describe.skipIf(!binding)("compiled output runs on lumiose/dom", () => {
       }`);
     if (!module) return ctx.skip(`lumiose/dom lacks ${missing.join(", ")}`);
     const app = render(module.Form);
-    lumiose.flushSync(); // attachments run as effects, after mount
+    lumiose.flush(); // attachments run as effects, after render
     const element = app.querySelector("input")!;
     expect(module.input()).toBe(element);
     expect(element.value).toBe("Ada");
@@ -418,17 +418,17 @@ describe.skipIf(!binding)("async components on lumiose/dom", () => {
     const app = render(module.Page);
     for (let i = 0; i < 20 && !app.querySelector("h3"); i++) {
       await new Promise((done) => setTimeout(done, 1));
-      lumiose.flushSync();
+      lumiose.flush();
     }
     const heading = app.querySelector("h3")!;
     expect(heading.textContent).toBe("Ada 1 xy");
     expect(heading.title).toBe("no");
     // A prop change re-runs the component; the new UI replaces the old one when it resolves.
     module.id.set("2");
-    lumiose.flushSync();
+    lumiose.flush();
     for (let i = 0; i < 20 && app.querySelector("h3")?.textContent !== "Ada 2 xy"; i++) {
       await new Promise((done) => setTimeout(done, 1));
-      lumiose.flushSync();
+      lumiose.flush();
     }
     expect(app.querySelectorAll("h3")).toHaveLength(1);
     expect(app.querySelector("h3")!.textContent).toBe("Ada 2 xy");

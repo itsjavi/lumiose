@@ -92,8 +92,8 @@ Routes with `mode = "spa"` use the client router `lumiose/router` ([reference](.
 - The SPA starts at the outermost `spa` layout (or the page itself) and covers every `spa` page
   below it; links between them navigate on the client, other links load the document.
 - `<Link href prefetch>` (plain `<a>` links work too), `navigate(href, { replace })`, reactive
-  `params()`, `route()` (the matched pattern), `url()`, `search()` (`search.set()` changes the
-  query) and `navigating()`.
+  `params()`, `route()` (the matched pattern), `url()`, `searchParams()` (`searchParams.set()` changes the
+  query) and `isNavigating()`.
 - Layouts persist: a layout's `children` is the outlet, and layouts shared by the old and the new
   page keep their state. A page with other param values (`songs/[id]`) is a new page.
 - A navigation holds the old page until the new page's async content is ready, then swaps.
@@ -105,16 +105,16 @@ Routes with `mode = "spa"` use the client router `lumiose/router` ([reference](.
 
 ## API
 
-| API                                                              | Use                                                    |
-| ---------------------------------------------------------------- | ------------------------------------------------------ |
-| `export default function Page(props: PageProps<"/x/[id]">)`      | A page component.                                      |
-| `export default function Layout(props: LayoutProps<"/x">)`       | A layout: `{ params, children }`.                      |
-| `params<"/x/[id]">()`                                            | The matched route's params, typed by pattern (server). |
-| `href(pattern, params?)`                                         | Build a URL from a typed route pattern.                |
-| `Routes`, `RouteParams<P>`, `RouteMap`, `LayoutMap`              | Route types.                                           |
-| `ErrorPageProps`                                                 | Props of `_404` and `_error`.                          |
-| `notFound()`, `error(status, message?)`, `redirect(to, status?)` | Stop rendering; see [Server](server.md).               |
-| `lumiose/router`: `Link`, `navigate`, `navigating`, `search`     | SPA routes ([reference](../reference/router.md)).      |
+| API                                                                                                   | Use                                                           |
+| ----------------------------------------------------------------------------------------------------- | ------------------------------------------------------------- |
+| `export default function Page(props: PageProps<"/x/[id]">)`                                           | A page component.                                             |
+| `export default function Layout(props: LayoutProps<"/x">)`                                            | A layout: `{ params, children }`.                             |
+| `params<"/x/[id]">()`                                                                                 | The matched route's params, typed by pattern (server).        |
+| `href(pattern, params?)`                                                                              | Build a URL from a typed route pattern.                       |
+| `Routes`, `RouteParams<P>`, `RouteMap`, `LayoutMap`                                                   | Route types.                                                  |
+| `ErrorPageProps`                                                                                      | Props of `_404` and `_error`.                                 |
+| `notFound()`, `error(status, message?)`, `redirect(to, status?)`                                      | Stop rendering; see [Server](server.md).                      |
+| `lumiose/router`: `Link`, `navigate`, `isNavigating`, `searchParams`, reactive `url`/`params`/`route` | SPA routes and islands ([reference](../reference/router.md)). |
 
 ## Example
 

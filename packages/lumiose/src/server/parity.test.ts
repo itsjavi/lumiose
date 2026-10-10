@@ -7,7 +7,7 @@ import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import {
   createComponent as clientComponent,
-  mount,
+  render,
   setAttr,
   setClass,
   setStyle,
@@ -190,7 +190,7 @@ describe("unsafe URL parity (TASK-168, decision-29)", () => {
   it("drops lowercase on* keys of spread props on both sides (TASK-165)", () => {
     const props = { onclick: "alert(1)", ONMOUSEOVER: "alert(2)", title: "kept" };
     const el = document.createElement("a");
-    mount(() => (spread(el, () => props), el), document.createElement("main"));
+    render(() => (spread(el, () => props), el), document.createElement("main"));
     expect(parsed(`<a${spreadAttrs(props)}></a>`)).toBe(written(el));
     expect(spreadAttrs(props)).toBe(' title="kept"');
   });
@@ -198,7 +198,7 @@ describe("unsafe URL parity (TASK-168, decision-29)", () => {
   it("blocks them in spread props too, and leaves other attributes alone", () => {
     const props = { href: "javascript:alert(1)", title: "javascript:alert(1)", src: "/ok.png" };
     const el = document.createElement("a");
-    mount(() => (spread(el, () => props), el), document.createElement("main"));
+    render(() => (spread(el, () => props), el), document.createElement("main"));
     expect(parsed(`<a${spreadAttrs(props)}></a>`)).toBe(written(el));
     expect(el.getAttribute("href")).toBe("about:blank#blocked");
     expect(el.getAttribute("title")).toBe("javascript:alert(1)");
@@ -259,14 +259,14 @@ describe("spread parity", () => {
       $$scope: "data-l-p1",
     };
     const div = document.createElement("div");
-    mount(() => (spread(div, () => props), div), document.createElement("main"));
+    render(() => (spread(div, () => props), div), document.createElement("main"));
     expect(parsed(`<div${spreadAttrs(props)}></div>`)).toBe(written(div));
   });
 
   it("renders DOM properties as the attributes that give the same initial state", () => {
     const props = { type: "checkbox", value: "on", checked: true, indeterminate: true };
     const input = document.createElement("input");
-    mount(() => (spread(input, () => props), input), document.createElement("main"));
+    render(() => (spread(input, () => props), input), document.createElement("main"));
     const container = document.createElement("div");
     container.innerHTML = `<input${spreadAttrs(props)}>`;
     const ssr = container.firstElementChild as HTMLInputElement;
@@ -283,7 +283,7 @@ async function both(
   serverCode: () => unknown,
 ): Promise<[string, string]> {
   const container = document.createElement("div");
-  mount(clientCode as () => never, container);
+  render(clientCode as () => never, container);
   return [parsed(await renderToString(serverCode)), normalize(container).innerHTML];
 }
 

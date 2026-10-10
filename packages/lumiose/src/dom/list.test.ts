@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 import { describe, expect, it } from "vitest";
 import type { Renderable } from "../contract/client.ts";
-import { flushSync, onCleanup, reconcile, signal, store, type Signal } from "../core/index.ts";
+import { flush, onCleanup, reconcile, signal, store, type Signal } from "../core/index.ts";
 import { createOwner, disposeOwner, runWithOwner, type Owner } from "../core/internal.ts";
 import { bind, list, setText, template } from "./index.ts";
 import { longestIncreasingSubsequence } from "./list.ts";
@@ -70,13 +70,13 @@ describe("list", () => {
     root(() => list(ul, null, source, renderItem));
     expect(text(ul)).toEqual(["1", "2", "3"]);
     source.set([...source(), ...items(4, 5)]);
-    flushSync();
+    flush();
     expect(text(ul)).toEqual(["1", "2", "3", "4", "5"]);
     source.set(source().filter((i) => i.id % 2));
-    flushSync();
+    flush();
     expect(text(ul)).toEqual(["1", "3", "5"]);
     source.set([]);
-    flushSync();
+    flush();
     expect(ul.childNodes.length).toBe(0);
   });
 
@@ -86,10 +86,10 @@ describe("list", () => {
     root(() => list(ul, null, source, renderItem));
     expect(ul.childNodes.length).toBe(0);
     source.set(items(1));
-    flushSync();
+    flush();
     expect(text(ul)).toEqual(["1"]);
     source.set(null);
-    flushSync();
+    flush();
     expect(ul.childNodes.length).toBe(0);
   });
 
@@ -100,10 +100,10 @@ describe("list", () => {
     root(() => list(el, marker, source, renderItem));
     expect(text(el)).toEqual(["head", "1", "2", "", "tail"]);
     source.set(items(3).concat(source().toReversed()));
-    flushSync();
+    flush();
     expect(text(el)).toEqual(["head", "3", "2", "1", "", "tail"]);
     source.set([]);
-    flushSync();
+    flush();
     expect(text(el)).toEqual(["head", "", "tail"]);
   });
 
@@ -114,12 +114,12 @@ describe("list", () => {
     root(() => list(el, marker, source, renderItem));
     const counts = spyMutations(el);
     source.set([]);
-    flushSync();
+    flush();
     expect(counts).toMatchObject({ removes: 0, clears: 1 });
     expect(el.childNodes.length).toBe(1);
     expect(el.firstChild).toBe(marker);
     source.set(items(4));
-    flushSync();
+    flush();
     expect(text(el)).toEqual(["4", ""]);
   });
 
@@ -129,7 +129,7 @@ describe("list", () => {
     root(() => list(ul, null, source, renderItem));
     const counts = spyMutations(ul);
     source.set(items(5, 6, 7, 8));
-    flushSync();
+    flush();
     expect(text(ul)).toEqual(["5", "6", "7", "8"]);
     expect(counts).toEqual({ inserts: 4, removes: 0, clears: 1 });
   });
@@ -144,7 +144,7 @@ describe("list", () => {
     const next = data.slice();
     [next[1], next[998]] = [next[998]!, next[1]!];
     source.set(next);
-    flushSync();
+    flush();
     expect(counts).toEqual({ inserts: 2, removes: 0, clears: 0 });
     expect(ul.childNodes[998]).toBe(second);
     expect(ul.childNodes[1]!.textContent).toBe("998");
@@ -158,7 +158,7 @@ describe("list", () => {
     const counts = spyMutations(ul);
     const [a, b, c, d, e, f] = data as [Item, Item, Item, Item, Item, Item];
     source.set([b, f, c, d, a, e]);
-    flushSync();
+    flush();
     expect(text(ul)).toEqual(["2", "6", "3", "4", "1", "5"]);
     // 2,3,4,5 stay; 6 and 1 move.
     expect(counts).toEqual({ inserts: 2, removes: 0, clears: 0 });
@@ -170,7 +170,7 @@ describe("list", () => {
     root(() => list(ul, null, source, renderItem));
     const counts = spyMutations(ul);
     source.set(source().filter((i) => i.id !== 3));
-    flushSync();
+    flush();
     expect(counts).toEqual({ inserts: 0, removes: 1, clears: 0 });
   });
 
@@ -189,7 +189,7 @@ describe("list", () => {
     );
     expect(text(ul)).toEqual(["0:1", "1:2", "2:3"]);
     source.set([data[2]!, data[0]!, data[1]!]);
-    flushSync();
+    flush();
     expect(text(ul)).toEqual(["0:3", "1:1", "2:2"]);
     expect(indexes).toBe(3);
     let declared = 0;
@@ -223,7 +223,7 @@ describe("list", () => {
     }
     expect(rowOwners).toBe(1);
     source.set(source().filter((i) => i.id !== 2));
-    flushSync();
+    flush();
     expect(log).toEqual([2]);
     expect(binding.firstChild).toBeUndefined();
   });
@@ -249,7 +249,7 @@ describe("list", () => {
     );
     const first = ul.firstChild;
     source.set([source()[0]!, { id: 2, v: "B" }]);
-    flushSync();
+    flush();
     expect(text(ul)).toEqual(["a", "B"]);
     expect(ul.firstChild).toBe(first);
   });
@@ -271,13 +271,13 @@ describe("list", () => {
     );
     expect(ul.textContent).toBe("abxc");
     label.set("y");
-    flushSync();
+    flush();
     expect(ul.textContent).toBe("abyc");
     source.set(["c", "b", "a"]);
-    flushSync();
+    flush();
     expect(ul.textContent).toBe("cbya");
     source.set(["b"]);
-    flushSync();
+    flush();
     expect(ul.textContent).toBe("by");
     expect(ul.querySelector("i")).toBeNull();
   });
@@ -289,7 +289,7 @@ describe("list", () => {
     root(() => list(ul, null, source, renderItem));
     data.push({ id: 3 });
     source.set(data);
-    flushSync();
+    flush();
     expect(text(ul)).toEqual(["1", "2", "3"]);
 
     const state = store({ rows: items(1, 2) });
@@ -304,10 +304,10 @@ describe("list", () => {
       ),
     );
     state.rows.push({ id: 3 });
-    flushSync();
+    flush();
     expect(text(ol)).toEqual(["1", "2", "3"]);
     state.rows[0] = { id: 9 };
-    flushSync();
+    flush();
     expect(text(ol)).toEqual(["9", "2", "3"]);
   });
 
@@ -336,7 +336,7 @@ describe("list", () => {
     );
     const [li1, li2] = [ul.children[0], ul.children[1]];
     counters[1]!.set(5);
-    flushSync();
+    flush();
     const mutations = spyMutations(ul);
 
     // Fresh objects from the server: equal row 1, a changed title on row 2.
@@ -344,7 +344,7 @@ describe("list", () => {
       { id: 1, title: "Dune" },
       { id: 2, title: "Emma (2nd ed.)" },
     ]);
-    flushSync();
+    flush();
     expect(renders).toBe(2);
     expect(ul.children[0]).toBe(li1);
     expect(ul.children[1]).toBe(li2);
@@ -357,7 +357,7 @@ describe("list", () => {
       { id: 2, title: "Emma (2nd ed.)" },
       { id: 1, title: "Dune" },
     ]);
-    flushSync();
+    flush();
     expect(renders).toBe(3);
     expect(ul.children[1]).toBe(li2);
     expect(ul.children[2]).toBe(li1);
@@ -377,7 +377,7 @@ describe("list", () => {
     disposeOwner(owner);
     expect(log.toSorted()).toEqual([1, 2]);
     source.set(items(3));
-    flushSync();
+    flush();
     expect(text(ul)).toEqual(["1", "2"]);
   });
 });
@@ -490,7 +490,7 @@ describe("list (property)", () => {
         const op = ops[Math.floor(random() * ops.length)]!;
         const next = op(source(), random, fresh);
         source.set(next);
-        flushSync();
+        flush();
         const nodes = rowNodes();
         expect(nodes.length).toBe(next.length);
         const seen = new Map<number, Node>();

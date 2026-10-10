@@ -3,14 +3,14 @@
 // navigations, with the server's precedence rules.
 import { afterEach, describe, expect, it } from "vitest";
 import type { Renderable } from "../contract/client.ts";
-import { flushSync, signal } from "../core/index.ts";
-import { createComponent, mount, template } from "./index.ts";
+import { flush, signal } from "../core/index.ts";
+import { createComponent, render as renderRoot, template } from "./index.ts";
 import { Head, Meta, Title } from "./head.ts";
 
 const disposers: (() => void)[] = [];
 
 function render(code: () => Renderable): () => void {
-  const dispose = mount(code, document.createElement("div"));
+  const dispose = renderRoot(code, document.createElement("div"));
   disposers.push(dispose);
   return dispose;
 }
@@ -43,7 +43,7 @@ describe("Title", () => {
     );
     expect(document.title).toBe("Profile of Ada");
     name.set("Bob");
-    flushSync();
+    flush();
     expect(document.title).toBe("Profile of Bob");
     const other = render(() => createComponent(Title, { children: "Other" }));
     // Shallower than the page title: the page still wins.
@@ -76,7 +76,7 @@ describe("Meta", () => {
     expect(document.head.firstElementChild).toBe(server);
     expect(server!.getAttribute("content")).toBe("page");
     page.set("updated");
-    flushSync();
+    flush();
     expect(server!.getAttribute("content")).toBe("updated");
     dispose();
     expect(document.head.querySelector('meta[name="description"]')).toBeNull();

@@ -38,7 +38,7 @@ describe("server core", () => {
     server.onMount(() => {
       runs++;
     });
-    server.flushSync();
+    server.flush();
     dispose();
     expect(runs).toBe(0);
     const obj = { a: 1 };
@@ -56,21 +56,21 @@ describe("server core", () => {
     const child = createOwner(root);
     const log: string[] = [];
     runWithOwner(root, () => {
-      server.provide(Ctx, "request");
+      Ctx({ value: "request" });
       server.onCleanup(() => log.push("cleanup"));
     });
-    expect(runWithOwner(child, () => server.inject(Ctx))).toBe("request");
+    expect(runWithOwner(child, () => server.useContext(Ctx))).toBe("request");
     disposeOwner(root);
     expect(log).toEqual(["cleanup"]);
   });
 
-  it("lifetime() is the request root's signal", () => {
+  it("getAbortSignal() is the request root's signal", () => {
     const root = createOwner(undefined);
     const nested = createOwner(createOwner(root));
-    const fromNested = runWithOwner(nested, server.lifetime);
-    expect(runWithOwner(root, server.lifetime)).toBe(fromNested);
+    const fromNested = runWithOwner(nested, server.getAbortSignal);
+    expect(runWithOwner(root, server.getAbortSignal)).toBe(fromNested);
     disposeOwner(root);
     expect(fromNested.aborted).toBe(true);
-    expect(() => server.lifetime()).toThrow(/server render/);
+    expect(() => server.getAbortSignal()).toThrow(/server render/);
   });
 });

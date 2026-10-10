@@ -1,6 +1,6 @@
 // Form action helpers under the node condition. `lumiose` exposes the same names in both entries,
 // so components that render on the server and hydrate (islands) can read them during SSR:
-// `actionData()` is the current request's, `submitting()` is false. `submit()` and `invalidate()`
+// `actionData()` is the current request's, `isSubmitting()` is false. `submit()` and `invalidate()`
 // only make sense in event handlers, so they throw. Keep signatures in sync with ./client.ts.
 
 import type { ActionResult } from "./protocol.ts";
@@ -9,7 +9,7 @@ import type { ActionFailureData, ActionsExport, ActionSuccessData } from "./type
 
 export { actionData } from "../server/scope.ts";
 
-export function submitting(_name?: string): boolean {
+export function isSubmitting(_name?: string): boolean {
   return false;
 }
 

@@ -1,17 +1,17 @@
 # `lumiose/dom`
 
-> `mount` renders a component tree into a DOM element. The rest of `lumiose/dom` is the client half of the compiler-runtime contract that compiled code imports.
+> `render` renders a component tree into a DOM element. The rest of `lumiose/dom` is the client half of the compiler-runtime contract that compiled code imports.
 
-## mount
+## render
 
 ```ts
-function mount(code: () => JSX.Element, container: Element): () => void;
+function render(code: () => JSX.Element, container: Element): () => void;
 ```
 
 Renders `code()` into `container` (appended after its existing content) under a new root owner, and
 marks the container as a delegation boundary. Returns a disposer that disposes the owner and
-removes the rendered nodes. With the Vite plugin, an entry module that imports `mount` re-mounts on
-hot updates.
+removes the rendered nodes. With the Vite plugin, an entry module that imports `render` re-renders
+the app on hot updates. Solid's `render` has the same signature.
 
 ## Compiler-runtime contract
 
@@ -81,12 +81,12 @@ Islands inside slots that an island inserts later are hydrated when they appear.
 
 ```tsx check
 import { signal } from "lumiose";
-import { mount } from "lumiose/dom";
+import { render } from "lumiose/dom";
 
 function App() {
   const name = signal("world");
   return <input bind:value={name} placeholder={`Hello, ${name()}`} />;
 }
 
-mount(() => <App />, document.getElementById("app")!);
+render(() => <App />, document.getElementById("app")!);
 ```

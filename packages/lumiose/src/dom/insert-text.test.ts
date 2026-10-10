@@ -3,7 +3,7 @@
 // semantics as the fallback, and the server's `insertText` holes that hydration claims.
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { Renderable } from "../contract/client.ts";
-import { flushSync, onCleanup, signal } from "../core/index.ts";
+import { flush, onCleanup, signal } from "../core/index.ts";
 import { createOwner, disposeOwner, runWithOwner } from "../core/internal.ts";
 import {
   island,
@@ -56,15 +56,15 @@ describe("insertText", () => {
       return parts;
     });
     label.set(2);
-    flushSync();
+    flush();
     expect(el.childNodes[1]).toBe(node);
     expect(node.data).toBe("2");
     label.set(null);
-    flushSync();
+    flush();
     expect(el.innerHTML).toBe("<i>a</i><i>b</i>");
     dispose();
     label.set("after");
-    flushSync();
+    flush();
     expect(node.data).toBe("");
   });
 
@@ -81,13 +81,13 @@ describe("insertText", () => {
 
     const b = bold();
     value.set(b);
-    flushSync();
+    flush();
     expect(el.innerHTML).toBe("<i>a</i><b>node</b><i>b</i>");
     expect(el.childNodes[2]).toBe(node);
     expect(node.data).toBe("");
 
     value.set(["x", b]);
-    flushSync();
+    flush();
     expect(el.innerHTML).toBe("<i>a</i>x<b>node</b><i>b</i>");
 
     // A nested function is tracked on its own, and disposed with the value that rendered it.
@@ -95,17 +95,17 @@ describe("insertText", () => {
       onCleanup(() => cleaned.push("nested"));
       return inner();
     });
-    flushSync();
+    flush();
     expect(el.innerHTML).toBe("<i>a</i>in<i>b</i>");
     inner.set("in2");
-    flushSync();
+    flush();
     expect(el.innerHTML).toBe("<i>a</i>in2<i>b</i>");
     // Its re-run disposed the previous evaluation.
     expect(cleaned).toEqual(["nested"]);
 
     // Text after a fallback renders in the region; the text node stays empty.
     value.set("back");
-    flushSync();
+    flush();
     expect(cleaned).toEqual(["nested", "nested"]);
     expect(el.innerHTML).toBe("<i>a</i>back<i>b</i>");
     expect(node.data).toBe("");
@@ -221,7 +221,7 @@ describe("insertText hydration", () => {
     const text = p.childNodes[1] as Text;
     expect(text.data).toBe("live");
     live.set("updated");
-    flushSync();
+    flush();
     expect(p.childNodes[1]).toBe(text);
     expect(text.data).toBe("updated");
     expect(warn).not.toHaveBeenCalled();

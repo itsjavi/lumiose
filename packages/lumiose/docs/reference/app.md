@@ -83,7 +83,7 @@ failure) with a `FetchError`, and with a `TypeError` for a redirect to a URL tha
 ### submitting
 
 ```ts
-function submitting(name?: string): boolean;
+function isSubmitting(name?: string): boolean;
 ```
 
 Whether a `submit()` is in flight; with a name, one to that named action (`?/name`). Reactive.
@@ -206,7 +206,9 @@ page's hash policy covers its inline elements); in the browser it reads
 `<meta property="csp-nonce">`. See [Security](../concepts/security.md).
 
 Available anywhere during a server render (also after `await`), scoped to the current request. In
-the browser they throw `LUM4003`. `env()` reads the adapter's env, else `process.env`;
+the browser they throw `LUM4003`. `url()`, `params()` and `route()` also exist in
+[`lumiose/router`](router.md): those are reactive, follow client navigations and also work during
+server rendering, so use them in code that runs in the browser (SPA routes, islands). `env()` reads the adapter's env, else `process.env`;
 `publicEnv()` returns the `PUBLIC_*` subset.
 
 ```ts

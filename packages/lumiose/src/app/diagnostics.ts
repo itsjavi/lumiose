@@ -24,7 +24,7 @@ export const LUM_ISLAND_PROP = "LUM4002";
 export const LUM_SERVER_ONLY = "LUM4003";
 /** A value awaited inside an island is not plain data (spec §4.4). */
 export const LUM_AWAIT_VALUE = "LUM4007";
-/** An island injected a context the page provided outside it (dev warning, TASK-194). */
+/** An island read a context the page provided outside it (dev warning, TASK-194). */
 export const LUM_ISLAND_PAGE_CONTEXT = "LUM4010";
 /** Status, headers, cookies or head changed after the SSR shell was sent (decision-19). */
 export const LUM_AFTER_SHELL = "LUM5004";

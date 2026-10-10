@@ -26,7 +26,7 @@ export interface SignalOptions<T> {
 }
 
 /** Where a signal function keeps its node. */
-export const SIGNAL_NODE: unique symbol = Symbol("lumiose.signal");
+export const SIGNAL_NODE: unique symbol = Symbol();
 
 interface SignalFn<T> extends Signal<T> {
   [SIGNAL_NODE]: SignalNode<T>;

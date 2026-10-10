@@ -5,17 +5,17 @@ import type { RouteParamValues } from "../server/context.ts";
 import {
   currentParams,
   currentRoute,
-  currentSearch,
+  currentSearchParams,
   currentUrl,
   navigate,
-  navigating,
-  setSearch,
+  isNavigating,
+  setSearchParams,
   type NavigateOptions,
-  type SearchInit,
+  type SearchParamsInit,
 } from "./router.ts";
 
 export { Link, type LinkProps, type Prefetch } from "./link.ts";
-export { navigate, navigating, type NavigateOptions, type SearchInit };
+export { navigate, isNavigating, type NavigateOptions, type SearchParamsInit };
 
 /**
  * Params of the current route, reactive: `params<"/songs/[id]">().id`. Inside a page that is
@@ -43,22 +43,25 @@ export function url(): URL {
   return currentUrl();
 }
 
-export interface Search {
+export interface SearchParams {
   /** The query of the current URL, reactive. A new object per change: do not mutate it. */
   (): URLSearchParams;
   /**
    * Navigates to the current path with a new query, keeping the scroll position:
-   * `search.set({ q, page: 2 })`, `search.set((current) => …)`. `null`/`undefined` values are
+   * `searchParams.set({ q, page: 2 })`, `searchParams.set((current) => …)`. `null`/`undefined` values are
    * left out. Adds a history entry unless `{ replace: true }`.
    */
   set(
-    next: SearchInit | ((current: URLSearchParams) => SearchInit),
+    next: SearchParamsInit | ((current: URLSearchParams) => SearchParamsInit),
     options?: NavigateOptions,
   ): Promise<void>;
 }
 
-/** The current URL's query (`search()`), and `search.set()` to change it. */
+/** The current URL's query (`searchParams()`), and `searchParams.set()` to change it. */
 // Pure: an island that only uses `<Link>` (on an MPA page) ships none of the router.
-export const search: Search = /* @__PURE__ */ Object.assign(() => currentSearch(), {
-  set: setSearch,
-});
+export const searchParams: SearchParams = /* @__PURE__ */ Object.assign(
+  () => currentSearchParams(),
+  {
+    set: setSearchParams,
+  },
+);

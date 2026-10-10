@@ -78,7 +78,7 @@ export async function readBody(response: Response): Promise<unknown> {
  * Fetches JSON: `const post = await fetchJSON<Post>("/api/posts/1")`. Throws a `FetchError` for
  * non-2xx responses. Returns plain data, so values awaited inside islands stay serializable.
  * During SSR, same-origin URLs are served in-process, with the page request's cookies.
- * Inside an async component, the signal defaults to `lifetime()`: a superseded run cancels its
+ * Inside an async component, the signal defaults to `getAbortSignal()`: a superseded run cancels its
  * fetch (pass `signal` to choose another, or `null` for none).
  */
 export async function fetchJSON<T = unknown>(input: string | URL, init?: RequestInit): Promise<T> {

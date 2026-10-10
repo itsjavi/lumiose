@@ -28,6 +28,7 @@ mistakes** and **Related diagnostics**. Reference pages list every export with i
 ## Start here
 
 - [Getting started](getting-started.md): Create a project, configure TypeScript and Vite, and render a first component.
+- [Upgrading from 0.1](upgrading.md): The renamed APIs (`useContext`, `<Ctx value>`, `render`, `isPending`, …) and how to migrate.
 
 ## Concepts
 
@@ -51,12 +52,12 @@ mistakes** and **Related diagnostics**. Reference pages list every export with i
 
 ## Reference
 
-- [`lumiose`: reactivity](reference/reactivity.md): `signal`, `computed`, `effect`, `batch`, `flushSync`, `untrack`, `store`, owners, context, `pending`, `busy`, `resource`.
+- [`lumiose`: reactivity](reference/reactivity.md): `signal`, `computed`, `effect`, `batch`, `flush`, `untrack`, `store`, owners, context (`createContext`, `useContext`), `getAbortSignal`, `isPending`, `isBusy`, `resource`.
 - [`lumiose`: components](reference/components.md): `Suspense`, `ErrorBoundary`, `Portal`, `Dynamic`, `ref`, `Head`, `Title`, `Meta`.
-- [`lumiose`: app layer](reference/app.md): `fetchJSON`, `submit`, `submitting`, `actionData`, `invalidate`, `fail`, `redirect`, `notFound`, `error`, `href`, request APIs and types.
+- [`lumiose`: app layer](reference/app.md): `fetchJSON`, `submit`, `isSubmitting`, `actionData`, `invalidate`, `fail`, `redirect`, `notFound`, `error`, `href`, request APIs and types.
 - [`lumiose`: server rendering](reference/server.md): `renderToStream`, `renderToString` and the `lumiose/server` subpath.
-- [`lumiose/dom`](reference/dom.md): `mount`, the compiler-runtime contract, `hydrate` (`lumiose/dom/hydrate`) and the island loader (`lumiose/dom/loader`).
-- [`lumiose/router`](reference/router.md): The SPA router: `Link`, `navigate`, `navigating` and reactive route state.
+- [`lumiose/dom`](reference/dom.md): `render`, the compiler-runtime contract, `hydrate` (`lumiose/dom/hydrate`) and the island loader (`lumiose/dom/loader`).
+- [`lumiose/router`](reference/router.md): The SPA router: `Link`, `navigate`, `isNavigating`, `searchParams` and reactive route state.
 - [`@lumiose/vite`](reference/vite.md): The Vite plugin and its options.
 - [JSX types and tsconfig](reference/jsx.md): `lumiose/jsx-runtime`, `lumiose/env` and the required `tsconfig.json`.
 - [CLI](reference/cli.md): `lumiose dev`, `build`, `preview`, `check`, `typegen`, `routes`, `lint`, `fmt`, `docs`, `explain`, `agents init` and `mcp`; `--format json` and exit codes.
@@ -214,10 +215,10 @@ export function Counter({ start = 0 }: { start?: number }) {
 
 ```tsx check file=main.tsx
 // src/main.tsx
-import { mount } from "lumiose/dom";
+import { render } from "lumiose/dom";
 import { Counter } from "./Counter.stsx";
 
-mount(() => <Counter start={1} />, document.getElementById("app")!);
+render(() => <Counter start={1} />, document.getElementById("app")!);
 ```
 
 Run `pnpm vite` and open the printed URL.
@@ -260,6 +261,78 @@ The extension bundles the server (it runs on VS Code's own Node.js) and uses the
 - [Components](concepts/components.md) and [Signals](concepts/signals.md): the component model.
 - [Styles](concepts/styles.md): scoping by placement, JS values in styles and build-time math.
 - [Rendering modes](concepts/rendering-modes.md): server-first pages with islands.
+
+<!-- source: upgrading.md -->
+
+# Upgrading from 0.1
+
+> The next release renames several APIs to the names React, Solid and Svelte use for the same behavior. The old names are removed, with no aliases: this page lists every rename and how to migrate.
+
+The renames change names only, except context, where `provide()` becomes a provider component.
+Type errors point at every place to update: `lumiose check` (or `tsc`) reports each old import as a
+missing export.
+
+## Migration table
+
+| 0.1                                                | Now                                                                        | Entry            |
+| -------------------------------------------------- | -------------------------------------------------------------------------- | ---------------- |
+| `inject(Ctx)`                                      | `useContext(Ctx)`                                                          | `lumiose`        |
+| `provide(Ctx, value)`                              | `<Ctx value={value}>…</Ctx>`                                               | `lumiose`        |
+| `lifetime()`                                       | `getAbortSignal()`                                                         | `lumiose`        |
+| `pending()`                                        | `isPending()`                                                              | `lumiose`        |
+| `busy()`                                           | `isBusy()`                                                                 | `lumiose`        |
+| `submitting(name?)`                                | `isSubmitting(name?)`                                                      | `lumiose`        |
+| `flushSync()`                                      | `flush()`                                                                  | `lumiose`        |
+| `navigating()`                                     | `isNavigating()`                                                           | `lumiose/router` |
+| `search()`, `search.set()`, `Search`, `SearchInit` | `searchParams()`, `searchParams.set()`, `SearchParams`, `SearchParamsInit` | `lumiose/router` |
+| `mount(code, container)`                           | `render(code, container)`                                                  | `lumiose/dom`    |
+
+Signatures and behavior are unchanged, apart from context.
+
+## Context: `provide()` becomes `<Ctx value>`
+
+`createContext()` returns a provider component, as in React 19 and Solid 2. Instead of calling
+`provide()` in a component body, wrap the subtree that should see the value:
+
+```tsx
+// 0.1
+export function Shop() {
+  provide(CartContext, createCart());
+  return <Products />;
+}
+
+// Now
+export function Shop() {
+  return (
+    <CartContext value={createCart()}>
+      <Products />
+    </CartContext>
+  );
+}
+```
+
+Differences to keep in mind:
+
+- The value reaches the provider's children only. A component that called `provide()` and then
+  read the context itself with `inject()` now reads it in a component inside the provider.
+- The provider reads `value` once, when it renders, as before: to share changing state, provide a
+  signal, a store or an object with getters.
+- Islands still start a new context root: a provider in the page does not reach an island
+  ([LUM4010](errors/LUM4010.md)).
+
+## Other changes
+
+- **App entries and HMR.** With `@lumiose/vite`, an app entry is detected by its `render` import
+  from `lumiose/dom` (it was `mount`). Rename the import and the entry keeps re-rendering on hot
+  updates.
+- **`ErrorBoundary`.** The docs call the fallback's second argument `reset` (it was `retry`), as
+  Solid and react-error-boundary do. It is only a parameter name: existing code keeps working.
+- **`url()`, `params()`, `route()`.** Unchanged. Those of `lumiose` read the request and are
+  server-only (`LUM4003` in the browser); those of `lumiose/router` are reactive and work in the
+  browser too.
+
+See also: [Signals and reactivity](concepts/signals.md), [Sharing state](concepts/state.md),
+[`lumiose`: reactivity](reference/reactivity.md).
 
 <!-- source: concepts/components.md -->
 
@@ -401,11 +474,11 @@ the signal marks it dirty and re-runs only what depends on it.
 
 - **Reads are synchronous.** `count()` always returns the current value, even right after a write.
 - **Writes are batched.** Writes inside a delegated event handler are batched for the duration of
-  the handler. Any other write schedules a microtask flush. `flushSync()` flushes immediately.
+  the handler. Any other write schedules a microtask flush. `flush()` flushes immediately.
 - **Flush order:** computeds are pulled, then DOM bindings run (parents before children), then user
   effects.
 - **Owners.** Every component, effect and root is an _owner_. Owners scope cleanups
-  (`onCleanup`), context (`provide`/`inject`), error handling and `lifetime()`. Disposing an owner
+  (`onCleanup`), context (`<Ctx value>`/`useContext`), error handling and `getAbortSignal()`. Disposing an owner
   disposes everything created under it.
 - **Equality.** A write that is `Object.is`-equal to the current value is not a change. Pass
   `{ equals }` to customize, or `{ equals: false }` to treat every write as a change.
@@ -413,29 +486,29 @@ the signal marks it dirty and re-runs only what depends on it.
 
 ## API
 
-| API                                                         | Shape                                                                                                                                       |
-| ----------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| `signal(value, { equals? })`                                | `s()` reads, `s.set(v)` and `s.update(fn)` write, `s.peek()` reads untracked.                                                               |
-| `computed(fn, { equals? })`                                 | `c()` reads. Lazy, cached and glitch-free; `fn` receives the previous value.                                                                |
-| `effect(fn)`                                                | Runs after the DOM updates and again when what it read changes. `fn` may return a cleanup. Returns a disposer.                              |
-| `onMount(fn)`                                               | Runs `fn` once, untracked, after the owner's DOM is mounted. May return a cleanup.                                                          |
-| `onCleanup(fn)`                                             | Runs `fn` when the current owner is disposed or re-runs.                                                                                    |
-| `store(obj)`                                                | Deep reactive proxy over a plain object or array: mutate it directly.                                                                       |
-| `snapshot(value)`                                           | A deep plain copy of a store, for `structuredClone`, `postMessage` and saving.                                                              |
-| `untrack(fn)`                                               | Runs `fn` without subscribing to what it reads.                                                                                             |
-| `batch(fn)`                                                 | Groups writes; dependents run once at the end.                                                                                              |
-| `flushSync()`                                               | Runs pending bindings and effects now.                                                                                                      |
-| `lifetime()`                                                | An `AbortSignal` aborted when the owner is disposed, an effect re-runs, or an async run is superseded. On the server, the request's signal. |
-| `createContext(default?)`, `provide(ctx, v)`, `inject(ctx)` | Values passed down the owner tree; they survive `await`.                                                                                    |
-| `resource(fetcher)`                                         | Low-level on-demand loading with `loading()`, `error()`, `refetch()`. Prefer [async components](async.md).                                  |
+| API                                                             | Shape                                                                                                                                       |
+| --------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| `signal(value, { equals? })`                                    | `s()` reads, `s.set(v)` and `s.update(fn)` write, `s.peek()` reads untracked.                                                               |
+| `computed(fn, { equals? })`                                     | `c()` reads. Lazy, cached and glitch-free; `fn` receives the previous value.                                                                |
+| `effect(fn)`                                                    | Runs after the DOM updates and again when what it read changes. `fn` may return a cleanup. Returns a disposer.                              |
+| `onMount(fn)`                                                   | Runs `fn` once, untracked, after the owner's DOM is mounted. May return a cleanup.                                                          |
+| `onCleanup(fn)`                                                 | Runs `fn` when the current owner is disposed or re-runs.                                                                                    |
+| `store(obj)`                                                    | Deep, mutable reactive proxy over a plain object or array (like Valtio's `proxy` or Solid's `createMutable`): mutate it directly.           |
+| `snapshot(value)`                                               | A deep plain copy of a store, for `structuredClone`, `postMessage` and saving.                                                              |
+| `untrack(fn)`                                                   | Runs `fn` without subscribing to what it reads.                                                                                             |
+| `batch(fn)`                                                     | Groups writes; dependents run once at the end.                                                                                              |
+| `flush()`                                                       | Runs pending bindings and effects now.                                                                                                      |
+| `getAbortSignal()`                                              | An `AbortSignal` aborted when the owner is disposed, an effect re-runs, or an async run is superseded. On the server, the request's signal. |
+| `createContext(default?)`, `<Ctx value={v}>`, `useContext(ctx)` | Values passed down the owner tree; they survive `await`. The provider reads `value` once: provide a signal or store for changing state.     |
+| `resource(fetcher)`                                             | Low-level on-demand loading with `loading()`, `error()`, `refetch()`. Prefer [async components](async.md).                                  |
 
-In-flight state (`pending()`, `busy()`, `submitting()`, `navigating()`) is covered in
+In-flight state (`isPending()`, `isBusy()`, `isSubmitting()`, `isNavigating()`) is covered in
 [Async components](async.md) and [Data and actions](data-and-actions.md).
 
 ## Example
 
 ```tsx check
-import { computed, createContext, effect, inject, provide, signal, store } from "lumiose";
+import { computed, createContext, effect, signal, store, useContext } from "lumiose";
 
 const Theme = createContext<"light" | "dark">("light");
 
@@ -450,21 +523,21 @@ export function Cart() {
     document.title = `Cart: ${total().toFixed(2)}`;
   });
 
-  provide(Theme, "dark");
-
   return (
-    <section>
-      <button onClick={() => items.push({ name: "Ink", price: 5, qty: 1 })}>Add ink</button>
-      <button onClick={() => (items[0]!.qty += 1)}>One more pen</button>
-      <button onClick={() => discount.set(0.1)}>Apply 10%</button>
-      <p>Total: {total().toFixed(2)}</p>
-      <ThemeLabel />
-    </section>
+    <Theme value="dark">
+      <section>
+        <button onClick={() => items.push({ name: "Ink", price: 5, qty: 1 })}>Add ink</button>
+        <button onClick={() => (items[0]!.qty += 1)}>One more pen</button>
+        <button onClick={() => discount.set(0.1)}>Apply 10%</button>
+        <p>Total: {total().toFixed(2)}</p>
+        <ThemeLabel />
+      </section>
+    </Theme>
   );
 }
 
 function ThemeLabel() {
-  const theme = inject(Theme);
+  const theme = useContext(Theme);
   return <small>Theme: {theme}</small>;
 }
 ```
@@ -481,7 +554,7 @@ function ThemeLabel() {
 - **Using `effect` to derive state.** `effect(() => b.set(a() * 2))` adds a frame of staleness and
   an extra flush. Use `computed(() => a() * 2)`.
 - **Expecting an effect to run synchronously.** Effects run after the DOM updates. In tests, call
-  `flushSync()` after a write before asserting.
+  `flush()` after a write before asserting.
 - **Module-scope signals in server code.** On the server, a signal at module scope is shared by
   every request. Keep request data in components or context (`LUM4008`).
 - **Posting a store to a worker.** `postMessage()` and `structuredClone()` throw on proxies: send
@@ -511,7 +584,7 @@ See also: [reference: reactivity](../reference/reactivity.md), [JSX bindings](js
 | Where                                      | Lives as long as          | Shared with                                | On the server                              |
 | ------------------------------------------ | ------------------------- | ------------------------------------------ | ------------------------------------------ |
 | A component (`signal`, `store` in setup)   | the component             | its children, through props                | one per request: safe                      |
-| Context (`provide` / `inject`)             | the providing owner       | everything rendered below it               | one per request: safe                      |
+| Context (`<Ctx value>` / `useContext`)     | the provider              | everything rendered inside it              | one per request: safe                      |
 | Module scope (`export const s = signal()`) | the page (in the browser) | every component and island that imports it | one per process: never write it during SSR |
 
 **No state library needed.** Only the code that reads a signal (or a store property) re-runs, so
@@ -524,7 +597,7 @@ selectors and re-render tuning are not needed. What the popular libraries offer 
 | Jotai `atomWithStorage`, Zustand `persist`           | the persisted signal recipe below                                                 |
 | Jotai `Provider`, Zustand `createStore` with context | a store with actions, provided through context (recipe below)                     |
 | Zustand selectors, `subscribeWithSelector`           | not needed: `computed` for the slice, `effect` to react to it                     |
-| Zustand `immer` middleware                           | `store()`: mutate it directly                                                     |
+| Zustand `immer` middleware                           | `store()`: a mutable proxy, mutate it directly                                    |
 | Zustand `devtools`                                   | `effect(() => console.debug(JSON.stringify(state)))` (tracks every property read) |
 | Valtio `proxy`, `snapshot`                           | `store`, `snapshot`                                                               |
 | Solid `reconcile`, TanStack structural sharing       | `reconcile(store, data)`: patch fresh data in, keeping unchanged items            |
@@ -537,14 +610,14 @@ the Lumiose runtime and the modules they import, so module-scope state is how is
 
 ## API
 
-| API                                                    | Use it for                                                           |
-| ------------------------------------------------------ | -------------------------------------------------------------------- |
-| `signal(v)`, `computed(fn)`, `store(obj)`              | The state itself and what derives from it.                           |
-| `createContext<T>()`, `provide(ctx, v)`, `inject(ctx)` | One instance per subtree (and per request on the server).            |
-| `effect(fn)`, `onMount(fn)`                            | Syncing with the outside world (storage, logging); browser only.     |
-| `onCleanup(fn)`                                        | Ending a subscription when its owner is disposed.                    |
-| `snapshot(value)`                                      | A plain copy of a store, to save or send. Its reads are not tracked. |
-| `reconcile(store, data, { key })`                      | Patching fresh data into a store, keeping unchanged items as is.     |
+| API                                                        | Use it for                                                           |
+| ---------------------------------------------------------- | -------------------------------------------------------------------- |
+| `signal(v)`, `computed(fn)`, `store(obj)`                  | The state itself and what derives from it.                           |
+| `createContext<T>()`, `<Ctx value={v}>`, `useContext(ctx)` | One instance per subtree (and per request on the server).            |
+| `effect(fn)`, `onMount(fn)`                                | Syncing with the outside world (storage, logging); browser only.     |
+| `onCleanup(fn)`                                            | Ending a subscription when its owner is disposed.                    |
+| `snapshot(value)`                                          | A plain copy of a store, to save or send. Its reads are not tracked. |
+| `reconcile(store, data, { key })`                          | Patching fresh data into a store, keeping unchanged items as is.     |
 
 See [Signals and reactivity](signals.md) for each API.
 
@@ -557,7 +630,7 @@ instance through context: every component below shares it, each request on the s
 own, and tests call `createCart()` directly.
 
 ```tsx check
-import { computed, createContext, inject, provide, store } from "lumiose";
+import { computed, createContext, store, useContext } from "lumiose";
 
 export function createCart() {
   const state = store({ items: [] as { id: string; qty: number }[] });
@@ -579,29 +652,30 @@ export type Cart = ReturnType<typeof createCart>;
 
 const CartContext = createContext<Cart>();
 
-export function injectCart(): Cart {
-  const cart = inject(CartContext);
-  if (cart === undefined) throw new Error("injectCart() needs a <Shop> above it.");
+export function getCart(): Cart {
+  const cart = useContext(CartContext);
+  if (cart === undefined) throw new Error("getCart() needs a <Shop> above it.");
   return cart;
 }
 
 export function Shop() {
-  provide(CartContext, createCart());
   return (
-    <main>
-      <AddButton id="pen" />
-      <CartCount />
-    </main>
+    <CartContext value={createCart()}>
+      <main>
+        <AddButton id="pen" />
+        <CartCount />
+      </main>
+    </CartContext>
   );
 }
 
 function AddButton({ id }: { id: string }) {
-  const cart = injectCart();
+  const cart = getCart();
   return <button onClick={() => cart.add(id)}>Add {id}</button>;
 }
 
 function CartCount() {
-  const cart = injectCart();
+  const cart = getCart();
   return <p>{cart.count()} items</p>;
 }
 ```
@@ -777,8 +851,8 @@ Derive slices with `computed(() => state().bears)`.
 - **Writing module-scope state during SSR.** A module-scope signal written in a component body or
   a server path leaks one request's state into the next (`LUM4008`). Write it in handlers and
   effects, or keep it in context.
-- **Injecting page context inside an island.** Each island starts a new context root, on the
-  server as in the browser, so `inject()` inside it does not see what the page provided outside
+- **Reading page context inside an island.** Each island starts a new context root, on the
+  server as in the browser, so `useContext()` inside it does not see what the page provided outside
   it and returns the context's default (`LUM4010` warns in dev). Pass the value as an island prop,
   provide the context inside the island, or share module-scope state.
 - **Reading `localStorage` in setup in a server-rendered component.** The server cannot read it,
@@ -1345,59 +1419,59 @@ component works in every rendering mode.
 
 **The await rewrite.** The compiler rewrites `await` only where the nearest enclosing function is
 the component itself; awaits inside handlers and callbacks are ordinary awaits. Around each
-component-level `await`, the runtime restores the owner, context and tracking, so `inject()`,
-`lifetime()` and signal reads keep working after it.
+component-level `await`, the runtime restores the owner, context and tracking, so `useContext()`,
+`getAbortSignal()` and signal reads keep working after it.
 
 **Re-runs.** Props and signals read in the body (before or after an `await`) are tracked. When one
 changes, the component **re-runs**:
 
-- the previous run's `lifetime()` signal aborts (cancel your fetches with it);
+- the previous run's `getAbortSignal()` signal aborts (cancel your fetches with it);
 - the old UI stays on screen until the new run resolves, then swaps atomically;
 - signals created in the body start fresh on each run;
-- `pending()` is true while the re-run is in flight.
+- `isPending()` is true while the re-run is in flight.
 
 **Boundaries.**
 
 - `<Suspense fallback={…}>` shows its fallback for **new** pending content: the first load, and
   branches mounted later. Re-runs of content already shown keep the stale UI instead (use
-  `pending()` to dim it).
-- `<ErrorBoundary fallback={(error, retry) => …}>` catches rejections and render errors below it.
+  `isPending()` to dim it).
+- `<ErrorBoundary fallback={(error, reset) => …}>` catches rejections and render errors below it.
 - With no boundary: on the server the component becomes part of the page shell (the response waits
   for it); on the client nothing renders until it resolves; errors go to the `_error` page.
 
 **In-flight state** (all are reactive and safe to read anywhere):
 
-| Helper              | True while                                                                                             |
-| ------------------- | ------------------------------------------------------------------------------------------------------ |
-| `pending()`         | this async component's own re-run is in flight (inside the component or its UI).                       |
-| `submitting(name?)` | a form action submission is in flight. See [Data and actions](data-and-actions.md).                    |
-| `navigating()`      | an SPA navigation is in flight. See [Routing](routing.md).                                             |
-| `busy()`            | anything above is in flight, or any `<Suspense>` shows its fallback. Use it for a global progress bar. |
+| Helper                | True while                                                                                             |
+| --------------------- | ------------------------------------------------------------------------------------------------------ |
+| `isPending()`         | this async component's own re-run is in flight (inside the component or its UI).                       |
+| `isSubmitting(name?)` | a form action submission is in flight. See [Data and actions](data-and-actions.md).                    |
+| `isNavigating()`      | an SPA navigation is in flight. See [Routing](routing.md).                                             |
+| `isBusy()`            | anything above is in flight, or any `<Suspense>` shows its fallback. Use it for a global progress bar. |
 
 **Islands.** Inside an [island](islands.md), each awaited value is recorded during SSR and
 replayed during hydration, so the client does not fetch it again. Those values must be plain data
 (`LUM4007`), and **everything awaited inside an island is sent to the browser**.
 
 > **Status:** async components, the `await` rewrite, re-runs, `<Suspense>`, `<ErrorBoundary>`,
-> `pending()`, `busy()` and server streaming are available, and so is replaying awaited values when
+> `isPending()`, `isBusy()` and server streaming are available, and so is replaying awaited values when
 > an island hydrates (see [Islands](islands.md)).
 
 ## API
 
-| API                                                              | Shape                                                                                                     |
-| ---------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
-| `async function Name(props) { const x = await …; return <… /> }` | An async component.                                                                                       |
-| `<Suspense fallback={…}>`                                        | Fallback for new pending content below.                                                                   |
-| `<ErrorBoundary fallback={(error, retry) => …}>`                 | Fallback after an error below; `retry()` mounts the children again. `fallback` may also be plain content. |
-| `pending()`                                                      | Whether this component's re-run is in flight.                                                             |
-| `busy()`                                                         | Whether anything in the app is in flight.                                                                 |
-| `lifetime()`                                                     | `AbortSignal` of the current run; aborted when superseded or disposed.                                    |
-| `fetchJSON<T>(url, init?)`                                       | Isomorphic JSON fetch that returns plain data. See [Data and actions](data-and-actions.md).               |
+| API                                                              | Shape                                                                                                      |
+| ---------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| `async function Name(props) { const x = await …; return <… /> }` | An async component.                                                                                        |
+| `<Suspense fallback={…}>`                                        | Fallback for new pending content below.                                                                    |
+| `<ErrorBoundary fallback={(error, reset) => …}>`                 | Fallback after an error below; `reset()` renders the children again. `fallback` may also be plain content. |
+| `isPending()`                                                    | Whether this component's re-run is in flight.                                                              |
+| `isBusy()`                                                       | Whether anything in the app is in flight.                                                                  |
+| `getAbortSignal()`                                               | `AbortSignal` of the current run; aborted when superseded or disposed.                                     |
+| `fetchJSON<T>(url, init?)`                                       | Isomorphic JSON fetch that returns plain data. See [Data and actions](data-and-actions.md).                |
 
 ## Example
 
 ```tsx check
-import { ErrorBoundary, Suspense, fetchJSON, lifetime, pending, signal } from "lumiose";
+import { ErrorBoundary, Suspense, fetchJSON, getAbortSignal, isPending, signal } from "lumiose";
 
 interface Book {
   id: string;
@@ -1406,11 +1480,11 @@ interface Book {
 }
 
 export async function BookDetails({ id }: { id: string }) {
-  const book = await fetchJSON<Book>(`/api/books/${id}`, { signal: lifetime() });
+  const book = await fetchJSON<Book>(`/api/books/${id}`, { signal: getAbortSignal() });
   const expanded = signal(false);
 
   return (
-    <article class={{ stale: pending() }}>
+    <article class={{ stale: isPending() }}>
       <h2>{book.title}</h2>
       <button onClick={() => expanded.update((open) => !open)}>Details</button>
       {expanded() && <p>{book.summary}</p>}
@@ -1429,9 +1503,9 @@ export function BookPage({ ids }: { ids: string[] }) {
         ))}
       </nav>
       <ErrorBoundary
-        fallback={(error, retry) => (
+        fallback={(error, reset) => (
           <p>
-            Could not load the book ({String(error)}). <button onClick={retry}>Retry</button>
+            Could not load the book ({String(error)}). <button onClick={reset}>Retry</button>
           </p>
         )}
       >
@@ -1444,7 +1518,7 @@ export function BookPage({ ids }: { ids: string[] }) {
 }
 ```
 
-Clicking another id re-runs `BookDetails`: the old book stays (dimmed through `pending()`) until
+Clicking another id re-runs `BookDetails`: the old book stays (dimmed through `isPending()`) until
 the new one arrives; `<Suspense>` only showed its fallback for the first load.
 
 ## Common mistakes
@@ -1452,14 +1526,14 @@ the new one arrives; `<Suspense>` only showed its fallback for the first load.
 - **Reading the component's own signals in its body.** A signal created in the body and read in
   the body re-runs the component, which re-creates the signal. Read it in JSX or handlers instead
   (`LUM2007`).
-- **Not passing `lifetime()` to fetches.** Without it, a superseded run's request keeps going. Pass
-  `{ signal: lifetime() }`.
+- **Not passing `getAbortSignal()` to fetches.** Without it, a superseded run's request keeps going. Pass
+  `{ signal: getAbortSignal() }`.
 - **Awaiting a `Response` inside an island.** `await fetch(url)` gives a non-serializable value.
   Use `await fetchJSON(url)` (`LUM4007`).
 - **Putting secrets in awaited values inside islands.** They are serialized into the HTML. Fetch
   only what the browser may see.
 - **Wrapping a re-run in `<Suspense>` and expecting the fallback again.** Revealed content keeps
-  its stale UI; show progress with `pending()` or `busy()`.
+  its stale UI; show progress with `isPending()` or `isBusy()`.
 - **`await using` in a component body.** Not supported in v1 (`LUM1007`).
 - **Expecting `resource()` on the server.** It never runs there; use an async component.
 
@@ -1524,13 +1598,13 @@ before hydrating.
 already client-side.
 
 **Context starts at the island.** An island hydrates as its own root, so context the page provided
-outside it (`provide()` in a layout or page) does not reach it, and the server renders it the same
-way: `inject()` inside an island returns the context's default, unless the island or a component
+outside it (a `<Ctx value>` provider in a layout or page) does not reach it, and the server renders it the same
+way: `useContext()` inside an island returns the context's default, unless the island or a component
 inside it provides the value. Contexts provided inside the island work on both sides. To hand page
 data to an island, pass it as a prop; to share state between islands, use module-scope state
-([Sharing state](state.md)). In dev, an island that injects a context the page provided warns
+([Sharing state](state.md)). In dev, an island that reads a context the page provided warns
 `LUM4010`. Slots are page content, so they keep seeing the page's context. `<Suspense>`,
-`<ErrorBoundary>`, request APIs (`locals()`, `cookies()`, …) and `lifetime()` work inside islands
+`<ErrorBoundary>`, request APIs (`locals()`, `cookies()`, …) and `getAbortSignal()` work inside islands
 during SSR as everywhere else.
 
 **Server-only boundaries.** `*.server.ts` files and everything under `src/server/` may not be
@@ -1634,9 +1708,9 @@ export default function Post() {
   island's graph is `LUM4003`. Call an endpoint with `fetchJSON` instead.
 - **Touching `window` or `document` at module scope** in a module that also runs on the server.
   Move it into `onMount` or an effect (`LUM4004`).
-- **Injecting page context inside an island.** An island hydrates as its own root, so it does not
-  see values the page provided outside it with `provide()`, and it renders the same way on the
-  server: `inject()` returns the context's default unless the island (or a component inside it)
+- **Reading page context inside an island.** An island hydrates as its own root, so it does not
+  see values the page provided outside it with a `<Ctx value>` provider, and it renders the same way on the
+  server: `useContext()` returns the context's default unless the island (or a component inside it)
   provides the value. Pass the value as a prop, or share module-scope state
   ([Sharing state](state.md)); dev warns with `LUM4010` when the page did provide it.
 - **Different output on server and client**, for example from `Math.random()` or `Date.now()` in
@@ -1655,7 +1729,7 @@ export default function Post() {
 - [LUM4004](../errors/LUM4004.md): browser API at module scope.
 - [LUM4006](../errors/LUM4006.md): hydration mismatch.
 - [LUM4007](../errors/LUM4007.md): non-serializable awaited value.
-- [LUM4010](../errors/LUM4010.md): island injects context provided by the page.
+- [LUM4010](../errors/LUM4010.md): island reads context provided by the page.
 
 See also: [Rendering modes](rendering-modes.md), [Async components](async.md), [Sharing state](state.md) (state shared by islands).
 
@@ -1755,8 +1829,8 @@ Routes with `mode = "spa"` use the client router `lumiose/router` ([reference](.
 - The SPA starts at the outermost `spa` layout (or the page itself) and covers every `spa` page
   below it; links between them navigate on the client, other links load the document.
 - `<Link href prefetch>` (plain `<a>` links work too), `navigate(href, { replace })`, reactive
-  `params()`, `route()` (the matched pattern), `url()`, `search()` (`search.set()` changes the
-  query) and `navigating()`.
+  `params()`, `route()` (the matched pattern), `url()`, `searchParams()` (`searchParams.set()` changes the
+  query) and `isNavigating()`.
 - Layouts persist: a layout's `children` is the outlet, and layouts shared by the old and the new
   page keep their state. A page with other param values (`songs/[id]`) is a new page.
 - A navigation holds the old page until the new page's async content is ready, then swaps.
@@ -1768,16 +1842,16 @@ Routes with `mode = "spa"` use the client router `lumiose/router` ([reference](.
 
 ## API
 
-| API                                                              | Use                                                    |
-| ---------------------------------------------------------------- | ------------------------------------------------------ |
-| `export default function Page(props: PageProps<"/x/[id]">)`      | A page component.                                      |
-| `export default function Layout(props: LayoutProps<"/x">)`       | A layout: `{ params, children }`.                      |
-| `params<"/x/[id]">()`                                            | The matched route's params, typed by pattern (server). |
-| `href(pattern, params?)`                                         | Build a URL from a typed route pattern.                |
-| `Routes`, `RouteParams<P>`, `RouteMap`, `LayoutMap`              | Route types.                                           |
-| `ErrorPageProps`                                                 | Props of `_404` and `_error`.                          |
-| `notFound()`, `error(status, message?)`, `redirect(to, status?)` | Stop rendering; see [Server](server.md).               |
-| `lumiose/router`: `Link`, `navigate`, `navigating`, `search`     | SPA routes ([reference](../reference/router.md)).      |
+| API                                                                                                   | Use                                                           |
+| ----------------------------------------------------------------------------------------------------- | ------------------------------------------------------------- |
+| `export default function Page(props: PageProps<"/x/[id]">)`                                           | A page component.                                             |
+| `export default function Layout(props: LayoutProps<"/x">)`                                            | A layout: `{ params, children }`.                             |
+| `params<"/x/[id]">()`                                                                                 | The matched route's params, typed by pattern (server).        |
+| `href(pattern, params?)`                                                                              | Build a URL from a typed route pattern.                       |
+| `Routes`, `RouteParams<P>`, `RouteMap`, `LayoutMap`                                                   | Route types.                                                  |
+| `ErrorPageProps`                                                                                      | Props of `_404` and `_error`.                                 |
+| `notFound()`, `error(status, message?)`, `redirect(to, status?)`                                      | Stop rendering; see [Server](server.md).                      |
+| `lumiose/router`: `Link`, `navigate`, `isNavigating`, `searchParams`, reactive `url`/`params`/`route` | SPA routes and islands ([reference](../reference/router.md)). |
 
 ## Example
 
@@ -1909,7 +1983,7 @@ cross-site requests).
 **Enhancing forms.** Inside an island, `onSubmit={submit}` posts the form without a page load.
 `submit()` resolves to `{ type: "success", status, data }`, `{ type: "failure", status, data }` or
 follows a redirect, and sets `actionData()`. It rejects only for unexpected errors, with a
-`FetchError`. `submitting(name?)` is true while a submission is in flight.
+`FetchError`. `isSubmitting(name?)` is true while a submission is in flight.
 
 **Refreshing.** `invalidate()` re-runs the current page's async components (SPA; the stale UI stays
 until the new data arrives), or reloads the page (MPA). On client-routed (SPA) pages a successful
@@ -1940,7 +2014,7 @@ type only: `import type { actions } from "../routes/reading-list.stsx"`.
 | `actionData<typeof actions>()`                                     | The last action's data or `fail` data, typed by the actions. Reactive. |
 | `submit(target, { action?, method?, signal?, invalidate? })`       | Post a form, submit event, `FormData`, `URLSearchParams` or a record.  |
 | `submit<typeof actions.name>(…)`                                   | The same, resolving with that action's typed success and failure data. |
-| `submitting(name?)`                                                | Whether a submission (to `?/name`) is in flight.                       |
+| `isSubmitting(name?)`                                              | Whether a submission (to `?/name`) is in flight.                       |
 | `invalidate()`                                                     | Refresh the current page's server data.                                |
 | `fetchJSON<T>(url, init?)`, `isFetchError(e)`                      | JSON fetch with typed errors.                                          |
 
@@ -1960,7 +2034,7 @@ export const GET: Endpoint<"/api/books"> = ({ url }) => {
 
 ```stsx check file=routes/books/new.stsx
 // src/routes/books/new.stsx: a form that works without JS, enhanced when it hydrates
-import { actionData, fail, redirect, submit, submitting, type ActionContext } from "lumiose";
+import { actionData, fail, redirect, submit, isSubmitting, type ActionContext } from "lumiose";
 
 interface Errors {
   title?: string;
@@ -1983,7 +2057,7 @@ export function NewBookForm() {
     <form method="post" action="?/create" onSubmit={submit}>
       <input name="title" />
       <p class="error">{actionData<typeof actions>()?.title}</p>
-      <button disabled={submitting("create")}>Add book</button>
+      <button disabled={isSubmitting("create")}>Add book</button>
     </form>
   );
 }
@@ -2984,7 +3058,7 @@ See also: [Styles](styles.md), [reference: CLI](../reference/cli.md).
 
 # Testing
 
-> Test components with Vitest through the Lumiose Vite plugin: mount into a DOM environment, interact, call `flushSync()`, assert. Test server rendering with `renderToString`.
+> Test components with Vitest through the Lumiose Vite plugin: render into a DOM environment, interact, call `flush()`, assert. Test server rendering with `renderToString`.
 
 ## Concept
 
@@ -2996,24 +3070,24 @@ as the app. Two things matter for component tests:
 - **The browser build of `lumiose`.** `lumiose` has a browser entry (signals, the DOM renderer) and a
   `node` entry (server rendering, where signals are plain values and effects never run). Vitest
   resolves Node conditions, but `lumiose()` gives tests in a DOM environment the browser entry of
-  `lumiose`, so mounted components update. Tests without a DOM environment keep the `node` entry.
+  `lumiose`, so rendered components update. Tests without a DOM environment keep the `node` entry.
 
-Updates are batched: after a write or an event outside a delegated handler, call `flushSync()`
+Updates are batched: after a write or an event outside a delegated handler, call `flush()`
 before asserting. Delegated events (`onClick`) need the element to be attached to `document`.
 
 Server rendering is tested with `renderToString(() => <Page />)` under the `node` entry: a test
 file without a DOM environment, in the same project.
 
 > **Status:** `@lumiose/testing` (a `render()` helper and Testing Library integration) is planned.
-> Until then, use `mount` from `lumiose/dom` as shown here.
+> Until then, use `render` from `lumiose/dom` as shown here.
 
 ## API
 
-| API                                                  | Use                                         |
-| ---------------------------------------------------- | ------------------------------------------- |
-| `mount(() => <App />, container)` from `lumiose/dom` | Render into a DOM node; returns a disposer. |
-| `flushSync()`                                        | Run pending bindings and effects now.       |
-| `renderToString(() => <App />)`                      | Server-render to a string (node entry).     |
+| API                                                   | Use                                         |
+| ----------------------------------------------------- | ------------------------------------------- |
+| `render(() => <App />, container)` from `lumiose/dom` | Render into a DOM node; returns a disposer. |
+| `flush()`                                             | Run pending bindings and effects now.       |
+| `renderToString(() => <App />)`                       | Server-render to a string (node entry).     |
 
 ## Example
 
@@ -3030,18 +3104,18 @@ export default defineConfig({
 
 ```tsx check file=Counter.test.tsx
 // src/Counter.test.tsx
-import { flushSync } from "lumiose";
-import { mount } from "lumiose/dom";
+import { flush } from "lumiose";
+import { render } from "lumiose/dom";
 import { expect, it } from "vitest";
 import { Counter } from "./Counter.stsx";
 
 it("counts clicks", () => {
   const container = document.body.appendChild(document.createElement("div"));
-  const dispose = mount(() => <Counter start={2} />, container);
+  const dispose = render(() => <Counter start={2} />, container);
 
   const button = container.querySelector("button")!;
   button.click();
-  flushSync();
+  flush();
 
   expect(button.textContent).toContain("Clicked 3 times");
   dispose();
@@ -3054,11 +3128,11 @@ it("counts clicks", () => {
 - **No DOM environment.** Without `happy-dom` (or `jsdom`) there is no `document`, and `lumiose`
   resolves to its `node` entry, which has no reactive graph: set the environment for component
   tests.
-- **Asserting right after a write.** Effects and bindings run in a microtask; call `flushSync()`
+- **Asserting right after a write.** Effects and bindings run in a microtask; call `flush()`
   first.
 - **Clicking a detached element.** Delegated handlers listen at `document`; append the container
   to `document.body`.
-- **Not disposing.** Call the disposer returned by `mount` so effects and listeners from one test
+- **Not disposing.** Call the disposer returned by `render` so effects and listeners from one test
   do not leak into the next.
 - **Testing server components in a DOM environment.** Async server components that use
   `request()`, `cookies()` or `*.server.ts` modules belong in server-side tests with
@@ -3339,15 +3413,15 @@ function onCleanup(fn: () => void): void;
 Registers `fn` on the current owner: it runs when the owner is disposed (or, for an effect, before
 its next run).
 
-## lifetime
+## getAbortSignal
 
 ```ts
-function lifetime(): AbortSignal;
+function getAbortSignal(): AbortSignal;
 ```
 
 An `AbortSignal` for the current owner. Aborted when the owner is disposed, when an effect re-runs,
 or when an async component run is superseded. On the server it is the request's signal. Throws
-outside an owner.
+outside an owner (with a message in development). Svelte has the same function.
 
 ## untrack
 
@@ -3366,10 +3440,10 @@ function batch<T>(fn: () => T): T;
 Defers dependents until `fn` returns, so they run once. Delegated event handlers are batched
 automatically.
 
-## flushSync
+## flush
 
 ```ts
-function flushSync(): void;
+function flush(): void;
 ```
 
 Runs pending computeds, DOM bindings and effects now, instead of in the next microtask.
@@ -3380,9 +3454,10 @@ Runs pending computeds, DOM bindings and effects now, instead of in the next mic
 function store<T extends object>(value: T): T;
 ```
 
-Wraps a plain object or array in a deep reactive proxy: reads track per property, writes notify
-only on change, array methods work. Class instances, `Map`s, `Set`s and frozen objects are returned
-as is.
+Wraps a plain object or array in a deep, **mutable** reactive proxy, like Valtio's `proxy`, Vue's
+`reactive` or Solid's `createMutable`: you write to it directly (`state.count++`,
+`state.items.push(item)`), with no setter. Reads track per property, writes notify only on change,
+array methods work. Class instances, `Map`s, `Set`s and frozen objects are returned as is.
 
 ## snapshot
 
@@ -3438,36 +3513,54 @@ const page = store({ rows: [{ slug: "intro", views: 1 }] });
 reconcile(page.rows, [{ slug: "intro", views: 2 }], { key: "slug" });
 ```
 
-## createContext, provide, inject
+## createContext, useContext
 
 ```ts
 function createContext<T>(defaultValue: T): Context<T>;
 function createContext<T>(): Context<T | undefined>;
-function provide<T>(context: Context<T>, value: T): void;
-function inject<T>(context: Context<T>): T;
+function useContext<T>(context: Context<T>): T;
 interface Context<T> {
+  (props: { value: T; children?: JSX.Element }): JSX.Element; // the provider component
   readonly id: symbol;
   readonly defaultValue: T;
 }
 ```
 
-`provide` sets a value on the current owner for everything created below it; `inject` returns the
-nearest provided value, or the default. Context survives `await` in async components.
+A context is also its provider component, as in React 19 and Solid 2: `<Theme value="dark">…</Theme>`
+provides `value` to everything rendered inside it, including content rendered later (conditionals,
+lists). `useContext` returns the value of the nearest provider above, or the default. A nested
+provider of the same context shadows the outer one for its subtree. Context survives `await` in
+async components. Islands start a new root ([LUM4010](../errors/LUM4010.md)).
 
-## pending
+The provider reads `value` once, when it renders, like Solid's provider and like every component
+prop read in a component body: components run once. To share state that changes, provide a signal,
+a store or an object with getters, and read it where it is used.
+
+```tsx
+const Theme = createContext("light");
+const Count = createContext(signal(0));
+
+<Theme value="dark">
+  <Count value={signal(5)}>
+    <Toolbar /> {/* useContext(Theme) is "dark"; useContext(Count)() is reactive */}
+  </Count>
+</Theme>;
+```
+
+## isPending
 
 ```ts
-function pending(): boolean;
+function isPending(): boolean;
 ```
 
 Inside an async component (its body or its UI): whether a **re-run** is in flight. The first load is
 not a re-run (`<Suspense>` covers it). Reading it in the body does not re-run the component.
 Always `false` on the server.
 
-## busy
+## isBusy
 
 ```ts
-function busy(): boolean;
+function isBusy(): boolean;
 ```
 
 App-wide: whether anything is in flight: an async component run, a `<Suspense>` showing its
@@ -3495,7 +3588,7 @@ stays loading. Prefer [async components](../concepts/async.md).
 ## Example
 
 ```tsx check
-import { batch, effect, lifetime, onCleanup, resource, signal, untrack } from "lumiose";
+import { batch, effect, getAbortSignal, onCleanup, resource, signal, untrack } from "lumiose";
 
 export function Clock() {
   const now = signal(new Date());
@@ -3521,7 +3614,7 @@ export function Clock() {
   return (
     <p onClick={rename}>
       {now().toLocaleTimeString()} · {user.loading() ? "…" : user()?.id}
-      {String(lifetime().aborted)}
+      {String(getAbortSignal().aborted)}
     </p>
   );
 }
@@ -3550,7 +3643,7 @@ interface SuspenseProps {
 
 Shows `fallback` while **new** async content below it is pending: the first load, and async
 components or resources that a branch mounts later. Re-runs of revealed content keep their stale UI
-(`pending()` tells them apart). Hidden content stays alive. A shown fallback counts for `busy()`.
+(`isPending()` tells them apart). Hidden content stays alive. A shown fallback counts for `isBusy()`.
 On the server, a boundary marks content that streams after the shell; with prerendering it is
 resolved inline.
 
@@ -3560,13 +3653,13 @@ resolved inline.
 function ErrorBoundary(props: ErrorBoundaryProps): JSX.Element;
 interface ErrorBoundaryProps {
   /** Rendered instead of the children after an error. */
-  fallback?: JSX.Element | ((error: unknown, retry: () => void) => JSX.Element);
+  fallback?: JSX.Element | ((error: unknown, reset: () => void) => JSX.Element);
   children?: JSX.Element;
 }
 ```
 
 Renders `fallback` when its children throw while rendering, an effect below throws, or an async
-component below rejects. `retry()` disposes the fallback and mounts the children again. On the
+component below rejects. `reset()` disposes the fallback and renders the children again. On the
 server, an error in a streamed boundary renders the nearest `ErrorBoundary` in place.
 
 In production server rendering, a fallback receives a generic `Error` with a short `digest`
@@ -3655,7 +3748,7 @@ export function Dialog() {
   const button = ref<HTMLButtonElement>();
 
   return (
-    <ErrorBoundary fallback={(error, retry) => <button onClick={retry}>{String(error)}</button>}>
+    <ErrorBoundary fallback={(error, reset) => <button onClick={reset}>{String(error)}</button>}>
       <button ref={button} onClick={() => open.set(true)}>
         Open
       </button>
@@ -3762,7 +3855,7 @@ failure) with a `FetchError`, and with a `TypeError` for a redirect to a URL tha
 ### submitting
 
 ```ts
-function submitting(name?: string): boolean;
+function isSubmitting(name?: string): boolean;
 ```
 
 Whether a `submit()` is in flight; with a name, one to that named action (`?/name`). Reactive.
@@ -3885,7 +3978,9 @@ page's hash policy covers its inline elements); in the browser it reads
 `<meta property="csp-nonce">`. See [Security](../concepts/security.md).
 
 Available anywhere during a server render (also after `await`), scoped to the current request. In
-the browser they throw `LUM4003`. `env()` reads the adapter's env, else `process.env`;
+the browser they throw `LUM4003`. `url()`, `params()` and `route()` also exist in
+[`lumiose/router`](router.md): those are reactive, follow client navigations and also work during
+server rendering, so use them in code that runs in the browser (SPA routes, islands). `env()` reads the adapter's env, else `process.env`;
 `publicEnv()` returns the `PUBLIC_*` subset.
 
 ```ts
@@ -4017,7 +4112,7 @@ function renderToStream(
 ): Promise<RenderedShell>;
 
 interface RenderToStreamOptions {
-  /** Aborts the render: rejects a pending shell, ends the stream and aborts lifetime(). */
+  /** Aborts the render: rejects a pending shell, ends the stream and aborts getAbortSignal(). */
   signal?: AbortSignal;
   /** SSG/prerender: render every Suspense boundary into the shell; no fallbacks, no stream. */
   resolveAll?: boolean;
@@ -4102,18 +4197,18 @@ export async function handle(request: Request): Promise<Response> {
 
 # `lumiose/dom`
 
-> `mount` renders a component tree into a DOM element. The rest of `lumiose/dom` is the client half of the compiler-runtime contract that compiled code imports.
+> `render` renders a component tree into a DOM element. The rest of `lumiose/dom` is the client half of the compiler-runtime contract that compiled code imports.
 
-## mount
+## render
 
 ```ts
-function mount(code: () => JSX.Element, container: Element): () => void;
+function render(code: () => JSX.Element, container: Element): () => void;
 ```
 
 Renders `code()` into `container` (appended after its existing content) under a new root owner, and
 marks the container as a delegation boundary. Returns a disposer that disposes the owner and
-removes the rendered nodes. With the Vite plugin, an entry module that imports `mount` re-mounts on
-hot updates.
+removes the rendered nodes. With the Vite plugin, an entry module that imports `render` re-renders
+the app on hot updates. Solid's `render` has the same signature.
 
 ## Compiler-runtime contract
 
@@ -4183,27 +4278,27 @@ Islands inside slots that an island inserts later are hydrated when they appear.
 
 ```tsx check
 import { signal } from "lumiose";
-import { mount } from "lumiose/dom";
+import { render } from "lumiose/dom";
 
 function App() {
   const name = signal("world");
   return <input bind:value={name} placeholder={`Hello, ${name()}`} />;
 }
 
-mount(() => <App />, document.getElementById("app")!);
+render(() => <App />, document.getElementById("app")!);
 ```
 
 <!-- source: reference/router.md -->
 
 # `lumiose/router`
 
-> The client router for `spa` routes, built on the Navigation API: `<Link>`, `navigate()`, reactive `params()`, `route()`, `search()`, `url()` and `navigating()`, persistent layouts, transitions that hold the old page, scroll and focus restoration, and a client-side `_404`.
+> The client router for `spa` routes, built on the Navigation API: `<Link>`, `navigate()`, reactive `params()`, `route()`, `searchParams()`, `url()` and `isNavigating()`, persistent layouts, transitions that hold the old page, scroll and focus restoration, and a client-side `_404`.
 
 `lumiose/router` works inside `spa` routes (`export const mode = "spa"`, or `lumiose({ mode: "spa" })`
 for the whole project); `<Link>` works on MPA pages too (see [Link](#link)). Pages and layouts of an SPA import it like any module; on the server
-(`ssr` pages) the same names read the request: `params()`, `route()`, `url()` and `search()` return the
-request's values, `<Link>` renders its `<a>`, `navigating()` is `false`, and `navigate()` and
-`search.set()` throw (call them from event handlers and effects). Concepts:
+(`ssr` pages) the same names read the request: `params()`, `route()`, `url()` and `searchParams()` return the
+request's values, `<Link>` renders its `<a>`, `isNavigating()` is `false`, and `navigate()` and
+`searchParams.set()` throw (call them from event handlers and effects). Concepts:
 [Routing](../concepts/routing.md), [Rendering modes](../concepts/rendering-modes.md).
 
 ## Components
@@ -4259,14 +4354,14 @@ once the new page is on screen (its async content ready), or when another naviga
 it. Browser only. Only `http:` and `https:` URLs (relative ones included) navigate: any other
 scheme, such as `javascript:`, throws a `TypeError`.
 
-### navigating
+### isNavigating
 
 ```ts
-function navigating(): boolean;
+function isNavigating(): boolean;
 ```
 
 Whether a navigation is in flight: from the click until the new page is on screen. Reactive, and
-counted by [`busy()`](reactivity.md) (decision-20).
+counted by [`isBusy()`](reactivity.md) (decision-20).
 
 ## Route state
 
@@ -4297,29 +4392,29 @@ function url(): URL;
 
 The current URL, reactive. Do not mutate it.
 
-### search
+### searchParams
 
 ```ts
-interface Search {
+interface SearchParams {
   (): URLSearchParams;
   set(
-    next: SearchInit | ((current: URLSearchParams) => SearchInit),
+    next: SearchParamsInit | ((current: URLSearchParams) => SearchParamsInit),
     options?: NavigateOptions,
   ): Promise<void>;
 }
-const search: Search;
+const searchParams: SearchParams;
 
-type SearchInit =
+type SearchParamsInit =
   | URLSearchParams
   | string
   | Record<string, string | number | boolean | readonly string[] | null | undefined>;
 ```
 
-`search()` is the current URL's query, reactive (a new object per change). `search.set()`
+`searchParams()` is the current URL's query, reactive (a new object per change). `searchParams.set()`
 navigates to the current path with a new query, keeping the scroll position; `null` and
 `undefined` values are left out. It adds a history entry unless `{ replace: true }`.
 
-While a page is still loading during a navigation, `params()`, `route()`, `url()` and `search()` called in it
+While a page is still loading during a navigation, `params()`, `route()`, `url()` and `searchParams()` called in it
 (and its props) already describe the page it is loading; everything else keeps the shown URL until
 the new page is on screen.
 
@@ -4334,14 +4429,14 @@ the new page is on screen.
 - **Persistent layouts.** A layout's `children` is the outlet. Layouts the old and the new page
   share stay mounted with their state; the first level that differs (another file, or other
   values of the params in its path, such as `songs/[id].stsx` for another song) is replaced. A
-  navigation that only changes the query keeps every level and updates `search()`.
+  navigation that only changes the query keeps every level and updates `searchParams()`.
 - **Transitions.** The new page is created off-screen. The old page stays until the new page's
   async content (async components and resources outside a `<Suspense>` of the new page) is ready;
   then the URL signals change and the pages swap in one step. A `<Suspense>` inside the new page
   shows its fallback instead.
 - **Scroll and focus.** After a navigation the page scrolls to the top (or to the URL's `#hash`)
   and focus moves to the document (or the first `[autofocus]` element); back/forward restore the
-  scroll position. `search.set()` keeps both.
+  scroll position. `searchParams.set()` keeps both.
 - **Errors.** `notFound()` and unknown URLs render the nearest `_404` page of the SPA; other errors
   its `_error` page (`{ status, error }` props), with the layouts kept. A thrown `redirect()`
   navigates. Without such a page, a minimal built-in error page replaces the SPA.
@@ -4356,7 +4451,7 @@ the new page is on screen.
 ```tsx check file=routes/music/_layout.tsx
 // src/routes/music/_layout.tsx: an SPA under /music, with a persistent layout
 import { href, type LayoutProps } from "lumiose";
-import { Link, navigating } from "lumiose/router";
+import { Link, isNavigating } from "lumiose/router";
 
 export const mode = "spa";
 
@@ -4369,7 +4464,7 @@ export default function Layout(props: LayoutProps<"/music">) {
           Settings
         </Link>
       </nav>
-      {navigating() && <progress />}
+      {isNavigating() && <progress />}
       <main>{props.children}</main>
     </div>
   );
@@ -4378,15 +4473,17 @@ export default function Layout(props: LayoutProps<"/music">) {
 
 ```tsx check file=routes/music/index.tsx
 // src/routes/music/index.tsx: a filter kept in the query
-import { search } from "lumiose/router";
+import { searchParams } from "lumiose/router";
 
 export default function Songs() {
-  const query = () => search().get("q") ?? "";
+  const query = () => searchParams().get("q") ?? "";
   return (
     <input
       type="search"
       value={query()}
-      onInput={(event) => search.set({ q: event.currentTarget.value || null }, { replace: true })}
+      onInput={(event) =>
+        searchParams.set({ q: event.currentTarget.value || null }, { replace: true })
+      }
     />
   );
 }
@@ -4540,8 +4637,8 @@ What it does:
   component of the file (a constant, a helper) re-renders all of the file's components. Components
   hydrated in an island or on the SPA's first page update the same way once hydrated. A module
   whose exports are not all such components (a constant or signal export, a changed export list,
-  an async or anonymous default component) falls back to the app entry: a client module that imports `mount` from `lumiose/dom` accepts
-  updates of every module it reaches and re-mounts the app into the same container (component
+  an async or anonymous default component) falls back to the app entry: a client module that imports `render` from `lumiose/dom` accepts
+  updates of every module it reaches and re-renders the app into the same container (component
   state resets; module-level signals of unchanged modules survive), else the page reloads.
 - Style blocks become `<file>?lumiose&type=style&lang.css` modules handled by Vite's CSS pipeline.
   Modules that `$` references import constants from are tracked as dependencies of that CSS module.
@@ -7029,6 +7126,11 @@ Keep the server code on the server and call it over HTTP: expose an endpoint (or
 call it with `fetchJSON` or `submit()` from the island. In client code, read public config from
 `import.meta.env.PUBLIC_*` instead of `env()`.
 
+For the current URL, params and route in client code, import `url()`, `params()` and `route()` from
+`lumiose/router` instead of `lumiose`. Those of `lumiose` read the request, so they are server-only
+and throw this error in the browser; those of `lumiose/router` are reactive, follow client
+navigations, and also work during server rendering.
+
 ## Related
 
 - [Islands](../concepts/islands.md)
@@ -7262,13 +7364,13 @@ export function Profile(props: { website: string }) {
 
 <!-- Generated from crates/lumiose_compiler/src/diagnostics/registry.rs by packages/lumiose/scripts/gen-error-docs.ts. Edit the explanation below the end marker. -->
 
-# LUM4010: Island injects context provided by the page
+# LUM4010: Island reads context provided by the page
 
 **Severity:** warning · **Category:** islands and boundaries (4xxx)
 
 <!-- end of generated header -->
 
-> An island calls `inject()` for a context that the page provides outside the island, so it gets
+> An island calls `useContext()` for a context that the page provides outside the island, so it gets
 > the context's default value.
 
 **Reported by:** the server runtime (`lumiose/server`), as a console warning in development, once
@@ -7277,9 +7379,9 @@ per island.
 ## What it means
 
 Each [island](../concepts/islands.md) hydrates in the browser as its own root: nothing the page
-rendered around it exists there, including the values the page passed down with `provide()`. So
+rendered around it exists there, including the values the page passed down with a `<Ctx value>` provider. So
 that the server HTML and the hydrated island agree, the island starts from a fresh root on the
-server too. Its `inject()` calls see only values provided inside the island, and otherwise the
+server too. Its `useContext()` calls see only values provided inside the island, and otherwise the
 context's default.
 
 This warning means the page did provide the context above the island. The island does not see that
@@ -7291,12 +7393,15 @@ value, on the server or in the browser.
 const Theme = createContext("light");
 
 export default function Page() {
-  provide(Theme, "dark");
-  return <ThemeToggle client:load />;
+  return (
+    <Theme value="dark">
+      <ThemeToggle client:load />
+    </Theme>
+  );
 }
 
 export function ThemeToggle() {
-  const theme = inject(Theme); // "light": the page's "dark" stays outside the island
+  const theme = useContext(Theme); // "light": the page's "dark" stays outside the island
   return <button>{theme}</button>;
 }
 ```
@@ -7645,17 +7750,17 @@ fix?, docs }`; `lumiose check --format json` prints them.
 
 ## Islands and boundaries (4xxx)
 
-| Code                  | Severity | Title                                       |
-| --------------------- | -------- | ------------------------------------------- |
-| [LUM4001](LUM4001.md) | error    | Island component is not exported            |
-| [LUM4002](LUM4002.md) | error    | Non-serializable island prop                |
-| [LUM4003](LUM4003.md) | error    | Server-only module in a client graph        |
-| [LUM4004](LUM4004.md) | warning  | Browser API at module scope                 |
-| [LUM4006](LUM4006.md) | error    | Hydration mismatch                          |
-| [LUM4007](LUM4007.md) | error    | Non-serializable awaited value              |
-| [LUM4008](LUM4008.md) | warning  | Module-scope signal written during SSR      |
-| [LUM4009](LUM4009.md) | warning  | Unsafe URL blocked in a URL attribute       |
-| [LUM4010](LUM4010.md) | warning  | Island injects context provided by the page |
+| Code                  | Severity | Title                                     |
+| --------------------- | -------- | ----------------------------------------- |
+| [LUM4001](LUM4001.md) | error    | Island component is not exported          |
+| [LUM4002](LUM4002.md) | error    | Non-serializable island prop              |
+| [LUM4003](LUM4003.md) | error    | Server-only module in a client graph      |
+| [LUM4004](LUM4004.md) | warning  | Browser API at module scope               |
+| [LUM4006](LUM4006.md) | error    | Hydration mismatch                        |
+| [LUM4007](LUM4007.md) | error    | Non-serializable awaited value            |
+| [LUM4008](LUM4008.md) | warning  | Module-scope signal written during SSR    |
+| [LUM4009](LUM4009.md) | warning  | Unsafe URL blocked in a URL attribute     |
+| [LUM4010](LUM4010.md) | warning  | Island reads context provided by the page |
 
 ## Routing and server (5xxx)
 

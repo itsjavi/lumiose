@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 import { describe, expect, it } from "vitest";
 import type { Renderable } from "../contract/client.ts";
-import { flushSync, onCleanup, signal } from "../core/index.ts";
+import { flush, onCleanup, signal } from "../core/index.ts";
 import { createOwner, disposeOwner, runWithOwner } from "../core/internal.ts";
 import { branch, createComponent, insert, template } from "./index.ts";
 import { createRange } from "./insert.ts";
@@ -47,7 +47,7 @@ describe("insert (dynamic)", () => {
     const text = el.childNodes[1]!;
     expect(el.textContent).toBe("a0z");
     count.set(5);
-    flushSync();
+    flush();
     expect(el.textContent).toBe("a5z");
     expect(el.childNodes[1]).toBe(text);
   });
@@ -60,7 +60,7 @@ describe("insert (dynamic)", () => {
     const [x, one] = [el.childNodes[1], el.childNodes[2]];
     expect(el.innerHTML).toBe("ax1<b></b><!---->z");
     n.set(2);
-    flushSync();
+    flush();
     expect(el.innerHTML).toBe("ax2<b></b><!---->z");
     expect(el.childNodes[1]).toBe(x);
     expect(el.childNodes[2]).toBe(one);
@@ -83,7 +83,7 @@ describe("insert (dynamic)", () => {
     ];
     for (const [next, html] of steps) {
       value.set(next);
-      flushSync();
+      flush();
       expect(el.innerHTML).toBe(html);
     }
   });
@@ -97,7 +97,7 @@ describe("insert (dynamic)", () => {
       insert(el, b);
     });
     a.set(["a1", "a2"]);
-    flushSync();
+    flush();
     expect(el.textContent).toBe("a1a2b");
   });
 
@@ -112,7 +112,7 @@ describe("insert (dynamic)", () => {
     const [, dispose] = root(() => insert(el, () => createComponent(Child, { name: which() })));
     expect(el.textContent).toBe("A");
     which.set("B");
-    flushSync();
+    flush();
     expect(el.textContent).toBe("B");
     expect(log).toEqual(["cleanup A"]);
     dispose();
@@ -137,7 +137,7 @@ describe("insert (nested dynamic content and ranges)", () => {
     const [, dispose] = root(() => insert(el, () => props.children, el.childNodes[1]!));
     expect(el.textContent).toBe("aaz");
     label.set("b");
-    flushSync();
+    flush();
     expect(el.textContent).toBe("abz");
     expect(created).toBe(1);
     dispose();
@@ -152,12 +152,12 @@ describe("insert (nested dynamic content and ranges)", () => {
     const [, dispose] = root(() => insert(el, () => (show() ? range : "none"), marker));
     expect(el.innerHTML).toBe("a<b></b>x<!---->z");
     show.set(false);
-    flushSync();
+    flush();
     expect(el.innerHTML).toBe("anone<!---->z");
     // Content rendered into the detached range lands inside it, and comes back with it.
     insert(end.parentNode!, "y", end);
     show.set(true);
-    flushSync();
+    flush();
     expect(el.innerHTML).toBe("a<b></b>xy<!---->z");
     dispose();
   });
@@ -177,10 +177,10 @@ describe("branch", () => {
     root(() => branch(el, marker, count, view("yes"), view("no")));
     expect(el.innerHTML).toBe("a<i>yes</i><!---->z");
     count.set(2);
-    flushSync();
+    flush();
     expect(created).toBe(1);
     count.set(0);
-    flushSync();
+    flush();
     expect(el.innerHTML).toBe("a<i>no</i><!---->z");
     expect(log).toEqual(["dispose yes"]);
     expect(created).toBe(2);
@@ -199,16 +199,16 @@ describe("branch", () => {
     );
     expect(el.innerHTML).toBe("a<!---->z");
     show.set(true);
-    flushSync();
+    flush();
     expect(el.textContent).toBe("a1z");
     count.set(2);
-    flushSync();
+    flush();
     expect(el.textContent).toBe("a2z");
     show.set(false);
-    flushSync();
+    flush();
     expect(el.innerHTML).toBe("a<!---->z");
     count.set(3);
-    flushSync();
+    flush();
     expect(views).toBe(2);
   });
 });

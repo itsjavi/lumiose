@@ -27,9 +27,9 @@ export function Likes() {
   return <button onClick={likeTwice}>Like</button>;
 }
 `,
-  "src/main.tsx": `import { mount } from "lumiose/dom";
+  "src/main.tsx": `import { render } from "lumiose/dom";
 import { Likes } from "./components/Likes.tsx";
-mount(() => <Likes />, document.body);
+render(() => <Likes />, document.body);
 `,
   "src/clean.tsx": `export const answer = 42;\n`,
   "src/entry.server.ts": `import { like } from "./lib/db.server.ts";

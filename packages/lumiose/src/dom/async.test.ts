@@ -5,16 +5,24 @@ import { afterEach, describe, expect, it } from "vitest";
 import type { Renderable } from "../contract/client.ts";
 import {
   createContext,
-  flushSync,
-  inject,
-  lifetime,
+  flush,
+  useContext,
+  getAbortSignal,
   onCleanup,
-  pending,
-  provide,
+  isPending,
   signal,
 } from "../core/index.ts";
 import { getOwner, type Owner } from "../core/internal.ts";
-import { $async, $await, $leave, branch, createComponent, insert, list, mount } from "./index.ts";
+import {
+  $async,
+  $await,
+  $leave,
+  branch,
+  createComponent,
+  insert,
+  list,
+  render as renderRoot,
+} from "./index.ts";
 import { withIsland } from "./frame.ts";
 
 interface Deferred<T> {
@@ -46,7 +54,7 @@ const containers: (() => void)[] = [];
 
 function render(code: () => Renderable): HTMLElement {
   const container = document.createElement("div");
-  containers.push(mount(code, container));
+  containers.push(renderRoot(code, container));
   return container;
 }
 
@@ -148,7 +156,7 @@ describe("async components", () => {
         onCleanup(() => log.push(`cleanup ${n}`));
         const name = (await $await(() => api.load(n), 0))();
         const el = p(name + suffix());
-        insert(el, () => (pending() ? " (refreshing)" : ""));
+        insert(el, () => (isPending() ? " (refreshing)" : ""));
         return el;
       } finally {
         $leave();
@@ -166,10 +174,10 @@ describe("async components", () => {
     expect(container.textContent).toBe("ada!");
 
     id.set(2);
-    flushSync();
+    flush();
     expect(runs).toBe(2);
     await settled();
-    // The old UI stays live (its bindings still update) and pending() is true.
+    // The old UI stays live (its bindings still update) and isPending() is true.
     expect(container.textContent).toBe("ada! (refreshing)");
     expect(log).toEqual([]);
 
@@ -180,7 +188,7 @@ describe("async components", () => {
 
     // A read after the await is tracked too.
     suffix.set("?");
-    flushSync();
+    flush();
     expect(runs).toBe(3);
     await settled();
     expect(container.textContent).toBe("bob! (refreshing)");
@@ -196,7 +204,7 @@ describe("async components", () => {
     const lifetimes: AbortSignal[] = [];
     const User = $async(async function User(props: { id: number }): Promise<Renderable> {
       try {
-        lifetimes.push(lifetime());
+        lifetimes.push(getAbortSignal());
         const n = props.id;
         const name = (await $await(() => api.load(n), 0))();
         return p(name);
@@ -214,9 +222,9 @@ describe("async components", () => {
     api.calls.get(1)!.resolve("one");
     await settled();
     id.set(2);
-    flushSync();
+    flush();
     id.set(3);
-    flushSync();
+    flush();
     // Run 2 was superseded before it resolved: its lifetime is aborted.
     expect(lifetimes.map((s) => s.aborted)).toEqual([true, true, false]);
     api.calls.get(3)!.resolve("three");
@@ -227,14 +235,14 @@ describe("async components", () => {
     expect(container.textContent).toBe("three");
   });
 
-  it("cancel superseded and unmounted runs through lifetime(), without reporting their errors", async () => {
+  it("cancel superseded and unmounted runs through getAbortSignal(), without reporting their errors", async () => {
     const id = signal(1);
     const api = loader<string>();
     const after: string[] = [];
     const User = $async(async function User(props: { id: number }): Promise<Renderable> {
       try {
         const n = props.id;
-        const name = (await $await(() => api.load(n, lifetime()), 0))();
+        const name = (await $await(() => api.load(n, getAbortSignal()), 0))();
         after.push(name);
         return p(name);
       } finally {
@@ -256,10 +264,10 @@ describe("async components", () => {
       return [...frag.childNodes];
     });
     id.set(2);
-    flushSync();
+    flush();
     expect(api.calls.get(1)!.signal!.aborted).toBe(true);
     show.set(false);
-    flushSync();
+    flush();
     expect(api.calls.get(2)!.signal!.aborted).toBe(true);
     await settled();
     expect(after).toEqual([]);
@@ -275,14 +283,18 @@ describe("async components", () => {
         const own = getOwner();
         (await $await(() => gates[props.gate]!.promise, 0))();
         owners.push(getOwner() === own ? own : undefined);
-        return p(inject(Theme));
+        return p(useContext(Theme));
       } finally {
         $leave();
       }
     });
     function Themed(props: { theme: string; gate: number }): Renderable {
-      provide(Theme, props.theme);
-      return createComponent(Child, { gate: props.gate });
+      return createComponent(Theme, {
+        value: props.theme,
+        get children() {
+          return createComponent(Child, { gate: props.gate });
+        },
+      });
     }
     const container = render(() => [
       createComponent(Themed, { theme: "dark", gate: 0 }),
@@ -305,16 +317,20 @@ describe("async components", () => {
           (await $await(() => Promise.reject(new Error("offline")), 0))();
           return p("unreachable");
         } catch (error) {
-          return p(`${(error as Error).message} in ${inject(Ctx)}`);
+          return p(`${(error as Error).message} in ${useContext(Ctx)}`);
         }
       } finally {
         $leave();
       }
     });
-    const container = render(() => {
-      provide(Ctx, "app");
-      return createComponent(Safe, {});
-    });
+    const container = render(() =>
+      createComponent(Ctx, {
+        value: "app",
+        get children() {
+          return createComponent(Safe, {});
+        },
+      }),
+    );
     await settled();
     expect(container.textContent).toBe("offline in app");
   });
@@ -372,21 +388,21 @@ describe("async components", () => {
     await settled();
     expect(container.textContent).toBe("leaf 1");
     id.set(2);
-    flushSync();
+    flush();
     await settled();
     expect(container.textContent).toBe("leaf 2");
     expect(log).toEqual(["leaf 1"]);
   });
 
-  it("do not track pending() in the body, so reading it never re-runs the component", async () => {
+  it("do not track isPending() in the body, so reading it never re-runs the component", async () => {
     const id = signal(1);
     const seen: boolean[] = [];
     const Reader = $async(async function Reader(props: { id: number }): Promise<Renderable> {
       try {
         const n = props.id;
-        seen.push(pending());
+        seen.push(isPending());
         (await $await(() => Promise.resolve(), 0))();
-        seen.push(pending());
+        seen.push(isPending());
         return p(String(n));
       } finally {
         $leave();
@@ -401,11 +417,11 @@ describe("async components", () => {
     );
     await settled();
     id.set(2);
-    flushSync();
+    flush();
     await settled();
     expect(container.textContent).toBe("2");
     expect(seen).toEqual([false, false, true, true]);
-    expect(pending()).toBe(false);
+    expect(isPending()).toBe(false);
   });
 
   it("move and remove their whole range with the region or list row they sit in", async () => {
@@ -418,10 +434,10 @@ describe("async components", () => {
     await settled();
     expect(container.textContent).toBe("aAbBcC");
     rows.set(["c", "a"]);
-    flushSync();
+    flush();
     expect(container.textContent).toBe("cCaA");
     rows.set([]);
-    flushSync();
+    flush();
     expect(container.textContent).toBe("");
   });
 });
@@ -471,7 +487,7 @@ describe("await replay keys", () => {
     await settled();
     expect(keys).toEqual(["0:0:0", "0.0.0:0:0"]);
     id.set(2);
-    flushSync();
+    flush();
     await settled();
     expect(keys).toHaveLength(2);
     expect(container.textContent).toBe("2leaf");

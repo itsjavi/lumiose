@@ -8,9 +8,9 @@
 //   environments; Vite processes it in both (never externalized or pre-bundled), so compiled code
 //   and the runtime share one module instance. Vitest's DOM environments (happy-dom, jsdom) are
 //   client environments with Node's conditions: they get the browser entry too (TASK-54).
-// - HMR (v1): a client module that imports `mount` from `lumiose/dom` (an app entry) accepts
+// - HMR (v1): a client module that imports `render` from `lumiose/dom` (an app entry) accepts
 //   updates of itself and of every module it reaches, so an edit re-runs the entry, which
-//   re-mounts the app into the same container after disposing the previous root. Component state
+//   re-renders the app into the same container after disposing the previous root. Component state
 //   is reset; module-level signals of unchanged modules survive. Per-component hot replacement
 //   can come later without changing this contract.
 // - Style blocks: compiled code imports `<id>?lumiose&type=style&lang.css`, served from the
@@ -112,7 +112,7 @@ const VITE_FS_DENY = [
 const HMR_DOM = "virtual:lumiose/hmr-dom";
 const HMR_DOM_ID = "\0lumiose:hmr-dom";
 // The compiler prints user imports verbatim, normalized by the code printer.
-const IMPORTS_MOUNT = /import\s*\{[^}]*\bmount\b[^}]*\}\s*from\s*"lumiose\/dom"/;
+const IMPORTS_RENDER = /import\s*\{[^}]*\brender\b[^}]*\}\s*from\s*"lumiose\/dom"/;
 
 export default function lumiose(options: LumioseOptions = {}): Plugin<LumiosePluginApi>[] {
   const api: LumiosePluginApi = {
@@ -404,7 +404,7 @@ export default function lumiose(options: LumioseOptions = {}): Plugin<LumiosePlu
             this.error(diagnosticError(message(first!) + more, { id }), first!.span.start);
           }
           let out = result.code;
-          if (serve && target === "client" && IMPORTS_MOUNT.test(out)) out = hmrEntry(out);
+          if (serve && target === "client" && IMPORTS_RENDER.test(out)) out = hmrEntry(out);
           return { code: out, map: result.map, moduleType: "js" };
         },
       },
@@ -524,7 +524,7 @@ function message(diagnostic: Diagnostic): string {
 }
 
 /**
- * An app entry in dev: its `lumiose/dom` imports go through the HMR wrapper (whose `mount` disposes
+ * An app entry in dev: its `lumiose/dom` imports go through the HMR wrapper (whose `render` disposes
  * the previous root of the same container) and the module accepts updates, so an edit anywhere
  * below it re-runs it with the updated modules.
  */
@@ -535,12 +535,12 @@ function hmrEntry(code: string): string {
   );
 }
 
-const HMR_DOM_CODE = `import { mount as mountRoot } from "lumiose/dom";
+const HMR_DOM_CODE = `import { render as renderRoot } from "lumiose/dom";
 export * from "lumiose/dom";
 const roots = (globalThis.__LUMIOSE_HMR_ROOTS__ ??= new Map());
-export function mount(code, container) {
+export function render(code, container) {
   roots.get(container)?.();
-  const dispose = mountRoot(code, container);
+  const dispose = renderRoot(code, container);
   roots.set(container, dispose);
   return () => {
     if (roots.get(container) === dispose) roots.delete(container);

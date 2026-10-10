@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 import { describe, expect, it, vi } from "vitest";
-import { computed, flushSync, signal } from "../core/index.ts";
+import { computed, flush, signal } from "../core/index.ts";
 import { createOwner, disposeOwner, runWithOwner } from "../core/internal.ts";
 import { bind, list, selector, template, toggleClass } from "./index.ts";
 
@@ -31,11 +31,11 @@ describe("selector", () => {
     const total = (): number => [...runs.values()].reduce((a, b) => a + b, 0);
     expect(total()).toBe(100);
     selected.set(3);
-    flushSync();
+    flush();
     expect(total()).toBe(101);
     expect(tbody.querySelectorAll(".danger")).toHaveLength(1);
     selected.set(42);
-    flushSync();
+    flush();
     expect(total()).toBe(103);
     expect(runs.get(3)).toBe(3);
     expect(runs.get(42)).toBe(2);
@@ -74,15 +74,15 @@ describe("selector", () => {
     // Rows 1-3 go: their bindings were the only readers of keys 1-3, whose nodes are dropped.
     const del = vi.spyOn(Map.prototype, "delete");
     rows.set([4]);
-    flushSync();
+    flush();
     expect(del.mock.calls.map(([key]) => key).toSorted()).toEqual([1, 2, 3]);
     del.mockRestore();
     selected.set(4);
-    flushSync();
+    flush();
     expect(tbody.firstElementChild!.className).toBe("on");
     // Old keys no longer notify anything: selecting 1 touches only row 4.
     selected.set(1);
-    flushSync();
+    flush();
     expect(tbody.firstElementChild!.className).toBe("");
     disposeOwner(owner);
   });

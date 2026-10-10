@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 import { describe, expect, it } from "vitest";
-import { flushSync, signal } from "../core/index.ts";
+import { flush, signal } from "../core/index.ts";
 import {
   applyScope,
   bind,
@@ -36,10 +36,10 @@ describe("setText", () => {
     });
     expect(node.data).toBe("a");
     label.set("b");
-    flushSync();
+    flush();
     expect(node.data).toBe("b");
     label.set("b");
-    flushSync();
+    flush();
     expect(writes).toBe(2);
   });
 });

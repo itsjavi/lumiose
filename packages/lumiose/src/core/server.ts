@@ -14,7 +14,7 @@ export type { EffectFn } from "./effect.ts";
 export type { Resource } from "./async.ts";
 export type { Context } from "./context.ts";
 export type { ReconcileOptions } from "./reconcile.ts";
-export { createContext, provide, inject } from "./context.ts";
+export { createContext, useContext } from "./context.ts";
 export { onCleanup } from "./owner.ts";
 
 interface Cell<T> extends Signal<T> {
@@ -88,15 +88,15 @@ export function batch<T>(fn: () => T): T {
   return fn();
 }
 
-export function flushSync(): void {}
+export function flush(): void {}
 
 /** Nothing is in flight during a server render that the page could show. */
-export function busy(): boolean {
+export function isBusy(): boolean {
   return false;
 }
 
 /** Async components render once per request on the server: no re-run is ever in flight. */
-export function pending(): boolean {
+export function isPending(): boolean {
   return false;
 }
 
@@ -110,10 +110,10 @@ export function resource<T>(_fetcher: (signal: AbortSignal) => T | PromiseLike<T
 }
 
 /** The request's signal: the lifetime of the request's root owner. */
-export function lifetime(): AbortSignal {
+export function getAbortSignal(): AbortSignal {
   let owner: Owner | undefined = getOwner();
   if (owner === undefined) {
-    throw new Error("lifetime() must be called during a server render.");
+    throw new Error("getAbortSignal() must be called during a server render.");
   }
   while (owner.parent !== undefined) {
     owner = owner.parent;

@@ -1,7 +1,7 @@
 // Island markers, slots, records and await records (decision-9, spec §7.2, §7.4).
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { locals, runInRequestScope, type RequestScope } from "../app/server/scope.ts";
-import { createContext, inject, onCleanup, provide, signal } from "../core/server.ts";
+import { createContext, onCleanup, signal, useContext } from "../core/server.ts";
 import { ErrorBoundary, Suspense } from "./components.ts";
 import {
   $await,
@@ -468,39 +468,44 @@ describe("island context (TASK-194)", () => {
   const Theme = createContext("default");
 
   function ThemeLabel() {
-    return ssr(["<i>", "</i>"], text(inject(Theme)));
+    return ssr(["<i>", "</i>"], text(useContext(Theme)));
   }
 
   function Themed(props: Props) {
-    const own = inject(Theme);
-    provide(Theme, "island");
+    const own = useContext(Theme);
     return ssr(
-      ["<b>", "</b>", "", ""],
+      ["<b>", "</b>", ""],
       text(own),
-      createComponent(ThemeLabel, {}),
-      insert(props.children),
+      createComponent(Theme, {
+        value: "island",
+        get children(): any {
+          return ssr(["", "", ""], createComponent(ThemeLabel, {}), insert(props.children));
+        },
+      }),
     );
   }
 
   async function AsyncThemed() {
     try {
-      const before = inject(Theme);
+      const before = useContext(Theme);
       (await $await(() => sleep(1), 0))();
-      return ssr(["<b>", "", "</b>"], text(before), text(inject(Theme)));
+      return ssr(["<b>", "", "</b>"], text(before), text(useContext(Theme)));
     } finally {
       $leave();
     }
   }
 
   function page(ref: string, component: (props: Props) => unknown, slot?: () => unknown) {
-    return createComponent(() => {
-      provide(Theme, "page");
-      return ssr(
-        ["", "", ""],
-        createComponent(ThemeLabel, {}),
-        island(ref, component, {}, "idle", undefined, slot && { children: slot }),
-      );
-    }, {});
+    return createComponent(Theme, {
+      value: "page",
+      get children(): any {
+        return ssr(
+          ["", "", ""],
+          createComponent(ThemeLabel, {}),
+          island(ref, component, {}, "idle", undefined, slot && { children: slot }),
+        );
+      },
+    });
   }
 
   let warn: ReturnType<typeof vi.spyOn>;
@@ -526,20 +531,24 @@ describe("island context (TASK-194)", () => {
     );
   });
 
-  it("warns LUM4010 once per island when it injects a context the page provided", async () => {
+  it("warns LUM4010 once per island when it reads a context the page provided", async () => {
     await renderToStream(() => page("/src/Warned.stsx#Warned", Themed));
     await renderToStream(() => page("/src/Warned.stsx#Warned", Themed));
     expect(warn).toHaveBeenCalledTimes(1);
     expect(String(warn.mock.calls[0]![0])).toMatch(
-      /^Lumiose: LUM4010: island Warned \(\/src\/Warned\.stsx#Warned\) calls inject\(\) for a context that the page provides outside the island\./,
+      /^Lumiose: LUM4010: island Warned \(\/src\/Warned\.stsx#Warned\) calls useContext\(\) for a context that the page provides outside the island\./,
     );
     // Not provided by the page, or provided inside the island: nothing to warn about.
     await renderToStream(() => island("/src/Quiet.stsx#Quiet", Themed, {}, "idle"));
     await renderToStream(() =>
-      page("/src/Inner.stsx#Inner", () => {
-        provide(Theme, "inner");
-        return createComponent(ThemeLabel, {});
-      }),
+      page("/src/Inner.stsx#Inner", () =>
+        createComponent(Theme, {
+          value: "inner",
+          get children(): any {
+            return createComponent(ThemeLabel, {});
+          },
+        }),
+      ),
     );
     expect(warn).toHaveBeenCalledTimes(1);
   });

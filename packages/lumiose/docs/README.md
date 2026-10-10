@@ -19,6 +19,7 @@ mistakes** and **Related diagnostics**. Reference pages list every export with i
 ## Start here
 
 - [Getting started](getting-started.md): Create a project, configure TypeScript and Vite, and render a first component.
+- [Upgrading from 0.1](upgrading.md): The renamed APIs (`useContext`, `<Ctx value>`, `render`, `isPending`, …) and how to migrate.
 
 ## Concepts
 
@@ -42,12 +43,12 @@ mistakes** and **Related diagnostics**. Reference pages list every export with i
 
 ## Reference
 
-- [`lumiose`: reactivity](reference/reactivity.md): `signal`, `computed`, `effect`, `batch`, `flushSync`, `untrack`, `store`, owners, context, `pending`, `busy`, `resource`.
+- [`lumiose`: reactivity](reference/reactivity.md): `signal`, `computed`, `effect`, `batch`, `flush`, `untrack`, `store`, owners, context (`createContext`, `useContext`), `getAbortSignal`, `isPending`, `isBusy`, `resource`.
 - [`lumiose`: components](reference/components.md): `Suspense`, `ErrorBoundary`, `Portal`, `Dynamic`, `ref`, `Head`, `Title`, `Meta`.
-- [`lumiose`: app layer](reference/app.md): `fetchJSON`, `submit`, `submitting`, `actionData`, `invalidate`, `fail`, `redirect`, `notFound`, `error`, `href`, request APIs and types.
+- [`lumiose`: app layer](reference/app.md): `fetchJSON`, `submit`, `isSubmitting`, `actionData`, `invalidate`, `fail`, `redirect`, `notFound`, `error`, `href`, request APIs and types.
 - [`lumiose`: server rendering](reference/server.md): `renderToStream`, `renderToString` and the `lumiose/server` subpath.
-- [`lumiose/dom`](reference/dom.md): `mount`, the compiler-runtime contract, `hydrate` (`lumiose/dom/hydrate`) and the island loader (`lumiose/dom/loader`).
-- [`lumiose/router`](reference/router.md): The SPA router: `Link`, `navigate`, `navigating` and reactive route state.
+- [`lumiose/dom`](reference/dom.md): `render`, the compiler-runtime contract, `hydrate` (`lumiose/dom/hydrate`) and the island loader (`lumiose/dom/loader`).
+- [`lumiose/router`](reference/router.md): The SPA router: `Link`, `navigate`, `isNavigating`, `searchParams` and reactive route state.
 - [`@lumiose/vite`](reference/vite.md): The Vite plugin and its options.
 - [JSX types and tsconfig](reference/jsx.md): `lumiose/jsx-runtime`, `lumiose/env` and the required `tsconfig.json`.
 - [CLI](reference/cli.md): `lumiose dev`, `build`, `preview`, `check`, `typegen`, `routes`, `lint`, `fmt`, `docs`, `explain`, `agents init` and `mcp`; `--format json` and exit codes.

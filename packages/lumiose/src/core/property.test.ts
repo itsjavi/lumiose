@@ -2,7 +2,7 @@
 // random writes, reads, batches and flushes, and checked against a naive reference that
 // recomputes everything from the current signal values.
 import { describe, expect, it } from "vitest";
-import { batch, effect, flushSync, store } from "./index.ts";
+import { batch, effect, flush, store } from "./index.ts";
 import {
   createComputedNode,
   createSignalNode,
@@ -155,7 +155,7 @@ function runScenario(seed: number, steps: number): string[] {
   };
 
   /** Flushes (directly or as a batch) and checks which effects ran. */
-  const flushAndCheck = (flush: (expect: () => void) => void): void => {
+  const flushAndCheck = (run: (expect: () => void) => void): void => {
     let expectations: { watcher: Watcher; before: number; due: boolean }[] = [];
     const snapshot = (): void => {
       expectations = watchers.map((watcher) => ({
@@ -164,7 +164,7 @@ function runScenario(seed: number, steps: number): string[] {
         due: watcher.runs === 0 || watcher.reads.some(([j, v]) => refValue(j) !== v),
       }));
     };
-    flush(snapshot);
+    run(snapshot);
     // Without reads between writes, an effect runs exactly when a value it read changed.
     // Reads in between may settle values early, which can only add (harmless) extra runs.
     const precise = !readAfterWrite;
@@ -209,7 +209,7 @@ function runScenario(seed: number, steps: number): string[] {
 
   flushAndCheck((snapshot) => {
     snapshot();
-    flushSync();
+    flush();
   });
 
   for (let step = 0; step < steps; step++) {
@@ -224,7 +224,7 @@ function runScenario(seed: number, steps: number): string[] {
     } else if (roll < 0.72) {
       flushAndCheck((snapshot) => {
         snapshot();
-        flushSync();
+        flush();
       });
     } else if (roll < 0.82) {
       flushAndCheck((snapshot) =>
@@ -243,7 +243,7 @@ function runScenario(seed: number, steps: number): string[] {
 
   flushAndCheck((snapshot) => {
     snapshot();
-    flushSync();
+    flush();
   });
   for (const watcher of watchers.splice(0)) watcher.dispose();
   for (let j = 0; j < nodeCount; j++) {
@@ -375,7 +375,7 @@ function runCascadeScenario(seed: number, steps: number): string[] {
     }
   };
 
-  flushSync();
+  flush();
   check();
   for (let step = 0; step < steps; step++) {
     const roll = random.next();
@@ -387,7 +387,7 @@ function runCascadeScenario(seed: number, steps: number): string[] {
     } else if (roll < 0.6) {
       read(random.int(nodeCount));
     } else if (roll < 0.85) {
-      flushSync();
+      flush();
       check();
     } else if (roll < 0.92) {
       spawn(undefined);
@@ -396,7 +396,7 @@ function runCascadeScenario(seed: number, steps: number): string[] {
       if (live[index]!.sink === undefined) live.splice(index, 1)[0]!.dispose();
     }
   }
-  flushSync();
+  flush();
   check();
   for (const entry of live.splice(0)) entry.dispose();
   return failures;
@@ -431,7 +431,7 @@ describe("store vs a plain array", () => {
           else if (roll === 6) target.length = Math.min(target.length, index);
         }
         if (random.int(3) === 0) {
-          flushSync();
+          flush();
           const sum = plain.reduce((acc, item) => acc + item.v, 0);
           expect([seenLength, seenSum, seenFirst], `seed ${seed} step ${step}`).toEqual([
             plain.length,
