@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import pkg from "../package.json" with { type: "json" };
 
 // The addon exists only after `pnpm --filter @lumiose/compiler build`.
 const binding = await import("../index.js").catch(() => undefined);
@@ -54,7 +55,7 @@ describe.skipIf(!binding)("@lumiose/compiler native scan", () => {
     expect(result.diagnostics).toMatchObject([
       { code: "LUM3010", severity: "error", docs: "errors/LUM3010" },
     ]);
-    expect(version()).toBe("0.0.0");
+    expect(version()).toBe(pkg.version);
   });
 
   it("is the identity for scripts", () => {

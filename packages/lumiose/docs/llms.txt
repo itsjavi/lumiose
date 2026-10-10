@@ -2,7 +2,7 @@
 
 > Lumiose is a TypeScript-first web framework: `.stsx` components (TSX plus raw-CSS `<style>` blocks), setup-once components with signals, and server-first rendering with islands.
 
-These docs match lumiose 0.0.0. Installed projects have them in `node_modules/lumiose/docs`;
+These docs match lumiose 0.1.0. Installed projects have them in `node_modules/lumiose/docs`;
 `lumiose docs <topic>` prints one and `lumiose explain <code>` explains a diagnostic.
 
 ## Start here
