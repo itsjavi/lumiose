@@ -57,16 +57,17 @@ fix?, docs }`; `lumiose check --format json` prints them.
 
 ## Islands and boundaries (4xxx)
 
-| Code                  | Severity | Title                                  |
-| --------------------- | -------- | -------------------------------------- |
-| [LUM4001](LUM4001.md) | error    | Island component is not exported       |
-| [LUM4002](LUM4002.md) | error    | Non-serializable island prop           |
-| [LUM4003](LUM4003.md) | error    | Server-only module in a client graph   |
-| [LUM4004](LUM4004.md) | warning  | Browser API at module scope            |
-| [LUM4006](LUM4006.md) | error    | Hydration mismatch                     |
-| [LUM4007](LUM4007.md) | error    | Non-serializable awaited value         |
-| [LUM4008](LUM4008.md) | warning  | Module-scope signal written during SSR |
-| [LUM4009](LUM4009.md) | warning  | Unsafe URL blocked in a URL attribute  |
+| Code                  | Severity | Title                                       |
+| --------------------- | -------- | ------------------------------------------- |
+| [LUM4001](LUM4001.md) | error    | Island component is not exported            |
+| [LUM4002](LUM4002.md) | error    | Non-serializable island prop                |
+| [LUM4003](LUM4003.md) | error    | Server-only module in a client graph        |
+| [LUM4004](LUM4004.md) | warning  | Browser API at module scope                 |
+| [LUM4006](LUM4006.md) | error    | Hydration mismatch                          |
+| [LUM4007](LUM4007.md) | error    | Non-serializable awaited value              |
+| [LUM4008](LUM4008.md) | warning  | Module-scope signal written during SSR      |
+| [LUM4009](LUM4009.md) | warning  | Unsafe URL blocked in a URL attribute       |
+| [LUM4010](LUM4010.md) | warning  | Island injects context provided by the page |
 
 ## Routing and server (5xxx)
 

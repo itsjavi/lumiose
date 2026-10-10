@@ -27,6 +27,8 @@ export const DISPOSED = 1;
 export const SUBSCRIBER = 2;
 /** A run that was superseded: it no longer tracks, and its lifetime is aborted. */
 export const STALE = 4;
+/** `inject()` does not look past this owner (see `isolateOwner`). */
+export const ISOLATED = 8;
 
 export function createOwner(parent: Owner | undefined): Owner {
   const owner: Owner = {
@@ -338,6 +340,40 @@ export function lookupContext(owner: Owner | undefined, key: symbol, fallback: u
 
 export function injectContext(key: symbol, fallback: unknown): unknown {
   return lookupContext(lookupOwner(), key, fallback);
+}
+
+// An island rendered on the server runs under an isolated owner: the browser hydrates it as its
+// own root, so `inject()` must not see user context provided above it there either (TASK-194).
+// Internal lookups (`injectContext`, `lookupContext`) pass isolated owners.
+const MISSING = Symbol();
+let pageContextHandlers: WeakMap<Owner, (key: symbol) => void> | undefined;
+
+/**
+ * Makes `owner` a root for `inject()`. In dev, `onPageContext` is called when `inject()` stops
+ * at `owner` although an owner above it provides the context.
+ */
+export function isolateOwner(owner: Owner, onPageContext?: (key: symbol) => void): void {
+  owner.state |= ISOLATED;
+  if (DEV && onPageContext !== undefined) {
+    (pageContextHandlers ??= new WeakMap()).set(owner, onPageContext);
+  }
+}
+
+/** `inject()`: the nearest provided value up to an isolated owner, or `fallback`. */
+export function injectUserContext(key: symbol, fallback: unknown): unknown {
+  for (let owner = lookupOwner(); owner !== undefined; owner = owner.parent) {
+    const context = owner.context;
+    if (context !== undefined && key in context) {
+      return context[key];
+    }
+    if (owner.state & ISOLATED) {
+      if (DEV && lookupContext(owner.parent, key, MISSING) !== MISSING) {
+        pageContextHandlers?.get(owner)?.(key);
+      }
+      return fallback;
+    }
+  }
+  return fallback;
 }
 
 // --- Errors ------------------------------------------------------------------

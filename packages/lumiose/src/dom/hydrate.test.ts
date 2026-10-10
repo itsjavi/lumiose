@@ -9,7 +9,8 @@ import { compile } from "@lumiose/compiler";
 import type { Renderable } from "../contract/client.ts";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { flushSync } from "../core/index.ts";
-import { island, renderToStream, renderToString } from "../server/index.ts";
+import { provide } from "../core/server.ts";
+import { createComponent, island, renderToStream, renderToString } from "../server/index.ts";
 import { loadIslands } from "./islands.ts";
 
 // happy-dom replaces the global `URL`, so paths are built with node:path.
@@ -572,6 +573,36 @@ describe("hydrate", () => {
     await hydrateAll(client);
     expect(warn).toHaveBeenCalledWith(expect.stringContaining("LUM4006"));
     expect(visible()).toBe("<div><b>y</b></div>");
+  });
+
+  it("gives an island the same context on both sides: not the page's, its own (TASK-194)", async () => {
+    const { client, server } = await load(`
+      import { createContext, inject, provide, signal } from "lumiose";
+      export const Theme = createContext("default");
+      function Label() {
+        return <i>{inject(Theme)}</i>;
+      }
+      export function Themed() {
+        const own = inject(Theme);
+        provide(Theme, "island");
+        const count = signal(0);
+        return <button onClick={() => count.set(count() + 1)}>{own} <Label /> {count()}</button>;
+      }`);
+    document.body.innerHTML = await renderToString(() =>
+      createComponent(() => {
+        provide(server.Theme, "page");
+        return island("/src/case#Themed", server.Themed, {}, "load");
+      }, {}),
+    );
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining("LUM4010: island Themed"));
+    const button = document.querySelector("button")!;
+    expect(button.textContent).toBe("default island 0");
+    await hydrateAll(client);
+    expect(warn).not.toHaveBeenCalledWith(expect.stringContaining("LUM4006"));
+    expect(document.querySelector("button")).toBe(button);
+    button.click();
+    flushSync();
+    expect(button.textContent).toBe("default island 1");
   });
 });
 

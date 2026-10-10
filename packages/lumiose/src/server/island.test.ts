@@ -1,6 +1,7 @@
 // Island markers, slots, records and await records (decision-9, spec §7.2, §7.4).
-import { describe, expect, it } from "vitest";
-import { signal } from "../core/server.ts";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { locals, runInRequestScope, type RequestScope } from "../app/server/scope.ts";
+import { createContext, inject, onCleanup, provide, signal } from "../core/server.ts";
 import { ErrorBoundary, Suspense } from "./components.ts";
 import {
   $await,
@@ -459,5 +460,107 @@ describe("await records", () => {
         awaits: { "0:0:0": "late" },
       },
     ]);
+  });
+});
+
+describe("island context (TASK-194)", () => {
+  // Islands hydrate as their own root, so on the server they do not see the page's context either.
+  const Theme = createContext("default");
+
+  function ThemeLabel() {
+    return ssr(["<i>", "</i>"], text(inject(Theme)));
+  }
+
+  function Themed(props: Props) {
+    const own = inject(Theme);
+    provide(Theme, "island");
+    return ssr(
+      ["<b>", "</b>", "", ""],
+      text(own),
+      createComponent(ThemeLabel, {}),
+      insert(props.children),
+    );
+  }
+
+  async function AsyncThemed() {
+    try {
+      const before = inject(Theme);
+      (await $await(() => sleep(1), 0))();
+      return ssr(["<b>", "", "</b>"], text(before), text(inject(Theme)));
+    } finally {
+      $leave();
+    }
+  }
+
+  function page(ref: string, component: (props: Props) => unknown, slot?: () => unknown) {
+    return createComponent(() => {
+      provide(Theme, "page");
+      return ssr(
+        ["", "", ""],
+        createComponent(ThemeLabel, {}),
+        island(ref, component, {}, "idle", undefined, slot && { children: slot }),
+      );
+    }, {});
+  }
+
+  let warn: ReturnType<typeof vi.spyOn>;
+  beforeEach(() => {
+    warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+  });
+  afterEach(() => {
+    warn.mockRestore();
+  });
+
+  it("gives islands the default, and the values provided inside them; slots keep the page's", async () => {
+    const shell = await renderToStream(() =>
+      page("/src/Themed.stsx#Themed", Themed, () => createComponent(ThemeLabel, {})),
+    );
+    expect(shell.body.split("<script")[0]).toBe(
+      "<i>page</i><!--l:0--><b>default</b><i>island</i><!--[--><!--l:s:children--><i>page</i><!--/l:s--><!--]--><!--/l:0-->",
+    );
+    const async = await renderToStream(() =>
+      page("/src/AsyncThemed.stsx#AsyncThemed", AsyncThemed),
+    );
+    expect(async.body.split("<script")[0]).toBe(
+      "<i>page</i><!--l:0--><!--[--><b>default<!--!-->default</b><!--]--><!--/l:0-->",
+    );
+  });
+
+  it("warns LUM4010 once per island when it injects a context the page provided", async () => {
+    await renderToStream(() => page("/src/Warned.stsx#Warned", Themed));
+    await renderToStream(() => page("/src/Warned.stsx#Warned", Themed));
+    expect(warn).toHaveBeenCalledTimes(1);
+    expect(String(warn.mock.calls[0]![0])).toMatch(
+      /^Lumiose: LUM4010: island Warned \(\/src\/Warned\.stsx#Warned\) calls inject\(\) for a context that the page provides outside the island\./,
+    );
+    // Not provided by the page, or provided inside the island: nothing to warn about.
+    await renderToStream(() => island("/src/Quiet.stsx#Quiet", Themed, {}, "idle"));
+    await renderToStream(() =>
+      page("/src/Inner.stsx#Inner", () => {
+        provide(Theme, "inner");
+        return createComponent(ThemeLabel, {});
+      }),
+    );
+    expect(warn).toHaveBeenCalledTimes(1);
+  });
+
+  it("keeps Suspense, error boundaries, request APIs and the page's lifetime inside islands", async () => {
+    let cleaned = 0;
+    function Request() {
+      onCleanup(() => cleaned++);
+      return ssr(["<p>", "</p>"], text((locals() as { user: string }).user));
+    }
+    const scope = { ctx: { locals: { user: "ada" } } } as unknown as RequestScope;
+    const shell = await runInRequestScope(scope, () =>
+      renderToStream(() =>
+        page("/src/Request.stsx#Request", () =>
+          ssr(["", "", ""], createComponent(Request, {}), boundaries()),
+        ),
+      ),
+    );
+    expect(shell.body.split("<script")[0]).toBe(
+      "<i>page</i><!--l:0--><p>ada</p><div><!--[--><b>sync</b><!--]--><!--[--><b>fine</b><!--]--><!--[!--><i>nope</i><!--]--><!--[!--><i>later</i><!--]--></div><!--/l:0-->",
+    );
+    expect(cleaned).toBe(1);
   });
 });

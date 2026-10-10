@@ -9,8 +9,16 @@
 // The record `{ id, ref, strategy, props, value?, slots?, awaits? }` is flushed with the chunk
 // (shell or boundary) the island renders in. `client:only` renders no component, so all its slots
 // are templates. An island inside another island's own render is rendered inline, with no record.
+//
+// The island renders under an isolated owner: the browser hydrates it as its own root, so its
+// `inject()` calls do not see context the page provided outside it here either (TASK-194). The
+// owner is still a child of the call site's, so `lifetime()`, cleanups and head depth follow the
+// page; Suspense, error boundaries and request APIs use the frame and the request scope instead.
 
-import { LUM_ISLAND_PROP, LumioseError } from "../app/diagnostics.ts";
+import { LUM_ISLAND_PAGE_CONTEXT, LUM_ISLAND_PROP, LumioseError } from "../app/diagnostics.ts";
+import { createOwner, getOwner, runWithOwner } from "../core/internal.ts";
+import { isolateOwner } from "../core/owner.ts";
+import { DEV } from "../dom/dev.ts";
 import type { IslandStrategy } from "../contract/server.ts";
 import {
   content,
@@ -74,13 +82,17 @@ export function island<P>(
       occurrences: undefined,
       streamed: parent.streamed,
     };
-    const node = runComponent(
-      component,
-      withSlots(props, names, (name) => {
-        inline.add(name);
-        return html(wrap(`<!--l:s:${name}-->`, rendered[name]!, "<!--/l:s-->"));
-      }),
-      frame,
+    const owner = createOwner(getOwner());
+    isolateOwner(owner, DEV ? () => warnPageContext(ref) : undefined);
+    const node = runWithOwner(owner, () =>
+      runComponent(
+        component,
+        withSlots(props, names, (name) => {
+          inline.add(name);
+          return html(wrap(`<!--l:s:${name}-->`, rendered[name]!, "<!--/l:s-->"));
+        }),
+        frame,
+      ),
     );
     out = node instanceof SSRHtml ? node.t : node.then((done) => done.t);
   }
@@ -103,6 +115,22 @@ export function island<P>(
   );
 }
 
+// Dev: warned islands, once per process.
+const warned = new Set<string>();
+
+function warnPageContext(ref: string): void {
+  if (warned.has(ref)) return;
+  warned.add(ref);
+  console.warn(
+    `Lumiose: ${LUM_ISLAND_PAGE_CONTEXT}: island ${nameOf(ref)} (${ref}) calls inject() for a context that the page provides outside the island. Islands hydrate as their own root, so the island gets the context's default value, on the server as in the browser. Pass the value as an island prop, provide it inside the island, or share module-scope state (run \`lumiose docs ${LUM_ISLAND_PAGE_CONTEXT}\`).`,
+  );
+}
+
+function nameOf(ref: string): string {
+  const hash = ref.lastIndexOf("#");
+  return hash === -1 ? "Island" : ref.slice(hash + 1);
+}
+
 function specifierOf(ref: string): string {
   const hash = ref.lastIndexOf("#");
   return hash === -1 ? ref : ref.slice(0, hash);
@@ -114,8 +142,7 @@ function encodeProps(ref: string, strategy: string, props: object, slots: string
     if (!slots.includes(key)) data[key] = (props as Record<string, unknown>)[key];
   }
   return encodeData(data, (path, reason) => {
-    const hash = ref.lastIndexOf("#");
-    const name = hash === -1 ? "Island" : ref.slice(hash + 1);
+    const name = nameOf(ref);
     throw new LumioseError(
       LUM_ISLAND_PROP,
       `Island prop "${path.replace(/^\./, "")}" of <${name} client:${strategy}> (${ref}) is ${reason}. Island props are sent to the browser and must be plain data: strings, numbers, booleans, null, arrays, plain objects, Date, Map, Set, BigInt or URL. Pass JSX as children, and keep functions inside the island`,

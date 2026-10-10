@@ -1,6 +1,6 @@
 // Context: values provided on an owner and injected anywhere below it (spec §4.3).
 // Context lives on owners, so it survives `await` once the run's owner is restored.
-import { injectContext, provideContext } from "./owner.ts";
+import { injectUserContext, provideContext } from "./owner.ts";
 
 export interface Context<T> {
   readonly id: symbol;
@@ -18,7 +18,10 @@ export function provide<T>(context: Context<T>, value: T): void {
   provideContext(context.id, value);
 }
 
-/** The value provided by the nearest owner above, or the context's default. */
+/**
+ * The value provided by the nearest owner above, or the context's default. Islands start a new
+ * root: they do not see context provided outside them, on the server as in the browser.
+ */
 export function inject<T>(context: Context<T>): T {
-  return injectContext(context.id, context.defaultValue) as T;
+  return injectUserContext(context.id, context.defaultValue) as T;
 }
