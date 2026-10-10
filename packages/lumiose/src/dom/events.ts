@@ -35,6 +35,7 @@ function dispatch(event: Event): void {
         } else {
           handler(event);
         }
+        current = document;
         if (event.cancelBubble) {
           return;
         }
