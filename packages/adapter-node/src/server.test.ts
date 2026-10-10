@@ -8,6 +8,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { build } from "@lumiose/vite/build";
 import { linkLumiose } from "@lumiose/vite/internal/test-links.ts";
 import { createServer, type LumioseServer } from "./server.ts";
+import { isHashed } from "./static.ts";
 
 const lumioseRoot = resolve(import.meta.dirname, "../../lumiose");
 // The build needs the native compiler binding (a dependency of lumiose, not of this package).
@@ -91,7 +92,20 @@ describe.skipIf(!binding)("@lumiose/adapter-node", () => {
     const island = /<link rel="modulepreload" href="(\/assets\/[^"]+\.js)">/.exec(html)![1]!;
     const chunk = await get(island);
     expect(chunk.status).toBe(200);
-    expect(chunk.headers.get("cache-control")).toBe("public, max-age=31536000, immutable");
+    // The chunk's hash changes with the runtime. One with a `-` inside revalidates (isHashed).
+    expect(chunk.headers.get("cache-control")).toBe(
+      isHashed(island)
+        ? "public, max-age=31536000, immutable"
+        : "public, max-age=0, must-revalidate",
+    );
+  });
+
+  it("caches only names that carry a Vite hash", () => {
+    expect(isHashed("/assets/Counter-Bx3_kZ9q.js")).toBe(true);
+    expect(isHashed("/assets/index.CfWq2a81.css")).toBe(true);
+    expect(isHashed("/assets/Counter-D-i-jZkv.js")).toBe(false);
+    expect(isHashed("/assets/logo.svg")).toBe(false);
+    expect(isHashed("/assets/my-component.js")).toBe(false);
   });
 
   it("falls back to the handler for server routes, endpoints and unknown paths", async () => {

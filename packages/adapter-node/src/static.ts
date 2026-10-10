@@ -218,7 +218,7 @@ function indexFiles(dir: string, symlinks: "follow" | "contain"): Map<string, Fi
  * an uppercase letter), so its URL changes with its content and it can be cached for a
  * year. Other files under the assets directory revalidate (TASK-167 L5).
  */
-function isHashed(path: string): boolean {
+export function isHashed(path: string): boolean {
   const name = path.slice(path.lastIndexOf("/") + 1);
   // A hash with a `-` inside fails the test: the file then revalidates, which is only slower.
   return /[-.](?=\w*[\dA-Z])\w{8,}\.[^.]+$/.test(name);
