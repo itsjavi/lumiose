@@ -19,6 +19,7 @@ const BUDGETS: Record<string, { limit: number; hard: boolean }> = {
 };
 
 const TYPICAL = `export { signal, computed, effect, batch, untrack, onCleanup, onMount } from "${src}core/index.ts"; export { template, bind, setText, setAttr, setClass, toggleClass, setStyle, insert, list, branch, selector, createComponent, delegateEvents, listen, render } from "${src}dom/index.ts";`;
+const FETCH = `export { fetchJSON } from "${src}app/fetch-json.ts";`;
 // The island loader's entry (dom/loader.ts) minus the manifest, which is app code.
 const ISLANDS = `export { loadIslands } from "${src}dom/islands.ts";`;
 
@@ -36,6 +37,10 @@ const entries: Record<string, string> = {
   // Every export plus hydration and the loader: no page ships all of it (report-only, spec §6).
   "whole client runtime, report-only (every export, hydrate, loader)": `export * from "${src}core/index.ts"; export * from "${src}dom/index.ts"; export * from "${src}dom/public.ts"; export { hydrate } from "${src}dom/hydrate.ts"; ${ISLANDS}`,
   "core (every export)": `export * from "${src}core/index.ts";`,
+  // App layer, report-only: `fetchJSON` called in event handlers only (no async components or
+  // resources), which leaves the keyed cache out, and the same with async components, which need it.
+  "app: typical imports + fetchJSON, report-only (handlers only)": `${TYPICAL} ${FETCH}`,
+  "app: typical imports + fetchJSON, report-only (with async components, cache)": `${TYPICAL} ${FETCH} export { $async, $await, $leave } from "${src}dom/index.ts";`,
   "dom only (core imports excluded)": `export * from "${src}dom/index.ts";`,
 };
 

@@ -381,12 +381,19 @@ function runBinding<T, E>(node: RenderEffect<T, E>, initial: boolean): void {
 // --- Async runs ----------------------------------------------------------------
 
 /**
+ * Whether a run was ever created. Only `createRun` sets it, so bundles without async components
+ * and resources fold it to `false` and drop code that only runs inside runs (the fetchJSON cache).
+ */
+export let hasRuns = false;
+
+/**
  * Creates the subscriber and owner of one async component run under `parent`.
  * `invalidate` is called once, during a flush, when something the run read has
  * changed; by then the run has stopped tracking and its lifetime is aborted.
  * The run stays alive (its UI and cleanups) until it is disposed.
  */
 export function createRun(invalidate: (run: Run) => void, parent: Owner | undefined): Run {
+  hasRuns = true;
   const run: Run = {
     parent: undefined,
     depth: 0,

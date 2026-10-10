@@ -2,6 +2,7 @@
 // `FetchError` for non-2xx responses. This is the browser version; under the node condition,
 // ./server/fetch-json.ts serves same-origin URLs in-process through the request handler.
 
+import { hasRuns } from "../core/effect.ts";
 import { getAbortSignal } from "../core/owner.ts";
 import { cached, inRun, runSignal } from "./cache/client.ts";
 import { HttpError, statusText } from "./server/control.ts";
@@ -100,7 +101,8 @@ export function fetchJSON<T = unknown>(input: string | URL, init?: RequestInit):
     const base = typeof document === "undefined" ? globalThis.location?.href : document.baseURI;
     const url = new URL(input, base);
     const send = (request: Request) => globalThis.fetch(request);
-    if (!inRun()) return requestJSON(send, jsonRequest(url, init));
+    // Without async components or resources no run exists, and bundlers drop the cache.
+    if (!hasRuns || !inRun()) return requestJSON(send, jsonRequest(url, init));
     // Called by an async component's run (`await fetchJSON(…)`): a superseded run stops waiting.
     const signal = init?.signal === undefined ? runSignal() : init.signal;
     if (!isCacheable(init)) return requestJSON(send, jsonRequest(url, { ...init, signal }));
