@@ -129,7 +129,8 @@ function invalidate(): Promise<void>;
 ```
 
 Refreshes the current page's server data after a mutation: re-runs the page's async components in
-SPA routes (their UI stays until the new data arrives), reloads the page otherwise. A successful
+SPA routes (their UI stays until the new data arrives), reloads the page otherwise (that promise
+never settles, as the page is going away). A successful
 `submit()` calls it for you on SPA pages only; on MPA pages call it yourself when the page needs
 fresh server HTML. Browser only.
 

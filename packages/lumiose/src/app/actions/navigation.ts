@@ -16,7 +16,12 @@ export interface ClientNavigation {
 export let navigation: ClientNavigation = {
   clientRouted: false,
   navigate: (href) => location.assign(navigationUrl(href)),
-  invalidate: () => location.reload(),
+  // The page is going away: the promise never settles, so nothing waiting on it (an optimistic
+  // overlay held until the refresh, TASK-196) acts on the old page before it unloads.
+  invalidate: () => {
+    location.reload();
+    return new Promise(() => {});
+  },
 };
 
 /**

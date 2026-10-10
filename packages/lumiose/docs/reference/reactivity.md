@@ -233,6 +233,26 @@ changes; its `AbortSignal` aborts when superseded or disposed. The first load co
 for the nearest `<Suspense>`. Errors are not thrown: read `error()`. Browser only: on the server it
 stays loading. Prefer [async components](../concepts/async.md).
 
+## optimistic
+
+```ts
+function optimistic<T>(source: () => T): Optimistic<T>;
+
+interface Optimistic<T> {
+  (): T; // source() with the pending overlays applied in order, tracked
+  set(value: T, promise: PromiseLike<unknown>): void;
+  update(fn: (value: T) => T, promise: PromiseLike<unknown>): void;
+}
+```
+
+A value that follows `source` (a getter such as `() => props.likes`, or a signal), plus overlays
+held while their promises are pending. Each `set`/`update` applies at once and drops when its own
+promise settles, either way: on success the (refreshed) source shows, on failure the value rolls
+back. Concurrent overlays apply in call order over the latest source value, so an `update` is
+re-applied when the source changes. A rejection is not re-thrown; await the promise itself to
+handle it. Writes stop when the owner is disposed. On the server it reads `source()` and `set`/`update`
+do nothing. See [optimistic updates](../concepts/data-and-actions.md#optimistic-updates).
+
 ## Example
 
 ```tsx check

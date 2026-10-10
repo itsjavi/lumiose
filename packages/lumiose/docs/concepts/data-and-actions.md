@@ -47,6 +47,18 @@ until the new data arrives), or reloads the page (MPA). On client-routed (SPA) p
 (`result.data`, `actionData()`). Call `invalidate()` yourself when the page needs fresh
 server-rendered content; on MPA pages that reloads and resets `actionData()`.
 
+**Optimistic updates.** `optimistic(source)` follows `source` (a getter such as `() => props.likes`,
+or a signal) and shows an overlay while a promise is pending: `likes.update((n) => n + 1,
+submit(event))` or `likes.set(value, promise)`. When the promise settles the overlay drops:
+on success the source already holds the new value, on failure (a `fail()` result or a rejection)
+the value rolls back. On SPA pages `submit()` resolves after its `invalidate()`, so the refreshed
+data replaces the overlay in the same task, with no flicker back. On MPA pages read the new value
+from the result (`actionData()?.likes ?? props.likes` as the source), or pass
+`submit(event).then(() => invalidate())`: the MPA `invalidate()` reloads and never settles, so the
+overlay holds until the page unloads. Overlays apply in call order and drop independently, and an
+`update` re-applies over the latest source. `optimistic` does not re-throw a rejection: await
+`submit()` yourself to handle errors.
+
 **Typed results.** Type an action's parameter with its page pattern,
 `(ctx: ActionContext<"/books/new">)`, and let TypeScript infer what it returns:
 `actionData<typeof actions>()` (or `typeof action`) is the union of the data the actions return
@@ -58,19 +70,20 @@ type only: `import type { actions } from "../routes/reading-list.stsx"`.
 
 ## API
 
-| API                                                                | Shape                                                                  |
-| ------------------------------------------------------------------ | ---------------------------------------------------------------------- |
-| `export const GET: Endpoint<"/api/x"> = (ctx) => Response`         | An endpoint method; `ctx.params` typed by the pattern.                 |
-| `export const action = async (ctx: ActionContext<"/x">) => …`      | The default form action of a page.                                     |
-| `export const actions = { name: (ctx: ActionContext<"/x">) => … }` | Named actions, posted to `?/name`.                                     |
-| `ctx.formData()`                                                   | The request body as `FormData` (400 if it is not a form).              |
-| `fail(status, data?)`                                              | A failed action result.                                                |
-| `actionData<typeof actions>()`                                     | The last action's data or `fail` data, typed by the actions. Reactive. |
-| `submit(target, { action?, method?, signal?, invalidate? })`       | Post a form, submit event, `FormData`, `URLSearchParams` or a record.  |
-| `submit<typeof actions.name>(…)`                                   | The same, resolving with that action's typed success and failure data. |
-| `isSubmitting(name?)`                                              | Whether a submission (to `?/name`) is in flight.                       |
-| `invalidate()`                                                     | Refresh the current page's server data.                                |
-| `fetchJSON<T>(url, init?)`, `isFetchError(e)`                      | JSON fetch with typed errors.                                          |
+| API                                                                  | Shape                                                                  |
+| -------------------------------------------------------------------- | ---------------------------------------------------------------------- |
+| `export const GET: Endpoint<"/api/x"> = (ctx) => Response`           | An endpoint method; `ctx.params` typed by the pattern.                 |
+| `export const action = async (ctx: ActionContext<"/x">) => …`        | The default form action of a page.                                     |
+| `export const actions = { name: (ctx: ActionContext<"/x">) => … }`   | Named actions, posted to `?/name`.                                     |
+| `ctx.formData()`                                                     | The request body as `FormData` (400 if it is not a form).              |
+| `fail(status, data?)`                                                | A failed action result.                                                |
+| `actionData<typeof actions>()`                                       | The last action's data or `fail` data, typed by the actions. Reactive. |
+| `submit(target, { action?, method?, signal?, invalidate? })`         | Post a form, submit event, `FormData`, `URLSearchParams` or a record.  |
+| `submit<typeof actions.name>(…)`                                     | The same, resolving with that action's typed success and failure data. |
+| `isSubmitting(name?)`                                                | Whether a submission (to `?/name`) is in flight.                       |
+| `invalidate()`                                                       | Refresh the current page's server data.                                |
+| `optimistic(source)`, `.set(value, promise)`, `.update(fn, promise)` | A value with overlays held while their promises are pending.           |
+| `fetchJSON<T>(url, init?)`, `isFetchError(e)`                        | JSON fetch with typed errors.                                          |
 
 ## Example
 
@@ -148,6 +161,43 @@ export async function BookSearch({ q }: { q: string }) {
 }
 ```
 
+A like button that counts at once and rolls back if the post fails. The page is MPA, so the island
+reads the new count from the action's result; on an SPA page `() => props.likes` is enough, as
+`submit()` refreshes the props before it resolves:
+
+```stsx check file=routes/likes/[id].stsx
+// src/routes/likes/[id].stsx
+import { actionData, optimistic, submit, type ActionContext } from "lumiose";
+
+export const mode = "server";
+
+let count = 3; // a database in a real app
+
+export const actions = {
+  like(_ctx: ActionContext<"/likes/[id]">) {
+    count += 1;
+    return { likes: count };
+  },
+};
+
+export function LikeButton(props: { likes: number }) {
+  const likes = optimistic(() => actionData<typeof actions>()?.likes ?? props.likes);
+  return (
+    <form
+      method="post"
+      action="?/like"
+      onSubmit={(event) => likes.update((n) => n + 1, submit(event))}
+    >
+      <button>Like ({likes()})</button>
+    </form>
+  );
+}
+
+export default function Post() {
+  return <LikeButton client:load likes={count} />;
+}
+```
+
 Keeping the page's filters through a named action:
 
 ```stsx check file=routes/issues.stsx
@@ -191,6 +241,9 @@ export default function Issues() {
 - **Expecting an MPA page to refresh after `submit()`.** On MPA pages `submit()` never reloads.
   Update the island from the result (a toggle sets its own state, a list removes its own row), or
   call `invalidate()` explicitly if the page must show fresh server HTML.
+- **Leaving an optimistic overlay up after the request.** Pass the promise to `set`/`update`
+  rather than resetting by hand, and on MPA pages give the island a source that changes
+  (`actionData()`, or an explicit `invalidate()`), or the value returns to the old one on success.
 - **Forms without `method="post"`.** Actions only run for POST; `submit()` refuses a form that does
   not say `method="post"`, as the no-JS form would not post either.
 - **Throwing for validation errors.** A thrown error renders `_error`. Return `fail(400, data)`.

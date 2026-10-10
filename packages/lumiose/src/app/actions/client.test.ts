@@ -269,6 +269,116 @@ describe("submit() refreshes client-routed pages after a success (decision-20, T
   });
 });
 
+/** What the page could paint: the value at each task boundary, consecutive repeats removed. */
+function paint(read: () => number): { stop(): number[] } {
+  const frames: number[] = [read()];
+  const timer = setInterval(() => frames.push(read()), 0);
+  return {
+    stop() {
+      clearInterval(timer);
+      frames.push(read());
+      return frames.filter((value, i) => value !== frames[i - 1]);
+    },
+  };
+}
+
+const later = (fn: () => void) =>
+  new Promise<void>((resolve) =>
+    setTimeout(() => {
+      fn();
+      resolve();
+    }, 5),
+  );
+
+describe("optimistic() with submit() (TASK-196)", () => {
+  type Optimistic = typeof import("../../core/optimistic.ts");
+  type Signals = typeof import("../../core/signal.ts");
+
+  async function load() {
+    const { optimistic } = (await import("../../core/optimistic.ts")) as Optimistic;
+    const { signal } = (await import("../../core/signal.ts")) as Signals;
+    return { optimistic, signal };
+  }
+
+  it("SPA: shows the refreshed value after success, with no flicker back", async () => {
+    const { optimistic, signal } = await load();
+    const likes = signal(10);
+    const shown = optimistic(likes);
+    // The refresh lands a moment later, as when async components re-run.
+    navigation.invalidate.mockImplementation(() => later(() => likes.set(11)));
+    serve(() => actionResult({ type: "success", status: 200 }));
+    shown.update((n) => n + 1, client.submit({}));
+    const frames = paint(shown);
+    await vi.waitFor(() => expect(navigation.invalidate).toHaveBeenCalledTimes(1));
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    expect(frames.stop()).toEqual([11]);
+  });
+
+  it("SPA: rolls back on fail() and on errors; the caller still sees the rejection", async () => {
+    const { optimistic } = await load();
+    const shown = optimistic(() => 10);
+    serve(() => actionResult({ type: "failure", status: 422, data: {} }, 422));
+    const failed = client.submit({});
+    shown.update((n) => n + 1, failed);
+    expect(shown()).toBe(11);
+    expect((await failed).type).toBe("failure");
+    await new Promise((resolve) => setTimeout(resolve));
+    expect(shown()).toBe(10);
+
+    serve(() => actionResult({ type: "error", status: 500, error: { message: "boom" } }, 500));
+    const errored = client.submit({});
+    shown.set(99, errored);
+    expect(shown()).toBe(99);
+    await expect(errored).rejects.toMatchObject({ status: 500 });
+    await new Promise((resolve) => setTimeout(resolve));
+    expect(shown()).toBe(10);
+    expect(navigation.invalidate).not.toHaveBeenCalled();
+  });
+
+  it("MPA: an island reading actionData() shows the new value with no flicker back", async () => {
+    const { optimistic } = await load();
+    navigation.clientRouted = false;
+    serve(() =>
+      later(() => {}).then(() =>
+        actionResult({ type: "success", status: 200, data: { likes: 11 } }),
+      ),
+    );
+    const shown = optimistic(
+      () => (client.actionData() as { likes?: number } | undefined)?.likes ?? 10,
+    );
+    shown.update((n) => n + 1, client.submit({}));
+    const frames = paint(shown);
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    expect(frames.stop()).toEqual([11]);
+    expect(navigation.invalidate).not.toHaveBeenCalled();
+  });
+
+  it("MPA: rolls back on fail()", async () => {
+    const { optimistic } = await load();
+    navigation.clientRouted = false;
+    serve(() => actionResult({ type: "failure", status: 400, data: { error: "no" } }, 400));
+    const shown = optimistic(() => 10);
+    const done = client.submit({});
+    shown.update((n) => n + 1, done);
+    expect(shown()).toBe(11);
+    await done;
+    await new Promise((resolve) => setTimeout(resolve));
+    expect(shown()).toBe(10);
+  });
+
+  it("MPA: invalidate() reloads and never settles, so an overlay holds until the page unloads", async () => {
+    vi.resetModules();
+    const { navigation: mpa } = await import("./navigation.ts");
+    const reload = vi.fn();
+    vi.stubGlobal("location", { reload });
+    let settled = false;
+    void Promise.resolve(mpa.invalidate()).then(() => (settled = true));
+    await new Promise((resolve) => setTimeout(resolve, 5));
+    expect(reload).toHaveBeenCalledTimes(1);
+    expect(settled).toBe(false);
+  });
+});
+
 describe("actionData()", () => {
   it("starts from the data the server embedded after a no-JS post", () => {
     document.head.innerHTML =

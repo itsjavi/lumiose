@@ -4,6 +4,7 @@
 // request, and disposes (or aborts) it when the request ends.
 import type { Resource } from "./async.ts";
 import type { EffectFn } from "./effect.ts";
+import type { Optimistic } from "./optimistic.ts";
 import { getOwner, lifetimeOf, type Owner } from "./owner.ts";
 import { reconcileInto, type ReconcileOptions } from "./reconcile.ts";
 import { copyPlain } from "./snapshot.ts";
@@ -12,6 +13,7 @@ import type { Computed, Signal, SignalOptions } from "./signal.ts";
 export type { Computed, Signal, SignalOptions } from "./signal.ts";
 export type { EffectFn } from "./effect.ts";
 export type { Resource } from "./async.ts";
+export type { Optimistic } from "./optimistic.ts";
 export type { Context } from "./context.ts";
 export type { ReconcileOptions } from "./reconcile.ts";
 export { createContext, useContext } from "./context.ts";
@@ -106,6 +108,13 @@ export function resource<T>(_fetcher: (signal: AbortSignal) => T | PromiseLike<T
   read.loading = () => true;
   read.error = noop;
   read.refetch = noop;
+  return read;
+}
+
+/** On the server an optimistic value is its source: nothing is pending during a render. */
+export function optimistic<T>(source: () => T): Optimistic<T> {
+  const read = (() => source()) as Optimistic<T>;
+  read.set = read.update = noop;
   return read;
 }
 
