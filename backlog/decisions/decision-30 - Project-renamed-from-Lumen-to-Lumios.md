@@ -6,7 +6,7 @@ status: accepted
 ---
 ## Context
 
-Decision-15 named the framework "lumen" for now. `lumen` and `create-lumen` are taken on npm. On 2026-10-10 the user decided to rename the package, all references and the deploy path, first to `lumiose`; since unscoped `lumiose` is held on npm by an unused placeholder, the user chose **`lumiose`** instead (`lumiose`, `create-lumiose` and the `@lumiose` scope are free).
+Decision-15 named the framework "lumen" for now. `lumen` and `create-lumen` are taken on npm. On 2026-10-10 the user decided to rename the package, all references and the deploy path, first to `lumiose`; since unscoped `lumiose` is held on npm by an unused placeholder, the user chose **`lumiose`** instead (`lumiose` and `create-lumiose` are free on npm; the user owns the `@lumiose` org).
 
 ## Decision
 
