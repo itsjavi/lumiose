@@ -129,7 +129,10 @@ export function vendor(cacheDir: string, ablation: Ablation): string {
       dependencies?: Record<string, string>;
     };
     mkdirSync(target, { recursive: true });
-    for (const entry of [...(manifest.files ?? []), "package.json"]) {
+    // Published packages ship a built dist/ (TASK-39); the vendor links the sources instead, which
+    // the workspace exports point at.
+    const entries = (manifest.files ?? []).map((entry) => (entry === "dist" ? "src" : entry));
+    for (const entry of [...entries, "package.json"]) {
       for (const name of readdirSync(from)) {
         if (!matches(name, entry)) continue;
         cpSync(join(from, name), join(target, name), {
