@@ -225,6 +225,7 @@ work remains.
   - A task is not Done while its docs are stale.
 - **Commits.** Commit early and often, so the user can follow progress between requests. Do not leave long lists of pending changes.
 - **Pushing.** Every push runs CI, which costs money. Commit locally as often as you like, but push only when needed: a finished, green task that needs CI to verify it, or a change the user should see deployed. Batch commits into one push, and never push backlog-only or note-only commits on their own.
+- **Releases.** Always release with `pnpm release:version <x.y.z>` (lockstep versions, generated files such as the napi loader `packages/compiler/index.js` and `llms.txt`, changelog, commit and tag). Never bump versions or edit those generated files by hand. Agents never tag or publish unless the user asks.
   - Workers whose `agents.json` entry has `canCommit: true` commit their own work in small, coherent Conventional Commits whenever a meaningful step is green, e.g. "feat(dom): claim cursor for lists". Mention the task id.
   - Commit only files in your area:
     1. Take `.local/coordination/git.lock/` (atomic `mkdir`).
