@@ -80,7 +80,7 @@ Failures, redirects and errors do not invalidate. Rejects only for unexpected er
 failure) with a `FetchError`, and with a `TypeError` for a redirect to a URL that is not `http(s)`
 (a `javascript:` location never runs). Browser only: rejects on the server.
 
-### submitting
+### isSubmitting
 
 ```ts
 function isSubmitting(name?: string): boolean;
