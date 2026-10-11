@@ -1,7 +1,15 @@
-// `/` opens the tracker on the open song, whose URL names it.
-import { href, redirect } from "lumiose";
-import { songId } from "../state.ts";
+// `/` shows the tracker on the open song, then moves to the song's URL (/songs/[id]). The build
+// prerenders it with the demo song, so the first paint is the app; once it has hydrated, the
+// browser's last song opens and the URL names it.
+import { href, onMount } from "lumiose";
+import { navigate } from "lumiose/router";
+import { restoreSession, songId } from "../state.ts";
+import { TrackerView } from "../ui/TrackerView.stsx";
 
 export default function Home() {
-  redirect(href("/songs/[id]", { id: songId.peek() }));
+  onMount(() => {
+    restoreSession();
+    void navigate(href("/songs/[id]", { id: songId.peek() }), { replace: true });
+  });
+  return <TrackerView />;
 }

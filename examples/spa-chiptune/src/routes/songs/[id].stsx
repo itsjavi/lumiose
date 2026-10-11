@@ -1,17 +1,25 @@
 // The tracker, editing a song of the library: a deep link to it opens it.
 import { notFound, type PageProps } from "lumiose";
 import { loadSaved } from "../../model/library.ts";
-import { openSong, saveNow, songId } from "../../state.ts";
+import { DEMO_ID, openSong, pinSong, saveNow, songId } from "../../state.ts";
 import { TrackerView } from "../../ui/TrackerView.stsx";
+
+// The library lives in the browser, so the build prerenders the demo song's page only. Other song
+// URLs render in the browser: static hosts serve them the 404.html shell (see ../_404.stsx).
+export function staticPaths() {
+  return [{ params: { id: DEMO_ID } }];
+}
 
 export default function SongPage(props: PageProps<"/songs/[id]">) {
   // Another song is a new page (the router re-creates it), so the id is read once.
   const id = props.params.id;
+  // Only in the browser: the prerendered page is the open song's (the demo).
   if (id !== songId.peek()) {
     const song = loadSaved(id);
     if (!song) notFound();
     saveNow();
     openSong(song, id);
   }
+  pinSong(id);
   return <TrackerView />;
 }

@@ -1,7 +1,8 @@
 # Lumiose Chip
 
-A chiptune tracker, composer and mixer built with Lumiose as a client-rendered SPA:
-`lumiose({ mode: "spa", ssr: false })`, file routes and [`lumiose/router`](../../packages/lumiose/docs/reference/router.md).
+A chiptune tracker, composer and mixer built with Lumiose as a prerendered SPA:
+`lumiose({ mode: "spa", prerender: true })`, file routes and [`lumiose/router`](../../packages/lumiose/docs/reference/router.md).
+Every page's HTML already shows the app, which then hydrates and routes in the browser.
 It has four NES-style voices synthesized in an AudioWorklet: two pulses, a triangle and noise. It
 ships with a demo song, "Lumiose Quest".
 
@@ -21,7 +22,7 @@ Then:
 ```sh
 cd examples/spa-chiptune
 pnpm dev        # lumiose dev; open the printed URL and press PLAY (or Space)
-pnpm build      # lumiose build: dist/client only (every route is a static shell or asset)
+pnpm build      # lumiose build: dist/client only (every route prerendered to HTML)
 pnpm preview    # lumiose preview: serves dist/client as a static site
 ```
 
@@ -30,9 +31,19 @@ The pages are cross-origin isolated by COOP/COEP headers, declared once with
 `lumiose build` writes them to `dist/client/_headers` for static hosts that read it (Netlify,
 Cloudflare Pages). The engine then publishes the playing row, the levels and the scope samples
 through a `SharedArrayBuffer`. Without isolation it falls back to `postMessage`, at about 60 Hz.
-`lumiose build` writes each route's shell as a static file (`dist/client/index.html`,
-`songs/index.html`, … and `404.html`, which serves deep links such as `/songs/<id>` on a static
-host).
+`lumiose build` renders each route to a static file (`dist/client/index.html`, `songs/index.html`,
+`songs/demo/index.html`, … and `404.html`).
+
+**Prerendering.** The build renders every page with the build-time state: the demo song (library id
+`demo`) and the default preferences. So module scope and component setup never touch the browser:
+storage, the `AudioContext`, the isolation service worker and `crossOriginIsolated` are read in
+`onMount()`, effects and event handlers. Once the first page has hydrated, the root layout's
+`onMount()` calls `restoreSession()` (`src/state.ts`), which applies the saved preferences, the
+library and the last song (or the song the URL names). A first visit sees no change; a returning
+visitor's song, theme and library appear right after hydration. Audio still starts on the first
+PLAY or note. Songs live in the browser, so only the demo's tracker page is prerendered
+(`staticPaths()` in `songs/[id].stsx`); a static host serves `404.html` for other song URLs, and
+the `_404` page opens a song saved in this browser in place.
 
 **GitHub Pages** cannot send headers, so the Lumiose website's build of this example (`pnpm
 build:site`, which sets `LUMIOSE_BASE`) adds a small first-party service worker,
@@ -80,14 +91,14 @@ The settings view lists every shortcut.
 
 ## How it is built
 
-| Part       | Files                                            | Notes                                                                                                                                                                                                                                                                                                                                                 |
-| ---------- | ------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Routes     | `src/routes/`, `src/nav.ts`, `src/document.stsx` | `_layout.stsx` is the app shell (header and transport, the mixer, the status bar), mounted once; each view is a route rendered in its outlet. `/` redirects to the open song's tracker, `songs/[id].stsx` opens the song a URL names (a `_404` when the library has no such song). `nav.ts` maps views to URLs for the tabs and the F-keys.           |
-| State      | `src/state.ts`, `src/model/`                     | The open song is one deep `store()`. Every edit is a list of path patches (`{ path, before, after }`). Undo and redo replay these patches, and the same writes keep the audio engine and the autosave in sync.                                                                                                                                        |
-| Synth      | `src/audio/synth.ts`                             | Plain TypeScript with no Web Audio. It has PolyBLEP pulses with four duty cycles, a 4-bit stepped triangle and LFSR noise in long and short modes. It runs a per-tick sequencer, the effects, and the instrument macros with loop and release points. The same code runs in the worklet, in the WAV export and in the unit tests.                     |
-| Engine     | `src/audio/engine.ts`, `worklet.ts`, `wav.ts`    | The worklet hosts the synth. The UI thread forwards song patches and transport commands to it. The WAV export renders through an `OfflineAudioContext` into 16-bit PCM.                                                                                                                                                                               |
-| Frame loop | `src/frame.ts`                                   | A single `requestAnimationFrame` loop reads the telemetry once per frame and sets the transport and meter signals. It also draws every oscilloscope canvas directly.                                                                                                                                                                                  |
-| UI         | `src/ui/*.stsx`                                  | Components, with one scoped `<style>` block at the end of each file (shared by its components) and `$tokens` (`src/tokens.ts`). Colors are CSS custom properties, so the NES and DMG themes switch at runtime. In the pattern editor, the cursor, the selection and the playing row are one style binding each, and the sheet moves with a transform. |
+| Part       | Files                                            | Notes                                                                                                                                                                                                                                                                                                                                                            |
+| ---------- | ------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Routes     | `src/routes/`, `src/nav.ts`, `src/document.stsx` | `_layout.stsx` is the app shell (header and transport, the mixer, the status bar), mounted once; each view is a route rendered in its outlet. `/` shows the tracker on the open song, then moves to its URL; `songs/[id].stsx` opens the song a URL names (a `_404` when the library has no such song). `nav.ts` maps views to URLs for the tabs and the F-keys. |
+| State      | `src/state.ts`, `src/model/`                     | The open song is one deep `store()`. Every edit is a list of path patches (`{ path, before, after }`). Undo and redo replay these patches, and the same writes keep the audio engine and the autosave in sync.                                                                                                                                                   |
+| Synth      | `src/audio/synth.ts`                             | Plain TypeScript with no Web Audio. It has PolyBLEP pulses with four duty cycles, a 4-bit stepped triangle and LFSR noise in long and short modes. It runs a per-tick sequencer, the effects, and the instrument macros with loop and release points. The same code runs in the worklet, in the WAV export and in the unit tests.                                |
+| Engine     | `src/audio/engine.ts`, `worklet.ts`, `wav.ts`    | The worklet hosts the synth. The UI thread forwards song patches and transport commands to it. The WAV export renders through an `OfflineAudioContext` into 16-bit PCM.                                                                                                                                                                                          |
+| Frame loop | `src/frame.ts`                                   | A single `requestAnimationFrame` loop reads the telemetry once per frame and sets the transport and meter signals. It also draws every oscilloscope canvas directly.                                                                                                                                                                                             |
+| UI         | `src/ui/*.stsx`                                  | Components, with one scoped `<style>` block at the end of each file (shared by its components) and `$tokens` (`src/tokens.ts`). Colors are CSS custom properties, so the NES and DMG themes switch at runtime. In the pattern editor, the cursor, the selection and the playing row are one style binding each, and the sheet moves with a transform.            |
 
 ## Performance
 

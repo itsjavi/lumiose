@@ -23,6 +23,7 @@ export function viewHref(view: View): string {
 /** The view of the current route. Reactive. */
 export function currentView(): View | undefined {
   switch (route()) {
+    case "/":
     case "/songs/[id]":
       return "tracker";
     case "/songs":

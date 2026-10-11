@@ -19,19 +19,18 @@ import { Header } from "../ui/Header.stsx";
 import { Mixer } from "../ui/Mixer.stsx";
 import { StatusBar } from "../ui/StatusBar.stsx";
 
-// GitHub Pages sends no COOP/COEP: in that build a service worker adds them (one reload on the
-// first visit). Everywhere else this does nothing.
-void isolate();
-
-// A small handle for the e2e tests and the curious: frame timing and the open song.
-Object.assign(globalThis, { chiptune: { frameStats, resetFrameStats, song: readSong } });
-
+// Every page is prerendered (lumiose({ prerender: true })): this module and the views load at build
+// time too, so browser APIs are only used in onMount(), effects and event handlers.
 export default function Layout(props: LayoutProps<"/">) {
-  // Reopen the last song (or save the demo as the first one) before the first view renders; a
-  // song URL (/songs/[id]) then opens its own song.
-  restoreSession();
-
   onMount(() => {
+    // The page has hydrated from the build-time state (the demo song): now reopen the browser's
+    // last song, or the one the URL names, with its saved preferences.
+    restoreSession();
+    // GitHub Pages sends no COOP/COEP: in that build a service worker adds them (one reload on the
+    // first visit). Everywhere else this does nothing.
+    void isolate();
+    // A small handle for the e2e tests and the curious: frame timing and the open song.
+    Object.assign(globalThis, { chiptune: { frameStats, resetFrameStats, song: readSong } });
     startFrameLoop();
     document.addEventListener("keydown", onKeyDown);
     document.addEventListener("keyup", onKeyUp);

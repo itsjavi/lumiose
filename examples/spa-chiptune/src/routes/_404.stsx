@@ -1,8 +1,16 @@
 // Unknown URLs and songs that are not in the library (a deep link from another browser).
-import { href, type ErrorPageProps } from "lumiose";
-import { Link } from "lumiose/router";
+import { href, onMount, type ErrorPageProps } from "lumiose";
+import { Link, navigate, params, route } from "lumiose/router";
+import { loadSaved } from "../model/library.ts";
 
 export default function NotFound(props: ErrorPageProps) {
+  // Songs live in the browser: the build only prerenders the demo's page, so a static host serves
+  // 404.html (this page, prerendered) for every other song URL, and `lumiose dev` renders it too.
+  // A song saved in this browser then opens client-side.
+  onMount(() => {
+    const id = route() === "/songs/[id]" ? params<"/songs/[id]">().id : undefined;
+    if (id !== undefined && loadSaved(id)) void navigate(location.href, { replace: true });
+  });
   return (
     <section class="not-found panel">
       <h2>{props.status} · Not here</h2>

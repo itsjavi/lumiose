@@ -2,17 +2,18 @@
 import lumiose from "@lumiose/vite";
 import { defineConfig } from "vite";
 
-// A client-rendered SPA: every route renders in the browser, inside the persistent root layout,
-// and `lumiose build` emits static files only (no dist/server). The COOP/COEP headers make pages
+// A prerendered SPA: `lumiose build` renders every route to HTML at build time (the UI before
+// JavaScript runs), the browser hydrates it inside the persistent root layout, and later navigation
+// is client-side. The build emits static files only (no dist/server). The COOP/COEP headers make pages
 // cross-origin isolated (SharedArrayBuffer for the audio engine): `lumiose({ headers })` sends them
 // in `lumiose dev` and `lumiose preview`, and writes them to dist/client/_headers for static hosts.
 export default defineConfig({
-  // Served below a path when LUMIOSE_BASE is set (the Lumiose website: /lumiose/examples/spa-chiptune/).
+  // Served below a path when LUMIOSE_BASE is set (the Lumiose website: /lumiose/showcase/chiptune-tracker/).
   base: process.env["LUMIOSE_BASE"] ?? "/",
   plugins: [
     lumiose({
       mode: "spa",
-      ssr: false,
+      prerender: true,
       csp: "strict",
       headers: {
         "cross-origin-opener-policy": "same-origin",

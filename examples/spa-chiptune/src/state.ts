@@ -1,11 +1,24 @@
 // Application state: the open song (a deep store), the undo history, the editor cursor and
 // preferences. Every song write goes through `write`, which updates the store (and so the UI),
 // the audio engine and the autosave.
+//
+// The app is prerendered: every route renders at build time from the initial state below (the demo
+// song and default preferences), and the browser hydrates that HTML from the same state. The
+// browser's saved state (preferences, the library, the last song) is applied by
+// `restoreSession()` once the first view has mounted, so module scope and component setup never
+// touch storage.
 import { batch, computed, effect, signal, store, untrack } from "lumiose";
 import * as engine from "./audio/engine.ts";
 import { demoSong } from "./model/demo.ts";
 import { createHistory } from "./model/history.ts";
-import { lastOpened, loadSaved, markOpened, newId, saveSong } from "./model/library.ts";
+import {
+  lastOpened,
+  loadSaved,
+  markOpened,
+  newId,
+  refreshLibrary,
+  saveSong,
+} from "./model/library.ts";
 import { clone, getAt, setAt } from "./model/song.ts";
 import type { Path, Song } from "./model/types.ts";
 
@@ -22,7 +35,10 @@ export interface CursorState {
 const raw = { song: demoSong() };
 export const doc = store(raw);
 
-export const songId = signal(newId());
+/** The library id of the demo song, the one every prerendered page shows. */
+export const DEMO_ID = "demo";
+
+export const songId = signal(DEMO_ID);
 export const cursor = store<CursorState>({ order: 0, row: 0, channel: 0, column: 0 });
 
 export interface Prefs {
@@ -54,10 +70,15 @@ function readPrefs(): Prefs {
   }
 }
 
-export const prefs = store<Prefs>(readPrefs());
+/** Whether `restoreSession()` has run: until then nothing is read from or written to storage. */
+let restored = false;
+let pinned: string | undefined;
+
+export const prefs = store<Prefs>({ ...defaults });
 
 effect(() => {
   const json = JSON.stringify(prefs);
+  if (!restored) return;
   try {
     localStorage.setItem(PREFS_KEY, json);
   } catch {
@@ -88,6 +109,9 @@ function scheduleSave(): void {
 
 export function saveNow(): void {
   clearTimeout(saveTimer);
+  // Before the session is restored, the open song is the build-time demo: saving it would
+  // overwrite the browser's copy.
+  if (!restored) return;
   if (saveSong(songId.peek(), raw.song)) saved.set(true);
 }
 
@@ -145,11 +169,25 @@ export function openSong(song: Song, id = newId()): void {
   markOpened(id);
 }
 
-/** Reopens the last song, or saves the demo as the first one. */
+/** Names the song of the first view's URL (`/songs/[id]`): the session opens it, not the last one. */
+export function pinSong(id: string): void {
+  if (!restored) pinned = id;
+}
+
+/**
+ * Applies the browser's saved state once, after the first view has mounted (and hydrated):
+ * preferences, the library, and the song the URL names or the last one opened. The first visit
+ * saves the demo as the first song of the library.
+ */
 export function restoreSession(): void {
-  const id = lastOpened();
+  if (restored) return;
+  restored = true;
+  Object.assign(prefs, readPrefs());
+  refreshLibrary();
+  const id = pinned ?? lastOpened();
   const song = id ? loadSaved(id) : undefined;
-  if (id && song) openSong(song, id);
+  // A song the first view already opened from the library (a client-rendered deep link) stays.
+  if (id && song && !(id === songId.peek() && id !== DEMO_ID)) openSong(song, id);
   else saveNow();
 }
 

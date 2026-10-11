@@ -1,5 +1,5 @@
-// The document around the client-rendered app (lumiose({ mode: "spa", ssr: false }) sends it as the
-// shell of every page).
+// The document around the app: every page is prerendered into it (lumiose({ mode: "spa", prerender:
+// true })).
 import type { DocumentProps } from "lumiose";
 
 const ICON =

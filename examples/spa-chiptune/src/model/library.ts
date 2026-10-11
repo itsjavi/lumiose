@@ -150,8 +150,13 @@ function readIndex(): LibraryEntry[] {
   }
 }
 
-/** The saved songs, most recently updated first. */
-export const library = signal<LibraryEntry[]>(readIndex());
+/** The saved songs, most recently updated first: empty until `refreshLibrary()` reads storage. */
+export const library = signal<LibraryEntry[]>([]);
+
+/** Reads the library from storage (in the browser, once the prerendered page has hydrated). */
+export function refreshLibrary(): void {
+  library.set(readIndex());
+}
 
 function writeIndex(list: LibraryEntry[]): void {
   list.sort((a, b) => b.updated - a.updated);
