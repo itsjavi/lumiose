@@ -42,73 +42,73 @@ export function ThemeToggle(props: { class?: JSX.ClassValue }) {
       <svg class="moon" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
         <path d="M20.2 14.6A8.4 8.4 0 0 1 9.4 3.8a8.4 8.4 0 1 0 10.8 10.8Z" />
       </svg>
-
-      <style>
-        .toggle {
-          display: inline-grid;
-          place-items: center;
-          inline-size: 2.25rem;
-          block-size: 2.25rem;
-          padding: 0;
-          border: 1px solid $color.border;
-          border-radius: $radius.pill;
-          background: $color.surface;
-          color: $color.muted;
-          transition:
-            color $motion.fast $motion.ease,
-            border-color $motion.fast $motion.ease,
-            box-shadow $motion.base $motion.ease;
-        }
-        .toggle:hover {
-          color: $color.text;
-          border-color: $color.borderStrong;
-          box-shadow: 0 0 0 4px color-mix(in oklab, $color.glowB 18%, transparent);
-        }
-        svg {
-          grid-area: 1 / 1;
-          fill: none;
-          stroke: currentColor;
-          stroke-width: 1.8;
-          stroke-linecap: round;
-          stroke-linejoin: round;
-          transition:
-            opacity $motion.base $motion.ease,
-            transform $motion.slow $motion.ease;
-        }
-        .sun circle {
-          fill: color-mix(in oklab, $color.glowB 45%, transparent);
-        }
-        .moon path {
-          fill: color-mix(in oklab, $color.glowA 30%, transparent);
-        }
-        .moon {
-          opacity: 0;
-          transform: rotate(-60deg) scale(0.6);
-        }
-
-        /* Dark in effect: explicitly, or by the system without an explicit light choice. */
-        :global(:root[data-theme="dark"]) .sun {
-          opacity: 0;
-          transform: rotate(60deg) scale(0.6);
-        }
-        :global(:root[data-theme="dark"]) .moon {
-          opacity: 1;
-          transform: none;
-        }
-        @media (prefers-color-scheme: dark) {
-          :global(:root:not([data-theme="light"])) .sun {
-            opacity: 0;
-            transform: rotate(60deg) scale(0.6);
-          }
-          :global(:root:not([data-theme="light"])) .moon {
-            opacity: 1;
-            transform: none;
-          }
-        }
-        .toggle:focus-visible {
-          outline-offset: $space.xxs;
-        }
-      </style>
     </button>
   );
 }
+
+<style>
+  .toggle {
+    display: inline-grid;
+    place-items: center;
+    inline-size: 2.25rem;
+    block-size: 2.25rem;
+    padding: 0;
+    border: 1px solid $color.border;
+    border-radius: $radius.pill;
+    background: $color.surface;
+    color: $color.muted;
+    transition:
+      color $motion.fast $motion.ease,
+      border-color $motion.fast $motion.ease,
+      box-shadow $motion.base $motion.ease;
+  }
+  .toggle:hover {
+    color: $color.text;
+    border-color: $color.borderStrong;
+    box-shadow: 0 0 0 4px color-mix(in oklab, $color.glowB 18%, transparent);
+  }
+  svg {
+    grid-area: 1 / 1;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    transition:
+      opacity $motion.base $motion.ease,
+      transform $motion.slow $motion.ease;
+  }
+  .sun circle {
+    fill: color-mix(in oklab, $color.glowB 45%, transparent);
+  }
+  .moon path {
+    fill: color-mix(in oklab, $color.glowA 30%, transparent);
+  }
+  .moon {
+    opacity: 0;
+    transform: rotate(-60deg) scale(0.6);
+  }
+
+  /* Dark in effect: explicitly, or by the system without an explicit light choice. */
+  :global(:root[data-theme="dark"]) .sun {
+    opacity: 0;
+    transform: rotate(60deg) scale(0.6);
+  }
+  :global(:root[data-theme="dark"]) .moon {
+    opacity: 1;
+    transform: none;
+  }
+  @media (prefers-color-scheme: dark) {
+    :global(:root:not([data-theme="light"])) .sun {
+      opacity: 0;
+      transform: rotate(60deg) scale(0.6);
+    }
+    :global(:root:not([data-theme="light"])) .moon {
+      opacity: 1;
+      transform: none;
+    }
+  }
+  .toggle:focus-visible {
+    outline-offset: $space.xxs;
+  }
+</style>

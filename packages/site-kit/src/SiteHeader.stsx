@@ -40,65 +40,65 @@ export function SiteHeader(props: SiteHeaderProps) {
           <ThemeToggle client:load />
         </div>
       </div>
-
-      <style>
-        .header {
-          position: sticky;
-          inset-block-start: 0;
-          z-index: $z.header;
-          background: color-mix(in oklab, $color.bg 80%, transparent);
-          backdrop-filter: blur(14px) saturate(1.5);
-          border-block-end: 1px solid $color.border;
-        }
-        /* A thin line of light along the bottom edge. */
-        .header::after {
-          content: "";
-          position: absolute;
-          inset-inline: 0;
-          inset-block-end: -1px;
-          block-size: 1px;
-          background: linear-gradient(
-            90deg,
-            transparent,
-            color-mix(in oklab, $color.glowA 70%, transparent) 30%,
-            color-mix(in oklab, $color.glowB 70%, transparent) 70%,
-            transparent
-          );
-          opacity: 0.7;
-          pointer-events: none;
-        }
-        .inner {
-          display: flex;
-          align-items: center;
-          gap: $space.lg;
-          max-inline-size: $layout.page;
-          block-size: $layout.header;
-          margin-inline: auto;
-          padding-inline: $layout.gutter;
-        }
-        .brand {
-          display: inline-flex;
-          border-radius: $space.xs;
-          text-decoration: none;
-        }
-        .actions {
-          display: flex;
-          align-items: center;
-          gap: $space.xs;
-          margin-inline-start: auto;
-        }
-        @media (width < $bp.md) {
-          .inner {
-            gap: $space.xs;
-          }
-          .brand {
-            margin-inline-end: auto;
-          }
-          .actions {
-            margin-inline-start: 0;
-          }
-        }
-      </style>
     </header>
   );
 }
+
+<style>
+  .header {
+    position: sticky;
+    inset-block-start: 0;
+    z-index: $z.header;
+    background: color-mix(in oklab, $color.bg 80%, transparent);
+    backdrop-filter: blur(14px) saturate(1.5);
+    border-block-end: 1px solid $color.border;
+  }
+  /* A thin line of light along the bottom edge. */
+  .header::after {
+    content: "";
+    position: absolute;
+    inset-inline: 0;
+    inset-block-end: -1px;
+    block-size: 1px;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      color-mix(in oklab, $color.glowA 70%, transparent) 30%,
+      color-mix(in oklab, $color.glowB 70%, transparent) 70%,
+      transparent
+    );
+    opacity: 0.7;
+    pointer-events: none;
+  }
+  .inner {
+    display: flex;
+    align-items: center;
+    gap: $space.lg;
+    max-inline-size: $layout.page;
+    block-size: $layout.header;
+    margin-inline: auto;
+    padding-inline: $layout.gutter;
+  }
+  .brand {
+    display: inline-flex;
+    border-radius: $space.xs;
+    text-decoration: none;
+  }
+  .actions {
+    display: flex;
+    align-items: center;
+    gap: $space.xs;
+    margin-inline-start: auto;
+  }
+  @media (width < $bp.md) {
+    .inner {
+      gap: $space.xs;
+    }
+    .brand {
+      margin-inline-end: auto;
+    }
+    .actions {
+      margin-inline-start: 0;
+    }
+  }
+</style>

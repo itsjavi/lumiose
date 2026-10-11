@@ -71,76 +71,76 @@ export function Footer(props: FooterProps) {
       <div class="bottom">
         <p>{props.children ?? "MIT licensed. Built with Lumiose."}</p>
       </div>
-
-      <style>
-        .footer {
-          margin-block-start: $space.xxxl;
-          border-block-start: 1px solid $color.border;
-          background:
-            radial-gradient(
-              50% 80% at 50% 100%,
-              color-mix(in oklab, $color.glowA 8%, transparent),
-              transparent
-            ),
-            $color.bg;
-          color: $color.muted;
-          font-size: $text.sm;
-        }
-        .inner {
-          display: flex;
-          flex-wrap: wrap;
-          gap: $space.xl $space.xxl;
-          max-inline-size: $layout.page;
-          margin-inline: auto;
-          padding: $space.xxl $layout.gutter $space.xl;
-        }
-        .about {
-          flex: 1 1 18rem;
-        }
-        .column {
-          flex: 0 1 10rem;
-        }
-        .tagline {
-          margin-block-start: $space.sm;
-          max-inline-size: 22rem;
-        }
-        h2 {
-          margin-block-end: $space.sm;
-          color: $color.text;
-          font-size: $text.xs;
-          font-weight: $weight.semibold;
-          letter-spacing: 0.08em;
-          text-transform: uppercase;
-        }
-        ul {
-          display: grid;
-          gap: $space.xs;
-        }
-        a {
-          color: $color.muted;
-          text-decoration: none;
-        }
-        a:hover {
-          color: $color.accentText;
-          text-decoration: underline;
-        }
-        .bottom {
-          max-inline-size: $layout.page;
-          margin-inline: auto;
-          padding: $space.md $layout.gutter $space.xl;
-          border-block-start: 1px solid $color.border;
-          color: $color.subtle;
-          font-size: $text.xs;
-        }
-        @media (width < $bp.sm) {
-          .about {
-            flex-basis: 100%;
-          }
-          .column {
-            flex: 1 1 8rem;
-          }
-        }
-      </style>
     </footer>
   );
 }
+
+<style>
+  .footer {
+    margin-block-start: $space.xxxl;
+    border-block-start: 1px solid $color.border;
+    background:
+      radial-gradient(
+        50% 80% at 50% 100%,
+        color-mix(in oklab, $color.glowA 8%, transparent),
+        transparent
+      ),
+      $color.bg;
+    color: $color.muted;
+    font-size: $text.sm;
+  }
+  .inner {
+    display: flex;
+    flex-wrap: wrap;
+    gap: $space.xl $space.xxl;
+    max-inline-size: $layout.page;
+    margin-inline: auto;
+    padding: $space.xxl $layout.gutter $space.xl;
+  }
+  .about {
+    flex: 1 1 18rem;
+  }
+  .column {
+    flex: 0 1 10rem;
+  }
+  .tagline {
+    margin-block-start: $space.sm;
+    max-inline-size: 22rem;
+  }
+  h2 {
+    margin-block-end: $space.sm;
+    color: $color.text;
+    font-size: $text.xs;
+    font-weight: $weight.semibold;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  ul {
+    display: grid;
+    gap: $space.xs;
+  }
+  a {
+    color: $color.muted;
+    text-decoration: none;
+  }
+  a:hover {
+    color: $color.accentText;
+    text-decoration: underline;
+  }
+  .bottom {
+    max-inline-size: $layout.page;
+    margin-inline: auto;
+    padding: $space.md $layout.gutter $space.xl;
+    border-block-start: 1px solid $color.border;
+    color: $color.subtle;
+    font-size: $text.xs;
+  }
+  @media (width < $bp.sm) {
+    .about {
+      flex-basis: 100%;
+    }
+    .column {
+      flex: 1 1 8rem;
+    }
+  }
+</style>

@@ -24,92 +24,92 @@ export function Card(props: CardProps) {
         {props.href !== undefined ? <a href={props.href}>{props.title}</a> : props.title}
       </h3>
       {props.children && <div class="content">{props.children}</div>}
-
-      <style>
-        .card {
-          position: relative;
-          display: flex;
-          flex-direction: column;
-          gap: $space.xs;
-          padding: $space.lg;
-          border: 1px solid $color.border;
-          border-radius: $radius.lg;
-          background: $color.surface;
-          box-shadow: $shadow.sm;
-          isolation: isolate;
-          transition:
-            border-color $motion.base $motion.ease,
-            box-shadow $motion.base $motion.ease,
-            transform $motion.base $motion.ease;
-        }
-        /* The glow: a soft light from the top edge, shown on hover. */
-        .card::before {
-          content: "";
-          position: absolute;
-          inset: 0;
-          z-index: -1;
-          border-radius: inherit;
-          background: $gradient.glow;
-          opacity: 0;
-          transition: opacity $motion.slow $motion.ease;
-        }
-        .card.linked:hover,
-        .card.linked:focus-within {
-          border-color: color-mix(in oklab, $color.accent 45%, $color.border);
-          box-shadow:
-            $shadow.md,
-            0 0 0 4px color-mix(in oklab, $color.glowA 10%, transparent);
-          transform: translateY(-2px);
-        }
-        .card.linked:hover::before,
-        .card.linked:focus-within::before {
-          opacity: 1;
-        }
-
-        .icon {
-          display: grid;
-          place-items: center;
-          inline-size: 2.5rem;
-          block-size: 2.5rem;
-          margin-block-end: $space.xs;
-          border-radius: $radius.md;
-          background: $color.accentSoft;
-          color: $color.accentText;
-        }
-        .eyebrow {
-          color: $color.accentText;
-          font-size: $text.xs;
-          font-weight: $weight.semibold;
-          letter-spacing: 0.08em;
-          text-transform: uppercase;
-        }
-        .title {
-          font-size: $text.lg;
-          letter-spacing: -0.01em;
-        }
-        .title a {
-          color: $color.text;
-          text-decoration: none;
-        }
-        /* The title's link covers the card, so the whole card is clickable. */
-        .title a::after {
-          content: "";
-          position: absolute;
-          inset: 0;
-          border-radius: $radius.lg;
-        }
-        .title a:focus-visible {
-          outline: none;
-        }
-        .card.linked:has(a:focus-visible) {
-          outline: 2px solid $color.accent;
-          outline-offset: 2px;
-        }
-        .content {
-          color: $color.muted;
-          font-size: $text.sm;
-        }
-      </style>
     </article>
   );
 }
+
+<style>
+  .card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: $space.xs;
+    padding: $space.lg;
+    border: 1px solid $color.border;
+    border-radius: $radius.lg;
+    background: $color.surface;
+    box-shadow: $shadow.sm;
+    isolation: isolate;
+    transition:
+      border-color $motion.base $motion.ease,
+      box-shadow $motion.base $motion.ease,
+      transform $motion.base $motion.ease;
+  }
+  /* The glow: a soft light from the top edge, shown on hover. */
+  .card::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    border-radius: inherit;
+    background: $gradient.glow;
+    opacity: 0;
+    transition: opacity $motion.slow $motion.ease;
+  }
+  .card.linked:hover,
+  .card.linked:focus-within {
+    border-color: color-mix(in oklab, $color.accent 45%, $color.border);
+    box-shadow:
+      $shadow.md,
+      0 0 0 4px color-mix(in oklab, $color.glowA 10%, transparent);
+    transform: translateY(-2px);
+  }
+  .card.linked:hover::before,
+  .card.linked:focus-within::before {
+    opacity: 1;
+  }
+
+  .icon {
+    display: grid;
+    place-items: center;
+    inline-size: 2.5rem;
+    block-size: 2.5rem;
+    margin-block-end: $space.xs;
+    border-radius: $radius.md;
+    background: $color.accentSoft;
+    color: $color.accentText;
+  }
+  .eyebrow {
+    color: $color.accentText;
+    font-size: $text.xs;
+    font-weight: $weight.semibold;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  .title {
+    font-size: $text.lg;
+    letter-spacing: -0.01em;
+  }
+  .title a {
+    color: $color.text;
+    text-decoration: none;
+  }
+  /* The title's link covers the card, so the whole card is clickable. */
+  .title a::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: $radius.lg;
+  }
+  .title a:focus-visible {
+    outline: none;
+  }
+  .card.linked:has(a:focus-visible) {
+    outline: 2px solid $color.accent;
+    outline-offset: 2px;
+  }
+  .content {
+    color: $color.muted;
+    font-size: $text.sm;
+  }
+</style>

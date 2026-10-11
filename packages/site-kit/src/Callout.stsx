@@ -39,54 +39,54 @@ export function Callout(props: CalloutProps) {
         <p class="title">{props.title ?? TITLES[kind()]}</p>
         <div class="content">{props.children}</div>
       </div>
-
-      <style>
-        .callout {
-          --callout-fg: $color.infoFg;
-          --callout-bg: $color.infoBg;
-          --callout-border: $color.infoBorder;
-          display: grid;
-          grid-template-columns: auto 1fr;
-          gap: $space.sm;
-          margin-block: $space.lg;
-          padding: $space.md $space.lg $space.md $space.md;
-          border: 1px solid var(--callout-border);
-          border-inline-start-width: 3px;
-          border-radius: $radius.md;
-          background: var(--callout-bg);
-          color: $color.text;
-          font-size: $text.sm;
-        }
-        .callout.warn {
-          --callout-fg: $color.warnFg;
-          --callout-bg: $color.warnBg;
-          --callout-border: $color.warnBorder;
-        }
-        .callout.tip {
-          --callout-fg: $color.tipFg;
-          --callout-bg: $color.tipBg;
-          --callout-border: $color.tipBorder;
-        }
-        .icon {
-          margin-block-start: 0.1rem;
-          fill: none;
-          stroke: var(--callout-fg);
-          stroke-width: 1.6;
-          stroke-linecap: round;
-          stroke-linejoin: round;
-        }
-        .title {
-          margin-block-end: $space.xxs;
-          color: var(--callout-fg);
-          font-weight: $weight.semibold;
-        }
-        .content > :deep(* + *) {
-          margin-block-start: $space.xs;
-        }
-        .content :deep(a) {
-          color: var(--callout-fg);
-        }
-      </style>
     </div>
   );
 }
+
+<style>
+  .callout {
+    --callout-fg: $color.infoFg;
+    --callout-bg: $color.infoBg;
+    --callout-border: $color.infoBorder;
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: $space.sm;
+    margin-block: $space.lg;
+    padding: $space.md $space.lg $space.md $space.md;
+    border: 1px solid var(--callout-border);
+    border-inline-start-width: 3px;
+    border-radius: $radius.md;
+    background: var(--callout-bg);
+    color: $color.text;
+    font-size: $text.sm;
+  }
+  .callout.warn {
+    --callout-fg: $color.warnFg;
+    --callout-bg: $color.warnBg;
+    --callout-border: $color.warnBorder;
+  }
+  .callout.tip {
+    --callout-fg: $color.tipFg;
+    --callout-bg: $color.tipBg;
+    --callout-border: $color.tipBorder;
+  }
+  .icon {
+    margin-block-start: 0.1rem;
+    fill: none;
+    stroke: var(--callout-fg);
+    stroke-width: 1.6;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+  .title {
+    margin-block-end: $space.xxs;
+    color: var(--callout-fg);
+    font-weight: $weight.semibold;
+  }
+  .content > :deep(* + *) {
+    margin-block-start: $space.xs;
+  }
+  .content :deep(a) {
+    color: var(--callout-fg);
+  }
+</style>

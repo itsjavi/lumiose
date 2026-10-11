@@ -79,65 +79,65 @@ export function Tabs(props: TabsProps) {
       <div ref={panels} class="panels">
         {props.children}
       </div>
-
-      <style>
-        .tabs {
-          margin-block: $space.lg;
-        }
-        .list {
-          display: flex;
-          gap: $space.xxs;
-          border-block-end: 1px solid $color.border;
-          overflow-x: auto;
-          scrollbar-width: none;
-        }
-        button {
-          position: relative;
-          padding: $space.xs $space.md;
-          border: 0;
-          border-radius: $radius.sm $radius.sm 0 0;
-          background: transparent;
-          color: $color.muted;
-          font-size: $text.sm;
-          font-weight: $weight.medium;
-          white-space: nowrap;
-          transition:
-            color $motion.fast $motion.ease,
-            background-color $motion.fast $motion.ease;
-        }
-        button:hover {
-          color: $color.text;
-          background: $color.sunken;
-        }
-        button:focus-visible {
-          outline-offset: -2px;
-        }
-        button.selected {
-          color: $color.text;
-        }
-        /* The selected tab is lit from below. */
-        button::after {
-          content: "";
-          position: absolute;
-          inset-inline: $space.xs;
-          inset-block-end: -1px;
-          block-size: 2px;
-          border-radius: $radius.pill;
-          background: $color.accent;
-          box-shadow: 0 -2px 12px $color.glowA;
-          transform: scaleX(0);
-          transition: transform $motion.base $motion.ease;
-        }
-        button.selected::after {
-          transform: scaleX(1);
-        }
-        .panels > :deep(*) {
-          margin-block-start: $space.md;
-        }
-        .panels > :deep([role="tabpanel"]:focus-visible) {
-          outline-offset: 4px;
-        }
-      </style>
     </div>
   );
 }
+
+<style>
+  .tabs {
+    margin-block: $space.lg;
+  }
+  .list {
+    display: flex;
+    gap: $space.xxs;
+    border-block-end: 1px solid $color.border;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  button {
+    position: relative;
+    padding: $space.xs $space.md;
+    border: 0;
+    border-radius: $radius.sm $radius.sm 0 0;
+    background: transparent;
+    color: $color.muted;
+    font-size: $text.sm;
+    font-weight: $weight.medium;
+    white-space: nowrap;
+    transition:
+      color $motion.fast $motion.ease,
+      background-color $motion.fast $motion.ease;
+  }
+  button:hover {
+    color: $color.text;
+    background: $color.sunken;
+  }
+  button:focus-visible {
+    outline-offset: -2px;
+  }
+  button.selected {
+    color: $color.text;
+  }
+  /* The selected tab is lit from below. */
+  button::after {
+    content: "";
+    position: absolute;
+    inset-inline: $space.xs;
+    inset-block-end: -1px;
+    block-size: 2px;
+    border-radius: $radius.pill;
+    background: $color.accent;
+    box-shadow: 0 -2px 12px $color.glowA;
+    transform: scaleX(0);
+    transition: transform $motion.base $motion.ease;
+  }
+  button.selected::after {
+    transform: scaleX(1);
+  }
+  .panels > :deep(*) {
+    margin-block-start: $space.md;
+  }
+  .panels > :deep([role="tabpanel"]:focus-visible) {
+    outline-offset: 4px;
+  }
+</style>

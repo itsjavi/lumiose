@@ -54,46 +54,46 @@ export function CopyButton(props: CopyButtonProps) {
             ? "Copy failed"
             : ""}
       </span>
-
-      <style>
-        .copy {
-          display: inline-flex;
-        }
-        button {
-          display: inline-grid;
-          place-items: center;
-          inline-size: 2rem;
-          block-size: 2rem;
-          padding: 0;
-          border: 1px solid transparent;
-          border-radius: $radius.sm;
-          background: transparent;
-          color: $color.subtle;
-          font-size: $text.xs;
-          transition:
-            color $motion.fast $motion.ease,
-            background-color $motion.fast $motion.ease,
-            border-color $motion.fast $motion.ease;
-        }
-        button:hover {
-          color: $color.text;
-          background: $color.surface;
-          border-color: $color.border;
-        }
-        button.done {
-          color: $color.tipFg;
-        }
-        button:focus-visible {
-          outline-offset: calc($space.xxs * -1);
-        }
-        svg {
-          fill: none;
-          stroke: currentColor;
-          stroke-width: 1.4;
-          stroke-linecap: round;
-          stroke-linejoin: round;
-        }
-      </style>
     </span>
   );
 }
+
+<style>
+  .copy {
+    display: inline-flex;
+  }
+  button {
+    display: inline-grid;
+    place-items: center;
+    inline-size: 2rem;
+    block-size: 2rem;
+    padding: 0;
+    border: 1px solid transparent;
+    border-radius: $radius.sm;
+    background: transparent;
+    color: $color.subtle;
+    font-size: $text.xs;
+    transition:
+      color $motion.fast $motion.ease,
+      background-color $motion.fast $motion.ease,
+      border-color $motion.fast $motion.ease;
+  }
+  button:hover {
+    color: $color.text;
+    background: $color.surface;
+    border-color: $color.border;
+  }
+  button.done {
+    color: $color.tipFg;
+  }
+  button:focus-visible {
+    outline-offset: calc($space.xxs * -1);
+  }
+  svg {
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.4;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+</style>

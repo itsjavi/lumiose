@@ -100,147 +100,147 @@ export function SiteNav(props: SiteNavProps) {
           </li>
         ))}
       </ul>
-
-      <style>
-        .nav {
-          display: flex;
-          align-items: center;
-        }
-        .menu {
-          display: none;
-        }
-        .links {
-          display: flex;
-          align-items: center;
-          gap: $space.xxs;
-        }
-        a {
-          position: relative;
-          display: inline-flex;
-          align-items: center;
-          gap: 0.35em;
-          padding: $space.xs $space.sm;
-          border-radius: $radius.pill;
-          color: $color.muted;
-          font-size: $text.sm;
-          font-weight: $weight.medium;
-          text-decoration: none;
-          transition:
-            color $motion.fast $motion.ease,
-            background-color $motion.fast $motion.ease;
-        }
-        a:hover {
-          color: $color.text;
-          background: $color.sunken;
-        }
-        a.active {
-          color: $color.text;
-        }
-        /* The active link carries a small light underneath. */
-        a.active::after {
-          content: "";
-          position: absolute;
-          inset-inline: $space.sm;
-          inset-block-end: 0.2rem;
-          block-size: 2px;
-          border-radius: $radius.pill;
-          background: $color.accent;
-          box-shadow: 0 0 10px $color.glowA;
-        }
-        .ext {
-          fill: none;
-          stroke: currentColor;
-          stroke-width: 1.4;
-          stroke-linecap: round;
-          opacity: 0.7;
-        }
-
-        @media (width < $bp.md) {
-          .menu {
-            display: inline-grid;
-            place-items: center;
-            inline-size: 2.25rem;
-            block-size: 2.25rem;
-            padding: 0;
-            border: 1px solid $color.border;
-            border-radius: $radius.pill;
-            background: $color.surface;
-            color: $color.text;
-          }
-          /* Three bars that turn into a cross. */
-          .bars,
-          .bars::before,
-          .bars::after {
-            display: block;
-            inline-size: 1rem;
-            block-size: 1.5px;
-            border-radius: 1px;
-            background: currentColor;
-            transition:
-              transform $motion.base $motion.ease,
-              background-color $motion.fast $motion.ease;
-          }
-          .bars {
-            position: relative;
-          }
-          .bars::before,
-          .bars::after {
-            content: "";
-            position: absolute;
-            inset-inline-start: 0;
-          }
-          .bars::before {
-            transform: translateY(-5px);
-          }
-          .bars::after {
-            transform: translateY(5px);
-          }
-          .open .bars {
-            background: transparent;
-          }
-          .open .bars::before {
-            transform: rotate(45deg);
-          }
-          .open .bars::after {
-            transform: rotate(-45deg);
-          }
-
-          .links {
-            position: absolute;
-            inset-inline: 0;
-            inset-block-start: 100%;
-            z-index: $z.menu;
-            display: none;
-            flex-direction: column;
-            align-items: stretch;
-            gap: $space.xxs;
-            padding: $space.sm $layout.gutter $space.lg;
-            background: $color.bg;
-            border-block-end: 1px solid $color.border;
-            box-shadow: $shadow.lg;
-          }
-          .open .links {
-            display: flex;
-          }
-          a {
-            display: flex;
-            padding: $space.sm $space.md;
-            font-size: $text.md;
-            border-radius: $radius.md;
-          }
-          a.active {
-            background: $color.accentSoft;
-            color: $color.accentText;
-          }
-          a.active::after {
-            inset-inline: auto;
-            inset-inline-start: 0.35rem;
-            inset-block: 30%;
-            block-size: auto;
-            inline-size: 3px;
-          }
-        }
-      </style>
     </nav>
   );
 }
+
+<style>
+  .nav {
+    display: flex;
+    align-items: center;
+  }
+  .menu {
+    display: none;
+  }
+  .links {
+    display: flex;
+    align-items: center;
+    gap: $space.xxs;
+  }
+  a {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35em;
+    padding: $space.xs $space.sm;
+    border-radius: $radius.pill;
+    color: $color.muted;
+    font-size: $text.sm;
+    font-weight: $weight.medium;
+    text-decoration: none;
+    transition:
+      color $motion.fast $motion.ease,
+      background-color $motion.fast $motion.ease;
+  }
+  a:hover {
+    color: $color.text;
+    background: $color.sunken;
+  }
+  a.active {
+    color: $color.text;
+  }
+  /* The active link carries a small light underneath. */
+  a.active::after {
+    content: "";
+    position: absolute;
+    inset-inline: $space.sm;
+    inset-block-end: 0.2rem;
+    block-size: 2px;
+    border-radius: $radius.pill;
+    background: $color.accent;
+    box-shadow: 0 0 10px $color.glowA;
+  }
+  .ext {
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.4;
+    stroke-linecap: round;
+    opacity: 0.7;
+  }
+
+  @media (width < $bp.md) {
+    .menu {
+      display: inline-grid;
+      place-items: center;
+      inline-size: 2.25rem;
+      block-size: 2.25rem;
+      padding: 0;
+      border: 1px solid $color.border;
+      border-radius: $radius.pill;
+      background: $color.surface;
+      color: $color.text;
+    }
+    /* Three bars that turn into a cross. */
+    .bars,
+    .bars::before,
+    .bars::after {
+      display: block;
+      inline-size: 1rem;
+      block-size: 1.5px;
+      border-radius: 1px;
+      background: currentColor;
+      transition:
+        transform $motion.base $motion.ease,
+        background-color $motion.fast $motion.ease;
+    }
+    .bars {
+      position: relative;
+    }
+    .bars::before,
+    .bars::after {
+      content: "";
+      position: absolute;
+      inset-inline-start: 0;
+    }
+    .bars::before {
+      transform: translateY(-5px);
+    }
+    .bars::after {
+      transform: translateY(5px);
+    }
+    .open .bars {
+      background: transparent;
+    }
+    .open .bars::before {
+      transform: rotate(45deg);
+    }
+    .open .bars::after {
+      transform: rotate(-45deg);
+    }
+
+    .links {
+      position: absolute;
+      inset-inline: 0;
+      inset-block-start: 100%;
+      z-index: $z.menu;
+      display: none;
+      flex-direction: column;
+      align-items: stretch;
+      gap: $space.xxs;
+      padding: $space.sm $layout.gutter $space.lg;
+      background: $color.bg;
+      border-block-end: 1px solid $color.border;
+      box-shadow: $shadow.lg;
+    }
+    .open .links {
+      display: flex;
+    }
+    a {
+      display: flex;
+      padding: $space.sm $space.md;
+      font-size: $text.md;
+      border-radius: $radius.md;
+    }
+    a.active {
+      background: $color.accentSoft;
+      color: $color.accentText;
+    }
+    a.active::after {
+      inset-inline: auto;
+      inset-inline-start: 0.35rem;
+      inset-block: 30%;
+      block-size: auto;
+      inline-size: 3px;
+    }
+  }
+</style>
