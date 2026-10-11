@@ -5,7 +5,7 @@ status: Done
 assignee:
   - Spark
 created_date: '2026-10-11 02:41'
-updated_date: '2026-10-11 02:58'
+updated_date: '2026-10-11 02:59'
 labels:
   - perf
   - core
@@ -53,6 +53,8 @@ Measurements (brotli, size-apps; before re-measured with HEAD sources on the sam
 | ssr-bookshelf | framework total | 11.31 | 11.35 |
 
 Pages without the fetching island load about 0.5 kB less; pages with it pay 10-20 B; apps where several islands fetch pay the gate, about 30 B. size.ts unchanged for the capped bundles (typical + islands 8.97 kB, every export 9.94 kB, both under the 10 kB cap; core/dom untouched); the report-only fetchJSON rows moved by +0.01 kB. js-framework-benchmark: its bundle (main.js 18.14 kB) contains no fetch code, so none of the changed modules reach it and CPU cannot change; no timed run. Checks: vitest packages/lumiose + packages/vite 937/937, typecheck lumiose and @lumiose/vite, lint (no new warnings), docs:check. apps/web typecheck fails in Beacon's in-progress e2e/playground.e2e.ts, unrelated. Raw output in .local/agents/spark/t233/.
+
+Lux sign-off (2026-10-11): accepted. Per-page load is what matters. Pages without the fetching island save about 0.5 kB, and pages with it pay 10–20 B. The 0.02–0.04 kB rise in framework totals comes from compression across chunks, not from added code.
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary
