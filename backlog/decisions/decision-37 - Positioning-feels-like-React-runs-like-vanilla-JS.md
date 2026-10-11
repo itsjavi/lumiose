@@ -127,6 +127,19 @@ Approved by the user on 2026-10-11.
 - **"until a page needs it":** replaces "where pages don't move", which was vague (CSS animates without JavaScript).
 - **"where pages don't need interactivity" was rejected.** Links and forms are interactive and still ship 0 kB.
 
+**Amendment, 2026-10-11 (user): the stack table.**
+
+- **Order:** Lumiose comes first, then the other stacks by npm downloads of each stack's main package, with the metric and period cited under the table.
+- **Lumiose's row:** a flat tint, not a gradient.
+- **Server speed replaces "interactive parts use the same components".** It is a group header over two columns:
+  - Rendering: renders/s, from the SSR benchmark.
+  - Requests: req/s on the fullstack comparison's home page.
+- **Astro's caveat** (its islands need a second UI framework) moves to a note under the table.
+- **New sources:**
+  - Astro gets a fullstack port (TASK-242).
+  - Preact, Astro and Remix 3 join the SSR benchmark (TASK-241).
+- **Heading:** "The best of every stack, in one framework" replaces "One framework where others need two", which read as passive-aggressive.
+
 ## Consequences
 
 - The amendment adds TASK-214 (playground move), TASK-215 (URLs and redirects), and TASK-216 to TASK-218 (prerendering).

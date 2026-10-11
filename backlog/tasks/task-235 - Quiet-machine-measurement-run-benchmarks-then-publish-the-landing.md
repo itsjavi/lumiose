@@ -5,6 +5,7 @@ status: In Progress
 assignee:
   - Lux
 created_date: '2026-10-11 03:07'
+updated_date: '2026-10-11 03:52'
 labels:
   - benchmark
 milestone: m-8
@@ -25,3 +26,9 @@ Pending (user, 2026-10-11): the machine is busy, so no benchmarks or evals run u
 - [ ] #2 Fullstack, js-framework-benchmark and SSR results committed with versions; TASK-202, 203, 204, 205, 206, 210, 225 and 226 closed
 - [ ] #3 The landing's evidence and stack table are filled from the new results with no 'measuring' cells, and the site is pushed
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Lux 2026-10-11: the measurement run also covers the Astro fullstack app (TASK-242) and the SSR entries for Preact, Astro and Remix 3 (TASK-241). It closes those tasks and fills TASK-240's Server speed cells.
+<!-- SECTION:NOTES:END -->
