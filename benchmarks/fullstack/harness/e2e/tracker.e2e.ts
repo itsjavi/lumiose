@@ -222,8 +222,9 @@ test.describe("project issues", () => {
     await expect(page).toHaveURL(new RegExp(`label=${encodeURIComponent(labels[0]!)}`));
     await expect(page).toHaveURL(/sort=created/);
     await ready(page);
+    // Polled: a router may commit the URL before the filtered page renders.
+    await expect.poll(() => pageCount(page)).toBeLessThan(unfiltered);
     expect(await rows.count()).toBeGreaterThan(0);
-    expect(await pageCount(page)).toBeLessThan(unfiltered);
     for (const row of (await rows.all()).slice(0, 10)) {
       expect(await badge(row, "status")).toBe("open");
       await expect(row.locator(".labels .label", { hasText: labels[0]! })).toHaveCount(1);
@@ -348,7 +349,8 @@ test.describe("search", () => {
     await input.press("Enter");
     await expect(page).toHaveURL(new RegExp(`/search\\?q=${encodeURIComponent(word)}`));
     await ready(page);
-    expect(await page.locator(tid("search-result")).count()).toBeGreaterThan(0);
+    // A router may commit the URL before the new page renders (Remix 3's Navigation API): wait.
+    await expect(page.locator(tid("search-result")).first()).toBeVisible();
     await expect(page.locator(`${tid("search-result")} .issue-link`).first()).toHaveAttribute(
       "href",
       /^\/issues\/\d+$/,

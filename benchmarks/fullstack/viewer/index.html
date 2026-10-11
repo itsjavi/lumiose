@@ -28,6 +28,7 @@
         --series-4: #eda100;
         --series-5: #e87ba4;
         --series-6: #008300;
+        --series-7: #4a3aa7;
         --better: #1f7a3a;
         --worse: #b42318;
         --dev: #8a4b00;
@@ -53,8 +54,8 @@
           --series-3: #199e70;
           --series-4: #c98500;
           --series-5: #d55181;
-        --series-6: #008300;
           --series-6: #008300;
+          --series-7: #9085e9;
           --better: #5cc37a;
           --worse: #f07a6e;
           --dev: #f0b45c;
@@ -80,6 +81,8 @@
         --series-3: #199e70;
         --series-4: #c98500;
         --series-5: #d55181;
+        --series-6: #008300;
+        --series-7: #9085e9;
         --better: #5cc37a;
         --worse: #f07a6e;
         --dev: #f0b45c;
@@ -556,6 +559,7 @@
         { id: "solid-start", name: "SolidStart", color: "var(--series-4)" },
         { id: "sveltekit", name: "SvelteKit", color: "var(--series-5)" },
         { id: "nuxt", name: "Nuxt", color: "var(--series-6)" },
+        { id: "remix", name: "Remix 3", color: "var(--series-7)" },
       ];
       // Tabs by where a metric is measured (schema 2 `env`; derived for schema-1 files).
       const envOf = (id, def) =>

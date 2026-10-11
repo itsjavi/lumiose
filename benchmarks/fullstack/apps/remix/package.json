@@ -1,0 +1,33 @@
+{
+  "name": "@bench/app-remix",
+  "version": "0.0.0",
+  "private": true,
+  "description": "The Tracker app (doc-4) in Remix 3 with SSR, on Node.",
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "seed": "bench-seed",
+    "dev": "NODE_ENV=development PORT=${PORT:-4107} node hmr.ts",
+    "build": "true",
+    "start": "NODE_ENV=production node --import remix/node-tsx server.ts",
+    "typecheck": "tsc -p tsconfig.json",
+    "clean": "true"
+  },
+  "dependencies": {
+    "@bench/data": "workspace:*",
+    "@bench/ui-css": "workspace:*",
+    "remix": "3.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "24.19.1",
+    "typescript": "7.0.2"
+  },
+  "demo": {
+    "name": "tracker-remix",
+    "title": "Tracker in Remix 3 (fullstack bench)",
+    "kind": "benchmark",
+    "setup": [
+      "seed"
+    ]
+  }
+}

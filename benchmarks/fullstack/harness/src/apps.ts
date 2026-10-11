@@ -9,7 +9,14 @@ import { fileURLToPath } from "node:url";
 export const FULLSTACK = fileURLToPath(new URL("../../", import.meta.url));
 export const REPO = fileURLToPath(new URL("../../../../", import.meta.url));
 
-export type AppId = "lumiose" | "react-router" | "next" | "solid-start" | "sveltekit" | "nuxt";
+export type AppId =
+  | "lumiose"
+  | "react-router"
+  | "next"
+  | "solid-start"
+  | "sveltekit"
+  | "nuxt"
+  | "remix";
 
 export interface App {
   id: AppId;
@@ -36,6 +43,11 @@ export interface App {
    * cannot stream a Suspense boundary (Nuxt renders to a string).
    */
   comments?: "streamed" | "client";
+  /**
+   * False for a framework without a production build (Remix 3 runs its sources and compiles
+   * browser modules on request): its build time and output sizes are not recorded.
+   */
+  build?: false;
 }
 
 export const APPS: App[] = [
@@ -150,6 +162,27 @@ export const APPS: App[] = [
     prodServer:
       "`node .output/server/index.mjs`: Nitro's node-server output of `nuxt build` (no compression)",
     comments: "client",
+  },
+  {
+    id: "remix",
+    name: "Remix 3",
+    dir: join(FULLSTACK, "apps/remix"),
+    port: 4107,
+    // No build step: the asset server compiles browser modules on request (nothing on disk).
+    clientOutput: [],
+    serverOutput: [],
+    build: false,
+    hmr: {
+      file: join(FULLSTACK, "apps/remix/app/actions/document.tsx"),
+      find: "fullstack comparison benchmark",
+    },
+    sharedSources: [],
+    env: {},
+    devTool: { name: "remix/assets", pkg: "@remix-run/assets", via: "remix" },
+    devServer:
+      "`node hmr.ts`: remix/node-hmr restarts the TypeScript server on changes and pushes browser updates; the asset server compiles browser modules on request",
+    prodServer:
+      "`node --import remix/node-tsx server.ts`: the same sources in production mode (no build step; browser modules compiled on first request, minified and fingerprinted; no compression)",
   },
 ];
 

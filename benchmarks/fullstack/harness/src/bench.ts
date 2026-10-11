@@ -281,7 +281,7 @@ try {
         log(`${app.name}: production build ${i + 1}/${timed}`);
         await runScript(app, "clean");
         const ms = await runScript(app, "build");
-        if (groups.includes("build"))
+        if (groups.includes("build") && app.build !== false)
           recorder.add(
             app.id,
             "build.time",
@@ -292,18 +292,24 @@ try {
       if (!groups.includes("build")) continue;
       const size = (dirs: string[]) =>
         dirs.reduce((sum, dir) => sum + dirSize(join(app.dir, dir)), 0);
-      recorder.add(
-        app.id,
-        "build.client-size",
-        def("build", "Client output on disk", "bytes"),
-        size(app.clientOutput),
-      );
-      recorder.add(
-        app.id,
-        "build.server-size",
-        def("build", "Server output on disk", "bytes"),
-        size(app.serverOutput),
-      );
+      if (app.build !== false) {
+        recorder.add(
+          app.id,
+          "build.client-size",
+          def("build", "Client output on disk", "bytes"),
+          size(app.clientOutput),
+        );
+        recorder.add(
+          app.id,
+          "build.server-size",
+          def("build", "Server output on disk", "bytes"),
+          size(app.serverOutput),
+        );
+      } else {
+        notes.push(
+          `${app.id}: no production build (the server runs the sources and compiles browser modules on request), so no build time or output sizes.`,
+        );
+      }
       await withServer(app, "start", async () => {
         const paths = await routes(app);
         for (const route of Object.keys(ROUTES) as Route[]) {
@@ -528,6 +534,8 @@ const run: RunFile = {
       vue: versionOf("vue", "nuxt"),
       "vue-router": versionOf("vue-router", "nuxt"),
       nitropack: versionOf("nitropack", "nuxt", "nuxt>@nuxt/nitro-server"),
+      remix: versionOf("remix", "remix"),
+      "@remix-run/component": versionOf("@remix-run/component", "remix", "remix"),
       vite: (() => {
         const lumioseApp = apps.find((a) => a.id === "lumiose");
         return lumioseApp === undefined ? null : resolvedVersion(lumioseApp, "vite", "lumiose");
