@@ -280,7 +280,21 @@ test.describe("issue page", () => {
       // Attribute quotes are optional in HTML (Lumiose omits them where it can).
       const fallback = html.search(/data-testid=["']?comments-loading\b/);
       expect(fallback, "the comments fallback is in the shell").toBeGreaterThan(-1);
-      expect(html.search(/data-testid=["']?comment-list\b/)).toBeGreaterThan(fallback);
+      // The comments arrive later in the same response: as streamed markup, or as streamed data
+      // that the client renders (SvelteKit streams load promises, not HTML; doc-4 §8).
+      const markup = html.search(/data-testid=["']?comment-list\b/);
+      if (markup !== -1) {
+        expect(markup, "the comments are streamed after the shell").toBeGreaterThan(fallback);
+      } else if ((await comments.count()) > 0) {
+        const words = (await comments.first().locator(".comment-body").innerText())
+          .split(/\s+/)
+          .slice(0, 3)
+          .join(" ");
+        expect(
+          html.indexOf(words, fallback),
+          "the comments are streamed after the shell",
+        ).toBeGreaterThan(fallback);
+      }
     }
 
     const api = await request.get(`/api/issues/${id}`);

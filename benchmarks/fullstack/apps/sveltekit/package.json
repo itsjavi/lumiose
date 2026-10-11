@@ -1,0 +1,40 @@
+{
+  "name": "@bench/app-sveltekit",
+  "version": "0.0.0",
+  "private": true,
+  "description": "The Tracker app (doc-4) in SvelteKit 3 with SSR, on adapter-node.",
+  "license": "MIT",
+  "type": "module",
+  "imports": {
+    "#lib/*": "./src/lib/*"
+  },
+  "scripts": {
+    "seed": "bench-seed",
+    "dev": "vite dev --host 127.0.0.1 --port ${PORT:-4105} --strictPort",
+    "build": "vite build",
+    "start": "NODE_ENV=production node build",
+    "typecheck": "svelte-kit sync && svelte-check --tsgo",
+    "clean": "rm -rf build .svelte-kit node_modules/.vite"
+  },
+  "devDependencies": {
+    "@bench/data": "workspace:*",
+    "@bench/ui-css": "workspace:*",
+    "@sveltejs/adapter-node": "6.0.0",
+    "@sveltejs/kit": "3.0.1",
+    "@sveltejs/vite-plugin-svelte": "7.3.1",
+    "@types/node": "24.19.1",
+    "@typescript/native": "npm:typescript@7.0.2",
+    "svelte": "5.57.2",
+    "svelte-check": "4.7.6",
+    "typescript": "6.0.3",
+    "vite": "8.3.4"
+  },
+  "demo": {
+    "name": "tracker-sveltekit",
+    "title": "Tracker in SvelteKit (fullstack bench)",
+    "kind": "benchmark",
+    "setup": [
+      "seed"
+    ]
+  }
+}

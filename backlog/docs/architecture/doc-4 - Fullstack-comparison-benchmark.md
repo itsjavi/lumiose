@@ -3,7 +3,7 @@ id: doc-4
 title: Fullstack comparison benchmark
 type: specification
 created_date: '2026-10-09 04:07'
-updated_date: '2026-10-11 01:53'
+updated_date: '2026-10-11 02:04'
 ---
 # Fullstack comparison benchmark
 
@@ -21,8 +21,9 @@ updated_date: '2026-10-11 01:53'
   - React Router: loaders/actions, `<Form>`/`useFetcher`, a loader promise + `<Await>` inside `<Suspense>` for streamed data. The whole page hydrates (that is how React Router works).
   - Next.js: server components, server actions, `"use client"` components for interactive parts, async server component inside `<Suspense>`.
   - SolidStart: file routes, `query` + `createAsync` server functions (`"use server"`) with route `preload`, `action`s with `<form action>` and `useSubmission`, a non-deferred `createAsync` inside `<Suspense>` for streamed data. The whole page hydrates (SolidStart's islands mode is not supported yet).
+  - SvelteKit: `+page.server.ts` loads and form actions with `use:enhance`, the session in `hooks.server.ts` (`locals.user`), and an un-awaited load promise rendered with `{#await}` for streamed data. The whole page hydrates.
 - **Dynamic rendering everywhere.** Every page renders on each request. No full-page or data caching (Next: no static prerendering of these routes, no `use cache`; React Router: no prerender; Lumiose: mode `server`).
-- **Production servers as shipped,** with HTTP compression **off** in every app (Next `compress: false`; React Router served by `@react-router/serve` or an equivalent minimal Node server with compression off; Lumiose `adapter-node`; SolidStart on Nitro's `node-server` output, which does not compress). Payload sizes are measured offline with gzip and brotli.
+- **Production servers as shipped,** with HTTP compression **off** in every app (Next `compress: false`; React Router served by `@react-router/serve` or an equivalent minimal Node server with compression off; Lumiose `adapter-node`; SolidStart on Nitro's `node-server` output, which does not compress; SvelteKit on adapter-node with `precompress: false`). Payload sizes are measured offline with gzip and brotli.
 - **Type checking is measured separately**, not inside build time (Next: `typescript.ignoreBuildErrors: true` for the timed build).
 - **Latest stable versions** (decision-41): every framework uses its latest stable version that is compatible with the rest of its stack, pinned exactly; §8 records each version and why an older one is used. Results files record the resolved versions. Node is the repo's Node (≥ 24).
 - **Same machine, sequential runs,** nothing else heavy running. Every results file records the machine.
@@ -73,6 +74,7 @@ benchmarks/fullstack/
   apps/react-router/    React Router     (Quasar)
   apps/next/            Next.js 16       (Quasar)
   apps/solid-start/     SolidStart 2     (Quasar)
+  apps/sveltekit/       SvelteKit 3      (Quasar)
   harness/e2e/          conformance suite (Nova; inside @bench/harness so it resolves @playwright/test)
   harness/              @bench/harness   runner, metrics, results writer (Nova)
   results/              <date>T<time>-<host>.json, index.json (committed)
@@ -88,9 +90,9 @@ Median plus spread (min and max; the viewer draws them as whiskers and highlight
 
 **Environment of each metric** (TASK-145). Dev servers (Vite, Turbopack) compile on request and differ a lot from production servers, so every metric says where it was measured:
 
-- `dev`: against each app's dev server (`lumiose dev`, `react-router dev` and SolidStart's `vite dev` on Vite, `next dev` on Turbopack). Only the **Dev** metrics below.
+- `dev`: against each app's dev server (`lumiose dev`, `react-router dev`, and SolidStart's and SvelteKit's `vite dev` on Vite, `next dev` on Turbopack). Only the **Dev** metrics below.
 - `build`: from the production build and the sources: build time, output size on disk (without precompressed `.br`/`.gz` copies), type check, source size, dependency footprint.
-- `prod`: against the built apps on their production servers (`start` script: Lumiose `node server.ts` on adapter-node, React Router `node server.ts` = Express + @react-router/express, Next `next start`, SolidStart `node .output/server/index.mjs` on Nitro): client payload, page load and every server metric, req/s included.
+- `prod`: against the built apps on their production servers (`start` script: Lumiose `node server.ts` on adapter-node, React Router `node server.ts` = Express + @react-router/express, Next `next start`, SolidStart `node .output/server/index.mjs` on Nitro, SvelteKit `node build` on adapter-node): client payload, page load and every server metric, req/s included.
 
 The harness runs every `start` with `NODE_ENV=production` and checks, on each app's first production start, that the process listening on the port has `NODE_ENV=production` (it stops otherwise) and that `/` is not compressed for a client accepting br and gzip. Each results file records the commands, the dev bundler and these checks.
 
@@ -114,13 +116,13 @@ The harness runs every `start` with `NODE_ENV=production` and checks, on each ap
 - Server RSS after the load test.
 
 **Other**
-- Type check time (`lumiose check` with TS 7 vs `tsc --noEmit` / `next typegen && tsc` / `tsc` for SolidStart).
-- Source size: lines of code per app (excluding shared packages), files.
+- Type check time (`lumiose check` with TS 7 vs `tsc --noEmit` / `next typegen && tsc` / `tsc` for SolidStart / `svelte-kit sync && svelte-check --tsgo` for SvelteKit).
+- Source size: lines of code per app (excluding shared packages), files. `.svelte` files count as code.
 - Dependency footprint: number of packages in each app's production dependency tree.
 
 ## 5. Conformance suite
 
-`benchmarks/fullstack/harness/e2e`: one Playwright suite parameterised by base URL, run against each app in production mode. It checks every route, status codes, the shared markup landmarks (`data-testid` attributes defined here), filters and pagination, streamed comments, each action (with and without a session), validation errors, the redirect after creating an issue, the 404 page, the JSON endpoints, and each client interaction.
+`benchmarks/fullstack/harness/e2e`: one Playwright suite parameterised by base URL, run against each app in production mode. It checks every route, status codes, the shared markup landmarks (`data-testid` attributes defined here), filters and pagination, streamed comments (with `COMMENTS_DELAY_MS` > 0 the fallback must be in the shell and the comments must arrive later in the same response, as markup or, for SvelteKit, as streamed data), each action (with and without a session), validation errors, the redirect after creating an issue, the 404 page, the JSON endpoints, and each client interaction.
 
 ## 6. Results and viewer
 
@@ -165,5 +167,22 @@ Ports for the landing's stack comparison (decision-37), registered in the harnes
 - **Streaming:** page data uses `createAsync(…, { deferStream: true })`, so the shell, status code and `<title>` wait for it, like a React Router loader; the comments are a non-deferred `createAsync` inside `<Suspense>` and stream after the shell.
 - **Interactive parts:** the whole page hydrates. GET forms (filters, search) are plain HTML forms (Solid Router only intercepts POST forms), so they reload the page where React Router navigates on the client. Links are plain `<a>` (the router intercepts them); `<A>` would add `active`/`inactive` classes and change the markup.
 - **Readiness:** `onMount` in a `BenchReady` component rendered after the page inside the root `<Suspense>`, so it runs once the lazily loaded route has hydrated.
-- **Workspace caveat:** `benchmarks/ssr` pins `solid-js` 1.9.16, and pnpm first reused it for `@solidjs/start`, giving the app two Solid runtimes (broken router context). The lockfile now resolves the app's whole tree to 1.9.17 (`pnpm update solid-js --depth Infinity` on the app).
+- **Workspace caveat:** `benchmarks/ssr` pinned `solid-js` 1.9.16 when the app was added, and pnpm first reused it for `@solidjs/start`, giving the app two Solid runtimes (broken router context). The lockfile now resolves the app's whole tree to 1.9.17 (`pnpm update solid-js --depth Infinity` on the app).
 - **Shared code:** the app has its own Solid components (no shared UI package), written from `@bench/react-ui` with the same elements, classes and `data-testid`s, so its source size counts them all.
+
+### SvelteKit (TASK-203, `apps/sveltekit`, port 4105)
+
+- **Versions:** `@sveltejs/kit` 3.0.1, `svelte` 5.57.2, `@sveltejs/adapter-node` 6.0.0, `@sveltejs/vite-plugin-svelte` 7.3.1, Vite 8.3.4, `svelte-check` 4.7.6. Type check: `svelte-kit sync && svelte-check --tsgo`, which needs TypeScript 6.0.3 (`typescript`, for svelte-check and SvelteKit's peer range) next to TypeScript 7.0.2 (`@typescript/native`, which does the check), as svelte-check documents. Svelte's experimental async mode and SvelteKit's experimental remote functions stay off: only stable features.
+- **Server:** adapter-node, production is `node build`. `precompress: false`, since the adapter otherwise serves brotli/gzip copies of the client assets. adapter-node assumes `https` for the request origin unless a proxy header says otherwise, which fails the CSRF check of form actions on plain http, so `paths.origin` is `http://127.0.0.1:4105` (`ORIGIN` overrides it at build time).
+- **Streaming:** SvelteKit streams load promises as data after the page, not as HTML: the shell carries the `{#await}` fallback and the client renders the comments when the data arrives (no JS, no comments). The conformance suite accepts that (§5). The other apps stream HTML.
+- **Data and mutations:** form actions everywhere (`?/close`, `?/status`, `?/comment`, `/login`, `/logout`), enhanced with `use:enhance`, which reloads the page's data after each one. The bulk close posts to `?<current query>&/close`, since a bare `?/close` would drop the filters. GET forms (filters, search) become client-side navigations through SvelteKit's router, as in React Router.
+- **Readiness:** `afterNavigate` in the root layout, which SvelteKit calls once the app has hydrated.
+- **Dependencies:** every package is a devDependency, as `sv create` sets it up: adapter-node bundles them into `build/`, which runs without `node_modules`. The "production dependency packages" metric therefore reads 0. SolidStart's Nitro output is self-contained too, but its template lists packages as dependencies (177). The metric follows each template's package.json, not what the server needs at run time.
+- **Shared code:** its own Svelte components (one per file), written from `@bench/react-ui` with the same elements, classes and `data-testid`s.
+
+### Notes for the next ports (Nuxt, Remix 3)
+
+- Ports 4106 (Nuxt) and 4107 (Remix 3); viewer colors `--series-6` (green `#008300` light and dark) and `--series-7` (violet `#4a3aa7` light, `#9085e9` dark), the next slots of the validated palette.
+- Nuxt uses Nitro like SolidStart: `node .output/server/index.mjs`, `clean` must also remove `node_modules/.nitro` and `.nuxt`; add `.vue` to the source-size extensions in `harness/src/measure.ts`.
+- If a framework streams data rather than HTML, the streaming conformance check already accepts it.
+- `resolvedVersion` finds packages whose `exports` hide `package.json`; add the framework's packages to `meta.versions` in `bench.ts`.

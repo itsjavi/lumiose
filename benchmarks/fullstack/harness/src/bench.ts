@@ -520,6 +520,9 @@ const run: RunFile = {
       "@solidjs/start": versionOf("@solidjs/start", "solid-start"),
       "@solidjs/router": versionOf("@solidjs/router", "solid-start"),
       nitro: versionOf("nitro", "solid-start"),
+      svelte: versionOf("svelte", "sveltekit"),
+      "@sveltejs/kit": versionOf("@sveltejs/kit", "sveltekit"),
+      "@sveltejs/adapter-node": versionOf("@sveltejs/adapter-node", "sveltekit"),
       vite: (() => {
         const lumioseApp = apps.find((a) => a.id === "lumiose");
         return lumioseApp === undefined ? null : resolvedVersion(lumioseApp, "vite", "lumiose");

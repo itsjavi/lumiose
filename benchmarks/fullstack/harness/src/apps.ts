@@ -9,7 +9,7 @@ import { fileURLToPath } from "node:url";
 export const FULLSTACK = fileURLToPath(new URL("../../", import.meta.url));
 export const REPO = fileURLToPath(new URL("../../../../", import.meta.url));
 
-export type AppId = "lumiose" | "react-router" | "next" | "solid-start";
+export type AppId = "lumiose" | "react-router" | "next" | "solid-start" | "sveltekit";
 
 export interface App {
   id: AppId;
@@ -106,6 +106,24 @@ export const APPS: App[] = [
       "`vite dev`: Vite with SolidStart's plugin (Environment API), modules compiled on request",
     prodServer:
       "`node .output/server/index.mjs`: Nitro's node-server output of `vite build` (no compression)",
+  },
+  {
+    id: "sveltekit",
+    name: "SvelteKit",
+    dir: join(FULLSTACK, "apps/sveltekit"),
+    port: 4105,
+    clientOutput: ["build/client"],
+    serverOutput: ["build/server"],
+    hmr: {
+      file: join(FULLSTACK, "apps/sveltekit/src/routes/+layout.svelte"),
+      find: "fullstack comparison benchmark",
+    },
+    sharedSources: [],
+    env: {},
+    devTool: { name: "Vite", pkg: "vite" },
+    devServer: "`vite dev`: Vite with SvelteKit's plugin, modules compiled on request",
+    prodServer:
+      "`node build`: the @sveltejs/adapter-node output of `vite build` (precompress: false, no compression)",
   },
 ];
 
