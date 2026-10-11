@@ -138,7 +138,10 @@ Approved by the user on 2026-10-11.
 - **New sources:**
   - Astro gets a fullstack port (TASK-242).
   - Preact, Astro and Remix 3 join the SSR benchmark (TASK-241).
-- **Heading:** "The best of every stack, in one framework" replaces "One framework where others need two", which read as passive-aggressive.
+- **Headings:** "One framework where others need two" read as passive-aggressive.
+  - The hero H1 becomes "The best of every stack, in one framework". The page's main heading is about Lumiose, not React.
+  - The tagline "Feels like React. Runs like vanilla JS." becomes the stack table's heading, above the numbers that back it up.
+  - The tagline stays in the page title, the README and `package.json`.
 
 ## Consequences
 
