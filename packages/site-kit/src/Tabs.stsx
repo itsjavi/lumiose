@@ -29,11 +29,16 @@ export function Tabs(props: TabsProps) {
   const list = ref<HTMLDivElement>();
   const panels = ref<HTMLDivElement>();
 
-  // The panels are the children's elements: label them, and show the selected one.
+  // The panels are the children's elements: label them, and show the selected one. The tabs point
+  // at them (aria-controls) only from here, once the panels have their ids: before Tabs runs (an
+  // island not hydrated yet, or no JavaScript), every panel shows, and no tab names a missing id.
   effect(() => {
     const container = panels();
     if (!container) return;
     const index = selected();
+    list()
+      ?.querySelectorAll('[role="tab"]')
+      .forEach((tab, i) => tab.setAttribute("aria-controls", `${id}-panel-${i}`));
     Array.from(container.children).forEach((panel, i) => {
       panel.id = `${id}-panel-${i}`;
       panel.setAttribute("role", "tabpanel");
@@ -68,7 +73,6 @@ export function Tabs(props: TabsProps) {
             id={`${id}-tab-${i}`}
             class={{ selected: selected() === i }}
             aria-selected={selected() === i ? "true" : "false"}
-            aria-controls={`${id}-panel-${i}`}
             tabindex={selected() === i ? 0 : -1}
             onClick={() => selected.set(i)}
           >
