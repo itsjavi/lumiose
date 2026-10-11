@@ -30,8 +30,11 @@ Two alternatives were rejected:
 - Prerendering automatically whenever there is no server. It changes render time silently as the rest of the app changes.
 - A third `ssr: "build"` value. It overloads `ssr` with timing.
 
+**Amendment, 2026-10-11 (user).** `export const prerender` on a layout applies to every page below it, inherited like `mode` and `ssr`: the nearest layout that sets it wins, then the project default. A page can still opt out with `prerender = false`.
+
 ## Consequences
 
 - TASK-216 (Nova) implements it: the prerender step, typegen, diagnostics and docs.
 - TASK-217 (chiptune tracker, Spark) and TASK-218 (Dotmatrix, Chime) adopt it. They move browser-only code out of module scope and setup.
 - concepts/rendering-modes and `llms.txt` gain the option.
+- TASK-229 (Nova) implements layout inheritance.
