@@ -473,9 +473,10 @@ try {
 }
 
 const anyApp = apps[0];
-const versionOf = (pkg: string, id: App["id"]) => {
+/** `pkg` as app `id` resolves it (`via` one of its dependencies), or as the first app does. */
+const versionOf = (pkg: string, id: App["id"], via?: string) => {
   const app = apps.find((a) => a.id === id) ?? anyApp;
-  return app === undefined ? null : resolvedVersion(app, pkg);
+  return app === undefined ? null : resolvedVersion(app, pkg, via);
 };
 const servers: RunFile["meta"]["servers"] = {};
 for (const app of apps) {
@@ -523,6 +524,10 @@ const run: RunFile = {
       svelte: versionOf("svelte", "sveltekit"),
       "@sveltejs/kit": versionOf("@sveltejs/kit", "sveltekit"),
       "@sveltejs/adapter-node": versionOf("@sveltejs/adapter-node", "sveltekit"),
+      nuxt: versionOf("nuxt", "nuxt"),
+      vue: versionOf("vue", "nuxt"),
+      "vue-router": versionOf("vue-router", "nuxt"),
+      nitropack: versionOf("nitropack", "nuxt", "nuxt>@nuxt/nitro-server"),
       vite: (() => {
         const lumioseApp = apps.find((a) => a.id === "lumiose");
         return lumioseApp === undefined ? null : resolvedVersion(lumioseApp, "vite", "lumiose");

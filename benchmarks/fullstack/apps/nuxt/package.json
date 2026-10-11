@@ -1,0 +1,37 @@
+{
+  "name": "@bench/app-nuxt",
+  "version": "0.0.0",
+  "private": true,
+  "description": "The Tracker app (doc-4) in Nuxt 4 with SSR, on Nitro's Node server.",
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "seed": "bench-seed",
+    "dev": "nuxt dev --host 127.0.0.1 --port ${PORT:-4106}",
+    "build": "nuxt build",
+    "start": "NODE_ENV=production node .output/server/index.mjs",
+    "typecheck": "nuxt typecheck",
+    "clean": "rm -rf .output .nuxt node_modules/.nitro node_modules/.cache node_modules/.vite",
+    "postinstall": "nuxt prepare"
+  },
+  "dependencies": {
+    "@bench/data": "workspace:*",
+    "@bench/ui-css": "workspace:*",
+    "nuxt": "4.6.1",
+    "vue": "3.5.43",
+    "vue-router": "5.4.0"
+  },
+  "devDependencies": {
+    "@types/node": "24.19.1",
+    "typescript": "6.0.3",
+    "vue-tsc": "3.3.13"
+  },
+  "demo": {
+    "name": "tracker-nuxt",
+    "title": "Tracker in Nuxt (fullstack bench)",
+    "kind": "benchmark",
+    "setup": [
+      "seed"
+    ]
+  }
+}

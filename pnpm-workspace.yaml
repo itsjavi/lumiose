@@ -11,5 +11,9 @@ packages:
   - evals
 allowBuilds:
   "@vscode/vsce-sign": false
+  # Nuxt's esbuild: the platform binary comes as an optional dependency, no install script needed.
+  esbuild: false
 minimumReleaseAgeExclude:
   - vite@8.3.4
+  - '@vue/language-core@3.3.13'
+  - vue-tsc@3.3.13

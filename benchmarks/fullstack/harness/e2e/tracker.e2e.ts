@@ -2,7 +2,8 @@
 // BENCH_BASE_URL (default the Lumiose app on :4101), and only uses the landmarks of landmarks.ts, so
 // every app must pass it unchanged. Tests that mutate data create their own issue or pick open
 // issues, so they do not depend on each other. Set BENCH_EXPECT_STREAMING=1 when the server runs
-// with COMMENTS_DELAY_MS > 0 to also check that comments stream after the shell.
+// with COMMENTS_DELAY_MS > 0 to also check that comments stream after the shell, or
+// BENCH_EXPECT_STREAMING=client for an app that loads them on the client (App.comments).
 import { expect, test, type Locator, type Page } from "@playwright/test";
 import { PRIORITIES, STATUSES, USERNAME, formOf, tid } from "./landmarks.ts";
 
@@ -275,15 +276,20 @@ test.describe("issue page", () => {
       await expect(comment.locator(".comment-body")).not.toBeEmpty();
     }
 
-    if (process.env.BENCH_EXPECT_STREAMING === "1") {
+    const streaming = process.env.BENCH_EXPECT_STREAMING;
+    if (streaming === "1" || streaming === "client") {
       const html = await (await request.get(href)).text();
       // Attribute quotes are optional in HTML (Lumiose omits them where it can).
       const fallback = html.search(/data-testid=["']?comments-loading\b/);
       expect(fallback, "the comments fallback is in the shell").toBeGreaterThan(-1);
-      // The comments arrive later in the same response: as streamed markup, or as streamed data
-      // that the client renders (SvelteKit streams load promises, not HTML; doc-4 §8).
       const markup = html.search(/data-testid=["']?comment-list\b/);
-      if (markup !== -1) {
+      if (streaming === "client") {
+        // An app that cannot stream a Suspense boundary (Nuxt renders to a string) loads the
+        // comments on the client after hydration: the response has the fallback only (doc-4 §8).
+        expect(markup, "the comments are not in the response").toBe(-1);
+      } else if (markup !== -1) {
+        // The comments arrive later in the same response: as streamed markup, or as streamed data
+        // that the client renders (SvelteKit streams load promises, not HTML; doc-4 §8).
         expect(markup, "the comments are streamed after the shell").toBeGreaterThan(fallback);
       } else if ((await comments.count()) > 0) {
         const words = (await comments.first().locator(".comment-body").innerText())

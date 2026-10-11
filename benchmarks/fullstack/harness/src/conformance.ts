@@ -11,12 +11,20 @@ import { args, selectApps } from "./cli.ts";
 const HARNESS = fileURLToPath(new URL("..", import.meta.url));
 export const COMMENTS_DELAY_MS = 150;
 
-/** Runs the Playwright suite against a server; resolves to whether it passed. */
-export function runSuite(url: string, streaming: boolean, quiet = false): Promise<boolean> {
+/**
+ * Runs the Playwright suite against a server; resolves to whether it passed. `streaming` is what
+ * the issue page's comments must do with COMMENTS_DELAY_MS > 0 (tracker.e2e.ts): stream after the
+ * shell ("1"), load on the client behind a server-rendered fallback ("client"), or not checked ("0").
+ */
+export function runSuite(
+  url: string,
+  streaming: "1" | "client" | "0",
+  quiet = false,
+): Promise<boolean> {
   return new Promise((resolve) => {
     const child = spawn("pnpm", ["exec", "playwright", "test", "-c", "e2e/playwright.config.ts"], {
       cwd: HARNESS,
-      env: { ...process.env, BENCH_BASE_URL: url, BENCH_EXPECT_STREAMING: streaming ? "1" : "0" },
+      env: { ...process.env, BENCH_BASE_URL: url, BENCH_EXPECT_STREAMING: streaming },
       stdio: quiet ? "ignore" : "inherit",
     });
     child.on("exit", (code) => resolve(code === 0));
@@ -32,7 +40,7 @@ export async function checkApp(
   if (options.build) await runScript(app, "build");
   const server = await startServer(app, "start", { COMMENTS_DELAY_MS: String(COMMENTS_DELAY_MS) });
   try {
-    return await runSuite(baseUrl(app), true, options.quiet);
+    return await runSuite(baseUrl(app), app.comments === "client" ? "client" : "1", options.quiet);
   } finally {
     await server.stop();
     await runScript(app, "seed"); // the suite mutates data
@@ -46,7 +54,7 @@ if (import.meta.main) {
     "no-build": { type: "boolean", default: false },
   });
   if (values.url !== undefined) {
-    process.exitCode = (await runSuite(values.url, false)) ? 0 : 1;
+    process.exitCode = (await runSuite(values.url, "0")) ? 0 : 1;
   } else {
     const summary: string[] = [];
     for (const app of selectApps(values.only)) {

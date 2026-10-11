@@ -9,7 +9,7 @@ import { fileURLToPath } from "node:url";
 export const FULLSTACK = fileURLToPath(new URL("../../", import.meta.url));
 export const REPO = fileURLToPath(new URL("../../../../", import.meta.url));
 
-export type AppId = "lumiose" | "react-router" | "next" | "solid-start" | "sveltekit";
+export type AppId = "lumiose" | "react-router" | "next" | "solid-start" | "sveltekit" | "nuxt";
 
 export interface App {
   id: AppId;
@@ -30,6 +30,12 @@ export interface App {
   /** How the dev server and the production server serve the app (viewer, results meta). */
   devServer: string;
   prodServer: string;
+  /**
+   * How the issue page's comments reach the browser (doc-4 §5): streamed in the same response
+   * (markup or data, the default), or fetched by the client after hydration, for a framework that
+   * cannot stream a Suspense boundary (Nuxt renders to a string).
+   */
+  comments?: "streamed" | "client";
 }
 
 export const APPS: App[] = [
@@ -124,6 +130,26 @@ export const APPS: App[] = [
     devServer: "`vite dev`: Vite with SvelteKit's plugin, modules compiled on request",
     prodServer:
       "`node build`: the @sveltejs/adapter-node output of `vite build` (precompress: false, no compression)",
+  },
+  {
+    id: "nuxt",
+    name: "Nuxt",
+    dir: join(FULLSTACK, "apps/nuxt"),
+    port: 4106,
+    clientOutput: [".output/public"],
+    serverOutput: [".output/server"],
+    hmr: {
+      file: join(FULLSTACK, "apps/nuxt/app/layouts/default.vue"),
+      find: "fullstack comparison benchmark",
+    },
+    sharedSources: [],
+    env: { NUXT_TELEMETRY_DISABLED: "1" },
+    devTool: { name: "Vite", pkg: "vite", via: "nuxt" },
+    devServer:
+      "`nuxt dev`: Vite (Nuxt's Vite builder) with Nitro's dev server, modules compiled on request",
+    prodServer:
+      "`node .output/server/index.mjs`: Nitro's node-server output of `nuxt build` (no compression)",
+    comments: "client",
   },
 ];
 
@@ -310,8 +336,9 @@ export const sleep = (ms: number): Promise<void> =>
 export function resolvedVersion(app: App, pkg: string, via?: string): string | null {
   try {
     let dir = app.dir;
-    // A dependency of a dependency (`vite` via `lumiose`): resolve from that package's directory.
-    if (via !== undefined) dir = dirname(packageJson(dir, via));
+    // A dependency of a dependency (`vite` via `lumiose`): resolve from that package's directory;
+    // `a>b` follows a chain (`nitropack` via `nuxt>@nuxt/nitro-server`).
+    for (const step of via?.split(">") ?? []) dir = dirname(packageJson(dir, step));
     return (JSON.parse(readFileSync(packageJson(dir, pkg), "utf8")) as { version: string }).version;
   } catch {
     return null;

@@ -3,13 +3,13 @@ id: doc-4
 title: Fullstack comparison benchmark
 type: specification
 created_date: '2026-10-09 04:07'
-updated_date: '2026-10-11 02:04'
+updated_date: '2026-10-11 02:18'
 ---
 # Fullstack comparison benchmark
 
 **Status:** requested by the user on 2026-10-09. Spec by Lux. Tasks: TASK-110 to TASK-115 (milestone m-8). More stacks for the landing's comparison table (decision-37): TASK-202 (SolidStart), TASK-203 (SvelteKit), TASK-204 (Nuxt), TASK-205 (Remix 3).
 
-**Goal.** Implement the same non-trivial fullstack app three times — **Lumiose SSR**, **React Router (framework mode, SSR)** and **Next.js 16 (App Router)**, later also **SolidStart** and **SvelteKit** (§8) — and compare dev and production metrics with a reproducible harness. Results are stored as JSON and browsed in a static HTML viewer.
+**Goal.** Implement the same non-trivial fullstack app three times — **Lumiose SSR**, **React Router (framework mode, SSR)** and **Next.js 16 (App Router)**, later also **SolidStart**, **SvelteKit** and **Nuxt** (§8) — and compare dev and production metrics with a reproducible harness. Results are stored as JSON and browsed in a static HTML viewer.
 
 ## 1. Fairness rules
 
@@ -22,8 +22,9 @@ updated_date: '2026-10-11 02:04'
   - Next.js: server components, server actions, `"use client"` components for interactive parts, async server component inside `<Suspense>`.
   - SolidStart: file routes, `query` + `createAsync` server functions (`"use server"`) with route `preload`, `action`s with `<form action>` and `useSubmission`, a non-deferred `createAsync` inside `<Suspense>` for streamed data. The whole page hydrates (SolidStart's islands mode is not supported yet).
   - SvelteKit: `+page.server.ts` loads and form actions with `use:enhance`, the session in `hooks.server.ts` (`locals.user`), and an un-awaited load promise rendered with `{#await}` for streamed data. The whole page hydrates.
+  - Nuxt: file-based pages with `useFetch` from Nitro server routes (`server/api`), mutations with `$fetch` to server routes followed by `refresh`/`refreshNuxtData`, `<NuxtLink>` for navigation, and `useLazyFetch(…, { server: false })` for the slow comments, since Nuxt cannot stream a Suspense boundary (§8). The whole page hydrates.
 - **Dynamic rendering everywhere.** Every page renders on each request. No full-page or data caching (Next: no static prerendering of these routes, no `use cache`; React Router: no prerender; Lumiose: mode `server`).
-- **Production servers as shipped,** with HTTP compression **off** in every app (Next `compress: false`; React Router served by `@react-router/serve` or an equivalent minimal Node server with compression off; Lumiose `adapter-node`; SolidStart on Nitro's `node-server` output, which does not compress; SvelteKit on adapter-node with `precompress: false`). Payload sizes are measured offline with gzip and brotli.
+- **Production servers as shipped,** with HTTP compression **off** in every app (Next `compress: false`; React Router served by `@react-router/serve` or an equivalent minimal Node server with compression off; Lumiose `adapter-node`; SolidStart and Nuxt on Nitro's `node-server` output, which does not compress; SvelteKit on adapter-node with `precompress: false`). Payload sizes are measured offline with gzip and brotli.
 - **Type checking is measured separately**, not inside build time (Next: `typescript.ignoreBuildErrors: true` for the timed build).
 - **Latest stable versions** (decision-41): every framework uses its latest stable version that is compatible with the rest of its stack, pinned exactly; §8 records each version and why an older one is used. Results files record the resolved versions. Node is the repo's Node (≥ 24).
 - **Same machine, sequential runs,** nothing else heavy running. Every results file records the machine.
@@ -75,14 +76,15 @@ benchmarks/fullstack/
   apps/next/            Next.js 16       (Quasar)
   apps/solid-start/     SolidStart 2     (Quasar)
   apps/sveltekit/       SvelteKit 3      (Quasar)
+  apps/nuxt/            Nuxt 4           (Quasar)
   harness/e2e/          conformance suite (Nova; inside @bench/harness so it resolves @playwright/test)
   harness/              @bench/harness   runner, metrics, results writer (Nova)
   results/              <date>T<time>-<host>.json, index.json (committed)
   viewer/               static HTML viewer (Nova)
 ```
 
-- Ports: Lumiose 4101, React Router 4102, Next 4103, SolidStart 4104, SvelteKit 4105 (dev and prod). Next free ones: Nuxt 4106, Remix 3 4107.
-- Each app exposes the same scripts: `seed`, `dev`, `build`, `start`, `typecheck`, `clean` (removes build output and framework caches: `.next`, `node_modules/.vite`, `build`, `dist`, `.react-router`, `.lumiose`, `.output`, `node_modules/.nitro`).
+- Ports: Lumiose 4101, React Router 4102, Next 4103, SolidStart 4104, SvelteKit 4105, Nuxt 4106 (dev and prod). Next free one: Remix 3 4107.
+- Each app exposes the same scripts: `seed`, `dev`, `build`, `start`, `typecheck`, `clean` (removes build output and framework caches: `.next`, `node_modules/.vite`, `build`, `dist`, `.react-router`, `.lumiose`, `.output`, `.nuxt`, `node_modules/.nitro`).
 
 ## 4. Metrics
 
@@ -90,9 +92,9 @@ Median plus spread (min and max; the viewer draws them as whiskers and highlight
 
 **Environment of each metric** (TASK-145). Dev servers (Vite, Turbopack) compile on request and differ a lot from production servers, so every metric says where it was measured:
 
-- `dev`: against each app's dev server (`lumiose dev`, `react-router dev`, and SolidStart's and SvelteKit's `vite dev` on Vite, `next dev` on Turbopack). Only the **Dev** metrics below.
+- `dev`: against each app's dev server (`lumiose dev`, `react-router dev`, SolidStart's and SvelteKit's `vite dev` and `nuxt dev` on Vite, `next dev` on Turbopack). Only the **Dev** metrics below.
 - `build`: from the production build and the sources: build time, output size on disk (without precompressed `.br`/`.gz` copies), type check, source size, dependency footprint.
-- `prod`: against the built apps on their production servers (`start` script: Lumiose `node server.ts` on adapter-node, React Router `node server.ts` = Express + @react-router/express, Next `next start`, SolidStart `node .output/server/index.mjs` on Nitro, SvelteKit `node build` on adapter-node): client payload, page load and every server metric, req/s included.
+- `prod`: against the built apps on their production servers (`start` script: Lumiose `node server.ts` on adapter-node, React Router `node server.ts` = Express + @react-router/express, Next `next start`, SolidStart `node .output/server/index.mjs` on Nitro, SvelteKit `node build` on adapter-node, Nuxt `node .output/server/index.mjs` on Nitro): client payload, page load and every server metric, req/s included.
 
 The harness runs every `start` with `NODE_ENV=production` and checks, on each app's first production start, that the process listening on the port has `NODE_ENV=production` (it stops otherwise) and that `/` is not compressed for a client accepting br and gzip. Each results file records the commands, the dev bundler and these checks.
 
@@ -116,13 +118,13 @@ The harness runs every `start` with `NODE_ENV=production` and checks, on each ap
 - Server RSS after the load test.
 
 **Other**
-- Type check time (`lumiose check` with TS 7 vs `tsc --noEmit` / `next typegen && tsc` / `tsc` for SolidStart / `svelte-kit sync && svelte-check --tsgo` for SvelteKit).
-- Source size: lines of code per app (excluding shared packages), files. `.svelte` files count as code.
+- Type check time (`lumiose check` with TS 7 vs `tsc --noEmit` / `next typegen && tsc` / `tsc` for SolidStart / `svelte-kit sync && svelte-check --tsgo` for SvelteKit / `nuxt typecheck` (vue-tsc) for Nuxt).
+- Source size: lines of code per app (excluding shared packages), files. `.svelte` and `.vue` files count as code.
 - Dependency footprint: number of packages in each app's production dependency tree.
 
 ## 5. Conformance suite
 
-`benchmarks/fullstack/harness/e2e`: one Playwright suite parameterised by base URL, run against each app in production mode. It checks every route, status codes, the shared markup landmarks (`data-testid` attributes defined here), filters and pagination, streamed comments (with `COMMENTS_DELAY_MS` > 0 the fallback must be in the shell and the comments must arrive later in the same response, as markup or, for SvelteKit, as streamed data), each action (with and without a session), validation errors, the redirect after creating an issue, the 404 page, the JSON endpoints, and each client interaction.
+`benchmarks/fullstack/harness/e2e`: one Playwright suite parameterised by base URL, run against each app in production mode. It checks every route, status codes, the shared markup landmarks (`data-testid` attributes defined here), filters and pagination, streamed comments (with `COMMENTS_DELAY_MS` > 0 the fallback must be in the shell and the comments must arrive later in the same response, as markup or, for SvelteKit, as streamed data; an app registered with `comments: "client"` in `harness/src/apps.ts`, Nuxt only, must instead render the fallback on the server and load the comments on the client, with no comments in the response), each action (with and without a session), validation errors, the redirect after creating an issue, the 404 page, the JSON endpoints, and each client interaction.
 
 ## 6. Results and viewer
 
@@ -180,9 +182,19 @@ Ports for the landing's stack comparison (decision-37), registered in the harnes
 - **Dependencies:** every package is a devDependency, as `sv create` sets it up: adapter-node bundles them into `build/`, which runs without `node_modules`. The "production dependency packages" metric therefore reads 0. SolidStart's Nitro output is self-contained too, but its template lists packages as dependencies (177). The metric follows each template's package.json, not what the server needs at run time.
 - **Shared code:** its own Svelte components (one per file), written from `@bench/react-ui` with the same elements, classes and `data-testid`s.
 
-### Notes for the next ports (Nuxt, Remix 3)
+### Nuxt (TASK-204, `apps/nuxt`, port 4106)
 
-- Ports 4106 (Nuxt) and 4107 (Remix 3); viewer colors `--series-6` (green `#008300` light and dark) and `--series-7` (violet `#4a3aa7` light, `#9085e9` dark), the next slots of the validated palette.
-- Nuxt uses Nitro like SolidStart: `node .output/server/index.mjs`, `clean` must also remove `node_modules/.nitro` and `.nuxt`; add `.vue` to the source-size extensions in `harness/src/measure.ts`.
+- **Versions:** `nuxt` 4.6.1, `vue` 3.5.43, `vue-router` 5.4.0, `nitropack` 2.13.4 (through `@nuxt/nitro-server`), Vite 8.3.4. Type check: `nuxt typecheck`, which runs `vue-tsc` 3.3.13 on TypeScript 6.0.3: vue-tsc needs TypeScript's JS API, which TypeScript 7 does not have. Nuxt 4.5's `experimental.ssrStreaming` and other experimental flags stay off: only stable features.
+- **Server:** `nuxt build` with Nitro's `node-server` preset; production is `node .output/server/index.mjs`. Nitro does not compress responses, and `compressPublicAssets` is off. The server output carries its own traced `node_modules` (Vue, unhead, devalue, …) and source maps, which count in its size on disk.
+- **Data and mutations:** pages read their data with `useFetch` from Nitro server routes (`/api/dashboard`, `/api/projects/:slug/issues`, `/api/issues/:id`, …), the documented Nuxt pattern: during SSR the call goes to the route in process (no HTTP), and the result is serialized into the page for hydration; on client navigations it is a request. The layout reads `/api/me` and `/api/projects` the same way, so each page render makes three in-process route calls. Mutations post JSON with `$fetch` to server routes (`/api/login`, `/api/issues`, `/api/issues/:id/status`, …) and refetch with `refresh`/`refreshNuxtData`; without a session a route answers 401 and the page navigates to /login. Nuxt has no form actions, so the forms need JavaScript, where the other apps also work without it. GET forms (filters, search) become client-side navigations, as in React Router and SvelteKit. The search page asks `/api/search` for 20 results (`limit=20`); the JSON endpoint's default stays 8.
+- **Streaming:** Nuxt renders pages to a string, and Vue's server renderer waits for async components rather than streaming a Suspense fallback (Nuxt 4.5's experimental streaming sends the body in order, so a slow component still holds back everything after it). The comments are therefore a `useLazyFetch(…, { server: false })`: the server renders the fallback and the client fetches the comments after hydration. The conformance suite checks that for this app (`comments: "client"`, §5). The issue page's server cost leaves out the comments query, but its time to interactive includes a second request.
+- **Interactive parts:** the whole page hydrates. Links are `<NuxtLink>`, which prefetches the code of linked pages when they scroll into view (the default, as Next's `<Link>`), so those chunks count in the client payload; it also adds `router-link-active` classes.
+- **Readiness:** a client plugin sets the mark on `app:suspense:resolve`, which Nuxt calls once the app has hydrated.
+- **Dev:** `nuxt dev` with Nuxt DevTools on, as `nuxi init` sets it up; `NUXT_TELEMETRY_DISABLED=1` and `telemetry: false`.
+- **Shared code:** its own Vue components (one per file), written from `@bench/react-ui` with the same elements, classes and `data-testid`s.
+
+### Notes for the next port (Remix 3)
+
+- Port 4107; viewer color `--series-7` (violet `#4a3aa7` light, `#9085e9` dark), the next slot of the validated palette.
 - If a framework streams data rather than HTML, the streaming conformance check already accepts it.
-- `resolvedVersion` finds packages whose `exports` hide `package.json`; add the framework's packages to `meta.versions` in `bench.ts`.
+- `resolvedVersion` finds packages whose `exports` hide `package.json`, and follows a chain (`nuxt>@nuxt/nitro-server`); add the framework's packages to `meta.versions` in `bench.ts`.
