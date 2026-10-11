@@ -137,6 +137,7 @@ describe("evidence", () => {
 function pending(results: {
   rendersByFramework: Record<string, number>;
   requestsByApp: Record<string, number>;
+  serverJsByApp?: Record<string, number>;
 }) {
   return readStacks({ cpuByColumn: {}, serverJsByApp: {}, ...results });
 }
@@ -179,9 +180,9 @@ describe("stack table", () => {
     expect(lumiose.requests).toMatchObject({ kind: "measured", text: /^\d[\d,]* req\/s$/ });
     const preact = rows.find((row) => row.stack === "Preact")!;
     expect(preact.requests).toEqual({ kind: "fact", text: "No full-stack layer" });
-    // Astro is shown honestly: 0 kB too (its islands caveat is a note under the table).
+    // Astro's server-page JS is measured on its fullstack port (TASK-242), not claimed.
     const astro = rows.find((row) => row.stack === "Astro")!;
-    expect(astro.serverJs).toMatchObject({ text: "0 kB" });
+    expect(astro.serverJs.kind).toMatch(/^(measured|measuring)$/);
     // No cell says "not measured": unmeasured cells are "measuring" until TASK-235.
     // React Router's framework mode is its full-stack layer.
     expect(rows.find((row) => row.stack === "React Router")!.fullStack).toEqual({
@@ -219,12 +220,14 @@ describe("stack table", () => {
     const after = pending({
       rendersByFramework: { Preact: 310.4, Astro: 120, "Remix 3": 98.6 },
       requestsByApp: { astro: 1234.5 },
+      serverJsByApp: { astro: 0 },
     });
     const row = (stack: string) => after.find((candidate) => candidate.stack === stack)!;
     expect(row("Preact").rendering).toEqual({ kind: "measured", text: "310 renders/s" });
     expect(row("Astro").rendering).toEqual({ kind: "measured", text: "120 renders/s" });
     expect(row("Remix 3").rendering).toEqual({ kind: "measured", text: "99 renders/s" });
     expect(row("Astro").requests).toEqual({ kind: "measured", text: "1,235 req/s" });
+    expect(row("Astro").serverJs).toEqual({ kind: "measured", text: "0 kB" });
   });
 });
 

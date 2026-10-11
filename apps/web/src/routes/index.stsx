@@ -215,13 +215,12 @@ export default function Home() {
           JS on a server page: what the fullstack comparison's issue tracker loads for its home
           page, brotli ({results.fullstackRun}). Client speed: js-framework-benchmark's weighted
           factor, where 1.00 is the fastest framework in the run
-          {vanilla === undefined ? "" : ` and vanilla JS scores ${vanilla.toFixed(2)}`}. Server speed:
-          renders per second of the SSR benchmark's 5,000-component page to an HTML string (
+          {vanilla === undefined ? "" : ` and vanilla JS scores ${vanilla.toFixed(2)}`}. Server
+          speed: renders per second of the SSR benchmark's 5,000-component page to an HTML string (
           {results.serverRun}), then requests per second on the fullstack comparison's home page
           {results.requestsRun === "" ? "" : ` (${results.requestsRun})`}. Both React rows use
           React's client and rendering entries. "measuring": the port or benchmark entry is being
-          added. Rows
-          after Lumiose are ordered by npm downloads of each stack's main package (
+          added. Rows after Lumiose are ordered by npm downloads of each stack's main package (
           {DOWNLOADS_PERIOD}). Method and every run: <a href={href("/benchmarks")}>benchmarks</a>.
         </p>
         <p class="note">Astro's interactive islands need a second UI framework.</p>
@@ -317,7 +316,7 @@ export default function Home() {
 
       <section class="section closing" aria-labelledby="start-title">
         <p class="kicker">Start</p>
-        <h2 id="start-title">Build something luminous.</h2>
+        <h2 id="start-title">Enlighten your next project.</h2>
         <div class="actions">
           <LinkButton href={getStarted} size="lg">
             Get started

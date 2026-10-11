@@ -146,8 +146,8 @@ const STACKS: StackSource[] = [
     downloads: { package: "astro", lastMonth: 28464424 },
     fullStack: "Built in",
     styles: "Built in",
-    // By design: Astro ships no JavaScript for a page without islands.
-    serverJs: { fact: "0 kB" },
+    // Measured on the fullstack comparison's Astro port (TASK-242), like the other stacks.
+    serverJs: { app: "astro" },
     clientSpeed: { fact: "Depends on the UI framework" },
     rendering: { framework: "Astro" },
     requests: { app: "astro" },
