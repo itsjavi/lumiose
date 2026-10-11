@@ -102,40 +102,17 @@ export const counterCss = `.counter[data-l-rdjmzp3m] {
 }
 `;
 
-export const createCommands = {
-  pnpm: "pnpm create lumiose my-app\ncd my-app && pnpm dev",
-  npm: "npm create lumiose@latest my-app\ncd my-app && npm run dev",
-  yarn: "yarn create lumiose my-app\ncd my-app && yarn dev",
-  bun: "bun create lumiose my-app\ncd my-app && bun run dev",
-} as const;
+/** The hero's install command (the docs list the other package managers). */
+export const installCommand = "npm create lumiose@latest my-app";
 
-export const checkSource = `import { signal } from "lumiose";
+/** A LUM2001 warning in `lumiose check`'s human format. */
+export const checkText = `$ lumiose check
+src/Counter.stsx:5:9 - warning LUM2001: \`doubled\` is computed once from a reactive value, so the JSX that uses it never updates
 
-export function Counter() {
-  const count = signal(1);
-  const doubled = count() * 2;
-  return <button onClick={() => count.update((n) => n + 1)}>{doubled}</button>;
-}
-`;
+5 |   const doubled = count() * 2;
+  |         ~~~~~~~~~~~~~~~~~~~~~
 
-export const checkSample = `$ lumiose check --format json
-{
-  "command": "check",
-  "ok": true,
-  "diagnostics": [
-    {
-      "source": "lumiose",
-      "code": "LUM2001",
-      "severity": "warning",
-      "file": "src/Counter.stsx",
-      "line": 5,
-      "column": 9,
-      "message": "\`doubled\` is computed once from a reactive value, so the JSX that uses it never updates",
-      "help": "Derive it lazily: \`const x = () => …\` (called as \`x()\` in JSX) or \`computed(() => …)\`.",
-      "docs": "diagnostics/LUM2001"
-    }
-  ],
-  "summary": { "errors": 0, "warnings": 1, "hints": 0, "files": 1 }
-}
+  help: Derive it lazily: \`const x = () => …\` (called as \`x()\` in JSX) or \`computed(() => …)\`.
+  docs: lumiose docs errors/LUM2001
 
-$ lumiose explain LUM2001   # the long form: cause, example, fix`;
+Found 0 errors, 1 warning in 1 file.`;

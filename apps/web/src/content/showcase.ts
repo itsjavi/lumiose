@@ -2,6 +2,7 @@
 // builds the real apps below /showcase/<slug>/, the samples with dummy content below
 // /demos/<slug>/ (noindex) and the benchmark UIs below /benchmarks/; these entries describe and
 // link them. ssr-bookshelf needs a server, so it links its code and a screenshot.
+import { href } from "lumiose";
 import { link, REPOSITORY } from "../lib/site.ts";
 
 export { REPOSITORY };
@@ -101,6 +102,67 @@ export function benchmarks(): Showcase[] {
       tags: ["dev", "build", "page load", "server"],
       demo: link("/benchmarks/fullstack/"),
       source: `${REPOSITORY}/tree/main/benchmarks/fullstack`,
+    },
+  ];
+}
+
+export interface RenderingMode {
+  /** The route option or directive that picks it. */
+  option: string;
+  title: string;
+  /** A few words, for the landing's tiles. */
+  summary: string;
+  /** One sentence, for the showcase's cards. */
+  description: string;
+  docs: string;
+  /** Live apps that use it. */
+  apps: { label: string; href: string; external?: boolean }[];
+}
+
+/** The rendering modes in the landing's order (static → islands → server → SPA), with live apps. */
+export function renderingModes(): RenderingMode[] {
+  const apps = new Map([...showcase(), ...demos()].map((item) => [item.name, item]));
+  const live = (name: string) => {
+    const item = apps.get(name)!;
+    return item.demo === undefined
+      ? { label: `${item.title} (source)`, href: item.source, external: true }
+      : { label: item.title, href: item.demo };
+  };
+  return [
+    {
+      option: "mode = static",
+      title: "Static",
+      summary: "Prerendered HTML",
+      description: "Prerendered at build time to plain HTML files, with staticPaths for params.",
+      docs: href("/docs/[...path]", { path: "concepts/rendering-modes" }),
+      apps: [live("ssg-travel-journal")],
+    },
+    {
+      option: "client:load · idle · visible",
+      title: "Islands",
+      summary: "Hydrate what moves",
+      description:
+        "Only interactive components hydrate, with serializable props and slots. This site is static, with islands for the search, the playground and the landing's light.",
+      docs: href("/docs/[...path]", { path: "concepts/islands" }),
+      apps: [{ label: "This site", href: href("/docs/[...path]", { path: "" }) }],
+    },
+    {
+      option: "mode = server",
+      title: "Server",
+      summary: "Streamed per request",
+      description:
+        "Rendered per request and streamed: the shell first, then each Suspense boundary.",
+      docs: href("/docs/[...path]", { path: "concepts/rendering-modes" }),
+      apps: [live("ssr-bookshelf")],
+    },
+    {
+      option: "mode = spa",
+      title: "SPA",
+      summary: "Client routing, prerendered first paint",
+      description:
+        "Client navigation with persistent layouts, where an app needs it, prerendered for a real first render.",
+      docs: href("/docs/[...path]", { path: "reference/router" }),
+      apps: [live("spa-chiptune"), live("spa-dotmatrix")],
     },
   ];
 }

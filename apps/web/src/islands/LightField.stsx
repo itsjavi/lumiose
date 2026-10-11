@@ -1,0 +1,142 @@
+// Island (client:idle): the landing hero's light field (lib/light-field.ts), a WebGL canvas behind
+// the copy. The hero's CSS gradient is the fallback: without JavaScript or WebGL the canvas stays
+// transparent, and the page is complete without it.
+//
+// Accessibility (decision-39): the light moves indefinitely, so a visible button pauses it (WCAG
+// 2.2.2); it also stops while the hero is off-screen. Under `prefers-reduced-motion: reduce` it
+// draws one still frame, with no loop and no button.
+import { color, radius, space, text, weight } from "@lumiose/site-kit/tokens";
+import { onMount, ref, signal } from "lumiose";
+import { createLightField } from "../lib/light-field.ts";
+
+/** Seconds the light takes to come up after the first frame. */
+const RISE = 2.2;
+
+/** The still frame shown under reduced motion: a moment where the rays are well spread. */
+const STILL = 12;
+
+export function LightField() {
+  const canvas = ref<HTMLCanvasElement>();
+  const lit = signal(false);
+  const moving = signal(false);
+  const paused = signal(false);
+  let resume = () => {};
+
+  onMount(() => {
+    const element = canvas()!;
+    const light = createLightField(element);
+    if (light === undefined) return;
+    const reduce = matchMedia("(prefers-reduced-motion: reduce)");
+    light.resize();
+
+    let frame = 0;
+    let visible = true;
+    let start = performance.now();
+    let elapsed = 0;
+
+    const still = () => {
+      light.resize();
+      light.draw(STILL, 1);
+    };
+    const tick = (now: number) => {
+      elapsed = (now - start) / 1000;
+      const rise = Math.min(1, elapsed / RISE);
+      light.draw(elapsed, 0.4 + 0.6 * (1 - (1 - rise) ** 2));
+      frame = requestAnimationFrame(tick);
+    };
+    const run = () => {
+      cancelAnimationFrame(frame);
+      frame = 0;
+      if (reduce.matches) return still();
+      if (paused() || !visible) return;
+      // Continue from where the light stopped.
+      start = performance.now() - elapsed * 1000;
+      frame = requestAnimationFrame(tick);
+    };
+    resume = run;
+
+    const onResize = () => {
+      light.resize();
+      if (frame === 0) light.draw(reduce.matches ? STILL : elapsed, 1);
+    };
+    const onPointer = (event: PointerEvent) => {
+      const box = element.getBoundingClientRect();
+      if (event.clientY > box.bottom) return;
+      light.lean((event.clientX - box.left) / box.width, (event.clientY - box.top) / box.height);
+    };
+    const onMotion = () => {
+      moving.set(!reduce.matches);
+      run();
+    };
+    const observer = new IntersectionObserver(([entry]) => {
+      visible = entry!.isIntersecting;
+      run();
+    });
+
+    observer.observe(element);
+    addEventListener("resize", onResize);
+    addEventListener("pointermove", onPointer, { passive: true });
+    reduce.addEventListener("change", onMotion);
+    onMotion();
+    lit.set(true);
+
+    return () => {
+      cancelAnimationFrame(frame);
+      observer.disconnect();
+      removeEventListener("resize", onResize);
+      removeEventListener("pointermove", onPointer);
+      reduce.removeEventListener("change", onMotion);
+    };
+  });
+
+  const toggle = () => {
+    paused.set(!paused());
+    resume();
+  };
+
+  return (
+    <div class="light">
+      <canvas ref={canvas} class={{ on: lit() }} aria-hidden="true" />
+      <button type="button" class="motion" hidden={!moving()} onClick={toggle}>
+        {paused() ? "Play animation" : "Pause animation"}
+      </button>
+    </div>
+  );
+}
+
+<style>
+  /* No stacking context of its own: the canvas sits under the hero's scrim and copy, the button
+     above them (the hero sets `isolation: isolate`). */
+  canvas {
+    position: absolute;
+    inset: 0;
+    z-index: -2;
+    display: block;
+    inline-size: 100%;
+    block-size: 100%;
+    opacity: 0;
+    transition: opacity 1.2s ease-out;
+  }
+  canvas.on {
+    opacity: 1;
+  }
+  .motion {
+    position: absolute;
+    inset-block-end: $space.md;
+    inset-inline-end: $space.md;
+    z-index: 2;
+    min-block-size: 2rem;
+    padding: $space.xxs $space.md;
+    border: 1px solid $color.borderStrong;
+    border-radius: $radius.pill;
+    /* Solid: the light behind it can be at its brightest. */
+    background: $color.bg;
+    color: $color.text;
+    font-size: $text.sm;
+    font-weight: $weight.medium;
+    cursor: pointer;
+  }
+  .motion:hover {
+    border-color: $color.glowB;
+  }
+</style>

@@ -26,6 +26,11 @@ async function settle(page: Page) {
   await page.waitForLoadState("networkidle");
   const path = new URL(page.url()).pathname;
   if (path === "/") {
+    // The light field (client:idle) draws once WebGL is up; the CSS light stays without it.
+    await page
+      .locator(".stage canvas.on")
+      .waitFor({ state: "attached", timeout: 10_000 })
+      .catch(() => {});
     // The live demo hydrates when visible: check it live (the static stand-in is checked below).
     await page.locator(".live-demo").scrollIntoViewIfNeeded();
   }
@@ -113,13 +118,27 @@ for (const scheme of ["light", "dark"] as const) {
 }
 
 /**
+ * The brightest color behind the hero's copy over the light field's frames, scrim included, from
+ * "text over the light field keeps AA contrast" below (it prints the measured peak).
+ */
+const STAGE_PEAK = "#302e40";
+
+/**
  * The decorative layers axe cannot see through ("needs review"), each replaced by a solid color at
  * its strongest: the glows composited at their peak, the sticky header's translucent background
  * over the page's darkest (light theme) or lightest (dark theme) content, and the two ends of the
  * primary buttons' and the gradient text's gradients. The site's own selectors: keep in sync.
  */
 const FLATTENED = [
-  `.top { background: color-mix(in srgb, var(--lm-glow-a) 22%, var(--lm-bg)) !important; }
+  // The landing's night stage: the light field, its CSS fallback and the scrim become one solid
+  // color, the brightest the field gets behind the copy (measured by the test below, rounded up).
+  `.stage { background: ${STAGE_PEAK} !important; }
+   .stage canvas, .stage .scrim { display: none !important; }
+   .box { background: color-mix(in srgb, var(--lm-glow-b) 14%, var(--lm-surface)) !important; }
+   tr.self > * { background: color-mix(in srgb, var(--lm-glow-b) 16%, var(--lm-surface)) !important; }
+   .closing { background: color-mix(in srgb, var(--lm-glow-b) 12%, var(--lm-bg)) !important; }
+   .install { background: color-mix(in srgb, var(--lm-bg) 75%, ${STAGE_PEAK}) !important; }
+   .top { background: color-mix(in srgb, var(--lm-glow-a) 22%, var(--lm-bg)) !important; }
    .footer { background: color-mix(in srgb, var(--lm-glow-a) 8%, var(--lm-bg)) !important; }
    .card::before { display: none !important; }
    .card.linked { background: color-mix(in srgb, var(--lm-glow-a) 22%, var(--lm-surface)) !important; }
@@ -152,6 +171,107 @@ for (const scheme of ["light", "dark"] as const) {
       }
     }
     expect(failures).toEqual([]);
+  });
+}
+
+/** An sRGB channel (0–255) in linear light. */
+function linear(channel: number) {
+  const c = channel / 255;
+  return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+}
+
+/** WCAG relative luminance of an sRGB color (0–255 channels). */
+function luminance([r, g, b]: number[]) {
+  return 0.2126 * linear(r!) + 0.7152 * linear(g!) + 0.0722 * linear(b!);
+}
+
+for (const [width, height] of [
+  [1440, 900],
+  [820, 1180],
+  [390, 844],
+] as const) {
+  test(`text over the light field keeps AA contrast at every sampled frame (${width} px)`, async ({
+    page,
+  }) => {
+    // decision-39: text over a moving background sits on a backdrop that keeps 4.5:1 (3:1 for
+    // large text) at every frame. Axe cannot see into the canvas, so this test does: it hides the
+    // copy, captures the stage over several seconds of light, and compares each text color with
+    // the brightest pixel behind it.
+    await page.setViewportSize({ width, height });
+    await page.goto("/");
+    const lit = page.locator(".stage canvas.on");
+    await lit.waitFor({ state: "attached", timeout: 10_000 }).catch(() => {});
+    test.skip((await lit.count()) === 0, "No WebGL here: the CSS light is checked by axe.");
+    await page.waitForTimeout(2500);
+
+    const texts = await page.evaluate(() => {
+      const stage = document.querySelector(".stage")!.getBoundingClientRect();
+      const selectors = [".eyebrow", "h1 .line", ".lead", ".badge", ".proof strong", ".proof span"];
+      return selectors.flatMap((selector) =>
+        Array.from(document.querySelectorAll<HTMLElement>(`.hero ${selector}`)).map((element) => {
+          const box = element.getBoundingClientRect();
+          const style = getComputedStyle(element);
+          const size = Number.parseFloat(style.fontSize);
+          const bold = Number(style.fontWeight) >= 700;
+          // The gradient headline: its darkest stop, the indigo end.
+          const color = element.classList.contains("lit") ? "rgb(184, 176, 255)" : style.color;
+          return {
+            label: `${selector} "${element.textContent!.trim().slice(0, 24)}"`,
+            box: [box.left - stage.left, box.top - stage.top, box.width, box.height],
+            rgb: color.match(/\d+/g)!.slice(0, 3).map(Number),
+            large: size >= 24 || (bold && size >= 18.66),
+          };
+        }),
+      );
+    });
+    await page.addStyleTag({ content: ".hero { visibility: hidden !important; }" });
+
+    const failures = new Set<string>();
+    let peak = [0, 0, 0];
+    for (let frame = 0; frame < 4; frame++) {
+      const shot = (await page.locator(".stage").screenshot()).toString("base64");
+      const brightest = await page.evaluate(
+        async ({ png, boxes }) => {
+          const image = new Image();
+          image.src = `data:image/png;base64,${png}`;
+          await image.decode();
+          const canvas = new OffscreenCanvas(image.width, image.height);
+          const context = canvas.getContext("2d")!;
+          context.drawImage(image, 0, 0);
+          return boxes.map(([x, y, w, h]) => {
+            const data = context.getImageData(
+              Math.max(0, Math.floor(x!)),
+              Math.max(0, Math.floor(y!)),
+              Math.max(1, Math.ceil(w!)),
+              Math.max(1, Math.ceil(h!)),
+            ).data;
+            let best = [0, 0, 0];
+            let bestSum = -1;
+            for (let i = 0; i < data.length; i += 4) {
+              // Rec. 709 weights: the brightest pixel by luminance, close enough to rank them.
+              const sum = 0.2126 * data[i]! + 0.7152 * data[i + 1]! + 0.0722 * data[i + 2]!;
+              if (sum > bestSum) {
+                bestSum = sum;
+                best = [data[i]!, data[i + 1]!, data[i + 2]!];
+              }
+            }
+            return best;
+          });
+        },
+        { png: shot, boxes: texts.map((text) => text.box) },
+      );
+      texts.forEach((text, index) => {
+        const background = brightest[index]!;
+        if (luminance(background) > luminance(peak)) peak = background;
+        const ratio = (luminance(text.rgb) + 0.05) / (luminance(background) + 0.05);
+        if (ratio < (text.large ? 3 : 4.5)) {
+          failures.add(`${text.label}: ${ratio.toFixed(2)} on rgb(${background.join(", ")})`);
+        }
+      });
+      await page.waitForTimeout(1500);
+    }
+    console.log(`[light field peak behind text] ${width} px: rgb(${peak.join(", ")})`);
+    expect([...failures]).toEqual([]);
   });
 }
 

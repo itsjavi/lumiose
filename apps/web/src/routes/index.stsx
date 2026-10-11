@@ -1,46 +1,37 @@
-// The landing page: what Lumiose is, with evidence. The benchmark numbers come from the committed
-// results (content/evidence.ts) and the compiled output from this version's compiler
-// (content/samples.ts, checked by its test).
-import { Callout, Card, CodeBlock, LinkButton, Tabs } from "@lumiose/site-kit";
+// The landing page (decision-37): the hero on a night stage lit by the LightField island, the stack
+// comparison table, four short sections and a closing call. Every number comes from the committed
+// results through content modules (content/evidence.ts, content/stacks.ts), and the compiled output
+// from this version's compiler (content/samples.ts), all checked by content.test.ts. The depth lives
+// elsewhere: charts on /benchmarks, rendering modes and apps on /showcase, tooling in the docs.
+import { CodeBlock, CopyButton, LinkButton } from "@lumiose/site-kit";
 import { highlight } from "@lumiose/site-kit/highlight";
 import {
   bp,
   color,
   font,
-  gradient,
   layout,
   leading,
   radius,
-  shadow,
   space,
   text,
   weight,
 } from "@lumiose/site-kit/tokens";
 import { href, Meta, Title } from "lumiose";
 import { BarChart } from "../components/BarChart.stsx";
-import { ShowcaseGrid } from "../components/Showcase.stsx";
+import { LightField } from "../islands/LightField.stsx";
 import { Playground } from "../islands/Playground.stsx";
-import { demos, showcase } from "../content/showcase.ts";
 import { evidence } from "../content/evidence.ts";
+import { prerelease, version } from "../content/release.ts";
 import {
-  checkSample,
-  checkSource,
+  checkText,
   counterCss,
   counterOutput,
   counterSource,
-  createCommands,
+  installCommand,
 } from "../content/samples.ts";
-import { link, REPOSITORY, site } from "../lib/site.ts";
-
-const fixed = (digits: number) => (value: number) => value.toFixed(digits);
-
-function Icon(props: { path: string }) {
-  return (
-    <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" class="icon">
-      <path d={props.path} />
-    </svg>
-  );
-}
+import { renderingModes } from "../content/showcase.ts";
+import { type Cell, COLUMNS, factor, kilobytes, stacks } from "../content/stacks.ts";
+import { site } from "../lib/site.ts";
 
 interface StaticTab {
   label: string;
@@ -77,18 +68,30 @@ function StaticTabs(props: { name: string; label: string; items: StaticTab[] }) 
   );
 }
 
-const ICONS = {
-  static: "M4 5h16v4H4zM4 11h16v4H4zM4 17h10v2H4z",
-  server: "M4 4h16v6H4zM4 14h16v6H4zM7 7h2M7 17h2",
-  islands: "M12 3a4 4 0 1 1 0 8 4 4 0 0 1 0-8ZM5 14a3 3 0 1 1 0 6 3 3 0 0 1 0-6ZM19 14a3 3 0 1 1 0 6 3 3 0 0 1 0-6Z",
-  spa: "M4 12h12M12 6l6 6-6 6",
-};
+function TableCell(props: { cell: Cell }) {
+  return props.cell.kind === "measuring" ? (
+    <span class="pending">measuring</span>
+  ) : (
+    <span class={[props.cell.kind, props.cell.kind === "fact" && props.cell.tone]}>
+      {props.cell.text}
+    </span>
+  );
+}
+
+/** A section's link: "Label →", with the arrow hidden from screen readers. */
+function More(props: { href: string; children: JSX.Element }) {
+  return (
+    <a class="more" href={props.href}>
+      {props.children} <span aria-hidden="true">→</span>
+    </a>
+  );
+}
 
 export default function Home() {
   const results = evidence();
-  const lumioseCpu = () => results.cpu.find((bar) => bar.self)?.value ?? 0;
-  const lumioseSize = () => results.size.find((bar) => bar.self)?.value ?? 0;
-  const lumioseSsr = () => results.ssr.find((bar) => bar.self)?.value ?? 0;
+  const self = (bars: { self: boolean; value: number }[]) => bars.find((bar) => bar.self)!.value;
+  const vanilla = results.cpuByColumn["vanillajs"];
+  const getStarted = href("/docs/[...path]", { path: "getting-started" });
 
   return (
     <div class="home">
@@ -97,253 +100,213 @@ export default function Home() {
       <Meta property="og:title" content="Lumiose" />
       <Meta property="og:description" content={site.description} />
 
-      <div class="top">
-        <section class="hero">
-          <p class="eyebrow">TypeScript · .stsx · signals · islands</p>
-          <h1>
-            Web apps that ship <span class="lit">light</span>
+      {/* A night stage in both themes: the light needs the dark. */}
+      <section class="stage" data-theme="dark" aria-labelledby="hero-title">
+        <LightField client:idle />
+        <div class="scrim" aria-hidden="true" />
+        <div class="hero">
+          <p class="eyebrow">Static · Server · Islands · SPA — one framework</p>
+          <h1 id="hero-title">
+            <span class="line">Feels like React.</span>{" "}
+            <span class="line lit">Runs like vanilla JS.</span>
           </h1>
           <p class="lead">
-            Lumiose compiles <code>.stsx</code> components, TSX with plain CSS beside it, into direct DOM
-            updates driven by signals. Pages render on the server, and only the parts that need to be
-            interactive ship JavaScript.
+            Lumiose is a web framework for every kind of web app, from static sites to SPAs:{" "}
+            <strong>TSX with scoped CSS built in</strong>, signals, and{" "}
+            <strong>0 kB of JavaScript</strong> where pages don't move.
           </p>
           <div class="actions">
-            <LinkButton href={href("/docs/[...path]", { path: "getting-started" })} size="lg">
+            <LinkButton href={getStarted} size="lg">
               Get started
             </LinkButton>
-            <LinkButton href={href("/docs/[...path]", { path: "" })} variant="secondary" size="lg">
-              Read the docs
+            <LinkButton href="#compare" variant="secondary" size="lg">
+              Compare the stacks
             </LinkButton>
-            <LinkButton href={href("/playground")} variant="ghost" size="lg">
+            <LinkButton href={href("/playground")} variant="secondary" size="lg">
               Playground
-            </LinkButton>
-            <LinkButton href={REPOSITORY} variant="ghost" size="lg" external>
-              GitHub
             </LinkButton>
           </div>
           <div class="install">
-            <Tabs client:load id="create" label="Package manager" labels={Object.keys(createCommands)}>
-              {Object.values(createCommands).map((code) => (
-                <CodeBlock code={code} lang="sh" highlight={highlight} />
-              ))}
-            </Tabs>
+            <code>
+              <span class="prompt" aria-hidden="true">
+                ${" "}
+              </span>
+              {installCommand}
+            </code>
+            <CopyButton client:visible text={installCommand} label="Copy the install command" />
           </div>
-          <ul class="facts" role="list">
+          {prerelease && <p class="badge">{version} · pre-release</p>}
+          <ul class="proof" role="list">
             <li>
-              <strong>{fixed(2)(lumioseCpu())}</strong>
-              <span>weighted factor on js-framework-benchmark (1.00 is the fastest)</span>
+              <strong>{factor(self(results.cpu))}</strong>
+              <span>vanilla JS on js-framework-benchmark</span>
             </li>
             <li>
-              <strong>{fixed(1)(lumioseSize())} kB</strong>
-              <span>compressed, runtime and app, for the benchmark app</span>
+              <strong>{kilobytes(self(results.serverJs))}</strong>
+              <span>JavaScript on server-rendered pages</span>
             </li>
             <li>
-              <strong>{Math.round(lumioseSsr())}/s</strong>
-              <span>server renders of a 5,000-component page</span>
-            </li>
-          </ul>
-        </section>
-      </div>
-
-      <section class="section split" aria-labelledby="stsx-title">
-        <header>
-          <p class="kicker">One file per component</p>
-          <h2 id="stsx-title">TSX and CSS, compiled together</h2>
-          <p>
-            A <code>.stsx</code> file is TSX with <code>&lt;style&gt;</code> blocks of plain CSS. The
-            compiler turns both into the smallest thing that does the job. Edit the sample: it
-            compiles in your browser.
-          </p>
-          <ul class="points" role="list">
-            <li>
-              <strong>Scoped by placement.</strong> One block at the end of the file styles every
-              component in it; nested in an element, it styles that subtree;{" "}
-              <code>&lt;style global&gt;</code> styles the app.
-            </li>
-            <li>
-              <strong>JS values in CSS.</strong> <code>$gap</code> and <code>$radius.pill</code>{" "}
-              read TypeScript constants, type-checked and inlined at build time.
-            </li>
-            <li>
-              <strong>Math at build time.</strong> Lightning CSS folds{" "}
-              <code>calc($gap * 2px)</code> to <code>16px</code>: no runtime, no CSS-in-JS.
-            </li>
-            <li>
-              <strong>Setup once, update what changed.</strong> No virtual DOM: a template is
-              cloned once, and only the bindings that read a signal re-run.
+              <strong>{kilobytes(self(results.size))}</strong>
+              <span>runtime and app, compressed</span>
             </li>
           </ul>
-          <a class="more" href={href("/docs/[...path]", { path: "concepts/styles" })}>
-            How styles work →
-          </a>
-        </header>
-        <div class="code-pair live-demo">
-          {/* The live editor loads (compiler, WebAssembly) when it scrolls into view; until then,
-              and without JavaScript, the sample and its output show as static tabs. */}
-          <Playground client:visible embedded code={counterSource}>
-            <StaticTabs
-              name="counter-view"
-              label="Counter sample"
-              items={[
-                { label: "You write", title: "App.stsx", lang: "stsx", code: counterSource },
-                { label: "JS output", title: "App.js", lang: "js", code: counterOutput },
-                { label: "CSS output", title: "App.css", lang: "css", code: counterCss },
-              ]}
-            />
-          </Playground>
         </div>
       </section>
 
-      <section class="section" id="performance" aria-labelledby="performance-title">
-        <header class="section-head">
-          <p class="kicker">Measured, not claimed</p>
-          <h2 id="performance-title">Fast on the client and the server</h2>
-          <p>
-            The same apps in every framework, measured with krausest's own js-framework-benchmark
-            runner and a server rendering benchmark. Numbers come from the latest committed run.
-          </p>
-        </header>
-        <div class="charts">
-          <BarChart
-            title="Client updates"
-            unit="Weighted geometric mean of CPU time, × the fastest"
-            better="lower"
-            bars={results.cpu}
-            format={fixed(2)}
-          />
-          <BarChart
-            title="Server rendering"
-            unit="Renders per second of a 1,000-row page"
-            better="higher"
-            bars={results.ssr}
-            format={(value) => Math.round(value).toString()}
-          />
-          <BarChart
-            title="Bundle size"
-            unit="Compressed kB, runtime and benchmark app"
-            better="lower"
-            bars={results.size}
-            format={fixed(1)}
-          />
+      <section class="section" id="compare" aria-labelledby="compare-title">
+        <p class="kicker">Compare the stacks</p>
+        <h2 id="compare-title">One framework where others need two</h2>
+        <p class="intro">
+          Components, styles, routing and the server in one project, measured against the stacks you
+          already know.
+        </p>
+        <div class="table" role="region" aria-labelledby="compare-title" tabindex="0">
+          <table>
+            <caption class="visually-hidden">
+              Lumiose compared with other web framework stacks
+            </caption>
+            <thead>
+              <tr>
+                {Object.values(COLUMNS).map((label) => (
+                  <th scope="col">{label}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {stacks().map((row) => (
+                <tr class={{ self: row.self === true }}>
+                  <th scope="row">{row.stack}</th>
+                  <td>
+                    <TableCell cell={row.fullStack} />
+                  </td>
+                  <td>
+                    <TableCell cell={row.styles} />
+                  </td>
+                  <td class="number">
+                    <TableCell cell={row.serverJs} />
+                  </td>
+                  <td class="number">
+                    <TableCell cell={row.clientSpeed} />
+                  </td>
+                  <td>
+                    <TableCell cell={row.sameComponents} />
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
-        <p class="source">
-          Client: {results.clientRun}. Server: {results.serverRun}. Method, every benchmark and the
-          caveats: <a href={href("/benchmarks/js-framework-benchmark")}>js-framework-benchmark</a>,{" "}
-          <code>benchmarks/ssr/RESULTS.md</code> in the repository, and the{" "}
-          <a href={href("/benchmarks")}>other benchmarks</a>.
+        <p class="note">
+          JS on a server page: what the fullstack comparison's issue tracker loads for its home
+          page, brotli ({results.fullstackRun}). Client speed: js-framework-benchmark's weighted
+          factor, where 1.00 is the fastest framework in the run
+          {vanilla === undefined ? "" : ` and vanilla JS scores ${vanilla.toFixed(2)}`}; both React
+          rows use React's entry. "measuring": the port or benchmark entry is being added. Method
+          and every run: <a href={href("/benchmarks")}>benchmarks</a>.
         </p>
       </section>
 
-      <section class="section" aria-labelledby="modes-title">
-        <header class="section-head">
-          <p class="kicker">Server first</p>
-          <h2 id="modes-title">Choose how each route renders</h2>
-          <p>
-            Static, server or SPA, per route, with islands where a page needs interaction. This site
-            is a static Lumiose app: every page is prerendered, and the search box is an island.
-          </p>
-        </header>
-        <div class="cards">
-          <Card
-            title="Static"
-            eyebrow="mode = static"
-            href={href("/docs/[...path]", { path: "concepts/rendering-modes" })}
-            icon={<Icon path={ICONS.static} />}
-          >
-            Prerendered at build time to plain HTML files, with <code>staticPaths</code> for params.
-          </Card>
-          <Card
-            title="Server"
-            eyebrow="mode = server"
-            href={href("/docs/[...path]", { path: "concepts/rendering-modes" })}
-            icon={<Icon path={ICONS.server} />}
-          >
-            Rendered per request and streamed: the shell first, then each Suspense boundary.
-          </Card>
-          <Card
-            title="Islands"
-            eyebrow="client:load · idle · visible"
-            href={href("/docs/[...path]", { path: "concepts/islands" })}
-            icon={<Icon path={ICONS.islands} />}
-          >
-            Only interactive components hydrate, with serializable props and slots.
-          </Card>
-          <Card
-            title="SPA routes"
-            eyebrow="mode = spa"
-            href={href("/docs/[...path]", { path: "reference/router" })}
-            icon={<Icon path={ICONS.spa} />}
-          >
-            Client navigation with persistent layouts, where an app needs it.
-          </Card>
-        </div>
-      </section>
+      <section class="section" aria-labelledby="why-title">
+        <p class="kicker">Why it feels light</p>
+        <h2 id="why-title">Four things, each one click deep</h2>
+        <div class="boxes">
+          <article class="box wide" aria-labelledby="familiar-title">
+            <div class="copy">
+              <h3 id="familiar-title">Familiar to write</h3>
+              <p>
+                A <code>.stsx</code> file is React-like JSX with scoped CSS built in: one{" "}
+                <code>&lt;style&gt;</code> at the end of the file serves every component in it,
+                typed by stock TypeScript. Edit the sample: it compiles in your browser.
+              </p>
+              <More href={href("/playground")}>Open the playground</More>
+            </div>
+            <div class="live-demo">
+              {/* The live editor loads (compiler, WebAssembly) when it scrolls into view; until
+                  then, and without JavaScript, the sample and its output show as static tabs. */}
+              <Playground client:visible embedded code={counterSource}>
+                <StaticTabs
+                  name="counter-view"
+                  label="Counter sample"
+                  items={[
+                    { label: "You write", title: "App.stsx", lang: "stsx", code: counterSource },
+                    { label: "JS output", title: "App.js", lang: "js", code: counterOutput },
+                    { label: "CSS output", title: "App.css", lang: "css", code: counterCss },
+                  ]}
+                />
+              </Playground>
+            </div>
+          </article>
 
-      <section class="section" aria-labelledby="examples-title">
-        <header class="section-head">
-          <p class="kicker">See it run</p>
-          <h2 id="examples-title">Example apps</h2>
-          <p>
-            Complete apps built with Lumiose, running on this site. See the{" "}
-            <a href={href("/showcase")}>showcase</a>, and the{" "}
-            <a href={href("/benchmarks")}>benchmarks</a> with their latest results.
-          </p>
-        </header>
-        <ShowcaseGrid
-          items={[...showcase(), ...demos()].filter((item) => item.demo !== undefined)}
-          open="Open the app"
-        />
-      </section>
+          <article class="box wide" aria-labelledby="modes-title">
+            <h3 id="modes-title">Every rendering mode</h3>
+            <p>Choose per route, from static to SPA: the same components work in all four.</p>
+            <ol class="modes" role="list">
+              {renderingModes().map((mode) => (
+                <li class="mode">
+                  <strong>{mode.title}</strong>
+                  <span>{mode.summary}</span>
+                  <ul class="apps" role="list">
+                    {mode.apps.map((app) => (
+                      <li>
+                        <a href={app.href}>{app.label}</a>
+                      </li>
+                    ))}
+                  </ul>
+                </li>
+              ))}
+            </ol>
+            <More href={href("/showcase")}>See the showcase</More>
+          </article>
 
-      <section class="section split" aria-labelledby="tools-title">
-        <header>
-          <p class="kicker">For humans and agents</p>
-          <h2 id="tools-title">Tooling that explains itself</h2>
-          <p>
-            Every tool speaks the same diagnostics, with stable <code>LUMxxxx</code> codes and a fix,
-            in your editor, in the terminal and as JSON.
-          </p>
-          <ul class="points" role="list">
-            <li>
-              <strong>TypeScript 7, typed from routes to CSS.</strong> Stock{" "}
-              <code>tsc</code>, no plugins: <code>lumiose check</code> type-checks{" "}
-              <code>.stsx</code> through shadow files and maps every error back to your source.
-            </li>
-            <li>
-              <strong>Docs in the package.</strong> <code>lumiose docs</code> and{" "}
-              <code>lumiose explain</code> print the version you installed; agents read them from{" "}
-              <code>node_modules/lumiose/docs</code>.
-            </li>
-            <li>
-              <strong>Editor support.</strong> A language server and VS Code extension, with CSS
-              completion inside style blocks, scoped to where you type.
-            </li>
-            <li>
-              <strong>Machine-readable.</strong> <code>--format json</code> on every command,{" "}
-              <a href={href("/llms.txt")}>llms.txt</a> and{" "}
-              <a href={href("/llms-full.txt")}>llms-full.txt</a> for this site.
-            </li>
-          </ul>
-        </header>
-        <div class="code-pair">
-          <CodeBlock code={checkSource} lang="stsx" title="src/Counter.stsx" highlight={highlight} />
-          <CodeBlock code={checkSample} lang="sh" title="terminal" highlight={highlight} />
+          <article class="box" aria-labelledby="fast-title">
+            <h3 id="fast-title">Light and fast, measured</h3>
+            <p>
+              The same issue tracker built three ways: the JavaScript a server-rendered page loads.
+            </p>
+            <BarChart
+              title="JS on a server page"
+              unit="kB, brotli"
+              better="lower"
+              bars={results.serverJs}
+              format={(value) => kilobytes(value).replace(" kB", "")}
+            />
+            <More href={href("/benchmarks")}>All benchmarks</More>
+          </article>
+
+          <article class="box" aria-labelledby="explicit-title">
+            <h3 id="explicit-title">Explicit, for you and your agent</h3>
+            <p>
+              No hidden machinery: client boundaries where you write them, every diagnostic with a{" "}
+              <code>LUMxxxx</code> code and a fix, and the docs in the package, served to your agent
+              over MCP.
+            </p>
+            <CodeBlock
+              code={checkText}
+              lang="sh"
+              title="terminal"
+              highlight={highlight}
+              copy={false}
+            />
+            <More href={href("/docs/[...path]", { path: "reference/mcp" })}>
+              Docs and MCP for agents
+            </More>
+          </article>
         </div>
       </section>
 
       <section class="section closing" aria-labelledby="start-title">
-        <Callout kind="info" title="Pre-release">
-          Lumiose is at 0.0.0. The docs mark what this version does not implement yet with a Status
-          note, and the APIs may still change.
-        </Callout>
-        <h2 id="start-title">Build something light</h2>
+        <p class="kicker">Start</p>
+        <h2 id="start-title">Build something luminous.</h2>
         <div class="actions">
-          <LinkButton href={href("/docs/[...path]", { path: "getting-started" })} size="lg">
+          <LinkButton href={getStarted} size="lg">
             Get started
           </LinkButton>
-          <LinkButton href={href("/docs/[...path]", { path: "concepts/components" })} variant="secondary" size="lg">
-            Learn the concepts
+          <LinkButton
+            href={href("/docs/[...path]", { path: "coming-from-react" })}
+            variant="secondary"
+            size="lg"
+          >
+            Coming from React
           </LinkButton>
         </div>
       </section>
@@ -352,21 +315,56 @@ export default function Home() {
 }
 
 <style>
-  .icon {
-    fill: none;
-    stroke: currentColor;
-    stroke-width: 2;
-    stroke-linecap: round;
-    stroke-linejoin: round;
-  }
-
   .home {
     background: $color.bg;
   }
-  /* The glow behind the hero only, so the text below it sits on the plain background. */
-  .top {
-    background: $gradient.glow no-repeat;
-    background-size: 100% min(100%, 40rem);
+
+  /* The stage: the CSS light is the fallback, under the LightField canvas once it draws. */
+  .stage {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+    background:
+      radial-gradient(50% 70% at 82% 8%, rgb(255 191 107 / 0.32), transparent 60%),
+      radial-gradient(70% 90% at 75% 0%, rgb(143 132 255 / 0.28), transparent 70%), #07061a;
+    /* The copy is lighter than the site's dark theme, so it reads over the brightest frames. */
+    --lm-muted: #cfcee6;
+    color: $color.text;
+    /* A horizon of light where the night meets the page. */
+    border-block-end: 1px solid $color.border;
+    border-image: linear-gradient(
+        90deg,
+        transparent,
+        color-mix(in oklab, $color.glowA 70%, transparent) 30%,
+        color-mix(in oklab, $color.glowB 70%, transparent) 70%,
+        transparent
+      )
+      1;
+  }
+  /* Keeps the copy readable over any frame of the light (decision-39): dark where the text is,
+     clear where the light is. Phones stack the copy across the whole width, so it covers more. */
+  .scrim {
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background: linear-gradient(
+      90deg,
+      rgb(7 6 26 / 0.9) 0%,
+      rgb(7 6 26 / 0.82) 50%,
+      rgb(7 6 26 / 0.72) 64%,
+      rgb(7 6 26 / 0) 92%
+    );
+  }
+  @media (width < $bp.lg) {
+    .scrim {
+      background: linear-gradient(
+        180deg,
+        rgb(7 6 26 / 0) 0,
+        rgb(7 6 26 / 0.84) 8rem,
+        rgb(7 6 26 / 0.88) 100%
+      );
+    }
   }
   .hero,
   .section {
@@ -374,50 +372,361 @@ export default function Home() {
     margin-inline: auto;
     padding-inline: $layout.gutter;
   }
-
   .hero {
-    padding-block: $space.xxxl $space.xxl;
-    text-align: center;
+    display: grid;
+    justify-items: start;
+    gap: $space.lg;
+    /* Room at the bottom for the pause button. */
+    padding-block: $space.xxxl calc($space.xxxl + $space.lg);
+  }
+  /* Narrow screens give the light the top of the stage; the copy starts below it. */
+  @media (width < $bp.lg) {
+    .hero {
+      padding-block-start: 9rem;
+    }
   }
   .eyebrow,
   .kicker {
-    color: $color.accentText;
+    margin: 0;
     font-family: $font.mono;
     font-size: $text.sm;
     font-weight: $weight.semibold;
   }
-  h1 {
-    margin-block: $space.sm $space.md;
-    font-size: $text.display;
+  .eyebrow {
+    color: $color.glowText;
   }
+  .kicker {
+    color: $color.accentText;
+  }
+  h1 {
+    margin: 0;
+    max-inline-size: 16ch;
+    font-size: clamp(2.6rem, 1.2rem + 4.2vw, 4.75rem);
+    font-weight: 800;
+    line-height: 1;
+    letter-spacing: -0.045em;
+    text-wrap: balance;
+  }
+  .line {
+    display: block;
+  }
+  /* The headline's light sweep: CSS only, once, and not under reduced motion. */
   .lit {
-    background: $gradient.text;
+    background-image:
+      linear-gradient(100deg, transparent 38%, rgb(255 255 255 / 0.95) 50%, transparent 62%),
+      linear-gradient(90deg, #ffd9a3 0%, $color.glowB 30%, #fff1dc 60%, #b8b0ff 100%);
+    background-size:
+      300% 100%,
+      100% 100%;
+    background-position:
+      -30% 0,
+      0 0;
+    background-repeat: no-repeat;
     background-clip: text;
     -webkit-background-clip: text;
     color: transparent;
+    animation: sweep 1.8s cubic-bezier(0.45, 0, 0.55, 1) 0.5s both;
+  }
+  @keyframes sweep {
+    from {
+      background-position:
+        120% 0,
+        0 0;
+    }
+    to {
+      background-position:
+        -30% 0,
+        0 0;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .lit {
+      animation: none;
+    }
   }
   .lead {
-    max-inline-size: $layout.prose;
-    margin-inline: auto;
+    margin: 0;
+    max-inline-size: 58ch;
     color: $color.muted;
-    font-size: $text.lg;
-    line-height: $leading.normal;
+    font-size: clamp(1.05rem, 0.98rem + 0.3vw, 1.2rem);
+    line-height: 1.55;
+  }
+  .lead strong {
+    color: $color.text;
+    font-weight: $weight.semibold;
   }
   .actions {
     display: flex;
     flex-wrap: wrap;
-    justify-content: center;
     gap: $space.sm;
-    margin-block-start: $space.xl;
   }
   .install {
-    max-inline-size: 34rem;
-    margin: $space.xl auto 0;
-    text-align: start;
+    display: flex;
+    align-items: center;
+    gap: $space.xs;
+    max-inline-size: 100%;
+    padding: $space.xxs $space.xxs $space.xxs $space.md;
+    border: 1px solid $color.border;
+    border-radius: $radius.md;
+    background: color-mix(in oklab, $color.bg 75%, transparent);
+    font-size: $text.sm;
   }
-  /* Until a Tabs island runs (it labels the panels role="tabpanel"), show its first panel. */
-  .install :deep(.panels > :not([role]) ~ :not([role])) {
-    display: none;
+  .install code {
+    padding: 0;
+    border: 0;
+    background: none;
+    overflow-x: auto;
+    color: $color.text;
+    white-space: nowrap;
+  }
+  .prompt {
+    color: $color.glowText;
+  }
+  .badge {
+    margin: 0;
+    padding: 0.1rem $space.xs;
+    border: 1px solid $color.borderStrong;
+    border-radius: $radius.pill;
+    color: $color.muted;
+    font-family: $font.mono;
+    font-size: $text.xs;
+  }
+  .proof {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    inline-size: min(100%, 52rem);
+    margin: $space.md 0 0;
+    padding: 0;
+    border-block-start: 1px solid $color.border;
+  }
+  .proof li {
+    display: grid;
+    align-content: start;
+    gap: $space.xxs;
+    padding: $space.md $space.lg 0 0;
+  }
+  .proof li + li {
+    padding-inline-start: $space.lg;
+    border-inline-start: 1px solid $color.border;
+  }
+  .proof strong {
+    color: #fff4e3;
+    font-size: clamp(1.6rem, 1.2rem + 1.4vw, 2.4rem);
+    font-weight: $weight.bold;
+    font-variant-numeric: tabular-nums;
+    line-height: 1.1;
+    letter-spacing: -0.03em;
+    text-shadow: 0 0 24px rgb(255 191 107 / 0.55);
+  }
+  .proof span {
+    color: $color.muted;
+    font-size: $text.sm;
+    line-height: $leading.snug;
+  }
+  @media (width < $bp.md) {
+    .proof {
+      grid-template-columns: minmax(0, 1fr);
+    }
+    .proof li,
+    .proof li + li {
+      padding: $space.sm 0;
+      border-inline-start: 0;
+    }
+    .proof li + li {
+      border-block-start: 1px solid $color.border;
+    }
+  }
+
+  .section {
+    padding-block: $space.xxxl;
+  }
+  .section > h2 {
+    margin-block: $space.xs 0;
+    font-size: clamp(1.8rem, 1.4rem + 1.6vw, 2.6rem);
+    line-height: 1.1;
+    letter-spacing: -0.035em;
+    text-wrap: balance;
+  }
+  .intro {
+    max-inline-size: 62ch;
+    margin-block: $space.sm 0;
+    color: $color.muted;
+    font-size: $text.lg;
+  }
+
+  /* The stack table. */
+  .table {
+    margin-block-start: $space.xl;
+    overflow-x: auto;
+    border: 1px solid $color.border;
+    border-radius: $radius.lg;
+    background: $color.surface;
+  }
+  table {
+    inline-size: 100%;
+    min-inline-size: 52rem;
+    border-collapse: collapse;
+    font-size: $text.sm;
+  }
+  th,
+  td {
+    padding: $space.sm $space.md;
+    border-block-end: 1px solid $color.border;
+    text-align: start;
+    vertical-align: middle;
+  }
+  thead th {
+    color: $color.subtle;
+    font-size: $text.xs;
+    font-weight: $weight.semibold;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+  tbody th {
+    font-weight: $weight.semibold;
+    white-space: nowrap;
+  }
+  tbody tr:last-child > * {
+    border-block-end: 0;
+  }
+  .number .measured {
+    font-family: $font.mono;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+  .pending,
+  .no {
+    color: $color.subtle;
+  }
+  .pending {
+    font-family: $font.mono;
+    font-size: $text.xs;
+  }
+  .yes {
+    color: $color.accentText;
+  }
+  /* Lumiose's row, lit from the left. */
+  tr.self > * {
+    background: linear-gradient(
+      90deg,
+      color-mix(in oklab, $color.glowB 16%, $color.surface),
+      color-mix(in oklab, $color.glowA 8%, $color.surface) 70%,
+      $color.surface
+    );
+  }
+  tr.self .measured {
+    font-weight: $weight.bold;
+  }
+  .note {
+    max-inline-size: 62rem;
+    margin-block: $space.sm 0;
+    color: $color.subtle;
+    font-size: $text.xs;
+  }
+
+  /* The four sections, each a box with a soft glow in the corner. */
+  .boxes {
+    display: grid;
+    gap: $space.lg;
+    margin-block-start: $space.xl;
+  }
+  @media (width >= $bp.lg) {
+    .boxes {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    .wide {
+      grid-column: 1 / -1;
+    }
+    .box.wide:has(.live-demo) {
+      grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+      column-gap: $space.xxl;
+    }
+  }
+  .box {
+    display: grid;
+    align-content: start;
+    gap: $space.md;
+    min-inline-size: 0;
+    padding: $space.lg;
+    border: 1px solid $color.border;
+    border-radius: $radius.lg;
+    background:
+      radial-gradient(
+        120% 90% at 100% 0%,
+        color-mix(in oklab, $color.glowB 14%, transparent),
+        transparent 55%
+      ),
+      radial-gradient(
+        90% 70% at 0% 0%,
+        color-mix(in oklab, $color.glowA 10%, transparent),
+        transparent 60%
+      ),
+      $color.surface;
+  }
+  .copy {
+    display: grid;
+    align-content: start;
+    gap: $space.md;
+  }
+  .box h3 {
+    margin: 0;
+    font-size: $text.xl;
+    letter-spacing: -0.02em;
+  }
+  .box p {
+    max-inline-size: 60ch;
+    margin: 0;
+    color: $color.muted;
+  }
+  .box :deep(.code) {
+    margin: 0;
+  }
+  /* The check output wraps like a terminal, so it reads in a narrow box. */
+  .box :deep(.code pre) {
+    white-space: pre-wrap;
+  }
+  .more {
+    justify-self: start;
+    font-weight: $weight.semibold;
+  }
+  .live-demo {
+    min-inline-size: 0;
+  }
+  .live-demo :deep(pre) {
+    white-space: pre;
+  }
+
+  .modes {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+    gap: $space.sm;
+    margin: 0;
+    padding: 0;
+  }
+  .mode {
+    display: grid;
+    align-content: start;
+    gap: $space.xxs;
+    padding: $space.md;
+    border: 1px solid $color.border;
+    border-radius: $radius.md;
+    background: $color.bg;
+  }
+  .mode > span {
+    color: $color.muted;
+    font-size: $text.sm;
+  }
+  .apps {
+    display: grid;
+    gap: $space.xxs;
+    margin: $space.xs 0 0;
+    padding: 0;
+    font-size: $text.sm;
+  }
+  .apps a {
+    display: inline-block;
+    min-block-size: 24px;
+    font-weight: $weight.medium;
   }
 
   /* StaticTabs: the label of each radio button is a tab; the checked one shows its panel. */
@@ -475,108 +784,26 @@ export default function Home() {
     clip-path: inset(50%);
     white-space: nowrap;
   }
-  .facts {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
-    gap: $space.md;
-    max-inline-size: 60rem;
-    margin: $space.xl auto 0;
-  }
-  .facts li {
-    display: grid;
-    gap: $space.xxs;
-    padding: $space.md $space.lg;
-    border: 1px solid $color.border;
-    border-radius: $radius.lg;
-    background: color-mix(in oklab, $color.surface 80%, transparent);
-    box-shadow: $shadow.sm;
-  }
-  .facts strong {
-    font-size: $text.xxl;
-    letter-spacing: -0.02em;
-    font-variant-numeric: tabular-nums;
-  }
-  .facts span {
-    color: $color.muted;
-    font-size: $text.sm;
-    line-height: $leading.snug;
-  }
 
-  .section {
-    padding-block: $space.xxxl;
-    border-block-start: 1px solid $color.border;
-  }
-  .section h2 {
-    margin-block: $space.xs $space.sm;
-    font-size: $text.xxxl;
-  }
-  .section header p:not(.kicker) {
-    color: $color.muted;
-    font-size: $text.lg;
-  }
-  .section-head {
-    max-inline-size: $layout.prose;
-    margin-block-end: $space.xl;
-  }
-  .split {
-    display: grid;
-    gap: $space.xl;
-    align-items: start;
-  }
-  @media (width >= $bp.lg) {
-    .split {
-      grid-template-columns: minmax(0, 5fr) minmax(0, 6fr);
-      gap: $space.xxl;
-    }
-  }
-  .points {
-    display: grid;
-    gap: $space.sm;
-    margin-block: $space.lg;
-  }
-  .points li {
-    padding-inline-start: $space.md;
-    border-inline-start: 2px solid $color.border;
-    color: $color.muted;
-  }
-  .points strong {
-    color: $color.text;
-  }
-  .more {
-    font-weight: $weight.semibold;
-  }
-  .code-pair {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr);
-    min-inline-size: 0;
-  }
-
-  .charts {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(20rem, 1fr));
-    gap: $space.md;
-  }
-  .source {
-    margin-block-start: $space.md;
-    color: $color.subtle;
-    font-size: $text.sm;
-  }
-
-  .cards {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
-    gap: $space.md;
-  }
   .closing {
     display: grid;
-    justify-items: center;
+    justify-items: start;
     gap: $space.md;
-    text-align: center;
+    padding-block-end: calc($space.xxxl + $space.lg);
+    border-block-start: 1px solid $color.border;
+    background:
+      radial-gradient(
+        60% 120% at 0% 100%,
+        color-mix(in oklab, $color.glowB 12%, transparent),
+        transparent 60%
+      ),
+      radial-gradient(
+        50% 100% at 30% 100%,
+        color-mix(in oklab, $color.glowA 10%, transparent),
+        transparent 70%
+      );
   }
   .closing h2 {
-    margin-block-start: $space.lg;
-  }
-  .closing .actions {
-    margin-block-start: 0;
+    font-size: clamp(2.2rem, 1.6rem + 2.6vw, 3.6rem);
   }
 </style>

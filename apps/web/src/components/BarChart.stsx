@@ -17,7 +17,9 @@ export interface BarChartProps {
 export function BarChart(props: BarChartProps) {
   const max = () => Math.max(...props.bars.map((bar) => bar.value));
   const sorted = () =>
-    props.bars.toSorted((a, b) => (props.better === "lower" ? a.value - b.value : b.value - a.value));
+    props.bars.toSorted((a, b) =>
+      props.better === "lower" ? a.value - b.value : b.value - a.value,
+    );
   const shown = (value: number) => (props.format ?? String)(value);
 
   return (
@@ -92,7 +94,9 @@ export function BarChart(props: BarChartProps) {
     border-radius: inherit;
     background: $color.borderStrong;
   }
+  /* A zero still shows as a spark of light: 0 kB is a result, not a missing bar. */
   .self .bar {
+    min-inline-size: 4px;
     background: linear-gradient(90deg, $color.glowA, $color.glowB);
   }
   .value {

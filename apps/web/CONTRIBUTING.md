@@ -34,6 +34,13 @@ a benchmark report, the showcase with the demos, the playground and the 404.
 
   A new gradient, glow or translucent layer behind text needs an entry in `FLATTENED`.
 
+- **The landing's light field.** Axe cannot see into the WebGL canvas behind the hero. A test hides
+  the copy, captures the stage at 1440, 820 and 390 px over several seconds of light, and compares
+  each text color with the brightest pixel behind it (4.5:1, or 3:1 for large text). It prints the
+  peak it found; `STAGE_PEAK` in `FLATTENED` must stay at or above it. Other tests check that the
+  "Pause animation" button and scrolling the hero away stop the loop, and that reduced motion draws
+  one still frame.
+
 - **Motion.** No animation runs longer than 5 seconds, and none runs longer than 1 second under
   `prefers-reduced-motion: reduce`.
 - **Focus.** Tabbing through the landing, a docs page, the showcase and the benchmarks, every

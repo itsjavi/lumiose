@@ -1,12 +1,20 @@
-// /benchmarks: the benchmark pages (TASK-163). The fullstack results viewer is copied by
-// scripts/site.ts to /benchmarks/fullstack/; the js-framework-benchmark results are a page of
-// this site, with the Lumiose benchmark app below it.
-import { layout, space } from "@lumiose/site-kit/tokens";
-import { Meta, Title } from "lumiose";
+// /benchmarks: the latest results as charts (moved from the landing, decision-37), then the
+// benchmark pages (TASK-163). The fullstack results viewer is copied by scripts/site.ts to
+// /benchmarks/fullstack/; the js-framework-benchmark results are a page of this site, with the
+// Lumiose benchmark app below it. Every number comes from the committed results (evidence.ts).
+import { bp, color, layout, space, text } from "@lumiose/site-kit/tokens";
+import { href, Meta, Title } from "lumiose";
+import { BarChart } from "../../components/BarChart.stsx";
 import { PageHead, ShowcaseGrid } from "../../components/Showcase.stsx";
+import { evidence } from "../../content/evidence.ts";
 import { benchmarks, REPOSITORY } from "../../content/showcase.ts";
+import { link } from "../../lib/site.ts";
+
+const fixed = (digits: number) => (value: number) => value.toFixed(digits);
 
 export default function Benchmarks() {
+  const results = evidence();
+
   return (
     <div class="page">
       <Title>Benchmarks · Lumiose</Title>
@@ -18,7 +26,52 @@ export default function Benchmarks() {
           <a href={`${REPOSITORY}/tree/main/benchmarks`}>benchmarks folder</a>.
         </p>
       </PageHead>
-      <ShowcaseGrid items={benchmarks()} open="See the results" />
+
+      <section class="results" aria-labelledby="results-title">
+        <h2 id="results-title">Latest results</h2>
+        <div class="charts">
+          <BarChart
+            title="JS on a server page"
+            unit="kB loaded by the issue tracker's home page, brotli"
+            better="lower"
+            bars={results.serverJs}
+            format={(value) => Math.round(value).toString()}
+          />
+          <BarChart
+            title="Client updates"
+            unit="Weighted geometric mean of CPU time, × the fastest"
+            better="lower"
+            bars={results.cpu}
+            format={fixed(2)}
+          />
+          <BarChart
+            title="Server rendering"
+            unit="Renders per second of a 5,000-component page"
+            better="higher"
+            bars={results.ssr}
+            format={(value) => Math.round(value).toString()}
+          />
+          <BarChart
+            title="Bundle size"
+            unit="Compressed kB, runtime and benchmark app"
+            better="lower"
+            bars={results.size}
+            format={fixed(1)}
+          />
+        </div>
+        <p class="source">
+          Fullstack: {results.fullstackRun}, in the{" "}
+          <a href={link("/benchmarks/fullstack/")}>results viewer</a>. Client: {results.clientRun},
+          in the{" "}
+          <a href={href("/benchmarks/js-framework-benchmark")}>js-framework-benchmark report</a>.
+          Server: {results.serverRun}, in <code>benchmarks/ssr/RESULTS.md</code>.
+        </p>
+      </section>
+
+      <section class="pages" aria-labelledby="pages-title">
+        <h2 id="pages-title">The benchmarks</h2>
+        <ShowcaseGrid items={benchmarks()} open="See the results" />
+      </section>
     </div>
   );
 }
@@ -28,5 +81,29 @@ export default function Benchmarks() {
     max-inline-size: $layout.page;
     margin-inline: auto;
     padding: $space.xl $layout.gutter $space.xxl;
+  }
+  .results,
+  .pages {
+    display: grid;
+    gap: $space.md;
+    margin-block-end: $space.xxl;
+  }
+  h2 {
+    margin: 0;
+    font-size: $text.xl;
+  }
+  .charts {
+    display: grid;
+    gap: $space.md;
+  }
+  @media (width >= $bp.md) {
+    .charts {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+  .source {
+    margin: 0;
+    color: $color.subtle;
+    font-size: $text.sm;
   }
 </style>

@@ -28,21 +28,99 @@ test("the landing page presents Lumiose with benchmark evidence", async ({ page 
   const failures = watchFailures(page);
   await page.goto("/");
   await expect(page).toHaveTitle(/Lumiose/);
-  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Web apps that ship light");
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText(
+    "Feels like React. Runs like vanilla JS.",
+  );
+  const description = await page.locator('meta[name="description"]').last().getAttribute("content");
+  expect((await page.locator(".hero .lead").textContent())?.replace(/\s+/g, " ")).toBe(description);
   await expect(page.getByRole("link", { name: "Get started" }).first()).toHaveAttribute(
     "href",
     "/docs/getting-started",
   );
-  const charts = page.locator("#performance figure");
-  await expect(charts).toHaveCount(3);
-  await expect(charts.first().locator("li.self")).toContainText("Lumiose");
+  await expect(page.getByRole("link", { name: "Compare the stacks" })).toHaveAttribute(
+    "href",
+    "#compare",
+  );
+  await expect(page.locator(".proof strong")).toHaveText([/^\d\.\d\d×$/, "0 kB", /^\d+\.\d kB$/]);
 
-  // The install Tabs island switches panels.
-  const install = page.getByRole("tablist", { name: "Package manager" });
-  await install.getByRole("tab", { name: "npm", exact: true }).click();
-  await expect(page.getByText("npm create lumiose@latest my-app")).toBeVisible();
-  await expect(page.getByText("pnpm create lumiose my-app")).toBeHidden();
+  // The stack table, right below the hero: nine stacks, Lumiose last, no "not measured" cell.
+  const table = page.locator("#compare table");
+  await expect(table.locator("tbody tr")).toHaveCount(9);
+  await expect(table.locator("tbody tr.self th")).toHaveText("Lumiose");
+  await expect(table.locator("tbody tr.self td").nth(2)).toHaveText("0 kB");
+  await expect(table).not.toContainText(/not measured/i);
+
+  // The four sections, in order, then the closing call.
+  await expect(page.locator(".box h3")).toHaveText([
+    "Familiar to write",
+    "Every rendering mode",
+    "Light and fast, measured",
+    "Explicit, for you and your agent",
+  ]);
+  await expect(page.locator(".box figure.chart li.self")).toContainText("Lumiose");
+  await expect(page.locator(".modes a").first()).toHaveAttribute(
+    "href",
+    /\/demos\/travel-journal\/$/,
+  );
   expect(failures).toEqual([]);
+});
+
+/** Counts requestAnimationFrame calls, to see whether the light field's loop runs. */
+async function countFrames(page: Page) {
+  await page.addInitScript(() => {
+    const original = window.requestAnimationFrame.bind(window);
+    (window as unknown as { frames: number }).frames = 0;
+    window.requestAnimationFrame = (callback) => {
+      (window as unknown as { frames: number }).frames++;
+      return original(callback);
+    };
+  });
+  return async (ms: number) => {
+    const before = await page.evaluate(() => (window as unknown as { frames: number }).frames);
+    await page.waitForTimeout(ms);
+    return (await page.evaluate(() => (window as unknown as { frames: number }).frames)) - before;
+  };
+}
+
+test("the light field pauses with its button and off-screen", async ({ page }) => {
+  const frames = await countFrames(page);
+  await page.goto("/");
+  const pause = page.getByRole("button", { name: "Pause animation" });
+  // client:idle: the island loads after the first paint, and only with WebGL.
+  await expect(page.locator(".stage canvas.on")).toBeAttached({ timeout: 10_000 });
+  await expect(pause).toBeVisible();
+  expect(await frames(500)).toBeGreaterThan(5);
+
+  await pause.click();
+  const play = page.getByRole("button", { name: "Play animation" });
+  await expect(play).toBeVisible();
+  expect(await frames(500)).toBeLessThanOrEqual(1);
+  await play.click();
+  expect(await frames(500)).toBeGreaterThan(5);
+
+  await page.locator("#start-title").scrollIntoViewIfNeeded();
+  await page.waitForTimeout(200);
+  expect(await frames(500)).toBeLessThanOrEqual(1);
+});
+
+test("under reduced motion the light field is one still frame", async ({ page }) => {
+  const frames = await countFrames(page);
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.goto("/");
+  await expect(page.locator(".stage canvas.on")).toBeAttached({ timeout: 10_000 });
+  await expect(page.locator(".stage .motion")).toBeHidden();
+  expect(await frames(1000)).toBeLessThanOrEqual(1);
+});
+
+test("without JavaScript the landing is complete, on the CSS light", async ({ browser }) => {
+  const context = await browser.newContext({ javaScriptEnabled: false });
+  const page = await context.newPage();
+  await page.goto("/");
+  await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+  await expect(page.locator("#compare tbody tr")).toHaveCount(9);
+  await expect(page.locator(".stage .motion")).toBeHidden();
+  await expect(page.locator(".live-demo").getByText("You write")).toBeVisible();
+  await context.close();
 });
 
 test("docs pages render the Markdown with navigation, TOC and prev/next", async ({ page }) => {
@@ -123,8 +201,8 @@ test("below a base path every URL keeps the base", async ({ page }) => {
   });
   await page.goto("/lumiose/");
   await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
-  await page.getByRole("link", { name: "Read the docs" }).click();
-  await expect(page).toHaveURL(/\/lumiose\/docs\/?$/);
+  await page.getByRole("link", { name: "Get started" }).first().click();
+  await expect(page).toHaveURL(/\/lumiose\/docs\/getting-started\/?$/);
   await (await search(page)).fill("islands");
   await page.getByRole("listbox", { name: "Docs pages" }).getByRole("option").first().click();
   await expect(page).toHaveURL(/\/lumiose\/docs\/.+/);
@@ -172,4 +250,34 @@ test("screenshots", async ({ page }) => {
   await page.screenshot({ path: out("docs-phone") });
   await page.goto("/");
   await page.screenshot({ path: out("home-phone") });
+});
+
+const landingShot = (name: string) => `../../backlog/assets/task-213-${name}.png`;
+
+// SCREENSHOTS=1 pnpm screenshots: TASK-213's landing captures at 1440 and 390 px, in both themes,
+// with the live demo loaded and the light paused once it is fully up.
+test("landing screenshots", async ({ page }) => {
+  test.skip(!process.env["SCREENSHOTS"], "Set SCREENSHOTS=1 to capture.");
+  for (const [width, height] of [
+    [1440, 900],
+    [390, 844],
+  ] as const) {
+    for (const scheme of ["light", "dark"] as const) {
+      await page.setViewportSize({ width, height });
+      await page.emulateMedia({ colorScheme: scheme });
+      await page.goto("/");
+      await page.locator(".live-demo").scrollIntoViewIfNeeded();
+      await expect(page.locator(".playground .status")).toContainText("Compiled", {
+        timeout: 20_000,
+      });
+      await page.evaluate(() => scrollTo(0, 0));
+      await expect(page.locator(".stage canvas.on")).toBeAttached({ timeout: 10_000 });
+      await page.waitForTimeout(3000);
+      await page.getByRole("button", { name: "Pause animation" }).click();
+      // The click scrolls the button into view; the capture starts at the top.
+      await page.evaluate(() => scrollTo(0, 0));
+      await page.waitForTimeout(300);
+      await page.screenshot({ path: landingShot(`${width}-${scheme}`), fullPage: true });
+    }
+  }
 });
