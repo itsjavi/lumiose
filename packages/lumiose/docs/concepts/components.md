@@ -77,10 +77,6 @@ export function SearchBox({ label, initial = "", children }: Props) {
       </label>
       <p>Searching for “{query()}”</p>
       {children}
-
-      <style>
-        .search { display: grid; gap: 0.5rem; }
-      </style>
     </form>
   );
 }
@@ -92,7 +88,14 @@ export function Page() {
     </SearchBox>
   );
 }
+
+<style>
+  .search { display: grid; gap: 0.5rem; }
+</style>
 ```
+
+Both components share the `<style>` block at the end of the file: by convention, each `.stsx`
+file has one, after its components ([Styles](styles.md)).
 
 ## Common mistakes
 

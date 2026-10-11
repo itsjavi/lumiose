@@ -13,29 +13,30 @@ export default function Layout(props: LayoutProps<"/">) {
         </nav>
       </header>
       {props.children}
-
-      <style>
-        .app {
-          max-width: 42rem;
-          margin: 0 auto;
-          padding: 1.5rem 1rem;
-        }
-        header {
-          display: flex;
-          justify-content: space-between;
-          margin-bottom: 2rem;
-        }
-        .brand {
-          font-weight: 700;
-        }
-      </style>
-      <style global>
-        body {
-          margin: 0;
-          font-family: system-ui, sans-serif;
-          line-height: 1.6;
-        }
-      </style>
     </div>
   );
 }
+
+<style>
+  .app {
+    max-width: 42rem;
+    margin: 0 auto;
+    padding: 1.5rem 1rem;
+  }
+  header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 2rem;
+  }
+  .brand {
+    font-weight: 700;
+  }
+</style>
+
+<style global>
+  body {
+    margin: 0;
+    font-family: system-ui, sans-serif;
+    line-height: 1.6;
+  }
+</style>

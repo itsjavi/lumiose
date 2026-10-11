@@ -19,14 +19,14 @@ export default function Benchmarks() {
         </p>
       </PageHead>
       <ShowcaseGrid items={benchmarks()} open="See the results" />
-
-      <style>
-        .page {
-          max-inline-size: $layout.page;
-          margin-inline: auto;
-          padding: $space.xl $layout.gutter $space.xxl;
-        }
-      </style>
     </div>
   );
 }
+
+<style>
+  .page {
+    max-inline-size: $layout.page;
+    margin-inline: auto;
+    padding: $space.xl $layout.gutter $space.xxl;
+  }
+</style>

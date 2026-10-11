@@ -12,24 +12,35 @@ export function Counter() {
   const count = signal(0);
 
   return (
-    <button class={{ hot: count() > 9 }} onClick={() => count.update((n) => n + 1)}>
+    <button class={{ pill: true, hot: count() > 9 }} onClick={() => count.update((n) => n + 1)}>
       Clicked {count()} times
-      <style>
-        button {
-          padding: calc($gap * 1px) calc($gap * 2px);
-          border-radius: $radius.pill;
-        }
-        .hot { outline: 2px solid tomato; }
-      </style>
     </button>
   );
 }
+
+export function Reset(props: { onReset(): void }) {
+  return (
+    <button class="pill ghost" onClick={props.onReset}>
+      Reset
+    </button>
+  );
+}
+
+<style>
+  .pill {
+    padding: calc($gap * 1px) calc($gap * 2px);
+    border-radius: $radius.pill;
+  }
+  .ghost { background: transparent; }
+  .hot { outline: 2px solid tomato; }
+</style>
 `;
 
 export const counterOutput = `import { signal } from "lumiose";
 import { template, bind, toggleClass, insert, delegateEvents } from "lumiose/dom";
 import "/app/src/Counter.stsx?lumiose&type=style&lang.css";
-const _t0 = /* @__PURE__ */ template(\`<button data-l-agorgvta>Clicked <!> times\`);
+const _t0 = /* @__PURE__ */ template(\`<button class=pill data-l-ybakenkt>Clicked <!> times\`);
+const _t1 = /* @__PURE__ */ template(\`<button class="pill ghost" data-l-ybakenkt>Reset\`);
 const _a0 = (el, v) => toggleClass(el, "hot", v);
 const gap = 8;
 const radius = { pill: "999px" };
@@ -41,15 +52,24 @@ export function Counter() {
 \tinsert(_el, count, _marker);
 \treturn _el;
 }
+export function Reset(props) {
+\tconst _el2 = _t1();
+\t_el2.$$click = props.onReset;
+\treturn _el2;
+}
 delegateEvents(["click"]);
 `;
 
-export const counterCss = `button[data-l-agorgvta] {
+export const counterCss = `.pill[data-l-ybakenkt] {
   border-radius: 999px;
   padding: 8px 16px;
 }
 
-.hot[data-l-agorgvta] {
+.ghost[data-l-ybakenkt] {
+  background: none;
+}
+
+.hot[data-l-ybakenkt] {
   outline: 2px solid tomato;
 }
 `;

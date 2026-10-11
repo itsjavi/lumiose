@@ -37,15 +37,6 @@ function Icon(props: { path: string }) {
   return (
     <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" class="icon">
       <path d={props.path} />
-      <style>
-        .icon {
-          fill: none;
-          stroke: currentColor;
-          stroke-width: 2;
-          stroke-linecap: round;
-          stroke-linejoin: round;
-        }
-      </style>
     </svg>
   );
 }
@@ -127,8 +118,9 @@ export default function Home() {
           </p>
           <ul class="points" role="list">
             <li>
-              <strong>Scoped by placement.</strong> A block styles the element it sits in, the whole
-              file at the top level, or the app with <code>&lt;style global&gt;</code>.
+              <strong>Scoped by placement.</strong> One block at the end of the file styles every
+              component in it; nested in an element, it styles that subtree;{" "}
+              <code>&lt;style global&gt;</code> styles the app.
             </li>
             <li>
               <strong>JS values in CSS.</strong> <code>$gap</code> and <code>$radius.pill</code>{" "}
@@ -305,173 +297,181 @@ export default function Home() {
           </LinkButton>
         </div>
       </section>
-
-      <style>
-        .home {
-          background:
-            $gradient.glow no-repeat,
-            $color.bg;
-          background-size:
-            100% 40rem,
-            auto;
-        }
-        .hero,
-        .section {
-          max-inline-size: $layout.page;
-          margin-inline: auto;
-          padding-inline: $layout.gutter;
-        }
-
-        .hero {
-          padding-block: $space.xxxl $space.xxl;
-          text-align: center;
-        }
-        .eyebrow,
-        .kicker {
-          color: $color.accentText;
-          font-family: $font.mono;
-          font-size: $text.sm;
-          font-weight: $weight.semibold;
-        }
-        h1 {
-          margin-block: $space.sm $space.md;
-          font-size: $text.display;
-        }
-        .lit {
-          background: $gradient.text;
-          background-clip: text;
-          -webkit-background-clip: text;
-          color: transparent;
-        }
-        .lead {
-          max-inline-size: $layout.prose;
-          margin-inline: auto;
-          color: $color.muted;
-          font-size: $text.lg;
-          line-height: $leading.normal;
-        }
-        .actions {
-          display: flex;
-          flex-wrap: wrap;
-          justify-content: center;
-          gap: $space.sm;
-          margin-block-start: $space.xl;
-        }
-        .install {
-          max-inline-size: 34rem;
-          margin: $space.xl auto 0;
-          text-align: start;
-        }
-        /* Until a Tabs island runs (it labels the panels role="tabpanel"), show its first panel. */
-        .install :deep(.panels > :not([role]) ~ :not([role])),
-        .code-pair :deep(.panels > :not([role]) ~ :not([role])) {
-          display: none;
-        }
-        .facts {
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
-          gap: $space.md;
-          max-inline-size: 60rem;
-          margin: $space.xl auto 0;
-        }
-        .facts li {
-          display: grid;
-          gap: $space.xxs;
-          padding: $space.md $space.lg;
-          border: 1px solid $color.border;
-          border-radius: $radius.lg;
-          background: color-mix(in oklab, $color.surface 80%, transparent);
-          box-shadow: $shadow.sm;
-        }
-        .facts strong {
-          font-size: $text.xxl;
-          letter-spacing: -0.02em;
-          font-variant-numeric: tabular-nums;
-        }
-        .facts span {
-          color: $color.muted;
-          font-size: $text.sm;
-          line-height: $leading.snug;
-        }
-
-        .section {
-          padding-block: $space.xxxl;
-          border-block-start: 1px solid $color.border;
-        }
-        .section h2 {
-          margin-block: $space.xs $space.sm;
-          font-size: $text.xxxl;
-        }
-        .section header p:not(.kicker) {
-          color: $color.muted;
-          font-size: $text.lg;
-        }
-        .section-head {
-          max-inline-size: $layout.prose;
-          margin-block-end: $space.xl;
-        }
-        .split {
-          display: grid;
-          gap: $space.xl;
-          align-items: start;
-        }
-        @media (width >= $bp.lg) {
-          .split {
-            grid-template-columns: minmax(0, 5fr) minmax(0, 6fr);
-            gap: $space.xxl;
-          }
-        }
-        .points {
-          display: grid;
-          gap: $space.sm;
-          margin-block: $space.lg;
-        }
-        .points li {
-          padding-inline-start: $space.md;
-          border-inline-start: 2px solid $color.border;
-          color: $color.muted;
-        }
-        .points strong {
-          color: $color.text;
-        }
-        .more {
-          font-weight: $weight.semibold;
-        }
-        .code-pair {
-          display: grid;
-          grid-template-columns: minmax(0, 1fr);
-          min-inline-size: 0;
-        }
-
-        .charts {
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(20rem, 1fr));
-          gap: $space.md;
-        }
-        .source {
-          margin-block-start: $space.md;
-          color: $color.subtle;
-          font-size: $text.sm;
-        }
-
-        .cards {
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
-          gap: $space.md;
-        }
-        .closing {
-          display: grid;
-          justify-items: center;
-          gap: $space.md;
-          text-align: center;
-        }
-        .closing h2 {
-          margin-block-start: $space.lg;
-        }
-        .closing .actions {
-          margin-block-start: 0;
-        }
-      </style>
     </div>
   );
 }
+
+<style>
+  .icon {
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  .home {
+    background:
+      $gradient.glow no-repeat,
+      $color.bg;
+    background-size:
+      100% 40rem,
+      auto;
+  }
+  .hero,
+  .section {
+    max-inline-size: $layout.page;
+    margin-inline: auto;
+    padding-inline: $layout.gutter;
+  }
+
+  .hero {
+    padding-block: $space.xxxl $space.xxl;
+    text-align: center;
+  }
+  .eyebrow,
+  .kicker {
+    color: $color.accentText;
+    font-family: $font.mono;
+    font-size: $text.sm;
+    font-weight: $weight.semibold;
+  }
+  h1 {
+    margin-block: $space.sm $space.md;
+    font-size: $text.display;
+  }
+  .lit {
+    background: $gradient.text;
+    background-clip: text;
+    -webkit-background-clip: text;
+    color: transparent;
+  }
+  .lead {
+    max-inline-size: $layout.prose;
+    margin-inline: auto;
+    color: $color.muted;
+    font-size: $text.lg;
+    line-height: $leading.normal;
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: $space.sm;
+    margin-block-start: $space.xl;
+  }
+  .install {
+    max-inline-size: 34rem;
+    margin: $space.xl auto 0;
+    text-align: start;
+  }
+  /* Until a Tabs island runs (it labels the panels role="tabpanel"), show its first panel. */
+  .install :deep(.panels > :not([role]) ~ :not([role])),
+  .code-pair :deep(.panels > :not([role]) ~ :not([role])) {
+    display: none;
+  }
+  .facts {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
+    gap: $space.md;
+    max-inline-size: 60rem;
+    margin: $space.xl auto 0;
+  }
+  .facts li {
+    display: grid;
+    gap: $space.xxs;
+    padding: $space.md $space.lg;
+    border: 1px solid $color.border;
+    border-radius: $radius.lg;
+    background: color-mix(in oklab, $color.surface 80%, transparent);
+    box-shadow: $shadow.sm;
+  }
+  .facts strong {
+    font-size: $text.xxl;
+    letter-spacing: -0.02em;
+    font-variant-numeric: tabular-nums;
+  }
+  .facts span {
+    color: $color.muted;
+    font-size: $text.sm;
+    line-height: $leading.snug;
+  }
+
+  .section {
+    padding-block: $space.xxxl;
+    border-block-start: 1px solid $color.border;
+  }
+  .section h2 {
+    margin-block: $space.xs $space.sm;
+    font-size: $text.xxxl;
+  }
+  .section header p:not(.kicker) {
+    color: $color.muted;
+    font-size: $text.lg;
+  }
+  .section-head {
+    max-inline-size: $layout.prose;
+    margin-block-end: $space.xl;
+  }
+  .split {
+    display: grid;
+    gap: $space.xl;
+    align-items: start;
+  }
+  @media (width >= $bp.lg) {
+    .split {
+      grid-template-columns: minmax(0, 5fr) minmax(0, 6fr);
+      gap: $space.xxl;
+    }
+  }
+  .points {
+    display: grid;
+    gap: $space.sm;
+    margin-block: $space.lg;
+  }
+  .points li {
+    padding-inline-start: $space.md;
+    border-inline-start: 2px solid $color.border;
+    color: $color.muted;
+  }
+  .points strong {
+    color: $color.text;
+  }
+  .more {
+    font-weight: $weight.semibold;
+  }
+  .code-pair {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    min-inline-size: 0;
+  }
+
+  .charts {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(20rem, 1fr));
+    gap: $space.md;
+  }
+  .source {
+    margin-block-start: $space.md;
+    color: $color.subtle;
+    font-size: $text.sm;
+  }
+
+  .cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+    gap: $space.md;
+  }
+  .closing {
+    display: grid;
+    justify-items: center;
+    gap: $space.md;
+    text-align: center;
+  }
+  .closing h2 {
+    margin-block-start: $space.lg;
+  }
+  .closing .actions {
+    margin-block-start: 0;
+  }
+</style>

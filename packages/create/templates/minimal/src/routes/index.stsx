@@ -8,15 +8,16 @@ export default function Home() {
       <p>
         Edit <code>src/routes/index.stsx</code>: pages are files in <code>src/routes</code>.
       </p>
-
-      <style>
-        main {
-          max-width: 40rem;
-          margin: 4rem auto;
-          padding: 0 1rem;
-          font-family: system-ui, sans-serif;
-        }
-      </style>
     </main>
   );
 }
+
+// One <style> block at the end of the file styles every component in this file.
+<style>
+  main {
+    max-width: 40rem;
+    margin: 4rem auto;
+    padding: 0 1rem;
+    font-family: system-ui, sans-serif;
+  }
+</style>

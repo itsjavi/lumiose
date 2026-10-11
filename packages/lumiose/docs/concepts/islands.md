@@ -123,13 +123,13 @@ export function LikeButton({ initial, children }: { initial: number; children?: 
   return (
     <button class="like" onClick={() => likes.update((n) => n + 1)}>
       {children} {likes()}
-
-      <style>
-        .like { border-radius: 999px; }
-      </style>
     </button>
   );
 }
+
+<style>
+  .like { border-radius: 999px; }
+</style>
 ```
 
 ```stsx check file=routes/posts/[id].stsx

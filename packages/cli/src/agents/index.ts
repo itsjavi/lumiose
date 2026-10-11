@@ -43,10 +43,14 @@ docs instead of guessing.
 
 - \`.stsx\` is TSX plus raw-CSS \`<style>\` blocks. Read and edit everything outside \`<style>\` as
   TSX; the inside of a \`<style>\` block is plain CSS, not a string or CSS-in-JS.
-- A block inside a component's JSX is scoped to that component's elements; \`<style global>\` is
-  global. \`$name\` in CSS reads a module-level \`const\` (\`$theme.gap\` for object members).
-- \`<style>\` belongs inside an intrinsic element, not in \`{…}\`, conditionals or \`.map\`
-  (\`LUM3010\`). \`.tsx\` files cannot have \`<style>\` (\`LUM1006\`); \`.ts\` files hold non-UI code.
+- Convention: one top-level \`<style>\` at the end of the file, after the components. It styles
+  every component in the file, so they share it. \`$name\` in CSS reads a top-level \`const\`
+  declared above the block (\`$theme.gap\` for object members). \`<style global>\` is global.
+- Nest a block inside an intrinsic element only to scope that element's subtree or to read a
+  \`const\` declared in the component; never in \`{…}\`, conditionals or \`.map\` (\`LUM3010\`).
+  When moving rules to the file-level block, check that no selector starts matching another
+  component of the file. \`.tsx\` files cannot have \`<style>\` (\`LUM1006\`); \`.ts\` files hold
+  non-UI code.
 - Import with the extension: \`import { Card } from "./Card.stsx";\`.
 
 ### Key rules
@@ -111,8 +115,10 @@ Follow the Lumiose section of \`AGENTS.md\`. This skill is the workflow.
   or call \`redirect()\`.
 - Interactivity in a \`static\`/\`server\` page: an exported component in \`src/components\`, used
   with \`client:load\` or \`client:visible\` and plain-data props.
-- Styles: a \`<style>\` block inside the component's root element (scoped), \`<style global>\` for
-  globals, \`$constant\` for module-level values, \`style={{ "--x": value() }}\` for runtime values.
+- Styles: one \`<style>\` block at the end of the file, shared by its components (scoped to the
+  file); a block nested in an element only to scope its subtree or read a component \`const\`;
+  \`<style global>\` for globals, \`$constant\` for top-level values,
+  \`style={{ "--x": value() }}\` for runtime values.
 - Mode: \`export const mode = "server"\` for request data (cookies, sessions, per-request HTML).
 
 ## 3. Verify

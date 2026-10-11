@@ -9,25 +9,26 @@ export default function Layout(props: LayoutProps<"/">) {
         <a href={href("/about")}>About</a>
       </nav>
       {props.children}
-
-      <style>
-        .app {
-          max-width: 42rem;
-          margin: 0 auto;
-          padding: 1.5rem 1rem;
-        }
-        nav {
-          display: flex;
-          gap: 1rem;
-          margin-bottom: 2rem;
-        }
-      </style>
-      <style global>
-        body {
-          margin: 0;
-          font-family: system-ui, sans-serif;
-        }
-      </style>
     </div>
   );
 }
+
+<style>
+  .app {
+    max-width: 42rem;
+    margin: 0 auto;
+    padding: 1.5rem 1rem;
+  }
+  nav {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 2rem;
+  }
+</style>
+
+<style global>
+  body {
+    margin: 0;
+    font-family: system-ui, sans-serif;
+  }
+</style>

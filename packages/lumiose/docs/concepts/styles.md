@@ -1,31 +1,94 @@
 # Styles
 
-> Write plain CSS in `<style>` blocks in `.stsx` files. Where a block sits decides its scope: the element that encloses it, the file, or the whole app with `<style global>`. CSS reads JS constants as `$name`, inlined at build time, and constant math is precomputed.
+> Write plain CSS in `<style>` blocks in `.stsx` files. By convention, one block at the end of the file styles every component in it. Where a block sits decides its scope: the file, the element that encloses it, or the whole app with `<style global>`. CSS reads JS constants as `$name`, inlined at build time, and constant math is precomputed.
 
 ## Concept
+
+**One block per file, at the end.** The default is a single top-level `<style>` after the
+components. It styles every template in the file, so several components share it, and it reads
+any top-level `const` declared above it. The JSX stays free of CSS, and the file reads like a
+component file with its stylesheet:
+
+```stsx check
+import { signal } from "lumiose";
+
+const accent = "#5546ff";
+const radius = "10px";
+
+export function Counter() {
+  const count = signal(0);
+
+  return (
+    <div class="counter">
+      <button onClick={() => count.update((n) => n + 1)}>{count()}</button>
+      <Reset onReset={() => count.set(0)} />
+    </div>
+  );
+}
+
+export function Reset(props: { onReset: () => void }) {
+  return (
+    <button class="reset" onClick={props.onReset}>
+      Reset
+    </button>
+  );
+}
+
+<style>
+  .counter { display: flex; gap: 0.5rem; }
+  button {
+    padding: 0.5rem 1rem;
+    border: 0;
+    border-radius: $radius;
+    background: $accent;
+    color: white;
+  }
+  .reset { background: transparent; color: $accent; }
+</style>
+```
+
+`Counter` and `Reset` share the block: `button` matches the buttons of both, and of no other file.
 
 **Placement decides scope.**
 
 | Placement                                                                            | Scope                                                                                                                                                                                                                                                                                                                         |
 | ------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| File top level (by convention, one block at the end of the file)                     | Every template in the file.                                                                                                                                                                                                                                                                                                   |
 | Inside a component's JSX, as a child of an intrinsic element or fragment (any depth) | Its **enclosing element and everything written inside it** in that component, including `.map` callbacks and JSX passed as children there. A block directly under the component's root element therefore covers the whole component. Sibling subtrees are not affected, and it never reaches other components' own templates. |
-| File top level (conventionally at the end of the file)                               | Every template in the file.                                                                                                                                                                                                                                                                                                   |
-| `<style global>` (anywhere a block is valid)                                         | The whole app, unscoped. Usually in the root `_layout.stsx`.                                                                                                                                                                                                                                                                  |
+| `<style global>` (anywhere a block is valid)                                         | The whole app, unscoped. Usually at the end of the root `_layout.stsx`.                                                                                                                                                                                                                                                       |
+
+**Nested blocks, for two jobs.** A block inside a component's JSX is still valid. Reach for one
+when the file-level block cannot do the job:
+
+- **Scoping one element's subtree,** so a selector such as `p` or `.note` cannot match anything
+  else in the file.
+- **Reading a constant declared inside a component** (`const gap = 12` in its body). A file-level
+  block only sees top-level constants.
 
 ```stsx
 export function Panel() {
+  const gap = 12;
+
   return (
     <div class="panel">
       <aside class="side">…</aside>                 {/* not styled by the <style> below */}
       <section class="body">
         <p class="note">…</p>
-        <style> .note { color: tomato; } </style>  {/* only this <section> subtree */}
+        <style> p { color: tomato; } </style>      {/* only the <p> of this <section> */}
       </section>
-      <style> .panel { display: grid; } </style>   {/* the whole component */}
+      <style> .panel { gap: calc($gap * 1px); } </style>   {/* reads the component's `gap` */}
     </div>
   );
 }
+
+<style>
+  .panel { display: grid; }
+</style>
 ```
+
+Everything else goes in the file-level block. Moving a block from a component's root to the end
+of the file widens its scope to every component in the file: check that its selectors (bare
+element selectors in particular) do not start matching another component's elements.
 
 **How scoping works.** Each scope with styles gets a token `data-l-<hash>`, a stable hash of the
 file path plus the component name, with one token per style-bearing element. Every element in the
@@ -290,8 +353,8 @@ custom-property folding.
 
 | Syntax                                   | Meaning                                                                                                  |
 | ---------------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| `<style>…</style>` at module top level   | File-scoped CSS, shared by every component of the file. By convention one block, at the end of the file. |
 | `<style>…</style>` in component JSX      | CSS scoped to its enclosing element's subtree (the whole component when placed under the root element).  |
-| `<style>…</style>` at module top level   | File-scoped CSS. Must come after the `const`s it references.                                             |
 | `<style global>…</style>`                | Unscoped, app-wide CSS.                                                                                  |
 | `$name`, `$obj.key`                      | A JS constant, inlined at build time, in property values and `@media`/`@container`/`@supports` preludes. |
 | `calc()`, `min()`, `max()`, `clamp()`, … | Folded at build time when every operand is a concrete value in compatible units.                         |
@@ -306,41 +369,43 @@ const radius = { sm: "4px", lg: "12px" } as const;
 const BREAKPOINT = "40rem";
 
 export function Card(props: { title: string; progress: number; class?: string }) {
-  const gap = 12;
-
   return (
     <article class={["card", props.class]} style={{ "--progress": `${props.progress}%` }}>
       <h2>{props.title}</h2>
       <div class="bar" />
-
-      <style>
-        .card { display: grid; gap: calc($gap * 1px); border-radius: $radius.lg; }
-        .bar { inline-size: var(--progress); block-size: 4px; background: currentColor; }
-        @media (width < $BREAKPOINT) { .card { border-radius: $radius.sm; } }
-      </style>
     </article>
   );
 }
 
-export function Dashboard() {
+export function Dashboard(props: { columns: number }) {
+  const gap = 12;
+
   return (
-    <main>
+    <main class="dashboard" style={{ "--columns": props.columns }}>
       <Card class="featured" title="Uploads" progress={40} />
+      <Card title="Downloads" progress={75} />
 
       <style>
-        .featured { outline: 2px solid gold; }
+        .dashboard { gap: calc($gap * 1px); }
       </style>
     </main>
   );
 }
 
 <style>
-  h2 { margin: 0; }
+  .dashboard { display: grid; grid-template-columns: repeat(var(--columns), 1fr); }
+  .card { display: grid; gap: 0.5rem; border-radius: $radius.lg; }
+  .card h2 { margin: 0; }
+  .bar { inline-size: var(--progress); block-size: 4px; background: currentColor; }
+  .featured { outline: 2px solid gold; }
+  @media (width < $BREAKPOINT) { .card { border-radius: $radius.sm; } }
 </style>
 ```
 
-`.featured` in `Dashboard` reaches the `<article>` inside `Card` through class passthrough; `h2`
-in the file-level block styles every template in the file.
+`Card` and `Dashboard` share the file-level block, which reads the top-level constants. `.featured`
+is set by `Dashboard` and styles the `<article>` inside `Card`: both are in the file's scope (from
+another file, the class would get there through class passthrough). The nested block in
+`Dashboard` is there because it reads `gap`, a constant of the component.
 
 ## Common mistakes
 
@@ -365,11 +430,12 @@ in the file-level block styles every template in the file.
   (`LUM3013`).
 - **`<style>` in a `.tsx` file.** It is a type error in `.tsx` (and `LUM1006` for raw CSS); rename the file to `.stsx`.
 - **Attributes on `<style>`.** Only `global` is allowed (`LUM1005`).
-- **Expecting a parent's styles to reach into children.** Scopes stop at component boundaries;
-  pass `class` (passthrough) or use `:deep()`.
+- **Expecting a parent's styles to reach into children from another file.** A file's blocks
+  never style the templates of components defined in other files; pass `class` (passthrough) or
+  use `:deep()`.
 - **Expecting a nested block to style sibling subtrees.** A `<style>` inside an element only
-  styles that element's subtree. Move it up to the common ancestor, or under the component's root
-  element, to cover more.
+  styles that element's subtree. Move its rules to the file-level block at the end of the file,
+  or the block up to the common ancestor.
 - **Styling JSX returned by a helper function.** In `const field = () => <label class="field">…`
   inside a component, the helper's JSX is not inside the element that holds a nested `<style>`, so
   `.field` matches nothing there (`LUM3005`). Move the block to the top level of the file (it

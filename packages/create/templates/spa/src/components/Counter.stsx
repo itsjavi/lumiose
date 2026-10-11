@@ -6,15 +6,16 @@ export function Counter(props: { start?: number }) {
   return (
     <button class={{ counter: true, hot: count() >= 5 }} onClick={() => count.update((n) => n + 1)}>
       Clicked {count()} times
-      <style>
-        .counter {
-          font: inherit;
-          padding: 0.5rem 1rem;
-        }
-        .hot {
-          color: crimson;
-        }
-      </style>
     </button>
   );
 }
+
+<style>
+  .counter {
+    font: inherit;
+    padding: 0.5rem 1rem;
+  }
+  .hot {
+    color: crimson;
+  }
+</style>

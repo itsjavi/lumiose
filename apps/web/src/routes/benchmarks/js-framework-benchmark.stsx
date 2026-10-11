@@ -40,47 +40,47 @@ export default function JsFrameworkBenchmark() {
         </p>
       </PageHead>
       <div class="results" innerHTML={html} />
-
-      <style>
-        .page {
-          max-inline-size: $layout.page;
-          margin-inline: auto;
-          padding: $space.xl $layout.gutter $space.xxl;
-        }
-        .actions {
-          display: flex;
-          gap: $space.xs;
-        }
-        .results {
-          max-inline-size: 100%;
-          overflow-x: auto;
-        }
-        .results :deep(table) {
-          border-collapse: collapse;
-          font-size: $text.sm;
-          font-variant-numeric: tabular-nums;
-          margin-block: $space.md;
-        }
-        .results :deep(:is(th, td)) {
-          padding: $space.xxs $space.xs;
-          border-block-end: 1px solid $color.border;
-          white-space: nowrap;
-        }
-        .results :deep(code) {
-          font-family: $font.mono;
-          font-size: 0.9em;
-        }
-        .results :deep(:is(p, li)) {
-          max-inline-size: 46rem;
-          color: $color.muted;
-        }
-        .results :deep(pre) {
-          padding: $space.sm;
-          border-radius: $radius.md;
-          background: $color.sunken;
-          overflow-x: auto;
-        }
-      </style>
     </div>
   );
 }
+
+<style>
+  .page {
+    max-inline-size: $layout.page;
+    margin-inline: auto;
+    padding: $space.xl $layout.gutter $space.xxl;
+  }
+  .actions {
+    display: flex;
+    gap: $space.xs;
+  }
+  .results {
+    max-inline-size: 100%;
+    overflow-x: auto;
+  }
+  .results :deep(table) {
+    border-collapse: collapse;
+    font-size: $text.sm;
+    font-variant-numeric: tabular-nums;
+    margin-block: $space.md;
+  }
+  .results :deep(:is(th, td)) {
+    padding: $space.xxs $space.xs;
+    border-block-end: 1px solid $color.border;
+    white-space: nowrap;
+  }
+  .results :deep(code) {
+    font-family: $font.mono;
+    font-size: 0.9em;
+  }
+  .results :deep(:is(p, li)) {
+    max-inline-size: 46rem;
+    color: $color.muted;
+  }
+  .results :deep(pre) {
+    padding: $space.sm;
+    border-radius: $radius.md;
+    background: $color.sunken;
+    overflow-x: auto;
+  }
+</style>

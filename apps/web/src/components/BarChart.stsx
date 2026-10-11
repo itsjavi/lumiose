@@ -39,65 +39,65 @@ export function BarChart(props: BarChartProps) {
           </li>
         ))}
       </ol>
-
-      <style>
-        .chart {
-          display: grid;
-          gap: $space.sm;
-          padding: $space.lg;
-          border: 1px solid $color.border;
-          border-radius: $radius.lg;
-          background: $color.surface;
-        }
-        figcaption {
-          display: grid;
-          gap: 0.15rem;
-        }
-        figcaption span {
-          color: $color.muted;
-          font-size: $text.sm;
-        }
-        ol {
-          display: grid;
-          gap: $space.xs;
-        }
-        li {
-          display: grid;
-          grid-template-columns: 6.5rem 1fr 4.5rem;
-          align-items: center;
-          gap: $space.sm;
-          font-size: $text.sm;
-        }
-        .label {
-          color: $color.muted;
-        }
-        .self .label,
-        .self .value {
-          color: $color.text;
-          font-weight: $weight.semibold;
-        }
-        .track {
-          block-size: 0.6rem;
-          border-radius: $radius.pill;
-          background: $color.sunken;
-          overflow: hidden;
-        }
-        .bar {
-          display: block;
-          inline-size: var(--size);
-          block-size: 100%;
-          border-radius: inherit;
-          background: $color.borderStrong;
-        }
-        .self .bar {
-          background: linear-gradient(90deg, $color.glowA, $color.glowB);
-        }
-        .value {
-          font-family: $font.mono;
-          font-variant-numeric: tabular-nums;
-          text-align: end;
-        }
-      </style>
     </figure>
   );
 }
+
+<style>
+  .chart {
+    display: grid;
+    gap: $space.sm;
+    padding: $space.lg;
+    border: 1px solid $color.border;
+    border-radius: $radius.lg;
+    background: $color.surface;
+  }
+  figcaption {
+    display: grid;
+    gap: 0.15rem;
+  }
+  figcaption span {
+    color: $color.muted;
+    font-size: $text.sm;
+  }
+  ol {
+    display: grid;
+    gap: $space.xs;
+  }
+  li {
+    display: grid;
+    grid-template-columns: 6.5rem 1fr 4.5rem;
+    align-items: center;
+    gap: $space.sm;
+    font-size: $text.sm;
+  }
+  .label {
+    color: $color.muted;
+  }
+  .self .label,
+  .self .value {
+    color: $color.text;
+    font-weight: $weight.semibold;
+  }
+  .track {
+    block-size: 0.6rem;
+    border-radius: $radius.pill;
+    background: $color.sunken;
+    overflow: hidden;
+  }
+  .bar {
+    display: block;
+    inline-size: var(--size);
+    block-size: 100%;
+    border-radius: inherit;
+    background: $color.borderStrong;
+  }
+  .self .bar {
+    background: linear-gradient(90deg, $color.glowA, $color.glowB);
+  }
+  .value {
+    font-family: $font.mono;
+    font-variant-numeric: tabular-nums;
+    text-align: end;
+  }
+</style>

@@ -66,113 +66,113 @@ export default function DocsLayout(props: LayoutProps<"/docs">) {
         </details>
       </aside>
       <div class="page">{props.children}</div>
-
-      <style>
-        .docs {
-          display: grid;
-          gap: $space.lg;
-          max-inline-size: $layout.page;
-          margin-inline: auto;
-          padding: $space.lg $layout.gutter $space.xxl;
-        }
-        @media (width >= $bp.lg) {
-          .docs {
-            grid-template-columns: 15rem minmax(0, 1fr);
-            gap: $space.xl;
-          }
-          /* The navigation scrolls on its own, below the search box, whose results may overlap
-             the page. */
-          .side {
-            position: sticky;
-            inset-block-start: calc($layout.header + $space.md);
-            align-self: start;
-            z-index: 2;
-          }
-          nav {
-            max-block-size: calc(100dvh - $layout.header - 6rem);
-            overflow-y: auto;
-            overscroll-behavior: contain;
-            padding-inline-end: $space.xs;
-          }
-          /* The disclosure is always open on wide screens. */
-          .menu > summary {
-            display: none;
-          }
-          .menu::details-content {
-            content-visibility: visible;
-          }
-        }
-        .side {
-          display: grid;
-          gap: $space.md;
-          align-content: start;
-          min-inline-size: 0;
-        }
-        .menu > summary {
-          padding: $space.xs $space.sm;
-          border: 1px solid $color.border;
-          border-radius: $radius.md;
-          background: $color.surface;
-          font-weight: $weight.semibold;
-          cursor: pointer;
-        }
-        nav {
-          display: grid;
-          gap: $space.lg;
-          padding-block: $space.sm;
-        }
-        .heading,
-        .group > summary {
-          margin-block-end: $space.xs;
-          color: $color.text;
-          font-size: $text.xs;
-          font-weight: $weight.semibold;
-          letter-spacing: 0.06em;
-          text-transform: uppercase;
-        }
-        .group > summary {
-          cursor: pointer;
-        }
-        ul {
-          display: grid;
-          gap: 1px;
-        }
-        a {
-          display: block;
-          padding: 0.3rem $space.sm;
-          border-radius: $radius.sm;
-          color: $color.muted;
-          font-size: $text.sm;
-          line-height: 1.35;
-          text-decoration: none;
-        }
-        a:hover {
-          background: $color.sunken;
-          color: $color.text;
-        }
-        a[aria-current="page"] {
-          background: $color.accentSoft;
-          color: $color.accentText;
-          font-weight: $weight.semibold;
-        }
-        .codes {
-          grid-template-columns: repeat(2, minmax(0, 1fr));
-        }
-        .codes a {
-          font-family: $font.mono;
-          font-size: $text.xs;
-        }
-        .codes li:first-child {
-          grid-column: 1 / -1;
-        }
-        .codes li:first-child a {
-          font-family: inherit;
-          font-size: $text.sm;
-        }
-        .page {
-          min-inline-size: 0;
-        }
-      </style>
     </div>
   );
 }
+
+<style>
+  .docs {
+    display: grid;
+    gap: $space.lg;
+    max-inline-size: $layout.page;
+    margin-inline: auto;
+    padding: $space.lg $layout.gutter $space.xxl;
+  }
+  @media (width >= $bp.lg) {
+    .docs {
+      grid-template-columns: 15rem minmax(0, 1fr);
+      gap: $space.xl;
+    }
+    /* The navigation scrolls on its own, below the search box, whose results may overlap
+       the page. */
+    .side {
+      position: sticky;
+      inset-block-start: calc($layout.header + $space.md);
+      align-self: start;
+      z-index: 2;
+    }
+    nav {
+      max-block-size: calc(100dvh - $layout.header - 6rem);
+      overflow-y: auto;
+      overscroll-behavior: contain;
+      padding-inline-end: $space.xs;
+    }
+    /* The disclosure is always open on wide screens. */
+    .menu > summary {
+      display: none;
+    }
+    .menu::details-content {
+      content-visibility: visible;
+    }
+  }
+  .side {
+    display: grid;
+    gap: $space.md;
+    align-content: start;
+    min-inline-size: 0;
+  }
+  .menu > summary {
+    padding: $space.xs $space.sm;
+    border: 1px solid $color.border;
+    border-radius: $radius.md;
+    background: $color.surface;
+    font-weight: $weight.semibold;
+    cursor: pointer;
+  }
+  nav {
+    display: grid;
+    gap: $space.lg;
+    padding-block: $space.sm;
+  }
+  .heading,
+  .group > summary {
+    margin-block-end: $space.xs;
+    color: $color.text;
+    font-size: $text.xs;
+    font-weight: $weight.semibold;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+  .group > summary {
+    cursor: pointer;
+  }
+  ul {
+    display: grid;
+    gap: 1px;
+  }
+  a {
+    display: block;
+    padding: 0.3rem $space.sm;
+    border-radius: $radius.sm;
+    color: $color.muted;
+    font-size: $text.sm;
+    line-height: 1.35;
+    text-decoration: none;
+  }
+  a:hover {
+    background: $color.sunken;
+    color: $color.text;
+  }
+  a[aria-current="page"] {
+    background: $color.accentSoft;
+    color: $color.accentText;
+    font-weight: $weight.semibold;
+  }
+  .codes {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .codes a {
+    font-family: $font.mono;
+    font-size: $text.xs;
+  }
+  .codes li:first-child {
+    grid-column: 1 / -1;
+  }
+  .codes li:first-child a {
+    font-family: inherit;
+    font-size: $text.sm;
+  }
+  .page {
+    min-inline-size: 0;
+  }
+</style>

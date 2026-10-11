@@ -101,18 +101,20 @@ export function Counter({ start = 0 }: { start?: number }) {
   return (
     <button class={{ hot: count() > 5 }} onClick={() => count.update((n) => n + 1)}>
       Clicked {count()} times
-
-      <style>
-        button { font: inherit; padding: 0.5rem 1rem; }
-        .hot { color: crimson; }
-      </style>
     </button>
   );
 }
+
+<style>
+  button { font: inherit; padding: 0.5rem 1rem; }
+  .hot { color: crimson; }
+</style>
 ```
 
 - The function body runs **once**. `count()` reads the signal; JSX that reads it updates on its own.
-- `<style>` inside the component's JSX is scoped to that component's elements.
+- The `<style>` block at the end of the file is scoped to this file: it styles the components
+  defined here, and nothing else. One block per file, after the components, is the convention;
+  [Styles](./concepts/styles.md) covers blocks nested in JSX.
 
 ## 5. Mount it
 

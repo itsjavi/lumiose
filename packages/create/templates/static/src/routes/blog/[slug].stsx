@@ -16,12 +16,12 @@ export default function BlogPost() {
       <h1>{post.title}</h1>
       <time>{post.date}</time>
       <p>{post.body}</p>
-
-      <style>
-        time {
-          color: #666;
-        }
-      </style>
     </article>
   );
 }
+
+<style>
+  time {
+    color: #666;
+  }
+</style>

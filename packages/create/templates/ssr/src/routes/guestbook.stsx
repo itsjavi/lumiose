@@ -47,25 +47,25 @@ export default function Guestbook() {
           </li>
         ))}
       </ul>
-
-      <style>
-        form {
-          display: grid;
-          gap: 0.25rem;
-          max-width: 24rem;
-        }
-        label {
-          display: grid;
-        }
-        .error {
-          margin: 0;
-          color: crimson;
-        }
-        .entries {
-          padding: 0;
-          list-style: none;
-        }
-      </style>
     </main>
   );
 }
+
+<style>
+  form {
+    display: grid;
+    gap: 0.25rem;
+    max-width: 24rem;
+  }
+  label {
+    display: grid;
+  }
+  .error {
+    margin: 0;
+    color: crimson;
+  }
+  .entries {
+    padding: 0;
+    list-style: none;
+  }
+</style>

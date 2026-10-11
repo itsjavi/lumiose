@@ -130,103 +130,103 @@ export function DocsSearch(props: { index: string }) {
           {status()}
         </p>
       </div>
-
-      <style>
-        .search {
-          position: relative;
-        }
-        .icon {
-          position: absolute;
-          inset-inline-start: 0.7rem;
-          inset-block-start: 50%;
-          inline-size: 1rem;
-          block-size: 1rem;
-          translate: 0 -50%;
-          fill: none;
-          stroke: $color.subtle;
-          stroke-width: 2;
-          stroke-linecap: round;
-          pointer-events: none;
-        }
-        input {
-          inline-size: 100%;
-          padding: 0.5rem 2.2rem 0.5rem 2.1rem;
-          border: 1px solid $color.border;
-          border-radius: $radius.md;
-          background: $color.surface;
-          font-size: $text.sm;
-        }
-        input:focus-visible {
-          outline: none;
-          border-color: $color.accent;
-          box-shadow: 0 0 0 3px $color.accentSoft;
-        }
-        input::-webkit-search-cancel-button {
-          display: none;
-        }
-        .key {
-          position: absolute;
-          inset-inline-end: 0.6rem;
-          inset-block-start: 50%;
-          translate: 0 -50%;
-          color: $color.subtle;
-          font-size: $text.xs;
-          pointer-events: none;
-        }
-        .panel {
-          position: absolute;
-          z-index: 30;
-          inset-inline-start: 0;
-          inset-block-start: calc(100% + $space.xs);
-          inline-size: min(26rem, calc(100vw - 2rem));
-          max-block-size: 70vh;
-          overflow-y: auto;
-          padding: $space.xxs;
-          border: 1px solid $color.border;
-          border-radius: $radius.md;
-          background: $color.surface;
-          box-shadow: $shadow.lg;
-        }
-        ul {
-          margin: 0;
-          padding: 0;
-          list-style: none;
-        }
-        li a {
-          display: grid;
-          gap: 0.1rem;
-          padding: $space.xs $space.sm;
-          border-radius: $radius.sm;
-          color: inherit;
-          text-decoration: none;
-        }
-        li a strong {
-          font-weight: $weight.semibold;
-        }
-        .where,
-        .snippet,
-        .status {
-          color: $color.muted;
-          font-size: $text.xs;
-        }
-        .where {
-          color: $color.accentText;
-        }
-        .snippet {
-          display: -webkit-box;
-          -webkit-line-clamp: 2;
-          -webkit-box-orient: vertical;
-          overflow: hidden;
-          font-family: $font.mono;
-        }
-        .status {
-          padding: $space.xs $space.sm;
-        }
-        li[aria-selected="true"] a,
-        li a:hover {
-          background: $color.accentSoft;
-        }
-      </style>
     </div>
   );
 }
+
+<style>
+  .search {
+    position: relative;
+  }
+  .icon {
+    position: absolute;
+    inset-inline-start: 0.7rem;
+    inset-block-start: 50%;
+    inline-size: 1rem;
+    block-size: 1rem;
+    translate: 0 -50%;
+    fill: none;
+    stroke: $color.subtle;
+    stroke-width: 2;
+    stroke-linecap: round;
+    pointer-events: none;
+  }
+  input {
+    inline-size: 100%;
+    padding: 0.5rem 2.2rem 0.5rem 2.1rem;
+    border: 1px solid $color.border;
+    border-radius: $radius.md;
+    background: $color.surface;
+    font-size: $text.sm;
+  }
+  input:focus-visible {
+    outline: none;
+    border-color: $color.accent;
+    box-shadow: 0 0 0 3px $color.accentSoft;
+  }
+  input::-webkit-search-cancel-button {
+    display: none;
+  }
+  .key {
+    position: absolute;
+    inset-inline-end: 0.6rem;
+    inset-block-start: 50%;
+    translate: 0 -50%;
+    color: $color.subtle;
+    font-size: $text.xs;
+    pointer-events: none;
+  }
+  .panel {
+    position: absolute;
+    z-index: 30;
+    inset-inline-start: 0;
+    inset-block-start: calc(100% + $space.xs);
+    inline-size: min(26rem, calc(100vw - 2rem));
+    max-block-size: 70vh;
+    overflow-y: auto;
+    padding: $space.xxs;
+    border: 1px solid $color.border;
+    border-radius: $radius.md;
+    background: $color.surface;
+    box-shadow: $shadow.lg;
+  }
+  ul {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  li a {
+    display: grid;
+    gap: 0.1rem;
+    padding: $space.xs $space.sm;
+    border-radius: $radius.sm;
+    color: inherit;
+    text-decoration: none;
+  }
+  li a strong {
+    font-weight: $weight.semibold;
+  }
+  .where,
+  .snippet,
+  .status {
+    color: $color.muted;
+    font-size: $text.xs;
+  }
+  .where {
+    color: $color.accentText;
+  }
+  .snippet {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    font-family: $font.mono;
+  }
+  .status {
+    padding: $space.xs $space.sm;
+  }
+  li[aria-selected="true"] a,
+  li a:hover {
+    background: $color.accentSoft;
+  }
+</style>

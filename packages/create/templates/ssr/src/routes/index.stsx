@@ -16,12 +16,12 @@ export default function Home() {
       <Suspense fallback={<p class="count">Counting entries…</p>}>
         <GuestCount />
       </Suspense>
-
-      <style>
-        .count {
-          color: #555;
-        }
-      </style>
     </main>
   );
 }
+
+<style>
+  .count {
+    color: #555;
+  }
+</style>

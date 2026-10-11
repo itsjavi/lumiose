@@ -23,19 +23,19 @@ export default function PlaygroundPage() {
           MIT licensed. The playground compiles in your browser with Lumiose's WebAssembly build.
         </p>
       </Footer>
-
-      <style>
-        .page {
-          display: flex;
-          flex-direction: column;
-          min-block-size: 100dvh;
-        }
-        main {
-          flex: 1;
-          display: flex;
-          flex-direction: column;
-        }
-      </style>
     </div>
   );
 }
+
+<style>
+  .page {
+    display: flex;
+    flex-direction: column;
+    min-block-size: 100dvh;
+  }
+  main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+  }
+</style>

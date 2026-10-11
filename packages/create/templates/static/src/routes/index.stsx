@@ -14,17 +14,17 @@ export default function Home() {
           </li>
         ))}
       </ul>
-
-      <style>
-        .posts {
-          padding: 0;
-          list-style: none;
-        }
-        time {
-          margin-left: 0.5rem;
-          color: #666;
-        }
-      </style>
     </main>
   );
 }
+
+<style>
+  .posts {
+    padding: 0;
+    list-style: none;
+  }
+  time {
+    margin-left: 0.5rem;
+    color: #666;
+  }
+</style>

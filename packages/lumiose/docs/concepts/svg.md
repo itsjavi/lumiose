@@ -106,19 +106,20 @@ export function Nav() {
       <button type="button">
         <Search class="icon" title="Search" />
       </button>
-      <style>
-        .link { color: rebeccapurple; }
-        .icon { width: 1.25em; height: 1.25em; vertical-align: -0.2em; }
-        .link:hover .icon { color: crimson; }
-      </style>
     </nav>
   );
 }
+
+<style>
+  .link { color: rebeccapurple; }
+  .icon { width: 1.25em; height: 1.25em; vertical-align: -0.2em; }
+  .link:hover .icon { color: crimson; }
+</style>
 ```
 
 The `Home` icon is decorative (its link has text); the search button has no text, so its icon
 gets a `title`. Both follow the link or button colour through `currentColor`, and `class="icon"`
-receives the component's scope, so the scoped `.icon` rule applies.
+receives the file's scope, so the scoped `.icon` rule applies.
 
 ## Common mistakes
 

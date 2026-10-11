@@ -130,13 +130,13 @@ export default function Layout(props: LayoutProps<"/">) {
         <a href={href("/blog/[slug]", { slug: "hello-world" })}>First post</a>
       </nav>
       {props.children}
-
-      <style global>
-        body { margin: 0; font-family: system-ui, sans-serif; }
-      </style>
     </div>
   );
 }
+
+<style global>
+  body { margin: 0; font-family: system-ui, sans-serif; }
+</style>
 ```
 
 ```stsx check file=routes/blog/[slug].stsx

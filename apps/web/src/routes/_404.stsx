@@ -16,31 +16,31 @@ export default function NotFound() {
           Home
         </LinkButton>
       </div>
-
-      <style>
-        .missing {
-          display: grid;
-          justify-items: center;
-          gap: $space.sm;
-          max-inline-size: $layout.prose;
-          margin-inline: auto;
-          padding: $space.xxxl $layout.gutter;
-          text-align: center;
-        }
-        .code {
-          color: $color.accentText;
-          font-size: $text.xxxl;
-          font-weight: 700;
-        }
-        p {
-          color: $color.muted;
-        }
-        .actions {
-          display: flex;
-          gap: $space.sm;
-          margin-block-start: $space.md;
-        }
-      </style>
     </section>
   );
 }
+
+<style>
+  .missing {
+    display: grid;
+    justify-items: center;
+    gap: $space.sm;
+    max-inline-size: $layout.prose;
+    margin-inline: auto;
+    padding: $space.xxxl $layout.gutter;
+    text-align: center;
+  }
+  .code {
+    color: $color.accentText;
+    font-size: $text.xxxl;
+    font-weight: 700;
+  }
+  p {
+    color: $color.muted;
+  }
+  .actions {
+    display: flex;
+    gap: $space.sm;
+    margin-block-start: $space.md;
+  }
+</style>
