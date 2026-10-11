@@ -24,8 +24,13 @@ const PAGES = [
 /** Waits for the islands a page hydrates on load, so axe sees their final markup. */
 async function settle(page: Page) {
   await page.waitForLoadState("networkidle");
-  if (new URL(page.url()).pathname.startsWith("/playground")) {
-    await expect(page.getByRole("status")).toContainText("Compiled with lumiose_wasm", {
+  const path = new URL(page.url()).pathname;
+  if (path === "/") {
+    // The live demo hydrates when visible: check it live (the static stand-in is checked below).
+    await page.locator(".live-demo").scrollIntoViewIfNeeded();
+  }
+  if (path === "/" || path.startsWith("/playground")) {
+    await expect(page.locator(".playground .status")).toContainText("Compiled with lumiose_wasm", {
       timeout: 20_000,
     });
   }
@@ -88,6 +93,23 @@ for (const scheme of ["light", "dark"] as const) {
       expect(describe(results.violations)).toEqual([]);
     });
   }
+}
+
+for (const scheme of ["light", "dark"] as const) {
+  test(`axe: landing with the demo's static stand-in (${scheme}) has no WCAG 2.2 AA violations`, async ({
+    page,
+  }) => {
+    // Before the live demo scrolls into view it shows what a visitor without JavaScript gets.
+    await page.emulateMedia({ colorScheme: scheme });
+    await page.goto("/");
+    await page.waitForLoadState("networkidle");
+    await expect(page.locator(".live-demo").getByText("You write")).toBeAttached();
+    const results = await new AxeBuilder({ page })
+      .include(".live-demo")
+      .withTags(WCAG_AA)
+      .analyze();
+    expect(describe(results.violations)).toEqual([]);
+  });
 }
 
 /**
@@ -181,7 +203,11 @@ test("keyboard focus is visible and not hidden by the sticky header", async ({ p
       await page.keyboard.press("Tab");
       // 2.4.7: focusing changes how the element or a near ancestor looks (outline, ring, border,
       // background), e.g. a card around a stretched link. Compared with the element blurred.
-      const focus = await page.evaluate(() => {
+      const focus = await page.evaluate(async () => {
+        // Some widgets (CodeMirror) restyle on focus a frame later.
+        // oxlint-disable-next-line unicorn/consistent-function-scoping -- runs in the page
+        const frames = () =>
+          new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
         const element = document.activeElement as HTMLElement | null;
         if (element === null || element === document.body) return null;
         const chain = [element];
@@ -204,10 +230,13 @@ test("keyboard focus is visible and not hidden by the sticky header", async ({ p
               ].join("|");
             })
             .join("\n");
+        await frames();
         const focused = look();
         element.blur();
+        await frames();
         const blurred = look();
         element.focus();
+        await frames();
         const box = element.getBoundingClientRect();
         return {
           label: `${element.tagName.toLowerCase()} "${element.textContent?.trim().slice(0, 30)}"`,

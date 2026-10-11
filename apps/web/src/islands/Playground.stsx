@@ -6,6 +6,9 @@
 // On /playground it keeps the state in the URL hash (shareable links) and offers the sample menu.
 // `embedded` drops both, for pages that embed the editor with their own `code` (the landing's live
 // demo, TASK-211). One instance per page: the tabs and panels use fixed ids.
+//
+// `children` is a static stand-in (a slot, server-rendered): it shows until the compiler is ready,
+// and is all a visitor without JavaScript sees. Without children the editor shows at once.
 import { bp, color, font, radius, space, text, weight } from "@lumiose/site-kit/tokens";
 import { onMount, signal } from "lumiose";
 import type { EditorView } from "@codemirror/view";
@@ -58,6 +61,8 @@ export interface PlaygroundProps {
   code?: string;
   /** Embedded in another page: no sample menu, no share link, no state in the URL. */
   embedded?: boolean;
+  /** Shown instead of the editor until the compiler is ready, and without JavaScript. */
+  children?: JSX.Element;
 }
 
 export function Playground(props: PlaygroundProps) {
@@ -71,6 +76,8 @@ export function Playground(props: PlaygroundProps) {
   const logs = signal<LogEntry[]>([]);
   const copied = signal(false);
   const stale = signal(false);
+  /** The live editor replaces the static stand-in once it can compile. */
+  const live = () => props.children === undefined || status() === "ready";
 
   let editorHost: HTMLDivElement | undefined;
   let clientHost: HTMLDivElement | undefined;
@@ -261,35 +268,42 @@ export function Playground(props: PlaygroundProps) {
   });
 
   return (
-    <div class="playground">
-      <div class="toolbar">
-        {!props.embedded && (
-          <label class="sample">
-            <span>Sample</span>
-            <select onChange={(event) => loadSample((event.target as HTMLSelectElement).value)}>
-              {samples.map((sample) => (
-                <option value={sample.id}>{sample.label}</option>
-              ))}
-            </select>
-          </label>
-        )}
-        <p class="status" role="status">
-          {status() === "loading"
-            ? "Loading the compiler…"
-            : status() === "failed"
-              ? `The compiler could not load: ${failure()}`
-              : errors() > 0
-                ? `${errors()} error${errors() === 1 ? "" : "s"}`
-                : `Compiled with lumiose_wasm ${version()}`}
-        </p>
-        {!props.embedded && (
-          <button type="button" class="share" onClick={() => void share()}>
-            {copied() ? "Link copied" : "Copy link"}
-          </button>
-        )}
-      </div>
+    <div class={{ playground: true, embedded: props.embedded === true }}>
+      {props.children !== undefined && (
+        <div class="stand-in" hidden={live()}>
+          {props.children}
+        </div>
+      )}
+      {(live() || status() === "failed") && (
+        <div class="toolbar">
+          {!props.embedded && (
+            <label class="sample">
+              <span>Sample</span>
+              <select onChange={(event) => loadSample((event.target as HTMLSelectElement).value)}>
+                {samples.map((sample) => (
+                  <option value={sample.id}>{sample.label}</option>
+                ))}
+              </select>
+            </label>
+          )}
+          <p class="status" role="status">
+            {status() === "loading"
+              ? "Loading the compiler…"
+              : status() === "failed"
+                ? `The compiler could not load: ${failure()}`
+                : errors() > 0
+                  ? `${errors()} error${errors() === 1 ? "" : "s"}`
+                  : `Compiled with lumiose_wasm ${version()}`}
+          </p>
+          {!props.embedded && (
+            <button type="button" class="share" onClick={() => void share()}>
+              {copied() ? "Link copied" : "Copy link"}
+            </button>
+          )}
+        </div>
+      )}
 
-      <div class="panes">
+      <div class="panes" hidden={!live()}>
         <section class="pane editor-pane" aria-label="Editor">
           <div class="pane-head">
             <span class="file">App.stsx</span>
@@ -626,6 +640,16 @@ export function Playground(props: PlaygroundProps) {
       grid-template-rows: minmax(24rem, 1fr) minmax(24rem, 1fr);
       block-size: auto;
     }
+  }
+  /* Embedded in a page column: the editor above the output, at fixed heights. */
+  .playground.embedded {
+    padding: 0;
+  }
+  .embedded .panes {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: 24rem 18rem;
+    block-size: auto;
+    min-block-size: 0;
   }
   @media (width < $bp.sm) {
     .playground {

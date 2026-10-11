@@ -19,8 +19,9 @@ node e2e/serve.ts 5194 /=.lumiose/e2e/root /lumiose/=.lumiose/e2e/base
 ## Accessibility: WCAG 2.2 AA
 
 Every page meets WCAG 2.2 AA (decision-39). `e2e/a11y.e2e.ts` checks it in the light and the dark
-theme on each page type: the landing, a docs page, the docs and diagnostics indexes, a diagnostic
-page, the benchmarks, a benchmark report, the showcase with the demos, the playground and the 404.
+theme on each page type: the landing (its live demo, and the static stand-in that visitors without
+JavaScript see), a docs page, the docs and diagnostics indexes, a diagnostic page, the benchmarks,
+a benchmark report, the showcase with the demos, the playground and the 404.
 
 - **axe** fails on any violation tagged `wcag2a`, `wcag2aa`, `wcag21a`, `wcag21aa` or `wcag22aa`.
 - **Needs review.** Axe cannot compute contrast over a gradient or a pseudo-element, so it reports

@@ -56,7 +56,8 @@ const theme = EditorView.theme({
     backgroundColor: "var(--lm-code-bg)",
     fontSize: "0.875rem",
   },
-  "&.cm-focused": { outline: "none" },
+  // The site's focus ring, inset because the panes clip their overflow (WCAG 2.4.7).
+  "&.cm-focused": { outline: "2px solid var(--lm-accent)", outlineOffset: "-2px" },
   ".cm-scroller": {
     fontFamily:
       'ui-monospace, "JetBrains Mono", "SF Mono", Menlo, Consolas, "Liberation Mono", monospace',

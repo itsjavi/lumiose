@@ -19,6 +19,7 @@ import {
 import { href, Meta, Title } from "lumiose";
 import { BarChart } from "../components/BarChart.stsx";
 import { ShowcaseGrid } from "../components/Showcase.stsx";
+import { Playground } from "../islands/Playground.stsx";
 import { demos, showcase } from "../content/showcase.ts";
 import { evidence } from "../content/evidence.ts";
 import {
@@ -38,6 +39,41 @@ function Icon(props: { path: string }) {
     <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" class="icon">
       <path d={props.path} />
     </svg>
+  );
+}
+
+interface StaticTab {
+  label: string;
+  title: string;
+  lang: string;
+  code: string;
+}
+
+/** Tabs that work without JavaScript: radio buttons pick the panel shown (CSS `:checked`). */
+function StaticTabs(props: { name: string; label: string; items: StaticTab[] }) {
+  return (
+    <div class="static-tabs">
+      <fieldset class="choices">
+        <legend class="visually-hidden">{props.label}</legend>
+        {props.items.map((item, i) => (
+          <label>
+            <input type="radio" name={props.name} value={String(i)} checked={i === 0} />
+            <span>{item.label}</span>
+          </label>
+        ))}
+      </fieldset>
+      <div class="static-panels">
+        {props.items.map((item) => (
+          <CodeBlock
+            code={item.code}
+            lang={item.lang}
+            title={item.title}
+            highlight={highlight}
+            copy={false}
+          />
+        ))}
+      </div>
+    </div>
   );
 }
 
@@ -116,7 +152,8 @@ export default function Home() {
           <h2 id="stsx-title">TSX and CSS, compiled together</h2>
           <p>
             A <code>.stsx</code> file is TSX with <code>&lt;style&gt;</code> blocks of plain CSS. The
-            compiler turns both into the smallest thing that does the job.
+            compiler turns both into the smallest thing that does the job. Edit the sample: it
+            compiles in your browser.
           </p>
           <ul class="points" role="list">
             <li>
@@ -141,12 +178,20 @@ export default function Home() {
             How styles work →
           </a>
         </header>
-        <div class="code-pair">
-          <Tabs client:visible id="counter" label="Counter.stsx" labels={["You write", "JS output", "CSS output"]}>
-            <CodeBlock code={counterSource} lang="stsx" title="Counter.stsx" highlight={highlight} />
-            <CodeBlock code={counterOutput} lang="js" title="Counter.js" highlight={highlight} />
-            <CodeBlock code={counterCss} lang="css" title="Counter.css" highlight={highlight} />
-          </Tabs>
+        <div class="code-pair live-demo">
+          {/* The live editor loads (compiler, WebAssembly) when it scrolls into view; until then,
+              and without JavaScript, the sample and its output show as static tabs. */}
+          <Playground client:visible embedded code={counterSource}>
+            <StaticTabs
+              name="counter-view"
+              label="Counter sample"
+              items={[
+                { label: "You write", title: "App.stsx", lang: "stsx", code: counterSource },
+                { label: "JS output", title: "App.js", lang: "js", code: counterOutput },
+                { label: "CSS output", title: "App.css", lang: "css", code: counterCss },
+              ]}
+            />
+          </Playground>
         </div>
       </section>
 
@@ -371,9 +416,64 @@ export default function Home() {
     text-align: start;
   }
   /* Until a Tabs island runs (it labels the panels role="tabpanel"), show its first panel. */
-  .install :deep(.panels > :not([role]) ~ :not([role])),
-  .code-pair :deep(.panels > :not([role]) ~ :not([role])) {
+  .install :deep(.panels > :not([role]) ~ :not([role])) {
     display: none;
+  }
+
+  /* StaticTabs: the label of each radio button is a tab; the checked one shows its panel. */
+  .choices {
+    display: flex;
+    gap: $space.xxs;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    border-block-end: 1px solid $color.border;
+  }
+  .choices label {
+    position: relative;
+    padding: $space.xs $space.md;
+    border-radius: $radius.sm $radius.sm 0 0;
+    color: $color.muted;
+    font-size: $text.sm;
+    font-weight: $weight.medium;
+    cursor: pointer;
+  }
+  .choices label:hover {
+    color: $color.text;
+  }
+  .choices label:has(:checked) {
+    color: $color.text;
+    box-shadow: inset 0 -2px 0 $color.accent;
+  }
+  .choices label:has(:focus-visible) {
+    outline: 2px solid $color.accent;
+    outline-offset: 2px;
+  }
+  .choices input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+  }
+  .static-panels > :global(*) {
+    display: none;
+  }
+  /* About the live editor's height, so the swap barely moves the page. */
+  .static-panels :global(pre) {
+    max-block-size: 38rem;
+    overflow: auto;
+  }
+  .static-tabs:has(label:nth-of-type(1) :checked) .static-panels > :global(:nth-child(1)),
+  .static-tabs:has(label:nth-of-type(2) :checked) .static-panels > :global(:nth-child(2)),
+  .static-tabs:has(label:nth-of-type(3) :checked) .static-panels > :global(:nth-child(3)) {
+    display: block;
+  }
+  .visually-hidden {
+    position: absolute;
+    inline-size: 1px;
+    block-size: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
   }
   .facts {
     display: grid;

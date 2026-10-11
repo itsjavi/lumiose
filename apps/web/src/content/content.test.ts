@@ -5,7 +5,8 @@ import { searchDocs, type SearchEntry } from "../lib/search.ts";
 import { docHref, docNav, docPages, findDoc, readOutline, slugify } from "./docs.ts";
 import { evidence } from "./evidence.ts";
 import { llmsText } from "./llms.ts";
-import { COUNTER_FILE, counterCss, counterOutput, counterSource } from "./samples.ts";
+import { FILENAME, ROOT } from "../playground/compiler.ts";
+import { counterCss, counterOutput, counterSource } from "./samples.ts";
 
 const binding = await import("@lumiose/compiler").catch(() => undefined);
 
@@ -99,13 +100,14 @@ describe("search", () => {
 });
 
 describe.skipIf(!binding)("landing page samples", () => {
-  it("show what this compiler produces for the Counter", () => {
-    const result = binding!.compile(counterSource, COUNTER_FILE, {
+  it("show what this compiler produces for the Counter, as the playground compiles it", () => {
+    const result = binding!.compile(counterSource, FILENAME, {
       target: "client",
-      root: "/app",
+      root: ROOT,
+      sourceMap: false,
     });
     expect(result.diagnostics).toEqual([]);
     expect(result.css).toBe(counterCss);
-    expect(result.code.replace(/\n\/\/# sourceMappingURL=.*$/s, "")).toBe(counterOutput);
+    expect(result.code).toBe(counterOutput);
   });
 });

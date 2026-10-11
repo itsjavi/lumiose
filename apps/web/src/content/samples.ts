@@ -1,24 +1,27 @@
-// Code shown on the landing page. `counterOutput` and `counterCss` are what this version of the
-// compiler produces for `counterSource` (client target), checked by samples.test.ts.
-
-export const COUNTER_FILE = "/app/src/Counter.stsx";
+// Code shown on the landing page. The live demo (the Playground island) starts from
+// `counterSource`; `counterOutput` and `counterCss` are what this version of the compiler produces
+// for it as the playground compiles it (client target, `/src/App.stsx`), shown before the editor
+// loads and without JavaScript. content.test.ts checks them.
 
 export const counterSource = `import { signal } from "lumiose";
 
 const gap = 8;
 const radius = { pill: "999px" };
 
-export function Counter() {
+export default function Counter() {
   const count = signal(0);
 
   return (
-    <button class={{ pill: true, hot: count() > 9 }} onClick={() => count.update((n) => n + 1)}>
-      Clicked {count()} times
-    </button>
+    <div class="counter">
+      <button class={{ pill: true, hot: count() > 9 }} onClick={() => count.update((n) => n + 1)}>
+        Clicked {count()} times
+      </button>
+      <Reset onReset={() => count.set(0)} />
+    </div>
   );
 }
 
-export function Reset(props: { onReset(): void }) {
+function Reset(props: { onReset(): void }) {
   return (
     <button class="pill ghost" onClick={props.onReset}>
       Reset
@@ -26,33 +29,48 @@ export function Reset(props: { onReset(): void }) {
   );
 }
 
+// One block at the end of the file styles both components.
 <style>
+  .counter {
+    display: flex;
+    gap: calc($gap * 1px);
+  }
   .pill {
     padding: calc($gap * 1px) calc($gap * 2px);
+    border: 2px solid #5546ff;
     border-radius: $radius.pill;
+    background: #5546ff;
+    color: white;
+    font: inherit;
   }
-  .ghost { background: transparent; }
-  .hot { outline: 2px solid tomato; }
+  .ghost {
+    background: transparent;
+    color: inherit;
+  }
+  .hot {
+    outline: 2px solid tomato;
+  }
 </style>
 `;
 
 export const counterOutput = `import { signal } from "lumiose";
-import { template, bind, toggleClass, insert, delegateEvents } from "lumiose/dom";
-import "/app/src/Counter.stsx?lumiose&type=style&lang.css";
-const _t0 = /* @__PURE__ */ template(\`<button class=pill data-l-ybakenkt>Clicked <!> times\`);
-const _t1 = /* @__PURE__ */ template(\`<button class="pill ghost" data-l-ybakenkt>Reset\`);
+import { template, bind, toggleClass, insert, createComponent, delegateEvents } from "lumiose/dom";
+import "/src/App.stsx?lumiose&type=style&lang.css";
+const _t0 = /* @__PURE__ */ template(\`<div class=counter data-l-rdjmzp3m><button class=pill data-l-rdjmzp3m>Clicked <!> times\`);
+const _t1 = /* @__PURE__ */ template(\`<button class="pill ghost" data-l-rdjmzp3m>Reset\`);
 const _a0 = (el, v) => toggleClass(el, "hot", v);
 const gap = 8;
 const radius = { pill: "999px" };
-export function Counter() {
+export default function Counter() {
 \tconst count = signal(0);
-\tconst _el = _t0(), _marker = _el.firstChild.nextSibling;
-\tbind(_el, () => count() > 9, _a0);
-\t_el.$$click = () => count.update((n) => n + 1);
-\tinsert(_el, count, _marker);
+\tconst _el = _t0(), _button = _el.firstChild, _marker = _button.firstChild.nextSibling;
+\tbind(_button, () => count() > 9, _a0);
+\t_button.$$click = () => count.update((n) => n + 1);
+\tinsert(_button, count, _marker);
+\tinsert(_el, createComponent(Reset, { onReset: () => count.set(0) }));
 \treturn _el;
 }
-export function Reset(props) {
+function Reset(props) {
 \tconst _el2 = _t1();
 \t_el2.$$click = props.onReset;
 \treturn _el2;
@@ -60,16 +78,26 @@ export function Reset(props) {
 delegateEvents(["click"]);
 `;
 
-export const counterCss = `.pill[data-l-ybakenkt] {
+export const counterCss = `.counter[data-l-rdjmzp3m] {
+  gap: 8px;
+  display: flex;
+}
+
+.pill[data-l-rdjmzp3m] {
+  color: #fff;
+  font: inherit;
+  background: #5546ff;
+  border: 2px solid #5546ff;
   border-radius: 999px;
   padding: 8px 16px;
 }
 
-.ghost[data-l-ybakenkt] {
+.ghost[data-l-rdjmzp3m] {
+  color: inherit;
   background: none;
 }
 
-.hot[data-l-ybakenkt] {
+.hot[data-l-rdjmzp3m] {
   outline: 2px solid tomato;
 }
 `;
