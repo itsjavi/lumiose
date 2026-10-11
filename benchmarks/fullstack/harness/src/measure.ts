@@ -6,15 +6,17 @@ import {
   readdirSync,
   readFileSync,
   realpathSync,
+  rmSync,
   statSync,
   writeFileSync,
 } from "node:fs";
-import { cpus, loadavg } from "node:os";
-import { dirname, extname, join } from "node:path";
+import { cpus, loadavg, tmpdir } from "node:os";
+import { dirname, extname, join, relative } from "node:path";
+import { fileURLToPath } from "node:url";
 import { brotliCompressSync, constants, gzipSync } from "node:zlib";
 import autocannon from "autocannon";
 import type { Browser, Page } from "@playwright/test";
-import { type App, baseUrl, sleep } from "./apps.ts";
+import { type App, REPO, baseUrl, sampleRoutes, sleep, startServer } from "./apps.ts";
 
 declare global {
   interface Window {
@@ -379,41 +381,95 @@ export function sourceSize(app: App): {
   return { app: sourceSizeOf(app.dir), shared };
 }
 
-/** The installed package directory of `name` as seen from `dir` (Node's node_modules lookup). */
-function findPackage(name: string, dir: string): string | undefined {
-  for (let current = dir; ; current = dirname(current)) {
-    const candidate = join(current, "node_modules", name, "package.json");
-    if (existsSync(candidate)) return realpathSync(dirname(candidate));
-    if (dirname(current) === current) return undefined;
+const TRACE_HOOK = fileURLToPath(new URL("./trace-loads.ts", import.meta.url));
+const HARNESS_DIR = fileURLToPath(new URL("..", import.meta.url));
+
+/**
+ * The package a loaded file belongs to: the directory after its last `node_modules/` (scoped
+ * packages included), or, outside node_modules, its nearest package.json with a name (a
+ * workspace package such as @bench/data).
+ */
+function packageRoot(file: string): string | undefined {
+  const marker = "/node_modules/";
+  const at = file.lastIndexOf(marker);
+  if (at !== -1) {
+    const [first = "", second = ""] = file.slice(at + marker.length).split("/");
+    return (
+      file.slice(0, at + marker.length) + (first.startsWith("@") ? `${first}/${second}` : first)
+    );
   }
+  for (let dir = dirname(file); dirname(dir) !== dir; dir = dirname(dir)) {
+    const manifest = join(dir, "package.json");
+    if (!existsSync(manifest)) continue;
+    if ((JSON.parse(readFileSync(manifest, "utf8")) as { name?: string }).name) return dir;
+  }
+  return undefined;
 }
 
 /**
- * Number of distinct packages in the app's production dependency closure: its `dependencies`,
- * theirs, and so on (installed optional and peer dependencies too), workspace packages included
- * and followed. Read from node_modules, since `pnpm list` dedupes across workspace projects and
- * does not expand linked packages.
+ * The packages the app's production server loads at runtime (doc-4 §4 "Other"): the server runs
+ * with a module hook (trace-loads.ts) that records every file it resolves, by `import` or
+ * `require`, while a browser loads the benchmark's pages and the other routes are requested once.
+ * Each file maps to its package; the app itself and its build output (Nitro's
+ * `.output/server/package.json`) are not dependencies, and files outside the repository (the
+ * package manager running the script) are not the server's. Code a build inlined into its output
+ * is not a package load, so a self-contained build counts 0.
  */
-export function dependencyCount(app: App): number {
-  const seen = new Set<string>();
-  const visit = (dir: string, own: boolean) => {
-    const manifest = JSON.parse(readFileSync(join(dir, "package.json"), "utf8")) as {
-      dependencies?: Record<string, string>;
-      optionalDependencies?: Record<string, string>;
-      peerDependencies?: Record<string, string>;
-    };
-    const names = new Set([
-      ...Object.keys(manifest.dependencies ?? {}),
-      ...Object.keys(manifest.optionalDependencies ?? {}),
-      ...(own ? [] : Object.keys(manifest.peerDependencies ?? {})),
-    ]);
-    for (const name of names) {
-      const found = findPackage(name, dir);
-      if (found === undefined || seen.has(found)) continue;
-      seen.add(found);
-      visit(found, false);
+export async function runtimeDependencies(
+  browser: Browser,
+  app: App,
+): Promise<{ count: number; packages: string[] }> {
+  const log = join(tmpdir(), `bench-loads-${app.id}-${process.pid}-${Date.now()}.txt`);
+  const server = await startServer(app, "start", {
+    NODE_OPTIONS: `${process.env.NODE_OPTIONS ?? ""} --import ${TRACE_HOOK}`.trim(),
+    BENCH_TRACE_LOADS: log,
+  });
+  try {
+    const paths = await sampleRoutes(app);
+    const context = await browser.newContext();
+    try {
+      const page = await context.newPage();
+      for (const path of [paths.home, paths.project, paths.issue]) {
+        await page.goto(baseUrl(app) + path, { waitUntil: "load", timeout: 120_000 });
+        await readyMark(page);
+        await page.waitForLoadState("networkidle");
+      }
+    } finally {
+      await context.close();
     }
-  };
-  visit(app.dir, true);
-  return seen.size;
+    const id = paths.issue.split("/").pop()!;
+    for (const path of [
+      "/issues/new",
+      "/search?q=error",
+      "/login",
+      `/api/issues/${id}`,
+      "/api/search?q=error",
+      "/no/such/page",
+    ]) {
+      await (await fetch(baseUrl(app) + path)).arrayBuffer();
+    }
+  } finally {
+    await server.stop();
+  }
+  const roots = new Set<string>();
+  const appDir = realpathSync(app.dir);
+  for (const url of existsSync(log) ? readFileSync(log, "utf8").split("\n") : []) {
+    if (!url.startsWith("file:")) continue;
+    const file = fileURLToPath(url);
+    if (!file.startsWith(REPO)) continue;
+    const root = packageRoot(file);
+    if (root === undefined || root === HARNESS_DIR.replace(/\/$/, "")) continue;
+    // The app and its build output are not dependencies; its node_modules are.
+    if ((root === appDir || root.startsWith(`${appDir}/`)) && !root.includes("/node_modules/"))
+      continue;
+    roots.add(root);
+  }
+  rmSync(log, { force: true });
+  const packages = [...roots]
+    .map((root) => {
+      const at = root.lastIndexOf("/node_modules/");
+      return at === -1 ? relative(REPO, root) : root.slice(at + "/node_modules/".length);
+    })
+    .toSorted();
+  return { count: roots.size, packages };
 }

@@ -3,7 +3,7 @@ id: doc-4
 title: Fullstack comparison benchmark
 type: specification
 created_date: '2026-10-09 04:07'
-updated_date: '2026-10-11 02:35'
+updated_date: '2026-10-11 02:40'
 ---
 # Fullstack comparison benchmark
 
@@ -95,7 +95,7 @@ Median plus spread (min and max; the viewer draws them as whiskers and highlight
 **Environment of each metric** (TASK-145). Dev servers (Vite, Turbopack) compile on request and differ a lot from production servers, so every metric says where it was measured:
 
 - `dev`: against each app's dev server (`lumiose dev`, `react-router dev`, SolidStart's and SvelteKit's `vite dev` and `nuxt dev` on Vite, `next dev` on Turbopack, Remix 3's `node hmr.ts` on its own asset server). Only the **Dev** metrics below.
-- `build`: from the production build and the sources: build time, output size on disk (without precompressed `.br`/`.gz` copies), type check, source size, dependency footprint.
+- `build`: from the production build and the sources: build time, output size on disk (without precompressed `.br`/`.gz` copies), type check, source size, runtime dependencies (measured on the production server, but a property of the build).
 - `prod`: against the built apps on their production servers (`start` script: Lumiose `node server.ts` on adapter-node, React Router `node server.ts` = Express + @react-router/express, Next `next start`, SolidStart `node .output/server/index.mjs` on Nitro, SvelteKit `node build` on adapter-node, Nuxt `node .output/server/index.mjs` on Nitro, Remix 3 `node --import remix/node-tsx server.ts`): client payload, page load and every server metric, req/s included.
 
 The harness runs every `start` with `NODE_ENV=production` and checks, on each app's first production start, that the process listening on the port has `NODE_ENV=production` (it stops otherwise) and that `/` is not compressed for a client accepting br and gzip. Each results file records the commands, the dev bundler and these checks.
@@ -122,7 +122,13 @@ The harness runs every `start` with `NODE_ENV=production` and checks, on each ap
 **Other**
 - Type check time (`lumiose check` with TS 7 vs `tsc --noEmit` / `next typegen && tsc` / `tsc` for SolidStart / `svelte-kit sync && svelte-check --tsgo` for SvelteKit / `nuxt typecheck` (vue-tsc) for Nuxt / `tsc` for Remix 3).
 - Source size: lines of code per app (excluding shared packages), files. `.svelte` and `.vue` files count as code.
-- Dependency footprint: number of packages in each app's production dependency tree.
+- Runtime dependencies (TASK-230): the number of packages the production server loads at run time, counted the same way for every app, whatever its package.json declares:
+  - The harness starts the `start` script with `NODE_OPTIONS=--import harness/src/trace-loads.ts`. That hook (`module.registerHooks`) records every file the server process resolves, by `import` or `require`, child processes included.
+  - Meanwhile a browser loads `/`, `/projects/:slug` and `/issues/:id` (with their assets), and `/issues/new`, `/search?q=`, `/login`, both JSON endpoints and a 404 are requested once. Mutations are not exercised.
+  - Each file maps to a package: the directory after its last `node_modules/`, or its nearest named package.json for a workspace package (`@bench/data`, `lumiose`). The app itself, its build output (Nitro's `.output/server/package.json`) and files outside the repository (the package manager running the script) do not count. Two versions of a package count twice.
+  - Code a build inlined into its output is not a package load, so a self-contained build (SvelteKit's adapter-node, SolidStart's Nitro output) counts 0, and a build that copies its externals next to the output (Nuxt's Nitro) counts those.
+  - Checked by hand on 2026-10-11: Nuxt's 21 packages are exactly the dependencies Nitro wrote to `.output/server/package.json`. SvelteKit's `build/` and SolidStart's `.output/server` import only `node:` builtins (their bare package specifiers are in JSDoc comments), so 0. Lumiose's `server.ts` imports `@lumiose/adapter-node`, which imports `lumiose`, which has no dependencies, so 2. React Router's server imports 7 packages, whose static `dependencies` closure is 75 packages, the trace's count. The two sets differ by one package each way: `scheduler` is declared by react-dom but not loaded by `react-dom/server`, and `supports-color` is not declared but `debug` loads it when present.
+  - The metric is `other.runtime-deps`. Runs before TASK-230 recorded `other.deps`, the `dependencies` closure of each app's package.json, which followed each template's choice of dependencies or devDependencies.
 
 ## 5. Conformance suite
 
@@ -181,7 +187,7 @@ Ports for the landing's stack comparison (decision-37), registered in the harnes
 - **Streaming:** SvelteKit streams load promises as data after the page, not as HTML: the shell carries the `{#await}` fallback and the client renders the comments when the data arrives (no JS, no comments). The conformance suite accepts that (§5). The other apps stream HTML.
 - **Data and mutations:** form actions everywhere (`?/close`, `?/status`, `?/comment`, `/login`, `/logout`), enhanced with `use:enhance`, which reloads the page's data after each one. The bulk close posts to `?<current query>&/close`, since a bare `?/close` would drop the filters. GET forms (filters, search) become client-side navigations through SvelteKit's router, as in React Router.
 - **Readiness:** `afterNavigate` in the root layout, which SvelteKit calls once the app has hydrated.
-- **Dependencies:** every package is a devDependency, as `sv create` sets it up: adapter-node bundles them into `build/`, which runs without `node_modules`. The "production dependency packages" metric therefore reads 0. SolidStart's Nitro output is self-contained too, but its template lists packages as dependencies (177). The metric follows each template's package.json, not what the server needs at run time.
+- **Dependencies:** every package is a devDependency, as `sv create` sets it up: adapter-node bundles them into `build/`, which runs without `node_modules`, so the server loads no package at run time (§4, runtime dependencies: 0, like SolidStart's self-contained Nitro output).
 - **Shared code:** its own Svelte components (one per file), written from `@bench/react-ui` with the same elements, classes and `data-testid`s.
 
 ### Nuxt (TASK-204, `apps/nuxt`, port 4106)
@@ -199,7 +205,7 @@ Ports for the landing's stack comparison (decision-37), registered in the harnes
 
 - **Versions:** `remix` 3.0.0 (one package; its parts are `@remix-run/component` 1.0.0, `@remix-run/fetch-router` 1.0.0, `@remix-run/assets` 1.0.0, …), TypeScript 7.0.2 (`tsc`). Remix 3 is its own stack, not React Router, and does not use React.
 - **Layout:** as `remix new` generates it: `server.ts` on `remix/node-fetch-server`, `app/routes.ts` (the route map), `app/router.ts` (middleware and controllers), controllers under `app/actions/`, browser code in `public/` directories next to its owner, and `app/assets.ts` for the asset server. `hmr.ts` is the starter's live-update dev server, used as the `dev` script.
-- **No build step:** production runs the TypeScript sources with `node --import remix/node-tsx server.ts`, and the asset server compiles browser modules and CSS on request: minified, with content-fingerprinted URLs (`fingerprint: true`, immutable caching) as the asset docs recommend for production, and cached in memory. So the `build` script is a no-op, build time and output sizes are not recorded (§4), and the first request for each module after a start pays its compilation (the page-load median absorbs it). The server process also holds that cache, which shows in its RSS.
+- **No build step:** production runs the TypeScript sources with `node --import remix/node-tsx server.ts`, and the asset server compiles browser modules and CSS on request: minified, with content-fingerprinted URLs (`fingerprint: true`, immutable caching) as the asset docs recommend for production, and cached in memory. So the `build` script is a no-op, build time and output sizes are not recorded (§4), and the first request for each module after a start pays its compilation (the page-load median absorbs it). The server process also holds that cache, which shows in its RSS, and loads the compilers at run time (oxc, Lightning CSS), which count in its runtime dependencies (§4).
 - **Unbundled browser modules:** the asset server serves ES modules one per file, with an import map and `modulepreload` links, so a first load makes about 50 requests where the bundling apps make 10 to 20.
 - **Interactive parts:** only the client entries hydrate: the search box, the bulk-select bar, the comment composer and the label picker. The browser runtime (`run()` in `app/actions/public/entry.ts`) loads on every page and turns same-origin links and forms into frame navigations through the Navigation API: it fetches the destination's HTML and reconciles the document. It commits the URL before the new page arrives, so the conformance suite waits for the content rather than the URL alone. The bulk-select bar is the smallest boundary: it follows the server-rendered row checkboxes through its form's `change` events.
 - **Data and mutations:** controllers call `@bench/data` and render pages with `context.render`. Native forms post to POST actions, which redirect with 303 or render the form again with status 400, so every form also works without JavaScript. The current user comes from a middleware (`context.currentUser`), and a `requireUser()` action middleware redirects mutations to /login. The session cookie uses `remix/cookie`, which base64-encodes the value (`uid=MTI=` for user 12).

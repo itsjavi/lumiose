@@ -26,13 +26,13 @@ import { args, selectApps } from "./cli.ts";
 import { checkApp } from "./conformance.ts";
 import {
   NETWORK_PROFILES,
-  dependencyCount,
   devPageLoad,
   dirSize,
   hmr,
   loadTest,
   pageLoad,
   payload,
+  runtimeDependencies,
   sourceSize,
   waitForIdle,
 } from "./measure.ts";
@@ -199,11 +199,14 @@ try {
       );
       loc("other.files-app", "… in the app", size.app.files, "count");
       loc("other.files-shared", "… in shared UI packages", size.shared.files, "count");
+      // The conformance suite built the app; without it, build first. The dev group cleans later.
+      if (values["skip-conformance"]) await runScript(app, "build");
+      const runtime = await runtimeDependencies(browser, app);
       recorder.add(
         app.id,
-        "other.deps",
-        def("other", "Production dependency packages", "count"),
-        dependencyCount(app),
+        "other.runtime-deps",
+        def("other", "Packages the production server loads at runtime", "count"),
+        runtime.count,
       );
       for (let i = 0; i < iterations.build; i++) {
         try {
