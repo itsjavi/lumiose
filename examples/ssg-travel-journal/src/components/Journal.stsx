@@ -35,30 +35,30 @@ export function Journal(props: { page: Page<Post>; path: string }) {
       )}
       <PostGrid posts={props.page.items} feature={props.page.number === 1} />
       <Pager page={props.page.number} count={props.page.count} />
-
-      <style>
-        .intro {
-          max-width: 46rem;
-          margin-bottom: $theme.space.xxl;
-        }
-        .kicker {
-          margin: 0 0 $theme.space.sm;
-          color: $theme.color.accent;
-          font-size: $theme.font.tiny;
-          font-weight: 600;
-          letter-spacing: 0.12em;
-          text-transform: uppercase;
-        }
-        .lead {
-          margin: 0;
-          color: $theme.color.muted;
-          font-size: $theme.font.lead;
-        }
-        .page-title {
-          margin-bottom: $theme.space.xl;
-          font-size: $theme.font.h2;
-        }
-      </style>
     </>
   );
 }
+
+<style>
+  .intro {
+    max-width: 46rem;
+    margin-bottom: $theme.space.xxl;
+  }
+  .kicker {
+    margin: 0 0 $theme.space.sm;
+    color: $theme.color.accent;
+    font-size: $theme.font.tiny;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+  .lead {
+    margin: 0;
+    color: $theme.color.muted;
+    font-size: $theme.font.lead;
+  }
+  .page-title {
+    margin-bottom: $theme.space.xl;
+    font-size: $theme.font.h2;
+  }
+</style>

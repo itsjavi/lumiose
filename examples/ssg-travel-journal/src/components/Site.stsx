@@ -41,95 +41,6 @@ export function SiteHeader() {
         <Search client:idle index="/search.json" />
         <ThemeToggle client:load />
       </div>
-
-      <style>
-        .site-header {
-          view-transition-name: site-header;
-          display: flex;
-          flex-wrap: wrap;
-          align-items: center;
-          gap: $theme.space.sm $theme.space.xl;
-          max-width: $theme.layout.page;
-          width: 100%;
-          margin: 0 auto;
-          padding: $theme.space.lg $theme.space.lg $theme.space.md;
-        }
-        .brand {
-          display: flex;
-          align-items: center;
-          gap: $theme.space.sm;
-          color: inherit;
-          text-decoration: none;
-        }
-        .brand span {
-          display: grid;
-          line-height: 1.2;
-        }
-        .brand strong {
-          font-family: $theme.font.display;
-          font-size: 1.35rem;
-          letter-spacing: -0.01em;
-        }
-        .brand small {
-          color: $theme.color.muted;
-          font-size: $theme.font.tiny;
-          letter-spacing: 0.08em;
-          text-transform: uppercase;
-        }
-        .logo {
-          width: 2.4rem;
-          height: 2.4rem;
-          border-radius: $theme.radius.md;
-          background: $theme.color.accent;
-          fill: $theme.color.paper;
-        }
-        .logo circle {
-          fill: $theme.color.mark;
-        }
-        nav {
-          display: flex;
-          flex: 1;
-          gap: $theme.space.lg;
-        }
-        nav a {
-          position: relative;
-          padding: $theme.space.xs 0;
-          color: $theme.color.muted;
-          font-weight: 500;
-          text-decoration: none;
-          transition: color $theme.motion.fast;
-        }
-        nav a:hover,
-        nav a[aria-current="page"] {
-          color: $theme.color.ink;
-        }
-        nav a[aria-current="page"]::after {
-          content: "";
-          position: absolute;
-          inset: auto 0 -2px;
-          height: 2px;
-          border-radius: 2px;
-          background: $theme.color.accent;
-        }
-        .tools {
-          display: flex;
-          align-items: center;
-          gap: $theme.space.sm;
-        }
-        @media (width < $theme.layout.narrow) {
-          .site-header {
-            padding: $theme.space.md;
-          }
-          nav {
-            order: 3;
-            flex-basis: 100%;
-            gap: $theme.space.md;
-          }
-          .tools {
-            margin-left: auto;
-          }
-        }
-      </style>
     </header>
   );
 }
@@ -150,33 +61,119 @@ export function SiteFooter() {
         <a href={href("/about")}>How it is built</a>
         {LUMIOSE_SITE && <a href={LUMIOSE_SITE}>Made with Lumiose</a>}
       </p>
-
-      <style>
-        .site-footer {
-          display: grid;
-          gap: $theme.space.sm;
-          justify-items: center;
-          padding: $theme.space.xl $theme.space.lg;
-          border-top: 1px solid $theme.color.line;
-          color: $theme.color.muted;
-          font-size: $theme.font.small;
-          text-align: center;
-        }
-        p {
-          max-width: $theme.layout.prose;
-          margin: 0;
-        }
-        .links {
-          display: flex;
-          gap: $theme.space.lg;
-        }
-        a {
-          color: inherit;
-        }
-        a:hover {
-          color: $theme.color.accent;
-        }
-      </style>
     </footer>
   );
 }
+
+<style>
+  .site-header {
+    view-transition-name: site-header;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: $theme.space.sm $theme.space.xl;
+    max-width: $theme.layout.page;
+    width: 100%;
+    margin: 0 auto;
+    padding: $theme.space.lg $theme.space.lg $theme.space.md;
+  }
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: $theme.space.sm;
+    color: inherit;
+    text-decoration: none;
+  }
+  .brand span {
+    display: grid;
+    line-height: 1.2;
+  }
+  .brand strong {
+    font-family: $theme.font.display;
+    font-size: 1.35rem;
+    letter-spacing: -0.01em;
+  }
+  .brand small {
+    color: $theme.color.muted;
+    font-size: $theme.font.tiny;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  .logo {
+    width: 2.4rem;
+    height: 2.4rem;
+    border-radius: $theme.radius.md;
+    background: $theme.color.accent;
+    fill: $theme.color.paper;
+  }
+  .logo circle {
+    fill: $theme.color.mark;
+  }
+  nav {
+    display: flex;
+    flex: 1;
+    gap: $theme.space.lg;
+  }
+  nav a {
+    position: relative;
+    padding: $theme.space.xs 0;
+    color: $theme.color.muted;
+    font-weight: 500;
+    text-decoration: none;
+    transition: color $theme.motion.fast;
+  }
+  nav a:hover,
+  nav a[aria-current="page"] {
+    color: $theme.color.ink;
+  }
+  nav a[aria-current="page"]::after {
+    content: "";
+    position: absolute;
+    inset: auto 0 -2px;
+    height: 2px;
+    border-radius: 2px;
+    background: $theme.color.accent;
+  }
+  .tools {
+    display: flex;
+    align-items: center;
+    gap: $theme.space.sm;
+  }
+  @media (width < $theme.layout.narrow) {
+    .site-header {
+      padding: $theme.space.md;
+    }
+    nav {
+      order: 3;
+      flex-basis: 100%;
+      gap: $theme.space.md;
+    }
+    .tools {
+      margin-left: auto;
+    }
+  }
+  .site-footer {
+    display: grid;
+    gap: $theme.space.sm;
+    justify-items: center;
+    padding: $theme.space.xl $theme.space.lg;
+    border-top: 1px solid $theme.color.line;
+    color: $theme.color.muted;
+    font-size: $theme.font.small;
+    text-align: center;
+  }
+  .site-footer p {
+    max-width: $theme.layout.prose;
+    margin: 0;
+  }
+  .links {
+    display: flex;
+    gap: $theme.space.lg;
+  }
+  .site-footer a {
+    color: inherit;
+  }
+  .site-footer a:hover {
+    color: $theme.color.accent;
+  }
+</style>

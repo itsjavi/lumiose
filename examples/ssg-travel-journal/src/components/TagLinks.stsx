@@ -14,39 +14,39 @@ export function TagLinks(props: { tags: readonly string[]; counts?: Record<strin
           </a>
         </li>
       ))}
-
-      <style>
-        .tags {
-          position: relative;
-          z-index: 1;
-          display: flex;
-          flex-wrap: wrap;
-          gap: $theme.space.xs $theme.space.sm;
-          margin: 0;
-          padding: 0;
-          list-style: none;
-        }
-        a {
-          display: inline-flex;
-          align-items: center;
-          gap: $theme.space.xs;
-          padding: 0.15rem 0.7rem;
-          border-radius: $theme.radius.pill;
-          background: $theme.color.chip;
-          color: $theme.color.ink;
-          font-size: $theme.font.tiny;
-          font-weight: 500;
-          text-decoration: none;
-          transition: background $theme.motion.fast;
-        }
-        a:hover {
-          background: $theme.color.chipHover;
-        }
-        .count {
-          color: $theme.color.muted;
-          font-variant-numeric: tabular-nums;
-        }
-      </style>
     </ul>
   );
 }
+
+<style>
+  .tags {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-wrap: wrap;
+    gap: $theme.space.xs $theme.space.sm;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  a {
+    display: inline-flex;
+    align-items: center;
+    gap: $theme.space.xs;
+    padding: 0.15rem 0.7rem;
+    border-radius: $theme.radius.pill;
+    background: $theme.color.chip;
+    color: $theme.color.ink;
+    font-size: $theme.font.tiny;
+    font-weight: 500;
+    text-decoration: none;
+    transition: background $theme.motion.fast;
+  }
+  a:hover {
+    background: $theme.color.chipHover;
+  }
+  .count {
+    color: $theme.color.muted;
+    font-variant-numeric: tabular-nums;
+  }
+</style>

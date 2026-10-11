@@ -56,41 +56,6 @@ export function ThemeToggle() {
           </g>
         )}
       </svg>
-
-      <style>
-        .toggle {
-          display: grid;
-          place-items: center;
-          width: 2.25rem;
-          height: 2.25rem;
-          padding: 0;
-          border: 1px solid $theme.color.line;
-          border-radius: $theme.radius.pill;
-          background: $theme.color.card;
-          color: $theme.color.ink;
-          cursor: pointer;
-          transition: background $theme.motion.fast;
-        }
-        .toggle:not([data-ready]) {
-          visibility: hidden;
-        }
-        .toggle:hover {
-          background: $theme.color.chip;
-        }
-        svg {
-          width: 1.15rem;
-          height: 1.15rem;
-          fill: none;
-          stroke: currentColor;
-          stroke-width: 1.8;
-          stroke-linecap: round;
-          stroke-linejoin: round;
-        }
-        .moon,
-        .system path {
-          fill: currentColor;
-        }
-      </style>
     </button>
   );
 }
@@ -115,3 +80,38 @@ function apply(choice: Choice): void {
   if (choice === "system") delete root.dataset.theme;
   else root.dataset.theme = choice;
 }
+
+<style>
+  .toggle {
+    display: grid;
+    place-items: center;
+    width: 2.25rem;
+    height: 2.25rem;
+    padding: 0;
+    border: 1px solid $theme.color.line;
+    border-radius: $theme.radius.pill;
+    background: $theme.color.card;
+    color: $theme.color.ink;
+    cursor: pointer;
+    transition: background $theme.motion.fast;
+  }
+  .toggle:not([data-ready]) {
+    visibility: hidden;
+  }
+  .toggle:hover {
+    background: $theme.color.chip;
+  }
+  svg {
+    width: 1.15rem;
+    height: 1.15rem;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+  .moon,
+  .system path {
+    fill: currentColor;
+  }
+</style>

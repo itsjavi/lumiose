@@ -90,167 +90,167 @@ function PostView(props: { post: Post }) {
           </a>
         )}
       </nav>
-
-      <style>
-        .hero {
-          display: grid;
-          justify-items: center;
-          gap: $theme.space.sm;
-          max-width: $theme.layout.prose;
-          margin: 0 auto $theme.space.xl;
-          text-align: center;
-        }
-        .hero h1 {
-          margin: 0;
-        }
-        .meta {
-          display: flex;
-          gap: $theme.space.sm;
-          margin: 0;
-          color: $theme.color.muted;
-          font-size: $theme.font.tiny;
-          letter-spacing: 0.06em;
-          text-transform: uppercase;
-        }
-        .summary {
-          margin: 0 0 $theme.space.sm;
-          color: $theme.color.muted;
-          font-size: $theme.font.lead;
-        }
-        .cover {
-          display: block;
-          width: 100%;
-          max-width: 60rem;
-          margin: 0 auto;
-          aspect-ratio: 16 / 9;
-          object-fit: cover;
-          border-radius: $theme.radius.lg;
-          box-shadow: $theme.shadow.card;
-        }
-        .columns {
-          display: grid;
-          grid-template-columns: minmax(0, $theme.layout.prose);
-          justify-content: center;
-          gap: $theme.space.xl;
-          margin-top: $theme.space.xl;
-        }
-        .toc {
-          padding: $theme.space.md $theme.space.lg;
-          border-left: 3px solid $theme.color.accent;
-          background: $theme.color.chip;
-          border-radius: 0 $theme.radius.md $theme.radius.md 0;
-          font-size: $theme.font.small;
-        }
-        .toc p {
-          margin: 0 0 $theme.space.xs;
-          font-weight: 600;
-        }
-        .toc ol {
-          margin: 0;
-          padding-left: 1.2rem;
-        }
-        .toc a {
-          color: inherit;
-        }
-
-        /* The Markdown body is inserted as HTML, so its elements carry no scope token: style
-           them from the scoped .prose wrapper with :deep(). */
-        .prose {
-          font-size: 1.125rem;
-          line-height: 1.75;
-        }
-        .prose :deep(h2) {
-          margin: $theme.space.xl 0 $theme.space.sm;
-          font-size: $theme.font.h2;
-          scroll-margin-top: $theme.space.lg;
-        }
-        .prose :deep(h3) {
-          margin: $theme.space.lg 0 $theme.space.sm;
-        }
-        .prose :deep(p),
-        .prose :deep(ul),
-        .prose :deep(ol) {
-          margin: 0 0 $theme.space.md;
-        }
-        .prose :deep(li + li) {
-          margin-top: $theme.space.xs;
-        }
-        .prose :deep(blockquote) {
-          margin: $theme.space.lg 0;
-          padding: $theme.space.xs 0 $theme.space.xs $theme.space.lg;
-          border-left: 3px solid $theme.color.accent;
-          color: $theme.color.muted;
-          font-family: $theme.font.display;
-          font-size: 1.25rem;
-          font-style: italic;
-        }
-        .prose :deep(blockquote p) {
-          margin: 0;
-        }
-        .prose :deep(table) {
-          display: block;
-          overflow-x: auto;
-          width: 100%;
-          margin: $theme.space.lg 0;
-          border-collapse: collapse;
-          font-size: $theme.font.small;
-          font-variant-numeric: tabular-nums;
-        }
-        .prose :deep(th),
-        .prose :deep(td) {
-          padding: $theme.space.sm $theme.space.md;
-          border-bottom: 1px solid $theme.color.line;
-          text-align: left;
-          white-space: nowrap;
-        }
-        .prose :deep(th) {
-          border-bottom-width: 2px;
-        }
-
-        .adjacent {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: $theme.space.lg;
-          max-width: $theme.layout.prose;
-          margin: $theme.space.xxl auto 0;
-          padding-top: $theme.space.lg;
-          border-top: 1px solid $theme.color.line;
-        }
-        .adjacent a {
-          display: grid;
-          gap: $theme.space.xs;
-          color: $theme.color.ink;
-          font-family: $theme.font.display;
-          font-size: 1.15rem;
-          text-decoration: none;
-        }
-        .adjacent a:hover {
-          color: $theme.color.accent;
-        }
-        .adjacent small {
-          color: $theme.color.muted;
-          font-family: $theme.font.body;
-          font-size: $theme.font.tiny;
-          letter-spacing: 0.08em;
-          text-transform: uppercase;
-        }
-        .older {
-          text-align: right;
-        }
-        @media (width >= 64rem) {
-          .columns {
-            grid-template-columns: 12rem minmax(0, $theme.layout.prose) 12rem;
-          }
-          .toc {
-            position: sticky;
-            top: $theme.space.lg;
-            align-self: start;
-          }
-          .prose:first-child {
-            grid-column: 2;
-          }
-        }
-      </style>
     </article>
   );
 }
+
+<style>
+  .hero {
+    display: grid;
+    justify-items: center;
+    gap: $theme.space.sm;
+    max-width: $theme.layout.prose;
+    margin: 0 auto $theme.space.xl;
+    text-align: center;
+  }
+  .hero h1 {
+    margin: 0;
+  }
+  .meta {
+    display: flex;
+    gap: $theme.space.sm;
+    margin: 0;
+    color: $theme.color.muted;
+    font-size: $theme.font.tiny;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+  .summary {
+    margin: 0 0 $theme.space.sm;
+    color: $theme.color.muted;
+    font-size: $theme.font.lead;
+  }
+  .cover {
+    display: block;
+    width: 100%;
+    max-width: 60rem;
+    margin: 0 auto;
+    aspect-ratio: 16 / 9;
+    object-fit: cover;
+    border-radius: $theme.radius.lg;
+    box-shadow: $theme.shadow.card;
+  }
+  .columns {
+    display: grid;
+    grid-template-columns: minmax(0, $theme.layout.prose);
+    justify-content: center;
+    gap: $theme.space.xl;
+    margin-top: $theme.space.xl;
+  }
+  .toc {
+    padding: $theme.space.md $theme.space.lg;
+    border-left: 3px solid $theme.color.accent;
+    background: $theme.color.chip;
+    border-radius: 0 $theme.radius.md $theme.radius.md 0;
+    font-size: $theme.font.small;
+  }
+  .toc p {
+    margin: 0 0 $theme.space.xs;
+    font-weight: 600;
+  }
+  .toc ol {
+    margin: 0;
+    padding-left: 1.2rem;
+  }
+  .toc a {
+    color: inherit;
+  }
+
+  /* The Markdown body is inserted as HTML, so its elements carry no scope token: style
+     them from the scoped .prose wrapper with :deep(). */
+  .prose {
+    font-size: 1.125rem;
+    line-height: 1.75;
+  }
+  .prose :deep(h2) {
+    margin: $theme.space.xl 0 $theme.space.sm;
+    font-size: $theme.font.h2;
+    scroll-margin-top: $theme.space.lg;
+  }
+  .prose :deep(h3) {
+    margin: $theme.space.lg 0 $theme.space.sm;
+  }
+  .prose :deep(p),
+  .prose :deep(ul),
+  .prose :deep(ol) {
+    margin: 0 0 $theme.space.md;
+  }
+  .prose :deep(li + li) {
+    margin-top: $theme.space.xs;
+  }
+  .prose :deep(blockquote) {
+    margin: $theme.space.lg 0;
+    padding: $theme.space.xs 0 $theme.space.xs $theme.space.lg;
+    border-left: 3px solid $theme.color.accent;
+    color: $theme.color.muted;
+    font-family: $theme.font.display;
+    font-size: 1.25rem;
+    font-style: italic;
+  }
+  .prose :deep(blockquote p) {
+    margin: 0;
+  }
+  .prose :deep(table) {
+    display: block;
+    overflow-x: auto;
+    width: 100%;
+    margin: $theme.space.lg 0;
+    border-collapse: collapse;
+    font-size: $theme.font.small;
+    font-variant-numeric: tabular-nums;
+  }
+  .prose :deep(th),
+  .prose :deep(td) {
+    padding: $theme.space.sm $theme.space.md;
+    border-bottom: 1px solid $theme.color.line;
+    text-align: left;
+    white-space: nowrap;
+  }
+  .prose :deep(th) {
+    border-bottom-width: 2px;
+  }
+
+  .adjacent {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: $theme.space.lg;
+    max-width: $theme.layout.prose;
+    margin: $theme.space.xxl auto 0;
+    padding-top: $theme.space.lg;
+    border-top: 1px solid $theme.color.line;
+  }
+  .adjacent a {
+    display: grid;
+    gap: $theme.space.xs;
+    color: $theme.color.ink;
+    font-family: $theme.font.display;
+    font-size: 1.15rem;
+    text-decoration: none;
+  }
+  .adjacent a:hover {
+    color: $theme.color.accent;
+  }
+  .adjacent small {
+    color: $theme.color.muted;
+    font-family: $theme.font.body;
+    font-size: $theme.font.tiny;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  .older {
+    text-align: right;
+  }
+  @media (width >= 64rem) {
+    .columns {
+      grid-template-columns: 12rem minmax(0, $theme.layout.prose) 12rem;
+    }
+    .toc {
+      position: sticky;
+      top: $theme.space.lg;
+      align-self: start;
+    }
+    .prose:first-child {
+      grid-column: 2;
+    }
+  }
+</style>

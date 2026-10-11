@@ -37,47 +37,47 @@ export function Pager(props: { page: number; count: number }) {
       ) : (
         <span class="step" />
       )}
-
-      <style>
-        .pager {
-          display: grid;
-          grid-template-columns: 1fr auto 1fr;
-          align-items: center;
-          gap: $theme.space.md;
-          margin-top: $theme.space.xxl;
-        }
-        .step:last-child {
-          justify-self: end;
-        }
-        ol {
-          display: flex;
-          gap: $theme.space.xs;
-          margin: 0;
-          padding: 0;
-          list-style: none;
-        }
-        .step,
-        .number {
-          font-weight: 500;
-          text-decoration: none;
-        }
-        .number {
-          display: grid;
-          place-items: center;
-          min-width: 2.25rem;
-          height: 2.25rem;
-          border-radius: $theme.radius.pill;
-          color: $theme.color.ink;
-          font-variant-numeric: tabular-nums;
-        }
-        .number:hover {
-          background: $theme.color.chip;
-        }
-        .number[aria-current="page"] {
-          background: $theme.color.accent;
-          color: $theme.color.accentInk;
-        }
-      </style>
     </nav>
   );
 }
+
+<style>
+  .pager {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    gap: $theme.space.md;
+    margin-top: $theme.space.xxl;
+  }
+  .step:last-child {
+    justify-self: end;
+  }
+  ol {
+    display: flex;
+    gap: $theme.space.xs;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .step,
+  .number {
+    font-weight: 500;
+    text-decoration: none;
+  }
+  .number {
+    display: grid;
+    place-items: center;
+    min-width: 2.25rem;
+    height: 2.25rem;
+    border-radius: $theme.radius.pill;
+    color: $theme.color.ink;
+    font-variant-numeric: tabular-nums;
+  }
+  .number:hover {
+    background: $theme.color.chip;
+  }
+  .number[aria-current="page"] {
+    background: $theme.color.accent;
+    color: $theme.color.accentInk;
+  }
+</style>

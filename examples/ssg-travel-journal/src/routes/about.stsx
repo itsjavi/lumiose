@@ -36,8 +36,8 @@ export default function About() {
           <code>GET</code> endpoints, written to files at build time.
         </li>
         <li>
-          <strong>Styles</strong>: global styles in the root layout, scoped{" "}
-          <code>&lt;style&gt;</code> blocks in every component, and design tokens from{" "}
+          <strong>Styles</strong>: global styles in the root layout, one scoped{" "}
+          <code>&lt;style&gt;</code> block at the end of each component file, and design tokens from{" "}
           <code>theme.ts</code> read as <code>$theme.*</code> and inlined at build time.
         </li>
         <li>
@@ -52,31 +52,31 @@ export default function About() {
       <p>
         <a href={href("/")}>Back to the journal</a>
       </p>
-
-      <style>
-        .about {
-          max-width: $theme.layout.prose;
-          font-size: 1.125rem;
-          line-height: 1.75;
-        }
-        .lead {
-          color: $theme.color.muted;
-          font-size: $theme.font.lead;
-        }
-        h2 {
-          margin: $theme.space.xl 0 $theme.space.sm;
-          font-size: $theme.font.h2;
-        }
-        li + li {
-          margin-top: $theme.space.sm;
-        }
-        code {
-          padding: 0.1em 0.35em;
-          border-radius: $theme.radius.sm;
-          background: $theme.color.chip;
-          font-size: 0.88em;
-        }
-      </style>
     </section>
   );
 }
+
+<style>
+  .about {
+    max-width: $theme.layout.prose;
+    font-size: 1.125rem;
+    line-height: 1.75;
+  }
+  .lead {
+    color: $theme.color.muted;
+    font-size: $theme.font.lead;
+  }
+  h2 {
+    margin: $theme.space.xl 0 $theme.space.sm;
+    font-size: $theme.font.h2;
+  }
+  li + li {
+    margin-top: $theme.space.sm;
+  }
+  code {
+    padding: 0.1em 0.35em;
+    border-radius: $theme.radius.sm;
+    background: $theme.color.chip;
+    font-size: 0.88em;
+  }
+</style>

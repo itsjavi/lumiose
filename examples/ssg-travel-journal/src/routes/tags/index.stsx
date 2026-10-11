@@ -26,48 +26,48 @@ export default function Tags() {
           </li>
         ))}
       </ul>
-
-      <style>
-        .tags-page {
-          max-width: 48rem;
-        }
-        .lead {
-          margin: 0 0 $theme.space.xl;
-          color: $theme.color.muted;
-          font-size: $theme.font.lead;
-        }
-        .cloud {
-          display: flex;
-          flex-wrap: wrap;
-          align-items: baseline;
-          gap: $theme.space.md;
-          margin: 0;
-          padding: 0;
-          list-style: none;
-        }
-        a {
-          display: inline-flex;
-          align-items: baseline;
-          gap: $theme.space.sm;
-          padding: $theme.space.sm $theme.space.lg;
-          border: 1px solid $theme.color.line;
-          border-radius: $theme.radius.pill;
-          background: $theme.color.card;
-          color: $theme.color.ink;
-          font-family: $theme.font.display;
-          font-size: calc(1rem + var(--weight) * 0.9rem);
-          text-decoration: none;
-          transition: border-color $theme.motion.fast;
-        }
-        a:hover {
-          border-color: $theme.color.accent;
-        }
-        span {
-          color: $theme.color.muted;
-          font-family: $theme.font.body;
-          font-size: $theme.font.tiny;
-        }
-      </style>
     </section>
   );
 }
+
+<style>
+  .tags-page {
+    max-width: 48rem;
+  }
+  .lead {
+    margin: 0 0 $theme.space.xl;
+    color: $theme.color.muted;
+    font-size: $theme.font.lead;
+  }
+  .cloud {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: $theme.space.md;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  a {
+    display: inline-flex;
+    align-items: baseline;
+    gap: $theme.space.sm;
+    padding: $theme.space.sm $theme.space.lg;
+    border: 1px solid $theme.color.line;
+    border-radius: $theme.radius.pill;
+    background: $theme.color.card;
+    color: $theme.color.ink;
+    font-family: $theme.font.display;
+    font-size: calc(1rem + var(--weight) * 0.9rem);
+    text-decoration: none;
+    transition: border-color $theme.motion.fast;
+  }
+  a:hover {
+    border-color: $theme.color.accent;
+  }
+  span {
+    color: $theme.color.muted;
+    font-family: $theme.font.body;
+    font-size: $theme.font.tiny;
+  }
+</style>

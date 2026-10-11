@@ -91,7 +91,9 @@ renders the body with `<props.post.Content />` and its table of contents from th
 
 - **Global**: `<style global>` in `routes/_layout.stsx`: the page base, `color-scheme` for the
   light and dark themes, focus styles, and the View Transitions opt-in.
-- **Scoped**: every component has its own `<style>` block. The post body is the Markdown file's
+- **Scoped**: each file ends with one `<style>` block, shared by the components it defines
+  (`Site.stsx` styles both the header and the footer; their selectors start from each one's root
+  class so they do not reach each other). The post body is the Markdown file's
   own component, so its elements carry no scope token of the page; `posts/[slug].stsx` styles
   them from its scoped `.prose` wrapper with `:deep()`.
 - **Tokens**: `src/theme.ts` holds colors, fonts, spacing, radii, shadows and breakpoints. Blocks

@@ -28,42 +28,42 @@ export default function NotFound(_props: ErrorPageProps) {
           Back to the journal
         </a>
       </p>
-
-      <style>
-        .not-found {
-          max-width: $theme.layout.prose;
-          margin: $theme.space.xl auto;
-          text-align: center;
-        }
-        .code {
-          margin: 0;
-          color: $theme.color.accent;
-          font-family: $theme.font.display;
-          font-size: 5rem;
-          line-height: 1;
-        }
-        .lead {
-          color: $theme.color.muted;
-          font-size: $theme.font.lead;
-        }
-        ul {
-          display: grid;
-          gap: $theme.space.sm;
-          margin: $theme.space.lg 0;
-          padding: 0;
-          list-style: none;
-          font-family: $theme.font.display;
-          font-size: 1.2rem;
-        }
-        .home {
-          display: inline-block;
-          padding: $theme.space.sm $theme.space.lg;
-          border-radius: $theme.radius.pill;
-          background: $theme.color.accent;
-          color: $theme.color.accentInk;
-          text-decoration: none;
-        }
-      </style>
     </section>
   );
 }
+
+<style>
+  .not-found {
+    max-width: $theme.layout.prose;
+    margin: $theme.space.xl auto;
+    text-align: center;
+  }
+  .code {
+    margin: 0;
+    color: $theme.color.accent;
+    font-family: $theme.font.display;
+    font-size: 5rem;
+    line-height: 1;
+  }
+  .lead {
+    color: $theme.color.muted;
+    font-size: $theme.font.lead;
+  }
+  ul {
+    display: grid;
+    gap: $theme.space.sm;
+    margin: $theme.space.lg 0;
+    padding: 0;
+    list-style: none;
+    font-family: $theme.font.display;
+    font-size: 1.2rem;
+  }
+  .home {
+    display: inline-block;
+    padding: $theme.space.sm $theme.space.lg;
+    border-radius: $theme.radius.pill;
+    background: $theme.color.accent;
+    color: $theme.color.accentInk;
+    text-decoration: none;
+  }
+</style>

@@ -125,91 +125,91 @@ export function Search(props: { index: string }) {
           {status()}
         </p>
       </div>
-
-      <style>
-        .search {
-          position: relative;
-          width: 15rem;
-        }
-        .icon {
-          position: absolute;
-          left: 0.7rem;
-          top: 50%;
-          width: 1rem;
-          height: 1rem;
-          translate: 0 -50%;
-          fill: none;
-          stroke: $theme.color.muted;
-          stroke-width: 2;
-          stroke-linecap: round;
-          pointer-events: none;
-        }
-        input {
-          width: 100%;
-          padding: 0.45rem 0.9rem 0.45rem 2.1rem;
-          border: 1px solid $theme.color.line;
-          border-radius: $theme.radius.pill;
-          background: $theme.color.card;
-          color: inherit;
-          font: inherit;
-          font-size: $theme.font.small;
-          transition:
-            border-color $theme.motion.fast,
-            box-shadow $theme.motion.fast;
-        }
-        input:focus {
-          outline: none;
-          border-color: $theme.color.accent;
-          box-shadow: 0 0 0 3px $theme.color.mark;
-        }
-        .panel {
-          position: absolute;
-          z-index: 30;
-          right: 0;
-          top: calc(100% + $theme.space.sm);
-          width: min(24rem, calc(100vw - 2rem));
-          padding: $theme.space.xs;
-          border: 1px solid $theme.color.line;
-          border-radius: $theme.radius.md;
-          background: $theme.color.card;
-          box-shadow: $theme.shadow.popup;
-        }
-        ul {
-          margin: 0;
-          padding: 0;
-          list-style: none;
-        }
-        li a {
-          display: grid;
-          gap: 0.1rem;
-          padding: $theme.space.sm $theme.space.md;
-          border-radius: $theme.radius.sm;
-          color: inherit;
-          text-decoration: none;
-        }
-        li a strong {
-          font-family: $theme.font.display;
-          font-weight: 600;
-        }
-        li a span,
-        .status {
-          color: $theme.color.muted;
-          font-size: $theme.font.tiny;
-        }
-        li[aria-selected="true"] a,
-        li a:hover {
-          background: $theme.color.chip;
-        }
-        .status {
-          margin: 0;
-          padding: $theme.space.sm $theme.space.md;
-        }
-        @media (width < $theme.layout.narrow) {
-          .search {
-            width: 11rem;
-          }
-        }
-      </style>
     </form>
   );
 }
+
+<style>
+  .search {
+    position: relative;
+    width: 15rem;
+  }
+  .icon {
+    position: absolute;
+    left: 0.7rem;
+    top: 50%;
+    width: 1rem;
+    height: 1rem;
+    translate: 0 -50%;
+    fill: none;
+    stroke: $theme.color.muted;
+    stroke-width: 2;
+    stroke-linecap: round;
+    pointer-events: none;
+  }
+  input {
+    width: 100%;
+    padding: 0.45rem 0.9rem 0.45rem 2.1rem;
+    border: 1px solid $theme.color.line;
+    border-radius: $theme.radius.pill;
+    background: $theme.color.card;
+    color: inherit;
+    font: inherit;
+    font-size: $theme.font.small;
+    transition:
+      border-color $theme.motion.fast,
+      box-shadow $theme.motion.fast;
+  }
+  input:focus {
+    outline: none;
+    border-color: $theme.color.accent;
+    box-shadow: 0 0 0 3px $theme.color.mark;
+  }
+  .panel {
+    position: absolute;
+    z-index: 30;
+    right: 0;
+    top: calc(100% + $theme.space.sm);
+    width: min(24rem, calc(100vw - 2rem));
+    padding: $theme.space.xs;
+    border: 1px solid $theme.color.line;
+    border-radius: $theme.radius.md;
+    background: $theme.color.card;
+    box-shadow: $theme.shadow.popup;
+  }
+  ul {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  li a {
+    display: grid;
+    gap: 0.1rem;
+    padding: $theme.space.sm $theme.space.md;
+    border-radius: $theme.radius.sm;
+    color: inherit;
+    text-decoration: none;
+  }
+  li a strong {
+    font-family: $theme.font.display;
+    font-weight: 600;
+  }
+  li a span,
+  .status {
+    color: $theme.color.muted;
+    font-size: $theme.font.tiny;
+  }
+  li[aria-selected="true"] a,
+  li a:hover {
+    background: $theme.color.chip;
+  }
+  .status {
+    margin: 0;
+    padding: $theme.space.sm $theme.space.md;
+  }
+  @media (width < $theme.layout.narrow) {
+    .search {
+      width: 11rem;
+    }
+  }
+</style>

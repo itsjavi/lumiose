@@ -34,48 +34,48 @@ export default function Archive() {
           </ol>
         </section>
       ))}
-
-      <style>
-        .archive {
-          max-width: $theme.layout.prose;
-        }
-        .lead {
-          margin: 0 0 $theme.space.lg;
-          color: $theme.color.muted;
-        }
-        h2 {
-          margin: $theme.space.xl 0 $theme.space.sm;
-          color: $theme.color.accent;
-          font-size: $theme.font.h2;
-        }
-        ol {
-          margin: 0;
-          padding: 0;
-          list-style: none;
-        }
-        li {
-          display: grid;
-          grid-template-columns: 7.5rem 1fr;
-          gap: $theme.space.md;
-          padding: $theme.space.sm 0;
-          border-bottom: 1px solid $theme.color.line;
-        }
-        time {
-          color: $theme.color.muted;
-          font-size: $theme.font.small;
-          font-variant-numeric: tabular-nums;
-          line-height: 1.9;
-        }
-        a {
-          color: $theme.color.ink;
-          font-family: $theme.font.display;
-          font-size: 1.15rem;
-          text-decoration: none;
-        }
-        a:hover {
-          color: $theme.color.accent;
-        }
-      </style>
     </section>
   );
 }
+
+<style>
+  .archive {
+    max-width: $theme.layout.prose;
+  }
+  .lead {
+    margin: 0 0 $theme.space.lg;
+    color: $theme.color.muted;
+  }
+  h2 {
+    margin: $theme.space.xl 0 $theme.space.sm;
+    color: $theme.color.accent;
+    font-size: $theme.font.h2;
+  }
+  ol {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  li {
+    display: grid;
+    grid-template-columns: 7.5rem 1fr;
+    gap: $theme.space.md;
+    padding: $theme.space.sm 0;
+    border-bottom: 1px solid $theme.color.line;
+  }
+  time {
+    color: $theme.color.muted;
+    font-size: $theme.font.small;
+    font-variant-numeric: tabular-nums;
+    line-height: 1.9;
+  }
+  a {
+    color: $theme.color.ink;
+    font-family: $theme.font.display;
+    font-size: 1.15rem;
+    text-decoration: none;
+  }
+  a:hover {
+    color: $theme.color.accent;
+  }
+</style>

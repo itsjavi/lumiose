@@ -34,21 +34,21 @@ function TagView(props: { tag: string; posts: readonly Post[] }) {
         {props.posts.length} {props.posts.length === 1 ? "post" : "posts"} tagged “{props.tag}”.
       </p>
       <PostGrid posts={props.posts} />
-
-      <style>
-        .crumbs {
-          margin: 0 0 $theme.space.sm;
-          font-size: $theme.font.small;
-        }
-        .crumbs a::before {
-          content: "← ";
-        }
-        .lead {
-          margin: 0 0 $theme.space.xl;
-          color: $theme.color.muted;
-          font-size: $theme.font.lead;
-        }
-      </style>
     </section>
   );
 }
+
+<style>
+  .crumbs {
+    margin: 0 0 $theme.space.sm;
+    font-size: $theme.font.small;
+  }
+  .crumbs a::before {
+    content: "← ";
+  }
+  .lead {
+    margin: 0 0 $theme.space.xl;
+    color: $theme.color.muted;
+    font-size: $theme.font.lead;
+  }
+</style>
