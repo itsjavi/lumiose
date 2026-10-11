@@ -85,6 +85,37 @@ test("deep links with params load their own prerendered page", async ({ page }) 
   expect(await sameDocument(page)).toBe(true);
 });
 
+test("a conditional fragment with inserts before a static element hydrates in place (TASK-234)", async ({
+  page,
+}) => {
+  const errors: string[] = [];
+  page.on("console", (message) => {
+    if (message.type() === "error" || message.type() === "warning") errors.push(message.text());
+  });
+  // A client render after a hydration mismatch removes the server's elements.
+  await page.addInitScript(() => {
+    const w = window as unknown as { removed: string[] };
+    w.removed = [];
+    new MutationObserver((records) => {
+      for (const record of records) {
+        for (const node of record.removedNodes) {
+          if (node instanceof Element) w.removed.push(node.outerHTML);
+        }
+      }
+    }).observe(document, { childList: true, subtree: true });
+  });
+  await page.goto("/");
+  await ready(page);
+  await expect(page.locator("#frag")).toHaveText("abstatic");
+  const removed = await page.evaluate(() => (window as unknown as { removed: string[] }).removed);
+  expect(removed.filter((html) => html.includes("frag-"))).toEqual([]);
+  expect(errors).toEqual([]);
+  await page.locator("#frag-toggle").click();
+  await expect(page.locator("#frag")).toHaveText("");
+  await page.locator("#frag-toggle").click();
+  await expect(page.locator("#frag")).toHaveText("abstatic");
+});
+
 /**
  * Records whether an element matching `selector` is ever visible at an animation frame (where the
  * browser paints) while the page loads.
