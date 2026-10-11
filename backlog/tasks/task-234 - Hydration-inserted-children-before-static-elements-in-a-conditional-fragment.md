@@ -5,7 +5,7 @@ status: Done
 assignee:
   - Photon
 created_date: '2026-10-11 02:43'
-updated_date: '2026-10-11 02:59'
+updated_date: '2026-10-11 03:02'
 labels:
   - compiler
   - hydration
@@ -25,7 +25,7 @@ Found by Chime in TASK-218 (repro and details in its notes). For a fragment insi
 <!-- AC:BEGIN -->
 - [x] #1 The repro hydrates without LUM4006 or a full re-render, in client and server output, with a regression test in the compiler and an e2e hydration test
 - [x] #2 Similar shapes are covered by tests: inserts after static elements, nested fragments, .map inside a conditional fragment
-- [ ] #3 Dotmatrix's display: contents workaround is removed by its owner, with its e2e passing
+- [x] #3 Dotmatrix's display: contents workaround is removed by its owner, with its e2e passing
 <!-- AC:END -->
 
 ## Implementation Notes
@@ -48,6 +48,8 @@ Photon, 2026-10-11 (commits fd9bbce, 10f7e50).
 **Validation.** `cargo test --workspace` green; `cargo clippy -p lumiose_compiler --all-targets` clean; packages/lumiose vitest 71 files / 798 tests green; packages/vite 139 green; packages/compiler 45 green; tsc for packages/lumiose clean; ssg-spa-e2e 17 passed (1 skipped by design); islands-e2e 5 passed; js-framework-benchmark builds (its output does not use `insertValue`, so it is unchanged in shape); WASM compiler (`lumiose_wasm`, wasm32-unknown-unknown) builds and includes the change; napi rebuilt.
 
 **AC #3 (Chime, not done here).** In examples/spa-dotmatrix/src/ui/InstrumentPanel.stsx, replace `<div class="pitched">…</div>` (around line 198) with a fragment `<>…</>`, delete the comment above it, and delete the `.pitched { display: contents; }` rule in the `<style>` block; then run Dotmatrix's e2e (dev and preview), which already fails on console errors and checks in-place hydration.
+
+Chime: removed the .pitched div workaround in examples/spa-dotmatrix InstrumentPanel; the pitched fields are a fragment again. lumiose check, unit tests (221) and Playwright dev+preview (66/66, fails on console errors/LUM warnings) pass; instrument panel screenshots pixel-identical before/after.
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary
