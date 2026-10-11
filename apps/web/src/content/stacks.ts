@@ -1,6 +1,6 @@
 // The landing's stack comparison table (decision-37): Lumiose against the stacks React and Next.js
-// developers already know. The facts (full-stack layer, styles, components in islands) are written
-// here; the measured cells come from the committed results through evidence.ts. A stack with no
+// developers already know. The facts (full-stack layer, styles) are written here; the measured cells
+// come from the committed results through evidence.ts. A stack with no
 // committed result yet shows "measuring", so a new run (TASK-235) only updates the results files.
 import { evidence, type Evidence } from "./evidence.ts";
 
@@ -19,7 +19,10 @@ export interface StackRow {
   styles: Cell;
   serverJs: Cell;
   clientSpeed: Cell;
-  sameComponents: Cell;
+  /** Server speed, first column: SSR renders per second of the benchmark page. */
+  rendering: Cell;
+  /** Server speed, second column: requests per second on the fullstack comparison's home page. */
+  requests: Cell;
   /** Lumiose's own row. */
   self?: boolean;
 }
@@ -30,11 +33,12 @@ export const COLUMNS = {
   styles: "Styles",
   serverJs: "JS on a server page",
   clientSpeed: "Client speed",
-  sameComponents: "Interactive parts use the same components",
 } as const;
 
+/** The header over the last two columns: rendering (renders/s), then requests (req/s). */
+export const SERVER_SPEED = "Server speed";
+
 const fact = (text: string, tone?: "yes" | "no"): Cell => ({ kind: "fact", text, tone });
-const yes = fact("Yes", "yes");
 
 interface StackSource {
   stack: string;
@@ -44,7 +48,10 @@ interface StackSource {
   serverJs: { app: string } | { fact: string };
   /** The js-framework-benchmark column (frameworks/keyed/<id>), or a fact without one. */
   clientSpeed: { column: string } | { fact: string };
-  sameComponents: Cell;
+  /** The SSR benchmark's row (benchmarks/ssr/RESULTS.md, by its Framework name). */
+  rendering: { framework: string };
+  /** The fullstack comparison's app whose home page is load-tested, or a fact without one. */
+  requests: { app: string } | { fact: string };
   /** npm downloads of the stack's main package (its full-stack framework where the row names one). */
   downloads?: { package: string; lastMonth: number };
   self?: boolean;
@@ -60,7 +67,8 @@ const STACKS: StackSource[] = [
     styles: "Built in",
     serverJs: { app: "lumiose" },
     clientSpeed: { column: "lumiose" },
-    sameComponents: yes,
+    rendering: { framework: "Lumiose" },
+    requests: { app: "lumiose" },
     self: true,
   },
   {
@@ -70,16 +78,18 @@ const STACKS: StackSource[] = [
     styles: "Pick a library",
     serverJs: { app: "next" },
     clientSpeed: { column: "react-hooks" },
-    sameComponents: yes,
+    rendering: { framework: "React" },
+    requests: { app: "next" },
   },
   {
     stack: "React Router",
     downloads: { package: "react-router", lastMonth: 255689984 },
-    fullStack: "Separate project",
+    fullStack: "Built in",
     styles: "Pick a library",
     serverJs: { app: "react-router" },
     clientSpeed: { column: "react-hooks" },
-    sameComponents: yes,
+    rendering: { framework: "React" },
+    requests: { app: "react-router" },
   },
   {
     stack: "Solid + SolidStart",
@@ -88,7 +98,8 @@ const STACKS: StackSource[] = [
     styles: "Pick a library",
     serverJs: { app: "solid-start" },
     clientSpeed: { column: "solid" },
-    sameComponents: yes,
+    rendering: { framework: "Solid" },
+    requests: { app: "solid-start" },
   },
   {
     stack: "Svelte + SvelteKit",
@@ -97,7 +108,8 @@ const STACKS: StackSource[] = [
     styles: "Built in",
     serverJs: { app: "sveltekit" },
     clientSpeed: { column: "svelte" },
-    sameComponents: yes,
+    rendering: { framework: "Svelte" },
+    requests: { app: "sveltekit" },
   },
   {
     stack: "Vue + Nuxt",
@@ -106,7 +118,8 @@ const STACKS: StackSource[] = [
     styles: "Built in",
     serverJs: { app: "nuxt" },
     clientSpeed: { column: "vue" },
-    sameComponents: yes,
+    rendering: { framework: "Vue" },
+    requests: { app: "nuxt" },
   },
   {
     stack: "Preact",
@@ -115,7 +128,8 @@ const STACKS: StackSource[] = [
     styles: "Pick a library",
     serverJs: { fact: "No full-stack layer" },
     clientSpeed: { column: "preact-hooks" },
-    sameComponents: yes,
+    rendering: { framework: "Preact" },
+    requests: { fact: "No full-stack layer" },
   },
   {
     stack: "Remix 3",
@@ -124,7 +138,8 @@ const STACKS: StackSource[] = [
     styles: "Built in",
     serverJs: { app: "remix" },
     clientSpeed: { column: "remix-v3" },
-    sameComponents: yes,
+    rendering: { framework: "Remix 3" },
+    requests: { app: "remix" },
   },
   {
     stack: "Astro",
@@ -134,7 +149,8 @@ const STACKS: StackSource[] = [
     // By design: Astro ships no JavaScript for a page without islands.
     serverJs: { fact: "0 kB" },
     clientSpeed: { fact: "Depends on the UI framework" },
-    sameComponents: fact("Islands need a second UI framework", "no"),
+    rendering: { framework: "Astro" },
+    requests: { app: "astro" },
   },
 ];
 
@@ -152,12 +168,24 @@ export function factor(value: number): string {
 /** Lumiose first, then the other stacks by npm downloads, most used first. */
 function ordered(sources: StackSource[]): StackSource[] {
   const downloads = (source: StackSource) => source.downloads?.lastMonth ?? 0;
-  return [...sources].sort(
+  return sources.toSorted(
     (a, b) => Number(b.self === true) - Number(a.self === true) || downloads(b) - downloads(a),
   );
 }
 
-export function readStacks(results: Pick<Evidence, "cpuByColumn" | "serverJsByApp">): StackRow[] {
+/** A throughput: `1,248 req/s`. */
+export function perSecond(value: number, unit: string): string {
+  return `${Math.round(value).toLocaleString("en-US")} ${unit}`;
+}
+
+/** A measured cell, or "measuring" while its result is not committed. */
+function measured(value: number | undefined, text: (value: number) => string): Cell {
+  return value === undefined ? { kind: "measuring" } : { kind: "measured", text: text(value) };
+}
+
+export function readStacks(
+  results: Pick<Evidence, "cpuByColumn" | "serverJsByApp" | "rendersByFramework" | "requestsByApp">,
+): StackRow[] {
   return ordered(STACKS).map((source) => {
     const serverJs =
       "app" in source.serverJs ? results.serverJsByApp[source.serverJs.app] : undefined;
@@ -179,7 +207,15 @@ export function readStacks(results: Pick<Evidence, "cpuByColumn" | "serverJsByAp
           : cpu === undefined
             ? { kind: "measuring" }
             : { kind: "measured", text: factor(cpu) },
-      sameComponents: source.sameComponents,
+      rendering: measured(results.rendersByFramework[source.rendering.framework], (value) =>
+        perSecond(value, "renders/s"),
+      ),
+      requests:
+        "fact" in source.requests
+          ? fact(source.requests.fact)
+          : measured(results.requestsByApp[source.requests.app], (value) =>
+              perSecond(value, "req/s"),
+            ),
       self: source.self,
     };
   });

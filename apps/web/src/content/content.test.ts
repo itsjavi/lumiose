@@ -2,9 +2,10 @@
 // and the compiled samples shown on the landing page.
 import { describe, expect, it } from "vitest";
 import { searchDocs, type SearchEntry } from "../lib/search.ts";
+import { site } from "../lib/site.ts";
 import { docHref, docNav, docPages, findDoc, readOutline, slugify } from "./docs.ts";
 import { evidence, readFullstack, type FullstackRun } from "./evidence.ts";
-import { COLUMNS, factor, kilobytes, readStacks, stacks } from "./stacks.ts";
+import { factor, kilobytes, perSecond, readStacks, stacks } from "./stacks.ts";
 import { llmsText } from "./llms.ts";
 import { FILENAME, ROOT } from "../playground/compiler.ts";
 import { counterCss, counterOutput, counterSource } from "./samples.ts";
@@ -60,6 +61,11 @@ describe("docs", () => {
     expect(broken).toEqual([]);
   });
 
+  it("keeps the meta description within 160 characters, search terms first", () => {
+    expect(site.description.length).toBeLessThanOrEqual(160);
+    expect(site.description).toMatch(/static sites, server-side rendering, islands and SPAs/);
+  });
+
   it("serves llms.txt with links to the site's pages", () => {
     const text = llmsText();
     expect(text).toContain("[Signals and reactivity](/docs/concepts/signals)");
@@ -67,12 +73,15 @@ describe("docs", () => {
   });
 });
 
-/** A fullstack results file with only Lumiose's home page payload (when measured). */
-function run(date: string, quick: boolean, bytes?: number): FullstackRun {
+/** A fullstack results file with only Lumiose's home page payload and throughput (when measured). */
+function run(date: string, quick: boolean, bytes?: number, rps?: number): FullstackRun {
   return {
     meta: { date, quick, node: "v26", machine: { cpu: "M1", cores: 8, os: "macOS" } },
     results: {
-      lumiose: bytes === undefined ? {} : { "payload.home.js-brotli": { median: bytes } },
+      lumiose: {
+        ...(bytes === undefined ? {} : { "payload.home.js-brotli": { median: bytes } }),
+        ...(rps === undefined ? {} : { "server.home.rps": { median: rps } }),
+      },
     },
   };
 }
@@ -108,7 +117,29 @@ describe("evidence", () => {
     ]);
     expect(picked.serverJsByApp).toEqual({ lumiose: 2 });
   });
+
+  it("reads the request throughput from the newest full run that measured it", () => {
+    expect(evidence().requestsByApp["lumiose"]).toBeGreaterThan(0);
+    expect(evidence().requestsRun).toMatch(/^\d{4}-\d{2}-\d{2} · /);
+    // Payloads and throughput may come from different runs.
+    const picked = readFullstack([
+      run("2026-01-01", false, 1000, 100),
+      run("2026-01-02", false, undefined, 200),
+      run("2026-01-03", true, 3000, 300),
+    ]);
+    expect(picked.serverJsByApp).toEqual({ lumiose: 1 });
+    expect(picked.requestsByApp).toEqual({ lumiose: 200 });
+    expect(picked.requestsRun).toMatch(/^2026-01-02 · /);
+  });
 });
+
+/** The stack table with only server speed results. */
+function pending(results: {
+  rendersByFramework: Record<string, number>;
+  requestsByApp: Record<string, number>;
+}) {
+  return readStacks({ cpuByColumn: {}, serverJsByApp: {}, ...results });
+}
 
 describe("stack table", () => {
   it("fills every measured cell from the committed results, and shows 'measuring' for the rest", () => {
@@ -137,16 +168,28 @@ describe("stack table", () => {
       kind: "measured",
       text: kilobytes(results.serverJsByApp["next"]!),
     });
-    // Astro is shown honestly: 0 kB too, and its islands need a second UI framework.
+    // Server speed: renders/s from the SSR benchmark (React's entry for both React rows), req/s
+    // from the fullstack home page.
+    expect(lumiose.rendering).toEqual({
+      kind: "measured",
+      text: perSecond(results.rendersByFramework["Lumiose"]!, "renders/s"),
+    });
+    expect(next.rendering).toEqual(rows.find((row) => row.stack === "React Router")!.rendering);
+    expect(next.rendering).toMatchObject({ text: /^\d[\d,]* renders\/s$/ });
+    expect(lumiose.requests).toMatchObject({ kind: "measured", text: /^\d[\d,]* req\/s$/ });
+    const preact = rows.find((row) => row.stack === "Preact")!;
+    expect(preact.requests).toEqual({ kind: "fact", text: "No full-stack layer" });
+    // Astro is shown honestly: 0 kB too (its islands caveat is a note under the table).
     const astro = rows.find((row) => row.stack === "Astro")!;
     expect(astro.serverJs).toMatchObject({ text: "0 kB" });
-    expect(astro.sameComponents).toMatchObject({ tone: "no" });
     // No cell says "not measured": unmeasured cells are "measuring" until TASK-235.
-    const cells = rows.flatMap((row) =>
-      Object.keys(COLUMNS)
-        .slice(1)
-        .map((key) => row[key as keyof typeof COLUMNS]),
-    );
+    // React Router's framework mode is its full-stack layer.
+    expect(rows.find((row) => row.stack === "React Router")!.fullStack).toEqual({
+      kind: "fact",
+      text: "Built in",
+      tone: "yes",
+    });
+    const cells = rows.flatMap((row) => Object.values(row));
     expect(JSON.stringify(cells)).not.toMatch(/not measured/i);
   });
 
@@ -154,6 +197,8 @@ describe("stack table", () => {
     const rows = readStacks({
       cpuByColumn: { vue: 1.1, lumiose: 1.05 },
       serverJsByApp: { nuxt: 54.3, lumiose: 0 },
+      rendersByFramework: {},
+      requestsByApp: {},
     });
     const vue = rows.find((row) => row.stack === "Vue + Nuxt")!;
     expect(vue.serverJs).toEqual({ kind: "measured", text: "54 kB" });
@@ -162,6 +207,24 @@ describe("stack table", () => {
       kind: "measuring",
     });
     expect(kilobytes(6.46)).toBe("6.5 kB");
+  });
+
+  it("maps the pending server speed sources, so committed results fill them", () => {
+    const before = pending({ rendersByFramework: {}, requestsByApp: {} });
+    for (const stack of ["Preact", "Astro", "Remix 3"]) {
+      expect(before.find((row) => row.stack === stack)!.rendering).toEqual({ kind: "measuring" });
+    }
+    expect(before.find((row) => row.stack === "Astro")!.requests).toEqual({ kind: "measuring" });
+    // The SSR entries of TASK-241 and the fullstack Astro app of TASK-242.
+    const after = pending({
+      rendersByFramework: { Preact: 310.4, Astro: 120, "Remix 3": 98.6 },
+      requestsByApp: { astro: 1234.5 },
+    });
+    const row = (stack: string) => after.find((candidate) => candidate.stack === stack)!;
+    expect(row("Preact").rendering).toEqual({ kind: "measured", text: "310 renders/s" });
+    expect(row("Astro").rendering).toEqual({ kind: "measured", text: "120 renders/s" });
+    expect(row("Remix 3").rendering).toEqual({ kind: "measured", text: "99 renders/s" });
+    expect(row("Astro").requests).toEqual({ kind: "measured", text: "1,235 req/s" });
   });
 });
 

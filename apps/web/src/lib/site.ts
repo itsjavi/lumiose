@@ -31,8 +31,9 @@ export const REPOSITORY = "https://github.com/itsjavi/lumiose";
 export const site = {
   name: "Lumiose",
   tagline: "Feels like React. Runs like vanilla JS.",
+  /** The meta and OG description: the search terms first, at most 160 characters. */
   description:
-    "Lumiose is a web framework for everything from static sites and SPAs to full-stack apps: TSX with scoped CSS built in, signals, and 0 kB of JavaScript until a page needs it.",
+    "Lumiose: one web framework for static sites, server-side rendering, islands and SPAs. TSX with scoped CSS, signals, and 0 kB of JS until a page needs it.",
 };
 
 export const navLinks: NavLink[] = [

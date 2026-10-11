@@ -28,11 +28,24 @@ test("the landing page presents Lumiose with benchmark evidence", async ({ page 
   const failures = watchFailures(page);
   await page.goto("/");
   await expect(page).toHaveTitle(/Lumiose/);
+  await expect(page).toHaveTitle("Lumiose: Feels like React. Runs like vanilla JS.");
   await expect(page.getByRole("heading", { level: 1 })).toHaveText(
-    "Feels like React. Runs like vanilla JS.",
+    "The best of every stack, in one framework",
   );
+  await expect(page.locator(".hero .eyebrow")).toHaveText(
+    "Static sites · Server-side rendering · Islands · SPAs",
+  );
+  await expect(page.locator(".hero .lead")).toContainText("TSX with scoped CSS built in");
+  // The meta and OG descriptions lead with the search terms, within 160 characters.
   const description = await page.locator('meta[name="description"]').last().getAttribute("content");
-  expect((await page.locator(".hero .lead").textContent())?.replace(/\s+/g, " ")).toBe(description);
+  expect(description).toMatch(
+    /^Lumiose: one web framework for static sites, server-side rendering/,
+  );
+  expect(description!.length).toBeLessThanOrEqual(160);
+  await expect(page.locator('meta[property="og:description"]')).toHaveAttribute(
+    "content",
+    description!,
+  );
   await expect(page.getByRole("link", { name: "Get started" }).first()).toHaveAttribute(
     "href",
     "/docs/getting-started",
@@ -49,6 +62,20 @@ test("the landing page presents Lumiose with benchmark evidence", async ({ page 
   await expect(table.locator("tbody tr.self th")).toHaveText("Lumiose");
   await expect(table.locator("tbody tr.self td").nth(2)).toHaveText("0 kB");
   await expect(table).not.toContainText(/not measured/i);
+  await expect(page.locator("#compare-title")).toHaveText(
+    "Feels like React. Runs like vanilla JS.",
+  );
+  // Server speed: one header over two cells, renders/s (SSR benchmark) then req/s (fullstack).
+  await expect(table.locator("thead tr")).toHaveCount(1);
+  await expect(table.locator("thead th").last()).toHaveText("Server speed");
+  await expect(table.locator("thead th").last()).toHaveAttribute("colspan", "2");
+  await expect(table.locator("tbody tr.self td").nth(4)).toHaveText(/^\d[\d,]* renders\/s$/);
+  await expect(table.locator("tbody tr.self td").nth(5)).toHaveText(/^\d[\d,]* req\/s$/);
+  const preact = table.locator("tbody tr", { has: page.locator("th", { hasText: /^Preact$/ }) });
+  await expect(preact.locator("td").last()).toHaveText("No full-stack layer");
+  await expect(page.locator("#compare .note").last()).toHaveText(
+    "Astro's interactive islands need a second UI framework.",
+  );
 
   // The four sections, in order, then the closing call.
   await expect(page.locator(".box h3")).toHaveText([

@@ -34,6 +34,7 @@ import {
   type Cell,
   COLUMNS,
   DOWNLOADS_PERIOD,
+  SERVER_SPEED,
   factor,
   kilobytes,
   stacks,
@@ -112,10 +113,10 @@ export default function Home() {
         <LightField client:idle />
         <div class="scrim" aria-hidden="true" />
         <div class="hero">
-          <p class="eyebrow">Static · Server · Islands · SPA — one framework</p>
+          <p class="eyebrow">Static sites · Server-side rendering · Islands · SPAs</p>
           <h1 id="hero-title">
-            <span class="line">Feels like React.</span>{" "}
-            <span class="line lit">Runs like vanilla JS.</span>
+            <span class="line">The best of every stack,</span>{" "}
+            <span class="line lit">in one framework</span>
           </h1>
           <p class="lead">
             Lumiose is a web framework for everything from static sites and SPAs to full-stack apps:{" "}
@@ -162,7 +163,7 @@ export default function Home() {
 
       <section class="section" id="compare" aria-labelledby="compare-title">
         <p class="kicker">Compare the stacks</p>
-        <h2 id="compare-title">One framework where others need two</h2>
+        <h2 id="compare-title">{site.tagline}</h2>
         <p class="intro">
           Components, styles, routing and the server in one project, measured against the stacks you
           already know.
@@ -177,6 +178,10 @@ export default function Home() {
                 {Object.values(COLUMNS).map((label) => (
                   <th scope="col">{label}</th>
                 ))}
+                {/* Over two cells, each self-describing by its unit: renders/s, then req/s. */}
+                <th scope="col" colspan="2">
+                  {SERVER_SPEED}
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -195,8 +200,11 @@ export default function Home() {
                   <td class="number">
                     <TableCell cell={row.clientSpeed} />
                   </td>
-                  <td>
-                    <TableCell cell={row.sameComponents} />
+                  <td class="number">
+                    <TableCell cell={row.rendering} />
+                  </td>
+                  <td class="number">
+                    <TableCell cell={row.requests} />
                   </td>
                 </tr>
               ))}
@@ -207,11 +215,16 @@ export default function Home() {
           JS on a server page: what the fullstack comparison's issue tracker loads for its home
           page, brotli ({results.fullstackRun}). Client speed: js-framework-benchmark's weighted
           factor, where 1.00 is the fastest framework in the run
-          {vanilla === undefined ? "" : ` and vanilla JS scores ${vanilla.toFixed(2)}`}; both React
-          rows use React's entry. "measuring": the port or benchmark entry is being added. Rows
+          {vanilla === undefined ? "" : ` and vanilla JS scores ${vanilla.toFixed(2)}`}. Server speed:
+          renders per second of the SSR benchmark's 5,000-component page to an HTML string (
+          {results.serverRun}), then requests per second on the fullstack comparison's home page
+          {results.requestsRun === "" ? "" : ` (${results.requestsRun})`}. Both React rows use
+          React's client and rendering entries. "measuring": the port or benchmark entry is being
+          added. Rows
           after Lumiose are ordered by npm downloads of each stack's main package (
           {DOWNLOADS_PERIOD}). Method and every run: <a href={href("/benchmarks")}>benchmarks</a>.
         </p>
+        <p class="note">Astro's interactive islands need a second UI framework.</p>
       </section>
 
       <section class="section" aria-labelledby="why-title">
@@ -572,7 +585,7 @@ export default function Home() {
   }
   table {
     inline-size: 100%;
-    min-inline-size: 52rem;
+    min-inline-size: 58rem;
     border-collapse: collapse;
     font-size: $text.sm;
   }

@@ -26,14 +26,20 @@ export interface Evidence {
   firstPaint: Bar[];
   /** SSR throughput of the same 5,000-component page (renders per second, higher is better). */
   ssr: Bar[];
+  /** The same, by the SSR results' Framework name (`React`), variants such as "(hydratable)" left out. */
+  rendersByFramework: Record<string, number>;
   /** The weighted CPU factor of every js-framework-benchmark column, by column id (`solid`). */
   cpuByColumn: Record<string, number>;
   /** JavaScript a server-rendered page of the fullstack issue tracker loads (kB, brotli). */
   serverJs: Bar[];
   /** The same, by fullstack app id (`next`, `react-router`). */
   serverJsByApp: Record<string, number>;
-  /** Where and when the fullstack numbers were measured. */
+  /** Requests per second on the fullstack issue tracker's home page, by app id. */
+  requestsByApp: Record<string, number>;
+  /** Where and when the fullstack page payloads were measured. */
   fullstackRun: string;
+  /** Where and when the fullstack request throughput was measured. */
+  requestsRun: string;
   /** Where and when the client numbers were measured. */
   clientRun: string;
   /** Where and when the server numbers were measured. */
@@ -62,6 +68,7 @@ const FULLSTACK_NAMES: Record<string, string> = {
   sveltekit: "SvelteKit",
   nuxt: "Nuxt",
   remix: "Remix 3",
+  astro: "Astro",
 };
 
 /** The fields of a fullstack results file (benchmarks/fullstack/results/*.json) read here. */
@@ -77,6 +84,8 @@ export interface FullstackRun {
 
 /** The metric of a server-rendered page's JavaScript: the home page, brotli-compressed. */
 const SERVER_JS = "payload.home.js-brotli";
+/** The metric of server throughput: requests per second on the home page. */
+const REQUESTS = "server.home.rps";
 
 interface Table {
   header: string[];
@@ -136,33 +145,56 @@ function runLine(markdown: string, field: string): string {
   return new RegExp(`^- ${field}: (.+)$`, "m").exec(markdown)?.[1]?.trim() ?? "";
 }
 
-/** The newest full (not `--quick`) fullstack run that measured the page payloads. */
-export function readFullstack(
+/** The newest full (not `--quick`) fullstack run that measured `metric`, and its medians by app. */
+function newestFull(
   runs: FullstackRun[],
-): Pick<Evidence, "serverJs" | "serverJsByApp" | "fullstackRun"> {
+  metric: string,
+): { run: FullstackRun; byApp: Record<string, number> } | undefined {
   const run = runs
     .filter((candidate) => !candidate.meta.quick)
-    .filter((candidate) => Object.values(candidate.results).some((app) => app[SERVER_JS]))
+    .filter((candidate) => Object.values(candidate.results).some((app) => app[metric]))
     .toSorted((a, b) => b.meta.date.localeCompare(a.meta.date))[0];
-  if (run === undefined) throw new Error("No full fullstack run measured the page payloads.");
-  const serverJsByApp: Record<string, number> = {};
+  if (run === undefined) return undefined;
+  const byApp: Record<string, number> = {};
   for (const [app, metrics] of Object.entries(run.results)) {
-    const bytes = metrics[SERVER_JS]?.median;
-    if (bytes !== undefined) serverJsByApp[app] = bytes / 1000;
+    const median = metrics[metric]?.median;
+    if (median !== undefined) byApp[app] = median;
   }
-  const { machine } = run.meta;
+  return { run, byApp };
+}
+
+/** `2026-10-09 · Apple M1 Max (10 cores) · macOS · Node 26.8.1`. */
+function runLabel({ meta }: FullstackRun): string {
+  return [
+    meta.date.slice(0, 10),
+    `${meta.machine.cpu} (${meta.machine.cores} cores)`,
+    meta.machine.os,
+    `Node ${meta.node.replace(/^v/, "")}`,
+  ].join(" · ");
+}
+
+/**
+ * From the fullstack runs: the page payloads and the request throughput, each from the newest full
+ * run that measured it (a run may measure only some metrics).
+ */
+export function readFullstack(
+  runs: FullstackRun[],
+): Pick<Evidence, "serverJs" | "serverJsByApp" | "fullstackRun" | "requestsByApp" | "requestsRun"> {
+  const payloads = newestFull(runs, SERVER_JS);
+  if (payloads === undefined) throw new Error("No full fullstack run measured the page payloads.");
+  const serverJsByApp = Object.fromEntries(
+    Object.entries(payloads.byApp).map(([app, bytes]) => [app, bytes / 1000]),
+  );
+  const requests = newestFull(runs, REQUESTS);
   return {
     serverJs: Object.entries(serverJsByApp).flatMap(([app, value]) => {
       const label = FULLSTACK_NAMES[app];
       return label === undefined ? [] : [{ label, value, self: app === "lumiose" }];
     }),
     serverJsByApp,
-    fullstackRun: [
-      run.meta.date.slice(0, 10),
-      `${machine.cpu} (${machine.cores} cores)`,
-      machine.os,
-      `Node ${run.meta.node.replace(/^v/, "")}`,
-    ].join(" · "),
+    fullstackRun: runLabel(payloads.run),
+    requestsByApp: requests?.byApp ?? {},
+    requestsRun: requests === undefined ? "" : runLabel(requests.run),
   };
 }
 
@@ -186,6 +218,13 @@ export function readEvidence(jsfb: string, ssr: string, fullstack: FullstackRun[
   const serverRun = /^\*\*Run:\*\* (.+?)\.$/m.exec(ssr)?.[1] ?? "";
 
   const cpuRow = row(cpuTable, "weighted geometric mean");
+  const ssrBars = ssrTable.rows
+    .filter((cells) => !cells[0]!.includes("("))
+    .map((cells) => ({
+      label: cells[0]!,
+      value: number(cells[2]!),
+      self: cells[0] === "Lumiose",
+    }));
   return {
     ...readFullstack(fullstack),
     cpu: bars(cpuTable, cpuRow),
@@ -194,13 +233,8 @@ export function readEvidence(jsfb: string, ssr: string, fullstack: FullstackRun[
     ),
     size: bars(sizeTable, row(sizeTable, "42_size-compressed")),
     firstPaint: bars(sizeTable, row(sizeTable, "43_first-paint")),
-    ssr: ssrTable.rows
-      .filter((cells) => !cells[0]!.includes("("))
-      .map((cells) => ({
-        label: cells[0]!,
-        value: number(cells[2]!),
-        self: cells[0] === "Lumiose",
-      })),
+    ssr: ssrBars,
+    rendersByFramework: Object.fromEntries(ssrBars.map((bar) => [bar.label, bar.value])),
     clientRun: [date, machine, browser].filter(Boolean).join(" · "),
     serverRun,
   };
