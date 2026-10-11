@@ -1,0 +1,38 @@
+{
+  "name": "@bench/app-solid-start",
+  "version": "0.0.0",
+  "private": true,
+  "description": "The Tracker app (doc-4) in SolidStart 2 with SSR, on Nitro's Node server.",
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "seed": "bench-seed",
+    "dev": "vite dev --host 127.0.0.1 --port ${PORT:-4104} --strictPort",
+    "build": "vite build",
+    "start": "NODE_ENV=production node .output/server/index.mjs",
+    "typecheck": "tsc -p tsconfig.json",
+    "clean": "rm -rf .output .nitro node_modules/.nitro node_modules/.vite"
+  },
+  "dependencies": {
+    "@bench/data": "workspace:*",
+    "@bench/ui-css": "workspace:*",
+    "@solidjs/meta": "0.29.4",
+    "@solidjs/router": "1.0.0",
+    "@solidjs/start": "2.0.6",
+    "nitro": "3.0.260903-beta",
+    "solid-js": "1.9.17"
+  },
+  "devDependencies": {
+    "@types/node": "24.19.1",
+    "typescript": "7.0.2",
+    "vite": "8.3.4"
+  },
+  "demo": {
+    "name": "tracker-solid-start",
+    "title": "Tracker in SolidStart (fullstack bench)",
+    "kind": "benchmark",
+    "setup": [
+      "seed"
+    ]
+  }
+}

@@ -3,27 +3,28 @@ id: doc-4
 title: Fullstack comparison benchmark
 type: specification
 created_date: '2026-10-09 04:07'
-updated_date: '2026-10-10 00:23'
+updated_date: '2026-10-11 01:53'
 ---
 # Fullstack comparison benchmark
 
-**Status:** requested by the user on 2026-10-09. Spec by Lux. Tasks: TASK-110 to TASK-115 (milestone m-8).
+**Status:** requested by the user on 2026-10-09. Spec by Lux. Tasks: TASK-110 to TASK-115 (milestone m-8). More stacks for the landing's comparison table (decision-37): TASK-202 (SolidStart), TASK-203 (SvelteKit), TASK-204 (Nuxt), TASK-205 (Remix 3).
 
-**Goal.** Implement the same non-trivial fullstack app three times — **Lumiose SSR**, **React Router (framework mode, SSR)** and **Next.js 16 (App Router)** — and compare dev and production metrics with a reproducible harness. Results are stored as JSON and browsed in a static HTML viewer.
+**Goal.** Implement the same non-trivial fullstack app three times — **Lumiose SSR**, **React Router (framework mode, SSR)** and **Next.js 16 (App Router)**, later also **SolidStart** and **SvelteKit** (§8) — and compare dev and production metrics with a reproducible harness. Results are stored as JSON and browsed in a static HTML viewer.
 
 ## 1. Fairness rules
 
-- **Same app, same output.** Same routes, data, HTML structure, class names and behaviour. One conformance Playwright suite (§5) runs against all three apps; an app is only benchmarked when it passes.
+- **Same app, same output.** Same routes, data, HTML structure, class names and behaviour. One conformance Playwright suite (§5) runs against every app; an app is only benchmarked when it passes.
 - **Same CSS.** All apps import one shared plain stylesheet (`@bench/ui-css`). No CSS Modules, Tailwind or scoped styles, so CSS bytes are identical and the comparison measures the framework.
 - **Same data layer.** All apps call the shared `@bench/data` package (`node:sqlite`, deterministic seed). No ORM, no framework data cache.
 - **Idiomatic framework code.** Each app uses its framework's recommended primitives:
   - Lumiose: route mode `server`, async components + `Suspense`, form actions, islands (`client:*`) for interactive parts.
   - React Router: loaders/actions, `<Form>`/`useFetcher`, a loader promise + `<Await>` inside `<Suspense>` for streamed data. The whole page hydrates (that is how React Router works).
   - Next.js: server components, server actions, `"use client"` components for interactive parts, async server component inside `<Suspense>`.
+  - SolidStart: file routes, `query` + `createAsync` server functions (`"use server"`) with route `preload`, `action`s with `<form action>` and `useSubmission`, a non-deferred `createAsync` inside `<Suspense>` for streamed data. The whole page hydrates (SolidStart's islands mode is not supported yet).
 - **Dynamic rendering everywhere.** Every page renders on each request. No full-page or data caching (Next: no static prerendering of these routes, no `use cache`; React Router: no prerender; Lumiose: mode `server`).
-- **Production servers as shipped,** with HTTP compression **off** in all three (Next `compress: false`; React Router served by `@react-router/serve` or an equivalent minimal Node server with compression off; Lumiose `adapter-node`). Payload sizes are measured offline with gzip and brotli.
+- **Production servers as shipped,** with HTTP compression **off** in every app (Next `compress: false`; React Router served by `@react-router/serve` or an equivalent minimal Node server with compression off; Lumiose `adapter-node`; SolidStart on Nitro's `node-server` output, which does not compress). Payload sizes are measured offline with gzip and brotli.
 - **Type checking is measured separately**, not inside build time (Next: `typescript.ignoreBuildErrors: true` for the timed build).
-- **Latest stable versions** at implementation time (Next.js 16.x, React 19.x, React Router latest stable); exact versions are pinned and recorded in every results file. Node is the repo's Node (≥ 24).
+- **Latest stable versions** (decision-41): every framework uses its latest stable version that is compatible with the rest of its stack, pinned exactly; §8 records each version and why an older one is used. Results files record the resolved versions. Node is the repo's Node (≥ 24).
 - **Same machine, sequential runs,** nothing else heavy running. Every results file records the machine.
 
 ## 2. The app: "Tracker" (an issue tracker)
@@ -71,14 +72,15 @@ benchmarks/fullstack/
   apps/lumiose/           Lumiose SSR        (Nova)
   apps/react-router/    React Router     (Quasar)
   apps/next/            Next.js 16       (Quasar)
+  apps/solid-start/     SolidStart 2     (Quasar)
   harness/e2e/          conformance suite (Nova; inside @bench/harness so it resolves @playwright/test)
   harness/              @bench/harness   runner, metrics, results writer (Nova)
   results/              <date>T<time>-<host>.json, index.json (committed)
   viewer/               static HTML viewer (Nova)
 ```
 
-- Ports: Lumiose 4101, React Router 4102, Next 4103 (dev and prod).
-- Each app exposes the same scripts: `seed`, `dev`, `build`, `start`, `typecheck`, `clean` (removes build output and framework caches: `.next`, `node_modules/.vite`, `build`, `dist`, `.react-router`, `.lumiose`).
+- Ports: Lumiose 4101, React Router 4102, Next 4103, SolidStart 4104, SvelteKit 4105 (dev and prod). Next free ones: Nuxt 4106, Remix 3 4107.
+- Each app exposes the same scripts: `seed`, `dev`, `build`, `start`, `typecheck`, `clean` (removes build output and framework caches: `.next`, `node_modules/.vite`, `build`, `dist`, `.react-router`, `.lumiose`, `.output`, `node_modules/.nitro`).
 
 ## 4. Metrics
 
@@ -86,9 +88,9 @@ Median plus spread (min and max; the viewer draws them as whiskers and highlight
 
 **Environment of each metric** (TASK-145). Dev servers (Vite, Turbopack) compile on request and differ a lot from production servers, so every metric says where it was measured:
 
-- `dev`: against each app's dev server (`lumiose dev` and `react-router dev` on Vite, `next dev` on Turbopack). Only the **Dev** metrics below.
+- `dev`: against each app's dev server (`lumiose dev`, `react-router dev` and SolidStart's `vite dev` on Vite, `next dev` on Turbopack). Only the **Dev** metrics below.
 - `build`: from the production build and the sources: build time, output size on disk (without precompressed `.br`/`.gz` copies), type check, source size, dependency footprint.
-- `prod`: against the built apps on their production servers (`start` script: Lumiose `node server.ts` on adapter-node, React Router `node server.ts` = Express + @react-router/express, Next `next start`): client payload, page load and every server metric, req/s included.
+- `prod`: against the built apps on their production servers (`start` script: Lumiose `node server.ts` on adapter-node, React Router `node server.ts` = Express + @react-router/express, Next `next start`, SolidStart `node .output/server/index.mjs` on Nitro): client payload, page load and every server metric, req/s included.
 
 The harness runs every `start` with `NODE_ENV=production` and checks, on each app's first production start, that the process listening on the port has `NODE_ENV=production` (it stops otherwise) and that `/` is not compressed for a client accepting br and gzip. Each results file records the commands, the dev bundler and these checks.
 
@@ -112,7 +114,7 @@ The harness runs every `start` with `NODE_ENV=production` and checks, on each ap
 - Server RSS after the load test.
 
 **Other**
-- Type check time (`lumiose check` with TS 7 vs `tsc --noEmit` / `next typegen && tsc`).
+- Type check time (`lumiose check` with TS 7 vs `tsc --noEmit` / `next typegen && tsc` / `tsc` for SolidStart).
 - Source size: lines of code per app (excluding shared packages), files.
 - Dependency footprint: number of packages in each app's production dependency tree.
 
@@ -150,3 +152,18 @@ The harness runs every `start` with `NODE_ENV=production` and checks, on each ap
 - `pnpm --filter @bench/harness run view`
 
 Full runs happen on a quiet machine (no agents running), together with the TASK-68 js-framework-benchmark rerun (TASK-115).
+
+## 8. Other stacks: versions and caveats
+
+Ports for the landing's stack comparison (decision-37), registered in the harness (`harness/src/apps.ts`) and the viewer. Versions follow decision-41.
+
+### SolidStart (TASK-202, `apps/solid-start`, port 4104)
+
+- **Versions:** `@solidjs/start` 2.0.6, `solid-js` 1.9.17, `@solidjs/router` 1.0.0, `@solidjs/meta` 0.29.4, `nitro` 3.0.260903-beta, Vite 8.3.4, TypeScript 7.0.2 (`tsc` type check). Solid 2 is release-candidate only and SolidStart 2 does not support it, so Solid stays on 1.9 (decision-41).
+- **Server:** `vite build` with SolidStart's plugin and `nitro({ preset: "node-server" })`, as in the official SolidStart 2 templates; production is `node .output/server/index.mjs`. Nitro 3 is only published as a beta, but it is the deployment path SolidStart 2 documents. It does not compress responses (`compressPublicAssets` is off by default) and serves `/_build/assets` as immutable.
+- **Data and mutations:** `query` functions are server functions, called in process during SSR and over `/_server` on client navigations; `action`s replace the `/login` and `/logout` POST routes and the form posts of the other apps (the conformance suite only drives the forms). Every action revalidates the page's queries in the same response (SolidStart's single-flight mutations). The session cookie is read from the request event (`getRequestEvent()`), not the HTTP event, so the single-flight render after login sees the new cookie. `query` dedupes calls within a request and reuses a client-side result for up to 5 s between a preload (link hover) and the navigation; that is the router's request deduplication, not a data cache, and every page request still reads the database.
+- **Streaming:** page data uses `createAsync(…, { deferStream: true })`, so the shell, status code and `<title>` wait for it, like a React Router loader; the comments are a non-deferred `createAsync` inside `<Suspense>` and stream after the shell.
+- **Interactive parts:** the whole page hydrates. GET forms (filters, search) are plain HTML forms (Solid Router only intercepts POST forms), so they reload the page where React Router navigates on the client. Links are plain `<a>` (the router intercepts them); `<A>` would add `active`/`inactive` classes and change the markup.
+- **Readiness:** `onMount` in a `BenchReady` component rendered after the page inside the root `<Suspense>`, so it runs once the lazily loaded route has hydrated.
+- **Workspace caveat:** `benchmarks/ssr` pins `solid-js` 1.9.16, and pnpm first reused it for `@solidjs/start`, giving the app two Solid runtimes (broken router context). The lockfile now resolves the app's whole tree to 1.9.17 (`pnpm update solid-js --depth Infinity` on the app).
+- **Shared code:** the app has its own Solid components (no shared UI package), written from `@bench/react-ui` with the same elements, classes and `data-testid`s, so its source size counts them all.

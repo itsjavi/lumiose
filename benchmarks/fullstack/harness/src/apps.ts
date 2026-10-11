@@ -1,16 +1,15 @@
-// The three Tracker apps (doc-4 §3) and how to drive them: every app exposes the same package
+// The Tracker apps (doc-4 §3) and how to drive them: every app exposes the same package
 // scripts (seed, dev, build, start, typecheck, clean) and listens on its fixed port.
 import { type ChildProcess, spawn } from "node:child_process";
 import { execFileSync } from "node:child_process";
-import { existsSync, readFileSync } from "node:fs";
-import { createRequire } from "node:module";
-import { join } from "node:path";
+import { existsSync, readFileSync, realpathSync } from "node:fs";
+import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 export const FULLSTACK = fileURLToPath(new URL("../../", import.meta.url));
 export const REPO = fileURLToPath(new URL("../../../../", import.meta.url));
 
-export type AppId = "lumiose" | "react-router" | "next";
+export type AppId = "lumiose" | "react-router" | "next" | "solid-start";
 
 export interface App {
   id: AppId;
@@ -88,6 +87,25 @@ export const APPS: App[] = [
     devServer: "`next dev`: Turbopack dev server, routes compiled on first request",
     prodServer:
       "`next start`: Next's production server on the `next build` output (compress: false)",
+  },
+  {
+    id: "solid-start",
+    name: "SolidStart",
+    dir: join(FULLSTACK, "apps/solid-start"),
+    port: 4104,
+    clientOutput: [".output/public"],
+    serverOutput: [".output/server"],
+    hmr: {
+      file: join(FULLSTACK, "apps/solid-start/src/components/layout.tsx"),
+      find: "fullstack comparison benchmark",
+    },
+    sharedSources: [],
+    env: {},
+    devTool: { name: "Vite", pkg: "vite" },
+    devServer:
+      "`vite dev`: Vite with SolidStart's plugin (Environment API), modules compiled on request",
+    prodServer:
+      "`node .output/server/index.mjs`: Nitro's node-server output of `vite build` (no compression)",
   },
 ];
 
@@ -273,17 +291,24 @@ export const sleep = (ms: number): Promise<void> =>
 /** Version of a package as the app resolves it, or null. */
 export function resolvedVersion(app: App, pkg: string, via?: string): string | null {
   try {
-    let base = join(app.dir, "package.json");
+    let dir = app.dir;
     // A dependency of a dependency (`vite` via `lumiose`): resolve from that package's directory.
-    if (via !== undefined) base = createRequire(base).resolve(`${via}/package.json`);
-    const require = createRequire(base);
-    return (
-      JSON.parse(readFileSync(require.resolve(`${pkg}/package.json`), "utf8")) as {
-        version: string;
-      }
-    ).version;
+    if (via !== undefined) dir = dirname(packageJson(dir, via));
+    return (JSON.parse(readFileSync(packageJson(dir, pkg), "utf8")) as { version: string }).version;
   } catch {
     return null;
+  }
+}
+
+/**
+ * The package.json of `pkg` as seen from `dir`, by Node's node_modules lookup rather than
+ * `require.resolve`, which fails for packages whose `exports` hide it (`@solidjs/start`).
+ */
+function packageJson(dir: string, pkg: string): string {
+  for (let current = dir; ; current = dirname(current)) {
+    const candidate = join(current, "node_modules", pkg, "package.json");
+    if (existsSync(candidate)) return realpathSync(candidate);
+    if (dirname(current) === current) throw new Error(`${pkg} not found from ${dir}`);
   }
 }
 

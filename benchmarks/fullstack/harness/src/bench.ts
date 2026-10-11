@@ -516,6 +516,10 @@ const run: RunFile = {
       "react-dom": versionOf("react-dom", "next"),
       "react-router": versionOf("react-router", "react-router"),
       next: versionOf("next", "next"),
+      "solid-js": versionOf("solid-js", "solid-start"),
+      "@solidjs/start": versionOf("@solidjs/start", "solid-start"),
+      "@solidjs/router": versionOf("@solidjs/router", "solid-start"),
+      nitro: versionOf("nitro", "solid-start"),
       vite: (() => {
         const lumioseApp = apps.find((a) => a.id === "lumiose");
         return lumioseApp === undefined ? null : resolvedVersion(lumioseApp, "vite", "lumiose");
