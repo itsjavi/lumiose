@@ -105,43 +105,43 @@ export function SearchBox(props: { q?: string }) {
           </li>
         ))}
       </ul>
-
-      <style>
-        .search {
-          position: relative;
-          flex: 0 1 18rem;
-        }
-        input {
-          box-sizing: border-box;
-          width: 100%;
-        }
-        .suggestions {
-          position: absolute;
-          z-index: 10;
-          inset: calc(100% + $theme.space.xs) 0 auto;
-          margin: 0;
-          padding: $theme.space.xs 0;
-          list-style: none;
-          border: 1px solid $theme.color.line;
-          border-radius: $theme.radius.md;
-          background: Canvas;
-          box-shadow: $theme.shadow.popup;
-        }
-        li a {
-          display: grid;
-          padding: $theme.space.xs $theme.space.md;
-          color: inherit;
-          text-decoration: none;
-        }
-        li a span {
-          color: $theme.color.muted;
-          font-size: $theme.font.small;
-        }
-        li[aria-selected="true"] a,
-        li a:hover {
-          background: $theme.color.hover;
-        }
-      </style>
     </form>
   );
 }
+
+<style>
+  .search {
+    position: relative;
+    flex: 0 1 18rem;
+  }
+  input {
+    box-sizing: border-box;
+    width: 100%;
+  }
+  .suggestions {
+    position: absolute;
+    z-index: 10;
+    inset: calc(100% + $theme.space.xs) 0 auto;
+    margin: 0;
+    padding: $theme.space.xs 0;
+    list-style: none;
+    border: 1px solid $theme.color.line;
+    border-radius: $theme.radius.md;
+    background: Canvas;
+    box-shadow: $theme.shadow.popup;
+  }
+  li a {
+    display: grid;
+    padding: $theme.space.xs $theme.space.md;
+    color: inherit;
+    text-decoration: none;
+  }
+  li a span {
+    color: $theme.color.muted;
+    font-size: $theme.font.small;
+  }
+  li[aria-selected="true"] a,
+  li a:hover {
+    background: $theme.color.hover;
+  }
+</style>

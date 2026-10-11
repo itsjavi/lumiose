@@ -37,48 +37,48 @@ export function Pager(props: {
       ) : (
         <span class="edge">Next →</span>
       )}
-
-      <style>
-        .pager {
-          display: flex;
-          flex-wrap: wrap;
-          gap: $theme.space.md;
-          align-items: center;
-          justify-content: center;
-          margin: $theme.space.xl 0 $theme.space.md;
-        }
-        .pager[hidden] {
-          display: none;
-        }
-        ol {
-          display: flex;
-          gap: $theme.space.xs;
-          margin: 0;
-          padding: 0;
-          list-style: none;
-        }
-        a,
-        span {
-          display: inline-block;
-          min-width: 1.5rem;
-          padding: $theme.space.xs $theme.space.sm;
-          border-radius: $theme.radius.sm;
-          text-align: center;
-          text-decoration: none;
-        }
-        a:hover {
-          background: $theme.color.hover;
-        }
-        [aria-current="page"] {
-          background: $theme.color.accent;
-          color: $theme.color.accentInk;
-          font-weight: 600;
-        }
-        .edge,
-        .gap {
-          color: $theme.color.muted;
-        }
-      </style>
     </nav>
   );
 }
+
+<style>
+  .pager {
+    display: flex;
+    flex-wrap: wrap;
+    gap: $theme.space.md;
+    align-items: center;
+    justify-content: center;
+    margin: $theme.space.xl 0 $theme.space.md;
+  }
+  .pager[hidden] {
+    display: none;
+  }
+  ol {
+    display: flex;
+    gap: $theme.space.xs;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  a,
+  span {
+    display: inline-block;
+    min-width: 1.5rem;
+    padding: $theme.space.xs $theme.space.sm;
+    border-radius: $theme.radius.sm;
+    text-align: center;
+    text-decoration: none;
+  }
+  a:hover {
+    background: $theme.color.hover;
+  }
+  [aria-current="page"] {
+    background: $theme.color.accent;
+    color: $theme.color.accentInk;
+    font-weight: 600;
+  }
+  .edge,
+  .gap {
+    color: $theme.color.muted;
+  }
+</style>

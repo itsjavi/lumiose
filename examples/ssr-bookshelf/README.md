@@ -181,9 +181,10 @@ then pass the results to a component as props. node:sqlite is synchronous, so pa
 
 ### Styles
 
-Each component has a `<style>` block directly under its root element, and pages have a file-level
-block at the end of the file, so their scope is the same whether a nested block covers the whole
-component or only its element's subtree (decision-23). Design tokens live in `src/theme.ts` and are
+Every file with styles ends with one file-level `<style>` block, shared by the components it
+defines (decision-40): `BookCard.stsx` styles `Cover`, `BookCard` and `BookGrid` from one block, and
+`Header.stsx` the header and the footer. Selectors start from a class of the component they style
+(`.site-footer p`), so they do not reach the file's other components. Design tokens live in `src/theme.ts` and are
 read as `$theme.color.accent`, `$theme.space.md` and so on: the compiler inlines them, so the
 module never reaches the browser. `src/styles.css` holds the few base styles for plain elements
 (body, links, form controls, `.byline`, `.error`, `.form`).

@@ -24,29 +24,29 @@ export function AccountLinks(props: { user: User | null }) {
           </form>
         </>
       )}
-
-      <style>
-        .account {
-          display: flex;
-          gap: $theme.space.md;
-          align-items: center;
-          font-size: $theme.font.small;
-          white-space: nowrap;
-        }
-        form {
-          margin: 0;
-        }
-        .register,
-        .sign-out {
-          padding: 0.2rem 0.7rem;
-          border: 1px solid $theme.color.accent;
-          border-radius: $theme.radius.pill;
-          background: transparent;
-          color: $theme.color.accent;
-          font-size: $theme.font.small;
-          text-decoration: none;
-        }
-      </style>
     </div>
   );
 }
+
+<style>
+  .account {
+    display: flex;
+    gap: $theme.space.md;
+    align-items: center;
+    font-size: $theme.font.small;
+    white-space: nowrap;
+  }
+  form {
+    margin: 0;
+  }
+  .register,
+  .sign-out {
+    padding: 0.2rem 0.7rem;
+    border: 1px solid $theme.color.accent;
+    border-radius: $theme.radius.pill;
+    background: transparent;
+    color: $theme.color.accent;
+    font-size: $theme.font.small;
+    text-decoration: none;
+  }
+</style>

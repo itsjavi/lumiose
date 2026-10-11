@@ -35,38 +35,38 @@ export function ReviewCard(props: {
         {props.review.updatedAt === props.review.createdAt ? "" : " · edited"}
       </p>
       <p class="body">{props.review.body}</p>
-
-      <style>
-        .review {
-          display: grid;
-          gap: $theme.space.xs;
-          padding: $theme.space.md 0;
-          border-top: 1px solid $theme.color.line;
-        }
-        .own {
-          padding-inline: $theme.space.md;
-          border: 1px solid color-mix(in srgb, $theme.color.accent 40%, transparent);
-          border-radius: $theme.radius.md;
-          background: color-mix(in srgb, $theme.color.accent 6%, transparent);
-        }
-        header {
-          display: flex;
-          flex-wrap: wrap;
-          gap: $theme.space.sm;
-          align-items: baseline;
-        }
-        h3 {
-          margin: 0;
-          font-size: 1rem;
-        }
-        .book,
-        .body {
-          margin: 0;
-        }
-        .body {
-          white-space: pre-line;
-        }
-      </style>
     </article>
   );
 }
+
+<style>
+  .review {
+    display: grid;
+    gap: $theme.space.xs;
+    padding: $theme.space.md 0;
+    border-top: 1px solid $theme.color.line;
+  }
+  .own {
+    padding-inline: $theme.space.md;
+    border: 1px solid color-mix(in srgb, $theme.color.accent 40%, transparent);
+    border-radius: $theme.radius.md;
+    background: color-mix(in srgb, $theme.color.accent 6%, transparent);
+  }
+  header {
+    display: flex;
+    flex-wrap: wrap;
+    gap: $theme.space.sm;
+    align-items: baseline;
+  }
+  h3 {
+    margin: 0;
+    font-size: 1rem;
+  }
+  .book,
+  .body {
+    margin: 0;
+  }
+  .body {
+    white-space: pre-line;
+  }
+</style>

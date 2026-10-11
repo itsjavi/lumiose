@@ -24,48 +24,6 @@ export function Header(props: { user?: User | null }) {
       </nav>
       <SearchBox client:load />
       {props.user === undefined ? <AccountMenu client:idle /> : <AccountLinks user={props.user} />}
-
-      <style>
-        .site-header {
-          display: flex;
-          flex-wrap: wrap;
-          gap: $theme.space.sm $theme.space.lg;
-          align-items: center;
-          padding: $theme.space.sm $theme.space.md;
-          border-bottom: 1px solid $theme.color.line;
-        }
-        .brand {
-          display: flex;
-          gap: $theme.space.sm;
-          align-items: center;
-          color: inherit;
-          font-weight: 700;
-          font-size: $theme.font.lead;
-          text-decoration: none;
-        }
-        .logo {
-          width: 0.9rem;
-          height: 1.2rem;
-          border-radius: 2px;
-          background: linear-gradient(
-            90deg,
-            $theme.color.accent 30%,
-            color-mix(in srgb, $theme.color.accent 60%, white) 30%
-          );
-        }
-        nav {
-          display: flex;
-          gap: $theme.space.md;
-          flex: 1;
-        }
-        nav a {
-          color: inherit;
-          text-decoration: none;
-        }
-        nav a:hover {
-          color: $theme.color.accent;
-        }
-      </style>
     </header>
   );
 }
@@ -77,19 +35,58 @@ export function Footer() {
         Bookshelf is a sample app of the Lumiose framework. Books, authors, readers and reviews are
         generated. <a href={href("/about")}>How it is built</a>
       </p>
-
-      <style>
-        .site-footer {
-          padding: $theme.space.lg $theme.space.md;
-          border-top: 1px solid $theme.color.line;
-          color: $theme.color.muted;
-          font-size: $theme.font.small;
-          text-align: center;
-        }
-        p {
-          margin: 0;
-        }
-      </style>
     </footer>
   );
 }
+
+<style>
+  .site-header {
+    display: flex;
+    flex-wrap: wrap;
+    gap: $theme.space.sm $theme.space.lg;
+    align-items: center;
+    padding: $theme.space.sm $theme.space.md;
+    border-bottom: 1px solid $theme.color.line;
+  }
+  .brand {
+    display: flex;
+    gap: $theme.space.sm;
+    align-items: center;
+    color: inherit;
+    font-weight: 700;
+    font-size: $theme.font.lead;
+    text-decoration: none;
+  }
+  .logo {
+    width: 0.9rem;
+    height: 1.2rem;
+    border-radius: 2px;
+    background: linear-gradient(
+      90deg,
+      $theme.color.accent 30%,
+      color-mix(in srgb, $theme.color.accent 60%, white) 30%
+    );
+  }
+  nav {
+    display: flex;
+    gap: $theme.space.md;
+    flex: 1;
+  }
+  nav a {
+    color: inherit;
+    text-decoration: none;
+  }
+  nav a:hover {
+    color: $theme.color.accent;
+  }
+  .site-footer {
+    padding: $theme.space.lg $theme.space.md;
+    border-top: 1px solid $theme.color.line;
+    color: $theme.color.muted;
+    font-size: $theme.font.small;
+    text-align: center;
+  }
+  .site-footer p {
+    margin: 0;
+  }
+</style>

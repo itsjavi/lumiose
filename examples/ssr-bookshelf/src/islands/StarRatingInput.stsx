@@ -58,50 +58,50 @@ export function StarRatingInput(props: { name: string; value: number | null; err
       <p class="error" role="alert">
         {hint()}
       </p>
-
-      <style>
-        .star-input {
-          margin: 0;
-          padding: 0;
-          border: 0;
-        }
-        legend {
-          padding: 0;
-        }
-        .row {
-          display: flex;
-          gap: 2px;
-          align-items: center;
-        }
-        label {
-          position: relative;
-          font-size: 1.75rem;
-          line-height: 1;
-          color: $theme.color.line;
-          cursor: pointer;
-        }
-        label.lit,
-        label:has(input:checked) {
-          color: $theme.color.star;
-        }
-        label:has(input:focus-visible) {
-          outline: 2px solid $theme.color.accent;
-          outline-offset: 2px;
-          border-radius: $theme.radius.sm;
-        }
-        input {
-          position: absolute;
-          inset: 0;
-          margin: 0;
-          opacity: 0;
-          cursor: pointer;
-        }
-        output {
-          margin-left: $theme.space.sm;
-          color: $theme.color.muted;
-          font-size: $theme.font.small;
-        }
-      </style>
     </fieldset>
   );
 }
+
+<style>
+  .star-input {
+    margin: 0;
+    padding: 0;
+    border: 0;
+  }
+  legend {
+    padding: 0;
+  }
+  .row {
+    display: flex;
+    gap: 2px;
+    align-items: center;
+  }
+  label {
+    position: relative;
+    font-size: 1.75rem;
+    line-height: 1;
+    color: $theme.color.line;
+    cursor: pointer;
+  }
+  label.lit,
+  label:has(input:checked) {
+    color: $theme.color.star;
+  }
+  label:has(input:focus-visible) {
+    outline: 2px solid $theme.color.accent;
+    outline-offset: 2px;
+    border-radius: $theme.radius.sm;
+  }
+  input {
+    position: absolute;
+    inset: 0;
+    margin: 0;
+    opacity: 0;
+    cursor: pointer;
+  }
+  output {
+    margin-left: $theme.space.sm;
+    color: $theme.color.muted;
+    font-size: $theme.font.small;
+  }
+</style>
