@@ -54,8 +54,16 @@ create-lumiose (`--template ssr`), installs the tarballs into it, and runs `lumi
 
 ## Compiler binaries
 
-`.github/workflows/binaries.yml` (same triggers) builds `@lumiose/compiler`'s native binary for
-each supported platform and the WebAssembly compiler, and uploads them as workflow artifacts:
+`.github/workflows/binaries.yml` builds `@lumiose/compiler`'s native binary for each supported
+platform and the WebAssembly compiler, and uploads them as workflow artifacts.
+
+It runs only when a push or pull request to `main` changes what goes into the binaries:
+- `crates/**`, `Cargo.toml`, `Cargo.lock` and `rust-toolchain.toml`
+- `packages/compiler/**`
+- the workflow itself and its smoke scripts
+
+Every release runs it too, because `release.yml` calls it, and you can start it by hand. CI and the
+Pages build compile the compiler they need themselves.
 
 | Artifact                                 | Built on                    | Smoke test                           |
 | ---------------------------------------- | --------------------------- | ------------------------------------ |

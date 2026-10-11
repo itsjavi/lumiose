@@ -4,13 +4,33 @@
 # the @lumiose/compiler-<platform> packages (packages/compiler/npm); release.yml calls this workflow.
 name: Binaries
 
+# Only when something that goes into the binaries changes: the Rust crates and toolchain, the
+# compiler package (napi loader and platform packages) and this workflow's own scripts. CI and Pages
+# build the compiler they need themselves; releases always build every binary (release.yml calls
+# this workflow), and it can be run by hand.
 on:
   push:
     branches: [main]
-    paths-ignore: ["backlog/**"]
+    paths:
+      - "crates/**"
+      - "Cargo.toml"
+      - "Cargo.lock"
+      - "rust-toolchain.toml"
+      - "packages/compiler/**"
+      - ".github/workflows/binaries.yml"
+      - ".github/scripts/smoke-napi.mjs"
+      - ".github/scripts/smoke-wasm.mjs"
   pull_request:
     branches: [main]
-    paths-ignore: ["backlog/**"]
+    paths:
+      - "crates/**"
+      - "Cargo.toml"
+      - "Cargo.lock"
+      - "rust-toolchain.toml"
+      - "packages/compiler/**"
+      - ".github/workflows/binaries.yml"
+      - ".github/scripts/smoke-napi.mjs"
+      - ".github/scripts/smoke-wasm.mjs"
   workflow_dispatch:
   workflow_call:
 
@@ -111,11 +131,16 @@ jobs:
 
       - name: Smoke test (Alpine)
         if: matrix.smoke == 'alpine'
-        # Docker Hub's official image through the AWS ECR Public mirror: no unauthenticated pull
-        # rate limit on shared runners.
-        run: >
-          docker run --rm -v "$PWD:/w" -w /w public.ecr.aws/docker/library/node:24-alpine
-          node .github/scripts/smoke-napi.mjs
+        # Docker Hub's official image through the AWS ECR Public mirror. Shared runners still hit
+        # its rate limit at times (exit 125), so the pull retries with a backoff before the run.
+        run: |
+          image=public.ecr.aws/docker/library/node:24-alpine
+          for attempt in 1 2 3 4; do
+            docker pull "$image" && break
+            [ "$attempt" = 4 ] && exit 1
+            sleep $((attempt * 20))
+          done
+          docker run --rm -v "$PWD:/w" -w /w "$image" node .github/scripts/smoke-napi.mjs
 
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
