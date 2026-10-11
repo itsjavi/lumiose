@@ -255,11 +255,7 @@ export default function Songs() {
     padding: 10px;
     background: var(--shell-low);
     border-radius: 8px;
-    background-image: repeating-linear-gradient(
-      0deg,
-      transparent 0 5px,
-      var(--groove) 5px 6px
-    );
+    background-image: repeating-linear-gradient(0deg, transparent 0 5px, var(--groove) 5px 6px);
   }
   .mood {
     justify-self: start;
