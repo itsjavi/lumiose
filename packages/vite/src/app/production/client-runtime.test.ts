@@ -86,6 +86,66 @@ export default function Home() { return <Counter client:load start={1} />; }
     expect(files.Counter).toMatch(/from"\.\/loader-[\w-]+\.js"/);
   });
 
+  // TASK-228: runtime that one island imports loads with that island only; runtime that several
+  // islands share goes to the runtime chunk, not to a chunk of its own (one more request each).
+  const POSTER = `import { submit } from "lumiose";
+export function Poster() {
+  return <form onSubmit={(event) => { event.preventDefault(); submit(event.currentTarget); }}><button>Save</button></form>;
+}
+`;
+  const FETCHER = `import { fetchJSON } from "lumiose";
+export function Fetcher() {
+  return <button onClick={() => fetchJSON("/api")}>Load</button>;
+}
+`;
+  const islandsApp = (counter: string, other: "Poster" | "Fetcher") =>
+    project({
+      "src/routes/index.stsx": `import { Counter } from "../components/Counter.stsx";
+import { ${other} } from "../components/${other}.stsx";
+export default function Home() { return <main><Counter client:load start={1} /><${other} client:load /></main>; }
+`,
+      "src/components/Counter.stsx": counter,
+      [`src/components/${other}.stsx`]: other === "Poster" ? POSTER : FETCHER,
+    });
+  // Strings only lumiose's submit() (app/actions/client.ts) and fetchJSON (app/fetch-json.ts) hold.
+  const SUBMIT = "formaction";
+  const FETCH_JSON = "application/json";
+
+  it("keeps runtime that one island imports in that island's chunk (TASK-228)", async () => {
+    const files = await scripts(islandsApp(COUNTER, "Poster"));
+    expect(Object.keys(files).toSorted()).toEqual(["Counter", "Poster", "loader"]);
+    expect(files.Poster).toContain(SUBMIT);
+    expect(files.loader).not.toContain(SUBMIT);
+    expect(files.Counter).not.toContain(SUBMIT);
+    // The rest of the runtime still comes from the loader's chunk.
+    expect(files.Poster).toMatch(/from"\.\/loader-[\w-]+\.js"/);
+  });
+
+  it("puts runtime that several islands import in the runtime chunk, not a chunk of its own (TASK-228)", async () => {
+    const files = await scripts(
+      islandsApp(
+        `import { signal, submit } from "lumiose";
+export function Counter(props: { start: number }) {
+  const count = signal(props.start);
+  return <form onSubmit={(event) => submit(event.currentTarget)}>{count()}</form>;
+}
+`,
+        "Poster",
+      ),
+    );
+    expect(Object.keys(files).toSorted()).toEqual(["Counter", "Poster", "loader"]);
+    expect(files.loader).toContain(SUBMIT);
+    expect(files.Poster).not.toContain(SUBMIT);
+    expect(files.Counter).not.toContain(SUBMIT);
+  });
+
+  it("keeps fetchJSON in the runtime chunk, where the minifier drops its unused cache (TASK-228)", async () => {
+    const files = await scripts(islandsApp(COUNTER, "Fetcher"));
+    expect(Object.keys(files).toSorted()).toEqual(["Counter", "Fetcher", "loader"]);
+    expect(files.loader).toContain(FETCH_JSON);
+    expect(files.Fetcher).not.toContain(FETCH_JSON);
+  });
+
   it("leaves the island loader and hydration out of an SPA where nothing hydrates", async () => {
     const files = await scripts(
       project({

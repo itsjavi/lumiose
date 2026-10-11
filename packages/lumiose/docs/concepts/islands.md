@@ -75,15 +75,27 @@ island, once, as `<script type="module" async>`: in the `<head>` when the shell 
 otherwise with the first streamed chunk that does. In a build, pages without islands load no
 JavaScript; the loader is the client entry, and each island is a chunk it imports when the island's
 trigger fires. The loader's chunk also holds the Lumiose runtime the islands share (signals, DOM,
-hydration), so a page loads one runtime file before its islands: about 9 to 10 kB min+brotli in
+hydration), so a page loads one runtime file before its islands: about 8 to 10 kB min+brotli in
 the sample apps (`pnpm --filter lumiose size:apps` reports them; the runtime's 10 kB cap is checked by
 `pnpm --filter lumiose size`). With your own server, pass its URL as
 `renderToStream(root, { loaderUrl })`.
 
 **Build output.** `lumiose build` puts the Lumiose runtime in one chunk: the island loader's, the SPA
 entry's when the app has no islands, or a shared `lumiose-[hash].js` when it has both. The router's
-History API fallback is a separate chunk, loaded only by browsers without the Navigation API. Dynamic
-imports go through a smaller preload helper than Vite's: it still adds the imported chunk's
+History API fallback is a separate chunk, loaded only by browsers without the Navigation API.
+
+Which runtime goes where follows one rule: the runtime chunk holds what the loader (or the SPA
+entry) imports, plus the runtime that two or more islands (or SPA pages) import; runtime that only
+one island imports goes into that island's chunk. A page's JavaScript then depends on its own
+islands, not on every island of the app: the keyed selector the compiler emits for one island's
+list, or `submit()` used by one form island, loads only on the pages that render that island. The trade-off: runtime shared
+by several islands stays in the runtime chunk, so a page with none of them still loads it, but no
+page loads more files than it has islands (a chunk per group of islands would cost one more request
+each). Imports through `lumiose` and `lumiose/dom` count only the modules that declare what they
+import. One exception stays in the runtime chunk: `fetchJSON`, whose cache the minifier drops in
+apps without async components or resources, which it can only do within one chunk.
+
+Dynamic imports go through a smaller preload helper than Vite's: it still adds the imported chunk's
 stylesheets (and waits for them, skipping those the page already holds in its merged or inline
 styles), module preloads and the CSP nonce of `<meta property="csp-nonce">`, but dispatches no `vite:preloadError` event (the router loads the
 URL with a document navigation when a page's module does not load).
