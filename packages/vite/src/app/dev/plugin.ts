@@ -104,7 +104,10 @@ interface AppFiles {
 
 export function lumioseDev(options: LumioseDevOptions = {}): Plugin {
   const routesDir = options.routesDir ?? DEFAULT_ROUTES_DIR;
-  const defaults: Pick<CreateRouteManifestOptions, "defaultMode" | "defaultSsr"> = {};
+  const defaults: Pick<
+    CreateRouteManifestOptions,
+    "defaultMode" | "defaultSsr" | "defaultPrerender"
+  > = {};
   let project: ProjectOptions = {};
   let server: ViteDevServer;
   let root: string;
@@ -234,8 +237,8 @@ export function lumioseDev(options: LumioseDevOptions = {}): Plugin {
       ...(project.csp === undefined ? {} : { csp: project.csp }),
       ...(project.headers === undefined ? {} : { headers: project.headers }),
       ...navigationOptions(project),
-      // Static routes render fully resolved, as the build prerenders them.
-      prerender: (route) => route.mode === "static",
+      // Prerendered routes render fully resolved, as the build prerenders them.
+      prerender: (route) => route.mode === "static" || route.prerender,
       onError: (error) => {
         const prepared = overlayError(error, root);
         server.config.logger.error(formatError(prepared, root), { timestamp: true });
@@ -354,6 +357,7 @@ export function lumioseDev(options: LumioseDevOptions = {}): Plugin {
       const ssr = options.ssr ?? project.ssr;
       if (mode !== undefined) defaults.defaultMode = mode;
       if (ssr !== undefined) defaults.defaultSsr = ssr;
+      if (project.prerender !== undefined) defaults.defaultPrerender = project.prerender;
     },
 
     async configureServer(vite) {

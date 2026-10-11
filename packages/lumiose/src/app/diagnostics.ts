@@ -32,6 +32,8 @@ export const LUM_STATE_VALUE = "LUM4011";
 export const LUM_AFTER_SHELL = "LUM5004";
 /** A static endpoint exports a method other than GET (it is prerendered to a file). */
 export const LUM_STATIC_ENDPOINT_METHOD = "LUM5005";
+/** An `spa` page sets `export const prerender = true` but renders only in the browser (`ssr = false`, decision-38). */
+export const LUM_PRERENDER_CLIENT_ONLY = "LUM5006";
 
 /** A runtime error carrying a Lumiose code and where to read about it (contract doc-2 §6). */
 export class LumioseError extends Error {

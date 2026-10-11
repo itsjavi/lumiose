@@ -1,5 +1,5 @@
-// Static reading of route module exports (`export const mode`, `export const ssr`, endpoint
-// method exports).
+// Static reading of route module exports (`export const mode`, `export const ssr`,
+// `export const prerender`, endpoint method exports).
 // A lightweight, comment-aware scan for now; the Rust compiler will provide module meta
 // later, so callers depend on the `ReadRouteModuleMeta` signature, not on this parser.
 
@@ -7,6 +7,8 @@ export interface RouteModuleMeta {
   /** The declared `mode` string, unvalidated. */
   mode?: string;
   ssr?: boolean;
+  /** `export const prerender`: an `spa` page rendered at build time (decision-38). */
+  prerender?: boolean;
   /** HTTP method exports (`GET`, `POST`, …) found by name; re-exports from other modules are missed. */
   methods?: string[];
   /** Exports that exist but cannot be read statically. */
@@ -15,7 +17,8 @@ export interface RouteModuleMeta {
 
 export type ReadRouteModuleMeta = (source: string) => RouteModuleMeta;
 
-const DECLARATION = /^[ \t]*export[ \t]+(const|let|var)[ \t]+(mode|ssr)\b[^=\n]*=[ \t]*([^;\n]*)/gm;
+const DECLARATION =
+  /^[ \t]*export[ \t]+(const|let|var)[ \t]+(mode|ssr|prerender)\b[^=\n]*=[ \t]*([^;\n]*)/gm;
 const STRING_VALUE = /^(["'`])(\w*)\1(?:\s+(?:as\s+const|satisfies\s+[\w.]+))?\s*$/;
 const BOOLEAN_VALUE = /^(true|false)(?:\s+(?:as\s+const|satisfies\s+[\w.]+))?\s*$/;
 const HTTP_METHODS = new Set(["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"]);
@@ -56,12 +59,12 @@ export const readRouteModuleMeta: ReadRouteModuleMeta = (source) => {
       } else {
         meta.mode = match[2] ?? "";
       }
-    } else if (meta.ssr === undefined) {
+    } else if (meta[name as "ssr" | "prerender"] === undefined) {
       const match = BOOLEAN_VALUE.exec(value);
       if (match === null) {
-        meta.problems.push(`"export const ssr" must be the literal true or false.`);
+        meta.problems.push(`"export const ${name}" must be the literal true or false.`);
       } else {
-        meta.ssr = match[1] === "true";
+        meta[name as "ssr" | "prerender"] = match[1] === "true";
       }
     }
   }

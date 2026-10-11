@@ -70,8 +70,8 @@ export function notePrefetchLink(): void {
 }
 
 /**
- * Build-time prerendering of a `static` route (spec §7.1): there is no request, so request APIs
- * throw LUM5001 while the route renders. Middleware is not guarded (it runs for every mode).
+ * Build-time prerendering of a `static` route, or of an `spa` route with `prerender` (spec §7.1,
+ * decision-38): there is no request, so request APIs throw LUM5001 while the route renders. Middleware is not guarded (it runs for every mode).
  */
 export interface PrerenderGuard {
   /** Called with each violation, also when an `<ErrorBoundary>` later catches the error. */
@@ -85,13 +85,13 @@ export function runPrerenderGuarded<T>(guard: PrerenderGuard | undefined, fn: ()
   return guards.run(guard, fn);
 }
 
-/** Throws LUM5001 when `api` is used while a static route is prerendered. */
+/** Throws LUM5001 when `api` is used while a route is prerendered. */
 export function assertRequestApi(api: string): void {
   const guard = guards.getStore();
   if (guard === undefined) return;
   const error = new LumioseError(
     LUM_PRERENDER_REQUEST,
-    `${api} reads the request, but this route is prerendered at build time (mode "static"), where there is no request. Render it per request with \`export const mode = "server"\`, or move this part into an island.`,
+    `${api} reads the request, but this route is prerendered at build time (mode "static", or an spa route with prerender), where there is no request. Render it per request (\`export const mode = "server"\`, or an spa route without prerender), or move this part into an island or the browser.`,
   );
   guard.report(error);
   throw error;

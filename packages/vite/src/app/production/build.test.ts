@@ -548,6 +548,128 @@ export default {
     expect(entry.config.headers).toEqual([{ path: "/**", headers: { "x-frame-options": "DENY" } }]);
   });
 
+  it("prerenders spa routes with prerender into hydrating HTML, without dist/server (TASK-216)", async () => {
+    const root = project({
+      "vite.config.ts": `import lumiose from "@lumiose/vite";
+export default { plugins: [lumiose({ mode: "spa" })] };
+`,
+      "src/routes/_layout.stsx": `export default function Shell(props: { children?: JSX.Element }) {
+  return <div class="shell">{props.children}</div>;
+}
+`,
+      "src/routes/index.stsx": `import { Link } from "lumiose/router";
+export const prerender = true;
+export default function Home() {
+  return <main><h1>Tracks</h1><Link href="/tracks/2">Two</Link></main>;
+}
+`,
+      "src/routes/tracks/[id].stsx": `import { params } from "lumiose/router";
+export const prerender = true;
+export function staticPaths() {
+  return [{ params: { id: "1" } }, { params: { id: "2" } }];
+}
+export default function Track() { return <h1>Track {params().id}</h1>; }
+`,
+      "src/routes/_404.stsx": `export default function NotFound() { return <h1>No such track</h1>; }
+`,
+    });
+    const result = await build({ root, ...quiet() });
+    expect(result.prerendered.map((file) => file.file).toSorted()).toEqual([
+      "404.html",
+      "index.html",
+      "tracks/1/index.html",
+      "tracks/2/index.html",
+    ]);
+    // Every page is prerendered and nothing else needs the server.
+    expect(result.serverEntry).toBeUndefined();
+    expect(existsSync(join(root, "dist/server"))).toBe(false);
+
+    // Real HTML, inside the SPA root island the SPA entry hydrates (`#lumiose:spa`, not a shell).
+    const home = read(root, "index.html");
+    expect(home).toContain("<h1>Tracks</h1>");
+    expect(home).toContain("class=shell");
+    expect(home).toContain("src/routes/index.stsx#lumiose:spa");
+    expect(home).not.toContain("#lumiose:csr");
+    const spa = /<script type="module" async src="\/(assets\/spa-[\w-]+\.js)"><\/script>/.exec(
+      home,
+    );
+    expect(spa).not.toBeNull();
+    expect(existsSync(join(result.clientDir, spa![1]!))).toBe(true);
+    // Deep links with params get their own HTML, which starts the same SPA.
+    const track = read(root, "tracks/2/index.html");
+    expect(track).toContain("<h1>Track <!--[-->2<!--]--></h1>");
+    expect(track).toContain("src/routes/tracks/[id].stsx#lumiose:spa");
+    expect(track).toContain(spa![0]);
+    // Unknown URLs: the _404 page, rendered inside the SPA.
+    expect(read(root, "404.html")).toContain("<h1>No such track</h1>");
+  });
+
+  it("makes lumiose({ prerender: true }) the spa default, which a page turns off (TASK-216)", async () => {
+    const root = project({
+      "vite.config.ts": `import lumiose from "@lumiose/vite";
+export default { plugins: [lumiose({ mode: "spa", prerender: true })] };
+`,
+      "src/routes/index.stsx": "export default function Home() { return <h1>Home</h1>; }\n",
+      "src/routes/live.stsx": `import { cookies } from "lumiose";
+export const prerender = false;
+export default function Live() { return <p>{cookies().get("a") ?? "none"}</p>; }
+`,
+      "src/routes/shell.stsx": `export const ssr = false;
+export default function Shell() { return <p>browser only</p>; }
+`,
+    });
+    const result = await build({ root, ...quiet() });
+    expect(result.prerendered.map((file) => file.file).toSorted()).toEqual([
+      "404.html",
+      "index.html",
+      "shell/index.html",
+    ]);
+    expect(read(root, "index.html")).toContain("<h1>Home</h1>");
+    // An ssr = false page stays a shell under the project default.
+    expect(read(root, "shell/index.html")).toContain("src/routes/shell.stsx#lumiose:csr");
+    // The page that opted out renders per request, so the build keeps its server.
+    expect(result.serverEntry).toBe(join(root, "dist/server/entry.js"));
+  });
+
+  it("stops when a prerendered spa route reads the request or lacks staticPaths() (TASK-216)", async () => {
+    const root = project({
+      "src/routes/_layout.stsx": `export const mode = "spa";
+export default function Shell(props: { children?: JSX.Element }) { return <div>{props.children}</div>; }
+`,
+      "src/routes/index.stsx": `import { cookies } from "lumiose";
+export const prerender = true;
+export default function Home() { return <p>{cookies().get("theme") ?? "light"}</p>; }
+`,
+      "src/routes/tracks/[id].stsx": `export const prerender = true;
+export default function Track() { return <h1>Track</h1>; }
+`,
+    });
+    const failure = await build({ root, ...quiet() }).catch((error: unknown) => error);
+    expect(failure).toBeInstanceOf(PrerenderError);
+    expect((failure as PrerenderError).problems).toEqual([
+      expect.stringContaining(
+        `src/routes/tracks/[id].stsx: "/tracks/[id]" is prerendered and has params, so it needs \`export async function staticPaths()\``,
+      ),
+      expect.stringMatching(
+        /^src\/routes\/index\.stsx \(\/\): cookies\(\) reads the request, but this route is prerendered.*LUM5001/,
+      ),
+    ]);
+  });
+
+  it("stops with LUM5006 for prerender on an ssr = false page, before building (TASK-216)", async () => {
+    const root = project({
+      "src/routes/index.stsx": `export const mode = "spa";
+export const ssr = false;
+export const prerender = true;
+export default function Home() { return <h1>Home</h1>; }
+`,
+    });
+    const failure = await build({ root, ...quiet() }).catch((error: unknown) => error);
+    expect(failure).toBeInstanceOf(BuildError);
+    expect((failure as Error).message).toContain("src/routes/index.stsx: LUM5006");
+    expect(existsSync(join(root, "dist"))).toBe(false);
+  });
+
   it("stops with LUM5001 when a prerendered route reads the request", async () => {
     const root = project({
       "src/routes/index.stsx": `import { cookies } from "lumiose";

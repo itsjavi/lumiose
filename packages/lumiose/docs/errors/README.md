@@ -72,13 +72,14 @@ fix?, docs }`; `lumiose check --format json` prints them.
 
 ## Routing and server (5xxx)
 
-| Code                  | Severity | Title                                            |
-| --------------------- | -------- | ------------------------------------------------ |
-| [LUM5001](LUM5001.md) | error    | Request API used during prerender                |
-| [LUM5002](LUM5002.md) | error    | Invalid route file                               |
-| [LUM5003](LUM5003.md) | error    | Duplicate route                                  |
-| [LUM5004](LUM5004.md) | error    | Head or status change inside a streamed boundary |
-| [LUM5005](LUM5005.md) | error    | Non-GET method in a static endpoint              |
+| Code                  | Severity | Title                                             |
+| --------------------- | -------- | ------------------------------------------------- |
+| [LUM5001](LUM5001.md) | error    | Request API used during prerender                 |
+| [LUM5002](LUM5002.md) | error    | Invalid route file                                |
+| [LUM5003](LUM5003.md) | error    | Duplicate route                                   |
+| [LUM5004](LUM5004.md) | error    | Head or status change inside a streamed boundary  |
+| [LUM5005](LUM5005.md) | error    | Non-GET method in a static endpoint               |
+| [LUM5006](LUM5006.md) | error    | Prerendered page that renders only in the browser |
 
 ## Tooling and config (6xxx)
 

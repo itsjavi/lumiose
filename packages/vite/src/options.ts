@@ -48,6 +48,14 @@ export interface LumioseOptions {
    */
   ssr?: boolean;
   /**
+   * Whether spa routes that render on the server are prerendered at build time into HTML that
+   * hydrates into the client router (decision-38), unless a page sets `export const prerender`.
+   * Routes with params list their paths with `staticPaths()`. Default: `false`.
+   *
+   * @example lumiose({ mode: "spa", prerender: true }) // an SPA built as static, hydrating pages
+   */
+  prerender?: boolean;
+  /**
    * Trailing slashes of page URLs (and prerendered file names): `"ignore"` serves both forms,
    * `"always"` and `"never"` redirect to the canonical one. Default: `"ignore"`.
    */
@@ -153,6 +161,7 @@ const KNOWN = [
   "exclude",
   "mode",
   "ssr",
+  "prerender",
   "trailingSlash",
   "csrf",
   "svg",
@@ -188,6 +197,18 @@ export function projectOptionsOf(options: LumioseOptions): ProjectOptions {
   if (ssr !== undefined) {
     if (typeof ssr !== "boolean") fail("ssr", `expected true or false, got ${describe(ssr)}`);
     project.ssr = ssr;
+  }
+  if (options.prerender !== undefined) {
+    if (typeof options.prerender !== "boolean") {
+      fail("prerender", `expected true or false, got ${describe(options.prerender)}`);
+    }
+    if (options.prerender && ssr === false) {
+      fail(
+        "prerender",
+        "has no effect with ssr: false, which renders spa routes only in the browser. Remove one of them.",
+      );
+    }
+    project.prerender = options.prerender;
   }
   if (trailingSlash !== undefined) {
     project.trailingSlash = oneOf("trailingSlash", trailingSlash, TRAILING_SLASHES);

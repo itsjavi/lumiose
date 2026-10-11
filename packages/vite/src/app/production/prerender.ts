@@ -1,5 +1,6 @@
-// Prerendering (spec §7.1, §8 Build step 3): renders every `static` page and `GET`s every
-// `static` endpoint through the built server entry, in-process, and writes the results to
+// Prerendering (spec §7.1, §8 Build step 3): renders every `static` page and every `spa` page with
+// `prerender` (decision-38: HTML the SPA hydrates) and `GET`s every `static` endpoint through the
+// built server entry, in-process, and writes the results to
 // `dist/client`: `path/index.html` (`path.html` with `trailingSlash: "never"`), endpoint files
 // at their path (`sitemap.xml`), and `404.html` from the root `_404` when the root scope is static
 // or `spa`. `spa` pages with `ssr = false` (and no params) get their shell, which the client renders.
@@ -87,9 +88,11 @@ export async function prerender(options: PrerenderOptions): Promise<PrerenderedF
 
   const targets: Target[] = [];
   for (const route of app.manifest.routes) {
-    // `spa` pages with `ssr = false` get their shell; other modes render per request.
+    // `spa` pages with `ssr = false` get their shell, those with `prerender` their HTML; other
+    // `spa` and `server` pages render per request.
     const shell = route.kind === "page" && route.mode === "spa" && !route.ssr;
-    if (route.mode !== "static" && !(shell && route.params.length === 0)) continue;
+    const prerendered = route.mode === "static" || (route.kind === "page" && route.prerender);
+    if (!prerendered && !(shell && route.params.length === 0)) continue;
     const kind = route.kind;
     if (shell) {
       targets.push({ route, path: route.pattern, kind });
@@ -195,8 +198,9 @@ async function routePaths(
   if (route.params.length === 0) return [route.pattern];
   const staticPaths = module.staticPaths;
   if (typeof staticPaths !== "function") {
+    const spa = route.mode === "spa";
     problems.push(
-      `${route.file}: "${route.pattern}" is static and has params, so it needs \`export async function staticPaths()\` returning [{ params }] for the build to prerender it. Or render it per request: export const mode = "server".`,
+      `${route.file}: "${route.pattern}" is ${spa ? "prerendered" : "static"} and has params, so it needs \`export async function staticPaths()\` returning [{ params }] for the build to prerender it. Or render it per request: ${spa ? "export const prerender = false" : 'export const mode = "server"'}.`,
     );
     return [];
   }

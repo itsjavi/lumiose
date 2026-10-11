@@ -92,9 +92,9 @@ export function createAppHandler(app: BuiltApp, options: AppHandlerOptions = {})
     headAssets: (files, spa) => stylesheetLinks(app, files) + spaModulePreloads(app, files, spa),
     base: app.base,
     trailingSlash: app.trailingSlash,
-    // Static routes that reach the server (a form post, params staticPaths() did not list) render
-    // fully resolved, like their prerendered HTML.
-    prerender: (route) => route.mode === "static",
+    // Prerendered routes that reach the server (a form post, params staticPaths() did not list)
+    // render fully resolved, like their prerendered HTML.
+    prerender: (route) => route.mode === "static" || route.prerender,
   });
 }
 

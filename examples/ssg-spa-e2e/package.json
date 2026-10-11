@@ -1,0 +1,29 @@
+{
+  "name": "@lumiose-examples/ssg-spa-e2e",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Lumiose fixture: an spa-mode app prerendered at build time (export const prerender, decision-38) and served as static files, tested in Chromium under lumiose dev and a static build (TASK-216 end-to-end test).",
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "dev": "lumiose dev",
+    "build": "lumiose build",
+    "preview": "lumiose preview",
+    "typecheck": "lumiose check",
+    "test:e2e": "playwright test"
+  },
+  "dependencies": {
+    "lumiose": "workspace:*"
+  },
+  "devDependencies": {
+    "@lumiose/cli": "workspace:*",
+    "@lumiose/vite": "workspace:*",
+    "@playwright/test": "1.63.0",
+    "@types/node": "^24.0.0",
+    "vite": "^8.3.4"
+  },
+  "demo": {
+    "title": "Prerendered SPA e2e fixture",
+    "kind": "e2e"
+  }
+}

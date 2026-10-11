@@ -4,6 +4,7 @@
 import {
   LUM_DUPLICATE_ROUTE,
   LUM_INVALID_ROUTE_FILE,
+  LUM_PRERENDER_CLIENT_ONLY,
   LUM_STATIC_ENDPOINT_METHOD,
   type AppDiagnostic,
   type DiagnosticSeverity,
@@ -43,6 +44,12 @@ export interface PageRoute extends RouteBase {
   mode: RouteMode;
   /** `false` only for `spa` routes rendered as a client shell (`export const ssr = false`). */
   ssr: boolean;
+  /**
+   * `spa` routes rendered at build time into HTML that hydrates (decision-38): own
+   * `export const prerender`, else the project default `lumiose({ prerender })`. Always `false` for
+   * other modes (`static` routes are prerendered by their mode) and `ssr = false` shells.
+   */
+  prerender: boolean;
   /** Layout files, outermost first. */
   layouts: string[];
   /** Nearest `_error` page. */
@@ -103,6 +110,8 @@ export interface CreateRouteManifestOptions {
   defaultMode?: RouteMode;
   /** Project default `ssr` of `spa` routes, `lumiose({ ssr })`. Default `true`. */
   defaultSsr?: boolean;
+  /** Project default `prerender` of `spa` routes, `lumiose({ prerender })` (decision-38). Default `false`. */
+  defaultPrerender?: boolean;
 }
 
 export const DEFAULT_ROUTES_DIR = "src/routes";
@@ -122,6 +131,7 @@ interface Declared {
   route: RouteFile;
   mode: string | undefined;
   ssr: boolean | undefined;
+  prerender: boolean | undefined;
   methods: readonly string[];
 }
 
@@ -133,6 +143,7 @@ export function createRouteManifest(
   const readMeta = options.readMeta ?? readRouteModuleMeta;
   const defaultMode = options.defaultMode ?? "static";
   const defaultSsr = options.defaultSsr ?? true;
+  const defaultPrerender = options.defaultPrerender ?? false;
   const diagnostics: AppDiagnostic[] = [];
   const report: Report = (code, severity, file, message, help) => {
     const diagnostic: AppDiagnostic = { code, severity, message, file };
@@ -195,6 +206,15 @@ export function createRouteManifest(
         );
         continue;
       }
+      if (declared.prerender !== undefined) {
+        report(
+          LUM_INVALID_ROUTE_FILE,
+          "warning",
+          file,
+          `"export const prerender" has no effect in a layout: it applies to spa pages.`,
+          "Set it on each page, or make it the project default with lumiose({ prerender: true }).",
+        );
+      }
       layoutsByDir.set(route.dir, declared);
     } else {
       modules.push(declared);
@@ -227,6 +247,35 @@ export function createRouteManifest(
     }
     if (mode !== "spa") return true;
     return declared.ssr ?? inheritedSsr(dir) ?? defaultSsr;
+  };
+
+  // `export const prerender` is read from pages only; a project default applies to `spa` pages
+  // rendered on the server, so an `ssr = false` shell under `lumiose({ prerender: true })` stays one.
+  const resolvePrerender = (declared: Declared, mode: RouteMode, ssr: boolean): boolean => {
+    if (declared.prerender !== undefined && mode !== "spa") {
+      report(
+        LUM_INVALID_ROUTE_FILE,
+        "warning",
+        declared.file,
+        `"export const prerender" has no effect: it applies to spa routes and this file's mode is "${mode}".`,
+        mode === "static"
+          ? "Remove it: static routes are always prerendered."
+          : 'Remove it, or set export const mode = "static" to prerender this route.',
+      );
+      return false;
+    }
+    if (mode !== "spa") return false;
+    if (declared.prerender === true && !ssr) {
+      report(
+        LUM_PRERENDER_CLIENT_ONLY,
+        "error",
+        declared.file,
+        `"export const prerender = true" renders this page at build time, but its ssr is false, so it renders only in the browser.`,
+        "Remove export const ssr = false (here, in a layout or in lumiose({ ssr })) to prerender the page, or remove prerender to keep the client-rendered shell.",
+      );
+      return false;
+    }
+    return ssr && (declared.prerender ?? defaultPrerender);
   };
 
   const layouts: LayoutEntry[] = [...layoutsByDir.values()]
@@ -275,11 +324,13 @@ export function createRouteManifest(
     } else {
       const mode =
         (declared.mode as RouteMode | undefined) ?? inheritedMode(route.dir) ?? defaultMode;
+      const ssr = resolveSsr(declared, mode, route.dir);
       entry = {
         ...base,
         kind: "page",
         mode,
-        ssr: resolveSsr(declared, mode, route.dir),
+        ssr,
+        prerender: resolvePrerender(declared, mode, ssr),
         layouts: layoutChain(route.dir)
           .map((layout) => layout.file)
           .toReversed(),
@@ -321,7 +372,7 @@ function checkMeta(
   route: RouteFile,
   file: string,
   report: Report,
-): { mode: string | undefined; ssr: boolean | undefined } {
+): { mode: string | undefined; ssr: boolean | undefined; prerender: boolean | undefined } {
   for (const problem of meta.problems) {
     report(
       LUM_INVALID_ROUTE_FILE,
@@ -343,7 +394,19 @@ function checkMeta(
     );
     mode = undefined;
   }
-  return { mode, ssr: route.kind === "endpoint" ? undefined : meta.ssr };
+  if (route.kind === "endpoint") {
+    if (meta.prerender !== undefined) {
+      report(
+        LUM_INVALID_ROUTE_FILE,
+        "warning",
+        file,
+        `"export const prerender" has no effect in an endpoint: it applies to spa pages.`,
+        'Remove it: static endpoints (the default) are prerendered, export const mode = "server" ones are not.',
+      );
+    }
+    return { mode, ssr: undefined, prerender: undefined };
+  }
+  return { mode, ssr: meta.ssr, prerender: meta.prerender };
 }
 
 /** Nearest-first ancestors of a routes-relative directory, including itself. */

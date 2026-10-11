@@ -4,7 +4,7 @@
 
 `lumiose/router` works inside `spa` routes (`export const mode = "spa"`, or `lumiose({ mode: "spa" })`
 for the whole project); `<Link>` works on MPA pages too (see [Link](#link)). Pages and layouts of an SPA import it like any module; on the server
-(`ssr` pages) the same names read the request: `params()`, `route()`, `url()` and `searchParams()` return the
+(`ssr` pages, rendered per request or prerendered at build time) the same names read the request: `params()`, `route()`, `url()` and `searchParams()` return the
 request's values, `<Link>` renders its `<a>`, `isNavigating()` is `false`, and `navigate()` and
 `searchParams.set()` throw (call them from event handlers and effects). Concepts:
 [Routing](../concepts/routing.md), [Rendering modes](../concepts/rendering-modes.md).

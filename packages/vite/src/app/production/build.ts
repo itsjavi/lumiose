@@ -4,7 +4,8 @@
 //    `lumiose check`). Route manifest errors (LUM5002/5003/5005) stop the build.
 // 2. Client environment → `dist/client`: the island loader and islands, assets, `public/`.
 // 3. Server environment → `dist/server/entry.js`, with the client build's island URLs.
-// 4. Prerender `static` routes and endpoints in-process through that entry (./prerender.ts).
+// 4. Prerender `static` routes and endpoints, and `spa` routes with `prerender` (decision-38),
+//    in-process through that entry (./prerender.ts).
 // 5. Precompress `dist/client` (`.br` and `.gz` copies, ./precompress.ts) for adapters to serve.
 //
 // The output deploys with `@lumiose/adapter-node` (statics, then the handler); a site whose routes
@@ -115,6 +116,7 @@ export async function build(options: BuildOptions = {}): Promise<BuildResult> {
     routesDir,
     defaultMode,
     ...(project.ssr === undefined ? {} : { defaultSsr: project.ssr }),
+    ...(project.prerender === undefined ? {} : { defaultPrerender: project.prerender }),
   });
   const errors = manifest.diagnostics.filter((diagnostic) => diagnostic.severity === "error");
   for (const diagnostic of manifest.diagnostics.filter((d) => d.severity === "warning")) {
@@ -150,7 +152,7 @@ export async function build(options: BuildOptions = {}): Promise<BuildResult> {
   await builder.build(ssr);
   const serverEntry = join(serverDir, "entry.js");
 
-  logger.info("\nprerendering static routes…");
+  logger.info("\nprerendering routes…");
   // A fresh module instance per build (repeated builds in one process, such as tests).
   const entry = (await import(
     `${pathToFileURL(serverEntry).href}?t=${Date.now()}`

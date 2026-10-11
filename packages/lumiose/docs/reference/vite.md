@@ -20,6 +20,8 @@ interface LumioseOptions {
   mode?: "static" | "server" | "spa"; // default "static"
   /** Whether spa routes render their content on the server (false: the shell only). */
   ssr?: boolean; // default true
+  /** Whether spa pages that render on the server are prerendered at build time; `export const prerender` overrides it. */
+  prerender?: boolean; // default false, and not with ssr: false
   /** Trailing slashes of page URLs: "always"/"never" redirect to the canonical form. */
   trailingSlash?: "ignore" | "always" | "never"; // default "ignore"
   /** The origin check of form posts (on by default); false turns it off. */
@@ -43,10 +45,11 @@ interface LumioseOptions {
 }
 ```
 
-The project options (`mode`, `ssr`, `trailingSlash`, `csrf`, `viewTransitions`, `prefetch`,
-`headers`, `limits`) are
+The project options (`mode`, `ssr`, `prerender`, `trailingSlash`, `csrf`, `viewTransitions`,
+`prefetch`, `headers`, `limits`) are
 read by `lumiose dev`, `lumiose build` and `lumiose routes`/`check` from the plugin's `api.options`.
-Invalid values and unknown option names throw when the config loads. `csp: "strict"` is
+Invalid values and unknown option names throw when the config loads, as does `prerender: true`
+with `ssr: false` ([prerendered SPA routes](../concepts/rendering-modes.md#prerendered-spa-routes)). `csp: "strict"` is
 described in [Security](../concepts/security.md): nonces on every inline script and style Lumiose
 writes and on those written in JSX, static `style` strings as nonce'd rules, a `Content-Security-Policy` header for pages rendered per request, and a hash policy
 `<meta>` in prerendered pages. `allowedOrigins` takes full

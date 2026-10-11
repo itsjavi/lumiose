@@ -40,6 +40,7 @@ describe("scanRoutes", () => {
       file: "src/routes/blog/[slug].stsx",
       mode: "static",
       ssr: true,
+      prerender: false,
       layouts: ["src/routes/_layout.stsx", "src/routes/blog/_layout.stsx"],
       errorPage: "src/routes/_error.stsx",
       notFoundPage: "src/routes/blog/_404.stsx",

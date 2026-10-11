@@ -105,6 +105,51 @@ describe("createRouteManifest", () => {
     ]);
   });
 
+  it("resolves prerender for spa pages that render on the server (decision-38)", () => {
+    const manifest = createRouteManifest(
+      Object.entries({
+        "index.stsx": PAGE,
+        "live.stsx": "export const prerender = false;",
+        "tracks/[id].stsx": "export const prerender = true;",
+        "shell.stsx": "export const ssr = false;",
+        "about.stsx": `export const mode = "static";`,
+      }).map(([path, source]) => ({ path, source })),
+      { defaultMode: "spa", defaultPrerender: true },
+    );
+    expect(manifest.diagnostics).toEqual([]);
+    expect(
+      Object.fromEntries(
+        manifest.routes.map((route) => [route.pattern, route.kind === "page" && route.prerender]),
+      ),
+    ).toEqual({
+      "/": true,
+      "/live": false,
+      "/tracks/[id]": true,
+      // An ssr = false shell stays one under the project default.
+      "/shell": false,
+      // Static routes are prerendered by their mode.
+      "/about": false,
+    });
+    expect(page(manifestOf({ "index.stsx": PAGE }), "/").prerender).toBe(false);
+  });
+
+  it("reports prerender with ssr = false (LUM5006) and where prerender has no effect (LUM5002)", () => {
+    const manifest = manifestOf({
+      "app/_layout.stsx": `export const mode = "spa";\nexport const ssr = false;\nexport const prerender = true;`,
+      "app/index.stsx": "export const prerender = true;",
+      "about.stsx": "export const prerender = true;",
+      "feed.xml.ts": "export const prerender = true;",
+    });
+    expect(page(manifest, "/app")).toMatchObject({ mode: "spa", ssr: false, prerender: false });
+    expect(page(manifest, "/about")).toMatchObject({ mode: "static", prerender: false });
+    expect(manifest.diagnostics).toMatchObject([
+      { code: "LUM5002", severity: "warning", file: "src/routes/app/_layout.stsx" },
+      { code: "LUM5002", severity: "warning", file: "src/routes/feed.xml.ts" },
+      { code: "LUM5002", severity: "warning", file: "src/routes/about.stsx" },
+      { code: "LUM5006", severity: "error", file: "src/routes/app/index.stsx" },
+    ]);
+  });
+
   it("gives endpoints a static or server mode, serving spa subtrees live", () => {
     const manifest = manifestOf({
       "sitemap.xml.ts": "",

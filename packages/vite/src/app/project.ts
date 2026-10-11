@@ -59,6 +59,7 @@ export function findAppFile(root: string, files: readonly string[]): string | un
 export interface ProjectOptions {
   mode?: RouteMode;
   ssr?: boolean;
+  prerender?: boolean;
   trailingSlash?: TrailingSlash;
   csrf?: false | CsrfOptions;
   viewTransitions?: boolean;

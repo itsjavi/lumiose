@@ -56,8 +56,9 @@ background.
 
 ## lumiose build
 
-Builds the client and server bundles into `dist/`, then prerenders the `static` routes. When every
-route is prerendered (no `server` route, no server-rendered `spa` route, no form action), the build
+Builds the client and server bundles into `dist/`, then prerenders the `static` routes and the `spa`
+pages with `prerender`. When every route is prerendered (no `server` route, no `spa` route rendered
+per request, no form action), the build
 removes `dist/server`: `dist/client` is the whole site, and `serverEntry` is `null`.
 `lumiose({ headers })` is written to `dist/client/_headers`.
 
@@ -65,7 +66,7 @@ removes `dist/server`: `dist/client` is the whole site, and `serverEntry` is `nu
 lumiose build --format json   # { outDir, clientDir, serverEntry, prerendered: [{ path, file, kind }] }
 ```
 
-Route errors (`LUM5002`, `LUM5003`, `LUM5005`) and compile errors exit 1.
+Route errors (`LUM5002`, `LUM5003`, `LUM5005`, `LUM5006`) and compile errors exit 1.
 
 ## lumiose preview
 

@@ -49,9 +49,19 @@ describe("lumiose() project options", () => {
       'lumiose({ include }): expected a RegExp, got "*.stsx".',
     );
     expect(create({ moed: "spa" })).toThrow(
-      "lumiose({ moed }): unknown option. Known options: include, exclude, mode, ssr, trailingSlash, csrf, svg, md, html, viewTransitions, prefetch, csp, headers, limits.",
+      "lumiose({ moed }): unknown option. Known options: include, exclude, mode, ssr, prerender, trailingSlash, csrf, svg, md, html, viewTransitions, prefetch, csp, headers, limits.",
     );
     expect(create(null)).toThrow("lumiose(): expected an options object, got null.");
+  });
+
+  it("validates prerender (TASK-216)", () => {
+    expect(apiOf({ mode: "spa", prerender: true })).toEqual({ mode: "spa", prerender: true });
+    expect(create({ prerender: "yes" })).toThrow(
+      'lumiose({ prerender }): expected true or false, got "yes".',
+    );
+    expect(create({ ssr: false, prerender: true })).toThrow(
+      "lumiose({ prerender }): has no effect with ssr: false, which renders spa routes only in the browser. Remove one of them.",
+    );
   });
 
   it("validates csp (TASK-138)", () => {

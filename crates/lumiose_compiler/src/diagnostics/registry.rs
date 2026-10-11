@@ -98,6 +98,7 @@ registry! {
     DuplicateRoute = "LUM5003", Error, "Duplicate route";
     HeadChangeInStreamedBoundary = "LUM5004", Error, "Head or status change inside a streamed boundary";
     StaticEndpointMethod = "LUM5005", Error, "Non-GET method in a static endpoint";
+    PrerenderClientOnlyPage = "LUM5006", Error, "Prerendered page that renders only in the browser";
     // 6xxx tooling and config
     TsconfigMissingOptions = "LUM6001", Warning, "tsconfig missing options required by Lumiose";
 }

@@ -10,6 +10,16 @@ describe("readRouteModuleMeta", () => {
     });
   });
 
+  it("reads a literal prerender export (decision-38)", () => {
+    expect(readRouteModuleMeta(`export const prerender = true;`)).toEqual({
+      prerender: true,
+      problems: [],
+    });
+    expect(readRouteModuleMeta(`export const prerender = isProd;`).problems).toEqual([
+      `"export const prerender" must be the literal true or false.`,
+    ]);
+  });
+
   it.each([
     [`export const mode = 'server'`, "server"],
     ["export const mode = `server`;", "server"],

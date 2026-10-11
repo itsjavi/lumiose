@@ -45,7 +45,7 @@ mistakes** and **Related diagnostics**. Reference pages list every export with i
 - [Routing](concepts/routing.md): File routes, layouts, params, typed `href()`, error pages and the SPA router.
 - [Data and actions](concepts/data-and-actions.md): Read data with async components, serve endpoints, mutate with form actions and `submit()`.
 - [Server](concepts/server.md): Request context, middleware, cookies, env, redirects and error helpers.
-- [Rendering modes](concepts/rendering-modes.md): `static`, `server` and `spa` routes, shell-first streaming, hydration and the build.
+- [Rendering modes](concepts/rendering-modes.md): `static`, `server` and `spa` routes, prerendered SPA pages, shell-first streaming, hydration and the build.
 - [SVG imports](concepts/svg.md): `import Icon from "./icon.svg"` as an inline, optimised component; `title`, `currentColor`, `?url` and `?raw`.
 - [Markdown and HTML imports](concepts/content.md): `.md` and `.html` files as static components; GFM, heading ids, frontmatter and its hook, scoped `<style>`, client `<script>`.
 - [Head and document](concepts/head.md): `<Title>`, `<Meta>`, `<Head>` and a custom `document.stsx`.
@@ -196,18 +196,20 @@ export function Counter({ start = 0 }: { start?: number }) {
   return (
     <button class={{ hot: count() > 5 }} onClick={() => count.update((n) => n + 1)}>
       Clicked {count()} times
-
-      <style>
-        button { font: inherit; padding: 0.5rem 1rem; }
-        .hot { color: crimson; }
-      </style>
     </button>
   );
 }
+
+<style>
+  button { font: inherit; padding: 0.5rem 1rem; }
+  .hot { color: crimson; }
+</style>
 ```
 
 - The function body runs **once**. `count()` reads the signal; JSX that reads it updates on its own.
-- `<style>` inside the component's JSX is scoped to that component's elements.
+- The `<style>` block at the end of the file is scoped to this file: it styles the components
+  defined here, and nothing else. One block per file, after the components, is the convention;
+  [Styles](./concepts/styles.md) covers blocks nested in JSX.
 
 ## 5. Mount it
 
@@ -419,10 +421,6 @@ export function SearchBox({ label, initial = "", children }: Props) {
       </label>
       <p>Searching for “{query()}”</p>
       {children}
-
-      <style>
-        .search { display: grid; gap: 0.5rem; }
-      </style>
     </form>
   );
 }
@@ -434,7 +432,14 @@ export function Page() {
     </SearchBox>
   );
 }
+
+<style>
+  .search { display: grid; gap: 0.5rem; }
+</style>
 ```
+
+Both components share the `<style>` block at the end of the file: by convention, each `.stsx`
+file has one, after its components ([Styles](styles.md)).
 
 ## Common mistakes
 
@@ -1079,32 +1084,95 @@ See also: [Components](components.md), [Styles](styles.md), [reference: JSX type
 
 # Styles
 
-> Write plain CSS in `<style>` blocks in `.stsx` files. Where a block sits decides its scope: the element that encloses it, the file, or the whole app with `<style global>`. CSS reads JS constants as `$name`, inlined at build time, and constant math is precomputed.
+> Write plain CSS in `<style>` blocks in `.stsx` files. By convention, one block at the end of the file styles every component in it. Where a block sits decides its scope: the file, the element that encloses it, or the whole app with `<style global>`. CSS reads JS constants as `$name`, inlined at build time, and constant math is precomputed.
 
 ## Concept
+
+**One block per file, at the end.** The default is a single top-level `<style>` after the
+components. It styles every template in the file, so several components share it, and it reads
+any top-level `const` declared above it. The JSX stays free of CSS, and the file reads like a
+component file with its stylesheet:
+
+```stsx check
+import { signal } from "lumiose";
+
+const accent = "#5546ff";
+const radius = "10px";
+
+export function Counter() {
+  const count = signal(0);
+
+  return (
+    <div class="counter">
+      <button onClick={() => count.update((n) => n + 1)}>{count()}</button>
+      <Reset onReset={() => count.set(0)} />
+    </div>
+  );
+}
+
+export function Reset(props: { onReset: () => void }) {
+  return (
+    <button class="reset" onClick={props.onReset}>
+      Reset
+    </button>
+  );
+}
+
+<style>
+  .counter { display: flex; gap: 0.5rem; }
+  button {
+    padding: 0.5rem 1rem;
+    border: 0;
+    border-radius: $radius;
+    background: $accent;
+    color: white;
+  }
+  .reset { background: transparent; color: $accent; }
+</style>
+```
+
+`Counter` and `Reset` share the block: `button` matches the buttons of both, and of no other file.
 
 **Placement decides scope.**
 
 | Placement                                                                            | Scope                                                                                                                                                                                                                                                                                                                         |
 | ------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| File top level (by convention, one block at the end of the file)                     | Every template in the file.                                                                                                                                                                                                                                                                                                   |
 | Inside a component's JSX, as a child of an intrinsic element or fragment (any depth) | Its **enclosing element and everything written inside it** in that component, including `.map` callbacks and JSX passed as children there. A block directly under the component's root element therefore covers the whole component. Sibling subtrees are not affected, and it never reaches other components' own templates. |
-| File top level (conventionally at the end of the file)                               | Every template in the file.                                                                                                                                                                                                                                                                                                   |
-| `<style global>` (anywhere a block is valid)                                         | The whole app, unscoped. Usually in the root `_layout.stsx`.                                                                                                                                                                                                                                                                  |
+| `<style global>` (anywhere a block is valid)                                         | The whole app, unscoped. Usually at the end of the root `_layout.stsx`.                                                                                                                                                                                                                                                       |
+
+**Nested blocks, for two jobs.** A block inside a component's JSX is still valid. Reach for one
+when the file-level block cannot do the job:
+
+- **Scoping one element's subtree,** so a selector such as `p` or `.note` cannot match anything
+  else in the file.
+- **Reading a constant declared inside a component** (`const gap = 12` in its body). A file-level
+  block only sees top-level constants.
 
 ```stsx
 export function Panel() {
+  const gap = 12;
+
   return (
     <div class="panel">
       <aside class="side">…</aside>                 {/* not styled by the <style> below */}
       <section class="body">
         <p class="note">…</p>
-        <style> .note { color: tomato; } </style>  {/* only this <section> subtree */}
+        <style> p { color: tomato; } </style>      {/* only the <p> of this <section> */}
       </section>
-      <style> .panel { display: grid; } </style>   {/* the whole component */}
+      <style> .panel { gap: calc($gap * 1px); } </style>   {/* reads the component's `gap` */}
     </div>
   );
 }
+
+<style>
+  .panel { display: grid; }
+</style>
 ```
+
+Everything else goes in the file-level block. Moving a block from a component's root to the end
+of the file widens its scope to every component in the file: check that its selectors (bare
+element selectors in particular) do not start matching another component's elements.
 
 **How scoping works.** Each scope with styles gets a token `data-l-<hash>`, a stable hash of the
 file path plus the component name, with one token per style-bearing element. Every element in the
@@ -1369,8 +1437,8 @@ custom-property folding.
 
 | Syntax                                   | Meaning                                                                                                  |
 | ---------------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| `<style>…</style>` at module top level   | File-scoped CSS, shared by every component of the file. By convention one block, at the end of the file. |
 | `<style>…</style>` in component JSX      | CSS scoped to its enclosing element's subtree (the whole component when placed under the root element).  |
-| `<style>…</style>` at module top level   | File-scoped CSS. Must come after the `const`s it references.                                             |
 | `<style global>…</style>`                | Unscoped, app-wide CSS.                                                                                  |
 | `$name`, `$obj.key`                      | A JS constant, inlined at build time, in property values and `@media`/`@container`/`@supports` preludes. |
 | `calc()`, `min()`, `max()`, `clamp()`, … | Folded at build time when every operand is a concrete value in compatible units.                         |
@@ -1385,41 +1453,43 @@ const radius = { sm: "4px", lg: "12px" } as const;
 const BREAKPOINT = "40rem";
 
 export function Card(props: { title: string; progress: number; class?: string }) {
-  const gap = 12;
-
   return (
     <article class={["card", props.class]} style={{ "--progress": `${props.progress}%` }}>
       <h2>{props.title}</h2>
       <div class="bar" />
-
-      <style>
-        .card { display: grid; gap: calc($gap * 1px); border-radius: $radius.lg; }
-        .bar { inline-size: var(--progress); block-size: 4px; background: currentColor; }
-        @media (width < $BREAKPOINT) { .card { border-radius: $radius.sm; } }
-      </style>
     </article>
   );
 }
 
-export function Dashboard() {
+export function Dashboard(props: { columns: number }) {
+  const gap = 12;
+
   return (
-    <main>
+    <main class="dashboard" style={{ "--columns": props.columns }}>
       <Card class="featured" title="Uploads" progress={40} />
+      <Card title="Downloads" progress={75} />
 
       <style>
-        .featured { outline: 2px solid gold; }
+        .dashboard { gap: calc($gap * 1px); }
       </style>
     </main>
   );
 }
 
 <style>
-  h2 { margin: 0; }
+  .dashboard { display: grid; grid-template-columns: repeat(var(--columns), 1fr); }
+  .card { display: grid; gap: 0.5rem; border-radius: $radius.lg; }
+  .card h2 { margin: 0; }
+  .bar { inline-size: var(--progress); block-size: 4px; background: currentColor; }
+  .featured { outline: 2px solid gold; }
+  @media (width < $BREAKPOINT) { .card { border-radius: $radius.sm; } }
 </style>
 ```
 
-`.featured` in `Dashboard` reaches the `<article>` inside `Card` through class passthrough; `h2`
-in the file-level block styles every template in the file.
+`Card` and `Dashboard` share the file-level block, which reads the top-level constants. `.featured`
+is set by `Dashboard` and styles the `<article>` inside `Card`: both are in the file's scope (from
+another file, the class would get there through class passthrough). The nested block in
+`Dashboard` is there because it reads `gap`, a constant of the component.
 
 ## Common mistakes
 
@@ -1444,11 +1514,12 @@ in the file-level block styles every template in the file.
   (`LUM3013`).
 - **`<style>` in a `.tsx` file.** It is a type error in `.tsx` (and `LUM1006` for raw CSS); rename the file to `.stsx`.
 - **Attributes on `<style>`.** Only `global` is allowed (`LUM1005`).
-- **Expecting a parent's styles to reach into children.** Scopes stop at component boundaries;
-  pass `class` (passthrough) or use `:deep()`.
+- **Expecting a parent's styles to reach into children from another file.** A file's blocks
+  never style the templates of components defined in other files; pass `class` (passthrough) or
+  use `:deep()`.
 - **Expecting a nested block to style sibling subtrees.** A `<style>` inside an element only
-  styles that element's subtree. Move it up to the common ancestor, or under the component's root
-  element, to cover more.
+  styles that element's subtree. Move its rules to the file-level block at the end of the file,
+  or the block up to the common ancestor.
 - **Styling JSX returned by a helper function.** In `const field = () => <label class="field">…`
   inside a component, the helper's JSX is not inside the element that holds a nested `<style>`, so
   `.field` matches nothing there (`LUM3005`). Move the block to the top level of the file (it
@@ -1796,13 +1867,13 @@ export function LikeButton({ initial, children }: { initial: number; children?: 
   return (
     <button class="like" onClick={() => likes.update((n) => n + 1)}>
       {children} {likes()}
-
-      <style>
-        .like { border-radius: 999px; }
-      </style>
     </button>
   );
 }
+
+<style>
+  .like { border-radius: 999px; }
+</style>
 ```
 
 ```stsx check file=routes/posts/[id].stsx
@@ -1994,13 +2065,13 @@ export default function Layout(props: LayoutProps<"/">) {
         <a href={href("/blog/[slug]", { slug: "hello-world" })}>First post</a>
       </nav>
       {props.children}
-
-      <style global>
-        body { margin: 0; font-family: system-ui, sans-serif; }
-      </style>
     </div>
   );
 }
+
+<style global>
+  body { margin: 0; font-family: system-ui, sans-serif; }
+</style>
 ```
 
 ```stsx check file=routes/blog/[slug].stsx
@@ -2492,22 +2563,24 @@ See also: [Data and actions](data-and-actions.md), [Routing](routing.md), [refer
 
 # Rendering modes
 
-> Each route picks a mode: `static` (built HTML, the default), `server` (rendered per request, shell first, then streamed `<Suspense>` boundaries) or `spa` (a client-routed subtree). All three use the same components.
+> Each route picks a mode: `static` (built HTML, the default), `server` (rendered per request, shell first, then streamed `<Suspense>` boundaries) or `spa` (a client-routed subtree, rendered per request, prerendered at build time or in the browser). All three use the same components.
 
 ## Concept
 
-| Mode               | HTML                                                               | JS shipped        | Navigation                              |
-| ------------------ | ------------------------------------------------------------------ | ----------------- | --------------------------------------- |
-| `static` (default) | At build time, for each path from `staticPaths()`                  | Islands only      | MPA (prefetch, opt-in View Transitions) |
-| `server`           | Per request: the shell, then streamed boundaries                   | Islands only      | MPA (prefetch, opt-in View Transitions) |
-| `spa`              | Server-rendered and hydrated, or a client shell with `ssr = false` | The whole subtree | Client router (`<Link prefetch>`)       |
+| Mode               | HTML                                                                                                                | JS shipped        | Navigation                              |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------- | ----------------- | --------------------------------------- |
+| `static` (default) | At build time, for each path from `staticPaths()`                                                                   | Islands only      | MPA (prefetch, opt-in View Transitions) |
+| `server`           | Per request: the shell, then streamed boundaries                                                                    | Islands only      | MPA (prefetch, opt-in View Transitions) |
+| `spa`              | Server-rendered (per request, or at build time with `prerender`) and hydrated, or a client shell with `ssr = false` | The whole subtree | Client router (`<Link prefetch>`)       |
 
 A route sets `export const mode = "server"` (a string literal); pages inherit the mode of their
 nearest layout that sets one, else the project default set in `vite.config.ts` with
 `lumiose({ mode: "server" })` (`"static"` when unset). `export const ssr = false` applies to `spa`
 routes: the build emits a static shell and the page renders in the browser. `lumiose({ ssr: false })`
 makes that the default for every `spa` route, so `lumiose({ mode: "spa", ssr: false })` turns the
-whole project into a client-rendered SPA built as static files.
+whole project into a client-rendered SPA built as static files. `export const prerender = true`
+renders an `spa` page at build time instead of per request, and `lumiose({ prerender: true })` makes
+that the default for every `spa` page (see [Prerendered SPA routes](#prerendered-spa-routes)).
 
 **Shell first, then stream (server mode).**
 
@@ -2547,9 +2620,42 @@ loader, and the build ships no hydration code.
   the browser renders the island. Such pages cannot export `action` or `headers`: use endpoints.
 - `_404` and `_error` pages below an `spa` layout render inside the SPA too.
 
+### Prerendered SPA routes
+
+`export const prerender = true` on an `spa` page renders it in the build's prerender step, as a
+`static` page is rendered: the build writes real HTML for it, which the SPA entry hydrates, and later
+navigation is client-side as usual. Search engines, link previews and visitors without JavaScript
+see the content, and a static host can serve the page.
+
+- **Opt in per page or for the project.** `export const prerender = true` on a page, or
+  `lumiose({ prerender: true })` for every `spa` page. A page opts out of the project default with
+  `export const prerender = false`, and is then rendered per request. `prerender` is read from
+  pages only, as a literal `true` or `false`; in a layout, an endpoint or a `static`/`server` route
+  it has no effect (a `LUM5002` warning).
+- **Params.** A page with params lists its paths with `staticPaths()`, as a `static` page does;
+  without it the build stops. The build writes one HTML file per path. On a static host, any other
+  URL gets `404.html`, which renders the root `_404` inside the SPA.
+- **No request.** The page renders at build time, so request APIs (`cookies()`, `request()`,
+  `locals()`, `response()`, `url().searchParams`) stop the build with `LUM5001`. Read them in the
+  browser, or call an endpoint.
+- **Browser-only code.** The page, its `spa` layouts and everything they import now load on the
+  server at build time, which an `ssr = false` page never did. Move browser APIs (`window`,
+  `document`, `localStorage`, `AudioContext`, `requestAnimationFrame`) out of module scope and out
+  of component setup: read them in `onMount()`, an effect or an event handler, which run only in
+  the browser. Create browser objects lazily, on first use. The compiler warns about browser
+  globals at module scope (`LUM4004`).
+- **Not with `ssr = false`.** `ssr = false` renders the page only in the browser. Setting
+  `prerender = true` on such a page is `LUM5006`, and `lumiose({ prerender: true, ssr: false })` is
+  rejected. Under `lumiose({ prerender: true })` alone, a page with `ssr = false` stays a shell.
+
+To move a client-rendered SPA (`ssr = false`) to prerendering: remove `ssr = false`, make its
+modules safe to load on the server (above), add `staticPaths()` to pages with params, then set
+`prerender = true` (or `lumiose({ prerender: true })`). `lumiose dev` renders the pages per request,
+fully resolved as the build does, so hydration problems show up there first.
+
 **Build (`lumiose build`).** 1. client build (islands, SPA, CSS, assets, `public/`), 2. server
-build, 3. prerender of every `static` route (each `staticPaths()` entry for routes with params) and
-every static `GET` endpoint, in-process through the built handler and fully resolved (no fallbacks
+build, 3. prerender of every `static` route and every `spa` page with `prerender` (each
+`staticPaths()` entry for routes with params) and every static `GET` endpoint, in-process through the built handler and fully resolved (no fallbacks
 or swap scripts), 4. precompression: a `.br` and a `.gz` copy next to every text file of
 `dist/client` of at least 1 kB, which `@lumiose/adapter-node` (and most static hosts and CDNs) serve
 to browsers that accept them. Output:
@@ -2558,7 +2664,8 @@ to browsers that accept them. Output:
   imports (`import photo from "./photo.png"` in a route, a relative `<img src>` in a `.md`
   import), written once under `assets/` with the fingerprinted URL the HTML uses. Prerendered
   files are `path/index.html` (`path.html` with
-  `lumiose({ trailingSlash: "never" })`), endpoint files such as `sitemap.xml`, the shell of each
+  `lumiose({ trailingSlash: "never" })`, prerendered `spa` pages included), endpoint files such as
+  `sitemap.xml`, the shell of each
   `ssr = false` page without params, and `404.html` from the root `_404` when the root scope is
   static or `spa`. In an `ssr = false` SPA, `404.html` is the shell: a static host that serves it
   for unknown URLs gets deep links to every route. Vite's `base` applies to URLs, not to file
@@ -2568,33 +2675,34 @@ to browsers that accept them. Output:
   (npm dependencies stay external, as Vite does for SSR), minified with function and class names
   kept, so production stack traces still name the functions.
 
-A route that reads the request while it prerenders (`cookies()`, `locals()`, `request()`,
+A route (`static`, or `spa` with `prerender`) that reads the request while it prerenders (`cookies()`, `locals()`, `request()`,
 `response()`, `url().searchParams`) stops the build with [LUM5001](../errors/LUM5001.md); a static
 endpoint can only export `GET` ([LUM5005](../errors/LUM5005.md)). Middleware still runs. A form
 post to a prerendered page reaches its `action` on the server. Serve the build with
 `@lumiose/adapter-node` (`createServer({ port })`: `dist/client` with caching headers, then the
-handler) or `lumiose preview`. A site whose every route is prerendered (no `server` route, no
-server-rendered `spa` route, no form action; `ssr = false` routes with params need a `404.html`
+handler) or `lumiose preview`. A site whose every route is prerendered (no `server` route, no `spa`
+route rendered per request, no form action; `ssr = false` routes with params need a `404.html`
 shell) builds no `dist/server`: deploy `dist/client` to any static host, and `lumiose preview` serves
 it without the adapter. Set response headers once with `lumiose({ headers })`
 ([@lumiose/vite](../reference/vite.md#lumiose)).
 
 > **Status:** `lumiose dev`, `lumiose build`, prerendering,
 > [`@lumiose/adapter-node`](../reference/adapter-node.md), CSS links in built pages, the island
-> loader (hydration), SPA mode (one root island, `ssr = false` shells) and the SPA router are
-> available.
+> loader (hydration), SPA mode (one root island, `ssr = false` shells, prerendered pages) and the
+> SPA router are available.
 
 ## API
 
-| API                                                 | Use                                                                                 |
-| --------------------------------------------------- | ----------------------------------------------------------------------------------- |
-| `export const mode = "static" \| "server" \| "spa"` | The route's mode (inherited from layouts).                                          |
-| `export const ssr = false`                          | `spa` routes: render in the browser only.                                           |
-| `lumiose({ mode, ssr })` in `vite.config.ts`        | The project defaults for routes and layouts that do not set them.                   |
-| `export async function staticPaths()`               | `static` routes with params: `[{ params: { slug: "a" } }, …]`.                      |
-| `export function headers(ctx)`                      | Response headers for the page.                                                      |
-| `<Suspense fallback>`                               | Marks content that may stream after the shell.                                      |
-| `renderToStream(root, options?)`                    | The server renderer behind it all; see [reference: server](../reference/server.md). |
+| API                                                     | Use                                                                                        |
+| ------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| `export const mode = "static" \| "server" \| "spa"`     | The route's mode (inherited from layouts).                                                 |
+| `export const ssr = false`                              | `spa` routes: render in the browser only.                                                  |
+| `export const prerender = true`                         | `spa` pages: render at build time into HTML that hydrates (`false` opts out).              |
+| `lumiose({ mode, ssr, prerender })` in `vite.config.ts` | The project defaults for routes and layouts that do not set them.                          |
+| `export async function staticPaths()`                   | `static` routes and prerendered `spa` pages with params: `[{ params: { slug: "a" } }, …]`. |
+| `export function headers(ctx)`                          | Response headers for the page.                                                             |
+| `<Suspense fallback>`                                   | Marks content that may stream after the shell.                                             |
+| `renderToStream(root, options?)`                        | The server renderer behind it all; see [reference: server](../reference/server.md).        |
 
 ## Example
 
@@ -2637,6 +2745,26 @@ export default function Doc({ params }: PageProps<"/docs/[slug]">) {
 }
 ```
 
+```stsx check file=routes/tracks/[id].stsx
+// src/routes/tracks/[id].stsx: prerendered for each id, then hydrated into the SPA
+import { onMount, signal } from "lumiose";
+import { params } from "lumiose/router";
+
+export const mode = "spa"; // or from a layout, or lumiose({ mode: "spa" })
+export const prerender = true;
+
+export function staticPaths() {
+  return ["1", "2", "3"].map((id) => ({ params: { id } }));
+}
+
+export default function Track() {
+  const volume = signal(1);
+  // Browser-only: runs after hydration, never at build time.
+  onMount(() => volume.set(Number(localStorage.getItem("volume") ?? 1)));
+  return <h1>Track {params().id} (volume {volume()})</h1>;
+}
+```
+
 ## Common mistakes
 
 - **Request APIs in a `static` route.** `cookies()`, `request()`, `locals()` and actions need
@@ -2648,6 +2776,9 @@ export default function Doc({ params }: PageProps<"/docs/[slug]">) {
 - **Expecting `spa` routes to receive `cookies` or `locals` as props.** They are not serializable
   into the SPA (`LUM4002`); call an endpoint.
 - **Computing `mode` at runtime.** `mode` must be a string literal (`LUM5002`).
+- **Browser APIs at module scope or in component setup of a prerendered `spa` page.** The build
+  renders it on the server; read them in `onMount()` or an event handler (`LUM4004`).
+- **`prerender = true` on an `ssr = false` page.** The page cannot be both (`LUM5006`).
 
 ## Related diagnostics
 
@@ -2655,6 +2786,7 @@ export default function Doc({ params }: PageProps<"/docs/[slug]">) {
 - [LUM5001](../errors/LUM5001.md): request API used during prerender.
 - [LUM5002](../errors/LUM5002.md): invalid route file.
 - [LUM5004](../errors/LUM5004.md): head or status change inside a streamed boundary.
+- [LUM5006](../errors/LUM5006.md): prerendered page that renders only in the browser.
 - [LUM4006](../errors/LUM4006.md): hydration mismatch.
 
 See also: [Islands](islands.md), [Async components](async.md), [Head and document](head.md).
@@ -2769,19 +2901,20 @@ export function Nav() {
       <button type="button">
         <Search class="icon" title="Search" />
       </button>
-      <style>
-        .link { color: rebeccapurple; }
-        .icon { width: 1.25em; height: 1.25em; vertical-align: -0.2em; }
-        .link:hover .icon { color: crimson; }
-      </style>
     </nav>
   );
 }
+
+<style>
+  .link { color: rebeccapurple; }
+  .icon { width: 1.25em; height: 1.25em; vertical-align: -0.2em; }
+  .link:hover .icon { color: crimson; }
+</style>
 ```
 
 The `Home` icon is decorative (its link has text); the search button has no text, so its icon
 gets a `title`. Both follow the link or button colour through `currentColor`, and `class="icon"`
-receives the component's scope, so the scoped `.icon` rule applies.
+receives the file's scope, so the scoped `.icon` rule applies.
 
 ## Common mistakes
 
@@ -4655,7 +4788,7 @@ render(() => <App />, document.getElementById("app")!);
 
 `lumiose/router` works inside `spa` routes (`export const mode = "spa"`, or `lumiose({ mode: "spa" })`
 for the whole project); `<Link>` works on MPA pages too (see [Link](#link)). Pages and layouts of an SPA import it like any module; on the server
-(`ssr` pages) the same names read the request: `params()`, `route()`, `url()` and `searchParams()` return the
+(`ssr` pages, rendered per request or prerendered at build time) the same names read the request: `params()`, `route()`, `url()` and `searchParams()` return the
 request's values, `<Link>` renders its `<a>`, `isNavigating()` is `false`, and `navigate()` and
 `searchParams.set()` throw (call them from event handlers and effects). Concepts:
 [Routing](../concepts/routing.md), [Rendering modes](../concepts/rendering-modes.md).
@@ -4885,6 +5018,8 @@ interface LumioseOptions {
   mode?: "static" | "server" | "spa"; // default "static"
   /** Whether spa routes render their content on the server (false: the shell only). */
   ssr?: boolean; // default true
+  /** Whether spa pages that render on the server are prerendered at build time; `export const prerender` overrides it. */
+  prerender?: boolean; // default false, and not with ssr: false
   /** Trailing slashes of page URLs: "always"/"never" redirect to the canonical form. */
   trailingSlash?: "ignore" | "always" | "never"; // default "ignore"
   /** The origin check of form posts (on by default); false turns it off. */
@@ -4908,10 +5043,11 @@ interface LumioseOptions {
 }
 ```
 
-The project options (`mode`, `ssr`, `trailingSlash`, `csrf`, `viewTransitions`, `prefetch`,
-`headers`, `limits`) are
+The project options (`mode`, `ssr`, `prerender`, `trailingSlash`, `csrf`, `viewTransitions`,
+`prefetch`, `headers`, `limits`) are
 read by `lumiose dev`, `lumiose build` and `lumiose routes`/`check` from the plugin's `api.options`.
-Invalid values and unknown option names throw when the config loads. `csp: "strict"` is
+Invalid values and unknown option names throw when the config loads, as does `prerender: true`
+with `ssr: false` ([prerendered SPA routes](../concepts/rendering-modes.md#prerendered-spa-routes)). `csp: "strict"` is
 described in [Security](../concepts/security.md): nonces on every inline script and style Lumiose
 writes and on those written in JSX, static `style` strings as nonce'd rules, a `Content-Security-Policy` header for pages rendered per request, and a hash policy
 `<meta>` in prerendered pages. `allowedOrigins` takes full
@@ -5289,8 +5425,9 @@ background.
 
 ## lumiose build
 
-Builds the client and server bundles into `dist/`, then prerenders the `static` routes. When every
-route is prerendered (no `server` route, no server-rendered `spa` route, no form action), the build
+Builds the client and server bundles into `dist/`, then prerenders the `static` routes and the `spa`
+pages with `prerender`. When every route is prerendered (no `server` route, no `spa` route rendered
+per request, no form action), the build
 removes `dist/server`: `dist/client` is the whole site, and `serverEntry` is `null`.
 `lumiose({ headers })` is written to `dist/client/_headers`.
 
@@ -5298,7 +5435,7 @@ removes `dist/server`: `dist/client` is the whole site, and `serverEntry` is `nu
 lumiose build --format json   # { outDir, clientDir, serverEntry, prerendered: [{ path, file, kind }] }
 ```
 
-Route errors (`LUM5002`, `LUM5003`, `LUM5005`) and compile errors exit 1.
+Route errors (`LUM5002`, `LUM5003`, `LUM5005`, `LUM5006`) and compile errors exit 1.
 
 ## lumiose preview
 
@@ -8054,13 +8191,16 @@ Everything a sent state holds is visible in the page; never put secrets in it.
 
 <!-- end of generated header -->
 
-> A request API is used while a `static` route is prerendered.
+> A request API is used while a route is prerendered: a `static` route, or an `spa` page with
+> `export const prerender = true`.
 
-**Reported by:** `lumiose build`, while it prerenders `static` routes.
+**Reported by:** `lumiose build`, while it prerenders `static` routes and `spa` pages with
+`prerender`.
 
 ## What it means
 
-`static` routes (the default) are rendered at build time, where there is no request: no cookies,
+`static` routes (the default) and `spa` pages with `prerender` are rendered at build time, where
+there is no request: no cookies,
 headers, query string or `locals`. Using `request()`, `cookies()`, `locals()`, `response()` or
 `url().searchParams` there (or `ctx.request`, `ctx.cookies` and `ctx.locals` in a static endpoint
 or `headers(ctx)`) cannot work, and the build stops. Middleware still runs for prerendered routes
@@ -8077,8 +8217,10 @@ export default function Home() {
 
 ## How to fix it
 
-Render the route per request: `export const mode = "server";`. Or keep the route static and move
-the request-dependent part into an island that reads it in the browser or calls an endpoint.
+Render the route per request: `export const mode = "server";` (for an `spa` page, remove
+`prerender` or set `export const prerender = false`). Or keep the route prerendered and move the
+request-dependent part into an island (in an `spa` page, `onMount()` or an event handler) that
+reads it in the browser or calls an endpoint.
 
 ## Related
 
@@ -8256,6 +8398,61 @@ folder). Keep the endpoint `static` only if it serves `GET` alone.
 - [Rendering modes](../concepts/rendering-modes.md)
 - [Routing](../concepts/routing.md)
 
+<!-- source: errors/LUM5006.md -->
+
+<!-- Generated from crates/lumiose_compiler/src/diagnostics/registry.rs by packages/lumiose/scripts/gen-error-docs.ts. Edit the explanation below the end marker. -->
+
+# LUM5006: Prerendered page that renders only in the browser
+
+**Severity:** error · **Category:** routing and server (5xxx)
+
+<!-- end of generated header -->
+
+> An `spa` page sets `export const prerender = true`, but its `ssr` is `false`.
+
+**Reported by:** the route scanner (`lumiose dev`, `lumiose check`, `lumiose build`).
+
+## What it means
+
+The two options ask for opposite things. `prerender = true` renders the page's HTML at build time,
+and the browser hydrates it. `ssr = false` renders the page only in the browser: the server sends
+an empty shell and never loads the page's modules. The `ssr = false` can come from the page itself,
+from a layout above it, or from the project default `lumiose({ ssr: false })`.
+
+## Example
+
+```stsx
+// src/routes/_layout.stsx
+export const mode = "spa";
+export const ssr = false;
+```
+
+```stsx
+// src/routes/index.stsx
+export const prerender = true;
+export default function Home() {
+  return <h1>Home</h1>;
+}
+```
+
+## How to fix it
+
+- **To prerender the page,** let it render on the server: remove `export const ssr = false`, or
+  set `export const ssr = true` on the page. Then move browser-only code (`window`, `document`,
+  `AudioContext`, `localStorage`) out of module scope and component setup, into event handlers or
+  `onMount()`.
+- **To keep the client-rendered shell,** remove `export const prerender = true`. A shell without
+  params is already written to a static file by `lumiose build`.
+
+`lumiose({ prerender: true })` together with `lumiose({ ssr: false })` is rejected by the plugin
+for the same reason. With only `lumiose({ prerender: true })`, a page that sets `ssr = false`
+stays a shell without this error.
+
+## Related
+
+- [Rendering modes](../concepts/rendering-modes.md#prerendered-spa-routes)
+- [LUM5001](LUM5001.md): request API used during prerender.
+
 <!-- source: errors/LUM6001.md -->
 
 <!-- Generated from crates/lumiose_compiler/src/diagnostics/registry.rs by packages/lumiose/scripts/gen-error-docs.ts. Edit the explanation below the end marker. -->
@@ -8389,13 +8586,14 @@ fix?, docs }`; `lumiose check --format json` prints them.
 
 ## Routing and server (5xxx)
 
-| Code                  | Severity | Title                                            |
-| --------------------- | -------- | ------------------------------------------------ |
-| [LUM5001](LUM5001.md) | error    | Request API used during prerender                |
-| [LUM5002](LUM5002.md) | error    | Invalid route file                               |
-| [LUM5003](LUM5003.md) | error    | Duplicate route                                  |
-| [LUM5004](LUM5004.md) | error    | Head or status change inside a streamed boundary |
-| [LUM5005](LUM5005.md) | error    | Non-GET method in a static endpoint              |
+| Code                  | Severity | Title                                             |
+| --------------------- | -------- | ------------------------------------------------- |
+| [LUM5001](LUM5001.md) | error    | Request API used during prerender                 |
+| [LUM5002](LUM5002.md) | error    | Invalid route file                                |
+| [LUM5003](LUM5003.md) | error    | Duplicate route                                   |
+| [LUM5004](LUM5004.md) | error    | Head or status change inside a streamed boundary  |
+| [LUM5005](LUM5005.md) | error    | Non-GET method in a static endpoint               |
+| [LUM5006](LUM5006.md) | error    | Prerendered page that renders only in the browser |
 
 ## Tooling and config (6xxx)
 
