@@ -1,6 +1,6 @@
 // Site-wide constants and the base path. The site may be served below a path (GitHub Pages:
 // `LUMIOSE_BASE=/lumiose/`): route URLs come from `href()`, which adds the base; other site URLs
-// (public files, the playground app) go through `link()`.
+// (public files such as the playground's generated assets) go through `link()`.
 import type { FooterColumn, NavLink } from "@lumiose/site-kit";
 import { href } from "lumiose";
 
@@ -20,6 +20,11 @@ export function sitePath(pathname: string): string {
   return pathname.startsWith(BASE) ? `/${pathname.slice(BASE.length)}` : pathname;
 }
 
+/** The docs page of a diagnostic's docs topic (`errors/LUM2001` or `diagnostics/LUM2001`). */
+export function docsLink(topic: string): string {
+  return link(`/docs/${topic.replace(/^diagnostics\//, "errors/")}`);
+}
+
 /** The source repository. */
 export const REPOSITORY = "https://github.com/itsjavi/lumiose";
 
@@ -34,7 +39,7 @@ export const navLinks: NavLink[] = [
   { href: href("/docs/[...path]", { path: "" }), label: "Docs" },
   { href: href("/examples"), label: "Examples" },
   { href: href("/benchmarks"), label: "Benchmarks" },
-  { href: link("/playground"), label: "Playground" },
+  { href: href("/playground"), label: "Playground" },
 ];
 
 export const footerColumns: FooterColumn[] = [
@@ -69,7 +74,7 @@ export const footerColumns: FooterColumn[] = [
     links: [
       { href: href("/llms.txt"), label: "llms.txt" },
       { href: href("/llms-full.txt"), label: "llms-full.txt" },
-      { href: link("/playground"), label: "Playground" },
+      { href: href("/playground"), label: "Playground" },
       { href: REPOSITORY, label: "GitHub" },
     ],
   },

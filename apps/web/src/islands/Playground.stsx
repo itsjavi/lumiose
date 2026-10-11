@@ -1,7 +1,11 @@
-// Island (client:load): the playground. The server renders its frame (toolbar, editor and output
-// panes); in the browser it loads the WebAssembly compiler and CodeMirror, compiles the source on
-// every edit for the client and the server, shows the output and the diagnostics, runs the client
-// output in a sandboxed preview frame and keeps the state in the URL hash (shareable links).
+// Island (client:load): the playground editor. The server renders its frame (toolbar, editor and
+// output panes); in the browser it loads the WebAssembly compiler and CodeMirror, compiles the source
+// on every edit for the client and the server, shows the output and the diagnostics, and runs the
+// client output in a sandboxed preview frame.
+//
+// On /playground it keeps the state in the URL hash (shareable links) and offers the sample menu.
+// `embedded` drops both, for pages that embed the editor with their own `code` (the landing's live
+// demo, TASK-211). One instance per page: the tabs and panels use fixed ids.
 import { bp, color, font, radius, space, text, weight } from "@lumiose/site-kit/tokens";
 import { onMount, signal } from "lumiose";
 import type { EditorView } from "@codemirror/view";
@@ -11,18 +15,26 @@ import {
   loadCompiler,
   type PlaygroundDiagnostic,
   type WasmCompiler,
-} from "../lib/compiler.ts";
+} from "../playground/compiler.ts";
 import {
   createEditor,
   createOutput,
   setText,
   showDiagnostics,
   setStyleScanner,
-} from "../lib/editor.ts";
-import { previewDocument, previewProgram, type PreviewMessage, type PreviewProgram } from "../lib/preview.ts";
-import { defaultSample, samples } from "../lib/samples.ts";
-import { decodeState, encodeState } from "../lib/share.ts";
-import { docsLink } from "../lib/site.ts";
+} from "../playground/editor.ts";
+import {
+  previewDocument,
+  previewProgram,
+  type PreviewMessage,
+  type PreviewProgram,
+} from "../playground/preview.ts";
+import { defaultSample, samples } from "../playground/samples.ts";
+import { decodeState, encodeState } from "../playground/share.ts";
+import { docsLink, link } from "../lib/site.ts";
+
+/** The WebAssembly compiler and the preview runtime (scripts/playground-assets.ts). */
+const ASSETS = link("/playground/generated/");
 
 const TABS = [
   { id: "preview", label: "Preview" },
@@ -41,7 +53,15 @@ interface LogEntry {
 
 const isTab = (id: string | undefined): id is TabId => TABS.some((tab) => tab.id === id);
 
-export function Playground(props: { base: string; site: string }) {
+export interface PlaygroundProps {
+  /** The source to start from (default: the first sample, or the URL's state on /playground). */
+  code?: string;
+  /** Embedded in another page: no sample menu, no share link, no state in the URL. */
+  embedded?: boolean;
+}
+
+export function Playground(props: PlaygroundProps) {
+  const initial = props.code ?? defaultSample.code;
   const status = signal<"loading" | "ready" | "failed">("loading");
   const failure = signal("");
   const version = signal("");
@@ -62,7 +82,7 @@ export function Playground(props: { base: string; site: string }) {
   let editor: EditorView | undefined;
   const outputs: Partial<Record<"client" | "server" | "css", EditorView>> = {};
   let runtime: Promise<string> | undefined;
-  let source = defaultSample.code;
+  let source = initial;
   let timer: ReturnType<typeof setTimeout> | undefined;
   let run = 0;
   let pending: { id: number; program: PreviewProgram } | undefined;
@@ -104,7 +124,7 @@ export function Playground(props: { base: string; site: string }) {
 
   function runPreview(program: PreviewProgram) {
     if (!frame) return;
-    runtime ??= fetch(`${props.base}generated/runtime.js`).then((response) => {
+    runtime ??= fetch(`${ASSETS}runtime.js`).then((response) => {
       if (!response.ok) throw new Error(`The preview runtime is missing (${response.status}).`);
       return response.text();
     });
@@ -143,13 +163,15 @@ export function Playground(props: { base: string; site: string }) {
   }
 
   async function saveState() {
+    if (props.embedded) return;
     const hash = await encodeState({ code: source, tab: tab() });
     if (hash !== location.hash) history.replaceState(null, "", hash);
   }
 
   async function loadState() {
+    if (props.embedded) return;
     const state = await decodeState(location.hash);
-    source = state?.code ?? defaultSample.code;
+    source = state?.code ?? initial;
     if (isTab(state?.tab)) tab.set(state.tab);
     if (editor && editor.state.doc.toString() !== source) setText(editor, source);
   }
@@ -199,7 +221,7 @@ export function Playground(props: { base: string; site: string }) {
   onMount(() => {
     let disposed = false;
     addEventListener("message", onFrameMessage);
-    addEventListener("hashchange", onHashChange);
+    if (!props.embedded) addEventListener("hashchange", onHashChange);
     void (async () => {
       await loadState();
       editor = createEditor(editorHost!, source, (text) => {
@@ -210,7 +232,7 @@ export function Playground(props: { base: string; site: string }) {
       outputs.server = createOutput(serverHost!, "js", "Compiled server JavaScript");
       outputs.css = createOutput(cssHost!, "css", "Compiled CSS");
       try {
-        compiler = await loadCompiler(props.base);
+        compiler = await loadCompiler(ASSETS);
       } catch (error) {
         failure.set((error as Error).message);
         status.set("failed");
@@ -241,14 +263,16 @@ export function Playground(props: { base: string; site: string }) {
   return (
     <div class="playground">
       <div class="toolbar">
-        <label class="sample">
-          <span>Sample</span>
-          <select onChange={(event) => loadSample((event.target as HTMLSelectElement).value)}>
-            {samples.map((sample) => (
-              <option value={sample.id}>{sample.label}</option>
-            ))}
-          </select>
-        </label>
+        {!props.embedded && (
+          <label class="sample">
+            <span>Sample</span>
+            <select onChange={(event) => loadSample((event.target as HTMLSelectElement).value)}>
+              {samples.map((sample) => (
+                <option value={sample.id}>{sample.label}</option>
+              ))}
+            </select>
+          </label>
+        )}
         <p class="status" role="status">
           {status() === "loading"
             ? "Loading the compiler…"
@@ -258,9 +282,11 @@ export function Playground(props: { base: string; site: string }) {
                 ? `${errors()} error${errors() === 1 ? "" : "s"}`
                 : `Compiled with lumiose_wasm ${version()}`}
         </p>
-        <button type="button" class="share" onClick={() => void share()}>
-          {copied() ? "Link copied" : "Copy link"}
-        </button>
+        {!props.embedded && (
+          <button type="button" class="share" onClick={() => void share()}>
+            {copied() ? "Link copied" : "Copy link"}
+          </button>
+        )}
       </div>
 
       <div class="panes">

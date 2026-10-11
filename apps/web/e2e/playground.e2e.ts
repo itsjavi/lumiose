@@ -83,6 +83,23 @@ test("switches samples and works below the site's base path", async ({ page }) =
   );
 });
 
+test("is a page of the site, and only it loads the compiler", async ({ page }) => {
+  await open(page);
+  await expect(page.getByRole("link", { name: "Playground" }).first()).toHaveAttribute(
+    "aria-current",
+    "page",
+  );
+  await expect(page.getByRole("contentinfo")).toContainText("MIT licensed");
+
+  const fetched: string[] = [];
+  page.on("request", (request) => fetched.push(request.url()));
+  for (const path of ["/", "/docs/concepts/styles", "/benchmarks"]) {
+    await page.goto(path);
+    await page.waitForLoadState("networkidle");
+  }
+  expect(fetched.filter((url) => /generated\/|lumiose_wasm|codemirror/i.test(url))).toEqual([]);
+});
+
 const out = (name: string) => `../../backlog/assets/task-58-${name}.png`;
 
 // SCREENSHOTS=1 pnpm screenshots: the representative captures in backlog/assets.

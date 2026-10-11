@@ -6,7 +6,7 @@ Lumiose is a web framework for every kind of web app, from static sites to SPAs:
 
 ## Run anything: `pnpm demo`
 
-Every package in the repo that serves HTML (the examples, the website and playground, the site-kit showcase, the benchmark apps and results viewers, the eval results viewer and the e2e test apps) can be started from the root:
+Every package in the repo that serves HTML (the examples, the website with its playground, the site-kit showcase, the benchmark apps and results viewers, the eval results viewer and the e2e test apps) can be started from the root:
 
 ```sh
 pnpm demo                          # pick one from a list grouped by kind
@@ -20,15 +20,15 @@ It prints the URL once the server answers; Ctrl+C stops the server and everythin
 
 ## Website
 
-The website is assembled into one static site: `apps/web` (the landing page at `/`, the docs at `/docs`, and the `/examples` and `/benchmarks` pages), `apps/playground` (at `/playground`), the example apps that need no server (`examples/spa-chiptune`, `spa-dotmatrix`, `ssg-travel-journal` and `vite-counter`, at `/examples/<name>/`), the fullstack benchmark's results viewer with the committed results (`/benchmarks/fullstack/`) and the Lumiose js-framework-benchmark app (`/benchmarks/js-framework-benchmark/app/`).
+The website is assembled into one static site: `apps/web` (the landing page at `/`, the docs at `/docs`, the `/examples` and `/benchmarks` pages, and the playground at `/playground`), the example apps that need no server (`examples/spa-chiptune`, `spa-dotmatrix`, `ssg-travel-journal` and `vite-counter`, at `/examples/<name>/`), the fullstack benchmark's results viewer with the committed results (`/benchmarks/fullstack/`) and the Lumiose js-framework-benchmark app (`/benchmarks/js-framework-benchmark/app/`).
 
 ```sh
-pnpm build:site                  # builds the compiler and both apps into dist/site
+pnpm build:site                  # builds the compiler, the website and the examples into dist/site
 pnpm build:site --base /lumiose/   # served below a path, e.g. a GitHub project page
 pnpm preview:site --base /lumiose/ # serves dist/site at http://localhost:4173/lumiose/
 ```
 
-`--skip-compiler` reuses an existing native compiler build. Each example gets `PUBLIC_LUMIOSE_SITE` (the site's base) and shows a small "Made with Lumiose" link back to the site when it is set; the static benchmark viewers get the same link. GitHub Pages answers every missing path with the root `404.html`; below an example that has its own `404.html` (the SPA shell of spa-chiptune, the journal's 404 page), that page renders the example's instead, so deep links work. The playground also builds the WebAssembly compiler, which needs `rustup target add wasm32-unknown-unknown` and `cargo install wasm-bindgen-cli --version 0.2.129 --locked` (the version must match the workspace's `wasm-bindgen` pin).
+`--skip-compiler` reuses an existing native compiler build. Each example gets `PUBLIC_LUMIOSE_SITE` (the site's base) and shows a small "Made with Lumiose" link back to the site when it is set; the static benchmark viewers get the same link. GitHub Pages answers every missing path with the root `404.html`; below an example that has its own `404.html` (the SPA shell of spa-chiptune, the journal's 404 page), that page renders the example's instead, so deep links work. The website's build also builds the playground's WebAssembly compiler (`apps/web/scripts/playground-assets.ts`), which needs `rustup target add wasm32-unknown-unknown` and `cargo install wasm-bindgen-cli --version 0.2.129 --locked` (the version must match the workspace's `wasm-bindgen` pin). `pnpm demo web` builds it too when the toolchain is installed; without it the rest of the site runs and the playground page reports the missing compiler.
 
 `.github/workflows/pages.yml` runs the same build on every push to `main` (or manually) and deploys `dist/site` to GitHub Pages, with the base taken from the Pages configuration. To enable it, set **Settings > Pages > Source** to **GitHub Actions** on the repository.
 

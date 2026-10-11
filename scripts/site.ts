@@ -4,8 +4,7 @@
 //   pnpm build:site [--base /lumiose/] [--out dist/site] [--skip-compiler]
 //   pnpm preview:site [--base /lumiose/] [--out dist/site] [--port 4173]
 //
-// - apps/web (/, /docs, /examples, /benchmarks) lands at the root of the output, apps/playground
-//   under playground/.
+// - apps/web (/, /docs, /examples, /benchmarks, /playground) lands at the root of the output.
 // - The examples that need no server are built below examples/<name>/ (TASK-163). ssr-bookshelf
 //   needs a server: the website shows a screenshot and links its code instead.
 // - Benchmarks: the fullstack results viewer with the committed results at
@@ -18,9 +17,9 @@
 //   A project page on GitHub Pages lives at https://<user>.github.io/<repo>/, so its base is
 //   /<repo>/. The output holds the files themselves, not a <base> folder.
 // - The native compiler (@lumiose/compiler, napi) is built first, since `lumiose build` compiles with
-//   it; --skip-compiler reuses an existing build. The playground also builds the WebAssembly
-//   compiler (needs `rustup target add wasm32-unknown-unknown` and the pinned wasm-bindgen-cli,
-//   see apps/playground/scripts/assets.ts).
+//   it; --skip-compiler reuses an existing build. apps/web's build also builds the playground's
+//   WebAssembly compiler (needs `rustup target add wasm32-unknown-unknown` and the pinned
+//   wasm-bindgen-cli, see apps/web/scripts/playground-assets.ts).
 //
 // `preview` serves the output below the base the way GitHub Pages does: directory index.html,
 // and the root 404.html for anything missing.
@@ -90,9 +89,7 @@ function copyBuild(from: string, to: string): void {
 
 function build(): void {
   if (!values["skip-compiler"]) pnpm(["build:compiler"]);
-  for (const app of ["@lumiose/web", "@lumiose/playground"]) {
-    pnpm(["--filter", app, "build"], { LUMIOSE_BASE: base });
-  }
+  pnpm(["--filter", "@lumiose/web", "build"], { LUMIOSE_BASE: base });
   for (const { name } of EXAMPLES) {
     // LUMIOSE_PAGES tells an example it is built for a static host without custom headers
     // (spa-chiptune's cross-origin isolation service worker, TASK-172).
@@ -107,7 +104,6 @@ function build(): void {
 
   rmSync(out, { recursive: true, force: true });
   copyBuild(join(repo, "apps/web/dist/client"), out);
-  copyBuild(join(repo, "apps/playground/dist/client"), join(out, "playground"));
   for (const { name, dist } of EXAMPLES) {
     copyBuild(join(repo, "examples", name, dist), join(out, "examples", name));
   }

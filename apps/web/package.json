@@ -2,12 +2,13 @@
   "name": "@lumiose/web",
   "version": "0.0.0",
   "private": true,
-  "description": "The Lumiose website: the landing page at / and the docs at /docs. A static Lumiose site built with @lumiose/site-kit.",
+  "description": "The Lumiose website: the landing page at /, the docs at /docs and the playground at /playground (the WebAssembly compiler, crates/lumiose_wasm, in the browser). A static Lumiose site built with @lumiose/site-kit.",
   "license": "MIT",
   "type": "module",
   "scripts": {
-    "dev": "lumiose dev",
-    "build": "lumiose build",
+    "playground:assets": "node scripts/playground-assets.ts",
+    "dev": "node scripts/playground-assets.ts --optional && lumiose dev",
+    "build": "node scripts/playground-assets.ts && lumiose build",
     "preview": "lumiose preview",
     "typecheck": "lumiose check",
     "test": "vitest run",
@@ -15,6 +16,16 @@
     "screenshots": "SCREENSHOTS=1 playwright test -g screenshots"
   },
   "dependencies": {
+    "@codemirror/autocomplete": "^6.20.3",
+    "@codemirror/commands": "^6.11.1",
+    "@codemirror/lang-css": "^6.3.1",
+    "@codemirror/lang-javascript": "^6.2.5",
+    "@codemirror/language": "^6.13.1",
+    "@codemirror/lint": "^6.9.7",
+    "@codemirror/state": "^6.7.6",
+    "@codemirror/view": "^6.43.14",
+    "@lezer/common": "^1.5.3",
+    "@lezer/highlight": "^1.2.5",
     "@lumiose/site-kit": "workspace:*",
     "lumiose": "workspace:*",
     "marked": "^18.0.14"
@@ -29,7 +40,7 @@
     "vitest": "^5.0.3"
   },
   "demo": {
-    "title": "Lumiose website",
+    "title": "Lumiose website and playground",
     "kind": "site"
   }
 }

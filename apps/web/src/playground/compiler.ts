@@ -1,4 +1,4 @@
-// The compiler in the browser: crates/lumiose_wasm, loaded on demand from public/generated/wasm
+// The compiler in the browser: crates/lumiose_wasm, loaded on demand from public/playground/generated/wasm
 // (scripts/assets.ts). Its `compile` takes the napi binding's options and returns the same
 // result shape, so the types of @lumiose/compiler describe it.
 
@@ -24,10 +24,10 @@ export type WasmCompileOptions = Omit<CompileOptions, "cssTargets">;
 
 let loading: Promise<WasmCompiler> | undefined;
 
-/** Loads and instantiates the wasm compiler once; `base` is the playground's base URL. */
-export function loadCompiler(base: string): Promise<WasmCompiler> {
+/** Loads and instantiates the wasm compiler once; `assets` is the URL of the generated assets. */
+export function loadCompiler(assets: string): Promise<WasmCompiler> {
   loading ??= (async () => {
-    const dir = `${base}generated/wasm/`;
+    const dir = `${assets}wasm/`;
     const module = (await import(/* @vite-ignore */ `${dir}lumiose_wasm.js`)) as WasmCompiler;
     await module.default({ module_or_path: `${dir}lumiose_wasm_bg.wasm` });
     return module;

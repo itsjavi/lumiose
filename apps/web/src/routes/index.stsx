@@ -78,7 +78,7 @@ export default function Home() {
           <LinkButton href={href("/docs/[...path]", { path: "" })} variant="secondary" size="lg">
             Read the docs
           </LinkButton>
-          <LinkButton href={link("/playground")} variant="ghost" size="lg">
+          <LinkButton href={href("/playground")} variant="ghost" size="lg">
             Playground
           </LinkButton>
           <LinkButton href={REPOSITORY} variant="ghost" size="lg" external>

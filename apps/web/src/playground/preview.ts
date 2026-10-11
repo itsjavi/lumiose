@@ -1,6 +1,6 @@
 // The live preview: the compiled client module runs in a sandboxed iframe (scripts, forms and
 // dialogs, but no same-origin access, so shared code cannot reach the site's origin) against the
-// real runtime. The parent sends the runtime bundle (public/generated/runtime.js), the module and
+// real runtime. The parent sends the runtime bundle (public/playground/generated/runtime.js), the module and
 // its CSS by postMessage; the frame turns them into blob modules, mounts the component and reports
 // console output and errors.
 

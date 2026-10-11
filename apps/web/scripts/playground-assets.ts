@@ -1,13 +1,17 @@
-// Builds the playground's generated assets into public/generated/ (git-ignored), before
-// `lumiose dev` and `lumiose build`:
+// Builds the playground's generated assets into public/playground/generated/ (git-ignored), before
+// `lumiose dev` and `lumiose build`. The site serves them at /playground/generated/, and only the
+// /playground page (and the islands that embed the editor) fetches them:
 //
 // - wasm/: the WebAssembly compiler, crates/lumiose_wasm built for wasm32-unknown-unknown and bound
 //   with wasm-bindgen (`--target web`). Needs the Rust target and the wasm-bindgen CLI at the
 //   version the workspace pins (see the error below).
-// - runtime.js: `lumiose` and `lumiose/dom` bundled into one module (src/preview/runtime.ts) for the
-//   preview iframe.
+// - runtime.js: `lumiose` and `lumiose/dom` bundled into one module (src/playground/runtime.ts) for
+//   the preview iframe.
 //
-//   node scripts/assets.ts
+//   node scripts/playground-assets.ts [--optional]
+//
+// --optional (used by `pnpm dev`) warns instead of failing when the Rust toolchain is missing, so
+// the rest of the site still runs; the playground page then reports that the compiler is missing.
 
 import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
@@ -18,7 +22,8 @@ import { build } from "vite";
 
 const app = fileURLToPath(new URL("..", import.meta.url));
 const repo = join(app, "../..");
-const out = join(app, "public/generated");
+const out = join(app, "public/playground/generated");
+const optional = process.argv.includes("--optional");
 
 function run(command: string, args: string[], cwd: string): void {
   try {
@@ -40,23 +45,28 @@ const SETUP = `The playground's compiler is crates/lumiose_wasm, built for the b
   rustup target add wasm32-unknown-unknown
   cargo install wasm-bindgen-cli --version ${bindgen ?? "<the workspace's wasm-bindgen>"} --locked`;
 
-run(
-  "cargo",
-  ["build", "-p", "lumiose_wasm", "--release", "--target", "wasm32-unknown-unknown"],
-  repo,
-);
-run(
-  "wasm-bindgen",
-  [
-    "--target",
-    "web",
-    "--no-typescript",
-    "--out-dir",
-    join(out, "wasm"),
-    join(repo, "target/wasm32-unknown-unknown/release/lumiose_wasm.wasm"),
-  ],
-  repo,
-);
+try {
+  run(
+    "cargo",
+    ["build", "-p", "lumiose_wasm", "--release", "--target", "wasm32-unknown-unknown"],
+    repo,
+  );
+  run(
+    "wasm-bindgen",
+    [
+      "--target",
+      "web",
+      "--no-typescript",
+      "--out-dir",
+      join(out, "wasm"),
+      join(repo, "target/wasm32-unknown-unknown/release/lumiose_wasm.wasm"),
+    ],
+    repo,
+  );
+} catch (error) {
+  if (!optional) throw error;
+  console.warn(`playground assets: skipped the WebAssembly compiler. ${(error as Error).message}`);
+}
 
 // The bundle is transformed with the app's tsconfig, which extends the generated one: write it
 // first, since a fresh checkout (CI) has no .lumiose/ yet.
@@ -72,10 +82,10 @@ await build({
     copyPublicDir: false,
     target: "es2022",
     lib: {
-      entry: join(app, "src/preview/runtime.ts"),
+      entry: join(app, "src/playground/runtime.ts"),
       formats: ["es"],
       fileName: () => "runtime.js",
     },
   },
 });
-console.log("playground assets: public/generated/{wasm/,runtime.js}");
+console.log("playground assets: public/playground/generated/{wasm/,runtime.js}");

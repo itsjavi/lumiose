@@ -94,7 +94,6 @@ describe("discover", () => {
       "ssr-bookshelf",
       "ssg-travel-journal",
       "web",
-      "playground",
       "bench-viewer",
       "tracker-lumiose",
       "tracker-next",
