@@ -1,5 +1,5 @@
 // The project as the CLI sees it: its root and the options of `lumiose({ … })` in its Vite config
-// (decision-21), which set the default route mode that route diagnostics and `lumiose routes` use.
+// (decision-21), which set the route defaults (mode, `ssr`, `prerender`) that route diagnostics and `lumiose routes` use.
 
 import { existsSync, realpathSync, statSync } from "node:fs";
 import { resolve } from "node:path";
@@ -46,7 +46,7 @@ export async function loadProjectOptions(root: string, command: string): Promise
   }
 }
 
-/** Route manifest options with the project's default mode and `ssr`. */
+/** Route manifest options with the project's default mode, `ssr` and `prerender`. */
 export async function routeOptions(
   root: string,
   command = "check",
@@ -55,5 +55,6 @@ export async function routeOptions(
   return {
     ...(options.mode === undefined ? {} : { defaultMode: options.mode }),
     ...(options.ssr === undefined ? {} : { defaultSsr: options.ssr }),
+    ...(options.prerender === undefined ? {} : { defaultPrerender: options.prerender }),
   };
 }

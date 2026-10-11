@@ -16,7 +16,7 @@ import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it, onTestFinished } from "vitest";
 import { tsconfigTemplate } from "./check/tsconfig.ts";
 import { suggest } from "./main.ts";
 
@@ -229,9 +229,45 @@ describe("lumiose CLI", () => {
       kind: "page",
       mode: "static",
       ssr: true,
+      prerender: false,
       layouts: ["src/routes/_layout.stsx"],
       params: [],
     });
+  });
+
+  it("lumiose routes marks spa pages prerendered by lumiose({ prerender }) and shells", async () => {
+    // A separate project, so that its routes stay out of the shared fixture's `check`.
+    const project = realpathSync(mkdtempSync(join(tmpdir(), "lumiose-cli-spa-")));
+    onTestFinished(() => rmSync(project, { recursive: true, force: true }));
+    symlinkSync(join(root, "node_modules"), join(project, "node_modules"), "dir");
+    const files: Record<string, string> = {
+      "vite.config.ts": `import lumiose from "@lumiose/vite";
+export default { plugins: [lumiose({ mode: "spa", prerender: true })] };
+`,
+      "src/routes/index.stsx": `export default function Home() {
+  return <main>Home</main>;
+}
+`,
+      "src/routes/editor.stsx": `export const ssr = false;
+export default function Editor() {
+  return <main>Editor</main>;
+}
+`,
+    };
+    for (const [name, text] of Object.entries(files)) {
+      mkdirSync(dirname(join(project, name)), { recursive: true });
+      writeFileSync(join(project, name), text);
+    }
+    const table = await run("routes", "--root", project);
+    expect(table.code).toBe(0);
+    expect(table.stdout).toMatch(/^\/\s+page\s+spa \(prerendered\)\s+index\.stsx$/m);
+    expect(table.stdout).toMatch(/^\/editor\s+page\s+spa \(shell\)\s+editor\.stsx$/m);
+
+    const { json } = await runJson("routes", "--root", project);
+    expect(json.routes).toEqual([
+      expect.objectContaining({ pattern: "/", mode: "spa", ssr: true, prerender: true }),
+      expect.objectContaining({ pattern: "/editor", mode: "spa", ssr: false, prerender: false }),
+    ]);
   });
 
   it("lumiose typegen writes the route types and the shadows", async () => {

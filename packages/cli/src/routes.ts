@@ -32,6 +32,11 @@ export interface RouteInfo {
   mode: "static" | "server" | "spa";
   /** Pages only: `false` for a `spa` page rendered as a client shell. */
   ssr?: boolean;
+  /**
+   * Pages only: `true` for a `spa` page rendered to HTML at build time (decision-38), from the page,
+   * its layouts or `lumiose({ prerender })`.
+   */
+  prerender?: boolean;
   /** Layout files (project-relative), outermost first; empty for endpoints. */
   layouts: string[];
   params: RouteParam[];
@@ -66,6 +71,7 @@ function routesReport(
           kind: "page",
           mode: route.mode,
           ssr: route.ssr,
+          prerender: route.prerender,
           layouts: route.layouts,
           params: route.params,
         }
@@ -125,7 +131,7 @@ export function routesTable(report: RoutesReport): string {
   const rows = report.routes.map((route) => [
     route.pattern,
     route.kind,
-    route.ssr === false ? `${route.mode} (shell)` : route.mode,
+    modeLabel(route),
     short(route.file),
     route.layouts.map(short).join(", "),
   ]);
@@ -144,6 +150,13 @@ export function routesTable(report: RoutesReport): string {
     line(header),
     ...rows.map(line),
   ].join("");
+}
+
+/** `spa (shell)` for a client-rendered shell, `spa (prerendered)` for a page rendered at build. */
+function modeLabel(route: RouteInfo): string {
+  if (route.ssr === false) return `${route.mode} (shell)`;
+  if (route.prerender === true) return `${route.mode} (prerendered)`;
+  return route.mode;
 }
 
 /** `lumiose typegen`: writes `.lumiose/types/routes.d.ts` and syncs the shadow TSX files. */

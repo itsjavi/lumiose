@@ -5510,7 +5510,9 @@ lumiose typegen --format json   # { routeTypes: { file, changed }, routes, shado
 ## lumiose routes
 
 Lists the routes in match order, with their kind, mode (from the route, its layouts or the project
-default `lumiose({ mode })`) and layouts. `spa (shell)` marks a `spa` page with `ssr = false`.
+default `lumiose({ mode })`) and layouts. `spa (shell)` marks a `spa` page with `ssr = false`, and
+`spa (prerendered)` a `spa` page rendered to HTML at build time, by its own `export const prerender`,
+a layout's or `lumiose({ prerender })`.
 
 ```sh
 $ lumiose routes
@@ -5521,7 +5523,7 @@ PATTERN        KIND      MODE    FILE                LAYOUTS
 /api/search    endpoint  server  api/search.ts
 /blog/[slug]   page      server  blog/[slug].stsx    _layout.stsx, blog/_layout.stsx
 
-$ lumiose routes --format json   # { routesDir, defaultMode, routes: [{ pattern, file, kind, mode, ssr?, layouts, params }], diagnostics, summary }
+$ lumiose routes --format json   # { routesDir, defaultMode, routes: [{ pattern, file, kind, mode, ssr?, prerender?, layouts, params }], diagnostics, summary }
 ```
 
 Paths in JSON are project-relative. Exits 1 when the routes have errors.
@@ -5716,7 +5718,7 @@ exist. stdout carries the protocol; console output of app code goes to stderr an
 | `docs_search` | `query`, `limit?` (10)                                | `{ query, results: [{ topic, title, summary, score, snippet }] }`, best first; every term must occur in a page.                                                                                                                                                              |
 | `docs_get`    | `topic`                                               | The page as Markdown. A topic is a path (`concepts/signals`), a bare name (`signals`), a code (`LUM2001`) or `""` for the index. An exported name (`fetchJSON`) returns its reference section.                                                                               |
 | `check`       | `files?`, `project?`                                  | `lumiose check` as `{ ok, summary, diagnostics, notes? }`. With `files`, only their diagnostics, and `projectSummary` for the whole project.                                                                                                                                 |
-| `routes`      | none                                                  | `lumiose routes --format json`: `{ routesDir, defaultMode, routes: [{ pattern, file, kind, mode, ssr?, layouts, params }], diagnostics, summary }`.                                                                                                                          |
+| `routes`      | none                                                  | `lumiose routes --format json`: `{ routesDir, defaultMode, routes: [{ pattern, file, kind, mode, ssr?, prerender?, layouts, params }], diagnostics, summary }`.                                                                                                              |
 | `components`  | `file?`                                               | `{ files: [{ file, components, islands, fileScope, hasStyles, errors }] }` for one file, or for every `.stsx`/`.tsx` file under `src/`.                                                                                                                                      |
 | `compile`     | `file?` or `source`, `target?` (`both`)               | `{ file, client: { code, css, cssDeps }, server: { code }, diagnostics }`: what the Vite plugin compiles, without source maps.                                                                                                                                               |
 | `render`      | `path`, `method?`, `headers?`, `maxLength?`, `strip?` | `{ url, status, headers, body, truncated }` from an in-process dev server. Redirects are returned, not followed. `strip: true` returns only the visible markup of an HTML page (no scripts, styles, link/meta tags, templates, hydration comments or `data-l-*` attributes). |

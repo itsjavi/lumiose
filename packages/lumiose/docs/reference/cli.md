@@ -123,7 +123,9 @@ lumiose typegen --format json   # { routeTypes: { file, changed }, routes, shado
 ## lumiose routes
 
 Lists the routes in match order, with their kind, mode (from the route, its layouts or the project
-default `lumiose({ mode })`) and layouts. `spa (shell)` marks a `spa` page with `ssr = false`.
+default `lumiose({ mode })`) and layouts. `spa (shell)` marks a `spa` page with `ssr = false`, and
+`spa (prerendered)` a `spa` page rendered to HTML at build time, by its own `export const prerender`,
+a layout's or `lumiose({ prerender })`.
 
 ```sh
 $ lumiose routes
@@ -134,7 +136,7 @@ PATTERN        KIND      MODE    FILE                LAYOUTS
 /api/search    endpoint  server  api/search.ts
 /blog/[slug]   page      server  blog/[slug].stsx    _layout.stsx, blog/_layout.stsx
 
-$ lumiose routes --format json   # { routesDir, defaultMode, routes: [{ pattern, file, kind, mode, ssr?, layouts, params }], diagnostics, summary }
+$ lumiose routes --format json   # { routesDir, defaultMode, routes: [{ pattern, file, kind, mode, ssr?, prerender?, layouts, params }], diagnostics, summary }
 ```
 
 Paths in JSON are project-relative. Exits 1 when the routes have errors.
