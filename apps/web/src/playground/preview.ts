@@ -128,7 +128,7 @@ export function previewDocument(theme: "light" | "dark" | undefined): string {
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <style>
-  :root { color-scheme: light dark; font-family: ui-sans-serif, system-ui, sans-serif; }
+  :root { color-scheme: light dark; background: Canvas; color: CanvasText; font-family: ui-sans-serif, system-ui, sans-serif; }
   body { margin: 0; padding: 1rem; }
 </style>
 <script type="module">${frameScript()}</script>

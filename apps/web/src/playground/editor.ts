@@ -126,7 +126,8 @@ export function createEditor(
         highlightActiveLineGutter(),
         lintGutter(),
         keymap.of([...closeBracketsKeymap, ...defaultKeymap, ...historyKeymap, indentWithTab]),
-        EditorView.contentAttributes.of({ "aria-label": "App.stsx source" }),
+        // An explicit tabindex, so checkers see the scroll box's focusable content (axe).
+        EditorView.contentAttributes.of({ "aria-label": "App.stsx source", tabindex: "0" }),
         EditorView.updateListener.of((update) => {
           if (update.docChanged) onChange(update.state.doc.toString());
         }),

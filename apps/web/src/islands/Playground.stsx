@@ -293,6 +293,8 @@ export function Playground(props: PlaygroundProps) {
         <section class="pane editor-pane" aria-label="Editor">
           <div class="pane-head">
             <span class="file">App.stsx</span>
+            {/* Tab indents in the editor; CodeMirror leaves it on Escape, then Tab (WCAG 2.1.2). */}
+            <span class="hint">Esc, then Tab, leaves the editor</span>
           </div>
           <div class="code" ref={(element: HTMLDivElement) => (editorHost = element)} />
         </section>
@@ -464,6 +466,14 @@ export function Playground(props: PlaygroundProps) {
     border-block-end: 1px solid $color.border;
     background: $color.surface;
     overflow-x: auto;
+  }
+  .hint {
+    margin-inline-start: auto;
+    align-self: center;
+    padding-inline: $space.xs;
+    color: $color.muted;
+    font-size: $text.xs;
+    white-space: nowrap;
   }
   .file {
     padding: $space.xs;

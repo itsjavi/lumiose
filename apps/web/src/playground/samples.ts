@@ -56,7 +56,7 @@ function Reset(props: { onReset(): void }) {
   }
   .ghost {
     background: transparent;
-    color: $accent;
+    color: light-dark($accent, #a99fff);
   }
 </style>
 `,

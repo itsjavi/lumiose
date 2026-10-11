@@ -61,52 +61,54 @@ export default function Home() {
       <Meta property="og:title" content="Lumiose" />
       <Meta property="og:description" content={site.description} />
 
-      <section class="hero">
-        <p class="eyebrow">TypeScript · .stsx · signals · islands</p>
-        <h1>
-          Web apps that ship <span class="lit">light</span>
-        </h1>
-        <p class="lead">
-          Lumiose compiles <code>.stsx</code> components, TSX with plain CSS beside it, into direct DOM
-          updates driven by signals. Pages render on the server, and only the parts that need to be
-          interactive ship JavaScript.
-        </p>
-        <div class="actions">
-          <LinkButton href={href("/docs/[...path]", { path: "getting-started" })} size="lg">
-            Get started
-          </LinkButton>
-          <LinkButton href={href("/docs/[...path]", { path: "" })} variant="secondary" size="lg">
-            Read the docs
-          </LinkButton>
-          <LinkButton href={href("/playground")} variant="ghost" size="lg">
-            Playground
-          </LinkButton>
-          <LinkButton href={REPOSITORY} variant="ghost" size="lg" external>
-            GitHub
-          </LinkButton>
-        </div>
-        <div class="install">
-          <Tabs client:load id="create" label="Package manager" labels={Object.keys(createCommands)}>
-            {Object.values(createCommands).map((code) => (
-              <CodeBlock code={code} lang="sh" highlight={highlight} />
-            ))}
-          </Tabs>
-        </div>
-        <ul class="facts" role="list">
-          <li>
-            <strong>{fixed(2)(lumioseCpu())}</strong>
-            <span>weighted factor on js-framework-benchmark (1.00 is the fastest)</span>
-          </li>
-          <li>
-            <strong>{fixed(1)(lumioseSize())} kB</strong>
-            <span>compressed, runtime and app, for the benchmark app</span>
-          </li>
-          <li>
-            <strong>{Math.round(lumioseSsr())}/s</strong>
-            <span>server renders of a 5,000-component page</span>
-          </li>
-        </ul>
-      </section>
+      <div class="top">
+        <section class="hero">
+          <p class="eyebrow">TypeScript · .stsx · signals · islands</p>
+          <h1>
+            Web apps that ship <span class="lit">light</span>
+          </h1>
+          <p class="lead">
+            Lumiose compiles <code>.stsx</code> components, TSX with plain CSS beside it, into direct DOM
+            updates driven by signals. Pages render on the server, and only the parts that need to be
+            interactive ship JavaScript.
+          </p>
+          <div class="actions">
+            <LinkButton href={href("/docs/[...path]", { path: "getting-started" })} size="lg">
+              Get started
+            </LinkButton>
+            <LinkButton href={href("/docs/[...path]", { path: "" })} variant="secondary" size="lg">
+              Read the docs
+            </LinkButton>
+            <LinkButton href={href("/playground")} variant="ghost" size="lg">
+              Playground
+            </LinkButton>
+            <LinkButton href={REPOSITORY} variant="ghost" size="lg" external>
+              GitHub
+            </LinkButton>
+          </div>
+          <div class="install">
+            <Tabs client:load id="create" label="Package manager" labels={Object.keys(createCommands)}>
+              {Object.values(createCommands).map((code) => (
+                <CodeBlock code={code} lang="sh" highlight={highlight} />
+              ))}
+            </Tabs>
+          </div>
+          <ul class="facts" role="list">
+            <li>
+              <strong>{fixed(2)(lumioseCpu())}</strong>
+              <span>weighted factor on js-framework-benchmark (1.00 is the fastest)</span>
+            </li>
+            <li>
+              <strong>{fixed(1)(lumioseSize())} kB</strong>
+              <span>compressed, runtime and app, for the benchmark app</span>
+            </li>
+            <li>
+              <strong>{Math.round(lumioseSsr())}/s</strong>
+              <span>server renders of a 5,000-component page</span>
+            </li>
+          </ul>
+        </section>
+      </div>
 
       <section class="section split" aria-labelledby="stsx-title">
         <header>
@@ -314,12 +316,12 @@ export default function Home() {
   }
 
   .home {
-    background:
-      $gradient.glow no-repeat,
-      $color.bg;
-    background-size:
-      100% 40rem,
-      auto;
+    background: $color.bg;
+  }
+  /* The glow behind the hero only, so the text below it sits on the plain background. */
+  .top {
+    background: $gradient.glow no-repeat;
+    background-size: 100% min(100%, 40rem);
   }
   .hero,
   .section {

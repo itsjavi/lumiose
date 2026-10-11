@@ -220,8 +220,10 @@ const markdown = new Marked({
       return `<a href="${escapeAttr(href)}"${external ? ' rel="noopener"' : ""}>${inner}</a>`;
     },
     table(token) {
-      // Wide reference tables scroll on their own instead of widening the page.
-      return `<div class="table">${defaults.table.call(this, token)}</div>\n`;
+      // Wide reference tables scroll on their own instead of widening the page. The scroll box is a
+      // focusable, named region, so keyboard users can scroll it too (WCAG 2.1.1).
+      const columns = token.header.map((cell) => cell.text.replaceAll("`", "")).join(", ");
+      return `<div class="table" role="region" tabindex="0" aria-label="${escapeAttr(`Table: ${columns}`)}">${defaults.table.call(this, token)}</div>\n`;
     },
     code(token) {
       // Top-level code blocks become CodeBlocks (renderDoc); these are nested ones (in lists).
