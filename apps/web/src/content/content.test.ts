@@ -113,16 +113,17 @@ describe("evidence", () => {
 describe("stack table", () => {
   it("fills every measured cell from the committed results, and shows 'measuring' for the rest", () => {
     const rows = stacks();
+    // Lumiose first, then by npm downloads of each stack's main package.
     expect(rows.map((row) => row.stack)).toEqual([
+      "Lumiose",
       "React + Next.js",
       "React Router",
-      "Solid + SolidStart",
+      "Preact",
+      "Astro",
       "Svelte + SvelteKit",
       "Vue + Nuxt",
-      "Preact",
+      "Solid + SolidStart",
       "Remix 3",
-      "Astro",
-      "Lumiose",
     ]);
     const results = evidence();
     const lumiose = rows.find((row) => row.self)!;

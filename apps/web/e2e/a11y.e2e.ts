@@ -135,7 +135,7 @@ const FLATTENED = [
   `.stage { background: ${STAGE_PEAK} !important; }
    .stage canvas, .stage .scrim { display: none !important; }
    .box { background: color-mix(in srgb, var(--lm-glow-b) 14%, var(--lm-surface)) !important; }
-   tr.self > * { background: color-mix(in srgb, var(--lm-glow-b) 16%, var(--lm-surface)) !important; }
+   tr.self > * { background: color-mix(in srgb, var(--lm-accent) 10%, var(--lm-surface)) !important; }
    .closing { background: color-mix(in srgb, var(--lm-glow-b) 12%, var(--lm-bg)) !important; }
    .install { background: color-mix(in srgb, var(--lm-bg) 75%, ${STAGE_PEAK}) !important; }
    .top { background: color-mix(in srgb, var(--lm-glow-a) 22%, var(--lm-bg)) !important; }

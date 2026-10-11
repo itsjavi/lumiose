@@ -30,7 +30,14 @@ import {
   installCommand,
 } from "../content/samples.ts";
 import { renderingModes } from "../content/showcase.ts";
-import { type Cell, COLUMNS, factor, kilobytes, stacks } from "../content/stacks.ts";
+import {
+  type Cell,
+  COLUMNS,
+  DOWNLOADS_PERIOD,
+  factor,
+  kilobytes,
+  stacks,
+} from "../content/stacks.ts";
 import { site } from "../lib/site.ts";
 
 interface StaticTab {
@@ -201,8 +208,9 @@ export default function Home() {
           page, brotli ({results.fullstackRun}). Client speed: js-framework-benchmark's weighted
           factor, where 1.00 is the fastest framework in the run
           {vanilla === undefined ? "" : ` and vanilla JS scores ${vanilla.toFixed(2)}`}; both React
-          rows use React's entry. "measuring": the port or benchmark entry is being added. Method
-          and every run: <a href={href("/benchmarks")}>benchmarks</a>.
+          rows use React's entry. "measuring": the port or benchmark entry is being added. Rows
+          after Lumiose are ordered by npm downloads of each stack's main package (
+          {DOWNLOADS_PERIOD}). Method and every run: <a href={href("/benchmarks")}>benchmarks</a>.
         </p>
       </section>
 
@@ -605,14 +613,9 @@ export default function Home() {
   .yes {
     color: $color.accentText;
   }
-  /* Lumiose's row, lit from the left. */
+  /* Lumiose's row: one flat tint across every cell. */
   tr.self > * {
-    background: linear-gradient(
-      90deg,
-      color-mix(in oklab, $color.glowB 16%, $color.surface),
-      color-mix(in oklab, $color.glowA 8%, $color.surface) 70%,
-      $color.surface
-    );
+    background: color-mix(in srgb, $color.accent 10%, $color.surface);
   }
   tr.self .measured {
     font-weight: $weight.bold;

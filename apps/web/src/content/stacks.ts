@@ -45,75 +45,15 @@ interface StackSource {
   /** The js-framework-benchmark column (frameworks/keyed/<id>), or a fact without one. */
   clientSpeed: { column: string } | { fact: string };
   sameComponents: Cell;
+  /** npm downloads of the stack's main package (its full-stack framework where the row names one). */
+  downloads?: { package: string; lastMonth: number };
   self?: boolean;
 }
 
+/** The period of the `downloads` figures, from api.npmjs.org (last-month point). */
+export const DOWNLOADS_PERIOD = "2026-09-10 to 2026-10-09";
+
 const STACKS: StackSource[] = [
-  {
-    stack: "React + Next.js",
-    fullStack: "Separate project",
-    styles: "Pick a library",
-    serverJs: { app: "next" },
-    clientSpeed: { column: "react-hooks" },
-    sameComponents: yes,
-  },
-  {
-    stack: "React Router",
-    fullStack: "Separate project",
-    styles: "Pick a library",
-    serverJs: { app: "react-router" },
-    clientSpeed: { column: "react-hooks" },
-    sameComponents: yes,
-  },
-  {
-    stack: "Solid + SolidStart",
-    fullStack: "Separate project",
-    styles: "Pick a library",
-    serverJs: { app: "solid-start" },
-    clientSpeed: { column: "solid" },
-    sameComponents: yes,
-  },
-  {
-    stack: "Svelte + SvelteKit",
-    fullStack: "Separate project",
-    styles: "Built in",
-    serverJs: { app: "sveltekit" },
-    clientSpeed: { column: "svelte" },
-    sameComponents: yes,
-  },
-  {
-    stack: "Vue + Nuxt",
-    fullStack: "Separate project",
-    styles: "Built in",
-    serverJs: { app: "nuxt" },
-    clientSpeed: { column: "vue" },
-    sameComponents: yes,
-  },
-  {
-    stack: "Preact",
-    fullStack: "None official",
-    styles: "Pick a library",
-    serverJs: { fact: "No full-stack layer" },
-    clientSpeed: { column: "preact-hooks" },
-    sameComponents: yes,
-  },
-  {
-    stack: "Remix 3",
-    fullStack: "Built in",
-    styles: "Built in",
-    serverJs: { app: "remix" },
-    clientSpeed: { column: "remix-v3" },
-    sameComponents: yes,
-  },
-  {
-    stack: "Astro",
-    fullStack: "Built in",
-    styles: "Built in",
-    // By design: Astro ships no JavaScript for a page without islands.
-    serverJs: { fact: "0 kB" },
-    clientSpeed: { fact: "Depends on the UI framework" },
-    sameComponents: fact("Islands need a second UI framework", "no"),
-  },
   {
     stack: "Lumiose",
     fullStack: "Built in",
@@ -122,6 +62,79 @@ const STACKS: StackSource[] = [
     clientSpeed: { column: "lumiose" },
     sameComponents: yes,
     self: true,
+  },
+  {
+    stack: "React + Next.js",
+    downloads: { package: "next", lastMonth: 281966992 },
+    fullStack: "Separate project",
+    styles: "Pick a library",
+    serverJs: { app: "next" },
+    clientSpeed: { column: "react-hooks" },
+    sameComponents: yes,
+  },
+  {
+    stack: "React Router",
+    downloads: { package: "react-router", lastMonth: 255689984 },
+    fullStack: "Separate project",
+    styles: "Pick a library",
+    serverJs: { app: "react-router" },
+    clientSpeed: { column: "react-hooks" },
+    sameComponents: yes,
+  },
+  {
+    stack: "Solid + SolidStart",
+    downloads: { package: "@solidjs/start", lastMonth: 676365 },
+    fullStack: "Separate project",
+    styles: "Pick a library",
+    serverJs: { app: "solid-start" },
+    clientSpeed: { column: "solid" },
+    sameComponents: yes,
+  },
+  {
+    stack: "Svelte + SvelteKit",
+    downloads: { package: "@sveltejs/kit", lastMonth: 13199804 },
+    fullStack: "Separate project",
+    styles: "Built in",
+    serverJs: { app: "sveltekit" },
+    clientSpeed: { column: "svelte" },
+    sameComponents: yes,
+  },
+  {
+    stack: "Vue + Nuxt",
+    downloads: { package: "nuxt", lastMonth: 10008198 },
+    fullStack: "Separate project",
+    styles: "Built in",
+    serverJs: { app: "nuxt" },
+    clientSpeed: { column: "vue" },
+    sameComponents: yes,
+  },
+  {
+    stack: "Preact",
+    downloads: { package: "preact", lastMonth: 162826174 },
+    fullStack: "None official",
+    styles: "Pick a library",
+    serverJs: { fact: "No full-stack layer" },
+    clientSpeed: { column: "preact-hooks" },
+    sameComponents: yes,
+  },
+  {
+    stack: "Remix 3",
+    downloads: { package: "remix", lastMonth: 114691 },
+    fullStack: "Built in",
+    styles: "Built in",
+    serverJs: { app: "remix" },
+    clientSpeed: { column: "remix-v3" },
+    sameComponents: yes,
+  },
+  {
+    stack: "Astro",
+    downloads: { package: "astro", lastMonth: 28464424 },
+    fullStack: "Built in",
+    styles: "Built in",
+    // By design: Astro ships no JavaScript for a page without islands.
+    serverJs: { fact: "0 kB" },
+    clientSpeed: { fact: "Depends on the UI framework" },
+    sameComponents: fact("Islands need a second UI framework", "no"),
   },
 ];
 
@@ -136,8 +149,16 @@ export function factor(value: number): string {
   return `${value.toFixed(2)}×`;
 }
 
+/** Lumiose first, then the other stacks by npm downloads, most used first. */
+function ordered(sources: StackSource[]): StackSource[] {
+  const downloads = (source: StackSource) => source.downloads?.lastMonth ?? 0;
+  return [...sources].sort(
+    (a, b) => Number(b.self === true) - Number(a.self === true) || downloads(b) - downloads(a),
+  );
+}
+
 export function readStacks(results: Pick<Evidence, "cpuByColumn" | "serverJsByApp">): StackRow[] {
-  return STACKS.map((source) => {
+  return ordered(STACKS).map((source) => {
     const serverJs =
       "app" in source.serverJs ? results.serverJsByApp[source.serverJs.app] : undefined;
     const cpu =
