@@ -142,6 +142,8 @@ Approved by the user on 2026-10-11.
   - The hero H1 becomes "The best of every stack, in one framework". The page's main heading is about Lumiose, not React.
   - The tagline "Feels like React. Runs like vanilla JS." becomes the stack table's heading, above the numbers that back it up.
   - The tagline stays in the page title, the README and `package.json`.
+- **Eyebrow:** "Static sites · Server-side rendering · Islands · SPAs". These are the terms people search for, with no acronyms. "Server" alone means nothing to a search engine.
+- **Meta and OG description:** they lead with the same terms and stay under 160 characters. The visible descriptor is unchanged.
 
 ## Consequences
 

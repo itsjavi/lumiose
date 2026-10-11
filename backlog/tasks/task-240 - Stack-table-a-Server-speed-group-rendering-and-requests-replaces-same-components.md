@@ -7,7 +7,7 @@ status: In Progress
 assignee:
   - Beacon
 created_date: '2026-10-11 03:48'
-updated_date: '2026-10-11 03:55'
+updated_date: '2026-10-11 03:57'
 labels:
   - site
 milestone: m-7
@@ -28,6 +28,7 @@ User 2026-10-11 (decision-37 amendment). Replace the column 'Interactive parts u
 - [ ] #2 The new SSR entries and the Astro app are mapped, so a committed result fills the cell without code changes (with a test); the Astro caveat is a note under the table
 - [ ] #3 Web vitest, e2e and the axe suite pass in light and dark
 - [ ] #4 The hero H1 reads 'The best of every stack, in one framework'; the table heading reads 'Feels like React. Runs like vanilla JS.'
+- [ ] #5 The eyebrow reads 'Static sites · Server-side rendering · Islands · SPAs'; the meta/OG description leads with those terms and is at most 160 characters (with a test)
 <!-- AC:END -->
 
 ## Implementation Notes
@@ -36,4 +37,6 @@ User 2026-10-11 (decision-37 amendment). Replace the column 'Interactive parts u
 User 2026-10-11: the table heading changes from 'One framework where others need two' (it read as passive-aggressive) to 'The best of every stack, in one framework'. Keep the section's lead sentence focused on what Lumiose brings, not on what others lack.
 
 User 2026-10-11, supersedes the heading note above: swap the two lines. The hero H1 becomes 'The best of every stack, in one framework' (the second line keeps the lit treatment, e.g. 'The best of every stack,' / 'in one framework'). The stack table's heading becomes 'Feels like React. Runs like vanilla JS.' The tagline stays in <title>, the README and package.json.
+
+User 2026-10-11: (1) the hero eyebrow becomes 'Static sites · Server-side rendering · Islands · SPAs': full search terms, no acronyms; the H1 already says 'in one framework'. (2) The site's meta and OG description lead with those terms and stay under 160 characters, for example: 'Lumiose: one web framework for static sites, server-side rendering, islands and SPAs. TSX with scoped CSS, signals, and 0 kB of JS until a page needs it.' The visible descriptor in the hero, README and docs stays as decided.
 <!-- SECTION:NOTES:END -->
