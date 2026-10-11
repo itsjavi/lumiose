@@ -46,13 +46,13 @@ Approved by the user on 2026-10-11.
 **One-liner.** It is used everywhere: README, meta and OG tags, `llms.txt`, the docs index, `package.json` descriptions and the site.
 
 - Tagline: "Feels like React. Runs like vanilla JS."
-- Descriptor: "Lumiose is a web framework for every kind of web app, from static sites to SPAs: TSX with first-class CSS, signals, and 0 kB of JavaScript where pages don't move."
+- Descriptor: "Lumiose is a web framework for every kind of web app, from static sites to SPAs: TSX with scoped CSS built in, signals, and 0 kB of JavaScript where pages don't move."
 
 **Hero.**
 
 - Eyebrow: "Static · Server · Islands · SPA — one framework".
 - H1: the tagline.
-- Sub: TSX with first-class CSS, per-route rendering, and 0 kB where pages don't move.
+- Sub: TSX with scoped CSS built in, per-route rendering, and 0 kB where pages don't move.
 - CTAs: Get started, Compare the stacks, Playground.
 - Proof row: 1.05× vanilla JS, 0 kB JS on server pages, 6.5 kB app.
 
@@ -65,7 +65,7 @@ Approved by the user on 2026-10-11.
 
 **Then, in this order:**
 
-1. Familiar to write. React-like JSX, one file per component with first-class CSS, and stock TypeScript, shown with a live, editable demo that runs the WASM compiler.
+1. Familiar to write. React-like JSX, one file per component with scoped CSS, and stock TypeScript, shown with a live, editable demo that runs the WASM compiler.
 2. Every rendering mode. Static → islands → server → SPA, each linked to a live example app.
 3. Light and fast, measured. The fullstack comparison against Next.js and React Router first, then js-framework-benchmark and SSR.
 4. Explicit, for you and your agent. No hidden machinery, `LUMxxxx` codes with fixes, and the agent eval numbers.
@@ -108,6 +108,18 @@ Approved by the user on 2026-10-11.
 - **Repository folders keep their names.**
 - **Old `/examples/...` URLs redirect without loss.** The publicly shared Dotmatrix links carry songs in `?song=…`, so the redirect keeps the path, query and hash.
 - **The showcase apps get a real first render** through build-time SPA prerendering (decision-38).
+
+**Amendment, 2026-10-11 (user): wording and visual direction.**
+
+- **Wording.** The descriptor says "TSX with scoped CSS built in" instead of "TSX with first-class CSS". It is concrete about what you get, and it matches the stack table's "Styles: Built in" column. "Embedded CSS" was rejected because it usually means a `<style>` block in the HTML document. "Support" was rejected because it sounds like an optional add-on.
+- **Visual direction.** The landing uses design spike A, "Lumen" (`.local/design-spike/a-lumen.html`):
+  - A dark page lit by a three.js light source.
+  - The menu sits on a solid bar.
+  - A scrim behind the copy guarantees contrast.
+  - The ambient motion has a pause control and honours reduced motion (decision-39).
+- **Rejected directions:**
+  - The prism, as too close to Vercel's visual language.
+  - The "lit windows" building, as not appealing.
 
 ## Consequences
 

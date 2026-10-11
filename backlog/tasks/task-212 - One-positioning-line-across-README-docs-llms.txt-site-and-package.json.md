@@ -5,6 +5,7 @@ status: To Do
 assignee:
   - Beacon
 created_date: '2026-10-10 22:41'
+updated_date: '2026-10-11 01:19'
 labels:
   - docs
   - positioning
@@ -17,7 +18,7 @@ ordinal: 214000
 ## Description
 
 <!-- SECTION:DESCRIPTION:BEGIN -->
-decision-37 (positioning, approved by the user 2026-10-11; notes in .local/positioning/): replace the four different one-liners with the tagline "Feels like React. Runs like vanilla JS." and the descriptor "Lumiose is a web framework for every kind of web app, from static sites to SPAs: TSX with first-class CSS, signals, and 0 kB of JavaScript where pages don't move." Surfaces: README.md and packages/lumiose/package.json description (Lux-owned files: coordinate), packages/lumiose/docs/README.md and the generated llms.txt/llms-full.txt, apps/web site.ts (tagline, description, landing title), and create-lumiose template texts that describe Lumiose. "TypeScript-first" leaves the one-liners; TypeScript stays as a proof point where relevant.
+decision-37 (positioning, approved by the user 2026-10-11; notes in .local/positioning/): replace the four different one-liners with the tagline "Feels like React. Runs like vanilla JS." and the descriptor "Lumiose is a web framework for every kind of web app, from static sites to SPAs: TSX with scoped CSS built in, signals, and 0 kB of JavaScript where pages don't move." Surfaces: README.md and packages/lumiose/package.json description (Lux-owned files: coordinate), packages/lumiose/docs/README.md and the generated llms.txt/llms-full.txt, apps/web site.ts (tagline, description, landing title), and create-lumiose template texts that describe Lumiose. "TypeScript-first" leaves the one-liners; TypeScript stays as a proof point where relevant.
 <!-- SECTION:DESCRIPTION:END -->
 
 ## Acceptance Criteria
