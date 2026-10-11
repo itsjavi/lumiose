@@ -5,17 +5,12 @@ status: To Do
 assignee:
   - Beacon
 created_date: '2026-10-10 22:41'
-updated_date: '2026-10-11 01:40'
+updated_date: '2026-10-11 03:07'
 labels:
   - landing
   - positioning
 milestone: m-7
 dependencies:
-  - TASK-202
-  - TASK-203
-  - TASK-204
-  - TASK-205
-  - TASK-206
   - TASK-211
   - TASK-212
   - TASK-214
@@ -37,6 +32,7 @@ decision-37 (positioning, approved by the user 2026-10-11; notes in .local/posit
 - [ ] #2 Every number and table cell comes from committed results through content modules checked by tests; no 'not measured' cells
 - [ ] #3 The page meets the site's accessibility and payload budgets, with screenshots in backlog/assets linked from this task
 - [ ] #4 axe reports no WCAG 2.0/2.1/2.2 A or AA violations on the landing (TASK-219's suite), and the manual criteria hold
+- [ ] #5 The light field is a self-written WebGL island, no three.js or GSAP; its JS (brotli) is reported, loads after first paint, and the page renders fully without it
 <!-- AC:END -->
 
 ## Implementation Notes
@@ -49,4 +45,6 @@ User 2026-10-11 (design spike in .local/design-spike/): the prism direction was 
 User 2026-10-11: the visual direction is A 'Lumen' (.local/design-spike/a-lumen.html, the accessible version with the menu bar, the copy scrim and the pause control). C 'Lit windows' was rejected. The descriptor now says 'TSX with scoped CSS built in' (decision-37).
 
 User 2026-10-11: no eval work for now (TASK-207, TASK-208 and TASK-209 are on hold). TASK-213 no longer waits for TASK-207. The 'Explicit, for you and your agent' section ships without agent eval numbers, describing docs, diagnostics and MCP instead, and gains the numbers once TASK-207 runs.
+
+Lux (2026-10-11): the user deferred all benchmarks. TASK-213 builds the landing now from the current committed results, with 'measuring' cells where results are missing. It is not pushed: TASK-235 runs the measurements, fills the cells and publishes. Implementation: recreate design A ('Lumen', .local/design-spike/a-lumen.html) without three.js or GSAP. Those libraries add more than 100 kB and would contradict '0 kB of JavaScript' on our own homepage. Use a hand-written WebGL fragment shader island (a few kB brotli, loaded on idle or visible), CSS for the headline light sweep, the CSS gradient as the no-JS/no-WebGL fallback, a pause control (WCAG 2.2.2) and reduced-motion support (decision-39).
 <!-- SECTION:NOTES:END -->
