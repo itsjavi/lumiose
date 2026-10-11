@@ -118,6 +118,8 @@ export interface ClientRuntime {
     render: (item: T, index: () => number) => Renderable,
     key?: (item: T) => unknown,
   ): Renderable;
+  /** Parentless `insert` (dynamic items of fragments and component children): a range that `insert` places as one node; under hydration it claims the server's `insert` block. */
+  insertValue(value: Renderable): Renderable;
   /** O(1) selection helper: `selector(selected)(key)` is true for the selected key and only re-notifies the two keys that change. */
   selector<T>(source: () => T): (key: T) => boolean;
 

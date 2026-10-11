@@ -28,6 +28,8 @@ export interface ServerRuntime {
   insert(value: unknown): unknown;
   /** A child that may be text, at a template text position (the client's `insertText`): text, nullish and booleans render like `text()`, anything else like `insert()`. */
   insertText(value: unknown): unknown;
+  /** A dynamic item of an array of renderables (fragments, component children; the client's `insertValue`): `insert()`, returned as markup the array renders as is. */
+  insertValue(value: unknown): unknown;
   /** One attribute: ` name="escaped"`, ` name` for true, "" for null/undefined/false. */
   attr(name: string, value: unknown): string;
   /** ` class="…"` from string | array | object. */

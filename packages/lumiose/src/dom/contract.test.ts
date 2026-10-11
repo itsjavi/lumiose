@@ -38,6 +38,7 @@ describe("lumiose/dom contract", () => {
       "$async",
       "branchValue",
       "listValue",
+      "insertValue",
     ];
     for (const name of members) {
       expect(typeof conforms[name], name).toBe("function");

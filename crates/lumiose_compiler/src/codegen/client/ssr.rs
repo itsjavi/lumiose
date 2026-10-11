@@ -127,11 +127,14 @@ impl<'a> Codegen<'a, '_> {
 
     /// A fragment or a component's children: one renderable, or an array of them. Runs of static
     /// items become one `ssr()` node (a lone text stays a string, escaped by the runtime);
-    /// dynamic items are values, rendered by whoever renders the array.
+    /// dynamic items are values, rendered by whoever renders the array. In an array, they mirror
+    /// the client's `fragment_item`: an `insertValue` range on the client is an `insertValue` here,
+    /// which writes the island block the range claims (TASK-234).
     pub(super) fn ssr_fragment_items(&mut self, items: Vec<Item<'a>>, span: Span) -> Compiled<'a> {
         let mut values = Vec::new();
         let mut setup = Vec::new();
         let mut run = Ssr::new();
+        let array = items.len() > 1;
         for item in items {
             match item {
                 Item::Text(text, _) => run.text(&text),
@@ -139,7 +142,11 @@ impl<'a> Codegen<'a, '_> {
                 Item::Element(element) => self.ssr_element(&mut run, element),
                 Item::Dynamic(expression) => {
                     self.flush_run(&mut run, &mut values, &mut setup, span);
-                    let compiled = self.ssr_renderable(expression);
+                    let compiled = if array {
+                        self.ssr_fragment_item(expression)
+                    } else {
+                        self.ssr_renderable(expression)
+                    };
                     setup.extend(compiled.setup);
                     values.push(compiled.value);
                 }
@@ -189,6 +196,36 @@ impl<'a> Codegen<'a, '_> {
             self.compile_value(expression)
         } else {
             Compiled::value(self.visited(expression))
+        }
+    }
+
+    /// A dynamic item of an array of renderables, as the client's `fragment_item` compiles it:
+    /// live values and JSX as in `ssr_renderable`, anything else (and a JSX-like value with a
+    /// reactive test) in an `insertValue`, the island block its range claims.
+    fn ssr_fragment_item(&mut self, expression: Expression<'a>) -> Compiled<'a> {
+        let expression = match self.live_value(expression) {
+            Ok(compiled) => return compiled,
+            Err(expression) => expression,
+        };
+        let span = expression.span();
+        let jsx = matches!(
+            expression.without_parentheses(),
+            Expression::JSXElement(_) | Expression::JSXFragment(_)
+        );
+        let compiled = if jsx || is_jsx_like(&expression) {
+            let reactive = !jsx && self.reads_reactive_test(&expression);
+            let compiled = self.compile_value(expression);
+            if !reactive {
+                return compiled;
+            }
+            compiled
+        } else {
+            Compiled::value(self.visited(expression))
+        };
+        let callee = self.runtime("insertValue", span);
+        Compiled {
+            setup: compiled.setup,
+            value: self.ast.call(span, callee, [compiled.value]),
         }
     }
 

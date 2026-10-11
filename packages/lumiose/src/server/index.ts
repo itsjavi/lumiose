@@ -9,6 +9,7 @@ export {
   branchArm,
   insert,
   insertText,
+  insertValue,
   list,
   mergeProps,
   restProps,

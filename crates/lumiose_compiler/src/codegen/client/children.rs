@@ -398,78 +398,110 @@ impl<'a> Codegen<'a, '_> {
                 _ => None,
             })
             .unwrap_or(self.namespace());
-        let mut template = Template::new(namespace);
-        enum Slot<'a> {
-            Root(usize),
-            Value(Expression<'a>),
-        }
-        let mut slots = Vec::new();
-        let mut setup = Vec::new();
-        // Text joins a template only next to elements; on its own a string is cheaper.
-        let has_elements = items
-            .iter()
-            .any(|item| matches!(item, Item::Element(_) | Item::Raw(..)));
+        // An array of renderables. Under hydration its server nodes are claimed in creation order
+        // (doc-2 §3.1), so everything is created in document order: each run of static items is a
+        // template of its own (text included, so that it claims its server text), components and
+        // JSX values are created in place, and other dynamic items become `insertValue` ranges,
+        // which claim the `insert` block the server writes for them (TASK-234).
+        let mut run: Option<Template<'a>> = None;
+        let flush = |cg: &mut Self, run: &mut Option<Template<'a>>, entries: &mut Vec<_>| {
+            if let Some(template) = run.take() {
+                let emitted = template.emit(cg, span, true);
+                entries.push((emitted.setup, emitted.roots));
+            }
+        };
+        let mut entries: Vec<(Vec<Statement<'a>>, Vec<Expression<'a>>)> = Vec::new();
+        let only_static = items.iter().all(|item| !matches!(item, Item::Dynamic(_)));
         for item in items {
+            let template = || Template::new(namespace);
             match item {
-                Item::Text(text, span) if !has_elements => {
-                    slots.push(Slot::Value(self.ast.string(span, &text)));
-                }
                 Item::Text(text, span) => {
-                    slots.push(Slot::Root(template.add(None, NodeKind::Text(text), span)))
+                    run.get_or_insert_with(template)
+                        .add(None, NodeKind::Text(text), span);
                 }
                 Item::Raw(raw, span) => {
-                    slots.push(Slot::Root(template.add(None, NodeKind::Raw(raw), span)))
+                    run.get_or_insert_with(template)
+                        .add(None, NodeKind::Raw(raw), span);
                 }
                 Item::Element(element) => {
-                    slots.push(Slot::Root(self.build_element(
-                        &mut template,
-                        element,
-                        None,
-                        namespace,
-                    )));
+                    let template = run.get_or_insert_with(template);
+                    self.build_element(template, element, None, namespace);
                 }
                 Item::Dynamic(expression) => {
-                    let compiled = self.renderable(expression, true);
-                    setup.extend(compiled.setup);
-                    slots.push(Slot::Value(compiled.value));
+                    flush(self, &mut run, &mut entries);
+                    let compiled = self.fragment_item(expression);
+                    entries.push((compiled.setup, vec![compiled.value]));
                 }
                 Item::Rows(..) => unreachable!("rows are only grouped in <table> children"),
             }
         }
-        if template.roots.is_empty() {
-            let values = slots.into_iter().filter_map(|s| match s {
-                Slot::Value(v) => Some(v),
-                Slot::Root(_) => None,
-            });
+        if only_static {
+            // Text and elements only: one template, returned whole.
+            let template = run.take().expect("static items");
+            let emitted = template.emit(self, span, false);
             return Some(Compiled {
-                setup,
-                value: self.ast.array(span, values.collect::<Vec<_>>()),
-            });
-        }
-        let only_roots = slots.iter().all(|s| matches!(s, Slot::Root(_)));
-        let roots = template.roots.clone();
-        let emitted = template.emit(self, span, !only_roots);
-        let mut all_setup = emitted.setup;
-        all_setup.extend(setup);
-        if only_roots {
-            return Some(Compiled {
-                setup: all_setup,
+                setup: emitted.setup,
                 value: emitted.whole,
             });
         }
-        let mut by_root: std::collections::HashMap<usize, Expression<'a>> =
-            roots.into_iter().zip(emitted.roots).collect();
-        let elements = slots
-            .into_iter()
-            .filter_map(|slot| match slot {
-                Slot::Root(root) => by_root.remove(&root),
-                Slot::Value(value) => Some(value),
-            })
-            .collect::<Vec<_>>();
+        flush(self, &mut run, &mut entries);
+        // A value that creates nodes is bound before any later creation code runs.
+        let mut creates_later = vec![false; entries.len()];
+        for i in (1..entries.len()).rev() {
+            creates_later[i - 1] = creates_later[i] || !entries[i].0.is_empty();
+        }
+        let mut setup = Vec::new();
+        let mut values = Vec::new();
+        for ((statements, entry_values), later) in entries.into_iter().zip(creates_later) {
+            setup.extend(statements);
+            for value in entry_values {
+                if later && !is_inert(&value) {
+                    let name = self.names.fresh("_v");
+                    setup.push(self.ast.const_decl(span, &name, value));
+                    values.push(self.ast.ident(span, &name));
+                } else {
+                    values.push(value);
+                }
+            }
+        }
         Some(Compiled {
-            setup: all_setup,
-            value: self.ast.array(span, elements),
+            setup,
+            value: self.ast.array(span, values),
         })
+    }
+
+    /// A dynamic item of an array of renderables (doc-2 §2): reactive conditionals and lists render
+    /// themselves (`branchValue`/`listValue`), components and other JSX compile in place, and
+    /// anything else renders into an `insertValue` range, tracked when it is dynamic. The server
+    /// mirrors it in `ssr_fragment_item`.
+    fn fragment_item(&mut self, expression: Expression<'a>) -> Compiled<'a> {
+        let expression = match self.live_value(expression) {
+            Ok(compiled) => return compiled,
+            Err(expression) => expression,
+        };
+        let span = expression.span();
+        let jsx = matches!(
+            expression.without_parentheses(),
+            Expression::JSXElement(_) | Expression::JSXFragment(_)
+        );
+        let value = if jsx || is_jsx_like(&expression) {
+            let reactive = !jsx && self.reads_reactive_test(&expression);
+            let compiled = self.compile_value(expression);
+            if !reactive {
+                return compiled;
+            }
+            self.ast
+                .arrow_returning(span, &[], compiled.setup, compiled.value)
+        } else {
+            let value = self.visited(expression);
+            if self.is_dynamic(&value) {
+                self.compute(value)
+            } else {
+                value
+            }
+        };
+        let callee = self.runtime("insertValue", span);
+        Compiled::value(self.ast.call(span, callee, [value]))
     }
 
     pub(super) fn compile_fragment(
@@ -517,7 +549,7 @@ impl<'a> Codegen<'a, '_> {
         }
     }
 
-    fn reads_reactive_test(&self, expression: &Expression<'a>) -> bool {
+    pub(super) fn reads_reactive_test(&self, expression: &Expression<'a>) -> bool {
         match expression.without_parentheses() {
             Expression::ConditionalExpression(cond) => self.reads_reactive(&cond.test),
             Expression::LogicalExpression(logical) => self.reads_reactive(&logical.left),
@@ -576,6 +608,18 @@ pub(super) fn text_consts(program: &Program<'_>, scoping: &Scoping) -> HashSet<S
     };
     collector.visit_program(program);
     collector.consts
+}
+
+/// A value whose evaluation creates nothing: a variable, a template root (`_nodes[0]`) or a string.
+fn is_inert(value: &Expression<'_>) -> bool {
+    match value {
+        Expression::Identifier(_) | Expression::StringLiteral(_) => true,
+        Expression::ComputedMemberExpression(member) => {
+            matches!(member.object, Expression::Identifier(_))
+                && matches!(member.expression, Expression::NumericLiteral(_))
+        }
+        _ => false,
+    }
 }
 
 /// Merges adjacent text items (e.g. `a{"b"}c`).

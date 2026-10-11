@@ -408,6 +408,15 @@ export function renderRange(value: Renderable, mode?: number): RangeStart {
   return start;
 }
 
+/**
+ * Parentless `insert`, for the dynamic items of fragments and component children (doc-2 §2):
+ * renders `value` (tracked like `insert`) into a new range that the consumer places as one node.
+ * Under hydration the range claims the next server block, the one the server's `insert` wrote.
+ */
+export function insertValue(value: Renderable): RangeStart {
+  return renderRange(value, 1);
+}
+
 // ---- branch --------------------------------------------------------------------------------------
 
 interface BranchState extends Region {

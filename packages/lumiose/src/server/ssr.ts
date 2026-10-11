@@ -93,6 +93,14 @@ export function insert(value: unknown): unknown {
   return currentFrame()?.island !== undefined ? wrap("<!--[-->", out, "<!--]-->") : out;
 }
 
+/**
+ * `insert` for a dynamic item of an array of renderables (the client's `insertValue`): the same
+ * island block, as markup, so that the array renders it as is.
+ */
+export function insertValue(value: unknown): unknown {
+  return html(insert(value) as Html);
+}
+
 /** Server rendering of a compiled `.map()`: rows joined in order, async rows resolved concurrently. */
 export function list<T>(
   source: readonly T[] | null | undefined,

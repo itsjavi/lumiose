@@ -660,6 +660,111 @@ describe("hydrate", () => {
   });
 });
 
+/** Hydrates `names` from one compiled source; checks every server element kept its identity. */
+async function hydrateInPlace(source: string, names: string[]): Promise<Module> {
+  const { client, server } = await load(source);
+  await serve(
+    server,
+    names.map((name) => [name, {}]),
+  );
+  const before = [...document.body.querySelectorAll("*")];
+  const html = visible();
+  await hydrateAll(client);
+  expect(warn).not.toHaveBeenCalled();
+  expect(visible()).toBe(html);
+  const after = [...document.body.querySelectorAll("*")];
+  expect(after.length).toBe(before.length);
+  expect(after.every((el, i) => el === before[i])).toBe(true);
+  return client;
+}
+
+// Arrays of renderables (fragments, component children) are created in document order, and
+// their dynamic items are `insertValue` ranges that claim the server's `insert` blocks.
+describe("hydrate: arrays of renderables (TASK-234)", () => {
+  it("claims inserts before a static element in a conditional fragment (the TASK-218 repro)", async () => {
+    await hydrateInPlace(
+      `
+      import { signal } from "lumiose";
+      const show = signal(true);
+      function item(name: string) {
+        return <span class="item">{name}</span>;
+      }
+      export function Panel() {
+        (globalThis as any).show = show;
+        return <div class="panel">{show() ? <>{item("a")}{item("b")}<label>static</label></> : null}</div>;
+      }`,
+      ["Panel"],
+    );
+    const show = (globalThis as any).show;
+    show.set(false);
+    flush();
+    expect(visible()).toBe('<div class="panel"></div>');
+    show.set(true);
+    flush();
+    expect(visible()).toBe(
+      '<div class="panel"><span class="item">a</span><span class="item">b</span><label>static</label></div>',
+    );
+  });
+
+  it("claims inserts after static elements, nested fragments and interleaved components", async () => {
+    await hydrateInPlace(
+      `
+      import { signal } from "lumiose";
+      const show = signal(true);
+      function item(name: string) {
+        return <span>{name}</span>;
+      }
+      function Card() {
+        return <article>card</article>;
+      }
+      export function After() {
+        return <div>{show() ? <><label>static</label>{item("a")}{item("b")}</> : null}</div>;
+      }
+      export function Nested() {
+        return <div>{show() ? <>{item("a")}<><b>inner</b>{item("b")}</><i>after</i></> : null}</div>;
+      }
+      export function Interleaved() {
+        return <><h1>Title</h1>{item("a")}<Card /><p>middle</p>{item("b")}<footer>end</footer></>;
+      }`,
+      ["After", "Nested", "Interleaved"],
+    );
+  });
+
+  it("claims a list and text with inserts in a conditional fragment, then updates them", async () => {
+    await hydrateInPlace(
+      `
+      import { signal } from "lumiose";
+      const items = signal(["x", "y"]);
+      const name = signal("Ada");
+      function Card(props: { children?: any }) {
+        return <p>{props.children}</p>;
+      }
+      export function List() {
+        Object.assign(globalThis as any, { items, name });
+        return <ul>{items().length > 0 ? <>{items().map((x) => <li>{x}</li>)}<li>last</li></> : null}</ul>;
+      }
+      export function Text() {
+        return <div>{name() ? <>Hello {name()}, you have <b>mail</b><em>!</em></> : null}</div>;
+      }
+      export function Children() {
+        return <Card>Footer {name()}</Card>;
+      }`,
+      ["List", "Text", "Children"],
+    );
+    const lis = [...document.querySelectorAll("li")];
+    const { items, name } = globalThis as any;
+    items.set(["y", "z"]);
+    name.set("Grace");
+    flush();
+    expect(visible()).toBe(
+      "<ul><li>y</li><li>z</li><li>last</li></ul>" +
+        "<div>Hello Grace, you have <b>mail</b><em>!</em></div>" +
+        "<p>Footer Grace</p>",
+    );
+    expect(document.querySelector("li:last-child")).toBe(lis[2]);
+  });
+});
+
 const request = (user: string) => ({ ctx: { locals: { user } } }) as unknown as RequestScope;
 
 describe("scoped state (TASK-193)", () => {

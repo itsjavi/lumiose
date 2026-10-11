@@ -10,6 +10,7 @@ const CONTRACT_KEYS: ReadonlyArray<keyof ServerRuntime> = [
   "text",
   "insert",
   "insertText",
+  "insertValue",
   "attr",
   "classAttr",
   "styleAttr",

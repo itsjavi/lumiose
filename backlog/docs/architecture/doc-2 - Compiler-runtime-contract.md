@@ -3,7 +3,7 @@ id: doc-2
 title: Compiler-runtime contract
 type: specification
 created_date: '2026-10-08 12:27'
-updated_date: '2026-10-10 00:23'
+updated_date: '2026-10-11 02:56'
 tags:
   - architecture
   - contract
@@ -50,6 +50,7 @@ tags:
 | `branch(parent, marker, cond, whenTrue, whenFalse?)` | Memoised on `!!cond()`. Disposes the inactive branch's owner |
 | `branchValue(cond, whenTrue, whenFalse?)` | `branch` without a parent: returns a `Renderable` range that `insert` places as one node. Memoised on `!!cond()`; disposes the inactive owner on a flip. Used for conditionals in component children, fragments and nested ternaries |
 | `listValue(source, render, key?)` | `list` without a parent: a `Renderable` range with the same keyed reconciliation and index rule. Clears remove rows one by one. **Codegen:** keep `branch`/`list` when the expression is a child of a template element (cheaper); use the value variants elsewhere, e.g. `get children() { return listValue(…) }`. Under hydration, TASK-18 maps the server `<!--[-->…<!--]-->` region onto the range |
+| `insertValue(value)` | `insert` without a parent: a `Renderable` range that `insert` places as one node, rendering `value` tracked like `insert`. **Codegen** (Photon, TASK-234): in an array of renderables (a fragment or component children with more than one item), every dynamic item that is not a reactive conditional, a list, a component or JSX becomes `insertValue(…)`, so that it claims the server's `insert` block under hydration |
 | `selector(source)` | Returns `isSelected(key)`. Only the previous and the next key re-notify |
 | `createComponent(C, props)` | New owner, untracked call. A native `async function` takes the async path (§4) |
 | `restProps(props, keys)`, `mergeProps(...)`, `spread(el, () => props)` | Reactive props utilities |
@@ -83,6 +84,7 @@ Imported only by code compiled with the `hot` option in `lumiose dev`; never par
 | `ssr(parts, ...holes)` | Interleaves parts and holes. Sync unless a hole is a thenable, in which case it returns `Promise<SSRNode>` and resolves holes concurrently while preserving order |
 | `text(v)` | Escaped text. Inside islands, it emits `<!--!-->` between adjacent dynamic texts (the compiler passes adjacency through its parts) |
 | `insert(v)` | Dynamic region. Inside islands it is wrapped as `<!--[-->…<!--]-->`; outside islands it is unwrapped |
+| `insertValue(v)` | `insert(v)` as an `SSRNode`, for a dynamic item of an array of renderables (the client's `insertValue`): an array escapes plain strings, so the block is returned as markup |
 | `insertText(v)` | `text()` for text values (including nullish and booleans), `insert()` for objects. A maybe-text child alone between nodes (the provable-text rule) is a client template text node written by `insertText`; a non-text value renders as an `insert()` block inside islands, which the client claims as a region whose marker is the text node |
 | `attr`, `classAttr`, `styleAttr`, `spreadAttrs`, `escape` | Attribute serialization. `styleAttr` follows the CSP mode (spec §7.4) |
 | `nonceAttr()` | Under strict CSP, the ` nonce="…"` attribute with the current response's nonce for JSX-authored `<script>`/`<style>` (and native SVG `<style>`) without an explicit `nonce`; empty otherwise. Static `style="…"` strings render as nonce'd rules (decision-27) |
@@ -102,7 +104,7 @@ Inside `<!--l:ID-->…<!--/l:ID-->`, the server marks every range the client cla
 
 | Marker | Server emits it for | Client counterpart |
 |---|---|---|
-| `<!--[-->…<!--]-->` | `insert`, `list`, the active branch | The helper's region |
+| `<!--[-->…<!--]-->` | `insert`, `insertValue`, `list`, the active branch | The helper's region (a range for `insertValue`, `listValue`, `branchValue`) |
 | `<!--[!-->…<!--]-->` | The inactive branch | The region (`whenFalse`) |
 | `<!--!-->` | Between adjacent `text()` holes | Text split |
 | `<!--[-->…<!--]-->` | Each async component instance | Its range (`createAsync`) |
@@ -115,6 +117,7 @@ Inside `<!--l:ID-->…<!--/l:ID-->`, the server marks every range the client cla
 
 **Template/server alignment** (Photon, TASK-14):
 - The server never emits the client's `<!>` placeholders. Inside islands, each client `insert`/`list`/`branch` corresponds to exactly one marker region, in the same child order.
+- **Arrays of renderables** (Photon, TASK-234): the client creates the items of a fragment or of component children in document order, because their server nodes are claimed positionally. Each run of static items (text included) is a template of its own, created where the run starts. Components and JSX values are created in place, and a value that creates nodes is bound to a `const` before any later creation code. Other dynamic items are `insertValue` ranges on the client and `insertValue` blocks on the server. A single-item fragment stays a plain value.
 - A `text()` hole whose value is `""` renders no text node, so the hydrator must create one.
 - **Isolated text children** (Photon, TASK-65): a dynamic child that is provably text compiles to a template text node on the client (`setText`/`.data`) and a `text()` hole on the server. That holds anywhere the child has no adjacent JSX text or dynamic sibling, not only for sole children. Provably text means string/number literals, template literals, string methods, or a `const` initialised from one of these. Next to text or another dynamic child it stays `insert`.
 - **Server props** (Lux, TASK-78): on the server target, dynamic props whose expression is trivially safe compile to plain data properties instead of getters. Trivially safe means a literal, a template literal of safe parts, a local identifier, or a single-level `props.x` read. Every other expression, plus all JSX-valued props and `children`, stays a lazy getter. This keeps evaluation semantics identical to the client: nothing can throw or run earlier than it would there.

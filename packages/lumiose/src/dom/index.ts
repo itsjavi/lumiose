@@ -13,7 +13,7 @@ export {
   setText,
   toggleClass,
 } from "./attributes.ts";
-export { branch, branchValue, insert, insertText } from "./insert.ts";
+export { branch, branchValue, insert, insertText, insertValue } from "./insert.ts";
 export { list, listValue } from "./list.ts";
 export { selector } from "./selector.ts";
 export { createComponent, mergeProps, restProps } from "./component.ts";
