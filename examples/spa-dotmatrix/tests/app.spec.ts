@@ -1,5 +1,28 @@
 import { readFileSync } from "node:fs";
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test as base, type Page } from "@playwright/test";
+
+/** Whether the app has hydrated: the root layout's onMount sets the `dotmatrix` handle. */
+const hydrated = (page: Page) => page.waitForFunction(() => "dotmatrix" in globalThis);
+
+// Pages are prerendered, so their UI shows before the app has hydrated and can take input: the
+// test page's `goto` and `reload` wait for hydration, as a person waits for a page to respond.
+const test = base.extend({
+  page: async ({ page }, use) => {
+    const goto = page.goto.bind(page);
+    const reload = page.reload.bind(page);
+    page.goto = async (...args) => {
+      const response = await goto(...args);
+      await hydrated(page);
+      return response;
+    };
+    page.reload = async (...args) => {
+      const response = await reload(...args);
+      await hydrated(page);
+      return response;
+    };
+    await use(page);
+  },
+});
 
 // Screenshots go to $DOTMATRIX_SHOTS when set (the dev project only).
 const SHOTS = process.env.DOTMATRIX_SHOTS;
@@ -56,9 +79,19 @@ declare global {
 }
 
 const errors: string[] = [];
+/** Page errors, console errors and Lumiose diagnostics (a hydration mismatch is a LUM4006 warning). */
+function watch(page: Page) {
+  page.on("pageerror", (error) => errors.push(error.message));
+  page.on("console", (message) => {
+    // The 404 route answers with its status, which Chromium logs as a failed load.
+    if (message.location().url.includes("/no-such-cartridge")) return;
+    if (message.type() === "error" || /\bLUM\d{4}\b/.test(message.text()))
+      errors.push(`console.${message.type()}: ${message.text()}`);
+  });
+}
 test.beforeEach(async ({ page }) => {
   errors.length = 0;
-  page.on("pageerror", (error) => errors.push(error.message));
+  watch(page);
   await page.goto("/learn");
   await page.evaluate(() => localStorage.clear());
 });
@@ -198,15 +231,150 @@ test("shares a song through its URL", async ({ page, browser }) => {
   expect(url).toMatch(/\/\?song=1\./);
   const expected = await page.evaluate(() => dotmatrix.song());
 
-  // A fresh browser (no saved song) opens the link.
+  // A fresh browser (no saved song) opens the link: the prerendered page shows the default song,
+  // hydrates in place, then loads the shared one.
   const other = await browser.newContext();
   const fresh = await other.newPage();
+  watch(fresh);
+  await fresh.addInitScript(watchHydration);
   await fresh.goto(url);
   await expect(fresh.locator("#song-title")).toHaveValue("Shared tune");
   await expect(fresh).toHaveURL(/\/$/);
   const opened = await fresh.evaluate(() => dotmatrix.song());
   expect(opened.tracks).toEqual(expected.tracks);
+  expect(await fresh.evaluate(() => window.replaced)).toEqual([]);
   await other.close();
+});
+
+// --- Prerendering (TASK-218) ---
+
+/** Every route and a text its prerendered HTML must hold before JavaScript runs. */
+const ROUTES = [
+  { path: "/", name: "studio", text: 'aria-label="Play song"' },
+  { path: "/songs", name: "songs", text: "Song gallery" },
+  { path: "/sfx", name: "sfx", text: "Sound effects" },
+  { path: "/creatures", name: "creatures", text: "Creature voices" },
+  { path: "/learn", name: "learn", text: "How a pocket console makes music" },
+  { path: "/learn/composing", name: "composing", text: "Composing for Dotmatrix" },
+  { path: "/no-such-cartridge", name: "404", text: "No cartridge here" },
+];
+
+declare global {
+  interface Window {
+    replaced: string[];
+  }
+}
+
+/**
+ * An init script: records prerendered elements of the app that leave the document. Hydration claims
+ * the server's nodes; a mismatch would clear the island and render it again on the client.
+ */
+function watchHydration() {
+  window.replaced = [];
+  new MutationObserver((records) => {
+    for (const record of records)
+      for (const node of record.removedNodes)
+        if (node instanceof Element && node.matches(".page, .bar, .main, .main > *"))
+          window.replaced.push(node.className);
+  }).observe(document, { childList: true, subtree: true });
+}
+
+test("every route's HTML holds the UI before JavaScript runs", async ({ request }) => {
+  for (const route of ROUTES) {
+    const response = await request.get(route.path);
+    const html = await response.text();
+    expect(html, route.path).toContain(route.text);
+    expect(html, route.path).toMatch(/class="?bar"?/);
+    expect(html, route.path).toMatch(/aria-label="?Views"?/);
+  }
+  // The studio comes with its song: the title, the channels and the notes on the grid.
+  const studio = await (await request.get("/")).text();
+  expect(studio).toMatch(/id="?song-title"?[^>]*value="First Steps"/);
+  expect(studio).toContain("Hero lead");
+  expect(studio).toMatch(/class="?note\b/);
+});
+
+test("every route renders without JavaScript", async ({ browser }, info) => {
+  const context = await browser.newContext({ javaScriptEnabled: false });
+  const page = await context.newPage();
+  for (const route of ROUTES) {
+    await page.goto(route.path);
+    await expect(page.locator(".bar .views a")).toHaveCount(5);
+    await expect(page.locator("main")).toContainText(
+      route.text.startsWith("aria-label") ? "Pulse 1" : route.text,
+    );
+    if (SHOTS && info.project.name === "preview")
+      await page.screenshot({ path: `${SHOTS}/task-218-nojs-${route.name}.png`, fullPage: true });
+  }
+  await page.goto("/");
+  await expect(page.locator("#song-title")).toHaveValue("First Steps");
+  await expect(page.locator(".lane .note").first()).toBeVisible();
+  await context.close();
+});
+
+test("hydration takes over the prerendered page in place", async ({ page }, info) => {
+  await page.addInitScript(watchHydration);
+  for (const route of ROUTES) {
+    await page.goto(route.path);
+    expect(await page.evaluate(() => window.replaced), route.path).toEqual([]);
+    if (SHOTS && info.project.name === "preview")
+      await page.screenshot({ path: `${SHOTS}/task-218-after-${route.name}.png`, fullPage: true });
+  }
+  // Later navigation is client-side.
+  await page.goto("/");
+  await page.evaluate(() => ((window as unknown as { marker: number }).marker = 1));
+  await page.locator(".bar .views").getByRole("link", { name: "Songs" }).click();
+  await expect(page.locator("h1")).toHaveText("Song gallery");
+  expect(await page.evaluate(() => (window as unknown as { marker?: number }).marker)).toBe(1);
+});
+
+test("what the browser saved comes back after hydration", async ({ page }) => {
+  await page.goto("/");
+  await page.evaluate(() => {
+    localStorage.setItem("dotmatrix.prefs", JSON.stringify({ theme: "dark", lcd: "ice" }));
+    const song = (globalThis as unknown as { dotmatrix: { song(): object } }).dotmatrix.song();
+    localStorage.setItem("dotmatrix.current", JSON.stringify({ ...song, title: "Saved tune" }));
+  });
+  await page.addInitScript(watchHydration);
+  await page.reload();
+  await expect(page.locator("#song-title")).toHaveValue("Saved tune");
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+  await expect(page.locator("html")).toHaveAttribute("data-lcd", "ice");
+  await expect(page.getByRole("radio", { name: "Ice" })).toHaveAttribute("aria-checked", "true");
+  expect(await page.evaluate(() => window.replaced)).toEqual([]);
+  // The saved theme and palette apply before the app runs: an inline script in the document head.
+  const noApp = await page.context().newPage();
+  await noApp.route("**/*", (route) =>
+    route.request().resourceType() === "script" ? route.abort() : route.continue(),
+  );
+  await noApp.goto("/");
+  await expect(noApp.locator("html")).toHaveAttribute("data-lcd", "ice");
+  await expect(noApp.locator("html")).toHaveAttribute("data-theme", "dark");
+  await expect(noApp.locator("#song-title")).toHaveValue("First Steps");
+  await noApp.close();
+});
+
+test("audio starts only after a user gesture", async ({ page }) => {
+  await page.addInitScript(() => {
+    const Native = window.AudioContext;
+    (window as unknown as { contexts: number }).contexts = 0;
+    window.AudioContext = class extends Native {
+      constructor(options?: AudioContextOptions) {
+        super(options);
+        (window as unknown as { contexts: number }).contexts++;
+      }
+    };
+  });
+  const contexts = () => page.evaluate(() => (window as unknown as { contexts: number }).contexts);
+  for (const path of ["/", "/sfx", "/creatures", "/songs"]) {
+    await page.goto(path);
+    await page.waitForTimeout(300);
+    expect(await contexts(), path).toBe(0);
+  }
+  await page.goto("/");
+  await page.getByRole("button", { name: "Play song" }).click();
+  await expect(page.locator(".transport .state")).toContainText("Playing");
+  expect(await contexts()).toBe(1);
 });
 
 test("SFX gallery: plays, bends, shows code and exports", async ({ page }, info) => {

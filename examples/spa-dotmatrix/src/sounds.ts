@@ -12,7 +12,16 @@ import type { Sfx, Song, SoundSheet } from "./model/types.ts";
 import { editor, openSong, say } from "./state.ts";
 import { download, slug } from "./files.ts";
 
-export const mySounds = signal<SavedSound[]>(loadSounds());
+/** The "My sounds" shelf: empty in the first (prerendered) render, then `loadMySounds()` fills it. */
+export const mySounds = signal<SavedSound[]>([]);
+
+let soundsLoaded = false;
+/** Reads the shelf from browser storage, once, after the app has mounted. */
+export function loadMySounds(): void {
+  if (soundsLoaded) return;
+  soundsLoaded = true;
+  mySounds.set(loadSounds());
+}
 
 export const renderSound = (data: EngineAudioData): Promise<Float32Array> =>
   renderPcm(data, { mono: true });

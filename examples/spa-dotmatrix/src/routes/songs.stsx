@@ -1,6 +1,6 @@
 // The song gallery: original demo songs to listen to and open in the studio, and the songs saved
 // in this browser ("My songs").
-import { computed, href, signal } from "lumiose";
+import { computed, href, onMount, signal } from "lumiose";
 import { navigate } from "lumiose/router";
 import { nowPlaying, play, playStep, rendering, stop } from "../audio/player.ts";
 import { songSeconds } from "../audio/driver.ts";
@@ -9,6 +9,8 @@ import { DEMOS, type Demo } from "../model/songs/index.ts";
 import { STEPS_PER_BAR, type Song } from "../model/types.ts";
 import { openSong, plainSong, say } from "../state.ts";
 import { tokens } from "../tokens.ts";
+
+const round = (v: number) => Math.round(v * 10) / 10;
 
 /** A thumbnail of a song: each channel's notes in its own band of a tiny screen. */
 function Thumb(props: { song: Song }) {
@@ -26,10 +28,13 @@ function Thumb(props: { song: Song }) {
       const pitches = track.notes.map((n) => n.p);
       const lo = Math.min(...pitches);
       const hi = Math.max(...pitches, lo + 1);
+      // Rounded to a tenth: the thumbnails are prerendered, so every digit is in the page's HTML.
       return track.notes.map((n) => ({
-        x: (n.s / total) * 200,
-        w: Math.max(1, (n.l / total) * 200 - 0.4),
-        y: ch === 3 ? top + (n.p % 3) * 2 : bottom - ((n.p - lo) / (hi - lo)) * (bottom - top),
+        x: round((n.s / total) * 200),
+        w: round(Math.max(1, (n.l / total) * 200 - 0.4)),
+        y: round(
+          ch === 3 ? top + (n.p % 3) * 2 : bottom - ((n.p - lo) / (hi - lo)) * (bottom - top),
+        ),
         c: ch,
       }));
     });
@@ -57,7 +62,9 @@ function open(song: Song, label: string) {
 }
 
 export default function Songs() {
-  const shelf = signal<SavedSong[]>(loadShelf());
+  // Saved songs live in browser storage: read after the first (prerendered) render.
+  const shelf = signal<SavedSong[]>([]);
+  onMount(() => shelf.set(loadShelf()));
   const songs = new Map(DEMOS.map((d) => [d.id, d.song()]));
 
   function listen(demo: Demo) {

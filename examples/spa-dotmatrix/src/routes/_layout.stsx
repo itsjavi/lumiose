@@ -6,7 +6,8 @@ import { effect, href, onMount } from "lumiose";
 import { Link } from "lumiose/router";
 import { position } from "../audio/player.ts";
 import { onKeyDown } from "../keys.ts";
-import { plainSong, prefs, type Prefs } from "../state.ts";
+import { loadMySounds } from "../sounds.ts";
+import { loadSaved, plainSong, prefs, type Prefs } from "../state.ts";
 import { tokens } from "../tokens.ts";
 import { Shortcuts } from "../ui/Shortcuts.stsx";
 
@@ -31,9 +32,6 @@ function nextTheme(theme: Prefs["theme"]): Prefs["theme"] {
   return dark ? "light" : "dark";
 }
 
-// A small handle for the e2e tests and the curious: the playhead and the open song.
-Object.assign(globalThis, { dotmatrix: { position, song: plainSong } });
-
 /** The Lumiose website, when this app is published on it (scripts/site.ts sets the variable). */
 const LUMIOSE_SITE: string | undefined = import.meta.env.PUBLIC_LUMIOSE_SITE;
 
@@ -45,7 +43,12 @@ export default function Layout(props: { children?: JSX.Element }) {
     root.dataset.lcd = prefs.lcd;
   });
 
+  // Browser-only work starts after the first render, which the build prerenders: what this
+  // browser saved, the keyboard, and a small handle for the e2e tests and the curious.
   onMount(() => {
+    loadSaved();
+    loadMySounds();
+    Object.assign(globalThis, { dotmatrix: { position, song: plainSong } });
     document.addEventListener("keydown", onKeyDown);
     return () => document.removeEventListener("keydown", onKeyDown);
   });

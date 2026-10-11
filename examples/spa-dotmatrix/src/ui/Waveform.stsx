@@ -1,5 +1,5 @@
 // A sound's waveform on a small dot-matrix screen; redrawn when the sound or the palette changes.
-import { effect, onCleanup } from "lumiose";
+import { effect } from "lumiose";
 import { prefs } from "../state.ts";
 import { tokens } from "../tokens.ts";
 
@@ -31,10 +31,9 @@ export function Waveform(props: { pcm: Float32Array | null; label: string; capti
     const data = props.pcm;
     void prefs.lcd;
     void prefs.theme;
-    cancelAnimationFrame(frame);
     frame = requestAnimationFrame(() => canvas && draw(canvas, data));
+    return () => cancelAnimationFrame(frame);
   });
-  onCleanup(() => cancelAnimationFrame(frame));
   return (
     <div class="wave">
       <canvas

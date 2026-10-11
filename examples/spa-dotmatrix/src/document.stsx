@@ -1,6 +1,10 @@
-// The document around the client-rendered app (lumiose({ mode: "spa", ssr: false }) sends it as the
-// shell of every page).
+// The document around the app. Every page is prerendered (lumiose({ mode: "spa", prerender: true })),
+// so this is real HTML that the SPA then hydrates.
 import type { DocumentProps } from "lumiose";
+
+// Applies the saved theme and screen palette before the first paint: the prerendered page shows the
+// defaults, and the app reads the rest of what this browser saved once it has hydrated.
+const PREFS_SCRIPT = `try{var p=JSON.parse(localStorage.getItem("dotmatrix.prefs")||"{}"),r=document.documentElement;if(p.theme==="light"||p.theme==="dark")r.dataset.theme=p.theme;if(["pocket","dusk","ice"].includes(p.lcd))r.dataset.lcd=p.lcd}catch(e){}`;
 
 const ICON =
   "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8' shape-rendering='crispEdges'%3E%3Crect width='8' height='8' rx='1' fill='%2356566a'/%3E%3Crect x='1' y='1' width='6' height='4' fill='%23c5cea0'/%3E%3Cpath fill='%231e2419' d='M2 2h1v2H2zM4 3h1v1H4zM5 2h1v1H5z'/%3E%3Ccircle cx='6' cy='6.5' r='.8' fill='%23e2508d'/%3E%3C/svg%3E";
@@ -18,6 +22,7 @@ export default function Document(props: DocumentProps) {
         />
         <title>Dotmatrix: a pocket chiptune studio</title>
         <link rel="icon" href={ICON} />
+        <script innerHTML={PREFS_SCRIPT} />
         {props.head}
       </head>
       <body>{props.body}</body>

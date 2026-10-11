@@ -1,7 +1,10 @@
 # Dotmatrix
 
-A pocket chiptune studio built with Lumiose as a client-rendered SPA: `lumiose({ mode: "spa", ssr: false })`,
-file routes and [`lumiose/router`](../../packages/lumiose/docs/reference/router.md). It makes music and sound
+A pocket chiptune studio built with Lumiose as a prerendered SPA: `lumiose({ mode: "spa", prerender: true })`,
+file routes and [`lumiose/router`](../../packages/lumiose/docs/reference/router.md). The build writes the
+real HTML of every page, so the studio, galleries and guides show before JavaScript runs; the app then
+hydrates, reads what the browser saved (the open song, settings, My songs and My sounds) and starts audio
+on the first click or key press. It makes music and sound
 effects for the four channels of the Game Boy sound chip, rendered by the gbapu APU engine in a Web Worker.
 It is the beginner-friendly sibling of [Lumiose Chip](../spa-chiptune): a piano roll and presets instead
 of a tracker and hex effect columns.
@@ -26,8 +29,8 @@ Then:
 ```sh
 cd examples/spa-dotmatrix
 pnpm dev        # lumiose dev; open the printed URL and press Play (or Space)
-pnpm build      # lumiose build: static shells in dist/client, plus dist/server
-pnpm preview    # lumiose preview: serves the build with @lumiose/adapter-node
+pnpm build      # lumiose build: every page prerendered into dist/client (a static site)
+pnpm preview    # lumiose preview: serves dist/client
 ```
 
 Checks:

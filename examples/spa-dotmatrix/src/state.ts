@@ -1,6 +1,10 @@
 // Application state: the song open in the studio (a deep store), its undo history, editor and
 // view preferences, and the status line. Every song edit goes through `edit`, which records undo,
 // autosaves and tells the player to re-render what changed.
+//
+// The app is prerendered: these modules also load at build time, where there is no browser
+// storage. Every store starts from the same defaults on the server and in the browser (so
+// hydration matches), and `loadSaved()` brings in what the browser stored once the app is mounted.
 import { batch, computed, effect, signal, snapshot, store, untrack } from "lumiose";
 import * as player from "./audio/player.ts";
 import { createHistory } from "./model/history.ts";
@@ -9,7 +13,7 @@ import { firstSteps } from "./model/songs/first-steps.ts";
 import { clone } from "./model/song.ts";
 import { CHANNELS, type ChannelIndex, type Song } from "./model/types.ts";
 
-export const doc = store({ song: loadCurrent() ?? firstSteps() });
+export const doc = store({ song: firstSteps() });
 
 /** A plain copy of the open song (for the worker, saving and history). */
 export const plainSong = (): Song => snapshot(doc.song);
@@ -59,16 +63,31 @@ function readPrefs(): Prefs {
   }
 }
 
-export const prefs = store<Prefs>(readPrefs());
+export const prefs = store<Prefs>({ ...defaults });
 
-effect(() => {
-  const json = JSON.stringify(prefs);
-  try {
-    localStorage.setItem(PREFS_KEY, json);
-  } catch {
-    // Private mode or full storage: preferences just do not persist.
-  }
-});
+let loaded = false;
+/**
+ * Brings in the open song and the preferences saved in this browser, then starts saving
+ * preference changes. Called once, after the app has mounted (and hydrated): the first render
+ * shows the defaults, as the prerendered HTML does.
+ */
+export function loadSaved(): void {
+  if (loaded) return;
+  loaded = true;
+  const song = loadCurrent();
+  batch(() => {
+    if (song) doc.song = song;
+    Object.assign(prefs, readPrefs());
+  });
+  effect(() => {
+    const json = JSON.stringify(prefs);
+    try {
+      localStorage.setItem(PREFS_KEY, json);
+    } catch {
+      // Private mode or full storage: preferences just do not persist.
+    }
+  });
+}
 
 // --- Edits, history, autosave and audio ---
 

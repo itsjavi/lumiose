@@ -1,6 +1,6 @@
 // The four channels as cartridge-like cards: pick one to edit, mute or solo it, pan it, and watch
 // its scope while the song plays.
-import { effect, onCleanup } from "lumiose";
+import { effect } from "lumiose";
 import { nowPlaying, scope } from "../audio/player.ts";
 import { presetName } from "../model/instruments.ts";
 import { CHANNELS, type ChannelIndex, type Pan } from "../model/types.ts";
@@ -43,10 +43,9 @@ function Scope(props: { ch: ChannelIndex }) {
     nowPlaying();
     void prefs.lcd;
     void prefs.theme;
-    cancelAnimationFrame(frame);
     frame = requestAnimationFrame(draw);
+    return () => cancelAnimationFrame(frame);
   });
-  onCleanup(() => cancelAnimationFrame(frame));
 
   return (
     <canvas class="scope" width="96" height="28" ref={(el) => (canvas = el)} aria-hidden="true" />

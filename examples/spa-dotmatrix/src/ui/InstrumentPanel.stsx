@@ -193,7 +193,9 @@ export function InstrumentPanel() {
                 () => envLabel(inst().env),
               )}
           {kind() !== "noise" ? (
-            <>
+            // An element, not a fragment: a fragment that mixes inserted fields with static ones
+            // hydrates out of order (TASK-218 notes). `display: contents` keeps the grid.
+            <div class="pitched">
               {range(
                 "Vibrato depth",
                 () => inst().vibrato.depth,
@@ -268,7 +270,7 @@ export function InstrumentPanel() {
                   <span>Shimmer (duty cycle pattern)</span>
                 </label>
               ) : null}
-            </>
+            </div>
           ) : null}
         </div>
       </details>
@@ -277,6 +279,9 @@ export function InstrumentPanel() {
 }
 
 <style>
+  .pitched {
+    display: contents;
+  }
   .field {
     display: grid;
     grid-template-columns: 1fr auto;
