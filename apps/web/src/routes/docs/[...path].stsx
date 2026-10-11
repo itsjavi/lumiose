@@ -22,16 +22,23 @@ export function staticPaths() {
 }
 
 export default function DocsPage(props: PageProps<"/docs/[...path]">) {
-  return <DocView page={findDoc(props.params.path) ?? notFound(`No docs page "${props.params.path}".`)} />;
+  return (
+    <DocView
+      page={findDoc(props.params.path) ?? notFound(`No docs page "${props.params.path}".`)}
+    />
+  );
 }
 
 function DocView(props: { page: DocPage }) {
   const around = () => adjacentDocs(props.page);
-  const toc = () => props.page.headings.filter((heading) => heading.depth === 2 || props.page.headings.length < 14);
+  const toc = () =>
+    props.page.headings.filter((heading) => heading.depth === 2 || props.page.headings.length < 14);
 
   return (
     <div class="doc">
-      <Title>{props.page.path === "" ? "Lumiose docs" : `${props.page.title} · Lumiose docs`}</Title>
+      <Title>
+        {props.page.path === "" ? "Lumiose docs" : `${props.page.title} · Lumiose docs`}
+      </Title>
       <Meta name="description" content={props.page.summary} />
       <Meta property="og:title" content={props.page.title} />
       <Meta property="og:description" content={props.page.summary} />
@@ -45,7 +52,12 @@ function DocView(props: { page: DocPage }) {
         <div class="prose">
           {props.page.blocks.map((block) =>
             block.kind === "code" ? (
-              <CodeBlock code={block.code} lang={block.lang} title={block.title} highlight={highlight} />
+              <CodeBlock
+                code={block.code}
+                lang={block.lang}
+                title={block.title}
+                highlight={highlight}
+              />
             ) : (
               <div class="chunk" innerHTML={block.html} />
             ),

@@ -112,9 +112,18 @@ export function DocsSearch(props: { index: string }) {
         /
       </kbd>
       <div class="panel" hidden={!open()}>
-        <ul id="docs-search-results" role="listbox" aria-label="Docs pages" hidden={results().length === 0}>
+        <ul
+          id="docs-search-results"
+          role="listbox"
+          aria-label="Docs pages"
+          hidden={results().length === 0}
+        >
           {results().map((result, index) => (
-            <li id={`docs-search-${index}`} role="option" aria-selected={index === active() ? "true" : "false"}>
+            <li
+              id={`docs-search-${index}`}
+              role="option"
+              aria-selected={index === active() ? "true" : "false"}
+            >
               <a href={result.url} tabindex="-1">
                 <span class="where">
                   {result.section}

@@ -9,7 +9,9 @@ export default function NotFound() {
       <Title>Page not found · Lumiose</Title>
       <p class="code">404</p>
       <h1>This page is not here</h1>
-      <p>It may have moved when the docs were reorganised. Search the docs or start from the top.</p>
+      <p>
+        It may have moved when the docs were reorganised. Search the docs or start from the top.
+      </p>
       <div class="actions">
         <LinkButton href={href("/docs/[...path]", { path: "" })}>Docs</LinkButton>
         <LinkButton href={href("/")} variant="secondary">

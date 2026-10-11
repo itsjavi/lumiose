@@ -142,7 +142,11 @@ export function Playground(props: PlaygroundProps) {
   }
 
   async function onFrameMessage(event: MessageEvent<PreviewMessage>) {
-    if (!frame || event.source !== frame.contentWindow || event.data?.source !== "lumiose-preview") {
+    if (
+      !frame ||
+      event.source !== frame.contentWindow ||
+      event.data?.source !== "lumiose-preview"
+    ) {
       return;
     }
     const message = event.data;
@@ -156,7 +160,10 @@ export function Playground(props: PlaygroundProps) {
         return;
       }
       if (id === run) {
-        frame.contentWindow?.postMessage({ source: "lumiose-playground", runtime: code, program }, "*");
+        frame.contentWindow?.postMessage(
+          { source: "lumiose-playground", runtime: code, program },
+          "*",
+        );
       }
     } else if (message.type === "console") {
       log(message.level, message.text);
