@@ -2,14 +2,15 @@
 <script setup lang="ts">
 import { STATUSES, STATUS_LABELS, type Status } from "@bench/data/format";
 
-defineProps<{ status: Status; pending?: boolean }>();
+defineProps<{ pending?: boolean }>();
+const status = defineModel<Status>({ required: true });
 </script>
 
 <template>
   <label class="field">
     <span class="field-label">Status</span>
-    <select name="status" data-testid="status-select">
-      <option v-for="value in STATUSES" :key="value" :value="value" :selected="value === status">
+    <select v-model="status" name="status" data-testid="status-select">
+      <option v-for="value in STATUSES" :key="value" :value="value">
         {{ STATUS_LABELS[value] }}
       </option>
     </select>

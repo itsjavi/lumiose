@@ -12,6 +12,13 @@ const comments = useLazyFetch(`/api/issues/${id}/comments`, { server: false });
 
 useHead({ title: () => (issue.value ? `#${issue.value.id} ${issue.value.title}` : "") });
 
+// The status form's selection, reset to the stored status whenever the issue reloads.
+const status = ref(issue.value!.status);
+watch(
+  () => issue.value?.status,
+  (value) => value && (status.value = value),
+);
+
 const body = ref("");
 const commentError = ref<string>();
 const posting = ref(false);
@@ -34,11 +41,10 @@ async function postComment() {
   }
 }
 
-async function updateStatus(event: Event) {
-  const status = new FormData(event.target as HTMLFormElement).get("status");
+async function updateStatus() {
   updating.value = true;
   try {
-    if (await postAction(`/api/issues/${id}/status`, { status })) await refresh();
+    if (await postAction(`/api/issues/${id}/status`, { status: status.value })) await refresh();
   } finally {
     updating.value = false;
   }
@@ -64,7 +70,7 @@ async function updateStatus(event: Event) {
       <aside class="issue-side">
         <IssueDetails :issue="issue" />
         <form class="status-form" @submit.prevent="updateStatus">
-          <StatusFields :status="issue.status" :pending="updating" />
+          <StatusFields v-model="status" :pending="updating" />
         </form>
       </aside>
     </div>
