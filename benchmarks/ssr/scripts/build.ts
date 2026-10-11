@@ -9,6 +9,7 @@
 //   node scripts/build.ts
 
 import { transformAsync } from "@babel/core";
+import { getViteConfig as getAstroViteConfig } from "astro/config";
 import { compile as compileLumiose } from "@lumiose/compiler";
 import { transform as transformSolid2 } from "@solidjs/compiler";
 import { createRequire } from "node:module";
@@ -132,6 +133,80 @@ export const render = (data) => renderToString(createElement(Page, { data }));
   });
 }
 
+/** Automatic JSX runtime from `preact`, as @preact/preset-vite configures it. */
+async function buildPreact(): Promise<void> {
+  const file = join(src, "preact/Page.jsx");
+  const result = await transformWithOxc(await readFile(file, "utf8"), file, {
+    lang: "jsx",
+    jsx: { runtime: "automatic", importSource: "preact", development: false },
+  });
+  await emit("preact", {
+    "Page.js": rewriteImports(result.code),
+    "render.js": `import { h } from "preact";
+import { renderToString } from "preact-render-to-string";
+import { Page } from "./Page.js";
+export const render = (data) => renderToString(h(Page, { data }));
+`,
+  });
+}
+
+/**
+ * Remix 3 has no bundler step: `remix/node-tsx` compiles JSX with Oxc (automatic runtime,
+ * `jsxImportSource: "remix/component"`) when Node loads the module. The same transform, ahead
+ * of time.
+ */
+async function buildRemix(): Promise<void> {
+  const file = join(src, "remix/Page.jsx");
+  const result = await transformWithOxc(await readFile(file, "utf8"), file, {
+    lang: "jsx",
+    jsx: { runtime: "automatic", importSource: "remix/component", development: false },
+  });
+  await emit("remix", {
+    "Page.js": rewriteImports(result.code),
+    "render.js": `import { jsx } from "remix/component/jsx-runtime";
+import { renderToString } from "remix/component/server";
+import { Page } from "./Page.js";
+export const render = (data) => renderToString(jsx(Page, { data }));
+`,
+  });
+}
+
+/**
+ * `.astro` components compiled by Astro's own Vite pipeline (`getViteConfig`, the config the
+ * Container API docs use with Vitest), as an SSR build of `Page.astro`. The Astro runtime stays
+ * external in `node_modules`; `render.js` renders the page through the Container API.
+ */
+async function buildAstro(): Promise<void> {
+  const dir = join(dist, "astro");
+  const config = await getAstroViteConfig(
+    {
+      logLevel: "warn",
+      mode: "production",
+      build: {
+        ssr: join(src, "astro/Page.astro"),
+        outDir: dir,
+        emptyOutDir: false,
+        minify: false,
+        rolldownOptions: {
+          // Astro bundles its runtime into its own server builds; here it stays a plain import,
+          // shared with the Container API.
+          external: (id) => /^astro(?:\/|$)/.test(id) || id.includes("/node_modules/astro/"),
+          output: { entryFileNames: "Page.js" },
+        },
+      },
+    },
+    { root, logLevel: "warn" },
+  )({ command: "build", mode: "production" });
+  await viteBuild({ ...config, configFile: false });
+  await emit("astro", {
+    "render.js": `import { experimental_AstroContainer } from "astro/container";
+import Page from "./Page.js";
+const container = await experimental_AstroContainer.create();
+export const render = (data) => container.renderToString(Page, { props: { data } });
+`,
+  });
+}
+
 /** Vue SFCs (options API) with their templates compiled for SSR, as @vitejs/plugin-vue does. */
 async function buildVue(): Promise<void> {
   const files: Record<string, string> = {};
@@ -189,5 +264,8 @@ await Promise.all([
   buildReact(),
   buildVue(),
   buildSvelte(),
+  buildPreact(),
+  buildRemix(),
+  buildAstro(),
 ]);
 console.log(`Built ${(await readdir(dist)).join(", ")} into ${dist}`);

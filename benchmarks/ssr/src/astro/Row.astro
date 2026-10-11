@@ -1,0 +1,17 @@
+---
+import { formatPrice } from "../data.ts";
+import Badge from "./Badge.astro";
+import Tags from "./Tags.astro";
+
+const { item } = Astro.props;
+---
+
+<tr class={item.active ? "row active" : "row"} data-id={item.id}>
+  <td class="id">{item.id}</td>
+  <td class="label"><a href={item.url} title={item.label}>{item.label}</a><p>{item.description}</p></td>
+  <td class="price">{formatPrice(item.price)}</td>
+  <td class="tags"><Tags tags={item.tags} /></td>
+  <td class="status">
+    {item.active ? <Badge kind="ok">active</Badge> : <Badge kind="off">inactive</Badge>}
+  </td>
+</tr>

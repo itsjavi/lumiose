@@ -1,0 +1,22 @@
+---
+import Row from "./Row.astro";
+import Summary from "./Summary.astro";
+
+const { data } = Astro.props;
+---
+
+<div class="page">
+  <header class="header">
+    <h1>{data.title}</h1>
+    <nav>{data.links.map((link) => <a href={link.href}>{link.text}</a>)}</nav>
+  </header>
+  <main>
+    <table class="table">
+      <thead><tr><th>#</th><th>Label</th><th>Price</th><th>Tags</th><th>Status</th></tr></thead>
+      <tbody>
+        {data.items.map((item) => <Row item={item} />)}
+      </tbody>
+    </table>
+  </main>
+  <footer class="footer"><Summary items={data.items} /></footer>
+</div>

@@ -81,6 +81,24 @@ const FRAMEWORKS: Framework[] = [
     pkg: "react-dom",
     mode: "`renderToString` (react-dom/server), automatic JSX runtime",
   },
+  {
+    id: "preact",
+    name: "Preact",
+    pkg: "preact",
+    mode: '`renderToString` (preact-render-to-string), automatic JSX runtime (`importSource: "preact"`)',
+  },
+  {
+    id: "astro",
+    name: "Astro",
+    pkg: "astro",
+    mode: "`renderToString` of the Container API (`experimental_AstroContainer`), `.astro` components compiled by Astro's Vite pipeline (`getViteConfig`)",
+  },
+  {
+    id: "remix",
+    name: "Remix 3",
+    pkg: "remix",
+    mode: '`renderToString` (remix/component/server), setup/render components, JSX compiled as `remix/node-tsx` does (Oxc, `jsxImportSource: "remix/component"`)',
+  },
 ];
 
 function version(pkg: string): string {
@@ -168,7 +186,8 @@ ${modes.join("\n")}
   (production builds, not minified) with \`solid-js\` resolved to the 2.0 package.
 - \`scripts/run.ts\` renders once and checks the HTML, warms up for ${warmupMs} ms, then counts
   renders in back-to-back ${runMs} ms runs, with a full GC (\`--expose-gc\`) before each run.
-  Async renderers (Lumiose, Vue) are awaited; sync ones (Solid, Svelte, React) are not.
+  Async renderers (Lumiose, Vue, Astro, Remix 3) are awaited; sync ones (Solid, Svelte,
+  React, Preact) are not.
 - \`scripts/bench.ts\` runs every framework in a fresh process per round, interleaving the
   frameworks across rounds, and reports the mean and sample standard deviation of all runs.
 
@@ -194,6 +213,20 @@ ${modes.join("\n")}
 - Versions are pinned exactly in \`package.json\` and are the latest stable releases when
   measured (decision-41). Solid 2 is a release candidate: it is an extra, labelled entry next to
   stable Solid, not a replacement.
+- **Astro** renders through the Container API, the documented way to render \`.astro\`
+  components to a string. Each render is a partial (no doctype or head) but still goes through
+  a full request: a \`Request\`, the render context and \`Astro\` globals, then a \`Response\`
+  whose streamed body is read back with \`text()\`. The number includes that per-request
+  framework overhead, as a real Astro page would. Its runtime loads from \`node_modules\`;
+  \`astro build\` would bundle it into the server build instead (the same code, not minified
+  either way). Astro also escapes \`>\` and \`'\` in text.
+- **Remix 3** has no build step: \`remix/node-tsx\` compiles JSX with Oxc when Node loads a
+  module. \`scripts/build.ts\` runs the same transform ahead of time. Its \`renderToString\`
+  drains \`renderToStream\`'s byte stream (async, with frame support) and strips its flush
+  markers.
+- **Preact** renders synchronously with \`preact-render-to-string\`. Preact, Remix 3 and Astro
+  emit no text separators or hydration markers here. Remix 3 writes \`data-id\` before
+  \`class\` on rows (attribute order is not significant).
 - Marko 6 is not included yet.
 - One machine, one Node version: compare ratios, not absolute numbers, and rerun before
   drawing conclusions from small differences.
