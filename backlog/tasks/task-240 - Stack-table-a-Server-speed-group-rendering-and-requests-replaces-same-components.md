@@ -7,7 +7,7 @@ status: In Progress
 assignee:
   - Beacon
 created_date: '2026-10-11 03:48'
-updated_date: '2026-10-11 03:57'
+updated_date: '2026-10-11 03:59'
 labels:
   - site
 milestone: m-7
@@ -39,4 +39,6 @@ User 2026-10-11: the table heading changes from 'One framework where others need
 User 2026-10-11, supersedes the heading note above: swap the two lines. The hero H1 becomes 'The best of every stack, in one framework' (the second line keeps the lit treatment, e.g. 'The best of every stack,' / 'in one framework'). The stack table's heading becomes 'Feels like React. Runs like vanilla JS.' The tagline stays in <title>, the README and package.json.
 
 User 2026-10-11: (1) the hero eyebrow becomes 'Static sites · Server-side rendering · Islands · SPAs': full search terms, no acronyms; the H1 already says 'in one framework'. (2) The site's meta and OG description lead with those terms and stay under 160 characters, for example: 'Lumiose: one web framework for static sites, server-side rendering, islands and SPAs. TSX with scoped CSS, signals, and 0 kB of JS until a page needs it.' The visible descriptor in the hero, README and docs stays as decided.
+
+User 2026-10-11, after seeing it: no sub-columns. 'Server speed' is one column, and each cell stacks the two metrics on two lines (renders/s over req/s). This supersedes the group-header layout.
 <!-- SECTION:NOTES:END -->

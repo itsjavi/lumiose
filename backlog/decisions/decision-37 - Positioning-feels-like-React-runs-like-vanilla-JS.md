@@ -131,7 +131,7 @@ Approved by the user on 2026-10-11.
 
 - **Order:** Lumiose comes first, then the other stacks by npm downloads of each stack's main package, with the metric and period cited under the table.
 - **Lumiose's row:** a flat tint, not a gradient.
-- **Server speed replaces "interactive parts use the same components".** It is a group header over two columns:
+- **Server speed replaces "interactive parts use the same components".** It is one column, and each cell stacks two metrics. The user rejected sub-columns after seeing them.
   - Rendering: renders/s, from the SSR benchmark.
   - Requests: req/s on the fullstack comparison's home page.
 - **Astro's caveat** (its islands need a second UI framework) moves to a note under the table.
