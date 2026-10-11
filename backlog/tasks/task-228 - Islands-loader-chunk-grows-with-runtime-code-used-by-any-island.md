@@ -1,11 +1,11 @@
 ---
 id: TASK-228
 title: Islands loader chunk grows with runtime code used by any island
-status: In Progress
+status: Done
 assignee:
   - Photon
 created_date: '2026-10-11 02:00'
-updated_date: '2026-10-11 02:40'
+updated_date: '2026-10-11 02:42'
 labels:
   - perf
   - islands
@@ -23,7 +23,7 @@ Found in TASK-214 (Beacon, 2026-10-11). Moving the playground island into apps/w
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
 - [x] #1 Measured before and after on apps/web (landing, a docs page, /playground): JS bytes and requests per page
-- [ ] #2 Runtime code used by only one island's graph is loaded only by that island; code shared by several islands may live in a shared chunk, without adding requests on pages that use one island
+- [x] #2 Runtime code used by only one island's graph is loaded only by that island; code shared by several islands may live in a shared chunk, without adding requests on pages that use one island
 - [x] #3 The chunking rule and its trade-off are documented (compiler/vite docs or doc-1), with a test that guards it
 <!-- AC:END -->
 
@@ -58,4 +58,12 @@ Open for Lux (AC #2 not checked): the fetchJSON pin is an exception to AC #2 (fe
  B. Spark follow-up: make the fetchJSON cache reachable only from code that creates runs (createRun installs it), so no in-chunk folding is needed; then drop FOLDED. Best end state; runtime design change in Spark's area.
  C. Drop the pin and accept +1.48 kB br per page on ssg-travel-journal-like apps (not recommended).
 Recommendation: A now, B as a follow-up task.
+
+Lux (2026-10-11): the fetchJSON exception is accepted for now (option A). app/fetch-json.ts stays pinned in the shared runtime chunk, so the minifier can still fold the unused cache. TASK-232 (Spark) removes the pin by restructuring the cache (option B). With that recorded exception, AC #2 holds.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Islands chunking: runtime that only one island imports lives in that island's chunk (Photon, 48ff6ce), with no extra requests. apps/web landing -397 B brotli, docs -371 B. Exception: fetch-json stays pinned until TASK-232.
+<!-- SECTION:FINAL_SUMMARY:END -->
