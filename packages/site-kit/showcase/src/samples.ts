@@ -9,18 +9,18 @@ export function Counter(props: { start?: number }) {
   return (
     <button class={{ hot: count() > 5 }} onClick={() => count.update((n) => n + 1)}>
       Clicked {count()} times
-
-      <style>
-        button {
-          padding: $space.xs $space.md;
-          border-radius: $radius.pill;
-          background: $color.accent;
-        }
-        .hot { box-shadow: 0 0 24px $color.glowA; }
-      </style>
     </button>
   );
 }
+
+<style>
+  button {
+    padding: $space.xs $space.md;
+    border-radius: $radius.pill;
+    background: $color.accent;
+  }
+  .hot { box-shadow: 0 0 24px $color.glowA; }
+</style>
 `;
 
 export const cssSample = `:root {

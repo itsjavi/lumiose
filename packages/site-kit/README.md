@@ -15,13 +15,14 @@ export default function Layout(props: { children: JSX.Element }) {
       <SiteHeader current="/docs" />
       <main>{props.children}</main>
       <Footer />
-      <style>
-        main { padding: $space.xl; color: $color.text; }
-        @media (width < $bp.md) { main { padding: $space.md; } }
-      </style>
     </div>
   );
 }
+
+<style>
+  main { padding: $space.xl; color: $color.text; }
+  @media (width < $bp.md) { main { padding: $space.md; } }
+</style>
 ```
 
 - Importing `@lumiose/site-kit` loads the base stylesheet (`src/Base.stsx`: theme custom properties,
