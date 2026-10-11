@@ -13,6 +13,9 @@ pnpm pack:check       # pack the publishable packages and check the tarballs (--
 pnpm release:version 0.2.0 --dry-run   # what a release would change (see Releases)
 ```
 
+Changes to the website (`apps/web`) follow [its contributing notes](apps/web/CONTRIBUTING.md): the
+WCAG 2.2 AA axe suite and the manual accessibility checklist (decision-39).
+
 ## Continuous integration
 
 `.github/workflows/ci.yml` runs on every push and pull request to `main`, on Linux, macOS and
