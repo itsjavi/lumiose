@@ -7,7 +7,7 @@ status: In Progress
 assignee:
   - Beacon
 created_date: '2026-10-11 03:48'
-updated_date: '2026-10-11 04:04'
+updated_date: '2026-10-11 04:05'
 labels:
   - site
 milestone: m-7
@@ -43,4 +43,6 @@ User 2026-10-11: (1) the hero eyebrow becomes 'Static sites · Server-side rende
 User 2026-10-11, after seeing it: no sub-columns. 'Server speed' is one column, and each cell stacks the two metrics on two lines (renders/s over req/s). This supersedes the group-header layout.
 
 User 2026-10-11, correction: keep two columns. Only the sub-header titles go. A single 'Server speed' header cell spans both columns (colspan 2), with no 'Rendering'/'Requests' row; each cell carries its unit (renders/s, req/s). This supersedes the stacked-cell note above.
+
+User 2026-10-11: React Router is full stack (framework mode; Remix merged into it), so its 'Full-stack layer' cell is 'Built in', not 'Separate project'.
 <!-- SECTION:NOTES:END -->
