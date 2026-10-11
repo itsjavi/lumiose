@@ -121,70 +121,71 @@ export function SettingsView() {
           00.
         </p>
       </section>
-      <style>
-        .settings-view {
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-          gap: 10px;
-          align-items: start;
-        }
-        .panel {
-          display: grid;
-          gap: 10px;
-        }
-        .check {
-          display: flex;
-          gap: 8px;
-          align-items: center;
-        }
-        .field {
-          display: grid;
-          gap: 4px;
-          color: var(--dim);
-        }
-        .field input {
-          inline-size: 8ch;
-        }
-        .themes {
-          display: flex;
-          gap: 6px;
-        }
-        .themes .on {
-          background: var(--yellow);
-          color: var(--bg);
-        }
-        dl {
-          display: grid;
-          grid-template-columns: max-content 1fr;
-          gap: 4px 12px;
-          margin: 0;
-        }
-        dt {
-          color: var(--dim);
-        }
-        dd {
-          margin: 0;
-        }
-        table {
-          border-collapse: collapse;
-        }
-        th,
-        td {
-          text-align: start;
-          padding: 3px 8px 3px 0;
-          vertical-align: top;
-          font-weight: normal;
-        }
-        kbd {
-          color: var(--yellow);
-          font-family: inherit;
-        }
-        .note {
-          margin: 0;
-          color: var(--dim);
-          line-height: 1.5;
-        }
-      </style>
     </div>
   );
 }
+
+<style>
+  .settings-view {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 10px;
+    align-items: start;
+  }
+  .panel {
+    display: grid;
+    gap: 10px;
+  }
+  .check {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+  .field {
+    display: grid;
+    gap: 4px;
+    color: var(--dim);
+  }
+  .field input {
+    inline-size: 8ch;
+  }
+  .themes {
+    display: flex;
+    gap: 6px;
+  }
+  .themes .on {
+    background: var(--yellow);
+    color: var(--bg);
+  }
+  dl {
+    display: grid;
+    grid-template-columns: max-content 1fr;
+    gap: 4px 12px;
+    margin: 0;
+  }
+  dt {
+    color: var(--dim);
+  }
+  dd {
+    margin: 0;
+  }
+  table {
+    border-collapse: collapse;
+  }
+  th,
+  td {
+    text-align: start;
+    padding: 3px 8px 3px 0;
+    vertical-align: top;
+    font-weight: normal;
+  }
+  kbd {
+    color: var(--yellow);
+    font-family: inherit;
+  }
+  .note {
+    margin: 0;
+    color: var(--dim);
+    line-height: 1.5;
+  }
+</style>

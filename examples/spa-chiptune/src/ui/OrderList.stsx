@@ -63,72 +63,73 @@ export function OrderList() {
           ▼
         </button>
       </div>
-      <style>
-        .orders {
-          display: grid;
-          grid-template-rows: auto 1fr auto;
-          min-block-size: 0;
-        }
-        header {
-          display: flex;
-          justify-content: space-between;
-          align-items: baseline;
-        }
-        .count {
-          color: var(--dim);
-        }
-        .list {
-          list-style: none;
-          margin: 0;
-          padding: 0;
-          overflow-y: auto;
-          min-block-size: 0;
-          font-family: $tokens.font.mono;
-        }
-        .list button {
-          display: flex;
-          gap: 2ch;
-          inline-size: 100%;
-          padding: 1px 8px;
-          background: transparent;
-          box-shadow: none;
-          border: 0;
-          color: var(--text);
-          justify-content: flex-start;
-        }
-        .list button:hover {
-          background: var(--raised);
-        }
-        .pos {
-          color: var(--dim);
-        }
-        .pat {
-          color: var(--cyan);
-        }
-        .list button.current {
-          background: var(--raised);
-          outline: 1px solid var(--yellow);
-          outline-offset: -1px;
-        }
-        .list button.live .pos {
-          color: var(--red);
-        }
-        .list button.live::after {
-          content: "◀";
-          color: var(--red);
-          margin-inline-start: auto;
-        }
-        .tools {
-          display: grid;
-          grid-template-columns: repeat(4, 1fr);
-          gap: 3px;
-          padding-block-start: 6px;
-        }
-        .tools button {
-          padding-inline: 0;
-          font-size: 11px;
-        }
-      </style>
     </section>
   );
 }
+
+<style>
+  .orders {
+    display: grid;
+    grid-template-rows: auto 1fr auto;
+    min-block-size: 0;
+  }
+  header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+  }
+  .count {
+    color: var(--dim);
+  }
+  .list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    overflow-y: auto;
+    min-block-size: 0;
+    font-family: $tokens.font.mono;
+  }
+  .list button {
+    display: flex;
+    gap: 2ch;
+    inline-size: 100%;
+    padding: 1px 8px;
+    background: transparent;
+    box-shadow: none;
+    border: 0;
+    color: var(--text);
+    justify-content: flex-start;
+  }
+  .list button:hover {
+    background: var(--raised);
+  }
+  .pos {
+    color: var(--dim);
+  }
+  .pat {
+    color: var(--cyan);
+  }
+  .list button.current {
+    background: var(--raised);
+    outline: 1px solid var(--yellow);
+    outline-offset: -1px;
+  }
+  .list button.live .pos {
+    color: var(--red);
+  }
+  .list button.live::after {
+    content: "◀";
+    color: var(--red);
+    margin-inline-start: auto;
+  }
+  .tools {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 3px;
+    padding-block-start: 6px;
+  }
+  .tools button {
+    padding-inline: 0;
+    font-size: 11px;
+  }
+</style>

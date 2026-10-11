@@ -161,86 +161,87 @@ export function SongsView() {
           ))}
         </ul>
       </section>
-      <style>
-        .songs-view {
-          display: grid;
-          grid-template-columns: minmax(320px, 420px) minmax(0, 1fr);
-          gap: 10px;
-          align-items: start;
-        }
-        .current {
-          display: grid;
-          gap: 10px;
-        }
-        label {
-          display: grid;
-          gap: 4px;
-          font-size: 11px;
-          color: var(--dim);
-          text-transform: uppercase;
-        }
-        .inline {
-          display: inline-flex;
-          align-items: center;
-          gap: 4px;
-          font-weight: 700;
-        }
-        .row {
-          display: flex;
-          gap: 14px;
-          flex-wrap: wrap;
-          align-items: center;
-        }
-        .facts {
-          margin: 0;
-          color: var(--dim);
-          font-size: 12px;
-        }
-        .actions {
-          display: flex;
-          gap: 6px;
-          flex-wrap: wrap;
-        }
-        .wav {
-          background: var(--blue);
-        }
-        ul {
-          list-style: none;
-          margin: 0;
-          padding: 0;
-          display: grid;
-          gap: 4px;
-        }
-        li {
-          display: grid;
-          grid-template-columns: minmax(0, 1fr) auto;
-          gap: 2px 12px;
-          padding: 6px 8px;
-          background: var(--bg);
-          border: 1px solid var(--line);
-        }
-        li.open {
-          border-color: var(--yellow);
-        }
-        .title {
-          font-weight: 700;
-        }
-        .meta {
-          grid-row: 2;
-          color: var(--dim);
-          font-size: 11px;
-        }
-        .buttons {
-          grid-row: 1 / 3;
-          grid-column: 2;
-          display: flex;
-          gap: 4px;
-          align-items: center;
-        }
-        .danger {
-          background: var(--red);
-        }
-      </style>
     </div>
   );
 }
+
+<style>
+  .songs-view {
+    display: grid;
+    grid-template-columns: minmax(320px, 420px) minmax(0, 1fr);
+    gap: 10px;
+    align-items: start;
+  }
+  .current {
+    display: grid;
+    gap: 10px;
+  }
+  label {
+    display: grid;
+    gap: 4px;
+    font-size: 11px;
+    color: var(--dim);
+    text-transform: uppercase;
+  }
+  .inline {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-weight: 700;
+  }
+  .row {
+    display: flex;
+    gap: 14px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  .facts {
+    margin: 0;
+    color: var(--dim);
+    font-size: 12px;
+  }
+  .actions {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+  .wav {
+    background: var(--blue);
+  }
+  ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 4px;
+  }
+  li {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 2px 12px;
+    padding: 6px 8px;
+    background: var(--bg);
+    border: 1px solid var(--line);
+  }
+  li.open {
+    border-color: var(--yellow);
+  }
+  .title {
+    font-weight: 700;
+  }
+  .meta {
+    grid-row: 2;
+    color: var(--dim);
+    font-size: 11px;
+  }
+  .buttons {
+    grid-row: 1 / 3;
+    grid-column: 2;
+    display: flex;
+    gap: 4px;
+    align-items: center;
+  }
+  .danger {
+    background: var(--red);
+  }
+</style>

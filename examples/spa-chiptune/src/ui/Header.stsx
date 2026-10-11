@@ -44,20 +44,6 @@ export function SongNumber(props: {
         value={doc.song[props.field]}
         onChange={commit}
       />
-      <style>
-        .number {
-          display: inline-flex;
-          align-items: center;
-          gap: 4px;
-          font-size: 11px;
-          color: var(--dim);
-          font-weight: 700;
-          text-transform: uppercase;
-        }
-        input {
-          inline-size: 9ch;
-        }
-      </style>
     </label>
   );
 }
@@ -199,147 +185,161 @@ export function Header() {
               : "AUDIO OFF"}
         </span>
       </div>
-      <style>
-        .header {
-          display: grid;
-          gap: 6px;
-          padding: 8px 12px 6px;
-          background: var(--panel);
-          border-block-end: calc($tokens.border * 1px) solid var(--line);
-        }
-        .top {
-          display: flex;
-          align-items: center;
-          gap: 16px;
-          flex-wrap: wrap;
-        }
-        .tabs {
-          display: flex;
-          gap: 4px;
-        }
-        /* View links look like the app's buttons. */
-        .tab {
-          font-size: 12px;
-          font-weight: 700;
-          text-transform: uppercase;
-          text-decoration: none;
-          color: var(--text);
-          background: var(--raised);
-          padding: 4px 10px;
-          box-shadow:
-            inset -2px -2px 0 0 rgb(0 0 0 / 0.45),
-            inset 2px 2px 0 0 var(--light);
-        }
-        .tab:hover {
-          filter: brightness(1.15);
-        }
-        .tabs .active {
-          background: var(--yellow);
-          color: var(--bg);
-        }
-        .song {
-          display: flex;
-          align-items: baseline;
-          gap: 10px;
-          margin-inline-start: auto;
-          min-inline-size: 0;
-        }
-        .title {
-          font-weight: 700;
-          color: var(--text);
-          overflow: hidden;
-          text-overflow: ellipsis;
-          white-space: nowrap;
-        }
-        .saved {
-          font-size: 11px;
-          color: var(--green);
-        }
-        .saved.dirty {
-          color: var(--orange);
-        }
-        .group {
-          display: flex;
-          gap: 4px;
-        }
-        .wav {
-          background: var(--blue);
-          color: var(--text);
-        }
-        .transport {
-          display: flex;
-          align-items: center;
-          gap: 6px;
-          flex-wrap: wrap;
-        }
-        .play {
-          min-inline-size: 9ch;
-          background: var(--green);
-          color: var(--bg);
-        }
-        .play.on {
-          background: var(--red);
-          color: var(--text);
-        }
-        .on {
-          background: var(--raised);
-          color: var(--yellow);
-        }
-        .rec.on {
-          background: var(--red);
-          color: var(--text);
-        }
-        .field {
-          display: inline-flex;
-          align-items: center;
-          gap: 4px;
-          font-size: 11px;
-          color: var(--dim);
-          font-weight: 700;
-        }
-        .stepper button {
-          padding: 2px 6px;
-        }
-        .stepper output {
-          min-inline-size: 2ch;
-          text-align: center;
-          color: var(--text);
-          font-family: $tokens.font.mono;
-          font-size: $tokens.font.size;
-        }
-        .stepper .ins {
-          min-inline-size: 14ch;
-          max-inline-size: 18ch;
-          overflow: hidden;
-          white-space: nowrap;
-          text-overflow: ellipsis;
-          text-align: start;
-        }
-        .lcd {
-          display: flex;
-          gap: 12px;
-          padding: 3px 10px;
-          background: #000;
-          color: var(--green);
-          font-family: $tokens.font.mono;
-          border: calc($tokens.border * 1px) inset var(--line);
-          text-shadow: 0 0 6px color-mix(in srgb, var(--green) 60%, transparent);
-        }
-        .live {
-          color: var(--yellow);
-        }
-        .engine {
-          margin-inline-start: auto;
-          font-size: 11px;
-          color: var(--dim);
-        }
-        .engine.running {
-          color: var(--green);
-        }
-        .engine.error {
-          color: var(--red);
-        }
-      </style>
     </header>
   );
 }
+
+<style>
+  .number {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    color: var(--dim);
+    font-weight: 700;
+    text-transform: uppercase;
+  }
+  input {
+    inline-size: 9ch;
+  }
+
+  .header {
+    display: grid;
+    gap: 6px;
+    padding: 8px 12px 6px;
+    background: var(--panel);
+    border-block-end: calc($tokens.border * 1px) solid var(--line);
+  }
+  .top {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  .tabs {
+    display: flex;
+    gap: 4px;
+  }
+  /* View links look like the app's buttons. */
+  .tab {
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    text-decoration: none;
+    color: var(--text);
+    background: var(--raised);
+    padding: 4px 10px;
+    box-shadow:
+      inset -2px -2px 0 0 rgb(0 0 0 / 0.45),
+      inset 2px 2px 0 0 var(--light);
+  }
+  .tab:hover {
+    filter: brightness(1.15);
+  }
+  .tabs .active {
+    background: var(--yellow);
+    color: var(--bg);
+  }
+  .song {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    margin-inline-start: auto;
+    min-inline-size: 0;
+  }
+  .title {
+    font-weight: 700;
+    color: var(--text);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .saved {
+    font-size: 11px;
+    color: var(--green);
+  }
+  .saved.dirty {
+    color: var(--orange);
+  }
+  .group {
+    display: flex;
+    gap: 4px;
+  }
+  .wav {
+    background: var(--blue);
+    color: var(--text);
+  }
+  .transport {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+  .play {
+    min-inline-size: 9ch;
+    background: var(--green);
+    color: var(--bg);
+  }
+  .play.on {
+    background: var(--red);
+    color: var(--text);
+  }
+  .on {
+    background: var(--raised);
+    color: var(--yellow);
+  }
+  .rec.on {
+    background: var(--red);
+    color: var(--text);
+  }
+  .field {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    color: var(--dim);
+    font-weight: 700;
+  }
+  .stepper button {
+    padding: 2px 6px;
+  }
+  .stepper output {
+    min-inline-size: 2ch;
+    text-align: center;
+    color: var(--text);
+    font-family: $tokens.font.mono;
+    font-size: $tokens.font.size;
+  }
+  .stepper .ins {
+    min-inline-size: 14ch;
+    max-inline-size: 18ch;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    text-align: start;
+  }
+  .lcd {
+    display: flex;
+    gap: 12px;
+    padding: 3px 10px;
+    background: #000;
+    color: var(--green);
+    font-family: $tokens.font.mono;
+    border: calc($tokens.border * 1px) inset var(--line);
+    text-shadow: 0 0 6px color-mix(in srgb, var(--green) 60%, transparent);
+  }
+  .live {
+    color: var(--yellow);
+  }
+  .engine {
+    margin-inline-start: auto;
+    font-size: 11px;
+    color: var(--dim);
+  }
+  .engine.running {
+    color: var(--green);
+  }
+  .engine.error {
+    color: var(--red);
+  }
+</style>

@@ -40,35 +40,36 @@ export function StatusBar() {
           Made with Lumiose
         </a>
       )}
-      <style>
-        .status {
-          display: flex;
-          gap: 16px;
-          padding: 4px 12px;
-          font-size: 11px;
-          color: var(--dim);
-          background: var(--panel);
-          border-block-start: 2px solid var(--line);
-          white-space: nowrap;
-        }
-        .message {
-          flex: 1;
-          color: var(--text);
-          overflow: hidden;
-          text-overflow: ellipsis;
-        }
-        .perf {
-          color: var(--green);
-        }
-        .site {
-          color: var(--dim);
-          text-decoration: none;
-        }
-        .site:hover {
-          color: var(--text);
-          text-decoration: underline;
-        }
-      </style>
     </footer>
   );
 }
+
+<style>
+  .status {
+    display: flex;
+    gap: 16px;
+    padding: 4px 12px;
+    font-size: 11px;
+    color: var(--dim);
+    background: var(--panel);
+    border-block-start: 2px solid var(--line);
+    white-space: nowrap;
+  }
+  .message {
+    flex: 1;
+    color: var(--text);
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .perf {
+    color: var(--green);
+  }
+  .site {
+    color: var(--dim);
+    text-decoration: none;
+  }
+  .site:hover {
+    color: var(--text);
+    text-decoration: underline;
+  }
+</style>

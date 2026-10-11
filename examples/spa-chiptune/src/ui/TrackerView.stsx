@@ -12,21 +12,22 @@ export function TrackerView() {
         <InstrumentList compact />
       </div>
       <PatternEditor />
-      <style>
-        .tracker {
-          display: grid;
-          grid-template-columns: minmax(170px, 200px) minmax(0, 1fr);
-          gap: 10px;
-          block-size: 100%;
-          min-block-size: 0;
-        }
-        .side {
-          display: grid;
-          grid-template-rows: 1fr 1fr;
-          gap: 10px;
-          min-block-size: 0;
-        }
-      </style>
     </div>
   );
 }
+
+<style>
+  .tracker {
+    display: grid;
+    grid-template-columns: minmax(170px, 200px) minmax(0, 1fr);
+    gap: 10px;
+    block-size: 100%;
+    min-block-size: 0;
+  }
+  .side {
+    display: grid;
+    grid-template-rows: 1fr 1fr;
+    gap: 10px;
+    min-block-size: 0;
+  }
+</style>

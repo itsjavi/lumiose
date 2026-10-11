@@ -166,98 +166,99 @@ export function MacroEditor(props: Props) {
           placeholder="e.g. 15 14 | 12 10 / 6 3 0"
         />
       </label>
-      <style>
-        .macro {
-          display: grid;
-          gap: 6px;
-          padding: 8px;
-          background: var(--bg);
-          border: calc($tokens.border * 1px) solid var(--line);
-        }
-        header {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-        }
-        h3 {
-          margin: 0;
-          flex: 1;
-          font-size: 12px;
-          color: var(--color);
-          text-transform: uppercase;
-          letter-spacing: 0.1em;
-        }
-        .range,
-        .length {
-          font-size: 11px;
-          color: var(--dim);
-        }
-        header button {
-          padding: 1px 8px;
-        }
-        .bars {
-          position: relative;
-          display: grid;
-          grid-template-columns: repeat(var(--slots), 1fr);
-          gap: 2px;
-          block-size: 110px;
-          cursor: crosshair;
-          touch-action: none;
-          background:
-            linear-gradient(var(--line), var(--line)) 0 calc((1 - var(--zero)) * 100%) / 100% 1px
-              no-repeat,
-            var(--panel);
-        }
-        .bar {
-          position: relative;
-        }
-        .bar::before {
-          content: "";
-          position: absolute;
-          inset-inline: 0;
-          /* From the zero line up (or down, for negative values). */
-          inset-block-end: calc(min(var(--v), var(--zero)) * 100%);
-          block-size: max(2px, calc(max(var(--v) - var(--zero), var(--zero) - var(--v)) * 100%));
-          background: var(--faint);
-        }
-        .bar.set::before {
-          background: var(--color);
-        }
-        .bar.loop {
-          box-shadow: inset 2px 0 0 var(--yellow);
-        }
-        .bar.release {
-          box-shadow: inset -2px 0 0 var(--red);
-        }
-        .lanes {
-          display: grid;
-          grid-template-columns: repeat(var(--slots), 1fr);
-          gap: 2px;
-        }
-        .mark {
-          block-size: 8px;
-          padding: 0;
-          box-shadow: none;
-          background: var(--faint);
-        }
-        .mark.on {
-          background: var(--yellow);
-        }
-        .mark.rel.on {
-          background: var(--red);
-        }
-        .text {
-          display: flex;
-          gap: 8px;
-          align-items: center;
-          font-size: 11px;
-          color: var(--dim);
-        }
-        .text input {
-          flex: 1;
-          min-inline-size: 0;
-        }
-      </style>
     </section>
   );
 }
+
+<style>
+  .macro {
+    display: grid;
+    gap: 6px;
+    padding: 8px;
+    background: var(--bg);
+    border: calc($tokens.border * 1px) solid var(--line);
+  }
+  header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  h3 {
+    margin: 0;
+    flex: 1;
+    font-size: 12px;
+    color: var(--color);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+  }
+  .range,
+  .length {
+    font-size: 11px;
+    color: var(--dim);
+  }
+  header button {
+    padding: 1px 8px;
+  }
+  .bars {
+    position: relative;
+    display: grid;
+    grid-template-columns: repeat(var(--slots), 1fr);
+    gap: 2px;
+    block-size: 110px;
+    cursor: crosshair;
+    touch-action: none;
+    background:
+      linear-gradient(var(--line), var(--line)) 0 calc((1 - var(--zero)) * 100%) / 100% 1px
+        no-repeat,
+      var(--panel);
+  }
+  .bar {
+    position: relative;
+  }
+  .bar::before {
+    content: "";
+    position: absolute;
+    inset-inline: 0;
+    /* From the zero line up (or down, for negative values). */
+    inset-block-end: calc(min(var(--v), var(--zero)) * 100%);
+    block-size: max(2px, calc(max(var(--v) - var(--zero), var(--zero) - var(--v)) * 100%));
+    background: var(--faint);
+  }
+  .bar.set::before {
+    background: var(--color);
+  }
+  .bar.loop {
+    box-shadow: inset 2px 0 0 var(--yellow);
+  }
+  .bar.release {
+    box-shadow: inset -2px 0 0 var(--red);
+  }
+  .lanes {
+    display: grid;
+    grid-template-columns: repeat(var(--slots), 1fr);
+    gap: 2px;
+  }
+  .mark {
+    block-size: 8px;
+    padding: 0;
+    box-shadow: none;
+    background: var(--faint);
+  }
+  .mark.on {
+    background: var(--yellow);
+  }
+  .mark.rel.on {
+    background: var(--red);
+  }
+  .text {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    font-size: 11px;
+    color: var(--dim);
+  }
+  .text input {
+    flex: 1;
+    min-inline-size: 0;
+  }
+</style>

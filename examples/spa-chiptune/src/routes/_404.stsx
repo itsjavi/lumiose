@@ -10,17 +10,18 @@ export default function NotFound(props: ErrorPageProps) {
       <Link class="library" href={href("/songs")}>
         Open the song library
       </Link>
-      <style>
-        .not-found {
-          max-inline-size: 60ch;
-        }
-        p {
-          color: var(--dim);
-        }
-        .library {
-          color: var(--cyan);
-        }
-      </style>
     </section>
   );
 }
+
+<style>
+  .not-found {
+    max-inline-size: 60ch;
+  }
+  p {
+    color: var(--dim);
+  }
+  .library {
+    color: var(--cyan);
+  }
+</style>

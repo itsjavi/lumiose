@@ -131,7 +131,7 @@ test("scoped, file and global styles apply without leaking", async ({ page }) =>
       .evaluate((el, p) => getComputedStyle(el).getPropertyValue(p), property);
   // Global: unscoped.
   expect(await css("body", "margin-top")).toBe("0px");
-  // Component scope (App) with a $token.
+  // File scope (App) with a $token.
   expect(await css("h1", "color")).toBe(ACCENT);
   // Counter's `h2` and `button` rules stay inside Counter.
   expect(await css(".counter h2", "color")).toBe(ACCENT);
@@ -168,8 +168,8 @@ test("style edits hot-update the CSS without re-running components", async ({ pa
     await edit(
       file,
       source.replace(
-        "h2 {\n          color: $theme.accent;\n        }",
-        "h2 {\n          color: rgb(1, 2, 3);\n        }",
+        "h2 {\n    color: $theme.accent;\n  }",
+        "h2 {\n    color: rgb(1, 2, 3);\n  }",
       ),
     );
     await expect(heading).toHaveCSS("color", "rgb(1, 2, 3)");

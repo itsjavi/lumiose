@@ -65,63 +65,64 @@ export function InstrumentView() {
       ) : (
         <p class="panel">Create an instrument to edit it.</p>
       )}
-      <style>
-        .instrument-view {
-          display: grid;
-          grid-template-columns: minmax(180px, 240px) minmax(0, 1fr);
-          gap: 10px;
-          block-size: 100%;
-          min-block-size: 0;
-        }
-        .editor {
-          display: grid;
-          gap: 10px;
-          align-content: start;
-          overflow: auto;
-        }
-        header {
-          display: flex;
-          align-items: baseline;
-          gap: 16px;
-        }
-        .name {
-          display: flex;
-          gap: 8px;
-          align-items: center;
-          font-size: 11px;
-          color: var(--dim);
-        }
-        .name input {
-          inline-size: 24ch;
-        }
-        .test {
-          display: flex;
-          align-items: center;
-          gap: 6px;
-          flex-wrap: wrap;
-          font-size: 11px;
-          color: var(--dim);
-        }
-        .test .on {
-          background: var(--yellow);
-          color: var(--bg);
-        }
-        .hint {
-          margin-inline-start: 12px;
-        }
-        .macros {
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(440px, 1fr));
-          gap: 10px;
-        }
-        .help {
-          margin: 0;
-          max-inline-size: 90ch;
-          color: var(--dim);
-          font-size: 12px;
-          line-height: 1.5;
-        }
-      </style>
     </div>
   );
 }
+
+<style>
+  .instrument-view {
+    display: grid;
+    grid-template-columns: minmax(180px, 240px) minmax(0, 1fr);
+    gap: 10px;
+    block-size: 100%;
+    min-block-size: 0;
+  }
+  .editor {
+    display: grid;
+    gap: 10px;
+    align-content: start;
+    overflow: auto;
+  }
+  header {
+    display: flex;
+    align-items: baseline;
+    gap: 16px;
+  }
+  .name {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    font-size: 11px;
+    color: var(--dim);
+  }
+  .name input {
+    inline-size: 24ch;
+  }
+  .test {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+    font-size: 11px;
+    color: var(--dim);
+  }
+  .test .on {
+    background: var(--yellow);
+    color: var(--bg);
+  }
+  .hint {
+    margin-inline-start: 12px;
+  }
+  .macros {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(440px, 1fr));
+    gap: 10px;
+  }
+  .help {
+    margin: 0;
+    max-inline-size: 90ch;
+    color: var(--dim);
+    font-size: 12px;
+    line-height: 1.5;
+  }
+</style>

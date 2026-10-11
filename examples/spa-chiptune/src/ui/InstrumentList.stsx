@@ -76,64 +76,65 @@ export function InstrumentList(props: { compact?: boolean }) {
           </button>
         </div>
       )}
-      <style>
-        .instruments {
-          display: grid;
-          grid-template-rows: auto 1fr auto;
-          min-block-size: 0;
-        }
-        header {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-        }
-        .edit {
-          font-size: 11px;
-          padding: 1px 6px;
-        }
-        .list {
-          list-style: none;
-          margin: 0;
-          padding: 0;
-          overflow-y: auto;
-          min-block-size: 0;
-        }
-        .list button {
-          display: flex;
-          gap: 1ch;
-          inline-size: 100%;
-          padding: 1px 8px;
-          background: transparent;
-          box-shadow: none;
-          border: 0;
-          color: var(--text);
-          text-transform: none;
-          justify-content: flex-start;
-          font-family: $tokens.font.mono;
-        }
-        .list button:hover {
-          background: var(--raised);
-        }
-        .list button.current {
-          background: var(--raised);
-          outline: 1px solid var(--cyan);
-          outline-offset: -1px;
-        }
-        .index {
-          color: var(--cyan);
-        }
-        .label {
-          overflow: hidden;
-          text-overflow: ellipsis;
-          white-space: nowrap;
-        }
-        .tools {
-          display: grid;
-          grid-template-columns: repeat(3, 1fr);
-          gap: 3px;
-          padding-block-start: 6px;
-        }
-      </style>
     </section>
   );
 }
+
+<style>
+  .instruments {
+    display: grid;
+    grid-template-rows: auto 1fr auto;
+    min-block-size: 0;
+  }
+  header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .edit {
+    font-size: 11px;
+    padding: 1px 6px;
+  }
+  .list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    overflow-y: auto;
+    min-block-size: 0;
+  }
+  .list button {
+    display: flex;
+    gap: 1ch;
+    inline-size: 100%;
+    padding: 1px 8px;
+    background: transparent;
+    box-shadow: none;
+    border: 0;
+    color: var(--text);
+    text-transform: none;
+    justify-content: flex-start;
+    font-family: $tokens.font.mono;
+  }
+  .list button:hover {
+    background: var(--raised);
+  }
+  .list button.current {
+    background: var(--raised);
+    outline: 1px solid var(--cyan);
+    outline-offset: -1px;
+  }
+  .index {
+    color: var(--cyan);
+  }
+  .label {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .tools {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 3px;
+    padding-block-start: 6px;
+  }
+</style>

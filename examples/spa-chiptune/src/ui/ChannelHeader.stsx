@@ -40,43 +40,44 @@ export function ChannelHeader(props: { channel: number }) {
       </div>
       <Scope channel={props.channel} label={info().name} />
       <Vu channel={props.channel} />
-      <style>
-        .head {
-          display: grid;
-          gap: 3px;
-          padding: 4px 6px 6px;
-          border-inline-start: 1px solid var(--line);
-          font-size: $tokens.font.size;
-        }
-        .muted {
-          opacity: 0.45;
-        }
-        .top {
-          display: flex;
-          align-items: center;
-          gap: 4px;
-        }
-        .name {
-          flex: 1;
-          color: var(--yellow);
-          font-weight: 700;
-          letter-spacing: 0.08em;
-        }
-        .ms {
-          inline-size: 20px;
-          block-size: 18px;
-          padding: 0;
-          font-size: 11px;
-        }
-        .ms.on {
-          background: var(--red);
-          color: var(--text);
-        }
-        .solo.on {
-          background: var(--yellow);
-          color: var(--bg);
-        }
-      </style>
     </div>
   );
 }
+
+<style>
+  .head {
+    display: grid;
+    gap: 3px;
+    padding: 4px 6px 6px;
+    border-inline-start: 1px solid var(--line);
+    font-size: $tokens.font.size;
+  }
+  .muted {
+    opacity: 0.45;
+  }
+  .top {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .name {
+    flex: 1;
+    color: var(--yellow);
+    font-weight: 700;
+    letter-spacing: 0.08em;
+  }
+  .ms {
+    inline-size: 20px;
+    block-size: 18px;
+    padding: 0;
+    font-size: 11px;
+  }
+  .ms.on {
+    background: var(--red);
+    color: var(--text);
+  }
+  .solo.on {
+    background: var(--yellow);
+    color: var(--bg);
+  }
+</style>
