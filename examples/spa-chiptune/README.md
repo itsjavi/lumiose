@@ -43,7 +43,7 @@ library and the last song (or the song the URL names). A first visit sees no cha
 visitor's song, theme and library appear right after hydration. Audio still starts on the first
 PLAY or note. Songs live in the browser, so only the demo's tracker page is prerendered
 (`staticPaths()` in `songs/[id].stsx`); a static host serves `404.html` for other song URLs, and
-the `_404` page opens a song saved in this browser in place.
+the router renders the song page in its place, which opens a song saved in this browser.
 
 **GitHub Pages** cannot send headers, so the Lumiose website's build of this example (`pnpm
 build:site`, which sets `LUMIOSE_BASE`) adds a small first-party service worker,

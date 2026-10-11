@@ -46,7 +46,7 @@ import { documentBody, documentParts, type DocumentComponent } from "./document.
 import { headersFor, type HeadersOption } from "../headers.ts";
 import { documentRules, navigationHead, type Prefetch } from "./navigation.ts";
 import { createServerRenderer, type PageRenderer, type PageTree } from "./render.ts";
-import { spaErrorPart, spaPagePart, spaPageTree } from "../router/server.ts";
+import { rerouteScript, spaErrorPart, spaPagePart, spaPageTree } from "../router/server.ts";
 import {
   assertRequestApi,
   createResponseState,
@@ -177,6 +177,16 @@ export function createRequestHandler(options: RequestHandlerOptions): RequestHan
   const specialPages = new Map<string, SpecialPage>(
     [...manifest.notFoundPages, ...manifest.errorPages].map((page) => [page.file, page]),
   );
+  // A `_404` page inside an SPA hides the document while its URL may be a page the router renders
+  // instead (TASK-231), by SPA.
+  const notFoundFiles = new Set(manifest.notFoundPages.map((page) => page.file));
+  const rerouteScripts = new Map<string, string>();
+  const rerouteHead = (app: string): string => {
+    let script = rerouteScripts.get(app);
+    if (script === undefined)
+      rerouteScripts.set(app, (script = rerouteScript(manifest, app, base)));
+    return script;
+  };
 
   const allowedOrigins = new Set(options.csrf === false ? [] : options.csrf?.allowedOrigins);
   const appLimits = resolveLimits(options.limits, DEFAULT_LIMITS, "lumiose({ limits })");
@@ -460,6 +470,7 @@ export function createRequestHandler(options: RequestHandlerOptions): RequestHan
     files: readonly string[],
     resolveAll = prerender === true,
     spa = false,
+    extraHead = "",
   ): Promise<Response> {
     const { request } = scope.ctx;
     // A policy configured with `lumiose({ headers })` for this path replaces Lumiose's.
@@ -512,7 +523,8 @@ export function createRequestHandler(options: RequestHandlerOptions): RequestHan
           : `<script type="application/json" data-l-action>${jsonForScript(scope.action.encoded)}</script>`;
       const meta = scope.nonce === undefined ? "" : nonceMeta(scope.nonce);
       const pages = addNonce(navigation.pages, nonce);
-      const head = meta + shell.head + assets + pages + rules.head + action;
+      const head =
+        meta + addNonce(extraHead, nonce) + shell.head + assets + pages + rules.head + action;
       const parts = documentParts(shell.body, head, document !== undefined);
       body = documentBody(parts, rules.stream, (error) => onError(error, request));
       // A prerendered page is a file: its inline scripts and styles are allowed by hash.
@@ -589,6 +601,7 @@ export function createRequestHandler(options: RequestHandlerOptions): RequestHan
             [...layouts, page.file],
             undefined,
             spa !== undefined,
+            spa?.ssr === true && notFoundFiles.has(page.file) ? rerouteHead(spa.app) : "",
           );
         } catch (failure) {
           if (isRedirect(failure)) return redirectResponse(failure, request);

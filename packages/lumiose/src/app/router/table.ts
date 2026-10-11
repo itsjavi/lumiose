@@ -8,13 +8,15 @@
 // SPA too. Pure and runtime-agnostic: used by the request handler, the dev and build entry
 // generator, and (as generated data) the client router.
 
-import type { RouteManifest } from "../routes/manifest.ts";
+import type { PageRoute, RouteManifest } from "../routes/manifest.ts";
 import type { RouteSegment } from "../routes/segments.ts";
 
 /** Suffix of the island ref of an SPA root, rendered on the server and hydrated: `/<leaf file>#lumiose:spa`. */
 export const SPA_REF = "#lumiose:spa";
 /** Suffix of the island ref of an SPA shell (`ssr = false`), rendered on the client only. */
 export const CSR_REF = "#lumiose:csr";
+/** Set on `<html>` by a `_404` page's script while it hides the document for the router (`rerouteScript()`). */
+export const REROUTE_ATTR = "data-l-reroute";
 
 /** The part of a page's layout chain that renders inside the SPA root island. */
 export interface SpaPart {
@@ -87,6 +89,8 @@ export interface ClientRoute {
   /** SPA pages: the nearest `_404` and `_error` pages. */
   notFound?: string;
   error?: string;
+  /** SPA pages: a 404 rendered for its URL renders the page on the client instead (see `reroutes`). */
+  reroute?: true;
 }
 
 /** A `_404` page and the URL scope of its directory (for unmatched URLs). */
@@ -120,6 +124,7 @@ export function clientTable(
     const entry: ClientRoute = { segments: route.segments, app, levels };
     if (route.notFoundPage !== undefined) entry.notFound = route.notFoundPage;
     if (route.errorPage !== undefined) entry.error = route.errorPage;
+    if (reroutes(route)) entry.reroute = true;
     routes.push(entry);
   }
   if (!spa) return undefined;
@@ -137,6 +142,18 @@ export function clientTable(
     })),
     pages,
   };
+}
+
+/**
+ * Whether a 404 the server rendered for a URL of this `spa` page is the browser's to resolve: the
+ * page has params and is not rendered per request (`prerender`, or an `ssr = false` shell). A static
+ * host answers the URLs `staticPaths()` did not list with `404.html`, and where the page does render
+ * on the server (`lumiose dev`, a server build), it has no browser data: a song saved in the
+ * browser is unknown there. When a `_404` page hydrates at such a URL, the router renders the
+ * page instead.
+ */
+export function reroutes(route: Pick<PageRoute, "mode" | "ssr" | "prerender" | "params">): boolean {
+  return route.mode === "spa" && (route.prerender || !route.ssr) && route.params.length > 0;
 }
 
 /** Whether any SPA page or SPA error page is rendered on the server (and so hydrates). */

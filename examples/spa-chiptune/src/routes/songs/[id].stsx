@@ -5,7 +5,8 @@ import { DEMO_ID, openSong, pinSong, saveNow, songId } from "../../state.ts";
 import { TrackerView } from "../../ui/TrackerView.stsx";
 
 // The library lives in the browser, so the build prerenders the demo song's page only. Other song
-// URLs render in the browser: static hosts serve them the 404.html shell (see ../_404.stsx).
+// URLs render in the browser: a static host serves them 404.html, and the router renders this page
+// in its place.
 export function staticPaths() {
   return [{ params: { id: DEMO_ID } }];
 }

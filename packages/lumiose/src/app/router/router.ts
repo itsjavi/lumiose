@@ -53,7 +53,7 @@ import { createRouteMatcher, type RouteMatcher } from "../routes/match.ts";
 import { formatPattern } from "../routes/segments.ts";
 import type { RouteManifest } from "../routes/manifest.ts";
 import { HttpError, isHttpError, isRedirect } from "../server/control.ts";
-import type { ClientRoute, ClientTable } from "./table.ts";
+import { REROUTE_ATTR, type ClientRoute, type ClientTable } from "./table.ts";
 
 export type Params = Record<string, string>;
 type Module = Record<string, unknown>;
@@ -272,16 +272,30 @@ export interface SpaRootProps {
  * Loads what the SPA root island renders first and returns its root component. `leaf` is the page
  * or error page the server rendered (from the island ref). `csr`: the server sent an empty shell,
  * so the view comes from the URL (a static host may serve the shell for any URL, as `404.html`).
+ * A `_404` page at the URL of a page that reroutes (`reroutes()` in ./table.ts: prerendered, with
+ * params `staticPaths()` may not list) renders that page instead, on the client: the island asks
+ * the loader for a fresh render (`$$fresh`), and the page decides, with the browser's data, whether
+ * it is found.
  */
 export async function prepareRoot(leaf: string, csr: boolean): Promise<Component<SpaRootProps>> {
   const r = router!;
   const url = new URL(location.href);
   const target = targetOf(r, url);
   const page = r.config.pages[leaf];
+  const reroute =
+    !csr &&
+    target?.route?.reroute === true &&
+    r.config.notFoundPages.some((notFound) => notFound.file === leaf);
   const [routeLevels, errorLevels] = await Promise.all([
     target === undefined ? undefined : loadLevels(r, target.levels),
-    page === undefined ? undefined : loadLevels(r, page.levels),
+    page === undefined || reroute ? undefined : loadLevels(r, page.levels),
   ]);
+  if (reroute) {
+    const root: Component<SpaRootProps> & { $$fresh?: true } = () =>
+      spaRoot(r, createView(r, url, target!, routeLevels!));
+    root.$$fresh = true;
+    return root;
+  }
   return (props) => {
     let view: View;
     const status = props.status;
@@ -327,7 +341,31 @@ function spaRoot(r: Router, view: View): Renderable {
   });
   const outlet = createOutlet(0, r.scope);
   r.root = outlet;
+  reveal(r);
   return () => outlet.shown().node;
+}
+
+/**
+ * Shows the document that a `_404` page hid while the router decides what its URL renders
+ * (`rerouteScript()` in ./server.ts), once the first view and what it started (an error page, a
+ * redirect) are on screen.
+ */
+function reveal(r: Router): void {
+  const html = document.documentElement;
+  if (!html.hasAttribute(REROUTE_ATTR)) return;
+  // A level that throws while it is created fails in a microtask (`createOutlet`): after it.
+  queueMicrotask(() => {
+    let stop: (() => void) | undefined;
+    let done = false;
+    stop = effect(() => {
+      if (r.navigating()) return;
+      done = true;
+      html.removeAttribute(REROUTE_ATTR);
+      html.style.removeProperty("visibility");
+      stop?.();
+    });
+    if (done) stop();
+  });
 }
 
 // --- Outlets ------------------------------------------------------------------------------------

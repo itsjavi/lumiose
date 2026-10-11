@@ -147,7 +147,10 @@ the new page is on screen.
   scroll position. `searchParams.set()` keeps both.
 - **Errors.** `notFound()` and unknown URLs render the nearest `_404` page of the SPA; other errors
   its `_error` page (`{ status, error }` props), with the layouts kept. A thrown `redirect()`
-  navigates. Without such a page, a minimal built-in error page replaces the SPA.
+  navigates. Without such a page, a minimal built-in error page replaces the SPA. A `_404` that
+  the server rendered at the URL of a prerendered page with params (`404.html` on a static host)
+  renders that page instead: see
+  [Prerendered SPA routes](../concepts/rendering-modes.md#prerendered-spa-routes).
 - **`invalidate()`** from `lumiose` re-runs the SPA's async components and resources (they keep
   their UI meanwhile) and resolves once they settled. `submit()` redirects navigate through the
   router, and a successful `submit()` invalidates (on MPA pages it does not: that would reload).

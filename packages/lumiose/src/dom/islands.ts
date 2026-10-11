@@ -223,14 +223,20 @@ export function loadIslands(manifest: IslandManifest): () => void {
       throw new Error(`Lumiose: the island ${island.ref} is missing from virtual:lumiose/islands.`);
     }
     void load!().then((component) => {
+      // A component marked `$$fresh` renders on the client instead of claiming the server's nodes
+      // (an SPA root that renders another view than the server did, app/router/router.ts).
+      const fresh = (component as { $$fresh?: true }).$$fresh === true;
+      if (fresh) {
+        while (island.s!.nextSibling !== island.e) (island.s!.nextSibling as ChildNode).remove();
+      }
       const dispose = hydrate(
         component as Component<object>,
         decodeData(island.props) as object,
         island.s!,
         island.e!,
-        (island.awaits ??= {}),
+        fresh ? {} : (island.awaits ??= {}),
         island.slots,
-        island.strategy === "only",
+        fresh || island.strategy === "only",
       );
       if (DEV) island.x = dispose;
       island.g = 2;

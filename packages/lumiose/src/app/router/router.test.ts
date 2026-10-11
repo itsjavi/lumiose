@@ -188,6 +188,8 @@ async function boot(path: string, leaf = "src/routes/index.tsx", base?: string):
 }
 
 const text = (): string => container.textContent ?? "";
+/** The document a `_404`'s script hid for the router (TASK-231) is shown again. */
+const hidden = (): boolean => document.documentElement.hasAttribute("data-l-reroute");
 
 beforeEach(() => {
   rootMounts = usersMounts = 0;
@@ -293,6 +295,70 @@ describe("lumiose/router", () => {
     expect(error).toHaveBeenCalledOnce();
     expect(rootMounts).toBe(1);
     error.mockRestore();
+  });
+
+  it("renders the page of a hydrating _404 whose URL is a page that reroutes (TASK-231)", async () => {
+    // The server rendered the _404 (404.html on a static host) for /users/…, a prerendered page
+    // with params; its script hid the document.
+    const rerouting = config();
+    rerouting.routes.find((r) => r.levels?.includes("src/routes/users/[id].tsx"))!.reroute = true;
+    const start = async (path: string): Promise<Component<object> & { $$fresh?: true }> => {
+      history.replaceState(null, "", path);
+      document.documentElement.setAttribute("data-l-reroute", "");
+      document.documentElement.style.visibility = "hidden";
+      createRouter(rerouting, APP);
+      const root = await prepareRoot("src/routes/_404.tsx", false);
+      container = document.createElement("div");
+      document.body.append(container);
+      dispose = render(
+        () => createComponent(root, { status: 404, message: "Not Found" }),
+        container,
+      );
+      return root;
+    };
+
+    const root = await start("/users/1");
+    // The island renders on the client instead of claiming the server's 404.
+    expect(root.$$fresh).toBe(true);
+    expect(hidden()).toBe(true);
+    await settled();
+    expect(text()).toBe("path /users/1users of 1user 1");
+    expect(route()).toBe("/users/[id]");
+    expect(hidden()).toBe(false);
+    expect(document.documentElement.style.visibility).toBe("");
+    dispose!();
+    container.remove();
+    resetRouter();
+
+    // The page decides with the browser's data: still not found.
+    userData["9"] = "missing";
+    await start("/users/9");
+    await settled();
+    await settled();
+    expect(text()).toBe("path /users/9404 Not Found");
+    expect(hidden()).toBe(false);
+    dispose!();
+    container.remove();
+    resetRouter();
+
+    // A URL that matches no page keeps the server's 404.
+    const unmatched = await start("/nowhere");
+    expect(unmatched.$$fresh).toBeUndefined();
+    await settled();
+    expect(text()).toBe("path /nowhere404 Not Found");
+    expect(hidden()).toBe(false);
+  });
+
+  it("keeps the 404 of a page that renders per request", async () => {
+    history.replaceState(null, "", "/users/1");
+    createRouter(config(), APP);
+    const root = await prepareRoot("src/routes/_404.tsx", false);
+    container = document.createElement("div");
+    document.body.append(container);
+    dispose = render(() => createComponent(root, { status: 404, message: "Not Found" }), container);
+    await settled();
+    expect(text()).toBe("path /users/1404 Not Found");
+    expect(loads).toEqual([]);
   });
 
   it("follows a thrown redirect()", async () => {

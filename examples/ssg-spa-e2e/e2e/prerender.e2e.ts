@@ -85,11 +85,59 @@ test("deep links with params load their own prerendered page", async ({ page }) 
   expect(await sameDocument(page)).toBe(true);
 });
 
-test("unknown URLs get the _404 page inside the SPA, which still navigates", async ({
+/**
+ * Records whether an element matching `selector` is ever visible at an animation frame (where the
+ * browser paints) while the page loads.
+ */
+async function watchFlash(page: Page, selector: string): Promise<void> {
+  await page.addInitScript((watched) => {
+    const w = window as unknown as { flashed: boolean };
+    w.flashed = false;
+    const frame = (): void => {
+      const el = document.querySelector(watched);
+      if (el?.checkVisibility({ visibilityProperty: true })) w.flashed = true;
+      requestAnimationFrame(frame);
+    };
+    requestAnimationFrame(frame);
+  }, selector);
+}
+
+const flashed = (page: Page): Promise<boolean> =>
+  page.evaluate(() => (window as unknown as { flashed: boolean }).flashed);
+
+test("a param staticPaths() did not list renders its page, with no 404 flash (TASK-231)", async ({
   page,
 }, testInfo) => {
-  test.skip(testInfo.project.name !== "build", "the static host's 404.html");
-  // A param staticPaths() did not list, and a URL no route matches.
+  await watchFlash(page, "#not-found");
+  const response = await page.goto("/tracks/4");
+  // The static host answers with 404.html; dev renders the page.
+  expect(response!.status()).toBe(testInfo.project.name === "build" ? 404 : 200);
+  await expect(page.locator("#track")).toHaveText("Track 4: Credits");
+  await expect(page.locator("#where")).toHaveText("mounted, volume 100");
+  await expect(page).toHaveTitle("Credits");
+  await ready(page);
+  expect(await flashed(page)).toBe(false);
+  await page.getByRole("link", { name: "Track 2", exact: true }).click();
+  await expect(page.locator("#track")).toHaveText("Track 2: Cave");
+  expect(await sameDocument(page)).toBe(true);
+});
+
+test("a page whose data is in the browser renders it after a server 404, with no flash (TASK-231)", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await page.evaluate(() => localStorage.setItem("track:5", "Saved"));
+  await watchFlash(page, "#not-found");
+  // The static host's 404.html, or the _404 that `lumiose dev` renders: the server has no such track.
+  const response = await page.goto("/tracks/5");
+  expect(response!.status()).toBe(404);
+  await expect(page.locator("#track")).toHaveText("Track 5: Saved");
+  await ready(page);
+  expect(await flashed(page)).toBe(false);
+});
+
+test("unknown URLs get the _404 page inside the SPA, which still navigates", async ({ page }) => {
+  // A route whose page finds nothing (on the client, from 404.html), and a URL no route matches.
   for (const path of ["/tracks/99", "/missing"]) {
     const response = await page.goto(path);
     expect(response!.status()).toBe(404);
@@ -99,4 +147,17 @@ test("unknown URLs get the _404 page inside the SPA, which still navigates", asy
   await page.getByRole("link", { name: "Track 2", exact: true }).click();
   await expect(page.locator("#track")).toHaveText("Track 2: Cave");
   expect(await sameDocument(page)).toBe(true);
+});
+
+test.describe("without JavaScript", () => {
+  test.use({ javaScriptEnabled: false });
+
+  test("unknown URLs show the _404 page", async ({ page }) => {
+    for (const path of ["/tracks/99", "/missing"]) {
+      const response = await page.goto(path);
+      expect(response!.status()).toBe(404);
+      await expect(page.locator("#not-found")).toHaveText("404 Not Found");
+      await expect(page.locator("#not-found")).toBeVisible();
+    }
+  });
 });

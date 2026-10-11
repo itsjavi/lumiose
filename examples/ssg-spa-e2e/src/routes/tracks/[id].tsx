@@ -1,16 +1,25 @@
-import { onMount, signal, Title, type PageProps } from "lumiose";
+import { notFound, onMount, signal, Title, type PageProps } from "lumiose";
 
-const TRACKS: Record<string, string> = { "1": "Overworld", "2": "Cave", "3": "Boss" };
+const TRACKS: Record<string, string> = {
+  "1": "Overworld",
+  "2": "Cave",
+  "3": "Boss",
+  "4": "Credits",
+};
 
-// Prerendered for each id (inherited from the root layout).
+// Prerendered for each id (inherited from the root layout), except the hidden track 4: a static
+// host serves 404.html for its URL, and the router renders this page in the browser (TASK-231).
 export function staticPaths() {
-  return Object.keys(TRACKS).map((id) => ({ params: { id } }));
+  return ["1", "2", "3"].map((id) => ({ params: { id } }));
 }
 
 // Awaited at build time; hydration replays the recorded value instead of loading it again.
 async function load(id: string): Promise<string> {
   await new Promise((resolve) => setTimeout(resolve, 10));
-  return TRACKS[id] ?? "Unknown";
+  // Tracks saved in this browser are unknown on the server (`lumiose dev` renders the _404 for
+  // them), and render once the router renders this page in the browser.
+  const saved = typeof localStorage === "undefined" ? null : localStorage.getItem(`track:${id}`);
+  return TRACKS[id] ?? saved ?? notFound();
 }
 
 export default async function Track(props: PageProps<"/tracks/[id]">) {

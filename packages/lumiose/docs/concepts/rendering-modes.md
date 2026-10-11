@@ -87,6 +87,16 @@ see the content, and a static host can serve the page.
 - **Params.** A page with params lists its paths with `staticPaths()`, as a `static` page does;
   without it the build stops. The build writes one HTML file per path. On a static host, any other
   URL gets `404.html`, which renders the root `_404` inside the SPA.
+- **Deep links to paths that were not prerendered.** When `404.html` loads at the URL of an SPA page
+  with params (a song saved in the browser, a record created after the build), the router renders
+  that page in the browser instead of the `_404`. The page decides with the browser's data, and
+  `notFound()` brings the `_404` back. A small inline script in `404.html` hides the document until
+  the router has rendered, so the 404 does not flash (at most 8 s, should the SPA not start). A URL
+  that matches no page keeps the `_404`, with status 404, and so does every URL without
+  JavaScript. `lumiose dev` and a server build do the same when such a page calls `notFound()`
+  while it renders on the server, which has no browser data. `ssr = false` pages with params
+  behave the same way. This needs a root `_404` page: without one, `404.html` is a plain error
+  page without the SPA.
 - **No request.** The page renders at build time, so request APIs (`cookies()`, `request()`,
   `locals()`, `response()`, `url().searchParams`) stop the build with `LUM5001`. Read them in the
   browser, or call an endpoint.

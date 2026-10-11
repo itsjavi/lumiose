@@ -6,6 +6,7 @@ import { createComponent, insert, ssr } from "../../server/index.ts";
 import { createRouteManifest, type RouteManifest } from "../routes/manifest.ts";
 import { createRequestHandler, type ModuleExports } from "../server/handler.ts";
 import { hasSpa, spaEntryCode } from "@lumiose/vite/internal/app/router/entry.ts";
+import { formatPattern } from "../routes/segments.ts";
 import { Link } from "./index.server.ts";
 import { clientTable, spaErrorPart, spaHydrates, spaPagePart } from "./table.ts";
 
@@ -103,6 +104,30 @@ describe("SPA pages in the request handler", () => {
     expect(html).toContain(
       '"ref":"/src/routes/app/_404.tsx#lumiose:spa","strategy":"load","props":{"status":404,"message":"Not Found"}',
     );
+    // Its pages render per request, so the 404 is final (TASK-231).
+    expect(html).not.toContain("data-l-reroute");
+  });
+
+  it("hides a _404 at the URL of a page that reroutes until the router has rendered (TASK-231)", async () => {
+    const { get } = app(
+      {
+        ...files,
+        "app/_layout.tsx": `${SPA}\nexport const prerender = true;`,
+        "app/editor.tsx": "export const ssr = false;\nexport const prerender = false;",
+        "app/docs/[...path].tsx": "",
+      },
+      { ...modules, "src/routes/app/docs/[...path].tsx": page(() => "<h1>docs</h1>") },
+    );
+    const { status, html } = await get("/app/x/y");
+    expect(status).toBe(404);
+    const source = /new RegExp\(("[^"]*")\)/.exec(html)?.[1];
+    expect(html.indexOf("data-l-reroute")).toBeLessThan(html.indexOf("<body-shell>"));
+    const pattern = new RegExp(JSON.parse(source!) as string);
+    // Prerendered pages with params; `/app` and `/app/editor` have their own files.
+    expect(
+      ["/app/7", "/app/7/", "/app/docs", "/app/docs/a/b"].filter((p) => pattern.test(p)),
+    ).toHaveLength(4);
+    expect(["/app", "/app/x/y", "/about", "/other/7"].some((p) => pattern.test(p))).toBe(false);
   });
 
   it("leaves other pages alone", async () => {
@@ -200,6 +225,30 @@ describe("the client table", () => {
         levels: ["src/routes/app/_layout.tsx", "src/routes/app/_404.tsx"],
       },
     });
+  });
+
+  it("marks the pages whose 404s the router resolves: params, not rendered per request (TASK-231)", () => {
+    const table = clientTable(
+      manifestOf(
+        {
+          "_layout.tsx": "export const prerender = true;",
+          "index.tsx": "",
+          "songs/[id].tsx": "",
+          "drafts/[id].tsx": "export const prerender = false;\nexport const ssr = false;",
+          "live/[id].tsx": "export const prerender = false;",
+          "_404.tsx": "",
+        },
+        "spa",
+      ),
+    )!;
+    expect(
+      table.routes.map((route) => [formatPattern(route.segments), route.reroute ?? false]),
+    ).toEqual([
+      ["/", false],
+      ["/drafts/[id]", true],
+      ["/live/[id]", false],
+      ["/songs/[id]", true],
+    ]);
   });
 
   it("generates the SPA entry module", () => {

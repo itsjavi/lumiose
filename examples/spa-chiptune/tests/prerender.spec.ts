@@ -34,6 +34,12 @@ test.describe("without JavaScript", () => {
       }
     }
   });
+
+  test("a song URL the server cannot know shows the 404 page", async ({ page }) => {
+    const response = await page.goto("/songs/nope");
+    expect(response!.status()).toBe(404);
+    await expect(page.getByRole("heading", { name: "404 · Not here" })).toBeVisible();
+  });
 });
 
 test("hydration keeps the prerendered nodes, and audio waits for a gesture", async ({ page }) => {
@@ -70,6 +76,18 @@ test("hydration keeps the prerendered nodes, and audio waits for a gesture", asy
 test("a song saved in this browser opens from its URL, though only the demo is prerendered", async ({
   page,
 }) => {
+  // The server answers its URL with the 404 page (404.html, or dev's render), which the router
+  // replaces with the song page before it is ever painted (TASK-231).
+  await page.addInitScript(() => {
+    const w = window as unknown as { flashed: boolean };
+    w.flashed = false;
+    const frame = (): void => {
+      const el = document.querySelector(".not-found");
+      if (el?.checkVisibility({ visibilityProperty: true })) w.flashed = true;
+      requestAnimationFrame(frame);
+    };
+    requestAnimationFrame(frame);
+  });
   await page.goto("/songs");
   await page.evaluate(() => localStorage.clear());
   await page.goto("/songs");
@@ -80,6 +98,9 @@ test("a song saved in this browser opens from its URL, though only the demo is p
   await expect(page.locator(".header .title")).toHaveText("Untitled");
   await expect(page.locator(".row").first()).toBeVisible();
   await expect(page.getByRole("heading", { name: "404 · Not here" })).toHaveCount(0);
+  expect(await page.evaluate(() => (window as unknown as { flashed: boolean }).flashed)).toBe(
+    false,
+  );
   // `/` reopens the last song and names it in the URL.
   const url = page.url();
   await page.goto("/");

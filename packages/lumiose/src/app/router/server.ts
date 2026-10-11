@@ -6,7 +6,9 @@ import type { Component } from "../../contract/client.ts";
 import { createComponent } from "../../server/frame.ts";
 import { island } from "../../server/island.ts";
 import type { PageTree } from "../server/render.ts";
-import { CSR_REF, SPA_REF, type SpaPart } from "./table.ts";
+import type { RouteManifest } from "../routes/manifest.ts";
+import type { RouteSegment } from "../routes/segments.ts";
+import { CSR_REF, REROUTE_ATTR, SPA_REF, reroutes, spaPagePart, type SpaPart } from "./table.ts";
 
 export { layoutChain, spaErrorPart, spaPagePart, type SpaPart } from "./table.ts";
 
@@ -49,4 +51,45 @@ function level(
       return level(levels, index + 1, leafProps, params);
     },
   });
+}
+
+/**
+ * The inline `<head>` script of a `_404` page rendered inside the SPA `app`: when the URL matches
+ * one of the SPA's pages that reroute (`reroutes()`), it hides the document before its first paint,
+ * so the 404 does not flash before the router renders the page. The router shows it again once its
+ * first view is on screen; so does a timeout, should the SPA never start. Without JavaScript the 404
+ * shows. `""` when no page of the SPA reroutes. `base`: with leading and trailing slashes.
+ */
+export function rerouteScript(
+  manifest: Pick<RouteManifest, "routes" | "layouts">,
+  app: string,
+  base: string,
+): string {
+  const paths: string[] = [];
+  for (const route of manifest.routes) {
+    if (route.kind !== "page" || !reroutes(route)) continue;
+    if (spaPagePart(manifest, route.layouts, route.file, route.ssr).app !== app) continue;
+    paths.push(pathSource(route.segments));
+  }
+  if (paths.length === 0) return "";
+  const source = `^${escapeRegExp(base.slice(0, -1))}(?:${paths.join("|")})/?$`;
+  return `<script>(()=>{const d=document.documentElement;if(new RegExp(${JSON.stringify(source)}).test(location.pathname)){d.setAttribute("${REROUTE_ATTR}","");d.style.visibility="hidden";setTimeout(()=>d.style.removeProperty("visibility"),${REVEAL_TIMEOUT})}})()</script>`;
+}
+
+/** The longest the document stays hidden, in ms, should the SPA not start. */
+const REVEAL_TIMEOUT = 8000;
+
+/** A regular expression source matching the (percent-encoded) pathname of a route, below `base`. */
+function pathSource(segments: readonly RouteSegment[]): string {
+  let source = "";
+  for (const segment of segments) {
+    if (segment.kind === "static") source += `/${escapeRegExp(encodeURIComponent(segment.value))}`;
+    else if (segment.kind === "param") source += "/[^/]+";
+    else source += "(?:/.*)?";
+  }
+  return source;
+}
+
+function escapeRegExp(text: string): string {
+  return text.replace(/[\\^$.*+?()[\]{}|/]/g, "\\$&");
 }

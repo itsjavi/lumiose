@@ -995,3 +995,23 @@ describe("island loader", () => {
     expect(defaultPrevented).toBe(false);
   });
 });
+
+describe("fresh islands", () => {
+  it("renders a component marked $$fresh on the client, replacing the server's nodes (TASK-231)", async () => {
+    document.body.innerHTML = await renderToString(() =>
+      island("/src/case#Root", () => "<h1>404</h1>", { status: 404 }, "load"),
+    );
+    const Root = Object.assign(
+      () => {
+        const h1 = document.createElement("h1");
+        h1.textContent = "page";
+        return h1;
+      },
+      { $$fresh: true as const },
+    );
+    loadIslands({ "/src/case#Root": () => Promise.resolve(Root) });
+    await settle();
+    expect(visible()).toBe("<h1>page</h1>");
+    expect(warn).not.toHaveBeenCalled();
+  });
+});
