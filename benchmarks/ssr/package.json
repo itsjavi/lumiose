@@ -2,7 +2,7 @@
   "name": "@lumiose/bench-ssr",
   "version": "0.0.0",
   "private": true,
-  "description": "SSR throughput benchmark: the same page rendered to a string by Lumiose, Solid, Vue, Svelte and React.",
+  "description": "SSR throughput benchmark: the same page rendered to a string by Lumiose, Solid (1.9 and the 2.0 release candidate), Vue, Svelte and React.",
   "license": "MIT",
   "type": "module",
   "scripts": {
@@ -13,13 +13,16 @@
   "dependencies": {
     "@babel/core": "^7.29.7",
     "@lumiose/compiler": "workspace:*",
-    "babel-preset-solid": "^1.9.16",
+    "@solidjs/compiler": "2.0.0-rc.14",
+    "@solidjs/web": "2.0.0-rc.14",
+    "babel-preset-solid": "1.9.16",
     "lumiose": "workspace:*",
-    "react": "^19.3.0",
-    "react-dom": "^19.3.0",
-    "solid-js": "1.9.16",
-    "svelte": "^5.57.2",
-    "vue": "^3.5.43"
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "solid-js": "1.9.17",
+    "solid-js-2": "npm:solid-js@2.0.0-rc.14",
+    "svelte": "5.57.2",
+    "vue": "3.5.43"
   },
   "devDependencies": {
     "@types/babel__core": "^7.20.5",

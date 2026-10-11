@@ -58,6 +58,12 @@ const FRAMEWORKS: Framework[] = [
     mode: "same, `hydratable: true` (hydration keys)",
   },
   {
+    id: "solid-2",
+    name: "Solid 2 (RC)",
+    pkg: "solid-js-2",
+    mode: '**pre-release** (`solid-js@next`): `renderToString` (@solidjs/web), @solidjs/compiler `generate: "ssr"`, not hydratable, from the same source as Solid',
+  },
+  {
     id: "svelte",
     name: "Svelte",
     pkg: "svelte",
@@ -156,7 +162,10 @@ ${modes.join("\n")}
 
 - \`scripts/build.ts\` compiles each implementation with the framework's own compiler, server
   target, as its bundler plugin would, into \`dist/<framework>/\`. Runtimes load from
-  \`node_modules\` with \`NODE_ENV=production\` (production builds of React and Vue).
+  \`node_modules\` with \`NODE_ENV=production\` (production builds of React and Vue). The
+  exception is Solid 2 (RC): it is installed next to Solid 1.9 (as \`solid-js-2\`), and its
+  runtime \`@solidjs/web\` imports \`solid-js\`, so \`dist/solid-2/render.js\` bundles that runtime
+  (production builds, not minified) with \`solid-js\` resolved to the 2.0 package.
 - \`scripts/run.ts\` renders once and checks the HTML, warms up for ${warmupMs} ms, then counts
   renders in back-to-back ${runMs} ms runs, with a full GC (\`--expose-gc\`) before each run.
   Async renderers (Lumiose, Vue) are awaited; sync ones (Solid, Svelte, React) are not.
@@ -182,6 +191,9 @@ ${modes.join("\n")}
   side in place (\`branchArm\`) instead of through closures. Deeper reads such as
   \`tags={props.item.tags}\` stay lazy getters, so they run when the child reads them, as on the
   client.
+- Versions are pinned exactly in \`package.json\` and are the latest stable releases when
+  measured (decision-41). Solid 2 is a release candidate: it is an extra, labelled entry next to
+  stable Solid, not a replacement.
 - Marko 6 is not included yet.
 - One machine, one Node version: compare ratios, not absolute numbers, and rerun before
   drawing conclusions from small differences.

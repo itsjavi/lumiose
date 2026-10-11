@@ -2,20 +2,27 @@
 // `dist/<framework>/` (plain ESM importing the framework's server runtime), plus a
 // `dist/<framework>/render.js` exporting `render(data)`: string or Promise<string>.
 //
+// Solid 2 (release candidate) is installed next to Solid 1.9 as `solid-js-2`. Its runtime,
+// `@solidjs/web`, imports `solid-js`, which resolves to 1.9 here, so `dist/solid-2/render.js`
+// bundles that runtime with `solid-js` resolved to the 2.0 package.
+//
 //   node scripts/build.ts
 
 import { transformAsync } from "@babel/core";
 import { compile as compileLumiose } from "@lumiose/compiler";
+import { transform as transformSolid2 } from "@solidjs/compiler";
+import { createRequire } from "node:module";
 import { mkdir, readdir, readFile, rm, writeFile } from "node:fs/promises";
 import { basename, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { compile as compileSvelte } from "svelte/compiler";
-import { transformWithOxc } from "vite";
+import { build as viteBuild, transformWithOxc } from "vite";
 import { compileTemplate, parse as parseSfc, rewriteDefault } from "vue/compiler-sfc";
 
 const root = fileURLToPath(new URL("..", import.meta.url));
 const src = join(root, "src");
 const dist = join(root, "dist");
+const require = createRequire(join(root, "package.json"));
 
 /** Relative imports of the sources, as they resolve from `dist/<framework>/`. */
 function rewriteImports(code: string): string {
@@ -66,6 +73,46 @@ async function buildSolid(framework: string, hydratable: boolean): Promise<void>
 import { Page } from "./Page.js";
 export const render = (data) => renderToString(() => createComponent(Page, { data }));
 `,
+  });
+}
+
+/** Solid 2 RC: its own compiler (`@solidjs/compiler`, the Oxc compiler `@solidjs/vite-plugin` uses). */
+async function buildSolid2(): Promise<void> {
+  const file = join(src, "solid/Page.jsx");
+  const result = transformSolid2(await readFile(file, "utf8"), {
+    filename: file,
+    generate: "ssr",
+    hydratable: false,
+  });
+  const dir = join(dist, "solid-2");
+  await emit("solid-2", {
+    "Page.js": rewriteImports(result.code),
+    "entry.js": `import { createComponent, renderToString } from "@solidjs/web";
+import { Page } from "./Page.js";
+export const render = (data) => renderToString(() => createComponent(Page, { data }));
+`,
+  });
+  // `solid-js` and its subpaths as the 2.0 package resolves them for itself (its `node` exports).
+  const solid2 = createRequire(require.resolve("solid-js-2/package.json"));
+  await viteBuild({
+    configFile: false,
+    logLevel: "warn",
+    mode: "production",
+    plugins: [
+      {
+        name: "solid-2",
+        enforce: "pre",
+        resolveId: (id) => (/^solid-js(?:\/|$)/.test(id) ? solid2.resolve(id) : null),
+      },
+    ],
+    ssr: { noExternal: true },
+    build: {
+      ssr: join(dir, "entry.js"),
+      outDir: dir,
+      emptyOutDir: false,
+      minify: false,
+      rolldownOptions: { output: { entryFileNames: "render.js" } },
+    },
   });
 }
 
@@ -138,6 +185,7 @@ await Promise.all([
   buildLumiose(),
   buildSolid("solid", false),
   buildSolid("solid-hydratable", true),
+  buildSolid2(),
   buildReact(),
   buildVue(),
   buildSvelte(),
