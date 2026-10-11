@@ -58,6 +58,7 @@ create-lumiose (`--template ssr`), installs the tarballs into it, and runs `lumi
 platform and the WebAssembly compiler, and uploads them as workflow artifacts.
 
 It runs only when a push or pull request to `main` changes what goes into the binaries:
+
 - `crates/**`, `Cargo.toml`, `Cargo.lock` and `rust-toolchain.toml`
 - `packages/compiler/**`
 - the workflow itself and its smoke scripts
