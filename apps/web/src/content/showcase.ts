@@ -1,6 +1,7 @@
-// The example apps and benchmark pages the site publishes (TASK-163). scripts/site.ts builds the
-// examples below /examples/<name>/ and the benchmark UIs below /benchmarks/; these entries
-// describe and link them. ssr-bookshelf needs a server, so it links its code and a screenshot.
+// The example apps and benchmark pages the site publishes (TASK-163, TASK-215). scripts/site.ts
+// builds the real apps below /showcase/<slug>/, the samples with dummy content below
+// /demos/<slug>/ (noindex) and the benchmark UIs below /benchmarks/; these entries describe and
+// link them. ssr-bookshelf needs a server, so it links its code and a screenshot.
 import { link, REPOSITORY } from "../lib/site.ts";
 
 export { REPOSITORY };
@@ -16,11 +17,12 @@ export interface Showcase {
   demo?: string;
   /** Its source in the repository. */
   source: string;
-  /** A screenshot (public/examples/<name>.png). */
+  /** A screenshot (public/showcase/<slug>.png). */
   image?: string;
 }
 
-export function examples(): Showcase[] {
+/** The real apps: indexed, at /showcase/<slug>/. */
+export function showcase(): Showcase[] {
   return [
     {
       name: "spa-chiptune",
@@ -28,9 +30,9 @@ export function examples(): Showcase[] {
       description:
         "A chiptune tracker in the browser: an SPA with a persistent layout, an AudioWorklet engine, keyboard-driven editing and a strict Content Security Policy.",
       tags: ["mode = spa", "router", "signals", "CSP"],
-      demo: link("/examples/spa-chiptune/"),
+      demo: link("/showcase/chiptune-tracker/"),
       source: `${REPOSITORY}/tree/main/examples/spa-chiptune`,
-      image: link("/examples/spa-chiptune.png"),
+      image: link("/showcase/chiptune-tracker.png"),
     },
     {
       name: "spa-dotmatrix",
@@ -38,19 +40,25 @@ export function examples(): Showcase[] {
       description:
         "A pocket chiptune studio for the four channels of the Game Boy sound chip: a piano roll, presets and sound effects, rendered by the gbapu engine in a Web Worker.",
       tags: ["mode = spa", "router", ".md imports", "Web Worker"],
-      demo: link("/examples/spa-dotmatrix/"),
+      demo: link("/showcase/dotmatrix/"),
       source: `${REPOSITORY}/tree/main/examples/spa-dotmatrix`,
-      image: link("/examples/spa-dotmatrix.png"),
+      image: link("/showcase/dotmatrix.png"),
     },
+  ];
+}
+
+/** Samples with dummy content: at /demos/<slug>/, not indexed. */
+export function demos(): Showcase[] {
+  return [
     {
       name: "ssg-travel-journal",
       title: "Long Way Round",
       description:
         "A static travel journal from Markdown posts: prerendered pages, tags and pagination, an RSS feed, a search island and cross-document View Transitions.",
       tags: ["mode = static", ".md imports", "islands", "View Transitions"],
-      demo: link("/examples/ssg-travel-journal/"),
+      demo: link("/demos/travel-journal/"),
       source: `${REPOSITORY}/tree/main/examples/ssg-travel-journal`,
-      image: link("/examples/ssg-travel-journal.png"),
+      image: link("/showcase/travel-journal.png"),
     },
     {
       name: "vite-counter",
@@ -58,9 +66,9 @@ export function examples(): Showcase[] {
       description:
         "The smallest setup: @lumiose/vite in a plain Vite app, with a counter and a todo list built from signals and scoped styles.",
       tags: ["@lumiose/vite", "signals", ".stsx"],
-      demo: link("/examples/vite-counter/"),
+      demo: link("/demos/counter/"),
       source: `${REPOSITORY}/tree/main/examples/vite-counter`,
-      image: link("/examples/vite-counter.png"),
+      image: link("/showcase/counter.png"),
     },
     {
       name: "ssr-bookshelf",
@@ -69,7 +77,7 @@ export function examples(): Showcase[] {
         "A server-rendered book catalogue with accounts, reviews and a reading list on SQLite: streaming SSR, form actions that work without JavaScript, and islands. It needs a Node server, so it does not run here.",
       tags: ["mode = server", "form actions", "islands", "adapter-node"],
       source: `${REPOSITORY}/tree/main/examples/ssr-bookshelf`,
-      image: link("/examples/ssr-bookshelf.png"),
+      image: link("/showcase/bookshelf.png"),
     },
   ];
 }

@@ -1,18 +1,30 @@
 // Builds the Lumiose website into one static directory, as GitHub Pages serves it
 // (.github/workflows/pages.yml runs the same command):
 //
-//   pnpm build:site [--base /lumiose/] [--out dist/site] [--skip-compiler]
+//   pnpm build:site [--base /lumiose/] [--out dist/site] [--skip-compiler] [--site-url <url>]
 //   pnpm preview:site [--base /lumiose/] [--out dist/site] [--port 4173]
+//   node scripts/site.ts redirects --out <dir> [--base /lumiose/]
 //
-// - apps/web (/, /docs, /examples, /benchmarks, /playground) lands at the root of the output.
-// - The examples that need no server are built below examples/<name>/ (TASK-163). ssr-bookshelf
+// - apps/web (/, /docs, /showcase, /benchmarks, /playground) lands at the root of the output.
+// - The example apps that need no server are built below it (TASK-215): the real apps at
+//   showcase/<slug>/ (indexed), the samples with dummy content at demos/<slug>/ (every page gets
+//   `<meta name="robots" content="noindex">`). Repository folders keep their names. ssr-bookshelf
 //   needs a server: the website shows a screenshot and links its code instead.
+// - Old URLs (examples/<folder>/…, shared publicly before TASK-215) redirect without loss: a stub at
+//   each old root and the root 404.html (for deeper paths) send the browser to the new home with the
+//   same rest of the path, query and hash (Dotmatrix share links carry the song in `?song=…`). A
+//   meta refresh and a canonical link are the no-JS fallback. `redirects` writes only these into a
+//   built apps/web, for its e2e tests.
+// - sitemap.xml lists every indexable page (not 404 pages, redirect stubs or noindex pages), with
+//   absolute URLs from --site-url (or LUMIOSE_SITE_URL; on GitHub Actions it defaults to
+//   https://<owner>.github.io<base>). Without one, no sitemap is written.
 // - Benchmarks: the fullstack results viewer with the committed results at
 //   benchmarks/fullstack/, and the Lumiose js-framework-benchmark app at
 //   benchmarks/js-framework-benchmark/app/ (the results page itself is apps/web's).
 // - GitHub Pages answers every missing path with the root 404.html, so that page gets a script
 //   that renders an example's own 404.html in place for paths below it: the SPA shell of
-//   spa-chiptune (deep links such as /examples/spa-chiptune/songs/3) or the journal's 404 page.
+//   the chiptune tracker (deep links such as /showcase/chiptune-tracker/songs/3) or the journal's
+//   404 page.
 // - The base is the URL path the site is served below (default "/"; also read from LUMIOSE_BASE).
 //   A project page on GitHub Pages lives at https://<user>.github.io/<repo>/, so its base is
 //   /<repo>/. The output holds the files themselves, not a <base> folder.
@@ -48,6 +60,7 @@ const { positionals, values } = parseArgs({
     base: { type: "string", default: process.env["LUMIOSE_BASE"] ?? "/" },
     out: { type: "string", default: "dist/site" },
     port: { type: "string", default: "4173" },
+    "site-url": { type: "string", default: process.env["LUMIOSE_SITE_URL"] },
     "skip-compiler": { type: "boolean", default: false },
   },
 });
@@ -66,18 +79,31 @@ function pnpm(args: string[], env: NodeJS.ProcessEnv = {}): void {
 }
 
 interface Example {
+  /** The folder in examples/. */
   name: string;
   /** The built static files, relative to the example. */
   dist: string;
+  /** Where the site serves it, relative to the base. */
+  path: string;
+  /** Real apps are indexed; samples with dummy content get noindex and stay out of the sitemap. */
+  indexed: boolean;
 }
 
-/** The examples published below examples/<name>/: static output, no server. */
+/** The examples the site publishes: static output, no server. */
 const EXAMPLES: Example[] = [
-  { name: "spa-chiptune", dist: "dist/client" },
-  { name: "ssg-travel-journal", dist: "dist/client" },
-  { name: "vite-counter", dist: "dist" },
-  { name: "spa-dotmatrix", dist: "dist/client" },
+  { name: "spa-chiptune", dist: "dist/client", path: "showcase/chiptune-tracker/", indexed: true },
+  { name: "spa-dotmatrix", dist: "dist/client", path: "showcase/dotmatrix/", indexed: true },
+  {
+    name: "ssg-travel-journal",
+    dist: "dist/client",
+    path: "demos/travel-journal/",
+    indexed: false,
+  },
+  { name: "vite-counter", dist: "dist", path: "demos/counter/", indexed: false },
 ];
+
+/** Old URL prefixes (before TASK-215) and their new homes, relative to the base. */
+const MOVED = EXAMPLES.map(({ name, path }) => ({ from: `examples/${name}/`, to: path }));
 
 /** Copies a build without the precompressed twins and host config Pages does not use. */
 function copyBuild(from: string, to: string): void {
@@ -90,11 +116,11 @@ function copyBuild(from: string, to: string): void {
 function build(): void {
   if (!values["skip-compiler"]) pnpm(["build:compiler"]);
   pnpm(["--filter", "@lumiose/web", "build"], { LUMIOSE_BASE: base });
-  for (const { name } of EXAMPLES) {
+  for (const { name, path } of EXAMPLES) {
     // LUMIOSE_PAGES tells an example it is built for a static host without custom headers
     // (spa-chiptune's cross-origin isolation service worker, TASK-172).
     pnpm(["--filter", `@lumiose-examples/${name}`, "build"], {
-      LUMIOSE_BASE: `${base}examples/${name}/`,
+      LUMIOSE_BASE: `${base}${path}`,
       LUMIOSE_PAGES: "1",
       // The website's root, for each demo's "Made with Lumiose" link.
       PUBLIC_LUMIOSE_SITE: base,
@@ -104,8 +130,13 @@ function build(): void {
 
   rmSync(out, { recursive: true, force: true });
   copyBuild(join(repo, "apps/web/dist/client"), out);
-  for (const { name, dist } of EXAMPLES) {
-    copyBuild(join(repo, "examples", name, dist), join(out, "examples", name));
+  for (const { name, dist, path, indexed } of EXAMPLES) {
+    copyBuild(join(repo, "examples", name, dist), join(out, path));
+    if (!indexed) {
+      for (const file of htmlFiles(join(out, path))) {
+        writeFileSync(file, readFileSync(file, "utf8").replace("</head>", `${NOINDEX}</head>`));
+      }
+    }
   }
   const fullstack = join(repo, "benchmarks/fullstack");
   copyBuild(join(fullstack, "viewer"), join(out, "benchmarks/fullstack"));
@@ -125,14 +156,87 @@ function build(): void {
   copyBuild(join(jsfb, "demo"), app);
   cpSync(join(jsfb, "dist/main.js"), join(app, "main.js"));
 
-  const scopes = EXAMPLES.flatMap(({ name }) =>
-    existsSync(join(out, "examples", name, "404.html")) ? [`examples/${name}/`] : [],
-  );
-  writeFileSync(
-    join(out, "404.html"),
-    readFileSync(join(out, "404.html"), "utf8").replace("<head>", `<head>${fallback(scopes)}`),
-  );
+  redirects();
+  sitemap();
   console.log(`site: ${values.out} (base ${base})`);
+}
+
+const NOINDEX = '<meta name="robots" content="noindex">';
+
+/** Every .html file below `dir`. */
+function htmlFiles(dir: string): string[] {
+  return readdirSync(dir, { recursive: true, withFileTypes: true })
+    .filter((entry) => entry.isFile() && entry.name.endsWith(".html"))
+    .map((entry) => join(entry.parentPath, entry.name));
+}
+
+/**
+ * The redirect from an old URL: below an old prefix, `location.replace()` to the new home with the
+ * rest of the path, the query and the hash. It runs in the old roots' stubs and in the root 404 page
+ * (GitHub Pages serves that for every missing path, such as /examples/spa-dotmatrix/songs).
+ */
+function redirectScript(siteBase: string, moved: typeof MOVED): string {
+  return `(function(){var b=${JSON.stringify(siteBase)},m=${JSON.stringify(moved)},p=location.pathname;for(var i=0;i<m.length;i++){var f=b+m[i].from;if((p+"/").indexOf(f)===0){location.replace(b+m[i].to+p.slice(f.length)+location.search+location.hash);document.write('<plaintext style="display:none">');return}}})();`;
+}
+
+/** The stub at an old root: the script, then a meta refresh and a canonical link without JS. */
+function redirectStub(to: string): string {
+  const target = `${base}${to}`;
+  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Moved to ${target}</title><script>${redirectScript(base, MOVED)}</script><meta http-equiv="refresh" content="0;url=${target}">${NOINDEX}<link rel="canonical" href="${target}"></head><body><p>This page moved to <a href="${target}">${target}</a>.</p></body></html>\n`;
+}
+
+/** Writes the old roots' stubs and the redirect into the root 404 page. */
+function redirects(): void {
+  for (const { from, to } of MOVED) {
+    mkdirSync(join(out, from), { recursive: true });
+    writeFileSync(join(out, from, "index.html"), redirectStub(to));
+  }
+  const scopes = EXAMPLES.flatMap(({ path }) =>
+    existsSync(join(out, path, "404.html")) ? [path] : [],
+  );
+  const notFound = join(out, "404.html");
+  writeFileSync(
+    notFound,
+    readFileSync(notFound, "utf8").replace(
+      "<head>",
+      `<head><script>${redirectScript(base, MOVED)}</script>${fallback(scopes)}`,
+    ),
+  );
+}
+
+/** The public URL of the base, for the sitemap's absolute URLs; undefined when unknown. */
+function siteUrl(): string | undefined {
+  const explicit = values["site-url"];
+  if (explicit) return explicit.endsWith("/") ? explicit : `${explicit}/`;
+  const owner = process.env["GITHUB_ACTIONS"] ? process.env["GITHUB_REPOSITORY_OWNER"] : undefined;
+  return owner ? `https://${owner.toLowerCase()}.github.io${base}` : undefined;
+}
+
+/** sitemap.xml: every indexable page (no 404 pages, no redirect stubs, no noindex pages). */
+function sitemap(): void {
+  const url = siteUrl();
+  if (url === undefined) {
+    console.log("site: no sitemap.xml (pass --site-url or set LUMIOSE_SITE_URL).");
+    return;
+  }
+  const pages = htmlFiles(out)
+    .filter((file) => !file.endsWith("404.html") && !readFileSync(file, "utf8").includes(NOINDEX))
+    .map((file) =>
+      file
+        .slice(out.length + 1)
+        .replaceAll("\\", "/")
+        .replace(/(^|\/)index\.html$/, "$1"),
+    )
+    .toSorted();
+  const entries = pages.map((page) => `  <url><loc>${url}${page}</loc></url>`).join("\n");
+  writeFileSync(
+    join(out, "sitemap.xml"),
+    `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${entries}\n</urlset>\n`,
+  );
+  // Crawlers read robots.txt at the domain's root only.
+  if (base === "/")
+    writeFileSync(join(out, "robots.txt"), `User-agent: *\nAllow: /\nSitemap: ${url}sitemap.xml\n`);
+  console.log(`site: sitemap.xml with ${pages.length} pages`);
 }
 
 /**
@@ -168,16 +272,17 @@ function preview(): void {
   };
   const port = Number(values.port);
   createServer((request, response) => {
-    const pathname = decodeURIComponent(new URL(request.url ?? "/", "http://x").pathname);
+    const requested = new URL(request.url ?? "/", "http://x");
+    const pathname = decodeURIComponent(requested.pathname);
     if (base !== "/" && pathname === base.slice(0, -1)) {
       response.writeHead(301, { location: base }).end();
       return;
     }
     const relative = pathname.startsWith(base) ? pathname.slice(base.length) : undefined;
     const found = relative === undefined ? undefined : file(relative);
-    // Like GitHub Pages, a directory without its trailing slash redirects to it.
+    // Like GitHub Pages, a directory without its trailing slash redirects to it, query included.
     if (found && found !== join(out, normalize(relative!)) && !pathname.endsWith("/")) {
-      response.writeHead(301, { location: `${pathname}/` }).end();
+      response.writeHead(301, { location: `${requested.pathname}/${requested.search}` }).end();
       return;
     }
     const path = found ?? join(out, "404.html");
@@ -191,4 +296,5 @@ function preview(): void {
 const command = positionals[0] ?? "build";
 if (command === "build") build();
 else if (command === "preview") preview();
+else if (command === "redirects") redirects();
 else throw new Error(`Unknown command ${command}: use build or preview.`);

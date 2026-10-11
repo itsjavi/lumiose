@@ -16,6 +16,9 @@ export default defineConfig({
       "node scripts/playground-assets.ts && " +
       "LUMIOSE_BASE=/lumiose/ pnpm exec lumiose build && rm -rf .lumiose/e2e && mkdir -p .lumiose/e2e && " +
       "cp -R dist/client .lumiose/e2e/base && pnpm exec lumiose build && " +
+      // The redirects from the old /examples/… URLs, as scripts/site.ts writes them (TASK-215).
+      "node ../../scripts/site.ts redirects --out apps/web/dist/client --base / && " +
+      "node ../../scripts/site.ts redirects --out apps/web/.lumiose/e2e/base --base /lumiose/ && " +
       `node e2e/serve.ts ${PORT} /=dist/client /lumiose/=.lumiose/e2e/base`,
     port: PORT,
     timeout: 300_000,

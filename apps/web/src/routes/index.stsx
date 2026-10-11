@@ -19,7 +19,7 @@ import {
 import { href, Meta, Title } from "lumiose";
 import { BarChart } from "../components/BarChart.stsx";
 import { ShowcaseGrid } from "../components/Showcase.stsx";
-import { examples } from "../content/showcase.ts";
+import { demos, showcase } from "../content/showcase.ts";
 import { evidence } from "../content/evidence.ts";
 import {
   checkSample,
@@ -238,12 +238,15 @@ export default function Home() {
           <p class="kicker">See it run</p>
           <h2 id="examples-title">Example apps</h2>
           <p>
-            Complete apps built with Lumiose, running on this site. See all the{" "}
-            <a href={href("/examples")}>examples</a>, and the{" "}
+            Complete apps built with Lumiose, running on this site. See the{" "}
+            <a href={href("/showcase")}>showcase</a>, and the{" "}
             <a href={href("/benchmarks")}>benchmarks</a> with their latest results.
           </p>
         </header>
-        <ShowcaseGrid items={examples().filter((item) => item.demo !== undefined)} open="Open the app" />
+        <ShowcaseGrid
+          items={[...showcase(), ...demos()].filter((item) => item.demo !== undefined)}
+          open="Open the app"
+        />
       </section>
 
       <section class="section split" aria-labelledby="tools-title">

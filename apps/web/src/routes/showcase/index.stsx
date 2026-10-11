@@ -1,0 +1,47 @@
+// /showcase: the real apps, built by scripts/site.ts below /showcase/<slug>/, then the demos with
+// dummy content below /demos/<slug>/ (TASK-163, TASK-215).
+import { layout, space } from "@lumiose/site-kit/tokens";
+import { href, Meta, Title } from "lumiose";
+import { PageHead, ShowcaseGrid } from "../../components/Showcase.stsx";
+import { demos, REPOSITORY, showcase } from "../../content/showcase.ts";
+
+export default function Showcase() {
+  return (
+    <div class="page">
+      <Title>Made with Lumiose · Showcase</Title>
+      <Meta name="description" content="Apps built with Lumiose, running on this site." />
+      <PageHead kicker="Showcase" title="Made with Lumiose">
+        <p>
+          Complete apps from the <a href={`${REPOSITORY}/tree/main/examples`}>examples folder</a>,
+          each built with <code>lumiose build</code> and published here as static files. Start your
+          own with the{" "}
+          <a href={href("/docs/[...path]", { path: "getting-started" })}>getting started</a> guide.
+        </p>
+      </PageHead>
+      <ShowcaseGrid items={showcase()} open="Open the app" />
+
+      <section class="demos" aria-labelledby="demos-title">
+        <h2 id="demos-title">Demos</h2>
+        <p>Smaller samples with placeholder content, to read alongside their code.</p>
+        <ShowcaseGrid items={demos()} open="Open the demo" />
+      </section>
+    </div>
+  );
+}
+
+<style>
+  .page {
+    max-inline-size: $layout.page;
+    margin-inline: auto;
+    padding: $space.xl $layout.gutter $space.xxl;
+  }
+  .demos {
+    display: grid;
+    gap: $space.sm;
+    margin-block-start: $space.xxl;
+  }
+  .demos h2,
+  .demos > p {
+    margin: 0;
+  }
+</style>
