@@ -1,0 +1,29 @@
+---
+import { formatDate, plural } from "@bench/data/format";
+import { listComments } from "@bench/data";
+
+/**
+ * The issue page's comments, rendered as a server island (`server:defer`): the page streams with
+ * the island's fallback, and the browser fetches this component's HTML right after (doc-4 §8).
+ */
+interface Props {
+  issueId: number;
+}
+
+const comments = await listComments(Astro.props.issueId);
+---
+
+<p class="muted" data-testid="comment-count">{plural(comments.length, "comment")}</p>
+<ol class="comment-list" data-testid="comment-list">
+  {
+    comments.map((comment) => (
+      <li class="comment" data-testid="comment">
+        <div class="comment-meta">
+          <strong>{comment.author.displayName}</strong>{" "}
+          <time datetime={comment.createdAt}>{formatDate(comment.createdAt)}</time>
+        </div>
+        <p class="comment-body">{comment.body}</p>
+      </li>
+    ))
+  }
+</ol>

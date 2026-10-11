@@ -1,0 +1,94 @@
+---
+import "@bench/ui-css/tracker.css";
+import { listProjects } from "@bench/data";
+
+/** The document and the layout every page shares (doc-4 §2). */
+interface Props {
+  title: string;
+}
+
+const { title } = Astro.props;
+const { user } = Astro.locals;
+const projects = listProjects();
+---
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{`${title} · Tracker`}</title>
+  </head>
+  <body>
+    <div class="app">
+      <header class="app-header" data-testid="app-header">
+        <a href="/" class="brand">Tracker</a>
+        <nav class="nav" data-testid="nav">
+          <a href="/">Dashboard</a>
+          <a href="/issues/new">New issue</a>
+          <a href="/search">Search</a>
+        </nav>
+        <div class="user" data-testid="current-user">
+          {
+            user ? (
+              <>
+                <span class="user-name">{user.displayName}</span>
+                <form method="post" action="/logout" class="logout-form">
+                  <button type="submit" class="btn btn-link" data-testid="logout-button">
+                    Log out
+                  </button>
+                </form>
+              </>
+            ) : (
+              <a href="/login" data-testid="login-link">
+                Log in
+              </a>
+            )
+          }
+        </div>
+      </header>
+      <div class="app-body">
+        <aside class="sidebar" data-testid="sidebar">
+          <h2 class="sidebar-title">Projects</h2>
+          <ul class="project-list">
+            {
+              projects.map((project) => (
+                <li>
+                  <a href={`/projects/${project.slug}`} data-testid="sidebar-project">
+                    <span class="project-name">{project.name}</span>
+                    <span class="count">{project.openCount}</span>
+                  </a>
+                </li>
+              ))
+            }
+          </ul>
+        </aside>
+        <main class="main" data-testid="main">
+          <slot />
+        </main>
+      </div>
+      <footer class="app-footer" data-testid="app-footer">
+        Tracker · fullstack comparison benchmark
+      </footer>
+    </div>
+    <script>
+      // The readiness mark of doc-4 §4, once every island on the page has hydrated: Astro removes
+      // an island's `ssr` attribute and dispatches `astro:hydrate` on it when it has. Pages
+      // without islands are ready when this runs, after the document is parsed.
+      declare global {
+        interface Window {
+          __benchReady?: number;
+        }
+      }
+
+      const unhydrated = "astro-island[ssr]";
+      const check = () => {
+        if (document.querySelector(unhydrated)) return;
+        // oxlint-disable-next-line no-underscore-dangle -- the name is fixed by doc-4 §4
+        window.__benchReady ??= performance.now();
+        document.removeEventListener("astro:hydrate", check, true);
+      };
+      document.addEventListener("astro:hydrate", check, true);
+      check();
+    </script>
+  </body>
+</html>

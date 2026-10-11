@@ -1,0 +1,88 @@
+---
+import { createIssue, listLabels, listProjects, parseLabels, validateIssue } from "@bench/data";
+import { LABELS_MAX, PRIORITIES, PRIORITY_LABELS, type IssueField } from "@bench/data/format";
+import Field from "../../components/Field.astro";
+import FieldError from "../../components/FieldError.astro";
+import LabelPicker from "../../islands/LabelPicker.tsx";
+import Layout from "../../layouts/Layout.astro";
+
+// The form's raw values, rendered again after a failed submission.
+let values = { title: "", body: "", project: "", priority: "medium", labels: [] as string[] };
+let errors: Partial<Record<IssueField, string>> = {};
+
+if (Astro.request.method === "POST") {
+  const { user } = Astro.locals;
+  if (!user) return Astro.redirect("/login", 303);
+  const input = Object.fromEntries(await Astro.request.formData());
+  const result = validateIssue(input);
+  if (result.ok) {
+    const id = createIssue(result.value, user.id);
+    return Astro.redirect(`/issues/${id}`, 303);
+  }
+  values = {
+    title: String(input.title ?? ""),
+    body: String(input.body ?? ""),
+    project: String(input.project ?? ""),
+    priority: String(input.priority ?? ""),
+    labels: parseLabels(input.labels),
+  };
+  errors = result.errors;
+  Astro.response.status = 400;
+}
+
+const projects = listProjects();
+const labels = listLabels();
+---
+
+<Layout title="New issue">
+  <h1 class="page-title">New issue</h1>
+  <form method="post" class="form issue-form">
+    <Field name="title" label="Title" error={errors.title}>
+      <input
+        id="title"
+        name="title"
+        value={values.title}
+        aria-invalid={errors.title ? "true" : undefined}
+      />
+    </Field>
+    <Field name="body" label="Description" error={errors.body}>
+      <textarea id="body" name="body" rows={8}>{values.body}</textarea>
+    </Field>
+    <div class="field-row">
+      <Field name="project" label="Project" error={errors.project}>
+        <select id="project" name="project">
+          <option value="">Choose a project</option>
+          {
+            projects.map((project) => (
+              <option value={project.slug} selected={project.slug === values.project}>
+                {project.name}
+              </option>
+            ))
+          }
+        </select>
+      </Field>
+      <Field name="priority" label="Priority" error={errors.priority}>
+        <select id="priority" name="priority">
+          {
+            PRIORITIES.map((priority) => (
+              <option value={priority} selected={priority === values.priority}>
+                {PRIORITY_LABELS[priority]}
+              </option>
+            ))
+          }
+        </select>
+      </Field>
+    </div>
+    <div class={errors.labels ? "field has-error" : "field"}>
+      <span class="field-label">Labels</span>
+      <LabelPicker
+        client:load
+        names={labels.map((label) => label.name)}
+        defaultValue={values.labels}
+        max={LABELS_MAX}
+      />
+      <FieldError name="labels" error={errors.labels} />
+    </div>
+    <button type="submit" class="btn btn-primary" data-testid="create-issue">Create issue</button>
+  </form>
+</Layout>

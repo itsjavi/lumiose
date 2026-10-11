@@ -1,0 +1,11 @@
+---
+interface Props {
+  body: string;
+}
+
+const { body } = Astro.props;
+---
+
+<div class="issue-body" data-testid="issue-body">
+  {body.split(/\n{2,}/).map((paragraph) => <p>{paragraph}</p>)}
+</div>

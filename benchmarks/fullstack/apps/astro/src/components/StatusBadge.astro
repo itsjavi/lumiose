@@ -1,0 +1,11 @@
+---
+import { STATUS_LABELS, type Status } from "@bench/data/format";
+
+interface Props {
+  status: Status;
+}
+
+const { status } = Astro.props;
+---
+
+<span class={`badge status-${status}`}>{STATUS_LABELS[status]}</span>

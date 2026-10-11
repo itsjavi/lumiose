@@ -1,0 +1,68 @@
+---
+import { formatDate, type IssueSummary } from "@bench/data/format";
+import LabelList from "./LabelList.astro";
+import PriorityBadge from "./PriorityBadge.astro";
+import StatusBadge from "./StatusBadge.astro";
+
+/**
+ * The project page's issue table. The row checkboxes are plain inputs of the bulk form; the
+ * BulkBar island follows them (and the select-all box) through the form's `change` events.
+ */
+interface Props {
+  issues: IssueSummary[];
+}
+
+const { issues } = Astro.props;
+---
+
+<table class="table issue-table" data-testid="issue-table">
+  <thead>
+    <tr>
+      <th class="col-check">
+        <input type="checkbox" aria-label="Select all" data-testid="select-all" />
+      </th>
+      <th class="num">#</th>
+      <th>Title</th>
+      <th>Status</th>
+      <th>Priority</th>
+      <th>Assignee</th>
+      <th class="num">Comments</th>
+      <th>Updated</th>
+    </tr>
+  </thead>
+  <tbody>
+    {
+      issues.map((issue) => (
+        <tr data-testid="issue-row" data-issue-id={issue.id}>
+          <td class="col-check">
+            <input
+              type="checkbox"
+              name="ids"
+              value={issue.id}
+              aria-label={`Select issue #${issue.id}`}
+              data-testid="row-select"
+            />
+          </td>
+          <td class="num muted">{issue.id}</td>
+          <td class="col-title">
+            <a href={`/issues/${issue.id}`} class="issue-link">
+              {issue.title}
+            </a>
+            <LabelList labels={issue.labels} />
+          </td>
+          <td>
+            <StatusBadge status={issue.status} />
+          </td>
+          <td>
+            <PriorityBadge priority={issue.priority} />
+          </td>
+          <td>{issue.assignee?.displayName ?? <span class="muted">Unassigned</span>}</td>
+          <td class="num">{issue.commentCount}</td>
+          <td>
+            <time datetime={issue.updatedAt}>{formatDate(issue.updatedAt)}</time>
+          </td>
+        </tr>
+      ))
+    }
+  </tbody>
+</table>

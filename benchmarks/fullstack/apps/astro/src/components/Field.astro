@@ -1,0 +1,17 @@
+---
+import FieldError from "./FieldError.astro";
+
+interface Props {
+  name: string;
+  label: string;
+  error?: string | undefined;
+}
+
+const { name, label, error } = Astro.props;
+---
+
+<div class={error ? "field has-error" : "field"}>
+  <label class="field-label" for={name}>{label}</label>
+  <slot />
+  <FieldError name={name} error={error} />
+</div>

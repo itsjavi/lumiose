@@ -1,0 +1,38 @@
+{
+  "name": "@bench/app-astro",
+  "version": "0.0.0",
+  "private": true,
+  "description": "The Tracker app (doc-4) in Astro with on-demand rendering on @astrojs/node, and Preact islands.",
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "seed": "bench-seed",
+    "dev": "astro dev --ignore-lock --host 127.0.0.1 --port ${PORT:-4108}",
+    "build": "astro build",
+    "start": "NODE_ENV=production HOST=127.0.0.1 PORT=${PORT:-4108} node dist/server/entry.mjs",
+    "typecheck": "astro check",
+    "clean": "rm -rf dist .astro node_modules/.vite node_modules/.astro"
+  },
+  "dependencies": {
+    "@astrojs/node": "11.1.7",
+    "@astrojs/preact": "6.0.6",
+    "@bench/data": "workspace:*",
+    "@bench/ui-css": "workspace:*",
+    "astro": "7.3.8",
+    "preact": "10.29.8"
+  },
+  "devDependencies": {
+    "@astrojs/check": "0.9.10",
+    "@emnapi/runtime": "1.11.3",
+    "@types/node": "24.19.1",
+    "typescript": "6.0.3"
+  },
+  "demo": {
+    "name": "tracker-astro",
+    "title": "Tracker in Astro (fullstack bench)",
+    "kind": "benchmark",
+    "setup": [
+      "seed"
+    ]
+  }
+}

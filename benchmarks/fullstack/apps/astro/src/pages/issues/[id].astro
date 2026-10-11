@@ -1,0 +1,62 @@
+---
+import { addComment, getIssue, isStatus, updateIssueStatus, validateComment } from "@bench/data";
+import { COMMENT_MAX } from "@bench/data/format";
+import Comments from "../../components/Comments.astro";
+import IssueBody from "../../components/IssueBody.astro";
+import IssueDetails from "../../components/IssueDetails.astro";
+import IssueHeader from "../../components/IssueHeader.astro";
+import StatusFields from "../../components/StatusFields.astro";
+import CommentComposer from "../../islands/CommentComposer.tsx";
+import Layout from "../../layouts/Layout.astro";
+
+const id = Astro.params.id ?? "";
+const issue = /^\d+$/.test(id) ? getIssue(Number(id)) : undefined;
+if (!issue) return Astro.rewrite("/404");
+
+// The status form and the comment composer post to this page; `intent` tells them apart.
+let commentError: string | undefined;
+if (Astro.request.method === "POST") {
+  const { user } = Astro.locals;
+  if (!user) return Astro.redirect("/login", 303);
+  const form = await Astro.request.formData();
+  if (form.get("intent") === "status") {
+    const status = form.get("status");
+    if (!isStatus(status)) return new Response("Bad Request", { status: 400 });
+    updateIssueStatus(issue.id, status, user.id);
+    return Astro.redirect(Astro.url.pathname, 303);
+  }
+  const result = validateComment(form.get("body"));
+  if (result.ok) {
+    addComment(issue.id, result.value, user.id);
+    return Astro.redirect(Astro.url.pathname, 303);
+  }
+  commentError = result.errors.body;
+  Astro.response.status = 400;
+}
+---
+
+<Layout title={`#${issue.id} ${issue.title}`}>
+  <IssueHeader issue={issue} />
+  <div class="issue-layout">
+    <div class="issue-main">
+      <IssueBody body={issue.body} />
+      <section class="comments" aria-label="Comments">
+        <h2 class="panel-title">Comments</h2>
+        <Comments server:defer issueId={issue.id}>
+          <p class="loading" data-testid="comments-loading" slot="fallback">Loading comments…</p>
+        </Comments>
+        <form method="post" class="comment-form">
+          <input type="hidden" name="intent" value="comment" />
+          <CommentComposer client:load max={COMMENT_MAX} error={commentError} />
+        </form>
+      </section>
+    </div>
+    <aside class="issue-side">
+      <IssueDetails issue={issue} />
+      <form method="post" class="status-form">
+        <input type="hidden" name="intent" value="status" />
+        <StatusFields status={issue.status} />
+      </form>
+    </aside>
+  </div>
+</Layout>

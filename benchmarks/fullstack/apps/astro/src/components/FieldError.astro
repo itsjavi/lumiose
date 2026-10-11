@@ -1,0 +1,16 @@
+---
+interface Props {
+  name: string;
+  error: string | undefined;
+}
+
+const { name, error } = Astro.props;
+---
+
+{
+  error && (
+    <p class="field-error" id={`${name}-error`} data-testid={`error-${name}`}>
+      {error}
+    </p>
+  )
+}

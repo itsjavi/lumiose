@@ -1,0 +1,20 @@
+---
+import type { Label } from "@bench/data/format";
+
+interface Props {
+  labels: Label[];
+  testId?: string;
+}
+
+const { labels, testId } = Astro.props;
+---
+
+{
+  labels.length > 0 && (
+    <ul class="labels" data-testid={testId}>
+      {labels.map((label) => (
+        <li class={`label label-${label.name}`}>{label.name}</li>
+      ))}
+    </ul>
+  )
+}

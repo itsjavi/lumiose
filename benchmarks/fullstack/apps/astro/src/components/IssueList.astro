@@ -1,0 +1,31 @@
+---
+import { formatDate, type IssueSummary } from "@bench/data/format";
+import PriorityBadge from "./PriorityBadge.astro";
+import StatusBadge from "./StatusBadge.astro";
+
+/** A compact list of issues (the dashboard's "recently updated", testId `recent-issues`). */
+interface Props {
+  issues: IssueSummary[];
+  testId: string;
+}
+
+const { issues, testId } = Astro.props;
+---
+
+<ul class="issue-list" data-testid={testId}>
+  {
+    issues.map((issue) => (
+      <li class="issue-item">
+        <a href={`/issues/${issue.id}`} class="issue-link">
+          <span class="issue-number">#{issue.id}</span> {issue.title}
+        </a>
+        <span class="issue-item-meta">
+          <StatusBadge status={issue.status} />
+          <PriorityBadge priority={issue.priority} />
+          <span class="muted">{issue.project.name}</span>
+          <time datetime={issue.updatedAt}>{formatDate(issue.updatedAt)}</time>
+        </span>
+      </li>
+    ))
+  }
+</ul>

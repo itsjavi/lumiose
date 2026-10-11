@@ -1,0 +1,44 @@
+---
+import { closeIssues, getProject, listIssues, listLabels, parseIssueFilters } from "@bench/data";
+import { PAGE_SIZE, issueListHref, plural } from "@bench/data/format";
+import FilterFields from "../../components/FilterFields.astro";
+import IssueTable from "../../components/IssueTable.astro";
+import Pagination from "../../components/Pagination.astro";
+import BulkBar from "../../islands/BulkBar.tsx";
+import Layout from "../../layouts/Layout.astro";
+
+const project = getProject(Astro.params.slug ?? "");
+if (!project) return Astro.rewrite("/404");
+
+// Bulk close: the bulk form posts the checked `ids` to this page, keeping the filters in its URL,
+// and the redirect brings the list back with them.
+if (Astro.request.method === "POST") {
+  const { user } = Astro.locals;
+  if (!user) return Astro.redirect("/login", 303);
+  const ids = (await Astro.request.formData()).getAll("ids").map(Number);
+  closeIssues(ids, user.id);
+  return Astro.redirect(`${Astro.url.pathname}${Astro.url.search}`, 303);
+}
+
+const filters = parseIssueFilters(Astro.url.searchParams);
+const { items, total } = listIssues({ projectSlug: project.slug, ...filters });
+---
+
+<Layout title={project.name}>
+  <header class="page-header">
+    <h1 class="page-title">{project.name}</h1>
+    <p class="muted" data-testid="issue-total">{plural(total, "issue")}</p>
+  </header>
+  <form method="get" class="filters">
+    <FilterFields filters={filters} labels={listLabels()} />
+  </form>
+  <form method="post" class="bulk-form">
+    <IssueTable issues={items} />
+    <BulkBar client:load />
+  </form>
+  <Pagination
+    page={filters.page}
+    totalPages={Math.max(1, Math.ceil(total / PAGE_SIZE))}
+    hrefFor={(n: number) => issueListHref(project.slug, filters, { page: n })}
+  />
+</Layout>

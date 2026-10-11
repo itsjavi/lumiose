@@ -1,0 +1,22 @@
+---
+import { getDashboard } from "@bench/data";
+import DashboardStats from "../components/DashboardStats.astro";
+import IssueList from "../components/IssueList.astro";
+import ProjectTable from "../components/ProjectTable.astro";
+import Layout from "../layouts/Layout.astro";
+
+const dashboard = getDashboard();
+---
+
+<Layout title="Dashboard">
+  <h1 class="page-title">Dashboard</h1>
+  <DashboardStats byStatus={dashboard.byStatus} byPriority={dashboard.byPriority} />
+  <section class="panel">
+    <h2 class="panel-title">Projects</h2>
+    <ProjectTable projects={dashboard.projects} />
+  </section>
+  <section class="panel">
+    <h2 class="panel-title">Recently updated</h2>
+    <IssueList issues={dashboard.recent} testId="recent-issues" />
+  </section>
+</Layout>

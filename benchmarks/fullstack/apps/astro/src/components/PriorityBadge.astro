@@ -1,0 +1,11 @@
+---
+import { PRIORITY_LABELS, type Priority } from "@bench/data/format";
+
+interface Props {
+  priority: Priority;
+}
+
+const { priority } = Astro.props;
+---
+
+<span class={`badge priority-${priority}`}>{PRIORITY_LABELS[priority]}</span>

@@ -1,0 +1,16 @@
+---
+import { searchIssues } from "@bench/data";
+import SearchResults from "../components/SearchResults.astro";
+import SearchBox from "../islands/SearchBox.tsx";
+import Layout from "../layouts/Layout.astro";
+
+const q = Astro.url.searchParams.get("q")?.trim() ?? "";
+---
+
+<Layout title="Search">
+  <h1 class="page-title">Search</h1>
+  <form method="get" action="/search" class="search-form" role="search">
+    <SearchBox client:load defaultValue={q} />
+  </form>
+  {q && <SearchResults hits={searchIssues(q)} />}
+</Layout>

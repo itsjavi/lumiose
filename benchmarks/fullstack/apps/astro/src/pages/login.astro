@@ -1,0 +1,31 @@
+---
+import { validateLogin } from "@bench/data";
+import Field from "../components/Field.astro";
+import Layout from "../layouts/Layout.astro";
+import { signIn } from "../session.ts";
+
+let username = "";
+let error: string | undefined;
+if (Astro.request.method === "POST") {
+  const value = (await Astro.request.formData()).get("username");
+  const result = validateLogin(value);
+  if (result.ok) {
+    signIn(Astro.cookies, result.value);
+    return Astro.redirect("/", 303);
+  }
+  username = typeof value === "string" ? value : "";
+  error = result.errors.username;
+  Astro.response.status = 400;
+}
+---
+
+<Layout title="Log in">
+  <h1 class="page-title">Log in</h1>
+  <form method="post" class="form login-form">
+    <Field name="username" label="Username" error={error}>
+      <input id="username" name="username" value={username} autocomplete="username" />
+    </Field>
+    <button type="submit" class="btn btn-primary" data-testid="login-submit">Log in</button>
+    <p class="muted">Try <code>alice</code> or <code>bob</code>.</p>
+  </form>
+</Layout>
