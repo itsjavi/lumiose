@@ -5,7 +5,7 @@ status: To Do
 assignee:
   - Beacon
 created_date: '2026-10-10 22:41'
-updated_date: '2026-10-11 01:19'
+updated_date: '2026-10-11 01:40'
 labels:
   - landing
   - positioning
@@ -16,7 +16,6 @@ dependencies:
   - TASK-204
   - TASK-205
   - TASK-206
-  - TASK-207
   - TASK-211
   - TASK-212
   - TASK-214
@@ -48,4 +47,6 @@ User 2026-10-11 (decision-37 amendment: lean landing and site IA): keep the land
 User 2026-10-11 (design spike in .local/design-spike/): the prism direction was rejected as too close to Vercel's visual language. Candidates: A 'Lumen' (dark, a three.js light field, with a pause control) and C 'Lit windows' (the page as a building at night: rendered HTML windows stay dark, interactive ones light up; a Static/Server/Islands/SPA switch). Both pass axe with no WCAG 2.2 A/AA violations. The direction is still the user's call. Accessibility (decision-39) is part of done: ambient motion pausable, reduced motion honoured, text over moving backgrounds on a guaranteed-contrast backdrop.
 
 User 2026-10-11: the visual direction is A 'Lumen' (.local/design-spike/a-lumen.html, the accessible version with the menu bar, the copy scrim and the pause control). C 'Lit windows' was rejected. The descriptor now says 'TSX with scoped CSS built in' (decision-37).
+
+User 2026-10-11: no eval work for now (TASK-207, TASK-208 and TASK-209 are on hold). TASK-213 no longer waits for TASK-207. The 'Explicit, for you and your agent' section ships without agent eval numbers, describing docs, diagnostics and MCP instead, and gains the numbers once TASK-207 runs.
 <!-- SECTION:NOTES:END -->
