@@ -111,9 +111,9 @@ export default function Home() {
             <span class="line lit">Runs like vanilla JS.</span>
           </h1>
           <p class="lead">
-            Lumiose is a web framework for every kind of web app, from static sites to SPAs:{" "}
+            Lumiose is a web framework for everything from static sites and SPAs to full-stack apps:{" "}
             <strong>TSX with scoped CSS built in</strong>, signals, and{" "}
-            <strong>0 kB of JavaScript</strong> where pages don't move.
+            <strong>0 kB of JavaScript</strong> until a page needs it.
           </p>
           <div class="actions">
             <LinkButton href={getStarted} size="lg">

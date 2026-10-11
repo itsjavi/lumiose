@@ -46,13 +46,13 @@ Approved by the user on 2026-10-11.
 **One-liner.** It is used everywhere: README, meta and OG tags, `llms.txt`, the docs index, `package.json` descriptions and the site.
 
 - Tagline: "Feels like React. Runs like vanilla JS."
-- Descriptor: "Lumiose is a web framework for every kind of web app, from static sites to SPAs: TSX with scoped CSS built in, signals, and 0 kB of JavaScript where pages don't move."
+- Descriptor: "Lumiose is a web framework for everything from static sites and SPAs to full-stack apps: TSX with scoped CSS built in, signals, and 0 kB of JavaScript until a page needs it."
 
 **Hero.**
 
 - Eyebrow: "Static · Server · Islands · SPA — one framework".
 - H1: the tagline.
-- Sub: TSX with scoped CSS built in, per-route rendering, and 0 kB where pages don't move.
+- Sub: TSX with scoped CSS built in, per-route rendering, and 0 kB of JavaScript until a page needs it.
 - CTAs: Get started, Compare the stacks, Playground.
 - Proof row: 1.05× vanilla JS, 0 kB JS on server pages, 6.5 kB app.
 
@@ -120,6 +120,12 @@ Approved by the user on 2026-10-11.
 - **Rejected directions:**
   - The prism, as too close to Vercel's visual language.
   - The "lit windows" building, as not appealing.
+
+**Amendment, 2026-10-11 (user): descriptor wording.** The descriptor now reads: "Lumiose is a web framework for everything from static sites and SPAs to full-stack apps: TSX with scoped CSS built in, signals, and 0 kB of JavaScript until a page needs it."
+
+- **"from static sites and SPAs to full-stack apps":** orders the range from simple to complex.
+- **"until a page needs it":** replaces "where pages don't move", which was vague (CSS animates without JavaScript).
+- **"where pages don't need interactivity" was rejected.** Links and forms are interactive and still ship 0 kB.
 
 ## Consequences
 

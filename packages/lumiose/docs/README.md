@@ -1,6 +1,6 @@
 # Lumiose docs
 
-> Lumiose is a web framework for every kind of web app, from static sites to SPAs: TSX with scoped CSS built in, signals, and 0 kB of JavaScript where pages don't move.
+> Lumiose is a web framework for everything from static sites and SPAs to full-stack apps: TSX with scoped CSS built in, signals, and 0 kB of JavaScript until a page needs it.
 
 **Feels like React. Runs like vanilla JS.** Components live in `.stsx` files (TSX plus raw-CSS `<style>` blocks), are set up once and
 update through signals, and every route picks its rendering mode: static, server, islands or SPA.

@@ -2,7 +2,7 @@
 
 **Feels like React. Runs like vanilla JS.**
 
-Lumiose is a web framework for every kind of web app, from static sites to SPAs: TSX with scoped CSS built in, signals, and 0 kB of JavaScript where pages don't move. The framework docs live in [`packages/lumiose/docs/`](packages/lumiose/docs/).
+Lumiose is a web framework for everything from static sites and SPAs to full-stack apps: TSX with scoped CSS built in, signals, and 0 kB of JavaScript until a page needs it. The framework docs live in [`packages/lumiose/docs/`](packages/lumiose/docs/).
 
 ## Run anything: `pnpm demo`
 
