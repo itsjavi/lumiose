@@ -16,7 +16,8 @@ export type AppId =
   | "solid-start"
   | "sveltekit"
   | "nuxt"
-  | "remix";
+  | "remix"
+  | "astro";
 
 export interface App {
   id: AppId;
@@ -39,8 +40,9 @@ export interface App {
   prodServer: string;
   /**
    * How the issue page's comments reach the browser (doc-4 §5): streamed in the same response
-   * (markup or data, the default), or fetched by the client after hydration, for a framework that
-   * cannot stream a Suspense boundary (Nuxt renders to a string).
+   * (markup or data, the default), or fetched by the client after the page, for a framework that
+   * cannot stream a Suspense boundary (Nuxt renders to a string; Astro streams in order and defers
+   * the comments to a server island).
    */
   comments?: "streamed" | "client";
   /**
@@ -183,6 +185,25 @@ export const APPS: App[] = [
       "`node hmr.ts`: remix/node-hmr restarts the TypeScript server on changes and pushes browser updates; the asset server compiles browser modules on request",
     prodServer:
       "`node --import remix/node-tsx server.ts`: the same sources in production mode (no build step; browser modules compiled on first request, minified and fingerprinted; no compression)",
+  },
+  {
+    id: "astro",
+    name: "Astro",
+    dir: join(FULLSTACK, "apps/astro"),
+    port: 4108,
+    clientOutput: ["dist/client"],
+    serverOutput: ["dist/server"],
+    hmr: {
+      file: join(FULLSTACK, "apps/astro/src/layouts/Layout.astro"),
+      find: "fullstack comparison benchmark",
+    },
+    sharedSources: [],
+    env: { ASTRO_TELEMETRY_DISABLED: "1" },
+    devTool: { name: "Vite", pkg: "vite", via: "astro" },
+    devServer: "`astro dev`: Vite with Astro's plugins, modules compiled on request",
+    prodServer:
+      "`node dist/server/entry.mjs`: the standalone @astrojs/node output of `astro build` (no compression)",
+    comments: "client",
   },
 ];
 

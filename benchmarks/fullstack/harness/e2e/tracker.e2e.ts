@@ -285,8 +285,8 @@ test.describe("issue page", () => {
       expect(fallback, "the comments fallback is in the shell").toBeGreaterThan(-1);
       const markup = html.search(/data-testid=["']?comment-list\b/);
       if (streaming === "client") {
-        // An app that cannot stream a Suspense boundary (Nuxt renders to a string) loads the
-        // comments on the client after hydration: the response has the fallback only (doc-4 §8).
+        // An app that cannot stream a Suspense boundary (Nuxt renders to a string, Astro streams in
+        // order) loads the comments on the client: the response has the fallback only (doc-4 §8).
         expect(markup, "the comments are not in the response").toBe(-1);
       } else if (markup !== -1) {
         // The comments arrive later in the same response: as streamed markup, or as streamed data

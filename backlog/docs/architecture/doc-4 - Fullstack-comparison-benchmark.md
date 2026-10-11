@@ -3,13 +3,13 @@ id: doc-4
 title: Fullstack comparison benchmark
 type: specification
 created_date: '2026-10-09 04:07'
-updated_date: '2026-10-11 02:40'
+updated_date: '2026-10-11 04:05'
 ---
 # Fullstack comparison benchmark
 
-**Status:** requested by the user on 2026-10-09. Spec by Lux. Tasks: TASK-110 to TASK-115 (milestone m-8). More stacks for the landing's comparison table (decision-37): TASK-202 (SolidStart), TASK-203 (SvelteKit), TASK-204 (Nuxt), TASK-205 (Remix 3).
+**Status:** requested by the user on 2026-10-09. Spec by Lux. Tasks: TASK-110 to TASK-115 (milestone m-8). More stacks for the landing's comparison table (decision-37): TASK-202 (SolidStart), TASK-203 (SvelteKit), TASK-204 (Nuxt), TASK-205 (Remix 3), TASK-242 (Astro).
 
-**Goal.** Implement the same non-trivial fullstack app three times — **Lumiose SSR**, **React Router (framework mode, SSR)** and **Next.js 16 (App Router)**, later also **SolidStart**, **SvelteKit**, **Nuxt** and **Remix 3** (§8) — and compare dev and production metrics with a reproducible harness. Results are stored as JSON and browsed in a static HTML viewer.
+**Goal.** Implement the same non-trivial fullstack app three times — **Lumiose SSR**, **React Router (framework mode, SSR)** and **Next.js 16 (App Router)**, later also **SolidStart**, **SvelteKit**, **Nuxt**, **Remix 3** and **Astro** (§8) — and compare dev and production metrics with a reproducible harness. Results are stored as JSON and browsed in a static HTML viewer.
 
 ## 1. Fairness rules
 
@@ -24,8 +24,9 @@ updated_date: '2026-10-11 02:40'
   - SvelteKit: `+page.server.ts` loads and form actions with `use:enhance`, the session in `hooks.server.ts` (`locals.user`), and an un-awaited load promise rendered with `{#await}` for streamed data. The whole page hydrates.
   - Nuxt: file-based pages with `useFetch` from Nitro server routes (`server/api`), mutations with `$fetch` to server routes followed by `refresh`/`refreshNuxtData`, `<NuxtLink>` for navigation, and `useLazyFetch(…, { server: false })` for the slow comments, since Nuxt cannot stream a Suspense boundary (§8). The whole page hydrates.
   - Remix 3: route maps and controllers (`remix/router`), pages rendered with `context.render` (`remix/component`), native forms posting to POST actions that redirect (303) or render again with errors (400), `clientEntry` components for the interactive parts, and a `<Frame>` with a fallback for streamed data. The browser runtime turns links and forms into frame navigations.
+  - Astro: on-demand rendering (`output: "server"`), pages and components as `.astro` files, a middleware for the session (`Astro.locals.user`), plain HTML forms posting to their own page (the frontmatter handles the POST and redirects with 303, or renders the form again with status 400), Preact islands (`client:load`) for the interactive parts, and a server island (`server:defer`) with a fallback for the slow comments, since Astro streams HTML in order (§8). Links and forms are full document navigations (no `<ClientRouter />`).
 - **Dynamic rendering everywhere.** Every page renders on each request. No full-page or data caching (Next: no static prerendering of these routes, no `use cache`; React Router: no prerender; Lumiose: mode `server`).
-- **Production servers as shipped,** with HTTP compression **off** in every app (Next `compress: false`; React Router served by `@react-router/serve` or an equivalent minimal Node server with compression off; Lumiose `adapter-node`; SolidStart and Nuxt on Nitro's `node-server` output, which does not compress; SvelteKit on adapter-node with `precompress: false`; Remix 3 on `remix/node-fetch-server` without the compression middleware). Payload sizes are measured offline with gzip and brotli.
+- **Production servers as shipped,** with HTTP compression **off** in every app (Next `compress: false`; React Router served by `@react-router/serve` or an equivalent minimal Node server with compression off; Lumiose `adapter-node`; SolidStart and Nuxt on Nitro's `node-server` output, which does not compress; SvelteKit on adapter-node with `precompress: false`; Remix 3 on `remix/node-fetch-server` without the compression middleware; Astro on `@astrojs/node` in standalone mode, which does not compress). Payload sizes are measured offline with gzip and brotli.
 - **Type checking is measured separately**, not inside build time (Next: `typescript.ignoreBuildErrors: true` for the timed build).
 - **Latest stable versions** (decision-41): every framework uses its latest stable version that is compatible with the rest of its stack, pinned exactly; §8 records each version and why an older one is used. Results files record the resolved versions. Node is the repo's Node (≥ 24).
 - **Same machine, sequential runs,** nothing else heavy running. Every results file records the machine.
@@ -79,14 +80,15 @@ benchmarks/fullstack/
   apps/sveltekit/       SvelteKit 3      (Quasar)
   apps/nuxt/            Nuxt 4           (Quasar)
   apps/remix/           Remix 3          (Quasar)
+  apps/astro/           Astro 7          (Quasar)
   harness/e2e/          conformance suite (Nova; inside @bench/harness so it resolves @playwright/test)
   harness/              @bench/harness   runner, metrics, results writer (Nova)
   results/              <date>T<time>-<host>.json, index.json (committed)
   viewer/               static HTML viewer (Nova)
 ```
 
-- Ports: Lumiose 4101, React Router 4102, Next 4103, SolidStart 4104, SvelteKit 4105, Nuxt 4106, Remix 3 4107 (dev and prod).
-- Each app exposes the same scripts: `seed`, `dev`, `build`, `start`, `typecheck`, `clean` (removes build output and framework caches: `.next`, `node_modules/.vite`, `build`, `dist`, `.react-router`, `.lumiose`, `.output`, `.nuxt`, `node_modules/.nitro`).
+- Ports: Lumiose 4101, React Router 4102, Next 4103, SolidStart 4104, SvelteKit 4105, Nuxt 4106, Remix 3 4107, Astro 4108 (dev and prod).
+- Each app exposes the same scripts: `seed`, `dev`, `build`, `start`, `typecheck`, `clean` (removes build output and framework caches: `.next`, `node_modules/.vite`, `build`, `dist`, `.react-router`, `.lumiose`, `.output`, `.nuxt`, `node_modules/.nitro`, `.astro`).
 
 ## 4. Metrics
 
@@ -94,9 +96,9 @@ Median plus spread (min and max; the viewer draws them as whiskers and highlight
 
 **Environment of each metric** (TASK-145). Dev servers (Vite, Turbopack) compile on request and differ a lot from production servers, so every metric says where it was measured:
 
-- `dev`: against each app's dev server (`lumiose dev`, `react-router dev`, SolidStart's and SvelteKit's `vite dev` and `nuxt dev` on Vite, `next dev` on Turbopack, Remix 3's `node hmr.ts` on its own asset server). Only the **Dev** metrics below.
+- `dev`: against each app's dev server (`lumiose dev`, `react-router dev`, SolidStart's and SvelteKit's `vite dev` and `nuxt dev` on Vite, `next dev` on Turbopack, Remix 3's `node hmr.ts` on its own asset server, `astro dev` on Vite). Only the **Dev** metrics below.
 - `build`: from the production build and the sources: build time, output size on disk (without precompressed `.br`/`.gz` copies), type check, source size, runtime dependencies (measured on the production server, but a property of the build).
-- `prod`: against the built apps on their production servers (`start` script: Lumiose `node server.ts` on adapter-node, React Router `node server.ts` = Express + @react-router/express, Next `next start`, SolidStart `node .output/server/index.mjs` on Nitro, SvelteKit `node build` on adapter-node, Nuxt `node .output/server/index.mjs` on Nitro, Remix 3 `node --import remix/node-tsx server.ts`): client payload, page load and every server metric, req/s included.
+- `prod`: against the built apps on their production servers (`start` script: Lumiose `node server.ts` on adapter-node, React Router `node server.ts` = Express + @react-router/express, Next `next start`, SolidStart `node .output/server/index.mjs` on Nitro, SvelteKit `node build` on adapter-node, Nuxt `node .output/server/index.mjs` on Nitro, Remix 3 `node --import remix/node-tsx server.ts`, Astro `node dist/server/entry.mjs` on @astrojs/node): client payload, page load and every server metric, req/s included.
 
 The harness runs every `start` with `NODE_ENV=production` and checks, on each app's first production start, that the process listening on the port has `NODE_ENV=production` (it stops otherwise) and that `/` is not compressed for a client accepting br and gzip. Each results file records the commands, the dev bundler and these checks.
 
@@ -120,8 +122,8 @@ The harness runs every `start` with `NODE_ENV=production` and checks, on each ap
 - Server RSS after the load test.
 
 **Other**
-- Type check time (`lumiose check` with TS 7 vs `tsc --noEmit` / `next typegen && tsc` / `tsc` for SolidStart / `svelte-kit sync && svelte-check --tsgo` for SvelteKit / `nuxt typecheck` (vue-tsc) for Nuxt / `tsc` for Remix 3).
-- Source size: lines of code per app (excluding shared packages), files. `.svelte` and `.vue` files count as code.
+- Type check time (`lumiose check` with TS 7 vs `tsc --noEmit` / `next typegen && tsc` / `tsc` for SolidStart / `svelte-kit sync && svelte-check --tsgo` for SvelteKit / `nuxt typecheck` (vue-tsc) for Nuxt / `tsc` for Remix 3 / `astro check` for Astro).
+- Source size: lines of code per app (excluding shared packages), files. `.svelte`, `.vue` and `.astro` files count as code.
 - Runtime dependencies (TASK-230): the number of packages the production server loads at run time, counted the same way for every app, whatever its package.json declares:
   - The harness starts the `start` script with `NODE_OPTIONS=--import harness/src/trace-loads.ts`. That hook (`module.registerHooks`) records every file the server process resolves, by `import` or `require`, child processes included.
   - Meanwhile a browser loads `/`, `/projects/:slug` and `/issues/:id` (with their assets), and `/issues/new`, `/search?q=`, `/login`, both JSON endpoints and a 404 are requested once. Mutations are not exercised.
@@ -132,7 +134,7 @@ The harness runs every `start` with `NODE_ENV=production` and checks, on each ap
 
 ## 5. Conformance suite
 
-`benchmarks/fullstack/harness/e2e`: one Playwright suite parameterised by base URL, run against each app in production mode. It checks every route, status codes, the shared markup landmarks (`data-testid` attributes defined here), filters and pagination, streamed comments (with `COMMENTS_DELAY_MS` > 0 the fallback must be in the shell and the comments must arrive later in the same response, as markup or, for SvelteKit, as streamed data; an app registered with `comments: "client"` in `harness/src/apps.ts`, Nuxt only, must instead render the fallback on the server and load the comments on the client, with no comments in the response), each action (with and without a session), validation errors, the redirect after creating an issue, the 404 page, the JSON endpoints, and each client interaction.
+`benchmarks/fullstack/harness/e2e`: one Playwright suite parameterised by base URL, run against each app in production mode. It checks every route, status codes, the shared markup landmarks (`data-testid` attributes defined here), filters and pagination, streamed comments (with `COMMENTS_DELAY_MS` > 0 the fallback must be in the shell and the comments must arrive later in the same response, as markup or, for SvelteKit, as streamed data; an app registered with `comments: "client"` in `harness/src/apps.ts` (Nuxt and Astro) must instead render the fallback on the server and load the comments on the client, with no comments in the response), each action (with and without a session), validation errors, the redirect after creating an issue, the 404 page, the JSON endpoints, and each client interaction.
 
 ## 6. Results and viewer
 
@@ -212,3 +214,16 @@ Ports for the landing's stack comparison (decision-37), registered in the harnes
 - **Streaming:** the comments are their own route (`/issues/:id/comments`) rendered into the page by `<Frame src fallback>`: the render middleware resolves the frame through the router while the page streams, and sends the comments' HTML later in the same response.
 - **Readiness:** `entry.ts` sets the mark after `app.ready()`, which resolves once the page's client entries have hydrated.
 - **Shared code:** its own components (`app/ui/`, the pages and the client entries), written from `@bench/react-ui` with the same elements, classes and `data-testid`s. The shared stylesheet is served through the asset server, which mounts `packages/ui-css`.
+
+### Astro (TASK-242, `apps/astro`, port 4108)
+
+- **Versions:** `astro` 7.3.8, `@astrojs/node` 11.1.7, `@astrojs/preact` 6.0.6, `preact` 10.29.8, Vite 8.3.4 (through Astro). `@astrojs/preact` 6 requires `preact ^10.6.5`, so the app stays on Preact 10 while the SSR benchmark uses Preact 11 (decision-41: the latest stable version compatible with the stack). Type check: `astro check` (`@astrojs/check` 0.9.10), which checks the `.astro`, `.ts` and `.tsx` files and needs TypeScript 6.0.3: it refuses TypeScript 7 (Astro points to an experimental `@astrojs/ts-content-mapper` for TypeScript 7.1+). No experimental flags.
+- **Server:** `astro build` with `output: "server"` and `@astrojs/node` in standalone mode; production is `node dist/server/entry.mjs` with `HOST` and `PORT`. The standalone server does not compress responses and serves `/_astro/` assets as immutable. Astro's defaults stay on: `compressHTML` (whitespace-collapsed HTML) and `build.inlineStylesheets: "auto"` (the shared stylesheet, over 4 kB, stays a `<link>`). The adapter enables Astro sessions with filesystem storage by default; the app does not use them, so nothing is written.
+- **Islands: Preact.** The search box, the bulk-select bar, the comment composer and the label picker are Preact components hydrated with `client:load`; everything else is server-only `.astro` markup with no JavaScript. Preact is the lightest of Astro's common UI integrations (Preact, its hooks and Astro's renderer are about 16 kB minified, before compression, shared by the islands of a page), and the React apps exist already. The bulk-select island is the smallest boundary, as in Remix 3: the issue table and its row checkboxes are server markup, and the island follows them through its form's `change` events. The Preact renderer can also load `@preact/signals` for signal props, but only when a prop is a signal, so these pages never fetch it.
+- **Data and mutations:** pages call `@bench/data` in their frontmatter. Forms are plain HTML forms posting to their own page (Astro's forms recipe); the frontmatter handles the POST (`Astro.request.formData()`), redirects with 303 on success and renders the form again with status 400 and the field errors otherwise, so every form works without JavaScript and each submission is a full page load, as in Remix 3. The issue page's two forms post an `intent` field. Astro Actions were the alternative: an HTML form posts to `<page>?_action=<name>`, the action runs before the page renders and the page reads its result (`Astro.getActionResult`) and redirects itself, so it adds a layer without removing a step; a failed submission also keeps `?_action=…` in the URL, and actions report input errors from Zod schemas, where the apps share a hand-written validator. Without a session, a POST redirects to /login. The session cookie is set with `Astro.cookies` (same attributes as the other apps). `security.checkOrigin` (on by default) checks the form posts' origin.
+- **Streaming:** Astro streams HTML in order, with no Suspense boundary: an awaited comments component would hold back the rest of the page (the composer, the issue sidebar and the footer) and leave no fallback in the shell, which fails the conformance check. The comments are therefore a server island (`<Comments server:defer>` with a `fallback` slot), Astro's primitive for deferring slow server content: the page carries the fallback and a `<link rel="preload" as="fetch">` for the island, and a small inline script fetches the island's HTML from `/_server-islands/Comments` once the document is parsed and swaps it in. Like Nuxt, the app is registered with `comments: "client"` (§5): the issue page's server cost leaves out the comments query, which the second request pays, and its time to interactive does not wait for the comments.
+- **Readiness:** a processed `<script>` in the layout (inlined and minified by the build) sets the mark once no `astro-island[ssr]` is left: Astro removes that attribute and dispatches `astro:hydrate` when an island has hydrated. Pages without islands set it when the document is parsed.
+- **Dev:** `astro dev --ignore-lock`. Astro 7 detects AI agents (`am-i-vibing`) and then starts the dev server in the background and returns; `--ignore-lock` keeps it in the foreground, so the harness owns the process, and skips the lock file that would refuse a second start. `ASTRO_TELEMETRY_DISABLED=1`. The dev toolbar stays on, as `create astro` sets it up.
+- **Dependencies:** astro, the adapter, the Preact integration and Preact are `dependencies`, as `create astro` sets them up: the server output imports them from `node_modules` at run time.
+- **Workspace caveat:** `@astrojs/check` loads `@astrojs/astro2tsx`, a WASI build whose `@napi-rs/wasm-runtime` peer-depends on `@emnapi/runtime`. pnpm first resolved that peer to the 2.0.0-alpha.5 that `packages/compiler` pins, which does not match its `@emnapi/core` 1.11.3 and crashed `astro check` on load (seen as "requires @astrojs/check to be installed"). The app pins `@emnapi/runtime` 1.11.3 as a devDependency, so the peer resolves to the matching version.
+- **Shared code:** its own `.astro` components (one per file) and Preact islands, written from `@bench/react-ui` with the same elements, classes and `data-testid`s.

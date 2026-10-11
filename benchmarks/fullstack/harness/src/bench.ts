@@ -539,6 +539,10 @@ const run: RunFile = {
       nitropack: versionOf("nitropack", "nuxt", "nuxt>@nuxt/nitro-server"),
       remix: versionOf("remix", "remix"),
       "@remix-run/component": versionOf("@remix-run/component", "remix", "remix"),
+      astro: versionOf("astro", "astro"),
+      "@astrojs/node": versionOf("@astrojs/node", "astro"),
+      "@astrojs/preact": versionOf("@astrojs/preact", "astro"),
+      preact: versionOf("preact", "astro"),
       vite: (() => {
         const lumioseApp = apps.find((a) => a.id === "lumiose");
         return lumioseApp === undefined ? null : resolvedVersion(lumioseApp, "vite", "lumiose");

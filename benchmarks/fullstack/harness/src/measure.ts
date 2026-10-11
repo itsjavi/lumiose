@@ -336,6 +336,7 @@ const CODE = new Set([
   ".stsx",
   ".svelte",
   ".vue",
+  ".astro",
   ".js",
   ".jsx",
   ".mjs",
