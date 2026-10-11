@@ -1,4 +1,5 @@
-// TASK-216 end to end: spa routes prerendered at build time (decision-38). The build project serves
+// TASK-216 end to end: spa routes prerendered at build time (decision-38), by the root layout's
+// `prerender` (TASK-229). The build project serves
 // dist/client as static files (the build has no dist/server); the dev project renders the same
 // pages per request. Each spec checks the HTML, its hydration and client navigation from it.
 import { existsSync } from "node:fs";

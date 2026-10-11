@@ -631,6 +631,39 @@ export default function Shell() { return <p>browser only</p>; }
     expect(result.serverEntry).toBe(join(root, "dist/server/entry.js"));
   });
 
+  it("prerenders the spa pages below a layout with prerender, nearest layout first (TASK-229)", async () => {
+    const root = project({
+      "src/routes/_layout.stsx": `export const mode = "spa";
+export const prerender = true;
+export default function Shell(props: { children?: JSX.Element }) { return <div class="shell">{props.children}</div>; }
+`,
+      "src/routes/index.stsx": "export default function Home() { return <h1>Home</h1>; }\n",
+      "src/routes/account.stsx": `import { cookies } from "lumiose";
+export const prerender = false;
+export default function Account() { return <p>{cookies().get("a") ?? "none"}</p>; }
+`,
+      "src/routes/studio/_layout.stsx": `export const prerender = false;
+export default function Studio(props: { children?: JSX.Element }) { return <section>{props.children}</section>; }
+`,
+      "src/routes/studio/index.stsx": "export default function Live() { return <h1>Live</h1>; }\n",
+      "src/routes/studio/demo/_layout.stsx": `export const prerender = true;
+export default function Demo(props: { children?: JSX.Element }) { return <div>{props.children}</div>; }
+`,
+      "src/routes/studio/demo/index.stsx":
+        "export default function Demo() { return <h1>Demo</h1>; }\n",
+    });
+    const result = await build({ root, ...quiet() });
+    expect(result.prerendered.map((file) => file.file).toSorted()).toEqual([
+      "404.html",
+      "index.html",
+      "studio/demo/index.html",
+    ]);
+    expect(read(root, "index.html")).toContain("src/routes/index.stsx#lumiose:spa");
+    expect(read(root, "studio/demo/index.html")).toContain("<h1>Demo</h1>");
+    // /account and /studio opted out, so they render per request.
+    expect(result.serverEntry).toBe(join(root, "dist/server/entry.js"));
+  });
+
   it("stops when a prerendered spa route reads the request or lacks staticPaths() (TASK-216)", async () => {
     const root = project({
       "src/routes/_layout.stsx": `export const mode = "spa";

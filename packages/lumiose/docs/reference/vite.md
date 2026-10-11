@@ -20,7 +20,7 @@ interface LumioseOptions {
   mode?: "static" | "server" | "spa"; // default "static"
   /** Whether spa routes render their content on the server (false: the shell only). */
   ssr?: boolean; // default true
-  /** Whether spa pages that render on the server are prerendered at build time; `export const prerender` overrides it. */
+  /** Whether spa pages that render on the server are prerendered at build time; a layout's or page's `export const prerender` overrides it. */
   prerender?: boolean; // default false, and not with ssr: false
   /** Trailing slashes of page URLs: "always"/"never" redirect to the canonical form. */
   trailingSlash?: "ignore" | "always" | "never"; // default "ignore"

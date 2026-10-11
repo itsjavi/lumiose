@@ -49,7 +49,8 @@ export interface LumioseOptions {
   ssr?: boolean;
   /**
    * Whether spa routes that render on the server are prerendered at build time into HTML that
-   * hydrates into the client router (decision-38), unless a page sets `export const prerender`.
+   * hydrates into the client router (decision-38), unless a layout or page sets
+   * `export const prerender`.
    * Routes with params list their paths with `staticPaths()`. Default: `false`.
    *
    * @example lumiose({ mode: "spa", prerender: true }) // an SPA built as static, hydrating pages

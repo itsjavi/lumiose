@@ -46,8 +46,9 @@ export interface PageRoute extends RouteBase {
   ssr: boolean;
   /**
    * `spa` routes rendered at build time into HTML that hydrates (decision-38): own
-   * `export const prerender`, else the project default `lumiose({ prerender })`. Always `false` for
-   * other modes (`static` routes are prerendered by their mode) and `ssr = false` shells.
+   * `export const prerender`, else the nearest layout's, else the project default
+   * `lumiose({ prerender })`. Always `false` for other modes (`static` routes are prerendered by
+   * their mode) and `ssr = false` shells.
    */
   prerender: boolean;
   /** Layout files, outermost first. */
@@ -206,15 +207,6 @@ export function createRouteManifest(
         );
         continue;
       }
-      if (declared.prerender !== undefined) {
-        report(
-          LUM_INVALID_ROUTE_FILE,
-          "warning",
-          file,
-          `"export const prerender" has no effect in a layout: it applies to spa pages.`,
-          "Set it on each page, or make it the project default with lumiose({ prerender: true }).",
-        );
-      }
       layoutsByDir.set(route.dir, declared);
     } else {
       modules.push(declared);
@@ -249,33 +241,83 @@ export function createRouteManifest(
     return declared.ssr ?? inheritedSsr(dir) ?? defaultSsr;
   };
 
-  // `export const prerender` is read from pages only; a project default applies to `spa` pages
-  // rendered on the server, so an `ssr = false` shell under `lumiose({ prerender: true })` stays one.
-  const resolvePrerender = (declared: Declared, mode: RouteMode, ssr: boolean): boolean => {
+  const noPrerenderEffect = (file: string, mode: RouteMode, where: string): void =>
+    report(
+      LUM_INVALID_ROUTE_FILE,
+      "warning",
+      file,
+      `"export const prerender" has no effect: it applies to spa routes and this ${where}'s mode is "${mode}".`,
+      mode === "static"
+        ? "Remove it: static routes are always prerendered."
+        : 'Remove it, or set export const mode = "static" to prerender these routes.',
+    );
+
+  // A layout's `prerender` applies to the `spa` pages below it (decision-38 amendment), so it has
+  // no effect, and is not inherited, when the layout itself is not `spa`.
+  for (const layout of layoutsByDir.values()) {
+    if (layout.prerender === undefined) continue;
+    const mode = inheritedMode(layout.route.dir) ?? defaultMode;
+    if (mode !== "spa") {
+      noPrerenderEffect(layout.file, mode, "layout");
+      layout.prerender = undefined;
+    }
+  }
+
+  const reportedClientOnly = new Set<string>();
+  // `prerender` resolves like `ssr`: the page's own export, else the nearest layout that sets it,
+  // else the project default. The project default applies to `spa` pages rendered on the server
+  // only, so an `ssr = false` shell under `lumiose({ prerender: true })` stays one; an explicit
+  // `prerender = true` (own or inherited) on such a page is LUM5006.
+  const resolvePrerender = (
+    declared: Declared,
+    mode: RouteMode,
+    ssr: boolean,
+    dir: string,
+  ): boolean => {
     if (declared.prerender !== undefined && mode !== "spa") {
-      report(
-        LUM_INVALID_ROUTE_FILE,
-        "warning",
-        declared.file,
-        `"export const prerender" has no effect: it applies to spa routes and this file's mode is "${mode}".`,
-        mode === "static"
-          ? "Remove it: static routes are always prerendered."
-          : 'Remove it, or set export const mode = "static" to prerender this route.',
-      );
+      noPrerenderEffect(declared.file, mode, "file");
       return false;
     }
     if (mode !== "spa") return false;
-    if (declared.prerender === true && !ssr) {
-      report(
-        LUM_PRERENDER_CLIENT_ONLY,
-        "error",
-        declared.file,
-        `"export const prerender = true" renders this page at build time, but its ssr is false, so it renders only in the browser.`,
-        "Remove export const ssr = false (here, in a layout or in lumiose({ ssr })) to prerender the page, or remove prerender to keep the client-rendered shell.",
-      );
+    const source =
+      declared.prerender === undefined
+        ? layoutChain(dir).find((layout) => layout.prerender !== undefined)
+        : declared;
+    if (source === undefined) return ssr && defaultPrerender;
+    if (source.prerender === true && !ssr) {
+      if (source === declared) {
+        report(
+          LUM_PRERENDER_CLIENT_ONLY,
+          "error",
+          declared.file,
+          `"export const prerender = true" renders this page at build time, but its ssr is false, so it renders only in the browser.`,
+          "Remove export const ssr = false (here, in a layout or in lumiose({ ssr })) to prerender the page, or remove prerender to keep the client-rendered shell.",
+        );
+        return false;
+      }
+      // Report where the conflict is introduced: the page when it sets ssr = false, else the
+      // deeper of the two layouts, once.
+      const ssrLayout =
+        declared.ssr === false ? undefined : layoutChain(dir).find((l) => l.ssr !== undefined);
+      const file =
+        declared.ssr === false
+          ? declared.file
+          : ssrLayout !== undefined && ssrLayout.route.dir.length > source.route.dir.length
+            ? ssrLayout.file
+            : source.file;
+      if (!reportedClientOnly.has(file)) {
+        reportedClientOnly.add(file);
+        report(
+          LUM_PRERENDER_CLIENT_ONLY,
+          "error",
+          file,
+          `"${declared.file}" inherits "export const prerender = true" from "${source.file}", but its ssr is false, so it renders only in the browser.`,
+          "Set export const prerender = false on the pages that render only in the browser, or remove export const ssr = false (in the page, a layout or lumiose({ ssr })) to prerender them.",
+        );
+      }
       return false;
     }
-    return ssr && (declared.prerender ?? defaultPrerender);
+    return source.prerender === true;
   };
 
   const layouts: LayoutEntry[] = [...layoutsByDir.values()]
@@ -330,7 +372,7 @@ export function createRouteManifest(
         kind: "page",
         mode,
         ssr,
-        prerender: resolvePrerender(declared, mode, ssr),
+        prerender: resolvePrerender(declared, mode, ssr, route.dir),
         layouts: layoutChain(route.dir)
           .map((layout) => layout.file)
           .toReversed(),

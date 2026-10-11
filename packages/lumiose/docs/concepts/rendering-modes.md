@@ -16,8 +16,9 @@ nearest layout that sets one, else the project default set in `vite.config.ts` w
 routes: the build emits a static shell and the page renders in the browser. `lumiose({ ssr: false })`
 makes that the default for every `spa` route, so `lumiose({ mode: "spa", ssr: false })` turns the
 whole project into a client-rendered SPA built as static files. `export const prerender = true`
-renders an `spa` page at build time instead of per request, and `lumiose({ prerender: true })` makes
-that the default for every `spa` page (see [Prerendered SPA routes](#prerendered-spa-routes)).
+renders an `spa` page (or, in a layout, every `spa` page below it) at build time instead of per
+request, and `lumiose({ prerender: true })` makes that the default for every `spa` page (see
+[Prerendered SPA routes](#prerendered-spa-routes)).
 
 **Shell first, then stream (server mode).**
 
@@ -64,11 +65,25 @@ loader, and the build ships no hydration code.
 navigation is client-side as usual. Search engines, link previews and visitors without JavaScript
 see the content, and a static host can serve the page.
 
-- **Opt in per page or for the project.** `export const prerender = true` on a page, or
-  `lumiose({ prerender: true })` for every `spa` page. A page opts out of the project default with
-  `export const prerender = false`, and is then rendered per request. `prerender` is read from
-  pages only, as a literal `true` or `false`; in a layout, an endpoint or a `static`/`server` route
-  it has no effect (a `LUM5002` warning).
+- **Opt in per page, per layout or for the project.** `export const prerender = true` on a page;
+  on a layout, for every `spa` page below it; or `lumiose({ prerender: true })` for every `spa`
+  page. It is inherited like `mode` and `ssr`: the page's own export wins, then the nearest layout
+  that sets it, then the project default. A page opts out with `export const prerender = false`,
+  and is then rendered per request; a layout's `prerender = false` turns the default off for its
+  subtree. `prerender` must be a literal `true` or `false`. In an endpoint, or in a layout or page
+  whose mode is `static` or `server`, it has no effect (a `LUM5002` warning).
+
+  ```stsx
+  // src/routes/_layout.stsx: every page below is prerendered…
+  export const mode = "spa";
+  export const prerender = true;
+  ```
+
+  ```stsx
+  // src/routes/account.stsx: …except this one, which reads cookies per request
+  export const prerender = false;
+  ```
+
 - **Params.** A page with params lists its paths with `staticPaths()`, as a `static` page does;
   without it the build stops. The build writes one HTML file per path. On a static host, any other
   URL gets `404.html`, which renders the root `_404` inside the SPA.
@@ -81,13 +96,15 @@ see the content, and a static host can serve the page.
   of component setup: read them in `onMount()`, an effect or an event handler, which run only in
   the browser. Create browser objects lazily, on first use. The compiler warns about browser
   globals at module scope (`LUM4004`).
-- **Not with `ssr = false`.** `ssr = false` renders the page only in the browser. Setting
-  `prerender = true` on such a page is `LUM5006`, and `lumiose({ prerender: true, ssr: false })` is
-  rejected. Under `lumiose({ prerender: true })` alone, a page with `ssr = false` stays a shell.
+- **Not with `ssr = false`.** `ssr = false` renders the page only in the browser. A page whose
+  `prerender = true` (its own or a layout's) meets `ssr = false` (its own, a layout's or the
+  project's) is `LUM5006`: give a browser-only page under a prerendering layout
+  `export const prerender = false`. `lumiose({ prerender: true, ssr: false })` is rejected. Under
+  `lumiose({ prerender: true })` alone, a page with `ssr = false` stays a shell.
 
 To move a client-rendered SPA (`ssr = false`) to prerendering: remove `ssr = false`, make its
 modules safe to load on the server (above), add `staticPaths()` to pages with params, then set
-`prerender = true` (or `lumiose({ prerender: true })`). `lumiose dev` renders the pages per request,
+`prerender = true` on the SPA's layout (or `lumiose({ prerender: true })`). `lumiose dev` renders the pages per request,
 fully resolved as the build does, so hydration problems show up there first.
 
 **Build (`lumiose build`).** 1. client build (islands, SPA, CSS, assets, `public/`), 2. server
@@ -134,7 +151,7 @@ it without the adapter. Set response headers once with `lumiose({ headers })`
 | ------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
 | `export const mode = "static" \| "server" \| "spa"`     | The route's mode (inherited from layouts).                                                 |
 | `export const ssr = false`                              | `spa` routes: render in the browser only.                                                  |
-| `export const prerender = true`                         | `spa` pages: render at build time into HTML that hydrates (`false` opts out).              |
+| `export const prerender = true`                         | `spa` pages: render at build time into HTML that hydrates (inherited from layouts).        |
 | `lumiose({ mode, ssr, prerender })` in `vite.config.ts` | The project defaults for routes and layouts that do not set them.                          |
 | `export async function staticPaths()`                   | `static` routes and prerendered `spa` pages with params: `[{ params: { slug: "a" } }, …]`. |
 | `export function headers(ctx)`                          | Response headers for the page.                                                             |
@@ -215,7 +232,8 @@ export default function Track() {
 - **Computing `mode` at runtime.** `mode` must be a string literal (`LUM5002`).
 - **Browser APIs at module scope or in component setup of a prerendered `spa` page.** The build
   renders it on the server; read them in `onMount()` or an event handler (`LUM4004`).
-- **`prerender = true` on an `ssr = false` page.** The page cannot be both (`LUM5006`).
+- **`prerender = true` on an `ssr = false` page.** The page cannot be both (`LUM5006`), also when
+  one of them comes from a layout.
 
 ## Related diagnostics
 

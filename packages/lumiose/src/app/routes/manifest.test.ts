@@ -135,19 +135,86 @@ describe("createRouteManifest", () => {
 
   it("reports prerender with ssr = false (LUM5006) and where prerender has no effect (LUM5002)", () => {
     const manifest = manifestOf({
-      "app/_layout.stsx": `export const mode = "spa";\nexport const ssr = false;\nexport const prerender = true;`,
+      "app/_layout.stsx": `export const mode = "spa";\nexport const ssr = false;`,
       "app/index.stsx": "export const prerender = true;",
+      "docs/_layout.stsx": "export const prerender = true;",
+      "docs/index.stsx": PAGE,
       "about.stsx": "export const prerender = true;",
       "feed.xml.ts": "export const prerender = true;",
     });
     expect(page(manifest, "/app")).toMatchObject({ mode: "spa", ssr: false, prerender: false });
     expect(page(manifest, "/about")).toMatchObject({ mode: "static", prerender: false });
+    expect(page(manifest, "/docs")).toMatchObject({ mode: "static", prerender: false });
     expect(manifest.diagnostics).toMatchObject([
-      { code: "LUM5002", severity: "warning", file: "src/routes/app/_layout.stsx" },
       { code: "LUM5002", severity: "warning", file: "src/routes/feed.xml.ts" },
+      { code: "LUM5002", severity: "warning", file: "src/routes/docs/_layout.stsx" },
       { code: "LUM5002", severity: "warning", file: "src/routes/about.stsx" },
       { code: "LUM5006", severity: "error", file: "src/routes/app/index.stsx" },
     ]);
+  });
+
+  it("inherits prerender from the nearest layout that sets it, which a page turns off (TASK-229)", () => {
+    const manifest = manifestOf({
+      "_layout.stsx": `export const mode = "spa";\nexport const prerender = true;`,
+      "index.stsx": PAGE,
+      "live.stsx": "export const prerender = false;",
+      "tracks/[id].stsx": PAGE,
+      "studio/_layout.stsx": "export const prerender = false;",
+      "studio/index.stsx": PAGE,
+      "studio/demo/_layout.stsx": "export const prerender = true;",
+      "studio/demo/index.stsx": PAGE,
+      "report.stsx": `export const mode = "server";`,
+    });
+    expect(manifest.diagnostics).toEqual([]);
+    expect(
+      Object.fromEntries(
+        manifest.routes.map((route) => [route.pattern, route.kind === "page" && route.prerender]),
+      ),
+    ).toEqual({
+      "/": true,
+      "/live": false,
+      "/report": false,
+      "/studio": false,
+      "/studio/demo": true,
+      "/tracks/[id]": true,
+    });
+  });
+
+  it("prefers a layout's prerender over the project default (TASK-229)", () => {
+    const manifest = createRouteManifest(
+      Object.entries({
+        "index.stsx": PAGE,
+        "editor/_layout.stsx": "export const prerender = false;",
+        "editor/index.stsx": PAGE,
+      }).map(([path, source]) => ({ path, source })),
+      { defaultMode: "spa", defaultPrerender: true },
+    );
+    expect(page(manifest, "/").prerender).toBe(true);
+    expect(page(manifest, "/editor").prerender).toBe(false);
+  });
+
+  it("reports an inherited prerender that meets ssr = false (LUM5006) once per file (TASK-229)", () => {
+    const manifest = manifestOf({
+      "_layout.stsx": `export const mode = "spa";\nexport const prerender = true;`,
+      "shell.stsx": "export const ssr = false;",
+      "opted-out.stsx": "export const ssr = false;\nexport const prerender = false;",
+      "editor/_layout.stsx": "export const ssr = false;",
+      "editor/index.stsx": PAGE,
+      "editor/[id].stsx": PAGE,
+      "kiosk/_layout.stsx": "export const ssr = false;\nexport const prerender = true;",
+      "kiosk/index.stsx": PAGE,
+    });
+    for (const pattern of ["/shell", "/opted-out", "/editor", "/editor/[id]", "/kiosk"]) {
+      expect(page(manifest, pattern)).toMatchObject({ ssr: false, prerender: false });
+    }
+    expect(manifest.diagnostics).toMatchObject([
+      { code: "LUM5006", severity: "error", file: "src/routes/editor/_layout.stsx" },
+      { code: "LUM5006", severity: "error", file: "src/routes/kiosk/_layout.stsx" },
+      { code: "LUM5006", severity: "error", file: "src/routes/shell.stsx" },
+    ]);
+    expect(manifest.diagnostics[0]!.message).toBe(
+      '"src/routes/editor/[id].stsx" inherits "export const prerender = true" from "src/routes/_layout.stsx", but its ssr is false, so it renders only in the browser.',
+    );
   });
 
   it("gives endpoints a static or server mode, serving spa subtrees live", () => {

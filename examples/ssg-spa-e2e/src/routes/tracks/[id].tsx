@@ -2,7 +2,7 @@ import { onMount, signal, Title, type PageProps } from "lumiose";
 
 const TRACKS: Record<string, string> = { "1": "Overworld", "2": "Cave", "3": "Boss" };
 
-// Prerendered for each id (the project default lumiose({ prerender: true })).
+// Prerendered for each id (inherited from the root layout).
 export function staticPaths() {
   return Object.keys(TRACKS).map((id) => ({ params: { id } }));
 }
