@@ -171,83 +171,84 @@ export function StudioCode() {
         </button>
         <span class="hint">{dirty() ? "Edited: Apply to hear it" : "In sync with the grid"}</span>
       </div>
-      <style>
-        .studio-code {
-          display: grid;
-          gap: 6px;
-          padding: 8px;
-        }
-        .none {
-          margin: 0;
-          font-size: 12px;
-        }
-        textarea {
-          inline-size: 100%;
-          min-block-size: 320px;
-          max-block-size: min(56vh, 520px);
-          padding: 8px 10px;
-          border: 2px solid var(--l1);
-          border-radius: 3px;
-          background: var(--l0);
-          color: var(--l3);
-          font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
-          font-size: 12px;
-          line-height: 1.45;
-          resize: vertical;
-          white-space: pre;
-        }
-        textarea:focus-visible {
-          outline: 2px solid var(--l3);
-          outline-offset: 0;
-        }
-        textarea[aria-invalid="true"] {
-          border-color: var(--l3);
-          border-style: dashed;
-        }
-        .errors {
-          display: grid;
-          gap: 2px;
-          margin: 0;
-          padding: 0;
-          list-style: none;
-        }
-        .errors button {
-          padding: 3px 8px;
-          border: 0;
-          background: var(--l3);
-          color: var(--l0);
-          font-size: 12px;
-          text-align: start;
-          cursor: pointer;
-        }
-        .bar {
-          display: flex;
-          flex-wrap: wrap;
-          align-items: center;
-          gap: 6px;
-        }
-        .key {
-          padding: 4px 10px;
-          border: 2px solid var(--l3);
-          background: var(--l0);
-          color: var(--l3);
-          font-family: $tokens.font.pixel;
-          font-size: 11px;
-          cursor: pointer;
-        }
-        .key:disabled {
-          opacity: 0.45;
-          cursor: default;
-        }
-        .key:not(:disabled):hover {
-          background: var(--l1);
-        }
-        .hint {
-          margin-inline-start: auto;
-          font-family: $tokens.font.pixel;
-          font-size: 10px;
-        }
-      </style>
     </div>
   );
 }
+
+<style>
+  .studio-code {
+    display: grid;
+    gap: 6px;
+    padding: 8px;
+  }
+  .none {
+    margin: 0;
+    font-size: 12px;
+  }
+  textarea {
+    inline-size: 100%;
+    min-block-size: 320px;
+    max-block-size: min(56vh, 520px);
+    padding: 8px 10px;
+    border: 2px solid var(--l1);
+    border-radius: 3px;
+    background: var(--l0);
+    color: var(--l3);
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    font-size: 12px;
+    line-height: 1.45;
+    resize: vertical;
+    white-space: pre;
+  }
+  textarea:focus-visible {
+    outline: 2px solid var(--l3);
+    outline-offset: 0;
+  }
+  textarea[aria-invalid="true"] {
+    border-color: var(--l3);
+    border-style: dashed;
+  }
+  .errors {
+    display: grid;
+    gap: 2px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .errors button {
+    padding: 3px 8px;
+    border: 0;
+    background: var(--l3);
+    color: var(--l0);
+    font-size: 12px;
+    text-align: start;
+    cursor: pointer;
+  }
+  .bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+  }
+  .key {
+    padding: 4px 10px;
+    border: 2px solid var(--l3);
+    background: var(--l0);
+    color: var(--l3);
+    font-family: $tokens.font.pixel;
+    font-size: 11px;
+    cursor: pointer;
+  }
+  .key:disabled {
+    opacity: 0.45;
+    cursor: default;
+  }
+  .key:not(:disabled):hover {
+    background: var(--l1);
+  }
+  .hint {
+    margin-inline-start: auto;
+    font-family: $tokens.font.pixel;
+    font-size: 10px;
+  }
+</style>

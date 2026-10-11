@@ -243,64 +243,65 @@ export default function Learn() {
           <li>Built with Lumiose, as a client-rendered single-page app.</li>
         </ul>
       </section>
-      <style>
-        .learn {
-          display: grid;
-          gap: 16px;
-          max-inline-size: 920px;
-          margin-inline: auto;
-        }
-        .intro h1 {
-          font-size: 24px;
-          color: var(--indigo);
-        }
-        .intro p {
-          margin: 6px 0 0;
-          color: var(--dim);
-          max-inline-size: 70ch;
-        }
-        .card {
-          display: grid;
-          gap: 10px;
-          border-inline-start: 6px solid var(--edge);
-        }
-        .c0 {
-          border-inline-start-color: var(--c0);
-        }
-        .c2 {
-          border-inline-start-color: var(--c2);
-        }
-        .c3 {
-          border-inline-start-color: var(--c3);
-        }
-        h2 {
-          font-size: 16px;
-        }
-        p,
-        ul {
-          margin: 0;
-          max-inline-size: 72ch;
-        }
-        ul {
-          display: grid;
-          gap: 6px;
-          padding-inline-start: 20px;
-        }
-        .hear {
-          display: flex;
-          flex-wrap: wrap;
-          gap: 6px;
-        }
-        .link {
-          color: var(--indigo);
-        }
-        code {
-          font-size: 13px;
-        }
-        .credits {
-          font-size: 14px;
-        }
-      </style>
     </article>
   );
 }
+
+<style>
+  .learn {
+    display: grid;
+    gap: 16px;
+    max-inline-size: 920px;
+    margin-inline: auto;
+  }
+  .intro h1 {
+    font-size: 24px;
+    color: var(--indigo);
+  }
+  .intro p {
+    margin: 6px 0 0;
+    color: var(--dim);
+    max-inline-size: 70ch;
+  }
+  .card {
+    display: grid;
+    gap: 10px;
+    border-inline-start: 6px solid var(--edge);
+  }
+  .c0 {
+    border-inline-start-color: var(--c0);
+  }
+  .c2 {
+    border-inline-start-color: var(--c2);
+  }
+  .c3 {
+    border-inline-start-color: var(--c3);
+  }
+  h2 {
+    font-size: 16px;
+  }
+  p,
+  ul {
+    margin: 0;
+    max-inline-size: 72ch;
+  }
+  ul {
+    display: grid;
+    gap: 6px;
+    padding-inline-start: 20px;
+  }
+  .hear {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .link {
+    color: var(--indigo);
+  }
+  code {
+    font-size: 13px;
+  }
+  .credits {
+    font-size: 14px;
+  }
+</style>

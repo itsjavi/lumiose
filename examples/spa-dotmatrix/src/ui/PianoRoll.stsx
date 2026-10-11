@@ -424,289 +424,290 @@ export function PianoRoll() {
       <p class="sr-only" aria-live="polite">
         {live()}
       </p>
-      <style>
-        .screen {
-          min-inline-size: 0;
-        }
-        .bezel {
-          padding: 14px 14px 10px;
-          background: var(--bezel);
-          border-radius: 14px 14px 40px 14px;
-          box-shadow:
-            inset 0 2px 0 rgb(255 255 255 / 0.08),
-            inset 0 -3px 0 rgb(0 0 0 / 0.3);
-        }
-        .lcd {
-          display: grid;
-          grid-template-rows: auto 1fr;
-          background: var(--l0);
-          color: var(--l3);
-          border-radius: 4px;
-          box-shadow:
-            inset 0 0 0 2px var(--l1),
-            inset 0 6px 14px -8px rgb(0 0 0 / 0.5);
-          overflow: hidden;
-        }
-        .top {
-          display: flex;
-          align-items: stretch;
-          border-block-end: 2px solid var(--l1);
-        }
-        .top .status {
-          flex: 1;
-          min-inline-size: 0;
-          border-block-end: 0;
-        }
-        .views {
-          display: flex;
-          gap: 2px;
-          padding: 3px 6px;
-          border-inline-start: 2px solid var(--l1);
-        }
-        .view {
-          padding: 0 8px;
-          border: 0;
-          background: transparent;
-          color: var(--l2);
-          font-family: $tokens.font.pixel;
-          font-size: 11px;
-          cursor: pointer;
-        }
-        .view[aria-checked="true"] {
-          background: var(--l3);
-          color: var(--l0);
-        }
-        .status {
-          display: flex;
-          gap: 14px;
-          align-items: center;
-          padding: 6px 10px 5px;
-          font-family: $tokens.font.pixel;
-          font-size: 12px;
-          border-block-end: 2px solid var(--l1);
-          white-space: nowrap;
-          overflow: hidden;
-        }
-        .chan {
-          padding: 0 5px;
-          background: var(--l3);
-          color: var(--l0);
-        }
-        .grow {
-          flex: 1;
-        }
-        .roll {
-          overflow: auto;
-          max-block-size: min(62vh, 560px);
-          overscroll-behavior: contain;
-          scrollbar-color: var(--l2) var(--l0);
-        }
-        .sheet {
-          display: grid;
-          grid-template-columns: 52px calc(var(--steps) * var(--cw));
-          grid-template-rows: 20px calc(var(--rows) * var(--chh));
-          inline-size: max-content;
-        }
-        .corner {
-          position: sticky;
-          inset-inline-start: 0;
-          inset-block-start: 0;
-          z-index: 3;
-          background: var(--l0);
-        }
-        .ruler {
-          position: sticky;
-          inset-block-start: 0;
-          z-index: 2;
-          background: var(--l0);
-          border-block-end: 2px solid var(--l1);
-        }
-        .barno {
-          position: absolute;
-          inset-inline-start: calc(var(--b) * 16 * var(--cw));
-          inline-size: calc(16 * var(--cw));
-          padding-inline-start: 4px;
-          font-family: $tokens.font.pixel;
-          font-size: 11px;
-          line-height: 18px;
-          border-inline-start: 2px solid var(--l2);
-          cursor: pointer;
-        }
-        .barno.picked {
-          background: var(--l1);
-        }
-        .flag {
-          margin-inline-start: 6px;
-          padding: 0 4px;
-          background: var(--l3);
-          color: var(--l0);
-        }
-        .keys {
-          position: sticky;
-          inset-inline-start: 0;
-          z-index: 2;
-          display: grid;
-          grid-auto-rows: var(--chh);
-          background: var(--l0);
-          border-inline-end: 2px solid var(--l1);
-        }
-        .key {
-          padding-inline: 6px;
-          font-family: $tokens.font.pixel;
-          font-size: 10px;
-          line-height: var(--chh);
-          color: var(--l2);
-        }
-        .key.root {
-          color: var(--l3);
-          background: var(--l1);
-        }
-        .lane {
-          position: relative;
-          touch-action: none;
-          cursor: crosshair;
-          background-image:
-            linear-gradient(90deg, var(--l2) 2px, transparent 2px),
-            linear-gradient(90deg, var(--l1) 1px, transparent 1px),
-            radial-gradient(circle, var(--l1) 1.2px, transparent 1.6px);
-          background-size:
-            calc(var(--cw) * 16) 100%,
-            calc(var(--cw) * 4) 100%,
-            var(--cw) var(--chh);
-        }
-        .lane:focus-visible {
-          outline: 3px solid var(--l3);
-          outline-offset: -3px;
-        }
-        .row {
-          position: absolute;
-          inset-inline: 0;
-          inset-block-start: calc(var(--r) * var(--chh));
-          block-size: var(--chh);
-          pointer-events: none;
-        }
-        .row.root {
-          background: color-mix(in srgb, var(--l1) 35%, transparent);
-        }
-        .intro {
-          position: absolute;
-          inset-block: 0;
-          inset-inline-start: 0;
-          inline-size: calc(var(--w) * var(--cw));
-          background: repeating-linear-gradient(
-            135deg,
-            transparent 0 6px,
-            color-mix(in srgb, var(--l1) 30%, transparent) 6px 8px
-          );
-          pointer-events: none;
-        }
-        .intro span {
-          position: sticky;
-          inset-inline-start: 60px;
-          display: inline-block;
-          margin: 4px;
-          padding: 0 4px;
-          font-family: $tokens.font.pixel;
-          font-size: 10px;
-          background: var(--l0);
-          color: var(--l2);
-        }
-        .picked-bar {
-          position: absolute;
-          inset-block: 0;
-          inset-inline-start: calc(var(--b) * 16 * var(--cw));
-          inline-size: calc(16 * var(--cw));
-          box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--l2) 60%, transparent);
-          pointer-events: none;
-        }
-        .note,
-        .ghost,
-        .cursor {
-          position: absolute;
-          inset-inline-start: calc(var(--s) * var(--cw) + 1px);
-          inset-block-start: calc(var(--r) * var(--chh) + 2px);
-          block-size: calc(var(--chh) - 4px);
-          pointer-events: none;
-        }
-        .note {
-          inline-size: calc(var(--l) * var(--cw) - 2px);
-          background: var(--l3);
-          border-radius: 3px;
-          box-shadow:
-            inset 0 -3px 0 rgb(0 0 0 / 0.25),
-            inset 2px 2px 0 color-mix(in srgb, var(--l0) 25%, transparent);
-        }
-        .note.drum {
-          inline-size: calc(var(--cw) - 4px);
-          inset-inline-start: calc(var(--s) * var(--cw) + 2px);
-          border-radius: 50%;
-        }
-        .note.own::after {
-          content: "";
-          position: absolute;
-          inset-block-start: 3px;
-          inset-inline-start: 3px;
-          inline-size: 4px;
-          block-size: 4px;
-          background: var(--l0);
-        }
-        .hidden {
-          display: none;
-        }
-        .note.lit {
-          background: var(--l2);
-          outline: 2px solid var(--l3);
-        }
-        .ghost {
-          inline-size: calc(var(--l) * var(--cw) - 2px);
-          inset-block-start: calc(var(--r) * var(--chh) + 7px);
-          block-size: 4px;
-          border-radius: 2px;
-          background: var(--l1);
-        }
-        .ghost.c0 {
-          background: var(--l2);
-          opacity: 0.55;
-        }
-        .cursor {
-          inline-size: calc(var(--cw) - 2px);
-          outline: 2px dashed var(--l3);
-          outline-offset: 1px;
-          border-radius: 3px;
-        }
-        .playhead {
-          position: absolute;
-          inset-block: 0;
-          inset-inline-start: calc(var(--s) * var(--cw));
-          inline-size: var(--cw);
-          background: color-mix(in srgb, var(--l3) 18%, transparent);
-          border-inline-start: 2px solid var(--l3);
-          pointer-events: none;
-        }
-        .led-row {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          padding: 9px 4px 0;
-          font-family: $tokens.font.pixel;
-          font-size: 10px;
-          letter-spacing: 0.08em;
-          color: rgb(255 255 255 / 0.55);
-        }
-        .led {
-          inline-size: 9px;
-          block-size: 9px;
-          border-radius: 50%;
-          background: #4a2430;
-          box-shadow: inset 0 1px 1px rgb(0 0 0 / 0.5);
-        }
-        .led.on {
-          background: #ff4d6d;
-          box-shadow:
-            0 0 8px 2px rgb(255 77 109 / 0.7),
-            inset 0 -1px 1px rgb(0 0 0 / 0.3);
-        }
-      </style>
     </section>
   );
 }
+
+<style>
+  .screen {
+    min-inline-size: 0;
+  }
+  .bezel {
+    padding: 14px 14px 10px;
+    background: var(--bezel);
+    border-radius: 14px 14px 40px 14px;
+    box-shadow:
+      inset 0 2px 0 rgb(255 255 255 / 0.08),
+      inset 0 -3px 0 rgb(0 0 0 / 0.3);
+  }
+  .lcd {
+    display: grid;
+    grid-template-rows: auto 1fr;
+    background: var(--l0);
+    color: var(--l3);
+    border-radius: 4px;
+    box-shadow:
+      inset 0 0 0 2px var(--l1),
+      inset 0 6px 14px -8px rgb(0 0 0 / 0.5);
+    overflow: hidden;
+  }
+  .top {
+    display: flex;
+    align-items: stretch;
+    border-block-end: 2px solid var(--l1);
+  }
+  .top .status {
+    flex: 1;
+    min-inline-size: 0;
+    border-block-end: 0;
+  }
+  .views {
+    display: flex;
+    gap: 2px;
+    padding: 3px 6px;
+    border-inline-start: 2px solid var(--l1);
+  }
+  .view {
+    padding: 0 8px;
+    border: 0;
+    background: transparent;
+    color: var(--l2);
+    font-family: $tokens.font.pixel;
+    font-size: 11px;
+    cursor: pointer;
+  }
+  .view[aria-checked="true"] {
+    background: var(--l3);
+    color: var(--l0);
+  }
+  .status {
+    display: flex;
+    gap: 14px;
+    align-items: center;
+    padding: 6px 10px 5px;
+    font-family: $tokens.font.pixel;
+    font-size: 12px;
+    border-block-end: 2px solid var(--l1);
+    white-space: nowrap;
+    overflow: hidden;
+  }
+  .chan {
+    padding: 0 5px;
+    background: var(--l3);
+    color: var(--l0);
+  }
+  .grow {
+    flex: 1;
+  }
+  .roll {
+    overflow: auto;
+    max-block-size: min(62vh, 560px);
+    overscroll-behavior: contain;
+    scrollbar-color: var(--l2) var(--l0);
+  }
+  .sheet {
+    display: grid;
+    grid-template-columns: 52px calc(var(--steps) * var(--cw));
+    grid-template-rows: 20px calc(var(--rows) * var(--chh));
+    inline-size: max-content;
+  }
+  .corner {
+    position: sticky;
+    inset-inline-start: 0;
+    inset-block-start: 0;
+    z-index: 3;
+    background: var(--l0);
+  }
+  .ruler {
+    position: sticky;
+    inset-block-start: 0;
+    z-index: 2;
+    background: var(--l0);
+    border-block-end: 2px solid var(--l1);
+  }
+  .barno {
+    position: absolute;
+    inset-inline-start: calc(var(--b) * 16 * var(--cw));
+    inline-size: calc(16 * var(--cw));
+    padding-inline-start: 4px;
+    font-family: $tokens.font.pixel;
+    font-size: 11px;
+    line-height: 18px;
+    border-inline-start: 2px solid var(--l2);
+    cursor: pointer;
+  }
+  .barno.picked {
+    background: var(--l1);
+  }
+  .flag {
+    margin-inline-start: 6px;
+    padding: 0 4px;
+    background: var(--l3);
+    color: var(--l0);
+  }
+  .keys {
+    position: sticky;
+    inset-inline-start: 0;
+    z-index: 2;
+    display: grid;
+    grid-auto-rows: var(--chh);
+    background: var(--l0);
+    border-inline-end: 2px solid var(--l1);
+  }
+  .key {
+    padding-inline: 6px;
+    font-family: $tokens.font.pixel;
+    font-size: 10px;
+    line-height: var(--chh);
+    color: var(--l2);
+  }
+  .key.root {
+    color: var(--l3);
+    background: var(--l1);
+  }
+  .lane {
+    position: relative;
+    touch-action: none;
+    cursor: crosshair;
+    background-image:
+      linear-gradient(90deg, var(--l2) 2px, transparent 2px),
+      linear-gradient(90deg, var(--l1) 1px, transparent 1px),
+      radial-gradient(circle, var(--l1) 1.2px, transparent 1.6px);
+    background-size:
+      calc(var(--cw) * 16) 100%,
+      calc(var(--cw) * 4) 100%,
+      var(--cw) var(--chh);
+  }
+  .lane:focus-visible {
+    outline: 3px solid var(--l3);
+    outline-offset: -3px;
+  }
+  .row {
+    position: absolute;
+    inset-inline: 0;
+    inset-block-start: calc(var(--r) * var(--chh));
+    block-size: var(--chh);
+    pointer-events: none;
+  }
+  .row.root {
+    background: color-mix(in srgb, var(--l1) 35%, transparent);
+  }
+  .intro {
+    position: absolute;
+    inset-block: 0;
+    inset-inline-start: 0;
+    inline-size: calc(var(--w) * var(--cw));
+    background: repeating-linear-gradient(
+      135deg,
+      transparent 0 6px,
+      color-mix(in srgb, var(--l1) 30%, transparent) 6px 8px
+    );
+    pointer-events: none;
+  }
+  .intro span {
+    position: sticky;
+    inset-inline-start: 60px;
+    display: inline-block;
+    margin: 4px;
+    padding: 0 4px;
+    font-family: $tokens.font.pixel;
+    font-size: 10px;
+    background: var(--l0);
+    color: var(--l2);
+  }
+  .picked-bar {
+    position: absolute;
+    inset-block: 0;
+    inset-inline-start: calc(var(--b) * 16 * var(--cw));
+    inline-size: calc(16 * var(--cw));
+    box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--l2) 60%, transparent);
+    pointer-events: none;
+  }
+  .note,
+  .ghost,
+  .cursor {
+    position: absolute;
+    inset-inline-start: calc(var(--s) * var(--cw) + 1px);
+    inset-block-start: calc(var(--r) * var(--chh) + 2px);
+    block-size: calc(var(--chh) - 4px);
+    pointer-events: none;
+  }
+  .note {
+    inline-size: calc(var(--l) * var(--cw) - 2px);
+    background: var(--l3);
+    border-radius: 3px;
+    box-shadow:
+      inset 0 -3px 0 rgb(0 0 0 / 0.25),
+      inset 2px 2px 0 color-mix(in srgb, var(--l0) 25%, transparent);
+  }
+  .note.drum {
+    inline-size: calc(var(--cw) - 4px);
+    inset-inline-start: calc(var(--s) * var(--cw) + 2px);
+    border-radius: 50%;
+  }
+  .note.own::after {
+    content: "";
+    position: absolute;
+    inset-block-start: 3px;
+    inset-inline-start: 3px;
+    inline-size: 4px;
+    block-size: 4px;
+    background: var(--l0);
+  }
+  .hidden {
+    display: none;
+  }
+  .note.lit {
+    background: var(--l2);
+    outline: 2px solid var(--l3);
+  }
+  .ghost {
+    inline-size: calc(var(--l) * var(--cw) - 2px);
+    inset-block-start: calc(var(--r) * var(--chh) + 7px);
+    block-size: 4px;
+    border-radius: 2px;
+    background: var(--l1);
+  }
+  .ghost.c0 {
+    background: var(--l2);
+    opacity: 0.55;
+  }
+  .cursor {
+    inline-size: calc(var(--cw) - 2px);
+    outline: 2px dashed var(--l3);
+    outline-offset: 1px;
+    border-radius: 3px;
+  }
+  .playhead {
+    position: absolute;
+    inset-block: 0;
+    inset-inline-start: calc(var(--s) * var(--cw));
+    inline-size: var(--cw);
+    background: color-mix(in srgb, var(--l3) 18%, transparent);
+    border-inline-start: 2px solid var(--l3);
+    pointer-events: none;
+  }
+  .led-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 9px 4px 0;
+    font-family: $tokens.font.pixel;
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    color: rgb(255 255 255 / 0.55);
+  }
+  .led {
+    inline-size: 9px;
+    block-size: 9px;
+    border-radius: 50%;
+    background: #4a2430;
+    box-shadow: inset 0 1px 1px rgb(0 0 0 / 0.5);
+  }
+  .led.on {
+    background: #ff4d6d;
+    box-shadow:
+      0 0 8px 2px rgb(255 77 109 / 0.7),
+      inset 0 -1px 1px rgb(0 0 0 / 0.3);
+  }
+</style>

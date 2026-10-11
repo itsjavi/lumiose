@@ -45,31 +45,32 @@ export function Waveform(props: { pcm: Float32Array | null; label: string; capti
         role="img"
       />
       {props.caption ? <span class="dur">{props.caption}</span> : null}
-      <style>
-        .wave {
-          position: relative;
-          padding: 10px;
-          background: var(--bezel);
-          border-radius: 10px 10px 26px 10px;
-        }
-        canvas {
-          display: block;
-          inline-size: 100%;
-          block-size: auto;
-          aspect-ratio: 560 / 96;
-          border-radius: 3px;
-          image-rendering: pixelated;
-          background: var(--l0);
-        }
-        .dur {
-          position: absolute;
-          inset-block-start: 14px;
-          inset-inline-end: 16px;
-          font-family: $tokens.font.pixel;
-          font-size: 11px;
-          color: var(--l3);
-        }
-      </style>
     </div>
   );
 }
+
+<style>
+  .wave {
+    position: relative;
+    padding: 10px;
+    background: var(--bezel);
+    border-radius: 10px 10px 26px 10px;
+  }
+  canvas {
+    display: block;
+    inline-size: 100%;
+    block-size: auto;
+    aspect-ratio: 560 / 96;
+    border-radius: 3px;
+    image-rendering: pixelated;
+    background: var(--l0);
+  }
+  .dur {
+    position: absolute;
+    inset-block-start: 14px;
+    inset-inline-end: 16px;
+    font-family: $tokens.font.pixel;
+    font-size: 11px;
+    color: var(--l3);
+  }
+</style>

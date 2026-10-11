@@ -112,67 +112,68 @@ export function SongPanel() {
           </label>
         )}
       </div>
-      <style>
-        .song {
-          display: grid;
-          gap: 14px;
-          align-content: start;
-        }
-        h2 {
-          font-size: 15px;
-          color: var(--indigo);
-        }
-        .rows {
-          display: grid;
-          grid-template-columns: repeat(auto-fill, minmax(min(130px, 100%), 1fr));
-          gap: 12px;
-        }
-        .field {
-          display: grid;
-          gap: 4px;
-          align-content: start;
-          min-inline-size: 0;
-        }
-        select {
-          inline-size: 100%;
-        }
-        .stepper {
-          display: flex;
-          align-items: center;
-          gap: 6px;
-        }
-        .stepper button {
-          inline-size: 32px;
-          block-size: 32px;
-          border: 0;
-          border-radius: 50%;
-          background: var(--shell-low);
-          font-size: 18px;
-          cursor: pointer;
-        }
-        .stepper output {
-          min-inline-size: 2.5ch;
-          text-align: center;
-          font-family: $tokens.font.pixel;
-          font-size: 16px;
-        }
-        .seg {
-          display: flex;
-          gap: 3px;
-        }
-        .seg button {
-          flex: 1;
-          padding: 6px 4px;
-          border: 2px solid transparent;
-          border-radius: 9px;
-          background: var(--shell-low);
-          font-size: 12px;
-          cursor: pointer;
-        }
-        .seg button[aria-checked="true"] {
-          border-color: var(--accent);
-        }
-      </style>
     </section>
   );
 }
+
+<style>
+  .song {
+    display: grid;
+    gap: 14px;
+    align-content: start;
+  }
+  h2 {
+    font-size: 15px;
+    color: var(--indigo);
+  }
+  .rows {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(130px, 100%), 1fr));
+    gap: 12px;
+  }
+  .field {
+    display: grid;
+    gap: 4px;
+    align-content: start;
+    min-inline-size: 0;
+  }
+  select {
+    inline-size: 100%;
+  }
+  .stepper {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .stepper button {
+    inline-size: 32px;
+    block-size: 32px;
+    border: 0;
+    border-radius: 50%;
+    background: var(--shell-low);
+    font-size: 18px;
+    cursor: pointer;
+  }
+  .stepper output {
+    min-inline-size: 2.5ch;
+    text-align: center;
+    font-family: $tokens.font.pixel;
+    font-size: 16px;
+  }
+  .seg {
+    display: flex;
+    gap: 3px;
+  }
+  .seg button {
+    flex: 1;
+    padding: 6px 4px;
+    border: 2px solid transparent;
+    border-radius: 9px;
+    background: var(--shell-low);
+    font-size: 12px;
+    cursor: pointer;
+  }
+  .seg button[aria-checked="true"] {
+    border-color: var(--accent);
+  }
+</style>

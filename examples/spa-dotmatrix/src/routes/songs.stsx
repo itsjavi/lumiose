@@ -178,164 +178,6 @@ export default function Songs() {
           </ul>
         )}
       </section>
-      <style>
-        .songs {
-          display: grid;
-          gap: 18px;
-        }
-        .intro h1 {
-          font-size: 24px;
-          color: var(--indigo);
-        }
-        .intro p {
-          max-inline-size: 70ch;
-          margin: 6px 0 0;
-          color: var(--dim);
-        }
-        .grid {
-          display: grid;
-          /* Twelve songs: complete rows of four, three, two or one. */
-          grid-template-columns: repeat(4, minmax(0, 1fr));
-          gap: 16px;
-          margin: 0;
-          padding: 0;
-          list-style: none;
-        }
-        .cart {
-          display: grid;
-          grid-template-rows: auto auto auto auto 1fr auto;
-          gap: 8px;
-          padding: 14px 16px 16px;
-          background: var(--shell);
-          border-radius: 10px 30px 14px 14px;
-          box-shadow:
-            inset 0 1px 0 rgb(255 255 255 / 0.3),
-            inset 0 -4px 0 rgb(0 0 0 / 0.1),
-            0 12px 26px -16px rgb(0 0 0 / 0.55);
-        }
-        .cart.live {
-          box-shadow:
-            inset 0 0 0 2px var(--accent),
-            0 12px 26px -16px rgb(0 0 0 / 0.55);
-        }
-        .label {
-          display: grid;
-          gap: 8px;
-          padding: 10px;
-          background: var(--shell-low);
-          border-radius: 8px;
-          background-image: repeating-linear-gradient(
-            0deg,
-            transparent 0 5px,
-            var(--groove) 5px 6px
-          );
-        }
-        .mood {
-          justify-self: start;
-          padding: 2px 8px;
-          border-radius: 999px;
-          background: var(--indigo);
-          color: var(--shell);
-          font-family: $tokens.font.pixel;
-          font-size: 11px;
-        }
-        .screen {
-          position: relative;
-          padding: 6px;
-          background: var(--bezel);
-          border-radius: 4px 4px 14px 4px;
-        }
-        .screen::after {
-          content: "";
-          position: absolute;
-          inset-block: 6px;
-          inset-inline-start: calc(6px + (100% - 12px) * var(--p));
-          inline-size: 2px;
-          background: var(--l3);
-          opacity: calc(var(--p) * 1000);
-        }
-        h2 {
-          font-size: 18px;
-        }
-        .facts {
-          margin: 0;
-          font-size: 12px;
-          color: var(--dim);
-          font-variant-numeric: tabular-nums;
-        }
-        .blurb {
-          margin: 0;
-        }
-        .tips {
-          margin: 0;
-          padding-inline-start: 18px;
-          font-size: 13px;
-          color: var(--dim);
-        }
-        .actions {
-          display: flex;
-          gap: 8px;
-          flex-wrap: wrap;
-        }
-        .mine {
-          display: grid;
-          gap: 12px;
-        }
-        .mine-head {
-          display: flex;
-          flex-wrap: wrap;
-          gap: 10px;
-          align-items: center;
-          justify-content: space-between;
-        }
-        .mine h2 {
-          color: var(--indigo);
-          font-size: 16px;
-        }
-        .empty {
-          margin: 0;
-          color: var(--dim);
-        }
-        .list {
-          display: grid;
-          gap: 6px;
-          margin: 0;
-          padding: 0;
-          list-style: none;
-        }
-        .list li {
-          display: flex;
-          flex-wrap: wrap;
-          align-items: center;
-          gap: 8px 12px;
-          padding: 8px 10px;
-          border-radius: 12px;
-          background: var(--shell-low);
-        }
-        .t {
-          font-weight: 600;
-          flex: 1;
-        }
-        .when {
-          font-size: 12px;
-          color: var(--dim);
-        }
-        @media (width < 1200px) {
-          .grid {
-            grid-template-columns: repeat(3, minmax(0, 1fr));
-          }
-        }
-        @media (width < 900px) {
-          .grid {
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-          }
-        }
-        @media (width < 600px) {
-          .grid {
-            grid-template-columns: minmax(0, 1fr);
-          }
-        }
-      </style>
     </div>
   );
 }
@@ -360,5 +202,161 @@ export default function Songs() {
   }
   .n3 {
     fill: var(--l1);
+  }
+  .songs {
+    display: grid;
+    gap: 18px;
+  }
+  .intro h1 {
+    font-size: 24px;
+    color: var(--indigo);
+  }
+  .intro p {
+    max-inline-size: 70ch;
+    margin: 6px 0 0;
+    color: var(--dim);
+  }
+  .grid {
+    display: grid;
+    /* Twelve songs: complete rows of four, three, two or one. */
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 16px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .cart {
+    display: grid;
+    grid-template-rows: auto auto auto auto 1fr auto;
+    gap: 8px;
+    padding: 14px 16px 16px;
+    background: var(--shell);
+    border-radius: 10px 30px 14px 14px;
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.3),
+      inset 0 -4px 0 rgb(0 0 0 / 0.1),
+      0 12px 26px -16px rgb(0 0 0 / 0.55);
+  }
+  .cart.live {
+    box-shadow:
+      inset 0 0 0 2px var(--accent),
+      0 12px 26px -16px rgb(0 0 0 / 0.55);
+  }
+  .label {
+    display: grid;
+    gap: 8px;
+    padding: 10px;
+    background: var(--shell-low);
+    border-radius: 8px;
+    background-image: repeating-linear-gradient(
+      0deg,
+      transparent 0 5px,
+      var(--groove) 5px 6px
+    );
+  }
+  .mood {
+    justify-self: start;
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: var(--indigo);
+    color: var(--shell);
+    font-family: $tokens.font.pixel;
+    font-size: 11px;
+  }
+  .screen {
+    position: relative;
+    padding: 6px;
+    background: var(--bezel);
+    border-radius: 4px 4px 14px 4px;
+  }
+  .screen::after {
+    content: "";
+    position: absolute;
+    inset-block: 6px;
+    inset-inline-start: calc(6px + (100% - 12px) * var(--p));
+    inline-size: 2px;
+    background: var(--l3);
+    opacity: calc(var(--p) * 1000);
+  }
+  h2 {
+    font-size: 18px;
+  }
+  .facts {
+    margin: 0;
+    font-size: 12px;
+    color: var(--dim);
+    font-variant-numeric: tabular-nums;
+  }
+  .blurb {
+    margin: 0;
+  }
+  .tips {
+    margin: 0;
+    padding-inline-start: 18px;
+    font-size: 13px;
+    color: var(--dim);
+  }
+  .actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .mine {
+    display: grid;
+    gap: 12px;
+  }
+  .mine-head {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .mine h2 {
+    color: var(--indigo);
+    font-size: 16px;
+  }
+  .empty {
+    margin: 0;
+    color: var(--dim);
+  }
+  .list {
+    display: grid;
+    gap: 6px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .list li {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 12px;
+    padding: 8px 10px;
+    border-radius: 12px;
+    background: var(--shell-low);
+  }
+  .t {
+    font-weight: 600;
+    flex: 1;
+  }
+  .when {
+    font-size: 12px;
+    color: var(--dim);
+  }
+  @media (width < 1200px) {
+    .grid {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+  }
+  @media (width < 900px) {
+    .grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+  @media (width < 600px) {
+    .grid {
+      grid-template-columns: minmax(0, 1fr);
+    }
   }
 </style>

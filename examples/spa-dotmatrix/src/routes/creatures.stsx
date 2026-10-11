@@ -305,143 +305,144 @@ export default function Creatures() {
           </span>
         </Maker>
       </div>
-      <style>
-        .creatures {
-          display: grid;
-          gap: 18px;
-        }
-        .intro h1 {
-          font-size: 24px;
-          color: var(--indigo);
-        }
-        .intro p {
-          max-inline-size: 72ch;
-          margin: 6px 0 0;
-          color: var(--dim);
-        }
-        .layout {
-          display: grid;
-          grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr);
-          gap: 18px;
-          align-items: start;
-        }
-        .side {
-          display: grid;
-          gap: 18px;
-        }
-        .roster {
-          display: grid;
-          /* 20 creatures: four full rows of five. */
-          grid-template-columns: repeat(5, minmax(0, 1fr));
-          gap: 10px;
-          margin: 0;
-          padding: 0;
-          list-style: none;
-        }
-        .critter {
-          display: grid;
-          justify-items: center;
-          gap: 6px;
-          inline-size: 100%;
-          padding: 10px 8px 12px;
-          border: 0;
-          border-radius: 14px;
-          background: var(--shell);
-          cursor: pointer;
-          box-shadow:
-            inset 0 -4px 0 rgb(0 0 0 / 0.12),
-            0 6px 14px -10px rgb(0 0 0 / 0.5);
-        }
-        .critter[aria-pressed="true"] {
-          background: var(--accent);
-          color: var(--accent-ink);
-        }
-        .frame {
-          display: grid;
-          place-items: center;
-          inline-size: min(64px, 100%);
-          aspect-ratio: 1;
-          border-radius: 8px;
-          background: var(--l0);
-          box-shadow: inset 0 0 0 3px var(--bezel);
-        }
-        .mini {
-          inline-size: 75%;
-          block-size: 75%;
-        }
-        .name {
-          max-inline-size: 100%;
-          font-family: $tokens.font.pixel;
-          font-size: 10px;
-          overflow-wrap: anywhere;
-        }
-        .portrait {
-          display: grid;
-          place-items: center;
-          flex: none;
-          inline-size: 84px;
-          block-size: 84px;
-          border-radius: 10px 10px 22px 10px;
-          background: var(--l0);
-          box-shadow: inset 0 0 0 5px var(--bezel);
-        }
-        .big {
-          inline-size: 60px;
-          block-size: 60px;
-        }
-        .bases {
-          display: grid;
-          gap: 10px;
-        }
-        .bases h2 {
-          font-size: 15px;
-          color: var(--indigo);
-        }
-        .chips {
-          display: grid;
-          /* 20 base voices: five full rows of four. */
-          grid-template-columns: repeat(4, minmax(0, 1fr));
-          gap: 8px;
-        }
-        .chips button {
-          display: grid;
-          gap: 2px;
-          padding: 9px 11px;
-          border: 2px solid transparent;
-          border-radius: 12px;
-          background: var(--shell-low);
-          text-align: start;
-          cursor: pointer;
-        }
-        .chips button[aria-checked="true"] {
-          border-color: var(--accent);
-        }
-        .bname {
-          font-family: $tokens.font.pixel;
-          font-size: 12px;
-        }
-        .bhint {
-          font-size: 12px;
-          color: var(--dim);
-        }
-        @media (width < 900px) {
-          .layout {
-            grid-template-columns: minmax(0, 1fr);
-          }
-        }
-        @media (width < 560px) {
-          .roster {
-            grid-template-columns: repeat(4, minmax(0, 1fr));
-            gap: 6px;
-          }
-          .critter {
-            padding: 8px 4px 10px;
-          }
-          .chips {
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-          }
-        }
-      </style>
     </div>
   );
 }
+
+<style>
+  .creatures {
+    display: grid;
+    gap: 18px;
+  }
+  .intro h1 {
+    font-size: 24px;
+    color: var(--indigo);
+  }
+  .intro p {
+    max-inline-size: 72ch;
+    margin: 6px 0 0;
+    color: var(--dim);
+  }
+  .layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr);
+    gap: 18px;
+    align-items: start;
+  }
+  .side {
+    display: grid;
+    gap: 18px;
+  }
+  .roster {
+    display: grid;
+    /* 20 creatures: four full rows of five. */
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 10px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .critter {
+    display: grid;
+    justify-items: center;
+    gap: 6px;
+    inline-size: 100%;
+    padding: 10px 8px 12px;
+    border: 0;
+    border-radius: 14px;
+    background: var(--shell);
+    cursor: pointer;
+    box-shadow:
+      inset 0 -4px 0 rgb(0 0 0 / 0.12),
+      0 6px 14px -10px rgb(0 0 0 / 0.5);
+  }
+  .critter[aria-pressed="true"] {
+    background: var(--accent);
+    color: var(--accent-ink);
+  }
+  .frame {
+    display: grid;
+    place-items: center;
+    inline-size: min(64px, 100%);
+    aspect-ratio: 1;
+    border-radius: 8px;
+    background: var(--l0);
+    box-shadow: inset 0 0 0 3px var(--bezel);
+  }
+  .mini {
+    inline-size: 75%;
+    block-size: 75%;
+  }
+  .name {
+    max-inline-size: 100%;
+    font-family: $tokens.font.pixel;
+    font-size: 10px;
+    overflow-wrap: anywhere;
+  }
+  .portrait {
+    display: grid;
+    place-items: center;
+    flex: none;
+    inline-size: 84px;
+    block-size: 84px;
+    border-radius: 10px 10px 22px 10px;
+    background: var(--l0);
+    box-shadow: inset 0 0 0 5px var(--bezel);
+  }
+  .big {
+    inline-size: 60px;
+    block-size: 60px;
+  }
+  .bases {
+    display: grid;
+    gap: 10px;
+  }
+  .bases h2 {
+    font-size: 15px;
+    color: var(--indigo);
+  }
+  .chips {
+    display: grid;
+    /* 20 base voices: five full rows of four. */
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 8px;
+  }
+  .chips button {
+    display: grid;
+    gap: 2px;
+    padding: 9px 11px;
+    border: 2px solid transparent;
+    border-radius: 12px;
+    background: var(--shell-low);
+    text-align: start;
+    cursor: pointer;
+  }
+  .chips button[aria-checked="true"] {
+    border-color: var(--accent);
+  }
+  .bname {
+    font-family: $tokens.font.pixel;
+    font-size: 12px;
+  }
+  .bhint {
+    font-size: 12px;
+    color: var(--dim);
+  }
+  @media (width < 900px) {
+    .layout {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+  @media (width < 560px) {
+    .roster {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 6px;
+    }
+    .critter {
+      padding: 8px 4px 10px;
+    }
+    .chips {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+</style>

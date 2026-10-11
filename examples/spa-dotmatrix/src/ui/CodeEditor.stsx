@@ -220,81 +220,82 @@ export function CodeEditor(props: {
           )}
         </>
       )}
-      <style>
-        .code {
-          display: grid;
-          gap: 10px;
-        }
-        .note,
-        .none {
-          margin: 0;
-          font-size: 13px;
-          color: var(--dim);
-        }
-        pre,
-        textarea {
-          margin: 0;
-          padding: 12px 14px;
-          max-block-size: 300px;
-          overflow: auto;
-          border-radius: 10px;
-          background: var(--l3);
-          color: var(--l0);
-          font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
-          font-size: 12px;
-          line-height: 1.5;
-        }
-        textarea {
-          inline-size: 100%;
-          min-block-size: 220px;
-          max-block-size: none;
-          border: 2px solid transparent;
-          resize: vertical;
-          white-space: pre;
-        }
-        textarea[aria-invalid="true"] {
-          border-color: var(--accent);
-        }
-        .editor {
-          display: grid;
-          gap: 8px;
-        }
-        .errors {
-          display: grid;
-          gap: 2px;
-          margin: 0;
-          padding: 0;
-          list-style: none;
-        }
-        .errors button {
-          padding: 4px 8px;
-          border: 0;
-          border-radius: 6px;
-          background: color-mix(in srgb, var(--accent) 14%, var(--shell-low));
-          color: var(--ink);
-          font-size: 13px;
-          text-align: start;
-          cursor: pointer;
-        }
-        .row {
-          display: flex;
-          flex-wrap: wrap;
-          align-items: end;
-          gap: 8px;
-        }
-        .name {
-          display: grid;
-          gap: 2px;
-          flex: 1 1 160px;
-          min-inline-size: 0;
-        }
-        .name input {
-          inline-size: 100%;
-        }
-        .label {
-          font-family: $tokens.font.pixel;
-        }
-      </style>
     </div>
   );
 }
+
+<style>
+  .code {
+    display: grid;
+    gap: 10px;
+  }
+  .note,
+  .none {
+    margin: 0;
+    font-size: 13px;
+    color: var(--dim);
+  }
+  pre,
+  textarea {
+    margin: 0;
+    padding: 12px 14px;
+    max-block-size: 300px;
+    overflow: auto;
+    border-radius: 10px;
+    background: var(--l3);
+    color: var(--l0);
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    font-size: 12px;
+    line-height: 1.5;
+  }
+  textarea {
+    inline-size: 100%;
+    min-block-size: 220px;
+    max-block-size: none;
+    border: 2px solid transparent;
+    resize: vertical;
+    white-space: pre;
+  }
+  textarea[aria-invalid="true"] {
+    border-color: var(--accent);
+  }
+  .editor {
+    display: grid;
+    gap: 8px;
+  }
+  .errors {
+    display: grid;
+    gap: 2px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .errors button {
+    padding: 4px 8px;
+    border: 0;
+    border-radius: 6px;
+    background: color-mix(in srgb, var(--accent) 14%, var(--shell-low));
+    color: var(--ink);
+    font-size: 13px;
+    text-align: start;
+    cursor: pointer;
+  }
+  .row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: end;
+    gap: 8px;
+  }
+  .name {
+    display: grid;
+    gap: 2px;
+    flex: 1 1 160px;
+    min-inline-size: 0;
+  }
+  .name input {
+    inline-size: 100%;
+  }
+  .label {
+    font-family: $tokens.font.pixel;
+  }
+</style>

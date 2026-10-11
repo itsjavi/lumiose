@@ -13,71 +13,72 @@ export default function Composing() {
       <article class="panel guide">
         <Guide />
       </article>
-      <style>
-        .composing {
-          display: grid;
-          gap: 12px;
-          max-inline-size: 920px;
-          margin-inline: auto;
-        }
-        .back {
-          justify-self: start;
-          color: var(--indigo);
-          font-family: $tokens.font.pixel;
-          font-size: 12px;
-        }
-        .guide {
-          padding: clamp(16px, 3vw, 32px);
-          overflow-wrap: anywhere;
-        }
-        .guide :deep(h1) {
-          font-size: 24px;
-          color: var(--indigo);
-          margin-block-end: 12px;
-        }
-        .guide :deep(h2) {
-          font-size: 17px;
-          color: var(--indigo);
-          margin-block: 28px 10px;
-        }
-        .guide :deep(p),
-        .guide :deep(li) {
-          max-inline-size: 74ch;
-        }
-        .guide :deep(a) {
-          color: var(--indigo);
-        }
-        .guide :deep(pre) {
-          overflow-x: auto;
-          padding: 12px 14px;
-          border-radius: 10px;
-          background: var(--l3);
-          color: var(--l0);
-          font-size: 12px;
-          line-height: 1.5;
-        }
-        .guide :deep(code) {
-          font-size: 0.9em;
-        }
-        .guide :deep(table) {
-          display: block;
-          overflow-x: auto;
-          border-collapse: collapse;
-          font-size: 13px;
-        }
-        .guide :deep(th),
-        .guide :deep(td) {
-          padding: 5px 10px;
-          border-block-end: 1px solid var(--edge);
-          text-align: start;
-          vertical-align: top;
-        }
-        .guide :deep(th) {
-          font-family: $tokens.font.pixel;
-          font-size: 11px;
-          color: var(--dim);
-        }
-      </style>
     </div>
   );
 }
+
+<style>
+  .composing {
+    display: grid;
+    gap: 12px;
+    max-inline-size: 920px;
+    margin-inline: auto;
+  }
+  .back {
+    justify-self: start;
+    color: var(--indigo);
+    font-family: $tokens.font.pixel;
+    font-size: 12px;
+  }
+  .guide {
+    padding: clamp(16px, 3vw, 32px);
+    overflow-wrap: anywhere;
+  }
+  .guide :deep(h1) {
+    font-size: 24px;
+    color: var(--indigo);
+    margin-block-end: 12px;
+  }
+  .guide :deep(h2) {
+    font-size: 17px;
+    color: var(--indigo);
+    margin-block: 28px 10px;
+  }
+  .guide :deep(p),
+  .guide :deep(li) {
+    max-inline-size: 74ch;
+  }
+  .guide :deep(a) {
+    color: var(--indigo);
+  }
+  .guide :deep(pre) {
+    overflow-x: auto;
+    padding: 12px 14px;
+    border-radius: 10px;
+    background: var(--l3);
+    color: var(--l0);
+    font-size: 12px;
+    line-height: 1.5;
+  }
+  .guide :deep(code) {
+    font-size: 0.9em;
+  }
+  .guide :deep(table) {
+    display: block;
+    overflow-x: auto;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+  .guide :deep(th),
+  .guide :deep(td) {
+    padding: 5px 10px;
+    border-block-end: 1px solid var(--edge);
+    text-align: start;
+    vertical-align: top;
+  }
+  .guide :deep(th) {
+    font-family: $tokens.font.pixel;
+    font-size: 11px;
+    color: var(--dim);
+  }
+</style>

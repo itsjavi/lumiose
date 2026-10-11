@@ -10,22 +10,23 @@ export default function NotFound(props: ErrorPageProps) {
       <Link class="btn primary" href={href("/")}>
         Back to the studio
       </Link>
-      <style>
-        .lost {
-          display: grid;
-          gap: 12px;
-          justify-items: start;
-          max-inline-size: 60ch;
-        }
-        h1 {
-          font-size: 20px;
-          color: var(--indigo);
-        }
-        p {
-          margin: 0;
-          color: var(--dim);
-        }
-      </style>
     </section>
   );
 }
+
+<style>
+  .lost {
+    display: grid;
+    gap: 12px;
+    justify-items: start;
+    max-inline-size: 60ch;
+  }
+  h1 {
+    font-size: 20px;
+    color: var(--indigo);
+  }
+  p {
+    margin: 0;
+    color: var(--dim);
+  }
+</style>

@@ -44,48 +44,49 @@ export function Shortcuts() {
       <button type="button" class="btn primary" onClick={() => shortcutsOpen.set(false)}>
         Got it
       </button>
-      <style>
-        .sheet {
-          inline-size: min(460px, calc(100vw - 32px));
-          padding: 22px;
-          border: 0;
-          border-radius: 20px;
-          background: var(--shell);
-          color: var(--ink);
-          box-shadow: 0 24px 60px -20px rgb(0 0 0 / 0.6);
-        }
-        .sheet::backdrop {
-          background: rgb(10 10 20 / 0.45);
-        }
-        h2 {
-          font-size: 16px;
-          color: var(--indigo);
-        }
-        dl {
-          display: grid;
-          gap: 6px;
-          margin: 16px 0;
-        }
-        .row {
-          display: grid;
-          grid-template-columns: 11rem 1fr;
-          gap: 10px;
-          align-items: baseline;
-        }
-        dd {
-          margin: 0;
-          color: var(--dim);
-        }
-        kbd {
-          font-family: inherit;
-          font-size: 12px;
-          font-weight: 600;
-          padding: 2px 6px;
-          border-radius: 5px;
-          background: var(--shell-low);
-          border: 1px solid var(--edge);
-        }
-      </style>
     </dialog>
   );
 }
+
+<style>
+  .sheet {
+    inline-size: min(460px, calc(100vw - 32px));
+    padding: 22px;
+    border: 0;
+    border-radius: 20px;
+    background: var(--shell);
+    color: var(--ink);
+    box-shadow: 0 24px 60px -20px rgb(0 0 0 / 0.6);
+  }
+  .sheet::backdrop {
+    background: rgb(10 10 20 / 0.45);
+  }
+  h2 {
+    font-size: 16px;
+    color: var(--indigo);
+  }
+  dl {
+    display: grid;
+    gap: 6px;
+    margin: 16px 0;
+  }
+  .row {
+    display: grid;
+    grid-template-columns: 11rem 1fr;
+    gap: 10px;
+    align-items: baseline;
+  }
+  dd {
+    margin: 0;
+    color: var(--dim);
+  }
+  kbd {
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 2px 6px;
+    border-radius: 5px;
+    background: var(--shell-low);
+    border: 1px solid var(--edge);
+  }
+</style>

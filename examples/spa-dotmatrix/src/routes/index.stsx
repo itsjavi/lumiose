@@ -41,37 +41,38 @@ export default function Studio() {
           </div>
         </div>
       </div>
-      <style>
-        .studio {
-          display: grid;
-          gap: 14px;
-        }
-        .deck {
-          display: grid;
-          grid-template-columns: 290px minmax(0, 1fr);
-          gap: 14px;
-          align-items: start;
-        }
-        .center {
-          display: grid;
-          gap: 14px;
-          min-inline-size: 0;
-        }
-        .below {
-          display: grid;
-          grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
-          gap: 14px;
-          align-items: start;
-        }
-        @media (width < 1100px) {
-          .deck {
-            grid-template-columns: minmax(0, 1fr);
-          }
-          .below {
-            grid-template-columns: minmax(0, 1fr);
-          }
-        }
-      </style>
     </div>
   );
 }
+
+<style>
+  .studio {
+    display: grid;
+    gap: 14px;
+  }
+  .deck {
+    display: grid;
+    grid-template-columns: 290px minmax(0, 1fr);
+    gap: 14px;
+    align-items: start;
+  }
+  .center {
+    display: grid;
+    gap: 14px;
+    min-inline-size: 0;
+  }
+  .below {
+    display: grid;
+    grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+    gap: 14px;
+    align-items: start;
+  }
+  @media (width < 1100px) {
+    .deck {
+      grid-template-columns: minmax(0, 1fr);
+    }
+    .below {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+</style>

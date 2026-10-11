@@ -135,67 +135,68 @@ export function GridTools() {
           New song
         </button>
       </div>
-      <style>
-        .gridtools {
-          display: grid;
-          gap: 8px;
-        }
-        .sheet {
-          display: flex;
-          flex-wrap: wrap;
-          align-items: center;
-          gap: 8px 10px;
-          padding: 10px 12px;
-          border-radius: 14px;
-          background: color-mix(in srgb, var(--indigo) 10%, var(--shell));
-        }
-        .sheet p {
-          flex: 1 1 260px;
-          margin: 0;
-          font-size: 13px;
-        }
-        .toolbar {
-          display: flex;
-          flex-wrap: wrap;
-          align-items: center;
-          gap: 8px 14px;
-        }
-        .group {
-          display: inline-flex;
-          flex-wrap: wrap;
-          align-items: center;
-          gap: 4px;
-        }
-        .tag {
-          padding: 3px 7px;
-          border-radius: 6px;
-          background: var(--bezel);
-          color: var(--l0);
-          font-family: $tokens.font.pixel;
-          font-size: 10px;
-        }
-        .tool {
-          padding: 5px 10px;
-          border: 0;
-          border-radius: 999px;
-          background: var(--shell);
-          color: var(--ink);
-          font-family: $tokens.font.pixel;
-          font-size: 11px;
-          cursor: pointer;
-          box-shadow: inset 0 -2px 0 rgb(0 0 0 / 0.12);
-        }
-        .tool:hover:not(:disabled) {
-          background: var(--groove);
-        }
-        .tool:disabled {
-          opacity: 0.45;
-          cursor: default;
-        }
-        .new {
-          margin-inline-start: auto;
-        }
-      </style>
     </div>
   );
 }
+
+<style>
+  .gridtools {
+    display: grid;
+    gap: 8px;
+  }
+  .sheet {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 10px;
+    padding: 10px 12px;
+    border-radius: 14px;
+    background: color-mix(in srgb, var(--indigo) 10%, var(--shell));
+  }
+  .sheet p {
+    flex: 1 1 260px;
+    margin: 0;
+    font-size: 13px;
+  }
+  .toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 14px;
+  }
+  .group {
+    display: inline-flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px;
+  }
+  .tag {
+    padding: 3px 7px;
+    border-radius: 6px;
+    background: var(--bezel);
+    color: var(--l0);
+    font-family: $tokens.font.pixel;
+    font-size: 10px;
+  }
+  .tool {
+    padding: 5px 10px;
+    border: 0;
+    border-radius: 999px;
+    background: var(--shell);
+    color: var(--ink);
+    font-family: $tokens.font.pixel;
+    font-size: 11px;
+    cursor: pointer;
+    box-shadow: inset 0 -2px 0 rgb(0 0 0 / 0.12);
+  }
+  .tool:hover:not(:disabled) {
+    background: var(--groove);
+  }
+  .tool:disabled {
+    opacity: 0.45;
+    cursor: default;
+  }
+  .new {
+    margin-inline-start: auto;
+  }
+</style>
