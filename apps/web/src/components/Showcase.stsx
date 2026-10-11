@@ -10,7 +10,18 @@ export function ShowcaseGrid(props: { items: Showcase[]; open?: string }) {
       {props.items.map((item) => (
         <li class="item">
           {item.image !== undefined && (
-            <img class="shot" src={item.image} alt={`Screenshot of ${item.title}`} loading="lazy" />
+            // A pointer shortcut to the app (or, without one, its source): the title and the buttons
+            // below are the accessible links, so this one stays out of the tab order and the tree.
+            <a
+              class="shot-link"
+              href={item.demo ?? item.source}
+              target={item.demo === undefined ? "_blank" : undefined}
+              rel={item.demo === undefined ? "noopener" : undefined}
+              tabindex="-1"
+              aria-hidden="true"
+            >
+              <img class="shot" src={item.image} alt="" loading="lazy" />
+            </a>
           )}
           <h3>
             {item.demo !== undefined ? <a href={item.demo}>{item.title}</a> : item.title}{" "}
@@ -71,13 +82,29 @@ export function PageHead(props: { kicker: string; title: string; children?: JSX.
     border-radius: $radius.lg;
     background: $color.surface;
   }
+  .shot-link {
+    display: block;
+    border-radius: $radius.md;
+  }
   .shot {
+    display: block;
     inline-size: 100%;
     aspect-ratio: 16 / 10;
     object-fit: cover;
     object-position: top;
     border: 1px solid $color.border;
     border-radius: $radius.md;
+    transition: border-color 0.15s;
+  }
+  /* Pointing at the screenshot, or at the title link, marks both as the way into the app. */
+  .shot-link:hover .shot,
+  .item:has(h3 a:is(:hover, :focus-visible)) .shot {
+    border-color: $color.accent;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .shot {
+      transition: none;
+    }
   }
   h3 {
     margin: 0;

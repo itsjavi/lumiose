@@ -51,6 +51,7 @@ import { createServer } from "node:http";
 import { extname, join, normalize, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
+import { EXAMPLES, MOUNTS } from "./site-mounts.ts";
 
 const repo = fileURLToPath(new URL("..", import.meta.url));
 
@@ -77,30 +78,6 @@ function pnpm(args: string[], env: NodeJS.ProcessEnv = {}): void {
     process.exit(1);
   }
 }
-
-interface Example {
-  /** The folder in examples/. */
-  name: string;
-  /** The built static files, relative to the example. */
-  dist: string;
-  /** Where the site serves it, relative to the base. */
-  path: string;
-  /** Real apps are indexed; samples with dummy content get noindex and stay out of the sitemap. */
-  indexed: boolean;
-}
-
-/** The examples the site publishes: static output, no server. */
-const EXAMPLES: Example[] = [
-  { name: "spa-chiptune", dist: "dist/client", path: "showcase/chiptune-tracker/", indexed: true },
-  { name: "spa-dotmatrix", dist: "dist/client", path: "showcase/dotmatrix/", indexed: true },
-  {
-    name: "ssg-travel-journal",
-    dist: "dist/client",
-    path: "demos/travel-journal/",
-    indexed: false,
-  },
-  { name: "vite-counter", dist: "dist", path: "demos/counter/", indexed: false },
-];
 
 /** Old URL prefixes (before TASK-215) and their new homes, relative to the base. */
 const MOVED = EXAMPLES.map(({ name, path }) => ({ from: `examples/${name}/`, to: path }));
@@ -130,31 +107,22 @@ function build(): void {
 
   rmSync(out, { recursive: true, force: true });
   copyBuild(join(repo, "apps/web/dist/client"), out);
-  for (const { name, dist, path, indexed } of EXAMPLES) {
-    copyBuild(join(repo, "examples", name, dist), join(out, path));
+  // Each mount from its package's output (scripts/site-mounts.ts).
+  for (const { path, files } of MOUNTS) {
+    for (const { at, from } of files) copyBuild(join(repo, from), join(out, path, at));
+  }
+  for (const { path, indexed } of EXAMPLES) {
     if (!indexed) {
       for (const file of htmlFiles(join(out, path))) {
         writeFileSync(file, readFileSync(file, "utf8").replace("</head>", `${NOINDEX}</head>`));
       }
     }
   }
-  const fullstack = join(repo, "benchmarks/fullstack");
-  copyBuild(join(fullstack, "viewer"), join(out, "benchmarks/fullstack"));
   const viewer = join(out, "benchmarks/fullstack/index.html");
   writeFileSync(
     viewer,
     readFileSync(viewer, "utf8").replace("data-lumiose-site hidden", `href="${base}"`),
   );
-  mkdirSync(join(out, "benchmarks/fullstack/results"), { recursive: true });
-  for (const file of readdirSync(join(fullstack, "results"))) {
-    if (file.endsWith(".json")) {
-      cpSync(join(fullstack, "results", file), join(out, "benchmarks/fullstack/results", file));
-    }
-  }
-  const jsfb = join(repo, "benchmarks/js-framework-benchmark");
-  const app = join(out, "benchmarks/js-framework-benchmark/app");
-  copyBuild(join(jsfb, "demo"), app);
-  cpSync(join(jsfb, "dist/main.js"), join(app, "main.js"));
 
   redirects();
   sitemap();

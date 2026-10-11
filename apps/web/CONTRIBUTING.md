@@ -16,6 +16,13 @@ builds from `.lumiose/e2e`. Locally, a server already running on port 5194 is re
 node e2e/serve.ts 5194 /=.lumiose/e2e/root /lumiose/=.lumiose/e2e/base
 ```
 
+The apps the site mounts below it (the showcase apps at `/showcase/<slug>/`, the demos at
+`/demos/<slug>/` and the benchmark UIs, listed in `scripts/site-mounts.ts`) are separate builds.
+The dev server serves them from `dist/site` (after `pnpm build:site`, for the same base) or from
+each package's own build (`scripts/dev-mounts.ts`); an app with no usable build gets a dev page
+naming the command that builds it. The `dev` Playwright project (`*.dev.e2e.ts`) runs against
+`lumiose dev` on port 5196.
+
 ## Accessibility: WCAG 2.2 AA
 
 Every page meets WCAG 2.2 AA (decision-39). `e2e/a11y.e2e.ts` checks it in the light and the dark
