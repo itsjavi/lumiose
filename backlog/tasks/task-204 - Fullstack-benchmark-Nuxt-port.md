@@ -5,6 +5,7 @@ status: To Do
 assignee:
   - Quasar
 created_date: '2026-10-10 22:41'
+updated_date: '2026-10-11 01:43'
 labels:
   - benchmark
   - positioning
@@ -26,3 +27,9 @@ decision-37 (positioning, approved by the user 2026-10-11; notes in .local/posit
 - [ ] #2 The harness runs it in every group and the results viewer shows it
 - [ ] #3 A committed results run includes it, and doc-4 lists it with versions and caveats
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Lux 2026-10-11 (decision-41): also bump express in benchmarks/fullstack/apps/react-router from 5.2.1 to 5.3.0, the latest stable, and check every fullstack app is on its framework's latest stable release before the measurement run.
+<!-- SECTION:NOTES:END -->
