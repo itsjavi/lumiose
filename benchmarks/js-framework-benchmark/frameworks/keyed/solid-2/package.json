@@ -1,0 +1,30 @@
+{
+  "name": "js-framework-benchmark-solid-2",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Solid 2 (release candidate) keyed demo: krausest's solid entry ported to the Solid 2 API",
+  "license": "Apache-2.0",
+  "type": "module",
+  "scripts": {
+    "dev": "rollup -c -w",
+    "build-prod": "rollup -c --environment production"
+  },
+  "dependencies": {
+    "@solidjs/web": "2.0.0-rc.14",
+    "solid-js": "2.0.0-rc.14"
+  },
+  "devDependencies": {
+    "@babel/core": "7.26.0",
+    "@rollup/plugin-babel": "6.0.4",
+    "@rollup/plugin-node-resolve": "15.3.0",
+    "@rollup/plugin-terser": "0.4.4",
+    "@solidjs/babel-plugin": "2.0.0-rc.14",
+    "rollup": "4.24.3"
+  },
+  "js-framework-benchmark": {
+    "frameworkVersionFromPackage": "solid-js",
+    "frameworkHomeURL": "https://www.solidjs.com/",
+    "language": "JavaScript",
+    "repoURL": "https://github.com/solidjs/solid"
+  }
+}

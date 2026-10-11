@@ -41,12 +41,50 @@ const SERVER = join(KRAUSEST, "server");
 const REPO = "https://github.com/krausest/js-framework-benchmark";
 /** Pinned upstream commit (2026-10, Chrome 154 results); bump deliberately. */
 const COMMIT = "bf894b681fb56433ccb6efb4a3c93e35eda2b20d";
-const REFERENCE = ["vanillajs", "solid", "svelte", "vue-vapor", "react-hooks"];
+const REFERENCE = [
+  "vanillajs",
+  "solid",
+  "svelte",
+  "vue",
+  "vue-vapor",
+  "preact-hooks",
+  "react-hooks",
+];
+/**
+ * Framework versions of the reference entries, installed exactly over krausest's lockfiles: the
+ * latest stable release of each (decision-41). Vue Vapor only ships in the Vue 3.6 release
+ * candidates, so it runs the newest one. Check them before every measurement run.
+ */
+const PINNED: Record<string, Record<string, string>> = {
+  solid: { "solid-js": "1.9.17", "babel-preset-solid": "1.9.16" },
+  svelte: { svelte: "5.57.2" },
+  vue: { vue: "3.5.43" },
+  "vue-vapor": { vue: "3.6.0-rc.11" },
+  "preact-hooks": { preact: "11.0.1" },
+  "react-hooks": { react: "19.3.0", "react-dom": "19.3.0" },
+};
 /**
  * Keyed implementations kept in this package (frameworks/keyed/<name>, krausest's layout: package.json
- * with `build-prod`, package-lock.json, index.html, src/) for frameworks krausest has no entry for.
+ * with `build-prod`, package-lock.json, index.html, src/, and an optional rollup.config.js) for
+ * frameworks krausest has no entry for, with exact versions in their package.json.
  */
-const LOCAL = ["remix-v3"];
+const LOCAL = ["solid-2", "remix-v3"];
+/** Column order: Lumiose, vanillajs, then the frameworks by family. */
+const ORDER = [
+  "lumiose",
+  "lumiose-hand",
+  "vanillajs",
+  "solid",
+  "solid-2",
+  "svelte",
+  "vue",
+  "vue-vapor",
+  "preact-hooks",
+  "react-hooks",
+  "remix-v3",
+];
+/** Column labels of pre-release entries (decision-41). */
+const LABELS: Record<string, string> = { "solid-2": "solid-2 (RC)", "vue-vapor": "vue-vapor (RC)" };
 const CHROME = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
 
 /** krausest's CPU benchmarks, with their weights in the weighted geometric mean (webdriver-ts-results). */
@@ -84,12 +122,7 @@ const { values: options } = parseArgs({
     port: { type: "string", default: process.env.JSFB_PORT ?? "8131" },
   },
 });
-const frameworks = options.frameworks?.split(",") ?? [
-  "lumiose",
-  "lumiose-hand",
-  ...REFERENCE,
-  ...LOCAL,
-];
+const frameworks = options.frameworks?.split(",") ?? ORDER;
 const benchmarks = options.benchmarks?.split(",");
 const port = Number(options.port);
 
@@ -115,24 +148,18 @@ const readJSON = (path: string): any => JSON.parse(readFileSync(path, "utf8"));
 // ---- setup ----------------------------------------------------------------------------------------
 
 function checkout(): void {
+  const keep = ["/*", "!/*/", "/css/", "/server/", "/webdriver-ts/"];
+  const sparse = ["sparse-checkout", "set", "--no-cone", ...keep];
+  sparse.push(...REFERENCE.map((f) => `/frameworks/keyed/${f}/`));
   if (existsSync(join(KRAUSEST, ".git"))) {
+    // An existing checkout picks up reference frameworks added since it was made.
+    sh("git", sparse, KRAUSEST);
     return;
   }
   mkdirSync(KRAUSEST, { recursive: true });
   sh("git", ["init", "-q"], KRAUSEST);
   sh("git", ["remote", "add", "origin", REPO], KRAUSEST);
-  const keep = ["/*", "!/*/", "/css/", "/server/", "/webdriver-ts/"];
-  sh(
-    "git",
-    [
-      "sparse-checkout",
-      "set",
-      "--no-cone",
-      ...keep,
-      ...REFERENCE.map((f) => `/frameworks/keyed/${f}/`),
-    ],
-    KRAUSEST,
-  );
+  sh("git", sparse, KRAUSEST);
   sh("git", ["fetch", "-q", "--depth", "1", "--filter=blob:none", "origin", COMMIT], KRAUSEST);
   sh("git", ["checkout", "-q", "FETCH_HEAD"], KRAUSEST);
 }
@@ -158,11 +185,36 @@ function install(): void {
     }
     const pkg = readJSON(join(dir, "package.json"));
     const hasDeps = pkg.dependencies !== undefined || pkg.devDependencies !== undefined;
-    if (hasDeps && !existsSync(join(dir, "dist"))) {
-      sh("npm", ["ci", "--no-audit", "--no-fund"], dir);
-      sh("npm", ["run", "build-prod"], dir);
+    if (hasDeps) {
+      installReference(dir, PINNED[name] ?? {});
     }
   }
+}
+
+/**
+ * Installs a krausest entry from its lockfile, then the pinned framework versions over it, and
+ * builds it. A marker file records the pins it was built with, so a version bump rebuilds it.
+ */
+function installReference(dir: string, pins: Record<string, string>): void {
+  const marker = join(dir, ".jsfb-pinned.json");
+  const wanted = JSON.stringify(pins);
+  if (
+    existsSync(join(dir, "dist")) &&
+    existsSync(marker) &&
+    readFileSync(marker, "utf8") === wanted
+  ) {
+    return;
+  }
+  if (!existsSync(join(dir, "node_modules"))) {
+    sh("npm", ["ci", "--no-audit", "--no-fund"], dir);
+  }
+  const specs = Object.entries(pins).map(([pkg, version]) => `${pkg}@${version}`);
+  if (specs.length > 0) {
+    sh("npm", ["install", "--save-exact", "--no-audit", "--no-fund", ...specs], dir);
+  }
+  rmSync(join(dir, "dist"), { recursive: true, force: true });
+  sh("npm", ["run", "build-prod"], dir);
+  writeFileSync(marker, wanted);
 }
 
 function lockfile(dir: string): string | undefined {
@@ -179,8 +231,16 @@ function installLocal(name: string, dest: string): void {
   const stale = !existsSync(join(dest, "node_modules")) || lockfile(source) !== lockfile(dest);
   mkdirSync(dest, { recursive: true });
   rmSync(join(dest, "src"), { recursive: true, force: true });
-  for (const entry of ["index.html", "package.json", "package-lock.json", "src"]) {
-    cpSync(join(source, entry), join(dest, entry), { recursive: true });
+  for (const entry of [
+    "index.html",
+    "package.json",
+    "package-lock.json",
+    "src",
+    "rollup.config.js",
+  ]) {
+    if (existsSync(join(source, entry))) {
+      cpSync(join(source, entry), join(dest, entry), { recursive: true });
+    }
   }
   if (stale) {
     sh("npm", ["ci", "--no-audit", "--no-fund"], dest);
@@ -410,8 +470,28 @@ const kB = (bytes: number): string => (bytes / 1024).toFixed(2);
 function summarize(names: Map<string, string>): string {
   const columns = frameworks.filter((f) => names.has(f));
   const header = (first: string): string =>
-    `| ${first} | ${columns.join(" | ")} |\n|---|${columns.map(() => "---:").join("|")}|`;
+    `| ${first} | ${columns.map((f) => LABELS[f] ?? f).join(" | ")} |\n|---|${columns.map(() => "---:").join("|")}|`;
   const official = officialMedians();
+  // krausest's published entry for each column: the same directory, at whatever version it measured.
+  const publishedNames = new Map<string, string>();
+  const publishedNote = new Map<string, string>();
+  const officialNames = new Set([...official.values()].flatMap((row) => [...row.keys()]));
+  for (const f of columns) {
+    // `vue-v3.5.39-keyed` belongs to vue, not to vue-vapor (`vue-vapor-v3.6.0-rc.5-keyed`).
+    const local = names.get(f);
+    const match =
+      local !== undefined && officialNames.has(local)
+        ? local
+        : [...officialNames].find(
+            (name) => name.startsWith(`${f}-v`) && /^\d/.test(name.slice(f.length + 2)),
+          );
+    if (match !== undefined) {
+      publishedNames.set(f, match);
+      if (match !== names.get(f)) {
+        publishedNote.set(f, match.slice(f.length + 2, -"-keyed".length));
+      }
+    }
+  }
   const lines: string[] = [];
 
   // CPU: median total duration (ms) and factor versus the fastest local framework.
@@ -431,7 +511,9 @@ function summarize(names: Map<string, string>): string {
     columns.forEach((f, i) => {
       const total = totals[i];
       factors.get(f)!.push(total === undefined ? undefined : total / min);
-      const officialTotal = officialRow?.get(names.get(f)!);
+      const publishedName = publishedNames.get(f);
+      const officialTotal =
+        publishedName === undefined ? undefined : officialRow?.get(publishedName);
       published
         .get(f)!
         .push(
@@ -458,6 +540,19 @@ function summarize(names: Map<string, string>): string {
   }
   const geo = (map: Map<string, (number | undefined)[]>): string =>
     columns.map((f) => fmt(weighted(map.get(f)!), 3)).join(" | ");
+  // The published factor, with the version krausest measured when it is not the one run here.
+  const publishedGeo = columns
+    .map((f) => {
+      const factor = weighted(published.get(f)!);
+      const note = publishedNote.get(f);
+      return factor === undefined
+        ? "–"
+        : `${fmt(factor, 3)}${note === undefined ? "" : ` (v${note})`}`;
+    })
+    .join(" | ");
+  const versions = columns
+    .filter((f) => !(f in LUMIOSE) && names.get(f)!.startsWith(`${f}-v`))
+    .map((f) => `${LABELS[f] ?? f} ${names.get(f)!.slice(f.length + 2, -"-keyed".length)}`);
 
   // Memory (MB) and size.
   const memoryRows = MEMORY.map(
@@ -483,8 +578,20 @@ function summarize(names: Map<string, string>): string {
     `- Machine: ${cpus()[0]?.model ?? "unknown CPU"} (${cpus().length} cores), ${platform()} ${release()}`,
     `- Browser: ${chromeVersion()}`,
     `- Iterations: ${sample ?? "?"} per CPU benchmark, ${memorySample ?? "?"} per memory benchmark (medians shown)`,
+    `- Framework versions (pinned in scripts/jsfb.ts and frameworks/keyed/*/package.json): ${versions.join(", ")}`,
     "- lumiose: src/App.stsx compiled by @lumiose/vite; lumiose-hand: the same app hand-compiled from the",
     "  compiler-runtime contract (src/hand-compiled.js), the target for the compiler's output",
+    ...(columns.includes("solid-2")
+      ? [
+          "- solid-2 (RC): frameworks/keyed/solid-2, krausest's solid entry ported to the Solid 2 release",
+          "  candidate (createProjection for the selection, automatic batching), compiled with the",
+          "  matching @solidjs/babel-plugin; a pre-release, shown next to stable Solid. krausest has no",
+          "  Solid 2 entry",
+        ]
+      : []),
+    ...(columns.includes("vue-vapor")
+      ? ["- vue-vapor (RC): Vue Vapor only ships in the Vue 3.6 release candidates"]
+      : []),
     ...(columns.includes("remix-v3")
       ? [
           "- remix-v3: frameworks/keyed/remix-v3, remix@3.0.0 (remix/component 1.0) bundled and minified",
@@ -499,10 +606,13 @@ function summarize(names: Map<string, string>): string {
     ...cpuRows,
     `| **weighted geometric mean** (local factors) | ${geo(factors)} |`,
     `| **projected published factor** | ${geo(projected)} |`,
-    `| published factor (krausest's table) | ${geo(published)} |`,
+    `| published factor (krausest's table) | ${publishedGeo} |`,
+    "",
+    "krausest's published table measured its own pinned versions: where a published factor names a",
+    "version, krausest measured that version and this run measured the newer one listed above.",
     "",
     "The projected factor calibrates each local time against vanillajs's factor in krausest's",
-    "published table (webdriver-ts/results.json, same Chrome major and framework versions):",
+    "published table (webdriver-ts/results.json, same Chrome major; vanillajs has no version):",
     "`(local / local vanillajs) × (published vanillajs / published fastest)`, then krausest's",
     "weighted geometric mean. It is the number to compare with the spec targets (doc-1 §11:",
     "CPU ≤ 1.12; published vanillajs 1.05, Solid 1.13).",
