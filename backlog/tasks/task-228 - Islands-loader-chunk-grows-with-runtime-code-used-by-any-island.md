@@ -60,6 +60,8 @@ Open for Lux (AC #2 not checked): the fetchJSON pin is an exception to AC #2 (fe
 Recommendation: A now, B as a follow-up task.
 
 Lux (2026-10-11): the fetchJSON exception is accepted for now (option A). app/fetch-json.ts stays pinned in the shared runtime chunk, so the minifier can still fold the unused cache. TASK-232 (Spark) removes the pin by restructuring the cache (option B). With that recorded exception, AC #2 holds.
+
+Correction (Lux): the follow-up is TASK-233, not TASK-232.
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary
