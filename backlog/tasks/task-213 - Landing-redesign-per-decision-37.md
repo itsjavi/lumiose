@@ -5,7 +5,7 @@ status: To Do
 assignee:
   - Beacon
 created_date: '2026-10-10 22:41'
-updated_date: '2026-10-10 22:51'
+updated_date: '2026-10-11 00:18'
 labels:
   - landing
   - positioning
@@ -21,6 +21,7 @@ dependencies:
   - TASK-212
   - TASK-214
   - TASK-215
+  - TASK-219
 priority: high
 ordinal: 215000
 ---
@@ -36,10 +37,13 @@ decision-37 (positioning, approved by the user 2026-10-11; notes in .local/posit
 - [ ] #1 Hero, table and sections match decision-37, in that order
 - [ ] #2 Every number and table cell comes from committed results through content modules checked by tests; no 'not measured' cells
 - [ ] #3 The page meets the site's accessibility and payload budgets, with screenshots in backlog/assets linked from this task
+- [ ] #4 axe reports no WCAG 2.0/2.1/2.2 A or AA violations on the landing (TASK-219's suite), and the manual criteria hold
 <!-- AC:END -->
 
 ## Implementation Notes
 
 <!-- SECTION:NOTES:BEGIN -->
 User 2026-10-11 (decision-37 amendment: lean landing and site IA): keep the landing lean. Landing = hero (pre-release as a badge), the stack table, four short sections (one sentence, one visual, one link each: Familiar to write, Every rendering mode, Light and fast, Explicit for you and your agent) and a closing CTA. Depth moves out: performance charts to /benchmarks, mode cards and the examples grid to /showcase, tooling, security and toolchain to the docs and the footer. Visual direction comes from the design spike in .local/design-spike/ once the user picks one.
+
+User 2026-10-11 (design spike in .local/design-spike/): the prism direction was rejected as too close to Vercel's visual language. Candidates: A 'Lumen' (dark, a three.js light field, with a pause control) and C 'Lit windows' (the page as a building at night: rendered HTML windows stay dark, interactive ones light up; a Static/Server/Islands/SPA switch). Both pass axe with no WCAG 2.2 A/AA violations. The direction is still the user's call. Accessibility (decision-39) is part of done: ambient motion pausable, reduced motion honoured, text over moving backgrounds on a guaranteed-contrast backdrop.
 <!-- SECTION:NOTES:END -->
