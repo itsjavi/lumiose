@@ -92,8 +92,9 @@ list, or `submit()` used by one form island, loads only on the pages that render
 by several islands stays in the runtime chunk, so a page with none of them still loads it, but no
 page loads more files than it has islands (a chunk per group of islands would cost one more request
 each). Imports through `lumiose` and `lumiose/dom` count only the modules that declare what they
-import. One exception stays in the runtime chunk: `fetchJSON`, whose cache the minifier drops in
-apps without async components or resources, which it can only do within one chunk.
+import. `fetchJSON` follows the same rule. One exception stays in the runtime chunk: a few bytes
+that guard `fetchJSON`'s cache, so the minifier can drop the cache in apps without async components
+or resources, which it can only do within one chunk.
 
 Dynamic imports go through a smaller preload helper than Vite's: it still adds the imported chunk's
 stylesheets (and waits for them, skipping those the page already holds in its merged or inline

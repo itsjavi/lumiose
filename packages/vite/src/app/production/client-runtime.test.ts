@@ -110,6 +110,8 @@ export default function Home() { return <main><Counter client:load start={1} /><
   // Strings only lumiose's submit() (app/actions/client.ts) and fetchJSON (app/fetch-json.ts) hold.
   const SUBMIT = "formaction";
   const FETCH_JSON = "application/json";
+  // A string the page cache (app/cache/client.ts) holds.
+  const PAYLOAD = "data-l-payload";
 
   it("keeps runtime that one island imports in that island's chunk (TASK-228)", async () => {
     const files = await scripts(islandsApp(COUNTER, "Poster"));
@@ -139,11 +141,15 @@ export function Counter(props: { start: number }) {
     expect(files.Counter).not.toContain(SUBMIT);
   });
 
-  it("keeps fetchJSON in the runtime chunk, where the minifier drops its unused cache (TASK-228)", async () => {
+  it("keeps fetchJSON in its island's chunk and only its cache gate in the runtime chunk (TASK-233)", async () => {
     const files = await scripts(islandsApp(COUNTER, "Fetcher"));
     expect(Object.keys(files).toSorted()).toEqual(["Counter", "Fetcher", "loader"]);
-    expect(files.loader).toContain(FETCH_JSON);
-    expect(files.Fetcher).not.toContain(FETCH_JSON);
+    expect(files.Fetcher).toContain(FETCH_JSON);
+    expect(files.loader).not.toContain(FETCH_JSON);
+    // The cache, and the gate in front of it, come from the loader's chunk, where the minifier can
+    // fold `hasRuns` (app/cache/run-fetch.ts).
+    expect(files.Fetcher).not.toContain(PAYLOAD);
+    expect(files.Fetcher).toMatch(/from"\.\/loader-[\w-]+\.js"/);
   });
 
   it("leaves the island loader and hydration out of an SPA where nothing hydrates", async () => {

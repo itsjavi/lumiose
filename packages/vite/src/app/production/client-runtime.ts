@@ -17,8 +17,8 @@
 //   more files than it has islands (Rolldown would otherwise cut a chunk per set of islands, one
 //   more request each). The public entries (`lumiose`, `lumiose/dom`) only re-export; they are
 //   marked free of side effects so that an island's import reaches only the modules that declare
-//   what it imports (./runtime-chunks.ts). One exception stays in the runtime chunk: fetchJSON
-//   (`FOLDED` below).
+//   what it imports (./runtime-chunks.ts). One exception stays in the runtime chunk: the gate
+//   between fetchJSON and its cache (`FOLDED` below).
 // - An app without islands builds an empty island loader, so nothing lands in a chunk that
 //   `lumiose build` removes afterwards.
 // - A smaller preload helper. Vite wraps every dynamic `import()` in `__vitePreload`, which adds
@@ -40,12 +40,13 @@ const PRELOAD_HELPER = "\0vite/preload-helper.js";
 const HISTORY_FALLBACK = runtimeFile("app/router/history.ts");
 /**
  * Runtime modules that stay in the runtime chunk even when one island alone imports them, because
- * they read a flag of that chunk which the minifier folds only within one chunk. fetchJSON reads
- * `hasRuns` (core/effect.ts): `false` in apps without async components or resources, so the
- * minifier drops the fetchJSON cache. Imported from another chunk the flag cannot be folded, and
- * the island would load the dead cache: +1.4 kB brotli on every page of ssg-travel-journal.
+ * they read a flag of that chunk which the minifier folds only within one chunk. fetchJSON's cache
+ * gate (app/cache/run-fetch.ts, TASK-233) reads `hasRuns` (core/effect.ts): `false` in apps without
+ * async components or resources, so the minifier empties the gate and drops the cache. Imported from
+ * another chunk the flag cannot be folded, and the island would load the dead cache: +1.4 kB brotli
+ * on every page of ssg-travel-journal. fetchJSON itself follows the rule above.
  */
-const FOLDED = new Set([runtimeFile("app/fetch-json.ts")]);
+const FOLDED = new Set([runtimeFile("app/cache/run-fetch.ts")]);
 
 export function clientRuntime(state: BuildState): Plugin {
   // Known once the client build transformed the island loader.

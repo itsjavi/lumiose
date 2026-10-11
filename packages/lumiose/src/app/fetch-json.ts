@@ -2,9 +2,7 @@
 // `FetchError` for non-2xx responses. This is the browser version; under the node condition,
 // ./server/fetch-json.ts serves same-origin URLs in-process through the request handler.
 
-import { hasRuns } from "../core/effect.ts";
-import { getAbortSignal } from "../core/owner.ts";
-import { cached, inRun, runSignal } from "./cache/client.ts";
+import { runFetch } from "./cache/run-fetch.ts";
 import { HttpError, statusText } from "./server/control.ts";
 
 /**
@@ -76,14 +74,6 @@ export async function readBody(response: Response): Promise<unknown> {
   return text;
 }
 
-/** Whether `init` makes a GET request that may be cached: not one with `cache: "no-store"`. */
-export function isCacheable(init: RequestInit | undefined): boolean {
-  return (
-    (init?.method === undefined || init.method.toUpperCase() === "GET") &&
-    init?.cache !== "no-store"
-  );
-}
-
 /**
  * Fetches JSON: `const post = await fetchJSON<Post>("/api/posts/1")`. Throws a `FetchError` for
  * non-2xx responses. Returns plain data, so values awaited inside islands stay serializable.
@@ -100,18 +90,10 @@ export function fetchJSON<T = unknown>(input: string | URL, init?: RequestInit):
   try {
     const base = typeof document === "undefined" ? globalThis.location?.href : document.baseURI;
     const url = new URL(input, base);
-    const send = (request: Request) => globalThis.fetch(request);
-    // Without async components or resources no run exists, and bundlers drop the cache.
-    if (!hasRuns || !inRun()) return requestJSON(send, jsonRequest(url, init));
-    // Called by an async component's run (`await fetchJSON(…)`): a superseded run stops waiting.
-    const signal = init?.signal === undefined ? runSignal() : init.signal;
-    if (!isCacheable(init)) return requestJSON(send, jsonRequest(url, { ...init, signal }));
-    return cached<T>(
-      url.href,
-      undefined,
-      () => requestJSON(send, jsonRequest(url, { ...init, signal: getAbortSignal() })),
-      signal,
-    );
+    const request = (options: RequestInit | undefined) =>
+      requestJSON<T>((sent) => globalThis.fetch(sent), jsonRequest(url, options));
+    // Inside an async component run, the cache (./cache/run-fetch.ts); elsewhere a plain request.
+    return runFetch(url, init, request) ?? request(init);
   } catch (error) {
     return Promise.reject(error);
   }

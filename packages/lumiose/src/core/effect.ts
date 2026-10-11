@@ -382,7 +382,8 @@ function runBinding<T, E>(node: RenderEffect<T, E>, initial: boolean): void {
 
 /**
  * Whether a run was ever created. Only `createRun` sets it, so bundles without async components
- * and resources fold it to `false` and drop code that only runs inside runs (the fetchJSON cache).
+ * and resources fold it to `false` and drop code that only runs inside runs (the fetchJSON cache,
+ * behind app/cache/run-fetch.ts).
  */
 export let hasRuns = false;
 

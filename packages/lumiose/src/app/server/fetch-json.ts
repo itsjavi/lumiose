@@ -6,7 +6,8 @@
 import { getAbortSignal } from "../../core/server.ts";
 import { inAsyncRun } from "../../server/frame.ts";
 import { cached, canCache } from "../cache/server.ts";
-import { isCacheable, jsonRequest, requestJSON } from "../fetch-json.ts";
+import { isCacheable } from "../cache/shared.ts";
+import { jsonRequest, requestJSON } from "../fetch-json.ts";
 import { getRequestScope } from "./scope.ts";
 
 const REDIRECTS = new Set([301, 302, 303, 307, 308]);

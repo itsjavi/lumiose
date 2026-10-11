@@ -128,3 +128,11 @@ export function join<T>(flight: Flight, signal: AbortSignal | null | undefined):
 export function looksLikeUrl(target: string): boolean {
   return /^(\.{0,2}\/|https?:)/i.test(target);
 }
+
+/** Whether `init` makes a GET request that `fetchJSON()` may cache: not one with `cache: "no-store"`. */
+export function isCacheable(init: RequestInit | undefined): boolean {
+  return (
+    (init?.method === undefined || init.method.toUpperCase() === "GET") &&
+    init?.cache !== "no-store"
+  );
+}
