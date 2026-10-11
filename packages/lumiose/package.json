@@ -1,7 +1,7 @@
 {
   "name": "lumiose",
   "version": "0.1.0",
-  "description": "Lumiose runtime: signals, the DOM and server renderers, the router and the app runtime.",
+  "description": "Feels like React. Runs like vanilla JS. Lumiose is a web framework for every kind of web app, from static sites to SPAs: TSX with scoped CSS built in, signals, and 0 kB of JavaScript where pages don't move.",
   "license": "MIT",
   "repository": {
     "type": "git",

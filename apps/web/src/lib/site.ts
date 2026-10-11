@@ -25,9 +25,9 @@ export const REPOSITORY = "https://github.com/itsjavi/lumiose";
 
 export const site = {
   name: "Lumiose",
-  tagline: "Signals, islands and scoped styles, compiled. Light by default.",
+  tagline: "Feels like React. Runs like vanilla JS.",
   description:
-    "Lumiose is a TypeScript-first web framework: .stsx components (TSX plus plain CSS), fine-grained signals without a virtual DOM, and server-first rendering with islands.",
+    "Lumiose is a web framework for every kind of web app, from static sites to SPAs: TSX with scoped CSS built in, signals, and 0 kB of JavaScript where pages don't move.",
 };
 
 export const navLinks: NavLink[] = [

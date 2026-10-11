@@ -1,6 +1,8 @@
 # Lumiose
 
-A TypeScript-first web framework: `.stsx` components, signals, islands and scoped styles, compiled by a Rust compiler. The framework docs live in [`packages/lumiose/docs/`](packages/lumiose/docs/).
+**Feels like React. Runs like vanilla JS.**
+
+Lumiose is a web framework for every kind of web app, from static sites to SPAs: TSX with scoped CSS built in, signals, and 0 kB of JavaScript where pages don't move. The framework docs live in [`packages/lumiose/docs/`](packages/lumiose/docs/).
 
 ## Run anything: `pnpm demo`
 

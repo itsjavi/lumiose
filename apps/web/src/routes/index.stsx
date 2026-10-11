@@ -65,7 +65,7 @@ export default function Home() {
 
   return (
     <div class="home">
-      <Title>Lumiose: signals, islands and scoped styles, compiled</Title>
+      <Title>{`Lumiose: ${site.tagline}`}</Title>
       <Meta name="description" content={site.description} />
       <Meta property="og:title" content="Lumiose" />
       <Meta property="og:description" content={site.description} />
@@ -264,7 +264,7 @@ export default function Home() {
           </p>
           <ul class="points" role="list">
             <li>
-              <strong>TypeScript-first, compatible with TypeScript 7.</strong> Stock{" "}
+              <strong>TypeScript 7, typed from routes to CSS.</strong> Stock{" "}
               <code>tsc</code>, no plugins: <code>lumiose check</code> type-checks{" "}
               <code>.stsx</code> through shadow files and maps every error back to your source.
             </li>

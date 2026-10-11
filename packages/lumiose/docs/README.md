@@ -1,6 +1,9 @@
 # Lumiose docs
 
-> Lumiose is a TypeScript-first web framework: `.stsx` components (TSX plus raw-CSS `<style>` blocks), setup-once components with signals, and server-first rendering with islands.
+> Lumiose is a web framework for every kind of web app, from static sites to SPAs: TSX with scoped CSS built in, signals, and 0 kB of JavaScript where pages don't move.
+
+**Feels like React. Runs like vanilla JS.** Components live in `.stsx` files (TSX plus raw-CSS `<style>` blocks), are set up once and
+update through signals, and every route picks its rendering mode: static, server, islands or SPA.
 
 These docs ship inside the package, so they always match the installed version. Read them from
 `node_modules/lumiose/docs`, or from the terminal:

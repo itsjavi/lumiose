@@ -22,9 +22,11 @@ export function agentsSection(): string {
   return `${AGENTS_START}
 ## Lumiose
 
-This project uses Lumiose: a TypeScript 7 web framework with \`.stsx\` components (TSX plus raw-CSS
-\`<style>\` blocks), setup-once components with signals, file routes and server-first rendering
-with islands. It is not React, Solid or Svelte: check the docs instead of guessing.
+This project uses Lumiose, a web framework for every kind of web app, from static sites to SPAs:
+TSX with scoped CSS built in, signals, and 0 kB of JavaScript where pages don't move. Components
+live in \`.stsx\` files (TSX plus raw-CSS \`<style>\` blocks), are set up once and update through
+signals; routes are file-based, with TypeScript 7. It is not React, Solid or Svelte: check the
+docs instead of guessing.
 
 ### Read the local docs first
 
