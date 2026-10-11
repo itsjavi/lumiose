@@ -1,0 +1,27 @@
+---
+id: TASK-223
+title: Style placement convention in Dotmatrix
+status: To Do
+assignee:
+  - Chime
+created_date: '2026-10-11 01:24'
+labels:
+  - styles
+  - example
+milestone: m-6
+dependencies: []
+priority: medium
+ordinal: 225000
+---
+
+## Description
+
+<!-- SECTION:DESCRIPTION:BEGIN -->
+decision-40 (user 2026-10-11): teach and use one top-level <style> at the end of the file by default, shared by every component in it; nested blocks only to scope one element's subtree or to read a component-local $constant. The docs show and explain both placements. Apply it to examples/spa-dotmatrix (21 files with <style>, 19 nested). Dotmatrix's prerender work (TASK-218) touches the same files: do this first, or in the same session.
+<!-- SECTION:DESCRIPTION:END -->
+
+## Acceptance Criteria
+<!-- AC:BEGIN -->
+- [ ] #1 Each .stsx file uses one top-level <style> at the end of the file by default; every remaining nested block scopes an element subtree or reads a component-local constant
+- [ ] #2 Rendering is unchanged: tests and e2e pass, and before/after screenshots of the main pages match (watch for selectors that now reach other components in the same file)
+<!-- AC:END -->
