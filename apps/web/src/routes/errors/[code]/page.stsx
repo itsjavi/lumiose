@@ -1,5 +1,6 @@
-// The URLs the runtime and compiler print (`https://lumiose.dev/errors/LUM4006`) redirect to the
-// diagnostic's docs page. Prerendered as static redirect pages (meta refresh plus a link).
+// Short diagnostic URLs (`/errors/LUM4006`) redirect to the diagnostic's docs page
+// (`/docs/errors/LUM4006`, https://itsjavi.com/lumiose/docs/errors/LUM4006 on GitHub Pages).
+// Prerendered as static redirect pages (meta refresh plus a link).
 import { href, redirect, type PageProps } from "lumiose";
 import { diagnosticCodes } from "../../../content/docs.ts";
 

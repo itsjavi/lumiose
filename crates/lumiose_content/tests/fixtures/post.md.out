@@ -37,8 +37,8 @@ export default function Content() {
           {"www.example.com"}
         </a>
         {" or "}
-        <a href="https://lumiose.dev/docs">
-          {"https://lumiose.dev/docs"}
+        <a href="https://itsjavi.com/lumiose/docs">
+          {"https://itsjavi.com/lumiose/docs"}
         </a>
         {". © 2026 "}
         <kbd>

@@ -298,7 +298,7 @@ describe("lumiose({ md, html })", () => {
     const value = {
       a: [1, -0, 2n, NaN, undefined, null],
       date: new Date("2026-10-09T00:00:00Z"),
-      url: new URL("https://lumiose.dev/"),
+      url: new URL("https://example.com/"),
       map: new Map([["k", new Set([1])]]),
     };
     // oxlint-disable-next-line no-eval -- checks that the code evaluates to the value

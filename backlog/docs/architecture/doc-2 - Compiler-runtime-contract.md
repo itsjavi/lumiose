@@ -3,7 +3,7 @@ id: doc-2
 title: Compiler-runtime contract
 type: specification
 created_date: '2026-10-08 12:27'
-updated_date: '2026-10-12 16:24'
+updated_date: '2026-10-12 21:53'
 tags:
   - architecture
   - contract
@@ -293,4 +293,4 @@ On the client build, `client:*` is removed, and the component is referenced only
 | `LUM4006` | Hydration mismatch, at runtime in dev |
 | `LUM4008` | Module-scope signal written during SSR, at runtime in dev |
 
-Runtime errors include the code plus a docs URL (`https://lumiose.dev/errors/LUMxxxx`; the URL is a placeholder until publishing).
+Runtime errors include the code and point to its docs page ("run `lumiose docs LUMxxxx`"), which is online at `https://itsjavi.com/lumiose/docs/errors/LUMxxxx`.

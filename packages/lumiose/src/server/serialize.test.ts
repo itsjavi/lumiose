@@ -17,7 +17,7 @@ describe("data-only serialization", () => {
     const value = {
       date: new Date("2026-10-08T12:00:00.000Z"),
       invalid: new Date(Number.NaN),
-      url: new URL("https://lumiose.dev/a?b=1"),
+      url: new URL("https://example.com/a?b=1"),
       map: new Map<unknown, unknown>([
         ["k", new Set([1n])],
         [2, { d: new Date(0) }],

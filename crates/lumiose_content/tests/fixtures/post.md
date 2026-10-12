@@ -5,7 +5,7 @@ tags: [lumiose, docs]
 # Hello, World!
 
 Some *emphasis*, **strong**, ~~gone~~, `code {braces}` and a [link](https://example.com "Title").
-Visit www.example.com or https://lumiose.dev/docs. &copy; 2026 <kbd>Ctrl</kbd>.
+Visit www.example.com or https://itsjavi.com/lumiose/docs. &copy; 2026 <kbd>Ctrl</kbd>.
 
 ## Hello, World!
 
