@@ -1,11 +1,11 @@
 ---
 id: TASK-235
 title: 'Quiet-machine measurement run (benchmarks), then publish the landing'
-status: In Progress
+status: Done
 assignee:
   - Lux
 created_date: '2026-10-11 03:07'
-updated_date: '2026-10-12 13:24'
+updated_date: '2026-10-12 14:42'
 labels:
   - benchmark
 milestone: m-8
@@ -24,7 +24,7 @@ Pending (user, 2026-10-11): the machine is busy, so no benchmarks or evals run u
 <!-- AC:BEGIN -->
 - [x] #1 User gave the go-ahead and the machine was quiet (load recorded in the results)
 - [x] #2 Fullstack, js-framework-benchmark and SSR results committed with versions; TASK-202, 203, 204, 205, 206, 210, 225 and 226 closed
-- [ ] #3 The landing's evidence and stack table are filled from the new results with no 'measuring' cells, and the site is pushed
+- [x] #3 The landing's evidence and stack table are filled from the new results with no 'measuring' cells, and the site is pushed
 <!-- AC:END -->
 
 ## Implementation Notes
@@ -38,4 +38,12 @@ Lux 2026-10-12: user gave the go-ahead. Versions re-checked on npm: all current 
 - SSR (ef81f5b): Lumiose 560 renders/s, Solid 747, Svelte 570 -> regression TASK-244.
 - Landing: stack table fully filled from the results; the 'measuring' footnote now shows only while a cell is measuring; content test asserts no measuring cells. Screenshot: backlog/assets/task-235-stack-table.jpg.
 Closed TASK-202..206, 210, 225, 226, 241, 242. Remaining: push (deploys the landing), waiting for the user.
+
+Lux 2026-10-12: the user pushed fd2723b..d3db9c9, which deployed the landing.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Quiet-machine run of all benchmarks on 2026-10-12 (fullstack 8 apps, js-framework-benchmark, SSR) committed with versions and load; the landing's stack table has no 'measuring' cells. Follow-ups: TASK-244, TASK-245, TASK-246.
+<!-- SECTION:FINAL_SUMMARY:END -->
