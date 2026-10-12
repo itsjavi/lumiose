@@ -71,6 +71,10 @@ pages with `prerender`. When every route is prerendered (no `server` route, no `
 per request, no form action), the build
 removes `dist/server`: `dist/client` is the whole site, and `serverEntry` is `null`.
 `lumiose({ headers })` is written to `dist/client/_headers`.
+Route modules' chunks and stylesheets are named after their route folder, since every page is
+`page.stsx`: `blog/[slug]/page.stsx` builds to `assets/blog-slug-page-[hash].js` (an `spa` page) and
+`assets/blog-slug-page-[hash].css`, `(app)/layout.stsx` to `assets/app-layout-[hash].css`. A Vite
+config that sets its own `entryFileNames`, `chunkFileNames` or `assetFileNames` keeps its names.
 
 ```sh
 lumiose build --format json   # { outDir, clientDir, serverEntry, prerendered: [{ path, file, kind }] }

@@ -19,7 +19,13 @@ import { runtimeFile } from "../../runtime-files.ts";
 import { existsSync } from "node:fs";
 import { mkdir, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
-import { normalizePath, type Plugin, type ResolvedConfig, type Rollup } from "vite";
+import {
+  normalizePath,
+  type Plugin,
+  type ResolvedConfig,
+  type Rollup,
+  type UserConfig,
+} from "vite";
 import { CSS_MANIFEST, isStylesheet } from "../../css-manifest.ts";
 import type { RouteManifest } from "lumiose/internal/app/routes/manifest.ts";
 import type { BuiltAppConfig } from "lumiose/internal/app/server/app.ts";
@@ -29,6 +35,7 @@ import type { LimitsOption } from "lumiose/internal/app/server/body.ts";
 import type { TrailingSlash } from "lumiose/internal/app/server/handler.ts";
 import type { Prefetch } from "lumiose/internal/app/server/navigation.ts";
 import { SPA_ENTRY, spaEntryPlugin } from "../router/entry.ts";
+import { routeModuleNames, routeOutput } from "./chunk-names.ts";
 import { clientRuntime } from "./client-runtime.ts";
 import {
   configProjectOptions,
@@ -110,6 +117,14 @@ function lumioseBuildEnvironments(state: BuildState): Plugin {
       state.outDir = normalizePath(resolve(state.root, config.build?.outDir ?? "dist"));
       state.trailingSlash =
         state.trailingSlashOption ?? configProjectOptions(config.plugins).trailingSlash ?? "ignore";
+      // Route modules' chunks and stylesheets are named after their route folder (TASK-260).
+      let names: Map<string, string> | undefined;
+      const routeNames = () =>
+        state.app === undefined ? undefined : (names ??= routeModuleNames(state.app.manifest));
+      const rootPrefix = `${state.root}/`;
+      const projectFile = (id: string) =>
+        id.startsWith(rootPrefix) ? id.slice(rootPrefix.length) : undefined;
+      const output = (dir: string) => routeOutput(dir, routeNames, projectFile);
       return {
         appType: "custom",
         define: hrefDefine(state.trailingSlash),
@@ -124,6 +139,10 @@ function lumioseBuildEnvironments(state: BuildState): Plugin {
                 // Vite drops the exports of app entries; the island manifest's lazy imports are
                 // what puts each island in its own chunk.
                 preserveEntrySignatures: "exports-only",
+                // The app's own file names, if it sets any, win.
+                ...(setsFileNames(config)
+                  ? {}
+                  : { output: output(config.build?.assetsDir ?? "assets") }),
               },
             },
           },
@@ -137,7 +156,7 @@ function lumioseBuildEnvironments(state: BuildState): Plugin {
                 input: { entry: SERVER_ENTRY },
                 output: {
                   entryFileNames: "entry.js",
-                  chunkFileNames: "chunks/[name]-[hash].js",
+                  chunkFileNames: output("chunks").chunkFileNames,
                   // Smaller server output (-29% on the fullstack bench) with function and class
                   // names kept, so production stack traces stay readable (TASK-174). Mangling would
                   // save 20% more for no measurable cold-start or throughput gain on Node.
@@ -211,6 +230,23 @@ function lumioseBuildEnvironments(state: BuildState): Plugin {
       },
     },
   };
+}
+
+/** Whether the Vite config names the client build's output files itself. */
+function setsFileNames(config: UserConfig): boolean {
+  const outputs = [
+    config.build?.rolldownOptions?.output,
+    config.build?.rollupOptions?.output,
+    config.environments?.client?.build?.rolldownOptions?.output,
+    config.environments?.client?.build?.rollupOptions?.output,
+  ].flat();
+  return outputs.some(
+    (output) =>
+      output !== undefined &&
+      (output.entryFileNames !== undefined ||
+        output.chunkFileNames !== undefined ||
+        output.assetFileNames !== undefined),
+  );
 }
 
 /**

@@ -123,6 +123,19 @@ const quiet = (): Pick<BuildOptions, "customLogger" | "logLevel"> => ({
 
 const read = (root: string, file: string) => readFileSync(join(root, "dist/client", file), "utf8");
 
+/** A component with a style block. */
+const styled = (name: string, head = "") =>
+  `${head}export default function C(props: { children?: JSX.Element }) {
+  return <div class="${name}">{props.children}<style>.${name} { color: teal; }</style></div>;
+}
+`;
+
+/** The client build's assets, sorted, without their hashes (8 base64url characters) by default. */
+const clientAssets = (root: string, unhashed = true) =>
+  readdirSync(join(root, "dist/client/assets"))
+    .map((file) => (unhashed ? file.replace(/-[\w-]{8}(\.\w+)$/, "$1") : file))
+    .toSorted();
+
 async function entryOf(root: string): Promise<ServerEntryModule> {
   return (await import(
     pathToFileURL(join(root, "dist/server/entry.js")).href
@@ -467,9 +480,76 @@ export default function Layout(props: { children?: JSX.Element }) {
     expect(inline![1]).toMatch(/\.home\[data-l-\w+\]\{color:teal\}/);
     expect(home.indexOf(shared[0])).toBeLessThan(home.indexOf(inline![0]));
     expect(page).toMatch(
-      /<link rel="stylesheet" href="\/assets\/page-[\w-]+\.css" data-l-css="\/assets\/page-[\w-]+\.css">/,
+      /<link rel="stylesheet" href="\/assets\/big-page-[\w-]+\.css" data-l-css="\/assets\/big-page-[\w-]+\.css">/,
     );
     expect([...home.matchAll(/rel="stylesheet"/g)]).toHaveLength(1);
+  });
+
+  it("names route modules' chunks and stylesheets after their route folder (TASK-260)", async () => {
+    const files = {
+      "src/routes/layout.stsx": styled("root"),
+      "src/routes/page.stsx": styled("home"),
+      "src/routes/not-found.stsx": styled("missing"),
+      "src/routes/error.stsx": styled("failed"),
+      "src/routes/blog/[slug]/page.stsx": styled("post", 'export const mode = "server";\n'),
+      "src/routes/(app)/dash/layout.stsx": styled("dash", 'export const mode = "spa";\n'),
+      "src/routes/(app)/dash/[...rest]/page.stsx": styled("rest"),
+      "src/components/Counter.stsx": `import { signal } from "lumiose";
+export function Counter() {
+  const count = signal(0);
+  return <button onClick={() => count.update((n) => n + 1)}>{count()}</button>;
+}
+`,
+      "src/routes/counter/page.stsx": `import { Counter } from "../../components/Counter.stsx";
+export default function Page() { return <Counter client:load />; }
+`,
+    };
+    const named = project(files);
+    await build({ root: named, ...quiet() });
+    expect(clientAssets(named)).toEqual(
+      expect.arrayContaining([
+        "page.css",
+        "layout.css",
+        "not-found.css",
+        "error.css",
+        "blog-slug-page.css",
+        "app-dash-layout.css",
+        "app-dash-layout.js",
+        "app-dash-rest-page.css",
+        "app-dash-rest-page.js",
+      ]),
+    );
+    expect(clientAssets(named).filter((file) => /^(?:page|layout)\.js$/.test(file))).toEqual([]);
+
+    // The same app with Vite's default file names: the chunks that import no route module keep
+    // their hashes.
+    const plain = project({
+      ...files,
+      "vite.config.ts": `import lumiose from "@lumiose/vite";
+export default {
+  plugins: [lumiose()],
+  build: {
+    rolldownOptions: {
+      output: {
+        entryFileNames: "assets/[name]-[hash].js",
+        chunkFileNames: "assets/[name]-[hash].js",
+        assetFileNames: "assets/[name]-[hash].[ext]",
+      },
+    },
+  },
+};
+`,
+    });
+    await build({ root: plain, ...quiet() });
+    expect(clientAssets(plain)).toEqual(
+      expect.arrayContaining(["page.css", "layout.js", "page.js"]),
+    );
+    const unrelated = (root: string) =>
+      clientAssets(root, false).filter((file) =>
+        /^(?:lumiose|loader|Counter)-[\w-]{8}\.js$/.test(file),
+      );
+    expect(unrelated(named)).toHaveLength(3);
+    expect(unrelated(named)).toEqual(unrelated(plain));
   });
 
   it("writes assets that only server-rendered pages import to dist/client, once (TASK-126)", async () => {

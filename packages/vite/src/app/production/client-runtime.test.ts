@@ -47,7 +47,11 @@ async function scripts(root: string): Promise<Record<string, string>> {
   });
   const files: Record<string, string> = {};
   for (const file of readdirSync(join(clientDir, "assets")).filter((f) => f.endsWith(".js"))) {
-    files[file.replace(/-[\w-]+\.js$/, "")] = readFileSync(join(clientDir, "assets", file), "utf8");
+    // Without the hash: 8 base64url characters.
+    files[file.replace(/-[\w-]{8}\.js$/, "")] = readFileSync(
+      join(clientDir, "assets", file),
+      "utf8",
+    );
   }
   return files;
 }
@@ -210,13 +214,13 @@ export default function Page() { return <Counter start={1} />; }
     const preloads = async (path: string): Promise<string[]> => {
       const html = await (await entry.default.fetch(new Request(`http://app.test${path}`))).text();
       return [...html.matchAll(/<link rel="?modulepreload"? href="?([^">]+)/g)].map((match) =>
-        match[1]!.replace(/-[\w-]+\.js$/, ""),
+        match[1]!.replace(/-[\w-]{8}\.js$/, ""),
       );
     };
     const spaPage = await preloads("/app");
-    // The layout chunk and the page's, which holds the Counter too.
-    expect(spaPage).toContain("/assets/layout");
-    expect(spaPage.filter((name) => name === "/assets/page").length).toBeGreaterThan(0);
+    // The layout chunk and the page's, which holds the Counter too, named after their folder.
+    expect(spaPage).toContain("/assets/app-layout");
+    expect(spaPage).toContain("/assets/app-page");
     expect(spaPage).not.toContain("/assets/spa");
     expect(await preloads("/")).toEqual([]);
   });
