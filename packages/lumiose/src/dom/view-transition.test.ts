@@ -59,7 +59,11 @@ const el = (tag: string, text?: () => string): HTMLElement => {
 };
 
 /** `<ViewTransition {...props}><tag>{text}</tag></ViewTransition>`, in compiled form. */
-const named = (props: { name?: string; enter?: string; exit?: string }, tag: string, text: string) =>
+const named = (
+  props: { name?: string; enter?: string; exit?: string },
+  tag: string,
+  text: string,
+) =>
   createComponent(ViewTransition, {
     ...props,
     get children() {

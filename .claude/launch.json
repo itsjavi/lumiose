@@ -4,15 +4,7 @@
     {
       "name": "web",
       "runtimeExecutable": "pnpm",
-      "runtimeArgs": [
-        "--filter",
-        "@lumiose/web",
-        "exec",
-        "lumiose",
-        "dev",
-        "--port",
-        "5196"
-      ],
+      "runtimeArgs": ["--filter", "@lumiose/web", "exec", "lumiose", "dev", "--port", "5196"],
       "port": 5196,
       "url": "http://localhost:5196"
     },

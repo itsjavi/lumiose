@@ -167,10 +167,7 @@ test("style edits hot-update the CSS without re-running components", async ({ pa
     // A style block edit: only the CSS module updates, so the count survives.
     await edit(
       file,
-      source.replace(
-        "h2 {\n    color: $theme.accent;\n  }",
-        "h2 {\n    color: rgb(1, 2, 3);\n  }",
-      ),
+      source.replace("h2 {\n    color: $theme.accent;\n  }", "h2 {\n    color: rgb(1, 2, 3);\n  }"),
     );
     await expect(heading).toHaveCSS("color", "rgb(1, 2, 3)");
     await expect(counter).toHaveText("Clicked 2 times");

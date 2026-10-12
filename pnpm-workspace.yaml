@@ -18,5 +18,5 @@ allowBuilds:
   prisma: false
 minimumReleaseAgeExclude:
   - vite@8.3.4
-  - '@vue/language-core@3.3.13'
+  - "@vue/language-core@3.3.13"
   - vue-tsc@3.3.13
