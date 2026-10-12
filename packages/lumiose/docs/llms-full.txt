@@ -47,7 +47,7 @@ mistakes** and **Related diagnostics**. Reference pages list every export with i
 - [Internationalization](concepts/i18n.md): Locale prefixes, per-page locale declarations, `locale()`, locale-aware `href()`, `hreflang` and canonical links, detection on entry.
 - [Data and actions](concepts/data-and-actions.md): Read data with async components, serve endpoints, mutate with form actions and `submit()`.
 - [Server](concepts/server.md): Request context, middleware, cookies, env, redirects and error helpers.
-- [Rendering modes](concepts/rendering-modes.md): `static`, `server` and `spa` routes, prerendered SPA pages, shell-first streaming, hydration and the build.
+- [Rendering modes](concepts/rendering-modes.md): `static`, `server` and `spa` routes: choosing a mode, combining modes, islands and `<Suspense>`, patterns close to partial prerendering, a comparison with Astro islands, prerendered SPA pages, shell-first streaming, hydration and the build.
 - [SVG imports](concepts/svg.md): `import Icon from "./icon.svg"` as an inline, optimised component; `title`, `currentColor`, `?url` and `?raw`.
 - [Markdown and HTML imports](concepts/content.md): `.md` and `.html` files as static components; GFM, heading ids, frontmatter and its hook, scoped `<style>`, client `<script>`.
 - [Head and document](concepts/head.md): `<Title>`, `<Meta>`, `<Head>` and a custom `document.stsx`.
@@ -1928,7 +1928,11 @@ On the server, the call compiles to an island record: the component's module and
 props, its slots and the hydration strategy. The page HTML contains the server-rendered island
 between comment markers (`<!--l:ID-->…<!--/l:ID-->`) plus a JSON record; a small loader (about 1
 kB) reads the records, arms the triggers and imports the island's module when one fires. Clicks,
-input, submits and key presses that happen before hydration are replayed.
+input, submits and key presses that happen before hydration are replayed. Islands work in `static`
+and `server` pages; how they compare with Astro's is in
+[Compared with Astro islands](rendering-modes.md#compared-with-astro-islands), and how a built page
+gets per-reader parts through an island in
+[Close to partial prerendering](rendering-modes.md#close-to-partial-prerendering).
 
 **Directives** (components only):
 
@@ -2098,7 +2102,7 @@ export default function Post() {
   reload: the island owns its state and updates itself from the result. Call `invalidate()` when
   the page needs fresh server HTML ([Data and actions](data-and-actions.md)).
 - **Making a whole page an island to get interactivity.** Mark only the interactive parts, or use
-  an `spa` route ([Rendering modes](rendering-modes.md)).
+  an `spa` route ([Choosing a mode](rendering-modes.md#choosing-a-mode)).
 
 ## Related diagnostics
 
@@ -3003,7 +3007,7 @@ See also: [Data and actions](data-and-actions.md), [Routing](routing.md), [refer
 
 # Rendering modes
 
-> Each route picks a mode: `static` (built HTML, the default), `server` (rendered per request, shell first, then streamed `<Suspense>` boundaries) or `spa` (a client-routed subtree, rendered per request, prerendered at build time or in the browser). All three use the same components.
+> Each route picks a mode: `static` (built HTML, the default), `server` (rendered per request, shell first, then streamed `<Suspense>` boundaries) or `spa` (a client-routed subtree, rendered per request, prerendered at build time or in the browser). All three use the same components, and modes mix per layout and page in one app.
 
 ## Concept
 
@@ -3022,6 +3026,129 @@ whole project into a client-rendered SPA built as static files. `export const pr
 renders an `spa` page (or, in a layout, every `spa` page below it) at build time instead of per
 request, and `lumiose({ prerender: true })` makes that the default for every `spa` page (see
 [Prerendered SPA routes](#prerendered-spa-routes)).
+
+### Choosing a mode
+
+Pick the mode by what the page needs, per route, not once for the whole app:
+
+| Mode                  | For                                                                                                        | Typical pages                                                                     | Costs                                                                                                           | Sample app                                                                                                                                                               |
+| --------------------- | ---------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `static`              | Content that is the same for every visitor and known at build time                                         | Docs, marketing, blog posts, catalogs                                             | Rendered once per build. Any static host (a form `action` still needs a server for the POST). JS: islands only. | [ssg-travel-journal](https://github.com/itsjavi/lumiose/tree/main/examples/ssg-travel-journal), this website                                                             |
+| `server`              | Pages that depend on the reader or the request, or must be fresh                                           | Account pages, dashboards, `?q=` search results, forms that re-render with errors | Rendered on every request: a server or a serverless function. JS: islands only.                                 | [ssr-auth](https://github.com/itsjavi/lumiose/tree/main/examples/ssr-auth), [ssr-bookshelf](https://github.com/itsjavi/lumiose/tree/main/examples/ssr-bookshelf)         |
+| `spa`                 | App-like areas (client navigation, layout state kept across pages) whose first view depends on the request | Signed-in app areas                                                               | Rendered on every request, then the whole subtree ships and hydrates.                                           | [spa-router-e2e](https://github.com/itsjavi/lumiose/tree/main/examples/spa-router-e2e) (test app)                                                                        |
+| `spa` + `prerender`   | App-like areas whose pages are the same for everyone and should work without JS and be indexed             | Public app pages, music tools, galleries                                          | Rendered once per build; any static host. The whole subtree ships and hydrates.                                 | [spa-chiptune](https://github.com/itsjavi/lumiose/tree/main/examples/spa-chiptune), [spa-dotmatrix](https://github.com/itsjavi/lumiose/tree/main/examples/spa-dotmatrix) |
+| `spa` + `ssr = false` | Code that cannot run on the server, where an empty first view is acceptable                                | Editors, canvas or audio tools, admin screens behind a sign-in                    | A static shell; nothing renders until the JS has loaded. No `action` or `headers` exports: use endpoints.       | `/csr` in [spa-router-e2e](https://github.com/itsjavi/lumiose/tree/main/examples/spa-router-e2e)                                                                         |
+
+A rule of thumb, in order:
+
+1. Start with `static`.
+2. A page needs an interactive part: add an [island](islands.md) (`client:*`) to that part. That is
+   not a reason to change the mode.
+3. A page reads the reader's session, cookies or search params, or must be fresh: `server`.
+4. A whole area behaves like an app: `spa`. Add `prerender` when its pages are the same for every
+   reader, and use `ssr = false` only for code that cannot run on the server.
+
+`lumiose routes` lists every route with its resolved mode ([CLI](../reference/cli.md#lumiose-routes)).
+
+### Granularity and combining
+
+Modes are chosen per route, and the finer features per component:
+
+- **Project:** `lumiose({ mode, ssr, prerender })` sets the defaults.
+- **Layout:** `export const mode`, `ssr` and `prerender` in a layout apply to every page below it;
+  the nearest layout that sets one wins.
+- **Page:** the page's own exports win. Endpoints (`route.ts`) take a mode too: `static` endpoints
+  are written at build time and only take `GET` ([LUM5005](../errors/LUM5005.md)).
+- **Component:** a `client:*` directive makes one usage of a component an island; `<Suspense>`
+  marks the part of a page that may arrive after the rest.
+
+What combines with each mode:
+
+| Mode                  | Islands (`client:*`)                                                                     | `<Suspense>`                                      | Request APIs (`cookies()`, `locals()`, `url().searchParams`)    |
+| --------------------- | ---------------------------------------------------------------------------------------- | ------------------------------------------------- | --------------------------------------------------------------- |
+| `static`              | Yes                                                                                      | Resolved at build time: no fallback, no streaming | No ([LUM5001](../errors/LUM5001.md))                            |
+| `server`              | Yes                                                                                      | Streams after the shell                           | Yes                                                             |
+| `spa`                 | Not needed: the whole subtree hydrates; a `client:*` inside renders as a plain component | Streams after the shell, then hydrates            | Not in SPA code, which also runs in the browser: call endpoints |
+| `spa` + `prerender`   | Not needed                                                                               | Resolved at build time                            | No ([LUM5001](../errors/LUM5001.md))                            |
+| `spa` + `ssr = false` | Not needed                                                                               | Shows its fallback, then renders in the browser   | No: the page renders in the browser; call endpoints             |
+
+And across levels:
+
+- **`static` and `server` pages share layouts.** A layout renders with the page: at build time for a
+  `static` page, per request for a `server` page.
+- **An `spa` subtree under server-rendered layouts.** The SPA starts at the outermost `spa` layout of
+  the page (or at the page). Layouts above it render on the server only (per request, or at build
+  time with `prerender`) and never hydrate.
+- **A page can leave an `spa` area.** A page with its own `mode = "static"` or `"server"` below an
+  `spa` layout is not part of the SPA: its layouts render on the server only, and links to it are
+  document navigations.
+- **A `static` page with a form `action`.** The `GET` is the built file; the `POST` runs the action
+  on the server and renders the page with its result.
+- **`prerender` and `ssr = false` exclude each other,** also when one comes from a layout or the
+  project ([LUM5006](../errors/LUM5006.md)).
+
+[ssr-bookshelf](https://github.com/itsjavi/lumiose/tree/main/examples/ssr-bookshelf) mixes modes in
+one app: `/about` and `/genres` are `static` with an account-menu island, the catalog and account
+pages are `server`, and `/api/me` and `/api/search` are `server` endpoints.
+
+### Close to partial prerendering
+
+Partial prerendering (PPR, part of Cache Components in Next.js 16) builds a page's static shell
+once, sends it at once on every request, and streams the request-dependent holes, each a
+`<Suspense>` boundary, into the same response. **Lumiose has no mode that serves a prebuilt shell
+and fills its holes per request:** a page is either built (`static`, `spa` with `prerender`) or
+rendered on every request (`server`, `spa`). Two patterns get close:
+
+- **`server` + `<Suspense>`.** Everything outside the boundaries is the shell; it renders per
+  request and is sent as soon as it resolves, and the slow or per-reader parts stream into the same
+  response. No extra request and no client JS beyond the swap script. Trade-offs: the shell renders
+  on every request (no CDN-cached shell), so keep it free of slow work. A streamed boundary is
+  applied by a ~300 B `$swap` script, or natively by browsers that apply `<template for>`
+  (declarative partial updates); without either, the reader keeps seeing the fallback. So keep
+  essential content and forms out of streamed boundaries. A boundary whose content renders
+  synchronously is not streamed at all: it is folded into the shell.
+- **`static` + islands.** The page is built once and served by any static host or CDN; the
+  per-reader parts are islands that call an endpoint after load (`client:idle` and
+  `fetchJSON("/api/me")`). Trade-offs: those parts need JS and a second request, appear after
+  hydration (give their fallback a stable size), and never appear without JS.
+
+Good candidates: pages whose main content is the same for everyone, with small per-reader or fresh
+parts (a product or book page with an account menu, a reading-list button and reviews), and slow,
+optional widgets. Poor candidates: pages that are mostly per reader (use plain `server`), content
+that decides the status or the head (it must be in the shell, [LUM5004](../errors/LUM5004.md)), and
+forms that must work without JavaScript inside a hole whose data is slow.
+
+The bookshelf sample shows each pattern:
+
+- `/about` and `/genres`: `static` + the account menu, a `client:idle` island over `/api/me`.
+- `/` (home): `server` + a `<Suspense>` around the recommendations, which really stream.
+- `/books/[isbn]`: shell + holes. The shell reads only the route param: the book's metadata and
+  description. The header's account area, the reading-list toggle, "Your review", the rating
+  summary and histogram, and the reviews list are each a `<Suspense>` hole that runs its own
+  queries and reads `locals()` or `url()` itself when it needs the reader or the query string, with
+  a fallback of stable size. Their data is synchronous (`node:sqlite`), so every hole resolves
+  inside the shell: nothing streams, and every form works without JavaScript. Async data in a hole
+  would stream it, as on the home page. The split marks which parts a prebuilt shell could hold.
+
+### Compared with Astro islands
+
+Lumiose islands follow Astro's idea: pages are server HTML with no JS by default, and a `client:*`
+directive at the usage site makes one component instance an island, with the same directive names
+(`client:load`, `client:idle`, `client:visible`, `client:media`, `client:only`) and serializable
+props. The differences (Astro 7.3, checked against its docs and source in October 2026):
+
+| Topic                 | Astro                                                                                                                                                      | Lumiose                                                                                                                                                                                  |
+| --------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Components            | `.astro` server components plus islands from React, Preact, Svelte, Vue or Solid, mixable on one page                                                      | One component model on the server and in the browser, so `client:only` needs no framework name                                                                                           |
+| Island markup         | An `<astro-island>` custom element around each island, with its component URL and props as attributes                                                      | Comment markers (`<!--l:ID-->…<!--/l:ID-->`) plus JSON records: no wrapper element, so flex, grid and child selectors see the island's own elements                                      |
+| Directive options     | `client:idle={{timeout}}`, `client:visible={{rootMargin}}`                                                                                                 | `client:idle` hydrates at the latest after 2 s; `client:visible="200px"`                                                                                                                 |
+| Early events          | Not replayed                                                                                                                                               | Clicks, input, submits and key presses before hydration are replayed                                                                                                                     |
+| Data                  | Passed to the island as props                                                                                                                              | Islands may also `await` data; the values are recorded during SSR and replayed during hydration, and cached awaits are sent once per page                                                |
+| Shared state          | Nano Stores (client side)                                                                                                                                  | Scoped state (`defineState`, [Sharing state](state.md)): one instance per page, seeded on the server and sent with the page                                                              |
+| Deferred server parts | `server:defer` server islands: a script fetches each one in a separate request after load (encrypted props, a `fallback` slot); works on prerendered pages | No `server:defer`. A `server` page streams the part in the same response with `<Suspense>` ([above](#close-to-partial-prerendering)); a built page uses a client island over an endpoint |
+| App navigation        | `<ClientRouter />` swaps documents on navigation, with `transition:persist`                                                                                | `spa` subtrees with a client router ([`lumiose/router`](../reference/router.md)) and layouts that persist; MPA pages use prefetch and, opt-in, native cross-document View Transitions    |
+
+### How pages render
 
 **Shell first, then stream (server mode).**
 
@@ -3120,7 +3247,9 @@ modules safe to load on the server (above), add `staticPaths()` to pages with pa
 `prerender = true` on the SPA's layout (or `lumiose({ prerender: true })`). `lumiose dev` renders the pages per request,
 fully resolved as the build does, so hydration problems show up there first.
 
-**Build (`lumiose build`).** 1. client build (islands, SPA, CSS, assets, `public/`), 2. server
+### Build
+
+`lumiose build` runs: 1. client build (islands, SPA, CSS, assets, `public/`), 2. server
 build, 3. prerender of every `static` route and every `spa` page with `prerender` (each
 `staticPaths()` entry for routes with params) and every static `GET` endpoint, in-process through the built handler and fully resolved (no fallbacks
 or swap scripts), 4. precompression: a `.br` and a `.gz` copy next to every text file of
