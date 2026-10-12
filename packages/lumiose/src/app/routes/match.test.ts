@@ -1,33 +1,33 @@
 import { describe, expect, it } from "vitest";
 import { createRouteManifest } from "./manifest.ts";
-import { createRouteMatcher, splitPathname } from "./match.ts";
+import { createRouteMatcher, matchSegments, splitPathname } from "./match.ts";
 
 const matcherOf = (paths: string[]) =>
   createRouteMatcher(createRouteManifest(paths.map((path) => ({ path, source: "" }))));
 
 describe("createRouteMatcher", () => {
   const matcher = matcherOf([
-    "index.stsx",
-    "about.stsx",
-    "(marketing)/pricing.stsx",
-    "blog/index.stsx",
-    "blog/new.stsx",
-    "blog/[slug].stsx",
-    "blog/[slug]/comments.stsx",
-    "docs/index.stsx",
-    "docs/[...path].stsx",
-    "[lang]/about.stsx",
-    "[...all].stsx",
-    "shop/[category]/[item].stsx",
-    "sitemap.xml.ts",
-    "api/posts/[id].ts",
+    "page.stsx",
+    "about/page.stsx",
+    "(marketing)/pricing/page.stsx",
+    "blog/page.stsx",
+    "blog/new/page.stsx",
+    "blog/[slug]/page.stsx",
+    "blog/[slug]/comments/page.stsx",
+    "docs/page.stsx",
+    "docs/[...path]/page.stsx",
+    "[lang]/about/page.stsx",
+    "[...all]/page.stsx",
+    "shop/[category]/[item]/page.stsx",
+    "sitemap.xml/route.ts",
+    "api/posts/[id]/route.ts",
   ]);
   const match = (pathname: string) => {
     const result = matcher.match(pathname);
     return result === null ? null : [result.route.pattern, result.params];
   };
 
-  it("matches static routes, index files and groups", () => {
+  it("matches static routes, folder pages and groups", () => {
     expect(match("/")).toEqual(["/", {}]);
     expect(match("/about")).toEqual(["/about", {}]);
     expect(match("/pricing")).toEqual(["/pricing", {}]);
@@ -48,8 +48,9 @@ describe("createRouteMatcher", () => {
     expect(match("/api/posts/7")).toEqual(["/api/posts/[id]", { id: "7" }]);
   });
 
-  it("lets a rest param match zero or more segments, after an exact match", () => {
+  it("lets a rest param match one or more segments", () => {
     expect(match("/docs")).toEqual(["/docs", {}]);
+    expect(match("/docs/")).toEqual(["/docs", {}]);
     expect(match("/docs/guide")).toEqual(["/docs/[...path]", { path: "guide" }]);
     expect(match("/docs/guide/routing/files")).toEqual([
       "/docs/[...path]",
@@ -70,10 +71,12 @@ describe("createRouteMatcher", () => {
   });
 
   it("returns null when nothing matches", () => {
-    const strict = matcherOf(["index.stsx", "blog/[slug].stsx"]);
+    const strict = matcherOf(["page.stsx", "blog/[slug]/page.stsx", "files/[...path]/page.stsx"]);
     expect(strict.match("/blog")).toBeNull();
     expect(strict.match("/blog/a/b")).toBeNull();
     expect(strict.match("/about")).toBeNull();
+    expect(strict.match("/files")).toBeNull();
+    expect(strict.match("/files/a")?.params).toEqual({ path: "a" });
   });
 
   it("is case-sensitive", () => {
@@ -81,25 +84,77 @@ describe("createRouteMatcher", () => {
   });
 });
 
-describe("RouteMatcher.notFound", () => {
-  it("picks the _404 page with the deepest matching scope", () => {
-    const matcher = matcherOf([
-      "_404.stsx",
-      "(marketing)/_404.stsx",
-      "blog/_404.stsx",
-      "shop/[category]/_404.stsx",
-      "index.stsx",
-    ]);
-    expect(matcher.notFound("/missing")?.file).toBe("src/routes/_404.stsx");
-    expect(matcher.notFound("/blog/missing/deep")?.file).toBe("src/routes/blog/_404.stsx");
-    expect(matcher.notFound("/shop/books/missing")?.file).toBe(
-      "src/routes/shop/[category]/_404.stsx",
-    );
-    expect(matcher.notFound("/shop")?.file).toBe("src/routes/_404.stsx");
+describe("optional segments", () => {
+  const matcher = matcherOf([
+    "[[lang]]/about/page.stsx",
+    "[slug]/page.stsx",
+    "docs/[[...path]]/page.stsx",
+    "docs/api/page.stsx",
+    "files/[[...path]]/route.ts",
+  ]);
+  const match = (pathname: string) => {
+    const result = matcher.match(pathname);
+    return result === null ? null : [result.route.pattern, result.params];
+  };
+
+  it("matches [[param]] with and without its segment, omitting the absent param", () => {
+    expect(match("/about")).toEqual(["/[[lang]]/about", {}]);
+    expect(match("/es/about")).toEqual(["/[[lang]]/about", { lang: "es" }]);
+    expect(match("/es")).toEqual(["/[slug]", { slug: "es" }]);
   });
 
-  it("returns undefined without _404 pages", () => {
-    expect(matcherOf(["index.stsx"]).notFound("/x")).toBeUndefined();
+  it("matches [[...rest]] with zero or more segments", () => {
+    expect(match("/docs")).toEqual(["/docs/[[...path]]", {}]);
+    expect(match("/docs/guide/routing")).toEqual(["/docs/[[...path]]", { path: "guide/routing" }]);
+    expect(match("/docs/api")).toEqual(["/docs/api", {}]);
+    expect(match("/files")).toEqual(["/files/[[...path]]", {}]);
+  });
+
+  it("ranks each URL shape on its own: static beats param", () => {
+    const ranked = matcherOf(["[[lang]]/[slug]/page.stsx", "blog/page.stsx"]);
+    expect(ranked.match("/blog")?.route.pattern).toBe("/blog");
+    expect(ranked.match("/post")?.params).toEqual({ slug: "post" });
+    expect(ranked.match("/es/post")?.params).toEqual({ lang: "es", slug: "post" });
+  });
+
+  it("matches optional segments with matchSegments", () => {
+    const segments = createRouteManifest([
+      { path: "[[lang]]/docs/[[...path]]/page.stsx", source: "" },
+    ]).routes[0]!.segments;
+    expect(matchSegments(segments, ["docs"])).toEqual({});
+    expect(matchSegments(segments, ["fr", "docs", "a", "b"])).toEqual({ lang: "fr", path: "a/b" });
+    expect(matchSegments(segments, ["fr"])).toBeNull();
+  });
+});
+
+describe("RouteMatcher.notFound", () => {
+  it("picks the not-found page with the deepest matching scope", () => {
+    const matcher = matcherOf([
+      "not-found.stsx",
+      "(marketing)/not-found.stsx",
+      "blog/not-found.stsx",
+      "shop/[category]/not-found.stsx",
+      "page.stsx",
+    ]);
+    expect(matcher.notFound("/missing")?.file).toBe("src/routes/not-found.stsx");
+    expect(matcher.notFound("/blog/missing/deep")?.file).toBe("src/routes/blog/not-found.stsx");
+    expect(matcher.notFound("/shop/books/missing")?.file).toBe(
+      "src/routes/shop/[category]/not-found.stsx",
+    );
+    expect(matcher.notFound("/shop")?.file).toBe("src/routes/not-found.stsx");
+  });
+
+  it("covers the URLs with and without an optional scope segment", () => {
+    const matcher = matcherOf(["not-found.stsx", "[[lang]]/docs/not-found.stsx"]);
+    expect(matcher.notFound("/docs/missing")?.file).toBe("src/routes/[[lang]]/docs/not-found.stsx");
+    expect(matcher.notFound("/es/docs/missing")?.file).toBe(
+      "src/routes/[[lang]]/docs/not-found.stsx",
+    );
+    expect(matcher.notFound("/es/blog")?.file).toBe("src/routes/not-found.stsx");
+  });
+
+  it("returns undefined without not-found pages", () => {
+    expect(matcherOf(["page.stsx"]).notFound("/x")).toBeUndefined();
   });
 });
 

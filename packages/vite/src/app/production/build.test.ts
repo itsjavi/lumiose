@@ -34,7 +34,7 @@ const middleware: Middleware = (ctx, next) => {
 export default middleware;
 `,
   "src/app.css": "body { margin: 0; }\n",
-  "src/routes/_layout.stsx": `import "../app.css";
+  "src/routes/layout.stsx": `import "../app.css";
 export default function Layout(props: { children?: JSX.Element }) {
   return (
     <div class="layout">
@@ -47,7 +47,7 @@ export default function Layout(props: { children?: JSX.Element }) {
   );
 }
 `,
-  "src/routes/index.stsx": `import { Suspense, Title } from "lumiose";
+  "src/routes/page.stsx": `import { Suspense, Title } from "lumiose";
 import { Counter } from "../components/Counter.stsx";
 async function Slow() {
   const text = await new Promise<string>((done) => setTimeout(() => done("resolved at build time"), 20));
@@ -69,34 +69,34 @@ export function Counter(props: { start: number }) {
   return <button onClick={() => count.update((n) => n + 1)}>{count()}</button>;
 }
 `,
-  "src/routes/about.stsx": `export default function About() { return <h1>About</h1>; }
+  "src/routes/about/page.stsx": `export default function About() { return <h1>About</h1>; }
 `,
-  "src/routes/blog/[slug].stsx": `import { params } from "lumiose";
+  "src/routes/blog/[slug]/page.stsx": `import { params } from "lumiose";
 export async function staticPaths() {
   return [{ params: { slug: "hello" } }, { params: { slug: "hola mundo" } }];
 }
 export default function Post() { return <h1>Post {params().slug}</h1>; }
 `,
-  "src/routes/docs/[...path].stsx": `export function staticPaths() {
+  "src/routes/docs/[...path]/page.stsx": `export function staticPaths() {
   return [{ params: { path: "guide/intro" } }];
 }
 export default function Doc(props: { params: { path: string } }) { return <h1>Doc {props.params.path}</h1>; }
 `,
-  "src/routes/old.stsx": `import { redirect } from "lumiose";
+  "src/routes/old/page.stsx": `import { redirect } from "lumiose";
 export default function Old() { throw redirect("/about"); }
 `,
-  "src/routes/sitemap.xml.ts": `export function GET(ctx: { url: URL }) {
+  "src/routes/sitemap.xml/route.ts": `export function GET(ctx: { url: URL }) {
   return new Response(\`<urlset><url>\${ctx.url.origin}/</url></urlset>\`, { headers: { "content-type": "application/xml" } });
 }
 `,
-  "src/routes/live.stsx": `import { cookies, url } from "lumiose";
+  "src/routes/live/page.stsx": `import { cookies, url } from "lumiose";
 export const mode = "server";
 export default function Live() { return <p>live {cookies().get("a") ?? "none"} {url().searchParams.get("q")}</p>; }
 `,
-  "src/routes/api/echo.ts": `export const mode = "server";
+  "src/routes/api/echo/route.ts": `export const mode = "server";
 export function POST() { return new Response("posted"); }
 `,
-  "src/routes/_404.stsx": `export default function NotFound(props: { status: number }) { return <h1>Missing {props.status}</h1>; }
+  "src/routes/not-found.stsx": `export default function NotFound(props: { status: number }) { return <h1>Missing {props.status}</h1>; }
 `,
 };
 
@@ -199,8 +199,8 @@ describe.skipIf(!binding)("lumiose build", () => {
     // dist/server/entry.js: `export default { fetch }` serves every route.
     const entry = await entryOf(root);
     // Route modules are imported once for the server's lifetime, not per request (TASK-150).
-    const first = entry.app.loadModule("src/routes/index.stsx");
-    expect(entry.app.loadModule("src/routes/index.stsx")).toBe(first);
+    const first = entry.app.loadModule("src/routes/page.stsx");
+    expect(entry.app.loadModule("src/routes/page.stsx")).toBe(first);
     const live = await entry.default.fetch(
       new Request("http://app.test/live?q=1", { headers: { cookie: "a=b" } }),
     );
@@ -228,7 +228,7 @@ export function Visits() {
   return <b onClick={() => count.update((n) => n + 1)}>{count()} visits</b>;
 }
 `,
-      "src/routes/index.stsx": `import { Visits } from "../components/Visits.stsx";
+      "src/routes/page.stsx": `import { Visits } from "../components/Visits.stsx";
 import { note } from "../lib/note.ts";
 import { visits } from "../lib/visits.ts";
 export const mode = "server";
@@ -296,7 +296,7 @@ export function Toggle() {
   );
 }
 `,
-      "src/routes/index.stsx": `import { Toggle } from "../components/Toggle.stsx";
+      "src/routes/page.stsx": `import { Toggle } from "../components/Toggle.stsx";
 export default function Home() { return <main><Toggle client:load /></main>; }
 `,
     });
@@ -338,11 +338,11 @@ export function Nav() {
     });
     const root = project({
       "package.json": `{ "name": "app", "private": true, "dependencies": { "@acme/kit": "workspace:*" } }\n`,
-      "src/routes/index.stsx": `import { Badge, Header } from "@acme/kit";
+      "src/routes/page.stsx": `import { Badge, Header } from "@acme/kit";
 export default function Home() { return <main><Header /><Badge client:load /></main>; }
 `,
       // A server route keeps dist/server, whose entry maps the refs too.
-      "src/routes/live.stsx": `export const mode = "server";\nexport default function Live() { return <h1>Live</h1>; }\n`,
+      "src/routes/live/page.stsx": `export const mode = "server";\nexport default function Live() { return <h1>Live</h1>; }\n`,
     });
     mkdirSync(join(root, "node_modules/@acme"));
     symlinkSync(kit, join(root, "node_modules/@acme/kit"), "dir");
@@ -371,12 +371,12 @@ export default function Home() { return <main><Header /><Badge client:load /></m
       "vite.config.ts": `import lumiose from "@lumiose/vite";
 export default { plugins: [lumiose({ viewTransitions: true })] };
 `,
-      "src/routes/index.stsx": `export default function Home() { return <a href="/live">Live</a>; }
+      "src/routes/page.stsx": `export default function Home() { return <a href="/live">Live</a>; }
 `,
-      "src/routes/live.stsx": `export const mode = "server";
+      "src/routes/live/page.stsx": `export const mode = "server";
 export default function Live() { return <h1>Live</h1>; }
 `,
-      "src/routes/feed.xml.ts": 'export function GET() { return new Response("<feed/>"); }\n',
+      "src/routes/feed.xml/route.ts": 'export function GET() { return new Response("<feed/>"); }\n',
     });
     await build({ root, ...quiet() });
 
@@ -395,7 +395,7 @@ export default function Live() { return <h1>Live</h1>; }
       "vite.config.ts": `import lumiose from "@lumiose/vite";
 export default { base: "/sub/", plugins: [lumiose({ trailingSlash: "always" })] };
 `,
-      "src/routes/index.stsx": `import { href } from "lumiose";
+      "src/routes/page.stsx": `import { href } from "lumiose";
 import { Nav } from "../components/Nav.stsx";
 export default function Home() {
   return (
@@ -410,10 +410,10 @@ export default function Home() {
       "src/components/Nav.stsx": `import { href } from "lumiose";
 export function Nav() { return <a class="nav" href={href("/")}>Home</a>; }
 `,
-      "src/routes/blog/[slug].stsx": `export const staticPaths = () => [{ params: { slug: "hello" } }];
+      "src/routes/blog/[slug]/page.stsx": `export const staticPaths = () => [{ params: { slug: "hello" } }];
 export default function Post() { return <h1>Post</h1>; }
 `,
-      "src/routes/feed.xml.ts": 'export function GET() { return new Response("<feed/>"); }\n',
+      "src/routes/feed.xml/route.ts": 'export function GET() { return new Response("<feed/>"); }\n',
     });
     const result = await build({ root, ...quiet() });
     expect(result.prerendered.map((file) => file.file)).toEqual(
@@ -437,16 +437,16 @@ export default function Post() { return <h1>Post</h1>; }
     const big = Array.from({ length: 120 }, (_, i) => `.rule-${i} { margin-left: ${i}px; }`);
     const root = project({
       "src/app.css": "body { margin: 0; }\n",
-      "src/routes/_layout.stsx": `import "../app.css";
+      "src/routes/layout.stsx": `import "../app.css";
 export default function Layout(props: { children?: JSX.Element }) {
   return <div class="layout">{props.children}<style>.layout { color: navy; }</style></div>;
 }
 `,
-      "src/routes/index.stsx": `export default function Home() {
+      "src/routes/page.stsx": `export default function Home() {
   return <main class="home">Home<style>.home { color: teal; }</style></main>;
 }
 `,
-      "src/routes/big.stsx": `export default function Big() {
+      "src/routes/big/page.stsx": `export default function Big() {
   return <main class="big">Big<style>${big.join("\n")}</style></main>;
 }
 `,
@@ -463,11 +463,11 @@ export default function Layout(props: { children?: JSX.Element }) {
     expect(read(root, shared[1]!)).toMatch(/margin:0[^]*\.layout\[data-l-\w+\]\{color:navy\}/);
     expect(shared[2]!.split(" ")).toHaveLength(2);
     // A small page stylesheet is inlined after it; one over 4 kB is linked.
-    const inline = /<style data-l-css="\/assets\/index-[\w-]+\.css">([^<]*)<\/style>/.exec(home);
+    const inline = /<style data-l-css="\/assets\/page-[\w-]+\.css">([^<]*)<\/style>/.exec(home);
     expect(inline![1]).toMatch(/\.home\[data-l-\w+\]\{color:teal\}/);
     expect(home.indexOf(shared[0])).toBeLessThan(home.indexOf(inline![0]));
     expect(page).toMatch(
-      /<link rel="stylesheet" href="\/assets\/big-[\w-]+\.css" data-l-css="\/assets\/big-[\w-]+\.css">/,
+      /<link rel="stylesheet" href="\/assets\/page-[\w-]+\.css" data-l-css="\/assets\/page-[\w-]+\.css">/,
     );
     expect([...home.matchAll(/rel="stylesheet"/g)]).toHaveLength(1);
   });
@@ -486,7 +486,7 @@ export default { plugins: [lumiose({ md: true })] };
       "src/components/Badge.stsx": `import shared from "../shared.png";
 export function Badge() { return <img class="badge" src={shared} onClick={() => {}} />; }
 `,
-      "src/routes/index.stsx": `import "../app.css";
+      "src/routes/page.stsx": `import "../app.css";
 import photo from "../photo.png";
 import shared from "../shared.png";
 import Post from "../content/post.md";
@@ -512,7 +512,7 @@ export default function Home() {
 
   it("builds a site without islands or server routes to a self-contained dist/client", async () => {
     const root = project({
-      "src/routes/index.stsx": "export default function Home() { return <h1>Static</h1>; }\n",
+      "src/routes/page.stsx": "export default function Home() { return <h1>Static</h1>; }\n",
     });
     const result = await build({ root, ...quiet() });
     // `_headers`: Lumiose's default headers for static hosts (decision-29).
@@ -528,7 +528,7 @@ export default function Home() {
 
   it("keeps dist/server for form actions, and writes lumiose({ headers }) to _headers (TASK-125)", async () => {
     const root = project({
-      "src/routes/index.stsx": `export const actions = { save: () => ({ ok: true }) };
+      "src/routes/page.stsx": `export const actions = { save: () => ({ ok: true }) };
 export default function Home() { return <h1>Static</h1>; }
 `,
       "public/_headers": "/static/*\n  x-own: 1",
@@ -553,24 +553,24 @@ export default {
       "vite.config.ts": `import lumiose from "@lumiose/vite";
 export default { plugins: [lumiose({ mode: "spa" })] };
 `,
-      "src/routes/_layout.stsx": `export default function Shell(props: { children?: JSX.Element }) {
+      "src/routes/layout.stsx": `export default function Shell(props: { children?: JSX.Element }) {
   return <div class="shell">{props.children}</div>;
 }
 `,
-      "src/routes/index.stsx": `import { Link } from "lumiose/router";
+      "src/routes/page.stsx": `import { Link } from "lumiose/router";
 export const prerender = true;
 export default function Home() {
   return <main><h1>Tracks</h1><Link href="/tracks/2">Two</Link></main>;
 }
 `,
-      "src/routes/tracks/[id].stsx": `import { params } from "lumiose/router";
+      "src/routes/tracks/[id]/page.stsx": `import { params } from "lumiose/router";
 export const prerender = true;
 export function staticPaths() {
   return [{ params: { id: "1" } }, { params: { id: "2" } }];
 }
 export default function Track() { return <h1>Track {params().id}</h1>; }
 `,
-      "src/routes/_404.stsx": `export default function NotFound() { return <h1>No such track</h1>; }
+      "src/routes/not-found.stsx": `export default function NotFound() { return <h1>No such track</h1>; }
 `,
     });
     const result = await build({ root, ...quiet() });
@@ -588,7 +588,7 @@ export default function Track() { return <h1>Track {params().id}</h1>; }
     const home = read(root, "index.html");
     expect(home).toContain("<h1>Tracks</h1>");
     expect(home).toContain("class=shell");
-    expect(home).toContain("src/routes/index.stsx#lumiose:spa");
+    expect(home).toContain("src/routes/page.stsx#lumiose:spa");
     expect(home).not.toContain("#lumiose:csr");
     const spa = /<script type="module" async src="\/(assets\/spa-[\w-]+\.js)"><\/script>/.exec(
       home,
@@ -598,7 +598,7 @@ export default function Track() { return <h1>Track {params().id}</h1>; }
     // Deep links with params get their own HTML, which starts the same SPA.
     const track = read(root, "tracks/2/index.html");
     expect(track).toContain("<h1>Track <!--[-->2<!--]--></h1>");
-    expect(track).toContain("src/routes/tracks/[id].stsx#lumiose:spa");
+    expect(track).toContain("src/routes/tracks/[id]/page.stsx#lumiose:spa");
     expect(track).toContain(spa![0]);
     // Unknown URLs: the _404 page, rendered inside the SPA.
     expect(read(root, "404.html")).toContain("<h1>No such track</h1>");
@@ -609,12 +609,12 @@ export default function Track() { return <h1>Track {params().id}</h1>; }
       "vite.config.ts": `import lumiose from "@lumiose/vite";
 export default { plugins: [lumiose({ mode: "spa", prerender: true })] };
 `,
-      "src/routes/index.stsx": "export default function Home() { return <h1>Home</h1>; }\n",
-      "src/routes/live.stsx": `import { cookies } from "lumiose";
+      "src/routes/page.stsx": "export default function Home() { return <h1>Home</h1>; }\n",
+      "src/routes/live/page.stsx": `import { cookies } from "lumiose";
 export const prerender = false;
 export default function Live() { return <p>{cookies().get("a") ?? "none"}</p>; }
 `,
-      "src/routes/shell.stsx": `export const ssr = false;
+      "src/routes/shell/page.stsx": `export const ssr = false;
 export default function Shell() { return <p>browser only</p>; }
 `,
     });
@@ -626,30 +626,30 @@ export default function Shell() { return <p>browser only</p>; }
     ]);
     expect(read(root, "index.html")).toContain("<h1>Home</h1>");
     // An ssr = false page stays a shell under the project default.
-    expect(read(root, "shell/index.html")).toContain("src/routes/shell.stsx#lumiose:csr");
+    expect(read(root, "shell/index.html")).toContain("src/routes/shell/page.stsx#lumiose:csr");
     // The page that opted out renders per request, so the build keeps its server.
     expect(result.serverEntry).toBe(join(root, "dist/server/entry.js"));
   });
 
   it("prerenders the spa pages below a layout with prerender, nearest layout first (TASK-229)", async () => {
     const root = project({
-      "src/routes/_layout.stsx": `export const mode = "spa";
+      "src/routes/layout.stsx": `export const mode = "spa";
 export const prerender = true;
 export default function Shell(props: { children?: JSX.Element }) { return <div class="shell">{props.children}</div>; }
 `,
-      "src/routes/index.stsx": "export default function Home() { return <h1>Home</h1>; }\n",
-      "src/routes/account.stsx": `import { cookies } from "lumiose";
+      "src/routes/page.stsx": "export default function Home() { return <h1>Home</h1>; }\n",
+      "src/routes/account/page.stsx": `import { cookies } from "lumiose";
 export const prerender = false;
 export default function Account() { return <p>{cookies().get("a") ?? "none"}</p>; }
 `,
-      "src/routes/studio/_layout.stsx": `export const prerender = false;
+      "src/routes/studio/layout.stsx": `export const prerender = false;
 export default function Studio(props: { children?: JSX.Element }) { return <section>{props.children}</section>; }
 `,
-      "src/routes/studio/index.stsx": "export default function Live() { return <h1>Live</h1>; }\n",
-      "src/routes/studio/demo/_layout.stsx": `export const prerender = true;
+      "src/routes/studio/page.stsx": "export default function Live() { return <h1>Live</h1>; }\n",
+      "src/routes/studio/demo/layout.stsx": `export const prerender = true;
 export default function Demo(props: { children?: JSX.Element }) { return <div>{props.children}</div>; }
 `,
-      "src/routes/studio/demo/index.stsx":
+      "src/routes/studio/demo/page.stsx":
         "export default function Demo() { return <h1>Demo</h1>; }\n",
     });
     const result = await build({ root, ...quiet() });
@@ -658,7 +658,7 @@ export default function Demo(props: { children?: JSX.Element }) { return <div>{p
       "index.html",
       "studio/demo/index.html",
     ]);
-    expect(read(root, "index.html")).toContain("src/routes/index.stsx#lumiose:spa");
+    expect(read(root, "index.html")).toContain("src/routes/page.stsx#lumiose:spa");
     expect(read(root, "studio/demo/index.html")).toContain("<h1>Demo</h1>");
     // /account and /studio opted out, so they render per request.
     expect(result.serverEntry).toBe(join(root, "dist/server/entry.js"));
@@ -666,14 +666,14 @@ export default function Demo(props: { children?: JSX.Element }) { return <div>{p
 
   it("stops when a prerendered spa route reads the request or lacks staticPaths() (TASK-216)", async () => {
     const root = project({
-      "src/routes/_layout.stsx": `export const mode = "spa";
+      "src/routes/layout.stsx": `export const mode = "spa";
 export default function Shell(props: { children?: JSX.Element }) { return <div>{props.children}</div>; }
 `,
-      "src/routes/index.stsx": `import { cookies } from "lumiose";
+      "src/routes/page.stsx": `import { cookies } from "lumiose";
 export const prerender = true;
 export default function Home() { return <p>{cookies().get("theme") ?? "light"}</p>; }
 `,
-      "src/routes/tracks/[id].stsx": `export const prerender = true;
+      "src/routes/tracks/[id]/page.stsx": `export const prerender = true;
 export default function Track() { return <h1>Track</h1>; }
 `,
     });
@@ -681,17 +681,17 @@ export default function Track() { return <h1>Track</h1>; }
     expect(failure).toBeInstanceOf(PrerenderError);
     expect((failure as PrerenderError).problems).toEqual([
       expect.stringContaining(
-        `src/routes/tracks/[id].stsx: "/tracks/[id]" is prerendered and has params, so it needs \`export async function staticPaths()\``,
+        `src/routes/tracks/[id]/page.stsx: "/tracks/[id]" is prerendered and has params, so it needs \`export async function staticPaths()\``,
       ),
       expect.stringMatching(
-        /^src\/routes\/index\.stsx \(\/\): cookies\(\) reads the request, but this route is prerendered.*LUM5001/,
+        /^src\/routes\/page\.stsx \(\/\): cookies\(\) reads the request, but this route is prerendered.*LUM5001/,
       ),
     ]);
   });
 
   it("stops with LUM5006 for prerender on an ssr = false page, before building (TASK-216)", async () => {
     const root = project({
-      "src/routes/index.stsx": `export const mode = "spa";
+      "src/routes/page.stsx": `export const mode = "spa";
 export const ssr = false;
 export const prerender = true;
 export default function Home() { return <h1>Home</h1>; }
@@ -699,16 +699,16 @@ export default function Home() { return <h1>Home</h1>; }
     });
     const failure = await build({ root, ...quiet() }).catch((error: unknown) => error);
     expect(failure).toBeInstanceOf(BuildError);
-    expect((failure as Error).message).toContain("src/routes/index.stsx: LUM5006");
+    expect((failure as Error).message).toContain("src/routes/page.stsx: LUM5006");
     expect(existsSync(join(root, "dist"))).toBe(false);
   });
 
   it("stops with LUM5001 when a prerendered route reads the request", async () => {
     const root = project({
-      "src/routes/index.stsx": `import { cookies } from "lumiose";
+      "src/routes/page.stsx": `import { cookies } from "lumiose";
 export default function Home() { return <p>{cookies().get("theme") ?? "light"}</p>; }
 `,
-      "src/routes/search.stsx": `import { url } from "lumiose";
+      "src/routes/search/page.stsx": `import { url } from "lumiose";
 export default function Search() { return <p>{url().searchParams.get("q")}</p>; }
 `,
     });
@@ -717,37 +717,38 @@ export default function Search() { return <p>{url().searchParams.get("q")}</p>; 
     const problems = (failure as PrerenderError).problems;
     expect(problems).toHaveLength(2);
     expect(problems[0]).toMatch(
-      /^src\/routes\/index\.stsx \(\/\): cookies\(\) reads the request.*LUM5001/,
+      /^src\/routes\/page\.stsx \(\/\): cookies\(\) reads the request.*LUM5001/,
     );
     expect(problems[1]).toMatch(
-      /^src\/routes\/search\.stsx \(\/search\): url\(\)\.searchParams reads the request/,
+      /^src\/routes\/search\/page\.stsx \(\/search\): url\(\)\.searchParams reads the request/,
     );
   });
 
   it("stops with LUM5005 for a static endpoint with other methods, before building", async () => {
     const root = project({
-      "src/routes/api/subscribe.ts":
+      "src/routes/api/subscribe/route.ts":
         "export function GET() { return new Response(); }\nexport function POST() { return new Response(); }\n",
     });
     const failure = await build({ root, ...quiet() }).catch((error: unknown) => error);
     expect(failure).toBeInstanceOf(BuildError);
-    expect((failure as Error).message).toContain("src/routes/api/subscribe.ts: LUM5005");
+    expect((failure as Error).message).toContain("src/routes/api/subscribe/route.ts: LUM5005");
     expect(existsSync(join(root, "dist"))).toBe(false);
   });
 
   it("requires staticPaths() for static routes with params and a 200 response", async () => {
     const root = project({
-      "src/routes/blog/[slug].stsx": "export default function Post() { return <h1>Post</h1>; }\n",
-      "src/routes/gone.stsx": `import { notFound } from "lumiose";
+      "src/routes/blog/[slug]/page.stsx":
+        "export default function Post() { return <h1>Post</h1>; }\n",
+      "src/routes/gone/page.stsx": `import { notFound } from "lumiose";
 export default function Gone() { notFound(); }
 `,
     });
     const failure = await build({ root, ...quiet() }).catch((error: unknown) => error);
     expect((failure as PrerenderError).problems).toEqual([
       expect.stringContaining(
-        `src/routes/blog/[slug].stsx: "/blog/[slug]" is static and has params, so it needs`,
+        `src/routes/blog/[slug]/page.stsx: "/blog/[slug]" is static and has params, so it needs`,
       ),
-      "src/routes/gone.stsx (/gone): responded 404; prerendered routes must respond 200 or redirect.",
+      "src/routes/gone/page.stsx (/gone): responded 404; prerendered routes must respond 200 or redirect.",
     ]);
   });
 });

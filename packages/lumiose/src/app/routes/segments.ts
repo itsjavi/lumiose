@@ -1,10 +1,20 @@
-// File-route naming conventions (spec §8): classifies a `src/routes`-relative path and
-// parses it into URL segments. Pure and runtime-agnostic.
+// File-route naming conventions (spec §8, decision-42): the Next.js App Router file names.
+// Classifies a `src/routes`-relative path and parses its folders into URL segments. Pure and
+// runtime-agnostic.
 
 export type RouteSegment =
   | { kind: "static"; value: string }
+  /** `[name]`: exactly one segment. */
   | { kind: "param"; name: string }
-  | { kind: "rest"; name: string };
+  /** `[[name]]`: zero or one segment. */
+  | { kind: "optional"; name: string }
+  /** `[...name]`: one or more segments; always last. */
+  | { kind: "rest"; name: string }
+  /** `[[...name]]`: zero or more segments; always last. */
+  | { kind: "optionalRest"; name: string };
+
+/** A segment list without optional segments: one URL shape of a route ({@link routeVariants}). */
+export type VariantSegment = Extract<RouteSegment, { kind: "static" | "param" | "rest" }>;
 
 export type RouteFileKind = "page" | "endpoint" | "layout" | "notFound" | "error";
 
@@ -14,8 +24,8 @@ export interface RouteFile {
   /** Routes-relative POSIX directory of the file ("" for the routes root). */
   dir: string;
   /**
-   * URL segments. For pages and endpoints, the route itself; for `_layout`, `_404` and
-   * `_error`, the URL scope of their directory.
+   * URL segments of the file's directory: the route itself for `page` and `route` files, the URL
+   * scope of `layout`, `not-found` and `error` files.
    */
   segments: RouteSegment[];
 }
@@ -26,41 +36,92 @@ export interface InvalidRouteFile {
   help?: string;
 }
 
+/** Not a route file: a colocated module, or anything below a private (`_`) or hidden folder. */
 export interface IgnoredRouteFile {
   status: "ignored";
 }
 
 export type ClassifiedRouteFile = RouteFile | InvalidRouteFile | IgnoredRouteFile;
 
-const PAGE_EXTENSIONS = [".stsx", ".tsx"] as const;
-const ENDPOINT_EXTENSION = ".ts";
+const PAGE_EXTENSIONS: readonly string[] = [".stsx", ".tsx"];
+const ROUTE_EXTENSIONS: readonly string[] = [...PAGE_EXTENSIONS, ".ts"];
+/** File names (without extension) that give a folder behavior. */
 const SPECIAL_FILES: Record<string, RouteFileKind> = {
-  _layout: "layout",
-  _404: "notFound",
-  _error: "error",
+  page: "page",
+  route: "endpoint",
+  layout: "layout",
+  "not-found": "notFound",
+  error: "error",
+};
+/** Next.js special files Lumiose does not have, and what to use instead. */
+const UNSUPPORTED_FILES: Record<string, string> = {
+  loading: "Show pending UI with <Suspense fallback={…}> in the page or a layout.",
+  template: "Use a layout.",
+  default: "Lumiose has no parallel routes: remove the file.",
+  "global-error": "Use an error page (error.stsx) at the root of src/routes.",
 };
 const IDENTIFIER = /^[A-Za-z_$][\w$]*$/;
 const GROUP = /^\(([^()]+)\)$/;
+const INTERCEPTING = /^(?:\(\.{1,3}\))+/;
 const PARAM = /^\[(\.\.\.)?([^[\]]*)\]$/;
+const OPTIONAL_PARAM = /^\[\[(\.\.\.)?([^[\]]*)\]\]$/;
 const UNSAFE_STATIC = /[\s?#%\\{}<>|^"`[\]()]/;
 
-/** Whether a file name could be a route module (cheap pre-filter before reading it). */
+/**
+ * Whether a file name is a route file name (`page.stsx`, `route.ts`, `layout.tsx`, …) or one of
+ * the Next.js special files reported as unsupported: the cheap filter before reading a file.
+ */
 export function isRouteModuleCandidate(fileName: string): boolean {
-  return splitExtension(fileName) !== undefined;
+  const split = splitExtension(fileName);
+  return split !== undefined && (split.stem in SPECIAL_FILES || split.stem in UNSUPPORTED_FILES);
+}
+
+/** Whether nothing below a folder of this name routes: private (`_name`) and hidden folders. */
+export function isIgnoredRouteFolder(name: string): boolean {
+  return name.startsWith("_") || name.startsWith(".") || name === "node_modules";
 }
 
 /** Classifies a `src/routes`-relative POSIX path. */
 export function classifyRouteFile(path: string): ClassifiedRouteFile {
   const parts = path.split("/");
   const fileName = parts.pop() ?? "";
-  if (parts.some((part) => part.startsWith("."))) return { status: "ignored" };
+  if (parts.some(isIgnoredRouteFolder)) return { status: "ignored" };
   const split = splitExtension(fileName);
   if (split === undefined) return { status: "ignored" };
   const { stem, extension } = split;
-  const isPage = extension !== ENDPOINT_EXTENSION;
+  const unsupported = UNSUPPORTED_FILES[stem];
+  if (unsupported !== undefined) {
+    return invalid(
+      `"${fileName}": Lumiose has no ${stem} files (a Next.js convention).`,
+      unsupported,
+    );
+  }
+  const kind = SPECIAL_FILES[stem];
+  if (kind === undefined) return { status: "ignored" };
+  if (kind === "endpoint" && extension !== ".ts") {
+    return invalid(`"${fileName}": an endpoint is a route.ts file.`, 'Rename it to "route.ts".');
+  }
+  if (kind !== "endpoint" && !PAGE_EXTENSIONS.includes(extension)) {
+    return invalid(
+      `"${fileName}" must be a component file.`,
+      `Rename it to "${stem}.stsx" or "${stem}.tsx"${kind === "page" ? ', or to "route.ts" for an endpoint' : ""}.`,
+    );
+  }
 
   const segments: RouteSegment[] = [];
   for (const part of parts) {
+    if (INTERCEPTING.test(part)) {
+      return invalid(
+        `Folder "${part}": Lumiose has no intercepting routes (a Next.js convention).`,
+        "Rename the folder, or prefix it with _ to make it private.",
+      );
+    }
+    if (part.startsWith("@")) {
+      return invalid(
+        `Folder "${part}": Lumiose has no parallel routes (@slot folders, a Next.js convention).`,
+        "Rename the folder, or prefix it with _ to make it private.",
+      );
+    }
     if (GROUP.test(part)) continue;
     if (part.includes("(") || part.includes(")")) {
       return invalid(`Folder "${part}" is not a valid route group.`, 'Groups are named "(name)".');
@@ -70,41 +131,10 @@ export function classifyRouteFile(path: string): ClassifiedRouteFile {
     segments.push(segment);
   }
 
-  let kind: RouteFileKind;
-  if (stem.startsWith("_")) {
-    const special = SPECIAL_FILES[stem];
-    if (special === undefined) {
-      return invalid(
-        `"${fileName}" is not a route file: only _layout, _404 and _error may start with "_".`,
-        "Move shared modules out of src/routes (for example to src/lib or src/components).",
-      );
-    }
-    if (!isPage) {
-      return invalid(
-        `"${fileName}" must be a page file.`,
-        `Rename it to "${stem}.stsx" or "${stem}.tsx".`,
-      );
-    }
-    kind = special;
-  } else {
-    kind = isPage ? "page" : "endpoint";
-    if (GROUP.test(stem)) {
-      return invalid(
-        `"${fileName}": route groups must be folders.`,
-        `Use "${stem}/index${extension}".`,
-      );
-    }
-    if (stem !== "index") {
-      const segment = parseSegment(stem);
-      if ("message" in segment) return segment;
-      segments.push(segment);
-    }
-  }
-
-  const restIndex = segments.findIndex((segment) => segment.kind === "rest");
+  const restIndex = segments.findIndex(isRest);
   if (restIndex !== -1 && restIndex !== segments.length - 1) {
     return invalid(
-      `"${path}": a [...rest] segment must be the last segment of the URL.`,
+      `"${path}": a [...rest] or [[...rest]] segment must be the last segment of the URL.`,
       "Move the files after the rest segment up, or turn the rest segment into a [param].",
     );
   }
@@ -123,26 +153,71 @@ export function classifyRouteFile(path: string): ClassifiedRouteFile {
   return { status: "route", kind, dir: parts.join("/"), segments };
 }
 
-/** Renders segments as a Lumiose route pattern, e.g. `/blog/[slug]`. */
+/** Renders segments as a Lumiose route pattern, e.g. `/blog/[slug]` or `/docs/[[...path]]`. */
 export function formatPattern(segments: readonly RouteSegment[]): string {
   const parts = segments.map((segment) => {
-    if (segment.kind === "static") return segment.value;
-    return segment.kind === "param" ? `[${segment.name}]` : `[...${segment.name}]`;
+    switch (segment.kind) {
+      case "static":
+        return segment.value;
+      case "param":
+        return `[${segment.name}]`;
+      case "optional":
+        return `[[${segment.name}]]`;
+      case "rest":
+        return `[...${segment.name}]`;
+      case "optionalRest":
+        return `[[...${segment.name}]]`;
+    }
   });
   return `/${parts.join("/")}`;
 }
 
-/** Pattern with param names erased: two routes with the same key serve the same URLs. */
+/** Pattern with param names erased: two segment lists with the same key serve the same URLs. */
 export function patternKey(segments: readonly RouteSegment[]): string {
-  return `/${segments.map((segment) => (segment.kind === "static" ? segment.value : segment.kind === "param" ? "[]" : "[...]")).join("/")}`;
+  return formatPattern(
+    segments.map((segment) =>
+      segment.kind === "static" ? segment : { kind: segment.kind, name: "" },
+    ),
+  );
 }
 
-const RANK = { static: 0, param: 1, rest: 2 } as const;
+/**
+ * The URL shapes of a route: every combination of its optional segments present or absent, as
+ * plain segments (`[[lang]]` → `[lang]`, `[[...path]]` → `[...path]`), in match priority order.
+ * Shapes serving the same URLs (`/[[a]]/[[b]]`) keep the first. A route without optional
+ * segments has one shape, itself.
+ */
+export function routeVariants(segments: readonly RouteSegment[]): VariantSegment[][] {
+  let variants: VariantSegment[][] = [[]];
+  for (const segment of segments) {
+    if (segment.kind === "optional" || segment.kind === "optionalRest") {
+      const present: VariantSegment = {
+        kind: segment.kind === "optional" ? "param" : "rest",
+        name: segment.name,
+      };
+      // Present first: on equal shapes, the earlier optional param takes the segment.
+      variants = variants.flatMap((variant) => [[...variant, present], variant]);
+    } else {
+      variants = variants.map((variant) => [...variant, segment]);
+    }
+  }
+  if (variants.length === 1) return variants;
+  const keys = new Set<string>();
+  return variants.toSorted(compareSegments).filter((variant) => {
+    const key = patternKey(variant);
+    if (keys.has(key)) return false;
+    keys.add(key);
+    return true;
+  });
+}
+
+const RANK = { static: 0, param: 1, optional: 2, rest: 3, optionalRest: 4 } as const;
 
 /**
  * Orders segment lists by match priority: position by position, static beats [param] beats
  * [...rest], and ending beats a trailing rest. Ties fall back to the static values so the
- * order is total and deterministic.
+ * order is total and deterministic. Lists with optional segments rank them after [param]; the
+ * matcher compares their {@link routeVariants} instead.
  */
 export function compareSegments(a: readonly RouteSegment[], b: readonly RouteSegment[]): number {
   const length = Math.max(a.length, b.length);
@@ -156,14 +231,12 @@ export function compareSegments(a: readonly RouteSegment[], b: readonly RouteSeg
   return keyA < keyB ? -1 : keyA > keyB ? 1 : 0;
 }
 
+function isRest(segment: RouteSegment): boolean {
+  return segment.kind === "rest" || segment.kind === "optionalRest";
+}
+
 function parseSegment(name: string): RouteSegment | InvalidRouteFile {
-  if (name.startsWith("[[")) {
-    return invalid(
-      `"${name}": optional params are not supported.`,
-      "Use a [...rest] segment, which also matches nothing.",
-    );
-  }
-  const param = PARAM.exec(name);
+  const param = OPTIONAL_PARAM.exec(name) ?? PARAM.exec(name);
   if (param !== null) {
     const paramName = param[2] ?? "";
     if (!IDENTIFIER.test(paramName) || paramName === "__proto__") {
@@ -172,26 +245,25 @@ function parseSegment(name: string): RouteSegment | InvalidRouteFile {
         "Param names must be JavaScript identifiers, for example [slug] or [...path].",
       );
     }
-    return param[1] === undefined
-      ? { kind: "param", name: paramName }
-      : { kind: "rest", name: paramName };
+    const optional = name.startsWith("[[");
+    if (param[1] === undefined) {
+      return { kind: optional ? "optional" : "param", name: paramName };
+    }
+    return { kind: optional ? "optionalRest" : "rest", name: paramName };
   }
   if (name === "" || UNSAFE_STATIC.test(name)) {
     return invalid(
       `"${name}" is not a valid route segment.`,
-      "A segment is either static text without spaces, brackets or URL delimiters, or exactly [param] or [...rest].",
+      "A segment is either static text without spaces, brackets or URL delimiters, or exactly [param], [[param]], [...rest] or [[...rest]].",
     );
   }
   return { kind: "static", value: name };
 }
 
 function splitExtension(fileName: string): { stem: string; extension: string } | undefined {
-  if (fileName.startsWith(".") || fileName.endsWith(".d.ts")) return undefined;
-  const extension = [...PAGE_EXTENSIONS, ENDPOINT_EXTENSION].find((ext) => fileName.endsWith(ext));
+  const extension = ROUTE_EXTENSIONS.find((ext) => fileName.endsWith(ext));
   if (extension === undefined) return undefined;
-  const stem = fileName.slice(0, -extension.length);
-  if (/\.(test|spec)$/.test(stem)) return undefined;
-  return { stem, extension };
+  return { stem: fileName.slice(0, -extension.length), extension };
 }
 
 function invalid(message: string, help?: string): InvalidRouteFile {

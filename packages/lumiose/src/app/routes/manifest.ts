@@ -15,6 +15,7 @@ import {
   compareSegments,
   formatPattern,
   patternKey,
+  routeVariants,
   type RouteFile,
   type RouteSegment,
 } from "./segments.ts";
@@ -25,16 +26,18 @@ export type EndpointMode = "static" | "server";
 
 export interface RouteParam {
   name: string;
-  /** `[...name]`: matches zero or more segments, joined with "/". */
+  /** `[...name]` and `[[...name]]`: the matched segments, joined with "/". */
   rest: boolean;
+  /** `[[name]]` and `[[...name]]`: may match no segment, and then the param is absent. */
+  optional: boolean;
 }
 
 interface RouteBase {
-  /** Lumiose route pattern, e.g. `/blog/[slug]`; groups and `index` are removed. */
+  /** Lumiose route pattern, e.g. `/blog/[slug]`; route groups are removed. */
   pattern: string;
   segments: RouteSegment[];
   params: RouteParam[];
-  /** Project-relative POSIX path, e.g. `src/routes/blog/[slug].stsx`. */
+  /** Project-relative POSIX path, e.g. `src/routes/blog/[slug]/page.stsx`. */
   file: string;
 }
 
@@ -53,9 +56,9 @@ export interface PageRoute extends RouteBase {
   prerender: boolean;
   /** Layout files, outermost first. */
   layouts: string[];
-  /** Nearest `_error` page. */
+  /** Nearest `error` page. */
   errorPage: string | undefined;
-  /** Nearest `_404` page, rendered when the page calls `notFound()`. */
+  /** Nearest `not-found` page, rendered when the page calls `notFound()`. */
   notFoundPage: string | undefined;
 }
 
@@ -77,7 +80,7 @@ export interface LayoutEntry {
   ssr: boolean;
 }
 
-/** A `_404` or `_error` page and the URL scope of its directory. */
+/** A `not-found` or `error` page and the URL scope of its directory. */
 export interface SpecialPage {
   file: string;
   dir: string;
@@ -88,7 +91,10 @@ export interface SpecialPage {
 export interface RouteManifest {
   /** Project-relative POSIX path of the routes directory. */
   routesDir: string;
-  /** Pages and endpoints in match priority order. */
+  /**
+   * Pages and endpoints in match priority order; a route with optional segments sorts by its most
+   * specific URL shape (the matcher ranks each shape on its own).
+   */
   routes: RouteEntry[];
   layouts: LayoutEntry[];
   notFoundPages: SpecialPage[];
@@ -174,7 +180,7 @@ export function createRouteManifest(
           LUM_DUPLICATE_ROUTE,
           "error",
           file,
-          `Duplicate ${route.kind === "notFound" ? "_404" : "_error"} page: "${existing.file}" already exists.`,
+          `Duplicate ${route.kind === "notFound" ? "not-found" : "error"} page: "${existing.file}" already exists.`,
           "Keep one of them.",
         );
         continue;
@@ -336,13 +342,26 @@ export function createRouteManifest(
 
   const routes: RouteEntry[] = [];
   const byKey = new Map<string, RouteEntry>();
-  for (const declared of modules) {
+  // Routes without optional segments claim their URLs first, so an overlap is reported on the
+  // route whose optional segment causes it.
+  const optionals = (declared: Declared) =>
+    declared.route.segments.filter((s) => s.kind === "optional" || s.kind === "optionalRest")
+      .length;
+  for (const declared of modules.toSorted((a, b) => optionals(a) - optionals(b))) {
     const { route, file } = declared;
     const base: RouteBase = {
       pattern: formatPattern(route.segments),
       segments: route.segments,
       params: route.segments.flatMap((segment) =>
-        segment.kind === "static" ? [] : [{ name: segment.name, rest: segment.kind === "rest" }],
+        segment.kind === "static"
+          ? []
+          : [
+              {
+                name: segment.name,
+                rest: segment.kind === "rest" || segment.kind === "optionalRest",
+                optional: segment.kind === "optional" || segment.kind === "optionalRest",
+              },
+            ],
       ),
       file,
     };
@@ -381,27 +400,53 @@ export function createRouteManifest(
       };
     }
 
-    const key = patternKey(route.segments);
-    const existing = byKey.get(key);
-    if (existing !== undefined) {
-      report(
-        LUM_DUPLICATE_ROUTE,
-        "error",
-        file,
-        `Duplicate route "${entry.pattern}": "${existing.file}" already serves the same URLs.`,
-        "Remove or rename one of the files. Route groups and param names do not change the URL.",
-      );
+    // Each URL shape of a route (with and without its optional segments) has one owner.
+    const variants = routeVariants(route.segments);
+    const keys = variants.map(patternKey);
+    const clash = keys.findIndex((key) => byKey.has(key));
+    if (clash !== -1) {
+      const existing = byKey.get(keys[clash]!)!;
+      const sameFolder =
+        existing.file.slice(0, existing.file.lastIndexOf("/")) ===
+        file.slice(0, file.lastIndexOf("/"));
+      if (sameFolder) {
+        report(
+          LUM_DUPLICATE_ROUTE,
+          "error",
+          file,
+          `Duplicate route "${entry.pattern}": "${existing.file}" already serves the same URLs.`,
+          existing.kind === entry.kind
+            ? "Keep one of them."
+            : "A folder has either a page or a route.ts endpoint: move one of them to another folder.",
+        );
+      } else {
+        const urls =
+          patternKey(existing.segments) === patternKey(route.segments)
+            ? "the same URLs"
+            : `"${formatPattern(variants[clash]!)}"`;
+        report(
+          LUM_DUPLICATE_ROUTE,
+          "error",
+          file,
+          `Duplicate route "${entry.pattern}": "${existing.file}" already serves ${urls}.`,
+          "Remove or move one of the files. Route groups and param names do not change the URL, and an optional segment also serves the URL without it.",
+        );
+      }
       continue;
     }
-    byKey.set(key, entry);
+    for (const key of keys) byKey.set(key, entry);
     routes.push(entry);
   }
+  const priority = (entry: RouteEntry) => routeVariants(entry.segments)[0]!;
   const specialPages = (byDir: Map<string, SpecialPage>) =>
     [...byDir.values()].toSorted((a, b) => compareStrings(a.dir, b.dir));
 
   return {
     routesDir,
-    routes: routes.toSorted((a, b) => compareSegments(a.segments, b.segments)),
+    routes: routes.toSorted(
+      (a, b) =>
+        compareSegments(priority(a), priority(b)) || compareSegments(a.segments, b.segments),
+    ),
     layouts,
     notFoundPages: specialPages(notFoundByDir),
     errorPages: specialPages(errorByDir),

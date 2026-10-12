@@ -18,42 +18,60 @@ const page = (manifest: RouteManifest, pattern: string): PageRoute => {
 describe("createRouteManifest", () => {
   it("builds pages and endpoints with patterns, params and project-relative files", () => {
     const manifest = manifestOf({
-      "index.stsx": PAGE,
-      "blog/[slug].stsx": PAGE,
-      "docs/[...path].tsx": PAGE,
-      "api/posts.ts": "export const GET = () => new Response();",
+      "page.stsx": PAGE,
+      "blog/[slug]/page.stsx": PAGE,
+      "docs/[...path]/page.tsx": PAGE,
+      "[[lang]]/files/[[...path]]/page.stsx": PAGE,
+      "api/posts/route.ts": "export const GET = () => new Response();",
+      "blog/[slug]/Card.stsx": "export default function Card() { return null; }",
+      "blog/_lib/posts.ts": "export const posts = [];",
     });
     expect(manifest.diagnostics).toEqual([]);
     expect(
       manifest.routes.map(({ kind, pattern, params, file }) => ({ kind, pattern, params, file })),
     ).toEqual([
-      { kind: "page", pattern: "/", params: [], file: "src/routes/index.stsx" },
-      { kind: "endpoint", pattern: "/api/posts", params: [], file: "src/routes/api/posts.ts" },
+      { kind: "page", pattern: "/", params: [], file: "src/routes/page.stsx" },
+      // Ranked by its most specific URL, /files.
+      {
+        kind: "page",
+        pattern: "/[[lang]]/files/[[...path]]",
+        params: [
+          { name: "lang", rest: false, optional: true },
+          { name: "path", rest: true, optional: true },
+        ],
+        file: "src/routes/[[lang]]/files/[[...path]]/page.stsx",
+      },
+      {
+        kind: "endpoint",
+        pattern: "/api/posts",
+        params: [],
+        file: "src/routes/api/posts/route.ts",
+      },
       {
         kind: "page",
         pattern: "/blog/[slug]",
-        params: [{ name: "slug", rest: false }],
-        file: "src/routes/blog/[slug].stsx",
+        params: [{ name: "slug", rest: false, optional: false }],
+        file: "src/routes/blog/[slug]/page.stsx",
       },
       {
         kind: "page",
         pattern: "/docs/[...path]",
-        params: [{ name: "path", rest: true }],
-        file: "src/routes/docs/[...path].tsx",
+        params: [{ name: "path", rest: true, optional: false }],
+        file: "src/routes/docs/[...path]/page.tsx",
       },
     ]);
   });
 
   it("resolves modes: own export, else the nearest layout, else static", () => {
     const manifest = manifestOf({
-      "_layout.stsx": PAGE,
-      "index.stsx": PAGE,
-      "blog/_layout.stsx": `export const mode = "server";`,
-      "blog/index.stsx": PAGE,
-      "blog/[slug].stsx": `export const mode = "static";`,
-      "blog/drafts/index.stsx": PAGE,
-      "blog/(admin)/_layout.stsx": PAGE,
-      "blog/(admin)/edit.stsx": PAGE,
+      "layout.stsx": PAGE,
+      "page.stsx": PAGE,
+      "blog/layout.stsx": `export const mode = "server";`,
+      "blog/page.stsx": PAGE,
+      "blog/[slug]/page.stsx": `export const mode = "static";`,
+      "blog/drafts/page.stsx": PAGE,
+      "blog/(admin)/layout.stsx": PAGE,
+      "blog/(admin)/edit/page.stsx": PAGE,
     });
     expect(manifest.diagnostics).toEqual([]);
     expect(Object.fromEntries(manifest.routes.map((route) => [route.pattern, route.mode]))).toEqual(
@@ -74,45 +92,45 @@ describe("createRouteManifest", () => {
 
   it("collects the layout chain outermost first, including group layouts", () => {
     const manifest = manifestOf({
-      "_layout.stsx": PAGE,
-      "(shop)/_layout.stsx": PAGE,
-      "(shop)/cart/_layout.tsx": PAGE,
-      "(shop)/cart/index.stsx": PAGE,
-      "about.stsx": PAGE,
+      "layout.stsx": PAGE,
+      "(shop)/layout.stsx": PAGE,
+      "(shop)/cart/layout.tsx": PAGE,
+      "(shop)/cart/page.stsx": PAGE,
+      "about/page.stsx": PAGE,
     });
     expect(page(manifest, "/cart").layouts).toEqual([
-      "src/routes/_layout.stsx",
-      "src/routes/(shop)/_layout.stsx",
-      "src/routes/(shop)/cart/_layout.tsx",
+      "src/routes/layout.stsx",
+      "src/routes/(shop)/layout.stsx",
+      "src/routes/(shop)/cart/layout.tsx",
     ]);
-    expect(page(manifest, "/about").layouts).toEqual(["src/routes/_layout.stsx"]);
+    expect(page(manifest, "/about").layouts).toEqual(["src/routes/layout.stsx"]);
   });
 
   it("resolves ssr for spa routes only and warns about ssr = false elsewhere", () => {
     const manifest = manifestOf({
-      "app/_layout.stsx": `export const mode = "spa";\nexport const ssr = false;`,
-      "app/index.stsx": PAGE,
-      "app/settings.stsx": "export const ssr = true;",
-      "app/report.stsx": `export const mode = "server";`,
-      "about.stsx": "export const ssr = false;",
+      "app/layout.stsx": `export const mode = "spa";\nexport const ssr = false;`,
+      "app/page.stsx": PAGE,
+      "app/settings/page.stsx": "export const ssr = true;",
+      "app/report/page.stsx": `export const mode = "server";`,
+      "about/page.stsx": "export const ssr = false;",
     });
     expect(page(manifest, "/app")).toMatchObject({ mode: "spa", ssr: false });
     expect(page(manifest, "/app/settings")).toMatchObject({ mode: "spa", ssr: true });
     expect(page(manifest, "/app/report")).toMatchObject({ mode: "server", ssr: true });
     expect(page(manifest, "/about")).toMatchObject({ mode: "static", ssr: true });
     expect(manifest.diagnostics).toMatchObject([
-      { code: "LUM5002", severity: "warning", file: "src/routes/about.stsx" },
+      { code: "LUM5002", severity: "warning", file: "src/routes/about/page.stsx" },
     ]);
   });
 
   it("resolves prerender for spa pages that render on the server (decision-38)", () => {
     const manifest = createRouteManifest(
       Object.entries({
-        "index.stsx": PAGE,
-        "live.stsx": "export const prerender = false;",
-        "tracks/[id].stsx": "export const prerender = true;",
-        "shell.stsx": "export const ssr = false;",
-        "about.stsx": `export const mode = "static";`,
+        "page.stsx": PAGE,
+        "live/page.stsx": "export const prerender = false;",
+        "tracks/[id]/page.stsx": "export const prerender = true;",
+        "shell/page.stsx": "export const ssr = false;",
+        "about/page.stsx": `export const mode = "static";`,
       }).map(([path, source]) => ({ path, source })),
       { defaultMode: "spa", defaultPrerender: true },
     );
@@ -130,40 +148,40 @@ describe("createRouteManifest", () => {
       // Static routes are prerendered by their mode.
       "/about": false,
     });
-    expect(page(manifestOf({ "index.stsx": PAGE }), "/").prerender).toBe(false);
+    expect(page(manifestOf({ "page.stsx": PAGE }), "/").prerender).toBe(false);
   });
 
   it("reports prerender with ssr = false (LUM5006) and where prerender has no effect (LUM5002)", () => {
     const manifest = manifestOf({
-      "app/_layout.stsx": `export const mode = "spa";\nexport const ssr = false;`,
-      "app/index.stsx": "export const prerender = true;",
-      "docs/_layout.stsx": "export const prerender = true;",
-      "docs/index.stsx": PAGE,
-      "about.stsx": "export const prerender = true;",
-      "feed.xml.ts": "export const prerender = true;",
+      "app/layout.stsx": `export const mode = "spa";\nexport const ssr = false;`,
+      "app/page.stsx": "export const prerender = true;",
+      "docs/layout.stsx": "export const prerender = true;",
+      "docs/page.stsx": PAGE,
+      "about/page.stsx": "export const prerender = true;",
+      "feed.xml/route.ts": "export const prerender = true;",
     });
     expect(page(manifest, "/app")).toMatchObject({ mode: "spa", ssr: false, prerender: false });
     expect(page(manifest, "/about")).toMatchObject({ mode: "static", prerender: false });
     expect(page(manifest, "/docs")).toMatchObject({ mode: "static", prerender: false });
     expect(manifest.diagnostics).toMatchObject([
-      { code: "LUM5002", severity: "warning", file: "src/routes/feed.xml.ts" },
-      { code: "LUM5002", severity: "warning", file: "src/routes/docs/_layout.stsx" },
-      { code: "LUM5002", severity: "warning", file: "src/routes/about.stsx" },
-      { code: "LUM5006", severity: "error", file: "src/routes/app/index.stsx" },
+      { code: "LUM5002", severity: "warning", file: "src/routes/feed.xml/route.ts" },
+      { code: "LUM5002", severity: "warning", file: "src/routes/docs/layout.stsx" },
+      { code: "LUM5002", severity: "warning", file: "src/routes/about/page.stsx" },
+      { code: "LUM5006", severity: "error", file: "src/routes/app/page.stsx" },
     ]);
   });
 
   it("inherits prerender from the nearest layout that sets it, which a page turns off (TASK-229)", () => {
     const manifest = manifestOf({
-      "_layout.stsx": `export const mode = "spa";\nexport const prerender = true;`,
-      "index.stsx": PAGE,
-      "live.stsx": "export const prerender = false;",
-      "tracks/[id].stsx": PAGE,
-      "studio/_layout.stsx": "export const prerender = false;",
-      "studio/index.stsx": PAGE,
-      "studio/demo/_layout.stsx": "export const prerender = true;",
-      "studio/demo/index.stsx": PAGE,
-      "report.stsx": `export const mode = "server";`,
+      "layout.stsx": `export const mode = "spa";\nexport const prerender = true;`,
+      "page.stsx": PAGE,
+      "live/page.stsx": "export const prerender = false;",
+      "tracks/[id]/page.stsx": PAGE,
+      "studio/layout.stsx": "export const prerender = false;",
+      "studio/page.stsx": PAGE,
+      "studio/demo/layout.stsx": "export const prerender = true;",
+      "studio/demo/page.stsx": PAGE,
+      "report/page.stsx": `export const mode = "server";`,
     });
     expect(manifest.diagnostics).toEqual([]);
     expect(
@@ -183,9 +201,9 @@ describe("createRouteManifest", () => {
   it("prefers a layout's prerender over the project default (TASK-229)", () => {
     const manifest = createRouteManifest(
       Object.entries({
-        "index.stsx": PAGE,
-        "editor/_layout.stsx": "export const prerender = false;",
-        "editor/index.stsx": PAGE,
+        "page.stsx": PAGE,
+        "editor/layout.stsx": "export const prerender = false;",
+        "editor/page.stsx": PAGE,
       }).map(([path, source]) => ({ path, source })),
       { defaultMode: "spa", defaultPrerender: true },
     );
@@ -195,36 +213,36 @@ describe("createRouteManifest", () => {
 
   it("reports an inherited prerender that meets ssr = false (LUM5006) once per file (TASK-229)", () => {
     const manifest = manifestOf({
-      "_layout.stsx": `export const mode = "spa";\nexport const prerender = true;`,
-      "shell.stsx": "export const ssr = false;",
-      "opted-out.stsx": "export const ssr = false;\nexport const prerender = false;",
-      "editor/_layout.stsx": "export const ssr = false;",
-      "editor/index.stsx": PAGE,
-      "editor/[id].stsx": PAGE,
-      "kiosk/_layout.stsx": "export const ssr = false;\nexport const prerender = true;",
-      "kiosk/index.stsx": PAGE,
+      "layout.stsx": `export const mode = "spa";\nexport const prerender = true;`,
+      "shell/page.stsx": "export const ssr = false;",
+      "opted-out/page.stsx": "export const ssr = false;\nexport const prerender = false;",
+      "editor/layout.stsx": "export const ssr = false;",
+      "editor/page.stsx": PAGE,
+      "editor/[id]/page.stsx": PAGE,
+      "kiosk/layout.stsx": "export const ssr = false;\nexport const prerender = true;",
+      "kiosk/page.stsx": PAGE,
     });
     for (const pattern of ["/shell", "/opted-out", "/editor", "/editor/[id]", "/kiosk"]) {
       expect(page(manifest, pattern)).toMatchObject({ ssr: false, prerender: false });
     }
     expect(manifest.diagnostics).toMatchObject([
-      { code: "LUM5006", severity: "error", file: "src/routes/editor/_layout.stsx" },
-      { code: "LUM5006", severity: "error", file: "src/routes/kiosk/_layout.stsx" },
-      { code: "LUM5006", severity: "error", file: "src/routes/shell.stsx" },
+      { code: "LUM5006", severity: "error", file: "src/routes/editor/layout.stsx" },
+      { code: "LUM5006", severity: "error", file: "src/routes/kiosk/layout.stsx" },
+      { code: "LUM5006", severity: "error", file: "src/routes/shell/page.stsx" },
     ]);
     expect(manifest.diagnostics[0]!.message).toBe(
-      '"src/routes/editor/[id].stsx" inherits "export const prerender = true" from "src/routes/_layout.stsx", but its ssr is false, so it renders only in the browser.',
+      '"src/routes/editor/[id]/page.stsx" inherits "export const prerender = true" from "src/routes/layout.stsx", but its ssr is false, so it renders only in the browser.',
     );
   });
 
   it("gives endpoints a static or server mode, serving spa subtrees live", () => {
     const manifest = manifestOf({
-      "sitemap.xml.ts": "",
-      "api/_layout.stsx": `export const mode = "server";`,
-      "api/posts.ts": "",
-      "api/feed.ts": `export const mode = "static";`,
-      "app/_layout.stsx": `export const mode = "spa";`,
-      "app/todos.ts": "",
+      "sitemap.xml/route.ts": "",
+      "api/layout.stsx": `export const mode = "server";`,
+      "api/posts/route.ts": "",
+      "api/feed/route.ts": `export const mode = "static";`,
+      "app/layout.stsx": `export const mode = "spa";`,
+      "app/todos/route.ts": "",
     });
     expect(Object.fromEntries(manifest.routes.map((route) => [route.pattern, route.mode]))).toEqual(
       {
@@ -239,12 +257,12 @@ describe("createRouteManifest", () => {
   it("starts from the project default mode and ssr (decision-21), which files override", () => {
     const manifest = createRouteManifest(
       Object.entries({
-        "index.stsx": PAGE,
-        "about.stsx": `export const mode = "static";`,
-        "admin/_layout.stsx": `export const mode = "server";`,
-        "admin/users.stsx": PAGE,
-        "editor.stsx": `export const ssr = true;`,
-        "api/todos.ts": "",
+        "page.stsx": PAGE,
+        "about/page.stsx": `export const mode = "static";`,
+        "admin/layout.stsx": `export const mode = "server";`,
+        "admin/users/page.stsx": PAGE,
+        "editor/page.stsx": `export const ssr = true;`,
+        "api/todos/route.ts": "",
       }).map(([path, source]) => ({ path, source })),
       { defaultMode: "spa", defaultSsr: false },
     );
@@ -265,53 +283,71 @@ describe("createRouteManifest", () => {
     });
   });
 
-  it("links each page to its nearest _error and _404 pages", () => {
+  it("links each page to its nearest error and not-found pages", () => {
     const manifest = manifestOf({
-      "_404.stsx": PAGE,
-      "_error.stsx": PAGE,
-      "blog/_404.stsx": PAGE,
-      "blog/[slug].stsx": PAGE,
-      "about.stsx": PAGE,
+      "not-found.stsx": PAGE,
+      "error.stsx": PAGE,
+      "blog/not-found.stsx": PAGE,
+      "blog/[slug]/page.stsx": PAGE,
+      "about/page.stsx": PAGE,
     });
     expect(page(manifest, "/blog/[slug]")).toMatchObject({
-      notFoundPage: "src/routes/blog/_404.stsx",
-      errorPage: "src/routes/_error.stsx",
+      notFoundPage: "src/routes/blog/not-found.stsx",
+      errorPage: "src/routes/error.stsx",
     });
     expect(page(manifest, "/about")).toMatchObject({
-      notFoundPage: "src/routes/_404.stsx",
-      errorPage: "src/routes/_error.stsx",
+      notFoundPage: "src/routes/not-found.stsx",
+      errorPage: "src/routes/error.stsx",
     });
     expect(manifest.notFoundPages.map(({ file, pattern }) => ({ file, pattern }))).toEqual([
-      { file: "src/routes/_404.stsx", pattern: "/" },
-      { file: "src/routes/blog/_404.stsx", pattern: "/blog" },
+      { file: "src/routes/not-found.stsx", pattern: "/" },
+      { file: "src/routes/blog/not-found.stsx", pattern: "/blog" },
     ]);
-    expect(manifest.errorPages.map((entry) => entry.file)).toEqual(["src/routes/_error.stsx"]);
+    expect(manifest.errorPages.map((entry) => entry.file)).toEqual(["src/routes/error.stsx"]);
   });
 
   it("reports LUM5002 for invalid route files and drops them", () => {
     const manifest = manifestOf({
-      "index.stsx": PAGE,
-      "_card.stsx": PAGE,
-      "blog/[slug.stsx": PAGE,
-      "docs/[...path]/edit.stsx": PAGE,
+      "page.stsx": PAGE,
+      "loading.stsx": PAGE,
+      "@modal/page.stsx": PAGE,
+      "blog/[slug/page.stsx": PAGE,
+      "docs/[...path]/edit/page.stsx": PAGE,
+      "api/route.tsx": PAGE,
     });
     expect(manifest.routes.map((route) => route.pattern)).toEqual(["/"]);
     expect(
       manifest.diagnostics.map(({ code, severity, file }) => ({ code, severity, file })),
     ).toEqual([
-      { code: "LUM5002", severity: "error", file: "src/routes/_card.stsx" },
-      { code: "LUM5002", severity: "error", file: "src/routes/blog/[slug.stsx" },
-      { code: "LUM5002", severity: "error", file: "src/routes/docs/[...path]/edit.stsx" },
+      { code: "LUM5002", severity: "error", file: "src/routes/@modal/page.stsx" },
+      { code: "LUM5002", severity: "error", file: "src/routes/api/route.tsx" },
+      { code: "LUM5002", severity: "error", file: "src/routes/blog/[slug/page.stsx" },
+      { code: "LUM5002", severity: "error", file: "src/routes/docs/[...path]/edit/page.stsx" },
+      { code: "LUM5002", severity: "error", file: "src/routes/loading.stsx" },
     ]);
-    expect(manifest.diagnostics[0]?.help).toContain("src/lib");
+    expect(manifest.diagnostics.at(-1)?.help).toContain("<Suspense");
+  });
+
+  it("ignores colocated modules and private folders", () => {
+    const manifest = manifestOf({
+      "page.stsx": PAGE,
+      "Header.stsx": PAGE,
+      "about.stsx": PAGE,
+      "helpers.ts": "export const x = 1;",
+      "_components/page.stsx": PAGE,
+      "blog/_drafts/[slug]/page.stsx": PAGE,
+      "blog/_lib/route.ts": "",
+    });
+    expect(manifest.diagnostics).toEqual([]);
+    expect(manifest.routes.map((route) => route.file)).toEqual(["src/routes/page.stsx"]);
   });
 
   it("reports LUM5002 for invalid or unreadable mode exports and falls back to inheritance", () => {
     const manifest = manifestOf({
-      "_layout.stsx": `export const mode = "server";`,
-      "a.stsx": `export const mode = "dynamic";`,
-      "b.stsx": "export const mode = MODE;",
-      "c.ts": `export const mode = "spa";`,
+      "layout.stsx": `export const mode = "server";`,
+      "a/page.stsx": `export const mode = "dynamic";`,
+      "b/page.stsx": "export const mode = MODE;",
+      "c/route.ts": `export const mode = "spa";`,
     });
     expect(manifest.routes.map((route) => [route.pattern, route.mode])).toEqual([
       ["/a", "server"],
@@ -321,61 +357,101 @@ describe("createRouteManifest", () => {
     expect(
       manifest.diagnostics.map(({ code, file, message }) => ({ code, file, message })),
     ).toEqual([
-      { code: "LUM5002", file: "src/routes/a.stsx", message: `Invalid mode "dynamic" for a page.` },
       {
         code: "LUM5002",
-        file: "src/routes/b.stsx",
+        file: "src/routes/a/page.stsx",
+        message: `Invalid mode "dynamic" for a page.`,
+      },
+      {
+        code: "LUM5002",
+        file: "src/routes/b/page.stsx",
         message: `"export const mode" must be a string literal, for example "server".`,
       },
-      { code: "LUM5002", file: "src/routes/c.ts", message: `Invalid mode "spa" for an endpoint.` },
+      {
+        code: "LUM5002",
+        file: "src/routes/c/route.ts",
+        message: `Invalid mode "spa" for an endpoint.`,
+      },
     ]);
   });
 
   it("reports LUM5003 when two files serve the same URLs and keeps the first", () => {
     const manifest = manifestOf({
-      "about.stsx": PAGE,
-      "about/index.stsx": PAGE,
-      "(marketing)/pricing.stsx": PAGE,
-      "pricing.tsx": PAGE,
-      "blog/[id].stsx": PAGE,
-      "blog/[slug].stsx": PAGE,
-      "feed.ts": "",
-      "feed.stsx": PAGE,
-      "_layout.stsx": PAGE,
-      "_layout.tsx": PAGE,
-      "_404.stsx": PAGE,
-      "_404.tsx": PAGE,
+      "about/page.stsx": PAGE,
+      "about/page.tsx": PAGE,
+      "(marketing)/pricing/page.stsx": PAGE,
+      "pricing/page.tsx": PAGE,
+      "blog/[id]/page.stsx": PAGE,
+      "blog/[slug]/page.stsx": PAGE,
+      "feed/page.stsx": PAGE,
+      "feed/route.ts": "",
+      "layout.stsx": PAGE,
+      "layout.tsx": PAGE,
+      "not-found.stsx": PAGE,
+      "not-found.tsx": PAGE,
     });
     expect(manifest.routes.map((route) => route.file)).toEqual([
-      "src/routes/about.stsx",
-      "src/routes/feed.stsx",
-      "src/routes/(marketing)/pricing.stsx",
-      "src/routes/blog/[id].stsx",
+      "src/routes/about/page.stsx",
+      "src/routes/feed/page.stsx",
+      "src/routes/(marketing)/pricing/page.stsx",
+      "src/routes/blog/[id]/page.stsx",
     ]);
     expect(manifest.diagnostics.map(({ code, file }) => `${code} ${file}`)).toEqual([
-      "LUM5003 src/routes/_404.tsx",
-      "LUM5003 src/routes/_layout.tsx",
-      "LUM5003 src/routes/about/index.stsx",
-      "LUM5003 src/routes/blog/[slug].stsx",
-      "LUM5003 src/routes/feed.ts",
-      "LUM5003 src/routes/pricing.tsx",
+      "LUM5003 src/routes/layout.tsx",
+      "LUM5003 src/routes/not-found.tsx",
+      "LUM5003 src/routes/about/page.tsx",
+      "LUM5003 src/routes/blog/[slug]/page.stsx",
+      "LUM5003 src/routes/feed/route.ts",
+      "LUM5003 src/routes/pricing/page.tsx",
     ]);
-    expect(manifest.diagnostics[2]?.message).toBe(
-      `Duplicate route "/about": "src/routes/about.stsx" already serves the same URLs.`,
-    );
+    expect(manifest.diagnostics[4]).toMatchObject({
+      message: `Duplicate route "/feed": "src/routes/feed/page.stsx" already serves the same URLs.`,
+      help: "A folder has either a page or a route.ts endpoint: move one of them to another folder.",
+    });
+  });
+
+  it("reports LUM5003 when an optional segment serves the URL of another route", () => {
+    const manifest = manifestOf({
+      "docs/page.stsx": PAGE,
+      "docs/[[...path]]/page.stsx": PAGE,
+      "about/page.stsx": PAGE,
+      "[[lang]]/about/page.stsx": PAGE,
+      "[[lang]]/contact/page.stsx": PAGE,
+    });
+    expect(manifest.routes.map((route) => route.pattern)).toEqual([
+      "/about",
+      // By its most specific URL, /contact.
+      "/[[lang]]/contact",
+      "/docs",
+    ]);
+    expect(
+      manifest.diagnostics.map(({ code, file, message }) => ({ code, file, message })),
+    ).toEqual([
+      {
+        code: "LUM5003",
+        file: "src/routes/[[lang]]/about/page.stsx",
+        message: `Duplicate route "/[[lang]]/about": "src/routes/about/page.stsx" already serves "/about".`,
+      },
+      {
+        code: "LUM5003",
+        file: "src/routes/docs/[[...path]]/page.stsx",
+        message: `Duplicate route "/docs/[[...path]]": "src/routes/docs/page.stsx" already serves "/docs".`,
+      },
+    ]);
   });
 
   it("reports LUM5005 for static endpoints exporting other methods than GET", () => {
     const manifest = manifestOf({
-      "feed.xml.ts": "export const GET = () => new Response();",
-      "api/subscribe.ts": "export const GET = () => new Response();\nexport function POST() {}",
-      "api/live.ts": 'export const mode = "server";\nexport function POST() {}',
+      "feed.xml/route.ts": "export const GET = () => new Response();",
+      "api/subscribe/route.ts":
+        "export const GET = () => new Response();\nexport function POST() {}",
+      "api/live/route.ts": 'export const mode = "server";\nexport function POST() {}',
     });
     expect(manifest.diagnostics).toEqual([
       {
         code: "LUM5005",
         severity: "error",
-        file: "src/routes/api/subscribe.ts",
+        file: "src/routes/api/subscribe/route.ts",
         message:
           "This endpoint is static (prerendered to a file at build time), so it can only serve GET, but it exports POST.",
         help: 'Serve it per request with export const mode = "server", or keep only GET.',
@@ -385,13 +461,13 @@ describe("createRouteManifest", () => {
   });
 
   it("supports a custom routes directory", () => {
-    const manifest = manifestOf({ "index.stsx": PAGE }, "./app/pages/");
+    const manifest = manifestOf({ "page.stsx": PAGE }, "./app/pages/");
     expect(manifest.routesDir).toBe("app/pages");
-    expect(manifest.routes[0]?.file).toBe("app/pages/index.stsx");
+    expect(manifest.routes[0]?.file).toBe("app/pages/page.stsx");
   });
 
   it("uses an injected module meta reader", () => {
-    const manifest = createRouteManifest([{ path: "index.stsx", source: "" }], {
+    const manifest = createRouteManifest([{ path: "page.stsx", source: "" }], {
       readMeta: () => ({ mode: "server", problems: [] }),
     });
     expect(manifest.routes[0]?.mode).toBe("server");

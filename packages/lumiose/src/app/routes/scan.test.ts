@@ -36,25 +36,25 @@ describe("scanRoutes", () => {
         { kind: "static", value: "blog" },
         { kind: "param", name: "slug" },
       ],
-      params: [{ name: "slug", rest: false }],
-      file: "src/routes/blog/[slug].stsx",
+      params: [{ name: "slug", rest: false, optional: false }],
+      file: "src/routes/blog/[slug]/page.stsx",
       mode: "static",
       ssr: true,
       prerender: false,
-      layouts: ["src/routes/_layout.stsx", "src/routes/blog/_layout.stsx"],
-      errorPage: "src/routes/_error.stsx",
-      notFoundPage: "src/routes/blog/_404.stsx",
+      layouts: ["src/routes/layout.stsx", "src/routes/blog/layout.stsx"],
+      errorPage: "src/routes/error.stsx",
+      notFoundPage: "src/routes/blog/not-found.stsx",
     });
     expect(byPattern.get("/pricing")).toMatchObject({
-      layouts: ["src/routes/_layout.stsx", "src/routes/(marketing)/_layout.stsx"],
+      layouts: ["src/routes/layout.stsx", "src/routes/(marketing)/layout.stsx"],
     });
     expect(byPattern.get("/app")).toMatchObject({ mode: "spa", ssr: false });
     expect(byPattern.get("/app/settings")).toMatchObject({ mode: "spa", ssr: true });
     expect(manifest.layouts.map((layout) => `${layout.mode} ${layout.file}`)).toEqual([
-      "static src/routes/_layout.stsx",
-      "static src/routes/(marketing)/_layout.stsx",
-      "spa src/routes/app/_layout.stsx",
-      "server src/routes/blog/_layout.stsx",
+      "static src/routes/layout.stsx",
+      "static src/routes/(marketing)/layout.stsx",
+      "spa src/routes/app/layout.stsx",
+      "server src/routes/blog/layout.stsx",
     ]);
   });
 

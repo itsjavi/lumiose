@@ -22,7 +22,7 @@ function rulesOf(html: string): unknown {
 
 /** A hand-compiled server component: layouts wrap their children, pages render their file. */
 const component = (file: string) =>
-  file.includes("_layout")
+  file.endsWith("/layout.tsx")
     ? (props: Props) =>
         ssr(
           ["<div>", "</div>"],
@@ -51,13 +51,13 @@ function app(files: Record<string, string>, options: Partial<RequestHandlerOptio
 }
 
 const FILES = {
-  "index.tsx": "",
-  "_404.tsx": "",
-  "about.tsx": 'export const mode = "server";',
-  "rss.xml.ts": "",
-  "api/[id].ts": 'export const mode = "server";',
-  "app/_layout.tsx": 'export const mode = "spa";',
-  "app/index.tsx": "",
+  "page.tsx": "",
+  "not-found.tsx": "",
+  "about/page.tsx": 'export const mode = "server";',
+  "rss.xml/route.ts": "",
+  "api/[id]/route.ts": 'export const mode = "server";',
+  "app/layout.tsx": 'export const mode = "spa";',
+  "app/page.tsx": "",
 };
 
 describe("MPA navigation options", () => {
@@ -99,7 +99,7 @@ describe("MPA navigation options", () => {
   });
 
   it("prefetches early with viewport, below Vite's base", async () => {
-    const get = app({ "index.tsx": "" }, { prefetch: "viewport", base: "/docs/" });
+    const get = app({ "page.tsx": "" }, { prefetch: "viewport", base: "/docs/" });
     expect(rulesOf(await get("/docs/"))).toEqual({
       prefetch: [{ where: { href_matches: "/docs{/*}?" }, eagerness: "eager" }],
     });
@@ -126,9 +126,9 @@ describe("per-link prefetch", () => {
   const FEED = { GET: () => new Response("<feed/>") };
   const scope = [{ href_matches: "/*" }, { not: { href_matches: ["/feed.xml{/}?"] } }];
   const modules = {
-    "src/routes/index.stsx": page(links),
-    "src/routes/plain.stsx": page(() => '<a href="/a">a</a>'),
-    "src/routes/feed.xml.ts": FEED,
+    "src/routes/page.stsx": page(links),
+    "src/routes/plain/page.stsx": page(() => '<a href="/a">a</a>'),
+    "src/routes/feed.xml/route.ts": FEED,
   };
 
   it("groups marked links by level; plain links follow the project default", async () => {
@@ -175,14 +175,16 @@ describe("per-link prefetch", () => {
 
   it("covers the marked links of streamed Suspense boundaries", async () => {
     const streamed = {
-      "src/routes/index.stsx": page(
+      "src/routes/page.stsx": page(
         () =>
           `<h1>shell</h1>${testDefer(async () => {
             await new Promise((done) => setTimeout(done, 10)); // renders after the shell
             return links();
           })}`,
       ),
-      "src/routes/plain.stsx": page(() => `<h1>shell</h1>${testDefer(async () => "<p>late</p>")}`),
+      "src/routes/plain/page.stsx": page(
+        () => `<h1>shell</h1>${testDefer(async () => "<p>late</p>")}`,
+      ),
     };
     // A default level: the head gets the marked rules, since a boundary may have marked links.
     const hover = appOf(streamed, { prefetch: "hover" });
@@ -220,12 +222,26 @@ describe("urlPattern", () => {
       { kind: "static", value: "files" },
       { kind: "rest", name: "path" },
     ]);
-    expect(files).toBe("/docs/files{/*}?");
-    expect(["/docs/files", "/docs/files/a/b"].map((path) => matches(files, path))).toEqual([
+    expect(files).toBe("/docs/files/:p1+{/}?");
+    expect(["/docs/files/a", "/docs/files/a/b/"].map((path) => matches(files, path))).toEqual([
       true,
       true,
     ]);
-    expect(matches(files, "/docs/filesx")).toBe(false);
+    expect(["/docs/files", "/docs/filesx"].map((path) => matches(files, path))).toEqual([
+      false,
+      false,
+    ]);
+  });
+
+  it("matches optional segments with and without them", () => {
+    const docs = urlPattern("", [
+      { kind: "optional", name: "lang" },
+      { kind: "static", value: "docs" },
+      { kind: "optionalRest", name: "path" },
+    ]);
+    expect(docs).toBe("{/:p0}?/docs{/:p2}*{/}?");
+    const urls = ["/docs", "/docs/", "/es/docs", "/es/docs/a/b", "/docs/a", "/a/b/docs"];
+    expect(urls.map((path) => matches(docs, path))).toEqual([true, true, true, true, true, false]);
   });
 
   it("escapes URLPattern syntax in static segments", () => {

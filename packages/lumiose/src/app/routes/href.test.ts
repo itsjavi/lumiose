@@ -15,12 +15,21 @@ describe("href", () => {
     );
   });
 
-  it("keeps rest separators and drops an empty rest", () => {
+  it("keeps rest separators", () => {
     expect(href("/docs/[...path]", { path: "guide/routing files" })).toBe(
       "/docs/guide/routing%20files",
     );
-    expect(href("/docs/[...path]", { path: "" })).toBe("/docs");
-    expect(href("/[...all]", { all: "" })).toBe("/");
+    expect(href("/docs/[...path]", { path: "/a//b/" })).toBe("/docs/a/b");
+  });
+
+  it("leaves out optional segments that are missing or empty", () => {
+    expect(href("/docs/[[...path]]", { path: "a/b" })).toBe("/docs/a/b");
+    expect(href("/docs/[[...path]]", { path: "" })).toBe("/docs");
+    expect(href("/docs/[[...path]]")).toBe("/docs");
+    expect(href("/[[...all]]")).toBe("/");
+    expect(href("/[[lang]]/about", { lang: "es" })).toBe("/es/about");
+    expect(href("/[[lang]]/about", {})).toBe("/about");
+    expect(fillPattern("/[[lang]]/about", { lang: undefined })).toBe("/about");
   });
 
   it("throws on missing or empty params", () => {
@@ -29,6 +38,8 @@ describe("href", () => {
     );
     expect(() => href("/blog/[slug]", { slug: "" })).toThrow(TypeError);
     expect(() => href("/docs/[...path]")).toThrow(TypeError);
+    expect(() => href("/docs/[...path]", { path: "" })).toThrow(TypeError);
+    expect(() => href("/docs/[...path]", { path: "/" })).toThrow(TypeError);
   });
 });
 
@@ -44,7 +55,7 @@ describe("href below the base, with the trailing-slash policy (TASK-101)", () =>
     expect(href("/docs/[...path]", { path: "concepts/signals" })).toBe(
       "/lumiose/docs/concepts/signals",
     );
-    expect(href("/docs/[...path]", { path: "" })).toBe("/lumiose/docs");
+    expect(href("/docs/[[...path]]", { path: "" })).toBe("/lumiose/docs");
     vi.stubEnv("BASE_URL", "/lumiose");
     expect(href("/about")).toBe("/lumiose/about");
   });

@@ -26,9 +26,9 @@ describe("fetchJSON() during SSR", () => {
         return next();
       }) satisfies Middleware,
     },
-    "src/routes/_404.stsx": page((props) => `404 ${props.error.message}`),
-    "src/routes/_error.stsx": page((props) => `${props.status} ${props.error.message}`),
-    "src/routes/api/me.ts": {
+    "src/routes/not-found.stsx": page((props) => `404 ${props.error.message}`),
+    "src/routes/error.stsx": page((props) => `${props.status} ${props.error.message}`),
+    "src/routes/api/me/route.ts": {
       GET: (ctx: RequestContext) => {
         cookies().set("seen", "1");
         return json({
@@ -40,15 +40,15 @@ describe("fetchJSON() during SSR", () => {
         });
       },
     },
-    "src/routes/api/missing.ts": {
+    "src/routes/api/missing/route.ts": {
       GET: () => json({ reason: "gone" }, { status: 404, statusText: "Not Found" }),
     },
-    "src/routes/api/old.ts": { GET: () => redirect("/api/me") },
-    "src/routes/api/loop.ts": { GET: () => fetchJSON("/api/loop").then(json) },
-    "src/routes/api/fails.ts": { GET: () => error(503) },
-    "src/routes/me.stsx": page(async () => JSON.stringify(await fetchJSON("api/me?x=1"))),
-    "src/routes/old.stsx": page(async () => JSON.stringify(await fetchJSON("/api/old"))),
-    "src/routes/missing.stsx": page(async () => {
+    "src/routes/api/old/route.ts": { GET: () => redirect("/api/me") },
+    "src/routes/api/loop/route.ts": { GET: () => fetchJSON("/api/loop").then(json) },
+    "src/routes/api/fails/route.ts": { GET: () => error(503) },
+    "src/routes/me/page.stsx": page(async () => JSON.stringify(await fetchJSON("api/me?x=1"))),
+    "src/routes/old/page.stsx": page(async () => JSON.stringify(await fetchJSON("/api/old"))),
+    "src/routes/missing/page.stsx": page(async () => {
       try {
         return await fetchJSON("/api/missing");
       } catch (caught) {
@@ -56,8 +56,8 @@ describe("fetchJSON() during SSR", () => {
         return `${caught.status} ${caught.url} ${JSON.stringify(caught.data)}`;
       }
     }),
-    "src/routes/fails.stsx": page(() => fetchJSON("/api/fails")),
-    "src/routes/loop.stsx": page(() => fetchJSON("/api/loop")),
+    "src/routes/fails/page.stsx": page(() => fetchJSON("/api/fails")),
+    "src/routes/loop/page.stsx": page(() => fetchJSON("/api/loop")),
   };
 
   it("serves same-origin URLs in-process, as part of the page request", async () => {
@@ -82,7 +82,7 @@ describe("fetchJSON() during SSR", () => {
   it("does not leak locals written by the in-process request back to the page", async () => {
     const { fetch } = app({
       ...modules,
-      "src/routes/me.stsx": page(async () => {
+      "src/routes/me/page.stsx": page(async () => {
         await fetchJSON("/api/me");
         return String((locals() as { depth: number }).depth);
       }),
@@ -92,10 +92,10 @@ describe("fetchJSON() during SSR", () => {
 
   it("sends request bodies in-process", async () => {
     const { fetch } = app({
-      "src/routes/api/echo.ts": {
+      "src/routes/api/echo/route.ts": {
         POST: async (ctx: RequestContext) => json({ got: await ctx.request.json() }),
       },
-      "src/routes/index.stsx": page(async () =>
+      "src/routes/page.stsx": page(async () =>
         JSON.stringify(
           await fetchJSON("/api/echo", {
             method: "POST",
@@ -138,7 +138,7 @@ describe("fetchJSON() during SSR", () => {
     );
     vi.stubGlobal("fetch", network);
     const { fetch } = app({
-      "src/routes/index.stsx": page(async () =>
+      "src/routes/page.stsx": page(async () =>
         JSON.stringify(await fetchJSON("https://api.example.com/x")),
       ),
     });

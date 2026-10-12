@@ -2,7 +2,7 @@
 // "lumiose" so `Routes`, `RouteParams`, `PageProps`, `LayoutProps`, the request context types and
 // `href()` know every route pattern (decision-26 §1).
 
-import type { RouteManifest } from "lumiose/internal/app/routes/manifest.ts";
+import type { RouteManifest, RouteParam } from "lumiose/internal/app/routes/manifest.ts";
 
 export function generateRouteTypes(
   manifest: Pick<RouteManifest, "routes" | "routesDir" | "layouts">,
@@ -11,7 +11,7 @@ export function generateRouteTypes(
     .toSorted((a, b) => compare(a.pattern, b.pattern))
     .map(
       (route) =>
-        `    ${JSON.stringify(route.pattern)}: { kind: "${route.kind}"; params: ${paramsType(route.params.map((param) => param.name))} };`,
+        `    ${JSON.stringify(route.pattern)}: { kind: "${route.kind}"; params: ${paramsType(route.params)} };`,
     );
   const layouts = [...new Set(manifest.layouts.map((layout) => layout.pattern))]
     .toSorted(compare)
@@ -35,13 +35,18 @@ export function generateRouteTypes(
   ].join("\n");
 }
 
-function paramsType(names: readonly string[]): string {
-  return names.length === 0 ? "{}" : `{ ${names.map((name) => `${name}: string`).join("; ")} }`;
+/** `{ slug: string; lang?: string }`: an optional `[[param]]` may be absent. */
+function paramsType(params: readonly Pick<RouteParam, "name" | "optional">[]): string {
+  if (params.length === 0) return "{}";
+  return `{ ${params.map(({ name, optional }) => `${name}${optional ? "?" : ""}: string`).join("; ")} }`;
 }
 
-/** `/books/[isbn]/[...rest]` → `["isbn", "rest"]`. */
-function patternParams(pattern: string): string[] {
-  return [...pattern.matchAll(/\[(?:\.\.\.)?([^\]]+)\]/g)].map((match) => match[1]!);
+/** `/[[lang]]/books/[isbn]/[...rest]` → `lang` (optional), `isbn`, `rest`. */
+function patternParams(pattern: string): Pick<RouteParam, "name" | "optional">[] {
+  return [...pattern.matchAll(/\[(\[)?(?:\.\.\.)?([^[\]]+)\]\]?/g)].map((match) => ({
+    name: match[2]!,
+    optional: match[1] !== undefined,
+  }));
 }
 
 function compare(a: string, b: string): number {

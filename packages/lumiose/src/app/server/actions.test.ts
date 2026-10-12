@@ -46,7 +46,7 @@ const html = async (res: Response) => {
 describe("form actions without JavaScript", () => {
   it("redirects with 303 when the action throws redirect(), keeping the cookies it set", async () => {
     const { fetch } = app({
-      "src/routes/login.stsx": echoPage({
+      "src/routes/login/page.stsx": echoPage({
         action: (async ({ formData }) => {
           const data = await formData();
           cookies().set("user", String(data.get("name")));
@@ -62,7 +62,7 @@ describe("form actions without JavaScript", () => {
 
   it("re-renders the page with status 200 and actionData() set to the returned data", async () => {
     const { fetch } = app({
-      "src/routes/todos.stsx": echoPage({
+      "src/routes/todos/page.stsx": echoPage({
         action: async ({ formData }: ActionContext) => ({
           added: (await formData()).get("title"),
           at: new Date(0),
@@ -82,7 +82,7 @@ describe("form actions without JavaScript", () => {
 
   it("re-renders with the fail() status and data", async () => {
     const { fetch } = app({
-      "src/routes/signup.stsx": echoPage({
+      "src/routes/signup/page.stsx": echoPage({
         action: () => fail(422, { errors: { email: "required" } }),
       }),
     });
@@ -93,7 +93,7 @@ describe("form actions without JavaScript", () => {
 
   it("returns a Response from the action as it is", async () => {
     const { fetch } = app({
-      "src/routes/export.stsx": echoPage({
+      "src/routes/export/page.stsx": echoPage({
         action: () => new Response("a,b", { headers: { "content-type": "text/csv" } }),
       }),
     });
@@ -117,7 +117,7 @@ describe("form actions without JavaScript", () => {
           return next();
         }) satisfies Middleware,
       },
-      "src/routes/items.stsx": echoPage({
+      "src/routes/items/page.stsx": echoPage({
         action: record("default"),
         actions: { create: record("create"), remove: record("remove") },
       }),
@@ -130,9 +130,9 @@ describe("form actions without JavaScript", () => {
 
   it("answers missing actions with 404 and pages without actions with 405", async () => {
     const { fetch } = app({
-      "src/routes/_404.stsx": page((props) => `<p>404 ${props.error.message}</p>`),
-      "src/routes/named.stsx": echoPage({ actions: { create: () => 1 } }),
-      "src/routes/plain.stsx": echoPage({}),
+      "src/routes/not-found.stsx": page((props) => `<p>404 ${props.error.message}</p>`),
+      "src/routes/named/page.stsx": echoPage({ actions: { create: () => 1 } }),
+      "src/routes/plain/page.stsx": echoPage({}),
     });
     const unknown = await fetch("/named?/nope", post());
     expect(unknown.status).toBe(404);
@@ -156,8 +156,8 @@ describe("form actions without JavaScript", () => {
 
   it("parses formData() once, and answers a non-form body with 400", async () => {
     const { fetch } = app({
-      "src/routes/_error.stsx": page((props) => `<p>${props.status} ${props.error.message}</p>`),
-      "src/routes/twice.stsx": echoPage({
+      "src/routes/error.stsx": page((props) => `<p>${props.status} ${props.error.message}</p>`),
+      "src/routes/twice/page.stsx": echoPage({
         action: async ({ formData }: ActionContext) => (await formData()) === (await formData()),
       }),
     });
@@ -169,8 +169,8 @@ describe("form actions without JavaScript", () => {
 
   it("renders _error for errors thrown by the action", async () => {
     const { fetch, onError } = app({
-      "src/routes/_error.stsx": page((props) => `<p>${props.status} ${props.error.message}</p>`),
-      "src/routes/admin.stsx": echoPage({
+      "src/routes/error.stsx": page((props) => `<p>${props.status} ${props.error.message}</p>`),
+      "src/routes/admin/page.stsx": echoPage({
         actions: {
           deny: () => error(403, "Admins only"),
           crash: () => {
@@ -190,14 +190,14 @@ describe("form actions without JavaScript", () => {
 
   it("rejects action data that is not plain data", async () => {
     const { fetch, onError } = app({
-      "src/routes/bad.stsx": echoPage({ action: () => ({ save: () => {} }) }),
+      "src/routes/bad/page.stsx": echoPage({ action: () => ({ save: () => {} }) }),
     });
     expect((await fetch("/bad", post())).status).toBe(500);
     expect(onError.mock.calls[0]![0].message).toMatch(/^Action data at save is a function\./);
   });
 
   it("leaves actionData() undefined on GET and does not embed it", async () => {
-    const { fetch } = app({ "src/routes/index.stsx": echoPage({ action: () => 1 }) });
+    const { fetch } = app({ "src/routes/page.stsx": echoPage({ action: () => 1 }) });
     const text = await (await fetch("/")).text();
     expect(text).toContain("<p>null</p>");
     expect(text).not.toContain("data-l-action");
@@ -212,8 +212,8 @@ describe("enhanced submissions (JSON protocol)", () => {
         return next();
       }) satisfies Middleware,
     },
-    "src/routes/private.stsx": echoPage({ action: () => 1 }),
-    "src/routes/todos.stsx": echoPage({
+    "src/routes/private/page.stsx": echoPage({ action: () => 1 }),
+    "src/routes/todos/page.stsx": echoPage({
       actions: {
         add: () => ({ id: 1, at: new Date(0) }),
         nothing: () => undefined,
@@ -301,7 +301,7 @@ describe("enhanced submissions (JSON protocol)", () => {
   });
 
   it("answers missing actions with error results and passes other responses through", async () => {
-    const { fetch } = app({ ...modules, "src/routes/plain.stsx": echoPage({}) });
+    const { fetch } = app({ ...modules, "src/routes/plain/page.stsx": echoPage({}) });
     const missing = await fetch("/todos?/nope", enhanced());
     expect(missing.status).toBe(404);
     expect(await result(missing)).toEqual({
@@ -326,8 +326,8 @@ describe("enhanced submissions (JSON protocol)", () => {
 
 describe("Origin check (CSRF)", () => {
   const modules: Modules = {
-    "src/routes/index.stsx": echoPage({ action: () => "ok" }),
-    "src/routes/api/hook.ts": { POST: () => new Response("hooked") },
+    "src/routes/page.stsx": echoPage({ action: () => "ok" }),
+    "src/routes/api/hook/route.ts": { POST: () => new Response("hooked") },
   };
   it("accepts same-origin, allowlisted and non-browser posts", async () => {
     const { fetch } = app(modules, { csrf: { allowedOrigins: ["https://admin.lumiose.test"] } });
@@ -397,7 +397,7 @@ describe("actionData() on the server", () => {
   it("is undefined outside a request, and in-request reads are typed by the caller", async () => {
     expect(actionData()).toBeUndefined();
     const { fetch } = app({
-      "src/routes/index.stsx": {
+      "src/routes/page.stsx": {
         default: () => String(((actionData() as number | undefined) ?? 0) + 1),
         action: () => 41,
       },

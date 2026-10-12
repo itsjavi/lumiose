@@ -24,9 +24,9 @@ afterAll(() => {
 
 describe("build and preview commands", () => {
   it("lumiose build reports route errors and exits 1", async () => {
-    mkdirSync(join(root, "src/routes/api"), { recursive: true });
+    mkdirSync(join(root, "src/routes/api/subscribe"), { recursive: true });
     writeFileSync(
-      join(root, "src/routes/api/subscribe.ts"),
+      join(root, "src/routes/api/subscribe/route.ts"),
       "export function GET() {}\nexport function POST() {}\n",
     );
     const errors: string[] = [];
@@ -56,8 +56,8 @@ describe("build and preview commands", () => {
       const app = realpathSync.native(mkdtempSync(join(tmpdir(), "lumiose-preview-")));
       roots.push(app);
       const files: Record<string, string> = {
-        "src/routes/index.stsx": "export default function Home() { return <h1>Home</h1>; }\n",
-        "src/routes/live.stsx": `export const mode = "server";
+        "src/routes/page.stsx": "export default function Home() { return <h1>Home</h1>; }\n",
+        "src/routes/live/page.stsx": `export const mode = "server";
 export default function Live() { return <h1>Live</h1>; }
 `,
         "vite.config.ts": `import lumiose from "@lumiose/vite";
@@ -120,9 +120,11 @@ export default {
       const app = realpathSync.native(mkdtempSync(join(tmpdir(), "lumiose-preview-static-")));
       roots.push(app);
       const files: Record<string, string> = {
-        "src/routes/index.stsx": "export default function Home() { return <h1>Home</h1>; }\n",
-        "src/routes/about.stsx": "export default function About() { return <h1>About</h1>; }\n",
-        "src/routes/_404.stsx": "export default function Missing() { return <h1>Missing</h1>; }\n",
+        "src/routes/page.stsx": "export default function Home() { return <h1>Home</h1>; }\n",
+        "src/routes/about/page.stsx":
+          "export default function About() { return <h1>About</h1>; }\n",
+        "src/routes/not-found.stsx":
+          "export default function Missing() { return <h1>Missing</h1>; }\n",
         "vite.config.ts": `import lumiose from "@lumiose/vite";
 export default {
   plugins: [lumiose({ headers: [{ path: "/**", headers: { "x-site": "1" } }, { path: "/about", headers: { "x-about": "1" } }] })],

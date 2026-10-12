@@ -127,43 +127,47 @@ const ErrorPage: Component<{ status: number; error: Error }> = (props) =>
   el("h1", () => `error ${props.status}: ${props.error.message}`);
 
 const modules: Record<string, Component<any>> = {
-  "src/routes/_layout.tsx": Root,
-  "src/routes/index.tsx": Home,
-  "src/routes/users/_layout.tsx": Users,
-  "src/routes/users/[id].tsx": User,
-  "src/routes/books/[id].tsx": Book,
-  "src/routes/search.tsx": Search,
-  "src/routes/old.tsx": Old,
-  "src/routes/slow.tsx": SuspensePage,
-  "src/routes/_404.tsx": NotFound,
-  "src/routes/_error.tsx": ErrorPage,
+  "src/routes/layout.tsx": Root,
+  "src/routes/page.tsx": Home,
+  "src/routes/users/layout.tsx": Users,
+  "src/routes/users/[id]/page.tsx": User,
+  "src/routes/books/[id]/page.tsx": Book,
+  "src/routes/search/page.tsx": Search,
+  "src/routes/old/page.tsx": Old,
+  "src/routes/slow/page.tsx": SuspensePage,
+  "src/routes/not-found.tsx": NotFound,
+  "src/routes/error.tsx": ErrorPage,
 };
 
-const APP = "src/routes/_layout.tsx";
-const userLevels = [APP, "src/routes/users/_layout.tsx", "src/routes/users/[id].tsx"];
+const APP = "src/routes/layout.tsx";
+const userLevels = [APP, "src/routes/users/layout.tsx", "src/routes/users/[id]/page.tsx"];
 
 function config(base = "/"): SpaConfig {
   return {
     base,
     routes: [
-      { segments: [], app: APP, levels: [APP, "src/routes/index.tsx"] },
-      { segments: [s("search")], app: APP, levels: [APP, "src/routes/search.tsx"] },
-      { segments: [s("old")], app: APP, levels: [APP, "src/routes/old.tsx"] },
-      { segments: [s("slow")], app: APP, levels: [APP, "src/routes/slow.tsx"] },
+      { segments: [], app: APP, levels: [APP, "src/routes/page.tsx"] },
+      { segments: [s("search")], app: APP, levels: [APP, "src/routes/search/page.tsx"] },
+      { segments: [s("old")], app: APP, levels: [APP, "src/routes/old/page.tsx"] },
+      { segments: [s("slow")], app: APP, levels: [APP, "src/routes/slow/page.tsx"] },
       { segments: [s("static")] },
-      { segments: [s("books"), param("id")], app: APP, levels: [APP, "src/routes/books/[id].tsx"] },
+      {
+        segments: [s("books"), param("id")],
+        app: APP,
+        levels: [APP, "src/routes/books/[id]/page.tsx"],
+      },
       {
         segments: [s("users"), param("id")],
         app: APP,
         levels: userLevels,
-        notFound: "src/routes/_404.tsx",
-        error: "src/routes/_error.tsx",
+        notFound: "src/routes/not-found.tsx",
+        error: "src/routes/error.tsx",
       },
     ],
-    notFoundPages: [{ file: "src/routes/_404.tsx", dir: "", segments: [] }],
+    notFoundPages: [{ file: "src/routes/not-found.tsx", dir: "", segments: [] }],
     pages: {
-      "src/routes/_404.tsx": { app: APP, levels: [APP, "src/routes/_404.tsx"] },
-      "src/routes/_error.tsx": { app: APP, levels: [APP, "src/routes/_error.tsx"] },
+      "src/routes/not-found.tsx": { app: APP, levels: [APP, "src/routes/not-found.tsx"] },
+      "src/routes/error.tsx": { app: APP, levels: [APP, "src/routes/error.tsx"] },
     },
     modules: Object.fromEntries(
       Object.entries(modules).map(([file, component]) => [
@@ -177,7 +181,7 @@ function config(base = "/"): SpaConfig {
 let container: HTMLElement;
 let dispose: (() => void) | undefined;
 
-async function boot(path: string, leaf = "src/routes/index.tsx", base?: string): Promise<void> {
+async function boot(path: string, leaf = "src/routes/page.tsx", base?: string): Promise<void> {
   history.replaceState(null, "", path);
   createRouter(config(base), APP);
   const RootComponent = await prepareRoot(leaf, true);
@@ -260,7 +264,7 @@ describe("lumiose/router", () => {
   });
 
   it("commits a navigation that keeps every level at once", async () => {
-    await boot("/search?q=a", "src/routes/search.tsx");
+    await boot("/search?q=a", "src/routes/search/page.tsx");
     expect(text()).toBe("path /searchq=a");
     await searchParams.set({ q: "b", empty: null });
     expect(location.search).toBe("?q=b");
@@ -301,13 +305,15 @@ describe("lumiose/router", () => {
     // The server rendered the _404 (404.html on a static host) for /users/…, a prerendered page
     // with params; its script hid the document.
     const rerouting = config();
-    rerouting.routes.find((r) => r.levels?.includes("src/routes/users/[id].tsx"))!.reroute = true;
+    rerouting.routes.find((r) =>
+      r.levels?.includes("src/routes/users/[id]/page.tsx"),
+    )!.reroute = true;
     const start = async (path: string): Promise<Component<object> & { $$fresh?: true }> => {
       history.replaceState(null, "", path);
       document.documentElement.setAttribute("data-l-reroute", "");
       document.documentElement.style.visibility = "hidden";
       createRouter(rerouting, APP);
-      const root = await prepareRoot("src/routes/_404.tsx", false);
+      const root = await prepareRoot("src/routes/not-found.tsx", false);
       container = document.createElement("div");
       document.body.append(container);
       dispose = render(
@@ -352,7 +358,7 @@ describe("lumiose/router", () => {
   it("keeps the 404 of a page that renders per request", async () => {
     history.replaceState(null, "", "/users/1");
     createRouter(config(), APP);
-    const root = await prepareRoot("src/routes/_404.tsx", false);
+    const root = await prepareRoot("src/routes/not-found.tsx", false);
     container = document.createElement("div");
     document.body.append(container);
     dispose = render(() => createComponent(root, { status: 404, message: "Not Found" }), container);
@@ -372,7 +378,7 @@ describe("lumiose/router", () => {
   });
 
   it("follows a redirect() thrown while the first page renders", async () => {
-    await boot("/old", "src/routes/old.tsx");
+    await boot("/old", "src/routes/old/page.tsx");
     await settled();
     expect(location.pathname + location.search).toBe("/search?q=moved");
     expect(text()).toBe("path /searchq=moved");
@@ -427,7 +433,7 @@ describe("lumiose/router", () => {
   });
 
   it("invalidate() re-runs the async components and keeps their UI meanwhile", async () => {
-    await boot("/users/1", "src/routes/users/[id].tsx");
+    await boot("/users/1", "src/routes/users/[id]/page.tsx");
     expect(loads).toEqual(["1"]);
     const again = (userData["1"] = deferred<string>());
     const done = invalidate();
@@ -444,7 +450,7 @@ describe("lumiose/router", () => {
   });
 
   it("keeps cached entries across navigations: going back shows them at once (TASK-195)", async () => {
-    await boot("/books/1", "src/routes/books/[id].tsx");
+    await boot("/books/1", "src/routes/books/[id]/page.tsx");
     expect(text()).toBe("path /books/1book 1");
     await navigate("/");
     expect(text()).toBe("path /home");
@@ -475,9 +481,9 @@ describe("lumiose/router", () => {
     dispose?.();
     history.replaceState(null, "", "/");
     const withLoad = config();
-    withLoad.modules["src/routes/search.tsx"] = load;
+    withLoad.modules["src/routes/search/page.tsx"] = load;
     createRouter(withLoad, APP);
-    const RootComponent = await prepareRoot("src/routes/index.tsx", true);
+    const RootComponent = await prepareRoot("src/routes/page.tsx", true);
     let link!: HTMLAnchorElement;
     dispose = render(() => {
       const root = createComponent(RootComponent, {});

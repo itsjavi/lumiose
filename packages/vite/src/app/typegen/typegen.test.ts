@@ -1,5 +1,5 @@
 import { execFile } from "node:child_process";
-import { cp, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { cp, mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
@@ -22,14 +22,16 @@ const TSC = join(
 describe("generateRouteTypes", () => {
   it("augments the lumiose RouteMap and LayoutMap with every route and layout, sorted by pattern", () => {
     const manifest = createRouteManifest([
-      { path: "_layout.stsx", source: "" },
-      { path: "(shop)/_layout.stsx", source: "" },
-      { path: "shop/[category]/_layout.stsx", source: "" },
-      { path: "index.stsx", source: "" },
-      { path: "blog/[slug].stsx", source: "" },
-      { path: "shop/[category]/[item].stsx", source: "" },
-      { path: "docs/[...path].stsx", source: "" },
-      { path: "sitemap.xml.ts", source: "" },
+      { path: "layout.stsx", source: "" },
+      { path: "(shop)/layout.stsx", source: "" },
+      { path: "shop/[category]/layout.stsx", source: "" },
+      { path: "[[lang]]/guide/layout.stsx", source: "" },
+      { path: "page.stsx", source: "" },
+      { path: "blog/[slug]/page.stsx", source: "" },
+      { path: "shop/[category]/[item]/page.stsx", source: "" },
+      { path: "docs/[...path]/page.stsx", source: "" },
+      { path: "[[lang]]/guide/[[...path]]/page.stsx", source: "" },
+      { path: "sitemap.xml/route.ts", source: "" },
     ]);
     expect(generateRouteTypes(manifest)).toBe(
       [
@@ -39,6 +41,7 @@ describe("generateRouteTypes", () => {
         'declare module "lumiose" {',
         "  interface RouteMap {",
         `    "/": { kind: "page"; params: {} };`,
+        `    "/[[lang]]/guide/[[...path]]": { kind: "page"; params: { lang?: string; path?: string } };`,
         `    "/blog/[slug]": { kind: "page"; params: { slug: string } };`,
         `    "/docs/[...path]": { kind: "page"; params: { path: string } };`,
         `    "/shop/[category]/[item]": { kind: "page"; params: { category: string; item: string } };`,
@@ -46,6 +49,7 @@ describe("generateRouteTypes", () => {
         "  }",
         "  interface LayoutMap {",
         `    "/": { params: {} };`,
+        `    "/[[lang]]/guide": { params: { lang?: string } };`,
         `    "/shop/[category]": { params: { category: string } };`,
         "  }",
         "}",
@@ -61,6 +65,9 @@ describe("typegen", () => {
   beforeAll(async () => {
     root = await mkdtemp(join(tmpdir(), "lumiose-typegen-"));
     await cp(join(BASIC, "src"), join(root, "src"), { recursive: true });
+    const optional = join(root, "src/routes/[[lang]]/guide/[[...path]]");
+    await mkdir(optional, { recursive: true });
+    await writeFile(join(optional, "page.stsx"), "export default function Guide() {}\n");
   });
 
   afterAll(async () => {
@@ -113,6 +120,7 @@ export type AllRoutes = Assert<
   Equal<
     Routes,
     | "/"
+    | "/[[lang]]/guide/[[...path]]"
     | "/about"
     | "/api/posts"
     | "/api/posts/[id]"
@@ -130,12 +138,17 @@ export type AllRoutes = Assert<
 >;
 export type ItemParams = Assert<Equal<RouteParams<"/shop/[category]/[item]">, { category: string; item: string }>>;
 export type HomeParams = Assert<Equal<RouteParams<"/">, {}>>;
+export type GuideParams = Assert<
+  Equal<RouteParams<"/[[lang]]/guide/[[...path]]">, { lang?: string; path?: string }>
+>;
 
 export const links: string[] = [
   href("/"),
   href("/about", {}),
   href("/blog/[slug]", { slug: "hello" }),
   href("/docs/[...path]", { path: "guide/routing" }),
+  href("/[[lang]]/guide/[[...path]]"),
+  href("/[[lang]]/guide/[[...path]]", { lang: "es" }),
   href("/shop/[category]/[item]", { category: "books", item: "dune" }),
   href("/api/posts/[id]", { id: "7" }),
 ];

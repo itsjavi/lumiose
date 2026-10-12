@@ -27,7 +27,7 @@ const binding = await import("@lumiose/compiler").catch(() => undefined);
 
 const FILES: Record<string, string> = {
   "src/app.css": `body { margin: 0; }\n`,
-  "src/routes/_layout.stsx": `import "../app.css";
+  "src/routes/layout.stsx": `import "../app.css";
 export default function Layout(props: { children?: JSX.Element }) {
   return (
     <div class="shell">
@@ -37,7 +37,7 @@ export default function Layout(props: { children?: JSX.Element }) {
   );
 }
 `,
-  "src/routes/index.stsx": `import { Suspense } from "lumiose";
+  "src/routes/page.stsx": `import { Suspense } from "lumiose";
 import { Card } from "../components/Card.stsx";
 import { Late } from "../components/Late.stsx";
 import { Counter } from "../components/Counter.stsx";
@@ -55,7 +55,7 @@ export default function Home() {
   );
 }
 `,
-  "src/routes/about.stsx": `export default function About() {
+  "src/routes/about/page.stsx": `export default function About() {
   return <p>About</p>;
 }
 `,
@@ -100,9 +100,9 @@ export default {
   "server.ts": `import manifest, { stylesheets } from "virtual:lumiose/css-manifest";
 export { manifest, stylesheets };
 export const routes = {
-  "src/routes/_layout.stsx": () => import("./src/routes/_layout.stsx"),
-  "src/routes/index.stsx": () => import("./src/routes/index.stsx"),
-  "src/routes/about.stsx": () => import("./src/routes/about.stsx"),
+  "src/routes/layout.stsx": () => import("./src/routes/layout.stsx"),
+  "src/routes/page.stsx": () => import("./src/routes/page.stsx"),
+  "src/routes/about/page.stsx": () => import("./src/routes/about/page.stsx"),
 };
 `,
 };
@@ -151,16 +151,16 @@ describe.skipIf(!binding)("the CSS manifest", () => {
   it("maps each route module to the client stylesheets its static graph reaches", () => {
     const manifest = server.manifest;
     expect(Object.keys(manifest).toSorted()).toEqual([
-      "src/routes/_layout.stsx",
-      "src/routes/index.stsx",
+      "src/routes/layout.stsx",
+      "src/routes/page.stsx",
     ]);
     // Import order: Card, Late (streamed inside Suspense, still linked in the shell), Counter.
-    expect(manifest["src/routes/index.stsx"]!.map(css)).toEqual([
+    expect(manifest["src/routes/page.stsx"]!.map(css)).toEqual([
       expect.stringContaining("color:teal"),
       expect.stringContaining("color:olive"),
       expect.stringContaining("color:#dc143c"),
     ]);
-    expect(manifest["src/routes/_layout.stsx"]!.map(css)).toEqual([
+    expect(manifest["src/routes/layout.stsx"]!.map(css)).toEqual([
       expect.stringContaining("margin:0"),
       expect.stringContaining("display:grid"),
     ]);
@@ -172,12 +172,12 @@ describe.skipIf(!binding)("the CSS manifest", () => {
     const manifest = server.manifest;
     expect(
       server.stylesheets([
-        "src/routes/_layout.stsx",
-        "src/routes/index.stsx",
-        "src/routes/_layout.stsx",
+        "src/routes/layout.stsx",
+        "src/routes/page.stsx",
+        "src/routes/layout.stsx",
       ]),
-    ).toEqual([...manifest["src/routes/_layout.stsx"]!, ...manifest["src/routes/index.stsx"]!]);
-    expect(server.stylesheets(["src/routes/about.stsx", "missing.stsx"])).toEqual([]);
+    ).toEqual([...manifest["src/routes/layout.stsx"]!, ...manifest["src/routes/page.stsx"]!]);
+    expect(server.stylesheets(["src/routes/about/page.stsx", "missing.stsx"])).toEqual([]);
   });
 
   it("builds every stylesheet once, in the client environment only", () => {
@@ -186,13 +186,13 @@ describe.skipIf(!binding)("the CSS manifest", () => {
       "assets/Card.css",
       "assets/Counter.css",
       "assets/Late.css",
-      "assets/_layout.css",
       "assets/app.css",
+      "assets/layout.css",
     ]);
     // No empty JS for the stylesheet entries; the island chunk links its CSS through the
     // manifest's file, not a copy.
     const js = files(join(root, "dist/client")).filter((file) => file.endsWith(".js"));
-    expect(js.some((file) => /\/(?:Card|Late|_layout|app)-/.test(file))).toBe(false);
+    expect(js.some((file) => /\/(?:Card|Late|layout|app)-/.test(file))).toBe(false);
     expect(
       client.filter(
         (file) =>
@@ -215,7 +215,7 @@ describe.skipIf(!binding)("stylesheets in dev", () => {
       expect(links.map((link) => link.href)).toEqual(
         expect.arrayContaining([
           "/app/src/app.css",
-          `/app/src/routes/_layout.stsx${style}`,
+          `/app/src/routes/layout.stsx${style}`,
           `/app/src/components/Card.stsx${style}`,
           `/app/src/components/Late.stsx${style}`,
           `/app/src/components/Counter.stsx${style}`,

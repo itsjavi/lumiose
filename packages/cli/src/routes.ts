@@ -124,7 +124,7 @@ export async function routesCommand(options: { root: string } & CommandIO): Prom
 /** The human route table: paths relative to the routes directory. */
 export function routesTable(report: RoutesReport): string {
   if (report.routes.length === 0) {
-    return `No routes in ${report.routesDir}. Add a page, such as ${report.routesDir}/index.stsx.\n`;
+    return `No routes in ${report.routesDir}. Add a page, such as ${report.routesDir}/page.stsx.\n`;
   }
   const prefix = `${report.routesDir}/`;
   const short = (file: string) => (file.startsWith(prefix) ? file.slice(prefix.length) : file);

@@ -154,7 +154,7 @@ describe("SourceText", () => {
 describe("parseTscOutput", () => {
   it("parses located, chained and global diagnostics", () => {
     const output = [
-      ".lumiose/shadow/src/routes/(marketing)/[slug].stsx.tsx(6,40): error TS2339: Property 'lgg' does not exist.",
+      ".lumiose/shadow/src/routes/(marketing)/[slug]/page.stsx.tsx(6,40): error TS2339: Property 'lgg' does not exist.",
       "src/a.ts(4,3): error TS2345: Argument of type 'A' is not assignable to parameter of type 'B'.",
       "  Types of parameters 'a' and 'a' are incompatible.",
       "    Type 'number' is not assignable to type 'string'.",
@@ -164,7 +164,7 @@ describe("parseTscOutput", () => {
     ].join("\n");
     expect(parseTscOutput(output)).toEqual([
       {
-        file: ".lumiose/shadow/src/routes/(marketing)/[slug].stsx.tsx",
+        file: ".lumiose/shadow/src/routes/(marketing)/[slug]/page.stsx.tsx",
         line: 6,
         column: 40,
         category: "error",
@@ -233,8 +233,8 @@ describe.skipIf(!binding)("syncShadows", () => {
       [
         "src/components/Button.stsx",
         "src/components/Card.stsx",
-        "src/routes/blog/[slug].stsx",
-        "src/routes/index.stsx",
+        "src/routes/blog/[slug]/page.stsx",
+        "src/routes/page.stsx",
       ].map(shadow),
     );
     expect(result.deleted).toEqual([]);
@@ -259,25 +259,25 @@ describe.skipIf(!binding)("syncShadows", () => {
     await rm(join(root, "src/routes/blog"), { recursive: true });
     const deletion = await syncShadows(root);
     expect(deletion.deleted).toEqual([
-      join(root, ".lumiose/shadow/src/routes/blog/[slug].stsx.tsx"),
+      join(root, ".lumiose/shadow/src/routes/blog/[slug]/page.stsx.tsx"),
     ]);
     expect(existsSync(join(root, ".lumiose/shadow/src/routes/blog"))).toBe(false);
-    expect(existsSync(join(root, ".lumiose/shadow/src/routes/index.stsx.tsx"))).toBe(true);
+    expect(existsSync(join(root, ".lumiose/shadow/src/routes/page.stsx.tsx"))).toBe(true);
   });
 
   it("syncs only the listed files with `files`", async () => {
     const root = await project("valid");
     await syncShadows(root);
-    await rm(join(root, "src/routes/index.stsx"));
+    await rm(join(root, "src/routes/page.stsx"));
     const button = join(root, "src/components/Button.stsx");
     await writeFile(button, (await readFile(button, "utf8")).replace("$accent", "$radius.sm"));
 
     const result = await syncShadows(root, {
-      files: ["src/routes/index.stsx", button, "src/tokens.ts"],
+      files: ["src/routes/page.stsx", button, "src/tokens.ts"],
     });
     expect(result.files.map((file) => file.source)).toEqual([button]);
     expect(result.written).toEqual([shadowPathFor(root, button)]);
-    expect(result.deleted).toEqual([join(root, ".lumiose/shadow/src/routes/index.stsx.tsx")]);
+    expect(result.deleted).toEqual([join(root, ".lumiose/shadow/src/routes/page.stsx.tsx")]);
   });
 });
 
@@ -305,7 +305,7 @@ describe.skipIf(!binding)("lumiose check", () => {
     const badge = await source("src/components/Badge.stsx");
     const theme = await source("src/components/Theme.stsx");
     const panel = await source("src/components/Panel.stsx");
-    const post = await source("src/routes/blog/[slug].stsx");
+    const post = await source("src/routes/blog/[slug]/page.stsx");
 
     expect(report.diagnostics).toEqual(
       [
@@ -325,7 +325,7 @@ describe.skipIf(!binding)("lumiose check", () => {
         errorAt("src/components/Theme.stsx", theme, "TS2552", "$acent", "acent", 1),
         errorAt("src/components/Theme.stsx", theme, "TS2304", "$spacing", "spacing", 1),
         // Typed route params.
-        errorAt("src/routes/blog/[slug].stsx", post, "TS2339", "params.id", "id", 7),
+        errorAt("src/routes/blog/[slug]/page.stsx", post, "TS2339", "params.id", "id", 7),
       ].map((diagnostic) => expect.objectContaining(diagnostic)),
     );
     for (const diagnostic of report.diagnostics.filter((d) => d.source === "ts")) {
@@ -508,8 +508,8 @@ describe.skipIf(!binding)("lumiose check", () => {
     ].join("\n");
     // Server code may import server-only modules: the page itself is not reported.
     const page = [
-      'import { like } from "../lib/db.server.ts";',
-      'import { Likes } from "../components/Likes.tsx";',
+      'import { like } from "../../lib/db.server.ts";',
+      'import { Likes } from "../../components/Likes.tsx";',
       "export default function Page() {",
       "  like();",
       "  return <Likes client:load />;",
@@ -518,8 +518,8 @@ describe.skipIf(!binding)("lumiose check", () => {
     ].join("\n");
     await writeFile(join(root, "src/lib/util.ts"), util);
     await writeFile(join(root, "src/components/Likes.tsx"), likes);
-    await mkdir(join(root, "src/routes"), { recursive: true });
-    await writeFile(join(root, "src/routes/likes.tsx"), page);
+    await mkdir(join(root, "src/routes/likes"), { recursive: true });
+    await writeFile(join(root, "src/routes/likes/page.tsx"), page);
     const { exitCode, report } = await checkJson(root);
     const lum4003 = report.diagnostics.filter((d) => d.code === "LUM4003");
     expect(lum4003).toEqual([
@@ -527,30 +527,30 @@ describe.skipIf(!binding)("lumiose check", () => {
       lumioseAt("src/lib/util.ts", "LUM4003", util, "./db.server.ts"),
     ]);
     expect(lum4003[1]!.message).toContain(
-      "(src/routes/likes.tsx → src/components/Likes.tsx → src/lib/util.ts)",
+      "(src/routes/likes/page.tsx → src/components/Likes.tsx → src/lib/util.ts)",
     );
     expect(exitCode).toBe(1);
   });
 
   it("reports LUM2001 for props reads in spa routes, not in server-rendered pages (TASK-109)", async () => {
     const root = await project("valid");
-    await mkdir(join(root, "src/routes/books"), { recursive: true });
-    await mkdir(join(root, "src/routes/app"), { recursive: true });
-    await writeFile(join(root, "src/routes/books/[slug].tsx"), derivingPage(""));
+    await mkdir(join(root, "src/routes/books/[slug]"), { recursive: true });
+    await mkdir(join(root, "src/routes/app/[slug]"), { recursive: true });
+    await writeFile(join(root, "src/routes/books/[slug]/page.tsx"), derivingPage(""));
     const spa = derivingPage('export const mode = "spa";\n');
-    await writeFile(join(root, "src/routes/app/[slug].tsx"), spa);
+    await writeFile(join(root, "src/routes/app/[slug]/page.tsx"), spa);
     const { report } = await checkJson(root);
     expect(report.diagnostics.filter((d) => d.code === "LUM2001")).toEqual([
       lumioseAt(
-        "src/routes/app/[slug].tsx",
+        "src/routes/app/[slug]/page.tsx",
         "LUM2001",
         spa,
         "title = props.params.slug.toUpperCase()",
       ),
     ]);
     // The language server asks per file (@lumiose/cli/tooling).
-    expect(await isServerRoute(root, join(root, "src/routes/books/[slug].tsx"))).toBe(true);
-    expect(await isServerRoute(root, join(root, "src/routes/app/[slug].tsx"))).toBe(false);
+    expect(await isServerRoute(root, join(root, "src/routes/books/[slug]/page.tsx"))).toBe(true);
+    expect(await isServerRoute(root, join(root, "src/routes/app/[slug]/page.tsx"))).toBe(false);
     expect(await isServerRoute(root, join(root, "src/components/Card.tsx"))).toBe(false);
   });
 

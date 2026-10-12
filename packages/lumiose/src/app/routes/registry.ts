@@ -14,7 +14,7 @@ import type { Renderable } from "../../contract/client.ts";
 /** Route pattern → `{ kind, params }`, filled by declaration merging. */
 export interface RouteMap {}
 
-/** Layout pattern (the URL scope of a `_layout` file's directory) → `{ params }`. */
+/** Layout pattern (the URL scope of a `layout` file's directory) → `{ params }`. */
 export interface LayoutMap {}
 
 /** Union of every route pattern in the app, e.g. `"/" | "/blog/[slug]"`. */
@@ -38,7 +38,10 @@ export type LayoutRoutes = [keyof LayoutMap] extends [never]
   ? string
   : Extract<keyof LayoutMap, string>;
 
-/** Params of a route pattern; `[...rest]` params are strings joined with "/". */
+/**
+ * Params of a route pattern; `[...rest]` params are strings joined with "/", and optional
+ * `[[param]]` and `[[...rest]]` params are optional properties.
+ */
 export type RouteParams<P extends Routes> = P extends keyof RouteMap
   ? RouteMap[P] extends { params: infer T }
     ? T

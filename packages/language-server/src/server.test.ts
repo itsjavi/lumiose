@@ -221,7 +221,7 @@ describe("language server (pull diagnostics)", () => {
 
   it("completes class names from the styles in scope", async () => {
     // Button's component block, the file block and the global block; not Icon's block. Plus the
-    // `<style global>` classes of other files (the unopened `_layout.stsx`) and imported `.css`.
+    // `<style global>` classes of other files (the unopened `layout.stsx`) and imported `.css`.
     expect(await complete('["button"', 2)).toEqual([
       "app-button",
       "app-shell",
@@ -572,7 +572,7 @@ describe("language server (pull diagnostics)", () => {
   });
 
   it("offers and defines <style global> classes of other files", async () => {
-    const layout = "src/routes/_layout.stsx";
+    const layout = "src/routes/layout.stsx";
     const layoutText = await readFile(join(server.root, layout), "utf8");
     const at = (text: string, needle: string, shift: number) => ({
       ...doc(CARD),

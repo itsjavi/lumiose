@@ -9,9 +9,15 @@ import {
   type RouteManifest,
   type RouteSourceFile,
 } from "lumiose/internal/app/routes/manifest.ts";
-import { isRouteModuleCandidate } from "lumiose/internal/app/routes/segments.ts";
+import {
+  isIgnoredRouteFolder,
+  isRouteModuleCandidate,
+} from "lumiose/internal/app/routes/segments.ts";
 
-/** Reads every route module under `<root>/<routesDir>` and builds the manifest. */
+/**
+ * Reads every route file (`page`, `route`, `layout`, …) under `<root>/<routesDir>` and builds the
+ * manifest. Colocated modules and private (`_`) folders are skipped without reading them.
+ */
 export async function scanRoutes(
   root: string,
   options: CreateRouteManifestOptions = {},
@@ -25,7 +31,7 @@ export async function scanRoutes(
   return createRouteManifest(files, { ...options, routesDir });
 }
 
-/** Routes-relative POSIX paths of candidate route modules; empty if the directory is missing. */
+/** Routes-relative POSIX paths of candidate route files; empty if the directory is missing. */
 async function listRouteModules(dir: string, prefix = ""): Promise<string[]> {
   let entries;
   try {
@@ -36,9 +42,12 @@ async function listRouteModules(dir: string, prefix = ""): Promise<string[]> {
   }
   const nested = await Promise.all(
     entries.map(async (entry) => {
-      if (entry.name.startsWith(".") || entry.name === "node_modules") return [];
       const path = prefix + entry.name;
-      if (entry.isDirectory()) return listRouteModules(join(dir, entry.name), `${path}/`);
+      if (entry.isDirectory()) {
+        return isIgnoredRouteFolder(entry.name)
+          ? []
+          : listRouteModules(join(dir, entry.name), `${path}/`);
+      }
       return entry.isFile() && isRouteModuleCandidate(entry.name) ? [path] : [];
     }),
   );

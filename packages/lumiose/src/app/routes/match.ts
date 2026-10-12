@@ -1,46 +1,60 @@
 // URL → route matching (spec §8). Runtime-agnostic: used by the request handler and the
 // SPA router. Priority, segment by segment: static > [param] > [...rest]; groups are
-// already removed from patterns by the manifest.
+// already removed from patterns by the manifest. A route with optional segments competes with
+// each of its URL shapes (`/[[lang]]/about` as `/about` and `/[lang]/about`).
 
 import type { RouteEntry, RouteManifest, SpecialPage } from "./manifest.ts";
-import { compareSegments, type RouteSegment } from "./segments.ts";
+import {
+  compareSegments,
+  routeVariants,
+  type RouteSegment,
+  type VariantSegment,
+} from "./segments.ts";
 
 export type RouteParamValues = Record<string, string>;
 
 export interface RouteMatch<R extends RouteEntry = RouteEntry> {
   route: R;
-  /** Decoded params; a `[...rest]` param holds the matched segments joined with "/". */
+  /**
+   * Decoded params; a `[...rest]` param holds the matched segments joined with "/", and an
+   * optional param that matched no segment is absent.
+   */
   params: RouteParamValues;
 }
 
 export interface RouteMatcher {
   /** The highest-priority route for a pathname (query and hash are ignored). */
   match(pathname: string): RouteMatch | null;
-  /** The `_404` page whose directory scope best covers an unmatched pathname. */
+  /** The `not-found` page whose directory scope best covers an unmatched pathname. */
   notFound(pathname: string): SpecialPage | undefined;
 }
 
 export function createRouteMatcher(
   manifest: Pick<RouteManifest, "routes" | "notFoundPages">,
 ): RouteMatcher {
-  const routes = manifest.routes.toSorted((a, b) => compareSegments(a.segments, b.segments));
+  const routes = manifest.routes
+    .flatMap((route) => routeVariants(route.segments).map((segments) => ({ route, segments })))
+    .toSorted((a, b) => compareSegments(a.segments, b.segments));
   // Deeper scopes first; on equal scopes prefer the page outside route groups (shallower folder).
-  const notFoundPages = manifest.notFoundPages.toSorted(
-    (a, b) => b.segments.length - a.segments.length || depth(a.dir) - depth(b.dir),
-  );
+  const notFoundPages = manifest.notFoundPages
+    .flatMap((page) => routeVariants(page.segments).map((segments) => ({ page, segments })))
+    .toSorted(
+      (a, b) => b.segments.length - a.segments.length || depth(a.page.dir) - depth(b.page.dir),
+    );
 
   return {
     match(pathname) {
       const parts = splitPathname(pathname);
-      for (const route of routes) {
-        const params = matchSegments(route.segments, parts);
+      for (const { route, segments } of routes) {
+        const params = matchVariant(segments, parts, false);
         if (params !== null) return { route, params };
       }
       return null;
     },
     notFound(pathname) {
       const parts = splitPathname(pathname);
-      return notFoundPages.find((page) => matchSegments(page.segments, parts, true) !== null);
+      return notFoundPages.find(({ segments }) => matchVariant(segments, parts, true) !== null)
+        ?.page;
     },
   };
 }
@@ -51,10 +65,23 @@ export function matchSegments(
   parts: readonly string[],
   prefix = false,
 ): RouteParamValues | null {
+  for (const variant of routeVariants(segments)) {
+    const params = matchVariant(variant, parts, prefix);
+    if (params !== null) return params;
+  }
+  return null;
+}
+
+function matchVariant(
+  segments: readonly VariantSegment[],
+  parts: readonly string[],
+  prefix: boolean,
+): RouteParamValues | null {
   const params: RouteParamValues = {};
   for (let i = 0; i < segments.length; i++) {
     const segment = segments[i]!;
     if (segment.kind === "rest") {
+      if (i >= parts.length) return null;
       params[segment.name] = parts.slice(i).join("/");
       return params;
     }

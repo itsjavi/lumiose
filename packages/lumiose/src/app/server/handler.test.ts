@@ -27,12 +27,12 @@ describe("pages", () => {
   it("renders the page through its layouts, outermost first, inside the default document", async () => {
     const seen: unknown[] = [];
     const { fetch } = app({
-      "src/routes/_layout.stsx": page(async (props) => {
+      "src/routes/layout.stsx": page(async (props) => {
         seen.push(["root", props.params]);
         return `<div id="root">${await props.children}</div>`;
       }),
-      "src/routes/blog/_layout.stsx": layout("section"),
-      "src/routes/blog/[slug].stsx": page((props) => `<h1>${props.params.slug}</h1>`),
+      "src/routes/blog/layout.stsx": layout("section"),
+      "src/routes/blog/[slug]/page.stsx": page((props) => `<h1>${props.params.slug}</h1>`),
     });
     const res = await fetch("/blog/hello");
     expect(res.status).toBe(200);
@@ -49,8 +49,8 @@ describe("pages", () => {
     );
     const { fetch } = app(
       {
-        "src/routes/_layout.stsx": layout("main"),
-        "src/routes/index.stsx": page(() => `${testHead("<title>Home</title>")}<h1>Home</h1>`),
+        "src/routes/layout.stsx": layout("main"),
+        "src/routes/page.stsx": page(() => `${testHead("<title>Home</title>")}<h1>Home</h1>`),
       },
       { headAssets },
     );
@@ -59,7 +59,7 @@ describe("pages", () => {
       `${DOCUMENT_START}<title>Home</title><link rel="stylesheet" href="/2.css"></head><body><main><h1>Home</h1></main></body></html>`,
     );
     expect(headAssets).toHaveBeenCalledWith(
-      ["src/routes/_layout.stsx", "src/routes/index.stsx"],
+      ["src/routes/layout.stsx", "src/routes/page.stsx"],
       false,
     );
   });
@@ -68,7 +68,7 @@ describe("pages", () => {
     const { fetch } = app(
       {
         "src/document.stsx": { default: Document },
-        "src/routes/index.stsx": page(() => `${testHead("<title>Hola</title>")}<h1>Hola</h1>`),
+        "src/routes/page.stsx": page(() => `${testHead("<title>Hola</title>")}<h1>Hola</h1>`),
       },
       { document: "src/document.stsx" },
     );
@@ -81,7 +81,7 @@ describe("pages", () => {
     const { fetch, onError } = app(
       {
         "src/document.stsx": page(() => ({ t: "<html><body></body></html>" })),
-        "src/routes/index.stsx": page(() => "<h1>x</h1>"),
+        "src/routes/page.stsx": page(() => "<h1>x</h1>"),
       },
       { document: "src/document.stsx" },
     );
@@ -99,7 +99,7 @@ describe("pages", () => {
             return next();
           }) satisfies Middleware,
         },
-        "src/routes/users/[id].stsx": page(async () => {
+        "src/routes/users/[id]/page.stsx": page(async () => {
           await new Promise((resolve) => setTimeout(resolve, 1));
           const local = locals() as { user: string };
           return [
@@ -120,7 +120,7 @@ describe("pages", () => {
 
   it("applies response().setStatus/setHeader and the page headers export", async () => {
     const { fetch } = app({
-      "src/routes/gone.stsx": {
+      "src/routes/gone/page.stsx": {
         default: () => {
           response().setStatus(410);
           response().setHeader("x-page", "1");
@@ -139,7 +139,7 @@ describe("pages", () => {
 
   it("streams Suspense chunks after the shell, inside <body>", async () => {
     const { fetch } = app({
-      "src/routes/index.stsx": page(() => `<h1>shell</h1>${testDefer(async () => "<p>late</p>")}`),
+      "src/routes/page.stsx": page(() => `<h1>shell</h1>${testDefer(async () => "<p>late</p>")}`),
     });
     const res = await fetch("/");
     expect(res.body).toBeInstanceOf(ReadableStream);
@@ -151,7 +151,7 @@ describe("pages", () => {
   it("renders fully resolved when prerendering", async () => {
     const { fetch } = app(
       {
-        "src/routes/index.stsx": page(() => `<h1>a</h1>${testDefer(async () => "<p>b</p>")}`),
+        "src/routes/page.stsx": page(() => `<h1>a</h1>${testDefer(async () => "<p>b</p>")}`),
       },
       { prerender: true },
     );
@@ -167,7 +167,7 @@ describe("pages", () => {
     for (const write of writes) {
       const gate = Promise.withResolvers<void>();
       const { fetch, onError } = app({
-        "src/routes/index.stsx": page(
+        "src/routes/page.stsx": page(
           () =>
             `<h1>shell</h1>${testDefer(async () => {
               await gate.promise;
@@ -189,7 +189,7 @@ describe("pages", () => {
   });
 
   it("answers HEAD without a body, OPTIONS with Allow, and other methods with 405", async () => {
-    const { fetch } = app({ "src/routes/index.stsx": page(() => "<h1>x</h1>") });
+    const { fetch } = app({ "src/routes/page.stsx": page(() => "<h1>x</h1>") });
     const head = await fetch("/", { method: "HEAD" });
     expect(head.status).toBe(200);
     expect(head.headers.get("content-type")).toBe("text/html; charset=utf-8");
@@ -220,11 +220,11 @@ describe("middleware", () => {
       };
     const { fetch } = app({
       "src/middleware.ts": { default: [tracer("a"), tracer("b")] },
-      "src/routes/index.stsx": page(() => {
+      "src/routes/page.stsx": page(() => {
         log.push("page");
         return (locals() as { trail: string[] }).trail.join(",");
       }),
-      "src/routes/api.ts": {
+      "src/routes/api/route.ts": {
         GET: ((ctx) => {
           log.push("endpoint");
           return Response.json(ctx.locals);
@@ -251,8 +251,8 @@ describe("middleware", () => {
           return res;
         }) satisfies Middleware,
       },
-      "src/routes/index.stsx": page(() => "<h1>x</h1>"),
-      "src/routes/admin/index.stsx": page(() => "<h1>admin</h1>"),
+      "src/routes/page.stsx": page(() => "<h1>x</h1>"),
+      "src/routes/admin/page.stsx": page(() => "<h1>admin</h1>"),
     });
     const denied = await fetch("/admin");
     expect(denied.status).toBe(401);
@@ -272,9 +272,9 @@ describe("middleware", () => {
           return next();
         }) satisfies Middleware,
       },
-      "src/routes/_error.stsx": errorPage("error"),
-      "src/routes/private.stsx": page(() => "<h1>secret</h1>"),
-      "src/routes/api/private.ts": { GET: () => new Response("secret") },
+      "src/routes/error.stsx": errorPage("error"),
+      "src/routes/private/page.stsx": page(() => "<h1>secret</h1>"),
+      "src/routes/api/private/route.ts": { GET: () => new Response("secret") },
     });
     const moved = await fetch("/old");
     expect(moved.status).toBe(308);
@@ -297,7 +297,7 @@ describe("middleware", () => {
     ]) {
       const { fetch, onError } = app({
         "src/middleware.ts": { default: middleware },
-        "src/routes/index.stsx": page(() => "<h1>x</h1>"),
+        "src/routes/page.stsx": page(() => "<h1>x</h1>"),
       });
       const res = await fetch("/");
       expect(res.status).toBe(500);
@@ -317,7 +317,7 @@ describe("endpoints", () => {
           Response.json({ method: ctx.request.method, id: ctx.params.id })) satisfies Endpoint,
       ]),
     );
-    const { fetch } = app({ "src/routes/api/items/[id].ts": handlers });
+    const { fetch } = app({ "src/routes/api/items/[id]/route.ts": handlers });
     for (const method of METHODS) {
       const res = await fetch("/api/items/7", { method });
       expect(await res.json()).toEqual({ method, id: "7" });
@@ -326,7 +326,7 @@ describe("endpoints", () => {
 
   it("answers missing methods with 405 and Allow, OPTIONS with 204, HEAD via GET", async () => {
     const { fetch } = app({
-      "src/routes/api/posts.ts": {
+      "src/routes/api/posts/route.ts": {
         GET: () => new Response("list", { headers: { "x-count": "2" } }),
         POST: () => new Response("created", { status: 201 }),
       },
@@ -344,14 +344,14 @@ describe("endpoints", () => {
 
   it("maps thrown control flow and failures to responses", async () => {
     const { fetch, onError } = app({
-      "src/routes/api/bad.ts": { GET: () => error(400, "Bad id") },
-      "src/routes/api/move.ts": { GET: () => redirect("/x"), POST: () => redirect("/y") },
-      "src/routes/api/boom.ts": {
+      "src/routes/api/bad/route.ts": { GET: () => error(400, "Bad id") },
+      "src/routes/api/move/route.ts": { GET: () => redirect("/x"), POST: () => redirect("/y") },
+      "src/routes/api/boom/route.ts": {
         GET: () => {
           throw new Error("db down");
         },
       },
-      "src/routes/api/nothing.ts": { GET: () => "nope" },
+      "src/routes/api/nothing/route.ts": { GET: () => "nope" },
     });
     const bad = await fetch("/api/bad");
     expect([bad.status, await bad.text()]).toEqual([400, "Bad id"]);
@@ -374,12 +374,12 @@ describe("endpoints", () => {
             return next();
           }) satisfies Middleware,
         },
-        "src/routes/api/boom.ts": {
+        "src/routes/api/boom/route.ts": {
           GET: () => {
             throw new Error("db down");
           },
         },
-        "src/routes/api/ok.ts": {
+        "src/routes/api/ok/route.ts": {
           GET: () => new Response("ok", { headers: { "cache-control": "max-age=60" } }),
         },
       },
@@ -395,9 +395,9 @@ describe("endpoints", () => {
 describe("redirects", () => {
   it("uses 302 for GET, 303 for other methods, and an explicit status when given", async () => {
     const { fetch } = app({
-      "src/routes/login.stsx": page(() => redirect(new URL("https://lumiose.test/home"))),
-      "src/routes/temp.stsx": page(() => redirect("/café?q=a b", 307)),
-      "src/routes/api/session.ts": {
+      "src/routes/login/page.stsx": page(() => redirect(new URL("https://lumiose.test/home"))),
+      "src/routes/temp/page.stsx": page(() => redirect("/café?q=a b", 307)),
+      "src/routes/api/session/route.ts": {
         DELETE: (ctx: RequestContext) => {
           ctx.cookies.delete("session");
           return redirect("/");
@@ -426,13 +426,13 @@ describe("redirects", () => {
 
 describe("error pages", () => {
   const tree: Modules = {
-    "src/routes/_layout.stsx": layout("main"),
-    "src/routes/_404.stsx": errorPage("root-404"),
-    "src/routes/_error.stsx": errorPage("root-error"),
-    "src/routes/index.stsx": page(() => "<h1>home</h1>"),
-    "src/routes/blog/_layout.stsx": layout("section"),
-    "src/routes/blog/_404.stsx": errorPage("blog-404"),
-    "src/routes/blog/[slug].stsx": page(({ params: { slug } }) => {
+    "src/routes/layout.stsx": layout("main"),
+    "src/routes/not-found.stsx": errorPage("root-404"),
+    "src/routes/error.stsx": errorPage("root-error"),
+    "src/routes/page.stsx": page(() => "<h1>home</h1>"),
+    "src/routes/blog/layout.stsx": layout("section"),
+    "src/routes/blog/not-found.stsx": errorPage("blog-404"),
+    "src/routes/blog/[slug]/page.stsx": page(({ params: { slug } }) => {
       if (slug === "missing") notFound();
       if (slug === "secret") error(403, "Forbidden post");
       if (slug === "boom") throw new Error("db down");
@@ -476,12 +476,12 @@ describe("error pages", () => {
 
   it("falls back to _error for 404s without a _404, then to a built-in page", async () => {
     const withError = app({
-      "src/routes/_error.stsx": errorPage("error"),
-      "src/routes/index.stsx": page(() => "x"),
+      "src/routes/error.stsx": errorPage("error"),
+      "src/routes/page.stsx": page(() => "x"),
     });
     expect(await (await withError.fetch("/nope")).text()).toContain("<p>error 404 Not Found</p>");
 
-    const bare = app({ "src/routes/index.stsx": page(() => error(418, "Teapot")) });
+    const bare = app({ "src/routes/page.stsx": page(() => error(418, "Teapot")) });
     const res = await bare.fetch("/");
     expect(res.status).toBe(418);
     expect(await res.text()).toBe(
@@ -491,21 +491,21 @@ describe("error pages", () => {
 
   it("drops failing layouts, then failing error pages", async () => {
     const brokenLayout = app({
-      "src/routes/_layout.stsx": page(() => {
+      "src/routes/layout.stsx": page(() => {
         throw new Error("layout down");
       }),
-      "src/routes/_error.stsx": errorPage("error"),
-      "src/routes/index.stsx": page(() => "x"),
+      "src/routes/error.stsx": errorPage("error"),
+      "src/routes/page.stsx": page(() => "x"),
     });
     const res = await brokenLayout.fetch("/");
     expect(res.status).toBe(500);
     expect(await res.text()).toContain("<body><p>error 500 Internal Server Error</p></body>");
 
     const brokenError = app({
-      "src/routes/_error.stsx": page(() => {
+      "src/routes/error.stsx": page(() => {
         throw new Error("error page down");
       }),
-      "src/routes/index.stsx": page(() => {
+      "src/routes/page.stsx": page(() => {
         throw new Error("page down");
       }),
     });
@@ -524,8 +524,8 @@ describe("error pages", () => {
           return next();
         }) satisfies Middleware,
       },
-      "src/routes/_error.stsx": errorPage("error"),
-      "src/routes/index.stsx": page(() => {
+      "src/routes/error.stsx": errorPage("error"),
+      "src/routes/page.stsx": page(() => {
         response().setHeader("cache-control", "max-age=600");
         error(503, "Maintenance");
       }),
@@ -539,8 +539,8 @@ describe("error pages", () => {
 
   it("follows a redirect thrown by an error page", async () => {
     const { fetch } = app({
-      "src/routes/_404.stsx": page(() => redirect("/")),
-      "src/routes/index.stsx": page(() => "x"),
+      "src/routes/not-found.stsx": page(() => redirect("/")),
+      "src/routes/page.stsx": page(() => "x"),
     });
     const res = await fetch("/nope");
     expect([res.status, res.headers.get("location")]).toEqual([302, "/"]);
@@ -550,7 +550,7 @@ describe("error pages", () => {
 describe("cookies", () => {
   it("reads request cookies and sets cookies with secure defaults", async () => {
     const { fetch } = app({
-      "src/routes/index.stsx": page(() => {
+      "src/routes/page.stsx": page(() => {
         const jar = cookies();
         jar.set("theme", "light mode", { httpOnly: false, maxAge: 3600 });
         jar.set("lang", "es");
@@ -569,7 +569,7 @@ describe("cookies", () => {
 
   it("omits Secure on http in dev", async () => {
     const handler = createRequestHandler({
-      manifest: createRouteManifest([{ path: "index.stsx", source: "" }]),
+      manifest: createRouteManifest([{ path: "page.stsx", source: "" }]),
       loadModule: async () => page(() => (cookies().set("a", "1"), "")),
       render: createStringRenderer(),
       dev: true,
@@ -582,13 +582,13 @@ describe("cookies", () => {
     const session = signedCookie("session");
     const { fetch } = app(
       {
-        "src/routes/api/login.ts": {
+        "src/routes/api/login/route.ts": {
           POST: async (ctx: RequestContext) => {
             await session.set(ctx.cookies, "user:42");
             return new Response("ok");
           },
         },
-        "src/routes/api/me.ts": {
+        "src/routes/api/me/route.ts": {
           GET: async (ctx: RequestContext) => new Response(String(await session.get(ctx.cookies))),
         },
       },

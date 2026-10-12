@@ -97,14 +97,14 @@ describe("request targets", () => {
   it("keeps the cross-site form check and url() on the real origin", async () => {
     let ran = 0;
     const { handle } = app({
-      "src/routes/account.stsx": {
+      "src/routes/account/page.stsx": {
         default: () => `<p>${url().host}${url().pathname}</p>`,
         action: () => {
           ran++;
           return { done: true };
         },
       },
-      "src/routes/[...rest].stsx": { default: () => `<p>${url().host} ${url().pathname}</p>` },
+      "src/routes/[...rest]/page.stsx": { default: () => `<p>${url().host} ${url().pathname}</p>` },
     });
     const port = await serve(handle, "https://victim.test");
     const form = "Content-Type: application/x-www-form-urlencoded";
@@ -175,7 +175,7 @@ const endpointHead = (path: string) =>
 function actionApp() {
   const ran = { count: 0 };
   const { handle } = app({
-    "src/routes/form.stsx": {
+    "src/routes/form/page.stsx": {
       default: () => "<p>form</p>",
       action: async (ctx: { formData(): Promise<FormData> }) => {
         await ctx.formData();
@@ -183,12 +183,12 @@ function actionApp() {
         return { ok: true };
       },
     },
-    "src/routes/api/upload.ts": {
+    "src/routes/api/upload/route.ts": {
       mode: "server",
       POST: async (ctx: { request: Request }) =>
         new Response(String((await ctx.request.arrayBuffer()).byteLength)),
     },
-    "src/routes/api/small.ts": {
+    "src/routes/api/small/route.ts": {
       mode: "server",
       limits: { body: "2kb" },
       POST: async (ctx: { request: Request }) =>
@@ -236,7 +236,7 @@ describe("request bodies and malformed requests", () => {
   it("takes the app's limits from lumiose({ limits })", async () => {
     const { handle } = app(
       {
-        "src/routes/api/upload.ts": {
+        "src/routes/api/upload/route.ts": {
           mode: "server",
           POST: async (ctx: { request: Request }) =>
             new Response(String((await ctx.request.arrayBuffer()).byteLength)),
@@ -263,7 +263,7 @@ describe("request bodies and malformed requests", () => {
 
 describe("trailing-slash redirects (TASK-165)", () => {
   it("never redirect to a protocol-relative URL", async () => {
-    const pages = { "src/routes/[slug].stsx": { default: () => "<p>page</p>" } };
+    const pages = { "src/routes/[slug]/page.stsx": { default: () => "<p>page</p>" } };
     const never = app(pages, { trailingSlash: "never" });
     const response = await never.handle(new Request("https://lumiose.test//evil.com/"));
     expect(response.status).toBe(308);

@@ -22,7 +22,7 @@ const typescriptDir = dirname(createRequire(import.meta.url).resolve("typescript
 const binding = await import("@lumiose/compiler").catch(() => undefined);
 
 const FILES: Record<string, string> = {
-  "src/routes/index.stsx": `import { Title } from "lumiose";
+  "src/routes/page.stsx": `import { Title } from "lumiose";
 import { Card } from "../components/Card.stsx";
 import { Counter } from "../components/Counter.stsx";
 
@@ -38,7 +38,7 @@ export default function Home() {
   );
 }
 `,
-  "src/routes/api/hello.ts": `export function GET() {
+  "src/routes/api/hello/route.ts": `export function GET() {
   return Response.json({ hello: "world" });
 }
 `,
@@ -194,7 +194,7 @@ describe("lumiose mcp", () => {
     expect(report.defaultMode).toBe("static");
     expect(report.routes).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({ pattern: "/", kind: "page", file: "src/routes/index.stsx" }),
+        expect.objectContaining({ pattern: "/", kind: "page", file: "src/routes/page.stsx" }),
         expect.objectContaining({ pattern: "/api/hello", kind: "endpoint" }),
       ]),
     );
@@ -218,7 +218,7 @@ describe("lumiose mcp", () => {
     expect(byFile["src/components/Counter.stsx"].components[0].props).toEqual({
       parameter: "{ start = 0 }: { start?: number }",
     });
-    expect(byFile["src/routes/index.stsx"].islands).toEqual([
+    expect(byFile["src/routes/page.stsx"].islands).toEqual([
       expect.objectContaining({
         export: "Counter",
         module: "/src/components/Counter.stsx",

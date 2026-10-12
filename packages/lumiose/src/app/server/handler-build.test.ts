@@ -12,10 +12,10 @@ const body = async (res: Response) => {
 
 describe("base", () => {
   const modules = {
-    "src/routes/index.stsx": page(() => `<h1>home ${url().pathname}</h1>`),
-    "src/routes/about.stsx": page(() => "<h1>about</h1>"),
-    "src/routes/_404.stsx": page((props) => `<p>404 ${props.status}</p>`),
-    "src/routes/api/ping.ts": { GET: (() => new Response("pong")) as Endpoint },
+    "src/routes/page.stsx": page(() => `<h1>home ${url().pathname}</h1>`),
+    "src/routes/about/page.stsx": page(() => "<h1>about</h1>"),
+    "src/routes/not-found.stsx": page((props) => `<p>404 ${props.status}</p>`),
+    "src/routes/api/ping/route.ts": { GET: (() => new Response("pong")) as Endpoint },
   };
 
   it("matches routes below the base; ctx.url keeps the full path", async () => {
@@ -36,9 +36,9 @@ describe("base", () => {
 
 describe("trailingSlash", () => {
   const modules = {
-    "src/routes/index.stsx": page(() => "<h1>home</h1>"),
-    "src/routes/about.stsx": page(() => "<h1>about</h1>"),
-    "src/routes/sitemap.xml.ts": { GET: (() => new Response("<urlset/>")) as Endpoint },
+    "src/routes/page.stsx": page(() => "<h1>home</h1>"),
+    "src/routes/about/page.stsx": page(() => "<h1>about</h1>"),
+    "src/routes/sitemap.xml/route.ts": { GET: (() => new Response("<urlset/>")) as Endpoint },
   };
 
   it("ignore (default): both forms render", async () => {
@@ -91,7 +91,7 @@ describe("prerendering (LUM5001)", () => {
     ["url().searchParams", () => url().searchParams.get("q")],
   ])("%s in a prerendered page", async (api, read) => {
     const { fetch, onError } = app(
-      { "src/routes/index.stsx": page(() => `<p>${String(read())}</p>`) },
+      { "src/routes/page.stsx": page(() => `<p>${String(read())}</p>`) },
       { prerendering: true },
     );
     const res = await fetch("/");
@@ -102,7 +102,7 @@ describe("prerendering (LUM5001)", () => {
   it("is reported even when an error boundary catches it, also inside Suspense", async () => {
     const { fetch, onError } = app(
       {
-        "src/routes/index.stsx": page(() =>
+        "src/routes/page.stsx": page(() =>
           testDefer(async () => {
             try {
               cookies();
@@ -123,8 +123,8 @@ describe("prerendering (LUM5001)", () => {
     const { fetch, onError } = app(
       {
         "src/middleware.ts": { default: readingMiddleware },
-        "src/routes/_layout.stsx": layout("main"),
-        "src/routes/blog/[slug].stsx": page(
+        "src/routes/layout.stsx": layout("main"),
+        "src/routes/blog/[slug]/page.stsx": page(
           () => `<h1>${url().pathname} ${params().slug} ${route()} ${env("SITE") ?? ""}</h1>`,
         ),
       },
@@ -138,10 +138,10 @@ describe("prerendering (LUM5001)", () => {
   it("guards ctx in endpoints and headers(ctx)", async () => {
     const { fetch, onError } = app(
       {
-        "src/routes/feed.xml.ts": {
+        "src/routes/feed.xml/route.ts": {
           GET: ((ctx) => new Response(`${ctx.url.pathname} ${ctx.cookies.get("a")}`)) as Endpoint,
         },
-        "src/routes/index.stsx": {
+        "src/routes/page.stsx": {
           ...page(() => "<p>home</p>"),
           headers: (ctx: { request: Request }) => ({
             "x-ua": ctx.request.headers.get("user-agent") ?? "",
@@ -159,7 +159,7 @@ describe("prerendering (LUM5001)", () => {
 
   it("renders fully resolved, with no swap scripts", async () => {
     const { fetch } = app(
-      { "src/routes/index.stsx": page(() => "<p>static</p>") },
+      { "src/routes/page.stsx": page(() => "<p>static</p>") },
       { prerendering: true },
     );
     expect(await body(await fetch("/"))).toBe("<p>static</p>");
@@ -167,7 +167,7 @@ describe("prerendering (LUM5001)", () => {
 
   it("leaves request APIs alone without prerendering", async () => {
     const { fetch, onError } = app({
-      "src/routes/index.stsx": page(
+      "src/routes/page.stsx": page(
         () => `<p>${cookies().get("a") ?? "none"} ${url().searchParams.get("q")}</p>`,
       ),
     });

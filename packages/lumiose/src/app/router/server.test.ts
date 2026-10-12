@@ -55,68 +55,70 @@ const SPA = 'export const mode = "spa";';
 
 describe("SPA pages in the request handler", () => {
   const files = {
-    "_layout.tsx": "",
-    "app/_layout.tsx": SPA,
-    "app/index.tsx": "",
-    "app/[id].tsx": "",
-    "app/_404.tsx": "",
-    "app/editor.tsx": "export const ssr = false;",
-    "about.tsx": "",
+    "layout.tsx": "",
+    "app/layout.tsx": SPA,
+    "app/page.tsx": "",
+    "app/[id]/page.tsx": "",
+    "app/not-found.tsx": "",
+    "app/editor/page.tsx": "export const ssr = false;",
+    "about/page.tsx": "",
   };
   const modules = {
-    "src/routes/_layout.tsx": layout("body-shell"),
-    "src/routes/app/_layout.tsx": layout("app-shell"),
-    "src/routes/app/index.tsx": page(() => "<h1>app</h1>"),
-    "src/routes/app/[id].tsx": page((props) => `<h1>item ${props.params.id}</h1>`),
-    "src/routes/app/_404.tsx": page((props) => `<h1>${props.status} ${props.error.message}</h1>`),
-    "src/routes/app/editor.tsx": page(() => "<h1>editor</h1>"),
-    "src/routes/about.tsx": page(() => "<h1>about</h1>"),
+    "src/routes/layout.tsx": layout("body-shell"),
+    "src/routes/app/layout.tsx": layout("app-shell"),
+    "src/routes/app/page.tsx": page(() => "<h1>app</h1>"),
+    "src/routes/app/[id]/page.tsx": page((props) => `<h1>item ${props.params.id}</h1>`),
+    "src/routes/app/not-found.tsx": page(
+      (props) => `<h1>${props.status} ${props.error.message}</h1>`,
+    ),
+    "src/routes/app/editor/page.tsx": page(() => "<h1>editor</h1>"),
+    "src/routes/about/page.tsx": page(() => "<h1>about</h1>"),
   };
 
   it("renders the part below the first spa layout as one root island", async () => {
     const { get } = app(files, modules);
     const { html } = await get("/app/7");
     expect(html).toContain(
-      '<script type="module" async src="/spa.js"></script><link rel="modulepreload" href="/src/routes/app/[id].tsx">',
+      '<script type="module" async src="/spa.js"></script><link rel="modulepreload" href="/src/routes/app/[id]/page.tsx">',
     );
     expect(html).toContain(
       "<body-shell><!--l:0--><app-shell><!--[--><h1>item 7</h1><!--]--></app-shell><!--/l:0--></body-shell>",
     );
     expect(html).toContain(
-      '[{"id":0,"ref":"/src/routes/app/[id].tsx#lumiose:spa","strategy":"load","props":{}}]',
+      '[{"id":0,"ref":"/src/routes/app/[id]/page.tsx#lumiose:spa","strategy":"load","props":{}}]',
     );
   });
 
   it("sends a shell for ssr = false, without loading the SPA's modules", async () => {
     const { get } = app(files, modules);
     const { html, loaded } = await get("/app/editor");
-    expect(loaded).toEqual(["src/routes/_layout.tsx"]);
+    expect(loaded).toEqual(["src/routes/layout.tsx"]);
     expect(html).toContain("<body-shell><!--l:0--><!--/l:0--></body-shell>");
-    expect(html).toContain('"ref":"/src/routes/app/editor.tsx#lumiose:csr","strategy":"only"');
+    expect(html).toContain('"ref":"/src/routes/app/editor/page.tsx#lumiose:csr","strategy":"only"');
     expect(html).toContain('<script type="module" async src="/spa.js">');
   });
 
-  it("renders _404 pages below an spa layout inside the SPA, with their status as props", async () => {
+  it("renders not-found pages below an spa layout inside the SPA, with their status as props", async () => {
     const { get } = app(files, modules);
     const { status, html } = await get("/app/x/y");
     expect(status).toBe(404);
     expect(html).toContain("<!--l:0--><app-shell><!--[--><h1>404 Not Found</h1>");
     expect(html).toContain(
-      '"ref":"/src/routes/app/_404.tsx#lumiose:spa","strategy":"load","props":{"status":404,"message":"Not Found"}',
+      '"ref":"/src/routes/app/not-found.tsx#lumiose:spa","strategy":"load","props":{"status":404,"message":"Not Found"}',
     );
     // Its pages render per request, so the 404 is final (TASK-231).
     expect(html).not.toContain("data-l-reroute");
   });
 
-  it("hides a _404 at the URL of a page that reroutes until the router has rendered (TASK-231)", async () => {
+  it("hides a not-found page at the URL of a page that reroutes until the router has rendered (TASK-231)", async () => {
     const { get } = app(
       {
         ...files,
-        "app/_layout.tsx": `${SPA}\nexport const prerender = true;`,
-        "app/editor.tsx": "export const ssr = false;\nexport const prerender = false;",
-        "app/docs/[...path].tsx": "",
+        "app/layout.tsx": `${SPA}\nexport const prerender = true;`,
+        "app/editor/page.tsx": "export const ssr = false;\nexport const prerender = false;",
+        "app/docs/[...path]/page.tsx": "",
       },
-      { ...modules, "src/routes/app/docs/[...path].tsx": page(() => "<h1>docs</h1>") },
+      { ...modules, "src/routes/app/docs/[...path]/page.tsx": page(() => "<h1>docs</h1>") },
     );
     const { status, html } = await get("/app/x/y");
     expect(status).toBe(404);
@@ -141,17 +143,17 @@ describe("SPA pages in the request handler", () => {
 describe("server <Link>", () => {
   it("renders an <a>, marks the current page and the prefetch level", async () => {
     const { get } = app(
-      { "_layout.tsx": SPA, "index.tsx": "", "b.tsx": "" },
+      { "layout.tsx": SPA, "page.tsx": "", "b/page.tsx": "" },
       {
-        "src/routes/_layout.tsx": (props: Props) =>
+        "src/routes/layout.tsx": (props: Props) =>
           ssr(
             ["<nav>", "", "</nav>", ""],
             insert(createComponent(Link, { href: "/", children: "Home" })),
             insert(createComponent(Link, { href: "/b", prefetch: "none", class: "x" })),
             insert(() => props.children),
           ),
-        "src/routes/index.tsx": page(() => "home"),
-        "src/routes/b.tsx": page(() => "b"),
+        "src/routes/page.tsx": page(() => "home"),
+        "src/routes/b/page.tsx": page(() => "b"),
       },
     );
     const { html } = await get("/");
@@ -163,38 +165,40 @@ describe("server <Link>", () => {
 
 describe("the client table", () => {
   const manifest = manifestOf({
-    "_layout.tsx": "",
-    "index.tsx": "",
-    "api/items.ts": "",
-    "app/_layout.tsx": SPA,
-    "app/[id].tsx": "",
-    "app/(admin)/_layout.tsx": 'export const mode = "server";',
-    "app/(admin)/settings.tsx": SPA,
-    "app/_404.tsx": "",
-    "_error.tsx": "",
-    "solo.tsx": SPA,
+    "layout.tsx": "",
+    "page.tsx": "",
+    "api/items/route.ts": "",
+    "app/layout.tsx": SPA,
+    "app/[id]/page.tsx": "",
+    "app/(admin)/layout.tsx": 'export const mode = "server";',
+    "app/(admin)/settings/page.tsx": SPA,
+    "app/not-found.tsx": "",
+    "error.tsx": "",
+    "solo/page.tsx": SPA,
   });
 
   it("finds each page's SPA part", () => {
-    expect(spaPagePart(manifest, ["src/routes/_layout.tsx"], "src/routes/solo.tsx", true)).toEqual({
-      outer: ["src/routes/_layout.tsx"],
-      levels: ["src/routes/solo.tsx"],
-      app: "src/routes/solo.tsx",
+    expect(
+      spaPagePart(manifest, ["src/routes/layout.tsx"], "src/routes/solo/page.tsx", true),
+    ).toEqual({
+      outer: ["src/routes/layout.tsx"],
+      levels: ["src/routes/solo/page.tsx"],
+      app: "src/routes/solo/page.tsx",
       ssr: true,
     });
     expect(
       spaErrorPart(
         manifest,
-        ["src/routes/_layout.tsx", "src/routes/app/_layout.tsx"],
-        "src/routes/app/_404.tsx",
+        ["src/routes/layout.tsx", "src/routes/app/layout.tsx"],
+        "src/routes/app/not-found.tsx",
       ),
     ).toEqual({
-      outer: ["src/routes/_layout.tsx"],
-      levels: ["src/routes/app/_layout.tsx", "src/routes/app/_404.tsx"],
-      app: "src/routes/app/_layout.tsx",
+      outer: ["src/routes/layout.tsx"],
+      levels: ["src/routes/app/layout.tsx", "src/routes/app/not-found.tsx"],
+      app: "src/routes/app/layout.tsx",
       ssr: true,
     });
-    expect(spaErrorPart(manifest, ["src/routes/_layout.tsx"], "src/routes/_error.tsx")).toBe(
+    expect(spaErrorPart(manifest, ["src/routes/layout.tsx"], "src/routes/error.tsx")).toBe(
       undefined,
     );
   });
@@ -203,26 +207,26 @@ describe("the client table", () => {
     const table = clientTable(manifest)!;
     expect(table.routes.map((route) => [route.app, route.levels])).toEqual([
       [undefined, undefined],
-      ["src/routes/solo.tsx", ["src/routes/solo.tsx"]],
+      ["src/routes/solo/page.tsx", ["src/routes/solo/page.tsx"]],
       [undefined, undefined],
       [
-        "src/routes/app/_layout.tsx",
+        "src/routes/app/layout.tsx",
         [
-          "src/routes/app/_layout.tsx",
-          "src/routes/app/(admin)/_layout.tsx",
-          "src/routes/app/(admin)/settings.tsx",
+          "src/routes/app/layout.tsx",
+          "src/routes/app/(admin)/layout.tsx",
+          "src/routes/app/(admin)/settings/page.tsx",
         ],
       ],
-      ["src/routes/app/_layout.tsx", ["src/routes/app/_layout.tsx", "src/routes/app/[id].tsx"]],
+      ["src/routes/app/layout.tsx", ["src/routes/app/layout.tsx", "src/routes/app/[id]/page.tsx"]],
     ]);
     expect(table.routes[4]).toMatchObject({
-      notFound: "src/routes/app/_404.tsx",
-      error: "src/routes/_error.tsx",
+      notFound: "src/routes/app/not-found.tsx",
+      error: "src/routes/error.tsx",
     });
     expect(table.pages).toEqual({
-      "src/routes/app/_404.tsx": {
-        app: "src/routes/app/_layout.tsx",
-        levels: ["src/routes/app/_layout.tsx", "src/routes/app/_404.tsx"],
+      "src/routes/app/not-found.tsx": {
+        app: "src/routes/app/layout.tsx",
+        levels: ["src/routes/app/layout.tsx", "src/routes/app/not-found.tsx"],
       },
     });
   });
@@ -231,12 +235,12 @@ describe("the client table", () => {
     const table = clientTable(
       manifestOf(
         {
-          "_layout.tsx": "export const prerender = true;",
-          "index.tsx": "",
-          "songs/[id].tsx": "",
-          "drafts/[id].tsx": "export const prerender = false;\nexport const ssr = false;",
-          "live/[id].tsx": "export const prerender = false;",
-          "_404.tsx": "",
+          "layout.tsx": "export const prerender = true;",
+          "page.tsx": "",
+          "songs/[id]/page.tsx": "",
+          "drafts/[id]/page.tsx": "export const prerender = false;\nexport const ssr = false;",
+          "live/[id]/page.tsx": "export const prerender = false;",
+          "not-found.tsx": "",
         },
         "spa",
       ),
@@ -256,33 +260,41 @@ describe("the client table", () => {
     const code = spaEntryCode(manifest, "/base/");
     expect(code).toContain('import islands from "virtual:lumiose/islands";');
     expect(code).toContain('base: "/base/"');
-    expect(code).toContain('"src/routes/app/[id].tsx": () => import("/src/routes/app/[id].tsx"),');
-    expect(code).not.toContain('import("/src/routes/index.tsx")');
-    expect(spaEntryCode(manifestOf({ "index.tsx": "" }), "/")).toBe("export {};\n");
+    expect(code).toContain(
+      '"src/routes/app/[id]/page.tsx": () => import("/src/routes/app/[id]/page.tsx"),',
+    );
+    expect(code).not.toContain('import("/src/routes/page.tsx")');
+    expect(spaEntryCode(manifestOf({ "page.tsx": "" }), "/")).toBe("export {};\n");
     // A build where nothing hydrates starts the SPA without the island loader (TASK-91).
     const csr = spaEntryCode(manifest, "/", true);
     expect(csr).toMatch(/^import \{ startCsr \} from ".*\/router\/csr\.ts";/);
     expect(csr).not.toContain("virtual:lumiose/islands");
-    expect(csr).toContain('"src/routes/app/[id].tsx": () => import("/src/routes/app/[id].tsx"),');
+    expect(csr).toContain(
+      '"src/routes/app/[id]/page.tsx": () => import("/src/routes/app/[id]/page.tsx"),',
+    );
   });
 
   it("tells whether any SPA page renders on the server", () => {
     expect(spaHydrates(manifest)).toBe(true);
-    const shells = { "_layout.tsx": "export const ssr = false;", "index.tsx": "", "_404.tsx": "" };
+    const shells = {
+      "layout.tsx": "export const ssr = false;",
+      "page.tsx": "",
+      "not-found.tsx": "",
+    };
     expect(spaHydrates(manifestOf(shells, "spa"))).toBe(false);
     expect(
-      spaHydrates(manifestOf({ ...shells, "about.tsx": "export const ssr = true;" }, "spa")),
+      spaHydrates(manifestOf({ ...shells, "about/page.tsx": "export const ssr = true;" }, "spa")),
     ).toBe(true);
-    expect(spaHydrates(manifestOf({ "index.tsx": "" }))).toBe(false);
+    expect(spaHydrates(manifestOf({ "page.tsx": "" }))).toBe(false);
   });
 
   it("makes the whole app one SPA with lumiose({ mode: 'spa' })", () => {
-    const spa = manifestOf({ "_layout.tsx": "", "index.tsx": "", "_404.tsx": "" }, "spa");
+    const spa = manifestOf({ "layout.tsx": "", "page.tsx": "", "not-found.tsx": "" }, "spa");
     const table = clientTable(spa)!;
     expect(table.routes[0]).toMatchObject({
-      app: "src/routes/_layout.tsx",
-      levels: ["src/routes/_layout.tsx", "src/routes/index.tsx"],
+      app: "src/routes/layout.tsx",
+      levels: ["src/routes/layout.tsx", "src/routes/page.tsx"],
     });
-    expect(Object.keys(table.pages)).toEqual(["src/routes/_404.tsx"]);
+    expect(Object.keys(table.pages)).toEqual(["src/routes/not-found.tsx"]);
   });
 });

@@ -152,9 +152,12 @@ export function speculationRules(
 export function urlPattern(prefix: string, segments: readonly RouteSegment[]): string {
   let pattern = prefix;
   for (const [index, segment] of segments.entries()) {
-    // `[...rest]` matches zero or more segments and is always last.
-    if (segment.kind === "rest") return `${pattern}{/*}?`;
-    pattern += segment.kind === "param" ? `/:p${index}` : `/${escapePattern(segment.value)}`;
+    if (segment.kind === "static") pattern += `/${escapePattern(segment.value)}`;
+    else if (segment.kind === "param") pattern += `/:p${index}`;
+    else if (segment.kind === "optional") pattern += `{/:p${index}}?`;
+    // `[...rest]` (one or more segments) and `[[...rest]]` (zero or more) are always last.
+    else if (segment.kind === "rest") pattern += `/:p${index}+`;
+    else pattern += `{/:p${index}}*`;
   }
   return `${pattern}{/}?`;
 }

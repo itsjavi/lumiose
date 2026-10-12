@@ -169,8 +169,8 @@ function expectWellFormed(html: string) {
 describe("default server renderer", () => {
   it("streams Suspense boundaries inside the default document, after the head", async () => {
     const { fetch } = app({
-      "src/routes/_layout.stsx": { default: Layout },
-      "src/routes/index.stsx": {
+      "src/routes/layout.stsx": { default: Layout },
+      "src/routes/page.stsx": {
         default: () =>
           ssr(
             ["", "<h1>Home</h1>", ""],
@@ -194,7 +194,7 @@ describe("default server renderer", () => {
     const { fetch } = app(
       {
         "src/document.stsx": { default: CustomDocument },
-        "src/routes/index.stsx": { default: ThemedPage },
+        "src/routes/page.stsx": { default: ThemedPage },
       },
       { document: "src/document.stsx", headAssets: () => '<link rel="stylesheet" href="/a.css">' },
     );
@@ -208,7 +208,7 @@ describe("default server renderer", () => {
     const { fetch } = app(
       {
         "src/document.stsx": { default: CustomDocument },
-        "src/routes/index.stsx": {
+        "src/routes/page.stsx": {
           default: () => suspense(() => createComponent(Late, { text: "x" })),
         },
       },
@@ -239,7 +239,7 @@ describe("default server renderer", () => {
         app(
           {
             ...("modules" in document ? document.modules : {}),
-            "src/routes/index.stsx": { default: page },
+            "src/routes/page.stsx": { default: page },
           },
           { render, ...("options" in document ? document.options : {}), ...options },
         ).fetch("/");
@@ -304,7 +304,7 @@ describe("default server renderer", () => {
 
   it("renders an ErrorBoundary fallback inside a streamed boundary", async () => {
     const { fetch, onError } = app({
-      "src/routes/index.stsx": {
+      "src/routes/page.stsx": {
         default: () =>
           suspense(() =>
             createComponent(ErrorBoundary, {
@@ -333,7 +333,7 @@ describe("default server renderer", () => {
   it("reports LUM5004 for redirects, head and status changes inside a streamed boundary", async () => {
     for (const Component of [RedirectLater, TitleLater, StatusLater]) {
       const { fetch, onError } = app({
-        "src/routes/index.stsx": {
+        "src/routes/page.stsx": {
           default: () =>
             ssr(
               ["<h1>shell</h1>", ""],
@@ -353,11 +353,11 @@ describe("default server renderer", () => {
 
   it("turns redirect() and notFound() in the shell into responses", async () => {
     const { fetch } = app({
-      "src/routes/_404.stsx": {
+      "src/routes/not-found.stsx": {
         default: (props: Props) => ssr(["<h1>", "</h1>"], text(props.status)),
       },
-      "src/routes/private.stsx": { default: RedirectLater },
-      "src/routes/missing.stsx": {
+      "src/routes/private/page.stsx": { default: RedirectLater },
+      "src/routes/missing/page.stsx": {
         default: async () => {
           try {
             (await $await(() => sleep(1), 0))();
@@ -379,7 +379,7 @@ describe("default server renderer", () => {
   it("renders fully resolved when prerendering, with island records and preload hints", async () => {
     const { fetch } = app(
       {
-        "src/routes/index.stsx": {
+        "src/routes/page.stsx": {
           default: () =>
             ssr(
               ["", ""],

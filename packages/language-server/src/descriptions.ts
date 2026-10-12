@@ -16,7 +16,7 @@ export const STYLE_DOC = [
 export const GLOBAL_DOC = [
   "**`<style global>`**: unscoped, app-wide CSS. Its selectors are not rewritten, so they match",
   "every element of the app, and its classes are offered in every file of the project. Usually",
-  "in the root `_layout.stsx`. It is the only attribute a `<style>` block takes.",
+  "in the root `layout.stsx`. It is the only attribute a `<style>` block takes.",
 ].join("\n");
 
 export const NATIVE_EVENT_DOC = [

@@ -12,12 +12,12 @@ const binding = await import("@lumiose/compiler").catch(() => undefined);
 
 const FILES: Record<string, string> = {
   "src/styles.css": "body { color: rgb(1, 2, 3); }\n",
-  "src/routes/_layout.stsx": `import "../styles.css";
+  "src/routes/layout.stsx": `import "../styles.css";
 export default function Layout(props: { children?: JSX.Element }) {
   return <div class="layout">{props.children}</div>;
 }
 `,
-  "src/routes/index.stsx": `import { Suspense, Title } from "lumiose";
+  "src/routes/page.stsx": `import { Suspense, Title } from "lumiose";
 async function Slow() {
   const text = await new Promise<string>((resolve) => setTimeout(() => resolve("slow content"), 50));
   return <p class="slow">{text}</p>;
@@ -34,7 +34,7 @@ export default function Home() {
   );
 }
 `,
-  "src/routes/stream.stsx": `import { Suspense, url } from "lumiose";
+  "src/routes/stream/page.stsx": `import { Suspense, url } from "lumiose";
 export const mode = "server";
 async function Slow() {
   const text = await new Promise<string>((resolve) => setTimeout(() => resolve("streamed content"), 300));
@@ -51,10 +51,10 @@ export default function Stream() {
   );
 }
 `,
-  "src/routes/api/hello.ts": `export const mode = "server";
+  "src/routes/api/hello/route.ts": `export const mode = "server";
 export const GET = (ctx: { url: URL }) => Response.json({ hello: ctx.url.searchParams.get("name") });
 `,
-  "src/routes/form.stsx": `import { actionData, fail, type Action } from "lumiose";
+  "src/routes/form/page.stsx": `import { actionData, fail, type Action } from "lumiose";
 export const mode = "server";
 export const action: Action = async (ctx) => {
   const name = String((await ctx.formData()).get("name") ?? "");
@@ -71,7 +71,7 @@ export function Counter(props: { start: number }) {
   return <button onClick={() => count.update((n) => n + 1)}>{count()}</button>;
 }
 `,
-  "src/routes/island.stsx": `import { Counter } from "../components/Counter.stsx";
+  "src/routes/island/page.stsx": `import { Counter } from "../../components/Counter.stsx";
 export const mode = "server";
 export default function IslandPage() {
   return <main><Counter client:load start={3} /></main>;
@@ -89,15 +89,15 @@ export function Visits() {
   return <b onClick={() => count.update((n) => n + 1)}>{count()} visits</b>;
 }
 `,
-  "src/routes/state.stsx": `import { Visits } from "../components/Visits.stsx";
-import { note } from "../lib/note.ts";
-import { visits } from "../lib/visits.ts";
+  "src/routes/state/page.stsx": `import { Visits } from "../../components/Visits.stsx";
+import { note } from "../../lib/note.ts";
+import { visits } from "../../lib/visits.ts";
 export const mode = "server";
 export default function StatePage() {
   return <main><p>{note().text()} {visits().count()}</p><Visits client:load /></main>;
 }
 `,
-  "src/routes/boom.stsx": `export const mode = "server";
+  "src/routes/boom/page.stsx": `export const mode = "server";
 export default function Boom() {
   throw new Error("Boom from the page");
 }
@@ -202,7 +202,7 @@ describe.skipIf(!binding)("lumiose dev", () => {
   });
 
   it("serves Lumiose modules to the browser from the client environment (islands, SPA)", async () => {
-    const response = await get("/src/routes/form.stsx?import");
+    const response = await get("/src/routes/form/page.stsx?import");
     const code = await response.text();
     expect(response.headers.get("content-type")).toMatch(/javascript/);
     expect(code).toContain("/packages/lumiose/src/dom/index.ts");
@@ -274,7 +274,7 @@ describe.skipIf(!binding)("lumiose dev", () => {
     );
     expect(overlay.message).toBe("Boom from the page");
     expect(overlay.loc).toEqual({
-      file: join(root, "src/routes/boom.stsx"),
+      file: join(root, "src/routes/boom/page.stsx"),
       line: 3,
       column: expect.any(Number),
     });
@@ -283,7 +283,7 @@ describe.skipIf(!binding)("lumiose dev", () => {
   });
 
   it("re-renders edited modules on the next request and reloads the browser", async () => {
-    const file = "src/routes/index.stsx";
+    const file = "src/routes/page.stsx";
     const source = FILES[file]!;
     write(file, source.replace("<h1>Home</h1>", "<h1>Edited</h1>"));
     await eventually(async () => (await (await get("/")).text()).includes("<h1>Edited</h1>"));
@@ -301,7 +301,7 @@ describe.skipIf(!binding)("lumiose dev", () => {
   });
 
   it("reloads the browser once when one save reaches the watcher as several changes", async () => {
-    const file = "src/routes/index.stsx";
+    const file = "src/routes/page.stsx";
     const source = FILES[file]!;
     write(file, source.replace("<h1>Home</h1>", "<h1>Twice</h1>"));
     await eventually(async () => (await (await get("/")).text()).includes("<h1>Twice</h1>"));
@@ -331,13 +331,16 @@ describe.skipIf(!binding)("lumiose dev", () => {
   });
 
   it("picks up added and removed routes, and regenerates the route types", async () => {
-    write("src/routes/added.stsx", "export default function Added() { return <p>added</p>; }\n");
+    write(
+      "src/routes/added/page.stsx",
+      "export default function Added() { return <p>added</p>; }\n",
+    );
     await eventually(async () => (await get("/added")).status === 200);
     expect(await (await get("/added")).text()).toContain("<p>added</p>");
     expect(readFileSync(join(root, ".lumiose/types/routes.d.ts"), "utf8")).toContain('"/added"');
     expect(sent).toContainEqual({ type: "full-reload", path: "*" });
 
-    rmSync(join(root, "src/routes/added.stsx"));
+    rmSync(join(root, "src/routes/added/page.stsx"));
     await eventually(async () => (await get("/added")).status === 404);
     expect(readFileSync(join(root, ".lumiose/types/routes.d.ts"), "utf8")).not.toContain(
       '"/added"',
@@ -345,9 +348,12 @@ describe.skipIf(!binding)("lumiose dev", () => {
   });
 
   it("shows route manifest errors on every page until they are fixed", async () => {
-    write("src/routes/stream.tsx", "export default function Clash() { return <p>clash</p>; }\n");
+    write(
+      "src/routes/stream/page.tsx",
+      "export default function Clash() { return <p>clash</p>; }\n",
+    );
     await eventually(async () => (await (await get("/")).text()).includes("LUM5003"));
-    rmSync(join(root, "src/routes/stream.tsx"));
+    rmSync(join(root, "src/routes/stream/page.tsx"));
     await eventually(async () => !(await (await get("/")).text()).includes("LUM5003"));
   });
 });
@@ -363,12 +369,12 @@ describe.skipIf(!binding)("lumiose dev below a base (TASK-101)", () => {
       "vite.config.ts": `import lumiose from "@lumiose/vite";
 export default { base: "/sub/", plugins: [lumiose({ trailingSlash: "always" })] };
 `,
-      "src/routes/index.stsx": `import { href } from "lumiose";
+      "src/routes/page.stsx": `import { href } from "lumiose";
 export default function Home() {
   return <main><a href={href("/blog/[slug]", { slug: "hello" })}>Post</a><a href={href("/")}>Home</a></main>;
 }
 `,
-      "src/routes/blog/[slug].stsx": `export default function Post() { return <h1>Post</h1>; }
+      "src/routes/blog/[slug]/page.stsx": `export default function Post() { return <h1>Post</h1>; }
 `,
     };
     for (const [name, code] of Object.entries(files)) {

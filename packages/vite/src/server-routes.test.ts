@@ -23,10 +23,10 @@ const derived = (
 `;
 
 const FILES: Record<string, string> = {
-  "src/routes/books/[slug].tsx": derived(),
-  "src/routes/live/[slug].tsx": derived('export const mode = "server";\n'),
-  "src/routes/app/[slug].tsx": derived('export const mode = "spa";\n'),
-  "src/routes/_layout.tsx": `export default function Layout(props: { children?: JSX.Element; title?: string }) {
+  "src/routes/books/[slug]/page.tsx": derived(),
+  "src/routes/live/[slug]/page.tsx": derived('export const mode = "server";\n'),
+  "src/routes/app/[slug]/page.tsx": derived('export const mode = "spa";\n'),
+  "src/routes/layout.tsx": `export default function Layout(props: { children?: JSX.Element; title?: string }) {
   const heading = props.title?.trim();
   return <div>{heading}{props.children}</div>;
 }
@@ -72,9 +72,9 @@ describe.skipIf(!binding)("server routes", () => {
   it("lists the static and server pages and layouts, not spa routes", async () => {
     const files = await scanServerRoutes(root, {});
     expect([...files].map((file) => file.slice(root.length)).toSorted()).toEqual([
-      "/src/routes/_layout.tsx",
-      "/src/routes/books/[slug].tsx",
-      "/src/routes/live/[slug].tsx",
+      "/src/routes/books/[slug]/page.tsx",
+      "/src/routes/layout.tsx",
+      "/src/routes/live/[slug]/page.tsx",
     ]);
   });
 
@@ -88,7 +88,7 @@ describe.skipIf(!binding)("server routes", () => {
       "upper",
     ]);
     // The spa route (and the component) are the two reported.
-    expect(stale.some((w) => w.includes("app/[slug].tsx"))).toBe(true);
+    expect(stale.some((w) => w.includes("app/[slug]/page.tsx"))).toBe(true);
     expect(stale.some((w) => w.includes("Card.tsx"))).toBe(true);
   });
 });

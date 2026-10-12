@@ -26,7 +26,8 @@ export type HrefArgs<P extends Routes> =
 /**
  * Builds the URL path of a route from its pattern, encoding each param: below Vite's `base`, with
  * a trailing slash when `trailingSlash` is `"always"`. A `[...rest]` param keeps its "/"
- * separators and may be empty. Throws on a missing or empty `[param]`, and on a `.` or `..`
+ * separators; an optional `[[param]]` or `[[...rest]]` that is missing or empty leaves its
+ * segment out. Throws on a missing or empty `[param]` or `[...rest]`, and on a `.` or `..`
  * segment, which a browser would resolve into another path (TASK-165).
  */
 export function href<P extends Routes>(pattern: P, ...args: HrefArgs<P>): string {
@@ -45,14 +46,17 @@ export function fillPattern(pattern: string, params: Record<string, unknown>): s
       parts.push(segment);
       continue;
     }
-    const rest = segment.startsWith("[...");
-    const name = segment.slice(rest ? 4 : 1, -1);
+    const optional = segment.startsWith("[[");
+    const inner = optional ? segment.slice(2, -2) : segment.slice(1, -1);
+    const rest = inner.startsWith("...");
+    const name = rest ? inner.slice(3) : inner;
     const value = params[name];
-    if (value === undefined || value === null || (!rest && value === "")) {
+    const text = value === undefined || value === null ? "" : String(value);
+    const pieces = rest ? text.split("/").filter((part) => part !== "") : [text];
+    if (pieces.length === 0 || pieces[0] === "") {
+      if (optional) continue;
       throw new TypeError(`href("${pattern}"): missing value for param "${name}".`);
     }
-    const text = String(value);
-    const pieces = rest ? text.split("/").filter((part) => part !== "") : [text];
     for (const piece of pieces) {
       // encodeURIComponent keeps dots: `..` would climb out of the route once resolved.
       if (piece === "." || piece === "..") {
@@ -87,5 +91,5 @@ export function normalizeBase(base: string): string {
  */
 function isFilePattern(pattern: string): boolean {
   const last = pattern.slice(pattern.lastIndexOf("/") + 1);
-  return last.replace(/\[[^\]]*\]/g, "").includes(".");
+  return last.replace(/\[\[?[^\]]*\]\]?/g, "").includes(".");
 }

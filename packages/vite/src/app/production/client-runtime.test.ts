@@ -71,7 +71,7 @@ describe.skipIf(!binding)("the client runtime of lumiose build", () => {
   it("puts the runtime of an islands app in the island loader's chunk", async () => {
     const files = await scripts(
       project({
-        "src/routes/index.stsx": `import { Counter } from "../components/Counter.stsx";
+        "src/routes/page.stsx": `import { Counter } from "../components/Counter.stsx";
 export default function Home() { return <Counter client:load start={1} />; }
 `,
         "src/components/Counter.stsx": COUNTER,
@@ -100,7 +100,7 @@ export function Fetcher() {
 `;
   const islandsApp = (counter: string, other: "Poster" | "Fetcher") =>
     project({
-      "src/routes/index.stsx": `import { Counter } from "../components/Counter.stsx";
+      "src/routes/page.stsx": `import { Counter } from "../components/Counter.stsx";
 import { ${other} } from "../components/${other}.stsx";
 export default function Home() { return <main><Counter client:load start={1} /><${other} client:load /></main>; }
 `,
@@ -155,30 +155,30 @@ export function Counter(props: { start: number }) {
   it("leaves the island loader and hydration out of an SPA where nothing hydrates", async () => {
     const files = await scripts(
       project({
-        "src/routes/_layout.stsx": `export const ssr = false;\n${SPA_LAYOUT}`,
-        "src/routes/index.stsx": "export default function Home() { return <h1>Home</h1>; }\n",
+        "src/routes/layout.stsx": `export const ssr = false;\n${SPA_LAYOUT}`,
+        "src/routes/page.stsx": "export default function Home() { return <h1>Home</h1>; }\n",
       }),
     );
     // The router's History API fallback: a chunk of its own, loaded without the Navigation API.
-    expect(Object.keys(files).toSorted()).toEqual(["_layout", "history", "routes", "spa"]);
+    expect(Object.keys(files).toSorted()).toEqual(["history", "layout", "page", "spa"]);
     expect(files.spa).toContain("#lumiose:csr");
     expect(files.spa).not.toContain("scrollRestoration");
     expect(files.history).toContain("scrollRestoration");
     expect(files.spa).not.toContain(ISLAND_LOADER);
     expect(files.spa).not.toContain(HYDRATION);
     expect(files.spa).not.toContain(VITE_PRELOAD);
-    expect(files["_layout"]).toMatch(/from"\.\/spa-[\w-]+\.js"/);
+    expect(files["layout"]).toMatch(/from"\.\/spa-[\w-]+\.js"/);
   });
 
   it("shares one runtime chunk between the island loader and a hydrating SPA", async () => {
     const files = await scripts(
       project({
-        "src/routes/index.stsx": `import { Counter } from "../components/Counter.stsx";
+        "src/routes/page.stsx": `import { Counter } from "../components/Counter.stsx";
 export default function Home() { return <Counter client:load start={1} />; }
 `,
         "src/components/Counter.stsx": COUNTER,
-        "src/routes/app/_layout.stsx": SPA_LAYOUT,
-        "src/routes/app/index.stsx": "export default function Page() { return <h1>Page</h1>; }\n",
+        "src/routes/app/layout.stsx": SPA_LAYOUT,
+        "src/routes/app/page.stsx": "export default function Page() { return <h1>Page</h1>; }\n",
       }),
     );
     expect(Object.keys(files)).toEqual(expect.arrayContaining(["loader", "spa", "lumiose"]));
@@ -192,9 +192,9 @@ export default function Home() { return <Counter client:load start={1} />; }
 
   it("modulepreloads an SPA page's layout and page chunks, and nothing on MPA pages (TASK-123)", async () => {
     const root = project({
-      "src/routes/index.stsx": "export default function Home() { return <h1>Home</h1>; }\n",
-      "src/routes/app/_layout.stsx": SPA_LAYOUT,
-      "src/routes/app/index.stsx": `import { Counter } from "../../components/Counter.stsx";
+      "src/routes/page.stsx": "export default function Home() { return <h1>Home</h1>; }\n",
+      "src/routes/app/layout.stsx": SPA_LAYOUT,
+      "src/routes/app/page.stsx": `import { Counter } from "../../components/Counter.stsx";
 export default function Page() { return <Counter start={1} />; }
 `,
       "src/components/Counter.stsx": COUNTER,
@@ -214,9 +214,9 @@ export default function Page() { return <Counter start={1} />; }
       );
     };
     const spaPage = await preloads("/app");
-    // The layout chunk and the page's (named after its folder), which holds the Counter too.
-    expect(spaPage).toContain("/assets/_layout");
-    expect(spaPage.filter((name) => name === "/assets/app").length).toBeGreaterThan(0);
+    // The layout chunk and the page's, which holds the Counter too.
+    expect(spaPage).toContain("/assets/layout");
+    expect(spaPage.filter((name) => name === "/assets/page").length).toBeGreaterThan(0);
     expect(spaPage).not.toContain("/assets/spa");
     expect(await preloads("/")).toEqual([]);
   });

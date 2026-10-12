@@ -18,7 +18,7 @@ const binding = await import(
 
 const FILES: Record<string, string> = {
   "public/favicon.svg": "<svg/>",
-  "src/routes/index.stsx": `import { Counter } from "../components/Counter.stsx";
+  "src/routes/page.stsx": `import { Counter } from "../components/Counter.stsx";
 export default function Home() { return <main><h1>Home</h1><Counter client:load start={1} /></main>; }
 `,
   "src/components/Counter.stsx": `import { signal } from "lumiose";
@@ -27,7 +27,7 @@ export function Counter(props: { start: number }) {
   return <button onClick={() => count.update((n) => n + 1)}>{count()}</button>;
 }
 `,
-  "src/routes/contact.stsx": `import { actionData, type Action } from "lumiose";
+  "src/routes/contact/page.stsx": `import { actionData, type Action } from "lumiose";
 // A static page with a form action: GET is prerendered, POST reaches the server.
 export const action: Action = async (ctx) => ({ name: String((await ctx.formData()).get("name")) });
 export default function Contact() {
@@ -35,21 +35,21 @@ export default function Contact() {
   return <p class="result">{data === undefined ? "form" : \`thanks \${data.name}\`}</p>;
 }
 `,
-  "src/routes/account.stsx": `import { cookies } from "lumiose";
+  "src/routes/account/page.stsx": `import { cookies } from "lumiose";
 export const mode = "server";
 export default function Account() { return <p>user {cookies().get("user") ?? "anonymous"}</p>; }
 `,
-  "src/routes/embed.stsx": `import { response } from "lumiose";
+  "src/routes/embed/page.stsx": `import { response } from "lumiose";
 export const mode = "server";
 export default function Embed() {
   response().setHeader("cross-origin-embedder-policy", "credentialless");
   return <p>embed</p>;
 }
 `,
-  "src/routes/api/time.ts": `export const mode = "server";
+  "src/routes/api/time/route.ts": `export const mode = "server";
 export const GET = () => Response.json({ ok: true });
 `,
-  "src/routes/_404.stsx": "export default function NotFound() { return <h1>Not here</h1>; }\n",
+  "src/routes/not-found.stsx": "export default function NotFound() { return <h1>Not here</h1>; }\n",
 };
 
 let root: string;
@@ -151,8 +151,8 @@ describe.skipIf(!binding)("@lumiose/adapter-node", () => {
   it("sends the build's lumiose({ headers }) by path; a response's own headers win (TASK-125)", async () => {
     const app = realpathSync.native(mkdtempSync(join(tmpdir(), "lumiose-adapter-headers-")));
     const files: Record<string, string> = {
-      "src/routes/index.stsx": "export default function Home() { return <h1>Home</h1>; }\n",
-      "src/routes/embed.stsx": FILES["src/routes/embed.stsx"]!,
+      "src/routes/page.stsx": "export default function Home() { return <h1>Home</h1>; }\n",
+      "src/routes/embed/page.stsx": FILES["src/routes/embed/page.stsx"]!,
       "vite.config.ts": `import lumiose from "@lumiose/vite";
 export default {
   plugins: [

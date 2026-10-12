@@ -494,7 +494,7 @@ describe("fetchJSON() in the browser", () => {
 describe("submit() against the request handler", () => {
   it("runs page actions end to end", async () => {
     const { handle } = app({
-      "src/routes/todos.stsx": {
+      "src/routes/todos/page.stsx": {
         default: () => "",
         actions: {
           add: async ({ formData }: ActionContext) => ({ title: (await formData()).get("title") }),

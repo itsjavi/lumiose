@@ -18,7 +18,7 @@ function el(tag: string, text: () => string): HTMLElement {
   return node;
 }
 
-const APP = "src/routes/_layout.tsx";
+const APP = "src/routes/layout.tsx";
 const Layout: Component<{ children?: unknown }> = (props) => {
   const main = el("main", () => `at ${url().pathname}: `);
   insert(main, () => props.children as never);
@@ -37,25 +37,29 @@ const NotFound: Component<{ status: number; error: Error }> = (props) =>
 
 const modules: Record<string, Component<any>> = {
   [APP]: Layout,
-  "src/routes/index.tsx": Home,
-  "src/routes/about.tsx": About,
-  "src/routes/me.tsx": Me,
-  "src/routes/_404.tsx": NotFound,
+  "src/routes/page.tsx": Home,
+  "src/routes/about/page.tsx": About,
+  "src/routes/me/page.tsx": Me,
+  "src/routes/not-found.tsx": NotFound,
 };
 
 const config: SpaConfig = {
   base: "/",
   routes: [
-    { segments: [], app: APP, levels: [APP, "src/routes/index.tsx"] },
+    { segments: [], app: APP, levels: [APP, "src/routes/page.tsx"] },
     {
       segments: [{ kind: "static", value: "about" }],
       app: APP,
-      levels: [APP, "src/routes/about.tsx"],
+      levels: [APP, "src/routes/about/page.tsx"],
     },
-    { segments: [{ kind: "static", value: "me" }], app: APP, levels: [APP, "src/routes/me.tsx"] },
+    {
+      segments: [{ kind: "static", value: "me" }],
+      app: APP,
+      levels: [APP, "src/routes/me/page.tsx"],
+    },
   ],
-  notFoundPages: [{ file: "src/routes/_404.tsx", dir: "", segments: [] }],
-  pages: { "src/routes/_404.tsx": { app: APP, levels: [APP, "src/routes/_404.tsx"] } },
+  notFoundPages: [{ file: "src/routes/not-found.tsx", dir: "", segments: [] }],
+  pages: { "src/routes/not-found.tsx": { app: APP, levels: [APP, "src/routes/not-found.tsx"] } },
   modules: Object.fromEntries(
     Object.entries(modules).map(([file, component]) => [
       file,
@@ -84,7 +88,7 @@ afterEach(() => {
 describe("startCsr", () => {
   it("renders the SPA root into the shell's range and routes from there", async () => {
     history.replaceState(null, "", "/");
-    shell("src/routes/index.tsx");
+    shell("src/routes/page.tsx");
     startCsr(config);
     await settled();
     expect(document.body.textContent).toBe("siteat /: homeend");
@@ -98,7 +102,7 @@ describe("startCsr", () => {
 
   it("restores scoped state from the shell's payload before the first render", async () => {
     history.replaceState(null, "", "/me");
-    shell("src/routes/me.tsx");
+    shell("src/routes/me/page.tsx");
     const payload = document.createElement("script");
     payload.type = "application/json";
     payload.dataset.lPayload = "";
@@ -111,7 +115,7 @@ describe("startCsr", () => {
 
   it("renders the error page the shell names, with its status", async () => {
     history.replaceState(null, "", "/missing");
-    shell("src/routes/_404.tsx", { status: 404, message: "Not Found" });
+    shell("src/routes/not-found.tsx", { status: 404, message: "Not Found" });
     startCsr(config);
     await settled();
     expect(document.body.textContent).toBe("siteat /missing: 404 Not Foundend");

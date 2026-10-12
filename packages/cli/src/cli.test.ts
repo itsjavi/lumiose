@@ -45,21 +45,21 @@ export default { plugins: [lumiose({ mode: "server" })] };
   );
 }
 `,
-  "src/routes/_layout.stsx": `export default function Layout(props: { children?: JSX.Element }) {
+  "src/routes/layout.stsx": `export default function Layout(props: { children?: JSX.Element }) {
   return <div class="layout">{props.children}</div>;
 }
 `,
-  "src/routes/index.stsx": `import { Card } from "../components/Card.stsx";
+  "src/routes/page.stsx": `import { Card } from "../components/Card.stsx";
 export const mode = "static";
 export default function Home() {
   return <main><Card title="Home" /></main>;
 }
 `,
-  "src/routes/about.stsx": `export default function About() {
+  "src/routes/about/page.stsx": `export default function About() {
   return <main><h1>About</h1></main>;
 }
 `,
-  "src/routes/api/hello.ts": `export const GET = () => Response.json({ hello: "world" });
+  "src/routes/api/hello/route.ts": `export const GET = () => Response.json({ hello: "world" });
 export const POST = () => new Response(null, { status: 204 });
 `,
 };
@@ -211,9 +211,9 @@ describe("lumiose CLI", () => {
     expect(table.stdout).toContain(
       "Routes in src/routes (default mode: server): 2 pages, 1 endpoint",
     );
-    expect(table.stdout).toMatch(/^\/\s+page\s+static\s+index\.stsx\s+_layout\.stsx$/m);
-    expect(table.stdout).toMatch(/^\/about\s+page\s+server\s+about\.stsx\s+_layout\.stsx$/m);
-    expect(table.stdout).toMatch(/^\/api\/hello\s+endpoint\s+server\s+api\/hello\.ts$/m);
+    expect(table.stdout).toMatch(/^\/\s+page\s+static\s+page\.stsx\s+layout\.stsx$/m);
+    expect(table.stdout).toMatch(/^\/about\s+page\s+server\s+about\/page\.stsx\s+layout\.stsx$/m);
+    expect(table.stdout).toMatch(/^\/api\/hello\s+endpoint\s+server\s+api\/hello\/route\.ts$/m);
 
     const { code, json } = await runJson("routes", "--root", root);
     expect(code).toBe(0);
@@ -225,12 +225,12 @@ describe("lumiose CLI", () => {
     });
     expect(json.routes).toContainEqual({
       pattern: "/",
-      file: "src/routes/index.stsx",
+      file: "src/routes/page.stsx",
       kind: "page",
       mode: "static",
       ssr: true,
       prerender: false,
-      layouts: ["src/routes/_layout.stsx"],
+      layouts: ["src/routes/layout.stsx"],
       params: [],
     });
   });
@@ -244,11 +244,11 @@ describe("lumiose CLI", () => {
       "vite.config.ts": `import lumiose from "@lumiose/vite";
 export default { plugins: [lumiose({ mode: "spa", prerender: true })] };
 `,
-      "src/routes/index.stsx": `export default function Home() {
+      "src/routes/page.stsx": `export default function Home() {
   return <main>Home</main>;
 }
 `,
-      "src/routes/editor.stsx": `export const ssr = false;
+      "src/routes/editor/page.stsx": `export const ssr = false;
 export default function Editor() {
   return <main>Editor</main>;
 }
@@ -260,8 +260,8 @@ export default function Editor() {
     }
     const table = await run("routes", "--root", project);
     expect(table.code).toBe(0);
-    expect(table.stdout).toMatch(/^\/\s+page\s+spa \(prerendered\)\s+index\.stsx$/m);
-    expect(table.stdout).toMatch(/^\/editor\s+page\s+spa \(shell\)\s+editor\.stsx$/m);
+    expect(table.stdout).toMatch(/^\/\s+page\s+spa \(prerendered\)\s+page\.stsx$/m);
+    expect(table.stdout).toMatch(/^\/editor\s+page\s+spa \(shell\)\s+editor\/page\.stsx$/m);
 
     const { json } = await runJson("routes", "--root", project);
     expect(json.routes).toEqual([

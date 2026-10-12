@@ -61,8 +61,9 @@ docs instead of guessing.
   handlers and effects, never in the component body (\`LUM2002\`).
 - Use \`class\` and \`for\` (not \`className\`/\`htmlFor\`), \`onClick\`-style events,
   \`style={{ "font-weight": 600 }}\` and \`bind:value={signal}\`. Lists are plain \`.map\` with \`key\`.
-- Routes are files in \`src/routes\` (\`_layout.stsx\`, \`[param].stsx\`, \`.ts\` endpoints exporting
-  \`GET\`/\`POST\`). The project's default mode is \`lumiose({ mode })\` in \`vite.config.ts\`; a route or
+- Routes are folders in \`src/routes\` with the Next.js App Router file names: \`page.stsx\`,
+  \`layout.stsx\`, \`not-found.stsx\`, \`error.stsx\`, \`route.ts\` endpoints exporting \`GET\`/\`POST\`,
+  and \`[param]\`, \`[...rest]\`, \`[[...rest]]\`, \`(group)\` folders. The project's default mode is \`lumiose({ mode })\` in \`vite.config.ts\`; a route or
   layout overrides it with \`export const mode = "static" | "server" | "spa"\`. Request APIs
   (\`cookies()\`, \`request()\`) need \`server\` (\`LUM5001\`). Load data in async page components;
   mutate with form \`actions\`.
@@ -73,7 +74,8 @@ docs instead of guessing.
   \`client:visible\`, with exported components and serializable props (\`LUM4001\`, \`LUM4002\`).
 - Server-only code lives in \`*.server.ts\` modules or \`src/server/\`; never import it into islands
   (\`LUM4003\`). Secrets come from \`env("NAME")\`, not \`import.meta.env\`.
-- Shared modules go in \`src/lib\` or \`src/components\`, not \`src/routes\` (\`LUM5002\`).
+- Any other file in \`src/routes\` is a colocated module, never a route, and \`_name\` folders are
+  private. Modules shared across routes go in \`src/lib\` or \`src/components\`.
 
 ### Before you finish
 
@@ -107,9 +109,9 @@ Follow the Lumiose section of \`AGENTS.md\`. This skill is the workflow.
 
 ## 2. Make the change
 
-- Page: \`src/routes/<path>.stsx\` exporting a default component (may be \`async\`) taking
+- Page: \`src/routes/<path>/page.stsx\` exporting a default component (may be \`async\`) taking
   \`PageProps<"/blog/[slug]">\`; params come from \`[name]\` segments, links from \`href()\`.
-- Endpoint: \`src/routes/<path>.ts\` exporting \`GET\`/\`POST\`/… typed \`Endpoint<"/api/x">\`.
+- Endpoint: \`src/routes/<path>/route.ts\` exporting \`GET\`/\`POST\`/… typed \`Endpoint<"/api/x">\`.
 - Form: export \`actions = { name(ctx: ActionContext<"/path">) {…} }\` from the page, post to
   \`?/name\`, read the result with \`actionData<typeof actions>()\`; return \`fail(status, data)\`
   or call \`redirect()\`.

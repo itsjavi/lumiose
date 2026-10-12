@@ -85,6 +85,8 @@ function pathSource(segments: readonly RouteSegment[]): string {
   for (const segment of segments) {
     if (segment.kind === "static") source += `/${escapeRegExp(encodeURIComponent(segment.value))}`;
     else if (segment.kind === "param") source += "/[^/]+";
+    else if (segment.kind === "optional") source += "(?:/[^/]+)?";
+    else if (segment.kind === "rest") source += "/.+";
     else source += "(?:/.*)?";
   }
   return source;
