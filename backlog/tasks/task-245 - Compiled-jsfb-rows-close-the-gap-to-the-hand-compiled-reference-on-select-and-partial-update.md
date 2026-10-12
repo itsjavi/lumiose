@@ -7,7 +7,7 @@ status: Done
 assignee:
   - '@Photon'
 created_date: '2026-10-12 13:24'
-updated_date: '2026-10-12 22:52'
+updated_date: '2026-10-12 23:05'
 labels:
   - benchmark
   - performance
@@ -45,6 +45,8 @@ jsfb A/B, compiled (with the setText fix) vs lumiose-hand, alternating in one br
 - n=30 (pnpm bench:jsfb:ab, quieter): 03 19.56 (17.57-21.84) vs 20.77 (17.89-22.63), paired +0.63 (−1.70..1.98); 04 6.31 (5.56-7.25) vs 7.19 (5.93-7.72), paired +0.38 (−0.96..1.55). Heap 1.804 vs 1.764 MB.
 - Before the fix (n=40): 03 21.00 vs 22.44, 04 7.37 vs 6.74: also within noise.
 Conclusion: on 03 and 04 the compiled app is within noise of the hand reference; the quiet-run gaps (03 17.4 vs 16.0, 04 6.0 vs 5.3 with equal script time 1.1/1.1 and 0.7/0.6) are not explained by codegen and did not reproduce in alternating runs, so they are most likely run-order/noise effects of the sequential runner. The remaining codegen gap is the label closure (TASK-268). RESULTS.md was not regenerated (needs a quiet-machine full run). Follow-up: TASK-267 (insert() numbers, Spark).
+
+Lux 2026-10-13, correction from TASK-267 (Spark, heap snapshots): the ~64 B per text node at 1k rows was V8's smi_string_cache growing once by ~64.5 kB after enough String(integer) calls, not per-node retention; the setText fix saves that only when nothing else on the page converts integers. The real per-child saving is in insert() regions (TASK-267: -22 B per integer child).
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary
