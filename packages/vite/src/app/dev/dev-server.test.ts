@@ -435,13 +435,15 @@ export default function Home() {
   it("renders href() links with the base and the trailing-slash policy, and serves both to the client", async () => {
     const html = await (await fetch(new URL("/sub/", server.url))).text();
     expect(html).toContain('<a href="/sub/blog/hello/">Post</a><a href="/sub/">Home</a>');
-    // The browser's copy of href() gets the same values from Vite's import.meta.env.
+    // The browser's copy of href() gets the same values: the base from Vite's import.meta.env,
+    // the policy from the global define @vite/env sets.
     // `/@fs/` + the absolute path with forward slashes (`/@fs/C:/…` on Windows).
     const fsPath = normalizePath(lumioseRoot).replace(/^\//, "");
     const module = await fetch(new URL(`/sub/@fs/${fsPath}/src/app/routes/href.ts`, server.url));
     expect(module.status).toBe(200);
     const code = await module.text();
     expect(code).toContain('"BASE_URL": "/sub/"');
-    expect(code).toContain('"LUMIOSE_TRAILING_SLASH": "always"');
+    const env = await (await fetch(new URL("/sub/@vite/env", server.url))).text();
+    expect(env).toContain('"__LUMIOSE_TRAILING_SLASH__": "always"');
   });
 });

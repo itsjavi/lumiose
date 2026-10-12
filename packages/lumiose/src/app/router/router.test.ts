@@ -438,7 +438,7 @@ describe("lumiose/router", () => {
 
   it("routes href() links below the base, with trailing slashes (TASK-101)", async () => {
     vi.stubEnv("BASE_URL", "/sub/");
-    vi.stubEnv("LUMIOSE_TRAILING_SLASH", "always");
+    vi.stubGlobal("__LUMIOSE_TRAILING_SLASH__", "always");
     try {
       await boot("/sub/", undefined, "/sub/");
       expect(text()).toBe("path /sub/home");
@@ -449,6 +449,7 @@ describe("lumiose/router", () => {
       expect(text()).toBe("path /sub/home");
     } finally {
       vi.unstubAllEnvs();
+      vi.unstubAllGlobals();
     }
   });
 

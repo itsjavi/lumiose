@@ -4,13 +4,14 @@
 //
 // Vite fills them in in every environment: `lumiose` is never external or pre-bundled
 // (@lumiose/vite), so server and client code alike see `import.meta.env.BASE_URL`,
-// `import.meta.env.LUMIOSE_TRAILING_SLASH` (defined by `lumiose dev` and `lumiose build` from
+// `__LUMIOSE_TRAILING_SLASH__` (defined by `lumiose dev` and `lumiose build` from
 // `lumiose({ trailingSlash })`) and `__LUMIOSE_I18N__` (defined by the `lumiose` plugin from
 // `lumiose({ i18n })`). Outside Vite they are unset: paths stay root-relative and unlocalized.
 //
-// The locales are a global define, not an `import.meta.env` one: Vitest turns `import.meta.env.*`
-// defines into `process.env` entries, strings shared by every project of a workspace, while it
-// sets global defines per project, as values.
+// Lumiose's own values are global defines, read through shape-checked accessors, not
+// `import.meta.env` ones: Vitest turns `import.meta.env.*` defines into `process.env` entries,
+// strings shared by every project of a workspace, while it sets global defines per project, as
+// values. Vite replaces them in builds and sets them as globals in dev (`@vite/client`).
 
 import { localizePath, splitLocale, type I18nUrls } from "../i18n/config.ts";
 import type { Locale, LocaleMap, RouteParams, Routes } from "./registry.ts";
@@ -18,16 +19,24 @@ import type { Locale, LocaleMap, RouteParams, Routes } from "./registry.ts";
 declare global {
   interface ImportMetaEnv {
     BASE_URL: string;
-    /** `lumiose({ trailingSlash })`, for `href()`. Defined by `lumiose dev` and `lumiose build`. */
-    LUMIOSE_TRAILING_SLASH?: "ignore" | "always" | "never";
   }
+  /** `lumiose({ trailingSlash })`, for `href()`; see the module comment. */
+  // oxlint-disable-next-line no-underscore-dangle -- a define, named like Vite's and Vitest's
+  var __LUMIOSE_TRAILING_SLASH__: unknown;
   /** The locales of `lumiose({ i18n })`, for `href()` and `lumiose/router`; see the module comment. */
   // oxlint-disable-next-line no-underscore-dangle -- a define, named like Vite's and Vitest's
   var __LUMIOSE_I18N__: unknown;
 }
 
 /** The `define` that carries `trailingSlash` to `href()`; see the module comment. */
-export const TRAILING_SLASH_DEFINE = "import.meta.env.LUMIOSE_TRAILING_SLASH";
+export const TRAILING_SLASH_DEFINE = "__LUMIOSE_TRAILING_SLASH__";
+
+/** `lumiose({ trailingSlash })` from its define, or `undefined` when it is not a policy. */
+export function envTrailingSlash(): "ignore" | "always" | "never" | undefined {
+  const value =
+    typeof __LUMIOSE_TRAILING_SLASH__ === "undefined" ? undefined : __LUMIOSE_TRAILING_SLASH__;
+  return value === "ignore" || value === "always" || value === "never" ? value : undefined;
+}
 /** The `define` that carries the locales of `lumiose({ i18n })` to `href()`. */
 export const I18N_DEFINE = "__LUMIOSE_I18N__";
 
@@ -86,7 +95,7 @@ export function envHref(
   const i18n = envI18n();
   return routeHref(pattern, (params ?? {}) as Record<string, unknown>, {
     base,
-    trailingSlash: import.meta.env?.LUMIOSE_TRAILING_SLASH,
+    trailingSlash: envTrailingSlash(),
     ...(i18n === undefined ? {} : { i18n, locale: current(i18n, base) }),
   });
 }

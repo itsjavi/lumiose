@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { appPath, envI18n, fillPattern, href, normalizeBase } from "./href.ts";
+import { appPath, envI18n, envTrailingSlash, fillPattern, href, normalizeBase } from "./href.ts";
 
 describe("href", () => {
   it("returns static patterns unchanged", () => {
@@ -43,10 +43,11 @@ describe("href", () => {
   });
 });
 
-// Vite fills in `import.meta.env` (BASE_URL, and LUMIOSE_TRAILING_SLASH from `lumiose dev`/`build`).
+// Vite fills in `import.meta.env.BASE_URL`, and `lumiose dev`/`build` define `__LUMIOSE_TRAILING_SLASH__`.
 describe("href below the base, with the trailing-slash policy (TASK-101)", () => {
   afterEach(() => {
     vi.unstubAllEnvs();
+    vi.unstubAllGlobals();
   });
 
   it("prefixes Vite's base; the root is the base itself", () => {
@@ -69,7 +70,7 @@ describe("href below the base, with the trailing-slash policy (TASK-101)", () =>
 
   it('adds a trailing slash to pages with "always", not to the root or file-like endpoints', () => {
     vi.stubEnv("BASE_URL", "/sub/");
-    vi.stubEnv("LUMIOSE_TRAILING_SLASH", "always");
+    vi.stubGlobal("__LUMIOSE_TRAILING_SLASH__", "always");
     expect(href("/")).toBe("/sub/");
     expect(href("/blog/[slug]", { slug: "v1.2" })).toBe("/sub/blog/v1.2/");
     expect(href("/llms.txt")).toBe("/sub/llms.txt");
@@ -78,7 +79,7 @@ describe("href below the base, with the trailing-slash policy (TASK-101)", () =>
 
   it('leaves paths bare with "never" and "ignore"', () => {
     for (const policy of ["never", "ignore"]) {
-      vi.stubEnv("LUMIOSE_TRAILING_SLASH", policy);
+      vi.stubGlobal("__LUMIOSE_TRAILING_SLASH__", policy);
       expect(href("/")).toBe("/");
       expect(href("/blog/[slug]", { slug: "a" })).toBe("/blog/a");
     }
@@ -95,12 +96,23 @@ describe("href below the base, with the trailing-slash policy (TASK-101)", () =>
 });
 
 // Vitest turns `import.meta.env.*` defines into `process.env` strings shared by every project of
-// the workspace (an i18n example's `"[object Object]"` reached apps/web), so the locales come from
-// the global `__LUMIOSE_I18N__` define, and only a locale config counts (TASK-254).
-describe("the locales define", () => {
+// the workspace (an i18n example's `"[object Object]"` reached apps/web), so Lumiose's values come
+// from global defines, and only well-shaped values count (TASK-254).
+describe("the defines", () => {
   afterEach(() => {
     vi.unstubAllEnvs();
     vi.unstubAllGlobals();
+  });
+
+  it("ignores an import.meta.env trailing slash and anything but a policy", () => {
+    vi.stubEnv("LUMIOSE_TRAILING_SLASH", "always");
+    expect(envTrailingSlash()).toBeUndefined();
+    expect(href("/about")).toBe("/about");
+    for (const value of ["sometimes", { policy: "always" }, null]) {
+      vi.stubGlobal("__LUMIOSE_TRAILING_SLASH__", value);
+      expect(envTrailingSlash()).toBeUndefined();
+      expect(href("/about")).toBe("/about");
+    }
   });
 
   it("ignores an import.meta.env entry and anything but a locale config", () => {

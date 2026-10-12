@@ -430,7 +430,7 @@ export default function Post() { return <h1>Post</h1>; }
     const runtime = chunks.filter((code) => code.includes("missing value for param"));
     expect(runtime).toHaveLength(1);
     expect(runtime[0]).not.toContain("import.meta");
-    expect(runtime[0]).not.toContain("LUMIOSE_TRAILING_SLASH");
+    expect(runtime[0]).not.toContain("__LUMIOSE_TRAILING_SLASH__");
   });
 
   it("links one shared stylesheet, then inlines or merges each page's own (TASK-121)", async () => {
