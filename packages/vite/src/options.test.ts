@@ -49,7 +49,7 @@ describe("lumiose() project options", () => {
       'lumiose({ include }): expected a RegExp, got "*.stsx".',
     );
     expect(create({ moed: "spa" })).toThrow(
-      "lumiose({ moed }): unknown option. Known options: include, exclude, mode, ssr, prerender, trailingSlash, csrf, svg, md, html, viewTransitions, prefetch, csp, headers, limits.",
+      "lumiose({ moed }): unknown option. Known options: include, exclude, mode, ssr, prerender, trailingSlash, csrf, svg, md, html, viewTransitions, prefetch, csp, headers, limits, adapter.",
     );
     expect(create(null)).toThrow("lumiose(): expected an options object, got null.");
   });
@@ -62,6 +62,15 @@ describe("lumiose() project options", () => {
     expect(create({ ssr: false, prerender: true })).toThrow(
       "lumiose({ prerender }): has no effect with ssr: false, which renders spa routes only in the browser. Remove one of them.",
     );
+  });
+
+  it("takes a deploy adapter (decision-45)", () => {
+    const adapter = { name: "@lumiose/adapter-test", staticFiles: "platform" as const, adapt() {} };
+    expect(apiOf({ adapter })).toEqual({ adapter });
+    expect(create({ adapter: {} })).toThrow(
+      "lumiose({ adapter }): expected an adapter such as cloudflare() from @lumiose/adapter-cloudflare, got an object.",
+    );
+    expect(create({ adapter: { ...adapter, staticFiles: "cdn" } })).toThrow(/lumiose\(\{ adapter \}\)/);
   });
 
   it("validates csp (TASK-138)", () => {

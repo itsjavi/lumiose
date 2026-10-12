@@ -23,6 +23,7 @@ import type { ServerEnv } from "lumiose/internal/app/server/context.ts";
 import type { RequestHandler, TrailingSlash } from "lumiose/internal/app/server/handler.ts";
 import type { BuildHandler } from "lumiose/internal/app/server/serve.ts";
 import { escapeAttr } from "lumiose/internal/server/node.ts";
+import { hasActions } from "lumiose/internal/app/server/actions.ts";
 
 /** What `dist/server/entry.js` exports. */
 export interface ServerEntryModule {
@@ -51,6 +52,11 @@ export interface PrerenderedFile {
   /** Path relative to `dist/client`, e.g. `blog/hello/index.html`. */
   file: string;
   kind: "page" | "endpoint" | "redirect" | "404";
+  /**
+   * The page has form actions: a POST to its URL must reach the server, not the file (deploy
+   * adapters route it there).
+   */
+  actions?: true;
 }
 
 /** Prerendering problems: LUM5001/LUM5005, missing `staticPaths()`, non-200 responses, render errors. */
@@ -72,6 +78,7 @@ interface Target {
   route: RouteEntry | undefined;
   path: string;
   kind: "page" | "endpoint" | "404";
+  actions?: true;
 }
 
 export async function prerender(options: PrerenderOptions): Promise<PrerenderedFile[]> {
@@ -116,8 +123,9 @@ export async function prerender(options: PrerenderOptions): Promise<PrerenderedF
         continue;
       }
     }
+    const actions = kind === "page" && hasActions(module);
     for (const path of await routePaths(route, module, problems)) {
-      targets.push({ route, path, kind });
+      targets.push({ route, path, kind, ...(actions ? { actions } : {}) });
     }
   }
   // Static hosts serve 404.html for unknown URLs: in an `spa` root it is the SPA (an empty shell
@@ -179,7 +187,7 @@ export async function prerender(options: PrerenderOptions): Promise<PrerenderedF
       );
       continue;
     } else {
-      result = { path: target.path, file, kind };
+      result = { path: target.path, file, kind, ...(target.actions ? { actions: true } : {}) };
     }
     const absolute = join(clientDir, file);
     await mkdir(dirname(absolute), { recursive: true });

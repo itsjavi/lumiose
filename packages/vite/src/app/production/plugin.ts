@@ -59,6 +59,11 @@ export interface BuildState {
   limits?: LimitsOption;
   /** `lumiose({ headers })`, for adapters (`config.headers` of the server entry). */
   headers?: HeadersOption;
+  /**
+   * The deploy adapter's platform serves `dist/client` (`staticFiles: "platform"`): the server
+   * entry's `fetch` has no static file layer, so the output does not import `node:fs`.
+   */
+  platformStaticFiles?: boolean;
   viewTransitions: boolean;
   prefetch: Prefetch;
   /** Scanned before the builds. */
@@ -360,13 +365,31 @@ export function serverEntryCode(state: BuildState, config: ResolvedConfig): stri
   // this entry, which can be loaded again under another URL (the build's prerender pass).
   // A build runs in production: NODE_ENV defaults to "production" (an explicit value is kept)
   // before the runtime, the routes and the dependencies they import are loaded (TASK-149).
+  // The static file layer (`node:fs`) only when the server serves dist/client (no deploy adapter
+  // whose platform does, decision-45).
+  const defaultExport =
+    state.platformStaticFiles === true
+      ? `/** { fetch(request, platform?) }: the app, with lumiose({ headers }). The platform serves dist/client. */
+export default serveBuild(createHandler(), config);`
+      : `/**
+ * { fetch(request, platform?) }: the static files of dist/client, then the app, with
+ * lumiose({ headers }). Bun and Deno run it as is.
+ */
+export default serveBuild(
+  createHandler(),
+  config,
+  staticFiles(new URL("../client/", import.meta.url), config),
+);`;
+  const staticImport =
+    state.platformStaticFiles === true
+      ? ""
+      : `const { staticFiles } = await import(${JSON.stringify(STATIC_RUNTIME)});\n`;
   return `import { stylesheets } from ${JSON.stringify(CSS_MANIFEST)};
-if (typeof process !== "undefined" && process.env && process.env.NODE_ENV === undefined) {
-  process.env.NODE_ENV = "production";
-}
+// Through a variable: bundlers that define process.env.NODE_ENV (wrangler) leave it alone.
+const processEnv = typeof process === "undefined" ? undefined : process.env;
+if (processEnv && processEnv.NODE_ENV === undefined) processEnv.NODE_ENV = "production";
 const { createAppHandler, serveBuild } = await import(${JSON.stringify(APP_RUNTIME)});
-const { staticFiles } = await import(${JSON.stringify(STATIC_RUNTIME)});
-
+${staticImport}
 const modules = {
 ${modules.join("\n")}
 };
@@ -399,14 +422,6 @@ export function createHandler(options) {
   return createAppHandler(app, options);
 }
 
-/**
- * \`{ fetch(request, platform?) }\`: the static files of dist/client, then the app, with
- * lumiose({ headers }). Bun and Deno run it as is.
- */
-export default serveBuild(
-  createHandler(),
-  config,
-  staticFiles(new URL("../client/", import.meta.url), config),
-);
+${defaultExport}
 `;
 }

@@ -1,0 +1,4 @@
+# Platform outputs of the adapters and their emulators
+.netlify/
+.vercel/
+.wrangler/

@@ -660,6 +660,40 @@ importers:
         specifier: 1.63.0
         version: 1.63.0
 
+  examples/ssr-deploy:
+    dependencies:
+      '@lumiose/adapter-cloudflare':
+        specifier: workspace:*
+        version: link:../../packages/adapter-cloudflare
+      '@lumiose/adapter-netlify':
+        specifier: workspace:*
+        version: link:../../packages/adapter-netlify
+      '@lumiose/adapter-node':
+        specifier: workspace:*
+        version: link:../../packages/adapter-node
+      '@lumiose/adapter-vercel':
+        specifier: workspace:*
+        version: link:../../packages/adapter-vercel
+      lumiose:
+        specifier: workspace:*
+        version: link:../../packages/lumiose
+      yaml:
+        specifier: ^2.9.1
+        version: 2.9.1
+    devDependencies:
+      '@lumiose/cli':
+        specifier: workspace:*
+        version: link:../../packages/cli
+      '@lumiose/vite':
+        specifier: workspace:*
+        version: link:../../packages/vite
+      '@types/node':
+        specifier: 24.19.1
+        version: 24.19.1
+      vite:
+        specifier: ^8.3.4
+        version: 8.3.4(@types/node@24.19.1)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(yaml@2.9.1)
+
   examples/vite-counter:
     dependencies:
       lumiose:
@@ -682,6 +716,18 @@ importers:
         specifier: ^8.3.4
         version: 8.3.4(@types/node@24.19.1)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(yaml@2.9.1)
 
+  packages/adapter-cloudflare:
+    devDependencies:
+      '@lumiose/vite':
+        specifier: workspace:*
+        version: link:../vite
+
+  packages/adapter-netlify:
+    devDependencies:
+      '@lumiose/vite':
+        specifier: workspace:*
+        version: link:../vite
+
   packages/adapter-node:
     dependencies:
       lumiose:
@@ -691,6 +737,22 @@ importers:
       '@lumiose/vite':
         specifier: workspace:*
         version: link:../vite
+
+  packages/adapter-vercel:
+    dependencies:
+      '@vercel/nft':
+        specifier: 1.11.0
+        version: 1.11.0(rollup@4.64.3)(supports-color@10.2.2)
+      lumiose:
+        specifier: workspace:*
+        version: link:../lumiose
+    devDependencies:
+      '@lumiose/vite':
+        specifier: workspace:*
+        version: link:../vite
+      vite:
+        specifier: ^8.3.4
+        version: 8.3.4(@types/node@24.19.1)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(yaml@2.9.1)
 
   packages/cli:
     dependencies:

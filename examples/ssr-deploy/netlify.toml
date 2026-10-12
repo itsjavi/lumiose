@@ -1,0 +1,11 @@
+# In its own repository, an app needs only:
+#
+#   [build]
+#     command = "lumiose build"
+#     publish = "dist/client"
+#
+# This sample is a package of a monorepo (Netlify's package directory): its commands run from the
+# repository root, so they name the package.
+[build]
+command = "pnpm --filter @lumiose-examples/ssr-deploy build:netlify"
+publish = "examples/ssr-deploy/dist/client"

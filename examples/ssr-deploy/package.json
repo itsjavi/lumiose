@@ -1,0 +1,40 @@
+{
+  "name": "@lumiose-examples/ssr-deploy",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Lumiose sample for the deploy adapters: one small server-rendered app built for Cloudflare, Vercel and Netlify, checked in each platform's local emulator.",
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "dev": "lumiose dev",
+    "build": "lumiose build",
+    "build:cloudflare": "DEPLOY_TARGET=cloudflare lumiose build",
+    "build:vercel": "DEPLOY_TARGET=vercel lumiose build",
+    "build:vercel-edge": "DEPLOY_TARGET=vercel-edge lumiose build",
+    "build:netlify": "DEPLOY_TARGET=netlify lumiose build",
+    "preview": "lumiose preview",
+    "typecheck": "lumiose check",
+    "e2e:cloudflare": "node e2e/cloudflare.ts",
+    "e2e:vercel": "node e2e/vercel.ts",
+    "e2e:netlify": "node e2e/netlify.ts",
+    "e2e:runtimes": "node e2e/runtimes.ts"
+  },
+  "dependencies": {
+    "@lumiose/adapter-cloudflare": "workspace:*",
+    "@lumiose/adapter-netlify": "workspace:*",
+    "@lumiose/adapter-node": "workspace:*",
+    "@lumiose/adapter-vercel": "workspace:*",
+    "lumiose": "workspace:*",
+    "yaml": "^2.9.1"
+  },
+  "devDependencies": {
+    "@lumiose/cli": "workspace:*",
+    "@lumiose/vite": "workspace:*",
+    "@types/node": "24.19.1",
+    "vite": "^8.3.4"
+  },
+  "demo": {
+    "title": "Deploy targets (Cloudflare, Vercel, Netlify)",
+    "kind": "e2e"
+  }
+}

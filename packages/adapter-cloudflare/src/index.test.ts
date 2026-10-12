@@ -1,0 +1,151 @@
+// The Cloudflare output of a real `lumiose build`: the Worker (called here with Workers'
+// arguments), the assets, and a server build without its static file layer. The Worker in
+// workerd is the local e2e's job (examples/ssr-deploy, `pnpm e2e:cloudflare`), never CI's.
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readdirSync,
+  readFileSync,
+  realpathSync,
+  rmSync,
+  symlinkSync,
+  writeFileSync,
+} from "node:fs";
+import { createRequire } from "node:module";
+import { tmpdir } from "node:os";
+import { dirname, join, resolve } from "node:path";
+import { pathToFileURL } from "node:url";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { build } from "@lumiose/vite/build";
+import { LUMIOSE_ROOT, linkLumiose } from "@lumiose/vite/internal/test-links.ts";
+import { assetsIgnore, wranglerConfig } from "./output.ts";
+
+// The build needs the native compiler binding (a dependency of lumiose, not of this package).
+const binding = await import(
+  pathToFileURL(createRequire(join(LUMIOSE_ROOT, "package.json")).resolve("@lumiose/compiler")).href
+).catch(() => undefined);
+
+const FILES: Record<string, string> = {
+  "vite.config.ts": `import lumiose from "@lumiose/vite";
+import { cloudflare } from "@lumiose/adapter-cloudflare";
+export default { plugins: [lumiose({ adapter: cloudflare(), headers: { "x-app": "1" } })] };
+`,
+  "src/routes/page.stsx": "export default function Home() { return <h1>Home</h1>; }\n",
+  "src/routes/form/page.stsx": `export const action = () => ({ ok: true });
+export default function Form() { return <form method="post"><button>Go</button></form>; }
+`,
+  "src/routes/api/platform/route.ts": `import type { Endpoint } from "lumiose";
+export const mode = "server";
+export const GET: Endpoint = (ctx) => {
+  ctx.platform.waitUntil(Promise.resolve("later"));
+  return Response.json({ env: ctx.platform.env, ip: ctx.platform.clientAddress ?? null });
+};
+`,
+  "public/robots.txt": "User-agent: *\n",
+};
+
+let root: string;
+
+beforeAll(async () => {
+  if (!binding) return;
+  root = realpathSync.native(mkdtempSync(join(tmpdir(), "lumiose-cloudflare-")));
+  for (const [name, code] of Object.entries(FILES)) {
+    mkdirSync(dirname(join(root, name)), { recursive: true });
+    writeFileSync(join(root, name), code);
+  }
+  linkLumiose(root);
+  symlinkSync(
+    resolve(import.meta.dirname, ".."),
+    join(root, "node_modules/@lumiose/adapter-cloudflare"),
+    "junction",
+  );
+  await build({ root, logLevel: "silent" });
+});
+
+afterAll(() => {
+  if (root) rmSync(root, { recursive: true, force: true });
+});
+
+describe.skipIf(!binding)("@lumiose/adapter-cloudflare", () => {
+  it("writes the Worker next to dist/client and dist/server", () => {
+    const worker = readFileSync(join(root, "dist/_worker.js"), "utf8");
+    expect(worker).toContain('import handler from "./server/entry.js";');
+    expect(worker).toContain("fetch(request, env, ctx)");
+  });
+
+  it("leaves dist/client to Cloudflare: no precompressed copies, no static layer in the server", () => {
+    const files = readdirSync(join(root, "dist/client"), { recursive: true }) as string[];
+    expect(files.some((file) => /\.(?:br|gz)$/.test(file))).toBe(false);
+    const server = readdirSync(join(root, "dist/server"), { recursive: true }) as string[];
+    for (const file of server.filter((name) => name.endsWith(".js"))) {
+      expect(readFileSync(join(root, "dist/server", file), "utf8")).not.toMatch(/node:fs/);
+    }
+  });
+
+  it("adds a year of caching for the assets directory to _headers", () => {
+    const headers = readFileSync(join(root, "dist/client/_headers"), "utf8");
+    expect(headers).toContain("/*\n  x-content-type-options: nosniff\n");
+    expect(headers).toContain("  x-app: 1\n");
+    expect(
+      headers.endsWith("/assets/*\n  cache-control: public, max-age=31536000, immutable\n"),
+    ).toBe(true);
+  });
+
+  it("leaves prerendered pages with form actions out of the assets", () => {
+    expect(existsSync(join(root, "dist/client/form/index.html"))).toBe(true);
+    expect(readFileSync(join(root, "dist/client/.assetsignore"), "utf8")).toBe(
+      "/form/index.html\n",
+    );
+    expect(assetsIgnore([{ path: "/", file: "index.html", kind: "page" }])).toBe("");
+  });
+
+  it("passes Workers' bindings, waitUntil and CF-Connecting-IP as ctx.platform", async () => {
+    const worker = (await import(pathToFileURL(join(root, "dist/_worker.js")).href)) as {
+      default: { fetch(request: Request, env: unknown, ctx: unknown): Promise<Response> };
+    };
+    const waited: unknown[] = [];
+    const ctx = {
+      waitUntil(this: unknown, promise: Promise<unknown>) {
+        expect(this).toBe(ctx);
+        waited.push(promise);
+      },
+    };
+    const res = await worker.default.fetch(
+      new Request("https://app.example/api/platform", {
+        headers: { "cf-connecting-ip": "203.0.113.9" },
+      }),
+      { KV: "binding" },
+      ctx,
+    );
+    expect(await res.json()).toEqual({ env: { KV: "binding" }, ip: "203.0.113.9" });
+    expect(res.headers.get("x-app")).toBe("1");
+    expect(waited).toHaveLength(1);
+    // A form post to the prerendered page reaches its action.
+    const posted = await worker.default.fetch(
+      new Request("https://app.example/form", {
+        method: "POST",
+        headers: { origin: "https://app.example" },
+        body: new URLSearchParams({ a: "1" }),
+      }),
+      {},
+      ctx,
+    );
+    expect(posted.status).toBe(200);
+  });
+
+  it("suggests a wrangler config for the build", () => {
+    const config = wranglerConfig({
+      root,
+      outDir: join(root, "dist"),
+      clientDir: join(root, "dist/client"),
+      serverEntry: join(root, "dist/server/entry.js"),
+      config: { base: "/", trailingSlash: "never", assetsDir: "assets" },
+    });
+    expect(JSON.parse(config)).toMatchObject({
+      main: "dist/_worker.js",
+      compatibility_flags: ["nodejs_compat"],
+      assets: { directory: "dist/client", html_handling: "drop-trailing-slash" },
+    });
+  });
+});

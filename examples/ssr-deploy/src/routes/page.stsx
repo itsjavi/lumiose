@@ -1,0 +1,13 @@
+// Prerendered at build time: the platform serves it as a static file.
+import { Title } from "lumiose";
+import { Counter } from "../components/Counter.stsx";
+
+export default function Home() {
+  return (
+    <main>
+      <Title>Home</Title>
+      <h1>Prerendered home</h1>
+      <Counter client:load start={1} />
+    </main>
+  );
+}

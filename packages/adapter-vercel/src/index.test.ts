@@ -1,0 +1,243 @@
+// The Vercel output of real `lumiose build`s (Build Output API v3): config.json, the static files
+// and the function, copied out of the project and called as Vercel's Node.js launcher calls it
+// (`handler(req, res)`), or the Edge module (`default(request, context)`, in Node.js). The full
+// harness is the local e2e's job (examples/ssr-deploy, `pnpm e2e:vercel`), never CI's.
+import { cp } from "node:fs/promises";
+import { createServer } from "node:http";
+import type { AddressInfo } from "node:net";
+import {
+  mkdirSync,
+  mkdtempSync,
+  readdirSync,
+  readFileSync,
+  realpathSync,
+  rmSync,
+  symlinkSync,
+  writeFileSync,
+} from "node:fs";
+import { createRequire } from "node:module";
+import { tmpdir } from "node:os";
+import { dirname, join, resolve } from "node:path";
+import { pathToFileURL } from "node:url";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { build } from "@lumiose/vite/build";
+import { LUMIOSE_ROOT, linkLumiose } from "@lumiose/vite/internal/test-links.ts";
+import { outputConfig, pathPattern } from "./config.ts";
+import { commonAncestor, nodeRuntime } from "./function.ts";
+
+// The build needs the native compiler binding (a dependency of lumiose, not of this package).
+const binding = await import(
+  pathToFileURL(createRequire(join(LUMIOSE_ROOT, "package.json")).resolve("@lumiose/compiler")).href
+).catch(() => undefined);
+
+const FILES: Record<string, string> = {
+  "src/routes/page.stsx": "export default function Home() { return <h1>Home</h1>; }\n",
+  "src/routes/about/page.stsx": "export default function About() { return <h1>About</h1>; }\n",
+  "src/routes/form/page.stsx": `export const action = () => ({ ok: true });
+export default function Form() { return <form method="post"><button>Go</button></form>; }
+`,
+  "src/routes/api/platform/route.ts": `import type { Endpoint } from "lumiose";
+export const mode = "server";
+export const GET: Endpoint = (ctx) =>
+  Response.json({ ip: ctx.platform.clientAddress ?? null, url: ctx.url.href });
+export const POST: Endpoint = async (ctx) => new Response("posted " + (await ctx.request.text()));
+`,
+  "public/robots.txt": "User-agent: *\n",
+};
+
+const roots: string[] = [];
+
+/** Builds the app with `vercel(options)` into a temporary project. */
+async function buildWith(options: string): Promise<string> {
+  const root = realpathSync.native(mkdtempSync(join(tmpdir(), "lumiose-vercel-")));
+  roots.push(root);
+  const files = {
+    ...FILES,
+    "vite.config.ts": `import lumiose from "@lumiose/vite";
+import { vercel } from "@lumiose/adapter-vercel";
+export default { plugins: [lumiose({ adapter: vercel(${options}), headers: { "x-app": "1" } })] };
+`,
+  };
+  for (const [name, code] of Object.entries(files)) {
+    mkdirSync(dirname(join(root, name)), { recursive: true });
+    writeFileSync(join(root, name), code);
+  }
+  writeFileSync(join(root, "package.json"), '{ "type": "module" }\n');
+  linkLumiose(root);
+  symlinkSync(
+    resolve(import.meta.dirname, ".."),
+    join(root, "node_modules/@lumiose/adapter-vercel"),
+    "junction",
+  );
+  await build({ root, logLevel: "silent" });
+  return join(root, ".vercel/output");
+}
+
+/** A copy of the function directory outside the project: only what the adapter put in it. */
+async function isolated(output: string): Promise<string> {
+  const copy = realpathSync.native(mkdtempSync(join(tmpdir(), "lumiose-vercel-func-")));
+  roots.push(copy);
+  await cp(join(output, "functions/__lumiose.func"), copy, {
+    recursive: true,
+    verbatimSymlinks: true,
+  });
+  return copy;
+}
+
+afterAll(() => {
+  for (const root of roots) rmSync(root, { recursive: true, force: true });
+});
+
+describe.skipIf(!binding)("@lumiose/adapter-vercel, Node.js runtime", () => {
+  let output: string;
+  beforeAll(async () => {
+    output = await buildWith("");
+  }, 120_000);
+
+  it("copies dist/client to static/, without _headers or precompressed copies", () => {
+    const files = readdirSync(join(output, "static"), { recursive: true }) as string[];
+    expect(files).toContain("robots.txt");
+    expect(files).toContain("index.html");
+    expect(files).not.toContain("_headers");
+    expect(files.some((file) => /\.(?:br|gz)$/.test(file))).toBe(false);
+  });
+
+  it("writes config.json: headers, hashed assets, form posts, the filesystem, then the function", () => {
+    const config = JSON.parse(readFileSync(join(output, "config.json"), "utf8"));
+    expect(config.version).toBe(3);
+    const routes = config.routes as Array<Record<string, unknown>>;
+    expect(routes[0]).toMatchObject({
+      headers: { "x-content-type-options": "nosniff" },
+      continue: true,
+    });
+    expect(routes[1]).toMatchObject({ headers: { "x-app": "1" }, continue: true });
+    expect(routes.find((route) => route.methods !== undefined)).toEqual({
+      src: "^\\/form/?$",
+      methods: ["POST", "PUT", "PATCH", "DELETE"],
+      dest: "/__lumiose",
+    });
+    const filesystem = routes.findIndex((route) => route.handle === "filesystem");
+    expect(routes.slice(filesystem + 1)).toEqual([{ src: "^(?:/.*)?$", dest: "/__lumiose" }]);
+    expect(config.overrides).toEqual({
+      "about/index.html": { path: "about" },
+      "form/index.html": { path: "form" },
+    });
+    const vc = JSON.parse(
+      readFileSync(join(output, "functions/__lumiose.func/.vc-config.json"), "utf8"),
+    );
+    expect(vc).toEqual({
+      runtime: nodeRuntime(),
+      handler: "dist/server/vercel-handler.js",
+      launcherType: "Nodejs",
+      supportsResponseStreaming: true,
+    });
+  });
+
+  it("runs from a copy of the function directory, as Vercel's launcher calls it", async () => {
+    const func = await isolated(output);
+    const vc = JSON.parse(readFileSync(join(func, ".vc-config.json"), "utf8"));
+    const { default: handler } = (await import(pathToFileURL(join(func, vc.handler)).href)) as {
+      default: (req: unknown, res: unknown) => Promise<void>;
+    };
+    const server = createServer((req, res) => {
+      req.headers["x-forwarded-proto"] = "https";
+      req.headers["x-forwarded-host"] = "app.example";
+      req.headers["x-real-ip"] = "192.0.2.8";
+      void handler(req, res);
+    });
+    await new Promise<void>((done) => server.listen(0, "127.0.0.1", done));
+    const url = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
+    try {
+      const res = await fetch(`${url}/api/platform`);
+      expect(await res.json()).toEqual({
+        ip: "192.0.2.8",
+        url: "https://app.example/api/platform",
+      });
+      expect(res.headers.get("x-app")).toBe("1");
+      const posted = await fetch(`${url}/api/platform`, { method: "POST", body: "ping" });
+      expect(await posted.text()).toBe("posted ping");
+      // The public origin from the forwarded headers: a same-site form post passes the check.
+      const form = await fetch(`${url}/form`, {
+        method: "POST",
+        headers: { origin: "https://app.example" },
+        body: new URLSearchParams({ a: "1" }),
+      });
+      expect(form.status).toBe(200);
+    } finally {
+      server.close();
+    }
+  });
+});
+
+describe.skipIf(!binding)("@lumiose/adapter-vercel, Edge runtime", () => {
+  let output: string;
+  beforeAll(async () => {
+    output = await buildWith('{ runtime: "edge" }');
+  }, 120_000);
+
+  it("bundles the function into one module that imports only what the Edge runtime has", () => {
+    const func = join(output, "functions/__lumiose.func");
+    expect(readdirSync(func).toSorted()).toEqual([".vc-config.json", "index.js"]);
+    expect(JSON.parse(readFileSync(join(func, ".vc-config.json"), "utf8"))).toEqual({
+      runtime: "edge",
+      entrypoint: "index.js",
+    });
+    const code = readFileSync(join(func, "index.js"), "utf8");
+    const imports = [...code.matchAll(/^import .* from "([^"]+)";$/gm)].map((match) => match[1]);
+    expect(imports).toEqual(["node:async_hooks"]);
+  });
+
+  it("answers with the build's handler, ctx.platform from the request and context", async () => {
+    const func = await isolated(output);
+    const { default: handler } = (await import(pathToFileURL(join(func, "index.js")).href)) as {
+      default: (request: Request, context: unknown) => Promise<Response>;
+    };
+    const waited: unknown[] = [];
+    const res = await handler(
+      new Request("https://app.example/api/platform", { headers: { "x-real-ip": "192.0.2.9" } }),
+      { waitUntil: (promise: unknown) => waited.push(promise) },
+    );
+    expect(await res.json()).toEqual({ ip: "192.0.2.9", url: "https://app.example/api/platform" });
+  });
+
+  it("refuses an option it does not know", async () => {
+    const { vercel } = await import("./index.ts");
+    expect(() => vercel({ runtime: "bun" as "edge" })).toThrow(/expected "nodejs" or "edge"/);
+  });
+});
+
+describe("config.json helpers", () => {
+  it("turns header paths into route patterns below base", () => {
+    expect(pathPattern("/**", "")).toBe("^(?:/[^/]+)*/?$");
+    expect(pathPattern("/blog/*", "/docs")).toBe("^\\/docs/blog/[^/]+/?$");
+    expect(new RegExp(pathPattern("/assets/**", "")).test("/assets/a/b.js")).toBe(true);
+    expect(new RegExp(pathPattern("/blog/*", "")).test("/blog/a/b")).toBe(false);
+  });
+
+  it("drops a default header that lumiose({ headers }) removes everywhere", () => {
+    const config = outputConfig({
+      config: {
+        base: "/",
+        trailingSlash: "never",
+        assetsDir: "assets",
+        headers: { "referrer-policy": "" },
+      },
+      hasFunction: false,
+      pages: ["about.html", "index.html", "404.html"],
+      actionPaths: [],
+      notFoundPage: true,
+    });
+    expect(config.routes[0]).toEqual({
+      src: "^(?:/[^/]+)*/?$",
+      headers: { "x-content-type-options": "nosniff" },
+      continue: true,
+    });
+    expect(config.routes.at(-1)).toEqual({ src: "^/.*$", dest: "/404.html", status: 404 });
+    expect(config.overrides).toEqual({ "about.html": { path: "about" } });
+  });
+
+  it("finds the common ancestor of directories", () => {
+    expect(commonAncestor(["/a/b/c", "/a/b/d/e", "/a/b"])).toBe("/a/b");
+    expect(commonAncestor(["/a/bc", "/a/b"])).toBe("/a");
+  });
+});

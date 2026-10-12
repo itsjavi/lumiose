@@ -7,10 +7,14 @@
 // 4. Prerender `static` routes and endpoints, and `spa` routes with `prerender` (decision-38),
 //    in-process through that entry (./prerender.ts).
 // 5. Precompress `dist/client` (`.br` and `.gz` copies, ./precompress.ts) for adapters to serve.
+// 6. With `lumiose({ adapter })` (decision-45, ./adapter.ts), the adapter writes the platform's
+//    output. Platforms that serve `dist/client` themselves get no precompressed copies, and a
+//    server entry without its static file layer.
 //
-// The output deploys with `@lumiose/adapter-node` (statics, then the handler); a site whose routes
-// are all prerendered deploys with `dist/client` alone, so the build then removes `dist/server`
-// (./static-site.ts). `lumiose({ headers })` is written to `dist/client/_headers` for static hosts.
+// The output deploys with `@lumiose/adapter-node` (statics, then the handler), or runs on Bun and
+// Deno as is (`export default { fetch }`); a site whose routes are all prerendered deploys with
+// `dist/client` alone, so the build then removes `dist/server` (./static-site.ts).
+// `lumiose({ headers })` is written to `dist/client/_headers` for static hosts.
 
 import { readFile, rm, rmdir, writeFile } from "node:fs/promises";
 import { dirname, join, relative, resolve } from "node:path";
@@ -109,6 +113,7 @@ export async function build(options: BuildOptions = {}): Promise<BuildResult> {
   state.csrf = project.csrf;
   if (project.limits !== undefined) state.limits = project.limits;
   if (project.headers !== undefined) state.headers = project.headers;
+  if (project.adapter?.staticFiles === "platform") state.platformStaticFiles = true;
   Object.assign(state, navigationOptions(project));
   const defaultMode: RouteMode = project.mode ?? "static";
 
@@ -183,18 +188,34 @@ export async function build(options: BuildOptions = {}): Promise<BuildResult> {
     await rm(serverDir, { recursive: true, force: true });
     logger.info("✓ every route is prerendered: dist/client is the whole site (no dist/server).");
   }
-  const compressed = await precompress(clientDir);
-  if (compressed.files > 0) {
-    logger.info(
-      `✓ ${compressed.files} file${compressed.files === 1 ? "" : "s"} precompressed (.br, .gz): ${kb(compressed.bytes)} → ${kb(compressed.brotliBytes)} brotli.`,
-    );
+  if (state.platformStaticFiles !== true) {
+    const compressed = await precompress(clientDir);
+    if (compressed.files > 0) {
+      logger.info(
+        `✓ ${compressed.files} file${compressed.files === 1 ? "" : "s"} precompressed (.br, .gz): ${kb(compressed.bytes)} → ${kb(compressed.brotliBytes)} brotli.`,
+      );
+    }
   }
-  return {
+  const result: BuildResult = {
     outDir: state.outDir,
     clientDir,
     serverEntry: needsServer === undefined ? undefined : serverEntry,
     prerendered,
   };
+  if (project.adapter !== undefined) {
+    logger.info(`\nadapting the build with ${project.adapter.name}…`);
+    await project.adapter.adapt({
+      root,
+      outDir: result.outDir,
+      clientDir,
+      serverEntry: result.serverEntry,
+      config: entry.config,
+      prerendered,
+      mode: resolved.mode,
+      logger,
+    });
+  }
+  return result;
 }
 
 /**

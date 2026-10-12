@@ -11,6 +11,7 @@ import type { CsrfOptions } from "lumiose/internal/app/server/csrf.ts";
 import type { LimitsOption } from "lumiose/internal/app/server/body.ts";
 import type { TrailingSlash } from "lumiose/internal/app/server/handler.ts";
 import type { Prefetch } from "lumiose/internal/app/server/navigation.ts";
+import type { Adapter } from "./production/adapter.ts";
 
 /**
  * The project root as the module graph sees it: absolute and real, with symbolic links and
@@ -67,6 +68,7 @@ export interface ProjectOptions {
   csp?: "strict";
   headers?: HeadersOption;
   limits?: LimitsOption;
+  adapter?: Adapter;
 }
 
 /** MPA navigation of `lumiose({ viewTransitions, prefetch })` with its defaults (decision-24). */

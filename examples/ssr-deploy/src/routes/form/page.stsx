@@ -1,0 +1,21 @@
+// A prerendered page with a form action: GET is a static file, POST reaches the function.
+import { actionData, Title, type ActionContext } from "lumiose";
+
+export const action = async (ctx: ActionContext<"/form">) => {
+  const form = await ctx.formData();
+  return { name: String(form.get("name") ?? "") };
+};
+
+export default function Form() {
+  const data = actionData<typeof action>();
+  return (
+    <main>
+      <Title>Form</Title>
+      <form method="post">
+        <input name="name" />
+        <button>Send</button>
+      </form>
+      <p class="result">{data === undefined ? "no post yet" : `hello ${data.name}`}</p>
+    </main>
+  );
+}

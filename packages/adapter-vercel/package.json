@@ -1,0 +1,45 @@
+{
+  "name": "@lumiose/adapter-vercel",
+  "version": "0.2.0",
+  "description": "Deploy a Lumiose build to Vercel (Build Output API v3): static files, and the build's fetch handler as a Node.js or Edge function.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/itsjavi/lumiose.git",
+    "directory": "packages/adapter-vercel"
+  },
+  "files": [
+    "dist"
+  ],
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./package.json": "./package.json"
+  },
+  "publishConfig": {
+    "exports": {
+      ".": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "./package.json": "./package.json"
+    }
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "vitest run",
+    "build": "node ../../scripts/build-package.ts",
+    "prepack": "pnpm run build"
+  },
+  "dependencies": {
+    "@vercel/nft": "1.11.0",
+    "lumiose": "workspace:*"
+  },
+  "devDependencies": {
+    "@lumiose/vite": "workspace:*",
+    "vite": "^8.3.4"
+  },
+  "peerDependencies": {
+    "vite": "^8.3.0"
+  }
+}

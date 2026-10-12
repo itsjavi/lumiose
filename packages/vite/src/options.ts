@@ -14,10 +14,12 @@ import type { RouteMode } from "lumiose/internal/app/routes/manifest.ts";
 import type { CsrfOptions } from "lumiose/internal/app/server/csrf.ts";
 import type { TrailingSlash } from "lumiose/internal/app/server/handler.ts";
 import type { MarkdownOptions } from "./content.ts";
+import { isAdapter, type Adapter } from "./app/production/adapter.ts";
 import type { Rollup } from "vite";
 import type { SvgOptions } from "./svg.ts";
 
 export type {
+  Adapter,
   CsrfOptions,
   HeaderRule,
   HeadersOption,
@@ -126,6 +128,15 @@ export interface LumioseOptions {
    * Default: `{ body: "1mb", upload: "10mb" }`.
    */
   limits?: LimitsOption;
+  /**
+   * The deploy adapter (decision-45): after prerendering, `lumiose build` writes the platform's
+   * output with it. `cloudflare()` from @lumiose/adapter-cloudflare, `vercel()` from
+   * @lumiose/adapter-vercel, `netlify()` from @lumiose/adapter-netlify. Default: none, the Node
+   * build that @lumiose/adapter-node, Bun and Deno serve.
+   *
+   * @example lumiose({ adapter: cloudflare() })
+   */
+  adapter?: Adapter;
 }
 
 /** The `api` of the `lumiose` plugin, read by the app layer (app/project.ts `projectOptions`). */
@@ -173,6 +184,7 @@ const KNOWN = [
   "csp",
   "headers",
   "limits",
+  "adapter",
 ];
 
 /** Validates `lumiose({ … })` options and returns the project options; throws a `TypeError`. */
@@ -231,6 +243,15 @@ export function projectOptionsOf(options: LumioseOptions): ProjectOptions {
       fail("limits", (error as Error).message.replace(/^limits(?:\.\w+)?: /, ""));
     }
     project.limits = options.limits;
+  }
+  if (options.adapter !== undefined) {
+    if (!isAdapter(options.adapter)) {
+      fail(
+        "adapter",
+        `expected an adapter such as cloudflare() from @lumiose/adapter-cloudflare, got ${describe(options.adapter)}`,
+      );
+    }
+    project.adapter = options.adapter;
   }
   return project;
 }

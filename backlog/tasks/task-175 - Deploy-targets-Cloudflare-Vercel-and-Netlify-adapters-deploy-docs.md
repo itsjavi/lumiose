@@ -1,11 +1,11 @@
 ---
 id: TASK-175
 title: 'Deploy adapters: Cloudflare, Vercel and Netlify'
-status: To Do
+status: In Progress
 assignee:
   - Nova
 created_date: '2026-10-09 12:12'
-updated_date: '2026-10-12 19:31'
+updated_date: '2026-10-12 20:24'
 labels:
   - adapter
   - docs
@@ -40,4 +40,16 @@ Docs-only targets (Bun, Deno, Node hosts, static hosts, Lambda) need no API deci
 Blocked: waits for the user's adapter API choice (A: lumiose({ adapter }) recommended; B: post-build command).
 
 Lux 2026-10-12: unblocked. User chose option A (lumiose({ adapter })), recorded in decision-45. Emulator e2e runs locally only (pnpm dlx, pinned); CI runs only the adapters' unit tests. Vercel: Node harness + config.json validation.
+
+Nova 2026-10-12 (session nova-20261012T193257Z-t248): implementation.
+- Adapter interface (internal, @lumiose/vite/build: Adapter, AdapterBuild): { name, staticFiles?: 'platform', adapt(build) }. lumiose({ adapter }) validated in options.ts; build() calls adapt() after prerendering. staticFiles 'platform' = no .br/.gz copies and a server entry without its static layer (no node:fs).
+- PrerenderedFile.actions marks prerendered pages with form actions: platforms answer POSTs to static files themselves (Cloudflare 405 seen in wrangler dev; Netlify 405 in netlify serve), so the adapters route them to the server.
+- _headers: one block per path (Cloudflare keeps only the last block of a path: the defaults were lost in wrangler dev).
+- @lumiose/adapter-cloudflare: dist/_worker.js (env, ctx.waitUntil, CF-Connecting-IP), /assets/* immutable in _headers, action pages in dist/client/.assetsignore (the Worker renders them), starter wrangler config in a warning when none exists.
+- @lumiose/adapter-netlify: .netlify/v1/functions/lumiose-server.mjs (path /*, preferStatic; context.ip, context.waitUntil) + lumiose-actions.mjs (action pages, method POST/PUT/PATCH/DELETE), /assets/* immutable in _headers, netlify.toml hint.
+- @lumiose/adapter-vercel: .vercel/output (Build Output v3): static/ (no _headers), config.json routes (header routes, hashed-asset caching, methods routes for action pages, filesystem, function), overrides for prerendered pages without the slash; nodejs = (req, res) handler bundling lumiose/node next to entry.js, traced with @vercel/nft 1.11.0 (pinned) and copied with pnpm symlinks; edge = one module bundled by Vite (webworker, edge-light/worker conditions), only Edge-provided node: modules allowed (else a build error).
+- Generated entry defaults NODE_ENV through a variable (wrangler's define warned on the assignment).
+- examples/ssr-deploy: one app (prerendered page with island, streamed server page, endpoints, form action on a prerendered page, not-found, csp strict, an npm dependency) + LOCAL ONLY e2e scripts: e2e:cloudflare (wrangler@4.142.0 dev), e2e:netlify (netlify-cli@27.10.0 serve), e2e:vercel [--edge] (config validation + Node harness, function copied out of the repo), e2e:runtimes (adapter-node, bun@1.4.2, deno@2.9.6). All via pnpm dlx, not dependencies; not in CI.
+- Results 2026-10-12: Cloudflare 10/10 (streaming, nonce CSP, env var binding, waitUntil); Netlify 10/10 with caveats (netlify serve sends max-age=0 whatever _headers says: rule checked in the file; waitUntil not observable across invocations); Vercel Node.js and Edge 10/10 in the harness; Node, Bun, Deno 10/10.
+- Note: netlify-cli appends .netlify to the root .gitignore on every run; the e2e script restores the file. Suggest Lux add .netlify/ to the root .gitignore.
 <!-- SECTION:NOTES:END -->

@@ -1,0 +1,8 @@
+{
+  "name": "lumiose-ssr-deploy",
+  "main": "dist/_worker.js",
+  "compatibility_date": "2026-09-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "assets": { "directory": "dist/client", "html_handling": "auto-trailing-slash" },
+  "vars": { "GREETING": "hello from wrangler" },
+}

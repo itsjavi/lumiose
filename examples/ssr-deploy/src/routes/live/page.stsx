@@ -1,0 +1,21 @@
+// Rendered per request by the function, shell first: the slow part streams in.
+import { Suspense, Title, url } from "lumiose";
+
+export const mode = "server";
+
+async function Slow() {
+  await new Promise((resolve) => setTimeout(resolve, 400));
+  return <p class="slow">streamed after the shell</p>;
+}
+
+export default function Live() {
+  return (
+    <main>
+      <Title>Live</Title>
+      <h1>Live {url().searchParams.get("q") ?? ""}</h1>
+      <Suspense fallback={<p class="fallback">loading</p>}>
+        <Slow />
+      </Suspense>
+    </main>
+  );
+}

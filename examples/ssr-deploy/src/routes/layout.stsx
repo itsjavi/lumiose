@@ -1,0 +1,18 @@
+import type { LayoutProps } from "lumiose";
+
+export default function Layout(props: LayoutProps<"/">) {
+  return (
+    <>
+      <header>
+        <a href="/">Deploy check</a>
+      </header>
+      {props.children}
+    </>
+  );
+}
+
+<style>
+  header {
+    font-weight: bold;
+  }
+</style>

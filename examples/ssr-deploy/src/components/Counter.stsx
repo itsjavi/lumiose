@@ -1,0 +1,10 @@
+import { signal } from "lumiose";
+
+export function Counter(props: { start: number }) {
+  const count = signal(props.start);
+  return (
+    <button type="button" onClick={() => count.update((n) => n + 1)}>
+      clicked {count()}
+    </button>
+  );
+}

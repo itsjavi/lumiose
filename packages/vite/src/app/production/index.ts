@@ -2,6 +2,7 @@
 export { build, BuildError } from "./build.ts";
 export type { BuildOptions, BuildResult } from "./build.ts";
 export { PrerenderError } from "./prerender.ts";
+export type { Adapter, AdapterBuild } from "./adapter.ts";
 export type { PrerenderedFile, ServerEntryModule } from "./prerender.ts";
 export { buildCommand, previewCommand } from "./command.ts";
 export type { BuildCommandOptions, PreviewCommandOptions } from "./command.ts";
