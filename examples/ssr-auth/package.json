@@ -13,6 +13,7 @@
     "db:generate": "lumiose typegen && prisma generate",
     "db:migrate": "prisma migrate deploy",
     "typecheck": "lumiose typegen && prisma generate && lumiose check",
+    "test": "vitest run",
     "test:e2e": "playwright test"
   },
   "dependencies": {

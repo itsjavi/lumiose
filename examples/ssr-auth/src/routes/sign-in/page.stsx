@@ -1,22 +1,15 @@
 import { actionData, fail, href, Title, url, type ActionContext, type ActionData } from "lumiose";
-import { isAPIError } from "better-auth/api";
-import { auth, redirectWithCookies, safeNext } from "../../server/auth.server.ts";
+import { authError, authRequest, redirectWithCookies, safeNext } from "../../server/auth.server.ts";
 
 export const action = async (ctx: ActionContext<"/sign-in">) => {
   const form = await ctx.formData();
   const email = String(form.get("email") ?? "").trim();
   const password = String(form.get("password") ?? "");
-  try {
-    const { headers } = await auth().api.signInEmail({
-      body: { email, password },
-      headers: ctx.request.headers,
-      returnHeaders: true,
-    });
-    return redirectWithCookies(safeNext(ctx.url.searchParams.get("next")), headers);
-  } catch (error) {
-    if (isAPIError(error)) return fail(error.statusCode, { email, message: error.message });
-    throw error;
-  }
+  // Through Better Auth's handler, so its rate limiter counts the attempt (3 per 10 s per client).
+  const response = await authRequest(ctx, "/sign-in/email", { email, password });
+  // A wrong password (401) or too many attempts (429): Better Auth's message.
+  if (!response.ok) return fail(response.status, { email, message: await authError(response) });
+  return redirectWithCookies(safeNext(ctx.url.searchParams.get("next")), response.headers);
 };
 
 export default function SignIn() {

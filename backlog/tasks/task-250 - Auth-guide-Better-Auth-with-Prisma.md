@@ -5,7 +5,7 @@ status: Done
 assignee:
   - Beacon
 created_date: '2026-10-12 18:39'
-updated_date: '2026-10-12 20:41'
+updated_date: '2026-10-12 21:07'
 labels:
   - docs
   - examples
@@ -44,6 +44,9 @@ Beacon 2026-10-12, implementation:
 - Findings: prisma generate reads tsconfig.json, which extends .lumiose/tsconfig.generated.json, so scripts run lumiose typegen first. auth.api calls are not rate-limited by Better Auth (documented). The Better Auth client makes the island chunk ~11.5 kB brotli (documented).
 
 Evidence: Playwright e2e 5/5 against the production build on a fresh e2e DB (protected redirect, sign-up -> dashboard, form sign-out, sign-in back to next, island sign-out with the client, Better Auth errors 401/422 on the forms, the same flow without JavaScript). lumiose dev smoke: redirect, sign-up, session, client sign-out 200, cross-origin client post 403. From a clean state (no .lumiose, no generated client): pnpm typecheck ok. Repo checks: pnpm typecheck, lint, fmt:examples, test (1719 passed) all green. Screenshot: backlog/assets/task-250-dashboard.png.
+
+Beacon 2026-10-12, follow-up (Lux): rate-limited sign-in/sign-up. The form actions now post to Better Auth's HTTP handler (authRequest() in auth.server.ts builds a JSON Request with cookie/origin/referer/user-agent) instead of auth.api, because Better Auth 1.7 only rate-limits HTTP requests (default special rule: /sign-in*, /sign-up* 3 per 10 s; 429 'Too many requests. Please try again later.'). Its limiter keys by X-Forwarded-For: authHandler()/authRequest() set it from ctx.platform.clientAddress (src/server/client-address.server.ts); a client's own X-Forwarded-For is ignored unless TRUSTED_PROXIES is set, in which case the chain is kept and passed with advanced.ipAddress.trustedProxies (Better Auth walks it from the right). The route.ts handler uses authHandler() too, so the island's requests are keyed the same way. Guide updated (pattern, TRUSTED_PROXIES, multi-instance note: memory storage per process vs rateLimit.storage 'database' or 'secondary-storage'; common mistake: auth.api.signInEmail skips the limiter).
+Evidence: Vitest 3/3 (client-address); Playwright 6/6, stable with --repeat-each=3, including 'repeated sign-ins from one client are rate-limited' (3x 401 then 429 with Better Auth's message, another client still signs in); each test gets its own IPv6 /64 via X-Forwarded-For with TRUSTED_PROXIES=127.0.0.1, and the 'could not determine a client IP' warning is gone. Manual, without TRUSTED_PROXIES: four failed sign-ins with spoofed X-Forwarded-For 10.0.0.1-4 -> 401, 401, 401, 429 (spoofing does not escape). lumiose dev: sign-up, client sign-out, bad sign-in 401 (limiter off in dev). lumiose check, fmt:examples, oxlint, docs:check, docs tests green. Unrelated: apps/web content.test.ts currently fails at import (href() i18n path in packages/lumiose/src/app/routes/href.ts via apps/web/src/lib/site.ts, after TASK-254); not touched here.
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary

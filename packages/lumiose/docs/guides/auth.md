@@ -1,6 +1,6 @@
 # Authentication with Better Auth
 
-> Email and password accounts with Better Auth and Prisma: Better Auth's handler as an endpoint, the session in middleware, protected pages, form actions for sign-up, sign-in and sign-out, and Better Auth's browser client in an island.
+> Email and password accounts with Better Auth and Prisma: Better Auth's handler as an endpoint, the session in middleware, protected pages, rate-limited form actions for sign-up, sign-in and sign-out, and Better Auth's browser client in an island.
 
 Lumiose has no auth module of its own: [Better Auth](https://www.better-auth.com) runs on any
 server that hands it a web `Request`, and that is what endpoints, middleware and actions have. This
@@ -12,9 +12,10 @@ guide stores accounts with [Prisma](https://www.prisma.io) on a SQLite file. Eve
 | `prisma/schema.prisma`                  | Better Auth's tables.                                               |
 | `src/server/db.server.ts`               | The Prisma client. Server-only.                                     |
 | `src/server/auth.server.ts`             | The Better Auth instance and helpers for pages and actions.         |
+| `src/server/client-address.server.ts`   | The client's address for Better Auth's rate limiter.                |
 | `src/routes/api/auth/[...all]/route.ts` | Better Auth's HTTP API, for its browser client.                     |
 | `src/middleware.ts`                     | The session on `ctx.locals`.                                        |
-| `src/routes/sign-in/page.stsx`, …       | Form actions that call Better Auth on the server.                   |
+| `src/routes/sign-in/page.stsx`, …       | Form actions that post to Better Auth's handler, rate-limited.      |
 | `src/islands/AccountMenu.stsx`          | An island that reads the session with Better Auth's browser client. |
 
 ## Setup
@@ -95,6 +96,7 @@ Create the first migration with `prisma migrate dev --name init` and commit `pri
 | `BETTER_AUTH_SECRET` | Signs Better Auth's cookies and tokens. A random value of at least 32 bytes (`openssl rand -base64 32`); a dev-only one in `.env.development`. |
 | `BETTER_AUTH_URL`    | The public URL (`https://example.com`), in production. Without it Better Auth takes the origin from each request, which suits dev.             |
 | `DATABASE_URL`       | `file:./data/auth.db` by default, relative to the working directory.                                                                           |
+| `TRUSTED_PROXIES`    | Behind a proxy: its address (`127.0.0.1` for nginx or Caddy on the same machine), so the rate limiter sees each client's address. See below.   |
 
 ## Prisma as a server-only module
 
@@ -126,23 +128,33 @@ environment: in dev, that includes the `.env` files.
 // src/server/auth.server.ts
 import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
-import { env, href, locals, redirect, url } from "lumiose";
+import { env, href, locals, redirect, url, type RequestContext } from "lumiose";
+import { forwardedFor, parseTrustedProxies } from "./client-address.server.ts";
 import { prisma } from "./db.server.ts";
 
-function createAuth() {
+function createAuth(trustedProxies: string[]) {
   return betterAuth({
     secret: env("BETTER_AUTH_SECRET"),
     baseURL: env("BETTER_AUTH_URL"),
     database: prismaAdapter(prisma(), { provider: "sqlite" }),
     emailAndPassword: { enabled: true },
+    // The rate limiter (on in production) keys requests by client address.
+    advanced: { ipAddress: { trustedProxies } },
   });
 }
 
-let instance: ReturnType<typeof createAuth> | undefined;
+let instance: { auth: ReturnType<typeof createAuth>; trustedProxies: string[] } | undefined;
+
+function setup() {
+  if (instance === undefined) {
+    const trustedProxies = parseTrustedProxies(env("TRUSTED_PROXIES"));
+    instance = { auth: createAuth(trustedProxies), trustedProxies };
+  }
+  return instance;
+}
 
 export function auth(): ReturnType<typeof createAuth> {
-  instance ??= createAuth();
-  return instance;
+  return setup().auth;
 }
 
 /** `{ user, session }` of a signed-in request. */
@@ -165,34 +177,77 @@ export function requireSession(): AuthSession {
   return session;
 }
 
-/** A 303 redirect that sets the cookies Better Auth returned (`returnHeaders: true`). */
-export function redirectWithCookies(location: string, headers: Headers): Response {
-  const response = new Response(null, { status: 303, headers: { location } });
-  for (const cookie of headers.getSetCookie()) response.headers.append("set-cookie", cookie);
-  return response;
-}
-
 /** `next` when it is a path on this site, else `fallback`: never a redirect to another site. */
 export function safeNext(next: string | null, fallback: string = href("/dashboard")): string {
   return next !== null && /^\/(?![/\\])/.test(next) ? next : fallback;
 }
+
+// authHandler(), authRequest(), authError() and redirectWithCookies(): below.
 ```
 
 `auth()` creates the instance inside the first request, for the same reason as `prisma()`. It also
 keeps Better Auth from starting while static pages prerender, where there is no secret.
 
+### Client addresses for the rate limiter
+
+In production, Better Auth limits requests per client address: 3 sign-in or sign-up attempts per
+10 seconds, 100 requests per 10 seconds elsewhere. It reads the address from `X-Forwarded-For`,
+which a request handed to it from Lumiose does not carry by itself. The sample sets it from
+`ctx.platform.clientAddress`, the address the host saw:
+
+```ts
+// src/server/client-address.server.ts
+/** `X-Forwarded-For` to hand to Better Auth, or `undefined` when the host knows no address. */
+export function forwardedFor(
+  headers: Headers,
+  clientAddress: string | undefined,
+  trustedProxies: readonly string[],
+): string | undefined {
+  // Without trusted proxies, the client's own X-Forwarded-For is ignored: it could pick any address.
+  const chain = trustedProxies.length > 0 ? headers.get("x-forwarded-for") : null;
+  const hops = [chain, clientAddress].filter((hop): hop is string => hop != null && hop !== "");
+  return hops.length === 0 ? undefined : hops.join(", ");
+}
+```
+
+```ts
+// src/server/auth.server.ts, continued
+type AuthContext = Pick<RequestContext, "request" | "url" | "platform">;
+
+function clientHeaders(ctx: AuthContext, headers: Headers): Headers {
+  const { trustedProxies } = setup();
+  const forwarded = forwardedFor(ctx.request.headers, ctx.platform.clientAddress, trustedProxies);
+  if (forwarded === undefined) headers.delete("x-forwarded-for");
+  else headers.set("x-forwarded-for", forwarded);
+  return headers;
+}
+
+/** Better Auth's HTTP API for a request, with the client's address for its rate limiter. */
+export function authHandler(ctx: AuthContext): Promise<Response> {
+  const headers = clientHeaders(ctx, new Headers(ctx.request.headers));
+  return auth().handler(new Request(ctx.request, { headers }));
+}
+```
+
+Behind a proxy, the address the host sees is the proxy's, and every visitor would share one
+bucket. Set `TRUSTED_PROXIES` to the proxy's address (or CIDR range, comma-separated): the
+proxy's `X-Forwarded-For` chain is then kept, and Better Auth, given the same list as
+`advanced.ipAddress.trustedProxies`, walks it from the right, skips the trusted hops and takes the
+client. On Cloudflare, `clientAddress` is already the visitor's (`CF-Connecting-IP`).
+
 ## The handler
 
 Better Auth's HTTP API (sessions, sign-in, sign-out and the rest) goes under `/api/auth/*`, where its
-browser client calls it. A catch-all endpoint passes the request through:
+browser client calls it. A catch-all endpoint passes the request through, with the client's
+address:
 
 ```ts
 // src/routes/api/auth/[...all]/route.ts
 import type { Endpoint } from "lumiose";
-import { auth } from "../../../../server/auth.server.ts";
+import { authHandler } from "../../../../server/auth.server.ts";
 
-export const GET: Endpoint<"/api/auth/[...all]"> = (ctx) => auth().handler(ctx.request);
-export const POST: Endpoint<"/api/auth/[...all]"> = (ctx) => auth().handler(ctx.request);
+export const GET: Endpoint<"/api/auth/[...all]"> = (ctx) => authHandler(ctx);
+export const POST: Endpoint<"/api/auth/[...all]"> = (ctx) => authHandler(ctx);
 ```
 
 The client posts JSON, which Lumiose's cross-site check leaves to the endpoint; Better Auth checks
@@ -267,30 +322,59 @@ need one ([Server](../concepts/server.md#example)).
 
 ## Forms: sign-up, sign-in and sign-out
 
-The forms post to page actions, which call Better Auth's server API. They work without JavaScript,
-and Lumiose's cross-site check guards them like any form action.
+The forms post to page actions, so they work without JavaScript, and Lumiose's cross-site check
+guards them like any form action. Sign-in and sign-up go on to Better Auth's HTTP handler, as its
+browser client would, so its rate limiter counts every attempt: it runs on HTTP requests only,
+and calls through `auth.api.signInEmail()` would skip it, leaving passwords open to guessing.
+
+```ts
+// src/server/auth.server.ts, continued
+/** Posts `body` to a Better Auth endpoint (`/sign-in/email`) through its HTTP handler. */
+export function authRequest(
+  ctx: AuthContext,
+  path: `/${string}`,
+  body: unknown,
+): Promise<Response> {
+  const headers = new Headers({ "content-type": "application/json" });
+  for (const name of ["cookie", "origin", "referer", "user-agent"]) {
+    const value = ctx.request.headers.get(name);
+    if (value !== null) headers.set(name, value);
+  }
+  const request = new Request(new URL(`/api/auth${path}`, ctx.url), {
+    method: "POST",
+    headers: clientHeaders(ctx, headers),
+    body: JSON.stringify(body),
+  });
+  return auth().handler(request);
+}
+
+/** The message of a failed Better Auth response: "Invalid email or password", "Too many requests…". */
+export async function authError(response: Response): Promise<string> {
+  const body = (await response.json().catch(() => null)) as { message?: unknown } | null;
+  return typeof body?.message === "string" ? body.message : response.statusText;
+}
+
+/** A 303 redirect that sets the cookies of a Better Auth response. */
+export function redirectWithCookies(location: string, headers: Headers): Response {
+  const response = new Response(null, { status: 303, headers: { location } });
+  for (const cookie of headers.getSetCookie()) response.headers.append("set-cookie", cookie);
+  return response;
+}
+```
 
 ```stsx
 // src/routes/sign-in/page.stsx
-import { actionData, fail, Title, url, type ActionContext, type ActionData } from "lumiose";
-import { isAPIError } from "better-auth/api";
-import { auth, redirectWithCookies, safeNext } from "../../server/auth.server.ts";
+import { actionData, fail, Title, type ActionContext, type ActionData } from "lumiose";
+import { authError, authRequest, redirectWithCookies, safeNext } from "../../server/auth.server.ts";
 
 export const action = async (ctx: ActionContext<"/sign-in">) => {
   const form = await ctx.formData();
   const email = String(form.get("email") ?? "").trim();
   const password = String(form.get("password") ?? "");
-  try {
-    const { headers } = await auth().api.signInEmail({
-      body: { email, password },
-      headers: ctx.request.headers,
-      returnHeaders: true,
-    });
-    return redirectWithCookies(safeNext(ctx.url.searchParams.get("next")), headers);
-  } catch (error) {
-    if (isAPIError(error)) return fail(error.statusCode, { email, message: error.message });
-    throw error;
-  }
+  const response = await authRequest(ctx, "/sign-in/email", { email, password });
+  // A wrong password (401) or too many attempts (429): Better Auth's message.
+  if (!response.ok) return fail(response.status, { email, message: await authError(response) });
+  return redirectWithCookies(safeNext(ctx.url.searchParams.get("next")), response.headers);
 };
 
 export default function SignIn() {
@@ -313,14 +397,16 @@ function SignInForm(props: { failed: ActionData<typeof action> | undefined }) {
 }
 ```
 
-- **Cookies.** `returnHeaders: true` returns the `Headers` Better Auth would have sent; the
-  action returns a redirect that carries their `Set-Cookie` lines. A plain `redirect()` would drop
-  them, and the visitor would not be signed in.
-- **Errors.** A wrong password, a taken email or a short password throws an `APIError` with an
-  HTTP status (`401`, `422`, `400`) and a message, which `fail()` shows on the page.
-- **Sign-up** is the same with `auth().api.signUpEmail({ body: { name, email, password }, … })`,
+- **Cookies.** Better Auth's response sets the session cookie; the action returns a redirect that
+  carries its `Set-Cookie` lines. A plain `redirect()` would drop them, and the visitor would not be
+  signed in.
+- **Errors.** A wrong password (`401`), a taken email (`422`), a short password (`400`) or too many
+  attempts (`429`, "Too many requests. Please try again later.") come back as a status and a
+  message, which `fail()` shows on the page.
+- **Sign-up** is the same with `authRequest(ctx, "/sign-up/email", { name, email, password })`,
   which signs the new user in.
-- **Sign-out** is an action on `/sign-out`, so a form on any page can post to it:
+- **Sign-out** needs no limit, so its action calls the server API, on `/sign-out` so that a form on
+  any page can post to it:
 
 ```ts
 export const action = async (ctx: ActionContext<"/sign-out">) => {
@@ -392,10 +478,14 @@ chunk is about 11 kB (brotli); an island that only needs the session can fetch
   cookies `Secure`) and `DATABASE_URL`, plus `ORIGIN` behind a proxy ([Deploy](../deploy/README.md)).
 - Apply migrations before starting the new build: `prisma migrate deploy` (the `prisma` CLI is a dev
   dependency, so run it where those are installed, such as CI or a release step).
-- Better Auth rate-limits its HTTP routes in production (3 sign-ins per 10 s per client), keyed by
-  the client IP from `X-Forwarded-For`. Behind a proxy, configure `advanced.ipAddress` for the
-  header your proxy sets. Calls through `auth.api`, as in the form actions above, are not
-  rate-limited: limit sign-in attempts in the action if the app is exposed to password guessing.
+- Behind a proxy, set `TRUSTED_PROXIES` to its address, or the rate limiter puts every visitor in
+  the proxy's bucket. The limiter is off in development (`lumiose dev`).
+- **Several instances.** The rate limiter keeps its counts in memory by default, per process: with
+  several instances (a cluster, replicas behind a load balancer, serverless functions), each one
+  counts on its own, and an attacker gets that many more attempts. Store them where every
+  instance sees them, with Better Auth's `rateLimit: { storage: "database" }` (a `rateLimit` table:
+  run `npx auth generate` and migrate) or `"secondary-storage"` (Redis or another store, through
+  Better Auth's `secondaryStorage` option).
 
 ## Common mistakes
 
@@ -404,8 +494,10 @@ chunk is about 11 kB (brotli); an island that only needs the session can fetch
 - **Calling `betterAuth()` at module scope with `env()` values.** In dev, `.env` values reach
   `env()` only inside a request, and a static page's prerender would start Better Auth without a
   secret. Create it on first use, as `auth()` does.
-- **Redirecting with `redirect()` after sign-in.** The session cookie is in the headers
-  `returnHeaders` gave you; return a `Response` that sets them.
+- **Signing in with `auth.api.signInEmail()` in the action.** It works, but Better Auth's rate
+  limiter never sees the attempt. Post to its handler, as `authRequest()` does.
+- **Redirecting with `redirect()` after sign-in.** The session cookie is in Better Auth's response
+  headers; return a `Response` that sets them.
 - **Reading the session in a `static` page.** `locals()` throws `LUM5001` while prerendering; render
   the page per request, or read the session in an island.
 - **`prisma generate` failing on a fresh checkout** with "File './.lumiose/tsconfig.generated.json'

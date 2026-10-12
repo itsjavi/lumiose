@@ -1,10 +1,31 @@
 // Accounts end to end, on the production build: sign-up, the protected page, sign-out (the form
 // action and Better Auth's browser client in the island), sign-in back to where the visitor was,
 // and the errors Better Auth reports. Each test creates its own user.
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Browser, type Page } from "@playwright/test";
 
 const PASSWORD = "correct horse battery";
 let users = 0;
+let clients = 0;
+// Random per run of this file, so retries and repeats (which load it again) get new addresses.
+const run = Math.floor(Math.random() * 0xffff).toString(16);
+
+/**
+ * A client address of its own (a /64 of the documentation range: Better Auth limits IPv6 clients
+ * by /64), which the server trusts from 127.0.0.1 (TRUSTED_PROXIES).
+ */
+function clientAddress(): Record<string, string> {
+  clients++;
+  return { "x-forwarded-for": `2001:db8:${run}:${clients.toString(16)}::1` };
+}
+
+test.beforeEach(async ({ page }) => {
+  await page.setExtraHTTPHeaders(clientAddress());
+});
+
+async function newClient(browser: Browser, options: { javaScriptEnabled?: boolean } = {}) {
+  const context = await browser.newContext({ ...options, extraHTTPHeaders: clientAddress() });
+  return { context, page: await context.newPage() };
+}
 
 async function signUp(page: Page): Promise<{ name: string; email: string }> {
   const id = `${Date.now().toString(36)}${users++}`;
@@ -76,8 +97,7 @@ test("Better Auth's errors show on the forms", async ({ page }) => {
 });
 
 test("the forms work without JavaScript", async ({ browser }) => {
-  const context = await browser.newContext({ javaScriptEnabled: false });
-  const page = await context.newPage();
+  const { context, page } = await newClient(browser, { javaScriptEnabled: false });
   const user = await signUp(page);
   await expect(page.locator("main")).toContainText(`Signed in as ${user.name}`);
   await page.locator("main").getByRole("button", { name: "Sign out" }).click();
@@ -85,4 +105,29 @@ test("the forms work without JavaScript", async ({ browser }) => {
   await page.goto("/dashboard");
   await expect(page).toHaveURL("/sign-in?next=%2Fdashboard");
   await context.close();
+});
+
+test("repeated sign-ins from one client are rate-limited", async ({ page, browser }) => {
+  const user = await signUp(page);
+  await page.context().clearCookies();
+  const attempt = async (target: Page, password: string) => {
+    await target.goto("/sign-in");
+    await target.getByLabel("Email").fill(user.email);
+    await target.getByLabel("Password").fill(password);
+    const [response] = await Promise.all([
+      target.waitForResponse((r) => r.request().method() === "POST"),
+      target.getByRole("button", { name: "Sign in" }).click(),
+    ]);
+    return response.status();
+  };
+  // Better Auth allows 3 sign-in attempts per 10 s per client address.
+  for (let i = 0; i < 3; i++) expect(await attempt(page, "not the password")).toBe(401);
+  expect(await attempt(page, PASSWORD)).toBe(429);
+  await expect(page.getByRole("alert")).toHaveText("Too many requests. Please try again later.");
+
+  // Another client is not affected.
+  const other = await newClient(browser);
+  await attempt(other.page, PASSWORD);
+  await expect(other.page).toHaveURL("/dashboard");
+  await other.context.close();
 });
