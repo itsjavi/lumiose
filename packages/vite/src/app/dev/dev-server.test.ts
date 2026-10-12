@@ -66,10 +66,13 @@ export default function Form() {
 }
 `,
   "src/components/Counter.stsx": `import { signal } from "lumiose";
+import { format } from "../lib/format.ts";
 export function Counter(props: { start: number }) {
   const count = signal(props.start);
-  return <button onClick={() => count.update((n) => n + 1)}>{count()}</button>;
+  return <button onClick={() => count.update((n) => n + 1)}>{format(count())}</button>;
 }
+`,
+  "src/lib/format.ts": `export const format = (n: number): string => String(n);
 `,
   "src/routes/island/page.stsx": `import { Counter } from "../../components/Counter.stsx";
 export const mode = "server";
@@ -171,6 +174,7 @@ describe.skipIf(!binding)("lumiose dev", () => {
     expect(response.status).toBe(200);
     expect(html).toContain("<title>Home</title>");
     expect(html).toContain('<script type="module" src="/@vite/client"></script>');
+    expect(html).toContain('<script type="module" src="/@id/__x00__lumiose:dev"></script>');
     expect(html).toMatch(
       /<link rel="stylesheet" href="\/src\/styles\.css" data-vite-dev-id="[^"]*\/src\/styles\.css">/,
     );
@@ -198,7 +202,30 @@ describe.skipIf(!binding)("lumiose dev", () => {
       rest += decoder.decode(chunk.value);
     }
     expect(rest).toContain('<template for="lb0"><p class=slow>streamed content</p></template>');
-    expect(rest).toMatch(/<\/body><\/html>$/);
+    // The dev annotation follows (TASK-148).
+    expect(rest).toMatch(
+      /<\/body><\/html><script type="application\/json" data-l-dev>[^<]*<\/script>$/,
+    );
+  });
+
+  it("ends HTML pages with their dev annotation and loads the dev client (TASK-148)", async () => {
+    const html = await (await get("/island")).text();
+    const json = /<script type="application\/json" data-l-dev>([^<]*)<\/script>$/.exec(html);
+    expect(JSON.parse(json![1]!)).toEqual({
+      method: "GET",
+      status: 200,
+      errors: false,
+      shell: expect.any(String),
+      islands: expect.any(String),
+    });
+    const entry = await (await get("/@id/__x00__lumiose:dev")).text();
+    const source = /import "(\/@fs\/[^"]+\/app\/dev\/client\.ts)"/.exec(entry);
+    expect(source).not.toBeNull();
+    const client = await get(source![1]!);
+    expect(client.status).toBe(200);
+    const code = await client.text();
+    expect(code).toContain("lumiose:server-update");
+    expect(code).toMatch(/import .* from "[^"]*\/app\/dev\/morph\.ts"/);
   });
 
   it("serves Lumiose modules to the browser from the client environment (islands, SPA)", async () => {
@@ -282,12 +309,14 @@ describe.skipIf(!binding)("lumiose dev", () => {
     expect(errors.join("\n")).toContain("Boom from the page");
   });
 
-  it("re-renders edited modules on the next request and reloads the browser", async () => {
+  it("re-renders edited server modules on the next request and has the page patch itself", async () => {
     const file = "src/routes/page.stsx";
     const source = FILES[file]!;
     write(file, source.replace("<h1>Home</h1>", "<h1>Edited</h1>"));
     await eventually(async () => (await (await get("/")).text()).includes("<h1>Edited</h1>"));
-    expect(sent).toContainEqual({ type: "full-reload", path: "*" });
+    await eventually(() => sent.some((payload) => payload.type === "custom"));
+    expect(sent).toContainEqual({ type: "custom", event: "lumiose:server-update" });
+    expect(sent).not.toContainEqual({ type: "full-reload", path: "*" });
 
     sent.length = 0;
     write(file, source.replace("<h1>Home</h1>", "<h1>Broken</h2>"));
@@ -300,7 +329,7 @@ describe.skipIf(!binding)("lumiose dev", () => {
     await eventually(async () => (await get("/")).status === 200);
   });
 
-  it("reloads the browser once when one save reaches the watcher as several changes", async () => {
+  it("updates the browser once when one save reaches the watcher as several changes", async () => {
     const file = "src/routes/page.stsx";
     const source = FILES[file]!;
     write(file, source.replace("<h1>Home</h1>", "<h1>Twice</h1>"));
@@ -311,9 +340,21 @@ describe.skipIf(!binding)("lumiose dev", () => {
     for (let i = 0; i < 3; i++) dev.vite.watcher.emit("change", join(root, file));
     await eventually(() => sent.length > 0);
     await new Promise((done) => setTimeout(done, 200));
-    expect(sent.filter((payload) => payload.type === "full-reload")).toHaveLength(1);
+    expect(sent).toEqual([{ type: "custom", event: "lumiose:server-update" }]);
     write(file, source);
     await eventually(async () => (await (await get("/")).text()).includes("<h1>Home</h1>"));
+  });
+
+  it("reloads the browser after edits to client code (TASK-148)", async () => {
+    // A module the island imports: the island's instances would keep its old exports.
+    await get("/island");
+    await settle();
+    const file = "src/lib/format.ts";
+    write(file, FILES[file]!.replace("String(n)", "`${n}!`"));
+    await eventually(() => sent.length > 0);
+    await new Promise((done) => setTimeout(done, 100));
+    expect(sent).toEqual([{ type: "full-reload", path: "*" }]);
+    write(file, FILES[file]!);
   });
 
   it("swaps stylesheets in place when only CSS changed", async () => {

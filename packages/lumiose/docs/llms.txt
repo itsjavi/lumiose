@@ -21,6 +21,7 @@ These docs match lumiose 0.2.0. Installed projects have them in `node_modules/lu
 - [Async components](concepts/async.md): `async` components on server and client, `<Suspense>`, `<ErrorBoundary>`, re-runs and in-flight state.
 - [Islands](concepts/islands.md): `client:*` directives, serializable props, slots and server-only boundaries.
 - [Routing](concepts/routing.md): File routes, layouts, params, typed `href()`, error pages and the SPA router.
+- [Internationalization](concepts/i18n.md): Locale prefixes, per-page locale declarations, `locale()`, locale-aware `href()`, `hreflang` and canonical links, detection on entry.
 - [Data and actions](concepts/data-and-actions.md): Read data with async components, serve endpoints, mutate with form actions and `submit()`.
 - [Server](concepts/server.md): Request context, middleware, cookies, env, redirects and error helpers.
 - [Rendering modes](concepts/rendering-modes.md): `static`, `server` and `spa` routes, prerendered SPA pages, shell-first streaming, hydration and the build.
@@ -118,4 +119,5 @@ These docs match lumiose 0.2.0. Installed projects have them in `node_modules/lu
 - [LUM5004: Head or status change inside a streamed boundary](errors/LUM5004.md)
 - [LUM5005: Non-GET method in a static endpoint](errors/LUM5005.md)
 - [LUM5006: Prerendered page that renders only in the browser](errors/LUM5006.md)
+- [LUM5007: Route param named `locale`](errors/LUM5007.md)
 - [LUM6001: tsconfig missing options required by Lumiose](errors/LUM6001.md)

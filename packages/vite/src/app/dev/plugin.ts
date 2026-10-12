@@ -11,9 +11,12 @@
 //   middleware or the document is added, removed or changed; typegen rewrites
 //   `.lumiose/types/routes.d.ts` on the way. A structural change reloads the browser.
 // - HMR: edits invalidate the module runner's cache (Vite's ssr full-reload), so the next request
-//   re-imports the changed server modules. A module in the server graph reloads the page (once per
-//   burst of file events, so a save reported as two changes reloads once); when
-//   every changed module is a stylesheet, linked styles are swapped in place instead.
+//   re-imports the changed server modules. When every changed module is a stylesheet, linked styles
+//   are swapped in place. Server-only code (not imported by an island or an SPA page) patches the
+//   page in place (TASK-148): the dev client (./client.ts) fetches its URL again and morphs the
+//   DOM, keeping islands (./morph.ts), as described by the dev annotation every HTML page ends
+//   with (./annotation.ts). Client code reloads the page, unless Vite or the island hot swap
+//   updates it. Once per burst of file events: a save reported as two changes updates once.
 // - Errors: unexpected render errors and compiler diagnostics (LUMxxxx, with Vite's code frame)
 //   are logged and open Vite's error overlay on the page that hit them, on top of the dev
 //   `error`/fallback page; route manifest errors (LUM5002/5003) show on every page until fixed.
@@ -21,6 +24,7 @@
 import { runtimeFile } from "../../runtime-files.ts";
 import { AsyncLocalStorage } from "node:async_hooks";
 import { join, relative, sep } from "node:path";
+import { fileURLToPath } from "node:url";
 import type { Connect, EnvironmentModuleNode, Plugin, ViteDevServer } from "vite";
 import { isCSSRequest, isRunnableDevEnvironment, loadEnv, normalizePath } from "vite";
 import { escapeAttr } from "lumiose/internal/server/node.ts";
@@ -51,6 +55,7 @@ import {
 } from "lumiose/internal/app/server/node-http.ts";
 import { typegen } from "../typegen/index.ts";
 import { formatError, overlayError, overlayScript, type OverlayError } from "./errors.ts";
+import { devAnnotation } from "./annotation.ts";
 import { hasSpa, SPA_ENTRY_ID, spaEntryCode } from "../router/entry.ts";
 import { ISLANDS_ID } from "../../islands.ts";
 import { spaRouteFiles } from "../../server-routes.ts";
@@ -58,6 +63,8 @@ import { headersFor, pathBelowBase } from "lumiose/internal/app/headers.ts";
 
 /** How long a burst of file events may last and still reload the browser once. */
 const RELOAD_DEBOUNCE_MS = 30;
+/** The custom HMR event of server-only edits, which ./client.ts answers. */
+const SERVER_UPDATE = "lumiose:server-update";
 
 export interface LumioseDevOptions {
   /** Project-relative routes directory. Default `src/routes`. */
@@ -84,6 +91,13 @@ const APP_SERVER_ENTRY = runtimeFile("app/server/index.ts");
  */
 const ISLAND_LOADER = runtimeFile("dom/loader.ts");
 const LOADER_ID = "\0lumiose:loader";
+/** The dev client (./client.ts, `.js` once built), loaded on every page through `\0lumiose:dev`. */
+const DEV_CLIENT = normalizePath(
+  fileURLToPath(
+    new URL(import.meta.url.endsWith(".ts") ? "client.ts" : "client.js", import.meta.url),
+  ),
+);
+const DEV_CLIENT_ID = "\0lumiose:dev";
 /** The browser URL of a virtual module id (`\0lumiose:spa` → `/@id/__x00__lumiose:spa`). */
 const virtualUrl = (base: string, id: string): string =>
   `${base}@id/${id.replace("\0", "__x00__")}`;
@@ -106,7 +120,7 @@ export function lumioseDev(options: LumioseDevOptions = {}): Plugin {
   const routesDir = options.routesDir ?? DEFAULT_ROUTES_DIR;
   const defaults: Pick<
     CreateRouteManifestOptions,
-    "defaultMode" | "defaultSsr" | "defaultPrerender"
+    "defaultMode" | "defaultSsr" | "defaultPrerender" | "i18n"
   > = {};
   let project: ProjectOptions = {};
   let server: ViteDevServer;
@@ -116,17 +130,21 @@ export function lumioseDev(options: LumioseDevOptions = {}): Plugin {
   let rescan = false;
   let cached: { runtime: AppServerModule; app: AppFiles; handler: RequestHandler } | undefined;
   let reloadTimer: ReturnType<typeof setTimeout> | undefined;
+  let pending: "reload" | "update" | undefined;
 
   /**
-   * Reloads the browser once for a burst of file events. One save can reach the watcher as
-   * several `change` events (a truncate, then the write; editors that write twice), and each would
-   * otherwise send its own full reload: the page reloads twice (TASK-139).
+   * Reloads the browser, or has it patch the page (`update`), once for a burst of file events: one
+   * save can reach the watcher as several `change` events (a truncate, then the write; editors that
+   * write twice), and each would otherwise send its own (TASK-139). A reload wins.
    */
-  function scheduleReload(): void {
+  function schedule(kind: "reload" | "update"): void {
+    if (pending !== "reload") pending = kind;
     clearTimeout(reloadTimer);
     reloadTimer = setTimeout(() => {
-      reloadTimer = undefined;
-      server.environments.client.hot.send({ type: "full-reload", path: "*" });
+      const hot = server.environments.client.hot;
+      if (pending === "reload") hot.send({ type: "full-reload", path: "*" });
+      else hot.send({ type: "custom", event: SERVER_UPDATE });
+      reloadTimer = pending = undefined;
     }, RELOAD_DEBOUNCE_MS);
   }
   // Errors reported while handling a request (including in-process fetches and streamed boundaries).
@@ -252,7 +270,9 @@ export function lumioseDev(options: LumioseDevOptions = {}): Plugin {
   /** `<head>` additions in dev: Vite's client (HMR, overlay) and the stylesheets the route imports. */
   function headAssets(current: AppFiles, files: readonly string[]): string {
     const base = server.config.base;
-    let html = `<script type="module" src="${escapeAttr(`${base}@vite/client`)}"></script>`;
+    let html =
+      `<script type="module" src="${escapeAttr(`${base}@vite/client`)}"></script>` +
+      `<script type="module" src="${escapeAttr(virtualUrl(base, DEV_CLIENT_ID))}"></script>`;
     const entries = current.document === undefined ? files : [current.document, ...files];
     for (const mod of stylesheets(entries)) {
       const href = base + mod.url.slice(1);
@@ -285,20 +305,39 @@ export function lumioseDev(options: LumioseDevOptions = {}): Plugin {
     return found;
   }
 
-  /** Appends the overlay script to HTML responses whose request reported errors. */
-  function withOverlay(response: Response, errors: OverlayError[]): Response {
-    if (response.body === null || !overlayEnabled(server)) return response;
+  /**
+   * Appends to HTML responses the dev annotation (./annotation.ts) and, when the request reported
+   * errors, the overlay script.
+   */
+  function withDevScripts(response: Response, method: string, errors: OverlayError[]): Response {
+    if (response.body === null) return response;
     if (!/^text\/html\b/i.test(response.headers.get("content-type") ?? "")) return response;
     const base = server.config.base;
     const encoder = new TextEncoder();
+    const decoder = new TextDecoder();
+    let html = "";
     const body = response.body.pipeThrough(
       new TransformStream<Uint8Array, Uint8Array>({
+        transform(chunk, controller) {
+          html += decoder.decode(chunk, { stream: true });
+          controller.enqueue(chunk);
+        },
         flush(controller) {
-          if (errors.length > 0) controller.enqueue(encoder.encode(overlayScript(errors, base)));
+          html += decoder.decode();
+          const page = { method, status: response.status, errors: errors.length > 0 };
+          let tail = devAnnotation(html, page);
+          if (errors.length > 0 && overlayEnabled(server)) tail += overlayScript(errors, base);
+          controller.enqueue(encoder.encode(tail));
         },
       }),
     );
-    return new Response(body, response);
+    const headers = new Headers(response.headers);
+    headers.delete("content-length");
+    return new Response(body, {
+      status: response.status,
+      statusText: response.statusText,
+      headers,
+    });
   }
 
   const middleware: Connect.NextHandleFunction = (req, res, next) => {
@@ -321,7 +360,7 @@ export function lumioseDev(options: LumioseDevOptions = {}): Plugin {
       const response = await requestErrors.run(errors, () =>
         handler.fetch(request, { clientAddress: req.socket.remoteAddress }),
       );
-      await sendWebResponse(res, withOverlay(response, errors));
+      await sendWebResponse(res, withDevScripts(response, request.method, errors));
     })().catch(next);
   };
 
@@ -340,18 +379,18 @@ export function lumioseDev(options: LumioseDevOptions = {}): Plugin {
     },
 
     resolveId: {
-      filter: { id: /^\0lumiose:(?:loader|spa)$/ },
+      filter: { id: /^\0lumiose:(?:loader|spa|dev)$/ },
       handler: (id) => id,
     },
 
     load: {
-      filter: { id: /^\0lumiose:(?:loader|spa)$/ },
+      filter: { id: /^\0lumiose:(?:loader|spa|dev)$/ },
       handler: (id) =>
         id === SPA_ENTRY_ID
           ? spaEntryCode(app.manifest, server.config.base, {
               viewTransitions: project.viewTransitions,
             })
-          : `import ${JSON.stringify(ISLAND_LOADER)};\n`,
+          : `import ${JSON.stringify(id === DEV_CLIENT_ID ? DEV_CLIENT : ISLAND_LOADER)};\n`,
     },
 
     configResolved(config) {
@@ -362,6 +401,7 @@ export function lumioseDev(options: LumioseDevOptions = {}): Plugin {
       if (mode !== undefined) defaults.defaultMode = mode;
       if (ssr !== undefined) defaults.defaultSsr = ssr;
       if (project.prerender !== undefined) defaults.defaultPrerender = project.prerender;
+      if (project.i18n !== undefined) defaults.i18n = project.i18n;
     },
 
     async configureServer(vite) {
@@ -418,25 +458,30 @@ if (import.meta.hot) import.meta.hot.accept((next) => {
         // entry, deleted route files included), invalidate the file and its importers: the next
         // request re-imports them; unrelated server modules (a database client) stay loaded.
         invalidateRunner(file);
-        const client = server.environments.client.hot;
         if (hotSwappable(file)) {
           // An island's own module: its instances re-render in the browser (the accept handler
           // appended by `transform`), so the page and the other islands keep their state.
           return [];
         }
-        if (modules.every((mod) => isStylesheet(mod.url))) {
-          client.send({
+        const styles = modules.filter((mod) => isStylesheet(mod.url));
+        if (styles.length < modules.length && isClientCode(file)) {
+          schedule("reload");
+          return [];
+        }
+        if (styles.length > 0) {
+          server.environments.client.hot.send({
             type: "update",
-            updates: modules.map((mod) => ({
+            updates: styles.map((mod) => ({
               type: "css-update" as const,
               path: mod.url,
               acceptedPath: mod.url,
               timestamp,
             })),
           });
-        } else {
-          scheduleReload();
         }
+        // Server-only code (a `.stsx` file's markup and its style block alike): the page patches
+        // itself with its fresh HTML.
+        if (styles.length < modules.length) schedule("update");
         return [];
       },
     },
@@ -471,6 +516,32 @@ if (import.meta.hot) import.meta.hot.accept((next) => {
       }
     }
     return true;
+  }
+
+  /**
+   * Whether `file` is client code: a module the browser loaded (stylesheets aside), or one that an
+   * island module or an SPA page or layout imports, from the server's module graph (islands that
+   * did not hydrate yet).
+   */
+  function isClientCode(file: string): boolean {
+    for (const mod of server.environments.client.moduleGraph.getModulesByFile(file) ?? []) {
+      if (!isStylesheet(mod.url)) return true;
+    }
+    const spa = spaRouteFiles(root, app.manifest);
+    const queue = [...(server.environments.ssr.moduleGraph.getModulesByFile(file) ?? [])];
+    const seen = new Set(queue);
+    for (const mod of queue) {
+      if (mod.file !== null && (spa.has(mod.file) || islandModuleOf(mod.file) !== undefined)) {
+        return true;
+      }
+      for (const importer of mod.importers) {
+        if (!seen.has(importer)) {
+          seen.add(importer);
+          queue.push(importer);
+        }
+      }
+    }
+    return false;
   }
 
   function invalidateRunner(file: string): void {

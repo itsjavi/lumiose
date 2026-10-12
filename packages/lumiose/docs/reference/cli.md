@@ -43,8 +43,18 @@ What an edit updates: a stylesheet or a file's `<style>` block updates in place;
 component in an island's own module re-renders its instances in place (the page, its scroll
 position, the island's other components and the other islands keep their state; see
 [hot updates](./vite.md)); an island module the compiler could not register re-renders the
-island's instances from their props; any other server-rendered code reloads the page. An island module that other client modules import also
-reloads, since they would keep its old exports.
+island's instances from their props. An island module that other client modules import reloads
+the page, since they would keep its old exports, and so does other client code (a module an
+island or an SPA route imports).
+
+Server-only code (pages, layouts and components that no island or SPA route imports, middleware,
+the document) updates the page in place: the page fetches its URL again and patches its DOM to the
+new HTML. Islands keep their DOM and state, and focus, scroll positions and form input survive; the
+title, meta tags and stylesheets of the head follow the new page. The page reloads instead when
+the new HTML changes the `<html>`, `<head>` or `<body>` attributes, adds or removes a script, or
+changes an island's props, hydration strategy or slot content; when the response status changed,
+redirected or is not HTML; when the page was the result of a form post; and when the render
+reported errors (the reload shows the overlay).
 
 ```sh
 lumiose dev --port 3000
