@@ -35,3 +35,5 @@ pnpm --filter @lumiose-examples/ssr-i18n-paraglide test:e2e   # Playwright, agai
 The e2e tests (`e2e/i18n.e2e.ts`) cover localized pages with their `hreflang` and canonical links,
 the 404 for an undeclared locale, the language switcher and the cookie it sets, detection on a
 first visit, and the island's messages.
+
+![The French home page after two clicks on the island](../../backlog/assets/task-255-paraglide-fr.png)

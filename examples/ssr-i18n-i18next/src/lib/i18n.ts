@@ -20,7 +20,7 @@ export const options = {
   fallbackLng: "en",
   // Synchronous init: resources are inline, so `t` works right after init().
   initAsync: false,
-  // Lumiose escapes text when it renders it; escaping here too would show `&amp;`.
+  // Lumiose escapes text when it renders it; escaping values here too would show `&amp;`.
   interpolation: { escapeValue: false },
 } as const;
 

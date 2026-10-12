@@ -40,7 +40,8 @@ function rememberLocale(next: Locale) {
     display: flex;
     gap: 0.75rem;
   }
-  [aria-current] {
+  /* The <a> elements are <Link>'s, so they need :deep() to get this component's styles. */
+  .locales :deep([aria-current]) {
     font-weight: 700;
     text-decoration: none;
   }

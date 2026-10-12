@@ -49,6 +49,7 @@ mistakes** and **Related diagnostics**. Reference pages list every export with i
 ## Guides
 
 - [Authentication with Better Auth](guides/auth.md): Email and password accounts with Better Auth and Prisma: the handler as an endpoint, the session in middleware, protected pages, form actions and the browser client in an island.
+- [i18n with Paraglide JS and i18next](guides/i18n.md): Messages in server pages and islands with Paraglide JS (compile-time) or i18next (a `t` per request), keyed by `locale()`; a language switcher on `alternates()` that updates the detection cookie; `hreflang`, canonical and `site` for search engines.
 - [Realtime](guides/realtime.md): Server-sent events from an endpoint to an island's `EventSource`, WebSockets with `ws` on the Node adapter's server, proxy configs and per-platform notes.
 
 ## Deploy
