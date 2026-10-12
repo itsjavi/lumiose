@@ -14,9 +14,7 @@ export function LocaleSwitcher(props: {
   return (
     <nav class="locales" aria-label={props.label}>
       {props.alternates.map((alternate) => (
-        // No prefetch: the response for "/" depends on the cookie this click changes.
         <Link
-          prefetch="none"
           href={alternate.href}
           hreflang={alternate.locale}
           lang={alternate.locale}

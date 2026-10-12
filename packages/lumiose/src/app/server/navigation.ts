@@ -7,7 +7,8 @@
 //   does not touch, and their full-page navigations then transition too.
 // - Prefetch: speculation rules that prefetch the page's same-origin links below `base` on hover
 //   (`moderate` eagerness) or early (`eager`). Endpoint URLs are left out, since a GET endpoint
-//   may act (`/logout`) and is no page to navigate to. `spa` documents get no rules: the client
+//   may act (`/logout`) and is no page to navigate to, and so is `/` with locale detection, whose
+//   answer depends on a cookie that may change before the navigation (decision-44). `spa` documents get no rules: the client
 //   router navigates their links, and `<Link prefetch>` loads the target route's modules instead.
 // - Per link (decision-24 amendment): on MPA pages `<Link prefetch>` renders a plain `<a>` with a
 //   `data-l-prefetch` marker. The rules of a page with marked links group them by level: the
@@ -20,7 +21,7 @@
 //   boundary rendered a marked link.
 
 import { jsonForScript } from "../../server/node.ts";
-import type { I18nUrls } from "../i18n/config.ts";
+import type { I18nConfig, I18nUrls } from "../i18n/config.ts";
 import type { Prefetch } from "../router/link.ts";
 import type { RouteEntry } from "../routes/manifest.ts";
 import type { RouteSegment } from "../routes/segments.ts";
@@ -57,13 +58,15 @@ export function navigationHead(
   options: { viewTransitions?: boolean; prefetch?: Prefetch },
   routes: readonly RouteEntry[],
   base: string,
-  i18n?: I18nUrls,
+  i18n?: I18nUrls & Partial<Pick<I18nConfig, "detect">>,
 ): NavigationHead {
   // Endpoints may be served under the other locales' prefixes too (decision-44).
   const prefixes = i18n?.locales.filter((locale) => locale !== i18n.defaultLocale) ?? [];
+  // A prefetch of the entry would keep a detection decision past a language switcher's cookie.
+  const detecting = i18n?.detect !== undefined && i18n.detect !== false;
   return {
     pages: options.viewTransitions === true ? VIEW_TRANSITIONS : "",
-    mpa: mpaRules(options.prefetch ?? "none", routes, base, prefixes),
+    mpa: mpaRules(options.prefetch ?? "none", routes, base, prefixes, detecting),
   };
 }
 
@@ -72,11 +75,12 @@ function mpaRules(
   routes: readonly RouteEntry[],
   base: string,
   prefixes: readonly string[],
+  detecting: boolean,
 ): MpaRules {
   return {
     prefetch,
-    plain: speculationRules(prefetch, routes, base, false, prefixes),
-    marked: speculationRules(prefetch, routes, base, true, prefixes),
+    plain: speculationRules(prefetch, routes, base, false, prefixes, detecting),
+    marked: speculationRules(prefetch, routes, base, true, prefixes, detecting),
   };
 }
 
@@ -122,16 +126,19 @@ export function speculationRules(
   base: string,
   marked = false,
   localePrefixes: readonly string[] = [],
+  detecting = false,
 ): string {
   // URL patterns resolve against the document's URL: a path keeps them same-origin.
   const prefix = base.slice(0, -1);
   const links: object[] = [{ href_matches: prefix === "" ? "/*" : `${prefix}{/*}?` }];
   // An optional locale prefix: `{/(es|fr)}?` (locales are letters, digits and dashes).
   const locales = localePrefixes.length === 0 ? "" : `{/(${localePrefixes.join("|")})}?`;
-  const endpoints = routes
+  const excluded = routes
     .filter((route) => route.kind === "endpoint")
     .map((route) => urlPattern(prefix + locales, route.segments));
-  if (endpoints.length > 0) links.push({ not: { href_matches: endpoints } });
+  // With locale detection, `/` (the base) answers per cookie: never prefetched (decision-44).
+  if (detecting) excluded.push(urlPattern(prefix, []));
+  if (excluded.length > 0) links.push({ not: { href_matches: excluded } });
   const rule = (level: Exclude<Prefetch, "none">, only?: object) => ({
     where:
       only !== undefined

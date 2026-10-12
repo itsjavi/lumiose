@@ -424,6 +424,27 @@ describe("detection", () => {
     expect(root.headers.get("location")).toBe("/fr");
   });
 
+  it("answers a prefetch of a detecting request with a 503 the browser discards, deciding nothing", async () => {
+    for (const purpose of ["prefetch", "prefetch;prerender"]) {
+      const root = await get("/", { cookie: "locale=es", "sec-purpose": purpose });
+      expect(root.status).toBe(503);
+      expect(root.headers.get("location")).toBeNull();
+      expect(root.headers.get("cache-control")).toBe("no-store");
+      expect(root.headers.get("vary")).toBe("Sec-Purpose, Cookie, Accept-Language");
+      // A first visit: no cookie is written either.
+      const first = await get("/about", { "accept-language": "es", "sec-purpose": purpose });
+      expect(first.status).toBe(503);
+      expect(first.headers.get("set-cookie")).toBeNull();
+    }
+    // Requests that do not detect are prefetched as usual.
+    const deep = await get("/about", { cookie: "locale=es", "sec-purpose": "prefetch" });
+    expect(deep.status).toBe(200);
+    expect((await get("/es", { "sec-purpose": "prefetch" })).status).toBe(200);
+    // The navigation after a cookie change decides afresh.
+    const navigation = await get("/", { cookie: "locale=en" });
+    expect(navigation.status).toBe(200);
+  });
+
   it("is off by default and while prerendering", async () => {
     const off = i18nApp(files);
     expect((await off.fetch("/about", { headers: { "accept-language": "es" } })).status).toBe(200);
@@ -439,6 +460,29 @@ describe("detection", () => {
 });
 
 describe("speculation rules", () => {
+  it("leave out the entry, which answers per cookie, when detection is on", () => {
+    const manifest = createRouteManifest([{ path: "page.stsx", source: "" }]);
+    const detecting = resolveI18n({ ...I18N, detect: { cookie: "locale" } });
+    const rules = (base: string, i18n = detecting) =>
+      JSON.parse(
+        />(.*)</.exec(
+          navigationHead({ prefetch: "hover" }, manifest.routes, base, i18n).mpa.plain,
+        )![1]!,
+      );
+    expect(rules("/").prefetch[0].where.and[1]).toEqual({ not: { href_matches: ["{/}?"] } });
+    expect(rules("/sub/").prefetch[0].where.and[1]).toEqual({
+      not: { href_matches: ["/sub{/}?"] },
+    });
+    // Without detection, the entry is prefetched like any page.
+    expect(rules("/", resolveI18n(I18N)).prefetch[0].where).toEqual({ href_matches: "/*" });
+    const entry = new URLPattern({ pathname: "{/}?" });
+    expect(["/", "/es", "/about"].map((pathname) => entry.test({ pathname }))).toEqual([
+      true,
+      false,
+      false,
+    ]);
+  });
+
   it("leave out endpoints under every locale prefix", () => {
     const manifest = createRouteManifest([{ path: "api/[id]/route.ts", source: "" }]);
     const head = navigationHead({ prefetch: "hover" }, manifest.routes, "/", resolveI18n(I18N));

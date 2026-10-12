@@ -164,6 +164,8 @@ const ACTION_PAGE_METHODS = "GET, HEAD, POST, OPTIONS";
 /** Nesting limit for in-process requests (`fetchJSON()` during SSR), against fetch loops. */
 const MAX_IN_PROCESS_DEPTH = 8;
 const CROSS_SITE_MESSAGE = "Cross-site form submissions are forbidden.";
+/** What detection answers for a prefetch: no decision (see `routeLocale`). */
+const PREFETCH: unique symbol = Symbol("prefetch");
 /** The locale cookie detection writes on a first visit: a year, readable by language switchers. */
 const LOCALE_COOKIE: CookieOptions = { path: "/", maxAge: 60 * 60 * 24 * 365, httpOnly: false };
 
@@ -521,6 +523,15 @@ export function createRequestHandler(options: RequestHandlerOptions): RequestHan
       throw new HttpError(404, "Not Found");
     }
     const target = route.kind === "page" && !inProcess ? detectLocale(scope, path) : undefined;
+    if (target === PREFETCH) {
+      // A prefetch (speculation rules, `<link rel=prefetch>`, a prerender) must not keep a
+      // detection decision: a language switcher may change the cookie before the navigation. Browsers
+      // discard a prefetch that is not 2xx, and the navigation itself then detects.
+      return new Response(null, {
+        status: 503,
+        headers: { "cache-control": "no-store", vary: "Sec-Purpose, Cookie, Accept-Language" },
+      });
+    }
     if (target !== undefined && target !== locale && declared.includes(target)) {
       const localizedPath = localizePath(path, target, config);
       const slash = trailingSlash === "always" && path === "/" ? "/" : "";
@@ -579,9 +590,9 @@ export function createRequestHandler(options: RequestHandlerOptions): RequestHan
    * Locale detection, on entry only (decision-44): on a first visit (no locale cookie) the visitor's
    * `Accept-Language` locale, which the cookie then records; on `/`, the cookie's locale. Deep links
    * with a cookie and prefixed URLs never redirect. Responses that depend on it vary on both
-   * headers and are not cached.
+   * headers and are not cached; a prefetch of such a request gets `PREFETCH`, and no decision.
    */
-  function detectLocale(scope: RequestScope, path: string): string | undefined {
+  function detectLocale(scope: RequestScope, path: string): string | typeof PREFETCH | undefined {
     const config = i18n!;
     const { detect } = config;
     const { request, cookies } = scope.ctx;
@@ -590,20 +601,19 @@ export function createRequestHandler(options: RequestHandlerOptions): RequestHan
     if (scope.i18n!.locale !== config.defaultLocale) return undefined;
     const root = path === "/";
     const stored = detect.cookie === undefined ? undefined : cookies.get(detect.cookie);
+    // Without a cookie, first visits cannot be told apart: only `/` detects. With one, only `/`.
+    if (stored === undefined ? detect.cookie === undefined && !root : !root) return undefined;
+    if (/\bprefetch\b/i.test(request.headers.get("sec-purpose") ?? "")) return PREFETCH;
     let target: string | undefined;
     if (stored === undefined) {
-      // Without a cookie, first visits cannot be told apart: only `/` detects.
-      if (detect.cookie === undefined && !root) return undefined;
       target = detect.acceptLanguage
         ? negotiateLocale(request.headers.get("accept-language"), config.locales)
         : undefined;
       if (detect.cookie !== undefined) {
         cookies.set(detect.cookie, target ?? config.defaultLocale, LOCALE_COOKIE);
       }
-    } else if (root) {
-      target = config.locales.includes(stored) ? stored : undefined;
     } else {
-      return undefined;
+      target = config.locales.includes(stored) ? stored : undefined;
     }
     scope.response.setHeader("vary", "Cookie, Accept-Language");
     scope.response.setHeader("cache-control", "private, no-store");
