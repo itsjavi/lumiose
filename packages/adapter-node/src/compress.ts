@@ -11,7 +11,10 @@ import {
   type Gzip,
 } from "node:zlib";
 
-export type Encoding = "br" | "gzip";
+// Shared with the build's fetch handler (`lumiose/node`).
+import { acceptedEncodings, type Encoding } from "lumiose/node";
+
+export { acceptedEncodings, type Encoding };
 
 /** Below this size a known-length response is sent as is. */
 const MIN_BYTES = 1024;
@@ -21,20 +24,6 @@ const GZIP_LEVEL = 6;
 
 const COMPRESSIBLE_TYPE =
   /^(?:text\/|application\/(?:json|[\w.+-]*\+json|javascript|ecmascript|xml|[\w.+-]*\+xml|manifest\+json|wasm)|image\/svg\+xml)/i;
-
-/** The encodings `Accept-Encoding` allows, in order of preference: brotli, then gzip (`q=0` excludes). */
-export function acceptedEncodings(accept: string | string[] | undefined): Encoding[] {
-  const header = Array.isArray(accept) ? accept.join(",") : (accept ?? "");
-  const weights = new Map<string, number>();
-  for (const part of header.split(",")) {
-    const [name, ...params] = part.trim().toLowerCase().split(";");
-    if (name === undefined || name === "") continue;
-    const q = params.map((p) => /^\s*q=([\d.]+)\s*$/.exec(p)?.[1]).find((v) => v !== undefined);
-    weights.set(name, q === undefined ? 1 : Number(q));
-  }
-  const weight = (name: string) => weights.get(name) ?? weights.get("*") ?? 0;
-  return (["br", "gzip"] as const).filter((encoding) => weight(encoding) > 0);
-}
 
 /** The encoding for a response to compress on the fly, if any. */
 export function negotiateEncoding(accept: string | string[] | undefined): Encoding | undefined {

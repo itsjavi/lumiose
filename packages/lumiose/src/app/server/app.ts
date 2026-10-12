@@ -19,6 +19,9 @@ import type { Prefetch } from "./navigation.ts";
 import { createServerRenderer } from "./render.ts";
 import { escapeAttr } from "../../server/node.ts";
 
+// The server build's `export default` wraps the handler (./serve.ts); one runtime import for both.
+export { serveBuild } from "./serve.ts";
+
 /** Options of the built app, for adapters serving `dist/client` next to the handler. */
 export interface BuiltAppConfig {
   /** Vite's `base`, with leading and trailing slashes. */

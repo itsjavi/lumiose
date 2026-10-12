@@ -15,6 +15,30 @@ export interface Locals {}
 /** Server environment variables: `process.env` unless the adapter passes its own. */
 export type ServerEnv = Readonly<Record<string, string | undefined>>;
 
+/**
+ * The bindings of the platform in `ctx.platform.env` (Cloudflare's KV, D1, R2, Durable Objects…).
+ * Type them with:
+ *
+ *   declare module "lumiose" { interface PlatformEnv { DB: D1Database } }
+ */
+export interface PlatformEnv {}
+
+/**
+ * What the host passes with each request (`fetch(request, platform)` of the server build), as
+ * `ctx.platform`. The deploy adapters fill it in; every field has a fallback.
+ */
+export interface Platform {
+  /** The platform's bindings (Cloudflare's `env`); `{}` on hosts without them (Node, Bun, Deno). */
+  readonly env: PlatformEnv;
+  /**
+   * Keeps the host running `promise` after the response is sent (Cloudflare's, Vercel's and
+   * Netlify's `waitUntil`). Elsewhere the promise just runs; a rejection goes to `onError`.
+   */
+  waitUntil(promise: Promise<unknown>): void;
+  /** The client's IP address as the host sees it (a proxy's, behind one); undefined when unknown. */
+  readonly clientAddress: string | undefined;
+}
+
 export type RouteParamValues = Record<string, string>;
 
 /** The params of route pattern `P`, or any params without one (middleware, shared helpers). */
@@ -32,6 +56,8 @@ export interface RequestContext<P extends Routes = never> {
   locals: Locals;
   cookies: Cookies;
   env: ServerEnv;
+  /** The host's extras: bindings, `waitUntil` and the client address (see `Platform`). */
+  platform: Platform;
 }
 
 /** `src/middleware.ts` default export (or an array of them, run in order). */

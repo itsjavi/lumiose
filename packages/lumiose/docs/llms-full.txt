@@ -67,6 +67,7 @@ mistakes** and **Related diagnostics**. Reference pages list every export with i
 - [CLI](reference/cli.md): `lumiose dev`, `build`, `preview`, `check`, `typegen`, `routes`, `lint`, `fmt`, `docs`, `explain`, `agents init` and `mcp`; `--format json` and exit codes.
 - [MCP server](reference/mcp.md): `lumiose mcp` for coding agents: docs, `check` with fixes, routes, components, compiler output, rendered HTML and dev logs.
 - [`@lumiose/adapter-node`](reference/adapter-node.md): `createServer`, `createHandler` and `createStaticHandler`: serve a build with Node.
+- [Server build](reference/server-entry.md): `dist/server/entry.js`: `export default { fetch(request, platform?) }`, `ctx.platform`, `createHandler` and `config`; run it with Bun or Deno.
 - [`@lumiose/query`](reference/query.md): TanStack Query for Lumiose (`useQuery`, `useMutation`, `useQueryClient`, `QueryClientProvider`), and when to use it instead of `fetchJSON`.
 
 ## Diagnostics
@@ -2586,10 +2587,17 @@ See also: [Server](server.md), [Routing](routing.md), [reference: app layer](../
 ## Concept
 
 **Request context.** Middleware, endpoints and actions receive
-`ctx = { request, url, params, locals, cookies, env }`. During a server render, the same values are
+`ctx = { request, url, params, locals, cookies, env, platform }`. During a server render, the same values are
 available through functions scoped to the current request (they work after `await` too):
 `request()`, `url()`, `params()`, `route()` (the matched pattern), `locals()`, `cookies()`,
 `response()` and `env(name)`.
+
+**Platform.** `ctx.platform` is what the host adds to a request: `env` (the platform's bindings,
+such as Cloudflare's KV or D1; `{}` elsewhere), `waitUntil(promise)` (work that continues after the
+response) and `clientAddress` (the client's IP as the host sees it). Each has a fallback, so the
+same code runs on every host ([server build](../reference/server-entry.md#platform)). Type the
+bindings by augmenting `PlatformEnv`. A server component that needs them gets them from middleware,
+through `locals`.
 
 **Middleware.** `src/middleware.ts` default-exports `(ctx, next) => Promise<Response>` (or an array,
 run in order). Use it for sessions, auth and headers. Put request data on `ctx.locals`, and type it
@@ -2636,7 +2644,7 @@ to Vite's `server.fs.deny` unless the config sets its own list (the server still
 
 | API                                                                      | Use                                                                    |
 | ------------------------------------------------------------------------ | ---------------------------------------------------------------------- |
-| `RequestContext<P>` (`ctx`)                                              | `{ request, url, params, locals, cookies, env }`.                      |
+| `RequestContext<P>` (`ctx`)                                              | `{ request, url, params, locals, cookies, env, platform }`.            |
 | `Middleware`                                                             | `(ctx, next) => Response \| Promise<Response>`.                        |
 | `request()`, `url()`, `params<P>()`, `route()`, `locals()`, `cookies()`  | Request APIs during a server render.                                   |
 | `response()`                                                             | `{ status, setStatus, getHeader, setHeader }` until the shell is sent. |
@@ -2645,6 +2653,7 @@ to Vite's `server.fs.deny` unless the config sets its own list (the server still
 | `signedCookie(name, options?)`                                           | `{ get(cookies), set(cookies, value), delete(cookies) }`.              |
 | `env(name)`, `publicEnv(source?)`                                        | Server env; the `PUBLIC_*` subset.                                     |
 | `Locals`                                                                 | Interface to augment with your request data.                           |
+| `Platform`, `PlatformEnv`                                                | `ctx.platform`; the interface to augment with your bindings.           |
 
 ## Example
 
@@ -2850,7 +2859,9 @@ to browsers that accept them. Output:
   static or `spa`. In an `ssr = false` SPA, `404.html` is the shell: a static host that serves it
   for unknown URLs gets deep links to every route. Vite's `base` applies to URLs, not to file
   paths.
-- `dist/server/entry.js`: `export default { fetch }`, plus `createHandler({ env })` and `config`.
+- `dist/server/entry.js`: `export default { fetch(request, platform?) }`, which serves the
+  static files of `dist/client`, then the app ([server build](../reference/server-entry.md)), plus
+  `createHandler({ env })` (the app alone) and `config`.
   The server output bundles your server code, linked workspace packages and the Lumiose runtime
   (npm dependencies stay external, as Vite does for SSR), minified with function and class names
   kept, so production stack traces still name the functions.
@@ -2860,7 +2871,7 @@ A route (`static`, or `spa` with `prerender`) that reads the request while it pr
 endpoint can only export `GET` ([LUM5005](../errors/LUM5005.md)). Middleware still runs. A form
 post to a prerendered page reaches its `action` on the server. Serve the build with
 `@lumiose/adapter-node` (`createServer({ port })`: `dist/client` with caching headers, then the
-handler) or `lumiose preview`. A site whose every route is prerendered (no `server` route, no `spa`
+handler) or `lumiose preview`, or run `dist/server/entry.js` with Bun or Deno. A site whose every route is prerendered (no `server` route, no `spa`
 route rendered per request, no form action; `ssr = false` routes with params need a `404.html`
 shell) builds no `dist/server`: deploy `dist/client` to any static host, and `lumiose preview` serves
 it without the adapter. Set response headers once with `lumiose({ headers })`
@@ -4724,6 +4735,12 @@ interface RequestContext<P extends Routes = never> {
   locals: Locals;
   cookies: Cookies;
   env: ServerEnv; // Readonly<Record<string, string | undefined>>
+  platform: Platform; // what the host adds: bindings, waitUntil, client address
+}
+interface Platform {
+  readonly env: PlatformEnv; // the platform's bindings; {} where there are none
+  waitUntil(promise: Promise<unknown>): void; // fallback: runs it, reports a rejection
+  readonly clientAddress: string | undefined;
 }
 interface ActionContext<P extends /* a page pattern */ = never> extends RequestContext<P> {
   formData(): Promise<FormData>; // parsed once; 400 if the body is not a form
@@ -4750,6 +4767,7 @@ interface DocumentProps {
   body: JSX.Element;
 }
 interface Locals {} // augment: declare module "lumiose" { interface Locals { … } }
+interface PlatformEnv {} // augment: declare module "lumiose" { interface PlatformEnv { … } }
 ```
 
 ## Example
@@ -6012,7 +6030,9 @@ type NodeHandler = (
 ```
 
 The same request handling as a Node request listener, for your own `http.createServer` or as
-connect/Express middleware (errors go to `next`). Set `origin` (or `ORIGIN`) when a proxy terminates
+connect/Express middleware (errors go to `next`). The app is the build's `createHandler()`
+([server build](./server-entry.md#createhandler)); `ctx.platform.clientAddress` is the socket's
+remote address (a proxy's, behind one). Set `origin` (or `ORIGIN`) when a proxy terminates
 TLS or rewrites the host: request URLs, and the cross-site check of form posts, use it.
 
 `headers` go on every response, the static files (prerendered pages included) and the app's
@@ -6112,6 +6132,168 @@ import express from "express";
 const server = express();
 server.use(await createHandler({ dir: new URL("./dist", import.meta.url) }));
 server.listen(3000);
+```
+
+<!-- source: reference/server-entry.md -->
+
+# Server build (`dist/server/entry.js`)
+
+> The output of `lumiose build` for servers: `export default { fetch(request, platform?) }`, a web-standard handler that serves pages, endpoints, form actions, streamed responses and the static files of `dist/client`. Bun and Deno run it as is; `@lumiose/adapter-node` and the deploy adapters wrap it.
+
+Concepts: [Rendering modes](../concepts/rendering-modes.md) (the build), [Server](../concepts/server.md)
+(the request context). For Node, use [`@lumiose/adapter-node`](adapter-node.md).
+
+## default export
+
+```ts
+declare const handler: {
+  fetch(request: Request, platform?: Partial<Platform>): Promise<Response>;
+};
+export default handler;
+```
+
+A request goes through, in order:
+
+1. **Static files** (`GET` and `HEAD` below Vite's `base`): the files of `dist/client`, with the
+   same rules as `@lumiose/adapter-node`: prerendered pages by URL (`/about` serves
+   `about/index.html`, or `about.html` with `trailingSlash: "never"`, and the `"always"`/`"never"`
+   policies redirect with `308`), the `.br`/`.gz` copies the build wrote for clients that accept
+   them (`Vary: Accept-Encoding`), a year of caching (`immutable`) for content-hashed assets and
+   revalidation (`ETag`, `Last-Modified`, `304`) for everything else. Dot files (other than
+   `.well-known`), `..` and `_headers` are never served. The directory is read with `node:fs` and
+   indexed on the first request: files added later are not served until a restart.
+2. **The app**: endpoints, form actions and pages, rendered shell first and streamed
+   (`<Suspense>`). The request's `signal` aborts the render when the client goes away. Bodies are
+   bounded by `lumiose({ limits })` (`413`).
+3. **Headers**: `lumiose({ headers })` for the path, and Lumiose's defaults
+   (`X-Content-Type-Options`, `Referrer-Policy`), go on every response that does not set them
+   itself.
+
+It does not compress the app's responses on the fly (static files use their precompressed
+copies): Deno compresses by itself, and CDNs and proxies do in front of the others. On Node,
+`@lumiose/adapter-node` compresses.
+
+The function works detached (`const { fetch } = handler`). Builds made with a deploy adapter
+(Cloudflare, Vercel, Netlify) leave the static files to the platform, which serves `dist/client`
+before calling the function.
+
+## platform
+
+```ts
+interface Platform {
+  /** The platform's bindings (Cloudflare's env); {} where there are none. */
+  readonly env: PlatformEnv;
+  /** Keeps the host running `promise` after the response; elsewhere it just runs. */
+  waitUntil(promise: Promise<unknown>): void;
+  /** The client's IP address as the host sees it (a proxy's, behind one). */
+  readonly clientAddress: string | undefined;
+}
+interface PlatformEnv {} // augment: declare module "lumiose" { interface PlatformEnv { … } }
+```
+
+The second argument becomes `ctx.platform` in middleware, endpoints and actions
+([Server](../concepts/server.md)). Every field has a fallback: `env` is `{}`, `waitUntil` lets the
+promise run and reports a rejection like any server error, `clientAddress` is `undefined`.
+Server environment variables stay in `ctx.env` and `env(name)`.
+
+What each host passes:
+
+| Host                                   | `env`         | `waitUntil`     | `clientAddress`             |
+| -------------------------------------- | ------------- | --------------- | --------------------------- |
+| `@lumiose/adapter-node`, `lumiose dev` | `{}`          | fallback        | the socket's remote address |
+| Bun (`Bun.serve` passes its server)    | `{}`          | fallback        | `server.requestIP(request)` |
+| Deno (`deno serve` passes its info)    | `{}`          | fallback        | `info.remoteAddr.hostname`  |
+| workerd (`fetch(request, env, ctx)`)   | the bindings  | `ctx.waitUntil` | `CF-Connecting-IP`          |
+| Your own server                        | what you pass | what you pass   | what you pass               |
+
+Behind a reverse proxy, `clientAddress` is the proxy's: read the header your proxy sets
+(`X-Forwarded-For`, `X-Real-IP`) in middleware if you trust it.
+
+Type your platform's bindings by augmenting `PlatformEnv`:
+
+```ts
+// src/env.d.ts
+declare module "lumiose" {
+  interface PlatformEnv {
+    DB: D1Database; // Cloudflare D1, typed by @cloudflare/workers-types
+  }
+}
+export {};
+```
+
+## createHandler
+
+```ts
+export function createHandler(options?: {
+  /** ctx.env and env(). Default: process.env. */
+  env?: Readonly<Record<string, string | undefined>>;
+  /** Unexpected errors. Default: console.error. */
+  onError?: (error: unknown, request: Request) => void;
+}): { fetch(request: Request, platform?: Partial<Platform>): Promise<Response> };
+```
+
+The app alone: no static files and no `lumiose({ headers })`. `@lumiose/adapter-node` uses it
+behind its own static file server.
+
+## config
+
+```ts
+export const config: {
+  base: string; // Vite's base, with slashes: "/" or "/docs/"
+  trailingSlash: "ignore" | "always" | "never";
+  assetsDir: string; // "assets": content-hashed files
+  headers?: HeadersOption; // lumiose({ headers })
+};
+```
+
+What servers of `dist/client` need to know about the build.
+
+## Run it
+
+Build first (`lumiose build`), then start the entry from the project directory, so that the npm
+dependencies it imports resolve from `node_modules`.
+
+**Bun** starts a server for a module whose default export has `fetch`
+(`PORT`, default 3000):
+
+```sh
+NODE_ENV=production PORT=3000 bun dist/server/entry.js
+```
+
+**Deno** serves it with `deno serve` (`--port`, default 8000). It reads `dist/client` and the
+environment:
+
+```sh
+deno serve --allow-net --allow-read --allow-env --port 3000 dist/server/entry.js
+```
+
+**Node**: use [`@lumiose/adapter-node`](adapter-node.md) (`createServer()`), which adds on-the-fly
+compression and Node's streaming. Any server that takes a fetch handler works too:
+
+```ts
+// server.ts, with Hono's Node server: `node server.ts`
+import { serve } from "@hono/node-server";
+import handler from "./dist/server/entry.js";
+
+serve({ fetch: (request) => handler.fetch(request), port: 3000 });
+```
+
+For Cloudflare, Vercel and Netlify, and for static hosts, see the deploy guides.
+
+## Example
+
+Using the platform in an endpoint: record a visit after the response, without delaying it.
+
+```ts check
+import type { Endpoint } from "lumiose";
+
+export const POST: Endpoint = (ctx) => {
+  const visitor = ctx.platform.clientAddress ?? "unknown";
+  ctx.platform.waitUntil(
+    fetch("https://analytics.example.com/hit", { method: "POST", body: visitor }),
+  );
+  return new Response(null, { status: 204 });
+};
 ```
 
 <!-- source: reference/query.md -->

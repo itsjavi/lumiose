@@ -318,7 +318,9 @@ export function lumioseDev(options: LumioseDevOptions = {}): Plugin {
         return;
       }
       const errors = [...app.errors];
-      const response = await requestErrors.run(errors, () => handler.fetch(request));
+      const response = await requestErrors.run(errors, () =>
+        handler.fetch(request, { clientAddress: req.socket.remoteAddress }),
+      );
       await sendWebResponse(res, withOverlay(response, errors));
     })().catch(next);
   };

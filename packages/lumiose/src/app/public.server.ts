@@ -56,6 +56,8 @@ export type {
   HttpMethod,
   Locals,
   Middleware,
+  Platform,
+  PlatformEnv,
   RequestContext,
   ResponseContext,
   ServerEnv,

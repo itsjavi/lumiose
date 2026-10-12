@@ -21,11 +21,13 @@ import type {
 } from "lumiose/internal/app/server/app.ts";
 import type { ServerEnv } from "lumiose/internal/app/server/context.ts";
 import type { RequestHandler, TrailingSlash } from "lumiose/internal/app/server/handler.ts";
+import type { BuildHandler } from "lumiose/internal/app/server/serve.ts";
 import { escapeAttr } from "lumiose/internal/server/node.ts";
 
 /** What `dist/server/entry.js` exports. */
 export interface ServerEntryModule {
-  default: RequestHandler;
+  /** The static files of `dist/client`, then the app (decision-45). */
+  default: BuildHandler;
   config: BuiltAppConfig;
   app: BuiltApp;
   createHandler(options?: AppHandlerOptions): RequestHandler;

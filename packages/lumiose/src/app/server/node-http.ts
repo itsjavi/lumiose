@@ -8,6 +8,20 @@ import { HttpError } from "./control.ts";
 
 // For adapters: the `lumiose({ headers })` of a request path (`config.headers` of the server entry).
 export { headersFor, pathBelowBase, type HeadersOption } from "../headers.ts";
+// For adapters: which file of `dist/client` answers a URL, and how it is cached.
+export {
+  acceptedEncodings,
+  cacheControl,
+  contentType,
+  fileEtag,
+  isHashed,
+  isNotModified,
+  matchStaticFile,
+  sameSiteLocation,
+  staticPath,
+  type Encoding,
+  type StaticMatch,
+} from "./static-files.ts";
 
 /**
  * The path and query of a request target, or undefined when the target cannot be served (400): only

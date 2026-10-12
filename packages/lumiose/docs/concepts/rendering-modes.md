@@ -134,7 +134,9 @@ to browsers that accept them. Output:
   static or `spa`. In an `ssr = false` SPA, `404.html` is the shell: a static host that serves it
   for unknown URLs gets deep links to every route. Vite's `base` applies to URLs, not to file
   paths.
-- `dist/server/entry.js`: `export default { fetch }`, plus `createHandler({ env })` and `config`.
+- `dist/server/entry.js`: `export default { fetch(request, platform?) }`, which serves the
+  static files of `dist/client`, then the app ([server build](../reference/server-entry.md)), plus
+  `createHandler({ env })` (the app alone) and `config`.
   The server output bundles your server code, linked workspace packages and the Lumiose runtime
   (npm dependencies stay external, as Vite does for SSR), minified with function and class names
   kept, so production stack traces still name the functions.
@@ -144,7 +146,7 @@ A route (`static`, or `spa` with `prerender`) that reads the request while it pr
 endpoint can only export `GET` ([LUM5005](../errors/LUM5005.md)). Middleware still runs. A form
 post to a prerendered page reaches its `action` on the server. Serve the build with
 `@lumiose/adapter-node` (`createServer({ port })`: `dist/client` with caching headers, then the
-handler) or `lumiose preview`. A site whose every route is prerendered (no `server` route, no `spa`
+handler) or `lumiose preview`, or run `dist/server/entry.js` with Bun or Deno. A site whose every route is prerendered (no `server` route, no `spa`
 route rendered per request, no form action; `ssr = false` routes with params need a `404.html`
 shell) builds no `dist/server`: deploy `dist/client` to any static host, and `lumiose preview` serves
 it without the adapter. Set response headers once with `lumiose({ headers })`

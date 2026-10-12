@@ -58,6 +58,7 @@ mistakes** and **Related diagnostics**. Reference pages list every export with i
 - [CLI](reference/cli.md): `lumiose dev`, `build`, `preview`, `check`, `typegen`, `routes`, `lint`, `fmt`, `docs`, `explain`, `agents init` and `mcp`; `--format json` and exit codes.
 - [MCP server](reference/mcp.md): `lumiose mcp` for coding agents: docs, `check` with fixes, routes, components, compiler output, rendered HTML and dev logs.
 - [`@lumiose/adapter-node`](reference/adapter-node.md): `createServer`, `createHandler` and `createStaticHandler`: serve a build with Node.
+- [Server build](reference/server-entry.md): `dist/server/entry.js`: `export default { fetch(request, platform?) }`, `ctx.platform`, `createHandler` and `config`; run it with Bun or Deno.
 - [`@lumiose/query`](reference/query.md): TanStack Query for Lumiose (`useQuery`, `useMutation`, `useQueryClient`, `QueryClientProvider`), and when to use it instead of `fetchJSON`.
 
 ## Diagnostics

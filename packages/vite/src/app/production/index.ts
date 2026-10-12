@@ -11,3 +11,4 @@ export type {
   BuiltAppConfig,
 } from "lumiose/internal/app/server/app.ts";
 export type { TrailingSlash } from "lumiose/internal/app/server/handler.ts";
+export type { BuildHandler } from "lumiose/internal/app/server/serve.ts";

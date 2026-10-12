@@ -11,6 +11,7 @@ import type {
   HttpMethod,
   Locals,
   Middleware,
+  Platform,
   RequestContext,
   ServerEnv,
 } from "./context.ts";
@@ -141,7 +142,11 @@ export interface RequestHandlerOptions {
 export type TrailingSlash = "ignore" | "always" | "never";
 
 export interface RequestHandler {
-  fetch(request: Request): Promise<Response>;
+  /**
+   * Serves a request. `platform` is what the host adds (`ctx.platform`): bindings, `waitUntil`
+   * and the client address; missing fields fall back (see `Platform`).
+   */
+  fetch(request: Request, platform?: Partial<Platform>): Promise<Response>;
 }
 
 const METHODS: readonly HttpMethod[] = ["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"];
@@ -160,6 +165,7 @@ interface ErrorPages {
 interface ParentRequest {
   cookies: CookieJar;
   locals: Locals;
+  platform: Platform;
   depth: number;
 }
 
@@ -191,11 +197,28 @@ export function createRequestHandler(options: RequestHandlerOptions): RequestHan
   const allowedOrigins = new Set(options.csrf === false ? [] : options.csrf?.allowedOrigins);
   const appLimits = resolveLimits(options.limits, DEFAULT_LIMITS, "lumiose({ limits })");
 
-  function fetch(request: Request): Promise<Response> {
-    return handle(request, undefined);
+  function fetch(request: Request, platform?: Partial<Platform>): Promise<Response> {
+    return handle(request, undefined, platform);
   }
 
-  async function handle(incoming: Request, parent: ParentRequest | undefined): Promise<Response> {
+  /** `ctx.platform`: the host's fields, with fallbacks for those it does not pass. */
+  function platformOf(request: Request, given: Partial<Platform> | undefined): Platform {
+    return {
+      env: given?.env ?? ({} as Platform["env"]),
+      waitUntil:
+        given?.waitUntil ??
+        ((promise) => {
+          Promise.resolve(promise).catch((error: unknown) => onError(error, request));
+        }),
+      clientAddress: given?.clientAddress,
+    };
+  }
+
+  async function handle(
+    incoming: Request,
+    parent: ParentRequest | undefined,
+    platform?: Partial<Platform>,
+  ): Promise<Response> {
     // Every body is bounded (413 beyond the limits); a route's own limits replace the app's once
     // its module is loaded (`applyRouteLimits`).
     const limits = { current: appLimits };
@@ -239,6 +262,7 @@ export function createRequestHandler(options: RequestHandlerOptions): RequestHan
       locals: (parent === undefined ? {} : { ...parent.locals }) as Locals,
       cookies,
       env: options.env ?? processEnv(),
+      platform: parent?.platform ?? platformOf(request, platform),
     };
     const depth = parent === undefined ? 0 : parent.depth + 1;
     const scope: RequestScope = {
@@ -246,7 +270,12 @@ export function createRequestHandler(options: RequestHandlerOptions): RequestHan
       cookies,
       ...(match === null ? {} : { route: match.route.pattern }),
       response: createResponseState(),
-      fetch: (inner) => fetchInProcess(inner, { cookies, locals: ctx.locals, depth }, request),
+      fetch: (inner) =>
+        fetchInProcess(
+          inner,
+          { cookies, locals: ctx.locals, platform: ctx.platform, depth },
+          request,
+        ),
       ...(options.csp === "strict" && !prerendering ? { nonce: createNonce() } : {}),
       bodyLimits: limits,
     };
@@ -711,6 +740,7 @@ function prerenderContext(ctx: RequestContext): RequestContext {
       return ctx.cookies;
     },
     env: ctx.env,
+    platform: ctx.platform,
   };
 }
 

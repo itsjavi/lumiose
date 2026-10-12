@@ -9,7 +9,9 @@
 // - ssr → `dist/server/entry.js` (`virtual:lumiose/server-entry`): the route manifest, a lazy
 //   import per route module, the middleware and the document, the island and loader URLs of the
 //   client build, the stylesheets of each module (`virtual:lumiose/css-manifest`, @lumiose/vite) and
-//   `export default { fetch }` from `createAppHandler()`. Assets that only server-rendered modules
+//   `export default { fetch(request, platform?) }`: the handler of `createAppHandler()` behind the
+//   static files of `dist/client`, with `lumiose({ headers })` (`serveBuild()`, decision-45).
+//   Assets that only server-rendered modules
 //   import (`import photo from "./photo.png"`, a relative `<img src>` in a `.md` import) are
 //   emitted by this build and moved to `dist/client`, where their URLs point (TASK-126).
 
@@ -35,6 +37,8 @@ import { STYLE_TAGS_PLACEHOLDER, styleTags } from "./stylesheets.ts";
 export const SERVER_ENTRY = "virtual:lumiose/server-entry";
 const SERVER_ENTRY_ID = "\0lumiose:server-entry";
 const APP_RUNTIME = runtimeFile("app/server/app.ts");
+/** The static files of `dist/client` for the entry's `fetch`, read with `node:fs`. */
+const STATIC_RUNTIME = runtimeFile("app/server/static-fs.ts");
 /** The island loader's client entry (`lumiose/dom/loader`). */
 const ISLAND_LOADER = runtimeFile("dom/loader.ts");
 /** JS left of a chunk whose pure-CSS imports Vite removed. */
@@ -360,7 +364,8 @@ export function serverEntryCode(state: BuildState, config: ResolvedConfig): stri
 if (typeof process !== "undefined" && process.env && process.env.NODE_ENV === undefined) {
   process.env.NODE_ENV = "production";
 }
-const { createAppHandler } = await import(${JSON.stringify(APP_RUNTIME)});
+const { createAppHandler, serveBuild } = await import(${JSON.stringify(APP_RUNTIME)});
+const { staticFiles } = await import(${JSON.stringify(STATIC_RUNTIME)});
 
 const modules = {
 ${modules.join("\n")}
@@ -389,11 +394,19 @@ export const app = {
   },
 };
 
-/** A request handler for this app: \`createHandler({ env, onError })\`. */
+/** The app's request handler (no static files): \`createHandler({ env, onError })\`. */
 export function createHandler(options) {
   return createAppHandler(app, options);
 }
 
-export default createHandler();
+/**
+ * \`{ fetch(request, platform?) }\`: the static files of dist/client, then the app, with
+ * lumiose({ headers }). Bun and Deno run it as is.
+ */
+export default serveBuild(
+  createHandler(),
+  config,
+  staticFiles(new URL("../client/", import.meta.url), config),
+);
 `;
 }

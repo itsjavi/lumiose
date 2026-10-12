@@ -5,10 +5,17 @@
 ## Concept
 
 **Request context.** Middleware, endpoints and actions receive
-`ctx = { request, url, params, locals, cookies, env }`. During a server render, the same values are
+`ctx = { request, url, params, locals, cookies, env, platform }`. During a server render, the same values are
 available through functions scoped to the current request (they work after `await` too):
 `request()`, `url()`, `params()`, `route()` (the matched pattern), `locals()`, `cookies()`,
 `response()` and `env(name)`.
+
+**Platform.** `ctx.platform` is what the host adds to a request: `env` (the platform's bindings,
+such as Cloudflare's KV or D1; `{}` elsewhere), `waitUntil(promise)` (work that continues after the
+response) and `clientAddress` (the client's IP as the host sees it). Each has a fallback, so the
+same code runs on every host ([server build](../reference/server-entry.md#platform)). Type the
+bindings by augmenting `PlatformEnv`. A server component that needs them gets them from middleware,
+through `locals`.
 
 **Middleware.** `src/middleware.ts` default-exports `(ctx, next) => Promise<Response>` (or an array,
 run in order). Use it for sessions, auth and headers. Put request data on `ctx.locals`, and type it
@@ -55,7 +62,7 @@ to Vite's `server.fs.deny` unless the config sets its own list (the server still
 
 | API                                                                      | Use                                                                    |
 | ------------------------------------------------------------------------ | ---------------------------------------------------------------------- |
-| `RequestContext<P>` (`ctx`)                                              | `{ request, url, params, locals, cookies, env }`.                      |
+| `RequestContext<P>` (`ctx`)                                              | `{ request, url, params, locals, cookies, env, platform }`.            |
 | `Middleware`                                                             | `(ctx, next) => Response \| Promise<Response>`.                        |
 | `request()`, `url()`, `params<P>()`, `route()`, `locals()`, `cookies()`  | Request APIs during a server render.                                   |
 | `response()`                                                             | `{ status, setStatus, getHeader, setHeader }` until the shell is sent. |
@@ -64,6 +71,7 @@ to Vite's `server.fs.deny` unless the config sets its own list (the server still
 | `signedCookie(name, options?)`                                           | `{ get(cookies), set(cookies, value), delete(cookies) }`.              |
 | `env(name)`, `publicEnv(source?)`                                        | Server env; the `PUBLIC_*` subset.                                     |
 | `Locals`                                                                 | Interface to augment with your request data.                           |
+| `Platform`, `PlatformEnv`                                                | `ctx.platform`; the interface to augment with your bindings.           |
 
 ## Example
 

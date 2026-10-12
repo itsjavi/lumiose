@@ -62,7 +62,9 @@ type NodeHandler = (
 ```
 
 The same request handling as a Node request listener, for your own `http.createServer` or as
-connect/Express middleware (errors go to `next`). Set `origin` (or `ORIGIN`) when a proxy terminates
+connect/Express middleware (errors go to `next`). The app is the build's `createHandler()`
+([server build](./server-entry.md#createhandler)); `ctx.platform.clientAddress` is the socket's
+remote address (a proxy's, behind one). Set `origin` (or `ORIGIN`) when a proxy terminates
 TLS or rewrites the host: request URLs, and the cross-site check of form posts, use it.
 
 `headers` go on every response, the static files (prerendered pages included) and the app's

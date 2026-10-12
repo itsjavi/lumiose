@@ -22,7 +22,9 @@ beforeAll(async () => {
   writeFileSync(
     join(dir, "server", "entry.js"),
     `export const config = { base: "/", trailingSlash: "ignore", assetsDir: "assets" };
-export default { fetch: (request) => new Response("app " + request.url) };
+const handler = { fetch: (request) => new Response("app " + request.url) };
+export const createHandler = () => handler;
+export default handler;
 `,
   );
   const handler = await createHandler({ dir, origin: "https://victim.test" });

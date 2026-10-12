@@ -1,7 +1,8 @@
 // `@lumiose/adapter-node` (spec §8 Build, "Adapters"): serves a `lumiose build` output with Node.
-// Requests go to the static files of `dist/client` first (GET/HEAD), then to the app's
-// `export default { fetch }` from `dist/server/entry.js`, through lumiose's Node bridge (streamed
-// responses, client disconnects abort the request). Configured `headers`, then the build's
+// Requests go to the static files of `dist/client` first (GET/HEAD), then to the app's handler
+// (`createHandler()` of `dist/server/entry.js`: the build's `export default { fetch }` without its
+// own static layer, decision-45), through lumiose's Node bridge (streamed responses, client
+// disconnects abort the request), with the socket's address as `ctx.platform.clientAddress`. Configured `headers`, then the build's
 // `lumiose({ headers })` for the path, go on every response first, so the static files' and the
 // app's own headers win. Responses are compressed by default
 // (`compress: false` turns it off): static files from the build's precompressed `.br`/`.gz`
@@ -91,7 +92,7 @@ export async function createHandler(options: HandlerOptions = {}): Promise<NodeH
 }
 
 function nodeHandler(dir: string, entry: ServerEntryModule, options: HandlerOptions): NodeHandler {
-  const app = options.env === undefined ? entry.default : entry.createHandler({ env: options.env });
+  const app = entry.createHandler(options.env === undefined ? {} : { env: options.env });
   const compress = options.compress !== false;
   const statics = createStaticHandler(join(dir, "client"), entry.config, {
     compress,
@@ -122,7 +123,9 @@ function nodeHandler(dir: string, entry: ServerEntryModule, options: HandlerOpti
     }
     void (async () => {
       if (await statics(req, res)) return;
-      const response = await app.fetch(toWebRequest(req, res, origin));
+      const response = await app.fetch(toWebRequest(req, res, origin), {
+        clientAddress: req.socket.remoteAddress,
+      });
       await sendWebResponse(
         res,
         compress

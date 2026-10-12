@@ -20,7 +20,9 @@ function fakeBuild(): string {
     join(dir, "server", "entry.js"),
     `globalThis.nodeEnvAtEntry = process.env.NODE_ENV;
 export const config = { base: "/", trailingSlash: "ignore", assetsDir: "assets" };
-export default { fetch: () => new Response("ok") };
+const handler = { fetch: () => new Response("ok") };
+export const createHandler = () => handler;
+export default handler;
 `,
   );
   return dir;

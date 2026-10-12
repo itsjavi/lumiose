@@ -10,49 +10,27 @@
 
 import { createReadStream, readdirSync, realpathSync, statSync, type Stats } from "node:fs";
 import type { IncomingMessage, ServerResponse } from "node:http";
-import { extname, join, sep } from "node:path";
+import { join, sep } from "node:path";
 import type { BuiltAppConfig } from "@lumiose/vite/build";
-import { requestTarget } from "lumiose/node";
-import { acceptedEncodings, varyOnEncoding } from "./compress.ts";
+import {
+  acceptedEncodings,
+  cacheControl,
+  contentType,
+  fileEtag,
+  isNotModified,
+  matchStaticFile,
+  requestTarget,
+  sameSiteLocation,
+  staticPath,
+  type Encoding,
+} from "lumiose/node";
+import { varyOnEncoding } from "./compress.ts";
+
+// The URL rules are shared with the build's fetch handler (`lumiose/node`).
+export { isHashed } from "lumiose/node";
 
 /** Serves a request from the directory; resolves `false` when no file answers it. */
 export type StaticHandler = (req: IncomingMessage, res: ServerResponse) => Promise<boolean>;
-
-const MIME_TYPES: Record<string, string> = {
-  ".html": "text/html; charset=utf-8",
-  ".css": "text/css; charset=utf-8",
-  ".js": "text/javascript; charset=utf-8",
-  ".mjs": "text/javascript; charset=utf-8",
-  ".json": "application/json; charset=utf-8",
-  ".map": "application/json; charset=utf-8",
-  ".webmanifest": "application/manifest+json; charset=utf-8",
-  ".xml": "application/xml; charset=utf-8",
-  ".txt": "text/plain; charset=utf-8",
-  ".md": "text/markdown; charset=utf-8",
-  ".csv": "text/csv; charset=utf-8",
-  ".svg": "image/svg+xml",
-  ".png": "image/png",
-  ".jpg": "image/jpeg",
-  ".jpeg": "image/jpeg",
-  ".gif": "image/gif",
-  ".webp": "image/webp",
-  ".avif": "image/avif",
-  ".ico": "image/x-icon",
-  ".woff": "font/woff",
-  ".woff2": "font/woff2",
-  ".ttf": "font/ttf",
-  ".otf": "font/otf",
-  ".wasm": "application/wasm",
-  ".mp4": "video/mp4",
-  ".webm": "video/webm",
-  ".mp3": "audio/mpeg",
-  ".ogg": "audio/ogg",
-  ".wav": "audio/wav",
-  ".pdf": "application/pdf",
-  ".zip": "application/zip",
-};
-const IMMUTABLE = "public, max-age=31536000, immutable";
-const REVALIDATE = "public, max-age=0, must-revalidate";
 
 export interface StaticOptions {
   /** Serve the precompressed `.br`/`.gz` copies to clients that accept them. Default: true. */
@@ -70,9 +48,8 @@ export function createStaticHandler(
   options: StaticOptions = {},
 ): StaticHandler {
   const compress = options.compress !== false;
-  const assetsPrefix = `${config.assetsDir.replace(/^\/+|\/+$/g, "")}/`;
   const files = indexFiles(dir, options.symlinks ?? "follow");
-  const fileStats = (path: string): FileInfo | undefined => files.get(path);
+  const has = (path: string): boolean => files.has(path);
 
   return async (req, res) => {
     if (req.method !== "GET" && req.method !== "HEAD") return false;
@@ -84,57 +61,13 @@ export function createStaticHandler(
       pathname: query < 0 ? target : target.slice(0, query),
       search: query < 0 ? "" : target.slice(query).replace(/#.*$/, ""),
     };
-    const path = relativePath(url.pathname, config.base);
+    const path = staticPath(url.pathname, config.base);
     if (path === undefined) return false;
-
-    if (path === "" || path.endsWith("/")) {
-      const index = fileStats(`${path}index.html`);
-      if (path !== "" && config.trailingSlash === "never") {
-        const page = fileStats(`${path.slice(0, -1)}.html`);
-        if (page !== undefined || index !== undefined) {
-          return redirect(res, `${url.pathname.replace(/\/+$/, "")}${url.search}`);
-        }
-      }
-      return index === undefined
-        ? false
-        : send(req, res, index, `${path}index.html`, false, compress);
-    }
-    const file = fileStats(path);
-    if (file !== undefined) {
-      return send(req, res, file, path, path.startsWith(assetsPrefix) && isHashed(path), compress);
-    }
-    if (config.trailingSlash !== "always") {
-      const page = fileStats(`${path}.html`);
-      if (page !== undefined) return send(req, res, page, `${path}.html`, false, compress);
-    }
-    const index = fileStats(`${path}/index.html`);
-    if (index === undefined) return false;
-    if (config.trailingSlash === "always") return redirect(res, `${url.pathname}/${url.search}`);
-    return send(req, res, index, `${path}/index.html`, false, compress);
+    const match = matchStaticFile(path, url, config.trailingSlash, has);
+    if (match === undefined) return false;
+    if (match.redirect !== undefined) return redirect(res, match.redirect);
+    return send(req, res, files.get(match.file)!, match.file, config.assetsDir, compress);
   };
-}
-
-/**
- * The decoded path below `base`, without its leading slash; `undefined` outside `base` or for
- * paths that must not reach the file system (`..`, dot files other than `.well-known`, NUL).
- */
-function relativePath(pathname: string, base: string): string | undefined {
-  let decoded: string;
-  try {
-    decoded = decodeURIComponent(pathname);
-  } catch {
-    return undefined;
-  }
-  let path: string;
-  if (decoded === base.slice(0, -1)) path = "";
-  else if (decoded.startsWith(base)) path = decoded.slice(base.length);
-  else return undefined;
-  for (const segment of path.split("/")) {
-    if (segment === "..") return undefined;
-    if (segment.startsWith(".") && segment !== ".well-known") return undefined;
-    if (segment.includes("\\") || segment.includes("\0")) return undefined;
-  }
-  return path;
 }
 
 interface FileInfo {
@@ -213,20 +146,8 @@ function indexFiles(dir: string, symlinks: "follow" | "contain"): Map<string, Fi
   return files;
 }
 
-/**
- * Whether a file name carries a build hash (Vite's `name-[hash].ext`: 8+ word characters with a digit or
- * an uppercase letter), so its URL changes with its content and it can be cached for a
- * year. Other files under the assets directory revalidate (TASK-167 L5).
- */
-export function isHashed(path: string): boolean {
-  const name = path.slice(path.lastIndexOf("/") + 1);
-  // A hash with a `-` inside fails the test: the file then revalidates, which is only slower.
-  return /[-.](?=\w*[\dA-Z])\w{8,}\.[^.]+$/.test(name);
-}
-
 function redirect(res: ServerResponse, location: string): true {
-  // A path, never a protocol-relative URL: `//evil.com` (or `/\\evil.com`) would leave the site.
-  res.writeHead(308, { location: location.replace(/^[/\\]+/, "/") });
+  res.writeHead(308, { location: sameSiteLocation(location) });
   res.end();
   return true;
 }
@@ -235,7 +156,7 @@ function redirect(res: ServerResponse, location: string): true {
 function variantOf(
   req: IncomingMessage,
   file: FileInfo,
-): { encoding: string; file: FileInfo } | undefined {
+): { encoding: Encoding; file: FileInfo } | undefined {
   if (file.br === undefined && file.gzip === undefined) return undefined;
   // br first, then gzip: a client that accepts both but finds no .br still gets the .gz.
   for (const encoding of acceptedEncodings(req.headers["accept-encoding"])) {
@@ -250,28 +171,33 @@ async function send(
   res: ServerResponse,
   original: FileInfo,
   path: string,
-  immutable: boolean,
+  assetsDir: string,
   compress: boolean,
 ): Promise<true> {
   const variant = compress ? variantOf(req, original) : undefined;
   const { absolute, stats } = variant?.file ?? original;
-  const tag = `${stats.size.toString(16)}-${Math.floor(stats.mtimeMs).toString(16)}`;
-  const etag = `W/"${variant === undefined ? tag : `${tag}-${variant.encoding}`}"`;
-  const lastModified = stats.mtime.toUTCString();
+  const etag = fileEtag(stats.size, stats.mtimeMs, variant?.encoding);
   const headers: Record<string, string> = {
-    "cache-control": immutable ? IMMUTABLE : REVALIDATE,
+    "cache-control": cacheControl(path, assetsDir),
     etag,
-    "last-modified": lastModified,
+    "last-modified": stats.mtime.toUTCString(),
   };
   if (compress && (original.br !== undefined || original.gzip !== undefined)) {
     headers.vary = varyOnEncoding(undefined);
   }
-  if (notModified(req, etag, stats.mtime)) {
+  if (
+    isNotModified(
+      req.headers["if-none-match"],
+      req.headers["if-modified-since"],
+      etag,
+      stats.mtime.getTime(),
+    )
+  ) {
     res.writeHead(304, headers);
     res.end();
     return true;
   }
-  headers["content-type"] = MIME_TYPES[extname(path).toLowerCase()] ?? "application/octet-stream";
+  headers["content-type"] = contentType(path);
   if (variant !== undefined) headers["content-encoding"] = variant.encoding;
   headers["content-length"] = String(stats.size);
   res.writeHead(200, headers);
@@ -291,15 +217,4 @@ async function send(
     });
     stream.pipe(res);
   });
-}
-
-function notModified(req: IncomingMessage, etag: string, mtime: Date): boolean {
-  const ifNoneMatch = req.headers["if-none-match"];
-  if (ifNoneMatch !== undefined) {
-    return ifNoneMatch.split(",").some((tag) => tag.trim() === etag || tag.trim() === "*");
-  }
-  const ifModifiedSince = req.headers["if-modified-since"];
-  if (ifModifiedSince === undefined) return false;
-  const since = Date.parse(ifModifiedSince);
-  return !Number.isNaN(since) && Math.floor(mtime.getTime() / 1000) <= Math.floor(since / 1000);
 }

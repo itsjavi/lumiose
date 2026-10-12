@@ -339,6 +339,12 @@ interface RequestContext<P extends Routes = never> {
   locals: Locals;
   cookies: Cookies;
   env: ServerEnv; // Readonly<Record<string, string | undefined>>
+  platform: Platform; // what the host adds: bindings, waitUntil, client address
+}
+interface Platform {
+  readonly env: PlatformEnv; // the platform's bindings; {} where there are none
+  waitUntil(promise: Promise<unknown>): void; // fallback: runs it, reports a rejection
+  readonly clientAddress: string | undefined;
 }
 interface ActionContext<P extends /* a page pattern */ = never> extends RequestContext<P> {
   formData(): Promise<FormData>; // parsed once; 400 if the body is not a form
@@ -365,6 +371,7 @@ interface DocumentProps {
   body: JSX.Element;
 }
 interface Locals {} // augment: declare module "lumiose" { interface Locals { … } }
+interface PlatformEnv {} // augment: declare module "lumiose" { interface PlatformEnv { … } }
 ```
 
 ## Example

@@ -102,7 +102,7 @@ describe("request context types", () => {
     await rm(root, { recursive: true, force: true });
   });
 
-  it("types Locals by module augmentation, middleware, endpoints and accessors with TypeScript 7", async () => {
+  it("types Locals and PlatformEnv by module augmentation, middleware, endpoints and accessors with TypeScript 7", async () => {
     await writeFile(
       join(root, "tsconfig.json"),
       JSON.stringify({
@@ -148,6 +148,9 @@ declare module "lumiose" {
   interface Locals {
     user: { name: string } | null;
   }
+  interface PlatformEnv {
+    DB: { prepare(sql: string): unknown };
+  }
   interface RouteMap {
     "/blog/[slug]": { kind: "page"; params: { slug: string } };
     "/api/posts/[id]": { kind: "endpoint"; params: { id: string } };
@@ -170,7 +173,12 @@ export const GET: Endpoint<"/api/posts/[id]"> = (ctx) => {
   if (id === "0") notFound();
   if (!ctx.locals.user) error(401, "Sign in");
   if (id === "old") redirect("/api/posts/1", 308);
-  return Response.json({ id, user: ctx.locals.user.name });
+  ctx.platform.env.DB.prepare("select 1");
+  // @ts-expect-error PlatformEnv has no such binding
+  ctx.platform.env.KV;
+  ctx.platform.waitUntil(Promise.resolve());
+  const ip: string | undefined = ctx.platform.clientAddress;
+  return Response.json({ id, user: ctx.locals.user.name, ip });
 };
 
 export function badRedirect(): never {
