@@ -212,6 +212,12 @@ ${modes.join("\n")}
   side in place (\`branchArm\`) instead of through closures. Deeper reads such as
   \`tags={props.item.tags}\` stay lazy getters, so they run when the child reads them, as on the
   client.
+- On 2026-10-12 (TASK-246) the benchmark started flattening each result (above), which lowers
+  every framework that returns its page as concatenated pieces (Solid by about 15%) and not
+  those that already return a flat string. Measured on that method, Lumiose gained about 12%
+  over its previous runtime and compiler: compiled templates concatenate their parts directly
+  when every hole is synchronous (+8%), the unsafe URL check skips its regexes for values that
+  cannot hold a scheme (+2.6%), and text holes take a string fast path (+0.6%).
 - Versions are pinned exactly in \`package.json\` and are the latest stable releases when
   measured (decision-41). Solid 2 is a release candidate: it is an extra, labelled entry next to
   stable Solid, not a replacement.
