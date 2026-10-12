@@ -558,7 +558,7 @@ export function createRequestHandler(options: RequestHandlerOptions): RequestHan
       body = documentBody(parts, rules.stream, (error) => onError(error, request));
       // A prerendered page is a file: its inline scripts and styles are allowed by hash.
       if (hashMarker !== undefined && typeof body === "string") {
-        body = withHashPolicy(body, hashMarker);
+        body = await withHashPolicy(body, hashMarker);
       }
     } catch (error) {
       await rules.stream?.cancel(error);

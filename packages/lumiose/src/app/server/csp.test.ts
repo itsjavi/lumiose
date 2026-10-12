@@ -212,19 +212,19 @@ describe("csp helpers", () => {
     expect(addNonce("<style>a{}</style>", undefined)).toBe("<style>a{}</style>");
   });
 
-  it("hashes executable inline scripts and styles, not data blocks or external scripts", () => {
-    const policy = hashPolicy(
+  it("hashes executable inline scripts and styles, not data blocks or external scripts", async () => {
+    const policy = await hashPolicy(
       '<script nonce="m" type="application/json">{}</script><script nonce="m" src="/x.js"></script><script nonce="m" type="speculationrules">{}</script><style nonce="m">a{}</style>',
       "m",
     );
     const directives = policy.split("; ");
     expect(directives[0]!.split(" ")).toHaveLength(3);
     expect(directives[1]!.split(" ")).toHaveLength(3);
-    expect(withHashPolicy('<p nonce="m">no head</p>', "m")).toBe("<p>no head</p>");
+    expect(await withHashPolicy('<p nonce="m">no head</p>', "m")).toBe("<p>no head</p>");
   });
 
-  it("hashes only what carries the marker: injected markup stays blocked (TASK-165)", () => {
-    const html = withHashPolicy(
+  it("hashes only what carries the marker: injected markup stays blocked (TASK-165)", async () => {
+    const html = await withHashPolicy(
       '<html><head><script nonce="m">ok()</script></head><body><div><script>evil()</script><style>x{}</style></div></body></html>',
       "m",
     );

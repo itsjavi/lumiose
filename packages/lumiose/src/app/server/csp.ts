@@ -14,15 +14,15 @@
 //
 // Inline `style` attributes are not allowed: in strict mode, `style` props render as rules of a
 // nonce'd (or hashed) `<style>` (`data-l-v`), and the client sets styles through the CSSOM.
-
-import { createHash, randomBytes } from "node:crypto";
+//
+// Web Crypto, not `node:crypto`: the request path runs on edge platforms too (decision-45).
 
 /** `lumiose({ csp })`: `"strict"`, or absent for no policy. */
 export type CspOption = "strict";
 
 /** A fresh nonce: 128 random bits, base64. */
 export function createNonce(): string {
-  return randomBytes(16).toString("base64");
+  return base64(crypto.getRandomValues(new Uint8Array(16)));
 }
 
 /** The policy of a page rendered for one request. */
@@ -40,19 +40,19 @@ export function noncePolicy(nonce: string): string {
  * their nonce, which are those Lumiose and JSX emitted while prerendering (decision-27). Other inline
  * scripts and styles (raw HTML strings) are not allowed, as with a per-request nonce (TASK-165).
  */
-export function hashPolicy(html: string, marker: string): string {
-  const scripts = new Set<string>();
-  const styles = new Set<string>();
+export async function hashPolicy(html: string, marker: string): Promise<string> {
+  const scripts: string[] = [];
+  const styles: string[] = [];
   const marked = (attributes: string) => attributes.includes(` nonce="${marker}"`);
   for (const match of html.matchAll(INLINE_SCRIPT)) {
-    if (marked(match[1]!) && isExecutable(match[1]!)) scripts.add(hash(match[2]!));
+    if (marked(match[1]!) && isExecutable(match[1]!)) scripts.push(match[2]!);
   }
   for (const match of html.matchAll(INLINE_STYLE)) {
-    if (marked(match[1]!)) styles.add(hash(match[2]!));
+    if (marked(match[1]!)) styles.push(match[2]!);
   }
   return [
-    ["script-src 'self'", ...scripts].join(" "),
-    ["style-src 'self'", ...styles].join(" "),
+    ["script-src 'self'", ...(await hashes(scripts))].join(" "),
+    ["style-src 'self'", ...(await hashes(styles))].join(" "),
     "object-src 'none'",
     "base-uri 'self'",
   ].join("; ");
@@ -62,8 +62,8 @@ export function hashPolicy(html: string, marker: string): string {
  * A prerendered document with its hash policy first in `<head>` (after `<meta charset>`), and the
  * `marker` nonces it was rendered with removed: a file served to everyone has no nonce.
  */
-export function withHashPolicy(html: string, marker: string): string {
-  const policy = hashPolicy(html, marker);
+export async function withHashPolicy(html: string, marker: string): Promise<string> {
+  const policy = await hashPolicy(html, marker);
   html = html.replaceAll(` nonce="${marker}"`, "");
   const head = /<head(?:\s[^>]*)?>/i.exec(html);
   if (head === null) return html;
@@ -111,6 +111,20 @@ function isExecutable(attributes: string): boolean {
   );
 }
 
-function hash(text: string): string {
-  return `'sha256-${createHash("sha256").update(text).digest("base64")}'`;
+/** The distinct `'sha256-…'` sources of `texts`, in order of first appearance. */
+async function hashes(texts: readonly string[]): Promise<string[]> {
+  const encoder = new TextEncoder();
+  const digests = await Promise.all(
+    [...new Set(texts)].map(async (text) => {
+      const digest = await crypto.subtle.digest("SHA-256", encoder.encode(text));
+      return `'sha256-${base64(new Uint8Array(digest))}'`;
+    }),
+  );
+  return [...new Set(digests)];
+}
+
+function base64(bytes: Uint8Array): string {
+  let binary = "";
+  for (const byte of bytes) binary += String.fromCharCode(byte);
+  return btoa(binary);
 }
