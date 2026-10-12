@@ -1,11 +1,11 @@
 ---
 id: TASK-246
 title: SSR render-path optimizations (no userland changes)
-status: In Progress
+status: Done
 assignee:
   - '@Lux'
 created_date: '2026-10-12 14:06'
-updated_date: '2026-10-12 16:02'
+updated_date: '2026-10-12 16:48'
 labels:
   - benchmark
   - performance
@@ -28,7 +28,7 @@ From the 2026-10-12 SSR profiling (TASK-244 discussion with the user): optimizat
 - [x] #2 URL attribute safety: the compiler routes only URL attributes through the URL check, and the runtime check has an exact fast path; adversarial client/server tests cover it
 - [x] #3 Text holes take an inline string fast path
 - [x] #4 Direct string concatenation for server templates whose holes are known strings, or a recorded reason why not
-- [ ] #5 Each step's measured gain (or none) is recorded in the notes; pnpm check passes
+- [x] #5 Each step's measured gain (or none) is recorded in the notes; pnpm check passes
 <!-- AC:END -->
 
 ## Implementation Notes
@@ -49,4 +49,12 @@ Lux 2026-10-12, method: each step bundled (esbuild) with its runtime as a snapsh
 Lux 2026-10-12: user decision: items 3 (merged attribute holes) and 4 (class folding) stay out, given their measured gains (none and +0.6%); their ACs are removed.
 
 Lux 2026-10-12: cheaper decision-28 memo tried at the user's request: no gain. Plain getters -3.2%, memo state in the function scope -2.7% (in process, vs the current IIFE memo); the current form stays.
+
+Lux 2026-10-12: fullstack server rerun after TASK-246 (results/2026-10-12T162115, all 8 apps, rebuilt with the new compiler): Lumiose req/s unchanged within noise (home 1377→1323, issue 5464→5520; other apps moved by the same few percent). Rendering is a small share of a request in the fullstack app; the gain shows in the SSR benchmark only.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+SSR render path +12% with no userland changes: guarded direct concatenation in compiled server templates (+8%), exact fast paths in the unsafe URL check (+2.6%), a text string fast path (+0.6%). The SSR benchmark now flattens results; Lumiose leads it (619 vs Solid 580). Merged attribute holes and class folding measured no/low gain and were left out by the user; cheaper memo variants were slower. Fullstack req/s unchanged.
+<!-- SECTION:FINAL_SUMMARY:END -->
