@@ -1,0 +1,20 @@
+import { href, Title } from "lumiose";
+
+export default function Home() {
+  return (
+    <main>
+      <Title>Realtime with Lumiose</Title>
+      <h1>Realtime with Lumiose</h1>
+      <ul>
+        <li>
+          <a href={href("/events")}>Server-sent events</a>: an endpoint streams messages to an
+          island's EventSource.
+        </li>
+        <li>
+          <a href={href("/chat")}>WebSocket chat</a>: <code>ws</code> on the Node server's{" "}
+          <code>upgrade</code> event.
+        </li>
+      </ul>
+    </main>
+  );
+}

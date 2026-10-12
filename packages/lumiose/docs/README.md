@@ -49,6 +49,7 @@ mistakes** and **Related diagnostics**. Reference pages list every export with i
 ## Guides
 
 - [Authentication with Better Auth](guides/auth.md): Email and password accounts with Better Auth and Prisma: the handler as an endpoint, the session in middleware, protected pages, form actions and the browser client in an island.
+- [Realtime](guides/realtime.md): Server-sent events from an endpoint to an island's `EventSource`, WebSockets with `ws` on the Node adapter's server, proxy configs and per-platform notes.
 
 ## Deploy
 

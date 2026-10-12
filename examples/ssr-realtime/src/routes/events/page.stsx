@@ -1,0 +1,22 @@
+// Server-sent events: the feed island listens to /api/events; the form publishes through this
+// page's action, and every open feed receives the message.
+import { fail, Title, type ActionContext } from "lumiose";
+import { LiveFeed } from "../../islands/LiveFeed.stsx";
+import { publish } from "../../server/bus.server.ts";
+
+export const action = async (ctx: ActionContext<"/events">) => {
+  const text = String((await ctx.formData()).get("text") ?? "").trim();
+  if (text === "") return fail(400, { error: "Write something first." });
+  return { published: publish(text).id };
+};
+
+export default function Events() {
+  return (
+    <main>
+      <Title>Server-sent events</Title>
+      <h1>Server-sent events</h1>
+      <p>Open this page in two windows: a message posted in one appears in both.</p>
+      <LiveFeed client:load />
+    </main>
+  );
+}

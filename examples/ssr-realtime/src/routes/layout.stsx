@@ -1,0 +1,44 @@
+import { href, type LayoutProps } from "lumiose";
+
+export default function Layout(props: LayoutProps<"/">) {
+  return (
+    <div class="app">
+      <nav>
+        <a href={href("/")}>Realtime</a>
+        <a href={href("/events")}>Server-sent events</a>
+        <a href={href("/chat")}>WebSocket chat</a>
+      </nav>
+      {props.children}
+    </div>
+  );
+}
+
+<style>
+  .app {
+    max-width: 40rem;
+    margin: 0 auto;
+    padding: 1.5rem 1rem;
+  }
+  nav {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 2rem;
+  }
+</style>
+
+<style global>
+  body {
+    margin: 0;
+    font:
+      16px/1.5 system-ui,
+      sans-serif;
+  }
+  input,
+  button {
+    font: inherit;
+    padding: 0.4rem 0.6rem;
+  }
+  .error {
+    color: #b00020;
+  }
+</style>

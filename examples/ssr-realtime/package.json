@@ -1,0 +1,31 @@
+{
+  "name": "@lumiose-examples/ssr-realtime",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Lumiose sample: server-sent events from an endpoint and WebSockets with ws on the Node adapter.",
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "dev": "lumiose dev",
+    "build": "lumiose build",
+    "start": "node server.ts",
+    "typecheck": "lumiose check",
+    "test": "vitest run",
+    "test:e2e": "playwright test"
+  },
+  "dependencies": {
+    "@lumiose/adapter-node": "workspace:*",
+    "lumiose": "workspace:*",
+    "ws": "8.22.0"
+  },
+  "devDependencies": {
+    "@lumiose/cli": "workspace:*",
+    "@lumiose/vite": "workspace:*",
+    "@playwright/test": "1.63.0",
+    "@types/ws": "8.18.2"
+  },
+  "demo": {
+    "title": "Realtime: server-sent events and WebSockets",
+    "kind": "example"
+  }
+}

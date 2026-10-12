@@ -1,0 +1,70 @@
+// Island: the live feed. An EventSource on /api/events fills a signal; the form posts to the
+// page's action without a reload, so the stream stays open.
+import { actionData, onCleanup, onMount, signal, submit, type ActionData } from "lumiose";
+import type { Message } from "../lib/messages.ts";
+import type { action } from "../routes/events/page.stsx";
+
+export function LiveFeed() {
+  const messages = signal<Message[]>([]);
+  const state = signal<"connecting" | "open" | "reconnecting">("connecting");
+
+  onMount(() => {
+    const source = new EventSource("/api/events");
+    source.addEventListener("open", () => state.set("open"));
+    // EventSource reconnects by itself (after the stream's `retry:` delay).
+    source.addEventListener("error", () => state.set("reconnecting"));
+    source.addEventListener("message", (event) => {
+      const message = JSON.parse(event.data) as Message;
+      messages.update((list) => [...list.slice(-49), message]);
+    });
+    // Runs when the island is disposed: closing the source ends the request, and the server's
+    // cleanup unsubscribes.
+    onCleanup(() => source.close());
+  });
+
+  async function post(event: SubmitEvent) {
+    const form = event.currentTarget as HTMLFormElement;
+    const result = await submit<typeof action>(event);
+    if (result.type === "success") form.reset();
+  }
+
+  return (
+    <section class="feed" data-state={state()}>
+      <p class="state">{state() === "open" ? "Live" : "Connecting…"}</p>
+      <ol class="messages">
+        {messages().map((message) => (
+          <li key={message.id}>
+            <time>{message.at.slice(11, 19)}</time> {message.text}
+          </li>
+        ))}
+      </ol>
+      <form method="post" onSubmit={post}>
+        <input name="text" aria-label="Message" autocomplete="off" required />
+        <button>Send</button>
+      </form>
+      <p class="error" role="alert">
+        {errorOf(actionData<typeof action>())}
+      </p>
+    </section>
+  );
+}
+
+/** The failure's message: the action's data is told apart by its shape. */
+function errorOf(data: ActionData<typeof action> | undefined): string | undefined {
+  return data !== undefined && "error" in data ? data.error : undefined;
+}
+
+<style>
+  .feed {
+    display: grid;
+    gap: 0.75rem;
+  }
+  .messages {
+    min-height: 6rem;
+    padding-left: 1.25rem;
+  }
+  time {
+    color: #666;
+    font-variant-numeric: tabular-nums;
+  }
+</style>

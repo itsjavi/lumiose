@@ -1,0 +1,15 @@
+// WebSockets: the chat island talks to /ws, which server.ts (and vite.config.ts in dev) attach to
+// the Node server with `ws`.
+import { Title } from "lumiose";
+import { Chat } from "../../islands/Chat.stsx";
+
+export default function ChatPage() {
+  return (
+    <main>
+      <Title>WebSocket chat</Title>
+      <h1>WebSocket chat</h1>
+      <p>Open this page in two windows and send a message.</p>
+      <Chat client:load />
+    </main>
+  );
+}

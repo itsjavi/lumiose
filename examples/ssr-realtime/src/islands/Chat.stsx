@@ -1,0 +1,64 @@
+// Island: a chat over a WebSocket to /ws. Messages from every connected window arrive on the
+// socket; sending writes to it.
+import { onCleanup, onMount, signal } from "lumiose";
+import type { Message } from "../lib/messages.ts";
+
+export function Chat() {
+  const messages = signal<Message[]>([]);
+  const open = signal(false);
+  let socket: WebSocket | undefined;
+
+  onMount(() => {
+    const url = new URL("/ws", location.href);
+    url.protocol = location.protocol === "https:" ? "wss:" : "ws:";
+    socket = new WebSocket(url);
+    socket.addEventListener("open", () => open.set(true));
+    socket.addEventListener("close", () => open.set(false));
+    socket.addEventListener("message", (event) => {
+      const message = JSON.parse(String(event.data)) as Message;
+      messages.update((list) => [...list.slice(-49), message]);
+    });
+    onCleanup(() => socket?.close());
+  });
+
+  function send(event: SubmitEvent) {
+    event.preventDefault();
+    const form = event.currentTarget as HTMLFormElement;
+    const text = String(new FormData(form).get("text") ?? "").trim();
+    if (text === "" || socket?.readyState !== WebSocket.OPEN) return;
+    socket.send(text);
+    form.reset();
+  }
+
+  return (
+    <section class="chat" data-state={open() ? "open" : "closed"}>
+      <p class="state">{open() ? "Connected" : "Connecting…"}</p>
+      <ol class="messages">
+        {messages().map((message) => (
+          <li key={message.id}>
+            <time>{message.at.slice(11, 19)}</time> {message.text}
+          </li>
+        ))}
+      </ol>
+      <form onSubmit={send}>
+        <input name="text" aria-label="Message" autocomplete="off" required />
+        <button disabled={!open()}>Send</button>
+      </form>
+    </section>
+  );
+}
+
+<style>
+  .chat {
+    display: grid;
+    gap: 0.75rem;
+  }
+  .messages {
+    min-height: 6rem;
+    padding-left: 1.25rem;
+  }
+  time {
+    color: #666;
+    font-variant-numeric: tabular-nums;
+  }
+</style>

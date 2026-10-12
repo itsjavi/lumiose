@@ -209,5 +209,6 @@ server {
 `proxy_set_header Host $host` matters: nginx sends the upstream's name (`my_app`) as `Host`
 otherwise. `http2 on` needs nginx 1.25.1 or later; on older versions, write `listen 443 ssl http2`.
 `proxy_http_version 1.1` with an empty `Connection` header reuses connections to Node
-(`keepalive`). `client_max_body_size` should match the largest body the app accepts
+(`keepalive`). For WebSockets, add the `/ws` location from the [realtime guide](../guides/realtime.md#behind-a-proxy).
+`client_max_body_size` should match the largest body the app accepts
 ([Security](../concepts/security.md)), or nginx answers `413` first.
