@@ -7,7 +7,7 @@ status: To Do
 assignee:
   - Nova
 created_date: '2026-10-12 20:55'
-updated_date: '2026-10-12 21:45'
+updated_date: '2026-10-12 21:46'
 labels:
   - i18n
   - router
@@ -30,4 +30,6 @@ Beacon (TASK-255) 2026-10-12: (5) Prefetch vs detection: Chromium's speculation-
 Nova 2026-10-12: (5) fixed in TASK-254 (6af11f1): speculation rules leave out / with detection on, and detecting requests with Sec-Purpose: prefetch get a 503 no-store the browser discards; the examples' prefetch="none" workaround is removed.
 
 Lux 2026-10-12: user approved item 6 as alternates(pattern?, params?): no argument = the current page; with a route pattern (and params) = that route's declared locales as [{ locale, href }]. No new name. Remove the hard-coded ABOUT_LOCALES from the i18n examples once it exists.
+
+Lux: item 1 (SPA alternates/canonical) split into its own task for Spark, after TASK-256.
 <!-- SECTION:NOTES:END -->
