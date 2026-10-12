@@ -187,7 +187,9 @@ ${modes.join("\n")}
 - \`scripts/run.ts\` renders once and checks the HTML, warms up for ${warmupMs} ms, then counts
   renders in back-to-back ${runMs} ms runs, with a full GC (\`--expose-gc\`) before each run.
   Async renderers (Lumiose, Vue, Astro, Remix 3) are awaited; sync ones (Solid, Svelte,
-  React, Preact) are not.
+  React, Preact) are not. Each render then reads one character of its result: renderers build
+  the page by concatenation, which V8 keeps as a tree of pieces, and the read makes V8 join
+  them into one string, the work a server does anyway when it writes the response.
 - \`scripts/bench.ts\` runs every framework in a fresh process per round, interleaving the
   frameworks across rounds, and reports the mean and sample standard deviation of all runs.
 

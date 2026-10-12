@@ -29,6 +29,18 @@ function once(): string | Promise<string> {
   return render(data);
 }
 
+/**
+ * Renderers build their result by concatenation, which V8 keeps as a tree of string pieces until
+ * the characters are needed. A server pays for joining it when it writes the response, so each
+ * render reads one character of the result, which makes V8 flatten it.
+ */
+function flatten(html: string): number {
+  return html.charCodeAt(html.length >> 1);
+}
+
+/** Keeps the flattening reads observable. */
+let sink = 0;
+
 /** Renders until `ms` elapsed; resolves to renders per second. */
 async function measure(ms: number): Promise<number> {
   let count = 0;
@@ -36,8 +48,9 @@ async function measure(ms: number): Promise<number> {
   const end = start + ms;
   let now = start;
   while (now < end) {
-    const html = once();
-    if (typeof html !== "string") await html;
+    let html = once();
+    if (typeof html !== "string") html = await html;
+    sink ^= flatten(html);
     count++;
     now = performance.now();
   }
