@@ -2,7 +2,8 @@
 // route manifest by `lumiose dev` and `lumiose build`, which load it on pages that render an SPA
 // instead of the island loader. It holds the client route table (every route, so that the router
 // knows which URLs are not its own), a lazy import per SPA layout and page, `viewTransition()` with
-// `lumiose({ viewTransitions: true })`, and starts the router (./boot.ts) with the app's island
+// `lumiose({ viewTransitions: true })`, `followLocaleLinks()` with `lumiose({ i18n })` (the hreflang
+// and canonical links, TASK-263), and starts the router (./boot.ts) with the app's island
 // manifest. A build where nothing hydrates (every SPA page is client-rendered and the island
 // manifest is empty) starts it with ./csr.ts instead, which leaves the island loader and hydration
 // out of the bundle.
@@ -19,6 +20,7 @@ export const SPA_ENTRY_ID = "\0lumiose:spa";
 const BOOT = runtimeFile("app/router/boot.ts");
 const CSR = runtimeFile("app/router/csr.ts");
 const VIEW_TRANSITION = runtimeFile("dom/view-transition.ts");
+const LOCALE_LINKS = runtimeFile("app/router/locale-links.ts");
 
 type Manifest = Pick<RouteManifest, "routes" | "layouts" | "notFoundPages" | "errorPages" | "i18n">;
 
@@ -49,20 +51,24 @@ export function spaEntryCode(
   base: ${JSON.stringify(base)},
   routes: ${JSON.stringify(table.routes)},
   notFoundPages: ${JSON.stringify(table.notFoundPages)},
-  pages: ${JSON.stringify(table.pages)},${table.i18n === undefined ? "" : `\n  i18n: ${JSON.stringify(table.i18n)},`}
+  pages: ${JSON.stringify(table.pages)},${table.i18n === undefined ? "" : `\n  i18n: ${JSON.stringify(table.i18n)},\n  followLocaleLinks,`}
   modules: {
 ${modules.join("\n")}
   },${viewTransitions ? "\n  viewTransition," : ""}
 }`;
-  const transition = viewTransitions
+  // Optional runtime modules, imported only when used, so other SPAs leave them out.
+  let imports = viewTransitions
     ? `import { viewTransition } from ${JSON.stringify(VIEW_TRANSITION)};\n`
     : "";
+  if (table.i18n !== undefined) {
+    imports += `import { followLocaleLinks } from ${JSON.stringify(LOCALE_LINKS)};\n`;
+  }
   return csr
-    ? `${transition}import { startCsr } from ${JSON.stringify(CSR)};
+    ? `${imports}import { startCsr } from ${JSON.stringify(CSR)};
 
 startCsr(${config});
 `
-    : `${transition}import islands from "virtual:lumiose/islands";
+    : `${imports}import islands from "virtual:lumiose/islands";
 import { startSpa } from ${JSON.stringify(BOOT)};
 
 startSpa(islands, ${config});

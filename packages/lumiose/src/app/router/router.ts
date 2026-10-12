@@ -56,7 +56,7 @@ import { createRouteMatcher, type RouteMatcher } from "../routes/match.ts";
 import { formatPattern } from "../routes/segments.ts";
 import type { RouteManifest } from "../routes/manifest.ts";
 import { HttpError, isHttpError, isRedirect } from "../server/control.ts";
-import { followLocaleLinks } from "./locale-links.ts";
+import type { followLocaleLinks } from "./locale-links.ts";
 import { REROUTE_ATTR, type ClientRoute, type ClientTable } from "./table.ts";
 
 export type Params = Record<string, string>;
@@ -74,6 +74,11 @@ export interface SpaConfig extends ClientTable {
    * it only then, so other SPAs leave it out.
    */
   viewTransition?: (update: () => void) => Promise<void>;
+  /**
+   * `followLocaleLinks()` (./locale-links.ts) with `lumiose({ i18n })`: the hreflang and canonical
+   * links follow the committed view. The entry imports it only then, so other SPAs leave it out.
+   */
+  followLocaleLinks?: typeof followLocaleLinks;
 }
 
 interface Level {
@@ -349,7 +354,7 @@ function spaRoot(r: Router, view: View): Renderable {
       const locale = localeOf(r, r.current().url);
       if (locale !== undefined) document.documentElement.lang = locale;
     });
-    followLocaleLinks(i18n, r.config.base, r.current);
+    r.config.followLocaleLinks?.(i18n, r.config.base, r.current);
   }
   provideContext(ROUTE, r.scope);
   provideContext(REVISION, r.revision);

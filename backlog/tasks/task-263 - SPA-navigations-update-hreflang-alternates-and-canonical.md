@@ -5,7 +5,7 @@ status: Done
 assignee:
   - Spark
 created_date: '2026-10-12 21:46'
-updated_date: '2026-10-12 22:24'
+updated_date: '2026-10-12 22:28'
 labels:
   - i18n
   - spa
@@ -38,6 +38,8 @@ Spark 2026-10-13: implemented.
 - Sizes: core + dom (every export) min+brotli 10182 -> 10194 (+12, the Head change; cap 10240). SPA entry of a real non-i18n app (spa-router-e2e at HEAD, lumiose build): spa chunk 16925 -> 17218 B brotli (+293), since the router imports the module statically. A lazy import() costs +69 eager, but emits a never-loaded chunk in non-i18n builds, which packages/vite/src/app/production/client-runtime.test.ts (exact chunk list, not Spark area) rejects.
 - PROPOSAL for Lux (outside Spark paths): have the SPA entry (packages/vite/src/app/router/entry.ts) pass followLocaleLinks in SpaConfig only with i18n, like viewTransition. SPAs without locales would then pay 0 bytes.
 Evidence: router.test.ts (server links adopted with a site origin, then /users/2, /search (English only: none), /es/about (page own canonical kept, no Lumiose canonical), /es/users/3; first view without server links), head.test.ts (hydrated <Head> twins taken and removed). spa-router-e2e now has i18n (en, es; the users layout declares both) and a TASK-263 spec (server links on /users/1, client navigation to /users/2 updates them, Home has none): 30/30 Playwright green in dev and build. pnpm check green (1787 tests, size, cargo).
+
+Spark 2026-10-13 (approved by Lux): the SPA entry (packages/vite/src/app/router/entry.ts) imports followLocaleLinks and passes it in SpaConfig only with lumiose({ i18n }), like viewTransition; the router calls config.followLocaleLinks?.(). SPA entries without i18n contain no locale-links code (checked: no chunk of a non-i18n build mentions rel=canonical/hreflang). Real builds, SPA entry chunk min/brotli, same tree vs 03b2e4f4: non-i18n spa-router-e2e 53127/17255 -> 52128/16906 (-999 min, -349 B brotli); i18n spa-router-e2e 53283/17302 -> 53319/17322 (+20 B brotli, the entry import). Tests: entry.test.ts (import and config field only with i18n, csr and hydrating entries), router tests, spa-router-e2e 30/30. pnpm check stopped at lint on packages/adapter-cloudflare/src/index.ts (another worker, uncommitted); the remaining steps run separately are green (1790 tests, size, scripts, fmt:examples).
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary

@@ -23,6 +23,7 @@ import { notFound, redirect } from "../server/control.ts";
 import { href } from "../routes/href.ts";
 import type { RouteSegment } from "../routes/segments.ts";
 import { Link, navigate, isNavigating, locale, params, route, searchParams, url } from "./index.ts";
+import { followLocaleLinks } from "./locale-links.ts";
 import { createRouter, invalidate, prepareRoot, resetRouter, type SpaConfig } from "./router.ts";
 
 interface Deferred<T> {
@@ -193,6 +194,7 @@ const localized = (): SpaConfig => {
   return {
     ...base,
     i18n: { locales: ["en", "es"], defaultLocale: "en" },
+    followLocaleLinks,
     routes: base.routes.map((each) =>
       each.levels === undefined
         ? each

@@ -5,6 +5,9 @@
 // with `location.origin`: it removes the links it manages and writes the view's. At start it
 // manages the server's links: the alternates of the configured locales, and the canonical whose
 // path is the first view's own (a page's own canonical has another).
+//
+// The SPA entry passes it to the router (`SpaConfig.followLocaleLinks`) only with
+// `lumiose({ i18n })`, so SPAs without locales leave this module out.
 import { effect } from "../../core/effect.ts";
 import { localizePath, splitLocale, type I18nUrls } from "../i18n/config.ts";
 import { appPath, envTrailingSlash } from "../routes/href.ts";
