@@ -149,3 +149,34 @@ describe.skipIf(!binding)("@lumiose/adapter-cloudflare", () => {
     });
   });
 });
+
+describe.skipIf(!binding)("@lumiose/adapter-cloudflare, a fully prerendered site", () => {
+  it("writes no Worker: Cloudflare serves the assets alone", async () => {
+    const site = realpathSync.native(mkdtempSync(join(tmpdir(), "lumiose-cloudflare-static-")));
+    try {
+      for (const [name, code] of Object.entries({
+        "vite.config.ts": FILES["vite.config.ts"]!,
+        "src/routes/page.stsx": FILES["src/routes/page.stsx"]!,
+      })) {
+        mkdirSync(dirname(join(site, name)), { recursive: true });
+        writeFileSync(join(site, name), code);
+      }
+      linkLumiose(site);
+      symlinkSync(
+        resolve(import.meta.dirname, ".."),
+        join(site, "node_modules/@lumiose/adapter-cloudflare"),
+        "junction",
+      );
+      const result = await build({ root: site, logLevel: "silent" });
+      expect(result.serverEntry).toBeUndefined();
+      expect(existsSync(join(site, "dist/_worker.js"))).toBe(false);
+      expect(readdirSync(join(site, "dist/client")).toSorted()).toEqual([
+        "404.html",
+        "_headers",
+        "index.html",
+      ]);
+    } finally {
+      rmSync(site, { recursive: true, force: true });
+    }
+  });
+});

@@ -146,7 +146,8 @@ A route (`static`, or `spa` with `prerender`) that reads the request while it pr
 endpoint can only export `GET` ([LUM5005](../errors/LUM5005.md)). Middleware still runs. A form
 post to a prerendered page reaches its `action` on the server. Serve the build with
 `@lumiose/adapter-node` (`createServer({ port })`: `dist/client` with caching headers, then the
-handler) or `lumiose preview`, or run `dist/server/entry.js` with Bun or Deno. A site whose every route is prerendered (no `server` route, no `spa`
+handler) or `lumiose preview`, run `dist/server/entry.js` with Bun or Deno, or deploy it to
+Cloudflare, Vercel or Netlify with an adapter ([Deploy](../deploy/README.md)). A site whose every route is prerendered (no `server` route, no `spa`
 route rendered per request, no form action; `ssr = false` routes with params need a `404.html`
 shell) builds no `dist/server`: deploy `dist/client` to any static host, and `lumiose preview` serves
 it without the adapter. Set response headers once with `lumiose({ headers })`

@@ -32,8 +32,7 @@ A request goes through, in order:
    itself.
 
 It does not compress the app's responses on the fly (static files use their precompressed
-copies): Deno compresses by itself, and CDNs and proxies do in front of the others. On Node,
-`@lumiose/adapter-node` compresses.
+copies): put a CDN or proxy that compresses in front. On Node, `@lumiose/adapter-node` compresses.
 
 The function works detached (`const { fetch } = handler`). Builds made with a deploy adapter
 (Cloudflare, Vercel, Netlify) leave the static files to the platform, which serves `dist/client`
@@ -140,7 +139,8 @@ import handler from "./dist/server/entry.js";
 serve({ fetch: (request) => handler.fetch(request), port: 3000 });
 ```
 
-For Cloudflare, Vercel and Netlify, and for static hosts, see the deploy guides.
+For Cloudflare, Vercel, Netlify, static hosts and the rest, see the
+[deploy guides](../deploy/README.md).
 
 ## Example
 

@@ -51,6 +51,16 @@ mistakes** and **Related diagnostics**. Reference pages list every export with i
 - [Docker](deploy/docker.md): A multi-stage Dockerfile: `node:24-alpine`, production dependencies only, a non-root user and a health check.
 - [VPS](deploy/vps.md): `@lumiose/adapter-node` under systemd or pm2, behind Caddy or nginx; what the adapter already does for compression and caching.
 - [Coolify](deploy/coolify.md): Deploy from the Dockerfile with Coolify's Dockerfile build pack.
+- [Cloudflare Workers](deploy/cloudflare.md): `@lumiose/adapter-cloudflare`: the Worker, static assets, bindings as `ctx.platform.env`.
+- [Vercel](deploy/vercel.md): `@lumiose/adapter-vercel`: the Build Output API, with a Node.js or Edge function.
+- [Netlify](deploy/netlify.md): `@lumiose/adapter-netlify`: the site and a Netlify Function.
+- [Bun](deploy/bun.md): `bun dist/server/entry.js`, static files included.
+- [Deno](deploy/deno.md): `deno serve dist/server/entry.js`, static files included.
+- [Fly.io](deploy/fly.md): The Docker image on Fly Machines, behind Fly's proxy.
+- [Render](deploy/render.md): A Node web service (or the Docker image), and static sites.
+- [Railway](deploy/railway.md): The Node adapter with Railway's Node builder, or the Docker image.
+- [Static hosts](deploy/static.md): A fully prerendered site on Cloudflare, Netlify, GitHub Pages, S3 with CloudFront or any file server.
+- [AWS Lambda](deploy/aws-lambda.md): A handler from Lambda's events to the server build's `fetch`.
 
 ## Reference
 

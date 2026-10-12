@@ -60,6 +60,16 @@ mistakes** and **Related diagnostics**. Reference pages list every export with i
 - [Docker](deploy/docker.md): A multi-stage Dockerfile: `node:24-alpine`, production dependencies only, a non-root user and a health check.
 - [VPS](deploy/vps.md): `@lumiose/adapter-node` under systemd or pm2, behind Caddy or nginx; what the adapter already does for compression and caching.
 - [Coolify](deploy/coolify.md): Deploy from the Dockerfile with Coolify's Dockerfile build pack.
+- [Cloudflare Workers](deploy/cloudflare.md): `@lumiose/adapter-cloudflare`: the Worker, static assets, bindings as `ctx.platform.env`.
+- [Vercel](deploy/vercel.md): `@lumiose/adapter-vercel`: the Build Output API, with a Node.js or Edge function.
+- [Netlify](deploy/netlify.md): `@lumiose/adapter-netlify`: the site and a Netlify Function.
+- [Bun](deploy/bun.md): `bun dist/server/entry.js`, static files included.
+- [Deno](deploy/deno.md): `deno serve dist/server/entry.js`, static files included.
+- [Fly.io](deploy/fly.md): The Docker image on Fly Machines, behind Fly's proxy.
+- [Render](deploy/render.md): A Node web service (or the Docker image), and static sites.
+- [Railway](deploy/railway.md): The Node adapter with Railway's Node builder, or the Docker image.
+- [Static hosts](deploy/static.md): A fully prerendered site on Cloudflare, Netlify, GitHub Pages, S3 with CloudFront or any file server.
+- [AWS Lambda](deploy/aws-lambda.md): A handler from Lambda's events to the server build's `fetch`.
 
 ## Reference
 
@@ -2911,7 +2921,8 @@ A route (`static`, or `spa` with `prerender`) that reads the request while it pr
 endpoint can only export `GET` ([LUM5005](../errors/LUM5005.md)). Middleware still runs. A form
 post to a prerendered page reaches its `action` on the server. Serve the build with
 `@lumiose/adapter-node` (`createServer({ port })`: `dist/client` with caching headers, then the
-handler) or `lumiose preview`, or run `dist/server/entry.js` with Bun or Deno. A site whose every route is prerendered (no `server` route, no `spa`
+handler) or `lumiose preview`, run `dist/server/entry.js` with Bun or Deno, or deploy it to
+Cloudflare, Vercel or Netlify with an adapter ([Deploy](../deploy/README.md)). A site whose every route is prerendered (no `server` route, no `spa`
 route rendered per request, no form action; `ssr = false` routes with params need a `404.html`
 shell) builds no `dist/server`: deploy `dist/client` to any static host, and `lumiose preview` serves
 it without the adapter. Set response headers once with `lumiose({ headers })`
@@ -3949,7 +3960,14 @@ A site whose every route is prerendered builds no `dist/server`: any static host
 `dist/client`. Anything else needs a runtime for `dist/server/entry.js`. On Node,
 `@lumiose/adapter-node` serves both directories, from the `server.ts` that
 `create-lumiose --template ssr` writes ([reference](../reference/adapter-node.md)); the guides
-below run it on Docker, a VPS and Coolify.
+below run it on Docker, a VPS, Coolify, Fly.io, Render and Railway. `dist/server/entry.js` exports
+a web-standard `{ fetch }` ([the server build](../reference/server-entry.md)), which Bun and Deno
+serve as it is.
+
+For Cloudflare, Vercel and Netlify, a deploy adapter in the Vite config writes the platform's
+output after the build: `lumiose({ adapter: cloudflare() })`, `vercel()` or `netlify()`. Those
+platforms serve `dist/client` themselves and compress on their own, so the build then writes no
+`.br`/`.gz` copies.
 
 ## Production settings
 
@@ -3968,6 +3986,14 @@ The Node adapter and the request handler read these environment variables:
 - [Docker](docker.md): A multi-stage Dockerfile: `node:24-alpine`, production dependencies only, a non-root user and a health check.
 - [VPS](vps.md): The Node adapter under systemd or pm2, behind Caddy or nginx, and what the adapter already does for compression and caching.
 - [Coolify](coolify.md): Deploy from the Dockerfile with Coolify's Dockerfile build pack.
+- [Cloudflare Workers](cloudflare.md): `@lumiose/adapter-cloudflare`: the Worker, static assets, bindings as `ctx.platform.env`.
+- [Vercel](vercel.md): `@lumiose/adapter-vercel`: the Build Output API, with a Node.js or Edge function.
+- [Netlify](netlify.md): `@lumiose/adapter-netlify`: the site and a Netlify Function.
+- [Bun](bun.md): `bun dist/server/entry.js`, static files included.
+- [Deno](deno.md): `deno serve dist/server/entry.js`, static files included.
+- [Fly.io](fly.md), [Render](render.md), [Railway](railway.md): The Node adapter on container and Node hosts.
+- [Static hosts](static.md): A fully prerendered site on Cloudflare, Netlify, GitHub Pages, S3 with CloudFront or any file server.
+- [AWS Lambda](aws-lambda.md): A handler from Lambda's events to the server build's `fetch`.
 
 ## Verification
 
@@ -3982,18 +4008,29 @@ Each target's status says how far its guide has been checked:
 <!-- To add a target: a page in this directory, a link in the Deploy list of ../README.md (which
      also places it in the website's navigation and llms.txt), and a row below. -->
 
-| Target                   | Guide                                    | Status         | Checked    | What was checked                                                                                                                                                                                                                                                                                                                    |
-| ------------------------ | ---------------------------------------- | -------------- | ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Docker                   | [Docker](docker.md)                      | Tested locally | 2026-10-12 | The Dockerfile on the page, on a `create-lumiose@0.2.0 --template ssr` project with packages from npm: builds, healthy, serves pages (brotli) and `immutable` assets, runs as `node`, stops in under a second. Docker 29.8, linux/arm64. The npm variant is not tested.                                                             |
-| Docker, bookshelf sample | [Docker](docker.md#the-bookshelf-sample) | Tested locally | 2026-10-12 | `examples/ssr-bookshelf/e2e/docker-smoke.ts` (local only, not in CI): health, a streamed page compressed on the fly, database queries, a sign-in form post, prerendered pages, `immutable` hashed assets served from their `.br` copies, the `node` user, no dev dependency in the image, a prompt stop. Docker 29.8, linux/arm64.  |
-| VPS: systemd             | [VPS](vps.md#systemd)                    | Tested locally | 2026-10-12 | The unit on the page ran the npm project under systemd 252 (Debian 12, in a privileged container): active, serving, stopped cleanly; `systemd-analyze verify` passes. Not on a VPS.                                                                                                                                                 |
-| VPS: pm2                 | [VPS](vps.md#pm2)                        | Tested locally | 2026-10-12 | The ecosystem file on the page with pm2 6.0 (fork mode) in a container: serves, inherits the shell's variables, survives `pm2 save` and `pm2 resurrect`. `pm2 startup` and cluster mode are not tested.                                                                                                                             |
-| Caddy                    | [VPS](vps.md#caddy)                      | Tested locally | 2026-10-12 | The Caddyfile on the page (Caddy 2.11, `localhost` with Caddy's local CA instead of a public certificate) in front of the bookshelf container: HTTP to HTTPS redirect, HTTP/2, streamed chunks not held back, brotli and gzip passed through unchanged (with `encode` too), `immutable` assets, a form post and a cross-site `403`. |
-| nginx                    | [VPS](vps.md#nginx)                      | Tested locally | 2026-10-12 | The config on the page (nginx 1.31, a self-signed certificate in place of certbot's) in front of the bookshelf container: `nginx -t`, the same checks as Caddy (with `gzip on` too); streaming also with nginx's default `proxy_buffering on`.                                                                                      |
-| Coolify                  | [Coolify](coolify.md)                    | Not tested     |            | Not deployed to a Coolify instance yet. It builds the Dockerfile tested above; the steps follow Coolify v4's documentation.                                                                                                                                                                                                         |
-| Cloudflare Workers       |                                          | Planned        |            |                                                                                                                                                                                                                                                                                                                                     |
-| Vercel                   |                                          | Planned        |            |                                                                                                                                                                                                                                                                                                                                     |
-| Netlify                  |                                          | Planned        |            |                                                                                                                                                                                                                                                                                                                                     |
+| Target                   | Guide                                       | Status         | Checked    | What was checked                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| ------------------------ | ------------------------------------------- | -------------- | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Docker                   | [Docker](docker.md)                         | Tested locally | 2026-10-12 | The Dockerfile on the page, on a `create-lumiose@0.2.0 --template ssr` project with packages from npm: builds, healthy, serves pages (brotli) and `immutable` assets, runs as `node`, stops in under a second. Docker 29.8, linux/arm64. The npm variant is not tested.                                                                                                                                                                                                                  |
+| Docker, bookshelf sample | [Docker](docker.md#the-bookshelf-sample)    | Tested locally | 2026-10-12 | `examples/ssr-bookshelf/e2e/docker-smoke.ts` (local only, not in CI): health, a streamed page compressed on the fly, database queries, a sign-in form post, prerendered pages, `immutable` hashed assets served from their `.br` copies, the `node` user, no dev dependency in the image, a prompt stop. Docker 29.8, linux/arm64.                                                                                                                                                       |
+| VPS: systemd             | [VPS](vps.md#systemd)                       | Tested locally | 2026-10-12 | The unit on the page ran the npm project under systemd 252 (Debian 12, in a privileged container): active, serving, stopped cleanly; `systemd-analyze verify` passes. Not on a VPS.                                                                                                                                                                                                                                                                                                      |
+| VPS: pm2                 | [VPS](vps.md#pm2)                           | Tested locally | 2026-10-12 | The ecosystem file on the page with pm2 6.0 (fork mode) in a container: serves, inherits the shell's variables, survives `pm2 save` and `pm2 resurrect`. `pm2 startup` and cluster mode are not tested.                                                                                                                                                                                                                                                                                  |
+| Caddy                    | [VPS](vps.md#caddy)                         | Tested locally | 2026-10-12 | The Caddyfile on the page (Caddy 2.11, `localhost` with Caddy's local CA instead of a public certificate) in front of the bookshelf container: HTTP to HTTPS redirect, HTTP/2, streamed chunks not held back, brotli and gzip passed through unchanged (with `encode` too), `immutable` assets, a form post and a cross-site `403`.                                                                                                                                                      |
+| nginx                    | [VPS](vps.md#nginx)                         | Tested locally | 2026-10-12 | The config on the page (nginx 1.31, a self-signed certificate in place of certbot's) in front of the bookshelf container: `nginx -t`, the same checks as Caddy (with `gzip on` too); streaming also with nginx's default `proxy_buffering on`.                                                                                                                                                                                                                                           |
+| Coolify                  | [Coolify](coolify.md)                       | Not tested     |            | Not deployed to a Coolify instance yet. It builds the Dockerfile tested above; the steps follow Coolify v4's documentation.                                                                                                                                                                                                                                                                                                                                                              |
+| Cloudflare Workers       | [Cloudflare](cloudflare.md)                 | Tested locally | 2026-10-12 | `examples/ssr-deploy`, `pnpm e2e:cloudflare` (local only, not in CI) in `wrangler@4.142.0 dev` (workerd): prerendered page and assets with `_headers` (defaults, `lumiose({ headers })`, `immutable` assets), a streamed server page with a CSP nonce, endpoints with `ctx.platform` (a `vars` binding, `CF-Connecting-IP`), an npm package, a form post to a prerendered page and a cross-site `403`, the not-found page, `waitUntil`. `process.env` holds `vars` with `nodejs_compat`. |
+| Cloudflare, static site  | [Static hosts](static.md#cloudflare)        | Tested locally | 2026-10-12 | `examples/ssg-travel-journal`'s `dist/client` by hand in `wrangler@4.142.0 dev` (assets only, `not_found_handling: "404-page"`) and `wrangler pages dev`: pages, `_headers`, `404.html` with status 404. Both serve the `.br`/`.gz` copies as plain files, hence the advice to leave them out.                                                                                                                                                                                           |
+| Vercel, Node.js runtime  | [Vercel](vercel.md)                         | Tested locally | 2026-10-12 | `pnpm e2e:vercel` (local only): `config.json` and `.vc-config.json` checked against the Build Output API v3, the function directory copied out of the repository (npm package traced in), then served by a Node.js harness that follows the routes and calls `handler(req, res)` as Vercel's launcher does: the same checks as Cloudflare. A harness, not Vercel's router or runtime.                                                                                                    |
+| Vercel, Edge runtime     | [Vercel](vercel.md#nodejs-or-edge)          | Tested locally | 2026-10-12 | `pnpm e2e:vercel --edge`: the same validation and checks, with the bundled module (it imports only `node:async_hooks`) called in Node.js, not in Vercel's Edge runtime.                                                                                                                                                                                                                                                                                                                  |
+| Netlify                  | [Netlify](netlify.md)                       | Tested locally | 2026-10-12 | `pnpm e2e:netlify` (local only) with `netlify-cli@27.10.0 serve`, which runs the build and bundles both functions: the same checks as Cloudflare, except two the local server cannot show: it sends `max-age=0` for static files (the `immutable` rule is checked in `_headers`), and its invocations share no state, so `waitUntil` is not observed.                                                                                                                                    |
+| Netlify, static site     | [Static hosts](static.md#netlify)           | Tested locally | 2026-10-12 | `examples/ssg-travel-journal`'s `dist/client` by hand with `netlify-cli@27.10.0 serve`: pages with and without the slash, `_headers`, `404.html` with status 404.                                                                                                                                                                                                                                                                                                                        |
+| Bun                      | [Bun](bun.md)                               | Tested locally | 2026-10-12 | `pnpm e2e:runtimes bun` (local only): `bun@1.4.2 dist/server/entry.js`, the same checks as Cloudflare (static files from `dist/client`, `ctx.platform.clientAddress` from Bun). The Dockerfile on the page is not tested.                                                                                                                                                                                                                                                                |
+| Deno                     | [Deno](deno.md)                             | Tested locally | 2026-10-12 | `pnpm e2e:runtimes deno` (local only): `deno@2.9.6 serve --allow-net --allow-read --allow-env`, the same checks. Deno Deploy is not tested.                                                                                                                                                                                                                                                                                                                                              |
+| Fly.io                   | [Fly.io](fly.md)                            | Not tested     |            | Runs the Docker image tested above; `fly.toml` follows Fly's documentation.                                                                                                                                                                                                                                                                                                                                                                                                              |
+| Render                   | [Render](render.md)                         | Not tested     |            | Settings from Render's documentation; the build and start commands are the Node adapter's, tested on a VPS.                                                                                                                                                                                                                                                                                                                                                                              |
+| Railway                  | [Railway](railway.md)                       | Not tested     |            | Settings from Railway's documentation; the build and start commands are the Node adapter's.                                                                                                                                                                                                                                                                                                                                                                                              |
+| GitHub Pages             | [Static hosts](static.md#github-pages)      | Not tested     |            | The workflow follows GitHub's Pages actions.                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| S3 and CloudFront        | [Static hosts](static.md#s3-and-cloudfront) | Not tested     |            | The commands follow AWS's documentation.                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| AWS Lambda               | [AWS Lambda](aws-lambda.md)                 | Not tested     |            | Not run in Lambda. The handler on the page was called in Node.js 26 with Function URL (payload 2.0) events against the sample's build: an endpoint, a streamed page (buffered), a form post, the not-found page, a static file.                                                                                                                                                                                                                                                          |
 
 <!-- source: deploy/docker.md -->
 
@@ -4427,6 +4464,679 @@ Set **Base Directory** to the directory the Dockerfile's `COPY` lines are relati
 **Dockerfile Location** to the Dockerfile's path from there. The bookshelf sample, for example,
 builds from the repository root with `/examples/ssr-bookshelf/Dockerfile`
 ([its notes](docker.md#the-bookshelf-sample)).
+
+<!-- source: deploy/cloudflare.md -->
+
+# Cloudflare Workers
+
+> Deploy to Cloudflare Workers with `@lumiose/adapter-cloudflare`: the build's fetch handler runs as the Worker, `dist/client` is served as static assets, and your bindings reach the app as `ctx.platform.env`.
+
+Tested locally in `wrangler dev` (workerd), not yet on Cloudflare itself: see the
+[verification table](README.md#verification).
+
+## Set it up
+
+```sh
+pnpm add -D @lumiose/adapter-cloudflare wrangler
+```
+
+```ts
+// vite.config.ts
+import { cloudflare } from "@lumiose/adapter-cloudflare";
+import lumiose from "@lumiose/vite";
+import { defineConfig } from "vite";
+
+export default defineConfig({
+  plugins: [lumiose({ adapter: cloudflare() })],
+});
+```
+
+```jsonc
+// wrangler.jsonc, next to package.json
+{
+  "name": "my-app",
+  "main": "dist/_worker.js",
+  "compatibility_date": "2026-09-01",
+  // AsyncLocalStorage, which Lumiose's request APIs use, and process.env for your variables.
+  "compatibility_flags": ["nodejs_compat"],
+  "assets": { "directory": "dist/client" },
+}
+```
+
+Then build and deploy:
+
+```sh
+pnpm lumiose build
+pnpm wrangler deploy      # or `wrangler dev` to try the build locally first
+```
+
+`lumiose build` warns, with a config to copy, when the project has no `wrangler.jsonc`,
+`wrangler.json` or `wrangler.toml`. A site whose every route is prerendered builds no Worker: drop
+`main`, and Cloudflare serves the assets alone.
+
+## What the build writes
+
+| File                        | What it is                                                                                                                                                                                                                             |
+| --------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `dist/_worker.js`           | The Worker: `dist/server/entry.js`'s `fetch`, called with `ctx.platform` (below). Wrangler bundles it, with the npm packages your server code imports, when it deploys.                                                                |
+| `dist/client`               | The static assets. Cloudflare serves a request that matches a file without running the Worker.                                                                                                                                         |
+| `dist/client/_headers`      | `lumiose({ headers })` and Lumiose's default headers for the static files, plus a year of caching (`immutable`) for `/assets/*`, whose files Vite names by content hash. The Worker's responses get the same headers from the handler. |
+| `dist/client/.assetsignore` | Only when prerendered pages have form actions: their HTML is left out of the assets, because Cloudflare answers a `POST` to a static file itself (`405`). The Worker renders those pages, fully resolved, and runs their actions.      |
+
+Cloudflare compresses responses itself, so the build writes no `.br`/`.gz` copies, and the server
+build leaves out its own static file layer (no `node:fs`).
+
+## The platform in your code
+
+Middleware, endpoints and actions get Cloudflare's arguments as `ctx.platform`:
+
+- `ctx.platform.env`: the Worker's bindings (KV, D1, R2, Durable Objects, variables, secrets).
+- `ctx.platform.waitUntil(promise)`: `ctx.waitUntil()`, for work after the response.
+- `ctx.platform.clientAddress`: the `CF-Connecting-IP` header.
+
+Type your bindings by augmenting `PlatformEnv` (with `@cloudflare/workers-types` or the types
+`wrangler types` generates):
+
+```ts
+// src/routes/api/notes/route.ts
+import type { Endpoint } from "lumiose";
+
+declare module "lumiose" {
+  interface PlatformEnv {
+    DB: D1Database;
+  }
+}
+
+export const mode = "server";
+
+export const GET: Endpoint<"/api/notes"> = async (ctx) => {
+  const { results } = await ctx.platform.env.DB.prepare("select * from notes").all();
+  return Response.json(results);
+};
+```
+
+Server components read them through middleware: copy what they need to `ctx.locals`.
+Variables and secrets are also in `process.env` with `nodejs_compat` (compatibility dates from
+2025-04-01), so `env("NAME")` and `ctx.env.NAME` work as on Node.
+
+## Trailing slashes
+
+Cloudflare's assets follow `assets.html_handling`. Match it to `lumiose({ trailingSlash })`:
+
+| `trailingSlash`      | `html_handling`                   | `/about`                       |
+| -------------------- | --------------------------------- | ------------------------------ |
+| `"ignore"` (default) | `"auto-trailing-slash"` (default) | redirects to `/about/` (`307`) |
+| `"always"`           | `"force-trailing-slash"`          | redirects to `/about/`         |
+| `"never"`            | `"drop-trailing-slash"`           | serves `about.html`            |
+
+With `"ignore"`, Lumiose serves both forms itself, but Cloudflare redirects `/about` before the
+Worker runs.
+
+## Good to know
+
+- Static files skip the Worker, so middleware does not run for them. Headers they need belong in
+  `lumiose({ headers })`.
+- Streaming works: the shell of a page is sent first, `<Suspense>` content follows.
+- Unknown URLs reach the Worker, which renders your `not-found` page. Without a Worker (a static
+  site), set `"not_found_handling": "404-page"` in `assets` to serve `404.html`.
+- The Worker's npm packages must run on Workers: with `nodejs_compat`, many Node.js APIs do, but
+  not everything (native modules, the file system of a server).
+
+## API
+
+```ts
+import { cloudflare } from "@lumiose/adapter-cloudflare"; // also the default export
+
+function cloudflare(): Adapter; // for lumiose({ adapter })
+```
+
+<!-- source: deploy/vercel.md -->
+
+# Vercel
+
+> Deploy to Vercel with `@lumiose/adapter-vercel`: `lumiose build` writes `.vercel/output` (the Build Output API), with `dist/client` as static files and the build's fetch handler as a Node.js or Edge function.
+
+Tested locally with a harness for the Build Output API, not yet on Vercel itself: Vercel has no
+local runner for `.vercel/output`. See the [verification table](README.md#verification).
+
+## Set it up
+
+```sh
+pnpm add -D @lumiose/adapter-vercel
+```
+
+```ts
+// vite.config.ts
+import { vercel } from "@lumiose/adapter-vercel";
+import lumiose from "@lumiose/vite";
+import { defineConfig } from "vite";
+
+export default defineConfig({
+  plugins: [lumiose({ adapter: vercel() })], // or vercel({ runtime: "edge" })
+});
+```
+
+In the Vercel project, set the **Framework Preset** to "Other" and the **Build Command** to
+`lumiose build` (or `pnpm build`). Vercel deploys the `.vercel/output` directory that the build
+writes. From the command line, build and deploy the output as it is:
+
+```sh
+pnpm lumiose build
+pnpm dlx vercel deploy --prebuilt
+```
+
+Add `.vercel/` to `.gitignore`.
+
+## What the build writes
+
+| Path                                      | What it is                                                                                                                                                                                         |
+| ----------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `.vercel/output/static/`                  | `dist/client` (below Vite's `base`), without `_headers`. Served first.                                                                                                                             |
+| `.vercel/output/functions/__lumiose.func` | The server, for every path no static file answers. Not written when every route is prerendered.                                                                                                    |
+| `.vercel/output/config.json`              | The routes: `lumiose({ headers })` and Lumiose's default headers, a year of caching (`immutable`) for content-hashed assets, form posts to prerendered pages, the static files, then the function. |
+
+Prerendered pages also answer at their URL without the trailing slash (`/about` serves
+`about/index.html` with `trailingSlash: "ignore"`, `about.html` with `"never"`), so the usual links
+hit the static files. Vercel compresses responses itself: the build writes no `.br`/`.gz` copies.
+
+## Node.js or Edge
+
+`vercel({ runtime })` picks where the function runs:
+
+- `"nodejs"` (default): a Node.js function (the build's Node.js major version, 22 at least),
+  with response streaming. The function directory holds the server build and the npm packages it
+  imports, found with `@vercel/nft`; native modules are copied as they are, so build on Linux
+  (Vercel's build does) when your dependencies have native binaries.
+- `"edge"`: one bundled module for Vercel's Edge runtime. npm packages are bundled with their
+  `edge-light` and `worker` builds. The Edge runtime has no file system and only some Node.js
+  modules (`async_hooks`, `buffer`, `events`, `util`, `assert`): the build stops with an error
+  naming any other module your server code imports.
+
+## The platform in your code
+
+- `ctx.platform.clientAddress`: the `X-Real-IP` header that Vercel sets.
+- `ctx.platform.waitUntil(promise)`: Vercel's `waitUntil` (the Edge function's context, or the
+  request context of a Node.js function), for work after the response.
+- `ctx.platform.env` is empty: variables are in `process.env`, `env("NAME")` and `ctx.env`.
+
+Request URLs use the public origin from `X-Forwarded-Proto` and `X-Forwarded-Host`, which
+Vercel's proxy sets, so the cross-site check of form posts compares the right origins.
+
+## Good to know
+
+- Static files skip the function, so middleware does not run for them. Headers they need belong in
+  `lumiose({ headers })`.
+- Vercel applies the header routes to the function's responses too. When the app sets a header
+  that `lumiose({ headers })` also sets for that path, which value wins on Vercel is not verified
+  yet; the handler itself keeps the app's.
+- A `""` value, which removes a header in `lumiose({ headers })`, can only remove it everywhere
+  (`/**`) on Vercel: routes cannot unset headers for some paths.
+
+## API
+
+```ts
+import { vercel } from "@lumiose/adapter-vercel"; // also the default export
+
+function vercel(options?: { runtime?: "nodejs" | "edge" }): Adapter; // default "nodejs"
+```
+
+<!-- source: deploy/netlify.md -->
+
+# Netlify
+
+> Deploy to Netlify with `@lumiose/adapter-netlify`: `dist/client` is the site, and the build's fetch handler runs as a Netlify Function for every path no static file answers.
+
+Tested locally with `netlify serve`, not yet on Netlify itself: see the
+[verification table](README.md#verification).
+
+## Set it up
+
+```sh
+pnpm add -D @lumiose/adapter-netlify
+```
+
+```ts
+// vite.config.ts
+import { netlify } from "@lumiose/adapter-netlify";
+import lumiose from "@lumiose/vite";
+import { defineConfig } from "vite";
+
+export default defineConfig({
+  plugins: [lumiose({ adapter: netlify() })],
+});
+```
+
+```toml
+# netlify.toml, next to package.json
+[build]
+  command = "lumiose build"
+  publish = "dist/client"
+```
+
+Push to a site connected to the repository, or deploy from the command line with
+`pnpm dlx netlify-cli deploy --build`. `netlify serve` runs the build and serves it locally.
+`lumiose build` warns when the project has no `netlify.toml`.
+
+**In a monorepo**, set the site's package directory to the app's directory: Netlify then runs the
+command from the repository root, so name the package and the full publish path:
+
+```toml
+[build]
+  command = "pnpm --filter my-app build"
+  publish = "apps/my-app/dist/client"
+```
+
+## What the build writes
+
+| Path                                        | What it is                                                                                                                                                                                           |
+| ------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `dist/client`                               | The site (`publish`). Netlify serves it first.                                                                                                                                                       |
+| `dist/client/_headers`                      | `lumiose({ headers })` and Lumiose's default headers for the static files, plus a year of caching (`immutable`) for `/assets/*`, whose files Vite names by content hash.                             |
+| `.netlify/v1/functions/lumiose-server.mjs`  | The server: a Netlify Function (web `Request`/`Response`) for every path below Vite's `base` that no static file answers (`preferStatic`). Netlify bundles it with its npm packages when it deploys. |
+| `.netlify/v1/functions/lumiose-actions.mjs` | Only when prerendered pages have form actions: the same server for their `POST`s, which Netlify would otherwise answer from the static file (`405`).                                                 |
+
+Netlify compresses responses itself: the build writes no `.br`/`.gz` copies. Add `.netlify/` to
+`.gitignore`.
+
+## The platform in your code
+
+- `ctx.platform.clientAddress`: the function context's `ip`.
+- `ctx.platform.waitUntil(promise)`: the context's `waitUntil`, for work after the response.
+- `ctx.platform.env` is empty: variables are in `process.env`, `env("NAME")` and `ctx.env`.
+
+## Good to know
+
+- Static files skip the function, so middleware does not run for them. Headers they need belong in
+  `lumiose({ headers })`.
+- Streaming works: the shell of a page is sent first, `<Suspense>` content follows.
+- `netlify serve` sends `cache-control: public, max-age=0` for static files whatever `_headers`
+  says. On Netlify itself, `_headers` sets it, as Netlify documents (not verified yet).
+- A site whose every route is prerendered needs no function: the build writes none, and Netlify
+  serves `404.html` for unknown URLs.
+
+## API
+
+```ts
+import { netlify } from "@lumiose/adapter-netlify"; // also the default export
+
+function netlify(): Adapter; // for lumiose({ adapter })
+```
+
+<!-- source: deploy/bun.md -->
+
+# Bun
+
+> Run a Lumiose build with Bun: `dist/server/entry.js` exports `{ fetch }`, which Bun serves as it is, static files included.
+
+Tested locally with Bun 1.4.2: see the [verification table](README.md#verification).
+
+## Run it
+
+Build with Node or Bun, then start the server build from the project directory, so that the npm
+packages it imports resolve from `node_modules`:
+
+```sh
+pnpm lumiose build
+NODE_ENV=production PORT=3000 bun dist/server/entry.js
+```
+
+Bun starts a server for a module whose default export has a `fetch` method, on `PORT` (default
+3000). The handler serves the static files of `dist/client` (with their `.br`/`.gz` copies,
+`ETag`s and a year of caching for content-hashed assets), then the app, with
+`lumiose({ headers })`. `ctx.platform.clientAddress` is Bun's `server.requestIP(request)`.
+
+Bun does not compress responses on the fly: put a proxy or CDN that does in front for
+server-rendered pages ([VPS](vps.md#the-proxy)).
+
+## In a container
+
+```dockerfile
+FROM oven/bun:1.4 AS build
+WORKDIR /app
+COPY package.json bun.lock ./
+RUN bun install --frozen-lockfile
+COPY . .
+RUN bun run build
+
+FROM oven/bun:1.4
+WORKDIR /app
+ENV NODE_ENV=production PORT=3000
+COPY --from=build /app/package.json /app/bun.lock ./
+RUN bun install --frozen-lockfile --production
+COPY --from=build /app/dist ./dist
+USER bun
+EXPOSE 3000
+CMD ["bun", "dist/server/entry.js"]
+```
+
+The image is not tested; the [Docker](docker.md) guide's Node image is.
+
+See also: [the server build](../reference/server-entry.md).
+
+<!-- source: deploy/deno.md -->
+
+# Deno
+
+> Run a Lumiose build with Deno: `deno serve` serves `dist/server/entry.js`'s `{ fetch }` as it is, static files included.
+
+Tested locally with Deno 2.9.6: see the [verification table](README.md#verification).
+
+## Run it
+
+Build with Node (Deno reads the project's `package.json` and `node_modules`), then serve the server
+build from the project directory:
+
+```sh
+pnpm lumiose build
+deno serve --allow-net --allow-read --allow-env --port 3000 dist/server/entry.js
+```
+
+`--allow-read` covers `dist/client` and `node_modules`, `--allow-env` the environment that
+`env()` and `ctx.env` read. The handler serves the static files of `dist/client` (with their
+`.br`/`.gz` copies, `ETag`s and a year of caching for content-hashed assets), then the app, with
+`lumiose({ headers })`. `ctx.platform.clientAddress` is the handler info's
+`remoteAddr.hostname`. The app's responses were not compressed in the local tests (streamed pages
+included): put a proxy or CDN that compresses in front ([VPS](vps.md#the-proxy)).
+
+**Deno Deploy** runs modules that export `{ fetch }`, but it is not tested: the server build
+imports npm packages from `node_modules` and reads `dist/client` from disk, which a deployment must
+include.
+
+See also: [the server build](../reference/server-entry.md).
+
+<!-- source: deploy/fly.md -->
+
+# Fly.io
+
+> Run a Lumiose app on Fly.io from the [Docker](docker.md) guide's image: `@lumiose/adapter-node` in a Machine, behind Fly's proxy.
+
+Not tested on Fly.io yet: the image is (see the [verification table](README.md#verification)).
+
+Add the Dockerfile and `.dockerignore` from [Docker](docker.md), then create the app with
+`fly launch` (it finds the Dockerfile; decline the database offers you do not need) and adjust the
+generated `fly.toml`:
+
+```toml
+# fly.toml
+app = "my-app"
+primary_region = "ams"
+
+[env]
+  NODE_ENV = "production"
+  PORT = "3000"
+
+[http_service]
+  internal_port = 3000
+  force_https = true
+  auto_stop_machines = "stop"
+  auto_start_machines = true
+  min_machines_running = 0
+
+[[http_service.checks]]
+  grace_period = "10s"
+  interval = "30s"
+  method = "GET"
+  timeout = "5s"
+  path = "/"
+```
+
+Secrets go in with `fly secrets set LUMIOSE_SECRET="$(openssl rand -base64 32)"`, then
+`fly deploy`. Fly's proxy terminates TLS and forwards the `Host` header, so request URLs are
+right without `ORIGIN`; `ctx.platform.clientAddress` is the proxy's address, and the client's is
+in the `Fly-Client-IP` header.
+
+The adapter compresses responses itself; Fly's proxy passes them through.
+
+<!-- source: deploy/render.md -->
+
+# Render
+
+> Run a Lumiose app on Render as a Node web service: `@lumiose/adapter-node`'s `server.ts`, or the [Docker](docker.md) guide's image.
+
+Not tested on Render yet: see the [verification table](README.md#verification).
+
+Create a **Web Service** from the repository with the Node runtime:
+
+| Setting       | Value                                                             |
+| ------------- | ----------------------------------------------------------------- |
+| Build command | `corepack enable && pnpm install --frozen-lockfile && pnpm build` |
+| Start command | `node server.ts`                                                  |
+| Health check  | `/` (or a cheap endpoint such as `/healthz`)                      |
+
+Set the environment variable `NODE_VERSION` to `24` (Lumiose needs Node 24 or later), and
+`LUMIOSE_SECRET` when the app signs cookies. Render sets `PORT`, which `createServer()` reads; its
+proxy terminates TLS and forwards the `Host` header, so `ORIGIN` is not needed.
+
+Or as a blueprint:
+
+```yaml
+# render.yaml
+services:
+  - type: web
+    name: my-app
+    runtime: node
+    buildCommand: corepack enable && pnpm install --frozen-lockfile && pnpm build
+    startCommand: node server.ts
+    healthCheckPath: /
+    envVars:
+      - key: NODE_VERSION
+        value: "24"
+      - key: LUMIOSE_SECRET
+        generateValue: true
+```
+
+With the Docker runtime instead, Render builds the Dockerfile from [Docker](docker.md) and runs it
+as is.
+
+A site whose every route is prerendered can be a **Static Site** instead: build command as above,
+publish directory `dist/client` (see [Static hosts](static.md)).
+
+<!-- source: deploy/railway.md -->
+
+# Railway
+
+> Run a Lumiose app on Railway: `@lumiose/adapter-node`'s `server.ts` built with Railway's Node builder, or the [Docker](docker.md) guide's image.
+
+Not tested on Railway yet: see the [verification table](README.md#verification).
+
+Create a service from the repository. Railway uses the `Dockerfile` when the repository has one
+([Docker](docker.md)); otherwise it builds with Node and runs the `build` and `start` scripts of
+`package.json`:
+
+```json
+{
+  "scripts": {
+    "build": "lumiose build",
+    "start": "node server.ts"
+  },
+  "engines": { "node": ">=24" }
+}
+```
+
+Or pin the commands in `railway.json`:
+
+```json
+{
+  "$schema": "https://railway.com/railway.schema.json",
+  "build": { "buildCommand": "pnpm build" },
+  "deploy": { "startCommand": "node server.ts", "healthcheckPath": "/" }
+}
+```
+
+Railway sets `PORT`, which `createServer()` reads. Add `LUMIOSE_SECRET` in the service's
+variables when the app signs cookies, then generate a domain in the service's networking settings.
+
+<!-- source: deploy/static.md -->
+
+# Static hosts
+
+> Deploy a site whose every route is prerendered: `dist/client` is the whole site, for GitHub Pages, Cloudflare, Netlify, S3 with CloudFront or any file server.
+
+`lumiose build` writes no `dist/server` when no route renders per request (no `server` route, no
+`spa` route rendered on the server per request, no form action): see
+[Rendering modes](../concepts/rendering-modes.md). What `dist/client` holds:
+
+- the pages as `path/index.html` (`path.html` with `lumiose({ trailingSlash: "never" })`), and
+  `404.html`, rendered from your root `not-found` page;
+- `assets/`, named by content hash: cache them for a year;
+- `_headers`: Lumiose's default headers and `lumiose({ headers })` in the format Netlify and
+  Cloudflare read;
+- a `.br` and a `.gz` copy of every text file of 1 kB or more, for servers that serve
+  precompressed files. Hosts that compress on their own serve them as plain files; leave them out of
+  the upload there.
+
+Set Vite's `base` when the site is served below a path (`base: "/my-repo/"` for a GitHub Pages
+project site): links built with `href()` follow it.
+
+How far each host's steps were checked is in the [verification table](README.md#verification).
+
+## Cloudflare
+
+Use the [Cloudflare adapter](cloudflare.md) even for a static site: it skips the precompressed
+copies and adds a year of caching for `/assets/*` to `_headers`. Without a server, the build writes
+no Worker, and the wrangler config has assets only:
+
+```jsonc
+// wrangler.jsonc
+{
+  "name": "my-site",
+  "compatibility_date": "2026-09-01",
+  "assets": { "directory": "dist/client", "not_found_handling": "404-page" },
+}
+```
+
+`pnpm wrangler deploy` uploads it. `not_found_handling: "404-page"` serves `404.html` with status
+404 for unknown URLs. On Cloudflare Pages, `pnpm wrangler pages deploy dist/client` deploys the
+same directory (Pages reads `_headers` and serves `404.html` by itself); add a
+`dist/client/.assetsignore` with `*.br` and `*.gz` there, or build with the adapter.
+
+## Netlify
+
+Use the [Netlify adapter](netlify.md) and the same `netlify.toml`: for a static site the build
+writes no function, and Netlify serves `404.html` and applies `_headers` by itself.
+
+## GitHub Pages
+
+Deploy `dist/client` with GitHub's Pages actions (set the repository's Pages source to "GitHub
+Actions"). GitHub Pages serves `404.html` for unknown URLs and ignores `_headers`; it compresses
+on its own.
+
+```yaml
+# .github/workflows/pages.yml
+name: Pages
+on:
+  push:
+    branches: [main]
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm lumiose build
+      - run: find dist/client -name "*.br" -o -name "*.gz" | xargs rm -f
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist/client
+      - id: deployment
+        uses: actions/deploy-pages@v4
+```
+
+For a project site (`https://<user>.github.io/<repo>/`), build with `base: "/<repo>/"` in
+`vite.config.ts`.
+
+## S3 and CloudFront
+
+Upload `dist/client` to the bucket with a long cache for the hashed assets and revalidation for the
+rest, then let CloudFront compress (enable "Compress objects automatically") and answer unknown URLs
+with `404.html` (a custom error response for 403 and 404, status 404):
+
+```sh
+aws s3 sync dist/client s3://my-bucket --delete \
+  --exclude "*.br" --exclude "*.gz" --exclude "_headers" \
+  --exclude "assets/*" --cache-control "public, max-age=0, must-revalidate"
+aws s3 sync dist/client/assets s3://my-bucket/assets --delete \
+  --exclude "*.br" --exclude "*.gz" --cache-control "public, max-age=31536000, immutable"
+```
+
+S3 serves `about/index.html` for `/about/` only from its website endpoint (or with a CloudFront
+function that appends `index.html`). Headers from `lumiose({ headers })` go into a CloudFront
+response headers policy.
+
+## Any file server
+
+nginx, Caddy or another server can serve `dist/client` as it is, `.br`/`.gz` copies included
+(nginx's `brotli_static`/`gzip_static`, Caddy's `precompressed`). `lumiose preview` serves it
+locally the way static hosts do.
+
+<!-- source: deploy/aws-lambda.md -->
+
+# AWS Lambda
+
+> Run the server build in AWS Lambda behind a Function URL or API Gateway, through a small adapter from Lambda's events to the build's web `fetch` handler.
+
+Not tested on AWS yet: see the [verification table](README.md#verification). There is no
+`@lumiose/adapter-lambda`; this page shows the handler to write.
+
+The Lambda runs `dist/server/entry.js`'s `fetch`, which serves the static files of `dist/client`
+when the deployment package includes them, then the app, with `lumiose({ headers })`. A CDN in
+front serves them better: put `dist/client` on S3 behind CloudFront
+([Static hosts](static.md#s3-and-cloudfront)), with a behavior that sends the other paths to the
+function.
+
+```ts
+// lambda.ts: deploy it with dist/ and the production node_modules (Node.js 24 runtime)
+import app from "./dist/server/entry.js";
+
+interface FunctionUrlEvent {
+  rawPath: string;
+  rawQueryString: string;
+  headers: Record<string, string>;
+  cookies?: string[];
+  body?: string;
+  isBase64Encoded: boolean;
+  requestContext: { http: { method: string; sourceIp: string } };
+}
+
+export async function handler(event: FunctionUrlEvent) {
+  const { method, sourceIp } = event.requestContext.http;
+  const headers = new Headers(event.headers);
+  if (event.cookies?.length) headers.set("cookie", event.cookies.join("; "));
+  const url = `https://${event.headers.host}${event.rawPath}${event.rawQueryString ? `?${event.rawQueryString}` : ""}`;
+  const body =
+    event.body === undefined || method === "GET" || method === "HEAD"
+      ? undefined
+      : Buffer.from(event.body, event.isBase64Encoded ? "base64" : "utf8");
+  const response = await app.fetch(new Request(url, { method, headers, body }), {
+    clientAddress: sourceIp,
+  });
+  const bytes = Buffer.from(await response.arrayBuffer());
+  return {
+    statusCode: response.status,
+    headers: Object.fromEntries([...response.headers].filter(([name]) => name !== "set-cookie")),
+    cookies: response.headers.getSetCookie(),
+    body: bytes.toString("base64"),
+    isBase64Encoded: true,
+  };
+}
+```
+
+This buffers each response: pages arrive whole, after their `<Suspense>` content resolves. Lambda's
+response streaming (`awslambda.streamifyResponse`, Function URLs only) can send the stream
+instead. `ctx.platform.waitUntil` falls back to letting the promise run, which Lambda may freeze
+once the response is returned: await such work in the handler instead.
 
 <!-- source: reference/reactivity.md -->
 
@@ -5962,11 +6672,13 @@ interface LumioseOptions {
   headers?: Record<string, string> | { path: string; headers: Record<string, string> }[];
   /** Request body limits, in bytes or "512kb"/"1mb": larger requests get 413. */
   limits?: { body?: number | string; upload?: number | string }; // default { body: "1mb", upload: "10mb" }
+  /** The deploy adapter: cloudflare(), vercel() or netlify() from their @lumiose/adapter-* packages. */
+  adapter?: Adapter; // default: none, the Node build
 }
 ```
 
 The project options (`mode`, `ssr`, `prerender`, `trailingSlash`, `csrf`, `viewTransitions`,
-`prefetch`, `headers`, `limits`) are
+`prefetch`, `headers`, `limits`, `adapter`) are
 read by `lumiose dev`, `lumiose build` and `lumiose routes`/`check` from the plugin's `api.options`.
 Invalid values and unknown option names throw when the config loads, as does `prerender: true`
 with `ssr: false` ([prerendered SPA routes](../concepts/rendering-modes.md#prerendered-spa-routes)). `csp: "strict"` is
@@ -5999,14 +6711,26 @@ lumiose({
 });
 ```
 
-| Deployment                       | Where the headers come from                                                         |
-| -------------------------------- | ----------------------------------------------------------------------------------- |
-| `lumiose dev`, `lumiose preview` | `lumiose({ headers })`                                                              |
-| `@lumiose/adapter-node`          | `lumiose({ headers })`, from the build (`config.headers` of `dist/server/entry.js`) |
-| Netlify, Cloudflare Pages        | `lumiose({ headers })`, as `dist/client/_headers`                                   |
-| Other static hosts and CDNs      | The host's own header configuration, copied from `lumiose({ headers })`             |
+| Deployment                         | Where the headers come from                                                         |
+| ---------------------------------- | ----------------------------------------------------------------------------------- |
+| `lumiose dev`, `lumiose preview`   | `lumiose({ headers })`                                                              |
+| `@lumiose/adapter-node`            | `lumiose({ headers })`, from the build (`config.headers` of `dist/server/entry.js`) |
+| `dist/server/entry.js` (Bun, Deno) | `lumiose({ headers })`, from the build, on static files and the app's responses     |
+| Cloudflare, Netlify adapters       | `dist/client/_headers` for static files; the build's handler for the rest           |
+| Vercel adapter                     | `config.json` routes                                                                |
+| Netlify, Cloudflare Pages          | `lumiose({ headers })`, as `dist/client/_headers`                                   |
+| Other static hosts and CDNs        | The host's own header configuration, copied from `lumiose({ headers })`             |
 
 Per-response headers that depend on the request belong in middleware or `response().setHeader()`.
+
+**Deploy adapters** (`adapter`, decision-45). After prerendering, `lumiose build` hands the build to
+the adapter, which writes the platform's output: `cloudflare()` from
+`@lumiose/adapter-cloudflare` ([guide](../deploy/cloudflare.md)), `vercel({ runtime })` from
+`@lumiose/adapter-vercel` ([guide](../deploy/vercel.md)), `netlify()` from
+`@lumiose/adapter-netlify` ([guide](../deploy/netlify.md)). These platforms serve `dist/client`
+themselves and compress on their own, so the build writes no `.br`/`.gz` copies and the server
+build has no static file layer. Without an adapter, the output is the Node build that
+`@lumiose/adapter-node`, Bun and Deno serve ([Deploy](../deploy/README.md)).
 
 MPA navigation ([Routing](../concepts/routing.md)): the page documents that `lumiose dev` and
 `lumiose build` render get, in `<head>`:
@@ -6882,8 +7606,7 @@ A request goes through, in order:
    itself.
 
 It does not compress the app's responses on the fly (static files use their precompressed
-copies): Deno compresses by itself, and CDNs and proxies do in front of the others. On Node,
-`@lumiose/adapter-node` compresses.
+copies): put a CDN or proxy that compresses in front. On Node, `@lumiose/adapter-node` compresses.
 
 The function works detached (`const { fetch } = handler`). Builds made with a deploy adapter
 (Cloudflare, Vercel, Netlify) leave the static files to the platform, which serves `dist/client`
@@ -6990,7 +7713,8 @@ import handler from "./dist/server/entry.js";
 serve({ fetch: (request) => handler.fetch(request), port: 3000 });
 ```
 
-For Cloudflare, Vercel and Netlify, and for static hosts, see the deploy guides.
+For Cloudflare, Vercel, Netlify, static hosts and the rest, see the
+[deploy guides](../deploy/README.md).
 
 ## Example
 

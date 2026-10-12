@@ -42,11 +42,13 @@ interface LumioseOptions {
   headers?: Record<string, string> | { path: string; headers: Record<string, string> }[];
   /** Request body limits, in bytes or "512kb"/"1mb": larger requests get 413. */
   limits?: { body?: number | string; upload?: number | string }; // default { body: "1mb", upload: "10mb" }
+  /** The deploy adapter: cloudflare(), vercel() or netlify() from their @lumiose/adapter-* packages. */
+  adapter?: Adapter; // default: none, the Node build
 }
 ```
 
 The project options (`mode`, `ssr`, `prerender`, `trailingSlash`, `csrf`, `viewTransitions`,
-`prefetch`, `headers`, `limits`) are
+`prefetch`, `headers`, `limits`, `adapter`) are
 read by `lumiose dev`, `lumiose build` and `lumiose routes`/`check` from the plugin's `api.options`.
 Invalid values and unknown option names throw when the config loads, as does `prerender: true`
 with `ssr: false` ([prerendered SPA routes](../concepts/rendering-modes.md#prerendered-spa-routes)). `csp: "strict"` is
@@ -79,14 +81,26 @@ lumiose({
 });
 ```
 
-| Deployment                       | Where the headers come from                                                         |
-| -------------------------------- | ----------------------------------------------------------------------------------- |
-| `lumiose dev`, `lumiose preview` | `lumiose({ headers })`                                                              |
-| `@lumiose/adapter-node`          | `lumiose({ headers })`, from the build (`config.headers` of `dist/server/entry.js`) |
-| Netlify, Cloudflare Pages        | `lumiose({ headers })`, as `dist/client/_headers`                                   |
-| Other static hosts and CDNs      | The host's own header configuration, copied from `lumiose({ headers })`             |
+| Deployment                         | Where the headers come from                                                         |
+| ---------------------------------- | ----------------------------------------------------------------------------------- |
+| `lumiose dev`, `lumiose preview`   | `lumiose({ headers })`                                                              |
+| `@lumiose/adapter-node`            | `lumiose({ headers })`, from the build (`config.headers` of `dist/server/entry.js`) |
+| `dist/server/entry.js` (Bun, Deno) | `lumiose({ headers })`, from the build, on static files and the app's responses     |
+| Cloudflare, Netlify adapters       | `dist/client/_headers` for static files; the build's handler for the rest           |
+| Vercel adapter                     | `config.json` routes                                                                |
+| Netlify, Cloudflare Pages          | `lumiose({ headers })`, as `dist/client/_headers`                                   |
+| Other static hosts and CDNs        | The host's own header configuration, copied from `lumiose({ headers })`             |
 
 Per-response headers that depend on the request belong in middleware or `response().setHeader()`.
+
+**Deploy adapters** (`adapter`, decision-45). After prerendering, `lumiose build` hands the build to
+the adapter, which writes the platform's output: `cloudflare()` from
+`@lumiose/adapter-cloudflare` ([guide](../deploy/cloudflare.md)), `vercel({ runtime })` from
+`@lumiose/adapter-vercel` ([guide](../deploy/vercel.md)), `netlify()` from
+`@lumiose/adapter-netlify` ([guide](../deploy/netlify.md)). These platforms serve `dist/client`
+themselves and compress on their own, so the build writes no `.br`/`.gz` copies and the server
+build has no static file layer. Without an adapter, the output is the Node build that
+`@lumiose/adapter-node`, Bun and Deno serve ([Deploy](../deploy/README.md)).
 
 MPA navigation ([Routing](../concepts/routing.md)): the page documents that `lumiose dev` and
 `lumiose build` render get, in `<head>`:
