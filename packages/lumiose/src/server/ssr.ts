@@ -83,6 +83,11 @@ export function text(value: unknown): unknown {
  * whose island block the client's fallback region claims.
  */
 export function insertText(value: unknown): unknown {
+  // Fast path: most text holes are strings.
+  if (typeof value === "string") {
+    const out = escapeText(value);
+    return currentFrame()?.island !== undefined ? new TextHole(out) : out;
+  }
   while (typeof value === "function") value = (value as () => unknown)();
   return typeof value === "object" && value !== null ? insert(value) : text(value);
 }
