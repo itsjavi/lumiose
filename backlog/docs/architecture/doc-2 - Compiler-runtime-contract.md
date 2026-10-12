@@ -3,7 +3,7 @@ id: doc-2
 title: Compiler-runtime contract
 type: specification
 created_date: '2026-10-08 12:27'
-updated_date: '2026-10-11 02:56'
+updated_date: '2026-10-12 14:36'
 tags:
   - architecture
   - contract
@@ -82,6 +82,7 @@ Imported only by code compiled with the `hot` option in `lumiose dev`; never par
 | Name | Contract |
 |---|---|
 | `ssr(parts, ...holes)` | Interleaves parts and holes. Sync unless a hole is a thenable, in which case it returns `Promise<SSRNode>` and resolves holes concurrently while preserving order |
+| `SSRHtml` | The runtime's `SSRNode` class. A template with holes compiles to a hoisted `_cN(...holes)` next to its parts `_sN`, which inlines `ssr()`'s synchronous outcome: when every hole is a string, and every `list`/`branch` hole an `SSRHtml`, it returns `new SSRHtml(p0 + h0 + p1 + h1.t + …)`; otherwise (a promise, an island text hole, a nullish raw value) it calls `ssr(_sN, ...holes)` with the same, already evaluated holes (TASK-246). Holes are evaluated once, in source order, either way |
 | `text(v)` | Escaped text. Inside islands, it emits `<!--!-->` between adjacent dynamic texts (the compiler passes adjacency through its parts) |
 | `insert(v)` | Dynamic region. Inside islands it is wrapped as `<!--[-->…<!--]-->`; outside islands it is unwrapped |
 | `insertValue(v)` | `insert(v)` as an `SSRNode`, for a dynamic item of an array of renderables (the client's `insertValue`): an array escapes plain strings, so the block is returned as markup |
@@ -192,11 +193,15 @@ delegateEvents(["click"]);
 ```js
 // server
 import { signal } from "lumiose";
-import { ssr, classAttr, insert } from "lumiose/server";
+import { ssr, SSRHtml, classAttr, insert } from "lumiose/server";
 const _s0 = ["<button data-l-c1", ">Clicked ", " times</button>"];
+const _c0 = (h0, h1) =>
+  typeof h0 === "string" && typeof h1 === "string"
+    ? new SSRHtml("<button data-l-c1" + h0 + ">Clicked " + h1 + " times</button>")
+    : ssr(_s0, h0, h1);
 export function Counter(props) {
   const count = signal(props.start === undefined ? 0 : props.start);
-  return ssr(_s0, classAttr({ hot: count() > 5 }), insert(count()));
+  return _c0(classAttr({ hot: count() > 5 }), insert(count()));
 }
 ```
 

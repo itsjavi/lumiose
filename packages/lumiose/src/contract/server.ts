@@ -22,6 +22,12 @@ export interface ServerRuntime {
    * Sync-first: returns an SSRNode unless some hole is a thenable, then a promise.
    */
   ssr(parts: readonly string[], ...holes: unknown[]): SSROutput;
+  /**
+   * The runtime's SSRNode class. Compiled templates inline `ssr()`'s synchronous outcome: when
+   * every hole is an HTML string or (for `list` and `branch` holes) an `SSRHtml`, they return
+   * `new SSRHtml(concatenation)`; otherwise they call `ssr()` with the same holes.
+   */
+  SSRHtml: new (html: string) => SSRNode;
   /** Escaped text content at a fixed text position; emits a `<!--!-->` separator when hydrating and adjacent to other dynamic text. */
   text(value: unknown): unknown;
   /** Dynamic content at a `<!>` placeholder position: renders value (text, nodes, arrays, components); wraps it in `<!--[-->…<!--]-->` only inside island subtrees. */

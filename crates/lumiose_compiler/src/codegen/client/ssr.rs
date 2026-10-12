@@ -31,6 +31,9 @@ pub struct Ssr<'a> {
     /// Escaped HTML; always one more than `holes`.
     parts: Vec<String>,
     holes: Vec<Expression<'a>>,
+    /// Per hole: whether it is a rendered node (`list`, `branch`, `branchArm`) rather than a
+    /// helper that returns an HTML string when it is synchronous.
+    nodes: Vec<bool>,
     setup: Vec<Statement<'a>>,
     /// The decoded text when the buffer only holds text (a fragment's text item).
     plain: String,
@@ -43,6 +46,7 @@ impl<'a> Ssr<'a> {
         Self {
             parts: vec![String::new()],
             holes: Vec::new(),
+            nodes: Vec::new(),
             setup: Vec::new(),
             plain: String::new(),
             markup: false,
@@ -64,8 +68,18 @@ impl<'a> Ssr<'a> {
     }
 
     fn hole(&mut self, hole: Expression<'a>) {
+        self.push_hole(hole, false);
+    }
+
+    /// A hole that renders to a node (`list`, `branch`, `branchArm`) or a promise of one.
+    fn node_hole(&mut self, hole: Expression<'a>) {
+        self.push_hole(hole, true);
+    }
+
+    fn push_hole(&mut self, hole: Expression<'a>, node: bool) {
         self.markup = true;
         self.holes.push(hole);
+        self.nodes.push(node);
         self.parts.push(String::new());
     }
 
@@ -84,14 +98,20 @@ impl<'a> Ssr<'a> {
         self.holes.is_empty() && self.parts[0].is_empty()
     }
 
-    /// `ssr(_sN, ...holes)` with the hoisted parts.
+    /// `ssr(_sN)` with the hoisted parts, or with holes `_cN(...holes)`: the hoisted
+    /// concatenation of `_sN` (see `Codegen::ssr_concat`).
     fn emit(self, cg: &mut Codegen<'a, '_>, span: Span) -> Compiled<'a> {
         let name = cg.ssr_parts(&self.parts, span);
-        let callee = cg.runtime("ssr", span);
-        let args = std::iter::once(cg.ast.ident(span, &name)).chain(self.holes);
+        let value = if self.holes.is_empty() {
+            let callee = cg.runtime("ssr", span);
+            cg.ast.call(span, callee, [cg.ast.ident(span, &name)])
+        } else {
+            let concat = cg.ssr_concat(&name, &self.parts, &self.nodes, span);
+            cg.ast.call(span, cg.ast.ident(span, &concat), self.holes)
+        };
         Compiled {
             setup: self.setup,
-            value: cg.ast.call(span, callee, args),
+            value,
         }
     }
 }
@@ -437,9 +457,12 @@ impl<'a> Codegen<'a, '_> {
             let list = self.compile_list(expression);
             out.setup.extend(list.setup);
             let callee = self.runtime("list", span);
-            self.ast.call(span, callee, [list.source, list.render])
+            out.node_hole(self.ast.call(span, callee, [list.source, list.render]));
+            return;
         } else if self.is_branch(&expression) {
-            self.server_branch(expression)
+            let branch = self.server_branch(expression);
+            out.node_hole(branch);
+            return;
         } else {
             let compiled_jsx = matches!(
                 expression.without_parentheses(),

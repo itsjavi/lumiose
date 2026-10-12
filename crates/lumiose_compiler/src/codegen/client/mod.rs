@@ -158,6 +158,7 @@ const CLIENT_RUNTIME: &[&str] = &[
 /// Runtime helpers in `lumiose/server` contract order (also the import order).
 const SERVER_RUNTIME: &[&str] = &[
     "ssr",
+    "SSRHtml",
     "text",
     "insert",
     "insertText",
@@ -207,6 +208,7 @@ pub fn transform<'a>(
             .collect(),
         text_consts: children::text_consts(program, scoping),
         templates: HashMap::new(),
+        ssr_concats: HashMap::new(),
         template_decls: Vec::new(),
         apply_decls: Vec::new(),
         hoisted: Vec::new(),
@@ -318,6 +320,8 @@ pub struct Codegen<'a, 's> {
     text_consts: HashSet<SymbolId>,
     /// Hoisted templates (client) or static part arrays (server) by content.
     templates: HashMap<(String, u8), String>,
+    /// Hoisted server template concatenations (`ssr_concat`) by parts and hole kinds.
+    ssr_concats: HashMap<String, String>,
     /// Module-scope declarations, emitted after the imports: templates (or part arrays), apply
     /// functions, then hoisted handlers.
     template_decls: Vec<Statement<'a>>,
@@ -415,6 +419,88 @@ impl<'a> Codegen<'a, '_> {
         self.template_decls
             .push(self.ast.const_decl(span, &name, init));
         self.templates.insert(key, name.clone());
+        name
+    }
+
+    /// The hoisted concatenation of the server template `parts` (named `parts_name`) around
+    /// holes, deduplicated:
+    /// `(h0, h1) => typeof h0 === "string" && h1 instanceof SSRHtml ? new SSRHtml(p0 + h0 + p1 +
+    /// h1.t + p2) : ssr(_sN, h0, h1)`. It is `ssr()`'s synchronous outcome without its generic
+    /// loop: string holes are HTML and node holes (`nodes[i]`: `list`, `branch`) render their
+    /// HTML. Any other value (a promise, an island text hole, null) takes `ssr()` with the same,
+    /// already evaluated holes.
+    pub fn ssr_concat(
+        &mut self,
+        parts_name: &str,
+        parts: &[String],
+        nodes: &[bool],
+        span: Span,
+    ) -> String {
+        let flags: String = nodes
+            .iter()
+            .map(|&node| if node { 'n' } else { 's' })
+            .collect();
+        let key = format!("{parts_name}:{flags}");
+        if let Some(name) = self.ssr_concats.get(&key) {
+            return name.clone();
+        }
+        // `_s3` → `_c3`, next to its parts.
+        let name = self.names.fresh(&format!("_c{}", &parts_name[2..]));
+        let params: Vec<String> = (0..nodes.len()).map(|i| format!("h{i}")).collect();
+        let Expression::Identifier(node_class) = self.runtime("SSRHtml", span) else {
+            unreachable!("runtime helpers are identifiers");
+        };
+        let node_class = node_class.name.as_str();
+        let mut test: Option<Expression<'a>> = None;
+        let mut html: Option<Expression<'a>> = None;
+        let append = |html: &mut Option<Expression<'a>>, value: Expression<'a>| {
+            *html = Some(match html.take() {
+                Some(left) => self.ast.binary(span, left, BinaryOperator::Addition, value),
+                None => value,
+            });
+        };
+        for (i, part) in parts.iter().enumerate() {
+            if !part.is_empty() {
+                append(&mut html, self.ast.string(span, part));
+            }
+            let (Some(param), Some(&node)) = (params.get(i), nodes.get(i)) else {
+                continue;
+            };
+            let hole = self.ast.ident(span, param);
+            let check = if node {
+                let class = self.ast.ident(span, node_class);
+                self.ast
+                    .binary(span, hole, BinaryOperator::Instanceof, class)
+            } else {
+                self.ast.is_string(span, hole)
+            };
+            test = Some(match test.take() {
+                Some(left) => self.ast.and(span, left, check),
+                None => check,
+            });
+            let hole = self.ast.ident(span, param);
+            let value = if node {
+                self.ast.member(span, hole, "t")
+            } else {
+                hole
+            };
+            append(&mut html, value);
+        }
+        let html = html.expect("a template with holes has content");
+        let fast = self
+            .ast
+            .new_instance(span, self.ast.ident(span, node_class), [html]);
+        let callee = self.runtime("ssr", span);
+        let args = std::iter::once(self.ast.ident(span, parts_name))
+            .chain(params.iter().map(|param| self.ast.ident(span, param)));
+        let slow = self.ast.call(span, callee, args);
+        let test = test.expect("a template with holes has checks");
+        let body = self.ast.conditional(span, test, fast, slow);
+        let params: Vec<&str> = params.iter().map(String::as_str).collect();
+        let function = self.ast.arrow(span, &params, body);
+        self.template_decls
+            .push(self.ast.const_decl(span, &name, function));
+        self.ssr_concats.insert(key, name.clone());
         name
     }
 

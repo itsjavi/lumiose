@@ -5,7 +5,7 @@ import { locals, url as requestUrl, signal } from "lumiose";
 import { url } from "lumiose/router";
 import { queries } from "../server/queries.server.ts";
 import { session } from "./server/session.ts";
-import { ssr, text, insert, attr } from "lumiose/server";
+import { ssr, SSRHtml, text, insert, attr } from "lumiose/server";
 const _s0 = [
 	"<main",
 	"",
@@ -15,12 +15,14 @@ const _s0 = [
 	"",
 	"</main>"
 ];
+const _c0 = (h0, h1, h2, h3, h4, h5) => typeof h0 === "string" && typeof h1 === "string" && typeof h2 === "string" && typeof h3 === "string" && typeof h4 === "string" && typeof h5 === "string" ? new SSRHtml("<main" + h0 + h1 + h2 + h3 + ">" + h4 + h5 + "</main>") : ssr(_s0, h0, h1, h2, h3, h4, h5);
 const _s1 = [
 	"<p",
 	"",
 	">",
 	"</p>"
 ];
+const _c1 = (h0, h1, h2) => typeof h0 === "string" && typeof h1 === "string" && typeof h2 === "string" ? new SSRHtml("<p" + h0 + h1 + ">" + h2 + "</p>") : ssr(_s1, h0, h1, h2);
 export default function BookPage(props) {
 	const book = queries().getBook("0-00");
 	const featured = queries().featuredBooks(6);
@@ -31,14 +33,14 @@ export default function BookPage(props) {
 	if (!locals().user) {
 		return null;
 	}
-	return ssr(_s0, attr("data-user", user), attr("data-next", next), attr("data-search", search), attr("data-theme", theme), insert(book.title), insert(featured.length));
+	return _c0(attr("data-user", user), attr("data-next", next), attr("data-search", search), attr("data-theme", theme), insert(book.title), insert(featured.length));
 }
 export function Island(props) {
 	const count = signal(0);
 	const doubled = count() * 2;
 	const upper = props.isbn.toUpperCase();
 	const query = url().searchParams.get("q");
-	return ssr(_s1, attr("data-isbn", upper), attr("data-query", query), text(doubled));
+	return _c1(attr("data-isbn", upper), attr("data-query", query), text(doubled));
 }
 
 // --- diagnostics ---

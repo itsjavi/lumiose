@@ -4,7 +4,7 @@
 // getter, so nothing runs earlier than on the client.
 import { signal } from "lumiose";
 import { Badge, Detail } from "./ui.tsx";
-import { ssr, insert, createComponent } from "lumiose/server";
+import { ssr, SSRHtml, insert, createComponent } from "lumiose/server";
 const _s0 = ["<i>★</i>"];
 const _s1 = [
 	"<main>",
@@ -12,10 +12,11 @@ const _s1 = [
 	"",
 	"</main>"
 ];
+const _c1 = (h0, h1, h2) => typeof h0 === "string" && typeof h1 === "string" && typeof h2 === "string" ? new SSRHtml("<main>" + h0 + h1 + h2 + "</main>") : ssr(_s1, h0, h1, h2);
 export function Page(props) {
 	const user = signal(props.user);
 	const size = 2;
-	return ssr(_s1, insert(createComponent(Badge, {
+	return _c1(insert(createComponent(Badge, {
 		kind: "ok",
 		children: "active"
 	})), insert(createComponent(Badge, {

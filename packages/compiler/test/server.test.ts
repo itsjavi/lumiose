@@ -343,7 +343,8 @@ const TABLE_SELECT = `
 describe.skipIf(!binding)("server target renders on lumiose/server", () => {
   it("counter (doc-2 §5.1)", async () => {
     const { module, code } = await load(COUNTER, "server");
-    expect(code).toContain("ssr(_s0, classAttr({ hot: count() > 5 }), insert(count()))");
+    expect(code).toContain("_c0(classAttr({ hot: count() > 5 }), insert(count()))");
+    expect(code).toContain(": ssr(_s0, h0, h1)");
     expect(await renderServer(module, "Counter", { start: 4 })).toBe(
       "<button>Clicked 4 times</button>",
     );

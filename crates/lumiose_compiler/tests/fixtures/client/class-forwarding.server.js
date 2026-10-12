@@ -1,4 +1,4 @@
-import { ssr, insert, insertText, classAttr, spreadAttrs, createComponent } from "lumiose/server";
+import { ssr, SSRHtml, insert, insertText, classAttr, spreadAttrs, createComponent } from "lumiose/server";
 import "/src/class-forwarding.tsx?lumiose&type=style&lang.css";
 const _s0 = [
 	"<span",
@@ -6,19 +6,23 @@ const _s0 = [
 	">",
 	"</span>"
 ];
+const _c0 = (h0, h1, h2) => typeof h0 === "string" && typeof h1 === "string" && typeof h2 === "string" ? new SSRHtml("<span" + h0 + h1 + ">" + h2 + "</span>") : ssr(_s0, h0, h1, h2);
 const _s1 = ["<div data-l-xv47rtvg>", "</div>"];
+const _c1 = (h0) => typeof h0 === "string" ? new SSRHtml("<div data-l-xv47rtvg>" + h0 + "</div>") : ssr(_s1, h0);
 const _s2 = ["<section data-l-h4k9s2t6>", "</section>"];
+const _c2 = (h0) => typeof h0 === "string" ? new SSRHtml("<section data-l-h4k9s2t6>" + h0 + "</section>") : ssr(_s2, h0);
 const _s3 = [
 	"<main data-l-7mclcxns>",
 	"",
 	"</main>"
 ];
+const _c3 = (h0, h1) => typeof h0 === "string" && typeof h1 === "string" ? new SSRHtml("<main data-l-7mclcxns>" + h0 + h1 + "</main>") : ssr(_s3, h0, h1);
 function Inner(props) {
-	return ssr(_s0, classAttr(props.class), spreadAttrs({ $$scope: props.$$scope }), insertText(props.label));
+	return _c0(classAttr(props.class), spreadAttrs({ $$scope: props.$$scope }), insertText(props.label));
 }
 // Styled: its own tokens plus the caller's.
 export function Middle(props) {
-	return ssr(_s1, insert(createComponent(Inner, ((_d, _v) => ({
+	return _c1(insert(createComponent(Inner, ((_d, _v) => ({
 		get class() {
 			return _d ? _v : (_v = ["middle", props.class], _d = true, _v);
 		},
@@ -36,14 +40,14 @@ export function Plain(props) {
 }
 // A class that is not the component's own carries only the own tokens.
 export function Own(props) {
-	return ssr(_s2, insert(createComponent(Inner, {
+	return _c2(insert(createComponent(Inner, {
 		class: "own",
 		label: props.label,
 		$$scope: "data-l-h4k9s2t6"
 	})));
 }
 export function Outer() {
-	return ssr(_s3, insert(createComponent(Middle, {
+	return _c3(insert(createComponent(Middle, {
 		class: "cta",
 		label: "a",
 		$$scope: "data-l-7mclcxns"

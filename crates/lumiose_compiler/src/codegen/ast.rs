@@ -143,6 +143,33 @@ impl<'a> Ast<'a> {
         Expression::new_binary_expression(span, left, operator, right, self)
     }
 
+    /// `left && right`.
+    pub fn and(&self, span: Span, left: Expression<'a>, right: Expression<'a>) -> Expression<'a> {
+        Expression::new_logical_expression(span, left, LogicalOperator::And, right, self)
+    }
+
+    /// `typeof value === "string"`.
+    pub fn is_string(&self, span: Span, value: Expression<'a>) -> Expression<'a> {
+        let kind = Expression::new_unary_expression(span, UnaryOperator::Typeof, value, self);
+        self.binary(
+            span,
+            kind,
+            BinaryOperator::StrictEquality,
+            self.string(span, "string"),
+        )
+    }
+
+    /// `new callee(args)`.
+    pub fn new_instance(
+        &self,
+        span: Span,
+        callee: Expression<'a>,
+        args: impl IntoIterator<Item = Expression<'a>>,
+    ) -> Expression<'a> {
+        let args = self.vec_from(args.into_iter().map(Argument::from));
+        Expression::new_new_expression(span, callee, None, args, self)
+    }
+
     /// `left ?? right`.
     pub fn coalesce(
         &self,

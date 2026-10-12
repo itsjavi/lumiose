@@ -2,7 +2,7 @@
 // style-bearing element, stamped on that element and the JSX lexically inside it (children
 // passed to components included); call sites passing `class` pass the enclosing chain.
 import { Card, Panel } from "./ui.stsx";
-import { ssr, insert, insertText, list, createComponent, $await, $leave, $async } from "lumiose/server";
+import { ssr, SSRHtml, insert, insertText, list, createComponent, $await, $leave, $async } from "lumiose/server";
 import "/src/nested-styles.stsx?lumiose&type=style&lang.css";
 const _s0 = ["<section class=a data-l-nmviz5ch data-l-wepye2d9><div class=b1 data-l-nmviz5ch data-l-wepye2d9><p class=c1 data-l-nmviz5ch data-l-wepye2d9>one</p></div><div class=b2 data-l-nmviz5ch data-l-wepye2d9><p class=c2 data-l-nmviz5ch data-l-wepye2d9 data-l-44pntcw3>two</p></div></section>"];
 const _s1 = ["<p class=note data-l-nmviz5ch data-l-238shbm8>inside the subtree</p>"];
@@ -12,13 +12,17 @@ const _s2 = [
 	"</article>",
 	"</main>"
 ];
+const _c2 = (h0, h1, h2) => typeof h0 === "string" && typeof h1 === "string" && typeof h2 === "string" ? new SSRHtml("<main data-l-nmviz5ch><header class=head data-l-nmviz5ch data-l-7ikt7jyc>" + h0 + "</header><article class=body data-l-nmviz5ch data-l-238shbm8>" + h1 + "</article>" + h2 + "</main>") : ssr(_s2, h0, h1, h2);
 const _s3 = ["<li class=item data-l-nmviz5ch data-l-jwlnrxd5 data-l-pqjmvna1>", "</li>"];
+const _c3 = (h0) => typeof h0 === "string" ? new SSRHtml("<li class=item data-l-nmviz5ch data-l-jwlnrxd5 data-l-pqjmvna1>" + h0 + "</li>") : ssr(_s3, h0);
 const _s4 = ["<tr data-l-nmviz5ch data-l-jwlnrxd5 data-l-qcwvws3i><td data-l-nmviz5ch data-l-jwlnrxd5 data-l-qcwvws3i>", "</td></tr>"];
+const _c4 = (h0) => typeof h0 === "string" ? new SSRHtml("<tr data-l-nmviz5ch data-l-jwlnrxd5 data-l-qcwvws3i><td data-l-nmviz5ch data-l-jwlnrxd5 data-l-qcwvws3i>" + h0 + "</td></tr>") : ssr(_s4, h0);
 const _s5 = [
 	"<ul class=list data-l-nmviz5ch data-l-jwlnrxd5 data-l-pqjmvna1>",
 	"</ul><table data-l-nmviz5ch data-l-jwlnrxd5 data-l-qcwvws3i><tbody data-l-nmviz5ch data-l-jwlnrxd5 data-l-qcwvws3i>",
 	"</tbody></table><table data-l-nmviz5ch data-l-jwlnrxd5><tbody data-l-nmviz5ch data-l-jwlnrxd5><tr class=row data-l-nmviz5ch data-l-jwlnrxd5 data-l-gw6dys2h><td data-l-nmviz5ch data-l-jwlnrxd5 data-l-gw6dys2h>static</td></tr></tbody></table>"
 ];
+const _c5 = (h0, h1) => h0 instanceof SSRHtml && h1 instanceof SSRHtml ? new SSRHtml("<ul class=list data-l-nmviz5ch data-l-jwlnrxd5 data-l-pqjmvna1>" + h0.t + "</ul><table data-l-nmviz5ch data-l-jwlnrxd5 data-l-qcwvws3i><tbody data-l-nmviz5ch data-l-jwlnrxd5 data-l-qcwvws3i>" + h1.t + "</tbody></table><table data-l-nmviz5ch data-l-jwlnrxd5><tbody data-l-nmviz5ch data-l-jwlnrxd5><tr class=row data-l-nmviz5ch data-l-jwlnrxd5 data-l-gw6dys2h><td data-l-nmviz5ch data-l-jwlnrxd5 data-l-gw6dys2h>static</td></tr></tbody></table>") : ssr(_s5, h0, h1);
 $async(Rows);
 // A → B1 → C1 and A → B2 → C2 → <style>: C1 is not styled by C2's blocks (and `.c1` there is
 // LUM3005, labelled with the `<p>` subtree). The root block covers the whole component; blocks
@@ -29,7 +33,7 @@ export function Tree() {
 }
 // Sibling subtrees, class passthrough and children passed to a component inside a subtree.
 export function Siblings(props) {
-	return ssr(_s2, insert(createComponent(Card, ((_d, _v) => ({
+	return _c2(insert(createComponent(Card, ((_d, _v) => ({
 		class: "title",
 		$$scope: "data-l-nmviz5ch data-l-7ikt7jyc",
 		get children() {
@@ -51,7 +55,7 @@ export function Siblings(props) {
 export async function Rows(props) {
 	try {
 		const items = (await $await(() => props.load(), 0))();
-		return ssr(_s5, list(items, (item) => ssr(_s3, insertText(item))), list(items, (item) => ssr(_s4, insertText(item))));
+		return _c5(list(items, (item) => _c3(insertText(item))), list(items, (item) => _c4(insertText(item))));
 	} finally {
 		$leave();
 	}

@@ -7,6 +7,7 @@ const conforms = runtime satisfies ServerRuntime;
 
 const CONTRACT_KEYS: ReadonlyArray<keyof ServerRuntime> = [
   "ssr",
+  "SSRHtml",
   "text",
   "insert",
   "insertText",

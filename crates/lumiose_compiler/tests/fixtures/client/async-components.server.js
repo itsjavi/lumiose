@@ -1,15 +1,18 @@
 // Async components: only awaits whose nearest function is the component are rewritten (site
 // indices in source order); `for await` is lowered; every async component form is tagged.
 import { fetchJSON } from "lumiose";
-import { ssr, text, insertText, createComponent, $await, $leave, $async } from "lumiose/server";
+import { ssr, SSRHtml, text, insertText, createComponent, $await, $leave, $async } from "lumiose/server";
 const _s0 = [
 	"<main><h1>",
 	"</h1><p>",
 	"</p><button>",
 	"</button></main>"
 ];
+const _c0 = (h0, h1, h2) => typeof h0 === "string" && typeof h1 === "string" && typeof h2 === "string" ? new SSRHtml("<main><h1>" + h0 + "</h1><p>" + h1 + "</p><button>" + h2 + "</button></main>") : ssr(_s0, h0, h1, h2);
 const _s1 = ["<pre>", "</pre>"];
+const _c1 = (h0) => typeof h0 === "string" ? new SSRHtml("<pre>" + h0 + "</pre>") : ssr(_s1, h0);
 const _s2 = ["<p>", "</p>"];
+const _c2 = (h0) => typeof h0 === "string" ? new SSRHtml("<p>" + h0 + "</p>") : ssr(_s2, h0);
 $async(Page);
 $async(Disposing);
 async function load(id) {
@@ -25,7 +28,7 @@ export default async function Page(props) {
 		} catch {
 			total = -1;
 		}
-		return ssr(_s0, insertText(first.title), insertText((await $await(() => load("inline"), 2))()), insertText(total));
+		return _c0(insertText(first.title), insertText((await $await(() => load("inline"), 2))()), insertText(total));
 	} finally {
 		$leave();
 	}
@@ -51,14 +54,14 @@ export const Stream = /* @__PURE__ */ $async(async (props) => {
 				if (_step && !_step.done && _iter.return) _iter.return();
 			}
 		}
-		return ssr(_s1, text(lines.join("\n")));
+		return _c1(text(lines.join("\n")));
 	} finally {
 		$leave();
 	}
 });
 const Quick = /* @__PURE__ */ $async(async () => {
 	try {
-		return ssr(_s2, insertText((await $await(() => Promise.resolve("quick"), 0))()));
+		return _c2(insertText((await $await(() => Promise.resolve("quick"), 0))()));
 	} finally {
 		$leave();
 	}
@@ -73,7 +76,7 @@ export const Anonymous = /* @__PURE__ */ $async(async function Anonymous() {
 export async function Disposing() {
 	try {
 		await using handle = (await $await(() => fetchJSON("/api/handle"), 0))();
-		return ssr(_s2, text(String(handle)));
+		return _c2(text(String(handle)));
 	} finally {
 		$leave();
 	}
