@@ -8,14 +8,14 @@
 access (databases, secrets) lives in `*.server.ts` modules or `src/server/`. See
 [Async components](async.md).
 
-**HTTP APIs: endpoints.** A `.ts` file under `src/routes` exports handlers named after HTTP
+**HTTP APIs: endpoints.** A `route.ts` file under `src/routes` exports handlers named after HTTP
 methods: `GET`, `POST`, `PUT`, `PATCH`, `DELETE` (and `HEAD`, `OPTIONS`), each
 `(ctx) => Response`. Islands, SPA code and other clients call them with `fetch` or `fetchJSON`.
 
 **`fetchJSON<T>(url, init?)`** fetches JSON and returns plain data, so awaited results stay
 serializable inside islands. Non-2xx responses throw a `FetchError` (an `HttpError` with `status`,
 `url` and the parsed body as `data`); if a server component lets it escape, the page renders
-`_error` (or `_404`) with that status. **During SSR, same-origin URLs are served in-process**, with
+`error` (or `not-found`) page with that status. **During SSR, same-origin URLs are served in-process**, with
 the page request's cookies, without a network round-trip. **Awaited in an async component, a GET
 is cached by URL**: components awaiting the same URL share one request, and in the browser cached
 data shows at once and revalidates in the background; `{ cache: "no-store" }` opts a request out.
@@ -101,8 +101,8 @@ type only: `import type { actions } from "../routes/reading-list.stsx"`.
 
 ## Example
 
-```ts check file=routes/api/books.ts
-// src/routes/api/books.ts: GET /api/books?q=…
+```ts check file=routes/api/books/route.ts
+// src/routes/api/books/route.ts: GET /api/books?q=…
 import type { Endpoint } from "lumiose";
 
 const books = [{ id: "1", title: "Dune" }];
@@ -113,8 +113,8 @@ export const GET: Endpoint<"/api/books"> = ({ url }) => {
 };
 ```
 
-```stsx check file=routes/books/new.stsx
-// src/routes/books/new.stsx: a form that works without JS, enhanced when it hydrates
+```stsx check file=routes/books/new/page.stsx
+// src/routes/books/new/page.stsx: a form that works without JS, enhanced when it hydrates
 import { actionData, fail, redirect, submit, isSubmitting, type ActionContext } from "lumiose";
 
 interface Errors {
@@ -179,8 +179,8 @@ A like button that counts at once and rolls back if the post fails. The page is 
 reads the new count from the action's result; on an SPA page `() => props.likes` is enough, as
 `submit()` refreshes the props before it resolves:
 
-```stsx check file=routes/likes/[id].stsx
-// src/routes/likes/[id].stsx
+```stsx check file=routes/likes/[id]/page.stsx
+// src/routes/likes/[id]/page.stsx
 import { actionData, optimistic, submit, type ActionContext } from "lumiose";
 
 export const mode = "server";
@@ -214,8 +214,8 @@ export default function Post() {
 
 Keeping the page's filters through a named action:
 
-```stsx check file=routes/issues.stsx
-// src/routes/issues.stsx: the list is filtered by ?status=; "Close" keeps the filter
+```stsx check file=routes/issues/page.stsx
+// src/routes/issues/page.stsx: the list is filtered by ?status=; "Close" keeps the filter
 import { redirect, url, type ActionContext } from "lumiose";
 
 export const mode = "server";

@@ -1,6 +1,6 @@
 # `lumiose/router`
 
-> The client router for `spa` routes, built on the Navigation API: `<Link>`, `navigate()`, reactive `params()`, `route()`, `searchParams()`, `url()` and `isNavigating()`, persistent layouts, transitions that hold the old page, scroll and focus restoration, and a client-side `_404`.
+> The client router for `spa` routes, built on the Navigation API: `<Link>`, `navigate()`, reactive `params()`, `route()`, `searchParams()`, `url()` and `isNavigating()`, persistent layouts, transitions that hold the old page, scroll and focus restoration, and a client-side `not-found` page.
 
 `lumiose/router` works inside `spa` routes (`export const mode = "spa"`, or `lumiose({ mode: "spa" })`
 for the whole project); `<Link>` works on MPA pages too (see [Link](#link)). Pages and layouts of an SPA import it like any module; on the server
@@ -89,7 +89,7 @@ function route(): Routes | undefined;
 ```
 
 The matched route pattern, reactive: `route() === "/songs/[id]"`. Compare patterns instead of
-matching `url().pathname`; typegen makes an unknown pattern a type error. `undefined` on a `_404`
+matching `url().pathname`; typegen makes an unknown pattern a type error. `undefined` on a `not-found`
 page for an unknown URL (a matched route that throws `notFound()` keeps its pattern).
 
 ### url
@@ -145,9 +145,9 @@ the new page is on screen.
 - **Scroll and focus.** After a navigation the page scrolls to the top (or to the URL's `#hash`)
   and focus moves to the document (or the first `[autofocus]` element); back/forward restore the
   scroll position. `searchParams.set()` keeps both.
-- **Errors.** `notFound()` and unknown URLs render the nearest `_404` page of the SPA; other errors
-  its `_error` page (`{ status, error }` props), with the layouts kept. A thrown `redirect()`
-  navigates. Without such a page, a minimal built-in error page replaces the SPA. A `_404` that
+- **Errors.** `notFound()` and unknown URLs render the nearest `not-found` page of the SPA; other
+  errors its `error` page (`{ status, error }` props), with the layouts kept. A thrown `redirect()`
+  navigates. Without such a page, a minimal built-in error page replaces the SPA. A `not-found` page that
   the server rendered at the URL of a prerendered page with params (`404.html` on a static host)
   renders that page instead: see
   [Prerendered SPA routes](../concepts/rendering-modes.md#prerendered-spa-routes).
@@ -159,8 +159,8 @@ the new page is on screen.
 
 ## Example
 
-```tsx check file=routes/music/_layout.tsx
-// src/routes/music/_layout.tsx: an SPA under /music, with a persistent layout
+```tsx check file=routes/music/layout.tsx
+// src/routes/music/layout.tsx: an SPA under /music, with a persistent layout
 import { href, type LayoutProps } from "lumiose";
 import { Link, isNavigating } from "lumiose/router";
 
@@ -182,8 +182,8 @@ export default function Layout(props: LayoutProps<"/music">) {
 }
 ```
 
-```tsx check file=routes/music/index.tsx
-// src/routes/music/index.tsx: a filter kept in the query
+```tsx check file=routes/music/page.tsx
+// src/routes/music/page.tsx: a filter kept in the query
 import { searchParams } from "lumiose/router";
 
 export default function Songs() {
@@ -200,8 +200,8 @@ export default function Songs() {
 }
 ```
 
-```tsx check file=routes/music/settings.tsx
-// src/routes/music/settings.tsx
+```tsx check file=routes/music/settings/page.tsx
+// src/routes/music/settings/page.tsx
 import { href } from "lumiose";
 import { navigate } from "lumiose/router";
 

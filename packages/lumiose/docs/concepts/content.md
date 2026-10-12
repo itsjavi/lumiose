@@ -120,7 +120,7 @@ declare module "*.md" {
 ```
 
 ```stsx
-// src/routes/blog/index.stsx: a list of posts and the latest one, with its table of contents
+// src/routes/blog/page.stsx: a list of posts and the latest one, with its table of contents
 import type { Frontmatter, Heading } from "*.md";
 
 type Post = {

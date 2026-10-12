@@ -131,10 +131,10 @@ a layout's or `lumiose({ prerender })`.
 $ lumiose routes
 Routes in src/routes (default mode: static): 2 pages, 1 endpoint
 
-PATTERN        KIND      MODE    FILE                LAYOUTS
-/              page      static  index.stsx          _layout.stsx
-/api/search    endpoint  server  api/search.ts
-/blog/[slug]   page      server  blog/[slug].stsx    _layout.stsx, blog/_layout.stsx
+PATTERN        KIND      MODE    FILE                   LAYOUTS
+/              page      static  page.stsx              layout.stsx
+/api/search    endpoint  server  api/search/route.ts
+/blog/[slug]   page      server  blog/[slug]/page.stsx  layout.stsx, blog/layout.stsx
 
 $ lumiose routes --format json   # { routesDir, defaultMode, routes: [{ pattern, file, kind, mode, ssr?, prerender?, layouts, params }], diagnostics, summary }
 ```

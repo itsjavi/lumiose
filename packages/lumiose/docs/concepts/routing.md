@@ -1,43 +1,61 @@
 # Routing
 
-> Routes are files under `src/routes`: pages (`.stsx`/`.tsx`), endpoints (`.ts`), nested `_layout` files and `_404`/`_error` pages. Route patterns and params are typed by `lumiose typegen`.
+> Routes are folders under `src/routes`, with the Next.js App Router file names: `page.stsx` pages, `route.ts` endpoints, nested `layout` files and `not-found`/`error` pages. Any other file there is colocated, not a route. Route patterns and params are typed by `lumiose typegen`.
 
 ## Concept
 
 ```
 src/
   routes/
-    _layout.stsx            root layout; nested _layout.stsx per folder
-    index.stsx              /
-    about.stsx              /about
-    blog/index.stsx         /blog
-    blog/[slug].stsx        /blog/:slug
-    docs/[...path].stsx     /docs/*  (rest param, may be empty)
-    (marketing)/pricing.stsx  /pricing  (a group folder adds no URL segment)
-    api/posts.ts            endpoint: export GET / POST / … = (ctx) => Response
-    sitemap.xml.ts          endpoint at /sitemap.xml
-    _404.stsx  _error.stsx  error pages, nearest one wins
-  document.stsx             optional: owns <html>, <head> and <body>
-  middleware.ts             optional: export default (ctx, next) => Promise<Response>
+    layout.stsx                     root layout; a nested layout.stsx per folder
+    page.stsx                       /
+    about/page.stsx                 /about
+    blog/page.stsx                  /blog
+    blog/[slug]/page.stsx           /blog/:slug
+    blog/[slug]/Comments.stsx       colocated module, not a route
+    blog/_lib/posts.ts              private folder: nothing below it routes
+    docs/[[...path]]/page.stsx      /docs and /docs/*  (optional rest)
+    files/[...path]/page.stsx       /files/*  (rest: one or more segments)
+    [[lang]]/contact/page.stsx      /contact and /:lang/contact  (optional param)
+    (marketing)/pricing/page.stsx   /pricing  (a group folder adds no URL segment)
+    api/posts/route.ts              endpoint: export GET / POST / … = (ctx) => Response
+    sitemap.xml/route.ts            endpoint at /sitemap.xml
+    not-found.stsx  error.stsx      error pages, nearest one wins
+  document.stsx                     optional: owns <html>, <head> and <body>
+  middleware.ts                     optional: export default (ctx, next) => Promise<Response>
 ```
 
-- **Matching priority:** static segments beat `[param]`, which beats `[...rest]`. Two files for
-  the same pattern are `LUM5003`.
-- Only `_layout`, `_404` and `_error` may start with `_`; keep shared modules out of `src/routes`
-  (`LUM5002`).
+- **A folder is a URL segment; special files give it behavior:** `page.stsx` or `page.tsx` (the
+  page), `route.ts` (an endpoint), and `layout`, `not-found` and `error` (`.stsx` or `.tsx`).
+  There is no `index` and no flat page file: `about/page.stsx` is the page at `/about`, and
+  `about.stsx` is not a route. A folder has a page or a `route.ts`, not both (`LUM5003`).
+- **Colocation:** any other file in `src/routes` (components, helpers, styles, tests) is ignored
+  by the router, so it can live next to the route that uses it. A folder whose name starts with
+  `_` is private: nothing below it routes, not even a `page.stsx`.
+- **Segments:** `[param]` matches one segment, `[[param]]` zero or one, `[...rest]` one or more
+  and `[[...rest]]` zero or more (joined with `/`); `(group)` folders add no segment. A rest
+  segment is the last one of the URL. An optional param that matched nothing is absent:
+  `params.lang` is `undefined` at `/contact`.
+- **Matching priority:** segment by segment, static beats `[param]`, which beats `[...rest]`. A
+  route with optional segments competes with each URL shape it serves: `/[[lang]]/contact` serves
+  `/contact` as a static route. Two files that serve the same URL are `LUM5003`, including a
+  `[[...rest]]` folder next to a page for the URL without it.
+- **Next.js files Lumiose does not have** are `LUM5002`, so they never silently do nothing:
+  `loading`, `template`, `default` and `global-error` files, `@slot` folders (parallel routes)
+  and `(.)` folders (intercepting routes).
 - **Layouts** wrap every page below their folder and receive `{ params, children }`. `children`
   is the page (the outlet).
 - **Pages** export a `default` component (it may be `async`), which receives `{ params }`. Other
   page exports: `mode`, `ssr`, `staticPaths`, `action`/`actions`, `headers` and `limits` (see
   [Rendering modes](rendering-modes.md), [Data and actions](data-and-actions.md) and
   [Security](security.md)). Endpoints may export `limits` too.
-- **Error pages:** `_404` renders unmatched URLs and `notFound()`; `_error` renders thrown errors
-  and `error(status)`. Both receive `{ status, error }`. Outside dev, unexpected errors are masked
-  as 500. An error page renders inside the layouts of its folder, like a page there: the root
-  `_404` gets the root `_layout` (header, navigation), so it only renders its own content. If a
-  layout itself fails, the error page renders without layouts. To give errors a different frame,
-  move the regular pages into a group with their own layout (`(app)/_layout.stsx`) and keep the
-  error page outside it.
+- **Error pages:** `not-found` renders unmatched URLs and `notFound()`; `error` renders thrown
+  errors and `error(status)`. Both receive `{ status, error }`. Outside dev, unexpected errors are
+  masked as 500. An error page renders inside the layouts of its folder, like a page there: the
+  root `not-found` gets the root `layout` (header, navigation), so it only renders its own
+  content. If a layout itself fails, the error page renders without layouts. To give errors a
+  different frame, move the regular pages into a group with their own layout
+  (`(app)/layout.stsx`) and keep the error page outside it.
 
 **Typed routes.** `lumiose typegen` (run by `lumiose check` and the dev server) writes
 `.lumiose/types/routes.d.ts`, which augments `RouteMap` (pages and endpoints) and `LayoutMap`
@@ -50,7 +68,10 @@ against that table: an unknown or stale pattern is a type error, and editors com
   (`{ params, children }`, with the params of the layout's URL scope; route groups such as `(app)`
   add nothing to it), and `params<"/blog/[slug]">()` the params anywhere on the server;
 - `RequestContext<P>`, `ActionContext<P>` and `Endpoint<P>` type `ctx.params` of middleware
-  helpers, actions and endpoints (see [Data and actions](data-and-actions.md)).
+  helpers, actions and endpoints (see [Data and actions](data-and-actions.md));
+- optional params are optional properties (`RouteParams<"/[[lang]]/contact">` is
+  `{ lang?: string }`), and `href()` leaves out an optional segment whose param is missing or
+  empty: `href("/docs/[[...path]]")` is `/docs`.
 
 **Navigation.** Routes are MPA by default: links load the next document. Two `lumiose()` options in
 `vite.config.ts` make these navigations smooth ([reference](../reference/vite.md#lumiose)); both are
@@ -96,8 +117,12 @@ Routes with `mode = "spa"` use the client router `lumiose/router` ([reference](.
   query) and `isNavigating()`.
 - Layouts persist: a layout's `children` is the outlet, and layouts shared by the old and the new
   page keep their state. A page with other param values (`songs/[id]`) is a new page.
-- A navigation holds the old page until the new page's async content is ready, then swaps.
-- Scroll restoration, focus reset, `_404` for unknown URLs and `notFound()`, `_error` for errors.
+- A navigation holds the old page until the new page's async content is ready, then swaps. With
+  `viewTransitions: true`, a navigation to another page swaps inside
+  [`viewTransition()`](../reference/components.md#viewtransition) (a query change on the same page
+  does not), and `<ViewTransition>` names the elements that morph.
+- Scroll restoration, focus reset, `not-found` for unknown URLs and `notFound()`, `error` for
+  errors.
 
 > **Status:** file routes, the manifest, matching, typegen, `href()`, the request handler, MPA
 > prefetch and View Transitions, and the SPA router (`lumiose/router`) are available, served by
@@ -112,14 +137,14 @@ Routes with `mode = "spa"` use the client router `lumiose/router` ([reference](.
 | `params<"/x/[id]">()`                                                                                 | The matched route's params, typed by pattern (server).        |
 | `href(pattern, params?)`                                                                              | Build a URL from a typed route pattern.                       |
 | `Routes`, `RouteParams<P>`, `RouteMap`, `LayoutMap`                                                   | Route types.                                                  |
-| `ErrorPageProps`                                                                                      | Props of `_404` and `_error`.                                 |
+| `ErrorPageProps`                                                                                      | Props of `not-found` and `error` pages.                       |
 | `notFound()`, `error(status, message?)`, `redirect(to, status?)`                                      | Stop rendering; see [Server](server.md).                      |
 | `lumiose/router`: `Link`, `navigate`, `isNavigating`, `searchParams`, reactive `url`/`params`/`route` | SPA routes and islands ([reference](../reference/router.md)). |
 
 ## Example
 
-```stsx check file=routes/_layout.stsx
-// src/routes/_layout.stsx
+```stsx check file=routes/layout.stsx
+// src/routes/layout.stsx
 import { href, type LayoutProps } from "lumiose";
 
 export default function Layout(props: LayoutProps<"/">) {
@@ -139,8 +164,8 @@ export default function Layout(props: LayoutProps<"/">) {
 </style>
 ```
 
-```stsx check file=routes/blog/[slug].stsx
-// src/routes/blog/[slug].stsx
+```stsx check file=routes/blog/[slug]/page.stsx
+// src/routes/blog/[slug]/page.stsx
 import { Title, notFound, type PageProps } from "lumiose";
 
 const posts: Record<string, string> = { "hello-world": "Hello, world" };
@@ -160,8 +185,8 @@ export default function Post({ params }: PageProps<"/blog/[slug]">) {
 }
 ```
 
-```tsx check file=routes/_404.tsx
-// src/routes/_404.tsx: renders inside routes/_layout.stsx above (its nav and styles), so only
+```tsx check file=routes/not-found.tsx
+// src/routes/not-found.tsx: renders inside routes/layout.stsx above (its nav and styles), so only
 // the page content goes here
 import type { ErrorPageProps } from "lumiose";
 
@@ -175,8 +200,8 @@ export default function NotFound({ status, error }: ErrorPageProps) {
 }
 ```
 
-```tsx check file=routes/index.tsx
-// src/routes/index.tsx
+```tsx check file=routes/page.tsx
+// src/routes/page.tsx
 export default function Home() {
   return <h1>Home</h1>;
 }
@@ -184,9 +209,13 @@ export default function Home() {
 
 ## Common mistakes
 
-- **Helpers inside `src/routes`.** `src/routes/_utils.ts` or `src/routes/(x).stsx` are not routes
-  (`LUM5002`). Put shared modules in `src/lib` or `src/components`.
-- **Two files for one URL.** `blog.stsx` and `blog/index.stsx` both match `/blog` (`LUM5003`).
+- **A flat or `index` page file.** `src/routes/about.stsx` and `src/routes/blog/index.stsx` are
+  colocated modules, not routes: name them `about/page.stsx` and `blog/page.stsx`. `lumiose routes`
+  lists what the router sees.
+- **A `[...rest]` folder for its parent's URL.** `docs/[...path]/page.stsx` does not match
+  `/docs`: use `docs/[[...path]]/page.stsx`, or add `docs/page.stsx`.
+- **Two files for one URL.** `cart/page.stsx` and `(shop)/cart/page.stsx` both match `/cart`, and
+  so do `feed/page.stsx` and `feed/route.ts` (`LUM5003`).
 - **Hard-coded URLs.** `"/blog/" + slug` breaks silently when a route moves; `href("/blog/[slug]",
   { slug })` fails type-checking instead.
 - **Reading params from `window.location` in a server component.** Use `props.params` or

@@ -56,7 +56,7 @@ loader, and the build ships no hydration code.
 - **`ssr = false`:** the server sends a shell (the document, the layouts above the SPA and an
   empty island) without loading the SPA's modules, so they may use browser APIs at module scope;
   the browser renders the island. Such pages cannot export `action` or `headers`: use endpoints.
-- `_404` and `_error` pages below an `spa` layout render inside the SPA too.
+- `not-found` and `error` pages below an `spa` layout render inside the SPA too.
 
 ### Prerendered SPA routes
 
@@ -74,28 +74,28 @@ see the content, and a static host can serve the page.
   whose mode is `static` or `server`, it has no effect (a `LUM5002` warning).
 
   ```stsx
-  // src/routes/_layout.stsx: every page below is prerendered…
+  // src/routes/layout.stsx: every page below is prerendered…
   export const mode = "spa";
   export const prerender = true;
   ```
 
   ```stsx
-  // src/routes/account.stsx: …except this one, which reads cookies per request
+  // src/routes/account/page.stsx: …except this one, which reads cookies per request
   export const prerender = false;
   ```
 
 - **Params.** A page with params lists its paths with `staticPaths()`, as a `static` page does;
   without it the build stops. The build writes one HTML file per path. On a static host, any other
-  URL gets `404.html`, which renders the root `_404` inside the SPA.
+  URL gets `404.html`, which renders the root `not-found` page inside the SPA.
 - **Deep links to paths that were not prerendered.** When `404.html` loads at the URL of an SPA page
   with params (a song saved in the browser, a record created after the build), the router renders
-  that page in the browser instead of the `_404`. The page decides with the browser's data, and
-  `notFound()` brings the `_404` back. A small inline script in `404.html` hides the document until
+  that page in the browser instead of the `not-found` page. The page decides with the browser's
+  data, and `notFound()` brings the `not-found` page back. A small inline script in `404.html` hides the document until
   the router has rendered, so the 404 does not flash (at most 8 s, should the SPA not start). A URL
-  that matches no page keeps the `_404`, with status 404, and so does every URL without
+  that matches no page keeps the `not-found` page, with status 404, and so does every URL without
   JavaScript. `lumiose dev` and a server build do the same when such a page calls `notFound()`
   while it renders on the server, which has no browser data. `ssr = false` pages with params
-  behave the same way. This needs a root `_404` page: without one, `404.html` is a plain error
+  behave the same way. This needs a root `not-found` page: without one, `404.html` is a plain error
   page without the SPA.
 - **No request.** The page renders at build time, so request APIs (`cookies()`, `request()`,
   `locals()`, `response()`, `url().searchParams`) stop the build with `LUM5001`. Read them in the
@@ -130,7 +130,7 @@ to browsers that accept them. Output:
   files are `path/index.html` (`path.html` with
   `lumiose({ trailingSlash: "never" })`, prerendered `spa` pages included), endpoint files such as
   `sitemap.xml`, the shell of each
-  `ssr = false` page without params, and `404.html` from the root `_404` when the root scope is
+  `ssr = false` page without params, and `404.html` from the root `not-found` page when the root scope is
   static or `spa`. In an `ssr = false` SPA, `404.html` is the shell: a static host that serves it
   for unknown URLs gets deep links to every route. Vite's `base` applies to URLs, not to file
   paths.
@@ -172,8 +172,8 @@ it without the adapter. Set response headers once with `lumiose({ headers })`
 
 ## Example
 
-```stsx check file=routes/stats.stsx
-// src/routes/stats.stsx: the shell (title, heading) is sent first; the slow chart streams in
+```stsx check file=routes/stats/page.stsx
+// src/routes/stats/page.stsx: the shell (title, heading) is sent first; the slow chart streams in
 import { Suspense, Title } from "lumiose";
 
 export const mode = "server";
@@ -196,8 +196,8 @@ export default function Stats() {
 }
 ```
 
-```tsx check file=routes/docs/[slug].tsx
-// src/routes/docs/[slug].tsx: prerendered for each slug
+```tsx check file=routes/docs/[slug]/page.tsx
+// src/routes/docs/[slug]/page.tsx: prerendered for each slug
 import type { PageProps } from "lumiose";
 
 const pages = { intro: "Introduction", setup: "Setup" } as const;
@@ -211,8 +211,8 @@ export default function Doc({ params }: PageProps<"/docs/[slug]">) {
 }
 ```
 
-```stsx check file=routes/tracks/[id].stsx
-// src/routes/tracks/[id].stsx: prerendered for each id, then hydrated into the SPA
+```stsx check file=routes/tracks/[id]/page.stsx
+// src/routes/tracks/[id]/page.stsx: prerendered for each id, then hydrated into the SPA
 import { onMount, signal } from "lumiose";
 import { params } from "lumiose/router";
 

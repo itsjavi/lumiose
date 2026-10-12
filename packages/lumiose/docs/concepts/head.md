@@ -66,8 +66,8 @@ export default function Document(props: DocumentProps) {
 }
 ```
 
-```tsx check file=routes/about.tsx
-// src/routes/about.tsx
+```tsx check file=routes/about/page.tsx
+// src/routes/about/page.tsx
 import { Head, Meta, Title } from "lumiose";
 
 export default function About() {

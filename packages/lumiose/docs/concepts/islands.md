@@ -145,10 +145,10 @@ export function LikeButton({ initial, children }: { initial: number; children?: 
 </style>
 ```
 
-```stsx check file=routes/posts/[id].stsx
-// src/routes/posts/[id].stsx: a server component; only LikeButton ships JS
+```stsx check file=routes/posts/[id]/page.stsx
+// src/routes/posts/[id]/page.stsx: a server component; only LikeButton ships JS
 import { params } from "lumiose";
-import { LikeButton } from "../../components/LikeButton.stsx";
+import { LikeButton } from "../../../components/LikeButton.stsx";
 
 export default function Post() {
   const { id } = params<"/posts/[id]">();

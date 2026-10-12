@@ -165,9 +165,9 @@ export function CartBadge() {
 }
 ```
 
-```stsx check file=routes/shop-islands.stsx
-import { AddToCart, CartBadge } from "../components/CartIslands.stsx";
-import { cart } from "../lib/cart.ts";
+```stsx check file=routes/shop-islands/page.stsx
+import { AddToCart, CartBadge } from "../../components/CartIslands.stsx";
+import { cart } from "../../lib/cart.ts";
 
 export const mode = "server";
 

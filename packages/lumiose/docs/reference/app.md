@@ -87,7 +87,7 @@ function isFetchError(value: unknown): value is FetchError;
 ```
 
 Thrown by `fetchJSON()` and by `submit()` for unexpected errors. An `HttpError`, so if a server
-component lets it escape, the page renders `_error` (or `_404`) with the same status.
+component lets it escape, the page renders the `error` (or `not-found`) page with the same status.
 
 ## Form actions
 
@@ -212,8 +212,9 @@ function href<P extends Routes>(pattern: P, ...args: HrefArgs<P>): string;
 ```
 
 Builds a path from a route pattern, encoding each param; `params` is required when the pattern has
-params. A `[...rest]` param keeps its `/` separators and may be empty. Throws on a missing or empty
-`[param]`.
+params. A `[...rest]` param keeps its `/` separators; an optional `[[param]]` or `[[...rest]]`
+whose value is missing or empty leaves its segment out (`href("/docs/[[...path]]")` is `/docs`).
+Throws on a missing or empty `[param]` or `[...rest]`.
 
 The path is below Vite's `base` and follows `lumiose({ trailingSlash })`, on the server and in the
 browser alike (`lumiose dev`, `lumiose build` and prerendering):
@@ -252,7 +253,8 @@ function isRedirect(value: unknown): value is Redirect;
 function isHttpError(value: unknown): value is HttpError;
 ```
 
-They throw; the framework renders a redirect, the nearest `_404` (404) or the nearest `_error`.
+They throw; the framework renders a redirect, the nearest `not-found` page (404) or the nearest
+`error` page.
 Without a status, `redirect()` uses 302 for GET/HEAD and 303 otherwise. `HttpError` is an `Error`
 with a `status`.
 
@@ -376,8 +378,8 @@ interface PlatformEnv {} // augment: declare module "lumiose" { interface Platfo
 
 ## Example
 
-```ts check file=routes/api/session.ts
-// src/routes/api/session.ts
+```ts check file=routes/api/session/route.ts
+// src/routes/api/session/route.ts
 import { isHttpError, type Endpoint } from "lumiose";
 
 // Per request: it reads cookies and accepts POST, so it cannot be prerendered (LUM5005).

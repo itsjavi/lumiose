@@ -167,13 +167,13 @@ Most routes are `server`, because they show the signed-in user or read the query
 | `/profile`            | server | `requireUser()`; your reviews, paginated                                                                                |
 | `/api/search`         | server | `GET` endpoint: top 8 `listBooks({ q })` results, for the search island                                                 |
 | `/api/me`             | server | `GET` endpoint: `{ user }` for the account menu on static pages                                                         |
-| `_404`, `_error`      | n/a    | Error pages (a forbidden review change renders `_error` with 403)                                                       |
+| `not-found`, `error`  | n/a    | Error pages (a forbidden review change renders `error` with 403)                                                        |
 
 Layouts:
 
-- `(app)/_layout.stsx` holds the server routes. It sets `mode = "server"` and renders the header
+- `(app)/layout.stsx` holds the server routes. It sets `mode = "server"` and renders the header
   with the user from `locals()`.
-- `(static)/_layout.stsx` holds the static routes. Its header renders `<AccountMenu client:idle>`.
+- `(static)/layout.stsx` holds the static routes. Its header renders `<AccountMenu client:idle>`.
 
 Pages read the request (`url()`, `locals()`, `params`) and run their queries in the default export,
 then pass the results to a component as props. node:sqlite is synchronous, so pages need no

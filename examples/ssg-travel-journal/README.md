@@ -39,18 +39,18 @@ src/
   components/              header and footer, post cards, tags, pager, journal page
   islands/                 Search (client:idle) and ThemeToggle (client:load)
   routes/
-    _layout.stsx           header, footer and <style global>
-    index.stsx             /                   journal, page 1
-    page/[page].stsx       /page/2, /page/3    staticPaths(); /page/1 redirects to /
-    posts/[slug].stsx      /posts/<slug>       staticPaths(): one page per post
-    tags/index.stsx        /tags
-    tags/[tag].stsx        /tags/<tag>         staticPaths(): one page per tag
-    archive.stsx           /archive            every post by year
-    about.stsx             /about
-    _404.stsx              → dist/client/404.html
-    rss.xml.ts             → dist/client/rss.xml
-    sitemap.xml.ts         → dist/client/sitemap.xml
-    search.json.ts         → dist/client/search.json
+    layout.stsx            header, footer and <style global>
+    page.stsx              /                   journal, page 1
+    page/[page]/page.stsx  /page/2, /page/3    staticPaths(); /page/1 redirects to /
+    posts/[slug]/page.stsx /posts/<slug>       staticPaths(): one page per post
+    tags/page.stsx         /tags
+    tags/[tag]/page.stsx   /tags/<tag>         staticPaths(): one page per tag
+    archive/page.stsx      /archive            every post by year
+    about/page.stsx        /about
+    not-found.stsx         → dist/client/404.html
+    rss.xml/route.ts       → dist/client/rss.xml
+    sitemap.xml/route.ts   → dist/client/sitemap.xml
+    search.json/route.ts   → dist/client/search.json
 ```
 
 The build prerenders 31 files: 3 journal pages and the `/page/1` redirect page, 10 posts, the
@@ -89,7 +89,7 @@ renders the body with `<props.post.Content />` and its table of contents from th
 
 ## Styles
 
-- **Global**: `<style global>` in `routes/_layout.stsx`: the page base, `color-scheme` for the
+- **Global**: `<style global>` in `routes/layout.stsx`: the page base, `color-scheme` for the
   light and dark themes, focus styles, and the View Transitions opt-in.
 - **Scoped**: each file ends with one `<style>` block, shared by the components it defines
   (`Site.stsx` styles both the header and the footer; their selectors start from each one's root

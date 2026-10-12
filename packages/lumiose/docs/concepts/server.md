@@ -30,7 +30,7 @@ declare module "lumiose" {
 ```
 
 **Control flow.** `redirect(to, status?)`, `notFound()` and `error(status, message?)` throw; the
-framework turns them into a redirect or the nearest `_404`/`_error` page. Without a status,
+framework turns them into a redirect or the nearest `not-found`/`error` page. Without a status,
 `redirect()` uses 302 for GET/HEAD and 303 for other methods.
 
 **Cookies.** `cookies.get/getAll/set/delete`. Defaults: `path=/`, `httpOnly`, `sameSite=lax`, and
@@ -100,8 +100,8 @@ const middleware: Middleware = async (ctx, next) => {
 export default middleware;
 ```
 
-```tsx check file=routes/account.tsx
-// src/routes/account.tsx
+```tsx check file=routes/account/page.tsx
+// src/routes/account/page.tsx
 import { locals, redirect, response } from "lumiose";
 
 export const mode = "server";
