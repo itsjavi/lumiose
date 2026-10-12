@@ -1,0 +1,1934 @@
+{
+  "schema": 2,
+  "meta": {
+    "date": "2026-10-12T16:21:15.467Z",
+    "host": "macbookpro",
+    "machine": {
+      "cpu": "Apple M1 Max",
+      "cores": 10,
+      "memoryGb": 32,
+      "os": "macOS 27.0.1"
+    },
+    "node": "v26.8.1",
+    "versions": {
+      "lumiose": "c69f45a",
+      "react": "19.3.0",
+      "react-dom": "19.3.0",
+      "react-router": "8.4.0",
+      "next": "16.4.0",
+      "solid-js": "1.9.17",
+      "@solidjs/start": "2.0.6",
+      "@solidjs/router": "1.0.0",
+      "nitro": "3.0.260903-beta",
+      "svelte": "5.57.2",
+      "@sveltejs/kit": "3.0.1",
+      "@sveltejs/adapter-node": "6.0.0",
+      "nuxt": "4.6.1",
+      "vue": "3.5.43",
+      "vue-router": "5.4.0",
+      "nitropack": "2.13.4",
+      "remix": "3.0.0",
+      "@remix-run/component": "1.0.0",
+      "astro": "7.3.8",
+      "@astrojs/node": "11.1.7",
+      "@astrojs/preact": "6.0.6",
+      "preact": "10.29.8",
+      "vite": "8.3.4"
+    },
+    "iterations": {
+      "dev": 5,
+      "build": 3,
+      "load": 5,
+      "server": 3
+    },
+    "quick": false,
+    "groups": [
+      "server"
+    ],
+    "apps": [
+      "lumiose",
+      "react-router",
+      "next",
+      "solid-start",
+      "sveltekit",
+      "nuxt",
+      "remix",
+      "astro"
+    ],
+    "conformance": {
+      "lumiose": "pass",
+      "react-router": "pass",
+      "next": "pass",
+      "solid-start": "pass",
+      "sveltekit": "pass",
+      "nuxt": "pass",
+      "remix": "pass",
+      "astro": "pass"
+    },
+    "servers": {
+      "lumiose": {
+        "dev": {
+          "command": "lumiose dev --port 4101 --host 127.0.0.1",
+          "tool": "Vite 8.3.4",
+          "description": "`lumiose dev`: Vite in middleware mode, modules compiled on request, SSR through Vite's module runner"
+        },
+        "build": {
+          "command": "lumiose build"
+        },
+        "prod": {
+          "command": "NODE_ENV=production node server.ts",
+          "description": "`node server.ts`: the `lumiose build` output on @lumiose/adapter-node (compress: false)",
+          "nodeEnv": "production",
+          "compression": false
+        }
+      },
+      "react-router": {
+        "dev": {
+          "command": "react-router dev --host 127.0.0.1 --port ${PORT:-4102} --strictPort",
+          "tool": "Vite 8.3.4",
+          "description": "`react-router dev`: Vite dev server, modules compiled on request"
+        },
+        "build": {
+          "command": "react-router build"
+        },
+        "prod": {
+          "command": "NODE_ENV=production node server.ts",
+          "description": "`node server.ts`: Express + @react-router/express on the `react-router build` output, no compression middleware",
+          "nodeEnv": "production",
+          "compression": false
+        }
+      },
+      "next": {
+        "dev": {
+          "command": "next dev --hostname 127.0.0.1 --port ${PORT:-4103}",
+          "tool": "Turbopack (next 16.4.0)",
+          "description": "`next dev`: Turbopack dev server, routes compiled on first request"
+        },
+        "build": {
+          "command": "next build"
+        },
+        "prod": {
+          "command": "next start --port ${PORT:-4103}",
+          "description": "`next start`: Next's production server on the `next build` output (compress: false)",
+          "nodeEnv": "production",
+          "compression": false
+        }
+      },
+      "solid-start": {
+        "dev": {
+          "command": "vite dev --host 127.0.0.1 --port ${PORT:-4104} --strictPort",
+          "tool": "Vite 8.3.4",
+          "description": "`vite dev`: Vite with SolidStart's plugin (Environment API), modules compiled on request"
+        },
+        "build": {
+          "command": "vite build"
+        },
+        "prod": {
+          "command": "NODE_ENV=production node .output/server/index.mjs",
+          "description": "`node .output/server/index.mjs`: Nitro's node-server output of `vite build` (no compression)",
+          "nodeEnv": "production",
+          "compression": false
+        }
+      },
+      "sveltekit": {
+        "dev": {
+          "command": "vite dev --host 127.0.0.1 --port ${PORT:-4105} --strictPort",
+          "tool": "Vite 8.3.4",
+          "description": "`vite dev`: Vite with SvelteKit's plugin, modules compiled on request"
+        },
+        "build": {
+          "command": "vite build"
+        },
+        "prod": {
+          "command": "NODE_ENV=production node build",
+          "description": "`node build`: the @sveltejs/adapter-node output of `vite build` (precompress: false, no compression)",
+          "nodeEnv": "production",
+          "compression": false
+        }
+      },
+      "nuxt": {
+        "dev": {
+          "command": "nuxt dev --host 127.0.0.1 --port ${PORT:-4106}",
+          "tool": "Vite 8.3.4",
+          "description": "`nuxt dev`: Vite (Nuxt's Vite builder) with Nitro's dev server, modules compiled on request"
+        },
+        "build": {
+          "command": "nuxt build"
+        },
+        "prod": {
+          "command": "NODE_ENV=production node .output/server/index.mjs",
+          "description": "`node .output/server/index.mjs`: Nitro's node-server output of `nuxt build` (no compression)",
+          "nodeEnv": "production",
+          "compression": false
+        }
+      },
+      "remix": {
+        "dev": {
+          "command": "NODE_ENV=development PORT=${PORT:-4107} node hmr.ts",
+          "tool": "remix/assets 1.0.0",
+          "description": "`node hmr.ts`: remix/node-hmr restarts the TypeScript server on changes and pushes browser updates; the asset server compiles browser modules on request"
+        },
+        "build": {
+          "command": "true"
+        },
+        "prod": {
+          "command": "NODE_ENV=production node --import remix/node-tsx server.ts",
+          "description": "`node --import remix/node-tsx server.ts`: the same sources in production mode (no build step; browser modules compiled on first request, minified and fingerprinted; no compression)",
+          "nodeEnv": "production",
+          "compression": false
+        }
+      },
+      "astro": {
+        "dev": {
+          "command": "astro dev --ignore-lock --host 127.0.0.1 --port ${PORT:-4108}",
+          "tool": "Vite 8.3.4",
+          "description": "`astro dev`: Vite with Astro's plugins, modules compiled on request"
+        },
+        "build": {
+          "command": "astro build"
+        },
+        "prod": {
+          "command": "NODE_ENV=production HOST=127.0.0.1 PORT=${PORT:-4108} node dist/server/entry.mjs",
+          "description": "`node dist/server/entry.mjs`: the standalone @astrojs/node output of `astro build` (no compression)",
+          "nodeEnv": "production",
+          "compression": false
+        }
+      }
+    },
+    "notes": [
+      "Load: Chromium, CPU throttled 4×, no network throttling; COMMENTS_DELAY_MS=0.",
+      "Payload: bytes of the first load until ready and network idle; gzip level 6, brotli quality 11 computed offline.",
+      "Server: rounds interleaved across apps (order rotated each round), each after a 3 s cool-down and an idle check (1-min load average ≤ 0.5/core, waiting up to 60 s)."
+    ]
+  },
+  "results": {
+    "lumiose": {
+      "server.cold-start": {
+        "unit": "ms",
+        "values": [
+          470.25,
+          446.9,
+          468.88
+        ],
+        "median": 468.88,
+        "min": 446.9,
+        "max": 470.25
+      },
+      "server.home.rps": {
+        "unit": "req/s",
+        "values": [
+          1312.28,
+          1322.64,
+          1339.91
+        ],
+        "median": 1322.64,
+        "min": 1312.28,
+        "max": 1339.91
+      },
+      "server.home.p50": {
+        "unit": "ms",
+        "values": [
+          36,
+          36,
+          35
+        ],
+        "median": 36,
+        "min": 35,
+        "max": 36
+      },
+      "server.home.p99": {
+        "unit": "ms",
+        "values": [
+          73,
+          73,
+          72
+        ],
+        "median": 73,
+        "min": 72,
+        "max": 73
+      },
+      "server.home.errors": {
+        "unit": "count",
+        "values": [
+          0,
+          0,
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 0
+      },
+      "server.project.rps": {
+        "unit": "req/s",
+        "values": [
+          1508.2,
+          1484.91,
+          1524.7
+        ],
+        "median": 1508.2,
+        "min": 1484.91,
+        "max": 1524.7
+      },
+      "server.project.p50": {
+        "unit": "ms",
+        "values": [
+          31,
+          32,
+          31
+        ],
+        "median": 31,
+        "min": 31,
+        "max": 32
+      },
+      "server.project.p99": {
+        "unit": "ms",
+        "values": [
+          63,
+          63,
+          62
+        ],
+        "median": 63,
+        "min": 62,
+        "max": 63
+      },
+      "server.project.errors": {
+        "unit": "count",
+        "values": [
+          0,
+          0,
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 0
+      },
+      "server.issue.rps": {
+        "unit": "req/s",
+        "values": [
+          5519.82,
+          5519.46,
+          5556.55
+        ],
+        "median": 5519.82,
+        "min": 5519.46,
+        "max": 5556.55
+      },
+      "server.issue.p50": {
+        "unit": "ms",
+        "values": [
+          8,
+          8,
+          8
+        ],
+        "median": 8,
+        "min": 8,
+        "max": 8
+      },
+      "server.issue.p99": {
+        "unit": "ms",
+        "values": [
+          16,
+          16,
+          16
+        ],
+        "median": 16,
+        "min": 16,
+        "max": 16
+      },
+      "server.issue.errors": {
+        "unit": "count",
+        "values": [
+          0,
+          0,
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 0
+      },
+      "server.api.rps": {
+        "unit": "req/s",
+        "values": [
+          17020.37,
+          16752.37,
+          16956.37
+        ],
+        "median": 16956.37,
+        "min": 16752.37,
+        "max": 17020.37
+      },
+      "server.api.p50": {
+        "unit": "ms",
+        "values": [
+          2,
+          2,
+          2
+        ],
+        "median": 2,
+        "min": 2,
+        "max": 2
+      },
+      "server.api.p99": {
+        "unit": "ms",
+        "values": [
+          5,
+          5,
+          5
+        ],
+        "median": 5,
+        "min": 5,
+        "max": 5
+      },
+      "server.api.errors": {
+        "unit": "count",
+        "values": [
+          0,
+          0,
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 0
+      },
+      "server.rss": {
+        "unit": "MB",
+        "values": [
+          216.08
+        ],
+        "median": 216.08,
+        "min": 216.08,
+        "max": 216.08
+      }
+    },
+    "react-router": {
+      "server.cold-start": {
+        "unit": "ms",
+        "values": [
+          546.34,
+          519.08,
+          545.19
+        ],
+        "median": 545.19,
+        "min": 519.08,
+        "max": 546.34
+      },
+      "server.home.rps": {
+        "unit": "req/s",
+        "values": [
+          654.1,
+          682.8,
+          710.1
+        ],
+        "median": 682.8,
+        "min": 654.1,
+        "max": 710.1
+      },
+      "server.home.p50": {
+        "unit": "ms",
+        "values": [
+          66,
+          64,
+          66
+        ],
+        "median": 66,
+        "min": 64,
+        "max": 66
+      },
+      "server.home.p99": {
+        "unit": "ms",
+        "values": [
+          139,
+          129,
+          119
+        ],
+        "median": 129,
+        "min": 119,
+        "max": 139
+      },
+      "server.home.errors": {
+        "unit": "count",
+        "values": [
+          0,
+          0,
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 0
+      },
+      "server.project.rps": {
+        "unit": "req/s",
+        "values": [
+          490.4,
+          489.19,
+          470.4
+        ],
+        "median": 489.19,
+        "min": 470.4,
+        "max": 490.4
+      },
+      "server.project.p50": {
+        "unit": "ms",
+        "values": [
+          103,
+          95,
+          104
+        ],
+        "median": 103,
+        "min": 95,
+        "max": 104
+      },
+      "server.project.p99": {
+        "unit": "ms",
+        "values": [
+          137,
+          189,
+          181
+        ],
+        "median": 181,
+        "min": 137,
+        "max": 189
+      },
+      "server.project.errors": {
+        "unit": "count",
+        "values": [
+          0,
+          0,
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 0
+      },
+      "server.issue.rps": {
+        "unit": "req/s",
+        "values": [
+          1596.8,
+          1648.1,
+          1558.73
+        ],
+        "median": 1596.8,
+        "min": 1558.73,
+        "max": 1648.1
+      },
+      "server.issue.p50": {
+        "unit": "ms",
+        "values": [
+          30,
+          30,
+          30
+        ],
+        "median": 30,
+        "min": 30,
+        "max": 30
+      },
+      "server.issue.p99": {
+        "unit": "ms",
+        "values": [
+          54,
+          52,
+          60
+        ],
+        "median": 54,
+        "min": 52,
+        "max": 60
+      },
+      "server.issue.errors": {
+        "unit": "count",
+        "values": [
+          0,
+          0,
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 0
+      },
+      "server.api.rps": {
+        "unit": "req/s",
+        "values": [
+          10692.73,
+          10713.82,
+          10434.55
+        ],
+        "median": 10692.73,
+        "min": 10434.55,
+        "max": 10713.82
+      },
+      "server.api.p50": {
+        "unit": "ms",
+        "values": [
+          4,
+          4,
+          4
+        ],
+        "median": 4,
+        "min": 4,
+        "max": 4
+      },
+      "server.api.p99": {
+        "unit": "ms",
+        "values": [
+          8,
+          8,
+          8
+        ],
+        "median": 8,
+        "min": 8,
+        "max": 8
+      },
+      "server.api.errors": {
+        "unit": "count",
+        "values": [
+          0,
+          0,
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 0
+      },
+      "server.rss": {
+        "unit": "MB",
+        "values": [
+          233.84
+        ],
+        "median": 233.84,
+        "min": 233.84,
+        "max": 233.84
+      }
+    },
+    "next": {
+      "server.cold-start": {
+        "unit": "ms",
+        "values": [
+          651.13,
+          643.88,
+          631.44
+        ],
+        "median": 643.88,
+        "min": 631.44,
+        "max": 651.13
+      },
+      "server.home.rps": {
+        "unit": "req/s",
+        "values": [
+          432.1,
+          437.3,
+          452
+        ],
+        "median": 437.3,
+        "min": 432.1,
+        "max": 452
+      },
+      "server.home.p50": {
+        "unit": "ms",
+        "values": [
+          112,
+          111,
+          108
+        ],
+        "median": 111,
+        "min": 108,
+        "max": 112
+      },
+      "server.home.p99": {
+        "unit": "ms",
+        "values": [
+          130,
+          129,
+          122
+        ],
+        "median": 129,
+        "min": 122,
+        "max": 130
+      },
+      "server.home.errors": {
+        "unit": "count",
+        "values": [
+          0,
+          0,
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 0
+      },
+      "server.project.rps": {
+        "unit": "req/s",
+        "values": [
+          362,
+          368.8,
+          368
+        ],
+        "median": 368,
+        "min": 362,
+        "max": 368.8
+      },
+      "server.project.p50": {
+        "unit": "ms",
+        "values": [
+          134,
+          131,
+          131
+        ],
+        "median": 131,
+        "min": 131,
+        "max": 134
+      },
+      "server.project.p99": {
+        "unit": "ms",
+        "values": [
+          161,
+          156,
+          160
+        ],
+        "median": 160,
+        "min": 156,
+        "max": 161
+      },
+      "server.project.errors": {
+        "unit": "count",
+        "values": [
+          0,
+          0,
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 0
+      },
+      "server.issue.rps": {
+        "unit": "req/s",
+        "values": [
+          690.6,
+          687.2,
+          722.2
+        ],
+        "median": 690.6,
+        "min": 687.2,
+        "max": 722.2
+      },
+      "server.issue.p50": {
+        "unit": "ms",
+        "values": [
+          70,
+          70,
+          68
+        ],
+        "median": 70,
+        "min": 68,
+        "max": 70
+      },
+      "server.issue.p99": {
+        "unit": "ms",
+        "values": [
+          86,
+          95,
+          81
+        ],
+        "median": 86,
+        "min": 81,
+        "max": 95
+      },
+      "server.issue.errors": {
+        "unit": "count",
+        "values": [
+          0,
+          0,
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 0
+      },
+      "server.api.rps": {
+        "unit": "req/s",
+        "values": [
+          5455.37,
+          5579.46,
+          5915.1
+        ],
+        "median": 5579.46,
+        "min": 5455.37,
+        "max": 5915.1
+      },
+      "server.api.p50": {
+        "unit": "ms",
+        "values": [
+          8,
+          8,
+          7
+        ],
+        "median": 8,
+        "min": 7,
+        "max": 8
+      },
+      "server.api.p99": {
+        "unit": "ms",
+        "values": [
+          17,
+          17,
+          16
+        ],
+        "median": 17,
+        "min": 16,
+        "max": 17
+      },
+      "server.api.errors": {
+        "unit": "count",
+        "values": [
+          0,
+          0,
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 0
+      },
+      "server.rss": {
+        "unit": "MB",
+        "values": [
+          482.36
+        ],
+        "median": 482.36,
+        "min": 482.36,
+        "max": 482.36
+      }
+    },
+    "solid-start": {
+      "server.cold-start": {
+        "unit": "ms",
+        "values": [
+          458.52,
+          428.35,
+          430.71
+        ],
+        "median": 430.71,
+        "min": 428.35,
+        "max": 458.52
+      },
+      "server.home.rps": {
+        "unit": "req/s",
+        "values": [
+          990.6,
+          998.5,
+          1002.2
+        ],
+        "median": 998.5,
+        "min": 990.6,
+        "max": 1002.2
+      },
+      "server.home.p50": {
+        "unit": "ms",
+        "values": [
+          47,
+          46,
+          46
+        ],
+        "median": 46,
+        "min": 46,
+        "max": 47
+      },
+      "server.home.p99": {
+        "unit": "ms",
+        "values": [
+          98,
+          96,
+          96
+        ],
+        "median": 96,
+        "min": 96,
+        "max": 98
+      },
+      "server.home.errors": {
+        "unit": "count",
+        "values": [
+          0,
+          0,
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 0
+      },
+      "server.project.rps": {
+        "unit": "req/s",
+        "values": [
+          747.5,
+          747.8,
+          743.8
+        ],
+        "median": 747.5,
+        "min": 743.8,
+        "max": 747.8
+      },
+      "server.project.p50": {
+        "unit": "ms",
+        "values": [
+          62,
+          62,
+          62
+        ],
+        "median": 62,
+        "min": 62,
+        "max": 62
+      },
+      "server.project.p99": {
+        "unit": "ms",
+        "values": [
+          131,
+          141,
+          143
+        ],
+        "median": 141,
+        "min": 131,
+        "max": 143
+      },
+      "server.project.errors": {
+        "unit": "count",
+        "values": [
+          0,
+          0,
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 0
+      },
+      "server.issue.rps": {
+        "unit": "req/s",
+        "values": [
+          2491.6,
+          2513.4,
+          2515.81
+        ],
+        "median": 2513.4,
+        "min": 2491.6,
+        "max": 2515.81
+      },
+      "server.issue.p50": {
+        "unit": "ms",
+        "values": [
+          18,
+          18,
+          18
+        ],
+        "median": 18,
+        "min": 18,
+        "max": 18
+      },
+      "server.issue.p99": {
+        "unit": "ms",
+        "values": [
+          49,
+          48,
+          49
+        ],
+        "median": 49,
+        "min": 48,
+        "max": 49
+      },
+      "server.issue.errors": {
+        "unit": "count",
+        "values": [
+          0,
+          0,
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 0
+      },
+      "server.api.rps": {
+        "unit": "req/s",
+        "values": [
+          19385.46,
+          19330.19,
+          19245.82
+        ],
+        "median": 19330.19,
+        "min": 19245.82,
+        "max": 19385.46
+      },
+      "server.api.p50": {
+        "unit": "ms",
+        "values": [
+          2,
+          2,
+          2
+        ],
+        "median": 2,
+        "min": 2,
+        "max": 2
+      },
+      "server.api.p99": {
+        "unit": "ms",
+        "values": [
+          4,
+          4,
+          5
+        ],
+        "median": 4,
+        "min": 4,
+        "max": 5
+      },
+      "server.api.errors": {
+        "unit": "count",
+        "values": [
+          0,
+          0,
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 0
+      },
+      "server.rss": {
+        "unit": "MB",
+        "values": [
+          237.5
+        ],
+        "median": 237.5,
+        "min": 237.5,
+        "max": 237.5
+      }
+    },
+    "sveltekit": {
+      "server.cold-start": {
+        "unit": "ms",
+        "values": [
+          446.75,
+          448.97,
+          446.82
+        ],
+        "median": 446.82,
+        "min": 446.75,
+        "max": 448.97
+      },
+      "server.home.rps": {
+        "unit": "req/s",
+        "values": [
+          1062.82,
+          1067.28,
+          1072.55
+        ],
+        "median": 1067.28,
+        "min": 1062.82,
+        "max": 1072.55
+      },
+      "server.home.p50": {
+        "unit": "ms",
+        "values": [
+          45,
+          45,
+          44
+        ],
+        "median": 45,
+        "min": 44,
+        "max": 45
+      },
+      "server.home.p99": {
+        "unit": "ms",
+        "values": [
+          90,
+          89,
+          89
+        ],
+        "median": 89,
+        "min": 89,
+        "max": 90
+      },
+      "server.home.errors": {
+        "unit": "count",
+        "values": [
+          0,
+          0,
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 0
+      },
+      "server.project.rps": {
+        "unit": "req/s",
+        "values": [
+          843.91,
+          840.4,
+          845.46
+        ],
+        "median": 843.91,
+        "min": 840.4,
+        "max": 845.46
+      },
+      "server.project.p50": {
+        "unit": "ms",
+        "values": [
+          57,
+          57,
+          57
+        ],
+        "median": 57,
+        "min": 57,
+        "max": 57
+      },
+      "server.project.p99": {
+        "unit": "ms",
+        "values": [
+          114,
+          114,
+          113
+        ],
+        "median": 114,
+        "min": 113,
+        "max": 114
+      },
+      "server.project.errors": {
+        "unit": "count",
+        "values": [
+          0,
+          0,
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 0
+      },
+      "server.issue.rps": {
+        "unit": "req/s",
+        "values": [
+          3493.19,
+          3516.64,
+          3512.28
+        ],
+        "median": 3512.28,
+        "min": 3493.19,
+        "max": 3516.64
+      },
+      "server.issue.p50": {
+        "unit": "ms",
+        "values": [
+          13,
+          13,
+          13
+        ],
+        "median": 13,
+        "min": 13,
+        "max": 13
+      },
+      "server.issue.p99": {
+        "unit": "ms",
+        "values": [
+          26,
+          26,
+          26
+        ],
+        "median": 26,
+        "min": 26,
+        "max": 26
+      },
+      "server.issue.errors": {
+        "unit": "count",
+        "values": [
+          0,
+          0,
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 0
+      },
+      "server.api.rps": {
+        "unit": "req/s",
+        "values": [
+          17805.82,
+          17830.55,
+          17811.64
+        ],
+        "median": 17811.64,
+        "min": 17805.82,
+        "max": 17830.55
+      },
+      "server.api.p50": {
+        "unit": "ms",
+        "values": [
+          2,
+          2,
+          2
+        ],
+        "median": 2,
+        "min": 2,
+        "max": 2
+      },
+      "server.api.p99": {
+        "unit": "ms",
+        "values": [
+          5,
+          5,
+          5
+        ],
+        "median": 5,
+        "min": 5,
+        "max": 5
+      },
+      "server.api.errors": {
+        "unit": "count",
+        "values": [
+          0,
+          0,
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 0
+      },
+      "server.rss": {
+        "unit": "MB",
+        "values": [
+          251.28
+        ],
+        "median": 251.28,
+        "min": 251.28,
+        "max": 251.28
+      }
+    },
+    "nuxt": {
+      "server.cold-start": {
+        "unit": "ms",
+        "values": [
+          510.99,
+          507.04,
+          482.17
+        ],
+        "median": 507.04,
+        "min": 482.17,
+        "max": 510.99
+      },
+      "server.home.rps": {
+        "unit": "req/s",
+        "values": [
+          605.8,
+          607.8,
+          610.71
+        ],
+        "median": 607.8,
+        "min": 605.8,
+        "max": 610.71
+      },
+      "server.home.p50": {
+        "unit": "ms",
+        "values": [
+          80,
+          80,
+          79
+        ],
+        "median": 80,
+        "min": 79,
+        "max": 80
+      },
+      "server.home.p99": {
+        "unit": "ms",
+        "values": [
+          99,
+          103,
+          101
+        ],
+        "median": 101,
+        "min": 99,
+        "max": 103
+      },
+      "server.home.errors": {
+        "unit": "count",
+        "values": [
+          0,
+          0,
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 0
+      },
+      "server.project.rps": {
+        "unit": "req/s",
+        "values": [
+          439.3,
+          439.9,
+          437.6
+        ],
+        "median": 439.3,
+        "min": 437.6,
+        "max": 439.9
+      },
+      "server.project.p50": {
+        "unit": "ms",
+        "values": [
+          109,
+          109,
+          109
+        ],
+        "median": 109,
+        "min": 109,
+        "max": 109
+      },
+      "server.project.p99": {
+        "unit": "ms",
+        "values": [
+          142,
+          142,
+          143
+        ],
+        "median": 142,
+        "min": 142,
+        "max": 143
+      },
+      "server.project.errors": {
+        "unit": "count",
+        "values": [
+          0,
+          0,
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 0
+      },
+      "server.issue.rps": {
+        "unit": "req/s",
+        "values": [
+          1172.41,
+          1185.2,
+          1187.41
+        ],
+        "median": 1185.2,
+        "min": 1172.41,
+        "max": 1187.41
+      },
+      "server.issue.p50": {
+        "unit": "ms",
+        "values": [
+          41,
+          41,
+          41
+        ],
+        "median": 41,
+        "min": 41,
+        "max": 41
+      },
+      "server.issue.p99": {
+        "unit": "ms",
+        "values": [
+          55,
+          53,
+          53
+        ],
+        "median": 53,
+        "min": 53,
+        "max": 55
+      },
+      "server.issue.errors": {
+        "unit": "count",
+        "values": [
+          0,
+          0,
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 0
+      },
+      "server.api.rps": {
+        "unit": "req/s",
+        "values": [
+          23317.1,
+          23268.8,
+          23368
+        ],
+        "median": 23317.1,
+        "min": 23268.8,
+        "max": 23368
+      },
+      "server.api.p50": {
+        "unit": "ms",
+        "values": [
+          1,
+          1,
+          1
+        ],
+        "median": 1,
+        "min": 1,
+        "max": 1
+      },
+      "server.api.p99": {
+        "unit": "ms",
+        "values": [
+          4,
+          4,
+          4
+        ],
+        "median": 4,
+        "min": 4,
+        "max": 4
+      },
+      "server.api.errors": {
+        "unit": "count",
+        "values": [
+          0,
+          0,
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 0
+      },
+      "server.rss": {
+        "unit": "MB",
+        "values": [
+          245.53
+        ],
+        "median": 245.53,
+        "min": 245.53,
+        "max": 245.53
+      }
+    },
+    "remix": {
+      "server.cold-start": {
+        "unit": "ms",
+        "values": [
+          635.41,
+          630.52,
+          656.63
+        ],
+        "median": 635.41,
+        "min": 630.52,
+        "max": 656.63
+      },
+      "server.home.rps": {
+        "unit": "req/s",
+        "values": [
+          802.3,
+          823.4,
+          840.37
+        ],
+        "median": 823.4,
+        "min": 802.3,
+        "max": 840.37
+      },
+      "server.home.p50": {
+        "unit": "ms",
+        "values": [
+          60,
+          58,
+          57
+        ],
+        "median": 58,
+        "min": 57,
+        "max": 60
+      },
+      "server.home.p99": {
+        "unit": "ms",
+        "values": [
+          120,
+          117,
+          115
+        ],
+        "median": 117,
+        "min": 115,
+        "max": 120
+      },
+      "server.home.errors": {
+        "unit": "count",
+        "values": [
+          0,
+          0,
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 0
+      },
+      "server.project.rps": {
+        "unit": "req/s",
+        "values": [
+          348.4,
+          352.3,
+          355.1
+        ],
+        "median": 352.3,
+        "min": 348.4,
+        "max": 355.1
+      },
+      "server.project.p50": {
+        "unit": "ms",
+        "values": [
+          141,
+          139,
+          138
+        ],
+        "median": 139,
+        "min": 138,
+        "max": 141
+      },
+      "server.project.p99": {
+        "unit": "ms",
+        "values": [
+          284,
+          278,
+          273
+        ],
+        "median": 278,
+        "min": 273,
+        "max": 284
+      },
+      "server.project.errors": {
+        "unit": "count",
+        "values": [
+          0,
+          0,
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 0
+      },
+      "server.issue.rps": {
+        "unit": "req/s",
+        "values": [
+          796,
+          797,
+          809.5
+        ],
+        "median": 797,
+        "min": 796,
+        "max": 809.5
+      },
+      "server.issue.p50": {
+        "unit": "ms",
+        "values": [
+          61,
+          60,
+          59
+        ],
+        "median": 60,
+        "min": 59,
+        "max": 61
+      },
+      "server.issue.p99": {
+        "unit": "ms",
+        "values": [
+          122,
+          122,
+          119
+        ],
+        "median": 122,
+        "min": 119,
+        "max": 122
+      },
+      "server.issue.errors": {
+        "unit": "count",
+        "values": [
+          0,
+          0,
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 0
+      },
+      "server.api.rps": {
+        "unit": "req/s",
+        "values": [
+          15645.46,
+          15673.1,
+          15647.64
+        ],
+        "median": 15647.64,
+        "min": 15645.46,
+        "max": 15673.1
+      },
+      "server.api.p50": {
+        "unit": "ms",
+        "values": [
+          2,
+          2,
+          2
+        ],
+        "median": 2,
+        "min": 2,
+        "max": 2
+      },
+      "server.api.p99": {
+        "unit": "ms",
+        "values": [
+          6,
+          6,
+          6
+        ],
+        "median": 6,
+        "min": 6,
+        "max": 6
+      },
+      "server.api.errors": {
+        "unit": "count",
+        "values": [
+          0,
+          0,
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 0
+      },
+      "server.rss": {
+        "unit": "MB",
+        "values": [
+          370.63
+        ],
+        "median": 370.63,
+        "min": 370.63,
+        "max": 370.63
+      }
+    },
+    "astro": {
+      "server.cold-start": {
+        "unit": "ms",
+        "values": [
+          476.46,
+          446.09,
+          473.13
+        ],
+        "median": 473.13,
+        "min": 446.09,
+        "max": 476.46
+      },
+      "server.home.rps": {
+        "unit": "req/s",
+        "values": [
+          1225.55,
+          1247.55,
+          1247
+        ],
+        "median": 1247,
+        "min": 1225.55,
+        "max": 1247.55
+      },
+      "server.home.p50": {
+        "unit": "ms",
+        "values": [
+          38,
+          38,
+          38
+        ],
+        "median": 38,
+        "min": 38,
+        "max": 38
+      },
+      "server.home.p99": {
+        "unit": "ms",
+        "values": [
+          72,
+          70,
+          69
+        ],
+        "median": 70,
+        "min": 69,
+        "max": 72
+      },
+      "server.home.errors": {
+        "unit": "count",
+        "values": [
+          0,
+          0,
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 0
+      },
+      "server.project.rps": {
+        "unit": "req/s",
+        "values": [
+          1291.46,
+          1306.19,
+          1304.28
+        ],
+        "median": 1304.28,
+        "min": 1291.46,
+        "max": 1306.19
+      },
+      "server.project.p50": {
+        "unit": "ms",
+        "values": [
+          38,
+          39,
+          38
+        ],
+        "median": 38,
+        "min": 38,
+        "max": 39
+      },
+      "server.project.p99": {
+        "unit": "ms",
+        "values": [
+          69,
+          57,
+          63
+        ],
+        "median": 63,
+        "min": 57,
+        "max": 69
+      },
+      "server.project.errors": {
+        "unit": "count",
+        "values": [
+          0,
+          0,
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 0
+      },
+      "server.issue.rps": {
+        "unit": "req/s",
+        "values": [
+          3130.64,
+          3140.28,
+          3161.73
+        ],
+        "median": 3140.28,
+        "min": 3130.64,
+        "max": 3161.73
+      },
+      "server.issue.p50": {
+        "unit": "ms",
+        "values": [
+          15,
+          15,
+          15
+        ],
+        "median": 15,
+        "min": 15,
+        "max": 15
+      },
+      "server.issue.p99": {
+        "unit": "ms",
+        "values": [
+          21,
+          21,
+          20
+        ],
+        "median": 21,
+        "min": 20,
+        "max": 21
+      },
+      "server.issue.errors": {
+        "unit": "count",
+        "values": [
+          0,
+          0,
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 0
+      },
+      "server.api.rps": {
+        "unit": "req/s",
+        "values": [
+          9445,
+          9698.55,
+          9721.1
+        ],
+        "median": 9698.55,
+        "min": 9445,
+        "max": 9721.1
+      },
+      "server.api.p50": {
+        "unit": "ms",
+        "values": [
+          5,
+          4,
+          4
+        ],
+        "median": 4,
+        "min": 4,
+        "max": 5
+      },
+      "server.api.p99": {
+        "unit": "ms",
+        "values": [
+          9,
+          9,
+          9
+        ],
+        "median": 9,
+        "min": 9,
+        "max": 9
+      },
+      "server.api.errors": {
+        "unit": "count",
+        "values": [
+          0,
+          0,
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 0
+      },
+      "server.rss": {
+        "unit": "MB",
+        "values": [
+          313.38
+        ],
+        "median": 313.38,
+        "min": 313.38,
+        "max": 313.38
+      }
+    }
+  },
+  "metrics": {
+    "server.cold-start": {
+      "label": "Server cold start (spawn → first 200)",
+      "group": "server",
+      "unit": "ms",
+      "better": "lower",
+      "env": "prod"
+    },
+    "server.home.rps": {
+      "label": "Requests/s",
+      "group": "server",
+      "unit": "req/s",
+      "better": "higher",
+      "section": "Throughput /",
+      "env": "prod"
+    },
+    "server.home.p50": {
+      "label": "Latency p50",
+      "group": "server",
+      "unit": "ms",
+      "better": "lower",
+      "section": "Throughput /",
+      "env": "prod"
+    },
+    "server.home.p99": {
+      "label": "Latency p99",
+      "group": "server",
+      "unit": "ms",
+      "better": "lower",
+      "section": "Throughput /",
+      "env": "prod"
+    },
+    "server.home.errors": {
+      "label": "Errors and non-2xx",
+      "group": "server",
+      "unit": "count",
+      "better": "lower",
+      "section": "Throughput /",
+      "env": "prod"
+    },
+    "server.project.rps": {
+      "label": "Requests/s",
+      "group": "server",
+      "unit": "req/s",
+      "better": "higher",
+      "section": "Throughput /projects/:slug?page=3",
+      "env": "prod"
+    },
+    "server.project.p50": {
+      "label": "Latency p50",
+      "group": "server",
+      "unit": "ms",
+      "better": "lower",
+      "section": "Throughput /projects/:slug?page=3",
+      "env": "prod"
+    },
+    "server.project.p99": {
+      "label": "Latency p99",
+      "group": "server",
+      "unit": "ms",
+      "better": "lower",
+      "section": "Throughput /projects/:slug?page=3",
+      "env": "prod"
+    },
+    "server.project.errors": {
+      "label": "Errors and non-2xx",
+      "group": "server",
+      "unit": "count",
+      "better": "lower",
+      "section": "Throughput /projects/:slug?page=3",
+      "env": "prod"
+    },
+    "server.issue.rps": {
+      "label": "Requests/s",
+      "group": "server",
+      "unit": "req/s",
+      "better": "higher",
+      "section": "Throughput /issues/:id (streamed)",
+      "env": "prod"
+    },
+    "server.issue.p50": {
+      "label": "Latency p50",
+      "group": "server",
+      "unit": "ms",
+      "better": "lower",
+      "section": "Throughput /issues/:id (streamed)",
+      "env": "prod"
+    },
+    "server.issue.p99": {
+      "label": "Latency p99",
+      "group": "server",
+      "unit": "ms",
+      "better": "lower",
+      "section": "Throughput /issues/:id (streamed)",
+      "env": "prod"
+    },
+    "server.issue.errors": {
+      "label": "Errors and non-2xx",
+      "group": "server",
+      "unit": "count",
+      "better": "lower",
+      "section": "Throughput /issues/:id (streamed)",
+      "env": "prod"
+    },
+    "server.api.rps": {
+      "label": "Requests/s",
+      "group": "server",
+      "unit": "req/s",
+      "better": "higher",
+      "section": "Throughput /api/issues/:id",
+      "env": "prod"
+    },
+    "server.api.p50": {
+      "label": "Latency p50",
+      "group": "server",
+      "unit": "ms",
+      "better": "lower",
+      "section": "Throughput /api/issues/:id",
+      "env": "prod"
+    },
+    "server.api.p99": {
+      "label": "Latency p99",
+      "group": "server",
+      "unit": "ms",
+      "better": "lower",
+      "section": "Throughput /api/issues/:id",
+      "env": "prod"
+    },
+    "server.api.errors": {
+      "label": "Errors and non-2xx",
+      "group": "server",
+      "unit": "count",
+      "better": "lower",
+      "section": "Throughput /api/issues/:id",
+      "env": "prod"
+    },
+    "server.rss": {
+      "label": "Server RSS after the load test",
+      "group": "server",
+      "unit": "MB",
+      "better": "lower",
+      "env": "prod"
+    }
+  }
+}

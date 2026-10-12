@@ -1,6 +1,31 @@
 {
   "runs": [
     {
+      "file": "2026-10-12T162115-macbookpro.json",
+      "date": "2026-10-12T16:21:15.467Z",
+      "host": "macbookpro",
+      "machine": {
+        "cpu": "Apple M1 Max",
+        "cores": 10,
+        "memoryGb": 32,
+        "os": "macOS 27.0.1"
+      },
+      "quick": false,
+      "apps": [
+        "lumiose",
+        "react-router",
+        "next",
+        "solid-start",
+        "sveltekit",
+        "nuxt",
+        "remix",
+        "astro"
+      ],
+      "groups": [
+        "server"
+      ]
+    },
+    {
       "file": "2026-10-12T114559-macbookpro.json",
       "date": "2026-10-12T11:45:59.720Z",
       "host": "macbookpro",
