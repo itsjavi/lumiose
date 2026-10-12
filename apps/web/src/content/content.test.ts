@@ -143,7 +143,7 @@ function pending(results: {
 }
 
 describe("stack table", () => {
-  it("fills every measured cell from the committed results, and shows 'measuring' for the rest", () => {
+  it("fills every cell from the committed results", () => {
     const rows = stacks();
     // Lumiose first, then by npm downloads of each stack's main package.
     expect(rows.map((row) => row.stack)).toEqual([
@@ -182,8 +182,7 @@ describe("stack table", () => {
     expect(preact.requests).toEqual({ kind: "fact", text: "No full-stack layer" });
     // Astro's server-page JS is measured on its fullstack port (TASK-242), not claimed.
     const astro = rows.find((row) => row.stack === "Astro")!;
-    expect(astro.serverJs.kind).toMatch(/^(measured|measuring)$/);
-    // No cell says "not measured": unmeasured cells are "measuring" until TASK-235.
+    expect(astro.serverJs.kind).toBe("measured");
     // React Router's framework mode is its full-stack layer.
     expect(rows.find((row) => row.stack === "React Router")!.fullStack).toEqual({
       kind: "fact",
@@ -192,6 +191,8 @@ describe("stack table", () => {
     });
     const cells = rows.flatMap((row) => Object.values(row));
     expect(JSON.stringify(cells)).not.toMatch(/not measured/i);
+    // TASK-235's run measured every cell: none is left "measuring".
+    expect(cells).not.toContainEqual({ kind: "measuring" });
   });
 
   it("fills a 'measuring' cell as soon as its results are committed", () => {

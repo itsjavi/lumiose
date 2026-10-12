@@ -99,6 +99,12 @@ export default function Home() {
   const results = evidence();
   const self = (bars: { self: boolean; value: number }[]) => bars.find((bar) => bar.self)!.value;
   const vanilla = results.cpuByColumn["vanillajs"];
+  const rows = stacks();
+  const measuring = rows.some((row) =>
+    [row.fullStack, row.styles, row.serverJs, row.clientSpeed, row.rendering, row.requests].some(
+      (cell) => cell.kind === "measuring",
+    ),
+  );
   const getStarted = href("/docs/[...path]", { path: "getting-started" });
 
   return (
@@ -185,7 +191,7 @@ export default function Home() {
               </tr>
             </thead>
             <tbody>
-              {stacks().map((row) => (
+              {rows.map((row) => (
                 <tr class={{ self: row.self === true }}>
                   <th scope="row">{row.stack}</th>
                   <td>
@@ -219,8 +225,9 @@ export default function Home() {
           speed: renders per second of the SSR benchmark's 5,000-component page to an HTML string (
           {results.serverRun}), then requests per second on the fullstack comparison's home page
           {results.requestsRun === "" ? "" : ` (${results.requestsRun})`}. Both React rows use
-          React's client and rendering entries. "measuring": the port or benchmark entry is being
-          added. Rows after Lumiose are ordered by npm downloads of each stack's main package (
+          React's client and rendering entries.
+          {measuring ? ' "measuring": the port or benchmark entry is being added.' : ""} Rows after
+          Lumiose are ordered by npm downloads of each stack's main package (
           {DOWNLOADS_PERIOD}). Method and every run: <a href={href("/benchmarks")}>benchmarks</a>.
         </p>
         <p class="note">Astro's interactive islands need a second UI framework.</p>
