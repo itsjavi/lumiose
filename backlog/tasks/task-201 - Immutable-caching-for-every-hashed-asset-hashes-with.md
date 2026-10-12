@@ -1,14 +1,13 @@
 ---
 id: TASK-201
 title: Immutable caching for every hashed asset (hashes with '-')
-status: In Progress
+status: To Do
 assignee:
   - Nova
 created_date: '2026-10-10 21:02'
-updated_date: '2026-10-12 22:12'
+updated_date: '2026-10-12 22:13'
 labels:
-  - adapter
-  - perf
+  - needs-decision
 dependencies: []
 priority: low
 ordinal: 203000
@@ -33,4 +32,6 @@ Nova 2026-10-13: fixed in the shared rule (packages/lumiose/src/app/server/stati
 - Considered: a list of the build's hashed outputs (exact, no heuristic) carried on the server entry's config export to adapter-node and static-fs. PROPOSAL, not done: it adds a field to the documented public config (reference/server-entry.md), which needs the user's approval. Rolldown hashCharacters base36/hex was rejected: all-letter or all-hex-digit tails of hand-written names (-download, -20241231) would match a pattern without the digit/uppercase requirement, and with it 7% of base36 hashes would be missed.
 - Observation (pre-existing, documented in adapter-cloudflare/netlify output.ts): the platform adapters' _headers rule makes every file under /assets/* immutable, public/assets copies included.
 - Tests: adapter-node isHashed cases (dashed hashes true; icon-download, my-component-v2, photo-2024-01 false), the build-served chunk always immutable, static-fs serves Counter-D-i-jZkv.js immutable and icon-download.svg revalidating, build test for the public/ warning. Docs: reference/adapter-node.md, reference/cli.md.
+
+Nova 2026-10-13, correction and status: the name rule misses a hash whose 8 characters are all lowercase letters, '-' or '_' ((28/64)^8, about 0.13%, 1 file in 750; before: about 12%), so AC #1 ('every') is not fully met by a name rule; those files revalidate, which is safe. Commit 86f6dc6 ships the improved rule, the public/ warning, tests and docs (pnpm check run on it: see the report). NEEDS DECISION (user): the exact fix is a list of the build's hashed outputs on the server entry's documented config export (e.g. an optional config.immutable: string[] of dist/client paths, built from the client bundle's file names, the merged stylesheets and the moved server assets), used by adapter-node and the fetch handler instead of the name rule when present. That adds a public field, so it waits for approval. Back to To Do with needs-decision; claim released.
 <!-- SECTION:NOTES:END -->
