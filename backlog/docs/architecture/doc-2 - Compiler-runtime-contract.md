@@ -3,7 +3,7 @@ id: doc-2
 title: Compiler-runtime contract
 type: specification
 created_date: '2026-10-08 12:27'
-updated_date: '2026-10-12 14:36'
+updated_date: '2026-10-12 16:24'
 tags:
   - architecture
   - contract
@@ -82,7 +82,7 @@ Imported only by code compiled with the `hot` option in `lumiose dev`; never par
 | Name | Contract |
 |---|---|
 | `ssr(parts, ...holes)` | Interleaves parts and holes. Sync unless a hole is a thenable, in which case it returns `Promise<SSRNode>` and resolves holes concurrently while preserving order |
-| `SSRHtml` | The runtime's `SSRNode` class. A template with holes compiles to a hoisted `_cN(...holes)` next to its parts `_sN`, which inlines `ssr()`'s synchronous outcome: when every hole is a string, and every `list`/`branch` hole an `SSRHtml`, it returns `new SSRHtml(p0 + h0 + p1 + h1.t + …)`; otherwise (a promise, an island text hole, a nullish raw value) it calls `ssr(_sN, ...holes)` with the same, already evaluated holes (TASK-246). Holes are evaluated once, in source order, either way |
+| `SSRHtml` | The class of the runtime's rendered HTML: every `SSRNode` the runtime creates is an `SSRHtml` instance. A template with holes compiles to a hoisted `_cN(...holes)` next to its parts `_sN`, which inlines `ssr()`'s synchronous outcome: when every hole is a string, and every `list`/`branch` hole an `SSRHtml`, it returns `new SSRHtml(p0 + h0 + p1 + h1.t + …)`; otherwise (a promise, an island text hole, a nullish raw value) it calls `ssr(_sN, ...holes)` with the same, already evaluated holes (TASK-246). Holes are evaluated once, in source order, either way |
 | `text(v)` | Escaped text. Inside islands, it emits `<!--!-->` between adjacent dynamic texts (the compiler passes adjacency through its parts) |
 | `insert(v)` | Dynamic region. Inside islands it is wrapped as `<!--[-->…<!--]-->`; outside islands it is unwrapped |
 | `insertValue(v)` | `insert(v)` as an `SSRNode`, for a dynamic item of an array of renderables (the client's `insertValue`): an array escapes plain strings, so the block is returned as markup |

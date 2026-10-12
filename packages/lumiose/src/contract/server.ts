@@ -23,7 +23,8 @@ export interface ServerRuntime {
    */
   ssr(parts: readonly string[], ...holes: unknown[]): SSROutput;
   /**
-   * The runtime's SSRNode class. Compiled templates inline `ssr()`'s synchronous outcome: when
+   * The class of the runtime's rendered HTML: every `SSRNode` the runtime creates is an
+   * `SSRHtml` instance. Compiled templates inline `ssr()`'s synchronous outcome: when
    * every hole is an HTML string or (for `list` and `branch` holes) an `SSRHtml`, they return
    * `new SSRHtml(concatenation)`; otherwise they call `ssr()` with the same holes.
    */
