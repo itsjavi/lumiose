@@ -62,6 +62,7 @@ export function island<P>(
   };
   if (strategyValue !== undefined) record.value = strategyValue;
   if (names.length > 0) record.slots = names;
+  if (render.idPrefix !== "") record.idPrefix = render.idPrefix;
   const unit = resolveUnit(parent.unit);
   const state: IslandState = { id, ref, record, unit };
   unit.islands.push(state);

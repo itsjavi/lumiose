@@ -122,6 +122,7 @@ export function renderShell(root: () => unknown, options: ShellOptions = {}): Pr
     sentCache: new Set(),
     isClientState: options.isClientState,
     hydrates: false,
+    idPrefix: options.idPrefix ?? "",
   };
   const frame: Frame = {
     render,

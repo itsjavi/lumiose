@@ -33,6 +33,11 @@ interface RenderToStreamOptions {
   loaderUrl?: string;
   /** Errors of streamed boundaries that no ErrorBoundary handled. Default: console.error. */
   onError?: (error: unknown) => void;
+  /**
+   * Prepended to every useId() of the render, its islands included (they reuse it when they
+   * hydrate). Keeps the ids of several renders or apps on one page apart. Default: "".
+   */
+  idPrefix?: string;
 }
 
 interface RenderedShell {
@@ -62,7 +67,9 @@ function renderToString(
 Renders everything resolved (no fallbacks, no stream) and returns the body HTML. Used for
 prerendering and tests.
 
-Both are server-only: in the browser build of `lumiose` they throw `LUM4003`.
+Both are server-only: in the browser build of `lumiose` they throw `LUM4003`. With `idPrefix`, the
+island records carry the prefix, so [`useId()`](reactivity.md#useid) returns the same ids after
+hydration.
 
 ## `lumiose/server`
 

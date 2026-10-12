@@ -40,6 +40,7 @@ export {
   signedCookie,
   url,
 } from "./server/scope.ts";
+export { renderToStream, renderToString } from "../server/render.ts";
 export type {
   CookieDeleteOptions,
   CookieOptions,

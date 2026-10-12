@@ -54,9 +54,16 @@ mistakes** and **Related diagnostics**. Reference pages list every export with i
 - [Testing](concepts/testing.md): Test components with Vitest and the Lumiose Vite plugin.
 - [Security](concepts/security.md): A strict Content Security Policy with nonces and hashes (`lumiose({ csp: "strict" })`, `cspNonce()`), and the cross-site form check.
 
+## Deploy
+
+- [Overview](deploy/README.md): What `lumiose build` writes, the production settings (`PORT`, `HOST`, `ORIGIN`, `LUMIOSE_SECRET`) and how far each target's guide was verified.
+- [Docker](deploy/docker.md): A multi-stage Dockerfile: `node:24-alpine`, production dependencies only, a non-root user and a health check.
+- [VPS](deploy/vps.md): `@lumiose/adapter-node` under systemd or pm2, behind Caddy or nginx; what the adapter already does for compression and caching.
+- [Coolify](deploy/coolify.md): Deploy from the Dockerfile with Coolify's Dockerfile build pack.
+
 ## Reference
 
-- [`lumiose`: reactivity](reference/reactivity.md): `signal`, `computed`, `effect`, `batch`, `flush`, `untrack`, `store`, owners, context (`createContext`, `useContext`), `getAbortSignal`, `isPending`, `isBusy`, `resource`.
+- [`lumiose`: reactivity](reference/reactivity.md): `signal`, `computed`, `effect`, `batch`, `flush`, `untrack`, `store`, owners, context (`createContext`, `useContext`), `useId`, `getAbortSignal`, `isPending`, `isBusy`, `resource`.
 - [`lumiose`: components](reference/components.md): `Suspense`, `ErrorBoundary`, `Portal`, `Dynamic`, `ref`, `Head`, `Title`, `Meta`.
 - [`lumiose`: app layer](reference/app.md): `fetchJSON`, `submit`, `isSubmitting`, `actionData`, `invalidate`, `fail`, `redirect`, `notFound`, `error`, `href`, request APIs and types.
 - [`lumiose`: server rendering](reference/server.md): `renderToStream`, `renderToString` and the `lumiose/server` subpath.
@@ -308,6 +315,7 @@ runs again, and signals created in the body start fresh ([Async components](conc
 | `useRef<HTMLInputElement>(null)`                      | `const input = ref<HTMLInputElement>()`, then `<input ref={input} />` and `input()?.focus()`.                                                   |
 | `useRef(value)` for a mutable value                   | A `let` variable in the component body: the body runs once.                                                                                     |
 | `<Ctx.Provider value={v}>`, `useContext(Ctx)`         | `<Ctx value={v}>`, `useContext(Ctx)`. The provider reads `value` once: provide a signal or a store for state that changes.                      |
+| `useId()`, `identifierPrefix`                         | `useId()`, and `idPrefix` on `render()` and `renderToStream()` ([useId](reference/reactivity.md#useid)).                                        |
 | `useSyncExternalStore(subscribe, get)`                | A signal set from the store's `subscribe` ([an external store](concepts/state.md#an-external-store-zustandvanilla-a-jotai-store-redux)).        |
 | Fetching in `useEffect`, TanStack Query               | An `async` component that awaits `fetchJSON()` or `query()` ([Async components](concepts/async.md)), or [`@lumiose/query`](reference/query.md). |
 | `useTransition`, `isPending`                          | `isPending()` inside an async component, and `isBusy()` for anything in flight.                                                                 |
@@ -530,6 +538,7 @@ read like a signal.
 | `function Name(props) { return <… /> }` | A component. PascalCase, returns JSX.                                           |
 | `children` prop                         | Lazy content passed between the tags. Insert once.                              |
 | `ref<T>()`                              | A ref callback that reads like a signal (`input()`), `undefined` until mounted. |
+| `useId()`                               | A unique id for `id`/`for` and `aria-*` pairs, the same after hydration.        |
 | `onMount(fn)`, `onCleanup(fn)`          | Run after mount; run when the component is disposed.                            |
 | `<Dynamic component={X} … />`           | Render a component (or tag name) chosen at runtime.                             |
 | `<Portal mount={node}>`                 | Render children elsewhere in the document.                                      |
@@ -3889,11 +3898,508 @@ value).
 
 See also: [Head and document](head.md), [Styles](styles.md), [Rendering modes](rendering-modes.md), [reference: `@lumiose/vite`](../reference/vite.md), [reference: app APIs](../reference/app.md).
 
+<!-- source: deploy/README.md -->
+
+# Deploy
+
+> Run a Lumiose build in production: what `lumiose build` writes, the settings a server needs, a guide per target, and what each guide was verified on.
+
+## What to deploy
+
+`lumiose build` writes `dist/` ([Rendering modes](../concepts/rendering-modes.md)):
+
+- `dist/client`: the browser assets (content-hashed, under `assets/`), the files of `public/`, and
+  the prerendered pages, with `.br` and `.gz` copies of every text file of 1 kB or more.
+- `dist/server/entry.js`: the request handler for server-rendered pages, endpoints and form
+  actions. It bundles your server code and the Lumiose runtime; other npm packages stay imports,
+  so production needs the app's `dependencies` installed.
+
+A site whose every route is prerendered builds no `dist/server`: any static host serves
+`dist/client`. Anything else runs on a server: `@lumiose/adapter-node` serves both directories with
+Node, from the `server.ts` that `create-lumiose --template ssr` writes
+([reference](../reference/adapter-node.md)).
+
+## Production settings
+
+The Node adapter and the request handler read these environment variables:
+
+| Variable         | Set it to                                                                                                                                                       |
+| ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `NODE_ENV`       | `production`. The adapter sets it when it is unset, before the build loads.                                                                                    |
+| `PORT`           | The port to listen on. Default: `3000`.                                                                                                                         |
+| `HOST`           | The address to listen on. Default: every address, which a container needs. Behind a proxy on the same machine, `127.0.0.1`.                                     |
+| `ORIGIN`         | The public origin, such as `https://example.com`, behind a proxy that terminates TLS or rewrites the host. Request URLs (`url()`, `ctx.url`) are built from it. |
+| `LUMIOSE_SECRET` | When the app signs cookies (`signedCookie()`): a random secret of at least 32 bytes (`openssl rand -base64 32`). Never commit it or bake it into an image.      |
+
+## Guides
+
+- [Docker](docker.md): A multi-stage Dockerfile: `node:24-alpine`, production dependencies only, a non-root user and a health check.
+- [VPS](vps.md): The Node adapter under systemd or pm2, behind Caddy or nginx, and what the adapter already does for compression and caching.
+- [Coolify](coolify.md): Deploy from the Dockerfile with Coolify's Dockerfile build pack.
+
+## Verification
+
+Each target's status says how far its guide has been checked:
+
+- **Verified on the platform**: deployed to the real service by hand, on the date given.
+- **Tested locally**: run on a development machine in the target's own runtime (a container, the
+  platform's emulator), by the script named or by hand; not on the real service.
+- **Not tested**: written from the platform's documentation only.
+- **Planned**: no guide yet.
+
+<!-- To add a target: a page in this directory, a link in the Deploy list of ../README.md (which
+     also places it in the website's navigation and llms.txt), and a row below. -->
+
+| Target                    | Guide                              | Status         | Checked    | What was checked                                                                                                                                                                                                                                                                                                                      |
+| ------------------------- | ---------------------------------- | -------------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Docker                    | [Docker](docker.md)                | Tested locally | 2026-10-12 | The Dockerfile on the page, on a `create-lumiose@0.2.0 --template ssr` project with packages from npm: builds, healthy, serves pages (brotli) and `immutable` assets, runs as `node`, stops in under a second. Docker 29.8, linux/arm64. The npm variant is not tested.                                                              |
+| Docker, bookshelf sample  | [Docker](docker.md#the-bookshelf-sample) | Tested locally | 2026-10-12 | `examples/ssr-bookshelf/e2e/docker-smoke.ts` (local only, not in CI): health, a streamed page compressed on the fly, database queries, prerendered pages, `immutable` hashed assets served from their `.br` copies, the `node` user, no dev dependency in the image, a prompt stop. Docker 29.8, linux/arm64.                        |
+| VPS: systemd              | [VPS](vps.md#systemd)              | Tested locally | 2026-10-12 | The unit on the page ran the npm project under systemd 252 (Debian 12, in a privileged container): active, serving, stopped cleanly; `systemd-analyze verify` passes. Not on a VPS.                                                                                                                                                 |
+| VPS: pm2                  | [VPS](vps.md#pm2)                  | Tested locally | 2026-10-12 | The ecosystem file on the page with pm2 6.0 (fork mode) in a container: serves, inherits the shell's variables, survives `pm2 save` and `pm2 resurrect`. `pm2 startup` and cluster mode are not tested.                                                                                                                              |
+| Caddy                     | [VPS](vps.md#caddy)                | Tested locally | 2026-10-12 | The Caddyfile on the page (Caddy 2.11, `localhost` with Caddy's local CA instead of a public certificate) in front of the bookshelf container: HTTP to HTTPS redirect, HTTP/2, streamed chunks not held back, brotli and gzip passed through unchanged (with `encode` too), `immutable` assets, a form post and a cross-site `403`. |
+| nginx                     | [VPS](vps.md#nginx)                | Tested locally | 2026-10-12 | The config on the page (nginx 1.31, a self-signed certificate in place of certbot's) in front of the bookshelf container: `nginx -t`, the same checks as Caddy (with `gzip on` too), and streaming with `proxy_buffering` on and off.                                                                                               |
+| Coolify                   | [Coolify](coolify.md)              | Not tested     |            | Not deployed to a Coolify instance yet. It builds the Dockerfile tested above; the steps follow Coolify v4's documentation.                                                                                                                                                                                                         |
+| Cloudflare Workers        |                                    | Planned        |            |                                                                                                                                                                                                                                                                                                                                       |
+| Vercel                    |                                    | Planned        |            |                                                                                                                                                                                                                                                                                                                                       |
+| Netlify                   |                                    | Planned        |            |                                                                                                                                                                                                                                                                                                                                       |
+
+<!-- source: deploy/docker.md -->
+
+# Docker
+
+> A multi-stage Dockerfile for a Lumiose app served by `@lumiose/adapter-node`: built with every dependency, run on `node:24-alpine` with production dependencies only, as a non-root user, with a health check.
+
+This page is for an app with server routes and the `server.ts` that `create-lumiose --template ssr`
+writes (`@lumiose/adapter-node`'s `createServer()`). The same image runs on any host that runs
+containers: a [VPS](vps.md) with Docker, [Coolify](coolify.md), Kubernetes, a container platform.
+
+## The Dockerfile
+
+Put it at the root of the project, next to `package.json` and `pnpm-lock.yaml`:
+
+```dockerfile
+# syntax=docker/dockerfile:1
+ARG NODE_VERSION=24
+
+# Build: all dependencies, then `lumiose build`. Debian (glibc): the compiler ships native
+# binaries for Linux x64 and arm64 on glibc, and for x64 only on musl (Alpine).
+FROM node:${NODE_VERSION}-slim AS build
+ENV PNPM_HOME=/pnpm CI=true
+RUN npm install --global pnpm@11
+WORKDIR /app
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml* ./
+RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --frozen-lockfile
+COPY . .
+RUN pnpm build
+
+# Production dependencies only, on the runtime's base image (native packages match its C library).
+FROM node:${NODE_VERSION}-alpine AS prod-deps
+ENV PNPM_HOME=/pnpm CI=true
+RUN npm install --global pnpm@11
+WORKDIR /app
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml* ./
+RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --frozen-lockfile --prod
+
+# Runtime: Node, the build output and production dependencies, as the unprivileged `node` user.
+FROM node:${NODE_VERSION}-alpine
+# tini passes `docker stop`'s SIGTERM on to Node, which ignores it as PID 1.
+RUN apk add --no-cache tini
+ENV NODE_ENV=production PORT=3000 HEALTHCHECK_PATH=/
+WORKDIR /app
+COPY --from=prod-deps /app/node_modules node_modules
+COPY --from=build /app/dist dist
+COPY package.json server.ts ./
+USER node
+EXPOSE 3000
+HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --start-interval=2s --retries=3 \
+  CMD ["node", "-e", "fetch('http://127.0.0.1:' + process.env.PORT + process.env.HEALTHCHECK_PATH).then((r) => process.exit(r.ok ? 0 : 1), () => process.exit(1))"]
+ENTRYPOINT ["/sbin/tini", "--"]
+CMD ["node", "server.ts"]
+```
+
+And a `.dockerignore`, so the build context leaves out what the image builds itself:
+
+```text
+node_modules
+dist
+.lumiose
+.git
+.env*
+*.log
+```
+
+Build and run it:
+
+```sh
+docker build -t my-app .
+docker run --rm -p 3000:3000 -e LUMIOSE_SECRET="$(openssl rand -base64 32)" my-app
+```
+
+`LUMIOSE_SECRET` is only needed when the app signs cookies (`signedCookie()`); pass every secret
+at run time like this, never as a build argument or an `ENV` line, which stay in the image. The
+other settings (`ORIGIN` behind a proxy, `PORT`, `HOST`) are in
+[Production settings](README.md#production-settings).
+
+## How it works
+
+- **Three stages.** `build` installs everything and runs `lumiose build`. `prod-deps` installs only
+  `dependencies`, so Vite, the compiler and the CLI never reach the image. The last stage copies
+  `dist/`, those `node_modules` and `server.ts` onto a fresh `node:24-alpine`. The server build
+  bundles your server code and the Lumiose runtime; other npm packages stay imports, which is why
+  production dependencies are installed.
+- **Debian to build, Alpine to run.** `lumiose build` loads the compiler's native binary, published
+  for Linux x64 and arm64 on glibc but only x64 on musl, so the build stage is `node:24-slim`,
+  which builds on both architectures (an arm64 laptop or server included). The build output is
+  JavaScript and static files, so it runs on Alpine. `prod-deps` uses the runtime's image so that a
+  dependency with a native addon is built for musl.
+- **Non-root.** The app runs as `node` (uid 1000), and the files it runs are owned by root, so it
+  cannot change them. A directory it writes to, such as a SQLite database's, must be created for
+  it before `USER node` and mounted as a volume:
+  `RUN mkdir /data && chown node:node /data`, then `docker run -v my-app-data:/data …`.
+- **Health check.** `HEALTHCHECK` fetches `HEALTHCHECK_PATH` (default `/`) with Node, since Alpine
+  has no curl; any `2xx` answer is healthy. Point it at a cheap URL, such as a `GET` endpoint
+  that returns `ok` without rendering a page: `docker run -e HEALTHCHECK_PATH=/healthz …`.
+  `--start-interval` (Docker Engine 25 or later) checks every 2 s while the container starts.
+- **Signals.** Node as PID 1 ignores `SIGTERM`, so `docker stop` would wait 10 s and kill it.
+  [tini](https://github.com/krallin/tini) passes the signal on, and Node exits at once.
+- **pnpm.** `npm install --global pnpm@11` installs pnpm; when `package.json` has a
+  `packageManager` field (`pnpm@11.x.y`), pnpm switches to that version. The cache mounts keep
+  the package store between builds. `pnpm-workspace.yaml*` copies the file when it exists
+  (pnpm 11 keeps settings there).
+
+**With npm** instead of pnpm: drop the `npm install --global pnpm@11` lines, the `PNPM_HOME`
+variable and the cache mounts, copy `package-lock.json` instead of `pnpm-lock.yaml`, and run
+`npm ci`, `npm run build` and `npm ci --omit=dev`. This variant has not been tested.
+
+## The bookshelf sample
+
+The repository's [bookshelf sample](https://github.com/itsjavi/lumiose/tree/main/examples/ssr-bookshelf)
+has a Dockerfile of the same shape, built from the monorepo instead of from npm:
+
+- The build context is the repository root (`docker build -f examples/ssr-bookshelf/Dockerfile .`).
+  Its ignore file is `examples/ssr-bookshelf/Dockerfile.dockerignore`: BuildKit reads the ignore
+  file named after the Dockerfile before the one at the context root. It allows only the
+  workspace packages the sample uses.
+- A first stage compiles the compiler's native binary from the Rust sources, because the
+  monorepo has no Linux binaries (npm installs them as `@lumiose/compiler-linux-*`).
+- pnpm installs with `--filter "@lumiose-examples/ssr-bookshelf..."`, and the production install
+  with `--filter-prod`, which leaves out the workspace's dev dependencies.
+- The build seeds a throwaway database, because the genre pages are prerendered from it. The
+  container seeds `/data/bookshelf.db` on its first start, and the health check calls `/api/me`.
+
+```sh
+docker build -f examples/ssr-bookshelf/Dockerfile -t lumiose-bookshelf .
+docker run --rm -p 3000:3000 -e LUMIOSE_SECRET="$(openssl rand -base64 32)" \
+  -v bookshelf-data:/data lumiose-bookshelf
+```
+
+`node examples/ssr-bookshelf/e2e/docker-smoke.ts` builds the image and checks a running container:
+health, a server-rendered page compressed with brotli, a database query, prerendered pages, the
+`immutable` caching of hashed assets and their precompressed copies, the `node` user, no dev
+dependency in the image, and a prompt stop. It needs Docker, skips itself in CI, and is never run
+by CI: a cold build compiles the Rust compiler (about 1 minute on an 8-core arm64 machine).
+
+<!-- source: deploy/vps.md -->
+
+# VPS
+
+> Run a Lumiose app on your own server: `@lumiose/adapter-node` under systemd or pm2, with Caddy or nginx in front for TLS. The adapter already compresses responses and caches hashed assets, so the proxy needs no rules for either.
+
+This page covers an app with server routes and the `server.ts` that `create-lumiose --template ssr`
+writes. The examples call the app `my-app`, serve it as `example.com`, and keep it in
+`/srv/my-app`. To run it in Docker on the server instead, see [Docker](docker.md).
+
+## Build and install
+
+The server needs Node 24 or later. Build where the dependencies are installed, on the server or
+in CI:
+
+```sh
+pnpm install --frozen-lockfile
+pnpm build
+```
+
+To ship production dependencies only, build in CI (or with the [Docker](docker.md) image's
+`build` stage), copy `dist/`, `server.ts`, `package.json`, `pnpm-lock.yaml` and
+`pnpm-workspace.yaml` (if any) to `/srv/my-app`, and run
+`pnpm install --frozen-lockfile --prod` there. Then start it with `node server.ts`, which serves
+`dist/` on `PORT` (3000).
+
+## What the adapter already does
+
+`createServer()` serves `dist/client` first, then the app ([`@lumiose/adapter-node`](../reference/adapter-node.md)):
+
+- **Compression.** Static files are sent from the `.br` and `.gz` copies that `lumiose build`
+  writes next to every text file of 1 kB or more (brotli 11, gzip 9), at no CPU cost per request.
+  Pages and endpoints with a text content type are compressed as they stream: brotli quality 4,
+  else gzip 6. Every compressible response gets `Vary: Accept-Encoding`.
+- **Caching.** Content-hashed files under `assets/` (`loader-BzIcWyn5.js`) get
+  `Cache-Control: public, max-age=31536000, immutable`; a new build changes their names. Every
+  other file, prerendered pages included, gets `public, max-age=0, must-revalidate` with an `ETag`
+  and `Last-Modified`, answered with `304` when unchanged. Pages rendered per request send what
+  the app sets (`response().setHeader("cache-control", …)`).
+- **Headers.** `lumiose({ headers })` and the default `X-Content-Type-Options` and
+  `Referrer-Policy` go on static files and pages alike.
+
+So the proxy only adds TLS, HTTP/2 and connection limits. Proxy every request to Node: a proxy
+that serves `dist/client` itself would have to repeat the caching rules and the headers above.
+With compression on in both, the proxy leaves the already encoded responses alone; or pass
+`compress: false` to `createServer()` and let the proxy compress.
+
+## The process
+
+### systemd
+
+Create a system user that owns nothing it runs:
+
+```sh
+sudo useradd --system --home-dir /srv/my-app --shell /usr/sbin/nologin my-app
+```
+
+Put the secrets in `/etc/my-app.env`, one `KEY=value` per line, readable by root only
+(`sudo chmod 600 /etc/my-app.env`):
+
+```sh
+LUMIOSE_SECRET=paste-the-output-of-openssl-rand-base64-32
+```
+
+`/etc/systemd/system/my-app.service`:
+
+```ini
+[Unit]
+Description=my-app (Lumiose)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=my-app
+Group=my-app
+WorkingDirectory=/srv/my-app
+ExecStart=/usr/bin/node server.ts
+Environment=NODE_ENV=production HOST=127.0.0.1 PORT=3000 ORIGIN=https://example.com
+# Secrets as KEY=value lines (LUMIOSE_SECRET=…), readable by root only.
+EnvironmentFile=/etc/my-app.env
+Restart=on-failure
+RestartSec=2
+# The app can read /srv/my-app and write only its state directory, /var/lib/my-app.
+StateDirectory=my-app
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+PrivateDevices=true
+
+[Install]
+WantedBy=multi-user.target
+```
+
+```sh
+sudo systemctl daemon-reload
+sudo systemctl enable --now my-app
+journalctl -u my-app -f                # logs
+sudo systemctl restart my-app          # after deploying a new build
+```
+
+Set `ExecStart` to the path `command -v node` prints. `HOST=127.0.0.1` keeps the app off the
+public network: only the proxy reaches it. Point file databases and uploads at `/var/lib/my-app`
+(the `StateDirectory`): with `ProtectSystem=strict`, it and a private `/tmp` are the only places
+the app can write.
+
+### pm2
+
+`ecosystem.config.cjs`, next to `server.ts`:
+
+```js
+module.exports = {
+  apps: [
+    {
+      name: "my-app",
+      cwd: "/srv/my-app",
+      script: "server.ts",
+      // Node runs server.ts itself; pm2 6 would start .ts files with Bun.
+      interpreter: "node",
+      env: {
+        NODE_ENV: "production",
+        HOST: "127.0.0.1",
+        PORT: "3000",
+        ORIGIN: "https://example.com",
+      },
+    },
+  ],
+};
+```
+
+```sh
+LUMIOSE_SECRET=… pm2 start ecosystem.config.cjs   # the app inherits this shell's variables
+pm2 save && pm2 startup                           # restart it on boot
+pm2 logs my-app
+```
+
+`pm2 save` writes the process list with its environment, the secret included, to
+`~/.pm2/dump.pm2`, which `pm2 resurrect` (run at boot by the script `pm2 startup` installs)
+restores. This runs one process (pm2's fork mode); pm2's cluster mode has not been tested with
+Lumiose.
+
+## The proxy
+
+Set `ORIGIN` to the public origin (`https://example.com`), as in the configs above. The app
+then builds request URLs (`url()`, `ctx.url`) with `https:` and your host, not the `http:` it
+receives from the proxy. Without `ORIGIN`, the URL comes from the `Host` header, which the proxy
+must pass through. The cross-site check of form posts compares the browser's `Origin` host with
+that URL's host. Behind a proxy, the app's `clientAddress` is the proxy's: read
+`X-Forwarded-For`, which both configs set, in middleware.
+
+### Caddy
+
+`/etc/caddy/Caddyfile`:
+
+```caddy
+example.com {
+	reverse_proxy 127.0.0.1:3000
+}
+```
+
+Caddy gets and renews the certificate, redirects HTTP to HTTPS, passes `Host` and sets
+`X-Forwarded-For`/`X-Forwarded-Proto`. It flushes streamed responses as they arrive, so
+`<Suspense>` chunks are not held back. It needs no `encode` directive: responses arrive
+compressed.
+
+### nginx
+
+`/etc/nginx/sites-available/my-app` (linked into `sites-enabled`), with a certificate from
+certbot:
+
+```nginx
+upstream my_app {
+    server 127.0.0.1:3000;
+    keepalive 16;
+}
+
+server {
+    listen 80;
+    listen [::]:80;
+    server_name example.com;
+    return 301 https://$host$request_uri;
+}
+
+server {
+    listen 443 ssl;
+    listen [::]:443 ssl;
+    http2 on;
+    server_name example.com;
+
+    ssl_certificate /etc/letsencrypt/live/example.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/example.com/privkey.pem;
+
+    # The app accepts uploads up to 10 MB (lumiose({ limits })); nginx's default is 1 MB.
+    client_max_body_size 10m;
+
+    location / {
+        proxy_pass http://my_app;
+        proxy_http_version 1.1;
+        proxy_set_header Connection "";
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        # Send each streamed chunk (a <Suspense> boundary) to the browser as it arrives.
+        proxy_buffering off;
+    }
+}
+```
+
+`proxy_set_header Host $host` matters: nginx sends the upstream's name (`my_app`) as `Host`
+otherwise. `http2 on` needs nginx 1.25.1 or later; on older versions, write `listen 443 ssl http2`.
+`proxy_http_version 1.1` with an empty `Connection` header reuses connections to Node
+(`keepalive`). `client_max_body_size` should match the largest body the app accepts
+([Security](../concepts/security.md)), or nginx answers `413` first.
+
+<!-- source: deploy/coolify.md -->
+
+# Coolify
+
+> Deploy a Lumiose app to Coolify with the Dockerfile build pack: the Dockerfile from the Docker guide, the exposed port, a domain, `ORIGIN` and runtime-only secrets, the image's health check, and a volume for data.
+
+[Coolify](https://coolify.io) builds the app's Dockerfile on your server and runs the image behind
+its proxy, which terminates TLS for the domain. Lumiose needs nothing Coolify-specific: the image
+is the one from [Docker](docker.md). The field names below follow Coolify v4's documentation; this
+guide has not been run on a Coolify instance yet (see the [verification table](README.md#verification)).
+
+## 1. Add the Dockerfile
+
+Commit the [Dockerfile and `.dockerignore`](docker.md#the-dockerfile) at the root of the
+repository. Check that it builds locally (`docker build -t my-app .`): Coolify runs the same build.
+
+## 2. Create the application
+
+In Coolify, **+ New**, pick the project and environment, connect the repository (a public URL, a
+Git App or a deploy key) and choose the **Dockerfile** build pack. Then, under **General**:
+
+| Field                   | Value                                                             |
+| ----------------------- | ----------------------------------------------------------------- |
+| **Base Directory**      | `/`, the build context (the directory with `package.json`)        |
+| **Dockerfile Location** | `/Dockerfile`, relative to the base directory                     |
+| **Ports Exposes**       | `3000`, the image's `PORT`                                        |
+| **Domains**             | `https://example.com`; Coolify's proxy gets the TLS certificate   |
+
+Coolify sets `PORT` to the first exposed port and `HOST` to `0.0.0.0` when they are not set,
+which is what `createServer()` reads.
+
+## 3. Environment variables
+
+Under **Environment Variables**:
+
+| Variable         | Value                                                                                                                     |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| `ORIGIN`         | The domain, `https://example.com`. The proxy speaks plain HTTP to the container, so request URLs (`url()`) need it.        |
+| `LUMIOSE_SECRET` | When the app signs cookies: `openssl rand -base64 32`. Set **Build time** to **Not available during build**.              |
+| Your own secrets | Database URLs, API keys: also **Not available during build**, since only the running server reads them.                   |
+
+New variables are available during the build by default; a secret that reaches the build can end
+up in the image's layers. Restart or redeploy after changing them.
+
+## 4. Health check
+
+The image's `HEALTHCHECK` fetches `HEALTHCHECK_PATH` (`/` by default) inside the container. For a
+Dockerfile application, Coolify uses an image's `HEALTHCHECK` instead of the one in its
+**Healthcheck** settings, waits for the new container to be healthy before it replaces the old
+one, and its default proxy (Traefik) stops routing to a container that turns unhealthy. To check a cheaper URL than the home
+page, add a `GET` endpoint such as `/healthz` and set `HEALTHCHECK_PATH=/healthz` as a variable.
+A health check configured in Coolify's dashboard instead runs `curl` or `wget` in the container;
+Alpine has `wget`.
+
+## 5. Persistent storage
+
+Files the app writes at run time (a SQLite database, uploads) are lost when Coolify replaces the
+container, unless they live on a volume. Create the directory for the `node` user in the
+Dockerfile, before `USER node`:
+
+```dockerfile
+RUN mkdir /data && chown node:node /data
+```
+
+Then **Configuration**, **Persistent Storage**, **Add**, **Volume Mount**, with `/data` as the
+**Destination Path**, and point the app at it (`DATABASE_PATH=/data/app.db`, or whatever your app
+reads). Redeploy, and back the volume up outside the server.
+
+## 6. Deploy
+
+**Deploy**, then read the build log (the three Dockerfile stages) and the runtime logs (the
+`Listening on …` line of `server.ts`). Pushes to the branch redeploy when automatic deployments
+are on.
+
+## A monorepo
+
+Set **Base Directory** to the directory the Dockerfile's `COPY` lines are relative to, and
+**Dockerfile Location** to the Dockerfile's path from there. The bookshelf sample, for example,
+builds from the repository root with `/examples/ssr-bookshelf/Dockerfile`
+([its notes](docker.md#the-bookshelf-sample)).
+
 <!-- source: reference/reactivity.md -->
 
 # `lumiose`: reactivity
 
-> Signatures and behavior of the reactive core exported by `lumiose`: signals, computeds, effects, stores, owners, context, scoped state and in-flight state.
+> Signatures and behavior of the reactive core exported by `lumiose`: signals, computeds, effects, stores, owners, context, ids (`useId`), scoped state and in-flight state.
 
 All of these are exported by `lumiose` in the browser and on the server. On the server (the `node`
 entry) signals are plain cells, computeds evaluate once per request, and `effect`/`onMount` never
@@ -4086,6 +4592,56 @@ const Count = createContext(signal(0));
     <Toolbar /> {/* useContext(Theme) is "dark"; useContext(Count)() is reactive */}
   </Count>
 </Theme>;
+```
+
+## useId
+
+```ts
+function useId(): string;
+```
+
+Returns an id that is unique in the page, for `id`/`for`, `aria-labelledby`, `aria-describedby`,
+`aria-controls` and the like. Call it in a component's setup, once per id you need; each call returns
+the instance's next id. The id is a valid HTML id and CSS identifier (`l0-0-1-0`, `ls3`, `lc7`), so
+it also works in selectors and as a `view-transition-name`. Do not parse it: the format may change.
+
+- **Server and hydration.** Inside an island (and an SPA, which is one), the server builds the id
+  from the island's id and the component instance's position in it, and hydration computes the same
+  id, so the server's `for`/`id` pairs stay as they are. Outside islands, server ids follow the
+  render tree, so the same page renders the same ids whatever order its async content resolves in.
+- **Browser only.** Content rendered in the browser after hydration, or by
+  [`render()`](dom.md#render), gets ids from a counter.
+- **Several apps on one page.** Give each a prefix: `render(code, container, { idPrefix: "cart-" })`,
+  or `renderToStream(root, { idPrefix })` on the server, which the page's islands reuse when they
+  hydrate. Ids then start with the prefix.
+- **Async components.** Each run of an async component runs its body again, so a re-run after a
+  signal it read changed gets new ids, as its other locals are new too.
+
+```tsx check
+import { useId } from "lumiose";
+
+export function EmailField(props: { label: string; hint: string }) {
+  const id = useId();
+  const hintId = useId();
+  return (
+    <p>
+      <label for={id}>{props.label}</label>
+      <input id={id} type="email" aria-describedby={hintId} />
+      <small id={hintId}>{props.hint}</small>
+    </p>
+  );
+}
+
+export function SignUp() {
+  const title = useId();
+  return (
+    <form aria-labelledby={title}>
+      <h2 id={title}>Sign up</h2>
+      <EmailField label="Email" hint="We never share it." />
+      <EmailField label="Backup email" hint="Optional." />
+    </form>
+  );
+}
 ```
 
 ## defineState
@@ -4831,6 +5387,11 @@ interface RenderToStreamOptions {
   loaderUrl?: string;
   /** Errors of streamed boundaries that no ErrorBoundary handled. Default: console.error. */
   onError?: (error: unknown) => void;
+  /**
+   * Prepended to every useId() of the render, its islands included (they reuse it when they
+   * hydrate). Keeps the ids of several renders or apps on one page apart. Default: "".
+   */
+  idPrefix?: string;
 }
 
 interface RenderedShell {
@@ -4860,7 +5421,9 @@ function renderToString(
 Renders everything resolved (no fallbacks, no stream) and returns the body HTML. Used for
 prerendering and tests.
 
-Both are server-only: in the browser build of `lumiose` they throw `LUM4003`.
+Both are server-only: in the browser build of `lumiose` they throw `LUM4003`. With `idPrefix`, the
+island records carry the prefix, so [`useId()`](reactivity.md#useid) returns the same ids after
+hydration.
 
 ## `lumiose/server`
 
@@ -4903,13 +5466,19 @@ export async function handle(request: Request): Promise<Response> {
 ## render
 
 ```ts
-function render(code: () => JSX.Element, container: Element): () => void;
+function render(code: () => JSX.Element, container: Element, options?: RenderOptions): () => void;
+
+interface RenderOptions {
+  /** Prepended to every useId() of the app: keeps the ids of several apps on one page apart. */
+  idPrefix?: string;
+}
 ```
 
 Renders `code()` into `container` (appended after its existing content) under a new root owner, and
 marks the container as a delegation boundary. Returns a disposer that disposes the owner and
 removes the rendered nodes. With the Vite plugin, an entry module that imports `render` re-renders
-the app on hot updates. Solid's `render` has the same signature.
+the app on hot updates. Solid's `render` has the same signature, without `options`.
+[`useId()`](reactivity.md#useid) in the app returns `idPrefix` followed by a counter.
 
 ## Compiler-runtime contract
 
@@ -4929,6 +5498,7 @@ function hydrate<P extends object>(
   awaits?: Record<string, unknown>,
   slots?: readonly string[],
   fresh?: boolean,
+  idPrefix?: string,
 ): () => void;
 ```
 
@@ -4950,6 +5520,9 @@ selections survive. Returns a disposer.
   in dev, [LUM4006](../errors/LUM4006.md) is logged. A missing await record makes the client await
   again (also LUM4006 in dev).
 - `fresh` (`client:only`) renders on the client without claiming.
+- **Ids.** [`useId()`](reactivity.md#useid) returns the server's ids while the island hydrates: they
+  come from the island id (in `start`) and each component's position. `idPrefix` is the server
+  render's (the island record's `idPrefix`).
 
 Importing `lumiose/dom/hydrate` also installs the hydration cursor that the compiled walk uses. Only
 the island loader and hydrating entries import it; bundles that never hydrate do not include it.

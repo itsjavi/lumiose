@@ -1,6 +1,6 @@
 # `lumiose`: reactivity
 
-> Signatures and behavior of the reactive core exported by `lumiose`: signals, computeds, effects, stores, owners, context, scoped state and in-flight state.
+> Signatures and behavior of the reactive core exported by `lumiose`: signals, computeds, effects, stores, owners, context, ids (`useId`), scoped state and in-flight state.
 
 All of these are exported by `lumiose` in the browser and on the server. On the server (the `node`
 entry) signals are plain cells, computeds evaluate once per request, and `effect`/`onMount` never
@@ -193,6 +193,56 @@ const Count = createContext(signal(0));
     <Toolbar /> {/* useContext(Theme) is "dark"; useContext(Count)() is reactive */}
   </Count>
 </Theme>;
+```
+
+## useId
+
+```ts
+function useId(): string;
+```
+
+Returns an id that is unique in the page, for `id`/`for`, `aria-labelledby`, `aria-describedby`,
+`aria-controls` and the like. Call it in a component's setup, once per id you need; each call returns
+the instance's next id. The id is a valid HTML id and CSS identifier (`l0-0-1-0`, `ls3`, `lc7`), so
+it also works in selectors and as a `view-transition-name`. Do not parse it: the format may change.
+
+- **Server and hydration.** Inside an island (and an SPA, which is one), the server builds the id
+  from the island's id and the component instance's position in it, and hydration computes the same
+  id, so the server's `for`/`id` pairs stay as they are. Outside islands, server ids follow the
+  render tree, so the same page renders the same ids whatever order its async content resolves in.
+- **Browser only.** Content rendered in the browser after hydration, or by
+  [`render()`](dom.md#render), gets ids from a counter.
+- **Several apps on one page.** Give each a prefix: `render(code, container, { idPrefix: "cart-" })`,
+  or `renderToStream(root, { idPrefix })` on the server, which the page's islands reuse when they
+  hydrate. Ids then start with the prefix.
+- **Async components.** Each run of an async component runs its body again, so a re-run after a
+  signal it read changed gets new ids, as its other locals are new too.
+
+```tsx check
+import { useId } from "lumiose";
+
+export function EmailField(props: { label: string; hint: string }) {
+  const id = useId();
+  const hintId = useId();
+  return (
+    <p>
+      <label for={id}>{props.label}</label>
+      <input id={id} type="email" aria-describedby={hintId} />
+      <small id={hintId}>{props.hint}</small>
+    </p>
+  );
+}
+
+export function SignUp() {
+  const title = useId();
+  return (
+    <form aria-labelledby={title}>
+      <h2 id={title}>Sign up</h2>
+      <EmailField label="Email" hint="We never share it." />
+      <EmailField label="Backup email" hint="Optional." />
+    </form>
+  );
+}
 ```
 
 ## defineState

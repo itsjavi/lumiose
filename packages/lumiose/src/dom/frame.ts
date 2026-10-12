@@ -23,8 +23,10 @@ export type AwaitReplay = (key: string, thunk: () => unknown) => { value: unknow
 
 export interface Frame {
   readonly path: string;
-  /** Child instances created so far. */
+  /** Child instances created so far, `useId()` calls included (./id.ts). */
   children: number;
+  /** The island's id prefix for `useId()`: the render's `idPrefix`, `l` and the island id. */
+  readonly i: string;
   readonly replay: AwaitReplay;
   /** Per-site await counters of the instance's first run. */
   occurrences: number[] | undefined;
@@ -55,6 +57,7 @@ export function childFrame(parent: Frame, h: Hydrator | undefined = parent.h): F
   return {
     path: parent.path === "" ? `${index}` : `${parent.path}.${index}`,
     children: 0,
+    i: parent.i,
     replay: parent.replay,
     occurrences: undefined,
     h,
@@ -63,16 +66,21 @@ export function childFrame(parent: Frame, h: Hydrator | undefined = parent.h): F
 
 /**
  * Runs `fn`, which renders an island's root component, with instance paths, await replay and the
- * claim cursor `h` on. The first component created inside gets path `0`.
+ * claim cursor `h` on. The first component created inside gets path `0`; `id` prefixes its ids.
  */
-export function withIsland<T>(replay: AwaitReplay, h: Hydrator | undefined, fn: () => T): T {
+export function withIsland<T>(
+  replay: AwaitReplay,
+  h: Hydrator | undefined,
+  fn: () => T,
+  id = "",
+): T {
   const set = (setFrame ??= (next) => {
     const prev = frame;
     frame = next;
     onFrame?.(next);
     return prev;
   });
-  const prev = set({ path: "", children: 0, replay, occurrences: undefined, h });
+  const prev = set({ path: "", children: 0, i: id, replay, occurrences: undefined, h });
   try {
     return fn();
   } finally {

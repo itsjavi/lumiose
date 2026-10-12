@@ -27,6 +27,11 @@ export interface RenderToStreamOptions {
    * `onError` with the same `digest`. Default: false (the fallback gets the error itself).
    */
   sanitizeErrors?: boolean;
+  /**
+   * Prepended to every `useId()` of the render, its islands included: keeps the ids of several
+   * renders (or apps) on one page apart. Default: "".
+   */
+  idPrefix?: string;
 }
 
 export interface RenderedShell {

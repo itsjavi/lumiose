@@ -5,6 +5,7 @@
 
 import { LUM_SERVER_ONLY, LumioseError } from "../diagnostics.ts";
 import type { Routes, RouteParams } from "../routes/registry.ts";
+import type { RenderedShell, RenderToStreamOptions } from "../../server/render-types.ts";
 import type { Locals, ResponseContext, RouteParamValues, ServerEnv } from "./context.ts";
 import type { Cookies, SignedCookie, SignedCookieOptions } from "./cookies.ts";
 
@@ -65,4 +66,24 @@ export function publicEnv(_source?: ServerEnv): Record<string, string> {
 
 export function signedCookie(_name: string, _options?: SignedCookieOptions): SignedCookie {
   return serverOnly("signedCookie()", CALL_ENDPOINT);
+}
+
+// The server render functions: here rather than with the client components (../../dom/public.ts),
+// so that like the request APIs they stay out of the runtime's size budget (spec §6). Only a call
+// from client code ships them.
+const RENDER =
+  "Render on the server (the node condition of lumiose), or render on the client with render() from lumiose/dom.";
+
+export function renderToStream(
+  _root: () => unknown,
+  _options?: RenderToStreamOptions,
+): Promise<RenderedShell> {
+  return serverOnly("renderToStream()", RENDER);
+}
+
+export function renderToString(
+  _root: () => unknown,
+  _options?: Omit<RenderToStreamOptions, "resolveAll">,
+): Promise<string> {
+  return serverOnly("renderToString()", RENDER);
 }

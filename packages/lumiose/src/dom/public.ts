@@ -1,13 +1,11 @@
 // Public client components and helpers re-exported from `lumiose` (owner: Spark; spec §4.2-4.3).
-// `lumiose` exposes the same names in the browser and under `node` (../server/public.ts): server-only
-// render functions are stubs here that throw LUM4003.
-import { LUM_SERVER_ONLY, LumioseError } from "../app/diagnostics.ts";
+// `lumiose` exposes the same names in the browser and under `node` (../server/public.ts): the
+// server-only render functions are stubs in ../app/server/browser.ts that throw LUM4003.
 import type { Component, Renderable } from "../contract/client.ts";
 import { onCleanup } from "../core/owner.ts";
 import { computed, signal } from "../core/signal.ts";
 import type { JSX } from "../jsx/jsx-runtime.ts";
 import { createComponent, restProps } from "./component.ts";
-import { DEV } from "./dev.ts";
 import { insert } from "./insert.ts";
 import { spread } from "./spread.ts";
 import type { RenderedShell, RenderToStreamOptions } from "../server/render-types.ts";
@@ -15,6 +13,7 @@ import type { RenderedShell, RenderToStreamOptions } from "../server/render-type
 export { ErrorBoundary, Suspense } from "./boundaries.ts";
 export type { ErrorBoundaryProps, SuspenseProps } from "./boundaries.ts";
 export { Head, Meta, Title } from "./head.ts";
+export { useId } from "./id.ts";
 export type { RenderedShell, RenderToStreamOptions };
 
 /**
@@ -73,30 +72,4 @@ export function Dynamic(props: DynamicProps): Renderable {
         ? createElement(component, others)
         : createComponent(component, others);
   };
-}
-
-function serverOnly(api: string): never {
-  throw new LumioseError(
-    LUM_SERVER_ONLY,
-    // The full hint in dev; production keeps the code, which `lumiose docs LUM4003` explains.
-    DEV
-      ? `${api} is server-only and cannot run in the browser. Render on the server (the node condition of lumiose), or render on the client with render() from lumiose/dom`
-      : `${api} is server-only`,
-  );
-}
-
-/** Server-only: see the `node` variant of `lumiose`. Throws LUM4003 in the browser. */
-export function renderToStream(
-  _root: () => unknown,
-  _options?: RenderToStreamOptions,
-): Promise<RenderedShell> {
-  return serverOnly("renderToStream()");
-}
-
-/** Server-only: see the `node` variant of `lumiose`. Throws LUM4003 in the browser. */
-export function renderToString(
-  _root: () => unknown,
-  _options?: Omit<RenderToStreamOptions, "resolveAll">,
-): Promise<string> {
-  return serverOnly("renderToString()");
 }

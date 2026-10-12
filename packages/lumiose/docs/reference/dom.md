@@ -5,13 +5,19 @@
 ## render
 
 ```ts
-function render(code: () => JSX.Element, container: Element): () => void;
+function render(code: () => JSX.Element, container: Element, options?: RenderOptions): () => void;
+
+interface RenderOptions {
+  /** Prepended to every useId() of the app: keeps the ids of several apps on one page apart. */
+  idPrefix?: string;
+}
 ```
 
 Renders `code()` into `container` (appended after its existing content) under a new root owner, and
 marks the container as a delegation boundary. Returns a disposer that disposes the owner and
 removes the rendered nodes. With the Vite plugin, an entry module that imports `render` re-renders
-the app on hot updates. Solid's `render` has the same signature.
+the app on hot updates. Solid's `render` has the same signature, without `options`.
+[`useId()`](reactivity.md#useid) in the app returns `idPrefix` followed by a counter.
 
 ## Compiler-runtime contract
 
@@ -31,6 +37,7 @@ function hydrate<P extends object>(
   awaits?: Record<string, unknown>,
   slots?: readonly string[],
   fresh?: boolean,
+  idPrefix?: string,
 ): () => void;
 ```
 
@@ -52,6 +59,9 @@ selections survive. Returns a disposer.
   in dev, [LUM4006](../errors/LUM4006.md) is logged. A missing await record makes the client await
   again (also LUM4006 in dev).
 - `fresh` (`client:only`) renders on the client without claiming.
+- **Ids.** [`useId()`](reactivity.md#useid) returns the server's ids while the island hydrates: they
+  come from the island id (in `start`) and each component's position. `idPrefix` is the server
+  render's (the island record's `idPrefix`).
 
 Importing `lumiose/dom/hydrate` also installs the hydration cursor that the compiled walk uses. Only
 the island loader and hydrating entries import it; bundles that never hydrate do not include it.

@@ -48,6 +48,8 @@ export interface IslandRecord {
   value?: string;
   slots?: string[];
   awaits?: Record<string, unknown>;
+  /** The render's `idPrefix`, for the island's `useId()` in the browser. */
+  idPrefix?: string;
 }
 
 export interface IslandState {
@@ -123,15 +125,23 @@ export interface RenderState {
   readonly isClientState: ((ref: string) => boolean) | undefined;
   /** A chunk with island records was sent: from then on, chunks carry the payload. */
   hydrates: boolean;
+  /** `renderToStream(root, { idPrefix })`: prepended to every `useId()` (./id.ts). */
+  readonly idPrefix: string;
 }
 
 export interface Frame {
   readonly render: RenderState;
   readonly unit: Unit;
   readonly island: IslandState | undefined;
-  /** Island-relative instance path (`0.2.1`); "" outside islands. */
+  /**
+   * Island-relative instance path (`0.2.1`). Outside islands, the id scope of `useId()`: "" for the
+   * render, then `2-`, `2-0-`, … for the scopes `scope()` forks.
+   */
   readonly path: string;
-  /** Child instances created so far (only counted inside islands). */
+  /**
+   * Inside islands, the child instances created so far, `useId()` calls included. Outside islands,
+   * the `useId()` calls and forked scopes so far.
+   */
   children: number;
   /** Per-site await counters of this run (only inside islands). */
   occurrences: number[] | undefined;
@@ -181,6 +191,18 @@ function instanceFrame(parent: Frame | undefined): Frame | undefined {
   };
 }
 
+/**
+ * The frame for code that runs later, outside the synchronous render of `frame`: an async run, a
+ * promise's content, an error fallback. Outside islands it forks a new `useId()` scope, numbered
+ * now, so that ids do not depend on the order in which promises settle: the same page renders the
+ * same ids. Inside islands frames already follow instance paths, which hydration matches.
+ */
+export function scope(frame: Frame | undefined): Frame | undefined {
+  return frame === undefined || frame.island !== undefined
+    ? frame
+    : { ...frame, path: `${frame.path}${frame.children++}-`, children: 0 };
+}
+
 // --- Content -----------------------------------------------------------------------------------
 
 /**
@@ -201,7 +223,7 @@ export function content(value: unknown): Html {
       if (value instanceof SSRHtml) return value.t;
       if (Array.isArray(value)) return contentList(value);
       if (isThenable(value)) {
-        const frame = current;
+        const frame = scope(current);
         const owner = getOwner();
         return Promise.resolve(value).then((resolved) =>
           withFrame(frame, owner, () => content(resolved)),
@@ -242,7 +264,7 @@ export function runComponent<P>(
   frame: Frame | undefined,
 ): SSRHtml | Promise<SSRHtml> {
   if (component instanceof AsyncFunction) {
-    return runAsync(component, props, frame, createOwner(getOwner()));
+    return runAsync(component, props, scope(frame), createOwner(getOwner()));
   }
   // The hot path of every sync component. Its owner is lazy (as for client list rows): it exists
   // only once the component provides context, registers a cleanup, reads `getAbortSignal()` or awaits,

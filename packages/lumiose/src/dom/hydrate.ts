@@ -30,6 +30,7 @@ import { decodeData } from "../server/serialize.ts";
 import { createComponent } from "./component.ts";
 import { DEV } from "./dev.ts";
 import { setFrameHook, withIsland, type AwaitReplay } from "./frame.ts";
+import { ID_PREFIX } from "./id.ts";
 import { hydrator, MISMATCH, setHydrator, type Hydrator } from "./hydration.ts";
 import { insert, type RangeStart } from "./insert.ts";
 
@@ -400,7 +401,8 @@ function slot(name: string, sources: Record<string, SlotSource>): Renderable {
  * renders `component` with `props`, claiming the server nodes instead of creating them, and
  * replays `awaits` (`{ "instancePath:site:occurrence": encoded value }`) instead of evaluating
  * first-run awaits. Each name in `slots` becomes a prop holding its server HTML. With `fresh`
- * (`client:only`), the island renders on the client without claiming. Returns a disposer.
+ * (`client:only`), the island renders on the client without claiming. `idPrefix` is the server
+ * render's, so `useId()` returns the server's ids. Returns a disposer.
  */
 export function hydrate<P extends object>(
   component: Component<P>,
@@ -410,6 +412,7 @@ export function hydrate<P extends object>(
   awaits?: Record<string, unknown>,
   slots?: readonly string[],
   fresh?: boolean,
+  idPrefix = "",
 ): () => void {
   const parent = start.parentNode!;
   // Dev diagnostics only: production builds drop the read.
@@ -469,6 +472,7 @@ export function hydrate<P extends object>(
   let owner: Owner;
   const render = (h: Hydrator | undefined): void => {
     owner = createOwner(undefined);
+    if (idPrefix) owner.context = { [ID_PREFIX]: idPrefix };
     runWithOwner(owner, () => {
       // Mismatches after an await reject their run; the fallback below replaces the island.
       onError((error) => {
@@ -476,7 +480,13 @@ export function hydrate<P extends object>(
           throw error;
         }
       });
-      withIsland(replay, h, () => insert(parent, createComponent(component, props), end));
+      withIsland(
+        replay,
+        h,
+        () => insert(parent, createComponent(component, props), end),
+        // `l:ID` → `lID`: the server's island ids (../server/id.ts).
+        idPrefix + (start as Comment).data.replace(":", ""),
+      );
     });
   };
   const island: Island = {

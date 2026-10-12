@@ -2,7 +2,7 @@
 // the app's island manifest; it is split out so tests can pass a manifest of their own.
 //
 // - Records: `<script type="application/json" data-l-islands>` holds the records of the islands
-//   in its chunk (`{ id, ref, strategy, props, value?, slots?, awaits? }`) and `{ id, awaits }`
+//   in its chunk (`{ id, ref, strategy, props, value?, slots?, awaits?, idPrefix? }`) and `{ id, awaits }`
 //   additions for islands whose content streamed later. A MutationObserver picks up each script
 //   as the stream arrives; one TreeWalker pass over comments then finds `<!--l:ID-->` and
 //   `<!--/l:ID-->` for the new records.
@@ -42,6 +42,7 @@ interface Island {
   value?: string;
   slots?: string[];
   awaits?: Record<string, unknown>;
+  idPrefix?: string;
   /** The range markers, once found. */
   s?: Comment;
   e?: Comment;
@@ -83,6 +84,7 @@ export function loadIslands(manifest: IslandManifest): () => void {
           island.awaits,
           island.slots,
           true,
+          island.idPrefix,
         );
         swapped = true;
       }
@@ -237,6 +239,7 @@ export function loadIslands(manifest: IslandManifest): () => void {
         fresh ? {} : (island.awaits ??= {}),
         island.slots,
         fresh || island.strategy === "only",
+        island.idPrefix,
       );
       if (DEV) island.x = dispose;
       island.g = 2;

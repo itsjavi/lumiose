@@ -3,6 +3,7 @@
 // island loader (./boot.ts) and hydration, which then do not ship.
 import { createOwner, runWithOwner } from "../../core/internal.ts";
 import { createComponent } from "../../dom/component.ts";
+import { ID_PREFIX } from "../../dom/id.ts";
 import { insert } from "../../dom/insert.ts";
 import { receivePayload } from "../../dom/state.ts";
 import { createRouter, prepareRoot, type SpaConfig } from "./router.ts";
@@ -35,6 +36,7 @@ export function startCsr(config: SpaConfig): void {
         id: number;
         ref: string;
         props: object;
+        idPrefix?: string;
       }[]) {
         const leaf = record.ref.slice(1, -CSR_REF.length);
         if (!record.ref.endsWith(CSR_REF) || leaves[leaf] === undefined) continue;
@@ -43,7 +45,9 @@ export function startCsr(config: SpaConfig): void {
         while ((end = walker.nextNode()) !== null && (end as Comment).data !== `/l:${record.id}`);
         createRouter(config, leaves[leaf]);
         void prepareRoot(leaf, true).then((root) => {
-          runWithOwner(createOwner(undefined), () =>
+          const owner = createOwner(undefined);
+          if (record.idPrefix) owner.context = { [ID_PREFIX]: record.idPrefix };
+          runWithOwner(owner, () =>
             insert(end!.parentNode!, createComponent(root, record.props), end),
           );
         });

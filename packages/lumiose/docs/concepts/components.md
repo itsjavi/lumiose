@@ -45,6 +45,7 @@ read like a signal.
 | `function Name(props) { return <… /> }` | A component. PascalCase, returns JSX.                                           |
 | `children` prop                         | Lazy content passed between the tags. Insert once.                              |
 | `ref<T>()`                              | A ref callback that reads like a signal (`input()`), `undefined` until mounted. |
+| `useId()`                               | A unique id for `id`/`for` and `aria-*` pairs, the same after hydration.        |
 | `onMount(fn)`, `onCleanup(fn)`          | Run after mount; run when the component is disposed.                            |
 | `<Dynamic component={X} … />`           | Render a component (or tag name) chosen at runtime.                             |
 | `<Portal mount={node}>`                 | Render children elsewhere in the document.                                      |

@@ -9,6 +9,7 @@ import {
   renderFrame,
   withFrame,
   currentFrame,
+  scope,
   type Frame,
   type RenderState,
 } from "./frame.ts";
@@ -91,7 +92,8 @@ function sanitized(error: unknown, render: RenderState): Error & { digest: strin
 }
 
 export function ErrorBoundary(props: ErrorBoundaryProps): unknown {
-  const frame = currentFrame();
+  // The fallback may render once the children reject: in a scope of its own (`useId()`).
+  const frame = scope(currentFrame());
   const owner = getOwner();
   // Inside islands the boundary is a block (the client's ErrorBoundary range): `<!--[-->` around
   // the children, `<!--[!-->` around a fallback, so the client renders that boundary afresh.

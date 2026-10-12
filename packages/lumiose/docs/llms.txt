@@ -31,9 +31,16 @@ These docs match lumiose 0.2.0. Installed projects have them in `node_modules/lu
 - [Testing](concepts/testing.md): Test components with Vitest and the Lumiose Vite plugin.
 - [Security](concepts/security.md): A strict Content Security Policy with nonces and hashes (`lumiose({ csp: "strict" })`, `cspNonce()`), and the cross-site form check.
 
+## Deploy
+
+- [Overview](deploy/README.md): What `lumiose build` writes, the production settings (`PORT`, `HOST`, `ORIGIN`, `LUMIOSE_SECRET`) and how far each target's guide was verified.
+- [Docker](deploy/docker.md): A multi-stage Dockerfile: `node:24-alpine`, production dependencies only, a non-root user and a health check.
+- [VPS](deploy/vps.md): `@lumiose/adapter-node` under systemd or pm2, behind Caddy or nginx; what the adapter already does for compression and caching.
+- [Coolify](deploy/coolify.md): Deploy from the Dockerfile with Coolify's Dockerfile build pack.
+
 ## Reference
 
-- [`lumiose`: reactivity](reference/reactivity.md): `signal`, `computed`, `effect`, `batch`, `flush`, `untrack`, `store`, owners, context (`createContext`, `useContext`), `getAbortSignal`, `isPending`, `isBusy`, `resource`.
+- [`lumiose`: reactivity](reference/reactivity.md): `signal`, `computed`, `effect`, `batch`, `flush`, `untrack`, `store`, owners, context (`createContext`, `useContext`), `useId`, `getAbortSignal`, `isPending`, `isBusy`, `resource`.
 - [`lumiose`: components](reference/components.md): `Suspense`, `ErrorBoundary`, `Portal`, `Dynamic`, `ref`, `Head`, `Title`, `Meta`.
 - [`lumiose`: app layer](reference/app.md): `fetchJSON`, `submit`, `isSubmitting`, `actionData`, `invalidate`, `fail`, `redirect`, `notFound`, `error`, `href`, request APIs and types.
 - [`lumiose`: server rendering](reference/server.md): `renderToStream`, `renderToString` and the `lumiose/server` subpath.
