@@ -8,6 +8,7 @@
   "scripts": {
     "build": "vite build",
     "bench:jsfb": "node scripts/jsfb.ts",
+    "bench:jsfb:ab": "node scripts/jsfb-ab.ts",
     "typecheck": "tsc -p tsconfig.json"
   },
   "dependencies": {

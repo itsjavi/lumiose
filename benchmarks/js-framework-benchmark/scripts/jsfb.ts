@@ -16,6 +16,9 @@
 //   --summary                         only rewrite RESULTS.md from existing results
 //   --build                           only set up and build (for manual runs against the server)
 //   --port N                          krausest server port (default 8131; env JSFB_PORT)
+//
+// To compare variants on a busy machine, `pnpm bench:jsfb:ab` (scripts/jsfb-ab.ts) alternates
+// them in one browser session instead.
 import { spawn, spawnSync } from "node:child_process";
 import {
   copyFileSync,
