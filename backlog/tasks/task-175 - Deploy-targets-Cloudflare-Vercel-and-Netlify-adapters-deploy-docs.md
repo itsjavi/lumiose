@@ -1,11 +1,11 @@
 ---
 id: TASK-175
 title: 'Deploy adapters: Cloudflare, Vercel and Netlify'
-status: In Progress
+status: Done
 assignee:
   - Nova
 created_date: '2026-10-09 12:12'
-updated_date: '2026-10-12 20:24'
+updated_date: '2026-10-12 20:35'
 labels:
   - adapter
   - docs
@@ -24,8 +24,8 @@ User 2026-10-12: a 1.0 must-have (was 'do this last' on 2026-10-09). Thin packag
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Three adapter packages on the shared fetch handler, each with build-output tests and an e2e run in its platform's local emulator
-- [ ] #2 A deploy guide page per target with copy-paste examples, and a verification table per target
+- [x] #1 Three adapter packages on the shared fetch handler, each with build-output tests and an e2e run in its platform's local emulator
+- [x] #2 A deploy guide page per target with copy-paste examples, and a verification table per target
 <!-- AC:END -->
 
 ## Implementation Notes
@@ -52,4 +52,17 @@ Nova 2026-10-12 (session nova-20261012T193257Z-t248): implementation.
 - examples/ssr-deploy: one app (prerendered page with island, streamed server page, endpoints, form action on a prerendered page, not-found, csp strict, an npm dependency) + LOCAL ONLY e2e scripts: e2e:cloudflare (wrangler@4.142.0 dev), e2e:netlify (netlify-cli@27.10.0 serve), e2e:vercel [--edge] (config validation + Node harness, function copied out of the repo), e2e:runtimes (adapter-node, bun@1.4.2, deno@2.9.6). All via pnpm dlx, not dependencies; not in CI.
 - Results 2026-10-12: Cloudflare 10/10 (streaming, nonce CSP, env var binding, waitUntil); Netlify 10/10 with caveats (netlify serve sends max-age=0 whatever _headers says: rule checked in the file; waitUntil not observable across invocations); Vercel Node.js and Edge 10/10 in the harness; Node, Bun, Deno 10/10.
 - Note: netlify-cli appends .netlify to the root .gitignore on every run; the e2e script restores the file. Suggest Lux add .netlify/ to the root .gitignore.
+
+Nova 2026-10-12: docs and evidence.
+- Commits: 6badad1 (CSP on Web Crypto), 955b804 (adapters, Adapter interface, example + local e2e), f4eb1b3 (deploy docs).
+- Docs: deploy/cloudflare.md, vercel.md, netlify.md, bun.md, deno.md, fly.md, render.md, railway.md, static.md (GitHub Pages, Cloudflare Workers/Pages static, Netlify static, S3+CloudFront, any file server), aws-lambda.md; Guides list and verification rows in deploy/README.md (claims only what ran; Fly, Render, Railway, GitHub Pages, S3, Lambda marked Not tested), docs/README.md Deploy list, reference/vite.md (adapter option, headers per deployment), server-entry.md and rendering-modes.md links.
+- Extra local runs by hand: static ssg-travel-journal in wrangler 4.142.0 dev (assets only) and wrangler pages dev, and in netlify-cli 27.10.0 serve; process.env with nodejs_compat in workerd; the Lambda page's handler in Node 26 with Function URL v2 events (recorded as Not tested: not in Lambda).
+- pnpm check (typecheck, oxlint, fmt:examples, vitest 1689 passed, scripts tests, size, cargo test) green at f4eb1b3 in an isolated worktree. pnpm pack:check: the three new packages would publish (release tooling picks packages/* up by itself).
+- Open: real free-tier deploys (user); on Vercel, which wins when a header route and the function set the same header is unverified (noted in vercel.md); root .gitignore could list .netlify/ (netlify-cli appends it on every run; the e2e restores the file).
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Three adapter packages on the server build's fetch handler: @lumiose/adapter-cloudflare (dist/_worker.js; bindings, ctx.waitUntil and CF-Connecting-IP as ctx.platform; action pages in .assetsignore), @lumiose/adapter-vercel (.vercel/output Build Output v3; Node.js function bundled + @vercel/nft trace, or one Edge module; header/caching/methods routes, overrides), @lumiose/adapter-netlify (Frameworks API functions with preferStatic, plus one for form posts to prerendered pages). lumiose({ adapter }) with an internal Adapter interface called after prerendering; platforms serving dist/client get no .br/.gz and no node:fs static layer. CSP nonces/hashes on Web Crypto. _headers one block per path. CI: build-output unit tests per package. Local only (pnpm dlx, pinned): examples/ssr-deploy e2e in wrangler 4.142.0 dev, netlify-cli 27.10.0 serve, a Vercel Build Output harness (Node.js and Edge), and Node/Bun 1.4.2/Deno 2.9.6: all checks pass (Netlify with two documented emulator limits). Deploy guides per target with a verification table that claims only what ran.
+<!-- SECTION:FINAL_SUMMARY:END -->
