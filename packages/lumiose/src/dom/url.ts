@@ -19,9 +19,26 @@ const URL_ATTRIBUTES = /^(?:href|src|action|formaction|xlink:href|poster|data|ci
  * server escapes `&`, so `&#106;avascript:` stays literal text on both sides.
  */
 export function isUnsafeUrl(value: string): boolean {
+  // Exact fast paths for the common safe values (server rendering writes many URLs): a value
+  // without ":" has no scheme, and stripping only removes characters, so it never gains one. A
+  // first character above space is never stripped, so the cleaned value starts with it, and only
+  // j, v and d start an unsafe scheme.
+  const code = value.charCodeAt(0);
+  const lower = code | 32;
+  if (value.indexOf(":") < 0 || (code > 32 && lower !== 106 && lower !== 118 && lower !== 100)) {
+    return false;
+  }
   // eslint-disable-next-line no-control-regex
   return /^(?:javascript|vbscript):|^data:\s*text\/html/i.test(
     value.replace(/^[\0- ]+|[\t\n\r]/g, ""),
+  );
+}
+
+/** Whether attribute `name` takes a URL. The length check (3, 4, 6 or 10) skips the regex for most names. */
+function isUrlAttribute(name: string): boolean {
+  const length = name.length;
+  return (
+    (length === 4 || length === 3 || length === 6 || length === 10) && URL_ATTRIBUTES.test(name)
   );
 }
 
@@ -30,7 +47,7 @@ export function isUnsafeUrl(value: string): boolean {
  * takes a URL and `value` is unsafe (with a LUM4009 warning in dev).
  */
 export function safeAttrValue(name: string, value: string): string {
-  if (!URL_ATTRIBUTES.test(name) || !isUnsafeUrl(value)) return value;
+  if (!isUrlAttribute(name) || !isUnsafeUrl(value)) return value;
   if (DEV) {
     console.warn(
       `Lumiose: LUM4009: blocked an unsafe URL in the "${name}" attribute (${JSON.stringify(value.slice(0, 40))}): javascript:, vbscript: and data:text/html URLs from dynamic values render as ${BLOCKED_URL}. Use an event handler instead of a script URL (run \`lumiose docs LUM4009\`).`,
