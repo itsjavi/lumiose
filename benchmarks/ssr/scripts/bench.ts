@@ -218,6 +218,12 @@ ${modes.join("\n")}
   over its previous runtime and compiler: compiled templates concatenate their parts directly
   when every hole is synchronous (+8%), the unsafe URL check skips its regexes for values that
   cannot hold a scheme (+2.6%), and text holes take a string fast path (+0.6%).
+- The quiet-machine run of 2026-10-12 before TASK-246 (ef81f5b, without flattening) measured
+  Lumiose at about 560 renders/s, down from about 660 on 2026-10-08 (a5d73ef). TASK-244 bisected
+  it with both builds loaded into one process and measured alternately: the unsafe URL check in
+  server \`attr()\` (TASK-168) cost about 7%, and evaluating deep prop reads at most once per
+  instance (decision-28, TASK-151) about 4% without flattening (none with it). Since TASK-246,
+  Lumiose renders the page as fast as a5d73ef without flattening, and 7-10% faster with it.
 - Versions are pinned exactly in \`package.json\` and are the latest stable releases when
   measured (decision-41). Solid 2 is a release candidate: it is an extra, labelled entry next to
   stable Solid, not a replacement.
