@@ -1,0 +1,14 @@
+{
+  "name": "Boulangerie Aurore",
+  "nav": { "about": "À propos", "language": "Langue" },
+  "home": {
+    "title": "Du pain frais chaque matin",
+    "intro": "Pain, croissants et viennoiseries, cuits chaque jour avant l’aube.",
+    "price": "Un croissant coûte {{price, currency(EUR)}}."
+  },
+  "notFound": {
+    "title": "Page introuvable",
+    "body": "Cette page n’existe pas, ou pas dans cette langue.",
+    "home": "Retour à l’accueil"
+  }
+}

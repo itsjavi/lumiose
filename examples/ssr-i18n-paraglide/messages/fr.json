@@ -1,0 +1,32 @@
+{
+  "$schema": "https://inlang.com/schema/inlang-message-format",
+  "site_name": "Boulangerie Aurore",
+  "nav_home": "Accueil",
+  "nav_about": "À propos",
+  "nav_language": "Langue",
+  "home_title": "Du pain frais chaque matin",
+  "home_intro": "Pain, croissants et viennoiseries, cuits chaque jour avant l’aube.",
+  "home_price": [
+    {
+      "declarations": [
+        "input price",
+        "local formattedPrice = price: number style=currency currency=EUR"
+      ],
+      "match": { "price=*": "Un croissant coûte {formattedPrice}." }
+    }
+  ],
+  "not_found_title": "Page introuvable",
+  "not_found_body": "Cette page n’existe pas, ou pas dans cette langue.",
+  "not_found_home": "Retour à l’accueil",
+  "basket_add": "Ajouter un croissant",
+  "basket_count": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{count} croissant dans votre panier",
+        "countPlural=other": "{count} croissants dans votre panier"
+      }
+    }
+  ]
+}

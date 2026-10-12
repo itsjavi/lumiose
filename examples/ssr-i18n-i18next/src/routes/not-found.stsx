@@ -1,0 +1,17 @@
+// Unmatched URLs, in the locale of their prefix.
+import { href, Title } from "lumiose";
+import { getT } from "../server/i18n.server.ts";
+
+export default function NotFound() {
+  const t = getT();
+  return (
+    <main>
+      <Title>{t("notFound.title")}</Title>
+      <h1>{t("notFound.title")}</h1>
+      <p>{t("notFound.body")}</p>
+      <p>
+        <a href={href("/")}>{t("notFound.home")}</a>
+      </p>
+    </main>
+  );
+}

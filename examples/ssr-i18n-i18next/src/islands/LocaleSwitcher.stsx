@@ -1,0 +1,47 @@
+// The language switcher: links to the current page in each locale it declares (alternates(), which
+// the layout passes as a prop), named in their own language; <Link> marks the current one with
+// aria-current="page". A click also updates the cookie that locale detection reads, so the next
+// visit to "/" opens in the chosen locale.
+import type { Locale } from "lumiose";
+import { Link } from "lumiose/router";
+
+const NAMES: Record<Locale, string> = { en: "English", es: "Español", fr: "Français" };
+
+export function LocaleSwitcher(props: {
+  label: string;
+  alternates: Array<{ locale: Locale; href: string }>;
+}) {
+  return (
+    <nav class="locales" aria-label={props.label}>
+      {props.alternates.map((alternate) => (
+        // No prefetch: the response for "/" depends on the cookie this click changes.
+        <Link
+          prefetch="none"
+          href={alternate.href}
+          hreflang={alternate.locale}
+          lang={alternate.locale}
+          onClick={() => rememberLocale(alternate.locale)}
+        >
+          {NAMES[alternate.locale]}
+        </Link>
+      ))}
+    </nav>
+  );
+}
+
+/** The cookie of `detect: { cookie: "locale" }` in vite.config.ts, with the attributes Lumiose uses. */
+function rememberLocale(next: Locale) {
+  const secure = location.protocol === "https:" ? "; secure" : "";
+  document.cookie = `locale=${next}; path=/; max-age=31536000; samesite=lax${secure}`;
+}
+
+<style>
+  .locales {
+    display: flex;
+    gap: 0.75rem;
+  }
+  [aria-current] {
+    font-weight: 700;
+    text-decoration: none;
+  }
+</style>

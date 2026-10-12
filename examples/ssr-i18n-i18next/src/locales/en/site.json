@@ -1,0 +1,18 @@
+{
+  "name": "Sunrise Bakery",
+  "nav": { "about": "About us", "language": "Language" },
+  "home": {
+    "title": "Fresh bread every morning",
+    "intro": "Bread, croissants and pastries, baked every day before sunrise.",
+    "price": "A croissant costs {{price, currency(EUR)}}."
+  },
+  "about": {
+    "title": "About us",
+    "body": "A family bakery since 1987. This page is in English and Spanish: it has no French translation yet."
+  },
+  "notFound": {
+    "title": "Page not found",
+    "body": "This page does not exist, or not in this language.",
+    "home": "Back to the home page"
+  }
+}

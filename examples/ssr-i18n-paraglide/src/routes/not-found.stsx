@@ -1,0 +1,16 @@
+// Unmatched URLs and pages missing in the requested locale (/fr/about), in that locale.
+import { href, Title } from "lumiose";
+import { m } from "../lib/i18n.ts";
+
+export default function NotFound() {
+  return (
+    <main>
+      <Title>{m.not_found_title()}</Title>
+      <h1>{m.not_found_title()}</h1>
+      <p>{m.not_found_body()}</p>
+      <p>
+        <a href={href("/")}>{m.not_found_home()}</a>
+      </p>
+    </main>
+  );
+}

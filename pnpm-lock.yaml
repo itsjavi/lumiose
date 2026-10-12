@@ -762,6 +762,9 @@ importers:
       '@inlang/paraglide-js':
         specifier: 2.27.0
         version: 2.27.0(typescript@7.0.2)(vite@8.3.4(@types/node@24.19.1)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(yaml@2.9.1))
+      '@inlang/plugin-message-format':
+        specifier: 4.5.0
+        version: 4.5.0
       '@lumiose/cli':
         specifier: workspace:*
         version: link:../../packages/cli
@@ -2262,8 +2265,15 @@ packages:
       vite:
         optional: true
 
+  '@inlang/plugin-message-format@4.5.0':
+    resolution: {integrity: sha512-sUiIAxNjFBciVun5bVJMZZ0fN6jU9RRaul3ThmE7kyXUtOeOE5GwrBdVCipRn/gxgMhZlCh88oO8RJbXegn+pA==}
+
   '@inlang/recommend-sherlock@0.2.1':
     resolution: {integrity: sha512-ckv8HvHy/iTqaVAEKrr+gnl+p3XFNwe5D2+6w6wJk2ORV2XkcRkKOJ/XsTUJbPSiyi4PI+p+T3bqbmNx/rDUlg==}
+
+  '@inlang/sdk@4.0.0':
+    resolution: {integrity: sha512-AwGasJATSKq9J3EVBdmIbpU++2DTI8z0J5WbejT6lqymLaoDB4cf95Zp0ijmJp7XUNP/z10qQfA2lz0TAojRYA==}
+    engines: {node: '>=20.0.0'}
 
   '@inlang/sdk@4.0.1':
     resolution: {integrity: sha512-1CxNtlaMtjWI22YlVhIpNUgINhZPyTwhHsKhwpRf6HhEXOem8cRImh8gX7wXAQ35gvDMTB46blxNMWKAXWo3pw==}
@@ -10903,9 +10913,21 @@ snapshots:
       typescript: 7.0.2
       vite: 8.3.4(@types/node@24.19.1)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(yaml@2.9.1)
 
+  '@inlang/plugin-message-format@4.5.0':
+    dependencies:
+      '@inlang/sdk': 4.0.0
+      '@sinclair/typebox': 0.31.30
+
   '@inlang/recommend-sherlock@0.2.1':
     dependencies:
       comment-json: 4.6.2
+
+  '@inlang/sdk@4.0.0':
+    dependencies:
+      '@lix-js/sdk': 0.19.0
+      '@sinclair/typebox': 0.31.30
+      kysely: 0.28.17
+      uuid: 14.0.3
 
   '@inlang/sdk@4.0.1':
     dependencies:

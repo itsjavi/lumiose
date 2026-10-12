@@ -1,0 +1,19 @@
+// The home page, in every configured locale. It renders per request (the config's mode), so locale
+// detection can redirect "/" to the visitor's locale.
+import { Title } from "lumiose";
+import { Basket } from "../islands/Basket.stsx";
+import { m } from "../lib/i18n.ts";
+
+export const locales = "all";
+
+export default function Home() {
+  return (
+    <main>
+      <Title>{m.site_name()}</Title>
+      <h1>{m.home_title()}</h1>
+      <p>{m.home_intro()}</p>
+      <p>{m.home_price({ price: 1.2 })}</p>
+      <Basket client:visible />
+    </main>
+  );
+}

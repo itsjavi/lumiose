@@ -1,0 +1,17 @@
+// Translated into English and Spanish only: /fr/about is a 404 (`missing: "404"`), and the page's
+// hreflang links and language switcher list en and es. Prerendered once per locale.
+import { Title } from "lumiose";
+import { m } from "../../lib/i18n.ts";
+
+export const mode = "static";
+export const locales = ["en", "es"];
+
+export default function About() {
+  return (
+    <main>
+      <Title>{`${m.about_title()} · ${m.site_name()}`}</Title>
+      <h1>{m.about_title()}</h1>
+      <p>{m.about_body()}</p>
+    </main>
+  );
+}

@@ -1,0 +1,5 @@
+{
+  "add": "Add a croissant",
+  "count_one": "{{count}} croissant in your basket",
+  "count_other": "{{count}} croissants in your basket"
+}

@@ -1,0 +1,18 @@
+// Translated into English and Spanish only: /fr/about redirects to /about (`missing: "redirect"`),
+// and the page's hreflang links and language switcher list en and es. Prerendered once per locale.
+import { Title } from "lumiose";
+import { getT } from "../../server/i18n.server.ts";
+
+export const mode = "static";
+export const locales = ["en", "es"];
+
+export default function About() {
+  const t = getT();
+  return (
+    <main>
+      <Title>{`${t("about.title")} · ${t("name")}`}</Title>
+      <h1>{t("about.title")}</h1>
+      <p>{t("about.body")}</p>
+    </main>
+  );
+}

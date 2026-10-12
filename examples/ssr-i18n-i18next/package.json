@@ -1,0 +1,29 @@
+{
+  "name": "@lumiose-examples/ssr-i18n-i18next",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Lumiose sample: a translated site with locale routing and i18next.",
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "dev": "lumiose dev",
+    "build": "lumiose build",
+    "start": "node server.ts",
+    "typecheck": "lumiose check",
+    "test:e2e": "playwright test"
+  },
+  "dependencies": {
+    "@lumiose/adapter-node": "workspace:*",
+    "i18next": "26.4.3",
+    "lumiose": "workspace:*"
+  },
+  "devDependencies": {
+    "@lumiose/cli": "workspace:*",
+    "@lumiose/vite": "workspace:*",
+    "@playwright/test": "1.63.0"
+  },
+  "demo": {
+    "title": "i18n with i18next (server-rendered)",
+    "kind": "example"
+  }
+}

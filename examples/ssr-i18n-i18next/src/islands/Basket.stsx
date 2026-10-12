@@ -1,0 +1,33 @@
+// An island with messages: the page passes the `basket` namespace in its locale as a prop (the
+// island's chunk carries i18next, not the translations), and the same t() calls render on the
+// server and run again in the browser.
+import { signal } from "lumiose";
+import { locale } from "lumiose/router";
+import { islandT, type Namespaces } from "../lib/i18n.ts";
+
+export function Basket(props: { messages: Namespaces["basket"] }) {
+  const t = islandT(locale(), "basket", props.messages);
+  const count = signal(0);
+  return (
+    <div class="basket">
+      <p aria-live="polite">{t("count", { count: count() })}</p>
+      <button type="button" onClick={() => count.update((n) => n + 1)}>
+        {t("add")}
+      </button>
+    </div>
+  );
+}
+
+<style>
+  .basket {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.75rem 1rem;
+    border: 1px solid #e4d8c4;
+    border-radius: 0.5rem;
+  }
+  p {
+    margin: 0;
+  }
+</style>

@@ -1,0 +1,34 @@
+{
+  "$schema": "https://inlang.com/schema/inlang-message-format",
+  "site_name": "Sunrise Bakery",
+  "nav_home": "Home",
+  "nav_about": "About us",
+  "nav_language": "Language",
+  "home_title": "Fresh bread every morning",
+  "home_intro": "Bread, croissants and pastries, baked every day before sunrise.",
+  "home_price": [
+    {
+      "declarations": [
+        "input price",
+        "local formattedPrice = price: number style=currency currency=EUR"
+      ],
+      "match": { "price=*": "A croissant costs {formattedPrice}." }
+    }
+  ],
+  "about_title": "About us",
+  "about_body": "A family bakery since 1987. This page is in English and Spanish: it has no French translation yet.",
+  "not_found_title": "Page not found",
+  "not_found_body": "This page does not exist, or not in this language.",
+  "not_found_home": "Back to the home page",
+  "basket_add": "Add a croissant",
+  "basket_count": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{count} croissant in your basket",
+        "countPlural=other": "{count} croissants in your basket"
+      }
+    }
+  ]
+}

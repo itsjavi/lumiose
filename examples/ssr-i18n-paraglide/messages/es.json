@@ -1,0 +1,34 @@
+{
+  "$schema": "https://inlang.com/schema/inlang-message-format",
+  "site_name": "Panadería Amanecer",
+  "nav_home": "Inicio",
+  "nav_about": "Quiénes somos",
+  "nav_language": "Idioma",
+  "home_title": "Pan recién hecho cada mañana",
+  "home_intro": "Pan, cruasanes y bollería, horneados cada día antes del amanecer.",
+  "home_price": [
+    {
+      "declarations": [
+        "input price",
+        "local formattedPrice = price: number style=currency currency=EUR"
+      ],
+      "match": { "price=*": "Un cruasán cuesta {formattedPrice}." }
+    }
+  ],
+  "about_title": "Quiénes somos",
+  "about_body": "Una panadería familiar desde 1987. Esta página está en inglés y en español: aún no tiene traducción al francés.",
+  "not_found_title": "Página no encontrada",
+  "not_found_body": "Esta página no existe, o no en este idioma.",
+  "not_found_home": "Volver al inicio",
+  "basket_add": "Añadir un cruasán",
+  "basket_count": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{count} cruasán en tu cesta",
+        "countPlural=other": "{count} cruasanes en tu cesta"
+      }
+    }
+  ]
+}

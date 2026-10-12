@@ -1,0 +1,18 @@
+{
+  "name": "Panadería Amanecer",
+  "nav": { "about": "Quiénes somos", "language": "Idioma" },
+  "home": {
+    "title": "Pan recién hecho cada mañana",
+    "intro": "Pan, cruasanes y bollería, horneados cada día antes del amanecer.",
+    "price": "Un cruasán cuesta {{price, currency(EUR)}}."
+  },
+  "about": {
+    "title": "Quiénes somos",
+    "body": "Una panadería familiar desde 1987. Esta página está en inglés y en español: aún no tiene traducción al francés."
+  },
+  "notFound": {
+    "title": "Página no encontrada",
+    "body": "Esta página no existe, o no en este idioma.",
+    "home": "Volver al inicio"
+  }
+}
