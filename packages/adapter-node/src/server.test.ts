@@ -104,7 +104,7 @@ describe.skipIf(!binding)("@lumiose/adapter-node", () => {
     );
     expect(assets.length).toBeGreaterThan(2);
     for (const file of assets) {
-      expect((await get(`/assets/${file}`)).headers.get("cache-control")).toBe(
+      expect((await get(`/assets/${file}`, { method: "HEAD" })).headers.get("cache-control")).toBe(
         file === "badge-v2-final.svg"
           ? "public, max-age=0, must-revalidate"
           : "public, max-age=31536000, immutable",

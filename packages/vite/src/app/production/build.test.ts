@@ -1006,9 +1006,10 @@ export function Counter() {
     const entry = await entryOf(root);
     expect((entry.config as { hashedFiles?: string[] }).hashedFiles).toEqual(adapter.hashedFiles);
     const cache = async (path: string) =>
-      (await entry.default.fetch(new Request(`http://app.test${path}`))).headers.get(
-        "cache-control",
-      );
+      // HEAD: no file is opened for a body nobody reads.
+      (
+        await entry.default.fetch(new Request(`http://app.test${path}`, { method: "HEAD" }))
+      ).headers.get("cache-control");
     for (const file of adapter.hashedFiles) {
       expect(await cache(`/${file}`)).toBe("public, max-age=31536000, immutable");
     }
