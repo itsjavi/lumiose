@@ -1,15 +1,12 @@
 // The root layout: the site name, the navigation and the language switcher, in the page's locale.
-import { alternates, href, locale, type LayoutProps, type Locale } from "lumiose";
+import { alternates, href, locale, type LayoutProps } from "lumiose";
 import { LocaleSwitcher } from "../islands/LocaleSwitcher.stsx";
 import { getT } from "../server/i18n.server.ts";
 
-/** The locales of /about (its `export const locales`): other locales link to the English page,
- * since `missing: "redirect"` would send them there anyway. */
-const ABOUT_LOCALES: readonly Locale[] = ["en", "es"];
-
-/** /about in the current locale when it has one, else in English. */
+/** /about in the current locale when it is translated (`alternates("/about")`), else in English. */
 function aboutHref(): string {
-  return href("/about", { locale: ABOUT_LOCALES.includes(locale()) ? locale() : "en" });
+  const translated = alternates("/about").find((each) => each.locale === locale());
+  return translated?.href ?? href("/about", { locale: "en" });
 }
 
 export default function Layout(props: LayoutProps<"/">) {

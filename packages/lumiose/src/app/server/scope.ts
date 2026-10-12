@@ -49,13 +49,17 @@ export interface RequestScope {
   bodyLimits?: { current: BodyLimits };
   /**
    * With `lumiose({ i18n })` (decision-44): the request's locale (its URL prefix, else the default
-   * locale), how `href()` builds URLs in it, and the matched route's URL in each locale it
-   * declares (`alternates()`).
+   * locale), how `href()` builds URLs in it, the matched route's URL in each locale it declares
+   * (`alternates()`), and any route's (`alternates(pattern, params)`).
    */
   i18n?: {
     locale: string;
     href: (pattern: string, params: Record<string, unknown>) => string;
     alternates: Array<{ locale: string; href: string }>;
+    routeAlternates: (
+      pattern: string,
+      params: Record<string, unknown>,
+    ) => Array<{ locale: string; href: string }>;
   };
 }
 

@@ -308,6 +308,60 @@ export default function Editor() {
     ]);
   });
 
+  it("lumiose routes lists the locales each route declares with lumiose({ i18n })", async () => {
+    const project = realpathSync(mkdtempSync(join(tmpdir(), "lumiose-cli-i18n-")));
+    onTestFinished(() => rmSync(project, { recursive: true, force: true }));
+    symlinkSync(join(root, "node_modules"), join(project, "node_modules"), "dir");
+    const files: Record<string, string> = {
+      "vite.config.ts": `import lumiose from "@lumiose/vite";
+export default { plugins: [lumiose({ i18n: { locales: ["en", "es", "fr"], defaultLocale: "en" } })] };
+`,
+      "src/routes/page.stsx": `export const locales = "all";
+export default function Home() {
+  return <main>Home</main>;
+}
+`,
+      "src/routes/about/page.stsx": `export default function About() {
+  return <main>About</main>;
+}
+`,
+      "src/routes/blog/[slug]/page.stsx": `export async function locales() {
+  return ["en", "es"];
+}
+export default function Post() {
+  return <main>Post</main>;
+}
+`,
+    };
+    for (const [name, text] of Object.entries(files)) {
+      mkdirSync(dirname(join(project, name)), { recursive: true });
+      writeFileSync(join(project, name), text);
+    }
+    const table = await run("routes", "--root", project);
+    expect(table.code).toBe(0);
+    expect(table.stdout).toContain(
+      "Routes in src/routes (default mode: static, locales: en, es, fr (default en)): 3 pages",
+    );
+    expect(table.stdout).toMatch(/^PATTERN\s+KIND\s+MODE\s+FILE\s+LOCALES\s+LAYOUTS$/m);
+    expect(table.stdout).toMatch(/^\/\s+page\s+static\s+page\.stsx\s+en, es, fr$/m);
+    expect(table.stdout).toMatch(/^\/about\s+page\s+static\s+about\/page\.stsx\s+en$/m);
+    expect(table.stdout).toMatch(
+      /^\/blog\/\[slug\]\s+page\s+static\s+blog\/\[slug\]\/page\.stsx\s+locales\(\) in blog\/\[slug\]\/page\.stsx$/m,
+    );
+
+    const { json } = await runJson("routes", "--root", project);
+    expect(json.i18n).toEqual({ locales: ["en", "es", "fr"], defaultLocale: "en" });
+    expect(json.routes).toEqual([
+      expect.objectContaining({ pattern: "/", locales: ["en", "es", "fr"] }),
+      expect.objectContaining({ pattern: "/about", locales: ["en"] }),
+      expect.objectContaining({
+        pattern: "/blog/[slug]",
+        localesFrom: "src/routes/blog/[slug]/page.stsx",
+      }),
+    ]);
+    expect(json.routes[2]).not.toHaveProperty("locales");
+  });
+
   it("lumiose typegen writes the route types and the shadows", async () => {
     const { code, json } = await runJson("typegen", "--cwd", root);
     expect(code).toBe(0);

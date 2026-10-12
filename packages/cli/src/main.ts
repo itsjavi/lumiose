@@ -168,7 +168,7 @@ const COMMANDS: readonly Command[] = [
   },
   {
     name: "routes",
-    summary: "List the routes: pattern, kind, mode, file and layouts",
+    summary: "List the routes: pattern, kind, mode, file, locales (with i18n) and layouts",
     options: [],
     positionals: { min: 0, max: 0 },
     exitCodes: "0 listed, 1 the routes have errors, 2 the tool failed",

@@ -16,6 +16,8 @@ A small bakery site in English, Spanish and French, with Lumiose's locale routin
 - `src/islands/Basket.stsx` is an island with messages (a plural and a click counter); its chunk
   holds only the messages it uses.
 - `src/islands/LocaleSwitcher.stsx` links to `alternates()` and updates the detection cookie.
+- `src/routes/layout.stsx` links to `/about` in the current locale when `alternates("/about")`
+  lists it, else in English.
 
 ## Run it
 

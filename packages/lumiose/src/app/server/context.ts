@@ -3,8 +3,8 @@
 
 import type { Renderable } from "../../contract/client.ts";
 import type {
+  CurrentLocale,
   EndpointRoutes,
-  Locale,
   PageRoutes,
   RouteParams,
   Routes,
@@ -63,7 +63,7 @@ export interface RequestContext<P extends Routes = never> {
    * The request's locale with `lumiose({ i18n })` (decision-44): its URL prefix (`/es/about` →
    * `"es"`), else the default locale. Undefined without `lumiose({ i18n })`.
    */
-  locale: Locale;
+  locale: CurrentLocale;
   locals: Locals;
   cookies: Cookies;
   env: ServerEnv;

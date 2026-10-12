@@ -143,8 +143,17 @@ export type Assert<T extends true> = T;
 
 export type Locales = Assert<Equal<Locale, "en" | "es">>;
 export type FromContext = Assert<Equal<RequestContext["locale"], Locale>>;
+export type FromLocale = Assert<Equal<ReturnType<typeof locale>, Locale>>;
 export const current: Locale = locale();
 export const links: { locale: Locale; href: string }[] = alternates();
+export const about: { locale: Locale; href: string }[] = alternates("/about");
+export const post: { locale: Locale; href: string }[] = alternates("/blog/[slug]", { slug: "a" });
+// @ts-expect-error params are required
+alternates("/blog/[slug]");
+// @ts-expect-error unknown route
+alternates("/abuot");
+// @ts-expect-error locale is no param: alternates() lists every declared locale
+alternates("/blog/[slug]", { slug: "a", locale: "es" });
 export const urls: string[] = [
   href("/about", { locale: "es" }),
   href("/blog/[slug]", { slug: "hello", locale: "en" }),
@@ -156,10 +165,21 @@ href("/about", { locale: "fr" });
 href("/blog/[slug]", { locale: "es" });
 `;
 
-const USAGE = `import { href, type PageProps, type RouteParams, type Routes } from "lumiose";
+const USAGE = `import {
+  href,
+  locale,
+  type PageProps,
+  type RequestContext,
+  type RouteParams,
+  type Routes,
+} from "lumiose";
 
 type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends <T>() => T extends B ? 1 : 2 ? true : false;
 export type Assert<T extends true> = T;
+
+// Without lumiose({ i18n }), the locale is undefined at runtime.
+export type NoLocale = Assert<Equal<ReturnType<typeof locale>, string | undefined>>;
+export type NoContextLocale = Assert<Equal<RequestContext["locale"], string | undefined>>;
 
 export type AllRoutes = Assert<
   Equal<

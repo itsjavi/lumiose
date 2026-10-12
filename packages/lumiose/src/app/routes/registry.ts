@@ -24,6 +24,13 @@ export interface LocaleMap {}
 /** A locale of the app, e.g. `"en" | "es"`; `string` until typegen ran with `lumiose({ i18n })`. */
 export type Locale = [keyof LocaleMap] extends [never] ? string : Extract<keyof LocaleMap, string>;
 
+/**
+ * What `locale()` and `ctx.locale` return: a `Locale`, or `undefined` too while `LocaleMap` is
+ * empty (no `lumiose({ i18n })`, or before typegen ran), when they are undefined at runtime.
+ * Internal: users see `Locale` or `string | undefined`.
+ */
+export type CurrentLocale = [keyof LocaleMap] extends [never] ? string | undefined : Locale;
+
 /** Union of every route pattern in the app, e.g. `"/" | "/blog/[slug]"`. */
 export type Routes = [keyof RouteMap] extends [never] ? string : Extract<keyof RouteMap, string>;
 

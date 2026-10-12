@@ -192,6 +192,7 @@ export function createRequestHandler(options: RequestHandlerOptions): RequestHan
   const render = options.render ?? createServerRenderer();
   const onError = options.onError ?? ((error: unknown) => console.error(error));
   const matcher = createRouteMatcher(manifest);
+  const routesByPattern = new Map(manifest.routes.map((route) => [route.pattern, route]));
   // Reuses the _404 scope lookup to find the _error page covering an unmatched URL.
   const errorMatcher = createRouteMatcher({ routes: [], notFoundPages: manifest.errorPages });
   const specialPages = new Map<string, SpecialPage>(
@@ -310,6 +311,7 @@ export function createRequestHandler(options: RequestHandlerOptions): RequestHan
                   locale: localized.locale,
                 }),
               alternates: [],
+              routeAlternates,
             },
           }),
     };
@@ -558,6 +560,31 @@ export function createRequestHandler(options: RequestHandlerOptions): RequestHan
       links,
       canonical: `<link rel="canonical" href="${escapeHtml(absolute(own.href))}">`,
     };
+  }
+
+  /**
+   * `alternates(pattern, params)`: a route's URL in each locale it declares, for links to a page
+   * that has fewer locales than the current one. Rendering is synchronous, so a route that decides
+   * its locales with a `locales({ params })` function is an error.
+   */
+  function routeAlternates(
+    pattern: string,
+    params: Record<string, unknown>,
+  ): Array<{ locale: string; href: string }> {
+    const config = i18n!;
+    const route = routesByPattern.get(pattern);
+    if (route === undefined) {
+      throw new TypeError(`alternates("${pattern}"): no route has this pattern.`);
+    }
+    if (route.localesFrom !== undefined) {
+      throw new TypeError(
+        `alternates("${pattern}"): ${route.localesFrom} decides the route's locales per params with a locales({ params }) function, which alternates() cannot run while rendering. Build the links with href("${pattern}", { ...params, locale }) from the locales your content lists, or declare them as a list (export const locales = [...]).`,
+      );
+    }
+    return (route.locales ?? [config.defaultLocale]).map((each) => ({
+      locale: each,
+      href: routeHref(pattern, { ...params, locale: each }, { base, trailingSlash, i18n: config }),
+    }));
   }
 
   /** The locales a route declares for these params: static, or its `locales({ params })` function's. */

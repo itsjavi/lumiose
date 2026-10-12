@@ -69,6 +69,10 @@ export type HrefArgs<P extends Routes> =
     ? [params?: RouteParams<P> & LocaleKey]
     : [params: RouteParams<P> & LocaleKey];
 
+/** The params argument of `alternates(pattern, params)`: like `href()`'s, without `locale`. */
+export type AlternatesArgs<P extends Routes> =
+  {} extends RouteParams<P> ? [params?: RouteParams<P>] : [params: RouteParams<P>];
+
 /**
  * Builds the URL path of a route from its pattern, encoding each param: below Vite's `base`, with
  * a trailing slash when `trailingSlash` is `"always"`, and with `lumiose({ i18n })` in the current

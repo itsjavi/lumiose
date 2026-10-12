@@ -172,7 +172,7 @@ describe("declared locales", () => {
   });
 
   it("gives endpoints locales like pages, and ctx.locale to middleware and endpoints", async () => {
-    const seen: string[] = [];
+    const seen: Array<string | undefined> = [];
     const { fetch } = i18nApp(
       {
         "src/middleware.ts": [
@@ -314,6 +314,90 @@ describe("hreflang, canonical and alternates()", () => {
     expect(await text(await below.fetch("/docs/fr/about/"))).toContain(
       "<p>en=/docs/about/,es=/docs/es/about/,fr=/docs/fr/about/</p>",
     );
+  });
+});
+
+/** A page that prints alternates() of another route. */
+const linking = (pattern: string, params?: object): ModuleExports => ({
+  default: () =>
+    (alternates as (pattern: string, params?: object) => { locale: string; href: string }[])(
+      pattern,
+      params,
+    )
+      .map((each) => `${each.locale}=${each.href}`)
+      .join(","),
+});
+
+describe("alternates(pattern, params)", () => {
+  it("lists another route in each locale it declares, from any locale, with base and slashes", async () => {
+    const { fetch } = i18nApp(
+      {
+        "src/routes/page.stsx": ['export const locales = "all";', linking("/about")],
+        "src/routes/about/page.stsx": ['export const locales = ["en", "es"];', localePage("a")],
+        "src/routes/post/page.stsx": [
+          'export const locales = "all";',
+          linking("/blog/[slug]", { slug: "hello world" }),
+        ],
+        "src/routes/blog/layout.stsx": [
+          'export const locales = ["en", "fr"];',
+          { default: () => "" },
+        ],
+        "src/routes/blog/[slug]/page.stsx": ["", localePage("post")],
+        "src/routes/plain/page.stsx": ['export const locales = "all";', linking("/contact")],
+        "src/routes/contact/page.stsx": ["", localePage("contact")],
+      },
+      I18N,
+      { base: "/docs/", trailingSlash: "always" },
+    );
+    expect(await text(await fetch("/docs/fr/"))).toContain("en=/docs/about/,es=/docs/es/about/");
+    // A layout's declaration applies; params are encoded like href()'s.
+    expect(await text(await fetch("/docs/es/post/"))).toContain(
+      "en=/docs/blog/hello%20world/,fr=/docs/fr/blog/hello%20world/",
+    );
+    // Without a declaration, the default locale alone.
+    expect(await text(await fetch("/docs/es/plain/"))).toContain("en=/docs/contact/");
+  });
+
+  it("ignores a locale key in params: it lists every declared locale", async () => {
+    const { fetch } = i18nApp({
+      "src/routes/page.stsx": ["", linking("/about", { locale: "fr" })],
+      "src/routes/about/page.stsx": ['export const locales = ["en", "es"];', localePage("a")],
+    });
+    expect(await text(await fetch("/"))).toContain("en=/about,es=/es/about");
+  });
+
+  it("throws for an unknown pattern and for a route with a locales() function", async () => {
+    const { fetch, onError } = i18nApp({
+      "src/routes/page.stsx": ["", linking("/abuot")],
+      "src/routes/post/page.stsx": ["", linking("/blog/[slug]", { slug: "a" })],
+      "src/routes/blog/[slug]/page.stsx": [
+        "export function locales() {}",
+        { locales: () => ["en"], default: () => "post" },
+      ],
+    });
+    expect((await fetch("/")).status).toBe(500);
+    expect(onError.mock.calls[0]![0]).toMatchObject({
+      message: 'alternates("/abuot"): no route has this pattern.',
+    });
+    expect((await fetch("/post")).status).toBe(500);
+    expect(String(onError.mock.calls[1]![0])).toContain(
+      "src/routes/blog/[slug]/page.stsx decides the route's locales per params with a locales({ params }) function",
+    );
+  });
+
+  it("is empty without lumiose({ i18n })", async () => {
+    const manifest = createRouteManifest([
+      { path: "page.stsx", source: "" },
+      { path: "about/page.stsx", source: "" },
+    ]);
+    const { fetch } = createRequestHandler({
+      manifest,
+      loadModule: async (file) => (file.endsWith("about/page.stsx") ? {} : linking("/about")),
+      render: createStringRenderer(),
+    });
+    const response = await fetch(new Request("https://lumiose.test/"));
+    expect(response.status).toBe(200);
+    expect(await text(response)).not.toContain("=/about");
   });
 });
 

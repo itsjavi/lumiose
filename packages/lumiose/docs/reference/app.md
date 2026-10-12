@@ -280,15 +280,23 @@ function response(): ResponseContext;
 function env(name: string): string | undefined;
 function publicEnv(source?: ServerEnv): Record<string, string>;
 function cspNonce(): string | undefined; // lumiose({ csp: "strict" }): the response's nonce
-function locale(): Locale; // lumiose({ i18n }): the request's locale; undefined without it
+function locale(): Locale; // lumiose({ i18n }): the request's locale; string | undefined without it
 function alternates(): { locale: Locale; href: string }[]; // the page in each declared locale
+function alternates<P extends Routes>(
+  pattern: P,
+  params?: RouteParams<P>,
+): { locale: Locale; href: string }[];
 ```
 
 `locale()` is the locale of the request's URL prefix (`/es/about` → `"es"`), else the default
-locale, also while prerendering (each locale renders separately). `alternates()` lists the current
+locale, also while prerendering (each locale renders separately); without `lumiose({ i18n })` it
+is `undefined`, typed `string | undefined` (so is `ctx.locale`). `alternates()` lists the current
 route's URL in every locale it declares, with `base` and the trailing-slash policy, for language
-switchers; `[]` without `lumiose({ i18n })` or when no route matched. See
-[Internationalization](../concepts/i18n.md).
+switchers; `[]` without `lumiose({ i18n })` or when no route matched. With a route pattern (and
+params, required when the route has some, as for `href()`), it lists that route's URLs from its
+`locales` list, a layout's or the default locale, to link a page translated into fewer locales:
+`alternates("/about")`. It throws for an unknown pattern and for a route whose locales come from a
+`locales({ params })` function. See [Internationalization](../concepts/i18n.md).
 
 `cspNonce()` is `undefined` without strict CSP, outside a request and while prerendering (the
 page's hash policy covers its inline elements); in the browser it reads

@@ -136,6 +136,9 @@ Lists the routes in match order, with their kind, mode (from the route, its layo
 default `lumiose({ mode })`) and layouts. `spa (shell)` marks a `spa` page with `ssr = false`, and
 `spa (prerendered)` a `spa` page rendered to HTML at build time, by its own `export const prerender`,
 a layout's or `lumiose({ prerender })`.
+With `lumiose({ i18n })`, the header names the locales and a `LOCALES` column lists the locales
+each route declares (its own `locales` export, a layout's, or the default locale alone);
+`locales() in <file>` marks a route whose `locales({ params })` function decides per params.
 
 ```sh
 $ lumiose routes
@@ -146,7 +149,15 @@ PATTERN        KIND      MODE    FILE                   LAYOUTS
 /api/search    endpoint  server  api/search/route.ts
 /blog/[slug]   page      server  blog/[slug]/page.stsx  layout.stsx, blog/layout.stsx
 
-$ lumiose routes --format json   # { routesDir, defaultMode, routes: [{ pattern, file, kind, mode, ssr?, prerender?, layouts, params }], diagnostics, summary }
+$ lumiose routes   # with lumiose({ i18n })
+Routes in src/routes (default mode: static, locales: en, es, fr (default en)): 3 pages, 0 endpoints
+
+PATTERN       KIND  MODE    FILE                   LOCALES                             LAYOUTS
+/             page  static  page.stsx              en, es, fr
+/about        page  static  about/page.stsx        en, es
+/blog/[slug]  page  static  blog/[slug]/page.stsx  locales() in blog/[slug]/page.stsx
+
+$ lumiose routes --format json   # { routesDir, defaultMode, i18n?, routes: [{ pattern, file, kind, mode, ssr?, prerender?, layouts, params, locales?, localesFrom? }], diagnostics, summary }
 ```
 
 Paths in JSON are project-relative. Exits 1 when the routes have errors.

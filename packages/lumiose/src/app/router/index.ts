@@ -2,7 +2,7 @@
 // the browser entry (and the types); ./index.server.ts has the server variants with the same names.
 import { splitLocale } from "../i18n/config.ts";
 import { envI18n, normalizeBase, pathBelowBase } from "../routes/href.ts";
-import type { Locale, RouteParams, Routes } from "../routes/registry.ts";
+import type { CurrentLocale, Locale, RouteParams, Routes } from "../routes/registry.ts";
 import type { RouteParamValues } from "../server/context.ts";
 import {
   currentParams,
@@ -43,7 +43,7 @@ export function route(): Routes | undefined {
  * its prefix (`/es/about` → `"es"`), else the default locale. In islands of other routes, the
  * page's locale. Undefined without `lumiose({ i18n })`.
  */
-export function locale(): Locale {
+export function locale(): CurrentLocale {
   const inside = routerLocale();
   if (inside !== undefined) return inside as Locale;
   // An island of another route: the page's URL.

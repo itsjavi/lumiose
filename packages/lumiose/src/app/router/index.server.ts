@@ -5,7 +5,7 @@ import type { Renderable } from "../../contract/client.ts";
 import { Dynamic } from "../../server/elements.ts";
 import { restProps } from "../../server/ssr.ts";
 import { locale as requestLocale } from "../i18n/server.ts";
-import type { Locale, RouteParams, Routes } from "../routes/registry.ts";
+import type { CurrentLocale, RouteParams, Routes } from "../routes/registry.ts";
 import type { RouteParamValues } from "../server/context.ts";
 import {
   notePrefetchLink,
@@ -72,7 +72,7 @@ export function url(): URL {
   return requestUrl();
 }
 
-export function locale(): Locale {
+export function locale(): CurrentLocale {
   return requestLocale();
 }
 

@@ -161,7 +161,7 @@ export async function createLumioseMcpServer(options: LumioseMcpOptions): Promis
     {
       title: "List the routes",
       description:
-        "The file routes in match priority order: pattern, page or endpoint, render mode (static, server, spa), file, layouts and params, plus route diagnostics.",
+        "The file routes in match priority order: pattern, page or endpoint, render mode (static, server, spa), file, layouts, params and, with lumiose({ i18n }), the locales each route declares, plus route diagnostics.",
       inputSchema: {},
       annotations: readOnly,
     },

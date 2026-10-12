@@ -40,6 +40,13 @@ export interface RouteInfo {
   /** Layout files (project-relative), outermost first; empty for endpoints. */
   layouts: string[];
   params: RouteParam[];
+  /**
+   * With `lumiose({ i18n })` (decision-44): the locales the route declares (its own, a layout's, or
+   * the default locale alone). Absent without i18n and when `localesFrom` decides per params.
+   */
+  locales?: string[];
+  /** The file (project-relative) whose `locales({ params })` function decides the locales. */
+  localesFrom?: string;
 }
 
 export interface RoutesReport {
@@ -47,6 +54,8 @@ export interface RoutesReport {
   routesDir: string;
   /** The project default, `lumiose({ mode })`; layouts and routes override it. */
   defaultMode: "static" | "server" | "spa";
+  /** `lumiose({ i18n })`: the configured locales and the default (unprefixed) one. */
+  i18n?: { locales: string[]; defaultLocale: string };
   /** In match priority order. */
   routes: RouteInfo[];
   diagnostics: CheckDiagnostic[];
@@ -63,8 +72,12 @@ function routesReport(
   manifest: RouteManifest,
   defaultMode: RoutesReport["defaultMode"],
 ): RoutesReport {
-  const routes = manifest.routes.map((route): RouteInfo =>
-    route.kind === "page"
+  const routes = manifest.routes.map((route): RouteInfo => {
+    const locales = {
+      ...(route.locales === undefined ? {} : { locales: route.locales }),
+      ...(route.localesFrom === undefined ? {} : { localesFrom: route.localesFrom }),
+    };
+    return route.kind === "page"
       ? {
           pattern: route.pattern,
           file: route.file,
@@ -74,6 +87,7 @@ function routesReport(
           prerender: route.prerender,
           layouts: route.layouts,
           params: route.params,
+          ...locales,
         }
       : {
           pattern: route.pattern,
@@ -82,12 +96,17 @@ function routesReport(
           mode: route.mode,
           layouts: [],
           params: route.params,
-        },
-  );
+          ...locales,
+        };
+  });
   const diagnostics = manifest.diagnostics.map(fromAppDiagnostic);
+  const { i18n } = manifest;
   return {
     routesDir: manifest.routesDir,
     defaultMode,
+    ...(i18n === undefined
+      ? {}
+      : { i18n: { locales: i18n.locales, defaultLocale: i18n.defaultLocale } }),
     routes,
     diagnostics,
     summary: summarize(diagnostics),
@@ -128,14 +147,17 @@ export function routesTable(report: RoutesReport): string {
   }
   const prefix = `${report.routesDir}/`;
   const short = (file: string) => (file.startsWith(prefix) ? file.slice(prefix.length) : file);
+  // With i18n, a LOCALES column before LAYOUTS (the longest cell, last).
+  const i18n = report.i18n !== undefined;
   const rows = report.routes.map((route) => [
     route.pattern,
     route.kind,
     modeLabel(route),
     short(route.file),
+    ...(i18n ? [localesLabel(route, short)] : []),
     route.layouts.map(short).join(", "),
   ]);
-  const header = ["PATTERN", "KIND", "MODE", "FILE", "LAYOUTS"];
+  const header = ["PATTERN", "KIND", "MODE", "FILE", ...(i18n ? ["LOCALES"] : []), "LAYOUTS"];
   const widths = header.map((title, column) =>
     Math.max(title.length, ...rows.map((row) => row[column]!.length)),
   );
@@ -145,11 +167,21 @@ export function routesTable(report: RoutesReport): string {
       .join("  ")
       .trimEnd()}\n`;
   const pages = report.routes.filter((route) => route.kind === "page").length;
+  const locales =
+    report.i18n === undefined
+      ? ""
+      : `, locales: ${report.i18n.locales.join(", ")} (default ${report.i18n.defaultLocale})`;
   return [
-    `Routes in ${report.routesDir} (default mode: ${report.defaultMode}): ${plural(pages, "page")}, ${plural(report.routes.length - pages, "endpoint")}\n\n`,
+    `Routes in ${report.routesDir} (default mode: ${report.defaultMode}${locales}): ${plural(pages, "page")}, ${plural(report.routes.length - pages, "endpoint")}\n\n`,
     line(header),
     ...rows.map(line),
   ].join("");
+}
+
+/** `en, es`, or `locales() in <file>` for a route whose function decides per params. */
+function localesLabel(route: RouteInfo, short: (file: string) => string): string {
+  if (route.localesFrom !== undefined) return `locales() in ${short(route.localesFrom)}`;
+  return (route.locales ?? []).join(", ");
 }
 
 /** `spa (shell)` for a client-rendered shell, `spa (prerendered)` for a page rendered at build. */

@@ -18,6 +18,8 @@ A small bakery site in English, Spanish and French, with Lumiose's locale routin
 - `src/islands/Basket.stsx` gets the `basket` namespace in the page's locale as a prop and creates
   a small i18next instance from it.
 - `src/islands/LocaleSwitcher.stsx` links to `alternates()` and updates the detection cookie.
+- `src/routes/layout.stsx` links to `/about` in the current locale when `alternates("/about")`
+  lists it, else in English.
 
 ## Run it
 
