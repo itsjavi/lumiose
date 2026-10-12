@@ -5,7 +5,7 @@ status: Done
 assignee:
   - '@Nova'
 created_date: '2026-10-12 18:40'
-updated_date: '2026-10-12 20:54'
+updated_date: '2026-10-12 21:11'
 labels:
   - router
   - i18n
@@ -57,6 +57,8 @@ Nova 2026-10-12, implementation:
 - Speculation rules leave out endpoints under every locale prefix.
 - Evidence: pnpm typecheck, oxlint (no new warnings in my files; errors only in TASK-148's in-progress dev/morph files at the time), pnpm test 1759 passed, node --test scripts 31/31, size OK (brotli 9.89 kB), cargo test --workspace green, docs:gen/docs:check green. New tests: i18n/config.test.ts, server/i18n.test.ts (27), manifest locales + LUM5007, router locale navigation, typegen Locale (TS 7), build: prerender per locale, site base, site warning; options: i18n and site validation, base inference and mismatch.
 - Not in scope / follow-ups: SPA navigations do not update hreflang/canonical links (server-rendered head only); x-default not written (agreed); lumiose routes JSON does not list locales.
+
+Nova 2026-10-12, fix 486a5bd: Vitest turns import.meta.env.* defines into process.env strings shared by every workspace project, so an i18n example's "[object Object]" reached apps/web and its module-level href() threw. The locales now travel in a global define (__LUMIOSE_I18N__: Vite replaces it statically, Vitest sets it per project as a value), and href()/lumiose/router accept only a value shaped like a locale config. Regression tests in href.test.ts; the build test checks a module-level href() in the SSR bundle. pnpm test: 1765 passed.
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary
