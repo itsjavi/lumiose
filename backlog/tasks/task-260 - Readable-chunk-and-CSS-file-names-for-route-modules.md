@@ -1,11 +1,11 @@
 ---
 id: TASK-260
 title: Readable chunk and CSS file names for route modules
-status: In Progress
+status: Done
 assignee:
   - Nova
 created_date: '2026-10-12 20:09'
-updated_date: '2026-10-12 22:07'
+updated_date: '2026-10-12 22:08'
 labels:
   - build
   - router
@@ -24,8 +24,8 @@ Since TASK-253 every page module is page.stsx and every layout layout.stsx, so t
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Client chunks and stylesheets of page, layout, not-found and error modules carry a name derived from their route folder
-- [ ] #2 Build tests assert the new names; no change to runtime behavior or hashes of unrelated chunks
+- [x] #1 Client chunks and stylesheets of page, layout, not-found and error modules carry a name derived from their route folder
+- [x] #2 Build tests assert the new names; no change to runtime behavior or hashes of unrelated chunks
 <!-- AC:END -->
 
 ## Implementation Notes
@@ -37,4 +37,12 @@ Nova 2026-10-13: route modules (pages, endpoints, layouts, not-found, error) are
 - A Vite config that sets its own entryFileNames/chunkFileNames/assetFileNames (top-level or client environment) keeps them: Lumiose then sets no client output naming.
 - Merged per-page stylesheets of TASK-121 (stylesheets.ts merge(rest, 'page')) keep the generic name: they group several modules.
 - Evidence: new build test (names of page/layout/not-found/error/server page/spa layout+page in a route group with a rest param; the same app with Vite's default names keeps the lumiose/loader/Counter chunk hashes), updated TASK-121/TASK-123 tests; examples/spa-router-e2e build+dev e2e 28/28 (dist: csr-page, users-id-page, users-layout, slow-page...). Its e2e pageModule regex (/page-[hash].js, Spark's file) still matches via 'slow'; its comment is slightly stale.
+
+Nova: pnpm check green (typecheck, lint, fmt:examples, 1783 tests, scripts, size, cargo). Commit 558126e.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Route modules' client chunks and stylesheets are named after their route folder (blog/[slug]/page.stsx -> assets/blog-slug-page-[hash].js/.css, (app)/layout.stsx -> app-layout), server chunks too (chunks/<name>-[hash].js). chunkFileNames names chunks whose facade is a route module; a codeSplitting group names each route style module's chunk, which names its CSS (Vite names CSS after the chunk), without changing chunking or CSS hashes. A Vite config with its own entry/chunk/asset file names keeps them. Build test asserts the names and that unrelated chunks keep their hashes; docs: reference/cli.md (lumiose build).
+<!-- SECTION:FINAL_SUMMARY:END -->
