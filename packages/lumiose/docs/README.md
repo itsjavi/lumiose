@@ -35,6 +35,7 @@ mistakes** and **Related diagnostics**. Reference pages list every export with i
 - [Async components](concepts/async.md): `async` components on server and client, `<Suspense>`, `<ErrorBoundary>`, re-runs and in-flight state.
 - [Islands](concepts/islands.md): `client:*` directives, serializable props, slots and server-only boundaries.
 - [Routing](concepts/routing.md): File routes, layouts, params, typed `href()`, error pages and the SPA router.
+- [Internationalization](concepts/i18n.md): Locale prefixes, per-page locale declarations, `locale()`, locale-aware `href()`, `hreflang` and canonical links, detection on entry.
 - [Data and actions](concepts/data-and-actions.md): Read data with async components, serve endpoints, mutate with form actions and `submit()`.
 - [Server](concepts/server.md): Request context, middleware, cookies, env, redirects and error helpers.
 - [Rendering modes](concepts/rendering-modes.md): `static`, `server` and `spa` routes, prerendered SPA pages, shell-first streaming, hydration and the build.

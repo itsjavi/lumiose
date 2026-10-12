@@ -229,11 +229,20 @@ With `"always"`, a pattern whose last segment has a dot (an endpoint such as `/f
 trailing slash. A relative `base` (`./`) counts as `/`. Outside Vite (plain Node) the path is
 root-relative.
 
+With `lumiose({ i18n })`, the path is in the current locale: the request's on the server, the
+page's URL in the browser (`/es/...` on a Spanish page). The `locale` key switches it and is no
+route param: `href("/blog/[slug]", { slug, locale: "es" })` is `/es/blog/hello`, `{ locale: "en" }`
+(the default locale) `/blog/hello`. An unknown locale throws. `href()` does not check that the
+page declares the locale: `alternates()` lists the URLs that exist. See
+[Internationalization](../concepts/i18n.md).
+
 ### Route types
 
 ```ts
 interface RouteMap {}                  // augmented by .lumiose/types/routes.d.ts (typegen)
 interface LayoutMap {}                 // the same, for layouts (by the URL scope of their folder)
+interface LocaleMap {}                 // the same, for the locales of lumiose({ i18n })
+type Locale = /* "en" | "es" | …, or string before typegen */;
 type Routes = /* every route pattern, or string before typegen */;
 type RouteParams<P extends Routes>;    // { slug: string } for "/blog/[slug]"
 interface PageProps<P extends /* a page pattern */> { params: RouteParams<P> }
@@ -271,7 +280,15 @@ function response(): ResponseContext;
 function env(name: string): string | undefined;
 function publicEnv(source?: ServerEnv): Record<string, string>;
 function cspNonce(): string | undefined; // lumiose({ csp: "strict" }): the response's nonce
+function locale(): Locale; // lumiose({ i18n }): the request's locale; undefined without it
+function alternates(): { locale: Locale; href: string }[]; // the page in each declared locale
 ```
+
+`locale()` is the locale of the request's URL prefix (`/es/about` → `"es"`), else the default
+locale, also while prerendering (each locale renders separately). `alternates()` lists the current
+route's URL in every locale it declares, with `base` and the trailing-slash policy, for language
+switchers; `[]` without `lumiose({ i18n })` or when no route matched. See
+[Internationalization](../concepts/i18n.md).
 
 `cspNonce()` is `undefined` without strict CSP, outside a request and while prerendering (the
 page's hash policy covers its inline elements); in the browser it reads
@@ -342,6 +359,7 @@ interface RequestContext<P extends Routes = never> {
   cookies: Cookies;
   env: ServerEnv; // Readonly<Record<string, string | undefined>>
   platform: Platform; // what the host adds: bindings, waitUntil, client address
+  locale: Locale; // lumiose({ i18n }): the request's locale; undefined without it
 }
 interface Platform {
   readonly env: PlatformEnv; // the platform's bindings; {} where there are none

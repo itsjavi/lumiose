@@ -100,6 +100,17 @@ function url(): URL;
 
 The current URL, reactive. Do not mutate it.
 
+### locale
+
+```ts
+function locale(): Locale;
+```
+
+With `lumiose({ i18n })`, the locale of the current URL (its prefix, else the default locale),
+reactive inside SPA routes; in islands of other routes, the page's. `undefined` without
+`lumiose({ i18n })`. A navigation to another locale renders every level again, and `<html lang>`
+follows. See [Internationalization](../concepts/i18n.md).
+
 ### searchParams
 
 ```ts

@@ -4,13 +4,15 @@
 // `dist/client`: `path/index.html` (`path.html` with `trailingSlash: "never"`), endpoint files
 // at their path (`sitemap.xml`), and `404.html` from the root `not-found` when the root scope is static
 // or `spa`. `spa` pages with `ssr = false` (and no params) get their shell, which the client renders.
-// Routes with params are rendered for each entry of their `staticPaths()`. Request APIs used by
+// Routes with params are rendered for each entry of their `staticPaths()`, and with
+// `lumiose({ i18n })` once per locale they declare (`/about`, `/es/about`). Request APIs used by
 // a route while it prerenders are LUM5001 (the handler's `prerendering` guard); a static endpoint
 // exporting other methods than GET is LUM5005. Every problem is collected; the build fails once.
 
 import { mkdir, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { LUM_STATIC_ENDPOINT_METHOD } from "lumiose/internal/app/diagnostics.ts";
+import { localizePath } from "lumiose/internal/app/i18n/config.ts";
 import { fillPattern } from "lumiose/internal/app/routes/href.ts";
 import type { RouteEntry, RouteMode } from "lumiose/internal/app/routes/manifest.ts";
 import { createRouteMatcher } from "lumiose/internal/app/routes/match.ts";
@@ -104,7 +106,14 @@ export async function prerender(options: PrerenderOptions): Promise<PrerenderedF
     if (!prerendered && !(shell && route.params.length === 0)) continue;
     const kind = route.kind;
     if (shell) {
-      targets.push({ route, path: route.pattern, kind });
+      for (const path of await localizedPaths(
+        app,
+        route,
+        [{ path: route.pattern, params: {} }],
+        problems,
+      )) {
+        targets.push({ route, path, kind });
+      }
       continue;
     }
     let module: Record<string, unknown>;
@@ -124,7 +133,13 @@ export async function prerender(options: PrerenderOptions): Promise<PrerenderedF
       }
     }
     const actions = kind === "page" && hasActions(module);
-    for (const path of await routePaths(route, module, problems)) {
+    const paths = await localizedPaths(
+      app,
+      route,
+      await routePaths(route, module, problems),
+      problems,
+    );
+    for (const path of paths) {
       targets.push({ route, path, kind, ...(actions ? { actions } : {}) });
     }
   }
@@ -199,13 +214,57 @@ export async function prerender(options: PrerenderOptions): Promise<PrerenderedF
   return [...written.values()];
 }
 
+interface RoutePath {
+  path: string;
+  params: Record<string, unknown>;
+}
+
+/**
+ * The paths of a route in every locale it declares with `lumiose({ i18n })` (decision-44): its
+ * static `locales`, or what its `locales({ params })` function returns for each path's params.
+ */
+async function localizedPaths(
+  app: BuiltApp,
+  route: RouteEntry,
+  paths: readonly RoutePath[],
+  problems: string[],
+): Promise<string[]> {
+  const { i18n } = app.manifest;
+  if (i18n === undefined) return paths.map((entry) => entry.path);
+  const result: string[] = [];
+  for (const { path, params } of paths) {
+    let locales: unknown = route.locales ?? [i18n.defaultLocale];
+    if (route.localesFrom !== undefined) {
+      try {
+        const declared = (await app.loadModule(route.localesFrom)).locales;
+        if (typeof declared !== "function") {
+          throw new TypeError("export locales must be a function locales({ params }).");
+        }
+        locales = await declared({ params });
+      } catch (error) {
+        problems.push(`${route.localesFrom}: locales(): ${describe(error)}`);
+        continue;
+      }
+      if (locales === "all") locales = i18n.locales;
+    }
+    if (!Array.isArray(locales) || locales.some((locale) => !i18n.locales.includes(locale))) {
+      problems.push(
+        `${route.localesFrom ?? route.file}: locales() must return locales of lumiose({ i18n }) or "all", got ${JSON.stringify(locales)}.`,
+      );
+      continue;
+    }
+    for (const locale of locales as string[]) result.push(localizePath(path, locale, i18n));
+  }
+  return result;
+}
+
 /** URL paths of a static route: its pattern, or one per `staticPaths()` entry when it has params. */
 async function routePaths(
   route: RouteEntry,
   module: Record<string, unknown>,
   problems: string[],
-): Promise<string[]> {
-  if (route.params.length === 0) return [route.pattern];
+): Promise<RoutePath[]> {
+  if (route.params.length === 0) return [{ path: route.pattern, params: {} }];
   const staticPaths = module.staticPaths;
   if (typeof staticPaths !== "function") {
     const spa = route.mode === "spa";
@@ -225,7 +284,7 @@ async function routePaths(
     problems.push(`${route.file}: staticPaths() must return an array of { params }.`);
     return [];
   }
-  const paths = new Set<string>();
+  const paths = new Map<string, RoutePath>();
   for (const item of entries) {
     const params = (item as { params?: unknown } | null)?.params;
     if (typeof params !== "object" || params === null) {
@@ -235,12 +294,14 @@ async function routePaths(
       continue;
     }
     try {
-      paths.add(fillPattern(route.pattern, params as Record<string, unknown>));
+      const values = params as Record<string, unknown>;
+      const path = fillPattern(route.pattern, values);
+      if (!paths.has(path)) paths.set(path, { path, params: values });
     } catch (error) {
       problems.push(`${route.file}: staticPaths(): ${describe(error)}`);
     }
   }
-  return [...paths];
+  return [...paths.values()];
 }
 
 /** Mode of the root scope, which the root `not-found` renders in. */

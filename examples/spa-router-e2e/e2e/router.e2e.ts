@@ -121,14 +121,17 @@ test("back and forward restore pages and scroll positions", async ({ page }) => 
   expect(await sameDocument(page)).toBe(true);
 });
 
+/**
+ * The slow page's module: src/routes/slow/page.tsx in dev, a page-[hash].js chunk in the build (the
+ * home page's chunk loaded before the test listens).
+ */
+const pageModule = (path: string) => path.includes("slow") || /\/page-[\w-]+\.js$/.test(path);
+
 test("<Link> prefetches on hover; a page's own <Suspense> shows its fallback", async ({ page }) => {
   await page.goto("/");
   await ready(page);
   const requested: string[] = [];
   page.on("request", (request) => requested.push(new URL(request.url()).pathname));
-  // The page module: src/routes/slow/page.tsx in dev, a page-[hash].js chunk in the build (the
-  // home page's chunk loaded before this listener).
-  const pageModule = (path: string) => path.includes("slow") || /\/page-[\w-]+\.js$/.test(path);
   await page.getByRole("link", { name: "Suspense" }).hover();
   await expect.poll(() => requested.some(pageModule)).toBe(true);
   const count = requested.length;

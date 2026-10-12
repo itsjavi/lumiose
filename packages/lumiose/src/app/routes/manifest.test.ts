@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { resolveI18n } from "../i18n/config.ts";
 import { createRouteManifest, type PageRoute, type RouteManifest } from "./manifest.ts";
 
 const PAGE = "export default function Page() { return null; }";
@@ -458,6 +459,96 @@ describe("createRouteManifest", () => {
       },
     ]);
     expect(manifest.routes.map((route) => route.pattern)).toContain("/api/subscribe");
+  });
+
+  it("resolves each route's locales with lumiose({ i18n }) (decision-44)", () => {
+    const i18n = resolveI18n({ locales: ["en", "es", "fr"], defaultLocale: "en" });
+    const manifest = createRouteManifest(
+      Object.entries({
+        "page.stsx": 'export const locales = "all";',
+        "about/page.stsx": PAGE,
+        "docs/layout.stsx": 'export const locales = ["en", "fr"];',
+        "docs/page.stsx": PAGE,
+        "docs/intro/page.stsx": 'export const locales = ["es"];',
+        "blog/[slug]/page.stsx": "export async function locales({ params }) { return []; }",
+        "news/layout.stsx": "export const locales = async () => ['en'];",
+        "news/[id]/route.ts": "export const GET = () => new Response();",
+      }).map(([path, source]) => ({ path, source })),
+      { i18n },
+    );
+    expect(manifest.diagnostics).toEqual([]);
+    expect(manifest.i18n).toBe(i18n);
+    expect(
+      Object.fromEntries(
+        manifest.routes.map((route) => [route.pattern, route.locales ?? route.localesFrom]),
+      ),
+    ).toEqual({
+      "/": ["en", "es", "fr"],
+      "/about": ["en"],
+      "/docs": ["en", "fr"],
+      "/docs/intro": ["es"],
+      "/blog/[slug]": "src/routes/blog/[slug]/page.stsx",
+      "/news/[id]": "src/routes/news/layout.stsx",
+    });
+    // Without i18n, routes have no locales.
+    expect(manifestOf({ "page.stsx": PAGE }).routes[0]).not.toHaveProperty("locales");
+  });
+
+  it("reports locales lumiose({ i18n }) does not configure, and locales without i18n (LUM5002)", () => {
+    const i18n = resolveI18n({ locales: ["en", "es"], defaultLocale: "en" });
+    const manifest = createRouteManifest(
+      [
+        { path: "a/page.stsx", source: 'export const locales = ["en", "de"];' },
+        { path: "b/page.stsx", source: "export const locales = LOCALES;" },
+      ],
+      { i18n },
+    );
+    expect(
+      manifest.diagnostics.map(({ code, severity, file, message }) => ({
+        code,
+        severity,
+        file,
+        message,
+      })),
+    ).toEqual([
+      {
+        code: "LUM5002",
+        severity: "error",
+        file: "src/routes/a/page.stsx",
+        message: '"export const locales" lists "de", which lumiose({ i18n }) does not configure.',
+      },
+      {
+        code: "LUM5002",
+        severity: "error",
+        file: "src/routes/b/page.stsx",
+        message:
+          '"export const locales" must be a list of locale literals, "all", or a function locales({ params }).',
+      },
+    ]);
+    expect(manifest.routes.find((route) => route.pattern === "/a")?.locales).toEqual(["en"]);
+    expect(manifestOf({ "page.stsx": 'export const locales = ["en"];' }).diagnostics).toMatchObject(
+      [{ code: "LUM5002", severity: "warning", file: "src/routes/page.stsx" }],
+    );
+  });
+
+  it("reports a route param named locale with lumiose({ i18n }) (LUM5007)", () => {
+    const i18n = resolveI18n({ locales: ["en", "es"], defaultLocale: "en" });
+    const files = [
+      { path: "[locale]/about/page.stsx", source: PAGE },
+      { path: "api/[[locale]]/route.ts", source: "" },
+    ];
+    expect(createRouteManifest(files, { i18n }).diagnostics).toMatchObject([
+      {
+        code: "LUM5007",
+        severity: "error",
+        file: "src/routes/[locale]/about/page.stsx",
+        message:
+          '"/[locale]/about" has a param named "locale", which href() reserves for the locale with lumiose({ i18n }).',
+      },
+      { code: "LUM5007", file: "src/routes/api/[[locale]]/route.ts" },
+    ]);
+    // An ordinary param without i18n.
+    expect(createRouteManifest(files).diagnostics).toEqual([]);
   });
 
   it("supports a custom routes directory", () => {

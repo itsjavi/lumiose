@@ -6,6 +6,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { resolveI18n } from "lumiose/internal/app/i18n/config.ts";
 import { createRouteManifest } from "lumiose/internal/app/routes/manifest.ts";
 import { generateRouteTypes, ROUTE_TYPES_FILE, typegen } from "./index.ts";
 
@@ -109,7 +110,51 @@ describe("typegen", () => {
     expect(result.output).toBe("");
     expect(result.ok).toBe(true);
   });
+
+  it("generates the Locale type of lumiose({ i18n }), which href() and the APIs take", async () => {
+    const i18n = resolveI18n({ locales: ["en", "es"], defaultLocale: "en" });
+    const { manifest } = await typegen(root, { i18n });
+    const types = generateRouteTypes(manifest);
+    expect(types).toContain(`  interface LocaleMap {\n    "en": true;\n    "es": true;\n  }\n`);
+    await writeFile(join(root, "usage.ts"), LOCALE_USAGE);
+    const result = await promisify(execFile)(process.execPath, [
+      TSC,
+      "-p",
+      root,
+      "--pretty",
+      "false",
+    ]).then(
+      () => ({ ok: true, output: "" }),
+      (error: { stdout?: string; stderr?: string }) => ({
+        ok: false,
+        output: `${error.stdout ?? ""}${error.stderr ?? ""}`,
+      }),
+    );
+    expect(result.output).toBe("");
+    expect(result.ok).toBe(true);
+    await typegen(root);
+  });
 });
+
+const LOCALE_USAGE = `import { alternates, href, locale, type Locale, type RequestContext } from "lumiose";
+
+type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends <T>() => T extends B ? 1 : 2 ? true : false;
+export type Assert<T extends true> = T;
+
+export type Locales = Assert<Equal<Locale, "en" | "es">>;
+export type FromContext = Assert<Equal<RequestContext["locale"], Locale>>;
+export const current: Locale = locale();
+export const links: { locale: Locale; href: string }[] = alternates();
+export const urls: string[] = [
+  href("/about", { locale: "es" }),
+  href("/blog/[slug]", { slug: "hello", locale: "en" }),
+  href("/blog/[slug]", { slug: "hello" }),
+];
+// @ts-expect-error not a configured locale
+href("/about", { locale: "fr" });
+// @ts-expect-error params are still required
+href("/blog/[slug]", { locale: "es" });
+`;
 
 const USAGE = `import { href, type PageProps, type RouteParams, type Routes } from "lumiose";
 

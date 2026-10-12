@@ -56,5 +56,6 @@ export async function routeOptions(
     ...(options.mode === undefined ? {} : { defaultMode: options.mode }),
     ...(options.ssr === undefined ? {} : { defaultSsr: options.ssr }),
     ...(options.prerender === undefined ? {} : { defaultPrerender: options.prerender }),
+    ...(options.i18n === undefined ? {} : { i18n: options.i18n }),
   };
 }

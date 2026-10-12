@@ -80,6 +80,7 @@ fix?, docs }`; `lumiose check --format json` prints them.
 | [LUM5004](LUM5004.md) | error    | Head or status change inside a streamed boundary  |
 | [LUM5005](LUM5005.md) | error    | Non-GET method in a static endpoint               |
 | [LUM5006](LUM5006.md) | error    | Prerendered page that renders only in the browser |
+| [LUM5007](LUM5007.md) | error    | Route param named `locale`                        |
 
 ## Tooling and config (6xxx)
 

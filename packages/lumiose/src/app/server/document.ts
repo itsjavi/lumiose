@@ -7,7 +7,9 @@
 // default document's charset and viewport, or plain tags in `src/document.stsx`) are the shallowest
 // head level. A collected tag with the same key (a `<Title>`; a `<Meta>` with the same charset,
 // name, property, http-equiv or itemprop) replaces the default where the document put it, so the
-// page has one of each and keeps the document's tag order.
+// page has one of each and keeps the document's tag order. A `<link rel="canonical">` is keyed too,
+// so the canonical Lumiose writes for localized pages (decision-44) is a default the page's own
+// replaces.
 
 import type { Component } from "../../contract/client.ts";
 import type { DocumentProps } from "./context.ts";
@@ -31,14 +33,28 @@ export interface DocumentParts {
   after: string;
 }
 
+export interface DocumentOptions {
+  /** The `lang` of `<html>` (the request's locale with `lumiose({ i18n })`); default document: `en`. */
+  lang?: string;
+  /** Head tags Lumiose adds as defaults: a collected tag with the same key replaces each. */
+  defaults?: string;
+}
+
 /**
  * Builds the document from the rendered shell. With a custom document, `shellBody` is the whole
  * document with the slots; otherwise it is the page body and the default document wraps it.
  */
-export function documentParts(shellBody: string, head: string, custom: boolean): DocumentParts {
+export function documentParts(
+  shellBody: string,
+  head: string,
+  custom: boolean,
+  options: DocumentOptions = {},
+): DocumentParts {
+  if (options.defaults !== undefined) head = withDefaults(options.defaults, head);
   if (!custom) {
     const [defaults, rest] = replaceDefaults(DEFAULT_HEAD, DEFAULT_TAGS, head);
-    return { before: `${defaults}${rest}</head><body>${shellBody}`, after: "</body></html>" };
+    const html = options.lang === undefined ? defaults : withLang(defaults, options.lang);
+    return { before: `${html}${rest}</head><body>${shellBody}`, after: "</body></html>" };
   }
   [shellBody, head] = replaceCustomDefaults(shellBody, head);
   const bodyAt = slot(shellBody, BODY_SLOT, "{props.body}");
@@ -51,7 +67,34 @@ export function documentParts(shellBody: string, head: string, custom: boolean):
     const at = headAt - bodyAt - BODY_SLOT.length;
     after = after.slice(0, at) + head + after.slice(at + HEAD_SLOT.length);
   }
+  if (options.lang !== undefined) before = withLang(before, options.lang);
   return { before: DOCTYPE.test(before) ? before : `<!doctype html>${before}`, after };
+}
+
+const HTML_OPEN = /<html\b((?:[^>"']|"[^"]*"|'[^']*')*)>/i;
+const LANG_ATTRIBUTE = /\slang\s*=\s*(?:"[^"]*"|'[^']*'|[^\s"'<>=`]+)/i;
+
+/** `html` with the `lang` of its `<html>` tag set to `lang` (added when missing). */
+function withLang(html: string, lang: string): string {
+  const value = ` lang="${lang.replace(/[&"<>]/g, (char) => `&#${char.charCodeAt(0)};`)}"`;
+  return html.replace(HTML_OPEN, (_tag, attributes: string) =>
+    LANG_ATTRIBUTE.test(attributes)
+      ? `<html${attributes.replace(LANG_ATTRIBUTE, value)}>`
+      : `<html${value}${attributes}>`,
+  );
+}
+
+/** `defaults` without the tags whose key `head` has, followed by `head`. */
+function withDefaults(defaults: string, head: string): string {
+  const keys = new Set(headTags(head).map((tag) => tag.key));
+  let kept = "";
+  let from = 0;
+  for (const tag of headTags(defaults)) {
+    if (!keys.has(tag.key)) continue;
+    kept += defaults.slice(from, tag.at);
+    from = tag.at + tag.html.length;
+  }
+  return kept + defaults.slice(from) + head;
 }
 
 // --- Head defaults -------------------------------------------------------------------------------
@@ -66,9 +109,9 @@ interface HeadTag {
 }
 
 // In source order: comments and raw text elements (skipped, so their content never matches),
-// titles, and metas (attribute values may contain `>`).
+// titles, metas and links (attribute values may contain `>`).
 const HEAD_TAG =
-  /<!--[\s\S]*?-->|<(script|style|template|noscript)\b[\s\S]*?<\/\1\s*>|<title\b[^>]*>[\s\S]*?<\/title\s*>|<meta\b(?:[^>"']|"[^"]*"|'[^']*')*>/gi;
+  /<!--[\s\S]*?-->|<(script|style|template|noscript)\b[\s\S]*?<\/\1\s*>|<title\b[^>]*>[\s\S]*?<\/title\s*>|<(?:meta|link)\b(?:[^>"']|"[^"]*"|'[^']*')*>/gi;
 const ATTRIBUTE = /([^\s"'<>/=]+)(?:\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'<>=`]+)))?/g;
 const META_KEYS = ["charset", "name", "property", "http-equiv", "itemprop"];
 const HEAD_OPEN = /<head[\s>]/i;
@@ -89,9 +132,14 @@ function headTags(html: string): HeadTag[] {
 
 function tagKey(tag: string): string | undefined {
   if (tag[1] === "t" || tag[1] === "T") return "title";
+  const link = tag[1] === "l" || tag[1] === "L";
   const attributes = new Map<string, string>();
   for (const [, name, double, single, bare] of tag.slice(5).matchAll(ATTRIBUTE)) {
     attributes.set(name!.toLowerCase(), double ?? single ?? bare ?? "");
+  }
+  if (link) {
+    const rel = attributes.get("rel")?.toLowerCase().split(/\s+/) ?? [];
+    return rel.includes("canonical") ? "link:canonical" : undefined;
   }
   const name = META_KEYS.find((key) => attributes.has(key));
   if (name === undefined) return undefined;

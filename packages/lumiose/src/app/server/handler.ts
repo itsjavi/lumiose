@@ -2,8 +2,9 @@
 // Matches the URL, builds the request context, runs the middleware chain, then serves an
 // endpoint or renders a page through its layouts, the document and the `_404`/`_error` pages.
 
-import type { PageRoute, RouteManifest, SpecialPage } from "../routes/manifest.ts";
-import { normalizeBase } from "../routes/href.ts";
+import type { PageRoute, RouteEntry, RouteManifest, SpecialPage } from "../routes/manifest.ts";
+import { normalizeBase, routeHref } from "../routes/href.ts";
+import { localizePath, negotiateLocale, splitLocale } from "../i18n/config.ts";
 import { createRouteMatcher, type RouteMatch } from "../routes/match.ts";
 import type { Component } from "../../contract/client.ts";
 import type {
@@ -13,6 +14,7 @@ import type {
   Middleware,
   Platform,
   RequestContext,
+  RouteParamValues,
   ServerEnv,
 } from "./context.ts";
 import { jsonForScript } from "../../server/node.ts";
@@ -25,8 +27,8 @@ import {
   resolveAction,
   runAction,
 } from "./actions.ts";
-import { HttpError, isHttpError, isRedirect, statusText, type Redirect } from "./control.ts";
-import { createCookieJar, type CookieJar } from "./cookies.ts";
+import { HttpError, isHttpError, isRedirect, Redirect, statusText } from "./control.ts";
+import { createCookieJar, type CookieJar, type CookieOptions } from "./cookies.ts";
 import {
   boundedRequest,
   checkContentLength,
@@ -62,7 +64,8 @@ import {
 export type ModuleExports = Record<string, unknown>;
 
 export interface RequestHandlerOptions {
-  manifest: Pick<RouteManifest, "routes" | "layouts" | "notFoundPages" | "errorPages">;
+  /** The routes; with `i18n`, URLs carry locale prefixes and routes declare locales (decision-44). */
+  manifest: Pick<RouteManifest, "routes" | "layouts" | "notFoundPages" | "errorPages" | "i18n">;
   /**
    * Request body limits (`lumiose({ limits })`, decision-29): `body` for URL-encoded, JSON and other
    * bodies (default 1 MB), `upload` for multipart (default 10 MB). A route's `export const limits`
@@ -137,6 +140,12 @@ export interface RequestHandlerOptions {
    * configures for a path replaces Lumiose's strict policy there (header and prerendered `<meta>`).
    */
   headers?: HeadersOption;
+  /**
+   * `lumiose({ site })`, the site's origin (`https://example.com`): the absolute `hreflang` and
+   * canonical URLs of localized pages while prerendering, which has no request origin. Without it,
+   * prerendered pages get root-relative ones.
+   */
+  site?: string;
 }
 
 export type TrailingSlash = "ignore" | "always" | "never";
@@ -155,6 +164,8 @@ const ACTION_PAGE_METHODS = "GET, HEAD, POST, OPTIONS";
 /** Nesting limit for in-process requests (`fetchJSON()` during SSR), against fetch loops. */
 const MAX_IN_PROCESS_DEPTH = 8;
 const CROSS_SITE_MESSAGE = "Cross-site form submissions are forbidden.";
+/** The locale cookie detection writes on a first visit: a year, readable by language switchers. */
+const LOCALE_COOKIE: CookieOptions = { path: "/", maxAge: 60 * 60 * 24 * 365, httpOnly: false };
 
 interface ErrorPages {
   notFoundPage: string | undefined;
@@ -174,7 +185,8 @@ export function createRequestHandler(options: RequestHandlerOptions): RequestHan
   const prerender = prerendering || (options.prerender ?? false);
   const base = normalizeBase(options.base ?? "/");
   const trailingSlash = options.trailingSlash ?? "ignore";
-  const navigation = navigationHead(options, manifest.routes, base);
+  const { i18n } = manifest;
+  const navigation = navigationHead(options, manifest.routes, base, i18n);
   const render = options.render ?? createServerRenderer();
   const onError = options.onError ?? ((error: unknown) => console.error(error));
   const matcher = createRouteMatcher(manifest);
@@ -224,9 +236,13 @@ export function createRequestHandler(options: RequestHandlerOptions): RequestHan
     const limits = { current: appLimits };
     const request = boundedRequest(incoming, () => limits.current);
     const url = new URL(request.url);
-    // The path below `base`; outside it nothing matches and the root error pages apply.
+    // The path below `base`; outside it nothing matches and the root error pages apply. With
+    // `i18n`, routes match the path without its locale prefix (`/es/about` → `/about`).
     const pathname = routePath(url.pathname, base);
-    const match = pathname === undefined ? null : matcher.match(pathname);
+    const localized =
+      pathname === undefined || i18n === undefined ? undefined : splitLocale(pathname, i18n);
+    const path = localized?.path ?? pathname;
+    const match = path === undefined ? null : matcher.match(path);
     const actionResult = wantsActionResult(request);
     if (match?.route.kind === "page" && pathname !== undefined) {
       const location = trailingSlashRedirect(request, url, pathname, trailingSlash);
@@ -263,6 +279,7 @@ export function createRequestHandler(options: RequestHandlerOptions): RequestHan
       cookies,
       env: options.env ?? processEnv(),
       platform: parent?.platform ?? platformOf(request, platform),
+      locale: localized?.locale as RequestContext["locale"],
     };
     const depth = parent === undefined ? 0 : parent.depth + 1;
     const scope: RequestScope = {
@@ -278,6 +295,21 @@ export function createRequestHandler(options: RequestHandlerOptions): RequestHan
         ),
       ...(options.csp === "strict" && !prerendering ? { nonce: createNonce() } : {}),
       bodyLimits: limits,
+      ...(localized === undefined
+        ? {}
+        : {
+            i18n: {
+              locale: localized.locale,
+              href: (pattern, params) =>
+                routeHref(pattern, params, {
+                  base,
+                  trailingSlash,
+                  i18n: i18n!,
+                  locale: localized.locale,
+                }),
+              alternates: [],
+            },
+          }),
     };
 
     // Prerendering guards request APIs in routes, not in middleware (nested in-process requests
@@ -285,13 +317,16 @@ export function createRequestHandler(options: RequestHandlerOptions): RequestHan
     const guard: PrerenderGuard | undefined = prerendering
       ? { report: (error) => onError(error, request) }
       : undefined;
-    const notFoundPath = pathname ?? "/";
+    // Error pages cover the path without its locale prefix, like routes.
+    const notFoundPath = path ?? "/";
     return runInRequestScope(scope, async () => {
       let response: Response;
       try {
         response = await runPrerenderGuarded(undefined, () =>
           runMiddleware(ctx, () =>
-            runPrerenderGuarded(guard, () => dispatch(scope, match, actionResult, notFoundPath)),
+            runPrerenderGuarded(guard, () =>
+              dispatch(scope, match, actionResult, notFoundPath, parent !== undefined),
+            ),
           ),
         );
       } catch (error) {
@@ -373,12 +408,19 @@ export function createRequestHandler(options: RequestHandlerOptions): RequestHan
     match: RouteMatch | null,
     actionResult: boolean,
     pathname: string,
+    inProcess: boolean,
   ): Promise<Response> {
     const { request } = scope.ctx;
     if (match === null) {
       return renderError(new HttpError(404, "Not Found"), scope, errorPagesFor(null, pathname));
     }
     const { route } = match;
+    let localeHead: { links: string; canonical: string } | undefined;
+    if (scope.i18n !== undefined) {
+      const outcome = await routeLocale(scope, match, pathname, inProcess);
+      if (outcome instanceof Response) return outcome;
+      localeHead = outcome;
+    }
     // What route code sees: while prerendering, its request APIs throw LUM5001.
     const routeCtx = prerendering ? prerenderContext(scope.ctx) : scope.ctx;
     if (route.kind === "endpoint") {
@@ -436,11 +478,136 @@ export function createRequestHandler(options: RequestHandlerOptions): RequestHan
         [...route.layouts, route.file],
         prerendering || (typeof prerender === "function" ? prerender(route) : prerender),
         spa !== undefined,
+        localeHead?.links,
+        localeHead?.canonical,
       );
     } catch (error) {
       scope.response = createResponseState(200, baseline);
       return renderError(error, scope, route);
     }
+  }
+
+  /**
+   * The locales of a matched route (decision-44): a route requested in a locale it does not declare
+   * is a 404, or a redirect to the default locale's URL with `missing: "redirect"`; detection may
+   * redirect an entry request to the visitor's locale. Otherwise records the route's URL in each
+   * declared locale (`alternates()`) and returns the `hreflang` links and canonical of a page.
+   */
+  async function routeLocale(
+    scope: RequestScope,
+    match: RouteMatch,
+    path: string,
+    inProcess: boolean,
+  ): Promise<Response | { links: string; canonical: string }> {
+    const config = i18n!;
+    const { route, params } = match;
+    const { request, url } = scope.ctx;
+    const locale = scope.i18n!.locale;
+    const declared = await declaredLocales(route, params);
+    const search = prerendering ? "" : url.search;
+    if (!declared.includes(locale)) {
+      if (
+        locale !== config.defaultLocale &&
+        config.missing === "redirect" &&
+        declared.includes(config.defaultLocale)
+      ) {
+        // 307 keeps the method and body of a form post.
+        const get = request.method === "GET" || request.method === "HEAD";
+        return redirectResponse(
+          new Redirect(base + path.slice(1) + search, get ? 302 : 307),
+          request,
+        );
+      }
+      throw new HttpError(404, "Not Found");
+    }
+    const target = route.kind === "page" && !inProcess ? detectLocale(scope, path) : undefined;
+    if (target !== undefined && target !== locale && declared.includes(target)) {
+      const localizedPath = localizePath(path, target, config);
+      const slash = trailingSlash === "always" && path === "/" ? "/" : "";
+      return new Response(null, {
+        status: 302,
+        headers: { location: base + localizedPath.slice(1) + slash + search },
+      });
+    }
+    const values = params as Record<string, unknown>;
+    scope.i18n!.alternates = declared.map((each) => ({
+      locale: each,
+      href: routeHref(route.pattern, values, { base, trailingSlash, i18n: config, locale: each }),
+    }));
+    // Search engines need absolute URLs: the request's origin, or `site` while prerendering.
+    const origin = prerendering ? options.site : url.origin;
+    const absolute = (href: string) => (origin === undefined ? href : origin + href);
+    if (route.kind !== "page" || declared.length < 2) return { links: "", canonical: "" };
+    let links = "";
+    for (const alternate of scope.i18n!.alternates) {
+      links += `<link rel="alternate" hreflang="${escapeHtml(alternate.locale)}" href="${escapeHtml(absolute(alternate.href))}">`;
+    }
+    const own = scope.i18n!.alternates.find((alternate) => alternate.locale === locale)!;
+    return {
+      links,
+      canonical: `<link rel="canonical" href="${escapeHtml(absolute(own.href))}">`,
+    };
+  }
+
+  /** The locales a route declares for these params: static, or its `locales({ params })` function's. */
+  async function declaredLocales(route: RouteEntry, params: RouteParamValues): Promise<string[]> {
+    const config = i18n!;
+    if (route.localesFrom === undefined) return route.locales ?? [config.defaultLocale];
+    const exported = (await loadModule(route.localesFrom)).locales;
+    if (typeof exported !== "function") {
+      throw new TypeError(
+        `${route.localesFrom}: export locales must be a function locales({ params }).`,
+      );
+    }
+    const result: unknown = await exported({ params });
+    if (result === "all") return config.locales;
+    if (!Array.isArray(result) || !result.every((each) => typeof each === "string")) {
+      throw new TypeError(
+        `${route.localesFrom}: locales({ params }) must return a list of locales or "all", got ${typeof result}.`,
+      );
+    }
+    const unknown = result.filter((each) => !config.locales.includes(each));
+    if (unknown.length > 0) {
+      throw new TypeError(
+        `${route.localesFrom}: locales({ params }) returned ${unknown.map((each) => `"${each}"`).join(", ")}, which lumiose({ i18n }) does not configure.`,
+      );
+    }
+    return result as string[];
+  }
+
+  /**
+   * Locale detection, on entry only (decision-44): on a first visit (no locale cookie) the visitor's
+   * `Accept-Language` locale, which the cookie then records; on `/`, the cookie's locale. Deep links
+   * with a cookie and prefixed URLs never redirect. Responses that depend on it vary on both
+   * headers and are not cached.
+   */
+  function detectLocale(scope: RequestScope, path: string): string | undefined {
+    const config = i18n!;
+    const { detect } = config;
+    const { request, cookies } = scope.ctx;
+    if (detect === false || prerendering) return undefined;
+    if (request.method !== "GET" && request.method !== "HEAD") return undefined;
+    if (scope.i18n!.locale !== config.defaultLocale) return undefined;
+    const root = path === "/";
+    const stored = detect.cookie === undefined ? undefined : cookies.get(detect.cookie);
+    let target: string | undefined;
+    if (stored === undefined) {
+      // Without a cookie, first visits cannot be told apart: only `/` detects.
+      if (detect.cookie === undefined && !root) return undefined;
+      target = detect.acceptLanguage
+        ? negotiateLocale(request.headers.get("accept-language"), config.locales)
+        : undefined;
+      if (detect.cookie !== undefined) {
+        cookies.set(detect.cookie, target ?? config.defaultLocale, LOCALE_COOKIE);
+      }
+    } else if (root) {
+      target = config.locales.includes(stored) ? stored : undefined;
+    } else {
+      return undefined;
+    }
+    scope.response.setHeader("vary", "Cookie, Accept-Language");
+    scope.response.setHeader("cache-control", "private, no-store");
+    return target;
   }
 
   /**
@@ -500,6 +667,7 @@ export function createRequestHandler(options: RequestHandlerOptions): RequestHan
     resolveAll = prerender === true,
     spa = false,
     extraHead = "",
+    defaultHead = "",
   ): Promise<Response> {
     const { request } = scope.ctx;
     // A policy configured with `lumiose({ headers })` for this path replaces Lumiose's.
@@ -554,7 +722,11 @@ export function createRequestHandler(options: RequestHandlerOptions): RequestHan
       const pages = addNonce(navigation.pages, nonce);
       const head =
         meta + addNonce(extraHead, nonce) + shell.head + assets + pages + rules.head + action;
-      const parts = documentParts(shell.body, head, document !== undefined);
+      const parts = documentParts(shell.body, head, document !== undefined, {
+        ...(scope.i18n === undefined ? {} : { lang: scope.i18n.locale }),
+        // Lumiose's canonical of a localized page: the page's or a layout's own replaces it.
+        ...(defaultHead === "" ? {} : { defaults: addNonce(defaultHead, nonce) }),
+      });
       body = documentBody(parts, rules.stream, (error) => onError(error, request));
       // A prerendered page is a file: its inline scripts and styles are allowed by hash.
       if (hashMarker !== undefined && typeof body === "string") {
@@ -731,6 +903,7 @@ function prerenderContext(ctx: RequestContext): RequestContext {
       return prerenderUrl(ctx.url);
     },
     params: ctx.params,
+    locale: ctx.locale,
     get locals() {
       assertRequestApi("ctx.locals");
       return ctx.locals;

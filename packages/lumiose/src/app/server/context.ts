@@ -2,7 +2,13 @@
 // TypeScript resolves `lumiose` through the browser entry (package.json "types").
 
 import type { Renderable } from "../../contract/client.ts";
-import type { EndpointRoutes, PageRoutes, RouteParams, Routes } from "../routes/registry.ts";
+import type {
+  EndpointRoutes,
+  Locale,
+  PageRoutes,
+  RouteParams,
+  Routes,
+} from "../routes/registry.ts";
 import type { Cookies } from "./cookies.ts";
 
 /**
@@ -53,6 +59,11 @@ export interface RequestContext<P extends Routes = never> {
   url: URL;
   /** Params of the matched route; `{}` when nothing matched. */
   params: ParamsOf<P>;
+  /**
+   * The request's locale with `lumiose({ i18n })` (decision-44): its URL prefix (`/es/about` →
+   * `"es"`), else the default locale. Undefined without `lumiose({ i18n })`.
+   */
+  locale: Locale;
   locals: Locals;
   cookies: Cookies;
   env: ServerEnv;

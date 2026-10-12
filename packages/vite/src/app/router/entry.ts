@@ -20,7 +20,7 @@ const BOOT = runtimeFile("app/router/boot.ts");
 const CSR = runtimeFile("app/router/csr.ts");
 const VIEW_TRANSITION = runtimeFile("dom/view-transition.ts");
 
-type Manifest = Pick<RouteManifest, "routes" | "layouts" | "notFoundPages" | "errorPages">;
+type Manifest = Pick<RouteManifest, "routes" | "layouts" | "notFoundPages" | "errorPages" | "i18n">;
 
 /** Whether the app has `spa` pages (and so an SPA entry). */
 export function hasSpa(manifest: Manifest): boolean {
@@ -49,7 +49,7 @@ export function spaEntryCode(
   base: ${JSON.stringify(base)},
   routes: ${JSON.stringify(table.routes)},
   notFoundPages: ${JSON.stringify(table.notFoundPages)},
-  pages: ${JSON.stringify(table.pages)},
+  pages: ${JSON.stringify(table.pages)},${table.i18n === undefined ? "" : `\n  i18n: ${JSON.stringify(table.i18n)},`}
   modules: {
 ${modules.join("\n")}
   },${viewTransitions ? "\n  viewTransition," : ""}

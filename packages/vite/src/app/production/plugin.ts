@@ -30,7 +30,13 @@ import type { TrailingSlash } from "lumiose/internal/app/server/handler.ts";
 import type { Prefetch } from "lumiose/internal/app/server/navigation.ts";
 import { SPA_ENTRY, spaEntryPlugin } from "../router/entry.ts";
 import { clientRuntime } from "./client-runtime.ts";
-import { configProjectOptions, hrefDefine, islandModules, projectOptions } from "../project.ts";
+import {
+  configProjectOptions,
+  hrefDefine,
+  islandModules,
+  projectOptions,
+  siteOrigin,
+} from "../project.ts";
 import { ISLANDS_ID } from "../../islands.ts";
 import { STYLE_TAGS_PLACEHOLDER, styleTags } from "./stylesheets.ts";
 
@@ -346,6 +352,7 @@ export function serverEntryCode(state: BuildState, config: ResolvedConfig): stri
       layouts: manifest.layouts,
       notFoundPages: manifest.notFoundPages,
       errorPages: manifest.errorPages,
+      ...(manifest.i18n === undefined ? {} : { i18n: manifest.i18n }),
     },
     ...(middleware === undefined ? {} : { middleware }),
     ...(document === undefined ? {} : { document }),
@@ -353,6 +360,9 @@ export function serverEntryCode(state: BuildState, config: ResolvedConfig): stri
     ...(state.limits === undefined ? {} : { limits: state.limits }),
     ...(state.viewTransitions ? { viewTransitions: true } : {}),
     ...(projectOptions(config, "build").csp === undefined ? {} : { csp: "strict" }),
+    ...(projectOptions(config, "build").site === undefined
+      ? {}
+      : { site: siteOrigin(projectOptions(config, "build").site) }),
     ...(state.prefetch === "none" ? {} : { prefetch: state.prefetch }),
     islands: state.islands,
     ...(state.loader === undefined ? {} : { loader: state.loader }),

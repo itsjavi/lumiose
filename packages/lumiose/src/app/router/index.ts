@@ -1,6 +1,8 @@
 // `lumiose/router` (owner: Spark): the client router of `spa` routes (spec §7.5, decision-20). This is
 // the browser entry (and the types); ./index.server.ts has the server variants with the same names.
-import type { RouteParams, Routes } from "../routes/registry.ts";
+import { splitLocale } from "../i18n/config.ts";
+import { normalizeBase, pathBelowBase } from "../routes/href.ts";
+import type { Locale, RouteParams, Routes } from "../routes/registry.ts";
 import type { RouteParamValues } from "../server/context.ts";
 import {
   currentParams,
@@ -9,6 +11,7 @@ import {
   currentUrl,
   navigate,
   isNavigating,
+  routerLocale,
   setSearchParams,
   type NavigateOptions,
   type SearchParamsInit,
@@ -33,6 +36,21 @@ export function params<P extends Routes = never>(): [P] extends [never]
  */
 export function route(): Routes | undefined {
   return currentRoute() as Routes | undefined;
+}
+
+/**
+ * The locale of the current URL with `lumiose({ i18n })` (decision-44), reactive inside SPA routes:
+ * its prefix (`/es/about` → `"es"`), else the default locale. In islands of other routes, the
+ * page's locale. Undefined without `lumiose({ i18n })`.
+ */
+export function locale(): Locale {
+  const inside = routerLocale();
+  if (inside !== undefined) return inside as Locale;
+  // An island of another route: the page's URL.
+  const i18n = import.meta.env?.LUMIOSE_I18N;
+  if (i18n === undefined) return undefined as never;
+  const path = pathBelowBase(location.pathname, normalizeBase(import.meta.env?.BASE_URL ?? "/"));
+  return (path === undefined ? i18n.defaultLocale : splitLocale(path, i18n).locale) as Locale;
 }
 
 /**

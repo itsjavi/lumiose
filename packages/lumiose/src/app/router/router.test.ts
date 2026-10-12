@@ -13,7 +13,7 @@ import { query } from "../cache/client.ts";
 import { notFound, redirect } from "../server/control.ts";
 import { href } from "../routes/href.ts";
 import type { RouteSegment } from "../routes/segments.ts";
-import { Link, navigate, isNavigating, params, route, searchParams, url } from "./index.ts";
+import { Link, navigate, isNavigating, locale, params, route, searchParams, url } from "./index.ts";
 import { createRouter, invalidate, prepareRoot, resetRouter, type SpaConfig } from "./router.ts";
 
 interface Deferred<T> {
@@ -177,6 +177,26 @@ function config(base = "/"): SpaConfig {
     ),
   };
 }
+
+/** The app with locales: the search page in English only (decision-44). */
+const localized = (): SpaConfig => {
+  const base = config();
+  return {
+    ...base,
+    i18n: { locales: ["en", "es"], defaultLocale: "en" },
+    routes: base.routes.map((each) =>
+      each.levels === undefined
+        ? each
+        : {
+            ...each,
+            locales:
+              each.segments[0]?.kind === "static" && each.segments[0].value === "search"
+                ? ["en"]
+                : ["en", "es"],
+          },
+    ),
+  };
+};
 
 let container: HTMLElement;
 let dispose: (() => void) | undefined;
@@ -429,6 +449,39 @@ describe("lumiose/router", () => {
       expect(text()).toBe("path /sub/home");
     } finally {
       vi.unstubAllEnvs();
+    }
+  });
+
+  it("routes locale-prefixed URLs of the locales a page declares (decision-44)", async () => {
+    history.replaceState(null, "", "/es/users/1");
+    createRouter(localized(), APP);
+    const RootComponent = await prepareRoot("src/routes/page.tsx", true);
+    container = document.createElement("div");
+    document.body.append(container);
+    dispose = render(() => createComponent(RootComponent, {}), container);
+    await settled();
+    expect(text()).toBe("path /es/users/1users of 1user 1");
+    expect(locale()).toBe("es");
+    expect(document.documentElement.lang).toBe("es");
+    // Another locale renders every level again.
+    await navigate("/users/2");
+    expect(text()).toBe("path /users/2users of 2user 2");
+    expect(locale()).toBe("en");
+    expect(document.documentElement.lang).toBe("en");
+    expect(rootMounts).toBe(2);
+    // A page the locale does not declare is the server's to answer.
+    const assign = vi.fn();
+    vi.stubGlobal("location", {
+      ...location,
+      href: location.href,
+      origin: location.origin,
+      assign,
+    });
+    try {
+      await navigate("/es/search");
+      expect(assign).toHaveBeenCalledWith(`${location.origin}/es/search`);
+    } finally {
+      vi.unstubAllGlobals();
     }
   });
 

@@ -57,6 +57,10 @@ src/
   different frame, move the regular pages into a group with their own layout
   (`(app)/layout.stsx`) and keep the error page outside it.
 
+**Locales.** With `lumiose({ i18n })`, the router also serves each page under the prefixes of the
+locales it declares (`/es/about` from `about/page.stsx`), and `href()`, `<html lang>` and the
+`hreflang` links follow. See [Internationalization](i18n.md).
+
 **Typed routes.** `lumiose typegen` (run by `lumiose check` and the dev server) writes
 `.lumiose/types/routes.d.ts`, which augments `RouteMap` (pages and endpoints) and `LayoutMap`
 (layouts). Every route-bound type then takes the route pattern as a string literal, checked

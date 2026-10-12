@@ -15,7 +15,7 @@ import {
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { pathToFileURL } from "node:url";
-import { afterAll, describe, expect, it } from "vitest";
+import { afterAll, describe, expect, it, vi } from "vitest";
 import { createLogger } from "vite";
 import { build, BuildError, type BuildOptions } from "./build.ts";
 import { PrerenderError, type ServerEntryModule } from "./prerender.ts";
@@ -733,6 +733,123 @@ export default function Search() { return <p>{url().searchParams.get("q")}</p>; 
     expect(failure).toBeInstanceOf(BuildError);
     expect((failure as Error).message).toContain("src/routes/api/subscribe/route.ts: LUM5005");
     expect(existsSync(join(root, "dist"))).toBe(false);
+  });
+
+  it("prerenders each page once per declared locale (decision-44)", async () => {
+    const root = project({
+      "vite.config.ts": `import lumiose from "@lumiose/vite";
+export default {
+  plugins: [
+    lumiose({ i18n: { locales: ["en", "es", "fr"], defaultLocale: "en" }, site: "https://example.com" }),
+  ],
+};
+`,
+      "src/routes/page.stsx": `import { href, locale } from "lumiose";
+export const locales = "all";
+export default function Home() {
+  return <a href={href("/about")}>{locale()}</a>;
+}
+`,
+      "src/routes/about/page.stsx": `import { locale } from "lumiose";
+export const locales = ["en", "es"];
+export default function About() {
+  return <h1>About {locale()}</h1>;
+}
+`,
+      "src/routes/blog/[slug]/page.stsx": `import { locale, type PageProps } from "lumiose";
+const translations: Record<string, string[]> = { hello: ["en", "es"], hola: ["es"] };
+export function staticPaths() {
+  return [{ params: { slug: "hello" } }, { params: { slug: "hola" } }];
+}
+export function locales({ params }: { params: { slug: string } }) {
+  return translations[params.slug] ?? [];
+}
+export default function Post(props: PageProps<"/blog/[slug]">) {
+  return <h1>{props.params.slug} {locale()}</h1>;
+}
+`,
+      "src/routes/not-found.stsx": `export default function NotFound() { return <h1>Not found</h1>; }
+`,
+    });
+    const result = await build({ root, ...quiet() });
+    expect(result.prerendered.map((file) => file.file).toSorted()).toEqual([
+      "404.html",
+      "about/index.html",
+      "blog/hello/index.html",
+      "es/about/index.html",
+      "es/blog/hello/index.html",
+      "es/blog/hola/index.html",
+      "es/index.html",
+      "fr/index.html",
+      "index.html",
+    ]);
+    const about = read(root, "es/about/index.html");
+    expect(about).toMatch(/^<!doctype html><html lang="es">/);
+    expect(about).toContain("<h1>About es</h1>");
+    expect(about).toContain('<link rel="canonical" href="https://example.com/es/about">');
+    expect(about).toContain(
+      '<link rel="alternate" hreflang="en" href="https://example.com/about">',
+    );
+    expect(about).toContain(
+      '<link rel="alternate" hreflang="es" href="https://example.com/es/about">',
+    );
+    expect(about).not.toContain('hreflang="fr"');
+    expect(read(root, "fr/index.html")).toContain('<a href="/fr/about">fr</a>');
+    const hola = read(root, "es/blog/hola/index.html");
+    expect(hola).toContain("<h1>hola es</h1>");
+    // One locale: no alternates.
+    expect(hola).not.toContain("hreflang");
+    expect(hola).not.toContain('rel="canonical"');
+  });
+
+  it("takes Vite's base from the path of lumiose({ site }), counted once in absolute URLs", async () => {
+    const root = project({
+      "vite.config.ts": `import lumiose from "@lumiose/vite";
+export default {
+  plugins: [
+    lumiose({
+      i18n: { locales: ["en", "es"], defaultLocale: "en" },
+      site: "https://example.com/docs",
+      trailingSlash: "always",
+    }),
+  ],
+};
+`,
+      "src/routes/about/page.stsx": `import { href } from "lumiose";
+export const locales = "all";
+export default function About() { return <a href={href("/about", { locale: "en" })}>About</a>; }
+`,
+    });
+    const result = await build({ root, ...quiet() });
+    expect(result.prerendered.map((file) => file.file).toSorted()).toEqual([
+      "404.html",
+      "about/index.html",
+      "es/about/index.html",
+    ]);
+    const about = read(root, "es/about/index.html");
+    expect(about).toContain('<link rel="canonical" href="https://example.com/docs/es/about/">');
+    expect(about).toContain(
+      '<link rel="alternate" hreflang="en" href="https://example.com/docs/about/">',
+    );
+    expect(about).toContain('<a href="/docs/about/">About</a>');
+  });
+
+  it("warns when localized pages are prerendered without lumiose({ site })", async () => {
+    const root = project({
+      "vite.config.ts": `import lumiose from "@lumiose/vite";
+export default { plugins: [lumiose({ i18n: { locales: ["en", "es"], defaultLocale: "en" } })] };
+`,
+      "src/routes/page.stsx": `export const locales = "all";
+export default function Home() { return <h1>Home</h1>; }
+`,
+    });
+    const logger = createLogger("silent");
+    const warn = vi.spyOn(logger, "warn");
+    await build({ root, customLogger: logger, logLevel: "silent" });
+    expect(warn).toHaveBeenCalledWith(
+      expect.stringContaining('lumiose({ site: "https://example.com" })'),
+    );
+    expect(read(root, "es/index.html")).toContain('<link rel="canonical" href="/es">');
   });
 
   it("requires staticPaths() for static routes with params and a 200 response", async () => {

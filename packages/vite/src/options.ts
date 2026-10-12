@@ -4,6 +4,7 @@
 // typo or a wrong value fails the config load with a message instead of being ignored.
 
 import type { HeaderRule, HeadersOption } from "lumiose/internal/app/headers.ts";
+import { resolveI18n, type I18nOptions } from "lumiose/internal/app/i18n/config.ts";
 import {
   DEFAULT_LIMITS,
   resolveLimits,
@@ -23,6 +24,7 @@ export type {
   CsrfOptions,
   HeaderRule,
   HeadersOption,
+  I18nOptions,
   MarkdownOptions,
   ProjectOptions,
   RouteMode,
@@ -137,6 +139,24 @@ export interface LumioseOptions {
    * @example lumiose({ adapter: cloudflare() })
    */
   adapter?: Adapter;
+  /**
+   * Locale routing (decision-44): route files stay unprefixed, the router serves the default locale
+   * at `/about` and every other locale under its prefix (`/es/about`). A page exists in the locales
+   * it declares with `export const locales` (a list, `"all"` or a function of its params), or a
+   * layout's; without one, only in the default locale. `missing`: a page requested in a locale it
+   * does not declare is a `"404"` (default) or a `"redirect"` to the default locale's page.
+   * `detect`: redirects to the visitor's locale on entry only (default `false`).
+   *
+   * @example lumiose({ i18n: { locales: ["en", "es"], defaultLocale: "en" } })
+   */
+  i18n?: I18nOptions;
+  /**
+   * The site's URL, `"https://example.com"` or with a path, `"https://example.com/docs"`: its origin
+   * makes the absolute URLs that prerendered pages need, such as the `hreflang` and canonical links
+   * of localized pages (pages rendered per request use the request's origin). A path is Vite's
+   * `base`: it becomes the base when the config sets none, and must match it otherwise.
+   */
+  site?: string;
 }
 
 /** The `api` of the `lumiose` plugin, read by the app layer (app/project.ts `projectOptions`). */
@@ -185,6 +205,8 @@ const KNOWN = [
   "headers",
   "limits",
   "adapter",
+  "i18n",
+  "site",
 ];
 
 /** Validates `lumiose({ … })` options and returns the project options; throws a `TypeError`. */
@@ -253,6 +275,15 @@ export function projectOptionsOf(options: LumioseOptions): ProjectOptions {
     }
     project.adapter = options.adapter;
   }
+  if (options.i18n !== undefined) {
+    try {
+      project.i18n = resolveI18n(options.i18n);
+    } catch (error) {
+      const [where, ...problem] = (error as Error).message.split(": ");
+      fail(`i18n${where}`, problem.join(": "));
+    }
+  }
+  if (options.site !== undefined) project.site = siteOf(options.site);
   return project;
 }
 
@@ -317,6 +348,31 @@ function csrfOptions(csrf: unknown): false | CsrfOptions {
     }
   }
   return { allowedOrigins: [...allowedOrigins] };
+}
+
+/** `lumiose({ site })` as its origin and path with a trailing slash: `https://example.com/docs/`. */
+function siteOf(site: unknown): string {
+  let url: URL | undefined;
+  try {
+    url = typeof site === "string" ? new URL(site) : undefined;
+  } catch {
+    url = undefined;
+  }
+  if (
+    url === undefined ||
+    originOf(url.href) === undefined ||
+    url.search !== "" ||
+    url.hash !== "" ||
+    url.username !== "" ||
+    url.password !== ""
+  ) {
+    fail(
+      "site",
+      `expected the site's URL such as "https://example.com" or "https://example.com/docs", got ${describe(site)}`,
+    );
+  }
+  const path = url.pathname.endsWith("/") ? url.pathname : `${url.pathname}/`;
+  return url.origin + path;
 }
 
 function originOf(value: string): string | undefined {

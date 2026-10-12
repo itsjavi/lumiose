@@ -1,9 +1,10 @@
-// Typed-route registry. `lumiose typegen` augments `RouteMap` and `LayoutMap` in
-// `.lumiose/types/routes.d.ts`:
+// Typed-route registry. `lumiose typegen` augments `RouteMap` and `LayoutMap`, and `LocaleMap`
+// with `lumiose({ i18n })`, in `.lumiose/types/routes.d.ts`:
 //
 //   declare module "lumiose" {
 //     interface RouteMap { "/blog/[slug]": { kind: "page"; params: { slug: string } } }
 //     interface LayoutMap { "/blog": { params: {} } }
+//     interface LocaleMap { en: true; es: true }
 //   }
 //
 // Every route-bound type takes the route pattern literal (decision-26 §1), so an unknown or stale
@@ -16,6 +17,12 @@ export interface RouteMap {}
 
 /** Layout pattern (the URL scope of a `layout` file's directory) → `{ params }`. */
 export interface LayoutMap {}
+
+/** The locales of `lumiose({ i18n })` as keys, filled by declaration merging (decision-44). */
+export interface LocaleMap {}
+
+/** A locale of the app, e.g. `"en" | "es"`; `string` until typegen ran with `lumiose({ i18n })`. */
+export type Locale = [keyof LocaleMap] extends [never] ? string : Extract<keyof LocaleMap, string>;
 
 /** Union of every route pattern in the app, e.g. `"/" | "/blog/[slug]"`. */
 export type Routes = [keyof RouteMap] extends [never] ? string : Extract<keyof RouteMap, string>;

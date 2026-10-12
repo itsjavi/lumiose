@@ -34,6 +34,8 @@ export const LUM_AFTER_SHELL = "LUM5004";
 export const LUM_STATIC_ENDPOINT_METHOD = "LUM5005";
 /** An `spa` page sets `export const prerender = true` but renders only in the browser (`ssr = false`, decision-38). */
 export const LUM_PRERENDER_CLIENT_ONLY = "LUM5006";
+/** A route param is named `locale`, which `href()` reserves with `lumiose({ i18n })` (decision-44). */
+export const LUM_LOCALE_PARAM = "LUM5007";
 
 /** A runtime error carrying a Lumiose code and where to read about it (contract doc-2 §6). */
 export class LumioseError extends Error {

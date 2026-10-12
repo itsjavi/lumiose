@@ -1,40 +1,117 @@
-// Typed link builder: `href("/blog/[slug]", { slug })` → "/blog/hello-world", below Vite's `base`
-// and in the form of the project's `trailingSlash` policy.
+// Typed link builder: `href("/blog/[slug]", { slug })` → "/blog/hello-world", below Vite's `base`,
+// in the form of the project's `trailingSlash` policy, and in the current locale with
+// `lumiose({ i18n })` (`{ locale }` switches it, decision-44).
 //
-// Both come from `import.meta.env`, which Vite fills in in every environment: `lumiose` is never
-// external or pre-bundled (@lumiose/vite), so server and client code alike see `BASE_URL` and
-// `LUMIOSE_TRAILING_SLASH` (defined by `lumiose dev` and `lumiose build` from `lumiose({ trailingSlash })`).
-// Outside Vite both are unset: paths stay root-relative.
+// All three come from `import.meta.env`, which Vite fills in in every environment: `lumiose` is
+// never external or pre-bundled (@lumiose/vite), so server and client code alike see `BASE_URL`,
+// `LUMIOSE_TRAILING_SLASH` (defined by `lumiose dev` and `lumiose build` from
+// `lumiose({ trailingSlash })`) and `LUMIOSE_I18N` (defined by the `lumiose` plugin from
+// `lumiose({ i18n })`). Outside Vite they are unset: paths stay root-relative and unlocalized.
 
-import type { RouteParams, Routes } from "./registry.ts";
+import { localizePath, splitLocale, type I18nUrls } from "../i18n/config.ts";
+import type { Locale, LocaleMap, RouteParams, Routes } from "./registry.ts";
 
 declare global {
   interface ImportMetaEnv {
     BASE_URL: string;
     /** `lumiose({ trailingSlash })`, for `href()`. Defined by `lumiose dev` and `lumiose build`. */
     LUMIOSE_TRAILING_SLASH?: "ignore" | "always" | "never";
+    /** The locales of `lumiose({ i18n })`, for `href()`. Defined by the `lumiose` plugin. */
+    LUMIOSE_I18N?: I18nUrls;
   }
 }
 
 /** The `define` that carries `trailingSlash` to `href()`; see the module comment. */
 export const TRAILING_SLASH_DEFINE = "import.meta.env.LUMIOSE_TRAILING_SLASH";
+/** The `define` that carries the locales of `lumiose({ i18n })` to `href()`. */
+export const I18N_DEFINE = "import.meta.env.LUMIOSE_I18N";
+
+/** With `lumiose({ i18n })`, `locale` picks the locale of the URL; it is no route param. */
+type LocaleKey = [keyof LocaleMap] extends [never] ? {} : { locale?: Locale | undefined };
 
 /** The params argument: required when the route has params, otherwise optional. */
 export type HrefArgs<P extends Routes> =
-  {} extends RouteParams<P> ? [params?: RouteParams<P>] : [params: RouteParams<P>];
+  {} extends RouteParams<P>
+    ? [params?: RouteParams<P> & LocaleKey]
+    : [params: RouteParams<P> & LocaleKey];
 
 /**
  * Builds the URL path of a route from its pattern, encoding each param: below Vite's `base`, with
- * a trailing slash when `trailingSlash` is `"always"`. A `[...rest]` param keeps its "/"
- * separators; an optional `[[param]]` or `[[...rest]]` that is missing or empty leaves its
- * segment out. Throws on a missing or empty `[param]` or `[...rest]`, and on a `.` or `..`
- * segment, which a browser would resolve into another path (TASK-165).
+ * a trailing slash when `trailingSlash` is `"always"`, and with `lumiose({ i18n })` in the current
+ * locale (the URL's in the browser, the request's on the server), or in `params.locale`. A
+ * `[...rest]` param keeps its "/" separators; an optional `[[param]]` or `[[...rest]]` that is
+ * missing or empty leaves its segment out. Throws on a missing or empty `[param]` or `[...rest]`,
+ * on an unknown `locale`, and on a `.` or `..` segment, which a browser would resolve into another
+ * path (TASK-165).
  */
 export function href<P extends Routes>(pattern: P, ...args: HrefArgs<P>): string {
-  const path = fillPattern(pattern, (args[0] ?? {}) as Record<string, unknown>);
+  return envHref(pattern, args[0], browserLocale);
+}
+
+/**
+ * `href()` with Vite's `base`, `trailingSlash` and locales from `import.meta.env`; `current` is the
+ * current locale given the locales and the base (undefined: the default locale).
+ */
+export function envHref(
+  pattern: string,
+  params: object | undefined,
+  current: (i18n: I18nUrls, base: string) => string | undefined,
+): string {
   const base = normalizeBase(import.meta.env?.BASE_URL ?? "/");
-  const slash = import.meta.env?.LUMIOSE_TRAILING_SLASH === "always" && !isFilePattern(pattern);
-  return appPath(path, base, slash);
+  const i18n = import.meta.env?.LUMIOSE_I18N;
+  return routeHref(pattern, (params ?? {}) as Record<string, unknown>, {
+    base,
+    trailingSlash: import.meta.env?.LUMIOSE_TRAILING_SLASH,
+    ...(i18n === undefined ? {} : { i18n, locale: current(i18n, base) }),
+  });
+}
+
+export interface RouteHrefOptions {
+  /** Vite's `base`, normalized (`normalizeBase`). */
+  base: string;
+  trailingSlash?: "ignore" | "always" | "never" | undefined;
+  /** The locales of `lumiose({ i18n })`: `params.locale` is then the URL's locale, not a param. */
+  i18n?: I18nUrls;
+  /** The locale when `params` has none (default: the default locale). */
+  locale?: string | undefined;
+}
+
+/** The URL path of a route below `base` (see `href()`), with explicit options. */
+export function routeHref(
+  pattern: string,
+  params: Record<string, unknown>,
+  options: RouteHrefOptions,
+): string {
+  const { i18n } = options;
+  let path: string;
+  if (i18n === undefined) {
+    path = fillPattern(pattern, params);
+  } else {
+    const { locale: requested, ...rest } = params;
+    const locale = requested ?? options.locale ?? i18n.defaultLocale;
+    if (typeof locale !== "string" || !i18n.locales.includes(locale)) {
+      throw new TypeError(
+        `href("${pattern}"): ${JSON.stringify(locale)} is not a locale of lumiose({ i18n }) (${i18n.locales.join(", ")}).`,
+      );
+    }
+    path = localizePath(fillPattern(pattern, rest), locale, i18n);
+  }
+  const slash = options.trailingSlash === "always" && !isFilePattern(pattern);
+  return appPath(path, options.base, slash);
+}
+
+/** The locale of the browser's URL, if any. */
+function browserLocale(i18n: I18nUrls, base: string): string | undefined {
+  if (typeof location === "undefined") return undefined;
+  const path = pathBelowBase(location.pathname, base);
+  return path === undefined ? undefined : splitLocale(path, i18n).locale;
+}
+
+/** A pathname below `base` (with leading and trailing slashes), starting with "/"; `undefined` outside it. */
+export function pathBelowBase(pathname: string, base: string): string | undefined {
+  if (base === "/") return pathname;
+  if (pathname === base.slice(0, -1)) return "/";
+  return pathname.startsWith(base) ? pathname.slice(base.length - 1) : undefined;
 }
 
 /** The path of a route below the base: the pattern with its params filled in, no trailing slash. */

@@ -20,6 +20,7 @@
 //   boundary rendered a marked link.
 
 import { jsonForScript } from "../../server/node.ts";
+import type { I18nUrls } from "../i18n/config.ts";
 import type { Prefetch } from "../router/link.ts";
 import type { RouteEntry } from "../routes/manifest.ts";
 import type { RouteSegment } from "../routes/segments.ts";
@@ -56,18 +57,26 @@ export function navigationHead(
   options: { viewTransitions?: boolean; prefetch?: Prefetch },
   routes: readonly RouteEntry[],
   base: string,
+  i18n?: I18nUrls,
 ): NavigationHead {
+  // Endpoints may be served under the other locales' prefixes too (decision-44).
+  const prefixes = i18n?.locales.filter((locale) => locale !== i18n.defaultLocale) ?? [];
   return {
     pages: options.viewTransitions === true ? VIEW_TRANSITIONS : "",
-    mpa: mpaRules(options.prefetch ?? "none", routes, base),
+    mpa: mpaRules(options.prefetch ?? "none", routes, base, prefixes),
   };
 }
 
-function mpaRules(prefetch: Prefetch, routes: readonly RouteEntry[], base: string): MpaRules {
+function mpaRules(
+  prefetch: Prefetch,
+  routes: readonly RouteEntry[],
+  base: string,
+  prefixes: readonly string[],
+): MpaRules {
   return {
     prefetch,
-    plain: speculationRules(prefetch, routes, base),
-    marked: speculationRules(prefetch, routes, base, true),
+    plain: speculationRules(prefetch, routes, base, false, prefixes),
+    marked: speculationRules(prefetch, routes, base, true, prefixes),
   };
 }
 
@@ -112,13 +121,16 @@ export function speculationRules(
   routes: readonly RouteEntry[],
   base: string,
   marked = false,
+  localePrefixes: readonly string[] = [],
 ): string {
   // URL patterns resolve against the document's URL: a path keeps them same-origin.
   const prefix = base.slice(0, -1);
   const links: object[] = [{ href_matches: prefix === "" ? "/*" : `${prefix}{/*}?` }];
+  // An optional locale prefix: `{/(es|fr)}?` (locales are letters, digits and dashes).
+  const locales = localePrefixes.length === 0 ? "" : `{/(${localePrefixes.join("|")})}?`;
   const endpoints = routes
     .filter((route) => route.kind === "endpoint")
-    .map((route) => urlPattern(prefix, route.segments));
+    .map((route) => urlPattern(prefix + locales, route.segments));
   if (endpoints.length > 0) links.push({ not: { href_matches: endpoints } });
   const rule = (level: Exclude<Prefetch, "none">, only?: object) => ({
     where:

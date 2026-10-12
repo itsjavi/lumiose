@@ -47,6 +47,16 @@ export interface RequestScope {
   prefetchLinks?: boolean;
   /** The body limits of the request: the app's, then the route's (./body.ts). */
   bodyLimits?: { current: BodyLimits };
+  /**
+   * With `lumiose({ i18n })` (decision-44): the request's locale (its URL prefix, else the default
+   * locale), how `href()` builds URLs in it, and the matched route's URL in each locale it
+   * declares (`alternates()`).
+   */
+  i18n?: {
+    locale: string;
+    href: (pattern: string, params: Record<string, unknown>) => string;
+    alternates: Array<{ locale: string; href: string }>;
+  };
 }
 
 export interface ActionState {

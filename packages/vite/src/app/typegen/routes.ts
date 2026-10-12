@@ -5,7 +5,7 @@
 import type { RouteManifest, RouteParam } from "lumiose/internal/app/routes/manifest.ts";
 
 export function generateRouteTypes(
-  manifest: Pick<RouteManifest, "routes" | "routesDir" | "layouts">,
+  manifest: Pick<RouteManifest, "routes" | "routesDir" | "layouts" | "i18n">,
 ): string {
   const routes = manifest.routes
     .toSorted((a, b) => compare(a.pattern, b.pattern))
@@ -30,6 +30,14 @@ export function generateRouteTypes(
     "  interface LayoutMap {",
     ...layouts,
     "  }",
+    // The `Locale` type of `lumiose({ i18n })` (decision-44).
+    ...(manifest.i18n === undefined
+      ? []
+      : [
+          "  interface LocaleMap {",
+          ...manifest.i18n.locales.map((locale) => `    ${JSON.stringify(locale)}: true;`),
+          "  }",
+        ]),
     "}",
     "",
   ].join("\n");

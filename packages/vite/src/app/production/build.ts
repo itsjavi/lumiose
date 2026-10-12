@@ -122,6 +122,7 @@ export async function build(options: BuildOptions = {}): Promise<BuildResult> {
     defaultMode,
     ...(project.ssr === undefined ? {} : { defaultSsr: project.ssr }),
     ...(project.prerender === undefined ? {} : { defaultPrerender: project.prerender }),
+    ...(project.i18n === undefined ? {} : { i18n: project.i18n }),
   });
   const errors = manifest.diagnostics.filter((diagnostic) => diagnostic.severity === "error");
   for (const diagnostic of manifest.diagnostics.filter((d) => d.severity === "warning")) {
@@ -172,6 +173,18 @@ export async function build(options: BuildOptions = {}): Promise<BuildResult> {
     logger.info(`  ${normalizePath(relative(root, join(clientDir, file.file)))}`);
   }
   logger.info(`✓ ${prerendered.length} file${prerendered.length === 1 ? "" : "s"} prerendered.`);
+  // Prerendered pages in several locales get hreflang and canonical links (decision-44).
+  const localized = manifest.routes.some(
+    (route) =>
+      route.kind === "page" &&
+      (route.mode === "static" || route.prerender) &&
+      (route.localesFrom !== undefined || (route.locales?.length ?? 0) > 1),
+  );
+  if (project.site === undefined && localized) {
+    logger.warn(
+      'Prerendered localized pages got root-relative hreflang and canonical URLs, which search engines ignore: set the site\'s URL with lumiose({ site: "https://example.com" }).',
+    );
+  }
   {
     // Lumiose's default headers and lumiose({ headers }) for static hosts. After `public/`: a
     // hand-written `_headers` keeps its rules, ours follow.

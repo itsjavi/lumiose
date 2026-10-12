@@ -15,9 +15,12 @@ export { query } from "./cache/client.ts";
 export type { QueryFunctionContext } from "./cache/shared.ts";
 export { fetchJSON, isFetchError, type FetchError } from "./fetch-json.ts";
 export { href, type HrefArgs } from "./routes/href.ts";
+export { alternates, locale } from "./i18n/browser.ts";
 export type {
   LayoutMap,
   LayoutProps,
+  Locale,
+  LocaleMap,
   PageProps,
   RouteMap,
   RouteParams,

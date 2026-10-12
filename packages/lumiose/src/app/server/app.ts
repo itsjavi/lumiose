@@ -34,7 +34,7 @@ export interface BuiltAppConfig {
 }
 
 export interface BuiltApp extends BuiltAppConfig {
-  manifest: Pick<RouteManifest, "routes" | "layouts" | "notFoundPages" | "errorPages">;
+  manifest: Pick<RouteManifest, "routes" | "layouts" | "notFoundPages" | "errorPages" | "i18n">;
   /** Imports a route module, the middleware or the document by its project-relative path. */
   loadModule: (file: string) => Promise<ModuleExports>;
   middleware?: string;
@@ -66,6 +66,8 @@ export interface BuiltApp extends BuiltAppConfig {
   prefetch?: Prefetch;
   /** `lumiose({ csp })`; absent when off. */
   csp?: "strict";
+  /** `lumiose({ site })`: the origin of absolute URLs in prerendered pages. */
+  site?: string;
 }
 
 export type AppHandlerOptions = Pick<
@@ -92,6 +94,7 @@ export function createAppHandler(app: BuiltApp, options: AppHandlerOptions = {})
     ...(app.prefetch === undefined ? {} : { prefetch: app.prefetch }),
     ...(app.csp === undefined ? {} : { csp: app.csp }),
     ...(app.headers === undefined ? {} : { headers: app.headers }),
+    ...(app.site === undefined ? {} : { site: app.site }),
     headAssets: (files, spa) => stylesheetLinks(app, files) + spaModulePreloads(app, files, spa),
     base: app.base,
     trailingSlash: app.trailingSlash,

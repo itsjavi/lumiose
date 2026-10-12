@@ -51,6 +51,7 @@ import { DEV } from "../../dom/dev.ts";
 import { MISMATCH } from "../../dom/hydration.ts";
 import { createRange, renderRange, type RangeStart } from "../../dom/insert.ts";
 import { navigationUrl, setClientNavigation } from "../actions/navigation.ts";
+import { splitLocale } from "../i18n/config.ts";
 import { createRouteMatcher, type RouteMatcher } from "../routes/match.ts";
 import { formatPattern } from "../routes/segments.ts";
 import type { RouteManifest } from "../routes/manifest.ts";
@@ -195,13 +196,20 @@ function routePath(url: URL, base: string): string | undefined {
   return url.pathname.startsWith(base) ? url.pathname.slice(base.length - 1) : undefined;
 }
 
-/** What this SPA renders for `url`; `undefined` for URLs it does not own (a document navigation). */
+/**
+ * What this SPA renders for `url`; `undefined` for URLs it does not own (a document navigation).
+ * With `lumiose({ i18n })`, routes match the path without its locale prefix, and a page the SPA
+ * owns only in the locales it declares (decision-44): the server answers the others.
+ */
 function targetOf(r: Router, url: URL): Target | undefined {
-  const path = routePath(url, r.config.base);
-  if (path === undefined) return undefined;
+  const below = routePath(url, r.config.base);
+  if (below === undefined) return undefined;
+  const { i18n } = r.config;
+  const { locale, path } = i18n === undefined ? { path: below } : splitLocale(below, i18n);
   const match = r.matcher.match(path);
   if (match !== null) {
     const route = match.route as unknown as ClientRoute;
+    if (locale !== undefined && route.locales?.includes(locale) !== true) return undefined;
     return route.app === r.app ? { levels: route.levels!, params: match.params, route } : undefined;
   }
   const notFound = r.matcher.notFound(path);
@@ -328,6 +336,13 @@ export async function prepareRoot(leaf: string, csr: boolean): Promise<Component
 function spaRoot(r: Router, view: View): Renderable {
   const owner = getOwner()!;
   r.current.set(view);
+  // `<html lang>` follows the locale of the committed view (decision-44).
+  if (r.config.i18n !== undefined) {
+    effect(() => {
+      const locale = localeOf(r, r.current().url);
+      if (locale !== undefined) document.documentElement.lang = locale;
+    });
+  }
   provideContext(ROUTE, r.scope);
   provideContext(REVISION, r.revision);
   onError((error) => {
@@ -456,13 +471,16 @@ function levelProps(content: Content, depth: number, scope: Scope, view: View): 
 function show(r: Router, view: View, nav: Nav): Promise<void> {
   const shown = untrack(r.current);
   let depth = 0;
-  while (
-    depth < view.levels.length &&
-    depth < shown.levels.length &&
-    levelKey(view.levels[depth]!.file, view.params) ===
-      levelKey(shown.levels[depth]!.file, shown.params)
-  ) {
-    depth++;
+  // Another locale renders every level again: content read the old one.
+  if (localeOf(r, view.url) === localeOf(r, shown.url)) {
+    while (
+      depth < view.levels.length &&
+      depth < shown.levels.length &&
+      levelKey(view.levels[depth]!.file, view.params) ===
+        levelKey(shown.levels[depth]!.file, shown.params)
+    ) {
+      depth++;
+    }
   }
   // The outlet that renders the first differing level (none past a layout without `children`).
   let outlet = r.root;
@@ -477,12 +495,19 @@ function show(r: Router, view: View, nav: Nav): Promise<void> {
   });
 }
 
-/** A level's identity: its file, and the values of the params in its path (`users/[id].tsx`). */
+/** A level's identity: its file, and the values of the params in its path (`users/[id]/page.tsx`). */
 function levelKey(file: string, params: Params): string {
   let key = file;
-  for (const [, name] of file.matchAll(/\[(?:\.\.\.)?([^\]]+)\]/g))
+  for (const [, name] of file.matchAll(/\[\[?(?:\.\.\.)?([^\]]+)\]\]?/g))
     key += `\0${params[name!] ?? ""}`;
   return key;
+}
+
+/** The locale of a URL with `lumiose({ i18n })`, else `undefined`. */
+function localeOf(r: Router, url: URL): string | undefined {
+  const { i18n } = r.config;
+  const path = i18n === undefined ? undefined : routePath(url, r.config.base);
+  return path === undefined ? undefined : splitLocale(path, i18n!).locale;
 }
 
 function prepare(r: Router, outlet: Outlet, depth: number, view: View, nav: Nav): void {
@@ -790,6 +815,18 @@ export function currentParams(): Params {
 /** `url()` of lumiose/router. */
 export function currentUrl(): URL {
   return scopeOf("url()").url();
+}
+
+/**
+ * `locale()` of lumiose/router inside the SPA: the locale of the URL content reads (reactive);
+ * `undefined` outside the SPA (an MPA island) or without `lumiose({ i18n })`.
+ */
+export function routerLocale(): string | undefined {
+  const r = router;
+  if (r?.config.i18n === undefined) return undefined;
+  const found = readContext(ROUTE, undefined) as Scope | undefined;
+  if (found !== undefined) return localeOf(r, found.url());
+  return r.root === undefined ? undefined : localeOf(r, r.scope.url());
 }
 
 /** `route()` of lumiose/router. */

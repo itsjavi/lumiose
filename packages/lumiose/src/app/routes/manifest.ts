@@ -1,9 +1,11 @@
 // Builds the typed route manifest from route files (spec §7.1, §8). Pure: `scan.ts` does
 // the file system work, so this also runs on in-memory trees (tests, dev server updates).
 
+import type { I18nConfig } from "../i18n/config.ts";
 import {
   LUM_DUPLICATE_ROUTE,
   LUM_INVALID_ROUTE_FILE,
+  LUM_LOCALE_PARAM,
   LUM_PRERENDER_CLIENT_ONLY,
   LUM_STATIC_ENDPOINT_METHOD,
   type AppDiagnostic,
@@ -39,6 +41,14 @@ interface RouteBase {
   params: RouteParam[];
   /** Project-relative POSIX path, e.g. `src/routes/blog/[slug]/page.stsx`. */
   file: string;
+  /**
+   * With `lumiose({ i18n })` (decision-44): the locales the route exists in, from its own
+   * `export const locales`, else the nearest layout's, else the default locale alone. Absent
+   * without i18n, and when `localesFrom` decides per params.
+   */
+  locales?: string[];
+  /** The page, endpoint or layout file whose `locales({ params })` function decides the locales. */
+  localesFrom?: string;
 }
 
 export interface PageRoute extends RouteBase {
@@ -91,6 +101,8 @@ export interface SpecialPage {
 export interface RouteManifest {
   /** Project-relative POSIX path of the routes directory. */
   routesDir: string;
+  /** `lumiose({ i18n })`, resolved: locale prefixes and declarations apply (decision-44). */
+  i18n?: I18nConfig;
   /**
    * Pages and endpoints in match priority order; a route with optional segments sorts by its most
    * specific URL shape (the matcher ranks each shape on its own).
@@ -119,6 +131,8 @@ export interface CreateRouteManifestOptions {
   defaultSsr?: boolean;
   /** Project default `prerender` of `spa` routes, `lumiose({ prerender })` (decision-38). Default `false`. */
   defaultPrerender?: boolean;
+  /** `lumiose({ i18n })`, resolved (decision-44): routes get their `locales`. */
+  i18n?: I18nConfig;
 }
 
 export const DEFAULT_ROUTES_DIR = "src/routes";
@@ -140,6 +154,8 @@ interface Declared {
   ssr: boolean | undefined;
   prerender: boolean | undefined;
   methods: readonly string[];
+  /** `export const locales`, checked against `lumiose({ i18n })`. */
+  locales: readonly string[] | "function" | undefined;
 }
 
 export function createRouteManifest(
@@ -151,6 +167,7 @@ export function createRouteManifest(
   const defaultMode = options.defaultMode ?? "static";
   const defaultSsr = options.defaultSsr ?? true;
   const defaultPrerender = options.defaultPrerender ?? false;
+  const i18n = options.i18n;
   const diagnostics: AppDiagnostic[] = [];
   const report: Report = (code, severity, file, message, help) => {
     const diagnostic: AppDiagnostic = { code, severity, message, file };
@@ -200,6 +217,7 @@ export function createRouteManifest(
       route,
       ...checkMeta(meta, route, file, report),
       methods: meta.methods ?? [],
+      locales: checkLocales(meta.locales, i18n, file, report),
     };
     if (route.kind === "layout") {
       const existing = layoutsByDir.get(route.dir);
@@ -221,6 +239,18 @@ export function createRouteManifest(
 
   const layoutChain = (dir: string): Declared[] =>
     ancestors(dir).flatMap((ancestor) => layoutsByDir.get(ancestor) ?? []);
+  // The page's own `locales`, else the nearest layout's, else the default locale (decision-44).
+  const localesOf = (declared: Declared): Pick<RouteBase, "locales" | "localesFrom"> => {
+    if (i18n === undefined) return {};
+    const source =
+      declared.locales === undefined
+        ? layoutChain(declared.route.dir).find((layout) => layout.locales !== undefined)
+        : declared;
+    if (source === undefined) return { locales: [i18n.defaultLocale] };
+    return source.locales === "function"
+      ? { localesFrom: source.file }
+      : { locales: [...(source.locales as readonly string[])] };
+  };
   const inheritedMode = (dir: string): RouteMode | undefined =>
     layoutChain(dir).find((layout) => layout.mode !== undefined)?.mode as RouteMode | undefined;
   const inheritedSsr = (dir: string): boolean | undefined =>
@@ -364,7 +394,17 @@ export function createRouteManifest(
             ],
       ),
       file,
+      ...localesOf(declared),
     };
+    if (i18n !== undefined && base.params.some((param) => param.name === "locale")) {
+      report(
+        LUM_LOCALE_PARAM,
+        "error",
+        file,
+        `"${base.pattern}" has a param named "locale", which href() reserves for the locale with lumiose({ i18n }).`,
+        "The router handles the locale prefix: remove the [locale] folder and read the locale with locale(). Rename the param if it means something else.",
+      );
+    }
     let entry: RouteEntry;
     if (route.kind === "endpoint") {
       const inherited = inheritedMode(route.dir) ?? defaultMode;
@@ -443,6 +483,7 @@ export function createRouteManifest(
 
   return {
     routesDir,
+    ...(i18n === undefined ? {} : { i18n }),
     routes: routes.toSorted(
       (a, b) =>
         compareSegments(priority(a), priority(b)) || compareSegments(a.segments, b.segments),
@@ -494,6 +535,39 @@ function checkMeta(
     return { mode, ssr: undefined, prerender: undefined };
   }
   return { mode, ssr: meta.ssr, prerender: meta.prerender };
+}
+
+/** `export const locales`, checked against the configured locales; unknown ones are dropped. */
+function checkLocales(
+  declared: RouteModuleMeta["locales"],
+  i18n: I18nConfig | undefined,
+  file: string,
+  report: Report,
+): readonly string[] | "function" | undefined {
+  if (declared === undefined) return undefined;
+  if (i18n === undefined) {
+    report(
+      LUM_INVALID_ROUTE_FILE,
+      "warning",
+      file,
+      `"export const locales" has no effect: lumiose({ i18n }) is not configured.`,
+      "Configure the locales with lumiose({ i18n: { locales, defaultLocale } }), or remove the export.",
+    );
+    return undefined;
+  }
+  if (declared === "function") return declared;
+  if (declared === "all") return i18n.locales;
+  const unknown = declared.filter((locale) => !i18n.locales.includes(locale));
+  if (unknown.length > 0) {
+    report(
+      LUM_INVALID_ROUTE_FILE,
+      "error",
+      file,
+      `"export const locales" lists ${unknown.map((locale) => `"${locale}"`).join(", ")}, which lumiose({ i18n }) does not configure.`,
+      `Use the configured locales: ${i18n.locales.map((locale) => `"${locale}"`).join(", ")}, or "all".`,
+    );
+  }
+  return [...new Set(declared.filter((locale) => i18n.locales.includes(locale)))];
 }
 
 /** Nearest-first ancestors of a routes-relative directory, including itself. */

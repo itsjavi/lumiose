@@ -4,7 +4,8 @@
 import { existsSync, realpathSync } from "node:fs";
 import { join, resolve } from "node:path";
 import type { Plugin, PluginOption, ResolvedConfig } from "vite";
-import { TRAILING_SLASH_DEFINE } from "lumiose/internal/app/routes/href.ts";
+import { I18N_DEFINE, TRAILING_SLASH_DEFINE } from "lumiose/internal/app/routes/href.ts";
+import type { I18nConfig } from "lumiose/internal/app/i18n/config.ts";
 import type { RouteMode } from "lumiose/internal/app/routes/manifest.ts";
 import type { HeadersOption } from "lumiose/internal/app/headers.ts";
 import type { CsrfOptions } from "lumiose/internal/app/server/csrf.ts";
@@ -69,6 +70,10 @@ export interface ProjectOptions {
   headers?: HeadersOption;
   limits?: LimitsOption;
   adapter?: Adapter;
+  /** `lumiose({ i18n })`, validated, with its defaults (decision-44). */
+  i18n?: I18nConfig;
+  /** `lumiose({ site })`: the site's URL, normalized with a trailing slash (`https://example.com/docs/`). */
+  site?: string;
 }
 
 /** MPA navigation of `lumiose({ viewTransitions, prefetch })` with its defaults (decision-24). */
@@ -111,6 +116,41 @@ export function isClientState(
 /** The `define` that hands `trailingSlash` to `href()` in every environment (./routes/href.ts). */
 export function hrefDefine(trailingSlash: TrailingSlash): Record<string, string> {
   return { [TRAILING_SLASH_DEFINE]: JSON.stringify(trailingSlash) };
+}
+
+/** The `define` that hands the locales of `lumiose({ i18n })` to `href()` and `lumiose/router`. */
+export function i18nDefine(i18n: I18nConfig): Record<string, string> {
+  return {
+    [I18N_DEFINE]: JSON.stringify({ locales: i18n.locales, defaultLocale: i18n.defaultLocale }),
+  };
+}
+
+/**
+ * The base `lumiose({ site })` sets: its path, when it has one and the config has no `base`;
+ * `undefined` otherwise. A site with a path and a `base` that is another path (a trailing slash
+ * aside) throws, so the site's path is never counted twice. A site without a path (its origin)
+ * goes with any base.
+ */
+export function siteBaseOf(site: string, base: string | undefined): string | undefined {
+  const path = new URL(site).pathname;
+  if (path === "/") return undefined;
+  if (base === undefined) return path;
+  const configured = base.startsWith("/") ? base : `/${base}`;
+  if (trim(configured) !== trim(path)) {
+    throw new TypeError(
+      `lumiose({ site }): the site's path "${path}" differs from Vite's base "${base}". Remove one of them, or make them match.`,
+    );
+  }
+  return undefined;
+}
+
+function trim(path: string): string {
+  return path.replace(/\/+$/, "");
+}
+
+/** The origin of `lumiose({ site })`, for absolute URLs (paths come from `href()`, with the base). */
+export function siteOrigin(site: string | undefined): string | undefined {
+  return site === undefined ? undefined : new URL(site).origin;
 }
 
 /**

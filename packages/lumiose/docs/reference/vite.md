@@ -44,11 +44,20 @@ interface LumioseOptions {
   limits?: { body?: number | string; upload?: number | string }; // default { body: "1mb", upload: "10mb" }
   /** The deploy adapter: cloudflare(), vercel() or netlify() from their @lumiose/adapter-* packages. */
   adapter?: Adapter; // default: none, the Node build
+  /** Locale routing: unprefixed default locale, prefixed others, per-page locale declarations. */
+  i18n?: {
+    locales: string[]; // URL path segments, such as "en" or "pt-BR"
+    defaultLocale: string; // served without a prefix
+    missing?: "404" | "redirect"; // default "404"
+    detect?: false | { cookie?: string; acceptLanguage?: boolean }; // default false
+  };
+  /** The site's URL, for the absolute URLs of prerendered pages (hreflang, canonical); a path is the base. */
+  site?: string; // such as "https://example.com" or "https://example.com/docs"
 }
 ```
 
 The project options (`mode`, `ssr`, `prerender`, `trailingSlash`, `csrf`, `viewTransitions`,
-`prefetch`, `headers`, `limits`, `adapter`) are
+`prefetch`, `headers`, `limits`, `adapter`, `i18n`, `site`) are
 read by `lumiose dev`, `lumiose build` and `lumiose routes`/`check` from the plugin's `api.options`.
 Invalid values and unknown option names throw when the config loads, as does `prerender: true`
 with `ssr: false` ([prerendered SPA routes](../concepts/rendering-modes.md#prerendered-spa-routes)). `csp: "strict"` is
@@ -66,6 +75,18 @@ segment a `:name` placeholder). Headers that middleware, endpoints or `response(
 win. Two headers are sent by default, as Rails and Django do: `X-Content-Type-Options: nosniff` and
 `Referrer-Policy: strict-origin-when-cross-origin`; give them another value in `headers`, or `""`
 to remove one (`_headers` gets `! name`).
+
+**Locales** (`i18n`) and **site** (`site`). With `i18n`, route files stay unprefixed: the
+default locale is served at `/about`, the others under their prefix (`/es/about`), and a page
+exists in the locales it declares with `export const locales`. `missing` decides what a page
+requested in another locale answers, `detect` redirects visitors to their locale on entry only. See
+[Internationalization](../concepts/i18n.md). `site` is the site's URL (`"https://example.com"`):
+prerendered pages have no request, so their absolute `hreflang` and canonical URLs are its origin
+followed by the `href()` path, which already has Vite's `base` and the trailing-slash policy;
+without `site` they are root-relative, and `lumiose build` warns. Pages rendered per request use
+the request's origin. A path in `site` (`"https://example.com/docs"`, trailing slash optional) is
+the app's base: it becomes Vite's `base` when the config sets none, and a config `base` that
+differs from it is an error naming both, so the path is never counted twice.
 
 **Body limits** (`limits`). `body` caps URL-encoded forms, JSON and any other non-multipart
 request body (default `"1mb"`), `upload` caps `multipart/form-data` bodies (default `"10mb"`). A

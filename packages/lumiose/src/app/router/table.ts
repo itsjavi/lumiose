@@ -8,6 +8,7 @@
 // SPA too. Pure and runtime-agnostic: used by the request handler, the dev and build entry
 // generator, and (as generated data) the client router.
 
+import type { I18nUrls } from "../i18n/config.ts";
 import type { PageRoute, RouteManifest } from "../routes/manifest.ts";
 import type { RouteSegment } from "../routes/segments.ts";
 
@@ -91,6 +92,11 @@ export interface ClientRoute {
   error?: string;
   /** SPA pages: a 404 rendered for its URL renders the page on the client instead (see `reroutes`). */
   reroute?: true;
+  /**
+   * SPA pages with `lumiose({ i18n })`: the locales the page declares. Absent when a `locales()`
+   * function decides per params: navigations to the page then load the document.
+   */
+  locales?: string[];
 }
 
 /** A `not-found` page and the URL scope of its directory (for unmatched URLs). */
@@ -106,11 +112,13 @@ export interface ClientTable {
   notFoundPages: ClientNotFoundPage[];
   /** `not-found`/`error` pages that render inside an SPA, by file. */
   pages: Record<string, { app: string; levels: string[] }>;
+  /** `lumiose({ i18n })`: paths carry locale prefixes (decision-44). */
+  i18n?: I18nUrls;
 }
 
 /** The client route table of an app, or `undefined` when it has no `spa` pages. */
 export function clientTable(
-  manifest: Pick<RouteManifest, "routes" | "layouts" | "notFoundPages" | "errorPages">,
+  manifest: Pick<RouteManifest, "routes" | "layouts" | "notFoundPages" | "errorPages" | "i18n">,
 ): ClientTable | undefined {
   const routes: ClientRoute[] = [];
   let spa = false;
@@ -125,6 +133,7 @@ export function clientTable(
     if (route.notFoundPage !== undefined) entry.notFound = route.notFoundPage;
     if (route.errorPage !== undefined) entry.error = route.errorPage;
     if (reroutes(route)) entry.reroute = true;
+    if (route.locales !== undefined) entry.locales = route.locales;
     routes.push(entry);
   }
   if (!spa) return undefined;
@@ -141,6 +150,9 @@ export function clientTable(
       segments,
     })),
     pages,
+    ...(manifest.i18n === undefined
+      ? {}
+      : { i18n: { locales: manifest.i18n.locales, defaultLocale: manifest.i18n.defaultLocale } }),
   };
 }
 

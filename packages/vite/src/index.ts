@@ -40,6 +40,7 @@ import { dirname, extname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { Diagnostic } from "@lumiose/compiler";
 import { writeLumioseTsconfig } from "./layout.ts";
+import { i18nDefine, siteBaseOf } from "./app/project.ts";
 import {
   defaultClientConditions,
   defaultServerConditions,
@@ -201,6 +202,12 @@ export default function lumiose(options: LumioseOptions = {}): Plugin<LumiosePlu
         if (process.env["VITEST"] !== undefined) out.test = { setupFiles: [VITEST_SETUP] };
         // decision-29: only `PUBLIC_` variables reach client code through `import.meta.env`.
         if (config.envPrefix === undefined) out.envPrefix = "PUBLIC_";
+        // The locales of `lumiose({ i18n })` for `href()` and `lumiose/router`, in every environment.
+        if (api.options.i18n !== undefined) out.define = i18nDefine(api.options.i18n);
+        // A path in `lumiose({ site })` is Vite's base: routes, assets and href() follow it.
+        const siteBase =
+          api.options.site === undefined ? undefined : siteBaseOf(api.options.site, config.base);
+        if (siteBase !== undefined) out.base = siteBase;
         // decision-29: the dev server does not serve server-only files over HTTP (`/@fs/`, `?raw`);
         // the ssr environment still loads them. Both are the user's to override.
         if (config.server?.fs?.deny === undefined) {
