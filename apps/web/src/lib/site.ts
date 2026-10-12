@@ -37,7 +37,7 @@ export const site = {
 };
 
 export const navLinks: NavLink[] = [
-  { href: href("/docs/[...path]", { path: "" }), label: "Docs" },
+  { href: href("/docs/[[...path]]", { path: "" }), label: "Docs" },
   { href: href("/showcase"), label: "Showcase" },
   { href: href("/benchmarks"), label: "Benchmarks" },
   { href: href("/playground"), label: "Playground" },
@@ -47,20 +47,23 @@ export const footerColumns: FooterColumn[] = [
   {
     title: "Learn",
     links: [
-      { href: href("/docs/[...path]", { path: "getting-started" }), label: "Getting started" },
-      { href: href("/docs/[...path]", { path: "coming-from-react" }), label: "Coming from React" },
-      { href: href("/docs/[...path]", { path: "concepts/components" }), label: "Components" },
-      { href: href("/docs/[...path]", { path: "concepts/styles" }), label: "Styles" },
-      { href: href("/docs/[...path]", { path: "concepts/islands" }), label: "Islands" },
+      { href: href("/docs/[[...path]]", { path: "getting-started" }), label: "Getting started" },
+      {
+        href: href("/docs/[[...path]]", { path: "coming-from-react" }),
+        label: "Coming from React",
+      },
+      { href: href("/docs/[[...path]]", { path: "concepts/components" }), label: "Components" },
+      { href: href("/docs/[[...path]]", { path: "concepts/styles" }), label: "Styles" },
+      { href: href("/docs/[[...path]]", { path: "concepts/islands" }), label: "Islands" },
     ],
   },
   {
     title: "Reference",
     links: [
-      { href: href("/docs/[...path]", { path: "reference/cli" }), label: "CLI" },
-      { href: href("/docs/[...path]", { path: "reference/vite" }), label: "@lumiose/vite" },
-      { href: href("/docs/[...path]", { path: "errors" }), label: "Diagnostics" },
-      { href: href("/docs/[...path]", { path: "concepts/security" }), label: "Security" },
+      { href: href("/docs/[[...path]]", { path: "reference/cli" }), label: "CLI" },
+      { href: href("/docs/[[...path]]", { path: "reference/vite" }), label: "@lumiose/vite" },
+      { href: href("/docs/[[...path]]", { path: "errors" }), label: "Diagnostics" },
+      { href: href("/docs/[[...path]]", { path: "concepts/security" }), label: "Security" },
     ],
   },
   {
@@ -78,7 +81,7 @@ export const footerColumns: FooterColumn[] = [
     links: [
       { href: href("/llms.txt"), label: "llms.txt" },
       { href: href("/llms-full.txt"), label: "llms-full.txt" },
-      { href: href("/docs/[...path]", { path: "reference/mcp" }), label: "MCP server" },
+      { href: href("/docs/[[...path]]", { path: "reference/mcp" }), label: "MCP server" },
       { href: REPOSITORY, label: "GitHub" },
     ],
   },

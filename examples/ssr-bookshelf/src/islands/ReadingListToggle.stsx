@@ -4,7 +4,7 @@
 // submit() does not reload it (decision-20): the island owns its state, and on /reading-list it
 // removes its own entry (`removeClosest`) instead of asking for fresh server data.
 import { href, signal, submit } from "lumiose";
-import type { actions } from "../routes/(app)/reading-list.stsx";
+import type { actions } from "../routes/(app)/reading-list/page.stsx";
 import * as theme from "../theme.ts";
 
 const TOGGLE_ACTION = `${href("/reading-list")}?/toggle`;

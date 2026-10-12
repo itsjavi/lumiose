@@ -1,0 +1,36 @@
+// The playground page, prerendered inside the site's layout (header and footer). The Playground
+// island loads the WebAssembly compiler, the preview runtime and the editor in the browser, so only
+// this page fetches them.
+import { Meta, Title } from "lumiose";
+import { Playground } from "../../islands/Playground.stsx";
+
+const description =
+  "Try Lumiose in the browser: edit a .stsx component and see the compiled client and server code, the scoped CSS, the diagnostics and the running result.";
+
+export default function PlaygroundPage() {
+  return (
+    <div class="playground-page">
+      <Title>Playground · Lumiose</Title>
+      <Meta name="description" content={description} />
+      <Meta property="og:title" content="Lumiose playground" />
+      <Meta property="og:description" content={description} />
+      <h1 class="visually-hidden">Playground</h1>
+      <Playground client:load />
+    </div>
+  );
+}
+
+<style>
+  .playground-page {
+    display: flex;
+    flex-direction: column;
+  }
+  .visually-hidden {
+    position: absolute;
+    inline-size: 1px;
+    block-size: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+</style>

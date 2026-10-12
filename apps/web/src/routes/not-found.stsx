@@ -1,0 +1,48 @@
+// Unknown URLs (dist/client/404.html on a static host).
+import { LinkButton } from "@lumiose/site-kit";
+import { color, layout, space, text } from "@lumiose/site-kit/tokens";
+import { href, Title } from "lumiose";
+
+export default function NotFound() {
+  return (
+    <section class="missing">
+      <Title>Page not found · Lumiose</Title>
+      <p class="code">404</p>
+      <h1>This page is not here</h1>
+      <p>
+        It may have moved when the docs were reorganised. Search the docs or start from the top.
+      </p>
+      <div class="actions">
+        <LinkButton href={href("/docs/[[...path]]", { path: "" })}>Docs</LinkButton>
+        <LinkButton href={href("/")} variant="secondary">
+          Home
+        </LinkButton>
+      </div>
+    </section>
+  );
+}
+
+<style>
+  .missing {
+    display: grid;
+    justify-items: center;
+    gap: $space.sm;
+    max-inline-size: $layout.prose;
+    margin-inline: auto;
+    padding: $space.xxxl $layout.gutter;
+    text-align: center;
+  }
+  .code {
+    color: $color.accentText;
+    font-size: $text.xxxl;
+    font-weight: 700;
+  }
+  p {
+    color: $color.muted;
+  }
+  .actions {
+    display: flex;
+    gap: $space.sm;
+    margin-block-start: $space.md;
+  }
+</style>

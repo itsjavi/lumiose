@@ -1,0 +1,14 @@
+import { Title } from "lumiose";
+
+export default function About() {
+  return (
+    <main>
+      <Title>About · {{name}}</Title>
+      <h1>About</h1>
+      <p>
+        Pages are page.stsx files in src/routes folders; the layout in src/routes/layout.stsx wraps
+        them.
+      </p>
+    </main>
+  );
+}

@@ -3,7 +3,7 @@
 import { COMMENT_MAX } from "@bench/data/format";
 import { actionData, onMount, signal, submit, isSubmitting } from "lumiose";
 import { markReady } from "../lib/ready.ts";
-import type { actions } from "../routes/issues/[id].tsx";
+import type { actions } from "../routes/issues/[id]/page.tsx";
 
 export interface CommentFailure {
   error: string;

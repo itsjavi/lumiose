@@ -134,7 +134,7 @@ export function renderingModes(): RenderingMode[] {
       title: "Static",
       summary: "Prerendered HTML",
       description: "Prerendered at build time to plain HTML files, with staticPaths for params.",
-      docs: href("/docs/[...path]", { path: "concepts/rendering-modes" }),
+      docs: href("/docs/[[...path]]", { path: "concepts/rendering-modes" }),
       apps: [live("ssg-travel-journal")],
     },
     {
@@ -143,8 +143,8 @@ export function renderingModes(): RenderingMode[] {
       summary: "Hydrate what moves",
       description:
         "Only interactive components hydrate, with serializable props and slots. This site is static, with islands for the search, the playground and the landing's light.",
-      docs: href("/docs/[...path]", { path: "concepts/islands" }),
-      apps: [{ label: "This site", href: href("/docs/[...path]", { path: "" }) }],
+      docs: href("/docs/[[...path]]", { path: "concepts/islands" }),
+      apps: [{ label: "This site", href: href("/docs/[[...path]]", { path: "" }) }],
     },
     {
       option: "mode = server",
@@ -152,7 +152,7 @@ export function renderingModes(): RenderingMode[] {
       summary: "Streamed per request",
       description:
         "Rendered per request and streamed: the shell first, then each Suspense boundary.",
-      docs: href("/docs/[...path]", { path: "concepts/rendering-modes" }),
+      docs: href("/docs/[[...path]]", { path: "concepts/rendering-modes" }),
       apps: [live("ssr-bookshelf")],
     },
     {
@@ -161,7 +161,7 @@ export function renderingModes(): RenderingMode[] {
       summary: "Client routing, prerendered first paint",
       description:
         "Client navigation with persistent layouts, where an app needs it, prerendered for a real first render.",
-      docs: href("/docs/[...path]", { path: "reference/router" }),
+      docs: href("/docs/[[...path]]", { path: "reference/router" }),
       apps: [live("spa-chiptune"), live("spa-dotmatrix")],
     },
   ];

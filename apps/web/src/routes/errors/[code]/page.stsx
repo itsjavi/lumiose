@@ -1,0 +1,12 @@
+// The URLs the runtime and compiler print (`https://lumiose.dev/errors/LUM4006`) redirect to the
+// diagnostic's docs page. Prerendered as static redirect pages (meta refresh plus a link).
+import { href, redirect, type PageProps } from "lumiose";
+import { diagnosticCodes } from "../../../content/docs.ts";
+
+export function staticPaths() {
+  return diagnosticCodes().map((code) => ({ params: { code } }));
+}
+
+export default function ErrorCode(props: PageProps<"/errors/[code]">) {
+  return redirect(href("/docs/[[...path]]", { path: `errors/${props.params.code}` }), 301);
+}

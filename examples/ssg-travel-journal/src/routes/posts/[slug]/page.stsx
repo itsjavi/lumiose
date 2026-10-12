@@ -1,0 +1,256 @@
+// One page per post (`staticPaths`): cover, title, table of contents, the rendered Markdown, and
+// links to the next and previous posts.
+import { Head, href, Meta, notFound, Title, type PageProps } from "lumiose";
+import { TagLinks } from "../../../components/TagLinks.stsx";
+import { adjacentPosts, allPosts, findPost, type Post } from "../../../content.ts";
+import { formatDate } from "../../../lib/format.ts";
+import { absoluteUrl, asset, site } from "../../../lib/site.ts";
+import * as theme from "../../../theme.ts";
+
+export function staticPaths() {
+  return allPosts().map((post) => ({ params: { slug: post.slug } }));
+}
+
+export default function PostPage(props: PageProps<"/posts/[slug]">) {
+  return (
+    <PostView post={findPost(props.params.slug) ?? notFound(`No post "${props.params.slug}".`)} />
+  );
+}
+
+function PostView(props: { post: Post }) {
+  const url = () => absoluteUrl(href("/posts/[slug]", { slug: props.post.slug }));
+  const around = () => adjacentPosts(props.post.slug);
+
+  return (
+    <article class="post">
+      <Title>
+        {props.post.title} · {site.title}
+      </Title>
+      <Meta name="description" content={props.post.summary} />
+      <Meta property="og:type" content="article" />
+      <Meta property="og:title" content={props.post.title} />
+      <Meta property="og:description" content={props.post.summary} />
+      <Meta property="og:image" content={absoluteUrl(props.post.cover)} />
+      <Head>
+        <link rel="canonical" href={url()} />
+      </Head>
+
+      <header class="hero">
+        <p class="meta">
+          <time datetime={props.post.date}>{formatDate(props.post.date)}</time>
+          <span aria-hidden="true">·</span>
+          <span>{props.post.readingMinutes} min read</span>
+        </p>
+        <h1>{props.post.title}</h1>
+        <p class="summary">{props.post.summary}</p>
+        <TagLinks tags={props.post.tags} />
+      </header>
+      <img
+        class="cover"
+        src={asset(props.post.cover)}
+        alt=""
+        width="1200"
+        height="750"
+        style={{ "view-transition-name": `cover-${props.post.slug}` }}
+      />
+
+      <div class="columns">
+        {props.post.headings.length > 1 ? (
+          <nav class="toc" aria-label="On this page">
+            <p>On this page</p>
+            <ol>
+              {props.post.headings.map((heading) => (
+                <li>
+                  <a href={`#${heading.id}`}>{heading.text}</a>
+                </li>
+              ))}
+            </ol>
+          </nav>
+        ) : null}
+        <div class="prose">
+          <props.post.Content />
+        </div>
+      </div>
+
+      <nav class="adjacent" aria-label="More posts">
+        {around().newer === undefined ? (
+          <span />
+        ) : (
+          <a rel="prev" href={href("/posts/[slug]", { slug: around().newer!.slug })}>
+            <small>Newer</small>
+            {around().newer!.title}
+          </a>
+        )}
+        {around().older === undefined ? (
+          <span />
+        ) : (
+          <a rel="next" class="older" href={href("/posts/[slug]", { slug: around().older!.slug })}>
+            <small>Older</small>
+            {around().older!.title}
+          </a>
+        )}
+      </nav>
+    </article>
+  );
+}
+
+<style>
+  .hero {
+    display: grid;
+    justify-items: center;
+    gap: $theme.space.sm;
+    max-width: $theme.layout.prose;
+    margin: 0 auto $theme.space.xl;
+    text-align: center;
+  }
+  .hero h1 {
+    margin: 0;
+  }
+  .meta {
+    display: flex;
+    gap: $theme.space.sm;
+    margin: 0;
+    color: $theme.color.muted;
+    font-size: $theme.font.tiny;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+  .summary {
+    margin: 0 0 $theme.space.sm;
+    color: $theme.color.muted;
+    font-size: $theme.font.lead;
+  }
+  .cover {
+    display: block;
+    width: 100%;
+    max-width: 60rem;
+    margin: 0 auto;
+    aspect-ratio: 16 / 9;
+    object-fit: cover;
+    border-radius: $theme.radius.lg;
+    box-shadow: $theme.shadow.card;
+  }
+  .columns {
+    display: grid;
+    grid-template-columns: minmax(0, $theme.layout.prose);
+    justify-content: center;
+    gap: $theme.space.xl;
+    margin-top: $theme.space.xl;
+  }
+  .toc {
+    padding: $theme.space.md $theme.space.lg;
+    border-left: 3px solid $theme.color.accent;
+    background: $theme.color.chip;
+    border-radius: 0 $theme.radius.md $theme.radius.md 0;
+    font-size: $theme.font.small;
+  }
+  .toc p {
+    margin: 0 0 $theme.space.xs;
+    font-weight: 600;
+  }
+  .toc ol {
+    margin: 0;
+    padding-left: 1.2rem;
+  }
+  .toc a {
+    color: inherit;
+  }
+
+  /* The Markdown body is inserted as HTML, so its elements carry no scope token: style
+     them from the scoped .prose wrapper with :deep(). */
+  .prose {
+    font-size: 1.125rem;
+    line-height: 1.75;
+  }
+  .prose :deep(h2) {
+    margin: $theme.space.xl 0 $theme.space.sm;
+    font-size: $theme.font.h2;
+    scroll-margin-top: $theme.space.lg;
+  }
+  .prose :deep(h3) {
+    margin: $theme.space.lg 0 $theme.space.sm;
+  }
+  .prose :deep(p),
+  .prose :deep(ul),
+  .prose :deep(ol) {
+    margin: 0 0 $theme.space.md;
+  }
+  .prose :deep(li + li) {
+    margin-top: $theme.space.xs;
+  }
+  .prose :deep(blockquote) {
+    margin: $theme.space.lg 0;
+    padding: $theme.space.xs 0 $theme.space.xs $theme.space.lg;
+    border-left: 3px solid $theme.color.accent;
+    color: $theme.color.muted;
+    font-family: $theme.font.display;
+    font-size: 1.25rem;
+    font-style: italic;
+  }
+  .prose :deep(blockquote p) {
+    margin: 0;
+  }
+  .prose :deep(table) {
+    display: block;
+    overflow-x: auto;
+    width: 100%;
+    margin: $theme.space.lg 0;
+    border-collapse: collapse;
+    font-size: $theme.font.small;
+    font-variant-numeric: tabular-nums;
+  }
+  .prose :deep(th),
+  .prose :deep(td) {
+    padding: $theme.space.sm $theme.space.md;
+    border-bottom: 1px solid $theme.color.line;
+    text-align: left;
+    white-space: nowrap;
+  }
+  .prose :deep(th) {
+    border-bottom-width: 2px;
+  }
+
+  .adjacent {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: $theme.space.lg;
+    max-width: $theme.layout.prose;
+    margin: $theme.space.xxl auto 0;
+    padding-top: $theme.space.lg;
+    border-top: 1px solid $theme.color.line;
+  }
+  .adjacent a {
+    display: grid;
+    gap: $theme.space.xs;
+    color: $theme.color.ink;
+    font-family: $theme.font.display;
+    font-size: 1.15rem;
+    text-decoration: none;
+  }
+  .adjacent a:hover {
+    color: $theme.color.accent;
+  }
+  .adjacent small {
+    color: $theme.color.muted;
+    font-family: $theme.font.body;
+    font-size: $theme.font.tiny;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  .older {
+    text-align: right;
+  }
+  @media (width >= 64rem) {
+    .columns {
+      grid-template-columns: 12rem minmax(0, $theme.layout.prose) 12rem;
+    }
+    .toc {
+      position: sticky;
+      top: $theme.space.lg;
+      align-self: start;
+    }
+    .prose:first-child {
+      grid-column: 2;
+    }
+  }
+</style>

@@ -1,5 +1,0 @@
-import { SettingsView } from "../ui/SettingsView.stsx";
-
-export default function Settings() {
-  return <SettingsView />;
-}

@@ -1,0 +1,65 @@
+import { href, Meta, notFound, Title, url, type PageProps } from "lumiose";
+import { BookGrid } from "../../../../components/BookCard.stsx";
+import { Pager } from "../../../../components/Pager.stsx";
+import { Rating } from "../../../../components/Rating.stsx";
+import { parsePageParam } from "../../../../lib/search-params.ts";
+import { queries } from "../../../../server/queries.server.ts";
+import { readingListToggles } from "../../../../server/toggles.server.ts";
+import * as theme from "../../../../theme.ts";
+import type { Author, BookSummary, Page } from "../../../../types.ts";
+
+export default function AuthorPage(props: PageProps<"/authors/[slug]">) {
+  return (
+    <AuthorDetail
+      author={
+        queries().getAuthor(props.params.slug) ?? notFound(`No author "${props.params.slug}".`)
+      }
+      books={queries().listBooks({
+        author: props.params.slug,
+        sort: "newest",
+        page: parsePageParam(url().searchParams.get("page")),
+        pageSize: 12,
+      })}
+    />
+  );
+}
+
+function AuthorDetail(props: { author: Author; books: Page<BookSummary> }) {
+  return (
+    <main>
+      <Title>{props.author.name} · Bookshelf</Title>
+      <Meta name="description" content={props.author.bio.slice(0, 150)} />
+      <p class="crumbs">
+        <a href={href("/authors")}>Authors</a> /
+      </p>
+      <h1>{props.author.name}</h1>
+      <p class="byline">
+        Born {props.author.birthYear} · {props.author.country} ·{" "}
+        {props.author.bookCount === 1 ? "1 book" : `${props.author.bookCount} books`}
+      </p>
+      <Rating rating={props.author.rating} />
+      <p class="bio">{props.author.bio}</p>
+      <h2>Books</h2>
+      <BookGrid books={props.books.items} toggle={readingListToggles(props.books.items)} />
+      <Pager
+        info={props.books}
+        href={(page) =>
+          `${href("/authors/[slug]", { slug: props.author.slug })}${page > 1 ? `?page=${page}` : ""}`
+        }
+        label="Book pages"
+      />
+    </main>
+  );
+}
+
+<style>
+  .crumbs {
+    margin: 0;
+    color: $theme.color.muted;
+    font-size: $theme.font.small;
+  }
+  .bio {
+    max-width: 42rem;
+    font-size: $theme.font.lead;
+  }
+</style>

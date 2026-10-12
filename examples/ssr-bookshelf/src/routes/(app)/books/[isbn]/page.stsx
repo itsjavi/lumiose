@@ -1,0 +1,420 @@
+// A book: details, ratings, the reader's own review (create, edit, delete through named form
+// actions) and the other reviews, paginated with `?page=`.
+import {
+  actionData,
+  error,
+  fail,
+  href,
+  locals,
+  Meta,
+  notFound,
+  redirect,
+  Title,
+  url,
+  type ActionContext,
+  type PageProps,
+} from "lumiose";
+import { Cover } from "../../../../components/BookCard.stsx";
+import { Pager } from "../../../../components/Pager.stsx";
+import { Rating } from "../../../../components/Rating.stsx";
+import { ReviewCard } from "../../../../components/ReviewCard.stsx";
+import { ReadingListToggle } from "../../../../islands/ReadingListToggle.stsx";
+import { StarRatingInput } from "../../../../islands/StarRatingInput.stsx";
+import { parsePageParam } from "../../../../lib/search-params.ts";
+import { LIMITS, validateReview, type ReviewInput } from "../../../../lib/validation.ts";
+import { loginHref, requireUser } from "../../../../server/auth.server.ts";
+import { queries } from "../../../../server/queries.server.ts";
+import * as theme from "../../../../theme.ts";
+import type { Book, FieldErrors, MutationResult, Page, Review, User } from "../../../../types.ts";
+
+type Context = ActionContext<"/books/[isbn]">;
+
+interface ReviewValues {
+  rating: string;
+  title: string;
+  body: string;
+}
+
+/** `fail()` data of the review actions: which form failed, what was typed, and why. */
+interface ReviewFailure {
+  form: "create" | "update";
+  values: ReviewValues;
+  errors: FieldErrors<keyof ReviewInput>;
+}
+
+const STARS = [5, 4, 3, 2, 1] as const;
+
+function findBook(isbn: string): Book {
+  return queries().getBook(isbn) ?? notFound(`No book with ISBN ${isbn}.`);
+}
+
+function typedValues(form: FormData): ReviewValues {
+  const text = (name: string) => {
+    const value = form.get(name);
+    return typeof value === "string" ? value : "";
+  };
+  return { rating: text("rating"), title: text("title"), body: text("body") };
+}
+
+function reviewId(form: FormData): number {
+  const id = Number(form.get("reviewId"));
+  return Number.isSafeInteger(id) && id > 0 ? id : error(400, "The form has no review id.");
+}
+
+/** Maps a refused mutation to the matching HTTP error. */
+function check<T>(result: MutationResult<T>): T {
+  if (result.ok) return result.value;
+  if (result.reason === "forbidden") error(403, "You can only change your own reviews.");
+  if (result.reason === "not-found") notFound("This review does not exist anymore.");
+  return error(409, "This review changed meanwhile.");
+}
+
+export const actions = {
+  async createReview(ctx: Context) {
+    const user = await requireUser(ctx);
+    const book = findBook(ctx.params.isbn);
+    const form = await ctx.formData();
+    const parsed = validateReview(form);
+    if (!parsed.ok) {
+      return fail(400, {
+        form: "create",
+        values: typedValues(form),
+        errors: parsed.errors,
+      } satisfies ReviewFailure);
+    }
+    const result = queries().createReview(user.id, book.id, parsed.value);
+    if (!result.ok && result.reason === "conflict") {
+      return fail(409, {
+        form: "create",
+        values: typedValues(form),
+        errors: { body: "You already reviewed this book: edit your review instead." },
+      } satisfies ReviewFailure);
+    }
+    check(result);
+    redirect(`${href("/books/[isbn]", { isbn: book.isbn })}#your-review`);
+  },
+
+  async updateReview(ctx: Context) {
+    const user = await requireUser(ctx);
+    const form = await ctx.formData();
+    const parsed = validateReview(form);
+    if (!parsed.ok) {
+      return fail(400, {
+        form: "update",
+        values: typedValues(form),
+        errors: parsed.errors,
+      } satisfies ReviewFailure);
+    }
+    check(queries().updateReview(user.id, reviewId(form), parsed.value));
+    redirect(`${href("/books/[isbn]", { isbn: ctx.params.isbn })}#your-review`);
+  },
+
+  async deleteReview(ctx: Context) {
+    const user = await requireUser(ctx);
+    check(queries().deleteReview(user.id, reviewId(await ctx.formData())));
+    redirect(`${href("/books/[isbn]", { isbn: ctx.params.isbn })}#your-review`);
+  },
+};
+
+export default function BookPage(props: PageProps<"/books/[isbn]">) {
+  return (
+    <BookDetail
+      book={findBook(props.params.isbn)}
+      user={locals().user ?? null}
+      page={parsePageParam(url().searchParams.get("page"))}
+      failure={actionData<typeof actions>()}
+    />
+  );
+}
+
+function BookDetail(props: {
+  book: Book;
+  user: User | null;
+  page: number;
+  failure: ReviewFailure | undefined;
+}) {
+  return (
+    <main>
+      <Title>{props.book.title} · Bookshelf</Title>
+      <Meta name="description" content={props.book.description.slice(0, 150)} />
+      <div class="book">
+        <div class="cover-wrap">
+          <Cover book={props.book} size="large" />
+        </div>
+        <div class="info">
+          <p class="genre">
+            <a href={href("/genres/[slug]", { slug: props.book.genre.slug })}>
+              {props.book.genre.name}
+            </a>
+          </p>
+          <h1>{props.book.title}</h1>
+          {props.book.subtitle === null ? null : <p class="subtitle">{props.book.subtitle}</p>}
+          <p class="authors">
+            by{" "}
+            {props.book.authors.map((author, index) => (
+              <>
+                {index === 0 ? "" : ", "}
+                <a href={href("/authors/[slug]", { slug: author.slug })}>{author.name}</a>
+              </>
+            ))}
+          </p>
+          <p class="byline">
+            {props.book.year} · {props.book.pages} pages · ISBN {props.book.isbn}
+          </p>
+          <Rating rating={props.book.rating} />
+          {props.user === null ? (
+            <p class="byline">
+              <a href={loginHref(url())}>Sign in</a> to keep a reading list.
+            </p>
+          ) : (
+            <ReadingListToggle
+              client:visible
+              bookId={props.book.id}
+              onList={queries().isOnReadingList(props.user.id, props.book.id)}
+              next={`/books/${props.book.isbn}`}
+            />
+          )}
+          <p class="description">{props.book.description}</p>
+          <Histogram histogram={props.book.ratingHistogram} />
+        </div>
+      </div>
+      <YourReview
+        book={props.book}
+        user={props.user}
+        review={props.user === null ? null : queries().getUserReview(props.user.id, props.book.id)}
+        failure={props.failure}
+      />
+      <Reviews
+        isbn={props.book.isbn}
+        reviews={queries().listReviews(props.book.id, { page: props.page, pageSize: 5 })}
+        userId={props.user?.id ?? null}
+      />
+    </main>
+  );
+}
+
+function Histogram(props: { histogram: Book["ratingHistogram"] }) {
+  const most = () => Math.max(1, ...props.histogram);
+  return (
+    <ul class="histogram" aria-label="Ratings by stars">
+      {STARS.map((stars) => (
+        <li>
+          <span>{stars} ★</span>
+          <span
+            class="bar"
+            style={{ "--share": `${(props.histogram[stars - 1]! / most()) * 100}%` }}
+          />
+          <span class="count">{props.histogram[stars - 1]}</span>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+function YourReview(props: {
+  book: Book;
+  user: User | null;
+  review: Review | null;
+  failure: ReviewFailure | undefined;
+}) {
+  return (
+    <section class="your-review" id="your-review">
+      <h2>Your review</h2>
+      {props.user === null ? (
+        <p>
+          <a href={loginHref(url())}>Sign in</a> to review this book.
+        </p>
+      ) : props.review === null ? (
+        <ReviewForm
+          action="?/createReview"
+          submitLabel="Post review"
+          values={props.failure?.form === "create" ? props.failure.values : undefined}
+          errors={props.failure?.form === "create" ? props.failure.errors : {}}
+        />
+      ) : (
+        <>
+          <ReviewCard review={props.review} own />
+          <details class="edit" open={props.failure?.form === "update"}>
+            <summary>Edit your review</summary>
+            <ReviewForm
+              action="?/updateReview"
+              reviewId={props.review.id}
+              submitLabel="Save changes"
+              values={
+                props.failure?.form === "update"
+                  ? props.failure.values
+                  : {
+                      rating: String(props.review.rating),
+                      title: props.review.title ?? "",
+                      body: props.review.body,
+                    }
+              }
+              errors={props.failure?.form === "update" ? props.failure.errors : {}}
+            />
+          </details>
+          <form class="delete" method="post" action="?/deleteReview">
+            <input type="hidden" name="reviewId" value={String(props.review.id)} />
+            <button>Delete review</button>
+          </form>
+        </>
+      )}
+    </section>
+  );
+}
+
+function ReviewForm(props: {
+  action: string;
+  reviewId?: number;
+  submitLabel: string;
+  values: ReviewValues | undefined;
+  errors: FieldErrors<keyof ReviewInput>;
+}) {
+  return (
+    <form class="review-form" method="post" action={props.action}>
+      {props.reviewId === undefined ? null : (
+        <input type="hidden" name="reviewId" value={String(props.reviewId)} />
+      )}
+      <StarRatingInput
+        client:visible
+        name="rating"
+        value={Number(props.values?.rating) || null}
+        error={props.errors.rating}
+      />
+      <label>
+        <span>
+          Title <span class="byline">(optional)</span>
+        </span>
+        <input name="title" value={props.values?.title ?? ""} maxlength={LIMITS.reviewTitle} />
+      </label>
+      <p class="error">{props.errors.title}</p>
+      <label>
+        Review
+        <textarea name="body" rows={5} required maxlength={LIMITS.reviewBody}>
+          {props.values?.body ?? ""}
+        </textarea>
+      </label>
+      <p class="error">{props.errors.body}</p>
+      <button>{props.submitLabel}</button>
+    </form>
+  );
+}
+
+function Reviews(props: { isbn: string; reviews: Page<Review>; userId: number | null }) {
+  return (
+    <section id="reviews">
+      <h2>
+        Reviews <span class="byline">({props.reviews.total})</span>
+      </h2>
+      {props.reviews.total === 0 ? <p class="byline">No reviews yet. Be the first!</p> : null}
+      {props.reviews.items.map((review) => (
+        <ReviewCard review={review} own={review.user.id === props.userId} />
+      ))}
+      <Pager
+        info={props.reviews}
+        href={(page) =>
+          `${href("/books/[isbn]", { isbn: props.isbn })}${page > 1 ? `?page=${page}` : ""}#reviews`
+        }
+        label="Review pages"
+      />
+    </section>
+  );
+}
+
+<style>
+  .book {
+    display: grid;
+    grid-template-columns: 14rem 1fr;
+    gap: $theme.space.xl;
+    align-items: start;
+  }
+  @media (width < $theme.layout.narrow) {
+    .book {
+      grid-template-columns: 1fr;
+    }
+    .cover-wrap {
+      max-width: 12rem;
+    }
+  }
+  .info {
+    display: grid;
+    gap: $theme.space.sm;
+  }
+  .info h1 {
+    margin: 0;
+  }
+  .info p {
+    margin: 0;
+  }
+  .genre a {
+    color: $theme.color.muted;
+    font-size: $theme.font.small;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    text-decoration: none;
+  }
+  .subtitle {
+    font-size: $theme.font.lead;
+    color: $theme.color.muted;
+  }
+  .description {
+    max-width: 42rem;
+    margin-top: $theme.space.sm;
+  }
+  .histogram {
+    display: grid;
+    gap: 2px;
+    max-width: 20rem;
+    margin: $theme.space.sm 0 0;
+    padding: 0;
+    list-style: none;
+    font-size: $theme.font.small;
+  }
+  .histogram li {
+    display: grid;
+    grid-template-columns: 2.5rem 1fr 2.5rem;
+    gap: $theme.space.sm;
+    align-items: center;
+  }
+  .bar {
+    height: 0.6rem;
+    border-radius: $theme.radius.pill;
+    background: linear-gradient(
+      90deg,
+      $theme.color.star var(--share),
+      $theme.color.surface var(--share)
+    );
+  }
+  .count {
+    color: $theme.color.muted;
+  }
+  .your-review {
+    max-width: 42rem;
+  }
+  .review-form {
+    display: grid;
+    gap: $theme.space.sm;
+    max-width: $theme.layout.form;
+  }
+  .review-form label {
+    display: grid;
+    gap: $theme.space.xs;
+  }
+  .review-form button {
+    justify-self: start;
+  }
+  .edit {
+    margin: $theme.space.md 0;
+  }
+  .edit summary {
+    color: $theme.color.accent;
+    cursor: pointer;
+  }
+  .edit .review-form {
+    margin-top: $theme.space.md;
+  }
+  .delete button {
+    border-color: $theme.color.danger;
+    background: transparent;
+    color: $theme.color.danger;
+  }
+</style>

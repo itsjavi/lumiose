@@ -1,4 +1,4 @@
-// Client-side search over the prebuilt index (`/search.json`, written by routes/search.json.ts).
+// Client-side search over the prebuilt index (`/search.json`, written by routes/search.json/route.ts).
 // Pure and tiny: the Search island imports it, so it ships to the browser.
 
 export interface SearchEntry {

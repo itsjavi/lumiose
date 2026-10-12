@@ -159,7 +159,7 @@ test("a page whose data is in the browser renders it after a server 404, with no
   await page.goto("/");
   await page.evaluate(() => localStorage.setItem("track:5", "Saved"));
   await watchFlash(page, "#not-found");
-  // The static host's 404.html, or the _404 that `lumiose dev` renders: the server has no such track.
+  // The static host's 404.html, or the not-found page that `lumiose dev` renders: the server has no such track.
   const response = await page.goto("/tracks/5");
   expect(response!.status()).toBe(404);
   await expect(page.locator("#track")).toHaveText("Track 5: Saved");
@@ -167,7 +167,9 @@ test("a page whose data is in the browser renders it after a server 404, with no
   expect(await flashed(page)).toBe(false);
 });
 
-test("unknown URLs get the _404 page inside the SPA, which still navigates", async ({ page }) => {
+test("unknown URLs get the not-found page inside the SPA, which still navigates", async ({
+  page,
+}) => {
   // A route whose page finds nothing (on the client, from 404.html), and a URL no route matches.
   for (const path of ["/tracks/99", "/missing"]) {
     const response = await page.goto(path);
@@ -183,7 +185,7 @@ test("unknown URLs get the _404 page inside the SPA, which still navigates", asy
 test.describe("without JavaScript", () => {
   test.use({ javaScriptEnabled: false });
 
-  test("unknown URLs show the _404 page", async ({ page }) => {
+  test("unknown URLs show the not-found page", async ({ page }) => {
     for (const path of ["/tracks/99", "/missing"]) {
       const response = await page.goto(path);
       expect(response!.status()).toBe(404);

@@ -1,4 +1,4 @@
-// Docs search: the index entries (built by routes/search.json.ts) and the scoring the DocsSearch
+// Docs search: the index entries (built by routes/search.json/route.ts) and the scoring the DocsSearch
 // island runs in the browser. Every term of the query must match; title matches rank first, then
 // headings, the summary and the body.
 

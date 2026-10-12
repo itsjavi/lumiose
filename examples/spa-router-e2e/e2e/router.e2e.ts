@@ -137,7 +137,7 @@ test("<Link> prefetches on hover; a page's own <Suspense> shows its fallback", a
   expect(requested.slice(count).filter((path) => path.includes("slow"))).toEqual([]);
 });
 
-test("unknown URLs render the _404 page inside the SPA", async ({ page }) => {
+test("unknown URLs render the not-found page inside the SPA", async ({ page }) => {
   await page.goto("/");
   await ready(page);
   await page.getByRole("link", { name: "Missing" }).click();

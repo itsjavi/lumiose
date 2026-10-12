@@ -90,7 +90,7 @@ describe("create-lumiose CLI", () => {
     expect(refused.out.stderr).toContain("is not empty");
     expect(await main([dir, "-t", "minimal", "-y", "--force"], io().io)).toBe(0);
     expect(readFileSync(join(dir, "notes.txt"), "utf8")).toBe("keep me");
-    expect(existsSync(join(dir, "src/routes/index.stsx"))).toBe(true);
+    expect(existsSync(join(dir, "src/routes/page.stsx"))).toBe(true);
   });
 
   it("asks for the directory and template in a terminal", async () => {
@@ -177,7 +177,7 @@ describe.skipIf(!binding).each(TEMPLATES)("template $name", (template) => {
     expect(read("AGENTS.md")).toContain("node_modules/lumiose/docs");
     expect(read("CLAUDE.md")).toContain("@AGENTS.md");
     expect(read(".claude/skills/lumiose/SKILL.md")).toMatch(/^---\nname: lumiose\n/);
-    expect(read("src/routes/index.stsx")).not.toContain("{{name}}");
+    expect(read("src/routes/page.stsx")).not.toContain("{{name}}");
     link(root);
   });
 

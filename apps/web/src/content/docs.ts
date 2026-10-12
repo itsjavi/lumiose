@@ -164,7 +164,7 @@ export function topicPath(topic: string): string {
 
 /** The site URL of a topic, with an optional `#hash`. */
 export function topicUrl(topic: string, hash = ""): string {
-  return routeHref("/docs/[...path]", { path: topicPath(topic) }) + hash;
+  return routeHref("/docs/[[...path]]", { path: topicPath(topic) }) + hash;
 }
 
 /**

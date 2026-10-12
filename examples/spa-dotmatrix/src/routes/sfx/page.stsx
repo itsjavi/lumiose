@@ -1,0 +1,361 @@
+// SFX gallery and maker: original sound effects as pads; pick one, bend it with a few sliders, see
+// its waveform and the driver code it becomes, save it as a WAV file, or open it in the studio to
+// edit it note by note. Sounds saved from the studio come back under "My sounds".
+import { computed, onCleanup, onMount, signal, store } from "lumiose";
+import { searchParams } from "lumiose/router";
+import { FPS, sfxData, sfxFrames, songSeconds } from "../../audio/driver.ts";
+import { playPcm } from "../../audio/player.ts";
+import { onSpace } from "../../keys.ts";
+import { DUTY_NAMES } from "../../model/instruments.ts";
+import { NO_MODS, SFX, applyMods, listing, sfxById, type SfxMods } from "../../model/sfx.ts";
+import { sfxToSheet, sheetToSfx } from "../../model/sheet.ts";
+import {
+  keepSound,
+  mySounds,
+  openInStudio,
+  openInStudioSheet,
+  renderSound,
+  saveWav,
+  sheetData,
+} from "../../sounds.ts";
+import { say } from "../../state.ts";
+import { tokens } from "../../tokens.ts";
+import { Maker, type Slider } from "../../ui/Maker.stsx";
+import { MySounds } from "../../ui/MySounds.stsx";
+
+const ms = (frames: number) => `${Math.round((frames / FPS) * 1000)} ms`;
+const rand = (lo: number, hi: number) => lo + Math.round(Math.random() * (hi - lo));
+
+type Choice = { custom: false; id: string } | { custom: true; id: string };
+
+export default function SfxPage() {
+  const selected = signal<Choice>({ custom: false, id: SFX[0]!.id });
+  const mods = store<SfxMods>({ ...NO_MODS });
+  const pcm = signal<Float32Array | null>(null);
+  let timer: ReturnType<typeof setTimeout> | undefined;
+
+  const entry = computed(() => {
+    const choice = selected();
+    return choice.custom ? mySounds().find((s) => s.id === choice.id) : undefined;
+  });
+  /** The SFX before the sliders: a preset, or a saved sound when the maker can express it. */
+  const base = computed(() => {
+    const choice = selected();
+    if (!choice.custom) return { sfx: sfxById(choice.id)! };
+    const saved = entry();
+    return saved ? sheetToSfx(saved.song, saved.id) : { reasons: ["it was deleted"] };
+  });
+  const current = computed(() => {
+    const b = base();
+    return "sfx" in b ? applyMods(b.sfx, { ...mods }) : null;
+  });
+  const title = () => current()?.name ?? entry()?.name ?? "Sound";
+  const sheet = computed(() => {
+    const sfx = current();
+    return sfx ? sfxToSheet(sfx, "sfx") : null;
+  });
+
+  function data() {
+    const sfx = current();
+    if (sfx) return sfxData(sfx);
+    return sheetData(entry()!.song);
+  }
+
+  async function fire(play = true) {
+    try {
+      const rendered = await renderSound(data());
+      pcm.set(rendered);
+      if (play) await playPcm(rendered);
+    } catch (error) {
+      say(`Audio failed: ${String(error)}`);
+    }
+  }
+
+  function pick(next: Choice) {
+    selected.set(next);
+    Object.assign(mods, NO_MODS);
+    void fire();
+  }
+
+  function tweak(field: keyof SfxMods, value: number) {
+    mods[field] = value;
+    clearTimeout(timer);
+    timer = setTimeout(() => void fire(), 140);
+  }
+
+  function surprise() {
+    Object.assign(mods, {
+      pitch: rand(-7, 7),
+      length: [0.6, 0.8, 1, 1.25, 1.5][rand(0, 4)]!,
+      sweep: rand(-1, 1) === 0 ? 0 : rand(-6, 6),
+      duty: rand(-1, 3),
+      tone: rand(-2, 2),
+      volume: 1,
+    });
+    void fire();
+  }
+
+  /** Copies the shown built-in sound (with the sliders applied) into My sounds. */
+  function copyToMine() {
+    const sfx = current();
+    if (!sfx) return;
+    const copy = sfxToSheet({ ...sfx, name: `${sfx.name} copy` }, "sfx");
+    if ("reasons" in copy) return say(`Cannot copy: ${copy.reasons.join(", ")}`);
+    const id = keepSound(copy.song);
+    if (id) pick({ custom: true, id });
+  }
+
+  function openStudio() {
+    const sfx = current();
+    if (sfx) openInStudio(sfx, "sfx");
+    else if (entry()) openInStudioSheet(entry()!.song, `Open ${entry()!.name} in the studio`);
+  }
+
+  onMount(() => {
+    onSpace(() => void fire());
+    const id = searchParams().get("sound");
+    if (id && mySounds().some((s) => s.id === id)) selected.set({ custom: true, id });
+    void fire(false);
+  });
+  onCleanup(() => {
+    onSpace(undefined);
+    clearTimeout(timer);
+  });
+
+  const voices = () => current()?.voices ?? [];
+  const has = (test: (channel: number) => boolean) => () => voices().some((v) => test(v.channel));
+  const editable = () => current() !== null;
+  const both = (f: () => boolean) => () => editable() && f();
+
+  const sliders: Slider[] = [
+    {
+      label: "Pitch",
+      value: () => mods.pitch,
+      min: -12,
+      max: 12,
+      step: 1,
+      show: () => (mods.pitch > 0 ? `+${mods.pitch}` : String(mods.pitch)),
+      enabled: both(has((c) => c !== 3)),
+      onInput: (v) => tweak("pitch", v),
+    },
+    {
+      label: "Length",
+      value: () => mods.length,
+      min: 0.5,
+      max: 2,
+      step: 0.05,
+      show: () => `${Math.round(mods.length * 100)}%`,
+      enabled: editable,
+      onInput: (v) => tweak("length", v),
+    },
+    {
+      label: "Sweep",
+      value: () => mods.sweep,
+      min: -7,
+      max: 7,
+      step: 1,
+      show: () =>
+        mods.sweep === 0 ? "Preset" : mods.sweep > 0 ? `Up ${mods.sweep}` : `Down ${-mods.sweep}`,
+      enabled: both(has((c) => c === 0)),
+      onInput: (v) => tweak("sweep", v),
+    },
+    {
+      label: "Duty",
+      value: () => mods.duty,
+      min: -1,
+      max: 3,
+      step: 1,
+      show: () => (mods.duty < 0 ? "Preset" : DUTY_NAMES[mods.duty]!),
+      enabled: both(has((c) => c !== 3)),
+      onInput: (v) => tweak("duty", v),
+    },
+    {
+      label: "Noise tone",
+      value: () => mods.tone,
+      min: -3,
+      max: 3,
+      step: 1,
+      show: () =>
+        mods.tone === 0 ? "Preset" : mods.tone > 0 ? `Bright ${mods.tone}` : `Dark ${-mods.tone}`,
+      enabled: both(has((c) => c === 3)),
+      onInput: (v) => tweak("tone", v),
+    },
+    {
+      label: "Volume",
+      value: () => mods.volume,
+      min: 0.25,
+      max: 1,
+      step: 0.05,
+      show: () => `${Math.round(mods.volume * 100)}%`,
+      enabled: editable,
+      onInput: (v) => tweak("volume", v),
+    },
+  ];
+
+  const notice = () => {
+    const b = base();
+    return "reasons" in b
+      ? `The sliders are off for this sound because ${b.reasons.join(", ")}. It still plays, exports and opens in the studio.`
+      : undefined;
+  };
+  const studioLimit = () => {
+    const s = sheet();
+    return s && "reasons" in s ? `Cannot open in the studio: ${s.reasons.join(", ")}` : "";
+  };
+
+  return (
+    <div class="sfx">
+      <header class="intro">
+        <h1>Sound effects</h1>
+        <p>
+          Each sound is a few square or noise notes, a handful of frames long, exactly how handheld
+          RPGs wrote them. Tap a pad, bend it, or open it in the studio to change it note by note.
+        </p>
+      </header>
+      <div class="layout">
+        <div class="side">
+          <ul class="pads" aria-label="Sound effects">
+            {SFX.map((sfx) => (
+              <li>
+                <button
+                  type="button"
+                  class="pad"
+                  aria-pressed={!selected().custom && selected().id === sfx.id}
+                  onClick={() => pick({ custom: false, id: sfx.id })}
+                >
+                  <span class="name">{sfx.name}</span>
+                  <span class="len">{ms(sfxFrames(sfx))}</span>
+                </button>
+              </li>
+            ))}
+          </ul>
+          <MySounds
+            kind="sfx"
+            selected={selected().custom ? selected().id : null}
+            onPick={(saved) => pick({ custom: true, id: saved.id })}
+          />
+        </div>
+        <Maker
+          title={title()}
+          blurb={current()?.blurb ?? "Your own sound, made in the studio."}
+          caption={
+            current()
+              ? ms(sfxFrames(current()!))
+              : `${Math.round(songSeconds(entry()!.song) * 1000)} ms`
+          }
+          pcm={pcm()}
+          onFire={() => void fire()}
+          sliders={sliders}
+          notice={notice()}
+          code={current() ? listing(current()!) : null}
+          kind="sfx"
+          onPcm={(rendered) => pcm.set(rendered)}
+          customId={selected().custom ? selected().id : undefined}
+          onCopy={copyToMine}
+          onSaved={(id) => pick({ custom: true, id })}
+          codeNote="The same sound as sound-driver macros: square_note frames, volume, fade, frequency. Fade 1–7 fades out (1 fastest), 9–15 fades in (9 fastest)."
+          actions={[
+            { label: "Surprise me", onClick: surprise, disabled: () => !editable() },
+            {
+              label: "Reset",
+              onClick: () => {
+                Object.assign(mods, NO_MODS);
+                void fire();
+              },
+              disabled: () => !editable(),
+            },
+            {
+              label: "Open in studio",
+              onClick: openStudio,
+              disabled: () => studioLimit() !== "",
+              title: () => studioLimit() || "Edit this sound on the studio's note grid",
+            },
+            {
+              label: "Export WAV",
+              primary: true,
+              onClick: () =>
+                void (async () => saveWav(pcm() ?? (await renderSound(data())), title()))(),
+            },
+          ]}
+        />
+      </div>
+    </div>
+  );
+}
+
+<style>
+  .sfx {
+    display: grid;
+    gap: 18px;
+  }
+  .intro h1 {
+    font-size: 24px;
+    color: var(--indigo);
+  }
+  .intro p {
+    max-inline-size: 70ch;
+    margin: 6px 0 0;
+    color: var(--dim);
+  }
+  .layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr);
+    gap: 18px;
+    align-items: start;
+  }
+  .side {
+    display: grid;
+    gap: 18px;
+  }
+  .pads {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(120px, 100%), 1fr));
+    gap: 10px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .pad {
+    display: grid;
+    gap: 4px;
+    inline-size: 100%;
+    min-block-size: 76px;
+    padding: 12px;
+    border: 0;
+    border-radius: 14px;
+    background: var(--shell);
+    text-align: start;
+    cursor: pointer;
+    box-shadow:
+      inset 0 -4px 0 rgb(0 0 0 / 0.12),
+      0 6px 14px -10px rgb(0 0 0 / 0.5);
+  }
+  .pad:active {
+    transform: translateY(2px);
+    box-shadow: inset 0 2px 0 rgb(0 0 0 / 0.12);
+  }
+  .pad[aria-pressed="true"] {
+    background: var(--accent);
+    color: var(--accent-ink);
+  }
+  .pad[aria-pressed="true"] .len {
+    color: inherit;
+    opacity: 0.8;
+  }
+  .name {
+    font-family: $tokens.font.pixel;
+    font-size: 13px;
+  }
+  .len {
+    font-size: 12px;
+    color: var(--dim);
+  }
+  @media (width < 900px) {
+    .layout {
+      grid-template-columns: minmax(0, 1fr);
+    }
+    .pads {
+      grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    }
+  }
+</style>

@@ -203,7 +203,8 @@ ${template.description}. Made with Lumiose (\`create-lumiose --template ${templa
 
 ## Layout
 
-- \`src/routes/\`: pages (\`.stsx\`) and endpoints (\`.ts\`); the file path is the URL.
+- \`src/routes/\`: one folder per URL segment, with a \`page.stsx\` page or a \`route.ts\` endpoint;
+  \`layout.stsx\` wraps the pages below it. Other files there are colocated modules.
 - \`vite.config.ts\`: \`lumiose({ mode: "${template.mode}" })\` sets the default route mode.
 - \`.lumiose/\`: generated types and shadow files (git-ignored).
 

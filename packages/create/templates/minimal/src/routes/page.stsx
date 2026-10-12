@@ -1,0 +1,24 @@
+import { Title } from "lumiose";
+
+export default function Home() {
+  return (
+    <main>
+      <Title>{{name}}</Title>
+      <h1>{{name}}</h1>
+      <p>
+        Edit <code>src/routes/page.stsx</code>: each folder in <code>src/routes</code> with a{" "}
+        <code>page.stsx</code> is a page.
+      </p>
+    </main>
+  );
+}
+
+// One <style> block at the end of the file styles every component in this file.
+<style>
+  main {
+    max-width: 40rem;
+    margin: 4rem auto;
+    padding: 0 1rem;
+    font-family: system-ui, sans-serif;
+  }
+</style>
