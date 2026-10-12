@@ -1,4 +1,4 @@
-This is a static Lumiose blog. Add a like button to each blog post page (`src/routes/blog/[slug].stsx`), below the post body.
+This is a static Lumiose blog. Add a like button to each blog post page (`src/routes/blog/[slug]/page.stsx`), below the post body.
 
 - Create it as `LikeButton`, exported from `src/components/LikeButton.stsx`, taking a `count` prop: the post's current number of likes (the new `likes` field in `src/lib/posts.ts`).
 - It renders a single `<button>` whose text is `♥ <count>` (for example `♥ 12`) and that has `aria-pressed="false"`.

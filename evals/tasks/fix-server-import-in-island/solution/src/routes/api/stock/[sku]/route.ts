@@ -1,5 +1,5 @@
 import type { Endpoint } from "lumiose";
-import { getStock } from "../../../server/stock.server.ts";
+import { getStock } from "../../../../server/stock.server.ts";
 
 export const GET: Endpoint<"/api/stock/[sku]"> = ({ params }) => {
   const stock = getStock(params.sku);

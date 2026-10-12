@@ -1,6 +1,6 @@
 import { notFound, params, Title } from "lumiose";
-import { StockBadge } from "../../components/StockBadge.stsx";
-import { hasProduct } from "../../server/stock.server.ts";
+import { StockBadge } from "../../../components/StockBadge.stsx";
+import { hasProduct } from "../../../server/stock.server.ts";
 
 export default function Product() {
   const { sku } = params<"/products/[sku]">();

@@ -1,5 +1,5 @@
 import { Title, url } from "lumiose";
-import { searchProducts } from "../server/products.server.ts";
+import { searchProducts } from "../../server/products.server.ts";
 
 async function Results({ q }: { q: string }) {
   const products = await searchProducts(q);

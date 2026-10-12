@@ -1,5 +1,5 @@
 import { href, notFound, params, Title } from "lumiose";
-import { posts } from "../../lib/posts.ts";
+import { posts } from "../../../lib/posts.ts";
 
 export async function staticPaths() {
   const tags = new Set(posts.flatMap((post) => post.tags));

@@ -1,5 +1,5 @@
 import { actionData, fail, redirect, Title, type ActionContext } from "lumiose";
-import { addTodo, listTodos, removeTodo, toggleTodo } from "../server/todos.server.ts";
+import { addTodo, listTodos, removeTodo, toggleTodo } from "../../server/todos.server.ts";
 
 const id = async (ctx: ActionContext<"/todos">) => Number((await ctx.formData()).get("id"));
 

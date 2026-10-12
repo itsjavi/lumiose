@@ -22,6 +22,6 @@ describe("counter island", () => {
     expect(html).toContain("Posts");
     expect(html).toMatch(/<output[^>]*>(<!--\[-->)?10(<!--\]-->)?<\/output>/);
     expect(source("vite.config.ts")).not.toMatch(/mode:\s*["']spa["']/);
-    expect(source("src/routes/index.stsx")).not.toMatch(/export const mode\s*=\s*["']spa["']/);
+    expect(source("src/routes/page.stsx")).not.toMatch(/export const mode\s*=\s*["']spa["']/);
   });
 });

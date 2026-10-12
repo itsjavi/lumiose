@@ -1,6 +1,6 @@
 import { notFound, params, Title } from "lumiose";
-import { LikeButton } from "../../components/LikeButton.stsx";
-import { findPost, posts } from "../../lib/posts.ts";
+import { LikeButton } from "../../../components/LikeButton.stsx";
+import { findPost, posts } from "../../../lib/posts.ts";
 
 /** The paths `lumiose build` prerenders for this route. */
 export async function staticPaths() {

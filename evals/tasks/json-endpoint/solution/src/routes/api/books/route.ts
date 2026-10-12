@@ -1,5 +1,5 @@
 import type { Endpoint } from "lumiose";
-import { books } from "../../lib/books.ts";
+import { books } from "../../../lib/books.ts";
 
 export const GET: Endpoint<"/api/books"> = ({ url }) => {
   const q = url.searchParams.get("q")?.toLowerCase() ?? "";
