@@ -12,6 +12,8 @@
 //   old page stays until the new one is ready; then, in one step, the URL signals change, the new
 //   content swaps in and the old content is disposed. A view with the same levels (another query)
 //   commits at once; props and `params()`/`url()`/`searchParams()` are reactive.
+// - View transitions: with `lumiose({ viewTransitions: true })` the entry passes `viewTransition()`,
+//   and that swap runs inside it. A view with the same levels still commits at once.
 // - Content created for a view reads that view (`params()`, `url()`, props) until it is shown,
 //   then the committed one.
 // - Navigation API: same-document navigations to URLs of this SPA are intercepted, so plain
@@ -64,6 +66,12 @@ export interface SpaConfig extends ClientTable {
   modules: Record<string, () => Promise<Module>>;
   /** Vite's `base`, with leading and trailing slashes. */
   base: string;
+  /**
+   * `viewTransition()` (../../dom/view-transition.ts) with `lumiose({ viewTransitions: true })`:
+   * navigations to other pages then swap their content inside a view transition. The entry imports
+   * it only then, so other SPAs leave it out.
+   */
+  viewTransition?: (update: () => void) => Promise<void>;
 }
 
 interface Level {
@@ -484,8 +492,9 @@ function prepare(r: Router, outlet: Outlet, depth: number, view: View, nav: Nav)
   let waiting = 0;
   let created = false;
   let content: Content | undefined;
+  let swapping = false;
 
-  const commit = (): void => {
+  const swap = (): void => {
     if (r.active !== nav) return;
     const previous = untrack(outlet.shown);
     batch(() => {
@@ -497,6 +506,14 @@ function prepare(r: Router, outlet: Outlet, depth: number, view: View, nav: Nav)
     });
     nav.cancel = undefined;
     nav.done?.();
+  };
+  // With view transitions, the swap waits for the browser to capture the old page.
+  const commit = (): void => {
+    if (r.active !== nav || swapping) return;
+    swapping = true;
+    const transition = r.config.viewTransition;
+    if (transition === undefined) swap();
+    else transition(swap).catch((error: unknown) => fail(r, error, untrack(r.current)));
   };
 
   (owner.context ??= {})[SUSPENSE] = {

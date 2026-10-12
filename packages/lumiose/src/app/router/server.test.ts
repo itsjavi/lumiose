@@ -266,7 +266,7 @@ describe("the client table", () => {
     expect(code).not.toContain('import("/src/routes/page.tsx")');
     expect(spaEntryCode(manifestOf({ "page.tsx": "" }), "/")).toBe("export {};\n");
     // A build where nothing hydrates starts the SPA without the island loader (TASK-91).
-    const csr = spaEntryCode(manifest, "/", true);
+    const csr = spaEntryCode(manifest, "/", { csr: true });
     expect(csr).toMatch(/^import \{ startCsr \} from ".*\/router\/csr\.ts";/);
     expect(csr).not.toContain("virtual:lumiose/islands");
     expect(csr).toContain(

@@ -348,7 +348,9 @@ export function lumioseDev(options: LumioseDevOptions = {}): Plugin {
       filter: { id: /^\0lumiose:(?:loader|spa)$/ },
       handler: (id) =>
         id === SPA_ENTRY_ID
-          ? spaEntryCode(app.manifest, server.config.base)
+          ? spaEntryCode(app.manifest, server.config.base, {
+              viewTransitions: project.viewTransitions,
+            })
           : `import ${JSON.stringify(ISLAND_LOADER)};\n`,
     },
 

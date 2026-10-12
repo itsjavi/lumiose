@@ -1,11 +1,11 @@
 ---
 id: TASK-252
 title: 'View transitions: viewTransition() and <ViewTransition>'
-status: To Do
+status: In Progress
 assignee:
   - '@Spark'
 created_date: '2026-10-12 18:40'
-updated_date: '2026-10-12 19:31'
+updated_date: '2026-10-12 19:58'
 labels:
   - runtime
   - api
@@ -34,4 +34,6 @@ Decision-43. viewTransition(fn) runs an update inside document.startViewTransiti
 
 <!-- SECTION:NOTES:BEGIN -->
 Lux 2026-10-12: SPA navigations use viewTransition() only when the existing lumiose({ viewTransitions: true }) option is on.
+
+Spark 2026-10-12: started (TASK-247 done in 94e8629). Lux: export viewTransition and <ViewTransition> from lumiose (no new subpath), in their own source module excluded from the capped core+dom measurement and reported on its own line; Spark may edit packages/vite/src/app/router/entry.ts (~5 lines) for the SPA flag.
 <!-- SECTION:NOTES:END -->
