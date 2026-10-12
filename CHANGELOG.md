@@ -2,6 +2,67 @@
 
 All Lumiose packages share one version.
 
+## 0.2.0 (2026-10-12)
+
+### Breaking changes
+
+- approved API renames and the <Ctx value> provider (TASK-191.1) (c07d91e)
+
+### Features
+
+- **web:** closing heading 'Enlighten your next project.'; Astro's server-page JS is measured on its port (TASK-240, TASK-242) (a4198c0)
+- **web:** server speed columns (renders/s, req/s) in the stack table, new hero H1, eyebrow and meta description (TASK-240) (1fc11e8)
+- **bench:** register the Astro app in the harness and the viewer (TASK-242) (bc37f1b)
+- **bench:** Astro port of the fullstack Tracker app (TASK-242) (ad6f7ea)
+- **bench-ssr:** Preact, Astro and Remix 3 entries in the SSR benchmark (TASK-241) (c595508)
+- **web:** serve the site's mounted apps under lumiose dev, and link the showcase screenshots (TASK-239) (6ab59d9)
+- **web:** stack table lists Lumiose first, then stacks by npm downloads; flat tint on Lumiose's row (TASK-213) (f3d18c3)
+- **web:** landing redesign: night stage with a WebGL light field, stack table, four sections (TASK-213) (8d62e19)
+- **web:** live, editable .stsx demo on the landing, with static tabs without JavaScript (TASK-211) (7daad9e)
+- **examples:** prerender every Dotmatrix route and hydrate it (TASK-218) (55f381e)
+- **bench:** count the packages each production server loads at runtime (TASK-230) (fe8db4c)
+- **bench:** Remix 3 port of the fullstack Tracker app (TASK-205) (d7c3b19)
+- **examples:** prerender the chiptune tracker; browser state restored after hydration (TASK-217) (58ad190)
+- **bench:** Nuxt port of the fullstack Tracker app (TASK-204) (3d1ed49)
+- **bench:** Vue and Preact jsfb entries, latest pinned framework versions, Solid 2 RC entry (TASK-206, TASK-225) (3f534a9)
+- **cli:** lumiose routes reads lumiose({ prerender }) and marks prerendered spa pages (TASK-227) (c690935)
+- **app:** layout-level export const prerender applies to the spa pages below it (TASK-229) (56525de)
+- **site:** /showcase and /demos URLs, sitemap, lossless redirects from /examples (TASK-215) (d218d14)
+- **bench:** SvelteKit port of the fullstack Tracker app (TASK-203) (4c6735a)
+- **web:** serve the playground as the /playground route of the website (TASK-214) (061811f)
+- **bench:** SolidStart port of the fullstack Tracker app (TASK-202) (8db9c45)
+- **app:** prerender spa routes at build time with export const prerender (TASK-216) (f8e5d5f)
+- **app:** isServer, query function context, fetchJSON cache: "no-store" (TASK-199) (9c7a8df)
+- **app:** keyed async cache: deduped fetchJSON, query(key, fn), targeted invalidate (TASK-195) (f413572)
+- **vite:** name scoped state where client code reaches it; fresh per test under Vitest (TASK-193) (4f1218f)
+- **core:** defineState, scoped state sent with the page (TASK-193) (ac9b4ce)
+- **query:** @lumiose/query adapter over @tanstack/query-core (TASK-197) (bf0724a)
+- **core:** optimistic values that roll back when the promise fails (TASK-196) (5c847b9)
+- **core:** reconcile patches fresh data into a store in place (TASK-192) (7e956d2)
+- **site:** GitHub link in the header and landing; 'Made with Lumiose' link back to the site in every published demo (TASK-188) (b5e68fc)
+
+### Fixes
+
+- **compiler:** create fragment items in document order, dynamic ones as insertValue blocks (TASK-234) (fd9bbce)
+- **router:** a hydrating SPA 404 renders the page its URL matches, with no 404 flash (TASK-231) (873fad4)
+- **site-kit:** tabs name their panels only once the panels have ids; header line as a border image (TASK-219) (b91cee2)
+- **bench:** controlled status select in the Nuxt app (TASK-204) (b01824b)
+- **bench:** restore RESULTS.md, overwritten by a local TASK-200 run in the reformat commit (9df6bf6)
+- **query:** lumiose is a peer dependency so apps keep one runtime; drop the coined ReconcileOption export (TASK-197) (f058486)
+- **server:** islands render without page context during SSR, matching hydration (TASK-194) (dfc1f41)
+- **release:** pack:check skips npm's dry run for published versions; release:version updates the loader and llms docs (TASK-183) (13ad897)
+- **release:** llms.txt and the napi loader follow v0.1.0; the compiler version test reads package.json (bf6c7cb)
+
+### Performance
+
+- **compiler:** server templates inline ssr()'s synchronous concatenation, +8% SSR renders/s (TASK-246) (f6eee54)
+- **server:** string fast path in insertText, +0.6% SSR renders/s (TASK-246) (c7db56b)
+- **dom:** exact fast paths for the unsafe URL check, +2.6% SSR renders/s (TASK-246) (2c56891)
+- **app:** fetchJSON follows the islands chunking rule; only its cache gate stays in the runtime chunk (TASK-233) (3edb233)
+- **vite:** keep runtime that one island imports in that island's chunk (TASK-228) (48ff6ce)
+- **app:** leave the keyed cache out of apps without runs (TASK-200) (af7e5e8)
+- **dom:** fold frame code out of bundles without islands hydration (TASK-200) (2d276b0)
+
 ## 0.1.0 (2026-10-10)
 
 ### Breaking changes
