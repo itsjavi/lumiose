@@ -5,7 +5,7 @@ status: Done
 assignee:
   - Nova
 created_date: '2026-10-09 12:12'
-updated_date: '2026-10-12 20:35'
+updated_date: '2026-10-12 20:45'
 labels:
   - adapter
   - docs
@@ -59,6 +59,8 @@ Nova 2026-10-12: docs and evidence.
 - Extra local runs by hand: static ssg-travel-journal in wrangler 4.142.0 dev (assets only) and wrangler pages dev, and in netlify-cli 27.10.0 serve; process.env with nodejs_compat in workerd; the Lambda page's handler in Node 26 with Function URL v2 events (recorded as Not tested: not in Lambda).
 - pnpm check (typecheck, oxlint, fmt:examples, vitest 1689 passed, scripts tests, size, cargo test) green at f4eb1b3 in an isolated worktree. pnpm pack:check: the three new packages would publish (release tooling picks packages/* up by itself).
 - Open: real free-tier deploys (user); on Vercel, which wins when a header route and the function set the same header is unverified (noted in vercel.md); root .gitignore could list .netlify/ (netlify-cli appends it on every run; the e2e restores the file).
+
+Nova 2026-10-12: the user approved (2026-10-12, via Lux) the type names Platform, PlatformEnv and VercelOptions, and decided the adapters have named exports only: the default exports of @lumiose/adapter-cloudflare, -vercel and -netlify are removed (6ddc708, refactor(adapters)!), with tests asserting the named export only, and the deploy pages and the Vite reference updated. Adapter unit tests, docs:check and pnpm check green at 6ddc708 (isolated worktree; vitest 1692 passed). Lux records it in decision-45.
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary
