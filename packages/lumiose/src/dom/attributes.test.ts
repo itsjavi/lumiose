@@ -19,6 +19,11 @@ describe("setText", () => {
     const node = document.createTextNode("x");
     setText(node, 42);
     expect(node.data).toBe("42");
+    // Numbers reach the DOM unconverted (TASK-245); the text is still String(number)'s.
+    for (const value of [-0, 1.5, Number.NaN, -Infinity, 1e21]) {
+      setText(node, value);
+      expect(node.data).toBe(String(value));
+    }
     setText(node, null);
     expect(node.data).toBe("");
     setText(node, "a");

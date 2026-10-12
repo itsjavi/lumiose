@@ -26,7 +26,14 @@ export function setNonce(el: HTMLElement | SVGElement): void {
 
 /** Text content: nullish and booleans render nothing, like `insert`. */
 export function setText(node: Text, value: unknown): void {
-  node.data = value == null || typeof value === "boolean" ? "" : String(value);
+  // A number goes to the DOM as is: the DOM converts it to the same text, and a JS string made
+  // with String() would stay alive with the node (about 64 bytes per text node in Chrome, TASK-245).
+  node.data =
+    typeof value === "number"
+      ? (value as unknown as string)
+      : value == null || typeof value === "boolean"
+        ? ""
+        : String(value);
 }
 
 /**
