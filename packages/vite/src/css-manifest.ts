@@ -33,7 +33,7 @@ const NOT_A_STYLESHEET = /[?&](?:inline|url|raw)\b/;
 /** The shape of `virtual:lumiose/css-manifest`. */
 export interface CssManifestModule {
   /**
-   * Project-relative module path (`src/routes/index.stsx`) → URLs (with `base`) of the
+   * Project-relative module path (`src/routes/page.stsx`) → URLs (with `base`) of the
    * stylesheets its static import graph reaches, in cascade order. Holds the entries and the
    * dynamically imported modules of the server build; empty in dev.
    */

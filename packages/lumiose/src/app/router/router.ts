@@ -3,7 +3,7 @@
 // - Boot: the SPA entry (./boot.ts) hydrates or client-renders the SPA root island with `spaRoot()`
 //   once the modules of its first view are loaded. One SPA runs per document.
 // - Views: a view is a URL resolved to the files the island renders ("levels": the SPA's layouts,
-//   then the page or a `_404`/`_error` page) and its params. `current` holds the committed view.
+//   then the page or a `not-found`/`error` page) and its params. `current` holds the committed view.
 // - Outlets: each layout's `children` is an outlet rendering the next level. Navigating to a view
 //   keeps the levels both views share (persistent layouts keep their state) and replaces the rest
 //   at the first level that differs: another file, or other values of the params in its path
@@ -20,8 +20,8 @@
 //   `<a href>` links, back/forward and `navigation.navigate()` all route here; it also restores
 //   scroll and resets focus after each transition. Without it, the History API fallback
 //   (./history.ts, loaded only then) intercepts link clicks and `popstate`, and restores scroll.
-// - Errors: a render error, a rejected async page or `notFound()` render the nearest `_error` or
-//   `_404` page inside the SPA (`redirect()` navigates); without one, a minimal built-in page.
+// - Errors: a render error, a rejected async page or `notFound()` render the nearest `error` or
+//   `not-found` page inside the SPA (`redirect()` navigates); without one, a minimal built-in page.
 // - `invalidate()` bumps a revision that every async component run and resource below the SPA
 //   reads, so they re-run (holding their UI); `submit()` redirects navigate through the router.
 import type { Component, Renderable } from "../../contract/client.ts";
@@ -86,7 +86,7 @@ export interface View {
   /** The matched route pattern (`/songs/[id]`); undefined when no route matched (a 404). */
   route?: string;
   levels: Level[];
-  /** Error pages (`_404`, `_error`, the built-in one): the leaf's `status` and `error` props. */
+  /** Error pages (`not-found`, `error`, the built-in one): the leaf's `status` and `error` props. */
   error?: { status: number; error: Error };
 }
 
@@ -280,7 +280,7 @@ export interface SpaRootProps {
  * Loads what the SPA root island renders first and returns its root component. `leaf` is the page
  * or error page the server rendered (from the island ref). `csr`: the server sent an empty shell,
  * so the view comes from the URL (a static host may serve the shell for any URL, as `404.html`).
- * A `_404` page at the URL of a page that reroutes (`reroutes()` in ./table.ts: prerendered, with
+ * A `not-found` page at the URL of a page that reroutes (`reroutes()` in ./table.ts: prerendered, with
  * params `staticPaths()` may not list) renders that page instead, on the client: the island asks
  * the loader for a fresh render (`$$fresh`), and the page decides, with the browser's data, whether
  * it is found.
@@ -354,7 +354,7 @@ function spaRoot(r: Router, view: View): Renderable {
 }
 
 /**
- * Shows the document that a `_404` page hid while the router decides what its URL renders
+ * Shows the document that a `not-found` page hid while the router decides what its URL renders
  * (`rerouteScript()` in ./server.ts), once the first view and what it started (an error page, a
  * redirect) are on screen.
  */
@@ -588,8 +588,8 @@ async function go(r: Router, url: URL, target: Target): Promise<void> {
 }
 
 /**
- * Renders the error page for `error` thrown while rendering `view`: the nearest `_404` (404s) or
- * `_error` page inside the SPA, else a built-in one. A thrown `redirect()` navigates instead.
+ * Renders the error page for `error` thrown while rendering `view`: the nearest `not-found` (404s) or
+ * `error` page inside the SPA, else a built-in one. A thrown `redirect()` navigates instead.
  */
 function fail(r: Router, error: unknown, view: View): void {
   if (isRedirect(error)) {

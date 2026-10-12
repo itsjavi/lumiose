@@ -2,7 +2,7 @@
 // `prerender` (decision-38: HTML the SPA hydrates) and `GET`s every `static` endpoint through the
 // built server entry, in-process, and writes the results to
 // `dist/client`: `path/index.html` (`path.html` with `trailingSlash: "never"`), endpoint files
-// at their path (`sitemap.xml`), and `404.html` from the root `_404` when the root scope is static
+// at their path (`sitemap.xml`), and `404.html` from the root `not-found` when the root scope is static
 // or `spa`. `spa` pages with `ssr = false` (and no params) get their shell, which the client renders.
 // Routes with params are rendered for each entry of their `staticPaths()`. Request APIs used by
 // a route while it prerenders are LUM5001 (the handler's `prerendering` guard); a static endpoint
@@ -37,7 +37,7 @@ export interface PrerenderOptions {
   entry: ServerEntryModule;
   /** Absolute `dist/client`. */
   clientDir: string;
-  /** Project default route mode: whether the root `_404` is prerendered when there is no root layout. */
+  /** Project default route mode: whether the root `not-found` is prerendered when there is no root layout. */
   defaultMode: RouteMode;
   /** `ctx.env`/`env()` while prerendering. */
   env: ServerEnv;
@@ -65,7 +65,7 @@ export class PrerenderError extends Error {
 }
 
 const NON_GET_METHODS = ["HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"];
-/** Requested to render the root `_404`; must not match a route. */
+/** Requested to render the root `not-found`; must not match a route. */
 const NOT_FOUND_PROBE = "/__lumiose/404";
 
 interface Target {
@@ -166,7 +166,7 @@ export async function prerender(options: PrerenderOptions): Promise<PrerenderedF
     const location = response.headers.get("location");
     if (kind === "404") {
       if (response.status !== 404) {
-        problems.push(`${where}: rendering the _404 page responded ${response.status}.`);
+        problems.push(`${where}: rendering the not-found page responded ${response.status}.`);
         continue;
       }
       result = { path: "/404", file, kind };
@@ -235,7 +235,7 @@ async function routePaths(
   return [...paths];
 }
 
-/** Mode of the root scope, which the root `_404` renders in. */
+/** Mode of the root scope, which the root `not-found` renders in. */
 function rootMode(app: BuiltApp, defaultMode: RouteMode): RouteMode {
   return app.manifest.layouts.find((layout) => layout.dir === "")?.mode ?? defaultMode;
 }

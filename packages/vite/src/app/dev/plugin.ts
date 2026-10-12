@@ -16,7 +16,7 @@
 //   every changed module is a stylesheet, linked styles are swapped in place instead.
 // - Errors: unexpected render errors and compiler diagnostics (LUMxxxx, with Vite's code frame)
 //   are logged and open Vite's error overlay on the page that hit them, on top of the dev
-//   `_error`/fallback page; route manifest errors (LUM5002/5003) show on every page until fixed.
+//   `error`/fallback page; route manifest errors (LUM5002/5003) show on every page until fixed.
 
 import { runtimeFile } from "../../runtime-files.ts";
 import { AsyncLocalStorage } from "node:async_hooks";

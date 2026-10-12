@@ -7,7 +7,7 @@ import { HttpError, statusText } from "./server/control.ts";
 
 /**
  * Thrown by `fetchJSON()` for non-2xx responses, and by `submit()` when an action throws. An
- * `HttpError`, so if a server component lets it escape, the page renders `_error` (or `_404`) with
+ * `HttpError`, so if a server component lets it escape, the page renders `error` (or `not-found`) with
  * the same status.
  */
 export class FetchError extends HttpError {

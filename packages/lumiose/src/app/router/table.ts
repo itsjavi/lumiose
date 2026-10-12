@@ -4,7 +4,7 @@
 // layout of its chain (or at the page itself when no layout is `spa`): the layouts above it render
 // on the server only, and the subtree renders as one root island. Pages that share that first
 // layout belong to the same SPA ("app") and navigate between each other on the client; any other
-// URL is a document navigation. `_404` and `_error` pages below an `spa` layout render inside the
+// URL is a document navigation. `not-found` and `error` pages below an `spa` layout render inside the
 // SPA too. Pure and runtime-agnostic: used by the request handler, the dev and build entry
 // generator, and (as generated data) the client router.
 
@@ -15,7 +15,7 @@ import type { RouteSegment } from "../routes/segments.ts";
 export const SPA_REF = "#lumiose:spa";
 /** Suffix of the island ref of an SPA shell (`ssr = false`), rendered on the client only. */
 export const CSR_REF = "#lumiose:csr";
-/** Set on `<html>` by a `_404` page's script while it hides the document for the router (`rerouteScript()`). */
+/** Set on `<html>` by a `not-found` page's script while it hides the document for the router (`rerouteScript()`). */
 export const REROUTE_ATTR = "data-l-reroute";
 
 /** The part of a page's layout chain that renders inside the SPA root island. */
@@ -45,7 +45,7 @@ export function spaPagePart(
 }
 
 /**
- * The SPA part of a `_404`/`_error` page rendered with `layouts`, or `undefined` when none of
+ * The SPA part of a `not-found`/`error` page rendered with `layouts`, or `undefined` when none of
  * them is an `spa` layout. Its `ssr` is the innermost `spa` layout's.
  */
 export function spaErrorPart(
@@ -86,14 +86,14 @@ export interface ClientRoute {
   app?: string;
   /** SPA pages: the files rendered by the island (layouts, then the page). */
   levels?: string[];
-  /** SPA pages: the nearest `_404` and `_error` pages. */
+  /** SPA pages: the nearest `not-found` and `error` pages. */
   notFound?: string;
   error?: string;
   /** SPA pages: a 404 rendered for its URL renders the page on the client instead (see `reroutes`). */
   reroute?: true;
 }
 
-/** A `_404` page and the URL scope of its directory (for unmatched URLs). */
+/** A `not-found` page and the URL scope of its directory (for unmatched URLs). */
 export interface ClientNotFoundPage {
   file: string;
   dir: string;
@@ -104,7 +104,7 @@ export interface ClientTable {
   /** Pages and endpoints in match priority order. */
   routes: ClientRoute[];
   notFoundPages: ClientNotFoundPage[];
-  /** `_404`/`_error` pages that render inside an SPA, by file. */
+  /** `not-found`/`error` pages that render inside an SPA, by file. */
   pages: Record<string, { app: string; levels: string[] }>;
 }
 
@@ -149,7 +149,7 @@ export function clientTable(
  * page has params and is not rendered per request (`prerender`, or an `ssr = false` shell). A static
  * host answers the URLs `staticPaths()` did not list with `404.html`, and where the page does render
  * on the server (`lumiose dev`, a server build), it has no browser data: a song saved in the
- * browser is unknown there. When a `_404` page hydrates at such a URL, the router renders the
+ * browser is unknown there. When a `not-found` page hydrates at such a URL, the router renders the
  * page instead.
  */
 export function reroutes(route: Pick<PageRoute, "mode" | "ssr" | "prerender" | "params">): boolean {

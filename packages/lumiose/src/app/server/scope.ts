@@ -173,7 +173,7 @@ export function url(): URL {
 
 /**
  * The matched route pattern, e.g. `"/blog/[slug]"`: compare it instead of matching `url().pathname`.
- * Undefined when no route matched (a `_404` page for an unknown URL).
+ * Undefined when no route matched (a `not-found` page for an unknown URL).
  */
 export function route(): Routes | undefined {
   return currentScope("route()").route as Routes | undefined;

@@ -54,7 +54,7 @@ function level(
 }
 
 /**
- * The inline `<head>` script of a `_404` page rendered inside the SPA `app`: when the URL matches
+ * The inline `<head>` script of a `not-found` page rendered inside the SPA `app`: when the URL matches
  * one of the SPA's pages that reroute (`reroutes()`), it hides the document before its first paint,
  * so the 404 does not flash before the router renders the page. The router shows it again once its
  * first view is on screen; so does a timeout, should the SPA never start. Without JavaScript the 404

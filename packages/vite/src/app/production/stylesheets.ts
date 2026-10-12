@@ -34,8 +34,8 @@ export const STYLE_TAGS_PLACEHOLDER = "__LUMIOSE_STYLE_TAGS__";
 const INLINE_LIMIT = 4096;
 
 /**
- * The tags for `pages` (each route's stylesheet URLs, in cascade order) and `others` (`_404` and
- * `_error` pages, which do not narrow the shared prefix), writing the merged files to the client
+ * The tags for `pages` (each route's stylesheet URLs, in cascade order) and `others` (`not-found` and
+ * `error` pages, which do not narrow the shared prefix), writing the merged files to the client
  * output.
  */
 export async function styleTags(

@@ -14,7 +14,7 @@ export class Redirect {
   }
 }
 
-/** Thrown by `error()` and `notFound()`; rendered by the nearest `_error` (or `_404` for 404s). */
+/** Thrown by `error()` and `notFound()`; rendered by the nearest `error` (or `not-found` for 404s). */
 export class HttpError extends Error {
   readonly status: number;
 
@@ -65,12 +65,12 @@ export function redirect(location: string | URL, status?: RedirectStatus): never
   throw new Redirect(target, status);
 }
 
-/** Stops rendering and renders the nearest `_404` page with status 404. */
+/** Stops rendering and renders the nearest `not-found` page with status 404. */
 export function notFound(message = "Not Found"): never {
   throw new HttpError(404, message);
 }
 
-/** Stops rendering and renders the nearest `_error` page (`_404` for 404) with this status. */
+/** Stops rendering and renders the nearest `error` page (`not-found` for 404) with this status. */
 export function error(status: number, message: string = statusText(status)): never {
   if (!(Number.isInteger(status) && status >= 400 && status <= 599)) {
     throw new RangeError(`error(): status must be between 400 and 599, got ${status}.`);

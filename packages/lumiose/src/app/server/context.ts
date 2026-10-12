@@ -109,7 +109,7 @@ export interface ResponseContext {
   setHeader(name: string, value: string): void;
 }
 
-/** Props of `_error` and `_404` pages. */
+/** Props of `error` and `not-found` pages. */
 export interface ErrorPageProps {
   status: number;
   /** An `HttpError` from `error()`/`notFound()`; other errors are masked as 500 outside dev. */

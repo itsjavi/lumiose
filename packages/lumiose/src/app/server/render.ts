@@ -15,7 +15,7 @@ import { BODY_SLOT, HEAD_SLOT } from "./document.ts";
 export interface PageTree {
   /** Layout components, outermost first. Each receives `{ params, children }`. */
   layouts: readonly Component<any>[];
-  /** The page, `_404` or `_error` component. */
+  /** The page, `not-found` or `error` component. */
   page: Component<any>;
   /** Props for `page`: `{ params }` for pages, `{ status, error }` (+ params) for error pages. */
   props: Record<string, unknown>;
