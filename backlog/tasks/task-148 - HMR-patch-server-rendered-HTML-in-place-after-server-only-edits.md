@@ -5,20 +5,21 @@ status: To Do
 assignee:
   - Nova
 created_date: '2026-10-09 05:24'
-updated_date: '2026-10-10 02:29'
+updated_date: '2026-10-12 18:40'
 labels:
   - dev
   - hmr
+milestone: m-9
 dependencies:
   - TASK-147
-priority: low
+priority: high
 ordinal: 148000
 ---
 
 ## Description
 
 <!-- SECTION:DESCRIPTION:BEGIN -->
-Planned only (user 2026-10-09: 'plan only') — do not start without the user's go-ahead. After an edit to a server-only component, fetch the current URL's fresh HTML and morph the page DOM in place (keeping islands' DOM and state, focus and scroll) instead of a full reload, similar in spirit to React Router's hot data revalidation. Fall back to a reload when the document/head structure changes.
+User 2026-10-12: a 1.0 must-have (smoother dev reload); was planned only on 2026-10-09. After an edit to a server-only component, fetch the current URL's fresh HTML and morph the page DOM in place (keeping islands' DOM and state, focus and scroll) instead of a full reload, similar in spirit to React Router's hot data revalidation. Fall back to a reload when the document/head structure changes. Main risk: keeping hydration markers intact while patching.
 <!-- SECTION:DESCRIPTION:END -->
 
 ## Acceptance Criteria

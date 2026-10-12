@@ -1,29 +1,31 @@
 ---
 id: TASK-175
-title: 'Deploy targets: Cloudflare, Vercel and Netlify adapters; deploy docs'
+title: 'Deploy adapters: Cloudflare, Vercel and Netlify'
 status: To Do
 assignee:
   - Nova
 created_date: '2026-10-09 12:12'
-updated_date: '2026-10-10 02:29'
+updated_date: '2026-10-12 18:40'
 labels:
   - adapter
   - docs
-milestone: m-7
-dependencies: []
-priority: low
+milestone: m-9
+dependencies:
+  - TASK-248
+priority: high
 ordinal: 175000
 ---
 
 ## Description
 
 <!-- SECTION:DESCRIPTION:BEGIN -->
-User 2026-10-09: do this last. Packages only where docs are not enough: @lumen/adapter-cloudflare (Workers + static assets, nodejs_compat for AsyncLocalStorage), @lumen/adapter-vercel (Build Output API v3), @lumen/adapter-netlify (Functions with Web Request/Response). Docs-only (with code examples): Bun, Deno, Node hosts (Docker, Fly, Render, Railway), static hosts (GitHub Pages, Cloudflare Pages, S3/CloudFront, Netlify static), AWS Lambda snippet.
+User 2026-10-12: a 1.0 must-have (was 'do this last' on 2026-10-09). Thin packages over the web-standard fetch handler (TASK-248): @lumiose/adapter-cloudflare (Workers + static assets, nodejs_compat for AsyncLocalStorage), @lumiose/adapter-vercel (Build Output API v3), @lumiose/adapter-netlify (Functions with Web Request/Response). The user cannot try every platform by hand, so each adapter is verified with its platform's local emulator in e2e (wrangler/workerd, netlify dev, vercel build output), and the docs carry a verification table ('verified locally' / 'verified on the platform') that only claims what was tested; the user does one real free-tier deploy per platform when convenient. Docs-only targets (with code examples): Bun, Deno, Fly, Render, Railway, static hosts (GitHub Pages, Cloudflare Pages, S3/CloudFront, Netlify static), AWS Lambda snippet. Docker, VPS and Coolify: TASK-249.
 <!-- SECTION:DESCRIPTION:END -->
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Three adapter packages with build output tests; a deploy guide page per target with copy-paste examples
+- [ ] #1 Three adapter packages on the shared fetch handler, each with build-output tests and an e2e run in its platform's local emulator
+- [ ] #2 A deploy guide page per target with copy-paste examples, and a verification table per target
 <!-- AC:END -->
 
 ## Implementation Notes
