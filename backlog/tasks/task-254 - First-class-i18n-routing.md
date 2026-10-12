@@ -5,7 +5,7 @@ status: Done
 assignee:
   - '@Nova'
 created_date: '2026-10-12 18:40'
-updated_date: '2026-10-12 21:11'
+updated_date: '2026-10-12 21:13'
 labels:
   - router
   - i18n
@@ -59,6 +59,8 @@ Nova 2026-10-12, implementation:
 - Not in scope / follow-ups: SPA navigations do not update hreflang/canonical links (server-rendered head only); x-default not written (agreed); lumiose routes JSON does not list locales.
 
 Nova 2026-10-12, fix 486a5bd: Vitest turns import.meta.env.* defines into process.env strings shared by every workspace project, so an i18n example's "[object Object]" reached apps/web and its module-level href() threw. The locales now travel in a global define (__LUMIOSE_I18N__: Vite replaces it statically, Vitest sets it per project as a value), and href()/lumiose/router accept only a value shaped like a locale config. Regression tests in href.test.ts; the build test checks a module-level href() in the SSR bundle. pnpm test: 1765 passed.
+
+Nova 2026-10-12: trailingSlash moved to the same mechanism (__LUMIOSE_TRAILING_SLASH__ global define, envTrailingSlash() accessor accepting only ignore/always/never); regression test in href.test.ts; dev-server test now checks @vite/env. pnpm test 1766 passed.
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary
