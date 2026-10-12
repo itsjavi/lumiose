@@ -1,10 +1,12 @@
-import { Title } from "lumiose";
+import { href, Title } from "lumiose";
 import * as theme from "../../../theme.ts";
+
+/** A seeded book (the seed is deterministic), to link the shell + holes pattern. */
+const SAMPLE_ISBN = "9786277549893";
 
 const FEATURES = [
   ["Server routes", "Books, authors, your list and profile render per request from node:sqlite."],
   ["Static routes", "This page and the genre pages are prerendered by lumiose build."],
-  ["Streaming", "The home page sends its shell first; slow recommendations stream in."],
   ["Form actions", "Sign-in, registration, reviews and the reading list post plain forms."],
   ["Islands", "Search suggestions, star ratings, reading-list buttons and the account menu."],
   ["Scoped styles", "Each component styles itself, with tokens from src/theme.ts."],
@@ -28,6 +30,44 @@ export default function About() {
           </div>
         ))}
       </dl>
+      <h2>Three ways to render a page</h2>
+      <p class="lead">
+        Pages that are the same for everyone, pages for one reader, and pages that are mostly the
+        same with a few personal parts each get their own pattern.
+      </p>
+      <dl class="features">
+        <div>
+          <dt>Static + island</dt>
+          <dd>
+            This page and the <a href={href("/genres")}>genre pages</a> are prerendered and served
+            as files, so they cannot know who is signed in. The header's account menu is a{" "}
+            <code>client:idle</code> island that asks <code>/api/me</code> once the page is idle.
+          </dd>
+        </div>
+        <div>
+          <dt>Server + streamed Suspense</dt>
+          <dd>
+            The <a href={href("/")}>home page</a> renders per request. Its shell is sent first, with
+            a placeholder, and the slow, async recommendations stream into the same response from
+            a <code>{"<Suspense>"}</code> boundary, applied by the browser or a small script.
+          </dd>
+        </div>
+        <div>
+          <dt>Shell + holes</dt>
+          <dd>
+            A <a href={href("/books/[isbn]", { isbn: SAMPLE_ISBN })}>book page</a> is a shell that
+            reads only the route param: the book and its description. The account area, the
+            reading-list button, your review, the ratings and the reviews are{" "}
+            <code>{"<Suspense>"}</code> holes that read the request themselves. Their queries are
+            synchronous, so the holes are folded into the first response: nothing streams, and
+            every form works without JavaScript.
+          </dd>
+        </div>
+      </dl>
+      <p>
+        More in the{" "}
+        <a href="https://lumiose.dev/docs/concepts/rendering-modes">rendering modes guide</a>.
+      </p>
     </main>
   );
 }

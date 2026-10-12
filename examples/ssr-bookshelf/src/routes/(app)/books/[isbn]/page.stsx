@@ -1,5 +1,15 @@
-// A book: details, ratings, the reader's own review (create, edit, delete through named form
-// actions) and the other reviews, paginated with `?page=`.
+// A book, as a reader-independent shell with holes. The shell is the catalog record (head tags,
+// cover, genre, title, authors, byline, description): it reads the route param and nothing else,
+// so it is the same for every reader and every request. Everything else is a hole: a <Suspense>
+// boundary whose content reads the request (locals(), url(), actionData()) and runs its queries
+// itself, with a fallback of fixed size.
+//   - Per reader: the reading-list toggle and "Your review" (create, edit and delete through
+//     named form actions), plus the header's account area, in (app)/layout.stsx.
+//   - Fresh (the same for every reader, but they change with each review or read the query
+//     string): the rating summary and histogram, and the reviews with their `?page=` pager.
+// node:sqlite is synchronous, so every hole resolves while the shell renders and is folded into
+// the first response: nothing streams (no <template for> or $swap script), and every form works
+// without JavaScript. Async data in a hole would stream it instead, as on the home page.
 import {
   actionData,
   error,
@@ -9,6 +19,7 @@ import {
   Meta,
   notFound,
   redirect,
+  Suspense,
   Title,
   url,
   type ActionContext,
@@ -16,7 +27,7 @@ import {
 } from "lumiose";
 import { Cover } from "../../../../components/BookCard.stsx";
 import { Pager } from "../../../../components/Pager.stsx";
-import { Rating } from "../../../../components/Rating.stsx";
+import { Rating, RatingPlaceholder } from "../../../../components/Rating.stsx";
 import { ReviewCard } from "../../../../components/ReviewCard.stsx";
 import { ReadingListToggle } from "../../../../islands/ReadingListToggle.stsx";
 import { StarRatingInput } from "../../../../islands/StarRatingInput.stsx";
@@ -25,7 +36,14 @@ import { LIMITS, validateReview, type ReviewInput } from "../../../../lib/valida
 import { loginHref, requireUser } from "../../../../server/auth.server.ts";
 import { queries } from "../../../../server/queries.server.ts";
 import * as theme from "../../../../theme.ts";
-import type { Book, FieldErrors, MutationResult, Page, Review, User } from "../../../../types.ts";
+import type {
+  Book,
+  BookRatings,
+  FieldErrors,
+  MutationResult,
+  Page,
+  Review,
+} from "../../../../types.ts";
 
 type Context = ActionContext<"/books/[isbn]">;
 
@@ -43,6 +61,7 @@ interface ReviewFailure {
 }
 
 const STARS = [5, 4, 3, 2, 1] as const;
+const REVIEWS_PER_PAGE = 5;
 
 function findBook(isbn: string): Book {
   return queries().getBook(isbn) ?? notFound(`No book with ISBN ${isbn}.`);
@@ -117,41 +136,25 @@ export const actions = {
 };
 
 export default function BookPage(props: PageProps<"/books/[isbn]">) {
-  return (
-    <BookDetail
-      book={findBook(props.params.isbn)}
-      user={locals().user ?? null}
-      page={parsePageParam(url().searchParams.get("page"))}
-      failure={actionData<typeof actions>()}
-    />
-  );
-}
-
-function BookDetail(props: {
-  book: Book;
-  user: User | null;
-  page: number;
-  failure: ReviewFailure | undefined;
-}) {
+  // In the shell, so a missing book is a 404 before anything is sent.
+  const book = findBook(props.params.isbn);
   return (
     <main>
-      <Title>{props.book.title} · Bookshelf</Title>
-      <Meta name="description" content={props.book.description.slice(0, 150)} />
+      <Title>{book.title} · Bookshelf</Title>
+      <Meta name="description" content={book.description.slice(0, 150)} />
       <div class="book">
         <div class="cover-wrap">
-          <Cover book={props.book} size="large" />
+          <Cover book={book} size="large" />
         </div>
         <div class="info">
           <p class="genre">
-            <a href={href("/genres/[slug]", { slug: props.book.genre.slug })}>
-              {props.book.genre.name}
-            </a>
+            <a href={href("/genres/[slug]", { slug: book.genre.slug })}>{book.genre.name}</a>
           </p>
-          <h1>{props.book.title}</h1>
-          {props.book.subtitle === null ? null : <p class="subtitle">{props.book.subtitle}</p>}
+          <h1>{book.title}</h1>
+          {book.subtitle === null ? null : <p class="subtitle">{book.subtitle}</p>}
           <p class="authors">
             by{" "}
-            {props.book.authors.map((author, index) => (
+            {book.authors.map((author, index) => (
               <>
                 {index === 0 ? "" : ", "}
                 <a href={href("/authors/[slug]", { slug: author.slug })}>{author.name}</a>
@@ -159,106 +162,134 @@ function BookDetail(props: {
             ))}
           </p>
           <p class="byline">
-            {props.book.year} · {props.book.pages} pages · ISBN {props.book.isbn}
+            {book.year} · {book.pages} pages · ISBN {book.isbn}
           </p>
-          <Rating rating={props.book.rating} />
-          {props.user === null ? (
-            <p class="byline">
-              <a href={loginHref(url())}>Sign in</a> to keep a reading list.
-            </p>
-          ) : (
-            <ReadingListToggle
-              client:visible
-              bookId={props.book.id}
-              onList={queries().isOnReadingList(props.user.id, props.book.id)}
-              next={`/books/${props.book.isbn}`}
-            />
-          )}
-          <p class="description">{props.book.description}</p>
-          <Histogram histogram={props.book.ratingHistogram} />
+          <Suspense fallback={<RatingPlaceholder />}>
+            <BookRating bookId={book.id} />
+          </Suspense>
+          <Suspense fallback={<p class="byline pending line" aria-hidden="true" />}>
+            <ReadingList book={book} />
+          </Suspense>
+          <p class="description">{book.description}</p>
+          <Suspense fallback={<Histogram histogram={null} />}>
+            <RatingsByStars bookId={book.id} />
+          </Suspense>
         </div>
       </div>
-      <YourReview
-        book={props.book}
-        user={props.user}
-        review={props.user === null ? null : queries().getUserReview(props.user.id, props.book.id)}
-        failure={props.failure}
-      />
-      <Reviews
-        isbn={props.book.isbn}
-        reviews={queries().listReviews(props.book.id, { page: props.page, pageSize: 5 })}
-        userId={props.user?.id ?? null}
-      />
+      <section class="your-review" id="your-review">
+        <h2>Your review</h2>
+        <Suspense fallback={<p class="pending line" aria-hidden="true" />}>
+          <YourReview book={book} />
+        </Suspense>
+      </section>
+      <section id="reviews">
+        <Suspense fallback={<ReviewsPlaceholder />}>
+          <Reviews book={book} />
+        </Suspense>
+      </section>
     </main>
   );
 }
 
-function Histogram(props: { histogram: Book["ratingHistogram"] }) {
-  const most = () => Math.max(1, ...props.histogram);
+// --- Fresh holes: the same for every reader, but they change with each review. ---------------
+
+function BookRating(props: { bookId: number }) {
+  return <Rating rating={queries().getBookRatings(props.bookId).summary} />;
+}
+
+function RatingsByStars(props: { bookId: number }) {
+  return <Histogram histogram={queries().getBookRatings(props.bookId).histogram} />;
+}
+
+/** Review counts per star; with no `histogram`, the empty rows of a fallback. */
+function Histogram(props: { histogram: BookRatings["histogram"] | null }) {
+  const count = (stars: number) => props.histogram?.[stars - 1] ?? 0;
+  const most = () => Math.max(1, ...(props.histogram ?? []));
   return (
-    <ul class="histogram" aria-label="Ratings by stars">
+    <ul
+      class="histogram"
+      aria-label={props.histogram === null ? undefined : "Ratings by stars"}
+      aria-hidden={props.histogram === null ? "true" : undefined}
+    >
       {STARS.map((stars) => (
         <li>
           <span>{stars} ★</span>
-          <span
-            class="bar"
-            style={{ "--share": `${(props.histogram[stars - 1]! / most()) * 100}%` }}
-          />
-          <span class="count">{props.histogram[stars - 1]}</span>
+          <span class="bar" style={{ "--share": `${(count(stars) / most()) * 100}%` }} />
+          <span class="count">{props.histogram === null ? "" : count(stars)}</span>
         </li>
       ))}
     </ul>
   );
 }
 
-function YourReview(props: {
-  book: Book;
-  user: User | null;
-  review: Review | null;
-  failure: ReviewFailure | undefined;
-}) {
-  return (
-    <section class="your-review" id="your-review">
-      <h2>Your review</h2>
-      {props.user === null ? (
-        <p>
-          <a href={loginHref(url())}>Sign in</a> to review this book.
-        </p>
-      ) : props.review === null ? (
+// --- Per-reader holes: they read the signed-in reader themselves. ------------------------------
+
+function ReadingList(props: { book: Book }) {
+  const user = locals().user ?? null;
+  return user === null ? (
+    <p class="byline">
+      <a href={loginHref(url())}>Sign in</a> to keep a reading list.
+    </p>
+  ) : (
+    <ReadingListToggle
+      client:visible
+      bookId={props.book.id}
+      onList={queries().isOnReadingList(user.id, props.book.id)}
+      next={href("/books/[isbn]", { isbn: props.book.isbn })}
+    />
+  );
+}
+
+function YourReview(props: { book: Book }) {
+  const user = locals().user ?? null;
+  // `actionData()` is set when a review action failed: the form shows what was typed and why.
+  return user === null ? (
+    <p>
+      <a href={loginHref(url())}>Sign in</a> to review this book.
+    </p>
+  ) : (
+    <ReviewEditor
+      review={queries().getUserReview(user.id, props.book.id)}
+      failure={actionData<typeof actions>()}
+    />
+  );
+}
+
+/** The reader's review with its edit and delete forms, or the form to write one. */
+function ReviewEditor(props: { review: Review | null; failure: ReviewFailure | undefined }) {
+  return props.review === null ? (
+    <ReviewForm
+      action="?/createReview"
+      submitLabel="Post review"
+      values={props.failure?.form === "create" ? props.failure.values : undefined}
+      errors={props.failure?.form === "create" ? props.failure.errors : {}}
+    />
+  ) : (
+    <>
+      <ReviewCard review={props.review} own />
+      <details class="edit" open={props.failure?.form === "update"}>
+        <summary>Edit your review</summary>
         <ReviewForm
-          action="?/createReview"
-          submitLabel="Post review"
-          values={props.failure?.form === "create" ? props.failure.values : undefined}
-          errors={props.failure?.form === "create" ? props.failure.errors : {}}
+          action="?/updateReview"
+          reviewId={props.review.id}
+          submitLabel="Save changes"
+          values={
+            props.failure?.form === "update"
+              ? props.failure.values
+              : {
+                  rating: String(props.review.rating),
+                  title: props.review.title ?? "",
+                  body: props.review.body,
+                }
+          }
+          errors={props.failure?.form === "update" ? props.failure.errors : {}}
         />
-      ) : (
-        <>
-          <ReviewCard review={props.review} own />
-          <details class="edit" open={props.failure?.form === "update"}>
-            <summary>Edit your review</summary>
-            <ReviewForm
-              action="?/updateReview"
-              reviewId={props.review.id}
-              submitLabel="Save changes"
-              values={
-                props.failure?.form === "update"
-                  ? props.failure.values
-                  : {
-                      rating: String(props.review.rating),
-                      title: props.review.title ?? "",
-                      body: props.review.body,
-                    }
-              }
-              errors={props.failure?.form === "update" ? props.failure.errors : {}}
-            />
-          </details>
-          <form class="delete" method="post" action="?/deleteReview">
-            <input type="hidden" name="reviewId" value={String(props.review.id)} />
-            <button>Delete review</button>
-          </form>
-        </>
-      )}
-    </section>
+      </details>
+      <form class="delete" method="post" action="?/deleteReview">
+        <input type="hidden" name="reviewId" value={String(props.review.id)} />
+        <button>Delete review</button>
+      </form>
+    </>
   );
 }
 
@@ -299,9 +330,21 @@ function ReviewForm(props: {
   );
 }
 
-function Reviews(props: { isbn: string; reviews: Page<Review>; userId: number | null }) {
+/** Fresh and per reader: the page comes from `?page=`, and the reader's own review is marked. */
+function Reviews(props: { book: Book }) {
+  const page = parsePageParam(url().searchParams.get("page"));
   return (
-    <section id="reviews">
+    <ReviewList
+      isbn={props.book.isbn}
+      reviews={queries().listReviews(props.book.id, { page, pageSize: REVIEWS_PER_PAGE })}
+      userId={locals().user?.id ?? null}
+    />
+  );
+}
+
+function ReviewList(props: { isbn: string; reviews: Page<Review>; userId: number | null }) {
+  return (
+    <>
       <h2>
         Reviews <span class="byline">({props.reviews.total})</span>
       </h2>
@@ -316,7 +359,18 @@ function Reviews(props: { isbn: string; reviews: Page<Review>; userId: number | 
         }
         label="Review pages"
       />
-    </section>
+    </>
+  );
+}
+
+function ReviewsPlaceholder() {
+  return (
+    <>
+      <h2>Reviews</h2>
+      {Array.from({ length: REVIEWS_PER_PAGE }, () => (
+        <div class="pending review-pending" aria-hidden="true" />
+      ))}
+    </>
   );
 }
 
@@ -386,6 +440,21 @@ function Reviews(props: { isbn: string; reviews: Page<Review>; userId: number | 
   }
   .count {
     color: $theme.color.muted;
+  }
+  /* Fallbacks of the holes. Each keeps a fixed size: the signed-out content's, or for the
+     reviews, a page of short ones. */
+  .pending {
+    border-radius: $theme.radius.sm;
+    background: $theme.color.surface;
+  }
+  /* One line of text, in the font of the element it stands in for. */
+  .line {
+    max-width: 16rem;
+    min-height: 1.5em;
+  }
+  .review-pending {
+    height: 7.25rem;
+    margin-bottom: $theme.space.md;
   }
   .your-review {
     max-width: 42rem;

@@ -47,12 +47,21 @@ export interface BookSummary {
   coverHue: number;
 }
 
-export interface Book extends BookSummary {
+/**
+ * A book's page data: the catalog record, the same for every reader. Its ratings change with
+ * every review, so they come apart (`BookRatings`).
+ */
+export interface Book extends Omit<BookSummary, "rating"> {
   subtitle: string | null;
   description: string;
   pages: number;
+}
+
+/** A book's ratings, derived from its reviews. */
+export interface BookRatings {
+  summary: RatingSummary;
   /** Review counts per star: index 0 holds 1-star reviews, index 4 holds 5-star reviews. */
-  ratingHistogram: [number, number, number, number, number];
+  histogram: [number, number, number, number, number];
 }
 
 export type Rating = 1 | 2 | 3 | 4 | 5;

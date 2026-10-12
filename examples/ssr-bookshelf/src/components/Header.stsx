@@ -2,14 +2,13 @@ import { href } from "lumiose";
 import { AccountMenu } from "../islands/AccountMenu.stsx";
 import { SearchBox } from "../islands/SearchBox.stsx";
 import * as theme from "../theme.ts";
-import type { User } from "../types.ts";
-import { AccountLinks } from "./AccountLinks.stsx";
 
 /**
- * Site header. `user` is `undefined` on prerendered pages, which cannot know who is signed in:
- * there the account menu island asks the server once the page is idle.
+ * Site header. `account` is its account area. Server pages pass a per-reader hole (see
+ * `(app)/layout.stsx`); the default is the account menu island, for prerendered pages, which
+ * cannot know who is signed in: it asks the server once the page is idle.
  */
-export function Header(props: { user?: User | null }) {
+export function Header(props: { account?: JSX.Element }) {
   return (
     <header class="site-header">
       <a class="brand" href={href("/")}>
@@ -23,7 +22,7 @@ export function Header(props: { user?: User | null }) {
         <a href={href("/about")}>About</a>
       </nav>
       <SearchBox client:load />
-      {props.user === undefined ? <AccountMenu client:idle /> : <AccountLinks user={props.user} />}
+      {props.account ?? <AccountMenu client:idle />}
     </header>
   );
 }

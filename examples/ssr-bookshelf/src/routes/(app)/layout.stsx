@@ -1,15 +1,30 @@
-// Layout of the server-rendered routes: they show the signed-in user, so they render per request.
-import { locals, type LayoutProps } from "lumiose";
+// Layout of the server-rendered routes, rendered per request. The header's account area is a
+// per-reader hole: a <Suspense> boundary whose content reads locals() itself, so the rest of the
+// layout reads nothing per reader. node:sqlite is synchronous, so the hole resolves while the
+// shell renders and is folded into it: nothing streams, and it works without JavaScript.
+import { locals, Suspense, type LayoutProps } from "lumiose";
 // Base styles first: component styles come after them in the cascade.
 import "../../styles.css";
+import { AccountLinks, AccountPlaceholder } from "../../components/AccountLinks.stsx";
 import { Footer, Header } from "../../components/Header.stsx";
 
 export const mode = "server";
 
+/** The signed-in reader's links (or the sign-in links), read from the request. */
+function ReaderAccount() {
+  return <AccountLinks user={locals().user ?? null} />;
+}
+
 export default function AppLayout(props: LayoutProps<"/">) {
   return (
     <>
-      <Header user={locals().user ?? null} />
+      <Header
+        account={
+          <Suspense fallback={<AccountPlaceholder />}>
+            <ReaderAccount />
+          </Suspense>
+        }
+      />
       {props.children}
       <Footer />
     </>

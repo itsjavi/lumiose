@@ -1,10 +1,13 @@
 // End-to-end tests of the built bookshelf served by @lumiose/adapter-node (see playwright.config.ts):
-// prerendered and server pages, streaming, form actions with and without JavaScript, sessions and
-// the four islands. Tests that change data register a fresh reader, so they do not depend on
-// each other. BOOKSHELF_SCREENSHOTS=1 also saves screenshots to backlog/assets/task-36-*.png.
+// prerendered and server pages, streaming, the book page's holes, form actions with and without
+// JavaScript, sessions and the four islands. Tests that change data register a fresh reader, so
+// they do not depend on each other. BOOKSHELF_SCREENSHOTS=1 also saves screenshots to
+// backlog/assets/task-36-*.png.
 import { expect, test, type Page } from "@playwright/test";
 
 const BOOK = { isbn: "9786277549893", title: "A Bakery to Remember" };
+/** The most reviewed book of the seed (The Cartographer's Tower): three pages of reviews. */
+const POPULAR_ISBN = "9784255958071";
 const ASSETS = new URL("../../../backlog/assets/", import.meta.url);
 
 async function screenshot(page: Page, name: string, fullPage = false): Promise<void> {
@@ -35,6 +38,14 @@ function enhancedPost(page: Page, action: string) {
       response.url().includes(action) &&
       response.request().headers()["x-lumiose-action"] === "1",
   );
+}
+
+/**
+ * Whether the HTML has streamed `<Suspense>` content: a fallback placeholder (`<?start>`), a
+ * `<template for>` chunk or the `$swap` script that applies chunks.
+ */
+function streamed(html: string): string[] {
+  return ["<?start", "<template for=", "$swap"].filter((marker) => html.includes(marker));
 }
 
 test.beforeEach(({ page }) => {
@@ -104,6 +115,29 @@ test.describe("pages", () => {
       page.locator("section", { hasText: "Featured" }).locator(".book-card"),
     ).toHaveCount(6);
     await screenshot(page, "home");
+  });
+
+  test("the book page folds its per-reader holes into the first response", async ({
+    page,
+    request,
+  }) => {
+    // Signed out: the shell (head, metadata, description) and each hole, with nothing streamed.
+    const signedOut = await (await request.get(`/books/${BOOK.isbn}`)).text();
+    expect(streamed(signedOut)).toEqual([]);
+    expect(signedOut).toContain(`<title>${BOOK.title} · Bookshelf</title>`);
+    expect(signedOut).toContain("to keep a reading list.");
+    expect(signedOut).toContain("to review this book.");
+    expect(signedOut).toContain('aria-label="Ratings by stars"');
+    expect(signedOut).toContain('aria-label="Review pages"');
+
+    // Signed in, on the second page of reviews: the document response as the browser got it.
+    const name = await register(page);
+    const signedIn = await (await page.goto(`/books/${POPULAR_ISBN}?page=2`))!.text();
+    expect(streamed(signedIn)).toEqual([]);
+    expect(signedIn).toContain(name);
+    expect(signedIn).toContain("+ Reading list");
+    expect(signedIn).toContain("Post review");
+    expect(signedIn).toMatch(/aria-current="?page"?[^>]*>2</);
   });
 
   test("static pages are prerendered and served from dist/client", async ({ page, request }) => {
@@ -383,7 +417,12 @@ test.describe("without JavaScript", () => {
     const form = page.locator("#your-review form");
     await form.getByRole("textbox", { name: /Title/ }).fill("Short");
     await form.getByRole("textbox", { name: "Review", exact: true }).fill("Too short");
+    const failed = page.waitForResponse((response) => response.request().method() === "POST");
     await form.getByRole("button", { name: "Post review" }).click();
+    // The errors are in the "Your review" hole, folded into the response like the others.
+    const response = await failed;
+    expect(response.status()).toBe(400);
+    expect(streamed(await response.text())).toEqual([]);
     await expect(page.locator("#your-review")).toContainText("Choose a rating from 1 to 5 stars.");
     await expect(page.locator("#your-review")).toContainText("Write at least 10 characters.");
     await expect(form.getByRole("textbox", { name: /Title/ })).toHaveValue("Short");

@@ -25,6 +25,15 @@ export function Rating(props: { rating: RatingSummary }) {
   );
 }
 
+/** Stands in for `Rating` while a page streams it: the same line, with five unlit stars. */
+export function RatingPlaceholder() {
+  return (
+    <p class="rating pending" aria-hidden="true">
+      <span class="stars" />
+    </p>
+  );
+}
+
 /** A review's own rating: `★★★★☆`. */
 export function Stars(props: { rating: number }) {
   return (
@@ -62,6 +71,9 @@ export function Stars(props: { rating: number }) {
   }
   .stars::before {
     content: "★★★★★";
+  }
+  .pending .stars {
+    --filled: 0%;
   }
   .review-stars {
     color: $theme.color.star;

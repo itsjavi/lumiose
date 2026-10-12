@@ -213,11 +213,13 @@ describe("book details and ratings", () => {
         "SELECT rating FROM reviews WHERE book_id = ?",
         summary.id,
       ).map((row) => row.rating);
-      const book = q.getBook(summary.isbn)!;
+      const { summary: rating, histogram } = q.getBookRatings(summary.id);
       const mean = ratings.reduce((sum, r) => sum + r, 0) / ratings.length;
-      expect(book.rating).toEqual({ average: Math.round(mean * 100) / 100, count: ratings.length });
-      expect(book.ratingHistogram.reduce((sum, n) => sum + n, 0)).toBe(ratings.length);
-      expect(book.ratingHistogram[4]).toBe(ratings.filter((r) => r === 5).length);
+      expect(rating).toEqual({ average: Math.round(mean * 100) / 100, count: ratings.length });
+      // The same summary as the book cards, which read the book_ratings view.
+      expect(rating).toEqual(summary.rating);
+      expect(histogram.reduce((sum, n) => sum + n, 0)).toBe(ratings.length);
+      expect(histogram[4]).toBe(ratings.filter((r) => r === 5).length);
     }
   });
 
@@ -237,15 +239,18 @@ describe("book details and ratings", () => {
     ).map((row) => row.slug);
     expect(book.authors.map((a) => a.slug)).toEqual(expected);
     expect(book.description.length).toBeGreaterThan(40);
+    // The catalog record only: the book page renders its ratings in holes of their own.
+    expect(book).not.toHaveProperty("rating");
     expect(q.getBook("0000000000000")).toBeNull();
   });
 
   it("reports an unreviewed book with a null average", () => {
     const book = q.listBooks({ pageSize: 1 }).items[0]!;
     db.prepare("DELETE FROM reviews WHERE book_id = ?").run(book.id);
-    const detail = q.getBook(book.isbn)!;
-    expect(detail.rating).toEqual({ average: null, count: 0 });
-    expect(detail.ratingHistogram).toEqual([0, 0, 0, 0, 0]);
+    expect(q.getBookRatings(book.id)).toEqual({
+      summary: { average: null, count: 0 },
+      histogram: [0, 0, 0, 0, 0],
+    });
   });
 
   it("lists a book's reviews newest first, paginated", () => {
@@ -276,7 +281,7 @@ describe("reviews are owned by their author", () => {
       createdAt: now.toISOString(),
     });
     expect(q.getUserReview(userId, book.id)).toEqual(created.value);
-    expect(q.getBook(book.isbn)!.rating.count).toBe(book.rating.count + 1);
+    expect(q.getBookRatings(book.id).summary.count).toBe(book.rating.count + 1);
 
     expect(q.createReview(userId, book.id, review)).toEqual({ ok: false, reason: "conflict" });
     expect(q.createReview(userId, 999_999, review)).toEqual({ ok: false, reason: "not-found" });
@@ -298,9 +303,9 @@ describe("reviews are owned by their author", () => {
       createdAt: target.createdAt,
       updatedAt: now.toISOString(),
     });
-    const after = q.getBook(book.isbn)!;
-    expect(after.rating.count).toBe(book.rating.count);
-    expect(after.rating.average!).toBeLessThan(book.rating.average!);
+    const after = q.getBookRatings(book.id).summary;
+    expect(after.count).toBe(book.rating.count);
+    expect(after.average!).toBeLessThan(book.rating.average!);
     expect(q.updateReview(target.user.id, 999_999, review)).toEqual({
       ok: false,
       reason: "not-found",
@@ -320,7 +325,7 @@ describe("reviews are owned by their author", () => {
     });
     expect(q.getReview(target.id)).toBeNull();
     expect(q.deleteReview(target.user.id, target.id)).toEqual({ ok: false, reason: "not-found" });
-    expect(q.getBook(book.isbn)!.rating.count).toBe(book.rating.count - 1);
+    expect(q.getBookRatings(book.id).summary.count).toBe(book.rating.count - 1);
   });
 
   it("lists a user's reviews with their books", () => {

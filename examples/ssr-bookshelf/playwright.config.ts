@@ -2,8 +2,9 @@ import { defineConfig, devices } from "@playwright/test";
 
 // Smoke tests of the production build (`lumiose build`, then `node server.ts` on @lumiose/adapter-node)
 // and the dev server's island hot swap (`lumiose dev`), each on a freshly seeded database of its own.
-const PORT = 5191;
-const DEV_PORT = 5189;
+// BOOKSHELF_E2E_PORT and BOOKSHELF_E2E_DEV_PORT move them, to run next to another copy.
+const PORT = Number(process.env.BOOKSHELF_E2E_PORT) || 5191;
+const DEV_PORT = Number(process.env.BOOKSHELF_E2E_DEV_PORT) || 5189;
 
 export default defineConfig({
   testDir: "e2e",

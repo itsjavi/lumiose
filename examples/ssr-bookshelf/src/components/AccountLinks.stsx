@@ -28,6 +28,18 @@ export function AccountLinks(props: { user: User | null }) {
   );
 }
 
+/**
+ * Stands in for the account area while a page streams it: an empty pill of the same height, as
+ * wide as the signed-out links.
+ */
+export function AccountPlaceholder() {
+  return (
+    <div class="account" aria-hidden="true">
+      <span class="pending" />
+    </div>
+  );
+}
+
 <style>
   .account {
     display: flex;
@@ -48,5 +60,12 @@ export function AccountLinks(props: { user: User | null }) {
     color: $theme.color.accent;
     font-size: $theme.font.small;
     text-decoration: none;
+  }
+  /* A pill's height: its line, padding and border. */
+  .pending {
+    width: 8.5rem;
+    height: calc($theme.font.small * 1.5 + 0.4rem + 2px);
+    border-radius: $theme.radius.pill;
+    background: $theme.color.surface;
   }
 </style>

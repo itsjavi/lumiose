@@ -11,6 +11,7 @@ import type {
   AuthorSummary,
   Book,
   BookFilters,
+  BookRatings,
   BookSort,
   BookSummary,
   Genre,
@@ -65,13 +66,16 @@ export type Queries = ReturnType<typeof createQueries>;
 
 // --- SQL building blocks -----------------------------------------------------------------------
 
-const SUMMARY_COLUMNS = `
+/** A book's catalog columns, without its ratings. */
+const BOOK_COLUMNS = `
   b.id, b.isbn, b.title, b.year, b.cover_hue,
   g.slug AS genre_slug, g.name AS genre_name,
-  r.average, coalesce(r.review_count, 0) AS review_count,
   (SELECT json_group_array(json_object('slug', a.slug, 'name', a.name) ORDER BY ba.position)
      FROM book_authors ba JOIN authors a ON a.id = ba.author_id
     WHERE ba.book_id = b.id) AS authors_json`;
+
+const SUMMARY_COLUMNS = `${BOOK_COLUMNS},
+  r.average, coalesce(r.review_count, 0) AS review_count`;
 
 const SUMMARY_JOINS = `
   JOIN genres g ON g.id = b.genre_id
@@ -104,7 +108,7 @@ const REVIEW_COLUMNS = `
   rv.id, rv.book_id, rv.user_id, u.name AS user_name, rv.rating, rv.title, rv.body,
   rv.created_at, rv.updated_at`;
 
-interface BookSummaryRow {
+interface BookBaseRow {
   id: number;
   isbn: string;
   title: string;
@@ -112,12 +116,15 @@ interface BookSummaryRow {
   cover_hue: number;
   genre_slug: string;
   genre_name: string;
-  average: number | null;
-  review_count: number;
   authors_json: string | null;
 }
 
-interface BookRow extends BookSummaryRow {
+interface BookSummaryRow extends BookBaseRow {
+  average: number | null;
+  review_count: number;
+}
+
+interface BookRow extends BookBaseRow {
   subtitle: string | null;
   description: string;
   pages: number;
@@ -238,27 +245,36 @@ export function createQueries(db: DatabaseSync, options: QueriesOptions = {}) {
     return { ...pageInfo(total, page, pageSize), items: rows.map(toBookSummary) };
   }
 
+  /** The catalog record only: it reads no reviews, so it changes only with the catalog. */
   function getBook(isbn: string): Book | null {
     const row = get<BookRow>(
-      `SELECT ${SUMMARY_COLUMNS}, b.subtitle, b.description, b.pages
-       FROM ${SUMMARY_FROM} WHERE b.isbn = ?`,
+      `SELECT ${BOOK_COLUMNS}, b.subtitle, b.description, b.pages
+       FROM books b JOIN genres g ON g.id = b.genre_id WHERE b.isbn = ?`,
       isbn,
     );
     if (row === undefined) return null;
-    const histogram: Book["ratingHistogram"] = [0, 0, 0, 0, 0];
-    for (const { rating, n } of all<{ rating: number; n: number }>(
-      "SELECT rating, count(*) AS n FROM reviews WHERE book_id = ? GROUP BY rating",
-      row.id,
-    )) {
-      histogram[rating - 1] = n;
-    }
     return {
-      ...toBookSummary(row),
+      ...toBookBase(row),
       subtitle: row.subtitle,
       description: row.description,
       pages: row.pages,
-      ratingHistogram: histogram,
     };
+  }
+
+  /** The rating summary and histogram of a book, from one pass over its reviews. */
+  function getBookRatings(bookId: number): BookRatings {
+    const histogram: BookRatings["histogram"] = [0, 0, 0, 0, 0];
+    let reviews = 0;
+    let stars = 0;
+    for (const { rating, n } of all<{ rating: number; n: number }>(
+      "SELECT rating, count(*) AS n FROM reviews WHERE book_id = ? GROUP BY rating",
+      bookId,
+    )) {
+      histogram[rating - 1] = n;
+      reviews += n;
+      stars += rating * n;
+    }
+    return { summary: ratingSummary(reviews === 0 ? null : stars / reviews, reviews), histogram };
   }
 
   /** Best rated books (by WEIGHTED_RATING, so a few glowing reviews do not beat many good ones). */
@@ -611,6 +627,7 @@ export function createQueries(db: DatabaseSync, options: QueriesOptions = {}) {
   return {
     listBooks,
     getBook,
+    getBookRatings,
     featuredBooks,
     trendingBooks,
     recommendationsFor,
@@ -644,7 +661,7 @@ export function queries(): Queries {
 
 // --- Row mapping -------------------------------------------------------------------------------
 
-function toBookSummary(row: BookSummaryRow): BookSummary {
+function toBookBase(row: BookBaseRow): Omit<BookSummary, "rating"> {
   return {
     id: row.id,
     isbn: row.isbn,
@@ -652,9 +669,12 @@ function toBookSummary(row: BookSummaryRow): BookSummary {
     year: row.year,
     genre: { slug: row.genre_slug, name: row.genre_name },
     authors: row.authors_json === null ? [] : (JSON.parse(row.authors_json) as AuthorRef[]),
-    rating: ratingSummary(row.average, row.review_count),
     coverHue: row.cover_hue,
   };
+}
+
+function toBookSummary(row: BookSummaryRow): BookSummary {
+  return { ...toBookBase(row), rating: ratingSummary(row.average, row.review_count) };
 }
 
 function ratingSummary(average: number | null, count: number): RatingSummary {

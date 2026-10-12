@@ -2,7 +2,8 @@
 
 A multi-page book catalog with search, reviews, reading lists and accounts, backed by
 `node:sqlite`. It shows Lumiose's `server` and `static` route modes, form actions, cookie sessions,
-islands and `<Suspense>` streaming.
+islands and `<Suspense>`, and three ways to render a page: static + island, server + streamed
+`<Suspense>`, and a shell with per-reader holes ([Rendering patterns](#rendering-patterns)).
 
 Every page works without JavaScript; four islands enhance the search box, the reading-list
 buttons, the star rating input and the account menu of prerendered pages. It runs on `lumiose dev`
@@ -32,10 +33,12 @@ pnpm --filter @lumiose-examples/ssr-bookshelf test:e2e   # Playwright, against t
 
 The e2e tests (`e2e/bookshelf.e2e.ts`) build the app and run `server.ts` on a freshly seeded
 database of their own (`data/e2e.db`). They cover browsing, filters and paging, the static
-pages, streaming, sign-in, registration, private pages, review create/edit/delete and the
-forbidden case, the reading list, each island (and that hydration reports no `LUM4006`), and the
-same forms with JavaScript disabled. `BOOKSHELF_SCREENSHOTS=1` also saves the screenshots in
-`backlog/assets/task-36-*.png`.
+pages, streaming, the book page's holes (no streamed chunks, signed in or out), sign-in,
+registration, private pages, review create/edit/delete and the forbidden case, the reading list,
+each island (and that hydration reports no `LUM4006`), the strict CSP, and the same forms with
+JavaScript disabled. `BOOKSHELF_SCREENSHOTS=1` also saves the screenshots in
+`backlog/assets/task-36-*.png`. They use ports 5191 (build) and 5189 (`lumiose dev`);
+`BOOKSHELF_E2E_PORT` and `BOOKSHELF_E2E_DEV_PORT` change them.
 
 `node src/server/seed.server.ts --if-empty` keeps an already seeded database; `dev` runs it first.
 In dev, `LUMIOSE_SECRET` comes from `.env.development` (a development-only value).
@@ -105,7 +108,9 @@ These are the queries:
     totals. `q` is an FTS5 prefix search ranked by bm25, with title matches above author matches
     above description matches. `sort` is one of `title`, `newest`, `oldest`, `rating` or
     `relevance`. `rating` uses a Bayesian average, and unreviewed books come last.
-  - `getBook(isbn)` adds the description, the authors and a rating histogram.
+  - `getBook(isbn)`: the catalog record for the book page (description, pages, authors), without
+    ratings, so it reads no reviews.
+  - `getBookRatings(bookId)`: the rating summary and histogram, from the reviews.
 - **Home page:**
   - `featuredBooks(limit)`.
   - `trendingBooks({ days, limit })`: the most reviewed books in the last 30 days of activity.
@@ -155,7 +160,7 @@ Most routes are `server`, because they show the signed-in user or read the query
 | --------------------- | ------ | ----------------------------------------------------------------------------------------------------------------------- |
 | `/`                   | server | Featured and trending books; **`<Suspense>` streams `recommendationsFor(user)`**                                        |
 | `/books`              | server | `listBooks(parseBookFilters(url().searchParams))`; search, genre and sort form; pager                                   |
-| `/books/[isbn]`       | server | Book detail, rating histogram, reading-list toggle, your review (create, edit, delete), reviews paginated with `?page=` |
+| `/books/[isbn]`       | server | **Shell + holes**: book details; ratings, reading-list toggle, your review (create, edit, delete) and reviews are holes |
 | `/authors`            | server | Paginated author index with a name filter                                                                               |
 | `/authors/[slug]`     | server | Bio, rating, and `listBooks({ author })` with a pager                                                                   |
 | `/genres`             | static | Genre index with book counts                                                                                            |
@@ -171,13 +176,44 @@ Most routes are `server`, because they show the signed-in user or read the query
 
 Layouts:
 
-- `(app)/layout.stsx` holds the server routes. It sets `mode = "server"` and renders the header
-  with the user from `locals()`.
+- `(app)/layout.stsx` holds the server routes. It sets `mode = "server"`; the header's account
+  area is a `<Suspense>` hole whose content reads the user from `locals()`.
 - `(static)/layout.stsx` holds the static routes. Its header renders `<AccountMenu client:idle>`.
 
 Pages read the request (`url()`, `locals()`, `params`) and run their queries in the default export,
-then pass the results to a component as props. node:sqlite is synchronous, so pages need no
-`await`; the slow recommendations are an async component inside `<Suspense>`.
+or in the hole that needs them, then pass the results to a component as props. node:sqlite is
+synchronous, so pages need no `await`; the slow recommendations are an async component inside
+`<Suspense>`.
+
+### Rendering patterns
+
+Each page picks the pattern that fits what it shows. The
+[rendering modes guide](../../packages/lumiose/docs/concepts/rendering-modes.md) explains the modes
+and `<Suspense>`.
+
+| Pattern                    | Pages                 | How                                                                                                                                                               |
+| -------------------------- | --------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Static + island            | `/about`, `/genres/*` | Prerendered by `lumiose build` and served as files. They cannot know the reader: the header's `AccountMenu` island (`client:idle`) asks `/api/me`.                |
+| Server + streamed Suspense | `/`                   | Rendered per request. The shell is sent first with a placeholder; the async recommendations stream into the same response (`<template for>` or a `$swap` script). |
+| Shell + holes              | `/books/[isbn]`       | Rendered per request. A shell that is the same for every reader, plus `<Suspense>` holes for the per-reader and fresh parts, folded into the first response.      |
+
+The book page is the shell + holes example:
+
+- **Shell:** `<Title>`, `<Meta>`, cover, genre, title, subtitle, authors, byline and description,
+  from `getBook()`. It reads only the route param, and `findBook()` (with its `notFound()`) runs
+  there, so the status is decided before anything is sent.
+- **Per-reader holes:** the header's account area (in `(app)/layout.stsx`, so every server page
+  has it), the reading-list toggle and "Your review".
+- **Fresh holes**, the same for every reader but changed by each review or the query string: the
+  rating summary and histogram (`getBookRatings()`), and the reviews with their `?page=` pager and
+  the reader's own review marked.
+
+Each hole is a component that reads `locals()`, `url()` or `actionData()` itself instead of taking
+the user from the shell, and its fallback keeps the size of the signed-out content. The queries
+are synchronous (node:sqlite), so each hole resolves while the shell renders and is folded into
+the first response: no fallback, `<template for>` or `$swap` is sent, and every form in a hole
+works without JavaScript (the e2e tests check both). An async query in a hole would stream it
+instead, as on the home page.
 
 ### Styles
 
