@@ -126,15 +126,18 @@ test("<Link> prefetches on hover; a page's own <Suspense> shows its fallback", a
   await ready(page);
   const requested: string[] = [];
   page.on("request", (request) => requested.push(new URL(request.url()).pathname));
+  // The page module: src/routes/slow/page.tsx in dev, a page-[hash].js chunk in the build (the
+  // home page's chunk loaded before this listener).
+  const pageModule = (path: string) => path.includes("slow") || /\/page-[\w-]+\.js$/.test(path);
   await page.getByRole("link", { name: "Suspense" }).hover();
-  await expect.poll(() => requested.some((path) => path.includes("slow"))).toBe(true);
+  await expect.poll(() => requested.some(pageModule)).toBe(true);
   const count = requested.length;
   await page.getByRole("link", { name: "Suspense" }).click();
   await expect(page.locator("#slow")).toBeVisible();
   await expect(page.locator("#slow-fallback")).toBeVisible();
   await expect(page.locator("#slow-content")).toBeVisible();
   // The click loaded nothing more: the module was prefetched.
-  expect(requested.slice(count).filter((path) => path.includes("slow"))).toEqual([]);
+  expect(requested.slice(count).filter(pageModule)).toEqual([]);
 });
 
 test("unknown URLs render the not-found page inside the SPA", async ({ page }) => {
