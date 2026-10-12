@@ -1,10 +1,11 @@
 ---
 id: TASK-268
 title: 'Proposal: member signals as binding sources without a closure'
-status: To Do
+status: Done
 assignee:
   - Lux
 created_date: '2026-10-12 22:52'
+updated_date: '2026-10-12 22:53'
 labels:
   - compiler
   - performance
@@ -22,5 +23,17 @@ Found in TASK-245. For {row.label()} the compiler emits insertText(text, () => r
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 A decision is recorded: keep the closure, or a specified rule (and contract change) the compiler can apply safely
+- [x] #1 A decision is recorded: keep the closure, or a specified rule (and contract change) the compiler can apply safely
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Lux 2026-10-13: decision (a) keep the closure. It is correct for any receiver (date.toISOString(), store.method()); its cost is 36 B/row and ~0.1-0.2 ms on 03 at 4x throttling, inside the same-browser A/B noise (TASK-245: compiled within noise of hand on 01/03/04). (b) would add type resolution to the OXC compiler, which has no type checker: partial, brittle, and wrong for aliased or imported types. (c) adds a runtime check per binding plus contract surface (and a user-approved name). Revisit only if a same-browser A/B shows a measurable gap.
+<!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Decision recorded: keep the closure for zero-argument member calls ({row.label()}); revisit only with a measurable same-browser A/B gap.
+<!-- SECTION:FINAL_SUMMARY:END -->
