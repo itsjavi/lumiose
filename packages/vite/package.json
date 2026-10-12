@@ -48,14 +48,15 @@
   },
   "dependencies": {
     "@lumiose/compiler": "workspace:*",
-    "lumiose": "workspace:*",
     "svgo": "^4.1.0",
     "yaml": "^2.9.1"
   },
   "devDependencies": {
+    "lumiose": "workspace:*",
     "vite": "^8.3.4"
   },
   "peerDependencies": {
+    "lumiose": "workspace:^",
     "vite": "^8.3.0"
   }
 }

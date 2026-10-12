@@ -1068,9 +1068,6 @@ importers:
       '@lumiose/compiler':
         specifier: workspace:*
         version: link:../compiler
-      lumiose:
-        specifier: workspace:*
-        version: link:../lumiose
       svgo:
         specifier: ^4.1.0
         version: 4.1.0
@@ -1078,6 +1075,9 @@ importers:
         specifier: ^2.9.1
         version: 2.9.1
     devDependencies:
+      lumiose:
+        specifier: workspace:*
+        version: link:../lumiose
       vite:
         specifier: ^8.3.4
         version: 8.3.4(@types/node@24.19.1)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(yaml@2.9.1)
