@@ -77,7 +77,7 @@ const sha = (source: string) => `'sha256-${createHash("sha256").update(source).d
 
 describe('lumiose({ csp: "strict" })', () => {
   it("puts a fresh nonce on every inline script and style and in the policy header", async () => {
-    const fetch = app({ "src/routes/index.stsx": page });
+    const fetch = app({ "src/routes/page.stsx": page });
     const res = await fetch("/");
     const policy = res.headers.get("content-security-policy")!;
     const nonce = /'nonce-([^']+)'/.exec(policy)![1]!;
@@ -121,7 +121,7 @@ describe('lumiose({ csp: "strict" })', () => {
           nonceAttr(),
         ),
     };
-    const res = await app({ "src/routes/index.stsx": authored })("/");
+    const res = await app({ "src/routes/page.stsx": authored })("/");
     const nonce = /'nonce-([^']+)'/.exec(res.headers.get("content-security-policy")!)![1]!;
     const html = await res.text();
     expect(html).toContain(`<script nonce="${nonce}">window.a = 1</script>`);
@@ -130,7 +130,7 @@ describe('lumiose({ csp: "strict" })', () => {
     expect(html).not.toMatch(/\sstyle="/);
     // Prerendered, the same page gets no nonce: its hash policy lists the inline elements.
     const prerendered = await (
-      await app({ "src/routes/index.stsx": authored }, { prerendering: true })("/")
+      await app({ "src/routes/page.stsx": authored }, { prerendering: true })("/")
     ).text();
     expect(prerendered).toContain("<script>window.a = 1</script>");
     expect(prerendered).toContain(sha("window.a = 1"));
@@ -139,8 +139,8 @@ describe('lumiose({ csp: "strict" })', () => {
 
   it("keeps nonce'd pages out of shared caches unless the page sets Cache-Control (TASK-165)", async () => {
     const fetch = app({
-      "src/routes/index.stsx": page,
-      "src/routes/cached.stsx": {
+      "src/routes/page.stsx": page,
+      "src/routes/cached/page.stsx": {
         ...page,
         headers: () => ({ "cache-control": "public, max-age=60" }),
       },
@@ -151,7 +151,7 @@ describe('lumiose({ csp: "strict" })', () => {
 
   it("leaves the policy to a page or middleware that sets one", async () => {
     const fetch = app(
-      { "src/routes/index.stsx": page, "src/middleware.ts": { default: ownPolicy } },
+      { "src/routes/page.stsx": page, "src/middleware.ts": { default: ownPolicy } },
       { middleware: "src/middleware.ts" },
     );
     expect((await fetch("/")).headers.get("content-security-policy")).toBe("default-src 'self'");
@@ -162,7 +162,7 @@ describe('lumiose({ csp: "strict" })', () => {
       { path: "/admin/**", headers: { "content-security-policy": "default-src 'self'" } },
     ];
     const fetch = app(
-      { "src/routes/index.stsx": page, "src/routes/admin/index.stsx": page },
+      { "src/routes/page.stsx": page, "src/routes/admin/page.stsx": page },
       { headers },
     );
     // The adapter sends the configured header; the handler adds none of its own there.
@@ -170,19 +170,19 @@ describe('lumiose({ csp: "strict" })', () => {
     expect((await fetch("/")).headers.get("content-security-policy")).toMatch(
       /^script-src 'nonce-/,
     );
-    const prerender = app({ "src/routes/admin/index.stsx": page }, { headers, prerendering: true });
+    const prerender = app({ "src/routes/admin/page.stsx": page }, { headers, prerendering: true });
     expect(await (await prerender("/admin")).text()).not.toContain("http-equiv");
   });
 
   it("sends no header in dev, where Vite injects its own styles", async () => {
-    const fetch = app({ "src/routes/index.stsx": page }, { dev: true });
+    const fetch = app({ "src/routes/page.stsx": page }, { dev: true });
     const res = await fetch("/");
     expect(res.headers.get("content-security-policy")).toBeNull();
     expect(await res.text()).toMatch(/<style nonce="[^"]+">\[data-l-v/);
   });
 
   it("allows a prerendered page's inline scripts and styles by hash", async () => {
-    const fetch = app({ "src/routes/index.stsx": page }, { prerendering: true });
+    const fetch = app({ "src/routes/page.stsx": page }, { prerendering: true });
     const res = await fetch("/");
     expect(res.headers.get("content-security-policy")).toBeNull();
     const html = await res.text();
