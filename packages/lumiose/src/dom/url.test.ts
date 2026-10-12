@@ -78,10 +78,34 @@ describe("isUnsafeUrl fast paths", () => {
 
 describe("safeAttrValue", () => {
   it("checks exactly the URL attributes, in any case", () => {
+    // URL attributes, other cases, then names of the same lengths and near misses.
     const names = [
-      ...["href", "src", "action", "formaction", "xlink:href", "poster", "data", "cite"],
-      ...["background", "HREF", "Src", "FormAction", "title", "class", "data-id", "srcset"],
-      ...["hrefs", "id", "a", "", "xlink:hre", "backgrounds", "alt", "rel", "type", "name"],
+      "href",
+      "src",
+      "action",
+      "formaction",
+      "xlink:href",
+      "poster",
+      "data",
+      "cite",
+      "background",
+      "HREF",
+      "Src",
+      "FormAction",
+      "title",
+      "class",
+      "data-id",
+      "srcset",
+      "hrefs",
+      "id",
+      "a",
+      "",
+      "xlink:hre",
+      "backgrounds",
+      "alt",
+      "rel",
+      "type",
+      "name",
     ];
     for (const name of names) {
       const expected = referenceUrlAttribute(name) ? BLOCKED_URL : "javascript:alert(1)";
