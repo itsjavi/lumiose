@@ -112,15 +112,19 @@ export function sameSiteLocation(location: string): string {
 }
 
 /**
- * Whether a file name carries a build hash (Vite's `name-[hash].ext`: 8+ word characters with a
- * digit or an uppercase letter), so its URL changes with its content and it can be cached for a
- * year. Other files under the assets directory revalidate (TASK-167 L5).
+ * Whether a file name carries a build hash, so its URL changes with its content and it can be
+ * cached for a year: Vite's `name-[hash].ext`, whose hash is 8 base64url characters, `-` and `_`
+ * included (`Counter-D-i-jZkv.js`, TASK-201), or 8+ word characters after a `-` or `.`
+ * (`index.CfWq2a81.css`); either with a digit or an uppercase letter, which hand-written names
+ * rarely have there (`icon-download.svg` is no hash). Other files under the assets directory
+ * revalidate (TASK-167 L5); `lumiose build` warns about `public/` files that look hashed.
  */
 export function isHashed(path: string): boolean {
   const name = path.slice(path.lastIndexOf("/") + 1);
-  // A hash with a `-` inside fails the test: the file then revalidates, which is only slower.
-  return /[-.](?=\w*[\dA-Z])\w{8,}\.[^.]+$/.test(name);
+  return HASHED_NAME.test(name);
 }
+
+const HASHED_NAME = /(?:-(?=[\w-]{0,7}[\dA-Z])[\w-]{8}|[-.](?=\w*[\dA-Z])\w{8,})\.[^.]+$/;
 
 /** `Cache-Control` of a file: a year for hashed files in the assets directory, else revalidate. */
 export function cacheControl(file: string, assetsDir: string): string {

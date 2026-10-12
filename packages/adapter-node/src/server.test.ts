@@ -92,20 +92,22 @@ describe.skipIf(!binding)("@lumiose/adapter-node", () => {
     const island = /<link rel="modulepreload" href="(\/assets\/[^"]+\.js)">/.exec(html)![1]!;
     const chunk = await get(island);
     expect(chunk.status).toBe(200);
-    // The chunk's hash changes with the runtime. One with a `-` inside revalidates (isHashed).
-    expect(chunk.headers.get("cache-control")).toBe(
-      isHashed(island)
-        ? "public, max-age=31536000, immutable"
-        : "public, max-age=0, must-revalidate",
-    );
+    // Every hashed chunk, also one whose hash holds a `-` (TASK-201).
+    expect(chunk.headers.get("cache-control")).toBe("public, max-age=31536000, immutable");
   });
 
   it("caches only names that carry a Vite hash", () => {
     expect(isHashed("/assets/Counter-Bx3_kZ9q.js")).toBe(true);
     expect(isHashed("/assets/index.CfWq2a81.css")).toBe(true);
-    expect(isHashed("/assets/Counter-D-i-jZkv.js")).toBe(false);
+    // Base64url hashes hold `-` and `_` in about 12% of files (TASK-201).
+    expect(isHashed("/assets/Counter-D-i-jZkv.js")).toBe(true);
+    expect(isHashed("/assets/lumiose-BOAdip2-.js")).toBe(true);
+    expect(isHashed("/assets/app-dash-rest-page-_x-9abcd.css")).toBe(true);
     expect(isHashed("/assets/logo.svg")).toBe(false);
     expect(isHashed("/assets/my-component.js")).toBe(false);
+    expect(isHashed("/assets/icon-download.svg")).toBe(false);
+    expect(isHashed("/assets/my-component-v2.js")).toBe(false);
+    expect(isHashed("/assets/photo-2024-01.jpg")).toBe(false);
   });
 
   it("falls back to the handler for server routes, endpoints and unknown paths", async () => {

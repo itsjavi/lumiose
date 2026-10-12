@@ -16,7 +16,7 @@
 // `dist/client` alone, so the build then removes `dist/server` (./static-site.ts).
 // `lumiose({ headers })` is written to `dist/client/_headers` for static hosts.
 
-import { readFile, rm, rmdir, writeFile } from "node:fs/promises";
+import { readdir, readFile, rm, rmdir, writeFile } from "node:fs/promises";
 import { dirname, join, relative, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import {
@@ -47,6 +47,7 @@ import { precompress } from "./precompress.ts";
 import { prerender, type PrerenderedFile, type ServerEntryModule } from "./prerender.ts";
 import { serverReason } from "./static-site.ts";
 import { headersFile } from "lumiose/internal/app/headers.ts";
+import { isHashed } from "lumiose/internal/app/server/static-files.ts";
 
 export interface BuildOptions {
   /** Project root. Default: the current directory. */
@@ -147,6 +148,7 @@ export async function build(options: BuildOptions = {}): Promise<BuildResult> {
   const client = builder.environments.client!;
   const clientDir = resolve(root, client.config.build.outDir);
   const clientOutput = await builder.build(client);
+  await warnHashedPublicFiles(resolved.publicDir, client.config.build.assetsDir, root, logger);
   Object.assign(state, await islandUrls(clientOutput, root, clientDir, client.config.base));
   // Island refs, including those of linked packages and bare specifiers (TASK-98).
   for (const [module, fileName] of Object.entries(state.islandChunks)) {
@@ -229,6 +231,30 @@ export async function build(options: BuildOptions = {}): Promise<BuildResult> {
     });
   }
   return result;
+}
+
+/**
+ * Servers cache files under the assets directory whose names look content-hashed for a year
+ * (`isHashed()`, TASK-201): the build's own files are, but a `public/` file copied there by hand is
+ * not, and a changed copy would not reach returning visitors.
+ */
+async function warnHashedPublicFiles(
+  publicDir: string,
+  assetsDir: string,
+  root: string,
+  logger: Logger,
+): Promise<void> {
+  if (publicDir === "") return;
+  const dir = join(publicDir, assetsDir);
+  const entries = await readdir(dir, { recursive: true, withFileTypes: true }).catch(() => []);
+  const files = entries
+    .filter((entry) => entry.isFile() && isHashed(entry.name))
+    .map((entry) => normalizePath(relative(root, join(entry.parentPath, entry.name))))
+    .toSorted();
+  if (files.length === 0) return;
+  logger.warn(
+    `${files.join(", ")}: ${files.length === 1 ? "this name looks" : "these names look"} content-hashed (name-[hash].ext), so servers cache ${files.length === 1 ? "it" : "them"} for a year (immutable) and a changed copy would not reach returning visitors. Rename ${files.length === 1 ? "it" : "them"}, or move ${files.length === 1 ? "it" : "them"} out of ${normalizePath(relative(root, dir))}/.`,
+  );
 }
 
 /**

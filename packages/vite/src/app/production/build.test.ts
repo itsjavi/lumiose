@@ -936,6 +936,25 @@ export default function Home() { return <h1>Home</h1>; }
     expect(read(root, "es/index.html")).toContain('<link rel="canonical" href="/es">');
   });
 
+  it("warns about public/ files under assets/ whose names look content-hashed (TASK-201)", async () => {
+    const root = project({
+      "public/assets/logo.svg": "<svg/>",
+      "public/assets/icons/badge-v2-final.svg": "<svg/>",
+      "public/robots-Ab3_xY9z.txt": "",
+      "src/routes/page.stsx": "export default function Home() { return <h1>Home</h1>; }\n",
+    });
+    const logger = createLogger("silent");
+    const warn = vi.spyOn(logger, "warn");
+    await build({ root, customLogger: logger, logLevel: "silent" });
+    const messages = warn.mock.calls.map(([message]) => message).join("\n");
+    // Only under the assets directory, where servers cache hashed names for a year.
+    expect(messages).toContain(
+      "public/assets/icons/badge-v2-final.svg: this name looks content-hashed (name-[hash].ext)",
+    );
+    expect(messages).not.toContain("logo.svg");
+    expect(messages).not.toContain("robots");
+  });
+
   it("requires staticPaths() for static routes with params and a 200 response", async () => {
     const root = project({
       "src/routes/blog/[slug]/page.stsx":

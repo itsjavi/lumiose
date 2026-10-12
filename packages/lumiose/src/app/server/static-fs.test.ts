@@ -14,6 +14,8 @@ const FILES: Record<string, string> = {
   "contact.html": "<h1>contact</h1>",
   "sitemap.xml": "<urlset/>",
   "assets/app-B4x9QkZ2.js": "console.log(1)",
+  "assets/Counter-D-i-jZkv.js": "console.log(2)",
+  "assets/icon-download.svg": "<svg/>",
   "assets/logo.svg": "<svg/>",
   "assets/style.css": "a{}",
   "assets/style.css.br": "br-bytes",
@@ -84,9 +86,15 @@ describe("staticFiles", () => {
     const asset = await get("/assets/app-B4x9QkZ2.js");
     expect(asset.headers.get("content-type")).toBe("text/javascript; charset=utf-8");
     expect(asset.headers.get("cache-control")).toBe("public, max-age=31536000, immutable");
-    expect((await get("/assets/logo.svg")).headers.get("cache-control")).toBe(
-      "public, max-age=0, must-revalidate",
+    // A Vite hash may hold `-` and `_` (TASK-201).
+    expect((await get("/assets/Counter-D-i-jZkv.js")).headers.get("cache-control")).toBe(
+      "public, max-age=31536000, immutable",
     );
+    for (const unhashed of ["/assets/logo.svg", "/assets/icon-download.svg"]) {
+      expect((await get(unhashed)).headers.get("cache-control")).toBe(
+        "public, max-age=0, must-revalidate",
+      );
+    }
     const big = await get("/big.bin");
     expect(big.headers.get("content-type")).toBe("application/octet-stream");
     expect(big.headers.get("content-length")).toBe("200000");

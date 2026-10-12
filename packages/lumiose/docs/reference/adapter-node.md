@@ -125,8 +125,11 @@ interface StaticOptions {
 
 Serves `GET` and `HEAD` requests below the app's `base` from `dir` (the build's `client/`), and
 resolves `false` when no file answers. Content-hashed files in the assets directory (Vite's
-`name-[hash].ext`) are cached for a year (`immutable`); everything else, other files under
-`assets/` included, revalidates with `ETag` and `Last-Modified` (`304`). Page URLs
+`name-[hash].ext`, whose hash may hold `-` and `_`: `Counter-D-i-jZkv.js`) are cached for a year
+(`immutable`); everything else, other files under `assets/` included, revalidates with `ETag` and
+`Last-Modified` (`304`). The rule reads the file name (8 hash characters with a digit or an
+uppercase letter), so a `public/assets/` file named like a hashed one (`badge-v2-final.svg`) is
+cached for a year too: `lumiose build` warns about such files. Page URLs
 follow the build's `trailingSlash`: `/about` serves `about/index.html` (`"ignore"`), redirects to
 `/about/` (`"always"`), or serves `about.html` (`"never"`, which redirects `/about/`). Paths with
 `..` or dot files (other than `.well-known`) are never served. `config` is the build entry's
