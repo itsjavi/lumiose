@@ -5,7 +5,7 @@ status: Done
 assignee:
   - '@Nova'
 created_date: '2026-10-12 18:40'
-updated_date: '2026-10-12 21:13'
+updated_date: '2026-10-12 21:25'
 labels:
   - router
   - i18n
@@ -61,6 +61,8 @@ Nova 2026-10-12, implementation:
 Nova 2026-10-12, fix 486a5bd: Vitest turns import.meta.env.* defines into process.env strings shared by every workspace project, so an i18n example's "[object Object]" reached apps/web and its module-level href() threw. The locales now travel in a global define (__LUMIOSE_I18N__: Vite replaces it statically, Vitest sets it per project as a value), and href()/lumiose/router accept only a value shaped like a locale config. Regression tests in href.test.ts; the build test checks a module-level href() in the SSR bundle. pnpm test: 1765 passed.
 
 Nova 2026-10-12: trailingSlash moved to the same mechanism (__LUMIOSE_TRAILING_SLASH__ global define, envTrailingSlash() accessor accepting only ignore/always/never); regression test in href.test.ts; dev-server test now checks @vite/env. pnpm test 1766 passed.
+
+Nova 2026-10-12, fix 6af11f1 (TASK-261 item 5): a prefetch never keeps a detection decision. (a) With detect on, the speculation rules leave out / (the base); (b) a detection-eligible request with Sec-Purpose: prefetch (incl. prefetch;prerender) gets 503 + Cache-Control: no-store + Vary: Sec-Purpose, Cookie, Accept-Language, which browsers discard, without detecting or writing the cookie; the navigation decides afresh. Tests in server/i18n.test.ts; the <Link prefetch="none"> workaround is gone from examples/ssr-i18n-{paraglide,i18next} and guides/i18n.md; concepts/i18n.md documents it. e2e: both examples 15/15 with --repeat-each=3; pnpm test 1768 passed.
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary

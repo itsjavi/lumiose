@@ -6,7 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-10-12 20:55'
-updated_date: '2026-10-12 21:17'
+updated_date: '2026-10-12 21:25'
 labels:
   - i18n
   - router
@@ -25,4 +25,6 @@ Found in TASK-254 (Nova). (1) SPA navigations do not update hreflang/canonical l
 
 <!-- SECTION:NOTES:BEGIN -->
 Beacon (TASK-255) 2026-10-12: (5) Prefetch vs detection: Chromium's speculation-rules prefetch of "/" (default rules, hover) made with the old locale cookie is a detection redirect, and Chromium reuses it after a language switcher changed the cookie, so switching to the default locale lands back on the old one (seen in examples/ssr-i18n-*; worked around there with <Link prefetch="none"> on the switcher links). Possible fixes, for Nova/Lux: answer requests with Sec-Purpose: prefetch that detection would redirect without the redirect (e.g. 503 + no-store, which Chromium discards), or leave "/" out of the speculation rules when detect.cookie is set. (6) Proposal only, no API decided: there is no way to ask which locales another route declares, so a layout linking an untranslated page hard-codes its locales (examples/ssr-i18n-*/src/routes/layout.stsx, ABOUT_LOCALES).
+
+Nova 2026-10-12: (5) fixed in TASK-254 (6af11f1): speculation rules leave out / with detection on, and detecting requests with Sec-Purpose: prefetch get a 503 no-store the browser discards; the examples' prefetch="none" workaround is removed.
 <!-- SECTION:NOTES:END -->
