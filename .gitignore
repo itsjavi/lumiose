@@ -34,6 +34,11 @@ target/
 .lumiose/
 *.vsix
 
+# Deploy platform CLIs (local adapter e2e runs)
+.netlify/
+.vercel/
+.wrangler/
+
 # Test and benchmark artifacts
 test-results/
 playwright-report/
