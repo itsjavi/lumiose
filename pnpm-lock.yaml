@@ -909,6 +909,9 @@ importers:
       '@lumiose/compiler-linux-arm64-gnu':
         specifier: workspace:*
         version: link:npm/linux-arm64-gnu
+      '@lumiose/compiler-linux-arm64-musl':
+        specifier: workspace:*
+        version: link:npm/linux-arm64-musl
       '@lumiose/compiler-linux-x64-gnu':
         specifier: workspace:*
         version: link:npm/linux-x64-gnu
@@ -927,6 +930,8 @@ importers:
   packages/compiler/npm/darwin-x64: {}
 
   packages/compiler/npm/linux-arm64-gnu: {}
+
+  packages/compiler/npm/linux-arm64-musl: {}
 
   packages/compiler/npm/linux-x64-gnu: {}
 

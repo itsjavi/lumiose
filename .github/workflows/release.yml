@@ -21,6 +21,8 @@ concurrency:
 jobs:
   binaries:
     uses: ./.github/workflows/binaries.yml
+    with:
+      release: true
 
   publish:
     needs: binaries

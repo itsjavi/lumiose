@@ -10,7 +10,7 @@ writes. The examples call the app `my-app`, serve it as `example.com`, and keep 
 
 The server needs Node 24 or later. Build on the server, or in CI and copy the output. The build
 loads the compiler's native binary, published for Linux x64 and arm64 on glibc and for x64 on
-musl (Alpine); on another platform, build in CI.
+musl (Alpine; arm64 too from the release after 0.2.0); on another platform, build in CI.
 
 ```sh
 pnpm install --frozen-lockfile

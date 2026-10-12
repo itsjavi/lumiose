@@ -63,19 +63,22 @@ It runs only when a push or pull request to `main` changes what goes into the bi
 - `packages/compiler/**`
 - the workflow itself and its smoke scripts
 
-Every release runs it too, because `release.yml` calls it, and you can start it by hand. CI and the
-Pages build compile the compiler they need themselves.
+Every release runs it too, because `release.yml` calls it, and you can start it by hand. Releases
+call it with `release: true`, which also builds the release-only targets (the `napi-release` job,
+marked below); a manual run builds them when its `release` box is checked. CI and the Pages build
+compile the compiler they need themselves.
 
-| Artifact                                 | Built on                    | Smoke test                           |
-| ---------------------------------------- | --------------------------- | ------------------------------------ |
-| `compiler-aarch64-apple-darwin`          | macOS (Apple silicon)       | native                               |
-| `compiler-x86_64-apple-darwin`           | macOS, cross-compiled       | x64 Node under Rosetta               |
-| `compiler-x86_64-unknown-linux-gnu`      | Ubuntu 22.04 (glibc 2.35)   | native                               |
-| `compiler-aarch64-unknown-linux-gnu`     | Ubuntu 22.04 on arm64       | native                               |
-| `compiler-x86_64-unknown-linux-musl`     | Ubuntu, with cargo-zigbuild | `node:24-alpine` container           |
-| `compiler-x86_64-pc-windows-msvc`        | Windows                     | native                               |
-| `compiler-wasm32-wasip1-threads`         | Ubuntu                      | `NAPI_RS_FORCE_WASI=error`           |
-| `lumiose-wasm` (`wasm-web`, `wasm-node`) | Ubuntu                      | Node, `wasm-bindgen --target nodejs` |
+| Artifact                                              | Built on                                   | Smoke test                           |
+| ----------------------------------------------------- | ------------------------------------------ | ------------------------------------ |
+| `compiler-aarch64-apple-darwin`                       | macOS (Apple silicon)                      | native                               |
+| `compiler-x86_64-apple-darwin`                        | macOS, cross-compiled                      | x64 Node under Rosetta               |
+| `compiler-x86_64-unknown-linux-gnu`                   | Ubuntu 22.04 (glibc 2.35)                  | native                               |
+| `compiler-aarch64-unknown-linux-gnu`                  | Ubuntu 22.04 on arm64                      | native                               |
+| `compiler-x86_64-unknown-linux-musl`                  | Ubuntu, with cargo-zigbuild                | `node:24-alpine` container           |
+| `compiler-aarch64-unknown-linux-musl` (releases only) | Ubuntu 22.04 on arm64, with cargo-zigbuild | `node:24-alpine` container (arm64)   |
+| `compiler-x86_64-pc-windows-msvc`                     | Windows                                    | native                               |
+| `compiler-wasm32-wasip1-threads`                      | Ubuntu                                     | `NAPI_RS_FORCE_WASI=error`           |
+| `lumiose-wasm` (`wasm-web`, `wasm-node`)              | Ubuntu                                     | Node, `wasm-bindgen --target nodejs` |
 
 The smoke test (`.github/scripts/smoke-napi.mjs`) loads the binary through the package's loader,
 checks that the native binary (not the WASI fallback) loaded and compiles a component. Download

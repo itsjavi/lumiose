@@ -1,0 +1,26 @@
+{
+  "name": "@lumiose/compiler-linux-arm64-musl",
+  "version": "0.2.0",
+  "description": "Native bindings (napi-rs) of the Lumiose Rust compiler, with a WebAssembly (WASI) fallback.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/itsjavi/lumiose.git",
+    "directory": "packages/compiler"
+  },
+  "files": [
+    "compiler.linux-arm64-musl.node"
+  ],
+  "main": "compiler.linux-arm64-musl.node",
+  "publishConfig": {
+    "os": [
+      "linux"
+    ],
+    "cpu": [
+      "arm64"
+    ],
+    "libc": [
+      "musl"
+    ]
+  }
+}

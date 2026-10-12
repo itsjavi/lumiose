@@ -29,6 +29,8 @@ RUN --mount=type=cache,target=/usr/local/cargo/registry \
 
 # 2. `lumiose build`, with the workspace packages the sample uses. Debian (glibc), like the
 # compiler stage; the build output is plain JavaScript and assets, so the runtime can be Alpine.
+# This stage stays Debian when npm has an arm64 musl binary too (after 0.2.0): the binding is
+# compiled from source above, not installed from npm.
 # The genre pages are prerendered from the database, so the build seeds a throwaway one (the
 # seed is deterministic: the runtime's database has the same genres).
 FROM node:${NODE_VERSION}-bookworm-slim AS build

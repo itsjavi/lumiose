@@ -15,7 +15,7 @@ Put it at the root of the project, next to `package.json` and `pnpm-lock.yaml`:
 ARG NODE_VERSION=24
 
 # Build: all dependencies, then `lumiose build`. Debian (glibc): the compiler ships native
-# binaries for Linux x64 and arm64 on glibc, and for x64 only on musl (Alpine).
+# binaries for Linux x64 and arm64 on glibc, and up to 0.2.0 for x64 only on musl (Alpine).
 FROM node:${NODE_VERSION}-slim AS build
 ENV PNPM_HOME=/pnpm CI=true
 RUN npm install --global pnpm@11
@@ -84,7 +84,9 @@ other settings (`ORIGIN` behind a proxy, `PORT`, `HOST`) are in
   for Linux x64 and arm64 on glibc but only x64 on musl, so the build stage is `node:24-slim`,
   which builds on both architectures (an arm64 laptop or server included). The build output is
   JavaScript and static files, so it runs on Alpine. `prod-deps` uses the runtime's image so that a
-  dependency with a native addon is built for musl.
+  dependency with a native addon is built for musl. The release after 0.2.0 also publishes the
+  arm64 musl binary (`@lumiose/compiler-linux-arm64-musl`); from that version on, the build stage
+  can be `node:24-alpine` as well, and this Debian stage becomes optional.
 - **Non-root.** The app runs as `node` (uid 1000), and the files it runs are owned by root, so it
   cannot change them. A directory it writes to, such as a SQLite database's, must be created for
   it before `USER node` and mounted as a volume:

@@ -7,7 +7,8 @@ name: Binaries
 # Only when something that goes into the binaries changes: the Rust crates and toolchain, the
 # compiler package (napi loader and platform packages) and this workflow's own scripts. CI and Pages
 # build the compiler they need themselves; releases always build every binary (release.yml calls
-# this workflow), and it can be run by hand.
+# this workflow with `release: true`), and it can be run by hand. Release-only targets (the
+# napi-release job) are built only when `release` is true, to keep the push runs short.
 on:
   push:
     branches: [main]
@@ -32,7 +33,16 @@ on:
       - ".github/scripts/smoke-napi.mjs"
       - ".github/scripts/smoke-wasm.mjs"
   workflow_dispatch:
+    inputs:
+      release:
+        description: Also build the release-only targets
+        type: boolean
+        default: false
   workflow_call:
+    inputs:
+      release:
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -76,7 +86,8 @@ jobs:
             os: windows-latest
             smoke: native
     runs-on: ${{ matrix.os }}
-    steps:
+    # Shared with napi-release (a YAML alias), which builds the release-only targets.
+    steps: &napi-steps
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Rust toolchain
@@ -147,6 +158,24 @@ jobs:
           name: compiler-${{ matrix.target }}
           path: packages/compiler/compiler.*.node
           if-no-files-found: error
+
+  # Targets built only for releases (and manual runs with `release`), not on every push that changes
+  # the crates, with the napi job's steps.
+  napi-release:
+    name: napi (${{ matrix.target }})
+    if: inputs.release
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Alpine on arm64 (Graviton, Ampere, Docker on Apple silicon). Linked against musl with
+          # cargo-zigbuild on an arm64 runner, so the node:24-alpine smoke test runs natively.
+          - target: aarch64-unknown-linux-musl
+            os: ubuntu-22.04-arm
+            smoke: alpine
+            zig: true
+    runs-on: ${{ matrix.os }}
+    steps: *napi-steps
 
   # The WASI build of the addon (@lumiose/compiler-wasm32-wasi), the loader's fallback where no
   # native binary fits.
