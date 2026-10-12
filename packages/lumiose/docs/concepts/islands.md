@@ -15,7 +15,11 @@ On the server, the call compiles to an island record: the component's module and
 props, its slots and the hydration strategy. The page HTML contains the server-rendered island
 between comment markers (`<!--l:ID-->…<!--/l:ID-->`) plus a JSON record; a small loader (about 1
 kB) reads the records, arms the triggers and imports the island's module when one fires. Clicks,
-input, submits and key presses that happen before hydration are replayed.
+input, submits and key presses that happen before hydration are replayed. Islands work in `static`
+and `server` pages; how they compare with Astro's is in
+[Compared with Astro islands](rendering-modes.md#compared-with-astro-islands), and how a built page
+gets per-reader parts through an island in
+[Close to partial prerendering](rendering-modes.md#close-to-partial-prerendering).
 
 **Directives** (components only):
 
@@ -185,7 +189,7 @@ export default function Post() {
   reload: the island owns its state and updates itself from the result. Call `invalidate()` when
   the page needs fresh server HTML ([Data and actions](data-and-actions.md)).
 - **Making a whole page an island to get interactivity.** Mark only the interactive parts, or use
-  an `spa` route ([Rendering modes](rendering-modes.md)).
+  an `spa` route ([Choosing a mode](rendering-modes.md#choosing-a-mode)).
 
 ## Related diagnostics
 
