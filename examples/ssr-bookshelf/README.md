@@ -188,7 +188,7 @@ synchronous, so pages need no `await`; the slow recommendations are an async com
 ### Rendering patterns
 
 Each page picks the pattern that fits what it shows. The
-[rendering modes guide](../../packages/lumiose/docs/concepts/rendering-modes.md) explains the modes
+[rendering modes guide](../../packages/lumiose/docs/concepts/rendering-modes.md#close-to-partial-prerendering) explains the modes
 and `<Suspense>`.
 
 | Pattern                    | Pages                 | How                                                                                                                                                               |
