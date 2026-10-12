@@ -5,7 +5,7 @@ status: In Progress
 assignee:
   - '@Lux'
 created_date: '2026-10-12 14:06'
-updated_date: '2026-10-12 14:41'
+updated_date: '2026-10-12 16:02'
 labels:
   - benchmark
   - performance
@@ -26,11 +26,9 @@ From the 2026-10-12 SSR profiling (TASK-244 discussion with the user): optimizat
 <!-- AC:BEGIN -->
 - [x] #1 The SSR benchmark flattens every framework's output string (what a server pays to write it), and RESULTS.md says so
 - [x] #2 URL attribute safety: the compiler routes only URL attributes through the URL check, and the runtime check has an exact fast path; adversarial client/server tests cover it
-- [ ] #3 Adjacent attribute holes are merged into one hole in server codegen
-- [x] #4 Text holes take an inline string fast path
-- [ ] #5 Literal class strings are folded at build time, with client parity tests
-- [x] #6 Direct string concatenation for server templates whose holes are known strings, or a recorded reason why not
-- [ ] #7 Each step's measured gain (or none) is recorded in the notes; pnpm check passes
+- [x] #3 Text holes take an inline string fast path
+- [x] #4 Direct string concatenation for server templates whose holes are known strings, or a recorded reason why not
+- [ ] #5 Each step's measured gain (or none) is recorded in the notes; pnpm check passes
 <!-- AC:END -->
 
 ## Implementation Notes
@@ -47,4 +45,8 @@ Lux 2026-10-12, method: each step bundled (esbuild) with its runtime as a snapsh
 - #6 guarded concatenation (f6eee54): upper bound of straight concatenation +12.7%; compiled design +8.0%: hoisted _cN(...holes) returns new SSRHtml(concat) when every hole is a string (list/branch: SSRHtml), else ssr(_sN, ...holes) with the same evaluated holes; lumiose/server exports SSRHtml; doc-2 §3 updated. Skipping checks on always-string attribute holes: no gain, kept uniform.
 - Cumulative, base0 -> final: +12.2% (10.5..12.3).
 - Full SSR run on the new method (114b08a): Lumiose 618.9, Solid 579.5 (1.07x behind), Svelte 504.7. pnpm typecheck, pnpm test (1570), cargo test --workspace and clippy pass.
+
+Lux 2026-10-12: user decision: items 3 (merged attribute holes) and 4 (class folding) stay out, given their measured gains (none and +0.6%); their ACs are removed.
+
+Lux 2026-10-12: cheaper decision-28 memo tried at the user's request: no gain. Plain getters -3.2%, memo state in the function scope -2.7% (in process, vs the current IIFE memo); the current form stays.
 <!-- SECTION:NOTES:END -->
