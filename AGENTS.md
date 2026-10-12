@@ -223,6 +223,7 @@ work remains.
   - Any agent may edit the doc pages for the features it implements. Beacon owns the docs structure, the generators and doc-wide consistency.
   - Regenerate with `pnpm --filter lumiose docs:gen`, and keep `pnpm --filter lumiose docs:check` and the docs tests green.
   - A task is not Done while its docs are stale.
+- **Performance.** Claim a speedup or regression only from an in-process A/B (old and new builds in one process, alternating); for server rendering, `pnpm --filter @lumiose/bench-ssr ab <ref>…` does it (`benchmarks/ssr/README.md`).
 - **Commits.** Commit early and often, so the user can follow progress between requests. Do not leave long lists of pending changes.
 - **Evals.** Never run anything under `evals/` (eval runs, `pnpm validate` or other eval scripts, even locally) without the user's explicit permission, because evals cost the user money. Editing eval files is fine. If an eval run seems needed, propose it instead.
 - **Pushing.** Every push runs CI, which costs money. Commit locally as often as you like, but push only when needed: a finished, green task that needs CI to verify it, or a change the user should see deployed. Batch commits into one push, and never push backlog-only or note-only commits on their own.

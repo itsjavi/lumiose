@@ -7,6 +7,7 @@
   "type": "module",
   "scripts": {
     "build": "node scripts/build.ts",
+    "ab": "node scripts/ab.ts",
     "bench": "node scripts/build.ts && node scripts/bench.ts",
     "typecheck": "tsc -p tsconfig.json"
   },
