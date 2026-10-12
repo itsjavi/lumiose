@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { appPath, fillPattern, href, normalizeBase } from "./href.ts";
+import { appPath, envI18n, fillPattern, href, normalizeBase } from "./href.ts";
 
 describe("href", () => {
   it("returns static patterns unchanged", () => {
@@ -91,6 +91,33 @@ describe("href below the base, with the trailing-slash policy (TASK-101)", () =>
     expect(appPath("/a", "/sub/", true)).toBe("/sub/a/");
     expect(normalizeBase("")).toBe("/");
     expect(normalizeBase("docs")).toBe("/docs/");
+  });
+});
+
+// Vitest turns `import.meta.env.*` defines into `process.env` strings shared by every project of
+// the workspace (an i18n example's `"[object Object]"` reached apps/web), so the locales come from
+// the global `__LUMIOSE_I18N__` define, and only a locale config counts (TASK-254).
+describe("the locales define", () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    vi.unstubAllGlobals();
+  });
+
+  it("ignores an import.meta.env entry and anything but a locale config", () => {
+    vi.stubEnv("LUMIOSE_I18N", "[object Object]");
+    expect(envI18n()).toBeUndefined();
+    expect(href("/about")).toBe("/about");
+    for (const value of ["[object Object]", {}, { locales: "en", defaultLocale: "en" }, null]) {
+      vi.stubGlobal("__LUMIOSE_I18N__", value);
+      expect(envI18n()).toBeUndefined();
+      expect(href("/about")).toBe("/about");
+    }
+  });
+
+  it("localizes href() with the __LUMIOSE_I18N__ define", () => {
+    vi.stubGlobal("__LUMIOSE_I18N__", { locales: ["en", "es"], defaultLocale: "en" });
+    expect(href("/about", { locale: "es" } as never)).toBe("/es/about");
+    expect(href("/about")).toBe("/about");
   });
 });
 

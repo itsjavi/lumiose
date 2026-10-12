@@ -2,11 +2,15 @@
 // in the form of the project's `trailingSlash` policy, and in the current locale with
 // `lumiose({ i18n })` (`{ locale }` switches it, decision-44).
 //
-// All three come from `import.meta.env`, which Vite fills in in every environment: `lumiose` is
-// never external or pre-bundled (@lumiose/vite), so server and client code alike see `BASE_URL`,
-// `LUMIOSE_TRAILING_SLASH` (defined by `lumiose dev` and `lumiose build` from
-// `lumiose({ trailingSlash })`) and `LUMIOSE_I18N` (defined by the `lumiose` plugin from
+// Vite fills them in in every environment: `lumiose` is never external or pre-bundled
+// (@lumiose/vite), so server and client code alike see `import.meta.env.BASE_URL`,
+// `import.meta.env.LUMIOSE_TRAILING_SLASH` (defined by `lumiose dev` and `lumiose build` from
+// `lumiose({ trailingSlash })`) and `__LUMIOSE_I18N__` (defined by the `lumiose` plugin from
 // `lumiose({ i18n })`). Outside Vite they are unset: paths stay root-relative and unlocalized.
+//
+// The locales are a global define, not an `import.meta.env` one: Vitest turns `import.meta.env.*`
+// defines into `process.env` entries, strings shared by every project of a workspace, while it
+// sets global defines per project, as values.
 
 import { localizePath, splitLocale, type I18nUrls } from "../i18n/config.ts";
 import type { Locale, LocaleMap, RouteParams, Routes } from "./registry.ts";
@@ -16,15 +20,36 @@ declare global {
     BASE_URL: string;
     /** `lumiose({ trailingSlash })`, for `href()`. Defined by `lumiose dev` and `lumiose build`. */
     LUMIOSE_TRAILING_SLASH?: "ignore" | "always" | "never";
-    /** The locales of `lumiose({ i18n })`, for `href()`. Defined by the `lumiose` plugin. */
-    LUMIOSE_I18N?: I18nUrls;
   }
+  /** The locales of `lumiose({ i18n })`, for `href()` and `lumiose/router`; see the module comment. */
+  // oxlint-disable-next-line no-underscore-dangle -- a define, named like Vite's and Vitest's
+  var __LUMIOSE_I18N__: unknown;
 }
 
 /** The `define` that carries `trailingSlash` to `href()`; see the module comment. */
 export const TRAILING_SLASH_DEFINE = "import.meta.env.LUMIOSE_TRAILING_SLASH";
 /** The `define` that carries the locales of `lumiose({ i18n })` to `href()`. */
-export const I18N_DEFINE = "import.meta.env.LUMIOSE_I18N";
+export const I18N_DEFINE = "__LUMIOSE_I18N__";
+
+/**
+ * The locales of `lumiose({ i18n })` from the `__LUMIOSE_I18N__` define, or `undefined` when it is
+ * not defined or not a locale config.
+ */
+export function envI18n(): I18nUrls | undefined {
+  const value = typeof __LUMIOSE_I18N__ === "undefined" ? undefined : __LUMIOSE_I18N__;
+  return isI18nUrls(value) ? value : undefined;
+}
+
+function isI18nUrls(value: unknown): value is I18nUrls {
+  if (typeof value !== "object" || value === null) return false;
+  const { locales, defaultLocale } = value as Partial<I18nUrls>;
+  return (
+    Array.isArray(locales) &&
+    locales.every((locale) => typeof locale === "string") &&
+    typeof defaultLocale === "string" &&
+    locales.includes(defaultLocale)
+  );
+}
 
 /** With `lumiose({ i18n })`, `locale` picks the locale of the URL; it is no route param. */
 type LocaleKey = [keyof LocaleMap] extends [never] ? {} : { locale?: Locale | undefined };
@@ -58,7 +83,7 @@ export function envHref(
   current: (i18n: I18nUrls, base: string) => string | undefined,
 ): string {
   const base = normalizeBase(import.meta.env?.BASE_URL ?? "/");
-  const i18n = import.meta.env?.LUMIOSE_I18N;
+  const i18n = envI18n();
   return routeHref(pattern, (params ?? {}) as Record<string, unknown>, {
     base,
     trailingSlash: import.meta.env?.LUMIOSE_TRAILING_SLASH,

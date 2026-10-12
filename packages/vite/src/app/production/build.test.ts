@@ -817,7 +817,11 @@ export default {
 `,
       "src/routes/about/page.stsx": `import { href } from "lumiose";
 export const locales = "all";
-export default function About() { return <a href={href("/about", { locale: "en" })}>About</a>; }
+// Outside a request: the locales come from the plugin's define (TASK-254 regression).
+const spanish = href("/about", { locale: "es" });
+export default function About() {
+  return <a href={href("/about", { locale: "en" })} data-es={spanish}>About</a>;
+}
 `,
     });
     const result = await build({ root, ...quiet() });
@@ -831,7 +835,7 @@ export default function About() { return <a href={href("/about", { locale: "en" 
     expect(about).toContain(
       '<link rel="alternate" hreflang="en" href="https://example.com/docs/about/">',
     );
-    expect(about).toContain('<a href="/docs/about/">About</a>');
+    expect(about).toContain('<a href="/docs/about/" data-es="/docs/es/about/">About</a>');
   });
 
   it("warns when localized pages are prerendered without lumiose({ site })", async () => {

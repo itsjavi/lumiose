@@ -1,7 +1,7 @@
 // `lumiose/router` (owner: Spark): the client router of `spa` routes (spec §7.5, decision-20). This is
 // the browser entry (and the types); ./index.server.ts has the server variants with the same names.
 import { splitLocale } from "../i18n/config.ts";
-import { normalizeBase, pathBelowBase } from "../routes/href.ts";
+import { envI18n, normalizeBase, pathBelowBase } from "../routes/href.ts";
 import type { Locale, RouteParams, Routes } from "../routes/registry.ts";
 import type { RouteParamValues } from "../server/context.ts";
 import {
@@ -47,7 +47,7 @@ export function locale(): Locale {
   const inside = routerLocale();
   if (inside !== undefined) return inside as Locale;
   // An island of another route: the page's URL.
-  const i18n = import.meta.env?.LUMIOSE_I18N;
+  const i18n = envI18n();
   if (i18n === undefined) return undefined as never;
   const path = pathBelowBase(location.pathname, normalizeBase(import.meta.env?.BASE_URL ?? "/"));
   return (path === undefined ? i18n.defaultLocale : splitLocale(path, i18n).locale) as Locale;
