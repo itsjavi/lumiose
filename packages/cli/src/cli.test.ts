@@ -1,6 +1,8 @@
-// `lumiose` CLI smoke tests (TASK-28): every command runs as a subprocess of the bin on a fixture app
-// (written to a temp dir whose node_modules link lumiose, TypeScript and @lumiose/adapter-node), with
-// its help, `--format json` envelope and exit code.
+// `lumiose` CLI smoke tests (TASK-28): every command runs on a fixture app (written to a temp dir
+// whose node_modules link lumiose, TypeScript and @lumiose/adapter-node), with its help,
+// `--format json` envelope and exit code. Commands that only compute an answer run in-process through
+// `main` (TASK-262: a cold start of the bin per call made these tests time out under full-suite
+// load); the bin's own wiring, the tools it shells out to and the servers run as subprocesses.
 import { linkLumiose } from "@lumiose/vite/internal/test-links.ts";
 import { spawn, type ChildProcess } from "node:child_process";
 import {
@@ -18,7 +20,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { afterAll, beforeAll, describe, expect, it, onTestFinished } from "vitest";
 import { tsconfigTemplate } from "./check/tsconfig.ts";
-import { suggest } from "./main.ts";
+import { main, suggest } from "./main.ts";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const packageDir = join(here, "..");
@@ -100,7 +102,21 @@ function start(args: string[], cwd = root): ChildProcess {
   });
 }
 
-function run(...args: string[]): Promise<Run> {
+/** Runs the CLI in this process, as bin.ts does, in the fixture app without colors. */
+async function run(...args: string[]): Promise<Run> {
+  let stdout = "";
+  let stderr = "";
+  const code = await main(args, {
+    cwd: root,
+    color: false,
+    write: (text) => void (stdout += text),
+    writeError: (text) => void (stderr += text),
+  });
+  return { code, stdout, stderr };
+}
+
+/** Runs the bin as a subprocess: a cold Node start per call, so tests give it a longer timeout. */
+function runBin(...args: string[]): Promise<Run> {
   return new Promise((resolve, reject) => {
     const child = start(args);
     let stdout = "";
@@ -113,7 +129,14 @@ function run(...args: string[]): Promise<Run> {
 }
 
 async function runJson(...args: string[]) {
-  const result = await run(...args, "--format", "json");
+  return withJson(await run(...args, "--format", "json"));
+}
+
+async function runBinJson(...args: string[]) {
+  return withJson(await runBin(...args, "--format", "json"));
+}
+
+function withJson(result: Run) {
   return { ...result, json: JSON.parse(result.stdout) as Record<string, any> };
 }
 
@@ -144,6 +167,21 @@ async function serve(command: string, use: (url: string) => Promise<void>) {
 }
 
 describe("lumiose CLI", () => {
+  it(
+    "the bin writes stdout and stderr and sets the exit code",
+    // Two cold starts of the bin, run concurrently: about 0.2 s on an idle machine, several seconds
+    // when the whole suite shares the CPU.
+    { timeout: 30_000 },
+    async () => {
+      const [version, typo] = await Promise.all([runBin("-v"), runBin("chek")]);
+      expect(version.code).toBe(0);
+      expect(version.stdout).toMatch(/^lumiose \d+\.\d+\.\d+\n$/);
+      expect(typo.code).toBe(2);
+      expect(typo.stdout).toBe("");
+      expect(typo.stderr).toContain('Unknown command "chek".');
+    },
+  );
+
   it("prints help, per-command help, JSON help and the version", async () => {
     const help = await run("--help");
     expect(help.code).toBe(0);
@@ -290,14 +328,14 @@ export default function Editor() {
   it.skipIf(!binding)(
     "lumiose check, lint and fmt report in the envelope",
     async () => {
-      const check = await runJson("check");
+      const check = await runBinJson("check");
       expect(check.code, check.stderr).toBe(0);
       expect(check.json).toMatchObject({ command: "check", ok: true, diagnostics: [] });
 
-      const lint = await runJson("lint");
+      const lint = await runBinJson("lint");
       expect(lint.json).toMatchObject({ command: "lint", ok: lint.code === 0 });
 
-      const fmt = await runJson("fmt", "--check", "src/components");
+      const fmt = await runBinJson("fmt", "--check", "src/components");
       expect(fmt.json).toMatchObject({
         command: "fmt",
         ok: fmt.code === 0,
@@ -329,7 +367,7 @@ export default function Editor() {
     "lumiose build, preview and dev run with JSON on stdout",
     { timeout: 60_000 },
     async () => {
-      const build = await runJson("build");
+      const build = await runBinJson("build");
       expect(build.code, build.stderr).toBe(0);
       expect(build.json).toMatchObject({ command: "build", ok: true, clientDir: "dist/client" });
       expect(build.json.prerendered).toContainEqual(
