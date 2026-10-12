@@ -32,7 +32,7 @@ interface LumioseOptions {
   md?: boolean | { frontmatter?(data: Record<string, unknown>, ctx: { file: string }): unknown }; // default false
   /** `.html` imports as components. */
   html?: boolean; // default false
-  /** Cross-document View Transitions between MPA pages (not under reduced motion). */
+  /** View Transitions (not under reduced motion): between MPA pages, and for SPA navigations. */
   viewTransitions?: boolean; // default false
   /** Speculation rules that prefetch the same-origin links of MPA pages. */
   prefetch?: "hover" | "viewport" | "none"; // default "hover"
@@ -93,7 +93,8 @@ MPA navigation ([Routing](../concepts/routing.md)): the page documents that `lum
 
 - `viewTransitions: true`:
   `<style>@media (prefers-reduced-motion:no-preference){@view-transition{navigation:auto}}</style>`,
-  on every page, `spa` pages included (their client navigations are not cross-document).
+  on every page, `spa` pages included (their client navigations are not cross-document: the SPA
+  router swaps their pages inside [`viewTransition()`](components.md#viewtransition) instead).
 - `prefetch`: a `<script type="speculationrules">` on every page except `spa` pages, whose
   `<Link prefetch>` prefetches instead. It matches the links below Vite's `base` (`href_matches`),
   except the URLs of endpoints, with `moderate` eagerness for `"hover"` (the pointer rests on the

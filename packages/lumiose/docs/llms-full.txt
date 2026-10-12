@@ -315,6 +315,7 @@ runs again, and signals created in the body start fresh ([Async components](conc
 | `useRef<HTMLInputElement>(null)`                      | `const input = ref<HTMLInputElement>()`, then `<input ref={input} />` and `input()?.focus()`.                                                   |
 | `useRef(value)` for a mutable value                   | A `let` variable in the component body: the body runs once.                                                                                     |
 | `<Ctx.Provider value={v}>`, `useContext(Ctx)`         | `<Ctx value={v}>`, `useContext(Ctx)`. The provider reads `value` once: provide a signal or a store for state that changes.                      |
+| `<ViewTransition>`, `startTransition` around it       | `<ViewTransition name? enter? exit?>`, and the update in `viewTransition(() => …)` ([reference](reference/components.md#viewtransition)).       |
 | `useId()`, `identifierPrefix`                         | `useId()`, and `idPrefix` on `render()` and `renderToStream()` ([useId](reference/reactivity.md#useid)).                                        |
 | `useSyncExternalStore(subscribe, get)`                | A signal set from the store's `subscribe` ([an external store](concepts/state.md#an-external-store-zustandvanilla-a-jotai-store-redux)).        |
 | Fetching in `useEffect`, TanStack Query               | An `async` component that awaits `fetchJSON()` or `query()` ([Async components](concepts/async.md)), or [`@lumiose/query`](reference/query.md). |
@@ -533,15 +534,16 @@ read like a signal.
 
 ## API
 
-| API                                     | Use                                                                             |
-| --------------------------------------- | ------------------------------------------------------------------------------- |
-| `function Name(props) { return <… /> }` | A component. PascalCase, returns JSX.                                           |
-| `children` prop                         | Lazy content passed between the tags. Insert once.                              |
-| `ref<T>()`                              | A ref callback that reads like a signal (`input()`), `undefined` until mounted. |
-| `useId()`                               | A unique id for `id`/`for` and `aria-*` pairs, the same after hydration.        |
-| `onMount(fn)`, `onCleanup(fn)`          | Run after mount; run when the component is disposed.                            |
-| `<Dynamic component={X} … />`           | Render a component (or tag name) chosen at runtime.                             |
-| `<Portal mount={node}>`                 | Render children elsewhere in the document.                                      |
+| API                                      | Use                                                                             |
+| ---------------------------------------- | ------------------------------------------------------------------------------- |
+| `function Name(props) { return <… /> }`  | A component. PascalCase, returns JSX.                                           |
+| `children` prop                          | Lazy content passed between the tags. Insert once.                              |
+| `ref<T>()`                               | A ref callback that reads like a signal (`input()`), `undefined` until mounted. |
+| `useId()`                                | A unique id for `id`/`for` and `aria-*` pairs, the same after hydration.        |
+| `viewTransition(fn)`, `<ViewTransition>` | Animate a state update; name the elements that enter, exit or move.             |
+| `onMount(fn)`, `onCleanup(fn)`           | Run after mount; run when the component is disposed.                            |
+| `<Dynamic component={X} … />`            | Render a component (or tag name) chosen at runtime.                             |
+| `<Portal mount={node}>`                  | Render children elsewhere in the document.                                      |
 
 Types: a component's return type is `JSX.Element`. Props are a plain interface; `children?:
 JSX.Element` for content.

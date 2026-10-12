@@ -22,6 +22,10 @@ const TYPICAL = `export { signal, computed, effect, batch, untrack, onCleanup, o
 const FETCH = `export { fetchJSON } from "${src}app/fetch-json.ts";`;
 // The island loader's entry (dom/loader.ts) minus the manifest, which is app code.
 const ISLANDS = `export { loadIslands } from "${src}dom/islands.ts";`;
+// Opt-in APIs (decision-43): exported by `lumiose` from modules of their own, outside the capped
+// "every export" set, since bundles that do not use them leave them out. Reported on top of it.
+const OPT_IN = `export * from "${src}dom/view-transition.ts";`;
+const EVERY = `export * from "${src}core/index.ts"; export * from "${src}dom/index.ts"; export * from "${src}dom/public.ts";`;
 
 /** Entry name → module source (imports are resolved against src/). */
 const entries: Record<string, string> = {
@@ -33,7 +37,8 @@ const entries: Record<string, string> = {
   "core + dom + hydrate (typical app imports, hydrate)": `${TYPICAL} export { hydrate } from "${src}dom/hydrate.ts";`,
   // What the js-framework-benchmark app needs (its bundle budget is 8 kB including app code).
   "core + dom (benchmark imports)": `export { signal, batch } from "${src}core/index.ts"; export { template, bind, setText, toggleClass, list, selector, createComponent, delegateEvents, render } from "${src}dom/index.ts";`,
-  "core + dom (every export)": `export * from "${src}core/index.ts"; export * from "${src}dom/index.ts"; export * from "${src}dom/public.ts";`,
+  "core + dom (every export)": EVERY,
+  "every export + view transitions, report-only (opt-in)": EVERY + OPT_IN,
   // Every export plus hydration and the loader: no page ships all of it (report-only, spec §6).
   "whole client runtime, report-only (every export, hydrate, loader)": `export * from "${src}core/index.ts"; export * from "${src}dom/index.ts"; export * from "${src}dom/public.ts"; export { hydrate } from "${src}dom/hydrate.ts"; ${ISLANDS}`,
   "core (every export)": `export * from "${src}core/index.ts";`,
@@ -113,6 +118,11 @@ const hydrateOnly = measured["core + dom + hydrate (typical app imports, hydrate
 const loader = islands.brotli - hydrateOnly.brotli;
 console.log(
   `  of which hydrate: brotli ${kb(hydrateOnly.brotli - base.brotli)}; loader: brotli ${kb(loader)} (target 1.00 kB: ${loader <= 1024 ? "OK" : "OVER"})`,
+);
+const every = measured["core + dom (every export)"]!;
+const optIn = measured["every export + view transitions, report-only (opt-in)"]!;
+console.log(
+  `view transitions on top of every export (opt-in): min ${kb(optIn.min - every.min)}, gzip ${kb(optIn.gzip - every.gzip)}, brotli ${kb(optIn.brotli - every.brotli)}`,
 );
 if (overHardCap.length > 0) {
   console.error(`\nOver the ${kb(HARD_CAP)} hard cap (spec §6): ${overHardCap.join("; ")}`);

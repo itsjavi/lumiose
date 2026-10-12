@@ -34,6 +34,7 @@ runs again, and signals created in the body start fresh ([Async components](conc
 | `useRef<HTMLInputElement>(null)`                      | `const input = ref<HTMLInputElement>()`, then `<input ref={input} />` and `input()?.focus()`.                                                   |
 | `useRef(value)` for a mutable value                   | A `let` variable in the component body: the body runs once.                                                                                     |
 | `<Ctx.Provider value={v}>`, `useContext(Ctx)`         | `<Ctx value={v}>`, `useContext(Ctx)`. The provider reads `value` once: provide a signal or a store for state that changes.                      |
+| `<ViewTransition>`, `startTransition` around it       | `<ViewTransition name? enter? exit?>`, and the update in `viewTransition(() => …)` ([reference](reference/components.md#viewtransition)).       |
 | `useId()`, `identifierPrefix`                         | `useId()`, and `idPrefix` on `render()` and `renderToStream()` ([useId](reference/reactivity.md#useid)).                                        |
 | `useSyncExternalStore(subscribe, get)`                | A signal set from the store's `subscribe` ([an external store](concepts/state.md#an-external-store-zustandvanilla-a-jotai-store-redux)).        |
 | Fetching in `useEffect`, TanStack Query               | An `async` component that awaits `fetchJSON()` or `query()` ([Async components](concepts/async.md)), or [`@lumiose/query`](reference/query.md). |

@@ -8,12 +8,11 @@ export type { ViewTransitionProps } from "../dom/view-transition.ts";
 
 /** Runs `fn`: there is no transition on the server. */
 export function viewTransition(fn: () => void): Promise<void> {
-  try {
+  // Rejects when `fn` throws.
+  return new Promise((resolve) => {
     fn();
-    return Promise.resolve();
-  } catch (error) {
-    return Promise.reject(error);
-  }
+    resolve();
+  });
 }
 
 /**

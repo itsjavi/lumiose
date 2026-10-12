@@ -1,0 +1,44 @@
+import { signal, useId, viewTransition, ViewTransition } from "lumiose";
+
+/**
+ * useId() and view transitions (TASK-247, TASK-252): the heading's id comes from the server and
+ * survives hydration; the panel and the rows are named <ViewTransition>s that enter, exit and move
+ * inside viewTransition().
+ */
+export function Notes(props: { items: string[] }) {
+  const items = signal(props.items);
+  const open = signal(false);
+  const title = useId();
+  return (
+    <section
+      class="notes"
+      aria-labelledby={title}
+      ref={(el: HTMLElement) => (el.dataset.hydrated = "")}
+    >
+      <h2 id={title}>Notes</h2>
+      <button class="toggle" onClick={() => viewTransition(() => open.set(!open()))}>
+        Toggle
+      </button>
+      <button
+        class="change"
+        onClick={() =>
+          viewTransition(() => items.set([...items()].reverse().slice(0, 2).concat("new")))
+        }
+      >
+        Change
+      </button>
+      {open() && (
+        <ViewTransition name="note-panel" enter="slide-in" exit="slide-out">
+          <p class="panel">Panel</p>
+        </ViewTransition>
+      )}
+      <ul>
+        {items().map((item) => (
+          <ViewTransition key={item} enter="slide-in" exit="slide-out">
+            <li>{item}</li>
+          </ViewTransition>
+        ))}
+      </ul>
+    </section>
+  );
+}

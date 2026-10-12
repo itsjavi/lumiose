@@ -1,6 +1,6 @@
 # `lumiose`: components
 
-> Signatures and behavior of the built-in components and element helpers exported by `lumiose`: `Suspense`, `ErrorBoundary`, `Portal`, `Dynamic`, `ref`, `Head`, `Title` and `Meta`.
+> Signatures and behavior of the built-in components and element helpers exported by `lumiose`: `Suspense`, `ErrorBoundary`, `Portal`, `Dynamic`, `ref`, `Head`, `Title`, `Meta`, and the view transitions `ViewTransition` and `viewTransition`.
 
 All are exported by `lumiose` in the browser and on the server. Concepts:
 [Components](../concepts/components.md), [Async components](../concepts/async.md),
@@ -110,6 +110,108 @@ function Head(props: { children?: JSX.Element }): JSX.Element;
 
 Appends its children to `<head>` and removes them on disposal. Elements equal to one already in
 `<head>` (for example rendered by the server) are skipped.
+
+## viewTransition
+
+```ts
+function viewTransition(fn: () => void): Promise<void>;
+```
+
+Runs `fn`, a state update (signal and store writes), inside
+[`document.startViewTransition`](https://developer.mozilla.org/docs/Web/API/Document/startViewTransition),
+and flushes, so the DOM shows the new state when the browser captures it: the page cross-fades from
+the old state to the new one, and named elements morph. The browser captures the old state first,
+so `fn` runs a frame later. The promise resolves when the transition finished, and rejects when
+`fn` throws. Without View Transitions support, or when the reader prefers reduced motion, it runs
+`fn` and flushes at once. On the server it only runs `fn`.
+
+With [`lumiose({ viewTransitions: true })`](vite.md#lumiose), SPA navigations to another page swap
+the page inside `viewTransition()` ([Routing](../concepts/routing.md)).
+
+## ViewTransition
+
+```ts
+function ViewTransition(props: ViewTransitionProps): JSX.Element;
+interface ViewTransitionProps {
+  /** The child's view-transition-name. Default: a useId() id, unique in the page. */
+  name?: string;
+  /** The child's view-transition-class while it enters in a viewTransition(). */
+  enter?: string;
+  /** The child's view-transition-class while it exits in a viewTransition(). */
+  exit?: string;
+  /** A single element. */
+  children?: JSX.Element;
+}
+```
+
+Gives its single child element a `view-transition-name`, so that in a `viewTransition()` it
+animates on its own instead of with the page:
+
+- **Moves.** In the old and the new state (a keyed list row that moved, a layout change), it morphs
+  from its old position and size to the new ones.
+- **Enters.** Rendered by the update (a conditional that turns on, a new row), it fades in, with
+  `view-transition-class: <enter>` until the transition finished.
+- **Exits.** Removed by the update, it fades out, with `view-transition-class: <exit>`. Every
+  `<ViewTransition>` with `exit` gets that class before the browser captures the old state (it is
+  not known yet which elements go); the ones that stay lose it again.
+
+Style the animations in a global style block with the
+[`::view-transition-*`](https://developer.mozilla.org/docs/Web/CSS/::view-transition-new)
+pseudo-elements, by name or by class: `::view-transition-new(.slide-in)` for entering elements,
+`::view-transition-old(.slide-out)` for exiting ones. The name is set in the browser, when the
+element is created or hydrated; for cross-document transitions between MPA pages, set
+`view-transition-name` in CSS ([Routing](../concepts/routing.md)). Anything but one element child
+renders unnamed, with a warning in development.
+
+```tsx check
+import { signal, viewTransition, ViewTransition } from "lumiose";
+
+export function Notifications() {
+  const items = signal([{ id: 1, text: "Welcome" }]);
+  let next = 2;
+  const add = () =>
+    viewTransition(() => items.set([{ id: next, text: `Note ${next++}` }, ...items()]));
+  const dismiss = (id: number) =>
+    viewTransition(() => items.set(items().filter((item) => item.id !== id)));
+
+  return (
+    <section>
+      <button onClick={add}>Add</button>
+      <ul>
+        {items().map((item) => (
+          <ViewTransition key={item.id} enter="slide-in" exit="slide-out">
+            <li>
+              {item.text} <button onClick={() => dismiss(item.id)}>Dismiss</button>
+            </li>
+          </ViewTransition>
+        ))}
+      </ul>
+    </section>
+  );
+}
+```
+
+```css
+/* In a global style block */
+::view-transition-new(.slide-in) {
+  animation: slide-in 0.25s ease-out;
+}
+::view-transition-old(.slide-out) {
+  animation: slide-out 0.2s ease-in forwards;
+}
+@keyframes slide-in {
+  from {
+    transform: translateX(-2rem);
+    opacity: 0;
+  }
+}
+@keyframes slide-out {
+  to {
+    transform: translateX(2rem);
+    opacity: 0;
+  }
+}
+```
 
 ## Example
 

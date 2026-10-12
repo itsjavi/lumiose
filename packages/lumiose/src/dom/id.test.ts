@@ -184,6 +184,22 @@ describe("useId", () => {
     expect(new Set(globalThis.ids).size).toBe(globalThis.ids.length);
   });
 
+  it("keeps ids in step after a <ViewTransition>, which names its child with one", async () => {
+    const { client, server } = await load(`${FIELD}
+      import { ViewTransition } from "lumiose";
+      export function Card() {
+        return <div><ViewTransition><p>card</p></ViewTransition><ViewTransition name="x"><b>b</b></ViewTransition><Field label="A" /></div>;
+      }`);
+    const serverIds = await serve(server, "Card");
+    expect(serverIds).toEqual(["l0-0-2-0", "l0-0-2-1"]);
+    expect(await hydrateAll(client)).toEqual(serverIds);
+    expect(warn).not.toHaveBeenCalled();
+    expect(document.querySelector("p")!.style.getPropertyValue("view-transition-name")).toBe(
+      "l0-0-0-0",
+    );
+    expect(document.querySelector("b")!.style.getPropertyValue("view-transition-name")).toBe("x");
+  });
+
   it("carries the render's idPrefix to the island in the browser", async () => {
     const { client, server } = await load(`${FIELD}
       export function One() { return <Field label="A" />; }`);

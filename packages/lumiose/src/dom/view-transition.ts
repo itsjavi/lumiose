@@ -36,15 +36,14 @@ const setClass = (n: Named, value: string): void =>
 export function viewTransition(fn: () => void): Promise<void> {
   if (
     document.startViewTransition === undefined ||
-    matchMedia("(prefers-reduced-motion: reduce)").matches
+    matchMedia("(prefers-reduced-motion:reduce)").matches
   ) {
-    try {
+    // Rejects when `fn` throws.
+    return new Promise((resolve) => {
       fn();
       flush();
-      return Promise.resolve();
-    } catch (error) {
-      return Promise.reject(error);
-    }
+      resolve();
+    });
   }
   const before = new Set<Named>();
   for (const n of named) {
