@@ -556,8 +556,8 @@ function message(diagnostic: Diagnostic): string {
 
 /**
  * An app entry in dev: its `lumiose/dom` imports go through the HMR wrapper (whose `render` disposes
- * the previous root of the same container) and the module accepts updates, so an edit anywhere
- * below it re-runs it with the updated modules.
+ * the previous root of the same container, and passes its options, such as `idPrefix`, through) and
+ * the module accepts updates, so an edit anywhere below it re-runs it with the updated modules.
  */
 function hmrEntry(code: string): string {
   return (
@@ -569,9 +569,9 @@ function hmrEntry(code: string): string {
 const HMR_DOM_CODE = `import { render as renderRoot } from "lumiose/dom";
 export * from "lumiose/dom";
 const roots = (globalThis.__LUMIOSE_HMR_ROOTS__ ??= new Map());
-export function render(code, container) {
+export function render(code, container, ...rest) {
   roots.get(container)?.();
-  const dispose = renderRoot(code, container);
+  const dispose = renderRoot(code, container, ...rest);
   roots.set(container, dispose);
   return () => {
     if (roots.get(container) === dispose) roots.delete(container);
