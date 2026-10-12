@@ -1,11 +1,11 @@
 ---
 id: TASK-226
 title: 'SSR benchmark: latest framework versions and a Solid 2 RC entry'
-status: In Progress
+status: Done
 assignee:
   - Nova
 created_date: '2026-10-11 01:43'
-updated_date: '2026-10-11 02:03'
+updated_date: '2026-10-12 13:24'
 labels:
   - benchmark
 milestone: m-8
@@ -22,8 +22,8 @@ decision-41 (user 2026-10-11): benchmarks/ssr uses solid-js 1.9.16 (latest 1.9.1
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Every implementation is on its latest stable version, pinned, with versions in RESULTS.md
-- [ ] #2 A Solid 2 (RC) implementation renders the same page, passes the output checks, and is labelled as a pre-release
+- [x] #1 Every implementation is on its latest stable version, pinned, with versions in RESULTS.md
+- [x] #2 A Solid 2 (RC) implementation renders the same page, passes the output checks, and is labelled as a pre-release
 <!-- AC:END -->
 
 ## Implementation Notes
@@ -34,4 +34,12 @@ Nova (2026-10-11): versions bumped and Solid 2 (RC) added; left In Progress unti
 - Solid 2 (RC): solid-js-2 = npm:solid-js@2.0.0-rc.14, @solidjs/web 2.0.0-rc.14 and @solidjs/compiler 2.0.0-rc.14 (the Oxc compiler that @solidjs/vite-plugin uses by default; babel-preset-solid stopped at 2.0.0-rc.2). It compiles the same src/solid/Page.jsx with generate: 'ssr', not hydratable. Because @solidjs/web imports solid-js, which resolves to 1.9 in this package (pnpm reports the unmet peer), build.ts bundles dist/solid-2/render.js with Vite, resolving solid-js and its subpaths to the 2.0 package (production builds, not minified). bench.ts lists it as 'Solid 2 (RC)', marked pre-release, with that method note and a versions note (decision-41).
 - Smoke only: every implementation passes scripts/run.ts's output checks (lumiose, solid, solid-hydratable, solid-2, svelte, vue, react), and bench.ts --rounds 1 --runs 1 wrote its table to scratch (Solid 2 RC 2.0.0-rc.14 about 0.7x Solid 1.9.17 on a busy machine; not a measurement). RESULTS.md not regenerated.
 - pnpm-lock.yaml changed (new deps); left uncommitted for Lux with the other lockfile changes.
+
+Lux 2026-10-12: quiet-machine SSR run (ef81f5b): versions in RESULTS.md; Solid 2 (RC) passes the output checks, 624 renders/s vs Solid 1.9.17 747.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+SSR benchmark on the latest stable versions with a labelled Solid 2 RC entry; 2026-10-12 results committed.
+<!-- SECTION:FINAL_SUMMARY:END -->

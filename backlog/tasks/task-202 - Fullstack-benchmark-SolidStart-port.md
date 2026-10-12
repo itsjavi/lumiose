@@ -1,11 +1,11 @@
 ---
 id: TASK-202
 title: 'Fullstack benchmark: SolidStart port'
-status: In Progress
+status: Done
 assignee:
   - Quasar
 created_date: '2026-10-10 22:40'
-updated_date: '2026-10-11 01:53'
+updated_date: '2026-10-12 13:24'
 labels:
   - benchmark
   - positioning
@@ -25,7 +25,7 @@ decision-37 (positioning, approved by the user 2026-10-11; notes in .local/posit
 <!-- AC:BEGIN -->
 - [x] #1 benchmarks/fullstack/apps/solid-start implements the doc-4 app idiomatically and passes the conformance checks
 - [x] #2 The harness runs it in every group and the results viewer shows it
-- [ ] #3 A committed results run includes it, and doc-4 lists it with versions and caveats
+- [x] #3 A committed results run includes it, and doc-4 lists it with versions and caveats
 <!-- AC:END -->
 
 ## Implementation Notes
@@ -36,4 +36,12 @@ Quasar (2026-10-11): SolidStart 2.0.6 port in benchmarks/fullstack/apps/solid-st
 - Registered in harness/src/apps.ts (+ versions in bench.ts; resolvedVersion now finds packages whose exports hide package.json) and the viewer (series-4).
 - Quick harness pass (`bench --quick --only solid-start`, busy machine): all groups ran, 92 metrics; the results file was deleted, not committed.
 - Remaining: AC #3, the full run on a quiet machine (Lux schedules it).
+
+Lux 2026-10-12: included in the quiet-machine fullstack run results/2026-10-12T114559-macbookpro.json (fd2723b); all 8 apps passed conformance. doc-4 §8 lists versions and caveats.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+SolidStart port measured in the 2026-10-12 quiet-machine run (TASK-235): home 1,026 req/s, issue page 33 kB JS (brotli), 0 runtime deps.
+<!-- SECTION:FINAL_SUMMARY:END -->

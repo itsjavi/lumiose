@@ -1,11 +1,11 @@
 ---
 id: TASK-225
 title: 'js-framework-benchmark: latest framework versions and a Solid 2 RC entry'
-status: In Progress
+status: Done
 assignee:
   - Spark
 created_date: '2026-10-11 01:43'
-updated_date: '2026-10-11 02:18'
+updated_date: '2026-10-12 13:24'
 labels:
   - benchmark
 milestone: m-8
@@ -24,7 +24,7 @@ decision-41 (user 2026-10-11): benchmark every framework at its latest stable ve
 <!-- AC:BEGIN -->
 - [x] #1 Every entry is installed at its latest stable version (Vue Vapor at the newest 3.6 RC), pinned, and listed with its version
 - [x] #2 A solid-2 (RC) entry builds and runs, labelled as a pre-release
-- [ ] #3 RESULTS.md is clear about which versions krausest's published factors used
+- [x] #3 RESULTS.md is clear about which versions krausest's published factors used
 <!-- AC:END -->
 
 ## Implementation Notes
@@ -35,4 +35,12 @@ New local entry frameworks/keyed/solid-2: krausest's solid entry ported to Solid
 RESULTS.md generator: column labels 'solid-2 (RC)' and 'vue-vapor (RC)', a framework-versions line, notes for both pre-releases, and the published-factor row now matches krausest's entry by directory and names the version krausest measured when it differs (e.g. '1.133 (v1.9.3)'), with a sentence explaining it. Verified with --summary on smoke results.
 Checks: tsc -p benchmarks/js-framework-benchmark, oxlint, oxfmt; smoke run of all 11 entries x all benchmarks (count 1) with no errors after the compiler fix.
 Remaining: AC #3 needs the regenerated RESULTS.md from the quiet-machine run: pnpm bench:jsfb --count 10 --mem-count 3 (about 1.5-2.5 h). Re-check versions before it (decision-41).
+
+Lux 2026-10-12: quiet-machine run (ef81f5b) on the pinned latest versions; RESULTS.md names each version and marks published factors measured on older ones.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+js-framework-benchmark runs the latest stable versions plus labelled Solid 2 RC and Vue Vapor RC entries; 2026-10-12 results committed.
+<!-- SECTION:FINAL_SUMMARY:END -->

@@ -1,11 +1,11 @@
 ---
 id: TASK-206
 title: 'js-framework-benchmark: add Vue and Preact entries'
-status: In Progress
+status: Done
 assignee:
   - Spark
 created_date: '2026-10-10 22:41'
-updated_date: '2026-10-11 02:18'
+updated_date: '2026-10-12 13:24'
 labels:
   - benchmark
   - positioning
@@ -24,7 +24,7 @@ decision-37 (positioning, approved by the user 2026-10-11; notes in .local/posit
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
 - [x] #1 pnpm bench:jsfb runs Vue (non-Vapor) and Preact keyed entries with pinned versions
-- [ ] #2 RESULTS.md includes both, with published factors where krausest has them
+- [x] #2 RESULTS.md includes both, with published factors where krausest has them
 <!-- AC:END -->
 
 ## Implementation Notes
@@ -32,4 +32,12 @@ decision-37 (positioning, approved by the user 2026-10-11; notes in .local/posit
 <!-- SECTION:NOTES:BEGIN -->
 Spark (2026-10-11): implemented. scripts/jsfb.ts adds krausest's keyed vue (standard, non-Vapor) and preact-hooks entries to REFERENCE (an existing .krausest checkout re-applies its sparse list, so they appear without a fresh clone). Versions are the latest stable (decision-41, TASK-225): vue 3.5.43, preact 11.0.1, installed exactly over krausest's lockfiles (PINNED in jsfb.ts). Both build and passed a smoke run of every benchmark (pnpm bench:jsfb --count 1 --mem-count 1, all 11 entries, no errors; RESULTS.md restored afterwards, not regenerated). Smoke numbers are noisy (busy machine) and not recorded.
 Remaining: only the quiet-machine run that regenerates RESULTS.md (AC #2): pnpm bench:jsfb --count 10 --mem-count 3, about 1.5-2.5 h for 11 entries. Then the website's evidence (apps/web/src/content/evidence.ts, Beacon) can use the new columns.
+
+Lux 2026-10-12: quiet-machine rerun (ef81f5b): Vue 1.247 and Preact 1.520 weighted local factors, published factors listed (Vue v3.5.39, Preact v11.0.0).
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Vue and Preact entries in js-framework-benchmark, measured in the 2026-10-12 quiet-machine run with krausest's published factors alongside.
+<!-- SECTION:FINAL_SUMMARY:END -->

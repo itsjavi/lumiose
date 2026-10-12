@@ -1,11 +1,11 @@
 ---
 id: TASK-203
 title: 'Fullstack benchmark: SvelteKit port'
-status: In Progress
+status: Done
 assignee:
   - Quasar
 created_date: '2026-10-10 22:41'
-updated_date: '2026-10-11 02:03'
+updated_date: '2026-10-12 13:24'
 labels:
   - benchmark
   - positioning
@@ -25,7 +25,7 @@ decision-37 (positioning, approved by the user 2026-10-11; notes in .local/posit
 <!-- AC:BEGIN -->
 - [x] #1 benchmarks/fullstack/apps/sveltekit implements the doc-4 app idiomatically and passes the conformance checks
 - [x] #2 The harness runs it in every group and the results viewer shows it
-- [ ] #3 A committed results run includes it, and doc-4 lists it with versions and caveats
+- [x] #3 A committed results run includes it, and doc-4 lists it with versions and caveats
 <!-- AC:END -->
 
 ## Implementation Notes
@@ -39,4 +39,12 @@ Quasar (2026-10-11): SvelteKit 3.0.1 port in benchmarks/fullstack/apps/sveltekit
 - Typecheck: `svelte-kit sync && svelte-check --tsgo` (TS 6.0.3 + TS 7.0.2), clean; oxlint clean.
 - Quick harness pass (`bench --quick --only sveltekit`, busy machine): all groups ran, 92 metrics; the results file was deleted, not committed.
 - Remaining: AC #3, the full run on a quiet machine (Lux schedules it).
+
+Lux 2026-10-12: included in the quiet-machine fullstack run results/2026-10-12T114559-macbookpro.json (fd2723b); all 8 apps passed conformance. doc-4 §8 lists versions and caveats.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+SvelteKit port measured in the 2026-10-12 quiet-machine run (TASK-235): home 1,104 req/s, issue page 39 kB JS (brotli), 0 runtime deps.
+<!-- SECTION:FINAL_SUMMARY:END -->

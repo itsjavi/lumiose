@@ -5,7 +5,7 @@ status: In Progress
 assignee:
   - Lux
 created_date: '2026-10-11 03:07'
-updated_date: '2026-10-11 03:52'
+updated_date: '2026-10-12 13:24'
 labels:
   - benchmark
 milestone: m-8
@@ -22,8 +22,8 @@ Pending (user, 2026-10-11): the machine is busy, so no benchmarks or evals run u
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 User gave the go-ahead and the machine was quiet (load recorded in the results)
-- [ ] #2 Fullstack, js-framework-benchmark and SSR results committed with versions; TASK-202, 203, 204, 205, 206, 210, 225 and 226 closed
+- [x] #1 User gave the go-ahead and the machine was quiet (load recorded in the results)
+- [x] #2 Fullstack, js-framework-benchmark and SSR results committed with versions; TASK-202, 203, 204, 205, 206, 210, 225 and 226 closed
 - [ ] #3 The landing's evidence and stack table are filled from the new results with no 'measuring' cells, and the site is pushed
 <!-- AC:END -->
 
@@ -31,4 +31,11 @@ Pending (user, 2026-10-11): the machine is busy, so no benchmarks or evals run u
 
 <!-- SECTION:NOTES:BEGIN -->
 Lux 2026-10-11: the measurement run also covers the Astro fullstack app (TASK-242) and the SSR entries for Preact, Astro and Remix 3 (TASK-241). It closes those tasks and fills TASK-240's Server speed cells.
+
+Lux 2026-10-12: user gave the go-ahead. Versions re-checked on npm: all current (decision-41), no upgrades. Installed Playwright 1.63's Chromium (missing). Runs, sequential, 1-min load logged every minute (1.3-3.0 during runs; brief 3.5-4.0 spikes):
+- Fullstack, all 8 apps pass conformance: results/2026-10-12T114559-macbookpro.json (fd2723b), 33 min, no busy server rounds. Consistent with the 10-09 reference (Lumiose /issue 5,464 vs 5,652 req/s).
+- js-framework-benchmark --count 10 --mem-count 3 (ef81f5b), ~1 h: Lumiose weighted 1.082, projected 1.132 (hand 1.09), faster in absolute times than 10-09 but vanilla improved more on the quiet machine -> TASK-245.
+- SSR (ef81f5b): Lumiose 560 renders/s, Solid 747, Svelte 570 -> regression TASK-244.
+- Landing: stack table fully filled from the results; the 'measuring' footnote now shows only while a cell is measuring; content test asserts no measuring cells. Screenshot: backlog/assets/task-235-stack-table.jpg.
+Closed TASK-202..206, 210, 225, 226, 241, 242. Remaining: push (deploys the landing), waiting for the user.
 <!-- SECTION:NOTES:END -->

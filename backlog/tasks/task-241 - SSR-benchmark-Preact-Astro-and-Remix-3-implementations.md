@@ -1,11 +1,11 @@
 ---
 id: TASK-241
 title: 'SSR benchmark: Preact, Astro and Remix 3 implementations'
-status: In Progress
+status: Done
 assignee:
   - Nova
 created_date: '2026-10-11 03:48'
-updated_date: '2026-10-11 03:57'
+updated_date: '2026-10-12 13:24'
 labels:
   - benchmark
 milestone: m-8
@@ -39,4 +39,12 @@ Nova (2026-10-11): entries landed in c595508.
 - Smoke (busy machine, 1 round x 1 run x 500 ms, scratch output; not results): Solid 583, Lumiose 448, Svelte 404, Preact 145, Vue 143, Astro 137, React 113, Remix 3 34 renders/s.
 - pnpm-lock.yaml not committed: the install also recorded Quasar's untracked benchmarks/fullstack/apps/astro importer, so Lux commits it with that app.
 Only TASK-235's measuring run remains.
+
+Lux 2026-10-12: measured in the quiet-machine SSR run (ef81f5b): Preact 237, Astro 201, Remix 3 45 renders/s.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Preact, Astro and Remix 3 SSR entries measured on 2026-10-12 and shown on the landing.
+<!-- SECTION:FINAL_SUMMARY:END -->
