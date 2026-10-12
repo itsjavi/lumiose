@@ -16,7 +16,13 @@ import {
 import { setText } from "./attributes.ts";
 import { hydrator } from "./hydration.ts";
 
-type Part = Node | string;
+/**
+ * Text stays the value itself (a string, number or bigint), which the DOM converts to the same text
+ * as `String()`. A converted string would stay alive as a region binding's last value (about 20
+ * bytes per numeric child in Chrome), and converting integers grows V8's number-string cache by
+ * about 64 kB once per page (TASK-267).
+ */
+type Part = Node | string | number | bigint;
 /** A resolved value: nothing, one text, one node, or a flat list. */
 type Content = Part | Part[] | null;
 
@@ -44,7 +50,8 @@ export function createRegion(parent: Node, marker: Node | null): Region {
   };
 }
 
-function isFragment(value: object): boolean {
+/** Whether `value` is a document fragment (false for text: primitives have no `nodeType`). */
+function isFragment(value: unknown): boolean {
   return (value as Node).nodeType === 11;
 }
 
@@ -55,16 +62,14 @@ function flatten(value: Renderable, out: Part[]): void {
   if (value == null || typeof value === "boolean") {
     return;
   }
-  if (typeof value !== "object") {
-    out.push(String(value));
-  } else if (Array.isArray(value)) {
+  if (Array.isArray(value)) {
     for (const item of value as readonly Renderable[]) {
       flatten(item, out);
     }
   } else if (isFragment(value)) {
     out.push(...Array.from((value as Node).childNodes));
   } else {
-    out.push(value as Node);
+    out.push(value as Part);
   }
 }
 
@@ -76,15 +81,12 @@ function resolve(value: Renderable): Content {
   if (value == null || typeof value === "boolean") {
     return null;
   }
-  if (typeof value !== "object") {
-    return String(value);
-  }
   if (Array.isArray(value) || isFragment(value)) {
     const parts: Part[] = [];
     flatten(value as Renderable, parts);
     return parts;
   }
-  return value as Node;
+  return value as Part;
 }
 
 function hasFunction(value: readonly Renderable[]): boolean {
@@ -209,13 +211,13 @@ function applyRegion(region: Region, content: Content): void {
     return;
   }
   const current = region.nodes;
-  if (typeof content === "string") {
+  if (typeof content !== "object") {
     const first = current[0];
     if (current.length === 1 && isText(first)) {
-      first.data = content;
+      first.data = content as string;
       return;
     }
-    content = document.createTextNode(content);
+    content = document.createTextNode(content as string);
     if (current.length === 0) {
       // First text of a dynamic text child (the common case): no reconciliation needed.
       region.nodes = [content];
@@ -227,17 +229,17 @@ function applyRegion(region: Region, content: Content): void {
   if (content === null) {
     reconcile(region, []);
   } else if (Array.isArray(content)) {
-    // Strings reuse the text node rendered at the same position, if any.
+    // Text reuses the text node rendered at the same position, if any.
     const nodes = content as Node[];
     for (let i = 0; i < content.length; i++) {
       const part = content[i]!;
-      if (typeof part === "string") {
+      if (typeof part !== "object") {
         const prev = current[i];
         if (isText(prev)) {
-          prev.data = part;
+          prev.data = part as string;
           nodes[i] = prev;
         } else {
-          nodes[i] = document.createTextNode(part);
+          nodes[i] = document.createTextNode(part as string);
         }
       }
     }
@@ -332,7 +334,7 @@ export function insert(parent: Node, value: Renderable, marker: Node | null = nu
     if (value != null && typeof value !== "boolean") {
       place(
         parent,
-        typeof value === "object" ? (value as Node) : document.createTextNode(String(value)),
+        typeof value === "object" ? (value as Node) : document.createTextNode(value as string),
         marker,
       );
     }

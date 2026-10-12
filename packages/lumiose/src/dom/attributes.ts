@@ -26,8 +26,8 @@ export function setNonce(el: HTMLElement | SVGElement): void {
 
 /** Text content: nullish and booleans render nothing, like `insert`. */
 export function setText(node: Text, value: unknown): void {
-  // A number goes to the DOM as is: the DOM converts it to the same text, and a JS string made
-  // with String() would stay alive with the node (about 64 bytes per text node in Chrome, TASK-245).
+  // A number goes to the DOM as is, which converts it to the same text. String() on integers grows
+  // V8's number-string cache by about 64 kB once per page; no string stays alive per node (TASK-267).
   node.data =
     typeof value === "number"
       ? (value as unknown as string)

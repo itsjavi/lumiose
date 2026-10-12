@@ -52,6 +52,29 @@ describe("insert (dynamic)", () => {
     expect(el.childNodes[1]).toBe(text);
   });
 
+  it("renders numbers and bigints with String()'s text on every path (TASK-267)", () => {
+    // Numbers reach the DOM unconverted; the text is still String(value)'s.
+    for (const value of [-0, 1.5, Number.NaN, -Infinity, 1e21, 10n]) {
+      const text = String(value);
+      const el = document.createElement("div");
+      insert(el, value);
+      expect(el.textContent).toBe(text);
+      const s = signal<number | bigint>(7);
+      const region = document.createElement("div");
+      const list = document.createElement("div");
+      root(() => {
+        insert(region, s);
+        insert(list, () => [value, () => s()]);
+      });
+      const node = region.firstChild;
+      s.set(value);
+      flush();
+      expect(region.textContent).toBe(text);
+      expect(region.firstChild).toBe(node);
+      expect(list.textContent).toBe(text + text);
+    }
+  });
+
   it("resolves nested functions and arrays, reusing text nodes and keeping node identity", () => {
     const [el, marker] = withMarker();
     const n = signal(1);
