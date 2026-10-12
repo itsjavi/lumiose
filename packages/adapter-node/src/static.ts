@@ -1,6 +1,7 @@
 // Static files of `dist/client` (assets, `public/`, prerendered pages and endpoints) for GET and
-// HEAD requests below the app's `base`. Content-hashed files in the assets directory are cached
-// for a year (`immutable`); everything else revalidates (ETag / Last-Modified, 304).
+// HEAD requests below the app's `base`. The files the build named by content hash (its `config`
+// lists them) are cached for a year (`immutable`); everything else revalidates (ETag /
+// Last-Modified, 304).
 // With `compress`, a client that accepts brotli or gzip gets the build's precompressed `.br`/`.gz`
 // copy of a file when there is one (`Vary: Accept-Encoding`).
 // Page URLs follow the build's `trailingSlash`: `/about` serves `about/index.html` (`ignore`),
@@ -66,7 +67,7 @@ export function createStaticHandler(
     const match = matchStaticFile(path, url, config.trailingSlash, has);
     if (match === undefined) return false;
     if (match.redirect !== undefined) return redirect(res, match.redirect);
-    return send(req, res, files.get(match.file)!, match.file, config.assetsDir, compress);
+    return send(req, res, files.get(match.file)!, match.file, config, compress);
   };
 }
 
@@ -171,14 +172,14 @@ async function send(
   res: ServerResponse,
   original: FileInfo,
   path: string,
-  assetsDir: string,
+  config: BuiltAppConfig,
   compress: boolean,
 ): Promise<true> {
   const variant = compress ? variantOf(req, original) : undefined;
   const { absolute, stats } = variant?.file ?? original;
   const etag = fileEtag(stats.size, stats.mtimeMs, variant?.encoding);
   const headers: Record<string, string> = {
-    "cache-control": cacheControl(path, assetsDir),
+    "cache-control": cacheControl(path, config),
     etag,
     "last-modified": stats.mtime.toUTCString(),
   };

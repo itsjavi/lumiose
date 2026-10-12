@@ -65,6 +65,15 @@ export async function runChecks(base: string, expect: Expectations): Promise<Res
     return `200, cache-control: ${cache || "(none)"}`;
   });
 
+  await check("public file under assets/ (not hashed) revalidates", async () => {
+    const res = await fetch(url("/assets/badge-v2-final.svg"));
+    await res.arrayBuffer();
+    assert(res.status === 200, `status ${res.status}`);
+    const cache = res.headers.get("cache-control") ?? "";
+    assert(!cache.includes("immutable"), `cache-control: ${cache}`);
+    return `200, cache-control: ${cache || "(none)"}`;
+  });
+
   await check("server page, streamed (Suspense), CSP nonce", async () => {
     const started = performance.now();
     // Uncompressed: a gzip stream without flushes would hold the shell back in the client.

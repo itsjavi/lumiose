@@ -47,7 +47,6 @@ import { precompress } from "./precompress.ts";
 import { prerender, type PrerenderedFile, type ServerEntryModule } from "./prerender.ts";
 import { serverReason } from "./static-site.ts";
 import { headersFile } from "lumiose/internal/app/headers.ts";
-import { isHashed } from "lumiose/internal/app/server/static-files.ts";
 
 export interface BuildOptions {
   /** Project root. Default: the current directory. */
@@ -97,6 +96,7 @@ export async function build(options: BuildOptions = {}): Promise<BuildResult> {
     prefetch: "hover",
     islands: {},
     islandChunks: {},
+    hashedFiles: new Set(),
   };
   const config: InlineConfig = {
     root,
@@ -148,7 +148,6 @@ export async function build(options: BuildOptions = {}): Promise<BuildResult> {
   const client = builder.environments.client!;
   const clientDir = resolve(root, client.config.build.outDir);
   const clientOutput = await builder.build(client);
-  await warnHashedPublicFiles(resolved.publicDir, client.config.build.assetsDir, root, logger);
   Object.assign(state, await islandUrls(clientOutput, root, clientDir, client.config.base));
   // Island refs, including those of linked packages and bare specifiers (TASK-98).
   for (const [module, fileName] of Object.entries(state.islandChunks)) {
@@ -225,6 +224,8 @@ export async function build(options: BuildOptions = {}): Promise<BuildResult> {
       clientDir,
       serverEntry: result.serverEntry,
       config: entry.config,
+      hashedFiles: state.hashedFileList ?? [],
+      unhashedAssets: await unhashedAssets(clientDir, client.config.build.assetsDir, state),
       prerendered,
       mode: resolved.mode,
       logger,
@@ -234,27 +235,22 @@ export async function build(options: BuildOptions = {}): Promise<BuildResult> {
 }
 
 /**
- * Servers cache files under the assets directory whose names look content-hashed for a year
- * (`isHashed()`, TASK-201): the build's own files are, but a `public/` file copied there by hand is
- * not, and a changed copy would not reach returning visitors.
+ * The files of the assets directory (relative to `clientDir`) the build did not name by content
+ * hash: `public/` copies, which static hosts must not cache for a year (TASK-201).
  */
-async function warnHashedPublicFiles(
-  publicDir: string,
+async function unhashedAssets(
+  clientDir: string,
   assetsDir: string,
-  root: string,
-  logger: Logger,
-): Promise<void> {
-  if (publicDir === "") return;
-  const dir = join(publicDir, assetsDir);
+  state: BuildState,
+): Promise<string[]> {
+  const hashed = new Set(state.hashedFileList);
+  const dir = join(clientDir, assetsDir);
   const entries = await readdir(dir, { recursive: true, withFileTypes: true }).catch(() => []);
-  const files = entries
-    .filter((entry) => entry.isFile() && isHashed(entry.name))
-    .map((entry) => normalizePath(relative(root, join(entry.parentPath, entry.name))))
+  return entries
+    .filter((entry) => entry.isFile())
+    .map((entry) => normalizePath(relative(clientDir, join(entry.parentPath, entry.name))))
+    .filter((file) => !hashed.has(file) && !hashed.has(file.replace(/\.(?:br|gz)$/, "")))
     .toSorted();
-  if (files.length === 0) return;
-  logger.warn(
-    `${files.join(", ")}: ${files.length === 1 ? "this name looks" : "these names look"} content-hashed (name-[hash].ext), so servers cache ${files.length === 1 ? "it" : "them"} for a year (immutable) and a changed copy would not reach returning visitors. Rename ${files.length === 1 ? "it" : "them"}, or move ${files.length === 1 ? "it" : "them"} out of ${normalizePath(relative(root, dir))}/.`,
-  );
 }
 
 /**

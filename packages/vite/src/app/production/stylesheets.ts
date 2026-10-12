@@ -41,7 +41,13 @@ const INLINE_LIMIT = 4096;
 export async function styleTags(
   pages: readonly (readonly string[])[],
   others: readonly (readonly string[])[],
-  options: { clientDir: string; base: string; assetsDir: string },
+  options: {
+    clientDir: string;
+    base: string;
+    assetsDir: string;
+    /** Called with each merged file (relative to `clientDir`), named by content hash. */
+    written?: (fileName: string) => void;
+  },
 ): Promise<StyleTags> {
   const sources = new Map<string, string>();
   const source = async (href: string): Promise<string | undefined> => {
@@ -63,6 +69,7 @@ export async function styleTags(
     const css = parts.join("");
     const hash = createHash("sha256").update(css).digest("base64url").slice(0, 8);
     const fileName = `${options.assetsDir.replace(/\/$/, "")}/${name}-${hash}.css`;
+    options.written?.(fileName);
     const target = join(options.clientDir, fileName);
     if (!existsSync(target)) {
       await mkdir(dirname(target), { recursive: true });

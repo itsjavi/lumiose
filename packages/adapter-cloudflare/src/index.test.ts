@@ -19,7 +19,7 @@ import { pathToFileURL } from "node:url";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { build } from "@lumiose/vite/build";
 import { LUMIOSE_ROOT, linkLumiose } from "@lumiose/vite/internal/test-links.ts";
-import { assetsIgnore, wranglerConfig } from "./output.ts";
+import { assetsCacheRules, assetsIgnore, wranglerConfig } from "./output.ts";
 
 // The build needs the native compiler binding (a dependency of lumiose, not of this package).
 const binding = await import(
@@ -43,6 +43,7 @@ export const GET: Endpoint = (ctx) => {
 };
 `,
   "public/robots.txt": "User-agent: *\n",
+  "public/assets/logo.svg": "<svg/>",
 };
 
 let root: string;
@@ -67,6 +68,28 @@ afterAll(() => {
   if (root) rmSync(root, { recursive: true, force: true });
 });
 
+const cacheBuild = (hashedFiles: string[], unhashedAssets: string[]) => ({
+  config: { base: "/docs/", trailingSlash: "ignore" as const, assetsDir: "assets" },
+  hashedFiles,
+  unhashedAssets,
+});
+const YEAR = "cache-control: public, max-age=31536000, immutable";
+
+describe("assetsCacheRules", () => {
+  it("caches the assets directory, detaches its public/ files, and adds hashed files outside it", () => {
+    expect(assetsCacheRules(cacheBuild(["assets/a-Bx3_kZ9q.js"], []))).toBe(
+      `/docs/assets/*\n  ${YEAR}\n`,
+    );
+    expect(
+      assetsCacheRules(
+        cacheBuild(["assets/a-Bx3_kZ9q.js", "fonts/f-D-i-jZkv.woff2"], ["assets/logo.svg"]),
+      ),
+    ).toBe(
+      `/docs/assets/*\n  ${YEAR}\n/docs/assets/logo.svg\n  ! cache-control\n/docs/fonts/f-D-i-jZkv.woff2\n  ${YEAR}\n`,
+    );
+  });
+});
+
 describe.skipIf(!binding)("@lumiose/adapter-cloudflare", () => {
   it("writes the Worker next to dist/client and dist/server", () => {
     const worker = readFileSync(join(root, "dist/_worker.js"), "utf8");
@@ -83,12 +106,14 @@ describe.skipIf(!binding)("@lumiose/adapter-cloudflare", () => {
     }
   });
 
-  it("adds a year of caching for the assets directory to _headers", () => {
+  it("adds a year of caching for the files the build hashed to _headers, not public/ ones", () => {
     const headers = readFileSync(join(root, "dist/client/_headers"), "utf8");
     expect(headers).toContain("/*\n  x-content-type-options: nosniff\n");
     expect(headers).toContain("  x-app: 1\n");
     expect(
-      headers.endsWith("/assets/*\n  cache-control: public, max-age=31536000, immutable\n"),
+      headers.endsWith(
+        "/assets/*\n  cache-control: public, max-age=31536000, immutable\n/assets/logo.svg\n  ! cache-control\n",
+      ),
     ).toBe(true);
   });
 

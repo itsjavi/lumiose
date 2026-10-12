@@ -2,7 +2,7 @@
 // shared by the servers of a build: @lumiose/adapter-node (Node streams) and the build's fetch
 // handler (./static-fs.ts, for Bun and Deno). No I/O here: callers look files up in their index.
 //
-// Content-hashed files in the assets directory are cached for a year (`immutable`); everything else
+// The files the build named by content hash are cached for a year (`immutable`); everything else
 // revalidates (ETag / Last-Modified, 304). Page URLs follow the build's `trailingSlash`: `/about`
 // serves `about/index.html` (`ignore`), redirects to `/about/` (`always`), or serves `about.html`
 // (`never`, which redirects `/about/`).
@@ -112,24 +112,41 @@ export function sameSiteLocation(location: string): string {
 }
 
 /**
- * Whether a file name carries a build hash, so its URL changes with its content and it can be
- * cached for a year: Vite's `name-[hash].ext`, whose hash is 8 base64url characters, `-` and `_`
- * included (`Counter-D-i-jZkv.js`, TASK-201), or 8+ word characters after a `-` or `.`
- * (`index.CfWq2a81.css`); either with a digit or an uppercase letter, which hand-written names
- * rarely have there (`icon-download.svg` is no hash). Other files under the assets directory
- * revalidate (TASK-167 L5); `lumiose build` warns about `public/` files that look hashed.
+ * What `cacheControl()` reads of the build's `config` export. `hashedFiles` is internal to
+ * Lumiose's builds and servers (TASK-201): the files of `dist/client` the build named by content
+ * hash (its bundles' outputs and merged stylesheets, never `public/` files).
+ */
+export interface CacheConfig {
+  assetsDir: string;
+  hashedFiles?: readonly string[];
+}
+
+const hashedSets = new WeakMap<readonly string[], ReadonlySet<string>>();
+
+/**
+ * `Cache-Control` of a file: a year (`immutable`) for the files the build named by content hash,
+ * else revalidate. A `config` without the build's list (a hand-made one) falls back to the file
+ * names: hashed-looking names in the assets directory (`isHashed()`).
+ */
+export function cacheControl(file: string, config: CacheConfig): string {
+  const { hashedFiles } = config;
+  if (hashedFiles === undefined) {
+    const prefix = `${config.assetsDir.replace(/^\/+|\/+$/g, "")}/`;
+    return file.startsWith(prefix) && isHashed(file) ? IMMUTABLE : REVALIDATE;
+  }
+  let hashed = hashedSets.get(hashedFiles);
+  if (hashed === undefined) hashedSets.set(hashedFiles, (hashed = new Set(hashedFiles)));
+  return hashed.has(file) ? IMMUTABLE : REVALIDATE;
+}
+
+/**
+ * Whether a file name looks like Vite's `name-[hash].ext` (8+ word characters with a digit or an
+ * uppercase letter): the fallback of `cacheControl()` without the build's list. Conservative: a
+ * hash with a `-` inside fails, and the file then revalidates, which is only slower (TASK-167 L5).
  */
 export function isHashed(path: string): boolean {
   const name = path.slice(path.lastIndexOf("/") + 1);
-  return HASHED_NAME.test(name);
-}
-
-const HASHED_NAME = /(?:-(?=[\w-]{0,7}[\dA-Z])[\w-]{8}|[-.](?=\w*[\dA-Z])\w{8,})\.[^.]+$/;
-
-/** `Cache-Control` of a file: a year for hashed files in the assets directory, else revalidate. */
-export function cacheControl(file: string, assetsDir: string): string {
-  const prefix = `${assetsDir.replace(/^\/+|\/+$/g, "")}/`;
-  return file.startsWith(prefix) && isHashed(file) ? IMMUTABLE : REVALIDATE;
+  return /[-.](?=\w*[\dA-Z])\w{8,}\.[^.]+$/.test(name);
 }
 
 export type Encoding = "br" | "gzip";

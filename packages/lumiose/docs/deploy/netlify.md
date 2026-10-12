@@ -44,12 +44,12 @@ command from the repository root, so name the package and the full publish path:
 
 ## What the build writes
 
-| Path                                        | What it is                                                                                                                                                                                           |
-| ------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `dist/client`                               | The site (`publish`). Netlify serves it first.                                                                                                                                                       |
-| `dist/client/_headers`                      | `lumiose({ headers })` and Lumiose's default headers for the static files, plus a year of caching (`immutable`) for `/assets/*`, whose files Vite names by content hash.                             |
-| `.netlify/v1/functions/lumiose-server.mjs`  | The server: a Netlify Function (web `Request`/`Response`) for every path below Vite's `base` that no static file answers (`preferStatic`). Netlify bundles it with its npm packages when it deploys. |
-| `.netlify/v1/functions/lumiose-actions.mjs` | Only when prerendered pages have form actions: the same server for their `POST`s, which Netlify would otherwise answer from the static file (`405`).                                                 |
+| Path                                        | What it is                                                                                                                                                                                                                         |
+| ------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `dist/client`                               | The site (`publish`). Netlify serves it first.                                                                                                                                                                                     |
+| `dist/client/_headers`                      | `lumiose({ headers })` and Lumiose's default headers for the static files, plus a year of caching (`immutable`) for the files Vite names by content hash: `/assets/*`, or each of them when `public/assets/` has files of its own. |
+| `.netlify/v1/functions/lumiose-server.mjs`  | The server: a Netlify Function (web `Request`/`Response`) for every path below Vite's `base` that no static file answers (`preferStatic`). Netlify bundles it with its npm packages when it deploys.                               |
+| `.netlify/v1/functions/lumiose-actions.mjs` | Only when prerendered pages have form actions: the same server for their `POST`s, which Netlify would otherwise answer from the static file (`405`).                                                                               |
 
 Netlify compresses responses itself: the build writes no `.br`/`.gz` copies. Add `.netlify/` to
 `.gitignore`.

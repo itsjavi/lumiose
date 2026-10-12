@@ -206,6 +206,24 @@ describe.skipIf(!binding)("@lumiose/adapter-vercel, Edge runtime", () => {
   });
 });
 
+/** The pattern of the immutable route of config.json, for these files. */
+const immutableRoute = (hashedFiles: string[], unhashedAssets: string[]) => {
+  const config = outputConfig({
+    config: { base: "/docs/", trailingSlash: "ignore", assetsDir: "assets" },
+    hasFunction: true,
+    pages: [],
+    actionPaths: [],
+    notFoundPage: false,
+    hashedFiles,
+    unhashedAssets,
+  });
+  const found = config.routes.find(
+    (each) => "headers" in each && each.headers?.["cache-control"] !== undefined,
+  ) as { src: string; headers: Record<string, string>; continue: boolean };
+  expect(found.headers["cache-control"]).toBe("public, max-age=31536000, immutable");
+  return new RegExp(found.src);
+};
+
 describe("config.json helpers", () => {
   it("turns header paths into route patterns below base", () => {
     expect(pathPattern("/**", "")).toBe("^(?:/[^/]+)*/?$");
@@ -226,6 +244,8 @@ describe("config.json helpers", () => {
       pages: ["about.html", "index.html", "404.html"],
       actionPaths: [],
       notFoundPage: true,
+      hashedFiles: [],
+      unhashedAssets: [],
     });
     expect(config.routes[0]).toEqual({
       src: "^(?:/[^/]+)*/?$",
@@ -234,6 +254,28 @@ describe("config.json helpers", () => {
     });
     expect(config.routes.at(-1)).toEqual({ src: "^/.*$", dest: "/404.html", status: 404 });
     expect(config.overrides).toEqual({ "about.html": { path: "about" } });
+  });
+
+  it("caches exactly the files the build hashed, not the assets directory's public/ files", () => {
+    const all = immutableRoute(["assets/a-Bx3_kZ9q.js"], []);
+    expect(all.test("/docs/assets/a-Bx3_kZ9q.js")).toBe(true);
+    expect(all.test("/docs/assets/sub/b-D-i-jZkv.css")).toBe(true);
+    expect(all.test("/docs/about")).toBe(false);
+    const some = immutableRoute(
+      ["assets/a-Bx3_kZ9q.js", "fonts/f-D-i-jZkv.woff2"],
+      ["assets/logo.svg", "assets/my icon.svg"],
+    );
+    expect(some.test("/docs/assets/a-Bx3_kZ9q.js")).toBe(true);
+    expect(some.test("/docs/fonts/f-D-i-jZkv.woff2")).toBe(true);
+    for (const path of [
+      "/docs/assets/logo.svg",
+      "/docs/assets/my%20icon.svg",
+      "/docs/fonts/x.woff2",
+    ]) {
+      expect(some.test(path)).toBe(false);
+    }
+    // Only the exact file is left out.
+    expect(some.test("/docs/assets/logo.svg.map")).toBe(true);
   });
 
   it("finds the common ancestor of directories", () => {

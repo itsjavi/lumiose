@@ -23,6 +23,7 @@ import {
   matchStaticFile,
   sameSiteLocation,
   staticPath,
+  type CacheConfig,
   type Encoding,
 } from "./static-files.ts";
 
@@ -41,7 +42,7 @@ const CHUNK = 64 * 1024;
 /** Serves GET and HEAD requests below the app's `base` from `dir`; `undefined` when no file answers. */
 export function staticFiles(
   dir: URL | string,
-  config: Pick<BuiltAppConfig, "base" | "trailingSlash" | "assetsDir">,
+  config: Pick<BuiltAppConfig, "base" | "trailingSlash"> & CacheConfig,
 ): StaticFiles {
   let index: Promise<Map<string, FileInfo>> | undefined;
   return async (request, url) => {
@@ -58,7 +59,7 @@ export function staticFiles(
         headers: { location: sameSiteLocation(match.redirect) },
       });
     }
-    return send(request, files.get(match.file)!, match.file, config.assetsDir);
+    return send(request, files.get(match.file)!, match.file, config);
   };
 }
 
@@ -66,13 +67,13 @@ async function send(
   request: Request,
   original: FileInfo,
   file: string,
-  assetsDir: string,
+  config: CacheConfig,
 ): Promise<Response | undefined> {
   const variant = variantOf(request.headers.get("accept-encoding"), original);
   const { absolute, size, mtimeMs } = variant?.file ?? original;
   const etag = fileEtag(size, mtimeMs, variant?.encoding);
   const headers = new Headers({
-    "cache-control": cacheControl(file, assetsDir),
+    "cache-control": cacheControl(file, config),
     etag,
     "last-modified": new Date(mtimeMs).toUTCString(),
   });

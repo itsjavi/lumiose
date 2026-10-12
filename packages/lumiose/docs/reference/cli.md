@@ -75,8 +75,8 @@ Route modules' chunks and stylesheets are named after their route folder, since 
 `page.stsx`: `blog/[slug]/page.stsx` builds to `assets/blog-slug-page-[hash].js` (an `spa` page) and
 `assets/blog-slug-page-[hash].css`, `(app)/layout.stsx` to `assets/app-layout-[hash].css`. A Vite
 config that sets its own `entryFileNames`, `chunkFileNames` or `assetFileNames` keeps its names.
-The build warns about files in `public/assets/` whose names look content-hashed
-(`badge-v2-final.svg`): servers cache those for a year, like the build's own hashed files
+Servers and deploy adapters cache exactly the files the build named by content hash for a year;
+files you put in `public/assets/` revalidate
 ([`@lumiose/adapter-node`](./adapter-node.md#createstatichandler)).
 
 ```sh

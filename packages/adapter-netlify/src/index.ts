@@ -12,7 +12,7 @@
 // to prerendered pages with actions, which their static file would refuse. The site is
 // `dist/client` (`publish` in
 // netlify.toml), with the build's `_headers`, to which this adapter adds a year of caching for the
-// assets directory; Netlify compresses on its own, so the build writes no `.br`/`.gz` copies.
+// files the build named by content hash; Netlify compresses on its own, so the build writes no `.br`/`.gz` copies.
 // Netlify bundles the function and the npm packages it imports when it deploys.
 
 import { existsSync } from "node:fs";
@@ -22,7 +22,7 @@ import type { Adapter, AdapterBuild } from "@lumiose/vite/build";
 import {
   ACTIONS_FUNCTION_FILE,
   actionsFunctionCode,
-  assetsCacheRule,
+  assetsCacheRules,
   FUNCTIONS_DIR,
   FUNCTION_FILE,
   functionCode,
@@ -39,7 +39,7 @@ export function netlify(): Adapter {
 
 async function adapt(build: AdapterBuild): Promise<void> {
   const { root, clientDir, serverEntry, config, logger } = build;
-  await appendFile(join(clientDir, "_headers"), assetsCacheRule(config.base, config.assetsDir));
+  await appendFile(join(clientDir, "_headers"), assetsCacheRules(build));
   const functions = join(root, FUNCTIONS_DIR);
   const file = join(functions, FUNCTION_FILE);
   const actionsFile = join(functions, ACTIONS_FUNCTION_FILE);

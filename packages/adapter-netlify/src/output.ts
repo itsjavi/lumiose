@@ -1,6 +1,7 @@
 // The files @lumiose/adapter-netlify writes (./index.ts).
 
 import { relative } from "node:path";
+import type { AdapterBuild } from "@lumiose/vite/build";
 
 /** Where Netlify's Frameworks API reads functions from, relative to the project. */
 export const FUNCTIONS_DIR = ".netlify/v1/functions";
@@ -9,12 +10,22 @@ export const FUNCTION_FILE = "lumiose-server.mjs";
 export const ACTIONS_FUNCTION_FILE = "lumiose-actions.mjs";
 
 /**
- * The `_headers` rule that caches the assets directory for a year: Vite names its files by content
- * hash (a file put in `public/<assetsDir>/` by hand gets it too).
+ * The `_headers` rules that cache exactly the files the build named by content hash for a year: the
+ * assets directory when all its files are (no `public/<assetsDir>/` copies), else each hashed file,
+ * so that no rule covers the others; plus any hashed file outside it.
  */
-export function assetsCacheRule(base: string, assetsDir: string): string {
+export function assetsCacheRules(
+  build: Pick<AdapterBuild, "config" | "hashedFiles" | "unhashedAssets">,
+): string {
+  const { base, assetsDir } = build.config;
   const dir = assetsDir.replace(/^\/+|\/+$/g, "");
-  return `${base}${dir}/*\n  cache-control: public, max-age=31536000, immutable\n`;
+  const paths =
+    build.unhashedAssets.length === 0
+      ? [`${dir}/*`, ...build.hashedFiles.filter((file) => !file.startsWith(`${dir}/`))]
+      : build.hashedFiles;
+  return paths
+    .map((path) => `${base}${path}\n  cache-control: public, max-age=31536000, immutable\n`)
+    .join("");
 }
 
 /**

@@ -224,7 +224,16 @@ describe.skipIf(!binding)("lumiose build", () => {
       new Request("http://app.test/api/echo", { method: "POST" }),
     );
     expect(await posted.text()).toBe("posted");
-    expect(entry.config).toEqual({ base: "/", trailingSlash: "ignore", assetsDir: "assets" });
+    const { hashedFiles, ...config } = entry.config as typeof entry.config & {
+      hashedFiles: string[];
+    };
+    expect(config).toEqual({ base: "/", trailingSlash: "ignore", assetsDir: "assets" });
+    // Internal (TASK-201): every file the build wrote to assets/, by name.
+    expect(hashedFiles).toEqual(
+      clientAssets(root, false)
+        .filter((file) => !/\.(?:br|gz)$/.test(file))
+        .map((file) => `assets/${file}`),
+    );
   });
 
   it("sends the scoped state islands reach, by the ids the client build assigned (TASK-193)", async () => {
@@ -285,7 +294,11 @@ export default { base: "/sub/", build: { outDir: "out" }, plugins: [lumiose()] }
     expect(home).toMatch(/<link rel="stylesheet" href="\/sub\/assets\/[\w.-]+\.css"/);
 
     const entry = (await import(pathToFileURL(result.serverEntry!).href)) as ServerEntryModule;
-    expect(entry.config).toEqual({ base: "/sub/", trailingSlash: "never", assetsDir: "assets" });
+    expect(entry.config).toMatchObject({
+      base: "/sub/",
+      trailingSlash: "never",
+      assetsDir: "assets",
+    });
     const about = await entry.default.fetch(new Request("http://app.test/sub/about/"));
     expect(about.status).toBe(308);
     expect(about.headers.get("location")).toBe("/sub/about");
@@ -936,23 +949,72 @@ export default function Home() { return <h1>Home</h1>; }
     expect(read(root, "es/index.html")).toContain('<link rel="canonical" href="/es">');
   });
 
-  it("warns about public/ files under assets/ whose names look content-hashed (TASK-201)", async () => {
+  it("lists the files it named by content hash for servers and adapters, never public/ ones (TASK-201)", async () => {
     const root = project({
-      "public/assets/logo.svg": "<svg/>",
-      "public/assets/icons/badge-v2-final.svg": "<svg/>",
-      "public/robots-Ab3_xY9z.txt": "",
-      "src/routes/page.stsx": "export default function Home() { return <h1>Home</h1>; }\n",
+      "vite.config.ts": `import { writeFileSync } from "node:fs";
+import { join } from "node:path";
+import lumiose from "@lumiose/vite";
+const adapter = {
+  name: "test-adapter",
+  adapt(build) {
+    const { hashedFiles, unhashedAssets } = build;
+    writeFileSync(join(build.root, "adapter.json"), JSON.stringify({ hashedFiles, unhashedAssets }));
+  },
+};
+export default { plugins: [lumiose({ adapter })] };
+`,
+      "public/assets/badge-v2-final.svg": "<svg/>",
+      "public/assets/icons/logo.svg": "<svg/>",
+      "src/app.css": "body { margin: 0; }\n",
+      "src/photo.png": "p".repeat(5000),
+      "src/routes/layout.stsx": `import "../app.css";
+export default function Layout(props: { children?: JSX.Element }) {
+  return <div class="layout">{props.children}<style>.layout { color: navy; }</style></div>;
+}
+`,
+      "src/routes/page.stsx": `import photo from "../photo.png";
+import { Counter } from "../components/Counter.stsx";
+export default function Home() { return <main><img src={photo} /><Counter client:load /></main>; }
+`,
+      "src/routes/live/page.stsx": `export const mode = "server";
+export default function Live() { return <h1>Live</h1>; }
+`,
+      "src/components/Counter.stsx": `import { signal } from "lumiose";
+export function Counter() {
+  const count = signal(0);
+  return <button onClick={() => count.update((n) => n + 1)}>{count()}</button>;
+}
+`,
     });
-    const logger = createLogger("silent");
-    const warn = vi.spyOn(logger, "warn");
-    await build({ root, customLogger: logger, logLevel: "silent" });
-    const messages = warn.mock.calls.map(([message]) => message).join("\n");
-    // Only under the assets directory, where servers cache hashed names for a year.
-    expect(messages).toContain(
-      "public/assets/icons/badge-v2-final.svg: this name looks content-hashed (name-[hash].ext)",
+    const result = await build({ root, ...quiet() });
+    const written = (readdirSync(join(result.clientDir, "assets"), { recursive: true }) as string[])
+      .map((file) => `assets/${file.split("\\").join("/")}`)
+      .filter((file) => /\.\w+$/.test(file) && !/\.(?:br|gz)$/.test(file));
+    const adapter = JSON.parse(readFileSync(join(root, "adapter.json"), "utf8")) as {
+      hashedFiles: string[];
+      unhashedAssets: string[];
+    };
+    const publicFiles = ["assets/badge-v2-final.svg", "assets/icons/logo.svg"];
+    expect(adapter.unhashedAssets).toEqual(publicFiles);
+    // The client's chunks and CSS, the merged stylesheet, and the image only the server imports.
+    expect(adapter.hashedFiles).toEqual(
+      written.filter((file) => !publicFiles.includes(file)).toSorted(),
     );
-    expect(messages).not.toContain("logo.svg");
-    expect(messages).not.toContain("robots");
+    expect(adapter.hashedFiles.map((file) => file.replace(/-[\w-]{8}\./, "."))).toEqual(
+      expect.arrayContaining(["assets/styles.css", "assets/photo.png", "assets/Counter.js"]),
+    );
+    const entry = await entryOf(root);
+    expect((entry.config as { hashedFiles?: string[] }).hashedFiles).toEqual(adapter.hashedFiles);
+    const cache = async (path: string) =>
+      (await entry.default.fetch(new Request(`http://app.test${path}`))).headers.get(
+        "cache-control",
+      );
+    for (const file of adapter.hashedFiles) {
+      expect(await cache(`/${file}`)).toBe("public, max-age=31536000, immutable");
+    }
+    for (const file of publicFiles) {
+      expect(await cache(`/${file}`)).toBe("public, max-age=0, must-revalidate");
+    }
   });
 
   it("requires staticPaths() for static routes with params and a 200 response", async () => {

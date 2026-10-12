@@ -8,7 +8,8 @@
 
 - the pages as `path/index.html` (`path.html` with `lumiose({ trailingSlash: "never" })`), and
   `404.html`, rendered from your root `not-found` page;
-- `assets/`, named by content hash: cache them for a year;
+- `assets/`, named by content hash: cache them for a year (files you put in `public/assets/` are
+  not hashed: keep them elsewhere in `public/`, or out of the long cache);
 - `_headers`: Lumiose's default headers and `lumiose({ headers })` in the format Netlify and
   Cloudflare read;
 - a `.br` and a `.gz` copy of every text file of 1 kB or more, for servers that serve
@@ -23,7 +24,7 @@ How far each host's steps were checked is in the [verification table](README.md#
 ## Cloudflare
 
 Use the [Cloudflare adapter](cloudflare.md) even for a static site: it skips the precompressed
-copies and adds a year of caching for `/assets/*` to `_headers`. Without a server, the build writes
+copies and adds a year of caching for the hashed files of `/assets/` to `_headers`. Without a server, the build writes
 no Worker, and the wrangler config has assets only:
 
 ```jsonc

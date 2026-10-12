@@ -1,5 +1,5 @@
 // The adapter on a real `lumiose build` output: statics first, then the app's fetch handler.
-import { mkdirSync, mkdtempSync, realpathSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readdirSync, realpathSync, rmSync, writeFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
@@ -18,6 +18,8 @@ const binding = await import(
 
 const FILES: Record<string, string> = {
   "public/favicon.svg": "<svg/>",
+  // Named like a hashed file, but a public/ copy: it revalidates (TASK-201).
+  "public/assets/badge-v2-final.svg": "<svg/>",
   "src/routes/page.stsx": `import { Counter } from "../components/Counter.stsx";
 export default function Home() { return <main><h1>Home</h1><Counter client:load start={1} /></main>; }
 `,
@@ -96,18 +98,27 @@ describe.skipIf(!binding)("@lumiose/adapter-node", () => {
     expect(chunk.headers.get("cache-control")).toBe("public, max-age=31536000, immutable");
   });
 
-  it("caches only names that carry a Vite hash", () => {
+  it("caches exactly the files the build named by content hash (TASK-201)", async () => {
+    const assets = readdirSync(join(root, "dist/client/assets")).filter(
+      (file) => !/\.(?:br|gz)$/.test(file),
+    );
+    expect(assets.length).toBeGreaterThan(2);
+    for (const file of assets) {
+      expect((await get(`/assets/${file}`)).headers.get("cache-control")).toBe(
+        file === "badge-v2-final.svg"
+          ? "public, max-age=0, must-revalidate"
+          : "public, max-age=31536000, immutable",
+      );
+    }
+  });
+
+  it("without the build's list, caches only names that carry a Vite hash", () => {
     expect(isHashed("/assets/Counter-Bx3_kZ9q.js")).toBe(true);
     expect(isHashed("/assets/index.CfWq2a81.css")).toBe(true);
-    // Base64url hashes hold `-` and `_` in about 12% of files (TASK-201).
-    expect(isHashed("/assets/Counter-D-i-jZkv.js")).toBe(true);
-    expect(isHashed("/assets/lumiose-BOAdip2-.js")).toBe(true);
-    expect(isHashed("/assets/app-dash-rest-page-_x-9abcd.css")).toBe(true);
+    // Conservative: a hash with a `-` inside revalidates.
+    expect(isHashed("/assets/Counter-D-i-jZkv.js")).toBe(false);
     expect(isHashed("/assets/logo.svg")).toBe(false);
     expect(isHashed("/assets/my-component.js")).toBe(false);
-    expect(isHashed("/assets/icon-download.svg")).toBe(false);
-    expect(isHashed("/assets/my-component-v2.js")).toBe(false);
-    expect(isHashed("/assets/photo-2024-01.jpg")).toBe(false);
   });
 
   it("falls back to the handler for server routes, endpoints and unknown paths", async () => {

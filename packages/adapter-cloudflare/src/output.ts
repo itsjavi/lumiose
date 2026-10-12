@@ -6,13 +6,25 @@ import type { AdapterBuild } from "@lumiose/vite/build";
 /** The Worker, next to `dist/client` and `dist/server`. */
 export const WORKER_FILE = "_worker.js";
 
+const IMMUTABLE = "cache-control: public, max-age=31536000, immutable";
+
 /**
- * The `_headers` rule that caches the assets directory for a year: Vite names its files by content
- * hash (a file put in `public/<assetsDir>/` by hand gets it too).
+ * The `_headers` rules that cache exactly the files the build named by content hash for a year:
+ * the assets directory, with its other files (`public/<assetsDir>/` copies) detached
+ * (`! cache-control`), plus any hashed file outside it. One rule in the common case: Cloudflare
+ * reads at most 100.
  */
-export function assetsCacheRule(base: string, assetsDir: string): string {
+export function assetsCacheRules(
+  build: Pick<AdapterBuild, "config" | "hashedFiles" | "unhashedAssets">,
+): string {
+  const { base, assetsDir } = build.config;
   const dir = assetsDir.replace(/^\/+|\/+$/g, "");
-  return `${base}${dir}/*\n  cache-control: public, max-age=31536000, immutable\n`;
+  let rules = `${base}${dir}/*\n  ${IMMUTABLE}\n`;
+  for (const file of build.unhashedAssets) rules += `${base}${file}\n  ! cache-control\n`;
+  for (const file of build.hashedFiles) {
+    if (!file.startsWith(`${dir}/`)) rules += `${base}${file}\n  ${IMMUTABLE}\n`;
+  }
+  return rules;
 }
 
 /** `.assetsignore` lines for the prerendered pages with form actions (`""` when there are none). */

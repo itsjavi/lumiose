@@ -19,7 +19,7 @@ import { pathToFileURL } from "node:url";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { build } from "@lumiose/vite/build";
 import { LUMIOSE_ROOT, linkLumiose } from "@lumiose/vite/internal/test-links.ts";
-import { actionsFunctionCode } from "./output.ts";
+import { actionsFunctionCode, assetsCacheRules } from "./output.ts";
 
 // The build needs the native compiler binding (a dependency of lumiose, not of this package).
 const binding = await import(
@@ -65,6 +65,26 @@ beforeAll(async () => {
 
 afterAll(() => {
   if (root) rmSync(root, { recursive: true, force: true });
+});
+
+const cacheBuild = (hashedFiles: string[], unhashedAssets: string[]) => ({
+  config: { base: "/docs/", trailingSlash: "ignore" as const, assetsDir: "assets" },
+  hashedFiles,
+  unhashedAssets,
+});
+const YEAR = "cache-control: public, max-age=31536000, immutable";
+
+describe("assetsCacheRules", () => {
+  it("caches the assets directory when the build hashed all its files, else each hashed file", () => {
+    expect(
+      assetsCacheRules(cacheBuild(["assets/a-Bx3_kZ9q.js", "fonts/f-D-i-jZkv.woff2"], [])),
+    ).toBe(`/docs/assets/*\n  ${YEAR}\n/docs/fonts/f-D-i-jZkv.woff2\n  ${YEAR}\n`);
+    expect(
+      assetsCacheRules(
+        cacheBuild(["assets/a-Bx3_kZ9q.js", "assets/b-D-i-jZkv.css"], ["assets/logo.svg"]),
+      ),
+    ).toBe(`/docs/assets/a-Bx3_kZ9q.js\n  ${YEAR}\n/docs/assets/b-D-i-jZkv.css\n  ${YEAR}\n`);
+  });
 });
 
 describe.skipIf(!binding)("@lumiose/adapter-netlify", () => {

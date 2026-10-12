@@ -35,11 +35,11 @@ Add `.vercel/` to `.gitignore`.
 
 ## What the build writes
 
-| Path                                      | What it is                                                                                                                                                                                         |
-| ----------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `.vercel/output/static/`                  | `dist/client` (below Vite's `base`), without `_headers`. Served first.                                                                                                                             |
-| `.vercel/output/functions/__lumiose.func` | The server, for every path no static file answers. Not written when every route is prerendered.                                                                                                    |
-| `.vercel/output/config.json`              | The routes: `lumiose({ headers })` and Lumiose's default headers, a year of caching (`immutable`) for content-hashed assets, form posts to prerendered pages, the static files, then the function. |
+| Path                                      | What it is                                                                                                                                                                                                                                          |
+| ----------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `.vercel/output/static/`                  | `dist/client` (below Vite's `base`), without `_headers`. Served first.                                                                                                                                                                              |
+| `.vercel/output/functions/__lumiose.func` | The server, for every path no static file answers. Not written when every route is prerendered.                                                                                                                                                     |
+| `.vercel/output/config.json`              | The routes: `lumiose({ headers })` and Lumiose's default headers, a year of caching (`immutable`) for the files the build named by content hash (not `public/assets/` files), form posts to prerendered pages, the static files, then the function. |
 
 Prerendered pages also answer at their URL without the trailing slash (`/about` serves
 `about/index.html` with `trailingSlash: "ignore"`, `about.html` with `"never"`), so the usual links

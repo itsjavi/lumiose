@@ -37,6 +37,10 @@ export interface ConfigInput {
   actionPaths: readonly string[];
   /** Whether the static files include a `404.html` (for builds without a function). */
   notFoundPage: boolean;
+  /** The files of the static directory the build named by content hash (`AdapterBuild`). */
+  hashedFiles: readonly string[];
+  /** The assets directory's other files: `public/<assetsDir>/` copies (`AdapterBuild`). */
+  unhashedAssets: readonly string[];
 }
 
 export function outputConfig(input: ConfigInput): OutputConfig {
@@ -45,7 +49,7 @@ export function outputConfig(input: ConfigInput): OutputConfig {
   const routes: Route[] = [
     ...headerRoutes(config.headers, prefix),
     {
-      src: `^${escape(prefix)}/${escape(config.assetsDir.replace(/^\/+|\/+$/g, ""))}/(?:[^/]+/)*[^/]*[-.](?=\\w*[\\dA-Z])\\w{8,}\\.[^./]+$`,
+      src: hashedPattern(input, prefix),
       headers: { "cache-control": "public, max-age=31536000, immutable" },
       continue: true,
     },
@@ -139,6 +143,22 @@ export function pathPattern(pattern: string, prefix: string): string {
     else regex += `/${escape(segment)}`;
   }
   return `${regex}/?$`;
+}
+
+/**
+ * The paths of exactly the files the build named by content hash: the assets directory but its
+ * other files (`public/<assetsDir>/` copies), plus any hashed file outside it.
+ */
+function hashedPattern(input: ConfigInput, prefix: string): string {
+  const dir = input.config.assetsDir.replace(/^\/+|\/+$/g, "");
+  // A file as it is named and as a request may encode it.
+  const path = (file: string) => [...new Set([file, encodeURI(file)])].map(escape).join("|");
+  const except =
+    input.unhashedAssets.length === 0
+      ? ""
+      : `(?!(?:${input.unhashedAssets.map((file) => path(file.slice(dir.length + 1))).join("|")})$)`;
+  const outside = input.hashedFiles.filter((file) => !file.startsWith(`${dir}/`)).map(path);
+  return `^${escape(prefix)}/(?:${[`${escape(dir)}/${except}.+`, ...outside].join("|")})$`;
 }
 
 function escape(text: string): string {

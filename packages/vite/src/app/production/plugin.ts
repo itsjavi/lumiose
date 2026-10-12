@@ -48,6 +48,13 @@ import { ISLANDS_ID } from "../../islands.ts";
 import { STYLE_TAGS_PLACEHOLDER, styleTags } from "./stylesheets.ts";
 
 export const SERVER_ENTRY = "virtual:lumiose/server-entry";
+/**
+ * Placeholder of the server entry's `config.hashedFiles` (internal, not in the documented config
+ * type), replaced once the server build is complete (`writeHashedFiles`). In minified code, with
+ * any quotes.
+ */
+const HASHED_FILES_PLACEHOLDER = "__LUMIOSE_HASHED_FILES__";
+const HASHED_FILES_LITERAL = /(["'`])__LUMIOSE_HASHED_FILES__\1/g;
 const SERVER_ENTRY_ID = "\0lumiose:server-entry";
 const APP_RUNTIME = runtimeFile("app/server/app.ts");
 /** The static files of `dist/client` for the entry's `fetch`, read with `node:fs`. */
@@ -98,6 +105,13 @@ export interface BuildState {
   spa?: string;
   /** SPA layout or page (project-relative) → the chunk URLs to modulepreload with it. */
   spaPreloads?: Record<string, string[]>;
+  /**
+   * Files of `dist/client` (relative) the builds named by content hash: the client bundle's
+   * outputs, the merged stylesheets and the assets moved from the server build (TASK-201).
+   */
+  hashedFiles: Set<string>;
+  /** `hashedFiles` of the written files, sorted, once the server build is complete. */
+  hashedFileList?: string[];
 }
 
 export function lumioseBuild(state: BuildState): Plugin[] {
@@ -195,6 +209,7 @@ function lumioseBuildEnvironments(state: BuildState): Plugin {
           clientDir: resolve(config.root, config.environments.client!.build.outDir),
           base: config.base,
           assetsDir: config.build.assetsDir,
+          written: (fileName) => state.hashedFiles.add(fileName),
         });
         // The placeholder ends its line: no mapped code moves.
         return {
@@ -212,24 +227,73 @@ function lumioseBuildEnvironments(state: BuildState): Plugin {
     // a facade chunk that only imports it; Vite then drops the pure-CSS chunk and blanks the import
     // (`/* empty css */`). Nothing loads the facade, so it is not written either (TASK-94).
     //
-    // It also finds the chunk of each island, by the module part of its ref (TASK-98).
+    // It also finds the chunk of each island, by the module part of its ref (TASK-98), and records
+    // the files named by content hash; the server build writes their list into its entry's config.
     generateBundle: {
       order: "post",
-      async handler(_, bundle) {
+      async handler(options, bundle) {
         if (this.environment.name === "ssr") {
           const config = this.environment.getTopLevelConfig();
           const clientDir = resolve(config.root, config.environments.client!.build.outDir);
-          await moveServerAssets(bundle, config.build.assetsDir, clientDir);
+          for (const asset of await moveServerAssets(bundle, config.build.assetsDir, clientDir)) {
+            if (isHashedOutput(asset, options)) state.hashedFiles.add(asset.fileName);
+          }
+          writeHashedFiles(bundle, state, clientDir);
           return;
         }
         if (this.environment.name !== "client") return;
         for (const [fileName, file] of Object.entries(bundle)) {
           if (isEmptyStylesheetFacade(file)) delete bundle[fileName];
         }
+        for (const file of Object.values(bundle)) {
+          if (isHashedOutput(file, options)) state.hashedFiles.add(file.fileName);
+        }
         state.islandChunks = await islandChunks(this, bundle);
       },
     },
   };
+}
+
+/** Matches a name that a `[hash]` ends, before the extension: `page-D-i-jZkv.css`. */
+const HASHED_OUTPUT = /[-.][\w-]{8}\.[^./]+$/;
+
+/**
+ * Whether a bundle output was named by content hash: by a file-name pattern with `[hash]` (Vite's
+ * defaults, Lumiose's route names), not by a plugin's explicit `fileName`.
+ */
+function isHashedOutput(
+  file: Rollup.OutputAsset | Rollup.OutputChunk,
+  options: Rollup.NormalizedOutputOptions,
+): boolean {
+  const pattern =
+    file.type === "asset"
+      ? options.assetFileNames
+      : file.isEntry
+        ? options.entryFileNames
+        : options.chunkFileNames;
+  if (typeof pattern === "string" && !pattern.includes("[hash")) return false;
+  return HASHED_OUTPUT.test(file.fileName);
+}
+
+/**
+ * Fills the server entry's `config.hashedFiles` with the hashed files the client output holds
+ * (the build removes some chunks, such as a loader without islands), sorted. Static file servers
+ * cache exactly those for a year (TASK-201).
+ */
+function writeHashedFiles(bundle: Rollup.OutputBundle, state: BuildState, clientDir: string): void {
+  const list = [...state.hashedFiles]
+    .filter((file) => existsSync(join(clientDir, file)))
+    .toSorted();
+  state.hashedFileList = list;
+  for (const file of Object.values(bundle)) {
+    if (file.type !== "chunk" || !file.moduleIds.includes(SERVER_ENTRY_ID)) continue;
+    const code = file.code.replace(
+      HASHED_FILES_LITERAL,
+      () => `JSON.parse(${JSON.stringify(JSON.stringify(list))})`,
+    );
+    if (code === file.code) throw new Error("lumiose build: the server entry lost its file list.");
+    file.code = code;
+  }
 }
 
 /** Whether the Vite config names the client build's output files itself. */
@@ -335,17 +399,20 @@ async function moveServerAssets(
   bundle: Rollup.OutputBundle,
   assetsDir: string,
   clientDir: string,
-): Promise<void> {
+): Promise<Rollup.OutputAsset[]> {
   const prefix = `${normalizePath(assetsDir).replace(/\/$/, "")}/`;
+  const moved: Rollup.OutputAsset[] = [];
   for (const [fileName, file] of Object.entries(bundle)) {
     if (file.type !== "asset" || !fileName.startsWith(prefix)) continue;
     delete bundle[fileName];
     if (fileName.endsWith(".css")) continue;
+    moved.push(file);
     const target = join(clientDir, fileName);
     if (existsSync(target)) continue;
     await mkdir(dirname(target), { recursive: true });
     await writeFile(target, file.source);
   }
+  return moved;
 }
 
 function isEmptyStylesheetFacade(file: Rollup.OutputAsset | Rollup.OutputChunk): boolean {
@@ -442,7 +509,7 @@ ${modules.join("\n")}
 const loadedModules = new Map();
 
 /** Options adapters need to serve dist/client next to the handler. */
-export const config = ${JSON.stringify(appConfig)};
+export const config = ${JSON.stringify({ ...appConfig, hashedFiles: HASHED_FILES_PLACEHOLDER })};
 
 export const app = {
   ...config,

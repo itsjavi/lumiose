@@ -82,6 +82,8 @@ async function adapt(build: AdapterBuild, runtime: Runtime): Promise<void> {
           .filter((file) => file.actions === true)
           .map((file) => prefix + file.path),
         notFoundPage: existsSync(join(clientDir, "404.html")),
+        hashedFiles: build.hashedFiles,
+        unhashedAssets: build.unhashedAssets,
       }),
       null,
       2,

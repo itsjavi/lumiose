@@ -33,6 +33,16 @@ export interface AdapterBuild {
   readonly serverEntry: string | undefined;
   /** The build's `config` export: `base`, `trailingSlash`, `assetsDir` and `headers`. */
   readonly config: BuiltAppConfig;
+  /**
+   * The files of `dist/client` (relative) the build named by content hash, which never change:
+   * cache them for a year (`immutable`). `public/` files are never among them.
+   */
+  readonly hashedFiles: readonly string[];
+  /**
+   * The other files of the assets directory (`public/` copies, relative to `dist/client`): a rule
+   * that caches the whole directory for a year must leave them out.
+   */
+  readonly unhashedAssets: readonly string[];
   /** Prerendered files, relative to `clientDir`. */
   readonly prerendered: readonly PrerenderedFile[];
   /** Vite's mode (`production`). */

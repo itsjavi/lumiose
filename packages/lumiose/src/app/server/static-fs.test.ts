@@ -7,6 +7,7 @@ import { pathToFileURL } from "node:url";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import type { BuiltAppConfig } from "./app.ts";
 import { staticFiles } from "./static-fs.ts";
+import type { CacheConfig } from "./static-files.ts";
 
 const FILES: Record<string, string> = {
   "index.html": "<h1>home</h1>",
@@ -15,7 +16,7 @@ const FILES: Record<string, string> = {
   "sitemap.xml": "<urlset/>",
   "assets/app-B4x9QkZ2.js": "console.log(1)",
   "assets/Counter-D-i-jZkv.js": "console.log(2)",
-  "assets/icon-download.svg": "<svg/>",
+  "assets/badge-v2-final.svg": "<svg/>",
   "assets/logo.svg": "<svg/>",
   "assets/style.css": "a{}",
   "assets/style.css.br": "br-bytes",
@@ -49,7 +50,7 @@ afterAll(() => {
 });
 
 /** Serves `dir`; misses answer 418 so tests can tell them apart. */
-function serve(config: Partial<BuiltAppConfig> = {}, root: string | URL = dir) {
+function serve(config: Partial<BuiltAppConfig & CacheConfig> = {}, root: string | URL = dir) {
   const statics = staticFiles(root, {
     base: "/",
     trailingSlash: "ignore",
@@ -86,11 +87,8 @@ describe("staticFiles", () => {
     const asset = await get("/assets/app-B4x9QkZ2.js");
     expect(asset.headers.get("content-type")).toBe("text/javascript; charset=utf-8");
     expect(asset.headers.get("cache-control")).toBe("public, max-age=31536000, immutable");
-    // A Vite hash may hold `-` and `_` (TASK-201).
-    expect((await get("/assets/Counter-D-i-jZkv.js")).headers.get("cache-control")).toBe(
-      "public, max-age=31536000, immutable",
-    );
-    for (const unhashed of ["/assets/logo.svg", "/assets/icon-download.svg"]) {
+    // Without the build's list, by name: a hash with a `-` inside revalidates.
+    for (const unhashed of ["/assets/logo.svg", "/assets/Counter-D-i-jZkv.js"]) {
       expect((await get(unhashed)).headers.get("cache-control")).toBe(
         "public, max-age=0, must-revalidate",
       );
@@ -99,6 +97,21 @@ describe("staticFiles", () => {
     expect(big.headers.get("content-type")).toBe("application/octet-stream");
     expect(big.headers.get("content-length")).toBe("200000");
     expect((await big.text()).length).toBe(200_000);
+  });
+
+  it("caches exactly the files the build lists as hashed (TASK-201)", async () => {
+    const get = serve({ hashedFiles: ["assets/Counter-D-i-jZkv.js", "assets/style.css"] });
+    const cache = async (path: string, init?: RequestInit) =>
+      (await get(path, init)).headers.get("cache-control");
+    expect(await cache("/assets/Counter-D-i-jZkv.js")).toBe("public, max-age=31536000, immutable");
+    // Its precompressed copy too.
+    expect(await cache("/assets/style.css", { headers: { "accept-encoding": "br" } })).toBe(
+      "public, max-age=31536000, immutable",
+    );
+    // A public/ file whose name looks hashed is not in the list.
+    for (const path of ["/assets/badge-v2-final.svg", "/assets/app-B4x9QkZ2.js", "/about/"]) {
+      expect(await cache(path)).toBe("public, max-age=0, must-revalidate");
+    }
   });
 
   it("serves the precompressed copy the client accepts, with Vary", async () => {
