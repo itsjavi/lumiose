@@ -48,7 +48,7 @@ export async function locales({ params }) {
 - `href("/about")` keeps the current locale; `href("/blog/[slug]", { slug, locale: "es" })` switches it. `locale` is a reserved key: a route param named `locale` is a diagnostic.
 - `alternates()` returns `[{ locale, href }]` for the current page's declared locales; the `hreflang` links and language switchers use it.
 - Locale per domain (`example.es`) is post-1.0.
-- Approved by the user later on 2026-10-12, during TASK-254: `LocaleMap`, the typegen registry behind `Locale` (augmented in `.lumiose/types/routes.d.ts`, like `RouteMap`), and `lumiose({ site: "https://example.com" })`, the site origin for absolute `hreflang` and canonical URLs on prerendered pages. Pages rendered per request use the request origin; without `site`, prerendered localized pages fall back to root-relative URLs and `lumiose build` warns.
+- Approved by the user later on 2026-10-12, during TASK-254: `LocaleMap`, the typegen registry behind `Locale` (augmented in `.lumiose/types/routes.d.ts`, like `RouteMap`), and `lumiose({ site: "https://example.com" })`, the site origin for absolute `hreflang` and canonical URLs on prerendered pages. Pages rendered per request use the request origin; without `site`, prerendered localized pages fall back to root-relative URLs and `lumiose build` warns. `site` may include a path (user, 2026-10-12): `https://example.com/docs` makes `/docs/` the default Vite `base`; a `base` that differs from the site's path is a config error; absolute URLs are the site's origin plus the base-aware `href()` path, so the path is never counted twice.
 
 ## Consequences
 
