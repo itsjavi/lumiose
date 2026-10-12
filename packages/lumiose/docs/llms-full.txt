@@ -3915,9 +3915,10 @@ See also: [Head and document](head.md), [Styles](styles.md), [Rendering modes](r
   so production needs the app's `dependencies` installed.
 
 A site whose every route is prerendered builds no `dist/server`: any static host serves
-`dist/client`. Anything else runs on a server: `@lumiose/adapter-node` serves both directories with
-Node, from the `server.ts` that `create-lumiose --template ssr` writes
-([reference](../reference/adapter-node.md)).
+`dist/client`. Anything else needs a runtime for `dist/server/entry.js`. On Node,
+`@lumiose/adapter-node` serves both directories, from the `server.ts` that
+`create-lumiose --template ssr` writes ([reference](../reference/adapter-node.md)); the guides
+below run it on Docker, a VPS and Coolify.
 
 ## Production settings
 
@@ -3925,7 +3926,7 @@ The Node adapter and the request handler read these environment variables:
 
 | Variable         | Set it to                                                                                                                                                       |
 | ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `NODE_ENV`       | `production`. The adapter sets it when it is unset, before the build loads.                                                                                    |
+| `NODE_ENV`       | `production`. The adapter sets it when it is unset, before the build loads.                                                                                     |
 | `PORT`           | The port to listen on. Default: `3000`.                                                                                                                         |
 | `HOST`           | The address to listen on. Default: every address, which a container needs. Behind a proxy on the same machine, `127.0.0.1`.                                     |
 | `ORIGIN`         | The public origin, such as `https://example.com`, behind a proxy that terminates TLS or rewrites the host. Request URLs (`url()`, `ctx.url`) are built from it. |
@@ -3950,18 +3951,18 @@ Each target's status says how far its guide has been checked:
 <!-- To add a target: a page in this directory, a link in the Deploy list of ../README.md (which
      also places it in the website's navigation and llms.txt), and a row below. -->
 
-| Target                    | Guide                              | Status         | Checked    | What was checked                                                                                                                                                                                                                                                                                                                      |
-| ------------------------- | ---------------------------------- | -------------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Docker                    | [Docker](docker.md)                | Tested locally | 2026-10-12 | The Dockerfile on the page, on a `create-lumiose@0.2.0 --template ssr` project with packages from npm: builds, healthy, serves pages (brotli) and `immutable` assets, runs as `node`, stops in under a second. Docker 29.8, linux/arm64. The npm variant is not tested.                                                              |
-| Docker, bookshelf sample  | [Docker](docker.md#the-bookshelf-sample) | Tested locally | 2026-10-12 | `examples/ssr-bookshelf/e2e/docker-smoke.ts` (local only, not in CI): health, a streamed page compressed on the fly, database queries, prerendered pages, `immutable` hashed assets served from their `.br` copies, the `node` user, no dev dependency in the image, a prompt stop. Docker 29.8, linux/arm64.                        |
-| VPS: systemd              | [VPS](vps.md#systemd)              | Tested locally | 2026-10-12 | The unit on the page ran the npm project under systemd 252 (Debian 12, in a privileged container): active, serving, stopped cleanly; `systemd-analyze verify` passes. Not on a VPS.                                                                                                                                                 |
-| VPS: pm2                  | [VPS](vps.md#pm2)                  | Tested locally | 2026-10-12 | The ecosystem file on the page with pm2 6.0 (fork mode) in a container: serves, inherits the shell's variables, survives `pm2 save` and `pm2 resurrect`. `pm2 startup` and cluster mode are not tested.                                                                                                                              |
-| Caddy                     | [VPS](vps.md#caddy)                | Tested locally | 2026-10-12 | The Caddyfile on the page (Caddy 2.11, `localhost` with Caddy's local CA instead of a public certificate) in front of the bookshelf container: HTTP to HTTPS redirect, HTTP/2, streamed chunks not held back, brotli and gzip passed through unchanged (with `encode` too), `immutable` assets, a form post and a cross-site `403`. |
-| nginx                     | [VPS](vps.md#nginx)                | Tested locally | 2026-10-12 | The config on the page (nginx 1.31, a self-signed certificate in place of certbot's) in front of the bookshelf container: `nginx -t`, the same checks as Caddy (with `gzip on` too), and streaming with `proxy_buffering` on and off.                                                                                               |
-| Coolify                   | [Coolify](coolify.md)              | Not tested     |            | Not deployed to a Coolify instance yet. It builds the Dockerfile tested above; the steps follow Coolify v4's documentation.                                                                                                                                                                                                         |
-| Cloudflare Workers        |                                    | Planned        |            |                                                                                                                                                                                                                                                                                                                                       |
-| Vercel                    |                                    | Planned        |            |                                                                                                                                                                                                                                                                                                                                       |
-| Netlify                   |                                    | Planned        |            |                                                                                                                                                                                                                                                                                                                                       |
+| Target                   | Guide                                    | Status         | Checked    | What was checked                                                                                                                                                                                                                                                                                                                    |
+| ------------------------ | ---------------------------------------- | -------------- | ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Docker                   | [Docker](docker.md)                      | Tested locally | 2026-10-12 | The Dockerfile on the page, on a `create-lumiose@0.2.0 --template ssr` project with packages from npm: builds, healthy, serves pages (brotli) and `immutable` assets, runs as `node`, stops in under a second. Docker 29.8, linux/arm64. The npm variant is not tested.                                                             |
+| Docker, bookshelf sample | [Docker](docker.md#the-bookshelf-sample) | Tested locally | 2026-10-12 | `examples/ssr-bookshelf/e2e/docker-smoke.ts` (local only, not in CI): health, a streamed page compressed on the fly, database queries, a sign-in form post, prerendered pages, `immutable` hashed assets served from their `.br` copies, the `node` user, no dev dependency in the image, a prompt stop. Docker 29.8, linux/arm64.  |
+| VPS: systemd             | [VPS](vps.md#systemd)                    | Tested locally | 2026-10-12 | The unit on the page ran the npm project under systemd 252 (Debian 12, in a privileged container): active, serving, stopped cleanly; `systemd-analyze verify` passes. Not on a VPS.                                                                                                                                                 |
+| VPS: pm2                 | [VPS](vps.md#pm2)                        | Tested locally | 2026-10-12 | The ecosystem file on the page with pm2 6.0 (fork mode) in a container: serves, inherits the shell's variables, survives `pm2 save` and `pm2 resurrect`. `pm2 startup` and cluster mode are not tested.                                                                                                                             |
+| Caddy                    | [VPS](vps.md#caddy)                      | Tested locally | 2026-10-12 | The Caddyfile on the page (Caddy 2.11, `localhost` with Caddy's local CA instead of a public certificate) in front of the bookshelf container: HTTP to HTTPS redirect, HTTP/2, streamed chunks not held back, brotli and gzip passed through unchanged (with `encode` too), `immutable` assets, a form post and a cross-site `403`. |
+| nginx                    | [VPS](vps.md#nginx)                      | Tested locally | 2026-10-12 | The config on the page (nginx 1.31, a self-signed certificate in place of certbot's) in front of the bookshelf container: `nginx -t`, the same checks as Caddy (with `gzip on` too); streaming also with nginx's default `proxy_buffering on`.                                                                                      |
+| Coolify                  | [Coolify](coolify.md)                    | Not tested     |            | Not deployed to a Coolify instance yet. It builds the Dockerfile tested above; the steps follow Coolify v4's documentation.                                                                                                                                                                                                         |
+| Cloudflare Workers       |                                          | Planned        |            |                                                                                                                                                                                                                                                                                                                                     |
+| Vercel                   |                                          | Planned        |            |                                                                                                                                                                                                                                                                                                                                     |
+| Netlify                  |                                          | Planned        |            |                                                                                                                                                                                                                                                                                                                                     |
 
 <!-- source: deploy/docker.md -->
 
@@ -4094,7 +4095,7 @@ docker run --rm -p 3000:3000 -e LUMIOSE_SECRET="$(openssl rand -base64 32)" \
 ```
 
 `node examples/ssr-bookshelf/e2e/docker-smoke.ts` builds the image and checks a running container:
-health, a server-rendered page compressed with brotli, a database query, prerendered pages, the
+health, a server-rendered page compressed with brotli, a database query, a sign-in, prerendered pages, the
 `immutable` caching of hashed assets and their precompressed copies, the `node` user, no dev
 dependency in the image, and a prompt stop. It needs Docker, skips itself in CI, and is never run
 by CI: a cold build compiles the Rust compiler (about 1 minute on an 8-core arm64 machine).
@@ -4111,8 +4112,9 @@ writes. The examples call the app `my-app`, serve it as `example.com`, and keep 
 
 ## Build and install
 
-The server needs Node 24 or later. Build where the dependencies are installed, on the server or
-in CI:
+The server needs Node 24 or later. Build on the server, or in CI and copy the output. The build
+loads the compiler's native binary, published for Linux x64 and arm64 on glibc and for x64 on
+musl (Alpine); on another platform, build in CI.
 
 ```sh
 pnpm install --frozen-lockfile
@@ -4335,12 +4337,12 @@ repository. Check that it builds locally (`docker build -t my-app .`): Coolify r
 In Coolify, **+ New**, pick the project and environment, connect the repository (a public URL, a
 Git App or a deploy key) and choose the **Dockerfile** build pack. Then, under **General**:
 
-| Field                   | Value                                                             |
-| ----------------------- | ----------------------------------------------------------------- |
-| **Base Directory**      | `/`, the build context (the directory with `package.json`)        |
-| **Dockerfile Location** | `/Dockerfile`, relative to the base directory                     |
-| **Ports Exposes**       | `3000`, the image's `PORT`                                        |
-| **Domains**             | `https://example.com`; Coolify's proxy gets the TLS certificate   |
+| Field                   | Value                                                           |
+| ----------------------- | --------------------------------------------------------------- |
+| **Base Directory**      | `/`, the build context (the directory with `package.json`)      |
+| **Dockerfile Location** | `/Dockerfile`, relative to the base directory                   |
+| **Ports Exposes**       | `3000`, the image's `PORT`                                      |
+| **Domains**             | `https://example.com`; Coolify's proxy gets the TLS certificate |
 
 Coolify sets `PORT` to the first exposed port and `HOST` to `0.0.0.0` when they are not set,
 which is what `createServer()` reads.
@@ -4349,11 +4351,11 @@ which is what `createServer()` reads.
 
 Under **Environment Variables**:
 
-| Variable         | Value                                                                                                                     |
-| ---------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| `ORIGIN`         | The domain, `https://example.com`. The proxy speaks plain HTTP to the container, so request URLs (`url()`) need it.        |
-| `LUMIOSE_SECRET` | When the app signs cookies: `openssl rand -base64 32`. Set **Build time** to **Not available during build**.              |
-| Your own secrets | Database URLs, API keys: also **Not available during build**, since only the running server reads them.                   |
+| Variable         | Value                                                                                                               |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------- |
+| `ORIGIN`         | The domain, `https://example.com`. The proxy speaks plain HTTP to the container, so request URLs (`url()`) need it. |
+| `LUMIOSE_SECRET` | When the app signs cookies: `openssl rand -base64 32`. Set **Build time** to **Not available during build**.        |
+| Your own secrets | Database URLs, API keys: also **Not available during build**, since only the running server reads them.             |
 
 New variables are available during the build by default; a secret that reaches the build can end
 up in the image's layers. Restart or redeploy after changing them.
@@ -6364,6 +6366,7 @@ file with scanner or syntax errors is reported, not changed. oxfmt has no plugin
 lumiose docs                  # the docs index
 lumiose docs signals          # a topic by name...
 lumiose docs concepts/signals # ...or by path
+lumiose docs deploy           # a section's index (deploy/README), like errors
 lumiose docs LUM2001          # a diagnostic page (also errors/LUM2001, diagnostics/LUM2001)
 lumiose docs fetchJSON        # an exported name: its section of the API reference
 lumiose docs bind:value       # no topic matches: search, best matches first

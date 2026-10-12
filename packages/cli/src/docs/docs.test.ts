@@ -40,6 +40,8 @@ describe("lumiose docs", () => {
     expect(resolveTopic("lum1004", docs)?.topic).toBe("errors/LUM1004");
     expect(resolveTopic("diagnostics/LUM1004", docs)?.topic).toBe("errors/LUM1004");
     expect(resolveTopic("errors", docs)?.topic).toBe("errors/README");
+    expect(resolveTopic("deploy", docs)?.topic).toBe("deploy/README");
+    expect(resolveTopic("docker", docs)?.topic).toBe("deploy/docker");
     expect(resolveTopic("no-such-topic", docs)).toBeUndefined();
   });
 
@@ -142,10 +144,10 @@ describe("docs contract", () => {
     }
   });
 
-  it("indexes every concept and reference page", () => {
+  it("indexes every concept, deploy and reference page", () => {
     const readme = docs.find((doc) => doc.topic === "README")!.content;
     for (const doc of docs) {
-      if (/^(concepts|reference)\//.test(doc.topic) || doc.topic === "getting-started") {
+      if (/^(concepts|deploy|reference)\//.test(doc.topic) || doc.topic === "getting-started") {
         expect(readme, doc.topic).toContain(`](${doc.topic}.md)`);
       }
     }

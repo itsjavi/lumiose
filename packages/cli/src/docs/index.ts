@@ -46,7 +46,7 @@ export interface SearchResult extends DocEntry {
 }
 
 /** Sections in reading order; topics sort by section, then by path. */
-const SECTIONS = ["README", "getting-started", "concepts/", "reference/", "errors/"];
+const SECTIONS = ["README", "getting-started", "concepts/", "deploy/", "reference/", "errors/"];
 
 function sectionRank(topic: string): number {
   const rank = SECTIONS.findIndex((section) =>
@@ -110,8 +110,9 @@ export function diagnosticCode(text: string): string | undefined {
 }
 
 /**
- * The doc for `query`: an exact topic, a diagnostic code, or a unique-by-priority bare name
- * (`jsx` → `concepts/jsx` before `reference/jsx`). Undefined when nothing matches exactly.
+ * The doc for `query`: an exact topic, a diagnostic code, a section's index (`deploy` →
+ * `deploy/README`), or a unique-by-priority bare name (`jsx` → `concepts/jsx` before
+ * `reference/jsx`). Undefined when nothing matches exactly.
  */
 export function resolveTopic(query: string, docs: readonly Doc[] = loadDocs()): Doc | undefined {
   const normalized = query
@@ -126,9 +127,9 @@ export function resolveTopic(query: string, docs: readonly Doc[] = loadDocs()): 
   const wanted = code === undefined ? normalized : `errors/${code}`.toLowerCase();
   const exact = docs.find((doc) => doc.topic.toLowerCase() === wanted);
   if (exact) return exact;
-  if (normalized === "errors" || normalized === "diagnostics") {
-    return docs.find((doc) => doc.topic === "errors/README");
-  }
+  const section = normalized === "diagnostics" ? "errors" : normalized;
+  const index = docs.find((doc) => doc.topic.toLowerCase() === `${section}/readme`);
+  if (index) return index;
   // Docs are in reading order, so concepts win over reference pages of the same name.
   return docs.find((doc) => doc.topic.toLowerCase().split("/").pop() === normalized);
 }

@@ -210,6 +210,7 @@ file with scanner or syntax errors is reported, not changed. oxfmt has no plugin
 lumiose docs                  # the docs index
 lumiose docs signals          # a topic by name...
 lumiose docs concepts/signals # ...or by path
+lumiose docs deploy           # a section's index (deploy/README), like errors
 lumiose docs LUM2001          # a diagnostic page (also errors/LUM2001, diagnostics/LUM2001)
 lumiose docs fetchJSON        # an exported name: its section of the API reference
 lumiose docs bind:value       # no topic matches: search, best matches first

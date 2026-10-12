@@ -1,0 +1,27 @@
+# The build context of ./Dockerfile is the repository root; BuildKit reads this file because it is
+# named after the Dockerfile. An allowlist: the workspace files the image needs, without
+# node_modules, build outputs or the other projects.
+*
+!package.json
+!pnpm-lock.yaml
+!pnpm-workspace.yaml
+!tsconfig.base.json
+!rust-toolchain.toml
+!Cargo.toml
+!Cargo.lock
+!crates
+!packages/lumiose
+!packages/vite
+!packages/cli
+!packages/compiler
+!packages/adapter-node
+!examples/ssr-bookshelf
+
+**/node_modules
+**/target
+**/dist
+**/*.node
+**/.lumiose
+**/.DS_Store
+examples/ssr-bookshelf/data
+examples/ssr-bookshelf/test-results
