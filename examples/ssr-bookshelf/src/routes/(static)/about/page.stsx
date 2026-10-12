@@ -48,8 +48,8 @@ export default function About() {
           <dt>Server + streamed Suspense</dt>
           <dd>
             The <a href={href("/")}>home page</a> renders per request. Its shell is sent first, with
-            a placeholder, and the slow, async recommendations stream into the same response from
-            a <code>{"<Suspense>"}</code> boundary, applied by the browser or a small script.
+            a placeholder, and the slow, async recommendations stream into the same response from a{" "}
+            <code>{"<Suspense>"}</code> boundary, applied by the browser or a small script.
           </dd>
         </div>
         <div>
@@ -59,8 +59,8 @@ export default function About() {
             reads only the route param: the book and its description. The account area, the
             reading-list button, your review, the ratings and the reviews are{" "}
             <code>{"<Suspense>"}</code> holes that read the request themselves. Their queries are
-            synchronous, so the holes are folded into the first response: nothing streams, and
-            every form works without JavaScript.
+            synchronous, so the holes are folded into the first response: nothing streams, and every
+            form works without JavaScript.
           </dd>
         </div>
       </dl>
