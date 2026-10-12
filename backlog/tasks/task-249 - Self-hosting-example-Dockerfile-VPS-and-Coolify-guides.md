@@ -5,7 +5,7 @@ status: Done
 assignee:
   - Beacon
 created_date: '2026-10-12 18:39'
-updated_date: '2026-10-12 20:01'
+updated_date: '2026-10-12 20:23'
 labels:
   - adapter
   - docs
@@ -49,6 +49,8 @@ Evidence (Docker 29.8.2, Docker Desktop, linux/arm64, 8 CPUs):
 - Coolify: not deployed (no instance used); guide follows Coolify v4 docs (Dockerfile build pack, health checks, env var scopes, persistent storage) fetched 2026-10-12.
 
 Beacon 2026-10-12: committed 84549e5. Checks: docs tests and website content tests green (31), docs:check green, lumiose check of the sample green, oxfmt/oxlint clean on the changed files. pnpm check stops at fmt:examples on examples/spa-dotmatrix/src/routes/learn/page.stsx (TASK-253 rename in progress, not mine); pnpm test has 3 failures outside this task (vite options.test 'unknown option' list, create.test minimal/spa templates: in-progress adapter option and route renames). Note: commit 94e8629 (TASK-247) picked up this task's README Deploy list before the deploy pages were committed; 84549e5 adds them. Rerun the smoke test once TASK-253 lands (its scanner WIP broke prerendering in a working-tree build).
+
+Beacon 2026-10-12: after TASK-253 landed (f0074db), docker-smoke.ts against the working tree (with Nova-adapters' TASK-248/175 WIP present): 20/20 checks ok, 15 files prerendered, build 16 s cached, stop 133 ms. The Dockerfile needed no change for the new route file names.
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary
