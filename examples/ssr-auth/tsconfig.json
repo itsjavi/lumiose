@@ -1,0 +1,17 @@
+{
+  // Lumiose's options (JSX, rootDirs for the shadow TSX) come from the generated config.
+  "extends": ["../../tsconfig.base.json", "./.lumiose/tsconfig.generated.json"],
+  "compilerOptions": {
+    "types": ["node", "lumiose/env"]
+  },
+  "include": [
+    "src",
+    "e2e",
+    "server.ts",
+    "vite.config.ts",
+    "prisma.config.ts",
+    "playwright.config.ts",
+    ".lumiose/shadow",
+    ".lumiose/types"
+  ]
+}

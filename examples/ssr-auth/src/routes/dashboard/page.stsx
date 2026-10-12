@@ -1,0 +1,23 @@
+// A protected page: requireSession() redirects visitors without a session to the sign-in page,
+// which sends them back here.
+import { href, response, Title } from "lumiose";
+import { requireSession } from "../../server/auth.server.ts";
+
+export default function Dashboard() {
+  const { user, session } = requireSession();
+  // Personal: never stored by a shared cache.
+  response().setHeader("cache-control", "private, no-store");
+  return (
+    <main>
+      <Title>Dashboard</Title>
+      <h1>Dashboard</h1>
+      <p>
+        Signed in as <strong>{user.name}</strong> ({user.email}).
+      </p>
+      <p>Your session lasts until {session.expiresAt.toISOString().slice(0, 10)}.</p>
+      <form method="post" action={href("/sign-out")}>
+        <button>Sign out</button>
+      </form>
+    </main>
+  );
+}

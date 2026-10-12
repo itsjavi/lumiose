@@ -1,0 +1,52 @@
+// Island: the account area of every page, from Better Auth's browser client. The session is a
+// nanostores atom; the island copies it into a signal while it is mounted.
+import { href, onMount, signal } from "lumiose";
+import { authClient } from "../lib/auth-client.ts";
+
+interface Account {
+  name: string;
+}
+
+export function AccountMenu() {
+  // `undefined` until the session has loaded: no links that may be wrong.
+  const account = signal<Account | null | undefined>(undefined);
+
+  onMount(() =>
+    // Called at once with the current value; the returned unsubscribe runs on unmount.
+    authClient.useSession.subscribe(({ data, isPending }) => {
+      if (!isPending) account.set(data === null ? null : { name: data.user.name });
+    }),
+  );
+
+  async function signOut() {
+    await authClient.signOut();
+    location.assign(href("/"));
+  }
+
+  return (
+    <div class="account">
+      {account() === null ? (
+        <>
+          <a href={href("/sign-in")}>Sign in</a>
+          <a href={href("/sign-up")}>Create account</a>
+        </>
+      ) : null}
+      {account() ? (
+        <>
+          <span class="name">{account()?.name}</span>
+          <button type="button" onClick={signOut}>
+            Sign out
+          </button>
+        </>
+      ) : null}
+    </div>
+  );
+}
+
+<style>
+  .account {
+    display: flex;
+    gap: 0.75rem;
+    align-items: center;
+  }
+</style>

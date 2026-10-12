@@ -1,0 +1,62 @@
+import { actionData, fail, Title, type ActionContext, type ActionData } from "lumiose";
+import { isAPIError } from "better-auth/api";
+import { auth, redirectWithCookies, safeNext } from "../../server/auth.server.ts";
+
+export const action = async (ctx: ActionContext<"/sign-up">) => {
+  const form = await ctx.formData();
+  const name = String(form.get("name") ?? "").trim();
+  const email = String(form.get("email") ?? "").trim();
+  const password = String(form.get("password") ?? "");
+  if (name === "") return fail(400, { name, email, message: "Enter your name." });
+  try {
+    // Creates the user and, by default, signs them in: the headers carry the session cookie.
+    const { headers } = await auth().api.signUpEmail({
+      body: { name, email, password },
+      headers: ctx.request.headers,
+      returnHeaders: true,
+    });
+    return redirectWithCookies(safeNext(ctx.url.searchParams.get("next")), headers);
+  } catch (error) {
+    // A taken email, a short password: Better Auth's message, with its status.
+    if (isAPIError(error)) return fail(error.statusCode, { name, email, message: error.message });
+    throw error;
+  }
+};
+
+export default function SignUp() {
+  return <SignUpForm failed={actionData<typeof action>()} />;
+}
+
+function SignUpForm(props: { failed: ActionData<typeof action> | undefined }) {
+  return (
+    <main>
+      <Title>Create an account</Title>
+      <h1>Create an account</h1>
+      {/* No action attribute: the form posts to this URL, `?next=` included. */}
+      <form class="stack" method="post">
+        <label>
+          Name
+          <input name="name" value={props.failed?.name ?? ""} autocomplete="name" required />
+        </label>
+        <label>
+          Email
+          <input
+            type="email"
+            name="email"
+            value={props.failed?.email ?? ""}
+            autocomplete="email"
+            required
+          />
+        </label>
+        <label>
+          Password (8 characters or more)
+          <input type="password" name="password" autocomplete="new-password" required />
+        </label>
+        <p class="error" role="alert">
+          {props.failed?.message}
+        </p>
+        <button>Create account</button>
+      </form>
+    </main>
+  );
+}

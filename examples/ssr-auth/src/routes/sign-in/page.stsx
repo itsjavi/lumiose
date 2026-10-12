@@ -1,0 +1,65 @@
+import { actionData, fail, href, Title, url, type ActionContext, type ActionData } from "lumiose";
+import { isAPIError } from "better-auth/api";
+import { auth, redirectWithCookies, safeNext } from "../../server/auth.server.ts";
+
+export const action = async (ctx: ActionContext<"/sign-in">) => {
+  const form = await ctx.formData();
+  const email = String(form.get("email") ?? "").trim();
+  const password = String(form.get("password") ?? "");
+  try {
+    const { headers } = await auth().api.signInEmail({
+      body: { email, password },
+      headers: ctx.request.headers,
+      returnHeaders: true,
+    });
+    return redirectWithCookies(safeNext(ctx.url.searchParams.get("next")), headers);
+  } catch (error) {
+    if (isAPIError(error)) return fail(error.statusCode, { email, message: error.message });
+    throw error;
+  }
+};
+
+export default function SignIn() {
+  return <SignInForm failed={actionData<typeof action>()} next={url().searchParams.get("next")} />;
+}
+
+function SignInForm(props: { failed: ActionData<typeof action> | undefined; next: string | null }) {
+  return (
+    <main>
+      <Title>Sign in</Title>
+      <h1>Sign in</h1>
+      <form class="stack" method="post">
+        <label>
+          Email
+          <input
+            type="email"
+            name="email"
+            value={props.failed?.email ?? ""}
+            autocomplete="username"
+            required
+          />
+        </label>
+        <label>
+          Password
+          <input type="password" name="password" autocomplete="current-password" required />
+        </label>
+        <p class="error" role="alert">
+          {props.failed?.message}
+        </p>
+        <button>Sign in</button>
+      </form>
+      <p>
+        New here?{" "}
+        <a
+          href={
+            props.next === null
+              ? href("/sign-up")
+              : `${href("/sign-up")}?next=${encodeURIComponent(props.next)}`
+          }
+        >
+          Create an account
+        </a>
+      </p>
+    </main>
+  );
+}

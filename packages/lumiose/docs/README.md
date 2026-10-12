@@ -45,6 +45,10 @@ mistakes** and **Related diagnostics**. Reference pages list every export with i
 - [Testing](concepts/testing.md): Test components with Vitest and the Lumiose Vite plugin.
 - [Security](concepts/security.md): A strict Content Security Policy with nonces and hashes (`lumiose({ csp: "strict" })`, `cspNonce()`), and the cross-site form check.
 
+## Guides
+
+- [Authentication with Better Auth](guides/auth.md): Email and password accounts with Better Auth and Prisma: the handler as an endpoint, the session in middleware, protected pages, form actions and the browser client in an island.
+
 ## Deploy
 
 - [Overview](deploy/README.md): What `lumiose build` writes, the production settings (`PORT`, `HOST`, `ORIGIN`, `LUMIOSE_SECRET`) and how far each target's guide was verified.

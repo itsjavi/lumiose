@@ -46,7 +46,15 @@ export interface SearchResult extends DocEntry {
 }
 
 /** Sections in reading order; topics sort by section, then by path. */
-const SECTIONS = ["README", "getting-started", "concepts/", "deploy/", "reference/", "errors/"];
+const SECTIONS = [
+  "README",
+  "getting-started",
+  "concepts/",
+  "guides/",
+  "deploy/",
+  "reference/",
+  "errors/",
+];
 
 function sectionRank(topic: string): number {
   const rank = SECTIONS.findIndex((section) =>

@@ -1,0 +1,4 @@
+# SQLite databases (dev and e2e)
+data/
+# The Prisma client, written by `prisma generate`
+src/server/generated/

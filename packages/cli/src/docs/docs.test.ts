@@ -42,6 +42,7 @@ describe("lumiose docs", () => {
     expect(resolveTopic("errors", docs)?.topic).toBe("errors/README");
     expect(resolveTopic("deploy", docs)?.topic).toBe("deploy/README");
     expect(resolveTopic("docker", docs)?.topic).toBe("deploy/docker");
+    expect(resolveTopic("auth", docs)?.topic).toBe("guides/auth");
     expect(resolveTopic("no-such-topic", docs)).toBeUndefined();
   });
 
@@ -144,10 +145,13 @@ describe("docs contract", () => {
     }
   });
 
-  it("indexes every concept, deploy and reference page", () => {
+  it("indexes every concept, guide, deploy and reference page", () => {
     const readme = docs.find((doc) => doc.topic === "README")!.content;
     for (const doc of docs) {
-      if (/^(concepts|deploy|reference)\//.test(doc.topic) || doc.topic === "getting-started") {
+      if (
+        /^(concepts|guides|deploy|reference)\//.test(doc.topic) ||
+        doc.topic === "getting-started"
+      ) {
         expect(readme, doc.topic).toContain(`](${doc.topic}.md)`);
       }
     }

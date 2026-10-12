@@ -13,6 +13,9 @@ allowBuilds:
   "@vscode/vsce-sign": false
   # Nuxt's esbuild: the platform binary comes as an optional dependency, no install script needed.
   esbuild: false
+  # Prisma (examples/ssr-auth): the CLI downloads its schema engine on first use instead.
+  "@prisma/engines": false
+  prisma: false
 minimumReleaseAgeExclude:
   - vite@8.3.4
   - '@vue/language-core@3.3.13'

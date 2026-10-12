@@ -1,0 +1,36 @@
+{
+  "name": "@lumiose-examples/ssr-auth",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Lumiose sample: email and password accounts with Better Auth and Prisma on SQLite.",
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "dev": "lumiose typegen && prisma generate && prisma migrate deploy && lumiose dev",
+    "build": "lumiose typegen && prisma generate && lumiose build",
+    "start": "node server.ts",
+    "preview": "lumiose preview",
+    "db:generate": "lumiose typegen && prisma generate",
+    "db:migrate": "prisma migrate deploy",
+    "typecheck": "lumiose typegen && prisma generate && lumiose check",
+    "test:e2e": "playwright test"
+  },
+  "dependencies": {
+    "@libsql/client": "0.17.4",
+    "@lumiose/adapter-node": "workspace:*",
+    "@prisma/adapter-libsql": "7.10.0",
+    "@prisma/client": "7.10.0",
+    "better-auth": "1.7.7",
+    "lumiose": "workspace:*"
+  },
+  "devDependencies": {
+    "@lumiose/cli": "workspace:*",
+    "@lumiose/vite": "workspace:*",
+    "@playwright/test": "1.63.0",
+    "prisma": "7.10.0"
+  },
+  "demo": {
+    "title": "Accounts with Better Auth and Prisma (server-rendered)",
+    "kind": "example"
+  }
+}

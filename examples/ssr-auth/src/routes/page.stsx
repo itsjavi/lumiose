@@ -1,0 +1,22 @@
+// The home page, prerendered: the account menu in the layout is the only part that knows the
+// visitor, and it finds out in the browser.
+import { href, Title } from "lumiose";
+
+export const mode = "static";
+
+export default function Home() {
+  return (
+    <main>
+      <Title>Accounts with Better Auth</Title>
+      <h1>Accounts with Better Auth</h1>
+      <p>
+        Email and password accounts with Better Auth and Prisma on SQLite. The forms work without
+        JavaScript; the account menu above uses Better Auth's browser client.
+      </p>
+      <p>
+        <a href={href("/sign-up")}>Create an account</a> or <a href={href("/sign-in")}>sign in</a>,
+        then open <a href={href("/dashboard")}>your dashboard</a>.
+      </p>
+    </main>
+  );
+}

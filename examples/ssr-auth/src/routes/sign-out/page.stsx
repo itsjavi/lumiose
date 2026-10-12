@@ -1,0 +1,24 @@
+// Signing out is a form action, so it works without JavaScript: forms on other pages post here.
+import { href, Title, type ActionContext } from "lumiose";
+import { auth, redirectWithCookies } from "../../server/auth.server.ts";
+
+export const action = async (ctx: ActionContext<"/sign-out">) => {
+  if (ctx.locals.session === null) return redirectWithCookies(href("/"), new Headers());
+  // Deletes the session row; the headers clear the cookies.
+  const { headers } = await auth().api.signOut({
+    headers: ctx.request.headers,
+    returnHeaders: true,
+  });
+  return redirectWithCookies(href("/"), headers);
+};
+
+export default function SignOut() {
+  return (
+    <main>
+      <Title>Sign out</Title>
+      <form method="post">
+        <button>Sign out</button>
+      </form>
+    </main>
+  );
+}

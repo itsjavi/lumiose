@@ -36,6 +36,7 @@ describe("docs", () => {
     expect(docNav().map((section) => section.title)).toEqual([
       "Start here",
       "Concepts",
+      "Guides",
       "Deploy",
       "Reference",
       "Diagnostics",
