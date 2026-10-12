@@ -81,7 +81,7 @@ Vercel's proxy sets, so the cross-site check of form posts compares the right or
 ## API
 
 ```ts
-import { vercel } from "@lumiose/adapter-vercel"; // also the default export
+import { vercel } from "@lumiose/adapter-vercel";
 
 function vercel(options?: { runtime?: "nodejs" | "edge" }): Adapter; // default "nodejs"
 ```

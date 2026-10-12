@@ -241,3 +241,9 @@ describe("config.json helpers", () => {
     expect(commonAncestor(["/a/bc", "/a/b"])).toBe("/a");
   });
 });
+
+describe("@lumiose/adapter-vercel exports", () => {
+  it("has the named export only (no default export)", async () => {
+    expect(Object.keys(await import("./index.ts"))).toEqual(["vercel"]);
+  });
+});

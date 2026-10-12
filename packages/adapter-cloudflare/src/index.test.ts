@@ -180,3 +180,9 @@ describe.skipIf(!binding)("@lumiose/adapter-cloudflare, a fully prerendered site
     }
   });
 });
+
+describe("@lumiose/adapter-cloudflare exports", () => {
+  it("has the named export only (no default export)", async () => {
+    expect(Object.keys(await import("./index.ts"))).toEqual(["cloudflare"]);
+  });
+});

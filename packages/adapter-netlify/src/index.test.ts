@@ -118,3 +118,9 @@ describe.skipIf(!binding)("@lumiose/adapter-netlify", () => {
     expect(waited).toHaveLength(1);
   });
 });
+
+describe("@lumiose/adapter-netlify exports", () => {
+  it("has the named export only (no default export)", async () => {
+    expect(Object.keys(await import("./index.ts"))).toEqual(["netlify"]);
+  });
+});

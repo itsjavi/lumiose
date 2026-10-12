@@ -45,8 +45,6 @@ export function vercel(options: VercelOptions = {}): Adapter {
   };
 }
 
-export default vercel;
-
 /** The Build Output API directory, relative to the project. */
 const OUTPUT_DIR = ".vercel/output";
 

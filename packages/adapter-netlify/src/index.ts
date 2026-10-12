@@ -37,8 +37,6 @@ export function netlify(): Adapter {
   };
 }
 
-export default netlify;
-
 async function adapt(build: AdapterBuild): Promise<void> {
   const { root, clientDir, serverEntry, config, logger } = build;
   await appendFile(join(clientDir, "_headers"), assetsCacheRule(config.base, config.assetsDir));

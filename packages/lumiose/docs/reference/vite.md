@@ -100,7 +100,14 @@ the adapter, which writes the platform's output: `cloudflare()` from
 `@lumiose/adapter-netlify` ([guide](../deploy/netlify.md)). These platforms serve `dist/client`
 themselves and compress on their own, so the build writes no `.br`/`.gz` copies and the server
 build has no static file layer. Without an adapter, the output is the Node build that
-`@lumiose/adapter-node`, Bun and Deno serve ([Deploy](../deploy/README.md)).
+`@lumiose/adapter-node`, Bun and Deno serve ([Deploy](../deploy/README.md)). The adapter packages
+have named exports only:
+
+```ts
+import { cloudflare } from "@lumiose/adapter-cloudflare";
+
+lumiose({ adapter: cloudflare() });
+```
 
 MPA navigation ([Routing](../concepts/routing.md)): the page documents that `lumiose dev` and
 `lumiose build` render get, in `<head>`:

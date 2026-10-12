@@ -116,7 +116,7 @@ Worker runs.
 ## API
 
 ```ts
-import { cloudflare } from "@lumiose/adapter-cloudflare"; // also the default export
+import { cloudflare } from "@lumiose/adapter-cloudflare";
 
 function cloudflare(): Adapter; // for lumiose({ adapter })
 ```

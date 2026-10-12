@@ -37,8 +37,6 @@ export function cloudflare(): Adapter {
   };
 }
 
-export default cloudflare;
-
 async function adapt(build: AdapterBuild): Promise<void> {
   const { outDir, clientDir, serverEntry, config, logger } = build;
   await appendFile(join(clientDir, "_headers"), assetsCacheRule(config.base, config.assetsDir));

@@ -73,7 +73,7 @@ Netlify compresses responses itself: the build writes no `.br`/`.gz` copies. Add
 ## API
 
 ```ts
-import { netlify } from "@lumiose/adapter-netlify"; // also the default export
+import { netlify } from "@lumiose/adapter-netlify";
 
 function netlify(): Adapter; // for lumiose({ adapter })
 ```
