@@ -1,6 +1,35 @@
 {
   "runs": [
     {
+      "file": "2026-10-12T114559-macbookpro.json",
+      "date": "2026-10-12T11:45:59.720Z",
+      "host": "macbookpro",
+      "machine": {
+        "cpu": "Apple M1 Max",
+        "cores": 10,
+        "memoryGb": 32,
+        "os": "macOS 27.0.1"
+      },
+      "quick": false,
+      "apps": [
+        "lumiose",
+        "react-router",
+        "next",
+        "solid-start",
+        "sveltekit",
+        "nuxt",
+        "remix",
+        "astro"
+      ],
+      "groups": [
+        "dev",
+        "build",
+        "load",
+        "server",
+        "other"
+      ]
+    },
+    {
       "file": "2026-10-09T085822-macbookpro.json",
       "date": "2026-10-09T08:58:22.553Z",
       "host": "macbookpro",
@@ -11,8 +40,14 @@
         "os": "macOS 27.0"
       },
       "quick": false,
-      "apps": ["lumiose", "react-router", "next"],
-      "groups": ["server"]
+      "apps": [
+        "lumiose",
+        "react-router",
+        "next"
+      ],
+      "groups": [
+        "server"
+      ]
     },
     {
       "file": "2026-10-09T084814-macbookpro.json",
@@ -25,8 +60,18 @@
         "os": "macOS 27.0"
       },
       "quick": false,
-      "apps": ["lumiose", "react-router", "next"],
-      "groups": ["dev", "build", "load", "server", "other"]
+      "apps": [
+        "lumiose",
+        "react-router",
+        "next"
+      ],
+      "groups": [
+        "dev",
+        "build",
+        "load",
+        "server",
+        "other"
+      ]
     },
     {
       "file": "2026-10-09T052359-macbookpro.json",
@@ -39,8 +84,18 @@
         "os": "macOS 27.0"
       },
       "quick": true,
-      "apps": ["lumiose", "react-router", "next"],
-      "groups": ["dev", "build", "load", "server", "other"]
+      "apps": [
+        "lumiose",
+        "react-router",
+        "next"
+      ],
+      "groups": [
+        "dev",
+        "build",
+        "load",
+        "server",
+        "other"
+      ]
     },
     {
       "file": "2026-10-09T045317-macbookpro.json",
@@ -53,8 +108,18 @@
         "os": "macOS 27.0"
       },
       "quick": true,
-      "apps": ["lumiose", "react-router", "next"],
-      "groups": ["dev", "build", "load", "server", "other"]
+      "apps": [
+        "lumiose",
+        "react-router",
+        "next"
+      ],
+      "groups": [
+        "dev",
+        "build",
+        "load",
+        "server",
+        "other"
+      ]
     }
   ]
 }

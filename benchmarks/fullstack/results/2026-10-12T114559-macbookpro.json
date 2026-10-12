@@ -1,0 +1,9006 @@
+{
+  "schema": 2,
+  "meta": {
+    "date": "2026-10-12T11:45:59.720Z",
+    "host": "macbookpro",
+    "machine": {
+      "cpu": "Apple M1 Max",
+      "cores": 10,
+      "memoryGb": 32,
+      "os": "macOS 27.0.1"
+    },
+    "node": "v26.8.1",
+    "versions": {
+      "lumiose": "96558c5",
+      "react": "19.3.0",
+      "react-dom": "19.3.0",
+      "react-router": "8.4.0",
+      "next": "16.4.0",
+      "solid-js": "1.9.17",
+      "@solidjs/start": "2.0.6",
+      "@solidjs/router": "1.0.0",
+      "nitro": "3.0.260903-beta",
+      "svelte": "5.57.2",
+      "@sveltejs/kit": "3.0.1",
+      "@sveltejs/adapter-node": "6.0.0",
+      "nuxt": "4.6.1",
+      "vue": "3.5.43",
+      "vue-router": "5.4.0",
+      "nitropack": "2.13.4",
+      "remix": "3.0.0",
+      "@remix-run/component": "1.0.0",
+      "astro": "7.3.8",
+      "@astrojs/node": "11.1.7",
+      "@astrojs/preact": "6.0.6",
+      "preact": "10.29.8",
+      "vite": "8.3.4"
+    },
+    "iterations": {
+      "dev": 5,
+      "build": 3,
+      "load": 5,
+      "server": 3
+    },
+    "quick": false,
+    "groups": [
+      "dev",
+      "build",
+      "load",
+      "server",
+      "other"
+    ],
+    "apps": [
+      "lumiose",
+      "react-router",
+      "next",
+      "solid-start",
+      "sveltekit",
+      "nuxt",
+      "remix",
+      "astro"
+    ],
+    "conformance": {
+      "lumiose": "pass",
+      "react-router": "pass",
+      "next": "pass",
+      "solid-start": "pass",
+      "sveltekit": "pass",
+      "nuxt": "pass",
+      "remix": "pass",
+      "astro": "pass"
+    },
+    "servers": {
+      "lumiose": {
+        "dev": {
+          "command": "lumiose dev --port 4101 --host 127.0.0.1",
+          "tool": "Vite 8.3.4",
+          "description": "`lumiose dev`: Vite in middleware mode, modules compiled on request, SSR through Vite's module runner"
+        },
+        "build": {
+          "command": "lumiose build"
+        },
+        "prod": {
+          "command": "NODE_ENV=production node server.ts",
+          "description": "`node server.ts`: the `lumiose build` output on @lumiose/adapter-node (compress: false)",
+          "nodeEnv": "production",
+          "compression": false
+        }
+      },
+      "react-router": {
+        "dev": {
+          "command": "react-router dev --host 127.0.0.1 --port ${PORT:-4102} --strictPort",
+          "tool": "Vite 8.3.4",
+          "description": "`react-router dev`: Vite dev server, modules compiled on request"
+        },
+        "build": {
+          "command": "react-router build"
+        },
+        "prod": {
+          "command": "NODE_ENV=production node server.ts",
+          "description": "`node server.ts`: Express + @react-router/express on the `react-router build` output, no compression middleware",
+          "nodeEnv": "production",
+          "compression": false
+        }
+      },
+      "next": {
+        "dev": {
+          "command": "next dev --hostname 127.0.0.1 --port ${PORT:-4103}",
+          "tool": "Turbopack (next 16.4.0)",
+          "description": "`next dev`: Turbopack dev server, routes compiled on first request"
+        },
+        "build": {
+          "command": "next build"
+        },
+        "prod": {
+          "command": "next start --port ${PORT:-4103}",
+          "description": "`next start`: Next's production server on the `next build` output (compress: false)",
+          "nodeEnv": "production",
+          "compression": false
+        }
+      },
+      "solid-start": {
+        "dev": {
+          "command": "vite dev --host 127.0.0.1 --port ${PORT:-4104} --strictPort",
+          "tool": "Vite 8.3.4",
+          "description": "`vite dev`: Vite with SolidStart's plugin (Environment API), modules compiled on request"
+        },
+        "build": {
+          "command": "vite build"
+        },
+        "prod": {
+          "command": "NODE_ENV=production node .output/server/index.mjs",
+          "description": "`node .output/server/index.mjs`: Nitro's node-server output of `vite build` (no compression)",
+          "nodeEnv": "production",
+          "compression": false
+        }
+      },
+      "sveltekit": {
+        "dev": {
+          "command": "vite dev --host 127.0.0.1 --port ${PORT:-4105} --strictPort",
+          "tool": "Vite 8.3.4",
+          "description": "`vite dev`: Vite with SvelteKit's plugin, modules compiled on request"
+        },
+        "build": {
+          "command": "vite build"
+        },
+        "prod": {
+          "command": "NODE_ENV=production node build",
+          "description": "`node build`: the @sveltejs/adapter-node output of `vite build` (precompress: false, no compression)",
+          "nodeEnv": "production",
+          "compression": false
+        }
+      },
+      "nuxt": {
+        "dev": {
+          "command": "nuxt dev --host 127.0.0.1 --port ${PORT:-4106}",
+          "tool": "Vite 8.3.4",
+          "description": "`nuxt dev`: Vite (Nuxt's Vite builder) with Nitro's dev server, modules compiled on request"
+        },
+        "build": {
+          "command": "nuxt build"
+        },
+        "prod": {
+          "command": "NODE_ENV=production node .output/server/index.mjs",
+          "description": "`node .output/server/index.mjs`: Nitro's node-server output of `nuxt build` (no compression)",
+          "nodeEnv": "production",
+          "compression": false
+        }
+      },
+      "remix": {
+        "dev": {
+          "command": "NODE_ENV=development PORT=${PORT:-4107} node hmr.ts",
+          "tool": "remix/assets 1.0.0",
+          "description": "`node hmr.ts`: remix/node-hmr restarts the TypeScript server on changes and pushes browser updates; the asset server compiles browser modules on request"
+        },
+        "build": {
+          "command": "true"
+        },
+        "prod": {
+          "command": "NODE_ENV=production node --import remix/node-tsx server.ts",
+          "description": "`node --import remix/node-tsx server.ts`: the same sources in production mode (no build step; browser modules compiled on first request, minified and fingerprinted; no compression)",
+          "nodeEnv": "production",
+          "compression": false
+        }
+      },
+      "astro": {
+        "dev": {
+          "command": "astro dev --ignore-lock --host 127.0.0.1 --port ${PORT:-4108}",
+          "tool": "Vite 8.3.4",
+          "description": "`astro dev`: Vite with Astro's plugins, modules compiled on request"
+        },
+        "build": {
+          "command": "astro build"
+        },
+        "prod": {
+          "command": "NODE_ENV=production HOST=127.0.0.1 PORT=${PORT:-4108} node dist/server/entry.mjs",
+          "description": "`node dist/server/entry.mjs`: the standalone @astrojs/node output of `astro build` (no compression)",
+          "nodeEnv": "production",
+          "compression": false
+        }
+      }
+    },
+    "notes": [
+      "Load: Chromium, CPU throttled 4×, no network throttling; COMMENTS_DELAY_MS=0.",
+      "Payload: bytes of the first load until ready and network idle; gzip level 6, brotli quality 11 computed offline.",
+      "Server: rounds interleaved across apps (order rotated each round), each after a 3 s cool-down and an idle check (1-min load average ≤ 0.5/core, waiting up to 60 s).",
+      "remix: no production build (the server runs the sources and compiles browser modules on request), so no build time or output sizes."
+    ]
+  },
+  "results": {
+    "lumiose": {
+      "other.loc": {
+        "unit": "lines",
+        "values": [
+          1160
+        ],
+        "median": 1160,
+        "min": 1160,
+        "max": 1160
+      },
+      "other.loc-app": {
+        "unit": "lines",
+        "values": [
+          1160
+        ],
+        "median": 1160,
+        "min": 1160,
+        "max": 1160
+      },
+      "other.loc-shared": {
+        "unit": "lines",
+        "values": [
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 0
+      },
+      "other.files": {
+        "unit": "count",
+        "values": [
+          26
+        ],
+        "median": 26,
+        "min": 26,
+        "max": 26
+      },
+      "other.files-app": {
+        "unit": "count",
+        "values": [
+          26
+        ],
+        "median": 26,
+        "min": 26,
+        "max": 26
+      },
+      "other.files-shared": {
+        "unit": "count",
+        "values": [
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 0
+      },
+      "other.runtime-deps": {
+        "unit": "count",
+        "values": [
+          2
+        ],
+        "median": 2,
+        "min": 2,
+        "max": 2
+      },
+      "other.typecheck": {
+        "unit": "ms",
+        "values": [
+          819.76,
+          754.91,
+          756.75
+        ],
+        "median": 756.75,
+        "min": 754.91,
+        "max": 819.76
+      },
+      "dev.cold-start": {
+        "unit": "ms",
+        "values": [
+          749.72,
+          753.15,
+          754.28,
+          754.06,
+          750.62
+        ],
+        "median": 753.15,
+        "min": 749.72,
+        "max": 754.28
+      },
+      "dev.first.home.ttfb": {
+        "unit": "ms",
+        "values": [
+          3.3,
+          3.6,
+          3.5,
+          3.6,
+          3.3
+        ],
+        "median": 3.5,
+        "min": 3.3,
+        "max": 3.6
+      },
+      "dev.first.home.load": {
+        "unit": "ms",
+        "values": [
+          23.6,
+          27.1,
+          24.6,
+          24.8,
+          24.8
+        ],
+        "median": 24.8,
+        "min": 23.6,
+        "max": 27.1
+      },
+      "dev.first.project.ttfb": {
+        "unit": "ms",
+        "values": [
+          3.6,
+          14.1,
+          13.4,
+          13.1,
+          13.1
+        ],
+        "median": 13.1,
+        "min": 3.6,
+        "max": 14.1
+      },
+      "dev.first.project.load": {
+        "unit": "ms",
+        "values": [
+          64.2,
+          75,
+          73.1,
+          71,
+          72.8
+        ],
+        "median": 72.8,
+        "min": 64.2,
+        "max": 75
+      },
+      "dev.first.issue.ttfb": {
+        "unit": "ms",
+        "values": [
+          10.4,
+          10.7,
+          10.2,
+          10.1,
+          10.5
+        ],
+        "median": 10.4,
+        "min": 10.1,
+        "max": 10.7
+      },
+      "dev.first.issue.load": {
+        "unit": "ms",
+        "values": [
+          39,
+          39.3,
+          38.1,
+          38.5,
+          39.5
+        ],
+        "median": 39,
+        "min": 38.1,
+        "max": 39.5
+      },
+      "dev.warm.home.ttfb": {
+        "unit": "ms",
+        "values": [
+          2.9,
+          3.1,
+          3,
+          3.1,
+          4.3
+        ],
+        "median": 3.1,
+        "min": 2.9,
+        "max": 4.3
+      },
+      "dev.warm.home.load": {
+        "unit": "ms",
+        "values": [
+          21.4,
+          21.8,
+          22.3,
+          21.7,
+          22.6
+        ],
+        "median": 21.8,
+        "min": 21.4,
+        "max": 22.6
+      },
+      "dev.warm.project.ttfb": {
+        "unit": "ms",
+        "values": [
+          3.2,
+          3.2,
+          3.2,
+          3.4,
+          3.4
+        ],
+        "median": 3.2,
+        "min": 3.2,
+        "max": 3.4
+      },
+      "dev.warm.project.load": {
+        "unit": "ms",
+        "values": [
+          33.9,
+          32.6,
+          32.7,
+          34.8,
+          33.9
+        ],
+        "median": 33.9,
+        "min": 32.6,
+        "max": 34.8
+      },
+      "dev.warm.issue.ttfb": {
+        "unit": "ms",
+        "values": [
+          2.4,
+          2.4,
+          2.6,
+          2.6,
+          2.3
+        ],
+        "median": 2.4,
+        "min": 2.3,
+        "max": 2.6
+      },
+      "dev.warm.issue.load": {
+        "unit": "ms",
+        "values": [
+          30,
+          30.2,
+          29.5,
+          30.2,
+          28.9
+        ],
+        "median": 30,
+        "min": 28.9,
+        "max": 30.2
+      },
+      "dev.hmr": {
+        "unit": "ms",
+        "values": [
+          97.34,
+          91.31,
+          206.8,
+          200.96,
+          202.63
+        ],
+        "median": 200.96,
+        "min": 91.31,
+        "max": 206.8
+      },
+      "dev.warm-start": {
+        "unit": "ms",
+        "values": [
+          746.06,
+          749.5,
+          751.82,
+          744.94,
+          745.98
+        ],
+        "median": 746.06,
+        "min": 744.94,
+        "max": 751.82
+      },
+      "build.time": {
+        "unit": "ms",
+        "values": [
+          697.67,
+          697.36,
+          702.87
+        ],
+        "median": 697.67,
+        "min": 697.36,
+        "max": 702.87
+      },
+      "build.client-size": {
+        "unit": "bytes",
+        "values": [
+          45530
+        ],
+        "median": 45530,
+        "min": 45530,
+        "max": 45530
+      },
+      "build.server-size": {
+        "unit": "bytes",
+        "values": [
+          129994
+        ],
+        "median": 129994,
+        "min": 129994,
+        "max": 129994
+      },
+      "payload.home.js-raw": {
+        "unit": "bytes",
+        "values": [
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 0
+      },
+      "payload.home.js-gzip": {
+        "unit": "bytes",
+        "values": [
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 0
+      },
+      "payload.home.js-brotli": {
+        "unit": "bytes",
+        "values": [
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 0
+      },
+      "payload.home.css-raw": {
+        "unit": "bytes",
+        "values": [
+          8581
+        ],
+        "median": 8581,
+        "min": 8581,
+        "max": 8581
+      },
+      "payload.home.css-gzip": {
+        "unit": "bytes",
+        "values": [
+          2582
+        ],
+        "median": 2582,
+        "min": 2582,
+        "max": 2582
+      },
+      "payload.home.css-brotli": {
+        "unit": "bytes",
+        "values": [
+          2198
+        ],
+        "median": 2198,
+        "min": 2198,
+        "max": 2198
+      },
+      "payload.home.html-raw": {
+        "unit": "bytes",
+        "values": [
+          10078
+        ],
+        "median": 10078,
+        "min": 10078,
+        "max": 10078
+      },
+      "payload.home.html-gzip": {
+        "unit": "bytes",
+        "values": [
+          2048
+        ],
+        "median": 2048,
+        "min": 2048,
+        "max": 2048
+      },
+      "payload.home.requests": {
+        "unit": "count",
+        "values": [
+          2
+        ],
+        "median": 2,
+        "min": 2,
+        "max": 2
+      },
+      "payload.project.js-raw": {
+        "unit": "bytes",
+        "values": [
+          33742
+        ],
+        "median": 33742,
+        "min": 33742,
+        "max": 33742
+      },
+      "payload.project.js-gzip": {
+        "unit": "bytes",
+        "values": [
+          13131
+        ],
+        "median": 13131,
+        "min": 13131,
+        "max": 13131
+      },
+      "payload.project.js-brotli": {
+        "unit": "bytes",
+        "values": [
+          11964
+        ],
+        "median": 11964,
+        "min": 11964,
+        "max": 11964
+      },
+      "payload.project.css-raw": {
+        "unit": "bytes",
+        "values": [
+          8581
+        ],
+        "median": 8581,
+        "min": 8581,
+        "max": 8581
+      },
+      "payload.project.css-gzip": {
+        "unit": "bytes",
+        "values": [
+          2582
+        ],
+        "median": 2582,
+        "min": 2582,
+        "max": 2582
+      },
+      "payload.project.css-brotli": {
+        "unit": "bytes",
+        "values": [
+          2198
+        ],
+        "median": 2198,
+        "min": 2198,
+        "max": 2198
+      },
+      "payload.project.html-raw": {
+        "unit": "bytes",
+        "values": [
+          36227
+        ],
+        "median": 36227,
+        "min": 36227,
+        "max": 36227
+      },
+      "payload.project.html-gzip": {
+        "unit": "bytes",
+        "values": [
+          5073
+        ],
+        "median": 5073,
+        "min": 5073,
+        "max": 5073
+      },
+      "payload.project.requests": {
+        "unit": "count",
+        "values": [
+          5
+        ],
+        "median": 5,
+        "min": 5,
+        "max": 5
+      },
+      "payload.issue.js-raw": {
+        "unit": "bytes",
+        "values": [
+          33713
+        ],
+        "median": 33713,
+        "min": 33713,
+        "max": 33713
+      },
+      "payload.issue.js-gzip": {
+        "unit": "bytes",
+        "values": [
+          13103
+        ],
+        "median": 13103,
+        "min": 13103,
+        "max": 13103
+      },
+      "payload.issue.js-brotli": {
+        "unit": "bytes",
+        "values": [
+          11915
+        ],
+        "median": 11915,
+        "min": 11915,
+        "max": 11915
+      },
+      "payload.issue.css-raw": {
+        "unit": "bytes",
+        "values": [
+          8581
+        ],
+        "median": 8581,
+        "min": 8581,
+        "max": 8581
+      },
+      "payload.issue.css-gzip": {
+        "unit": "bytes",
+        "values": [
+          2582
+        ],
+        "median": 2582,
+        "min": 2582,
+        "max": 2582
+      },
+      "payload.issue.css-brotli": {
+        "unit": "bytes",
+        "values": [
+          2198
+        ],
+        "median": 2198,
+        "min": 2198,
+        "max": 2198
+      },
+      "payload.issue.html-raw": {
+        "unit": "bytes",
+        "values": [
+          8593
+        ],
+        "median": 8593,
+        "min": 8593,
+        "max": 8593
+      },
+      "payload.issue.html-gzip": {
+        "unit": "bytes",
+        "values": [
+          2856
+        ],
+        "median": 2856,
+        "min": 2856,
+        "max": 2856
+      },
+      "payload.issue.requests": {
+        "unit": "count",
+        "values": [
+          6
+        ],
+        "median": 6,
+        "min": 6,
+        "max": 6
+      },
+      "load.home.ttfb": {
+        "unit": "ms",
+        "values": [
+          2.7,
+          2.6,
+          2.8,
+          2.4,
+          2.3
+        ],
+        "median": 2.6,
+        "min": 2.3,
+        "max": 2.8
+      },
+      "load.home.fcp": {
+        "unit": "ms",
+        "values": [
+          64,
+          64,
+          60,
+          60,
+          60
+        ],
+        "median": 60,
+        "min": 60,
+        "max": 64
+      },
+      "load.home.lcp": {
+        "unit": "ms",
+        "values": [
+          64,
+          64,
+          60,
+          60,
+          60
+        ],
+        "median": 60,
+        "min": 60,
+        "max": 64
+      },
+      "load.home.dcl": {
+        "unit": "ms",
+        "values": [
+          19.5,
+          19.7,
+          19.8,
+          18.8,
+          18.8
+        ],
+        "median": 19.5,
+        "min": 18.8,
+        "max": 19.8
+      },
+      "load.home.load": {
+        "unit": "ms",
+        "values": [
+          24.3,
+          24.4,
+          24.9,
+          24.2,
+          24.1
+        ],
+        "median": 24.3,
+        "min": 24.1,
+        "max": 24.9
+      },
+      "load.home.tbt": {
+        "unit": "ms",
+        "values": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 0
+      },
+      "load.home.ready": {
+        "unit": "ms",
+        "values": [
+          17.9,
+          18.4,
+          18.9,
+          17.9,
+          17.8
+        ],
+        "median": 17.9,
+        "min": 17.8,
+        "max": 18.9
+      },
+      "load.project.ttfb": {
+        "unit": "ms",
+        "values": [
+          5.4,
+          2.6,
+          2.3,
+          2.5,
+          2.6
+        ],
+        "median": 2.6,
+        "min": 2.3,
+        "max": 5.4
+      },
+      "load.project.fcp": {
+        "unit": "ms",
+        "values": [
+          88,
+          84,
+          84,
+          84,
+          84
+        ],
+        "median": 84,
+        "min": 84,
+        "max": 88
+      },
+      "load.project.lcp": {
+        "unit": "ms",
+        "values": [
+          88,
+          84,
+          84,
+          84,
+          84
+        ],
+        "median": 84,
+        "min": 84,
+        "max": 88
+      },
+      "load.project.dcl": {
+        "unit": "ms",
+        "values": [
+          25.2,
+          21.9,
+          22.3,
+          23,
+          22.5
+        ],
+        "median": 22.5,
+        "min": 21.9,
+        "max": 25.2
+      },
+      "load.project.load": {
+        "unit": "ms",
+        "values": [
+          85,
+          81.6,
+          80.2,
+          81.6,
+          80.9
+        ],
+        "median": 81.6,
+        "min": 80.2,
+        "max": 85
+      },
+      "load.project.tbt": {
+        "unit": "ms",
+        "values": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 0
+      },
+      "load.project.ready": {
+        "unit": "ms",
+        "values": [
+          92.5,
+          89.5,
+          89.1,
+          89.6,
+          89.4
+        ],
+        "median": 89.5,
+        "min": 89.1,
+        "max": 92.5
+      },
+      "load.issue.ttfb": {
+        "unit": "ms",
+        "values": [
+          4.1,
+          2,
+          1.8,
+          1.9,
+          1.7
+        ],
+        "median": 1.9,
+        "min": 1.7,
+        "max": 4.1
+      },
+      "load.issue.fcp": {
+        "unit": "ms",
+        "values": [
+          68,
+          76,
+          68,
+          80,
+          68
+        ],
+        "median": 68,
+        "min": 68,
+        "max": 80
+      },
+      "load.issue.lcp": {
+        "unit": "ms",
+        "values": [
+          68,
+          76,
+          68,
+          80,
+          68
+        ],
+        "median": 68,
+        "min": 68,
+        "max": 80
+      },
+      "load.issue.dcl": {
+        "unit": "ms",
+        "values": [
+          24.2,
+          21.6,
+          21.2,
+          21.7,
+          22
+        ],
+        "median": 21.7,
+        "min": 21.2,
+        "max": 24.2
+      },
+      "load.issue.load": {
+        "unit": "ms",
+        "values": [
+          69.7,
+          67.1,
+          67.1,
+          71.3,
+          70.4
+        ],
+        "median": 69.7,
+        "min": 67.1,
+        "max": 71.3
+      },
+      "load.issue.tbt": {
+        "unit": "ms",
+        "values": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 0
+      },
+      "load.issue.ready": {
+        "unit": "ms",
+        "values": [
+          77.2,
+          74.6,
+          74.2,
+          79.1,
+          77.2
+        ],
+        "median": 77.2,
+        "min": 74.2,
+        "max": 79.1
+      },
+      "server.cold-start": {
+        "unit": "ms",
+        "values": [
+          472.55,
+          445.76,
+          442.88
+        ],
+        "median": 445.76,
+        "min": 442.88,
+        "max": 472.55
+      },
+      "server.home.rps": {
+        "unit": "req/s",
+        "values": [
+          1376.91,
+          1360.64,
+          1381.37
+        ],
+        "median": 1376.91,
+        "min": 1360.64,
+        "max": 1381.37
+      },
+      "server.home.p50": {
+        "unit": "ms",
+        "values": [
+          34,
+          35,
+          34
+        ],
+        "median": 34,
+        "min": 34,
+        "max": 35
+      },
+      "server.home.p99": {
+        "unit": "ms",
+        "values": [
+          70,
+          71,
+          70
+        ],
+        "median": 70,
+        "min": 70,
+        "max": 71
+      },
+      "server.home.errors": {
+        "unit": "count",
+        "values": [
+          0,
+          0,
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 0
+      },
+      "server.project.rps": {
+        "unit": "req/s",
+        "values": [
+          1499.46,
+          1461.9,
+          1505.73
+        ],
+        "median": 1499.46,
+        "min": 1461.9,
+        "max": 1505.73
+      },
+      "server.project.p50": {
+        "unit": "ms",
+        "values": [
+          31,
+          32,
+          31
+        ],
+        "median": 31,
+        "min": 31,
+        "max": 32
+      },
+      "server.project.p99": {
+        "unit": "ms",
+        "values": [
+          63,
+          64,
+          63
+        ],
+        "median": 63,
+        "min": 63,
+        "max": 64
+      },
+      "server.project.errors": {
+        "unit": "count",
+        "values": [
+          0,
+          0,
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 0
+      },
+      "server.issue.rps": {
+        "unit": "req/s",
+        "values": [
+          5456.55,
+          5463.6,
+          5599.82
+        ],
+        "median": 5463.6,
+        "min": 5456.55,
+        "max": 5599.82
+      },
+      "server.issue.p50": {
+        "unit": "ms",
+        "values": [
+          8,
+          8,
+          8
+        ],
+        "median": 8,
+        "min": 8,
+        "max": 8
+      },
+      "server.issue.p99": {
+        "unit": "ms",
+        "values": [
+          17,
+          16,
+          16
+        ],
+        "median": 16,
+        "min": 16,
+        "max": 17
+      },
+      "server.issue.errors": {
+        "unit": "count",
+        "values": [
+          0,
+          0,
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 0
+      },
+      "server.api.rps": {
+        "unit": "req/s",
+        "values": [
+          16869.1,
+          16756.73,
+          16943.28
+        ],
+        "median": 16869.1,
+        "min": 16756.73,
+        "max": 16943.28
+      },
+      "server.api.p50": {
+        "unit": "ms",
+        "values": [
+          2,
+          2,
+          2
+        ],
+        "median": 2,
+        "min": 2,
+        "max": 2
+      },
+      "server.api.p99": {
+        "unit": "ms",
+        "values": [
+          5,
+          5,
+          5
+        ],
+        "median": 5,
+        "min": 5,
+        "max": 5
+      },
+      "server.api.errors": {
+        "unit": "count",
+        "values": [
+          0,
+          0,
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 0
+      },
+      "server.rss": {
+        "unit": "MB",
+        "values": [
+          215.64
+        ],
+        "median": 215.64,
+        "min": 215.64,
+        "max": 215.64
+      }
+    },
+    "react-router": {
+      "other.loc": {
+        "unit": "lines",
+        "values": [
+          1359
+        ],
+        "median": 1359,
+        "min": 1359,
+        "max": 1359
+      },
+      "other.loc-app": {
+        "unit": "lines",
+        "values": [
+          471
+        ],
+        "median": 471,
+        "min": 471,
+        "max": 471
+      },
+      "other.loc-shared": {
+        "unit": "lines",
+        "values": [
+          888
+        ],
+        "median": 888,
+        "min": 888,
+        "max": 888
+      },
+      "other.files": {
+        "unit": "count",
+        "values": [
+          29
+        ],
+        "median": 29,
+        "min": 29,
+        "max": 29
+      },
+      "other.files-app": {
+        "unit": "count",
+        "values": [
+          18
+        ],
+        "median": 18,
+        "min": 18,
+        "max": 18
+      },
+      "other.files-shared": {
+        "unit": "count",
+        "values": [
+          11
+        ],
+        "median": 11,
+        "min": 11,
+        "max": 11
+      },
+      "other.runtime-deps": {
+        "unit": "count",
+        "values": [
+          75
+        ],
+        "median": 75,
+        "min": 75,
+        "max": 75
+      },
+      "other.typecheck": {
+        "unit": "ms",
+        "values": [
+          1131.66,
+          796.49,
+          792.72
+        ],
+        "median": 796.49,
+        "min": 792.72,
+        "max": 1131.66
+      },
+      "dev.cold-start": {
+        "unit": "ms",
+        "values": [
+          990.86,
+          986.55,
+          989.55,
+          988.93,
+          990.1
+        ],
+        "median": 989.55,
+        "min": 986.55,
+        "max": 990.86
+      },
+      "dev.first.home.ttfb": {
+        "unit": "ms",
+        "values": [
+          9.2,
+          13,
+          13,
+          12.8,
+          13.6
+        ],
+        "median": 13,
+        "min": 9.2,
+        "max": 13.6
+      },
+      "dev.first.home.load": {
+        "unit": "ms",
+        "values": [
+          177.9,
+          178.3,
+          180.1,
+          180.9,
+          181.7
+        ],
+        "median": 180.1,
+        "min": 177.9,
+        "max": 181.7
+      },
+      "dev.first.project.ttfb": {
+        "unit": "ms",
+        "values": [
+          18.6,
+          26.9,
+          26.1,
+          26.4,
+          26.6
+        ],
+        "median": 26.4,
+        "min": 18.6,
+        "max": 26.9
+      },
+      "dev.first.project.load": {
+        "unit": "ms",
+        "values": [
+          71.5,
+          85.6,
+          78.8,
+          89.4,
+          90.9
+        ],
+        "median": 85.6,
+        "min": 71.5,
+        "max": 90.9
+      },
+      "dev.first.issue.ttfb": {
+        "unit": "ms",
+        "values": [
+          8.9,
+          8.9,
+          9,
+          9,
+          9.7
+        ],
+        "median": 9,
+        "min": 8.9,
+        "max": 9.7
+      },
+      "dev.first.issue.load": {
+        "unit": "ms",
+        "values": [
+          61,
+          67.3,
+          62,
+          66.5,
+          67.7
+        ],
+        "median": 66.5,
+        "min": 61,
+        "max": 67.7
+      },
+      "dev.warm.home.ttfb": {
+        "unit": "ms",
+        "values": [
+          10.3,
+          10.7,
+          11,
+          10.7,
+          10.8
+        ],
+        "median": 10.7,
+        "min": 10.3,
+        "max": 11
+      },
+      "dev.warm.home.load": {
+        "unit": "ms",
+        "values": [
+          57.1,
+          56.9,
+          58.3,
+          57.5,
+          56.9
+        ],
+        "median": 57.1,
+        "min": 56.9,
+        "max": 58.3
+      },
+      "dev.warm.project.ttfb": {
+        "unit": "ms",
+        "values": [
+          17.9,
+          23.2,
+          22.8,
+          22.7,
+          23.2
+        ],
+        "median": 22.8,
+        "min": 17.9,
+        "max": 23.2
+      },
+      "dev.warm.project.load": {
+        "unit": "ms",
+        "values": [
+          68.5,
+          76.1,
+          73.3,
+          73.1,
+          73.1
+        ],
+        "median": 73.1,
+        "min": 68.5,
+        "max": 76.1
+      },
+      "dev.warm.issue.ttfb": {
+        "unit": "ms",
+        "values": [
+          8.3,
+          8.5,
+          8.4,
+          8.4,
+          8.4
+        ],
+        "median": 8.4,
+        "min": 8.3,
+        "max": 8.5
+      },
+      "dev.warm.issue.load": {
+        "unit": "ms",
+        "values": [
+          56.8,
+          56.2,
+          56.4,
+          54.8,
+          55.8
+        ],
+        "median": 56.2,
+        "min": 54.8,
+        "max": 56.8
+      },
+      "dev.hmr": {
+        "unit": "ms",
+        "values": [
+          192.48,
+          90.69,
+          179.07,
+          75.36,
+          84.33
+        ],
+        "median": 90.69,
+        "min": 75.36,
+        "max": 192.48
+      },
+      "dev.warm-start": {
+        "unit": "ms",
+        "values": [
+          975.73,
+          963.71,
+          973.56,
+          964.58,
+          967.85
+        ],
+        "median": 967.85,
+        "min": 963.71,
+        "max": 975.73
+      },
+      "build.time": {
+        "unit": "ms",
+        "values": [
+          813.76,
+          818.79,
+          818.04
+        ],
+        "median": 818.04,
+        "min": 813.76,
+        "max": 818.79
+      },
+      "build.client-size": {
+        "unit": "bytes",
+        "values": [
+          386589
+        ],
+        "median": 386589,
+        "min": 386589,
+        "max": 386589
+      },
+      "build.server-size": {
+        "unit": "bytes",
+        "values": [
+          72024
+        ],
+        "median": 72024,
+        "min": 72024,
+        "max": 72024
+      },
+      "payload.home.js-raw": {
+        "unit": "bytes",
+        "values": [
+          356995
+        ],
+        "median": 356995,
+        "min": 356995,
+        "max": 356995
+      },
+      "payload.home.js-gzip": {
+        "unit": "bytes",
+        "values": [
+          115035
+        ],
+        "median": 115035,
+        "min": 115035,
+        "max": 115035
+      },
+      "payload.home.js-brotli": {
+        "unit": "bytes",
+        "values": [
+          100786
+        ],
+        "median": 100786,
+        "min": 100786,
+        "max": 100786
+      },
+      "payload.home.css-raw": {
+        "unit": "bytes",
+        "values": [
+          8581
+        ],
+        "median": 8581,
+        "min": 8581,
+        "max": 8581
+      },
+      "payload.home.css-gzip": {
+        "unit": "bytes",
+        "values": [
+          2582
+        ],
+        "median": 2582,
+        "min": 2582,
+        "max": 2582
+      },
+      "payload.home.css-brotli": {
+        "unit": "bytes",
+        "values": [
+          2198
+        ],
+        "median": 2198,
+        "min": 2198,
+        "max": 2198
+      },
+      "payload.home.html-raw": {
+        "unit": "bytes",
+        "values": [
+          22316
+        ],
+        "median": 22316,
+        "min": 22316,
+        "max": 22316
+      },
+      "payload.home.html-gzip": {
+        "unit": "bytes",
+        "values": [
+          5383
+        ],
+        "median": 5383,
+        "min": 5383,
+        "max": 5383
+      },
+      "payload.home.requests": {
+        "unit": "count",
+        "values": [
+          14
+        ],
+        "median": 14,
+        "min": 14,
+        "max": 14
+      },
+      "payload.project.js-raw": {
+        "unit": "bytes",
+        "values": [
+          358702
+        ],
+        "median": 358702,
+        "min": 358702,
+        "max": 358702
+      },
+      "payload.project.js-gzip": {
+        "unit": "bytes",
+        "values": [
+          115545
+        ],
+        "median": 115545,
+        "min": 115545,
+        "max": 115545
+      },
+      "payload.project.js-brotli": {
+        "unit": "bytes",
+        "values": [
+          101262
+        ],
+        "median": 101262,
+        "min": 101262,
+        "max": 101262
+      },
+      "payload.project.css-raw": {
+        "unit": "bytes",
+        "values": [
+          8581
+        ],
+        "median": 8581,
+        "min": 8581,
+        "max": 8581
+      },
+      "payload.project.css-gzip": {
+        "unit": "bytes",
+        "values": [
+          2582
+        ],
+        "median": 2582,
+        "min": 2582,
+        "max": 2582
+      },
+      "payload.project.css-brotli": {
+        "unit": "bytes",
+        "values": [
+          2198
+        ],
+        "median": 2198,
+        "min": 2198,
+        "max": 2198
+      },
+      "payload.project.html-raw": {
+        "unit": "bytes",
+        "values": [
+          65215
+        ],
+        "median": 65215,
+        "min": 65215,
+        "max": 65215
+      },
+      "payload.project.html-gzip": {
+        "unit": "bytes",
+        "values": [
+          11793
+        ],
+        "median": 11793,
+        "min": 11793,
+        "max": 11793
+      },
+      "payload.project.requests": {
+        "unit": "count",
+        "values": [
+          13
+        ],
+        "median": 13,
+        "min": 13,
+        "max": 13
+      },
+      "payload.issue.js-raw": {
+        "unit": "bytes",
+        "values": [
+          358231
+        ],
+        "median": 358231,
+        "min": 358231,
+        "max": 358231
+      },
+      "payload.issue.js-gzip": {
+        "unit": "bytes",
+        "values": [
+          115421
+        ],
+        "median": 115421,
+        "min": 115421,
+        "max": 115421
+      },
+      "payload.issue.js-brotli": {
+        "unit": "bytes",
+        "values": [
+          101139
+        ],
+        "median": 101139,
+        "min": 101139,
+        "max": 101139
+      },
+      "payload.issue.css-raw": {
+        "unit": "bytes",
+        "values": [
+          8581
+        ],
+        "median": 8581,
+        "min": 8581,
+        "max": 8581
+      },
+      "payload.issue.css-gzip": {
+        "unit": "bytes",
+        "values": [
+          2582
+        ],
+        "median": 2582,
+        "min": 2582,
+        "max": 2582
+      },
+      "payload.issue.css-brotli": {
+        "unit": "bytes",
+        "values": [
+          2198
+        ],
+        "median": 2198,
+        "min": 2198,
+        "max": 2198
+      },
+      "payload.issue.html-raw": {
+        "unit": "bytes",
+        "values": [
+          17931
+        ],
+        "median": 17931,
+        "min": 17931,
+        "max": 17931
+      },
+      "payload.issue.html-gzip": {
+        "unit": "bytes",
+        "values": [
+          4821
+        ],
+        "median": 4821,
+        "min": 4821,
+        "max": 4821
+      },
+      "payload.issue.requests": {
+        "unit": "count",
+        "values": [
+          13
+        ],
+        "median": 13,
+        "min": 13,
+        "max": 13
+      },
+      "load.home.ttfb": {
+        "unit": "ms",
+        "values": [
+          6.4,
+          4.9,
+          4.2,
+          4.4,
+          3.9
+        ],
+        "median": 4.4,
+        "min": 3.9,
+        "max": 6.4
+      },
+      "load.home.fcp": {
+        "unit": "ms",
+        "values": [
+          68,
+          68,
+          68,
+          68,
+          68
+        ],
+        "median": 68,
+        "min": 68,
+        "max": 68
+      },
+      "load.home.lcp": {
+        "unit": "ms",
+        "values": [
+          68,
+          68,
+          68,
+          68,
+          68
+        ],
+        "median": 68,
+        "min": 68,
+        "max": 68
+      },
+      "load.home.dcl": {
+        "unit": "ms",
+        "values": [
+          63.4,
+          28.2,
+          27.7,
+          27.2,
+          27.8
+        ],
+        "median": 27.8,
+        "min": 27.2,
+        "max": 63.4
+      },
+      "load.home.load": {
+        "unit": "ms",
+        "values": [
+          67.1,
+          63.9,
+          63.6,
+          62.9,
+          64.4
+        ],
+        "median": 63.9,
+        "min": 62.9,
+        "max": 67.1
+      },
+      "load.home.tbt": {
+        "unit": "ms",
+        "values": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 0
+      },
+      "load.home.ready": {
+        "unit": "ms",
+        "values": [
+          189,
+          161.3,
+          163.8,
+          161.9,
+          161.6
+        ],
+        "median": 161.9,
+        "min": 161.3,
+        "max": 189
+      },
+      "load.project.ttfb": {
+        "unit": "ms",
+        "values": [
+          7.3,
+          5.2,
+          4.7,
+          4.6,
+          5.2
+        ],
+        "median": 5.2,
+        "min": 4.6,
+        "max": 7.3
+      },
+      "load.project.fcp": {
+        "unit": "ms",
+        "values": [
+          92,
+          88,
+          88,
+          92,
+          88
+        ],
+        "median": 88,
+        "min": 88,
+        "max": 92
+      },
+      "load.project.lcp": {
+        "unit": "ms",
+        "values": [
+          92,
+          88,
+          88,
+          92,
+          88
+        ],
+        "median": 88,
+        "min": 88,
+        "max": 92
+      },
+      "load.project.dcl": {
+        "unit": "ms",
+        "values": [
+          33.8,
+          32.1,
+          31.2,
+          31.8,
+          31.6
+        ],
+        "median": 31.8,
+        "min": 31.2,
+        "max": 33.8
+      },
+      "load.project.load": {
+        "unit": "ms",
+        "values": [
+          83.2,
+          81.2,
+          80.2,
+          80.8,
+          81.4
+        ],
+        "median": 81.2,
+        "min": 80.2,
+        "max": 83.2
+      },
+      "load.project.tbt": {
+        "unit": "ms",
+        "values": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 0
+      },
+      "load.project.ready": {
+        "unit": "ms",
+        "values": [
+          200.6,
+          198.7,
+          195,
+          196.6,
+          196.7
+        ],
+        "median": 196.7,
+        "min": 195,
+        "max": 200.6
+      },
+      "load.issue.ttfb": {
+        "unit": "ms",
+        "values": [
+          4.4,
+          3.2,
+          2.9,
+          2.9,
+          2.8
+        ],
+        "median": 2.9,
+        "min": 2.8,
+        "max": 4.4
+      },
+      "load.issue.fcp": {
+        "unit": "ms",
+        "values": [
+          72,
+          68,
+          68,
+          68,
+          68
+        ],
+        "median": 68,
+        "min": 68,
+        "max": 72
+      },
+      "load.issue.lcp": {
+        "unit": "ms",
+        "values": [
+          72,
+          68,
+          68,
+          68,
+          68
+        ],
+        "median": 68,
+        "min": 68,
+        "max": 72
+      },
+      "load.issue.dcl": {
+        "unit": "ms",
+        "values": [
+          28.2,
+          25.6,
+          26.5,
+          26,
+          26.8
+        ],
+        "median": 26.5,
+        "min": 25.6,
+        "max": 28.2
+      },
+      "load.issue.load": {
+        "unit": "ms",
+        "values": [
+          65.9,
+          62.7,
+          63.3,
+          63.8,
+          64.3
+        ],
+        "median": 63.8,
+        "min": 62.7,
+        "max": 65.9
+      },
+      "load.issue.tbt": {
+        "unit": "ms",
+        "values": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 0
+      },
+      "load.issue.ready": {
+        "unit": "ms",
+        "values": [
+          163.7,
+          158.5,
+          158.7,
+          160.3,
+          161.1
+        ],
+        "median": 160.3,
+        "min": 158.5,
+        "max": 163.7
+      },
+      "server.cold-start": {
+        "unit": "ms",
+        "values": [
+          517.16,
+          517.03,
+          512.84
+        ],
+        "median": 517.03,
+        "min": 512.84,
+        "max": 517.16
+      },
+      "server.home.rps": {
+        "unit": "req/s",
+        "values": [
+          700.28,
+          705,
+          716.19
+        ],
+        "median": 705,
+        "min": 700.28,
+        "max": 716.19
+      },
+      "server.home.p50": {
+        "unit": "ms",
+        "values": [
+          62,
+          68,
+          64
+        ],
+        "median": 64,
+        "min": 62,
+        "max": 68
+      },
+      "server.home.p99": {
+        "unit": "ms",
+        "values": [
+          129,
+          117,
+          121
+        ],
+        "median": 121,
+        "min": 117,
+        "max": 129
+      },
+      "server.home.errors": {
+        "unit": "count",
+        "values": [
+          0,
+          0,
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 0
+      },
+      "server.project.rps": {
+        "unit": "req/s",
+        "values": [
+          485.91,
+          495.3,
+          463.7
+        ],
+        "median": 485.91,
+        "min": 463.7,
+        "max": 495.3
+      },
+      "server.project.p50": {
+        "unit": "ms",
+        "values": [
+          105,
+          103,
+          111
+        ],
+        "median": 105,
+        "min": 103,
+        "max": 111
+      },
+      "server.project.p99": {
+        "unit": "ms",
+        "values": [
+          143,
+          140,
+          178
+        ],
+        "median": 143,
+        "min": 140,
+        "max": 178
+      },
+      "server.project.errors": {
+        "unit": "count",
+        "values": [
+          0,
+          0,
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 0
+      },
+      "server.issue.rps": {
+        "unit": "req/s",
+        "values": [
+          1501.19,
+          1553.1,
+          1553
+        ],
+        "median": 1553,
+        "min": 1501.19,
+        "max": 1553.1
+      },
+      "server.issue.p50": {
+        "unit": "ms",
+        "values": [
+          31,
+          31,
+          30
+        ],
+        "median": 31,
+        "min": 30,
+        "max": 31
+      },
+      "server.issue.p99": {
+        "unit": "ms",
+        "values": [
+          64,
+          60,
+          62
+        ],
+        "median": 62,
+        "min": 60,
+        "max": 64
+      },
+      "server.issue.errors": {
+        "unit": "count",
+        "values": [
+          0,
+          0,
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 0
+      },
+      "server.api.rps": {
+        "unit": "req/s",
+        "values": [
+          10711.64,
+          10692.73,
+          10697.82
+        ],
+        "median": 10697.82,
+        "min": 10692.73,
+        "max": 10711.64
+      },
+      "server.api.p50": {
+        "unit": "ms",
+        "values": [
+          4,
+          4,
+          4
+        ],
+        "median": 4,
+        "min": 4,
+        "max": 4
+      },
+      "server.api.p99": {
+        "unit": "ms",
+        "values": [
+          8,
+          8,
+          8
+        ],
+        "median": 8,
+        "min": 8,
+        "max": 8
+      },
+      "server.api.errors": {
+        "unit": "count",
+        "values": [
+          0,
+          0,
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 0
+      },
+      "server.rss": {
+        "unit": "MB",
+        "values": [
+          235.58
+        ],
+        "median": 235.58,
+        "min": 235.58,
+        "max": 235.58
+      }
+    },
+    "next": {
+      "other.loc": {
+        "unit": "lines",
+        "values": [
+          1325
+        ],
+        "median": 1325,
+        "min": 1325,
+        "max": 1325
+      },
+      "other.loc-app": {
+        "unit": "lines",
+        "values": [
+          437
+        ],
+        "median": 437,
+        "min": 437,
+        "max": 437
+      },
+      "other.loc-shared": {
+        "unit": "lines",
+        "values": [
+          888
+        ],
+        "median": 888,
+        "min": 888,
+        "max": 888
+      },
+      "other.files": {
+        "unit": "count",
+        "values": [
+          30
+        ],
+        "median": 30,
+        "min": 30,
+        "max": 30
+      },
+      "other.files-app": {
+        "unit": "count",
+        "values": [
+          19
+        ],
+        "median": 19,
+        "min": 19,
+        "max": 19
+      },
+      "other.files-shared": {
+        "unit": "count",
+        "values": [
+          11
+        ],
+        "median": 11,
+        "min": 11,
+        "max": 11
+      },
+      "other.runtime-deps": {
+        "unit": "count",
+        "values": [
+          7
+        ],
+        "median": 7,
+        "min": 7,
+        "max": 7
+      },
+      "other.typecheck": {
+        "unit": "ms",
+        "values": [
+          837.51,
+          637.04,
+          642.43
+        ],
+        "median": 642.43,
+        "min": 637.04,
+        "max": 837.51
+      },
+      "dev.cold-start": {
+        "unit": "ms",
+        "values": [
+          1883.41,
+          1741.3,
+          1754.9,
+          1766.28,
+          1767.62
+        ],
+        "median": 1766.28,
+        "min": 1741.3,
+        "max": 1883.41
+      },
+      "dev.first.home.ttfb": {
+        "unit": "ms",
+        "values": [
+          48.8,
+          57.3,
+          58.5,
+          57.8,
+          58.1
+        ],
+        "median": 57.8,
+        "min": 48.8,
+        "max": 58.5
+      },
+      "dev.first.home.load": {
+        "unit": "ms",
+        "values": [
+          133.4,
+          143.5,
+          144.4,
+          143.2,
+          144.6
+        ],
+        "median": 143.5,
+        "min": 133.4,
+        "max": 144.6
+      },
+      "dev.first.project.ttfb": {
+        "unit": "ms",
+        "values": [
+          68.3,
+          418.8,
+          422.9,
+          425.5,
+          424.2
+        ],
+        "median": 422.9,
+        "min": 68.3,
+        "max": 425.5
+      },
+      "dev.first.project.load": {
+        "unit": "ms",
+        "values": [
+          153.6,
+          505.8,
+          510.1,
+          511.9,
+          508.3
+        ],
+        "median": 508.3,
+        "min": 153.6,
+        "max": 511.9
+      },
+      "dev.first.issue.ttfb": {
+        "unit": "ms",
+        "values": [
+          356,
+          358.1,
+          360.2,
+          361.6,
+          359.3
+        ],
+        "median": 359.3,
+        "min": 356,
+        "max": 361.6
+      },
+      "dev.first.issue.load": {
+        "unit": "ms",
+        "values": [
+          441.5,
+          439.3,
+          442.1,
+          444.5,
+          440.8
+        ],
+        "median": 441.5,
+        "min": 439.3,
+        "max": 444.5
+      },
+      "dev.warm.home.ttfb": {
+        "unit": "ms",
+        "values": [
+          49.9,
+          50.5,
+          55.4,
+          51.4,
+          50.6
+        ],
+        "median": 50.6,
+        "min": 49.9,
+        "max": 55.4
+      },
+      "dev.warm.home.load": {
+        "unit": "ms",
+        "values": [
+          132,
+          133.2,
+          137.9,
+          133.2,
+          133.5
+        ],
+        "median": 133.2,
+        "min": 132,
+        "max": 137.9
+      },
+      "dev.warm.project.ttfb": {
+        "unit": "ms",
+        "values": [
+          66.5,
+          69.5,
+          69.5,
+          70.6,
+          69.1
+        ],
+        "median": 69.5,
+        "min": 66.5,
+        "max": 70.6
+      },
+      "dev.warm.project.load": {
+        "unit": "ms",
+        "values": [
+          151.8,
+          154.7,
+          154.6,
+          155.8,
+          153.9
+        ],
+        "median": 154.6,
+        "min": 151.8,
+        "max": 155.8
+      },
+      "dev.warm.issue.ttfb": {
+        "unit": "ms",
+        "values": [
+          48.2,
+          47.6,
+          46.6,
+          46.3,
+          46
+        ],
+        "median": 46.6,
+        "min": 46,
+        "max": 48.2
+      },
+      "dev.warm.issue.load": {
+        "unit": "ms",
+        "values": [
+          129,
+          133.1,
+          145.2,
+          125.6,
+          138.6
+        ],
+        "median": 133.1,
+        "min": 125.6,
+        "max": 145.2
+      },
+      "dev.hmr": {
+        "unit": "ms",
+        "values": [
+          148.55,
+          144.13,
+          137.68,
+          139.02,
+          147.82
+        ],
+        "median": 144.13,
+        "min": 137.68,
+        "max": 148.55
+      },
+      "dev.warm-start": {
+        "unit": "ms",
+        "values": [
+          1756.4,
+          1751.83,
+          1764.47,
+          1744.06,
+          1747.18
+        ],
+        "median": 1751.83,
+        "min": 1744.06,
+        "max": 1764.47
+      },
+      "build.time": {
+        "unit": "ms",
+        "values": [
+          2282.43,
+          2237.66,
+          2265.69
+        ],
+        "median": 2265.69,
+        "min": 2237.66,
+        "max": 2282.43
+      },
+      "build.client-size": {
+        "unit": "bytes",
+        "values": [
+          621581
+        ],
+        "median": 621581,
+        "min": 621581,
+        "max": 621581
+      },
+      "build.server-size": {
+        "unit": "bytes",
+        "values": [
+          7160870
+        ],
+        "median": 7160870,
+        "min": 7160870,
+        "max": 7160870
+      },
+      "payload.home.js-raw": {
+        "unit": "bytes",
+        "values": [
+          463992
+        ],
+        "median": 463992,
+        "min": 463992,
+        "max": 463992
+      },
+      "payload.home.js-gzip": {
+        "unit": "bytes",
+        "values": [
+          138482
+        ],
+        "median": 138482,
+        "min": 138482,
+        "max": 138482
+      },
+      "payload.home.js-brotli": {
+        "unit": "bytes",
+        "values": [
+          119055
+        ],
+        "median": 119055,
+        "min": 119055,
+        "max": 119055
+      },
+      "payload.home.css-raw": {
+        "unit": "bytes",
+        "values": [
+          8587
+        ],
+        "median": 8587,
+        "min": 8587,
+        "max": 8587
+      },
+      "payload.home.css-gzip": {
+        "unit": "bytes",
+        "values": [
+          2578
+        ],
+        "median": 2578,
+        "min": 2578,
+        "max": 2578
+      },
+      "payload.home.css-brotli": {
+        "unit": "bytes",
+        "values": [
+          2197
+        ],
+        "median": 2197,
+        "min": 2197,
+        "max": 2197
+      },
+      "payload.home.html-raw": {
+        "unit": "bytes",
+        "values": [
+          35387
+        ],
+        "median": 35387,
+        "min": 35387,
+        "max": 35387
+      },
+      "payload.home.html-gzip": {
+        "unit": "bytes",
+        "values": [
+          4976
+        ],
+        "median": 4976,
+        "min": 4976,
+        "max": 4976
+      },
+      "payload.home.requests": {
+        "unit": "count",
+        "values": [
+          31
+        ],
+        "median": 31,
+        "min": 31,
+        "max": 31
+      },
+      "payload.project.js-raw": {
+        "unit": "bytes",
+        "values": [
+          471326
+        ],
+        "median": 471326,
+        "min": 471326,
+        "max": 471326
+      },
+      "payload.project.js-gzip": {
+        "unit": "bytes",
+        "values": [
+          141315
+        ],
+        "median": 141315,
+        "min": 141315,
+        "max": 141315
+      },
+      "payload.project.js-brotli": {
+        "unit": "bytes",
+        "values": [
+          121524
+        ],
+        "median": 121524,
+        "min": 121524,
+        "max": 121524
+      },
+      "payload.project.css-raw": {
+        "unit": "bytes",
+        "values": [
+          8587
+        ],
+        "median": 8587,
+        "min": 8587,
+        "max": 8587
+      },
+      "payload.project.css-gzip": {
+        "unit": "bytes",
+        "values": [
+          2578
+        ],
+        "median": 2578,
+        "min": 2578,
+        "max": 2578
+      },
+      "payload.project.css-brotli": {
+        "unit": "bytes",
+        "values": [
+          2197
+        ],
+        "median": 2197,
+        "min": 2197,
+        "max": 2197
+      },
+      "payload.project.html-raw": {
+        "unit": "bytes",
+        "values": [
+          73037
+        ],
+        "median": 73037,
+        "min": 73037,
+        "max": 73037
+      },
+      "payload.project.html-gzip": {
+        "unit": "bytes",
+        "values": [
+          10974
+        ],
+        "median": 10974,
+        "min": 10974,
+        "max": 10974
+      },
+      "payload.project.requests": {
+        "unit": "count",
+        "values": [
+          45
+        ],
+        "median": 45,
+        "min": 45,
+        "max": 45
+      },
+      "payload.issue.js-raw": {
+        "unit": "bytes",
+        "values": [
+          465802
+        ],
+        "median": 465802,
+        "min": 465802,
+        "max": 465802
+      },
+      "payload.issue.js-gzip": {
+        "unit": "bytes",
+        "values": [
+          139403
+        ],
+        "median": 139403,
+        "min": 139403,
+        "max": 139403
+      },
+      "payload.issue.js-brotli": {
+        "unit": "bytes",
+        "values": [
+          119857
+        ],
+        "median": 119857,
+        "min": 119857,
+        "max": 119857
+      },
+      "payload.issue.css-raw": {
+        "unit": "bytes",
+        "values": [
+          8587
+        ],
+        "median": 8587,
+        "min": 8587,
+        "max": 8587
+      },
+      "payload.issue.css-gzip": {
+        "unit": "bytes",
+        "values": [
+          2578
+        ],
+        "median": 2578,
+        "min": 2578,
+        "max": 2578
+      },
+      "payload.issue.css-brotli": {
+        "unit": "bytes",
+        "values": [
+          2197
+        ],
+        "median": 2197,
+        "min": 2197,
+        "max": 2197
+      },
+      "payload.issue.html-raw": {
+        "unit": "bytes",
+        "values": [
+          26287
+        ],
+        "median": 26287,
+        "min": 26287,
+        "max": 26287
+      },
+      "payload.issue.html-gzip": {
+        "unit": "bytes",
+        "values": [
+          5292
+        ],
+        "median": 5292,
+        "min": 5292,
+        "max": 5292
+      },
+      "payload.issue.requests": {
+        "unit": "count",
+        "values": [
+          34
+        ],
+        "median": 34,
+        "min": 34,
+        "max": 34
+      },
+      "load.home.ttfb": {
+        "unit": "ms",
+        "values": [
+          8.1,
+          6.3,
+          6.4,
+          5.8,
+          5.6
+        ],
+        "median": 6.3,
+        "min": 5.6,
+        "max": 8.1
+      },
+      "load.home.fcp": {
+        "unit": "ms",
+        "values": [
+          72,
+          68,
+          68,
+          68,
+          68
+        ],
+        "median": 68,
+        "min": 68,
+        "max": 72
+      },
+      "load.home.lcp": {
+        "unit": "ms",
+        "values": [
+          72,
+          68,
+          68,
+          68,
+          68
+        ],
+        "median": 68,
+        "min": 68,
+        "max": 72
+      },
+      "load.home.dcl": {
+        "unit": "ms",
+        "values": [
+          27.8,
+          27,
+          27.2,
+          27.7,
+          27.5
+        ],
+        "median": 27.5,
+        "min": 27,
+        "max": 27.8
+      },
+      "load.home.load": {
+        "unit": "ms",
+        "values": [
+          145.4,
+          141.4,
+          144.4,
+          143.1,
+          143.8
+        ],
+        "median": 143.8,
+        "min": 141.4,
+        "max": 145.4
+      },
+      "load.home.tbt": {
+        "unit": "ms",
+        "values": [
+          15.9,
+          15.4,
+          19,
+          17.2,
+          18.8
+        ],
+        "median": 17.2,
+        "min": 15.4,
+        "max": 19
+      },
+      "load.home.ready": {
+        "unit": "ms",
+        "values": [
+          190.5,
+          187,
+          190.8,
+          189.5,
+          189.3
+        ],
+        "median": 189.5,
+        "min": 187,
+        "max": 190.8
+      },
+      "load.project.ttfb": {
+        "unit": "ms",
+        "values": [
+          9.9,
+          6.6,
+          6.8,
+          6.5,
+          6.3
+        ],
+        "median": 6.6,
+        "min": 6.3,
+        "max": 9.9
+      },
+      "load.project.fcp": {
+        "unit": "ms",
+        "values": [
+          96,
+          92,
+          92,
+          92,
+          92
+        ],
+        "median": 92,
+        "min": 92,
+        "max": 96
+      },
+      "load.project.lcp": {
+        "unit": "ms",
+        "values": [
+          96,
+          92,
+          92,
+          92,
+          92
+        ],
+        "median": 92,
+        "min": 92,
+        "max": 96
+      },
+      "load.project.dcl": {
+        "unit": "ms",
+        "values": [
+          35.9,
+          32.6,
+          33.3,
+          32.1,
+          31
+        ],
+        "median": 32.6,
+        "min": 31,
+        "max": 35.9
+      },
+      "load.project.load": {
+        "unit": "ms",
+        "values": [
+          168.7,
+          167.3,
+          167,
+          164.7,
+          162.6
+        ],
+        "median": 167,
+        "min": 162.6,
+        "max": 168.7
+      },
+      "load.project.tbt": {
+        "unit": "ms",
+        "values": [
+          15.1,
+          16.4,
+          14.9,
+          13.7,
+          12.6
+        ],
+        "median": 14.9,
+        "min": 12.6,
+        "max": 16.4
+      },
+      "load.project.ready": {
+        "unit": "ms",
+        "values": [
+          231.1,
+          228.2,
+          228.6,
+          224.9,
+          227.3
+        ],
+        "median": 228.2,
+        "min": 224.9,
+        "max": 231.1
+      },
+      "load.issue.ttfb": {
+        "unit": "ms",
+        "values": [
+          7.3,
+          4.7,
+          4.8,
+          4.9,
+          4.5
+        ],
+        "median": 4.8,
+        "min": 4.5,
+        "max": 7.3
+      },
+      "load.issue.fcp": {
+        "unit": "ms",
+        "values": [
+          76,
+          72,
+          72,
+          72,
+          72
+        ],
+        "median": 72,
+        "min": 72,
+        "max": 76
+      },
+      "load.issue.lcp": {
+        "unit": "ms",
+        "values": [
+          76,
+          72,
+          72,
+          72,
+          72
+        ],
+        "median": 72,
+        "min": 72,
+        "max": 76
+      },
+      "load.issue.dcl": {
+        "unit": "ms",
+        "values": [
+          30.8,
+          27,
+          27.5,
+          27.1,
+          26.4
+        ],
+        "median": 27.1,
+        "min": 26.4,
+        "max": 30.8
+      },
+      "load.issue.load": {
+        "unit": "ms",
+        "values": [
+          151.7,
+          148.5,
+          148.3,
+          148.5,
+          146.1
+        ],
+        "median": 148.5,
+        "min": 146.1,
+        "max": 151.7
+      },
+      "load.issue.tbt": {
+        "unit": "ms",
+        "values": [
+          16.4,
+          17.2,
+          16.9,
+          17,
+          17.6
+        ],
+        "median": 17,
+        "min": 16.4,
+        "max": 17.6
+      },
+      "load.issue.ready": {
+        "unit": "ms",
+        "values": [
+          194.1,
+          191.5,
+          193.5,
+          190.8,
+          191.9
+        ],
+        "median": 191.9,
+        "min": 190.8,
+        "max": 194.1
+      },
+      "server.cold-start": {
+        "unit": "ms",
+        "values": [
+          636.2,
+          641.89,
+          635.37
+        ],
+        "median": 636.2,
+        "min": 635.37,
+        "max": 641.89
+      },
+      "server.home.rps": {
+        "unit": "req/s",
+        "values": [
+          442.2,
+          446,
+          459.7
+        ],
+        "median": 446,
+        "min": 442.2,
+        "max": 459.7
+      },
+      "server.home.p50": {
+        "unit": "ms",
+        "values": [
+          110,
+          108,
+          106
+        ],
+        "median": 108,
+        "min": 106,
+        "max": 110
+      },
+      "server.home.p99": {
+        "unit": "ms",
+        "values": [
+          125,
+          130,
+          129
+        ],
+        "median": 129,
+        "min": 125,
+        "max": 130
+      },
+      "server.home.errors": {
+        "unit": "count",
+        "values": [
+          0,
+          0,
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 0
+      },
+      "server.project.rps": {
+        "unit": "req/s",
+        "values": [
+          349.8,
+          344.2,
+          353.8
+        ],
+        "median": 349.8,
+        "min": 344.2,
+        "max": 353.8
+      },
+      "server.project.p50": {
+        "unit": "ms",
+        "values": [
+          137,
+          139,
+          137
+        ],
+        "median": 137,
+        "min": 137,
+        "max": 139
+      },
+      "server.project.p99": {
+        "unit": "ms",
+        "values": [
+          168,
+          166,
+          161
+        ],
+        "median": 166,
+        "min": 161,
+        "max": 168
+      },
+      "server.project.errors": {
+        "unit": "count",
+        "values": [
+          0,
+          0,
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 0
+      },
+      "server.issue.rps": {
+        "unit": "req/s",
+        "values": [
+          674,
+          685.6,
+          710.7
+        ],
+        "median": 685.6,
+        "min": 674,
+        "max": 710.7
+      },
+      "server.issue.p50": {
+        "unit": "ms",
+        "values": [
+          72,
+          70,
+          68
+        ],
+        "median": 70,
+        "min": 68,
+        "max": 72
+      },
+      "server.issue.p99": {
+        "unit": "ms",
+        "values": [
+          95,
+          91,
+          83
+        ],
+        "median": 91,
+        "min": 83,
+        "max": 95
+      },
+      "server.issue.errors": {
+        "unit": "count",
+        "values": [
+          0,
+          0,
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 0
+      },
+      "server.api.rps": {
+        "unit": "req/s",
+        "values": [
+          5499.55,
+          5639.1,
+          6019.46
+        ],
+        "median": 5639.1,
+        "min": 5499.55,
+        "max": 6019.46
+      },
+      "server.api.p50": {
+        "unit": "ms",
+        "values": [
+          8,
+          8,
+          7
+        ],
+        "median": 8,
+        "min": 7,
+        "max": 8
+      },
+      "server.api.p99": {
+        "unit": "ms",
+        "values": [
+          17,
+          17,
+          16
+        ],
+        "median": 17,
+        "min": 16,
+        "max": 17
+      },
+      "server.api.errors": {
+        "unit": "count",
+        "values": [
+          0,
+          0,
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 0
+      },
+      "server.rss": {
+        "unit": "MB",
+        "values": [
+          480.05
+        ],
+        "median": 480.05,
+        "min": 480.05,
+        "max": 480.05
+      }
+    },
+    "solid-start": {
+      "other.loc": {
+        "unit": "lines",
+        "values": [
+          1308
+        ],
+        "median": 1308,
+        "min": 1308,
+        "max": 1308
+      },
+      "other.loc-app": {
+        "unit": "lines",
+        "values": [
+          1308
+        ],
+        "median": 1308,
+        "min": 1308,
+        "max": 1308
+      },
+      "other.loc-shared": {
+        "unit": "lines",
+        "values": [
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 0
+      },
+      "other.files": {
+        "unit": "count",
+        "values": [
+          26
+        ],
+        "median": 26,
+        "min": 26,
+        "max": 26
+      },
+      "other.files-app": {
+        "unit": "count",
+        "values": [
+          26
+        ],
+        "median": 26,
+        "min": 26,
+        "max": 26
+      },
+      "other.files-shared": {
+        "unit": "count",
+        "values": [
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 0
+      },
+      "other.runtime-deps": {
+        "unit": "count",
+        "values": [
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 0
+      },
+      "other.typecheck": {
+        "unit": "ms",
+        "values": [
+          710.7,
+          484.21,
+          488.58
+        ],
+        "median": 488.58,
+        "min": 484.21,
+        "max": 710.7
+      },
+      "dev.cold-start": {
+        "unit": "ms",
+        "values": [
+          2479.3,
+          2467.74,
+          2478.63,
+          2521.54,
+          2461.52
+        ],
+        "median": 2478.63,
+        "min": 2461.52,
+        "max": 2521.54
+      },
+      "dev.first.home.ttfb": {
+        "unit": "ms",
+        "values": [
+          18.4,
+          15.6,
+          14.3,
+          14.8,
+          15.2
+        ],
+        "median": 15.2,
+        "min": 14.3,
+        "max": 18.4
+      },
+      "dev.first.home.load": {
+        "unit": "ms",
+        "values": [
+          475.1,
+          492.6,
+          489.7,
+          501.4,
+          488.6
+        ],
+        "median": 489.7,
+        "min": 475.1,
+        "max": 501.4
+      },
+      "dev.first.project.ttfb": {
+        "unit": "ms",
+        "values": [
+          11.8,
+          53.5,
+          52.8,
+          55.1,
+          53.3
+        ],
+        "median": 53.3,
+        "min": 11.8,
+        "max": 55.1
+      },
+      "dev.first.project.load": {
+        "unit": "ms",
+        "values": [
+          75.7,
+          117.7,
+          117.3,
+          119.7,
+          124
+        ],
+        "median": 117.7,
+        "min": 75.7,
+        "max": 124
+      },
+      "dev.first.issue.ttfb": {
+        "unit": "ms",
+        "values": [
+          39.9,
+          41.8,
+          43.1,
+          44.5,
+          42.2
+        ],
+        "median": 42.2,
+        "min": 39.9,
+        "max": 44.5
+      },
+      "dev.first.issue.load": {
+        "unit": "ms",
+        "values": [
+          95.9,
+          98.9,
+          101.1,
+          100.4,
+          99.9
+        ],
+        "median": 99.9,
+        "min": 95.9,
+        "max": 101.1
+      },
+      "dev.warm.home.ttfb": {
+        "unit": "ms",
+        "values": [
+          11.1,
+          10.8,
+          11.2,
+          11.6,
+          12.2
+        ],
+        "median": 11.2,
+        "min": 10.8,
+        "max": 12.2
+      },
+      "dev.warm.home.load": {
+        "unit": "ms",
+        "values": [
+          66.5,
+          66.6,
+          66.3,
+          67.3,
+          68.3
+        ],
+        "median": 66.6,
+        "min": 66.3,
+        "max": 68.3
+      },
+      "dev.warm.project.ttfb": {
+        "unit": "ms",
+        "values": [
+          169.5,
+          164.9,
+          164.5,
+          169.2,
+          186.3
+        ],
+        "median": 169.2,
+        "min": 164.5,
+        "max": 186.3
+      },
+      "dev.warm.project.load": {
+        "unit": "ms",
+        "values": [
+          248.6,
+          241.7,
+          239.9,
+          248.9,
+          250.8
+        ],
+        "median": 248.6,
+        "min": 239.9,
+        "max": 250.8
+      },
+      "dev.warm.issue.ttfb": {
+        "unit": "ms",
+        "values": [
+          12.5,
+          12.4,
+          10.5,
+          12,
+          10.6
+        ],
+        "median": 12,
+        "min": 10.5,
+        "max": 12.5
+      },
+      "dev.warm.issue.load": {
+        "unit": "ms",
+        "values": [
+          69.3,
+          69.1,
+          66.3,
+          68,
+          68.2
+        ],
+        "median": 68.2,
+        "min": 66.3,
+        "max": 69.3
+      },
+      "dev.hmr": {
+        "unit": "ms",
+        "values": [
+          152.71,
+          92.04,
+          101.03,
+          42.45,
+          149.91
+        ],
+        "median": 101.03,
+        "min": 42.45,
+        "max": 152.71
+      },
+      "dev.warm-start": {
+        "unit": "ms",
+        "values": [
+          2463.05,
+          2485.62,
+          2466.72,
+          2464.72,
+          2500.33
+        ],
+        "median": 2466.72,
+        "min": 2463.05,
+        "max": 2500.33
+      },
+      "build.time": {
+        "unit": "ms",
+        "values": [
+          2781.5,
+          2737.8,
+          2746.85
+        ],
+        "median": 2746.85,
+        "min": 2737.8,
+        "max": 2781.5
+      },
+      "build.client-size": {
+        "unit": "bytes",
+        "values": [
+          155672
+        ],
+        "median": 155672,
+        "min": 155672,
+        "max": 155672
+      },
+      "build.server-size": {
+        "unit": "bytes",
+        "values": [
+          521894
+        ],
+        "median": 521894,
+        "min": 521894,
+        "max": 521894
+      },
+      "payload.home.js-raw": {
+        "unit": "bytes",
+        "values": [
+          105402
+        ],
+        "median": 105402,
+        "min": 105402,
+        "max": 105402
+      },
+      "payload.home.js-gzip": {
+        "unit": "bytes",
+        "values": [
+          36380
+        ],
+        "median": 36380,
+        "min": 36380,
+        "max": 36380
+      },
+      "payload.home.js-brotli": {
+        "unit": "bytes",
+        "values": [
+          32578
+        ],
+        "median": 32578,
+        "min": 32578,
+        "max": 32578
+      },
+      "payload.home.css-raw": {
+        "unit": "bytes",
+        "values": [
+          25436
+        ],
+        "median": 25436,
+        "min": 25436,
+        "max": 25436
+      },
+      "payload.home.css-gzip": {
+        "unit": "bytes",
+        "values": [
+          5493
+        ],
+        "median": 5493,
+        "min": 5493,
+        "max": 5493
+      },
+      "payload.home.css-brotli": {
+        "unit": "bytes",
+        "values": [
+          4810
+        ],
+        "median": 4810,
+        "min": 4810,
+        "max": 4810
+      },
+      "payload.home.html-raw": {
+        "unit": "bytes",
+        "values": [
+          21371
+        ],
+        "median": 21371,
+        "min": 21371,
+        "max": 21371
+      },
+      "payload.home.html-gzip": {
+        "unit": "bytes",
+        "values": [
+          4635
+        ],
+        "median": 4635,
+        "min": 4635,
+        "max": 4635
+      },
+      "payload.home.requests": {
+        "unit": "count",
+        "values": [
+          10
+        ],
+        "median": 10,
+        "min": 10,
+        "max": 10
+      },
+      "payload.project.js-raw": {
+        "unit": "bytes",
+        "values": [
+          108526
+        ],
+        "median": 108526,
+        "min": 108526,
+        "max": 108526
+      },
+      "payload.project.js-gzip": {
+        "unit": "bytes",
+        "values": [
+          37518
+        ],
+        "median": 37518,
+        "min": 37518,
+        "max": 37518
+      },
+      "payload.project.js-brotli": {
+        "unit": "bytes",
+        "values": [
+          33601
+        ],
+        "median": 33601,
+        "min": 33601,
+        "max": 33601
+      },
+      "payload.project.css-raw": {
+        "unit": "bytes",
+        "values": [
+          25436
+        ],
+        "median": 25436,
+        "min": 25436,
+        "max": 25436
+      },
+      "payload.project.css-gzip": {
+        "unit": "bytes",
+        "values": [
+          5493
+        ],
+        "median": 5493,
+        "min": 5493,
+        "max": 5493
+      },
+      "payload.project.css-brotli": {
+        "unit": "bytes",
+        "values": [
+          4810
+        ],
+        "median": 4810,
+        "min": 4810,
+        "max": 4810
+      },
+      "payload.project.html-raw": {
+        "unit": "bytes",
+        "values": [
+          71871
+        ],
+        "median": 71871,
+        "min": 71871,
+        "max": 71871
+      },
+      "payload.project.html-gzip": {
+        "unit": "bytes",
+        "values": [
+          11178
+        ],
+        "median": 11178,
+        "min": 11178,
+        "max": 11178
+      },
+      "payload.project.requests": {
+        "unit": "count",
+        "values": [
+          10
+        ],
+        "median": 10,
+        "min": 10,
+        "max": 10
+      },
+      "payload.issue.js-raw": {
+        "unit": "bytes",
+        "values": [
+          107741
+        ],
+        "median": 107741,
+        "min": 107741,
+        "max": 107741
+      },
+      "payload.issue.js-gzip": {
+        "unit": "bytes",
+        "values": [
+          37325
+        ],
+        "median": 37325,
+        "min": 37325,
+        "max": 37325
+      },
+      "payload.issue.js-brotli": {
+        "unit": "bytes",
+        "values": [
+          33449
+        ],
+        "median": 33449,
+        "min": 33449,
+        "max": 33449
+      },
+      "payload.issue.css-raw": {
+        "unit": "bytes",
+        "values": [
+          25436
+        ],
+        "median": 25436,
+        "min": 25436,
+        "max": 25436
+      },
+      "payload.issue.css-gzip": {
+        "unit": "bytes",
+        "values": [
+          5493
+        ],
+        "median": 5493,
+        "min": 5493,
+        "max": 5493
+      },
+      "payload.issue.css-brotli": {
+        "unit": "bytes",
+        "values": [
+          4810
+        ],
+        "median": 4810,
+        "min": 4810,
+        "max": 4810
+      },
+      "payload.issue.html-raw": {
+        "unit": "bytes",
+        "values": [
+          15192
+        ],
+        "median": 15192,
+        "min": 15192,
+        "max": 15192
+      },
+      "payload.issue.html-gzip": {
+        "unit": "bytes",
+        "values": [
+          4158
+        ],
+        "median": 4158,
+        "min": 4158,
+        "max": 4158
+      },
+      "payload.issue.requests": {
+        "unit": "count",
+        "values": [
+          10
+        ],
+        "median": 10,
+        "min": 10,
+        "max": 10
+      },
+      "load.home.ttfb": {
+        "unit": "ms",
+        "values": [
+          5.1,
+          4.4,
+          4.6,
+          4.5,
+          4.6
+        ],
+        "median": 4.6,
+        "min": 4.4,
+        "max": 5.1
+      },
+      "load.home.fcp": {
+        "unit": "ms",
+        "values": [
+          68,
+          68,
+          68,
+          68,
+          68
+        ],
+        "median": 68,
+        "min": 68,
+        "max": 68
+      },
+      "load.home.lcp": {
+        "unit": "ms",
+        "values": [
+          68,
+          68,
+          68,
+          68,
+          68
+        ],
+        "median": 68,
+        "min": 68,
+        "max": 68
+      },
+      "load.home.dcl": {
+        "unit": "ms",
+        "values": [
+          26.1,
+          26.2,
+          26,
+          25.9,
+          26.2
+        ],
+        "median": 26.1,
+        "min": 25.9,
+        "max": 26.2
+      },
+      "load.home.load": {
+        "unit": "ms",
+        "values": [
+          81,
+          80,
+          80.3,
+          79.4,
+          80.3
+        ],
+        "median": 80.3,
+        "min": 79.4,
+        "max": 81
+      },
+      "load.home.tbt": {
+        "unit": "ms",
+        "values": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 0
+      },
+      "load.home.ready": {
+        "unit": "ms",
+        "values": [
+          86.2,
+          84.5,
+          85.6,
+          84.6,
+          85.7
+        ],
+        "median": 85.6,
+        "min": 84.5,
+        "max": 86.2
+      },
+      "load.project.ttfb": {
+        "unit": "ms",
+        "values": [
+          7.5,
+          4.5,
+          3.6,
+          4.4,
+          3.4
+        ],
+        "median": 4.4,
+        "min": 3.4,
+        "max": 7.5
+      },
+      "load.project.fcp": {
+        "unit": "ms",
+        "values": [
+          96,
+          92,
+          88,
+          92,
+          92
+        ],
+        "median": 92,
+        "min": 88,
+        "max": 96
+      },
+      "load.project.lcp": {
+        "unit": "ms",
+        "values": [
+          96,
+          92,
+          88,
+          92,
+          92
+        ],
+        "median": 92,
+        "min": 88,
+        "max": 96
+      },
+      "load.project.dcl": {
+        "unit": "ms",
+        "values": [
+          34.9,
+          31,
+          29.9,
+          30.6,
+          30.3
+        ],
+        "median": 30.6,
+        "min": 29.9,
+        "max": 34.9
+      },
+      "load.project.load": {
+        "unit": "ms",
+        "values": [
+          105.7,
+          102.3,
+          99.9,
+          101.5,
+          101.3
+        ],
+        "median": 101.5,
+        "min": 99.9,
+        "max": 105.7
+      },
+      "load.project.tbt": {
+        "unit": "ms",
+        "values": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 0
+      },
+      "load.project.ready": {
+        "unit": "ms",
+        "values": [
+          118.9,
+          116.9,
+          113.9,
+          115.3,
+          115.8
+        ],
+        "median": 115.8,
+        "min": 113.9,
+        "max": 118.9
+      },
+      "load.issue.ttfb": {
+        "unit": "ms",
+        "values": [
+          5.2,
+          3.7,
+          2.5,
+          3.5,
+          3.6
+        ],
+        "median": 3.6,
+        "min": 2.5,
+        "max": 5.2
+      },
+      "load.issue.fcp": {
+        "unit": "ms",
+        "values": [
+          72,
+          72,
+          72,
+          68,
+          68
+        ],
+        "median": 72,
+        "min": 68,
+        "max": 72
+      },
+      "load.issue.lcp": {
+        "unit": "ms",
+        "values": [
+          72,
+          72,
+          72,
+          68,
+          68
+        ],
+        "median": 72,
+        "min": 68,
+        "max": 72
+      },
+      "load.issue.dcl": {
+        "unit": "ms",
+        "values": [
+          26.8,
+          25.9,
+          25,
+          25.1,
+          24.1
+        ],
+        "median": 25.1,
+        "min": 24.1,
+        "max": 26.8
+      },
+      "load.issue.load": {
+        "unit": "ms",
+        "values": [
+          83.6,
+          82.8,
+          83.3,
+          82.2,
+          81
+        ],
+        "median": 82.8,
+        "min": 81,
+        "max": 83.6
+      },
+      "load.issue.tbt": {
+        "unit": "ms",
+        "values": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 0
+      },
+      "load.issue.ready": {
+        "unit": "ms",
+        "values": [
+          90.1,
+          89.2,
+          89.6,
+          89.1,
+          86.8
+        ],
+        "median": 89.2,
+        "min": 86.8,
+        "max": 90.1
+      },
+      "server.cold-start": {
+        "unit": "ms",
+        "values": [
+          427.98,
+          432.82,
+          426.9
+        ],
+        "median": 427.98,
+        "min": 426.9,
+        "max": 432.82
+      },
+      "server.home.rps": {
+        "unit": "req/s",
+        "values": [
+          1019.7,
+          1025.6,
+          1034.8
+        ],
+        "median": 1025.6,
+        "min": 1019.7,
+        "max": 1034.8
+      },
+      "server.home.p50": {
+        "unit": "ms",
+        "values": [
+          45,
+          45,
+          44
+        ],
+        "median": 45,
+        "min": 44,
+        "max": 45
+      },
+      "server.home.p99": {
+        "unit": "ms",
+        "values": [
+          94,
+          94,
+          92
+        ],
+        "median": 94,
+        "min": 92,
+        "max": 94
+      },
+      "server.home.errors": {
+        "unit": "count",
+        "values": [
+          0,
+          0,
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 0
+      },
+      "server.project.rps": {
+        "unit": "req/s",
+        "values": [
+          742,
+          747.5,
+          750.2
+        ],
+        "median": 747.5,
+        "min": 742,
+        "max": 750.2
+      },
+      "server.project.p50": {
+        "unit": "ms",
+        "values": [
+          62,
+          62,
+          61
+        ],
+        "median": 62,
+        "min": 61,
+        "max": 62
+      },
+      "server.project.p99": {
+        "unit": "ms",
+        "values": [
+          135,
+          130,
+          130
+        ],
+        "median": 130,
+        "min": 130,
+        "max": 135
+      },
+      "server.project.errors": {
+        "unit": "count",
+        "values": [
+          0,
+          0,
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 0
+      },
+      "server.issue.rps": {
+        "unit": "req/s",
+        "values": [
+          2505.2,
+          2503.6,
+          2509.4
+        ],
+        "median": 2505.2,
+        "min": 2503.6,
+        "max": 2509.4
+      },
+      "server.issue.p50": {
+        "unit": "ms",
+        "values": [
+          18,
+          18,
+          18
+        ],
+        "median": 18,
+        "min": 18,
+        "max": 18
+      },
+      "server.issue.p99": {
+        "unit": "ms",
+        "values": [
+          48,
+          49,
+          49
+        ],
+        "median": 49,
+        "min": 48,
+        "max": 49
+      },
+      "server.issue.errors": {
+        "unit": "count",
+        "values": [
+          0,
+          0,
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 0
+      },
+      "server.api.rps": {
+        "unit": "req/s",
+        "values": [
+          17891.28,
+          18178.19,
+          18234.91
+        ],
+        "median": 18178.19,
+        "min": 17891.28,
+        "max": 18234.91
+      },
+      "server.api.p50": {
+        "unit": "ms",
+        "values": [
+          2,
+          2,
+          2
+        ],
+        "median": 2,
+        "min": 2,
+        "max": 2
+      },
+      "server.api.p99": {
+        "unit": "ms",
+        "values": [
+          5,
+          5,
+          5
+        ],
+        "median": 5,
+        "min": 5,
+        "max": 5
+      },
+      "server.api.errors": {
+        "unit": "count",
+        "values": [
+          0,
+          0,
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 0
+      },
+      "server.rss": {
+        "unit": "MB",
+        "values": [
+          229.06
+        ],
+        "median": 229.06,
+        "min": 229.06,
+        "max": 229.06
+      }
+    },
+    "sveltekit": {
+      "other.loc": {
+        "unit": "lines",
+        "values": [
+          1023
+        ],
+        "median": 1023,
+        "min": 1023,
+        "max": 1023
+      },
+      "other.loc-app": {
+        "unit": "lines",
+        "values": [
+          1023
+        ],
+        "median": 1023,
+        "min": 1023,
+        "max": 1023
+      },
+      "other.loc-shared": {
+        "unit": "lines",
+        "values": [
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 0
+      },
+      "other.files": {
+        "unit": "count",
+        "values": [
+          48
+        ],
+        "median": 48,
+        "min": 48,
+        "max": 48
+      },
+      "other.files-app": {
+        "unit": "count",
+        "values": [
+          48
+        ],
+        "median": 48,
+        "min": 48,
+        "max": 48
+      },
+      "other.files-shared": {
+        "unit": "count",
+        "values": [
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 0
+      },
+      "other.runtime-deps": {
+        "unit": "count",
+        "values": [
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 0
+      },
+      "other.typecheck": {
+        "unit": "ms",
+        "values": [
+          1986.26,
+          1611.73,
+          1586.07
+        ],
+        "median": 1611.73,
+        "min": 1586.07,
+        "max": 1986.26
+      },
+      "dev.cold-start": {
+        "unit": "ms",
+        "values": [
+          1163.27,
+          1171.39,
+          1160.85,
+          1172.44,
+          1165.76
+        ],
+        "median": 1165.76,
+        "min": 1160.85,
+        "max": 1172.44
+      },
+      "dev.first.home.ttfb": {
+        "unit": "ms",
+        "values": [
+          4.9,
+          5.6,
+          5.6,
+          5.5,
+          5.5
+        ],
+        "median": 5.5,
+        "min": 4.9,
+        "max": 5.6
+      },
+      "dev.first.home.load": {
+        "unit": "ms",
+        "values": [
+          10.1,
+          10.8,
+          10.9,
+          10.6,
+          10.8
+        ],
+        "median": 10.8,
+        "min": 10.1,
+        "max": 10.9
+      },
+      "dev.first.project.ttfb": {
+        "unit": "ms",
+        "values": [
+          6.8,
+          39.9,
+          41.7,
+          40.5,
+          39.5
+        ],
+        "median": 39.9,
+        "min": 6.8,
+        "max": 41.7
+      },
+      "dev.first.project.load": {
+        "unit": "ms",
+        "values": [
+          21.1,
+          54.5,
+          56.7,
+          55.1,
+          54.7
+        ],
+        "median": 54.7,
+        "min": 21.1,
+        "max": 56.7
+      },
+      "dev.first.issue.ttfb": {
+        "unit": "ms",
+        "values": [
+          29.7,
+          32.4,
+          31.2,
+          31.4,
+          31.2
+        ],
+        "median": 31.2,
+        "min": 29.7,
+        "max": 32.4
+      },
+      "dev.first.issue.load": {
+        "unit": "ms",
+        "values": [
+          41.6,
+          44.5,
+          43,
+          43.3,
+          43.1
+        ],
+        "median": 43.1,
+        "min": 41.6,
+        "max": 44.5
+      },
+      "dev.warm.home.ttfb": {
+        "unit": "ms",
+        "values": [
+          4.4,
+          4.9,
+          4.8,
+          4.8,
+          4.7
+        ],
+        "median": 4.8,
+        "min": 4.4,
+        "max": 4.9
+      },
+      "dev.warm.home.load": {
+        "unit": "ms",
+        "values": [
+          9.6,
+          10,
+          10,
+          10,
+          10
+        ],
+        "median": 10,
+        "min": 9.6,
+        "max": 10
+      },
+      "dev.warm.project.ttfb": {
+        "unit": "ms",
+        "values": [
+          5.8,
+          6.1,
+          6.1,
+          6.1,
+          6
+        ],
+        "median": 6.1,
+        "min": 5.8,
+        "max": 6.1
+      },
+      "dev.warm.project.load": {
+        "unit": "ms",
+        "values": [
+          20.5,
+          20,
+          20,
+          20,
+          20.1
+        ],
+        "median": 20,
+        "min": 20,
+        "max": 20.5
+      },
+      "dev.warm.issue.ttfb": {
+        "unit": "ms",
+        "values": [
+          4.6,
+          3.5,
+          3.4,
+          3.4,
+          3.4
+        ],
+        "median": 3.4,
+        "min": 3.4,
+        "max": 4.6
+      },
+      "dev.warm.issue.load": {
+        "unit": "ms",
+        "values": [
+          17,
+          15.1,
+          14.8,
+          15.2,
+          14.9
+        ],
+        "median": 15.1,
+        "min": 14.8,
+        "max": 17
+      },
+      "dev.hmr": {
+        "unit": "ms",
+        "values": [
+          171.67,
+          171.14,
+          168.07,
+          170.09,
+          157.71
+        ],
+        "median": 170.09,
+        "min": 157.71,
+        "max": 171.67
+      },
+      "dev.warm-start": {
+        "unit": "ms",
+        "values": [
+          1060.56,
+          1082.55,
+          1067.29,
+          1060.86,
+          1088.01
+        ],
+        "median": 1067.29,
+        "min": 1060.56,
+        "max": 1088.01
+      },
+      "build.time": {
+        "unit": "ms",
+        "values": [
+          1750.53,
+          1738.69,
+          1743.92
+        ],
+        "median": 1743.92,
+        "min": 1738.69,
+        "max": 1750.53
+      },
+      "build.client-size": {
+        "unit": "bytes",
+        "values": [
+          137662
+        ],
+        "median": 137662,
+        "min": 137662,
+        "max": 137662
+      },
+      "build.server-size": {
+        "unit": "bytes",
+        "values": [
+          1517221
+        ],
+        "median": 1517221,
+        "min": 1517221,
+        "max": 1517221
+      },
+      "payload.home.js-raw": {
+        "unit": "bytes",
+        "values": [
+          106908
+        ],
+        "median": 106908,
+        "min": 106908,
+        "max": 106908
+      },
+      "payload.home.js-gzip": {
+        "unit": "bytes",
+        "values": [
+          42050
+        ],
+        "median": 42050,
+        "min": 42050,
+        "max": 42050
+      },
+      "payload.home.js-brotli": {
+        "unit": "bytes",
+        "values": [
+          37918
+        ],
+        "median": 37918,
+        "min": 37918,
+        "max": 37918
+      },
+      "payload.home.css-raw": {
+        "unit": "bytes",
+        "values": [
+          8581
+        ],
+        "median": 8581,
+        "min": 8581,
+        "max": 8581
+      },
+      "payload.home.css-gzip": {
+        "unit": "bytes",
+        "values": [
+          2582
+        ],
+        "median": 2582,
+        "min": 2582,
+        "max": 2582
+      },
+      "payload.home.css-brotli": {
+        "unit": "bytes",
+        "values": [
+          2198
+        ],
+        "median": 2198,
+        "min": 2198,
+        "max": 2198
+      },
+      "payload.home.html-raw": {
+        "unit": "bytes",
+        "values": [
+          18238
+        ],
+        "median": 18238,
+        "min": 18238,
+        "max": 18238
+      },
+      "payload.home.html-gzip": {
+        "unit": "bytes",
+        "values": [
+          3967
+        ],
+        "median": 3967,
+        "min": 3967,
+        "max": 3967
+      },
+      "payload.home.requests": {
+        "unit": "count",
+        "values": [
+          20
+        ],
+        "median": 20,
+        "min": 20,
+        "max": 20
+      },
+      "payload.project.js-raw": {
+        "unit": "bytes",
+        "values": [
+          111010
+        ],
+        "median": 111010,
+        "min": 111010,
+        "max": 111010
+      },
+      "payload.project.js-gzip": {
+        "unit": "bytes",
+        "values": [
+          43845
+        ],
+        "median": 43845,
+        "min": 43845,
+        "max": 43845
+      },
+      "payload.project.js-brotli": {
+        "unit": "bytes",
+        "values": [
+          39466
+        ],
+        "median": 39466,
+        "min": 39466,
+        "max": 39466
+      },
+      "payload.project.css-raw": {
+        "unit": "bytes",
+        "values": [
+          8581
+        ],
+        "median": 8581,
+        "min": 8581,
+        "max": 8581
+      },
+      "payload.project.css-gzip": {
+        "unit": "bytes",
+        "values": [
+          2582
+        ],
+        "median": 2582,
+        "min": 2582,
+        "max": 2582
+      },
+      "payload.project.css-brotli": {
+        "unit": "bytes",
+        "values": [
+          2198
+        ],
+        "median": 2198,
+        "min": 2198,
+        "max": 2198
+      },
+      "payload.project.html-raw": {
+        "unit": "bytes",
+        "values": [
+          60730
+        ],
+        "median": 60730,
+        "min": 60730,
+        "max": 60730
+      },
+      "payload.project.html-gzip": {
+        "unit": "bytes",
+        "values": [
+          8820
+        ],
+        "median": 8820,
+        "min": 8820,
+        "max": 8820
+      },
+      "payload.project.requests": {
+        "unit": "count",
+        "values": [
+          21
+        ],
+        "median": 21,
+        "min": 21,
+        "max": 21
+      },
+      "payload.issue.js-raw": {
+        "unit": "bytes",
+        "values": [
+          109918
+        ],
+        "median": 109918,
+        "min": 109918,
+        "max": 109918
+      },
+      "payload.issue.js-gzip": {
+        "unit": "bytes",
+        "values": [
+          43443
+        ],
+        "median": 43443,
+        "min": 43443,
+        "max": 43443
+      },
+      "payload.issue.js-brotli": {
+        "unit": "bytes",
+        "values": [
+          39107
+        ],
+        "median": 39107,
+        "min": 39107,
+        "max": 39107
+      },
+      "payload.issue.css-raw": {
+        "unit": "bytes",
+        "values": [
+          8581
+        ],
+        "median": 8581,
+        "min": 8581,
+        "max": 8581
+      },
+      "payload.issue.css-gzip": {
+        "unit": "bytes",
+        "values": [
+          2582
+        ],
+        "median": 2582,
+        "min": 2582,
+        "max": 2582
+      },
+      "payload.issue.css-brotli": {
+        "unit": "bytes",
+        "values": [
+          2198
+        ],
+        "median": 2198,
+        "min": 2198,
+        "max": 2198
+      },
+      "payload.issue.html-raw": {
+        "unit": "bytes",
+        "values": [
+          12105
+        ],
+        "median": 12105,
+        "min": 12105,
+        "max": 12105
+      },
+      "payload.issue.html-gzip": {
+        "unit": "bytes",
+        "values": [
+          3744
+        ],
+        "median": 3744,
+        "min": 3744,
+        "max": 3744
+      },
+      "payload.issue.requests": {
+        "unit": "count",
+        "values": [
+          21
+        ],
+        "median": 21,
+        "min": 21,
+        "max": 21
+      },
+      "load.home.ttfb": {
+        "unit": "ms",
+        "values": [
+          4,
+          3.3,
+          3.3,
+          3.5,
+          3.2
+        ],
+        "median": 3.3,
+        "min": 3.2,
+        "max": 4
+      },
+      "load.home.fcp": {
+        "unit": "ms",
+        "values": [
+          72,
+          72,
+          68,
+          72,
+          72
+        ],
+        "median": 72,
+        "min": 68,
+        "max": 72
+      },
+      "load.home.lcp": {
+        "unit": "ms",
+        "values": [
+          72,
+          72,
+          68,
+          72,
+          72
+        ],
+        "median": 72,
+        "min": 68,
+        "max": 72
+      },
+      "load.home.dcl": {
+        "unit": "ms",
+        "values": [
+          29.3,
+          27.6,
+          27.7,
+          27.9,
+          28.1
+        ],
+        "median": 27.9,
+        "min": 27.6,
+        "max": 29.3
+      },
+      "load.home.load": {
+        "unit": "ms",
+        "values": [
+          32.6,
+          30.6,
+          31.2,
+          30.8,
+          31.4
+        ],
+        "median": 31.2,
+        "min": 30.6,
+        "max": 32.6
+      },
+      "load.home.tbt": {
+        "unit": "ms",
+        "values": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 0
+      },
+      "load.home.ready": {
+        "unit": "ms",
+        "values": [
+          122.1,
+          120.3,
+          120.7,
+          121.2,
+          122.1
+        ],
+        "median": 121.2,
+        "min": 120.3,
+        "max": 122.1
+      },
+      "load.project.ttfb": {
+        "unit": "ms",
+        "values": [
+          7,
+          3.4,
+          3.4,
+          3.5,
+          3.7
+        ],
+        "median": 3.5,
+        "min": 3.4,
+        "max": 7
+      },
+      "load.project.fcp": {
+        "unit": "ms",
+        "values": [
+          100,
+          96,
+          92,
+          96,
+          96
+        ],
+        "median": 96,
+        "min": 92,
+        "max": 100
+      },
+      "load.project.lcp": {
+        "unit": "ms",
+        "values": [
+          100,
+          96,
+          92,
+          96,
+          96
+        ],
+        "median": 96,
+        "min": 92,
+        "max": 100
+      },
+      "load.project.dcl": {
+        "unit": "ms",
+        "values": [
+          37,
+          31.6,
+          32,
+          31.9,
+          32.8
+        ],
+        "median": 32,
+        "min": 31.6,
+        "max": 37
+      },
+      "load.project.load": {
+        "unit": "ms",
+        "values": [
+          73.8,
+          69.5,
+          68.9,
+          68.5,
+          69.8
+        ],
+        "median": 69.5,
+        "min": 68.5,
+        "max": 73.8
+      },
+      "load.project.tbt": {
+        "unit": "ms",
+        "values": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 0
+      },
+      "load.project.ready": {
+        "unit": "ms",
+        "values": [
+          161.2,
+          156.3,
+          157.1,
+          155.5,
+          157.5
+        ],
+        "median": 157.1,
+        "min": 155.5,
+        "max": 161.2
+      },
+      "load.issue.ttfb": {
+        "unit": "ms",
+        "values": [
+          5.3,
+          2.1,
+          2.1,
+          2,
+          2.5
+        ],
+        "median": 2.1,
+        "min": 2,
+        "max": 5.3
+      },
+      "load.issue.fcp": {
+        "unit": "ms",
+        "values": [
+          80,
+          76,
+          76,
+          76,
+          76
+        ],
+        "median": 76,
+        "min": 76,
+        "max": 80
+      },
+      "load.issue.lcp": {
+        "unit": "ms",
+        "values": [
+          144,
+          140,
+          144,
+          148,
+          140
+        ],
+        "median": 144,
+        "min": 140,
+        "max": 148
+      },
+      "load.issue.dcl": {
+        "unit": "ms",
+        "values": [
+          31.7,
+          27.5,
+          27.5,
+          28,
+          29.3
+        ],
+        "median": 28,
+        "min": 27.5,
+        "max": 31.7
+      },
+      "load.issue.load": {
+        "unit": "ms",
+        "values": [
+          61.1,
+          56.8,
+          57,
+          58.9,
+          58.5
+        ],
+        "median": 58.5,
+        "min": 56.8,
+        "max": 61.1
+      },
+      "load.issue.tbt": {
+        "unit": "ms",
+        "values": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 0
+      },
+      "load.issue.ready": {
+        "unit": "ms",
+        "values": [
+          133.6,
+          128.9,
+          131,
+          134.7,
+          130.4
+        ],
+        "median": 131,
+        "min": 128.9,
+        "max": 134.7
+      },
+      "server.cold-start": {
+        "unit": "ms",
+        "values": [
+          449.42,
+          447.82,
+          420.05
+        ],
+        "median": 447.82,
+        "min": 420.05,
+        "max": 449.42
+      },
+      "server.home.rps": {
+        "unit": "req/s",
+        "values": [
+          1089.82,
+          1103.73,
+          1107.55
+        ],
+        "median": 1103.73,
+        "min": 1089.82,
+        "max": 1107.55
+      },
+      "server.home.p50": {
+        "unit": "ms",
+        "values": [
+          44,
+          43,
+          43
+        ],
+        "median": 43,
+        "min": 43,
+        "max": 44
+      },
+      "server.home.p99": {
+        "unit": "ms",
+        "values": [
+          88,
+          87,
+          86
+        ],
+        "median": 87,
+        "min": 86,
+        "max": 88
+      },
+      "server.home.errors": {
+        "unit": "count",
+        "values": [
+          0,
+          0,
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 0
+      },
+      "server.project.rps": {
+        "unit": "req/s",
+        "values": [
+          838.82,
+          841.4,
+          851.46
+        ],
+        "median": 841.4,
+        "min": 838.82,
+        "max": 851.46
+      },
+      "server.project.p50": {
+        "unit": "ms",
+        "values": [
+          57,
+          57,
+          57
+        ],
+        "median": 57,
+        "min": 57,
+        "max": 57
+      },
+      "server.project.p99": {
+        "unit": "ms",
+        "values": [
+          114,
+          114,
+          113
+        ],
+        "median": 114,
+        "min": 113,
+        "max": 114
+      },
+      "server.project.errors": {
+        "unit": "count",
+        "values": [
+          0,
+          0,
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 0
+      },
+      "server.issue.rps": {
+        "unit": "req/s",
+        "values": [
+          3482,
+          3495.55,
+          3488
+        ],
+        "median": 3488,
+        "min": 3482,
+        "max": 3495.55
+      },
+      "server.issue.p50": {
+        "unit": "ms",
+        "values": [
+          13,
+          13,
+          13
+        ],
+        "median": 13,
+        "min": 13,
+        "max": 13
+      },
+      "server.issue.p99": {
+        "unit": "ms",
+        "values": [
+          26,
+          26,
+          26
+        ],
+        "median": 26,
+        "min": 26,
+        "max": 26
+      },
+      "server.issue.errors": {
+        "unit": "count",
+        "values": [
+          0,
+          0,
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 0
+      },
+      "server.api.rps": {
+        "unit": "req/s",
+        "values": [
+          17925.1,
+          17917.82,
+          17910.55
+        ],
+        "median": 17917.82,
+        "min": 17910.55,
+        "max": 17925.1
+      },
+      "server.api.p50": {
+        "unit": "ms",
+        "values": [
+          2,
+          2,
+          2
+        ],
+        "median": 2,
+        "min": 2,
+        "max": 2
+      },
+      "server.api.p99": {
+        "unit": "ms",
+        "values": [
+          5,
+          5,
+          5
+        ],
+        "median": 5,
+        "min": 5,
+        "max": 5
+      },
+      "server.api.errors": {
+        "unit": "count",
+        "values": [
+          0,
+          0,
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 0
+      },
+      "server.rss": {
+        "unit": "MB",
+        "values": [
+          242.55
+        ],
+        "median": 242.55,
+        "min": 242.55,
+        "max": 242.55
+      }
+    },
+    "nuxt": {
+      "other.loc": {
+        "unit": "lines",
+        "values": [
+          1048
+        ],
+        "median": 1048,
+        "min": 1048,
+        "max": 1048
+      },
+      "other.loc-app": {
+        "unit": "lines",
+        "values": [
+          1048
+        ],
+        "median": 1048,
+        "min": 1048,
+        "max": 1048
+      },
+      "other.loc-shared": {
+        "unit": "lines",
+        "values": [
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 0
+      },
+      "other.files": {
+        "unit": "count",
+        "values": [
+          52
+        ],
+        "median": 52,
+        "min": 52,
+        "max": 52
+      },
+      "other.files-app": {
+        "unit": "count",
+        "values": [
+          52
+        ],
+        "median": 52,
+        "min": 52,
+        "max": 52
+      },
+      "other.files-shared": {
+        "unit": "count",
+        "values": [
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 0
+      },
+      "other.runtime-deps": {
+        "unit": "count",
+        "values": [
+          21
+        ],
+        "median": 21,
+        "min": 21,
+        "max": 21
+      },
+      "other.typecheck": {
+        "unit": "ms",
+        "values": [
+          2986.38,
+          2773.84,
+          2762.93
+        ],
+        "median": 2773.84,
+        "min": 2762.93,
+        "max": 2986.38
+      },
+      "dev.cold-start": {
+        "unit": "ms",
+        "values": [
+          2800.46,
+          2730.8,
+          2727.33,
+          2722.98,
+          2759.37
+        ],
+        "median": 2730.8,
+        "min": 2722.98,
+        "max": 2800.46
+      },
+      "dev.first.home.ttfb": {
+        "unit": "ms",
+        "values": [
+          20.3,
+          19.5,
+          18.1,
+          16.3,
+          16.4
+        ],
+        "median": 18.1,
+        "min": 16.3,
+        "max": 20.3
+      },
+      "dev.first.home.load": {
+        "unit": "ms",
+        "values": [
+          51.2,
+          50.3,
+          48.9,
+          47.5,
+          50
+        ],
+        "median": 50,
+        "min": 47.5,
+        "max": 51.2
+      },
+      "dev.first.project.ttfb": {
+        "unit": "ms",
+        "values": [
+          45,
+          181.8,
+          179.5,
+          183.7,
+          184.2
+        ],
+        "median": 181.8,
+        "min": 45,
+        "max": 184.2
+      },
+      "dev.first.project.load": {
+        "unit": "ms",
+        "values": [
+          104.1,
+          205.5,
+          202.3,
+          206.5,
+          206.7
+        ],
+        "median": 205.5,
+        "min": 104.1,
+        "max": 206.7
+      },
+      "dev.first.issue.ttfb": {
+        "unit": "ms",
+        "values": [
+          46.5,
+          43.6,
+          49.5,
+          45.9,
+          43.7
+        ],
+        "median": 45.9,
+        "min": 43.6,
+        "max": 49.5
+      },
+      "dev.first.issue.load": {
+        "unit": "ms",
+        "values": [
+          65.7,
+          63,
+          68.8,
+          65,
+          63.3
+        ],
+        "median": 65,
+        "min": 63,
+        "max": 68.8
+      },
+      "dev.warm.home.ttfb": {
+        "unit": "ms",
+        "values": [
+          7.9,
+          9.1,
+          9.1,
+          9.8,
+          9.7
+        ],
+        "median": 9.1,
+        "min": 7.9,
+        "max": 9.8
+      },
+      "dev.warm.home.load": {
+        "unit": "ms",
+        "values": [
+          25.7,
+          26.7,
+          27.2,
+          28,
+          27.7
+        ],
+        "median": 27.2,
+        "min": 25.7,
+        "max": 28
+      },
+      "dev.warm.project.ttfb": {
+        "unit": "ms",
+        "values": [
+          11.6,
+          12,
+          11.2,
+          11.3,
+          10.8
+        ],
+        "median": 11.3,
+        "min": 10.8,
+        "max": 12
+      },
+      "dev.warm.project.load": {
+        "unit": "ms",
+        "values": [
+          33.8,
+          34.4,
+          34,
+          33.4,
+          32.8
+        ],
+        "median": 33.8,
+        "min": 32.8,
+        "max": 34.4
+      },
+      "dev.warm.issue.ttfb": {
+        "unit": "ms",
+        "values": [
+          7.6,
+          6.7,
+          8,
+          6.8,
+          7
+        ],
+        "median": 7,
+        "min": 6.7,
+        "max": 8
+      },
+      "dev.warm.issue.load": {
+        "unit": "ms",
+        "values": [
+          25.9,
+          25.3,
+          26.5,
+          26,
+          25.8
+        ],
+        "median": 25.9,
+        "min": 25.3,
+        "max": 26.5
+      },
+      "dev.hmr": {
+        "unit": "ms",
+        "values": [
+          135.68,
+          133.5,
+          134.59,
+          134.62,
+          132.02
+        ],
+        "median": 134.59,
+        "min": 132.02,
+        "max": 135.68
+      },
+      "dev.warm-start": {
+        "unit": "ms",
+        "values": [
+          2631.92,
+          2640.17,
+          2625.95,
+          2635.27,
+          2653.7
+        ],
+        "median": 2635.27,
+        "min": 2625.95,
+        "max": 2653.7
+      },
+      "build.time": {
+        "unit": "ms",
+        "values": [
+          3778.12,
+          3773.31,
+          3919.56
+        ],
+        "median": 3778.12,
+        "min": 3773.31,
+        "max": 3919.56
+      },
+      "build.client-size": {
+        "unit": "bytes",
+        "values": [
+          240880
+        ],
+        "median": 240880,
+        "min": 240880,
+        "max": 240880
+      },
+      "build.server-size": {
+        "unit": "bytes",
+        "values": [
+          2506869
+        ],
+        "median": 2506869,
+        "min": 2506869,
+        "max": 2506869
+      },
+      "payload.home.js-raw": {
+        "unit": "bytes",
+        "values": [
+          225868
+        ],
+        "median": 225868,
+        "min": 225868,
+        "max": 225868
+      },
+      "payload.home.js-gzip": {
+        "unit": "bytes",
+        "values": [
+          85105
+        ],
+        "median": 85105,
+        "min": 85105,
+        "max": 85105
+      },
+      "payload.home.js-brotli": {
+        "unit": "bytes",
+        "values": [
+          76068
+        ],
+        "median": 76068,
+        "min": 76068,
+        "max": 76068
+      },
+      "payload.home.css-raw": {
+        "unit": "bytes",
+        "values": [
+          8484
+        ],
+        "median": 8484,
+        "min": 8484,
+        "max": 8484
+      },
+      "payload.home.css-gzip": {
+        "unit": "bytes",
+        "values": [
+          2591
+        ],
+        "median": 2591,
+        "min": 2591,
+        "max": 2591
+      },
+      "payload.home.css-brotli": {
+        "unit": "bytes",
+        "values": [
+          2205
+        ],
+        "median": 2205,
+        "min": 2205,
+        "max": 2205
+      },
+      "payload.home.html-raw": {
+        "unit": "bytes",
+        "values": [
+          19128
+        ],
+        "median": 19128,
+        "min": 19128,
+        "max": 19128
+      },
+      "payload.home.html-gzip": {
+        "unit": "bytes",
+        "values": [
+          4712
+        ],
+        "median": 4712,
+        "min": 4712,
+        "max": 4712
+      },
+      "payload.home.requests": {
+        "unit": "count",
+        "values": [
+          19
+        ],
+        "median": 19,
+        "min": 19,
+        "max": 19
+      },
+      "payload.project.js-raw": {
+        "unit": "bytes",
+        "values": [
+          232237
+        ],
+        "median": 232237,
+        "min": 232237,
+        "max": 232237
+      },
+      "payload.project.js-gzip": {
+        "unit": "bytes",
+        "values": [
+          87518
+        ],
+        "median": 87518,
+        "min": 87518,
+        "max": 87518
+      },
+      "payload.project.js-brotli": {
+        "unit": "bytes",
+        "values": [
+          78247
+        ],
+        "median": 78247,
+        "min": 78247,
+        "max": 78247
+      },
+      "payload.project.css-raw": {
+        "unit": "bytes",
+        "values": [
+          8484
+        ],
+        "median": 8484,
+        "min": 8484,
+        "max": 8484
+      },
+      "payload.project.css-gzip": {
+        "unit": "bytes",
+        "values": [
+          2591
+        ],
+        "median": 2591,
+        "min": 2591,
+        "max": 2591
+      },
+      "payload.project.css-brotli": {
+        "unit": "bytes",
+        "values": [
+          2205
+        ],
+        "median": 2205,
+        "min": 2205,
+        "max": 2205
+      },
+      "payload.project.html-raw": {
+        "unit": "bytes",
+        "values": [
+          61369
+        ],
+        "median": 61369,
+        "min": 61369,
+        "max": 61369
+      },
+      "payload.project.html-gzip": {
+        "unit": "bytes",
+        "values": [
+          10968
+        ],
+        "median": 10968,
+        "min": 10968,
+        "max": 10968
+      },
+      "payload.project.requests": {
+        "unit": "count",
+        "values": [
+          20
+        ],
+        "median": 20,
+        "min": 20,
+        "max": 20
+      },
+      "payload.issue.js-raw": {
+        "unit": "bytes",
+        "values": [
+          232237
+        ],
+        "median": 232237,
+        "min": 232237,
+        "max": 232237
+      },
+      "payload.issue.js-gzip": {
+        "unit": "bytes",
+        "values": [
+          87518
+        ],
+        "median": 87518,
+        "min": 87518,
+        "max": 87518
+      },
+      "payload.issue.js-brotli": {
+        "unit": "bytes",
+        "values": [
+          78247
+        ],
+        "median": 78247,
+        "min": 78247,
+        "max": 78247
+      },
+      "payload.issue.css-raw": {
+        "unit": "bytes",
+        "values": [
+          8484
+        ],
+        "median": 8484,
+        "min": 8484,
+        "max": 8484
+      },
+      "payload.issue.css-gzip": {
+        "unit": "bytes",
+        "values": [
+          2591
+        ],
+        "median": 2591,
+        "min": 2591,
+        "max": 2591
+      },
+      "payload.issue.css-brotli": {
+        "unit": "bytes",
+        "values": [
+          2205
+        ],
+        "median": 2205,
+        "min": 2205,
+        "max": 2205
+      },
+      "payload.issue.html-raw": {
+        "unit": "bytes",
+        "values": [
+          9661
+        ],
+        "median": 9661,
+        "min": 9661,
+        "max": 9661
+      },
+      "payload.issue.html-gzip": {
+        "unit": "bytes",
+        "values": [
+          3071
+        ],
+        "median": 3071,
+        "min": 3071,
+        "max": 3071
+      },
+      "payload.issue.requests": {
+        "unit": "count",
+        "values": [
+          21
+        ],
+        "median": 21,
+        "min": 21,
+        "max": 21
+      },
+      "load.home.ttfb": {
+        "unit": "ms",
+        "values": [
+          6.7,
+          5.8,
+          6.1,
+          5.7,
+          5.7
+        ],
+        "median": 5.8,
+        "min": 5.7,
+        "max": 6.7
+      },
+      "load.home.fcp": {
+        "unit": "ms",
+        "values": [
+          92,
+          88,
+          68,
+          92,
+          92
+        ],
+        "median": 92,
+        "min": 68,
+        "max": 92
+      },
+      "load.home.lcp": {
+        "unit": "ms",
+        "values": [
+          92,
+          88,
+          68,
+          92,
+          92
+        ],
+        "median": 92,
+        "min": 68,
+        "max": 92
+      },
+      "load.home.dcl": {
+        "unit": "ms",
+        "values": [
+          48.3,
+          46.9,
+          80.3,
+          47.6,
+          47.3
+        ],
+        "median": 47.6,
+        "min": 46.9,
+        "max": 80.3
+      },
+      "load.home.load": {
+        "unit": "ms",
+        "values": [
+          51.8,
+          50.1,
+          80.3,
+          51.5,
+          50.5
+        ],
+        "median": 51.5,
+        "min": 50.1,
+        "max": 80.3
+      },
+      "load.home.tbt": {
+        "unit": "ms",
+        "values": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 0
+      },
+      "load.home.ready": {
+        "unit": "ms",
+        "values": [
+          157.6,
+          156.4,
+          151.5,
+          158.9,
+          158
+        ],
+        "median": 157.6,
+        "min": 151.5,
+        "max": 158.9
+      },
+      "load.project.ttfb": {
+        "unit": "ms",
+        "values": [
+          11.4,
+          6.6,
+          5.8,
+          6.7,
+          5.8
+        ],
+        "median": 6.6,
+        "min": 5.8,
+        "max": 11.4
+      },
+      "load.project.fcp": {
+        "unit": "ms",
+        "values": [
+          120,
+          112,
+          88,
+          92,
+          88
+        ],
+        "median": 92,
+        "min": 88,
+        "max": 120
+      },
+      "load.project.lcp": {
+        "unit": "ms",
+        "values": [
+          120,
+          112,
+          88,
+          92,
+          88
+        ],
+        "median": 92,
+        "min": 88,
+        "max": 120
+      },
+      "load.project.dcl": {
+        "unit": "ms",
+        "values": [
+          58,
+          53.5,
+          101.3,
+          102.7,
+          100.8
+        ],
+        "median": 100.8,
+        "min": 53.5,
+        "max": 102.7
+      },
+      "load.project.load": {
+        "unit": "ms",
+        "values": [
+          93.7,
+          89.8,
+          101.3,
+          102.7,
+          100.8
+        ],
+        "median": 100.8,
+        "min": 89.8,
+        "max": 102.7
+      },
+      "load.project.tbt": {
+        "unit": "ms",
+        "values": [
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 1
+      },
+      "load.project.ready": {
+        "unit": "ms",
+        "values": [
+          200.2,
+          195.4,
+          189.6,
+          191.3,
+          188.4
+        ],
+        "median": 191.3,
+        "min": 188.4,
+        "max": 200.2
+      },
+      "load.issue.ttfb": {
+        "unit": "ms",
+        "values": [
+          7.1,
+          3.6,
+          3.7,
+          3.8,
+          4.3
+        ],
+        "median": 3.8,
+        "min": 3.6,
+        "max": 7.1
+      },
+      "load.issue.fcp": {
+        "unit": "ms",
+        "values": [
+          96,
+          72,
+          68,
+          96,
+          96
+        ],
+        "median": 96,
+        "min": 68,
+        "max": 96
+      },
+      "load.issue.lcp": {
+        "unit": "ms",
+        "values": [
+          184,
+          180,
+          176,
+          188,
+          188
+        ],
+        "median": 184,
+        "min": 176,
+        "max": 188
+      },
+      "load.issue.dcl": {
+        "unit": "ms",
+        "values": [
+          48.5,
+          82.8,
+          80.8,
+          47.6,
+          47.9
+        ],
+        "median": 48.5,
+        "min": 47.6,
+        "max": 82.8
+      },
+      "load.issue.load": {
+        "unit": "ms",
+        "values": [
+          77.7,
+          82.8,
+          80.9,
+          76.8,
+          77
+        ],
+        "median": 77.7,
+        "min": 76.8,
+        "max": 82.8
+      },
+      "load.issue.tbt": {
+        "unit": "ms",
+        "values": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 0
+      },
+      "load.issue.ready": {
+        "unit": "ms",
+        "values": [
+          161,
+          151.9,
+          149.2,
+          159.3,
+          158.6
+        ],
+        "median": 158.6,
+        "min": 149.2,
+        "max": 161
+      },
+      "server.cold-start": {
+        "unit": "ms",
+        "values": [
+          510.05,
+          479.5,
+          478.25
+        ],
+        "median": 479.5,
+        "min": 478.25,
+        "max": 510.05
+      },
+      "server.home.rps": {
+        "unit": "req/s",
+        "values": [
+          603.5,
+          610.9,
+          614.21
+        ],
+        "median": 610.9,
+        "min": 603.5,
+        "max": 614.21
+      },
+      "server.home.p50": {
+        "unit": "ms",
+        "values": [
+          81,
+          79,
+          78
+        ],
+        "median": 79,
+        "min": 78,
+        "max": 81
+      },
+      "server.home.p99": {
+        "unit": "ms",
+        "values": [
+          99,
+          97,
+          102
+        ],
+        "median": 99,
+        "min": 97,
+        "max": 102
+      },
+      "server.home.errors": {
+        "unit": "count",
+        "values": [
+          0,
+          0,
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 0
+      },
+      "server.project.rps": {
+        "unit": "req/s",
+        "values": [
+          426.5,
+          426.6,
+          428.7
+        ],
+        "median": 426.6,
+        "min": 426.5,
+        "max": 428.7
+      },
+      "server.project.p50": {
+        "unit": "ms",
+        "values": [
+          112,
+          112,
+          112
+        ],
+        "median": 112,
+        "min": 112,
+        "max": 112
+      },
+      "server.project.p99": {
+        "unit": "ms",
+        "values": [
+          146,
+          143,
+          145
+        ],
+        "median": 145,
+        "min": 143,
+        "max": 146
+      },
+      "server.project.errors": {
+        "unit": "count",
+        "values": [
+          0,
+          0,
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 0
+      },
+      "server.issue.rps": {
+        "unit": "req/s",
+        "values": [
+          1165.2,
+          1165,
+          1165.1
+        ],
+        "median": 1165.1,
+        "min": 1165,
+        "max": 1165.2
+      },
+      "server.issue.p50": {
+        "unit": "ms",
+        "values": [
+          41,
+          41,
+          41
+        ],
+        "median": 41,
+        "min": 41,
+        "max": 41
+      },
+      "server.issue.p99": {
+        "unit": "ms",
+        "values": [
+          56,
+          60,
+          60
+        ],
+        "median": 60,
+        "min": 56,
+        "max": 60
+      },
+      "server.issue.errors": {
+        "unit": "count",
+        "values": [
+          0,
+          0,
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 0
+      },
+      "server.api.rps": {
+        "unit": "req/s",
+        "values": [
+          23477.1,
+          23328,
+          23471.28
+        ],
+        "median": 23471.28,
+        "min": 23328,
+        "max": 23477.1
+      },
+      "server.api.p50": {
+        "unit": "ms",
+        "values": [
+          1,
+          1,
+          1
+        ],
+        "median": 1,
+        "min": 1,
+        "max": 1
+      },
+      "server.api.p99": {
+        "unit": "ms",
+        "values": [
+          3,
+          3,
+          3
+        ],
+        "median": 3,
+        "min": 3,
+        "max": 3
+      },
+      "server.api.errors": {
+        "unit": "count",
+        "values": [
+          0,
+          0,
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 0
+      },
+      "server.rss": {
+        "unit": "MB",
+        "values": [
+          190.92
+        ],
+        "median": 190.92,
+        "min": 190.92,
+        "max": 190.92
+      }
+    },
+    "remix": {
+      "other.loc": {
+        "unit": "lines",
+        "values": [
+          1496
+        ],
+        "median": 1496,
+        "min": 1496,
+        "max": 1496
+      },
+      "other.loc-app": {
+        "unit": "lines",
+        "values": [
+          1496
+        ],
+        "median": 1496,
+        "min": 1496,
+        "max": 1496
+      },
+      "other.loc-shared": {
+        "unit": "lines",
+        "values": [
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 0
+      },
+      "other.files": {
+        "unit": "count",
+        "values": [
+          31
+        ],
+        "median": 31,
+        "min": 31,
+        "max": 31
+      },
+      "other.files-app": {
+        "unit": "count",
+        "values": [
+          31
+        ],
+        "median": 31,
+        "min": 31,
+        "max": 31
+      },
+      "other.files-shared": {
+        "unit": "count",
+        "values": [
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 0
+      },
+      "other.runtime-deps": {
+        "unit": "count",
+        "values": [
+          41
+        ],
+        "median": 41,
+        "min": 41,
+        "max": 41
+      },
+      "other.typecheck": {
+        "unit": "ms",
+        "values": [
+          774.97,
+          495.51,
+          500.14
+        ],
+        "median": 500.14,
+        "min": 495.51,
+        "max": 774.97
+      },
+      "dev.cold-start": {
+        "unit": "ms",
+        "values": [
+          915.45,
+          902.84,
+          903.28,
+          903.3,
+          896.85
+        ],
+        "median": 903.28,
+        "min": 896.85,
+        "max": 915.45
+      },
+      "dev.first.home.ttfb": {
+        "unit": "ms",
+        "values": [
+          6.2,
+          6.4,
+          6.4,
+          6.7,
+          6.5
+        ],
+        "median": 6.4,
+        "min": 6.2,
+        "max": 6.7
+      },
+      "dev.first.home.load": {
+        "unit": "ms",
+        "values": [
+          165.7,
+          172.1,
+          165.4,
+          168.6,
+          167.5
+        ],
+        "median": 167.5,
+        "min": 165.4,
+        "max": 172.1
+      },
+      "dev.first.project.ttfb": {
+        "unit": "ms",
+        "values": [
+          7.6,
+          28.9,
+          30.2,
+          29.3,
+          29.4
+        ],
+        "median": 29.3,
+        "min": 7.6,
+        "max": 30.2
+      },
+      "dev.first.project.load": {
+        "unit": "ms",
+        "values": [
+          73.6,
+          93.4,
+          94.4,
+          94.3,
+          94.2
+        ],
+        "median": 94.2,
+        "min": 73.6,
+        "max": 94.4
+      },
+      "dev.first.issue.ttfb": {
+        "unit": "ms",
+        "values": [
+          18.8,
+          20.7,
+          21,
+          20.6,
+          20.9
+        ],
+        "median": 20.7,
+        "min": 18.8,
+        "max": 21
+      },
+      "dev.first.issue.load": {
+        "unit": "ms",
+        "values": [
+          80.7,
+          79.6,
+          80.4,
+          79.2,
+          80.3
+        ],
+        "median": 80.3,
+        "min": 79.2,
+        "max": 80.7
+      },
+      "dev.warm.home.ttfb": {
+        "unit": "ms",
+        "values": [
+          4.9,
+          5.1,
+          5.2,
+          5.1,
+          5.1
+        ],
+        "median": 5.1,
+        "min": 4.9,
+        "max": 5.2
+      },
+      "dev.warm.home.load": {
+        "unit": "ms",
+        "values": [
+          52.5,
+          51.6,
+          51.7,
+          53,
+          52.2
+        ],
+        "median": 52.2,
+        "min": 51.6,
+        "max": 53
+      },
+      "dev.warm.project.ttfb": {
+        "unit": "ms",
+        "values": [
+          7.4,
+          7.3,
+          7.2,
+          7.3,
+          7.2
+        ],
+        "median": 7.3,
+        "min": 7.2,
+        "max": 7.4
+      },
+      "dev.warm.project.load": {
+        "unit": "ms",
+        "values": [
+          59.2,
+          62.2,
+          61.9,
+          60.7,
+          61.8
+        ],
+        "median": 61.8,
+        "min": 59.2,
+        "max": 62.2
+      },
+      "dev.warm.issue.ttfb": {
+        "unit": "ms",
+        "values": [
+          5.7,
+          5.8,
+          4.9,
+          6,
+          5.9
+        ],
+        "median": 5.8,
+        "min": 4.9,
+        "max": 6
+      },
+      "dev.warm.issue.load": {
+        "unit": "ms",
+        "values": [
+          55.2,
+          53.4,
+          53.9,
+          54,
+          53.8
+        ],
+        "median": 53.9,
+        "min": 53.4,
+        "max": 55.2
+      },
+      "dev.hmr": {
+        "unit": "ms",
+        "values": [
+          127.41,
+          130.24,
+          130.25,
+          113.9,
+          128.15
+        ],
+        "median": 128.15,
+        "min": 113.9,
+        "max": 130.25
+      },
+      "dev.warm-start": {
+        "unit": "ms",
+        "values": [
+          908,
+          906.92,
+          898.65,
+          902.52,
+          898.98
+        ],
+        "median": 902.52,
+        "min": 898.65,
+        "max": 908
+      },
+      "payload.home.js-raw": {
+        "unit": "bytes",
+        "values": [
+          121353
+        ],
+        "median": 121353,
+        "min": 121353,
+        "max": 121353
+      },
+      "payload.home.js-gzip": {
+        "unit": "bytes",
+        "values": [
+          47024
+        ],
+        "median": 47024,
+        "min": 47024,
+        "max": 47024
+      },
+      "payload.home.js-brotli": {
+        "unit": "bytes",
+        "values": [
+          41533
+        ],
+        "median": 41533,
+        "min": 41533,
+        "max": 41533
+      },
+      "payload.home.css-raw": {
+        "unit": "bytes",
+        "values": [
+          8529
+        ],
+        "median": 8529,
+        "min": 8529,
+        "max": 8529
+      },
+      "payload.home.css-gzip": {
+        "unit": "bytes",
+        "values": [
+          2559
+        ],
+        "median": 2559,
+        "min": 2559,
+        "max": 2559
+      },
+      "payload.home.css-brotli": {
+        "unit": "bytes",
+        "values": [
+          2170
+        ],
+        "median": 2170,
+        "min": 2170,
+        "max": 2170
+      },
+      "payload.home.html-raw": {
+        "unit": "bytes",
+        "values": [
+          31610
+        ],
+        "median": 31610,
+        "min": 31610,
+        "max": 31610
+      },
+      "payload.home.html-gzip": {
+        "unit": "bytes",
+        "values": [
+          3329
+        ],
+        "median": 3329,
+        "min": 3329,
+        "max": 3329
+      },
+      "payload.home.requests": {
+        "unit": "count",
+        "values": [
+          49
+        ],
+        "median": 49,
+        "min": 49,
+        "max": 49
+      },
+      "payload.project.js-raw": {
+        "unit": "bytes",
+        "values": [
+          123620
+        ],
+        "median": 123620,
+        "min": 123620,
+        "max": 123620
+      },
+      "payload.project.js-gzip": {
+        "unit": "bytes",
+        "values": [
+          47892
+        ],
+        "median": 47892,
+        "min": 47892,
+        "max": 47892
+      },
+      "payload.project.js-brotli": {
+        "unit": "bytes",
+        "values": [
+          42287
+        ],
+        "median": 42287,
+        "min": 42287,
+        "max": 42287
+      },
+      "payload.project.css-raw": {
+        "unit": "bytes",
+        "values": [
+          8529
+        ],
+        "median": 8529,
+        "min": 8529,
+        "max": 8529
+      },
+      "payload.project.css-gzip": {
+        "unit": "bytes",
+        "values": [
+          2559
+        ],
+        "median": 2559,
+        "min": 2559,
+        "max": 2559
+      },
+      "payload.project.css-brotli": {
+        "unit": "bytes",
+        "values": [
+          2170
+        ],
+        "median": 2170,
+        "min": 2170,
+        "max": 2170
+      },
+      "payload.project.html-raw": {
+        "unit": "bytes",
+        "values": [
+          60335
+        ],
+        "median": 60335,
+        "min": 60335,
+        "max": 60335
+      },
+      "payload.project.html-gzip": {
+        "unit": "bytes",
+        "values": [
+          6484
+        ],
+        "median": 6484,
+        "min": 6484,
+        "max": 6484
+      },
+      "payload.project.requests": {
+        "unit": "count",
+        "values": [
+          51
+        ],
+        "median": 51,
+        "min": 51,
+        "max": 51
+      },
+      "payload.issue.js-raw": {
+        "unit": "bytes",
+        "values": [
+          124039
+        ],
+        "median": 124039,
+        "min": 124039,
+        "max": 124039
+      },
+      "payload.issue.js-gzip": {
+        "unit": "bytes",
+        "values": [
+          47944
+        ],
+        "median": 47944,
+        "min": 47944,
+        "max": 47944
+      },
+      "payload.issue.js-brotli": {
+        "unit": "bytes",
+        "values": [
+          42342
+        ],
+        "median": 42342,
+        "min": 42342,
+        "max": 42342
+      },
+      "payload.issue.css-raw": {
+        "unit": "bytes",
+        "values": [
+          8529
+        ],
+        "median": 8529,
+        "min": 8529,
+        "max": 8529
+      },
+      "payload.issue.css-gzip": {
+        "unit": "bytes",
+        "values": [
+          2559
+        ],
+        "median": 2559,
+        "min": 2559,
+        "max": 2559
+      },
+      "payload.issue.css-brotli": {
+        "unit": "bytes",
+        "values": [
+          2170
+        ],
+        "median": 2170,
+        "min": 2170,
+        "max": 2170
+      },
+      "payload.issue.html-raw": {
+        "unit": "bytes",
+        "values": [
+          31644
+        ],
+        "median": 31644,
+        "min": 31644,
+        "max": 31644
+      },
+      "payload.issue.html-gzip": {
+        "unit": "bytes",
+        "values": [
+          3954
+        ],
+        "median": 3954,
+        "min": 3954,
+        "max": 3954
+      },
+      "payload.issue.requests": {
+        "unit": "count",
+        "values": [
+          51
+        ],
+        "median": 51,
+        "min": 51,
+        "max": 51
+      },
+      "load.home.ttfb": {
+        "unit": "ms",
+        "values": [
+          3.7,
+          2.8,
+          2.8,
+          3,
+          3
+        ],
+        "median": 3,
+        "min": 2.8,
+        "max": 3.7
+      },
+      "load.home.fcp": {
+        "unit": "ms",
+        "values": [
+          76,
+          80,
+          80,
+          80,
+          76
+        ],
+        "median": 80,
+        "min": 76,
+        "max": 80
+      },
+      "load.home.lcp": {
+        "unit": "ms",
+        "values": [
+          76,
+          80,
+          80,
+          80,
+          76
+        ],
+        "median": 80,
+        "min": 76,
+        "max": 80
+      },
+      "load.home.dcl": {
+        "unit": "ms",
+        "values": [
+          98.7,
+          96.6,
+          98.3,
+          96.3,
+          95.9
+        ],
+        "median": 96.6,
+        "min": 95.9,
+        "max": 98.7
+      },
+      "load.home.load": {
+        "unit": "ms",
+        "values": [
+          109.1,
+          106.8,
+          108.1,
+          106.2,
+          105.3
+        ],
+        "median": 106.8,
+        "min": 105.3,
+        "max": 109.1
+      },
+      "load.home.tbt": {
+        "unit": "ms",
+        "values": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 0
+      },
+      "load.home.ready": {
+        "unit": "ms",
+        "values": [
+          98.7,
+          95.8,
+          98.3,
+          96.3,
+          95.7
+        ],
+        "median": 96.3,
+        "min": 95.7,
+        "max": 98.7
+      },
+      "load.project.ttfb": {
+        "unit": "ms",
+        "values": [
+          12.8,
+          5.1,
+          5.9,
+          4.9,
+          5
+        ],
+        "median": 5.1,
+        "min": 4.9,
+        "max": 12.8
+      },
+      "load.project.fcp": {
+        "unit": "ms",
+        "values": [
+          108,
+          104,
+          104,
+          100,
+          104
+        ],
+        "median": 104,
+        "min": 100,
+        "max": 108
+      },
+      "load.project.lcp": {
+        "unit": "ms",
+        "values": [
+          108,
+          104,
+          104,
+          100,
+          104
+        ],
+        "median": 104,
+        "min": 100,
+        "max": 108
+      },
+      "load.project.dcl": {
+        "unit": "ms",
+        "values": [
+          134.2,
+          127.3,
+          128.1,
+          125.9,
+          128
+        ],
+        "median": 128,
+        "min": 125.9,
+        "max": 134.2
+      },
+      "load.project.load": {
+        "unit": "ms",
+        "values": [
+          145.1,
+          137.5,
+          139.3,
+          137.1,
+          138.6
+        ],
+        "median": 138.6,
+        "min": 137.1,
+        "max": 145.1
+      },
+      "load.project.tbt": {
+        "unit": "ms",
+        "values": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 0
+      },
+      "load.project.ready": {
+        "unit": "ms",
+        "values": [
+          178.2,
+          149.5,
+          150.7,
+          148.6,
+          150.3
+        ],
+        "median": 150.3,
+        "min": 148.6,
+        "max": 178.2
+      },
+      "load.issue.ttfb": {
+        "unit": "ms",
+        "values": [
+          8.7,
+          3.6,
+          3.9,
+          3.8,
+          3.5
+        ],
+        "median": 3.8,
+        "min": 3.5,
+        "max": 8.7
+      },
+      "load.issue.fcp": {
+        "unit": "ms",
+        "values": [
+          92,
+          88,
+          84,
+          84,
+          84
+        ],
+        "median": 84,
+        "min": 84,
+        "max": 92
+      },
+      "load.issue.lcp": {
+        "unit": "ms",
+        "values": [
+          156,
+          148,
+          148,
+          148,
+          148
+        ],
+        "median": 148,
+        "min": 148,
+        "max": 156
+      },
+      "load.issue.dcl": {
+        "unit": "ms",
+        "values": [
+          111.5,
+          106.7,
+          103.4,
+          104.3,
+          104
+        ],
+        "median": 104.3,
+        "min": 103.4,
+        "max": 111.5
+      },
+      "load.issue.load": {
+        "unit": "ms",
+        "values": [
+          121.4,
+          116,
+          113.5,
+          113.9,
+          114.1
+        ],
+        "median": 114.1,
+        "min": 113.5,
+        "max": 121.4
+      },
+      "load.issue.tbt": {
+        "unit": "ms",
+        "values": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 0
+      },
+      "load.issue.ready": {
+        "unit": "ms",
+        "values": [
+          158.2,
+          152.5,
+          149.8,
+          149.5,
+          151.4
+        ],
+        "median": 151.4,
+        "min": 149.5,
+        "max": 158.2
+      },
+      "server.cold-start": {
+        "unit": "ms",
+        "values": [
+          633.03,
+          630.56,
+          628.06
+        ],
+        "median": 630.56,
+        "min": 628.06,
+        "max": 633.03
+      },
+      "server.home.rps": {
+        "unit": "req/s",
+        "values": [
+          822.28,
+          843.1,
+          860.5
+        ],
+        "median": 843.1,
+        "min": 822.28,
+        "max": 860.5
+      },
+      "server.home.p50": {
+        "unit": "ms",
+        "values": [
+          58,
+          57,
+          56
+        ],
+        "median": 57,
+        "min": 56,
+        "max": 58
+      },
+      "server.home.p99": {
+        "unit": "ms",
+        "values": [
+          117,
+          115,
+          112
+        ],
+        "median": 115,
+        "min": 112,
+        "max": 117
+      },
+      "server.home.errors": {
+        "unit": "count",
+        "values": [
+          0,
+          0,
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 0
+      },
+      "server.project.rps": {
+        "unit": "req/s",
+        "values": [
+          350,
+          355.2,
+          355.3
+        ],
+        "median": 355.2,
+        "min": 350,
+        "max": 355.3
+      },
+      "server.project.p50": {
+        "unit": "ms",
+        "values": [
+          140,
+          138,
+          138
+        ],
+        "median": 138,
+        "min": 138,
+        "max": 140
+      },
+      "server.project.p99": {
+        "unit": "ms",
+        "values": [
+          154,
+          277,
+          277
+        ],
+        "median": 277,
+        "min": 154,
+        "max": 277
+      },
+      "server.project.errors": {
+        "unit": "count",
+        "values": [
+          0,
+          0,
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 0
+      },
+      "server.issue.rps": {
+        "unit": "req/s",
+        "values": [
+          794.73,
+          800.46,
+          814.1
+        ],
+        "median": 800.46,
+        "min": 794.73,
+        "max": 814.1
+      },
+      "server.issue.p50": {
+        "unit": "ms",
+        "values": [
+          60,
+          60,
+          59
+        ],
+        "median": 60,
+        "min": 59,
+        "max": 60
+      },
+      "server.issue.p99": {
+        "unit": "ms",
+        "values": [
+          121,
+          121,
+          119
+        ],
+        "median": 121,
+        "min": 119,
+        "max": 121
+      },
+      "server.issue.errors": {
+        "unit": "count",
+        "values": [
+          0,
+          0,
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 0
+      },
+      "server.api.rps": {
+        "unit": "req/s",
+        "values": [
+          15701.46,
+          15740.73,
+          15691.28
+        ],
+        "median": 15701.46,
+        "min": 15691.28,
+        "max": 15740.73
+      },
+      "server.api.p50": {
+        "unit": "ms",
+        "values": [
+          2,
+          2,
+          2
+        ],
+        "median": 2,
+        "min": 2,
+        "max": 2
+      },
+      "server.api.p99": {
+        "unit": "ms",
+        "values": [
+          6,
+          6,
+          6
+        ],
+        "median": 6,
+        "min": 6,
+        "max": 6
+      },
+      "server.api.errors": {
+        "unit": "count",
+        "values": [
+          0,
+          0,
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 0
+      },
+      "server.rss": {
+        "unit": "MB",
+        "values": [
+          383.19
+        ],
+        "median": 383.19,
+        "min": 383.19,
+        "max": 383.19
+      }
+    },
+    "astro": {
+      "other.loc": {
+        "unit": "lines",
+        "values": [
+          1046
+        ],
+        "median": 1046,
+        "min": 1046,
+        "max": 1046
+      },
+      "other.loc-app": {
+        "unit": "lines",
+        "values": [
+          1046
+        ],
+        "median": 1046,
+        "min": 1046,
+        "max": 1046
+      },
+      "other.loc-shared": {
+        "unit": "lines",
+        "values": [
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 0
+      },
+      "other.files": {
+        "unit": "count",
+        "values": [
+          36
+        ],
+        "median": 36,
+        "min": 36,
+        "max": 36
+      },
+      "other.files-app": {
+        "unit": "count",
+        "values": [
+          36
+        ],
+        "median": 36,
+        "min": 36,
+        "max": 36
+      },
+      "other.files-shared": {
+        "unit": "count",
+        "values": [
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 0
+      },
+      "other.runtime-deps": {
+        "unit": "count",
+        "values": [
+          1
+        ],
+        "median": 1,
+        "min": 1,
+        "max": 1
+      },
+      "other.typecheck": {
+        "unit": "ms",
+        "values": [
+          3221.62,
+          2970.48,
+          2958.64
+        ],
+        "median": 2970.48,
+        "min": 2958.64,
+        "max": 3221.62
+      },
+      "dev.cold-start": {
+        "unit": "ms",
+        "values": [
+          1709.39,
+          1706.54,
+          1706.07,
+          1707.62,
+          1709.63
+        ],
+        "median": 1707.62,
+        "min": 1706.07,
+        "max": 1709.63
+      },
+      "dev.first.home.ttfb": {
+        "unit": "ms",
+        "values": [
+          4.5,
+          4.8,
+          5.1,
+          4.9,
+          4.9
+        ],
+        "median": 4.9,
+        "min": 4.5,
+        "max": 5.1
+      },
+      "dev.first.home.load": {
+        "unit": "ms",
+        "values": [
+          31.2,
+          36.4,
+          33.6,
+          32.9,
+          35.7
+        ],
+        "median": 33.6,
+        "min": 31.2,
+        "max": 36.4
+      },
+      "dev.first.project.ttfb": {
+        "unit": "ms",
+        "values": [
+          4.6,
+          32.3,
+          32.9,
+          33.2,
+          32.9
+        ],
+        "median": 32.9,
+        "min": 4.6,
+        "max": 33.2
+      },
+      "dev.first.project.load": {
+        "unit": "ms",
+        "values": [
+          28.7,
+          57,
+          57.9,
+          57.9,
+          58
+        ],
+        "median": 57.9,
+        "min": 28.7,
+        "max": 58
+      },
+      "dev.first.issue.ttfb": {
+        "unit": "ms",
+        "values": [
+          24.6,
+          24.8,
+          24.1,
+          24.8,
+          24.8
+        ],
+        "median": 24.8,
+        "min": 24.1,
+        "max": 24.8
+      },
+      "dev.first.issue.load": {
+        "unit": "ms",
+        "values": [
+          45.9,
+          46.2,
+          46.1,
+          46.6,
+          46
+        ],
+        "median": 46.1,
+        "min": 45.9,
+        "max": 46.6
+      },
+      "dev.warm.home.ttfb": {
+        "unit": "ms",
+        "values": [
+          3.8,
+          3.8,
+          3.9,
+          3.8,
+          3.9
+        ],
+        "median": 3.8,
+        "min": 3.8,
+        "max": 3.9
+      },
+      "dev.warm.home.load": {
+        "unit": "ms",
+        "values": [
+          21.6,
+          21.6,
+          22,
+          21.8,
+          21.8
+        ],
+        "median": 21.8,
+        "min": 21.6,
+        "max": 22
+      },
+      "dev.warm.project.ttfb": {
+        "unit": "ms",
+        "values": [
+          4.9,
+          4.7,
+          4.8,
+          4.8,
+          4.7
+        ],
+        "median": 4.8,
+        "min": 4.7,
+        "max": 4.9
+      },
+      "dev.warm.project.load": {
+        "unit": "ms",
+        "values": [
+          30.4,
+          29.8,
+          29.4,
+          29.6,
+          29.8
+        ],
+        "median": 29.8,
+        "min": 29.4,
+        "max": 30.4
+      },
+      "dev.warm.issue.ttfb": {
+        "unit": "ms",
+        "values": [
+          4.2,
+          3.9,
+          4.1,
+          4,
+          3.9
+        ],
+        "median": 4,
+        "min": 3.9,
+        "max": 4.2
+      },
+      "dev.warm.issue.load": {
+        "unit": "ms",
+        "values": [
+          25.1,
+          25.2,
+          25,
+          25.1,
+          24.7
+        ],
+        "median": 25.1,
+        "min": 24.7,
+        "max": 25.2
+      },
+      "dev.hmr": {
+        "unit": "ms",
+        "values": [
+          188.53,
+          190.2,
+          148.95,
+          85.23,
+          190.66
+        ],
+        "median": 188.53,
+        "min": 85.23,
+        "max": 190.66
+      },
+      "dev.warm-start": {
+        "unit": "ms",
+        "values": [
+          1620.54,
+          1622.22,
+          1609.34,
+          1619.65,
+          1603.12
+        ],
+        "median": 1619.65,
+        "min": 1603.12,
+        "max": 1622.22
+      },
+      "build.time": {
+        "unit": "ms",
+        "values": [
+          1313.46,
+          1288.48,
+          1298.95
+        ],
+        "median": 1298.95,
+        "min": 1288.48,
+        "max": 1313.46
+      },
+      "build.client-size": {
+        "unit": "bytes",
+        "values": [
+          36217
+        ],
+        "median": 36217,
+        "min": 36217,
+        "max": 36217
+      },
+      "build.server-size": {
+        "unit": "bytes",
+        "values": [
+          1541394
+        ],
+        "median": 1541394,
+        "min": 1541394,
+        "max": 1541394
+      },
+      "payload.home.js-raw": {
+        "unit": "bytes",
+        "values": [
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 0
+      },
+      "payload.home.js-gzip": {
+        "unit": "bytes",
+        "values": [
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 0
+      },
+      "payload.home.js-brotli": {
+        "unit": "bytes",
+        "values": [
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 0
+      },
+      "payload.home.css-raw": {
+        "unit": "bytes",
+        "values": [
+          8530
+        ],
+        "median": 8530,
+        "min": 8530,
+        "max": 8530
+      },
+      "payload.home.css-gzip": {
+        "unit": "bytes",
+        "values": [
+          2562
+        ],
+        "median": 2562,
+        "min": 2562,
+        "max": 2562
+      },
+      "payload.home.css-brotli": {
+        "unit": "bytes",
+        "values": [
+          2173
+        ],
+        "median": 2173,
+        "min": 2173,
+        "max": 2173
+      },
+      "payload.home.html-raw": {
+        "unit": "bytes",
+        "values": [
+          10451
+        ],
+        "median": 10451,
+        "min": 10451,
+        "max": 10451
+      },
+      "payload.home.html-gzip": {
+        "unit": "bytes",
+        "values": [
+          2053
+        ],
+        "median": 2053,
+        "min": 2053,
+        "max": 2053
+      },
+      "payload.home.requests": {
+        "unit": "count",
+        "values": [
+          2
+        ],
+        "median": 2,
+        "min": 2,
+        "max": 2
+      },
+      "payload.project.js-raw": {
+        "unit": "bytes",
+        "values": [
+          17405
+        ],
+        "median": 17405,
+        "min": 17405,
+        "max": 17405
+      },
+      "payload.project.js-gzip": {
+        "unit": "bytes",
+        "values": [
+          7881
+        ],
+        "median": 7881,
+        "min": 7881,
+        "max": 7881
+      },
+      "payload.project.js-brotli": {
+        "unit": "bytes",
+        "values": [
+          7146
+        ],
+        "median": 7146,
+        "min": 7146,
+        "max": 7146
+      },
+      "payload.project.css-raw": {
+        "unit": "bytes",
+        "values": [
+          8530
+        ],
+        "median": 8530,
+        "min": 8530,
+        "max": 8530
+      },
+      "payload.project.css-gzip": {
+        "unit": "bytes",
+        "values": [
+          2562
+        ],
+        "median": 2562,
+        "min": 2562,
+        "max": 2562
+      },
+      "payload.project.css-brotli": {
+        "unit": "bytes",
+        "values": [
+          2173
+        ],
+        "median": 2173,
+        "min": 2173,
+        "max": 2173
+      },
+      "payload.project.html-raw": {
+        "unit": "bytes",
+        "values": [
+          42307
+        ],
+        "median": 42307,
+        "min": 42307,
+        "max": 42307
+      },
+      "payload.project.html-gzip": {
+        "unit": "bytes",
+        "values": [
+          7141
+        ],
+        "median": 7141,
+        "min": 7141,
+        "max": 7141
+      },
+      "payload.project.requests": {
+        "unit": "count",
+        "values": [
+          7
+        ],
+        "median": 7,
+        "min": 7,
+        "max": 7
+      },
+      "payload.issue.js-raw": {
+        "unit": "bytes",
+        "values": [
+          17508
+        ],
+        "median": 17508,
+        "min": 17508,
+        "max": 17508
+      },
+      "payload.issue.js-gzip": {
+        "unit": "bytes",
+        "values": [
+          7906
+        ],
+        "median": 7906,
+        "min": 7906,
+        "max": 7906
+      },
+      "payload.issue.js-brotli": {
+        "unit": "bytes",
+        "values": [
+          7163
+        ],
+        "median": 7163,
+        "min": 7163,
+        "max": 7163
+      },
+      "payload.issue.css-raw": {
+        "unit": "bytes",
+        "values": [
+          8530
+        ],
+        "median": 8530,
+        "min": 8530,
+        "max": 8530
+      },
+      "payload.issue.css-gzip": {
+        "unit": "bytes",
+        "values": [
+          2562
+        ],
+        "median": 2562,
+        "min": 2562,
+        "max": 2562
+      },
+      "payload.issue.css-brotli": {
+        "unit": "bytes",
+        "values": [
+          2173
+        ],
+        "median": 2173,
+        "min": 2173,
+        "max": 2173
+      },
+      "payload.issue.html-raw": {
+        "unit": "bytes",
+        "values": [
+          12228
+        ],
+        "median": 12228,
+        "min": 12228,
+        "max": 12228
+      },
+      "payload.issue.html-gzip": {
+        "unit": "bytes",
+        "values": [
+          4432
+        ],
+        "median": 4432,
+        "min": 4432,
+        "max": 4432
+      },
+      "payload.issue.requests": {
+        "unit": "count",
+        "values": [
+          8
+        ],
+        "median": 8,
+        "min": 8,
+        "max": 8
+      },
+      "load.home.ttfb": {
+        "unit": "ms",
+        "values": [
+          3.6,
+          3.3,
+          3.2,
+          3.1,
+          3.3
+        ],
+        "median": 3.3,
+        "min": 3.1,
+        "max": 3.6
+      },
+      "load.home.fcp": {
+        "unit": "ms",
+        "values": [
+          60,
+          60,
+          60,
+          60,
+          60
+        ],
+        "median": 60,
+        "min": 60,
+        "max": 60
+      },
+      "load.home.lcp": {
+        "unit": "ms",
+        "values": [
+          60,
+          60,
+          60,
+          60,
+          60
+        ],
+        "median": 60,
+        "min": 60,
+        "max": 60
+      },
+      "load.home.dcl": {
+        "unit": "ms",
+        "values": [
+          20.1,
+          20.4,
+          20.2,
+          19.6,
+          18.8
+        ],
+        "median": 20.1,
+        "min": 18.8,
+        "max": 20.4
+      },
+      "load.home.load": {
+        "unit": "ms",
+        "values": [
+          23.1,
+          23.2,
+          23.5,
+          22.6,
+          21.6
+        ],
+        "median": 23.1,
+        "min": 21.6,
+        "max": 23.5
+      },
+      "load.home.tbt": {
+        "unit": "ms",
+        "values": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 0
+      },
+      "load.home.ready": {
+        "unit": "ms",
+        "values": [
+          20,
+          20.4,
+          20.2,
+          19.4,
+          18.7
+        ],
+        "median": 20,
+        "min": 18.7,
+        "max": 20.4
+      },
+      "load.project.ttfb": {
+        "unit": "ms",
+        "values": [
+          9.2,
+          3.6,
+          3.2,
+          3.3,
+          3
+        ],
+        "median": 3.3,
+        "min": 3,
+        "max": 9.2
+      },
+      "load.project.fcp": {
+        "unit": "ms",
+        "values": [
+          92,
+          88,
+          88,
+          88,
+          88
+        ],
+        "median": 88,
+        "min": 88,
+        "max": 92
+      },
+      "load.project.lcp": {
+        "unit": "ms",
+        "values": [
+          92,
+          88,
+          88,
+          88,
+          88
+        ],
+        "median": 88,
+        "min": 88,
+        "max": 92
+      },
+      "load.project.dcl": {
+        "unit": "ms",
+        "values": [
+          32.3,
+          26.8,
+          26.4,
+          27.3,
+          26.1
+        ],
+        "median": 26.8,
+        "min": 26.1,
+        "max": 32.3
+      },
+      "load.project.load": {
+        "unit": "ms",
+        "values": [
+          69.2,
+          62.7,
+          63.2,
+          62.9,
+          62.5
+        ],
+        "median": 62.9,
+        "min": 62.5,
+        "max": 69.2
+      },
+      "load.project.tbt": {
+        "unit": "ms",
+        "values": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 0
+      },
+      "load.project.ready": {
+        "unit": "ms",
+        "values": [
+          113.5,
+          107.6,
+          107.8,
+          108.1,
+          107.6
+        ],
+        "median": 107.8,
+        "min": 107.6,
+        "max": 113.5
+      },
+      "load.issue.ttfb": {
+        "unit": "ms",
+        "values": [
+          5.6,
+          2.6,
+          2.9,
+          2.9,
+          4.7
+        ],
+        "median": 2.9,
+        "min": 2.6,
+        "max": 5.6
+      },
+      "load.issue.fcp": {
+        "unit": "ms",
+        "values": [
+          76,
+          72,
+          72,
+          72,
+          76
+        ],
+        "median": 72,
+        "min": 72,
+        "max": 76
+      },
+      "load.issue.lcp": {
+        "unit": "ms",
+        "values": [
+          100,
+          96,
+          96,
+          96,
+          108
+        ],
+        "median": 96,
+        "min": 96,
+        "max": 108
+      },
+      "load.issue.dcl": {
+        "unit": "ms",
+        "values": [
+          30.5,
+          26.2,
+          26.7,
+          26.3,
+          28.5
+        ],
+        "median": 26.7,
+        "min": 26.2,
+        "max": 30.5
+      },
+      "load.issue.load": {
+        "unit": "ms",
+        "values": [
+          60.9,
+          55,
+          55.3,
+          55.6,
+          56.8
+        ],
+        "median": 55.6,
+        "min": 55,
+        "max": 60.9
+      },
+      "load.issue.tbt": {
+        "unit": "ms",
+        "values": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 0
+      },
+      "load.issue.ready": {
+        "unit": "ms",
+        "values": [
+          105.5,
+          97,
+          100.3,
+          100,
+          96.9
+        ],
+        "median": 100,
+        "min": 96.9,
+        "max": 105.5
+      },
+      "server.cold-start": {
+        "unit": "ms",
+        "values": [
+          472.64,
+          472.29,
+          473.22
+        ],
+        "median": 472.64,
+        "min": 472.29,
+        "max": 473.22
+      },
+      "server.home.rps": {
+        "unit": "req/s",
+        "values": [
+          1265.1,
+          1288.73,
+          1293.55
+        ],
+        "median": 1288.73,
+        "min": 1265.1,
+        "max": 1293.55
+      },
+      "server.home.p50": {
+        "unit": "ms",
+        "values": [
+          36,
+          37,
+          36
+        ],
+        "median": 36,
+        "min": 36,
+        "max": 37
+      },
+      "server.home.p99": {
+        "unit": "ms",
+        "values": [
+          71,
+          67,
+          67
+        ],
+        "median": 67,
+        "min": 67,
+        "max": 71
+      },
+      "server.home.errors": {
+        "unit": "count",
+        "values": [
+          0,
+          0,
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 0
+      },
+      "server.project.rps": {
+        "unit": "req/s",
+        "values": [
+          1272,
+          1283.46,
+          1288.73
+        ],
+        "median": 1283.46,
+        "min": 1272,
+        "max": 1288.73
+      },
+      "server.project.p50": {
+        "unit": "ms",
+        "values": [
+          38,
+          39,
+          38
+        ],
+        "median": 38,
+        "min": 38,
+        "max": 39
+      },
+      "server.project.p99": {
+        "unit": "ms",
+        "values": [
+          66,
+          67,
+          65
+        ],
+        "median": 66,
+        "min": 65,
+        "max": 67
+      },
+      "server.project.errors": {
+        "unit": "count",
+        "values": [
+          0,
+          0,
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 0
+      },
+      "server.issue.rps": {
+        "unit": "req/s",
+        "values": [
+          3124.8,
+          3138.28,
+          3134.4
+        ],
+        "median": 3134.4,
+        "min": 3124.8,
+        "max": 3138.28
+      },
+      "server.issue.p50": {
+        "unit": "ms",
+        "values": [
+          15,
+          15,
+          15
+        ],
+        "median": 15,
+        "min": 15,
+        "max": 15
+      },
+      "server.issue.p99": {
+        "unit": "ms",
+        "values": [
+          21,
+          21,
+          21
+        ],
+        "median": 21,
+        "min": 21,
+        "max": 21
+      },
+      "server.issue.errors": {
+        "unit": "count",
+        "values": [
+          0,
+          0,
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 0
+      },
+      "server.api.rps": {
+        "unit": "req/s",
+        "values": [
+          9525.28,
+          9694.4,
+          9670.91
+        ],
+        "median": 9670.91,
+        "min": 9525.28,
+        "max": 9694.4
+      },
+      "server.api.p50": {
+        "unit": "ms",
+        "values": [
+          4,
+          4,
+          4
+        ],
+        "median": 4,
+        "min": 4,
+        "max": 4
+      },
+      "server.api.p99": {
+        "unit": "ms",
+        "values": [
+          9,
+          9,
+          9
+        ],
+        "median": 9,
+        "min": 9,
+        "max": 9
+      },
+      "server.api.errors": {
+        "unit": "count",
+        "values": [
+          0,
+          0,
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 0
+      },
+      "server.rss": {
+        "unit": "MB",
+        "values": [
+          310.13
+        ],
+        "median": 310.13,
+        "min": 310.13,
+        "max": 310.13
+      }
+    }
+  },
+  "metrics": {
+    "other.loc": {
+      "label": "Source lines (non-blank), app + shared UI",
+      "group": "other",
+      "unit": "lines",
+      "better": "lower",
+      "section": "Source size",
+      "env": "build"
+    },
+    "other.loc-app": {
+      "label": "… in the app",
+      "group": "other",
+      "unit": "lines",
+      "better": "lower",
+      "section": "Source size",
+      "env": "build"
+    },
+    "other.loc-shared": {
+      "label": "… in shared UI packages",
+      "group": "other",
+      "unit": "lines",
+      "better": "lower",
+      "section": "Source size",
+      "env": "build"
+    },
+    "other.files": {
+      "label": "Source files, app + shared UI",
+      "group": "other",
+      "unit": "count",
+      "better": "lower",
+      "section": "Source size",
+      "env": "build"
+    },
+    "other.files-app": {
+      "label": "… in the app",
+      "group": "other",
+      "unit": "count",
+      "better": "lower",
+      "section": "Source size",
+      "env": "build"
+    },
+    "other.files-shared": {
+      "label": "… in shared UI packages",
+      "group": "other",
+      "unit": "count",
+      "better": "lower",
+      "section": "Source size",
+      "env": "build"
+    },
+    "other.runtime-deps": {
+      "label": "Packages the production server loads at runtime",
+      "group": "other",
+      "unit": "count",
+      "better": "lower",
+      "env": "build"
+    },
+    "other.typecheck": {
+      "label": "Type check",
+      "group": "other",
+      "unit": "ms",
+      "better": "lower",
+      "env": "build"
+    },
+    "dev.cold-start": {
+      "label": "Dev server cold start (spawn → first 200 on /)",
+      "group": "dev",
+      "unit": "ms",
+      "better": "lower",
+      "env": "dev"
+    },
+    "dev.first.home.ttfb": {
+      "label": "TTFB",
+      "group": "dev",
+      "unit": "ms",
+      "better": "lower",
+      "section": "First load /",
+      "env": "dev"
+    },
+    "dev.first.home.load": {
+      "label": "load event",
+      "group": "dev",
+      "unit": "ms",
+      "better": "lower",
+      "section": "First load /",
+      "env": "dev"
+    },
+    "dev.first.project.ttfb": {
+      "label": "TTFB",
+      "group": "dev",
+      "unit": "ms",
+      "better": "lower",
+      "section": "First load /projects/:slug",
+      "env": "dev"
+    },
+    "dev.first.project.load": {
+      "label": "load event",
+      "group": "dev",
+      "unit": "ms",
+      "better": "lower",
+      "section": "First load /projects/:slug",
+      "env": "dev"
+    },
+    "dev.first.issue.ttfb": {
+      "label": "TTFB",
+      "group": "dev",
+      "unit": "ms",
+      "better": "lower",
+      "section": "First load /issues/:id",
+      "env": "dev"
+    },
+    "dev.first.issue.load": {
+      "label": "load event",
+      "group": "dev",
+      "unit": "ms",
+      "better": "lower",
+      "section": "First load /issues/:id",
+      "env": "dev"
+    },
+    "dev.warm.home.ttfb": {
+      "label": "TTFB",
+      "group": "dev",
+      "unit": "ms",
+      "better": "lower",
+      "section": "Warm load /",
+      "env": "dev"
+    },
+    "dev.warm.home.load": {
+      "label": "load event",
+      "group": "dev",
+      "unit": "ms",
+      "better": "lower",
+      "section": "Warm load /",
+      "env": "dev"
+    },
+    "dev.warm.project.ttfb": {
+      "label": "TTFB",
+      "group": "dev",
+      "unit": "ms",
+      "better": "lower",
+      "section": "Warm load /projects/:slug",
+      "env": "dev"
+    },
+    "dev.warm.project.load": {
+      "label": "load event",
+      "group": "dev",
+      "unit": "ms",
+      "better": "lower",
+      "section": "Warm load /projects/:slug",
+      "env": "dev"
+    },
+    "dev.warm.issue.ttfb": {
+      "label": "TTFB",
+      "group": "dev",
+      "unit": "ms",
+      "better": "lower",
+      "section": "Warm load /issues/:id",
+      "env": "dev"
+    },
+    "dev.warm.issue.load": {
+      "label": "load event",
+      "group": "dev",
+      "unit": "ms",
+      "better": "lower",
+      "section": "Warm load /issues/:id",
+      "env": "dev"
+    },
+    "dev.hmr": {
+      "label": "HMR: shared component edit → DOM",
+      "group": "dev",
+      "unit": "ms",
+      "better": "lower",
+      "env": "dev"
+    },
+    "dev.warm-start": {
+      "label": "Dev server warm start (caches kept)",
+      "group": "dev",
+      "unit": "ms",
+      "better": "lower",
+      "env": "dev"
+    },
+    "build.time": {
+      "label": "Production build (cold, after clean)",
+      "group": "build",
+      "unit": "ms",
+      "better": "lower",
+      "env": "build"
+    },
+    "build.client-size": {
+      "label": "Client output on disk",
+      "group": "build",
+      "unit": "bytes",
+      "better": "lower",
+      "env": "build"
+    },
+    "build.server-size": {
+      "label": "Server output on disk",
+      "group": "build",
+      "unit": "bytes",
+      "better": "lower",
+      "env": "build"
+    },
+    "payload.home.js-raw": {
+      "label": "JS (raw)",
+      "group": "build",
+      "unit": "bytes",
+      "better": "lower",
+      "section": "Client payload /",
+      "env": "prod"
+    },
+    "payload.home.js-gzip": {
+      "label": "JS (gzip)",
+      "group": "build",
+      "unit": "bytes",
+      "better": "lower",
+      "section": "Client payload /",
+      "env": "prod"
+    },
+    "payload.home.js-brotli": {
+      "label": "JS (brotli)",
+      "group": "build",
+      "unit": "bytes",
+      "better": "lower",
+      "section": "Client payload /",
+      "env": "prod"
+    },
+    "payload.home.css-raw": {
+      "label": "CSS (raw)",
+      "group": "build",
+      "unit": "bytes",
+      "better": "lower",
+      "section": "Client payload /",
+      "env": "prod"
+    },
+    "payload.home.css-gzip": {
+      "label": "CSS (gzip)",
+      "group": "build",
+      "unit": "bytes",
+      "better": "lower",
+      "section": "Client payload /",
+      "env": "prod"
+    },
+    "payload.home.css-brotli": {
+      "label": "CSS (brotli)",
+      "group": "build",
+      "unit": "bytes",
+      "better": "lower",
+      "section": "Client payload /",
+      "env": "prod"
+    },
+    "payload.home.html-raw": {
+      "label": "HTML document (raw)",
+      "group": "build",
+      "unit": "bytes",
+      "better": "lower",
+      "section": "Client payload /",
+      "env": "prod"
+    },
+    "payload.home.html-gzip": {
+      "label": "HTML document (gzip)",
+      "group": "build",
+      "unit": "bytes",
+      "better": "lower",
+      "section": "Client payload /",
+      "env": "prod"
+    },
+    "payload.home.requests": {
+      "label": "Requests",
+      "group": "build",
+      "unit": "count",
+      "better": "lower",
+      "section": "Client payload /",
+      "env": "prod"
+    },
+    "payload.project.js-raw": {
+      "label": "JS (raw)",
+      "group": "build",
+      "unit": "bytes",
+      "better": "lower",
+      "section": "Client payload /projects/:slug",
+      "env": "prod"
+    },
+    "payload.project.js-gzip": {
+      "label": "JS (gzip)",
+      "group": "build",
+      "unit": "bytes",
+      "better": "lower",
+      "section": "Client payload /projects/:slug",
+      "env": "prod"
+    },
+    "payload.project.js-brotli": {
+      "label": "JS (brotli)",
+      "group": "build",
+      "unit": "bytes",
+      "better": "lower",
+      "section": "Client payload /projects/:slug",
+      "env": "prod"
+    },
+    "payload.project.css-raw": {
+      "label": "CSS (raw)",
+      "group": "build",
+      "unit": "bytes",
+      "better": "lower",
+      "section": "Client payload /projects/:slug",
+      "env": "prod"
+    },
+    "payload.project.css-gzip": {
+      "label": "CSS (gzip)",
+      "group": "build",
+      "unit": "bytes",
+      "better": "lower",
+      "section": "Client payload /projects/:slug",
+      "env": "prod"
+    },
+    "payload.project.css-brotli": {
+      "label": "CSS (brotli)",
+      "group": "build",
+      "unit": "bytes",
+      "better": "lower",
+      "section": "Client payload /projects/:slug",
+      "env": "prod"
+    },
+    "payload.project.html-raw": {
+      "label": "HTML document (raw)",
+      "group": "build",
+      "unit": "bytes",
+      "better": "lower",
+      "section": "Client payload /projects/:slug",
+      "env": "prod"
+    },
+    "payload.project.html-gzip": {
+      "label": "HTML document (gzip)",
+      "group": "build",
+      "unit": "bytes",
+      "better": "lower",
+      "section": "Client payload /projects/:slug",
+      "env": "prod"
+    },
+    "payload.project.requests": {
+      "label": "Requests",
+      "group": "build",
+      "unit": "count",
+      "better": "lower",
+      "section": "Client payload /projects/:slug",
+      "env": "prod"
+    },
+    "payload.issue.js-raw": {
+      "label": "JS (raw)",
+      "group": "build",
+      "unit": "bytes",
+      "better": "lower",
+      "section": "Client payload /issues/:id",
+      "env": "prod"
+    },
+    "payload.issue.js-gzip": {
+      "label": "JS (gzip)",
+      "group": "build",
+      "unit": "bytes",
+      "better": "lower",
+      "section": "Client payload /issues/:id",
+      "env": "prod"
+    },
+    "payload.issue.js-brotli": {
+      "label": "JS (brotli)",
+      "group": "build",
+      "unit": "bytes",
+      "better": "lower",
+      "section": "Client payload /issues/:id",
+      "env": "prod"
+    },
+    "payload.issue.css-raw": {
+      "label": "CSS (raw)",
+      "group": "build",
+      "unit": "bytes",
+      "better": "lower",
+      "section": "Client payload /issues/:id",
+      "env": "prod"
+    },
+    "payload.issue.css-gzip": {
+      "label": "CSS (gzip)",
+      "group": "build",
+      "unit": "bytes",
+      "better": "lower",
+      "section": "Client payload /issues/:id",
+      "env": "prod"
+    },
+    "payload.issue.css-brotli": {
+      "label": "CSS (brotli)",
+      "group": "build",
+      "unit": "bytes",
+      "better": "lower",
+      "section": "Client payload /issues/:id",
+      "env": "prod"
+    },
+    "payload.issue.html-raw": {
+      "label": "HTML document (raw)",
+      "group": "build",
+      "unit": "bytes",
+      "better": "lower",
+      "section": "Client payload /issues/:id",
+      "env": "prod"
+    },
+    "payload.issue.html-gzip": {
+      "label": "HTML document (gzip)",
+      "group": "build",
+      "unit": "bytes",
+      "better": "lower",
+      "section": "Client payload /issues/:id",
+      "env": "prod"
+    },
+    "payload.issue.requests": {
+      "label": "Requests",
+      "group": "build",
+      "unit": "count",
+      "better": "lower",
+      "section": "Client payload /issues/:id",
+      "env": "prod"
+    },
+    "load.home.ttfb": {
+      "label": "TTFB",
+      "group": "load",
+      "unit": "ms",
+      "better": "lower",
+      "section": "/ (CPU 4× slower)",
+      "env": "prod"
+    },
+    "load.home.fcp": {
+      "label": "First contentful paint",
+      "group": "load",
+      "unit": "ms",
+      "better": "lower",
+      "section": "/ (CPU 4× slower)",
+      "env": "prod"
+    },
+    "load.home.lcp": {
+      "label": "Largest contentful paint",
+      "group": "load",
+      "unit": "ms",
+      "better": "lower",
+      "section": "/ (CPU 4× slower)",
+      "env": "prod"
+    },
+    "load.home.dcl": {
+      "label": "DOMContentLoaded",
+      "group": "load",
+      "unit": "ms",
+      "better": "lower",
+      "section": "/ (CPU 4× slower)",
+      "env": "prod"
+    },
+    "load.home.load": {
+      "label": "load event",
+      "group": "load",
+      "unit": "ms",
+      "better": "lower",
+      "section": "/ (CPU 4× slower)",
+      "env": "prod"
+    },
+    "load.home.tbt": {
+      "label": "Total blocking time",
+      "group": "load",
+      "unit": "ms",
+      "better": "lower",
+      "section": "/ (CPU 4× slower)",
+      "env": "prod"
+    },
+    "load.home.ready": {
+      "label": "Interactive (__benchReady)",
+      "group": "load",
+      "unit": "ms",
+      "better": "lower",
+      "section": "/ (CPU 4× slower)",
+      "env": "prod"
+    },
+    "load.project.ttfb": {
+      "label": "TTFB",
+      "group": "load",
+      "unit": "ms",
+      "better": "lower",
+      "section": "/projects/:slug (CPU 4× slower)",
+      "env": "prod"
+    },
+    "load.project.fcp": {
+      "label": "First contentful paint",
+      "group": "load",
+      "unit": "ms",
+      "better": "lower",
+      "section": "/projects/:slug (CPU 4× slower)",
+      "env": "prod"
+    },
+    "load.project.lcp": {
+      "label": "Largest contentful paint",
+      "group": "load",
+      "unit": "ms",
+      "better": "lower",
+      "section": "/projects/:slug (CPU 4× slower)",
+      "env": "prod"
+    },
+    "load.project.dcl": {
+      "label": "DOMContentLoaded",
+      "group": "load",
+      "unit": "ms",
+      "better": "lower",
+      "section": "/projects/:slug (CPU 4× slower)",
+      "env": "prod"
+    },
+    "load.project.load": {
+      "label": "load event",
+      "group": "load",
+      "unit": "ms",
+      "better": "lower",
+      "section": "/projects/:slug (CPU 4× slower)",
+      "env": "prod"
+    },
+    "load.project.tbt": {
+      "label": "Total blocking time",
+      "group": "load",
+      "unit": "ms",
+      "better": "lower",
+      "section": "/projects/:slug (CPU 4× slower)",
+      "env": "prod"
+    },
+    "load.project.ready": {
+      "label": "Interactive (__benchReady)",
+      "group": "load",
+      "unit": "ms",
+      "better": "lower",
+      "section": "/projects/:slug (CPU 4× slower)",
+      "env": "prod"
+    },
+    "load.issue.ttfb": {
+      "label": "TTFB",
+      "group": "load",
+      "unit": "ms",
+      "better": "lower",
+      "section": "/issues/:id (CPU 4× slower)",
+      "env": "prod"
+    },
+    "load.issue.fcp": {
+      "label": "First contentful paint",
+      "group": "load",
+      "unit": "ms",
+      "better": "lower",
+      "section": "/issues/:id (CPU 4× slower)",
+      "env": "prod"
+    },
+    "load.issue.lcp": {
+      "label": "Largest contentful paint",
+      "group": "load",
+      "unit": "ms",
+      "better": "lower",
+      "section": "/issues/:id (CPU 4× slower)",
+      "env": "prod"
+    },
+    "load.issue.dcl": {
+      "label": "DOMContentLoaded",
+      "group": "load",
+      "unit": "ms",
+      "better": "lower",
+      "section": "/issues/:id (CPU 4× slower)",
+      "env": "prod"
+    },
+    "load.issue.load": {
+      "label": "load event",
+      "group": "load",
+      "unit": "ms",
+      "better": "lower",
+      "section": "/issues/:id (CPU 4× slower)",
+      "env": "prod"
+    },
+    "load.issue.tbt": {
+      "label": "Total blocking time",
+      "group": "load",
+      "unit": "ms",
+      "better": "lower",
+      "section": "/issues/:id (CPU 4× slower)",
+      "env": "prod"
+    },
+    "load.issue.ready": {
+      "label": "Interactive (__benchReady)",
+      "group": "load",
+      "unit": "ms",
+      "better": "lower",
+      "section": "/issues/:id (CPU 4× slower)",
+      "env": "prod"
+    },
+    "server.cold-start": {
+      "label": "Server cold start (spawn → first 200)",
+      "group": "server",
+      "unit": "ms",
+      "better": "lower",
+      "env": "prod"
+    },
+    "server.home.rps": {
+      "label": "Requests/s",
+      "group": "server",
+      "unit": "req/s",
+      "better": "higher",
+      "section": "Throughput /",
+      "env": "prod"
+    },
+    "server.home.p50": {
+      "label": "Latency p50",
+      "group": "server",
+      "unit": "ms",
+      "better": "lower",
+      "section": "Throughput /",
+      "env": "prod"
+    },
+    "server.home.p99": {
+      "label": "Latency p99",
+      "group": "server",
+      "unit": "ms",
+      "better": "lower",
+      "section": "Throughput /",
+      "env": "prod"
+    },
+    "server.home.errors": {
+      "label": "Errors and non-2xx",
+      "group": "server",
+      "unit": "count",
+      "better": "lower",
+      "section": "Throughput /",
+      "env": "prod"
+    },
+    "server.project.rps": {
+      "label": "Requests/s",
+      "group": "server",
+      "unit": "req/s",
+      "better": "higher",
+      "section": "Throughput /projects/:slug?page=3",
+      "env": "prod"
+    },
+    "server.project.p50": {
+      "label": "Latency p50",
+      "group": "server",
+      "unit": "ms",
+      "better": "lower",
+      "section": "Throughput /projects/:slug?page=3",
+      "env": "prod"
+    },
+    "server.project.p99": {
+      "label": "Latency p99",
+      "group": "server",
+      "unit": "ms",
+      "better": "lower",
+      "section": "Throughput /projects/:slug?page=3",
+      "env": "prod"
+    },
+    "server.project.errors": {
+      "label": "Errors and non-2xx",
+      "group": "server",
+      "unit": "count",
+      "better": "lower",
+      "section": "Throughput /projects/:slug?page=3",
+      "env": "prod"
+    },
+    "server.issue.rps": {
+      "label": "Requests/s",
+      "group": "server",
+      "unit": "req/s",
+      "better": "higher",
+      "section": "Throughput /issues/:id (streamed)",
+      "env": "prod"
+    },
+    "server.issue.p50": {
+      "label": "Latency p50",
+      "group": "server",
+      "unit": "ms",
+      "better": "lower",
+      "section": "Throughput /issues/:id (streamed)",
+      "env": "prod"
+    },
+    "server.issue.p99": {
+      "label": "Latency p99",
+      "group": "server",
+      "unit": "ms",
+      "better": "lower",
+      "section": "Throughput /issues/:id (streamed)",
+      "env": "prod"
+    },
+    "server.issue.errors": {
+      "label": "Errors and non-2xx",
+      "group": "server",
+      "unit": "count",
+      "better": "lower",
+      "section": "Throughput /issues/:id (streamed)",
+      "env": "prod"
+    },
+    "server.api.rps": {
+      "label": "Requests/s",
+      "group": "server",
+      "unit": "req/s",
+      "better": "higher",
+      "section": "Throughput /api/issues/:id",
+      "env": "prod"
+    },
+    "server.api.p50": {
+      "label": "Latency p50",
+      "group": "server",
+      "unit": "ms",
+      "better": "lower",
+      "section": "Throughput /api/issues/:id",
+      "env": "prod"
+    },
+    "server.api.p99": {
+      "label": "Latency p99",
+      "group": "server",
+      "unit": "ms",
+      "better": "lower",
+      "section": "Throughput /api/issues/:id",
+      "env": "prod"
+    },
+    "server.api.errors": {
+      "label": "Errors and non-2xx",
+      "group": "server",
+      "unit": "count",
+      "better": "lower",
+      "section": "Throughput /api/issues/:id",
+      "env": "prod"
+    },
+    "server.rss": {
+      "label": "Server RSS after the load test",
+      "group": "server",
+      "unit": "MB",
+      "better": "lower",
+      "env": "prod"
+    }
+  }
+}
