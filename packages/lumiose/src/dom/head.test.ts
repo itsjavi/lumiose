@@ -160,4 +160,29 @@ describe("Head", () => {
     dispose();
     expect(document.head.innerHTML).toBe(`<link rel="canonical" href="/page">`);
   });
+
+  it("while hydrating, keeps the server's element in place and removes it on disposal (TASK-263)", () => {
+    // A layout and a page both rendered the same link; the server wrote it twice.
+    const link = `<link rel="preconnect" href="https://cdn.example">`;
+    document.head.innerHTML = `${link}<meta charset="utf-8">${link}`;
+    const [first, second] = Array.from(document.head.querySelectorAll("link"));
+    const component = () =>
+      createComponent(Head, {
+        get children() {
+          return template(link)();
+        },
+      });
+    const layout = hydrateIsland(component);
+    const page = hydrateIsland(component);
+    // Each took one of the server's, without adding its own.
+    expect(Array.from(document.head.children)).toEqual([
+      first,
+      document.head.querySelector("meta"),
+      second,
+    ]);
+    page();
+    expect(document.head.innerHTML).toBe(`${link}<meta charset="utf-8">`);
+    layout();
+    expect(document.head.innerHTML).toBe(`<meta charset="utf-8">`);
+  });
 });

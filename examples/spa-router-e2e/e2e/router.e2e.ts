@@ -87,6 +87,41 @@ test("the document's head defaults come back on pages without their own (TASK-25
   expect(await sameDocument(page)).toBe(true);
 });
 
+test("hreflang alternates and the canonical follow client navigations (TASK-263)", async ({
+  page,
+  baseURL,
+}) => {
+  const links = () =>
+    page.evaluate(() =>
+      Array.from(
+        document.head.querySelectorAll<HTMLLinkElement>("link[hreflang],link[rel=canonical]"),
+        (el) => `${el.rel} ${el.hreflang} ${el.getAttribute("href")}`,
+      ),
+    );
+  await page.goto("/users/1");
+  await ready(page);
+  // The server's links.
+  expect(await links()).toEqual([
+    `canonical  ${baseURL}/users/1`,
+    `alternate en ${baseURL}/users/1`,
+    `alternate es ${baseURL}/es/users/1`,
+  ]);
+  await page.getByRole("link", { name: "User 2", exact: true }).click();
+  await expect(page.locator("#user")).toHaveText("User 2");
+  await expect
+    .poll(links)
+    .toEqual([
+      `alternate en ${baseURL}/users/2`,
+      `alternate es ${baseURL}/es/users/2`,
+      `canonical  ${baseURL}/users/2`,
+    ]);
+  // Home exists in English only: no links.
+  await page.getByRole("link", { name: "Home" }).click();
+  await expect(page.locator("#home")).toBeVisible();
+  await expect.poll(links).toEqual([]);
+  expect(await sameDocument(page)).toBe(true);
+});
+
 test("a navigation holds the old page until the new page's data is ready", async ({ page }) => {
   await page.goto("/");
   await ready(page);

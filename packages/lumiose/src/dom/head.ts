@@ -175,21 +175,36 @@ export function Meta(props: Attributes): Renderable {
 
 /**
  * Appends its children to `<head>` and removes them on disposal. Elements equal to one already in
- * `<head>` (for example rendered by the server) are skipped.
+ * `<head>` (for example rendered by the server) are skipped. While hydrating, that one is the
+ * server's render of this component (`$$h` marks it taken, so that two components with the same
+ * element take one each): it stays in place and goes with it.
  */
 export function Head(props: { children?: Renderable }): Renderable {
   const start = renderRange(() => props.children);
   const end = start.$$end;
   const head = document.head;
+  let taken: Element[] | undefined;
   for (let node = start.nextSibling!; node !== end;) {
     const next = node.nextSibling!;
-    if (node.nodeType === 1 && Array.from(head.children).some((el) => el.isEqualNode(node))) {
+    const twin =
+      node.nodeType === 1 &&
+      Array.from(head.children as HTMLCollectionOf<Element & { $$h?: true }>).find(
+        (el) => !(hydrator && el.$$h) && el.isEqualNode(node),
+      );
+    if (twin) {
       (node as ChildNode).remove();
+      if (hydrator) {
+        (taken ??= []).push(twin);
+        twin.$$h = true;
+      }
     }
     node = next;
   }
   place(head, start, null);
   // The range leaves `<head>` as a unit (into a fragment of its own).
-  onCleanup(() => place(new DocumentFragment(), start, null));
+  onCleanup(() => {
+    place(new DocumentFragment(), start, null);
+    taken?.forEach((el) => el.remove());
+  });
   return null;
 }

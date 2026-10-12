@@ -2425,8 +2425,14 @@ its `<head>`:
 - `<link rel="canonical">` to the page's own URL in its locale (each locale is canonical for
   itself). A canonical the page or a layout renders with `<Head>` replaces it.
 
+In `spa` routes the client router keeps them current: after each navigation it writes the new
+page's links, or removes them for a page that declares a single locale, and a canonical that the
+new page renders with `<Head>` still replaces Lumiose's. Hreflang links of the configured locales
+belong to Lumiose there: do not write them with `<Head>`.
+
 These URLs are absolute: the request's origin for pages rendered per request, and
-`lumiose({ site })` for prerendered pages, which have no request. Without `site`, prerendered pages
+`lumiose({ site })` for prerendered pages, which have no request; after an SPA navigation, the
+page's origin (`location.origin`). Without `site`, prerendered pages
 get root-relative URLs, which search engines ignore, and `lumiose build` warns. The origin is
 joined with the `href()` path, which already has Vite's `base`: a site with a path
 (`"https://example.com/docs"`) sets the base when the config has none, and must match it
@@ -3793,7 +3799,7 @@ There is no `meta` export: these components are the one way to set head content.
   `property`, `http-equiv` or `itemprop` dedupe: the deepest one wins, and the previous value comes
   back when it is removed.
 - `<Head>`: any other head elements (`<link>`, `<script>`). Elements already in `<head>` are not
-  duplicated.
+  duplicated; while hydrating, the server's copy belongs to the component and goes with it.
 
 **On the server** they are collected while the shell renders and flushed into `<head>`. Inside a
 streamed `<Suspense>` boundary they are too late (`LUM5004`). **In the browser** (islands, SPA)

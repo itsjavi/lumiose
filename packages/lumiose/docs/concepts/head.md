@@ -12,7 +12,7 @@ There is no `meta` export: these components are the one way to set head content.
   `property`, `http-equiv` or `itemprop` dedupe: the deepest one wins, and the previous value comes
   back when it is removed.
 - `<Head>`: any other head elements (`<link>`, `<script>`). Elements already in `<head>` are not
-  duplicated.
+  duplicated; while hydrating, the server's copy belongs to the component and goes with it.
 
 **On the server** they are collected while the shell renders and flushed into `<head>`. Inside a
 streamed `<Suspense>` boundary they are too late (`LUM5004`). **In the browser** (islands, SPA)

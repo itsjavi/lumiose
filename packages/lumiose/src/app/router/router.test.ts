@@ -5,7 +5,16 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { Component, Renderable } from "../../contract/client.ts";
 import { isBusy, effect, onCleanup, signal } from "../../core/index.ts";
-import { $async, $await, $leave, createComponent, insert, render } from "../../dom/index.ts";
+import {
+  $async,
+  $await,
+  $leave,
+  createComponent,
+  insert,
+  render,
+  template,
+} from "../../dom/index.ts";
+import { Head } from "../../dom/head.ts";
 import { Suspense } from "../../dom/boundaries.ts";
 import { resetStates } from "../../core/state.ts";
 import { invalidate as appInvalidate } from "../actions/client.ts";
@@ -197,6 +206,21 @@ const localized = (): SpaConfig => {
     ),
   };
 };
+
+/** A page with its own canonical (`<Head>`), which replaces the router's (TASK-263). */
+const About: Component<object> = () =>
+  createComponent(Head, {
+    get children() {
+      return template('<link rel="canonical" href="https://example.com/about">')();
+    },
+  });
+
+/** The hreflang and canonical links in `<head>`, as `rel hreflang href`. */
+const localeLinks = (): string[] =>
+  Array.from(
+    document.head.querySelectorAll<HTMLLinkElement>("link[hreflang],link[rel=canonical]"),
+    (link) => `${link.rel} ${link.hreflang} ${link.getAttribute("href")}`,
+  );
 
 let container: HTMLElement;
 let dispose: (() => void) | undefined;
@@ -483,6 +507,85 @@ describe("lumiose/router", () => {
       expect(assign).toHaveBeenCalledWith(`${location.origin}/es/search`);
     } finally {
       vi.unstubAllGlobals();
+    }
+  });
+
+  it("updates the hreflang alternates and the canonical after navigations (TASK-263)", async () => {
+    const o = location.origin;
+    // The server's links for /es/users/1 (prerendered with `site`, another origin), plus links
+    // that are not the router's: another kind of alternate and an x-default.
+    document.head.innerHTML =
+      '<link rel="canonical" href="https://example.com/es/users/1">' +
+      '<link rel="alternate" type="application/rss+xml" href="/feed.xml">' +
+      '<link rel="alternate" hreflang="en" href="https://example.com/users/1">' +
+      '<link rel="alternate" hreflang="es" href="https://example.com/es/users/1">' +
+      '<link rel="alternate" hreflang="x-default" href="/">';
+    const server = document.head.innerHTML;
+    const app = localized();
+    app.routes.push({
+      segments: [s("about")],
+      app: APP,
+      levels: [APP, "src/routes/about/page.tsx"],
+      locales: ["en", "es"],
+    });
+    app.modules["src/routes/about/page.tsx"] = () => Promise.resolve({ default: About });
+    history.replaceState(null, "", "/es/users/1");
+    createRouter(app, APP);
+    const RootComponent = await prepareRoot("src/routes/users/[id]/page.tsx", true);
+    container = document.createElement("div");
+    document.body.append(container);
+    try {
+      dispose = render(() => createComponent(RootComponent, {}), container);
+      await settled();
+      expect(document.head.innerHTML).toBe(server);
+      await navigate("/users/2");
+      expect(localeLinks()).toEqual([
+        "alternate x-default /",
+        `alternate en ${o}/users/2`,
+        `alternate es ${o}/es/users/2`,
+        `canonical  ${o}/users/2`,
+      ]);
+      expect(document.head.querySelector("[type]")).not.toBeNull();
+      // English only: no alternates, no canonical.
+      await navigate("/search");
+      expect(localeLinks()).toEqual(["alternate x-default /"]);
+      await navigate("/es/about");
+      expect(localeLinks()).toEqual([
+        "alternate x-default /",
+        "canonical  https://example.com/about",
+        `alternate en ${o}/about`,
+        `alternate es ${o}/es/about`,
+      ]);
+      await navigate("/es/users/3");
+      expect(localeLinks()).toEqual([
+        "alternate x-default /",
+        `alternate en ${o}/users/3`,
+        `alternate es ${o}/es/users/3`,
+        `canonical  ${o}/es/users/3`,
+      ]);
+    } finally {
+      document.head.textContent = "";
+    }
+  });
+
+  it("writes the first view's locale links when the server rendered another page (TASK-263)", async () => {
+    // A `not-found` page the router reroutes: the server wrote none of the page's links.
+    history.replaceState(null, "", "/es/users/1");
+    createRouter(localized(), APP);
+    const RootComponent = await prepareRoot("src/routes/page.tsx", true);
+    container = document.createElement("div");
+    document.body.append(container);
+    try {
+      dispose = render(() => createComponent(RootComponent, {}), container);
+      await settled();
+      const o = location.origin;
+      expect(localeLinks()).toEqual([
+        `alternate en ${o}/users/1`,
+        `alternate es ${o}/es/users/1`,
+        `canonical  ${o}/es/users/1`,
+      ]);
+    } finally {
+      document.head.textContent = "";
     }
   });
 

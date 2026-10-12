@@ -56,6 +56,7 @@ import { createRouteMatcher, type RouteMatcher } from "../routes/match.ts";
 import { formatPattern } from "../routes/segments.ts";
 import type { RouteManifest } from "../routes/manifest.ts";
 import { HttpError, isHttpError, isRedirect } from "../server/control.ts";
+import { followLocaleLinks } from "./locale-links.ts";
 import { REROUTE_ATTR, type ClientRoute, type ClientTable } from "./table.ts";
 
 export type Params = Record<string, string>;
@@ -86,6 +87,8 @@ export interface View {
   params: Params;
   /** The matched route pattern (`/songs/[id]`); undefined when no route matched (a 404). */
   route?: string;
+  /** `lumiose({ i18n })`: the locales the matched route declares. */
+  locales?: string[];
   levels: Level[];
   /** Error pages (`not-found`, `error`, the built-in one): the leaf's `status` and `error` props. */
   error?: { status: number; error: Error };
@@ -264,7 +267,10 @@ function createView(r: Router, url: URL, target: Target, levels: Level[]): View 
         : target.params,
     levels,
   };
-  if (target.route !== undefined) view.route = formatPattern(target.route.segments);
+  if (target.route !== undefined) {
+    view.route = formatPattern(target.route.segments);
+    if (target.route.locales !== undefined) view.locales = target.route.locales;
+  }
   if (target.status !== undefined) {
     view.error = { status: target.status, error: new HttpError(target.status, "Not Found") };
   }
@@ -336,12 +342,14 @@ export async function prepareRoot(leaf: string, csr: boolean): Promise<Component
 function spaRoot(r: Router, view: View): Renderable {
   const owner = getOwner()!;
   r.current.set(view);
-  // `<html lang>` follows the locale of the committed view (decision-44).
-  if (r.config.i18n !== undefined) {
+  // `<html lang>` and the hreflang and canonical links follow the committed view (decision-44).
+  const { i18n } = r.config;
+  if (i18n !== undefined) {
     effect(() => {
       const locale = localeOf(r, r.current().url);
       if (locale !== undefined) document.documentElement.lang = locale;
     });
+    followLocaleLinks(i18n, r.config.base, r.current);
   }
   provideContext(ROUTE, r.scope);
   provideContext(REVISION, r.revision);
