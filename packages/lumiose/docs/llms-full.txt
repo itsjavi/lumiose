@@ -3369,7 +3369,7 @@ See also: [Styles](styles.md), [Islands](islands.md), [SVG imports](svg.md), [re
 **Head components.** `<Title>`, `<Meta>` and `<Head>` can be used in any component, layout or page.
 There is no `meta` export: these components are the one way to set head content.
 
-- `<Title>`: the deepest one wins, so a page overrides its layouts.
+- `<Title>`: the deepest one wins, so a page overrides its layouts and the document.
 - `<Meta name="…" content="…" />`: attributes as in HTML. Metas with the same `charset`, `name`,
   `property`, `http-equiv` or `itemprop` dedupe: the deepest one wins, and the previous value comes
   back when it is removed.
@@ -3382,10 +3382,17 @@ they update `document.title` and `<head>` live, and are removed with their compo
 
 **Document.** By default Lumiose renders the HTML document. `src/document.stsx` takes over
 `<html>`, `<head>` and `<body>`: it receives `{ head, body }` and must render each once. It renders
-like any component, so it can set defaults with `<Title>`/`<Meta>` and provide context to pages.
-`{props.head}` also carries the page's stylesheets, preload hints and island loader. `{props.body}`
-is followed by the page's island records and its streamed `<Suspense>` content, so the whole page
-stays inside `<body>` with either document.
+like any component, so it can provide context to pages. `{props.head}` also carries the page's
+stylesheets, preload hints and island loader. `{props.body}` is followed by the page's island records
+and its streamed `<Suspense>` content, so the whole page stays inside `<body>` with either document.
+
+**Head defaults.** The `<title>` and `<meta>` tags the document writes in its `<head>` are defaults,
+the shallowest level of the head: a `<Title>` replaces the title, and a `<Meta>` replaces the tag
+with the same `charset`, `name`, `property`, `http-equiv` or `itemprop`, where the document put it.
+Each page gets one of each, in complete and streamed responses. The default document's `charset` and
+`viewport` tags work the same way. The document renders on the server only, so after an SPA
+navigation a default that a page replaced does not come back: defaults that SPA pages fall back to
+belong in their outermost `spa` layout, as `<Title>`/`<Meta>`.
 
 > **Status:** available on the server (`renderToStream`) and in the browser; the default and custom
 > documents are rendered by the request handler.
@@ -3394,7 +3401,7 @@ stays inside `<body>` with either document.
 
 | API                     | Use                                                                                 |
 | ----------------------- | ----------------------------------------------------------------------------------- |
-| `<Title>{text}</Title>` | The document title; the deepest wins.                                               |
+| `<Title>{text}</Title>` | The document title; the deepest wins, over the document's `<title>`.                |
 | `<Meta … />`            | A `<meta>` tag, keyed by `charset`, `name`, `property`, `http-equiv` or `itemprop`. |
 | `<Head>…</Head>`        | Other head elements.                                                                |
 | `DocumentProps`         | `{ head, body }`: props of `src/document.stsx`.                                     |
@@ -3402,8 +3409,8 @@ stays inside `<body>` with either document.
 ## Example
 
 ```stsx check file=document.stsx
-// src/document.stsx
-import { Meta, type DocumentProps } from "lumiose";
+// src/document.stsx: the title and description are defaults that pages replace
+import type { DocumentProps } from "lumiose";
 
 export default function Document(props: DocumentProps) {
   return (
@@ -3411,7 +3418,8 @@ export default function Document(props: DocumentProps) {
       <head>
         <meta charset="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <Meta name="description" content="A Lumiose site" />
+        <title>A Lumiose site</title>
+        <meta name="description" content="A Lumiose site" />
         {props.head}
       </head>
       <body>{props.body}</body>
@@ -4315,7 +4323,8 @@ the element exists. Pass it as `ref={input}`.
 function Title(props: { children?: JSX.Element }): JSX.Element;
 ```
 
-Sets the document title. The deepest `<Title>` wins, so a page overrides its layouts.
+Sets the document title. The deepest `<Title>` wins, so a page overrides its layouts. It replaces
+the `<title>` that `src/document.stsx` writes in `<head>`.
 
 ## Meta
 
@@ -4325,7 +4334,8 @@ function Meta(props: Record<string, unknown>): JSX.Element;
 
 Adds or updates a `<meta>` in `<head>`, with the given attributes. Metas with the same `charset`,
 `name`, `property`, `http-equiv` or `itemprop` dedupe: the deepest wins, and the previous one comes
-back when it is removed.
+back when it is removed. A `<Meta>` replaces the `<meta>` with the same key that the document writes
+in `<head>` (`src/document.stsx`, or the default document's `charset` and `viewport`).
 
 ## Head
 

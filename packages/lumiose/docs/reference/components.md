@@ -88,7 +88,8 @@ the element exists. Pass it as `ref={input}`.
 function Title(props: { children?: JSX.Element }): JSX.Element;
 ```
 
-Sets the document title. The deepest `<Title>` wins, so a page overrides its layouts.
+Sets the document title. The deepest `<Title>` wins, so a page overrides its layouts. It replaces
+the `<title>` that `src/document.stsx` writes in `<head>`.
 
 ## Meta
 
@@ -98,7 +99,8 @@ function Meta(props: Record<string, unknown>): JSX.Element;
 
 Adds or updates a `<meta>` in `<head>`, with the given attributes. Metas with the same `charset`,
 `name`, `property`, `http-equiv` or `itemprop` dedupe: the deepest wins, and the previous one comes
-back when it is removed.
+back when it is removed. A `<Meta>` replaces the `<meta>` with the same key that the document writes
+in `<head>` (`src/document.stsx`, or the default document's `charset` and `viewport`).
 
 ## Head
 

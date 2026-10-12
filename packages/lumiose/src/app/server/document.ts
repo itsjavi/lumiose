@@ -2,6 +2,12 @@
 // `src/document.stsx`, which renders as the root component of the page tree (see
 // `composePageTree`) with `head`/`body` placeholders. The handler then splits the shell around the
 // body's end so the Suspense stream lands inside `<body>`.
+//
+// Head defaults (TASK-238): the `<title>` and `<meta>` tags the document writes in its `<head>` (the
+// default document's charset and viewport, or plain tags in `src/document.stsx`) are the shallowest
+// head level. A collected tag with the same key (a `<Title>`; a `<Meta>` with the same charset,
+// name, property, http-equiv or itemprop) replaces the default where the document put it, so the
+// page has one of each and keeps the document's tag order.
 
 import type { Component } from "../../contract/client.ts";
 import type { DocumentProps } from "./context.ts";
@@ -31,8 +37,10 @@ export interface DocumentParts {
  */
 export function documentParts(shellBody: string, head: string, custom: boolean): DocumentParts {
   if (!custom) {
-    return { before: `${DEFAULT_HEAD}${head}</head><body>${shellBody}`, after: "</body></html>" };
+    const [defaults, rest] = replaceDefaults(DEFAULT_HEAD, DEFAULT_TAGS, head);
+    return { before: `${defaults}${rest}</head><body>${shellBody}`, after: "</body></html>" };
   }
+  [shellBody, head] = replaceCustomDefaults(shellBody, head);
   const bodyAt = slot(shellBody, BODY_SLOT, "{props.body}");
   const headAt = slot(shellBody, HEAD_SLOT, "{props.head}");
   let before = shellBody.slice(0, bodyAt);
@@ -44,6 +52,109 @@ export function documentParts(shellBody: string, head: string, custom: boolean):
     after = after.slice(0, at) + head + after.slice(at + HEAD_SLOT.length);
   }
   return { before: DOCTYPE.test(before) ? before : `<!doctype html>${before}`, after };
+}
+
+// --- Head defaults -------------------------------------------------------------------------------
+
+interface HeadTag {
+  at: number;
+  html: string;
+  /** The dedupe key of the head components: "title", "charset" or `<attribute>:<value>`. */
+  key: string;
+  /** Text that a tag with this key contains ("title", "charset" or the value). */
+  needle: string;
+}
+
+// In source order: comments and raw text elements (skipped, so their content never matches),
+// titles, and metas (attribute values may contain `>`).
+const HEAD_TAG =
+  /<!--[\s\S]*?-->|<(script|style|template|noscript)\b[\s\S]*?<\/\1\s*>|<title\b[^>]*>[\s\S]*?<\/title\s*>|<meta\b(?:[^>"']|"[^"]*"|'[^']*')*>/gi;
+const ATTRIBUTE = /([^\s"'<>/=]+)(?:\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'<>=`]+)))?/g;
+const META_KEYS = ["charset", "name", "property", "http-equiv", "itemprop"];
+const HEAD_OPEN = /<head[\s>]/i;
+
+/** The keyed `<title>` and `<meta>` tags of `html`. */
+function headTags(html: string): HeadTag[] {
+  const tags: HeadTag[] = [];
+  for (const match of html.matchAll(HEAD_TAG)) {
+    const tag = match[0];
+    if (match[1] !== undefined || tag[1] === "!") continue;
+    const key = tagKey(tag);
+    if (key !== undefined) {
+      tags.push({ at: match.index, html: tag, key, needle: key.slice(key.indexOf(":") + 1) });
+    }
+  }
+  return tags;
+}
+
+function tagKey(tag: string): string | undefined {
+  if (tag[1] === "t" || tag[1] === "T") return "title";
+  const attributes = new Map<string, string>();
+  for (const [, name, double, single, bare] of tag.slice(5).matchAll(ATTRIBUTE)) {
+    attributes.set(name!.toLowerCase(), double ?? single ?? bare ?? "");
+  }
+  const name = META_KEYS.find((key) => attributes.has(key));
+  if (name === undefined) return undefined;
+  return name === "charset" ? name : `${name}:${attributes.get(name)}`;
+}
+
+const DEFAULT_TAGS = headTags(DEFAULT_HEAD);
+
+/**
+ * Replaces the default tags of `html` (`defaults`, its keyed tags) with the tags of `head` that have
+ * the same key: the first one in place, later ones dropped. Returns both, minus the moved tags.
+ */
+function replaceDefaults(
+  html: string,
+  defaults: readonly HeadTag[],
+  head: string,
+): [html: string, head: string] {
+  // Most pages set none of the defaults: skip the scan (Lumiose writes tags in lowercase).
+  if (!defaults.some((tag) => head.includes(tag.needle))) return [html, head];
+  const collected = new Map<string, HeadTag>();
+  for (const tag of headTags(head)) {
+    if (!collected.has(tag.key)) collected.set(tag.key, tag);
+  }
+  const replaced = new Set<string>();
+  let out = "";
+  let from = 0;
+  for (const tag of defaults) {
+    const page = collected.get(tag.key);
+    if (page === undefined) continue;
+    out += html.slice(from, tag.at) + (replaced.has(tag.key) ? "" : page.html);
+    from = tag.at + tag.html.length;
+    replaced.add(tag.key);
+  }
+  if (replaced.size === 0) return [html, head];
+  out += html.slice(from);
+  let rest = "";
+  from = 0;
+  for (const tag of collected.values()) {
+    if (!replaced.has(tag.key)) continue;
+    rest += head.slice(from, tag.at);
+    from = tag.at + tag.html.length;
+  }
+  return [out, rest + head.slice(from)];
+}
+
+// The head of a custom document rarely changes between requests: its tags are kept.
+let lastRegion = "";
+let lastTags: HeadTag[] = [];
+
+/** A custom document's defaults are the tags of its `<head>` element. */
+function replaceCustomDefaults(html: string, head: string): [html: string, head: string] {
+  const start = html.search(HEAD_OPEN);
+  const end = start === -1 ? -1 : html.indexOf("</head>", start);
+  if (end === -1) return [html, head];
+  const region = html.slice(start, end);
+  if (region !== lastRegion) {
+    lastRegion = region;
+    lastTags = headTags(region);
+  }
+  const [defaults, rest] = replaceDefaults(region, lastTags, head);
+  return defaults === region
+    ? [html, rest]
+    : [html.slice(0, start) + defaults + html.slice(end), rest];
 }
 
 function slot(html: string, marker: string, prop: string): number {
