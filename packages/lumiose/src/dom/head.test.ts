@@ -6,6 +6,7 @@ import type { Renderable } from "../contract/client.ts";
 import { flush, signal } from "../core/index.ts";
 import { createComponent, render as renderRoot, template } from "./index.ts";
 import { Head, Meta, Title } from "./head.ts";
+import { hydrate } from "./hydrate.ts";
 
 const disposers: (() => void)[] = [];
 
@@ -15,12 +16,22 @@ function render(code: () => Renderable): () => void {
   return dispose;
 }
 
+/** Hydrates `code` as an island whose server HTML rendered nothing in the body. */
+function hydrateIsland(code: () => Renderable): () => void {
+  const host = document.createElement("div");
+  host.innerHTML = "<!--l:0--><!--/l:0-->";
+  const dispose = hydrate(code, {}, host.firstChild!, host.lastChild!);
+  disposers.push(dispose);
+  return dispose;
+}
+
 afterEach(() => {
   for (const dispose of disposers.splice(0)) {
     dispose();
   }
-  document.head.textContent = "";
+  // Setting the title creates a `<title>`: cleared with the rest.
   document.title = "";
+  document.head.textContent = "";
 });
 
 function Layout(props: { children?: Renderable }): Renderable {
@@ -79,8 +90,55 @@ describe("Meta", () => {
     flush();
     expect(server!.getAttribute("content")).toBe("updated");
     dispose();
-    expect(document.head.querySelector('meta[name="description"]')).toBeNull();
-    expect(document.head.querySelector("meta[charset]")).not.toBeNull();
+    // Adopted outside hydration, the server's tag was a default: it comes back.
+    expect(Array.from(document.head.querySelectorAll("meta"), (el) => el.outerHTML)).toEqual([
+      `<meta name="description" content="from server">`,
+      `<meta charset="utf-8">`,
+    ]);
+  });
+
+  it("removes a tag it created", () => {
+    const dispose = render(() => createComponent(Meta, { name: "robots", content: "none" }));
+    expect(document.head.innerHTML).toBe(`<meta name="robots" content="none">`);
+    dispose();
+    expect(document.head.innerHTML).toBe("");
+  });
+});
+
+describe("defaults (TASK-256)", () => {
+  it("the title before the first <Title> comes back when the last one goes", () => {
+    document.title = "Site";
+    const dispose = render(() => createComponent(Title, { children: "Page" }));
+    expect(document.title).toBe("Page");
+    dispose();
+    expect(document.title).toBe("Site");
+  });
+
+  it("while hydrating, a page's tags are its own: the defaults they replaced come back", () => {
+    document.head.innerHTML =
+      `<title data-l-default="&lt;title&gt;Tom &amp;amp; Jerry&lt;/title&gt;">Page</title>` +
+      `<meta name="description" content="Page" data-l-default='&lt;meta name="description" content="Site"&gt;'>` +
+      `<meta name="robots" content="none">`;
+    const dispose = hydrateIsland(() => [
+      createComponent(Title, { children: "Page" }),
+      createComponent(Meta, { name: "description", content: "Page" }),
+      createComponent(Meta, { name: "robots", content: "none" }),
+    ]);
+    expect(document.head.querySelectorAll("meta")).toHaveLength(2);
+    expect(document.head.querySelector("meta[data-l-default]")).toBeNull();
+    dispose();
+    expect(document.title).toBe("Tom & Jerry");
+    // The description's default is back in place; the robots tag had none.
+    expect(document.head.querySelectorAll("meta")).toHaveLength(1);
+    expect(document.head.lastElementChild!.outerHTML).toBe(
+      `<meta name="description" content="Site">`,
+    );
+  });
+
+  it("while hydrating, a page without a default title leaves none", () => {
+    document.head.innerHTML = `<title>Page</title>`;
+    hydrateIsland(() => createComponent(Title, { children: "Page" }))();
+    expect(document.title).toBe("");
   });
 });
 

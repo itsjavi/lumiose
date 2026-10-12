@@ -1,10 +1,12 @@
 // @vitest-environment happy-dom
 // Head defaults (TASK-238): the `<title>` and `<meta>` tags a document writes in its `<head>` are
 // replaced by the page's `<Title>` and `<Meta>` with the same key, so the page has one of each, on
-// the server and after SPA navigations. (End-to-end SSR and streaming: server-renderer.test.ts.)
+// the server and after SPA navigations, where the defaults come back on pages without them
+// (TASK-256). (End-to-end SSR and streaming: server-renderer.test.ts.)
 import { afterEach, describe, expect, it } from "vitest";
 import type { Renderable } from "../../contract/client.ts";
 import { Meta, Title } from "../../dom/head.ts";
+import { hydrate } from "../../dom/hydrate.ts";
 import { createComponent, render } from "../../dom/index.ts";
 import * as server from "../../server/index.ts";
 import { Meta as ServerMeta, Suspense, Title as ServerTitle } from "../../server/components.ts";
@@ -20,13 +22,20 @@ function page(shellBody: string, head: string, custom = true): string {
   return before + after;
 }
 
+const ESCAPES: Record<string, string> = { "&": "&amp;", "'": "&#39;", "<": "&lt;", ">": "&gt;" };
+
+/** The attribute a page's tag gets when it replaces the default `html` (TASK-256). */
+const replacing = (html: string) =>
+  ` data-l-default='${html.replace(/[&'<>]/g, (char) => ESCAPES[char]!)}'`;
+
 describe("head defaults", () => {
   it("the default document's charset and viewport give way to the page's, in place", () => {
     expect(
       page("<p>x</p>", '<title>Page</title><meta name="viewport" content="width=1000">', false),
     ).toBe(
-      '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=1000">' +
-        "<title>Page</title></head><body><p>x</p></body></html>",
+      '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=1000"' +
+        replacing('<meta name="viewport" content="width=device-width, initial-scale=1">') +
+        "><title>Page</title></head><body><p>x</p></body></html>",
     );
   });
 
@@ -39,8 +48,9 @@ describe("head defaults", () => {
       '<title>About</title><meta name="description" content="About us">' +
       '<meta property="og:title" content="About"><link rel="stylesheet" href="/a.css">';
     expect(page(document, head)).toBe(
-      '<!doctype html><html lang="en"><head><meta charset="utf-8"><title>About</title>' +
-        '<meta name="description" content="About us"><meta name="color-scheme" content="light dark">' +
+      `<!doctype html><html lang="en"><head><meta charset="utf-8"><title${replacing("<title>Site</title>")}>About</title>` +
+        `<meta name="description" content="About us"${replacing('<meta name="description" content="Site">')}>` +
+        '<meta name="color-scheme" content="light dark">' +
         '<meta property="og:title" content="About"><link rel="stylesheet" href="/a.css">' +
         '<link rel="icon" href="/i.svg"></head><body><main></main></body></html>',
     );
@@ -57,9 +67,10 @@ describe("head defaults", () => {
       '<meta http-equiv="X-UA-Compatible" content="IE=11"><meta itemprop="name" content="Page">' +
       '<meta name="googlebot" content="none"><meta content="unkeyed">';
     expect(page(document, head)).toBe(
-      '<!doctype html><html lang="en"><head><meta charset="latin1">' +
-        "<meta PROPERTY='og:type' content=\"article\">" +
-        '<meta http-equiv="X-UA-Compatible" content="IE=11"><meta itemprop="name" content="Page">' +
+      `<!doctype html><html lang="en"><head><meta charset="latin1"${replacing('<meta charset="utf-8">')}>` +
+        `<meta PROPERTY='og:type' content="article"${replacing('<meta property="og:type" content="website">')}>` +
+        `<meta http-equiv="X-UA-Compatible" content="IE=11"${replacing('<meta http-equiv="X-UA-Compatible" content="IE=edge">')}>` +
+        `<meta itemprop="name" content="Page"${replacing('<meta itemprop="name" content="Site">')}>` +
         '<meta name="robots" content="all"><meta content="unkeyed">' +
         '<meta name="googlebot" content="none"><meta content="unkeyed">' +
         "</head><body><main></main></body></html>",
@@ -74,7 +85,8 @@ describe("head defaults", () => {
       "<svg><title>Icon</title></svg>",
     );
     expect(page(document, '<title>Page</title><meta name="description" content="Page">')).toBe(
-      `<!doctype html><html lang="en"><head>${script}${comment}<meta name="description" content="Page">` +
+      `<!doctype html><html lang="en"><head>${script}${comment}<meta name="description" content="Page" ` +
+        `data-l-default='&lt;meta name="description" content="a &gt; b"&gt;'>` +
         "<title>Page</title></head><body><svg><title>Icon</title></svg></body></html>",
     );
   });
@@ -84,8 +96,9 @@ describe("head defaults", () => {
       `<meta name="description" content="a"><meta name="description" content="b">${HEAD_SLOT}`,
     );
     expect(page(document, '<meta name="description" content="Page">')).toBe(
-      '<!doctype html><html lang="en"><head><meta name="description" content="Page">' +
-        "</head><body><main></main></body></html>",
+      '<!doctype html><html lang="en"><head><meta name="description" content="Page"' +
+        replacing('<meta name="description" content="a">') +
+        "></head><body><main></main></body></html>",
     );
   });
 
@@ -164,8 +177,9 @@ const viewport = () =>
 
 describe("head defaults in server responses", () => {
   const HEAD =
-    '<!doctype html><html lang="en"><head><meta charset="utf-8"><title>About</title>' +
-    '<meta name="description" content="About us"><link rel="icon" href="/i.svg"></head><body>';
+    `<!doctype html><html lang="en"><head><meta charset="utf-8"><title${replacing("<title>Site</title>")}>About</title>` +
+    `<meta name="description" content="About us"${replacing('<meta name="description" content="Site">')}>` +
+    '<link rel="icon" href="/i.svg"></head><body>';
 
   it("a complete response has one title and one description", async () => {
     expect(await serve(about(false), PlainDocument)).toBe(`${HEAD}<h1>About</h1></body></html>`);
@@ -177,14 +191,15 @@ describe("head defaults in server responses", () => {
       true,
     );
     expect(html).toContain('<template for="lb0"><p>late</p></template>');
-    expect(html.match(/<title>/g)).toHaveLength(1);
+    expect(html.match(/<title\b/g)).toHaveLength(1);
     expect(html.match(/<meta name="description"/g)).toHaveLength(1);
   });
 
   it("the default document's viewport gives way to the page's", async () => {
     expect(await serve(viewport)).toBe(
-      '<!doctype html><html lang="en"><head><meta charset="utf-8">' +
-        '<meta name="viewport" content="width=1000"></head><body></body></html>',
+      '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=1000"' +
+        replacing('<meta name="viewport" content="width=device-width, initial-scale=1">') +
+        "></head><body></body></html>",
     );
   });
 });
@@ -202,60 +217,74 @@ function serverRender(head: string) {
   document.head.innerHTML = new DOMParser().parseFromString(html, "text/html").head.innerHTML;
 }
 
-/** Renders a client page with an optional title and description; returns its disposer. */
-function clientPage(title?: string, description?: string): () => void {
-  const dispose = render((): Renderable => {
+/**
+ * Renders a client page with an optional title and description, hydrated (the first page) or
+ * client-rendered (after a navigation); returns its disposer.
+ */
+function clientPage(title?: string, description?: string, hydrated = false): () => void {
+  const code = (): Renderable => {
     const out: Renderable[] = [];
     if (title !== undefined) out.push(createComponent(Title, { children: title }));
     if (description !== undefined) {
       out.push(createComponent(Meta, { name: "description", content: description }));
     }
     return out;
-  }, document.createElement("div"));
+  };
+  const host = document.createElement("div");
+  host.innerHTML = "<!--l:0--><!--/l:0-->";
+  const dispose = hydrated
+    ? hydrate(code, {}, host.firstChild!, host.lastChild!)
+    : render(code, host);
   disposers.push(dispose);
   return dispose;
 }
 
+/** One title, one description (or none), in the document's order. */
 function expectHead(title: string, description: string | undefined) {
   expect(document.head.querySelectorAll("title")).toHaveLength(1);
   expect(document.title).toBe(title);
   const metas = document.head.querySelectorAll('meta[name="description"]');
   expect(metas).toHaveLength(description === undefined ? 0 : 1);
   if (description !== undefined) expect(metas[0]!.getAttribute("content")).toBe(description);
+  expect(Array.from(document.head.children, (el) => el.localName)).toEqual(
+    ["meta", "title", "meta"].slice(0, description === undefined ? 2 : 3),
+  );
 }
 
 describe("head defaults after SPA navigations", () => {
   afterEach(() => {
     for (const dispose of disposers.splice(0)) dispose();
-    document.head.textContent = "";
     document.title = "";
+    document.head.textContent = "";
   });
 
-  it("a server page that replaced the defaults, then pages with and without them", () => {
+  it("a server page that replaced the defaults: they come back on pages without them", () => {
     serverRender('<title>A</title><meta name="description" content="A">');
     expectHead("A", "A");
-    const a = clientPage("A", "A");
+    const a = clientPage("A", "A", true);
     expectHead("A", "A");
-    // The next page mounts before the previous one is disposed.
+    // The next page mounts before the previous one is disposed, as with the router.
+    const b = clientPage("B");
+    a();
+    expectHead("B", "Site");
+    const c = clientPage(undefined, "C");
+    b();
+    expectHead("Site", "C");
+    clientPage();
+    c();
+    expectHead("Site", "Site");
+  });
+
+  it("a server page that kept the defaults: the next page's tags take them over, then give them back", () => {
+    serverRender("");
+    expectHead("Site", "Site");
+    const a = clientPage(undefined, undefined, true);
+    expectHead("Site", "Site");
     const b = clientPage("B", "B");
     a();
     expectHead("B", "B");
+    clientPage();
     b();
-    const c = clientPage("C", "C");
-    expectHead("C", "C");
-    c();
-    // The document renders on the server only: a default it replaced does not come back.
-    clientPage("D");
-    expectHead("D", undefined);
-  });
-
-  it("a server page that kept the defaults: the next page's tags take them over", () => {
-    serverRender("");
     expectHead("Site", "Site");
-    const a = clientPage();
-    expectHead("Site", "Site");
-    a();
-    clientPage("B", "B");
-    expectHead("B", "B");
   });
 });

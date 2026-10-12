@@ -16,7 +16,8 @@ There is no `meta` export: these components are the one way to set head content.
 
 **On the server** they are collected while the shell renders and flushed into `<head>`. Inside a
 streamed `<Suspense>` boundary they are too late (`LUM5004`). **In the browser** (islands, SPA)
-they update `document.title` and `<head>` live, and are removed with their component.
+they update `document.title` and `<head>` live, and are removed with their component: the
+previous value comes back, or the head default (below) when the last one of a key goes.
 
 **Document.** By default Lumiose renders the HTML document. `src/document.stsx` takes over
 `<html>`, `<head>` and `<body>`: it receives `{ head, body }` and must render each once. It renders
@@ -28,9 +29,12 @@ and its streamed `<Suspense>` content, so the whole page stays inside `<body>` w
 the shallowest level of the head: a `<Title>` replaces the title, and a `<Meta>` replaces the tag
 with the same `charset`, `name`, `property`, `http-equiv` or `itemprop`, where the document put it.
 Each page gets one of each, in complete and streamed responses. The default document's `charset` and
-`viewport` tags work the same way. The document renders on the server only, so after an SPA
-navigation a default that a page replaced does not come back: defaults that SPA pages fall back to
-belong in their outermost `spa` layout, as `<Title>`/`<Meta>`.
+`viewport` tags work the same way. After an SPA navigation to a page without its own `<Title>` or
+`<Meta>` of a key, the default comes back, as the server would render that page: a tag that
+replaced a default carries it in a `data-l-default` attribute. The same goes for the `<Title>` and
+`<Meta>` of layouts outside the SPA (the ones the server renders around it), except where the page
+that loaded the document replaced them; SPA-wide defaults belong in the document or the outermost
+`spa` layout.
 
 > **Status:** available on the server (`renderToStream`) and in the browser; the default and custom
 > documents are rendered by the request handler.

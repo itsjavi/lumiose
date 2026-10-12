@@ -10,6 +10,12 @@
 // page has one of each and keeps the document's tag order. A `<link rel="canonical">` is keyed too,
 // so the canonical Lumiose writes for localized pages (decision-44) is a default the page's own
 // replaces.
+//
+// The client needs a replaced default back after an SPA navigation to a page without that tag
+// (TASK-256): the replacing tag carries the default's HTML in `data-l-default`, which
+// ../../dom/head.ts restores. Defaults no page replaced stay as written, so pages without
+// overrides get the same HTML: the client tells them from the page's own tags by when it adopts
+// them (a tag adopted while hydrating is the page's, any other is a default to restore).
 
 import type { Component } from "../../contract/client.ts";
 import type { DocumentProps } from "./context.ts";
@@ -169,7 +175,7 @@ function replaceDefaults(
   for (const tag of defaults) {
     const page = collected.get(tag.key);
     if (page === undefined) continue;
-    out += html.slice(from, tag.at) + (replaced.has(tag.key) ? "" : page.html);
+    out += html.slice(from, tag.at) + (replaced.has(tag.key) ? "" : carrying(page.html, tag));
     from = tag.at + tag.html.length;
     replaced.add(tag.key);
   }
@@ -183,6 +189,21 @@ function replaceDefaults(
     from = tag.at + tag.html.length;
   }
   return [out, rest + head.slice(from)];
+}
+
+const ESCAPES: Record<string, string> = { "&": "&amp;", "'": "&#39;", "<": "&lt;", ">": "&gt;" };
+
+/**
+ * `tag` (a page's `<title>`, `<meta>` or `<link>`) with the HTML of the default it replaces in a
+ * last `data-l-default` attribute, single-quoted so the default's double quotes stay as written.
+ * Escaping `<` and `>` keeps the carried tag invisible to scrapers that match tags in the source,
+ * and the page's own attributes come first for those that match them.
+ */
+function carrying(tag: string, replaced: HeadTag): string {
+  const at =
+    tag[1] === "t" || tag[1] === "T" ? tag.indexOf(">") : tag.length - (tag.endsWith("/>") ? 2 : 1);
+  const value = replaced.html.replace(/[&'<>]/g, (char) => ESCAPES[char]!);
+  return `${tag.slice(0, at)} data-l-default='${value}'${tag.slice(at)}`;
 }
 
 // The head of a custom document rarely changes between requests: its tags are kept.

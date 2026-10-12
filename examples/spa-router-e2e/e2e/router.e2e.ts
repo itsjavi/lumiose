@@ -58,6 +58,35 @@ test("client navigation keeps persistent layouts and their state", async ({ page
   expect(await sameDocument(page)).toBe(true);
 });
 
+/** The document's title and its one description. */
+async function expectHead(page: Page, title: string, description: string): Promise<void> {
+  await expect(page).toHaveTitle(title);
+  const metas = page.locator('head meta[name="description"]');
+  await expect(metas).toHaveCount(1);
+  await expect(metas).toHaveAttribute("content", description);
+  await expect(page.locator("head title")).toHaveCount(1);
+}
+
+test("the document's head defaults come back on pages without their own (TASK-256)", async ({
+  page,
+}) => {
+  // The user page replaces the document's title and description; its tags carry them.
+  const html = await (await page.request.get("/users/1")).text();
+  expect(html).toContain("<title data-l-default='&lt;title&gt;SPA router e2e&lt;/title&gt;'>");
+  expect(html.match(/<meta name="description"/g)).toHaveLength(1);
+  await page.goto("/users/1");
+  await ready(page);
+  await expectHead(page, "User 1", "Profile of User 1");
+  await page.getByRole("link", { name: "Home" }).click();
+  await expect(page.locator("#home")).toBeVisible();
+  await expectHead(page, "SPA router e2e", "An spa-mode fixture");
+  await page.getByRole("link", { name: "User 2", exact: true }).click();
+  await expectHead(page, "User 2", "Profile of User 2");
+  await page.getByRole("link", { name: "Home" }).click();
+  await expectHead(page, "SPA router e2e", "An spa-mode fixture");
+  expect(await sameDocument(page)).toBe(true);
+});
+
 test("a navigation holds the old page until the new page's data is ready", async ({ page }) => {
   await page.goto("/");
   await ready(page);

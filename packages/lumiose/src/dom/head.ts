@@ -2,10 +2,17 @@
 // current across SPA navigations, with the server's rules (the deepest `<Title>` wins; metas with the
 // same charset/name/property/http-equiv/itemprop dedupe and the deepest wins; ties go to the latest).
 // Tags already in `<head>` (rendered by the server) are adopted instead of duplicated.
+//
+// Defaults (TASK-256): what a title or keyed meta was before the first `<Title>`/`<Meta>` of its
+// key took it over comes back when the last one goes, as when the server renders a page without
+// them. A tag adopted outside hydration is that default (the document's, or a server-only
+// layout's); one adopted while hydrating is the page's own, and its default is the HTML the server
+// put in its `data-l-default` when the page replaced one (../app/server/document.ts).
 import type { Renderable } from "../contract/client.ts";
 import { getOwner, renderEffect } from "../core/internal.ts";
 import { onCleanup } from "../core/owner.ts";
 import { setAttr } from "./attributes.ts";
+import { hydrator } from "./hydration.ts";
 import { place, renderRange } from "./insert.ts";
 
 interface Entry<T> {
@@ -51,19 +58,32 @@ function textOf(value: Renderable): string {
   return typeof value === "object" ? ((value as Node).textContent ?? "") : String(value);
 }
 
+/** The default that server tag `el` replaced (its `data-l-default`), parsed; empty when none. */
+function replaced(el: Element | null): DocumentFragment {
+  const t = document.createElement("template");
+  t.innerHTML = el?.getAttribute("data-l-default") ?? "";
+  return t.content;
+}
+
 // --- Title ---------------------------------------------------------------------------------------
 
 const titles: Entry<string>[] = [];
+let defaultTitle = "";
 
 function updateTitle(): void {
-  const best = winner(titles);
-  if (best !== undefined) {
-    document.title = best.value!;
-  }
+  document.title = winner(titles)?.value ?? defaultTitle;
 }
 
-/** Sets `document.title`. The deepest `<Title>` wins (a page overrides its layouts). */
+/**
+ * Sets `document.title`. The deepest `<Title>` wins (a page overrides its layouts); the default
+ * title comes back when the last one goes.
+ */
 export function Title(props: { children?: Renderable }): Renderable {
+  if (titles.length === 0) {
+    defaultTitle = hydrator
+      ? replaced(document.querySelector("title")).textContent!
+      : document.title;
+  }
   addEntry(titles, () => textOf(props.children), updateTitle);
   return null;
 }
@@ -74,7 +94,7 @@ type Attributes = Record<string, unknown>;
 
 const META_KEYS = ["charset", "name", "property", "http-equiv", "itemprop"] as const;
 const metas = new Map<string, Entry<Attributes>[]>();
-const metaElements = new Map<string, Element>();
+const metaElements = new Map<string, Element & { $$d?: Node }>();
 let unkeyed = 0;
 
 /** The dedupe key of a meta (read through `get`: props or an element), or `undefined` when it has none. */
@@ -118,19 +138,25 @@ function updateMeta(key: string): void {
   const best = winner(metas.get(key)!);
   let el = metaElements.get(key);
   if (best === undefined) {
-    el?.remove();
+    // The default (`$$d`, possibly empty) comes back where the tag was.
+    el?.replaceWith(el.$$d!);
     metaElements.delete(key);
     metas.delete(key);
     return;
   }
   if (el === undefined) {
-    el = adoptMeta(key, best.value!) ?? document.head.appendChild(document.createElement("meta"));
+    const adopted = adoptMeta(key, best.value!);
+    el = adopted ?? document.head.appendChild(document.createElement("meta"));
+    el.$$d = hydrator ? replaced(el) : (adopted?.cloneNode() ?? new DocumentFragment());
     metaElements.set(key, el);
   }
   setAttributes(el, best.value!);
 }
 
-/** Adds or updates a `<meta>` in `<head>`; removed (or the next deepest restored) on disposal. */
+/**
+ * Adds or updates a `<meta>` in `<head>`. On disposal the next deepest comes back, else the tag's
+ * default (or none).
+ */
 export function Meta(props: Attributes): Renderable {
   const key = metaKey((name) => props[name]) ?? `#${unkeyed++}`;
   let entries = metas.get(key);

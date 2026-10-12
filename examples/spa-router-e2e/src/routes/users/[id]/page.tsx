@@ -1,4 +1,4 @@
-import { fetchJSON, invalidate, Title, type PageProps } from "lumiose";
+import { fetchJSON, invalidate, Meta, Title, type PageProps } from "lumiose";
 
 interface User {
   id: string;
@@ -16,6 +16,7 @@ export default async function UserPage(props: PageProps<"/users/[id]">) {
   return (
     <article>
       <Title>{user.name}</Title>
+      <Meta name="description" content={`Profile of ${user.name}`} />
       <h1 id="user">{user.name}</h1>
       <p id="hits">load {user.hits}</p>
       <button id="refresh" onClick={() => invalidate()}>
