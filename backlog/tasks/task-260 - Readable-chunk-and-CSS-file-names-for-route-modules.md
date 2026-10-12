@@ -2,8 +2,10 @@
 id: TASK-260
 title: Readable chunk and CSS file names for route modules
 status: To Do
-assignee: []
+assignee:
+  - Nova
 created_date: '2026-10-12 20:09'
+updated_date: '2026-10-12 21:45'
 labels:
   - build
   - router

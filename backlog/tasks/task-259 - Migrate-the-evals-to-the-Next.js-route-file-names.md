@@ -2,8 +2,10 @@
 id: TASK-259
 title: Migrate the evals to the Next.js route file names
 status: To Do
-assignee: []
+assignee:
+  - Quasar
 created_date: '2026-10-12 20:09'
+updated_date: '2026-10-12 21:45'
 labels:
   - evals
   - router
@@ -26,3 +28,9 @@ TASK-253 (decision-42) moved every app in the repo to page.stsx / route.ts / lay
 - [ ] #2 Task prompts, graders and evals/src mention the new file names
 - [ ] #3 lumiose check passes on each solution project; no eval run without the user's permission
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Lux 2026-10-12: edit eval task files only; never run evals, pnpm validate or eval scripts (user permission required).
+<!-- SECTION:NOTES:END -->

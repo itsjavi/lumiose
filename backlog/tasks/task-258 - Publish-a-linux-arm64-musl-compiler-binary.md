@@ -2,8 +2,10 @@
 id: TASK-258
 title: Publish a linux-arm64-musl compiler binary
 status: To Do
-assignee: []
+assignee:
+  - Photon
 created_date: '2026-10-12 20:01'
+updated_date: '2026-10-12 21:45'
 labels:
   - compiler
   - adapter
@@ -23,3 +25,9 @@ Found in TASK-249: @lumiose/compiler publishes Linux binaries for x64/arm64 on g
 - [ ] #2 @lumiose/compiler-linux-arm64-musl is published with the other binaries and listed in optionalDependencies
 - [ ] #3 docs/deploy/docker.md no longer needs the Debian build stage note (or keeps it as an option)
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Lux 2026-10-12: user approved adding linux-arm64-musl to the compiler release matrix (runs only on releases). Verify locally with an arm64 node:alpine container (this machine is arm64); never trigger CI runs. Then simplify the Docker docs' Debian build-stage workaround if it is no longer needed.
+<!-- SECTION:NOTES:END -->

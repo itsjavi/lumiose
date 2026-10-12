@@ -2,8 +2,10 @@
 id: TASK-256
 title: SPA navigations bring back the document's head defaults
 status: To Do
-assignee: []
+assignee:
+  - Spark
 created_date: '2026-10-12 19:48'
+updated_date: '2026-10-12 21:45'
 labels:
   - seo
   - head
@@ -25,3 +27,9 @@ Follow-up of TASK-238 (found by Nova). The server now treats the <title>/<meta> 
 - [ ] #2 No duplicate tags; server HTML for pages without overrides unchanged or the change justified
 - [ ] #3 Docs (concepts/head) updated; runtime size stays under its cap
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Lux 2026-10-12: output format delegated to Spark (record it in the task): prefer a marker attribute on server-rendered default head tags plus the replaced default carried by the replacing tag, over growing the SPA payload; justify bytes; runtime cap applies. Spark may edit app/server/document.ts for the server side.
+<!-- SECTION:NOTES:END -->
