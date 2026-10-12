@@ -82,7 +82,7 @@ export const DEMOS: Demo[] = [
     tips: [
       "Four bars of intro build the tension before the lead comes in.",
       "Pulse 2 races in sixteenth-note arpeggios while the lead holds long notes.",
-      "The B natural of the harmonic minor makes every G chord pull back to C minor.",
+      "Phrase two lifts through B♭ to E♭ major; the last note, B natural, pulls back to C.",
     ],
     song: lastStand,
   },

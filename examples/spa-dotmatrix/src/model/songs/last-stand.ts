@@ -1,17 +1,21 @@
 // "Last Stand", a final battle: C harmonic minor, heavy. A four-bar ominous intro (bass pedal and
 // racing arpeggios), then a sixteen-bar loop where the lead sings long, dramatic notes over them.
+// One motif: a held note, then a two-eighth turn that steps into the next bar. The first phrase
+// climbs C–E♭–A♭ over i–VI–iv and falls to D on V; the second climbs C–E♭–F–G and lands on the
+// relative major (VII–III); the third peaks on E♭ sighing to D over V; the last comes back down to
+// B, the leading tone, for the loop.
 import { buildSong } from "../song.ts";
 import { chords, drums, melody, repeat } from "../notation.ts";
 import type { Song } from "../types.ts";
 
 const LEAD = `
   .:16 | .:16 | .:16 | .:16 |
-  C5:12 Eb5:2 D5:2 | C5:4 G4:4 Eb5:8 | Ab5:12 G5:2 F5:2 | Eb5:8 C5:8 |
-  F5:6 G5:2 Ab5:8 | C6:8 Ab5:8 | B5:12 Ab5:2 G5:2 | G5:16 |
-  G5:4 C6:4 Eb6:8 | D6:8 Bb5:4 F5:4 | C6:6 Bb5:2 Ab5:8 | B5:8 D6:8 |
-  Ab5:4 G5:4 F5:4 Eb5:4 | D5:4 Eb5:4 F5:4 B4:4 | C5:16 | B4:8 D5:4 G5:4 |`;
+  C5:12 Eb5:2 D5:2 | Eb5:12 Ab5:2 G5:2 | Ab5:12 F5:2 Eb5:2 | D5:16 |
+  C5:12 Eb5:2 D5:2 | Eb5:12 Ab5:2 G5:2 | F5:12 Bb5:2 Ab5:2 | G5:16 |
+  C6:12 Bb5:2 Ab5:2 | G5:12 Ab5:2 Bb5:2 | C6:8 Eb6:8 | D6:16 |
+  C6:12 Ab5:2 F5:2 | Eb5:12 F5:2 Eb5:2 | D5:12 Eb5:2 D5:2 | G5:4 F5:4 D5:4 B4:4 |`;
 
-const CHORDS = "Cm Cm Ab G Cm Cm Ab Ab Fm Fm G G Cm Bb Ab G Fm G Cm G";
+const CHORDS = "Cm Cm Ab G Cm Ab Fm G Cm Ab Bb Eb Fm Cm Ab G Fm Ab G G";
 const BEAT = "K:2 K S:2 K K:2 K S:2 H |";
 const FILL = "K:2 S T T L L S:1 S S S |";
 

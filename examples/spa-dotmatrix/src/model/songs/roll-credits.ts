@@ -1,15 +1,17 @@
 // "Roll the Credits", an ending theme: G major, warm and a little nostalgic. A two-bar intro on the
-// drums, then a sixteen-bar loop: a singing lead, shimmering broken chords and a walking bass.
+// drums, then a sixteen-bar loop: a singing lead, shimmering broken chords and a walking bass. The
+// opening rises up the G chord and sighs down by step; the second phrase answers with a half
+// cadence on D; then the tune climbs by step to C and D at the top and settles on G.
 import { buildSong } from "../song.ts";
 import { chords, drums, melody, repeat } from "../notation.ts";
 import type { Song } from "../types.ts";
 
 const LEAD = `
   .:16 | .:16 |
-  B4:4 D5:4 G5:6 F#5:2 | A5:8 F#5:4 D5:4 | E5:4 G5:4 B5:6 A5:2 | G5:8 E5:8 |
-  D5:2 E5 G5:4 B5:6 A5:2 | A5:4 F#5:4 D5:8 | E5:4 G5:4 C6:4 B5:4 | A5:12 .:4 |
-  B5:6 A5:2 G5:4 E5:4 | E5:4 G5:4 C6:8 | B5:6 A5:2 G5:4 D5:4 | F#5:8 A5:8 |
-  G5:4 E5:4 C5:4 E5:4 | F#5:4 A5:4 D6:8 | B5:12 A5:2 B5:2 | G5:12 .:4 |`;
+  B4:4 D5:4 G5:6 F#5:2 | A5:6 G5:2 F#5:8 | E5:6 F#5:2 G5:8 | E5:4 D5:4 C5:4 B4:4 |
+  B4:4 D5:4 G5:6 F#5:2 | A5:6 G5:2 F#5:4 D5:4 | E5:6 F#5:2 G5:4 E5:4 | F#5:12 .:4 |
+  G5:6 A5:2 B5:8 | C6:6 B5:2 A5:4 G5:4 | B5:6 A5:2 G5:4 D5:4 | F#5:4 G5:4 A5:8 |
+  C6:6 B5:2 A5:4 C6:4 | D6:6 C6:2 B5:4 A5:4 | B5:6 A5:2 G5:4 A5:4 | G5:12 .:4 |`;
 
 const CHORDS = "G D G D Em C G D C D Em C G D C D G G";
 const BEAT = "K:4 H:2 H S:4 H:2 H |";

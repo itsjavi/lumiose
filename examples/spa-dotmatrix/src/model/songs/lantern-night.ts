@@ -1,15 +1,17 @@
 // "Lantern Night", a calm night theme: E harmonic minor, slow. Two bars of music box and pad, then
-// an eight-bar loop where the lead glides between touching notes over a soft wave pad.
+// an eight-bar loop where the lead glides between touching notes over a soft wave pad. One rocking
+// motif (a long note, a step, a long note) moves through i–VI–iv–V, a half cadence on B7, then
+// climbs over III–iv–V to the high F#, and the D# leading tone resolves home to E.
 import { buildSong } from "../song.ts";
 import { chords, drums, melody, repeat } from "../notation.ts";
 import type { Song } from "../types.ts";
 
 const LEAD = `
   .:16 | .:16 |
-  B4:8 G4:4 A4:4 | B4:6 C5:2 E5:8 | D5:8 C5:4 B4:4 | A4:8 F#4:4 D#4:4 |
-  E4:6 G4:2 B4:8 | C5:6 B4:2 G4:8 | A4:6 B4:2 D5:4 F#5:4 | D#5:8 B4:8 |`;
+  B4:6 A4:2 G4:8 | A4:6 G4:2 E4:8 | A4:6 B4:2 C5:8 | B4:6 A4:2 F#4:8 |
+  G4:6 A4:2 B4:8 | C5:6 D5:2 E5:8 | F#5:6 E5:2 D#5:8 | E5:8 .:8 |`;
 
-const CHORDS = "Em Em Em Cmaj7 Am7 B7 Em C D B7";
+const CHORDS = "Em B7 Em C Am B7 G Am B7 Em";
 
 export function lanternNight(): Song {
   return buildSong({
