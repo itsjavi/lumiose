@@ -7,7 +7,7 @@ status: Done
 assignee:
   - Beacon
 created_date: '2026-10-11 03:32'
-updated_date: '2026-10-12 22:02'
+updated_date: '2026-10-12 22:03'
 labels:
   - docs
   - rendering
@@ -47,6 +47,8 @@ Verified against the code: modes per sample app with lumiose routes (bookshelf s
 Astro: checked 2026-10-12 against docs.astro.build sources (withastro/docs main: guides/server-islands, concepts/islands, reference/directives-reference, recipes/sharing-state-islands, guides/view-transitions), astro source (packages/astro/src/runtime/server/astro-island.ts: <astro-island> with component-url/renderer-url/props attributes, no early-event replay) and npm (astro 7.3.8), plus the TASK-1 survey. Next.js PPR wording checked against the Next.js docs (Cache Components, next 16.4.0).
 TASK-236 is still In Progress (Nova): the book page paragraph follows its task definition and was checked against the in-progress code (books/[isbn]/page.stsx header comment and holes, (app)/layout.stsx account Suspense) at 2026-10-12 22:00 UTC; re-check it when TASK-236 lands.
 Checks: docs:gen, docs:check, packages/cli/src/docs tests and apps/web tests green; the page renders in lumiose dev of apps/web with the new anchors.
+
+Beacon 2026-10-12 22:10 UTC: Nova committed the TASK-236 book page (c118855c); the paragraph matches the committed code (shell reads only the route param; account area, reading-list toggle, Your review, rating summary/histogram and reviews are synchronous Suspense holes, no streamed chunks). TASK-236 itself was not yet marked Done.
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary
