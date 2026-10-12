@@ -5,6 +5,7 @@ status: To Do
 assignee:
   - '@Nova'
 created_date: '2026-10-12 18:40'
+updated_date: '2026-10-12 19:31'
 labels:
   - router
   - i18n
@@ -23,7 +24,13 @@ Decision-44. Router-level locale prefix (route files stay unprefixed), the reque
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 The user approved the config shape and API names (recorded in decision-44)
+- [x] #1 The user approved the config shape and API names (recorded in decision-44)
 - [ ] #2 Routing, href(), hreflang, html lang, detection and prerendering work as decision-44 describes, with tests
 - [ ] #3 No automatic alternates or duplicate URLs for undeclared locales (tested)
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Lux 2026-10-12: the user approved the config shape and API names (lumiose({ i18n }), export const locales / function locales, layout-level locales, locale(), ctx.locale, href(.., { locale }), alternates(), "all"); recorded in decision-44. Domains post-1.0.
+<!-- SECTION:NOTES:END -->

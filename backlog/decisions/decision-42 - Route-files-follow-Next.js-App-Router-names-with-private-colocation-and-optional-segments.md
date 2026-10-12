@@ -14,16 +14,19 @@ Lumiose keeps its own route implementation (`packages/lumiose/src/app/routes/`):
 
 ## Decision
 
-Approved by the user on 2026-10-12.
+Approved by the user on 2026-10-12, then amended the same day: **Next.js App Router file conventions only, without ambiguity** (one name per role, no Lumiose-specific aliases or flat files).
 
-- **Special files take the Next.js names:** `layout`, `not-found` and `error` replace `_layout`, `_404` and `_error`.
-- **`_` marks private colocation:** files and folders whose name starts with `_` are ignored by the router, at any depth, so components and helpers can live next to their routes.
-- **Optional segments:** `[[param]]` (one optional segment) and `[[...rest]]` (optional catch-all), with match ranking, typegen and typed `href()`.
-- **`page` is an alias for `index`**, so Next.js-style folders (`blog/page.stsx`) work. Having both in one folder is a duplicate (LUM5003).
-- **Kept from Lumiose:** a `.ts` file is an endpoint (Next.js uses `route.ts`), flat files such as `about.stsx` stay valid, and duplicates and invalid names stay errors.
+- **A folder is a URL segment; special files give it behavior**, with the Next.js names:
+  - `page.stsx` / `page.tsx`: the page. There is no `index` and no flat page file: `about.stsx` becomes `about/page.stsx`.
+  - `route.ts`: an endpoint (`GET`, `POST`, … exports). `sitemap.xml.ts` becomes `sitemap.xml/route.ts`. A `page` and a `route` in one folder are a duplicate (LUM5003).
+  - `layout`, `not-found` and `error` replace `_layout`, `_404` and `_error`, with the same nesting semantics as before (nearest wins).
+- **Colocation:** any other file in `src/routes` is not a route and is ignored by the router, as in Next.js, so components and helpers live next to their routes. Folders whose name starts with `_` are private: nothing below them routes.
+- **Segments:** `[param]`, `[...rest]` (one or more segments, as in Next.js; before, it could be empty), `[[...rest]]` (zero or more) and route groups `(group)`. `[[param]]` (one optional segment) stays as the one extension beyond Next.js, approved in the first version of this decision. Match ranking, typegen and typed `href()` cover them all.
+- **Next.js features Lumiose does not have** (`loading`, `template`, `default`, `global-error`, `@slot` parallel routes, `(.)` intercepting routes) are LUM5002 errors rather than silently ignored files, since they look like they would work.
+- **Unchanged:** the `src/routes` directory, `src/document.stsx`, `src/middleware.ts`, duplicates and invalid names as errors.
 
 ## Consequences
 
-- A breaking change before 1.0: the old special names get a diagnostic with the rename, the docs, templates (`@lumiose/create`), examples and the website move to the new names.
+- A breaking change before 1.0, with no backwards compatibility (user, 2026-10-12: nobody else uses Lumiose yet): no rename diagnostic, no upgrading section. The docs, templates (`@lumiose/create`), examples, benchmarks and the website move to the new names.
 - The route manifest, matcher, typegen, CLI `routes` and the language server change together (TASK-253).
 - i18n routing (decision-44) does not need optional segments: the locale prefix is handled by the router.

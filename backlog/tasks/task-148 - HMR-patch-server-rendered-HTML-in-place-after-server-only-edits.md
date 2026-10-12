@@ -5,7 +5,7 @@ status: To Do
 assignee:
   - Nova
 created_date: '2026-10-09 05:24'
-updated_date: '2026-10-12 18:40'
+updated_date: '2026-10-12 19:31'
 labels:
   - dev
   - hmr
@@ -34,4 +34,6 @@ User 2026-10-12: a 1.0 must-have (smoother dev reload); was planned only on 2026
 Lux 2026-10-09: deferred (user accepted the pushback): DOM morphing after server edits risks unexpected behaviour; keep the full reload.
 
 Status: deferred (user accepted, 2026-10-09). Not planned.
+
+Lux 2026-10-12: revived by the user (1.0 must-have, replaces the 2026-10-09 deferral). Default in dev, no option, full reload as the fallback when the document/head structure changes. Starts after TASK-253 lands (both touch packages/vite/src/app).
 <!-- SECTION:NOTES:END -->

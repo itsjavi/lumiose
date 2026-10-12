@@ -5,7 +5,7 @@ status: To Do
 assignee:
   - Nova
 created_date: '2026-10-09 12:12'
-updated_date: '2026-10-12 18:40'
+updated_date: '2026-10-12 19:31'
 labels:
   - adapter
   - docs
@@ -38,4 +38,6 @@ Runtime notes for edge targets: the server runtime imports node:async_hooks (Asy
 Docs-only targets (Bun, Deno, Node hosts, static hosts, Lambda) need no API decision but a docs section: proposed docs/deploy/<target>.md pages plus a 'Deploy' section in docs/README.md (docs structure is Beacon's).
 
 Blocked: waits for the user's adapter API choice (A: lumiose({ adapter }) recommended; B: post-build command).
+
+Lux 2026-10-12: unblocked. User chose option A (lumiose({ adapter })), recorded in decision-45. Emulator e2e runs locally only (pnpm dlx, pinned); CI runs only the adapters' unit tests. Vercel: Node harness + config.json validation.
 <!-- SECTION:NOTES:END -->

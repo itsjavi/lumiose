@@ -3,8 +3,9 @@ id: TASK-249
 title: 'Self-hosting: example Dockerfile, VPS and Coolify guides'
 status: To Do
 assignee:
-  - '@Nova'
+  - Beacon
 created_date: '2026-10-12 18:39'
+updated_date: '2026-10-12 19:31'
 labels:
   - adapter
   - docs
@@ -25,3 +26,9 @@ User 2026-10-12: self-hosted VPS and Coolify are first-class targets. An example
 - [ ] #1 The example Dockerfile builds and serves an example app in a local test
 - [ ] #2 VPS and Coolify docs pages with copy-paste config; listed in the deploy verification table
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Lux 2026-10-12: reassigned Nova -> Beacon (doc-heavy; Nova overloaded). Beacon may create its example app under examples/.
+<!-- SECTION:NOTES:END -->

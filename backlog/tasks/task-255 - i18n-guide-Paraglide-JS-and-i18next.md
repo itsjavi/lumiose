@@ -3,8 +3,9 @@ id: TASK-255
 title: 'i18n guide: Paraglide JS and i18next'
 status: To Do
 assignee:
-  - '@Beacon'
+  - Beacon
 created_date: '2026-10-12 18:40'
+updated_date: '2026-10-12 19:31'
 labels:
   - docs
   - i18n
@@ -26,3 +27,9 @@ User 2026-10-12: a guide showing the most popular libraries end to end on the sa
 - [ ] #1 A docs page with both integrations: setup, messages in pages and islands, locale switching, SEO notes
 - [ ] #2 A tested example for each library
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Lux 2026-10-12: reassigned Nova -> Beacon (doc-heavy; Nova overloaded). Beacon may create its example app under examples/.
+<!-- SECTION:NOTES:END -->

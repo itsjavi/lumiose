@@ -5,6 +5,7 @@ status: To Do
 assignee:
   - '@Spark'
 created_date: '2026-10-12 18:39'
+updated_date: '2026-10-12 19:31'
 labels:
   - runtime
   - api
@@ -26,3 +27,9 @@ Decision-43. useId() from lumiose: server id from the component instance's rende
 - [ ] #2 Client-only renders get unique ids; a prefix option separates apps on one page
 - [ ] #3 Docs (reference/reactivity, an accessible-form example) and tests, including server/client parity
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Lux 2026-10-12: user approved an idPrefix option on mount()/hydrate() and on the SSR render entry. Spark may edit the server render files under packages/lumiose/src/server/** that useId needs (coordinate: Nova works in app/** meanwhile).
+<!-- SECTION:NOTES:END -->

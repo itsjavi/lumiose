@@ -5,6 +5,7 @@ status: To Do
 assignee:
   - '@Spark'
 created_date: '2026-10-12 18:40'
+updated_date: '2026-10-12 19:31'
 labels:
   - runtime
   - api
@@ -28,3 +29,9 @@ Decision-43. viewTransition(fn) runs an update inside document.startViewTransiti
 - [ ] #2 <ViewTransition> animates enter, exit and moves of conditionals and keyed lists; SPA navigations use viewTransition()
 - [ ] #3 Runtime size stays under the cap when unused; docs and tests (happy-dom + a browser check)
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Lux 2026-10-12: SPA navigations use viewTransition() only when the existing lumiose({ viewTransitions: true }) option is on.
+<!-- SECTION:NOTES:END -->
