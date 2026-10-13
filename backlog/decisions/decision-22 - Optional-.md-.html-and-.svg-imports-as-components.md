@@ -40,6 +40,7 @@ The user wants to import Markdown (blogs and content) and HTML (for example web 
   - Users can validate it at build time through an optional hook, `lumen({ md: { frontmatter(data, { file }) { …; return data } } })`. Throwing fails the build with file context.
   - For static types, users augment `declare module "*.md"` themselves, or validate at the import site.
 - **SVG (user decision, 2026-10-08, after the TASK-70 study):** `.svg` imports are inline components by default, with the query switches `?inline`, `?url` and `?raw`. There is **no sprite mode**. Build-time optimisation is configurable through `lumen({ svg: { optimize } })`.
+  - **Amended by decision-46 (2026-10-14):** an `.svg` import is a component only with `?component`, in the project and in `node_modules`. A bare import and `?inline` are Vite's again.
 - **TASK-69 semantics (confirmed by the user, 2026-10-09):**
   - A full `.html` document keeps its `<head>` styles and scripts.
   - A nested `<style>` in `.md`/`.html` scopes to its parent element's subtree (decision-23).

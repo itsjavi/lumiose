@@ -28,7 +28,7 @@ interface LumioseOptions {
   trailingSlash?: "ignore" | "always" | "never"; // default "ignore"
   /** The origin check of form posts (on by default); false turns it off. */
   csrf?: false | { allowedOrigins?: readonly string[] };
-  /** `.svg` imports as inline components; false leaves them to Vite (URLs). */
+  /** `.svg?component` imports as inline components; false leaves them to Vite (URLs). */
   svg?: boolean | { optimize?: boolean | SvgoConfig; currentColor?: boolean }; // default true
   /** `.md` imports as components; the hook validates or transforms each file's frontmatter. */
   md?: boolean | { frontmatter?(data: Record<string, unknown>, ctx: { file: string }): unknown }; // default false
@@ -166,13 +166,14 @@ What it does:
   (islands, SPA routes) reaches it; pages send only those states' values
   ([`defineState`](reactivity.md#definestate)). Under Vitest it adds a setup file that resets
   scoped state before each test.
-- Loads project `.svg` files (`./icon.svg`, `./icon.svg?inline`) as inline components for the
-  environment's target, optimised with SVGO (`optimize`: `true` for Lumiose's defaults,
-  `preset-default` plus `convertStyleToAttrs`; your SVGO config; or `false`). Scripts, event
-  handlers and `javascript:` URLs are always removed and ids prefixed per file. `currentColor:
-  true` replaces every colour with `currentColor` (SVGO's `convertColors`, before other
-  plugins). `?url` and `?raw` stay Vite's, and `.svg` files in `exclude` (node_modules) keep
-  Vite's URL import. See [SVG imports](../concepts/svg.md).
+- Loads `.svg?component` imports (`./icon.svg?component`, or a package's
+  `lucide-static/icons/house.svg?component`) as inline components for the environment's target,
+  optimised with SVGO (`optimize`: `true` for Lumiose's defaults, `preset-default` plus
+  `convertStyleToAttrs`; your SVGO config; or `false`). Scripts, event handlers and
+  `javascript:` URLs are always removed and ids prefixed per file. `currentColor: true` replaces
+  every colour with `currentColor` (SVGO's `convertColors`, before other plugins). Every other
+  `.svg` import (bare, `?url`, `?inline`, `?raw`) is Vite's. See
+  [SVG imports](../concepts/svg.md).
 - With `md`/`html`, loads project `.md` and `.html` files as static components: their source
   becomes the Lumiose module `<file>.md.stsx` (`.html.stsx`), compiled like any `.stsx` file, with
   `frontmatter` from `<file>.md?lumiose-frontmatter`, `headings`, relative asset URLs as `?url`

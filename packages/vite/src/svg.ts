@@ -1,13 +1,12 @@
-// `.svg` imports as inline components (decision-22, TASK-70, TASK-96; owner: Halo, in Photon's
-// plugin).
+// `.svg` imports as inline components (decision-22, decision-46, TASK-70, TASK-96, TASK-270;
+// owner: Halo, in Photon's plugin).
 //
-// `import Icon from "./icon.svg"` (or `./icon.svg?inline`) loads a module whose default export
-// renders the file inline: SVGO optimises it, then `compileSvg` (lumiose_svg) removes scripts,
-// event handlers and `javascript:` URLs, prefixes its ids per file and has the Lumiose compiler
-// turn it into a static template for the environment's target, so the component is the same on
-// the client, on the server and in islands. Vite's own `?url` and `?raw` keep working, and files
-// in `exclude` (node_modules by default) keep Vite's URL import, since a dependency importing an
-// `.svg` expects a URL.
+// `import Icon from "./icon.svg?component"` loads a module whose default export renders the file
+// inline: SVGO optimises it, then `compileSvg` (lumiose_svg) removes scripts, event handlers and
+// `javascript:` URLs, prefixes its ids per file and has the Lumiose compiler turn it into a static
+// template for the environment's target, so the component is the same on the client, on the
+// server and in islands. The query is the opt-in, so it works for any file, `node_modules`
+// included (icon sets), and every other `.svg` import (bare, `?url`, `?raw`, `?inline`) is Vite's.
 
 import { readFile } from "node:fs/promises";
 import { compileSvg } from "@lumiose/compiler";
@@ -16,7 +15,7 @@ import type { Plugin } from "vite";
 
 export type { SvgoConfig };
 
-/** `lumiose({ svg })`: how `.svg` imports become components; `false` leaves them to Vite. */
+/** `lumiose({ svg })`: how `.svg?component` imports are compiled; `false` leaves them to Vite. */
 export interface SvgOptions {
   /**
    * Optimise with SVGO: `true` uses Lumiose's defaults (`preset-default`, plus
@@ -39,7 +38,11 @@ export interface ResolvedSvgOptions {
   currentColor: boolean;
 }
 
-const SVG_COMPONENT = /\.svg(?:\?inline)?$/;
+/**
+ * An `.svg` id with `component` among its query parameters: in dev, Vite adds others around it
+ * (`?component&v=<hash>` for files in `node_modules`).
+ */
+const SVG_COMPONENT = /\.svg\?(?:[^#]*&)?component(?:&|$)/;
 
 /** Validates `lumiose({ svg })`; `false` when `.svg` imports are left to Vite. */
 export function svgOptionsOf(svg: unknown): false | ResolvedSvgOptions {
@@ -96,20 +99,15 @@ export function svgoConfigOf(options: ResolvedSvgOptions, path: string): SvgoCon
 
 let svgo: Promise<typeof import("svgo")> | undefined;
 
-/** The plugin that loads project `.svg` files as components. */
-export function svgPlugin(
-  options: ResolvedSvgOptions,
-  exclude: RegExp,
-  root: () => string,
-): Plugin {
+/** The plugin that loads `.svg?component` imports as components. */
+export function svgPlugin(options: ResolvedSvgOptions, root: () => string): Plugin {
   return {
     name: "lumiose:svg",
     enforce: "pre",
     load: {
       filter: { id: SVG_COMPONENT },
       async handler(id) {
-        const file = id.replace(/\?inline$/, "");
-        if (exclude.test(file)) return null;
+        const file = id.slice(0, id.indexOf("?"));
         let source = await readFile(file, "utf8");
         const config = svgoConfigOf(options, file);
         let unparsed: Error | undefined;

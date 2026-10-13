@@ -464,7 +464,7 @@ export default function lumiose(options: LumioseOptions = {}): Plugin<LumiosePlu
       serve: () => serve,
     }),
     // `.svg` imports as inline components (./svg.ts).
-    ...(svg ? [svgPlugin(svg, exclude, () => root)] : []),
+    ...(svg ? [svgPlugin(svg, () => root)] : []),
     // `.md` and `.html` imports as components (./content.ts).
     ...(content ? [content.plugin()] : []),
   ];

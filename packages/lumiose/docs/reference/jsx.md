@@ -49,7 +49,7 @@ The generated file, with paths relative to `.lumiose/`:
 | `include` `.lumiose/shadow`, `.lumiose/types`   | Shadow files and generated route types are part of the program.                           |
 | `types: ["lumiose/env"]`                        | The global `JSX` namespace, `import.meta.env`, `Locals` and `.svg`/`.md`/`.html` modules. |
 | `allowImportingTsExtensions`                    | Imports name their extension: `./Card.stsx`, `./tokens.ts`.                               |
-| `skipLibCheck`                                  | `lumiose/env` and `vite/client` can both be loaded: their `*.svg` declarations collide.   |
+| `skipLibCheck`                                  | Dependencies' `.d.ts` files are not checked: faster, and their type errors are not yours. |
 
 If you set `include` or `types` yourself, they replace the generated lists: keep `src`,
 `.lumiose/shadow` and `.lumiose/types` in `include`, and `lumiose/env` in `types`. An array `extends`
@@ -168,11 +168,10 @@ declare module "*.css" {} // import "./app.css": bundled into the page's CSS
 declare module "*.css?url" {} // export default url: string
 declare module "*.css?inline" {} // export default css: string
 declare module "*.css?raw" {} // export default source: string
-declare module "*.svg" {
+declare module "*.svg?component" {
   const Svg: (props: JSX.SVGProps<SVGSVGElement> & { title?: string }) => JSX.Element;
   export default Svg;
 }
-declare module "*.svg?inline" {} // the same component
 declare module "*.svg?url" {} // export default url: string
 declare module "*.svg?raw" {} // export default raw: string
 declare module "*.md" {
@@ -194,10 +193,8 @@ declare module "*.html" {
 ```
 
 Declare known public variables by merging `interface ImportMetaEnv { readonly PUBLIC_API: string }`.
-The built-in members match `vite/client`, so both can be loaded; list `lumiose/env` first, because
-`vite/client` types `*.svg` as a URL string and the first declaration wins. The two default exports
-of `*.svg` are a duplicate in their `.d.ts` files, which `skipLibCheck` (generated) does not check (see
-[SVG imports](../concepts/svg.md)). TypeScript checks side-effect imports
-(`noUncheckedSideEffectImports`), hence `*.css`. With `lumiose/env` listed first it also matches
+The built-in members match `vite/client`, so both can be loaded. `vite/client` types the other
+asset imports, bare `.svg` URLs included (see [SVG imports](../concepts/svg.md)). TypeScript checks
+side-effect imports (`noUncheckedSideEffectImports`), hence `*.css`. With `lumiose/env` listed first it also matches
 `*.module.css`, so a CSS module import has no class map type; scoped `<style>` blocks replace CSS
 modules in Lumiose components.

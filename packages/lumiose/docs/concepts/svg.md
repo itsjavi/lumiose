@@ -1,13 +1,16 @@
 # SVG imports
 
-> `import Icon from "./icon.svg"` gives an inline SVG component: optimised at build time, styled with `currentColor` and props, labelled with `title`, the same on the server, the client and in islands. `?url` and `?raw` keep Vite's meaning.
+> `import Icon from "./icon.svg?component"` gives an inline SVG component, from your project or a package such as an icon set: optimised at build time, styled with `currentColor` and props, labelled with `title`, the same on the server, the client and in islands. Every other `.svg` import keeps Vite's meaning.
 
 ## Concept
 
-With the Lumiose Vite plugin, an `.svg` file in your project imports as a component. The build
+With the Lumiose Vite plugin, an `.svg` file imported with `?component` is a component. The build
 optimises the file with [SVGO](https://svgo.dev) and compiles it into a static template, so
 rendering an icon clones markup, on the server and in the browser alike. The icon is
 **inline**: its paths are part of the page's HTML, CSS reaches them, and nothing is fetched.
+
+The query is the switch, so it works the same for your files and for packages:
+`import House from "lucide-static/icons/house.svg?component"`. Without it, an `.svg` import is what Vite makes of it: a URL by default.
 
 - **Props override the file.** The file's root attributes (`width`, `height`, `viewBox`, `fill`,
   `stroke`, `class`, …) are defaults; any `<svg>` prop you pass replaces the matching one:
@@ -49,11 +52,10 @@ rendering an icon clones markup, on the server and in the browser alike. The ico
 - **Optimisation.** By default SVGO runs its `preset-default` plus `convertStyleToAttrs` (fewer
   `style` attributes, for strict CSPs). Pass your own SVGO config as `optimize` to choose the
   plugins (`{ plugins: [...] }`, `multipass`, `floatPrecision`), or `false` to skip SVGO.
-- **Query switches.** `./icon.svg` and `./icon.svg?inline` are the component. `?url` is Vite's
-  asset URL (or a `data:` URL for small files) and `?raw` the file's text.
-- **Dependencies.** `.svg` files under `node_modules` (the plugin's `exclude`) keep Vite's URL
-  import, which is what a library importing an `.svg` expects. `lumiose({ svg: false })` leaves
-  every `.svg` import to Vite.
+- **Query switches.** `./icon.svg?component` is the component. The rest are Vite's: `./icon.svg`
+  and `?url` are the asset URL (or a `data:` URL for small files), `?inline` always a `data:` URL
+  and `?raw` the file's text. A library that imports its own `.svg` files gets the URL it
+  expects. `lumiose({ svg: false })` leaves `?component` to Vite too.
 
 Inline is a deliberate choice over sprites (`<use href="#id">`): with the compression every
 server applies, a page of repeated inline icons transfers about as many bytes as a sprite, and
@@ -61,16 +63,18 @@ inline icons render faster and can be styled and animated part by part.
 
 ## API
 
-| Import / option                            | Gives                                                       |
-| ------------------------------------------ | ----------------------------------------------------------- |
-| `import Icon from "./icon.svg"`            | `(props: JSX.SVGProps<SVGSVGElement> & { title?: string })` |
-| `import Icon from "./icon.svg?inline"`     | The same component                                          |
-| `import url from "./icon.svg?url"`         | The asset URL (`string`, Vite)                              |
-| `import text from "./icon.svg?raw"`        | The file's text (`string`, Vite)                            |
-| `lumiose({ svg: { optimize: config } })`   | Optimise with your SVGO config instead of Lumiose's         |
-| `lumiose({ svg: { optimize: false } })`    | Skip SVGO (sanitising and id prefixes still run)            |
-| `lumiose({ svg: { currentColor: true } })` | Replace every colour with `currentColor`                    |
-| `lumiose({ svg: false })`                  | `.svg` imports stay Vite's URLs                             |
+| Import / option                             | Gives                                                       |
+| ------------------------------------------- | ----------------------------------------------------------- |
+| `import Icon from "./icon.svg?component"`   | `(props: JSX.SVGProps<SVGSVGElement> & { title?: string })` |
+| `import Icon from "pkg/icon.svg?component"` | The same, from a package                                    |
+| `import url from "./icon.svg"`              | The asset URL (`string`, Vite; typed by `vite/client`)      |
+| `import url from "./icon.svg?url"`          | The asset URL (`string`, Vite)                              |
+| `import data from "./icon.svg?inline"`      | A `data:` URL (`string`, Vite; typed by `vite/client`)      |
+| `import text from "./icon.svg?raw"`         | The file's text (`string`, Vite)                            |
+| `lumiose({ svg: { optimize: config } })`    | Optimise with your SVGO config instead of Lumiose's         |
+| `lumiose({ svg: { optimize: false } })`     | Skip SVGO (sanitising and id prefixes still run)            |
+| `lumiose({ svg: { currentColor: true } })`  | Replace every colour with `currentColor`                    |
+| `lumiose({ svg: false })`                   | `.svg` imports stay Vite's URLs                             |
 
 The types come with `lumiose/env` (`"types": ["lumiose/env"]` in `tsconfig.json`).
 
@@ -92,9 +96,9 @@ export default defineConfig({
 
 ```tsx
 // src/components/Nav.stsx
-import Home from "../icons/home.svg";
-import Search from "../icons/search.svg";
-import logoUrl from "../icons/logo.svg?url";
+import Home from "../icons/home.svg?component";
+import Search from "../icons/search.svg?component";
+import logoUrl from "../icons/logo.svg";
 
 export function Nav() {
   return (
@@ -123,14 +127,10 @@ receives the file's scope, so the scoped `.icon` rule applies.
 
 ## Common mistakes
 
-- **Expecting a URL.** Before Lumiose, `import icon from "./icon.svg"` was a URL string in Vite.
-  Use `./icon.svg?url` for `<img src>` and CSS, or `lumiose({ svg: false })` for the old behaviour
-  everywhere.
-- **Loading `vite/client` types first.** `vite/client` also declares `*.svg` (as a string), and
-  whichever comes first in `"types"` wins: `Icon` then "cannot be used as a JSX component". List
-  `lumiose/env` first, or drop `vite/client` (`lumiose/env` already types `import.meta.env`).
-  Both type `*.svg` with a default export, a duplicate that TypeScript reports in the two `.d.ts`
-  files unless `skipLibCheck` is on (the generated tsconfig sets it).
+- **Forgetting `?component`.** `import Icon from "./icon.svg"` is a URL string, so `<Icon />` is
+  a type error ("cannot be used as a JSX component" with `vite/client` in `"types"`, "cannot find
+  module" without it). Add `?component`. `?inline` is not the component either: it is Vite's
+  `data:` URL.
 - **Styling inner paths from a scoped block.** The paths belong to the icon component, so only the
   root `<svg>` (through `class`) carries your component's scope. Use inherited properties
   (`color`, `fill`, `stroke`, `stroke-width`) on the root, or `:deep(path)`.

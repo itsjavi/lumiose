@@ -1,8 +1,7 @@
-// `lumiose/env`: `.svg` imports (TASK-70). Inline components with SVG props and `title`; `?url` and
-// `?raw` are strings.
+// `lumiose/env`: `.svg` imports (TASK-70, decision-46). `?component` is an inline component with SVG
+// props and `title`; `?url` and `?raw` are strings.
 import "./helpers.ts";
-import Icon from "./icons/home.svg";
-import Inline from "./icons/home.svg?inline";
+import Icon from "./icons/home.svg?component";
 import Url from "./icons/home.svg?url";
 import raw from "./icons/home.svg?raw";
 
@@ -15,7 +14,7 @@ export const accepted = [
   <Icon />,
   <Icon class="icon" width={32} height="2em" fill="red" aria-label="Home" />,
   <Icon title="Home" style={{ color: "red" }} onClick={(e) => e.currentTarget.viewBox} />,
-  <Inline ref={(svg) => svg.getBBox()} stroke-width={2} />,
+  <Icon ref={(svg) => svg.getBBox()} stroke-width={2} />,
 ];
 
 export const rejected = [

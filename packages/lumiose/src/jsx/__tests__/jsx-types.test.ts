@@ -50,7 +50,7 @@ describe("JSX types (TypeScript 7)", () => {
     if (status !== 0) expect(output).toMatch(/\(\d+,\d+\): error TS/);
   });
 
-  it("loads `lumiose/env` with `vite/client`: the first `*.svg` declaration wins (TASK-122)", () => {
+  it("loads `lumiose/env` with `vite/client`: `?component` a component, bare `.svg` a URL", () => {
     const project = mkdtempSync(join(tmpdir(), "lumiose-jsx-vite-client-"));
     try {
       mkdirSync(join(project, "node_modules"));
@@ -72,8 +72,10 @@ describe("JSX types (TypeScript 7)", () => {
             allowImportingTsExtensions: true,
             noEmit: true,
             strict: true,
-            skipLibCheck: true,
-            types: ["lumiose/env", "vite/client"],
+            // No duplicate `*.svg` declaration between the two (decision-46), so library checks
+            // stay on.
+            skipLibCheck: false,
+            types: ["vite/client", "lumiose/env"],
           },
           include: ["src"],
         }),
@@ -81,8 +83,11 @@ describe("JSX types (TypeScript 7)", () => {
       writeFileSync(
         join(project, "src/app.tsx"),
         [
-          'import Icon from "./icon.svg";',
+          'import Icon from "./icon.svg?component";',
+          'import url from "./icon.svg";',
+          'import data from "./icon.svg?inline";',
           'export const icon: JSX.Element = <Icon title="Home" />;',
+          "export const src: string[] = [url, data];",
           "export const hot = import.meta.hot;",
           "",
         ].join("\n"),

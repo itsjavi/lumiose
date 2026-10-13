@@ -1,6 +1,7 @@
-// `.svg` imports (./svg.ts) against a real Vite 8 dev server: components for both environments,
-// Vite's own `?url`/`?raw`, dependencies left alone, errors and options. The fixture app is written
-// to a temp dir whose node_modules/lumiose links to this package.
+// `.svg` imports (./svg.ts) against a real Vite 8 dev server: `?component` for both environments,
+// from the project and from dependencies, Vite's own bare/`?url`/`?raw`/`?inline` imports, errors
+// and options. The fixture app is written to a temp dir whose node_modules/lumiose links to this
+// package.
 import { linkLumiose } from "./test-links.ts";
 import { mkdirSync, mkdtempSync, realpathSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -23,17 +24,22 @@ const FILES: Record<string, string> = {
   "icons/broken.svg": `<svg><path></svg>`,
   "icons/mono.svg": `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" onload="alert(1)">
   <script>alert(2)</script><path fill="#000000" d="M8 0l0 16"/></svg>`,
+  // An icon set shipped as SVG files, like lucide-static.
+  "node_modules/dep/package.json": `{ "name": "dep", "version": "1.0.0" }`,
   "node_modules/dep/logo.svg": HOME,
   "render.tsx": `import { renderToString } from "lumiose";
-import Home from "./icons/home.svg";
-import Inline from "./icons/home.svg?inline";
+import Home from "./icons/home.svg?component";
+import Logo from "dep/logo.svg?component";
 export const render = () =>
   renderToString(() => (
     <p>
       <Home title="Go home" class="icon" />
-      <Inline width={16} aria-label="Home" />
+      <Logo width={16} aria-label="Logo" />
     </p>
   ));
+`,
+  "client.ts": `import Logo from "dep/logo.svg?component";
+export { Logo };
 `,
 };
 
@@ -75,8 +81,8 @@ afterAll(async () => {
 });
 
 describe.skipIf(!binding)(".svg imports", () => {
-  it("loads a project .svg as an inline component for the client", async () => {
-    const result = await server.environments.client.transformRequest("/icons/home.svg");
+  it("loads an .svg?component import as an inline component for the client", async () => {
+    const result = await server.environments.client.transformRequest("/icons/home.svg?component");
     expect(result!.code).toContain("template(");
     expect(result!.code).toContain("/packages/lumiose/src/dom/index.ts");
     expect(result!.code).toContain("M5 12H3l9-9 9 9h-2");
@@ -84,60 +90,74 @@ describe.skipIf(!binding)(".svg imports", () => {
     expect(result!.code).not.toMatch(/<\?xml|editor comment|>Home</);
   });
 
-  it("compiles for lumiose/server in the ssr environment, the same for ?inline", async () => {
-    const svg = await server.environments.ssr.transformRequest("/icons/home.svg");
-    const inline = await server.environments.ssr.transformRequest("/icons/home.svg?inline");
+  it("compiles for lumiose/server in the ssr environment", async () => {
+    const svg = await server.environments.ssr.transformRequest("/icons/home.svg?component");
     expect(svg!.code).toContain("/packages/lumiose/src/server/index.ts");
     expect(svg!.code).not.toContain("template(");
-    expect(inline!.code).toBe(svg!.code);
   });
 
-  it("server-renders the component with title and props", async () => {
+  it("loads a dependency's .svg?component, among the queries Vite adds", async () => {
+    const client = await server.environments.client.transformRequest("/client.ts");
+    const specifier = /"(\/node_modules\/dep\/logo\.svg\?[^"]+)"/.exec(client!.code)?.[1];
+    expect(specifier).toMatch(/[?&]component(?:&|$)/);
+    // The browser requests it with `import` (and `v=<hash>` for a dependency); Vite's middleware
+    // drops `import` before the plugins see the id.
+    const id = specifier!.replace(/([?&])import(?:&|$)/, "$1").replace(/[?&]$/, "");
+    const logo = await server.environments.client.transformRequest(`${id}&v=0123abcd`);
+    expect(logo!.code).toContain("template(");
+  });
+
+  it("server-renders the components with title and props", async () => {
     const { render } = (await server.ssrLoadModule("/render.tsx")) as {
       render: () => Promise<string>;
     };
     const html = await render();
     expect(html).toMatch(/<svg[^>]* role="img" aria-labelledby="l\w+-t-Go_home" class="icon">/);
     expect(html).toMatch(/<title id="l\w+-t-Go_home">Go home<\/title><path d="M5 12H3/);
-    // A label from aria-label: not hidden; width overrides the file's.
-    expect(html).toMatch(/<svg width="16"[^>]* aria-label="Home"/);
+    // The dependency's icon, labelled by aria-label: not hidden; width overrides the file's.
+    expect(html).toMatch(/<svg width="16"[^>]* aria-label="Logo"/);
     expect(html).not.toContain('aria-hidden="true"');
   });
 
-  it("keeps Vite's ?url and ?raw", async () => {
-    const url = await server.environments.client.transformRequest("/icons/home.svg?url");
-    const raw = await server.environments.client.transformRequest("/icons/home.svg?raw");
+  it("leaves bare, ?url, ?raw and ?inline imports to Vite", async () => {
+    const client = server.environments.client;
     // A URL, or a data: URL for a file under Vite's assetsInlineLimit.
-    expect(url!.code).toMatch(/^export default "(?:\/icons\/home\.svg|data:image\/svg\+xml,)/);
-    expect(raw!.code).toContain("An editor comment");
-  });
-
-  it("leaves .svg files of dependencies to Vite", async () => {
-    const result = await server.environments.client.transformRequest("/node_modules/dep/logo.svg");
-    expect(result!.code).toContain("export default");
-    expect(result!.code).not.toContain("template(");
+    const url = /^export default "(?:\/icons\/home\.svg|data:image\/svg\+xml,)/;
+    expect((await client.transformRequest("/icons/home.svg"))!.code).toMatch(url);
+    expect((await client.transformRequest("/icons/home.svg?url"))!.code).toMatch(url);
+    expect((await client.transformRequest("/icons/home.svg?raw"))!.code).toContain(
+      "An editor comment",
+    );
+    expect((await client.transformRequest("/icons/home.svg?inline"))!.code).toMatch(
+      /^export default "data:image\/svg\+xml/,
+    );
+    const dependency = await client.transformRequest("/node_modules/dep/logo.svg");
+    expect(dependency!.code).toMatch(/^export default "/);
   });
 
   it("reports a malformed file with its location", async () => {
-    await expect(server.environments.client.transformRequest("/icons/broken.svg")).rejects.toThrow(
-      /broken\.svg: invalid SVG: .* at 1:/,
-    );
+    await expect(
+      server.environments.client.transformRequest("/icons/broken.svg?component"),
+    ).rejects.toThrow(/broken\.svg: invalid SVG: .* at 1:/);
   });
 
   it("sanitises with any SVGO config; currentColor runs before its plugins", async () => {
-    const mono = await custom.environments.client.transformRequest("/icons/mono.svg");
+    const mono = await custom.environments.client.transformRequest("/icons/mono.svg?component");
     // No SVGO plugin: the path data is the file's; scripts and handlers are still removed.
     expect(mono!.code).toContain("M8 0l0 16");
     expect(mono!.code).toContain("currentColor");
     expect(mono!.code).not.toMatch(/alert|onload/);
-    const optimized = await server.environments.client.transformRequest("/icons/mono.svg");
+    const optimized = await server.environments.client.transformRequest(
+      "/icons/mono.svg?component",
+    );
     expect(optimized!.code).toContain("M8 0v16");
     expect(optimized!.code).not.toMatch(/alert|onload|currentColor/);
   });
 
-  it("leaves every .svg import to Vite with svg: false", async () => {
-    const result = await plain.environments.client.transformRequest("/icons/home.svg");
-    expect(result!.code).toMatch(/^export default "(?:\/icons\/home\.svg|data:image\/svg\+xml,)/);
+  it("leaves ?component imports to Vite with svg: false", async () => {
+    const result = await plain.environments.client.transformRequest("/icons/home.svg?component");
+    expect(result!.code).toMatch(/^export default "/);
+    expect(result!.code).not.toContain("template(");
   });
 });
 

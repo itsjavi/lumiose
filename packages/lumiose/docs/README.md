@@ -39,7 +39,7 @@ mistakes** and **Related diagnostics**. Reference pages list every export with i
 - [Data and actions](concepts/data-and-actions.md): Read data with async components, serve endpoints, mutate with form actions and `submit()`.
 - [Server](concepts/server.md): Request context, middleware, cookies, env, redirects and error helpers.
 - [Rendering modes](concepts/rendering-modes.md): `static`, `server` and `spa` routes: choosing a mode, combining modes, islands and `<Suspense>`, patterns close to partial prerendering, a comparison with Astro islands, prerendered SPA pages, shell-first streaming, hydration and the build.
-- [SVG imports](concepts/svg.md): `import Icon from "./icon.svg"` as an inline, optimised component; `title`, `currentColor`, `?url` and `?raw`.
+- [SVG imports](concepts/svg.md): `import Icon from "./icon.svg?component"` as an inline, optimised component, from your project or a package; `title`, `currentColor`, and Vite's own `.svg` imports.
 - [Markdown and HTML imports](concepts/content.md): `.md` and `.html` files as static components; GFM, heading ids, frontmatter and its hook, scoped `<style>`, client `<script>`.
 - [Head and document](concepts/head.md): `<Title>`, `<Meta>`, `<Head>` and a custom `document.stsx`.
 - [Compiler and diagnostics](concepts/compiler.md): What the compiler does with `.stsx`/`.tsx`, and how `LUMxxxx` diagnostics work.

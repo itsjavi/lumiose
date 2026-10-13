@@ -72,8 +72,9 @@ export interface LumioseOptions {
    */
   csrf?: false | CsrfOptions;
   /**
-   * `.svg` imports (`import Icon from "./icon.svg"`) as inline components, optimised with SVGO;
-   * `?url` and `?raw` keep Vite's behaviour. `false` leaves `.svg` imports to Vite (a URL).
+   * `.svg?component` imports (`import Icon from "./icon.svg?component"`, from the project or a
+   * package) as inline components, optimised with SVGO; every other `.svg` import is Vite's.
+   * `false` leaves `?component` to Vite too (a URL).
    * Default: `true` (`{ optimize: true, currentColor: false }`).
    */
   svg?: boolean | SvgOptions;
