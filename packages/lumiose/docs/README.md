@@ -23,7 +23,6 @@ mistakes** and **Related diagnostics**. Reference pages list every export with i
 
 - [Getting started](getting-started.md): Create a project, configure TypeScript and Vite, and render a first component.
 - [Coming from React](coming-from-react.md): Hooks mapped to signals, what goes away (the rules of hooks, dependency arrays, stale closures, memoization) and the mistakes React habits cause.
-- [Upgrading from 0.1](upgrading.md): The renamed APIs (`useContext`, `<Ctx value>`, `render`, `isPending`, …) and how to migrate.
 
 ## Concepts
 
