@@ -1,6 +1,6 @@
 {
   "name": "@lumiose/adapter-netlify",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Deploy a Lumiose build to Netlify: dist/client as the site, the build's fetch handler as a Netlify Function.",
   "license": "MIT",
   "repository": {

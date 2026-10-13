@@ -2,6 +2,51 @@
 
 All Lumiose packages share one version.
 
+## 0.3.0 (2026-10-13)
+
+### Breaking changes
+
+- **adapters:** named exports only (TASK-175) (6ddc708c)
+- **routes:** Next.js App Router file conventions (TASK-253) (0a459fda)
+
+### Features
+
+- **web:** generate the README's benchmark numbers from the committed results (TASK-269) (19cda157)
+- **bench:** same-browser alternating jsfb A/B, pnpm bench:jsfb:ab (TASK-245) (45d0356d)
+- **router:** SPA navigations update the hreflang alternates and the canonical (TASK-263) (03b2e4f4)
+- **build:** name route modules' chunks and stylesheets after their route folder (TASK-260) (558126ec)
+- **dotmatrix:** recompose Rival Clash, Last Stand, Lantern Night, Bumbling Along and Roll the Credits; every demo passes the composition check (TASK-187) (762a8e1a)
+- **examples:** bookshelf book page as a reader-independent shell with per-reader holes (TASK-236) (c118855c)
+- **compiler:** publish a linux-arm64-musl binary from release runs (TASK-258) (d8c34fd2)
+- **i18n:** alternates(pattern, params), routes' locales in lumiose routes, locale() typed undefined without i18n (TASK-261) (b5670dde)
+- **examples:** ssr-i18n-paraglide and ssr-i18n-i18next, a translated site with locale routing (TASK-255) (434b0cd6)
+- **examples:** ssr-realtime with server-sent events and WebSockets, and the realtime guide (TASK-251) (e22a539e)
+- **i18n:** locale routing with lumiose({ i18n }) and lumiose({ site }) (TASK-254) (b22b4915)
+- **dev:** patch server-rendered pages in place after server-only edits (TASK-148) (9bd0ef1f)
+- **examples:** ssr-auth with Better Auth and Prisma, and the authentication guide (TASK-250) (2e534c24)
+- **adapters:** Cloudflare, Vercel and Netlify deploy adapters (TASK-175) (955b8045)
+- **runtime:** viewTransition() and <ViewTransition>, SPA navigations in view transitions (TASK-252) (9417918a)
+- **runtime:** useId() with server/hydration parity and idPrefix (TASK-247) (94e8629b)
+- **app:** one web-standard fetch handler for the server build, with ctx.platform (TASK-248) (c68a4769)
+
+### Fixes
+
+- **static:** servers and deploy adapters cache exactly the files the build hashed (TASK-201) (b078c8a1)
+- **static:** immutable caching for hashes with - and _, and a build warning for public files that look hashed (TASK-201) (86f6dc62)
+- **head:** SPA navigations bring back the document's head defaults (TASK-256) (0cb1783b)
+- **i18n:** a prefetch never keeps a locale detection decision (TASK-254) (6af11f14)
+- **app:** carry trailingSlash in a global define too, read through a checked accessor (TASK-254) (cd7759b5)
+- **i18n:** carry the locales in a global define, which Vitest keeps per project (TASK-254) (486a5bde)
+- **examples:** rate-limit sign-in form actions in ssr-auth (TASK-250) (78c650fa)
+- **vite:** HMR entry wrapper forwards render() options such as idPrefix (TASK-257) (eba439cf)
+- **app:** the page's <Title> and <Meta> replace the document's own head tags (TASK-238) (7b8e0449)
+
+### Performance
+
+- **dom:** insert writes numbers to the DOM unconverted (TASK-267) (ce09eb3e)
+- **dom:** setText writes numbers to the DOM unconverted (TASK-245) (8ebf8cfc)
+- **router:** the SPA entry passes followLocaleLinks only with i18n (TASK-263) (a7d7c135)
+
 ## 0.2.0 (2026-10-12)
 
 ### Breaking changes

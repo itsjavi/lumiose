@@ -1,6 +1,6 @@
 {
   "name": "@lumiose/prettier-plugin",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Prettier support for Lumiose .stsx files: the TSX with Prettier's TypeScript printer, each <style> block with its CSS printer, re-indented at its placement (like lumiose fmt).",
   "license": "MIT",
   "repository": {

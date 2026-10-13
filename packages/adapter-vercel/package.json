@@ -1,6 +1,6 @@
 {
   "name": "@lumiose/adapter-vercel",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Deploy a Lumiose build to Vercel (Build Output API v3): static files, and the build's fetch handler as a Node.js or Edge function.",
   "license": "MIT",
   "repository": {
