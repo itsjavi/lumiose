@@ -10,7 +10,8 @@ rendering an icon clones markup, on the server and in the browser alike. The ico
 **inline**: its paths are part of the page's HTML, CSS reaches them, and nothing is fetched.
 
 The query is the switch, so it works the same for your files and for packages:
-`import House from "lucide-static/icons/house.svg?component"`. Without it, an `.svg` import is what Vite makes of it: a URL by default.
+`import House from "lucide-static/icons/house.svg?component"` (see
+[Icons with Lucide](../guides/icons.md)). Without it, an `.svg` import is what Vite makes of it: a URL by default.
 
 - **Props override the file.** The file's root attributes (`width`, `height`, `viewBox`, `fill`,
   `stroke`, `class`, …) are defaults; any `<svg>` prop you pass replaces the matching one:
