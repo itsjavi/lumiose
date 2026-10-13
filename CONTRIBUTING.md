@@ -67,8 +67,10 @@ pnpm's store, Cargo's registry and `target/`, and the Playwright browsers are ca
 
 The published packages share one version: `lumiose` (the runtime, no dependencies),
 `@lumiose/vite` (the Vite plugin, dev server and build), `@lumiose/cli` (the `lumiose` command),
-`@lumiose/compiler`, `@lumiose/adapter-node`, `@lumiose/language-server`, `@lumiose/eslint-plugin`,
-`@lumiose/prettier-plugin` and `create-lumiose`. In the workspace their `exports` point at the
+`@lumiose/compiler`, the deploy adapters (`@lumiose/adapter-node`, `-cloudflare`, `-vercel` and
+`-netlify`), `@lumiose/query`, `@lumiose/language-server`, `@lumiose/eslint-plugin`,
+`@lumiose/prettier-plugin` and `create-lumiose`: every package in `packages/` that is not
+`private`, so a new one is published with the next release. In the workspace their `exports` point at the
 TypeScript sources, which Node runs directly. Published, they point at `dist/` instead
 (`publishConfig`, applied by `pnpm pack`): `pnpm build` in a package (also its `prepack`) runs
 `scripts/build-package.ts`, which compiles `src/` with the package's `tsconfig.build.json`
