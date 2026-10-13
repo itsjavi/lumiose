@@ -16,6 +16,35 @@ pnpm release:version 0.2.0 --dry-run   # what a release would change (see Releas
 Changes to the website (`apps/web`) follow [its contributing notes](apps/web/CONTRIBUTING.md): the
 WCAG 2.2 AA axe suite and the manual accessibility checklist (decision-39).
 
+## Run anything: `pnpm demo`
+
+Every package in the repo that serves HTML (the examples, the website with its playground, the site-kit showcase, the benchmark apps and results viewers, the eval results viewer and the e2e test apps) can be started from the root:
+
+```sh
+pnpm demo                          # pick one from a list grouped by kind
+pnpm demo chip                     # fuzzy name: starts spa-chiptune in dev
+pnpm demo bookshelf --prod         # build, then its production server (preview, start or serve)
+pnpm demo web --port 5000 --open   # choose the port, open the browser when it answers
+pnpm demo --list                   # list without starting (--json for tools)
+```
+
+It prints the URL once the server answers; Ctrl+C stops the server and everything it started. Entries come from the workspace packages that have a `dev`, `view`, `start`, `serve` or `preview` script, so new apps appear on their own. A package can describe itself with a `demo` field in its `package.json`: `"demo": { "title": "Chiptune tracker (SPA)", "kind": "example" }` (`kind`: `example`, `site`, `benchmark`, `eval` or `e2e`; optional `name`, `setup` scripts to run first such as `["seed"]`, `port: "flag" | "env"`, or `"demo": false` to hide it). Details: [`scripts/demo.ts`](scripts/demo.ts); tests: `node --test scripts/demo.test.ts`.
+
+## Website
+
+The website is assembled into one static site: `apps/web` (the landing page at `/`, the docs at `/docs`, the `/showcase` and `/benchmarks` pages, and the playground at `/playground`), the example apps that need no server (the real apps `examples/spa-chiptune` and `spa-dotmatrix` at `/showcase/chiptune-tracker/` and `/showcase/dotmatrix/`, indexed and in `sitemap.xml`; the samples `ssg-travel-journal` and `vite-counter` at `/demos/travel-journal/` and `/demos/counter/`, with `noindex` and out of the sitemap), the fullstack benchmark's results viewer with the committed results (`/benchmarks/fullstack/`) and the Lumiose js-framework-benchmark app (`/benchmarks/js-framework-benchmark/app/`).
+
+```sh
+pnpm build:site                  # builds the compiler, the website and the examples into dist/site
+pnpm build:site --base /lumiose/   # served below a path, e.g. a GitHub project page
+pnpm preview:site --base /lumiose/ # serves dist/site at http://localhost:4173/lumiose/
+pnpm build:site --site-url https://example.com/   # the public URL for sitemap.xml (default on GitHub Actions: https://<owner>.github.io<base>)
+```
+
+`--skip-compiler` reuses an existing native compiler build. Each example gets `PUBLIC_LUMIOSE_SITE` (the site's base) and shows a small "Made with Lumiose" link back to the site when it is set; the static benchmark viewers get the same link. GitHub Pages answers every missing path with the root `404.html`; below an example that has its own `404.html` (the SPA shell of the chiptune tracker, the journal's 404 page), that page renders the example's instead, so deep links work. The old `/examples/<folder>/…` URLs redirect to the new homes with the same path, query and hash (Dotmatrix share links carry the song in `?song=…`), through a stub at each old root and the root `404.html`, with a meta refresh and a canonical link without JavaScript. The website's build also builds the playground's WebAssembly compiler (`apps/web/scripts/playground-assets.ts`), which needs `rustup target add wasm32-unknown-unknown` and `cargo install wasm-bindgen-cli --version 0.2.129 --locked` (the version must match the workspace's `wasm-bindgen` pin). `pnpm demo web` builds it too when the toolchain is installed; without it the rest of the site runs and the playground page reports the missing compiler.
+
+`.github/workflows/pages.yml` runs the same build on every push to `main` (or manually) and deploys `dist/site` to GitHub Pages, with the base taken from the Pages configuration. To enable it, set **Settings > Pages > Source** to **GitHub Actions** on the repository.
+
 ## Continuous integration
 
 `.github/workflows/ci.yml` runs on every push and pull request to `main`, on Linux, macOS and
