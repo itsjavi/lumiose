@@ -2,7 +2,7 @@
 // developers already know. The facts (full-stack layer, styles) are written here; the measured cells
 // come from the committed results through evidence.ts. A stack with no
 // committed result yet shows "measuring", so a new run (TASK-235) only updates the results files.
-import { evidence, type Evidence } from "./evidence.ts";
+import { evidence, type Bar, type Evidence } from "./evidence.ts";
 
 /** A table cell. */
 export type Cell =
@@ -223,4 +223,38 @@ export function readStacks(
 
 export function stacks(): StackRow[] {
   return readStacks(evidence());
+}
+
+const self = (bars: Bar[]) => bars.find((bar) => bar.self)!.value;
+
+/** Lumiose's headline figures, shown in the landing's hero and the README. */
+export function headlines(
+  results: Pick<Evidence, "cpu" | "serverJs" | "size">,
+): { value: string; label: string }[] {
+  return [
+    { value: factor(self(results.cpu)), label: "vanilla JS on js-framework-benchmark" },
+    { value: kilobytes(self(results.serverJs)), label: "JavaScript on server-rendered pages" },
+    { value: kilobytes(self(results.size)), label: "runtime and app, compressed" },
+  ];
+}
+
+/** How the comparison table was measured, shown under it on the landing page and in the README. */
+export function tableNote(
+  results: Pick<Evidence, "cpuByColumn" | "fullstackRun" | "serverRun" | "requestsRun">,
+  rows: StackRow[],
+): string {
+  const vanilla = results.cpuByColumn["vanillajs"];
+  const measuring = rows.some((row) =>
+    [row.fullStack, row.styles, row.serverJs, row.clientSpeed, row.rendering, row.requests].some(
+      (cell) => cell.kind === "measuring",
+    ),
+  );
+  return [
+    `JS on a server page: what the fullstack comparison's issue tracker loads for its home page, brotli (${results.fullstackRun}).`,
+    `Client speed: js-framework-benchmark's weighted factor, where 1.00 is the fastest framework in the run${vanilla === undefined ? "" : ` and vanilla JS scores ${vanilla.toFixed(2)}`}.`,
+    `Server speed: renders per second of the SSR benchmark's 5,000-component page to an HTML string (${results.serverRun}), then requests per second on the fullstack comparison's home page${results.requestsRun === "" ? "" : ` (${results.requestsRun})`}.`,
+    "Both React rows use React's client and rendering entries.",
+    ...(measuring ? ['"measuring": the port or benchmark entry is being added.'] : []),
+    `Rows after Lumiose are ordered by npm downloads of each stack's main package (${DOWNLOADS_PERIOD}).`,
+  ].join(" ");
 }

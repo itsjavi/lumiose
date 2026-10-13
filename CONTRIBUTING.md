@@ -45,6 +45,8 @@ pnpm build:site --site-url https://example.com/   # the public URL for sitemap.x
 
 `.github/workflows/pages.yml` runs the same build on every push to `main` (or manually) and deploys `dist/site` to GitHub Pages, with the base taken from the Pages configuration. To enable it, set **Settings > Pages > Source** to **GitHub Actions** on the repository.
 
+The README's headline numbers and stack comparison table are generated from the same committed results as the landing page (`apps/web/src/content/readme.ts`), between `<!-- generated:… -->` markers. After committing new benchmark results (`benchmarks/*/RESULTS.md`, `benchmarks/fullstack/results/`) or editing the stack facts in `apps/web/src/content/stacks.ts`, run `pnpm readme:gen` and commit the README with them; the website's content tests fail while it is stale.
+
 ## Continuous integration
 
 `.github/workflows/ci.yml` runs on every push and pull request to `main`, on Linux, macOS and

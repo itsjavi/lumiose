@@ -19,7 +19,8 @@
     "release:version": "node scripts/release.ts",
     "build:site": "node scripts/site.ts build",
     "preview:site": "node scripts/site.ts preview",
-    "demo": "node scripts/demo.ts"
+    "demo": "node scripts/demo.ts",
+    "readme:gen": "node apps/web/scripts/readme.ts"
   },
   "devDependencies": {
     "@lumiose/cli": "workspace:*",

@@ -33,11 +33,11 @@ import { renderingModes } from "../content/showcase.ts";
 import {
   type Cell,
   COLUMNS,
-  DOWNLOADS_PERIOD,
   SERVER_SPEED,
-  factor,
+  headlines,
   kilobytes,
   stacks,
+  tableNote,
 } from "../content/stacks.ts";
 import { site } from "../lib/site.ts";
 
@@ -97,14 +97,7 @@ function More(props: { href: string; children: JSX.Element }) {
 
 export default function Home() {
   const results = evidence();
-  const self = (bars: { self: boolean; value: number }[]) => bars.find((bar) => bar.self)!.value;
-  const vanilla = results.cpuByColumn["vanillajs"];
   const rows = stacks();
-  const measuring = rows.some((row) =>
-    [row.fullStack, row.styles, row.serverJs, row.clientSpeed, row.rendering, row.requests].some(
-      (cell) => cell.kind === "measuring",
-    ),
-  );
   const getStarted = href("/docs/[[...path]]", { path: "getting-started" });
 
   return (
@@ -151,18 +144,12 @@ export default function Home() {
           </div>
           {prerelease && <p class="badge">{version} · pre-release</p>}
           <ul class="proof" role="list">
-            <li>
-              <strong>{factor(self(results.cpu))}</strong>
-              <span>vanilla JS on js-framework-benchmark</span>
-            </li>
-            <li>
-              <strong>{kilobytes(self(results.serverJs))}</strong>
-              <span>JavaScript on server-rendered pages</span>
-            </li>
-            <li>
-              <strong>{kilobytes(self(results.size))}</strong>
-              <span>runtime and app, compressed</span>
-            </li>
+            {headlines(results).map((item) => (
+              <li>
+                <strong>{item.value}</strong>
+                <span>{item.label}</span>
+              </li>
+            ))}
           </ul>
         </div>
       </section>
@@ -218,17 +205,8 @@ export default function Home() {
           </table>
         </div>
         <p class="note">
-          JS on a server page: what the fullstack comparison's issue tracker loads for its home
-          page, brotli ({results.fullstackRun}). Client speed: js-framework-benchmark's weighted
-          factor, where 1.00 is the fastest framework in the run
-          {vanilla === undefined ? "" : ` and vanilla JS scores ${vanilla.toFixed(2)}`}. Server
-          speed: renders per second of the SSR benchmark's 5,000-component page to an HTML string (
-          {results.serverRun}), then requests per second on the fullstack comparison's home page
-          {results.requestsRun === "" ? "" : ` (${results.requestsRun})`}. Both React rows use
-          React's client and rendering entries.
-          {measuring ? ' "measuring": the port or benchmark entry is being added.' : ""} Rows after
-          Lumiose are ordered by npm downloads of each stack's main package ({DOWNLOADS_PERIOD}).
-          Method and every run: <a href={href("/benchmarks")}>benchmarks</a>.
+          {tableNote(results, rows)} Method and every run:{" "}
+          <a href={href("/benchmarks")}>benchmarks</a>.
         </p>
         <p class="note">Astro's interactive islands need a second UI framework.</p>
       </section>

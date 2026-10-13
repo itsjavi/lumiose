@@ -5,8 +5,10 @@ import { searchDocs, type SearchEntry } from "../lib/search.ts";
 import { site } from "../lib/site.ts";
 import { docHref, docNav, docPages, findDoc, readOutline, slugify } from "./docs.ts";
 import { evidence, readFullstack, type FullstackRun } from "./evidence.ts";
-import { factor, kilobytes, perSecond, readStacks, stacks } from "./stacks.ts";
+import { factor, headlines, kilobytes, perSecond, readStacks, stacks } from "./stacks.ts";
 import { llmsText } from "./llms.ts";
+import { fillReadme, generateReadme, readmeRegions } from "./readme.ts";
+import rootReadme from "../../../../README.md?raw";
 import { FILENAME, ROOT } from "../playground/compiler.ts";
 import { counterCss, counterOutput, counterSource } from "./samples.ts";
 
@@ -231,6 +233,33 @@ describe("stack table", () => {
     expect(row("Remix 3").rendering).toEqual({ kind: "measured", text: "99 renders/s" });
     expect(row("Astro").requests).toEqual({ kind: "measured", text: "1,235 req/s" });
     expect(row("Astro").serverJs).toEqual({ kind: "measured", text: "0 kB" });
+  });
+});
+
+describe("README numbers", () => {
+  it("match the committed results", () => {
+    expect(
+      generateReadme(rootReadme),
+      "README.md's generated numbers are stale: run `pnpm readme:gen`",
+    ).toBe(rootReadme);
+  });
+
+  it("show the landing's headlines and every stack row", () => {
+    const regions = readmeRegions(evidence(), stacks());
+    for (const { value, label } of headlines(evidence())) {
+      expect(regions.proof).toContain(`<strong>${value}</strong><br><sub>${label}</sub>`);
+    }
+    for (const row of stacks()) expect(regions.compare).toContain(row.stack);
+    expect(regions.compare).toContain("<td><strong>Lumiose</strong></td>");
+    expect(regions.compare).not.toMatch(/\n\s*\n/);
+  });
+
+  it("replace only the marked regions", () => {
+    const readme = "intro\n<!-- generated:a -->\nold\n<!-- /generated:a -->\noutro\n";
+    expect(fillReadme(readme, { a: "new" })).toBe(
+      "intro\n<!-- generated:a -->\nnew\n<!-- /generated:a -->\noutro\n",
+    );
+    expect(() => fillReadme(readme, { b: "new" })).toThrow("<!-- generated:b -->");
   });
 });
 

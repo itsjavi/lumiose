@@ -19,13 +19,15 @@
   <a href="LICENSE">MIT License</a>
 </p>
 
+<!-- generated:proof -->
 <table align="center">
   <tr>
-    <td align="center"><strong>0 kB</strong><br><sub>JavaScript on server-rendered pages</sub></td>
     <td align="center"><strong>1.08×</strong><br><sub>vanilla JS on js-framework-benchmark</sub></td>
+    <td align="center"><strong>0 kB</strong><br><sub>JavaScript on server-rendered pages</sub></td>
     <td align="center"><strong>6.4 kB</strong><br><sub>runtime and app, compressed</sub></td>
   </tr>
 </table>
+<!-- /generated:proof -->
 
 ## Quick start
 
@@ -101,25 +103,23 @@ export default function Counter() {
 
 ## How it compares
 
-| Stack              | Styles         | JS on a server page | Client speed | SSR renders/s | Requests/s |
-| ------------------ | -------------- | ------------------: | -----------: | ------------: | ---------: |
-| **Lumiose**        | **Built in**   |            **0 kB** |    **1.08×** |       **619** |  **1,323** |
-| React + Next.js    | Pick a library |              119 kB |        1.54× |           185 |        437 |
-| React Router       | Pick a library |              101 kB |        1.54× |           185 |        683 |
-| Preact             | Pick a library |                   — |        1.52× |           208 |          — |
-| Astro              | Built in       |                0 kB |           —¹ |           206 |      1,247 |
-| Svelte + SvelteKit | Built in       |               38 kB |        1.17× |           505 |      1,067 |
-| Vue + Nuxt         | Built in       |               76 kB |        1.25× |           204 |        608 |
-| Solid + SolidStart | Pick a library |               33 kB |        1.11× |           580 |        999 |
-| Remix 3            | Built in       |               42 kB |        1.57× |            44 |        823 |
-
-<sub>
-Measured on 2026-10-12 (Apple M1 Max, Node 26.8.1). <b>JS on a server page</b>: what the same issue tracker loads for
-its home page, brotli. <b>Client speed</b>: js-framework-benchmark's weighted factor, where 1.00 is vanilla JS.
-<b>SSR renders/s</b>: a 5,000-component page rendered to an HTML string. <b>Requests/s</b>: the issue tracker's home
-page. Preact has no full-stack layer. ¹ Astro's interactive islands need a second UI framework. Method and every run:
-<a href="https://itsjavi.com/lumiose/benchmarks">benchmarks</a>.
-</sub>
+<!-- generated:compare -->
+<table>
+  <thead><tr><th>Stack</th><th>Full-stack layer</th><th>Styles</th><th>JS on a server page</th><th>Client speed</th><th colspan="2">Server speed</th></tr></thead>
+  <tbody>
+    <tr><td><strong>Lumiose</strong></td><td><strong>Built in</strong></td><td><strong>Built in</strong></td><td align="right"><strong>0&nbsp;kB</strong></td><td align="right"><strong>1.08×</strong></td><td align="right"><strong>619&nbsp;renders/s</strong></td><td align="right"><strong>1,323&nbsp;req/s</strong></td></tr>
+    <tr><td>React + Next.js</td><td>Separate project</td><td>Pick a library</td><td align="right">119&nbsp;kB</td><td align="right">1.54×</td><td align="right">185&nbsp;renders/s</td><td align="right">437&nbsp;req/s</td></tr>
+    <tr><td>React Router</td><td>Built in</td><td>Pick a library</td><td align="right">101&nbsp;kB</td><td align="right">1.54×</td><td align="right">185&nbsp;renders/s</td><td align="right">683&nbsp;req/s</td></tr>
+    <tr><td>Preact</td><td>None official</td><td>Pick a library</td><td align="right">No full-stack layer</td><td align="right">1.52×</td><td align="right">208&nbsp;renders/s</td><td align="right">No full-stack layer</td></tr>
+    <tr><td>Astro</td><td>Built in</td><td>Built in</td><td align="right">0&nbsp;kB</td><td align="right">Depends on the UI framework</td><td align="right">206&nbsp;renders/s</td><td align="right">1,247&nbsp;req/s</td></tr>
+    <tr><td>Svelte + SvelteKit</td><td>Separate project</td><td>Built in</td><td align="right">38&nbsp;kB</td><td align="right">1.17×</td><td align="right">505&nbsp;renders/s</td><td align="right">1,067&nbsp;req/s</td></tr>
+    <tr><td>Vue + Nuxt</td><td>Separate project</td><td>Built in</td><td align="right">76&nbsp;kB</td><td align="right">1.25×</td><td align="right">204&nbsp;renders/s</td><td align="right">608&nbsp;req/s</td></tr>
+    <tr><td>Solid + SolidStart</td><td>Separate project</td><td>Pick a library</td><td align="right">33&nbsp;kB</td><td align="right">1.11×</td><td align="right">580&nbsp;renders/s</td><td align="right">999&nbsp;req/s</td></tr>
+    <tr><td>Remix 3</td><td>Built in</td><td>Built in</td><td align="right">42&nbsp;kB</td><td align="right">1.57×</td><td align="right">44&nbsp;renders/s</td><td align="right">823&nbsp;req/s</td></tr>
+  </tbody>
+</table>
+<p><sub>JS on a server page: what the fullstack comparison's issue tracker loads for its home page, brotli (2026-10-12 · Apple M1 Max (10 cores) · macOS 27.0.1 · Node 26.8.1). Client speed: js-framework-benchmark's weighted factor, where 1.00 is the fastest framework in the run and vanilla JS scores 1.00. Server speed: renders per second of the SSR benchmark's 5,000-component page to an HTML string (2026-10-12, Node v26.8.1, Apple M1 Max (10 cores, 32 GB), darwin 27.0.0 arm64), then requests per second on the fullstack comparison's home page (2026-10-12 · Apple M1 Max (10 cores) · macOS 27.0.1 · Node 26.8.1). Both React rows use React's client and rendering entries. Rows after Lumiose are ordered by npm downloads of each stack's main package (2026-09-10 to 2026-10-09). Astro's interactive islands need a second UI framework. Method and every run: <a href="https://itsjavi.com/lumiose/benchmarks">benchmarks</a>.</sub></p>
+<!-- /generated:compare -->
 
 ## Showcase
 
