@@ -57,7 +57,7 @@ import {
     --lm-code-bg: light-dark($light.codeBg, $dark.codeBg);
     --lm-code-fg: light-dark($light.codeFg, $dark.codeFg);
     --lm-inline-code-fg: light-dark($light.inlineCodeFg, $dark.inlineCodeFg);
-    --lm-inline-code-bg: light-dark($light.inlineCodeBg, $dark.inlineCodeBg);
+    --lm-inline-code-bg: var(--lm-info-bg);
     --lm-inline-code-border: light-dark($light.inlineCodeBorder, $dark.inlineCodeBorder);
     --lm-info-fg: light-dark($light.infoFg, $dark.infoFg);
     --lm-info-bg: light-dark($light.infoBg, $dark.infoBg);
@@ -187,8 +187,8 @@ import {
     font-size: 0.9em;
     font-variant-ligatures: none;
   }
-  /* Inline code: smaller than the text around it (monospace glyphs run wide), on a slate chip
-     that stands out from the page; a chip broken across lines keeps its edges. */
+  /* Inline code: smaller than the text around it (monospace glyphs run wide), a slate chip on the
+     info background that sets it apart from body text; a chip broken across lines keeps its edges. */
   :where(:not(pre) > code) {
     padding: 0.08em 0.32em;
     border-radius: $radius.sm;

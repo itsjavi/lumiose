@@ -24,7 +24,6 @@ export const light = {
   codeBg: "#f5f5fa",
   codeFg: "#1d1d2c",
   inlineCodeFg: "#161d2b",
-  inlineCodeBg: "#dce1ea",
   inlineCodeBorder: "#bcc4d2",
   infoFg: "#0a58a6",
   infoBg: "#edf4ff",
@@ -67,7 +66,6 @@ export const dark = {
   codeBg: "#10101a",
   codeFg: "#e3e3f0",
   inlineCodeFg: "#f3f5fa",
-  inlineCodeBg: "#363e52",
   inlineCodeBorder: "#4f5971",
   infoFg: "#8fc3ff",
   infoBg: "#0e1b31",
@@ -113,7 +111,7 @@ export const color = {
   shadow: "var(--lm-shadow)",
   codeBg: "var(--lm-code-bg)",
   codeFg: "var(--lm-code-fg)",
-  /** Inline code in running text: a neutral slate chip that stands out from the page. */
+  /** Inline code in running text: a slate chip on the info background, apart from body text. */
   inlineCodeFg: "var(--lm-inline-code-fg)",
   inlineCodeBg: "var(--lm-inline-code-bg)",
   inlineCodeBorder: "var(--lm-inline-code-border)",
