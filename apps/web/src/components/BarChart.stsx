@@ -94,9 +94,8 @@ export function BarChart(props: BarChartProps) {
     border-radius: inherit;
     background: $color.borderStrong;
   }
-  /* A zero still shows as a spark of light: 0 kB is a result, not a missing bar. */
+  /* No minimum width: equal values draw equal bars, so a zero is empty for every stack. */
   .self .bar {
-    min-inline-size: 4px;
     background: linear-gradient(90deg, $color.glowA, $color.glowB);
   }
   .value {
