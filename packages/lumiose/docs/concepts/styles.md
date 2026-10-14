@@ -1,6 +1,6 @@
 # Styles
 
-> Write plain CSS in `<style>` blocks in `.stsx` files. By convention, one block at the end of the file styles every component in it. Where a block sits decides its scope: the file, the element that encloses it, or the whole app with `<style global>`. CSS reads JS constants as `$name`, inlined at build time, and constant math is precomputed.
+> Write plain CSS in `<style>` blocks: where a block sits decides its scope, and CSS can read JS constants at build time.
 
 ## Concept
 

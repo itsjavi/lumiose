@@ -1,6 +1,6 @@
 # Server
 
-> Server code gets the request context everywhere: `ctx` in middleware, endpoints and actions, and `request()`, `url()`, `params()`, `route()`, `locals()`, `cookies()` and `response()` anywhere during a server render.
+> Middleware, endpoints, form actions and server renders all get the request context: URL, params, cookies, locals and the response.
 
 ## Concept
 

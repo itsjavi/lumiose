@@ -1,6 +1,6 @@
 # Railway
 
-> Run a Lumiose app on Railway: `@lumiose/adapter-node`'s `server.ts` built with Railway's Node builder, or the [Docker](docker.md) guide's image.
+> Run a Lumiose app on Railway with the Node adapter and Railway's Node builder, or from the Docker guide's image.
 
 Not tested on Railway yet: see the [verification table](README.md#verification).
 

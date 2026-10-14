@@ -1,6 +1,6 @@
 # Bun
 
-> Run a Lumiose build with Bun: `dist/server/entry.js` exports `{ fetch }`, which Bun serves as it is, static files included.
+> Run a Lumiose build with Bun, which serves the server build's fetch handler and the static files as they are.
 
 Tested locally with Bun 1.4.2: see the [verification table](README.md#verification).
 

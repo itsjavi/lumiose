@@ -1,6 +1,6 @@
 # Data and actions
 
-> One way to read data (async components), one way to serve an API (endpoints), one way to mutate (form actions, enhanced with `submit()`). No route loaders, no RPC server functions.
+> Read data in async components, serve APIs from endpoints and change data with form actions: one way to do each, with no loaders or RPC.
 
 ## Concept
 

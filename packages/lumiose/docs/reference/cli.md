@@ -1,6 +1,6 @@
 # CLI
 
-> The `lumiose` command: `dev`, `build`, `preview`, `check`, `typegen`, `routes`, `lint`, `fmt`, `docs`, `explain`, `agents init` and `mcp`, each with help, `--format json` and stable exit codes.
+> The `lumiose` command: every subcommand with its options, JSON output and exit codes.
 
 The command comes with the `@lumiose/cli` package (`pnpm add -D @lumiose/cli`).
 

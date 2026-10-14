@@ -1,6 +1,6 @@
 # AWS Lambda
 
-> Run the server build in AWS Lambda behind a Function URL or API Gateway, through a small adapter from Lambda's events to the build's web `fetch` handler.
+> Run the server build on AWS Lambda behind a Function URL or API Gateway, through a small adapter from Lambda events to its fetch handler.
 
 Not tested on AWS yet: see the [verification table](README.md#verification). There is no
 `@lumiose/adapter-lambda`; this page shows the handler to write.

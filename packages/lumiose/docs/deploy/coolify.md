@@ -1,6 +1,6 @@
 # Coolify
 
-> Deploy a Lumiose app to Coolify with the Dockerfile build pack: the Dockerfile from the Docker guide, the exposed port, a domain, `ORIGIN` and runtime-only secrets, the image's health check, and a volume for data.
+> Deploy to Coolify with its Dockerfile build pack: the port, a domain, secrets, the health check and a volume for data.
 
 [Coolify](https://coolify.io) builds the app's Dockerfile on your server and runs the image behind
 its proxy, which terminates TLS for the domain. Lumiose needs nothing Coolify-specific: the image

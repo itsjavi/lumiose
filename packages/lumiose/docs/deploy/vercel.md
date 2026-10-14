@@ -1,6 +1,6 @@
 # Vercel
 
-> Deploy to Vercel with `@lumiose/adapter-vercel`: `lumiose build` writes `.vercel/output` (the Build Output API), with `dist/client` as static files and the build's fetch handler as a Node.js or Edge function.
+> Deploy to Vercel with `@lumiose/adapter-vercel`: the static files plus the app as a Node.js or Edge function.
 
 Tested locally with a harness for the Build Output API, not yet on Vercel itself: Vercel has no
 local runner for `.vercel/output`. See the [verification table](README.md#verification).

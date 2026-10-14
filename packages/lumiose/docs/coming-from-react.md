@@ -1,6 +1,6 @@
 # Coming from React
 
-> Lumiose JSX reads like React, but a component's body runs once, as setup, and never re-renders. The rules of hooks, dependency arrays, stale closures and memoization go away. A few new mistakes take their place, and the compiler flags most of them.
+> Lumiose JSX reads like React, but components run once and never re-render: what changes, what goes away, and the new mistakes to avoid.
 
 This page maps React habits to Lumiose. The linked pages have the full rules.
 

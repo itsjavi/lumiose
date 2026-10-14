@@ -1,6 +1,6 @@
 # Netlify
 
-> Deploy to Netlify with `@lumiose/adapter-netlify`: `dist/client` is the site, and the build's fetch handler runs as a Netlify Function for every path no static file answers.
+> Deploy to Netlify with `@lumiose/adapter-netlify`: the static files are the site, the app runs as a Netlify Function.
 
 Tested locally with `netlify serve`, not yet on Netlify itself: see the
 [verification table](README.md#verification).

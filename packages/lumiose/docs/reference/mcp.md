@@ -1,6 +1,6 @@
 # MCP server
 
-> `lumiose mcp` serves the project to coding agents over the Model Context Protocol: version-matched docs, `lumiose check` diagnostics with fixes, routes, component metadata, compiler output, server-rendered HTML and dev server logs.
+> `lumiose mcp` serves your project to coding agents: version-matched docs, diagnostics with fixes, routes, compiler output and logs.
 
 `lumiose mcp` starts a stdio MCP server for the project in the current directory (or `--root`). It
 gives an agent the same answers as the CLI, as structured tool results, without parsing terminal

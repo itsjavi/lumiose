@@ -1,6 +1,6 @@
 # `lumiose`: components
 
-> Signatures and behavior of the built-in components and element helpers exported by `lumiose`: `Suspense`, `ErrorBoundary`, `Portal`, `Dynamic`, `ref`, `Head`, `Title`, `Meta`, and the view transitions `ViewTransition` and `viewTransition`.
+> Signatures of the built-in components, from Suspense and error boundaries to portals, head tags and view transitions.
 
 All are exported by `lumiose` in the browser and on the server. Concepts:
 [Components](../concepts/components.md), [Async components](../concepts/async.md),

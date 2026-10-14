@@ -1,6 +1,6 @@
 # JSX types and tsconfig
 
-> `lumiose/jsx-runtime` types JSX for `jsxImportSource: "lumiose"`; `lumiose/env` declares the global `JSX` namespace, `import.meta.env` and `Locals`. This page lists the type rules and the tsconfig.
+> The JSX and environment types, and the tsconfig settings a Lumiose project needs.
 
 ## tsconfig.json
 

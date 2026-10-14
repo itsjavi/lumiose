@@ -1,6 +1,6 @@
 # Security
 
-> `lumiose({ csp: "strict" })` sends a strict Content Security Policy: a fresh nonce on every inline script and style Lumiose writes and on those you write in JSX, `cspNonce()` for markup you build yourself, and hashes for prerendered pages. Form actions are also checked against cross-site posts.
+> A strict Content Security Policy, with nonces and hashes, from one option, and a cross-site check on every form action.
 
 ## Concept
 

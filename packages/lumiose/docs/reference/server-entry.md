@@ -1,6 +1,6 @@
 # Server build (`dist/server/entry.js`)
 
-> The output of `lumiose build` for servers: `export default { fetch(request, platform?) }`, a web-standard handler that serves pages, endpoints, form actions, streamed responses and the static files of `dist/client`. Bun and Deno run it as is; `@lumiose/adapter-node` and the deploy adapters wrap it.
+> What `lumiose build` writes for servers: one web-standard fetch handler for pages, endpoints, actions and static files.
 
 Concepts: [Rendering modes](../concepts/rendering-modes.md) (the build), [Server](../concepts/server.md)
 (the request context). For Node, use [`@lumiose/adapter-node`](adapter-node.md).

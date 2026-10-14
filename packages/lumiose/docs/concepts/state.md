@@ -1,6 +1,6 @@
 # Sharing state
 
-> Signals already do what Jotai, Zustand and Valtio do: keep state in a component, pass it down with context, or share it with `defineState`: one instance per page in the browser, one per request on the server, sent to the islands. This page shows where state should live, with recipes for stores with actions, families, persistence, external stores and state shared by islands.
+> Where state should live: in a component, passed down with context, or shared by a page and its islands, with recipes for common store patterns.
 
 ## Concept
 

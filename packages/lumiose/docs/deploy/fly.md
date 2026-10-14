@@ -1,6 +1,6 @@
 # Fly.io
 
-> Run a Lumiose app on Fly.io from the [Docker](docker.md) guide's image: `@lumiose/adapter-node` in a Machine, behind Fly's proxy.
+> Run a Lumiose app on Fly.io from the Docker guide's image, behind Fly's proxy.
 
 Not tested on Fly.io yet: the image is (see the [verification table](README.md#verification)).
 

@@ -1,6 +1,6 @@
 # Routing
 
-> Routes are folders under `src/routes`, with the Next.js App Router file names: `page.stsx` pages, `route.ts` endpoints, nested `layout` files and `not-found`/`error` pages. Any other file there is colocated, not a route. Route patterns and params are typed by `lumiose typegen`.
+> Routes are folders under `src/routes`, named like the Next.js App Router: pages, layouts, endpoints and error pages, with typed params.
 
 ## Concept
 

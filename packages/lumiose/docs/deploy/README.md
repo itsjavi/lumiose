@@ -1,6 +1,6 @@
 # Deploy
 
-> Run a Lumiose build in production: what `lumiose build` writes, the settings a server needs, a guide per target, and what each guide was verified on.
+> Run a Lumiose build in production: what the build writes, the settings a server needs, and a guide for each hosting target.
 
 ## What to deploy
 

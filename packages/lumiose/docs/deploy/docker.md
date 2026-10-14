@@ -1,6 +1,6 @@
 # Docker
 
-> A multi-stage Dockerfile for a Lumiose app served by `@lumiose/adapter-node`: built with every dependency, run on `node:24-alpine` with production dependencies only, as a non-root user, with a health check.
+> A multi-stage Dockerfile for a Lumiose app: production dependencies only, a non-root user and a health check.
 
 This page is for an app with server routes and the `server.ts` that `create-lumiose --template ssr`
 writes (`@lumiose/adapter-node`'s `createServer()`). The same image runs on any host that runs

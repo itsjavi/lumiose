@@ -1,6 +1,6 @@
 # Signals and reactivity
 
-> State lives in signals: read with `count()`, write with `count.set(v)`. Computeds derive, effects react, and only the code that read a signal re-runs.
+> State lives in signals: read with `count()`, write with `count.set(v)`, and only the code that read a signal re-runs.
 
 ## Concept
 

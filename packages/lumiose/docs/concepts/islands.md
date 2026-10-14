@@ -1,6 +1,6 @@
 # Islands
 
-> Pages render on the server and ship no JS by default. Add a `client:*` directive where a component is used, and only that component (an island) hydrates in the browser.
+> Pages ship no JavaScript by default: add a `client:*` directive to a component and only that island hydrates in the browser.
 
 ## Concept
 

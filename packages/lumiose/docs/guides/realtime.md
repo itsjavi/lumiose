@@ -1,6 +1,6 @@
 # Realtime: server-sent events and WebSockets
 
-> Push updates to the browser: server-sent events from an endpoint, read by an island with `EventSource`, and WebSockets with `ws` on the Node adapter's server. With proxy configs and notes per platform.
+> Push live updates to the browser with server-sent events or WebSockets, with proxy configs and notes per platform.
 
 **Server-sent events** (SSE) are a streamed `GET` response: the server pushes, the browser's
 `EventSource` reads and reconnects by itself, and they pass through proxies and CDNs as plain HTTP.

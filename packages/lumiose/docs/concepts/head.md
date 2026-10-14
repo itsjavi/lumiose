@@ -1,6 +1,6 @@
 # Head and document
 
-> Set head content with `<Title>`, `<Meta>` and `<Head>` from any component. Lumiose renders `<html>`, `<head>` and `<body>` for you; `src/document.stsx` customizes them.
+> Set the page's title and meta tags from any component, and customize the HTML document around your app.
 
 ## Concept
 

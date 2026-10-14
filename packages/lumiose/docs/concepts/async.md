@@ -1,6 +1,6 @@
 # Async components
 
-> Any component may be `async` and `await` data in its body, on the server and the client. `<Suspense>` shows a fallback while new content loads; `<ErrorBoundary>` catches failures.
+> Components can be async and await their data, on the server and in the browser, with Suspense for loading states and error boundaries for failures.
 
 ## Concept
 

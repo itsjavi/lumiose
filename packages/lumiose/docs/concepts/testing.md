@@ -1,6 +1,6 @@
 # Testing
 
-> Test components with Vitest through the Lumiose Vite plugin: render into a DOM environment, interact, call `flush()`, assert. Test server rendering with `renderToString`.
+> Test components with Vitest: render into a DOM, interact, flush updates and assert, and test server rendering as HTML strings.
 
 ## Concept
 

@@ -1,6 +1,6 @@
 # Authentication with Better Auth
 
-> Email and password accounts with Better Auth and Prisma: Better Auth's handler as an endpoint, the session in middleware, protected pages, rate-limited form actions for sign-up, sign-in and sign-out, and Better Auth's browser client in an island.
+> Email and password accounts with Better Auth and Prisma: sign-up, sign-in and sign-out, the session in middleware and protected pages.
 
 Lumiose has no auth module of its own: [Better Auth](https://www.better-auth.com) runs on any
 server that hands it a web `Request`, and that is what endpoints, middleware and actions have. This

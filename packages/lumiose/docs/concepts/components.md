@@ -1,6 +1,6 @@
 # Components
 
-> A component is a PascalCase function that returns JSX. Its body runs once, as setup; signals make the JSX update in place.
+> A component is a function that returns JSX: its body runs once, as setup, and signals update the JSX in place.
 
 ## Concept
 

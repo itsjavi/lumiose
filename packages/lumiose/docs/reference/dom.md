@@ -1,6 +1,6 @@
 # `lumiose/dom`
 
-> `render` renders a component tree into a DOM element. The rest of `lumiose/dom` is the client half of the compiler-runtime contract that compiled code imports.
+> `render` mounts a component tree into the DOM; the rest of `lumiose/dom` is what compiled code imports.
 
 ## render
 

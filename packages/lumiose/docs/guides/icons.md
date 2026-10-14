@@ -1,6 +1,6 @@
 # Icons with Lucide
 
-> Use Lucide, or any icon set shipped as SVG files, through `?component` imports: each icon is an inline component, compiled at build time, sized and coloured with CSS, labelled with `title`, with no icon JavaScript at runtime.
+> Use Lucide, or any SVG icon set, as inline components compiled at build time, sized and coloured with CSS.
 
 [Lucide](https://lucide.dev) publishes every icon as an SVG file in the
 [`lucide-static`](https://www.npmjs.com/package/lucide-static) package. Import a file with

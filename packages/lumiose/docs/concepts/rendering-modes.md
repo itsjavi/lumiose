@@ -1,6 +1,6 @@
 # Rendering modes
 
-> Each route picks a mode: `static` (built HTML, the default), `server` (rendered per request, shell first, then streamed `<Suspense>` boundaries) or `spa` (a client-routed subtree, rendered per request, prerendered at build time or in the browser). All three use the same components, and modes mix per layout and page in one app.
+> Each route renders as static HTML, on the server per request, or as a client-routed SPA, with the same components, mixed freely in one app.
 
 ## Concept
 

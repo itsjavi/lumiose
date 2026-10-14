@@ -1,6 +1,6 @@
 # Compiler and diagnostics
 
-> A Rust compiler (OXC and Lightning CSS) turns `.stsx` and `.tsx` into fine-grained client code or string-concatenating server code. Every rule it enforces has a stable `LUMxxxx` code with a docs page.
+> A Rust compiler turns `.stsx` and `.tsx` files into fine-grained DOM code for the browser and string-building code for the server.
 
 ## Concept
 

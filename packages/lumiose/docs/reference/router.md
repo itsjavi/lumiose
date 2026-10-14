@@ -1,6 +1,6 @@
 # `lumiose/router`
 
-> The client router for `spa` routes, built on the Navigation API: `<Link>`, `navigate()`, reactive `params()`, `route()`, `searchParams()`, `url()` and `isNavigating()`, persistent layouts, transitions that hold the old page, scroll and focus restoration, and a client-side `not-found` page.
+> The client router for `spa` routes: links, navigation, reactive route state, persistent layouts, transitions and scroll restoration.
 
 `lumiose/router` works inside `spa` routes (`export const mode = "spa"`, or `lumiose({ mode: "spa" })`
 for the whole project); `<Link>` works on MPA pages too (see [Link](#link)). Pages and layouts of an SPA import it like any module; on the server

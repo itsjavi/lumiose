@@ -298,7 +298,7 @@ The extension bundles the server (it runs on VS Code's own Node.js) and uses the
 
 # Coming from React
 
-> Lumiose JSX reads like React, but a component's body runs once, as setup, and never re-renders. The rules of hooks, dependency arrays, stale closures and memoization go away. A few new mistakes take their place, and the compiler flags most of them.
+> Lumiose JSX reads like React, but components run once and never re-render: what changes, what goes away, and the new mistakes to avoid.
 
 This page maps React habits to Lumiose. The linked pages have the full rules.
 
@@ -439,7 +439,7 @@ export function Clock({ label }: { label: string }) {
 
 # Components
 
-> A component is a PascalCase function that returns JSX. Its body runs once, as setup; signals make the JSX update in place.
+> A component is a function that returns JSX: its body runs once, as setup, and signals update the JSX in place.
 
 ## Concept
 
@@ -570,7 +570,7 @@ See also: [JSX](jsx.md), [Signals](signals.md), [reference: components](../refer
 
 # Signals and reactivity
 
-> State lives in signals: read with `count()`, write with `count.set(v)`. Computeds derive, effects react, and only the code that read a signal re-runs.
+> State lives in signals: read with `count()`, write with `count.set(v)`, and only the code that read a signal re-runs.
 
 ## Concept
 
@@ -681,7 +681,7 @@ See also: [reference: reactivity](../reference/reactivity.md), [JSX bindings](js
 
 # Sharing state
 
-> Signals already do what Jotai, Zustand and Valtio do: keep state in a component, pass it down with context, or share it with `defineState`: one instance per page in the browser, one per request on the server, sent to the islands. This page shows where state should live, with recipes for stores with actions, families, persistence, external stores and state shared by islands.
+> Where state should live: in a component, passed down with context, or shared by a page and its islands, with recipes for common store patterns.
 
 ## Concept
 
@@ -1043,7 +1043,7 @@ See also: [Signals and reactivity](signals.md), [Islands](islands.md), [Async co
 
 # JSX
 
-> JSX reads like React (`.map()`, ternaries, `onClick`) but compiles to cloned templates with fine-grained bindings. Only expressions that read signals update.
+> JSX reads like React but compiles to cloned templates with fine-grained bindings, so only the expressions that read signals update.
 
 ## Concept
 
@@ -1181,7 +1181,7 @@ See also: [Components](components.md), [Styles](styles.md), [reference: JSX type
 
 # Styles
 
-> Write plain CSS in `<style>` blocks in `.stsx` files. By convention, one block at the end of the file styles every component in it. Where a block sits decides its scope: the file, the element that encloses it, or the whole app with `<style global>`. CSS reads JS constants as `$name`, inlined at build time, and constant math is precomputed.
+> Write plain CSS in `<style>` blocks: where a block sits decides its scope, and CSS can read JS constants at build time.
 
 ## Concept
 
@@ -1640,7 +1640,7 @@ See also: [Components](components.md), [JSX `style` and `class`](jsx.md).
 
 # Async components
 
-> Any component may be `async` and `await` data in its body, on the server and the client. `<Suspense>` shows a fallback while new content loads; `<ErrorBoundary>` catches failures.
+> Components can be async and await their data, on the server and in the browser, with Suspense for loading states and error boundaries for failures.
 
 ## Concept
 
@@ -1841,7 +1841,7 @@ See also: [Islands](islands.md), [Rendering modes](rendering-modes.md), [referen
 
 # Islands
 
-> Pages render on the server and ship no JS by default. Add a `client:*` directive where a component is used, and only that component (an island) hydrates in the browser.
+> Pages ship no JavaScript by default: add a `client:*` directive to a component and only that island hydrates in the browser.
 
 ## Concept
 
@@ -2049,7 +2049,7 @@ See also: [Rendering modes](rendering-modes.md), [Async components](async.md), [
 
 # Routing
 
-> Routes are folders under `src/routes`, with the Next.js App Router file names: `page.stsx` pages, `route.ts` endpoints, nested `layout` files and `not-found`/`error` pages. Any other file there is colocated, not a route. Route patterns and params are typed by `lumiose typegen`.
+> Routes are folders under `src/routes`, named like the Next.js App Router: pages, layouts, endpoints and error pages, with typed params.
 
 ## Concept
 
@@ -2291,7 +2291,7 @@ See also: [Rendering modes](rendering-modes.md), [Server](server.md), [reference
 
 # Internationalization
 
-> Locale routing is built in: with `lumiose({ i18n })`, route files stay unprefixed, the default locale is served at `/about` and every other locale under its prefix (`/es/about`). Pages declare the locales they exist in; `locale()`, `href()`, `<html lang>`, `hreflang` and canonical links follow. Translating messages stays in libraries.
+> Built-in locale routing: one set of route files served under each locale's prefix, with locale-aware links, `hreflang` and canonical URLs.
 
 ## Concept
 
@@ -2514,7 +2514,7 @@ See also: [i18n with Paraglide JS and i18next](../guides/i18n.md), [Routing](rou
 
 # Data and actions
 
-> One way to read data (async components), one way to serve an API (endpoints), one way to mutate (form actions, enhanced with `submit()`). No route loaders, no RPC server functions.
+> Read data in async components, serve APIs from endpoints and change data with form actions: one way to do each, with no loaders or RPC.
 
 ## Concept
 
@@ -2798,7 +2798,7 @@ See also: [Server](server.md), [Routing](routing.md), [reference: app layer](../
 
 # Server
 
-> Server code gets the request context everywhere: `ctx` in middleware, endpoints and actions, and `request()`, `url()`, `params()`, `route()`, `locals()`, `cookies()` and `response()` anywhere during a server render.
+> Middleware, endpoints, form actions and server renders all get the request context: URL, params, cookies, locals and the response.
 
 ## Concept
 
@@ -2941,7 +2941,7 @@ See also: [Data and actions](data-and-actions.md), [Routing](routing.md), [refer
 
 # Rendering modes
 
-> Each route picks a mode: `static` (built HTML, the default), `server` (rendered per request, shell first, then streamed `<Suspense>` boundaries) or `spa` (a client-routed subtree, rendered per request, prerendered at build time or in the browser). All three use the same components, and modes mix per layout and page in one app.
+> Each route renders as static HTML, on the server per request, or as a client-routed SPA, with the same components, mixed freely in one app.
 
 ## Concept
 
@@ -3329,7 +3329,7 @@ See also: [Islands](islands.md), [Async components](async.md), [Head and documen
 
 # SVG imports
 
-> `import Icon from "./icon.svg?component"` gives an inline SVG component, from your project or a package such as an icon set: optimised at build time, styled with `currentColor` and props, labelled with `title`, the same on the server, the client and in islands. Every other `.svg` import keeps Vite's meaning.
+> Import any SVG file, from your project or an icon set, as an inline component with `?component`, optimised at build time and styled with CSS.
 
 ## Concept
 
@@ -3488,7 +3488,7 @@ See also: [Styles](styles.md), [JSX](jsx.md), [reference: `@lumiose/vite`](../re
 
 # Markdown and HTML imports
 
-> With `lumiose({ md: true, html: true })`, `import Post, { frontmatter, headings } from "./post.md"` and `import Card from "./card.html"` give static components, compiled at build time: CommonMark + GFM with heading ids, a headings list and YAML frontmatter, or HTML whose `<style>` is scoped to the file and whose `<script>` runs in the browser.
+> Import Markdown and HTML files as components, compiled at build time, with frontmatter, heading lists, scoped styles and client scripts.
 
 ## Concept
 
@@ -3716,7 +3716,7 @@ See also: [Styles](styles.md), [Islands](islands.md), [SVG imports](svg.md), [re
 
 # Head and document
 
-> Set head content with `<Title>`, `<Meta>` and `<Head>` from any component. Lumiose renders `<html>`, `<head>` and `<body>` for you; `src/document.stsx` customizes them.
+> Set the page's title and meta tags from any component, and customize the HTML document around your app.
 
 ## Concept
 
@@ -3824,7 +3824,7 @@ See also: [Rendering modes](rendering-modes.md), [reference: components](../refe
 
 # Compiler and diagnostics
 
-> A Rust compiler (OXC and Lightning CSS) turns `.stsx` and `.tsx` into fine-grained client code or string-concatenating server code. Every rule it enforces has a stable `LUMxxxx` code with a docs page.
+> A Rust compiler turns `.stsx` and `.tsx` files into fine-grained DOM code for the browser and string-building code for the server.
 
 ## Concept
 
@@ -3936,7 +3936,7 @@ See also: [Styles](styles.md), [reference: CLI](../reference/cli.md).
 
 # Testing
 
-> Test components with Vitest through the Lumiose Vite plugin: render into a DOM environment, interact, call `flush()`, assert. Test server rendering with `renderToString`.
+> Test components with Vitest: render into a DOM, interact, flush updates and assert, and test server rendering as HTML strings.
 
 ## Concept
 
@@ -4032,7 +4032,7 @@ See also: [Getting started](../getting-started.md), [reference: `lumiose/dom`](.
 
 # Security
 
-> `lumiose({ csp: "strict" })` sends a strict Content Security Policy: a fresh nonce on every inline script and style Lumiose writes and on those you write in JSX, `cspNonce()` for markup you build yourself, and hashes for prerendered pages. Form actions are also checked against cross-site posts.
+> A strict Content Security Policy, with nonces and hashes, from one option, and a cross-site check on every form action.
 
 ## Concept
 
@@ -4240,7 +4240,7 @@ See also: [Head and document](head.md), [Styles](styles.md), [Rendering modes](r
 
 # Authentication with Better Auth
 
-> Email and password accounts with Better Auth and Prisma: Better Auth's handler as an endpoint, the session in middleware, protected pages, rate-limited form actions for sign-up, sign-in and sign-out, and Better Auth's browser client in an island.
+> Email and password accounts with Better Auth and Prisma: sign-up, sign-in and sign-out, the session in middleware and protected pages.
 
 Lumiose has no auth module of its own: [Better Auth](https://www.better-auth.com) runs on any
 server that hands it a web `Request`, and that is what endpoints, middleware and actions have. This
@@ -4750,7 +4750,7 @@ See also: [Server](../concepts/server.md), [Data and actions](../concepts/data-a
 
 # Icons with Lucide
 
-> Use Lucide, or any icon set shipped as SVG files, through `?component` imports: each icon is an inline component, compiled at build time, sized and coloured with CSS, labelled with `title`, with no icon JavaScript at runtime.
+> Use Lucide, or any SVG icon set, as inline components compiled at build time, sized and coloured with CSS.
 
 [Lucide](https://lucide.dev) publishes every icon as an SVG file in the
 [`lucide-static`](https://www.npmjs.com/package/lucide-static) package. Import a file with
@@ -4853,7 +4853,7 @@ See also: [SVG imports](../concepts/svg.md), [Styles](../concepts/styles.md), [I
 
 # i18n with Paraglide JS and i18next
 
-> Translate a site end to end on top of Lumiose's locale routing: Paraglide JS compile-time messages or i18next, in server pages and in islands, keyed by the request's `locale()`; a language switcher on `alternates()` that updates the detection cookie; and what search engines see.
+> Translate a site with Paraglide JS or i18next, in server pages and islands, with a language switcher and links search engines understand.
 
 Lumiose routes locales ([Internationalization](../concepts/i18n.md)): it reads the URL prefix,
 declares which pages exist in which locale, builds localized links and writes `<html lang>`,
@@ -5414,7 +5414,7 @@ See also: [Internationalization](../concepts/i18n.md), [Islands](../concepts/isl
 
 # Realtime: server-sent events and WebSockets
 
-> Push updates to the browser: server-sent events from an endpoint, read by an island with `EventSource`, and WebSockets with `ws` on the Node adapter's server. With proxy configs and notes per platform.
+> Push live updates to the browser with server-sent events or WebSockets, with proxy configs and notes per platform.
 
 **Server-sent events** (SSE) are a streamed `GET` response: the server pushes, the browser's
 `EventSource` reads and reconnects by itself, and they pass through proxies and CDNs as plain HTTP.
@@ -5721,7 +5721,7 @@ See also: [Data and actions](../concepts/data-and-actions.md) (endpoints, `submi
 
 # Deploy
 
-> Run a Lumiose build in production: what `lumiose build` writes, the settings a server needs, a guide per target, and what each guide was verified on.
+> Run a Lumiose build in production: what the build writes, the settings a server needs, and a guide for each hosting target.
 
 ## What to deploy
 
@@ -5813,7 +5813,7 @@ Each target's status says how far its guide has been checked:
 
 # Docker
 
-> A multi-stage Dockerfile for a Lumiose app served by `@lumiose/adapter-node`: built with every dependency, run on `node:24-alpine` with production dependencies only, as a non-root user, with a health check.
+> A multi-stage Dockerfile for a Lumiose app: production dependencies only, a non-root user and a health check.
 
 This page is for an app with server routes and the `server.ts` that `create-lumiose --template ssr`
 writes (`@lumiose/adapter-node`'s `createServer()`). The same image runs on any host that runs
@@ -5951,7 +5951,7 @@ by CI: a cold build compiles the Rust compiler (about 1 minute on an 8-core arm6
 
 # VPS
 
-> Run a Lumiose app on your own server: `@lumiose/adapter-node` under systemd or pm2, with Caddy or nginx in front for TLS. The adapter already compresses responses and caches hashed assets, so the proxy needs no rules for either.
+> Run a Lumiose app on your own server with the Node adapter under systemd or pm2, behind Caddy or nginx for TLS.
 
 This page covers an app with server routes and the `server.ts` that `create-lumiose --template ssr`
 writes. The examples call the app `my-app`, serve it as `example.com`, and keep it in
@@ -6168,7 +6168,7 @@ otherwise. `http2 on` needs nginx 1.25.1 or later; on older versions, write `lis
 
 # Coolify
 
-> Deploy a Lumiose app to Coolify with the Dockerfile build pack: the Dockerfile from the Docker guide, the exposed port, a domain, `ORIGIN` and runtime-only secrets, the image's health check, and a volume for data.
+> Deploy to Coolify with its Dockerfile build pack: the port, a domain, secrets, the health check and a volume for data.
 
 [Coolify](https://coolify.io) builds the app's Dockerfile on your server and runs the image behind
 its proxy, which terminates TLS for the domain. Lumiose needs nothing Coolify-specific: the image
@@ -6249,7 +6249,7 @@ builds from the repository root with `/examples/ssr-bookshelf/Dockerfile`
 
 # Cloudflare Workers
 
-> Deploy to Cloudflare Workers with `@lumiose/adapter-cloudflare`: the build's fetch handler runs as the Worker, `dist/client` is served as static assets, and your bindings reach the app as `ctx.platform.env`.
+> Deploy to Cloudflare Workers with `@lumiose/adapter-cloudflare`: the app runs as a Worker, the static files as assets.
 
 Tested locally in `wrangler dev` (workerd), not yet on Cloudflare itself: see the
 [verification table](README.md#verification).
@@ -6374,7 +6374,7 @@ function cloudflare(): Adapter; // for lumiose({ adapter })
 
 # Vercel
 
-> Deploy to Vercel with `@lumiose/adapter-vercel`: `lumiose build` writes `.vercel/output` (the Build Output API), with `dist/client` as static files and the build's fetch handler as a Node.js or Edge function.
+> Deploy to Vercel with `@lumiose/adapter-vercel`: the static files plus the app as a Node.js or Edge function.
 
 Tested locally with a harness for the Build Output API, not yet on Vercel itself: Vercel has no
 local runner for `.vercel/output`. See the [verification table](README.md#verification).
@@ -6464,7 +6464,7 @@ function vercel(options?: { runtime?: "nodejs" | "edge" }): Adapter; // default 
 
 # Netlify
 
-> Deploy to Netlify with `@lumiose/adapter-netlify`: `dist/client` is the site, and the build's fetch handler runs as a Netlify Function for every path no static file answers.
+> Deploy to Netlify with `@lumiose/adapter-netlify`: the static files are the site, the app runs as a Netlify Function.
 
 Tested locally with `netlify serve`, not yet on Netlify itself: see the
 [verification table](README.md#verification).
@@ -6546,7 +6546,7 @@ function netlify(): Adapter; // for lumiose({ adapter })
 
 # Bun
 
-> Run a Lumiose build with Bun: `dist/server/entry.js` exports `{ fetch }`, which Bun serves as it is, static files included.
+> Run a Lumiose build with Bun, which serves the server build's fetch handler and the static files as they are.
 
 Tested locally with Bun 1.4.2: see the [verification table](README.md#verification).
 
@@ -6597,7 +6597,7 @@ See also: [the server build](../reference/server-entry.md).
 
 # Deno
 
-> Run a Lumiose build with Deno: `deno serve` serves `dist/server/entry.js`'s `{ fetch }` as it is, static files included.
+> Run a Lumiose build with Deno: `deno serve` runs the server build's fetch handler and serves the static files as they are.
 
 Tested locally with Deno 2.9.6: see the [verification table](README.md#verification).
 
@@ -6628,7 +6628,7 @@ See also: [the server build](../reference/server-entry.md).
 
 # Fly.io
 
-> Run a Lumiose app on Fly.io from the [Docker](docker.md) guide's image: `@lumiose/adapter-node` in a Machine, behind Fly's proxy.
+> Run a Lumiose app on Fly.io from the Docker guide's image, behind Fly's proxy.
 
 Not tested on Fly.io yet: the image is (see the [verification table](README.md#verification)).
 
@@ -6671,7 +6671,7 @@ The adapter compresses responses itself; Fly's proxy passes them through.
 
 # Render
 
-> Run a Lumiose app on Render as a Node web service: `@lumiose/adapter-node`'s `server.ts`, or the [Docker](docker.md) guide's image.
+> Run a Lumiose app on Render as a Node web service, with the Node adapter or the Docker guide's image.
 
 Not tested on Render yet: see the [verification table](README.md#verification).
 
@@ -6715,7 +6715,7 @@ publish directory `dist/client` (see [Static hosts](static.md)).
 
 # Railway
 
-> Run a Lumiose app on Railway: `@lumiose/adapter-node`'s `server.ts` built with Railway's Node builder, or the [Docker](docker.md) guide's image.
+> Run a Lumiose app on Railway with the Node adapter and Railway's Node builder, or from the Docker guide's image.
 
 Not tested on Railway yet: see the [verification table](README.md#verification).
 
@@ -6750,7 +6750,7 @@ variables when the app signs cookies, then generate a domain in the service's ne
 
 # Static hosts
 
-> Deploy a site whose every route is prerendered: `dist/client` is the whole site, for GitHub Pages, Cloudflare, Netlify, S3 with CloudFront or any file server.
+> Deploy a fully prerendered site to GitHub Pages, Cloudflare, Netlify, S3 or any file server: `dist/client` is the whole site.
 
 `lumiose build` writes no `dist/server` when no route renders per request (no `server` route, no
 `spa` route rendered on the server per request, no form action): see
@@ -6866,7 +6866,7 @@ locally the way static hosts do.
 
 # AWS Lambda
 
-> Run the server build in AWS Lambda behind a Function URL or API Gateway, through a small adapter from Lambda's events to the build's web `fetch` handler.
+> Run the server build on AWS Lambda behind a Function URL or API Gateway, through a small adapter from Lambda events to its fetch handler.
 
 Not tested on AWS yet: see the [verification table](README.md#verification). There is no
 `@lumiose/adapter-lambda`; this page shows the handler to write.
@@ -6923,7 +6923,7 @@ once the response is returned: await such work in the handler instead.
 
 # `lumiose`: reactivity
 
-> Signatures and behavior of the reactive core exported by `lumiose`: signals, computeds, effects, stores, owners, context, ids (`useId`), scoped state and in-flight state.
+> Signatures of the reactive core: signals, computeds, effects, stores, context, ids and scoped state.
 
 All of these are exported by `lumiose` in the browser and on the server. On the server (the `node`
 entry) signals are plain cells, computeds evaluate once per request, and `effect`/`onMount` never
@@ -7326,7 +7326,7 @@ export function Clock() {
 
 # `lumiose`: components
 
-> Signatures and behavior of the built-in components and element helpers exported by `lumiose`: `Suspense`, `ErrorBoundary`, `Portal`, `Dynamic`, `ref`, `Head`, `Title`, `Meta`, and the view transitions `ViewTransition` and `viewTransition`.
+> Signatures of the built-in components, from Suspense and error boundaries to portals, head tags and view transitions.
 
 All are exported by `lumiose` in the browser and on the server. Concepts:
 [Components](../concepts/components.md), [Async components](../concepts/async.md),
@@ -7580,7 +7580,7 @@ export function Dialog() {
 
 # `lumiose`: app layer
 
-> Signatures of the app-layer exports of `lumiose`: data fetching, form actions, routing helpers, control flow, request APIs, cookies, env and the request-context types.
+> Signatures of the app-layer exports: data fetching, form actions, routing helpers, request APIs, cookies and env.
 
 `lumiose` exposes the same names in the browser and on the server. Server-only APIs exist in the
 browser build as stubs that throw `LUM4003` with a hint; browser-only APIs reject on the server.
@@ -8010,7 +8010,7 @@ export const POST: Endpoint<"/api/session"> = async ({ request, cookies }) => {
 
 # `lumiose`: server rendering
 
-> `renderToStream` and `renderToString` render components to HTML under the `node` entry of `lumiose`; `lumiose/server` is the server half of the compiler-runtime contract.
+> `renderToStream` and `renderToString` render components to HTML on the server.
 
 Most apps never call these directly: the request handler (and `lumiose dev` / `lumiose build`) does.
 Use them for custom servers, tests and tools. Concepts:
@@ -8117,7 +8117,7 @@ export async function handle(request: Request): Promise<Response> {
 
 # `lumiose/dom`
 
-> `render` renders a component tree into a DOM element. The rest of `lumiose/dom` is the client half of the compiler-runtime contract that compiled code imports.
+> `render` mounts a component tree into the DOM; the rest of `lumiose/dom` is what compiled code imports.
 
 ## render
 
@@ -8222,7 +8222,7 @@ render(() => <App />, document.getElementById("app")!);
 
 # `lumiose/router`
 
-> The client router for `spa` routes, built on the Navigation API: `<Link>`, `navigate()`, reactive `params()`, `route()`, `searchParams()`, `url()` and `isNavigating()`, persistent layouts, transitions that hold the old page, scroll and focus restoration, and a client-side `not-found` page.
+> The client router for `spa` routes: links, navigation, reactive route state, persistent layouts, transitions and scroll restoration.
 
 `lumiose/router` works inside `spa` routes (`export const mode = "spa"`, or `lumiose({ mode: "spa" })`
 for the whole project); `<Link>` works on MPA pages too (see [Link](#link)). Pages and layouts of an SPA import it like any module; on the server
@@ -8450,7 +8450,7 @@ See also: [Routing](../concepts/routing.md), [Rendering modes](../concepts/rende
 
 # `@lumiose/vite`
 
-> The Vite 8 plugin: compiles `.stsx` and `.tsx` with the Lumiose compiler, picks the `lumiose` entry per Vite environment, reports diagnostics in the overlay and reloads on edit.
+> The Vite 8 plugin: compiles `.stsx` and `.tsx` files, reports diagnostics in the overlay and reloads on edit.
 
 Install it next to `lumiose` and Vite: `pnpm add -D @lumiose/vite vite`. Both are peer
 dependencies, so the plugin, the compiled modules and its Vitest setup share the app's one copy of
@@ -8661,7 +8661,7 @@ export default defineConfig({
 
 # JSX types and tsconfig
 
-> `lumiose/jsx-runtime` types JSX for `jsxImportSource: "lumiose"`; `lumiose/env` declares the global `JSX` namespace, `import.meta.env` and `Locals`. This page lists the type rules and the tsconfig.
+> The JSX and environment types, and the tsconfig settings a Lumiose project needs.
 
 ## tsconfig.json
 
@@ -8864,7 +8864,7 @@ modules in Lumiose components.
 
 # CLI
 
-> The `lumiose` command: `dev`, `build`, `preview`, `check`, `typegen`, `routes`, `lint`, `fmt`, `docs`, `explain`, `agents init` and `mcp`, each with help, `--format json` and stable exit codes.
+> The `lumiose` command: every subcommand with its options, JSON output and exit codes.
 
 The command comes with the `@lumiose/cli` package (`pnpm add -D @lumiose/cli`).
 
@@ -9165,7 +9165,7 @@ resources. It runs until the client disconnects. See [MCP server](mcp.md).
 
 # MCP server
 
-> `lumiose mcp` serves the project to coding agents over the Model Context Protocol: version-matched docs, `lumiose check` diagnostics with fixes, routes, component metadata, compiler output, server-rendered HTML and dev server logs.
+> `lumiose mcp` serves your project to coding agents: version-matched docs, diagnostics with fixes, routes, compiler output and logs.
 
 `lumiose mcp` starts a stdio MCP server for the project in the current directory (or `--root`). It
 gives an agent the same answers as the CLI, as structured tool results, without parsing terminal
@@ -9280,7 +9280,7 @@ exist. stdout carries the protocol; console output of app code goes to stderr an
 
 # `@lumiose/adapter-node`
 
-> Serves a `lumiose build` output with Node: the static files of `dist/client` first, then the app's request handler from `dist/server/entry.js`, with streamed responses.
+> Serve a Lumiose build with Node: the static files first, then the app's streamed responses.
 
 `lumiose preview` uses it, so a project that previews or deploys on Node depends on it. Concepts:
 [Rendering modes](../concepts/rendering-modes.md) (build output), [Server](../concepts/server.md).
@@ -9451,7 +9451,7 @@ server.listen(3000);
 
 # Server build (`dist/server/entry.js`)
 
-> The output of `lumiose build` for servers: `export default { fetch(request, platform?) }`, a web-standard handler that serves pages, endpoints, form actions, streamed responses and the static files of `dist/client`. Bun and Deno run it as is; `@lumiose/adapter-node` and the deploy adapters wrap it.
+> What `lumiose build` writes for servers: one web-standard fetch handler for pages, endpoints, actions and static files.
 
 Concepts: [Rendering modes](../concepts/rendering-modes.md) (the build), [Server](../concepts/server.md)
 (the request context). For Node, use [`@lumiose/adapter-node`](adapter-node.md).
@@ -9613,7 +9613,7 @@ export const POST: Endpoint = (ctx) => {
 
 # `@lumiose/query`
 
-> TanStack Query for Lumiose: `useQuery`, `useMutation`, `useQueryClient` and `QueryClientProvider` over `@tanstack/query-core`, with the names and call shapes of `@tanstack/solid-query` v5 and results in reactive stores.
+> TanStack Query for Lumiose, with Solid Query's API and results in reactive stores.
 
 An optional package, not part of `lumiose`: install it with `pnpm add @lumiose/query`. It is a thin
 adapter. Caching, deduplication, retries, stale times, invalidation and refetching on focus or

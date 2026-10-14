@@ -1,6 +1,6 @@
 # `lumiose`: app layer
 
-> Signatures of the app-layer exports of `lumiose`: data fetching, form actions, routing helpers, control flow, request APIs, cookies, env and the request-context types.
+> Signatures of the app-layer exports: data fetching, form actions, routing helpers, request APIs, cookies and env.
 
 `lumiose` exposes the same names in the browser and on the server. Server-only APIs exist in the
 browser build as stubs that throw `LUM4003` with a hint; browser-only APIs reject on the server.

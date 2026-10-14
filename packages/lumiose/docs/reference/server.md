@@ -1,6 +1,6 @@
 # `lumiose`: server rendering
 
-> `renderToStream` and `renderToString` render components to HTML under the `node` entry of `lumiose`; `lumiose/server` is the server half of the compiler-runtime contract.
+> `renderToStream` and `renderToString` render components to HTML on the server.
 
 Most apps never call these directly: the request handler (and `lumiose dev` / `lumiose build`) does.
 Use them for custom servers, tests and tools. Concepts:

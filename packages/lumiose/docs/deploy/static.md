@@ -1,6 +1,6 @@
 # Static hosts
 
-> Deploy a site whose every route is prerendered: `dist/client` is the whole site, for GitHub Pages, Cloudflare, Netlify, S3 with CloudFront or any file server.
+> Deploy a fully prerendered site to GitHub Pages, Cloudflare, Netlify, S3 or any file server: `dist/client` is the whole site.
 
 `lumiose build` writes no `dist/server` when no route renders per request (no `server` route, no
 `spa` route rendered on the server per request, no form action): see

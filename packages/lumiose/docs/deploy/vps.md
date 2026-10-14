@@ -1,6 +1,6 @@
 # VPS
 
-> Run a Lumiose app on your own server: `@lumiose/adapter-node` under systemd or pm2, with Caddy or nginx in front for TLS. The adapter already compresses responses and caches hashed assets, so the proxy needs no rules for either.
+> Run a Lumiose app on your own server with the Node adapter under systemd or pm2, behind Caddy or nginx for TLS.
 
 This page covers an app with server routes and the `server.ts` that `create-lumiose --template ssr`
 writes. The examples call the app `my-app`, serve it as `example.com`, and keep it in

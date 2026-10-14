@@ -1,6 +1,6 @@
 # SVG imports
 
-> `import Icon from "./icon.svg?component"` gives an inline SVG component, from your project or a package such as an icon set: optimised at build time, styled with `currentColor` and props, labelled with `title`, the same on the server, the client and in islands. Every other `.svg` import keeps Vite's meaning.
+> Import any SVG file, from your project or an icon set, as an inline component with `?component`, optimised at build time and styled with CSS.
 
 ## Concept
 

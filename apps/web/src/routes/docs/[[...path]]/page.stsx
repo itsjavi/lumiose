@@ -121,9 +121,10 @@ function DocView(props: { page: DocPage }) {
       display: none;
     }
   }
+  /* About 75 characters a line at the prose size, a comfortable measure for long reading. */
   article {
     min-inline-size: 0;
-    max-inline-size: 50rem;
+    max-inline-size: 46rem;
   }
   .head {
     margin-block-end: $space.lg;
@@ -138,15 +139,26 @@ function DocView(props: { page: DocPage }) {
     font-size: $text.xxxl;
   }
   .lead {
+    max-inline-size: 40rem;
     color: $color.muted;
     font-size: $text.lg;
-    line-height: $leading.snug;
+    line-height: 1.5;
+    text-wrap: pretty;
+  }
+  /* A subtitle reads as one sentence: its code is set in the code font, without chips. */
+  .lead :deep(code) {
+    padding: 0;
+    border: 0;
+    background: none;
+    color: $color.text;
+    font-size: 0.9em;
   }
 
   .chunk {
     display: contents;
   }
   .prose {
+    font-size: 1.0625rem;
     line-height: $leading.normal;
   }
   .prose :deep(:is(p, ul, ol, blockquote, .table, .nested-code)) {
@@ -185,8 +197,12 @@ function DocView(props: { page: DocPage }) {
   .prose :deep(:is(ul, ol)) {
     padding-inline-start: 1.4em;
   }
+  /* List items are often whole paragraphs with a bold lead-in: space them like paragraphs. */
   .prose :deep(li + li) {
-    margin-block-start: $space.xxs;
+    margin-block-start: $space.xs;
+  }
+  .prose :deep(li::marker) {
+    color: $color.subtle;
   }
   .prose :deep(li > :is(ul, ol)) {
     margin-block: $space.xxs 0;

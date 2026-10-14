@@ -56,6 +56,9 @@ import {
     --lm-shadow: light-dark($light.shadow, $dark.shadow);
     --lm-code-bg: light-dark($light.codeBg, $dark.codeBg);
     --lm-code-fg: light-dark($light.codeFg, $dark.codeFg);
+    --lm-inline-code-fg: light-dark($light.inlineCodeFg, $dark.inlineCodeFg);
+    --lm-inline-code-bg: light-dark($light.inlineCodeBg, $dark.inlineCodeBg);
+    --lm-inline-code-border: light-dark($light.inlineCodeBorder, $dark.inlineCodeBorder);
     --lm-info-fg: light-dark($light.infoFg, $dark.infoFg);
     --lm-info-bg: light-dark($light.infoBg, $dark.infoBg);
     --lm-info-border: light-dark($light.infoBorder, $dark.infoBorder);
@@ -184,12 +187,20 @@ import {
     font-size: 0.9em;
     font-variant-ligatures: none;
   }
+  /* Inline code: smaller than the text around it (monospace glyphs run wide), on a slate chip
+     that stands out from the page; a chip broken across lines keeps its edges. */
   :where(:not(pre) > code) {
-    padding: 0.1em 0.35em;
+    padding: 0.08em 0.32em;
     border-radius: $radius.sm;
-    background: $color.sunken;
-    border: 1px solid $color.border;
-    color: $color.text;
+    background: $color.inlineCodeBg;
+    border: 1px solid $color.inlineCodeBorder;
+    color: $color.inlineCodeFg;
+    font-size: 0.85em;
+    box-decoration-break: clone;
+  }
+  /* Code that is a link's text reads as the link. */
+  :where(a > code) {
+    color: inherit;
   }
   :where(kbd) {
     padding: 0.1em 0.4em;

@@ -1,6 +1,6 @@
 # Deno
 
-> Run a Lumiose build with Deno: `deno serve` serves `dist/server/entry.js`'s `{ fetch }` as it is, static files included.
+> Run a Lumiose build with Deno: `deno serve` runs the server build's fetch handler and serves the static files as they are.
 
 Tested locally with Deno 2.9.6: see the [verification table](README.md#verification).
 

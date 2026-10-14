@@ -1,6 +1,6 @@
 # `lumiose`: reactivity
 
-> Signatures and behavior of the reactive core exported by `lumiose`: signals, computeds, effects, stores, owners, context, ids (`useId`), scoped state and in-flight state.
+> Signatures of the reactive core: signals, computeds, effects, stores, context, ids and scoped state.
 
 All of these are exported by `lumiose` in the browser and on the server. On the server (the `node`
 entry) signals are plain cells, computeds evaluate once per request, and `effect`/`onMount` never

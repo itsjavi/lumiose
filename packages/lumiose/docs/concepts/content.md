@@ -1,6 +1,6 @@
 # Markdown and HTML imports
 
-> With `lumiose({ md: true, html: true })`, `import Post, { frontmatter, headings } from "./post.md"` and `import Card from "./card.html"` give static components, compiled at build time: CommonMark + GFM with heading ids, a headings list and YAML frontmatter, or HTML whose `<style>` is scoped to the file and whose `<script>` runs in the browser.
+> Import Markdown and HTML files as components, compiled at build time, with frontmatter, heading lists, scoped styles and client scripts.
 
 ## Concept
 

@@ -1,6 +1,6 @@
 # Render
 
-> Run a Lumiose app on Render as a Node web service: `@lumiose/adapter-node`'s `server.ts`, or the [Docker](docker.md) guide's image.
+> Run a Lumiose app on Render as a Node web service, with the Node adapter or the Docker guide's image.
 
 Not tested on Render yet: see the [verification table](README.md#verification).
 

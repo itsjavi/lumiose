@@ -1,6 +1,6 @@
 # `@lumiose/vite`
 
-> The Vite 8 plugin: compiles `.stsx` and `.tsx` with the Lumiose compiler, picks the `lumiose` entry per Vite environment, reports diagnostics in the overlay and reloads on edit.
+> The Vite 8 plugin: compiles `.stsx` and `.tsx` files, reports diagnostics in the overlay and reloads on edit.
 
 Install it next to `lumiose` and Vite: `pnpm add -D @lumiose/vite vite`. Both are peer
 dependencies, so the plugin, the compiled modules and its Vitest setup share the app's one copy of

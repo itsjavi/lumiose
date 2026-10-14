@@ -1,6 +1,6 @@
 # `@lumiose/query`
 
-> TanStack Query for Lumiose: `useQuery`, `useMutation`, `useQueryClient` and `QueryClientProvider` over `@tanstack/query-core`, with the names and call shapes of `@tanstack/solid-query` v5 and results in reactive stores.
+> TanStack Query for Lumiose, with Solid Query's API and results in reactive stores.
 
 An optional package, not part of `lumiose`: install it with `pnpm add @lumiose/query`. It is a thin
 adapter. Caching, deduplication, retries, stale times, invalidation and refetching on focus or

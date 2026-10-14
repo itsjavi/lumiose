@@ -1,6 +1,6 @@
 # JSX
 
-> JSX reads like React (`.map()`, ternaries, `onClick`) but compiles to cloned templates with fine-grained bindings. Only expressions that read signals update.
+> JSX reads like React but compiles to cloned templates with fine-grained bindings, so only the expressions that read signals update.
 
 ## Concept
 

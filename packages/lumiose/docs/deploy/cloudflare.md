@@ -1,6 +1,6 @@
 # Cloudflare Workers
 
-> Deploy to Cloudflare Workers with `@lumiose/adapter-cloudflare`: the build's fetch handler runs as the Worker, `dist/client` is served as static assets, and your bindings reach the app as `ctx.platform.env`.
+> Deploy to Cloudflare Workers with `@lumiose/adapter-cloudflare`: the app runs as a Worker, the static files as assets.
 
 Tested locally in `wrangler dev` (workerd), not yet on Cloudflare itself: see the
 [verification table](README.md#verification).

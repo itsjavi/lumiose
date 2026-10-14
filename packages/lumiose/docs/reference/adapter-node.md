@@ -1,6 +1,6 @@
 # `@lumiose/adapter-node`
 
-> Serves a `lumiose build` output with Node: the static files of `dist/client` first, then the app's request handler from `dist/server/entry.js`, with streamed responses.
+> Serve a Lumiose build with Node: the static files first, then the app's streamed responses.
 
 `lumiose preview` uses it, so a project that previews or deploys on Node depends on it. Concepts:
 [Rendering modes](../concepts/rendering-modes.md) (build output), [Server](../concepts/server.md).
