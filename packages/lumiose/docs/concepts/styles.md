@@ -123,7 +123,8 @@ imports, CSS Modules, Tailwind v4 and `.scss` imports still work through Vite.
 
 > **Status:** available. `@lumiose/vite` serves each file's CSS as a CSS module, and style-only or
 > constant-only edits hot-update the CSS without remounting. `LUM3012` (a custom property set in a
-> `style` prop that no stylesheet reads) is reported by `lumiose build` only.
+> `style` prop that no stylesheet reads) needs the whole project: `lumiose build`, `lumiose check` and
+> the language server report it.
 
 **In builds**, a page needs few render-blocking stylesheets. `lumiose build` merges the stylesheets
 every page starts with (the document's, the root layouts', shared components') into one file that

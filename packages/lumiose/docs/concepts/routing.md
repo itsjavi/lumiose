@@ -46,7 +46,8 @@ src/
 - **Layouts** wrap every page below their folder and receive `{ params, children }`. `children`
   is the page (the outlet).
 - **Pages** export a `default` component (it may be `async`), which receives `{ params }`. Other
-  page exports: `mode`, `ssr`, `staticPaths`, `action`/`actions`, `headers` and `limits` (see
+  page exports: `mode`, `ssr`, `prerender`, `staticPaths`, `action`/`actions`, `headers` and
+  `limits` (see
   [Rendering modes](rendering-modes.md), [Data and actions](data-and-actions.md) and
   [Security](security.md)). Endpoints may export `limits` too.
 - **Error pages:** `not-found` renders unmatched URLs and `notFound()`; `error` renders thrown

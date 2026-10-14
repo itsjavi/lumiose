@@ -193,7 +193,7 @@ What it does:
   A style-only edit, or an edit to such a constants module, hot-updates the CSS without remounting.
 
 > **Status:** compilation, environments, diagnostics, HMR, style-block CSS, `.svg`, `.md` and `.html` imports and the
-> project options above are available. The designed options `adapter` and `css` are not.
+> project options above are available. The designed option `css` is not.
 
 ## Example
 

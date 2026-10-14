@@ -72,4 +72,5 @@ pnpm --filter @lumiose/site-kit screenshots  # backlog/assets/task-59-*.png
 
 A Lumiose project that imports the kit (or, like the showcase, its `../../src` files) type-checks its
 `.stsx` modules when its tsconfig extends the generated `.lumiose/tsconfig.generated.json` (see
-`showcase/tsconfig.json` and "Shadow TSX and tsconfig" in `lumiose check`'s docs).
+`showcase/tsconfig.json` and "Imports outside `src/` and `.stsx` from other packages" in
+`packages/lumiose/docs/reference/jsx.md`).

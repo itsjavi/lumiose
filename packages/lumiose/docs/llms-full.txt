@@ -100,8 +100,9 @@ mistakes** and **Related diagnostics**. Reference pages list every export with i
 
 ## Status of this version
 
-Lumiose is pre-release (`0.0.0`). The docs describe the designed API; where this version does not
-implement something yet, the page says so in a **Status** note. In short:
+Lumiose is pre-1.0, so APIs may still change between minor versions. The docs describe the
+designed API; where this version does not implement something yet, the page says so in a
+**Status** note. In short:
 
 | Area                                                                                  | Status                                                                     |
 | ------------------------------------------------------------------------------------- | -------------------------------------------------------------------------- |
@@ -160,7 +161,7 @@ pnpm add lumiose
 pnpm add -D @lumiose/vite @lumiose/cli vite typescript
 ```
 
-Lumiose ships as three packages that share one version:
+Every Lumiose package shares one version. A project starts with three:
 
 - `lumiose`: the runtime your app imports (signals, the DOM and server renderers, the router, the
   app runtime). It has no dependencies.
@@ -1304,7 +1305,8 @@ imports, CSS Modules, Tailwind v4 and `.scss` imports still work through Vite.
 
 > **Status:** available. `@lumiose/vite` serves each file's CSS as a CSS module, and style-only or
 > constant-only edits hot-update the CSS without remounting. `LUM3012` (a custom property set in a
-> `style` prop that no stylesheet reads) is reported by `lumiose build` only.
+> `style` prop that no stylesheet reads) needs the whole project: `lumiose build`, `lumiose check` and
+> the language server report it.
 
 **In builds**, a page needs few render-blocking stylesheets. `lumiose build` merges the stylesheets
 every page starts with (the document's, the root layouts', shared components') into one file that
@@ -1667,7 +1669,7 @@ changes, the component **re-runs**:
   `isPending()` to dim it).
 - `<ErrorBoundary fallback={(error, reset) => …}>` catches rejections and render errors below it.
 - With no boundary: on the server the component becomes part of the page shell (the response waits
-  for it); on the client nothing renders until it resolves; errors go to the `_error` page.
+  for it); on the client nothing renders until it resolves; errors go to the `error` page.
 
 **In-flight state** (all are reactive and safe to read anywhere):
 
@@ -2095,7 +2097,8 @@ src/
 - **Layouts** wrap every page below their folder and receive `{ params, children }`. `children`
   is the page (the outlet).
 - **Pages** export a `default` component (it may be `async`), which receives `{ params }`. Other
-  page exports: `mode`, `ssr`, `staticPaths`, `action`/`actions`, `headers` and `limits` (see
+  page exports: `mode`, `ssr`, `prerender`, `staticPaths`, `action`/`actions`, `headers` and
+  `limits` (see
   [Rendering modes](rendering-modes.md), [Data and actions](data-and-actions.md) and
   [Security](security.md)). Endpoints may export `limits` too.
 - **Error pages:** `not-found` renders unmatched URLs and `notFound()`; `error` renders thrown
@@ -2591,7 +2594,7 @@ and the data they pass to `fail()`, or `undefined` before a submission. `submit<
 resolves with `{ type: "success", data }` or `{ type: "failure", data }` typed from that action,
 so the two are told apart by `type`; `actionData()` data is told apart by its shape.
 `ActionData<typeof actions>` names that type for a child component's props. An island that posts to another page's action imports the
-type only: `import type { actions } from "../routes/reading-list.stsx"`.
+type only: `import type { actions } from "../routes/reading-list/page.stsx"`.
 
 ## API
 
@@ -2778,13 +2781,14 @@ export default function Issues() {
   (`actionData()`, or an explicit `invalidate()`), or the value returns to the old one on success.
 - **Forms without `method="post"`.** Actions only run for POST; `submit()` refuses a form that does
   not say `method="post"`, as the no-JS form would not post either.
-- **Throwing for validation errors.** A thrown error renders `_error`. Return `fail(400, data)`.
+- **Throwing for validation errors.** A thrown error renders the `error` page. Return
+  `fail(400, data)`.
 - **Casting action data.** `actionData<{ errors: … }>()` is a type error: pass `typeof actions`.
   Annotating the export with `Action` (`export const action: Action = …`) hides what it returns,
   so annotate the parameter instead, or check it with `satisfies Action<"/x">`. Add
   `satisfies YourFailure` to `fail()` data whose string literals should stay literal.
 - **Disabling the Origin check to make a cross-site form work.** Allow the specific origin instead
-  (`csrf.allowedOrigins` in the request handler options).
+  (`lumiose({ csrf: { allowedOrigins } })` in `vite.config.ts`).
 
 ## Related diagnostics
 
@@ -3089,7 +3093,7 @@ props. The differences (Astro 7.3, checked against its docs and source in Octobe
 1. **Shell.** The response starts once everything **outside** `<Suspense>` has resolved, including
    async components without a boundary. Until then you can still set the status, headers and
    cookies, call `redirect()`, `notFound()` or `error()`, and add `<Title>`/`<Meta>`/`<Head>`.
-   A failure renders `_error` with the right status.
+   A failure renders the `error` page with the right status.
 2. **Stream.** `<Suspense>` boundaries then stream in as they resolve, out of order, and replace
    their fallbacks (with native `<template for>` updates or a ~300 B `$swap` script). An error
    renders the boundary's `<ErrorBoundary>` in place. A head or status change inside a streamed
@@ -3867,6 +3871,7 @@ are generated from it. They appear in the Vite overlay, in `lumiose check`, in t
 | 3xxx  | Styles: placement, `$name` references, unused CSS                           |
 | 4xxx  | Islands and boundaries: exports, serialization, server-only code, hydration |
 | 5xxx  | Routing and server: route files, prerender, streaming                       |
+| 6xxx  | Tooling and config: the project's tsconfig                                  |
 
 **Tooling on top.** `lumiose check` (typegen, shadow files, `tsc --noEmit`, scanner and compiler
 diagnostics), `lumiose lint` (oxlint on shadows, optional stylelint on blocks), `lumiose fmt` (oxfmt
@@ -8369,7 +8374,7 @@ the new page is on screen.
   document navigation).
 - **Persistent layouts.** A layout's `children` is the outlet. Layouts the old and the new page
   share stay mounted with their state; the first level that differs (another file, or other
-  values of the params in its path, such as `songs/[id].stsx` for another song) is replaced. A
+  values of the params in its path, such as `songs/[id]/page.stsx` for another song) is replaced. A
   navigation that only changes the query keeps every level and updates `searchParams()`.
 - **Transitions.** The new page is created off-screen. The old page stays until the new page's
   async content (async components and resources outside a `<Suspense>` of the new page) is ready;
@@ -8643,7 +8648,7 @@ What it does:
   A style-only edit, or an edit to such a constants module, hot-updates the CSS without remounting.
 
 > **Status:** compilation, environments, diagnostics, HMR, style-block CSS, `.svg`, `.md` and `.html` imports and the
-> project options above are available. The designed options `adapter` and `css` are not.
+> project options above are available. The designed option `css` is not.
 
 ## Example
 
@@ -9156,10 +9161,6 @@ claude mcp add lumiose -- npx lumiose mcp   # register it with Claude Code
 Starts the MCP server on stdio for coding agents: the tools `docs_search`, `docs_get`, `check`,
 `routes`, `components`, `compile`, `render` and `dev_logs`, and the docs and the route manifest as
 resources. It runs until the client disconnects. See [MCP server](mcp.md).
-
-## Planned commands
-
-`lumiose upgrade` is designed (spec §3) but not available yet.
 
 <!-- source: reference/mcp.md -->
 

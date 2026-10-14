@@ -27,7 +27,7 @@ changes, the component **re-runs**:
   `isPending()` to dim it).
 - `<ErrorBoundary fallback={(error, reset) => …}>` catches rejections and render errors below it.
 - With no boundary: on the server the component becomes part of the page shell (the response waits
-  for it); on the client nothing renders until it resolves; errors go to the `_error` page.
+  for it); on the client nothing renders until it resolves; errors go to the `error` page.
 
 **In-flight state** (all are reactive and safe to read anywhere):
 

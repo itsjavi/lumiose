@@ -63,7 +63,7 @@ docs instead of guessing.
   \`style={{ "font-weight": 600 }}\` and \`bind:value={signal}\`. Lists are plain \`.map\` with \`key\`.
 - Routes are folders in \`src/routes\` with the Next.js App Router file names: \`page.stsx\`,
   \`layout.stsx\`, \`not-found.stsx\`, \`error.stsx\`, \`route.ts\` endpoints exporting \`GET\`/\`POST\`,
-  and \`[param]\`, \`[...rest]\`, \`[[...rest]]\`, \`(group)\` folders. The project's default mode is \`lumiose({ mode })\` in \`vite.config.ts\`; a route or
+  and \`[param]\`, \`[[param]]\`, \`[...rest]\`, \`[[...rest]]\`, \`(group)\` folders. The project's default mode is \`lumiose({ mode })\` in \`vite.config.ts\`; a route or
   layout overrides it with \`export const mode = "static" | "server" | "spa"\`. Request APIs
   (\`cookies()\`, \`request()\`) need \`server\` (\`LUM5001\`). Load data in async page components;
   mutate with form \`actions\`.

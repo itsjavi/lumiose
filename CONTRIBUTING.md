@@ -10,7 +10,7 @@ pnpm install
 pnpm build:compiler   # the native compiler (crates/lumiose_napi) into packages/compiler
 pnpm check            # what CI runs: build, typecheck, lint, example formatting, tests, size, cargo test
 pnpm pack:check       # pack the publishable packages and check the tarballs (--smoke: build an app with them)
-pnpm release:version 0.2.0 --dry-run   # what a release would change (see Releases)
+pnpm release:version <x.y.z> --dry-run   # what a release would change (see Releases)
 ```
 
 Changes to the website (`apps/web`) follow [its contributing notes](apps/web/CONTRIBUTING.md): the

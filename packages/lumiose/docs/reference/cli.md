@@ -292,7 +292,3 @@ claude mcp add lumiose -- npx lumiose mcp   # register it with Claude Code
 Starts the MCP server on stdio for coding agents: the tools `docs_search`, `docs_get`, `check`,
 `routes`, `components`, `compile`, `render` and `dev_logs`, and the docs and the route manifest as
 resources. It runs until the client disconnects. See [MCP server](mcp.md).
-
-## Planned commands
-
-`lumiose upgrade` is designed (spec §3) but not available yet.

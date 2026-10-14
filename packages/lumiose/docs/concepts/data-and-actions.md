@@ -77,7 +77,7 @@ and the data they pass to `fail()`, or `undefined` before a submission. `submit<
 resolves with `{ type: "success", data }` or `{ type: "failure", data }` typed from that action,
 so the two are told apart by `type`; `actionData()` data is told apart by its shape.
 `ActionData<typeof actions>` names that type for a child component's props. An island that posts to another page's action imports the
-type only: `import type { actions } from "../routes/reading-list.stsx"`.
+type only: `import type { actions } from "../routes/reading-list/page.stsx"`.
 
 ## API
 
@@ -264,13 +264,14 @@ export default function Issues() {
   (`actionData()`, or an explicit `invalidate()`), or the value returns to the old one on success.
 - **Forms without `method="post"`.** Actions only run for POST; `submit()` refuses a form that does
   not say `method="post"`, as the no-JS form would not post either.
-- **Throwing for validation errors.** A thrown error renders `_error`. Return `fail(400, data)`.
+- **Throwing for validation errors.** A thrown error renders the `error` page. Return
+  `fail(400, data)`.
 - **Casting action data.** `actionData<{ errors: … }>()` is a type error: pass `typeof actions`.
   Annotating the export with `Action` (`export const action: Action = …`) hides what it returns,
   so annotate the parameter instead, or check it with `satisfies Action<"/x">`. Add
   `satisfies YourFailure` to `fail()` data whose string literals should stay literal.
 - **Disabling the Origin check to make a cross-site form work.** Allow the specific origin instead
-  (`csrf.allowedOrigins` in the request handler options).
+  (`lumiose({ csrf: { allowedOrigins } })` in `vite.config.ts`).
 
 ## Related diagnostics
 

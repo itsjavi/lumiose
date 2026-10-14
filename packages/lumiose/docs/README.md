@@ -91,8 +91,9 @@ mistakes** and **Related diagnostics**. Reference pages list every export with i
 
 ## Status of this version
 
-Lumiose is pre-release (`0.0.0`). The docs describe the designed API; where this version does not
-implement something yet, the page says so in a **Status** note. In short:
+Lumiose is pre-1.0, so APIs may still change between minor versions. The docs describe the
+designed API; where this version does not implement something yet, the page says so in a
+**Status** note. In short:
 
 | Area                                                                                  | Status                                                                     |
 | ------------------------------------------------------------------------------------- | -------------------------------------------------------------------------- |

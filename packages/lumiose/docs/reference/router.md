@@ -147,7 +147,7 @@ the new page is on screen.
   document navigation).
 - **Persistent layouts.** A layout's `children` is the outlet. Layouts the old and the new page
   share stay mounted with their state; the first level that differs (another file, or other
-  values of the params in its path, such as `songs/[id].stsx` for another song) is replaced. A
+  values of the params in its path, such as `songs/[id]/page.stsx` for another song) is replaced. A
   navigation that only changes the query keeps every level and updates `searchParams()`.
 - **Transitions.** The new page is created off-screen. The old page stays until the new page's
   async content (async components and resources outside a `<Suspense>` of the new page) is ready;

@@ -22,7 +22,8 @@ pnpm --filter @lumiose-examples/ssg-travel-journal test:e2e   # Playwright, agai
 
 `serve.ts` is a tiny static file server that behaves like a typical static host (`/about` serves
 `about/index.html`, unknown paths get `404.html` with a 404 status). No Lumiose code runs while it
-serves. `lumiose build` also writes `dist/server`, which a static deploy does not need.
+serves. Every route is prerendered, so `lumiose build` writes no `dist/server`: `dist/client` is
+the whole site.
 
 ## What is where
 
@@ -94,7 +95,7 @@ renders the body with `<props.post.Content />` and its table of contents from th
 - **Scoped**: each file ends with one `<style>` block, shared by the components it defines
   (`Site.stsx` styles both the header and the footer; their selectors start from each one's root
   class so they do not reach each other). The post body is the Markdown file's
-  own component, so its elements carry no scope token of the page; `posts/[slug].stsx` styles
+  own component, so its elements carry no scope token of the page; `posts/[slug]/page.stsx` styles
   them from its scoped `.prose` wrapper with `:deep()`.
 - **Tokens**: `src/theme.ts` holds colors, fonts, spacing, radii, shadows and breakpoints. Blocks
   read them as `$theme.color.accent` or `@media (width < $theme.layout.narrow)`, and the compiler

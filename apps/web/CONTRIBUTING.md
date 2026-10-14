@@ -17,9 +17,9 @@ node e2e/serve.ts 5194 /=.lumiose/e2e/root /lumiose/=.lumiose/e2e/base
 ```
 
 The apps the site mounts below it (the showcase apps at `/showcase/<slug>/`, the demos at
-`/demos/<slug>/` and the benchmark UIs, listed in `scripts/site-mounts.ts`) are separate builds.
-The dev server serves them from `dist/site` (after `pnpm build:site`, for the same base) or from
-each package's own build (`scripts/dev-mounts.ts`); an app with no usable build gets a dev page
+`/demos/<slug>/` and the benchmark UIs, listed in the repository's `scripts/site-mounts.ts`) are
+separate builds. The dev server serves them from `dist/site` (after `pnpm build:site`, for the same
+base) or from each package's own build (`apps/web/scripts/dev-mounts.ts`); an app with no usable build gets a dev page
 naming the command that builds it. The `dev` Playwright project (`*.dev.e2e.ts`) runs against
 `lumiose dev` on port 5196.
 

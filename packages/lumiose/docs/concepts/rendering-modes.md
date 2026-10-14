@@ -148,7 +148,7 @@ props. The differences (Astro 7.3, checked against its docs and source in Octobe
 1. **Shell.** The response starts once everything **outside** `<Suspense>` has resolved, including
    async components without a boundary. Until then you can still set the status, headers and
    cookies, call `redirect()`, `notFound()` or `error()`, and add `<Title>`/`<Meta>`/`<Head>`.
-   A failure renders `_error` with the right status.
+   A failure renders the `error` page with the right status.
 2. **Stream.** `<Suspense>` boundaries then stream in as they resolve, out of order, and replace
    their fallbacks (with native `<template for>` updates or a ~300 B `$swap` script). An error
    renders the boundary's `<ErrorBoundary>` in place. A head or status change inside a streamed

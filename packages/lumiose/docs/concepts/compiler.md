@@ -43,6 +43,7 @@ are generated from it. They appear in the Vite overlay, in `lumiose check`, in t
 | 3xxx  | Styles: placement, `$name` references, unused CSS                           |
 | 4xxx  | Islands and boundaries: exports, serialization, server-only code, hydration |
 | 5xxx  | Routing and server: route files, prerender, streaming                       |
+| 6xxx  | Tooling and config: the project's tsconfig                                  |
 
 **Tooling on top.** `lumiose check` (typegen, shadow files, `tsc --noEmit`, scanner and compiler
 diagnostics), `lumiose lint` (oxlint on shadows, optional stylelint on blocks), `lumiose fmt` (oxfmt

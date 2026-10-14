@@ -39,7 +39,7 @@ pnpm add lumiose
 pnpm add -D @lumiose/vite @lumiose/cli vite typescript
 ```
 
-Lumiose ships as three packages that share one version:
+Every Lumiose package shares one version. A project starts with three:
 
 - `lumiose`: the runtime your app imports (signals, the DOM and server renderers, the router, the
   app runtime). It has no dependencies.

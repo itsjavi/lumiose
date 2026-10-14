@@ -91,8 +91,8 @@ export default function Counter() {
   prerendered first paint). The same components work in all four.
 - **The full stack, built in.** File routes with layouts and a typed `href()`, async components, form actions that
   work without JavaScript, endpoints, middleware, cookies, i18n, and a strict Content Security Policy with nonces.
-- **Content as components.** Import `.md` and `.html` files (GFM, front matter) and SVGs (optimised and inlined) as
-  components.
+- **Content as components.** Import `.md` and `.html` files (GFM, front matter) as components, and any SVG,
+  icon sets such as Lucide included, with `?component` (optimised and inlined).
 - **Deploy anywhere.** Node, Docker, Cloudflare Workers, Vercel, Netlify, Bun, Deno, Fly.io, Render, Railway, AWS
   Lambda or any static host, each with a [deploy guide](https://itsjavi.com/lumiose/docs/deploy/).
 - **Explicit, for you and your agent.** Client boundaries are where you write them. Every diagnostic has a `LUMxxxx`
