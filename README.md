@@ -12,10 +12,10 @@
 
 <p align="center">
   <a href="https://itsjavi.com/lumiose/">Website</a> ·
-  <a href="https://itsjavi.com/lumiose/docs/getting-started">Get started</a> ·
-  <a href="https://itsjavi.com/lumiose/playground">Playground</a> ·
-  <a href="https://itsjavi.com/lumiose/showcase">Showcase</a> ·
-  <a href="https://itsjavi.com/lumiose/benchmarks">Benchmarks</a> ·
+  <a href="https://itsjavi.com/lumiose/docs/getting-started/">Get started</a> ·
+  <a href="https://itsjavi.com/lumiose/playground/">Playground</a> ·
+  <a href="https://itsjavi.com/lumiose/showcase/">Showcase</a> ·
+  <a href="https://itsjavi.com/lumiose/benchmarks/">Benchmarks</a> ·
   <a href="LICENSE">MIT License</a>
 </p>
 
@@ -78,7 +78,7 @@ export default function Counter() {
 ```
 
 `Counter` runs once. Clicking updates only the text and the class that read `count()`. Try it in the
-[playground](https://itsjavi.com/lumiose/playground), which runs the compiler in your browser.
+[playground](https://itsjavi.com/lumiose/playground/), which runs the compiler in your browser.
 
 ## Features
 
@@ -94,7 +94,7 @@ export default function Counter() {
 - **Content as components.** Import `.md` and `.html` files (GFM, front matter) and SVGs (optimised and inlined) as
   components.
 - **Deploy anywhere.** Node, Docker, Cloudflare Workers, Vercel, Netlify, Bun, Deno, Fly.io, Render, Railway, AWS
-  Lambda or any static host, each with a [deploy guide](https://itsjavi.com/lumiose/docs/deploy).
+  Lambda or any static host, each with a [deploy guide](https://itsjavi.com/lumiose/docs/deploy/).
 - **Explicit, for you and your agent.** Client boundaries are where you write them. Every diagnostic has a `LUMxxxx`
   code, a fix and a docs page. The docs ship inside the package (`lumiose docs signals`) and are served to agents over
   MCP.
@@ -118,7 +118,7 @@ export default function Counter() {
     <tr><td>Remix 3</td><td>Built in</td><td>Built in</td><td align="right">42&nbsp;kB</td><td align="right">1.57×</td><td align="right">44&nbsp;renders/s</td><td align="right">823&nbsp;req/s</td></tr>
   </tbody>
 </table>
-<p><sub>JS on a server page: what the fullstack comparison's issue tracker loads for its home page, brotli (2026-10-12 · Apple M1 Max (10 cores) · macOS 27.0.1 · Node 26.8.1). Client speed: js-framework-benchmark's weighted factor, where 1.00 is the fastest framework in the run and vanilla JS scores 1.00. Server speed: renders per second of the SSR benchmark's 5,000-component page to an HTML string (2026-10-12, Node v26.8.1, Apple M1 Max (10 cores, 32 GB), darwin 27.0.0 arm64), then requests per second on the fullstack comparison's home page (2026-10-12 · Apple M1 Max (10 cores) · macOS 27.0.1 · Node 26.8.1). Both React rows use React's client and rendering entries. Rows after Lumiose are ordered by npm downloads of each stack's main package (2026-09-10 to 2026-10-09). Astro's interactive islands need a second UI framework. Method and every run: <a href="https://itsjavi.com/lumiose/benchmarks">benchmarks</a>.</sub></p>
+<p><sub>JS on a server page: what the fullstack comparison's issue tracker loads for its home page, brotli (2026-10-12 · Apple M1 Max (10 cores) · macOS 27.0.1 · Node 26.8.1). Client speed: js-framework-benchmark's weighted factor, where 1.00 is the fastest framework in the run and vanilla JS scores 1.00. Server speed: renders per second of the SSR benchmark's 5,000-component page to an HTML string (2026-10-12, Node v26.8.1, Apple M1 Max (10 cores, 32 GB), darwin 27.0.0 arm64), then requests per second on the fullstack comparison's home page (2026-10-12 · Apple M1 Max (10 cores) · macOS 27.0.1 · Node 26.8.1). Both React rows use React's client and rendering entries. Rows after Lumiose are ordered by npm downloads of each stack's main package (2026-09-10 to 2026-10-09). Astro's interactive islands need a second UI framework. Method and every run: <a href="https://itsjavi.com/lumiose/benchmarks/">benchmarks</a>.</sub></p>
 <!-- /generated:compare -->
 
 ## Showcase
@@ -148,11 +148,11 @@ playground and the landing page's light.
 ## Documentation
 
 The docs live in [`packages/lumiose/docs/`](packages/lumiose/docs/) and ship with the package, so they always match
-the installed version. Read them on the [website](https://itsjavi.com/lumiose/docs/getting-started), from the terminal
+the installed version. Read them on the [website](https://itsjavi.com/lumiose/docs/getting-started/), from the terminal
 with `lumiose docs`, or through [`llms.txt`](https://itsjavi.com/lumiose/llms.txt). Good places to start:
-[Getting started](https://itsjavi.com/lumiose/docs/getting-started),
-[Coming from React](https://itsjavi.com/lumiose/docs/coming-from-react) and
-[Rendering modes](https://itsjavi.com/lumiose/docs/concepts/rendering-modes).
+[Getting started](https://itsjavi.com/lumiose/docs/getting-started/),
+[Coming from React](https://itsjavi.com/lumiose/docs/coming-from-react/) and
+[Rendering modes](https://itsjavi.com/lumiose/docs/concepts/rendering-modes/).
 
 ## Working on Lumiose
 

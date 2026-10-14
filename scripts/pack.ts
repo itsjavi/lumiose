@@ -72,6 +72,8 @@ export function tarballProblems(manifest: Manifest, files: string[]): string[] {
   const has = new Set(files);
   if (manifest.private) problems.push("is private");
   if (!has.has("LICENSE")) problems.push("no LICENSE");
+  // npm shows the README as the package's page.
+  if (!has.has("README.md")) problems.push("no README.md");
   // Platform packages carry os/cpu (publishConfig, so the workspace installs them everywhere).
   if (
     manifest.main?.endsWith(".node") &&

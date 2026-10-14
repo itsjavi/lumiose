@@ -26,6 +26,7 @@ const manifest = (fields: Partial<Manifest> = {}): Manifest => ({
 });
 const FILES = [
   "LICENSE",
+  "README.md",
   "package.json",
   "dist/index.js",
   "dist/index.d.ts",
@@ -72,13 +73,14 @@ describe("tarballProblems", () => {
     ]);
   });
 
-  it("reports a missing LICENSE and main", () => {
+  it("reports a missing LICENSE, README and main", () => {
     const problems = tarballProblems(
       manifest({ main: "compiler.linux-x64-gnu.node" }),
-      FILES.filter((file) => file !== "LICENSE"),
+      FILES.filter((file) => file !== "LICENSE" && file !== "README.md"),
     );
     assert.deepEqual(problems, [
       "no LICENSE",
+      "no README.md",
       "a native binary without os and cpu",
       "export or bin compiler.linux-x64-gnu.node: missing",
     ]);
