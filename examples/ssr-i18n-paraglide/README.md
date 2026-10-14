@@ -34,6 +34,10 @@ pnpm --filter @lumiose-examples/ssr-i18n-paraglide test:e2e   # Playwright, agai
 `project.inlang/settings.json` loads the message format plugin from `node_modules` (the
 `@inlang/plugin-message-format` dev dependency) instead of a CDN URL, so builds need no network.
 
+The root `pnpm typecheck` runs this example's typecheck on its own, before the parallel run of the
+other packages. Paraglide's compiler gives up when the inlang project does not open within 30
+seconds, which happened on a busy CI runner.
+
 The e2e tests (`e2e/i18n.e2e.ts`) cover localized pages with their `hreflang` and canonical links,
 the 404 for an undeclared locale, the language switcher and the cookie it sets, detection on a
 first visit, and the island's messages.

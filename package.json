@@ -4,7 +4,7 @@
   "license": "MIT",
   "type": "module",
   "scripts": {
-    "typecheck": "pnpm -r --parallel --if-present typecheck",
+    "typecheck": "pnpm --filter @lumiose-examples/ssr-i18n-paraglide typecheck && pnpm -r --parallel --if-present --filter=!@lumiose-examples/ssr-i18n-paraglide typecheck",
     "test": "vitest run",
     "test:watch": "vitest",
     "lint": "oxlint",
