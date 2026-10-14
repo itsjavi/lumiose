@@ -2,8 +2,9 @@
 # the tag (vX.Y.Z) runs this workflow: the Binaries workflow builds and smoke-tests every compiler
 # binary, then scripts/publish.ts packs every package (the binaries go into their
 # @lumiose/compiler-<platform> packages) and publishes them to npm with provenance, platform packages
-# first. Until the repository variable LUMIOSE_PUBLISH is "true", it is a dry run that publishes
-# nothing; a manual run (workflow_dispatch) is always a dry run.
+# first, and the github-release job creates the tag's GitHub release with its changelog section.
+# Until the repository variable LUMIOSE_PUBLISH is "true", it is a dry run that publishes nothing;
+# a manual run (workflow_dispatch) is always a dry run.
 name: Release
 
 on:
@@ -56,3 +57,35 @@ jobs:
         run: node scripts/publish.ts ${{ (github.event_name == 'push' && vars.LUMIOSE_PUBLISH == 'true') && ' ' || '--dry-run' }}
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+  # The GitHub release of the tag, after a real publish only (a dry run creates none): titled by the
+  # tag, with the version's CHANGELOG.md section as notes, a pre-release for x.y.z-* versions. A
+  # re-run updates the notes of the release it created.
+  github-release:
+    needs: publish
+    if: github.event_name == 'push' && vars.LUMIOSE_PUBLISH == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+
+      - name: Create the GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          version="${TAG#v}"
+          notes="$RUNNER_TEMP/notes.md"
+          node scripts/release-notes.ts "$version" > "$notes"
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release edit "$TAG" --notes-file "$notes"
+          else
+            flags=(--title "$TAG" --notes-file "$notes" --verify-tag)
+            if [[ "$version" == *-* ]]; then flags+=(--prerelease); fi
+            gh release create "$TAG" "${flags[@]}"
+          fi

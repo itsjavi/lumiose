@@ -154,7 +154,10 @@ one version (lockstep); nothing is bumped by hand.
    builds and smoke-tests every compiler binary, then `scripts/publish.ts` packs every package,
    puts each binary into its platform package, checks that the tag names the packages' version,
    and publishes with npm provenance in dependency order (platform packages, `@lumiose/compiler`,
-   `lumiose`, then the tooling). Prereleases (`x.y.z-rc.1`) go to the `next` dist-tag.
+   `lumiose`, then the tooling). Prereleases (`x.y.z-rc.1`) go to the `next` dist-tag. After the
+   publish, the `github-release` job creates the tag's GitHub release, with the version's
+   `CHANGELOG.md` section as notes (`node scripts/release-notes.ts <x.y.z>` prints them) and marked
+   as a pre-release for `x.y.z-*` versions.
 3. Until the repository variable `LUMIOSE_PUBLISH` is `true` (with npm trusted publishing set up
    for the packages, or an `NPM_TOKEN` secret), the workflow is a dry run (`npm publish --dry-run`)
    and publishes nothing. A manual run (workflow_dispatch) is always a dry run.
