@@ -5,7 +5,7 @@ status: Done
 assignee:
   - Chime
 created_date: '2026-10-09 04:31'
-updated_date: '2026-10-09 05:09'
+updated_date: '2026-10-14 03:47'
 labels:
   - samples
   - spa
@@ -19,7 +19,7 @@ ordinal: 133000
 ## Description
 
 <!-- SECTION:DESCRIPTION:BEGIN -->
-User request 2026-10-09: a sibling of spa-chiptune built with Lumen, using the user's Game Boy APU engine (/Users/javi/Developer/lab/projects/games/newbark-engine/packages/gbapu, vendored with its LICENSE-NOTICE.md and PROVENANCE.json) and learning from crystal-exporter (docs/audio.md, audio/DSL.md, authored examples) how Crystal-style music and SFX are expressed. Easier for beginners than spa-chiptune, equally polished, with its own design. Demo songs and SFX must be original compositions in that style: no Pokémon Crystal songs, SFX, cries or exported game data.
+User request 2026-10-09: a sibling of spa-chiptune built with Lumen, using the user's Game Boy APU engine (newbark-engine's packages/gbapu, vendored with its LICENSE-NOTICE.md and PROVENANCE.json) and learning from crystal-exporter (docs/audio.md, audio/DSL.md, authored examples) how Crystal-style music and SFX are expressed. Easier for beginners than spa-chiptune, equally polished, with its own design. Demo songs and SFX must be original compositions in that style: no Pokémon Crystal songs, SFX, cries or exported game data.
 <!-- SECTION:DESCRIPTION:END -->
 
 ## Acceptance Criteria

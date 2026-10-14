@@ -7,7 +7,7 @@ status: Done
 assignee:
   - Chime
 created_date: '2026-10-09 05:37'
-updated_date: '2026-10-09 05:48'
+updated_date: '2026-10-14 03:47'
 labels:
   - samples
   - audio
@@ -21,7 +21,7 @@ ordinal: 153000
 ## Description
 
 <!-- SECTION:DESCRIPTION:BEGIN -->
-User feedback 2026-10-09: the creature voices sound similar to each other and like old cell phones ringing. The previous set is recorded in git at 24cd678. Learn how real cries are built from the crystal-exporter examples at /Users/javi/Developer/lab/projects/games/newbark-engine/tools/crystal-exporter/audio/src/game/audios (cries/, species-cries/, sfx/, music/, the engine types and drivers) and redesign the creatures. The reference is extracted game data: learn techniques and statistics only; never copy or closely transcribe any command sequence, frequency series or envelope pattern. Also write a composing guide for Dotmatrix covering SFX, cries and music.
+User feedback 2026-10-09: the creature voices sound similar to each other and like old cell phones ringing. The previous set is recorded in git at 24cd678. Learn how real cries are built from the crystal-exporter examples in newbark-engine's tools/crystal-exporter/audio/src/game/audios (cries/, species-cries/, sfx/, music/, the engine types and drivers) and redesign the creatures. The reference is extracted game data: learn techniques and statistics only; never copy or closely transcribe any command sequence, frequency series or envelope pattern. Also write a composing guide for Dotmatrix covering SFX, cries and music.
 <!-- SECTION:DESCRIPTION:END -->
 
 ## Acceptance Criteria

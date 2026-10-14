@@ -257,6 +257,15 @@ with a disposable screenshot when practical.
 Store final representative screenshots in `backlog/assets/` and link
 them from the relevant task. Keep intermediate captures in scratch.
 
+## Local environment details
+
+Never write details of the local environment into anything committed or
+published: absolute paths (`/Users/…`, `~/…`), temp directories, usernames,
+hostnames or checkout locations, in backlog tasks and their references,
+docs, code, comments or commit messages. Refer to other projects by name or
+public URL, and to files by repo-relative paths. Check the diff for them
+before committing.
+
 ## Files that LLMs and Agents should not use as context
 
 Any file matching these patterns, should not be used as context:
