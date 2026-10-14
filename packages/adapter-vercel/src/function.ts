@@ -218,7 +218,14 @@ export function commonAncestor(dirs: readonly string[]): string {
       dir !== ancestor &&
       !dir.startsWith(ancestor.endsWith(sep) ? ancestor : ancestor + sep)
     ) {
-      ancestor = dirname(ancestor);
+      const parent = dirname(ancestor);
+      // A root is its own dirname: without this check, dirs on another drive would loop forever.
+      if (parent === ancestor) {
+        throw new Error(
+          `@lumiose/adapter-vercel: the function's files share no common directory (${JSON.stringify(ancestor)} and ${JSON.stringify(dir)}). Keep the project and its node_modules on one drive.`,
+        );
+      }
+      ancestor = parent;
     }
   }
   return ancestor;

@@ -52,7 +52,9 @@ hit the static files. Vercel compresses responses itself: the build writes no `.
 - `"nodejs"` (default): a Node.js function (the build's Node.js major version, 22 at least),
   with response streaming. The function directory holds the server build and the npm packages it
   imports, found with `@vercel/nft`; native modules are copied as they are, so build on Linux
-  (Vercel's build does) when your dependencies have native binaries.
+  (Vercel's build does) when your dependencies have native binaries. The project and its
+  `node_modules` must be on one drive: the build stops with an error when the traced files share
+  no common directory.
 - `"edge"`: one bundled module for Vercel's Edge runtime. npm packages are bundled with their
   `edge-light` and `worker` builds. The Edge runtime has no file system and only some Node.js
   modules (`async_hooks`, `buffer`, `events`, `util`, `assert`): the build stops with an error

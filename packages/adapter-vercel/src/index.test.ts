@@ -279,8 +279,15 @@ describe("config.json helpers", () => {
   });
 
   it("finds the common ancestor of directories", () => {
-    expect(commonAncestor(["/a/b/c", "/a/b/d/e", "/a/b"])).toBe("/a/b");
-    expect(commonAncestor(["/a/bc", "/a/b"])).toBe("/a");
+    // resolve() gives platform paths (`D:\a\b` on Windows), as the build passes them.
+    expect(commonAncestor([resolve("/a/b/c"), resolve("/a/b/d/e"), resolve("/a/b")])).toBe(
+      resolve("/a/b"),
+    );
+    expect(commonAncestor([resolve("/a/bc"), resolve("/a/b")])).toBe(resolve("/a"));
+  });
+
+  it("throws, instead of looping, when the directories share no root", () => {
+    expect(() => commonAncestor(["/a/b", "a/b"])).toThrow(/share no common directory/);
   });
 });
 
