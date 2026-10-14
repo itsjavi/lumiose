@@ -2,7 +2,7 @@
 
 > Lumiose is a web framework for everything from static sites and SPAs to full-stack apps: TSX with scoped CSS built in, signals, and 0 kB of JavaScript until a page needs it.
 
-These docs match lumiose 0.3.0. Installed projects have them in `node_modules/lumiose/docs`;
+These docs match lumiose 0.4.0. Installed projects have them in `node_modules/lumiose/docs`;
 `lumiose docs <topic>` prints one and `lumiose explain <code>` explains a diagnostic.
 
 ## Start here

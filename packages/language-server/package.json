@@ -1,6 +1,6 @@
 {
   "name": "@lumiose/language-server",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "The Lumiose language server: a TypeScript 7 takeover proxy for .ts/.tsx/.stsx plus CSS features for .stsx style blocks.",
   "license": "MIT",
   "repository": {

@@ -2,6 +2,16 @@
 
 All Lumiose packages share one version.
 
+## 0.4.0 (2026-10-14)
+
+### Breaking changes
+
+- **vite:** SVG components only through ?component, from the project or node_modules (TASK-270) (7421bcc9)
+
+### Fixes
+
+- **web:** a zero bar is empty for every stack, Lumiose's included (TASK-274) (173e6c48)
+
 ## 0.3.0 (2026-10-13)
 
 ### Breaking changes
