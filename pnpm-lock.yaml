@@ -436,6 +436,8 @@ importers:
         specifier: ^8.3.4
         version: 8.3.4(@types/node@24.19.1)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(yaml@2.9.1)
 
+  benchmarks/large-app: {}
+
   benchmarks/ssr:
     dependencies:
       '@babel/core':

@@ -1,0 +1,14 @@
+{
+  "name": "@lumiose/bench-large-app",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Large-app benchmark: build time, dev cold start, HMR latency and server memory of a generated 1,500-route app, as an A/B of two Lumiose builds.",
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "generate": "node scripts/generate.ts",
+    "ab": "node scripts/ab.ts",
+    "test": "node --test scripts/*.test.ts",
+    "typecheck": "tsc -p tsconfig.json"
+  }
+}
