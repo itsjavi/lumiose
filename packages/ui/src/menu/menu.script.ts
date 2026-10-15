@@ -8,6 +8,8 @@
 //   light-dismisses it on a main-button press and release outside (native light dismiss also
 //   closes on a right-click and cannot be canceled), closes submenus with their parent and with
 //   their siblings, and closes on a close request (`CloseWatcher`, where the browser has it).
+// - Placement: where CSS anchor positioning is missing, the shared ../placement/place.ts places
+//   an open popup next to its trigger, and again on scroll and resize.
 // - Focus: a keyboard opening focuses the first item that can run (Arrow Up: the last one), a
 //   pointer opening the popup; closing returns focus to the trigger, without scrolling, unless an
 //   outside press landed on something focusable. Once defined, the element toggles the popup on
@@ -24,6 +26,8 @@
 // the element and items are queried when an event needs them, so Lumiose may add, remove or
 // rerender items at any time. It must not import `lumiose`: server-rendered pages load it without
 // the runtime.
+
+import { anchoring, place } from "../placement/place.ts";
 
 const ITEM = "[role^='menuitem']";
 /** Typed characters add up into one search until this pause (ms), as in Base UI. */
@@ -151,6 +155,9 @@ export class MenuElement extends HTMLElement {
         return this.#onPointerOut(event as PointerEvent);
       case "toggle":
         return this.#onToggle(event as ToggleEvent);
+      case "scroll":
+      case "resize":
+        return this.#place();
       default: {
         // focusin, focusout: the highlight follows focus.
         const item = event.target as HTMLElement;
@@ -212,6 +219,7 @@ export class MenuElement extends HTMLElement {
     (popup.showPopover as (options?: { source?: HTMLElement | null }) => void)({
       source: this.trigger,
     });
+    this.#place();
     this.#listen(true);
     if (typeof CloseWatcher === "function") {
       const watcher = new CloseWatcher();
@@ -235,12 +243,20 @@ export class MenuElement extends HTMLElement {
     this.popup!.hidePopover();
   }
 
-  /** The presses on the page that light-dismiss the menu, while it is open. */
+  /**
+   * The presses on the page that light-dismiss the menu, while it is open, and the scrolling and
+   * resizing that move its trigger where the script places the popup.
+   */
   #listen(on: boolean): void {
-    for (const type of ["pointerdown", "pointerup"]) {
-      if (on) document.addEventListener(type, this, true);
-      else document.removeEventListener(type, this, true);
-    }
+    const method = on ? "addEventListener" : "removeEventListener";
+    for (const type of ["pointerdown", "pointerup"]) document[method](type, this, true);
+    if (!anchoring) for (const type of ["scroll", "resize"]) window[method](type, this, true);
+  }
+
+  /** Places the popup next to its trigger where CSS anchor positioning is missing. */
+  #place(): void {
+    const trigger = this.trigger;
+    if (!anchoring && trigger && this.open) place(this.popup!, trigger);
   }
 
   #focus(edge: Edge): void {
@@ -265,6 +281,7 @@ export class MenuElement extends HTMLElement {
     if (open) {
       const edge = this.#edge ?? "first";
       this.#edge = undefined;
+      this.#place();
       this.#focus(edge);
     } else {
       this.#listen(false);

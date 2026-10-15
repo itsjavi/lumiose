@@ -19,6 +19,7 @@ import {
 } from "lumiose";
 import type { MenuCheckedChangeDetail, MenuElement, MenuOpenChangeDetail } from "./menu.script.ts";
 import menuScript from "./menu.script.ts?client";
+import { anchorName, placement, withStyle, type Align, type Side } from "../placement/placement.ts";
 
 declare module "lumiose/jsx-runtime" {
   namespace JSX {
@@ -34,9 +35,9 @@ declare module "lumiose/jsx-runtime" {
 }
 
 /** The trigger's side the popup goes on. `inline-start` and `inline-end` follow the direction. */
-export type MenuSide = "top" | "bottom" | "left" | "right" | "inline-start" | "inline-end";
+export type MenuSide = Side;
 /** How the popup aligns with the trigger along that side. */
-export type MenuAlign = "start" | "center" | "end";
+export type MenuAlign = Align;
 
 /**
  * `Menu.Root` renders `<lu-menu>`, an element with no box that holds the menu's state and adds its
@@ -164,8 +165,8 @@ export type MenuSubmenuTriggerProps = Omit<JSX.IntrinsicElements["button"], "dis
 interface MenuContextValue {
   popupId: string;
   triggerId: string;
-  /** The anchor name that ties the popup to its trigger. */
-  anchor: string;
+  /** The id the parts share; the anchor name that ties the popup to its trigger derives from it. */
+  id: string;
   submenu: boolean;
   /** How many triggers are rendered: the popup is labelled by the trigger only when there is one. */
   triggers: Signal<number>;
@@ -192,18 +193,6 @@ function register(count: Signal<number>) {
   onCleanup(() => count.update((n) => n - 1));
 }
 
-type Style = string | JSX.CSSProperties | undefined;
-
-/** `style` with `extra` in front, so the caller's own declarations win. */
-function withStyle(style: Style, extra: JSX.CSSProperties): string | JSX.CSSProperties {
-  if (typeof style !== "string") return { ...extra, ...style };
-  const ours = Object.entries(extra)
-    .filter(([, value]) => value !== undefined)
-    .map(([name, value]) => `${name}: ${value}`)
-    .join("; ");
-  return `${ours}; ${style}`;
-}
-
 /** The item attributes shared by every kind of item. */
 function itemAttributes({ disabled, label, closeOnClick }: ItemProps) {
   return {
@@ -222,7 +211,7 @@ function menuRoot(props: MenuRootProps, submenu: boolean) {
   const context: MenuContextValue = {
     popupId: `${id}-popup`,
     triggerId: `${id}-trigger`,
-    anchor: `--lu-${id}`,
+    id,
     submenu,
     triggers: signal(0),
   };
@@ -275,7 +264,7 @@ function Trigger({ children, style, ...rest }: MenuTriggerProps) {
       id={menu.triggerId}
       popovertarget={menu.popupId}
       aria-haspopup="menu"
-      style={withStyle(style, { "anchor-name": menu.anchor })}
+      style={withStyle(style, { "anchor-name": anchorName(menu.id) })}
     >
       {children}
     </button>
@@ -294,7 +283,7 @@ function SubmenuTrigger({ children, disabled, label, style, ...rest }: MenuSubme
       role="menuitem"
       popovertarget={menu.popupId}
       aria-haspopup="menu"
-      style={withStyle(style, { "anchor-name": menu.anchor })}
+      style={withStyle(style, { "anchor-name": anchorName(menu.id) })}
     >
       {children}
     </button>
@@ -307,17 +296,16 @@ function Popup({ children, side, align, sideOffset, alignOffset, style, ...rest 
     <div
       tabindex={-1}
       aria-labelledby={menu.triggers() > 0 ? menu.triggerId : undefined}
-      data-side={side ?? (menu.submenu ? "inline-end" : "bottom")}
-      data-align={align ?? "start"}
       {...rest}
       id={menu.popupId}
       role="menu"
       popover="auto"
-      style={withStyle(style, {
-        "position-anchor": menu.anchor,
-        "--lu-side-offset": sideOffset === undefined ? undefined : `${sideOffset}px`,
-        "--lu-align-offset": alignOffset === undefined ? undefined : `${alignOffset}px`,
-      })}
+      {...placement(
+        { side, align, sideOffset, alignOffset, style },
+        menu.id,
+        menu.submenu ? "inline-end" : "bottom",
+        "start",
+      )}
     >
       {children}
     </div>

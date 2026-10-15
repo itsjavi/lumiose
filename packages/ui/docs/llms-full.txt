@@ -389,7 +389,7 @@ Until the script loads (or without JavaScript) the dialog behaves as the browser
 
 # Menu
 
-> A menu of commands, links, checkbox and radio items and submenus, opened by a button: the trigger's `popovertarget` opens it and CSS anchor positioning places it, so it works in server HTML with no JavaScript, and a 2.4 kB script adds the APG Menu Button keyboard contract where JavaScript runs. `bind:open`, `bind:checked` and `bind:value` keep signals in sync in islands.
+> A menu of commands, links, checkbox and radio items and submenus, opened by a button: the trigger's `popovertarget` opens it and CSS anchor positioning places it, so it works in server HTML with no JavaScript, and a 2.9 kB script adds the APG Menu Button keyboard contract where JavaScript runs. `bind:open`, `bind:checked` and `bind:value` keep signals in sync in islands.
 
 ```ts
 import { Menu } from "@lumiose/ui"; // or "@lumiose/ui/menu"
@@ -649,11 +649,13 @@ A starting point:
 ```
 
 `@lumiose/ui/menu.css` holds what the menu needs to work, in the `lu.core` layer: `lu-menu` has
-no box, the popup and its groups lay the items out in a column (`display: grid`, items
-`display: flex`), and, where the browser has CSS anchor positioning, the popup sits on its
-`data-side` and `data-align` (`position-area`), flips when it does not fit
-(`position-try-fallbacks`), and keeps the gaps of `--lu-side-offset` and `--lu-align-offset`. The
-`sideOffset` and `alignOffset` props set those two properties on the popup.
+no box, and the popup and its groups lay the items out in a column (`display: grid`, items
+`display: flex`). It imports the placement rules Menu shares with Popover and Tooltip: with CSS
+anchor positioning, a popup sits on its `data-side` and `data-align`, keeps the gaps of
+`--lu-side-offset` and `--lu-align-offset`, flips when it does not fit (a submenu tries the other
+side, then the other alignment, then below and above its trigger) and hides while its trigger is
+scrolled out of view. The `sideOffset` and `alignOffset` props set those two properties on the
+popup.
 
 ## Keyboard and focus
 
@@ -698,7 +700,7 @@ items in order, and links work; commands, which run JavaScript, need it anyway. 
 `onOpenChange` and the `bind:` props need the component to run in the browser, in an island.
 
 The keyboard contract comes from a small script: a page that renders a `Menu` loads it once, as a
-2.4 kB (brotli) module without the Lumiose runtime, and islands bundle it. It defines `lu-menu`,
+2.9 kB (brotli) module without the Lumiose runtime, and islands bundle it. It defines `lu-menu`,
 which upgrades every menu on the page in place, and adds what the native popover lacks: focus on
 open and its return on close, the arrows, Home, End and typeahead, Escape one level at a time, Tab,
 submenus, checkbox and radio items, disabled items, `data-highlighted`, and the pointer behaviour
@@ -719,8 +721,9 @@ The element is also an API of its own, for scripts and other frameworks:
 
 - **Popovers and `popovertarget`**: Chrome and Edge 114, Firefox 125, Safari 17.
 - **CSS anchor positioning** places the popup: Chrome and Edge 125, Firefox 147, Safari 26
-  (partly; 27 fully). Elsewhere the popup shows where the browser shows any popover, in the middle
-  of the viewport, and still works.
+  (partly; 27 fully). Elsewhere the client script places the popup with the same sides,
+  alignment, offsets and flips; without JavaScript it shows where the browser shows any popover,
+  in the middle of the viewport, and still works.
 - **`showPopover({ source })`**, which ties a popup the script opens to its trigger: Chrome 137,
   Firefox 144, Safari 26. Older browsers open it the same way.
 - **`CloseWatcher`**, for the Android back gesture: Chrome 126, Firefox 149. Elsewhere Escape
