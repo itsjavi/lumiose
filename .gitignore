@@ -48,3 +48,8 @@ playwright-report/
 *.db
 *.db-shm
 *.db-wal
+
+.agents/skills
+.claude/skills
+skills-lock.json
+
