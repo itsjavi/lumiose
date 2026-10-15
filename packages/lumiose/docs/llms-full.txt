@@ -63,7 +63,7 @@ mistakes** and **Related**.
 - [Markdown and HTML imports](concepts/content.md): `.md` and `.html` files as static components; GFM, heading ids, frontmatter and its hook, scoped `<style>`, client `<script>`.
 - [Head and document](concepts/head.md): `<Title>`, `<Meta>`, `<Head>` and a custom `document.stsx`.
 - [Compiler and diagnostics](concepts/compiler.md): What the compiler does with `.stsx`/`.tsx`, and how `LUMxxxx` diagnostics work.
-- [Testing](concepts/testing.md): Test components with Vitest and the Lumiose Vite plugin.
+- [Testing](concepts/testing.md): Component tests with Vitest and Testing Library (queries and user-event), server rendering as strings, and end-to-end tests with Playwright.
 - [Security](concepts/security.md): A strict Content Security Policy with nonces and hashes (`lumiose({ csp: "strict" })`, `cspNonce()`), and the cross-site form check.
 
 ## Guides
@@ -72,6 +72,9 @@ mistakes** and **Related**.
 - [Icons with Lucide](guides/icons.md): Lucide's SVG files (`lucide-static`), or any SVG icon set, as inline components through `?component` imports: install, size, colour and stroke with CSS, labels, and why not `lucide-react`.
 - [i18n with Paraglide JS and i18next](guides/i18n.md): Messages in server pages and islands with Paraglide JS (compile-time) or i18next (a `t` per request), keyed by `locale()`; a language switcher on `alternates()` that updates the detection cookie; `hreflang`, canonical and `site` for search engines.
 - [Realtime](guides/realtime.md): Server-sent events from an endpoint to an island's `EventSource`, WebSockets with `ws` on the Node adapter's server, proxy configs and per-platform notes.
+- [Payments with Stripe Checkout](guides/stripe.md): Checkout started from a form action, a return page, and webhooks received by a `route.ts` endpoint that verifies Stripe's signature.
+- [Content from Sanity](guides/sanity.md): Sanity content read in async components and prerendered, draft previews on a server-rendered route behind a secret, and static rebuilds from Sanity's webhook.
+- [Editors](guides/editors.md): The language server in Neovim and Helix (file type, root markers, the server command), what works in Zed today, and GitHub highlighting through `.gitattributes`.
 - [Web components](guides/web-components.md): Custom elements and web-component libraries: defining them in the browser, typing them in JSX, properties versus attributes (React 19's rule), events with `on:`, server rendering, and the Custom Elements Everywhere score (100).
 
 ## Deploy
@@ -129,7 +132,7 @@ designed API; where this version does not implement something yet, the page says
 | `lumiose check`, `lint`, `fmt`, `docs`, `explain`, language server, VS Code extension | Available                                                                  |
 | `lumiose mcp`                                                                         | Available                                                                  |
 | `create-lumiose` (templates `minimal`, `static`, `ssr`, `spa`), `lumiose agents init` | Available                                                                  |
-| `@lumiose/testing`                                                                    | Planned                                                                    |
+| Testing: Vitest, Testing Library and Playwright                                       | Available, with stock tools (no adapter package)                           |
 
 <!-- source: getting-started.md -->
 
@@ -305,7 +308,8 @@ Lumiose language server, which proxies TypeScript for `.ts`, `.tsx` and `.stsx` 
 
 The extension bundles the server (it runs on VS Code's own Node.js) and uses the project's
 `typescript`; install `@lumiose/language-server` as a dev dependency only to pin the server to your
-`lumiose` version. See [Compiler and diagnostics](concepts/compiler.md).
+`lumiose` version. See [Compiler and diagnostics](concepts/compiler.md). Neovim and Helix run the
+same server: [Editors](guides/editors.md).
 
 ## Next
 
@@ -5610,9 +5614,17 @@ See also: [Styles](styles.md), [reference: CLI](../reference/cli.md).
 
 # Testing
 
-> Test components with Vitest: render into a DOM, interact, flush updates and assert, and test server rendering as HTML strings.
+> Test components with Vitest and Testing Library (queries and user-event against the real DOM that `render()` builds), server rendering as HTML strings, and whole apps end to end with Playwright.
 
 ## Concept
+
+**Three kinds of tests**, with stock tools and no Lumiose adapter package:
+
+| Test             | Tools                                                                      | What it runs                                       |
+| ---------------- | -------------------------------------------------------------------------- | -------------------------------------------------- |
+| Component        | Vitest, `happy-dom`, `@testing-library/dom`, `@testing-library/user-event` | `render()` from `lumiose/dom` into `document.body` |
+| Server rendering | Vitest (node environment)                                                  | `renderToString(() => <Page />)`                   |
+| End to end       | Playwright (`@playwright/test`)                                            | The built app, served by `lumiose preview`         |
 
 Vitest uses your Vite config, so `lumiose()` compiles `.stsx` and `.tsx` test subjects the same way
 as the app. Two things matter for component tests:
@@ -5624,27 +5636,41 @@ as the app. Two things matter for component tests:
   resolves Node conditions, but `lumiose()` gives tests in a DOM environment the browser entry of
   `lumiose`, so rendered components update. Tests without a DOM environment keep the `node` entry.
 
-Updates are batched: after a write or an event outside a delegated handler, call `flush()`
-before asserting. Delegated events (`onClick`) need the element to be attached to `document`.
+**Testing Library.** `render()` builds real DOM nodes, so `@testing-library/dom` works as it is:
+query by role, label or text (`screen.getByRole("button", { name: "Add" })`), and drive the page
+with `@testing-library/user-event`, which types and clicks like a user. Render into a container
+appended to `document.body` (delegated handlers such as `onClick` listen at `document`), and call
+the disposer `render()` returns after each test. `await user.click(…)` returns after the handler's
+updates are applied: a write inside a delegated handler is flushed when the handler ends. For
+matchers such as `toBeDisabled()`, add `@testing-library/jest-dom`.
 
-Server rendering is tested with `renderToString(() => <Page />)` under the `node` entry: a test
+Updates outside handlers are batched: after a write in the test itself (`count.set(3)`), call
+`flush()` before asserting, or use a `findBy…` query, which retries until the element appears.
+
+**Server rendering** is tested with `renderToString(() => <Page />)` under the `node` entry: a test
 file without a DOM environment, in the same project.
+
+**End to end.** Playwright drives a browser against the production build: its `webServer` option
+runs `lumiose build` and `lumiose preview`, and tests visit pages, click and assert. Islands replay
+clicks and input that happen before they hydrate, so tests need no wait for hydration. Keep these
+tests to the flows that need a real browser and a server: navigation, forms that post to actions,
+and the islands on them.
 
 **Scoped state is fresh in each test.** `lumiose()` adds a Vitest setup file that resets
 `defineState` instances before each test, so one test's cart never leaks into the next. In server
 tests, a state's accessor called outside a render (to seed or inspect it) uses one instance per
 test, which `renderToString` then shares.
 
-> **Status:** `@lumiose/testing` (a `render()` helper and Testing Library integration) is planned.
-> Until then, use `render` from `lumiose/dom` as shown here.
-
 ## API
 
-| API                                                   | Use                                         |
-| ----------------------------------------------------- | ------------------------------------------- |
-| `render(() => <App />, container)` from `lumiose/dom` | Render into a DOM node; returns a disposer. |
-| `flush()`                                             | Run pending bindings and effects now.       |
-| `renderToString(() => <App />)`                       | Server-render to a string (node entry).     |
+| API                                                     | Use                                                                     |
+| ------------------------------------------------------- | ----------------------------------------------------------------------- |
+| `render(() => <App />, container)` from `lumiose/dom`   | Render into a DOM node; returns a disposer.                             |
+| `screen`, `within(element)` from `@testing-library/dom` | Queries: `getBy…` (now), `findBy…` (waits), `queryBy…` (may be absent). |
+| `userEvent.setup()` from `@testing-library/user-event`  | `await user.click(el)`, `user.type(el, text)`, `user.keyboard(…)`.      |
+| `flush()`                                               | Run pending bindings and effects now.                                   |
+| `renderToString(() => <App />)`                         | Server-render to a string (node entry).                                 |
+| `playwright.config.ts`: `webServer`, `use.baseURL`      | Build and serve the app for end-to-end tests.                           |
 
 ## Example
 
@@ -5655,9 +5681,82 @@ import { defineConfig } from "vite";
 
 export default defineConfig({
   plugins: [lumiose()],
-  test: { environment: "happy-dom" },
+  test: { environment: "happy-dom", include: ["src/**/*.test.{ts,tsx}"] },
 });
 ```
+
+A form component and its test:
+
+```stsx check file=components/TodoForm.stsx
+// src/components/TodoForm.stsx
+import { signal } from "lumiose";
+
+export function TodoForm(props: { onAdd?: (title: string) => void }) {
+  const title = signal("");
+  const todos = signal<string[]>([]);
+  return (
+    <form
+      onSubmit={(event) => {
+        event.preventDefault();
+        todos.update((list) => [...list, title()]);
+        props.onAdd?.(title());
+        title.set("");
+      }}
+    >
+      <label>
+        Title <input bind:value={title} />
+      </label>
+      <button disabled={title() === ""}>Add</button>
+      <ul>
+        {todos().map((todo) => (
+          <li>{todo}</li>
+        ))}
+      </ul>
+    </form>
+  );
+}
+```
+
+```tsx check file=components/TodoForm.test.tsx
+// src/components/TodoForm.test.tsx
+import { screen, within } from "@testing-library/dom";
+import userEvent from "@testing-library/user-event";
+import { render } from "lumiose/dom";
+import { afterEach, expect, it, vi } from "vitest";
+import { TodoForm } from "./TodoForm.stsx";
+
+let dispose: (() => void) | undefined;
+
+// Attached to document.body, where delegated handlers listen; disposed after each test.
+function mount(ui: () => JSX.Element) {
+  const container = document.body.appendChild(document.createElement("div"));
+  dispose = render(ui, container);
+}
+
+afterEach(() => {
+  dispose?.();
+  document.body.replaceChildren();
+});
+
+it("adds a todo", async () => {
+  const user = userEvent.setup();
+  const onAdd = vi.fn();
+  mount(() => <TodoForm onAdd={onAdd} />);
+
+  const add = screen.getByRole<HTMLButtonElement>("button", { name: "Add" });
+  expect(add.disabled).toBe(true);
+
+  await user.type(screen.getByLabelText("Title"), "Write tests");
+  expect(add.disabled).toBe(false);
+  await user.click(add);
+
+  expect(within(screen.getByRole("list")).getByText("Write tests")).toBeTruthy();
+  expect(onAdd).toHaveBeenCalledWith("Write tests");
+  expect(screen.getByLabelText<HTMLInputElement>("Title").value).toBe("");
+});
+```
+
+A test that writes a signal itself flushes before asserting:
 
 ```tsx check file=Counter.test.tsx
 // src/Counter.test.tsx
@@ -5680,20 +5779,59 @@ it("counts clicks", () => {
 });
 ```
 
+End to end with Playwright (`pnpm add -D @playwright/test`, then `npx playwright install chromium`):
+
+```ts check
+// playwright.config.ts
+import { defineConfig, devices } from "@playwright/test";
+
+export default defineConfig({
+  testDir: "e2e",
+  use: { baseURL: "http://localhost:4173" },
+  projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
+  // Builds the app and serves the build, as production would.
+  webServer: {
+    command: "lumiose build && lumiose preview --port 4173",
+    url: "http://localhost:4173",
+    reuseExistingServer: !process.env.CI,
+  },
+});
+```
+
+```ts check
+// e2e/guestbook.spec.ts
+import { expect, test } from "@playwright/test";
+
+test("signs the guestbook", async ({ page }) => {
+  await page.goto("/guestbook");
+  await page.getByLabel("Name").fill("Ada");
+  await page.getByLabel("Message").fill("Hello");
+  await page.getByRole("button", { name: "Sign" }).click();
+  // The form posts to the page's action, which redirects back to the list.
+  await expect(page.getByText("Ada: Hello")).toBeVisible();
+});
+```
+
+Run it with `npx playwright test`. Keep `e2e/` out of Vitest's `include`, as above.
+
 ## Common mistakes
 
 - **No DOM environment.** Without `happy-dom` (or `jsdom`) there is no `document`, and `lumiose`
   resolves to its `node` entry, which has no reactive graph: set the environment for component
   tests.
-- **Asserting right after a write.** Effects and bindings run in a microtask; call `flush()`
-  first.
-- **Clicking a detached element.** Delegated handlers listen at `document`; append the container
-  to `document.body`.
+- **Asserting right after a write in the test.** Effects and bindings run in a microtask; call
+  `flush()` first, or query with `findBy…`.
+- **Rendering into a detached element.** Delegated handlers listen at `document`; append the
+  container to `document.body`, or user-event clicks reach no handler.
 - **Not disposing.** Call the disposer returned by `render` so effects and listeners from one test
-  do not leak into the next.
+  do not leak into the next, and clear `document.body` so `screen` queries see one test's DOM.
 - **Testing server components in a DOM environment.** Async server components that use
   `request()`, `cookies()` or `*.server.ts` modules belong in server-side tests with
-  `renderToString`.
+  `renderToString`, or in end-to-end tests.
+- **Running end-to-end tests against `lumiose dev`.** The dev server compiles on demand and sends
+  no CSP; test the build with `lumiose preview`.
+- **Waiting for hydration in Playwright.** Islands replay early clicks and input; assert on what
+  the page shows instead of waiting for a timeout.
 
 ## Related diagnostics
 
@@ -7387,6 +7525,662 @@ comments (checked for 75 s through nginx and Caddy). A WebSocket that may stay q
 See also: [Data and actions](../concepts/data-and-actions.md) (endpoints, `submit()`),
 [Islands](../concepts/islands.md), [`@lumiose/adapter-node`](../reference/adapter-node.md),
 [Deploy](../deploy/README.md).
+
+<!-- source: guides/stripe.md -->
+
+# Payments with Stripe Checkout
+
+> Start Stripe Checkout from a form action, fulfill orders in a `route.ts` endpoint that verifies Stripe's webhook signature, and show the result on a return page.
+
+Lumiose has no payments module: the `stripe` package runs in server code, and that is where form
+actions and endpoints run. This guide uses Stripe's hosted Checkout page, so the browser loads no
+Stripe script and the forms work without JavaScript.
+
+| File                                     | Role                                                                    |
+| ---------------------------------------- | ----------------------------------------------------------------------- |
+| `src/server/stripe.server.ts`            | The Stripe client and the products on sale. Server-only.                |
+| `src/routes/pricing/page.stsx`           | A form whose action creates a Checkout Session and redirects to it.     |
+| `src/routes/checkout/success/page.tsx`   | The return page: what the customer sees after paying.                   |
+| `src/routes/api/stripe/webhook/route.ts` | Stripe's events, with the signature verified: fulfillment happens here. |
+
+> **Status:** written against Stripe's API reference and the `stripe` package 23 (its types check
+> every example on this page); not run against a Stripe account.
+
+## Setup
+
+```sh
+pnpm add stripe
+```
+
+The server needs two secrets, never `PUBLIC_*` variables:
+
+| Variable                | Where it comes from                                                                           |
+| ----------------------- | --------------------------------------------------------------------------------------------- |
+| `STRIPE_SECRET_KEY`     | The dashboard's API keys (`sk_test_…` while testing).                                         |
+| `STRIPE_WEBHOOK_SECRET` | The webhook endpoint's signing secret (`whsec_…`), or the one `stripe listen` prints locally. |
+
+The pages and the endpoint below render per request (`export const mode = "server"`), or the
+whole project does with `lumiose({ mode: "server" })`: a `static` endpoint can only answer `GET`
+([LUM5005](../errors/LUM5005.md)), and a form action needs a server anyway.
+
+## The client
+
+The client and the price list live in a `*.server.ts` module, so neither the secret key nor the
+prices can reach browser code ([LUM4003](../errors/LUM4003.md)). It is created on first use: `env()`
+reads the adapter's environment, which is only there during a request on some hosts.
+
+```ts check file=server/stripe.server.ts
+// src/server/stripe.server.ts
+import { env } from "lumiose";
+import Stripe from "stripe";
+
+let client: Stripe | undefined;
+
+export function stripe(): Stripe {
+  const key = env("STRIPE_SECRET_KEY");
+  if (key === undefined) throw new Error("STRIPE_SECRET_KEY is not set.");
+  return (client ??= new Stripe(key));
+}
+
+/** What the store sells: the form posts a plan name, never a price. */
+export const PLANS = {
+  starter: { name: "Starter", price: "price_starter_monthly" },
+  team: { name: "Team", price: "price_team_monthly" },
+} as const;
+
+export type Plan = keyof typeof PLANS;
+
+export function isPlan(value: unknown): value is Plan {
+  return typeof value === "string" && Object.hasOwn(PLANS, value);
+}
+```
+
+## Checkout from a form action
+
+The form posts the plan to the page's `checkout` action. The action checks it against `PLANS`,
+creates a Checkout Session and redirects (303) to the URL Stripe returns. Stripe sends the customer
+back to `success_url`, with `{CHECKOUT_SESSION_ID}` replaced by the session's id, or to `cancel_url`.
+
+```stsx check file=routes/pricing/page.stsx
+// src/routes/pricing/page.stsx
+import { Title, actionData, fail, redirect, type ActionContext } from "lumiose";
+import { PLANS, isPlan, stripe } from "../../server/stripe.server.ts";
+
+export const mode = "server";
+
+export const actions = {
+  async checkout(ctx: ActionContext<"/pricing">) {
+    const plan = (await ctx.formData()).get("plan");
+    if (!isPlan(plan)) return fail(400, { error: "Pick a plan." });
+
+    const session = await stripe().checkout.sessions.create({
+      mode: "subscription",
+      line_items: [{ price: PLANS[plan].price, quantity: 1 }],
+      success_url: new URL("/checkout/success?session_id={CHECKOUT_SESSION_ID}", ctx.url).href,
+      cancel_url: new URL("/pricing", ctx.url).href,
+      // Ties the payment to your user in the webhook.
+      client_reference_id: ctx.locals.userId ?? undefined,
+      metadata: { plan },
+    });
+    if (session.url === null) return fail(502, { error: "Checkout is not available." });
+    redirect(session.url, 303);
+  },
+};
+
+export default function Pricing() {
+  return (
+    <main>
+      <Title>Pricing</Title>
+      <h1>Pricing</h1>
+      <form method="post" action="?/checkout">
+        {Object.entries(PLANS).map(([id, plan]) => (
+          <button name="plan" value={id}>
+            Subscribe to {plan.name}
+          </button>
+        ))}
+      </form>
+      <p class="error">{actionData<typeof actions>()?.error}</p>
+    </main>
+  );
+}
+```
+
+`ctx.locals.userId` is whatever your middleware puts on `locals` (here the `Locals` of the
+[Server](../concepts/server.md) page); pass `customer` or `customer_email` instead when you keep
+Stripe customers. `mode: "payment"` sells one-off items; `"subscription"` needs recurring prices.
+
+To post without a page load, put the form in an island with `onSubmit={submit}`: `submit()` follows
+the redirect to Stripe like the plain form. The form above needs no JavaScript at all.
+
+## The return page
+
+The return page shows the result. It does not fulfill the order: the customer may close the tab
+before it loads, and anyone can open the URL. Fulfillment happens in the webhook.
+
+```tsx check file=routes/checkout/success/page.tsx
+// src/routes/checkout/success/page.tsx
+import { Title, notFound, url } from "lumiose";
+import { stripe } from "../../../server/stripe.server.ts";
+
+export const mode = "server";
+
+export default async function CheckoutSuccess() {
+  const id = url().searchParams.get("session_id") ?? notFound();
+  const session = await stripe().checkout.sessions.retrieve(id);
+  const paid =
+    session.payment_status === "paid" || session.payment_status === "no_payment_required";
+  return (
+    <main>
+      <Title>{paid ? "Thank you" : "Payment pending"}</Title>
+      <h1>{paid ? "Thank you!" : "Your payment is being processed"}</h1>
+      <p>A receipt is on its way to {session.customer_details?.email ?? "your email"}.</p>
+    </main>
+  );
+}
+```
+
+## Webhooks in an endpoint
+
+Stripe posts events to a `route.ts` endpoint. The signature covers the exact bytes of the body, so
+read it with `request.text()` (never parse and re-serialize it), and verify it with
+`constructEventAsync`, which uses the Web Crypto API and runs on every host Lumiose deploys to.
+Answer quickly with a 2xx: Stripe retries failed deliveries, and the same event may arrive twice,
+so make fulfillment idempotent.
+
+```ts check file=routes/api/stripe/webhook/route.ts
+// src/routes/api/stripe/webhook/route.ts
+import { env, type Endpoint } from "lumiose";
+import type Stripe from "stripe";
+import { stripe } from "../../../../server/stripe.server.ts";
+
+export const mode = "server";
+
+export const POST: Endpoint<"/api/stripe/webhook"> = async ({ request, platform }) => {
+  const signature = request.headers.get("stripe-signature");
+  const secret = env("STRIPE_WEBHOOK_SECRET");
+  if (signature === null || secret === undefined) return new Response(null, { status: 400 });
+
+  let event: Stripe.Event;
+  try {
+    event = await stripe().webhooks.constructEventAsync(await request.text(), signature, secret);
+  } catch {
+    return new Response("Invalid signature", { status: 400 });
+  }
+
+  switch (event.type) {
+    case "checkout.session.completed":
+    case "checkout.session.async_payment_succeeded": {
+      const session = event.data.object;
+      if (session.payment_status !== "unpaid") {
+        // Slow work (emails, provisioning) may finish after the response.
+        platform.waitUntil(fulfill(event.id, session));
+      }
+      break;
+    }
+    case "checkout.session.async_payment_failed":
+      // Tell the customer the delayed payment failed.
+      break;
+  }
+  return new Response(null, { status: 200 });
+};
+
+/** Grants what was bought, once per event id. */
+async function fulfill(eventId: string, session: Stripe.Checkout.Session): Promise<void> {
+  // if (await db.events.seen(eventId)) return;
+  // await db.subscriptions.activate(session.client_reference_id, session.metadata?.plan);
+  void [eventId, session];
+}
+```
+
+Lumiose's cross-site check covers page form posts and form-encoded endpoint requests; Stripe posts
+JSON, so the endpoint answers it and the signature is the check. Keep the endpoint out of any
+middleware that requires a session.
+
+In the dashboard, add the endpoint's URL (`https://example.com/api/stripe/webhook`) with the events
+it handles. Locally, the Stripe CLI forwards them and prints the signing secret for
+`STRIPE_WEBHOOK_SECRET`:
+
+```sh
+stripe listen --forward-to localhost:5173/api/stripe/webhook
+stripe trigger checkout.session.completed
+```
+
+## Production
+
+- Set `STRIPE_SECRET_KEY` and `STRIPE_WEBHOOK_SECRET` on the host, with live keys for production and
+  a webhook endpoint per environment (each has its own signing secret).
+- Behind a proxy, set `ORIGIN` so `ctx.url` (and with it `success_url` and `cancel_url`) has the
+  public origin ([Deploy](../deploy/README.md)).
+- Hosted Checkout is a redirect, so a strict CSP (`lumiose({ csp: "strict" })`) needs no change.
+  Stripe.js (embedded Checkout, Elements) is a third-party script: allow its origins in your own
+  policy ([Security](../concepts/security.md)).
+
+## Common mistakes
+
+- **Fulfilling on the return page.** It may never load, and anyone can open it. Fulfill in the
+  webhook, and use the return page to show the status.
+- **Trusting a price from the form.** Post a plan or product id and look its price up on the
+  server, as `PLANS` does.
+- **Parsing the webhook body before verifying it.** `request.json()` and `JSON.stringify` change the
+  bytes, and the signature check fails. Pass `await request.text()`.
+- **A static webhook endpoint.** Without `mode = "server"` (here or for the project), a `POST`
+  export is [LUM5005](../errors/LUM5005.md).
+- **Importing the Stripe client into an island.** The secret key would ship to the browser;
+  `*.server.ts` makes it [LUM4003](../errors/LUM4003.md).
+- **Doing slow work before answering the webhook.** Stripe waits a few seconds, then retries. Answer
+  first and hand the rest to `platform.waitUntil()`, or queue it.
+
+<!-- source: guides/sanity.md -->
+
+# Content from Sanity
+
+> Read Sanity content in async components and prerender it, preview drafts on server-rendered routes behind a secret, and rebuild the static pages when editors publish.
+
+[Sanity](https://www.sanity.io) keeps the content and its editing studio; Lumiose reads it with
+`@sanity/client`, which runs in server code. Published content is read at build time, so the
+pages are static files; drafts are read per request on a separate, server-rendered preview route.
+
+| File                                          | Role                                                                      |
+| --------------------------------------------- | ------------------------------------------------------------------------- |
+| `src/server/sanity.server.ts`                 | The Sanity clients, the queries and the preview cookie. Server-only.      |
+| `src/components/Story.stsx`                   | A story, rendered the same way for published content and drafts.          |
+| `src/routes/stories/page.stsx`                | The list of stories, prerendered.                                         |
+| `src/routes/stories/[slug]/page.stsx`         | One page per published story, prerendered with `staticPaths()`.           |
+| `src/routes/api/preview/route.ts`             | Turns preview on (a signed cookie) when the secret matches.               |
+| `src/routes/preview/stories/[slug]/page.stsx` | The draft of a story, rendered per request for previewers.                |
+| `src/routes/api/sanity/webhook/route.ts`      | Optional: Sanity's publish webhook, verified, then the host's build hook. |
+
+> **Status:** written against Sanity's documentation and the `@sanity/client` 8 and
+> `@sanity/webhook` 4 packages (their types check every example on this page); not run against a
+> Sanity project.
+
+## Setup
+
+```sh
+pnpm add @sanity/client
+pnpm add @sanity/webhook   # only for the webhook endpoint
+```
+
+| Variable                | Use                                                                            |
+| ----------------------- | ------------------------------------------------------------------------------ |
+| `SANITY_PROJECT_ID`     | The project id, from the Sanity dashboard.                                     |
+| `SANITY_DATASET`        | Usually `production`.                                                          |
+| `SANITY_READ_TOKEN`     | A token with read access to drafts, for previews only. Never in browser code.  |
+| `SANITY_PREVIEW_SECRET` | A random string the studio's preview link carries (`openssl rand -base64 32`). |
+| `LUMIOSE_SECRET`        | Signs the preview cookie ([Server](../concepts/server.md)).                    |
+
+The pages here are `static` (the project default) except the preview route and the endpoints,
+which say `export const mode = "server"`. A site with no server at all can skip previews and the
+webhook endpoint, and point Sanity's webhook straight at the host's build hook
+([below](#rebuilding-when-content-changes)).
+
+## The clients and queries
+
+One client reads published content through Sanity's CDN. The preview client reads drafts with a
+token, without the CDN. Both live in a `*.server.ts` module, so the token never reaches browser code
+([LUM4003](../errors/LUM4003.md)), and are created on first use, when `env()` has the host's
+variables.
+
+```ts check file=server/sanity.server.ts
+// src/server/sanity.server.ts
+import { createClient, type SanityClient } from "@sanity/client";
+import { env, signedCookie } from "lumiose";
+
+/** Set by /api/preview; the preview route renders drafts only while it is valid. */
+export const previewCookie = signedCookie("sanity-preview", { maxAge: 60 * 60 });
+
+export interface Story {
+  title: string;
+  slug: string;
+  summary: string;
+  publishedAt: string | null;
+}
+
+let published: SanityClient | undefined;
+
+function required(name: string): string {
+  const value = env(name);
+  if (value === undefined) throw new Error(`${name} is not set.`);
+  return value;
+}
+
+/** Published content, through the CDN. With `preview`, drafts, with the read token. */
+function sanity(preview = false): SanityClient {
+  published ??= createClient({
+    projectId: required("SANITY_PROJECT_ID"),
+    dataset: required("SANITY_DATASET"),
+    apiVersion: "2026-10-01",
+    useCdn: true,
+    perspective: "published",
+  });
+  return preview
+    ? published.withConfig({
+        token: required("SANITY_READ_TOKEN"),
+        useCdn: false,
+        perspective: "drafts",
+      })
+    : published;
+}
+
+const STORY = `{ title, "slug": slug.current, summary, publishedAt }`;
+
+export function listStories(): Promise<Story[]> {
+  return sanity().fetch(
+    `*[_type == "story" && defined(slug.current)] | order(publishedAt desc) ${STORY}`,
+  );
+}
+
+export function getStory(slug: string, preview = false): Promise<Story | null> {
+  return sanity(preview).fetch(`*[_type == "story" && slug.current == $slug][0] ${STORY}`, {
+    slug,
+  });
+}
+```
+
+Rich text (Portable Text) renders to HTML with a framework-agnostic library such as
+`@portabletext/to-html`, written with `innerHTML`; this guide keeps a plain `summary` field.
+
+## Reading content
+
+Pages await their content in async components. `query()` caches each result for the request (or
+the build), so a layout and a page that need the same story share one fetch
+([Async components](../concepts/async.md)).
+
+```stsx check file=components/Story.stsx
+// src/components/Story.stsx
+import type { Story as StoryData } from "../server/sanity.server.ts";
+
+export function Story({ story }: { story: StoryData }) {
+  return (
+    <article class="story">
+      <h1>{story.title}</h1>
+      {story.publishedAt && <time datetime={story.publishedAt}>{story.publishedAt.slice(0, 10)}</time>}
+      <p>{story.summary}</p>
+    </article>
+  );
+}
+
+<style>
+  .story time { color: gray; }
+</style>
+```
+
+```stsx check file=routes/stories/page.stsx
+// src/routes/stories/page.stsx: built once per deploy
+import { Title, href, query } from "lumiose";
+import { listStories } from "../../server/sanity.server.ts";
+
+export default async function Stories() {
+  const stories = await query(["stories"], listStories);
+  return (
+    <main>
+      <Title>Stories</Title>
+      <ul>
+        {stories.map((story) => (
+          <li key={story.slug}>
+            <a href={href("/stories/[slug]", { slug: story.slug })}>{story.title}</a>
+          </li>
+        ))}
+      </ul>
+    </main>
+  );
+}
+```
+
+```stsx check file=routes/stories/[slug]/page.stsx
+// src/routes/stories/[slug]/page.stsx: one file per published story
+import { Meta, Title, notFound, query, type PageProps } from "lumiose";
+import { Story } from "../../../components/Story.stsx";
+import { getStory, listStories } from "../../../server/sanity.server.ts";
+
+export async function staticPaths() {
+  return (await listStories()).map((story) => ({ params: { slug: story.slug } }));
+}
+
+export default async function StoryPage({ params }: PageProps<"/stories/[slug]">) {
+  const story = (await query(["story", params.slug], () => getStory(params.slug))) ?? notFound();
+  return (
+    <main>
+      <Title>{story.title}</Title>
+      <Meta name="description" content={story.summary} />
+      <Story story={story} />
+    </main>
+  );
+}
+```
+
+## Previewing drafts
+
+Drafts change on every keystroke and need a token, so they cannot be prerendered. A preview route
+renders them per request, for people who opened the studio's preview link. The link carries the
+secret; the endpoint checks it, sets a signed cookie and redirects to the preview page, which reads
+the cookie on every request.
+
+```ts check file=routes/api/preview/route.ts
+// src/routes/api/preview/route.ts: GET /api/preview?secret=…&slug=…
+import { env, href, type Endpoint } from "lumiose";
+import { previewCookie } from "../../../server/sanity.server.ts";
+
+export const mode = "server";
+
+export const GET: Endpoint<"/api/preview"> = async ({ url, cookies }) => {
+  const secret = env("SANITY_PREVIEW_SECRET");
+  const slug = url.searchParams.get("slug");
+  if (secret === undefined || url.searchParams.get("secret") !== secret || slug === null) {
+    return new Response("Invalid preview link", { status: 401 });
+  }
+  await previewCookie.set(cookies, "1");
+  return Response.redirect(new URL(href("/preview/stories/[slug]", { slug }), url), 307);
+};
+```
+
+```stsx check file=routes/preview/stories/[slug]/page.stsx
+// src/routes/preview/stories/[slug]/page.stsx: the draft, rendered per request
+import { Meta, Title, cookies, notFound, query, response, type PageProps } from "lumiose";
+import { Story } from "../../../../components/Story.stsx";
+import { getStory, previewCookie } from "../../../../server/sanity.server.ts";
+
+export const mode = "server";
+
+export default async function StoryPreview({ params }: PageProps<"/preview/stories/[slug]">) {
+  if ((await previewCookie.get(cookies())) !== "1") notFound();
+  response().setHeader("cache-control", "private, no-store");
+  const story =
+    (await query(["story", params.slug, "drafts"], () => getStory(params.slug, true))) ?? notFound();
+  return (
+    <main>
+      <Title>{`Preview: ${story.title}`}</Title>
+      <Meta name="robots" content="noindex" />
+      <p role="status">Preview of the latest draft.</p>
+      <Story story={story} />
+    </main>
+  );
+}
+```
+
+In the studio, point the preview link (the Presentation tool's preview URL, or a document action)
+at `https://example.com/api/preview?secret=<SANITY_PREVIEW_SECRET>&slug=<slug>`. To refresh the
+preview while an editor types, reload the page, or poll from an island that calls
+`invalidate()` on an interval.
+
+## Rebuilding when content changes
+
+Published pages are files, so new content needs a new build. Most hosts give a build hook: a URL
+that starts a deploy when something posts to it (Netlify build hooks, Vercel deploy hooks,
+Cloudflare Pages deploy hooks, a CI workflow dispatch).
+
+**Without a server:** in Sanity's dashboard, create a webhook that posts to the build hook on
+create, update and delete, with the filter `_type == "story"`. No code runs in the app.
+
+**With a server:** point the webhook at an endpoint instead. It verifies Sanity's signature (set a
+secret on the webhook), so nobody else can trigger builds, keeps the build hook's URL off Sanity,
+and can skip changes that do not affect the site:
+
+```ts check file=routes/api/sanity/webhook/route.ts
+// src/routes/api/sanity/webhook/route.ts
+import { SIGNATURE_HEADER_NAME, isValidSignature } from "@sanity/webhook";
+import { env, type Endpoint } from "lumiose";
+
+export const mode = "server";
+
+export const POST: Endpoint<"/api/sanity/webhook"> = async ({ request, platform }) => {
+  const secret = env("SANITY_WEBHOOK_SECRET");
+  const hook = env("BUILD_HOOK_URL");
+  const signature = request.headers.get(SIGNATURE_HEADER_NAME);
+  const body = await request.text(); // the exact bytes Sanity signed
+  if (secret === undefined || hook === undefined || signature === null) {
+    return new Response(null, { status: 400 });
+  }
+  if (!(await isValidSignature(body, signature, secret))) {
+    return new Response("Invalid signature", { status: 401 });
+  }
+  const { _type } = JSON.parse(body) as { _type?: string };
+  if (_type === "story") platform.waitUntil(fetch(hook, { method: "POST" }));
+  return new Response(null, { status: 202 });
+};
+```
+
+The webhook posts JSON, which Lumiose's cross-site check leaves to the endpoint: the signature is
+the check. Set the webhook's projection to `{_type}` (or more) so the body carries what the
+endpoint reads.
+
+## Common mistakes
+
+- **Reading drafts on a static page.** A prerendered page cannot read cookies
+  ([LUM5001](../errors/LUM5001.md)) and would bake one moment's draft into a public file. Keep
+  drafts on the `server` preview route.
+- **The read token in browser code.** It reads every draft; keep it in `*.server.ts`, and fetch in
+  server components or endpoints.
+- **Expecting published edits to appear without a build.** The pages are files: trigger a build
+  from the webhook, or make the route `server` and read through the CDN on every request.
+- **Verifying the webhook against re-serialized JSON.** Pass `await request.text()` to
+  `isValidSignature`, then parse.
+- **A preview page without `noindex` and `no-store`.** Search engines and shared caches would keep
+  a draft. The preview page sets both.
+
+<!-- source: guides/editors.md -->
+
+# Editors: Neovim, Helix and Zed
+
+> Run the Lumiose language server in Neovim and Helix (file type, root markers, the server command), what works in Zed today, and how GitHub highlights `.stsx` files.
+
+VS Code has the Lumiose extension, which bundles the language server
+([Getting started](../getting-started.md#editor)). Other editors start the same server over the
+Language Server Protocol. It gives them everything the extension shows: TypeScript for `.ts`,
+`.tsx` and `.stsx` files, CSS features in `<style>` blocks, class and custom property completion,
+the compiler's `LUMxxxx` diagnostics and hovers that explain how each JSX expression runs.
+
+## Set up the server
+
+Install it in the project, so it matches your `lumiose` version:
+
+```sh
+pnpm add -D @lumiose/language-server
+```
+
+Every editor needs the same four things:
+
+| Setting      | Value                                                                                         |
+| ------------ | --------------------------------------------------------------------------------------------- |
+| Command      | `npx --no-install lumiose-language-server --stdio`, run in the project (Node.js 24 or later). |
+| Files        | `.stsx` (a file type of its own), `.ts` and `.tsx`.                                           |
+| Root markers | `vite.config.ts`, then `package.json`.                                                        |
+| Highlighting | The TSX grammar for `.stsx`: the editor colors the TSX, and the server adds the rest.         |
+
+The server proxies TypeScript 7 for `.ts` and `.tsx` files too ("takeover"), so types, renames and
+go-to-definition flow between them and `.stsx` files. Disable the editor's own TypeScript server
+(`ts_ls`, `vtsls`, `typescript-language-server`) for Lumiose projects; with two servers, `.tsx`
+files would get every diagnostic twice.
+
+## Neovim
+
+Neovim 0.11 or later, with the built-in LSP client. In `init.lua` (or a file under `plugin/`):
+
+```lua
+-- .stsx files: TSX with <style> blocks.
+vim.filetype.add({ extension = { stsx = "stsx" } })
+-- Color them with the TSX tree-sitter parser (nvim-treesitter's "tsx").
+vim.treesitter.language.register("tsx", "stsx")
+
+vim.lsp.config("lumiose", {
+  -- The project's own server, started in the project root.
+  cmd = function(dispatchers, config)
+    return vim.lsp.rpc.start(
+      { "npx", "--no-install", "lumiose-language-server", "--stdio" },
+      dispatchers,
+      { cwd = config.root_dir }
+    )
+  end,
+  filetypes = { "typescript", "typescriptreact", "stsx" },
+  root_markers = { "vite.config.ts", "package.json" },
+})
+vim.lsp.enable("lumiose")
+```
+
+Do not enable `ts_ls` or `vtsls` for the same projects (with nvim-lspconfig, leave them out of
+`vim.lsp.enable`). `:checkhealth vim.lsp` shows the attached client.
+
+## Helix
+
+In `~/.config/helix/languages.toml`:
+
+```toml
+[language-server.lumiose]
+command = "npx"
+args = ["--no-install", "lumiose-language-server", "--stdio"]
+
+# .stsx files: TSX plus <style> blocks, colored with the TSX grammar.
+[[language]]
+name = "stsx"
+scope = "source.stsx"
+file-types = ["stsx"]
+roots = ["vite.config.ts", "package.json"]
+grammar = "tsx"
+comment-tokens = "//"
+block-comment-tokens = { start = "/*", end = "*/" }
+indent = { tab-width = 2, unit = "  " }
+language-servers = ["lumiose"]
+
+# Takeover: one TypeScript server, through Lumiose, for .ts and .tsx files too.
+[[language]]
+name = "typescript"
+roots = ["vite.config.ts", "package.json"]
+language-servers = ["lumiose"]
+
+[[language]]
+name = "tsx"
+roots = ["vite.config.ts", "package.json"]
+language-servers = ["lumiose"]
+```
+
+The `stsx` language reuses the TSX grammar, and its queries come from TSX: create
+`~/.config/helix/runtime/queries/stsx/highlights.scm` with the single line `; inherits: tsx`, and
+the same for `indents.scm`, `injections.scm`, `locals.scm` and `textobjects.scm`. To keep the
+TypeScript override to Lumiose projects, put the `language-server` and `typescript`/`tsx` entries
+in the project's `.helix/languages.toml` instead. `hx --health stsx` checks the setup.
+
+## Zed
+
+Zed runs language servers only through its extensions, and this version of Lumiose has no Zed
+extension, so the server's features are not available in Zed. Mapping `.stsx` to Zed's TSX
+language (`"file_types": { "TSX": ["stsx"] }`) colors the files, but Zed's TypeScript server then
+reports the CSS of every `<style>` block as TSX syntax errors. Use VS Code, Neovim or Helix for
+`.stsx` files, and run `lumiose check` for the diagnostics.
+
+## Other editors
+
+Any editor with an LSP client works with the settings in [Set up the server](#set-up-the-server).
+JetBrains IDEs have no Lumiose plugin.
+
+## GitHub
+
+GitHub highlights `.stsx` files as TSX through `.gitattributes`:
+
+```
+*.stsx linguist-language=TSX
+```
+
+`create-lumiose` writes this file, and `lumiose agents init` adds the line to an existing project.
 
 <!-- source: guides/web-components.md -->
 

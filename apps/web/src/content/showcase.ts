@@ -98,9 +98,9 @@ export function benchmarks(): Showcase[] {
       name: "fullstack",
       title: "Fullstack comparison",
       description:
-        "The same issue tracker built with Lumiose, React Router and Next.js, measured end to end: dev server, build, page load and server throughput, in an interactive results viewer.",
+        "The same issue tracker built with Lumiose and seven other stacks, measured end to end: dev server, build, page load and server throughput. The method, every implementation, the raw results and an interactive viewer.",
       tags: ["dev", "build", "page load", "server"],
-      demo: link("/benchmarks/fullstack/"),
+      demo: href("/benchmarks/fullstack-comparison"),
       source: `${REPOSITORY}/tree/main/benchmarks/fullstack`,
     },
   ];
