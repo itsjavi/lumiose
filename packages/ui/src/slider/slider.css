@@ -1,0 +1,69 @@
+/*
+ * The CSS Slider needs to work, and nothing else (decision-62). The Control stacks the Track and
+ * the thumbs (native range inputs) in one place; the Indicator spans the selected part of the
+ * track, from `--lu-slider-start` to `--lu-slider-end`; over a Track, the thumbs' own tracks are
+ * see-through. With two thumbs, only the thumbs take the pointer, so a press on the track reaches
+ * the control and moves the nearest thumb. A vertical slider writes its thumbs bottom to top. It
+ * sits in the `lu.core` layer, so any app CSS wins.
+ */
+@layer lu.core, lu.theme;
+
+@layer lu.core {
+  lu-slider {
+    display: block;
+  }
+  /* The Control: the track and the thumbs in one grid cell. */
+  lu-slider div:has(> input[type="range"]) {
+    display: grid;
+    position: relative;
+    touch-action: pan-y;
+  }
+  lu-slider[data-orientation="vertical"] div:has(> input[type="range"]) {
+    justify-items: center;
+    touch-action: pan-x;
+  }
+  lu-slider div:has(> input[type="range"]) > * {
+    grid-area: 1 / 1;
+    margin: 0;
+  }
+  /* The Track and its Indicator. */
+  lu-slider div:has(> input[type="range"]) > div {
+    position: relative;
+    align-self: center;
+  }
+  lu-slider div:has(> input[type="range"]) > div > div {
+    position: absolute;
+    inset-block: 0;
+    inset-inline-start: var(--lu-slider-start, 0%);
+    inset-inline-end: calc(100% - var(--lu-slider-end, 0%));
+  }
+  lu-slider[data-orientation="vertical"] div:has(> input[type="range"]) > div {
+    align-self: stretch;
+    justify-self: center;
+  }
+  lu-slider[data-orientation="vertical"] div:has(> input[type="range"]) > div > div {
+    inset-inline: 0;
+    inset-block-start: calc(100% - var(--lu-slider-end, 0%));
+    inset-block-end: var(--lu-slider-start, 0%);
+  }
+  /* Over a Track, the thumbs' own tracks give way to it. */
+  lu-slider div:has(> div) > input[type="range"] {
+    appearance: none;
+    background: transparent;
+  }
+  /* A vertical thumb runs bottom to top. */
+  lu-slider input[type="range"][aria-orientation="vertical"] {
+    writing-mode: vertical-lr;
+    direction: rtl;
+  }
+  /* Two thumbs: only the thumbs take the pointer; a press on the track moves the nearest one. */
+  lu-slider div:has(> input[type="range"] ~ input[type="range"]) > input[type="range"] {
+    pointer-events: none;
+  }
+  lu-slider div:has(> input[type="range"] ~ input[type="range"]) > input::-webkit-slider-thumb {
+    pointer-events: auto;
+  }
+  lu-slider div:has(> input[type="range"] ~ input[type="range"]) > input::-moz-range-thumb {
+    pointer-events: auto;
+  }
+}

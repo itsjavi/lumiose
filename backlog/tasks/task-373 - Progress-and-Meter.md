@@ -1,11 +1,11 @@
 ---
 id: TASK-373
 title: Progress and Meter
-status: To Do
+status: In Progress
 assignee:
   - '@Halo'
 created_date: '2026-10-15 16:55'
-updated_date: '2026-10-15 18:05'
+updated_date: '2026-10-15 22:54'
 labels:
   - ui
 milestone: m-12

@@ -117,6 +117,21 @@ const COMPONENTS: Component[] = [
     scripts: ["toast/toast.script.ts"],
     css: "toast/toast.css",
   },
+  { name: "button", module: "button/button.tsx", scripts: ["button/button.script.ts"] },
+  { name: "toggle", module: "toggle/toggle.tsx", scripts: [] },
+  {
+    name: "toggle-group",
+    module: "toggle-group/toggle-group.tsx",
+    scripts: ["toggle-group/toggle-group.script.ts"],
+  },
+  { name: "progress", module: "progress/progress.tsx", scripts: [] },
+  { name: "meter", module: "meter/meter.tsx", scripts: [] },
+  {
+    name: "slider",
+    module: "slider/slider.tsx",
+    scripts: ["slider/slider.script.ts"],
+    css: "slider/slider.css",
+  },
 ];
 
 const CLIENT_SCRIPT = /\?client$/;

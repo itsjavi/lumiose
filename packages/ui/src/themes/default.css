@@ -39,6 +39,10 @@
  *   .lu-toast-viewport                  a Toast.Viewport: a column at the bottom end
  *   .lu-toast                           a Toast.Root: surface, title (h2), description (p), the
  *                                       close button (Toast.Close); data-type="error"
+ *   .lu-toggle                          a Toggle: a button with a pressed surface and bar
+ *   .lu-toggle-group                    a ToggleGroup: its toggles in a row (or a column)
+ *   .lu-progress, .lu-meter             a Progress.Root, a Meter.Root: label, value and bar
+ *   .lu-slider                          a Slider.Root: label, value, track, indicator, thumbs
  */
 @layer lu.core, lu.theme;
 
@@ -1119,5 +1123,229 @@
     .lu-toast[data-swiping] {
       transition: none;
     }
+  }
+
+  /* Toggle and Toggle Group (TASK-369) -------------------------------------------------------- */
+
+  .lu-toggle {
+    display: inline-grid;
+    place-items: center;
+    min-inline-size: 2.25rem;
+    min-block-size: 2.25rem;
+    padding: 0.375rem 0.625rem;
+    border: 1px solid var(--lu-input);
+    border-radius: calc(var(--lu-radius) - 2px);
+    background: var(--lu-background);
+    color: var(--lu-foreground);
+    font: inherit;
+    font-size: 0.875rem;
+    font-weight: 500;
+    line-height: 1.25;
+    cursor: pointer;
+  }
+  .lu-toggle:hover {
+    background: var(--lu-accent);
+  }
+  /* Pressed: a filled surface and a bar along the bottom, a shape and not only a colour. */
+  .lu-toggle[aria-pressed="true"] {
+    background: var(--lu-accent);
+    color: var(--lu-accent-foreground);
+    box-shadow: inset 0 -3px 0 var(--lu-foreground);
+  }
+  .lu-toggle:focus-visible {
+    outline: 2px solid var(--lu-ring);
+    outline-offset: 2px;
+  }
+  .lu-toggle:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+  .lu-toggle-group {
+    display: inline-flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+  }
+  .lu-toggle-group[data-orientation="vertical"] {
+    flex-direction: column;
+  }
+
+  /* Progress and Meter (TASK-373) ------------------------------------------------------------- */
+
+  .lu-progress,
+  .lu-meter {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: baseline;
+    gap: 0.375rem 1rem;
+    inline-size: min(20rem, 100%);
+    font-size: 0.875rem;
+  }
+  .lu-progress > :where(label),
+  .lu-meter > :where(label) {
+    font-weight: 500;
+  }
+  .lu-progress > :where(span),
+  .lu-meter > :where(span) {
+    color: var(--lu-muted-foreground);
+    font-variant-numeric: tabular-nums;
+  }
+  /*
+   * The bar: its edge in --lu-input (3:1, so the full range shows), the value in the primary
+   * colour (a lighter blue in dark, 3:1 against the bar there too).
+   */
+  .lu-progress > :where(progress),
+  .lu-meter > :where(meter) {
+    grid-column: 1 / -1;
+    appearance: none;
+    box-sizing: border-box;
+    inline-size: 100%;
+    block-size: 0.625rem;
+    border: 1px solid var(--lu-input);
+    border-radius: 999px;
+    background: var(--lu-background);
+    overflow: hidden;
+    --lu-bar: light-dark(var(--lu-primary), #60a5fa);
+  }
+  .lu-progress > progress::-webkit-progress-bar {
+    background: transparent;
+  }
+  .lu-progress > progress::-webkit-progress-value {
+    border-radius: inherit;
+    background: var(--lu-bar);
+  }
+  .lu-progress > progress::-moz-progress-bar {
+    border-radius: inherit;
+    background: var(--lu-bar);
+  }
+  /* Indeterminate: a segment that slides, still where motion is reduced. */
+  .lu-progress > progress:indeterminate {
+    background-image: linear-gradient(
+      to right,
+      transparent 0 35%,
+      var(--lu-bar) 35% 65%,
+      transparent 65%
+    );
+    background-size: 200% 100%;
+  }
+  .lu-progress > progress:indeterminate::-moz-progress-bar {
+    background: transparent;
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .lu-progress > progress:indeterminate {
+      animation: lu-progress-slide 1.4s linear infinite;
+    }
+  }
+  @keyframes lu-progress-slide {
+    from {
+      background-position: 100% 0;
+    }
+    to {
+      background-position: -100% 0;
+    }
+  }
+  .lu-meter > meter::-webkit-meter-bar {
+    border: 0;
+    background: transparent;
+  }
+  .lu-meter > meter::-webkit-meter-optimum-value,
+  .lu-meter > meter::-webkit-meter-suboptimum-value,
+  .lu-meter > meter::-webkit-meter-even-less-good-value {
+    border-radius: inherit;
+    background: var(--lu-bar);
+  }
+  .lu-meter > meter::-moz-meter-bar {
+    border-radius: inherit;
+    background: var(--lu-bar);
+  }
+
+  /* Slider (TASK-372) ------------------------------------------------------------------------- */
+
+  .lu-slider {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: baseline;
+    gap: 0.25rem 1rem;
+    inline-size: min(20rem, 100%);
+    font-size: 0.875rem;
+    --lu-bar: light-dark(var(--lu-primary), #60a5fa);
+  }
+  .lu-slider > :where(label) {
+    font-weight: 500;
+  }
+  .lu-slider > :where(output) {
+    color: var(--lu-muted-foreground);
+    font-variant-numeric: tabular-nums;
+  }
+  /* The control: a 24px tall strip (the thumbs' target), the full width. */
+  .lu-slider > :where(div) {
+    grid-column: 1 / -1;
+    block-size: 1.5rem;
+  }
+  .lu-slider[data-orientation="vertical"] > :where(div) {
+    grid-column: auto;
+    inline-size: 1.5rem;
+    block-size: 10rem;
+  }
+  /* The track: --lu-input at its edge (3:1), the selected part in the primary colour. */
+  .lu-slider > div > :where(div) {
+    box-sizing: border-box;
+    inline-size: 100%;
+    block-size: 0.5rem;
+    border: 1px solid var(--lu-input);
+    border-radius: 999px;
+    background: var(--lu-background);
+  }
+  .lu-slider[data-orientation="vertical"] > div > :where(div) {
+    inline-size: 0.5rem;
+    block-size: 100%;
+  }
+  .lu-slider > div > div > :where(div) {
+    border-radius: inherit;
+    background: var(--lu-bar);
+  }
+  .lu-slider :where(input[type="range"]) {
+    inline-size: 100%;
+    block-size: 1.5rem;
+    margin: 0;
+    cursor: pointer;
+  }
+  .lu-slider :where(input[type="range"][aria-orientation="vertical"]) {
+    inline-size: 1.5rem;
+    block-size: 100%;
+  }
+  /* The thumb: a 24px circle with a primary edge; focus adds a ring around it. */
+  .lu-slider input[type="range"]::-webkit-slider-thumb {
+    appearance: none;
+    box-sizing: border-box;
+    inline-size: 1.5rem;
+    block-size: 1.5rem;
+    border: 2px solid var(--lu-bar);
+    border-radius: 50%;
+    background: var(--lu-background);
+    box-shadow: 0 1px 3px rgb(0 0 0 / 0.3);
+  }
+  .lu-slider input[type="range"]::-moz-range-thumb {
+    box-sizing: border-box;
+    inline-size: 1.5rem;
+    block-size: 1.5rem;
+    border: 2px solid var(--lu-bar);
+    border-radius: 50%;
+    background: var(--lu-background);
+    box-shadow: 0 1px 3px rgb(0 0 0 / 0.3);
+  }
+  .lu-slider input[type="range"]:focus-visible {
+    outline: none;
+  }
+  .lu-slider input[type="range"]:focus-visible::-webkit-slider-thumb {
+    outline: 2px solid var(--lu-ring);
+    outline-offset: 2px;
+  }
+  .lu-slider input[type="range"]:focus-visible::-moz-range-thumb {
+    outline: 2px solid var(--lu-ring);
+    outline-offset: 2px;
+  }
+  .lu-slider input[type="range"]:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
   }
 }

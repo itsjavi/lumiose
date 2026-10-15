@@ -50,6 +50,13 @@
     "./accordion.css": "./src/accordion/accordion.css",
     "./toast": "./src/toast/toast.tsx",
     "./toast.css": "./src/toast/toast.css",
+    "./button": "./src/button/button.tsx",
+    "./toggle": "./src/toggle/toggle.tsx",
+    "./toggle-group": "./src/toggle-group/toggle-group.tsx",
+    "./progress": "./src/progress/progress.tsx",
+    "./meter": "./src/meter/meter.tsx",
+    "./slider": "./src/slider/slider.tsx",
+    "./slider.css": "./src/slider/slider.css",
     "./themes/default.css": "./src/themes/default.css",
     "./package.json": "./package.json"
   },
@@ -86,6 +93,13 @@
       "./accordion.css": "./dist/accordion/accordion.css",
       "./toast": "./dist/toast/toast.tsx",
       "./toast.css": "./dist/toast/toast.css",
+      "./button": "./dist/button/button.tsx",
+      "./toggle": "./dist/toggle/toggle.tsx",
+      "./toggle-group": "./dist/toggle-group/toggle-group.tsx",
+      "./progress": "./dist/progress/progress.tsx",
+      "./meter": "./dist/meter/meter.tsx",
+      "./slider": "./dist/slider/slider.tsx",
+      "./slider.css": "./dist/slider/slider.css",
       "./themes/default.css": "./dist/themes/default.css",
       "./package.json": "./package.json"
     }
