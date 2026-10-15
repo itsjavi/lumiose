@@ -336,6 +336,11 @@ describe.skipIf(!binding)("lumiose dev", () => {
     expect(await script.text()).toContain('customElements.define("lu-menu"');
     // Pages that do not render one load none.
     expect(await (await get("/island")).text()).not.toContain("lu-menu.element");
+    // Client code (islands, SPA pages) imports the same URL: one module, one definition.
+    const component = await (await get("/src/ui/Menu.stsx?import")).text();
+    const marker = /import \w+ from "([^"]*lumiose-client[^"]*)"/.exec(component);
+    const markerCode = await (await get(marker![1]!)).text();
+    expect(markerCode).toContain('import "/src/ui/lu-menu.element.ts"');
   });
 
   it("serves endpoints", async () => {
