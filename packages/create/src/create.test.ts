@@ -1,7 +1,9 @@
 // create-lumiose (TASK-33): the CLI contract, then every template scaffolded by the bin into a temp
 // dir (node_modules linked to the workspace's lumiose, adapter, TypeScript and Vite), checked with
-// `lumiose check`, built with `lumiose build` and served by `lumiose dev`.
-import { spawn } from "node:child_process";
+// `lumiose check`, built with `lumiose build`, served by `lumiose dev`, and its build served by
+// `lumiose preview` under the strict CSP the templates enable (TASK-315).
+import { spawn, type ChildProcess } from "node:child_process";
+import { createHash } from "node:crypto";
 import {
   existsSync,
   mkdirSync,
@@ -171,7 +173,8 @@ describe.skipIf(!binding).each(TEMPLATES)("template $name", (template) => {
       ]),
     );
     const read = (file: string) => readFileSync(join(root, file), "utf8");
-    expect(read("vite.config.ts")).toContain(`lumiose({ mode: "${template.mode}" })`);
+    expect(read("vite.config.ts")).toContain(`mode: "${template.mode}",`);
+    expect(read("vite.config.ts")).toContain(`csp: "strict",`);
     expect(read("tsconfig.json")).toContain('"extends": "./.lumiose/tsconfig.generated.json"');
     expect(read(".gitattributes")).toBe("*.stsx linguist-language=TSX\n");
     expect(read("AGENTS.md")).toContain("node_modules/lumiose/docs");
@@ -198,20 +201,44 @@ describe.skipIf(!binding).each(TEMPLATES)("template $name", (template) => {
     expect(JSON.parse(routes.stdout)).toMatchObject({ ok: true, defaultMode: template.mode });
   });
 
+  it("serves its pages under the strict CSP with lumiose preview (TASK-315)", async () => {
+    const child = spawn(
+      process.execPath,
+      [lumioseBin, "preview", "--format", "json", "--port", "0"],
+      {
+        cwd: root,
+      },
+    );
+    try {
+      const url = await serverUrl(child, "preview");
+      // Every page linked from the home page, and the pages they link to.
+      const queue = ["/"];
+      const seen = new Set<string>();
+      const problems: string[] = [];
+      while (queue.length > 0 && seen.size < 20) {
+        const path = queue.shift()!;
+        if (seen.has(path)) continue;
+        seen.add(path);
+        const response = await fetch(new URL(path, url));
+        expect(response.status, path).toBe(200);
+        if (!response.headers.get("content-type")?.startsWith("text/html")) continue;
+        const html = await response.text();
+        problems.push(...cspProblems(path, response.headers.get("content-security-policy"), html));
+        for (const [, href] of html.matchAll(/<a [^>]*href="(\/[^"#?]*)"/g)) queue.push(href!);
+      }
+      expect(seen.size).toBeGreaterThan(template.name === "minimal" ? 0 : 1);
+      expect(problems).toEqual([]);
+    } finally {
+      child.kill("SIGTERM");
+    }
+  });
+
   it("serves its home page with lumiose dev", async () => {
     const child = spawn(process.execPath, [lumioseBin, "dev", "--format", "json", "--port", "0"], {
       cwd: root,
     });
     try {
-      const line = await new Promise<string>((resolve, reject) => {
-        let stdout = "";
-        child.stdout.on("data", (chunk) => {
-          stdout += chunk;
-          if (stdout.includes("\n")) resolve(stdout.slice(0, stdout.indexOf("\n")));
-        });
-        child.on("close", (code) => reject(new Error(`lumiose dev exited with ${code}`)));
-      });
-      const { url } = JSON.parse(line) as { url: string };
+      const url = await serverUrl(child, "dev");
       const home = await fetch(url);
       expect(home.status).toBe(200);
       expect(await home.text()).toContain("<title>");
@@ -232,3 +259,57 @@ describe.skipIf(!binding).each(TEMPLATES)("template $name", (template) => {
     }
   });
 });
+
+/** The URL a `lumiose dev|preview --format json` process prints on its first line. */
+async function serverUrl(child: ChildProcess, command: string): Promise<string> {
+  const line = await new Promise<string>((resolve, reject) => {
+    let stdout = "";
+    child.stdout!.on("data", (chunk) => {
+      stdout += chunk;
+      if (stdout.includes("\n")) resolve(stdout.slice(0, stdout.indexOf("\n")));
+    });
+    child.on("close", (code) => reject(new Error(`lumiose ${command} exited with ${code}`)));
+  });
+  return (JSON.parse(line) as { url: string }).url;
+}
+
+/** Script types the browser runs, so a strict CSP must allow them; data blocks are not run. */
+const EXECUTABLE = /^(?:|module|text\/javascript|importmap|speculationrules)$/;
+
+/**
+ * What a strict CSP would refuse on a page: the policy comes from the response header (pages
+ * rendered per request: nonces) or a `<meta>` first in `<head>` (prerendered pages: hashes). Every
+ * inline script the browser runs and every inline style must carry the nonce or match a hash, and
+ * no element may carry a `style` attribute or an inline event handler.
+ */
+function cspProblems(path: string, header: string | null, html: string): string[] {
+  const meta = /<meta http-equiv="Content-Security-Policy" content="([^"]*)"/.exec(html)?.[1];
+  const policy = header ?? meta?.replaceAll("&#39;", "'").replaceAll("&apos;", "'");
+  if (policy === undefined) return [`${path}: no Content-Security-Policy`];
+  const problems: string[] = [];
+  if (
+    !/script-src [^;]*'strict-dynamic'/.test(policy) &&
+    !/script-src [^;]*'sha256-/.test(policy)
+  ) {
+    problems.push(`${path}: the policy is not strict: ${policy}`);
+  }
+  const allowed = (attributes: string, body: string) => {
+    const nonce = /\snonce="([^"]*)"/.exec(attributes)?.[1];
+    if (nonce !== undefined && policy.includes(`'nonce-${nonce}'`)) return true;
+    const hash = createHash("sha256").update(body).digest("base64");
+    return policy.includes(`'sha256-${hash}'`);
+  };
+  for (const [, attributes, body] of html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/g)) {
+    if (/\ssrc=/.test(attributes!)) continue;
+    const type = /\stype="([^"]*)"/.exec(attributes!)?.[1] ?? "";
+    if (!EXECUTABLE.test(type)) continue;
+    if (!allowed(attributes!, body!)) problems.push(`${path}: inline script <script${attributes}>`);
+  }
+  for (const [, attributes, body] of html.matchAll(/<style\b([^>]*)>([\s\S]*?)<\/style>/g)) {
+    if (!allowed(attributes!, body!)) problems.push(`${path}: inline style <style${attributes}>`);
+  }
+  for (const [attribute] of html.matchAll(/<[a-z][^>]*\s(?:style|on[a-z]+)="[^"]*"/g)) {
+    problems.push(`${path}: inline attribute in ${attribute.slice(0, 80)}`);
+  }
+  return problems;
+}

@@ -6,6 +6,9 @@ import { color, font, layout, space, text } from "@lumiose/site-kit/tokens";
 import { href, Meta, Title } from "lumiose";
 import { PageHead, ShowcaseGrid } from "../../components/Showcase.stsx";
 import { demos, renderingModes, REPOSITORY, showcase } from "../../content/showcase.ts";
+import { usedBy } from "../../content/used-by.ts";
+
+const usedByFile = `${REPOSITORY}/blob/main/apps/web/src/content/used-by.ts`;
 
 export default function Showcase() {
   return (
@@ -53,6 +56,28 @@ export default function Showcase() {
         <p>Smaller samples with placeholder content, to read alongside their code.</p>
         <ShowcaseGrid items={demos()} open="Open the demo" />
       </section>
+
+      <section class="block" id="used-by" aria-labelledby="used-by-title">
+        <h2 id="used-by-title">Used by</h2>
+        {usedBy.length === 0 ? (
+          <p>No external production apps yet.</p>
+        ) : (
+          <ul class="used-by" role="list">
+            {usedBy.map((app) => (
+              <li>
+                <a href={app.url}>{app.name}</a>: {app.description}
+              </li>
+            ))}
+          </ul>
+        )}
+        <p>
+          Running Lumiose in production? Add your app: append its name, URL and a one-line
+          description to <a href={usedByFile}>apps/web/src/content/used-by.ts</a> and open a pull
+          request. The list counts apps the Lumiose maintainer does not run, and it is how the{" "}
+          <a href={href("/docs/[[...path]]", { path: "stability" })}>stability rules</a> know that
+          Lumiose has real users: there is no telemetry.
+        </p>
+      </section>
     </div>
   );
 }
@@ -84,6 +109,10 @@ export default function Showcase() {
     margin-block-start: $space.xs;
     color: $color.muted;
     font-size: $text.sm;
+  }
+  .used-by {
+    margin: 0;
+    padding-inline-start: $space.lg;
   }
   .apps a {
     position: relative;

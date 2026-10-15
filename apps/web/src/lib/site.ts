@@ -64,12 +64,14 @@ export const footerColumns: FooterColumn[] = [
       { href: href("/docs/[[...path]]", { path: "reference/vite" }), label: "@lumiose/vite" },
       { href: href("/docs/[[...path]]", { path: "errors" }), label: "Diagnostics" },
       { href: href("/docs/[[...path]]", { path: "concepts/security" }), label: "Security" },
+      { href: href("/docs/[[...path]]", { path: "stability" }), label: "Stability" },
     ],
   },
   {
     title: "See it run",
     links: [
       { href: href("/showcase"), label: "Showcase" },
+      { href: `${href("/showcase")}#used-by`, label: "Used by" },
       { href: href("/benchmarks"), label: "Benchmarks" },
       { href: href("/benchmarks/js-framework-benchmark"), label: "js-framework-benchmark" },
       { href: link("/benchmarks/fullstack/"), label: "Fullstack comparison" },

@@ -149,4 +149,68 @@ describe("JSX types (TypeScript 7)", () => {
       rmSync(project, { recursive: true, force: true });
     }
   });
+  it.each([["lumiose/env"], ["lumiose/env", "vite/client"], ["vite/client", "lumiose/env"]])(
+    "types `*.module.css` imports as read-only class maps with types %j (TASK-334)",
+    (...types) => {
+      const project = mkdtempSync(join(tmpdir(), "lumiose-jsx-css-modules-"));
+      try {
+        mkdirSync(join(project, "node_modules"));
+        symlinkSync(packageDir, join(project, "node_modules/lumiose"), "junction");
+        symlinkSync(
+          dirname(require.resolve("vite/package.json")),
+          join(project, "node_modules/vite"),
+          "junction",
+        );
+        mkdirSync(join(project, "src/nested"), { recursive: true });
+        writeFileSync(
+          join(project, "tsconfig.json"),
+          JSON.stringify({
+            compilerOptions: {
+              jsx: "preserve",
+              jsxImportSource: "lumiose",
+              module: "preserve",
+              moduleResolution: "bundler",
+              allowImportingTsExtensions: true,
+              noEmit: true,
+              strict: true,
+              // Library checks on: no declaration merges with vite/client's `*.module.css`.
+              skipLibCheck: false,
+              types,
+            },
+            include: ["src"],
+          }),
+        );
+        writeFileSync(
+          join(project, "src/nested/Card.tsx"),
+          [
+            'import styles from "./card.module.css";',
+            'import shared from "../shared.module.css";',
+            'import "./app.css";',
+            'import url from "./app.css?url";',
+            'import inline from "./app.css?inline";',
+            'import raw from "./app.css?raw";',
+            "export function Card(props: { open: boolean; class?: string }) {",
+            "  return (",
+            "    <div class={[styles.a, props.open && styles.b, props.class]}>",
+            "      <button class={styles.button}>{shared['with-dash']}</button>",
+            "    </div>",
+            "  );",
+            "}",
+            "export const strings: string[] = [url, inline, raw, styles.button];",
+            "// @ts-expect-error the class map is read-only",
+            'styles.button = "x";',
+            "// @ts-expect-error class names are strings",
+            "export const n: number = styles.button;",
+            "",
+          ].join("\n"),
+        );
+        const { status, output } = tsc(join(project, "tsconfig.json"));
+        expect(jsxDiagnostics(output, project)).toEqual([]);
+        expect(output.split("\n").filter((line) => line.includes("src/nested/"))).toEqual([]);
+        if (status !== 0) expect(output).toMatch(/\(\d+,\d+\): error TS/);
+      } finally {
+        rmSync(project, { recursive: true, force: true });
+      }
+    },
+  );
 });

@@ -9,6 +9,8 @@ import {
   existsSync,
   mkdirSync,
   mkdtempSync,
+  readdirSync,
+  readFileSync,
   realpathSync,
   rmSync,
   symlinkSync,
@@ -117,8 +119,12 @@ async function run(...args: string[]): Promise<Run> {
 
 /** Runs the bin as a subprocess: a cold Node start per call, so tests give it a longer timeout. */
 function runBin(...args: string[]): Promise<Run> {
+  return runBinIn(root, ...args);
+}
+
+function runBinIn(cwd: string, ...args: string[]): Promise<Run> {
   return new Promise((resolve, reject) => {
-    const child = start(args);
+    const child = start(args, cwd);
     let stdout = "";
     let stderr = "";
     child.stdout!.on("data", (chunk) => (stdout += chunk));
@@ -141,8 +147,8 @@ function withJson(result: Run) {
 }
 
 /** Starts a server command with `--format json --port 0`, reads its JSON line, then stops it. */
-async function serve(command: string, use: (url: string) => Promise<void>) {
-  const child = start([command, "--format", "json", "--port", "0"]);
+async function serve(command: string, use: (url: string) => Promise<void>, cwd = root) {
+  const child = start([command, "--format", "json", "--port", "0"], cwd);
   let stderr = "";
   child.stderr!.on("data", (chunk) => (stderr += chunk));
   const closed = new Promise<number | null>((resolve) => child.on("close", resolve));
@@ -164,6 +170,29 @@ async function serve(command: string, use: (url: string) => Promise<void>) {
   // Vite's dev server exits with 128 + 15 on SIGTERM; on Windows the process is terminated
   // without an exit code (null).
   expect(process.platform === "win32" ? [0, 143, null] : [0, 143]).toContain(await closed);
+}
+
+/** The CSS modules test page, importing from `components`. */
+function cssModulesPage(components: string) {
+  return `import { Tile } from "${components}/Tile.tsx";
+import styles from "${components}/Tile.module.css";
+export default function Page() {
+  return (
+    <main>
+      <p class={styles.tile}>Server only</p>
+      <Tile client:load active class="extra" />
+    </main>
+  );
+}
+`;
+}
+
+/** The classes of the CSS modules test page's server-only `<p>` and island `<button>`. */
+function pageClasses(html: string) {
+  return {
+    paragraph: /<p class="([^"]*)">Server only/.exec(html)?.[1],
+    button: /<button class="([^"]*)">/.exec(html)?.[1],
+  };
 }
 
 describe("lumiose CLI", () => {
@@ -489,6 +518,87 @@ export default { plugins: [lumiose({ mode: "server" })] };
         expect(home.status).toBe(200);
         expect(await home.text()).toMatch(/<h2[^>]*>Home<\/h2>/);
       });
+    },
+  );
+  it.skipIf(!binding)(
+    "CSS modules render the same hashed classes on the server and in the browser (TASK-334)",
+    { timeout: 60_000 },
+    async () => {
+      const project = realpathSync(mkdtempSync(join(tmpdir(), "lumiose-cli-css-modules-")));
+      onTestFinished(() => rmSync(project, { recursive: true, force: true }));
+      symlinkSync(join(root, "node_modules"), join(project, "node_modules"), "dir");
+      const files: Record<string, string> = {
+        "package.json": JSON.stringify({ name: "css-modules", private: true, type: "module" }),
+        "tsconfig.json": JSON.stringify(tsconfigTemplate(), null, 2),
+        "vite.config.ts": `import lumiose from "@lumiose/vite";
+export default { plugins: [lumiose()] };
+`,
+        "src/components/Tile.module.css": ".tile { padding: 1rem; }\n.active { color: crimson; }\n",
+        "src/components/Tile.tsx": `import { signal } from "lumiose";
+import styles from "./Tile.module.css";
+export function Tile(props: { active: boolean; class?: string }) {
+  const on = signal(props.active);
+  return (
+    <button class={[styles.tile, on() && styles.active, props.class]} onClick={() => on.update((v) => !v)}>
+      Tile
+    </button>
+  );
+}
+`,
+        // A prerendered page and a page rendered per request.
+        "src/routes/page.stsx": cssModulesPage("../components"),
+        "src/routes/server/page.stsx": `export const mode = "server";\n${cssModulesPage("../../components")}`,
+      };
+      for (const [name, text] of Object.entries(files)) {
+        mkdirSync(dirname(join(project, name)), { recursive: true });
+        writeFileSync(join(project, name), text);
+      }
+      const check = await runBinIn(project, "check", "--format", "json");
+      expect(JSON.parse(check.stdout), check.stderr).toMatchObject({ ok: true, diagnostics: [] });
+
+      const build = await runBinIn(project, "build", "--format", "json");
+      expect(build.code, build.stderr).toBe(0);
+      const built = pageClasses(readFileSync(join(project, "dist/client/index.html"), "utf8"));
+      const [tile, active] = built.button?.split(" ") ?? [];
+      expect(tile).toMatch(/^_tile_\w+$/);
+      expect(active).toMatch(/^_active_\w+$/);
+      expect(built).toEqual({ paragraph: tile, button: `${tile} ${active} extra` });
+      // The browser's class map (the island's chunks) and the stylesheet use the same names.
+      const assets = join(project, "dist/client/assets");
+      const read = (suffix: string) =>
+        readdirSync(assets)
+          .filter((name) => name.endsWith(suffix))
+          .map((name) => readFileSync(join(assets, name), "utf8"))
+          .join("\n");
+      for (const name of [tile, active]) {
+        expect(read(".js")).toContain(`\`${name}\``);
+        expect(read(".css")).toContain(`.${name}{`);
+      }
+      await serve(
+        "preview",
+        async (url) => {
+          const html = await (await fetch(new URL("/server", url))).text();
+          expect(pageClasses(html)).toEqual(built);
+        },
+        project,
+      );
+      await serve(
+        "dev",
+        async (url) => {
+          const dev = pageClasses(await (await fetch(new URL("/server", url))).text());
+          const [devTile, devActive] = dev.button?.split(" ") ?? [];
+          expect(dev).toEqual({ paragraph: devTile, button: `${devTile} ${devActive} extra` });
+          // The module the browser imports in dev maps the names to the same classes.
+          const module = await (
+            await fetch(new URL("/src/components/Tile.module.css?import", url))
+          ).text();
+          for (const name of [devTile, devActive]) {
+            expect(module).toContain(`"${name}"`);
+            expect(module).toContain(`.${name} {`);
+          }
+        },
+        project,
+      );
     },
   );
 });

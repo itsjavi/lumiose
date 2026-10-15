@@ -121,6 +121,47 @@ a +0,1,0 specificity bump. Dynamic classes always work, because no element is pr
 **Blocks are plain CSS:** no Sass, no `lang`, `media` or other attributes (only `global`). CSS
 imports, CSS Modules, Tailwind v4 and `.scss` imports still work through Vite.
 
+**CSS Modules** are supported next to style blocks, for stylesheets shared by several files or
+brought from another project. Vite processes `*.module.css` files: it hashes each class name
+(`.pill` becomes `_pill_1x2y3_1`), and the default export maps the names to the hashed classes,
+typed as a read-only class map by `lumiose/env`. The server render and the browser get the same
+names in `lumiose dev` and in builds, so islands hydrate without mismatches. Pass the classes to
+`class` like any string, alone or in an array with other classes:
+
+```css
+/* src/components/Badge.module.css */
+.pill {
+  border-radius: 999px;
+  padding: 0 0.5rem;
+}
+.warn {
+  background: gold;
+}
+```
+
+```stsx check file=components/Badge.stsx
+// src/components/Badge.stsx
+import styles from "./Badge.module.css";
+
+export function Badge(props: { warn?: boolean; class?: string; children?: JSX.Element }) {
+  return (
+    <span class={["badge", styles.pill, props.warn && styles.warn, props.class]}>
+      {props.children}
+    </span>
+  );
+}
+
+<style>
+  .badge { display: inline-flex; align-items: center; }
+</style>
+```
+
+A CSS module is global CSS with unique names: placement scoping, `$name` constants and the
+`LUM3xxx` diagnostics apply to style blocks only. Prefer a style block for a component's own
+styles; class completion in the editor covers style blocks and global stylesheets, not CSS
+modules. Other preprocessors' module files (`.module.scss`) work through Vite, typed by
+`vite/client`.
+
 > **Status:** available. `@lumiose/vite` serves each file's CSS as a CSS module, and style-only or
 > constant-only edits hot-update the CSS without remounting. `LUM3012` (a custom property set in a
 > `style` prop that no stylesheet reads) needs the whole project: `lumiose build`, `lumiose check` and
