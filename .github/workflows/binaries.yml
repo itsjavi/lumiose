@@ -142,15 +142,18 @@ jobs:
 
       - name: Smoke test (Alpine)
         if: matrix.smoke == 'alpine'
-        # Docker Hub's official image through the AWS ECR Public mirror. Shared runners still hit
-        # its rate limit at times (exit 125), so the pull retries with a backoff before the run.
+        # Docker Hub's official image through public mirrors. Shared runners hit the mirrors' rate
+        # and data limits at times ("toomanyrequests"), so each round tries Google's mirror, AWS ECR
+        # Public and Docker Hub before backing off.
         run: |
-          image=public.ecr.aws/docker/library/node:24-alpine
-          for attempt in 1 2 3 4; do
-            docker pull "$image" && break
-            [ "$attempt" = 4 ] && exit 1
+          image=""
+          for attempt in 1 2 3; do
+            for candidate in mirror.gcr.io/library/node:24-alpine public.ecr.aws/docker/library/node:24-alpine docker.io/library/node:24-alpine; do
+              if docker pull "$candidate"; then image=$candidate; break 2; fi
+            done
             sleep $((attempt * 20))
           done
+          [ -n "$image" ] || exit 1
           docker run --rm -v "$PWD:/w" -w /w "$image" node .github/scripts/smoke-napi.mjs
 
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
