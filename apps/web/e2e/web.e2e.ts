@@ -219,7 +219,7 @@ test("llms.txt and llms-full.txt are served at the root, and the UI's below /ui"
   // @lumiose/ui's docs ship in their own package, with their own index (decision-64).
   const ui = await request.get("/ui/llms.txt");
   expect(ui.ok()).toBe(true);
-  expect(await ui.text()).toContain("](/docs/ui/dialog)");
+  expect(await ui.text()).toContain("](/ui/dialog)");
   const uiFull = await request.get("/ui/llms-full.txt");
   expect(await uiFull.text()).toContain("<!-- source: dialog.md -->");
 });

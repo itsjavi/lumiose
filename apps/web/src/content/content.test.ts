@@ -1,9 +1,21 @@
 // The website's content layer: docs rendering and links, the benchmark evidence, llms.txt, search
 // and the compiled samples shown on the landing page.
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { searchDocs, type SearchEntry } from "../lib/search.ts";
 import { site } from "../lib/site.ts";
-import { docHref, docNav, docPages, findDoc, readOutline, slugify } from "./docs.ts";
+import {
+  docHref,
+  docNav,
+  docPages,
+  findDoc,
+  findUiPage,
+  readOutline,
+  slugify,
+  uiNav,
+  uiPages,
+} from "./docs.ts";
+import { schemeStyle, themeProperties } from "./ui-theme.ts";
 import { evidence, readFullstack, type FullstackRun } from "./evidence.ts";
 import { factor, headlines, kilobytes, perSecond, readStacks, stacks } from "./stacks.ts";
 import { llmsText, uiLlmsText } from "./llms.ts";
@@ -13,6 +25,13 @@ import { FILENAME, ROOT } from "../playground/compiler.ts";
 import { counterCss, counterOutput, counterSource } from "./samples.ts";
 
 const binding = await import("@lumiose/compiler").catch(() => undefined);
+
+/** The live demos of a UI page. */
+function demos(path: string) {
+  return findUiPage(path)!.blocks.flatMap((block) =>
+    block.kind === "code" && block.demo ? [block.demo] : [],
+  );
+}
 
 describe("docs", () => {
   it("rewrites links between Markdown files to page URLs", () => {
@@ -26,7 +45,14 @@ describe("docs", () => {
     expect(docHref("https://itsjavi.com/lumiose/docs/concepts/islands/", "ui/dialog")).toBe(
       "/docs/concepts/islands",
     );
-    expect(docHref("README.md#the-default-theme", "ui/dialog")).toBe("/docs/ui#the-default-theme");
+    // …and are the /ui section (TASK-387), which Lumiose's pages link by its URL.
+    expect(docHref("README.md#the-default-theme", "ui/dialog")).toBe("/ui#the-default-theme");
+    expect(docHref("popover.md#popoverpopup", "ui/tooltip")).toBe("/ui/popover#popoverpopup");
+    expect(docHref("https://itsjavi.com/lumiose/docs/ui/dialog/", "README")).toBe("/ui/dialog");
+    expect(docHref("https://itsjavi.com/lumiose/ui/llms.txt", "README")).toBe("/ui/llms.txt");
+    expect(docHref("https://itsjavi.com/lumiose/ui/tabs#styling", "README")).toBe(
+      "/ui/tabs#styling",
+    );
   });
 
   it("makes GitHub-style heading anchors", () => {
@@ -55,19 +81,73 @@ describe("docs", () => {
     expect(readOutline("## A\n\n- [One](one.md): x\n")).toEqual([
       { title: "A", entries: [{ topic: "one", label: "One" }] },
     ]);
-    // @lumiose/ui's pages fill the UI section (decision-64).
+    // @lumiose/ui's pages fill the UI section (decision-64), at their /ui URLs (TASK-387), and
+    // are not docs pages.
     const ui = docNav().find((section) => section.title === "UI")!.pages;
-    expect(ui.map((page) => page.topic).slice(0, 2)).toEqual(["ui/README", "ui/dialog"]);
-    expect(findDoc("ui/dialog")?.title).toBe("Dialog");
+    expect(ui).toEqual(uiPages());
+    expect(findDoc("ui/dialog")).toBeUndefined();
+    expect(docPages().some((page) => page.topic.startsWith("ui/"))).toBe(false);
+  });
+
+  it("renders the /ui section from packages/ui/docs, in the order of its llms.txt", () => {
+    const pages = uiPages();
+    expect(pages[0]).toMatchObject({
+      topic: "ui/README",
+      path: "",
+      url: "/ui",
+      label: "Introduction",
+    });
+    expect(uiNav().map((section) => section.title)).toEqual(["Overview", "Components"]);
+    const components = uiNav().find((section) => section.title === "Components")!.pages;
+    for (const name of ["dialog", "menu", "popover", "tabs", "tooltip"]) {
+      expect(components.map((page) => page.path)).toContain(name);
+    }
+    expect(findUiPage("/dialog/")).toMatchObject({ title: "Dialog", url: "/ui/dialog" });
+  });
+
+  it("gives every UI component page a live demo, and islands where the example needs one", () => {
+    for (const page of uiNav().find((section) => section.title === "Components")!.pages) {
+      expect(demos(page.path).length, page.path).toBeGreaterThan(0);
+    }
+    expect(demos("dialog")).toEqual([
+      { id: "dialog-1", island: false },
+      { id: "dialog-2", island: true },
+    ]);
+  });
+
+  it("shows the default theme's palette after the table of its properties", () => {
+    const withPalette = uiPages().filter((page) =>
+      page.blocks.some((block) => block.kind === "palette"),
+    );
+    expect(withPalette).toHaveLength(1);
+    // Vitest stubs CSS imports, so the test reads the stylesheet itself.
+    const css = readFileSync(
+      new URL("../../../../packages/ui/src/themes/default.css", import.meta.url),
+      "utf8",
+    );
+    const properties = themeProperties(css);
+    expect(properties.find((property) => property.name === "--lu-background")).toEqual({
+      name: "--lu-background",
+      light: "#fff",
+      dark: "#09090b",
+    });
+    expect(properties.find((property) => property.name === "--lu-primary")).toMatchObject({
+      light: "#2563eb",
+      dark: "#2563eb",
+    });
+    expect(schemeStyle("dark", properties)).toMatch(
+      /^color-scheme: dark; --lu-background: #09090b;/,
+    );
   });
 
   it("links only to pages and anchors that exist", () => {
     const broken: string[] = [];
-    for (const page of docPages()) {
+    for (const page of [...docPages(), ...uiPages()]) {
       const html = page.blocks.map((block) => (block.kind === "html" ? block.html : "")).join("");
-      for (const [, href] of html.matchAll(/href="(\/docs[^"]*)"/g)) {
-        const [path, hash] = href!.slice("/docs".length).split("#");
-        const target = findDoc(path!);
+      for (const [, href, root] of html.matchAll(/href="(\/(docs|ui)(?:[/#][^"]*)?)"/g)) {
+        if (href!.endsWith(".txt")) continue;
+        const [path, hash] = href!.slice(root!.length + 1).split("#");
+        const target = root === "ui" ? findUiPage(path!) : findDoc(path!);
         const anchored =
           hash === undefined || target?.headings.some((heading) => heading.id === hash);
         if (target === undefined || !anchored) broken.push(`${page.topic} → ${href}`);
@@ -91,7 +171,7 @@ describe("docs", () => {
   it("serves @lumiose/ui's llms.txt with links to its pages on the site", () => {
     const text = uiLlmsText();
     expect(text).toMatch(/^# Lumiose UI\n/);
-    expect(text).toContain("[Dialog](/docs/ui/dialog)");
+    expect(text).toContain("[Dialog](/ui/dialog)");
     expect(text).not.toMatch(/\]\([^)]+\.md\)/);
   });
 });

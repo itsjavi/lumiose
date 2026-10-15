@@ -1,0 +1,32 @@
+// The /ui section (TASK-387): @lumiose/ui's docs, rendered from packages/ui/docs (the pages the
+// package ships, one source with its llms.txt) by DocArticle, with each example's live demo above
+// its code (src/ui-demos, generated from those examples) and the default theme's palette.
+//
+// The demos use @lumiose/ui's stylesheets and default theme, imported here so that only the /ui
+// pages link them. The theme styles only its `lu-` classes and `--lu-` properties, and its
+// `color-scheme` sits in a layer, so the site's own (unlayered, set by the theme toggle) decides
+// light or dark for the demos too.
+import "@lumiose/ui/styles.css";
+import "@lumiose/ui/themes/default.css";
+import { notFound, type PageProps } from "lumiose";
+import { DocArticle } from "../../../components/DocArticle.stsx";
+import { ThemePalette } from "../../../components/ThemePalette.stsx";
+import { findUiPage, uiPages } from "../../../content/docs.ts";
+import { UiDemo } from "../../../ui-demos/index.tsx";
+
+export function staticPaths() {
+  return uiPages().map((page) => ({ params: { path: page.path } }));
+}
+
+export default function UiPage(props: PageProps<"/ui/[[...path]]">) {
+  const page =
+    findUiPage(props.params.path ?? "") ?? notFound(`No UI page "${props.params.path}".`);
+  return (
+    <DocArticle
+      page={page}
+      title={page.path === "" ? "Lumiose UI" : `${page.title} · Lumiose UI`}
+      demo={(id) => <UiDemo id={id} />}
+      palette={() => <ThemePalette />}
+    />
+  );
+}

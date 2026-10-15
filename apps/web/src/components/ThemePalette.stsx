@@ -1,0 +1,157 @@
+// The default theme's colours in light and dark (TASK-387), read from @lumiose/ui's stylesheet
+// (content/ui-theme.ts): a preview of each scheme side by side, whatever the site's own scheme, then
+// every `--lu-` property with its two values. The /ui page shows it after the table of the theme's
+// properties, and loads the theme (the `lu-button` class).
+import { color, font, radius, space, text, weight } from "@lumiose/site-kit/tokens";
+import { schemeStyle, themeProperties } from "../content/ui-theme.ts";
+
+export function ThemePalette() {
+  const properties = themeProperties();
+  const swatch = (name: string, value: string) => (
+    <span class="value">
+      <span
+        class={{ swatch: true, radius: name === "--lu-radius" }}
+        style={name === "--lu-radius" ? `border-radius: ${value}` : `background: ${value}`}
+        aria-hidden="true"
+      />
+      <code>{value}</code>
+    </span>
+  );
+
+  return (
+    <div class="palette">
+      <div class="schemes">
+        {(["light", "dark"] as const).map((scheme) => (
+          <figure class="scheme" style={schemeStyle(scheme, properties)}>
+            <figcaption>{scheme === "light" ? "Light" : "Dark"}</figcaption>
+            <div class="buttons">
+              <span class="lu-button">Button</span>
+              <span class="lu-button" data-variant="primary">
+                Primary
+              </span>
+              <span class="lu-button" data-variant="destructive">
+                Destructive
+              </span>
+            </div>
+            <div class="surface">
+              <strong>A popover surface</strong>
+              <span>With muted text below its title.</span>
+            </div>
+          </figure>
+        ))}
+      </div>
+      <div class="table" role="region" tabindex="0" aria-label="Table: Property, Light, Dark">
+        <table>
+          <thead>
+            <tr>
+              <th scope="col">Property</th>
+              <th scope="col">Light</th>
+              <th scope="col">Dark</th>
+            </tr>
+          </thead>
+          <tbody>
+            {properties.map((property) => (
+              <tr>
+                <th scope="row">
+                  <code>{property.name}</code>
+                </th>
+                <td>{swatch(property.name, property.light)}</td>
+                <td>{swatch(property.name, property.dark)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+<style>
+  .palette {
+    display: grid;
+    gap: $space.md;
+    margin-block: 0 $space.md;
+  }
+  .schemes {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+    gap: $space.md;
+  }
+  .scheme {
+    display: grid;
+    gap: $space.md;
+    padding: $space.md;
+    border: 1px solid $color.border;
+    border-radius: $radius.lg;
+    background: var(--lu-background);
+    color: var(--lu-foreground);
+    font-family: $font.sans;
+  }
+  figcaption {
+    font-size: $text.sm;
+    font-weight: $weight.semibold;
+  }
+  .buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: $space.xs;
+  }
+  .surface {
+    display: grid;
+    gap: $space.xxs;
+    padding: $space.sm $space.md;
+    border: 1px solid var(--lu-border);
+    border-radius: var(--lu-radius);
+    background: var(--lu-popover);
+    color: var(--lu-popover-foreground);
+    font-size: $text.sm;
+  }
+  .surface span {
+    color: var(--lu-muted-foreground);
+  }
+  .table {
+    overflow-x: auto;
+    border: 1px solid $color.border;
+    border-radius: $radius.md;
+  }
+  table {
+    inline-size: 100%;
+    border-collapse: collapse;
+    font-size: $text.sm;
+  }
+  :is(th, td) {
+    padding: $space.xs $space.sm;
+    border-block-end: 1px solid $color.border;
+    text-align: start;
+    vertical-align: middle;
+  }
+  thead th {
+    background: $color.sunken;
+    font-weight: $weight.semibold;
+  }
+  tbody th {
+    font-weight: $weight.regular;
+  }
+  tr:last-child :is(th, td) {
+    border-block-end: 0;
+  }
+  code {
+    font-family: $font.mono;
+    white-space: nowrap;
+  }
+  .value {
+    display: inline-flex;
+    align-items: center;
+    gap: $space.xs;
+  }
+  .swatch {
+    inline-size: 1.25rem;
+    block-size: 1.25rem;
+    border: 1px solid $color.borderStrong;
+    border-radius: $radius.sm;
+  }
+  .swatch.radius {
+    border-width: 2px 0 0 2px;
+    border-color: $color.text;
+  }
+</style>

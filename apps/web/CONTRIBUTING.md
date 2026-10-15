@@ -23,12 +23,43 @@ base) or from each package's own build (`apps/web/scripts/dev-mounts.ts`); an ap
 naming the command that builds it. The `dev` Playwright project (`*.dev.e2e.ts`) runs against
 `lumiose dev` on port 5196.
 
+## The UI section (`/ui`)
+
+`/ui` is `@lumiose/ui`'s documentation (TASK-387). Its pages are the Markdown that the package
+ships, `packages/ui/docs`, in the order of `packages/ui/docs/llms.txt`. Nothing is written twice:
+
+- **Pages.** `src/content/docs.ts` renders them, and `src/routes/ui/[[...path]]/page.stsx` serves
+  them at `/ui/<page>` (the README at `/ui`). The docs navigation lists them in its UI section,
+  and the old `/docs/ui/*` URLs are static redirects.
+- **Live demos.** Every ` ```tsx check ` example (the ones the docs tests type-check) that
+  exports one component without props is also a live demo. It is shown above its code, and the
+  page's first demo also appears at the top. `scripts/ui-demos.ts` writes the examples to
+  `src/ui-demos/` (generated, committed), with `UiDemo`, which renders them by id. An example
+  is server-rendered, so it works without JavaScript as far as its component does. It is an
+  island (`client:visible`) when it uses signals, `bind:`, `on:` or an event prop.
+- **Theme.** The `/ui` page imports `@lumiose/ui/styles.css` and `themes/default.css`, so only the
+  `/ui` pages load them. The site's theme toggle sets the `color-scheme` that the theme's
+  `light-dark()` colours follow. Inside a demo, `all: revert-layer` drops the site's own base
+  styles, so the components look as the default theme draws them. The palette on the page with
+  the `--lu-` property table is read from the theme's stylesheet.
+
+**Adding a component** (such as Combobox, once its page lands in `packages/ui/docs`):
+
+1. Its page follows `dialog.md`'s sections and is listed in the UI `llms.txt`
+   (`pnpm --filter @lumiose/ui docs:gen`). The page and its navigation entry then appear on
+   their own.
+2. Run `pnpm --filter @lumiose/web ui:demos` and commit `src/ui-demos/`.
+   `src/content/ui-demos.test.ts` fails in `pnpm check` until the generated demos match the
+   examples. Two examples must not export the same name.
+3. Add the page to `PAGES` and `OPEN_DEMOS` in `e2e/a11y.e2e.ts`, then run `pnpm test:e2e`.
+
 ## Accessibility: WCAG 2.2 AA
 
 Every page meets WCAG 2.2 AA (decision-39). `e2e/a11y.e2e.ts` checks it in the light and the dark
 theme on each page type: the landing (its live demo, and the static stand-in that visitors without
 JavaScript see), a docs page, the docs and diagnostics indexes, a diagnostic page, the benchmarks,
-a benchmark report, the showcase with the demos, the playground and the 404.
+a benchmark report, the showcase with the demos, the playground, the 404, and the `/ui` pages (each
+component's first demo also open).
 
 - **axe** fails on any violation tagged `wcag2a`, `wcag2aa`, `wcag21a`, `wcag21aa` or `wcag22aa`.
 - **Needs review.** Axe cannot compute contrast over a gradient or a pseudo-element, so it reports

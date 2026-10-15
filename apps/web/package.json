@@ -2,11 +2,12 @@
   "name": "@lumiose/web",
   "version": "0.0.0",
   "private": true,
-  "description": "The Lumiose website: the landing page at /, the docs at /docs and the playground at /playground (the WebAssembly compiler, crates/lumiose_wasm, in the browser). A static Lumiose site built with @lumiose/site-kit.",
+  "description": "The Lumiose website: the landing page at /, the docs at /docs, the @lumiose/ui docs at /ui and the playground at /playground (the WebAssembly compiler, crates/lumiose_wasm, in the browser). A static Lumiose site built with @lumiose/site-kit.",
   "license": "MIT",
   "type": "module",
   "scripts": {
     "playground:assets": "node scripts/playground-assets.ts",
+    "ui:demos": "node scripts/ui-demos.ts",
     "dev": "node scripts/playground-assets.ts --optional && lumiose dev",
     "build": "node scripts/playground-assets.ts && lumiose build",
     "preview": "lumiose preview",
@@ -27,6 +28,7 @@
     "@lezer/common": "^1.5.3",
     "@lezer/highlight": "^1.2.5",
     "@lumiose/site-kit": "workspace:*",
+    "@lumiose/ui": "workspace:*",
     "lumiose": "workspace:*",
     "marked": "^18.0.14"
   },

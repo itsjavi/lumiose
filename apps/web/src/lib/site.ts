@@ -38,6 +38,7 @@ export const site = {
 
 export const navLinks: NavLink[] = [
   { href: href("/docs/[[...path]]", { path: "" }), label: "Docs" },
+  { href: href("/ui/[[...path]]", { path: "" }), label: "UI" },
   { href: href("/showcase"), label: "Showcase" },
   { href: href("/benchmarks"), label: "Benchmarks" },
   { href: href("/playground"), label: "Playground" },
@@ -55,6 +56,7 @@ export const footerColumns: FooterColumn[] = [
       { href: href("/docs/[[...path]]", { path: "concepts/components" }), label: "Components" },
       { href: href("/docs/[[...path]]", { path: "concepts/styles" }), label: "Styles" },
       { href: href("/docs/[[...path]]", { path: "concepts/islands" }), label: "Islands" },
+      { href: href("/ui/[[...path]]", { path: "" }), label: "UI components" },
     ],
   },
   {

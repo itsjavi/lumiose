@@ -20,6 +20,59 @@ const PAGES = [
   { name: "showcase and demos", path: "/showcase" },
   { name: "playground", path: "/playground" },
   { name: "404", path: "/docs/nope" },
+  // The /ui section (TASK-387): the introduction with the theme's palette, and each component's
+  // page with its live demos on @lumiose/ui's default theme.
+  { name: "UI introduction", path: "/ui" },
+  { name: "UI Dialog", path: "/ui/dialog" },
+  { name: "UI Menu", path: "/ui/menu" },
+  { name: "UI Popover", path: "/ui/popover" },
+  { name: "UI Tabs", path: "/ui/tabs" },
+  { name: "UI Tooltip", path: "/ui/tooltip" },
+];
+
+/** Opens the first demo of a UI page: its popup, or (Tabs) another panel. */
+const OPEN_DEMOS: { name: string; path: string; open: (page: Page) => Promise<void> }[] = [
+  {
+    name: "Dialog",
+    path: "/ui/dialog",
+    open: async (page) => {
+      await page.locator(".hero .preview").getByRole("button").click();
+      await expect(page.getByRole("alertdialog")).toBeVisible();
+    },
+  },
+  {
+    name: "Menu",
+    path: "/ui/menu",
+    open: async (page) => {
+      await page.locator(".hero .preview").getByRole("button", { name: "Project" }).click();
+      await page.keyboard.press("ArrowDown");
+      await expect(page.getByRole("menu").first()).toBeVisible();
+    },
+  },
+  {
+    name: "Popover",
+    path: "/ui/popover",
+    open: async (page) => {
+      await page.locator(".hero .preview").getByRole("button", { name: "Notifications" }).click();
+      await expect(page.getByRole("dialog", { name: "Notifications" }).first()).toBeVisible();
+    },
+  },
+  {
+    name: "Tabs",
+    path: "/ui/tabs",
+    open: async (page) => {
+      await page.locator(".hero .preview").getByRole("tab", { name: "Password" }).click();
+      await expect(page.locator(".hero .preview").getByRole("tabpanel")).toHaveText(/password/);
+    },
+  },
+  {
+    name: "Tooltip",
+    path: "/ui/tooltip",
+    open: async (page) => {
+      await page.locator(".hero .preview").getByRole("button", { name: "Bold" }).focus();
+      await expect(page.getByRole("tooltip").first()).toBeVisible();
+    },
+  },
 ];
 
 /** Waits for the islands a page hydrates on load, so axe sees their final markup. */
@@ -96,6 +149,23 @@ for (const scheme of ["light", "dark"] as const) {
         console.log(`[axe needs review] ${name} (${scheme}):\n  ${review.join("\n  ")}`);
         testInfo.annotations.push({ type: "axe needs review", description: review.join("; ") });
       }
+      expect(describe(results.violations)).toEqual([]);
+    });
+  }
+}
+
+for (const scheme of ["light", "dark"] as const) {
+  for (const { name, path, open } of OPEN_DEMOS) {
+    test(`axe: UI ${name} demo open (${scheme}) has no WCAG 2.2 AA violations`, async ({
+      page,
+    }) => {
+      await page.emulateMedia({ colorScheme: scheme });
+      await page.goto(path);
+      await settle(page);
+      await open(page);
+      // The popups fade in: axe checks their final colours.
+      await page.waitForTimeout(400);
+      const results = await new AxeBuilder({ page }).withTags(WCAG_AA).analyze();
       expect(describe(results.violations)).toEqual([]);
     });
   }
@@ -316,7 +386,7 @@ test("no ambient motion runs longer than 5 seconds (2.2.2 needs a pause control 
 });
 
 test("keyboard focus is visible and not hidden by the sticky header", async ({ page }) => {
-  for (const path of ["/", "/docs/concepts/styles", "/showcase", "/benchmarks"]) {
+  for (const path of ["/", "/docs/concepts/styles", "/showcase", "/benchmarks", "/ui/tabs"]) {
     await page.goto(path);
     await settle(page);
     const header = await page.locator("header").first().boundingBox();

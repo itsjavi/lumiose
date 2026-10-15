@@ -1,0 +1,402 @@
+// A docs page: the header (section, title, lead), the Markdown blocks (the kit's CodeBlock for
+// code), prev/next links and the table of contents. Shared by /docs and /ui (TASK-387). A UI page
+// passes `demo`, which renders the live demo of an example (src/ui-demos), and `palette`, the default
+// theme's colours; the demos then appear above their code, and the page's first one at the top.
+//
+// The Markdown's styles target only its own HTML (`.chunk`), so they never reach a demo: a demo's
+// preview resets what the site's unlayered base styles set (`all: revert-layer`), so the components
+// look as @lumiose/ui's default theme draws them, in the site's light or dark scheme.
+import { CodeBlock } from "@lumiose/site-kit";
+import { highlight } from "@lumiose/site-kit/highlight";
+import {
+  bp,
+  color,
+  font,
+  layout,
+  leading,
+  radius,
+  space,
+  text,
+  weight,
+} from "@lumiose/site-kit/tokens";
+import { Meta, Title } from "lumiose";
+import { adjacentDocs, type DocBlock, type DocPage } from "../content/docs.ts";
+
+type Demo = NonNullable<Extract<DocBlock, { kind: "code" }>["demo"]>;
+
+export interface DocArticleProps {
+  page: DocPage;
+  /** The document title. */
+  title: string;
+  /** Renders a UI example's live demo by id. */
+  demo?: (id: string) => JSX.Element;
+  /** Renders the default theme's palette. */
+  palette?: () => JSX.Element;
+}
+
+export function DocArticle(props: DocArticleProps) {
+  const around = () => adjacentDocs(props.page);
+  const toc = () =>
+    props.page.headings.filter((heading) => heading.depth === 2 || props.page.headings.length < 14);
+  const demos = () =>
+    props.demo === undefined
+      ? []
+      : props.page.blocks.flatMap((block) =>
+          block.kind === "code" && block.demo !== undefined ? [block.demo] : [],
+        );
+  const preview = (demo: Demo) => (
+    <div class="preview" data-demo={demo.id}>
+      {props.demo!(demo.id)}
+    </div>
+  );
+
+  return (
+    <div class="doc">
+      <Title>{props.title}</Title>
+      <Meta name="description" content={props.page.summary} />
+      <Meta property="og:title" content={props.page.title} />
+      <Meta property="og:description" content={props.page.summary} />
+
+      <article>
+        <header class="head">
+          <p class="section">{props.page.section}</p>
+          <h1>{props.page.title}</h1>
+          {props.page.summary !== "" && <p class="lead" innerHTML={props.page.summaryHtml} />}
+        </header>
+        {demos().length > 0 && (
+          <figure class="demo hero">
+            {preview(demos()[0]!)}
+            <figcaption class="note">
+              A live demo, with the default theme. <a href={`#demo-${demos()[0]!.id}`}>Its code</a>
+            </figcaption>
+          </figure>
+        )}
+        <div class="prose">
+          {props.page.blocks.map((block) =>
+            block.kind === "palette" ? (
+              props.palette?.()
+            ) : block.kind === "html" ? (
+              <div class="chunk" innerHTML={block.html} />
+            ) : block.demo !== undefined && props.demo !== undefined ? (
+              <figure class="demo" id={`demo-${block.demo.id}`}>
+                {preview(block.demo)}
+                <figcaption class="note">
+                  {block.demo.island
+                    ? "Live: an island, hydrated when it scrolls into view"
+                    : "Live: server-rendered, no island"}
+                </figcaption>
+                <CodeBlock code={block.code} lang={block.lang} title={block.title} highlight={highlight} />
+              </figure>
+            ) : (
+              <CodeBlock
+                code={block.code}
+                lang={block.lang}
+                title={block.title}
+                highlight={highlight}
+              />
+            ),
+          )}
+        </div>
+        <nav class="adjacent" aria-label="Previous and next pages">
+          {around().prev === undefined ? (
+            <span />
+          ) : (
+            <a rel="prev" href={around().prev!.url}>
+              <small>Previous</small>
+              {around().prev!.label}
+            </a>
+          )}
+          {around().next === undefined ? (
+            <span />
+          ) : (
+            <a rel="next" class="next" href={around().next!.url}>
+              <small>Next</small>
+              {around().next!.label}
+            </a>
+          )}
+        </nav>
+      </article>
+
+      {toc().length > 1 && (
+        <nav class="toc" aria-label="On this page">
+          <p>On this page</p>
+          <ol role="list">
+            {toc().map((heading) => (
+              <li class={{ sub: heading.depth === 3 }}>
+                <a href={`#${heading.id}`}>{heading.text}</a>
+              </li>
+            ))}
+          </ol>
+        </nav>
+      )}
+    </div>
+  );
+}
+
+<style>
+  .doc {
+    display: grid;
+    gap: $space.xl;
+  }
+  @media (width >= $bp.xl) {
+    .doc {
+      grid-template-columns: minmax(0, 1fr) 13rem;
+    }
+    .toc {
+      position: sticky;
+      inset-block-start: calc($layout.header + $space.md);
+      align-self: start;
+      max-block-size: calc(100dvh - $layout.header - $space.xl);
+      overflow-y: auto;
+    }
+  }
+  @media (width < $bp.xl) {
+    .toc {
+      display: none;
+    }
+  }
+  /* About 75 characters a line at the prose size, a comfortable measure for long reading. */
+  article {
+    min-inline-size: 0;
+    max-inline-size: 46rem;
+  }
+  .head {
+    margin-block-end: $space.lg;
+  }
+  .section {
+    color: $color.accentText;
+    font-size: $text.sm;
+    font-weight: $weight.semibold;
+  }
+  h1 {
+    margin-block: $space.xxs $space.sm;
+    font-size: $text.xxxl;
+  }
+  .lead {
+    max-inline-size: 40rem;
+    color: $color.muted;
+    font-size: $text.lg;
+    line-height: 1.5;
+    text-wrap: pretty;
+  }
+  /* A subtitle reads as one sentence: its code is set in the code font, without chips. */
+  .lead :deep(code) {
+    padding: 0;
+    border: 0;
+    background: none;
+    color: $color.text;
+    font-size: 0.9em;
+  }
+
+  .chunk {
+    display: contents;
+  }
+  .prose {
+    font-size: 1.0625rem;
+    line-height: $leading.normal;
+  }
+  .chunk :deep(:is(p, ul, ol, blockquote, .table, .nested-code)) {
+    margin-block: 0 $space.md;
+  }
+  .chunk :deep(:is(h2, h3, h4)) {
+    position: relative;
+    scroll-margin-block-start: calc($layout.header + $space.md);
+  }
+  .chunk :deep(h2) {
+    margin-block: $space.xxl $space.md;
+    padding-block-start: $space.md;
+    border-block-start: 1px solid $color.border;
+    font-size: $text.xxl;
+  }
+  .chunk :deep(h3) {
+    margin-block: $space.xl $space.sm;
+    font-size: $text.xl;
+  }
+  .chunk :deep(h4) {
+    margin-block: $space.lg $space.xs;
+  }
+  .chunk :deep(.anchor) {
+    position: absolute;
+    inset-inline-start: -1.1em;
+    padding-inline-end: 0.3em;
+    color: $color.subtle;
+    text-decoration: none;
+    opacity: 0;
+    transition: opacity 120ms;
+  }
+  .chunk :deep(:is(h2, h3, h4):hover .anchor),
+  .chunk :deep(.anchor:focus-visible) {
+    opacity: 1;
+  }
+  .chunk :deep(:is(ul, ol)) {
+    padding-inline-start: 1.4em;
+  }
+  /* List items are often whole paragraphs with a bold lead-in: space them like paragraphs. */
+  .chunk :deep(li + li) {
+    margin-block-start: $space.xs;
+  }
+  .chunk :deep(li::marker) {
+    color: $color.subtle;
+  }
+  .chunk :deep(li > :is(ul, ol)) {
+    margin-block: $space.xxs 0;
+  }
+  .chunk :deep(blockquote) {
+    padding: $space.sm $space.md;
+    border-inline-start: 3px solid $color.border;
+    border-radius: 0 $radius.md $radius.md 0;
+    background: $color.sunken;
+    color: $color.muted;
+  }
+  .chunk :deep(blockquote.status) {
+    border-color: $color.infoBorder;
+    background: $color.infoBg;
+    color: $color.text;
+  }
+  .chunk :deep(blockquote > :last-child) {
+    margin-block-end: 0;
+  }
+  .chunk :deep(.table) {
+    overflow-x: auto;
+    border: 1px solid $color.border;
+    border-radius: $radius.md;
+  }
+  .chunk :deep(table) {
+    inline-size: 100%;
+    border-collapse: collapse;
+    font-size: $text.sm;
+  }
+  .chunk :deep(:is(th, td)) {
+    padding: $space.xs $space.sm;
+    border-block-end: 1px solid $color.border;
+    text-align: start;
+    vertical-align: top;
+  }
+  .chunk :deep(th) {
+    background: $color.sunken;
+    font-weight: $weight.semibold;
+    white-space: nowrap;
+  }
+  .chunk :deep(tr:last-child td) {
+    border-block-end: 0;
+  }
+  .chunk :deep(td code) {
+    white-space: nowrap;
+  }
+  .chunk :deep(.nested-code) {
+    padding: $space.sm $space.md;
+    border: 1px solid $color.border;
+    border-radius: $radius.md;
+    background: $color.codeBg;
+    overflow-x: auto;
+    font-size: $text.sm;
+  }
+
+  /* Live demos: the preview, a caption, then the example's code below it. */
+  .demo {
+    margin-block: $space.lg;
+  }
+  .demo :deep(.code) {
+    margin-block: 0;
+    border-start-start-radius: 0;
+    border-start-end-radius: 0;
+  }
+  .preview {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: $space.md;
+    min-block-size: 9rem;
+    padding: $space.xl $space.lg;
+    border: 1px solid $color.border;
+    border-radius: $radius.lg $radius.lg 0 0;
+    background: var(--lu-background);
+    color: var(--lu-foreground);
+    font-family: $font.sans;
+    font-size: 1rem;
+    line-height: 1.5;
+  }
+  .hero .preview {
+    min-block-size: 12rem;
+    border-radius: $radius.lg;
+  }
+  /* The site's base styles are unlayered, so they would win over the theme's layered rules: inside
+     a demo they step back to the theme (lu.theme, lu.core) and the browser's defaults. */
+  .preview :deep(*),
+  .preview :deep(*::before),
+  .preview :deep(*::after) {
+    all: revert-layer;
+  }
+  .note {
+    padding: $space.xs $space.md;
+    border-inline: 1px solid $color.border;
+    background: $color.sunken;
+    color: $color.muted;
+    font-size: $text.sm;
+  }
+  .hero .note {
+    padding-inline: 0;
+    border: 0;
+    background: none;
+  }
+
+  .adjacent {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: $space.md;
+    margin-block-start: $space.xxl;
+    padding-block-start: $space.lg;
+    border-block-start: 1px solid $color.border;
+  }
+  .adjacent a {
+    display: grid;
+    gap: 0.15rem;
+    padding: $space.sm $space.md;
+    border: 1px solid $color.border;
+    border-radius: $radius.md;
+    font-weight: $weight.semibold;
+    text-decoration: none;
+  }
+  .adjacent a:hover {
+    border-color: $color.accent;
+  }
+  .adjacent small {
+    color: $color.muted;
+    font-weight: $weight.regular;
+  }
+  .next {
+    text-align: end;
+  }
+
+  .toc p {
+    margin-block-end: $space.xs;
+    font-size: $text.xs;
+    font-weight: $weight.semibold;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+  .toc ol {
+    display: grid;
+    gap: 0.2rem;
+    border-inline-start: 1px solid $color.border;
+  }
+  .toc a {
+    display: block;
+    padding: 0.15rem $space.sm;
+    color: $color.muted;
+    font-size: $text.sm;
+    line-height: 1.35;
+    text-decoration: none;
+  }
+  .toc a:hover {
+    color: $color.text;
+  }
+  .toc .sub a {
+    padding-inline-start: $space.lg;
+    font-size: $text.xs;
+  }
+  .chunk :deep(code) {
+    font-family: $font.mono;
+  }
+</style>
