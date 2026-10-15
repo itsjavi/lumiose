@@ -44,6 +44,7 @@ describe("lumiose docs", () => {
     expect(resolveTopic("docker", docs)?.topic).toBe("deploy/docker");
     expect(resolveTopic("auth", docs)?.topic).toBe("guides/auth");
     expect(resolveTopic("coming-from/react", docs)?.topic).toBe("coming-from/react");
+    expect(resolveTopic("react-router", docs)?.topic).toBe("coming-from/react-router");
     expect(resolveTopic("no-such-topic", docs)).toBeUndefined();
   });
 
@@ -148,7 +149,12 @@ describe("docs contract", () => {
 
   it("gives every Coming from guide the shared outline, in order (TASK-301)", () => {
     const guides = docs.filter((doc) => doc.topic.startsWith("coming-from/"));
-    expect(guides.map((doc) => doc.topic)).toContain("coming-from/react");
+    expect(guides.map((doc) => doc.topic).toSorted()).toEqual([
+      "coming-from/nextjs",
+      "coming-from/react",
+      "coming-from/react-router",
+      "coming-from/solid",
+    ]);
     for (const doc of guides) {
       const framework = doc.title.replace(/^Coming from /, "");
       const sections = [...doc.content.matchAll(/^## (.+)$/gm)].map((match) => match[1]);
