@@ -31,7 +31,8 @@ import "@lumiose/ui/themes/default.css"; // optional look: `--lu-` custom proper
 ```
 
 The package ships its `.tsx` and `.css` sources, which the app's Lumiose compiler compiles for the
-server and the browser. Docs: `lumiose docs ui` (`packages/lumiose/docs/ui/`).
+server and the browser. Docs ship with it, for this version: `docs/` (`docs/llms.txt` indexes them;
+in a project, `node_modules/@lumiose/ui/docs/`), and `lumiose docs ui` prints them.
 
 - `pnpm --filter @lumiose/ui test`: unit tests (server rendering and the DOM, Vitest).
 - `pnpm --filter @lumiose/ui size`: JavaScript and CSS per component.
