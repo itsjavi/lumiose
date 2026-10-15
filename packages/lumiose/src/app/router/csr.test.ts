@@ -97,6 +97,11 @@ describe("startCsr", () => {
     expect(end.data).toBe("/l:0");
     expect(document.querySelector("main")!.compareDocumentPosition(end)).toBe(4);
     await navigate("/about");
+    // The route announcer (./announcer.ts), after the shell, reads the new page's heading.
+    const announcer = document.body.lastElementChild!;
+    expect(announcer.hasAttribute("data-l-announcer")).toBe(true);
+    expect(announcer.textContent).toBe("about");
+    announcer.remove();
     expect(document.body.textContent).toBe("siteat /about: aboutend");
   });
 

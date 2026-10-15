@@ -19,9 +19,13 @@
 // - Navigation API: same-document navigations to URLs of this SPA are intercepted, so plain
 //   `<a href>` links, back/forward and `navigation.navigate()` all route here; it also restores
 //   scroll and resets focus after each transition. Without it, the History API fallback
-//   (./history.ts, loaded only then) intercepts link clicks and `popstate`, and restores scroll.
+//   (./history.ts, loaded only then) intercepts link clicks and `popstate`, restores scroll and
+//   resets focus the same way.
+// - Announcer (./announcer.ts, TASK-345): once a navigation's page is on screen, scrolled and
+//   focused, a live region reads its title to screen readers (not for the first view).
 // - Hooks (./hooks.ts, decision-50): `beforeNavigate` hooks run before a navigation loads anything
-//   and may cancel it; `afterNavigate` hooks run once its page is on screen, scrolled and focused.
+//   and may cancel it; `afterNavigate` hooks run once its page is on screen, scrolled, focused and
+//   announced.
 //   A navigation to a document outside the SPA runs them with `willUnload`, then unloads.
 // - Errors: a render error, a rejected async page or `notFound()` render the nearest `error` or
 //   `not-found` page inside the SPA (`redirect()` navigates); without one, a minimal built-in page.
@@ -29,7 +33,7 @@
 //   reads, so they re-run (holding their UI); `submit()` redirects navigate through the router.
 import type { Component, Renderable } from "../../contract/client.ts";
 import { isBusy } from "../../core/async.ts";
-import { batch, effect } from "../../core/effect.ts";
+import { batch, effect, onMount } from "../../core/effect.ts";
 import {
   beginBusy,
   createOwner,
@@ -61,6 +65,7 @@ import { formatPattern } from "../routes/segments.ts";
 import type { RouteManifest } from "../routes/manifest.ts";
 import type { Routes } from "../routes/registry.ts";
 import { HttpError, isHttpError, isRedirect } from "../server/control.ts";
+import { createAnnouncer, type Announcer } from "./announcer.ts";
 import type { HistoryNavigation } from "./history.ts";
 import {
   endNavigation,
@@ -169,6 +174,8 @@ interface Router {
   endBusy: (() => void) | undefined;
   /** Modules loaded or loading, by file. */
   loaded: Map<string, Promise<Component<any>>>;
+  /** The route announcer, once the SPA root is on screen. */
+  announcer: Announcer | undefined;
 }
 
 const ROUTE: unique symbol = Symbol("lumiose.route");
@@ -201,6 +208,7 @@ export function createRouter(config: SpaConfig, app: string): void {
     active: undefined,
     endBusy: undefined,
     loaded: new Map(),
+    announcer: undefined,
   };
   if (import.meta.env?.DEV && INSPECTED) {
     labelValue(current, "route view", true);
@@ -415,6 +423,15 @@ function spaRoot(r: Router, view: View): Renderable {
   onCleanup(() => {
     supersede(r);
     r.root = undefined;
+  });
+  // After hydration, outside the island: the announcer is no part of what the server rendered.
+  onMount(() => {
+    const announcer = createAnnouncer(untrack(r.current).url);
+    r.announcer = announcer;
+    onCleanup(() => {
+      announcer.remove();
+      if (r.announcer === announcer) r.announcer = undefined;
+    });
   });
   const outlet = createOutlet(0, r.scope);
   r.root = outlet;
@@ -859,6 +876,15 @@ function leave(r: Router, type: RouterNavigation["type"], url: URL, redirect: bo
   leaveTo(redirect ? undefined : navigationTo(r, type, url, true));
 }
 
+/**
+ * `navigation` ended: `shown` once its page is on screen with its scroll position and focus set.
+ * The announcer reads it, then the `afterNavigate` hooks run.
+ */
+function settle(r: Router, navigation: RouterNavigation, shown: boolean): void {
+  if (shown) r.announcer?.navigated(untrack(r.current).url);
+  endNavigation(navigation, shown);
+}
+
 function historyNavigation(
   r: Router,
   url: URL,
@@ -868,7 +894,7 @@ function historyNavigation(
   return {
     run: () => (INSTRUMENTED ? visit(r, url, target, navigation) : go(r, url, target)),
     done: (shown) => {
-      if (navigation !== undefined) endNavigation(navigation, shown);
+      if (navigation !== undefined) settle(r, navigation, shown);
     },
   };
 }
@@ -971,8 +997,8 @@ function listen(r: Router): () => void {
           const shown = INSTRUMENTED ? visit(r, url, target, navigation) : go(r, url, target);
           // Settles after the scroll restoration and focus reset that follow the handler.
           (api.transition?.finished ?? shown).then(
-            () => endNavigation(navigation, true),
-            () => endNavigation(navigation, false),
+            () => settle(r, navigation, true),
+            () => settle(r, navigation, false),
           );
           return shown;
         },

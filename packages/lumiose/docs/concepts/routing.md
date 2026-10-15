@@ -134,8 +134,9 @@ Routes with `mode = "spa"` use the client router `lumiose/router` ([reference](.
   `viewTransitions: true`, a navigation to another page swaps inside
   [`viewTransition()`](../reference/components.md#viewtransition) (a query change on the same page
   does not), and `<ViewTransition>` names the elements that morph.
-- Scroll restoration, focus reset, `not-found` for unknown URLs and `notFound()`, `error` for
-  errors.
+- Scroll restoration, focus reset, an announcement of each new page for screen readers (its
+  `<Title>`, else its first `<h1>`), `not-found` for unknown URLs and `notFound()`, `error` for
+  errors. See [Behaviour](../reference/router.md#behaviour).
 - Navigation hooks: `beforeNavigate(fn)` runs before each navigation and may `cancel()` it (to
   confirm leaving unsaved changes; the browser asks for one that unloads the document), and
   `afterNavigate(fn)` runs after each completed one and once on mount (page views, focus). They

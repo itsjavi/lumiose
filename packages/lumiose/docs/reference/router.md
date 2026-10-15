@@ -1,6 +1,6 @@
 # `lumiose/router`
 
-> The client router for `spa` routes: links, navigation, navigation hooks, reactive route state, persistent layouts, transitions and scroll restoration.
+> The client router for `spa` routes: links, navigation, navigation hooks, reactive route state, persistent layouts, transitions, scroll restoration, focus reset and page announcements.
 
 `lumiose/router` works inside `spa` routes (`export const mode = "spa"`, or `lumiose({ mode: "spa" })`
 for the whole project); `<Link>`, `beforeNavigate()` and `afterNavigate()` work on MPA pages too (see [Link](#link) and
@@ -137,7 +137,8 @@ interface AfterNavigate {
 ```
 
 Runs once per completed client navigation, after the new page is on screen (after a view
-transition's DOM update, not its animation), its scroll position restored and focus reset. A
+transition's DOM update, not its animation), its scroll position restored, focus reset and the page
+announced to screen readers. A
 navigation that a newer one supersedes or a hook cancels never completes. It also runs once when
 the component mounts, with `type: "enter"` and `from: null`, so the first page view counts too; a
 component that a navigation created gets that navigation's call instead.
@@ -231,8 +232,19 @@ the new page is on screen.
   then the URL signals change and the pages swap in one step. A `<Suspense>` inside the new page
   shows its fallback instead.
 - **Scroll and focus.** After a navigation the page scrolls to the top (or to the URL's `#hash`)
-  and focus moves to the document (or the first `[autofocus]` element); back/forward restore the
-  scroll position. `searchParams.set()` keeps both.
+  and focus moves to the document (or the first focusable `[autofocus]` element), so the next Tab
+  starts from the top of the page, as after a document load; back/forward restore the scroll
+  position. Focus the new page moved while it loaded stays. `searchParams.set()` keeps both, and
+  back/forward between entries that differ only in `#hash` keeps focus. Browsers without the
+  Navigation API get the same behaviour from the History API fallback.
+- **Announcements.** Screen readers announce a document load, not a client navigation, so the
+  router reads each new page aloud: once it is on screen, scrolled and focused, a visually hidden
+  live region (`aria-live="assertive"`, `aria-atomic="true"`, appended to `<body>` with a
+  `data-l-announcer` attribute) gets its `document.title` (set by `<Title>`), else the text of its
+  first `<h1>`, else its path. The first page is not announced (the screen reader reads the
+  document), nor is a navigation that keeps the path (a query change) unless the title changed.
+  Give each page a distinct `<Title>` so the announcement says where the user is. The region is
+  created once the SPA has hydrated, outside it, and removed with it.
 - **Errors.** `notFound()` and unknown URLs render the nearest `not-found` page of the SPA; other
   errors its `error` page (`{ status, error }` props), with the layouts kept. With
   `src/instrumentation.client.ts`, its `onError` receives the other errors (`phase: "navigate"`),
