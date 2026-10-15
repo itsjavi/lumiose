@@ -7,15 +7,13 @@ import type { RouteParamValues } from "../server/context.ts";
 import {
   currentParams,
   currentRoute,
-  currentSearchParams,
   currentUrl,
   navigate,
   isNavigating,
   routerLocale,
-  setSearchParams,
   type NavigateOptions,
-  type SearchParamsInit,
 } from "./router.ts";
+import { readSearchParams, writeSearchParams, type SearchParamsInit } from "./search.ts";
 
 export {
   afterNavigate,
@@ -70,12 +68,16 @@ export function url(): URL {
 }
 
 export interface SearchParams {
-  /** The query of the current URL, reactive. A new object per change: do not mutate it. */
+  /**
+   * The query of the current URL, reactive. A new object per change: do not mutate it. Also in
+   * islands of MPA pages, where `set()` changes it.
+   */
   (): URLSearchParams;
   /**
-   * Navigates to the current path with a new query, keeping the scroll position:
-   * `searchParams.set({ q, page: 2 })`, `searchParams.set((current) => …)`. `null`/`undefined` values are
-   * left out. Adds a history entry unless `{ replace: true }`.
+   * Changes the current URL's query, keeping the scroll position: `searchParams.set({ q, page: 2 })`,
+   * `searchParams.set((current) => …)`. `null`/`undefined` values are left out. Adds a history
+   * entry unless `{ replace: true }`. Inside an SPA it navigates; in islands of MPA pages it only
+   * updates the URL and `searchParams()` (the server-rendered HTML stays as it is).
    */
   set(
     next: SearchParamsInit | ((current: URLSearchParams) => SearchParamsInit),
@@ -84,10 +86,8 @@ export interface SearchParams {
 }
 
 /** The current URL's query (`searchParams()`), and `searchParams.set()` to change it. */
-// Pure: an island that only uses `<Link>` (on an MPA page) ships none of the router.
-export const searchParams: SearchParams = /* @__PURE__ */ Object.assign(
-  () => currentSearchParams(),
-  {
-    set: setSearchParams,
-  },
-);
+// Pure: an island that only uses `<Link>` (on an MPA page) ships none of the router, and one that
+// uses `searchParams` ships only ./search.ts.
+export const searchParams: SearchParams = /* @__PURE__ */ Object.assign(() => readSearchParams(), {
+  set: writeSearchParams,
+});

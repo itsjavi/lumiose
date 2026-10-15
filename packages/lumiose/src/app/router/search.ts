@@ -1,0 +1,96 @@
+// `searchParams()` and `searchParams.set()` of `lumiose/router` (owner: Spark, decision-61).
+//
+// - Inside an SPA they are the router's (`setRouterSearch`): reactive per view, and `set()`
+//   navigates through the router.
+// - In islands of MPA pages (`static` and `server` routes), where no router runs, the query is
+//   shallow URL state: a signal shared by every island of the document, which `set()` writes with
+//   `history.pushState()`/`replaceState()` without loading anything, and which back/forward
+//   between those entries update. Nothing navigates: the navigation hooks do not run, and the
+//   server-rendered parts of the page keep the HTML of the URL they were rendered for.
+//
+// Apart from ./router.ts, so that those islands ship none of the router.
+import { computed, signal, type Signal } from "../../core/signal.ts";
+import type { NavigateOptions } from "./router.ts";
+
+export type SearchParamsInit =
+  | URLSearchParams
+  | string
+  | Record<string, string | number | boolean | readonly string[] | null | undefined>;
+
+type SearchParamsNext = SearchParamsInit | ((current: URLSearchParams) => SearchParamsInit);
+
+/** The SPA router's `searchParams()` and `searchParams.set()`. */
+export interface RouterSearch {
+  read(): URLSearchParams;
+  set(next: SearchParamsNext, options: NavigateOptions): Promise<void>;
+}
+
+/** A signal, so that an island read before the SPA started follows the router once it does. */
+const routed = signal<RouterSearch | undefined>(undefined);
+
+/** Called by the router when it starts and stops. */
+export function setRouterSearch(search: RouterSearch | undefined): void {
+  routed.set(search);
+}
+
+/** The shallow query (`location.search`) and its params, created on the first use. */
+let shallow: { search: Signal<string>; params: () => URLSearchParams } | undefined;
+
+function onPopState(): void {
+  shallow?.search.set(location.search);
+}
+
+function shallowState(): NonNullable<typeof shallow> {
+  if (shallow === undefined) {
+    const search = signal(location.search);
+    shallow = { search, params: computed(() => new URLSearchParams(search())) };
+    // Back/forward between the entries `set()` added stay in the document.
+    addEventListener("popstate", onPopState);
+  }
+  return shallow;
+}
+
+/** `searchParams()`. */
+export function readSearchParams(): URLSearchParams {
+  const router = routed();
+  return router === undefined ? shallowState().params() : router.read();
+}
+
+/** `searchParams.set()`. */
+export function writeSearchParams(
+  next: SearchParamsNext,
+  options: NavigateOptions = {},
+): Promise<void> {
+  const router = routed.peek();
+  if (router !== undefined) return router.set(next, options);
+  const state = shallowState();
+  const url = new URL(location.href);
+  const value = typeof next === "function" ? next(new URLSearchParams(url.search)) : next;
+  url.search = searchString(value);
+  // As in the browser, going to the current URL replaces its entry.
+  const replace = options.replace === true || url.href === location.href;
+  history[replace ? "replaceState" : "pushState"](history.state, "", url.href);
+  state.search.set(location.search);
+  return Promise.resolve();
+}
+
+/** A query string from a `searchParams.set()` value: `null` and `undefined` values are left out. */
+export function searchString(value: SearchParamsInit): string {
+  if (typeof value === "string" || value instanceof URLSearchParams) {
+    return new URLSearchParams(value).toString();
+  }
+  const out = new URLSearchParams();
+  for (const [key, item] of Object.entries(value)) {
+    if (item === null || item === undefined) continue;
+    if (Array.isArray(item)) for (const one of item) out.append(key, String(one));
+    else out.append(key, String(item));
+  }
+  return out.toString();
+}
+
+/** For tests: forgets the shallow query and the router. */
+export function resetSearch(): void {
+  removeEventListener("popstate", onPopState);
+  shallow = undefined;
+  routed.set(undefined);
+}

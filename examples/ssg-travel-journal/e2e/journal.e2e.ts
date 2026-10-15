@@ -71,12 +71,12 @@ test.describe("static output", () => {
     await islandsReady(page);
     expect(scripts.length).toBeGreaterThan(0);
     for (const script of scripts) expect(script).toMatch(/^\/assets\/[\w-]+\.js$/);
-    // Inline: the theme script of document.tsx, the speculation rules of lumiose({ prefetch }) and
-    // the island records.
+    // Inline: the theme script of document.tsx, the one that waits for the linked stylesheets
+    // (TASK-278), the speculation rules of lumiose({ prefetch }) and the island records.
     const inline = await page
       .locator("script:not([src])")
       .evaluateAll((elements) => elements.map((element) => element.getAttribute("type")));
-    expect(inline).toEqual([null, "speculationrules", "application/json"]);
+    expect(inline).toEqual([null, null, "speculationrules", "application/json"]);
   });
 });
 

@@ -3,8 +3,8 @@
 > The client router for `spa` routes: links, navigation, navigation hooks, reactive route state, persistent layouts, transitions, scroll restoration, focus reset and page announcements.
 
 `lumiose/router` works inside `spa` routes (`export const mode = "spa"`, or `lumiose({ mode: "spa" })`
-for the whole project); `<Link>`, `beforeNavigate()` and `afterNavigate()` work on MPA pages too (see [Link](#link) and
-[Navigation hooks](#navigation-hooks)). Pages and layouts of an SPA import it like any module; on the server
+for the whole project); `<Link>`, `beforeNavigate()`, `afterNavigate()` and `searchParams` work on MPA pages too (see [Link](#link),
+[Navigation hooks](#navigation-hooks) and [searchParams](#searchparams)). Pages and layouts of an SPA import it like any module; on the server
 (`ssr` pages, rendered per request or prerendered at build time) the same names read the request: `params()`, `route()`, `url()` and `searchParams()` return the
 request's values, `<Link>` renders its `<a>`, `isNavigating()` is `false`, `beforeNavigate()` and
 `afterNavigate()` register nothing, and `navigate()` and `searchParams.set()` throw (call them from
@@ -212,6 +212,15 @@ type SearchParamsInit =
 `searchParams()` is the current URL's query, reactive (a new object per change). `searchParams.set()`
 navigates to the current path with a new query, keeping the scroll position; `null` and
 `undefined` values are left out. It adds a history entry unless `{ replace: true }`.
+
+In islands of MPA pages (`static` and `server` routes), where no router runs, the query is
+shallow URL state: `searchParams()` is the document's query, shared by every island, and
+`searchParams.set()` writes the URL with `history.pushState()` (`replaceState()` with
+`{ replace: true }`, or when the URL does not change), keeping the path, the hash, the scroll
+position and focus. Back/forward between those entries update `searchParams()`. It loads nothing:
+the server-rendered HTML stays as it is, and the navigation hooks do not run. During SSR, islands
+of `server` pages read the request's query; at build time a `static` page has none (`LUM5001`). See
+[Islands](../concepts/islands.md#concept).
 
 While a page is still loading during a navigation, `params()`, `route()`, `url()` and `searchParams()` called in it
 (and its props) already describe the page it is loading; everything else keeps the shown URL until

@@ -165,17 +165,17 @@ export function Editor() {
 
 ## API
 
-| API                                                                                                   | Use                                                                                    |
-| ----------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
-| `export default function Page(props: PageProps<"/x/[id]">)`                                           | A page component.                                                                      |
-| `export default function Layout(props: LayoutProps<"/x">)`                                            | A layout: `{ params, children }`.                                                      |
-| `params<"/x/[id]">()`                                                                                 | The matched route's params, typed by pattern (server).                                 |
-| `href(pattern, params?)`                                                                              | Build a URL from a typed route pattern.                                                |
-| `Routes`, `RouteParams<P>`, `RouteMap`, `LayoutMap`                                                   | Route types.                                                                           |
-| `ErrorPageProps`                                                                                      | Props of `not-found` and `error` pages.                                                |
-| `notFound()`, `error(status, message?)`, `redirect(to, status?)`                                      | Stop rendering; see [Server](server.md).                                               |
-| `lumiose/router`: `Link`, `navigate`, `isNavigating`, `searchParams`, reactive `url`/`params`/`route` | SPA routes and islands ([reference](../reference/router.md)).                          |
-| `lumiose/router`: `beforeNavigate(fn)`, `afterNavigate(fn)`                                           | Run around navigations; cancel one ([hooks](../reference/router.md#navigation-hooks)). |
+| API                                                                                                   | Use                                                                                                    |
+| ----------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| `export default function Page(props: PageProps<"/x/[id]">)`                                           | A page component.                                                                                      |
+| `export default function Layout(props: LayoutProps<"/x">)`                                            | A layout: `{ params, children }`.                                                                      |
+| `params<"/x/[id]">()`                                                                                 | The matched route's params, typed by pattern (server).                                                 |
+| `href(pattern, params?)`                                                                              | Build a URL from a typed route pattern.                                                                |
+| `Routes`, `RouteParams<P>`, `RouteMap`, `LayoutMap`                                                   | Route types.                                                                                           |
+| `ErrorPageProps`                                                                                      | Props of `not-found` and `error` pages.                                                                |
+| `notFound()`, `error(status, message?)`, `redirect(to, status?)`                                      | Stop rendering; see [Server](server.md).                                                               |
+| `lumiose/router`: `Link`, `navigate`, `isNavigating`, `searchParams`, reactive `url`/`params`/`route` | SPA routes; `Link`, the hooks and `searchParams` in islands too ([reference](../reference/router.md)). |
+| `lumiose/router`: `beforeNavigate(fn)`, `afterNavigate(fn)`                                           | Run around navigations; cancel one ([hooks](../reference/router.md#navigation-hooks)).                 |
 
 ## Example
 

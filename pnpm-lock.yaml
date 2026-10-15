@@ -852,6 +852,37 @@ importers:
         specifier: ^8.3.4
         version: 8.3.4(@types/node@24.19.1)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(yaml@2.9.1)
 
+  examples/ui-spike:
+    dependencies:
+      '@lumiose/adapter-node':
+        specifier: workspace:*
+        version: link:../../packages/adapter-node
+      '@timelessui/components':
+        specifier: 0.2.0
+        version: 0.2.0
+      lumiose:
+        specifier: workspace:*
+        version: link:../../packages/lumiose
+    devDependencies:
+      '@axe-core/playwright':
+        specifier: 4.13.0
+        version: 4.13.0(playwright-core@1.63.0)
+      '@lumiose/cli':
+        specifier: workspace:*
+        version: link:../../packages/cli
+      '@lumiose/vite':
+        specifier: workspace:*
+        version: link:../../packages/vite
+      '@playwright/test':
+        specifier: 1.63.0
+        version: 1.63.0
+      '@types/node':
+        specifier: ^24.0.0
+        version: 24.19.1
+      vite:
+        specifier: ^8.3.4
+        version: 8.3.4(@types/node@24.19.1)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(yaml@2.9.1)
+
   examples/vite-counter:
     dependencies:
       lumiose:
@@ -5773,6 +5804,15 @@ packages:
     engines: {node: '>=12', npm: '>=6'}
     peerDependencies:
       '@testing-library/dom': '>=7.21.4'
+
+  '@timelessui/color@0.2.0':
+    resolution: {integrity: sha512-Ly3tPbSh4cU1SIJOlK+nRCSxfnoOEktRk24RlbRZG2scQnS6Ku5wFIbnkjmvo1ca8Z88a91sPcwDszvE8pTnRQ==}
+
+  '@timelessui/components@0.2.0':
+    resolution: {integrity: sha512-bQJ93r8qhMJjDxN8Q0tyZBAxoLl5HgH2Biq8g+JzShpRE0P6vlq9e7mDGYWtLdR/ZZYopPg825awFWwLqCQgbw==}
+
+  '@timelessui/core@0.2.0':
+    resolution: {integrity: sha512-/KlwgFkicRfT6qPgi5nDaKev5RY2AIpeaTg2wnm2RMzIVc9Sr3nO/CmRaq+3u4bLo+83prZpkCRsgP7HxunZkg==}
 
   '@tybys/wasm-util@0.10.4':
     resolution: {integrity: sha512-W3c4gRigFS0T/Ma4qIYF3GDAc5AQdHb1yL5znJT1Zv1YaD9Kitx656wBjvr19qbiosmZT8lWDM5BEMynUqX65A==}
@@ -14911,6 +14951,15 @@ snapshots:
   '@testing-library/user-event@14.6.7(@testing-library/dom@10.4.2)':
     dependencies:
       '@testing-library/dom': 10.4.2
+
+  '@timelessui/color@0.2.0': {}
+
+  '@timelessui/components@0.2.0':
+    dependencies:
+      '@timelessui/color': 0.2.0
+      '@timelessui/core': 0.2.0
+
+  '@timelessui/core@0.2.0': {}
 
   '@tybys/wasm-util@0.10.4':
     dependencies:

@@ -2612,6 +2612,13 @@ all pages link and browsers cache, then puts each page's own stylesheets after i
 `<style>` when they total 4 kB or less, else merged into one file for that page. The cascade
 order is the same as in dev, where each file's CSS stays a separate stylesheet for HMR. In the
 sample apps a first view went from 6–8 stylesheet requests to one, with about 30% fewer CSS bytes (brotli).
+A page that links a stylesheet also gets `<script>/* waits for the stylesheets above */</script>`
+after its stylesheet tags (54 bytes, in dev too). The browser parses the body only once the
+stylesheets before that script have loaded, so the body's first layout is styled. Without it,
+Chrome could lay out the unstyled body when a scrolled page is reloaded, restore the scroll
+position from that layout, and paint the first frames at the wrong place until `load`.
+The first paint waits for the stylesheets either way. With `csp: "strict"` the script gets the
+nonce or its hash (see [Security](security.md)).
 Each tag lists the stylesheets it holds in `data-l-css`, so an island or an SPA route that imports
 one does not load it again. Pages link the CSS files the build output contains: when another Vite
 plugin rewrites a stylesheet under a new name after Lumiose recorded it, the build follows it (by
@@ -3391,6 +3398,18 @@ with the page. In dev, an island that reads a context the page provided warns
 `<ErrorBoundary>`, request APIs (`locals()`, `cookies()`, …) and `getAbortSignal()` work inside islands
 during SSR as everywhere else.
 
+**URL state: `searchParams`.** Islands can keep state in the query string without reloading:
+`searchParams()` from [`lumiose/router`](../reference/router.md#searchparams) is the page's query,
+reactive, and `searchParams.set({ q })` changes it with `history.pushState()` (`{ replace: true }`
+for `replaceState()`). Every island of the page sees the same value, and back/forward between
+those entries update it. Nothing navigates: the server-rendered parts of the page keep the HTML
+of the URL they were rendered for, and the navigation hooks do not run. So the island owns the
+query-dependent UI (a search box and its results table): the page passes the first results as
+props, and the island fetches the next ones from an endpoint. A reload, or a shared link, renders
+the new query on the server. During SSR, islands of `server` pages read the request's query; a
+`static` page has none at build time (`LUM5001`), so its island reads it with `client:only`, or in
+`onMount()`. `params()`, `route()` and `url()` work only inside `spa` routes: pass them as props.
+
 **Server-only boundaries.** `*.server.ts` files and everything under `src/server/` may not be
 imported from code that reaches the browser (`LUM4003`): keep database access, secrets and
 `env()` there. `lumiose dev` and `lumiose build` fail with the chain of importers when the client graph
@@ -3588,6 +3607,10 @@ export default function Post() {
   first.
 - **Making a whole page an island to get interactivity.** Mark only the interactive parts, or use
   an `spa` route ([Choosing a mode](rendering-modes.md#choosing-a-mode)).
+- **Rendering query-dependent HTML on the server and changing the query from an island.**
+  `searchParams.set()` does not re-render the page, so a table the server rendered from
+  `url().searchParams` keeps the old rows. Render that table inside the island, from props and an
+  endpoint.
 
 ## Related diagnostics
 
@@ -3780,7 +3803,7 @@ export function Editor() {
 | `Routes`, `RouteParams<P>`, `RouteMap`, `LayoutMap`                                                   | Route types.                                                                           |
 | `ErrorPageProps`                                                                                      | Props of `not-found` and `error` pages.                                                |
 | `notFound()`, `error(status, message?)`, `redirect(to, status?)`                                      | Stop rendering; see [Server](server.md).                                               |
-| `lumiose/router`: `Link`, `navigate`, `isNavigating`, `searchParams`, reactive `url`/`params`/`route` | SPA routes and islands ([reference](../reference/router.md)).                          |
+| `lumiose/router`: `Link`, `navigate`, `isNavigating`, `searchParams`, reactive `url`/`params`/`route` | SPA routes; `Link`, the hooks and `searchParams` in islands too ([reference](../reference/router.md)). |
 | `lumiose/router`: `beforeNavigate(fn)`, `afterNavigate(fn)`                                           | Run around navigations; cancel one ([hooks](../reference/router.md#navigation-hooks)). |
 
 ## Example
@@ -6157,7 +6180,8 @@ default stays off, so a project set up by hand opts in. With `lumiose({ csp: "st
 
 - **Pages rendered per request** (`server` routes, `spa` routes that reach the server) get a new
   random nonce for each response. Every inline `<script>` and `<style>` Lumiose writes carries it:
-  the page's stylesheets that are inlined (see [Styles](styles.md)), the island loader, the
+  the page's stylesheets that are inlined and the script after the linked ones (see
+  [Styles](styles.md)), the island loader, the
   streamed `<Suspense>` swaps, the speculation rules, the View Transitions opt-in and module
   preloads. The response gets this header:
 
@@ -11960,8 +11984,8 @@ render(() => <App />, document.getElementById("app")!);
 > The client router for `spa` routes: links, navigation, navigation hooks, reactive route state, persistent layouts, transitions, scroll restoration, focus reset and page announcements.
 
 `lumiose/router` works inside `spa` routes (`export const mode = "spa"`, or `lumiose({ mode: "spa" })`
-for the whole project); `<Link>`, `beforeNavigate()` and `afterNavigate()` work on MPA pages too (see [Link](#link) and
-[Navigation hooks](#navigation-hooks)). Pages and layouts of an SPA import it like any module; on the server
+for the whole project); `<Link>`, `beforeNavigate()`, `afterNavigate()` and `searchParams` work on MPA pages too (see [Link](#link),
+[Navigation hooks](#navigation-hooks) and [searchParams](#searchparams)). Pages and layouts of an SPA import it like any module; on the server
 (`ssr` pages, rendered per request or prerendered at build time) the same names read the request: `params()`, `route()`, `url()` and `searchParams()` return the
 request's values, `<Link>` renders its `<a>`, `isNavigating()` is `false`, `beforeNavigate()` and
 `afterNavigate()` register nothing, and `navigate()` and `searchParams.set()` throw (call them from
@@ -12169,6 +12193,15 @@ type SearchParamsInit =
 `searchParams()` is the current URL's query, reactive (a new object per change). `searchParams.set()`
 navigates to the current path with a new query, keeping the scroll position; `null` and
 `undefined` values are left out. It adds a history entry unless `{ replace: true }`.
+
+In islands of MPA pages (`static` and `server` routes), where no router runs, the query is
+shallow URL state: `searchParams()` is the document's query, shared by every island, and
+`searchParams.set()` writes the URL with `history.pushState()` (`replaceState()` with
+`{ replace: true }`, or when the URL does not change), keeping the path, the hash, the scroll
+position and focus. Back/forward between those entries update `searchParams()`. It loads nothing:
+the server-rendered HTML stays as it is, and the navigation hooks do not run. During SSR, islands
+of `server` pages read the request's query; at build time a `static` page has none (`LUM5001`). See
+[Islands](../concepts/islands.md#concept).
 
 While a page is still loading during a navigation, `params()`, `route()`, `url()` and `searchParams()` called in it
 (and its props) already describe the page it is loading; everything else keeps the shown URL until

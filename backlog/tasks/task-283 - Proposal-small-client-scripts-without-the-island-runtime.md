@@ -5,7 +5,7 @@ status: To Do
 assignee:
   - '@Lux'
 created_date: '2026-10-14 03:30'
-updated_date: '2026-10-14 03:47'
+updated_date: '2026-10-15 12:36'
 labels:
   - proposal
   - islands
@@ -25,3 +25,9 @@ Found in the itsjavi.com port to Lumiose 0.4.0 (the port's FINDINGS.md), gap 6. 
 <!-- AC:BEGIN -->
 - [ ] #1 A decision is recorded; if a mechanism is added, its name is approved by the user and documented
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Found by the TASK-332 spike (Halo, 2026-10-15) while prototyping @lumiose/ui widgets; details in TASK-332's notes and examples/ui-spike. F2: there is no way to ship a custom element's definition (a web component's script) with a server-rendered page that has no island; whatever this proposal decides should cover that case.
+<!-- SECTION:NOTES:END -->

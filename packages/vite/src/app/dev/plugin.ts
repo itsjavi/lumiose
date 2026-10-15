@@ -55,6 +55,7 @@ import {
   type RouteMode,
 } from "lumiose/internal/app/routes/manifest.ts";
 import type { RequestHandler, TrailingSlash } from "lumiose/internal/app/server/handler.ts";
+import { STYLESHEETS_LOADED } from "lumiose/internal/app/server/stylesheets.ts";
 import {
   RejectedRequest,
   sendWebResponse,
@@ -320,11 +321,12 @@ export function lumioseDev(options: LumioseDevOptions = {}): Plugin {
       `<script type="module" src="${escapeAttr(`${base}@vite/client`)}"></script>` +
       `<script type="module" src="${escapeAttr(virtualUrl(base, DEV_CLIENT_ID))}"></script>`;
     const entries = current.document === undefined ? files : [current.document, ...files];
-    for (const mod of stylesheets(entries)) {
+    const linked = stylesheets(entries);
+    for (const mod of linked) {
       const href = base + mod.url.slice(1);
       html += `<link rel="stylesheet" href="${escapeAttr(href)}" data-vite-dev-id="${escapeAttr(mod.id ?? mod.url)}">`;
     }
-    return html;
+    return linked.length === 0 ? html : html + STYLESHEETS_LOADED;
   }
 
   /**

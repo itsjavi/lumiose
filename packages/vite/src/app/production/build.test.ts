@@ -17,6 +17,7 @@ import { dirname, join } from "node:path";
 import { pathToFileURL } from "node:url";
 import { afterAll, describe, expect, it, vi } from "vitest";
 import { createLogger } from "vite";
+import { STYLESHEETS_LOADED } from "lumiose/internal/app/server/stylesheets.ts";
 import { build, BuildError, type BuildOptions } from "./build.ts";
 import { PrerenderError, type ServerEntryModule } from "./prerender.ts";
 
@@ -520,10 +521,16 @@ export default function Layout(props: { children?: JSX.Element }) {
     const inline = /<style data-l-css="\/assets\/page-[\w-]+\.css">([^<]*)<\/style>/.exec(home);
     expect(inline![1]).toMatch(/\.home\[data-l-\w+\]\{color:teal\}/);
     expect(home.indexOf(shared[0])).toBeLessThan(home.indexOf(inline![0]));
-    expect(page).toMatch(
-      /<link rel="stylesheet" href="\/assets\/big-page-[\w-]+\.css" data-l-css="\/assets\/big-page-[\w-]+\.css">/,
-    );
+    const pageLink =
+      /<link rel="stylesheet" href="\/assets\/big-page-[\w-]+\.css" data-l-css="\/assets\/big-page-[\w-]+\.css">/.exec(
+        page,
+      );
+    expect(pageLink).not.toBeNull();
     expect([...home.matchAll(/rel="stylesheet"/g)]).toHaveLength(1);
+    // The parser waits for the linked files before the body, where a reload restores its scroll
+    // position (TASK-278).
+    expect(home).toContain(inline![0] + STYLESHEETS_LOADED);
+    expect(page).toContain(pageLink![0] + STYLESHEETS_LOADED);
   });
 
   it("links the stylesheets a plugin renamed after Lumiose, as StyleX does (TASK-342)", async () => {

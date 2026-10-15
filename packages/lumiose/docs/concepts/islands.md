@@ -65,6 +65,18 @@ with the page. In dev, an island that reads a context the page provided warns
 `<ErrorBoundary>`, request APIs (`locals()`, `cookies()`, …) and `getAbortSignal()` work inside islands
 during SSR as everywhere else.
 
+**URL state: `searchParams`.** Islands can keep state in the query string without reloading:
+`searchParams()` from [`lumiose/router`](../reference/router.md#searchparams) is the page's query,
+reactive, and `searchParams.set({ q })` changes it with `history.pushState()` (`{ replace: true }`
+for `replaceState()`). Every island of the page sees the same value, and back/forward between
+those entries update it. Nothing navigates: the server-rendered parts of the page keep the HTML
+of the URL they were rendered for, and the navigation hooks do not run. So the island owns the
+query-dependent UI (a search box and its results table): the page passes the first results as
+props, and the island fetches the next ones from an endpoint. A reload, or a shared link, renders
+the new query on the server. During SSR, islands of `server` pages read the request's query; a
+`static` page has none at build time (`LUM5001`), so its island reads it with `client:only`, or in
+`onMount()`. `params()`, `route()` and `url()` work only inside `spa` routes: pass them as props.
+
 **Server-only boundaries.** `*.server.ts` files and everything under `src/server/` may not be
 imported from code that reaches the browser (`LUM4003`): keep database access, secrets and
 `env()` there. `lumiose dev` and `lumiose build` fail with the chain of importers when the client graph
@@ -262,6 +274,10 @@ export default function Post() {
   first.
 - **Making a whole page an island to get interactivity.** Mark only the interactive parts, or use
   an `spa` route ([Choosing a mode](rendering-modes.md#choosing-a-mode)).
+- **Rendering query-dependent HTML on the server and changing the query from an island.**
+  `searchParams.set()` does not re-render the page, so a table the server rendered from
+  `url().searchParams` keeps the old rows. Render that table inside the island, from props and an
+  endpoint.
 
 ## Related diagnostics
 

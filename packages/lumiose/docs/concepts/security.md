@@ -11,7 +11,8 @@ default stays off, so a project set up by hand opts in. With `lumiose({ csp: "st
 
 - **Pages rendered per request** (`server` routes, `spa` routes that reach the server) get a new
   random nonce for each response. Every inline `<script>` and `<style>` Lumiose writes carries it:
-  the page's stylesheets that are inlined (see [Styles](styles.md)), the island loader, the
+  the page's stylesheets that are inlined and the script after the linked ones (see
+  [Styles](styles.md)), the island loader, the
   streamed `<Suspense>` swaps, the speculation rules, the View Transitions opt-in and module
   preloads. The response gets this header:
 

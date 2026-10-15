@@ -133,6 +133,13 @@ all pages link and browsers cache, then puts each page's own stylesheets after i
 `<style>` when they total 4 kB or less, else merged into one file for that page. The cascade
 order is the same as in dev, where each file's CSS stays a separate stylesheet for HMR. In the
 sample apps a first view went from 6–8 stylesheet requests to one, with about 30% fewer CSS bytes (brotli).
+A page that links a stylesheet also gets `<script>/* waits for the stylesheets above */</script>`
+after its stylesheet tags (54 bytes, in dev too). The browser parses the body only once the
+stylesheets before that script have loaded, so the body's first layout is styled. Without it,
+Chrome could lay out the unstyled body when a scrolled page is reloaded, restore the scroll
+position from that layout, and paint the first frames at the wrong place until `load`.
+The first paint waits for the stylesheets either way. With `csp: "strict"` the script gets the
+nonce or its hash (see [Security](security.md)).
 Each tag lists the stylesheets it holds in `data-l-css`, so an island or an SPA route that imports
 one does not load it again. Pages link the CSS files the build output contains: when another Vite
 plugin rewrites a stylesheet under a new name after Lumiose recorded it, the build follows it (by

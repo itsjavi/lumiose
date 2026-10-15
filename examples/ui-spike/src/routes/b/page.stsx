@@ -1,0 +1,12 @@
+import "../../option-b/theme.css";
+import { Showcase } from "../../showcase.tsx";
+import * as ui from "../../option-b/ui.tsx";
+
+export default function OptionB() {
+  return (
+    <>
+      <h1>(b) Port into @lumiose/ui</h1>
+      <Showcase ui={ui} />
+    </>
+  );
+}
