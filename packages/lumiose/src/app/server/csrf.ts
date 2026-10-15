@@ -40,10 +40,20 @@ export function isSameOriginRequest(
   if (site !== null) return site === "same-origin" || site === "none";
   if (origin === null) return true;
   try {
-    // Hosts only: behind a TLS-terminating proxy the request URL may say http:.
-    return new URL(origin).host === url.host;
+    // Hosts only: behind a TLS-terminating proxy the request URL may say http:. A port is compared
+    // after its scheme's default: `http://a.test:80` is `http://a.test` and matches `https://a.test:80`.
+    const from = new URL(origin);
+    return (
+      from.host === url.host ||
+      (from.hostname === url.hostname && effectivePort(from) === effectivePort(url))
+    );
   } catch {
     // `Origin: null` (sandboxed frames, file: pages) or a malformed value.
     return false;
   }
+}
+
+/** The URL's port, or its scheme's default (URL drops a default port from `port`). */
+function effectivePort(url: URL): string {
+  return url.port || (url.protocol === "https:" ? "443" : url.protocol === "http:" ? "80" : "");
 }

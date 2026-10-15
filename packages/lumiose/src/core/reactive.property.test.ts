@@ -1,8 +1,14 @@
 // Property-based tests: random graphs of signals, computeds and effects are driven by
 // random writes, reads, batches and flushes, and checked against a naive reference that
 // recomputes everything from the current signal values.
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { batch, effect, flush, store } from "./index.ts";
+
+// At the nightly case count the scenarios run for minutes: the timeout grows with the count, as in
+// app/server/__fixtures__/property.ts (TASK-344).
+vi.setConfig({
+  testTimeout: Math.max(10_000, Number(process.env.LUMIOSE_PROPERTY_RUNS ?? 0) * 25),
+});
 import {
   createComputedNode,
   createSignalNode,
