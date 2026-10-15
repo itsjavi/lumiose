@@ -15,7 +15,7 @@ import type { Renderable } from "../../contract/client.ts";
 /** Route pattern → `{ kind, params }`, filled by declaration merging. */
 export interface RouteMap {}
 
-/** Layout pattern (the URL scope of a `layout` file's directory) → `{ params }`. */
+/** Layout pattern (the URL scope of a `layout` or `middleware` file's directory) → `{ params }`. */
 export interface LayoutMap {}
 
 /** The locales of `lumiose({ i18n })` as keys, filled by declaration merging (decision-44). */
@@ -47,10 +47,30 @@ export type PageRoutes = RoutesOf<"page">;
 /** Union of the endpoint patterns: what `Endpoint` takes. */
 export type EndpointRoutes = RoutesOf<"endpoint">;
 
-/** Union of the layout patterns: what `LayoutProps` takes. */
+/**
+ * Union of the layout patterns, the URL scopes of the folders with a `layout` or a `middleware`
+ * file: what `LayoutProps` and `Middleware` take.
+ */
 export type LayoutRoutes = [keyof LayoutMap] extends [never]
   ? string
   : Extract<keyof LayoutMap, string>;
+
+/** Params of a layout pattern (a folder's URL scope). */
+export type LayoutParams<P extends LayoutRoutes> = P extends keyof LayoutMap
+  ? LayoutMap[P] extends { params: infer T }
+    ? T
+    : never
+  : Record<string, string>;
+
+/**
+ * The route patterns in the URL scope `P` and below it: `"/admin"` → `"/admin" | "/admin/users"`.
+ * Patterns only, so a group folder's scope covers every route below the same URL.
+ */
+export type RoutesBelow<P extends string> = [keyof RouteMap] extends [never]
+  ? string
+  : P extends "/"
+    ? Routes
+    : Extract<Routes, P | `${P}/${string}`>;
 
 /**
  * Params of a route pattern; `[...rest]` params are strings joined with "/", and optional
@@ -73,11 +93,7 @@ export interface PageProps<P extends PageRoutes> {
  * `params` holds the params of that scope.
  */
 export interface LayoutProps<P extends LayoutRoutes> {
-  params: P extends keyof LayoutMap
-    ? LayoutMap[P] extends { params: infer T }
-      ? T
-      : never
-    : Record<string, string>;
+  params: LayoutParams<P>;
   /** The page (or nested layout) to render. */
   children: Renderable;
 }

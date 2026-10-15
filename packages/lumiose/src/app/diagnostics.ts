@@ -36,6 +36,8 @@ export const LUM_STATIC_ENDPOINT_METHOD = "LUM5005";
 export const LUM_PRERENDER_CLIENT_ONLY = "LUM5006";
 /** A route param is named `locale`, which `href()` reserves with `lumiose({ i18n })` (decision-44). */
 export const LUM_LOCALE_PARAM = "LUM5007";
+/** A folder `middleware.ts` covers prerendered routes, where it runs at build time only (decision-48). */
+export const LUM_PRERENDERED_MIDDLEWARE = "LUM5008";
 
 /** A runtime error carrying a Lumiose code and where to read about it (contract doc-2 §6). */
 export class LumioseError extends Error {

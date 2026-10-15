@@ -6,6 +6,7 @@ import {
   LUM_DUPLICATE_ROUTE,
   LUM_INVALID_ROUTE_FILE,
   LUM_LOCALE_PARAM,
+  LUM_PRERENDERED_MIDDLEWARE,
   LUM_PRERENDER_CLIENT_ONLY,
   LUM_STATIC_ENDPOINT_METHOD,
   type AppDiagnostic,
@@ -49,6 +50,11 @@ interface RouteBase {
   locales?: string[];
   /** The page, endpoint or layout file whose `locales({ params })` function decides the locales. */
   localesFrom?: string;
+  /**
+   * Folder `middleware.ts` files (decision-48) of the route's folder and its ancestors, outermost
+   * first; absent when there are none. `src/middleware.ts` runs before them and is not listed.
+   */
+  middleware?: string[];
 }
 
 export interface PageRoute extends RouteBase {
@@ -90,6 +96,14 @@ export interface LayoutEntry {
   ssr: boolean;
 }
 
+/** A folder `middleware.ts` (decision-48) and the URL scope of its directory. */
+export interface MiddlewareEntry {
+  file: string;
+  /** Routes-relative directory: the middleware runs for the routes in it and below it. */
+  dir: string;
+  pattern: string;
+}
+
 /** A `not-found` or `error` page and the URL scope of its directory. */
 export interface SpecialPage {
   file: string;
@@ -109,6 +123,8 @@ export interface RouteManifest {
    */
   routes: RouteEntry[];
   layouts: LayoutEntry[];
+  /** Folder middleware, by directory; each route lists its own chain (`RouteBase.middleware`). */
+  middleware: MiddlewareEntry[];
   notFoundPages: SpecialPage[];
   errorPages: SpecialPage[];
   diagnostics: AppDiagnostic[];
@@ -179,6 +195,7 @@ export function createRouteManifest(
   const layoutsByDir = new Map<string, Declared>();
   const notFoundByDir = new Map<string, SpecialPage>();
   const errorByDir = new Map<string, SpecialPage>();
+  const middlewareByDir = new Map<string, MiddlewareEntry>();
 
   for (const { path, source } of files.toSorted((a, b) => compareStrings(a.path, b.path))) {
     const file = routesDir === "" ? path : `${routesDir}/${path}`;
@@ -186,6 +203,26 @@ export function createRouteManifest(
     if (route.status === "ignored") continue;
     if (route.status === "invalid") {
       report(LUM_INVALID_ROUTE_FILE, "error", file, route.message, route.help);
+      continue;
+    }
+
+    if (route.kind === "middleware") {
+      const existing = middlewareByDir.get(route.dir);
+      if (existing !== undefined) {
+        report(
+          LUM_DUPLICATE_ROUTE,
+          "error",
+          file,
+          `Duplicate middleware: "${existing.file}" already exists.`,
+          "Keep one of them.",
+        );
+        continue;
+      }
+      middlewareByDir.set(route.dir, {
+        file,
+        dir: route.dir,
+        pattern: formatPattern(route.segments),
+      });
       continue;
     }
 
@@ -250,6 +287,13 @@ export function createRouteManifest(
     return source.locales === "function"
       ? { localesFrom: source.file }
       : { locales: [...(source.locales as readonly string[])] };
+  };
+  // Folder middleware of the route's folder and its ancestors, outermost first (decision-48).
+  const middlewareOf = (dir: string): Pick<RouteBase, "middleware"> => {
+    const chain = ancestors(dir)
+      .flatMap((ancestor) => middlewareByDir.get(ancestor)?.file ?? [])
+      .toReversed();
+    return chain.length === 0 ? {} : { middleware: chain };
   };
   const inheritedMode = (dir: string): RouteMode | undefined =>
     layoutChain(dir).find((layout) => layout.mode !== undefined)?.mode as RouteMode | undefined;
@@ -395,6 +439,7 @@ export function createRouteManifest(
       ),
       file,
       ...localesOf(declared),
+      ...middlewareOf(route.dir),
     };
     if (i18n !== undefined && base.params.some((param) => param.name === "locale")) {
       report(
@@ -480,6 +525,30 @@ export function createRouteManifest(
   const priority = (entry: RouteEntry) => routeVariants(entry.segments)[0]!;
   const specialPages = (byDir: Map<string, SpecialPage>) =>
     [...byDir.values()].toSorted((a, b) => compareStrings(a.dir, b.dir));
+  const middleware = [...middlewareByDir.values()].toSorted((a, b) => compareStrings(a.dir, b.dir));
+
+  // Prerendered routes are files production serves without the app: their folder middleware runs
+  // at build time only, so it cannot guard their requests (decision-48).
+  for (const entry of middleware) {
+    const prerendered = routes
+      .filter(
+        (route) =>
+          route.middleware?.includes(entry.file) === true &&
+          (route.mode === "static" || (route.kind === "page" && route.prerender)),
+      )
+      .map((route) => route.pattern)
+      .toSorted(compareStrings);
+    if (prerendered.length === 0) continue;
+    const shown = prerendered.slice(0, 3).map((pattern) => `"${pattern}"`);
+    if (prerendered.length > 3) shown.push(`${prerendered.length - 3} more`);
+    report(
+      LUM_PRERENDERED_MIDDLEWARE,
+      "warning",
+      entry.file,
+      `This middleware covers prerendered routes (${shown.join(", ")}): it runs for them at build time only, so it cannot guard their requests.`,
+      'Render those routes per request with export const mode = "server" (in the page, a layout or lumiose({ mode })) when the middleware guards them; headers and locals for the render are fine as they are.',
+    );
+  }
 
   return {
     routesDir,
@@ -489,6 +558,7 @@ export function createRouteManifest(
         compareSegments(priority(a), priority(b)) || compareSegments(a.segments, b.segments),
     ),
     layouts,
+    middleware,
     notFoundPages: specialPages(notFoundByDir),
     errorPages: specialPages(errorByDir),
     diagnostics,

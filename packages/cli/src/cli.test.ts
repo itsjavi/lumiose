@@ -269,6 +269,7 @@ describe("lumiose CLI", () => {
       ssr: true,
       prerender: false,
       layouts: ["src/routes/layout.stsx"],
+      middleware: [],
       params: [],
     });
   });
@@ -360,6 +361,57 @@ export default function Post() {
       }),
     ]);
     expect(json.routes[2]).not.toHaveProperty("locales");
+  });
+
+  it("lumiose routes prints each route's middleware chain and warns about prerendered ones", async () => {
+    const project = realpathSync(mkdtempSync(join(tmpdir(), "lumiose-cli-middleware-")));
+    onTestFinished(() => rmSync(project, { recursive: true, force: true }));
+    symlinkSync(join(root, "node_modules"), join(project, "node_modules"), "dir");
+    const files: Record<string, string> = {
+      "vite.config.ts": `import lumiose from "@lumiose/vite";
+export default { plugins: [lumiose({ mode: "server" })] };
+`,
+      "src/middleware.ts": "export default (ctx, next) => next();\n",
+      "src/routes/page.stsx": "export default function Home() {\n  return <main>Home</main>;\n}\n",
+      "src/routes/admin/middleware.ts": "export default (ctx, next) => next();\n",
+      "src/routes/admin/users/middleware.ts": "export default (ctx, next) => next();\n",
+      "src/routes/admin/users/page.stsx":
+        "export default function Users() {\n  return <main>Users</main>;\n}\n",
+      "src/routes/admin/docs/page.stsx":
+        'export const mode = "static";\nexport default function Docs() {\n  return <main>Docs</main>;\n}\n',
+    };
+    for (const [name, text] of Object.entries(files)) {
+      mkdirSync(dirname(join(project, name)), { recursive: true });
+      writeFileSync(join(project, name), text);
+    }
+    const table = await run("routes", "--root", project);
+    expect(table.code).toBe(0);
+    expect(table.stdout).toMatch(/^PATTERN\s+KIND\s+MODE\s+FILE\s+MIDDLEWARE\s+LAYOUTS$/m);
+    expect(table.stdout).toMatch(/^\/\s+page\s+server\s+page\.stsx\s+src\/middleware\.ts$/m);
+    expect(table.stdout).toMatch(
+      /^\/admin\/users\s+page\s+server\s+admin\/users\/page\.stsx\s+src\/middleware\.ts > admin\/middleware\.ts > admin\/users\/middleware\.ts$/m,
+    );
+    expect(table.stdout).toContain("LUM5008");
+
+    const { json } = await runJson("routes", "--root", project);
+    expect(json.routes).toEqual([
+      expect.objectContaining({ pattern: "/", middleware: ["src/middleware.ts"] }),
+      expect.objectContaining({
+        pattern: "/admin/docs",
+        middleware: ["src/middleware.ts", "src/routes/admin/middleware.ts"],
+      }),
+      expect.objectContaining({
+        pattern: "/admin/users",
+        middleware: [
+          "src/middleware.ts",
+          "src/routes/admin/middleware.ts",
+          "src/routes/admin/users/middleware.ts",
+        ],
+      }),
+    ]);
+    expect(json.diagnostics).toEqual([
+      expect.objectContaining({ code: "LUM5008", file: "src/routes/admin/middleware.ts" }),
+    ]);
   });
 
   it("lumiose typegen writes the route types and the shadows", async () => {

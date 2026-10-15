@@ -5,7 +5,9 @@
 ## Concept
 
 **Request context.** Middleware, endpoints and actions receive
-`ctx = { request, url, params, locals, cookies, env, platform }`. During a server render, the same values are
+`ctx = { request, url, params, route, locals, cookies, env, platform }`, where `route` is the
+matched pattern (`"/users/[id]"`; `undefined` in `src/middleware.ts` for a URL no route matches).
+During a server render, the same values are
 available through functions scoped to the current request (they work after `await` too):
 `request()`, `url()`, `params()`, `route()` (the matched pattern), `locals()`, `cookies()`,
 `response()` and `env(name)`.
@@ -18,8 +20,8 @@ bindings by augmenting `PlatformEnv`. A server component that needs them gets th
 through `locals`.
 
 **Middleware.** `src/middleware.ts` default-exports `(ctx, next) => Promise<Response>` (or an array,
-run in order). Use it for sessions, auth and headers. Put request data on `ctx.locals`, and type it
-by augmenting `Locals`:
+run in order) and runs for every request. Use it for sessions, auth and headers. Put request data on
+`ctx.locals`, and type it by augmenting `Locals`:
 
 ```ts
 declare module "lumiose" {
@@ -28,6 +30,30 @@ declare module "lumiose" {
   }
 }
 ```
+
+**Folder middleware.** A `middleware.ts` (or `.js`) in a route folder has the same default export and
+runs for every page, form action and `route.ts` endpoint in that folder and below it. That makes it
+the place for a section's auth: a layout guard (`locals()` plus `redirect()`) covers the folder's
+pages, but not their actions or endpoints. Group folders count: `(account)/middleware.ts` covers
+every route in the group without a URL segment.
+
+- **Order.** The trailing-slash redirect and the cross-site check answer first. Then
+  `src/middleware.ts`, and inside its `next()` the route's locale checks (`/es/admin` runs the
+  `/admin` middleware), the folder middleware from the outermost folder to the innermost, and the
+  route. Responses unwind in reverse. URLs that match no route run `src/middleware.ts` only.
+- **Errors.** What folder middleware throws (`redirect()`, `error()`, any error) renders the
+  route's error page outside the chain, as for `src/middleware.ts`.
+- **Types.** `Middleware<"/admin">` takes the folder's URL scope (the pattern `LayoutProps` takes):
+  `ctx.params` holds the folder's params and `ctx.route` the patterns below it.
+- **SPA routes.** Client navigations between `spa` pages do not reach the server. The middleware
+  runs for the document request and for the actions and endpoints below the folder, which is what
+  protects an SPA's data.
+- **Prerendered routes.** Like `src/middleware.ts`, folder middleware runs whenever the app handles
+  a route: per request for server routes, for every route in `lumiose dev`, and at build time for
+  prerendered pages, whose files production serves without the app. It cannot guard those, so
+  `lumiose check` and the build warn ([`LUM5008`](../errors/LUM5008.md)).
+- `src/routes/middleware.ts` is an error ([`LUM5002`](../errors/LUM5002.md)): the app's middleware
+  is `src/middleware.ts`. `lumiose routes` prints each route's middleware chain.
 
 **Control flow.** `redirect(to, status?)`, `notFound()` and `error(status, message?)` throw; the
 framework turns them into a redirect or the nearest `not-found`/`error` page. Without a status,
@@ -62,8 +88,8 @@ to Vite's `server.fs.deny` unless the config sets its own list (the server still
 
 | API                                                                      | Use                                                                    |
 | ------------------------------------------------------------------------ | ---------------------------------------------------------------------- |
-| `RequestContext<P>` (`ctx`)                                              | `{ request, url, params, locals, cookies, env, platform }`.            |
-| `Middleware`                                                             | `(ctx, next) => Response \| Promise<Response>`.                        |
+| `RequestContext<P>` (`ctx`)                                              | `{ request, url, params, route, locals, cookies, env, platform }`.     |
+| `Middleware<P?>`                                                         | `(ctx, next) => Response \| Promise<Response>`; `P`: a folder's scope. |
 | `request()`, `url()`, `params<P>()`, `route()`, `locals()`, `cookies()`  | Request APIs during a server render.                                   |
 | `response()`                                                             | `{ status, setStatus, getHeader, setHeader }` until the shell is sent. |
 | `redirect(to, status?)`, `notFound(message?)`, `error(status, message?)` | Throw to stop rendering.                                               |
@@ -89,15 +115,24 @@ declare module "lumiose" {
 
 const middleware: Middleware = async (ctx, next) => {
   ctx.locals.userId = (await session.get(ctx.cookies)) ?? null;
-  if (ctx.url.pathname.startsWith("/account") && ctx.locals.userId === null) {
-    return Response.redirect(new URL("/login", ctx.url), 303);
-  }
   const res = await next();
   res.headers.set("x-frame-options", "DENY");
   return res;
 };
 
 export default middleware;
+```
+
+```ts check file=routes/account/middleware.ts
+// src/routes/account/middleware.ts: every page, action and endpoint under /account
+import type { Middleware } from "lumiose";
+
+const requireUser: Middleware<"/account"> = (ctx, next) => {
+  if (ctx.locals.userId === null) return Response.redirect(new URL("/login", ctx.url), 303);
+  return next();
+};
+
+export default requireUser;
 ```
 
 ```tsx check file=routes/account/page.tsx
@@ -117,6 +152,10 @@ export default function Account() {
 
 ## Common mistakes
 
+- **Guarding a section in a layout.** A layout's `redirect()` does not cover the folder's form
+  actions or endpoints. Put the check in the folder's `middleware.ts`.
+- **Guarding prerendered routes with folder middleware.** It runs at build time only for them
+  (`LUM5008`). Set `export const mode = "server"` on the routes it protects.
 - **Reading request APIs in a `static` route.** `cookies()`, `request()` and friends throw
   `LUM5001` while prerendering. Set `export const mode = "server"`.
 - **Setting headers or status after the shell.** Inside a streamed `<Suspense>` boundary it is too
@@ -135,6 +174,8 @@ export default function Account() {
 - [LUM4003](../errors/LUM4003.md): server-only module in a client graph.
 - [LUM4008](../errors/LUM4008.md): module-scope signal written during SSR.
 - [LUM5001](../errors/LUM5001.md): request API used during prerender.
+- [LUM5002](../errors/LUM5002.md): invalid route file, such as `src/routes/middleware.ts`.
 - [LUM5004](../errors/LUM5004.md): head or status change inside a streamed boundary.
+- [LUM5008](../errors/LUM5008.md): folder middleware covering prerendered routes.
 
 See also: [Data and actions](data-and-actions.md), [Routing](routing.md), [reference: app layer](../reference/app.md).

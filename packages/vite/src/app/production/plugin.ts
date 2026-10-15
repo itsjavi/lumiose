@@ -432,6 +432,7 @@ export function serverEntryCode(state: BuildState, config: ResolvedConfig): stri
   const files = new Set<string>([
     ...manifest.routes.map((route) => route.file),
     ...manifest.layouts.map((layout) => layout.file),
+    ...manifest.middleware.map((folder) => folder.file),
     ...manifest.notFoundPages.map((page) => page.file),
     ...manifest.errorPages.map((page) => page.file),
   ]);

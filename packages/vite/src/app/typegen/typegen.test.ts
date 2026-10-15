@@ -60,6 +60,26 @@ describe("generateRouteTypes", () => {
   });
 });
 
+describe("generateRouteTypes with folder middleware", () => {
+  it("lists folders that have only a middleware file in LayoutMap (decision-48)", () => {
+    const manifest = createRouteManifest([
+      { path: "layout.stsx", source: "" },
+      { path: "admin/middleware.ts", source: "" },
+      { path: "admin/users/[id]/page.stsx", source: "" },
+      { path: "(account)/middleware.ts", source: "" },
+      { path: "(account)/settings/page.stsx", source: "" },
+    ]);
+    expect(generateRouteTypes(manifest)).toContain(
+      [
+        "  interface LayoutMap {",
+        `    "/": { params: {} };`,
+        `    "/admin": { params: {} };`,
+        "  }",
+      ].join("\n"),
+    );
+  });
+});
+
 describe("typegen", () => {
   let root: string;
 
@@ -109,6 +129,34 @@ describe("typegen", () => {
     );
     expect(result.output).toBe("");
     expect(result.ok).toBe(true);
+  });
+
+  it("types ctx.params and ctx.route of folder middleware (decision-48)", async () => {
+    const folder = join(root, "src/routes/shop/[category]");
+    await writeFile(join(folder, "middleware.ts"), "export default [];\n");
+    try {
+      const { manifest } = await typegen(root);
+      expect(manifest.diagnostics.filter((d) => d.severity === "error")).toEqual([]);
+      await writeFile(join(root, "usage.ts"), MIDDLEWARE_USAGE);
+      const result = await promisify(execFile)(process.execPath, [
+        TSC,
+        "-p",
+        root,
+        "--pretty",
+        "false",
+      ]).then(
+        () => ({ ok: true, output: "" }),
+        (error: { stdout?: string; stderr?: string }) => ({
+          ok: false,
+          output: `${error.stdout ?? ""}${error.stderr ?? ""}`,
+        }),
+      );
+      expect(result.output).toBe("");
+      expect(result.ok).toBe(true);
+    } finally {
+      await rm(join(folder, "middleware.ts"));
+      await typegen(root);
+    }
   });
 
   it("generates the Locale type of lumiose({ i18n }), which href() and the APIs take", async () => {
@@ -163,6 +211,32 @@ export const urls: string[] = [
 href("/about", { locale: "fr" });
 // @ts-expect-error params are still required
 href("/blog/[slug]", { locale: "es" });
+`;
+
+const MIDDLEWARE_USAGE = `import type { LayoutProps, Middleware, RequestContext, Routes } from "lumiose";
+
+type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends <T>() => T extends B ? 1 : 2 ? true : false;
+export type Assert<T extends true> = T;
+
+type Ctx<M> = M extends (ctx: infer C, next: any) => any ? C : never;
+type Shop = Ctx<Middleware<"/shop/[category]">>;
+export type ShopParams = Assert<Equal<Shop["params"], { category: string }>>;
+export type ShopRoute = Assert<Equal<Shop["route"], "/shop/[category]/[item]">>;
+// A group folder's scope covers every route below its URL.
+export type RootRoute = Assert<Equal<Ctx<Middleware<"/">>["route"], Routes>>;
+// src/middleware.ts also runs for unmatched URLs.
+export type AppRoute = Assert<Equal<Ctx<Middleware>["route"], Routes | undefined>>;
+export type EndpointRoute = Assert<Equal<RequestContext<"/api/posts/[id]">["route"], "/api/posts/[id]">>;
+export type ShopLayout = Assert<Equal<LayoutProps<"/shop/[category]">["params"], { category: string }>>;
+
+export const guard: Middleware<"/shop/[category]"> = (ctx, next) => {
+  const category: string = ctx.params.category;
+  // @ts-expect-error the folder's params only
+  ctx.params.item;
+  return category === "" ? Promise.resolve(new Response(null, { status: 404 })) : next();
+};
+// @ts-expect-error not a folder with a layout or middleware
+export type Unknown = Middleware<"/shop">;
 `;
 
 const USAGE = `import {

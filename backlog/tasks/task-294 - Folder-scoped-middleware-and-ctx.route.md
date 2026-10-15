@@ -1,11 +1,11 @@
 ---
 id: TASK-294
 title: Folder-scoped middleware and ctx.route
-status: To Do
+status: In Progress
 assignee:
   - '@Nova'
 created_date: '2026-10-15 02:22'
-updated_date: '2026-10-15 03:16'
+updated_date: '2026-10-15 04:24'
 labels:
   - middleware
   - routing
@@ -36,3 +36,9 @@ Code: packages/vite/src/app/project.ts (MIDDLEWARE_FILES), packages/vite/src/app
 - [ ] #6 concepts/server.md, concepts/routing.md, reference/app.md and the Coming from guides are updated
 - [ ] #7 src/routes/middleware.ts is a LUM5002 error that points to src/middleware.ts
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Nova (2026-10-15): claimed in worktree branch claude/nova-m10-97578d (M10 batch 1).
+<!-- SECTION:NOTES:END -->

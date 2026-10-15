@@ -2,7 +2,7 @@
 // project-relative path; `src/routes/**` files become the route manifest.
 
 import { expect, vi } from "vitest";
-import { createRouteManifest } from "../../routes/manifest.ts";
+import { createRouteManifest, type CreateRouteManifestOptions } from "../../routes/manifest.ts";
 import { createRequestHandler, type ModuleExports, type RequestHandlerOptions } from "../handler.ts";
 import { createStringRenderer } from "./string-renderer.ts";
 
@@ -13,11 +13,16 @@ export type Modules = Record<string, ModuleExports>;
 const ROUTES = "src/routes/";
 
 /** A fetch handler over in-memory modules; `fetch(path)` resolves paths against https://lumiose.test. */
-export function app(modules: Modules, options: Partial<RequestHandlerOptions> = {}) {
+export function app(
+  modules: Modules,
+  options: Partial<RequestHandlerOptions> = {},
+  manifestOptions: CreateRouteManifestOptions = {},
+) {
   const manifest = createRouteManifest(
     Object.keys(modules)
       .filter((file) => file.startsWith(ROUTES))
       .map((file) => ({ path: file.slice(ROUTES.length), source: "" })),
+    manifestOptions,
   );
   expect(manifest.diagnostics).toEqual([]);
   const onError = vi.fn();

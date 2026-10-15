@@ -363,6 +363,9 @@ interface RequestContext<P extends Routes = never> {
   request: Request;
   url: URL;
   params: RouteParams<P>;
+  // The matched pattern (route()): P, or any pattern; undefined only in src/middleware.ts for a
+  // URL no route matches.
+  route: Routes | undefined;
   locals: Locals;
   cookies: Cookies;
   env: ServerEnv; // Readonly<Record<string, string | undefined>>
@@ -377,7 +380,9 @@ interface Platform {
 interface ActionContext<P extends /* a page pattern */ = never> extends RequestContext<P> {
   formData(): Promise<FormData>; // parsed once; 400 if the body is not a form
 }
-type Middleware = (
+// src/middleware.ts, or a folder's middleware.ts with the folder's URL scope as P ("/admin"):
+// then ctx.params holds the folder's params and ctx.route the patterns below it (decision-48).
+type Middleware<P extends /* a layout or middleware folder's pattern */ = never> = (
   ctx: RequestContext,
   next: () => Promise<Response>,
 ) => Response | Promise<Response>;

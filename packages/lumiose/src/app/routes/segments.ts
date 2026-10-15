@@ -16,7 +16,7 @@ export type RouteSegment =
 /** A segment list without optional segments: one URL shape of a route ({@link routeVariants}). */
 export type VariantSegment = Extract<RouteSegment, { kind: "static" | "param" | "rest" }>;
 
-export type RouteFileKind = "page" | "endpoint" | "layout" | "notFound" | "error";
+export type RouteFileKind = "page" | "endpoint" | "layout" | "notFound" | "error" | "middleware";
 
 export interface RouteFile {
   status: "route";
@@ -25,7 +25,7 @@ export interface RouteFile {
   dir: string;
   /**
    * URL segments of the file's directory: the route itself for `page` and `route` files, the URL
-   * scope of `layout`, `not-found` and `error` files.
+   * scope of `layout`, `not-found`, `error` and `middleware` files.
    */
   segments: RouteSegment[];
 }
@@ -52,7 +52,10 @@ const SPECIAL_FILES: Record<string, RouteFileKind> = {
   layout: "layout",
   "not-found": "notFound",
   error: "error",
+  middleware: "middleware",
 };
+/** Folder middleware (decision-48): the extensions of `src/middleware.ts`. */
+const MIDDLEWARE_EXTENSIONS: readonly string[] = [".ts", ".js"];
 /** Next.js special files Lumiose does not have, and what to use instead. */
 const UNSUPPORTED_FILES: Record<string, string> = {
   loading: "Show pending UI with <Suspense fallback={…}> in the page or a layout.",
@@ -72,6 +75,7 @@ const UNSAFE_STATIC = /[\s?#%\\{}<>|^"`[\]()]/;
  * the Next.js special files reported as unsupported: the cheap filter before reading a file.
  */
 export function isRouteModuleCandidate(fileName: string): boolean {
+  if (fileName === "middleware.js") return true;
   const split = splitExtension(fileName);
   return split !== undefined && (split.stem in SPECIAL_FILES || split.stem in UNSUPPORTED_FILES);
 }
@@ -86,7 +90,10 @@ export function classifyRouteFile(path: string): ClassifiedRouteFile {
   const parts = path.split("/");
   const fileName = parts.pop() ?? "";
   if (parts.some(isIgnoredRouteFolder)) return { status: "ignored" };
-  const split = splitExtension(fileName);
+  const split =
+    fileName === "middleware.js"
+      ? { stem: "middleware", extension: ".js" }
+      : splitExtension(fileName);
   if (split === undefined) return { status: "ignored" };
   const { stem, extension } = split;
   const unsupported = UNSUPPORTED_FILES[stem];
@@ -101,7 +108,20 @@ export function classifyRouteFile(path: string): ClassifiedRouteFile {
   if (kind === "endpoint" && extension !== ".ts") {
     return invalid(`"${fileName}": an endpoint is a route.ts file.`, 'Rename it to "route.ts".');
   }
-  if (kind !== "endpoint" && !PAGE_EXTENSIONS.includes(extension)) {
+  if (kind === "middleware") {
+    if (!MIDDLEWARE_EXTENSIONS.includes(extension)) {
+      return invalid(
+        `"${fileName}": folder middleware is a middleware.ts file.`,
+        'Rename it to "middleware.ts".',
+      );
+    }
+    if (parts.length === 0) {
+      return invalid(
+        `"${fileName}" in the routes root: the app's middleware is src/middleware.ts.`,
+        "Move it to src/middleware.ts, which runs for every request. A middleware.ts in a route folder runs for the pages, actions and endpoints of that folder.",
+      );
+    }
+  } else if (kind !== "endpoint" && !PAGE_EXTENSIONS.includes(extension)) {
     return invalid(
       `"${fileName}" must be a component file.`,
       `Rename it to "${stem}.stsx" or "${stem}.tsx"${kind === "page" ? ', or to "route.ts" for an endpoint' : ""}.`,

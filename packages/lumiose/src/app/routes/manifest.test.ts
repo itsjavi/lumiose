@@ -551,6 +551,149 @@ describe("createRouteManifest", () => {
     expect(createRouteManifest(files).diagnostics).toEqual([]);
   });
 
+  it("gives each page and endpoint its folder middleware, outermost first (decision-48)", () => {
+    const manifest = createRouteManifest(
+      Object.entries({
+        "page.stsx": PAGE,
+        "admin/middleware.ts": "",
+        "admin/page.stsx": PAGE,
+        "admin/users/[id]/middleware.js": "",
+        "admin/users/[id]/page.stsx": PAGE,
+        "admin/api/route.ts": "export const POST = () => new Response();",
+        "(account)/middleware.ts": "",
+        "(account)/settings/page.stsx": PAGE,
+        "[[lang]]/docs/middleware.ts": "",
+        "[[lang]]/docs/page.stsx": PAGE,
+        "about/page.stsx": PAGE,
+      }).map(([path, source]) => ({ path, source })),
+      { defaultMode: "server" },
+    );
+    expect(manifest.diagnostics).toEqual([]);
+    const chains = Object.fromEntries(
+      manifest.routes.map((route) => [route.pattern, route.middleware]),
+    );
+    expect(chains).toEqual({
+      "/": undefined,
+      "/about": undefined,
+      "/admin": ["src/routes/admin/middleware.ts"],
+      "/admin/api": ["src/routes/admin/middleware.ts"],
+      "/admin/users/[id]": [
+        "src/routes/admin/middleware.ts",
+        "src/routes/admin/users/[id]/middleware.js",
+      ],
+      "/settings": ["src/routes/(account)/middleware.ts"],
+      "/[[lang]]/docs": ["src/routes/[[lang]]/docs/middleware.ts"],
+    });
+    expect(manifest.middleware).toEqual([
+      { file: "src/routes/(account)/middleware.ts", dir: "(account)", pattern: "/" },
+      {
+        file: "src/routes/[[lang]]/docs/middleware.ts",
+        dir: "[[lang]]/docs",
+        pattern: "/[[lang]]/docs",
+      },
+      { file: "src/routes/admin/middleware.ts", dir: "admin", pattern: "/admin" },
+      {
+        file: "src/routes/admin/users/[id]/middleware.js",
+        dir: "admin/users/[id]",
+        pattern: "/admin/users/[id]",
+      },
+    ]);
+  });
+
+  it("reports src/routes/middleware.ts, component middleware and duplicates (LUM5002, LUM5003)", () => {
+    const manifest = manifestOf({
+      "page.stsx": PAGE,
+      "middleware.ts": "",
+      "admin/middleware.ts": "",
+      "admin/middleware.js": "",
+      "admin/page.stsx": PAGE,
+      "blog/middleware.tsx": PAGE,
+      "blog/page.stsx": PAGE,
+    });
+    expect(
+      manifest.diagnostics
+        .filter((diagnostic) => diagnostic.severity === "error")
+        .map(({ code, file, message }) => ({ code, file, message })),
+    ).toEqual([
+      {
+        code: "LUM5003",
+        file: "src/routes/admin/middleware.ts",
+        message: 'Duplicate middleware: "src/routes/admin/middleware.js" already exists.',
+      },
+      {
+        code: "LUM5002",
+        file: "src/routes/blog/middleware.tsx",
+        message: '"middleware.tsx": folder middleware is a middleware.ts file.',
+      },
+      {
+        code: "LUM5002",
+        file: "src/routes/middleware.ts",
+        message: '"middleware.ts" in the routes root: the app\'s middleware is src/middleware.ts.',
+      },
+    ]);
+    expect(manifest.diagnostics.find((d) => d.file === "src/routes/middleware.ts")?.help).toContain(
+      "Move it to src/middleware.ts",
+    );
+    expect(page(manifest, "/").middleware).toBeUndefined();
+    expect(page(manifest, "/blog").middleware).toBeUndefined();
+  });
+
+  it("warns when folder middleware covers prerendered routes (LUM5008)", () => {
+    const manifest = manifestOf({
+      "admin/middleware.ts": "",
+      "admin/page.stsx": PAGE,
+      "admin/users/page.stsx": PAGE,
+      "admin/feed.xml/route.ts": "export const GET = () => new Response();",
+      "app/middleware.ts": "",
+      "app/layout.stsx": 'export const mode = "spa"; export default function L() { return null; }',
+      "app/page.stsx":
+        "export const prerender = true; export default function P() { return null; }",
+      "app/live/page.stsx": PAGE,
+      "account/middleware.ts": "",
+      "account/page.stsx":
+        'export const mode = "server"; export default function P() { return null; }',
+      "account/api/route.ts":
+        'export const mode = "server"; export const POST = () => new Response();',
+      "many/middleware.ts": "",
+      "many/a/page.stsx": PAGE,
+      "many/b/page.stsx": PAGE,
+      "many/c/page.stsx": PAGE,
+      "many/d/page.stsx": PAGE,
+      "many/e/page.stsx": PAGE,
+    });
+    expect(
+      manifest.diagnostics.map(({ code, severity, file, message }) => ({
+        code,
+        severity,
+        file,
+        message,
+      })),
+    ).toEqual([
+      {
+        code: "LUM5008",
+        severity: "warning",
+        file: "src/routes/admin/middleware.ts",
+        message:
+          'This middleware covers prerendered routes ("/admin", "/admin/feed.xml", "/admin/users"): it runs for them at build time only, so it cannot guard their requests.',
+      },
+      {
+        code: "LUM5008",
+        severity: "warning",
+        file: "src/routes/app/middleware.ts",
+        message:
+          'This middleware covers prerendered routes ("/app"): it runs for them at build time only, so it cannot guard their requests.',
+      },
+      {
+        code: "LUM5008",
+        severity: "warning",
+        file: "src/routes/many/middleware.ts",
+        message:
+          'This middleware covers prerendered routes ("/many/a", "/many/b", "/many/c", 2 more): it runs for them at build time only, so it cannot guard their requests.',
+      },
+    ]);
+    expect(manifest.diagnostics[0]?.help).toContain('export const mode = "server"');
+  });
+
   it("supports a custom routes directory", () => {
     const manifest = manifestOf({ "page.stsx": PAGE }, "./app/pages/");
     expect(manifest.routesDir).toBe("app/pages");

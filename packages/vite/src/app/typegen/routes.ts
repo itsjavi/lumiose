@@ -1,11 +1,11 @@
 // Generates `.lumiose/types/routes.d.ts`: augments the `RouteMap` and `LayoutMap` registries in
-// "lumiose" so `Routes`, `RouteParams`, `PageProps`, `LayoutProps`, the request context types and
-// `href()` know every route pattern (decision-26 §1).
+// "lumiose" so `Routes`, `RouteParams`, `PageProps`, `LayoutProps`, `Middleware`, the request
+// context types and `href()` know every route pattern (decision-26 §1).
 
 import type { RouteManifest, RouteParam } from "lumiose/internal/app/routes/manifest.ts";
 
 export function generateRouteTypes(
-  manifest: Pick<RouteManifest, "routes" | "routesDir" | "layouts" | "i18n">,
+  manifest: Pick<RouteManifest, "routes" | "routesDir" | "layouts" | "middleware" | "i18n">,
 ): string {
   const routes = manifest.routes
     .toSorted((a, b) => compare(a.pattern, b.pattern))
@@ -13,7 +13,11 @@ export function generateRouteTypes(
       (route) =>
         `    ${JSON.stringify(route.pattern)}: { kind: "${route.kind}"; params: ${paramsType(route.params)} };`,
     );
-  const layouts = [...new Set(manifest.layouts.map((layout) => layout.pattern))]
+  // Folder scopes: `LayoutProps` and `Middleware` (decision-48) take them, so folders with only a
+  // middleware file count too.
+  const layouts = [
+    ...new Set([...manifest.layouts, ...manifest.middleware].map((folder) => folder.pattern)),
+  ]
     .toSorted(compare)
     .map(
       (pattern) =>

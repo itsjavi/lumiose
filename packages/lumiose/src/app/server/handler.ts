@@ -283,6 +283,7 @@ export function createRequestHandler(options: RequestHandlerOptions): RequestHan
       env: options.env ?? processEnv(),
       platform: parent?.platform ?? platformOf(request, platform),
       locale: localized?.locale as RequestContext["locale"],
+      route: match?.route.pattern,
     };
     const depth = parent === undefined ? 0 : parent.depth + 1;
     const scope: RequestScope = {
@@ -329,7 +330,7 @@ export function createRequestHandler(options: RequestHandlerOptions): RequestHan
         response = await runPrerenderGuarded(undefined, () =>
           runMiddleware(ctx, () =>
             runPrerenderGuarded(guard, () =>
-              dispatch(scope, match, actionResult, notFoundPath, parent !== undefined),
+              dispatch(scope, match, actionResult, notFoundPath, parent !== undefined, guard),
             ),
           ),
         );
@@ -375,25 +376,39 @@ export function createRequestHandler(options: RequestHandlerOptions): RequestHan
     return handle(inner, parent);
   }
 
-  async function runMiddleware(ctx: RequestContext, last: () => Promise<Response>) {
-    const chain = options.middleware === undefined ? [] : await loadMiddleware(options.middleware);
-    const call = async (index: number): Promise<Response> => {
+  /** `src/middleware.ts` around `last`; every request runs it. */
+  function runMiddleware(ctx: RequestContext, last: () => Promise<Response>): Promise<Response> {
+    return options.middleware === undefined
+      ? last()
+      : runMiddlewareFiles(ctx, [options.middleware], last);
+  }
+
+  /** The middleware of `files` around `last`, in order: each file's functions, then the next file's. */
+  async function runMiddlewareFiles(
+    ctx: RequestContext,
+    files: readonly string[],
+    last: () => Promise<Response>,
+  ): Promise<Response> {
+    const chains = await Promise.all(files.map(loadMiddleware));
+    const call = async (fileIndex: number, index: number): Promise<Response> => {
+      const chain = chains[fileIndex];
+      if (chain === undefined) return last();
       const middleware = chain[index];
-      if (middleware === undefined) return last();
+      if (middleware === undefined) return call(fileIndex + 1, 0);
       let called = false;
       const response = await middleware(ctx, () => {
         if (called) throw new Error("Middleware called next() more than once.");
         called = true;
-        return call(index + 1);
+        return call(fileIndex, index + 1);
       });
       if (!(response instanceof Response)) {
         throw new TypeError(
-          `Middleware #${index + 1} in ${options.middleware} must return a Response (usually \`return next()\`).`,
+          `Middleware #${index + 1} in ${files[fileIndex]} must return a Response (usually \`return next()\`).`,
         );
       }
       return response;
     };
-    return call(0);
+    return call(0, 0);
   }
 
   async function loadMiddleware(file: string): Promise<Middleware[]> {
@@ -413,18 +428,36 @@ export function createRequestHandler(options: RequestHandlerOptions): RequestHan
     actionResult: boolean,
     pathname: string,
     inProcess: boolean,
+    guard: PrerenderGuard | undefined,
   ): Promise<Response> {
-    const { request } = scope.ctx;
     if (match === null) {
       return renderError(new HttpError(404, "Not Found"), scope, errorPagesFor(null, pathname));
     }
-    const { route } = match;
     let localeHead: { links: string; canonical: string } | undefined;
     if (scope.i18n !== undefined) {
       const outcome = await routeLocale(scope, match, pathname, inProcess);
       if (outcome instanceof Response) return outcome;
       localeHead = outcome;
     }
+    const serve = () => serveRoute(scope, match, actionResult, localeHead);
+    const folders = match.route.middleware;
+    if (folders === undefined) return serve();
+    // Folder middleware (decision-48), outermost first, unguarded while prerendering like
+    // src/middleware.ts. What it throws renders the error page outside the chain (`handle`).
+    return runPrerenderGuarded(undefined, () =>
+      runMiddlewareFiles(scope.ctx, folders, () => runPrerenderGuarded(guard, serve)),
+    );
+  }
+
+  /** Serves a matched route: its endpoint, or its page (with its form action). */
+  async function serveRoute(
+    scope: RequestScope,
+    match: RouteMatch,
+    actionResult: boolean,
+    localeHead: { links: string; canonical: string } | undefined,
+  ): Promise<Response> {
+    const { request } = scope.ctx;
+    const { route } = match;
     // What route code sees: while prerendering, its request APIs throw LUM5001.
     const routeCtx = prerendering ? prerenderContext(scope.ctx) : scope.ctx;
     if (route.kind === "endpoint") {
@@ -941,6 +974,7 @@ function prerenderContext(ctx: RequestContext): RequestContext {
     },
     params: ctx.params,
     locale: ctx.locale,
+    route: ctx.route,
     get locals() {
       assertRequestApi("ctx.locals");
       return ctx.locals;

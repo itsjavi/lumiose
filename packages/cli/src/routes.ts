@@ -4,6 +4,7 @@
 import { relative, sep } from "node:path";
 import type { RouteManifest, RouteParam } from "lumiose/internal/app/routes/manifest.ts";
 import { scanRoutes } from "@lumiose/vite/internal/app/routes/scan.ts";
+import { findAppFile, MIDDLEWARE_FILES } from "@lumiose/vite/internal/app/project.ts";
 import { typegen } from "@lumiose/vite/internal/app/typegen/index.ts";
 import {
   fromAppDiagnostic,
@@ -39,6 +40,11 @@ export interface RouteInfo {
   prerender?: boolean;
   /** Layout files (project-relative), outermost first; empty for endpoints. */
   layouts: string[];
+  /**
+   * The middleware that runs for the route, in order: `src/middleware.ts`, then the folder
+   * `middleware.ts` files from the outermost folder in (project-relative, decision-48).
+   */
+  middleware: string[];
   params: RouteParam[];
   /**
    * With `lumiose({ i18n })` (decision-44): the locales the route declares (its own, a layout's, or
@@ -62,17 +68,26 @@ export interface RoutesReport {
   summary: CheckSummary;
 }
 
-/** The project's routes with their modes and layouts. */
+/** The project's routes with their modes, layouts and middleware. */
 export async function listRoutes(root: string): Promise<RoutesReport> {
   const options = await routeOptions(root, "routes");
-  return routesReport(await scanRoutes(root, options), options.defaultMode ?? "static");
+  return routesReport(
+    await scanRoutes(root, options),
+    options.defaultMode ?? "static",
+    findAppFile(root, MIDDLEWARE_FILES),
+  );
 }
 
 function routesReport(
   manifest: RouteManifest,
   defaultMode: RoutesReport["defaultMode"],
+  appMiddleware: string | undefined,
 ): RoutesReport {
   const routes = manifest.routes.map((route): RouteInfo => {
+    const middleware = [
+      ...(appMiddleware === undefined ? [] : [appMiddleware]),
+      ...(route.middleware ?? []),
+    ];
     const locales = {
       ...(route.locales === undefined ? {} : { locales: route.locales }),
       ...(route.localesFrom === undefined ? {} : { localesFrom: route.localesFrom }),
@@ -86,6 +101,7 @@ function routesReport(
           ssr: route.ssr,
           prerender: route.prerender,
           layouts: route.layouts,
+          middleware,
           params: route.params,
           ...locales,
         }
@@ -95,6 +111,7 @@ function routesReport(
           kind: "endpoint",
           mode: route.mode,
           layouts: [],
+          middleware,
           params: route.params,
           ...locales,
         };
@@ -147,17 +164,28 @@ export function routesTable(report: RoutesReport): string {
   }
   const prefix = `${report.routesDir}/`;
   const short = (file: string) => (file.startsWith(prefix) ? file.slice(prefix.length) : file);
-  // With i18n, a LOCALES column before LAYOUTS (the longest cell, last).
+  // With i18n, a LOCALES column; with middleware, a MIDDLEWARE column (the chain, in order);
+  // LAYOUTS (the longest cell) last.
   const i18n = report.i18n !== undefined;
+  const middleware = report.routes.some((route) => route.middleware.length > 0);
   const rows = report.routes.map((route) => [
     route.pattern,
     route.kind,
     modeLabel(route),
     short(route.file),
     ...(i18n ? [localesLabel(route, short)] : []),
+    ...(middleware ? [route.middleware.map(short).join(" > ")] : []),
     route.layouts.map(short).join(", "),
   ]);
-  const header = ["PATTERN", "KIND", "MODE", "FILE", ...(i18n ? ["LOCALES"] : []), "LAYOUTS"];
+  const header = [
+    "PATTERN",
+    "KIND",
+    "MODE",
+    "FILE",
+    ...(i18n ? ["LOCALES"] : []),
+    ...(middleware ? ["MIDDLEWARE"] : []),
+    "LAYOUTS",
+  ];
   const widths = header.map((title, column) =>
     Math.max(title.length, ...rows.map((row) => row[column]!.length)),
   );

@@ -132,6 +132,10 @@ describe("isRouteModuleCandidate", () => {
       "helpers.ts",
       "page.test.ts",
       "page.css",
+      "middleware.ts",
+      "middleware.js",
+      "middleware.test.ts",
+      "route.js",
     ];
     expect(names.filter(isRouteModuleCandidate)).toEqual([
       "page.stsx",
@@ -142,6 +146,8 @@ describe("isRouteModuleCandidate", () => {
       "error.stsx",
       "loading.tsx",
       "page.ts",
+      "middleware.ts",
+      "middleware.js",
     ]);
   });
 });

@@ -122,4 +122,5 @@ These docs match lumiose 0.4.0. Installed projects have them in `node_modules/lu
 - [LUM5005: Non-GET method in a static endpoint](errors/LUM5005.md)
 - [LUM5006: Prerendered page that renders only in the browser](errors/LUM5006.md)
 - [LUM5007: Route param named `locale`](errors/LUM5007.md)
+- [LUM5008: Folder middleware covering prerendered routes](errors/LUM5008.md)
 - [LUM6001: tsconfig missing options required by Lumiose](errors/LUM6001.md)

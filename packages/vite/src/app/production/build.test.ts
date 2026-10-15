@@ -641,6 +641,38 @@ export default {
     expect(entry.config.headers).toEqual([{ path: "/**", headers: { "x-frame-options": "DENY" } }]);
   });
 
+  it("runs folder middleware in the server build and while prerendering, which warns (decision-48)", async () => {
+    const root = project({
+      "src/routes/admin/middleware.ts": `import type { Middleware } from "lumiose";
+const guard: Middleware<"/admin"> = async (ctx, next) => {
+  if (ctx.route === "/admin" && ctx.url.searchParams.get("key") !== "1") {
+    return new Response("denied", { status: 401 });
+  }
+  const response = await next();
+  const html = (await response.text()).replace("</h1>", \` via \${ctx.route}</h1>\`);
+  return new Response(html, response);
+};
+export default guard;
+`,
+      "src/routes/admin/page.stsx": `export const mode = "server";
+export default function Admin() { return <h1>Admin</h1>; }
+`,
+      "src/routes/admin/docs/page.stsx": `export default function Docs() { return <h1>Docs</h1>; }
+`,
+    });
+    const logger = createLogger("silent");
+    const warn = vi.spyOn(logger, "warn");
+    await build({ root, customLogger: logger, logLevel: "silent" });
+    expect(warn).toHaveBeenCalledWith(
+      expect.stringMatching(/^LUM5008: .*"\/admin\/docs".*\(src\/routes\/admin\/middleware\.ts\)$/),
+    );
+    expect(read(root, "admin/docs/index.html")).toContain("<h1>Docs via /admin/docs</h1>");
+    const entry = await entryOf(root);
+    expect((await entry.default.fetch(new Request("http://app.test/admin"))).status).toBe(401);
+    const admin = await entry.default.fetch(new Request("http://app.test/admin?key=1"));
+    expect(await admin.text()).toContain("<h1>Admin via /admin</h1>");
+  });
+
   it("prerenders spa routes with prerender into hydrating HTML, without dist/server (TASK-216)", async () => {
     const root = project({
       "vite.config.ts": `import lumiose from "@lumiose/vite";

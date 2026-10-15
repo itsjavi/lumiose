@@ -316,9 +316,10 @@ export default function Dashboard() {
 
 A visitor without a session gets a `302` to `/sign-in?next=%2Fdashboard`, and signing in brings them
 back. Protected pages render per request (`mode = "server"`, the sample's default): a `static` page
-cannot read the session ([LUM5001](../errors/LUM5001.md)). To guard a whole section instead, check
-`ctx.locals.session` in the middleware after setting it and return a redirect for the paths that
-need one ([Server](../concepts/server.md#example)).
+cannot read the session ([LUM5001](../errors/LUM5001.md)). To guard a whole section instead, with
+its form actions and endpoints, add a `middleware.ts` to its folder that returns a redirect when
+`ctx.locals.session` is `null`: it runs after `src/middleware.ts` for every route below the folder
+([Server](../concepts/server.md#concept)).
 
 ## Forms: sign-up, sign-in and sign-out
 

@@ -19,6 +19,7 @@ src/
     [[lang]]/contact/page.stsx      /contact and /:lang/contact  (optional param)
     (marketing)/pricing/page.stsx   /pricing  (a group folder adds no URL segment)
     api/posts/route.ts              endpoint: export GET / POST / … = (ctx) => Response
+    admin/middleware.ts             runs for the pages, actions and endpoints below /admin
     sitemap.xml/route.ts            endpoint at /sitemap.xml
     not-found.stsx  error.stsx      error pages, nearest one wins
   document.stsx                     optional: owns <html>, <head> and <body>
@@ -26,7 +27,8 @@ src/
 ```
 
 - **A folder is a URL segment; special files give it behavior:** `page.stsx` or `page.tsx` (the
-  page), `route.ts` (an endpoint), and `layout`, `not-found` and `error` (`.stsx` or `.tsx`).
+  page), `route.ts` (an endpoint), `middleware.ts` (folder middleware), and `layout`, `not-found`
+  and `error` (`.stsx` or `.tsx`).
   There is no `index` and no flat page file: `about/page.stsx` is the page at `/about`, and
   `about.stsx` is not a route. A folder has a page or a `route.ts`, not both (`LUM5003`).
 - **Colocation:** any other file in `src/routes` (components, helpers, styles, tests) is ignored
@@ -45,6 +47,10 @@ src/
   and `(.)` folders (intercepting routes).
 - **Layouts** wrap every page below their folder and receive `{ params, children }`. `children`
   is the page (the outlet).
+- **Folder middleware:** a `middleware.ts` runs for every page, form action and endpoint below its
+  folder (group folders included), after `src/middleware.ts` and outermost folder first. It is the
+  place for a section's auth, since a layout does not see the folder's actions and endpoints. See
+  [Server](server.md#concept); `src/routes/middleware.ts` is `LUM5002` (use `src/middleware.ts`).
 - **Pages** export a `default` component (it may be `async`), which receives `{ params }`. Other
   page exports: `mode`, `ssr`, `prerender`, `staticPaths`, `action`/`actions`, `headers` and
   `limits` (see
@@ -64,7 +70,7 @@ locales it declares (`/es/about` from `about/page.stsx`), and `href()`, `<html l
 
 **Typed routes.** `lumiose typegen` (run by `lumiose check` and the dev server) writes
 `.lumiose/types/routes.d.ts`, which augments `RouteMap` (pages and endpoints) and `LayoutMap`
-(layouts). Every route-bound type then takes the route pattern as a string literal, checked
+(the folders with a layout or a middleware file). Every route-bound type then takes the route pattern as a string literal, checked
 against that table: an unknown or stale pattern is a type error, and editors complete it.
 
 - `href("/blog/[slug]", { slug })` builds a URL and type-checks the pattern and params; the URL
@@ -72,8 +78,10 @@ against that table: an unknown or stale pattern is a type error, and editors com
 - `PageProps<"/blog/[slug]">` types a page's props, `LayoutProps<"/blog">` a layout's
   (`{ params, children }`, with the params of the layout's URL scope; route groups such as `(app)`
   add nothing to it), and `params<"/blog/[slug]">()` the params anywhere on the server;
-- `RequestContext<P>`, `ActionContext<P>` and `Endpoint<P>` type `ctx.params` of middleware
-  helpers, actions and endpoints (see [Data and actions](data-and-actions.md));
+- `RequestContext<P>`, `ActionContext<P>` and `Endpoint<P>` type `ctx.params` and `ctx.route` of
+  middleware helpers, actions and endpoints (see [Data and actions](data-and-actions.md)), and
+  `Middleware<"/admin">` those of a folder's middleware: the folder's params and the patterns
+  below it;
 - optional params are optional properties (`RouteParams<"/[[lang]]/contact">` is
   `{ lang?: string }`), and `href()` leaves out an optional segment whose param is missing or
   empty: `href("/docs/[[...path]]")` is `/docs`.
@@ -236,5 +244,6 @@ export default function Home() {
 - [LUM5002](../errors/LUM5002.md): invalid route file.
 - [LUM5003](../errors/LUM5003.md): duplicate route.
 - [LUM5001](../errors/LUM5001.md): request API used during prerender.
+- [LUM5008](../errors/LUM5008.md): folder middleware covering prerendered routes.
 
 See also: [Rendering modes](rendering-modes.md), [Server](server.md), [reference: app layer](../reference/app.md), [`lumiose/router`](../reference/router.md).

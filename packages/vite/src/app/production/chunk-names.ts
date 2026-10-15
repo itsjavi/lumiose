@@ -25,11 +25,15 @@ export function routeModuleName(file: string, routesDir: string): string {
     .join("-");
 }
 
-/** Project-relative file of each page, endpoint, layout, `not-found` and `error` module → its name. */
+/**
+ * Project-relative file of each page, endpoint, layout, middleware, `not-found` and `error` module
+ * → its name.
+ */
 export function routeModuleNames(manifest: RouteManifest): Map<string, string> {
   const files = [
     ...manifest.routes,
     ...manifest.layouts,
+    ...manifest.middleware,
     ...manifest.notFoundPages,
     ...manifest.errorPages,
   ].map((entry) => entry.file);

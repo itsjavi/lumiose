@@ -5,9 +5,12 @@ import type { Renderable } from "../../contract/client.ts";
 import type {
   CurrentLocale,
   EndpointRoutes,
+  LayoutParams,
+  LayoutRoutes,
   PageRoutes,
   RouteParams,
   Routes,
+  RoutesBelow,
 } from "../routes/registry.ts";
 import type { Cookies } from "./cookies.ts";
 
@@ -60,6 +63,11 @@ export interface RequestContext<P extends Routes = never> {
   /** Params of the matched route; `{}` when nothing matched. */
   params: ParamsOf<P>;
   /**
+   * The matched route pattern (`"/users/[id]"`, what `route()` returns). Undefined when no route
+   * matched, which only `src/middleware.ts` sees.
+   */
+  route: [P] extends [never] ? Routes | undefined : P;
+  /**
    * The request's locale with `lumiose({ i18n })` (decision-44): its URL prefix (`/es/about` →
    * `"es"`), else the default locale. Undefined without `lumiose({ i18n })`.
    */
@@ -71,11 +79,22 @@ export interface RequestContext<P extends Routes = never> {
   platform: Platform;
 }
 
-/** `src/middleware.ts` default export (or an array of them, run in order). */
-export type Middleware = (
-  ctx: RequestContext,
+/**
+ * The default export of `src/middleware.ts` or of a folder's `middleware.ts` (or an array of them,
+ * run in order). In a folder, `Middleware<"/admin">` types `ctx.params` with the folder's params
+ * and `ctx.route` with the patterns below it (decision-48); the pattern is the folder's URL scope,
+ * as in `LayoutProps`.
+ */
+export type Middleware<P extends LayoutRoutes = never> = (
+  ctx: [P] extends [never] ? RequestContext : FolderContext<P>,
   next: () => Promise<Response>,
 ) => Response | Promise<Response>;
+
+/** What a folder's middleware sees: a route below the folder matched. */
+interface FolderContext<P extends LayoutRoutes> extends Omit<RequestContext, "params" | "route"> {
+  params: LayoutParams<P>;
+  route: RoutesBelow<P>;
+}
 
 export type HttpMethod = "GET" | "HEAD" | "POST" | "PUT" | "PATCH" | "DELETE" | "OPTIONS";
 
