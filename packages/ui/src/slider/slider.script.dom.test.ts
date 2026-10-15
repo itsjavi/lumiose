@@ -99,3 +99,18 @@ it("sets the values without events, and formats aria-valuetext with format and l
   expect(document.querySelector("output")!.textContent).toBe("40% – 60%");
   expect(slider.style.getPropertyValue("--lu-slider-start")).toBe("40%");
 });
+
+it("follows the thumbs back after a form reset", async () => {
+  const slider = mount([20, 70]);
+  document.body.innerHTML = `<form>${document.body.innerHTML}</form>`;
+  const form = document.querySelector("form")!;
+  const moved = document.querySelector("lu-slider") as SliderElement;
+  drag(0, 40);
+  expect(moved.style.getPropertyValue("--lu-slider-start")).toBe("40%");
+  form.reset();
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  expect(moved.value).toEqual([20, 70]);
+  expect(moved.style.getPropertyValue("--lu-slider-start")).toBe("20%");
+  expect(document.querySelector("output")!.textContent).toBe("20 – 70");
+  expect(slider.isConnected).toBe(false);
+});

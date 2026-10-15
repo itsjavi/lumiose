@@ -26,6 +26,10 @@
     grid-area: 1 / 1;
     margin: 0;
   }
+  /* The thumbs over the (positioned) track, for the pointer too. */
+  lu-slider div:has(> input[type="range"]) > input[type="range"] {
+    position: relative;
+  }
   /* The Track and its Indicator. */
   lu-slider div:has(> input[type="range"]) > div {
     position: relative;

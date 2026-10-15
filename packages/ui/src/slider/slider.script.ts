@@ -13,6 +13,8 @@
 // - The values as text: `aria-valuetext` on the thumbs when the element has a `format`
 //   (`Intl.NumberFormat` options, JSON), and the Value part (an `<output for>` the thumbs) unless
 //   it renders content of its own (then it has no `for`).
+// - After a form reset, which moves the thumbs back without an `input` event, the track and the
+//   text follow them.
 //
 // It must not import `lumiose`: server-rendered pages load it without the runtime.
 
@@ -55,6 +57,7 @@ export class SliderElement extends HTMLElement {
     this.addEventListener("input", this.#onInput);
     this.addEventListener("keydown", this.#onKeyDown);
     this.addEventListener("pointerdown", this.#onPress);
+    document.addEventListener("reset", this.#onReset, true);
     if (document.readyState === "loading") {
       document.addEventListener("DOMContentLoaded", () => this.#sync(), { once: true });
     } else queueMicrotask(() => this.#sync());
@@ -64,6 +67,7 @@ export class SliderElement extends HTMLElement {
     this.removeEventListener("input", this.#onInput);
     this.removeEventListener("keydown", this.#onKeyDown);
     this.removeEventListener("pointerdown", this.#onPress);
+    document.removeEventListener("reset", this.#onReset, true);
   }
 
   #range(thumb: HTMLInputElement) {
@@ -126,6 +130,11 @@ export class SliderElement extends HTMLElement {
     }
   }
 
+  /** A form reset puts the thumbs back without an `input` event: the track and text follow. */
+  #onReset = (event: Event) => {
+    if (this.thumbs.some((thumb) => thumb.form === event.target)) setTimeout(() => this.#sync());
+  };
+
   #onInput = (event: Event) => {
     const thumb = event.target as HTMLInputElement;
     if (!thumb.matches?.(THUMB) || thumb.closest("lu-slider") !== this) return;
@@ -165,15 +174,19 @@ export class SliderElement extends HTMLElement {
     this.#move(thumb, thumb.valueAsNumber + delta, true);
   };
 
-  /** The value at a pointer position on the control. */
+  /**
+   * The value at a pointer position on the control. A native thumb travels inside its input, inset
+   * by half its size, and is about as large as the input is thick.
+   */
   #valueAt(event: PointerEvent, thumb: HTMLInputElement): number {
     const box = thumb.getBoundingClientRect();
     const { min, max } = this.#range(thumb);
     const vertical = thumb.getAttribute("aria-orientation") === "vertical";
     const rtl = !vertical && getComputedStyle(thumb).direction === "rtl";
-    let ratio = vertical
-      ? (box.bottom - event.clientY) / box.height
-      : (event.clientX - box.left) / box.width;
+    const length = vertical ? box.height : box.width;
+    const size = Math.min(vertical ? box.width : box.height, length);
+    const offset = vertical ? box.bottom - event.clientY : event.clientX - box.left;
+    let ratio = length > size ? (offset - size / 2) / (length - size) : 0;
     if (rtl) ratio = 1 - ratio;
     return min + Math.min(1, Math.max(0, ratio)) * (max - min);
   }
@@ -183,7 +196,7 @@ export class SliderElement extends HTMLElement {
     // One thumb: the native input takes presses on its whole track.
     if (thumbs.length < 2 || event.button !== 0 || !event.isPrimary) return;
     if ((event.target as Element).matches?.(THUMB)) return;
-    const control = (event.target as Element).closest?.<HTMLElement>("div");
+    const control = (event.target as Element).closest?.<HTMLElement>(`div:has(> ${THUMB})`);
     if (!control || !this.contains(control)) return;
     const value = this.#valueAt(event, thumbs[0]!);
     // The nearest thumb; between two at the same distance, the one the press is past.
