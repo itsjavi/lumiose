@@ -9535,7 +9535,11 @@ table below lists them as they land.
   elements report changes with lowercase DOM events, like native ones: `openchange`,
   `checkedchange` and `change`.
 - **Keyboard contracts.** Every component follows its WAI-ARIA Authoring Practices pattern, and
-  its end-to-end tests check the keyboard paths and run axe.
+  its end-to-end tests check the keyboard paths.
+- **WCAG 2.2 AA.** Every component meets it: the components own semantics, keyboard and
+  behaviour, and the default theme owns the visual criteria (contrast, non-text contrast, focus
+  visible, target size). Each component's end-to-end tests run axe with the WCAG A and AA rules,
+  closed and open, in light and dark, and check reflow at 320 CSS pixels and text spacing.
 
 This is the approach of [Timeless](https://timeless.build), ported to Lumiose.
 
@@ -9591,6 +9595,11 @@ one, and redefine a property outside layers to change it:
   --lu-radius: 0.375rem;
 }
 ```
+
+The theme meets WCAG 2.2 AA in light and dark: each `-foreground` colour reaches 4.5:1 on its
+surface, and `--lu-input` (the borders of fields and controls) and `--lu-ring` (the focus ring)
+reach 3:1 on the surfaces they sit on. `--lu-border` is for decoration, such as a dialog's edge:
+it is too light to outline a control. Keep those ratios when you change the colours.
 
 ### Your own CSS
 

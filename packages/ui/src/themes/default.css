@@ -6,6 +6,12 @@
  * `lu.theme` layer, above `lu.core`: any app CSS outside layers wins, so set a property on `:root`
  * (or any subtree) to restyle everything.
  *
+ * WCAG 2.2 AA (decision-62, doc-9 section 17), light / dark: every `-foreground` reaches 4.5:1 on
+ * its surface, muted text included (5.1 / 5.8 on --lu-muted, 5.6 / 6.9 on --lu-popover); field
+ * and control borders (--lu-input) and the focus ring 3:1 on the surfaces they sit on (3.3 / 3.1
+ * on --lu-muted; ring 5.2 / 7.0). --lu-border is for decoration only: it is not enough to outline
+ * a control. The ratios per pair are in TASK-392.
+ *
  *   .lu-button                          a button; data-variant="primary" | "destructive"
  *   .lu-dialog                          a Dialog.Popup: surface, backdrop, title (h2),
  *                                       description (p), footer
@@ -26,13 +32,13 @@
     --lu-secondary: light-dark(#f4f4f5, #27272a);
     --lu-secondary-foreground: light-dark(#18181b, #fafafa);
     --lu-muted: light-dark(#f4f4f5, #27272a);
-    --lu-muted-foreground: light-dark(#71717a, #a1a1aa);
+    --lu-muted-foreground: light-dark(#67676f, #a1a1aa);
     --lu-accent: light-dark(#f4f4f5, #27272a);
     --lu-accent-foreground: light-dark(#18181b, #fafafa);
     --lu-destructive: #dc2626;
     --lu-destructive-foreground: #fff;
     --lu-border: light-dark(#e4e4e7, #3f3f46);
-    --lu-input: light-dark(#d4d4d8, #52525b);
+    --lu-input: light-dark(#85858e, #71717a);
     --lu-ring: light-dark(#2563eb, #60a5fa);
     --lu-radius: 0.625rem;
   }

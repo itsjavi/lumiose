@@ -1,13 +1,8 @@
 // Dialog and alert dialog (TASK-355): the APG Dialog keyboard contract, focus on open and its
-// return on close, roles, names and descriptions, axe, behaviour without JavaScript, page scroll
-// behind a modal, and the sync with signals in an island.
-import AxeBuilder from "@axe-core/playwright";
+// return on close, roles, names and descriptions, behaviour without JavaScript, page scroll behind a
+// modal, the sync with signals in an island, and WCAG 2.2 AA with the default theme (TASK-392).
 import { expect, test, type Page } from "@playwright/test";
-
-const axe = async (page: Page) => {
-  const results = await new AxeBuilder({ page }).analyze();
-  return results.violations.map((violation) => `${violation.id}: ${violation.nodes.length}`);
-};
+import { axe, clipped, focusRing, SCHEMES, smallTargets, TEXT_SPACING } from "./a11y.ts";
 
 const lumioseWarnings = (page: Page) => {
   const warnings: string[] = [];
@@ -331,5 +326,90 @@ test.describe("in an island", () => {
     await expect(dialog).toBeHidden();
     await expect(page.getByTestId("dialog-state")).toHaveText("open: false, returned: none");
     expect(warnings).toEqual([]);
+  });
+});
+
+test.describe("WCAG 2.2 AA with the default theme (doc-9 section 17)", () => {
+  /** Each dialog of /dialog: how to open it and the dialog that opens. */
+  const DIALOGS = [
+    { trigger: "Delete project…", role: "alertdialog", name: "Delete project?" },
+    { trigger: "Edit profile", role: "dialog", name: "Edit profile" },
+    { trigger: "Settings", role: "dialog", name: "Settings" },
+  ] as const;
+
+  for (const scheme of SCHEMES) {
+    test(`axe passes closed and open (${scheme})`, async ({ page }) => {
+      await page.emulateMedia({ colorScheme: scheme });
+      await page.goto("/dialog");
+      expect(await axe(page)).toEqual([]);
+      for (const { trigger, role, name } of DIALOGS) {
+        await page.getByRole("button", { name: trigger }).click();
+        const dialog = page.getByRole(role, { name, exact: true });
+        await expect(dialog).toBeVisible();
+        expect(await axe(page)).toEqual([]);
+        if (name === "Settings") {
+          await dialog.getByRole("button", { name: "Advanced…" }).click();
+          await expect(page.getByRole("dialog", { name: "Advanced settings" })).toBeVisible();
+          expect(await axe(page)).toEqual([]);
+          await page.keyboard.press("Escape");
+        }
+        await page.keyboard.press("Escape");
+        await expect(dialog).toBeHidden();
+      }
+
+      await page.goto("/dialog/island");
+      expect(await axe(page)).toEqual([]);
+      await page.getByTestId("open-by-signal").click();
+      await expect(page.getByRole("dialog", { name: "Edit profile" })).toBeVisible();
+      expect(await axe(page)).toEqual([]);
+    });
+  }
+
+  test("focus is visible on the trigger and inside the dialog (2.4.7)", async ({ page }) => {
+    await page.goto("/dialog");
+    await page.getByRole("button", { name: "Edit profile" }).focus();
+    await page.keyboard.press("Tab");
+    await page.keyboard.press("Shift+Tab");
+    expect(await focusRing(page)).toBe("2px solid");
+    await page.keyboard.press("Enter");
+    await page.keyboard.press("Tab");
+    await expect(page.getByRole("button", { name: "Cancel" })).toBeFocused();
+    expect(await focusRing(page)).toBe("2px solid");
+  });
+
+  test("targets are at least 24 by 24 CSS pixels (2.5.8)", async ({ page }) => {
+    await page.goto("/dialog");
+    expect(await smallTargets(page.locator("main"))).toEqual([]);
+    for (const { trigger, role, name } of DIALOGS) {
+      await page.getByRole("button", { name: trigger }).click();
+      const dialog = page.getByRole(role, { name, exact: true });
+      expect(await smallTargets(dialog)).toEqual([]);
+      await page.keyboard.press("Escape");
+    }
+  });
+
+  test("dialogs reflow at 320 CSS pixels and survive text spacing (1.4.10, 1.4.12)", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 320, height: 640 });
+    await page.goto("/dialog");
+    await page.addStyleTag({ content: TEXT_SPACING });
+    for (const { trigger, role, name } of DIALOGS) {
+      await page.getByRole("button", { name: trigger }).click();
+      const dialog = page.getByRole(role, { name, exact: true });
+      await expect(dialog).toBeVisible();
+      // Inside the viewport, no horizontal scrolling, nothing cut off.
+      const box = (await dialog.boundingBox())!;
+      expect(box.x).toBeGreaterThanOrEqual(0);
+      expect(box.x + box.width).toBeLessThanOrEqual(320);
+      expect(await dialog.evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(
+        true,
+      );
+      expect(await clipped(dialog)).toEqual([]);
+      for (const button of await dialog.getByRole("button").all()) {
+        await expect(button).toBeInViewport();
+      }
+      await page.keyboard.press("Escape");
+    }
   });
 });
