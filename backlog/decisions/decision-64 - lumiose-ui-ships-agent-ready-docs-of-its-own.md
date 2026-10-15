@@ -21,7 +21,12 @@ The UI pages lived in packages/lumiose/docs/ui. @lumiose/ui keeps its own 0.x ve
 
 ## Decision
 
-Orchestrator decision (Lux, 2026-10-15), from the user's request. Public names are proposals until the user reviews them.
+Orchestrator decision (Lux, 2026-10-15), from the user's request. The public names were approved by the user on 2026-10-15 (TASK-393):
+- the create-lumiose flag `--ui`;
+- the `lumiose-ui` skill and its AGENTS.md subsection;
+- the MCP tool `ui_components`, the `ui/…` docs topics and the `lumiose://docs/ui/<page>` resources;
+- the site paths `/ui/llms.txt` and `/ui/llms-full.txt`;
+- @lumiose/ui's `docs:gen` and `docs:check` scripts.
 
 - **The UI docs ship in @lumiose/ui**, in packages/ui/docs. That puts them in `node_modules/@lumiose/ui/docs` and keeps them on the installed version. They have their own generated and checked `llms.txt` and `llms-full.txt`. lumiose's `llms.txt` links the UI one, with both the installed path and the site URL, and the site serves it.
 - **Every component page follows one template**, the sections of the Dialog page: Anatomy, API, Example, Styling, Keyboard and focus, Without JavaScript, Browser support, Related. Agents find the same facts in the same place. A test checks that every exported component has a page, an llms entry and a type-checked example. It also checks that every prop of every part has a JSDoc comment, which editors and agents read from the types.

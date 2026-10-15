@@ -5,7 +5,7 @@ status: Done
 assignee:
   - '@Halo'
 created_date: '2026-10-15 16:46'
-updated_date: '2026-10-15 18:54'
+updated_date: '2026-10-15 19:36'
 labels:
   - ui
 milestone: m-12
@@ -76,6 +76,8 @@ Screenshots: backlog/assets/task-359-tabs-light.png, task-359-tabs-dark.png (key
 2026-10-15 Halo: AC #7 (decision-64, merged from main after this task was finished): the page now follows the template's sections (Anatomy, API, Example, Styling, Keyboard and focus, Without JavaScript, Browser support, Related). It still lives in packages/lumiose/docs/ui/ next to dialog.md and README.md: packages/ui/docs and the UI llms.txt are TASK-393's structure and generator (Beacon), not on main yet, and moving only these pages would split the UI docs. Parked In Progress until TASK-393 moves the UI pages and lists them; AC #1-#6 are done and verified.
 
 2026-10-15 Halo: AC #7 met. Merged main with TASK-393. The page is now packages/ui/docs/<component>.md, with the template's sections, and is listed in the UI llms.txt (Beacon's generator, regenerated with pnpm --filter @lumiose/ui docs:gen). Every part prop has JSDoc; Beacon's packages/cli/src/docs/ui.test.ts contract passes. The shared placement is also its own commit (5a95f4a9) for Spark's Menu; placement() takes a defaultAlign.
+
+2026-10-15 (user): the proposed public names in these notes are approved as listed.
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary

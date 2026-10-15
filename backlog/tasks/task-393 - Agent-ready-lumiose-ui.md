@@ -5,7 +5,7 @@ status: Done
 assignee:
   - '@Beacon'
 created_date: '2026-10-15 18:05'
-updated_date: '2026-10-15 18:39'
+updated_date: '2026-10-15 19:36'
 labels:
   - ui
   - docs
@@ -78,4 +78,6 @@ For integration:
 - New component pages (Popover, Tooltip, Tabs, Menu) must follow dialog.md: the eight sections, an Anatomy table with backticked part names, `### Component.Part` prop tables (Prop, Type, Default, description), a ```tsx check block in Example, hooks as code spans in Styling, JSDoc on every exported *Props type and member; then `pnpm --filter @lumiose/ui docs:gen`.
 
 Validation (2026-10-15): pnpm check green (typecheck, lint, fmt:examples, Vitest 2069 passed / 2 skipped, script tests, size caps, cargo test); apps/web Playwright 66 passed, 3 skipped (/ui/llms.txt and /ui/llms-full.txt checked); create-lumiose's --ui test checks and builds a static app against the workspace @lumiose/ui. No Rust changes. Halo's and Spark's new pages were not on main yet: the contract test checks them when they land.
+
+2026-10-15 (user): the proposed public names in these notes are approved as listed.
 <!-- SECTION:NOTES:END -->

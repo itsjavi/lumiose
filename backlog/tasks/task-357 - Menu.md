@@ -5,7 +5,7 @@ status: Done
 assignee:
   - '@Spark'
 created_date: '2026-10-15 16:46'
-updated_date: '2026-10-15 19:13'
+updated_date: '2026-10-15 19:36'
 labels:
   - ui
 milestone: m-12
@@ -123,6 +123,8 @@ User decision 2026-10-15: @lumiose/ui reaches parity with Base UI's components b
 - Checks now: pnpm check green (vitest 2109 passed, 2 skipped; lint, fmt, fmt:examples, runtime caps, cargo tests; no Rust changes). @lumiose/ui unit 61 (menu 35). examples/ui-e2e: 76 passed, 2 skipped by design (dev and build), and 152 passed with --repeat-each=2. Size: menu client script 7.25 kB min / 2.71 gzip / 2.43 brotli; component JS in islands 12.30 / 4.18 / 3.78; menu.css 1.80 / 0.43 / 0.37.
 
 2026-10-15 (Spark), after Halo shared the placement module (5a95f4a9, merged into this branch; its parent is main d5d4db13): Menu.Popup uses placement() (root bottom/start, submenu inline-end/start), the triggers anchorName() and withStyle(); menu.css imports placement.css and drops its own position-area rules; lu-menu calls place() where CSS anchor positioning is missing (on open, scroll and resize). Placement e2e unchanged and passing. Size now: menu client script 8.62 kB min / 3.28 gzip / 2.94 brotli (place.ts fallback included); component JS 13.75 / 4.78 / 4.32; menu.css 2.07 / 0.51 / 0.43 (with placement.css). Checks: pnpm check green (vitest 2109 passed, 2 skipped); ui unit 61; ui-e2e 152 passed with --repeat-each=2 (4 skipped by design); UI docs contract 10 passed; docs regenerated.
+
+2026-10-15 (user): the proposed public names in these notes are approved as listed.
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary
