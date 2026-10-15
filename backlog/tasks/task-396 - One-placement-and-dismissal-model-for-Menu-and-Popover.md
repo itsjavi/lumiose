@@ -1,10 +1,11 @@
 ---
 id: TASK-396
 title: One placement and dismissal model for Menu and Popover
-status: To Do
+status: Done
 assignee:
   - '@Halo'
 created_date: '2026-10-15 19:22'
+updated_date: '2026-10-15 20:45'
 labels:
   - ui
 milestone: m-12
@@ -23,6 +24,46 @@ Found at the M12 second-batch merge (2026-10-15). Menu and Popover solve doc-9's
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Menu and Popover use one recorded dismissal approach, or the split is recorded with its reason
-- [ ] #2 One pair of placement type names is exported
+- [x] #1 Menu and Popover use one recorded dismissal approach, or the split is recorded with its reason
+- [x] #2 One pair of placement type names is exported
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+2026-10-15 (Halo): claimed (M12 third batch, branch claude/halo-m12c-4d6b9f).
+
+2026-10-15 (Halo): done on branch claude/halo-m12c-4d6b9f.
+
+## Decision (technical, decision-16; Lux may promote it to a decision record)
+
+One dismissal model for the anchored layers the client scripts open, Menu's: **the script makes the popup a manual popover and dismisses it itself**, through a shared module, `packages/ui/src/layer/layer.ts`, now used by Menu, Popover and Combobox. Popover's "keep `popover=auto` and reopen in a requestAnimationFrame" is gone. Why:
+- The reopen hack fires `toggle` twice (closed, then open) on a right-click outside, so `onOpenChange` reports `false` then `true`, and the theme's exit and enter transitions restart.
+- Combobox needs a manual popover anyway: focus stays in its input, which an auto popover's light dismiss would fight.
+- One place holds doc-9 section 1's outside-press filters: main button and primary pointer only, press and release both outside, no scrollbar presses, no nodes the press removed, presses inside the popup's box count as inside (password-manager overlays). Before, Menu had its own copy and Popover none.
+
+The model: `openLayer({ popup, contains, dismiss })` while a popup is open, released when it closes. It dismisses on an outside press (innermost first), on a close request (a `CloseWatcher` per layer, or an Escape listener that only acts when no handler took the key, so a parent dialog keeps its own close request), and when another layer opens outside it (the auto popover stack's rule: sibling submenus, two popovers). Layers nest through the DOM. Layers whose popup left the page while open are forgotten.
+
+Server HTML keeps `popover="auto"` for Menu and Popover, so they open, light-dismiss and close on Escape with no JavaScript. Popover's script flips a closed popup to manual on its trigger's click (before `popovertarget` acts; a key press clicks too), and `Popover.Root`'s `open` prop does the same before `showPopover`; the layer is registered on `beforetoggle`, so a press right after opening already counts. A popup opened some other way while still `auto` keeps the browser's light dismiss.
+
+Native `<select>` (TASK-358) keeps the platform's picker dismissal. Tooltip (`popover=hint`) and Dialog (`<dialog>`, closedby) are not layers of this model.
+
+## Placement names
+
+`MenuSide` and `MenuAlign` are gone: `Menu.Popup`'s `side` and `align` use the package's `Side` and `Align` (`@lumiose/ui` exports one pair, with `PlacementProps`). Not public yet (@lumiose/ui is unreleased), so no deprecation.
+
+## Evidence
+
+- `layer/layer.dom.test.ts` (6 tests): filters, removed nodes, one close request per layer, nesting, the auto-stack rule, pruning.
+- ui-e2e: Menu (right-click/middle click outside keeps it open, outside click closes the tree, submenus, dialogs), Popover (right-click outside keeps it open, nested popovers, Escape one at a time, in a dialog), Combobox, Tooltip, on dev and build. The script-list tests now expect the shared `layer-*.js` chunk.
+- Sizes (brotli): Popover script 1.26 → 1.72 kB, Menu 2.94 → 3.28 kB (each row counts the shared module); all client scripts together 7.99 → 7.98 kB.
+- Docs: menu.md, popover.md (dismissal and sizes), combobox.md.
+
+2026-10-15 (Halo): validation on the branch: pnpm check green except apps/web/src/content/content.test.ts:60 (Beacon's area), which expects the UI nav's second page to be ui/dialog; with combobox.md it is ui/combobox (pages sort by title). One-line test fix sent to Beacon (beacon-m12b, editing apps/web); not edited here. The steps after Vitest ran by hand: script tests, lumiose size, cargo test (165 passed). ui unit 101 (incl. layer and compile tests), typecheck ui and ui-e2e, oxlint clean, docs:check and the cli docs tests (ui contract, examples type-check) green, pnpm pack:check --smoke --skip-npm green (@lumiose/ui 40 files). ui-e2e full suite dev and build: 268 passed, 6 skipped by design.
+<!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Menu, Popover and Combobox share one dismissal model (packages/ui/src/layer/layer.ts: manual popovers, outside-press filters, close requests, the auto-stack rule); Popover's reopen-after-right-click is gone, and Menu's placement types are the package's Side and Align.
+<!-- SECTION:FINAL_SUMMARY:END -->

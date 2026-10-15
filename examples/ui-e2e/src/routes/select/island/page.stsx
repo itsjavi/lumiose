@@ -1,0 +1,12 @@
+import { Title } from "lumiose";
+import { SelectSignals } from "../../../islands/SelectSignals.tsx";
+
+export default function SelectIslandPage() {
+  return (
+    <>
+      <Title>Select in an island, bound to signals</Title>
+      <h1>Select in an island, bound to signals</h1>
+      <SelectSignals client:load />
+    </>
+  );
+}

@@ -29,7 +29,6 @@ export { Tabs } from "./tabs/tabs.tsx";
 export type { TabsListProps, TabsPanelProps, TabsRootProps, TabsTabProps } from "./tabs/tabs.tsx";
 export { Menu } from "./menu/menu.tsx";
 export type {
-  MenuAlign,
   MenuCheckboxItemProps,
   MenuGroupLabelProps,
   MenuGroupProps,
@@ -40,8 +39,33 @@ export type {
   MenuRadioItemProps,
   MenuRootProps,
   MenuSeparatorProps,
-  MenuSide,
   MenuSubmenuRootProps,
   MenuSubmenuTriggerProps,
   MenuTriggerProps,
 } from "./menu/menu.tsx";
+export { Combobox } from "./combobox/combobox.tsx";
+export type {
+  ComboboxChipsProps,
+  ComboboxClearProps,
+  ComboboxEmptyProps,
+  ComboboxGroupLabelProps,
+  ComboboxGroupProps,
+  ComboboxInputProps,
+  ComboboxItemProps,
+  ComboboxLabelProps,
+  ComboboxListProps,
+  ComboboxPopupProps,
+  ComboboxRootProps,
+  ComboboxStatusProps,
+  ComboboxTriggerProps,
+  ComboboxValue,
+} from "./combobox/combobox.tsx";
+export { Select } from "./select/select.tsx";
+export type {
+  SelectGroupProps,
+  SelectItemProps,
+  SelectRootProps,
+  SelectSeparatorProps,
+  SelectTriggerProps,
+  SelectValueProps,
+} from "./select/select.tsx";

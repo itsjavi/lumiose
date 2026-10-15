@@ -424,8 +424,10 @@ test.describe("pointer", () => {
     await actions(page).trigger.focus();
     await page.keyboard.press("Enter");
     await expect(actions(page).item("Rename")).toBeFocused();
-    // Menu's script and the placement fallback it shares with Popover and Tooltip; no island runtime.
+    // Menu's script, the dismissal model it shares with Popover and Combobox, and the placement
+    // fallback it shares with Popover and Tooltip; no island runtime.
     expect(scripts.toSorted()).toEqual([
+      expect.stringMatching(/\/layer-[\w-]+\.js$/),
       expect.stringMatching(/\/menu\.script-[\w-]+\.js$/),
       expect.stringMatching(/\/place-[\w-]+\.js$/),
     ]);

@@ -1,0 +1,12 @@
+import { Title } from "lumiose";
+import { ComboboxSignals } from "../../../islands/ComboboxSignals.tsx";
+
+export default function ComboboxIslandPage() {
+  return (
+    <>
+      <Title>Combobox in an island, bound to signals</Title>
+      <h1>Combobox in an island, bound to signals</h1>
+      <ComboboxSignals client:load />
+    </>
+  );
+}

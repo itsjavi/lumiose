@@ -10,6 +10,7 @@ import {
   onCleanup,
   ref,
   signal,
+  untrack,
   useContext,
   useId,
   type Signal,
@@ -132,8 +133,9 @@ function Popup({ children, ref: forwarded, ...rest }: DialogPopupProps) {
   const alert = () => dialog.role() === "alertdialog";
   // The server writes the attributes before it renders the children, so it renders them first to
   // know which Title and Description exist. The browser claims the dialog before its children
-  // (hydration needs that order) and updates the references when the parts register.
-  const content = isServer ? children : undefined;
+  // (hydration needs that order) and updates the references when the parts register. The server
+  // renders once, so reading them once is the intent: `untrack` says so (no LUM2001).
+  const content = isServer ? untrack(() => children) : undefined;
   return (
     <dialog
       role={alert() ? "alertdialog" : undefined}

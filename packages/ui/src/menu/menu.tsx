@@ -34,11 +34,6 @@ declare module "lumiose/jsx-runtime" {
   }
 }
 
-/** The trigger's side the popup goes on. `inline-start` and `inline-end` follow the direction. */
-export type MenuSide = Side;
-/** How the popup aligns with the trigger along that side. */
-export type MenuAlign = Align;
-
 /**
  * `Menu.Root` renders `<lu-menu>`, an element with no box that holds the menu's state and adds its
  * keyboard and item behaviour. `bind:open={signal}` stands in for `open` and `onOpenChange`.
@@ -75,9 +70,9 @@ export type MenuPopupProps = JSX.IntrinsicElements["div"] & {
    * `"right"`, `"inline-start"` or `"inline-end"` (default for a submenu). It flips to the other
    * side when it does not fit.
    */
-  side?: MenuSide;
+  side?: Side;
   /** How the popup aligns with the trigger along that side. Default `"start"`. */
-  align?: MenuAlign;
+  align?: Align;
   /** The gap between the trigger and the popup, in CSS pixels. */
   sideOffset?: number;
   /** A shift along the side, away from the aligned edge, in CSS pixels. */
@@ -369,8 +364,9 @@ function GroupElement({
   ...rest
 }: JSX.IntrinsicElements["div"] & { group: GroupContextValue }) {
   // The server writes the attributes before it renders the children: render them first to know
-  // whether a GroupLabel exists. The browser updates the reference when the label registers.
-  const content = isServer ? children : undefined;
+  // whether a GroupLabel exists. The browser updates the reference when the label registers. The
+  // server renders once, so reading them once is the intent: `untrack` says so (no LUM2001).
+  const content = isServer ? untrack(() => children) : undefined;
   return (
     <div aria-labelledby={group.labels() > 0 ? group.labelId : undefined} {...rest} role="group">
       {isServer ? content : children}

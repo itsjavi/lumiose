@@ -1,0 +1,16 @@
+/*
+ * The CSS Select needs to work, and nothing else (decision-62). Select is a native `<select>`: a
+ * select whose first child is a `Select.Trigger` is a customizable select (`appearance:
+ * base-select`), since only that renders the trigger, `Select.Value` and options with more than
+ * text. Browsers without customizable select ignore it and keep their own control. A select with
+ * no Trigger keeps the native look unless your CSS or the theme opts in. It sits in the `lu.core`
+ * layer, so any app CSS wins.
+ */
+@layer lu.core, lu.theme;
+
+@layer lu.core {
+  select:has(> button:first-child),
+  select:has(> button:first-child)::picker(select) {
+    appearance: base-select;
+  }
+}

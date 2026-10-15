@@ -31,6 +31,10 @@
     "./tabs.css": "./src/tabs/tabs.css",
     "./menu": "./src/menu/menu.tsx",
     "./menu.css": "./src/menu/menu.css",
+    "./combobox": "./src/combobox/combobox.tsx",
+    "./combobox.css": "./src/combobox/combobox.css",
+    "./select": "./src/select/select.tsx",
+    "./select.css": "./src/select/select.css",
     "./themes/default.css": "./src/themes/default.css",
     "./package.json": "./package.json"
   },
@@ -48,6 +52,10 @@
       "./tabs.css": "./dist/tabs/tabs.css",
       "./menu": "./dist/menu/menu.tsx",
       "./menu.css": "./dist/menu/menu.css",
+      "./combobox": "./dist/combobox/combobox.tsx",
+      "./combobox.css": "./dist/combobox/combobox.css",
+      "./select": "./dist/select/select.tsx",
+      "./select.css": "./dist/select/select.css",
       "./themes/default.css": "./dist/themes/default.css",
       "./package.json": "./package.json"
     }
