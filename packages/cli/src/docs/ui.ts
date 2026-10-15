@@ -68,7 +68,7 @@ export interface UiComponent {
 
 export interface UiCatalog {
   components: UiComponent[];
-  /** The cascade layers and the default theme's custom properties, from the UI index. */
+  /** The cascade layers and the default theme's custom properties, from the index and guides. */
   theme: { layers: string[]; properties: string[] };
 }
 
@@ -78,8 +78,10 @@ export function uiCatalog(docs: readonly Doc[]): UiCatalog {
     .filter(isComponentPage)
     .map(parseComponent)
     .toSorted((a, b) => a.name.localeCompare(b.name));
-  const readme = docs.find((doc) => doc.topic.replace(UI_PREFIX, "") === "README");
-  const spans = readme === undefined ? [] : codeSpans(readme.content);
+  // The index and the guides (Theming) name the layers and the theme's properties.
+  const spans = docs
+    .filter((doc) => !isComponentPage(doc))
+    .flatMap((doc) => codeSpans(doc.content));
   return {
     components,
     theme: {

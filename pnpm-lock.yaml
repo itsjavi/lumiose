@@ -65,6 +65,9 @@ importers:
       '@lumiose/site-kit':
         specifier: workspace:*
         version: link:../../packages/site-kit
+      '@lumiose/ui':
+        specifier: workspace:*
+        version: link:../../packages/ui
       lumiose:
         specifier: workspace:*
         version: link:../../packages/lumiose

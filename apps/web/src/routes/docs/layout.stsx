@@ -1,178 +1,47 @@
-// The docs shell: search and the section navigation beside the page. Below $bp.lg the navigation
-// folds into a closed disclosure above the page, so the content comes first on phones; on wide
-// screens CSS shows the disclosure's content without its summary.
-import { bp, color, font, layout, radius, space, text, weight } from "@lumiose/site-kit/tokens";
+// The docs shell (DocsShell): search and the docs navigation, the index's sections. The UI section
+// lists the @lumiose/ui pages, at their /ui URLs; the diagnostics fold into a disclosure.
 import { href, url, type LayoutProps } from "lumiose";
+import { DocsShell, type ShellSection } from "../../components/DocsShell.stsx";
 import { docNav, findDoc } from "../../content/docs.ts";
-import { DocsSearch } from "../../islands/DocsSearch.stsx";
 import { sitePath } from "../../lib/site.ts";
 
 export default function DocsLayout(props: LayoutProps<"/docs">) {
   const path = sitePath(url().pathname).replace(/^\/docs\/?|\/$/g, "");
   const current = findDoc(path);
+  const sections = (): ShellSection[] => [
+    ...docNav().map((section) =>
+      section.title === "Diagnostics"
+        ? {
+            title: section.title,
+            codes: true,
+            links: section.pages.map((page) => ({
+              href: page.url,
+              label: page.path === "errors" ? "All diagnostics" : page.title.split(":")[0]!,
+              title: page.title,
+              current: page === current,
+            })),
+          }
+        : {
+            title: section.title,
+            links: section.pages.map((page) => ({
+              href: page.url,
+              label: page.label,
+              current: page === current,
+            })),
+          },
+    ),
+    {
+      title: "See it run",
+      links: [
+        { href: href("/examples"), label: "Examples" },
+        { href: href("/benchmarks"), label: "Benchmarks" },
+      ],
+    },
+  ];
 
   return (
-    <div class="docs">
-      <aside class="side" aria-label="Documentation">
-        <DocsSearch client:idle index={href("/search.json")} />
-        <details class="menu">
-          <summary>Menu</summary>
-          <nav aria-label="Docs">
-            {docNav().map((section) =>
-              section.title === "Diagnostics" ? (
-                <details class="group" open={current?.section === "Diagnostics"}>
-                  <summary>{section.title}</summary>
-                  <ul role="list" class="codes">
-                    {section.pages.map((page) => (
-                      <li>
-                        <a
-                          href={page.url}
-                          aria-current={page === current ? "page" : undefined}
-                          title={page.title}
-                        >
-                          {page.path === "errors" ? "All diagnostics" : page.title.split(":")[0]}
-                        </a>
-                      </li>
-                    ))}
-                  </ul>
-                </details>
-              ) : (
-                <div class="group">
-                  <p class="heading">{section.title}</p>
-                  <ul role="list">
-                    {section.pages.map((page) => (
-                      <li>
-                        <a href={page.url} aria-current={page === current ? "page" : undefined}>
-                          {page.label}
-                        </a>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              ),
-            )}
-            <div class="group">
-              <p class="heading">See it run</p>
-              <ul role="list">
-                <li>
-                  <a href={href("/examples")}>Examples</a>
-                </li>
-                <li>
-                  <a href={href("/benchmarks")}>Benchmarks</a>
-                </li>
-              </ul>
-            </div>
-          </nav>
-        </details>
-      </aside>
-      <div class="page">{props.children}</div>
-    </div>
+    <DocsShell label="Docs" sections={sections()}>
+      {props.children}
+    </DocsShell>
   );
 }
-
-<style>
-  .docs {
-    display: grid;
-    gap: $space.lg;
-    max-inline-size: $layout.page;
-    margin-inline: auto;
-    padding: $space.lg $layout.gutter $space.xxl;
-  }
-  @media (width >= $bp.lg) {
-    .docs {
-      grid-template-columns: 15rem minmax(0, 1fr);
-      gap: $space.xl;
-    }
-    /* The navigation scrolls on its own, below the search box, whose results may overlap
-       the page. */
-    .side {
-      position: sticky;
-      inset-block-start: calc($layout.header + $space.md);
-      align-self: start;
-      z-index: 2;
-    }
-    nav {
-      max-block-size: calc(100dvh - $layout.header - 6rem);
-      overflow-y: auto;
-      overscroll-behavior: contain;
-      padding-inline-end: $space.xs;
-    }
-    /* The disclosure is always open on wide screens. */
-    .menu > summary {
-      display: none;
-    }
-    .menu::details-content {
-      content-visibility: visible;
-    }
-  }
-  .side {
-    display: grid;
-    gap: $space.md;
-    align-content: start;
-    min-inline-size: 0;
-  }
-  .menu > summary {
-    padding: $space.xs $space.sm;
-    border: 1px solid $color.border;
-    border-radius: $radius.md;
-    background: $color.surface;
-    font-weight: $weight.semibold;
-    cursor: pointer;
-  }
-  nav {
-    display: grid;
-    gap: $space.lg;
-    padding-block: $space.sm;
-  }
-  .heading,
-  .group > summary {
-    margin-block-end: $space.xs;
-    color: $color.text;
-    font-size: $text.xs;
-    font-weight: $weight.semibold;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-  }
-  .group > summary {
-    cursor: pointer;
-  }
-  ul {
-    display: grid;
-    gap: 1px;
-  }
-  a {
-    display: block;
-    padding: 0.3rem $space.sm;
-    border-radius: $radius.sm;
-    color: $color.muted;
-    font-size: $text.sm;
-    line-height: 1.35;
-    text-decoration: none;
-  }
-  a:hover {
-    background: $color.sunken;
-    color: $color.text;
-  }
-  a[aria-current="page"] {
-    background: $color.accentSoft;
-    color: $color.accentText;
-    font-weight: $weight.semibold;
-  }
-  .codes {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-  .codes a {
-    font-family: $font.mono;
-    font-size: $text.xs;
-  }
-  .codes li:first-child {
-    grid-column: 1 / -1;
-  }
-  .codes li:first-child a {
-    font-family: inherit;
-    font-size: $text.sm;
-  }
-  .page {
-    min-inline-size: 0;
-  }
-</style>

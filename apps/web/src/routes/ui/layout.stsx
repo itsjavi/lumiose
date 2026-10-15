@@ -1,0 +1,33 @@
+// The /ui section's shell (DocsShell): the @lumiose/ui pages (packages/ui/docs) in the order of the
+// UI's llms.txt, then links for agents and back to the Lumiose docs.
+import { href, url, type LayoutProps } from "lumiose";
+import { DocsShell, type ShellSection } from "../../components/DocsShell.stsx";
+import { findUiPage, uiNav } from "../../content/docs.ts";
+import { sitePath } from "../../lib/site.ts";
+
+export default function UiLayout(props: LayoutProps<"/ui">) {
+  const current = findUiPage(sitePath(url().pathname).replace(/^\/ui\/?|\/$/g, ""));
+  const sections = (): ShellSection[] => [
+    ...uiNav().map((section) => ({
+      title: section.title,
+      links: section.pages.map((page) => ({
+        href: page.url,
+        label: page.label,
+        current: page === current,
+      })),
+    })),
+    {
+      title: "More",
+      links: [
+        { href: href("/ui/llms.txt"), label: "UI llms.txt" },
+        { href: href("/docs/[[...path]]", { path: "" }), label: "Lumiose docs" },
+      ],
+    },
+  ];
+
+  return (
+    <DocsShell label="UI" sections={sections()}>
+      {props.children}
+    </DocsShell>
+  );
+}

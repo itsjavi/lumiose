@@ -1,7 +1,8 @@
 // The docs content layer: the version-matched Markdown of `packages/lumiose/docs` (the single source
 // that `lumiose docs` prints and the package ships), rendered for /docs. @lumiose/ui ships its own
-// docs (`packages/ui/docs`, decision-64): they are mounted below `ui/` and fill the index's UI
-// section, in the order of their llms.txt.
+// docs (`packages/ui/docs`, decision-64): they are the /ui section (TASK-387), in the order of their
+// llms.txt, with topics below `ui/` (`ui/dialog`), and also fill the docs index's UI section. Their
+// `tsx check` examples carry the id of their live demo (./ui-demos.ts).
 //
 // This is the only module that knows the docs are Markdown files read through Vite: it loads them
 // as raw strings with `import.meta.glob(…, { query: "?raw" })` and renders them with `marked`.
@@ -13,6 +14,8 @@ import { highlight } from "@lumiose/site-kit/highlight";
 import { href as routeHref } from "lumiose";
 import { Marked, Renderer, type Token, type Tokens } from "marked";
 import uiIndex from "../../../../packages/ui/docs/llms.txt?raw";
+import { link } from "../lib/site.ts";
+import { isCheckedTsx, uiDemos } from "./ui-demos.ts";
 
 const sources = import.meta.glob<string>("../../../../packages/lumiose/docs/**/*.md", {
   query: "?raw",
@@ -28,6 +31,8 @@ const uiSources = import.meta.glob<string>("../../../../packages/ui/docs/**/*.md
 const UI_DOCS_DIR = "../../../../packages/ui/docs/";
 /** The UI pages link Lumiose's pages by their URLs on this site (they ship in another package). */
 const SITE_DOCS = "https://itsjavi.com/lumiose/docs/";
+/** …and Lumiose's pages link the UI section by its URL. */
+const SITE_UI = "https://itsjavi.com/lumiose/ui/";
 
 export interface DocHeading {
   depth: 2 | 3;
@@ -35,15 +40,29 @@ export interface DocHeading {
   text: string;
 }
 
-/** A run of rendered Markdown, or a code block (rendered by the kit's CodeBlock, with copy). */
+/**
+ * A run of rendered Markdown, a code block (rendered by the kit's CodeBlock, with copy), or the
+ * default theme's palette (after the table of its custom properties, on a UI page).
+ */
 export type DocBlock =
   | { kind: "html"; html: string }
-  | { kind: "code"; code: string; lang: string; title?: string };
+  | {
+      kind: "code";
+      code: string;
+      lang: string;
+      title?: string;
+      /** A UI page's example with a live demo: its id (`dialog-1`) and whether it is an island. */
+      demo?: { id: string; island: boolean };
+    }
+  | { kind: "palette" };
 
 export interface DocPage {
   /** The docs path without `.md`: `concepts/signals`, `errors/LUM1001`, `README`. */
   topic: string;
-  /** The URL path below /docs: `concepts/signals`, `errors/LUM1001`; "" for the index. */
+  /**
+   * The URL path below /docs (`concepts/signals`, `errors/LUM1001`), or below /ui for a UI page
+   * (`dialog`); "" for an index.
+   */
   path: string;
   /** The site URL (base included). */
   url: string;
@@ -55,7 +74,7 @@ export interface DocPage {
   summary: string;
   /** The summary as inline HTML (code spans and links kept). */
   summaryHtml: string;
-  /** The navigation section: Start here, Concepts, Reference or Diagnostics. */
+  /** The navigation section: Start here, Concepts, Reference or Diagnostics; Overview or Components. */
   section: string;
   blocks: DocBlock[];
   /** `##` and `###` headings, for the table of contents. */
@@ -71,7 +90,12 @@ export interface NavSection {
 
 const DIAGNOSTICS = "Diagnostics";
 
-let cache: { pages: DocPage[]; byPath: Map<string, DocPage>; nav: NavSection[] } | undefined;
+interface Collection {
+  pages: DocPage[];
+  byPath: Map<string, DocPage>;
+}
+
+let cache: { docs: Collection; ui: Collection; nav: NavSection[] } | undefined;
 
 function load() {
   if (cache !== undefined) return cache;
@@ -85,58 +109,101 @@ function load() {
   const index = texts.get("README");
   if (index === undefined) throw new Error(`No docs index at ${DOCS_DIR}README.md.`);
 
-  // The index's sections give the reading order and the navigation labels.
-  const ui = readOutline(uiIndex)
-    .flatMap((section) => section.entries)
-    .map((entry) => ({ topic: `ui/${entry.topic}`, label: entry.label }));
-  const outline = readOutline(index)
-    .map((section) => (section.title === "UI" ? { ...section, entries: ui } : section))
-    .filter((section) => section.entries.length > 0);
+  // The UI's llms.txt gives its reading order: the overview and guides, then the components.
+  const ui = collect(
+    texts,
+    readOutline(uiIndex).flatMap((section) =>
+      section.entries.map((entry) => ({
+        topic: `ui/${entry.topic}`,
+        section: section.title,
+        label: entry.topic === "README" ? "Introduction" : entry.label,
+      })),
+    ),
+  );
+
+  // The index's sections give the reading order and the navigation labels. Its UI section links
+  // the UI's llms.txt: there the navigation lists the UI pages, at their /ui URLs.
+  const outline = readOutline(index);
   const placed = new Set(outline.flatMap((section) => section.entries.map((entry) => entry.topic)));
   const diagnostics = [...texts.keys()]
     .filter((topic) => topic.startsWith("errors/") && !placed.has(topic))
     .toSorted();
-  const order: { topic: string; section: string; label?: string }[] = [
+  const docs = collect(texts, [
     { topic: "README", section: "Start here", label: "Overview" },
     ...outline.flatMap((section) =>
       section.entries.map((entry) => ({ ...entry, section: section.title })),
     ),
     ...diagnostics.map((topic) => ({ topic, section: DIAGNOSTICS })),
-  ];
+  ]);
 
+  const nav: NavSection[] = [];
+  for (const page of docs.pages) {
+    const last = nav.at(-1);
+    if (last?.title === page.section) last.pages.push(page);
+    else nav.push({ title: page.section, pages: [page] });
+  }
+  const at = outline.findIndex((section) => section.title === "UI");
+  if (at !== -1) {
+    const after = [...outline.slice(at + 1).map((section) => section.title), DIAGNOSTICS];
+    const before = nav.findIndex((section) => after.includes(section.title));
+    nav.splice(before === -1 ? nav.length : before, 0, { title: "UI", pages: [...ui.pages] });
+  }
+  cache = { docs, ui, nav };
+  return cache;
+}
+
+function collect(
+  texts: ReadonlyMap<string, string>,
+  order: readonly { topic: string; section: string; label?: string }[],
+): Collection {
   const pages: DocPage[] = [];
   for (const { topic, section, label } of order) {
     const text = texts.get(topic);
     if (text === undefined || pages.some((page) => page.topic === topic)) continue;
     pages.push(renderDoc(topic, text, section, label));
   }
-  const nav: NavSection[] = [];
-  for (const page of pages) {
-    const last = nav.at(-1);
-    if (last?.title === page.section) last.pages.push(page);
-    else nav.push({ title: page.section, pages: [page] });
-  }
-  cache = { pages, byPath: new Map(pages.map((page) => [page.path, page])), nav };
-  return cache;
+  return { pages, byPath: new Map(pages.map((page) => [page.path, page])) };
 }
 
 /** Every docs page, in reading order (the index's order, then the diagnostics by code). */
 export function docPages(): readonly DocPage[] {
-  return load().pages;
+  return load().docs.pages;
 }
 
 /** The page at a URL path below /docs (`""` is the index). */
 export function findDoc(path: string): DocPage | undefined {
-  return load().byPath.get(path.replace(/^\/+|\/+$/g, ""));
+  return load().docs.byPath.get(path.replace(/^\/+|\/+$/g, ""));
 }
 
+/** The docs navigation: the index's sections, the UI pages included. */
 export function docNav(): readonly NavSection[] {
   return load().nav;
 }
 
-/** The pages before and after `page` in reading order. */
+/** Every page of the /ui section (packages/ui/docs), in the order of the UI's llms.txt. */
+export function uiPages(): readonly DocPage[] {
+  return load().ui.pages;
+}
+
+/** The UI page at a URL path below /ui (`""` is the introduction). */
+export function findUiPage(path: string): DocPage | undefined {
+  return load().ui.byPath.get(path.replace(/^\/+|\/+$/g, ""));
+}
+
+/** The /ui navigation: the UI's llms.txt sections (Overview, Components). */
+export function uiNav(): readonly NavSection[] {
+  const nav: NavSection[] = [];
+  for (const page of uiPages()) {
+    const last = nav.at(-1);
+    if (last?.title === page.section) last.pages.push(page);
+    else nav.push({ title: page.section, pages: [page] });
+  }
+  return nav;
+}
+
+/** The pages before and after `page` in reading order, in its own section of the site. */
 export function adjacentDocs(page: DocPage): { prev?: DocPage; next?: DocPage } {
-  const pages = docPages();
+  const pages = isUiTopic(page.topic) ? uiPages() : docPages();
   const at = pages.indexOf(page);
   return { prev: pages[at - 1], next: pages[at + 1] };
 }
@@ -174,14 +241,27 @@ export function readOutline(index: string): OutlineSection[] {
 
 // --- Rendering ---------------------------------------------------------------------------------
 
-/** URL path below /docs of a topic: `README` → "", `errors/README` → `errors`. */
+function isUiTopic(topic: string): boolean {
+  return topic === "ui" || topic.startsWith("ui/");
+}
+
+/**
+ * URL path of a topic, below /docs (`README` → "", `errors/README` → `errors`), or below /ui for a
+ * UI topic (`ui/README` → "", `ui/dialog` → `dialog`).
+ */
 export function topicPath(topic: string): string {
-  return topic === "README" ? "" : topic.replace(/\/README$/, "");
+  const path = isUiTopic(topic) ? topic.replace(/^ui\/?/, "") : topic;
+  return path === "README" ? "" : path.replace(/\/README$/, "");
 }
 
 /** The site URL of a topic, with an optional `#hash`. */
 export function topicUrl(topic: string, hash = ""): string {
-  return routeHref("/docs/[[...path]]", { path: topicPath(topic) }) + hash;
+  const path = topicPath(topic);
+  return (
+    (isUiTopic(topic)
+      ? routeHref("/ui/[[...path]]", { path })
+      : routeHref("/docs/[[...path]]", { path })) + hash
+  );
 }
 
 /**
@@ -192,6 +272,14 @@ export function docHref(href: string, from: string): string {
   if (href.startsWith(SITE_DOCS)) {
     const [path = "", hash] = href.slice(SITE_DOCS.length).split("#");
     return topicUrl(path.replace(/\/$/, "") || "README", hash === undefined ? "" : `#${hash}`);
+  }
+  if (href.startsWith(SITE_UI)) {
+    const [path = "", hash] = href.slice(SITE_UI.length).split("#");
+    if (path.endsWith(".txt")) return link(`/ui/${path}`);
+    return topicUrl(
+      `ui/${path.replace(/\/$/, "") || "README"}`,
+      hash === undefined ? "" : `#${hash}`,
+    );
   }
   if (/^[a-z][a-z0-9+.-]*:|^\/\/|^#/i.test(href)) return href;
   const match = /^([^#?]*?)\.md(#.*)?$/.exec(href);
@@ -305,16 +393,34 @@ function renderDoc(topic: string, source: string, section: string, label?: strin
     });
     run = [];
   };
+  // A UI page's examples that have a live demo, and their count among its `tsx check` blocks.
+  const ui = isUiTopic(topic);
+  const name = topic.slice("ui/".length);
+  const demos = new Map(ui ? uiDemos(name, source).map((demo) => [demo.id, demo.island]) : []);
+  let examples = 0;
   for (const token of body) {
     if (token.type !== "code") {
       run.push(token);
+      // The default theme's palette follows the table of its custom properties.
+      if (ui && token.type === "table" && token.raw.includes("`--lu-background`")) {
+        flush();
+        blocks.push({ kind: "palette" });
+      }
       continue;
     }
     flush();
     const code = token as Tokens.Code;
     const [lang = "text", ...meta] = (code.lang ?? "").split(/\s+/).filter(Boolean);
     const file = meta.find((part) => part.startsWith("file="))?.slice("file=".length);
-    blocks.push({ kind: "code", code: code.text, lang, ...(file ? { title: file } : {}) });
+    const id = ui && isCheckedTsx(code.lang) ? `${name}-${++examples}` : "";
+    const island = demos.get(id);
+    blocks.push({
+      kind: "code",
+      code: code.text,
+      lang,
+      ...(file ? { title: file } : {}),
+      ...(island === undefined ? {} : { demo: { id, island } }),
+    });
   }
   flush();
 
