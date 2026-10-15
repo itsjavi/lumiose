@@ -16,6 +16,11 @@ allowBuilds:
   # Prisma (examples/ssr-auth): the CLI downloads its schema engine on first use instead.
   "@prisma/engines": false
   prisma: false
+  # The Sentry, OpenTelemetry and PostHog guides' type-checked examples (@lumiose/cli devDependencies)
+  # need only the packages' types: no Sentry CLI binary download, no core-js or protobufjs postinstall.
+  "@sentry/cli": false
+  core-js: false
+  protobufjs: false
 minimumReleaseAgeExclude:
   - vite@8.3.4
   - "@vue/language-core@3.3.13"

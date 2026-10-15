@@ -74,6 +74,9 @@ mistakes** and **Related**.
 - [Realtime](guides/realtime.md): Server-sent events from an endpoint to an island's `EventSource`, WebSockets with `ws` on the Node adapter's server, proxy configs and per-platform notes.
 - [Payments with Stripe Checkout](guides/stripe.md): Checkout started from a form action, a return page, and webhooks received by a `route.ts` endpoint that verifies Stripe's signature.
 - [Content from Sanity](guides/sanity.md): Sanity content read in async components and prerendered, draft previews on a server-rendered route behind a secret, and static rebuilds from Sanity's webhook.
+- [Tracing with OpenTelemetry](guides/opentelemetry.md): Spans for requests, their phases and client navigations from the instrumentation files, a relay for the browser's spans, and setups for OpenObserve, SigNoz and Datadog.
+- [Error reporting with Sentry](guides/sentry.md): Server errors from `onRequestError` and browser errors from `onError` reported to Sentry, with the source maps of both builds uploaded by Sentry's Vite plugin.
+- [Product analytics with PostHog](guides/posthog.md): PostHog started in `src/instrumentation.client.ts`, page views on MPA pages and SPA navigations (`afterNavigate`), events from islands and feature flags evaluated on the server.
 - [Editors](guides/editors.md): The language server in Neovim and Helix (file type, root markers, the server command), what works in Zed today, and GitHub highlighting through `.gitattributes`.
 - [Web components](guides/web-components.md): Custom elements and web-component libraries: defining them in the browser, typing them in JSX, properties versus attributes (React 19's rule), events with `on:`, server rendering, and the Custom Elements Everywhere score (100).
 
@@ -8180,6 +8183,691 @@ endpoint reads.
   `isValidSignature`, then parse.
 - **A preview page without `noindex` and `no-store`.** Search engines and shared caches would keep
   a draft. The preview page sets both.
+
+<!-- source: guides/opentelemetry.md -->
+
+# Tracing with OpenTelemetry
+
+> Trace requests, their phases and the browser's navigations with OpenTelemetry from `src/instrumentation.server.ts` and `src/instrumentation.client.ts`, and send them to OpenObserve, SigNoz or Datadog.
+
+Lumiose has no tracing of its own: its instrumentation files hand every phase of a request, and
+every client navigation, submission, fetch and hydration, to observers you write
+([Server](../concepts/server.md#instrumentation), [Islands](../concepts/islands.md#concept)). This
+guide makes those observers OpenTelemetry spans and exports them over OTLP, which every backend
+below accepts.
+
+| File                                     | Role                                                                         |
+| ---------------------------------------- | ---------------------------------------------------------------------------- |
+| `src/instrumentation.server.ts`          | Starts the Node SDK; a span per request and per phase; errors as spans.      |
+| `src/instrumentation.client.ts`          | A browser tracer; spans for navigations, submissions, fetches and hydration. |
+| `src/routes/api/otel/v1/traces/route.ts` | Relays the browser's spans to the backend with the server's credentials.     |
+
+> **Status:** checked end to end on 2026-10-15 with a Lumiose app built with `lumiose build` and
+> served by `lumiose preview`, against OpenObserve and self-hosted SigNoz 0.129 (its last Docker Compose release) in Docker (server spans
+> nested by phase, failed requests, a continued `traceparent`, and browser navigation and
+> hydration spans through the relay). The Datadog setup follows Datadog's documentation; it was not
+> run. Packages: `@opentelemetry/api` 1.9, `@opentelemetry/sdk-node` and
+> `@opentelemetry/exporter-trace-otlp-http` 0.223, `@opentelemetry/sdk-trace-web` 2.12.
+
+## Setup
+
+```sh
+pnpm add @opentelemetry/api @opentelemetry/sdk-node @opentelemetry/exporter-trace-otlp-http
+pnpm add @opentelemetry/sdk-trace-web @opentelemetry/sdk-trace-base @opentelemetry/resources @opentelemetry/semantic-conventions
+```
+
+The Node SDK runs where the server runs on Node: `lumiose dev`, `lumiose preview`,
+`@lumiose/adapter-node` and the Docker and VPS targets. On Cloudflare Workers or Vercel's Edge
+runtime, start that platform's OpenTelemetry integration in `register()` instead; the wrappers
+below stay the same.
+
+## Server spans
+
+`register()` starts the SDK once per server instance, before the first request. The
+`instrumentations` wrappers open a span per request (`SERVER` kind, named after the route
+pattern, as OpenTelemetry's HTTP conventions ask) and a child span per phase: each middleware file,
+the action, the endpoint, the render until the shell is ready, and each streamed boundary. The
+SDK's context manager makes each phase's span a child of the one around it, so a trace shows the
+request, then its middleware, then its render, then its streamed parts. A `traceparent` header
+from a proxy or another service continues its trace. `onRequestError` records unexpected errors
+with the phase and the `digest` that an `<ErrorBoundary>` fallback shows.
+
+```ts check
+// src/instrumentation.server.ts
+import {
+  ROOT_CONTEXT,
+  SpanKind,
+  SpanStatusCode,
+  propagation,
+  trace,
+  type Span,
+  type TextMapGetter,
+} from "@opentelemetry/api";
+import type { RequestErrorInfo, ServerInstrumentation } from "lumiose";
+
+export async function register() {
+  const { NodeSDK } = await import("@opentelemetry/sdk-node");
+  const { OTLPTraceExporter } = await import("@opentelemetry/exporter-trace-otlp-http");
+  // The endpoint and headers come from the OTEL_EXPORTER_OTLP_* variables (see the backends).
+  new NodeSDK({ serviceName: "my-app", traceExporter: new OTLPTraceExporter() }).start();
+}
+
+const tracer = trace.getTracer("lumiose");
+
+/** Reads a `traceparent` header, so a trace started by a proxy or another service continues. */
+const headers: TextMapGetter<Headers> = {
+  get: (carrier, key) => carrier.get(key) ?? undefined,
+  keys: (carrier) => [...carrier.keys()],
+};
+
+type Result = { status: "success" } | { status: "error"; error: unknown };
+
+/** Ends a phase's span: failed, with the exception, when the phase failed. */
+function end(span: Span, result: Result): void {
+  if (result.status === "error") {
+    span.recordException(result.error instanceof Error ? result.error : String(result.error));
+    span.setStatus({ code: SpanStatusCode.ERROR });
+  }
+  span.end();
+}
+
+/** The endpoint that relays the browser's spans (below): no spans for the relay itself. */
+const RELAY = "/api/otel/v1/traces";
+
+/** A child span around one phase: `call()` runs it, inside the span. */
+function phase(
+  name: string,
+  info: { route: string | undefined },
+  attributes: Record<string, string>,
+  call: () => Promise<Result>,
+) {
+  if (info.route === RELAY) return call();
+  return tracer.startActiveSpan(name, { attributes }, async (span) => end(span, await call()));
+}
+
+export const instrumentations: ServerInstrumentation[] = [
+  {
+    request: (call, info) => {
+      if (info.route === RELAY) return call();
+      const parent = propagation.extract(ROOT_CONTEXT, info.request.headers, headers);
+      const method = info.request.method;
+      const name = info.route === undefined ? method : `${method} ${info.route}`;
+      const attributes = {
+        "http.request.method": method,
+        "url.path": new URL(info.request.url).pathname,
+        ...(info.route === undefined ? {} : { "http.route": info.route }),
+      };
+      return tracer.startActiveSpan(
+        name,
+        { kind: SpanKind.SERVER, attributes },
+        parent,
+        async (span) => {
+          const result = await call();
+          const status = result.status === "success" ? result.response?.status : undefined;
+          if (status !== undefined) span.setAttribute("http.response.status_code", status);
+          if (status !== undefined && status >= 500) span.setStatus({ code: SpanStatusCode.ERROR });
+          end(span, result);
+        },
+      );
+    },
+    middleware: (call, info) => phase("middleware", info, { "code.file.path": info.file }, call),
+    action: (call, info) => phase(`action ${info.name}`, info, {}, call),
+    endpoint: (call, info) => phase(`${info.method} handler`, info, {}, call),
+    render: (call, info) => phase("render", info, {}, call),
+    stream: (call, info) => phase("stream", info, {}, call),
+  },
+];
+
+/** Unexpected errors, as spans of their own with the phase and the digest users see. */
+export function onRequestError(error: unknown, info: RequestErrorInfo) {
+  const span = tracer.startSpan(`error ${info.phase}`, {
+    attributes: {
+      "http.route": info.route ?? "",
+      "lumiose.phase": info.phase,
+      "lumiose.digest": info.digest ?? "",
+    },
+  });
+  end(span, { status: "error", error });
+}
+```
+
+## Client spans
+
+`src/instrumentation.client.ts` runs on every page before islands hydrate and before the SPA
+router starts, so its tracer sees the first hydration. The `navigate` wrapper covers a client
+navigation of an SPA until the new page is on screen; `submit`, `fetch` and `hydrate` cover form
+submissions, `fetchJSON()` and `query()` requests, and each island. MPA pages have no client
+navigations: their page loads are the server's `request` spans.
+
+```ts check
+// src/instrumentation.client.ts
+import { SpanStatusCode, trace, type Span } from "@opentelemetry/api";
+import { OTLPTraceExporter } from "@opentelemetry/exporter-trace-otlp-http";
+import { resourceFromAttributes } from "@opentelemetry/resources";
+import { BatchSpanProcessor } from "@opentelemetry/sdk-trace-base";
+import { WebTracerProvider } from "@opentelemetry/sdk-trace-web";
+import { ATTR_SERVICE_NAME } from "@opentelemetry/semantic-conventions";
+import type { ClientErrorInfo, ClientInstrumentation } from "lumiose";
+
+const provider = new WebTracerProvider({
+  resource: resourceFromAttributes({ [ATTR_SERVICE_NAME]: "my-app-browser" }),
+  // The app's own endpoint forwards the spans with the server's credentials (below).
+  spanProcessors: [new BatchSpanProcessor(new OTLPTraceExporter({ url: "/api/otel/v1/traces" }))],
+});
+provider.register();
+
+const tracer = trace.getTracer("lumiose");
+
+type Result = { status: "success" } | { status: "error"; error: unknown };
+
+function end(span: Span, result: Result): void {
+  if (result.status === "error") {
+    span.recordException(result.error instanceof Error ? result.error : String(result.error));
+    span.setStatus({ code: SpanStatusCode.ERROR });
+  }
+  span.end();
+}
+
+function phase(name: string, attributes: Record<string, string>, call: () => Promise<Result>) {
+  return tracer.startActiveSpan(name, { attributes }, async (span) => end(span, await call()));
+}
+
+export const instrumentations: ClientInstrumentation[] = [
+  {
+    // A client navigation of an SPA, until the new page is on screen.
+    navigate: (call, info) =>
+      phase(
+        `navigate ${info.to?.route ?? info.to?.url.pathname ?? ""}`,
+        { "lumiose.navigation": info.type, "url.path": info.to?.url.pathname ?? "" },
+        call,
+      ),
+    submit: (call, info) => phase(`submit ${info.action}`, { "url.full": info.url }, call),
+    fetch: (call, info) =>
+      phase(
+        "fetch",
+        "url" in info ? { "url.full": info.url } : { "lumiose.query": JSON.stringify(info.key) },
+        call,
+      ),
+    hydrate: (call, info) => phase(`hydrate ${info.island}`, {}, call),
+  },
+];
+
+export function onError(error: unknown, info: ClientErrorInfo) {
+  const span = tracer.startSpan(`error ${info.phase}`, {
+    attributes: { "lumiose.phase": info.phase, "lumiose.island": info.island ?? "" },
+  });
+  end(span, { status: "error", error });
+}
+
+// Spans are batched: send the last ones when the page goes away.
+addEventListener("pagehide", () => void provider.forceFlush());
+```
+
+The web SDK adds about 58 kB of JavaScript (16 kB brotli) to every page, since every page loads
+the file. The `@opentelemetry/api` calls in the wrappers do nothing until a provider is registered,
+so a site that only needs a sample can load the SDK with `import()` for some page loads and leave
+the rest without it.
+
+## The relay endpoint
+
+Backends need credentials that must not ship to the browser, and most do not accept cross-origin
+requests. The browser exporter posts to the app instead, and this endpoint forwards the spans with
+the same `OTEL_EXPORTER_OTLP_*` settings the server uses. The server instrumentation above skips
+it, so relaying spans creates none. The body limit keeps it from relaying anything larger than a
+batch of spans.
+
+```ts check file=routes/api/otel/v1/traces/route.ts
+// src/routes/api/otel/v1/traces/route.ts: the browser's spans, forwarded with the server's settings
+import { env, type Endpoint } from "lumiose";
+
+export const mode = "server";
+// Spans come in batches; anything larger is not a span batch.
+export const limits = { body: "256kb" };
+
+/** `OTEL_EXPORTER_OTLP_HEADERS` (`key=value,…`, values URL-encoded), as OpenTelemetry reads it. */
+function otlpHeaders(): Record<string, string> {
+  const pairs = (env("OTEL_EXPORTER_OTLP_HEADERS") ?? "")
+    .split(",")
+    .filter((pair) => pair.includes("="));
+  return Object.fromEntries(
+    pairs.map((pair) => {
+      const at = pair.indexOf("=");
+      return [pair.slice(0, at).trim(), decodeURIComponent(pair.slice(at + 1).trim())];
+    }),
+  );
+}
+
+export const POST: Endpoint<"/api/otel/v1/traces"> = async ({ request }) => {
+  const url =
+    env("OTEL_EXPORTER_OTLP_TRACES_ENDPOINT") ??
+    `${env("OTEL_EXPORTER_OTLP_ENDPOINT") ?? "http://localhost:4318"}/v1/traces`;
+  const response = await fetch(url, {
+    method: "POST",
+    headers: {
+      ...otlpHeaders(),
+      "content-type": request.headers.get("content-type") ?? "application/json",
+    },
+    body: await request.arrayBuffer(),
+  });
+  return new Response(null, { status: response.ok ? 204 : 502 });
+};
+```
+
+## Backends
+
+The server exporter and the relay read OpenTelemetry's standard variables:
+
+| Variable                             | Use                                                                         |
+| ------------------------------------ | --------------------------------------------------------------------------- |
+| `OTEL_EXPORTER_OTLP_ENDPOINT`        | The backend's OTLP/HTTP base URL; traces go to `<url>/v1/traces`.           |
+| `OTEL_EXPORTER_OTLP_TRACES_ENDPOINT` | The full traces URL, when it is not `<base>/v1/traces`.                     |
+| `OTEL_EXPORTER_OTLP_HEADERS`         | `key=value` pairs, comma-separated, values URL-encoded (`%20` for a space). |
+| `OTEL_SERVICE_NAME`                  | Overrides `serviceName`.                                                    |
+
+### OpenObserve
+
+OpenObserve takes OTLP/HTTP at `/api/<organization>/v1/traces`, with HTTP Basic authentication
+(the user's email and password, or an ingestion token from the UI):
+
+```sh
+OTEL_EXPORTER_OTLP_TRACES_ENDPOINT=https://openobserve.example.com/api/default/v1/traces
+OTEL_EXPORTER_OTLP_HEADERS="Authorization=Basic%20Og=="
+```
+
+Locally, OpenObserve runs in one container; its UI is at `http://localhost:5080`:
+
+```sh
+docker run -d -p 5080:5080 -e ZO_ROOT_USER_EMAIL=root@example.com -e ZO_ROOT_USER_PASSWORD=change-me \
+  public.ecr.aws/zinclabs/openobserve:latest
+```
+
+### SigNoz
+
+Self-hosted SigNoz receives OTLP/HTTP on port 4318, without authentication: keep that port on a
+private network.
+
+```sh
+OTEL_EXPORTER_OTLP_ENDPOINT=http://signoz-otel-collector:4318
+```
+
+SigNoz Cloud takes the region's ingestion URL and the ingestion key as a header:
+
+```sh
+OTEL_EXPORTER_OTLP_ENDPOINT=https://ingest.<region>.signoz.cloud:443
+OTEL_EXPORTER_OTLP_HEADERS=signoz-ingestion-key=<your-ingestion-key>
+```
+
+SigNoz installs with its `foundryctl` tool ([SigNoz docs](https://signoz.io/docs/install/docker/));
+the UI is at `http://localhost:8080`. On a fresh install the collector starts receiving once the
+first user has signed up in the UI, which creates the organization.
+
+### Datadog
+
+The Datadog Agent receives OTLP once its receiver is enabled, and forwards to Datadog with the
+Agent's API key, so the app needs no Datadog credentials. Enable the HTTP receiver on the Agent
+(`DD_OTLP_CONFIG_RECEIVER_PROTOCOLS_HTTP_ENDPOINT=0.0.0.0:4318`, and expose the port), then point
+the app at it:
+
+```sh
+OTEL_EXPORTER_OTLP_ENDPOINT=http://datadog-agent:4318
+```
+
+The spans appear in Datadog APM under the service name. For the browser, Datadog's own RUM SDK
+started in `src/instrumentation.client.ts` is the usual choice; the relay above works too, through
+the Agent.
+
+## Common mistakes
+
+- **Starting the SDK at module scope.** Start it in `register()`, which the server awaits before the
+  first request; module code also runs while `lumiose build` loads the server.
+- **Exporting from the browser straight to the backend.** The credentials would ship in the bundle,
+  and the backend must allow the page's origin. Relay through the app.
+- **High-cardinality span names.** Name spans after the route pattern (`GET /stories/[slug]`), not
+  the URL; the URL goes in `url.path`.
+- **Expecting spans for static files.** The server serves them before the app, so no wrapper sees
+  them; prerendered pages are static files.
+- **Changing the request in a wrapper.** Wrappers observe: they cannot change arguments, results or
+  the response. Use middleware for that.
+
+<!-- source: guides/sentry.md -->
+
+# Error reporting with Sentry
+
+> Report server errors from `onRequestError` and browser errors from `onError` to Sentry, with source maps for the client and the server bundles.
+
+Sentry has no Lumiose SDK, and needs none: `@sentry/node` starts in
+`src/instrumentation.server.ts` and receives every unexpected error of a request, and
+`@sentry/browser` starts in `src/instrumentation.client.ts`, before any island hydrates, and
+receives the errors of islands, the SPA router and `submit()`
+([Server](../concepts/server.md#instrumentation), [Islands](../concepts/islands.md#concept)).
+Sentry's Vite plugin uploads the source maps of both builds.
+
+| File                            | Role                                                                   |
+| ------------------------------- | ---------------------------------------------------------------------- |
+| `vite.config.ts`                | Hidden source maps, uploaded to Sentry after each build, then deleted. |
+| `src/instrumentation.server.ts` | Starts `@sentry/node`; reports request errors with their phase.        |
+| `src/instrumentation.client.ts` | Starts `@sentry/browser`; reports island, router and submit errors.    |
+
+> **Status:** checked on 2026-10-15 with a Lumiose app built with `lumiose build` and served by
+> `lumiose preview`, against a local stand-in for Sentry's ingest endpoint: a server render error
+> and an island error each arrived as one event with the tags below and debug IDs for the source
+> maps, and the build wrote hidden source maps for the client and the server. Not run against a
+> Sentry account (no upload of the maps). Packages: `@sentry/node` and `@sentry/browser` 10.76,
+> `@sentry/vite-plugin` 5.4.
+
+## Setup
+
+```sh
+pnpm add @sentry/node @sentry/browser
+pnpm add -D @sentry/vite-plugin
+```
+
+| Variable                       | Where                                                                                 |
+| ------------------------------ | ------------------------------------------------------------------------------------- |
+| `SENTRY_DSN`                   | The server, at run time.                                                              |
+| `PUBLIC_SENTRY_DSN`            | The build, for the browser bundle (`import.meta.env` only sees `PUBLIC_*` variables). |
+| `SENTRY_AUTH_TOKEN`            | The build, to upload source maps. A secret: never a `PUBLIC_*` variable.              |
+| `SENTRY_ORG`, `SENTRY_PROJECT` | The build, with the token.                                                            |
+
+A DSN is not a secret (it only lets clients send events), so the same one may serve both sides.
+
+## Source maps
+
+`build.sourcemap: "hidden"` writes a map next to every bundle of both builds without the
+`//# sourceMappingURL` comment, so browsers do not fetch them. The plugin, last in the list, runs
+after the client build and after the server build: it adds a debug ID to each bundle and its map,
+uploads the maps, and deletes them so they are not deployed. Without `SENTRY_AUTH_TOKEN` (on a
+laptop) it builds as usual, warns, and uploads nothing.
+
+```ts check
+// vite.config.ts
+import lumiose from "@lumiose/vite";
+import { sentryVitePlugin } from "@sentry/vite-plugin";
+import { defineConfig } from "vite";
+
+export default defineConfig({
+  // Source maps for Sentry only: "hidden" leaves out the //# sourceMappingURL comment.
+  build: { sourcemap: "hidden" },
+  plugins: [
+    lumiose({ mode: "server" }),
+    // Last: uploads the client's and the server's source maps after each build, then deletes them.
+    sentryVitePlugin({
+      org: process.env.SENTRY_ORG,
+      project: process.env.SENTRY_PROJECT,
+      authToken: process.env.SENTRY_AUTH_TOKEN,
+      sourcemaps: { filesToDeleteAfterUpload: ["dist/**/*.map"] },
+    }),
+  ],
+});
+```
+
+## Server errors
+
+`register()` starts the SDK once per server instance, before the first request.
+`onRequestError` receives what the request handler catches and Sentry's own Node integrations do
+not see: errors that render the `error` page or answer 500, errors of streamed `<Suspense>`
+boundaries, rejected `waitUntil()` work and errors an `<ErrorBoundary>` caught, each with the
+phase it happened in. `redirect()`, `notFound()` and `error(status)` are not reported.
+
+```ts check
+// src/instrumentation.server.ts
+import * as Sentry from "@sentry/node";
+import { env, type RequestErrorInfo } from "lumiose";
+
+export function register() {
+  Sentry.init({
+    dsn: env("SENTRY_DSN"),
+    environment: env("SENTRY_ENVIRONMENT") ?? "production",
+    // Errors only; tracing is in the OpenTelemetry guide.
+    tracesSampleRate: 0,
+  });
+}
+
+export function onRequestError(error: unknown, info: RequestErrorInfo) {
+  Sentry.captureException(error, {
+    tags: { phase: info.phase, route: info.route ?? "(none)" },
+    extra: { url: info.request.url, method: info.request.method, digest: info.digest },
+  });
+}
+```
+
+The `digest` is what an `<ErrorBoundary>` fallback shows in production: a user who quotes it
+leads you to the event. Sentry's Node SDK also sets up OpenTelemetry for its own tracing; to keep
+the [OpenTelemetry guide](opentelemetry.md)'s setup as well, follow Sentry's instructions for an
+existing OpenTelemetry setup (`skipOpenTelemetrySetup`).
+
+## Browser errors
+
+The file's top-level code runs before any island hydrates, so the SDK is ready for hydration
+errors. `onError` receives what Lumiose catches: an island that fails to load or hydrate
+(`"hydrate"`), an async component or an `<ErrorBoundary>` (`"render"`), an effect or binding
+(`"effect"`), the SPA router (`"navigate"`) and `submit()` (`"submit"`), with the island's
+module and export. Sentry's own handlers still catch everything else on the page.
+
+```ts check
+// src/instrumentation.client.ts
+import * as Sentry from "@sentry/browser";
+import type { ClientErrorInfo } from "lumiose";
+
+Sentry.init({
+  dsn: import.meta.env.PUBLIC_SENTRY_DSN,
+  environment: import.meta.env.PROD ? "production" : "development",
+});
+
+export function onError(error: unknown, info: ClientErrorInfo) {
+  Sentry.captureException(error, {
+    tags: { phase: info.phase, route: info.route ?? "(mpa)", island: info.island ?? "(none)" },
+  });
+}
+```
+
+## Production
+
+- On serverless hosts the function may stop before the SDK sends: call
+  `ctx.platform.waitUntil(Sentry.flush(2000))` after reporting, or follow Sentry's guide for the
+  platform.
+- With `lumiose({ csp: "strict" })`, the browser SDK posts events with `fetch`, which the
+  strict policy does not restrict (it sets `script-src` and `style-src`, not `connect-src`).
+- Set `release` in both `init` calls, or let the plugin inject it from the Git commit, so
+  events and source maps match.
+
+## Common mistakes
+
+- **Starting the server SDK at module scope.** Start it in `register()`, which the server awaits
+  before the first request.
+- **Reporting from middleware with `try`/`catch` around `next()`.** Render errors, streamed
+  boundaries and endpoint 500s never reach it; `onRequestError` gets them.
+- **`SENTRY_DSN` in browser code.** It is undefined there; the browser bundle reads
+  `import.meta.env.PUBLIC_SENTRY_DSN` at build time.
+- **Deploying the source maps.** Keep `filesToDeleteAfterUpload`, or anyone can read the original
+  source.
+- **The plugin before `lumiose()`.** Put it last, so it sees the final bundles.
+
+<!-- source: guides/posthog.md -->
+
+# Product analytics with PostHog
+
+> Start PostHog in `src/instrumentation.client.ts`, count page views on MPA pages and SPA navigations (`afterNavigate`), send events from islands, and evaluate feature flags on the server.
+
+PostHog's browser SDK starts in `src/instrumentation.client.ts`, the one file every page loads,
+also pages without islands. A page view is a document load there, and an SPA's client navigation
+in `afterNavigate` ([`lumiose/router`](../reference/router.md#afternavigate)). Islands send events,
+and `posthog-node` evaluates feature flags while the server renders, so a page shows the right
+variant without a flicker.
+
+| File                            | Role                                                                     |
+| ------------------------------- | ------------------------------------------------------------------------ |
+| `src/instrumentation.client.ts` | Loads and starts `posthog-js`; counts each document load as a page view. |
+| `src/components/PageViews.tsx`  | In the outermost `spa` layout: counts client navigations.                |
+| `src/components/PlanButton.tsx` | An island that sends an event.                                           |
+| `src/server/posthog.server.ts`  | The `posthog-node` client. Server-only.                                  |
+| `src/routes/plans/page.stsx`    | A server page that renders a feature flag's variant.                     |
+
+> **Status:** checked on 2026-10-15 with a Lumiose app built with `lumiose build` and served by
+> `lumiose preview`, against a local stand-in for PostHog's API: one `$pageview` per MPA page
+> load, per SPA document load and per SPA navigation, the island's event, and the server's flag
+> evaluation. Not run against a PostHog project. Packages: `posthog-js` 1.438, `posthog-node` 5.55.
+
+## Setup
+
+```sh
+pnpm add posthog-js posthog-node
+```
+
+| Variable                      | Where                                                                       |
+| ----------------------------- | --------------------------------------------------------------------------- |
+| `PUBLIC_POSTHOG_KEY`          | The build, for the browser (`phc_…`, the project API key: not a secret).    |
+| `PUBLIC_POSTHOG_HOST`         | The build: `https://us.i.posthog.com`, `https://eu.i.posthog.com` or yours. |
+| `POSTHOG_KEY`, `POSTHOG_HOST` | The server, for `posthog-node` (the same key).                              |
+
+## Page views
+
+`posthog-js` is about 300 kB of JavaScript (85 kB brotli), so the file loads it with `import()`
+instead of a static import, which would hold back hydration on every page until it ran. Automatic
+page views are off: the file counts each document load (an MPA page, or the first page of an SPA)
+once.
+
+```ts check
+// src/instrumentation.client.ts
+// posthog-js is large (about 85 kB brotli): load it without holding back hydration.
+void import("posthog-js").then(({ default: posthog }) => {
+  posthog.init(import.meta.env.PUBLIC_POSTHOG_KEY, {
+    api_host: import.meta.env.PUBLIC_POSTHOG_HOST ?? "https://us.i.posthog.com",
+    // Page views are counted here and in <PageViews>, the same way on MPA and SPA pages.
+    capture_pageview: false,
+    person_profiles: "identified_only",
+  });
+  // Every document load: an MPA page, or the first page of an SPA.
+  posthog.capture("$pageview");
+});
+```
+
+An SPA navigates on the client, so no document loads: `afterNavigate` counts those navigations.
+Render this component once, in the outermost `spa` layout, where it stays mounted across
+navigations. Its `"enter"` call is the document load the file above already counted.
+
+```tsx check file=components/PageViews.tsx
+// src/components/PageViews.tsx: in the outermost spa layout
+import posthog from "posthog-js";
+import { afterNavigate } from "lumiose/router";
+
+export function PageViews() {
+  afterNavigate((navigation) => {
+    // "enter" is the document load, which instrumentation.client.ts already counted.
+    if (navigation.type === "enter" || navigation.to === null) return;
+    posthog.capture("$pageview", { $current_url: navigation.to.url.href });
+  });
+  return null;
+}
+```
+
+```stsx check file=routes/workspace/layout.stsx
+// src/routes/workspace/layout.stsx
+import type { LayoutProps } from "lumiose";
+import { PageViews } from "../../components/PageViews.tsx";
+
+export const mode = "spa";
+
+export default function Workspace(props: LayoutProps<"/workspace">) {
+  return (
+    <div class="workspace">
+      <PageViews />
+      {props.children}
+    </div>
+  );
+}
+```
+
+## Events
+
+Islands import `posthog` and send events from handlers. They share the instance the
+instrumentation file starts, which is ready long before a person clicks.
+
+```tsx check file=components/PlanButton.tsx
+// src/components/PlanButton.tsx: an island
+import posthog from "posthog-js";
+
+export function PlanButton(props: { plan: string }) {
+  return (
+    <button onClick={() => posthog.capture("plan_selected", { plan: props.plan })}>
+      Choose {props.plan}
+    </button>
+  );
+}
+```
+
+To tie events to your users, call `posthog.identify(userId)` in an island once the person is
+signed in, and `posthog.reset()` on sign-out.
+
+## Feature flags
+
+A flag read in the browser arrives after the page shows, so the page would switch variants in
+front of the reader. Evaluate it on the server instead, while the page renders, with the same
+distinct id the browser uses (your user id once identified):
+
+```ts check file=server/posthog.server.ts
+// src/server/posthog.server.ts
+import { env } from "lumiose";
+import { PostHog } from "posthog-node";
+
+let client: PostHog | undefined;
+
+export function posthog(): PostHog {
+  const key = env("POSTHOG_KEY");
+  if (key === undefined) throw new Error("POSTHOG_KEY is not set.");
+  return (client ??= new PostHog(key, { host: env("POSTHOG_HOST") ?? "https://us.i.posthog.com" }));
+}
+```
+
+```stsx check file=routes/plans/page.stsx
+// src/routes/plans/page.stsx
+import { Title, locals } from "lumiose";
+import { PlanButton } from "../../components/PlanButton.tsx";
+import { posthog } from "../../server/posthog.server.ts";
+
+export const mode = "server";
+
+export default async function Pricing() {
+  const user = locals().userId ?? "anonymous";
+  // Evaluated on the server, so the page renders the right variant without a flicker.
+  const annual = await posthog().isFeatureEnabled("annual-pricing", user);
+  return (
+    <main>
+      <Title>Plans</Title>
+      <h1>{annual ? "Pay yearly, save 20%" : "Plans"}</h1>
+      <PlanButton client:load plan={annual ? "team-yearly" : "team"} />
+    </main>
+  );
+}
+```
+
+`locals().userId` is whatever your middleware stores ([Server](../concepts/server.md)). The page is a
+`server` route, since a flag depends on the reader. `posthog-node` batches its own events (such as
+`$feature_flag_called`); on a serverless host, flush before the function ends with
+`ctx.platform.waitUntil(posthog().flush())`.
+
+## Production
+
+- With `lumiose({ csp: "strict" })`, `posthog-js` is bundled with your code, so the policy allows
+  it. Its extensions (surveys, session recording) load further scripts from PostHog's host, which a
+  strict policy refuses: keep them off, or set your own policy for them
+  ([Security](../concepts/security.md)).
+- Ad blockers often block PostHog's hosts: PostHog documents a reverse proxy, which in Lumiose can
+  be middleware or an endpoint that forwards `/ingest/*` to PostHog.
+- Ask for consent where the law requires it before `posthog.init()` (or start with
+  `opt_out_capturing_by_default: true` and call `posthog.opt_in_capturing()`).
+
+## Common mistakes
+
+- **Leaving automatic page views on.** PostHog's history-based page views and the ones above would
+  count SPA navigations twice; keep `capture_pageview: false`.
+- **`afterNavigate` in a page instead of the layout.** A page is replaced on navigation, so its
+  hook would see only its own `"enter"`. Put the component in the outermost `spa` layout.
+- **A static `import posthog from "posthog-js"` in the instrumentation file.** Every page then waits
+  for 300 kB of JavaScript before its islands hydrate.
+- **Reading flags in the browser for content above the fold.** Evaluate them on the server.
+- **The server key in browser code.** Only `PUBLIC_*` variables reach `import.meta.env`; keep
+  `posthog-node` in `*.server.ts` modules.
 
 <!-- source: guides/editors.md -->
 
