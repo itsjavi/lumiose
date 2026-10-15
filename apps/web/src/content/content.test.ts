@@ -40,6 +40,7 @@ describe("docs", () => {
       "Coming from",
       "Concepts",
       "Guides",
+      "UI",
       "Deploy",
       "Reference",
       "Diagnostics",

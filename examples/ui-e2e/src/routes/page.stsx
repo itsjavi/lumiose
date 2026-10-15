@@ -1,0 +1,20 @@
+import { Title } from "lumiose";
+
+export default function Home() {
+  return (
+    <article>
+      <Title>@lumiose/ui e2e fixture</Title>
+      <h1>@lumiose/ui end-to-end fixture</h1>
+      <p>
+        Each component server-rendered without an island, and bound to signals in an island. The
+        Playwright suite in <code>e2e/</code> checks keyboard contracts, focus, axe and behaviour
+        without JavaScript, on <code>lumiose dev</code> and on a production build.
+      </p>
+      <ul>
+        <li>
+          <a href="/dialog">Dialog and alert dialog</a> (<a href="/dialog/island">in an island</a>)
+        </li>
+      </ul>
+    </article>
+  );
+}

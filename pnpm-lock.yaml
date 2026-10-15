@@ -852,6 +852,37 @@ importers:
         specifier: ^8.3.4
         version: 8.3.4(@types/node@24.19.1)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(yaml@2.9.1)
 
+  examples/ui-e2e:
+    dependencies:
+      '@lumiose/adapter-node':
+        specifier: workspace:*
+        version: link:../../packages/adapter-node
+      '@lumiose/ui':
+        specifier: workspace:*
+        version: link:../../packages/ui
+      lumiose:
+        specifier: workspace:*
+        version: link:../../packages/lumiose
+    devDependencies:
+      '@axe-core/playwright':
+        specifier: 4.13.0
+        version: 4.13.0(playwright-core@1.63.0)
+      '@lumiose/cli':
+        specifier: workspace:*
+        version: link:../../packages/cli
+      '@lumiose/vite':
+        specifier: workspace:*
+        version: link:../../packages/vite
+      '@playwright/test':
+        specifier: 1.63.0
+        version: 1.63.0
+      '@types/node':
+        specifier: ^24.0.0
+        version: 24.19.1
+      vite:
+        specifier: ^8.3.4
+        version: 8.3.4(@types/node@24.19.1)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(yaml@2.9.1)
+
   examples/ui-spike:
     dependencies:
       '@lumiose/adapter-node':

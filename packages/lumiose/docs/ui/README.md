@@ -59,13 +59,13 @@ Each component's page has an example stylesheet to start from.
 
 ## Components
 
-| Component            | Status  |
-| -------------------- | ------- |
-| Dialog, alert dialog | Planned |
-| Popover, tooltip     | Planned |
-| Menu                 | Planned |
-| Combobox, select     | Planned |
-| Tabs                 | Planned |
+| Component                         | Status                                      |
+| --------------------------------- | ------------------------------------------- |
+| [Dialog, alert dialog](dialog.md) | Available: native `<dialog>`, no JavaScript |
+| Popover, tooltip                  | Planned                                     |
+| Menu                              | Planned                                     |
+| Combobox, select                  | Planned                                     |
+| Tabs                              | Planned                                     |
 
 ## Size
 

@@ -1,0 +1,12 @@
+import { Title } from "lumiose";
+import { DialogSignals } from "../../../islands/DialogSignals.tsx";
+
+export default function DialogIslandPage() {
+  return (
+    <>
+      <Title>Dialog in an island, bound to signals</Title>
+      <h1>Dialog in an island, bound to signals</h1>
+      <DialogSignals client:load />
+    </>
+  );
+}

@@ -25,7 +25,9 @@ interface Component {
   css: string;
 }
 
-const COMPONENTS: Component[] = [];
+const COMPONENTS: Component[] = [
+  { name: "dialog", module: "dialog/dialog.tsx", elements: [], css: "dialog/dialog.css" },
+];
 
 /** Compiles `.tsx` modules for the browser, as @lumiose/vite does in an app. */
 const lumioseClient: Plugin = {

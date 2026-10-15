@@ -1,0 +1,64 @@
+import { Dialog } from "@lumiose/ui";
+import { Title } from "lumiose";
+
+// Server-rendered, no island: the dialogs work from the HTML alone.
+export default function DialogPage() {
+  return (
+    <>
+      <Title>Dialog</Title>
+      <h1>Dialog</h1>
+      <div class="grid">
+        <section aria-labelledby="alert-heading">
+          <h2 id="alert-heading">Alert dialog</h2>
+          <Dialog.Root role="alertdialog">
+            <Dialog.Trigger class="button">Delete project…</Dialog.Trigger>
+            <Dialog.Popup class="dialog">
+              <Dialog.Title>Delete project?</Dialog.Title>
+              <Dialog.Description>
+                This removes the project and its 12 deployments.
+              </Dialog.Description>
+              <footer>
+                <Dialog.Close class="button" value="cancel">
+                  Cancel
+                </Dialog.Close>
+                <Dialog.Close class="button danger" value="delete">
+                  Delete
+                </Dialog.Close>
+              </footer>
+            </Dialog.Popup>
+          </Dialog.Root>
+        </section>
+
+        <section aria-labelledby="dialog-heading">
+          <h2 id="dialog-heading">Dialog with a field, no description</h2>
+          <Dialog.Root>
+            <Dialog.Trigger class="button">Edit profile</Dialog.Trigger>
+            <Dialog.Popup class="dialog">
+              <Dialog.Title>Edit profile</Dialog.Title>
+              <label>
+                Name
+                <input name="name" value="Ada" />
+              </label>
+              <footer>
+                <Dialog.Close class="button" value="cancel">
+                  Cancel
+                </Dialog.Close>
+                <Dialog.Close class="button" value="save">
+                  Save
+                </Dialog.Close>
+              </footer>
+            </Dialog.Popup>
+          </Dialog.Root>
+        </section>
+      </div>
+      {/* Makes the page scroll, to check that a modal dialog locks it. */}
+      <div class="tall" />
+    </>
+  );
+}
+
+<style>
+  .tall {
+    block-size: 150vh;
+  }
+</style>

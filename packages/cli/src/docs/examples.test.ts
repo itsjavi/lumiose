@@ -23,6 +23,7 @@ const linked = {
   lumiose: join(here, "../../../lumiose"),
   "@lumiose/adapter-node": join(here, "../../../adapter-node"),
   "@lumiose/vite": join(here, "../../../vite"),
+  "@lumiose/ui": join(here, "../../../ui"),
   vite: dirname(require.resolve("vite/package.json")),
   typescript: dirname(require.resolve("typescript/package.json")),
   vitest: dirname(require.resolve("vitest/package.json")),

@@ -3,3 +3,5 @@
  * (decision-62). It all sits in the `lu` cascade layer, so any app CSS outside layers wins.
  */
 @layer lu;
+
+@import "./dialog/dialog.css";

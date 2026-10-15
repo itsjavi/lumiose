@@ -1,0 +1,32 @@
+{
+  "name": "@lumiose-examples/ui-e2e",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Lumiose fixture: the @lumiose/ui components server-rendered and in islands, checked in Chromium for their keyboard contracts, focus, axe and behaviour without JavaScript.",
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "dev": "lumiose dev",
+    "build": "lumiose build",
+    "preview": "lumiose preview",
+    "typecheck": "lumiose check",
+    "test:e2e": "playwright test"
+  },
+  "dependencies": {
+    "@lumiose/adapter-node": "workspace:*",
+    "@lumiose/ui": "workspace:*",
+    "lumiose": "workspace:*"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "4.13.0",
+    "@lumiose/cli": "workspace:*",
+    "@lumiose/vite": "workspace:*",
+    "@playwright/test": "1.63.0",
+    "@types/node": "^24.0.0",
+    "vite": "^8.3.4"
+  },
+  "demo": {
+    "title": "@lumiose/ui e2e fixture",
+    "kind": "e2e"
+  }
+}

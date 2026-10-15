@@ -1,0 +1,13 @@
+import { Title } from "lumiose";
+import { DialogSignals } from "../../../islands/DialogSignals.tsx";
+
+// The island's signal starts true: the dialog opens as soon as the island hydrates.
+export default function DialogInitialPage() {
+  return (
+    <>
+      <Title>Dialog open on load</Title>
+      <h1>Dialog open on load</h1>
+      <DialogSignals initiallyOpen client:load />
+    </>
+  );
+}

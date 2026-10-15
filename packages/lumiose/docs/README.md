@@ -75,6 +75,7 @@ mistakes** and **Related**.
 ## UI
 
 - [UI components](ui/README.md): `@lumiose/ui`, accessible and unstyled primitives on native elements, server-rendered without hydration: the approach, styling the parts with your own CSS, and the components available and planned.
+- [Dialog](ui/dialog.md): `Dialog.Root`, `Trigger`, `Popup`, `Title`, `Description` and `Close`, and the alert dialog (`role="alertdialog"`): a native `<dialog>` with invoker commands, no JavaScript; `open`/`onOpenChange` with signals; styling, keyboard and focus.
 
 ## Deploy
 

@@ -18,13 +18,17 @@
   ],
   "exports": {
     ".": "./src/index.ts",
+    "./dialog": "./src/dialog/dialog.tsx",
     "./styles.css": "./src/styles.css",
+    "./dialog.css": "./src/dialog/dialog.css",
     "./package.json": "./package.json"
   },
   "publishConfig": {
     "exports": {
       ".": "./dist/index.ts",
+      "./dialog": "./dist/dialog/dialog.tsx",
       "./styles.css": "./dist/styles.css",
+      "./dialog.css": "./dist/dialog/dialog.css",
       "./package.json": "./package.json"
     }
   },
