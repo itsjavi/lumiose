@@ -1,7 +1,8 @@
 // @vitest-environment happy-dom
 // Accessibility of client navigations (TASK-345) on the History API fallback (happy-dom has no
-// Navigation API): the route announcer (./announcer.ts) and the fallback's focus reset
-// (./history.ts). Components are written in their compiled shape; the SPA boots client-rendered.
+// Navigation API): the route announcer (./announcer.ts), the fallback's focus reset (./history.ts)
+// and its fragment navigations, left to the browser (TASK-350). Components are written in their
+// compiled shape; the SPA boots client-rendered.
 // ./announcer-hydration.test.ts covers the announcer of a hydrated SPA root.
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { Component, Renderable } from "../../contract/client.ts";
@@ -9,7 +10,7 @@ import { resetStates } from "../../core/state.ts";
 import { $async, $await, $leave, createComponent, insert, render } from "../../dom/index.ts";
 import { Title } from "../../dom/head.ts";
 import type { RouteSegment } from "../routes/segments.ts";
-import { afterNavigate, navigate, searchParams } from "./index.ts";
+import { afterNavigate, navigate, searchParams, url } from "./index.ts";
 import { createRouter, prepareRoot, resetRouter, type SpaConfig } from "./router.ts";
 
 const settled = (): Promise<void> => new Promise((resolve) => setTimeout(resolve, 0));
@@ -138,6 +139,44 @@ function click(selector: string): void {
   (container.querySelector(selector) as HTMLElement).click();
 }
 
+/**
+ * A browser's fragment navigation, as Chromium runs it (happy-dom fires no `popstate` for one): it
+ * adds or replaces the entry with a null state, fires `popstate`, then scrolls to the fragment.
+ */
+function fragmentNavigation(href: string, replace: boolean): void {
+  if (replace) history.replaceState(null, "", href);
+  else history.pushState(null, "", href);
+  dispatchEvent(new PopStateEvent("popstate", { state: null }));
+  log.push(`browser scrolls to ${location.hash}`);
+}
+
+/** A link click that nothing prevented, as browsers run it for a fragment of the page. */
+function browserClick(event: MouseEvent): void {
+  const link = (event.target as Element).closest("a");
+  if (event.defaultPrevented || link === null) return;
+  const to = new URL(link.href);
+  if (to.pathname === location.pathname && to.search === location.search && to.href.includes("#")) {
+    event.preventDefault();
+    fragmentNavigation(to.href, to.href === location.href);
+  }
+}
+
+let stopFragments: (() => void) | undefined;
+/**
+ * Fragment navigations as browsers run them, for `location.assign()`/`replace()` and links that
+ * nothing prevented. After `boot()`: the click listener runs after the router's.
+ */
+function browserFragments(): void {
+  vi.spyOn(location, "assign").mockImplementation((href) =>
+    fragmentNavigation(String(href), false),
+  );
+  vi.spyOn(location, "replace").mockImplementation((href) =>
+    fragmentNavigation(String(href), true),
+  );
+  addEventListener("click", browserClick);
+  stopFragments = () => removeEventListener("click", browserClick);
+}
+
 beforeEach(() => {
   log = [];
   let resolve!: () => void;
@@ -152,6 +191,9 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  stopFragments?.();
+  stopFragments = undefined;
+  vi.unstubAllGlobals();
   observer?.disconnect();
   dispose?.();
   dispose = undefined;
@@ -284,6 +326,7 @@ describe("the History fallback's focus reset", () => {
 
   it("resets focus on back/forward to another page, not between entries of one page", async () => {
     await boot("/");
+    browserFragments();
     await navigate("/about");
     await navigate("/about#team");
     const box = container.querySelector("#box") as HTMLElement;
@@ -298,5 +341,91 @@ describe("the History fallback's focus reset", () => {
     await settled();
     expect(location.pathname).toBe("/");
     expect(document.activeElement).toBe(document.body);
+  });
+});
+
+describe("fragment navigations in the History fallback", () => {
+  // At the end of the session history, so that the browser's entries grow `history.length`.
+  beforeEach(() => history.pushState(null, "", "/"));
+
+  it("leaves navigate() to a fragment of the page to the browser, and follows its URL", async () => {
+    await boot("/about");
+    browserFragments();
+    listen();
+    log = [];
+    const box = container.querySelector("#box") as HTMLElement;
+    box.focus();
+    await navigate("/about#team");
+    expect(location.assign).toHaveBeenCalledWith(`${location.origin}/about#team`);
+    expect(url().hash).toBe("#team");
+    // No scroll of the router's, focus reset, hooks or announcement.
+    expect(log).toEqual(["browser scrolls to #team"]);
+    expect(document.activeElement).toBe(box);
+    expect(await announced()).toEqual([]);
+    // The entry the browser added gets a key and the next index.
+    expect(history.state).toEqual({ "lumiose:key": expect.any(String), "lumiose:index": 1 });
+  });
+
+  it("replaces the entry for navigate(…, { replace: true })", async () => {
+    await boot("/about");
+    browserFragments();
+    await navigate("/about#team", { replace: true });
+    expect(location.replace).toHaveBeenCalledWith(`${location.origin}/about#team`);
+    expect(location.assign).not.toHaveBeenCalled();
+    expect(url().hash).toBe("#team");
+    expect(history.state).toEqual({ "lumiose:key": expect.any(String), "lumiose:index": 0 });
+  });
+
+  it("leaves links to a fragment of the page to the browser, the current one included", async () => {
+    await boot("/about");
+    browserFragments();
+    log = [];
+    const link = el("a");
+    link.setAttribute("href", "#team");
+    container.append(link);
+    link.click();
+    await settled();
+    // The same URL again: the browser replaces the entry.
+    link.click();
+    await settled();
+    expect(location.href).toBe(`${location.origin}/about#team`);
+    expect(url().hash).toBe("#team");
+    expect(log).toEqual(["browser scrolls to #team", "browser scrolls to #team"]);
+    expect((history.state as Record<string, unknown>)["lumiose:index"]).toBe(1);
+  });
+
+  it("restores the scroll position of an entry the browser added on back/forward", async () => {
+    await boot("/about");
+    browserFragments();
+    log = [];
+    const link = el("a");
+    link.setAttribute("href", "#team");
+    container.append(link);
+    link.click();
+    await settled();
+    // The router does not scroll back to the top after the browser.
+    expect(log).toEqual(["browser scrolls to #team"]);
+    // Where the browser scrolled to, and the user left it.
+    vi.stubGlobal("scrollY", 300);
+    await navigate("/blank");
+    vi.stubGlobal("scrollY", 0);
+    history.back();
+    await settled();
+    await settled();
+    expect(location.hash).toBe("#team");
+    expect(scrollTo).toHaveBeenLastCalledWith(0, 300);
+  });
+
+  it("leaves the index of an entry it cannot place unknown", async () => {
+    await boot("/about");
+    browserFragments();
+    // Not through navigate(): nothing tells the router that the browser replaced the entry.
+    location.replace(`${location.origin}/about#team`);
+    await settled();
+    expect(url().hash).toBe("#team");
+    expect(history.state).toEqual({
+      "lumiose:key": expect.any(String),
+      "lumiose:index": undefined,
+    });
   });
 });

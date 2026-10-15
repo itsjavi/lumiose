@@ -62,7 +62,9 @@ interface NavigateOptions {
 Navigates on the client when `href` belongs to the current SPA, else loads the document. Resolves
 once the new page is on screen (its async content ready), or when another navigation supersedes
 it. Browser only. Only `http:` and `https:` URLs (relative ones included) navigate: any other
-scheme, such as `javascript:`, throws a `TypeError`.
+scheme, such as `javascript:`, throws a `TypeError`. An `href` that only names a fragment of the
+current page (`navigate("#comments")`) is the browser's, as a link to it is: it scrolls there and
+keeps focus, no hook runs, and `url()` follows.
 
 ### isNavigating
 
@@ -235,8 +237,9 @@ the new page is on screen.
   and focus moves to the document (or the first focusable `[autofocus]` element), so the next Tab
   starts from the top of the page, as after a document load; back/forward restore the scroll
   position. Focus the new page moved while it loaded stays. `searchParams.set()` keeps both, and
-  back/forward between entries that differ only in `#hash` keeps focus. Browsers without the
-  Navigation API get the same behaviour from the History API fallback.
+  back/forward between entries that differ only in `#hash` keeps focus. A link or `navigate()` to
+  a `#hash` of the current page is left to the browser, which scrolls to it and keeps focus.
+  Browsers without the Navigation API get the same behaviour from the History API fallback.
 - **Announcements.** Screen readers announce a document load, not a client navigation, so the
   router reads each new page aloud: once it is on screen, scrolled and focused, a visually hidden
   live region (`aria-live="assertive"`, `aria-atomic="true"`, appended to `<body>` with a

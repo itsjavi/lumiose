@@ -5,6 +5,11 @@
 // Each entry the fallback creates stores a key (for its scroll position) and its index in the
 // session history in `history.state`: `popstate` cannot be cancelled, so a back/forward that a
 // `beforeNavigate` hook cancels goes back by the difference (decision-50).
+//
+// Fragment navigations (a link to a `#hash` of the page, `navigate()` to one, `location.hash`)
+// are the browser's, as with the Navigation API (TASK-350): it adds or replaces the entry, fires
+// `popstate` (with a null state), then scrolls to the fragment. That `popstate` only commits the URL
+// and gives the new entry its key.
 
 /**
  * A navigation of the router: `run` loads and shows its page (resolves once it is on screen or
@@ -37,9 +42,16 @@ let state:
       /** Undefined after back/forward to an entry the fallback did not create. */
       index: number | undefined;
       href: string;
+      /** `history.length` on the current entry: a fragment navigation that grows it added an entry. */
+      length: number;
       positions: Map<string, [number, number]>;
     }
   | undefined;
+
+/** The fragment navigation `historyFragment()` starts replaces the current entry. */
+let replacing = false;
+/** The navigation that the latest `popstate` started. */
+let traversal: Promise<void> | undefined;
 
 function newKey(): string {
   return Math.random().toString(36).slice(2, 10);
@@ -54,6 +66,7 @@ function enter(key: string, index: number | undefined, href: string): void {
     state.key = key;
     state.index = index;
     state.href = href;
+    state.length = history.length;
   }
 }
 
@@ -66,7 +79,13 @@ export function listenHistory(route: Route): () => void {
   history.replaceState({ ...first, [KEY]: firstKey, [INDEX]: firstIndex }, "");
   const restoration = history.scrollRestoration;
   history.scrollRestoration = "manual";
-  state = { key: firstKey, index: firstIndex, href: location.href, positions: new Map() };
+  state = {
+    key: firstKey,
+    index: firstIndex,
+    href: location.href,
+    length: history.length,
+    positions: new Map(),
+  };
   const current = state;
   /** A cancelled back/forward is on its way back to the entry it left. */
   let restoring = false;
@@ -92,8 +111,12 @@ export function listenHistory(route: Route): () => void {
       return;
     }
     const url = new URL(link.href);
-    // An in-page anchor: the browser scrolls to it.
-    if (url.hash !== "" && url.pathname === location.pathname && url.search === location.search) {
+    // A fragment of this page (`#`, the same one included): the browser's.
+    if (
+      url.href.includes("#") &&
+      url.pathname === location.pathname &&
+      url.search === location.search
+    ) {
       return;
     }
     const navigation = route(url, "link");
@@ -124,16 +147,34 @@ export function listenHistory(route: Route): () => void {
       return;
     }
     save();
-    const key = entry?.[KEY] as string | undefined;
+    let key = entry?.[KEY] as string | undefined;
     // Back/forward between entries of one page (only the hash differs) keeps focus, as browsers do.
     const from = new URL(current.href);
     const samePage = url.pathname === from.pathname && url.search === from.search;
-    enter(key ?? newKey(), index, url.href);
+    // A fragment navigation: its entry has no key yet, and the browser scrolls once this returns.
+    const fragment = samePage && key === undefined;
+    let next = index;
+    if (fragment) {
+      // Its index: the current one when it replaced the entry, the next one when it added an entry
+      // at the end (`history.length` grew), else unknown (an entry of the page before the fallback
+      // started, or one added after going back).
+      next =
+        current.index === undefined
+          ? undefined
+          : replacing || url.href === current.href
+            ? current.index
+            : history.length > current.length
+              ? current.index + 1
+              : undefined;
+      key = newKey();
+      history.replaceState({ ...entry, [KEY]: key, [INDEX]: next }, "");
+    }
+    enter(key ?? newKey(), next, url.href);
     if (navigation === undefined) {
       location.reload();
       return;
     }
-    void historyGo(url, navigation, "traverse", false, key, samePage);
+    traversal = historyGo(url, navigation, "traverse", fragment, key, samePage);
   };
   addEventListener("click", onClick);
   addEventListener("popstate", onPopState);
@@ -146,9 +187,26 @@ export function listenHistory(route: Route): () => void {
 }
 
 /**
+ * Goes to `url`, a fragment of the current page: the browser's, as with the Navigation API. It adds
+ * (or replaces) the entry, keeps focus and scrolls to the fragment; its `popstate` commits the URL.
+ * Resolves once committed.
+ */
+export function historyFragment(url: URL, replace: boolean): Promise<void> {
+  traversal = undefined;
+  replacing = replace;
+  try {
+    if (replace) location.replace(url.href);
+    else location.assign(url.href);
+  } finally {
+    replacing = false;
+  }
+  return traversal ?? Promise.resolve();
+}
+
+/**
  * Updates the history entry for `url`, runs the navigation, then scrolls and resets focus, as the
  * Navigation API's `scroll` and `focusReset: "after-transition"` do; `keepScroll` keeps both, like
- * their `"manual"`.
+ * their `"manual"` (for a fragment navigation, the browser scrolls).
  */
 export async function historyGo(
   url: URL,
@@ -181,14 +239,16 @@ export async function historyGo(
     navigation.done(false);
     return;
   }
-  if (kind === "traverse") {
-    const [x, y] = (entry === undefined ? undefined : state?.positions.get(entry)) ?? [0, 0];
-    scrollTo(x, y);
-  } else if (!keepScroll) {
-    const id = decodeURIComponent(url.hash.slice(1));
-    const anchor = id === "" ? null : document.getElementById(id);
-    if (anchor !== null) anchor.scrollIntoView();
-    else scrollTo(0, 0);
+  if (!keepScroll) {
+    if (kind === "traverse") {
+      const [x, y] = (entry === undefined ? undefined : state?.positions.get(entry)) ?? [0, 0];
+      scrollTo(x, y);
+    } else {
+      const id = decodeURIComponent(url.hash.slice(1));
+      const anchor = id === "" ? null : document.getElementById(id);
+      if (anchor !== null) anchor.scrollIntoView();
+      else scrollTo(0, 0);
+    }
   }
   if (!keepFocus && !focused) resetFocus();
   navigation.done(true);

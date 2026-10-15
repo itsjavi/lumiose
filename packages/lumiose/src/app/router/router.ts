@@ -809,6 +809,14 @@ function navigateTo(
     return Promise.resolve();
   }
   return loadHistory().then((fallback) => {
+    // A fragment of the current page: the browser's, as with the Navigation API (no hooks).
+    if (
+      url.href.includes("#") &&
+      url.pathname === location.pathname &&
+      url.search === location.search
+    ) {
+      return fallback.historyFragment(url, replace);
+    }
     const navigation = begin(r!, "navigate", url, redirect);
     if (navigation !== undefined) {
       return fallback.historyGo(
@@ -1027,8 +1035,9 @@ const loadHistory = (): Promise<typeof import("./history.ts")> =>
 
 /**
  * The fallback's view of a link click or back/forward to `url`: the navigation that shows it, if
- * the SPA owns it (`null` when a hook cancelled it). Back/forward that only changes the hash is
- * not a navigation for the hooks.
+ * the SPA owns it (`null` when a hook cancelled it). A move between fragments of one page (the
+ * browser's fragment navigations, back/forward that only changes the hash) is not a navigation for
+ * the hooks.
  */
 function routeOf(
   r: Router,
@@ -1042,7 +1051,9 @@ function routeOf(
   }
   const shown = untrack(r.current).url;
   const hash =
-    url.pathname === shown.pathname && url.search === shown.search && url.hash !== shown.hash;
+    url.pathname === shown.pathname &&
+    url.search === shown.search &&
+    (url.href.includes("#") || shown.href.includes("#"));
   const navigation = hash ? undefined : begin(r, type, url, false);
   return hash || navigation !== undefined ? historyNavigation(r, url, target, navigation) : null;
 }
