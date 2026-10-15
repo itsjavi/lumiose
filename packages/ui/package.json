@@ -29,6 +29,8 @@
     "./tooltip.css": "./src/tooltip/tooltip.css",
     "./tabs": "./src/tabs/tabs.tsx",
     "./tabs.css": "./src/tabs/tabs.css",
+    "./menu": "./src/menu/menu.tsx",
+    "./menu.css": "./src/menu/menu.css",
     "./themes/default.css": "./src/themes/default.css",
     "./package.json": "./package.json"
   },
@@ -44,6 +46,8 @@
       "./tooltip.css": "./dist/tooltip/tooltip.css",
       "./tabs": "./dist/tabs/tabs.tsx",
       "./tabs.css": "./dist/tabs/tabs.css",
+      "./menu": "./dist/menu/menu.tsx",
+      "./menu.css": "./dist/menu/menu.css",
       "./themes/default.css": "./dist/themes/default.css",
       "./package.json": "./package.json"
     }

@@ -27,3 +27,21 @@ export type {
 export type { Align, PlacementProps, Side } from "./placement/placement.ts";
 export { Tabs } from "./tabs/tabs.tsx";
 export type { TabsListProps, TabsPanelProps, TabsRootProps, TabsTabProps } from "./tabs/tabs.tsx";
+export { Menu } from "./menu/menu.tsx";
+export type {
+  MenuAlign,
+  MenuCheckboxItemProps,
+  MenuGroupLabelProps,
+  MenuGroupProps,
+  MenuItemProps,
+  MenuLinkItemProps,
+  MenuPopupProps,
+  MenuRadioGroupProps,
+  MenuRadioItemProps,
+  MenuRootProps,
+  MenuSeparatorProps,
+  MenuSide,
+  MenuSubmenuRootProps,
+  MenuSubmenuTriggerProps,
+  MenuTriggerProps,
+} from "./menu/menu.tsx";

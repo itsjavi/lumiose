@@ -125,7 +125,7 @@ Each component's page has an example stylesheet to start from.
 | [Dialog, alert dialog](dialog.md) | Available: native `<dialog>`, works without JavaScript                |
 | [Popover](popover.md)             | Available: native popover, works without JavaScript                   |
 | [Tooltip](tooltip.md)             | Available: native hint popover, opened by its script                  |
-| Menu                              | Planned                                                               |
+| [Menu](menu.md)                   | Available: popover menu, opens without JavaScript                     |
 | Combobox, select                  | Planned                                                               |
 | [Tabs](tabs.md)                   | Available: server HTML with the full state, `<lu-tabs>` adds the keys |
 

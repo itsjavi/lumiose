@@ -95,3 +95,8 @@ export function focusRing(page: Page): Promise<string> {
     return style.outlineStyle === "none" ? "none" : `${style.outlineWidth} ${style.outlineStyle}`;
   });
 }
+
+/** The last link of the layout's nav, right before `<main>`: Tab from it enters the page. */
+export function lastNavLink(page: Page): Locator {
+  return page.getByRole("navigation", { name: "Components" }).getByRole("link").last();
+}

@@ -3,7 +3,15 @@
 // fallbacks of doc-9 §8, the server HTML without JavaScript, the sync with signals in an island,
 // and WCAG 2.2 AA with the default theme.
 import { expect, test, type Locator, type Page } from "@playwright/test";
-import { axe, clipped, focusRing, SCHEMES, smallTargets, TEXT_SPACING } from "./a11y.ts";
+import {
+  axe,
+  clipped,
+  focusRing,
+  lastNavLink,
+  SCHEMES,
+  smallTargets,
+  TEXT_SPACING,
+} from "./a11y.ts";
 
 const root = (page: Page, id: string) => page.getByTestId(id);
 const tab = (scope: Locator, name: string) => scope.getByRole("tab", { name, exact: true });
@@ -52,7 +60,7 @@ test.describe("keyboard contract (APG Tabs)", () => {
   }) => {
     await page.goto("/tabs");
     const manual = root(page, "manual");
-    await page.getByRole("link", { name: "Tabs in an island" }).focus();
+    await lastNavLink(page).focus();
     await page.keyboard.press("Tab");
     // Tab enters the list on the selected tab.
     await expect(tab(manual, "Password")).toBeFocused();
@@ -217,7 +225,7 @@ test.describe("WCAG 2.2 AA with the default theme (doc-9 section 17)", () => {
     page,
   }) => {
     await page.goto("/tabs");
-    await page.getByRole("link", { name: "Tabs in an island" }).focus();
+    await lastNavLink(page).focus();
     await page.keyboard.press("Tab");
     expect(await focusRing(page)).toBe("2px solid");
     // A disabled tab takes focus: its ring is not faded with it (1.4.11).

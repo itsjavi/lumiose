@@ -1,0 +1,12 @@
+import { Title } from "lumiose";
+import { MenuSignals } from "../../../islands/MenuSignals.tsx";
+
+export default function MenuIslandPage() {
+  return (
+    <>
+      <Title>Menu in an island, bound to signals</Title>
+      <h1>Menu in an island, bound to signals</h1>
+      <MenuSignals client:load />
+    </>
+  );
+}

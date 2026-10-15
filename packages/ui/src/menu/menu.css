@@ -1,0 +1,22 @@
+/*
+ * The CSS Menu needs to work, and nothing else (decision-62): `lu-menu` adds no box and the items
+ * stack. The popups are placed next to their triggers by the shared placement rules (their
+ * `data-side` and `data-align`, `--lu-side-offset` and `--lu-align-offset`, with flips), which
+ * Popover and Tooltip use too; where CSS anchor positioning is missing, the client script places
+ * them. It sits in the `lu.core` layer, so any app CSS wins.
+ */
+@layer lu.core, lu.theme;
+@import "../placement/placement.css";
+
+@layer lu.core {
+  lu-menu {
+    display: contents;
+  }
+  lu-menu :is([role="menu"]:popover-open, [role="menu"] [role="group"]) {
+    display: grid;
+  }
+  lu-menu [role^="menuitem"] {
+    display: flex;
+    align-items: center;
+  }
+}

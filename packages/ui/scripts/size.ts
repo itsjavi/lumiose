@@ -55,6 +55,12 @@ const COMPONENTS: Component[] = [
     scripts: ["tabs/tabs.script.ts"],
     css: "tabs/tabs.css",
   },
+  {
+    name: "menu",
+    module: "menu/menu.tsx",
+    scripts: ["menu/menu.script.ts"],
+    css: "menu/menu.css",
+  },
 ];
 
 const CLIENT_SCRIPT = /\?client$/;

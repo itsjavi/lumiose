@@ -20,6 +20,8 @@
  *   .lu-tooltip                         a Tooltip.Popup: inverted colours, a 6px gap
  *   .lu-tabs                            a Tabs.Root: the list, its tabs (the selected one
  *                                       underlined) and the panels
+ *   .lu-menu                            a Menu.Popup (submenus too): surface, items, checkbox
+ *                                       and radio marks, separators, group labels
  */
 @layer lu.core, lu.theme;
 
@@ -304,5 +306,111 @@
   .lu-tabs [role="tabpanel"] {
     padding-block: 1rem;
     border-radius: calc(var(--lu-radius) - 4px);
+  }
+
+  /* Menu (TASK-357) --------------------------------------------------------------------------- */
+
+  .lu-menu {
+    box-sizing: border-box;
+    min-inline-size: 8rem;
+    max-block-size: min(24rem, 100dvh - 1rem);
+    overflow-y: auto;
+    padding: 0.25rem;
+    border: 1px solid var(--lu-border);
+    border-radius: calc(var(--lu-radius) - 2px);
+    background: var(--lu-popover);
+    color: var(--lu-popover-foreground);
+    font-size: 0.875rem;
+    line-height: 1.25;
+    box-shadow:
+      0 10px 15px -3px rgb(0 0 0 / 0.1),
+      0 4px 6px -4px rgb(0 0 0 / 0.1);
+    --lu-side-offset: 0.25rem;
+  }
+  /* A submenu's first item lines up with its trigger. */
+  .lu-menu[data-side^="inline-"],
+  .lu-menu[data-side="left"],
+  .lu-menu[data-side="right"] {
+    --lu-side-offset: 0.125rem;
+    --lu-align-offset: calc(-0.25rem - 1px);
+  }
+  .lu-menu :where([role^="menuitem"]) {
+    box-sizing: border-box;
+    gap: 0.5rem;
+    min-block-size: 2rem;
+    padding: 0.375rem 0.5rem;
+    border: 0;
+    border-radius: calc(var(--lu-radius) - 4px);
+    background: none;
+    color: inherit;
+    font: inherit;
+    text-align: start;
+    text-decoration: none;
+    cursor: default;
+  }
+  .lu-menu :where([role^="menuitem"][data-highlighted], [aria-expanded="true"]) {
+    background: var(--lu-accent);
+    color: var(--lu-accent-foreground);
+  }
+  .lu-menu :where([role^="menuitem"]:focus-visible) {
+    outline: 2px solid var(--lu-ring);
+    outline-offset: -2px;
+  }
+  .lu-menu :where([role^="menuitem"][aria-disabled="true"]) {
+    opacity: 0.5;
+  }
+  /* Checkbox and radio marks: a symbol, not only a colour; empty alt text keeps them out of the name. */
+  .lu-menu :where([role="menuitemcheckbox"], [role="menuitemradio"])::before {
+    content: "";
+    flex: none;
+    inline-size: 1rem;
+    text-align: center;
+  }
+  .lu-menu :where([role="menuitemcheckbox"][aria-checked="true"])::before {
+    content: "✓" / "";
+  }
+  .lu-menu :where([role="menuitemradio"][aria-checked="true"])::before {
+    content: "●" / "";
+    font-size: 0.5rem;
+  }
+  .lu-menu :where([role="menuitem"][aria-haspopup="menu"])::after {
+    content: "›" / "";
+    margin-inline-start: auto;
+    padding-inline-start: 1rem;
+  }
+  .lu-menu :where([role="menuitem"][aria-haspopup="menu"]:dir(rtl))::after {
+    content: "‹" / "";
+  }
+  .lu-menu :where([role="separator"]) {
+    block-size: 1px;
+    margin: 0.25rem -0.25rem;
+    background: var(--lu-border);
+  }
+  .lu-menu :where([role="group"] > [role="presentation"]) {
+    padding: 0.375rem 0.5rem;
+    color: var(--lu-muted-foreground);
+    font-size: 0.75rem;
+    font-weight: 500;
+  }
+
+  /* Fade and zoom in and out; `overlay` keeps the menu in the top layer while it fades (Chromium). */
+  @media (prefers-reduced-motion: no-preference) {
+    .lu-menu {
+      transition:
+        opacity 100ms ease-out,
+        scale 100ms ease-out,
+        overlay 100ms allow-discrete,
+        display 100ms allow-discrete;
+    }
+    .lu-menu:not(:popover-open) {
+      opacity: 0;
+      scale: 0.96;
+    }
+    @starting-style {
+      .lu-menu:popover-open {
+        opacity: 0;
+        scale: 0.96;
+      }
+    }
   }
 }

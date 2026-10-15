@@ -21,6 +21,9 @@ export default function Home() {
         <li>
           <a href="/tabs">Tabs</a> (<a href="/tabs/island">in an island</a>)
         </li>
+        <li>
+          <a href="/menu">Menu</a> (<a href="/menu/island">in an island</a>)
+        </li>
       </ul>
     </article>
   );
