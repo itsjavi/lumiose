@@ -89,18 +89,19 @@ pages, render on the `server` and send `cache-control` headers to a CDN.
 
 ### Server and head
 
-| Next.js                                                           | Lumiose                                                                                                                                                                                                                         |
-| ----------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Route handlers: `GET(request, { params })`, `NextResponse.json()` | `export const GET: Endpoint<"/api/posts/[id]"> = (ctx) => Response`, with `ctx.request`, `ctx.params`, `ctx.url`, `ctx.cookies`; `Response.json()`.                                                                             |
-| `middleware.ts` (`proxy.ts` in Next.js 16)                        | `src/middleware.ts`: `(ctx, next) => Response`. `NextResponse.next()` is `next()`; request data goes on `ctx.locals`.                                                                                                           |
-| `config.matcher`                                                  | A check of `ctx.url.pathname` in the middleware.                                                                                                                                                                                |
-| `metadata`, `generateMetadata()`                                  | `<Title>`, `<Meta>` and `<Head>` rendered by the page or layout; an async page awaits its data first. The deepest wins ([Head and document](../concepts/head.md)).                                                              |
-| `generateViewport()`                                              | `<Meta name="viewport" … />`, or the tag in `document.stsx`.                                                                                                                                                                    |
-| `sitemap.ts`, `robots.ts`                                         | Endpoints: `sitemap.xml/route.ts`, `robots.txt/route.ts`, written at build time on `static` routes.                                                                                                                             |
-| `next/script`                                                     | `<Head><script src="…" async /></Head>`; under a strict CSP, see [Security](../concepts/security.md).                                                                                                                           |
-| `next/font`                                                       | `@font-face` in a `<style global>` block, with the font files in `public/`.                                                                                                                                                     |
-| `next/image`                                                      | No image component: `import photo from "./photo.jpg"` gives the fingerprinted URL; write `<img>` with `width`, `height`, `loading="lazy"` and `srcset`. Vite plugins that resize images at build time work in `vite.config.ts`. |
-| `next.config`: `headers()`, `basePath`, `trailingSlash`, `i18n`   | `lumiose({ headers, trailingSlash, i18n })` and Vite's `base`, in `vite.config.ts`. Redirects go in middleware.                                                                                                                 |
+| Next.js                                                           | Lumiose                                                                                                                                                                                                                                                                  |
+| ----------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Route handlers: `GET(request, { params })`, `NextResponse.json()` | `export const GET: Endpoint<"/api/posts/[id]"> = (ctx) => Response`, with `ctx.request`, `ctx.params`, `ctx.url`, `ctx.cookies`; `Response.json()`.                                                                                                                      |
+| `middleware.ts` (`proxy.ts` in Next.js 16)                        | `src/middleware.ts`: `(ctx, next) => Response`. `NextResponse.next()` is `next()`; request data goes on `ctx.locals`.                                                                                                                                                    |
+| `config.matcher`                                                  | A `middleware.ts` in the route folder it covers (`src/routes/dashboard/middleware.ts` for `/dashboard/:path*`); it runs after `src/middleware.ts`. `ctx.route`, the matched pattern, serves other checks.                                                                |
+| `instrumentation.ts`: `register()`, `onRequestError()`            | `src/instrumentation.server.ts` with the same exports: `register()` runs once per server instance, `onRequestError(error, info)` gets `{ request, route, params, phase, digest }`; `instrumentations` time each phase ([Server](../concepts/server.md#instrumentation)). |
+| `metadata`, `generateMetadata()`                                  | `<Title>`, `<Meta>` and `<Head>` rendered by the page or layout; an async page awaits its data first. The deepest wins ([Head and document](../concepts/head.md)).                                                                                                       |
+| `generateViewport()`                                              | `<Meta name="viewport" … />`, or the tag in `document.stsx`.                                                                                                                                                                                                             |
+| `sitemap.ts`, `robots.ts`                                         | Endpoints: `sitemap.xml/route.ts`, `robots.txt/route.ts`, written at build time on `static` routes.                                                                                                                                                                      |
+| `next/script`                                                     | `<Head><script src="…" async /></Head>`; under a strict CSP, see [Security](../concepts/security.md).                                                                                                                                                                    |
+| `next/font`                                                       | `@font-face` in a `<style global>` block, with the font files in `public/`.                                                                                                                                                                                              |
+| `next/image`                                                      | No image component: `import photo from "./photo.jpg"` gives the fingerprinted URL; write `<img>` with `width`, `height`, `loading="lazy"` and `srcset`. Vite plugins that resize images at build time work in `vite.config.ts`.                                          |
+| `next.config`: `headers()`, `basePath`, `trailingSlash`, `i18n`   | `lumiose({ headers, trailingSlash, i18n })` and Vite's `base`, in `vite.config.ts`. Redirects go in middleware.                                                                                                                                                          |
 
 ### Navigation
 
@@ -126,22 +127,21 @@ pages, render on the `server` and send `cache-control` headers to a CDN.
 
 ## What has no equivalent
 
-| Next.js                                                             | Instead                                                                                                                                                                                                                                             |
-| ------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Parallel routes (`@slot`, `default.tsx`)                            | Render the parts as components of one layout or page; branch on `route()` or a search param for conditional areas.                                                                                                                                  |
-| Intercepting routes (`(.)photo`), route modals                      | A `<dialog>` in an island, with the open item in `searchParams()`; or an `spa` route whose layout keeps the list mounted while the detail page renders.                                                                                             |
-| ISR (`revalidate`), on-demand revalidation on the server            | Rebuild `static` pages, or render on the `server` and set `cache-control: s-maxage=…, stale-while-revalidate=…` for a CDN.                                                                                                                          |
-| A prebuilt shell with per-request holes (PPR)                       | The two patterns in [Close to partial prerendering](../concepts/rendering-modes.md#close-to-partial-prerendering).                                                                                                                                  |
-| `template.tsx`                                                      | None: page state resets on every navigation, and `spa` layouts keep theirs by design.                                                                                                                                                               |
-| Middleware rewrites                                                 | None: redirect instead, or render the same component from both routes.                                                                                                                                                                              |
-| Middleware scoped to a folder                                       | This version has no folder-scoped middleware: the one `src/middleware.ts` checks `ctx.url.pathname`.                                                                                                                                                |
-| `instrumentation.ts`, `onRequestError`, `instrumentation-client.ts` | This version has no instrumentation files. Unexpected server errors go to `console.error`; when you serve `dist/server/entry.js` yourself, `createHandler({ onError })` receives them ([server build](../reference/server-entry.md#createhandler)). |
-| Image optimization, `next/font` optimization                        | None built in: see the `next/image` and `next/font` rows above.                                                                                                                                                                                     |
-| Generated images (`opengraph-image.tsx`, `icon.tsx`)                | Static files in `public/`, or an endpoint that returns the image.                                                                                                                                                                                   |
-| `forbidden.tsx`, `unauthorized.tsx`                                 | `error(403)` and `error(401)` render `error.stsx`, which reads `status`.                                                                                                                                                                            |
-| Draft mode                                                          | A `server` route that reads a preview cookie.                                                                                                                                                                                                       |
-| A custom server running `next dev`                                  | This version has no dev handler for custom servers: develop with `lumiose dev`, and run your server against the build.                                                                                                                              |
-| React component libraries                                           | No React interop: native elements, web components or framework-agnostic libraries (see [Coming from React](react.md)).                                                                                                                              |
+| Next.js                                                  | Instead                                                                                                                                                 |
+| -------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Parallel routes (`@slot`, `default.tsx`)                 | Render the parts as components of one layout or page; branch on `route()` or a search param for conditional areas.                                      |
+| Intercepting routes (`(.)photo`), route modals           | A `<dialog>` in an island, with the open item in `searchParams()`; or an `spa` route whose layout keeps the list mounted while the detail page renders. |
+| ISR (`revalidate`), on-demand revalidation on the server | Rebuild `static` pages, or render on the `server` and set `cache-control: s-maxage=…, stale-while-revalidate=…` for a CDN.                              |
+| A prebuilt shell with per-request holes (PPR)            | The two patterns in [Close to partial prerendering](../concepts/rendering-modes.md#close-to-partial-prerendering).                                      |
+| `template.tsx`                                           | None: page state resets on every navigation, and `spa` layouts keep theirs by design.                                                                   |
+| Middleware rewrites                                      | None: redirect instead, or render the same component from both routes.                                                                                  |
+| `instrumentation-client.ts`                              | This version has no client instrumentation file: `window` `error` and `unhandledrejection` listeners catch what escapes.                                |
+| Image optimization, `next/font` optimization             | None built in: see the `next/image` and `next/font` rows above.                                                                                         |
+| Generated images (`opengraph-image.tsx`, `icon.tsx`)     | Static files in `public/`, or an endpoint that returns the image.                                                                                       |
+| `forbidden.tsx`, `unauthorized.tsx`                      | `error(403)` and `error(401)` render `error.stsx`, which reads `status`.                                                                                |
+| Draft mode                                               | A `server` route that reads a preview cookie.                                                                                                           |
+| A custom server running `next dev`                       | This version has no dev handler for custom servers: develop with `lumiose dev`, and run your server against the build.                                  |
+| React component libraries                                | No React interop: native elements, web components or framework-agnostic libraries (see [Coming from React](react.md)).                                  |
 
 ## Example
 
@@ -340,22 +340,32 @@ export const GET: Endpoint<"/sitemap.xml"> = () => {
 };
 ```
 
-`middleware.ts` (`proxy.ts`) becomes `src/middleware.ts`, without a `matcher`:
+`middleware.ts` (`proxy.ts`) becomes `src/middleware.ts` for what runs on every request, and a
+`middleware.ts` in a route folder for what a `matcher` scoped:
 
 ```ts check
 // src/middleware.ts
 import type { Middleware } from "lumiose";
 
 const middleware: Middleware = async (ctx, next) => {
-  if (ctx.url.pathname.startsWith("/dashboard") && ctx.cookies.get("session") === undefined) {
-    return Response.redirect(new URL("/login", ctx.url), 307);
-  }
   const response = await next();
   response.headers.set("x-frame-options", "DENY");
   return response;
 };
 
 export default middleware;
+```
+
+```ts check file=routes/dashboard/middleware.ts
+// src/routes/dashboard/middleware.ts: matcher "/dashboard/:path*", actions and endpoints included
+import type { Middleware } from "lumiose";
+
+const requireSession: Middleware<"/dashboard"> = (ctx, next) =>
+  ctx.cookies.get("session") === undefined
+    ? Response.redirect(new URL("/login", ctx.url), 307)
+    : next();
+
+export default requireSession;
 ```
 
 ## Common mistakes
@@ -366,8 +376,8 @@ export default middleware;
   dynamic rendering; Lumiose stops the build with [LUM5001](../errors/LUM5001.md). Set
   `export const mode = "server"`.
 - **Guarding a `static` page in middleware.** Prerendered pages are files in production, served
-  without running middleware (it runs for them at build time). Pages behind a sign-in are `server`
-  or `spa` routes.
+  without running middleware (it runs for them at build time; a folder middleware that covers
+  them is [LUM5008](../errors/LUM5008.md)). Pages behind a sign-in are `server` or `spa` routes.
 - **`loading.tsx`, `@modal` or `(.)photo`.** They are [LUM5002](../errors/LUM5002.md) errors. Use
   `<Suspense>`, components in the layout, and a dialog or an `spa` route.
 - **`export const metadata`.** Nothing reads it. Render `<Title>` and `<Meta>`.

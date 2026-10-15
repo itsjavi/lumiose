@@ -75,21 +75,22 @@ folder under `src/routes` is a URL segment, and `page`, `layout`, `route`, `erro
 
 ### Server, document and rendering
 
-| React Router                                                                | Lumiose                                                                                                                                                           |
-| --------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `middleware` export and `context.set()` / `context.get()`                   | `src/middleware.ts`, one for the app: `(ctx, next) => Response`, with request data on `ctx.locals` (typed by augmenting `Locals`), read in pages with `locals()`. |
-| `getLoadContext()`, `AppLoadContext`                                        | `ctx.platform` (the host's bindings, `waitUntil()`, the client address) and `env(name)`.                                                                          |
-| `root.tsx`: `<Meta />`, `<Links />`, `<Scripts />`, `<ScrollRestoration />` | `src/document.stsx` renders `{props.head}` and `{props.body}`; stylesheets, scripts and scroll restoration are built in.                                          |
-| `meta` and `links` exports                                                  | `<Title>`, `<Meta>` and `<Head>` in any component ([Head and document](../concepts/head.md)).                                                                     |
-| `headers` export                                                            | `headers(ctx)` export, `response().setHeader()`, middleware, or `lumiose({ headers })` for every page.                                                            |
-| `ErrorBoundary` export, `isRouteErrorResponse()`                            | `error.stsx` and `not-found.stsx` (the nearest wins, with `{ status, error }`), and `<ErrorBoundary>` for an error in place.                                      |
-| `HydrateFallback`                                                           | `<Suspense fallback>`, or the shell of an `ssr = false` route.                                                                                                    |
-| `entry.server.tsx`: `handleRequest`, streaming                              | No file: the handler streams the shell, then `<Suspense>` boundaries; headers go in middleware.                                                                   |
-| `entry.client.tsx`: `hydrateRoot`                                           | No file: the island loader and the SPA entry hydrate.                                                                                                             |
-| `ssr: false` (SPA mode)                                                     | `lumiose({ mode: "spa", ssr: false })`, or `export const ssr = false` on an `spa` route.                                                                          |
-| `prerender: [...]`                                                          | `static` routes (the default) with `staticPaths()` for params, and `export const prerender = true` on `spa` pages.                                                |
-| `react-router-serve`                                                        | `@lumiose/adapter-node`'s `createServer()`, or `lumiose preview`; other hosts in [Deploy](../deploy/README.md).                                                   |
-| Custom server: `createRequestHandler()` from `@react-router/express`        | `createHandler()` from `@lumiose/adapter-node`, a request listener or Express middleware; or `dist/server/entry.js`'s `fetch(request)`.                           |
+| React Router                                                                | Lumiose                                                                                                                                                                                                                                                                  |
+| --------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `middleware` export and `context.set()` / `context.get()`                   | `src/middleware.ts` for every request, and a `middleware.ts` in a route folder for the routes below it: `(ctx, next) => Response`, run parent to child, with request data on `ctx.locals` (typed by augmenting `Locals`), read in pages with `locals()`.                 |
+| `getLoadContext()`, `AppLoadContext`                                        | `ctx.platform` (the host's bindings, `waitUntil()`, the client address) and `env(name)`.                                                                                                                                                                                 |
+| `root.tsx`: `<Meta />`, `<Links />`, `<Scripts />`, `<ScrollRestoration />` | `src/document.stsx` renders `{props.head}` and `{props.body}`; stylesheets, scripts and scroll restoration are built in.                                                                                                                                                 |
+| `meta` and `links` exports                                                  | `<Title>`, `<Meta>` and `<Head>` in any component ([Head and document](../concepts/head.md)).                                                                                                                                                                            |
+| `headers` export                                                            | `headers(ctx)` export, `response().setHeader()`, middleware, or `lumiose({ headers })` for every page.                                                                                                                                                                   |
+| `ErrorBoundary` export, `isRouteErrorResponse()`                            | `error.stsx` and `not-found.stsx` (the nearest wins, with `{ status, error }`), and `<ErrorBoundary>` for an error in place.                                                                                                                                             |
+| `HydrateFallback`                                                           | `<Suspense fallback>`, or the shell of an `ssr = false` route.                                                                                                                                                                                                           |
+| `entry.server.tsx`: `handleRequest`, streaming                              | No file: the handler streams the shell, then `<Suspense>` boundaries; headers go in middleware.                                                                                                                                                                          |
+| `handleError` in `entry.server.tsx`, server `instrumentations`              | `src/instrumentation.server.ts`: `onRequestError(error, info)` with the route and phase, and `instrumentations` that wrap `request`, `middleware`, `action`, `endpoint`, `render` and `stream`; `call()` never throws ([Server](../concepts/server.md#instrumentation)). |
+| `entry.client.tsx`: `hydrateRoot`                                           | No file: the island loader and the SPA entry hydrate.                                                                                                                                                                                                                    |
+| `ssr: false` (SPA mode)                                                     | `lumiose({ mode: "spa", ssr: false })`, or `export const ssr = false` on an `spa` route.                                                                                                                                                                                 |
+| `prerender: [...]`                                                          | `static` routes (the default) with `staticPaths()` for params, and `export const prerender = true` on `spa` pages.                                                                                                                                                       |
+| `react-router-serve`                                                        | `@lumiose/adapter-node`'s `createServer()`, or `lumiose preview`; other hosts in [Deploy](../deploy/README.md).                                                                                                                                                          |
+| Custom server: `createRequestHandler()` from `@react-router/express`        | `createHandler()` from `@lumiose/adapter-node`, a request listener or Express middleware; or `dist/server/entry.js`'s `fetch(request)`.                                                                                                                                  |
 
 ### Navigation
 
@@ -104,17 +105,16 @@ folder under `src/routes` is a URL segment, and `page`, `layout`, `route`, `erro
 
 ## What has no equivalent
 
-| React Router                                                | Instead                                                                                                                                                                                                                                             |
-| ----------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Routes defined in code (`routes.ts`, `route()`)             | File routes only. Colocate components and helpers next to the route; `_private` folders never route.                                                                                                                                                |
-| `middleware` on a route, for its subtree                    | This version has no route- or folder-scoped middleware: the one `src/middleware.ts` checks `ctx.url.pathname`.                                                                                                                                      |
-| `clientMiddleware`                                          | None. Run the code in the `spa` layout (`effect`, `onMount`) or in the handler that navigates.                                                                                                                                                      |
-| `handleError`, `instrumentations`                           | This version has no instrumentation hooks. Unexpected server errors go to `console.error`; when you serve `dist/server/entry.js` yourself, `createHandler({ onError })` receives them ([server build](../reference/server-entry.md#createhandler)). |
-| `useFetcher()` per instance, `useFetchers()`                | This version has no per-instance submission handle: keep each `await submit(…)` result in a signal of the component that sent it. `isSubmitting(name)` counts every submission to an action.                                                        |
-| `useBlocker()`, `unstable_usePrompt()`                      | This version has no navigation guards. A `beforeunload` listener covers leaving the document.                                                                                                                                                       |
-| `handle` and `useMatches()`                                 | Pass data down as props or context from the layout; compare `route()` with a pattern.                                                                                                                                                               |
-| `useNavigation().location` and `.formData`                  | `isNavigating()` for pending UI, and `optimistic()` for the value being submitted.                                                                                                                                                                  |
-| A Vite dev server in middleware mode inside a custom server | This version has no dev handler for custom servers: develop with `lumiose dev`, and run your server against the build.                                                                                                                              |
+| React Router                                                  | Instead                                                                                                                                                                                      |
+| ------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Routes defined in code (`routes.ts`, `route()`)               | File routes only. Colocate components and helpers next to the route; `_private` folders never route.                                                                                         |
+| `clientMiddleware`                                            | None. Run the code in the `spa` layout (`effect`, `onMount`) or in the handler that navigates.                                                                                               |
+| Client `instrumentations` (`router.navigate`, `router.fetch`) | This version has no client instrumentation hooks: `window` `error` and `unhandledrejection` listeners catch what escapes.                                                                    |
+| `useFetcher()` per instance, `useFetchers()`                  | This version has no per-instance submission handle: keep each `await submit(…)` result in a signal of the component that sent it. `isSubmitting(name)` counts every submission to an action. |
+| `useBlocker()`, `unstable_usePrompt()`                        | This version has no navigation guards. A `beforeunload` listener covers leaving the document.                                                                                                |
+| `handle` and `useMatches()`                                   | Pass data down as props or context from the layout; compare `route()` with a pattern.                                                                                                        |
+| `useNavigation().location` and `.formData`                    | `isNavigating()` for pending UI, and `optimistic()` for the value being submitted.                                                                                                           |
+| A Vite dev server in middleware mode inside a custom server   | This version has no dev handler for custom servers: develop with `lumiose dev`, and run your server against the build.                                                                       |
 
 ## Example
 
@@ -261,14 +261,23 @@ declare module "lumiose" {
 
 const middleware: Middleware = async (ctx, next) => {
   ctx.locals.userId = (await session.get(ctx.cookies)) ?? null;
-  // One middleware for the app: scope a check by path.
-  if (ctx.url.pathname.startsWith("/projects") && ctx.locals.userId === null) {
-    return Response.redirect(new URL("/login", ctx.url), 303);
-  }
   return next();
 };
 
 export default middleware;
+```
+
+A route's `middleware` for its subtree is a `middleware.ts` in its folder. It runs after
+`src/middleware.ts`, for every page, action and endpoint below the folder:
+
+```ts check file=routes/projects/middleware.ts
+// src/routes/projects/middleware.ts
+import type { Middleware } from "lumiose";
+
+const requireUser: Middleware<"/projects"> = (ctx, next) =>
+  ctx.locals.userId === null ? Response.redirect(new URL("/login", ctx.url), 303) : next();
+
+export default requireUser;
 ```
 
 A custom server, where React Router uses `createRequestHandler()`:

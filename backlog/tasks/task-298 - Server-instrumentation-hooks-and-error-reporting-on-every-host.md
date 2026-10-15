@@ -5,7 +5,7 @@ status: Done
 assignee:
   - '@Nova'
 created_date: '2026-10-15 02:22'
-updated_date: '2026-10-15 05:06'
+updated_date: '2026-10-15 05:15'
 labels:
   - observability
 milestone: m-10
@@ -54,6 +54,8 @@ Nova (2026-10-15), implementation:
 - Tests: app/server/instrumentation.test.ts (register once/concurrency/errors/prerendering, each phase of onRequestError incl. ErrorBoundary digest in prod and dev, streamed boundaries, waitUntil with and without host, onRequestError throwing, every wrapper with route and status, nesting order, skip/repeat/throw, in-process requests), public-api type test, dev-server (register, errors, caught errors, re-register after edit), build (entry, not while prerendering), adapter-node (onError + hook), Cloudflare, Vercel (node and edge), Netlify.
 - Docs: concepts/server.md (### Instrumentation, API rows, checked example, OpenTelemetry example, mistakes), reference/server-entry.md, reference/adapter-node.md, reference/app.md (types), llms regenerated. Coming from: the in-flight React Router/Next.js guides (Beacon, not in main) describe instrumentation as missing: hand-over in the run notes for Lux/Beacon.
 - Checks: vitest lumiose, vite, adapters, cli, apps/web: 1340 passed; typecheck lumiose/vite/cli/adapters clean; oxlint clean on touched files; docs:check green; size caps OK.
+
+Nova (2026-10-15, batch 2): Coming-from guides updated after Beacon's guides merged: react-router.md, nextjs.md (mapping rows, no-equivalent rows, examples) and solid.md (middleware row).
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary

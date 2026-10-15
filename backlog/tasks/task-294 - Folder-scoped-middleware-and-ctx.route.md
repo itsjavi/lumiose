@@ -5,7 +5,7 @@ status: Done
 assignee:
   - '@Nova'
 created_date: '2026-10-15 02:22'
-updated_date: '2026-10-15 05:11'
+updated_date: '2026-10-15 05:15'
 labels:
   - middleware
   - routing
@@ -54,6 +54,8 @@ Nova (2026-10-15), implementation:
 - Checks: vitest lumiose/src/app, vite/src/app, cli, apps/web content: 686+ passed; typecheck lumiose/vite/cli clean; oxlint clean on touched files; docs:check green; cargo test lumiose_compiler diagnostics ok.
 
 Nova (2026-10-15), follow-up after pnpm check: `RequestContext.route` is `Routes | undefined` whatever `P` is. Typing it as `P` made TypeScript measure `RequestContext` as covariant in `P`, so `RequestContext<"/logout">` no longer passed to helpers taking `RequestContext` (benchmarks/fullstack/apps/lumiose failed `lumiose check`). `Middleware<"/folder">` keeps the narrowed `ctx.route` (its own context type). Regression type test in typegen.test.ts; docs (routing.md, reference/app.md) say so. Also: `route` assignments in handler.ts cast like `locale`, for apps whose RouteMap is generated.
+
+Nova (2026-10-15, batch 2): Coming-from guides updated after Beacon's guides merged: react-router.md, nextjs.md (mapping rows, no-equivalent rows, examples) and solid.md (middleware row).
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary
