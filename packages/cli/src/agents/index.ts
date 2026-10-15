@@ -1,8 +1,10 @@
 // Agent setup files (spec §10, decision-10): `AGENTS.md` (a Lumiose section between markers),
 // `CLAUDE.md` referencing it, the `lumiose` skill, the `.gitattributes` line for `.stsx` and, when
-// missing, a `tsconfig.json` that extends the generated one (decision-25). Written by
-// `lumiose agents init` for existing projects and by create-lumiose for new ones (`@lumiose/cli/agents`).
-// Re-running updates Lumiose's parts and leaves everything else in these files alone.
+// missing, a `tsconfig.json` that extends the generated one (decision-25). A project that depends
+// on @lumiose/ui also gets a UI part in the Lumiose section and the `lumiose-ui` skill
+// (decision-64). Written by `lumiose agents init` for existing projects and by create-lumiose for
+// new ones (`@lumiose/cli/agents`). Re-running updates Lumiose's parts and leaves everything else in
+// these files alone.
 
 import { existsSync } from "node:fs";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
@@ -15,10 +17,51 @@ export const AGENTS_START =
   "<!-- lumiose:start (managed by `lumiose agents init`; edit outside the markers) -->";
 export const AGENTS_END = "<!-- lumiose:end -->";
 export const SKILL_FILE = ".claude/skills/lumiose/SKILL.md";
+export const UI_SKILL_FILE = ".claude/skills/lumiose-ui/SKILL.md";
 export const GITATTRIBUTES_LINE = "*.stsx linguist-language=TSX";
 
-/** The Lumiose section of `AGENTS.md`, markers included. */
-export function agentsSection(): string {
+/** Whether a `package.json` lists @lumiose/ui as a dependency of any kind. */
+export function dependsOnUi(packageJson: string | undefined): boolean {
+  if (packageJson === undefined) return false;
+  try {
+    const manifest = JSON.parse(packageJson) as Record<string, unknown>;
+    return ["dependencies", "devDependencies", "peerDependencies"].some((field) => {
+      const deps = manifest[field];
+      return typeof deps === "object" && deps !== null && "@lumiose/ui" in deps;
+    });
+  } catch {
+    return false;
+  }
+}
+
+/** The UI part of the Lumiose section, for projects that depend on @lumiose/ui. */
+function uiSection(): string {
+  return `
+### UI components (\`@lumiose/ui\`)
+
+This project uses \`@lumiose/ui\`: accessible, unstyled components on native elements (\`<dialog>\`,
+popovers, invoker commands), server-rendered without hydration. Use them instead of hand-rolling
+dialogs, menus, popovers or tabs, and follow the \`lumiose-ui\` skill.
+
+- Its docs match the installed version: \`node_modules/@lumiose/ui/docs/llms.txt\` lists one page
+  per component (anatomy, API, example, styling, keyboard). \`npx lumiose docs ui\` and
+  \`npx lumiose docs dialog\` print them; the MCP server's \`ui_components\` tool lists every
+  component's parts, props, events and styling hooks.
+- Compose the documented parts (\`Dialog.Root\` > \`Dialog.Trigger\`, \`Dialog.Popup\` >
+  \`Dialog.Title\`); each part takes the props of the element it renders (\`class\`, \`aria-*\`,
+  events). Keep state in a signal with \`bind:open={open}\`, or \`open\` plus \`onOpenChange\`.
+- Unstyled: \`@lumiose/ui/styles.css\` (layer \`lu.core\`) and the optional
+  \`@lumiose/ui/themes/default.css\` (layer \`lu.theme\`, \`--lu-\` custom properties). Style parts
+  through \`class\` and native or ARIA state (\`dialog[open]\`, \`[aria-expanded="true"]\`,
+  \`[data-highlighted]\`); unlayered CSS wins over both layers.
+- Keep them accessible: every dialog has a \`Dialog.Title\` (or an \`aria-label\` on its \`Popup\`),
+  icon-only triggers get an \`aria-label\`, focus stays visible, and the roles, ids and ARIA
+  wiring the parts set are left alone.
+`;
+}
+
+/** The Lumiose section of `AGENTS.md`, markers included (with the UI part when `ui`). */
+export function agentsSection(options: { ui?: boolean } = {}): string {
   return `${AGENTS_START}
 ## Lumiose
 
@@ -76,7 +119,7 @@ docs instead of guessing.
   (\`LUM4003\`). Secrets come from \`env("NAME")\`, not \`import.meta.env\`.
 - Any other file in \`src/routes\` is a colocated module, never a route, and \`_name\` folders are
   private. Modules shared across routes go in \`src/lib\` or \`src/components\`.
-
+${options.ui ? uiSection() : ""}
 ### Before you finish
 
 Run \`npx lumiose check\` (types, routes and Lumiose diagnostics; \`--format json\` for a
@@ -131,6 +174,93 @@ Follow the Lumiose section of \`AGENTS.md\`. This skill is the workflow.
 3. \`npx lumiose lint\` and \`npx lumiose fmt\`.
 4. Behaviour: \`npx lumiose dev --format json\` prints \`{ "url": … }\` once listening; fetch the page.
    \`npx lumiose build\` prerenders static routes and fails on route errors.
+`;
+}
+
+/** The `lumiose-ui` skill, for projects that depend on @lumiose/ui (decision-64). */
+export function uiSkillFile(): string {
+  return `---
+name: lumiose-ui
+description: Build UI with @lumiose/ui in a Lumiose app (Dialog and the other accessible, unstyled components on native elements): composing parts, bind: and events, styling with classes, state selectors, the lu.core and lu.theme layers and --lu- variables, and the accessibility rules. Use for any dialog, popover, tooltip, menu, tabs, select or combobox, and when styling @lumiose/ui parts.
+---
+
+# @lumiose/ui
+
+Follow the UI part of the Lumiose section of \`AGENTS.md\`. This skill is the workflow.
+
+## 1. Find the component
+
+- Index: \`node_modules/@lumiose/ui/docs/llms.txt\` (the docs of the installed version). Each
+  component page has the same sections: Anatomy, API, Example, Styling, Keyboard and focus,
+  Without JavaScript, Browser support, Related.
+- Or \`npx lumiose docs ui\` (the overview and the component list) and \`npx lumiose docs dialog\`.
+- Or, with the Lumiose MCP server, \`ui_components\` (every component's parts, props, events and
+  styling hooks) and \`docs_get("ui/dialog")\`.
+- Prefer a component over hand-written markup and scripts: it brings the keyboard contract, focus
+  handling and ARIA wiring.
+
+## 2. Compose the parts
+
+- Import from \`@lumiose/ui\` or the component's entry (\`@lumiose/ui/dialog\`), and use the parts
+  in the nesting the Anatomy shows: \`Dialog.Root\` holds the state, \`Dialog.Trigger\` and
+  \`Dialog.Popup\` go inside it, \`Dialog.Title\`, \`Dialog.Description\` and \`Dialog.Close\` inside
+  the popup.
+- Every part takes the props of the element it renders (\`class\`, \`style\`, \`aria-*\`, \`data-*\`,
+  events, \`ref\`) and passes them through. The ids and commands that connect the parts are
+  theirs: do not set \`id\`, \`command\` or \`commandfor\` on them.
+- In a server-rendered page the components work without an island: native elements, and a small
+  client script the page loads by itself. Controlled state (\`open\`, \`onOpenChange\`, \`bind:\`)
+  needs the component to run in the browser, inside an island (\`client:load\`).
+
+## 3. State and events
+
+- A component's state is a prop and a callback: \`open\` with \`onOpenChange\`, \`value\` with
+  \`onValueChange\`, \`checked\` with \`onCheckedChange\`. Leave both out and the element keeps its
+  own state.
+- \`bind:open={open}\` passes a signal both ways: it is short for \`open={open()}\` plus
+  \`onOpenChange={(next) => open.set(next)}\`, and works for every prop \`x\` with an \`onXChange\`.
+- Native events of the rendered element use \`on:\` (\`on:close\` on \`Dialog.Popup\`); custom
+  elements report changes with lowercase DOM events (\`openchange\`, \`change\`).
+
+## 4. Style
+
+- The package is unstyled. \`@lumiose/ui/styles.css\` (or a component's own, such as
+  \`@lumiose/ui/dialog.css\`) holds only what the components need to work, in the \`lu.core\` layer.
+  Import it once, in the root layout.
+- \`@lumiose/ui/themes/default.css\` is the optional default theme, in the \`lu.theme\` layer: put
+  its classes on the parts (\`lu-button\`, \`lu-dialog\`, …, listed in each page's Styling section)
+  and change its colours and radius through its \`--lu-\` custom properties (shadcn/ui's names:
+  \`--lu-primary\`, \`--lu-background\`, \`--lu-radius\`, …). It follows light and dark.
+- Your own CSS is unlayered, so it wins over both layers without specificity tricks. If the app
+  orders its layers, put \`lu\` first: \`@layer lu, base, components;\`.
+- Style state through native and ARIA selectors, not extra classes: \`dialog[open]\`, \`:modal\`,
+  \`::backdrop\`, \`:popover-open\`, \`[aria-expanded="true"]\`, \`[aria-checked="true"]\`,
+  \`[aria-selected="true"]\`, and \`[data-highlighted]\` on the active item of a list.
+- Animate opening and closing with \`@starting-style\` and \`allow-discrete\` transitions of
+  \`display\` and \`overlay\`, inside \`@media (prefers-reduced-motion: no-preference)\`, as the
+  Styling sections show.
+
+## 5. Keep it accessible
+
+@lumiose/ui targets WCAG 2.2 AA when its components are used as documented. Keep it that way:
+
+- A dialog needs a name: a \`Dialog.Title\`, or an \`aria-label\` on \`Dialog.Popup\`. Use
+  \`role="alertdialog"\` on \`Dialog.Root\` for a confirmation that needs an answer.
+- A trigger with only an icon needs an \`aria-label\`; never put interactive elements inside a
+  trigger or a close button.
+- Do not remove or override the roles, \`aria-*\` wiring and \`tabindex\` the parts set; pass
+  \`aria-*\` only to add a label or a description.
+- Popups opened from a modal dialog (a menu, a select) go inside its \`Popup\`: everything outside
+  a modal dialog is inert.
+- Keep a visible focus style (\`:focus-visible\`) and, when changing theme colours, a contrast of
+  4.5:1 for text and 3:1 for borders and focus rings.
+
+## 6. Verify
+
+1. \`npx lumiose check --format json\`: the parts' props are typed; fix every error.
+2. Try it without JavaScript where the page is server-rendered: triggers and close buttons still
+   work, as the component's "Without JavaScript" section says.
+3. Use the keyboard: the keys in the component's "Keyboard and focus" table.
 `;
 }
 
@@ -231,7 +361,8 @@ function codexConfig(current: string | undefined, pm: PackageManager): string {
 /**
  * The agent files for a project whose current files are read with `read` (undefined: missing):
  * new files in full; in existing ones only the Lumiose section, the `@AGENTS.md` reference and the
- * `.gitattributes` line are added or updated.
+ * `.gitattributes` line are added or updated. A `package.json` that depends on @lumiose/ui adds
+ * the UI part and the `lumiose-ui` skill.
  */
 export function planAgentFiles(
   read: (file: string) => string | undefined,
@@ -244,20 +375,18 @@ export function planAgentFiles(
       current === undefined ? "created" : current === content ? "unchanged" : "updated";
     return { file, action, content };
   };
+  const ui = dependsOnUi(read("package.json"));
+  const section = agentsSection({ ui });
   return [
     plan("AGENTS.md", (current) => {
       if (current === undefined)
-        return `# ${options.name}\n\nGuidance for coding agents.\n\n${agentsSection()}`;
+        return `# ${options.name}\n\nGuidance for coding agents.\n\n${section}`;
       const start = current.indexOf(AGENTS_START);
       const end = current.indexOf(AGENTS_END, start);
       if (start !== -1 && end !== -1) {
-        return (
-          current.slice(0, start) +
-          agentsSection().trimEnd() +
-          current.slice(end + AGENTS_END.length)
-        );
+        return current.slice(0, start) + section.trimEnd() + current.slice(end + AGENTS_END.length);
       }
-      return `${current.trimEnd()}\n\n${agentsSection()}`;
+      return `${current.trimEnd()}\n\n${section}`;
     }),
     plan("CLAUDE.md", (current) => {
       if (current === undefined) return "Follow the instructions in @AGENTS.md\n";
@@ -266,6 +395,7 @@ export function planAgentFiles(
         : `${current.trimEnd()}\n\nFollow the instructions in @AGENTS.md\n`;
     }),
     plan(SKILL_FILE, () => skillFile()),
+    ...(ui ? [plan(UI_SKILL_FILE, () => uiSkillFile())] : []),
     plan(".gitattributes", (current) => {
       if (current === undefined) return `${GITATTRIBUTES_LINE}\n`;
       const has = current.split("\n").some((line) => line.trim() === GITATTRIBUTES_LINE);
@@ -290,7 +420,15 @@ export async function agentsInit(
   options: AgentFilesOptions = {},
 ): Promise<AgentFile[]> {
   const current = new Map<string, string | undefined>();
-  const files = ["AGENTS.md", "CLAUDE.md", SKILL_FILE, ".gitattributes", "tsconfig.json"];
+  const files = [
+    "AGENTS.md",
+    "CLAUDE.md",
+    SKILL_FILE,
+    UI_SKILL_FILE,
+    ".gitattributes",
+    "tsconfig.json",
+    "package.json",
+  ];
   if (options.mcp !== undefined) files.push(MCP_JSON, CODEX_CONFIG);
   for (const file of files) {
     current.set(file, await readFile(join(root, file), "utf8").catch(() => undefined));

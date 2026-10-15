@@ -7,6 +7,13 @@ other Lumiose packages share, and is not on npm yet: today it is used from this 
 workspace. The goal for its 1.0 is parity with [Base UI](https://base-ui.com)'s components; the
 table below lists them as they land.
 
+These pages ship in the package, in `node_modules/@lumiose/ui/docs`, so they match the installed
+version. For coding agents, `llms.txt` indexes them and `llms-full.txt` holds them all;
+`lumiose docs ui` and `lumiose docs dialog` print them; the MCP server's `ui_components` tool lists
+every component's parts, props, events and styling hooks; and `lumiose agents init` adds a UI
+section to `AGENTS.md` and the `lumiose-ui` skill. Every component page has the same sections:
+Anatomy, API, Example, Styling, Keyboard and focus, Without JavaScript, Browser support and Related.
+
 ## Approach
 
 - **Native first.** A component renders the element the platform already has for the job: a
@@ -118,6 +125,6 @@ and brotli).
 
 ## Related
 
-- [Web components](../guides/web-components.md): custom elements in Lumiose pages and islands.
-- [Islands](../concepts/islands.md): where components run in the browser.
-- [JSX](../concepts/jsx.md): `class`, events and `on:`.
+- [Web components](https://itsjavi.com/lumiose/docs/guides/web-components/): custom elements in Lumiose pages and islands.
+- [Islands](https://itsjavi.com/lumiose/docs/concepts/islands/): where components run in the browser.
+- [JSX](https://itsjavi.com/lumiose/docs/concepts/jsx/): `class`, events and `on:`.

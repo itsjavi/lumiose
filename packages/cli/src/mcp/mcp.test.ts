@@ -1,6 +1,6 @@
 // `lumiose mcp` (TASK-34) through the MCP SDK client: in memory for every tool and resource, and once
 // over stdio with the real `lumiose` binary. The fixture app lives in a temp dir whose
-// node_modules link this package and TypeScript.
+// node_modules link this package, @lumiose/ui and TypeScript.
 import { linkLumiose } from "@lumiose/vite/internal/test-links.ts";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
@@ -96,6 +96,7 @@ beforeAll(async () => {
   await mkdir(join(root, "node_modules"));
   linkLumiose(root);
   await symlink(typescriptDir, join(root, "node_modules/typescript"), "junction");
+  await symlink(join(packageDir, "../ui"), join(root, "node_modules/@lumiose/ui"), "junction");
 
   mcp = await createLumioseMcpServer({ root });
   const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
@@ -148,8 +149,76 @@ describe("lumiose mcp", () => {
       "docs_search",
       "render",
       "routes",
+      "ui_components",
     ]);
     expect(client.getInstructions()).toContain("docs_search");
+    expect(client.getInstructions()).toContain("ui_components");
+  });
+
+  it("finds @lumiose/ui's pages and lists its components (decision-64)", async () => {
+    const page = await call("docs_get", { topic: "ui/dialog" });
+    expect(page.text).toContain("lumiose docs: ui/dialog");
+    expect((await call("docs_get", { topic: "dialog" })).text).toMatch(/^# Dialog$/m);
+    const search = await callJson("docs_search", { query: "alertdialog", limit: 3 });
+    expect(search.results[0]).toMatchObject({ topic: "ui/dialog" });
+
+    const catalog = await callJson("ui_components");
+    expect(catalog).toMatchObject({ available: true });
+    expect(catalog.theme.layers).toEqual(["lu.core", "lu.theme"]);
+    expect(catalog.theme.properties).toContain("--lu-primary");
+    const dialog = catalog.components.find((c: { name: string }) => c.name === "Dialog");
+    expect(dialog).toMatchObject({ topic: "ui/dialog" });
+    expect(dialog.imports[0]).toMatch(/^import \{ Dialog \} from "@lumiose\/ui";/);
+    expect(dialog.parts.map((part: { name: string }) => part.name)).toEqual([
+      "Dialog.Root",
+      "Dialog.Trigger",
+      "Dialog.Popup",
+      "Dialog.Title",
+      "Dialog.Description",
+      "Dialog.Close",
+    ]);
+    expect(dialog.props).toContainEqual(
+      expect.objectContaining({
+        part: "Dialog.Root",
+        name: "role",
+        type: '"dialog" | "alertdialog"',
+      }),
+    );
+    expect(dialog.events).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ part: "Dialog.Root", name: "onOpenChange" }),
+        expect.objectContaining({ part: "Dialog.Popup", name: "on:close" }),
+      ]),
+    );
+    expect(dialog.styling).toEqual(
+      expect.arrayContaining(["lu-dialog", "dialog[open]", "::backdrop", "--nested-dialogs"]),
+    );
+
+    const one = await callJson("ui_components", { name: "dialog" });
+    expect(one.component.name).toBe("Dialog");
+    const unknown = await call("ui_components", { name: "Carousel" });
+    expect(unknown.isError).toBe(true);
+    expect(unknown.text).toContain("Dialog");
+  });
+
+  it("says when @lumiose/ui is not installed", async () => {
+    const bare = await realpath(await mkdtemp(join(tmpdir(), "lumiose-mcp-bare-")));
+    const other = await createLumioseMcpServer({ root: bare });
+    const otherClient = new Client({ name: "lumiose-test", version: "0.0.0" });
+    const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
+    await Promise.all([
+      other.server.connect(serverTransport),
+      otherClient.connect(clientTransport),
+    ]);
+    try {
+      const result = await otherClient.callTool({ name: "ui_components", arguments: {} });
+      const text = (result.content as { text: string }[])[0]!.text;
+      expect(JSON.parse(text)).toMatchObject({ available: false });
+    } finally {
+      await otherClient.close();
+      await other.close();
+      await rm(bare, { recursive: true, force: true });
+    }
   });
 
   it("searches and reads the docs", async () => {

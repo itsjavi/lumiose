@@ -83,6 +83,7 @@ export const footerColumns: FooterColumn[] = [
     links: [
       { href: href("/llms.txt"), label: "llms.txt" },
       { href: href("/llms-full.txt"), label: "llms-full.txt" },
+      { href: href("/ui/llms.txt"), label: "UI llms.txt" },
       { href: href("/docs/[[...path]]", { path: "reference/mcp" }), label: "MCP server" },
       { href: REPOSITORY, label: "GitHub" },
     ],

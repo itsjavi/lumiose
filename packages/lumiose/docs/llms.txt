@@ -56,8 +56,7 @@ These docs match lumiose 0.4.0. Installed projects have them in `node_modules/lu
 
 ## UI
 
-- [UI components](ui/README.md): `@lumiose/ui`, accessible and unstyled primitives on native elements, server-rendered without hydration: the approach, styling with your own CSS or the optional default theme (`--lu-` custom properties, light and dark), and the components available and planned.
-- [Dialog](ui/dialog.md): `Dialog.Root`, `Trigger`, `Popup`, `Title`, `Description` and `Close`, and the alert dialog (`role="alertdialog"`): a native `<dialog>` with invoker commands, working without JavaScript, plus a 0.8 kB script for the native gaps; `bind:open` with signals; styling, keyboard and focus.
+- [UI components](https://itsjavi.com/lumiose/ui/llms.txt): `@lumiose/ui`, accessible and unstyled primitives on native elements, server-rendered without hydration, with the optional default theme. Its docs ship in its own package and match its own version: `node_modules/@lumiose/ui/docs/llms.txt` indexes them, and in a project that depends on it `lumiose docs ui` and `lumiose docs dialog` print them and the MCP server's `ui_components` tool lists the components.
 
 ## Deploy
 
