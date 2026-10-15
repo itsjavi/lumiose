@@ -50,6 +50,7 @@ import {
 } from "../project.ts";
 import { ISLANDS_ID } from "../../islands.ts";
 import { STYLE_TAGS_PLACEHOLDER, styleTags } from "./stylesheets.ts";
+import { cssRenames, snapshotCss, type CssSnapshot } from "./css-renames.ts";
 
 export const SERVER_ENTRY = "virtual:lumiose/server-entry";
 /**
@@ -124,11 +125,28 @@ export interface BuildState {
   hashedFiles: Set<string>;
   /** `hashedFiles` of the written files, sorted, once the server build is complete. */
   hashedFileList?: string[];
+  /** The client bundle's CSS before the plugins' `generateBundle` hooks (./css-renames.ts). */
+  cssBefore?: CssSnapshot;
+  /** The URLs of the CSS files the client build wrote. */
+  clientCss?: Set<string>;
+  /** Stylesheet URL the CSS manifest recorded → the URL of the file a plugin renamed it to. */
+  cssRenames?: Record<string, string>;
 }
 
 export function lumioseBuild(state: BuildState): Plugin[] {
   return [
     lumioseBuildEnvironments(state),
+    {
+      // The client CSS before any plugin's `generateBundle` changes it (TASK-342).
+      name: "lumiose:css-snapshot",
+      apply: "build",
+      generateBundle: {
+        order: "pre",
+        handler(_options, bundle) {
+          if (this.environment.name === "client") state.cssBefore = snapshotCss(bundle);
+        },
+      },
+    },
     spaEntryPlugin(
       () => state.app?.manifest,
       () => state.clientEntryFile !== undefined,
@@ -231,6 +249,16 @@ function lumioseBuildEnvironments(state: BuildState): Plugin {
         if (!code.includes(placeholder)) return;
         const config = this.environment.getTopLevelConfig();
         const { pages, others } = pageStylesheets(this, state);
+        // A stylesheet a plugin renamed or removed after the CSS manifest recorded it, and which
+        // `cssRenames()` could not follow: pages would link a file the output does not contain.
+        const missing = new Set(
+          [...pages, ...others].flat().filter((href) => state.clientCss?.has(href) === false),
+        );
+        for (const href of missing) {
+          this.warn(
+            `${href} is a stylesheet of the app, but the client build output has no such file: a plugin renamed or removed it after Lumiose recorded it. Pages link it as it is.`,
+          );
+        }
         const tags = await styleTags(pages, others, {
           clientDir: resolve(config.root, config.environments.client!.build.outDir),
           base: config.base,
@@ -271,11 +299,26 @@ function lumioseBuildEnvironments(state: BuildState): Plugin {
         for (const [fileName, file] of Object.entries(bundle)) {
           if (isEmptyStylesheetFacade(file)) delete bundle[fileName];
         }
-        for (const file of Object.values(bundle)) {
-          if (isHashedOutput(file, options)) state.hashedFiles.add(file.fileName);
-        }
         state.islandChunks = await islandChunks(this, bundle);
       },
+    },
+
+    // The client output as written, after every plugin's `generateBundle`: its hashed files, and
+    // the stylesheets a plugin renamed after the CSS manifest recorded them (TASK-342).
+    writeBundle(options, bundle) {
+      if (this.environment.name !== "client") return;
+      for (const file of Object.values(bundle)) {
+        if (isHashedOutput(file, options)) state.hashedFiles.add(file.fileName);
+      }
+      const { base } = this.environment.config;
+      const after = snapshotCss(bundle);
+      state.clientCss = new Set([...after.assets.keys()].map((file) => base + file));
+      if (state.cssBefore === undefined) return;
+      const renames = cssRenames(state.cssBefore, after);
+      if (renames.size === 0) return;
+      state.cssRenames = Object.fromEntries(
+        [...renames].map(([from, to]) => [base + from, base + to]),
+      );
     },
   };
 }
@@ -398,10 +441,11 @@ function pageStylesheets(
       )
       .toSorted((a, b) => a.dir.length - b.dir.length)
       .map((layout) => layout.file);
+  const renames = state.cssRenames ?? {};
   const hrefsOf = (files: readonly string[]): string[] => {
     const hrefs = new Set<string>();
     for (const file of document === undefined ? files : [document, ...files]) {
-      for (const href of manifest[file] ?? []) hrefs.add(href);
+      for (const href of manifest[file] ?? []) hrefs.add(renames[href] ?? href);
     }
     return [...hrefs];
   };
@@ -491,6 +535,7 @@ export function serverEntryCode(state: BuildState, config: ResolvedConfig): stri
     ...(state.csrf === undefined ? {} : { csrf: state.csrf }),
     ...(state.limits === undefined ? {} : { limits: state.limits }),
     ...(state.streamTimeout === undefined ? {} : { streamTimeout: state.streamTimeout }),
+    ...(state.cssRenames === undefined ? {} : { cssRenames: state.cssRenames }),
     ...(state.viewTransitions ? { viewTransitions: true } : {}),
     ...(projectOptions(config, "build").csp === undefined ? {} : { csp: "strict" }),
     ...(projectOptions(config, "build").site === undefined

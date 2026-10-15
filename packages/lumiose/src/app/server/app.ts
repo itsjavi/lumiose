@@ -70,6 +70,11 @@ export interface BuiltApp extends BuiltAppConfig {
   stylesheets?: (files: readonly string[]) => readonly string[];
   /** How `lumiose build` grouped the stylesheets: a shared file, then each page's own (TASK-121). */
   styleTags?: StyleTags;
+  /**
+   * Stylesheet URL of the CSS manifest → the file a plugin renamed it to after Lumiose recorded it
+   * (TASK-342); absent when none was.
+   */
+  cssRenames?: Readonly<Record<string, string>>;
   /** `lumiose({ viewTransitions })`; absent when off. */
   viewTransitions?: boolean;
   /** `lumiose({ prefetch })`; absent for `"none"`. */
@@ -134,5 +139,10 @@ function spaModulePreloads(app: BuiltApp, files: readonly string[], spa: boolean
 function stylesheetLinks(app: BuiltApp, files: readonly string[]): string {
   if (app.stylesheets === undefined) return "";
   const modules = app.document === undefined ? files : [app.document, ...files];
-  return stylesheetTags(app.stylesheets(modules), app.styleTags);
+  const hrefs = app.stylesheets(modules);
+  const renames = app.cssRenames;
+  return stylesheetTags(
+    renames === undefined ? hrefs : [...new Set(hrefs.map((href) => renames[href] ?? href))],
+    app.styleTags,
+  );
 }

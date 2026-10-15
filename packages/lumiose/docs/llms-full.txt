@@ -2611,7 +2611,10 @@ all pages link and browsers cache, then puts each page's own stylesheets after i
 order is the same as in dev, where each file's CSS stays a separate stylesheet for HMR. In the
 sample apps a first view went from 6–8 stylesheet requests to one, with about 30% fewer CSS bytes (brotli).
 Each tag lists the stylesheets it holds in `data-l-css`, so an island or an SPA route that imports
-one does not load it again.
+one does not load it again. Pages link the CSS files the build output contains: when another Vite
+plugin rewrites a stylesheet under a new name after Lumiose recorded it, the build follows it (by
+the chunks that import it, the name it was emitted with, or the one new CSS file), and warns about
+a linked stylesheet the output no longer has.
 
 ### JS values in styles
 
@@ -2971,9 +2974,11 @@ plugin, `@stylexjs/unplugin`):
 - **`.stsx` files are not compiled.** The plugin only transforms `.js`, `.ts`, `.jsx` and `.tsx`
   files, so `stylex.create()` in an `.stsx` file throws when the page renders. In `.ts` and `.tsx`
   modules it compiles.
-- **Production builds lose rules.** The plugin writes all rules into one stylesheet and renames
-  it, while Lumiose links each route's stylesheets: depending on the plugin order, a page links a
-  file that no longer exists or only one route gets the rules.
+- **Production builds lose rules.** The plugin appends all rules to one stylesheet (renamed under
+  a new hash, which pages follow), while Lumiose links each route's own stylesheets: only the pages
+  that link that one file get the rules. Pointing its `cssInjectionTarget` at a stylesheet the root
+  layout imports stops the build in Vite (`vite:css-post`), since the plugin deletes a file Vite
+  still reads.
 - **In `lumiose dev`** the rules are served at `/virtual:stylex.css` but not linked; a document
   must link them itself: `{import.meta.env.DEV && <link rel="stylesheet" href="/virtual:stylex.css" />}`.
 - **Apply styles with `stylex.attrs()`,** which returns `class` and a `style` string, the attributes

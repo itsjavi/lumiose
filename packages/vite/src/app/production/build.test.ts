@@ -130,6 +130,32 @@ const styled = (name: string, head = "") =>
 }
 `;
 
+// Appends a rule to CSS assets in generateBundle and emits each under a new hash, deleting the
+// old file, as StyleX does: under the old asset's name with the chunks' imported CSS updated
+// (`as` empty), or under the name `as` with nothing else told.
+const renaming = (which: string, as: string) => `const rename = {
+  name: "rename-css",
+  apply: "build",
+  generateBundle: {
+    order: "post",
+    handler(_options, bundle) {
+      if (this.environment.name !== "client") return;
+      for (const old of Object.values(bundle)) {
+        if (old.type !== "asset" || !old.fileName.endsWith(".css") || !old.fileName.includes(${JSON.stringify(which)})) continue;
+        const source = String(old.source) + ".renamed{color:red}\\n";
+        const name = ${JSON.stringify(as)} || old.names[0];
+        const fileName = this.getFileName(this.emitFile({ type: "asset", name, source }));
+        delete bundle[old.fileName];
+        if (${JSON.stringify(as)}) continue;
+        for (const chunk of Object.values(bundle)) {
+          const css = chunk.type === "chunk" ? chunk.viteMetadata?.importedCss : undefined;
+          if (css?.delete(old.fileName)) css.add(fileName);
+        }
+      }
+    },
+  },
+};`;
+
 /** The client build's assets, sorted, without their hashes (8 base64url characters) by default. */
 const clientAssets = (root: string, unhashed = true) =>
   readdirSync(join(root, "dist/client/assets"))
@@ -498,6 +524,61 @@ export default function Layout(props: { children?: JSX.Element }) {
       /<link rel="stylesheet" href="\/assets\/big-page-[\w-]+\.css" data-l-css="\/assets\/big-page-[\w-]+\.css">/,
     );
     expect([...home.matchAll(/rel="stylesheet"/g)]).toHaveLength(1);
+  });
+
+  it("links the stylesheets a plugin renamed after Lumiose, as StyleX does (TASK-342)", async () => {
+    const big = Array.from({ length: 120 }, (_, i) => `.rule-${i} { margin-left: ${i}px; }`);
+    const files = (plugin: string): Record<string, string> => ({
+      "vite.config.ts": `import lumiose from "@lumiose/vite";
+${plugin}
+export default { plugins: [lumiose(), rename] };
+`,
+      "src/app.css": "body { margin: 0; }\n",
+      "src/routes/layout.stsx": `import "../app.css";
+export default function Layout(props: { children?: JSX.Element }) {
+  return <div>{props.children}</div>;
+}
+`,
+      "src/routes/page.stsx": `export default function Home() {
+  return <main class="home">Home<style>.home { color: teal; }</style></main>;
+}
+`,
+      "src/routes/live/page.stsx": `export const mode = "server";
+export default function Live() {
+  return <main class="live">Live<style>${big.join("\n")}</style></main>;
+}
+`,
+    });
+    const RULE = ".renamed{color:red}";
+    /** A document's linked stylesheets, read from the output (a missing file throws), and inline ones. */
+    const stylesOf = (root: string, html: string) => ({
+      links: [...html.matchAll(/<link rel="stylesheet" href="\/([^"]+)"/g)].map(([, file]) =>
+        read(root, file!),
+      ),
+      inline: [...html.matchAll(/<style data-l-css="[^"]*">([^<]*)<\/style>/g)].map(
+        ([, css]) => css,
+      ),
+    });
+
+    // Every stylesheet renamed under its own name: followed by name, prerendered or per request.
+    const root = project(files(renaming(".css", "")));
+    await build({ root, ...quiet() });
+    const home = stylesOf(root, read(root, "index.html"));
+    expect(home.links).toHaveLength(1);
+    expect(home.inline).toHaveLength(1);
+    for (const css of [...home.links, ...home.inline]) expect(css).toContain(RULE);
+    const response = await (await entryOf(root)).default.fetch(new Request("http://app.test/live"));
+    const live = stylesOf(root, await response.text());
+    expect(live.links).toHaveLength(2);
+    for (const css of live.links) expect(css).toContain(RULE);
+
+    // One stylesheet renamed and nothing else told: the one new CSS file replaces it.
+    const single = project(files(renaming("app", "other.css")));
+    await build({ root: single, ...quiet() });
+    const page = stylesOf(single, read(single, "index.html"));
+    expect(page.links).toHaveLength(1);
+    expect(page.links[0]).toContain(RULE);
+    expect(page.inline).toHaveLength(1);
   });
 
   it("names route modules' chunks and stylesheets after their route folder (TASK-260)", async () => {
