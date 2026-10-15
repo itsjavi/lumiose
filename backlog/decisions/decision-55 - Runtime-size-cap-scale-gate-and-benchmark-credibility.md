@@ -20,4 +20,4 @@ User decision, 2026-10-15.
 ## Consequences
 
 - Tasks: TASK-321 (cap), TASK-319 and TASK-320 (benchmark and gate), TASK-316, TASK-317 and TASK-318 (credibility).
-- Outward-facing steps (the upstream pull request, community posts) need the user's approval.
+- Outward-facing steps (the upstream pull request, community posts) need the user's approval. On 2026-10-15 the user postponed both until they decide to do them manually: the upstream submission (formerly TASK-316) and the review request (formerly TASK-318) are drafts (draft-3 and draft-4), not pending work.

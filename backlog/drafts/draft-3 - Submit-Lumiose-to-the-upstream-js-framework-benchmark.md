@@ -1,11 +1,11 @@
 ---
-id: TASK-316
+id: DRAFT-3
 title: Submit Lumiose to the upstream js-framework-benchmark
 status: In Progress
 assignee:
   - '@Spark'
 created_date: '2026-10-15 04:02'
-updated_date: '2026-10-15 07:41'
+updated_date: '2026-10-15 12:00'
 labels:
   - performance
   - benchmark
@@ -40,4 +40,6 @@ AC#1 done (Spark, 2026-10-15):
 - Parked for the user: AC#2 (approve and open the upstream PR: release the version to submit, bump the two packages, run with --lock --export, open the PR with only that folder) and AC#3 (link official results once krausest publishes them). upstream/README.md has the steps.
 
 User decision, 2026-10-15 (parked decisions review): the user opens the upstream pull request themselves, following upstream/README.md; record its link here afterwards.
+
+2026-10-15 (user): postponed until the user decides to do it manually; nothing is posted to GitHub Discussions or the js-framework-benchmark repository. Not pending: moved to drafts.
 <!-- SECTION:NOTES:END -->

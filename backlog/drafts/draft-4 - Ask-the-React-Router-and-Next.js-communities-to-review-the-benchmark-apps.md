@@ -1,11 +1,11 @@
 ---
-id: TASK-318
+id: DRAFT-4
 title: Ask the React Router and Next.js communities to review the benchmark apps
 status: In Progress
 assignee:
   - '@Lux'
 created_date: '2026-10-15 04:03'
-updated_date: '2026-10-15 07:41'
+updated_date: '2026-10-15 12:00'
 labels:
   - performance
   - benchmark
@@ -48,4 +48,6 @@ The React Router and Next.js versions were written by the Lumiose maintainers, s
 Please open an issue with the label `benchmark`, or a pull request against `benchmarks/fullstack/apps/react-router` or `benchmarks/fullstack/apps/next`. Every accepted change gets a new published run, with the change noted next to the results.
 
 User decision, 2026-10-15 (parked decisions review): the user posts the review request themselves (the draft above); record the links here afterwards.
+
+2026-10-15 (user): postponed until the user decides to do it manually; nothing is posted to GitHub Discussions or the js-framework-benchmark repository. Not pending: moved to drafts.
 <!-- SECTION:NOTES:END -->
