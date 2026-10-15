@@ -1,6 +1,6 @@
 # Menu
 
-> A menu of commands, links, checkbox and radio items and submenus, opened by a button: the trigger's `popovertarget` opens it and CSS anchor positioning places it, so it works in server HTML with no JavaScript, and a 2.3 kB script adds the APG Menu Button keyboard contract where JavaScript runs. `bind:open`, `bind:checked` and `bind:value` keep signals in sync in islands.
+> A menu of commands, links, checkbox and radio items and submenus, opened by a button: the trigger's `popovertarget` opens it and CSS anchor positioning places it, so it works in server HTML with no JavaScript, and a 2.4 kB script adds the APG Menu Button keyboard contract where JavaScript runs. `bind:open`, `bind:checked` and `bind:value` keep signals in sync in islands.
 
 ```ts
 import { Menu } from "@lumiose/ui"; // or "@lumiose/ui/menu"
@@ -34,21 +34,21 @@ import "@lumiose/ui/themes/default.css"; // optional: the default theme
 </Menu.Root>
 ```
 
-| Part             | Renders                                                                                                                 |
-| ---------------- | ----------------------------------------------------------------------------------------------------------------------- |
-| `Root`           | `<lu-menu>`, an element with no box (`display: contents`) that holds the menu's state and adds the keyboard contract.   |
-| `Trigger`        | `<button type="button" popovertarget="…" aria-haspopup="menu">`; `aria-expanded` follows the menu once the script runs. |
-| `Popup`          | `<div role="menu" popover="auto" tabindex="-1" data-side="…" data-align="…">`, labelled by its trigger.                 |
-| `Item`           | `<button type="button" role="menuitem">`: a command.                                                                    |
-| `LinkItem`       | `<a role="menuitem">`: a link.                                                                                          |
-| `CheckboxItem`   | `<button type="button" role="menuitemcheckbox" aria-checked="…">`                                                       |
-| `Separator`      | `<div role="separator">`                                                                                                |
-| `Group`          | `<div role="group">`, labelled by its `GroupLabel`.                                                                     |
-| `GroupLabel`     | `<div role="presentation">`, which names its `Group` or `RadioGroup`.                                                   |
-| `RadioGroup`     | `<div role="group">` of radio items, one of them checked.                                                               |
-| `RadioItem`      | `<button type="button" role="menuitemradio" value="…" aria-checked="…">`                                                |
-| `SubmenuRoot`    | `<lu-menu>` for a submenu, inside a `Popup`.                                                                            |
-| `SubmenuTrigger` | `<button type="button" role="menuitem" popovertarget="…" aria-haspopup="menu">`: an item of the parent menu.            |
+| Part             | Renders                                                                                                                                              |
+| ---------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Root`           | `<lu-menu>`, an element with no box (`display: contents`) that holds the menu's state and adds the keyboard contract.                                |
+| `Trigger`        | `<button type="button" popovertarget="…" aria-haspopup="menu">`; `aria-expanded` follows the menu once the script runs.                              |
+| `Popup`          | `<div role="menu" popover="auto" tabindex="-1" data-side="…" data-align="…">`, labelled by its trigger; `popover="manual"` once the script opens it. |
+| `Item`           | `<button type="button" role="menuitem">`: a command.                                                                                                 |
+| `LinkItem`       | `<a role="menuitem">`: a link.                                                                                                                       |
+| `CheckboxItem`   | `<button type="button" role="menuitemcheckbox" aria-checked="…">`                                                                                    |
+| `Separator`      | `<div role="separator">`                                                                                                                             |
+| `Group`          | `<div role="group">`, labelled by its `GroupLabel`.                                                                                                  |
+| `GroupLabel`     | `<div role="presentation">`, which names its `Group` or `RadioGroup`.                                                                                |
+| `RadioGroup`     | `<div role="group">` of radio items, one of them checked.                                                                                            |
+| `RadioItem`      | `<button type="button" role="menuitemradio" value="…" aria-checked="…">`                                                                             |
+| `SubmenuRoot`    | `<lu-menu>` for a submenu, inside a `Popup`.                                                                                                         |
+| `SubmenuTrigger` | `<button type="button" role="menuitem" popovertarget="…" aria-haspopup="menu">`: an item of the parent menu.                                         |
 
 The trigger and the popup sit inside `Root`; a submenu's trigger and popup sit inside its
 `SubmenuRoot`, which sits in the parent's `Popup`, as deep as you like. Items, groups and separators
@@ -297,8 +297,9 @@ Base UI's behaviour where the pattern leaves a choice:
   mouse press on the trigger opens the menu at once: releasing it on an item runs the item, and
   releasing it outside closes the menu. A submenu opens after the pointer rests 100 ms on its
   trigger, and stays open while the pointer heads for it across other items.
-- **A click outside** closes the whole menu, submenus included; a click inside a submenu leaves its
-  parents open.
+- **A click outside** closes the whole menu, submenus included, and a click in a menu closes the
+  submenus open from it. A right-click, a middle click or a second finger outside leaves the menu
+  open, as in Base UI.
 
 ## Without JavaScript, and the client script
 
@@ -308,11 +309,14 @@ items in order, and links work; commands, which run JavaScript, need it anyway. 
 `onOpenChange` and the `bind:` props need the component to run in the browser, in an island.
 
 The keyboard contract comes from a small script: a page that renders a `Menu` loads it once, as a
-2.3 kB (brotli) module without the Lumiose runtime, and islands bundle it. It defines `lu-menu`,
+2.4 kB (brotli) module without the Lumiose runtime, and islands bundle it. It defines `lu-menu`,
 which upgrades every menu on the page in place, and adds what the native popover lacks: focus on
 open and its return on close, the arrows, Home, End and typeahead, Escape one level at a time, Tab,
 submenus, checkbox and radio items, disabled items, `data-highlighted`, and the pointer behaviour
-above. Until it loads (or without JavaScript) the menu behaves as a native popover of buttons.
+above. It also takes over dismissal: the popup becomes a manual popover when the script opens it,
+and the script closes it on a click outside (main button only), on Escape, and on a close request
+such as the Android back gesture. Until it loads (or without JavaScript) the menu behaves as a
+native `popover="auto"` of buttons, which any click outside closes.
 
 The element is also an API of its own, for scripts and other frameworks:
 
@@ -330,6 +334,8 @@ The element is also an API of its own, for scripts and other frameworks:
   of the viewport, and still works.
 - **`showPopover({ source })`**, which ties a popup the script opens to its trigger: Chrome 137,
   Firefox 144, Safari 26. Older browsers open it the same way.
+- **`CloseWatcher`**, for the Android back gesture: Chrome 126, Firefox 149. Elsewhere Escape
+  still closes the menu.
 - **Exit animations** that keep the popup in the top layer while it fades (`overlay`) are
   Chromium-only.
 

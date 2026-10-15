@@ -27,10 +27,14 @@ function closed(popover: HTMLElement | null): boolean {
   );
 }
 
+const auto = (element: HTMLElement) => element.getAttribute("popover") === "auto";
+
 function hide(element: HTMLElement) {
   if (!shown.has(element)) return;
-  // Popovers nested in it close first, as in the auto popover stack.
-  for (const other of shown) if (other !== element && element.contains(other)) hide(other);
+  // Auto popovers nested in it close first, as in the auto popover stack.
+  for (const other of shown) {
+    if (other !== element && element.contains(other) && auto(other)) hide(other);
+  }
   fire(element, "beforetoggle", "closed");
   shown.delete(element);
   fire(element, "toggle", "closed");
@@ -40,8 +44,9 @@ beforeAll(() => {
   const proto = HTMLElement.prototype as HTMLElement & Record<string, unknown>;
   proto.showPopover = function (this: HTMLElement) {
     if (shown.has(this)) return;
-    // Opening closes the open popovers that are not its ancestors.
-    for (const other of shown) if (!other.contains(this)) hide(other);
+    // Opening an auto popover closes the open auto popovers that are not its ancestors.
+    if (auto(this))
+      for (const other of shown) if (auto(other) && !other.contains(this)) hide(other);
     fire(this, "beforetoggle", "open");
     shown.add(this);
     fire(this, "toggle", "open");
@@ -108,6 +113,14 @@ function keys(...names: string[]) {
   for (const name of names) key(active()!, name);
 }
 
+/** A press and release of a pointer on `target`. */
+function press(target: Element, init: PointerEventInit = {}) {
+  for (const type of ["pointerdown", "pointerup"]) {
+    target.dispatchEvent(
+      new PointerEvent(type, { bubbles: true, button: 0, isPrimary: true, ...init }),
+    );
+  }
+}
 function click(target: HTMLElement, init: MouseEventInit = {}) {
   target.dispatchEvent(
     new MouseEvent("click", { bubbles: true, cancelable: true, detail: 1, ...init }),
@@ -192,6 +205,39 @@ describe("lu-menu: opening and focus", () => {
     keys("ArrowDown");
     expect(item("Rename").hasAttribute("data-highlighted")).toBe(false);
     expect(item("Delete").hasAttribute("data-highlighted")).toBe(true);
+  });
+});
+
+describe("lu-menu: light dismiss", () => {
+  it("makes the popup a manual popover and closes it on a main-button press outside", () => {
+    openEdit();
+    const menu = menuOf(item("Rename"));
+    expect(menu.popup!.getAttribute("popover")).toBe("manual");
+    const after = document.querySelector<HTMLElement>("button:not([role], [aria-haspopup])")!;
+    press(item("Delete"));
+    expect(menu.open).toBe(true);
+    press(after, { button: 2 });
+    press(after, { button: 1 });
+    press(after, { isPrimary: false });
+    expect(menu.open).toBe(true);
+    press(after);
+    expect(menu.open).toBe(false);
+  });
+
+  it("closes a submenu on a press in its parent, and the whole tree on a press outside", () => {
+    openEdit();
+    const share = trigger("Share");
+    share.focus();
+    key(share, "ArrowRight");
+    const sub = menuOf(item("Email"));
+    const root = menuOf(item("Rename"));
+    press(root.popup!);
+    expect(sub.open).toBe(false);
+    expect(root.open).toBe(true);
+    key(share, "ArrowRight");
+    press(document.body);
+    expect(sub.open).toBe(false);
+    expect(root.open).toBe(false);
   });
 });
 

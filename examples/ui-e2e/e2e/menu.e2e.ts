@@ -289,6 +289,39 @@ test.describe("pointer", () => {
     await expect(menu).toBeHidden();
   });
 
+  test("a right-click or a middle click outside does not close the menu", async ({ page }) => {
+    // Base UI and Zag ignore secondary buttons (doc-9, section 1); the native light dismiss does
+    // not and cannot be canceled, so lu-menu makes the popup a manual popover and dismisses it.
+    await page.goto("/menu");
+    const { trigger, menu, item } = actions(page);
+    await trigger.focus();
+    await page.keyboard.press("Enter");
+    await expect(item("Rename")).toBeFocused();
+    const heading = page.getByRole("heading", { name: "Placement" });
+    // The page still gets the right-click.
+    const contextMenu = page.evaluate(
+      () =>
+        new Promise<string>((resolve) =>
+          document.addEventListener(
+            "contextmenu",
+            (event) => {
+              event.preventDefault();
+              resolve((event.target as Element).textContent ?? "");
+            },
+            { once: true },
+          ),
+        ),
+    );
+    await heading.click({ button: "right" });
+    expect(await contextMenu).toBe("Placement");
+    await heading.click({ button: "middle" });
+    await expect(menu).toBeVisible();
+    await expect(page.getByRole("menu")).toHaveCount(1);
+    await heading.click();
+    await expect(menu).toBeHidden();
+    await expect(trigger).toBeFocused();
+  });
+
   test("a click outside closes the menu; focus returns unless it landed on a button", async ({
     page,
   }) => {

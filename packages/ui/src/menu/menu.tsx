@@ -213,7 +213,8 @@ function itemAttributes({ disabled, label, closeOnClick }: ItemProps) {
   };
 }
 
-function MenuState(props: MenuRootProps & { submenu: boolean }) {
+/** The state and element of `Root` and `SubmenuRoot`, rendered by either. */
+function menuRoot(props: MenuRootProps, submenu: boolean) {
   // Adds the keyboard and item behaviour where JavaScript runs; the page loads it once (decision-63).
   menuScript();
   const host = ref<MenuElement>();
@@ -222,7 +223,7 @@ function MenuState(props: MenuRootProps & { submenu: boolean }) {
     popupId: `${id}-popup`,
     triggerId: `${id}-trigger`,
     anchor: `--lu-${id}`,
-    submenu: props.submenu,
+    submenu,
     triggers: signal(0),
   };
 
@@ -231,11 +232,11 @@ function MenuState(props: MenuRootProps & { submenu: boolean }) {
   // before the island hydrated stays open, and the signal hears of it.
   let mounted = false;
   effect(() => {
-    const menu = host();
+    const element = host();
     const wanted = props.open;
-    if (!menu?.isConnected || wanted === undefined) return;
-    if (!mounted && !wanted && menu.open) untrack(() => props.onOpenChange?.(true));
-    else menu.open = wanted;
+    if (!element?.isConnected || wanted === undefined) return;
+    if (!mounted && !wanted && element.open) untrack(() => props.onOpenChange?.(true));
+    else element.open = wanted;
     mounted = true;
   });
 
@@ -254,11 +255,11 @@ function MenuState(props: MenuRootProps & { submenu: boolean }) {
 }
 
 function Root(props: MenuRootProps) {
-  return <MenuState {...props} submenu={false} />;
+  return menuRoot(props, false);
 }
 
 function SubmenuRoot(props: MenuSubmenuRootProps) {
-  return <MenuState {...props} submenu />;
+  return menuRoot(props, true);
 }
 
 // Each part spreads the caller's props first, so they override the defaults, and sets the wiring
@@ -391,7 +392,8 @@ function GroupElement({
 
 function Group(props: MenuGroupProps) {
   useMenu();
-  const group: GroupContextValue = { labelId: `${useId()}-label`, labels: signal(0) };
+  const id = useId();
+  const group: GroupContextValue = { labelId: `${id}-label`, labels: signal(0) };
   return (
     <GroupContext value={group}>
       <GroupElement {...props} group={group} />
@@ -418,7 +420,8 @@ function RadioGroup({
   ...rest
 }: MenuRadioGroupProps) {
   useMenu();
-  const group: GroupContextValue = { labelId: `${useId()}-label`, labels: signal(0) };
+  const id = useId();
+  const group: GroupContextValue = { labelId: `${id}-label`, labels: signal(0) };
   const radio = { value: () => (value === undefined ? defaultValue : value) };
   return (
     <GroupContext value={group}>

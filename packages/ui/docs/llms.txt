@@ -14,3 +14,4 @@ props, events and styling hooks. The Lumiose docs: `node_modules/lumiose/docs/ll
 ## Components
 
 - [Dialog](dialog.md): A modal dialog, or an alert dialog that needs an answer: a native `<dialog>` opened and closed by invoker commands, so it works in server HTML with no JavaScript, and a 0.8 kB script closes the native element's gaps where JavaScript runs. `bind:open` (or `open` and `onOpenChange`) keeps a signal in sync in islands.
+- [Menu](menu.md): A menu of commands, links, checkbox and radio items and submenus, opened by a button: the trigger's `popovertarget` opens it and CSS anchor positioning places it, so it works in server HTML with no JavaScript, and a 2.4 kB script adds the APG Menu Button keyboard contract where JavaScript runs. `bind:open`, `bind:checked` and `bind:value` keep signals in sync in islands.

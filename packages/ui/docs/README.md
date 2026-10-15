@@ -112,7 +112,7 @@ Each component's page has an example stylesheet to start from.
 | --------------------------------- | ------------------------------------------------------ |
 | [Dialog, alert dialog](dialog.md) | Available: native `<dialog>`, works without JavaScript |
 | Popover, tooltip                  | Planned                                                |
-| Menu                              | Planned                                                |
+| [Menu](menu.md)                   | Available: popover menu, opens without JavaScript      |
 | Combobox, select                  | Planned                                                |
 | Tabs                              | Planned                                                |
 
