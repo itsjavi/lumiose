@@ -139,6 +139,13 @@ export interface ResponseContext {
   setStatus(status: number): void;
   getHeader(name: string): string | null;
   setHeader(name: string, value: string): void;
+  /**
+   * `setStreaming(false)` sends one fully resolved document instead of streaming `<Suspense>`
+   * boundaries (decision-58): the render waits for every boundary, as when prerendering. For
+   * clients that do not run JavaScript, such as crawlers. Call it before the shell is sent: in
+   * middleware, or in a page before its first `<Suspense>`.
+   */
+  setStreaming(streaming: boolean): void;
 }
 
 /** Props of `error` and `not-found` pages. */

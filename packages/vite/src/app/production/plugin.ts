@@ -32,6 +32,7 @@ import type { BuiltAppConfig } from "lumiose/internal/app/server/app.ts";
 import type { HeadersOption } from "lumiose/internal/app/headers.ts";
 import type { CsrfOptions } from "lumiose/internal/app/server/csrf.ts";
 import type { LimitsOption } from "lumiose/internal/app/server/body.ts";
+import type { StreamTimeoutOption } from "lumiose/internal/app/server/stream-timeout.ts";
 import type { TrailingSlash } from "lumiose/internal/app/server/handler.ts";
 import type { Prefetch } from "lumiose/internal/app/server/navigation.ts";
 import { SPA_ENTRY, spaEntryPlugin } from "../router/entry.ts";
@@ -80,6 +81,8 @@ export interface BuildState {
   csrf: false | CsrfOptions | undefined;
   /** `lumiose({ limits })`, for the server entry. */
   limits?: LimitsOption;
+  /** `lumiose({ streamTimeout })`, for the server entry. */
+  streamTimeout?: StreamTimeoutOption;
   /** `lumiose({ headers })`, for adapters (`config.headers` of the server entry). */
   headers?: HeadersOption;
   /**
@@ -487,6 +490,7 @@ export function serverEntryCode(state: BuildState, config: ResolvedConfig): stri
     ...(instrumentation === undefined ? {} : { instrumentation }),
     ...(state.csrf === undefined ? {} : { csrf: state.csrf }),
     ...(state.limits === undefined ? {} : { limits: state.limits }),
+    ...(state.streamTimeout === undefined ? {} : { streamTimeout: state.streamTimeout }),
     ...(state.viewTransitions ? { viewTransitions: true } : {}),
     ...(projectOptions(config, "build").csp === undefined ? {} : { csp: "strict" }),
     ...(projectOptions(config, "build").site === undefined

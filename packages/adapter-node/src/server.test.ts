@@ -8,6 +8,10 @@ import { createServer as createHttpServer } from "node:http";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { build } from "@lumiose/vite/build";
 import { linkLumiose } from "@lumiose/vite/internal/test-links.ts";
+import {
+  checkStreaming,
+  STREAMING_FILES,
+} from "@lumiose/vite/internal/app/__fixtures__/streaming.ts";
 import { createHandler, createServer, type LumioseServer } from "./server.ts";
 import { isHashed } from "./static.ts";
 
@@ -229,6 +233,28 @@ export default {
       expect(embed.headers.get("cross-origin-embedder-policy")).toBe("credentialless");
     } finally {
       await configured.close();
+      rmSync(app, { recursive: true, force: true });
+    }
+  });
+
+  it("streams, sends one resolved document from middleware, and ends a hung boundary (TASK-340)", async () => {
+    const app = realpathSync.native(mkdtempSync(join(tmpdir(), "lumiose-adapter-streaming-")));
+    for (const [name, code] of Object.entries(STREAMING_FILES)) {
+      mkdirSync(dirname(join(app, name)), { recursive: true });
+      writeFileSync(join(app, name), code);
+    }
+    linkLumiose(app);
+    await build({ root: app, logLevel: "silent" });
+    const streaming = await createServer({
+      dir: join(app, "dist"),
+      port: 0,
+      host: "127.0.0.1",
+      onError: () => {},
+    });
+    try {
+      await checkStreaming((path) => fetch(new URL(path.slice(1), streaming.url)), false);
+    } finally {
+      await streaming.close();
       rmSync(app, { recursive: true, force: true });
     }
   });

@@ -72,6 +72,7 @@ import {
   type PrerenderGuard,
   type RequestScope,
 } from "./scope.ts";
+import { resolveStreamTimeout, type StreamTimeoutOption } from "./stream-timeout.ts";
 
 export type ModuleExports = Record<string, unknown>;
 
@@ -165,6 +166,13 @@ export interface RequestHandlerOptions {
    */
   headers?: HeadersOption;
   /**
+   * `lumiose({ streamTimeout })` (decision-58): how long a page render waits for pending
+   * `<Suspense>` boundaries, in milliseconds or as `"30s"`; `false` waits as long as the client
+   * stays. Expired, pending async components fail with LUM5009 (the nearest `<ErrorBoundary>`
+   * renders), then pending boundaries, and the response ends. Default 30 s. Prerendering ignores it.
+   */
+  streamTimeout?: StreamTimeoutOption;
+  /**
    * `lumiose({ site })`, the site's origin (`https://example.com`): the absolute `hreflang` and
    * canonical URLs of localized pages while prerendering, which has no request origin. Without it,
    * prerendered pages get root-relative ones.
@@ -236,6 +244,7 @@ export function createRequestHandler(options: RequestHandlerOptions): RequestHan
   const allowedOrigins = new Set(options.csrf === false ? [] : options.csrf?.allowedOrigins);
   const clientHead = clientEntryHead(options.clientEntry);
   const appLimits = resolveLimits(options.limits, DEFAULT_LIMITS, "lumiose({ limits })");
+  const streamTimeout = resolveStreamTimeout(options.streamTimeout, "lumiose({ streamTimeout })");
 
   // `src/instrumentation.server.ts`: loaded on the first request, which waits for `register()`.
   // Without it (and while prerendering) `hooks` stays undefined: one check per phase.
@@ -461,7 +470,8 @@ export function createRequestHandler(options: RequestHandlerOptions): RequestHan
           ),
         );
       } catch (error) {
-        scope.response = createResponseState();
+        // Error pages keep `setStreaming(false)`: it is about the client, not the page.
+        scope.response = createResponseState(200, undefined, scope.response.streaming);
         response =
           match?.route.kind === "endpoint"
             ? endpointError(error, ctx, "middleware")
@@ -693,7 +703,7 @@ export function createRequestHandler(options: RequestHandlerOptions): RequestHan
         localeHead?.canonical,
       );
     } catch (error) {
-      scope.response = createResponseState(200, baseline);
+      scope.response = createResponseState(200, baseline, scope.response.streaming);
       return renderError(error, scope, route, phase);
     }
   }
@@ -951,6 +961,14 @@ export function createRequestHandler(options: RequestHandlerOptions): RequestHan
       request,
       signal: request.signal,
       resolveAll,
+      // `setStreaming(false)` (decision-58) is read live: middleware sets it before the render, a
+      // page while it renders. Prerendering resolves everything and ignores `streamTimeout`.
+      ...(resolveAll
+        ? {}
+        : {
+            streaming: () => scope.response.streaming,
+            ...(streamTimeout === false ? {} : { streamTimeout }),
+          }),
       onError: (error, streamed) => report(error, ctx, streamed === true ? "stream" : "render"),
       // Production: ErrorBoundary fallbacks see a generic error with a digest (decision-29), which
       // the server log gets with the error; onRequestError gets every caught error, dev included.
@@ -1057,6 +1075,7 @@ export function createRequestHandler(options: RequestHandlerOptions): RequestHan
         ? toError(error)
         : new HttpError(500, statusText(500));
     const baseline = new Headers(scope.response.headers);
+    const streaming = scope.response.streaming;
     const candidates = status === 404 ? [pages.notFoundPage, pages.errorPage] : [pages.errorPage];
 
     for (const file of new Set(candidates)) {
@@ -1064,7 +1083,7 @@ export function createRequestHandler(options: RequestHandlerOptions): RequestHan
       if (page === undefined) continue;
       const layoutFiles = layoutsFor(page.dir);
       for (const layouts of layoutFiles.length > 0 ? [layoutFiles, []] : [[]]) {
-        scope.response = createResponseState(status, baseline);
+        scope.response = createResponseState(status, baseline, streaming);
         try {
           // Error pages below an `spa` layout render inside the SPA, as pages do (TASK-25).
           const spa = spaErrorPart(manifest, layouts, page.file);
@@ -1099,7 +1118,7 @@ export function createRequestHandler(options: RequestHandlerOptions): RequestHan
         }
       }
     }
-    scope.response = createResponseState(status, baseline);
+    scope.response = createResponseState(status, baseline, streaming);
     return fallbackPage(status, exposed);
   }
 

@@ -10,6 +10,7 @@ import type { RouteMode } from "lumiose/internal/app/routes/manifest.ts";
 import type { HeadersOption } from "lumiose/internal/app/headers.ts";
 import type { CsrfOptions } from "lumiose/internal/app/server/csrf.ts";
 import type { LimitsOption } from "lumiose/internal/app/server/body.ts";
+import type { StreamTimeoutOption } from "lumiose/internal/app/server/stream-timeout.ts";
 import type { TrailingSlash } from "lumiose/internal/app/server/handler.ts";
 import type { Prefetch } from "lumiose/internal/app/server/navigation.ts";
 import type { Adapter } from "./production/adapter.ts";
@@ -89,6 +90,7 @@ export interface ProjectOptions {
   csp?: "strict";
   headers?: HeadersOption;
   limits?: LimitsOption;
+  streamTimeout?: StreamTimeoutOption;
   adapter?: Adapter;
   /** `lumiose({ i18n })`, validated, with its defaults (decision-44). */
   i18n?: I18nConfig;

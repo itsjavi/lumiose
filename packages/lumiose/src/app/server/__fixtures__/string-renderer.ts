@@ -52,7 +52,7 @@ export function createStringRenderer(): PageRenderer {
       let body = await resolve(root());
       const head = current.head.join("");
       if (current.deferred.length === 0) return { head, body, stream: null };
-      if (options.resolveAll) {
+      if (options.resolveAll || options.streaming?.() === false) {
         const chunks = await Promise.all(current.deferred);
         body = body.replace(/<!--defer:(\d+)-->/g, (_, index: string) => chunks[Number(index)]!);
         return { head, body, stream: null };

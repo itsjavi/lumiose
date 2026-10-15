@@ -82,6 +82,7 @@ fix?, docs }`; `lumiose check --format json` prints them.
 | [LUM5006](LUM5006.md) | error    | Prerendered page that renders only in the browser |
 | [LUM5007](LUM5007.md) | error    | Route param named `locale`                        |
 | [LUM5008](LUM5008.md) | warning  | Folder middleware covering prerendered routes     |
+| [LUM5009](LUM5009.md) | error    | Boundary still pending when streamTimeout expired |
 
 ## Tooling and config (6xxx)
 

@@ -34,6 +34,13 @@ export interface PageRenderOptions {
   /** Prerender/SSG: resolve every Suspense boundary into the body; no fallbacks or swap scripts. */
   resolveAll: boolean;
   /**
+   * Whether the response still streams: `response().setStreaming(false)` resolves every boundary
+   * from then on, and those already streaming are inlined (decision-58).
+   */
+  streaming?: () => boolean;
+  /** `lumiose({ streamTimeout })` in milliseconds; undefined when off (decision-58). */
+  streamTimeout?: number;
+  /**
    * Errors no `<ErrorBoundary>` handled: of streamed boundaries (headers are already sent,
    * `streamed`), or while the render ends.
    */
@@ -137,7 +144,18 @@ const rawHtml = (html: string) => new SSRHtml(html);
 export function createServerRenderer(options: ServerRendererOptions = {}): PageRenderer {
   return async (
     tree,
-    { signal, resolveAll, onError, onCaughtError, onBoundary, loaderUrl, csp, sanitizeErrors },
+    {
+      signal,
+      resolveAll,
+      streaming,
+      streamTimeout,
+      onError,
+      onCaughtError,
+      onBoundary,
+      loaderUrl,
+      csp,
+      sanitizeErrors,
+    },
   ) => {
     const { head, html, records, stream } = await renderShell(
       composePageTree(tree, createComponent, rawHtml),
@@ -146,6 +164,8 @@ export function createServerRenderer(options: ServerRendererOptions = {}): PageR
         signal,
         resolveAll,
         onError,
+        ...(streaming === undefined ? {} : { streaming }),
+        ...(streamTimeout === undefined ? {} : { streamTimeout }),
         ...(onCaughtError === undefined ? {} : { onCaughtError }),
         ...(onBoundary === undefined ? {} : { onBoundary }),
         ...(sanitizeErrors === true ? { sanitizeErrors } : {}),

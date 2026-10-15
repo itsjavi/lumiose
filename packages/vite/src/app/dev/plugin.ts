@@ -286,6 +286,7 @@ export function lumioseDev(options: LumioseDevOptions = {}): Plugin {
       ...(project.trailingSlash === undefined ? {} : { trailingSlash: project.trailingSlash }),
       ...(project.csrf === undefined ? {} : { csrf: project.csrf }),
       ...(project.limits === undefined ? {} : { limits: project.limits }),
+      ...(project.streamTimeout === undefined ? {} : { streamTimeout: project.streamTimeout }),
       ...(project.csp === undefined ? {} : { csp: project.csp }),
       ...(project.headers === undefined ? {} : { headers: project.headers }),
       ...navigationOptions(project),

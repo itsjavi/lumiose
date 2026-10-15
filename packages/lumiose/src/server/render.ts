@@ -31,6 +31,7 @@ import {
   FLUSHED,
   PENDING,
   READY,
+  resolvesAll,
   resolveUnit,
   withFrame,
   type CaughtErrorInfo,
@@ -57,6 +58,18 @@ export interface ShellOptions extends RenderToStreamOptions {
   onCaughtError?: (error: unknown, info: CaughtErrorInfo) => void;
   /** Each streamed boundary, with a promise that settles once its content is ready or failed. */
   onBoundary?: (settled: Promise<unknown>) => void;
+  /**
+   * Whether the response still streams (`response().setStreaming()`, decision-58), read at each
+   * boundary and when the shell completes: once false, boundaries render into the shell, and those
+   * already streaming are waited for and inlined. Ignored with `resolveAll`.
+   */
+  streaming?: () => boolean;
+  /**
+   * `lumiose({ streamTimeout })` in milliseconds (decision-58): once it expires, async component
+   * runs still pending fail with LUM5009 (the nearest `<ErrorBoundary>` renders), then boundaries
+   * still pending fail, and the response ends. Ignored with `resolveAll`.
+   */
+  streamTimeout?: number;
   /**
    * Dev (`lumiose dev`): whether client code reaches the scoped state `ref` (`<module>#<export>`).
    * Builds give ids only to such states, so they need no check.
@@ -109,8 +122,14 @@ export function renderShell(root: () => unknown, options: ShellOptions = {}): Pr
   const active = currentStateScope();
   const states = active ?? createStateScope();
   const onError = options.onError ?? ((error: unknown) => console.error(error));
+  const resolveAll = options.resolveAll === true;
   const render: RenderState = {
-    resolveAll: options.resolveAll === true,
+    resolveAll,
+    streaming: resolveAll ? undefined : options.streaming,
+    // Prerendering waits for everything (decision-58).
+    streamTimeout: resolveAll ? undefined : options.streamTimeout,
+    timeout: undefined,
+    streamed: options.streaming === undefined || resolveAll ? undefined : [],
     nonce: options.nonce,
     strictStyles: options.strictStyles === true,
     moduleUrl: options.islandUrl ?? ((specifier) => specifier),
@@ -171,12 +190,20 @@ export function renderShell(root: () => unknown, options: ShellOptions = {}): Pr
     Promise.resolve(body).then(
       (html) => {
         signal?.removeEventListener("abort", abort);
-        try {
-          resolve(completeShell(render, html, signal));
-        } catch (error) {
+        const failed = (error: unknown) => {
           // LUM4011: a scoped state the page sends holds a value that is not plain data.
           finish(render);
           reject(error);
+        };
+        if (render.pending > 0 && resolvesAll(render)) {
+          // `setStreaming(false)` after boundaries started streaming: one document with them inlined.
+          inlineBoundaries(render, html, signal).then(resolve, failed);
+          return;
+        }
+        try {
+          resolve(completeShell(render, html, signal));
+        } catch (error) {
+          failed(error);
         }
       },
       (error: unknown) => {
@@ -225,10 +252,87 @@ function completeShell(render: RenderState, html: string, signal?: AbortSignal):
   return { head, html, records, stream };
 }
 
+/**
+ * The shell of a render whose response stopped streaming while boundaries were already streaming
+ * (`setStreaming(false)` in a page, decision-58): waits for every boundary, then puts each one's
+ * content in place of its placeholder, as a synchronous boundary renders. A failed boundary keeps
+ * its fallback, as in a streamed response.
+ */
+async function inlineBoundaries(
+  render: RenderState,
+  html: string,
+  signal: AbortSignal | undefined,
+): Promise<ShellParts> {
+  const streamed = render.streamed!;
+  let abort: (() => void) | undefined;
+  const aborted = new Promise<never>((_, reject) => {
+    abort = () => reject(signal!.reason);
+    signal?.addEventListener("abort", abort, { once: true });
+  });
+  try {
+    // Boundaries inside streaming ones register while those render: wait until none is left.
+    for (let seen = 0; seen < streamed.length;) {
+      const settled = streamed.slice(seen).map((boundary) => boundary.settled);
+      seen = streamed.length;
+      await Promise.race([Promise.all(settled), aborted]);
+    }
+  } finally {
+    signal?.removeEventListener("abort", abort!);
+  }
+  const out = inline(render, html);
+  render.pending = 0;
+  render.shell.waiting = [];
+  return completeShell(render, out, signal);
+}
+
+const RANGE_START = '<?start name="lb';
+const RANGE_END = "<?end>";
+
+/** `html` with each placeholder of a ready boundary replaced by its (inlined) content. */
+function inline(render: RenderState, html: string): string {
+  let out = "";
+  let at = 0;
+  for (let start = html.indexOf(RANGE_START); start >= 0; start = html.indexOf(RANGE_START, at)) {
+    const open = html.indexOf('">', start) + 2;
+    const end = open < 2 ? -1 : rangeEnd(html, open);
+    if (end < 0) break;
+    const unit = render.streamed![Number(html.slice(start + RANGE_START.length, open - 2))]?.unit;
+    out += html.slice(at, start);
+    if (unit?.state === READY) {
+      foldUnit(render, unit);
+      out += inline(render, unit.html);
+    } else {
+      out += html.slice(start, open) + inline(render, html.slice(open, end)) + RANGE_END;
+    }
+    at = end + RANGE_END.length;
+  }
+  return out + html.slice(at);
+}
+
+/** Where the range whose content starts at `from` ends (`<?end>`), past nested ranges; -1 if open. */
+function rangeEnd(html: string, from: number): number {
+  let depth = 0;
+  for (let at = from; ;) {
+    const end = html.indexOf(RANGE_END, at);
+    if (end < 0) return -1;
+    const start = html.indexOf("<?start ", at);
+    if (start >= 0 && start < end) {
+      depth++;
+      at = start + 1;
+    } else if (depth === 0) {
+      return end;
+    } else {
+      depth--;
+      at = end + RANGE_END.length;
+    }
+  }
+}
+
 /** Ends the render: disposes the root owner (cleanups run, `getAbortSignal()` aborts). */
 function finish(render: RenderState): void {
   if (render.done) return;
   render.done = true;
+  render.timeout?.cancel();
   try {
     disposeOwner(render.owner);
   } catch (error) {
@@ -311,7 +415,7 @@ export function streamBoundary(render: RenderState, unit: Unit, html: Promise<st
   const id = (unit.id = render.nextBoundary++);
   render.pending++;
   render.onBoundary?.(html);
-  html.then(
+  const settled = html.then(
     (value) => {
       if (render.done) return;
       unit.html = value;
@@ -327,6 +431,7 @@ export function streamBoundary(render: RenderState, unit: Unit, html: Promise<st
       drop(render, unit);
     },
   );
+  render.streamed?.push({ unit, settled });
   return `lb${id}`;
 }
 

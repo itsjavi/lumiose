@@ -346,10 +346,16 @@ interface ResponseContext {
   setStatus(status: number): void;
   getHeader(name: string): string | null;
   setHeader(name: string, value: string): void;
+  setStreaming(streaming: boolean): void; // false: one fully resolved document
 }
 ```
 
-Writable until the shell is sent; later writes throw `LUM5004`.
+Writable until the shell is sent; later writes throw `LUM5004`. `setStreaming(false)` makes the
+response wait for every `<Suspense>` boundary and send one complete document, without fallbacks
+or swap scripts, as prerendering renders; call it in middleware, or in a page before its first
+`<Suspense>`. It is meant for crawlers: see
+[the middleware recipe](../concepts/server.md#crawlers-get-one-resolved-document). The response
+still waits at most `lumiose({ streamTimeout })` ([`LUM5009`](../errors/LUM5009.md)).
 
 ## Cookies
 

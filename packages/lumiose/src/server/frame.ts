@@ -18,7 +18,7 @@ import {
   type Owner,
 } from "../core/internal.ts";
 import { setCurrentOwner } from "../core/reactive.ts";
-import { LUM_AWAIT_VALUE, LumioseError } from "../app/diagnostics.ts";
+import { LUM_AWAIT_VALUE, LUM_STREAM_TIMEOUT, LumioseError } from "../app/diagnostics.ts";
 import type { ServerEntry } from "../app/cache/server.ts";
 import { encodeData } from "./serialize.ts";
 import { escapeText, html, isThenable, join, SSRHtml, type Html } from "./node.ts";
@@ -91,7 +91,19 @@ export interface HeadEntry {
 }
 
 export interface RenderState {
+  /** Prerendering: every `<Suspense>` renders into the shell (see `resolvesAll`). */
   readonly resolveAll: boolean;
+  /**
+   * Whether the response still streams (`response().setStreaming()`, decision-58). Once it reads
+   * false, boundaries render into the shell, and those already streaming are inlined (./render.ts).
+   */
+  readonly streaming: (() => boolean) | undefined;
+  /** `lumiose({ streamTimeout })` in milliseconds (decision-58); undefined when off. */
+  readonly streamTimeout: number | undefined;
+  /** Its timer, started by the first async work (`withTimeout`). */
+  timeout: StreamTimeout | undefined;
+  /** With `streaming`: each streamed boundary by id, settled once its content is placed or failed. */
+  readonly streamed: Array<{ unit: Unit; settled: Promise<unknown> }> | undefined;
   readonly nonce: string | undefined;
   readonly strictStyles: boolean;
   readonly moduleUrl: (specifier: string) => string;
@@ -132,6 +144,68 @@ export interface RenderState {
   hydrates: boolean;
   /** `renderToStream(root, { idPrefix })`: prepended to every `useId()` (./id.ts). */
   readonly idPrefix: string;
+}
+
+/** The `streamTimeout` timer of a render: both promises resolve once it expires. */
+export interface StreamTimeout {
+  /** Async component runs fail then: the nearest `<ErrorBoundary>` renders. */
+  readonly early: Promise<void>;
+  /** A task later: boundaries whose content is still pending fail. */
+  readonly late: Promise<void>;
+  /** The LUM5009 error of one failed run or boundary (each gets its own digest). */
+  readonly error: () => LumioseError;
+  readonly cancel: () => void;
+}
+
+/** Whether `<Suspense>` boundaries render into the shell: prerendering, or `setStreaming(false)`. */
+export function resolvesAll(render: RenderState): boolean {
+  return render.resolveAll || (render.streaming !== undefined && !render.streaming());
+}
+
+/**
+ * `value`, failing with LUM5009 once the render's `streamTimeout` expires (decision-58): `early`
+ * for async component runs, so the rejection starts where the render waits and the nearest
+ * `<ErrorBoundary>` handles it; `late` for whole boundaries, a task later, once those fallbacks
+ * had their turn.
+ */
+export function withTimeout<T>(
+  render: RenderState | undefined,
+  value: Promise<T>,
+  late = false,
+): Promise<T> {
+  if (render?.streamTimeout === undefined || render.done) return value;
+  const timeout = (render.timeout ??= startTimeout(render.streamTimeout));
+  const expired = (late ? timeout.late : timeout.early).then((): never => {
+    throw timeout.error();
+  });
+  return Promise.race([value, expired]);
+}
+
+function startTimeout(ms: number): StreamTimeout {
+  let expireEarly!: () => void;
+  let expireLate!: () => void;
+  const early = new Promise<void>((resolve) => (expireEarly = resolve));
+  const late = new Promise<void>((resolve) => (expireLate = resolve));
+  let lateTimer: ReturnType<typeof setTimeout> | undefined;
+  const timer = setTimeout(() => {
+    expireEarly();
+    lateTimer = setTimeout(expireLate, 0);
+  }, ms);
+  // A pending render does not keep a process alive on its own (Node; elsewhere timers are numbers).
+  (timer as { unref?: () => void }).unref?.();
+  return {
+    early,
+    late,
+    error: () =>
+      new LumioseError(
+        LUM_STREAM_TIMEOUT,
+        `This part of the page was still loading when lumiose({ streamTimeout }) expired after ${ms} ms. Find the slow data source, render an <ErrorBoundary> around it, or raise streamTimeout`,
+      ),
+    cancel: () => {
+      clearTimeout(timer);
+      if (lateTimer !== undefined) clearTimeout(lateTimer);
+    },
+  };
 }
 
 /** Where an `<ErrorBoundary>` caught an error: `digest` is set when the fallback got a generic one. */
@@ -366,7 +440,8 @@ function runAsync<P>(
     // `$await` or `$leave` normally paused it already; hand-written async code may not call them.
     pause(run);
   }
-  const rendered = Promise.resolve(result).then((value) =>
+  // `streamTimeout` fails the run where it waits (decision-58): its own awaits, not its children.
+  const rendered = withTimeout(frame?.render, Promise.resolve(result)).then((value) =>
     value instanceof SSRHtml ? value.t : withFrame(frame, owner, () => content(value)),
   );
   // Inside islands the instance's output is a block: the range the client's async instance

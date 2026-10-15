@@ -7,6 +7,7 @@ import type { RouteManifest } from "../routes/manifest.ts";
 import type { HeadersOption } from "../headers.ts";
 import type { CsrfOptions } from "./csrf.ts";
 import type { LimitsOption } from "./body.ts";
+import type { StreamTimeoutOption } from "./stream-timeout.ts";
 import { stylesheetTags, type StyleTags } from "./stylesheets.ts";
 import {
   createRequestHandler,
@@ -49,6 +50,8 @@ export interface BuiltApp extends BuiltAppConfig {
   csrf?: false | CsrfOptions;
   /** `lumiose({ limits })`. */
   limits?: LimitsOption;
+  /** `lumiose({ streamTimeout })`; absent for the default. */
+  streamTimeout?: StreamTimeoutOption;
   /** Island module specifier (`/src/components/Team.stsx`) → its client chunk URL. */
   islands: Readonly<Record<string, string>>;
   /** URL of the island loader chunk (with `base`); absent when the app has no islands. */
@@ -98,6 +101,7 @@ export function createAppHandler(app: BuiltApp, options: AppHandlerOptions = {})
     ...(app.clientEntry === undefined ? {} : { clientEntry: app.clientEntry }),
     ...(app.csrf === undefined ? {} : { csrf: app.csrf }),
     ...(app.limits === undefined ? {} : { limits: app.limits }),
+    ...(app.streamTimeout === undefined ? {} : { streamTimeout: app.streamTimeout }),
     ...(app.spa === undefined ? {} : { spaEntry: app.spa }),
     ...(app.viewTransitions === undefined ? {} : { viewTransitions: app.viewTransitions }),
     ...(app.prefetch === undefined ? {} : { prefetch: app.prefetch }),

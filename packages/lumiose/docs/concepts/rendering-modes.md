@@ -153,7 +153,23 @@ props. The differences (Astro 7.3, checked against its docs and source in Octobe
    their fallbacks (with native `<template for>` updates or a ~300 B `$swap` script). An error
    renders the boundary's `<ErrorBoundary>` in place. A head or status change inside a streamed
    boundary is `LUM5004`.
-3. **SSG and prerender** resolve everything: no fallbacks and no swap scripts.
+3. **Timeout.** A render waits for its boundaries for `lumiose({ streamTimeout })`, 30 seconds by
+   default. Then async components still waiting fail with
+   [`LUM5009`](../errors/LUM5009.md): the nearest `<ErrorBoundary>` around each renders its
+   fallback into the stream, a boundary without one keeps its `<Suspense>` fallback,
+   `onRequestError` gets phase `"stream"`, and the response ends. `false` waits as long as the
+   client stays connected.
+4. **SSG and prerender** resolve everything: no fallbacks and no swap scripts, and no timeout.
+
+**One resolved document per request.** `response().setStreaming(false)` makes a `server` page
+render as prerendering does: the response waits for every boundary and sends one complete
+document, without fallbacks or swap scripts. It is meant for clients that do not run JavaScript,
+such as crawlers ([the recipe](server.md#crawlers-get-one-resolved-document)). Call it before the
+shell is sent: in middleware (best), or in a page before its first `<Suspense>`; later it is
+`LUM5004`. Boundaries already streaming when a page calls it are waited for and put in place, but
+they stay streamed boundaries for the rest (no head or status changes inside them). In such a
+response, a boundary that fails without an `<ErrorBoundary>` fails the page, as when prerendering,
+and `streamTimeout` still applies. Error pages of the request keep the setting.
 
 So: put slow, optional content inside `<Suspense>` to send the page sooner; leave essential
 content (and anything that decides the status) outside.
@@ -296,6 +312,8 @@ it without the adapter. Set response headers once with `lumiose({ headers })`
 | `export async function staticPaths()`                   | `static` routes and prerendered `spa` pages with params: `[{ params: { slug: "a" } }, …]`. |
 | `export function headers(ctx)`                          | Response headers for the page.                                                             |
 | `<Suspense fallback>`                                   | Marks content that may stream after the shell.                                             |
+| `response().setStreaming(false)`                        | This response waits for every boundary and sends one resolved document.                    |
+| `lumiose({ streamTimeout })`                            | How long a render waits for boundaries (`"30s"` default; `false`: no limit).               |
 | `renderToStream(root, options?)`                        | The server renderer behind it all; see [reference: server](../reference/server.md).        |
 
 ## Example
@@ -367,6 +385,12 @@ export default function Track() {
   (`LUM5004`). Decide them outside the boundary.
 - **Wrapping the whole page in `<Suspense>`.** The shell is then just the fallback, and the status
   cannot change. Wrap only slow, optional parts.
+- **Serving crawlers streamed fallbacks.** Crawlers that do not run JavaScript index the fallback
+  and see the content in a `<template>`. Turn streaming off for them in middleware
+  ([recipe](server.md#crawlers-get-one-resolved-document)).
+- **A data source that never answers.** Without `streamTimeout` (`false`) the response stays open
+  until the client leaves. Keep the timeout, and put an `<ErrorBoundary>` around slow parts
+  (`LUM5009`).
 - **Expecting `spa` routes to receive `cookies` or `locals` as props.** They are not serializable
   into the SPA (`LUM4002`); call an endpoint.
 - **Computing `mode` at runtime.** `mode` must be a string literal (`LUM5002`).
@@ -382,6 +406,7 @@ export default function Track() {
 - [LUM5002](../errors/LUM5002.md): invalid route file.
 - [LUM5004](../errors/LUM5004.md): head or status change inside a streamed boundary.
 - [LUM5006](../errors/LUM5006.md): prerendered page that renders only in the browser.
+- [LUM5009](../errors/LUM5009.md): boundary still pending when `streamTimeout` expired.
 - [LUM4006](../errors/LUM4006.md): hydration mismatch.
 
 See also: [Islands](islands.md), [Async components](async.md), [Head and document](head.md).

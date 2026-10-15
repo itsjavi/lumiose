@@ -69,7 +69,9 @@ in development, unless you pass `{ allowWeakSecret: true }`. Generate one with
 **Status and headers.** `response().setStatus()` and `setHeader()` change the page response, and
 a page may export `headers(ctx)`. They are writable **until the shell is sent** (see
 [Rendering modes](rendering-modes.md)); a change inside a streamed `<Suspense>` boundary is
-`LUM5004`.
+`LUM5004`. So is `response().setStreaming(false)`, which makes the page wait for every
+`<Suspense>` boundary and send one fully resolved document instead of streaming them
+([for crawlers](#crawlers-get-one-resolved-document)).
 
 **Env.** `env("NAME")` reads server env variables (the adapter's env, else `process.env`) in
 server-only code. Only `import.meta.env.PUBLIC_*` reaches client code (`@lumiose/vite` sets Vite's
@@ -79,6 +81,30 @@ server-only code. Only `import.meta.env.PUBLIC_*` reaches client code (`@lumiose
 that reaches the browser is `LUM4003`, also through a web worker, `new URL("…", import.meta.url)`
 or a `?raw`/`?url` import. `lumiose dev` does not serve these files over HTTP either: they are added
 to Vite's `server.fs.deny` unless the config sets its own list (the server still loads them).
+
+### Crawlers get one resolved document
+
+Crawlers that do not run JavaScript index what the HTML holds: with streaming, the fallbacks, and
+the content only inside `<template>` elements at the end. Lumiose ships no list of crawlers; test
+the user agent in middleware, for example with the [`isbot`](https://www.npmjs.com/package/isbot)
+package, and turn streaming off for them:
+
+```ts
+// src/middleware.ts
+import { isbot } from "isbot";
+import { response, type Middleware } from "lumiose";
+
+const middleware: Middleware = (ctx, next) => {
+  if (isbot(ctx.request.headers.get("user-agent"))) response().setStreaming(false);
+  return next();
+};
+
+export default middleware;
+```
+
+Everyone else still gets the shell first. The response waits up to `lumiose({ streamTimeout })`
+(30 seconds by default), then the boundaries still pending fail ([`LUM5009`](../errors/LUM5009.md)).
+A shared cache that stores such pages should vary on the user agent, or store neither version.
 
 ### Instrumentation
 
@@ -92,8 +118,8 @@ does not, since errors there fail the build. Its three exports are optional:
   file. What it throws is logged, and the server goes on.
 - **`onRequestError(error, info)`** receives the unexpected errors of a request on every host,
   `lumiose dev` included: those that render the `error` page or answer 500, errors of streamed
-  `<Suspense>` boundaries, rejected `ctx.platform.waitUntil()` work, and errors an
-  `<ErrorBoundary>` caught, with the `digest` its fallback shows outside dev. `redirect()`,
+  `<Suspense>` boundaries (also those `streamTimeout` ended), rejected `ctx.platform.waitUntil()`
+  work, and errors an `<ErrorBoundary>` caught, with the `digest` its fallback shows outside dev. `redirect()`,
   `notFound()` and `error(status)` are not errors. `info` is `{ request, route, params, phase,
   digest }`, with `phase` one of `"middleware"` (also the route's locale checks), `"action"`,
   `"endpoint"`, `"render"`, `"stream"` or `"waitUntil"`. The handler's `onError` (the host's log,
@@ -121,20 +147,20 @@ counterpart, `src/instrumentation.client.ts`, runs on every page before hydratio
 
 ## API
 
-| API                                                                               | Use                                                                    |
-| --------------------------------------------------------------------------------- | ---------------------------------------------------------------------- |
-| `RequestContext<P>` (`ctx`)                                                       | `{ request, url, params, route, locals, cookies, env, platform }`.     |
-| `Middleware<P?>`                                                                  | `(ctx, next) => Response \| Promise<Response>`; `P`: a folder's scope. |
-| `request()`, `url()`, `params<P>()`, `route()`, `locals()`, `cookies()`           | Request APIs during a server render.                                   |
-| `response()`                                                                      | `{ status, setStatus, getHeader, setHeader }` until the shell is sent. |
-| `redirect(to, status?)`, `notFound(message?)`, `error(status, message?)`          | Throw to stop rendering.                                               |
-| `isRedirect(e)`, `isHttpError(e)`                                                 | Recognize those when you catch errors.                                 |
-| `signedCookie(name, options?)`                                                    | `{ get(cookies), set(cookies, value), delete(cookies) }`.              |
-| `env(name)`, `publicEnv(source?)`                                                 | Server env; the `PUBLIC_*` subset.                                     |
-| `Locals`                                                                          | Interface to augment with your request data.                           |
-| `Platform`, `PlatformEnv`                                                         | `ctx.platform`; the interface to augment with your bindings.           |
-| `src/instrumentation.server.ts`: `register`, `onRequestError`, `instrumentations` | Observes the server ([Instrumentation](#instrumentation)).             |
-| `RequestErrorInfo`, `ServerInstrumentation`                                       | `onRequestError`'s `info`; one observer of `instrumentations`.         |
+| API                                                                               | Use                                                                                  |
+| --------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| `RequestContext<P>` (`ctx`)                                                       | `{ request, url, params, route, locals, cookies, env, platform }`.                   |
+| `Middleware<P?>`                                                                  | `(ctx, next) => Response \| Promise<Response>`; `P`: a folder's scope.               |
+| `request()`, `url()`, `params<P>()`, `route()`, `locals()`, `cookies()`           | Request APIs during a server render.                                                 |
+| `response()`                                                                      | `{ status, setStatus, getHeader, setHeader, setStreaming }` until the shell is sent. |
+| `redirect(to, status?)`, `notFound(message?)`, `error(status, message?)`          | Throw to stop rendering.                                                             |
+| `isRedirect(e)`, `isHttpError(e)`                                                 | Recognize those when you catch errors.                                               |
+| `signedCookie(name, options?)`                                                    | `{ get(cookies), set(cookies, value), delete(cookies) }`.                            |
+| `env(name)`, `publicEnv(source?)`                                                 | Server env; the `PUBLIC_*` subset.                                                   |
+| `Locals`                                                                          | Interface to augment with your request data.                                         |
+| `Platform`, `PlatformEnv`                                                         | `ctx.platform`; the interface to augment with your bindings.                         |
+| `src/instrumentation.server.ts`: `register`, `onRequestError`, `instrumentations` | Observes the server ([Instrumentation](#instrumentation)).                           |
+| `RequestErrorInfo`, `ServerInstrumentation`                                       | `onRequestError`'s `info`; one observer of `instrumentations`.                       |
 
 ## Example
 
@@ -302,5 +328,6 @@ export const instrumentations: ServerInstrumentation[] = [
 - [LUM5002](../errors/LUM5002.md): invalid route file, such as `src/routes/middleware.ts`.
 - [LUM5004](../errors/LUM5004.md): head or status change inside a streamed boundary.
 - [LUM5008](../errors/LUM5008.md): folder middleware covering prerendered routes.
+- [LUM5009](../errors/LUM5009.md): boundary still pending when `streamTimeout` expired.
 
 See also: [Data and actions](data-and-actions.md), [Routing](routing.md), [reference: app layer](../reference/app.md).

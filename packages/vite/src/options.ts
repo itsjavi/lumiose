@@ -10,6 +10,10 @@ import {
   resolveLimits,
   type LimitsOption,
 } from "lumiose/internal/app/server/body.ts";
+import {
+  resolveStreamTimeout,
+  type StreamTimeoutOption,
+} from "lumiose/internal/app/server/stream-timeout.ts";
 import type { ProjectOptions } from "./app/project.ts";
 import type { RouteMode } from "lumiose/internal/app/routes/manifest.ts";
 import type { CsrfOptions } from "lumiose/internal/app/server/csrf.ts";
@@ -132,6 +136,14 @@ export interface LumioseOptions {
    */
   limits?: LimitsOption;
   /**
+   * How long a page render waits for its pending `<Suspense>` boundaries (decision-58), in
+   * milliseconds or as `"30s"`, `"500ms"`, `"2m"`. Once it expires, async components still pending
+   * fail with LUM5009 (the nearest `<ErrorBoundary>` renders its fallback), boundaries still
+   * pending keep their fallback, and the response ends. `false` waits as long as the client stays.
+   * Prerendering ignores it. Default: `"30s"`.
+   */
+  streamTimeout?: StreamTimeoutOption;
+  /**
    * The deploy adapter (decision-45): after prerendering, `lumiose build` writes the platform's
    * output with it. `cloudflare()` from @lumiose/adapter-cloudflare, `vercel()` from
    * @lumiose/adapter-vercel, `netlify()` from @lumiose/adapter-netlify. Default: none, the Node
@@ -205,6 +217,7 @@ const KNOWN = [
   "csp",
   "headers",
   "limits",
+  "streamTimeout",
   "adapter",
   "i18n",
   "site",
@@ -266,6 +279,14 @@ export function projectOptionsOf(options: LumioseOptions): ProjectOptions {
       fail("limits", (error as Error).message.replace(/^limits(?:\.\w+)?: /, ""));
     }
     project.limits = options.limits;
+  }
+  if (options.streamTimeout !== undefined) {
+    try {
+      resolveStreamTimeout(options.streamTimeout);
+    } catch (error) {
+      fail("streamTimeout", (error as Error).message.replace(/^streamTimeout: /, ""));
+    }
+    project.streamTimeout = options.streamTimeout;
   }
   if (options.adapter !== undefined) {
     if (!isAdapter(options.adapter)) {

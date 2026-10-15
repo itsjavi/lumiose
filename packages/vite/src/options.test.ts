@@ -55,7 +55,7 @@ describe("lumiose() project options", () => {
       'lumiose({ include }): expected a RegExp, got "*.stsx".',
     );
     expect(create({ moed: "spa" })).toThrow(
-      "lumiose({ moed }): unknown option. Known options: include, exclude, mode, ssr, prerender, trailingSlash, csrf, svg, md, html, viewTransitions, prefetch, csp, headers, limits, adapter, i18n, site.",
+      "lumiose({ moed }): unknown option. Known options: include, exclude, mode, ssr, prerender, trailingSlash, csrf, svg, md, html, viewTransitions, prefetch, csp, headers, limits, streamTimeout, adapter, i18n, site.",
     );
     expect(create(null)).toThrow("lumiose(): expected an options object, got null.");
   });
@@ -153,6 +153,16 @@ describe("lumiose() project options", () => {
     );
     // A site without a path is an origin: any base goes with it.
     expect(configOf("https://example.com", "/app/").base).toBeUndefined();
+  });
+
+  it("validates streamTimeout: milliseconds, a duration string or false (decision-58)", () => {
+    expect(apiOf({ streamTimeout: "10s" })).toEqual({ streamTimeout: "10s" });
+    expect(apiOf({ streamTimeout: 500 })).toEqual({ streamTimeout: 500 });
+    expect(apiOf({ streamTimeout: false })).toEqual({ streamTimeout: false });
+    expect(create({ streamTimeout: "1h" })).toThrow(
+      'lumiose({ streamTimeout }): expected a duration in milliseconds (1 to 2^31 - 1) or a string like "30s", "500ms" or "2m", or false, got "1h".',
+    );
+    expect(create({ streamTimeout: true })).toThrow(/^lumiose\(\{ streamTimeout \}\): expected/);
   });
 
   it("validates csp (TASK-138)", () => {

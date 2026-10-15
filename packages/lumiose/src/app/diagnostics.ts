@@ -38,6 +38,8 @@ export const LUM_PRERENDER_CLIENT_ONLY = "LUM5006";
 export const LUM_LOCALE_PARAM = "LUM5007";
 /** A folder `middleware.ts` covers prerendered routes, where it runs at build time only (decision-48). */
 export const LUM_PRERENDERED_MIDDLEWARE = "LUM5008";
+/** A `<Suspense>` boundary was still pending when `lumiose({ streamTimeout })` expired (decision-58). */
+export const LUM_STREAM_TIMEOUT = "LUM5009";
 
 /** A runtime error carrying a Lumiose code and where to read about it (contract doc-2 §6). */
 export class LumioseError extends Error {

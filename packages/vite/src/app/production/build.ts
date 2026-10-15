@@ -115,6 +115,7 @@ export async function build(options: BuildOptions = {}): Promise<BuildResult> {
   const project = projectOptions(resolved, "build");
   state.csrf = project.csrf;
   if (project.limits !== undefined) state.limits = project.limits;
+  if (project.streamTimeout !== undefined) state.streamTimeout = project.streamTimeout;
   if (project.headers !== undefined) state.headers = project.headers;
   if (project.adapter?.staticFiles === "platform") state.platformStaticFiles = true;
   Object.assign(state, navigationOptions(project));

@@ -10,9 +10,10 @@ import {
 import { linkLumiose } from "../../test-links.ts";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
-import { afterAll, describe, expect, it } from "vitest";
+import { afterAll, describe, expect, it, vi } from "vitest";
 import { build } from "./build.ts";
 import { buildCommand, previewCommand, startPreview } from "./command.ts";
+import { checkStreaming, STREAMING_FILES } from "../__fixtures__/streaming.ts";
 
 const binding = await import("@lumiose/compiler").catch(() => undefined);
 const adapterRoot = resolve(import.meta.dirname, "../../../../adapter-node");
@@ -111,6 +112,29 @@ export default {
         "cross-origin-opener-policy": null,
         "cross-origin-embedder-policy": "require-corp",
       });
+    },
+  );
+
+  it.skipIf(!binding)(
+    "lumiose preview streams, sends one resolved document from middleware, and ends a hung boundary (TASK-340)",
+    async () => {
+      const app = realpathSync.native(mkdtempSync(join(tmpdir(), "lumiose-preview-streaming-")));
+      roots.push(app);
+      for (const [name, code] of Object.entries(STREAMING_FILES)) {
+        mkdirSync(dirname(join(app, name)), { recursive: true });
+        writeFileSync(join(app, name), code);
+      }
+      linkLumiose(app);
+      symlinkSync(adapterRoot, join(app, "node_modules/@lumiose/adapter-node"), "dir");
+      await build({ root: app, logLevel: "silent" });
+      const server = await startPreview({ root: app, port: 0, host: "127.0.0.1" });
+      const error = vi.spyOn(console, "error").mockImplementation(() => {});
+      try {
+        await checkStreaming((path) => fetch(new URL(path, server.url)), false);
+      } finally {
+        error.mockRestore();
+        await server.close();
+      }
     },
   );
 

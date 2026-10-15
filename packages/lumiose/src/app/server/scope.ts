@@ -27,6 +27,8 @@ import {
 /** Response status and headers collected for a page; see `ResponseContext`. */
 export interface ResponseState extends ResponseContext {
   readonly headers: Headers;
+  /** False once `setStreaming(false)` asked for one fully resolved document (decision-58). */
+  readonly streaming: boolean;
   /** Called once the page shell resolved: later writes throw LUM5004. */
   seal(): void;
 }
@@ -128,8 +130,13 @@ export function getRequestScope(): RequestScope | undefined {
   return storage.getStore();
 }
 
-export function createResponseState(status = 200, headers?: HeadersInit): ResponseState {
+export function createResponseState(
+  status = 200,
+  headers?: HeadersInit,
+  streaming = true,
+): ResponseState {
   let current = status;
+  let streams = streaming;
   let sealed = false;
   const all = new Headers(headers);
   const check = (what: string) => {
@@ -151,6 +158,13 @@ export function createResponseState(status = 200, headers?: HeadersInit): Respon
         throw new RangeError(`setStatus(): status must be between 200 and 599, got ${next}.`);
       }
       current = next;
+    },
+    get streaming() {
+      return streams;
+    },
+    setStreaming(next) {
+      check("change streaming");
+      streams = next;
     },
     getHeader: (name) => all.get(name),
     setHeader(name, value) {

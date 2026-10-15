@@ -4502,7 +4502,9 @@ in development, unless you pass `{ allowWeakSecret: true }`. Generate one with
 **Status and headers.** `response().setStatus()` and `setHeader()` change the page response, and
 a page may export `headers(ctx)`. They are writable **until the shell is sent** (see
 [Rendering modes](rendering-modes.md)); a change inside a streamed `<Suspense>` boundary is
-`LUM5004`.
+`LUM5004`. So is `response().setStreaming(false)`, which makes the page wait for every
+`<Suspense>` boundary and send one fully resolved document instead of streaming them
+([for crawlers](#crawlers-get-one-resolved-document)).
 
 **Env.** `env("NAME")` reads server env variables (the adapter's env, else `process.env`) in
 server-only code. Only `import.meta.env.PUBLIC_*` reaches client code (`@lumiose/vite` sets Vite's
@@ -4512,6 +4514,30 @@ server-only code. Only `import.meta.env.PUBLIC_*` reaches client code (`@lumiose
 that reaches the browser is `LUM4003`, also through a web worker, `new URL("…", import.meta.url)`
 or a `?raw`/`?url` import. `lumiose dev` does not serve these files over HTTP either: they are added
 to Vite's `server.fs.deny` unless the config sets its own list (the server still loads them).
+
+### Crawlers get one resolved document
+
+Crawlers that do not run JavaScript index what the HTML holds: with streaming, the fallbacks, and
+the content only inside `<template>` elements at the end. Lumiose ships no list of crawlers; test
+the user agent in middleware, for example with the [`isbot`](https://www.npmjs.com/package/isbot)
+package, and turn streaming off for them:
+
+```ts
+// src/middleware.ts
+import { isbot } from "isbot";
+import { response, type Middleware } from "lumiose";
+
+const middleware: Middleware = (ctx, next) => {
+  if (isbot(ctx.request.headers.get("user-agent"))) response().setStreaming(false);
+  return next();
+};
+
+export default middleware;
+```
+
+Everyone else still gets the shell first. The response waits up to `lumiose({ streamTimeout })`
+(30 seconds by default), then the boundaries still pending fail ([`LUM5009`](../errors/LUM5009.md)).
+A shared cache that stores such pages should vary on the user agent, or store neither version.
 
 ### Instrumentation
 
@@ -4525,8 +4551,8 @@ does not, since errors there fail the build. Its three exports are optional:
   file. What it throws is logged, and the server goes on.
 - **`onRequestError(error, info)`** receives the unexpected errors of a request on every host,
   `lumiose dev` included: those that render the `error` page or answer 500, errors of streamed
-  `<Suspense>` boundaries, rejected `ctx.platform.waitUntil()` work, and errors an
-  `<ErrorBoundary>` caught, with the `digest` its fallback shows outside dev. `redirect()`,
+  `<Suspense>` boundaries (also those `streamTimeout` ended), rejected `ctx.platform.waitUntil()`
+  work, and errors an `<ErrorBoundary>` caught, with the `digest` its fallback shows outside dev. `redirect()`,
   `notFound()` and `error(status)` are not errors. `info` is `{ request, route, params, phase,
   digest }`, with `phase` one of `"middleware"` (also the route's locale checks), `"action"`,
   `"endpoint"`, `"render"`, `"stream"` or `"waitUntil"`. The handler's `onError` (the host's log,
@@ -4554,20 +4580,20 @@ counterpart, `src/instrumentation.client.ts`, runs on every page before hydratio
 
 ## API
 
-| API                                                                               | Use                                                                    |
-| --------------------------------------------------------------------------------- | ---------------------------------------------------------------------- |
-| `RequestContext<P>` (`ctx`)                                                       | `{ request, url, params, route, locals, cookies, env, platform }`.     |
-| `Middleware<P?>`                                                                  | `(ctx, next) => Response \| Promise<Response>`; `P`: a folder's scope. |
-| `request()`, `url()`, `params<P>()`, `route()`, `locals()`, `cookies()`           | Request APIs during a server render.                                   |
-| `response()`                                                                      | `{ status, setStatus, getHeader, setHeader }` until the shell is sent. |
-| `redirect(to, status?)`, `notFound(message?)`, `error(status, message?)`          | Throw to stop rendering.                                               |
-| `isRedirect(e)`, `isHttpError(e)`                                                 | Recognize those when you catch errors.                                 |
-| `signedCookie(name, options?)`                                                    | `{ get(cookies), set(cookies, value), delete(cookies) }`.              |
-| `env(name)`, `publicEnv(source?)`                                                 | Server env; the `PUBLIC_*` subset.                                     |
-| `Locals`                                                                          | Interface to augment with your request data.                           |
-| `Platform`, `PlatformEnv`                                                         | `ctx.platform`; the interface to augment with your bindings.           |
-| `src/instrumentation.server.ts`: `register`, `onRequestError`, `instrumentations` | Observes the server ([Instrumentation](#instrumentation)).             |
-| `RequestErrorInfo`, `ServerInstrumentation`                                       | `onRequestError`'s `info`; one observer of `instrumentations`.         |
+| API                                                                               | Use                                                                                  |
+| --------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| `RequestContext<P>` (`ctx`)                                                       | `{ request, url, params, route, locals, cookies, env, platform }`.                   |
+| `Middleware<P?>`                                                                  | `(ctx, next) => Response \| Promise<Response>`; `P`: a folder's scope.               |
+| `request()`, `url()`, `params<P>()`, `route()`, `locals()`, `cookies()`           | Request APIs during a server render.                                                 |
+| `response()`                                                                      | `{ status, setStatus, getHeader, setHeader, setStreaming }` until the shell is sent. |
+| `redirect(to, status?)`, `notFound(message?)`, `error(status, message?)`          | Throw to stop rendering.                                                             |
+| `isRedirect(e)`, `isHttpError(e)`                                                 | Recognize those when you catch errors.                                               |
+| `signedCookie(name, options?)`                                                    | `{ get(cookies), set(cookies, value), delete(cookies) }`.                            |
+| `env(name)`, `publicEnv(source?)`                                                 | Server env; the `PUBLIC_*` subset.                                                   |
+| `Locals`                                                                          | Interface to augment with your request data.                                         |
+| `Platform`, `PlatformEnv`                                                         | `ctx.platform`; the interface to augment with your bindings.                         |
+| `src/instrumentation.server.ts`: `register`, `onRequestError`, `instrumentations` | Observes the server ([Instrumentation](#instrumentation)).                           |
+| `RequestErrorInfo`, `ServerInstrumentation`                                       | `onRequestError`'s `info`; one observer of `instrumentations`.                       |
 
 ## Example
 
@@ -4735,6 +4761,7 @@ export const instrumentations: ServerInstrumentation[] = [
 - [LUM5002](../errors/LUM5002.md): invalid route file, such as `src/routes/middleware.ts`.
 - [LUM5004](../errors/LUM5004.md): head or status change inside a streamed boundary.
 - [LUM5008](../errors/LUM5008.md): folder middleware covering prerendered routes.
+- [LUM5009](../errors/LUM5009.md): boundary still pending when `streamTimeout` expired.
 
 See also: [Data and actions](data-and-actions.md), [Routing](routing.md), [reference: app layer](../reference/app.md).
 
@@ -4895,7 +4922,23 @@ props. The differences (Astro 7.3, checked against its docs and source in Octobe
    their fallbacks (with native `<template for>` updates or a ~300 B `$swap` script). An error
    renders the boundary's `<ErrorBoundary>` in place. A head or status change inside a streamed
    boundary is `LUM5004`.
-3. **SSG and prerender** resolve everything: no fallbacks and no swap scripts.
+3. **Timeout.** A render waits for its boundaries for `lumiose({ streamTimeout })`, 30 seconds by
+   default. Then async components still waiting fail with
+   [`LUM5009`](../errors/LUM5009.md): the nearest `<ErrorBoundary>` around each renders its
+   fallback into the stream, a boundary without one keeps its `<Suspense>` fallback,
+   `onRequestError` gets phase `"stream"`, and the response ends. `false` waits as long as the
+   client stays connected.
+4. **SSG and prerender** resolve everything: no fallbacks and no swap scripts, and no timeout.
+
+**One resolved document per request.** `response().setStreaming(false)` makes a `server` page
+render as prerendering does: the response waits for every boundary and sends one complete
+document, without fallbacks or swap scripts. It is meant for clients that do not run JavaScript,
+such as crawlers ([the recipe](server.md#crawlers-get-one-resolved-document)). Call it before the
+shell is sent: in middleware (best), or in a page before its first `<Suspense>`; later it is
+`LUM5004`. Boundaries already streaming when a page calls it are waited for and put in place, but
+they stay streamed boundaries for the rest (no head or status changes inside them). In such a
+response, a boundary that fails without an `<ErrorBoundary>` fails the page, as when prerendering,
+and `streamTimeout` still applies. Error pages of the request keep the setting.
 
 So: put slow, optional content inside `<Suspense>` to send the page sooner; leave essential
 content (and anything that decides the status) outside.
@@ -5038,6 +5081,8 @@ it without the adapter. Set response headers once with `lumiose({ headers })`
 | `export async function staticPaths()`                   | `static` routes and prerendered `spa` pages with params: `[{ params: { slug: "a" } }, …]`. |
 | `export function headers(ctx)`                          | Response headers for the page.                                                             |
 | `<Suspense fallback>`                                   | Marks content that may stream after the shell.                                             |
+| `response().setStreaming(false)`                        | This response waits for every boundary and sends one resolved document.                    |
+| `lumiose({ streamTimeout })`                            | How long a render waits for boundaries (`"30s"` default; `false`: no limit).               |
 | `renderToStream(root, options?)`                        | The server renderer behind it all; see [reference: server](../reference/server.md).        |
 
 ## Example
@@ -5109,6 +5154,12 @@ export default function Track() {
   (`LUM5004`). Decide them outside the boundary.
 - **Wrapping the whole page in `<Suspense>`.** The shell is then just the fallback, and the status
   cannot change. Wrap only slow, optional parts.
+- **Serving crawlers streamed fallbacks.** Crawlers that do not run JavaScript index the fallback
+  and see the content in a `<template>`. Turn streaming off for them in middleware
+  ([recipe](server.md#crawlers-get-one-resolved-document)).
+- **A data source that never answers.** Without `streamTimeout` (`false`) the response stays open
+  until the client leaves. Keep the timeout, and put an `<ErrorBoundary>` around slow parts
+  (`LUM5009`).
 - **Expecting `spa` routes to receive `cookies` or `locals` as props.** They are not serializable
   into the SPA (`LUM4002`); call an endpoint.
 - **Computing `mode` at runtime.** `mode` must be a string literal (`LUM5002`).
@@ -5124,6 +5175,7 @@ export default function Track() {
 - [LUM5002](../errors/LUM5002.md): invalid route file.
 - [LUM5004](../errors/LUM5004.md): head or status change inside a streamed boundary.
 - [LUM5006](../errors/LUM5006.md): prerendered page that renders only in the browser.
+- [LUM5009](../errors/LUM5009.md): boundary still pending when `streamTimeout` expired.
 - [LUM4006](../errors/LUM4006.md): hydration mismatch.
 
 See also: [Islands](islands.md), [Async components](async.md), [Head and document](head.md).
@@ -11375,10 +11427,16 @@ interface ResponseContext {
   setStatus(status: number): void;
   getHeader(name: string): string | null;
   setHeader(name: string, value: string): void;
+  setStreaming(streaming: boolean): void; // false: one fully resolved document
 }
 ```
 
-Writable until the shell is sent; later writes throw `LUM5004`.
+Writable until the shell is sent; later writes throw `LUM5004`. `setStreaming(false)` makes the
+response wait for every `<Suspense>` boundary and send one complete document, without fallbacks
+or swap scripts, as prerendering renders; call it in middleware, or in a page before its first
+`<Suspense>`. It is meant for crawlers: see
+[the middleware recipe](../concepts/server.md#crawlers-get-one-resolved-document). The response
+still waits at most `lumiose({ streamTimeout })` ([`LUM5009`](../errors/LUM5009.md)).
 
 ## Cookies
 
@@ -12152,6 +12210,8 @@ interface LumioseOptions {
   headers?: Record<string, string> | { path: string; headers: Record<string, string> }[];
   /** Request body limits, in bytes or "512kb"/"1mb": larger requests get 413. */
   limits?: { body?: number | string; upload?: number | string }; // default { body: "1mb", upload: "10mb" }
+  /** How long a page render waits for pending <Suspense> boundaries: milliseconds, "30s", "500ms", "2m", or false. */
+  streamTimeout?: number | string | false; // default "30s"
   /** The deploy adapter: cloudflare(), vercel() or netlify() from their @lumiose/adapter-* packages. */
   adapter?: Adapter; // default: none, the Node build
   /** Locale routing: unprefixed default locale, prefixed others, per-page locale declarations. */
@@ -12167,7 +12227,7 @@ interface LumioseOptions {
 ```
 
 The project options (`mode`, `ssr`, `prerender`, `trailingSlash`, `csrf`, `viewTransitions`,
-`prefetch`, `headers`, `limits`, `adapter`, `i18n`, `site`) are
+`prefetch`, `headers`, `limits`, `streamTimeout`, `adapter`, `i18n`, `site`) are
 read by `lumiose dev`, `lumiose build` and `lumiose routes`/`check` from the plugin's `api.options`.
 Invalid values and unknown option names throw when the config loads, as does `prerender: true`
 with `ssr: false` ([prerendered SPA routes](../concepts/rendering-modes.md#prerendered-spa-routes)). `csp: "strict"` is
@@ -12203,6 +12263,16 @@ request body (default `"1mb"`), `upload` caps `multipart/form-data` bodies (defa
 route's `export const limits = { upload: "100mb" }` overrides them for its requests. Sizes are
 bytes or strings with `b`, `kb`, `mb` or `gb` (1024-based); a size past 2^53 - 1 bytes is an
 error. See [Security](../concepts/security.md).
+
+**Streaming timeout** (`streamTimeout`). How long a page render waits for its pending
+`<Suspense>` boundaries, from the start of the render: milliseconds, or a string with `ms`, `s` or
+`m` (`"30s"`, the default). Once it expires, async components still waiting fail with
+[`LUM5009`](../errors/LUM5009.md): the nearest `<ErrorBoundary>` renders its fallback into the
+stream, a boundary without one keeps its `<Suspense>` fallback, `onRequestError` receives the error
+with phase `"stream"`, and the response ends. It applies to `lumiose dev` and the build output on
+every host, also to responses that `response().setStreaming(false)` resolves in full; prerendering
+ignores it. `false` waits as long as the client stays connected. Values past 2^31 - 1 ms are an
+error. See [Rendering modes](../concepts/rendering-modes.md#how-pages-render).
 
 ```ts
 lumiose({
@@ -15797,8 +15867,9 @@ least one segment.
 
 A `server` response starts with the shell: everything outside `<Suspense>`. Once it is sent, the
 status line, headers (including `Set-Cookie`) and `<head>` are on the wire. Content inside a
-streamed `<Suspense>` boundary that calls `response().setStatus()`, `setHeader()`, `cookies().set()`,
-`redirect()`, or renders `<Title>`/`<Meta>`/`<Head>` is too late.
+streamed `<Suspense>` boundary that calls `response().setStatus()`, `setHeader()`,
+`setStreaming()`, `cookies().set()`, `redirect()`, or renders `<Title>`/`<Meta>`/`<Head>` is too
+late.
 
 ## Example
 
@@ -16027,6 +16098,65 @@ its folder, or let the warning stand.
 - [Rendering modes](../concepts/rendering-modes.md)
 - [Routing](../concepts/routing.md)
 
+<!-- source: errors/LUM5009.md -->
+
+<!-- Generated from crates/lumiose_compiler/src/diagnostics/registry.rs by packages/lumiose/scripts/gen-error-docs.ts. Edit the explanation below the end marker. -->
+
+# LUM5009: Boundary still pending when streamTimeout expired
+
+**Severity:** error · **Category:** routing and server (5xxx)
+
+<!-- end of generated header -->
+
+> A `<Suspense>` boundary was still waiting for data when `lumiose({ streamTimeout })` expired.
+
+**Reported by:** the server runtime, to the `<ErrorBoundary>` around the waiting component (or to
+the boundary itself), to `onRequestError` with phase `"stream"`, and to the server log.
+
+## What it means
+
+A page render waits for its pending `<Suspense>` boundaries for `streamTimeout`, 30 seconds by
+default. When it expires, every async component still waiting fails with this error: the nearest
+`<ErrorBoundary>` around it renders its fallback into the stream. A boundary with no
+`<ErrorBoundary>` inside keeps its `<Suspense>` fallback. Then the response ends, so a data source
+that never answers cannot hold the connection open. In production the `<ErrorBoundary>` fallback
+receives a generic error with a digest, as for any error (the log has the original).
+
+A response that does not stream (`response().setStreaming(false)`) waits for the same timeout; there
+a boundary with no `<ErrorBoundary>` fails the page, as any error inside it would.
+
+## Example
+
+```tsx
+export default function Dashboard() {
+  return (
+    <Suspense fallback={<p>Loading…</p>}>
+      <ErrorBoundary fallback={<p>The report is taking too long. Try again later.</p>}>
+        <Report />
+      </ErrorBoundary>
+    </Suspense>
+  );
+}
+
+async function Report() {
+  const report = await fetchJSON<Report>("/api/report"); // the service never answers
+  return <ReportTable report={report} />;
+}
+```
+
+## How to fix it
+
+Find the data source that did not answer in time (`onRequestError` receives the route). Give it its
+own timeout or cache, render an `<ErrorBoundary>` around the component so readers see a useful
+fallback, or raise the limit with `lumiose({ streamTimeout: "60s" })`. `streamTimeout: false` waits
+as long as the client stays connected. Prerendering ignores the timeout.
+
+## Related
+
+- [Rendering modes: shell first, then stream](../concepts/rendering-modes.md)
+- [Server](../concepts/server.md)
+- [`lumiose()` options](../reference/vite.md)
+
 <!-- source: errors/LUM6001.md -->
 
 <!-- Generated from crates/lumiose_compiler/src/diagnostics/registry.rs by packages/lumiose/scripts/gen-error-docs.ts. Edit the explanation below the end marker. -->
@@ -16170,6 +16300,7 @@ fix?, docs }`; `lumiose check --format json` prints them.
 | [LUM5006](LUM5006.md) | error    | Prerendered page that renders only in the browser |
 | [LUM5007](LUM5007.md) | error    | Route param named `locale`                        |
 | [LUM5008](LUM5008.md) | warning  | Folder middleware covering prerendered routes     |
+| [LUM5009](LUM5009.md) | error    | Boundary still pending when streamTimeout expired |
 
 ## Tooling and config (6xxx)
 

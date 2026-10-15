@@ -7,7 +7,9 @@ import { spreadAttrs } from "./attrs.ts";
 import {
   content,
   renderFrame,
+  resolvesAll,
   withFrame,
+  withTimeout,
   currentFrame,
   scope,
   type Frame,
@@ -31,7 +33,8 @@ export interface SuspenseProps {
  * sent with the shell inside `<?start name="lbN">…<?end>`, and the content streams later. Head,
  * status and redirect changes inside the boundary are LUM5004; its errors go to an
  * `<ErrorBoundary>` inside it, or to `onError` (the fallback then stays).
- * `resolveAll` (SSG): transparent, everything renders into the shell.
+ * `resolveAll` (SSG) or `setStreaming(false)`: transparent, everything renders into the shell.
+ * With `streamTimeout`, content still pending a task after it expired fails with LUM5009.
  */
 export function Suspense(props: SuspenseProps): unknown {
   const frame = renderFrame("<Suspense>");
@@ -39,7 +42,10 @@ export function Suspense(props: SuspenseProps): unknown {
   // Inside islands the boundary is a block (the client's Suspense range), around the content or
   // around the streamed placeholder, which the content replaces in place.
   const range = (out: Html): Html => (frame.island === undefined ? out : wrap(OPEN, out, CLOSE));
-  if (render.resolveAll) return html(range(content(props.children)));
+  if (resolvesAll(render)) {
+    const out = content(props.children);
+    return html(range(typeof out === "string" ? out : withTimeout(render, out, true)));
+  }
   const unit = createUnit(frame.unit);
   const inner: Frame = { ...frame, unit, streamed: true };
   let out: Html;
@@ -54,7 +60,7 @@ export function Suspense(props: SuspenseProps): unknown {
     foldUnit(render, unit);
     return new SSRHtml(range(out) as string);
   }
-  const name = streamBoundary(render, unit, out);
+  const name = streamBoundary(render, unit, withTimeout(render, out, true));
   return html(range(wrap(`<?start name="${name}">`, content(props.fallback), "<?end>")));
 }
 

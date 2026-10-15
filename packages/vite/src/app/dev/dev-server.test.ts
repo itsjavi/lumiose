@@ -7,6 +7,7 @@ import { dirname, join } from "node:path";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { createLogger, normalizePath, type HotPayload } from "vite";
 import { createDevServer, type DevServer } from "./server.ts";
+import { checkStreaming, STREAMING_FILES } from "../__fixtures__/streaming.ts";
 
 const binding = await import("@lumiose/compiler").catch(() => undefined);
 
@@ -509,5 +510,31 @@ export default function Home() {
     expect(code).toContain('"BASE_URL": "/sub/"');
     const env = await (await fetch(new URL("/sub/@vite/env", server.url))).text();
     expect(env).toContain('"__LUMIOSE_TRAILING_SLASH__": "always"');
+  });
+});
+
+describe.skipIf(!binding)("lumiose dev: setStreaming(false) and streamTimeout (TASK-340)", () => {
+  let site: string;
+  let server: DevServer;
+
+  beforeAll(async () => {
+    if (!binding) return;
+    site = realpathSync.native(mkdtempSync(join(tmpdir(), "lumiose-dev-streaming-")));
+    for (const [name, code] of Object.entries(STREAMING_FILES)) {
+      mkdirSync(dirname(join(site, name)), { recursive: true });
+      writeFileSync(join(site, name), code);
+    }
+    mkdirSync(join(site, "node_modules"));
+    linkLumiose(site);
+    server = await createDevServer({ root: site, port: 0, customLogger: createLogger("silent") });
+  });
+
+  afterAll(async () => {
+    await server?.close();
+    if (site) rmSync(site, { recursive: true, force: true });
+  });
+
+  it("streams, sends one resolved document from middleware, and ends a hung boundary", async () => {
+    await checkStreaming((path) => fetch(new URL(path, server.url)), true);
   });
 });

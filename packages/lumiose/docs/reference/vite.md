@@ -44,6 +44,8 @@ interface LumioseOptions {
   headers?: Record<string, string> | { path: string; headers: Record<string, string> }[];
   /** Request body limits, in bytes or "512kb"/"1mb": larger requests get 413. */
   limits?: { body?: number | string; upload?: number | string }; // default { body: "1mb", upload: "10mb" }
+  /** How long a page render waits for pending <Suspense> boundaries: milliseconds, "30s", "500ms", "2m", or false. */
+  streamTimeout?: number | string | false; // default "30s"
   /** The deploy adapter: cloudflare(), vercel() or netlify() from their @lumiose/adapter-* packages. */
   adapter?: Adapter; // default: none, the Node build
   /** Locale routing: unprefixed default locale, prefixed others, per-page locale declarations. */
@@ -59,7 +61,7 @@ interface LumioseOptions {
 ```
 
 The project options (`mode`, `ssr`, `prerender`, `trailingSlash`, `csrf`, `viewTransitions`,
-`prefetch`, `headers`, `limits`, `adapter`, `i18n`, `site`) are
+`prefetch`, `headers`, `limits`, `streamTimeout`, `adapter`, `i18n`, `site`) are
 read by `lumiose dev`, `lumiose build` and `lumiose routes`/`check` from the plugin's `api.options`.
 Invalid values and unknown option names throw when the config loads, as does `prerender: true`
 with `ssr: false` ([prerendered SPA routes](../concepts/rendering-modes.md#prerendered-spa-routes)). `csp: "strict"` is
@@ -95,6 +97,16 @@ request body (default `"1mb"`), `upload` caps `multipart/form-data` bodies (defa
 route's `export const limits = { upload: "100mb" }` overrides them for its requests. Sizes are
 bytes or strings with `b`, `kb`, `mb` or `gb` (1024-based); a size past 2^53 - 1 bytes is an
 error. See [Security](../concepts/security.md).
+
+**Streaming timeout** (`streamTimeout`). How long a page render waits for its pending
+`<Suspense>` boundaries, from the start of the render: milliseconds, or a string with `ms`, `s` or
+`m` (`"30s"`, the default). Once it expires, async components still waiting fail with
+[`LUM5009`](../errors/LUM5009.md): the nearest `<ErrorBoundary>` renders its fallback into the
+stream, a boundary without one keeps its `<Suspense>` fallback, `onRequestError` receives the error
+with phase `"stream"`, and the response ends. It applies to `lumiose dev` and the build output on
+every host, also to responses that `response().setStreaming(false)` resolves in full; prerendering
+ignores it. `false` waits as long as the client stays connected. Values past 2^31 - 1 ms are an
+error. See [Rendering modes](../concepts/rendering-modes.md#how-pages-render).
 
 ```ts
 lumiose({
