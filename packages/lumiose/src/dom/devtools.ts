@@ -1,11 +1,12 @@
 // The dev hook registry of the in-page inspector (decision-59, TASK-341; owner: Spark).
 //
 // In `lumiose dev` with the inspector on, the reactive core, the DOM runtime and the island loader
-// report here, behind `import.meta.env?.DEV && INSPECTED` (./dev.ts): components as they render (name, props, source location,
-// parent), the signals, computeds, effects and bindings created meanwhile, signal writes, effect
-// and binding runs with the writes that caused them, and island transitions. Builds define neither
-// `DEV` nor the inspector flag, so the bundler drops every call site and, with them, this module:
-// keep its top level free of side effects (the registry is created by the first hook).
+// report here, behind `import.meta.env?.DEV && INSPECTED` (./dev.ts): components as they render
+// (name, props, source location, parent), the signals, computeds, effects and bindings created
+// meanwhile, signal writes, effect and binding runs with the writes that caused them, and island
+// transitions. Builds define neither `DEV` nor the inspector flag, so the bundler drops every call
+// site and, with them, this module: keep its top level free of side effects (the registry is
+// created by the first hook).
 //
 // The inspector (@lumiose/vite's dev client) reads the registry from
 // `globalThis[Symbol.for("lumiose.devtools")]`, which a browser extension could read too. Its shape
@@ -246,8 +247,9 @@ function createState(): State {
     },
     valueOf(record) {
       const node = record.node;
-      if (record.kind === "signal")
+      if (record.kind === "signal") {
         return { value: (node as SignalNode).pendingValue, stale: false };
+      }
       if (record.kind === "computed") {
         return { value: (node as ComputedNode).value, stale: !!(node.flags & STALE) };
       }

@@ -264,7 +264,7 @@ test("@lumiose/query: shared query, reactive key and a mutation that invalidates
   page,
 }) => {
   const html = await (await page.request.get("/query")).text();
-  expect(html).toMatch(/<p id="?query-a"?[^>]*>(<!--\[-->)?loading/);
+  expect(html).toMatch(/<p [^>]*id="?query-a"?[^>]*>(<!--\[-->)?loading/);
   await page.goto("/query");
   await ready(page);
   await expect(page.locator("#query-a")).toHaveText(/^User 1 · load \d+$/);
