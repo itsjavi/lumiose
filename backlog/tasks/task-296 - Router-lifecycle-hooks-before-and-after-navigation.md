@@ -5,7 +5,7 @@ status: Done
 assignee:
   - '@Spark'
 created_date: '2026-10-15 02:22'
-updated_date: '2026-10-15 04:46'
+updated_date: '2026-10-15 05:14'
 labels:
   - router
   - spa
@@ -53,6 +53,8 @@ Implementation (Spark):
 - Size (vite build, minify, brotli 11, same bundling as scripts/size.ts; main vs branch): SPA bundle (router exports + startSpa) 12560 -> 13126 B (+566 B, of which about 70 B is TASK-305's loader change); History fallback chunk 727 -> 884 B; an island bundle that uses the hooks on an MPA page +275 B. doc-8 estimated 0.3 kB.
 - Tests: src/app/router/hooks.test.ts (14): History fallback (enter, link, navigate, query-only, cancel, popstate restore, disposal, view transitions, willUnload + beforeunload), a stand-in Navigation API (link/navigate cancel, cancelable and non-cancelable traversal, supersede, document navigation), and an MPA component (leave only, enter once, listener removed). examples/spa-router-e2e: a new editor page and a spec run in Chromium with the Navigation API and with the History fallback, under dev and the build (34/34 pass).
 - Docs: reference/router.md (Navigation hooks section, example), concepts/routing.md, coming-from-react.md (useBlocker row), docs README/llms regenerated. The Coming from React Router, Next.js and Solid guides do not exist yet (TASK-302 to TASK-304, Beacon): notes added there.
+
+Batch 2 (Spark): the Coming from guides moved to docs/coming-from/ (Beacon). Added beforeNavigate/afterNavigate rows to react-router.md (useBlocker, unstable_usePrompt, useBeforeUnload, location effects), nextjs.md (onRouterTransitionStart, usePathname page-view effects, beforeunload) and solid.md (useBeforeLeave, location effects), and removed their 'no navigation guards' rows. The old edit to coming-from-react.md was dropped in the move; react.md sends router topics to react-router.md.
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary

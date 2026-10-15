@@ -609,14 +609,16 @@ pages, render on the `server` and send `cache-control` headers to a CDN.
 
 ### Navigation
 
-| Next.js                                                              | Lumiose                                                                                                                                                              |
-| -------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `next/link`                                                          | `<a href={href(…)}>`, or `<Link href prefetch>` from `lumiose/router`. MPA pages prefetch on hover by default; `prefetch="viewport"` matches Next.js.                |
-| Client-side navigation between pages                                 | On `spa` routes, with persistent layouts. `static` and `server` pages load the next document, with optional View Transitions (`lumiose({ viewTransitions: true })`). |
-| `useRouter().push(href)`, `.replace(href)`                           | `navigate(href)`, `navigate(href, { replace: true })` from `lumiose/router`.                                                                                         |
-| `usePathname()`, `useSearchParams()`, `useParams()`                  | `url().pathname`, `searchParams()` (and `searchParams.set()`), `params()` from `lumiose/router`.                                                                     |
-| `useSelectedLayoutSegment()`                                         | `route()`, the matched pattern: `route() === "/blog/[slug]"`.                                                                                                        |
-| `redirect()`, `permanentRedirect()`, `forbidden()`, `unauthorized()` | `redirect(to)`, `redirect(to, 308)`, `error(403)`, `error(401)`.                                                                                                     |
+| Next.js                                                                               | Lumiose                                                                                                                                                                     |
+| ------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `next/link`                                                                           | `<a href={href(…)}>`, or `<Link href prefetch>` from `lumiose/router`. MPA pages prefetch on hover by default; `prefetch="viewport"` matches Next.js.                       |
+| Client-side navigation between pages                                                  | On `spa` routes, with persistent layouts. `static` and `server` pages load the next document, with optional View Transitions (`lumiose({ viewTransitions: true })`).        |
+| `useRouter().push(href)`, `.replace(href)`                                            | `navigate(href)`, `navigate(href, { replace: true })` from `lumiose/router`.                                                                                                |
+| `usePathname()`, `useSearchParams()`, `useParams()`                                   | `url().pathname`, `searchParams()` (and `searchParams.set()`), `params()` from `lumiose/router`.                                                                            |
+| `useSelectedLayoutSegment()`                                                          | `route()`, the matched pattern: `route() === "/blog/[slug]"`.                                                                                                               |
+| `onRouterTransitionStart(url, type)`, a `useEffect` on `usePathname()` for page views | `afterNavigate(fn)` from `lumiose/router`: after each completed navigation, and once on mount with `type: "enter"` ([hooks](../reference/router.md#navigation-hooks)).      |
+| A `beforeunload` listener to protect unsaved changes                                  | `beforeNavigate((navigation) => navigation.cancel())`: it also stops SPA links, `navigate()` and back/forward; for a navigation that leaves the document, the browser asks. |
+| `redirect()`, `permanentRedirect()`, `forbidden()`, `unauthorized()`                  | `redirect(to)`, `redirect(to, 308)`, `error(403)`, `error(401)`.                                                                                                            |
 
 ### Rendering and deployment
 
@@ -995,14 +997,16 @@ folder under `src/routes` is a URL segment, and `page`, `layout`, `route`, `erro
 
 ### Navigation
 
-| React Router               | Lumiose                                                                                                              |
-| -------------------------- | -------------------------------------------------------------------------------------------------------------------- |
-| `<Link to>`, `<NavLink>`   | `<a href={href(…)}>` or `<Link href>` from `lumiose/router`; `<Link>` sets `aria-current="page"` on the active link. |
-| `<Link prefetch="intent">` | `<Link prefetch="hover">`, the default; MPA pages prefetch through speculation rules.                                |
-| `useNavigate()`            | `navigate(href, { replace })` from `lumiose/router`.                                                                 |
-| `useParams()`              | `props.params`, or `params()` from `lumiose/router` (reactive, also on the server).                                  |
-| `useSearchParams()`        | `searchParams()` and `searchParams.set()` from `lumiose/router`; `url().searchParams` in server code.                |
-| `useLocation()`            | `url()` from `lumiose/router`; `route()` is the matched pattern.                                                     |
+| React Router                                                | Lumiose                                                                                                                                                                                                                                                          |
+| ----------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `<Link to>`, `<NavLink>`                                    | `<a href={href(…)}>` or `<Link href>` from `lumiose/router`; `<Link>` sets `aria-current="page"` on the active link.                                                                                                                                             |
+| `<Link prefetch="intent">`                                  | `<Link prefetch="hover">`, the default; MPA pages prefetch through speculation rules.                                                                                                                                                                            |
+| `useNavigate()`                                             | `navigate(href, { replace })` from `lumiose/router`.                                                                                                                                                                                                             |
+| `useParams()`                                               | `props.params`, or `params()` from `lumiose/router` (reactive, also on the server).                                                                                                                                                                              |
+| `useSearchParams()`                                         | `searchParams()` and `searchParams.set()` from `lumiose/router`; `url().searchParams` in server code.                                                                                                                                                            |
+| `useLocation()`                                             | `url()` from `lumiose/router`; `route()` is the matched pattern.                                                                                                                                                                                                 |
+| `useBlocker()`, `unstable_usePrompt()`, `useBeforeUnload()` | `beforeNavigate((navigation) => navigation.cancel())` from `lumiose/router`: SPA links, `navigate()` and back/forward; for a navigation that leaves the document (`navigation.willUnload`), the browser asks ([hooks](../reference/router.md#navigation-hooks)). |
+| A `useEffect` on `useLocation()` (page views, focus)        | `afterNavigate(fn)`: after each completed navigation, and once on mount with `type: "enter"`.                                                                                                                                                                    |
 
 ## What has no equivalent
 
@@ -1013,7 +1017,6 @@ folder under `src/routes` is a URL segment, and `page`, `layout`, `route`, `erro
 | `clientMiddleware`                                          | None. Run the code in the `spa` layout (`effect`, `onMount`) or in the handler that navigates.                                                                                                                                                      |
 | `handleError`, `instrumentations`                           | This version has no instrumentation hooks. Unexpected server errors go to `console.error`; when you serve `dist/server/entry.js` yourself, `createHandler({ onError })` receives them ([server build](../reference/server-entry.md#createhandler)). |
 | `useFetcher()` per instance, `useFetchers()`                | This version has no per-instance submission handle: keep each `await submit(…)` result in a signal of the component that sent it. `isSubmitting(name)` counts every submission to an action.                                                        |
-| `useBlocker()`, `unstable_usePrompt()`                      | This version has no navigation guards. A `beforeunload` listener covers leaving the document.                                                                                                                                                       |
 | `handle` and `useMatches()`                                 | Pass data down as props or context from the layout; compare `route()` with a pattern.                                                                                                                                                               |
 | `useNavigation().location` and `.formData`                  | `isNavigating()` for pending UI, and `optimistic()` for the value being submitted.                                                                                                                                                                  |
 | A Vite dev server in middleware mode inside a custom server | This version has no dev handler for custom servers: develop with `lumiose dev`, and run your server against the build.                                                                                                                              |
@@ -1335,15 +1338,17 @@ persistent layouts ([Rendering modes](../concepts/rendering-modes.md)).
 
 ### Solid Router
 
-| Solid Router                                 | Lumiose                                                                                                         |
-| -------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
-| `<Router>` with `<Route path component>`     | File routes; `lumiose routes` lists them.                                                                       |
-| `<A href>`, `activeClass`                    | `<Link href>` from `lumiose/router`, with `aria-current="page"` on the active link; `href()` builds typed URLs. |
-| `useNavigate()`, `<Navigate href>`           | `navigate(href, { replace })`; `redirect(to)` while rendering.                                                  |
-| `useParams()`, `useLocation()`, `useMatch()` | `params()`, `url()` and `route()` (the matched pattern) from `lumiose/router`.                                  |
-| `useSearchParams()`: `[params, setParams]`   | `searchParams()` and `searchParams.set({ q })`.                                                                 |
-| `useIsRouting()`                             | `isNavigating()`.                                                                                               |
-| `preload` functions on routes                | None: data loads where it is awaited, and `<Link prefetch>` loads a page's modules ahead.                       |
+| Solid Router                                     | Lumiose                                                                                                                                                                                          |
+| ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `<Router>` with `<Route path component>`         | File routes; `lumiose routes` lists them.                                                                                                                                                        |
+| `<A href>`, `activeClass`                        | `<Link href>` from `lumiose/router`, with `aria-current="page"` on the active link; `href()` builds typed URLs.                                                                                  |
+| `useNavigate()`, `<Navigate href>`               | `navigate(href, { replace })`; `redirect(to)` while rendering.                                                                                                                                   |
+| `useParams()`, `useLocation()`, `useMatch()`     | `params()`, `url()` and `route()` (the matched pattern) from `lumiose/router`.                                                                                                                   |
+| `useSearchParams()`: `[params, setParams]`       | `searchParams()` and `searchParams.set({ q })`.                                                                                                                                                  |
+| `useIsRouting()`                                 | `isNavigating()`.                                                                                                                                                                                |
+| `useBeforeLeave((e) => e.preventDefault())`      | `beforeNavigate((navigation) => navigation.cancel())`; for a navigation that leaves the document (`navigation.willUnload`), the browser asks ([hooks](../reference/router.md#navigation-hooks)). |
+| A `createEffect` on `useLocation()` (page views) | `afterNavigate(fn)`: after each completed navigation, and once on mount with `type: "enter"`.                                                                                                    |
+| `preload` functions on routes                    | None: data loads where it is awaited, and `<Link prefetch>` loads a page's modules ahead.                                                                                                        |
 
 ## What has no equivalent
 
@@ -1356,7 +1361,6 @@ persistent layouts ([Rendering modes](../concepts/rendering-modes.md)).
 | `lazy()`                                                  | None: code splits per island and per `spa` page.                                                                                                                          |
 | Server functions (`"use server"`) called like functions   | Form actions and endpoints. Calling an endpoint with `fetchJSON()` from an island keeps the network boundary visible.                                                     |
 | `useSubmission()` per action instance, `useSubmissions()` | This version has no per-instance submission handle: keep each `await submit(…)` result in a signal of the component that sent it.                                         |
-| `useBeforeLeave()`                                        | This version has no navigation guards. A `beforeunload` listener covers leaving the document.                                                                             |
 | `preload` and `query` preloading on hover                 | `<Link prefetch>` loads the page's modules; data loads when the page renders.                                                                                             |
 | Solid component libraries (Kobalte, Corvu)                | They target Solid's runtime and do not run. Use native elements (`<dialog>`, `popover`), web components or framework-agnostic libraries.                                  |
 

@@ -104,14 +104,16 @@ pages, render on the `server` and send `cache-control` headers to a CDN.
 
 ### Navigation
 
-| Next.js                                                              | Lumiose                                                                                                                                                              |
-| -------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `next/link`                                                          | `<a href={href(…)}>`, or `<Link href prefetch>` from `lumiose/router`. MPA pages prefetch on hover by default; `prefetch="viewport"` matches Next.js.                |
-| Client-side navigation between pages                                 | On `spa` routes, with persistent layouts. `static` and `server` pages load the next document, with optional View Transitions (`lumiose({ viewTransitions: true })`). |
-| `useRouter().push(href)`, `.replace(href)`                           | `navigate(href)`, `navigate(href, { replace: true })` from `lumiose/router`.                                                                                         |
-| `usePathname()`, `useSearchParams()`, `useParams()`                  | `url().pathname`, `searchParams()` (and `searchParams.set()`), `params()` from `lumiose/router`.                                                                     |
-| `useSelectedLayoutSegment()`                                         | `route()`, the matched pattern: `route() === "/blog/[slug]"`.                                                                                                        |
-| `redirect()`, `permanentRedirect()`, `forbidden()`, `unauthorized()` | `redirect(to)`, `redirect(to, 308)`, `error(403)`, `error(401)`.                                                                                                     |
+| Next.js                                                                               | Lumiose                                                                                                                                                                     |
+| ------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `next/link`                                                                           | `<a href={href(…)}>`, or `<Link href prefetch>` from `lumiose/router`. MPA pages prefetch on hover by default; `prefetch="viewport"` matches Next.js.                       |
+| Client-side navigation between pages                                                  | On `spa` routes, with persistent layouts. `static` and `server` pages load the next document, with optional View Transitions (`lumiose({ viewTransitions: true })`).        |
+| `useRouter().push(href)`, `.replace(href)`                                            | `navigate(href)`, `navigate(href, { replace: true })` from `lumiose/router`.                                                                                                |
+| `usePathname()`, `useSearchParams()`, `useParams()`                                   | `url().pathname`, `searchParams()` (and `searchParams.set()`), `params()` from `lumiose/router`.                                                                            |
+| `useSelectedLayoutSegment()`                                                          | `route()`, the matched pattern: `route() === "/blog/[slug]"`.                                                                                                               |
+| `onRouterTransitionStart(url, type)`, a `useEffect` on `usePathname()` for page views | `afterNavigate(fn)` from `lumiose/router`: after each completed navigation, and once on mount with `type: "enter"` ([hooks](../reference/router.md#navigation-hooks)).      |
+| A `beforeunload` listener to protect unsaved changes                                  | `beforeNavigate((navigation) => navigation.cancel())`: it also stops SPA links, `navigate()` and back/forward; for a navigation that leaves the document, the browser asks. |
+| `redirect()`, `permanentRedirect()`, `forbidden()`, `unauthorized()`                  | `redirect(to)`, `redirect(to, 308)`, `error(403)`, `error(401)`.                                                                                                            |
 
 ### Rendering and deployment
 
