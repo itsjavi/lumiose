@@ -3,7 +3,7 @@
 // leaves the site, and a Node request target never names another host.
 import type { IncomingMessage } from "node:http";
 import { describe, expect, it } from "vitest";
-import { fc, RUNS, TIMEOUT } from "./__fixtures__/property.ts";
+import { fc, RUNS } from "./__fixtures__/property.ts";
 import { app, page } from "./__fixtures__/app.ts";
 import { isRedirect, redirect } from "./control.ts";
 import { requestTarget } from "./node-http.ts";
@@ -83,34 +83,30 @@ describe("the trailing-slash redirect", () => {
     .array(segment, { minLength: 1, maxLength: 6 })
     .map((parts) => `/${parts.join("/")}`);
 
-  it(
-    "stays on the site, whatever the path",
-    async () => {
-      for (const trailingSlash of ["always", "never"] as const) {
-        const { handle } = app(
-          { "src/routes/[...path]/page.stsx": page(() => "<h1>any</h1>") },
-          { trailingSlash },
-        );
-        await fc.assert(
-          fc.asyncProperty(pathArb, fc.webQueryParameters(), async (path, query) => {
-            let request: Request;
-            try {
-              // Concatenated, as servers build it: `new URL("//evil.com", origin)` would read a host.
-              request = new Request(`${ORIGIN}${path}${query === "" ? "" : `?${query}`}`);
-            } catch {
-              return;
-            }
-            const response = await handle(request);
-            if (response.status !== 308) return;
-            const location = response.headers.get("location")!;
-            expect(new URL(location, request.url).origin).toBe(ORIGIN);
-          }),
-          { numRuns: Math.max(20, Math.floor(RUNS / 2)) },
-        );
-      }
-    },
-    TIMEOUT,
-  );
+  it("stays on the site, whatever the path", async () => {
+    for (const trailingSlash of ["always", "never"] as const) {
+      const { handle } = app(
+        { "src/routes/[...path]/page.stsx": page(() => "<h1>any</h1>") },
+        { trailingSlash },
+      );
+      await fc.assert(
+        fc.asyncProperty(pathArb, fc.webQueryParameters(), async (path, query) => {
+          let request: Request;
+          try {
+            // Concatenated, as servers build it: `new URL("//evil.com", origin)` would read a host.
+            request = new Request(`${ORIGIN}${path}${query === "" ? "" : `?${query}`}`);
+          } catch {
+            return;
+          }
+          const response = await handle(request);
+          if (response.status !== 308) return;
+          const location = response.headers.get("location")!;
+          expect(new URL(location, request.url).origin).toBe(ORIGIN);
+        }),
+        { numRuns: Math.max(20, Math.floor(RUNS / 2)) },
+      );
+    }
+  });
 });
 
 describe("requestTarget()", () => {

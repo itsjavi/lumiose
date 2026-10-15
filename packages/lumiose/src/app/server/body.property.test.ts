@@ -3,7 +3,7 @@
 // a body within its limit reads back unchanged and a larger one is a 413, and form parsing fails
 // only with a 400 or a 413.
 import { describe, expect, it } from "vitest";
-import { fc, TIMEOUT } from "./__fixtures__/property.ts";
+import { fc } from "./__fixtures__/property.ts";
 import {
   boundedRequest,
   checkContentLength,
@@ -62,155 +62,135 @@ async function settle<T>(read: Promise<T>): Promise<T | { status: number }> {
 }
 
 describe("bounded bodies", () => {
-  it(
-    "read back unchanged within the limit, and are a 413 past it, however they are chunked",
-    async () => {
-      await fc.assert(
-        fc.asyncProperty(
-          fc.uint8Array({ maxLength: 3000 }),
-          fc.array(fc.nat(), { maxLength: 6 }),
-          fc.constantFrom(...TYPES),
-          limitsArb,
-          async (bytes, cuts, type, limits: BodyLimits) => {
-            const request = boundedRequest(chunked(bytes, cuts, type), () => limits);
-            const limit = limitOf(request.headers, limits);
-            const read = await settle(request.arrayBuffer());
-            if (bytes.length <= limit) {
-              expect(new Uint8Array(read as ArrayBuffer)).toEqual(bytes);
-            } else {
-              expect(read).toEqual({ status: 413 });
-            }
-          },
-        ),
-      );
-    },
-    TIMEOUT,
-  );
+  it("read back unchanged within the limit, and are a 413 past it, however they are chunked", async () => {
+    await fc.assert(
+      fc.asyncProperty(
+        fc.uint8Array({ maxLength: 3000 }),
+        fc.array(fc.nat(), { maxLength: 6 }),
+        fc.constantFrom(...TYPES),
+        limitsArb,
+        async (bytes, cuts, type, limits: BodyLimits) => {
+          const request = boundedRequest(chunked(bytes, cuts, type), () => limits);
+          const limit = limitOf(request.headers, limits);
+          const read = await settle(request.arrayBuffer());
+          if (bytes.length <= limit) {
+            expect(new Uint8Array(read as ArrayBuffer)).toEqual(bytes);
+          } else {
+            expect(read).toEqual({ status: 413 });
+          }
+        },
+      ),
+    );
+  });
 
-  it(
-    "round-trip URL-encoded forms within the limit",
-    async () => {
-      await fc.assert(
-        fc.asyncProperty(
-          fc.array(fc.tuple(fc.string({ unit: "grapheme" }), fc.string({ unit: "grapheme" })), {
-            maxLength: 8,
-          }),
-          limitsArb,
-          async (fields, limits) => {
-            const bytes = new TextEncoder().encode(new URLSearchParams(fields).toString());
-            const request = boundedRequest(chunked(bytes, [3, 17], URL_ENCODED), () => limits);
-            const read = await settle(readFormData(request));
-            if (bytes.length <= limits.body) {
-              expect([...(read as FormData)]).toEqual(fields);
-            } else {
-              expect(read).toEqual({ status: 413 });
-            }
-          },
-        ),
-      );
-    },
-    TIMEOUT,
-  );
-
-  it(
-    "round-trip multipart forms with files within the upload limit",
-    async () => {
-      const name = fc.stringMatching(/^[a-z][a-z0-9_]{0,8}$/);
-      await fc.assert(
-        fc.asyncProperty(
-          fc.array(
-            fc.oneof(
-              fc.tuple(name, fc.string({ unit: "grapheme" })),
-              fc.tuple(name, fc.record({ file: name, bytes: fc.uint8Array({ maxLength: 600 }) })),
-            ),
-            { maxLength: 6 },
-          ),
-          limitsArb,
-          async (fields, limits) => {
-            const form = new FormData();
-            for (const [key, value] of fields) {
-              if (typeof value === "string") form.append(key, value);
-              else form.append(key, new File([value.bytes], `${value.file}.bin`));
-            }
-            const encoded = new Request("https://app.test/", { method: "POST", body: form });
-            const type = encoded.headers.get("content-type")!;
-            const bytes = new Uint8Array(await encoded.arrayBuffer());
-            const request = boundedRequest(chunked(bytes, [40, 41, 500], type), () => limits);
-            const read = await settle(readFormData(request));
-            if (bytes.length > limits.upload) {
-              expect(read).toEqual({ status: 413 });
-              return;
-            }
-            const entries = await Promise.all(
-              [...(read as FormData)].map(async ([key, value]) =>
-                typeof value === "string"
-                  ? [key, value]
-                  : [key, { file: value.name, bytes: new Uint8Array(await value.arrayBuffer()) }],
-              ),
-            );
-            // Multipart encoding writes line breaks in values as CRLF.
-            const expected = fields.map(([key, value]) =>
-              typeof value === "string"
-                ? [key, value.replace(/\r\n|\r|\n/g, "\r\n")]
-                : [key, { file: `${value.file}.bin`, bytes: value.bytes }],
-            );
-            expect(entries).toEqual(expected);
-          },
-        ),
-      );
-    },
-    TIMEOUT,
-  );
-
-  it(
-    "round-trip JSON within the body limit",
-    async () => {
-      await fc.assert(
-        fc.asyncProperty(fc.jsonValue({ maxDepth: 3 }), limitsArb, async (value, limits) => {
-          const text = JSON.stringify(value);
-          const bytes = new TextEncoder().encode(text);
-          const request = boundedRequest(chunked(bytes, [1, 9], "application/json"), () => limits);
-          const read = await settle(request.json());
-          if (bytes.length <= limits.body) expect(read).toEqual(JSON.parse(text));
-          else expect(read).toEqual({ status: 413 });
+  it("round-trip URL-encoded forms within the limit", async () => {
+    await fc.assert(
+      fc.asyncProperty(
+        fc.array(fc.tuple(fc.string({ unit: "grapheme" }), fc.string({ unit: "grapheme" })), {
+          maxLength: 8,
         }),
-      );
-    },
-    TIMEOUT,
-  );
+        limitsArb,
+        async (fields, limits) => {
+          const bytes = new TextEncoder().encode(new URLSearchParams(fields).toString());
+          const request = boundedRequest(chunked(bytes, [3, 17], URL_ENCODED), () => limits);
+          const read = await settle(readFormData(request));
+          if (bytes.length <= limits.body) {
+            expect([...(read as FormData)]).toEqual(fields);
+          } else {
+            expect(read).toEqual({ status: 413 });
+          }
+        },
+      ),
+    );
+  });
+
+  it("round-trip multipart forms with files within the upload limit", async () => {
+    const name = fc.stringMatching(/^[a-z][a-z0-9_]{0,8}$/);
+    await fc.assert(
+      fc.asyncProperty(
+        fc.array(
+          fc.oneof(
+            fc.tuple(name, fc.string({ unit: "grapheme" })),
+            fc.tuple(name, fc.record({ file: name, bytes: fc.uint8Array({ maxLength: 600 }) })),
+          ),
+          { maxLength: 6 },
+        ),
+        limitsArb,
+        async (fields, limits) => {
+          const form = new FormData();
+          for (const [key, value] of fields) {
+            if (typeof value === "string") form.append(key, value);
+            else form.append(key, new File([value.bytes], `${value.file}.bin`));
+          }
+          const encoded = new Request("https://app.test/", { method: "POST", body: form });
+          const type = encoded.headers.get("content-type")!;
+          const bytes = new Uint8Array(await encoded.arrayBuffer());
+          const request = boundedRequest(chunked(bytes, [40, 41, 500], type), () => limits);
+          const read = await settle(readFormData(request));
+          if (bytes.length > limits.upload) {
+            expect(read).toEqual({ status: 413 });
+            return;
+          }
+          const entries = await Promise.all(
+            [...(read as FormData)].map(async ([key, value]) =>
+              typeof value === "string"
+                ? [key, value]
+                : [key, { file: value.name, bytes: new Uint8Array(await value.arrayBuffer()) }],
+            ),
+          );
+          // Multipart encoding writes line breaks in values as CRLF.
+          const expected = fields.map(([key, value]) =>
+            typeof value === "string"
+              ? [key, value.replace(/\r\n|\r|\n/g, "\r\n")]
+              : [key, { file: `${value.file}.bin`, bytes: value.bytes }],
+          );
+          expect(entries).toEqual(expected);
+        },
+      ),
+    );
+  });
+
+  it("round-trip JSON within the body limit", async () => {
+    await fc.assert(
+      fc.asyncProperty(fc.jsonValue({ maxDepth: 3 }), limitsArb, async (value, limits) => {
+        const text = JSON.stringify(value);
+        const bytes = new TextEncoder().encode(text);
+        const request = boundedRequest(chunked(bytes, [1, 9], "application/json"), () => limits);
+        const read = await settle(request.json());
+        if (bytes.length <= limits.body) expect(read).toEqual(JSON.parse(text));
+        else expect(read).toEqual({ status: 413 });
+      }),
+    );
+  });
 });
 
 describe("form parsing", () => {
-  it(
-    "answers any body with form data, a 400 or a 413, never another error",
-    async () => {
-      await fc.assert(
-        fc.asyncProperty(
-          fc.uint8Array({ maxLength: 800 }),
-          fc.oneof(
-            fc.constantFrom(URL_ENCODED, "multipart/form-data", "application/json", "text/plain"),
-            fc.string().map((boundary) => `multipart/form-data; boundary=${boundary}`),
-            fc.string(),
-          ),
-          fc.nat(1000),
-          async (bytes, type, limit) => {
-            const limits = { body: limit, upload: limit };
-            const request = boundedRequest(chunked(bytes, [7], type), () => limits);
-            let read: FormData | { status: number };
-            try {
-              read = await settle(readFormData(request));
-            } catch (error) {
-              // A content type the Request constructor itself refuses never reaches the parser.
-              if (error instanceof TypeError && /content-type/i.test(error.message)) return;
-              throw error;
-            }
-            if (!(read instanceof FormData)) expect([400, 413]).toContain(read.status);
-          },
+  it("answers any body with form data, a 400 or a 413, never another error", async () => {
+    await fc.assert(
+      fc.asyncProperty(
+        fc.uint8Array({ maxLength: 800 }),
+        fc.oneof(
+          fc.constantFrom(URL_ENCODED, "multipart/form-data", "application/json", "text/plain"),
+          fc.string().map((boundary) => `multipart/form-data; boundary=${boundary}`),
+          fc.string(),
         ),
-      );
-    },
-    TIMEOUT,
-  );
+        fc.nat(1000),
+        async (bytes, type, limit) => {
+          const limits = { body: limit, upload: limit };
+          const request = boundedRequest(chunked(bytes, [7], type), () => limits);
+          let read: FormData | { status: number };
+          try {
+            read = await settle(readFormData(request));
+          } catch (error) {
+            // A content type the Request constructor itself refuses never reaches the parser.
+            if (error instanceof TypeError && /content-type/i.test(error.message)) return;
+            throw error;
+          }
+          if (!(read instanceof FormData)) expect([400, 413]).toContain(read.status);
+        },
+      ),
+    );
+  });
 });
 
 describe("declared sizes", () => {

@@ -2,7 +2,7 @@
 // TASK-313): a browser request from another site never passes, same-host requests and clients
 // without browser headers do, and through the handler a refused post never runs the action.
 import { describe, expect, it, vi } from "vitest";
-import { fc, RUNS, TIMEOUT } from "./__fixtures__/property.ts";
+import { fc, RUNS } from "./__fixtures__/property.ts";
 import { app } from "./__fixtures__/app.ts";
 import { isSameOriginRequest, needsOriginCheck } from "./csrf.ts";
 
@@ -122,38 +122,33 @@ describe("needsOriginCheck()", () => {
 });
 
 describe("the handler", () => {
-  it(
-    "never runs a page action for a cross-site form post",
-    async () => {
-      const action = vi.fn(() => ({ ok: true }));
-      const { handle } = app({
-        "src/routes/page.stsx": { default: () => "<h1>home</h1>", actions: { save: action } },
-      });
-      await fc.assert(
-        fc.asyncProperty(
-          hostArb.filter((host) => host !== "lumiose.test"),
-          schemeArb,
-          fc.constantFrom("cross-site", "same-site", undefined),
-          fc.boolean(),
-          async (host, scheme, site, enhanced) => {
-            const headers: Record<string, string> = {
-              origin: `${scheme}://${host}`,
-              "content-type": "application/x-www-form-urlencoded",
-              ...(site === undefined ? {} : { "sec-fetch-site": site }),
-              ...(enhanced ? { accept: "application/json", "x-lumiose-action": "1" } : {}),
-            };
-            const response = await handle(
-              new Request("https://lumiose.test/?/save", { method: "POST", headers, body: "a=1" }),
-            );
-            expect(response.status).toBe(403);
-            if (enhanced)
-              expect(await response.json()).toMatchObject({ type: "error", status: 403 });
-          },
-        ),
-        { numRuns: Math.max(10, Math.floor(RUNS / 4)) },
-      );
-      expect(action).not.toHaveBeenCalled();
-    },
-    TIMEOUT,
-  );
+  it("never runs a page action for a cross-site form post", async () => {
+    const action = vi.fn(() => ({ ok: true }));
+    const { handle } = app({
+      "src/routes/page.stsx": { default: () => "<h1>home</h1>", actions: { save: action } },
+    });
+    await fc.assert(
+      fc.asyncProperty(
+        hostArb.filter((host) => host !== "lumiose.test"),
+        schemeArb,
+        fc.constantFrom("cross-site", "same-site", undefined),
+        fc.boolean(),
+        async (host, scheme, site, enhanced) => {
+          const headers: Record<string, string> = {
+            origin: `${scheme}://${host}`,
+            "content-type": "application/x-www-form-urlencoded",
+            ...(site === undefined ? {} : { "sec-fetch-site": site }),
+            ...(enhanced ? { accept: "application/json", "x-lumiose-action": "1" } : {}),
+          };
+          const response = await handle(
+            new Request("https://lumiose.test/?/save", { method: "POST", headers, body: "a=1" }),
+          );
+          expect(response.status).toBe(403);
+          if (enhanced) expect(await response.json()).toMatchObject({ type: "error", status: 403 });
+        },
+      ),
+      { numRuns: Math.max(10, Math.floor(RUNS / 4)) },
+    );
+    expect(action).not.toHaveBeenCalled();
+  });
 });

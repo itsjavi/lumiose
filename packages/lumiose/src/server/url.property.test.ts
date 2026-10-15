@@ -3,6 +3,7 @@
 // TASK-313): every value a browser would run as script or load as an HTML document is blocked in
 // URL attributes, attribute values and text survive the HTML parser unchanged, and navigations
 // only go to http(s) URLs.
+import { parseFragment, type DefaultTreeAdapterTypes } from "parse5";
 import { describe, expect, it } from "vitest";
 import { fc } from "../app/server/__fixtures__/property.ts";
 import { navigationUrl } from "../app/actions/navigation.ts";
@@ -100,6 +101,27 @@ describe("unsafe URLs", () => {
   });
 });
 
+// The escaping properties parse with parse5, which implements the HTML standard's tokenizer and tree
+// construction as browsers do. happy-dom's parser is not a reference: it emits the text before a
+// stray `-->` twice ("a-->" becomes "aa-->"), which failed the text property at 200,000 cases
+// (TASK-344).
+/** The only element `html` parses to, as the content of a `<template>`. */
+function parseElement(html: string): DefaultTreeAdapterTypes.Element {
+  const nodes = parseFragment(html).childNodes;
+  expect(nodes).toHaveLength(1);
+  return nodes[0] as DefaultTreeAdapterTypes.Element;
+}
+
+/** Asserts that escaped `value` parses back to the same text: no element or comment opens, no entity decodes. */
+function textSurvives(value: string): void {
+  const element = parseElement(`<p>${escapeText(value)}</p>`);
+  const text = element.childNodes.map((node) => {
+    expect(node.nodeName).toBe("#text");
+    return (node as DefaultTreeAdapterTypes.TextNode).value;
+  });
+  expect(text.join("")).toBe(value);
+}
+
 describe("escaping", () => {
   it("keeps attribute values intact through the HTML parser, unsafe URLs aside", () => {
     fc.assert(
@@ -107,26 +129,20 @@ describe("escaping", () => {
         fc.constantFrom("title", "href", "data-x", "alt", "aria-label"),
         valueArb.filter(htmlSafe),
         (name, value) => {
-          const template = document.createElement("template");
-          template.innerHTML = `<a${attr(name, value)}></a>`;
-          const element = template.content.firstElementChild!;
-          expect(element.attributes).toHaveLength(1);
-          expect(element.getAttribute(name)).toBe(safeAttrValue(name, value));
+          const element = parseElement(`<a${attr(name, value)}></a>`);
+          expect(element.attrs).toEqual([{ name, value: safeAttrValue(name, value) }]);
         },
       ),
     );
   });
 
   it("keeps text intact through the HTML parser: no tag or entity can open", () => {
-    fc.assert(
-      fc.property(valueArb.filter(htmlSafe), (value) => {
-        const template = document.createElement("template");
-        template.innerHTML = `<p>${escapeText(value)}</p>`;
-        const element = template.content.firstElementChild!;
-        expect(element.children).toHaveLength(0);
-        expect(element.textContent).toBe(value);
-      }),
-    );
+    fc.assert(fc.property(valueArb.filter(htmlSafe), textSurvives));
+  });
+
+  it("keeps a stray comment end in text as text", () => {
+    // The 200,000-case counterexample of happy-dom's parser (TASK-344).
+    for (const value of ["javascript:,-->", "a-->", "--!>", "<!-- a -->"]) textSurvives(value);
   });
 });
 
