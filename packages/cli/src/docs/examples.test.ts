@@ -22,6 +22,8 @@ const require = createRequire(import.meta.url);
 const linked = {
   lumiose: join(here, "../../../lumiose"),
   "@lumiose/adapter-node": join(here, "../../../adapter-node"),
+  "@lumiose/vite": join(here, "../../../vite"),
+  vite: dirname(require.resolve("vite/package.json")),
   typescript: dirname(require.resolve("typescript/package.json")),
   vitest: dirname(require.resolve("vitest/package.json")),
   // Libraries the testing docs and the guides use (pinned devDependencies of @lumiose/cli).
@@ -37,8 +39,13 @@ const linked = {
       "@playwright/test",
       "@sanity/client",
       "@sanity/webhook",
+      "@sentry/browser",
+      "@sentry/node",
+      "@sentry/vite-plugin",
       "@testing-library/dom",
       "@testing-library/user-event",
+      "posthog-js",
+      "posthog-node",
       "stripe",
     ].map((name) => [name, realpathSync(join(here, "../../node_modules", name))]),
   ),
