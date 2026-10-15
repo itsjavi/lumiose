@@ -153,6 +153,21 @@ describe("attribute parity", () => {
   });
 });
 
+describe("custom element attributes (TASK-337)", () => {
+  it("leave objects and arrays to the client, which sets them as properties", () => {
+    const items = ["a", "b"];
+    expect(attr("items", items, true)).toBe("");
+    expect(attr("config", { a: 1 }, true)).toBe("");
+    expect(attr("max", 5, true)).toBe(' max="5"');
+    expect(attr("label", "x", true)).toBe(' label="x"');
+    expect(attr("open", true, true)).toBe(" open");
+    expect(spreadAttrs({ items, max: 5 }, true)).toBe(' max="5"');
+    // Built-in elements are unchanged: an object renders its string (a URL).
+    expect(attr("href", new URL("https://example.com/a"))).toBe(' href="https://example.com/a"');
+    expect(spreadAttrs({ items })).toBe(' items="a,b"');
+  });
+});
+
 describe("unsafe URL parity (TASK-168, decision-29)", () => {
   const UNSAFE = [
     "javascript:alert(1)",

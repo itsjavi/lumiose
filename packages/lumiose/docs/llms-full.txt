@@ -8332,10 +8332,10 @@ On the server a custom element renders as its tag with the attributes Lumiose ca
 strings, numbers and `true` (`<star-rating max="5" value="4">`), and its light-DOM children. Its
 shadow root and properties exist only once the browser defines the element; when the island
 hydrates, Lumiose sets the properties on the upgraded element. Arrays and objects are not
-attributes: in this version the server writes them as text (`labels="Bad,Poor,…"`), and the
-property replaces them when the island hydrates (TASK-337 leaves them out of the HTML, as React 19
-does). Elements outside islands stay server HTML: they upgrade when their definition loads, and
-read what they need from attributes.
+attributes: the server leaves them out of the HTML, as React 19 does (`labels` above), and the
+island sets them as properties when it hydrates; functions are left out too. Elements outside
+islands stay server HTML: they upgrade when their definition loads, and read what they need from
+attributes.
 
 To show the element before its definition loads, style it with `:not(:defined)`:
 

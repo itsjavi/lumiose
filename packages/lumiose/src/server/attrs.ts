@@ -17,10 +17,14 @@ export const BOOLEANISH =
 /**
  * ` name="escaped"`, or "" for null/undefined and functions (handlers). Booleans follow the client
  * `setAttr`: `aria-*` and enumerated attributes get "true"/"false"; other attributes are present
- * (` name`) for `true` and omitted for `false`.
+ * (` name`) for `true` and omitted for `false`. `custom`: the element is a custom element (the
+ * compiler passes `true` for a tag with a dash): objects and arrays are left out, as in React 19,
+ * since the client sets them as properties when the island hydrates (TASK-337).
  */
-export function attr(name: string, value: unknown): string {
-  if (value == null || typeof value === "function") return "";
+export function attr(name: string, value: unknown, custom?: boolean): string {
+  if (value == null || typeof value === "function" || (custom && typeof value === "object")) {
+    return "";
+  }
   if (typeof value === "boolean") {
     if (BOOLEANISH.test(name)) return ` ${name}="${value}"`;
     return value ? ` ${name}` : "";
@@ -164,15 +168,18 @@ const NOT_ATTRIBUTE = /^on|^(?:bind|client):/i;
 // A valid attribute name with nothing that could close the tag or start another attribute.
 const ATTRIBUTE_NAME = /^[^\s"'<>/=\p{Cc}]+$/u;
 
-/** `{...props}` on an element. Event handlers, directives and invalid names are skipped. */
-export function spreadAttrs(props: Record<string, unknown>): string {
+/**
+ * `{...props}` on an element. Event handlers, directives and invalid names are skipped; `custom`
+ * as in `attr()`.
+ */
+export function spreadAttrs(props: Record<string, unknown>, custom?: boolean): string {
   let out = "";
   for (const key of Object.keys(props)) {
     if (SKIPPED.has(key) || NOT_ATTRIBUTE.test(key)) continue;
     const value = props[key];
     if (key === "class") out += classAttr(value);
     else if (key === "style") out += styleAttr(value);
-    else if (ATTRIBUTE_NAME.test(key)) out += attr(key, value);
+    else if (ATTRIBUTE_NAME.test(key)) out += attr(key, value, custom);
   }
   const scope = props.$$scope;
   if (typeof scope === "string") {
