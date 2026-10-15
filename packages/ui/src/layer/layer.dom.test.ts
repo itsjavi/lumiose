@@ -20,8 +20,8 @@ function layer(parent: Element = document.body) {
   const release = openLayer({
     popup,
     contains: (node) => popup.contains(node) || trigger.contains(node),
-    dismiss: (press) => {
-      dismissed.push(press);
+    dismiss: (where) => {
+      dismissed.push(where);
       release();
     },
   });

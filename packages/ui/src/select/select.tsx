@@ -9,6 +9,7 @@
 // the selected option's content, and options may hold more than text. TASK-358 records why it is
 // native rather than the listbox pattern.
 import { createContext, effect, ref, untrack, useContext } from "lumiose";
+import { fieldProps, useField } from "../field/context.ts";
 
 declare module "lumiose/jsx-runtime" {
   namespace JSX {
@@ -92,10 +93,13 @@ function Root({ value, defaultValue, onValueChange, children, ...rest }: SelectR
       element.value = wanted;
     }
   });
+  // Inside a Field: the field's id, name and ARIA references (TASK-365).
+  const field = useField();
   return (
     <SelectContext value={context}>
       <select
         {...rest}
+        {...fieldProps(field, rest)}
         ref={(element: HTMLSelectElement) => {
           select(element);
           rest.ref?.(element);

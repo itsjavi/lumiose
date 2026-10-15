@@ -1,0 +1,135 @@
+import {
+  Checkbox,
+  CheckboxGroup,
+  Field,
+  Fieldset,
+  Form,
+  Input,
+  Radio,
+  RadioGroup,
+  Switch,
+} from "@lumiose/ui";
+import { actionData, fail, signal, submit, Title, type ActionContext } from "lumiose";
+
+const COLOURS = ["red", "green", "blue"];
+
+export const actions = {
+  async save(ctx: ActionContext<"/form/island">) {
+    const form = await ctx.formData();
+    if (form.get("handle") === "admin") return fail(400, { handle: "That handle is reserved." });
+    return { saved: String(form.get("handle")) };
+  },
+};
+
+/**
+ * The form controls bound to signals in an island: `bind:value` on Input, CheckboxGroup and
+ * RadioGroup, `bind:checked` on Checkbox and Switch, a Field `validate` function, and a Form
+ * posted with `submit()` whose `fail()` errors show in the field.
+ */
+export function FormSignals() {
+  const handle = signal("ada");
+  const agree = signal(false);
+  const dark = signal(true);
+  const colours = signal<string[]>(["red"]);
+  const size = signal("m");
+  return (
+    <section class="grid">
+      <Form
+        method="post"
+        action="?/save"
+        onSubmit={submit}
+        errors={actionData<typeof actions>()}
+        class="lu-fieldset"
+      >
+        <Field.Root
+          name="handle"
+          class="lu-field"
+          validate={(value) =>
+            typeof value === "string" && value.includes(" ") ? "No spaces, please." : null
+          }
+        >
+          {/*
+            The control comes last, in GOV.UK's order: a Field.Control followed by another part
+            does not hydrate yet (LUM4006, reported from TASK-365).
+          */}
+          <Field.Label>Handle</Field.Label>
+          <Field.Description>Try "admin", or a space.</Field.Description>
+          <Field.Error />
+          <Field.Control class="lu-input" required bind:value={handle} />
+        </Field.Root>
+        <label>
+          <Checkbox.Root name="agree" class="lu-checkbox" bind:checked={agree} /> I agree
+        </label>
+        <label>
+          <Switch.Root name="dark" class="lu-switch" bind:checked={dark} /> Dark mode
+        </label>
+        <button type="submit" class="lu-button" data-variant="primary">
+          Save
+        </button>
+        {/*
+          The groups come last: a standalone component followed by an element in a component's
+          children does not hydrate yet (LUM4006, reported from TASK-365).
+        */}
+        <CheckboxGroup
+          name="colours"
+          allValues={COLOURS}
+          bind:value={colours}
+          class="lu-fieldset"
+        >
+          <Fieldset.Legend>Colours</Fieldset.Legend>
+          <label>
+            <Checkbox.Root parent class="lu-checkbox" /> All colours
+          </label>
+          {COLOURS.map((colour) => (
+            <label>
+              <Checkbox.Root value={colour} class="lu-checkbox" /> {colour}
+            </label>
+          ))}
+        </CheckboxGroup>
+        <RadioGroup name="size" bind:value={size} class="lu-fieldset">
+          <Fieldset.Legend>Size</Fieldset.Legend>
+          <label>
+            <Radio.Root value="s" class="lu-radio" /> Small
+          </label>
+          <label>
+            <Radio.Root value="m" class="lu-radio" /> Medium
+          </label>
+        </RadioGroup>
+      </Form>
+      <div>
+        <button
+          type="button"
+          class="lu-button"
+          data-testid="set-signals"
+          onClick={() => {
+            handle.set("grace");
+            agree.set(true);
+            dark.set(false);
+            colours.set(["green", "blue"]);
+            size.set("s");
+          }}
+        >
+          Set every signal
+        </button>
+        <output data-testid="form-state">
+          handle: {handle()}, agree: {String(agree())}, dark: {String(dark())}, colours:{" "}
+          {colours().join(" ") || "none"}, size: {size()}, saved:{" "}
+          {(() => {
+            const data = actionData<typeof actions>();
+            return data && "saved" in data ? data.saved : "none";
+          })()}
+        </output>
+      </div>
+    </section>
+  );
+}
+
+export default function FormIslandPage() {
+  return (
+    <>
+      <Title>Form controls in an island, bound to signals</Title>
+      <h1>Form controls in an island, bound to signals</h1>
+      <FormSignals client:load />
+    </>
+  );
+}

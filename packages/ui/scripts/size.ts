@@ -24,7 +24,8 @@ interface Component {
   module: string;
   /** Its client scripts: element definitions or gap scripts (decision-63). */
   scripts: string[];
-  css: string;
+  /** Its stylesheet; native components (Fieldset, Checkbox, …) need none. */
+  css?: string;
 }
 
 /** The optional themes (`@lumiose/ui/themes/<name>.css`), all components included. */
@@ -73,6 +74,31 @@ const COMPONENTS: Component[] = [
     scripts: [],
     css: "select/select.css",
   },
+  {
+    name: "field",
+    module: "field/field.tsx",
+    scripts: ["field/field.script.ts"],
+    css: "field/field.css",
+  },
+  { name: "fieldset", module: "fieldset/fieldset.tsx", scripts: [] },
+  { name: "form", module: "form/form.tsx", scripts: [] },
+  { name: "input", module: "input/input.tsx", scripts: [] },
+  {
+    name: "checkbox",
+    module: "checkbox/checkbox.tsx",
+    scripts: ["checkbox/checkbox.script.ts"],
+  },
+  {
+    name: "checkbox-group",
+    module: "checkbox-group/checkbox-group.tsx",
+    scripts: ["checkbox/checkbox.script.ts"],
+  },
+  {
+    name: "radio-group",
+    module: "radio-group/radio-group.tsx",
+    scripts: ["checkbox/checkbox.script.ts"],
+  },
+  { name: "switch", module: "switch/switch.tsx", scripts: ["checkbox/checkbox.script.ts"] },
 ];
 
 const CLIENT_SCRIPT = /\?client$/;
@@ -162,7 +188,7 @@ for (const component of COMPONENTS) {
   const exports = `export * from "${src}${component.module}";`;
   const componentJs = cell(await bundle(exports, "js"));
   console.log(
-    `| ${component.name} | ${await js(component.scripts)} | ${componentJs} | ${await css([component.css])} |`,
+    `| ${component.name} | ${await js(component.scripts)} | ${componentJs} | ${component.css ? await css([component.css]) : "none"} |`,
   );
 }
 for (const theme of THEMES)

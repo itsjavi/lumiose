@@ -1,0 +1,16 @@
+/*
+ * The CSS Field needs to work, and nothing else (decision-62): `lu-field` is a block, and the error
+ * parts the script hides stay hidden whatever `display` your CSS gives them. Fieldset, Form, Input,
+ * Checkbox, Checkbox Group, Radio Group and Switch are native elements and need none. It sits in
+ * the `lu.core` layer, so any app CSS wins.
+ */
+@layer lu.core, lu.theme;
+
+@layer lu.core {
+  lu-field {
+    display: block;
+  }
+  lu-field [hidden] {
+    display: none !important;
+  }
+}

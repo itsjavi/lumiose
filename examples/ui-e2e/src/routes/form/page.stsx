@@ -1,0 +1,152 @@
+import {
+  Checkbox,
+  CheckboxGroup,
+  Field,
+  Fieldset,
+  Form,
+  Radio,
+  RadioGroup,
+  Select,
+  Switch,
+} from "@lumiose/ui";
+import { actionData, fail, Title, type ActionContext } from "lumiose";
+
+const TOPPINGS = ["cheese", "olives", "peppers"];
+
+export const actions = {
+  /** Checks the username on the server: "taken" is, as a database would say. */
+  async signup(ctx: ActionContext<"/form">) {
+    const form = await ctx.formData();
+    if (form.get("username") === "taken") {
+      return fail(400, { username: "That username is taken." });
+    }
+    return { saved: new URLSearchParams(form as unknown as Record<string, string>).toString() };
+  },
+};
+
+// Server-rendered, no island: the form controls are native, Field's script shows validation in
+// the fields, and the action's errors come back in the HTML. Styled with the default theme.
+export default function FormPage() {
+  const result = actionData<typeof actions>();
+  return (
+    <>
+      <Title>Form</Title>
+      <h1>Form</h1>
+      <Form
+        method="post"
+        action="?/signup"
+        errors={result && "username" in result ? result : undefined}
+        class="grid"
+      >
+        <section aria-labelledby="account-heading">
+          <h2 id="account-heading">Account</h2>
+          <Field.Root name="username" class="lu-field">
+            <Field.Label>Username</Field.Label>
+            <Field.Control class="lu-input" required minlength={3} autocomplete="username" />
+            <Field.Description>At least 3 characters. Try "taken".</Field.Description>
+            <Field.Error />
+          </Field.Root>
+          <Field.Root name="email" validationMode="onBlur" class="lu-field">
+            <Field.Label>Email</Field.Label>
+            <Field.Control class="lu-input" type="email" required autocomplete="email" />
+            <Field.Error match="valueMissing">Enter your email.</Field.Error>
+            <Field.Error match="typeMismatch">Enter an email like ada@example.com.</Field.Error>
+          </Field.Root>
+          <Field.Root name="plan" class="lu-field">
+            <Field.Label>Plan</Field.Label>
+            <Select.Root defaultValue="pro" class="lu-select">
+              <Select.Item value="free">Free</Select.Item>
+              <Select.Item value="pro">Pro</Select.Item>
+            </Select.Root>
+          </Field.Root>
+        </section>
+
+        <section aria-labelledby="choices-heading">
+          <h2 id="choices-heading">Choices</h2>
+          <CheckboxGroup
+            name="toppings"
+            defaultValue={["cheese"]}
+            allValues={TOPPINGS}
+            class="lu-fieldset"
+          >
+            <Fieldset.Legend>Toppings</Fieldset.Legend>
+            <label>
+              <Checkbox.Root parent class="lu-checkbox" /> All toppings
+            </label>
+            {TOPPINGS.map((topping) => (
+              <label>
+                <Checkbox.Root value={topping} class="lu-checkbox" /> {topping}
+              </label>
+            ))}
+          </CheckboxGroup>
+          <Field.Root name="size" class="lu-field">
+            <RadioGroup required class="lu-fieldset">
+              <Fieldset.Legend>Size</Fieldset.Legend>
+              <label>
+                <Radio.Root value="s" class="lu-radio" /> Small
+              </label>
+              <label>
+                <Radio.Root value="m" class="lu-radio" /> Medium
+              </label>
+              <label>
+                <Radio.Root value="l" class="lu-radio" disabled /> Large (sold out)
+              </label>
+            </RadioGroup>
+            <Field.Error>Choose a size.</Field.Error>
+          </Field.Root>
+        </section>
+
+        <section aria-labelledby="settings-heading">
+          <h2 id="settings-heading">Settings</h2>
+          <Fieldset.Root class="lu-fieldset">
+            <Fieldset.Legend>Preferences</Fieldset.Legend>
+            <label>
+              <Switch.Root name="newsletter" defaultChecked class="lu-switch" /> Newsletter
+            </label>
+            <label>
+              <Checkbox.Root name="beta" indeterminate class="lu-checkbox" /> Beta features
+            </label>
+            <label>
+              <Checkbox.Root name="locked" defaultChecked readOnly class="lu-checkbox" /> Locked
+              setting
+            </label>
+          </Fieldset.Root>
+          <Field.Root name="terms" class="lu-field">
+            <div>
+              <Checkbox.Root required class="lu-checkbox" />
+              <Field.Label>I accept the terms</Field.Label>
+            </div>
+            <Field.Error />
+          </Field.Root>
+          <Fieldset.Root disabled class="lu-fieldset">
+            <Fieldset.Legend>Disabled group</Fieldset.Legend>
+            <label>
+              <Switch.Root name="disabled-switch" class="lu-switch" /> Off for now
+            </label>
+          </Fieldset.Root>
+        </section>
+
+        <footer>
+          <button type="submit" class="lu-button" data-variant="primary">
+            Sign up
+          </button>
+          <button type="reset" class="lu-button">
+            Reset
+          </button>
+        </footer>
+      </Form>
+      <output data-testid="saved">{result && "saved" in result ? result.saved : ""}</output>
+    </>
+  );
+}
+
+<style>
+  :global(form footer) {
+    display: flex;
+    gap: 0.5rem;
+    align-self: end;
+  }
+  :global(.grid > section) {
+    gap: 1rem;
+  }
+</style>
