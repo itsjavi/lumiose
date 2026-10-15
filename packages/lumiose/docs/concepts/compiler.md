@@ -15,7 +15,8 @@
 4. generates JS for the **client** (cloned templates, bindings, delegated events) or the **server**
    (string concatenation with escaping), with source maps. Types are stripped.
 
-Vite's own JSX transform is disabled for Lumiose files, and `node_modules` is excluded.
+Vite's own JSX transform is disabled for Lumiose files, and `node_modules` is excluded, except the
+[Lumiose packages](../reference/vite.md#lumiose-packages) installed there.
 
 **The masking invariant.** Masked TSX parses as valid TSX with identical offsets. Tools rely on it:
 TypeScript type-checks _shadow files_ (`.lumiose/shadow/<path>.stsx.tsx`, the masked text), so

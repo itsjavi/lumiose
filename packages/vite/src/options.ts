@@ -39,7 +39,10 @@ export type {
 export interface LumioseOptions {
   /** Modules compiled by Lumiose. Default: `.stsx` and `.tsx` files. */
   include?: RegExp;
-  /** Modules left to Vite. Default: anything in node_modules. */
+  /**
+   * Modules left to Vite. Default: anything in node_modules, except the modules of the Lumiose
+   * packages installed there (they depend on `lumiose`); a value replaces that whole rule.
+   */
   exclude?: RegExp;
   /**
    * The project's default route mode: `"static"` (prerendered at build time), `"server"`

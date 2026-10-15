@@ -98,7 +98,7 @@ export function stateBindings(program: { body: readonly Node[] }): StateBinding[
   return locals.map((local) => ({ local, name: exported.get(local) ?? local }));
 }
 
-/** The id island refs use for `file`: root-relative, else package-relative, else `file` itself. */
+/** The id island refs use for `file`: root- or package-relative (the innermost), else `file`. */
 export function stableModuleId(
   file: string,
   root: string,
@@ -108,15 +108,22 @@ export function stableModuleId(
     const base = dir.replace(/\/$/, "");
     return file.startsWith(`${base}/`) ? file.slice(base.length) : undefined;
   };
+  // The innermost of the root and the packages names the module, as in the compiler: a package
+  // installed in the root's node_modules is named by its package (the root wins a tie).
   const inRoot = within(root);
-  if (inRoot !== undefined) return inRoot;
   let found: { name: string; rest: string; depth: number } | undefined;
   for (const pkg of packages) {
     const rest = within(pkg.dir);
-    if (rest !== undefined && (found === undefined || pkg.dir.length > found.depth)) {
-      found = { name: pkg.name, rest, depth: pkg.dir.length };
+    const depth = pkg.dir.replace(/\/$/, "").length;
+    if (rest !== undefined && (found === undefined || depth > found.depth)) {
+      found = { name: pkg.name, rest, depth };
     }
   }
+  if (
+    inRoot !== undefined &&
+    (found === undefined || found.depth <= root.replace(/\/$/, "").length)
+  )
+    return inRoot;
   return found === undefined ? file : found.name + found.rest;
 }
 

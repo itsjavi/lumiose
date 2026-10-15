@@ -3594,10 +3594,12 @@ export function CopyButton(props: { text: string }) {
 - **Keep it free of the runtime.** A script that imports `lumiose` makes its pages load the
   runtime. It is client code: only `PUBLIC_*` env reaches it, and importing server-only code is
   `LUM4003`.
-- **Builds** find `?client` imports in the project and its linked workspace packages, and build
-  each script as a chunk of its own. An import they do not find, such as one in a package installed
-  from npm, is a build warning, and its pages do not load it. In `lumiose dev` the script loads from
-  its own URL. Its type comes from `lumiose/env`: a default export `() => void`.
+- **Builds** find `?client` imports in the project and its
+  [Lumiose packages](../reference/vite.md#lumiose-packages), linked or installed from npm, and build
+  each script as a chunk of its own. An import they do not find, such as one in a package that
+  does not depend on `lumiose`, is a build warning, and its pages do not load it. In `lumiose dev`
+  the script loads from its own URL. Its type comes from `lumiose/env`: a default export
+  `() => void`.
 
 **Build output.** `lumiose build` puts the Lumiose runtime in one chunk: the island loader's, the SPA
 entry's when the app has no islands, or a shared `lumiose-[hash].js` when it has both. The router's
@@ -3620,16 +3622,18 @@ stylesheets (and waits for them, skipping those the page already holds in its me
 styles), module preloads and the CSP nonce of `<meta property="csp-nonce">`, but dispatches no `vite:preloadError` event (the router loads the
 URL with a document navigation when a page's module does not load).
 
-**Islands from other packages.** Components of a linked workspace package (`"@acme/ui": "workspace:*"`)
-can be or render islands too. Island records name modules without build-machine paths:
-root-relative inside the project (`/src/components/LikeButton.stsx#LikeButton`), package-relative
-outside it (`@acme/ui/src/Nav.stsx#Nav`), or by the import's bare name
-(`import { Nav } from "@acme/ui"` gives `@acme/ui#Nav`). Either way, the `modulepreload` hint of a
-`client:load` island points at its chunk in a build and at Vite's URL of the module in dev. Builds
-also look for island call sites in the linked packages that depend on `lumiose`, so each of their
-islands gets its chunk even when only server code renders it. Folders inside such a package that
-are projects of their own (with a `package.json`, `tsconfig.json` or `vite.config.*`, such as a
-showcase app) are left out.
+**Islands from other packages.** Components of a
+[Lumiose package](../reference/vite.md#lumiose-packages), linked (`"@acme/ui": "workspace:*"`) or
+installed from npm, can be or render islands too. Island records name modules without
+build-machine paths: root-relative inside the project
+(`/src/components/LikeButton.stsx#LikeButton`), package-relative in a package
+(`@acme/ui/src/Nav.stsx#Nav`, also for one installed under the project's `node_modules`), or by
+the import's bare name (`import { Nav } from "@acme/ui"` gives `@acme/ui#Nav`). Either way, the
+`modulepreload` hint of a `client:load` island points at its chunk in a build and at Vite's URL of
+the module in dev. Builds also look for island call sites in the Lumiose packages, so each of
+their islands gets its chunk even when only server code renders it. Folders inside a linked
+package that are projects of their own (with a `package.json`, `tsconfig.json` or
+`vite.config.*`, such as a showcase app) are left out.
 
 > **Status:** available: island calls and records (`LUM4001`, `LUM4002`), the loader with its
 > triggers and event replay, and hydration (`LUM4006` on a mismatch), in `lumiose dev` and builds.
@@ -5846,7 +5850,8 @@ See also: [Rendering modes](rendering-modes.md), [reference: components](../refe
 4. generates JS for the **client** (cloned templates, bindings, delegated events) or the **server**
    (string concatenation with escaping), with source maps. Types are stripped.
 
-Vite's own JSX transform is disabled for Lumiose files, and `node_modules` is excluded.
+Vite's own JSX transform is disabled for Lumiose files, and `node_modules` is excluded, except the
+[Lumiose packages](../reference/vite.md#lumiose-packages) installed there.
 
 **The masking invariant.** Masked TSX parses as valid TSX with identical offsets. Tools rely on it:
 TypeScript type-checks _shadow files_ (`.lumiose/shadow/<path>.stsx.tsx`, the masked text), so
@@ -12868,7 +12873,7 @@ function lumiose(options?: LumioseOptions): Plugin[];
 interface LumioseOptions {
   /** Modules compiled by Lumiose. Default: .stsx and .tsx files. */
   include?: RegExp;
-  /** Modules left to Vite. Default: anything in node_modules. */
+  /** Modules left to Vite. Default: node_modules, except the Lumiose packages installed there. */
   exclude?: RegExp;
   /** The project's default route mode; a layout's or route's `export const mode` overrides it. */
   mode?: "static" | "server" | "spa"; // default "static"
@@ -13075,6 +13080,40 @@ What it does:
 
 > **Status:** compilation, environments, diagnostics, HMR, style-block CSS, `.svg`, `.md` and `.html` imports and the
 > project options above are available. The designed option `css` is not.
+
+## Lumiose packages
+
+A **Lumiose package** is a dependency that lists `lumiose` in its `dependencies` or
+`peerDependencies` (any dependency field), found from the app's `package.json` and, transitively,
+from the Lumiose packages themselves. `@lumiose/ui` and any component library built for Lumiose
+are; Lumiose's own tooling (`@lumiose/cli`, `@lumiose/vite`, the adapters, the editor plugins) is
+not. The plugin treats their modules like the app's own, whether the package is linked
+(`"@acme/ui": "workspace:*"`) or installed in `node_modules` from npm or a tarball:
+
+- **Compiled with the app's options.** Their `.tsx` and `.stsx` modules go through the Lumiose
+  compiler for the server or the browser, with the app's targets, CSP mode and dev tools, in
+  `lumiose dev` and builds alike. The default `exclude` leaves every other package in
+  `node_modules` to Vite; an explicit `exclude` replaces that rule, so `exclude: /node_modules/`
+  compiles no installed package.
+- **Scanned with the project.** Builds find their island call sites, stylesheets and
+  [client scripts](../concepts/islands.md#concept) (`?client`) before the server graph
+  exists, so their islands get chunks and their pages load their scripts. An installed package is
+  scanned whole, `dist/` included, but not the packages in its own `node_modules`; a linked one
+  without its build output (`dist/`, `build/`) and nested projects (a folder with a
+  `package.json`, `tsconfig.json` or `vite.config.*`).
+- **One `lumiose`.** They are bundled with the server code (`resolve.noExternal`) and kept out of
+  Vite's dependency pre-bundling (`optimizeDeps.exclude`), so their modules and the app's share one
+  runtime instance, and Vite never compiles their JSX for React. A CommonJS dependency of a Lumiose
+  package then needs `optimizeDeps: { include: ["@acme/ui > some-cjs-dep"] }`.
+- **Stable names.** Island refs and scope tokens name their modules package-relatively
+  (`@acme/ui/dist/Nav.tsx#Nav`), wherever the package manager put them (`node_modules/.pnpm/…`
+  included).
+
+**Publishing a component library.** Ship the sources (`.tsx`, `.stsx`, `.ts`, `.css`) and point
+`exports` at them, with `lumiose` as a peer dependency: no build step, and the app's compiler
+compiles them for its own server and browser targets. List client scripts and stylesheets in
+`sideEffects` (`["**/*.css", "**/*.script.ts"]`), so bundlers keep their side-effect imports.
+`@lumiose/ui` is published this way (`dist/` holds a copy of `src/` without tests).
 
 ## createDevHandler()
 

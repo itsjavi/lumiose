@@ -448,14 +448,15 @@ pub fn compile(source: &str, filename: &str, options: &CompileOptions) -> Compil
     }
 }
 
-/// The module path that scope tokens hash: relative to `root` (without a leading `/`) when the
-/// module is inside it, package-relative inside a listed package, otherwise the id as given
-/// (without its query).
+/// The module path that scope tokens hash: relative to `root` (without a leading `/`) or
+/// package-relative, whichever directory is innermost (`module_id::base`), otherwise the id as
+/// given (without its query).
 fn scope_path(filename: &str, root: Option<&str>, packages: &[PackageRoot]) -> String {
     let id = module_id::clean_id(filename);
-    match root.and_then(|root| module_id::within(&id, root)) {
-        Some(rest) => rest[1..].to_owned(),
-        None => module_id::package_relative(&id, packages).unwrap_or(id),
+    match module_id::base(&id, root, packages) {
+        Some(module_id::Base::Root(rest)) => rest[1..].to_owned(),
+        Some(module_id::Base::Package(name, rest)) => format!("{name}{rest}"),
+        None => id,
     }
 }
 

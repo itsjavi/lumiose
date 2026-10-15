@@ -1,13 +1,16 @@
 // `@lumiose/vite`: the Vite 8 plugin (owner: Photon; spec §5.5, decision-5).
 //
-// - Compiles `.stsx` and `.tsx` modules (outside node_modules) with the native Lumiose compiler,
-//   before Vite's own OXC transform, which is told to skip them. The target follows the Vite
-//   environment: `lumiose/server` code for server consumers (SSR), `lumiose/dom` code otherwise.
+// - Compiles `.stsx` and `.tsx` modules with the native Lumiose compiler, before Vite's own OXC
+//   transform, which is told to skip them: the app's, and those of the Lumiose packages it uses,
+//   linked or installed in node_modules (./packages.ts); other packages in node_modules are left
+//   to Vite. The target follows the Vite environment: `lumiose/server` code for server consumers
+//   (SSR), `lumiose/dom` code otherwise.
 // - Compiler diagnostics become Vite warnings and errors with code frames (the dev overlay).
 // - `lumiose` resolves its `browser` export in client environments and its `node` export in server
-//   environments; Vite processes it in both (never externalized or pre-bundled), so compiled code
-//   and the runtime share one module instance. Vitest's DOM environments (happy-dom, jsdom) are
-//   client environments with Node's conditions: they get the browser entry too (TASK-54).
+//   environments; Vite processes it and the Lumiose packages in both (never externalized or
+//   pre-bundled), so compiled code and the runtime share one module instance. Vitest's DOM
+//   environments (happy-dom, jsdom) are client environments with Node's conditions: they get the
+//   browser entry too (TASK-54).
 // - HMR (v1): a client module that imports `render` from `lumiose/dom` (an app entry) accepts
 //   updates of itself and of every module it reaches, so an edit re-runs the entry, which
 //   re-renders the app into the same container after disposing the previous root. Component state
@@ -18,8 +21,8 @@
 //   Vite's resolver and CSS-only HMR for style edits (./styles.ts).
 // - `virtual:lumiose/islands` is the island manifest (./islands.ts). Island refs are root-relative
 //   (`/src/components/Team.stsx#TeamPanel`) for modules inside the Vite root and package-relative
-//   (`@acme/ui/src/Nav.stsx#Nav`) outside it, so the HTML never holds build-machine paths; the
-//   scan covers linked Lumiose packages too (./packages.ts).
+//   (`@acme/ui/src/Nav.stsx#Nav`) in a Lumiose package, so the HTML never holds build-machine
+//   paths; the scan covers the Lumiose packages too (./packages.ts).
 // - `virtual:lumiose/css-manifest` is the CSS manifest of builds (./css-manifest.ts): every
 //   stylesheet is built in the client environment, and the server build maps each route module to
 //   the stylesheets its static import graph reaches.
@@ -86,7 +89,11 @@ export type {
   TrailingSlash,
 } from "./options.ts";
 
-const LUMIOSE_MODULE = /\.(?:stsx|tsx)$/;
+/**
+ * `.stsx` and `.tsx` modules. In dev, the modules of Lumiose packages in node_modules may carry
+ * Vite's dependency version query (`dialog.tsx?v=1a2b3c4d`, inherited from a versioned importer).
+ */
+const LUMIOSE_MODULE = /\.(?:stsx|tsx)(?:\?v=\w+)?$/;
 const NODE_MODULES = /[\\/]node_modules[\\/]/;
 /** Vite's default OXC exclusion, kept when Lumiose files are added to it. */
 const VITE_OXC_EXCLUDE = /\.js$/;
@@ -146,6 +153,12 @@ export default function lumiose(options: LumioseOptions = {}): Plugin<LumiosePlu
   const svg = svgOptionsOf(options.svg);
   const include = options.include ?? LUMIOSE_MODULE;
   const exclude = options.exclude ?? NODE_MODULES;
+  // Modules left to Vite: the `exclude` option, or by default node_modules except the modules of
+  // the Lumiose packages installed there (./packages.ts).
+  const isExcluded = (file: string): boolean =>
+    options.exclude !== undefined
+      ? options.exclude.test(file)
+      : NODE_MODULES.test(file) && !packages.installs(cleanId(file));
   const content = contentOf(contentOptionsOf(options.md, options.html), exclude);
   // Content modules (`<file>.md.stsx`) are Lumiose modules whatever `include` says.
   const lumioseModules = content ? [include, content.moduleFilter] : [include];
@@ -159,10 +172,10 @@ export default function lumiose(options: LumioseOptions = {}): Plugin<LumiosePlu
   const styles = new StyleCache();
   const cssManifest = new CssManifest();
   const customProperties = new CustomPropertyCheck();
-  let packages = new Packages(root, exclude);
+  let packages = new Packages(root, options.exclude);
   let scanned: ScannedModule[] | undefined;
   const project = (): ScannedModule[] =>
-    (scanned ??= scanProject(root, include, exclude, packages, content));
+    (scanned ??= scanProject(root, include, isExcluded, packages, content));
   // Every compile of a file names modules alike, so its JS and CSS agree on scope tokens.
   const compileOptions = (file: string, target: Target) => ({
     target,
@@ -177,7 +190,7 @@ export default function lumiose(options: LumioseOptions = {}): Plugin<LumiosePlu
     // Source locations and signal labels for the inspector; content modules are generated code.
     ...(inspector && !content?.moduleFilter.test(cleanId(file)) ? { devSource: true } : {}),
   });
-  const isLumioseFile = (file: string): boolean => include.test(file) && !exclude.test(file);
+  const isLumioseFile = (file: string): boolean => include.test(file) && !isExcluded(file);
   // Server-rendered route modules (./server-routes.ts), scanned once and again after a route
   // module changes (its `mode` export may have).
   let serverRoutes: Promise<Set<string>> | undefined;
@@ -202,6 +215,9 @@ export default function lumiose(options: LumioseOptions = {}): Plugin<LumiosePlu
 
       config(config, env) {
         serve = env.command === "serve";
+        // The Lumiose packages, for configEnvironment (configResolved knows the root again).
+        root = normalizePath(resolve(config.root ?? process.cwd()));
+        packages = new Packages(root, options.exclude);
         const out: UserConfig & { test?: { setupFiles: string[] } } = {};
         // Scoped state is fresh in each test (Vitest merges the list with the project's).
         if (process.env["VITEST"] !== undefined) out.test = { setupFiles: [VITEST_SETUP] };
@@ -237,12 +253,14 @@ export default function lumiose(options: LumioseOptions = {}): Plugin<LumiosePlu
       },
 
       async configResolved(config) {
-        root = config.root;
+        if (config.root !== root) {
+          root = config.root;
+          packages = new Packages(root, options.exclude);
+        }
         inspector =
           serve &&
           process.env["VITEST"] === undefined &&
           Object.keys(INSPECTOR_DEFINE).every((key) => config.define?.[key] !== undefined);
-        packages = new Packages(root, exclude);
         // Vite reads the project's tsconfig, which may extend the generated one (TASK-73).
         await writeLumioseTsconfig(root);
       },
@@ -260,6 +278,8 @@ export default function lumiose(options: LumioseOptions = {}): Plugin<LumiosePlu
 
       configEnvironment(name, config) {
         const server = (config.consumer ?? (name === "client" ? "client" : "server")) === "server";
+        // Lumiose packages hold `.tsx` for this plugin to compile, and import the app's `lumiose`.
+        const lumiosePackages = packages.lumiose().map((p) => p.name);
         const out: EnvironmentOptions = {
           resolve: {
             // Explicit per consumer: `browser` → src/index.ts, `node` → src/index.server.ts.
@@ -267,9 +287,9 @@ export default function lumiose(options: LumioseOptions = {}): Plugin<LumiosePlu
               ...(server ? defaultServerConditions : defaultClientConditions),
             ],
           },
-          optimizeDeps: { exclude: LUMIOSE_ENTRIES },
+          optimizeDeps: { exclude: [...LUMIOSE_ENTRIES, ...lumiosePackages] },
         };
-        if (server) out.resolve!.noExternal = ["lumiose"];
+        if (server) out.resolve!.noExternal = ["lumiose", ...lumiosePackages];
         return out;
       },
 
@@ -409,8 +429,12 @@ export default function lumiose(options: LumioseOptions = {}): Plugin<LumiosePlu
       },
 
       transform: {
-        filter: { id: { include: lumioseModules, exclude } },
+        // The default exclusion depends on the packages, checked by the handler.
+        filter: {
+          id: { include: lumioseModules, ...(options.exclude ? { exclude: options.exclude } : {}) },
+        },
         async handler(code, id) {
+          if (isExcluded(id)) return null;
           const target: Target =
             this.environment.config.consumer === "server" ? "server" : "client";
           const result = await compileWithModules(

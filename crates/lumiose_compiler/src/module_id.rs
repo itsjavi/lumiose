@@ -1,12 +1,14 @@
 //! Machine-independent module ids for island refs and scope tokens (TASK-74).
 //!
-//! A module inside the project root is named root-relatively (`/src/x.stsx`). A module outside it
-//! but inside a package the host listed (a linked workspace package) is named package-relatively
-//! (`@acme/ui/src/Nav.stsx`, the same string as a deep import of it). Anything else keeps its id
-//! as given. So refs in server-rendered HTML and scope tokens do not depend on where the project
-//! sits on the build machine.
+//! A module inside the project root is named root-relatively (`/src/x.stsx`). A module inside a
+//! package the host listed (a linked workspace package, or a Lumiose package installed in
+//! `node_modules`) is named package-relatively (`@acme/ui/src/Nav.stsx`, the same string as a deep
+//! import of it). When both contain it, the innermost directory wins: a package installed under
+//! the root's `node_modules` is named by its package, a root inside a package by the root.
+//! Anything else keeps its id as given. So refs in server-rendered HTML and scope tokens depend
+//! neither on where the project sits on the build machine nor on the package manager's layout.
 
-/// A package outside the project root whose modules get package-relative ids.
+/// A package whose modules get package-relative ids.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct PackageRoot {
     /// The package name (`@acme/ui`).
@@ -31,22 +33,52 @@ pub(crate) fn within<'a>(id: &'a str, dir: &str) -> Option<&'a str> {
         .filter(|rest| rest.starts_with('/'))
 }
 
-/// `@acme/ui/src/Nav.stsx` for a module inside one of `packages` (the innermost wins).
-pub(crate) fn package_relative(id: &str, packages: &[PackageRoot]) -> Option<String> {
+/// The innermost of `packages` that contains `id`, with the rest of `id` after its directory.
+fn innermost_package<'a>(
+    id: &'a str,
+    packages: &'a [PackageRoot],
+) -> Option<(&'a PackageRoot, &'a str)> {
     packages
         .iter()
         .filter_map(|package| within(id, &package.dir).map(|rest| (package, rest)))
-        .max_by_key(|(package, _)| package.dir.len())
-        .map(|(package, rest)| format!("{}{rest}", package.name))
+        .max_by_key(|(package, _)| package.dir.trim_end_matches('/').len())
+}
+
+/// Where `id` is named from: the rest after the root (`Root`), or a package name and the rest
+/// after its directory (`Package`), whichever directory is innermost; the root wins a tie.
+pub(crate) enum Base<'a> {
+    Root(&'a str),
+    Package(&'a str, &'a str),
+}
+
+pub(crate) fn base<'a>(
+    id: &'a str,
+    root: Option<&str>,
+    packages: &'a [PackageRoot],
+) -> Option<Base<'a>> {
+    let package = innermost_package(id, packages);
+    if let Some(root) = root
+        && let Some(rest) = within(id, root)
+    {
+        let root_len = root.replace('\\', "/").trim_end_matches('/').len();
+        match package {
+            Some((package, rest)) if package.dir.trim_end_matches('/').len() > root_len => {
+                return Some(Base::Package(&package.name, rest));
+            }
+            _ => return Some(Base::Root(rest)),
+        }
+    }
+    package.map(|(package, rest)| Base::Package(&package.name, rest))
 }
 
 /// The id island refs use: root-relative (`/src/x.stsx`), package-relative, or `id` as given.
 /// `id` is a cleaned, absolute module id (or a relative one when there is no root).
 pub(crate) fn stable_id(id: &str, root: Option<&str>, packages: &[PackageRoot]) -> String {
-    if let Some(rest) = root.and_then(|root| within(id, root)) {
-        return rest.to_owned();
+    match base(id, root, packages) {
+        Some(Base::Root(rest)) => rest.to_owned(),
+        Some(Base::Package(name, rest)) => format!("{name}{rest}"),
+        None => id.to_owned(),
     }
-    package_relative(id, packages).unwrap_or_else(|| id.to_owned())
 }
 
 /// True when `specifier`, imported by the module `importer`, names a server-only module (spec
@@ -150,5 +182,35 @@ mod tests {
         );
         assert_eq!(id("/elsewhere/A.stsx"), "/elsewhere/A.stsx");
         assert_eq!(clean_id(r"C:\repo\a.stsx?x=1"), "C:/repo/a.stsx");
+    }
+
+    #[test]
+    fn the_innermost_of_root_and_package_names_a_module() {
+        // A package installed in the root's node_modules (pnpm's layout) is named by its package.
+        let installed = vec![PackageRoot {
+            name: "@acme/ui".into(),
+            dir: "/app/node_modules/.pnpm/@acme+ui@1.0.0/node_modules/@acme/ui".into(),
+        }];
+        assert_eq!(
+            stable_id(
+                "/app/node_modules/.pnpm/@acme+ui@1.0.0/node_modules/@acme/ui/dist/Nav.tsx",
+                Some("/app/"),
+                &installed
+            ),
+            "@acme/ui/dist/Nav.tsx"
+        );
+        assert_eq!(
+            stable_id("/app/src/App.stsx", Some("/app"), &installed),
+            "/src/App.stsx"
+        );
+        // A root inside a listed package (a showcase app of the kit) names its own modules.
+        assert_eq!(
+            stable_id(
+                "/repo/packages/kit/showcase/src/App.stsx",
+                Some("/repo/packages/kit/showcase"),
+                &kit()
+            ),
+            "/src/App.stsx"
+        );
     }
 }

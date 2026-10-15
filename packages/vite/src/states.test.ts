@@ -50,6 +50,15 @@ describe("stableModuleId", () => {
     expect(id("/repo/packages/kit/icons/state.ts")).toBe("@acme/kit-icons/state.ts");
     expect(id("/elsewhere/state.ts")).toBe("/elsewhere/state.ts");
   });
+
+  it("names a package installed under the root by its package, a root inside a package by the root", () => {
+    const ui = "/app/node_modules/.pnpm/@acme+ui@1.0.0/node_modules/@acme/ui";
+    const installed = [{ name: "@acme/ui", dir: ui }];
+    expect(stableModuleId(`${ui}/dist/state.ts`, "/app", installed)).toBe("@acme/ui/dist/state.ts");
+    expect(stableModuleId("/app/src/state.ts", "/app", installed)).toBe("/src/state.ts");
+    const kit = [{ name: "@acme/kit", dir: "/repo/kit" }];
+    expect(stableModuleId("/repo/kit/demo/src/a.ts", "/repo/kit/demo", kit)).toBe("/src/a.ts");
+  });
 });
 
 describe("lumiose:state", () => {
