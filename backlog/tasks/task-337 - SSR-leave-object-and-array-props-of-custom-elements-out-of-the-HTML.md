@@ -3,11 +3,13 @@ id: TASK-337
 title: 'SSR: leave object and array props of custom elements out of the HTML'
 status: To Do
 assignee:
-  - '@Lux'
+  - '@Photon'
 created_date: '2026-10-15 05:23'
+updated_date: '2026-10-15 05:39'
 labels:
   - ssr
   - compiler
+milestone: m-11
 dependencies: []
 priority: low
 ordinal: 339000
@@ -25,3 +27,9 @@ Found in TASK-326 (Spark). On the client, props of a custom element that defines
 - [ ] #2 Built-in elements are unchanged (a URL object in href still renders its string)
 - [ ] #3 The web components guide no longer mentions the text attributes
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+2026-10-15 (Lux): routed to Photon (the compiler marks custom-element props) in coordination with Nova (server rendering of those props); part of the M11 run after TASK-326.
+<!-- SECTION:NOTES:END -->
