@@ -28,12 +28,15 @@ Contract: decision-62 (approved by the user on 2026-10-15 from the TASK-332 spik
 - [x] #3 Keyboard-contract and axe tests pass
 - [x] #4 Unstyled: ships only the CSS the primitive needs to work, in one low-priority layer
 - [ ] #5 Passes every item of the "UI primitives pitfall checklist" backlog doc (from Base UI and Zag/Ark) that applies
+- [ ] #6 The default theme styles Dialog and the docs examples use it
 <!-- AC:END -->
 
 ## Implementation Notes
 
 <!-- SECTION:NOTES:BEGIN -->
 User decision 2026-10-15: @lumiose/ui reaches parity with Base UI's components before 1.0 (Base UI 1.9.0), unstyled, and verified against Base UI and Zag/Ark. Contract: decision-62. The package ships unstyled: only the CSS a primitive needs to work (display, positioning and anchoring, the top layer, CSS variables), in one low-priority layer; no theme, no design tokens. Example styling lives in docs and test pages only. Check the work against the "UI primitives pitfall checklist" backlog doc (from Base UI and Zag/Ark) before Done.
+
+2026-10-15: check Dialog against doc-9 (UI primitives pitfall checklist), sections 1 and 2; give Dialog its rules in the default theme.
 
 2026-10-15 (Halo): claimed (branch claude/halo-m12-945f07); TASK-353's scaffold is committed there.
 
