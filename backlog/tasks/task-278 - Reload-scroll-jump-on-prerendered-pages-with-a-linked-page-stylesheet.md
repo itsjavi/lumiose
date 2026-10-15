@@ -1,11 +1,11 @@
 ---
 id: TASK-278
 title: Reload scroll jump on prerendered pages with a linked page stylesheet
-status: In Progress
+status: Done
 assignee:
   - '@Nova'
 created_date: '2026-10-14 03:30'
-updated_date: '2026-10-15 12:20'
+updated_date: '2026-10-15 12:28'
 labels:
   - bug
   - css
@@ -23,9 +23,9 @@ Found in the itsjavi.com port to Lumiose 0.4.0 (the port's FINDINGS.md), gap 1. 
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Reloading a long, scrolled prerendered page paints at the restored position (0 jumps in a reload-scroll measurement on a sample app or the itsjavi.com port)
-- [ ] #2 The byte cost of the change is measured on the sample apps and recorded in the task
-- [ ] #3 concepts/styles.md (In builds) describes the new rule
+- [x] #1 Reloading a long, scrolled prerendered page paints at the restored position (0 jumps in a reload-scroll measurement on a sample app or the itsjavi.com port)
+- [x] #2 The byte cost of the change is measured on the sample apps and recorded in the task
+- [x] #3 concepts/styles.md (In builds) describes the new rule
 <!-- AC:END -->
 
 ## Implementation Plan
@@ -67,4 +67,12 @@ After the change (real builds; travel journal with its CSP hash policy in place)
 **Port.** The itsjavi.com port depends on the published lumiose 0.4.0, so it was measured with the identical script inserted into its existing output (0/30), not rebuilt with this branch; the port repository was not modified.
 
 **Decision to record (Lux).** "Pages that link stylesheets hold the parser with an inline script after them, instead of inlining more CSS" (rationale above); proposed for a decision record, not written by this worker.
+
+Validation: pnpm check green (1982 tests, size caps OK: 9.22 / 13.32 kB brotli); docs:check green; all 14 Playwright suites pass (ssg-travel-journal's inline-script list updated for the new script; its strict-CSP test passes with the hashed script). Root oxfmt --check flags 6 benchmark result JSONs untouched here (CI runs fmt:examples, which passes).
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Chrome restored a reloaded page's scroll position from a layout made before its linked stylesheets loaded. Pages that link a stylesheet now get `<script>/* waits for the stylesheets above */</script>` after their stylesheet tags (builds and dev; nonce'd or hashed under csp: "strict"), which holds the parser until the CSS loads. Reloads that jumped: 0/30 on ssg-travel-journal and apps/web pages (8–23/30 before) and on the itsjavi.com port output (11/30 before). Cost: 54 B raw per page (about 12 B brotli; +59 B brotli with a strict-CSP hash). Inlining the page's own CSS at any size still jumped (5–13/30) and cost 10–192 kB more per full visit, so TASK-121's grouping and the 4 kB limit stay. Docs: concepts/styles.md (In builds), concepts/security.md.
+<!-- SECTION:FINAL_SUMMARY:END -->
