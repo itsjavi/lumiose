@@ -1,0 +1,23 @@
+import { Title } from "lumiose";
+import { ContextMenuSignals } from "../../../islands/ContextMenuSignals.tsx";
+
+export default function ContextMenuIslandPage() {
+  return (
+    <>
+      <Title>Context Menu in an island, bound to signals</Title>
+      <h1>Context Menu in an island, bound to signals</h1>
+      <ContextMenuSignals client:load />
+    </>
+  );
+}
+
+<style>
+  :global(.area) {
+    display: grid;
+    place-items: center;
+    min-block-size: 8rem;
+    margin-block-end: 1rem;
+    border: 2px dashed currentColor;
+    border-radius: 0.5rem;
+  }
+</style>

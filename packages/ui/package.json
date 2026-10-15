@@ -50,6 +50,10 @@
     "./accordion.css": "./src/accordion/accordion.css",
     "./toast": "./src/toast/toast.tsx",
     "./toast.css": "./src/toast/toast.css",
+    "./context-menu": "./src/context-menu/context-menu.tsx",
+    "./context-menu.css": "./src/context-menu/context-menu.css",
+    "./drawer": "./src/drawer/drawer.tsx",
+    "./drawer.css": "./src/drawer/drawer.css",
     "./themes/default.css": "./src/themes/default.css",
     "./package.json": "./package.json"
   },
@@ -86,6 +90,10 @@
       "./accordion.css": "./dist/accordion/accordion.css",
       "./toast": "./dist/toast/toast.tsx",
       "./toast.css": "./dist/toast/toast.css",
+      "./context-menu": "./dist/context-menu/context-menu.tsx",
+      "./context-menu.css": "./dist/context-menu/context-menu.css",
+      "./drawer": "./dist/drawer/drawer.tsx",
+      "./drawer.css": "./dist/drawer/drawer.css",
       "./themes/default.css": "./dist/themes/default.css",
       "./package.json": "./package.json"
     }

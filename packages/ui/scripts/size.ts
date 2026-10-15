@@ -117,6 +117,18 @@ const COMPONENTS: Component[] = [
     scripts: ["toast/toast.script.ts"],
     css: "toast/toast.css",
   },
+  {
+    name: "context-menu",
+    module: "context-menu/context-menu.tsx",
+    scripts: ["context-menu/context-menu.script.ts"],
+    css: "context-menu/context-menu.css",
+  },
+  {
+    name: "drawer",
+    module: "drawer/drawer.tsx",
+    scripts: ["dialog/dialog.script.ts", "drawer/drawer.script.ts"],
+    css: "drawer/drawer.css",
+  },
 ];
 
 const CLIENT_SCRIPT = /\?client$/;

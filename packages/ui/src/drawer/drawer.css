@@ -1,0 +1,38 @@
+/*
+ * A drawer is a modal <dialog> against the edge of the window its `data-swipe-direction` names,
+ * across that edge's length, instead of the browser's centred box; Dialog's rule keeps the page
+ * behind it from scrolling. While it is swiped it takes the pointer's moves rather than selecting
+ * text.
+ */
+@layer lu.core, lu.theme;
+@import "../dialog/dialog.css";
+
+@layer lu.core {
+  dialog[data-swipe-direction] {
+    margin: 0;
+    max-inline-size: none;
+    max-block-size: none;
+  }
+  /* The browser's `fit-content` would leave it short of the edge's length. */
+  dialog:is([data-swipe-direction="down"], [data-swipe-direction="up"]) {
+    inline-size: auto;
+  }
+  dialog:is([data-swipe-direction="left"], [data-swipe-direction="right"]) {
+    block-size: auto;
+  }
+  dialog[data-swipe-direction="down"] {
+    inset: auto 0 0;
+  }
+  dialog[data-swipe-direction="up"] {
+    inset: 0 0 auto;
+  }
+  dialog[data-swipe-direction="left"] {
+    inset: 0 auto 0 0;
+  }
+  dialog[data-swipe-direction="right"] {
+    inset: 0 0 0 auto;
+  }
+  dialog[data-swipe-direction][data-swiping] {
+    user-select: none;
+  }
+}

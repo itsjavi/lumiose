@@ -83,6 +83,8 @@ custom properties, named as in shadcn/ui, are listed in [Theming](theming.md#the
 | [Collapsible](collapsible.md)       | Available: native `<details>`, works without JavaScript                                   |
 | [Accordion](accordion.md)           | Available: native `<details>` items, `<lu-accordion>` adds the keys                       |
 | [Toast](toast.md)                   | Available: server-rendered or from a manager, `<lu-toast-viewport>` times and closes them |
+| [Context Menu](context-menu.md)     | Available: Menu at the pointer, opened by its script (right-click, long press, keys)      |
+| [Drawer](drawer.md)                 | Available: a Dialog against an edge, works without JavaScript; its script adds the swipe  |
 
 ## Size
 

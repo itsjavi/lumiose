@@ -1,0 +1,56 @@
+import { ContextMenu } from "@lumiose/ui";
+import { Title } from "lumiose";
+
+// Server-rendered, no island: <lu-context-menu>'s script opens Menu's popup at the pointer.
+export default function ContextMenuPage() {
+  return (
+    <>
+      <Title>Context Menu</Title>
+      <h1>Context Menu</h1>
+      <ContextMenu.Root>
+        <ContextMenu.Trigger
+          class="area"
+          tabindex={0}
+          aria-label="Project files"
+          data-testid="area"
+        >
+          Right-click, long-press, or press Shift+F10 here.
+        </ContextMenu.Trigger>
+        <ContextMenu.Popup class="lu-menu" aria-label="File actions">
+          <ContextMenu.Item>Rename</ContextMenu.Item>
+          <ContextMenu.Item>Duplicate</ContextMenu.Item>
+          <ContextMenu.Item disabled>Share</ContextMenu.Item>
+          <ContextMenu.Separator />
+          <ContextMenu.LinkItem href="#history">History</ContextMenu.LinkItem>
+          <ContextMenu.SubmenuRoot>
+            <ContextMenu.SubmenuTrigger>Move to</ContextMenu.SubmenuTrigger>
+            <ContextMenu.Popup class="lu-menu">
+              <ContextMenu.Item>Archive</ContextMenu.Item>
+              <ContextMenu.Item>Trash</ContextMenu.Item>
+            </ContextMenu.Popup>
+          </ContextMenu.SubmenuRoot>
+        </ContextMenu.Popup>
+      </ContextMenu.Root>
+      <ContextMenu.Root disabled>
+        <ContextMenu.Trigger class="area" data-testid="disabled">
+          The browser's own menu here.
+        </ContextMenu.Trigger>
+        <ContextMenu.Popup class="lu-menu" aria-label="Unused">
+          <ContextMenu.Item>Never</ContextMenu.Item>
+        </ContextMenu.Popup>
+      </ContextMenu.Root>
+      <p id="history">History.</p>
+    </>
+  );
+}
+
+<style>
+  :global(.area) {
+    display: grid;
+    place-items: center;
+    min-block-size: 8rem;
+    margin-block-end: 1rem;
+    border: 2px dashed currentColor;
+    border-radius: 0.5rem;
+  }
+</style>

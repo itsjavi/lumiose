@@ -1,0 +1,16 @@
+/*
+ * Context Menu is Menu, opened at the pointer: `@lumiose/ui/menu.css` lays out its popup and
+ * items. `<lu-context-menu>` adds no box, and the trigger area keeps iOS's callout (the long-press
+ * preview) from showing over the menu.
+ */
+@layer lu.core, lu.theme;
+@import "../menu/menu.css";
+
+@layer lu.core {
+  lu-context-menu {
+    display: contents;
+  }
+  lu-context-menu > :not(lu-menu) {
+    -webkit-touch-callout: none;
+  }
+}

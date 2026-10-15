@@ -157,7 +157,8 @@ export type MenuSeparatorProps = JSX.IntrinsicElements["div"];
 export type MenuSubmenuTriggerProps = Omit<JSX.IntrinsicElements["button"], "disabled"> &
   Omit<ItemProps, "closeOnClick">;
 
-interface MenuContextValue {
+/** The ids and counts Menu's parts share; ContextMenu provides it too, to reuse the parts. */
+export interface MenuContextValue {
   popupId: string;
   triggerId: string;
   /** The id the parts share; the anchor name that ties the popup to its trigger derives from it. */
@@ -172,7 +173,7 @@ interface GroupContextValue {
   labels: Signal<number>;
 }
 
-const MenuContext = createContext<MenuContextValue>();
+export const MenuContext = createContext<MenuContextValue>();
 const GroupContext = createContext<GroupContextValue>();
 const RadioContext = createContext<{ value: () => string | undefined }>();
 

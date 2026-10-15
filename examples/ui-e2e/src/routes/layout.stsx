@@ -29,6 +29,10 @@ export default function Root(props: LayoutProps<"/">) {
         <a href="/accordion/island">Accordion in an island</a>
         <a href="/toast">Toast</a>
         <a href="/toast/island">Toasts from an island</a>
+        <a href="/context-menu">Context Menu</a>
+        <a href="/context-menu/island">Context Menu in an island</a>
+        <a href="/drawer">Drawer</a>
+        <a href="/drawer/island">Drawer in an island</a>
       </nav>
       <main>{props.children}</main>
     </div>
