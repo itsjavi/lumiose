@@ -198,12 +198,19 @@ const COMMANDS: readonly Command[] = [
   {
     name: "docs",
     args: "[topic...]",
-    summary: "Print a docs topic (concepts/signals, LUM1004, …), search the docs, or list topics",
+    summary:
+      "Print a docs topic (concepts/signals, LUM1004, ui/dialog with @lumiose/ui), search the docs, or list topics",
     options: [],
     positionals: { min: 0, max: Infinity },
     exitCodes: "0 found, 1 nothing matches, 2 the tool failed",
-    examples: ["lumiose docs", "lumiose docs signals", 'lumiose docs "await island" --format json'],
-    run: ({ format, args, io }) => docsCommand({ query: args.join(" "), format, ...out(io) }),
+    examples: [
+      "lumiose docs",
+      "lumiose docs signals",
+      'lumiose docs "await island" --format json',
+      "lumiose docs ui",
+    ],
+    run: ({ root, format, args, io }) =>
+      docsCommand({ query: args.join(" "), root, format, ...out(io) }),
   },
   {
     name: "explain",
@@ -218,7 +225,7 @@ const COMMANDS: readonly Command[] = [
   {
     name: "mcp",
     summary:
-      "Start the MCP server on stdio: docs, check, routes, components, compile, render, dev logs",
+      "Start the MCP server on stdio: docs, check, routes, components, compile, render, dev logs, UI components",
     options: [],
     positionals: { min: 0, max: 0 },
     exitCodes: "0 the client disconnected, 2 the server could not start",
@@ -231,7 +238,7 @@ const COMMANDS: readonly Command[] = [
     name: "agents",
     args: "init",
     summary:
-      "Write or update AGENTS.md (Lumiose section), CLAUDE.md, the lumiose skill and .gitattributes",
+      "Write or update AGENTS.md (Lumiose section), CLAUDE.md, the lumiose skill (and lumiose-ui with @lumiose/ui) and .gitattributes",
     options: ["mcp"],
     positionals: { min: 1, max: 1 },
     exitCodes: "0 written, 2 the tool failed",

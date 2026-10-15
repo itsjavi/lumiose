@@ -1,6 +1,7 @@
 // `@lumiose/vite` against a real Vite 8 dev server (client and ssr environments). The fixture app is
 // written to a temp dir whose node_modules/lumiose links to this package; node_modules/@acme/kit
-// links a workspace package next to the app (outside the Vite root) with an island.
+// links a workspace package next to the app (outside the Vite root) with an island, and
+// node_modules/@acme/ui is a Lumiose package installed in pnpm's layout (TASK-390).
 import { linkLumiose, LUMIOSE_ROOT } from "./test-links.ts";
 import {
   mkdirSync,
@@ -94,7 +95,30 @@ export default function Kit() {
   return <Header />;
 }
 `,
-  "package.json": `{ "name": "app", "private": true, "dependencies": { "@acme/kit": "workspace:*" } }\n`,
+  "routes/ui.tsx": `import { Badge } from "@acme/ui";
+export default function Ui() {
+  return <Badge />;
+}
+`,
+  "package.json": `{ "name": "app", "private": true, "dependencies": { "@acme/kit": "workspace:*", "@acme/ui": "1.0.0", "plain": "1.0.0" } }\n`,
+};
+
+/** Where pnpm installs `@acme/ui` (node_modules/@acme/ui links to it). */
+const UI_DIR = "node_modules/.pnpm/@acme+ui@1.0.0/node_modules/@acme/ui";
+
+/** A Lumiose package installed from npm: it ships its sources in `dist/`, island and all. */
+const UI: Record<string, string> = {
+  "package.json": `{ "name": "@acme/ui", "version": "1.0.0", "type": "module", "exports": { ".": "./dist/index.ts" }, "peerDependencies": { "lumiose": "^0.1.0" } }\n`,
+  "dist/index.ts": `export { Badge } from "./Badge.tsx";\n`,
+  "dist/Badge.tsx": `import { Star } from "./Star.stsx";
+export function Badge() {
+  return <span class="badge"><Star client:load /></span>;
+}
+`,
+  "dist/Star.stsx": `export function Star() {
+  return <i class="star">*<style>.star { color: gold; }</style></i>;
+}
+`,
 };
 
 /** A linked workspace package (`../kit`), whose island call site only the server graph reaches. */
@@ -148,6 +172,14 @@ beforeAll(async () => {
   }
   mkdirSync(join(root, "node_modules/@acme"));
   symlinkSync(kit, join(root, "node_modules/@acme/kit"), "junction");
+  for (const [name, code] of Object.entries(UI)) {
+    mkdirSync(dirname(join(root, UI_DIR, name)), { recursive: true });
+    writeFileSync(join(root, UI_DIR, name), code);
+  }
+  symlinkSync(join(root, UI_DIR), join(root, "node_modules/@acme/ui"), "junction");
+  // An installed package that does not use Lumiose: left to Vite.
+  mkdirSync(join(root, "node_modules/plain"));
+  writeFileSync(join(root, "node_modules/plain/package.json"), `{ "name": "plain" }\n`);
   const logger = createLogger("silent");
   logger.warn = (message) => void warnings.push(message);
   server = await createServer({
@@ -232,7 +264,10 @@ describe.skipIf(!binding)("@lumiose/vite", () => {
   });
 
   it("keeps Vite's OXC transform away from Lumiose modules only", async () => {
-    expect(server.config.oxc && server.config.oxc.exclude).toEqual([/\.js$/, /\.(?:stsx|tsx)$/]);
+    expect(server.config.oxc && server.config.oxc.exclude).toEqual([
+      /\.js$/,
+      /\.(?:stsx|tsx)(?:\?v=\w+)?$/,
+    ]);
     const result = await server.environments.client.transformRequest("/util.ts");
     expect(result!.code).toContain("export const answer = 42");
   });
@@ -297,6 +332,29 @@ describe.skipIf(!binding)("@lumiose/vite", () => {
     const token = /data-l-(\w+)/.exec(ssr!.code)![1];
     const css = await server.environments.client.transformRequest(`${fs}/src/Header.stsx${STYLE}`);
     expect(css!.code).toContain(`[data-l-${token}]`);
+  });
+
+  it("compiles the Lumiose packages installed in node_modules, named package-relatively", async () => {
+    const { client, ssr } = server.environments;
+    // Bundled with the server code and kept from the optimizer, which would compile them as React.
+    expect(ssr.config.resolve.noExternal).toEqual(
+      expect.arrayContaining(["@acme/kit", "@acme/ui"]),
+    );
+    expect(client.config.optimizeDeps.exclude).toContain("@acme/ui");
+    expect(client.config.optimizeDeps.exclude).not.toContain("plain");
+    // The scan found the island call site in its dist/, before any of its modules was compiled.
+    const loaded = await client.pluginContainer.load("\0lumiose:islands");
+    const manifest = typeof loaded === "string" ? loaded : loaded!.code;
+    expect(manifest).toContain(`"@acme/ui/dist/Star.stsx#Star": () => import(`);
+    // Island refs and scope tokens hold neither the root's path nor pnpm's layout.
+    const server_ = await ssr.transformRequest(`/${UI_DIR}/dist/Badge.tsx`);
+    expect(server_!.code).toContain('island)("@acme/ui/dist/Star.stsx#Star"');
+    // In dev, a module imported from a versioned one carries Vite's version query.
+    const browser = await client.transformRequest(`/${UI_DIR}/dist/Star.stsx?v=1a2b3c4d`);
+    expect(browser!.code).toContain("template(");
+    const token = /data-l-(\w+)/.exec(browser!.code)![1];
+    const css = await client.transformRequest(`/${UI_DIR}/dist/Star.stsx${STYLE}`);
+    expect(css!.code).toContain(`.star[data-l-${token}]`);
   });
 
   it("builds every island into its own chunk from the manifest", async () => {

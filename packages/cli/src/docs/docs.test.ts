@@ -170,11 +170,11 @@ describe("docs contract", () => {
     }
   });
 
-  it("indexes every concept, guide, UI, deploy and reference page", () => {
+  it("indexes every concept, guide, deploy and reference page", () => {
     const readme = docs.find((doc) => doc.topic === "README")!.content;
     for (const doc of docs) {
       if (
-        /^(coming-from|concepts|guides|ui|deploy|reference)\//.test(doc.topic) ||
+        /^(coming-from|concepts|guides|deploy|reference)\//.test(doc.topic) ||
         ["getting-started", "stability", "when-not-to-use"].includes(doc.topic)
       ) {
         expect(readme, doc.topic).toContain(`](${doc.topic}.md)`);

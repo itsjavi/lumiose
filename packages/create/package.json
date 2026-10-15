@@ -33,6 +33,7 @@
   },
   "devDependencies": {
     "@lumiose/adapter-node": "workspace:*",
+    "@lumiose/ui": "workspace:*",
     "typescript": "^7.0.2",
     "vite": "^8.3.4"
   },

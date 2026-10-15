@@ -37,15 +37,19 @@ export function withStyle(style: Style, extra: JSX.CSSProperties): string | JSX.
   return { ...extra, ...style };
 }
 
-/** The anchored popup's attributes: its placement, and its anchor and offsets in `style`. */
+/**
+ * The anchored popup's attributes: its placement, and its anchor and offsets in `style`.
+ * `defaultSide` and `defaultAlign` apply when the props leave them out.
+ */
 export function placement(
   props: PlacementProps & { style?: Style },
   id: string,
   defaultSide: Side,
+  defaultAlign: Align = "center",
 ) {
   return {
     "data-side": props.side ?? defaultSide,
-    "data-align": props.align ?? "center",
+    "data-align": props.align ?? defaultAlign,
     style: withStyle(props.style, {
       "position-anchor": anchorName(id),
       "--lu-side-offset": props.sideOffset === undefined ? undefined : `${props.sideOffset}px`,

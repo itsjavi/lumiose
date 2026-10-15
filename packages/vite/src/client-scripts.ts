@@ -89,7 +89,7 @@ export function clientScriptsPlugin(options: ClientScriptsOptions): Plugin {
           if (script === undefined && !warned.has(file)) {
             warned.add(file);
             this.warn(
-              `${normalizePath(relative(config.root, file))} is a client script (${CLIENT_SCRIPT_QUERY}), but the client build did not build it: the module that imports it is outside the project and its linked packages. Pages that render it do not load it.`,
+              `${normalizePath(relative(config.root, file))} is a client script (${CLIENT_SCRIPT_QUERY}), but the client build did not build it: the module that imports it is outside the project and its Lumiose packages. Pages that render it do not load it.`,
             );
           }
         }

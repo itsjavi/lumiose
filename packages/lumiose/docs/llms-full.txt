@@ -83,11 +83,7 @@ mistakes** and **Related**.
 
 ## UI
 
-- [UI components](ui/README.md): `@lumiose/ui`, accessible and unstyled primitives on native elements, server-rendered without hydration: the approach, styling with your own CSS or the optional default theme (`--lu-` custom properties, light and dark), and the components available and planned.
-- [Dialog](ui/dialog.md): `Dialog.Root`, `Trigger`, `Popup`, `Title`, `Description` and `Close`, and the alert dialog (`role="alertdialog"`): a native `<dialog>` with invoker commands, working without JavaScript, plus a 0.8 kB script for the native gaps; `bind:open` with signals; styling, keyboard and focus.
-- [Popover](ui/popover.md): `Popover.Root`, `Trigger`, `Popup`, `Title`, `Description` and `Close`: a native `popover` opened by `popovertarget` and placed with CSS anchor positioning (`side`, `align`, `sideOffset`, `alignOffset`), working without JavaScript, plus a 1.3 kB script for focus, right-clicks and older browsers; `bind:open`; styling, keyboard and focus.
-- [Tooltip](ui/tooltip.md): `Tooltip.Root`, `Trigger` and `Popup`: a native `popover="hint"` with `role="tooltip"` that describes its trigger in server HTML, opened on hover and keyboard focus by a 1.5 kB script (delays, one at a time, hoverable, Escape); `bind:open`; the placement props of Popover.
-- [Tabs](ui/tabs.md): `Tabs.Root`, `List`, `Tab` and `Panel`: the APG tabs pattern with the whole state in server HTML and `<lu-tabs>`, a 0.8 kB light-DOM element, for the keys and the selection; manual or automatic activation (`activateOnFocus`), `loopFocus`, vertical orientation, right-to-left; disabled tabs; `bind:value`.
+- [UI components](https://itsjavi.com/lumiose/ui/llms.txt): `@lumiose/ui`, accessible and unstyled primitives on native elements, server-rendered without hydration, with the optional default theme. Its docs ship in its own package and match its own version: `node_modules/@lumiose/ui/docs/llms.txt` indexes them, and in a project that depends on it `lumiose docs ui` and `lumiose docs dialog` print them and the MCP server's `ui_components` tool lists the components.
 
 ## Deploy
 
@@ -145,7 +141,7 @@ designed API; where this version does not implement something yet, the page says
 | `lumiose mcp`                                                                         | Available                                                                  |
 | `create-lumiose` (templates `minimal`, `static`, `ssr`, `spa`), `lumiose agents init` | Available                                                                  |
 | Testing: Vitest, Testing Library and Playwright                                       | Available, with stock tools (no adapter package)                           |
-| `@lumiose/ui`                                                                         | In development, not on npm yet ([UI components](ui/README.md))             |
+| `@lumiose/ui`                                                                         | In development, not on npm yet (its docs: `lumiose docs ui`)               |
 
 <!-- source: getting-started.md -->
 
@@ -185,6 +181,12 @@ highlighting `.stsx` as TSX. In an existing project, `lumiose agents init` write
 the [Lumiose MCP server](reference/mcp.md) for Claude Code (`.mcp.json`) and Codex
 (`.codex/config.toml`). Run `create-lumiose --help` for the options (`--yes`, `--force`, `--mcp`,
 `--format json`).
+
+**Status:** `create-lumiose` will also offer `@lumiose/ui`, the accessible and unstyled UI
+components, with a question and `--ui`, once that package is on npm: it adds the dependency, imports
+its stylesheet and default theme in the root layout, and adds its agent files (a UI part in
+`AGENTS.md` and the `lumiose-ui` skill). In a project that already depends on it,
+`lumiose agents init` adds those agent files.
 
 The rest of this page sets a project up by hand, step by step.
 
@@ -3597,10 +3599,12 @@ export function CopyButton(props: { text: string }) {
 - **Keep it free of the runtime.** A script that imports `lumiose` makes its pages load the
   runtime. It is client code: only `PUBLIC_*` env reaches it, and importing server-only code is
   `LUM4003`.
-- **Builds** find `?client` imports in the project and its linked workspace packages, and build
-  each script as a chunk of its own. An import they do not find, such as one in a package installed
-  from npm, is a build warning, and its pages do not load it. In `lumiose dev` the script loads from
-  its own URL. Its type comes from `lumiose/env`: a default export `() => void`.
+- **Builds** find `?client` imports in the project and its
+  [Lumiose packages](../reference/vite.md#lumiose-packages), linked or installed from npm, and build
+  each script as a chunk of its own. An import they do not find, such as one in a package that
+  does not depend on `lumiose`, is a build warning, and its pages do not load it. In `lumiose dev`
+  the script loads from its own URL. Its type comes from `lumiose/env`: a default export
+  `() => void`.
 
 **Build output.** `lumiose build` puts the Lumiose runtime in one chunk: the island loader's, the SPA
 entry's when the app has no islands, or a shared `lumiose-[hash].js` when it has both. The router's
@@ -3623,16 +3627,18 @@ stylesheets (and waits for them, skipping those the page already holds in its me
 styles), module preloads and the CSP nonce of `<meta property="csp-nonce">`, but dispatches no `vite:preloadError` event (the router loads the
 URL with a document navigation when a page's module does not load).
 
-**Islands from other packages.** Components of a linked workspace package (`"@acme/ui": "workspace:*"`)
-can be or render islands too. Island records name modules without build-machine paths:
-root-relative inside the project (`/src/components/LikeButton.stsx#LikeButton`), package-relative
-outside it (`@acme/ui/src/Nav.stsx#Nav`), or by the import's bare name
-(`import { Nav } from "@acme/ui"` gives `@acme/ui#Nav`). Either way, the `modulepreload` hint of a
-`client:load` island points at its chunk in a build and at Vite's URL of the module in dev. Builds
-also look for island call sites in the linked packages that depend on `lumiose`, so each of their
-islands gets its chunk even when only server code renders it. Folders inside such a package that
-are projects of their own (with a `package.json`, `tsconfig.json` or `vite.config.*`, such as a
-showcase app) are left out.
+**Islands from other packages.** Components of a
+[Lumiose package](../reference/vite.md#lumiose-packages), linked (`"@acme/ui": "workspace:*"`) or
+installed from npm, can be or render islands too. Island records name modules without
+build-machine paths: root-relative inside the project
+(`/src/components/LikeButton.stsx#LikeButton`), package-relative in a package
+(`@acme/ui/src/Nav.stsx#Nav`, also for one installed under the project's `node_modules`), or by
+the import's bare name (`import { Nav } from "@acme/ui"` gives `@acme/ui#Nav`). Either way, the
+`modulepreload` hint of a `client:load` island points at its chunk in a build and at Vite's URL of
+the module in dev. Builds also look for island call sites in the Lumiose packages, so each of
+their islands gets its chunk even when only server code renders it. Folders inside a linked
+package that are projects of their own (with a `package.json`, `tsconfig.json` or
+`vite.config.*`, such as a showcase app) are left out.
 
 > **Status:** available: island calls and records (`LUM4001`, `LUM4002`), the loader with its
 > triggers and event replay, and hydration (`LUM4006` on a mismatch), in `lumiose dev` and builds.
@@ -5849,7 +5855,8 @@ See also: [Rendering modes](rendering-modes.md), [reference: components](../refe
 4. generates JS for the **client** (cloned templates, bindings, delegated events) or the **server**
    (string concatenation with escaping), with source maps. Types are stripped.
 
-Vite's own JSX transform is disabled for Lumiose files, and `node_modules` is excluded.
+Vite's own JSX transform is disabled for Lumiose files, and `node_modules` is excluded, except the
+[Lumiose packages](../reference/vite.md#lumiose-packages) installed there.
 
 **The masking invariant.** Masked TSX parses as valid TSX with identical offsets. Tools rely on it:
 TypeScript type-checks _shadow files_ (`.lumiose/shadow/<path>.stsx.tsx`, the masked text), so
@@ -9504,899 +9511,6 @@ star-rating:not(:defined) {
 - [JSX types](../reference/jsx.md#custom-elements): declaring custom elements.
 - [Islands](../concepts/islands.md): hydration and directives.
 
-<!-- source: ui/README.md -->
-
-# UI components
-
-> `@lumiose/ui`: accessible, unstyled UI primitives built on native elements (`<dialog>`, popover, invoker commands, CSS anchor positioning), server-rendered without hydration. Style them with your own CSS or the optional default theme.
-
-**Status:** in development. `@lumiose/ui` keeps its own 0.x versions, apart from the version all
-other Lumiose packages share, and is not on npm yet: today it is used from this repository's
-workspace. The goal for its 1.0 is parity with [Base UI](https://base-ui.com)'s components; the
-table below lists them as they land.
-
-## Approach
-
-- **Native first.** A component renders the element the platform already has for the job: a
-  `<dialog>` opened by an invoker command, a popover, a `<button>`. Those work in server HTML
-  before any script loads, and keep the browser's own keyboard handling and focus management.
-- **Custom elements only where the platform falls short.** Keyboard navigation in a menu or the
-  filtering of a combobox need script: those components render a light-DOM custom element with a
-  `lu-` tag (`lu-menu`, `lu-combobox`) that upgrades the server HTML in place. A page is meant to
-  load only the definitions of the elements it renders, and no island runtime for them (in
-  development, with those components).
-- **Small scripts for native gaps.** Where a native element falls short of Base UI's behaviour, a
-  small script closes the gap, such as Dialog's right-click and touch handling. The component
-  still works without it; a page that renders the component loads it once, without the island
-  runtime.
-- **Parts.** Each component is a set of parts named as in Base UI (`Dialog.Root`,
-  `Dialog.Trigger`, `Dialog.Popup`, …). Every part that renders an element takes that element's
-  props (`class`, `style`, `aria-*`, events) and passes them through.
-- **Signals.** A component's state is a prop and a callback: `open` with `onOpenChange`, `checked`
-  with `onCheckedChange`, `value` with `onValueChange`. Pass a signal's value and write it back in
-  the callback to keep both in sync, or leave both out and the element keeps its own state. Custom
-  elements report changes with lowercase DOM events, like native ones: `openchange`,
-  `checkedchange` and `change`.
-- **Keyboard contracts.** Every component follows its WAI-ARIA Authoring Practices pattern, and
-  its end-to-end tests check the keyboard paths.
-- **WCAG 2.2 AA.** Every component meets it: the components own semantics, keyboard and
-  behaviour, and the default theme owns the visual criteria (contrast, non-text contrast, focus
-  visible, target size). Each component's end-to-end tests run axe with the WCAG A and AA rules,
-  closed and open, in light and dark, and check reflow at 320 CSS pixels and text spacing.
-
-This is the approach of [Timeless](https://timeless.build), ported to Lumiose.
-
-## Styling
-
-`@lumiose/ui` is **unstyled**: its stylesheets hold only what a component needs to work
-(display, positioning and anchoring, the top layer, the CSS variables a component sets), in the
-`lu.core` cascade layer. A look is opt-in: the default theme, or your own CSS.
-
-```ts
-import "@lumiose/ui/styles.css"; // what every component needs (or "@lumiose/ui/dialog.css", …)
-import "@lumiose/ui/themes/default.css"; // optional: the default theme
-```
-
-Both stylesheets declare the layers `lu.core, lu.theme`, in that order. CSS outside layers always
-wins over layered CSS, so your own stylesheets override the package's without specificity games.
-If your app orders its own layers, put `lu` first: `@layer lu, reset, components;`.
-
-### The default theme
-
-`@lumiose/ui/themes/default.css` is a ready look for demos, prototypes and getting started: neutral
-surfaces, a blue primary, light and dark. It styles a few classes, which you put on the parts
-through their `class` prop:
-
-| Class        | On                  | Variants                                                                |
-| ------------ | ------------------- | ----------------------------------------------------------------------- |
-| `lu-button`  | any `<button>` part | `data-variant="primary"`, `data-variant="destructive"`                  |
-| `lu-dialog`  | `Dialog.Popup`      | Styles the backdrop, the title, the description and a `<footer>` inside |
-| `lu-popover` | `Popover.Popup`     | Styles the title, the description and a `<footer>` inside               |
-| `lu-tooltip` | `Tooltip.Popup`     |                                                                         |
-| `lu-tabs`    | `Tabs.Root`         | Styles the list, the tabs (the selected one underlined) and the panels  |
-
-Its colours and radius are custom properties with shadcn/ui's names and a `--lu-` prefix, so a
-shadcn palette carries over:
-
-| Property                                          | Used for                            |
-| ------------------------------------------------- | ----------------------------------- |
-| `--lu-background`, `--lu-foreground`              | Page-level surfaces and text        |
-| `--lu-card`, `--lu-card-foreground`               | Cards                               |
-| `--lu-popover`, `--lu-popover-foreground`         | Dialogs, popovers, menus            |
-| `--lu-primary`, `--lu-primary-foreground`         | Primary actions                     |
-| `--lu-secondary`, `--lu-secondary-foreground`     | Secondary actions                   |
-| `--lu-muted`, `--lu-muted-foreground`             | Subdued surfaces and text           |
-| `--lu-accent`, `--lu-accent-foreground`           | Hover and highlighted items         |
-| `--lu-destructive`, `--lu-destructive-foreground` | Destructive actions                 |
-| `--lu-border`, `--lu-input`, `--lu-ring`          | Borders, field borders, focus rings |
-| `--lu-radius`                                     | Corner radius                       |
-
-The theme sets `color-scheme: light dark` on `:root` and every colour with `light-dark()`, so it
-follows the system. Set `color-scheme: light` (or `dark`) on `:root` or on any element to force
-one, and redefine a property outside layers to change it:
-
-```css
-:root {
-  --lu-primary: #7c3aed;
-  --lu-radius: 0.375rem;
-}
-```
-
-The theme meets WCAG 2.2 AA in light and dark: each `-foreground` colour reaches 4.5:1 on its
-surface, and `--lu-input` (the borders of fields and controls) and `--lu-ring` (the focus ring)
-reach 3:1 on the surfaces they sit on. `--lu-border` is for decoration, such as a dialog's edge:
-it is too light to outline a control. Keep those ratios when you change the colours.
-
-### Your own CSS
-
-Style the parts through:
-
-- **Class props.** Every part takes `class` (and `style`), like the element it renders. No part
-  carries a class or attribute of its own.
-- **State.** Components expose state the way the platform does, so selectors read it directly:
-  `dialog[open]`, `:modal`, `::backdrop`, `:popover-open`, `[aria-expanded]`, `[aria-checked]`,
-  `[aria-selected]`, and `data-highlighted` on the active option of a list.
-
-Each component's page has an example stylesheet to start from.
-
-## Components
-
-| Component                         | Status                                                                |
-| --------------------------------- | --------------------------------------------------------------------- |
-| [Dialog, alert dialog](dialog.md) | Available: native `<dialog>`, works without JavaScript                |
-| [Popover](popover.md)             | Available: native popover, works without JavaScript                   |
-| [Tooltip](tooltip.md)             | Available: native hint popover, opened by its script                  |
-| Menu                              | Planned                                                               |
-| Combobox, select                  | Planned                                                               |
-| [Tabs](tabs.md)                   | Available: server HTML with the full state, `<lu-tabs>` adds the keys |
-
-## Size
-
-`@lumiose/ui` is opt-in, so its size is reported apart from the runtime's caps:
-`pnpm --filter @lumiose/ui size` prints, per component, the JavaScript a server-rendered page loads
-for its custom elements, the JavaScript an island that uses it loads, and its CSS (minified, gzip
-and brotli).
-
-## Related
-
-- [Web components](../guides/web-components.md): custom elements in Lumiose pages and islands.
-- [Islands](../concepts/islands.md): where components run in the browser.
-- [JSX](../concepts/jsx.md): `class`, events and `on:`.
-
-<!-- source: ui/dialog.md -->
-
-# Dialog
-
-> A modal dialog, or an alert dialog that needs an answer: a native `<dialog>` opened and closed by invoker commands, so it works in server HTML with no JavaScript, and a 0.8 kB script closes the native element's gaps where JavaScript runs. `bind:open` (or `open` and `onOpenChange`) keeps a signal in sync in islands.
-
-```ts
-import { Dialog } from "@lumiose/ui"; // or "@lumiose/ui/dialog"
-import "@lumiose/ui/dialog.css"; // locks the page's scroll behind a modal dialog
-import "@lumiose/ui/themes/default.css"; // optional: the default theme
-```
-
-## Anatomy
-
-```tsx
-<Dialog.Root>
-  <Dialog.Trigger />
-  <Dialog.Popup>
-    <Dialog.Title />
-    <Dialog.Description />
-    <Dialog.Close />
-  </Dialog.Popup>
-</Dialog.Root>
-```
-
-| Part          | Renders                                                                                                                       |
-| ------------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| `Root`        | No element. Holds the state and the ids the other parts share.                                                                |
-| `Trigger`     | `<button type="button" command="show-modal" commandfor="…" aria-haspopup="dialog" aria-expanded="…">`                         |
-| `Popup`       | `<dialog closedby="…">`, labelled by its `Title` and described by its `Description`; `role="alertdialog"` for an alert dialog |
-| `Title`       | `<h2>`, which names the dialog.                                                                                               |
-| `Description` | `<p>`, which describes it.                                                                                                    |
-| `Close`       | `<button type="button" command="close" commandfor="…">`: its `value` becomes the dialog's `returnValue`.                      |
-
-The trigger can sit anywhere inside `Root`, and a popup may have several close buttons. `Title` and
-`Description` go inside `Popup`. A dialog may contain another `Dialog.Root`: the inner dialog
-opens on top of the outer one.
-
-## API
-
-### Dialog.Root
-
-| Prop           | Type                        | Default    |                                                                                                                                                   |
-| -------------- | --------------------------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `open`         | `boolean`                   |            | Opens or closes the dialog when it changes, in the browser. Server HTML always starts closed: a modal dialog opens only from a trigger or script. |
-| `onOpenChange` | `(open: boolean) => void`   |            | Called after the dialog opens or closes, whatever did it: the trigger, a close button, Escape, a click outside or `open`.                         |
-| `bind:open`    | `Signal<boolean>`           |            | Stands in for `open` and `onOpenChange`: the signal opens and closes the dialog, and follows it.                                                  |
-| `role`         | `"dialog" \| "alertdialog"` | `"dialog"` | `"alertdialog"` for a confirmation that needs an answer: a click outside does not close it.                                                       |
-
-Without `open`, `onOpenChange` or `bind:open` the dialog keeps its own state.
-
-### The other parts
-
-Each part takes the props of the element it renders (`class`, `style`, `aria-*`, `data-*`, event
-handlers, `ref`) and passes them through. Your props override the defaults (`type`,
-`aria-haspopup`, `aria-expanded`, `closedby`, `aria-labelledby`, `aria-describedby`); `id`,
-`command` and `commandfor` stay the parts' own, since they connect the parts.
-
-- **`Trigger`**: `aria-expanded` follows the dialog in the browser. In server HTML it stays
-  `"false"`, which is never wrong where assistive technology can reach it: while the modal dialog
-  is open, the trigger is inert.
-- **`Popup`**: `closedby` is `"any"` for a dialog (Escape or a click outside closes it) and
-  `"closerequest"` for an alert dialog (Escape only); pass `closedby="none"` to allow neither. Native
-  events work as on a `<dialog>`: `on:close` runs after any close, and
-  `event.currentTarget.returnValue` holds the value of the `Close` that closed it (it is unchanged
-  after Escape).
-- **`Title`** and **`Description`**: the popup's `aria-labelledby` and `aria-describedby` point at
-  the ones it renders, and only those; in an island they follow parts that appear or go away. A
-  dialog without a `Title` needs an `aria-label` on `Popup`.
-
-## Example
-
-A confirmation in a server-rendered page, with no island, styled by the default theme:
-
-```tsx check
-import { Dialog } from "@lumiose/ui";
-
-export function DeleteProject() {
-  return (
-    <Dialog.Root role="alertdialog">
-      <Dialog.Trigger class="lu-button">Delete project…</Dialog.Trigger>
-      <Dialog.Popup class="lu-dialog">
-        <Dialog.Title>Delete project?</Dialog.Title>
-        <Dialog.Description>This removes the project and its deployments.</Dialog.Description>
-        <footer>
-          <Dialog.Close class="lu-button" value="cancel">
-            Cancel
-          </Dialog.Close>
-          <Dialog.Close class="lu-button" data-variant="destructive" value="delete">
-            Delete
-          </Dialog.Close>
-        </footer>
-      </Dialog.Popup>
-    </Dialog.Root>
-  );
-}
-```
-
-In an island, bound to a signal: the button outside opens it, and the signal follows whatever
-closes it. `bind:open={open}` is short for `open={open()}` plus
-`onOpenChange={(next) => open.set(next)}`.
-
-```tsx check
-import { Dialog } from "@lumiose/ui";
-import { signal } from "lumiose";
-
-export function EditProfile() {
-  const open = signal(false);
-  const saved = signal("");
-  return (
-    <>
-      <button type="button" class="lu-button" onClick={() => open.set(true)}>
-        Edit profile
-      </button>
-      <Dialog.Root bind:open={open}>
-        <Dialog.Popup
-          class="lu-dialog"
-          on:close={(event) => saved.set(event.currentTarget.returnValue)}
-        >
-          <Dialog.Title>Edit profile</Dialog.Title>
-          <Dialog.Description>Your name as others see it.</Dialog.Description>
-          <footer>
-            <Dialog.Close class="lu-button" data-variant="primary" value="save">
-              Save
-            </Dialog.Close>
-          </footer>
-        </Dialog.Popup>
-      </Dialog.Root>
-      <p>{open() ? "Editing…" : `Last answer: ${saved() || "none"}`}</p>
-    </>
-  );
-}
-```
-
-## Styling
-
-**With the default theme**, put `lu-dialog` on `Popup` and `lu-button` on the buttons
-(`data-variant="primary"` or `"destructive"` for filled ones). `lu-dialog` also styles the backdrop,
-the title, the description and a `<footer>` for the buttons, and fades and zooms the dialog in and
-out. Its colours come from the theme's `--lu-` properties ([UI components](README.md#the-default-theme)).
-
-**With your own CSS**, style the parts through `class` and the dialog's native state: `dialog[open]`,
-`:modal`, `::backdrop` and `[role="alertdialog"]`. Where the client script runs, a dialog with open
-dialogs inside also gets `data-nested-dialog-open` and `--nested-dialogs` (how many are open inside
-it), as in Base UI; `dialog:has(dialog[open])` matches the same dialogs without the script. A starting point, with a fade that keeps the dialog in the top layer while it
-closes:
-
-```css
-.dialog {
-  inline-size: min(28rem, 100vw - 2rem);
-  padding: 1.25rem;
-  border: 1px solid #d4d4d8;
-  border-radius: 0.75rem;
-  box-shadow: 0 10px 30px -10px rgb(0 0 0 / 0.35);
-}
-.dialog::backdrop {
-  background: rgb(0 0 0 / 0.45);
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  .dialog,
-  .dialog::backdrop {
-    transition:
-      opacity 150ms ease-out,
-      overlay 150ms allow-discrete,
-      display 150ms allow-discrete;
-  }
-  .dialog:not([open]),
-  .dialog:not([open])::backdrop {
-    opacity: 0;
-  }
-  @starting-style {
-    .dialog[open],
-    .dialog[open]::backdrop {
-      opacity: 0;
-    }
-  }
-}
-```
-
-`@lumiose/ui/dialog.css` holds one rule, in the `lu.core` layer: the page behind any modal
-`<dialog>` does not scroll, and keeps its scrollbar's space so the layout does not shift
-(`:root:has(dialog:modal) { overflow: hidden; scrollbar-gutter: stable }`). Leave the stylesheet out,
-or override the rule, to let the page scroll.
-
-## Keyboard and focus
-
-The browser's modal dialog provides the
-[WAI-ARIA dialog pattern](https://www.w3.org/WAI/ARIA/apg/patterns/dialog-modal/):
-
-| Key            | Does                                                                                                 |
-| -------------- | ---------------------------------------------------------------------------------------------------- |
-| Enter, Space   | On the trigger: opens the dialog.                                                                    |
-| Tab, Shift+Tab | Move between the focusable elements of the dialog. The page behind is inert: focus never reaches it. |
-| Escape         | Closes the dialog on top, alert dialogs included. With nested dialogs, one Escape closes one dialog. |
-
-- **On open**, focus moves to the element with `autofocus`, or else the first focusable element
-  inside, or else the dialog. Opened by touch, the dialog focuses itself instead, so no virtual
-  keyboard opens over it (an `autofocus` element still gets focus).
-- **On close**, focus returns to the element that had it before: the trigger, or the button that
-  set the signal. If that element is gone, focus goes to another trigger of the dialog, without
-  scrolling the page.
-- **A click outside** closes a dialog, not an alert dialog, and only the dialog on top. A press
-  that starts inside and ends outside, such as selecting text, does not count, and neither does a
-  right-click or a second finger.
-- Popups opened from a dialog (a menu, a select) belong inside its `Popup`: everything outside a
-  modal dialog is inert.
-
-## Without JavaScript, and the client script
-
-The trigger, the close buttons, Escape and the click outside are HTML features: a dialog in a
-server-rendered page works before any script loads, and with none. `open`, `onOpenChange`,
-`bind:open` and a live `aria-expanded` need the component to run in the browser, in an island.
-
-Where the native element falls short of Base UI's dialog, a small script closes the gap: a page
-that renders a `Dialog` loads it once, as a 0.8 kB (brotli) module without the Lumiose runtime, and
-islands bundle it. It covers every `<dialog>` on the page:
-
-- a right-click or a second finger outside does not close the dialog;
-- `data-nested-dialog-open` and `--nested-dialogs` on a dialog with open dialogs inside;
-- a dialog opened by touch focuses itself;
-- focus returns without scrolling, to the opener or, if it is gone, another trigger (WebKit, which
-  does not focus a clicked button, would otherwise leave focus on the page);
-- the click outside where the browser lacks `closedby` (Safari), and the invoker commands where it
-  lacks them.
-
-Until the script loads (or without JavaScript) the dialog behaves as the browser's own.
-
-## Browser support
-
-- **Invoker commands** (`command`, `commandfor`) open and close the dialog: Chrome and Edge 135,
-  Firefox 144, Safari 26.2. In older browsers the client script stands in for them; without
-  JavaScript the trigger and the close buttons do nothing there.
-- **`closedby`**: Chrome 134 and Firefox 141; Safari only in Technology Preview. Elsewhere the
-  client script closes the dialog on a click outside; without JavaScript only Escape does.
-- **Exit animations** that keep the dialog in the top layer (`overlay`) are Chromium-only.
-  Elsewhere the dialog leaves the top layer as soon as it starts closing.
-
-## Related
-
-- [UI components](README.md): the approach, styling, the default theme and the other components.
-- [Islands](../concepts/islands.md): running a component in the browser, for `open` and
-  `onOpenChange`.
-- [JSX](../concepts/jsx.md): native events with `on:` and `ref`.
-
-<!-- source: ui/popover.md -->
-
-# Popover
-
-> A popup anchored to its trigger: a native `popover` opened and closed by the trigger's `popovertarget`, placed with CSS anchor positioning, so it works in server HTML with no JavaScript. A 1.3 kB script moves focus into it and back, ignores right-clicks outside, keeps `aria-expanded` current and places it in browsers without anchor positioning. `bind:open` (or `open` and `onOpenChange`) keeps a signal in sync in islands.
-
-```ts
-import { Popover } from "@lumiose/ui"; // or "@lumiose/ui/popover"
-import "@lumiose/ui/popover.css"; // places the popup next to its trigger
-import "@lumiose/ui/themes/default.css"; // optional: the default theme
-```
-
-## Anatomy
-
-```tsx
-<Popover.Root>
-  <Popover.Trigger />
-  <Popover.Popup>
-    <Popover.Title />
-    <Popover.Description />
-    <Popover.Close />
-  </Popover.Popup>
-</Popover.Root>
-```
-
-| Part          | Renders                                                                                                                        |
-| ------------- | ------------------------------------------------------------------------------------------------------------------------------ |
-| `Root`        | No element. Holds the state and the ids the other parts share.                                                                 |
-| `Trigger`     | `<button type="button" popovertarget="…" aria-haspopup="dialog">`, with an `anchor-name` in its `style`.                       |
-| `Popup`       | `<div popover="auto" role="dialog" data-side="…" data-align="…">`, labelled by its `Title` and described by its `Description`. |
-| `Title`       | `<h2>`, which names the popup.                                                                                                 |
-| `Description` | `<p>`, which describes it.                                                                                                     |
-| `Close`       | `<button type="button" popovertarget="…" popovertargetaction="hide">`.                                                         |
-
-The popup is a non-modal dialog, as in Base UI: the page around it stays usable. A popover may
-contain another `Popover.Root`: the inner popup opens on top, and closing the outer one closes
-both.
-
-## API
-
-### Popover.Root
-
-| Prop           | Type                      | Default |                                                                                                                                                 |
-| -------------- | ------------------------- | ------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
-| `open`         | `boolean`                 |         | Opens or closes the popover when it changes, in the browser. Server HTML always starts closed: a popover opens only from its trigger or script. |
-| `onOpenChange` | `(open: boolean) => void` |         | Called after the popover opens or closes, whatever did it: the trigger, a close button, Escape, a click outside, another popover or `open`.     |
-| `bind:open`    | `Signal<boolean>`         |         | Stands in for `open` and `onOpenChange`.                                                                                                        |
-
-### Popover.Popup
-
-| Prop          | Type                                                                       | Default    |                                                                                                |
-| ------------- | -------------------------------------------------------------------------- | ---------- | ---------------------------------------------------------------------------------------------- |
-| `side`        | `"top" \| "bottom" \| "left" \| "right" \| "inline-start" \| "inline-end"` | `"bottom"` | The trigger's side the popup goes on. `inline-start` and `inline-end` follow `dir`.            |
-| `align`       | `"start" \| "center" \| "end"`                                             | `"center"` | How the popup lines up with the trigger along that side.                                       |
-| `sideOffset`  | `number`                                                                   | `0`        | The gap between the trigger and the popup, in CSS pixels.                                      |
-| `alignOffset` | `number`                                                                   | `0`        | A shift along the side, in CSS pixels: away from the aligned edge, or right/down when centred. |
-
-The popup flips to the opposite side when it does not fit, and goes below (or above) the trigger
-when a `left` or `right` popup fits on neither side. It hides while its trigger is scrolled out
-of view.
-
-### The other parts
-
-Each part takes the props of the element it renders (`class`, `style`, `aria-*`, `data-*`, event
-handlers, `ref`) and passes them through. Your props override the defaults (`type`,
-`aria-haspopup`, `role`, `aria-labelledby`, `aria-describedby`); `id`, `popover` and
-`popovertarget` stay the parts' own. A `style` you pass keeps the anchor name.
-
-- **`Trigger`**: `aria-expanded` comes from the browser for `popovertarget`, and from the client
-  script once it runs.
-- **`Popup`**: native events work as on any popover: `on:toggle` and `on:beforetoggle`. A popup
-  without a `Title` needs an `aria-label`.
-
-## Example
-
-```tsx check
-import { Popover } from "@lumiose/ui";
-
-export function Notifications() {
-  return (
-    <Popover.Root>
-      <Popover.Trigger class="lu-button">Notifications</Popover.Trigger>
-      <Popover.Popup class="lu-popover" align="start">
-        <Popover.Title>Notifications</Popover.Title>
-        <Popover.Description>You are all caught up.</Popover.Description>
-        <footer>
-          <Popover.Close class="lu-button">Close</Popover.Close>
-        </footer>
-      </Popover.Popup>
-    </Popover.Root>
-  );
-}
-```
-
-In an island, bound to a signal: `bind:open={open}` is short for `open={open()}` plus
-`onOpenChange={(next) => open.set(next)}`. A popover opened by the signal still anchors to its
-trigger and treats it as its invoker.
-
-```tsx check
-import { Popover } from "@lumiose/ui";
-import { signal } from "lumiose";
-
-export function Filters() {
-  const open = signal(false);
-  return (
-    <>
-      <Popover.Root bind:open={open}>
-        <Popover.Trigger class="lu-button">Filters</Popover.Trigger>
-        <Popover.Popup class="lu-popover" side="right" sideOffset={8}>
-          <Popover.Title>Filters</Popover.Title>
-        </Popover.Popup>
-      </Popover.Root>
-      <p>{open() ? "Choosing filters…" : "All items"}</p>
-    </>
-  );
-}
-```
-
-## Styling
-
-**With the default theme**, put `lu-popover` on `Popup`: a surface with the title, the
-description and a `<footer>` styled, a 4px gap to the trigger, and a fade. Its colours come from the
-theme's `--lu-` properties ([UI components](README.md#the-default-theme)).
-
-**With your own CSS**, style the popup through `class` and its state: `:popover-open`,
-`[data-side]` and `[data-align]` (the requested placement; a flip does not change them), and the
-trigger through `[aria-expanded]`. Two custom properties set the offsets, and the props override
-them: `--lu-side-offset` and `--lu-align-offset`.
-
-```css
-.popover {
-  --lu-side-offset: 6px;
-  padding: 0.75rem;
-  border: 1px solid #d4d4d8;
-  border-radius: 0.5rem;
-  box-shadow: 0 10px 30px -10px rgb(0 0 0 / 0.35);
-}
-```
-
-`@lumiose/ui/popover.css` holds the placement, in the `lu.core` layer: for each `data-side` and
-`data-align`, the CSS anchor positioning that puts the popup next to its trigger, with flips and
-`position-visibility: anchors-visible`. Tooltip shares it.
-
-## Keyboard and focus
-
-| Key          | Does                                                                                                                             |
-| ------------ | -------------------------------------------------------------------------------------------------------------------------------- |
-| Enter, Space | On the trigger: opens or closes the popover.                                                                                     |
-| Tab          | Moves through the popup, then on to the element after the trigger. When the trigger is the last element, focus leaves the popup. |
-| Shift+Tab    | From the start of the popup, back to the trigger. The popover stays open.                                                        |
-| Escape       | Closes the popover on top. With nested popovers, or a popover in a dialog, one Escape closes one layer.                          |
-
-- **On open**, focus moves to the first focusable element in the popup, or to the popup itself
-  when it has none. Opened by touch, the popup focuses itself, so no virtual keyboard opens.
-- **On close**, focus returns to the trigger without scrolling, unless a click outside landed on
-  another control, which keeps it. Escape and the close buttons return it too.
-- **A click outside** closes the popover; a right-click or a second finger does not. A press inside a nested popover does not close its
-  parent, and opening another popover closes the first.
-- Popovers opened from a dialog belong inside its `Popup`: everything outside a modal dialog is
-  inert.
-
-## Without JavaScript, and the client script
-
-The trigger, the close buttons, Escape, the click outside and the placement are HTML and CSS
-features: a popover in a server-rendered page works before any script loads, and with none.
-`open`, `onOpenChange` and `bind:open` need the component to run in an island.
-
-A page that renders a `Popover` loads a 1.3 kB (brotli) module once, without the Lumiose runtime;
-islands bundle it. It covers every Popover on the page:
-
-- focus on open (the first focusable element, or the popup) and its return on close;
-- a right-click or a second finger outside does not close the popover (the browser's light
-  dismiss does, and cannot be cancelled: the script shows it again before it paints);
-- `aria-expanded` on the triggers;
-- the placement in browsers without CSS anchor positioning, which it keeps current on scroll and
-  resize.
-
-## Browser support
-
-- **Popover and `popovertarget`**: every current browser (Baseline 2024).
-- **CSS anchor positioning**: Chrome and Edge 125, Firefox 147, Safari 26. Elsewhere the client
-  script places the popup; without JavaScript there it opens in the middle of the viewport.
-- Safari and Firefox do not follow a trigger moved by a CSS `transform`.
-
-## Related
-
-- [UI components](README.md): the approach, styling, the default theme and the other components.
-- [Tooltip](tooltip.md): a short tip on hover or focus, with the same placement props.
-- [Dialog](dialog.md): a modal popup.
-
-<!-- source: ui/tooltip.md -->
-
-# Tooltip
-
-> A short tip next to its trigger, on hover or keyboard focus: a native `popover="hint"` with `role="tooltip"`, placed with CSS anchor positioning. The trigger is described by the tip in server HTML, so screen readers announce it without hovering; a 1.5 kB script opens and closes it as Base UI's tooltip does. `bind:open` (or `open` and `onOpenChange`) keeps a signal in sync in islands.
-
-```ts
-import { Tooltip } from "@lumiose/ui"; // or "@lumiose/ui/tooltip"
-import "@lumiose/ui/tooltip.css"; // places the tip next to its trigger
-import "@lumiose/ui/themes/default.css"; // optional: the default theme
-```
-
-## Anatomy
-
-```tsx
-<Tooltip.Root>
-  <Tooltip.Trigger />
-  <Tooltip.Popup />
-</Tooltip.Root>
-```
-
-| Part      | Renders                                                                                                     |
-| --------- | ----------------------------------------------------------------------------------------------------------- |
-| `Root`    | No element. Holds the ids the parts share.                                                                  |
-| `Trigger` | `<button type="button" aria-describedby="…">`, with an `anchor-name` in its `style`.                        |
-| `Popup`   | `<span popover="hint" role="tooltip" data-side="…" data-align="…">`: a `<span>`, so it fits in a paragraph. |
-
-**Accessibility model.** The tooltip follows the
-[WAI-ARIA tooltip pattern](https://www.w3.org/WAI/ARIA/apg/patterns/tooltip/): the tip is the
-trigger's description, always, not only while it shows. It is not its name: give an icon-only
-trigger an `aria-label` (Base UI asks the same).
-
-## API
-
-### Tooltip.Root
-
-| Prop                    | Type                      | Default |                                                                                                                                                                                                      |
-| ----------------------- | ------------------------- | ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `open`                  | `boolean`                 |         | Opens or closes the tip when it changes, in the browser.                                                                                                                                             |
-| `onOpenChange`          | `(open: boolean) => void` |         | Called after the tip opens or closes, whatever did it: hover, focus, Escape, `open`.                                                                                                                 |
-| `bind:open`             | `Signal<boolean>`         |         | Stands in for `open` and `onOpenChange`.                                                                                                                                                             |
-| `disabled`              | `boolean`                 | `false` | Hover and focus do not open the tip; `open` still does.                                                                                                                                              |
-| `disableHoverablePopup` | `boolean`                 | `false` | Closes the tip as soon as the pointer leaves the trigger, instead of letting it move onto the tip. WCAG 1.4.13 asks for hoverable content: use it only for tips that cover something the user needs. |
-
-### Tooltip.Trigger
-
-| Prop           | Type      | Default |                                                                        |
-| -------------- | --------- | ------- | ---------------------------------------------------------------------- |
-| `delay`        | `number`  | `600`   | How long the pointer rests on the trigger before the tip opens, in ms. |
-| `closeDelay`   | `number`  | `0`     | How long the tip stays after the pointer leaves, in ms.                |
-| `closeOnClick` | `boolean` | `true`  | A click (or Enter, or Space) on the trigger closes the tip.            |
-
-The trigger takes a `<button>`'s props too; an `aria-describedby` you pass is kept, after the tip.
-These props reach the client script as attributes of the trigger: `data-delay`,
-`data-close-delay`, `data-close-on-click="false"`, and `data-trigger-disabled` from `Root`'s
-`disabled`.
-
-### Tooltip.Popup
-
-The placement props of [Popover.Popup](popover.md#popoverpopup): `side` (default `"top"`),
-`align`, `sideOffset` and `alignOffset`.
-
-## Example
-
-```tsx check
-import { Tooltip } from "@lumiose/ui";
-
-export function BoldButton() {
-  return (
-    <Tooltip.Root>
-      <Tooltip.Trigger class="lu-button" aria-label="Bold">
-        B
-      </Tooltip.Trigger>
-      <Tooltip.Popup class="lu-tooltip">Bold (Ctrl+B)</Tooltip.Popup>
-    </Tooltip.Root>
-  );
-}
-```
-
-## Styling
-
-**With the default theme**, put `lu-tooltip` on `Popup`: inverted colours, a 6px gap and a fade.
-
-**With your own CSS**, style the tip through `class`, `:popover-open`, `[data-side]` and
-`[data-align]`, and the offsets through `--lu-side-offset` and `--lu-align-offset`, as for
-[Popover](popover.md#styling). `@lumiose/ui/tooltip.css` holds the placement both share.
-
-## Keyboard and focus
-
-The [WAI-ARIA tooltip pattern](https://www.w3.org/WAI/ARIA/apg/patterns/tooltip/), with Base UI's
-and Zag's opening rules:
-
-| Key          | Does                                                                             |
-| ------------ | -------------------------------------------------------------------------------- |
-| Tab          | Focusing the trigger from the keyboard opens the tip at once; leaving closes it. |
-| Escape       | Closes the tip, and only the tip: a dialog or popover around it stays open.      |
-| Enter, Space | Activate the trigger and close the tip, unless `closeOnClick={false}`.           |
-
-- **Opens** after `delay` of hover with a mouse or a pen, or at once on keyboard focus
-  (`:focus-visible`). A touch never opens it, and neither does the focus a mouse click gives.
-- **One at a time.** Within 400 ms of another tooltip closing, or while one is open, the next one
-  opens without delay, so moving along a toolbar reads each tip.
-- **A press before the delay** cancels the opening.
-- **Closes** on Escape (only the tip: a dialog or popover around it stays open), on a press, on a
-  click of the trigger (unless `closeOnClick={false}`), on blur, and when something around the
-  trigger scrolls.
-- **Hoverable** (WCAG 1.4.13): the pointer can move from the trigger onto the tip, across the gap,
-  and the tip stays; it closes `closeDelay` after the pointer leaves both.
-
-A tooltip inside a popover keeps the popover open, and one inside a dialog belongs inside its
-`Popup` (everything outside a modal dialog is inert).
-
-## Without JavaScript, and the client script
-
-Without JavaScript the tip never shows, but the trigger keeps its description: screen readers
-announce it. A page that renders a `Tooltip` loads a 1.5 kB (brotli) module once, without the
-Lumiose runtime; islands bundle it. It opens and closes every tooltip on the page, and places them
-in browsers without CSS anchor positioning.
-
-## Browser support
-
-- **`popover="hint"`**: Chrome and Edge from 133 (complete in 151), Firefox from 149 (complete in
-  153). Safari reads it as `popover="manual"`: the client script does the same work there.
-- **CSS anchor positioning**: Chrome and Edge 125, Firefox 147, Safari 26. Elsewhere the client
-  script places the tip.
-
-## Related
-
-- [UI components](README.md): the approach, styling, the default theme and the other components.
-- [Popover](popover.md): a popup with interactive content, opened by a click.
-
-<!-- source: ui/tabs.md -->
-
-# Tabs
-
-> A tab list and the panel of the selected tab, after the WAI-ARIA tabs pattern: the server HTML holds the whole state (roles, `aria-selected`, the roving tab stop, the hidden panels), and `<lu-tabs>`, a 0.8 kB light-DOM element, adds the arrow keys and the selection. Manual or automatic activation, horizontal or vertical, right-to-left aware; `bind:value` (or `value` and `onValueChange`) keeps a signal in sync.
-
-```ts
-import { Tabs } from "@lumiose/ui"; // or "@lumiose/ui/tabs"
-import "@lumiose/ui/tabs.css"; // makes <lu-tabs> a block
-import "@lumiose/ui/themes/default.css"; // optional: the default theme
-```
-
-## Anatomy
-
-```tsx
-<Tabs.Root>
-  <Tabs.List>
-    <Tabs.Tab />
-  </Tabs.List>
-  <Tabs.Panel />
-</Tabs.Root>
-```
-
-| Part    | Renders                                                                                                                   |
-| ------- | ------------------------------------------------------------------------------------------------------------------------- |
-| `Root`  | `<lu-tabs>`, the element that handles the keys and the selection.                                                         |
-| `List`  | `<div role="tablist">`, with `aria-orientation="vertical"` when vertical. Name it with `aria-label` or `aria-labelledby`. |
-| `Tab`   | `<button type="button" role="tab" value="…" aria-selected="…" aria-controls="…" tabindex="…">`.                           |
-| `Panel` | `<div role="tabpanel" tabindex="0" aria-labelledby="…">`, `hidden` unless its tab is selected.                            |
-
-A `Tab` and a `Panel` with the same `value` belong together. Every panel stays in the page, hidden
-when its tab is not selected, so the browser can switch them before any script loads.
-
-## API
-
-### Tabs.Root
-
-| Prop            | Type                         | Default               |                                                  |
-| --------------- | ---------------------------- | --------------------- | ------------------------------------------------ |
-| `value`         | `string`                     |                       | Selects the tab with this value when it changes. |
-| `defaultValue`  | `string`                     | the first enabled tab | The tab selected at first, without `value`.      |
-| `onValueChange` | `(value: string) => void`    |                       | Called after the user selects another tab.       |
-| `bind:value`    | `Signal<string>`             |                       | Stands in for `value` and `onValueChange`.       |
-| `orientation`   | `"horizontal" \| "vertical"` | `"horizontal"`        | Which arrow keys move between the tabs.          |
-
-`Root` also takes the props of an element (`class`, `style`, `data-*`, events) and passes them to
-`<lu-tabs>`.
-
-### Tabs.List
-
-| Prop              | Type      | Default |                                                                                            |
-| ----------------- | --------- | ------- | ------------------------------------------------------------------------------------------ |
-| `activateOnFocus` | `boolean` | `false` | Selects a tab as soon as it receives focus (automatic activation), as Zag does by default. |
-| `loopFocus`       | `boolean` | `true`  | The arrow keys go from the last tab to the first and back.                                 |
-
-The element reads them from the list's attributes: `data-activate-on-focus` and
-`data-loop-focus="false"`.
-
-### Tabs.Tab and Tabs.Panel
-
-| Prop       | On    | Type      |                                                               |
-| ---------- | ----- | --------- | ------------------------------------------------------------- |
-| `value`    | both  | `string`  | Pairs a tab with its panel. Required.                         |
-| `disabled` | `Tab` | `boolean` | The tab takes focus but cannot be selected (`aria-disabled`). |
-
-Each takes the props of the element it renders. `role`, `id`, `value`, `aria-selected`,
-`aria-controls`, `aria-labelledby`, `tabindex` on tabs and `hidden` stay the parts' own.
-
-- **Disabled tabs.** A selected tab that becomes disabled gives its selection to the first enabled
-  tab. With every tab disabled, none is selected and the first tab is the tab stop.
-- **The element.** `<lu-tabs>`' `value` property reads and sets the selection, and it fires
-  `valuechange` (not bubbling) when the user changes it, so `bind:value` works on the element too.
-
-## Example
-
-```tsx check
-import { Tabs } from "@lumiose/ui";
-
-export function AccountSettings() {
-  return (
-    <Tabs.Root class="lu-tabs" defaultValue="account">
-      <Tabs.List aria-label="Account settings">
-        <Tabs.Tab value="account">Account</Tabs.Tab>
-        <Tabs.Tab value="password">Password</Tabs.Tab>
-        <Tabs.Tab value="billing" disabled>
-          Billing
-        </Tabs.Tab>
-      </Tabs.List>
-      <Tabs.Panel value="account">Your name and email.</Tabs.Panel>
-      <Tabs.Panel value="password">Change your password.</Tabs.Panel>
-      <Tabs.Panel value="billing">Invoices and payment methods.</Tabs.Panel>
-    </Tabs.Root>
-  );
-}
-```
-
-In an island, bound to a signal: `bind:value={tab}` is short for `value={tab()}` plus
-`onValueChange={(next) => tab.set(next)}`.
-
-```tsx check
-import { Tabs } from "@lumiose/ui";
-import { signal } from "lumiose";
-
-export function Project() {
-  const tab = signal("overview");
-  return (
-    <>
-      <Tabs.Root class="lu-tabs" bind:value={tab}>
-        <Tabs.List aria-label="Project" activateOnFocus>
-          <Tabs.Tab value="overview">Overview</Tabs.Tab>
-          <Tabs.Tab value="settings">Settings</Tabs.Tab>
-        </Tabs.List>
-        <Tabs.Panel value="overview">The project at a glance.</Tabs.Panel>
-        <Tabs.Panel value="settings">Name and members.</Tabs.Panel>
-      </Tabs.Root>
-      <button type="button" onClick={() => tab.set("settings")}>
-        Open the settings
-      </button>
-    </>
-  );
-}
-```
-
-## Styling
-
-**With the default theme**, put `lu-tabs` on `Root`: tabs in a row (or a column when vertical)
-over a rule, the selected one underlined (beside it when vertical) in the foreground colour,
-disabled ones faded, and focus rings on tabs and panels. The list wraps on narrow screens.
-
-**With your own CSS**, style the parts through `class` and their state: `[role="tab"]`,
-`[aria-selected="true"]`, `[aria-disabled="true"]`, `[role="tablist"][aria-orientation="vertical"]`
-and `[role="tabpanel"]`. Mark the selected tab with more than a colour (WCAG 1.4.1), such as a bar
-or a weight, at 3:1 against its background (WCAG 1.4.11).
-
-```css
-.tabs [role="tab"] {
-  padding: 0.5rem 1rem;
-  border: 0;
-  background: none;
-  color: #52525b;
-}
-.tabs [role="tab"][aria-selected="true"] {
-  color: #09090b;
-  box-shadow: inset 0 -2px currentColor;
-}
-```
-
-`@lumiose/ui/tabs.css` holds one rule, in the `lu.core` layer: `lu-tabs { display: block }`.
-
-## Keyboard and focus
-
-The [WAI-ARIA tabs pattern](https://www.w3.org/WAI/ARIA/apg/patterns/tabs/):
-
-| Key                   | Does                                                                                               |
-| --------------------- | -------------------------------------------------------------------------------------------------- |
-| Tab                   | Into the list, onto the selected tab; out of it, onto the panel.                                   |
-| ArrowRight, ArrowLeft | The next or previous tab (horizontal). Swapped in right-to-left. Loops unless `loopFocus={false}`. |
-| ArrowDown, ArrowUp    | The next or previous tab (vertical).                                                               |
-| Home, End             | The first or last tab.                                                                             |
-| Enter, Space          | Selects the focused tab (manual activation).                                                       |
-
-- **Manual activation** (the default, as in Base UI): the arrows move focus and Enter, Space or a
-  click selects. With `activateOnFocus`, moving focus selects too. Either way only the panels
-  change: nothing navigates or submits.
-- **Only the main button** selects: a right-click does not. Disabled tabs take focus but are
-  never selected.
-- The arrow keys do nothing while an input method is composing, or with Alt, Ctrl or Meta held.
-
-## Without JavaScript, and the element's script
-
-The server HTML is complete: the selected tab, its panel and the tab stop are right before any
-script loads, and the panels of the other tabs are `hidden`. Selecting another tab needs
-`<lu-tabs>`' script, a 0.8 kB (brotli) module that a page rendering `Tabs` loads once, without
-the Lumiose runtime; islands bundle it. `value`, `onValueChange` and `bind:value` need the
-component to run in an island.
-
-## Browser support
-
-- **Custom elements** (`<lu-tabs>`) and everything the element uses: every current browser.
-- The default theme's vertical tabs follow the direction with `:dir()`: Chrome and Edge 120,
-  Firefox 49, Safari 16.4.
-
-## Related
-
-- [UI components](README.md): the approach, styling, the default theme and the other components.
-- [Web components](../guides/web-components.md): custom elements, their properties and
-  `bind:` on them.
-
 <!-- source: deploy/README.md -->
 
 # Deploy
@@ -13393,7 +12507,7 @@ function lumiose(options?: LumioseOptions): Plugin[];
 interface LumioseOptions {
   /** Modules compiled by Lumiose. Default: .stsx and .tsx files. */
   include?: RegExp;
-  /** Modules left to Vite. Default: anything in node_modules. */
+  /** Modules left to Vite. Default: node_modules, except the Lumiose packages installed there. */
   exclude?: RegExp;
   /** The project's default route mode; a layout's or route's `export const mode` overrides it. */
   mode?: "static" | "server" | "spa"; // default "static"
@@ -13600,6 +12714,40 @@ What it does:
 
 > **Status:** compilation, environments, diagnostics, HMR, style-block CSS, `.svg`, `.md` and `.html` imports and the
 > project options above are available. The designed option `css` is not.
+
+## Lumiose packages
+
+A **Lumiose package** is a dependency that lists `lumiose` in its `dependencies` or
+`peerDependencies` (any dependency field), found from the app's `package.json` and, transitively,
+from the Lumiose packages themselves. `@lumiose/ui` and any component library built for Lumiose
+are; Lumiose's own tooling (`@lumiose/cli`, `@lumiose/vite`, the adapters, the editor plugins) is
+not. The plugin treats their modules like the app's own, whether the package is linked
+(`"@acme/ui": "workspace:*"`) or installed in `node_modules` from npm or a tarball:
+
+- **Compiled with the app's options.** Their `.tsx` and `.stsx` modules go through the Lumiose
+  compiler for the server or the browser, with the app's targets, CSP mode and dev tools, in
+  `lumiose dev` and builds alike. The default `exclude` leaves every other package in
+  `node_modules` to Vite; an explicit `exclude` replaces that rule, so `exclude: /node_modules/`
+  compiles no installed package.
+- **Scanned with the project.** Builds find their island call sites, stylesheets and
+  [client scripts](../concepts/islands.md#concept) (`?client`) before the server graph
+  exists, so their islands get chunks and their pages load their scripts. An installed package is
+  scanned whole, `dist/` included, but not the packages in its own `node_modules`; a linked one
+  without its build output (`dist/`, `build/`) and nested projects (a folder with a
+  `package.json`, `tsconfig.json` or `vite.config.*`).
+- **One `lumiose`.** They are bundled with the server code (`resolve.noExternal`) and kept out of
+  Vite's dependency pre-bundling (`optimizeDeps.exclude`), so their modules and the app's share one
+  runtime instance, and Vite never compiles their JSX for React. A CommonJS dependency of a Lumiose
+  package then needs `optimizeDeps: { include: ["@acme/ui > some-cjs-dep"] }`.
+- **Stable names.** Island refs and scope tokens name their modules package-relatively
+  (`@acme/ui/dist/Nav.tsx#Nav`), wherever the package manager put them (`node_modules/.pnpm/…`
+  included).
+
+**Publishing a component library.** Ship the sources (`.tsx`, `.stsx`, `.ts`, `.css`) and point
+`exports` at them, with `lumiose` as a peer dependency: no build step, and the app's compiler
+compiles them for its own server and browser targets. List client scripts and stylesheets in
+`sideEffects` (`["**/*.css", "**/*.script.ts"]`), so bundlers keep their side-effect imports.
+`@lumiose/ui` is published this way (`dist/` holds a copy of `src/` without tests).
 
 ## createDevHandler()
 
@@ -14152,9 +13300,13 @@ lumiose docs --format json    # { topics: [{ topic, title, summary }] }
 lumiose docs signals --format json   # { topic, title, summary, related, content }
 lumiose docs Link --format json      # { topic, heading, content }
 lumiose docs "await island" --format json   # { query, results: [{ topic, title, score, snippet }] }
+lumiose docs ui               # with @lumiose/ui installed: its index (ui/README)
+lumiose docs dialog           # ...and a component's page (ui/dialog)
 ```
 
-Prints the version-matched docs from `node_modules/lumiose/docs`. A bare name prefers concepts over
+Prints the version-matched docs from `node_modules/lumiose/docs`. When the project has
+`@lumiose/ui` installed, its docs, which ship in its package and match its own version
+(`node_modules/@lumiose/ui/docs`), join them as `ui/` topics. A bare name prefers concepts over
 reference pages and lists the other matches. An exported name (case-sensitive, such as `signal`,
 `Link` or `fail`) prints the section of the reference page that documents it. A search requires
 every term to occur in a page.
@@ -14184,7 +13336,11 @@ Makes an existing project agent-ready, as `create-lumiose` does for new ones: a 
 that references `@AGENTS.md`, the `lumiose` skill (`.claude/skills/lumiose/SKILL.md`) and the
 `*.stsx linguist-language=TSX` line in `.gitattributes`, and a `tsconfig.json` that extends
 `.lumiose/tsconfig.generated.json` when the project has none (an existing one is left alone).
-Re-running it updates only those parts. `--mcp` also registers `lumiose mcp` for Claude Code and
+When `package.json` depends on `@lumiose/ui`, the Lumiose section gets a UI part (its docs, the
+`ui_components` tool, composing parts, `bind:`, styling and the accessibility rules) and the
+`lumiose-ui` skill (`.claude/skills/lumiose-ui/SKILL.md`) is written too; once the dependency is
+gone, the next run drops the UI part. Re-running it updates only those parts. `--mcp` also
+registers `lumiose mcp` for Claude Code and
 Codex, run with the package manager of the lockfile (see [MCP](mcp.md#register-it)); the JSON
 report then has `mcp: { command, args, note }`.
 
@@ -14196,8 +13352,8 @@ claude mcp add lumiose -- npx lumiose mcp   # register it with Claude Code
 ```
 
 Starts the MCP server on stdio for coding agents: the tools `docs_search`, `docs_get`, `check`,
-`routes`, `components`, `compile`, `render` and `dev_logs`, and the docs and the route manifest as
-resources. It runs until the client disconnects. See [MCP server](mcp.md).
+`routes`, `components`, `compile`, `render`, `dev_logs` and `ui_components` (the `@lumiose/ui`
+components, when installed), and the docs and the route manifest as resources. It runs until the client disconnects. See [MCP server](mcp.md).
 
 <!-- source: reference/mcp.md -->
 
@@ -14257,16 +13413,17 @@ exist. stdout carries the protocol; console output of app code goes to stderr an
 
 ## Tools
 
-| Tool          | Input                                                 | Returns                                                                                                                                                                                                                                                                      |
-| ------------- | ----------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `docs_search` | `query`, `limit?` (10)                                | `{ query, results: [{ topic, title, summary, score, snippet }] }`, best first; every term must occur in a page.                                                                                                                                                              |
-| `docs_get`    | `topic`                                               | The page as Markdown. A topic is a path (`concepts/signals`), a bare name (`signals`), a code (`LUM2001`) or `""` for the index. An exported name (`fetchJSON`) returns its reference section.                                                                               |
-| `check`       | `files?`, `project?`                                  | `lumiose check` as `{ ok, summary, diagnostics, notes? }`. With `files`, only their diagnostics, and `projectSummary` for the whole project.                                                                                                                                 |
-| `routes`      | none                                                  | `lumiose routes --format json`: `{ routesDir, defaultMode, i18n?, routes: [{ pattern, file, kind, mode, ssr?, prerender?, layouts, middleware, params, locales?, localesFrom? }], diagnostics, summary }`.                                                                   |
-| `components`  | `file?`                                               | `{ files: [{ file, components, islands, fileScope, hasStyles, errors }] }` for one file, or for every `.stsx`/`.tsx` file under `src/`.                                                                                                                                      |
-| `compile`     | `file?` or `source`, `target?` (`both`)               | `{ file, client: { code, css, cssDeps }, server: { code }, diagnostics }`: what the Vite plugin compiles, without source maps.                                                                                                                                               |
-| `render`      | `path`, `method?`, `headers?`, `maxLength?`, `strip?` | `{ url, status, headers, body, truncated }` from an in-process dev server. Redirects are returned, not followed. `strip: true` returns only the visible markup of an HTML page (no scripts, styles, link/meta tags, templates, hydration comments or `data-l-*` attributes). |
-| `dev_logs`    | `since?`, `level?`, `limit?` (100)                    | `{ available, entries: [{ id, time, level, source, message }] }`: the logs of the dev server that `render` started.                                                                                                                                                          |
+| Tool            | Input                                                 | Returns                                                                                                                                                                                                                                                                      |
+| --------------- | ----------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `docs_search`   | `query`, `limit?` (10)                                | `{ query, results: [{ topic, title, summary, score, snippet }] }`, best first; every term must occur in a page.                                                                                                                                                              |
+| `docs_get`      | `topic`                                               | The page as Markdown. A topic is a path (`concepts/signals`), a bare name (`signals`), a code (`LUM2001`) or `""` for the index. An exported name (`fetchJSON`) returns its reference section.                                                                               |
+| `ui_components` | `name?`                                               | With `@lumiose/ui` installed, `{ available: true, docs, components: [{ name, topic, summary, imports, parts, props, events, styling }], theme: { layers, properties } }`, or `{ component, theme }` for one `name`; `{ available: false, help }` without it.                 |
+| `check`         | `files?`, `project?`                                  | `lumiose check` as `{ ok, summary, diagnostics, notes? }`. With `files`, only their diagnostics, and `projectSummary` for the whole project.                                                                                                                                 |
+| `routes`        | none                                                  | `lumiose routes --format json`: `{ routesDir, defaultMode, i18n?, routes: [{ pattern, file, kind, mode, ssr?, prerender?, layouts, middleware, params, locales?, localesFrom? }], diagnostics, summary }`.                                                                   |
+| `components`    | `file?`                                               | `{ files: [{ file, components, islands, fileScope, hasStyles, errors }] }` for one file, or for every `.stsx`/`.tsx` file under `src/`.                                                                                                                                      |
+| `compile`       | `file?` or `source`, `target?` (`both`)               | `{ file, client: { code, css, cssDeps }, server: { code }, diagnostics }`: what the Vite plugin compiles, without source maps.                                                                                                                                               |
+| `render`        | `path`, `method?`, `headers?`, `maxLength?`, `strip?` | `{ url, status, headers, body, truncated }` from an in-process dev server. Redirects are returned, not followed. `strip: true` returns only the visible markup of an HTML page (no scripts, styles, link/meta tags, templates, hydration comments or `data-l-*` attributes). |
+| `dev_logs`      | `since?`, `level?`, `limit?` (100)                    | `{ available, entries: [{ id, time, level, source, message }] }`: the logs of the dev server that `render` started.                                                                                                                                                          |
 
 - **Diagnostics** (`check`, `compile`, `components`) have the shape of `lumiose check --format json`:
   `source`, `code`, `severity`, `file`, 1-based `line`/`column`/`endLine`/`endColumn`, `message`,
@@ -14284,6 +13441,15 @@ exist. stdout carries the protocol; console output of app code goes to stderr an
   running: later calls see file changes like `lumiose dev` does. Pages return their HTML; endpoints
   their response body. Render errors return the dev error page, and their details are in
   `dev_logs`.
+- **`@lumiose/ui`**: when the project has it installed, its docs (which ship in its package and
+  match its own version) join the docs tools as `ui/` topics: `docs_get("ui")` is its index and
+  `docs_get("ui/dialog")`, or `docs_get("dialog")`, a component's page. `ui_components` reads every
+  component page, which share one template: `parts` (`{ name, renders }` from the Anatomy table),
+  `props` (`{ part, name, type, default, description }` from the API tables), `events` (the callback
+  props, such as `onOpenChange`, and the native `on:` events the API names, such as `on:close`) and
+  `styling` (the classes, data attributes, state selectors and custom properties the Styling section
+  names, such as `lu-dialog`, `dialog[open]` and `--nested-dialogs`). `theme` lists the cascade
+  layers (`lu.core`, `lu.theme`) and the default theme's `--lu-` custom properties.
 - **`dev_logs`** returns `available: false` with an explanation until `render` started the dev
   server: the logs of a `lumiose dev` started in a terminal are not visible to the MCP server. Pass
   the last `id` you saw as `since` to read only newer entries; `level` is the minimum (`info`,
@@ -14292,10 +13458,10 @@ exist. stdout carries the protocol; console output of app code goes to stderr an
 
 ## Resources
 
-| URI                      | Content                                                             |
-| ------------------------ | ------------------------------------------------------------------- |
-| `lumiose://docs/<topic>` | Each docs page as Markdown, e.g. `lumiose://docs/concepts/signals`. |
-| `lumiose://routes`       | The route manifest, as the `routes` tool returns it (JSON).         |
+| URI                      | Content                                                                                                                |
+| ------------------------ | ---------------------------------------------------------------------------------------------------------------------- |
+| `lumiose://docs/<topic>` | Each docs page as Markdown, e.g. `lumiose://docs/concepts/signals`, and `lumiose://docs/ui/dialog` with `@lumiose/ui`. |
+| `lumiose://routes`       | The route manifest, as the `routes` tool returns it (JSON).                                                            |
 
 ## Boundaries
 
@@ -14309,7 +13475,8 @@ exist. stdout carries the protocol; console output of app code goes to stderr an
 
 ## Workflow for agents
 
-1. Look the feature up: `docs_search`, then `docs_get` (the docs match the installed version).
+1. Look the feature up: `docs_search`, then `docs_get` (the docs match the installed version). For
+   UI, `ui_components` lists the `@lumiose/ui` components to use instead of hand-written widgets.
 2. Make the change.
 3. `check` and fix every error; `docs_get` with a diagnostic's `docs` topic explains it.
 4. `render` the affected routes to see the HTML; `dev_logs` with `level: "warn"` shows problems.

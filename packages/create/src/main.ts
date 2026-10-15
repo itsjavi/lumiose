@@ -13,6 +13,7 @@ import {
   scaffold,
   ScaffoldError,
   TEMPLATES,
+  UI_PACKAGE,
   type TemplateName,
 } from "./scaffold.ts";
 
@@ -26,7 +27,15 @@ export interface CreateIO {
   userAgent?: string;
 }
 
-const USAGE = `Usage: create-lumiose [dir] [options]
+export interface CreateOptions {
+  /**
+   * Offer @lumiose/ui (the `--ui` flag and its question). Default: once the package is on npm
+   * (TASK-389); tests turn it on against the workspace package.
+   */
+  offerUi?: boolean;
+}
+
+const usage = (offerUi: boolean) => `Usage: create-lumiose [dir] [options]
 
 Create a Lumiose app in <dir> (asked for when missing in a terminal; default: lumiose-app).
 
@@ -37,7 +46,13 @@ Options:
   --force                Write into a non-empty directory (same-name files are overwritten)
   --mcp                  Register the Lumiose MCP server for Claude Code (.mcp.json) and Codex
                          (.codex/config.toml), run with your package manager
-  --format <format>      human (default) or json: { command: "create", ok, ... } on stdout
+${
+  offerUi
+    ? `  --ui                   Add @lumiose/ui: accessible, unstyled components with the default theme,
+                         and their agent docs and skill
+`
+    : ""
+}  --format <format>      human (default) or json: { command: "create", ok, ... } on stdout
   -h, --help             Show this help
   -v, --version          Show the version
 
@@ -52,7 +67,12 @@ Examples:
   pnpm create lumiose my-app --mcp
 `;
 
-export async function main(argv: string[], io: CreateIO = processIO()): Promise<number> {
+export async function main(
+  argv: string[],
+  io: CreateIO = processIO(),
+  options: CreateOptions = {},
+): Promise<number> {
+  const offerUi = options.offerUi ?? UI_PACKAGE?.published === true;
   const json = argv.some(
     (arg, index) => arg === "--format=json" || (arg === "--format" && argv[index + 1] === "json"),
   );
@@ -74,6 +94,7 @@ export async function main(argv: string[], io: CreateIO = processIO()): Promise<
         yes: { type: "boolean", short: "y" },
         force: { type: "boolean" },
         mcp: { type: "boolean" },
+        ui: { type: "boolean" },
         format: { type: "string" },
         help: { type: "boolean", short: "h" },
         version: { type: "boolean", short: "v" },
@@ -87,7 +108,7 @@ export async function main(argv: string[], io: CreateIO = processIO()): Promise<
     return usageError(`--format must be "human" or "json", not "${values.format}".`);
   }
   if (values.help) {
-    io.write(USAGE);
+    io.write(usage(offerUi));
     return 0;
   }
   if (values.version) {
@@ -95,6 +116,9 @@ export async function main(argv: string[], io: CreateIO = processIO()): Promise<
     return 0;
   }
   if (positionals.length > 1) return usageError(`Unexpected argument "${positionals[1]}".`);
+  if (values.ui && !offerUi) {
+    return usageError("--ui comes with the first release of @lumiose/ui, which is not on npm yet.");
+  }
   if (values.template !== undefined && !isTemplate(values.template)) {
     return usageError(
       `Unknown template "${values.template}". Pick one of: ${TEMPLATES.map((t) => t.name).join(", ")}.`,
@@ -108,6 +132,13 @@ export async function main(argv: string[], io: CreateIO = processIO()): Promise<
   let template = values.template as TemplateName | undefined;
   if (template === undefined && ask) template = await askTemplate(ask);
   template ??= DEFAULT_TEMPLATE;
+  let ui = values.ui ?? false;
+  if (values.ui === undefined && offerUi && ask) {
+    const answer = await ask(
+      "Add @lumiose/ui, accessible UI components with a default theme? (y/N): ",
+    );
+    ui = /^y(?:es)?$/i.test(answer.trim());
+  }
 
   const pm = packageManager(io.userAgent);
   let result;
@@ -118,6 +149,7 @@ export async function main(argv: string[], io: CreateIO = processIO()): Promise<
       ...(values.name === undefined ? {} : { name: values.name }),
       force: values.force ?? false,
       ...(values.mcp ? { mcp: pm } : {}),
+      ...(ui ? { ui } : {}),
     });
   } catch (error) {
     if (!(error instanceof ScaffoldError)) throw error;
@@ -141,6 +173,7 @@ export async function main(argv: string[], io: CreateIO = processIO()): Promise<
         template: result.template.name,
         mode: result.template.mode,
         files: result.files,
+        ui,
         next,
         ...(values.mcp ? { mcp: { ...mcpCommand(pm), note: mcpNote(pm) } } : {}),
       }),
@@ -149,6 +182,9 @@ export async function main(argv: string[], io: CreateIO = processIO()): Promise<
     io.write(
       `\nCreated ${result.name} in ${result.dir} (template: ${result.template.name}, mode: ${result.template.mode}).\n` +
         `Agent-ready: AGENTS.md, CLAUDE.md and the lumiose skill (.claude/skills/lumiose).\n` +
+        (ui
+          ? "UI: @lumiose/ui with its default theme, and the lumiose-ui skill (.claude/skills/lumiose-ui).\n"
+          : "") +
         (values.mcp
           ? `MCP: .mcp.json (Claude Code) and .codex/config.toml (Codex) run the Lumiose MCP server.\n${mcpNote(pm)}\n`
           : "") +

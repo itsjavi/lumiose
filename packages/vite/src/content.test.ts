@@ -260,7 +260,7 @@ describe.skipIf(!binding)(".md and .html imports", () => {
     const modules = scanProject(
       root,
       /\.(?:stsx|tsx)$/,
-      /node_modules/,
+      (file) => /node_modules/.test(file),
       new Packages(root, /node_modules/),
       content,
     );

@@ -237,6 +237,6 @@ Until the script loads (or without JavaScript) the dialog behaves as the browser
 ## Related
 
 - [UI components](README.md): the approach, styling, the default theme and the other components.
-- [Islands](../concepts/islands.md): running a component in the browser, for `open` and
+- [Islands](https://itsjavi.com/lumiose/docs/concepts/islands/): running a component in the browser, for `open` and
   `onOpenChange`.
-- [JSX](../concepts/jsx.md): native events with `on:` and `ref`.
+- [JSX](https://itsjavi.com/lumiose/docs/concepts/jsx/): native events with `on:` and `ref`.

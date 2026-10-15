@@ -56,11 +56,7 @@ These docs match lumiose 0.4.0. Installed projects have them in `node_modules/lu
 
 ## UI
 
-- [UI components](ui/README.md): `@lumiose/ui`, accessible and unstyled primitives on native elements, server-rendered without hydration: the approach, styling with your own CSS or the optional default theme (`--lu-` custom properties, light and dark), and the components available and planned.
-- [Dialog](ui/dialog.md): `Dialog.Root`, `Trigger`, `Popup`, `Title`, `Description` and `Close`, and the alert dialog (`role="alertdialog"`): a native `<dialog>` with invoker commands, working without JavaScript, plus a 0.8 kB script for the native gaps; `bind:open` with signals; styling, keyboard and focus.
-- [Popover](ui/popover.md): `Popover.Root`, `Trigger`, `Popup`, `Title`, `Description` and `Close`: a native `popover` opened by `popovertarget` and placed with CSS anchor positioning (`side`, `align`, `sideOffset`, `alignOffset`), working without JavaScript, plus a 1.3 kB script for focus, right-clicks and older browsers; `bind:open`; styling, keyboard and focus.
-- [Tooltip](ui/tooltip.md): `Tooltip.Root`, `Trigger` and `Popup`: a native `popover="hint"` with `role="tooltip"` that describes its trigger in server HTML, opened on hover and keyboard focus by a 1.5 kB script (delays, one at a time, hoverable, Escape); `bind:open`; the placement props of Popover.
-- [Tabs](ui/tabs.md): `Tabs.Root`, `List`, `Tab` and `Panel`: the APG tabs pattern with the whole state in server HTML and `<lu-tabs>`, a 0.8 kB light-DOM element, for the keys and the selection; manual or automatic activation (`activateOnFocus`), `loopFocus`, vertical orientation, right-to-left; disabled tabs; `bind:value`.
+- [UI components](https://itsjavi.com/lumiose/ui/llms.txt): `@lumiose/ui`, accessible and unstyled primitives on native elements, server-rendered without hydration, with the optional default theme. Its docs ship in its own package and match its own version: `node_modules/@lumiose/ui/docs/llms.txt` indexes them, and in a project that depends on it `lumiose docs ui` and `lumiose docs dialog` print them and the MCP server's `ui_components` tool lists the components.
 
 ## Deploy
 

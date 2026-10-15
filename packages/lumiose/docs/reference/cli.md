@@ -261,9 +261,13 @@ lumiose docs --format json    # { topics: [{ topic, title, summary }] }
 lumiose docs signals --format json   # { topic, title, summary, related, content }
 lumiose docs Link --format json      # { topic, heading, content }
 lumiose docs "await island" --format json   # { query, results: [{ topic, title, score, snippet }] }
+lumiose docs ui               # with @lumiose/ui installed: its index (ui/README)
+lumiose docs dialog           # ...and a component's page (ui/dialog)
 ```
 
-Prints the version-matched docs from `node_modules/lumiose/docs`. A bare name prefers concepts over
+Prints the version-matched docs from `node_modules/lumiose/docs`. When the project has
+`@lumiose/ui` installed, its docs, which ship in its package and match its own version
+(`node_modules/@lumiose/ui/docs`), join them as `ui/` topics. A bare name prefers concepts over
 reference pages and lists the other matches. An exported name (case-sensitive, such as `signal`,
 `Link` or `fail`) prints the section of the reference page that documents it. A search requires
 every term to occur in a page.
@@ -293,7 +297,11 @@ Makes an existing project agent-ready, as `create-lumiose` does for new ones: a 
 that references `@AGENTS.md`, the `lumiose` skill (`.claude/skills/lumiose/SKILL.md`) and the
 `*.stsx linguist-language=TSX` line in `.gitattributes`, and a `tsconfig.json` that extends
 `.lumiose/tsconfig.generated.json` when the project has none (an existing one is left alone).
-Re-running it updates only those parts. `--mcp` also registers `lumiose mcp` for Claude Code and
+When `package.json` depends on `@lumiose/ui`, the Lumiose section gets a UI part (its docs, the
+`ui_components` tool, composing parts, `bind:`, styling and the accessibility rules) and the
+`lumiose-ui` skill (`.claude/skills/lumiose-ui/SKILL.md`) is written too; once the dependency is
+gone, the next run drops the UI part. Re-running it updates only those parts. `--mcp` also
+registers `lumiose mcp` for Claude Code and
 Codex, run with the package manager of the lockfile (see [MCP](mcp.md#register-it)); the JSON
 report then has `mcp: { command, args, note }`.
 
@@ -305,5 +313,5 @@ claude mcp add lumiose -- npx lumiose mcp   # register it with Claude Code
 ```
 
 Starts the MCP server on stdio for coding agents: the tools `docs_search`, `docs_get`, `check`,
-`routes`, `components`, `compile`, `render` and `dev_logs`, and the docs and the route manifest as
-resources. It runs until the client disconnects. See [MCP server](mcp.md).
+`routes`, `components`, `compile`, `render`, `dev_logs` and `ui_components` (the `@lumiose/ui`
+components, when installed), and the docs and the route manifest as resources. It runs until the client disconnects. See [MCP server](mcp.md).

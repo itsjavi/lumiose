@@ -1,5 +1,6 @@
 // Docs examples are type-checked (TASK-32): every ```tsx / ```stsx / ```ts block whose info
-// string contains `check` is written into one temp project and checked with the `lumiose check`
+// string contains `check`, in lumiose's docs and @lumiose/ui's (`ui/…` topics, decision-64), is
+// written into one temp project and checked with the `lumiose check`
 // machinery (typegen, shadow TSX, TypeScript 7). Blocks without `check` (common mistakes,
 // fragments, planned APIs) are not checked.
 //
@@ -14,7 +15,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { afterAll, describe, expect, it } from "vitest";
 import { check, tsconfigTemplate } from "../check/index.ts";
-import { loadDocs } from "./index.ts";
+import { loadProjectDocs } from "./index.ts";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const require = createRequire(import.meta.url);
@@ -87,7 +88,9 @@ function asModule(code: string): string {
   return /^(?:import|export)\s/m.test(code) ? code : `${code}\nexport {};\n`;
 }
 
-const examples = loadDocs().flatMap((doc) => extractExamples(doc.topic, doc.content));
+const examples = loadProjectDocs({ uiDir: join(here, "../../../ui/docs") }).flatMap((doc) =>
+  extractExamples(doc.topic, doc.content),
+);
 
 const roots: string[] = [];
 afterAll(async () => {

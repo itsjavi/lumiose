@@ -181,5 +181,5 @@ component to run in an island.
 ## Related
 
 - [UI components](README.md): the approach, styling, the default theme and the other components.
-- [Web components](../guides/web-components.md): custom elements, their properties and
+- [Web components](https://itsjavi.com/lumiose/docs/guides/web-components/): custom elements, their properties and
   `bind:` on them.
