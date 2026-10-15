@@ -77,6 +77,7 @@ import {
   type RouterNavigation,
 } from "./hooks.ts";
 import type { followLocaleLinks } from "./locale-links.ts";
+import { searchString, setRouterSearch, type SearchParamsInit } from "./search.ts";
 import { REROUTE_ATTR, type ClientRoute, type ClientTable } from "./table.ts";
 import { labelValue } from "../../dom/devtools.ts";
 
@@ -407,6 +408,8 @@ function spaRoot(r: Router, view: View): Renderable {
   provideContext(REVISION, r.revision);
   setRouterLocation(() => locationOf(untrack(r.current)));
   onCleanup(() => setRouterLocation(undefined));
+  setRouterSearch({ read: currentSearchParams, set: setSearchParams });
+  onCleanup(() => setRouterSearch(undefined));
   onError((error) => {
     // A hydration mismatch goes to the island, which renders on the client instead.
     if (error === MISMATCH) handleError(owner.parent, error);
@@ -1098,10 +1101,7 @@ export function isNavigating(): boolean {
   return router?.navigating() ?? false;
 }
 
-export type SearchParamsInit =
-  | URLSearchParams
-  | string
-  | Record<string, string | number | boolean | readonly string[] | null | undefined>;
+export type { SearchParamsInit };
 
 /** Replaces the query of the current URL, keeping the scroll position. */
 export function setSearchParams(
@@ -1112,19 +1112,6 @@ export function setSearchParams(
   const value = typeof next === "function" ? next(new URLSearchParams(current.search)) : next;
   current.search = searchString(value);
   return navigateTo(current, options.replace === true, true);
-}
-
-function searchString(value: SearchParamsInit): string {
-  if (typeof value === "string" || value instanceof URLSearchParams) {
-    return new URLSearchParams(value).toString();
-  }
-  const out = new URLSearchParams();
-  for (const [key, item] of Object.entries(value)) {
-    if (item === null || item === undefined) continue;
-    if (Array.isArray(item)) for (const one of item) out.append(key, String(one));
-    else out.append(key, String(item));
-  }
-  return out.toString();
 }
 
 /**
@@ -1168,4 +1155,5 @@ function trimSlash(path: string): string {
 /** For tests: forgets the router. */
 export function resetRouter(): void {
   router = undefined;
+  setRouterSearch(undefined);
 }
