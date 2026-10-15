@@ -226,7 +226,10 @@ export type ShopRoute = Assert<Equal<Shop["route"], "/shop/[category]/[item]">>;
 export type RootRoute = Assert<Equal<Ctx<Middleware<"/">>["route"], Routes>>;
 // src/middleware.ts also runs for unmatched URLs.
 export type AppRoute = Assert<Equal<Ctx<Middleware>["route"], Routes | undefined>>;
-export type EndpointRoute = Assert<Equal<RequestContext<"/api/posts/[id]">["route"], "/api/posts/[id]">>;
+export type EndpointRoute = Assert<Equal<RequestContext<"/api/posts/[id]">["route"], Routes | undefined>>;
+// A typed context still passes where any context is expected (shared helpers).
+const helper = (ctx: RequestContext): string | undefined => ctx.route;
+export const typed = (ctx: RequestContext<"/api/posts/[id]">) => helper(ctx);
 export type ShopLayout = Assert<Equal<LayoutProps<"/shop/[category]">["params"], { category: string }>>;
 
 export const guard: Middleware<"/shop/[category]"> = (ctx, next) => {

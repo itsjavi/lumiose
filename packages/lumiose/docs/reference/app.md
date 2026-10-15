@@ -363,8 +363,7 @@ interface RequestContext<P extends Routes = never> {
   request: Request;
   url: URL;
   params: RouteParams<P>;
-  // The matched pattern (route()): P, or any pattern; undefined only in src/middleware.ts for a
-  // URL no route matches.
+  // The matched pattern (route()); undefined only in src/middleware.ts for a URL no route matches.
   route: Routes | undefined;
   locals: Locals;
   cookies: Cookies;

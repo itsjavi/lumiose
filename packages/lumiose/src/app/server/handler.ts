@@ -249,7 +249,11 @@ export function createRequestHandler(options: RequestHandlerOptions): RequestHan
     const match = matchOf(request);
     return observe(
       hooks.request,
-      { request, route: match?.route.pattern, params: match?.params ?? {} },
+      {
+        request,
+        route: match?.route.pattern as RequestContext["route"],
+        params: match?.params ?? {},
+      },
       () => handle(request, undefined, platform),
       wrapperFailed(request),
       (response) => ({ response: { status: response.status } }),
@@ -398,7 +402,7 @@ export function createRequestHandler(options: RequestHandlerOptions): RequestHan
           report(error, ctx, "waitUntil", undefined, log),
         ),
       locale: localized?.locale as RequestContext["locale"],
-      route: match?.route.pattern,
+      route: match?.route.pattern as RequestContext["route"],
     };
     const depth = parent === undefined ? 0 : parent.depth + 1;
     const scope: RequestScope = {

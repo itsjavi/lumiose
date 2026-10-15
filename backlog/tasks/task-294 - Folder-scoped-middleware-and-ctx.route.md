@@ -5,7 +5,7 @@ status: Done
 assignee:
   - '@Nova'
 created_date: '2026-10-15 02:22'
-updated_date: '2026-10-15 04:35'
+updated_date: '2026-10-15 05:11'
 labels:
   - middleware
   - routing
@@ -52,6 +52,8 @@ Nova (2026-10-15), implementation:
 - Docs: concepts/server.md (Folder middleware section, example, mistakes), concepts/routing.md, reference/app.md, reference/cli.md, reference/mcp.md, guides/auth.md, errors/LUM5002.md, errors/LUM5008.md, llms regenerated. Coming from: coming-from-react.md has no middleware mapping; the React Router and Next.js guides are Beacon in-flight work (TASK-302/303, not in main) that still describe folder middleware as missing: hand-over written to the run notes for Lux/Beacon.
 - Tests: segments/manifest (kinds, chains with groups and optional segments, LUM5002/5003/5008), server/middleware.test.ts (order, scoping, unmatched URLs, actions, endpoints, groups, optional segments, locals and headers, errors, i18n, prerendering, ctx.route in root middleware/endpoints/actions), typegen (LayoutMap + TS 7 type test of Middleware<P>), cli routes, build (server entry + prerender + LUM5008 log).
 - Checks: vitest lumiose/src/app, vite/src/app, cli, apps/web content: 686+ passed; typecheck lumiose/vite/cli clean; oxlint clean on touched files; docs:check green; cargo test lumiose_compiler diagnostics ok.
+
+Nova (2026-10-15), follow-up after pnpm check: `RequestContext.route` is `Routes | undefined` whatever `P` is. Typing it as `P` made TypeScript measure `RequestContext` as covariant in `P`, so `RequestContext<"/logout">` no longer passed to helpers taking `RequestContext` (benchmarks/fullstack/apps/lumiose failed `lumiose check`). `Middleware<"/folder">` keeps the narrowed `ctx.route` (its own context type). Regression type test in typegen.test.ts; docs (routing.md, reference/app.md) say so. Also: `route` assignments in handler.ts cast like `locale`, for apps whose RouteMap is generated.
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary

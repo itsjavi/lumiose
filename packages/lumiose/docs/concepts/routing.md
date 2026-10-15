@@ -78,10 +78,10 @@ against that table: an unknown or stale pattern is a type error, and editors com
 - `PageProps<"/blog/[slug]">` types a page's props, `LayoutProps<"/blog">` a layout's
   (`{ params, children }`, with the params of the layout's URL scope; route groups such as `(app)`
   add nothing to it), and `params<"/blog/[slug]">()` the params anywhere on the server;
-- `RequestContext<P>`, `ActionContext<P>` and `Endpoint<P>` type `ctx.params` and `ctx.route` of
-  middleware helpers, actions and endpoints (see [Data and actions](data-and-actions.md)), and
-  `Middleware<"/admin">` those of a folder's middleware: the folder's params and the patterns
-  below it;
+- `RequestContext<P>`, `ActionContext<P>` and `Endpoint<P>` type `ctx.params` of middleware
+  helpers, actions and endpoints (see [Data and actions](data-and-actions.md)), and
+  `Middleware<"/admin">` types a folder's middleware: `ctx.params` with the folder's params and
+  `ctx.route` with the patterns below it;
 - optional params are optional properties (`RouteParams<"/[[lang]]/contact">` is
   `{ lang?: string }`), and `href()` leaves out an optional segment whose param is missing or
   empty: `href("/docs/[[...path]]")` is `/docs`.

@@ -64,9 +64,11 @@ export interface RequestContext<P extends Routes = never> {
   params: ParamsOf<P>;
   /**
    * The matched route pattern (`"/users/[id]"`, what `route()` returns). Undefined when no route
-   * matched, which only `src/middleware.ts` sees.
+   * matched, which only `src/middleware.ts` sees. Not narrowed by `P`: that would keep
+   * `RequestContext<"/a">` from passing where a `RequestContext` is expected (`Middleware<P>`
+   * narrows it).
    */
-  route: [P] extends [never] ? Routes | undefined : P;
+  route: Routes | undefined;
   /**
    * The request's locale with `lumiose({ i18n })` (decision-44): its URL prefix (`/es/about` →
    * `"es"`), else the default locale. Undefined without `lumiose({ i18n })`.
