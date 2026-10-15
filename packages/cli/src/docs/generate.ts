@@ -211,12 +211,10 @@ export function generateLlms(docs: readonly Doc[], version: string): Map<string,
   for (const section of sections) {
     index.push("", `## ${section.heading}`, "");
     for (const link of section.links) {
-      const doc = /^https?:/.test(link.path) ? undefined : byPath.get(link.path);
-      if (doc) {
-        if (!ordered.includes(doc)) ordered.push(doc);
-      } else if (!/^https?:/.test(link.path)) {
-        throw new Error(`docs/README.md links to a missing doc: ${link.path}`);
-      }
+      const external = /^https?:/.test(link.path);
+      const doc = external ? undefined : byPath.get(link.path);
+      if (!external && !doc) throw new Error(`docs/README.md links to a missing doc: ${link.path}`);
+      if (doc && !ordered.includes(doc)) ordered.push(doc);
       const description = link.description ?? doc?.summary;
       index.push(`- [${link.title}](${link.path})${description ? `: ${description}` : ""}`);
     }
