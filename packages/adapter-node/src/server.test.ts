@@ -4,10 +4,11 @@ import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { createServer as createHttpServer } from "node:http";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { build } from "@lumiose/vite/build";
 import { linkLumiose } from "@lumiose/vite/internal/test-links.ts";
-import { createServer, type LumioseServer } from "./server.ts";
+import { createHandler, createServer, type LumioseServer } from "./server.ts";
 import { isHashed } from "./static.ts";
 
 const lumioseRoot = resolve(import.meta.dirname, "../../lumiose");
@@ -52,6 +53,16 @@ export default function Embed() {
 export const GET = () => Response.json({ ok: true });
 `,
   "src/routes/not-found.stsx": "export default function NotFound() { return <h1>Not here</h1>; }\n",
+  "src/routes/api/fail/route.ts": `export const mode = "server";
+export function GET(): Response { throw new Error("endpoint failed"); }
+`,
+  "src/instrumentation.server.ts": `import type { RequestErrorInfo } from "lumiose";
+const log: string[] = ((globalThis as any).lumioseNodeInstrumentationLog ??= []);
+export function register() { log.push("register"); }
+export function onRequestError(error: unknown, info: RequestErrorInfo) {
+  log.push(\`\${info.phase} \${info.route} \${(error as Error).message}\`);
+}
+`,
 };
 
 let root: string;
@@ -78,6 +89,28 @@ const get = (path: string, init?: RequestInit) =>
   fetch(new URL(path.slice(1), server.url), { redirect: "manual", ...init });
 
 describe.skipIf(!binding)("@lumiose/adapter-node", () => {
+  it("reports errors to src/instrumentation.server.ts and to onError (TASK-298)", async () => {
+    const log = ((
+      globalThis as { lumioseNodeInstrumentationLog?: string[] }
+    ).lumioseNodeInstrumentationLog ??= []);
+    expect((await get("/api/fail")).status).toBe(500);
+    expect(log).toEqual(["register", "endpoint /api/fail endpoint failed"]);
+
+    const onError = vi.fn();
+    const handler = await createHandler({ dir: join(root, "dist"), onError });
+    const http = createHttpServer(handler);
+    await new Promise<void>((done) => http.listen(0, "127.0.0.1", done));
+    try {
+      const { port } = http.address() as { port: number };
+      expect((await fetch(`http://127.0.0.1:${port}/api/fail`)).status).toBe(500);
+    } finally {
+      await new Promise((done) => http.close(done));
+    }
+    expect(onError).toHaveBeenCalledWith(new Error("endpoint failed"), expect.any(Request));
+    // One module instance per process: register() ran once for both handlers.
+    expect(log.filter((entry) => entry === "register")).toEqual(["register"]);
+  });
+
   it("listens on a URL with the app's base", () => {
     expect(server.url).toMatch(/^http:\/\/127\.0\.0\.1:\d+\/$/);
   });

@@ -35,6 +35,20 @@ export default { plugins: [lumiose({ adapter: netlify(), headers: { "x-app": "1"
   "src/routes/form/page.stsx": `export const action = () => ({ ok: true });
 export default function Form() { return <form method="post"><button>Go</button></form>; }
 `,
+  "src/instrumentation.server.ts": `import type { RequestErrorInfo } from "lumiose";
+const log: string[] = ((globalThis as any).lumioseInstrumentationLog ??= []);
+export function register() { log.push("register"); }
+export function onRequestError(error: unknown, info: RequestErrorInfo) {
+  log.push(\`\${info.phase} \${info.route} \${(error as Error).message}\`);
+}
+`,
+  "src/routes/api/fail/route.ts": `import type { Endpoint } from "lumiose";
+export const mode = "server";
+export const GET: Endpoint = (ctx) => {
+  ctx.platform.waitUntil(Promise.reject(new Error("later failed")));
+  throw new Error("endpoint failed");
+};
+`,
   "src/routes/api/platform/route.ts": `import type { Endpoint } from "lumiose";
 export const mode = "server";
 export const GET: Endpoint = (ctx) => {
@@ -44,6 +58,10 @@ export const GET: Endpoint = (ctx) => {
 `,
   "public/robots.txt": "User-agent: *\n",
 };
+
+/** What `src/instrumentation.server.ts` of the fixture logged (TASK-298). */
+const instrumentationLog = (): string[] =>
+  ((globalThis as { lumioseInstrumentationLog?: string[] }).lumioseInstrumentationLog ??= []);
 
 let root: string;
 
@@ -136,6 +154,27 @@ describe.skipIf(!binding)("@lumiose/adapter-netlify", () => {
     expect(await res.json()).toEqual({ env: {}, ip: "198.51.100.4" });
     expect(res.headers.get("x-app")).toBe("1");
     expect(waited).toHaveLength(1);
+  });
+});
+
+describe.skipIf(!binding)("@lumiose/adapter-netlify instrumentation", () => {
+  it("reports errors and rejected waitUntil() work to src/instrumentation.server.ts (TASK-298)", async () => {
+    const functions = join(root, ".netlify/v1/functions");
+    const fn = (await import(pathToFileURL(join(functions, "lumiose-server.mjs")).href)) as {
+      default: (request: Request, context: unknown) => Promise<Response>;
+    };
+    const waited: Array<Promise<unknown>> = [];
+    const context = { waitUntil: (promise: Promise<unknown>) => void waited.push(promise) };
+    const res = await fn.default(new Request("https://app.example/api/fail"), context);
+    expect(res.status).toBe(500);
+    await expect(waited[0]).rejects.toThrow("later failed");
+    expect(instrumentationLog()).toEqual(
+      expect.arrayContaining([
+        "register",
+        "waitUntil /api/fail later failed",
+        "endpoint /api/fail endpoint failed",
+      ]),
+    );
   });
 });
 

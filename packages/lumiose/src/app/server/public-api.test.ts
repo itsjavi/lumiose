@@ -141,7 +141,9 @@ const USAGE = `import {
   type Endpoint,
   type ErrorPageProps,
   type Middleware,
+  type RequestErrorInfo,
   type RouteParams,
+  type ServerInstrumentation,
 } from "lumiose";
 
 declare module "lumiose" {
@@ -158,6 +160,7 @@ declare module "lumiose" {
 }
 
 export const middleware: Middleware = async (ctx, next) => {
+  const matched: "/blog/[slug]" | "/api/posts/[id]" | undefined = ctx.route;
   ctx.locals.user = ctx.cookies.get("session") ? { name: "ada" } : null;
   // @ts-expect-error Locals has no such key
   ctx.locals.role = "admin";
@@ -196,6 +199,37 @@ export async function Post() {
   cookies().set("seen", slug, { sameSite: "strict", maxAge: 60 });
   return [slug, any, user, pattern, unknown];
 }
+
+// src/instrumentation.server.ts (decision-49)
+export function onRequestError(error: unknown, info: RequestErrorInfo): void {
+  const phase: "middleware" | "action" | "endpoint" | "render" | "stream" | "waitUntil" = info.phase;
+  const where: "/blog/[slug]" | "/api/posts/[id]" | undefined = info.route;
+  const digest: string | undefined = info.digest;
+  const method: string = info.request.method;
+  console.log(error, phase, where, digest, method, info.params);
+}
+
+export const instrumentations: ServerInstrumentation[] = [
+  {
+    request: async (call, info) => {
+      const route: string | undefined = info.route;
+      const result = await call();
+      return result.status === "error" ? [route, result.error] : result.response?.status;
+    },
+    middleware: (call, info) => [info.file, call()],
+    action: async (call, info) => {
+      const name: string = info.name;
+      const result = await call();
+      // @ts-expect-error a phase result has no response
+      return [name, result.response];
+    },
+    endpoint: (call, info) => [info.method, call()],
+    render: (call) => call(),
+    stream: (call) => call(),
+  },
+];
+// @ts-expect-error not a phase
+export const unknownPhase: ServerInstrumentation = { loader: (call: () => unknown) => call() };
 
 export function ErrorPage({ status, error }: ErrorPageProps): string {
   return \`\${status} \${error.message} \${error.status ?? ""}\`;

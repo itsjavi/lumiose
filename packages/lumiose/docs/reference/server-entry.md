@@ -88,13 +88,19 @@ export {};
 export function createHandler(options?: {
   /** ctx.env and env(). Default: process.env. */
   env?: Readonly<Record<string, string | undefined>>;
-  /** Unexpected errors. Default: console.error. */
+  /** Unexpected errors (not redirect(), notFound() or error(status)). Default: console.error. */
   onError?: (error: unknown, request: Request) => void;
 }): { fetch(request: Request, platform?: Partial<Platform>): Promise<Response> };
 ```
 
 The app alone: no static files and no `lumiose({ headers })`. `@lumiose/adapter-node` uses it
 behind its own static file server.
+
+`onError` is the host's log. With a [`src/instrumentation.server.ts`](../concepts/server.md#instrumentation),
+the build bundles it into the server entry: every handler (the default export, `createHandler()`,
+the adapters') runs its `register()` before the first request, once per server instance, and its
+`onRequestError()` receives the same errors with the route and the phase, after `onError`.
+Prerendering at build time does not load it.
 
 ## config
 

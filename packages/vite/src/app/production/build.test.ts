@@ -673,6 +673,54 @@ export default function Admin() { return <h1>Admin</h1>; }
     expect(await admin.text()).toContain("<h1>Admin via /admin</h1>");
   });
 
+  it("bundles src/instrumentation.server.ts into the server entry, not into prerendering (TASK-298)", async () => {
+    const root = project({
+      "src/instrumentation.server.ts": `import type { RequestErrorInfo, ServerInstrumentation } from "lumiose";
+const log: string[] = ((globalThis as any).lumioseBuildInstrumentationLog ??= []);
+export async function register() {
+  log.push("register");
+}
+export function onRequestError(error: unknown, info: RequestErrorInfo) {
+  log.push(\`\${info.phase} \${info.route} \${(error as Error).message}\`);
+}
+export const instrumentations: ServerInstrumentation[] = [
+  {
+    request: async (call, info) => {
+      const result = await call();
+      log.push(\`request \${info.route} \${result.status === "success" ? result.response?.status : "error"}\`);
+    },
+  },
+];
+`,
+      "src/routes/page.stsx": `export default function Home() { return <h1>Home</h1>; }
+`,
+      "src/routes/api/fail/route.ts": `export const mode = "server";
+export function GET(): Response { throw new Error("endpoint failed"); }
+`,
+    });
+    const log = ((
+      globalThis as { lumioseBuildInstrumentationLog?: string[] }
+    ).lumioseBuildInstrumentationLog ??= []);
+    await build({ root, ...quiet() });
+    expect(read(root, "index.html")).toContain("<h1>Home</h1>");
+    // Prerendering loads the entry but neither registers nor reports.
+    expect(log).toEqual([]);
+    const entry = await entryOf(root);
+    expect(entry.app.instrumentation).toBe("src/instrumentation.server.ts");
+    const onError = vi.fn();
+    const handler = entry.createHandler({ onError });
+    expect((await handler.fetch(new Request("http://app.test/api/fail"))).status).toBe(500);
+    expect((await handler.fetch(new Request("http://app.test/api/fail"))).status).toBe(500);
+    expect(log).toEqual([
+      "register",
+      "endpoint /api/fail endpoint failed",
+      "request /api/fail 500",
+      "endpoint /api/fail endpoint failed",
+      "request /api/fail 500",
+    ]);
+    expect(onError).toHaveBeenCalledTimes(2);
+  });
+
   it("prerenders spa routes with prerender into hydrating HTML, without dist/server (TASK-216)", async () => {
     const root = project({
       "vite.config.ts": `import lumiose from "@lumiose/vite";

@@ -72,11 +72,17 @@ const noop = (): void => {};
  * become LUM5004 errors and render the fallback.
  */
 /**
- * Production (decision-29): the error an `<ErrorBoundary>` fallback receives instead of `error`,
- * which may hold secrets (a database message, a file path). The original goes to the server log
- * (`onError`) with the same short `digest`, so a reported page can be matched to its log entry.
+ * Reports an error an `<ErrorBoundary>` caught (`onCaughtError`) and returns what its fallback
+ * receives. Production (decision-29): a generic error with a short `digest` instead of `error`,
+ * which may hold secrets (a database message, a file path); the original is reported with the same
+ * `digest`, so a reported page can be matched to its log entry.
  */
-function sanitized(error: unknown, render: RenderState): Error & { digest: string } {
+function caught(error: unknown, frame: Frame): unknown {
+  const { render, streamed } = frame;
+  if (!render.sanitizeErrors) {
+    render.onCaughtError(error, { digest: undefined, streamed });
+    return error;
+  }
   const bytes = crypto.getRandomValues(new Uint8Array(4));
   const digest = Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("");
   const logged =
@@ -84,7 +90,7 @@ function sanitized(error: unknown, render: RenderState): Error & { digest: strin
       ? error
       : new Error(String(error), { cause: error });
   Object.defineProperty(logged, "digest", { configurable: true, enumerable: true, value: digest });
-  render.onError(logged);
+  render.onCaughtError(logged, { digest, streamed });
   return Object.assign(
     new Error(`An error occurred while rendering this part of the page (digest ${digest}).`),
     { digest },
@@ -103,8 +109,7 @@ export function ErrorBoundary(props: ErrorBoundaryProps): unknown {
       if (frame === undefined || !frame.streamed) throw error;
       error = boundaryError(error);
     }
-    if (frame?.render.sanitizeErrors === true && !isHttpError(error))
-      error = sanitized(error, frame.render);
+    if (frame !== undefined) error = caught(error, frame);
     const out = withFrame(frame, owner, () => {
       const value = props.fallback;
       return content(typeof value === "function" ? value(error, noop) : value);

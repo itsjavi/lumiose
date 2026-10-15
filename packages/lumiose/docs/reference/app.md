@@ -407,6 +407,33 @@ interface Locals {} // augment: declare module "lumiose" { interface Locals { â€
 interface PlatformEnv {} // augment: declare module "lumiose" { interface PlatformEnv { â€¦ } }
 ```
 
+### Instrumentation types
+
+The exports of `src/instrumentation.server.ts` ([Server](../concepts/server.md#instrumentation)):
+`register(): unknown`, `onRequestError(error: unknown, info: RequestErrorInfo): unknown` and
+`instrumentations: ServerInstrumentation[]`.
+
+```ts
+interface RequestErrorInfo {
+  request: Request;
+  route: Routes | undefined; // the matched pattern; undefined when no route matched
+  params: Record<string, string>;
+  phase: "middleware" | "action" | "endpoint" | "render" | "stream" | "waitUntil";
+  digest: string | undefined; // what an <ErrorBoundary> fallback shows outside dev
+}
+// Each wrapper: (call, info) => unknown. call() runs the phase (once) and never throws.
+type Result = { status: "success" } | { status: "error"; error: unknown };
+type Info = { request: Request; route: Routes | undefined; params: Record<string, string> };
+interface ServerInstrumentation {
+  request?(call: () => Promise<Result & { response?: { status: number } }>, info: Info): unknown;
+  middleware?(call: () => Promise<Result>, info: Info & { file: string }): unknown;
+  action?(call: () => Promise<Result>, info: Info & { name: string }): unknown; // "default" for `action`
+  endpoint?(call: () => Promise<Result>, info: Info & { method: HttpMethod }): unknown;
+  render?(call: () => Promise<Result>, info: Info): unknown; // until the shell is ready
+  stream?(call: () => Promise<Result>, info: Info): unknown; // each streamed boundary
+}
+```
+
 ## Example
 
 ```ts check file=routes/api/session/route.ts

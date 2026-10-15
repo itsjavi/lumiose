@@ -43,7 +43,25 @@ export const GET: Endpoint = (ctx) =>
 export const POST: Endpoint = async (ctx) => new Response("posted " + (await ctx.request.text()));
 `,
   "public/robots.txt": "User-agent: *\n",
+  "src/instrumentation.server.ts": `import type { RequestErrorInfo } from "lumiose";
+const log: string[] = ((globalThis as any).lumioseInstrumentationLog ??= []);
+export function register() { log.push("register"); }
+export function onRequestError(error: unknown, info: RequestErrorInfo) {
+  log.push(\`\${info.phase} \${info.route} \${(error as Error).message}\`);
+}
+`,
+  "src/routes/api/fail/route.ts": `import type { Endpoint } from "lumiose";
+export const mode = "server";
+export const GET: Endpoint = (ctx) => {
+  ctx.platform.waitUntil(Promise.reject(new Error("later failed")));
+  throw new Error("endpoint failed");
 };
+`,
+};
+
+/** What `src/instrumentation.server.ts` of the fixture logged (TASK-298). */
+const instrumentationLog = (): string[] =>
+  ((globalThis as { lumioseInstrumentationLog?: string[] }).lumioseInstrumentationLog ??= []);
 
 const roots: string[] = [];
 
@@ -163,6 +181,9 @@ describe.skipIf(!binding)("@lumiose/adapter-vercel, Node.js runtime", () => {
         body: new URLSearchParams({ a: "1" }),
       });
       expect(form.status).toBe(200);
+      // Errors reach src/instrumentation.server.ts (TASK-298).
+      expect((await fetch(`${url}/api/fail`)).status).toBe(500);
+      expect(instrumentationLog()).toContain("endpoint /api/fail endpoint failed");
     } finally {
       server.close();
     }
@@ -198,6 +219,18 @@ describe.skipIf(!binding)("@lumiose/adapter-vercel, Edge runtime", () => {
       { waitUntil: (promise: unknown) => waited.push(promise) },
     );
     expect(await res.json()).toEqual({ ip: "192.0.2.9", url: "https://app.example/api/platform" });
+    // Errors and rejected waitUntil() work reach src/instrumentation.server.ts (TASK-298).
+    const failed = await handler(new Request("https://app.example/api/fail"), {
+      waitUntil: (promise: unknown) => waited.push(promise),
+    });
+    expect(failed.status).toBe(500);
+    await expect(waited.at(-1)).rejects.toThrow("later failed");
+    expect(instrumentationLog()).toEqual(
+      expect.arrayContaining([
+        "waitUntil /api/fail later failed",
+        "endpoint /api/fail endpoint failed",
+      ]),
+    );
   });
 
   it("refuses an option it does not know", async () => {

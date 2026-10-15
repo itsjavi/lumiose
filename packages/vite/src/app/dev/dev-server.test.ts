@@ -105,7 +105,36 @@ export default function Boom() {
   throw new Error("Boom from the page");
 }
 `,
+  "src/routes/caught/page.stsx": `import { ErrorBoundary } from "lumiose";
+export const mode = "server";
+function Broken(): JSX.Element {
+  throw new Error("Caught by a boundary");
+}
+export default function Caught() {
+  return (
+    <ErrorBoundary fallback={(error: Error) => <p class="caught">{error.message}</p>}>
+      <Broken />
+    </ErrorBoundary>
+  );
+}
+`,
+  "src/instrumentation.server.ts": INSTRUMENTATION("v1"),
 };
+
+/** `src/instrumentation.server.ts`, logging to `globalThis` (the module runner shares it). */
+function INSTRUMENTATION(version: string): string {
+  return `const log: string[] = ((globalThis as any).lumioseInstrumentationLog ??= []);
+export function register() {
+  log.push("register ${version}");
+}
+export function onRequestError(error: unknown, info: { phase: string; route?: string }) {
+  log.push(\`\${info.phase} \${info.route} \${(error as Error).message}\`);
+}
+`;
+}
+
+const instrumentationLog = (): string[] =>
+  ((globalThis as { lumioseInstrumentationLog?: string[] }).lumioseInstrumentationLog ??= []);
 
 const lumioseRoot = LUMIOSE_ROOT;
 let root: string;
@@ -307,6 +336,23 @@ describe.skipIf(!binding)("lumiose dev", () => {
     });
     expect(overlay.frame).toContain('3  |    throw new Error("Boom from the page");');
     expect(errors.join("\n")).toContain("Boom from the page");
+  });
+
+  it("loads src/instrumentation.server.ts: register() once, onRequestError() for errors, caught ones too (TASK-298)", async () => {
+    await get("/boom");
+    const caught = await get("/caught");
+    expect(await caught.text()).toContain("<p class=caught>Caught by a boundary</p>");
+    const log = instrumentationLog();
+    expect(log.filter((entry) => entry.startsWith("register"))).toEqual(["register v1"]);
+    expect(log).toContain("render /boom Boom from the page");
+    expect(log).toContain("render /caught Caught by a boundary");
+    // An edit loads the new file, which registers again.
+    write("src/instrumentation.server.ts", INSTRUMENTATION("v2"));
+    await eventually(async () => {
+      await get("/api/hello");
+      return log.includes("register v2");
+    });
+    await settle();
   });
 
   it("re-renders edited server modules on the next request and has the page patch itself", async () => {

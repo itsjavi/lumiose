@@ -33,6 +33,7 @@ import {
   READY,
   resolveUnit,
   withFrame,
+  type CaughtErrorInfo,
   type Frame,
   type IslandRecord,
   type RenderState,
@@ -47,6 +48,15 @@ export type { RenderedShell, RenderToStreamOptions };
 
 /** `renderShell` options of the app layer (not public). */
 export interface ShellOptions extends RenderToStreamOptions {
+  /** `onError`, told whether the error belongs to a streamed boundary (after the shell). */
+  onError?: (error: unknown, streamed?: boolean) => void;
+  /**
+   * Every error an `<ErrorBoundary>` caught, also outside production (instrumentation, decision-49).
+   * Default: the sanitized ones go to `onError`, with their digest (decision-29).
+   */
+  onCaughtError?: (error: unknown, info: CaughtErrorInfo) => void;
+  /** Each streamed boundary, with a promise that settles once its content is ready or failed. */
+  onBoundary?: (settled: Promise<unknown>) => void;
   /**
    * Dev (`lumiose dev`): whether client code reaches the scoped state `ref` (`<module>#<export>`).
    * Builds give ids only to such states, so they need no check.
@@ -77,7 +87,11 @@ export function renderToStream(
   root: () => unknown,
   options: RenderToStreamOptions = {},
 ): Promise<RenderedShell> {
-  return renderShell(root, options).then(({ head, html, records, stream }) => ({
+  // The public `onError` gets the error alone (the shell's also says where it happened).
+  const { onError } = options;
+  const shellOptions =
+    onError === undefined ? options : { ...options, onError: (error: unknown) => onError(error) };
+  return renderShell(root, shellOptions).then(({ head, html, records, stream }) => ({
     head,
     body: html + records,
     stream,
@@ -94,6 +108,7 @@ export function renderShell(root: () => unknown, options: ShellOptions = {}): Pr
   // The request's state scope; a render outside a request gets one of its own.
   const active = currentStateScope();
   const states = active ?? createStateScope();
+  const onError = options.onError ?? ((error: unknown) => console.error(error));
   const render: RenderState = {
     resolveAll: options.resolveAll === true,
     nonce: options.nonce,
@@ -101,7 +116,13 @@ export function renderShell(root: () => unknown, options: ShellOptions = {}): Pr
     moduleUrl: options.islandUrl ?? ((specifier) => specifier),
     loaderUrl: options.loaderUrl,
     loaderSent: false,
-    onError: options.onError ?? ((error) => console.error(error)),
+    onError,
+    onCaughtError:
+      options.onCaughtError ??
+      ((error, { digest, streamed }) => {
+        if (digest !== undefined) onError(error, streamed);
+      }),
+    onBoundary: options.onBoundary,
     sanitizeErrors: options.sanitizeErrors === true,
     owner: createOwner(undefined),
     shell: createUnit(undefined),
@@ -211,7 +232,7 @@ function finish(render: RenderState): void {
   try {
     disposeOwner(render.owner);
   } catch (error) {
-    render.onError(error);
+    render.onError(error, render.shellDone);
   }
 }
 
@@ -289,6 +310,7 @@ export function addPreload(render: RenderState, unit: Unit, url: string): void {
 export function streamBoundary(render: RenderState, unit: Unit, html: Promise<string>): string {
   const id = (unit.id = render.nextBoundary++);
   render.pending++;
+  render.onBoundary?.(html);
   html.then(
     (value) => {
       if (render.done) return;
@@ -301,7 +323,7 @@ export function streamBoundary(render: RenderState, unit: Unit, html: Promise<st
     },
     (error: unknown) => {
       if (render.done) return;
-      render.onError(boundaryError(error));
+      render.onError(boundaryError(error), true);
       drop(render, unit);
     },
   );
@@ -314,7 +336,7 @@ function flush(render: RenderState, unit: Unit): void {
     payload = statePayload(render, unit);
   } catch (error) {
     // LUM4011: the boundary keeps its fallback, as when its content fails.
-    render.onError(error);
+    render.onError(error, true);
     drop(render, unit);
     return;
   }

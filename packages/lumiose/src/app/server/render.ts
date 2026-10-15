@@ -33,8 +33,18 @@ export interface PageRenderOptions {
   signal: AbortSignal;
   /** Prerender/SSG: resolve every Suspense boundary into the body; no fallbacks or swap scripts. */
   resolveAll: boolean;
-  /** Errors of streamed boundaries that no `<ErrorBoundary>` handled (headers are already sent). */
-  onError?: (error: unknown) => void;
+  /**
+   * Errors no `<ErrorBoundary>` handled: of streamed boundaries (headers are already sent,
+   * `streamed`), or while the render ends.
+   */
+  onError?: (error: unknown, streamed?: boolean) => void;
+  /**
+   * Each error an `<ErrorBoundary>` caught, with its `digest` when `sanitizeErrors` replaced it in
+   * the fallback. Default: those with a digest go to `onError`.
+   */
+  onCaughtError?: (error: unknown, info: { digest: string | undefined; streamed: boolean }) => void;
+  /** Each streamed boundary, with a promise that settles once its content is ready or failed. */
+  onBoundary?: (settled: Promise<unknown>) => void;
   /** Overrides the renderer's `loaderUrl` for this page (pages with an SPA load the SPA entry). */
   loaderUrl?: string;
   /**
@@ -125,7 +135,10 @@ const rawHtml = (html: string) => new SSRHtml(html);
 
 /** The default `PageRenderer`: lumiose/server's shell-first `renderToStream`. */
 export function createServerRenderer(options: ServerRendererOptions = {}): PageRenderer {
-  return async (tree, { signal, resolveAll, onError, loaderUrl, csp, sanitizeErrors }) => {
+  return async (
+    tree,
+    { signal, resolveAll, onError, onCaughtError, onBoundary, loaderUrl, csp, sanitizeErrors },
+  ) => {
     const { head, html, records, stream } = await renderShell(
       composePageTree(tree, createComponent, rawHtml),
       {
@@ -133,6 +146,8 @@ export function createServerRenderer(options: ServerRendererOptions = {}): PageR
         signal,
         resolveAll,
         onError,
+        ...(onCaughtError === undefined ? {} : { onCaughtError }),
+        ...(onBoundary === undefined ? {} : { onBoundary }),
         ...(sanitizeErrors === true ? { sanitizeErrors } : {}),
         ...(loaderUrl === undefined ? {} : { loaderUrl }),
         ...(csp === undefined ? {} : { strictStyles: true }),

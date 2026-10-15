@@ -18,7 +18,7 @@ import type {
   ServerEnv,
 } from "./context.ts";
 import { jsonForScript } from "../../server/node.ts";
-import { wantsActionResult } from "../actions/protocol.ts";
+import { actionName, wantsActionResult } from "../actions/protocol.ts";
 import {
   actionResultResponse,
   encodeActionData,
@@ -48,7 +48,19 @@ import {
 import { documentBody, documentParts, type DocumentComponent } from "./document.ts";
 import { headersFor, type HeadersOption } from "../headers.ts";
 import { documentRules, navigationHead, type Prefetch } from "./navigation.ts";
-import { createServerRenderer, type PageRenderer, type PageTree } from "./render.ts";
+import {
+  createServerRenderer,
+  type PageRenderer,
+  type PageRenderOptions,
+  type PageTree,
+} from "./render.ts";
+import {
+  instrumentationError,
+  loadInstrumentation,
+  observe,
+  type InstrumentationHooks,
+  type RequestPhase,
+} from "./instrumentation.ts";
 import { rerouteScript, spaErrorPart, spaPagePart, spaPageTree } from "../router/server.ts";
 import {
   assertRequestApi,
@@ -101,6 +113,12 @@ export interface RequestHandlerOptions {
   prerender?: boolean | ((route: PageRoute) => boolean);
   /** Called with unexpected errors (not redirects or `error()`/`notFound()`). Default: console.error. */
   onError?: (error: unknown, request: Request) => void;
+  /**
+   * Project-relative path of `src/instrumentation.server.ts` (decision-49): loaded before the
+   * first request, which waits for its `register()`; then `onRequestError` receives unexpected
+   * errors and `instrumentations` observe the phases of each request. Ignored while prerendering.
+   */
+  instrumentation?: string;
   /**
    * The Origin check against cross-site form posts (decision-18), on by default: cross-site form
    * actions and form-encoded endpoint requests get a 403. `false` turns it off.
@@ -212,19 +230,112 @@ export function createRequestHandler(options: RequestHandlerOptions): RequestHan
   const allowedOrigins = new Set(options.csrf === false ? [] : options.csrf?.allowedOrigins);
   const appLimits = resolveLimits(options.limits, DEFAULT_LIMITS, "lumiose({ limits })");
 
+  // `src/instrumentation.server.ts`: loaded on the first request, which waits for `register()`.
+  // Without it (and while prerendering) `hooks` stays undefined: one check per phase.
+  const instrumentationFile = prerendering ? undefined : options.instrumentation;
+  let hooks: InstrumentationHooks | undefined;
+  let ready = instrumentationFile === undefined;
+  let loading: Promise<void> | undefined;
+
   function fetch(request: Request, platform?: Partial<Platform>): Promise<Response> {
-    return handle(request, undefined, platform);
+    if (!ready) {
+      loading ??= instrument(instrumentationFile!, request);
+      return loading.then(() => fetch(request, platform));
+    }
+    if (hooks === undefined || hooks.request.length === 0) {
+      return handle(request, undefined, platform);
+    }
+    // The whole request, observed by `request` wrappers (top-level requests only).
+    const match = matchOf(request);
+    return observe(
+      hooks.request,
+      { request, route: match?.route.pattern, params: match?.params ?? {} },
+      () => handle(request, undefined, platform),
+      wrapperFailed(request),
+      (response) => ({ response: { status: response.status } }),
+    );
+  }
+
+  /** The route a request matches, as `handle` matches it, for `request` wrappers. */
+  function matchOf(request: Request): RouteMatch | null {
+    const pathname = routePath(new URL(request.url).pathname, base);
+    const path =
+      pathname === undefined || i18n === undefined ? pathname : splitLocale(pathname, i18n).path;
+    return path === undefined ? null : matcher.match(path);
+  }
+
+  async function instrument(file: string, request: Request): Promise<void> {
+    try {
+      hooks = await loadInstrumentation(await loadModule(file), file, (error) =>
+        onError(error, request),
+      );
+    } catch (error) {
+      onError(error, request);
+    }
+    ready = true;
+  }
+
+  /**
+   * An unexpected error of a request: the host's `onError`, then `onRequestError` of the
+   * instrumentation. `log: false` reports to the instrumentation only.
+   */
+  function report(
+    error: unknown,
+    ctx: RequestContext,
+    phase: RequestPhase,
+    digest?: string,
+    log = true,
+  ): void {
+    if (log) onError(error, ctx.request);
+    const onRequestError = hooks?.onRequestError;
+    if (onRequestError === undefined) return;
+    const info = { request: ctx.request, route: ctx.route, params: ctx.params, phase, digest };
+    try {
+      const result = onRequestError(error, info);
+      if (result instanceof Promise) result.catch((failure) => failed(failure, ctx.request));
+    } catch (failure) {
+      failed(failure, ctx.request);
+    }
+  }
+
+  /** What `onRequestError` threw, for the server log. */
+  function failed(failure: unknown, request: Request): void {
+    onError(instrumentationError(instrumentationFile!, "onRequestError()", failure), request);
+  }
+
+  /** What a wrapper of `instrumentations` threw, for the server log. */
+  function wrapperFailed(request: Request): (failure: unknown) => void {
+    return (failure) =>
+      onError(
+        instrumentationError(instrumentationFile!, "an instrumentations wrapper", failure),
+        request,
+      );
   }
 
   /** `ctx.platform`: the host's fields, with fallbacks for those it does not pass. */
-  function platformOf(request: Request, given: Partial<Platform> | undefined): Platform {
+  function platformOf(
+    request: Request,
+    given: Partial<Platform> | undefined,
+    rejected: (error: unknown, log: boolean) => void,
+  ): Platform {
+    const hostWaitUntil = given?.waitUntil;
     return {
       env: given?.env ?? ({} as Platform["env"]),
       waitUntil:
-        given?.waitUntil ??
-        ((promise) => {
-          Promise.resolve(promise).catch((error: unknown) => onError(error, request));
-        }),
+        hostWaitUntil === undefined
+          ? (promise) => {
+              Promise.resolve(promise).catch((error: unknown) => rejected(error, true));
+            }
+          : hooks?.onRequestError === undefined
+            ? hostWaitUntil
+            : // The host still sees the rejection (it logs it); onRequestError gets it too.
+              (promise) =>
+                hostWaitUntil(
+                  Promise.resolve(promise).catch((error: unknown) => {
+                    rejected(error, false);
+                    throw error;
+                  }),
+                ),
       clientAddress: given?.clientAddress,
     };
   }
@@ -281,7 +392,11 @@ export function createRequestHandler(options: RequestHandlerOptions): RequestHan
       locals: (parent === undefined ? {} : { ...parent.locals }) as Locals,
       cookies,
       env: options.env ?? processEnv(),
-      platform: parent?.platform ?? platformOf(request, platform),
+      platform:
+        parent?.platform ??
+        platformOf(request, platform, (error, log) =>
+          report(error, ctx, "waitUntil", undefined, log),
+        ),
       locale: localized?.locale as RequestContext["locale"],
       route: match?.route.pattern,
     };
@@ -338,9 +453,9 @@ export function createRequestHandler(options: RequestHandlerOptions): RequestHan
         scope.response = createResponseState();
         response =
           match?.route.kind === "endpoint"
-            ? endpointError(error, request)
+            ? endpointError(error, ctx, "middleware")
             : await runPrerenderGuarded(guard, () =>
-                renderError(error, scope, errorPagesFor(match, notFoundPath)),
+                renderError(error, scope, errorPagesFor(match, notFoundPath), "middleware"),
               );
       }
       if (actionResult) response = redirectAsActionResult(response);
@@ -389,12 +504,29 @@ export function createRequestHandler(options: RequestHandlerOptions): RequestHan
     files: readonly string[],
     last: () => Promise<Response>,
   ): Promise<Response> {
-    const chains = await Promise.all(files.map(loadMiddleware));
+    const chains =
+      files.length === 1
+        ? [await loadMiddleware(files[0]!)]
+        : await Promise.all(files.map(loadMiddleware));
+    // Each file, observed by `middleware` wrappers around itself and what follows it.
+    const enter = (fileIndex: number): Promise<Response> => {
+      const wrappers = hooks?.middleware;
+      if (wrappers === undefined || wrappers.length === 0 || fileIndex === files.length) {
+        return call(fileIndex, 0);
+      }
+      const { request, route, params } = ctx;
+      return observe(
+        wrappers,
+        { request, route, params, file: files[fileIndex]! },
+        () => call(fileIndex, 0),
+        wrapperFailed(request),
+      );
+    };
     const call = async (fileIndex: number, index: number): Promise<Response> => {
       const chain = chains[fileIndex];
       if (chain === undefined) return last();
       const middleware = chain[index];
-      if (middleware === undefined) return call(fileIndex + 1, 0);
+      if (middleware === undefined) return enter(fileIndex + 1);
       let called = false;
       const response = await middleware(ctx, () => {
         if (called) throw new Error("Middleware called next() more than once.");
@@ -408,7 +540,7 @@ export function createRequestHandler(options: RequestHandlerOptions): RequestHan
       }
       return response;
     };
-    return call(0, 0);
+    return enter(0);
   }
 
   async function loadMiddleware(file: string): Promise<Middleware[]> {
@@ -422,7 +554,9 @@ export function createRequestHandler(options: RequestHandlerOptions): RequestHan
     return chain as Middleware[];
   }
 
-  async function dispatch(
+  // Not async, like `serveMatched`: a request without folder middleware goes through as many
+  // async functions as before them.
+  function dispatch(
     scope: RequestScope,
     match: RouteMatch | null,
     actionResult: boolean,
@@ -433,19 +567,34 @@ export function createRequestHandler(options: RequestHandlerOptions): RequestHan
     if (match === null) {
       return renderError(new HttpError(404, "Not Found"), scope, errorPagesFor(null, pathname));
     }
-    let localeHead: { links: string; canonical: string } | undefined;
-    if (scope.i18n !== undefined) {
-      const outcome = await routeLocale(scope, match, pathname, inProcess);
-      if (outcome instanceof Response) return outcome;
-      localeHead = outcome;
+    if (scope.i18n === undefined) {
+      return serveMatched(scope, match, actionResult, undefined, guard);
     }
-    const serve = () => serveRoute(scope, match, actionResult, localeHead);
+    return routeLocale(scope, match, pathname, inProcess).then((outcome) =>
+      outcome instanceof Response
+        ? outcome
+        : serveMatched(scope, match, actionResult, outcome, guard),
+    );
+  }
+
+  /**
+   * A matched route behind its folder middleware (decision-48), outermost first, unguarded while
+   * prerendering like src/middleware.ts. What the middleware throws renders the error page outside
+   * the chain (`handle`).
+   */
+  function serveMatched(
+    scope: RequestScope,
+    match: RouteMatch,
+    actionResult: boolean,
+    localeHead: { links: string; canonical: string } | undefined,
+    guard: PrerenderGuard | undefined,
+  ): Promise<Response> {
     const folders = match.route.middleware;
-    if (folders === undefined) return serve();
-    // Folder middleware (decision-48), outermost first, unguarded while prerendering like
-    // src/middleware.ts. What it throws renders the error page outside the chain (`handle`).
+    if (folders === undefined) return serveRoute(scope, match, actionResult, localeHead);
     return runPrerenderGuarded(undefined, () =>
-      runMiddlewareFiles(scope.ctx, folders, () => runPrerenderGuarded(guard, serve)),
+      runMiddlewareFiles(scope.ctx, folders, () =>
+        runPrerenderGuarded(guard, () => serveRoute(scope, match, actionResult, localeHead)),
+      ),
     );
   }
 
@@ -464,13 +613,25 @@ export function createRequestHandler(options: RequestHandlerOptions): RequestHan
       try {
         const module = await loadModule(route.file);
         applyRouteLimits(scope, module, route.file);
-        return await serveEndpoint(routeCtx, request, module);
+        const wrappers = hooks?.endpoint;
+        if (wrappers === undefined || wrappers.length === 0) {
+          return await serveEndpoint(routeCtx, request, module);
+        }
+        const { route: pattern, params } = scope.ctx;
+        return await observe(
+          wrappers,
+          { request, route: pattern, params, method: request.method as HttpMethod },
+          () => serveEndpoint(routeCtx, request, module),
+          wrapperFailed(request),
+        );
       } catch (error) {
-        return endpointError(error, request);
+        return endpointError(error, scope.ctx, "endpoint");
       }
     }
 
     const baseline = new Headers(scope.response.headers);
+    // Where an error of the page comes from, for `onRequestError`.
+    let phase: RequestPhase = "render";
     try {
       // `spa` pages render their SPA part as one root island; with `ssr = false` the server sends
       // a shell and neither loads nor runs the SPA's layouts and page (TASK-25).
@@ -488,8 +649,10 @@ export function createRequestHandler(options: RequestHandlerOptions): RequestHan
         pageModule !== undefined && hasActions(pageModule) ? ACTION_PAGE_METHODS : PAGE_METHODS;
       if (request.method === "OPTIONS") return allowResponse(204, allow);
       if (request.method === "POST" && allow === ACTION_PAGE_METHODS) {
+        phase = "action";
         const response = await handleAction(scope, pageModule!, actionResult);
         if (response !== undefined) return response;
+        phase = "render";
       } else if (request.method !== "GET" && request.method !== "HEAD") {
         return allowResponse(405, allow);
       }
@@ -520,7 +683,7 @@ export function createRequestHandler(options: RequestHandlerOptions): RequestHan
       );
     } catch (error) {
       scope.response = createResponseState(200, baseline);
-      return renderError(error, scope, route);
+      return renderError(error, scope, route, phase);
     }
   }
 
@@ -692,19 +855,19 @@ export function createRequestHandler(options: RequestHandlerOptions): RequestHan
   ): Promise<Response | undefined> {
     const { ctx } = scope;
     if (!actionResult) {
-      const outcome = await runAction(resolveAction(pageModule, ctx.url), ctx);
+      const outcome = await observedAction(pageModule, ctx);
       if (outcome instanceof Response) return outcome;
       scope.action = { data: outcome.data, encoded: encodeActionData(outcome.data) };
       if (outcome.status !== 200) scope.response.setStatus(outcome.status);
       return undefined;
     }
     try {
-      const outcome = await runAction(resolveAction(pageModule, ctx.url), ctx);
+      const outcome = await observedAction(pageModule, ctx);
       return outcome instanceof Response ? outcome : actionResultResponse(outcomeBody(outcome));
     } catch (error) {
       if (isRedirect(error)) throw error;
       const status = isHttpError(error) ? error.status : 500;
-      if (!isHttpError(error)) onError(error, ctx.request);
+      if (!isHttpError(error)) report(error, ctx, "action");
       const message = isHttpError(error)
         ? error.message
         : dev
@@ -714,7 +877,22 @@ export function createRequestHandler(options: RequestHandlerOptions): RequestHan
     }
   }
 
-  function endpointError(error: unknown, request: Request): Response {
+  /** Runs the action a page POST targets, observed by `action` wrappers. */
+  function observedAction(pageModule: ModuleExports, ctx: RequestContext) {
+    const action = resolveAction(pageModule, ctx.url);
+    const wrappers = hooks?.action;
+    if (wrappers === undefined || wrappers.length === 0) return runAction(action, ctx);
+    const { request, route, params } = ctx;
+    return observe(
+      wrappers,
+      { request, route, params, name: actionName(ctx.url) ?? "default" },
+      () => runAction(action, ctx),
+      wrapperFailed(request),
+    );
+  }
+
+  function endpointError(error: unknown, ctx: RequestContext, phase: RequestPhase): Response {
+    const { request } = ctx;
     if (isRedirect(error)) return redirectResponse(error, request);
     if (isHttpError(error)) {
       return new Response(error.message, {
@@ -722,7 +900,7 @@ export function createRequestHandler(options: RequestHandlerOptions): RequestHan
         headers: { "content-type": "text/plain; charset=utf-8" },
       });
     }
-    onError(error, request);
+    report(error, ctx, phase);
     return new Response(dev ? describe(error) : statusText(500), {
       status: 500,
       headers: { "content-type": "text/plain; charset=utf-8" },
@@ -757,19 +935,37 @@ export function createRequestHandler(options: RequestHandlerOptions): RequestHan
       options.document === undefined
         ? undefined
         : componentOf<DocumentComponent>(await loadModule(options.document), options.document);
-    const shell = await render(
-      { ...tree, document },
-      {
-        request,
-        signal: request.signal,
-        resolveAll,
-        onError: (error) => onError(error, request),
-        // Production: ErrorBoundary fallbacks see a generic error with a digest (decision-29).
-        ...(dev ? {} : { sanitizeErrors: true }),
-        ...(spa && options.spaEntry !== undefined ? { loaderUrl: options.spaEntry } : {}),
-        ...(options.csp === undefined ? {} : { csp: { nonce } }),
-      },
-    );
+    const { ctx } = scope;
+    const renderOptions: PageRenderOptions = {
+      request,
+      signal: request.signal,
+      resolveAll,
+      onError: (error, streamed) => report(error, ctx, streamed === true ? "stream" : "render"),
+      // Production: ErrorBoundary fallbacks see a generic error with a digest (decision-29), which
+      // the server log gets with the error; onRequestError gets every caught error, dev included.
+      onCaughtError: (error, { digest, streamed }) =>
+        report(error, ctx, streamed ? "stream" : "render", digest, digest !== undefined),
+      ...(dev ? {} : { sanitizeErrors: true }),
+      ...(spa && options.spaEntry !== undefined ? { loaderUrl: options.spaEntry } : {}),
+      ...(options.csp === undefined ? {} : { csp: { nonce } }),
+    };
+    if (hooks !== undefined && hooks.stream.length > 0) {
+      const wrappers = hooks.stream;
+      const info = { request, route: ctx.route, params: ctx.params };
+      renderOptions.onBoundary = (settled) => {
+        observe(wrappers, info, () => settled, wrapperFailed(request)).catch(() => {});
+      };
+    }
+    const page = { ...tree, document };
+    const shell =
+      hooks === undefined || hooks.render.length === 0
+        ? await render(page, renderOptions)
+        : await observe(
+            hooks.render,
+            { request, route: ctx.route, params: ctx.params },
+            () => render(page, renderOptions),
+            wrapperFailed(request),
+          );
     const state = scope.response;
     state.seal();
     let body: string | ReadableStream<Uint8Array>;
@@ -797,7 +993,7 @@ export function createRequestHandler(options: RequestHandlerOptions): RequestHan
         // Lumiose's canonical of a localized page: the page's or a layout's own replaces it.
         ...(defaultHead === "" ? {} : { defaults: addNonce(defaultHead, nonce) }),
       });
-      body = documentBody(parts, rules.stream, (error) => onError(error, request));
+      body = documentBody(parts, rules.stream, (error) => report(error, ctx, "stream"));
       // A prerendered page is a file: its inline scripts and styles are allowed by hash.
       if (hashMarker !== undefined && typeof body === "string") {
         body = await withHashPolicy(body, hashMarker);
@@ -827,11 +1023,16 @@ export function createRequestHandler(options: RequestHandlerOptions): RequestHan
    * Turns a thrown value into a response: a redirect, or the `_404` (404s) / `_error` page with its
    * layouts, then without them if a layout fails too, then a built-in fallback page.
    */
-  async function renderError(error: unknown, scope: RequestScope, pages: ErrorPages) {
+  async function renderError(
+    error: unknown,
+    scope: RequestScope,
+    pages: ErrorPages,
+    phase: RequestPhase = "render",
+  ) {
     const { request } = scope.ctx;
     if (isRedirect(error)) return redirectResponse(error, request);
     const status = isHttpError(error) ? error.status : 500;
-    if (!isHttpError(error)) onError(error, request);
+    if (!isHttpError(error)) report(error, scope.ctx, phase);
     const exposed = isHttpError(error)
       ? error
       : dev
@@ -876,7 +1077,7 @@ export function createRequestHandler(options: RequestHandlerOptions): RequestHan
           );
         } catch (failure) {
           if (isRedirect(failure)) return redirectResponse(failure, request);
-          onError(failure, request);
+          report(failure, scope.ctx, "render");
         }
       }
     }

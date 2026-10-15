@@ -44,7 +44,25 @@ export const GET: Endpoint = (ctx) => {
 `,
   "public/robots.txt": "User-agent: *\n",
   "public/assets/logo.svg": "<svg/>",
+  "src/instrumentation.server.ts": `import type { RequestErrorInfo } from "lumiose";
+const log: string[] = ((globalThis as any).lumioseInstrumentationLog ??= []);
+export function register() { log.push("register"); }
+export function onRequestError(error: unknown, info: RequestErrorInfo) {
+  log.push(\`\${info.phase} \${info.route} \${(error as Error).message}\`);
+}
+`,
+  "src/routes/api/fail/route.ts": `import type { Endpoint } from "lumiose";
+export const mode = "server";
+export const GET: Endpoint = (ctx) => {
+  ctx.platform.waitUntil(Promise.reject(new Error("later failed")));
+  throw new Error("endpoint failed");
 };
+`,
+};
+
+/** What `src/instrumentation.server.ts` of the fixture logged (TASK-298). */
+const instrumentationLog = (): string[] =>
+  ((globalThis as { lumioseInstrumentationLog?: string[] }).lumioseInstrumentationLog ??= []);
 
 let root: string;
 
@@ -157,6 +175,23 @@ describe.skipIf(!binding)("@lumiose/adapter-cloudflare", () => {
       ctx,
     );
     expect(posted.status).toBe(200);
+  });
+
+  it("reports errors and rejected waitUntil() work to src/instrumentation.server.ts (TASK-298)", async () => {
+    const worker = (await import(pathToFileURL(join(root, "dist/_worker.js")).href)) as {
+      default: { fetch(request: Request, env: unknown, ctx: unknown): Promise<Response> };
+    };
+    const waited: Array<Promise<unknown>> = [];
+    const ctx = { waitUntil: (promise: Promise<unknown>) => void waited.push(promise) };
+    const res = await worker.default.fetch(new Request("https://app.example/api/fail"), {}, ctx);
+    expect(res.status).toBe(500);
+    // Workers still see the rejection.
+    await expect(waited[0]).rejects.toThrow("later failed");
+    expect(instrumentationLog()).toEqual([
+      "register",
+      "waitUntil /api/fail later failed",
+      "endpoint /api/fail endpoint failed",
+    ]);
   });
 
   it("suggests a wrangler config for the build", () => {

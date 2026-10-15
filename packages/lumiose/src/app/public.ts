@@ -73,3 +73,4 @@ export type {
   ResponseContext,
   ServerEnv,
 } from "./server/context.ts";
+export type { RequestErrorInfo, ServerInstrumentation } from "./server/instrumentation.ts";

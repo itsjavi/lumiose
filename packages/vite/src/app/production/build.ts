@@ -33,6 +33,7 @@ import {
   DOCUMENT_FILES,
   findAppFile,
   findViteConfig,
+  INSTRUMENTATION_SERVER_FILES,
   MIDDLEWARE_FILES,
   navigationOptions,
   projectOptions,
@@ -143,6 +144,7 @@ export async function build(options: BuildOptions = {}): Promise<BuildResult> {
     manifest,
     middleware: findAppFile(root, MIDDLEWARE_FILES),
     document: findAppFile(root, DOCUMENT_FILES),
+    instrumentation: findAppFile(root, INSTRUMENTATION_SERVER_FILES),
   };
 
   const client = builder.environments.client!;

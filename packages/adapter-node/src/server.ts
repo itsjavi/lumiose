@@ -43,6 +43,12 @@ export interface HandlerOptions {
   /** `ctx.env` and `env()` of requests. Default: `process.env`. */
   env?: Readonly<Record<string, string | undefined>>;
   /**
+   * Receives the app's unexpected errors (not `redirect()`, `notFound()` or `error(status)`) with
+   * the request. Default: `console.error`. `src/instrumentation.server.ts`'s `onRequestError`
+   * receives them too, with the route and phase.
+   */
+  onError?: (error: unknown, request: Request) => void;
+  /**
    * Headers for every response, static files and the app's alike, such as
    * `Cross-Origin-Opener-Policy`/`Cross-Origin-Embedder-Policy` for `crossOriginIsolated`. A
    * response's own header of the same name wins (a page's `response().setHeader()`, a static
@@ -92,7 +98,10 @@ export async function createHandler(options: HandlerOptions = {}): Promise<NodeH
 }
 
 function nodeHandler(dir: string, entry: ServerEntryModule, options: HandlerOptions): NodeHandler {
-  const app = entry.createHandler(options.env === undefined ? {} : { env: options.env });
+  const app = entry.createHandler({
+    ...(options.env === undefined ? {} : { env: options.env }),
+    ...(options.onError === undefined ? {} : { onError: options.onError }),
+  });
   const compress = options.compress !== false;
   const statics = createStaticHandler(join(dir, "client"), entry.config, {
     compress,

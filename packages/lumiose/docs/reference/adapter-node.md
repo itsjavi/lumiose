@@ -46,6 +46,8 @@ interface HandlerOptions {
   origin?: string;
   /** `ctx.env` and `env()` of requests. Default: `process.env`. */
   env?: Readonly<Record<string, string | undefined>>;
+  /** The app's unexpected errors, with the request. Default: `console.error`. */
+  onError?: (error: unknown, request: Request) => void;
   /** Headers for every response; a response's own header of the same name wins. */
   headers?: import("node:http").OutgoingHttpHeaders;
   /** Compress responses for clients that accept brotli or gzip. Default: true. */
@@ -66,6 +68,12 @@ connect/Express middleware (errors go to `next`). The app is the build's `create
 ([server build](./server-entry.md#createhandler)); `ctx.platform.clientAddress` is the socket's
 remote address (a proxy's, behind one). Set `origin` (or `ORIGIN`) when a proxy terminates
 TLS or rewrites the host: request URLs, and the cross-site check of form posts, use it.
+
+`onError` receives the app's unexpected errors (not `redirect()`, `notFound()` or
+`error(status)`), as the build's `createHandler({ onError })` does; it replaces the default
+`console.error`. `src/instrumentation.server.ts` runs with the build either way: its
+`onRequestError` also receives them, with the route and phase
+([Server](../concepts/server.md#instrumentation)).
 
 `headers` go on every response, the static files (prerendered pages included) and the app's
 alike: the place for headers that middleware cannot add to static files, such as

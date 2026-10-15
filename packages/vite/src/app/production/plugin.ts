@@ -91,6 +91,8 @@ export interface BuildState {
     manifest: RouteManifest;
     middleware: string | undefined;
     document: string | undefined;
+    /** `src/instrumentation.server.ts` (decision-49), part of the server build when present. */
+    instrumentation?: string | undefined;
   };
   /** Island specifier → client chunk URL, from the client build. */
   islands: Record<string, string>;
@@ -428,7 +430,7 @@ function isEmptyStylesheetFacade(file: Rollup.OutputAsset | Rollup.OutputChunk):
 
 /** The server entry module: data of the built app plus its handler. */
 export function serverEntryCode(state: BuildState, config: ResolvedConfig): string {
-  const { manifest, middleware, document } = state.app!;
+  const { manifest, middleware, document, instrumentation } = state.app!;
   const files = new Set<string>([
     ...manifest.routes.map((route) => route.file),
     ...manifest.layouts.map((layout) => layout.file),
@@ -438,6 +440,7 @@ export function serverEntryCode(state: BuildState, config: ResolvedConfig): stri
   ]);
   if (middleware !== undefined) files.add(middleware);
   if (document !== undefined) files.add(document);
+  if (instrumentation !== undefined) files.add(instrumentation);
   const modules = [...files]
     .toSorted()
     .map(
@@ -460,6 +463,7 @@ export function serverEntryCode(state: BuildState, config: ResolvedConfig): stri
     },
     ...(middleware === undefined ? {} : { middleware }),
     ...(document === undefined ? {} : { document }),
+    ...(instrumentation === undefined ? {} : { instrumentation }),
     ...(state.csrf === undefined ? {} : { csrf: state.csrf }),
     ...(state.limits === undefined ? {} : { limits: state.limits }),
     ...(state.viewTransitions ? { viewTransitions: true } : {}),

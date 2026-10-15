@@ -80,24 +80,59 @@ that reaches the browser is `LUM4003`, also through a web worker, `new URL("…"
 or a `?raw`/`?url` import. `lumiose dev` does not serve these files over HTTP either: they are added
 to Vite's `server.fs.deny` unless the config sets its own list (the server still loads them).
 
-> **Status:** the request handler, middleware, endpoints, cookies, env and error pages are
-> available, served by `lumiose dev` and by the build output (`lumiose preview`,
-> [`@lumiose/adapter-node`](../reference/adapter-node.md)).
+### Instrumentation
+
+`src/instrumentation.server.ts` (also `.js` or `.mjs`; server-only by its `.server.` segment) is
+where error reporting and tracing start. `lumiose dev`, `lumiose preview`, the server build
+(`dist/server/entry.js` on any host) and the deploy adapters load it; prerendering at build time
+does not, since errors there fail the build. Its three exports are optional:
+
+- **`register()`** runs once per server instance (per isolate on workers), before the first
+  request, which waits for it: start an SDK here. `lumiose dev` runs it again after an edit of the
+  file. What it throws is logged, and the server goes on.
+- **`onRequestError(error, info)`** receives the unexpected errors of a request on every host,
+  `lumiose dev` included: those that render the `error` page or answer 500, errors of streamed
+  `<Suspense>` boundaries, rejected `ctx.platform.waitUntil()` work, and errors an
+  `<ErrorBoundary>` caught, with the `digest` its fallback shows outside dev. `redirect()`,
+  `notFound()` and `error(status)` are not errors. `info` is `{ request, route, params, phase,
+  digest }`, with `phase` one of `"middleware"` (also the route's locale checks), `"action"`,
+  `"endpoint"`, `"render"`, `"stream"` or `"waitUntil"`. The handler's `onError` (the host's log,
+  `console.error` by default) still gets each error first, except those an `<ErrorBoundary>`
+  caught in dev.
+- **`instrumentations`**, an array of observers with optional wrappers per phase: `request` (a
+  request until its response is ready to send, `call()`'s result adds `response.status`),
+  `middleware` (each middleware file, `info.file`), `action` (`info.name`: the key in `actions`,
+  or `"default"`), `endpoint` (`info.method`), `render` (a page or error page until its shell is
+  ready) and `stream` (each streamed boundary). A wrapper gets `call` and `info`
+  (`{ request, route, params }` plus those): call `call()` where the phase runs and await it to
+  time it. It never throws and resolves to `{ status: "success" }` or `{ status: "error", error }`.
+  A wrapper only observes: the phase runs once, also when the wrapper never calls `call()`, its
+  result is the phase's own, and what a wrapper throws is logged. The first observer is the
+  outermost. Static files are served before the app and are not observed; a `fetchJSON()` the
+  render handles in-process gets its phases observed, not a `request` of its own.
+
+Without the file nothing loads; with it, a phase without wrappers costs one check.
+
+> **Status:** the request handler, middleware, endpoints, cookies, env, error pages and
+> instrumentation are available, served by `lumiose dev` and by the build output
+> (`lumiose preview`, [`@lumiose/adapter-node`](../reference/adapter-node.md), the deploy adapters).
 
 ## API
 
-| API                                                                      | Use                                                                    |
-| ------------------------------------------------------------------------ | ---------------------------------------------------------------------- |
-| `RequestContext<P>` (`ctx`)                                              | `{ request, url, params, route, locals, cookies, env, platform }`.     |
-| `Middleware<P?>`                                                         | `(ctx, next) => Response \| Promise<Response>`; `P`: a folder's scope. |
-| `request()`, `url()`, `params<P>()`, `route()`, `locals()`, `cookies()`  | Request APIs during a server render.                                   |
-| `response()`                                                             | `{ status, setStatus, getHeader, setHeader }` until the shell is sent. |
-| `redirect(to, status?)`, `notFound(message?)`, `error(status, message?)` | Throw to stop rendering.                                               |
-| `isRedirect(e)`, `isHttpError(e)`                                        | Recognize those when you catch errors.                                 |
-| `signedCookie(name, options?)`                                           | `{ get(cookies), set(cookies, value), delete(cookies) }`.              |
-| `env(name)`, `publicEnv(source?)`                                        | Server env; the `PUBLIC_*` subset.                                     |
-| `Locals`                                                                 | Interface to augment with your request data.                           |
-| `Platform`, `PlatformEnv`                                                | `ctx.platform`; the interface to augment with your bindings.           |
+| API                                                                               | Use                                                                    |
+| --------------------------------------------------------------------------------- | ---------------------------------------------------------------------- |
+| `RequestContext<P>` (`ctx`)                                                       | `{ request, url, params, route, locals, cookies, env, platform }`.     |
+| `Middleware<P?>`                                                                  | `(ctx, next) => Response \| Promise<Response>`; `P`: a folder's scope. |
+| `request()`, `url()`, `params<P>()`, `route()`, `locals()`, `cookies()`           | Request APIs during a server render.                                   |
+| `response()`                                                                      | `{ status, setStatus, getHeader, setHeader }` until the shell is sent. |
+| `redirect(to, status?)`, `notFound(message?)`, `error(status, message?)`          | Throw to stop rendering.                                               |
+| `isRedirect(e)`, `isHttpError(e)`                                                 | Recognize those when you catch errors.                                 |
+| `signedCookie(name, options?)`                                                    | `{ get(cookies), set(cookies, value), delete(cookies) }`.              |
+| `env(name)`, `publicEnv(source?)`                                                 | Server env; the `PUBLIC_*` subset.                                     |
+| `Locals`                                                                          | Interface to augment with your request data.                           |
+| `Platform`, `PlatformEnv`                                                         | `ctx.platform`; the interface to augment with your bindings.           |
+| `src/instrumentation.server.ts`: `register`, `onRequestError`, `instrumentations` | Observes the server ([Instrumentation](#instrumentation)).             |
+| `RequestErrorInfo`, `ServerInstrumentation`                                       | `onRequestError`'s `info`; one observer of `instrumentations`.         |
 
 ## Example
 
@@ -150,7 +185,95 @@ export default function Account() {
 }
 ```
 
+```ts check file=instrumentation.server.ts
+// src/instrumentation.server.ts
+import type { RequestErrorInfo, ServerInstrumentation } from "lumiose";
+
+export async function register() {
+  // Once per server instance, before the first request: start an SDK here.
+}
+
+export function onRequestError(error: unknown, info: RequestErrorInfo) {
+  const where = `${info.request.method} ${info.route ?? "(no route)"} [${info.phase}]`;
+  console.error(where, info.digest ?? "", error);
+}
+
+export const instrumentations: ServerInstrumentation[] = [
+  {
+    request: async (call, info) => {
+      const start = performance.now();
+      const result = await call();
+      const status = result.status === "success" ? result.response?.status : "failed";
+      const ms = Math.round(performance.now() - start);
+      console.log(`${info.request.method} ${info.route ?? "-"} ${status} ${ms} ms`);
+    },
+  },
+];
+```
+
+Tracing with [OpenTelemetry](https://opentelemetry.io/docs/languages/js/): install
+`@opentelemetry/api` and an SDK (`@opentelemetry/sdk-node` with an exporter), start the SDK in
+`register()`, and open a span per phase. Spans nest as the phases do: middleware inside the request,
+the action, endpoint or render inside the middleware. Instrumenting other libraries automatically
+(database drivers, `fetch`) still needs `node --import`, as OpenTelemetry documents.
+
+```ts
+// src/instrumentation.server.ts
+import { SpanStatusCode, trace, type Attributes } from "@opentelemetry/api";
+import type { ServerInstrumentation } from "lumiose";
+
+export async function register() {
+  const { NodeSDK } = await import("@opentelemetry/sdk-node");
+  new NodeSDK({ serviceName: "my-app" }).start(); // exporters from OTEL_* env variables
+}
+
+const tracer = trace.getTracer("my-app");
+
+/** A span around one phase, failed when the phase failed. */
+const span =
+  (name: string, attributes: Attributes) =>
+  (call: () => Promise<{ status: "success" | "error"; error?: unknown }>) =>
+    tracer.startActiveSpan(name, { attributes }, async (s) => {
+      const result = await call();
+      if (result.status === "error") {
+        s.recordException(result.error as Error);
+        s.setStatus({ code: SpanStatusCode.ERROR });
+      }
+      s.end();
+    });
+
+export const instrumentations: ServerInstrumentation[] = [
+  {
+    request: (call, info) =>
+      tracer.startActiveSpan(`${info.request.method} ${info.route ?? ""}`, async (s) => {
+        s.setAttributes({
+          "http.request.method": info.request.method,
+          "http.route": info.route ?? "",
+        });
+        const result = await call();
+        if (result.status === "success" && result.response !== undefined) {
+          s.setAttribute("http.response.status_code", result.response.status);
+          if (result.response.status >= 500) s.setStatus({ code: SpanStatusCode.ERROR });
+        }
+        s.end();
+      }),
+    middleware: (call, info) => span("middleware", { "code.file.path": info.file })(call),
+    action: (call, info) => span(`action ${info.name}`, { "http.route": info.route ?? "" })(call),
+    endpoint: (call, info) =>
+      span(`${info.method} handler`, { "http.route": info.route ?? "" })(call),
+    render: (call, info) => span("render", { "http.route": info.route ?? "" })(call),
+    stream: (call, info) => span("stream", { "http.route": info.route ?? "" })(call),
+  },
+];
+```
+
 ## Common mistakes
+
+- **Reporting errors from middleware with `try`/`catch` around `next()`.** The error page, the
+  `500` of an endpoint and streamed boundaries never throw there. Use `onRequestError` in
+  `src/instrumentation.server.ts`.
+- **Changing the request in an instrumentation wrapper.** Wrappers observe: they cannot change
+  arguments, results or the response. Use middleware for that.
 
 - **Guarding a section in a layout.** A layout's `redirect()` does not cover the folder's form
   actions or endpoints. Put the check in the folder's `middleware.ts`.

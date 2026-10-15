@@ -98,7 +98,12 @@ export interface RenderState {
   /** URL of the island loader script; sent once, with the first island records. */
   readonly loaderUrl: string | undefined;
   loaderSent: boolean;
-  readonly onError: (error: unknown) => void;
+  /** Errors no `<ErrorBoundary>` handled; `streamed` when they belong to a streamed boundary. */
+  readonly onError: (error: unknown, streamed?: boolean) => void;
+  /** Each error an `<ErrorBoundary>` caught, with its digest when sanitized (./render.ts). */
+  readonly onCaughtError: (error: unknown, info: CaughtErrorInfo) => void;
+  /** Each streamed boundary's content, settling once it is ready or failed (instrumentation). */
+  readonly onBoundary: ((settled: Promise<unknown>) => void) | undefined;
   /** `<ErrorBoundary>` fallbacks get a generic error with a digest (production, decision-29). */
   readonly sanitizeErrors: boolean;
   /** The request's root owner: disposed (aborting `getAbortSignal()`) when the render ends. */
@@ -127,6 +132,13 @@ export interface RenderState {
   hydrates: boolean;
   /** `renderToStream(root, { idPrefix })`: prepended to every `useId()` (./id.ts). */
   readonly idPrefix: string;
+}
+
+/** Where an `<ErrorBoundary>` caught an error: `digest` is set when the fallback got a generic one. */
+export interface CaughtErrorInfo {
+  digest: string | undefined;
+  /** Inside a streamed boundary, after the shell was sent. */
+  streamed: boolean;
 }
 
 export interface Frame {

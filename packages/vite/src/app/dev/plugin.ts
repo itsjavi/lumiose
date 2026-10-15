@@ -34,6 +34,7 @@ import {
   DOCUMENT_FILES,
   findAppFile,
   hrefDefine,
+  INSTRUMENTATION_SERVER_FILES,
   isClientState,
   islandModules,
   MIDDLEWARE_FILES,
@@ -111,6 +112,8 @@ interface AppFiles {
   manifest: RouteManifest;
   middleware: string | undefined;
   document: string | undefined;
+  /** `src/instrumentation.server.ts` (decision-49). */
+  instrumentation: string | undefined;
   /** Route manifest errors, shown in the overlay of every page until fixed. */
   errors: OverlayError[];
   key: string;
@@ -154,6 +157,7 @@ export function lumioseDev(options: LumioseDevOptions = {}): Plugin {
     const { manifest } = await typegen(root, { routesDir, ...defaults });
     const middleware = findAppFile(root, MIDDLEWARE_FILES);
     const document = findAppFile(root, DOCUMENT_FILES);
+    const instrumentation = findAppFile(root, INSTRUMENTATION_SERVER_FILES);
     const errors = manifest.diagnostics
       .filter((diagnostic) => diagnostic.severity === "error")
       .map((diagnostic) => diagnosticError(diagnostic, root));
@@ -165,8 +169,9 @@ export function lumioseDev(options: LumioseDevOptions = {}): Plugin {
       manifest.diagnostics,
       middleware,
       document,
+      instrumentation,
     ]);
-    return { manifest, middleware, document, errors, key };
+    return { manifest, middleware, document, instrumentation, errors, key };
   }
 
   function reportDiagnostics(diagnostics: readonly AppDiagnostic[]): void {
@@ -213,7 +218,9 @@ export function lumioseDev(options: LumioseDevOptions = {}): Plugin {
     if (file.startsWith(`${routesDir}/`)) {
       refresh();
     } else if (
-      (MIDDLEWARE_FILES.includes(file) || DOCUMENT_FILES.includes(file)) &&
+      (MIDDLEWARE_FILES.includes(file) ||
+        DOCUMENT_FILES.includes(file) ||
+        INSTRUMENTATION_SERVER_FILES.includes(file)) &&
       (event === "add" || event === "unlink")
     ) {
       refresh();
@@ -245,6 +252,10 @@ export function lumioseDev(options: LumioseDevOptions = {}): Plugin {
       ...(hasSpa(current.manifest) ? { spaEntry: virtualUrl(base, SPA_ENTRY_ID) } : {}),
       ...(current.middleware === undefined ? {} : { middleware: current.middleware }),
       ...(current.document === undefined ? {} : { document: current.document }),
+      // register() runs once per module instance: again after an edit of the file.
+      ...(current.instrumentation === undefined
+        ? {}
+        : { instrumentation: current.instrumentation }),
       headAssets: (files) => headAssets(current, files),
       env: serverEnv(server),
       dev: true,
@@ -458,6 +469,13 @@ if (import.meta.hot) import.meta.hot.accept((next) => {
         // entry, deleted route files included), invalidate the file and its importers: the next
         // request re-imports them; unrelated server modules (a database client) stay loaded.
         invalidateRunner(file);
+        // The handler holds the instrumentation it loaded: a new one loads the edited file.
+        if (
+          app.instrumentation !== undefined &&
+          file === normalizePath(join(root, app.instrumentation))
+        ) {
+          cached = undefined;
+        }
         if (hotSwappable(file)) {
           // An island's own module: its instances re-render in the browser (the accept handler
           // appended by `transform`), so the page and the other islands keep their state.
