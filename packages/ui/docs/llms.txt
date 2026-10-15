@@ -1,0 +1,16 @@
+# Lumiose UI
+
+> `@lumiose/ui`: accessible, unstyled UI primitives built on native elements (`<dialog>`, popover, invoker commands, CSS anchor positioning), server-rendered without hydration. Style them with your own CSS or the optional default theme.
+
+These docs ship in `@lumiose/ui` and match the installed version: `node_modules/@lumiose/ui/docs`.
+In a project that depends on it, `lumiose docs ui` prints the index and `lumiose docs dialog` a
+component's page; the Lumiose MCP server's `ui_components` tool lists every component's parts,
+props, events and styling hooks. The Lumiose docs: `node_modules/lumiose/docs/llms.txt`.
+
+## Overview
+
+- [UI components](README.md): `@lumiose/ui`: accessible, unstyled UI primitives built on native elements (`<dialog>`, popover, invoker commands, CSS anchor positioning), server-rendered without hydration. Style them with your own CSS or the optional default theme.
+
+## Components
+
+- [Dialog](dialog.md): A modal dialog, or an alert dialog that needs an answer: a native `<dialog>` opened and closed by invoker commands, so it works in server HTML with no JavaScript, and a 0.8 kB script closes the native element's gaps where JavaScript runs. `bind:open` (or `open` and `onOpenChange`) keeps a signal in sync in islands.

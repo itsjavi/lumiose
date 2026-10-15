@@ -35,6 +35,12 @@ the [Lumiose MCP server](reference/mcp.md) for Claude Code (`.mcp.json`) and Cod
 (`.codex/config.toml`). Run `create-lumiose --help` for the options (`--yes`, `--force`, `--mcp`,
 `--format json`).
 
+**Status:** `create-lumiose` will also offer `@lumiose/ui`, the accessible and unstyled UI
+components, with a question and `--ui`, once that package is on npm: it adds the dependency, imports
+its stylesheet and default theme in the root layout, and adds its agent files (a UI part in
+`AGENTS.md` and the `lumiose-ui` skill). In a project that already depends on it,
+`lumiose agents init` adds those agent files.
+
 The rest of this page sets a project up by hand, step by step.
 
 ## 1. Install

@@ -16,6 +16,10 @@ import {
 } from "lumiose";
 import dialogScript from "./dialog.script.ts?client";
 
+/**
+ * `Dialog.Root` renders no element: it holds the dialog's state and the ids its parts share.
+ * `bind:open={signal}` stands in for `open` and `onOpenChange`.
+ */
 export interface DialogRootProps {
   /**
    * Opens (`true`) or closes (`false`) the dialog when it changes, in the browser. Pair it with
@@ -30,6 +34,7 @@ export interface DialogRootProps {
    * (Escape still does). Default `"dialog"`.
    */
   role?: "dialog" | "alertdialog";
+  /** The other parts: a `Dialog.Trigger` and the `Dialog.Popup`, anywhere inside. */
   children?: JSX.Element;
 }
 

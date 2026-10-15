@@ -1,6 +1,7 @@
 // `lumiose docs [topic]` and `lumiose explain <code>` (spec §10, decision-10): print and search the
-// version-matched Markdown docs shipped in `lumiose/docs`. Also the docs API that the MCP server's
-// `docs_get` / `docs_search` tools build on (TASK-34).
+// version-matched Markdown docs shipped in `lumiose/docs`, plus @lumiose/ui's (`ui/…` topics) when
+// the project has it installed (decision-64). Also the docs API that the MCP server's `docs_get` /
+// `docs_search` tools build on (TASK-34).
 //
 // A topic is a docs path without `.md`: `concepts/signals`, `reference/app`, `errors/LUM1004`.
 // Lookups also accept a bare name (`signals`), a code (`LUM1004`) and the older
@@ -18,8 +19,8 @@ import {
   type Failure,
   type OutputFormat,
 } from "../output.ts";
+import { UI_PREFIX, uiDocsDir } from "./ui.ts";
 
-/** The docs shipped with this version of `lumiose`. */
 /** The docs shipped with the installed `lumiose` package (the version the project runs). */
 export const DOCS_DIR = join(
   dirname(createRequire(import.meta.url).resolve("lumiose/package.json")),
@@ -90,6 +91,19 @@ export function loadDocs(dir: string = DOCS_DIR): Doc[] {
   return topics
     .toSorted(compareTopics)
     .map((topic) => parseDoc(topic, readFileSync(join(dir, `${topic}.md`), "utf8")));
+}
+
+/**
+ * The docs a project reads: lumiose's from `dir`, then @lumiose/ui's from `uiDir` (by default the
+ * one `root` has installed) with `ui/` topics, in reading order.
+ */
+export function loadProjectDocs(options: { root?: string; dir?: string; uiDir?: string }): Doc[] {
+  const uiDir = options.uiDir ?? (options.root === undefined ? undefined : uiDocsDir(options.root));
+  const ui = uiDir === undefined ? [] : loadDocs(uiDir);
+  return [
+    ...loadDocs(options.dir),
+    ...ui.map((doc) => ({ ...doc, topic: UI_PREFIX + doc.topic })),
+  ].toSorted((a, b) => compareTopics(a.topic, b.topic));
 }
 
 export function parseDoc(topic: string, content: string): Doc {
@@ -290,8 +304,12 @@ export interface DocsCommandOptions {
   format: OutputFormat;
   write: (text: string) => void;
   writeError: (text: string) => void;
+  /** The project root, whose installed @lumiose/ui adds its pages. */
+  root?: string;
   /** Docs directory (tests). */
   dir?: string;
+  /** UI docs directory (tests). Default: the installed @lumiose/ui's. */
+  uiDir?: string;
 }
 
 /** Writes a failure: the JSON envelope (with `payload`) on stdout, or the message on stderr. */
@@ -325,7 +343,7 @@ function entry(doc: DocEntry): DocEntry {
 
 /** `lumiose docs [topic]`: prints a topic, or the search results for the query. */
 export function docsCommand(options: DocsCommandOptions): number {
-  const docs = loadDocs(options.dir);
+  const docs = loadProjectDocs(options);
   if (docs.length === 0) {
     return fail("docs", options, EXIT_FAILURE, {
       message: `no docs found in ${options.dir ?? DOCS_DIR}.`,

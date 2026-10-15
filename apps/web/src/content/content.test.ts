@@ -6,7 +6,7 @@ import { site } from "../lib/site.ts";
 import { docHref, docNav, docPages, findDoc, readOutline, slugify } from "./docs.ts";
 import { evidence, readFullstack, type FullstackRun } from "./evidence.ts";
 import { factor, headlines, kilobytes, perSecond, readStacks, stacks } from "./stacks.ts";
-import { llmsText } from "./llms.ts";
+import { llmsText, uiLlmsText } from "./llms.ts";
 import { fillReadme, generateReadme, readmeRegions } from "./readme.ts";
 import rootReadme from "../../../../README.md?raw";
 import { FILENAME, ROOT } from "../playground/compiler.ts";
@@ -22,6 +22,11 @@ describe("docs", () => {
     expect(docHref("../README.md", "concepts/jsx")).toBe("/docs");
     expect(docHref("https://example.com/a.md", "README")).toBe("https://example.com/a.md");
     expect(docHref("#concept", "README")).toBe("#concept");
+    // The UI pages (packages/ui/docs) link Lumiose's by their site URLs.
+    expect(docHref("https://itsjavi.com/lumiose/docs/concepts/islands/", "ui/dialog")).toBe(
+      "/docs/concepts/islands",
+    );
+    expect(docHref("README.md#the-default-theme", "ui/dialog")).toBe("/docs/ui#the-default-theme");
   });
 
   it("makes GitHub-style heading anchors", () => {
@@ -50,6 +55,10 @@ describe("docs", () => {
     expect(readOutline("## A\n\n- [One](one.md): x\n")).toEqual([
       { title: "A", entries: [{ topic: "one", label: "One" }] },
     ]);
+    // @lumiose/ui's pages fill the UI section (decision-64).
+    const ui = docNav().find((section) => section.title === "UI")!.pages;
+    expect(ui.map((page) => page.topic).slice(0, 2)).toEqual(["ui/README", "ui/dialog"]);
+    expect(findDoc("ui/dialog")?.title).toBe("Dialog");
   });
 
   it("links only to pages and anchors that exist", () => {
@@ -75,6 +84,14 @@ describe("docs", () => {
   it("serves llms.txt with links to the site's pages", () => {
     const text = llmsText();
     expect(text).toContain("[Signals and reactivity](/docs/concepts/signals)");
+    expect(text).not.toMatch(/\]\([^)]+\.md\)/);
+    expect(text).toContain("](https://itsjavi.com/lumiose/ui/llms.txt)");
+  });
+
+  it("serves @lumiose/ui's llms.txt with links to its pages on the site", () => {
+    const text = uiLlmsText();
+    expect(text).toMatch(/^# Lumiose UI\n/);
+    expect(text).toContain("[Dialog](/docs/ui/dialog)");
     expect(text).not.toMatch(/\]\([^)]+\.md\)/);
   });
 });

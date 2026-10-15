@@ -1,5 +1,7 @@
 // The docs content layer: the version-matched Markdown of `packages/lumiose/docs` (the single source
-// that `lumiose docs` prints and the package ships), rendered for /docs.
+// that `lumiose docs` prints and the package ships), rendered for /docs. @lumiose/ui ships its own
+// docs (`packages/ui/docs`, decision-64): they are mounted below `ui/` and fill the index's UI
+// section, in the order of their llms.txt.
 //
 // This is the only module that knows the docs are Markdown files read through Vite: it loads them
 // as raw strings with `import.meta.glob(…, { query: "?raw" })` and renders them with `marked`.
@@ -10,6 +12,7 @@
 import { highlight } from "@lumiose/site-kit/highlight";
 import { href as routeHref } from "lumiose";
 import { Marked, Renderer, type Token, type Tokens } from "marked";
+import uiIndex from "../../../../packages/ui/docs/llms.txt?raw";
 
 const sources = import.meta.glob<string>("../../../../packages/lumiose/docs/**/*.md", {
   query: "?raw",
@@ -17,6 +20,14 @@ const sources = import.meta.glob<string>("../../../../packages/lumiose/docs/**/*
   eager: true,
 });
 const DOCS_DIR = "../../../../packages/lumiose/docs/";
+const uiSources = import.meta.glob<string>("../../../../packages/ui/docs/**/*.md", {
+  query: "?raw",
+  import: "default",
+  eager: true,
+});
+const UI_DOCS_DIR = "../../../../packages/ui/docs/";
+/** The UI pages link Lumiose's pages by their URLs on this site (they ship in another package). */
+const SITE_DOCS = "https://itsjavi.com/lumiose/docs/";
 
 export interface DocHeading {
   depth: 2 | 3;
@@ -64,17 +75,23 @@ let cache: { pages: DocPage[]; byPath: Map<string, DocPage>; nav: NavSection[] }
 
 function load() {
   if (cache !== undefined) return cache;
-  const texts = new Map(
-    Object.entries(sources).map(([file, text]) => [
-      file.slice(DOCS_DIR.length, -".md".length),
-      text,
-    ]),
-  );
+  const texts = new Map<string, string>();
+  for (const [file, text] of Object.entries(sources)) {
+    texts.set(file.slice(DOCS_DIR.length, -".md".length), text);
+  }
+  for (const [file, text] of Object.entries(uiSources)) {
+    texts.set(`ui/${file.slice(UI_DOCS_DIR.length, -".md".length)}`, text);
+  }
   const index = texts.get("README");
   if (index === undefined) throw new Error(`No docs index at ${DOCS_DIR}README.md.`);
 
   // The index's sections give the reading order and the navigation labels.
-  const outline = readOutline(index);
+  const ui = readOutline(uiIndex)
+    .flatMap((section) => section.entries)
+    .map((entry) => ({ topic: `ui/${entry.topic}`, label: entry.label }));
+  const outline = readOutline(index)
+    .map((section) => (section.title === "UI" ? { ...section, entries: ui } : section))
+    .filter((section) => section.entries.length > 0);
   const placed = new Set(outline.flatMap((section) => section.entries.map((entry) => entry.topic)));
   const diagnostics = [...texts.keys()]
     .filter((topic) => topic.startsWith("errors/") && !placed.has(topic))
@@ -138,7 +155,7 @@ interface OutlineSection {
   entries: { topic: string; label: string }[];
 }
 
-/** `## Section` headings with `- [Label](topic.md): …` items, in order. */
+/** `## Section` headings with `- [Label](topic.md): …` items, in order (sections may be empty). */
 export function readOutline(index: string): OutlineSection[] {
   const sections: OutlineSection[] = [];
   for (const line of index.split("\n")) {
@@ -152,7 +169,7 @@ export function readOutline(index: string): OutlineSection[] {
       sections.at(-1)!.entries.push({ topic: item[2]!, label: plain(item[1]!) });
     }
   }
-  return sections.filter((section) => section.entries.length > 0);
+  return sections;
 }
 
 // --- Rendering ---------------------------------------------------------------------------------
@@ -172,6 +189,10 @@ export function topicUrl(topic: string, hash = ""): string {
  * its `#hash`); other links are left alone.
  */
 export function docHref(href: string, from: string): string {
+  if (href.startsWith(SITE_DOCS)) {
+    const [path = "", hash] = href.slice(SITE_DOCS.length).split("#");
+    return topicUrl(path.replace(/\/$/, "") || "README", hash === undefined ? "" : `#${hash}`);
+  }
   if (/^[a-z][a-z0-9+.-]*:|^\/\/|^#/i.test(href)) return href;
   const match = /^([^#?]*?)\.md(#.*)?$/.exec(href);
   if (match === null) return href;

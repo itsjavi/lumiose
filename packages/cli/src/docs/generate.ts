@@ -7,6 +7,7 @@
 // below `END_MARKER`, which regeneration keeps. A code without a page gets a stub body.
 
 import type { Doc } from "./index.ts";
+import { isComponentPage } from "./ui.ts";
 
 /** The single source of truth for diagnostic codes (spec §5.4). */
 export const REGISTRY_PATH = "crates/lumiose_compiler/src/diagnostics/registry.rs";
@@ -159,9 +160,12 @@ interface IndexSection {
   links: { title: string; path: string; description: string | undefined }[];
 }
 
-const LINK = /^\s*[-*]\s+\[([^\]]+)\]\(([^)]+\.md)\)(?:\s*(?::|—|-)\s*(.+))?$/;
+const LINK = /^\s*[-*]\s+\[([^\]]+)\]\(([^)]+\.md|https?:[^)\s]+)\)(?:\s*(?::|—|-)\s*(.+))?$/;
 
-/** The `## Section` → `- [Title](path): description` lists of the docs index. */
+/**
+ * The `## Section` → `- [Title](path): description` lists of the docs index. A link is a docs
+ * path, or an absolute URL (another package's docs, such as @lumiose/ui's llms.txt).
+ */
 export function parseIndex(readme: string): IndexSection[] {
   const sections: IndexSection[] = [];
   for (const line of readme.split("\n")) {
@@ -207,10 +211,11 @@ export function generateLlms(docs: readonly Doc[], version: string): Map<string,
   for (const section of sections) {
     index.push("", `## ${section.heading}`, "");
     for (const link of section.links) {
-      const doc = byPath.get(link.path);
-      if (!doc) throw new Error(`docs/README.md links to a missing doc: ${link.path}`);
-      if (!ordered.includes(doc)) ordered.push(doc);
-      const description = link.description ?? doc.summary;
+      const external = /^https?:/.test(link.path);
+      const doc = external ? undefined : byPath.get(link.path);
+      if (!external && !doc) throw new Error(`docs/README.md links to a missing doc: ${link.path}`);
+      if (doc && !ordered.includes(doc)) ordered.push(doc);
+      const description = link.description ?? doc?.summary;
       index.push(`- [${link.title}](${link.path})${description ? `: ${description}` : ""}`);
     }
   }
@@ -222,7 +227,20 @@ export function generateLlms(docs: readonly Doc[], version: string): Map<string,
   for (const doc of docs) {
     if (!ordered.includes(doc)) ordered.push(doc);
   }
+  return llmsFiles(index, intro, ordered);
+}
 
+/** An index entry of the UI llms.txt. */
+function uiEntry(doc: Doc): string {
+  return `- [${doc.title}](${doc.topic}.md)${doc.summary ? `: ${doc.summary}` : ""}`;
+}
+
+/** `llms.txt` from its lines, and `llms-full.txt`: the intro, then every doc in `ordered`. */
+function llmsFiles(
+  index: readonly string[],
+  intro: readonly string[],
+  ordered: readonly Doc[],
+): Map<string, string> {
   const full = [...intro, ""];
   for (const doc of ordered) {
     full.push("", `<!-- source: ${doc.topic}.md -->`, "", doc.content.trim(), "");
@@ -231,4 +249,41 @@ export function generateLlms(docs: readonly Doc[], version: string): Map<string,
     ["llms.txt", `${index.join("\n")}\n`],
     ["llms-full.txt", `${full.join("\n").replace(/\n{3,}/g, "\n\n")}\n`],
   ]);
+}
+
+/**
+ * `llms.txt` and `llms-full.txt` of @lumiose/ui's docs (decision-64): the index (`README`) and
+ * any other guide under Overview, then every component page by title. Links are relative to the
+ * UI docs directory. The docs ship in the package, so they match the installed version without
+ * naming it: a release of @lumiose/ui does not regenerate them.
+ */
+export function generateUiLlms(docs: readonly Doc[]): Map<string, string> {
+  const readme = docs.find((doc) => doc.topic === "README");
+  if (!readme) throw new Error("The UI docs have no README.md index.");
+  const guides = docs.filter((doc) => doc !== readme && !isComponentPage(doc));
+  const components = docs
+    .filter(isComponentPage)
+    .toSorted((a, b) => a.title.localeCompare(b.title));
+  const intro = [
+    "# Lumiose UI",
+    "",
+    `> ${readme.summary ?? "Docs for @lumiose/ui."}`,
+    "",
+    "These docs ship in `@lumiose/ui` and match the installed version: `node_modules/@lumiose/ui/docs`.",
+    "In a project that depends on it, `lumiose docs ui` prints the index and `lumiose docs dialog` a",
+    "component's page; the Lumiose MCP server's `ui_components` tool lists every component's parts,",
+    "props, events and styling hooks. The Lumiose docs: `node_modules/lumiose/docs/llms.txt`.",
+  ];
+  const index = [
+    ...intro,
+    "",
+    "## Overview",
+    "",
+    ...[readme, ...guides].map(uiEntry),
+    "",
+    "## Components",
+    "",
+    ...components.map(uiEntry),
+  ];
+  return llmsFiles(index, intro, [readme, ...guides, ...components]);
 }
