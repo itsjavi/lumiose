@@ -1,0 +1,164 @@
+/*
+ * Option (b): the port keeps Timeless's CSS architecture (tokens, a required core of behaviour, a
+ * replaceable look), in layers so unlayered app CSS always wins. Styling hooks are native and ARIA
+ * state ([open], :popover-open, aria-expanded, aria-checked, aria-selected, aria-disabled), plus
+ * Base UI's `data-highlighted` for the active option.
+ */
+@layer lu.tokens, lu.core, lu.theme;
+
+@layer lu.tokens {
+  :root {
+    color-scheme: light dark;
+    --lu-bg: light-dark(#fff, #18181b);
+    --lu-surface: light-dark(#fff, #232326);
+    --lu-fg: light-dark(#18181b, #f4f4f5);
+    --lu-muted: light-dark(#71717a, #a1a1aa);
+    --lu-border: light-dark(#e4e4e7, #3f3f46);
+    --lu-accent: light-dark(#4f46e5, #818cf8);
+    --lu-accent-fg: light-dark(#fff, #18181b);
+    --lu-highlight: light-dark(#eef2ff, #312e81);
+    --lu-radius: 0.5rem;
+    --lu-shadow: 0 10px 30px -10px rgb(0 0 0 / 0.35);
+  }
+}
+
+@layer lu.core {
+  lu-menu,
+  lu-combobox {
+    display: contents;
+  }
+  .lu-popup:popover-open {
+    position: fixed;
+    inset: auto;
+    margin: 0;
+    position-area: block-end span-inline-end;
+    position-try-fallbacks: flip-block;
+    max-block-size: 18rem;
+    overflow: auto;
+  }
+  .lu-menu-popup:popover-open,
+  .lu-listbox:popover-open {
+    display: grid;
+  }
+  /* Display rules sit on :not([hidden]) so a theme's `display` never shows a filtered-out option. */
+  .lu-option:not([hidden]),
+  .lu-menu-item {
+    display: flex;
+    align-items: center;
+  }
+}
+
+@layer lu.theme {
+  .lu-button {
+    font: inherit;
+    padding: 0.45rem 0.9rem;
+    border: 1px solid var(--lu-border);
+    border-radius: var(--lu-radius);
+    background: var(--lu-surface);
+    color: var(--lu-fg);
+    cursor: pointer;
+  }
+  .lu-button:hover {
+    border-color: var(--lu-muted);
+  }
+  .lu-button:focus-visible,
+  .lu-input:focus-visible {
+    outline: 2px solid var(--lu-accent);
+    outline-offset: 2px;
+  }
+  .lu-button[data-variant="danger"] {
+    background: light-dark(#dc2626, #f87171);
+    border-color: transparent;
+    color: var(--lu-accent-fg);
+  }
+
+  .lu-dialog {
+    max-inline-size: min(28rem, calc(100vw - 2rem));
+    padding: 1.25rem;
+    border: 1px solid var(--lu-border);
+    border-radius: calc(var(--lu-radius) * 1.5);
+    background: var(--lu-surface);
+    color: var(--lu-fg);
+    box-shadow: var(--lu-shadow);
+  }
+  .lu-dialog::backdrop {
+    background: rgb(0 0 0 / 0.45);
+  }
+  .lu-dialog h2 {
+    margin: 0 0 0.5rem;
+    font-size: 1.125rem;
+  }
+  .lu-dialog p {
+    margin: 0 0 1.25rem;
+    color: var(--lu-muted);
+  }
+  .lu-dialog footer {
+    display: flex;
+    justify-content: end;
+    gap: 0.5rem;
+  }
+
+  .lu-popup {
+    min-inline-size: anchor-size(width);
+    margin-block: 0.25rem;
+    padding: 0.25rem;
+    border: 1px solid var(--lu-border);
+    border-radius: var(--lu-radius);
+    background: var(--lu-surface);
+    color: var(--lu-fg);
+    box-shadow: var(--lu-shadow);
+  }
+  .lu-menu-popup {
+    min-inline-size: 11rem;
+  }
+
+  .lu-menu-item,
+  .lu-option {
+    gap: 0.5rem;
+    padding: 0.4rem 0.6rem;
+    border: 0;
+    border-radius: calc(var(--lu-radius) - 0.125rem);
+    background: none;
+    color: inherit;
+    font: inherit;
+    text-align: start;
+    cursor: default;
+  }
+  .lu-menu-item:focus,
+  .lu-option[data-highlighted] {
+    outline: none;
+    background: var(--lu-highlight);
+  }
+  .lu-menu-item[aria-disabled="true"],
+  .lu-option[aria-disabled="true"] {
+    color: var(--lu-muted);
+  }
+  .lu-menu-item::before,
+  .lu-option::before {
+    content: "";
+    inline-size: 1rem;
+  }
+  .lu-menu-item[aria-checked="true"]::before,
+  .lu-option[aria-selected="true"]::before {
+    content: "✓";
+  }
+  .lu-separator {
+    block-size: 1px;
+    margin: 0.25rem 0;
+    background: var(--lu-border);
+  }
+
+  .lu-label {
+    font-size: 0.875rem;
+    color: var(--lu-muted);
+  }
+  .lu-input {
+    font: inherit;
+    inline-size: 14rem;
+    padding: 0.45rem 0.6rem;
+    border: 1px solid var(--lu-border);
+    border-radius: var(--lu-radius);
+    background: var(--lu-surface);
+    color: var(--lu-fg);
+  }
+}
