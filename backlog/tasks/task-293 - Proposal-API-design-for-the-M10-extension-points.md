@@ -1,15 +1,18 @@
 ---
 id: TASK-293
 title: 'Proposal: API design for the M10 extension points'
-status: To Do
+status: In Progress
 assignee:
   - '@Lux'
 created_date: '2026-10-15 02:21'
+updated_date: '2026-10-15 02:39'
 labels:
   - proposal
   - needs-decision
 milestone: m-10
 dependencies: []
+documentation:
+  - doc-8
 priority: high
 ordinal: 295000
 ---
@@ -33,3 +36,9 @@ Out of scope: route loaders and RPC server functions (decision-18), routes defin
 - [ ] #3 Approved shapes are recorded as decisions, and M10's implementation tasks are updated with them
 - [ ] #4 Rejected or deferred features are recorded with the reason, and their tasks updated or closed
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Proposal drafted for the user review in doc-8 (2026-10-15), grounded in the current server, router, actions and dev-server code and in React Router, Next.js, SvelteKit, Solid Router and TanStack prior art. Waiting for the user approval per feature (AC #2). Found while researching: TASK-305 (island load or hydration failures are unhandled).
+<!-- SECTION:NOTES:END -->
