@@ -3450,8 +3450,8 @@ with `<link rel="modulepreload">` for the chunks it imports):
   island hydrates and before the SPA router starts (prerendered SPA pages and `ssr = false` shells
   included). Meanwhile the loader already captures clicks, input and submits on islands, and
   replays them once the islands hydrated. Client navigations of an SPA do not run it again.
-- **Pages without islands or SPA routes** load it as their only script, without the Lumiose
-  runtime.
+- **Pages without islands or SPA routes** load it and its imports as their only scripts, without
+  the Lumiose runtime, also when it uses `import()`.
 - **Failures.** What it throws is logged, and the page hydrates anyway.
 - **Keep it short.** `lumiose dev` warns when it takes longer than 16 ms (one frame) from the
   start of its module to the end of its top-level code; `import()` what is not needed at once.

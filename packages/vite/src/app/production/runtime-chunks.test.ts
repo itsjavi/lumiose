@@ -1,7 +1,13 @@
 // Which runtime modules stay with the one island that imports them (./runtime-chunks.ts, TASK-228).
 // The build end to end: ./client-runtime.test.ts.
 import { describe, expect, it } from "vitest";
-import { barrel, importedNames, singleEntryModules, type Barrel } from "./runtime-chunks.ts";
+import {
+  barrel,
+  plainEntryHelpers,
+  importedNames,
+  singleEntryModules,
+  type Barrel,
+} from "./runtime-chunks.ts";
 
 describe("barrel()", () => {
   it("reads the re-exports of a module that only re-exports", () => {
@@ -142,5 +148,60 @@ describe("singleEntryModules()", () => {
     });
     // B reaches all the barrel re-exports, so core.ts is shared with A.
     expect([...single].toSorted()).toEqual(["/rt/index.ts", "/rt/list.ts"]);
+  });
+});
+
+// Entries without the runtime: the client entry `/app/client.ts`, which imports `entry`, and a
+// client script `/app/script.ts` importing `script`; a loader imports the runtime and the preload
+// helper (`\0helper`) when `loader` is set.
+function helpers(entry: string[], loader: boolean, script: string[] = []) {
+  const modules: Record<string, { importedIds: string[]; dynamic?: string[]; entry?: boolean }> = {
+    "/app/client.ts": { importedIds: entry, dynamic: ["/app/lazy.ts"], entry: true },
+    "/app/script.ts": { importedIds: script, entry: true },
+    "/app/lazy.ts": { importedIds: ["\0helper"] },
+    "/app/lib.ts": { importedIds: [] },
+    "\0helper": { importedIds: [] },
+    "/rt/core.ts": { importedIds: [] },
+    ...(loader
+      ? { "/rt/loader.ts": { importedIds: ["/rt/core.ts", "\0helper"], entry: true } }
+      : {}),
+  };
+  const result = plainEntryHelpers(
+    {
+      ids: Object.keys(modules),
+      info: (id) => {
+        const module = modules[id];
+        if (module === undefined) return null;
+        return {
+          isEntry: module.entry ?? false,
+          importedIds: module.importedIds,
+          dynamicallyImportedIds: module.dynamic ?? [],
+          exports: [],
+          code: "",
+        };
+      },
+    },
+    ["/app/client.ts", "/app/script.ts"],
+    (id) => id.startsWith("\0"),
+    (id) => id.startsWith("/rt/") || id.startsWith("\0"),
+  );
+  return { shared: [...result.shared], own: [...result.own] };
+}
+
+describe("plainEntryHelpers()", () => {
+  it("shares the helpers that the runtime imports too", () => {
+    expect(helpers(["/app/lib.ts", "\0helper"], true)).toEqual({ shared: ["\0helper"], own: [] });
+  });
+
+  it("keeps the helpers that only one entry imports in its chunk", () => {
+    expect(helpers(["\0helper"], false)).toEqual({ shared: [], own: ["\0helper"] });
+  });
+
+  it("shares the helpers of two entries without the runtime", () => {
+    expect(helpers(["\0helper"], false, ["\0helper"])).toEqual({ shared: ["\0helper"], own: [] });
+  });
+
+  it("leaves the helpers in the runtime when the entry imports the runtime", () => {
+    expect(helpers(["/rt/core.ts", "\0helper"], true)).toEqual({ shared: [], own: [] });
   });
 });

@@ -75,6 +75,17 @@ export function Counter(props: { start: number }) {
 `,
   "src/lib/format.ts": `export const format = (n: number): string => String(n);
 `,
+  "src/ui/lu-menu.element.ts": `customElements.define("lu-menu", class extends HTMLElement {});
+`,
+  "src/ui/Menu.stsx": `import define from "./lu-menu.element.ts?lumiose-client";
+export function Menu(props: { children?: JSX.Element }) {
+  define();
+  return <lu-menu>{props.children}</lu-menu>;
+}
+`,
+  "src/routes/menu/page.stsx": `import { Menu } from "../../ui/Menu.stsx";
+export default function MenuPage() { return <Menu>Items</Menu>; }
+`,
   "src/routes/island/page.stsx": `import { Counter } from "../../components/Counter.stsx";
 export const mode = "server";
 export default function IslandPage() {
@@ -312,6 +323,24 @@ describe.skipIf(!binding)("lumiose dev", () => {
     const loader = await get(source![1]!);
     expect(loader.status).toBe(200);
     expect(await loader.text()).toContain("lumiose:islands");
+  });
+
+  it("loads the client scripts of the components a page renders, from their own URL (TASK-354)", async () => {
+    const html = await (await get("/menu")).text();
+    expect(html).toContain(
+      '<script type="module" async src="/src/ui/lu-menu.element.ts"></script>',
+    );
+    expect(html).toContain("<lu-menu>Items</lu-menu>");
+    const script = await get("/src/ui/lu-menu.element.ts");
+    expect(script.status).toBe(200);
+    expect(await script.text()).toContain('customElements.define("lu-menu"');
+    // Pages that do not render one load none.
+    expect(await (await get("/island")).text()).not.toContain("lu-menu.element");
+    // Client code (islands, SPA pages) imports the same URL: one module, one definition.
+    const component = await (await get("/src/ui/Menu.stsx?import")).text();
+    const marker = /import \w+ from "([^"]*lumiose-client[^"]*)"/.exec(component);
+    const markerCode = await (await get(marker![1]!)).text();
+    expect(markerCode).toContain('import "/src/ui/lu-menu.element.ts"');
   });
 
   it("serves endpoints", async () => {

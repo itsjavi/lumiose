@@ -74,6 +74,8 @@ export interface Unit {
   /** Await records of islands created in other units (appended records). */
   awaits: Map<IslandState, Record<string, unknown>> | undefined;
   preloads: string[];
+  /** Module scripts the unit's components need in the browser (./client-script.ts). */
+  scripts: string[];
   styles: string[];
   /** Boundaries whose placeholder is inside this unit, waiting for it to flush. */
   waiting: Unit[];
@@ -110,6 +112,8 @@ export interface RenderState {
   /** URL of the island loader script; sent once, with the first island records. */
   readonly loaderUrl: string | undefined;
   loaderSent: boolean;
+  /** The client scripts (./client-script.ts) the chunks sent so far loaded. */
+  readonly sentScripts: Set<string>;
   /** Errors no `<ErrorBoundary>` handled; `streamed` when they belong to a streamed boundary. */
   readonly onError: (error: unknown, streamed?: boolean) => void;
   /** Each error an `<ErrorBoundary>` caught, with its digest when sanitized (./render.ts). */

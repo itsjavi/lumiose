@@ -169,6 +169,28 @@ async function entryOf(root: string): Promise<ServerEntryModule> {
   )) as ServerEntryModule;
 }
 
+/** A custom element definition (TASK-354) that must never run on the server. */
+const element = (tag: string) => `import { key } from "./keys.ts";
+// Never runs on the server.
+if (typeof document === "undefined") throw new Error("${tag} ran on the server");
+customElements.define("${tag}", class extends HTMLElement { key = key; });
+`;
+/** A component rendering `<tag>`, with its definition as a client script. */
+const component = (
+  name: string,
+  tag: string,
+) => `import define from "./${tag}.element.ts?lumiose-client";
+export function ${name}(props: { children?: JSX.Element }) {
+  define();
+  return <${tag}>{props.children}</${tag}>;
+}
+`;
+/** A client script's tag (TASK-354). */
+const scriptTag = (url: string) => `<script type="module" async src="${url}"></script>`;
+/** The module scripts of a page, in order. */
+const moduleScripts = (html: string) =>
+  [...html.matchAll(/<script type="module"[^>]*src="([^"]+)"/g)].map((match) => match[1]);
+
 describe.skipIf(!binding)("lumiose build", () => {
   it("builds the client and server, then prerenders static pages, staticPaths, endpoints and 404.html", async () => {
     const root = project(SITE);
@@ -848,15 +870,13 @@ export default function Live() { return <h1>Live SPA</h1>; }
     expect(client.url).toMatch(/^\/assets\/instrumentation-[\w-]{8}\.js$/);
     const tag = `<script type="module" src="${client.url}" data-l-client></script>`;
     const preloads = client.preloads!.map((url) => `<link rel="modulepreload" href="${url}">`);
-    const scripts = (html: string) =>
-      [...html.matchAll(/<script type="module"[^>]*src="([^"]+)"/g)].map((match) => match[1]);
 
     // A page without islands or SPA routes: the client entry and what it imports, nothing else.
     const home = read(root, "index.html");
     expect(home).toContain(
       `<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">${preloads.join("")}${tag}`,
     );
-    expect(scripts(home)).toEqual([client.url]);
+    expect(moduleScripts(home)).toEqual([client.url]);
     const runtime = readdirSync(join(root, "dist/client/assets")).filter((file) =>
       file.startsWith("lumiose-"),
     );
@@ -869,7 +889,7 @@ export default function Live() { return <h1>Live SPA</h1>; }
     // An islands page: the loader that waits for the client entry.
     const island = read(root, "island/index.html");
     expect(island).toContain(tag);
-    const [, loader] = scripts(island);
+    const [, loader] = moduleScripts(island);
     expect(loader).toBe(entry.app.loader);
     const loaderCode = read(root, loader!.slice(1));
     const runtimeCode = runtime.map((file) => read(root, `assets/${file}`)).join("");
@@ -884,6 +904,134 @@ export default function Live() { return <h1>Live SPA</h1>; }
     expect(read(root, "app/index.html")).toContain(tag);
     const live = await entry.default.fetch(new Request("http://app.test/live"));
     expect(await live.text()).toContain(tag);
+  });
+
+  it("keeps the runtime off pages without islands when src/instrumentation.client.ts uses import() (TASK-346)", async () => {
+    const root = project({
+      "src/instrumentation.client.ts": `if (location.pathname === "/") await import("./lib/extra.ts");
+export {};
+`,
+      "src/lib/extra.ts": `performance.mark("extra");
+`,
+      "src/components/Counter.stsx": `import { signal } from "lumiose";
+export function Counter() {
+  const count = signal(0);
+  return <button onClick={() => count.update((n) => n + 1)}>{count()}</button>;
+}
+`,
+      "src/routes/page.stsx": `export default function Home() { return <h1>No JavaScript</h1>; }
+`,
+      "src/routes/island/page.stsx": `import { Counter } from "../../components/Counter.stsx";
+export default function Island() { return <main><Counter client:load /></main>; }
+`,
+    });
+    await build({ root, ...quiet() });
+    const entry = await entryOf(root);
+    const client = entry.app.clientEntry!;
+    const loader = entry.app.loader!;
+    const preloads = client.preloads ?? [];
+    // The page loads the client entry and what it imports, none of which is the runtime.
+    const home = read(root, "index.html");
+    const files = [client.url, ...preloads];
+    for (const url of files) {
+      expect(url).not.toBe(loader);
+      expect(read(root, url.slice(1)).includes("script[data-l-client]"), url).toBe(false);
+    }
+    expect([...home.matchAll(/(?:src|href)="(\/assets\/[^"]+\.js)"/g)].map((m) => m[1])).toEqual([
+      ...preloads,
+      client.url,
+    ]);
+    // The lazy import still preloads and runs.
+    expect(read(root, client.url.slice(1))).toMatch(/import\([`"']\.\/extra-[\w-]{8}\.js[`"']\)/);
+    // An islands page still hydrates through the loader.
+    expect(read(root, "island/index.html")).toContain(loader);
+  });
+
+  it("loads the client scripts of server-rendered components on the pages that render them (TASK-354)", async () => {
+    const root = project({
+      "package.json": `{ "name": "fixture", "type": "module", "sideEffects": false }`,
+      "src/ui/keys.ts": `export const key = "ArrowDown";
+`,
+      "src/ui/lu-menu.element.ts": element("lu-menu"),
+      "src/ui/lu-combobox.element.ts": element("lu-combobox"),
+      "src/ui/Menu.stsx": component("Menu", "lu-menu"),
+      "src/ui/Combobox.stsx": component("Combobox", "lu-combobox"),
+      "src/components/Counter.stsx": `import { signal } from "lumiose";
+import { Menu } from "../ui/Menu.stsx";
+export function Counter() {
+  const count = signal(0);
+  return <Menu><button onClick={() => count.update((n) => n + 1)}>{count()}</button></Menu>;
+}
+`,
+      "src/routes/page.stsx": `import { Menu } from "../ui/Menu.stsx";
+export default function Home() { return <main><Menu>Static</Menu><Menu>Twice</Menu></main>; }
+`,
+      "src/routes/plain/page.stsx": `import { Menu } from "../../ui/Menu.stsx";
+const show = false;
+export default function Plain() { return <main>{show ? <Menu>Hidden</Menu> : "No menu"}</main>; }
+`,
+      "src/routes/live/page.stsx": `import { Suspense } from "lumiose";
+import { Combobox } from "../../ui/Combobox.stsx";
+export const mode = "server";
+async function Later() {
+  await new Promise((resolve) => setTimeout(resolve, 5));
+  return <Combobox>Streamed</Combobox>;
+}
+export default function Live() { return <main><Suspense fallback={<p>…</p>}><Later /></Suspense></main>; }
+`,
+      "src/routes/island/page.stsx": `import { Counter } from "../../components/Counter.stsx";
+export default function Island() { return <main><Counter client:load /></main>; }
+`,
+      "src/routes/app/layout.stsx": `export const mode = "spa";
+export const prerender = true;
+export default function App(props: { children?: JSX.Element }) { return <div id="app">{props.children}</div>; }
+`,
+      "src/routes/app/page.stsx": `import { Combobox } from "../../ui/Combobox.stsx";
+export default function AppHome() { return <Combobox>SPA</Combobox>; }
+`,
+    });
+    await build({ root, ...quiet() });
+    const entry = await entryOf(root);
+    const assets = readdirSync(join(root, "dist/client/assets")).filter((f) => f.endsWith(".js"));
+    const file = (prefix: string) => `/assets/${assets.find((f) => f.startsWith(prefix))!}`;
+    const menu = file("lu-menu.element-");
+    const combobox = file("lu-combobox.element-");
+    const keys = file("keys-");
+    const preload = `<link rel="modulepreload" href="${keys}">`;
+
+    // Each definition is a chunk of its own, with no runtime: it defines its element.
+    for (const url of [menu, combobox]) {
+      const code = read(root, url.slice(1));
+      expect(code).toContain("customElements.define");
+      expect(code).not.toMatch(/lumiose-[\w-]{8}\.js/);
+    }
+
+    // A static page: the definition of the element it renders, once, and nothing else.
+    const home = read(root, "index.html");
+    expect(home).toContain(scriptTag(menu) + preload);
+    expect(moduleScripts(home)).toEqual([menu]);
+
+    // A page that imports the component without rendering it loads none.
+    expect(moduleScripts(read(root, "plain/index.html"))).toEqual([]);
+
+    // A server page: with the boundary that renders the element.
+    const live = await (await entry.default.fetch(new Request("http://app.test/live"))).text();
+    expect(moduleScripts(live)).toEqual([combobox]);
+    expect(live.indexOf(scriptTag(combobox))).toBeGreaterThan(live.indexOf("<p>…</p>"));
+
+    // A prerendered SPA page: from the head, and from the SPA's own code on client navigations.
+    const app = read(root, "app/index.html");
+    expect(moduleScripts(app)).toEqual([entry.app.spa, combobox]);
+    const spaChunks = assets
+      .filter((f) => f.startsWith("app-page-"))
+      .map((f) => read(root, `assets/${f}`));
+    expect(spaChunks.join("")).toContain(combobox.slice("/assets/".length));
+
+    // An island: the page loads the definition with the loader; the island imports the same file.
+    const island = read(root, "island/index.html");
+    expect(moduleScripts(island)).toEqual([entry.app.loader, menu]);
+    const counter = read(root, entry.app.islands["/src/components/Counter.stsx"]!.slice(1));
+    expect(counter).toContain(menu.slice("/assets/".length));
   });
 
   it("stops with LUM4003 when src/instrumentation.client.ts imports server-only code (TASK-295)", async () => {
