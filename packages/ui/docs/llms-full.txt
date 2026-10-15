@@ -74,15 +74,23 @@ custom properties, named as in shadcn/ui, are listed in [Theming](theming.md#the
 
 ## Components
 
-| Component                         | Status                                                                |
-| --------------------------------- | --------------------------------------------------------------------- |
-| [Dialog, alert dialog](dialog.md) | Available: native `<dialog>`, works without JavaScript                |
-| [Popover](popover.md)             | Available: native popover, works without JavaScript                   |
-| [Tooltip](tooltip.md)             | Available: native hint popover, opened by its script                  |
-| [Menu](menu.md)                   | Available: popover menu, opens without JavaScript                     |
-| [Combobox](combobox.md)           | Available: `<lu-combobox>`, a form control that filters its options   |
-| [Select](select.md)               | Available: native `<select>`, customizable where supported, no script |
-| [Tabs](tabs.md)                   | Available: server HTML with the full state, `<lu-tabs>` adds the keys |
+| Component                           | Status                                                                |
+| ----------------------------------- | --------------------------------------------------------------------- |
+| [Dialog, alert dialog](dialog.md)   | Available: native `<dialog>`, works without JavaScript                |
+| [Popover](popover.md)               | Available: native popover, works without JavaScript                   |
+| [Tooltip](tooltip.md)               | Available: native hint popover, opened by its script                  |
+| [Menu](menu.md)                     | Available: popover menu, opens without JavaScript                     |
+| [Combobox](combobox.md)             | Available: `<lu-combobox>`, a form control that filters its options   |
+| [Select](select.md)                 | Available: native `<select>`, customizable where supported, no script |
+| [Tabs](tabs.md)                     | Available: server HTML with the full state, `<lu-tabs>` adds the keys |
+| [Field](field.md)                   | Available: label, description, errors; native validation in the field |
+| [Fieldset](fieldset.md)             | Available: native `<fieldset>` and `<legend>`, no script              |
+| [Form](form.md)                     | Available: native `<form>`, a form action's errors in its fields      |
+| [Input](input.md)                   | Available: native `<input>`, no script                                |
+| [Checkbox](checkbox.md)             | Available: native checkbox, indeterminate and read-only               |
+| [Checkbox Group](checkbox-group.md) | Available: checkboxes with one value and a parent checkbox            |
+| [Radio](radio-group.md)             | Available: native radios in a radiogroup fieldset                     |
+| [Switch](switch.md)                 | Available: native checkbox with the switch role                       |
 
 ## Size
 
@@ -192,16 +200,22 @@ If your app orders its own layers, put `lu` first: `@layer lu, reset, components
 surfaces, a blue primary, light and dark. It styles a few classes, which you put on the parts
 through their `class` prop:
 
-| Class         | On                  | Variants                                                                |
-| ------------- | ------------------- | ----------------------------------------------------------------------- |
-| `lu-button`   | any `<button>` part | `data-variant="primary"`, `data-variant="destructive"`                  |
-| `lu-dialog`   | `Dialog.Popup`      | Styles the backdrop, the title, the description and a `<footer>` inside |
-| `lu-popover`  | `Popover.Popup`     | Styles the title, the description and a `<footer>` inside               |
-| `lu-tooltip`  | `Tooltip.Popup`     |                                                                         |
-| `lu-tabs`     | `Tabs.Root`         | Styles the list, the tabs (the selected one underlined) and the panels  |
-| `lu-menu`     | every `Menu.Popup`  | Styles the items, their checkbox and radio marks, separators and labels |
-| `lu-combobox` | `Combobox.Root`     | Lays out the field (label, chips, input, buttons) and styles the popup  |
-| `lu-select`   | `Select.Root`       | Makes it a customizable select and styles the control and the picker    |
+| Class         | On                                             | Variants                                                                |
+| ------------- | ---------------------------------------------- | ----------------------------------------------------------------------- |
+| `lu-button`   | any `<button>` part                            | `data-variant="primary"`, `data-variant="destructive"`                  |
+| `lu-dialog`   | `Dialog.Popup`                                 | Styles the backdrop, the title, the description and a `<footer>` inside |
+| `lu-popover`  | `Popover.Popup`                                | Styles the title, the description and a `<footer>` inside               |
+| `lu-tooltip`  | `Tooltip.Popup`                                |                                                                         |
+| `lu-tabs`     | `Tabs.Root`                                    | Styles the list, the tabs (the selected one underlined) and the panels  |
+| `lu-menu`     | every `Menu.Popup`                             | Styles the items, their checkbox and radio marks, separators and labels |
+| `lu-combobox` | `Combobox.Root`                                | Lays out the field (label, chips, input, buttons) and styles the popup  |
+| `lu-select`   | `Select.Root`                                  | Makes it a customizable select and styles the control and the picker    |
+| `lu-field`    | `Field.Root`                                   | Stacks the label, control, description and errors; errors in red        |
+| `lu-input`    | `Input`, `Field.Control`                       | A text field with a focus ring and a red border when invalid            |
+| `lu-fieldset` | `Fieldset.Root`, `CheckboxGroup`, `RadioGroup` | The legend and the items in a column                                    |
+| `lu-checkbox` | `Checkbox.Root`                                | An 18px box in a 24px target, a ✓ or a dash                             |
+| `lu-radio`    | `Radio.Root`                                   | An 18px circle in a 24px target, a thick ring when checked              |
+| `lu-switch`   | `Switch.Root`                                  | A track and a thumb on the side that tells on from off                  |
 
 Its colours and radius are custom properties with shadcn/ui's names and a `--lu-` prefix, so a
 shadcn palette carries over:
@@ -252,6 +266,246 @@ Each component's page has an example stylesheet to start from.
 - [UI components](README.md): the approach and the components.
 - [Installation](installation.md): adding the package and importing its stylesheets.
 - [Styles](https://itsjavi.com/lumiose/docs/concepts/styles/): scoped CSS and global stylesheets in Lumiose.
+
+<!-- source: checkbox.md -->
+
+# Checkbox
+
+> A native `<input type="checkbox">`, after Base UI's Checkbox: Space and a label click toggle it, the form submits its value when checked, reset and `required` work, in server HTML and without JavaScript. `indeterminate`, `readOnly`, the parent checkbox of a [Checkbox Group](checkbox-group.md) and `bind:checked` come on top, with a 0.5 kB script shared with Radio Group and Switch.
+
+```ts
+import { Checkbox } from "@lumiose/ui"; // or "@lumiose/ui/checkbox"
+import "@lumiose/ui/themes/default.css"; // optional: the default theme
+```
+
+## Anatomy
+
+```tsx
+<label>
+  <Checkbox.Root /> Label
+</label>
+```
+
+| Part   | Renders                                                                                                           |
+| ------ | ----------------------------------------------------------------------------------------------------------------- |
+| `Root` | `<input type="checkbox">`; `data-indeterminate` in server HTML while indeterminate, `aria-readonly` if read-only. |
+
+Name it with a wrapping `<label>`, a `<label for>`, a `Field.Label`, or `aria-label`.
+
+## API
+
+### Checkbox.Root
+
+| Prop              | Type                         | Default |                                                                                                      |
+| ----------------- | ---------------------------- | ------- | ---------------------------------------------------------------------------------------------------- |
+| `checked`         | `boolean`                    |         | Checks or unchecks it when it changes. Pair it with `onCheckedChange`.                               |
+| `defaultChecked`  | `boolean`                    | `false` | Whether it starts checked; a form reset goes back to it.                                             |
+| `onCheckedChange` | `(checked: boolean) => void` |         | Called after the user checks or unchecks it.                                                         |
+| `bind:checked`    | `Signal<boolean>`            |         | Stands in for `checked` and `onCheckedChange`.                                                       |
+| `indeterminate`   | `boolean`                    | `false` | Neither checked nor unchecked (mixed for assistive technology) until the user toggles it.            |
+| `value`           | `string`                     | `"on"`  | What it submits when checked, and its identity in a Checkbox Group.                                  |
+| `parent`          | `boolean`                    | `false` | The "select all" checkbox of a Checkbox Group: it checks them all and follows them. Never submitted. |
+| `readOnly`        | `boolean`                    | `false` | It cannot be toggled, but stays focusable and is submitted.                                          |
+
+Every other native prop passes through: `name`, `required`, `disabled`, `form`, `id`, `class`,
+`aria-*`. Inside a Field it takes the field's `id`, `name`, `aria-describedby` and
+`aria-invalid`; inside a Checkbox Group, its `checked` state and `name`.
+
+**Differences from Base UI's Checkbox.** The box is the native input, so there is no
+`Checkbox.Indicator`: draw the box and its mark with `appearance: none` and `::before` (as the
+default theme does). There is no `nativeButton`, `inputRef` or `uncheckedValue`: an unchecked box
+submits nothing, as a native one does.
+
+## Example
+
+In an island, bound to a signal:
+
+```tsx check
+import { Checkbox } from "@lumiose/ui";
+import { signal } from "lumiose";
+
+export function NewsletterOptIn() {
+  const subscribed = signal(false);
+  return (
+    <p>
+      <label>
+        <Checkbox.Root name="newsletter" bind:checked={subscribed} class="lu-checkbox" /> Send me
+        the newsletter
+      </label>{" "}
+      {subscribed() ? "Thanks!" : ""}
+    </p>
+  );
+}
+```
+
+## Styling
+
+**With the default theme**, put `lu-checkbox` on `Root`: an 18px box drawn by `::before` inside a
+24px target, a ✓ when checked and a dash when indeterminate (a symbol, not only a colour), the
+primary colour for both, a focus ring, a red border with `aria-invalid="true"`.
+
+**With your own CSS**, style the input and its state: `:checked`, `:indeterminate` (and
+`[data-indeterminate]` before the script runs), `:disabled`, `:focus-visible`,
+`[aria-readonly="true"]`, `[aria-invalid="true"]`.
+
+```css
+.checkbox {
+  appearance: none;
+  inline-size: 1.25rem;
+  block-size: 1.25rem;
+  border: 1px solid #85858e;
+  border-radius: 0.25rem;
+}
+.checkbox:checked {
+  background: #2563eb;
+}
+.checkbox:checked::before {
+  content: "✓" / "";
+  color: #fff;
+}
+```
+
+Checkbox ships no stylesheet: it needs none to work.
+
+## Keyboard and focus
+
+| Key   | Does                                                   |
+| ----- | ------------------------------------------------------ |
+| Space | Toggles it (not when read-only).                       |
+| Tab   | Moves to the next control: a checkbox is one tab stop. |
+
+Enter does not toggle it. A click on its label toggles it too.
+
+## Without JavaScript, and the client script
+
+A native checkbox: toggling, submission, `required`, reset and `disabled` (its own or a fieldset's)
+work with no script.
+
+A page that renders a Checkbox, Checkbox Group, Radio Group or Switch loads one 0.5 kB (brotli)
+script once, without the Lumiose runtime; islands bundle it. It turns server HTML's
+`data-indeterminate` into the `indeterminate` property (which has no attribute), makes read-only
+inputs ignore clicks, Space and the label, and runs the parent checkbox of a group. Without it, an
+indeterminate box shows unchecked (the theme still draws it mixed) and a read-only one toggles.
+
+## Browser support
+
+Native checkboxes, `:indeterminate` and `appearance: none` with `::before`: every supported
+browser.
+
+## Related
+
+- [Checkbox Group](checkbox-group.md): several checkboxes with one value and a parent checkbox.
+- [Switch](switch.md): on and off for a setting that applies at once.
+- [Field](field.md): a label, a description and errors for a checkbox.
+
+<!-- source: checkbox-group.md -->
+
+# Checkbox Group
+
+> A group of checkboxes with one value, the list of the checked ones, after Base UI's CheckboxGroup: a native `<fieldset>` whose checkboxes share a name, so the form submits each checked value and a disabled group disables them all, without JavaScript. A parent checkbox checks them all and shows checked, mixed or unchecked as they are; `bind:value` keeps a signal in sync.
+
+```ts
+import { CheckboxGroup, Checkbox, Fieldset } from "@lumiose/ui"; // or "@lumiose/ui/checkbox-group"
+import "@lumiose/ui/themes/default.css"; // optional: the default theme
+```
+
+## Anatomy
+
+```tsx
+<CheckboxGroup>
+  <Fieldset.Legend />
+  <Checkbox.Root parent />
+  <Checkbox.Root />
+</CheckboxGroup>
+```
+
+| Part            | Renders                                                                             |
+| --------------- | ----------------------------------------------------------------------------------- |
+| `CheckboxGroup` | `<fieldset>` around the checkboxes; a `Fieldset.Legend` first inside names it.      |
+| `Checkbox.Root` | A [Checkbox](checkbox.md) of the group, checked when its `value` is in the group's. |
+
+## API
+
+### CheckboxGroup
+
+| Prop            | Type                        | Default |                                                                                        |
+| --------------- | --------------------------- | ------- | -------------------------------------------------------------------------------------- |
+| `value`         | `string[]`                  |         | Checks the checkboxes with these values when it changes. Pair it with `onValueChange`. |
+| `defaultValue`  | `string[]`                  | `[]`    | The values checked at first.                                                           |
+| `onValueChange` | `(value: string[]) => void` |         | Called with the checked values after the user checks or unchecks one.                  |
+| `bind:value`    | `Signal<string[]>`          |         | Stands in for `value` and `onValueChange`.                                             |
+| `allValues`     | `string[]`                  |         | Every checkbox's value: the parent checkbox's state in server HTML.                    |
+| `name`          | `string`                    |         | The name the checkboxes submit under, unless they have their own.                      |
+| `disabled`      | `boolean`                   | `false` | Disables every checkbox (a disabled fieldset).                                         |
+
+Every other `<fieldset>` prop passes through.
+
+**Differences from Base UI's CheckboxGroup.** It renders a `<fieldset>`, so a legend names it and
+`disabled` is native. `name` is added: Base UI gives each checkbox its own. A parent checkbox
+needs only `parent` here, not a controlled group, since the script runs it from the DOM. A
+`required` group (one checked at least) is not offered yet.
+
+## Example
+
+Toppings in a server-rendered form, with a "select all" box:
+
+```tsx check
+import { Checkbox, CheckboxGroup, Fieldset } from "@lumiose/ui";
+
+const TOPPINGS = ["Cheese", "Olives", "Peppers"];
+
+export function ToppingsGroup() {
+  return (
+    <CheckboxGroup
+      name="toppings"
+      defaultValue={["Cheese"]}
+      allValues={TOPPINGS}
+      class="lu-fieldset"
+    >
+      <Fieldset.Legend>Toppings</Fieldset.Legend>
+      <label>
+        <Checkbox.Root parent class="lu-checkbox" /> All toppings
+      </label>
+      {TOPPINGS.map((topping) => (
+        <label>
+          <Checkbox.Root value={topping} class="lu-checkbox" /> {topping}
+        </label>
+      ))}
+    </CheckboxGroup>
+  );
+}
+```
+
+## Styling
+
+**With the default theme**, put `lu-fieldset` on the group and `lu-checkbox` on each checkbox
+([Checkbox](checkbox.md#styling)). Style a parent checkbox with `[data-parent]` if it should look
+different.
+
+CheckboxGroup ships no stylesheet: it needs none to work.
+
+## Keyboard and focus
+
+Each checkbox is its own tab stop; Space toggles the focused one. Toggling the parent checks or
+unchecks every enabled checkbox of the group; toggling one updates the parent (checked, mixed or
+unchecked).
+
+## Without JavaScript, and the client script
+
+The checkboxes are native: they toggle, submit under the group's name and reset with no script.
+The parent checkbox shows its server state and is never submitted, but checks nothing until the
+shared checkbox script (0.5 kB brotli, [Checkbox](checkbox.md#without-javascript-and-the-client-script))
+runs.
+
+## Browser support
+
+Every supported browser.
+
+## Related
+
+- [Checkbox](checkbox.md): the checkboxes, `indeterminate` and `readOnly`.
+- [Fieldset](fieldset.md): the legend.
+- [Radio Group](radio-group.md): one value out of several.
 
 <!-- source: combobox.md -->
 
@@ -842,6 +1096,490 @@ Until the script loads (or without JavaScript) the dialog behaves as the browser
   `onOpenChange`.
 - [JSX](https://itsjavi.com/lumiose/docs/concepts/jsx/): native events with `on:` and `ref`.
 
+<!-- source: field.md -->
+
+# Field
+
+> A form field: a label, a native control, a description and its errors, wired with `for`, `aria-describedby` and `aria-invalid`, after Base UI's Field. Validation is the browser's constraint validation (`required`, `type`, `pattern`, `minlength`…); a 1.0 kB script shows it in the field's Error parts at the right time, instead of the browser's bubble, and focuses the first invalid field on submit. A Form's server errors render in the HTML, so they work without JavaScript.
+
+```ts
+import { Field } from "@lumiose/ui"; // or "@lumiose/ui/field"
+import "@lumiose/ui/field.css"; // makes <lu-field> a block, keeps hidden errors hidden
+import "@lumiose/ui/themes/default.css"; // optional: the default theme
+```
+
+## Anatomy
+
+```tsx
+<Field.Root>
+  <Field.Label />
+  <Field.Control />
+  <Field.Description />
+  <Field.Error />
+</Field.Root>
+```
+
+| Part          | Renders                                                                                                                                      |
+| ------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Root`        | `<lu-field>`, a block around the other parts, with `validation-mode`.                                                                        |
+| `Label`       | `<label for="…">`, pointing at the control.                                                                                                  |
+| `Control`     | `<input>`: [Input](input.md), with the field's `id`, `name`, `aria-describedby` and `aria-invalid`.                                          |
+| `Description` | `<p>` that describes the control.                                                                                                            |
+| `Error`       | `<output hidden>`: without children, the field's message (`for` the control); with children, your message. Shown while the field is invalid. |
+
+Instead of `Field.Control`, a field can hold a [Checkbox](checkbox.md), a [Switch](switch.md), a
+[Select](select.md) or a [Radio Group](radio-group.md): they take the field's wiring the same way.
+
+## API
+
+### Field.Root
+
+| Prop             | Type                                           | Default      |                                                                                                                                             |
+| ---------------- | ---------------------------------------------- | ------------ | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| `name`           | `string`                                       |              | The control's `name` (unless it has its own), and the key of the field's errors in the Form's `errors`.                                     |
+| `disabled`       | `boolean`                                      | `false`      | Disables the control.                                                                                                                       |
+| `invalid`        | `boolean`                                      | `false`      | Marks the field invalid, as a server error does: its Error shows and the control gets `aria-invalid`, until the value changes.              |
+| `validationMode` | `"onSubmit" \| "onBlur" \| "onChange"`         | `"onSubmit"` | When errors show: after a submit attempt, also when the control loses focus, or as soon as it is edited. Once shown, they follow the value. |
+| `validate`       | `(value: string \| boolean) => string \| null` |              | Your own check, run on every edit in an island: return a message when the value is invalid. It becomes the control's custom validity.       |
+
+`Root` passes `class`, `style` and other element props to `<lu-field>`. A Form's `validationMode`
+applies to the fields that set none.
+
+### Field.Error
+
+| Prop       | Type                          | Default |                                                                                                        |
+| ---------- | ----------------------------- | ------- | ------------------------------------------------------------------------------------------------------ |
+| `match`    | `keyof ValidityState \| true` |         | Shows only for that problem (`"valueMissing"`, `"typeMismatch"`, `"tooShort"`, …), or always (`true`). |
+| `children` | `JSX.Element`                 |         | Your message. Without children, the Error shows the server's message or the browser's.                 |
+
+### Field.Control
+
+[Input](input.md)'s props: every native `<input>` prop, plus `value`, `defaultValue`,
+`onValueChange` and `bind:value`.
+
+### The other parts
+
+`Label` and `Description` take the props of the element they render (`class`, `style`, `aria-*`)
+and pass them through; their `id` and `for` stay the field's.
+
+**Differences from Base UI's Field.** The control is native and so is validation: there is no
+`Field.Validity`, no async `validate` or `validationDebounceTime`, and no `dirty`, `touched`,
+`actionsRef` or `Field.Item`. State is exposed the platform's way, `aria-invalid` on the control
+and `:user-invalid`, `:invalid`, `:focus-within` in CSS, rather than Base UI's `data-dirty`,
+`data-touched` and friends. `Field.Error` renders an `<output>`, not a `<div>`.
+
+## Example
+
+An email field in a server-rendered page, with no island:
+
+```tsx check
+import { Field } from "@lumiose/ui";
+
+export function EmailField() {
+  return (
+    <form method="post">
+      <Field.Root name="email" validationMode="onBlur" class="lu-field">
+        <Field.Label>Email</Field.Label>
+        <Field.Control type="email" required autocomplete="email" class="lu-input" />
+        <Field.Description>We never share it.</Field.Description>
+        <Field.Error match="valueMissing">Enter your email.</Field.Error>
+        <Field.Error match="typeMismatch">Enter an email like ada@example.com.</Field.Error>
+      </Field.Root>
+      <button class="lu-button">Subscribe</button>
+    </form>
+  );
+}
+```
+
+With a form action, a [Form](form.md)'s `errors` (the data the action passes to `fail()`) show in
+the field of the same `name`, in the page the server renders back:
+
+```tsx check
+import { Field, Form } from "@lumiose/ui";
+
+export function UsernameField(props: { errors?: { username?: string } }) {
+  return (
+    <Form method="post" errors={props.errors}>
+      <Field.Root name="username" class="lu-field">
+        <Field.Label>Username</Field.Label>
+        <Field.Control required minlength={3} class="lu-input" />
+        <Field.Error />
+      </Field.Root>
+      <button class="lu-button">Sign up</button>
+    </Form>
+  );
+}
+```
+
+## Styling
+
+**With the default theme**, put `lu-field` on `Root` and `lu-input` on the control: the parts
+stack with a small gap, the label is medium weight, the description muted, the errors red (a
+lighter red in dark, to keep 4.5:1), and an invalid control gets a red border.
+
+**With your own CSS**, style the parts through `class` and state:
+
+- the control: `[aria-invalid="true"]` while an error shows, `:user-invalid` (invalid after the
+  user interacted), `:invalid`, `:focus-visible`, `:disabled`;
+- the field: `lu-field:has([aria-invalid="true"])`, `lu-field:focus-within`;
+- the errors: `output` in the field (`[hidden]` while they do not apply).
+
+```css
+.field {
+  display: grid;
+  gap: 0.25rem;
+}
+.field [aria-invalid="true"] {
+  border-color: #dc2626;
+}
+.field output {
+  color: #b91c1c;
+  font-size: 0.875rem;
+}
+```
+
+`@lumiose/ui/field.css` holds what Field needs to work, in the `lu.core` layer: `lu-field` is a
+block, and the errors the script hides stay hidden whatever `display` your CSS gives them.
+
+## Keyboard and focus
+
+The control's own keyboard. Field adds focus on a submit attempt: the first invalid control of the
+form, in DOM order, takes focus, and its error is part of its accessible description, so a screen
+reader reads it there.
+
+- **On a submit attempt**, every invalid field shows its errors; the browser's bubble does not
+  appear for a field with an Error part.
+- **`validationMode="onBlur"`** shows a field's error when focus leaves it, except a missing value
+  in a field the user has not edited yet (Base UI's rule). **`"onChange"`** shows it as the user
+  types.
+- **Once shown**, an error follows the value: it updates as the problem changes and goes away when
+  the value is valid. A server error goes away as soon as the value changes.
+- **A form reset** hides every error.
+
+## Without JavaScript, and the field's script
+
+The control, its `for` label and its constraints are native: the browser validates on submit and
+reports the first problem in its own bubble, and the form submits when everything is valid. Server
+errors from a Form render in the HTML, visible and linked with `aria-describedby` and
+`aria-invalid`.
+
+A page that renders a `Field` loads a 1.0 kB (brotli) script once, without the Lumiose runtime;
+islands bundle it. It cancels the browser's `invalid` bubble for fields that have an Error part and
+shows the problem there instead (the browser's message, or one your `validate` set), with the
+timing above, focuses the first invalid control on a submit attempt, keeps `aria-invalid` and
+`aria-describedby` current (a description rendered after the control is linked once the script
+runs), and hides server errors once the value changes.
+
+## Browser support
+
+- **Constraint validation**, `:user-invalid` (Chrome 119, Firefox 88, Safari 16.5) and the
+  `invalid` event: in every supported browser.
+- **`<output for>`**: in every browser; Chromium and screen readers include an output's text in
+  the control's description. Playwright's own `toHaveAccessibleDescription` leaves it out; the
+  @lumiose/ui tests read Chromium's computation instead.
+
+## Related
+
+- [Form](form.md): server errors for the fields, by name.
+- [Input](input.md): `Field.Control`.
+- [Fieldset](fieldset.md): a group of fields with a legend.
+- [Checkbox](checkbox.md), [Switch](switch.md), [Radio Group](radio-group.md),
+  [Select](select.md): controls that take a field's wiring.
+- [Data and actions](https://itsjavi.com/lumiose/docs/concepts/data-and-actions/): form actions,
+  `fail()` and `actionData()`.
+
+<!-- source: fieldset.md -->
+
+# Fieldset
+
+> A group of related fields with a caption: a native `<fieldset>` and `<legend>`, after Base UI's Fieldset. The browser names the group by its legend and disables every control inside a disabled fieldset, with no JavaScript and no CSS of its own. The legend also names a Checkbox Group or a Radio Group.
+
+```ts
+import { Fieldset } from "@lumiose/ui"; // or "@lumiose/ui/fieldset"
+import "@lumiose/ui/themes/default.css"; // optional: the default theme
+```
+
+## Anatomy
+
+```tsx
+<Fieldset.Root>
+  <Fieldset.Legend />
+</Fieldset.Root>
+```
+
+| Part     | Renders                                             |
+| -------- | --------------------------------------------------- |
+| `Root`   | `<fieldset>`, a group (`role="group"`).             |
+| `Legend` | `<legend>`, which names the group; the first child. |
+
+## API
+
+### Fieldset.Root
+
+| Prop       | Type      | Default |                                                                               |
+| ---------- | --------- | ------- | ----------------------------------------------------------------------------- |
+| `disabled` | `boolean` | `false` | Disables every control inside, except those in its legend; none is submitted. |
+
+Every other `<fieldset>` prop (`form`, `name`, `class`, `aria-*`) passes through.
+
+### Fieldset.Legend
+
+The `<legend>`'s props pass through. Put it first in the fieldset, or first in a
+[CheckboxGroup](checkbox-group.md) or [RadioGroup](radio-group.md), which render a fieldset too.
+
+**Differences from Base UI's Fieldset.** `Legend` is a native `<legend>` (Base UI renders a
+`<div>` labelling the fieldset), so the group is named without ARIA.
+
+## Example
+
+```tsx check
+import { Field, Fieldset } from "@lumiose/ui";
+
+export function AddressFields() {
+  return (
+    <Fieldset.Root class="lu-fieldset">
+      <Fieldset.Legend>Shipping address</Fieldset.Legend>
+      <Field.Root name="street" class="lu-field">
+        <Field.Label>Street</Field.Label>
+        <Field.Control autocomplete="street-address" class="lu-input" />
+      </Field.Root>
+      <Field.Root name="city" class="lu-field">
+        <Field.Label>City</Field.Label>
+        <Field.Control autocomplete="address-level2" class="lu-input" />
+      </Field.Root>
+    </Fieldset.Root>
+  );
+}
+```
+
+## Styling
+
+**With the default theme**, put `lu-fieldset` on `Root`: no border or padding, the legend
+semi-bold, the fields in a column.
+
+**With your own CSS**, style the `fieldset` and `legend`, and `:disabled` (`fieldset:disabled`
+matches a disabled fieldset; its controls match `:disabled`). A fieldset's minimum width defaults
+to its content's: set `min-inline-size: 0` to let it shrink.
+
+Fieldset ships no stylesheet: it needs none to work.
+
+## Keyboard and focus
+
+The controls' own. A fieldset is not focusable; a disabled fieldset takes its controls out of the
+tab order. Screen readers announce the legend when focus enters the group.
+
+## Without JavaScript
+
+Everything is native: the group, its name, and `disabled`, in server HTML. No script.
+
+## Browser support
+
+`<fieldset>`, `<legend>` and `fieldset[disabled]`: every browser.
+
+## Related
+
+- [Field](field.md): the fields inside.
+- [Checkbox Group](checkbox-group.md) and [Radio Group](radio-group.md): groups of choices, named
+  by a `Fieldset.Legend`.
+- [Form](form.md).
+
+<!-- source: form.md -->
+
+# Form
+
+> A native `<form>` that hands its fields the server's errors, after Base UI's Form. Pass the data a form action gives `fail()` as `errors`, and each [Field](field.md) shows the message for its `name`, in the HTML the server renders back (no JavaScript needed) or, with `submit()`, in an island. Submission, validation and the first invalid field's focus are the platform's and Field's.
+
+```ts
+import { Form } from "@lumiose/ui"; // or "@lumiose/ui/form"
+```
+
+## Anatomy
+
+```tsx
+<Form>
+  <Field.Root />
+</Form>
+```
+
+| Part   | Renders                               |
+| ------ | ------------------------------------- |
+| `Form` | `<form>`, with the props it is given. |
+
+## API
+
+### Form
+
+| Prop             | Type                                   | Default      |                                                                                                                                |
+| ---------------- | -------------------------------------- | ------------ | ------------------------------------------------------------------------------------------------------------------------------ |
+| `errors`         | `object`                               |              | The server's errors by field name: a message or several for each `Field.Root` `name`, such as `actionData()` after a `fail()`. |
+| `validationMode` | `"onSubmit" \| "onBlur" \| "onChange"` | `"onSubmit"` | When the fields show their errors, unless a field sets its own.                                                                |
+
+Every other `<form>` prop passes through: `method`, `action`, `onSubmit` (Lumiose's `submit`),
+`novalidate`, `class`.
+
+**Differences from Base UI's Form.** No `onFormSubmit` or `actionsRef`: the form is native and
+Lumiose's form actions post it (`action="?/name"`, `onSubmit={submit}`). Base UI sets
+`noValidate`; here the browser's validation stays on, so it still works without JavaScript, and
+Field's script shows the problems in the fields instead of the browser's bubble.
+
+## Example
+
+A sign-up page whose action checks the username on the server:
+
+```tsx check
+import { Field, Form } from "@lumiose/ui";
+import { actionData, fail, type ActionContext } from "lumiose";
+
+export const actions = {
+  async signup(ctx: ActionContext) {
+    const form = await ctx.formData();
+    if (form.get("username") === "admin") {
+      return fail(400, { username: "That username is taken." });
+    }
+    return { welcome: String(form.get("username")) };
+  },
+};
+
+export function SignupForm() {
+  const result = actionData<typeof actions>();
+  return (
+    <Form method="post" action="?/signup" errors={result}>
+      <Field.Root name="username" class="lu-field">
+        <Field.Label>Username</Field.Label>
+        <Field.Control required minlength={3} autocomplete="username" class="lu-input" />
+        <Field.Error />
+      </Field.Root>
+      <button class="lu-button" data-variant="primary">
+        Sign up
+      </button>
+    </Form>
+  );
+}
+```
+
+`errors={result}` works whatever else the action returns: only the keys that name a field and hold
+a string or an array of strings become errors. In an island, add `onSubmit={submit}` and the
+errors arrive without a page load.
+
+## Styling
+
+Form adds nothing to style: style the `form` and its state, `form:invalid` (a field is invalid)
+and `form:has(:user-invalid)` (one the user touched is), and its fields
+([Field](field.md#styling)). Form ships no stylesheet.
+
+## Keyboard and focus
+
+The platform's: Enter in a text field submits the form. On a submit attempt with invalid fields,
+nothing is sent, the fields show their errors, and the first invalid control takes focus (Field's
+script; without it, the browser focuses it and shows its bubble).
+
+## Without JavaScript
+
+A native form posts to its action and the page renders back with `actionData()`, so the server's
+errors show in their fields with no script. The browser validates the fields before it posts.
+
+## Browser support
+
+Every browser. Field's script needs the `invalid` event and constraint validation, which every
+supported browser has.
+
+## Related
+
+- [Field](field.md): the fields and their errors.
+- [Fieldset](fieldset.md): groups of fields.
+- [Data and actions](https://itsjavi.com/lumiose/docs/concepts/data-and-actions/): form actions,
+  `fail()`, `actionData()` and `submit()`.
+
+<!-- source: input.md -->
+
+# Input
+
+> A native `<input>`, after Base UI's Input: every type, constraint and autofill the browser has, plus `onValueChange` and `bind:value`. Inside a [Field](field.md) (as `Field.Control`) it takes the field's id, name and ARIA references. No script, no CSS of its own.
+
+```ts
+import { Input } from "@lumiose/ui"; // or "@lumiose/ui/input"
+import "@lumiose/ui/themes/default.css"; // optional: the default theme
+```
+
+## Anatomy
+
+```tsx
+<Input />
+```
+
+| Part    | Renders                                |
+| ------- | -------------------------------------- |
+| `Input` | `<input>`, with the props it is given. |
+
+## API
+
+### Input
+
+| Prop            | Type                      | Default |                                                                             |
+| --------------- | ------------------------- | ------- | --------------------------------------------------------------------------- |
+| `value`         | `string`                  |         | Sets the value when it changes. Pair it with `onValueChange`.               |
+| `defaultValue`  | `string`                  |         | The value at first, when `value` is left out; a form reset goes back to it. |
+| `onValueChange` | `(value: string) => void` |         | Called with the new value on every edit.                                    |
+| `bind:value`    | `Signal<string>`          |         | Stands in for `value` and `onValueChange`.                                  |
+
+Every native `<input>` prop passes through: `type`, `name`, `required`, `pattern`, `minlength`,
+`placeholder`, `autocomplete`, `readonly`, `disabled`, `class`, `aria-*`, events. Inside a Field,
+its own `id`, `name`, `aria-describedby` and `aria-invalid` win over the field's.
+
+**Differences from Base UI's Input.** The same element and props; `bind:value` stands in for the
+pair.
+
+## Example
+
+A search box in an island, bound to a signal:
+
+```tsx check
+import { Input } from "@lumiose/ui";
+import { signal } from "lumiose";
+
+const BOOKS = ["Dune", "Emma", "Ulysses", "Middlemarch"];
+
+export function BookSearch() {
+  const query = signal("");
+  const found = () => BOOKS.filter((book) => book.toLowerCase().includes(query().toLowerCase()));
+  return (
+    <search>
+      <Input type="search" aria-label="Search books" bind:value={query} class="lu-input" />
+      <p>{found().join(", ") || "No books."}</p>
+    </search>
+  );
+}
+```
+
+## Styling
+
+**With the default theme**, put `lu-input` on it: a bordered field, a muted placeholder, a focus
+ring, a red border with `aria-invalid="true"`.
+
+**With your own CSS**, style the `input` and its state: `:focus-visible`, `:disabled`,
+`:read-only`, `:placeholder-shown`, `:user-invalid`, `[aria-invalid="true"]`.
+
+Input ships no stylesheet: it needs none to work.
+
+## Keyboard and focus
+
+The browser's text-field keyboard. One tab stop.
+
+## Without JavaScript
+
+A native input: typing, autofill, validation and submission work with no script. `value`,
+`onValueChange` and `bind:value` need the component to run in an island.
+
+## Browser support
+
+Every browser; input types and constraints as the browser supports them.
+
+## Related
+
+- [Field](field.md): label, description and errors for an Input (`Field.Control`).
+- [Combobox](combobox.md): an input that filters options.
+- [JSX](https://itsjavi.com/lumiose/docs/concepts/jsx/): `bind:value`.
+
 <!-- source: menu.md -->
 
 # Menu
@@ -1399,6 +2137,133 @@ islands bundle it. It covers every Popover on the page:
 - [Tooltip](tooltip.md): a short tip on hover or focus, with the same placement props.
 - [Dialog](dialog.md): a modal popup.
 
+<!-- source: radio-group.md -->
+
+# Radio
+
+> A group of radios with one value, after Base UI's RadioGroup and Radio: native radios in a `<fieldset role="radiogroup">`. The browser gives the group one tab stop, arrow keys that move and select (skipping disabled radios), `required`, submission and reset, in server HTML and without JavaScript; a legend names the group. `bind:value` keeps a signal in sync.
+
+```ts
+import { Radio, RadioGroup, Fieldset } from "@lumiose/ui"; // or "@lumiose/ui/radio-group"
+import "@lumiose/ui/themes/default.css"; // optional: the default theme
+```
+
+## Anatomy
+
+```tsx
+<RadioGroup>
+  <Fieldset.Legend />
+  <Radio.Root />
+</RadioGroup>
+```
+
+| Part         | Renders                                                                                  |
+| ------------ | ---------------------------------------------------------------------------------------- |
+| `RadioGroup` | `<fieldset role="radiogroup">`; a `Fieldset.Legend` first inside names it.               |
+| `Radio.Root` | `<input type="radio">` with the group's `name`, checked when its `value` is the group's. |
+
+Put each radio in a `<label>` (or name it with `aria-label`).
+
+## API
+
+### RadioGroup
+
+| Prop            | Type                      | Default         |                                                                                 |
+| --------------- | ------------------------- | --------------- | ------------------------------------------------------------------------------- |
+| `value`         | `string`                  |                 | Checks the radio with this value when it changes. Pair it with `onValueChange`. |
+| `defaultValue`  | `string`                  |                 | The radio checked at first; none when left out.                                 |
+| `onValueChange` | `(value: string) => void` |                 | Called with the value of the radio the user checks.                             |
+| `bind:value`    | `Signal<string>`          |                 | Stands in for `value` and `onValueChange`.                                      |
+| `name`          | `string`                  | a generated one | The name the radios share and submit under (a Field's `name` inside a Field).   |
+| `required`      | `boolean`                 | `false`         | A radio must be checked to submit the form (`aria-required` on the group).      |
+| `readOnly`      | `boolean`                 | `false`         | The radios cannot be checked, but stay focusable and are submitted.             |
+| `disabled`      | `boolean`                 | `false`         | Disables every radio (a disabled fieldset).                                     |
+
+Every other `<fieldset>` prop passes through. Inside a Field, the group takes the field's
+`aria-describedby` and `aria-invalid`, and its radios the field's name.
+
+### Radio.Root
+
+| Prop       | Type      | Default |                                                         |
+| ---------- | --------- | ------- | ------------------------------------------------------- |
+| `value`    | `string`  |         | Required: the value the group takes when it is checked. |
+| `disabled` | `boolean` | `false` | It cannot be checked; the arrow keys skip it.           |
+
+Every other native prop passes through (`id`, `class`, `aria-*`).
+
+**Differences from Base UI's RadioGroup and Radio.** The radios are native inputs in a fieldset, so
+there is no `Radio.Indicator` (style `:checked` with `appearance: none`) and no `nativeButton` or
+`inputRef`.
+
+## Example
+
+In an island, bound to a signal:
+
+```tsx check
+import { Fieldset, Radio, RadioGroup } from "@lumiose/ui";
+import { signal } from "lumiose";
+
+export function ShippingChoice() {
+  const speed = signal("standard");
+  return (
+    <div>
+      <RadioGroup name="shipping" bind:value={speed} class="lu-fieldset">
+        <Fieldset.Legend>Shipping</Fieldset.Legend>
+        <label>
+          <Radio.Root value="standard" class="lu-radio" /> Standard
+        </label>
+        <label>
+          <Radio.Root value="express" class="lu-radio" /> Express
+        </label>
+        <label>
+          <Radio.Root value="drone" disabled class="lu-radio" /> Drone (soon)
+        </label>
+      </RadioGroup>
+      <p>Arrives {speed() === "express" ? "tomorrow" : "in three days"}.</p>
+    </div>
+  );
+}
+```
+
+## Styling
+
+**With the default theme**, put `lu-fieldset` on the group and `lu-radio` on each radio: an 18px
+circle in a 24px target, a thick primary ring when checked (a shape, not only a colour), a focus
+ring.
+
+**With your own CSS**, style the inputs and their state: `:checked`, `:disabled`,
+`:focus-visible`; the group: `[role="radiogroup"]`, `[aria-invalid="true"]`.
+
+Radio Group ships no stylesheet: it needs none to work.
+
+## Keyboard and focus
+
+| Key                     | Does                                                            |
+| ----------------------- | --------------------------------------------------------------- |
+| Tab                     | Into the group, on the checked radio (or the first); out of it. |
+| Arrow Down, Arrow Right | Checks the next enabled radio, around at the end.               |
+| Arrow Up, Arrow Left    | Checks the previous enabled radio.                              |
+| Space                   | Checks the focused radio.                                       |
+
+Enter does not check a radio. Read-only radios move focus but do not change.
+
+## Without JavaScript, and the client script
+
+Native radios: the roving tab stop, the arrow keys, `required`, submission and reset work with no
+script. The shared checkbox script (0.5 kB brotli,
+[Checkbox](checkbox.md#without-javascript-and-the-client-script)) adds read-only.
+
+## Browser support
+
+Native radios and `role="radiogroup"` on a fieldset: every supported browser.
+
+## Related
+
+- [Checkbox Group](checkbox-group.md): several values.
+- [Select](select.md): one value from a longer list.
+- [Field](field.md): a description and errors for the group.
+- [Fieldset](fieldset.md): the legend.
+
 <!-- source: select.md -->
 
 # Select
@@ -1454,7 +2319,8 @@ the options' text.
 | `disabled`      | `boolean`                 | `false`          | The select cannot be used.                                                        |
 
 Every other `<select>` prop passes through: `id`, `autocomplete`, `form`, `class`, `aria-*`, event
-handlers. Name it with a `<label for>` pointing at its `id`, or `aria-label`.
+handlers. Name it with a `<label for>` pointing at its `id`, or `aria-label`, or put it in a
+[Field](field.md) with a `Field.Label`: it takes the field's id, name and ARIA references.
 
 ### Select.Item
 
@@ -1631,6 +2497,105 @@ control's value when it changes, and its `change` event calls `onValueChange`.
 - [UI components](README.md): the approach, styling, the default theme and the other components.
 - [Islands](https://itsjavi.com/lumiose/docs/concepts/islands/): running a component in the
   browser, for `bind:value`.
+
+<!-- source: switch.md -->
+
+# Switch
+
+> On or off, for a setting: a native `<input type="checkbox" role="switch">`, after Base UI's Switch. Space and a label click toggle it, the form submits its value when on, `required` and reset work, in server HTML and without JavaScript, and assistive technology announces a switch. `bind:checked` keeps a signal in sync.
+
+```ts
+import { Switch } from "@lumiose/ui"; // or "@lumiose/ui/switch"
+import "@lumiose/ui/themes/default.css"; // optional: the default theme
+```
+
+## Anatomy
+
+```tsx
+<label>
+  <Switch.Root /> Label
+</label>
+```
+
+| Part   | Renders                                                                |
+| ------ | ---------------------------------------------------------------------- |
+| `Root` | `<input type="checkbox" role="switch">`; `aria-readonly` if read-only. |
+
+## API
+
+### Switch.Root
+
+| Prop              | Type                         | Default |                                                                     |
+| ----------------- | ---------------------------- | ------- | ------------------------------------------------------------------- |
+| `checked`         | `boolean`                    |         | Turns it on or off when it changes. Pair it with `onCheckedChange`. |
+| `defaultChecked`  | `boolean`                    | `false` | Whether it starts on; a form reset goes back to it.                 |
+| `onCheckedChange` | `(checked: boolean) => void` |         | Called after the user turns it on or off.                           |
+| `bind:checked`    | `Signal<boolean>`            |         | Stands in for `checked` and `onCheckedChange`.                      |
+| `value`           | `string`                     | `"on"`  | What it submits when on.                                            |
+| `readOnly`        | `boolean`                    | `false` | It cannot be toggled, but stays focusable and is submitted.         |
+
+Every other native prop passes through: `name`, `required`, `disabled`, `form`, `id`, `class`,
+`aria-*`. Inside a Field it takes the field's wiring.
+
+**Differences from Base UI's Switch.** The switch is the native input, so there is no
+`Switch.Thumb`: draw the track and thumb with `appearance: none` and `::before`. No `nativeButton`,
+`inputRef` or `uncheckedValue` (an off switch submits nothing). `<input switch>` exists only in
+Safari, so `role="switch"` stays on a checkbox everywhere.
+
+## Example
+
+In an island, bound to a signal:
+
+```tsx check
+import { Switch } from "@lumiose/ui";
+import { signal } from "lumiose";
+
+export function AirplaneMode() {
+  const on = signal(false);
+  return (
+    <p>
+      <label>
+        <Switch.Root name="airplane" bind:checked={on} class="lu-switch" /> Airplane mode
+      </label>{" "}
+      {on() ? "Radios off." : ""}
+    </p>
+  );
+}
+```
+
+## Styling
+
+**With the default theme**, put `lu-switch` on `Root`: a 40 by 24px track (`--lu-input` when off,
+the primary colour when on) and a white thumb on the side that tells on from off, a focus ring.
+
+**With your own CSS**, style the input and its state: `:checked`, `:disabled`, `:focus-visible`,
+`[aria-readonly="true"]`, `[aria-invalid="true"]`.
+
+Switch ships no stylesheet: it needs none to work.
+
+## Keyboard and focus
+
+| Key   | Does                                     |
+| ----- | ---------------------------------------- |
+| Space | Turns it on or off (not when read-only). |
+| Tab   | Moves on: one tab stop.                  |
+
+Enter does not toggle it. A click on its label does.
+
+## Without JavaScript, and the client script
+
+A native checkbox with the switch role: toggling, submission, `required`, reset and `disabled`
+work with no script. The shared checkbox script (0.5 kB brotli,
+[Checkbox](checkbox.md#without-javascript-and-the-client-script)) adds read-only.
+
+## Browser support
+
+`role="switch"` on a checkbox: every supported browser and screen reader.
+
+## Related
+
+- [Checkbox](checkbox.md): a choice to confirm, submitted with a form.
+- [Field](field.md): a description and errors for a switch.
 
 <!-- source: tabs.md -->
 

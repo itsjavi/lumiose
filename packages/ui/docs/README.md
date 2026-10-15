@@ -63,15 +63,23 @@ custom properties, named as in shadcn/ui, are listed in [Theming](theming.md#the
 
 ## Components
 
-| Component                         | Status                                                                |
-| --------------------------------- | --------------------------------------------------------------------- |
-| [Dialog, alert dialog](dialog.md) | Available: native `<dialog>`, works without JavaScript                |
-| [Popover](popover.md)             | Available: native popover, works without JavaScript                   |
-| [Tooltip](tooltip.md)             | Available: native hint popover, opened by its script                  |
-| [Menu](menu.md)                   | Available: popover menu, opens without JavaScript                     |
-| [Combobox](combobox.md)           | Available: `<lu-combobox>`, a form control that filters its options   |
-| [Select](select.md)               | Available: native `<select>`, customizable where supported, no script |
-| [Tabs](tabs.md)                   | Available: server HTML with the full state, `<lu-tabs>` adds the keys |
+| Component                           | Status                                                                |
+| ----------------------------------- | --------------------------------------------------------------------- |
+| [Dialog, alert dialog](dialog.md)   | Available: native `<dialog>`, works without JavaScript                |
+| [Popover](popover.md)               | Available: native popover, works without JavaScript                   |
+| [Tooltip](tooltip.md)               | Available: native hint popover, opened by its script                  |
+| [Menu](menu.md)                     | Available: popover menu, opens without JavaScript                     |
+| [Combobox](combobox.md)             | Available: `<lu-combobox>`, a form control that filters its options   |
+| [Select](select.md)                 | Available: native `<select>`, customizable where supported, no script |
+| [Tabs](tabs.md)                     | Available: server HTML with the full state, `<lu-tabs>` adds the keys |
+| [Field](field.md)                   | Available: label, description, errors; native validation in the field |
+| [Fieldset](fieldset.md)             | Available: native `<fieldset>` and `<legend>`, no script              |
+| [Form](form.md)                     | Available: native `<form>`, a form action's errors in its fields      |
+| [Input](input.md)                   | Available: native `<input>`, no script                                |
+| [Checkbox](checkbox.md)             | Available: native checkbox, indeterminate and read-only               |
+| [Checkbox Group](checkbox-group.md) | Available: checkboxes with one value and a parent checkbox            |
+| [Radio](radio-group.md)             | Available: native radios in a radiogroup fieldset                     |
+| [Switch](switch.md)                 | Available: native checkbox with the switch role                       |
 
 ## Size
 

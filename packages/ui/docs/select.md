@@ -51,7 +51,8 @@ the options' text.
 | `disabled`      | `boolean`                 | `false`          | The select cannot be used.                                                        |
 
 Every other `<select>` prop passes through: `id`, `autocomplete`, `form`, `class`, `aria-*`, event
-handlers. Name it with a `<label for>` pointing at its `id`, or `aria-label`.
+handlers. Name it with a `<label for>` pointing at its `id`, or `aria-label`, or put it in a
+[Field](field.md) with a `Field.Label`: it takes the field's id, name and ARIA references.
 
 ### Select.Item
 

@@ -214,6 +214,15 @@ test.describe("Checkbox, Checkbox Group, Radio Group and Switch", () => {
     await locked.press(" ");
     await page.getByText("Locked setting").click();
     await expect(locked).toBeChecked();
+
+    // A read-only radio group: focus moves, the checked radio does not change.
+    const region = page.getByRole("radiogroup", { name: "Region (locked)" });
+    await expect(region).toHaveAttribute("aria-readonly", "true");
+    await region.getByRole("radio", { name: "Europe" }).focus();
+    await page.keyboard.press("ArrowDown");
+    await expect(region.getByRole("radio", { name: "Europe" })).toBeChecked();
+    await region.getByRole("radio", { name: "Americas" }).click();
+    await expect(region.getByRole("radio", { name: "Europe" })).toBeChecked();
   });
 
   test("the parent checkbox checks the group and follows it", async ({ page }) => {

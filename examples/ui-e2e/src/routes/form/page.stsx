@@ -111,6 +111,15 @@ export default function FormPage() {
               setting
             </label>
           </Fieldset.Root>
+          <RadioGroup name="region" defaultValue="eu" readOnly class="lu-fieldset">
+            <Fieldset.Legend>Region (locked)</Fieldset.Legend>
+            <label>
+              <Radio.Root value="eu" class="lu-radio" /> Europe
+            </label>
+            <label>
+              <Radio.Root value="us" class="lu-radio" /> Americas
+            </label>
+          </RadioGroup>
           <Field.Root name="terms" class="lu-field">
             <div>
               <Checkbox.Root required class="lu-checkbox" />

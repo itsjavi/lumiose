@@ -1,11 +1,11 @@
 ---
 id: TASK-368
 title: Switch
-status: To Do
+status: In Progress
 assignee:
   - '@Halo'
 created_date: '2026-10-15 16:54'
-updated_date: '2026-10-15 18:05'
+updated_date: '2026-10-15 21:36'
 labels:
   - ui
 milestone: m-12
@@ -40,4 +40,23 @@ User decision 2026-10-15: @lumiose/ui reaches parity with Base UI's components b
 2026-10-15 (user): @lumiose/ui meets WCAG 2.2 AA (decision-62, doc-9 section 17).
 
 2026-10-15 (user): @lumiose/ui is agent-ready like lumiose (decision-64). The component's docs page lives in packages/ui/docs/<component>.md, follows dialog.md's sections (Anatomy, API, Example, Styling, Keyboard and focus, Without JavaScript, Browser support, Related) and is listed in the UI llms.txt.
+
+2026-10-15 (Halo): implemented with TASK-365 (commit 084666fe and the docs commit); see TASK-365's notes for Field and the shared script.
+
+## Design (technical)
+
+Switch.Root is a native `<input type="checkbox" role="switch">` (`<input switch>` is Safari-only): toggling, submission when on, `required`, reset and `disabled` are the platform's, and assistive technology announces a switch with its checked state. The shared checkbox script adds read-only. Inside a Field it takes the field's wiring.
+
+## doc-9 section 12
+
+[x] `role=switch` with its checked state (native), Space toggles (e2e), `aria-readonly` when read-only, `required` exposed natively. [ ] An "unchecked" value submitted when off: not offered (Base UI's `uncheckedValue`; follow-up). Native validation runs on submit. [x] `role=switch` on a checkbox, not `<input switch>`.
+Section 17: [x] 1.4.1 on and off differ by the thumb's side, not only the track's colour. [x] 1.4.11 track --lu-input off (3:1), --lu-primary on; white thumb 3.8:1 on the light track, 4.9:1 on the dark one. [x] 2.5.8 40 by 24px. [x] axe light and dark (TASK-365's runs).
+
+## Against Base UI and Zag
+
+Base UI Switch: `checked`, `defaultChecked`, `onCheckedChange`, `value`, `readOnly`, `required`, `disabled`, `name` match; no `Switch.Thumb` (draw it with `::before`), `nativeButton`, `inputRef` or `uncheckedValue`. Zag switch: a hidden checkbox behind a custom control; here the checkbox is the control.
+
+## New public names (user review)
+
+Switch.Root `checked`, `defaultChecked`, `onCheckedChange`, `value`, `readOnly`; theme class `lu-switch`; export `/switch`.
 <!-- SECTION:NOTES:END -->
