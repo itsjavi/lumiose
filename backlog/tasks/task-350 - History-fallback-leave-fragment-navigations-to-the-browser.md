@@ -1,11 +1,11 @@
 ---
 id: TASK-350
 title: 'History fallback: leave fragment navigations to the browser'
-status: In Progress
+status: Done
 assignee:
   - Spark
 created_date: '2026-10-15 13:19'
-updated_date: '2026-10-15 13:25'
+updated_date: '2026-10-15 13:28'
 labels: []
 dependencies: []
 priority: medium
@@ -49,6 +49,8 @@ Index choice: no guessing. An entry the browser added after going back (history.
 Remaining divergence (unchanged, pre-existing): with the Navigation API the router ignores hashChange navigate events entirely, so url() keeps the old hash there, while the fallback commits it.
 
 Integration pending (2026-10-15): implemented, validated and committed on branch claude/reverent-engelbart-0b1530 (commit 5c0a82ab), not yet in main. The main checkout has another session's uncommitted edits to the same files (packages/lumiose/src/app/router/router.ts, router/index.ts, docs/reference/router.md, docs/llms-full.txt; Lux, shallow URL state for islands, decision-61), so merging now would collide with that work. Next action: once those edits are committed, merge the branch into main, resolve any conflicts in router.ts/router.md, regenerate llms-full.txt (pnpm --filter lumiose docs:gen), rerun the router tests, then mark Done.
+
+Integrated (2026-10-15): main (with TASK-351) merged into claude/reverent-engelbart-0b1530 without conflicts (merge 9e7a989a); router tests 8 files, 82 tests passed; pnpm --filter lumiose typecheck exit 0; pnpm lint exit 0; docs:check failed only because main's llms-full.txt was stale in the routing.md API table (from TASK-351), regenerated with docs:gen, docs:check green. Main fast-forwarded to the branch.
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary
