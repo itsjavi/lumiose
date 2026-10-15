@@ -19,11 +19,12 @@
 //   marked free of side effects so that an island's import reaches only the modules that declare
 //   what it imports (./runtime-chunks.ts). One exception stays in the runtime chunk: the gate
 //   between fetchJSON and its cache (`FOLDED` below).
-// - Except the client helpers of `src/instrumentation.client.ts` (TASK-346). Vite's preload helper,
-//   which every `import()` uses, is runtime by the rule above; a client entry with an `import()`
-//   would then load the runtime chunk on pages without islands, which decision-49 rules out. Unless
-//   the entry imports the runtime itself, its helpers go to its own chunk, or to a `helpers` chunk
-//   when the runtime uses them too: one more small file on pages with islands.
+// - Except the client helpers of the entries that pages load without the runtime (TASK-346):
+//   `src/instrumentation.client.ts` and client scripts (../../client-scripts.ts). Vite's preload
+//   helper, which every `import()` uses, is runtime by the rule above; such an entry with an
+//   `import()` would then load the runtime chunk on pages without islands, which decision-49 rules
+//   out. Unless the entry imports the runtime itself, its helpers go to its own chunk, or to a
+//   `helpers` chunk when something else uses them too: one more small file on pages with islands.
 // - An app without islands builds an empty island loader, so nothing lands in a chunk that
 //   `lumiose build` removes afterwards.
 // - A smaller preload helper. Vite wraps every dynamic `import()` in `__vitePreload`, which adds
@@ -36,8 +37,7 @@ import { LUMIOSE_SRC, runtimeFile } from "../../runtime-files.ts";
 import { type Plugin } from "vite";
 import { hasIslands, hasSpa, SPA_ENTRY_ID } from "../router/entry.ts";
 import type { BuildState } from "./plugin.ts";
-import { join } from "node:path";
-import { barrel, clientEntryHelpers, singleEntryModules, type Barrel } from "./runtime-chunks.ts";
+import { barrel, plainEntryHelpers, singleEntryModules, type Barrel } from "./runtime-chunks.ts";
 
 /** The island loader's client entries: `lumiose/dom/loader`, or the one that waits for the client entry. */
 const ISLAND_LOADER = runtimeFile("dom/loader.ts");
@@ -63,7 +63,7 @@ export function clientRuntime(state: BuildState): Plugin {
   // imports: known once the client build parsed every module.
   const barrels = new Map<string, Barrel>();
   let single = new Set<string>();
-  // The client helpers `src/instrumentation.client.ts` imports, when it imports no runtime.
+  // The client helpers of the entries that load without the runtime (./runtime-chunks.ts).
   let helpers = { shared: new Set<string>(), own: new Set<string>() };
   const spa = (): boolean => state.app !== undefined && hasSpa(state.app.manifest);
 
@@ -128,14 +128,17 @@ export function clientRuntime(state: BuildState): Plugin {
         barrels,
         (id) => isRuntime(id) && !isLoader(id),
       );
-      if (state.clientEntryFile !== undefined) {
-        helpers = clientEntryHelpers(
-          { ids: this.getModuleIds(), info: (id) => this.getModuleInfo(id) },
-          join(state.root, state.clientEntryFile),
-          isHelper,
-          isRuntime,
-        );
-      }
+      // The entries that load without the runtime: src/instrumentation.client.ts, client scripts.
+      const ids = [...this.getModuleIds()];
+      const entries = ids.filter(
+        (id) => this.getModuleInfo(id)?.isEntry === true && !isRuntime(id) && id !== SPA_ENTRY_ID,
+      );
+      helpers = plainEntryHelpers(
+        { ids, info: (id) => this.getModuleInfo(id) },
+        entries,
+        isHelper,
+        isRuntime,
+      );
     },
 
     load: {

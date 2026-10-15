@@ -4,7 +4,9 @@
 //
 // - island call sites (`meta.islands`), mostly in route modules (./islands.ts);
 // - stylesheets the server graph may import (./css-manifest.ts): every Lumiose module with style
-//   blocks, and the CSS files imported by any source module (`import "./app.css"` in a layout).
+//   blocks, and the CSS files imported by any source module (`import "./app.css"` in a layout);
+// - client scripts of server-rendered components (./client-scripts.ts): imports with the
+//   `?lumiose-client` marker, which the client build builds as entries.
 //
 // Lumiose modules are compiled once without CSS; other JS/TS modules are only searched for import
 // specifiers. A specifier found in a comment only builds an unused stylesheet.
@@ -37,6 +39,8 @@ export interface ScannedModule {
   hasStyles: boolean;
   /** Specifiers of the stylesheets it imports (`./app.css`, `pkg/theme.css`). */
   stylesheets: string[];
+  /** Specifiers of the client scripts it imports (`./menu.element.ts?lumiose-client`). */
+  clientScripts?: string[];
 }
 
 /** Scans every source module under `root` and in the linked Lumiose packages. */
@@ -68,8 +72,16 @@ export function scanProject(
     }
     if (!lumiose) {
       const stylesheets = stylesheetImports(source);
-      if (stylesheets.length > 0)
-        modules.push({ file, islands: [], hasStyles: false, stylesheets });
+      const clientScripts = clientScriptImports(source);
+      if (stylesheets.length > 0 || clientScripts.length > 0) {
+        modules.push({
+          file,
+          islands: [],
+          hasStyles: false,
+          stylesheets,
+          ...(clientScripts.length > 0 ? { clientScripts } : {}),
+        });
+      }
       continue;
     }
     const result = compile(source, contentModule ?? file, {
@@ -78,6 +90,7 @@ export function scanProject(
       sourceMap: false,
       emitCss: false,
     });
+    const clientScripts = clientScriptImports(result.code);
     modules.push({
       file: contentModule ?? file,
       islands: result.meta.islands,
@@ -85,6 +98,7 @@ export function scanProject(
       // The compiled code: style blocks are gone, imports are printed verbatim, and the module's
       // own CSS module is imported when it has styles.
       stylesheets: stylesheetImports(result.code),
+      ...(clientScripts.length > 0 ? { clientScripts } : {}),
     });
   }
   return modules;
@@ -95,6 +109,17 @@ export function stylesheetImports(code: string): string[] {
   for (const match of code.matchAll(IMPORT_SPECIFIER)) {
     const specifier = match[2]!;
     if (isCSSRequest(specifier) && !NOT_A_STYLESHEET.test(specifier)) found.add(specifier);
+  }
+  return [...found];
+}
+
+/** The import marker of client scripts (./client-scripts.ts). */
+const CLIENT_SCRIPT = /\?lumiose-client$/;
+
+export function clientScriptImports(code: string): string[] {
+  const found = new Set<string>();
+  for (const match of code.matchAll(IMPORT_SPECIFIER)) {
+    if (CLIENT_SCRIPT.test(match[2]!)) found.add(match[2]!);
   }
   return [...found];
 }

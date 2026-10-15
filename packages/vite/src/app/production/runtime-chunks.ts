@@ -217,24 +217,28 @@ export async function singleEntryModules(
 }
 
 /**
- * Where the client helpers (`isHelper`: Vite's preload helper and the like) that `entry`, the client
- * entry (decision-49), imports go, so that a page without islands loads no runtime (TASK-346):
+ * Where the client helpers (`isHelper`: Vite's preload helper and the like) go that `entries`
+ * import: the client entries that pages load without the runtime, `src/instrumentation.client.ts`
+ * (decision-49) and client scripts (TASK-354). The runtime chunk would hold them, so a page loading
+ * such an entry would load the runtime too (TASK-346):
  *
- * - `shared`: those the rest of the client imports too (the island loader, the SPA entry and the
- *   chunks they load), for a chunk of their own that both import.
- * - `own`: those only the entry and its lazy imports use, for the entry's chunk.
+ * - `own`: those only one of these entries uses (with its lazy imports), for its own chunk.
+ * - `shared`: those something else uses too (another such entry, the island loader, the SPA entry,
+ *   the chunks they load), for a chunk of their own.
  *
- * Both are empty when the entry imports the runtime (`isRuntime`): its pages load the runtime chunk
- * anyway, so the helpers stay there.
+ * An entry that imports the runtime (`isRuntime`) loads the runtime chunk anyway: its helpers stay
+ * there, unless an entry without the runtime needs them too.
  */
-export function clientEntryHelpers(
+export function plainEntryHelpers(
   graph: Pick<ChunkGraph, "ids" | "info">,
-  entry: string,
+  entries: readonly string[],
   isHelper: (id: string) => boolean,
   isRuntime: (id: string) => boolean,
 ): { shared: Set<string>; own: Set<string> } {
   const shared = new Set<string>();
   const own = new Set<string>();
+  const plain = new Set(entries);
+  // What `starts` reach, without entering another of `entries` (a chunk of its own).
   const reach = (starts: string[], lazy: boolean): Set<string> => {
     const seen = new Set<string>();
     const stack = [...starts];
@@ -244,19 +248,32 @@ export function clientEntryHelpers(
       seen.add(id);
       const info = graph.info(id);
       if (info === null) continue;
-      for (const target of info.importedIds) if (target !== entry) stack.push(target);
-      if (lazy) for (const target of info.dynamicallyImportedIds) stack.push(target);
+      const targets = lazy
+        ? [...info.importedIds, ...info.dynamicallyImportedIds]
+        : info.importedIds;
+      for (const target of targets) if (!plain.has(target)) stack.push(target);
     }
     return seen;
   };
-  const helpers: string[] = [];
-  for (const id of reach([entry], false)) {
-    if (isHelper(id)) helpers.push(id);
-    else if (isRuntime(id)) return { shared, own };
+  const SHARED = "\0shared";
+  /** Helper → the one entry without the runtime that imports it, or SHARED. */
+  const owners = new Map<string, string>();
+  const others: string[] = [];
+  for (const entry of entries) {
+    const reached = reach([entry], false);
+    if ([...reached].some((id) => isRuntime(id) && !isHelper(id))) {
+      others.push(entry);
+      continue;
+    }
+    for (const id of reached) {
+      if (isHelper(id)) owners.set(id, owners.has(id) ? SHARED : entry);
+    }
   }
-  if (helpers.length === 0) return { shared, own };
-  const others = [...graph.ids].filter((id) => id !== entry && graph.info(id)?.isEntry === true);
+  if (owners.size === 0) return { shared, own };
+  for (const id of graph.ids) {
+    if (!plain.has(id) && graph.info(id)?.isEntry === true) others.push(id);
+  }
   const rest = reach(others, true);
-  for (const id of helpers) (rest.has(id) ? shared : own).add(id);
+  for (const [id, owner] of owners) (owner === SHARED || rest.has(id) ? shared : own).add(id);
   return { shared, own };
 }

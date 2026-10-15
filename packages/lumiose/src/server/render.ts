@@ -135,6 +135,7 @@ export function renderShell(root: () => unknown, options: ShellOptions = {}): Pr
     moduleUrl: options.islandUrl ?? ((specifier) => specifier),
     loaderUrl: options.loaderUrl,
     loaderSent: false,
+    sentScripts: new Set(),
     onError,
     onCaughtError:
       options.onCaughtError ??
@@ -354,6 +355,12 @@ function unitAssets(render: RenderState, unit: Unit): string {
     render.loaderSent = true;
     out += `<script type="module" async src="${escapeAttr(render.loaderUrl)}"${nonceAttr(render)}></script>`;
   }
+  for (const url of unit.scripts) {
+    // A boundary streamed earlier may have sent it already.
+    if (render.sentScripts.has(url)) continue;
+    render.sentScripts.add(url);
+    out += `<script type="module" async src="${escapeAttr(url)}"${nonceAttr(render)}></script>`;
+  }
   for (const url of unit.preloads) {
     out += `<link rel="modulepreload" href="${escapeAttr(url)}"${nonceAttr(render)}>`;
   }
@@ -381,6 +388,7 @@ export function createUnit(parent: Unit | undefined): Unit {
     islands: [],
     awaits: undefined,
     preloads: [],
+    scripts: [],
     styles: [],
     waiting: [],
   };
@@ -402,6 +410,7 @@ export function foldUnit(render: RenderState, unit: Unit): void {
     }
   }
   for (const url of unit.preloads) addPreload(render, target, url);
+  for (const url of unit.scripts) if (!target.scripts.includes(url)) target.scripts.push(url);
   target.styles.push(...unit.styles);
   target.waiting.push(...unit.waiting);
 }

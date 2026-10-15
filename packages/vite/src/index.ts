@@ -54,6 +54,7 @@ import {
   type ViteDevServer,
 } from "vite";
 import { contentOf, contentOptionsOf } from "./content.ts";
+import { clientScriptsPlugin } from "./client-scripts.ts";
 import { CSS_MANIFEST_ID, CssManifest, cssManifestCode, fillManifest } from "./css-manifest.ts";
 import { CustomPropertyCheck, unreadMessage } from "./custom-properties.ts";
 import { ISLANDS_ID, IslandRegistry } from "./islands.ts";
@@ -464,6 +465,8 @@ export default function lumiose(options: LumioseOptions = {}): Plugin<LumiosePlu
     },
     // LUM4003: server-only modules never enter a client graph (./server-only.ts).
     serverOnlyPlugin(),
+    // Client scripts of server-rendered components (./client-scripts.ts).
+    clientScriptsPlugin({ serve: () => serve, scan: project, hasServerBuild }),
     // Scoped state ids (./states.ts), after TypeScript and Lumiose compilation.
     statePlugin({
       registry: states,
