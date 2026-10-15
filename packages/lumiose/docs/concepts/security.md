@@ -5,8 +5,9 @@
 ## Concept
 
 **Strict Content Security Policy.** A strict CSP lets the browser run only the scripts and apply
-only the styles the page meant to include, so injected markup cannot run code. With
-`lumiose({ csp: "strict" })`:
+only the styles the page meant to include, so injected markup cannot run code. **New projects start
+with it:** every `create-lumiose` template sets `csp: "strict"` in `vite.config.ts`. The framework
+default stays off, so a project set up by hand opts in. With `lumiose({ csp: "strict" })`:
 
 - **Pages rendered per request** (`server` routes, `spa` routes that reach the server) get a new
   random nonce for each response. Every inline `<script>` and `<style>` Lumiose writes carries it:

@@ -156,6 +156,11 @@ cd my-app && pnpm install && pnpm dev
 | `ssr`     | `server`            | Streaming, a form action, a JSON endpoint and a Node server. |
 | `spa`     | `spa`               | Pages and a persistent layout rendered in the browser.       |
 
+Every template also sets `lumiose({ csp: "strict" })`, so new projects start with a strict Content
+Security Policy: nonces on pages rendered per request, hashes on prerendered ones, and no inline
+scripts or styles that Lumiose did not write ([Security](concepts/security.md)). Remove the option
+to turn it off; projects set up by hand, as below, start without it.
+
 Every project starts agent-ready: `AGENTS.md` (with a Lumiose section pointing at these docs),
 `CLAUDE.md` referencing it, the `lumiose` skill in `.claude/skills/lumiose`, and `.gitattributes`
 highlighting `.stsx` as TSX. In an existing project, `lumiose agents init` writes the same files
@@ -5499,8 +5504,9 @@ See also: [Getting started](../getting-started.md), [reference: `lumiose/dom`](.
 ## Concept
 
 **Strict Content Security Policy.** A strict CSP lets the browser run only the scripts and apply
-only the styles the page meant to include, so injected markup cannot run code. With
-`lumiose({ csp: "strict" })`:
+only the styles the page meant to include, so injected markup cannot run code. **New projects start
+with it:** every `create-lumiose` template sets `csp: "strict"` in `vite.config.ts`. The framework
+default stays off, so a project set up by hand opts in. With `lumiose({ csp: "strict" })`:
 
 - **Pages rendered per request** (`server` routes, `spa` routes that reach the server) get a new
   random nonce for each response. Every inline `<script>` and `<style>` Lumiose writes carries it:

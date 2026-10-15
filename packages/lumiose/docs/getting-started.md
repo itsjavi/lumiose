@@ -22,6 +22,11 @@ cd my-app && pnpm install && pnpm dev
 | `ssr`     | `server`            | Streaming, a form action, a JSON endpoint and a Node server. |
 | `spa`     | `spa`               | Pages and a persistent layout rendered in the browser.       |
 
+Every template also sets `lumiose({ csp: "strict" })`, so new projects start with a strict Content
+Security Policy: nonces on pages rendered per request, hashes on prerendered ones, and no inline
+scripts or styles that Lumiose did not write ([Security](concepts/security.md)). Remove the option
+to turn it off; projects set up by hand, as below, start without it.
+
 Every project starts agent-ready: `AGENTS.md` (with a Lumiose section pointing at these docs),
 `CLAUDE.md` referencing it, the `lumiose` skill in `.claude/skills/lumiose`, and `.gitattributes`
 highlighting `.stsx` as TSX. In an existing project, `lumiose agents init` writes the same files

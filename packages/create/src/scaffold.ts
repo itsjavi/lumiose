@@ -1,6 +1,6 @@
 // Writes a new Lumiose project: a template's `src/` (and extras), the generated package.json,
-// tsconfig.json (extending the generated one, decision-25), vite.config.ts with the template's `lumiose({ mode })` (decision-21),
-// .gitignore and README, then the agent files (AGENTS.md, CLAUDE.md, the lumiose skill,
+// tsconfig.json (extending the generated one, decision-25), vite.config.ts with the template's
+// `lumiose({ mode })` (decision-21) and `csp: "strict"` (decision-56), .gitignore and README, then the agent files (AGENTS.md, CLAUDE.md, the lumiose skill,
 // .gitattributes) from `@lumiose/cli/agents`, shared with `lumiose agents init`.
 
 import { existsSync } from "node:fs";
@@ -180,9 +180,16 @@ function viteConfig(template: Template): string {
 import { defineConfig } from "vite";
 
 export default defineConfig({
-  // The default mode of every route: "static" (built HTML), "server" (rendered per request) or
-  // "spa" (rendered in the browser). A route or layout overrides it with \`export const mode\`.
-  plugins: [lumiose({ mode: "${template.mode}" })],
+  plugins: [
+    lumiose({
+      // The default mode of every route: "static" (built HTML), "server" (rendered per request) or
+      // "spa" (rendered in the browser). A route or layout overrides it with \`export const mode\`.
+      mode: "${template.mode}",
+      // A strict Content Security Policy: a nonce on pages rendered per request, hashes on
+      // prerendered ones. The scripts and styles Lumiose and your JSX write get them.
+      csp: "strict",
+    }),
+  ],
 });
 `;
 }
@@ -205,7 +212,8 @@ ${template.description}. Made with Lumiose (\`create-lumiose --template ${templa
 
 - \`src/routes/\`: one folder per URL segment, with a \`page.stsx\` page or a \`route.ts\` endpoint;
   \`layout.stsx\` wraps the pages below it. Other files there are colocated modules.
-- \`vite.config.ts\`: \`lumiose({ mode: "${template.mode}" })\` sets the default route mode.
+- \`vite.config.ts\`: \`lumiose({ mode: "${template.mode}", csp: "strict" })\` sets the default route mode
+  and a strict Content Security Policy.
 - \`.lumiose/\`: generated types and shadow files (git-ignored).
 
 \`.stsx\` files are TSX with raw-CSS \`<style>\` blocks. The docs for your Lumiose version are in
