@@ -16,7 +16,8 @@ pnpm --filter lumiose test:properties [runs]   # the property tests with many ca
 
 Property tests (`*.property.test.ts`, [fast-check](https://fast-check.dev)) cover request body
 parsing under the limits, the Origin check, redirect targets and unsafe URLs in rendered HTML
-(decision-56). `pnpm test` runs 100 cases of each; `test:properties` runs many more (the nightly
+(decision-56), and the reactive core against a naive reference on random signal graphs
+(`core/reactive.property.test.ts`, one seed per 10 cases). `pnpm test` runs 100 cases of each; `test:properties` runs many more (the nightly
 workflow's). A failure prints its seed: rerun with `LUMIOSE_PROPERTY_SEED=<seed>` to reproduce it.
 
 ### Fuzzing
