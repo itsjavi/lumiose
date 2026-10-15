@@ -221,7 +221,7 @@ impl<'a> Codegen<'a, '_> {
         for token in self.scope_tokens(span) {
             template.element_attrs_mut(node).push((token, None));
         }
-        if let Some((name, value)) = self.source_attribute(span) {
+        if let Some((name, value)) = self.source_attribute(&tag, span) {
             template.element_attrs_mut(node).push((name, Some(value)));
         }
         if !has_inner_html {

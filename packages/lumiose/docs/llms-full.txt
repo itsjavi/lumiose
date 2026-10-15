@@ -5762,8 +5762,8 @@ It has four panels:
 
 **Alt+click** any element to open its source at the line in your editor, through Vite's
 open-in-editor endpoint. It works on server-rendered markup too, not only on islands: in dev, the
-compiler gives every element a `data-lumiose-source="src/routes/page.stsx:12:5"` attribute, on the
-server and in the browser alike. While you hold Alt, the element it would open is outlined.
+compiler gives every element that renders a box a `data-lumiose-source="src/routes/page.stsx:12:5"`
+attribute, on the server and in the browser alike (not `<head>` elements such as `<title>`). While you hold Alt, the element it would open is outlined.
 
 **What the inspector sees.** Server-only components (pages and layouts of `static` and `server`
 routes) run on the server, so they have no client tree: the Tree lists islands and `spa` pages,
@@ -5823,13 +5823,13 @@ Alt+click the button: your editor opens `src/components/Counter.stsx` at line 8.
 
 ## Common mistakes
 
-| Mistake                                       | What happens                                                                                    | Instead                                                                                                |
-| --------------------------------------------- | ----------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
-| Looking for a page's server component in Tree | It is not there: it ran on the server.                                                          | Alt+click its markup to open it; Tree lists what runs in the browser.                                  |
-| Reading a computed marked `(stale)` as wrong  | Nothing read it since its inputs changed, so it has not re-evaluated (computeds are lazy).      | It updates on its next read. The inspector never evaluates it, so it never changes what your app runs. |
-| Expecting the line where a signal was written | The last write names the file and the function, not the line: the stack has compiled positions. | Open the file from the source link, or Alt+click the element.                                          |
-| Alt+click opening the wrong editor, or none   | `launch-editor` picked another editor, or found none.                                           | Set `LAUNCH_EDITOR` (for example `code`, `cursor`, `webstorm`) in the environment of `lumiose dev`.    |
-| Asserting on `data-lumiose-source` in tests   | The attribute exists only in `lumiose dev`, not in builds or under Vitest.                      | Test the built app, or select elements by role and text.                                               |
+| Mistake                                                    | What happens                                                                                                                                | Instead                                                                                                  |
+| ---------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| Looking for a page's server component in Tree              | It is not there: it ran on the server.                                                                                                      | Alt+click its markup to open it; Tree lists what runs in the browser.                                    |
+| Reading a computed marked `(stale)` as wrong               | Nothing read it since its inputs changed, so it has not re-evaluated (computeds are lazy).                                                  | It updates on its next read. The inspector never evaluates it, so it never changes what your app runs.   |
+| Expecting the line where a signal was written              | The last write names the file and the function, not the line: the stack has compiled positions.                                             | Open the file from the source link, or Alt+click the element.                                            |
+| Alt+click opening the wrong editor, or none                | `launch-editor` picked another editor, or found none.                                                                                       | Set `LAUNCH_EDITOR` (for example `code`, `cursor`, `webstorm`) in the environment of `lumiose dev`.      |
+| Matching a dev page's raw HTML exactly in end-to-end tests | In `lumiose dev`, elements that render a box carry `data-lumiose-source`, so `<h1 id=user>` no longer matches. Builds and Vitest have none. | Allow extra attributes (`/<h1 id=user[^>]*>/`), select elements by role and text, or test the built app. |
 
 ## Related diagnostics
 
@@ -12304,8 +12304,8 @@ differs from it is an error naming both, so the path is never counted twice.
 **In-page inspector** (`inspector`, decision-59). `lumiose dev` mounts the inspector on every page
 from its dev client: Alt+Shift+L or the corner button opens the component tree, signals, islands
 and why something updated, and Alt+click opens an element's source through Vite's open-in-editor
-endpoint ([Dev tools](../concepts/dev-tools.md)). In dev, the plugin also compiles every element with
-`data-lumiose-source="<file>:<line>:<column>"`, signal and computed variables with their names, and
+endpoint ([Dev tools](../concepts/dev-tools.md)). In dev, the plugin also compiles every element that renders a box (not `<title>`, `<meta>` and
+the like) with `data-lumiose-source="<file>:<line>:<column>"`, signal and computed variables with their names, and
 component registrations with their locations, and the runtime records for the inspector behind the
 `import.meta.env.LUMIOSE_INSPECTOR` define. Builds and Vitest get none of it. `inspector: false`
 removes all of it from `lumiose dev` too.

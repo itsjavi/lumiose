@@ -32,11 +32,12 @@ test("a prerendered page is real HTML that hydrates into the SPA", async ({ page
     if (message.type() === "error" || message.type() === "warning") errors.push(message.text());
   });
   const html = await (await page.request.get("/tracks/2")).text();
-  expect(html).toMatch(/<h1 id=track>Track (<!--\[-->)?2(<!--\]-->)?: (<!--\[-->)?Cave/);
+  // `[^>]*`: in dev, elements carry `data-lumiose-source` for the inspector.
+  expect(html).toMatch(/<h1 id=track[^>]*>Track (<!--\[-->)?2(<!--\]-->)?: (<!--\[-->)?Cave/);
   expect(html).toContain("<title>Cave</title>");
   expect(html).toContain("#lumiose:spa");
   // onMount() did not run while prerendering.
-  expect(html).toMatch(/<p id=where>(<!--\[-->)?prerendered/);
+  expect(html).toMatch(/<p id=where[^>]*>(<!--\[-->)?prerendered/);
 
   await page.goto("/tracks/2");
   await ready(page);

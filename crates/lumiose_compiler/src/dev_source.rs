@@ -1,9 +1,9 @@
 //! Source locations for the in-page inspector of `lumiose dev` (decision-59, TASK-341,
 //! `CompileOptions::dev_source`):
 //!
-//! - every intrinsic element gets `data-lumiose-source="<file>:<line>:<column>"`, in client
-//!   templates and in server HTML alike, so Alt+click opens any element's source, server-only
-//!   markup included (the file is root-relative, or the module id outside the root);
+//! - every intrinsic element that renders a box gets `data-lumiose-source="<file>:<line>:<column>"`,
+//!   in client templates and in server HTML alike, so Alt+click opens any element's source,
+//!   server-only markup included (the file is root-relative, or the module id outside the root);
 //! - `$hot` receives each component's location (`hot.rs`);
 //! - `const count = signal(…)`, `computed(…)` and `ref()` imported from `lumiose` become
 //!   `$label(signal(…), "count")` (`lumiose/dom/hot`), which names them in the inspector.
@@ -24,6 +24,24 @@ pub const SOURCE_ATTRIBUTE: &str = "data-lumiose-source";
 const LABEL: &str = "$$lumioseLabel";
 /// `lumiose`'s reactive constructors whose results get labels.
 const LABELLED: [&str; 3] = ["signal", "computed", "ref"];
+
+/// Whether elements `tag` get a source location: not those that render no box (nothing to
+/// Alt+click), which include the head elements whose HTML the runtime keeps (`<title>` defaults).
+pub fn is_located(tag: &str) -> bool {
+    !matches!(
+        tag,
+        "html"
+            | "head"
+            | "title"
+            | "meta"
+            | "link"
+            | "script"
+            | "style"
+            | "base"
+            | "noscript"
+            | "template"
+    )
+}
 
 /// A module's file label and line starts.
 pub struct DevSource {

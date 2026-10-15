@@ -18,7 +18,8 @@ function sameDocument(page: Page): Promise<boolean> {
 
 test("deep links render on the server and hydrate", async ({ page }) => {
   const html = await (await page.request.get("/users/2")).text();
-  expect(html).toMatch(/<h1 id=user>(<!--\[-->)?User 2/);
+  // `[^>]*`: in dev, elements carry `data-lumiose-source` for the inspector.
+  expect(html).toMatch(/<h1 id=user[^>]*>(<!--\[-->)?User 2/);
   expect(html).toContain("#lumiose:spa");
   await page.goto("/users/2");
   await ready(page);
@@ -263,7 +264,7 @@ test("@lumiose/query: shared query, reactive key and a mutation that invalidates
   page,
 }) => {
   const html = await (await page.request.get("/query")).text();
-  expect(html).toMatch(/<p id="?query-a"?>(<!--\[-->)?loading/);
+  expect(html).toMatch(/<p id="?query-a"?[^>]*>(<!--\[-->)?loading/);
   await page.goto("/query");
   await ready(page);
   await expect(page.locator("#query-a")).toHaveText(/^User 1 · load \d+$/);

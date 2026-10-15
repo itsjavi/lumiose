@@ -95,8 +95,8 @@ differs from it is an error naming both, so the path is never counted twice.
 **In-page inspector** (`inspector`, decision-59). `lumiose dev` mounts the inspector on every page
 from its dev client: Alt+Shift+L or the corner button opens the component tree, signals, islands
 and why something updated, and Alt+click opens an element's source through Vite's open-in-editor
-endpoint ([Dev tools](../concepts/dev-tools.md)). In dev, the plugin also compiles every element with
-`data-lumiose-source="<file>:<line>:<column>"`, signal and computed variables with their names, and
+endpoint ([Dev tools](../concepts/dev-tools.md)). In dev, the plugin also compiles every element that renders a box (not `<title>`, `<meta>` and
+the like) with `data-lumiose-source="<file>:<line>:<column>"`, signal and computed variables with their names, and
 component registrations with their locations, and the runtime records for the inspector behind the
 `import.meta.env.LUMIOSE_INSPECTOR` define. Builds and Vitest get none of it. `inspector: false`
 removes all of it from `lumiose dev` too.

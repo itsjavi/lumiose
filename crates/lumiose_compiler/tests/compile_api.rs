@@ -915,6 +915,22 @@ export function Counter() {
         "{server}"
     );
     assert!(!server.contains("lumioseLabel") && !server.contains("lumioseHot"));
+    // Elements that render no box get none, among them the head elements whose HTML the runtime
+    // keeps (`<title>` defaults).
+    let head = r#"export function Head() {
+  return <head><title>Hi</title><meta name="a" content="b" /><body><p>x</p></body></head>;
+}
+"#;
+    let options = CompileOptions {
+        target: Target::Server,
+        dev_source: true,
+        ..CompileOptions::default()
+    };
+    let code = compile(head, "/src/Head.stsx", &options).code;
+    assert!(
+        code.contains("<head><title>Hi</title><meta name=a content=b><body data-lumiose-source=/src/Head.stsx:2:62>"),
+        "{code}"
+    );
     // Off by default.
     let plain = compile(
         source,
