@@ -1,11 +1,11 @@
 ---
 id: TASK-396
 title: One placement and dismissal model for Menu and Popover
-status: In Progress
+status: Done
 assignee:
   - '@Halo'
 created_date: '2026-10-15 19:22'
-updated_date: '2026-10-15 20:41'
+updated_date: '2026-10-15 20:45'
 labels:
   - ui
 milestone: m-12
@@ -58,4 +58,12 @@ Native `<select>` (TASK-358) keeps the platform's picker dismissal. Tooltip (`po
 - ui-e2e: Menu (right-click/middle click outside keeps it open, outside click closes the tree, submenus, dialogs), Popover (right-click outside keeps it open, nested popovers, Escape one at a time, in a dialog), Combobox, Tooltip, on dev and build. The script-list tests now expect the shared `layer-*.js` chunk.
 - Sizes (brotli): Popover script 1.26 → 1.72 kB, Menu 2.94 → 3.28 kB (each row counts the shared module); all client scripts together 7.99 → 7.98 kB.
 - Docs: menu.md, popover.md (dismissal and sizes), combobox.md.
+
+2026-10-15 (Halo): validation on the branch: pnpm check green except apps/web/src/content/content.test.ts:60 (Beacon's area), which expects the UI nav's second page to be ui/dialog; with combobox.md it is ui/combobox (pages sort by title). One-line test fix sent to Beacon (beacon-m12b, editing apps/web); not edited here. The steps after Vitest ran by hand: script tests, lumiose size, cargo test (165 passed). ui unit 101 (incl. layer and compile tests), typecheck ui and ui-e2e, oxlint clean, docs:check and the cli docs tests (ui contract, examples type-check) green, pnpm pack:check --smoke --skip-npm green (@lumiose/ui 40 files). ui-e2e full suite dev and build: 268 passed, 6 skipped by design.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Menu, Popover and Combobox share one dismissal model (packages/ui/src/layer/layer.ts: manual popovers, outside-press filters, close requests, the auto-stack rule); Popover's reopen-after-right-click is gone, and Menu's placement types are the package's Side and Align.
+<!-- SECTION:FINAL_SUMMARY:END -->

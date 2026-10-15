@@ -1,11 +1,11 @@
 ---
 id: TASK-358
 title: Combobox and Select
-status: In Progress
+status: Done
 assignee:
   - '@Halo'
 created_date: '2026-10-15 16:46'
-updated_date: '2026-10-15 20:31'
+updated_date: '2026-10-15 20:45'
 labels:
   - ui
 milestone: m-12
@@ -24,13 +24,13 @@ Contract: decision-62 (approved by the user on 2026-10-15 from the TASK-332 spik
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Combobox and Select follow their APG contracts and submit with forms
-- [ ] #2 value/onValueChange and bind:value work with signals; the input shows the label
-- [ ] #3 Keyboard-contract and axe tests pass
-- [ ] #4 Unstyled: ships only the CSS the primitive needs to work, in one low-priority layer
-- [ ] #5 Passes every item of the "UI primitives pitfall checklist" backlog doc (from Base UI and Zag/Ark) that applies
-- [ ] #6 Meets WCAG 2.2 AA (doc-9 section 17): axe with the WCAG A and AA tags passes closed and open, with the default theme, in light and dark, and the manual criteria that apply are checked and recorded
-- [ ] #7 Its docs page in packages/ui/docs follows the component template (decision-64) and is listed in @lumiose/ui's llms.txt
+- [x] #1 Combobox and Select follow their APG contracts and submit with forms
+- [x] #2 value/onValueChange and bind:value work with signals; the input shows the label
+- [x] #3 Keyboard-contract and axe tests pass
+- [x] #4 Unstyled: ships only the CSS the primitive needs to work, in one low-priority layer
+- [x] #5 Passes every item of the "UI primitives pitfall checklist" backlog doc (from Base UI and Zag/Ark) that applies
+- [x] #6 Meets WCAG 2.2 AA (doc-9 section 17): axe with the WCAG A and AA tags passes closed and open, with the default theme, in light and dark, and the manual criteria that apply are checked and recorded
+- [x] #7 Its docs page in packages/ui/docs follows the component template (decision-64) and is listed in @lumiose/ui's llms.txt
 <!-- AC:END -->
 
 ## Implementation Notes
@@ -93,4 +93,12 @@ Combobox client script 3.76 kB (11.63 min / 4.21 gzip), component JS 5.22 kB, CS
 - Dialog's Safari `closedby` fallback tests the dialog's box: a press on a top-layer popup that overflows the dialog (combobox list, menu) counts as outside. Test with WebKit.
 - Combobox `autoHighlight`, `openOnInputClick`, `limit` props for parity; a `Separator` part.
 - Firefox/WebKit runs of the combobox and select suites (TASK-361's test kit).
+
+2026-10-15 (Halo): validation on the branch: pnpm check green except apps/web/src/content/content.test.ts:60 (Beacon's area), which expects the UI nav's second page to be ui/dialog; with combobox.md it is ui/combobox (pages sort by title). One-line test fix sent to Beacon (beacon-m12b, editing apps/web); not edited here. The steps after Vitest ran by hand: script tests, lumiose size, cargo test (165 passed). ui unit 101 (incl. layer and compile tests), typecheck ui and ui-e2e, oxlint clean, docs:check and the cli docs tests (ui contract, examples type-check) green, pnpm pack:check --smoke --skip-npm green (@lumiose/ui 40 files). ui-e2e full suite dev and build: 268 passed, 6 skipped by design.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Combobox (lu-combobox: form-associated, APG list autocomplete, groups, empty and status, clear, multiple with chips, required, reset, async options, bind:value and bind:open) and Select (a native select, customizable where supported, no script; reason recorded) ship in @lumiose/ui with docs pages, theme blocks and e2e (keyboard, forms, layers, islands, axe light and dark). Follow-ups proposed in the notes.
+<!-- SECTION:FINAL_SUMMARY:END -->
