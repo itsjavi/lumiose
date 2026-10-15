@@ -87,7 +87,11 @@ export async function lint(options: LintOptions): Promise<LintResult> {
   const notes: string[] = [];
   const fileKey = (file: string) => relative(root, file).split(sep).join("/");
 
-  const reports = await runOxlint(oxlint, root, ["--ignore-pattern=**/.lumiose/**"]);
+  // oxlint walks into node_modules (and through its symlinks, a whole workspace) unless told not to.
+  const reports = await runOxlint(oxlint, root, [
+    "--ignore-pattern=**/.lumiose/**",
+    "--ignore-pattern=**/node_modules/**",
+  ]);
   if (files.length > 0) {
     const config = await writeShadowConfig(root);
     for (let i = 0; i < files.length; i += CHUNK) {

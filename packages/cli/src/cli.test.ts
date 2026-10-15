@@ -460,16 +460,29 @@ export default { plugins: [lumiose({ mode: "server" })] };
     );
   });
 
+  // One test per command, each a cold CLI start, so a slow one is named in the failure.
   it.skipIf(!binding)(
-    "lumiose check, lint and fmt report in the envelope",
+    "lumiose check reports in the envelope",
     async () => {
       const check = await runBinJson("check");
       expect(check.code, check.stderr).toBe(0);
       expect(check.json).toMatchObject({ command: "check", ok: true, diagnostics: [] });
+    },
+    60_000,
+  );
 
+  it.skipIf(!binding)(
+    "lumiose lint reports in the envelope",
+    async () => {
       const lint = await runBinJson("lint");
       expect(lint.json).toMatchObject({ command: "lint", ok: lint.code === 0 });
+    },
+    60_000,
+  );
 
+  it.skipIf(!binding)(
+    "lumiose fmt reports in the envelope",
+    async () => {
       const fmt = await runBinJson("fmt", "--check", "src/components");
       expect(fmt.json).toMatchObject({
         command: "fmt",
@@ -477,7 +490,6 @@ export default { plugins: [lumiose({ mode: "server" })] };
         check: true,
         summary: { files: 1, errors: 0 },
       });
-      // Three CLI runs, one of them a full TypeScript check: seconds on a CI runner.
     },
     60_000,
   );

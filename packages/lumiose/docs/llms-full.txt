@@ -12766,7 +12766,8 @@ Paths in JSON are project-relative. Exits 1 when the routes have errors.
 ## lumiose lint
 
 Runs oxlint on the project, including `.stsx` files (through their shadow TSX, with diagnostics
-inside style blocks dropped), and, when the project installs and configures stylelint, on each
+inside style blocks dropped) and leaving out `node_modules` and `.lumiose`, and, when the project
+installs and configures stylelint, on each
 block's CSS with `$` references replaced by same-length identifiers. The JSON report has the shape
 of `lumiose check`'s.
 
