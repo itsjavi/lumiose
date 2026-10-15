@@ -4,15 +4,18 @@
 // packages outside lockstep, `INDEPENDENT_PACKAGES`), and `npm publish
 // --dry-run` accepts them in publish order (the path scripts/publish.ts takes for real; versions
 // already on npm are skipped there, the tarballs are still checked and smoke-tested). With
-// `--smoke`, it also creates an app with the packed create-lumiose, installs the packed packages
-// into it from the tarballs, and runs `lumiose check` and `lumiose build` there. Nothing is
-// published.
+// `--smoke`, it also creates an app with the packed create-lumiose, adds a page that uses the
+// packed @lumiose/ui (scripts/fixtures/pack-ui), installs the packed packages into it from the
+// tarballs, and runs `lumiose check` and `lumiose build` there, then its Playwright test in
+// Chromium under `lumiose dev` and `lumiose preview` (TASK-390: Lumiose packages installed in
+// node_modules are compiled; `playwright install chromium` first). Nothing is published.
 //
 //   node scripts/pack.ts [--out <dir>] [--smoke] [--skip-npm]
 
 import { execFileSync } from "node:child_process";
 import {
   copyFileSync,
+  cpSync,
   existsSync,
   mkdirSync,
   mkdtempSync,
@@ -180,7 +183,8 @@ export interface Packed {
   manifest: Manifest;
 }
 
-function pack(dir: string, out: string): Packed {
+/** Packs `dir` into `out` and checks the tarball (a private package only for the smoke app). */
+function pack(dir: string, out: string, smokeOnly = false): Packed {
   const before = new Set(readdirSync(out));
   run("pnpm", ["pack", "--pack-destination", out], dir);
   const created = readdirSync(out).filter((file) => file.endsWith(".tgz") && !before.has(file));
@@ -193,7 +197,7 @@ function pack(dir: string, out: string): Packed {
     .split("\n")
     .filter(Boolean)
     .map((file) => file.replace(/^package\//, ""));
-  const problems = tarballProblems(manifest, files);
+  const problems = tarballProblems(smokeOnly ? { ...manifest, private: false } : manifest, files);
   if (problems.length > 0) {
     throw new Error(`${manifest.name}:\n${problems.map((p) => `  - ${p}`).join("\n")}`);
   }
@@ -201,9 +205,25 @@ function pack(dir: string, out: string): Packed {
   return { name: manifest.name, tarball, manifest };
 }
 
-/** Creates an app with the packed create-lumiose and builds it with the packed packages. */
+/** The app files that use the packed @lumiose/ui, with their Playwright test (TASK-390). */
+const PACK_UI_FIXTURE = join(REPO, "scripts/fixtures/pack-ui");
+
+/** The Playwright version of the repository's browser tests, whose Chromium CI caches. */
+function playwrightVersion(): string {
+  const manifest = readManifest(join(REPO, "examples/ui-e2e"));
+  return manifest.devDependencies!["@playwright/test"]!;
+}
+
+/**
+ * Creates an app with the packed create-lumiose, adds a page that uses the packed @lumiose/ui,
+ * checks and builds it with the packed packages, and runs its browser test in dev and build.
+ */
 function smoke(packed: Packed[], out: string): void {
   const dir = mkdtempSync(join(tmpdir(), "lumiose-pack-"));
+  // @lumiose/ui is private until TASK-389, so packAll leaves it out.
+  if (!packed.some((p) => p.name === "@lumiose/ui")) {
+    packed = [...packed, pack(join(REPO, "packages/ui"), out, true)];
+  }
   try {
     const file = (name: string) => `file:${packed.find((p) => p.name === name)!.tarball}`;
     const overrides = Object.fromEntries(packed.map((p) => [p.name, file(p.name)]));
@@ -231,24 +251,32 @@ function smoke(packed: Packed[], out: string): void {
     for (const deps of [manifest.dependencies, manifest.devDependencies]) {
       for (const name of Object.keys(deps)) if (name in overrides) deps[name] = overrides[name]!;
     }
+    manifest.dependencies["@lumiose/ui"] = file("@lumiose/ui");
+    manifest.devDependencies["@playwright/test"] = playwrightVersion();
     writeFileSync(join(app, "package.json"), JSON.stringify({ ...manifest, overrides }, null, 2));
+    cpSync(PACK_UI_FIXTURE, app, { recursive: true });
     run("npm", ["install", "--no-audit", "--no-fund", "--loglevel=error"], app);
     const bin = join(app, "node_modules/@lumiose/cli/dist/bin.js");
-    for (const command of [["check"], ["build"]]) {
+    const playwright = join(app, "node_modules/@playwright/test/cli.js");
+    const steps: [string, string[]][] = [
+      ["lumiose check", [bin, "check"]],
+      ["lumiose build", [bin, "build"]],
+      ["playwright test (lumiose dev, lumiose preview)", [playwright, "test"]],
+    ];
+    for (const [step, args] of steps) {
       try {
-        run(process.execPath, [bin, ...command], app);
+        run(process.execPath, args, app);
       } catch (error) {
         const { stdout, stderr } = error as { stdout?: string; stderr?: string };
-        throw new Error(
-          `lumiose ${command.join(" ")} failed in the packed app:\n${stdout ?? ""}${stderr ?? ""}`,
-          { cause: error },
-        );
+        throw new Error(`${step} failed in the packed app:\n${stdout ?? ""}${stderr ?? ""}`, {
+          cause: error,
+        });
       }
+      if (step === "lumiose build" && !existsSync(join(app, "dist/server")))
+        throw new Error("lumiose build wrote no dist/server");
     }
-    if (!existsSync(join(app, "dist/server")))
-      throw new Error("lumiose build wrote no dist/server");
     console.log(
-      `smoke: create-lumiose --template ssr, lumiose check and lumiose build pass (${out})`,
+      `smoke: create-lumiose --template ssr with @lumiose/ui, lumiose check, lumiose build and the browser test in dev and build pass (${out})`,
     );
   } finally {
     rmSync(dir, { recursive: true, force: true });

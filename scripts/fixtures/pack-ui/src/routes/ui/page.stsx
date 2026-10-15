@@ -1,0 +1,26 @@
+import { Dialog } from "@lumiose/ui";
+import { UiIsland } from "../../islands/UiIsland.tsx";
+
+// Server-rendered dialogs (no island): the page loads Dialog's client script alone, which marks a
+// dialog with an open dialog inside it.
+export default function UiPage() {
+  return (
+    <main>
+      <h1>@lumiose/ui</h1>
+      <Dialog.Root>
+        <Dialog.Trigger>Settings</Dialog.Trigger>
+        <Dialog.Popup>
+          <Dialog.Title>Settings</Dialog.Title>
+          <Dialog.Root>
+            <Dialog.Trigger>Advanced</Dialog.Trigger>
+            <Dialog.Popup>
+              <Dialog.Title>Advanced</Dialog.Title>
+              <Dialog.Close>Done</Dialog.Close>
+            </Dialog.Popup>
+          </Dialog.Root>
+        </Dialog.Popup>
+      </Dialog.Root>
+      <UiIsland client:load />
+    </main>
+  );
+}
