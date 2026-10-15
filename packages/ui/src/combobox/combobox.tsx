@@ -10,7 +10,6 @@ import {
   createContext,
   effect,
   isServer,
-  onCleanup,
   ref,
   signal,
   untrack,
@@ -24,15 +23,19 @@ import type {
   ComboboxOpenChangeDetail,
 } from "./combobox.script.ts";
 import comboboxScript from "./combobox.script.ts?client";
+import { controlId, describedBy, useField } from "../field/context.ts";
 import { anchorName, placement, withStyle, type PlacementProps } from "../placement/placement.ts";
+import { ComboboxContext, register, useCombobox, type ComboboxContextValue } from "./context.ts";
 
 declare module "lumiose/jsx-runtime" {
   namespace JSX {
     interface IntrinsicElements {
       /**
-       * Combobox's element, rendered by `Combobox.Root`: a form control with no box. Properties
-       * `value` (an array with `multiple`), `open`, `name`, `required`, `disabled`, `multiple`;
-       * attribute `filter`; events `change` and `openchange` (`detail.open`).
+       * Combobox's element, rendered by `Combobox.Root` and `Autocomplete.Root`: a form control
+       * with no box. Properties `value` (an array with `multiple`), `open`, `name`, `required`,
+       * `disabled`, `multiple`; attributes `filter`, and for an Autocomplete `free` (the input's
+       * text is the value), `inline` (the arrows complete the text) and `open-on-input-click`;
+       * events `change` and `openchange` (`detail.open`).
        */
       "lu-combobox": JSX.HTMLProps<ComboboxElement> & {
         name?: string;
@@ -40,6 +43,9 @@ declare module "lumiose/jsx-runtime" {
         disabled?: boolean;
         multiple?: boolean;
         filter?: ComboboxFilter;
+        free?: boolean;
+        inline?: boolean;
+        "open-on-input-click"?: boolean;
       };
     }
   }
@@ -173,33 +179,7 @@ export type ComboboxChipsProps = Omit<JSX.IntrinsicElements["div"], "children"> 
   removeLabel?: string;
 };
 
-interface ComboboxContextValue {
-  /** The element's id; the parts' ids and the anchor name derive from it. */
-  id: string;
-  /** The selected values, as the element last reported them. */
-  selected: () => string[];
-  multiple: () => boolean;
-  disabled: () => boolean;
-  /** How many Labels are rendered: the listbox is named by the label only when there is one. */
-  labels: Signal<number>;
-  /** Whether the parts are inside a `Popup`: the `List` is then not the popover. */
-  popup: boolean;
-}
-
-const ComboboxContext = createContext<ComboboxContextValue>();
 const GroupContext = createContext<{ labelId: string; labels: Signal<number> }>();
-
-function useCombobox(): ComboboxContextValue {
-  const context = useContext(ComboboxContext);
-  if (!context) throw new Error("Combobox parts must be inside <Combobox.Root>.");
-  return context;
-}
-
-/** Counts a rendered part in `count` while it is mounted. */
-function register(count: Signal<number>) {
-  count.update((n) => n + 1);
-  onCleanup(() => count.update((n) => n - 1));
-}
 
 const list = (value: string | readonly string[] | undefined): string[] =>
   value === undefined || value === "" ? [] : typeof value === "string" ? [value] : [...value];
@@ -224,13 +204,16 @@ function Root<Multiple extends boolean | undefined = false>({
   // The behaviour, on the server HTML and in islands; the page loads it once (decision-63).
   comboboxScript();
   const id = useId();
+  // Inside a Field: the field's id, name, state and ARIA references (TASK-404).
+  const field = useField();
   const host = ref<ComboboxElement>();
   const selected = signal<string[]>(untrack(() => list(value ?? defaultValue)));
   const context: ComboboxContextValue = {
     id,
+    inputId: field ? controlId(field) : `${id}-input`,
     selected,
     multiple: () => multiple === true,
-    disabled: () => disabled === true,
+    disabled: () => disabled === true || field?.disabled() === true,
     labels: signal(0),
     popup: false,
   };
@@ -256,9 +239,9 @@ function Root<Multiple extends boolean | undefined = false>({
         {...rest}
         ref={host}
         id={id}
-        name={name}
+        name={name ?? field?.name()}
         required={required}
-        disabled={disabled}
+        disabled={context.disabled()}
         multiple={multiple}
         filter={filter}
         on:change={() => {
@@ -283,7 +266,7 @@ function Label({ children, ...rest }: ComboboxLabelProps) {
   const combobox = useCombobox();
   register(combobox.labels);
   return (
-    <label {...rest} id={`${combobox.id}-label`} for={`${combobox.id}-input`}>
+    <label {...rest} id={`${combobox.id}-label`} for={combobox.inputId}>
       {children}
     </label>
   );
@@ -291,15 +274,25 @@ function Label({ children, ...rest }: ComboboxLabelProps) {
 
 function Input({ style, ...rest }: ComboboxInputProps) {
   const combobox = useCombobox();
+  const field = useField();
+  // In an Autocomplete the input is the form control (name, required, its text); in a Combobox the
+  // element is.
+  const own = untrack(() => {
+    const text = combobox.text;
+    return text ? { name: text.name(), required: text.required(), value: text.initial } : {};
+  });
   return (
     <input
       autocomplete="off"
       spellcheck={false}
+      aria-describedby={field ? describedBy(field) : undefined}
+      aria-invalid={field?.invalid() ? "true" : undefined}
       {...rest}
+      {...own}
       type="text"
-      id={`${combobox.id}-input`}
+      id={combobox.inputId}
       role="combobox"
-      aria-autocomplete="list"
+      aria-autocomplete={combobox.text?.autocomplete ?? "list"}
       aria-expanded="false"
       aria-controls={`${combobox.id}-list`}
       disabled={combobox.disabled() || rest.disabled}
@@ -327,7 +320,9 @@ function Trigger({ children, ...rest }: ComboboxTriggerProps) {
 function Clear({ children, ...rest }: ComboboxClearProps) {
   const combobox = useCombobox();
   // The script shows and hides it from then on.
-  const empty = untrack(() => combobox.selected().length === 0);
+  const empty = untrack(() =>
+    combobox.text ? !combobox.text.initial : combobox.selected().length === 0,
+  );
   return (
     <button
       type="button"
