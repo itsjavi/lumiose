@@ -5,7 +5,7 @@ status: Done
 assignee:
   - '@Photon'
 created_date: '2026-10-15 04:03'
-updated_date: '2026-10-15 17:24'
+updated_date: '2026-10-15 17:32'
 labels:
   - release
 milestone: m-12
@@ -40,6 +40,8 @@ Photon, 2026-10-15. Implementation:
 - Docs: CONTRIBUTING.md Releases, 'Packages outside lockstep'. AGENTS.md's Releases bullet (Lux's file) could mention --package.
 - For the user's review: the --package flag, the <name>@<x.y.z> tag format (changesets style), and the commit-scope rule for the changelogs.
 - Last step not done here: packages/ui is not on main yet (Halo's branch). Making it public (drop private: true, first release --package @lumiose/ui 0.1.0) is recorded as a follow-up task.
+
+2026-10-15 (user): confirmed --package, the <name>@<x.y.z> tag format and the changelog split by the ui commit scope.
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary

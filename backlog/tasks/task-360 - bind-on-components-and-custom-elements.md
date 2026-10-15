@@ -5,7 +5,7 @@ status: Done
 assignee:
   - '@Photon'
 created_date: '2026-10-15 16:46'
-updated_date: '2026-10-15 17:24'
+updated_date: '2026-10-15 17:32'
 labels:
   - ui
 milestone: m-12
@@ -40,6 +40,8 @@ Photon, 2026-10-15. Design and implementation:
 - Docs: concepts/jsx.md (section and common mistake), reference/jsx.md, guides/web-components.md (Two-way binding), reference/dom.md (contract list), llms regenerated.
 - Public names for the user's review: bindProperty (lumiose/dom contract helper, compiler-emitted, not an app API); the custom-element event rule (input, change, xchange); onXChange composition order (signal first, then the handler).
 - Found: bindValue, bindChecked and bindProperty miss a write of the previous value made before the next flush (the signal's net value is unchanged, so the render effect does not re-run and the element keeps the user's value). Core/dom issue, recorded as a task for Spark.
+
+2026-10-15 (user): confirmed the custom-element event rule (input, change, <name>change) and the order (the signal updates before the caller's onXChange).
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary

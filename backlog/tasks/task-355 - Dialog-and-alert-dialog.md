@@ -5,7 +5,7 @@ status: In Progress
 assignee:
   - '@Halo'
 created_date: '2026-10-15 16:46'
-updated_date: '2026-10-15 17:25'
+updated_date: '2026-10-15 17:32'
 labels:
   - ui
 milestone: m-12
@@ -64,4 +64,6 @@ doc-9 pass (pass = native or ours, tested where noted):
 - Section 2. Pass: initial focus autofocus, then first focusable, then the dialog (e2e); alert dialog role, no outside dismissal, Escape closes (e2e); label and description references track the parts, trigger has aria-haspopup and aria-expanded (unit, e2e); page inert, Tab never reaches it (e2e); nested: Escape closes only the child (e2e). Gaps: (e) no data-nested-dialog-open or nested-count variable (CSS can use dialog:has(dialog:modal), documented); (f) touch-opened dialogs still focus the first field, which may open the virtual keyboard (Base UI focuses the popup); (g) no light dismiss in Safari (closedby only in Technology Preview) and no JS fallback.
 
 Status: In Progress, not Done. AC #2 waits for TASK-360 (bind:open; Photon has no commits on its branch yet). AC #5 waits for a decision on gaps (a) to (g): accept them as native-only behaviour (my recommendation for server pages, documented in ui/dialog.md) or add an optional script that filters secondary buttons, adds nested state and a Safari light-dismiss fallback, shipped like element definitions (TASK-354). Also for the user: invoker commands are Baseline 2025, not 'widely available', with no fallback (docs/stability.md promises a fallback for newer features). Next action once TASK-360 is on main: git merge main, add a bind:open island case and a type test, check AC #2.
+
+2026-10-15 (user): close the doc-9 gaps with a small optional script, not by accepting native behaviour: Dialog keeps working with zero JS, and a script shipped through the ?client mechanism (decision-63) when a Dialog renders filters secondary-button dismissal, adds data-nested-dialog-open and a nested-count variable, focuses the popup when opened by touch, returns focus with preventScroll and a fallback when the trigger is gone, and polyfills light dismiss (Safari) and invoker commands where missing. About 1 kB; measure it.
 <!-- SECTION:NOTES:END -->

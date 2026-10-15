@@ -5,7 +5,7 @@ status: In Progress
 assignee:
   - '@Nova'
 created_date: '2026-10-15 16:46'
-updated_date: '2026-10-15 17:14'
+updated_date: '2026-10-15 17:32'
 labels:
   - ui
 milestone: m-12
@@ -58,4 +58,6 @@ Hand-off to Halo (TASK-357 Menu, TASK-358 Combobox, @lumiose/ui):
 - Until the public name lands, declare the marker locally: `declare module "*?lumiose-client" { const clientScript: () => void; export default clientScript; }`.
 - Element modules must not import lumiose (they would load the runtime). They no longer run on the server, so the `globalThis.HTMLElement ?? Object` guard is only needed if server code imports them otherwise. Still list them in `sideEffects` for other bundlers.
 - The scan covers the app and linked workspace packages. A package installed from npm (node_modules) is neither scanned nor compiled by default (`exclude`), the same as its islands and `.stsx` styles: to settle with @lumiose/ui's packaging (TASK-353).
+
+2026-10-15 (user): the public spelling is the ?client query (P1), recorded as decision-63. Next: rename ?lumiose-client to ?client, add the module type to lumiose's JSX/env types, write the docs section, and point TASK-283 at it.
 <!-- SECTION:NOTES:END -->
