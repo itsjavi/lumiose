@@ -283,6 +283,9 @@ impl<'a> Codegen<'a, '_> {
         for token in self.scope_tokens(span) {
             out.attribute(&token, None);
         }
+        if let Some((name, value)) = self.source_attribute(span) {
+            out.attribute(&name, Some(&value));
+        }
         for piece in open.tail {
             out.piece(piece);
         }

@@ -7,6 +7,7 @@ mod compile;
 pub mod css;
 pub mod custom_properties;
 pub mod depth;
+mod dev_source;
 pub mod diagnostics;
 mod hot;
 pub mod imports;

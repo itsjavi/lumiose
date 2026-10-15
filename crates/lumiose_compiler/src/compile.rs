@@ -77,6 +77,10 @@ pub struct CompileOptions {
     /// Dev client builds: register components for component-level hot updates (TASK-146, see
     /// `hot.rs`). Ignored for the server target.
     pub hot: bool,
+    /// Dev with the in-page inspector (decision-59, see `dev_source.rs`): elements carry
+    /// `data-lumiose-source`, `$hot` gets component locations and signals get labels. For both
+    /// targets, so server-rendered markup has the attribute too.
+    pub dev_source: bool,
     /// Report browser globals evaluated at module scope (`LUM4004`), for modules of server
     /// graphs: always on for the server target; `lumiose check` and the language server turn it on
     /// for client compiles of modules that server rendering loads.
@@ -98,6 +102,7 @@ impl Default for CompileOptions {
             server_route: false,
             strict_csp: false,
             hot: false,
+            dev_source: false,
             browser_globals: false,
         }
     }
@@ -335,6 +340,10 @@ pub fn compile(source: &str, filename: &str, options: &CompileOptions) -> Compil
         hot.apply(&mut program);
     }
 
+    let dev_source = options
+        .dev_source
+        .then(|| crate::dev_source::DevSource::new(source, filename, options.root.as_deref()));
+
     let custom_properties_set = custom_properties::set_in_style_props(&program);
     let module_imports = imports::imports(&program);
 
@@ -346,6 +355,7 @@ pub fn compile(source: &str, filename: &str, options: &CompileOptions) -> Compil
         scope_tokens: &scopes.tokens,
         style_import: options.style_import,
         strict_csp: options.strict_csp,
+        dev_source: dev_source.as_ref(),
     };
     let output = client::transform(
         &ast,
@@ -357,6 +367,9 @@ pub fn compile(source: &str, filename: &str, options: &CompileOptions) -> Compil
         &transform_options,
     );
     diagnostics.extend(output.diagnostics);
+    let labels = (dev_source.is_some() && options.target == Target::Client)
+        .then(|| crate::dev_source::label_signals(&ast, &mut program))
+        .flatten();
 
     // Print against the original text: source map columns and `sourcesContent` then refer to
     // the authored file (masked style regions are never printed).
@@ -370,7 +383,12 @@ pub fn compile(source: &str, filename: &str, options: &CompileOptions) -> Compil
     if let Some(hot) = &hot
         && !printed.code.is_empty()
     {
-        printed.code.push_str(&hot.footer());
+        printed
+            .code
+            .push_str(&hot.footer(dev_source.as_ref().map(|dev| (dev, source))));
+    }
+    if let Some(labels) = labels {
+        printed.code.push_str(&labels);
     }
 
     let mut custom_properties_read = Vec::new();

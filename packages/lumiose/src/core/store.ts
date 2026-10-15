@@ -4,6 +4,8 @@
 // property gets a trigger node on its first tracked read; writes fire the node
 // only when the value changed. Adding or deleting keys (and array length
 // changes) also fires a per-object KEYS node, which `ownKeys` tracks.
+import { INSPECTED } from "../dom/dev.ts";
+import { storeKey } from "../dom/devtools.ts";
 import { batch } from "./effect.ts";
 import {
   activeSub,
@@ -52,6 +54,7 @@ function trackKey(target: object, key: Key): void {
     nodeMaps.set(target, (nodes = Object.create(null) as Record<Key, TriggerNode>));
   }
   track((nodes[key] ??= createTrigger()));
+  if (INSPECTED) storeKey(nodes[key]!, key);
 }
 
 function fire(target: object, key: Key): void {

@@ -342,6 +342,9 @@ pub struct CompileOptions {
     /// Dev client builds: register components for component-level hot updates (`lumiose/dom`'s
     /// `$hot`). Default `false`.
     pub hot: Option<bool>,
+    /// Dev with the in-page inspector: elements carry `data-lumiose-source="file:line:column"`,
+    /// `$hot` gets component locations and signals get labels. Default `false`.
+    pub dev_source: Option<bool>,
     /// Report browser globals evaluated at module scope (LUM4004); always on for the server
     /// target. Default `false`.
     pub browser_globals: Option<bool>,
@@ -597,6 +600,7 @@ pub fn compile(
                 server_route: o.server_route.unwrap_or(defaults.server_route),
                 strict_csp: o.strict_csp.unwrap_or(defaults.strict_csp),
                 hot: o.hot.unwrap_or(defaults.hot),
+                dev_source: o.dev_source.unwrap_or(defaults.dev_source),
                 browser_globals: o.browser_globals.unwrap_or(defaults.browser_globals),
             }
         }
@@ -917,6 +921,7 @@ pub fn compile_svg(
             server_route: None,
             strict_csp: None,
             hot: None,
+            dev_source: None,
             browser_globals: None,
         }),
     )

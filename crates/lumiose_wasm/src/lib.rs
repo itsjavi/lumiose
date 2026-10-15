@@ -89,6 +89,7 @@ struct CompileOptions {
     server_route: Option<bool>,
     strict_csp: Option<bool>,
     hot: Option<bool>,
+    dev_source: Option<bool>,
     browser_globals: Option<bool>,
 }
 
@@ -209,6 +210,7 @@ fn compiler_options(options: CompileOptions) -> lumiose_compiler::CompileOptions
         server_route: options.server_route.unwrap_or(defaults.server_route),
         strict_csp: options.strict_csp.unwrap_or(defaults.strict_csp),
         hot: options.hot.unwrap_or(defaults.hot),
+        dev_source: options.dev_source.unwrap_or(defaults.dev_source),
         browser_globals: options.browser_globals.unwrap_or(defaults.browser_globals),
     }
 }

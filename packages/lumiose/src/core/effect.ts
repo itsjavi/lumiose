@@ -29,6 +29,8 @@ import {
   untrack,
 } from "./reactive.ts";
 import { DIRTY, PENDING, RECURSED_CHECK, WATCHING, type ReactiveNode } from "./system.ts";
+import { INSPECTED } from "../dom/dev.ts";
+import { nodeCreated, nodeRan } from "../dom/devtools.ts";
 
 const USER = 0;
 const RENDER = 1;
@@ -278,6 +280,7 @@ export function effect(fn: EffectFn): () => void {
     fn,
   };
   attachOwner(node, getOwner());
+  if (INSPECTED) nodeCreated(node, "effect");
   if (!(node.state & DISPOSED)) {
     enqueue(node);
   }
@@ -288,6 +291,7 @@ function runUser(node: UserEffect): void {
   if (node.state & DISPOSED || !isDirty(node)) {
     return;
   }
+  if (INSPECTED) nodeRan(node);
   if (node.firstChild !== undefined || node.cleanups !== undefined || node.lifetime !== undefined) {
     try {
       resetOwner(node);
@@ -343,6 +347,7 @@ export function renderEffect<E, T>(
     value: undefined,
   };
   attachOwner(node, getOwner());
+  if (INSPECTED) nodeCreated(node, "binding", undefined, target);
   if (!(node.state & DISPOSED)) {
     runBinding(node, true);
   }
@@ -351,6 +356,7 @@ export function renderEffect<E, T>(
 
 function runRender(node: RenderEffect): void {
   if (!(node.state & DISPOSED) && isDirty(node)) {
+    if (INSPECTED) nodeRan(node);
     runBinding(node, false);
   }
 }

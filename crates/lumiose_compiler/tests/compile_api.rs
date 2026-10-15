@@ -866,6 +866,64 @@ export default async function Page() {
 }
 
 #[test]
+fn dev_source_locates_elements_components_and_signals_for_the_inspector() {
+    let source = r#"import { computed, signal as cell } from "lumiose";
+const signal = (n: number) => n;
+export function Counter() {
+  const count = cell(0);
+  const doubled = computed(() => count() * 2);
+  const plain = signal(1);
+  return (
+    <p class="n">
+      <b>{doubled()}</b> {plain}
+    </p>
+  );
+}
+"#;
+    let dev = |target: Target| {
+        let options = CompileOptions {
+            target,
+            hot: true,
+            dev_source: true,
+            root: Some("/repo/app".into()),
+            ..CompileOptions::default()
+        };
+        let result = compile(source, "/repo/app/src/Counter.stsx", &options);
+        assert!(result.diagnostics.is_empty(), "{:?}", result.diagnostics);
+        result.code
+    };
+    let client = dev(Target::Client);
+    assert!(
+        client.contains(
+            "template(`<p class=n data-lumiose-source=src/Counter.stsx:8:5><b data-lumiose-source=src/Counter.stsx:9:7>"
+        ),
+        "{client}"
+    );
+    assert!(client.contains(r#"$$lumioseHot(import.meta.hot, "Counter", Counter, "#));
+    assert!(client.contains(r#", "src/Counter.stsx:3:8");"#));
+    // Only `lumiose`'s constructors, under their local names.
+    assert!(client.contains(r#"const count = $$lumioseLabel(cell(0), "count");"#));
+    assert!(client.contains(r#"$$lumioseLabel(computed(() => count() * 2), "doubled")"#));
+    assert!(client.contains("const plain = signal(1);"));
+    assert!(client.contains(r#"import { $label as $$lumioseLabel } from "lumiose/dom/hot";"#));
+    // Server HTML carries the same attributes, so server-only markup can be located too.
+    let server = dev(Target::Server);
+    assert!(
+        server.contains("<p class=n data-lumiose-source=src/Counter.stsx:8:5>"),
+        "{server}"
+    );
+    assert!(!server.contains("lumioseLabel") && !server.contains("lumioseHot"));
+    // Off by default.
+    let plain = compile(
+        source,
+        "/repo/app/src/Counter.stsx",
+        &CompileOptions::default(),
+    )
+    .code;
+    assert!(!plain.contains("data-lumiose-source") && !plain.contains("lumioseLabel"));
+}
+
+#[test]
 fn lum4004_reports_browser_globals_evaluated_at_module_scope_on_the_server() {
     let source = r#"import { onMount, signal } from "lumiose";
 const saved = localStorage.getItem("theme");

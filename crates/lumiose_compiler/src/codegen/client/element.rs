@@ -221,6 +221,9 @@ impl<'a> Codegen<'a, '_> {
         for token in self.scope_tokens(span) {
             template.element_attrs_mut(node).push((token, None));
         }
+        if let Some((name, value)) = self.source_attribute(span) {
+            template.element_attrs_mut(node).push((name, Some(value)));
+        }
         if !has_inner_html {
             let child_namespace = html::child_namespace(namespace, &tag);
             self.build_children(template, Some(node), element.children, child_namespace);
