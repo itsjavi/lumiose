@@ -2,7 +2,8 @@
 // brotli. Report-only: @lumiose/ui is opt-in, so it is measured apart from the runtime's caps
 // (decision-55), and the `lumiose` runtime it imports is left out of every row. Per component:
 //
-// - Elements JS: the `lu-*` custom element definitions a server-rendered page loads for it.
+// - Client script: what a server-rendered page loads for it (decision-63): `lu-*` element
+//   definitions, or a script that closes a native element's gaps.
 // - Component JS: the component compiled for the browser, as an island that uses it loads it.
 // - CSS: its stylesheet, the CSS it needs to work (the package is unstyled). Themes are opt-in
 //   and reported on their own rows.
@@ -21,8 +22,8 @@ interface Component {
   name: string;
   /** The module that exports the component's parts. */
   module: string;
-  /** Its `lu-*` element definitions (none for components that need no script). */
-  elements: string[];
+  /** Its client scripts: element definitions or gap scripts (decision-63). */
+  scripts: string[];
   css: string;
 }
 
@@ -30,12 +31,33 @@ interface Component {
 const THEMES = ["default"];
 
 const COMPONENTS: Component[] = [
-  { name: "dialog", module: "dialog/dialog.tsx", elements: [], css: "dialog/dialog.css" },
+  {
+    name: "dialog",
+    module: "dialog/dialog.tsx",
+    scripts: ["dialog/dialog.script.ts"],
+    css: "dialog/dialog.css",
+  },
 ];
 
-/** Compiles `.tsx` modules for the browser, as @lumiose/vite does in an app. */
+const CLIENT_SCRIPT = /\?(?:lumiose-)?client$/;
+
+/**
+ * Compiles `.tsx` modules for the browser, as @lumiose/vite does in an app, where a client-script
+ * import (decision-63) imports the script and exports a function that does nothing.
+ */
 const lumioseClient: Plugin = {
   name: "lumiose-client",
+  enforce: "pre",
+  async resolveId(id, importer) {
+    if (!CLIENT_SCRIPT.test(id)) return null;
+    const script = await this.resolve(id.replace(CLIENT_SCRIPT, ""), importer);
+    return script && `\0client-script:${script.id}`;
+  },
+  load(id) {
+    if (!id.startsWith("\0client-script:")) return null;
+    const script = id.slice("\0client-script:".length);
+    return `import ${JSON.stringify(script)};\nexport default () => {};`;
+  },
   transform(code, id) {
     if (!id.endsWith(".tsx")) return null;
     const result = compile(code, id, { target: "client", sourceMap: false, styleImport: false });
@@ -98,18 +120,18 @@ const js = async (modules: string[]) => cell(await bundle(imports(modules), "js"
 const css = async (modules: string[]) => cell(await bundle(imports(modules), "css"));
 
 console.log("@lumiose/ui, min / gzip / brotli in kB (the lumiose runtime is not included)\n");
-console.log("| Component | Elements JS (server pages) | Component JS (islands) | CSS |");
+console.log("| Component | Client script (server pages) | Component JS (islands) | CSS |");
 console.log("| --- | --- | --- | --- |");
 for (const component of COMPONENTS) {
   const exports = `export * from "${src}${component.module}";`;
   const componentJs = cell(await bundle(exports, "js"));
   console.log(
-    `| ${component.name} | ${await js(component.elements)} | ${componentJs} | ${await css([component.css])} |`,
+    `| ${component.name} | ${await js(component.scripts)} | ${componentJs} | ${await css([component.css])} |`,
   );
 }
 for (const theme of THEMES)
   console.log(`| theme: ${theme} | | | ${await css([`themes/${theme}.css`])} |`);
 const everything = `export * from "${src}index.ts";`;
 console.log(
-  `| everything | ${await js(COMPONENTS.flatMap((c) => c.elements))} | ${cell(await bundle(everything, "js"))} | ${await css(["styles.css"])} |`,
+  `| everything | ${await js(COMPONENTS.flatMap((c) => c.scripts))} | ${cell(await bundle(everything, "js"))} | ${await css(["styles.css"])} |`,
 );

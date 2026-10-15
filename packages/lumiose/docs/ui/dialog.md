@@ -1,6 +1,6 @@
 # Dialog
 
-> A modal dialog, or an alert dialog that needs an answer: a native `<dialog>` opened and closed by invoker commands, so it works in server HTML with no JavaScript. `open` and `onOpenChange` keep a signal in sync in islands.
+> A modal dialog, or an alert dialog that needs an answer: a native `<dialog>` opened and closed by invoker commands, so it works in server HTML with no JavaScript, and a 0.8 kB script closes the native element's gaps where JavaScript runs. `bind:open` (or `open` and `onOpenChange`) keeps a signal in sync in islands.
 
 ```ts
 import { Dialog } from "@lumiose/ui"; // or "@lumiose/ui/dialog"
@@ -42,9 +42,10 @@ opens on top of the outer one.
 | -------------- | --------------------------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `open`         | `boolean`                   |            | Opens or closes the dialog when it changes, in the browser. Server HTML always starts closed: a modal dialog opens only from a trigger or script. |
 | `onOpenChange` | `(open: boolean) => void`   |            | Called after the dialog opens or closes, whatever did it: the trigger, a close button, Escape, a click outside or `open`.                         |
+| `bind:open`    | `Signal<boolean>`           |            | Stands in for `open` and `onOpenChange`: the signal opens and closes the dialog, and follows it.                                                  |
 | `role`         | `"dialog" \| "alertdialog"` | `"dialog"` | `"alertdialog"` for a confirmation that needs an answer: a click outside does not close it.                                                       |
 
-Without `open` and `onOpenChange` the dialog keeps its own state.
+Without `open`, `onOpenChange` or `bind:open` the dialog keeps its own state.
 
 ### The other parts
 
@@ -94,7 +95,8 @@ export function DeleteProject() {
 ```
 
 In an island, bound to a signal: the button outside opens it, and the signal follows whatever
-closes it.
+closes it. `bind:open={open}` is short for `open={open()}` plus
+`onOpenChange={(next) => open.set(next)}`.
 
 ```tsx check
 import { Dialog } from "@lumiose/ui";
@@ -108,7 +110,7 @@ export function EditProfile() {
       <button type="button" class="lu-button" onClick={() => open.set(true)}>
         Edit profile
       </button>
-      <Dialog.Root open={open()} onOpenChange={(next) => open.set(next)}>
+      <Dialog.Root bind:open={open}>
         <Dialog.Popup
           class="lu-dialog"
           on:close={(event) => saved.set(event.currentTarget.returnValue)}
@@ -136,8 +138,9 @@ the title, the description and a `<footer>` for the buttons, and fades and zooms
 out. Its colours come from the theme's `--lu-` properties ([UI components](README.md#the-default-theme)).
 
 **With your own CSS**, style the parts through `class` and the dialog's native state: `dialog[open]`,
-`:modal`, `::backdrop`, `[role="alertdialog"]`, and `dialog:has(dialog:modal)` for a dialog with a
-nested one open on top. A starting point, with a fade that keeps the dialog in the top layer while it
+`:modal`, `::backdrop` and `[role="alertdialog"]`. Where the client script runs, a dialog with open
+dialogs inside also gets `data-nested-dialog-open` and `--nested-dialogs` (how many are open inside
+it), as in Base UI; `dialog:has(dialog[open])` matches the same dialogs without the script. A starting point, with a fade that keeps the dialog in the top layer while it
 closes:
 
 ```css
@@ -190,28 +193,44 @@ The browser's modal dialog provides the
 | Escape         | Closes the dialog on top, alert dialogs included. With nested dialogs, one Escape closes one dialog. |
 
 - **On open**, focus moves to the element with `autofocus`, or else the first focusable element
-  inside, or else the dialog.
+  inside, or else the dialog. Opened by touch, the dialog focuses itself instead, so no virtual
+  keyboard opens over it (an `autofocus` element still gets focus).
 - **On close**, focus returns to the element that had it before: the trigger, or the button that
-  set the signal.
+  set the signal. If that element is gone, focus goes to another trigger of the dialog, without
+  scrolling the page.
 - **A click outside** closes a dialog, not an alert dialog, and only the dialog on top. A press
-  that starts inside and ends outside, such as selecting text, does not count.
-- **Known gap:** Chromium's native light dismiss also closes a dialog on a right-click outside,
-  where Base UI and Zag ignore secondary buttons. Server pages have no script to filter it.
+  that starts inside and ends outside, such as selecting text, does not count, and neither does a
+  right-click or a second finger.
 - Popups opened from a dialog (a menu, a select) belong inside its `Popup`: everything outside a
   modal dialog is inert.
 
-## Without JavaScript
+## Without JavaScript, and the client script
 
 The trigger, the close buttons, Escape and the click outside are HTML features: a dialog in a
-server-rendered page works before any script loads, and with none. `open`, `onOpenChange` and a
-live `aria-expanded` need the component to run in the browser, in an island.
+server-rendered page works before any script loads, and with none. `open`, `onOpenChange`,
+`bind:open` and a live `aria-expanded` need the component to run in the browser, in an island.
+
+Where the native element falls short of Base UI's dialog, a small script closes the gap: a page
+that renders a `Dialog` loads it once, as a 0.8 kB (brotli) module without the Lumiose runtime, and
+islands bundle it. It covers every `<dialog>` on the page:
+
+- a right-click or a second finger outside does not close the dialog;
+- `data-nested-dialog-open` and `--nested-dialogs` on a dialog with open dialogs inside;
+- a dialog opened by touch focuses itself;
+- focus returns without scrolling, to the opener or, if it is gone, another trigger (WebKit, which
+  does not focus a clicked button, would otherwise leave focus on the page);
+- the click outside where the browser lacks `closedby` (Safari), and the invoker commands where it
+  lacks them.
+
+Until the script loads (or without JavaScript) the dialog behaves as the browser's own.
 
 ## Browser support
 
 - **Invoker commands** (`command`, `commandfor`) open and close the dialog: Chrome and Edge 135,
-  Firefox 144, Safari 26.2. In older browsers the trigger and the close buttons do nothing.
-- **`closedby`**: Chrome 134 and Firefox 141; Safari only in Technology Preview. Without it a
-  click outside does not close the dialog; Escape still does.
+  Firefox 144, Safari 26.2. In older browsers the client script stands in for them; without
+  JavaScript the trigger and the close buttons do nothing there.
+- **`closedby`**: Chrome 134 and Firefox 141; Safari only in Technology Preview. Elsewhere the
+  client script closes the dialog on a click outside; without JavaScript only Escape does.
 - **Exit animations** that keep the dialog in the top layer (`overlay`) are Chromium-only.
   Elsewhere the dialog leaves the top layer as soon as it starts closing.
 

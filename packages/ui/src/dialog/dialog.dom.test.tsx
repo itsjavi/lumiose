@@ -125,6 +125,31 @@ it("references the Description only while it is rendered", () => {
   expect(dialog.hasAttribute("aria-describedby")).toBe(false);
 });
 
+it("keeps a signal in sync with bind:open", () => {
+  const open = signal(false);
+  const container = mount(() => (
+    <Dialog.Root bind:open={open}>
+      <Dialog.Popup>
+        <Dialog.Title>Bound</Dialog.Title>
+      </Dialog.Popup>
+    </Dialog.Root>
+  ));
+  flush();
+  const dialog = container.querySelector("dialog")!;
+  open.set(true);
+  flush();
+  expect(dialog.open).toBe(true);
+  // Escape, a close button or a click outside: the browser closes it and fires toggle.
+  dialog.close();
+  toggled(dialog, "closed");
+  flush();
+  expect(open()).toBe(false);
+  dialog.showModal();
+  toggled(dialog, "open");
+  flush();
+  expect(open()).toBe(true);
+});
+
 it("opens on mount when open starts true", () => {
   const container = mount(() => <Controlled open={() => true} onOpenChange={() => {}} />);
   flush();

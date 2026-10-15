@@ -14,7 +14,8 @@
   ],
   "type": "module",
   "sideEffects": [
-    "**/*.css"
+    "**/*.css",
+    "**/*.script.ts"
   ],
   "exports": {
     ".": "./src/index.ts",

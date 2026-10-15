@@ -3,6 +3,9 @@
 // state: the trigger, a close button, Escape, a click on the backdrop and the `open` prop all end
 // in its `toggle` event, the single source of `onOpenChange`. Ported from Timeless's approach
 // (https://timeless.build); the keyboard contract is the platform's (APG Dialog pattern).
+// Until lumiose/env declares the ?client import (TASK-354), for apps that type-check this file.
+// oxlint-disable-next-line typescript/triple-slash-reference
+/// <reference path="../client-script.d.ts" />
 import {
   createContext,
   effect,
@@ -14,6 +17,7 @@ import {
   useId,
   type Signal,
 } from "lumiose";
+import dialogScript from "./dialog.script.ts?lumiose-client";
 
 export interface DialogRootProps {
   /**
@@ -66,6 +70,8 @@ function useDialog(): DialogContextValue {
 }
 
 function Root(props: DialogRootProps) {
+  // Closes the native dialog's gaps where JavaScript runs; the page loads it once (decision-63).
+  dialogScript();
   const popup = ref<HTMLDialogElement>();
   const id = useId();
   const open = signal(false);

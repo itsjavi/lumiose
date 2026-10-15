@@ -138,10 +138,8 @@ test.describe("keyboard contract (APG Dialog)", () => {
   });
 
   test("a right-click outside does not close it", async ({ page }) => {
-    // Base UI and Zag ignore secondary buttons (doc-9, section 1). Chromium's native light dismiss
-    // (closedby="any") closes on a right-click too, and a server page has no script to filter it:
-    // an expected failure, so a browser change shows up here.
-    test.fail();
+    // Base UI and Zag ignore secondary buttons (doc-9, section 1); Chromium's native light dismiss
+    // does not, so Dialog's client script cancels it.
     await page.goto("/dialog");
     await page.getByRole("button", { name: "Edit profile" }).click();
     const dialog = page.getByRole("dialog", { name: "Edit profile" });
@@ -155,7 +153,7 @@ test.describe("keyboard contract (APG Dialog)", () => {
     await page.goto("/dialog");
     const settingsTrigger = page.getByRole("button", { name: "Settings" });
     await settingsTrigger.click();
-    const settings = page.getByRole("dialog", { name: "Settings" });
+    const settings = page.getByRole("dialog", { name: "Settings", exact: true });
     await expect(settings).toBeVisible();
     const advancedTrigger = settings.getByRole("button", { name: "Advanced…" });
     await advancedTrigger.click();
@@ -163,6 +161,10 @@ test.describe("keyboard contract (APG Dialog)", () => {
     await expect(advanced).toBeVisible();
     await expect(advanced).toHaveAccessibleDescription("Opened on top of Settings.");
     await expect(advanced.getByRole("button", { name: "Done" })).toBeFocused();
+    // The client script marks the parent and counts what is open inside it.
+    await expect(settings).toHaveAttribute("data-nested-dialog-open");
+    await expect(settings).toHaveCSS("--nested-dialogs", "1");
+    await expect(advanced).not.toHaveAttribute("data-nested-dialog-open");
     expect(await axe(page)).toEqual([]);
 
     // A press inside the child does not close the parent.
@@ -172,6 +174,7 @@ test.describe("keyboard contract (APG Dialog)", () => {
     await expect(advanced).toBeHidden();
     await expect(settings).toBeVisible();
     await expect(advancedTrigger).toBeFocused();
+    await expect(settings).not.toHaveAttribute("data-nested-dialog-open");
 
     await advancedTrigger.click();
     await expect(advanced).toBeVisible();
@@ -184,6 +187,24 @@ test.describe("keyboard contract (APG Dialog)", () => {
     await expect(settingsTrigger).toBeFocused();
   });
 
+  test("focus returns to another trigger when the opener is gone", async ({ page }) => {
+    await page.goto("/dialog");
+    const trigger = page.getByRole("button", { name: "Edit profile" });
+    await trigger.click();
+    const dialog = page.getByRole("dialog", { name: "Edit profile" });
+    await expect(dialog).toBeVisible();
+    // Replace the trigger while the dialog is open, as a re-render might.
+    await trigger.evaluate((button) => {
+      const copy = button.cloneNode(true) as HTMLElement;
+      copy.textContent = "Edit profile again";
+      button.after(copy);
+      button.remove();
+    });
+    await page.keyboard.press("Escape");
+    await expect(dialog).toBeHidden();
+    await expect(page.getByRole("button", { name: "Edit profile again" })).toBeFocused();
+  });
+
   test("the page behind a modal dialog does not scroll", async ({ page }) => {
     await page.goto("/dialog");
     const overflow = () =>
@@ -192,13 +213,30 @@ test.describe("keyboard contract (APG Dialog)", () => {
     await page.getByRole("button", { name: "Edit profile" }).click();
     await expect(page.getByRole("dialog", { name: "Edit profile" })).toBeVisible();
     expect(await overflow()).toBe("hidden");
+    // The page had a scrollbar: its space stays, so nothing shifts.
+    await expect(page.locator("html")).toHaveCSS("scrollbar-gutter", "stable");
     await page.keyboard.press("Escape");
     await expect(page.getByRole("dialog")).toBeHidden();
     expect(await overflow()).not.toBe("hidden");
   });
 });
 
-test("a server-rendered page with dialogs loads no JavaScript for them", async ({
+test.describe("opened by touch", () => {
+  test.use({ hasTouch: true });
+
+  test("the dialog focuses itself, not its first field", async ({ page }) => {
+    // A focused field would open the virtual keyboard over the dialog (doc-9, section 2).
+    await page.goto("/dialog");
+    await page.getByRole("button", { name: "Edit profile" }).tap();
+    const dialog = page.getByRole("dialog", { name: "Edit profile" });
+    await expect(dialog).toBeVisible();
+    await expect(dialog).toBeFocused();
+    await page.keyboard.press("Tab");
+    await expect(dialog.getByRole("textbox", { name: "Name" })).toBeFocused();
+  });
+});
+
+test("a server-rendered page with dialogs loads only Dialog's client script", async ({
   page,
 }, testInfo) => {
   test.skip(testInfo.project.name === "dev", "the dev server always loads Vite's client");
@@ -209,7 +247,9 @@ test("a server-rendered page with dialogs loads no JavaScript for them", async (
   await page.goto("/dialog");
   await page.getByRole("button", { name: "Delete project…" }).click();
   await expect(page.getByRole("alertdialog")).toBeVisible();
-  expect(scripts).toEqual([]);
+  // One small module, no island runtime or loader.
+  expect(scripts).toEqual([expect.stringMatching(/\/dialog\.script-[\w-]+\.js$/)]);
+  await expect(page.locator("script[data-l-islands]")).toHaveCount(0);
 });
 
 test.describe("in an island", () => {
@@ -249,6 +289,36 @@ test.describe("in an island", () => {
     await expect(dialog).toBeVisible();
     expect(await axe(page)).toEqual([]);
     expect(warnings).toEqual([]);
+  });
+
+  test("bind:open keeps a signal in sync both ways", async ({ page }) => {
+    const warnings = lumioseWarnings(page);
+    await page.goto("/dialog/island");
+    const state = page.getByTestId("bind-state");
+    const dialog = page.getByRole("dialog", { name: "Rename project" });
+    await expect(state).toHaveText("open: false");
+    await page.getByTestId("bind-open").click();
+    await expect(dialog).toBeVisible();
+    await expect(state).toHaveText("open: true");
+    await page.keyboard.press("Escape");
+    await expect(dialog).toBeHidden();
+    await expect(state).toHaveText("open: false");
+    await page.getByRole("button", { name: "Rename project" }).click();
+    await expect(state).toHaveText("open: true");
+    await dialog.getByRole("button", { name: "Done" }).click();
+    await expect(state).toHaveText("open: false");
+    expect(warnings).toEqual([]);
+  });
+
+  test("a page without a scrollbar gets no empty gutter while locked", async ({ page }) => {
+    await page.goto("/dialog/island");
+    const html = page.locator("html");
+    await page.getByTestId("bind-open").click();
+    await expect(page.getByRole("dialog", { name: "Rename project" })).toBeVisible();
+    await expect(html).toHaveCSS("overflow-y", "hidden");
+    await expect(html).toHaveCSS("scrollbar-gutter", "auto");
+    await page.keyboard.press("Escape");
+    await expect(html).not.toHaveAttribute("style", /\S/);
   });
 
   test("a signal that starts true opens the dialog once the island hydrates", async ({ page }) => {

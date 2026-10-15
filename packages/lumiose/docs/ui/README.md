@@ -17,6 +17,10 @@ table below lists them as they land.
   `lu-` tag (`lu-menu`, `lu-combobox`) that upgrades the server HTML in place. A page is meant to
   load only the definitions of the elements it renders, and no island runtime for them (in
   development, with those components).
+- **Small scripts for native gaps.** Where a native element falls short of Base UI's behaviour, a
+  small script closes the gap, such as Dialog's right-click and touch handling. The component
+  still works without it; a page that renders the component loads it once, without the island
+  runtime.
 - **Parts.** Each component is a set of parts named as in Base UI (`Dialog.Root`,
   `Dialog.Trigger`, `Dialog.Popup`, …). Every part that renders an element takes that element's
   props (`class`, `style`, `aria-*`, events) and passes them through.
@@ -97,13 +101,13 @@ Each component's page has an example stylesheet to start from.
 
 ## Components
 
-| Component                         | Status                                      |
-| --------------------------------- | ------------------------------------------- |
-| [Dialog, alert dialog](dialog.md) | Available: native `<dialog>`, no JavaScript |
-| Popover, tooltip                  | Planned                                     |
-| Menu                              | Planned                                     |
-| Combobox, select                  | Planned                                     |
-| Tabs                              | Planned                                     |
+| Component                         | Status                                                 |
+| --------------------------------- | ------------------------------------------------------ |
+| [Dialog, alert dialog](dialog.md) | Available: native `<dialog>`, works without JavaScript |
+| Popover, tooltip                  | Planned                                                |
+| Menu                              | Planned                                                |
+| Combobox, select                  | Planned                                                |
+| Tabs                              | Planned                                                |
 
 ## Size
 
