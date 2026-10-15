@@ -1,11 +1,11 @@
 ---
 id: TASK-355
 title: Dialog and alert dialog
-status: In Progress
+status: Done
 assignee:
   - '@Halo'
 created_date: '2026-10-15 16:46'
-updated_date: '2026-10-15 17:32'
+updated_date: '2026-10-15 17:50'
 labels:
   - ui
 milestone: m-12
@@ -24,10 +24,10 @@ Contract: decision-62 (approved by the user on 2026-10-15 from the TASK-332 spik
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
 - [x] #1 Dialog and alert dialog work without JavaScript, with the APG keyboard contract and focus return
-- [ ] #2 open/onOpenChange and bind:open keep a signal in sync
+- [x] #2 open/onOpenChange and bind:open keep a signal in sync
 - [x] #3 Keyboard-contract and axe tests pass
 - [x] #4 Unstyled: ships only the CSS the primitive needs to work, in one low-priority layer
-- [ ] #5 Passes every item of the "UI primitives pitfall checklist" backlog doc (from Base UI and Zag/Ark) that applies
+- [x] #5 Passes every item of the "UI primitives pitfall checklist" backlog doc (from Base UI and Zag/Ark) that applies
 - [x] #6 The default theme styles Dialog and the docs examples use it
 <!-- AC:END -->
 
@@ -66,4 +66,33 @@ doc-9 pass (pass = native or ours, tested where noted):
 Status: In Progress, not Done. AC #2 waits for TASK-360 (bind:open; Photon has no commits on its branch yet). AC #5 waits for a decision on gaps (a) to (g): accept them as native-only behaviour (my recommendation for server pages, documented in ui/dialog.md) or add an optional script that filters secondary buttons, adds nested state and a Safari light-dismiss fallback, shipped like element definitions (TASK-354). Also for the user: invoker commands are Baseline 2025, not 'widely available', with no fallback (docs/stability.md promises a fallback for newer features). Next action once TASK-360 is on main: git merge main, add a bind:open island case and a type test, check AC #2.
 
 2026-10-15 (user): close the doc-9 gaps with a small optional script, not by accepting native behaviour: Dialog keeps working with zero JS, and a script shipped through the ?client mechanism (decision-63) when a Dialog renders filters secondary-button dismissal, adds data-nested-dialog-open and a nested-count variable, focuses the popup when opened by touch, returns focus with preventScroll and a fallback when the trigger is gone, and polyfills light dismiss (Safari) and invoker commands where missing. About 1 kB; measure it.
+
+2026-10-15 (Halo): the user's decision on gaps (a) to (g), closed by Dialog's client script, and bind:open (TASK-360).
+
+- packages/ui/src/dialog/dialog.script.ts (no lumiose import; Dialog.Root calls it through the ?client import of decision-63, so a page that renders a Dialog loads it once without the runtime, and islands bundle it). It covers every <dialog> on the page: a secondary button or a second finger does not light-dismiss (cancels the native, cancelable `cancel`; verified in Chromium), closedby="any" polyfilled where missing (Safari: main-button press and click both outside the box), invoker commands polyfilled where missing (show-modal, close with returnValue, request-close), data-nested-dialog-open and --nested-dialogs (Base UI's names) on dialogs with open dialogs inside, a dialog opened by touch focuses itself unless an autofocus element is there, focus returns with preventScroll to the opener (the command event's source, else the element focused before opening) or to another trigger of the dialog when closing left focus on the page (WebKit, a removed trigger), and the scroll lock also locks a <body> scroller and drops the gutter on a page that had no scrollbar (gap b).
+- Size (pnpm --filter @lumiose/ui size, min/gzip/brotli kB): client script 2.43/1.10/0.95; component JS in islands, script included, 4.57/1.87/1.67; the built /dialog page loads one 2.0 kB module and no runtime (e2e).
+- packages/ui/package.json sideEffects lists **/*.script.ts (bundlers dropped the side-effect-only module otherwise).
+- AC #2: bind:open on Dialog.Root, type test (dialog.types.test.tsx: bind:open takes Signal<boolean>, not its value or another type; no bind:value), happy-dom test, e2e island case (signal opens, Escape, trigger and Done report back).
+- Tests: unit 26 (script 12 in happy-dom, which lacks closedby and invoker commands, so the polyfills run there); e2e 29 passed + 1 skipped by design (new: right-click no longer an expected failure, nested state attribute and variable, touch tap focuses the dialog, focus falls back to a replacement trigger, gutter on a page without scrollbar, bind:open, the server page loads only the script).
+- Docs: ui/dialog.md (bind:open, the client script section, focus and click-outside behaviour, nested hooks, browser support with the polyfills), ui/README.md (small scripts for native gaps).
+
+doc-9 re-run, sections 1 and 2 (pass unless noted):
+- Section 1, layers and dismissal: top layer only (native, nested e2e); second modal stacks (native); press inside a child or drag-out (e2e; the polyfill needs press and click outside the same dialog); main button only and no second finger (script; e2e right-click, unit); removed targets (the polyfill checks the press target); backdrop by click, not mousedown; WebKit focus on pressed buttons (script restores to the command's source; unit). N/a until they exist: toasts and persistent elements (TASK-371), JS-managed layers' Escape, menu opening a dialog (TASK-357). Untested: presses on a classic scrollbar and password-manager overlays.
+- Section 1, modality: inert page (native); popups from a dialog belong inside its Popup (documented); Android back is a close request (documented).
+- Section 1, scroll lock: native none (dialog.css); ref-counted (:has); no snapshot of another lock; <html> or a scrolling <body> (script, unit); no shift (stable gutter where a scrollbar was, none where there was not; e2e); iOS overflow-only like Base UI.
+- Section 1, focus and infrastructure: focus return with preventScroll and a fallback (script, e2e); IME, pointer modality, RTL, live regions n/a; never rendered open (no enter animation on first render); overlay exit animations Chromium-only (documented); deterministic ids, no references to unrendered ids (unit); open modals never server-rendered.
+- Section 2: initial focus incl. touch (e2e tap); alert dialog (e2e); label and description tracking, aria-haspopup and aria-expanded (unit, e2e); inert page and Tab (e2e); nested Escape (e2e) and nested state hooks (script, e2e); bounds check for the backdrop (polyfill, unit).
+- Still not covered here: Firefox and WebKit runs and a screen reader pass (TASK-361, before 0.1.0); a display:contents wrapper around the popup.
+
+Public names for the user's review: data-nested-dialog-open and --nested-dialogs (Base UI's names), the dialog.script.ts file convention for gap scripts.
+
+Remaining: Dialog.Root imports the script with the internal ?lumiose-client query (plus a local module declaration in packages/ui/src/client-script.d.ts) until Nova's ?client rename (58e44723) is on main; then swap the query, drop the local declaration, re-run the checks and mark Done. pnpm check at caa1c213: vitest 2055 passed, scripts 48, runtime caps OK, cargo 164; examples/ui-e2e 29 passed + 1 skipped by design.
+
+2026-10-15 (Halo): Nova's ?client rename is on main (merged at fb3b48db). Dialog.Root now imports its script as ./dialog.script.ts?client, typed by lumiose/env; the local module declaration is gone. Re-run after the swap: pnpm check green (vitest 2055 passed, scripts 48, runtime caps OK, cargo 164); examples/ui-e2e 29 passed + 1 skipped by design (the no-script check runs on the build only). Sizes unchanged: client script 2.43/1.10/0.95 kB, component JS in islands 4.58/1.87/1.67, dialog.css 0.09/0.10/0.09.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Dialog and alert dialog on the native <dialog> with invoker commands: works with no JavaScript, styled by the opt-in default theme, bind:open (or open/onOpenChange) keeps a signal in sync, and a 0.95 kB client script shipped through ?client closes the native gaps from doc-9 (secondary-button and multi-touch dismissal, closedby and invoker-command polyfills, nested-dialog state, touch focus, focus return with a fallback, scroll lock refinements). Keyboard-contract, axe, no-JS and island tests pass in Chromium; Firefox, WebKit and screen-reader runs are TASK-361's.
+<!-- SECTION:FINAL_SUMMARY:END -->

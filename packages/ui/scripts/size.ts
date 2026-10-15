@@ -39,14 +39,14 @@ const COMPONENTS: Component[] = [
   },
 ];
 
-const CLIENT_SCRIPT = /\?(?:lumiose-)?client$/;
+const CLIENT_SCRIPT = /\?client$/;
 
 /**
  * Compiles `.tsx` modules for the browser, as @lumiose/vite does in an app, where a client-script
  * import (decision-63) imports the script and exports a function that does nothing.
  */
 const lumioseClient: Plugin = {
-  name: "lumiose-client",
+  name: "compile-for-browser",
   enforce: "pre",
   async resolveId(id, importer) {
     if (!CLIENT_SCRIPT.test(id)) return null;
