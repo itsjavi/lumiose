@@ -3,9 +3,9 @@ id: TASK-370
 title: Accordion and Collapsible
 status: To Do
 assignee:
-  - '@Spark'
+  - '@Beacon'
 created_date: '2026-10-15 16:54'
-updated_date: '2026-10-15 20:56'
+updated_date: '2026-10-15 20:57'
 labels:
   - ui
 milestone: m-12
@@ -41,4 +41,6 @@ User decision 2026-10-15: @lumiose/ui reaches parity with Base UI's components b
 2026-10-15 (user): @lumiose/ui is agent-ready like lumiose (decision-64). The component's docs page lives in packages/ui/docs/<component>.md, follows dialog.md's sections (Anatomy, API, Example, Styling, Keyboard and focus, Without JavaScript, Browser support, Related) and is listed in the UI llms.txt.
 
 2026-10-15 (Lux, orchestrator): reassigned to Spark, so it runs in parallel with Halo's form controls (TASK-365 to TASK-368). Spark may edit packages/ui/src/<component>/**, the component's docs page and e2e, and add its lines to the shared package files (index.ts, package.json exports, styles.css, themes/default.css, scripts/size.ts, docs README and theming tables).
+
+2026-10-15 (Lux, orchestrator): reassigned to Beacon instead. New sessions cannot start from an automated turn, so the idle Beacon session takes it. The same edit areas apply.
 <!-- SECTION:NOTES:END -->
