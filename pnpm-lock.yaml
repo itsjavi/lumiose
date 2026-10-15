@@ -1206,6 +1206,27 @@ importers:
         specifier: ^8.3.4
         version: 8.3.4(@types/node@24.19.1)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(yaml@2.9.1)
 
+  packages/ui:
+    devDependencies:
+      '@lumiose/compiler':
+        specifier: workspace:*
+        version: link:../compiler
+      '@lumiose/vite':
+        specifier: workspace:*
+        version: link:../vite
+      '@types/node':
+        specifier: ^24.0.0
+        version: 24.19.1
+      happy-dom:
+        specifier: ^20.14.5
+        version: 20.14.5
+      lumiose:
+        specifier: workspace:*
+        version: link:../lumiose
+      vite:
+        specifier: ^8.3.4
+        version: 8.3.4(@types/node@24.19.1)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(yaml@2.9.1)
+
   packages/vite:
     dependencies:
       '@lumiose/compiler':

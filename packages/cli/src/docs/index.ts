@@ -54,6 +54,7 @@ const SECTIONS = [
   "coming-from/",
   "concepts/",
   "guides/",
+  "ui/",
   "deploy/",
   "reference/",
   "errors/",

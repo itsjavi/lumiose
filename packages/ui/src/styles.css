@@ -1,0 +1,5 @@
+/*
+ * The CSS every @lumiose/ui component needs to work, and nothing else: the package is unstyled
+ * (decision-62). It all sits in the `lu` cascade layer, so any app CSS outside layers wins.
+ */
+@layer lu;

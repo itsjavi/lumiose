@@ -72,6 +72,10 @@ mistakes** and **Related**.
 - [Editors](guides/editors.md): The language server in Neovim and Helix (file type, root markers, the server command), what works in Zed today, and GitHub highlighting through `.gitattributes`.
 - [Web components](guides/web-components.md): Custom elements and web-component libraries: defining them in the browser, typing them in JSX, properties versus attributes (React 19's rule), events with `on:`, server rendering, and the Custom Elements Everywhere score (100).
 
+## UI
+
+- [UI components](ui/README.md): `@lumiose/ui`, accessible and unstyled primitives on native elements, server-rendered without hydration: the approach, styling the parts with your own CSS, and the components available and planned.
+
 ## Deploy
 
 - [Overview](deploy/README.md): What `lumiose build` writes, the production settings (`PORT`, `HOST`, `ORIGIN`, `LUMIOSE_SECRET`) and how far each target's guide was verified.
@@ -128,3 +132,4 @@ designed API; where this version does not implement something yet, the page says
 | `lumiose mcp`                                                                         | Available                                                                  |
 | `create-lumiose` (templates `minimal`, `static`, `ssr`, `spa`), `lumiose agents init` | Available                                                                  |
 | Testing: Vitest, Testing Library and Playwright                                       | Available, with stock tools (no adapter package)                           |
+| `@lumiose/ui`                                                                         | In development, not on npm yet ([UI components](ui/README.md))             |
