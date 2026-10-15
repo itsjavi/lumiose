@@ -44,7 +44,8 @@
  *   .lu-progress, .lu-meter             a Progress.Root, a Meter.Root: label, value and bar
  *   .lu-slider                          a Slider.Root: label, value, track, indicator, thumbs
  *   .lu-drawer                          a Drawer.Popup: a surface against its edge (a handle on
- *                                       a bottom sheet), title, description, footer; slides
+ *                                       a bottom sheet), title, description, footer; slides *   .lu-number-field                    a NumberField.Root: label, one bordered group with the
+ *                                       input between its buttons
  */
 @layer lu.core, lu.theme;
 
@@ -1468,5 +1469,82 @@
         translate: 100% 0;
       }
     }
+  }
+
+  /* Number Field (TASK-375) ------------------------------------------------------------------- */
+
+  .lu-number-field {
+    display: grid;
+    gap: 0.375rem;
+    justify-items: start;
+    font-size: 0.875rem;
+  }
+  .lu-number-field :where(label) {
+    font-weight: 500;
+  }
+  /* The group: one bordered control with the input between its buttons; focus rings all of it. */
+  .lu-number-field > :where(div),
+  .lu-number-field > :where(input:not([type="hidden"])) {
+    display: inline-flex;
+    align-items: stretch;
+    border: 1px solid var(--lu-input);
+    border-radius: calc(var(--lu-radius) - 2px);
+    background: var(--lu-background);
+    color: var(--lu-foreground);
+  }
+  .lu-number-field > div:focus-within,
+  .lu-number-field > input:focus-visible {
+    outline: 2px solid var(--lu-ring);
+    outline-offset: 2px;
+  }
+  .lu-number-field :where(input:not([type="hidden"])) {
+    box-sizing: border-box;
+    inline-size: 8rem;
+    min-block-size: 2.25rem;
+    padding: 0.5rem 0.75rem;
+    font: inherit;
+    font-variant-numeric: tabular-nums;
+    text-align: center;
+  }
+  .lu-number-field > div > :where(input) {
+    border: 0;
+    background: transparent;
+    color: inherit;
+  }
+  .lu-number-field > div > input:focus-visible {
+    outline: none;
+  }
+  .lu-number-field :where(input):disabled {
+    opacity: 0.5;
+  }
+  .lu-number-field :where(button[data-action]) {
+    display: grid;
+    place-items: center;
+    min-inline-size: 2.25rem;
+    padding: 0;
+    border: 0;
+    background: var(--lu-muted);
+    color: var(--lu-foreground);
+    font: inherit;
+    font-size: 1rem;
+    cursor: pointer;
+  }
+  .lu-number-field :where(button[data-action="decrement"]) {
+    border-inline-end: 1px solid var(--lu-input);
+  }
+  .lu-number-field :where(button[data-action="increment"]) {
+    border-inline-start: 1px solid var(--lu-input);
+  }
+  .lu-number-field button[data-action]:hover:not(:disabled) {
+    background: var(--lu-accent);
+  }
+  .lu-number-field button[data-action]:disabled {
+    color: var(--lu-muted-foreground);
+    cursor: not-allowed;
+  }
+  /* A scrub area reads as part of the label; dragging it shows the resize cursor everywhere. */
+  .lu-number-field[data-scrubbing],
+  .lu-number-field[data-scrubbing] * {
+    cursor: ew-resize;
   }
 }

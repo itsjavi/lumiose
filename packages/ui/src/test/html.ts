@@ -8,8 +8,11 @@ export function attrs(
 ): Record<string, string> {
   for (const [, body] of html.matchAll(new RegExp(`<${tag}\\b([^>]*)>`, "g"))) {
     const out: Record<string, string> = {};
-    for (const [, name, value] of body!.matchAll(/([\w:-]+)(?:="([^"]*)")?/g)) {
-      out[name!] = value ?? "";
+    // Quoted values, or unquoted ones (static attributes the compiler writes without quotes).
+    for (const [, name, quoted, bare] of body!.matchAll(
+      /([\w:-]+)(?:=(?:"([^"]*)"|([^\s"'>]+)))?/g,
+    )) {
+      out[name!] = quoted ?? bare ?? "";
     }
     if (match(out)) return out;
   }

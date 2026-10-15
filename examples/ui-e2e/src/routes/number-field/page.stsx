@@ -1,0 +1,98 @@
+import { Field, NumberField } from "@lumiose/ui";
+import { Title } from "lumiose";
+
+// Server-rendered, no island: without `format` the input is a native number input, which works and
+// submits without JavaScript; `<lu-number-field>`'s script adds the buttons, the large step,
+// Home and End, scrubbing and the wheel. With `format` it shows the formatted value and submits the
+// number from a hidden input. The form submits to this page (GET), so the values show in the URL.
+// Styled with the default theme.
+export default function NumberFieldPage() {
+  return (
+    <>
+      <Title>Number Field</Title>
+      <h1>Number Field</h1>
+      <form method="get" action="/number-field" class="grid">
+        <section aria-labelledby="native-heading">
+          <h2 id="native-heading">Native</h2>
+          <Field.Root name="quantity" class="lu-field">
+            <Field.Label>Quantity</Field.Label>
+            <NumberField.Root defaultValue={1} min={1} max={99} class="lu-number-field">
+              <NumberField.Group>
+                <NumberField.Decrement>−</NumberField.Decrement>
+                <NumberField.Input />
+                <NumberField.Increment>+</NumberField.Increment>
+              </NumberField.Group>
+            </NumberField.Root>
+          </Field.Root>
+          <NumberField.Root
+            id="seats"
+            name="seats"
+            defaultValue={4}
+            disabled
+            class="lu-number-field"
+          >
+            <label for="seats">Seats</label>
+            <NumberField.Group>
+              <NumberField.Decrement>−</NumberField.Decrement>
+              <NumberField.Input />
+              <NumberField.Increment>+</NumberField.Increment>
+            </NumberField.Group>
+          </NumberField.Root>
+        </section>
+
+        <section aria-labelledby="formatted-heading">
+          <h2 id="formatted-heading">Formatted</h2>
+          <NumberField.Root
+            id="price"
+            name="price"
+            defaultValue={1234.5}
+            min={0}
+            step={0.5}
+            largeStep={100}
+            format={{ style: "currency", currency: "USD" }}
+            locale="en-US"
+            class="lu-number-field"
+          >
+            <NumberField.ScrubArea>
+              <label for="price">Price</label>
+            </NumberField.ScrubArea>
+            <NumberField.Group>
+              <NumberField.Decrement>−</NumberField.Decrement>
+              <NumberField.Input />
+              <NumberField.Increment>+</NumberField.Increment>
+            </NumberField.Group>
+          </NumberField.Root>
+          <NumberField.Root
+            id="discount"
+            name="discount"
+            defaultValue={0.25}
+            min={0}
+            max={1}
+            step={0.05}
+            largeStep={0.25}
+            format={{ style: "percent" }}
+            locale="en-US"
+            allowWheelScrub
+            class="lu-number-field"
+          >
+            <label for="discount">Discount</label>
+            <NumberField.Group>
+              <NumberField.Decrement>−</NumberField.Decrement>
+              <NumberField.Input />
+              <NumberField.Increment>+</NumberField.Increment>
+            </NumberField.Group>
+          </NumberField.Root>
+        </section>
+
+        <footer>
+          <button type="submit" class="lu-button" data-variant="primary">
+            Apply
+          </button>
+          <button type="reset" class="lu-button">
+            Reset
+          </button>
+        </footer>
+      </form>
+    </>
+  );
+}

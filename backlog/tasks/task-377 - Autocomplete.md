@@ -1,11 +1,11 @@
 ---
 id: TASK-377
 title: Autocomplete
-status: To Do
+status: In Progress
 assignee:
   - '@Halo'
 created_date: '2026-10-15 16:55'
-updated_date: '2026-10-15 18:05'
+updated_date: '2026-10-15 23:39'
 labels:
   - ui
 milestone: m-12
@@ -39,4 +39,6 @@ User decision 2026-10-15: @lumiose/ui reaches parity with Base UI's components b
 2026-10-15 (user): @lumiose/ui meets WCAG 2.2 AA (decision-62, doc-9 section 17).
 
 2026-10-15 (user): @lumiose/ui is agent-ready like lumiose (decision-64). The component's docs page lives in packages/ui/docs/<component>.md, follows dialog.md's sections (Anatomy, API, Example, Styling, Keyboard and focus, Without JavaScript, Browser support, Related) and is listed in the UI llms.txt.
+
+2026-10-16 (Halo): claimed (M12 sixth batch, branch claude/halo-m12c-4d6b9f).
 <!-- SECTION:NOTES:END -->

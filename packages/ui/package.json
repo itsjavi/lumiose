@@ -61,6 +61,8 @@
     "./context-menu.css": "./src/context-menu/context-menu.css",
     "./drawer": "./src/drawer/drawer.tsx",
     "./drawer.css": "./src/drawer/drawer.css",
+    "./number-field": "./src/number-field/number-field.tsx",
+    "./number-field.css": "./src/number-field/number-field.css",
     "./themes/default.css": "./src/themes/default.css",
     "./package.json": "./package.json"
   },
@@ -108,6 +110,8 @@
       "./context-menu.css": "./dist/context-menu/context-menu.css",
       "./drawer": "./dist/drawer/drawer.tsx",
       "./drawer.css": "./dist/drawer/drawer.css",
+      "./number-field": "./dist/number-field/number-field.tsx",
+      "./number-field.css": "./dist/number-field/number-field.css",
       "./themes/default.css": "./dist/themes/default.css",
       "./package.json": "./package.json"
     }

@@ -1,0 +1,12 @@
+import { Title } from "lumiose";
+import { NumberFieldSignals } from "../../../islands/NumberFieldSignals.tsx";
+
+export default function NumberFieldIslandPage() {
+  return (
+    <>
+      <Title>Number Field in an island, bound to a signal</Title>
+      <h1>Number Field in an island, bound to a signal</h1>
+      <NumberFieldSignals client:load />
+    </>
+  );
+}

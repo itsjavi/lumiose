@@ -1,0 +1,38 @@
+/*
+ * The CSS Number Field needs to work, and nothing else (decision-62). Its own buttons replace the
+ * native number input's spinners once its script runs (`:defined`); until then (or without
+ * JavaScript) the buttons, which need the script, stay hidden and the native spinners work. A
+ * scrub area takes the pointer for its drag. It sits in the `lu.core` layer, so any app CSS wins.
+ */
+@layer lu.core, lu.theme;
+
+@layer lu.core {
+  lu-number-field {
+    display: block;
+  }
+  lu-number-field:not(:defined) button[data-action] {
+    visibility: hidden;
+  }
+  lu-number-field:defined input[type="number"] {
+    appearance: textfield;
+  }
+  lu-number-field:defined input[type="number"]::-webkit-inner-spin-button,
+  lu-number-field:defined input[type="number"]::-webkit-outer-spin-button {
+    appearance: none;
+    margin: 0;
+  }
+  /* Held, a button must not select text or open a touch callout. */
+  lu-number-field button[data-action] {
+    user-select: none;
+    -webkit-touch-callout: none;
+    touch-action: manipulation;
+  }
+  lu-number-field [data-scrub] {
+    cursor: ew-resize;
+    touch-action: none;
+    user-select: none;
+  }
+  lu-number-field [data-scrub][data-direction="vertical"] {
+    cursor: ns-resize;
+  }
+}

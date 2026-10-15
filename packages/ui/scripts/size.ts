@@ -144,6 +144,12 @@ const COMPONENTS: Component[] = [
     scripts: ["dialog/dialog.script.ts", "drawer/drawer.script.ts"],
     css: "drawer/drawer.css",
   },
+  {
+    name: "number-field",
+    module: "number-field/number-field.tsx",
+    scripts: ["number-field/number-field.script.ts"],
+    css: "number-field/number-field.css",
+  },
 ];
 
 const CLIENT_SCRIPT = /\?client$/;

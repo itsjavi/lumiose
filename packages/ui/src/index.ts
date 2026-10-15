@@ -172,3 +172,12 @@ export type {
   DrawerTitleProps,
   DrawerTriggerProps,
 } from "./drawer/drawer.tsx";
+export { NumberField } from "./number-field/number-field.tsx";
+export type {
+  NumberFieldDecrementProps,
+  NumberFieldGroupProps,
+  NumberFieldIncrementProps,
+  NumberFieldInputProps,
+  NumberFieldRootProps,
+  NumberFieldScrubAreaProps,
+} from "./number-field/number-field.tsx";
