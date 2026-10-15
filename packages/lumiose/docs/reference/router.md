@@ -198,7 +198,7 @@ interface SearchParams {
   (): URLSearchParams;
   set(
     next: SearchParamsInit | ((current: URLSearchParams) => SearchParamsInit),
-    options?: NavigateOptions,
+    options?: SearchParamsOptions,
   ): Promise<void>;
 }
 const searchParams: SearchParams;
@@ -207,20 +207,26 @@ type SearchParamsInit =
   | URLSearchParams
   | string
   | Record<string, string | number | boolean | readonly string[] | null | undefined>;
+
+interface SearchParamsOptions extends NavigateOptions {
+  shallow?: boolean;
+}
 ```
 
 `searchParams()` is the current URL's query, reactive (a new object per change). `searchParams.set()`
 navigates to the current path with a new query, keeping the scroll position; `null` and
-`undefined` values are left out. It adds a history entry unless `{ replace: true }`.
+`undefined` values are left out. It adds a history entry unless `{ replace: true }`. Inside an
+SPA, `{ shallow: true }` changes nothing: a query change already keeps every layout and page
+mounted.
 
-In islands of MPA pages (`static` and `server` routes), where no router runs, the query is
-shallow URL state: `searchParams()` is the document's query, shared by every island, and
-`searchParams.set()` writes the URL with `history.pushState()` (`replaceState()` with
-`{ replace: true }`, or when the URL does not change), keeping the path, the hash, the scroll
-position and focus. Back/forward between those entries update `searchParams()`. It loads nothing:
-the server-rendered HTML stays as it is, and the navigation hooks do not run. During SSR, islands
-of `server` pages read the request's query; at build time a `static` page has none (`LUM5001`). See
-[Islands](../concepts/islands.md#concept).
+In islands of MPA pages (`static` and `server` routes), where no router runs, `searchParams()` is
+the document's query, shared by every island, and `searchParams.set()` loads the page with the new
+query, like `navigate()` there. With `{ shallow: true }` it loads nothing: it writes the URL with
+`history.pushState()` (`replaceState()` with `{ replace: true }`, or when the URL does not change)
+and updates `searchParams()`, keeping the path, the hash, the scroll position and focus. Back/forward
+between those entries update `searchParams()`. The server-rendered HTML then stays as it is, and the
+navigation hooks do not run. During SSR, islands of `server` pages read the request's query; at
+build time a `static` page has none (`LUM5001`). See [Islands](../concepts/islands.md#concept).
 
 While a page is still loading during a navigation, `params()`, `route()`, `url()` and `searchParams()` called in it
 (and its props) already describe the page it is loading; everything else keeps the shown URL until

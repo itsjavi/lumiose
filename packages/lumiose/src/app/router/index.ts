@@ -13,7 +13,12 @@ import {
   routerLocale,
   type NavigateOptions,
 } from "./router.ts";
-import { readSearchParams, writeSearchParams, type SearchParamsInit } from "./search.ts";
+import {
+  readSearchParams,
+  writeSearchParams,
+  type SearchParamsInit,
+  type SearchParamsOptions,
+} from "./search.ts";
 
 export {
   afterNavigate,
@@ -24,7 +29,13 @@ export {
   type NavigationType,
 } from "./hooks.ts";
 export { Link, type LinkProps, type Prefetch } from "./link.ts";
-export { navigate, isNavigating, type NavigateOptions, type SearchParamsInit };
+export {
+  navigate,
+  isNavigating,
+  type NavigateOptions,
+  type SearchParamsInit,
+  type SearchParamsOptions,
+};
 
 /**
  * Params of the current route, reactive: `params<"/songs/[id]">().id`. Inside a page that is
@@ -70,18 +81,19 @@ export function url(): URL {
 export interface SearchParams {
   /**
    * The query of the current URL, reactive. A new object per change: do not mutate it. Also in
-   * islands of MPA pages, where `set()` changes it.
+   * islands of MPA pages, where a shallow `set()` changes it.
    */
   (): URLSearchParams;
   /**
-   * Changes the current URL's query, keeping the scroll position: `searchParams.set({ q, page: 2 })`,
+   * Navigates to the current path with a new query: `searchParams.set({ q, page: 2 })`,
    * `searchParams.set((current) => …)`. `null`/`undefined` values are left out. Adds a history
-   * entry unless `{ replace: true }`. Inside an SPA it navigates; in islands of MPA pages it only
+   * entry unless `{ replace: true }`. Inside an SPA the router navigates, keeping the scroll
+   * position; in islands of MPA pages the page loads, unless `{ shallow: true }`, which only
    * updates the URL and `searchParams()` (the server-rendered HTML stays as it is).
    */
   set(
     next: SearchParamsInit | ((current: URLSearchParams) => SearchParamsInit),
-    options?: NavigateOptions,
+    options?: SearchParamsOptions,
   ): Promise<void>;
 }
 

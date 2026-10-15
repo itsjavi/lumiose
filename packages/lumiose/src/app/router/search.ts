@@ -2,10 +2,11 @@
 //
 // - Inside an SPA they are the router's (`setRouterSearch`): reactive per view, and `set()`
 //   navigates through the router.
-// - In islands of MPA pages (`static` and `server` routes), where no router runs, the query is
-//   shallow URL state: a signal shared by every island of the document, which `set()` writes with
+// - In islands of MPA pages (`static` and `server` routes), where no router runs, `set()` loads
+//   the page with the new query, as `navigate()` does there. With `{ shallow: true }` the query is
+//   URL state instead: a signal shared by every island of the document, which `set()` writes with
 //   `history.pushState()`/`replaceState()` without loading anything, and which back/forward
-//   between those entries update. Nothing navigates: the navigation hooks do not run, and the
+//   between those entries update. Nothing navigates then: the navigation hooks do not run, and the
 //   server-rendered parts of the page keep the HTML of the URL they were rendered for.
 //
 // Apart from ./router.ts, so that those islands ship none of the router.
@@ -16,6 +17,15 @@ export type SearchParamsInit =
   | URLSearchParams
   | string
   | Record<string, string | number | boolean | readonly string[] | null | undefined>;
+
+/** Options of `searchParams.set()`. */
+export interface SearchParamsOptions extends NavigateOptions {
+  /**
+   * In islands of MPA pages, update the URL and `searchParams()` without loading the page. Inside
+   * an SPA, where a query change already keeps every layout and page mounted, it changes nothing.
+   */
+  shallow?: boolean;
+}
 
 type SearchParamsNext = SearchParamsInit | ((current: URLSearchParams) => SearchParamsInit);
 
@@ -44,7 +54,7 @@ function shallowState(): NonNullable<typeof shallow> {
   if (shallow === undefined) {
     const search = signal(location.search);
     shallow = { search, params: computed(() => new URLSearchParams(search())) };
-    // Back/forward between the entries `set()` added stay in the document.
+    // Back/forward between the entries a shallow `set()` added stay in the document.
     addEventListener("popstate", onPopState);
   }
   return shallow;
@@ -59,14 +69,19 @@ export function readSearchParams(): URLSearchParams {
 /** `searchParams.set()`. */
 export function writeSearchParams(
   next: SearchParamsNext,
-  options: NavigateOptions = {},
+  options: SearchParamsOptions = {},
 ): Promise<void> {
   const router = routed.peek();
   if (router !== undefined) return router.set(next, options);
-  const state = shallowState();
   const url = new URL(location.href);
   const value = typeof next === "function" ? next(new URLSearchParams(url.search)) : next;
   url.search = searchString(value);
+  if (options.shallow !== true) {
+    if (options.replace === true) location.replace(url.href);
+    else location.assign(url.href);
+    return Promise.resolve();
+  }
+  const state = shallowState();
   // As in the browser, going to the current URL replaces its entry.
   const replace = options.replace === true || url.href === location.href;
   history[replace ? "replaceState" : "pushState"](history.state, "", url.href);

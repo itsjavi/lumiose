@@ -17,9 +17,10 @@ import { PREFETCH_MARKER } from "../server/navigation.ts";
 import type { AfterNavigate, BeforeNavigate } from "./hooks.ts";
 import type { LinkProps } from "./link.ts";
 import type { SearchParams } from "./index.ts";
-import type { NavigateOptions, SearchParamsInit } from "./router.ts";
+import type { NavigateOptions } from "./router.ts";
+import type { SearchParamsInit, SearchParamsOptions } from "./search.ts";
 
-export type { LinkProps, NavigateOptions, SearchParams, SearchParamsInit };
+export type { LinkProps, NavigateOptions, SearchParams, SearchParamsInit, SearchParamsOptions };
 export type { Prefetch } from "./link.ts";
 export type { AfterNavigate, BeforeNavigate, NavigationTarget, NavigationType } from "./hooks.ts";
 
@@ -91,7 +92,7 @@ export function afterNavigate(_fn: (navigation: AfterNavigate) => void): void {}
 export const searchParams: SearchParams = Object.assign(
   () => new URLSearchParams(requestUrl().search),
   {
-    set: (_next: unknown, _options?: NavigateOptions): Promise<void> =>
+    set: (_next: unknown, _options?: SearchParamsOptions): Promise<void> =>
       browserOnly("searchParams.set()"),
   },
 );

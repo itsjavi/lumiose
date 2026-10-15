@@ -20,12 +20,16 @@ The user compared three directions on 2026-10-15:
 
 The user approved the API on 2026-10-15. Implemented in TASK-351.
 
-- Outside an SPA, `searchParams()` and `searchParams.set()` from `lumiose/router` work in islands, with the same names and signatures as in an SPA.
+**Amendment (2026-10-15, TASK-352).** The user chose that a page load stays the default and that shallow updates are opt-in. The rule follows the `shallow` option of the Next.js Pages Router. nuqs defaults the other way, with `shallow: true`. With this default, `set()` means "navigate" everywhere, as it did on MPA pages before TASK-351, and server-rendered HTML never goes stale by accident.
+
+- Outside an SPA, `searchParams()` and `searchParams.set()` from `lumiose/router` work in islands, with the same names and signatures as in an SPA. `set()` takes `SearchParamsOptions`: `NavigateOptions` plus `shallow`.
 - `searchParams()` is a reactive `URLSearchParams` of the document's query. Every island of the document shares one signal.
-- `searchParams.set()` writes the URL with `history.pushState()`, or `replaceState()` with `{ replace: true }` or when the URL does not change. It keeps the path, the hash, the scroll position and focus, and loads nothing.
-- Back/forward between those entries (`popstate`) update `searchParams()`.
-- These changes are not navigations: `beforeNavigate` and `afterNavigate` do not run.
-- The server-rendered parts of the page keep the HTML of the URL they were rendered for. A reload, or a shared link, renders the new query on the server.
+- By default, `searchParams.set()` loads the page with the new query (`location.assign()`, or `location.replace()` with `{ replace: true }`), like `navigate()` on MPA pages.
+- With `{ shallow: true }`, it writes the URL with `history.pushState()`, or `replaceState()` with `{ replace: true }` or when the URL does not change. It keeps the path, the hash, the scroll position and focus, and loads nothing.
+- Back/forward between shallow entries (`popstate`) update `searchParams()`.
+- Shallow changes are not navigations: `beforeNavigate` and `afterNavigate` do not run.
+- After a shallow change, the server-rendered parts of the page keep the HTML of the URL they were rendered for. A reload, or a shared link, renders the new query on the server.
+- Inside an SPA, `shallow` changes nothing: a query change already keeps every layout and page mounted.
 - During SSR, islands of `server` pages read the request's query, so hydration matches. Islands of `static` pages cannot read it at build time (LUM5001): they use `client:only`, or read it in `onMount()`.
 - Inside an SPA, both functions keep their current behaviour, through the router.
 

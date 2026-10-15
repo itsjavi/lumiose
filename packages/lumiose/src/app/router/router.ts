@@ -1112,8 +1112,6 @@ export function isNavigating(): boolean {
   return router?.navigating() ?? false;
 }
 
-export type { SearchParamsInit };
-
 /** Replaces the query of the current URL, keeping the scroll position. */
 export function setSearchParams(
   next: SearchParamsInit | ((current: URLSearchParams) => SearchParamsInit),
