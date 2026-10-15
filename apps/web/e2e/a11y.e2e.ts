@@ -16,6 +16,7 @@ const PAGES = [
   { name: "diagnostic page", path: "/docs/errors/LUM2001" },
   { name: "benchmarks", path: "/benchmarks" },
   { name: "benchmark report", path: "/benchmarks/js-framework-benchmark" },
+  { name: "benchmark method", path: "/benchmarks/fullstack-comparison" },
   { name: "showcase and demos", path: "/showcase" },
   { name: "playground", path: "/playground" },
   { name: "404", path: "/docs/nope" },

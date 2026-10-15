@@ -74,7 +74,7 @@ export const footerColumns: FooterColumn[] = [
       { href: `${href("/showcase")}#used-by`, label: "Used by" },
       { href: href("/benchmarks"), label: "Benchmarks" },
       { href: href("/benchmarks/js-framework-benchmark"), label: "js-framework-benchmark" },
-      { href: link("/benchmarks/fullstack/"), label: "Fullstack comparison" },
+      { href: href("/benchmarks/fullstack-comparison"), label: "Fullstack comparison" },
       { href: href("/playground"), label: "Playground" },
     ],
   },

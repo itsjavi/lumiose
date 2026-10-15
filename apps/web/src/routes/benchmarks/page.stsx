@@ -61,7 +61,9 @@ export default function Benchmarks() {
         </div>
         <p class="source">
           Fullstack: {results.fullstackRun}, in the{" "}
-          <a href={link("/benchmarks/fullstack/")}>results viewer</a>. Client: {results.clientRun},
+          <a href={link("/benchmarks/fullstack/")}>results viewer</a> (
+          <a href={href("/benchmarks/fullstack-comparison")}>method and raw data</a>). Client:{" "}
+          {results.clientRun},
           in the{" "}
           <a href={href("/benchmarks/js-framework-benchmark")}>js-framework-benchmark report</a>.
           Server: {results.serverRun}, in <code>benchmarks/ssr/RESULTS.md</code>.

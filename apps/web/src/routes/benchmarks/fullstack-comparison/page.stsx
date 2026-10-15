@@ -1,0 +1,207 @@
+// /benchmarks/fullstack-comparison (TASK-317): the fullstack comparison's methodology (doc-4, written
+// for readers in content/fullstack-method.md), the implementation of each stack, every committed
+// results file and how to reproduce a run. The results viewer itself is published at
+// /benchmarks/fullstack/ by scripts/site.ts, with the same files below it.
+import { LinkButton } from "@lumiose/site-kit";
+import { color, font, layout, radius, space, text } from "@lumiose/site-kit/tokens";
+import { Meta, Title } from "lumiose";
+import { Marked } from "marked";
+import method from "../../../content/fullstack-method.md?raw";
+import { implementations, runs } from "../../../content/fullstack.ts";
+import { PageHead } from "../../../components/Showcase.stsx";
+import { REPOSITORY } from "../../../content/showcase.ts";
+import { link } from "../../../lib/site.ts";
+
+const methodHtml = new Marked({ gfm: true }).parse(method, { async: false });
+
+/** `code` spans of a one-line description as elements, the rest as text. */
+function inline(text: string): JSX.Element {
+  return text.split(/`([^`]+)`/).map((part, index) => (index % 2 === 1 ? <code>{part}</code> : part));
+}
+
+/** `2026-10-12T16:21:15.467Z` → `2026-10-12 16:21 UTC`. */
+function utc(date: string): string {
+  return `${date.slice(0, 10)} ${date.slice(11, 16)} UTC`;
+}
+
+export default function FullstackComparison() {
+  const all = runs();
+  const apps = implementations();
+  const viewer = link("/benchmarks/fullstack/");
+
+  return (
+    <div class="page">
+      <Title>Fullstack comparison: method and data · Lumiose</Title>
+      <Meta
+        name="description"
+        content="How Lumiose's fullstack comparison is measured: the app, the fairness rules, every implementation, the raw results and how to reproduce a run."
+      />
+      <PageHead kicker="Benchmarks" title="Fullstack comparison: method and data">
+        <p>
+          One issue tracker, built with Lumiose and seven other stacks, measured end to end: dev
+          server, build, page load and server throughput. This page has the rules, the code of
+          each app, every committed results file and the commands to run it yourself.
+        </p>
+        <p class="actions">
+          <LinkButton href={viewer}>Open the results viewer</LinkButton>
+          <LinkButton
+            href={`${REPOSITORY}/tree/main/benchmarks/fullstack`}
+            variant="secondary"
+            external
+          >
+            Source
+          </LinkButton>
+        </p>
+      </PageHead>
+
+      <div class="prose" innerHTML={methodHtml} />
+
+      <section class="block" aria-labelledby="implementations-title">
+        <h2 id="implementations-title">The implementations</h2>
+        <p>
+          Versions and production servers as the newest run recorded them. Shared code lives in{" "}
+          <a href={`${REPOSITORY}/tree/main/benchmarks/fullstack/packages`}>packages</a> (data,
+          stylesheet, React components), and the runner and the conformance suite in{" "}
+          <a href={`${REPOSITORY}/tree/main/benchmarks/fullstack/harness`}>harness</a>.
+        </p>
+        <div class="table" role="region" aria-labelledby="implementations-title" tabindex="0">
+          <table>
+            <thead>
+              <tr>
+                <th scope="col">Stack</th>
+                <th scope="col">How it is built</th>
+                <th scope="col">Production server</th>
+              </tr>
+            </thead>
+            <tbody>
+              {apps.map((app) => (
+                <tr>
+                  <th scope="row">
+                    <a href={app.source}>{app.name}</a>
+                    <span class="versions">{app.versions}</span>
+                  </th>
+                  <td>{inline(app.approach)}</td>
+                  <td>{app.server === undefined ? "—" : <code>{app.server}</code>}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="block" aria-labelledby="results-title">
+        <h2 id="results-title">Raw results</h2>
+        <p>
+          Every committed run, newest first, as the JSON files the viewer reads (
+          <a href={link("/benchmarks/fullstack/results/index.json")}>index.json</a> lists them). A
+          full run measures every metric group it names; a quick run is one iteration, for smoke
+          tests. The site's charts use the newest full run that measured each metric.
+        </p>
+        <div class="table" role="region" aria-labelledby="results-title" tabindex="0">
+          <table>
+            <thead>
+              <tr>
+                <th scope="col">Run</th>
+                <th scope="col">Machine</th>
+                <th scope="col">Metric groups</th>
+                <th scope="col">Apps</th>
+                <th scope="col">File</th>
+              </tr>
+            </thead>
+            <tbody>
+              {all.map((run) => (
+                <tr>
+                  <th scope="row">
+                    {utc(run.meta.date)}
+                    {run.meta.quick && <span class="versions">quick</span>}
+                  </th>
+                  <td>
+                    {run.meta.machine.cpu} ({run.meta.machine.cores} cores), {run.meta.machine.os},
+                    Node {run.meta.node.replace(/^v/, "")}
+                  </td>
+                  <td>{(run.meta.groups ?? ["all"]).join(", ")}</td>
+                  <td>{run.meta.apps.length}</td>
+                  <td>
+                    <a href={run.url}>JSON</a> · <a href={run.source}>GitHub</a>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+  );
+}
+
+<style>
+  .page {
+    max-inline-size: $layout.page;
+    margin-inline: auto;
+    padding: $space.xl $layout.gutter $space.xxl;
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: $space.xs;
+  }
+  .prose,
+  .block {
+    max-inline-size: 100%;
+    margin-block-end: $space.xl;
+  }
+  .block {
+    display: grid;
+    gap: $space.sm;
+  }
+  .block > h2,
+  .block > p {
+    margin: 0;
+  }
+  .prose :deep(h2),
+  .block h2 {
+    margin-block: $space.lg $space.sm;
+    font-size: $text.xl;
+  }
+  .prose :deep(pre) {
+    overflow-x: auto;
+    padding: $space.sm;
+    border-radius: $radius.md;
+    background: $color.sunken;
+    font-size: $text.sm;
+  }
+  .prose :deep(table),
+  table {
+    inline-size: 100%;
+    border-collapse: collapse;
+    font-size: $text.sm;
+  }
+  .prose :deep(table) {
+    display: block;
+    overflow-x: auto;
+  }
+  .table {
+    overflow-x: auto;
+  }
+  .prose :deep(th),
+  .prose :deep(td),
+  th,
+  td {
+    padding: $space.xs $space.sm;
+    border-block-end: 1px solid $color.border;
+    text-align: start;
+    vertical-align: top;
+  }
+  code,
+  .prose :deep(code) {
+    font-family: $font.mono;
+    font-size: 0.9em;
+  }
+  .versions {
+    display: block;
+    color: $color.subtle;
+    font-family: $font.mono;
+    font-size: $text.xs;
+    font-weight: normal;
+  }
+</style>
