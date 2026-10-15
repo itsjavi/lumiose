@@ -24,5 +24,7 @@ export function Toggle(props: { label: string }) {
 }
 
 <style>
-  .toggle { cursor: pointer; }
+  .toggle {
+    cursor: pointer;
+  }
 </style>

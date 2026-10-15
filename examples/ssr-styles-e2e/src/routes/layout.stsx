@@ -18,6 +18,10 @@ export default function Root(props: LayoutProps<"/">) {
 }
 
 <style>
-  .shell { font-family: system-ui, sans-serif; }
-  .order { color: rgb(0, 0, 255); }
+  .shell {
+    font-family: system-ui, sans-serif;
+  }
+  .order {
+    color: rgb(0, 0, 255);
+  }
 </style>

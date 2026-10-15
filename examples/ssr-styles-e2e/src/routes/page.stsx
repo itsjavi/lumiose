@@ -23,5 +23,7 @@ export default function Home() {
 }
 
 <style>
-  .block-wins { padding: 2px; }
+  .block-wins {
+    padding: 2px;
+  }
 </style>
