@@ -57,6 +57,10 @@
     "./meter": "./src/meter/meter.tsx",
     "./slider": "./src/slider/slider.tsx",
     "./slider.css": "./src/slider/slider.css",
+    "./context-menu": "./src/context-menu/context-menu.tsx",
+    "./context-menu.css": "./src/context-menu/context-menu.css",
+    "./drawer": "./src/drawer/drawer.tsx",
+    "./drawer.css": "./src/drawer/drawer.css",
     "./themes/default.css": "./src/themes/default.css",
     "./package.json": "./package.json"
   },
@@ -100,6 +104,10 @@
       "./meter": "./dist/meter/meter.tsx",
       "./slider": "./dist/slider/slider.tsx",
       "./slider.css": "./dist/slider/slider.css",
+      "./context-menu": "./dist/context-menu/context-menu.tsx",
+      "./context-menu.css": "./dist/context-menu/context-menu.css",
+      "./drawer": "./dist/drawer/drawer.tsx",
+      "./drawer.css": "./dist/drawer/drawer.css",
       "./themes/default.css": "./dist/themes/default.css",
       "./package.json": "./package.json"
     }

@@ -1237,3 +1237,34 @@ describe("fresh islands", () => {
     expect(warn).not.toHaveBeenCalled();
   });
 });
+
+// Component children whose first item is a component, then a different element (TASK-403).
+describe("hydrate: component children that start with a component (TASK-403)", () => {
+  it("claims a component, then a namespaced component, inside a component's children", async () => {
+    const hot = { data: {} as Record<string, unknown>, invalidate: vi.fn(), accept: vi.fn() };
+    (globalThis as Record<string, unknown>).hot = hot;
+    const { client, server } = await load(
+      `
+      function B() {
+        return <b>c</b>;
+      }
+      const NS = { P: () => <p>x</p> };
+      function Wrap(props: { children?: any }) {
+        return <section>{props.children}</section>;
+      }
+      export function Repro() {
+        return <Wrap><B /><NS.P /></Wrap>;
+      }`,
+      { hot: true },
+    );
+    try {
+      await serve(server, [["Repro", {}]]);
+      const html = visible();
+      await hydrateAll(client);
+      expect(warn).not.toHaveBeenCalled();
+      expect(visible()).toBe(html);
+    } finally {
+      delete (globalThis as Record<string, unknown>).hot;
+    }
+  });
+});

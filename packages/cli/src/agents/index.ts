@@ -41,7 +41,8 @@ function uiSection(): string {
 
 This project uses \`@lumiose/ui\`: accessible, unstyled components on native elements (\`<dialog>\`,
 popovers, invoker commands), server-rendered without hydration. Use them instead of hand-rolling
-dialogs, menus, popovers, tabs, accordions or toasts, and follow the \`lumiose-ui\` skill.
+dialogs, drawers, menus, context menus, popovers, tabs, accordions or toasts, and follow the
+\`lumiose-ui\` skill.
 
 - Its docs match the installed version: \`node_modules/@lumiose/ui/docs/llms.txt\` lists one page
   per component (anatomy, API, example, styling, keyboard). \`npx lumiose docs ui\` and
@@ -181,7 +182,7 @@ Follow the Lumiose section of \`AGENTS.md\`. This skill is the workflow.
 export function uiSkillFile(): string {
   return `---
 name: lumiose-ui
-description: Build UI with @lumiose/ui in a Lumiose app (Dialog and the other accessible, unstyled components on native elements): composing parts, bind: and events, styling with classes, state selectors, the lu.core and lu.theme layers and --lu- variables, and the accessibility rules. Use for any dialog, popover, tooltip, menu, tabs, select, combobox, accordion, collapsible or toast, and when styling @lumiose/ui parts.
+description: Build UI with @lumiose/ui in a Lumiose app (Dialog and the other accessible, unstyled components on native elements): composing parts, bind: and events, styling with classes, state selectors, the lu.core and lu.theme layers and --lu- variables, and the accessibility rules. Use for any dialog, drawer, popover, tooltip, menu, context menu, tabs, select, combobox, accordion, collapsible or toast, and when styling @lumiose/ui parts.
 ---
 
 # @lumiose/ui

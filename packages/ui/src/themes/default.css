@@ -43,6 +43,8 @@
  *   .lu-toggle-group                    a ToggleGroup: its toggles in a row (or a column)
  *   .lu-progress, .lu-meter             a Progress.Root, a Meter.Root: label, value and bar
  *   .lu-slider                          a Slider.Root: label, value, track, indicator, thumbs
+ *   .lu-drawer                          a Drawer.Popup: a surface against its edge (a handle on
+ *                                       a bottom sheet), title, description, footer; slides
  */
 @layer lu.core, lu.theme;
 
@@ -1344,5 +1346,127 @@
   .lu-slider input[type="range"]:disabled {
     opacity: 0.5;
     cursor: not-allowed;
+  }
+
+  /* Drawer (TASK-382) ------------------------------------------------------------------------- */
+
+  /*
+   * A popover surface against its edge, rounded on the inside; a bottom sheet has a handle (a
+   * decoration: the close buttons and Escape do what a swipe does). It slides in and out from its
+   * edge, follows a swipe, and leaves from where the swipe let go; the backdrop fades with it.
+   */
+  .lu-drawer {
+    box-sizing: border-box;
+    padding: 1.5rem;
+    border: 1px solid var(--lu-border);
+    background: var(--lu-popover);
+    color: var(--lu-popover-foreground);
+    box-shadow:
+      0 10px 15px -3px rgb(0 0 0 / 0.1),
+      0 4px 6px -4px rgb(0 0 0 / 0.1);
+    translate: var(--drawer-swipe-movement-x, 0) var(--drawer-swipe-movement-y, 0);
+  }
+  .lu-drawer::backdrop {
+    background: rgb(0 0 0 / 0.5);
+    opacity: calc(1 - var(--drawer-swipe-progress, 0));
+  }
+  .lu-drawer[data-swipe-direction="down"] {
+    max-block-size: 85dvh;
+    padding-block-start: 2rem;
+    border-block-end: 0;
+    border-radius: var(--lu-radius) var(--lu-radius) 0 0;
+  }
+  .lu-drawer[data-swipe-direction="down"]::before {
+    content: "";
+    position: absolute;
+    inset-block-start: 0.75rem;
+    inset-inline-start: 50%;
+    inline-size: 2.5rem;
+    block-size: 0.25rem;
+    border-radius: 999px;
+    background: var(--lu-input);
+    translate: -50% 0;
+  }
+  .lu-drawer[data-swipe-direction="up"] {
+    max-block-size: 85dvh;
+    border-block-start: 0;
+    border-radius: 0 0 var(--lu-radius) var(--lu-radius);
+  }
+  .lu-drawer:is([data-swipe-direction="left"], [data-swipe-direction="right"]) {
+    inline-size: min(22rem, 100vw - 3rem);
+  }
+  .lu-drawer[data-swipe-direction="left"] {
+    border-inline-start: 0;
+    border-start-end-radius: var(--lu-radius);
+    border-end-end-radius: var(--lu-radius);
+  }
+  .lu-drawer[data-swipe-direction="right"] {
+    border-inline-end: 0;
+    border-start-start-radius: var(--lu-radius);
+    border-end-start-radius: var(--lu-radius);
+  }
+  .lu-drawer :where(h2) {
+    margin: 0 0 0.5rem;
+    font-size: 1.125rem;
+    font-weight: 600;
+    line-height: 1.3;
+  }
+  .lu-drawer :where(p) {
+    margin: 0 0 1.5rem;
+    color: var(--lu-muted-foreground);
+    font-size: 0.875rem;
+    line-height: 1.5;
+  }
+  .lu-drawer :where(footer) {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: end;
+    gap: 0.5rem;
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .lu-drawer,
+    .lu-drawer::backdrop {
+      transition:
+        translate 250ms ease-out,
+        opacity 250ms ease-out,
+        overlay 250ms allow-discrete,
+        display 250ms allow-discrete;
+    }
+    .lu-drawer[data-swiping],
+    .lu-drawer[data-swiping]::backdrop {
+      transition: none;
+    }
+    .lu-drawer:not([open])::backdrop {
+      opacity: 0;
+    }
+    .lu-drawer[data-swipe-direction="down"]:not([open]) {
+      translate: 0 100%;
+    }
+    .lu-drawer[data-swipe-direction="up"]:not([open]) {
+      translate: 0 -100%;
+    }
+    .lu-drawer[data-swipe-direction="left"]:not([open]) {
+      translate: -100% 0;
+    }
+    .lu-drawer[data-swipe-direction="right"]:not([open]) {
+      translate: 100% 0;
+    }
+    @starting-style {
+      .lu-drawer[open]::backdrop {
+        opacity: 0;
+      }
+      .lu-drawer[data-swipe-direction="down"][open] {
+        translate: 0 100%;
+      }
+      .lu-drawer[data-swipe-direction="up"][open] {
+        translate: 0 -100%;
+      }
+      .lu-drawer[data-swipe-direction="left"][open] {
+        translate: -100% 0;
+      }
+      .lu-drawer[data-swipe-direction="right"][open] {
+        translate: 100% 0;
+      }
+    }
   }
 }

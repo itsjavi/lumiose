@@ -386,6 +386,9 @@ test.describe("pointer", () => {
   test("a submenu sits at the inline end of its trigger, the menu below its trigger", async ({
     page,
   }) => {
+    // Tall enough that the submenu fits below its trigger under the layout's growing nav, so
+    // anchor positioning has no reason to shift it.
+    await page.setViewportSize({ width: 1280, height: 1000 });
     await page.goto("/menu");
     const { trigger, menu, item } = actions(page);
     await trigger.click();

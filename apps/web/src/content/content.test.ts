@@ -100,7 +100,17 @@ describe("docs", () => {
     expect(uiNav().map((section) => section.title)).toEqual(["Overview", "Components"]);
     expect(uiNav()[0]!.pages.map((page) => page.path)).toEqual(["", "installation", "theming"]);
     const components = uiNav().find((section) => section.title === "Components")!.pages;
-    for (const name of ["accordion", "collapsible", "dialog", "menu", "popover", "tabs", "toast"]) {
+    for (const name of [
+      "accordion",
+      "collapsible",
+      "context-menu",
+      "dialog",
+      "drawer",
+      "menu",
+      "popover",
+      "tabs",
+      "toast",
+    ]) {
       expect(components.map((page) => page.path)).toContain(name);
     }
     expect(findUiPage("/dialog/")).toMatchObject({ title: "Dialog", url: "/ui/dialog" });

@@ -1,0 +1,53 @@
+import { Drawer } from "@lumiose/ui";
+import { Title } from "lumiose";
+
+// Server-rendered, no island: native modal <dialog>s against an edge; the script adds the swipe.
+export default function DrawerPage() {
+  return (
+    <>
+      <Title>Drawer</Title>
+      <h1>Drawer</h1>
+      <Drawer.Root>
+        <Drawer.Trigger class="lu-button">Filters</Drawer.Trigger>
+        <Drawer.Popup class="lu-drawer" data-testid="bottom">
+          <Drawer.Title>Filters</Drawer.Title>
+          <Drawer.Description>Narrow the list down.</Drawer.Description>
+          <Drawer.Content
+            class="scroller"
+            role="region"
+            aria-label="Filter options"
+            tabindex={0}
+            data-testid="content"
+          >
+            {Array.from({ length: 30 }, (_, i) => (
+              <p>Filter option {i + 1}</p>
+            ))}
+          </Drawer.Content>
+          <footer>
+            <Drawer.Close class="lu-button" data-variant="primary">
+              Done
+            </Drawer.Close>
+          </footer>
+        </Drawer.Popup>
+      </Drawer.Root>
+      <Drawer.Root swipeDirection="right">
+        <Drawer.Trigger class="lu-button">Menu</Drawer.Trigger>
+        <Drawer.Popup class="lu-drawer" data-testid="side">
+          <Drawer.Title>Menu</Drawer.Title>
+          <nav aria-label="Site">
+            <a href="#home">Home</a>
+          </nav>
+          <Drawer.Close class="lu-button">Close</Drawer.Close>
+        </Drawer.Popup>
+      </Drawer.Root>
+      <p id="home">Home.</p>
+    </>
+  );
+}
+
+<style>
+  :global(.scroller) {
+    max-block-size: 12rem;
+    overflow: auto;
+  }
+</style>

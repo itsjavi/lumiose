@@ -89,6 +89,8 @@ custom properties, named as in shadcn/ui, are listed in [Theming](theming.md#the
 | [Progress](progress.md)             | Available: native `<progress>`, indeterminate when unknown, no script                     |
 | [Meter](meter.md)                   | Available: native `<meter>`, no script                                                    |
 | [Slider](slider.md)                 | Available: native range inputs, `<lu-slider>` adds ranges and Page Up and Page Down       |
+| [Context Menu](context-menu.md)     | Available: Menu at the pointer, opened by its script (right-click, long press, keys)      |
+| [Drawer](drawer.md)                 | Available: a Dialog against an edge, works without JavaScript; its script adds the swipe  |
 
 ## Size
 

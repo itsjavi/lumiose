@@ -155,3 +155,20 @@ export type {
   SliderValue,
   SliderValueProps,
 } from "./slider/slider.tsx";
+export { ContextMenu } from "./context-menu/context-menu.tsx";
+export type {
+  ContextMenuPopupProps,
+  ContextMenuRootProps,
+  ContextMenuTriggerProps,
+} from "./context-menu/context-menu.tsx";
+export { Drawer } from "./drawer/drawer.tsx";
+export type {
+  DrawerCloseProps,
+  DrawerContentProps,
+  DrawerDescriptionProps,
+  DrawerPopupProps,
+  DrawerRootProps,
+  DrawerSwipeDirection,
+  DrawerTitleProps,
+  DrawerTriggerProps,
+} from "./drawer/drawer.tsx";

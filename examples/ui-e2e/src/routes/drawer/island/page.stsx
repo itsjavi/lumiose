@@ -1,0 +1,12 @@
+import { Title } from "lumiose";
+import { DrawerSignals } from "../../../islands/DrawerSignals.tsx";
+
+export default function DrawerIslandPage() {
+  return (
+    <>
+      <Title>Drawer in an island, bound to a signal</Title>
+      <h1>Drawer in an island, bound to a signal</h1>
+      <DrawerSignals client:load />
+    </>
+  );
+}

@@ -112,6 +112,14 @@ export class MenuElement extends HTMLElement {
     else this.#hide(popup.contains(document.activeElement));
   }
 
+  /**
+   * Opens the menu as a keyboard (focus on the first item that can run) or a pointer opening
+   * (focus on the popup) would: ContextMenu opens it this way, having no trigger.
+   */
+  show(keyboard: boolean): void {
+    if (this.popup?.isConnected && !this.open) this.#show(keyboard ? "first" : "popup");
+  }
+
   connectedCallback(): void {
     for (const type of EVENTS) {
       this.addEventListener(type, this);
@@ -208,9 +216,9 @@ export class MenuElement extends HTMLElement {
     // also closes an open sibling submenu (a layer this one is not inside of).
     popup.setAttribute("popover", "manual");
     this.#edge = edge;
-    // `source` makes the trigger the invoker, as a click on it would.
-    (popup.showPopover as (options?: { source?: HTMLElement | null }) => void)({
-      source: this.trigger,
+    // `source` makes the trigger the invoker, as a click on it would. A context menu has none.
+    (popup.showPopover as (options?: { source?: HTMLElement }) => void)({
+      source: this.trigger ?? undefined,
     });
     this.#place();
     this.#listen(true);
