@@ -136,6 +136,27 @@ Routes with `mode = "spa"` use the client router `lumiose/router` ([reference](.
   does not), and `<ViewTransition>` names the elements that morph.
 - Scroll restoration, focus reset, `not-found` for unknown URLs and `notFound()`, `error` for
   errors.
+- Navigation hooks: `beforeNavigate(fn)` runs before each navigation and may `cancel()` it (to
+  confirm leaving unsaved changes; the browser asks for one that unloads the document), and
+  `afterNavigate(fn)` runs after each completed one and once on mount (page views, focus). They
+  belong to the component that calls them during setup, and work in islands of MPA pages too
+  (`"leave"` and `"enter"` only). See [Navigation hooks](../reference/router.md#navigation-hooks).
+
+```tsx
+import { signal } from "lumiose";
+import { afterNavigate, beforeNavigate } from "lumiose/router";
+
+export function Editor() {
+  const dirty = signal(false);
+  beforeNavigate((navigation) => {
+    if (!dirty()) return;
+    if (navigation.willUnload) navigation.cancel(); // the browser asks
+    else if (!confirm("Discard your changes?")) navigation.cancel();
+  });
+  afterNavigate((navigation) => console.info("page view", navigation.to?.url.pathname));
+  return <textarea onInput={() => dirty.set(true)} />;
+}
+```
 
 > **Status:** file routes, the manifest, matching, typegen, `href()`, the request handler, MPA
 > prefetch and View Transitions, and the SPA router (`lumiose/router`) are available, served by
@@ -143,16 +164,17 @@ Routes with `mode = "spa"` use the client router `lumiose/router` ([reference](.
 
 ## API
 
-| API                                                                                                   | Use                                                           |
-| ----------------------------------------------------------------------------------------------------- | ------------------------------------------------------------- |
-| `export default function Page(props: PageProps<"/x/[id]">)`                                           | A page component.                                             |
-| `export default function Layout(props: LayoutProps<"/x">)`                                            | A layout: `{ params, children }`.                             |
-| `params<"/x/[id]">()`                                                                                 | The matched route's params, typed by pattern (server).        |
-| `href(pattern, params?)`                                                                              | Build a URL from a typed route pattern.                       |
-| `Routes`, `RouteParams<P>`, `RouteMap`, `LayoutMap`                                                   | Route types.                                                  |
-| `ErrorPageProps`                                                                                      | Props of `not-found` and `error` pages.                       |
-| `notFound()`, `error(status, message?)`, `redirect(to, status?)`                                      | Stop rendering; see [Server](server.md).                      |
-| `lumiose/router`: `Link`, `navigate`, `isNavigating`, `searchParams`, reactive `url`/`params`/`route` | SPA routes and islands ([reference](../reference/router.md)). |
+| API                                                                                                   | Use                                                                                    |
+| ----------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| `export default function Page(props: PageProps<"/x/[id]">)`                                           | A page component.                                                                      |
+| `export default function Layout(props: LayoutProps<"/x">)`                                            | A layout: `{ params, children }`.                                                      |
+| `params<"/x/[id]">()`                                                                                 | The matched route's params, typed by pattern (server).                                 |
+| `href(pattern, params?)`                                                                              | Build a URL from a typed route pattern.                                                |
+| `Routes`, `RouteParams<P>`, `RouteMap`, `LayoutMap`                                                   | Route types.                                                                           |
+| `ErrorPageProps`                                                                                      | Props of `not-found` and `error` pages.                                                |
+| `notFound()`, `error(status, message?)`, `redirect(to, status?)`                                      | Stop rendering; see [Server](server.md).                                               |
+| `lumiose/router`: `Link`, `navigate`, `isNavigating`, `searchParams`, reactive `url`/`params`/`route` | SPA routes and islands ([reference](../reference/router.md)).                          |
+| `lumiose/router`: `beforeNavigate(fn)`, `afterNavigate(fn)`                                           | Run around navigations; cancel one ([hooks](../reference/router.md#navigation-hooks)). |
 
 ## Example
 
@@ -236,6 +258,9 @@ export default function Home() {
 - **Matching `url().pathname` to know which route is showing.** `route() === "/songs/[id]"`
   compares the matched pattern, type-checked against the app's routes.
 - **Route loaders.** There are none: load data in the async page component itself (decision-18).
+- **A custom dialog for leaving the document.** For a navigation that unloads the page
+  (`navigation.willUnload`), `cancel()` makes the browser show its own prompt; a `confirm()` or a
+  modal cannot run there. Ask with your own UI only for navigations inside the SPA.
 - **`mode` that is not a string literal.** `export const mode = getMode()` cannot be read at build
   time (`LUM5002`).
 

@@ -87,6 +87,14 @@ island manifest (`virtual:lumiose/islands`, from `@lumiose/vite`), and:
 
 Islands inside slots that an island inserts later are hydrated when they appear.
 
+**When an island fails.** A module that does not load (a deploy replaced its chunk, a network
+error) or a component that throws while it hydrates is logged with the island's ref
+(`Lumiose: hydrate error in island /src/Counter.tsx#Counter`), not left as an unhandled promise
+rejection. The events the island caught are dispatched again without being held back, so their
+default actions run: a link navigates, a form submits to its `action`. A module that did not load
+is imported again on the next interaction with the island; an island whose hydration threw stays
+server HTML.
+
 ## Example
 
 ```tsx check

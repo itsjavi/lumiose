@@ -20,6 +20,9 @@
 //   `<a href>` links, back/forward and `navigation.navigate()` all route here; it also restores
 //   scroll and resets focus after each transition. Without it, the History API fallback
 //   (./history.ts, loaded only then) intercepts link clicks and `popstate`, and restores scroll.
+// - Hooks (./hooks.ts, decision-50): `beforeNavigate` hooks run before a navigation loads anything
+//   and may cancel it; `afterNavigate` hooks run once its page is on screen, scrolled and focused.
+//   A navigation to a document outside the SPA runs them with `willUnload`, then unloads.
 // - Errors: a render error, a rejected async page or `notFound()` render the nearest `error` or
 //   `not-found` page inside the SPA (`redirect()` navigates); without one, a minimal built-in page.
 // - `invalidate()` bumps a revision that every async component run and resource below the SPA
@@ -55,7 +58,18 @@ import { splitLocale } from "../i18n/config.ts";
 import { createRouteMatcher, type RouteMatcher } from "../routes/match.ts";
 import { formatPattern } from "../routes/segments.ts";
 import type { RouteManifest } from "../routes/manifest.ts";
+import type { Routes } from "../routes/registry.ts";
 import { HttpError, isHttpError, isRedirect } from "../server/control.ts";
+import type { HistoryNavigation } from "./history.ts";
+import {
+  endNavigation,
+  leaveTo,
+  runBefore,
+  setRouterLocation,
+  startNavigation,
+  type NavigationTarget,
+  type RouterNavigation,
+} from "./hooks.ts";
 import type { followLocaleLinks } from "./locale-links.ts";
 import { REROUTE_ATTR, type ClientRoute, type ClientTable } from "./table.ts";
 
@@ -156,8 +170,14 @@ interface Router {
 }
 
 const ROUTE: unique symbol = Symbol("lumiose.route");
+/** `navigation.navigate()` info of `navigate()`; it tells the hooks their type. */
+const NAVIGATE = "lumiose:navigate";
 /** `navigation.navigate()` info of navigations that keep the scroll position (`searchParams.set()`). */
 const KEEP_SCROLL = "lumiose:keep-scroll";
+/** `navigation.navigate()` info of a thrown `redirect()`: it continues a confirmed navigation. */
+const REDIRECT = "lumiose:redirect";
+/** `navigation.traverseTo()` info of the way back from a back/forward that a hook cancelled. */
+const RESTORE = "lumiose:restore";
 
 let router: Router | undefined;
 
@@ -358,6 +378,8 @@ function spaRoot(r: Router, view: View): Renderable {
   }
   provideContext(ROUTE, r.scope);
   provideContext(REVISION, r.revision);
+  setRouterLocation(() => locationOf(untrack(r.current)));
+  onCleanup(() => setRouterLocation(undefined));
   onError((error) => {
     // A hydration mismatch goes to the island, which renders on the client instead.
     if (error === MISMATCH) handleError(owner.parent, error);
@@ -612,7 +634,11 @@ async function go(r: Router, url: URL, target: Target): Promise<void> {
       levels = await loadLevels(r, target.levels);
     } catch (error) {
       // A module that does not load (a stale chunk after a deploy): load the page from the server.
-      if (r.active === nav) location.assign(url.href);
+      // The URL is already the page's; its hooks ran.
+      if (r.active === nav) {
+        leaveTo();
+        location.reload();
+      }
       throw error;
     }
     if (r.active !== nav) return;
@@ -631,7 +657,7 @@ async function go(r: Router, url: URL, target: Target): Promise<void> {
  */
 function fail(r: Router, error: unknown, view: View): void {
   if (isRedirect(error)) {
-    void navigate(error.location, { replace: true });
+    void navigateTo(navigationUrl(error.location), true, false, true);
     return;
   }
   const status = isHttpError(error) ? error.status : 500;
@@ -707,28 +733,115 @@ export function navigate(href: string | URL, options: NavigateOptions = {}): Pro
   return navigateTo(navigationUrl(href), options.replace === true, false);
 }
 
-function navigateTo(url: URL, replace: boolean, keepScroll: boolean): Promise<void> {
+/** `redirect`: a thrown `redirect()`, which continues a navigation the hooks already confirmed. */
+function navigateTo(
+  url: URL,
+  replace: boolean,
+  keepScroll: boolean,
+  redirect = false,
+): Promise<void> {
   const r = router;
-  const target = r === undefined || r.root === undefined ? undefined : targetOf(r, url);
+  const target = r?.root === undefined ? undefined : targetOf(r, url);
+  const api = navigationApi();
+  if (api !== undefined && r?.root !== undefined) {
+    // The `navigate` event runs the hooks (`listen()`), for a document navigation too.
+    const result = api.navigate(url.href, {
+      history: replace ? "replace" : "auto",
+      info: redirect ? REDIRECT : keepScroll ? KEEP_SCROLL : NAVIGATE,
+    });
+    return target === undefined
+      ? Promise.resolve()
+      : result.finished.then(
+          () => {},
+          () => {},
+        );
+  }
   if (target === undefined) {
+    if (r?.root !== undefined) leave(r, "navigate", url, redirect);
     if (replace) location.replace(url.href);
     else location.assign(url.href);
     return Promise.resolve();
   }
-  const api = navigationApi();
-  if (api !== undefined) {
-    const result = api.navigate(url.href, {
-      history: replace ? "replace" : "auto",
-      info: keepScroll ? KEEP_SCROLL : undefined,
-    });
-    return result.finished.then(
-      () => {},
-      () => {},
-    );
-  }
-  return loadHistory().then((fallback) =>
-    fallback.historyGo(url, () => go(r!, url, target), replace ? "replace" : "push", keepScroll),
-  );
+  return loadHistory().then((fallback) => {
+    const navigation = begin(r!, "navigate", url, redirect);
+    if (navigation !== undefined) {
+      return fallback.historyGo(
+        url,
+        historyNavigation(r!, url, target, navigation),
+        replace ? "replace" : "push",
+        keepScroll,
+      );
+    }
+  });
+}
+
+// --- Hooks (./hooks.ts) ----------------------------------------------------------------------------
+
+function locationOf(view: View): NavigationTarget {
+  return { url: view.url, route: view.route as Routes | undefined, params: view.params };
+}
+
+/**
+ * Where a navigation to `url` goes: its route and params when the app has a page there (inside the
+ * SPA or not), `null` outside the app (another origin, or outside its base).
+ */
+function locate(r: Router, url: URL): NavigationTarget | null {
+  const below = routePath(url, r.config.base);
+  if (below === undefined) return null;
+  const { i18n } = r.config;
+  const match = r.matcher.match(i18n === undefined ? below : splitLocale(below, i18n).path);
+  return {
+    url,
+    route:
+      match === null
+        ? undefined
+        : (formatPattern((match.route as unknown as ClientRoute).segments) as Routes),
+    params: match?.params ?? {},
+  };
+}
+
+function navigationTo(
+  r: Router,
+  type: RouterNavigation["type"],
+  url: URL,
+  willUnload: boolean,
+): RouterNavigation {
+  return { type, from: locationOf(untrack(r.current)), to: locate(r, url), willUnload };
+}
+
+/**
+ * Starts a client navigation to `url`: runs the `beforeNavigate` hooks (not for a redirect);
+ * undefined when one cancelled it.
+ */
+function begin(
+  r: Router,
+  type: RouterNavigation["type"],
+  url: URL,
+  redirect: boolean,
+): RouterNavigation | undefined {
+  const navigation = navigationTo(r, type, url, false);
+  if (!redirect && runBefore(navigation)) return undefined;
+  startNavigation(navigation);
+  return navigation;
+}
+
+/** A navigation to a document outside the SPA starts: its hooks run now (not for a redirect). */
+function leave(r: Router, type: RouterNavigation["type"], url: URL, redirect: boolean): void {
+  leaveTo(redirect ? undefined : navigationTo(r, type, url, true));
+}
+
+function historyNavigation(
+  r: Router,
+  url: URL,
+  target: Target,
+  navigation: RouterNavigation | undefined,
+): HistoryNavigation {
+  return {
+    run: () => go(r, url, target),
+    done: (shown) => {
+      if (navigation !== undefined) endNavigation(navigation, shown);
+    },
+  };
 }
 
 // --- Navigation API and History fallback ---------------------------------------------------------
@@ -753,6 +866,9 @@ interface NavigationLike extends EventTarget {
     url: string,
     options: { history: "auto" | "replace"; info?: unknown },
   ): { finished: Promise<unknown> };
+  traverseTo(key: string, options: { info: unknown }): unknown;
+  currentEntry: { key: string } | null;
+  transition: { finished: Promise<unknown> } | null;
 }
 
 function navigationApi(): NavigationLike | undefined {
@@ -765,18 +881,57 @@ function listen(r: Router): () => void {
   if (api !== undefined) {
     const onNavigate = (event: Event): void => {
       const e = event as NavigateEventLike;
-      if (!e.canIntercept || e.hashChange || e.downloadRequest !== null || e.formData !== null) {
+      const info = e.info;
+      if (info === RESTORE) {
+        // Back to the entry a cancelled back/forward left: the page never changed.
+        e.intercept({ scroll: "manual", focusReset: "manual", handler: async () => {} });
         return;
       }
-      if (e.navigationType === "reload") return;
+      if (
+        e.hashChange ||
+        e.downloadRequest !== null ||
+        e.formData !== null ||
+        e.navigationType === "reload"
+      ) {
+        return;
+      }
       const url = new URL(e.destination.url);
-      const target = targetOf(r, url);
-      if (target === undefined) return;
-      const keep = e.info === KEEP_SCROLL;
+      const target = e.canIntercept ? targetOf(r, url) : undefined;
+      const traverse = e.navigationType === "traverse";
+      const type = traverse ? "popstate" : info === undefined ? "link" : "navigate";
+      if (target === undefined) {
+        leave(r, type, url, info === REDIRECT);
+        return;
+      }
+      const navigation = begin(r, type, url, info === REDIRECT);
+      if (navigation === undefined) {
+        if (e.cancelable) e.preventDefault();
+        else if (traverse) {
+          // The browser does not let it be cancelled: it happens, then goes back.
+          const key = api.currentEntry!.key;
+          e.intercept({
+            scroll: "manual",
+            focusReset: "manual",
+            handler: async () => {
+              api.traverseTo(key, { info: RESTORE });
+            },
+          });
+        }
+        return;
+      }
+      const keep = info === KEEP_SCROLL;
       e.intercept({
         scroll: keep ? "manual" : "after-transition",
         focusReset: keep ? "manual" : "after-transition",
-        handler: () => go(r, url, target),
+        handler: () => {
+          const shown = go(r, url, target);
+          // Settles after the scroll restoration and focus reset that follow the handler.
+          (api.transition?.finished ?? shown).then(
+            () => endNavigation(navigation, true),
+            () => endNavigation(navigation, false),
+          );
+          return shown;
+        },
       });
     };
     api.addEventListener("navigate", onNavigate);
@@ -787,7 +942,7 @@ function listen(r: Router): () => void {
   let stop: (() => void) | undefined;
   let stopped = false;
   void loadHistory().then((fallback) => {
-    if (!stopped) stop = fallback.listenHistory((url) => routeOf(r, url));
+    if (!stopped) stop = fallback.listenHistory((url, type) => routeOf(r, url, type));
   });
   return () => {
     stopped = true;
@@ -800,10 +955,26 @@ let historyModule: Promise<typeof import("./history.ts")> | undefined;
 const loadHistory = (): Promise<typeof import("./history.ts")> =>
   (historyModule ??= import("./history.ts"));
 
-/** The fallback's view of `url`: the navigation that shows it, if the SPA owns it. */
-function routeOf(r: Router, url: URL): (() => Promise<void>) | undefined {
+/**
+ * The fallback's view of a link click or back/forward to `url`: the navigation that shows it, if
+ * the SPA owns it (`null` when a hook cancelled it). Back/forward that only changes the hash is
+ * not a navigation for the hooks.
+ */
+function routeOf(
+  r: Router,
+  url: URL,
+  type: "link" | "popstate",
+): HistoryNavigation | null | undefined {
   const target = targetOf(r, url);
-  return target === undefined ? undefined : () => go(r, url, target);
+  if (target === undefined) {
+    leave(r, type, url, false);
+    return undefined;
+  }
+  const shown = untrack(r.current).url;
+  const hash =
+    url.pathname === shown.pathname && url.search === shown.search && url.hash !== shown.hash;
+  const navigation = hash ? undefined : begin(r, type, url, false);
+  return hash || navigation !== undefined ? historyNavigation(r, url, target, navigation) : null;
 }
 
 // --- Public API ---------------------------------------------------------------------------------

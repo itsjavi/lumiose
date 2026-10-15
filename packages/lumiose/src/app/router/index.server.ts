@@ -14,12 +14,14 @@ import {
   url as requestUrl,
 } from "../server/scope.ts";
 import { PREFETCH_MARKER } from "../server/navigation.ts";
+import type { AfterNavigate, BeforeNavigate } from "./hooks.ts";
 import type { LinkProps } from "./link.ts";
 import type { SearchParams } from "./index.ts";
 import type { NavigateOptions, SearchParamsInit } from "./router.ts";
 
 export type { LinkProps, NavigateOptions, SearchParams, SearchParamsInit };
 export type { Prefetch } from "./link.ts";
+export type { AfterNavigate, BeforeNavigate, NavigationTarget, NavigationType } from "./hooks.ts";
 
 function browserOnly(api: string): never {
   throw new Error(
@@ -79,6 +81,12 @@ export function locale(): CurrentLocale {
 export function isNavigating(): boolean {
   return false;
 }
+
+/** Nothing navigates while the server renders: the hook is registered in the browser only. */
+export function beforeNavigate(_fn: (navigation: BeforeNavigate) => void): void {}
+
+/** Nothing navigates while the server renders: the hook is registered in the browser only. */
+export function afterNavigate(_fn: (navigation: AfterNavigate) => void): void {}
 
 export const searchParams: SearchParams = Object.assign(
   () => new URLSearchParams(requestUrl().search),

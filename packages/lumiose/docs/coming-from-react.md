@@ -21,31 +21,32 @@ runs again, and signals created in the body start fresh ([Async components](conc
 
 ## From React to Lumiose
 
-| React                                                 | Lumiose                                                                                                                                         |
-| ----------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
-| `const [count, setCount] = useState(0)`               | `const count = signal(0)`: read `count()`, write `count.set(1)` or `count.update((n) => n + 1)`.                                                |
-| `useReducer(reducer, init)`                           | A `store()` plus the functions that change it ([a store with actions](concepts/state.md#a-store-with-actions-zustand-style)).                   |
-| `useMemo(() => a * b, [a, b])`                        | `computed(() => a() * b())`, or a plain function `() => a() * b()` for cheap derivations.                                                       |
-| `useCallback(fn, deps)`, `React.memo(Component)`      | Not needed: functions are created once and components don't re-render.                                                                          |
-| `useEffect(fn, [deps])`                               | `effect(fn)`: it tracks what it reads. Return a cleanup, as in React.                                                                           |
-| `useEffect(fn, [])`                                   | `onMount(fn)`: runs once, untracked, after mount. It may return a cleanup.                                                                      |
-| `useLayoutEffect(fn, deps)`                           | `effect(fn)` or `onMount(fn)`: there is one kind of effect, and it runs after the DOM writes of the same flush.                                 |
-| Cleanup returned from `useEffect`, `AbortController`  | `onCleanup(fn)`, and `getAbortSignal()`, aborted when the owner is disposed or the effect re-runs.                                              |
-| `useRef<HTMLInputElement>(null)`                      | `const input = ref<HTMLInputElement>()`, then `<input ref={input} />` and `input()?.focus()`.                                                   |
-| `useRef(value)` for a mutable value                   | A `let` variable in the component body: the body runs once.                                                                                     |
-| `<Ctx.Provider value={v}>`, `useContext(Ctx)`         | `<Ctx value={v}>`, `useContext(Ctx)`. The provider reads `value` once: provide a signal or a store for state that changes.                      |
-| `<ViewTransition>`, `startTransition` around it       | `<ViewTransition name? enter? exit?>`, and the update in `viewTransition(() => …)` ([reference](reference/components.md#viewtransition)).       |
-| `useId()`, `identifierPrefix`                         | `useId()`, and `idPrefix` on `render()` and `renderToStream()` ([useId](reference/reactivity.md#useid)).                                        |
-| `useSyncExternalStore(subscribe, get)`                | A signal set from the store's `subscribe` ([an external store](concepts/state.md#an-external-store-zustandvanilla-a-jotai-store-redux)).        |
-| Fetching in `useEffect`, TanStack Query               | An `async` component that awaits `fetchJSON()` or `query()` ([Async components](concepts/async.md)), or [`@lumiose/query`](reference/query.md). |
-| `useTransition`, `isPending`                          | `isPending()` inside an async component, and `isBusy()` for anything in flight.                                                                 |
-| `useOptimistic(state, update)`                        | `optimistic(source)` ([Data and actions](concepts/data-and-actions.md)).                                                                        |
-| `<Suspense>`, error boundary classes                  | `<Suspense fallback={…}>` and `<ErrorBoundary fallback={(error, reset) => …}>`.                                                                 |
-| `createPortal(children, node)`                        | `<Portal mount={node}>`.                                                                                                                        |
-| `{items.map((item) => <Row key={item.id} />)}`        | The same, with `items()`. It compiles to a keyed list; `key` is optional ([JSX](concepts/jsx.md)).                                              |
-| `className`, `htmlFor`, `style={{ fontWeight: 600 }}` | `class`, `for`, `style={{ "font-weight": 600 }}` (kebab-case keys).                                                                             |
-| `dangerouslySetInnerHTML={{ __html: html }}`          | `innerHTML={html}`.                                                                                                                             |
-| `onChange` on a text input (fires on every keystroke) | `onInput`, or `bind:value={signal}`. Handlers get native events, so `onChange` fires when the value is committed.                               |
+| React                                                 | Lumiose                                                                                                                                              |
+| ----------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `const [count, setCount] = useState(0)`               | `const count = signal(0)`: read `count()`, write `count.set(1)` or `count.update((n) => n + 1)`.                                                     |
+| `useReducer(reducer, init)`                           | A `store()` plus the functions that change it ([a store with actions](concepts/state.md#a-store-with-actions-zustand-style)).                        |
+| `useMemo(() => a * b, [a, b])`                        | `computed(() => a() * b())`, or a plain function `() => a() * b()` for cheap derivations.                                                            |
+| `useCallback(fn, deps)`, `React.memo(Component)`      | Not needed: functions are created once and components don't re-render.                                                                               |
+| `useEffect(fn, [deps])`                               | `effect(fn)`: it tracks what it reads. Return a cleanup, as in React.                                                                                |
+| `useEffect(fn, [])`                                   | `onMount(fn)`: runs once, untracked, after mount. It may return a cleanup.                                                                           |
+| `useLayoutEffect(fn, deps)`                           | `effect(fn)` or `onMount(fn)`: there is one kind of effect, and it runs after the DOM writes of the same flush.                                      |
+| Cleanup returned from `useEffect`, `AbortController`  | `onCleanup(fn)`, and `getAbortSignal()`, aborted when the owner is disposed or the effect re-runs.                                                   |
+| `useRef<HTMLInputElement>(null)`                      | `const input = ref<HTMLInputElement>()`, then `<input ref={input} />` and `input()?.focus()`.                                                        |
+| `useRef(value)` for a mutable value                   | A `let` variable in the component body: the body runs once.                                                                                          |
+| `<Ctx.Provider value={v}>`, `useContext(Ctx)`         | `<Ctx value={v}>`, `useContext(Ctx)`. The provider reads `value` once: provide a signal or a store for state that changes.                           |
+| `<ViewTransition>`, `startTransition` around it       | `<ViewTransition name? enter? exit?>`, and the update in `viewTransition(() => …)` ([reference](reference/components.md#viewtransition)).            |
+| `useId()`, `identifierPrefix`                         | `useId()`, and `idPrefix` on `render()` and `renderToStream()` ([useId](reference/reactivity.md#useid)).                                             |
+| `useSyncExternalStore(subscribe, get)`                | A signal set from the store's `subscribe` ([an external store](concepts/state.md#an-external-store-zustandvanilla-a-jotai-store-redux)).             |
+| Fetching in `useEffect`, TanStack Query               | An `async` component that awaits `fetchJSON()` or `query()` ([Async components](concepts/async.md)), or [`@lumiose/query`](reference/query.md).      |
+| `useTransition`, `isPending`                          | `isPending()` inside an async component, and `isBusy()` for anything in flight.                                                                      |
+| `useOptimistic(state, update)`                        | `optimistic(source)` ([Data and actions](concepts/data-and-actions.md)).                                                                             |
+| `<Suspense>`, error boundary classes                  | `<Suspense fallback={…}>` and `<ErrorBoundary fallback={(error, reset) => …}>`.                                                                      |
+| `createPortal(children, node)`                        | `<Portal mount={node}>`.                                                                                                                             |
+| `{items.map((item) => <Row key={item.id} />)}`        | The same, with `items()`. It compiles to a keyed list; `key` is optional ([JSX](concepts/jsx.md)).                                                   |
+| `className`, `htmlFor`, `style={{ fontWeight: 600 }}` | `class`, `for`, `style={{ "font-weight": 600 }}` (kebab-case keys).                                                                                  |
+| `dangerouslySetInnerHTML={{ __html: html }}`          | `innerHTML={html}`.                                                                                                                                  |
+| `onChange` on a text input (fires on every keystroke) | `onInput`, or `bind:value={signal}`. Handlers get native events, so `onChange` fires when the value is committed.                                    |
+| React Router `useBlocker`, `useLocation` effects      | `beforeNavigate((navigation) => navigation.cancel())` and `afterNavigate(fn)` from `lumiose/router` ([hooks](reference/router.md#navigation-hooks)). |
 
 ## What goes away
 

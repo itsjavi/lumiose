@@ -17,6 +17,14 @@ import {
   type SearchParamsInit,
 } from "./router.ts";
 
+export {
+  afterNavigate,
+  beforeNavigate,
+  type AfterNavigate,
+  type BeforeNavigate,
+  type NavigationTarget,
+  type NavigationType,
+} from "./hooks.ts";
 export { Link, type LinkProps, type Prefetch } from "./link.ts";
 export { navigate, isNavigating, type NavigateOptions, type SearchParamsInit };
 

@@ -518,12 +518,15 @@ export function hydrate<P extends object>(
       render(new Cursor([hole(entries(start.nextSibling, end), parent, end)], island));
     } catch (error) {
       if (error !== MISMATCH) {
+        // A component that throws: what it set up goes, the loader reports the error (TASK-305).
+        disposeOwner(owner!);
         throw error;
       }
+    } finally {
+      // Normally each link is restored when its region opens; never leave one redirected.
+      for (const link of island.l) unskip(link);
+      island.l = [];
     }
-    // Normally each link is restored when its region opens; never leave one redirected.
-    for (const link of island.l) unskip(link);
-    island.l = [];
     if (island.f) {
       island.r();
     }

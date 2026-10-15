@@ -85,7 +85,7 @@ mistakes** and **Related diagnostics**. Reference pages list every export with i
 - [`lumiose`: app layer](reference/app.md): `fetchJSON`, `submit`, `isSubmitting`, `actionData`, `invalidate`, `fail`, `redirect`, `notFound`, `error`, `href`, request APIs and types.
 - [`lumiose`: server rendering](reference/server.md): `renderToStream`, `renderToString` and the `lumiose/server` subpath.
 - [`lumiose/dom`](reference/dom.md): `render`, the compiler-runtime contract, `hydrate` (`lumiose/dom/hydrate`) and the island loader (`lumiose/dom/loader`).
-- [`lumiose/router`](reference/router.md): The SPA router: `Link`, `navigate`, `isNavigating`, `searchParams` and reactive route state.
+- [`lumiose/router`](reference/router.md): The SPA router: `Link`, `navigate`, `isNavigating`, `searchParams`, `beforeNavigate`/`afterNavigate` and reactive route state.
 - [`@lumiose/vite`](reference/vite.md): The Vite plugin and its options.
 - [JSX types and tsconfig](reference/jsx.md): `lumiose/jsx-runtime`, `lumiose/env` and the required `tsconfig.json`.
 - [CLI](reference/cli.md): `lumiose dev`, `build`, `preview`, `check`, `typegen`, `routes`, `lint`, `fmt`, `docs`, `explain`, `agents init` and `mcp`; `--format json` and exit codes.
@@ -320,31 +320,32 @@ runs again, and signals created in the body start fresh ([Async components](conc
 
 ## From React to Lumiose
 
-| React                                                 | Lumiose                                                                                                                                         |
-| ----------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
-| `const [count, setCount] = useState(0)`               | `const count = signal(0)`: read `count()`, write `count.set(1)` or `count.update((n) => n + 1)`.                                                |
-| `useReducer(reducer, init)`                           | A `store()` plus the functions that change it ([a store with actions](concepts/state.md#a-store-with-actions-zustand-style)).                   |
-| `useMemo(() => a * b, [a, b])`                        | `computed(() => a() * b())`, or a plain function `() => a() * b()` for cheap derivations.                                                       |
-| `useCallback(fn, deps)`, `React.memo(Component)`      | Not needed: functions are created once and components don't re-render.                                                                          |
-| `useEffect(fn, [deps])`                               | `effect(fn)`: it tracks what it reads. Return a cleanup, as in React.                                                                           |
-| `useEffect(fn, [])`                                   | `onMount(fn)`: runs once, untracked, after mount. It may return a cleanup.                                                                      |
-| `useLayoutEffect(fn, deps)`                           | `effect(fn)` or `onMount(fn)`: there is one kind of effect, and it runs after the DOM writes of the same flush.                                 |
-| Cleanup returned from `useEffect`, `AbortController`  | `onCleanup(fn)`, and `getAbortSignal()`, aborted when the owner is disposed or the effect re-runs.                                              |
-| `useRef<HTMLInputElement>(null)`                      | `const input = ref<HTMLInputElement>()`, then `<input ref={input} />` and `input()?.focus()`.                                                   |
-| `useRef(value)` for a mutable value                   | A `let` variable in the component body: the body runs once.                                                                                     |
-| `<Ctx.Provider value={v}>`, `useContext(Ctx)`         | `<Ctx value={v}>`, `useContext(Ctx)`. The provider reads `value` once: provide a signal or a store for state that changes.                      |
-| `<ViewTransition>`, `startTransition` around it       | `<ViewTransition name? enter? exit?>`, and the update in `viewTransition(() => …)` ([reference](reference/components.md#viewtransition)).       |
-| `useId()`, `identifierPrefix`                         | `useId()`, and `idPrefix` on `render()` and `renderToStream()` ([useId](reference/reactivity.md#useid)).                                        |
-| `useSyncExternalStore(subscribe, get)`                | A signal set from the store's `subscribe` ([an external store](concepts/state.md#an-external-store-zustandvanilla-a-jotai-store-redux)).        |
-| Fetching in `useEffect`, TanStack Query               | An `async` component that awaits `fetchJSON()` or `query()` ([Async components](concepts/async.md)), or [`@lumiose/query`](reference/query.md). |
-| `useTransition`, `isPending`                          | `isPending()` inside an async component, and `isBusy()` for anything in flight.                                                                 |
-| `useOptimistic(state, update)`                        | `optimistic(source)` ([Data and actions](concepts/data-and-actions.md)).                                                                        |
-| `<Suspense>`, error boundary classes                  | `<Suspense fallback={…}>` and `<ErrorBoundary fallback={(error, reset) => …}>`.                                                                 |
-| `createPortal(children, node)`                        | `<Portal mount={node}>`.                                                                                                                        |
-| `{items.map((item) => <Row key={item.id} />)}`        | The same, with `items()`. It compiles to a keyed list; `key` is optional ([JSX](concepts/jsx.md)).                                              |
-| `className`, `htmlFor`, `style={{ fontWeight: 600 }}` | `class`, `for`, `style={{ "font-weight": 600 }}` (kebab-case keys).                                                                             |
-| `dangerouslySetInnerHTML={{ __html: html }}`          | `innerHTML={html}`.                                                                                                                             |
-| `onChange` on a text input (fires on every keystroke) | `onInput`, or `bind:value={signal}`. Handlers get native events, so `onChange` fires when the value is committed.                               |
+| React                                                 | Lumiose                                                                                                                                              |
+| ----------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `const [count, setCount] = useState(0)`               | `const count = signal(0)`: read `count()`, write `count.set(1)` or `count.update((n) => n + 1)`.                                                     |
+| `useReducer(reducer, init)`                           | A `store()` plus the functions that change it ([a store with actions](concepts/state.md#a-store-with-actions-zustand-style)).                        |
+| `useMemo(() => a * b, [a, b])`                        | `computed(() => a() * b())`, or a plain function `() => a() * b()` for cheap derivations.                                                            |
+| `useCallback(fn, deps)`, `React.memo(Component)`      | Not needed: functions are created once and components don't re-render.                                                                               |
+| `useEffect(fn, [deps])`                               | `effect(fn)`: it tracks what it reads. Return a cleanup, as in React.                                                                                |
+| `useEffect(fn, [])`                                   | `onMount(fn)`: runs once, untracked, after mount. It may return a cleanup.                                                                           |
+| `useLayoutEffect(fn, deps)`                           | `effect(fn)` or `onMount(fn)`: there is one kind of effect, and it runs after the DOM writes of the same flush.                                      |
+| Cleanup returned from `useEffect`, `AbortController`  | `onCleanup(fn)`, and `getAbortSignal()`, aborted when the owner is disposed or the effect re-runs.                                                   |
+| `useRef<HTMLInputElement>(null)`                      | `const input = ref<HTMLInputElement>()`, then `<input ref={input} />` and `input()?.focus()`.                                                        |
+| `useRef(value)` for a mutable value                   | A `let` variable in the component body: the body runs once.                                                                                          |
+| `<Ctx.Provider value={v}>`, `useContext(Ctx)`         | `<Ctx value={v}>`, `useContext(Ctx)`. The provider reads `value` once: provide a signal or a store for state that changes.                           |
+| `<ViewTransition>`, `startTransition` around it       | `<ViewTransition name? enter? exit?>`, and the update in `viewTransition(() => …)` ([reference](reference/components.md#viewtransition)).            |
+| `useId()`, `identifierPrefix`                         | `useId()`, and `idPrefix` on `render()` and `renderToStream()` ([useId](reference/reactivity.md#useid)).                                             |
+| `useSyncExternalStore(subscribe, get)`                | A signal set from the store's `subscribe` ([an external store](concepts/state.md#an-external-store-zustandvanilla-a-jotai-store-redux)).             |
+| Fetching in `useEffect`, TanStack Query               | An `async` component that awaits `fetchJSON()` or `query()` ([Async components](concepts/async.md)), or [`@lumiose/query`](reference/query.md).      |
+| `useTransition`, `isPending`                          | `isPending()` inside an async component, and `isBusy()` for anything in flight.                                                                      |
+| `useOptimistic(state, update)`                        | `optimistic(source)` ([Data and actions](concepts/data-and-actions.md)).                                                                             |
+| `<Suspense>`, error boundary classes                  | `<Suspense fallback={…}>` and `<ErrorBoundary fallback={(error, reset) => …}>`.                                                                      |
+| `createPortal(children, node)`                        | `<Portal mount={node}>`.                                                                                                                             |
+| `{items.map((item) => <Row key={item.id} />)}`        | The same, with `items()`. It compiles to a keyed list; `key` is optional ([JSX](concepts/jsx.md)).                                                   |
+| `className`, `htmlFor`, `style={{ fontWeight: 600 }}` | `class`, `for`, `style={{ "font-weight": 600 }}` (kebab-case keys).                                                                                  |
+| `dangerouslySetInnerHTML={{ __html: html }}`          | `innerHTML={html}`.                                                                                                                                  |
+| `onChange` on a text input (fires on every keystroke) | `onInput`, or `bind:value={signal}`. Handlers get native events, so `onChange` fires when the value is committed.                                    |
+| React Router `useBlocker`, `useLocation` effects      | `beforeNavigate((navigation) => navigation.cancel())` and `afterNavigate(fn)` from `lumiose/router` ([hooks](reference/router.md#navigation-hooks)). |
 
 ## What goes away
 
@@ -1858,7 +1859,10 @@ On the server, the call compiles to an island record: the component's module and
 props, its slots and the hydration strategy. The page HTML contains the server-rendered island
 between comment markers (`<!--l:ID-->…<!--/l:ID-->`) plus a JSON record; a small loader (about 1
 kB) reads the records, arms the triggers and imports the island's module when one fires. Clicks,
-input, submits and key presses that happen before hydration are replayed. Islands work in `static`
+input, submits and key presses that happen before hydration are replayed. An island whose module
+fails to load or whose hydration throws is logged with its module, and those events get their
+default actions (a link still navigates, a form still submits); a module that failed to load is
+loaded again on the next interaction ([details](../reference/dom.md#lumiosedomloader)). Islands work in `static`
 and `server` pages; how they compare with Astro's is in
 [Compared with Astro islands](rendering-modes.md#compared-with-astro-islands), and how a built page
 gets per-reader parts through an island in
@@ -2187,6 +2191,27 @@ Routes with `mode = "spa"` use the client router `lumiose/router` ([reference](.
   does not), and `<ViewTransition>` names the elements that morph.
 - Scroll restoration, focus reset, `not-found` for unknown URLs and `notFound()`, `error` for
   errors.
+- Navigation hooks: `beforeNavigate(fn)` runs before each navigation and may `cancel()` it (to
+  confirm leaving unsaved changes; the browser asks for one that unloads the document), and
+  `afterNavigate(fn)` runs after each completed one and once on mount (page views, focus). They
+  belong to the component that calls them during setup, and work in islands of MPA pages too
+  (`"leave"` and `"enter"` only). See [Navigation hooks](../reference/router.md#navigation-hooks).
+
+```tsx
+import { signal } from "lumiose";
+import { afterNavigate, beforeNavigate } from "lumiose/router";
+
+export function Editor() {
+  const dirty = signal(false);
+  beforeNavigate((navigation) => {
+    if (!dirty()) return;
+    if (navigation.willUnload) navigation.cancel(); // the browser asks
+    else if (!confirm("Discard your changes?")) navigation.cancel();
+  });
+  afterNavigate((navigation) => console.info("page view", navigation.to?.url.pathname));
+  return <textarea onInput={() => dirty.set(true)} />;
+}
+```
 
 > **Status:** file routes, the manifest, matching, typegen, `href()`, the request handler, MPA
 > prefetch and View Transitions, and the SPA router (`lumiose/router`) are available, served by
@@ -2194,16 +2219,17 @@ Routes with `mode = "spa"` use the client router `lumiose/router` ([reference](.
 
 ## API
 
-| API                                                                                                   | Use                                                           |
-| ----------------------------------------------------------------------------------------------------- | ------------------------------------------------------------- |
-| `export default function Page(props: PageProps<"/x/[id]">)`                                           | A page component.                                             |
-| `export default function Layout(props: LayoutProps<"/x">)`                                            | A layout: `{ params, children }`.                             |
-| `params<"/x/[id]">()`                                                                                 | The matched route's params, typed by pattern (server).        |
-| `href(pattern, params?)`                                                                              | Build a URL from a typed route pattern.                       |
-| `Routes`, `RouteParams<P>`, `RouteMap`, `LayoutMap`                                                   | Route types.                                                  |
-| `ErrorPageProps`                                                                                      | Props of `not-found` and `error` pages.                       |
-| `notFound()`, `error(status, message?)`, `redirect(to, status?)`                                      | Stop rendering; see [Server](server.md).                      |
-| `lumiose/router`: `Link`, `navigate`, `isNavigating`, `searchParams`, reactive `url`/`params`/`route` | SPA routes and islands ([reference](../reference/router.md)). |
+| API                                                                                                   | Use                                                                                    |
+| ----------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| `export default function Page(props: PageProps<"/x/[id]">)`                                           | A page component.                                                                      |
+| `export default function Layout(props: LayoutProps<"/x">)`                                            | A layout: `{ params, children }`.                                                      |
+| `params<"/x/[id]">()`                                                                                 | The matched route's params, typed by pattern (server).                                 |
+| `href(pattern, params?)`                                                                              | Build a URL from a typed route pattern.                                                |
+| `Routes`, `RouteParams<P>`, `RouteMap`, `LayoutMap`                                                   | Route types.                                                                           |
+| `ErrorPageProps`                                                                                      | Props of `not-found` and `error` pages.                                                |
+| `notFound()`, `error(status, message?)`, `redirect(to, status?)`                                      | Stop rendering; see [Server](server.md).                                               |
+| `lumiose/router`: `Link`, `navigate`, `isNavigating`, `searchParams`, reactive `url`/`params`/`route` | SPA routes and islands ([reference](../reference/router.md)).                          |
+| `lumiose/router`: `beforeNavigate(fn)`, `afterNavigate(fn)`                                           | Run around navigations; cancel one ([hooks](../reference/router.md#navigation-hooks)). |
 
 ## Example
 
@@ -2287,6 +2313,9 @@ export default function Home() {
 - **Matching `url().pathname` to know which route is showing.** `route() === "/songs/[id]"`
   compares the matched pattern, type-checked against the app's routes.
 - **Route loaders.** There are none: load data in the async page component itself (decision-18).
+- **A custom dialog for leaving the document.** For a navigation that unloads the page
+  (`navigation.willUnload`), `cancel()` makes the browser show its own prompt; a `confirm()` or a
+  modal cannot run there. Ask with your own UI only for navigations inside the SPA.
 - **`mode` that is not a string literal.** `export const mode = getMode()` cannot be read at build
   time (`LUM5002`).
 
@@ -8416,6 +8445,14 @@ island manifest (`virtual:lumiose/islands`, from `@lumiose/vite`), and:
 
 Islands inside slots that an island inserts later are hydrated when they appear.
 
+**When an island fails.** A module that does not load (a deploy replaced its chunk, a network
+error) or a component that throws while it hydrates is logged with the island's ref
+(`Lumiose: hydrate error in island /src/Counter.tsx#Counter`), not left as an unhandled promise
+rejection. The events the island caught are dispatched again without being held back, so their
+default actions run: a link navigates, a form submits to its `action`. A module that did not load
+is imported again on the next interaction with the island; an island whose hydration threw stays
+server HTML.
+
 ## Example
 
 ```tsx check
@@ -8434,13 +8471,15 @@ render(() => <App />, document.getElementById("app")!);
 
 # `lumiose/router`
 
-> The client router for `spa` routes: links, navigation, reactive route state, persistent layouts, transitions and scroll restoration.
+> The client router for `spa` routes: links, navigation, navigation hooks, reactive route state, persistent layouts, transitions and scroll restoration.
 
 `lumiose/router` works inside `spa` routes (`export const mode = "spa"`, or `lumiose({ mode: "spa" })`
-for the whole project); `<Link>` works on MPA pages too (see [Link](#link)). Pages and layouts of an SPA import it like any module; on the server
+for the whole project); `<Link>`, `beforeNavigate()` and `afterNavigate()` work on MPA pages too (see [Link](#link) and
+[Navigation hooks](#navigation-hooks)). Pages and layouts of an SPA import it like any module; on the server
 (`ssr` pages, rendered per request or prerendered at build time) the same names read the request: `params()`, `route()`, `url()` and `searchParams()` return the
-request's values, `<Link>` renders its `<a>`, `isNavigating()` is `false`, and `navigate()` and
-`searchParams.set()` throw (call them from event handlers and effects). Concepts:
+request's values, `<Link>` renders its `<a>`, `isNavigating()` is `false`, `beforeNavigate()` and
+`afterNavigate()` register nothing, and `navigate()` and `searchParams.set()` throw (call them from
+event handlers and effects). Concepts:
 [Routing](../concepts/routing.md), [Rendering modes](../concepts/rendering-modes.md).
 
 ## Components
@@ -8504,6 +8543,81 @@ function isNavigating(): boolean;
 
 Whether a navigation is in flight: from the click until the new page is on screen. Reactive, and
 counted by [`isBusy()`](reactivity.md) (decision-20).
+
+## Navigation hooks
+
+SvelteKit's `beforeNavigate` and `afterNavigate` (decision-50). Call them during component setup,
+like `onMount`: the hook runs while the component is mounted and is removed when it is disposed.
+
+### beforeNavigate
+
+```ts
+function beforeNavigate(fn: (navigation: BeforeNavigate) => void): void;
+
+interface BeforeNavigate {
+  type: "link" | "navigate" | "popstate" | "leave";
+  from: NavigationTarget | null;
+  /** `null` when the next document is outside the app (another origin, or `"leave"`). */
+  to: NavigationTarget | null;
+  /** The document unloads: the navigation is not a client-side one. */
+  willUnload: boolean;
+  cancel(): void;
+}
+
+interface NavigationTarget {
+  url: URL;
+  /** The matched route pattern (`/songs/[id]`); undefined when none matched. */
+  route: Routes | undefined;
+  params: Record<string, string>;
+}
+```
+
+Runs before each navigation away from the current location, before the router loads anything.
+`type` is what started it:
+
+| `type`       | Navigation                                                                                   |
+| ------------ | -------------------------------------------------------------------------------------------- |
+| `"link"`     | A link click (or a `GET` form) to a URL of the SPA, or out of it (`willUnload`).             |
+| `"navigate"` | `navigate()` or `searchParams.set()` (a thrown `redirect()` runs no hook: it continues one). |
+| `"popstate"` | Back/forward.                                                                                |
+| `"leave"`    | The document unloads otherwise: closing the tab, typing a URL, a reload, a `POST` form.      |
+
+`navigation.cancel()` stops it, and the URL stays the current one:
+
+- Inside the SPA, the navigation does not start. Back/forward that the browser does not let the
+  page cancel happens, then the router returns to the entry it left (without the Navigation API,
+  each history entry the router creates stores its index in `history.state` for that).
+- For a navigation that unloads the document (`willUnload`: `"leave"`, or a link or `navigate()`
+  to a page outside the SPA), the browser shows its own "Leave site?" prompt (`beforeunload`): a
+  custom dialog cannot run there. The browser shows it only after the user interacted with the
+  page.
+
+A change of the URL's `#hash` alone is not a navigation for the hooks.
+
+### afterNavigate
+
+```ts
+function afterNavigate(fn: (navigation: AfterNavigate) => void): void;
+
+interface AfterNavigate {
+  type: "enter" | "link" | "navigate" | "popstate";
+  from: NavigationTarget | null;
+  to: NavigationTarget | null;
+  willUnload: boolean;
+}
+```
+
+Runs once per completed client navigation, after the new page is on screen (after a view
+transition's DOM update, not its animation), its scroll position restored and focus reset. A
+navigation that a newer one supersedes or a hook cancels never completes. It also runs once when
+the component mounts, with `type: "enter"` and `from: null`, so the first page view counts too; a
+component that a navigation created gets that navigation's call instead.
+
+### On MPA pages
+
+Islands of `static` and `server` pages have no router, and using the hooks loads none: there,
+`beforeNavigate` sees only `"leave"` (a `beforeunload` listener, added while a hook is registered)
+and `afterNavigate` fires once with `"enter"`, with `route` undefined.
 
 ## Route state
 
@@ -8600,7 +8714,7 @@ the new page is on screen.
   their UI meanwhile) and resolves once they settled. `submit()` redirects navigate through the
   router, and a successful `submit()` invalidates (on MPA pages it does not: that would reload).
 - **Stale modules.** A page module that fails to load (an old chunk after a deploy) loads the URL
-  as a document instead.
+  as a document instead (its hooks already ran: no `"leave"`).
 
 ## Example
 
@@ -8646,12 +8760,37 @@ export default function Songs() {
 ```
 
 ```tsx check file=routes/music/settings/page.tsx
-// src/routes/music/settings/page.tsx
-import { href } from "lumiose";
-import { navigate } from "lumiose/router";
+// src/routes/music/settings/page.tsx: asks before leaving unsaved changes
+import { href, signal } from "lumiose";
+import { afterNavigate, beforeNavigate, navigate } from "lumiose/router";
 
 export default function Settings() {
-  return <button onClick={() => navigate(href("/music"), { replace: true })}>Done</button>;
+  const dirty = signal(false);
+
+  beforeNavigate((navigation) => {
+    if (!dirty()) return;
+    if (navigation.willUnload) navigation.cancel(); // the browser asks
+    else if (!confirm("Discard your changes?")) navigation.cancel();
+  });
+
+  afterNavigate((navigation) => {
+    if (navigation.to !== null) console.info("page view", navigation.to.url.pathname);
+  });
+
+  return (
+    <form>
+      <input name="volume" onInput={() => dirty.set(true)} />
+      <button
+        type="button"
+        onClick={() => {
+          dirty.set(false);
+          void navigate(href("/music"), { replace: true });
+        }}
+      >
+        Done
+      </button>
+    </form>
+  );
 }
 ```
 
