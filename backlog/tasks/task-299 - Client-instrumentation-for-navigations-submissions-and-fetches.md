@@ -5,6 +5,7 @@ status: To Do
 assignee:
   - '@Spark'
 created_date: '2026-10-15 02:22'
+updated_date: '2026-10-15 03:16'
 labels:
   - observability
 milestone: m-10
@@ -20,7 +21,7 @@ ordinal: 301000
 <!-- SECTION:DESCRIPTION:BEGIN -->
 Nothing reports what happens in the browser: SPA navigations, `submit()` calls, `fetchJSON` and `query` requests, island hydration, and uncaught errors in islands. React Router instruments its client router; Lumiose apps have to patch these by hand.
 
-Outcome (shape approved in the design task): client hooks, registered from the client entry hook, that wrap navigations, submissions, data fetches and hydration with their route and timing, and receive uncaught island and router errors. They cost nothing when unused and map onto OpenTelemetry web spans without a dependency.
+Approved shape (decision-49): `src/instrumentation.client.ts` exports `onError(error, info)` for island errors (`"hydrate"`, `"render"`, `"effect"`), router errors (`"navigate"`) and `submit()` rejections (`"submit"`), and `instrumentations`: observers wrapping `navigate`, `submit`, `fetch` (`fetchJSON` and `query`) and `hydrate` (each island), with the server's observer rules. Exports that do not exist cost nothing: the build drops the dispatch code. TASK-305 makes island load failures reportable first.
 
 Code: packages/lumiose/src/app/router, packages/lumiose/src/dom, and packages/lumiose/src/app/actions (Nova's area: coordinate with Nova).
 <!-- SECTION:DESCRIPTION:END -->

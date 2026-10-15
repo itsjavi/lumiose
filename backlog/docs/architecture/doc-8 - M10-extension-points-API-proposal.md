@@ -3,31 +3,29 @@ id: doc-8
 title: M10 extension points API proposal
 type: specification
 created_date: '2026-10-15 02:39'
-updated_date: '2026-10-15 02:39'
+updated_date: '2026-10-15 03:16'
 ---
 # M10 extension points: API proposal
 
-Status (2026-10-15): **proposal**, waiting for the user's review (TASK-293). Nothing here is decided. Each approved item becomes a decision and updates its implementation task; rejected items close theirs.
+Status (2026-10-15): **approved** by the user (TASK-293). Every recommendation was approved as proposed, with one change: the instrumentation files are `src/instrumentation.server.ts` and `src/instrumentation.client.ts` (also `.js` and `.mjs`), not NX's `instrumentation.ts` and `instrumentation-client.ts`. In each section's questions, the bold answer is the approved one. Recorded as decision-48 to decision-52; the render customization gaps raised during the review became TASK-306.
 
 Abbreviations: RR = React Router 7, NX = Next.js 16, SK = SvelteKit 2, SR = Solid Router, AS = Astro 5, TQ = TanStack Query 5.
 
-## What you are asked to approve
+## Approved API
 
 | #   | Feature                | Proposed API                                                                           | Task     |
 | --- | ---------------------- | -------------------------------------------------------------------------------------- | -------- |
 | 1   | Folder middleware      | `middleware.ts` in route folders, and `ctx.route` in every middleware                  | TASK-294 |
-| 2   | Client entry           | `src/instrumentation-client.ts`, run before hydration on every page                    | TASK-295 |
+| 2   | Client entry           | `src/instrumentation.client.ts`, run before hydration on every page                    | TASK-295 |
 | 3   | Router hooks           | `beforeNavigate(fn)` and `afterNavigate(fn)` from `lumiose/router`                     | TASK-296 |
 | 4   | Submissions            | `submission<typeof actions.x>()`: `{ submit, isSubmitting, result, error, abort, reset }` | TASK-297 |
-| 5   | Server instrumentation | `src/instrumentation.ts`: `register`, `onRequestError`, `instrumentations`             | TASK-298 |
-| 6   | Client instrumentation | `onError` and `instrumentations` exports of `src/instrumentation-client.ts`            | TASK-299 |
+| 5   | Server instrumentation | `src/instrumentation.server.ts`: `register`, `onRequestError`, `instrumentations`             | TASK-298 |
+| 6   | Client instrumentation | `onError` and `instrumentations` exports of `src/instrumentation.client.ts`            | TASK-299 |
 | 7   | Dev handler            | `createDevHandler()` from `@lumiose/vite/dev`                                          | TASK-300 |
-
-Each section ends with the questions for you; the recommended answer comes first.
 
 ## Shared rules
 
-- **Project files** sit in `src/` next to `document.stsx` and `middleware.ts`. Their names follow NX where the behaviour matches (decision-32, decision-42): `instrumentation.ts` and `instrumentation-client.ts` do what NX's files do.
+- **Project files** sit in `src/` next to `document.stsx` and `middleware.ts`. `instrumentation.server.ts` and `instrumentation.client.ts` (also `.js` and `.mjs`) do what NX's `instrumentation.ts` and `instrumentation-client.ts` do, named with Lumiose's suffix rule: the `.server.` segment already makes a file server-only (LUM4003). `.client.` is part of the reserved name only, not a general convention. There are no `entry.server` or `entry.client` files: RR's own those render and hydration, which Lumiose does not expose (decision-32).
 - **Component-scoped hooks** (`beforeNavigate`, `afterNavigate`, `submission`) are called during component setup, like `onMount`, and are removed or aborted when the component is disposed.
 - **Instrumentation observes and never changes behaviour** (RR's model). A wrapper receives `call`, which never throws and resolves to `{ status: "success" }` or `{ status: "error", error }`; it cannot change arguments or results, and an error thrown by a wrapper is logged without affecting the request.
 - **Unused means free.** Without the file or the hook, no code ships to the browser and the server path adds at most one branch per phase, verified with an in-process A/B.
@@ -75,14 +73,14 @@ export default requireAdmin;
 3. `src/routes/middleware.ts`: **a LUM5002 error pointing to `src/middleware.ts`**, keeping one global place, or allowed as "every matched route".
 4. Middleware covering prerendered routes: **a warning** (it runs at build time only), or an error.
 
-## 2. Client entry: `src/instrumentation-client.ts`
+## 2. Client entry: `src/instrumentation.client.ts`
 
 **Problem.** Nothing runs before islands hydrate or the SPA router starts: analytics, error-reporting SDKs, polyfills, global listeners. The island loader and the SPA entry are generated; `src/document.stsx` only renders HTML.
 
 **Proposal.**
 
 ```ts
-// src/instrumentation-client.ts
+// src/instrumentation.client.ts
 import * as Sentry from "@sentry/browser";
 
 Sentry.init({ dsn: import.meta.env.PUBLIC_SENTRY_DSN });
@@ -106,7 +104,7 @@ Sentry.init({ dsn: import.meta.env.PUBLIC_SENTRY_DSN });
 **Prior art.** NX `instrumentation-client.ts` (before hydration, sync code only, `onRouterTransitionStart`). SK `hooks.client.ts` (`init`, `handleError`). RR `entry.client.tsx`.
 
 **Questions.**
-1. The name: **`src/instrumentation-client.ts`**, `src/client.ts`, or `src/hooks.client.ts`.
+1. The name: **`src/instrumentation.client.ts`** (also `.js`, `.mjs`; the user's change from the proposed `src/instrumentation-client.ts`), `src/client.ts`, or `src/hooks.client.ts`.
 2. Pages: **every page**, or only pages that already ship JavaScript.
 3. Top-level `await`: **awaited before hydration**, or not awaited (NX).
 
@@ -206,14 +204,14 @@ export function TodoRow(props: { todo: { id: string; done: boolean } }) {
 2. The members: **`submit`, `isSubmitting`, `result`, `error`, `abort`, `reset`**.
 3. Instances leave `actionData()` alone: **yes**, or also set it.
 
-## 5. Server instrumentation: `src/instrumentation.ts`
+## 5. Server instrumentation: `src/instrumentation.server.ts`
 
 **Problem.** Error reporting is the build handler's `onError` option, which defaults to `console.error`. `@lumiose/adapter-node` and the Cloudflare, Vercel and Netlify adapters create the handler without options, so in production errors only reach the console; `lumiose dev` logs them to Vite and the overlay. Errors an `ErrorBoundary` catches are reported only outside dev. Tracing is limited to middleware wrapping `next()`, which does not see the phases inside a request.
 
 **Proposal.**
 
 ```ts
-// src/instrumentation.ts
+// src/instrumentation.server.ts
 import { SpanStatusCode, trace } from "@opentelemetry/api";
 import type { RequestErrorInfo, ServerInstrumentation } from "lumiose";
 
@@ -261,17 +259,17 @@ export const instrumentations: ServerInstrumentation[] = [
 **Prior art.** RR `instrumentations` (`handler.request`; route `loader`, `action`, `middleware`; observe only; `call` never throws). NX `instrumentation.ts` (`register`, `onRequestError(error, request, context)`). SK `instrumentation.server.ts` and `handleError`.
 
 **Questions.**
-1. The file and exports: **`src/instrumentation.ts` with `register`, `onRequestError` and `instrumentations`** (NX plus RR names).
+1. The file and exports: **`src/instrumentation.server.ts` (also `.js`, `.mjs`; the user's change from the proposed `src/instrumentation.ts`) with `register`, `onRequestError` and `instrumentations`** (NX plus RR names).
 2. The phases: **`request`, `middleware`, `action`, `endpoint`, `render`, `stream`**.
 
-## 6. Client instrumentation: exports of `src/instrumentation-client.ts`
+## 6. Client instrumentation: exports of `src/instrumentation.client.ts`
 
 **Problem.** Nothing reports SPA navigations, submissions, `fetchJSON` and `query` requests or island hydration. Errors reach the console at best: the router logs its own, and an island whose chunk fails to load or whose hydration throws ends in an unhandled promise rejection.
 
 **Proposal.**
 
 ```ts
-// src/instrumentation-client.ts
+// src/instrumentation.client.ts
 import type { ClientErrorInfo, ClientInstrumentation } from "lumiose";
 
 export function onError(error: unknown, info: ClientErrorInfo) {
@@ -357,6 +355,18 @@ server.listen(3000);
 - An island whose chunk fails to load or whose hydration throws ends in an unhandled promise rejection (`void load().then(…)` in `packages/lumiose/src/dom/islands.ts`, no catch), stays dead and keeps the events it captured. Recorded as its own task; feature 6 then reports these errors.
 - Errors an `ErrorBoundary` catches on the server are reported only outside dev (feature 5 changes that).
 
-## After approval
+## Render customization (raised in the review)
 
-Each approved feature becomes one decision (its file names, exports and semantics), linked from its task; the task's description and acceptance criteria are updated to the approved shape. TASK-294 has no dependency on the others; TASK-295 comes before TASK-299.
+Lumiose has no hook to customise server rendering, and none is planned as a file: `document.stsx` owns the HTML, middleware the headers and response body, `csp: "strict"` the nonces, and `instrumentation.server.ts` the errors. Two gaps remain, planned as small declarative options in TASK-306: fully resolved responses for crawlers that do not run JavaScript (today only prerendering waits for every boundary) and a streaming timeout (today a slow boundary holds the response until the client goes away).
+
+## Recorded as
+
+| Decision    | Covers                                                                          | Tasks                        |
+| ----------- | ------------------------------------------------------------------------------- | ---------------------------- |
+| decision-48 | Folder middleware and `ctx.route` (feature 1)                                   | TASK-294                     |
+| decision-49 | The instrumentation files, their timing, exports and phases (features 2, 5, 6) | TASK-295, TASK-298, TASK-299 |
+| decision-50 | `beforeNavigate` and `afterNavigate` (feature 3)                                | TASK-296                     |
+| decision-51 | `submission()` (feature 4)                                                      | TASK-297                     |
+| decision-52 | `createDevHandler()` (feature 7)                                                | TASK-300                     |
+
+Features 2, 5 and 6 share one decision because they share the two files. TASK-294 has no dependency on the others; TASK-295 comes before TASK-299.

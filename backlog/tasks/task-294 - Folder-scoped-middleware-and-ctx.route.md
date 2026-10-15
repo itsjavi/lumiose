@@ -5,6 +5,7 @@ status: To Do
 assignee:
   - '@Nova'
 created_date: '2026-10-15 02:22'
+updated_date: '2026-10-15 03:16'
 labels:
   - middleware
   - routing
@@ -20,7 +21,7 @@ ordinal: 296000
 <!-- SECTION:DESCRIPTION:BEGIN -->
 Today the only middleware is `src/middleware.ts` (a function or an array), run for every page, form action and endpoint. Scoping it means testing `ctx.url.pathname`, and `ctx` has no matched route pattern. A layout can guard with `locals()` and `redirect()`, but that guard does not cover the folder's form actions or `route.ts` endpoints, so auth for a section such as `/admin` has no safe per-folder home.
 
-Outcome (shape approved in the design task): a `middleware.ts` in a route folder runs for the pages, actions and endpoints below it, after `src/middleware.ts` and outermost first, and every middleware gets the matched pattern as `ctx.route`, typed by the routes table. Questions for the design: `static` and prerendered routes (in production, static files are served without middleware), i18n locale prefixes, groups and optional segments, and how `lumiose routes` shows middleware.
+Approved shape (decision-48): a `middleware.ts` in a route folder (same extensions as `src/middleware.ts`) runs for the pages, form actions and endpoints in its folder and below, group folders included, after `src/middleware.ts` and the route's locale checks, outermost folder first. `ctx.route` is the matched pattern (`undefined` in `src/middleware.ts` for unmatched URLs), and `Middleware<"/folder">` types `ctx.params` and `ctx.route`. `src/routes/middleware.ts` is LUM5002, pointing to `src/middleware.ts`. Folder middleware runs per request, for every route in dev, and at build time for prerendered pages; covering a prerendered route is a warning in `lumiose check` and the build. The manifest gives each page and endpoint a `middleware` list, built like `layouts`.
 
 Code: packages/vite/src/app/project.ts (MIDDLEWARE_FILES), packages/vite/src/app/routes, packages/lumiose/src/app/server/handler.ts.
 <!-- SECTION:DESCRIPTION:END -->
@@ -33,4 +34,5 @@ Code: packages/vite/src/app/project.ts (MIDDLEWARE_FILES), packages/vite/src/app
 - [ ] #4 lumiose routes lists each route's middleware chain
 - [ ] #5 Tests cover order, scoping, actions, endpoints, groups and optional segments
 - [ ] #6 concepts/server.md, concepts/routing.md, reference/app.md and the Coming from guides are updated
+- [ ] #7 src/routes/middleware.ts is a LUM5002 error that points to src/middleware.ts
 <!-- AC:END -->

@@ -5,6 +5,7 @@ status: To Do
 assignee:
   - '@Nova'
 created_date: '2026-10-15 02:22'
+updated_date: '2026-10-15 03:16'
 labels:
   - dev-server
 milestone: m-10
@@ -19,7 +20,7 @@ ordinal: 302000
 <!-- SECTION:DESCRIPTION:BEGIN -->
 A custom server works only with the build: `dist/server/entry.js`, its `createHandler()` and `@lumiose/adapter-node`. In dev the app runs inside `lumiose dev`, so a project with its own Express, Hono or Node server keeps two setups, and WebSocket upgrades need a separate Vite plugin in dev (guides/realtime.md). React Router lets a custom server mount the dev build through Vite's middleware mode.
 
-Outcome (shape approved in the design task): a dev handler that a project's own server mounts in dev, with HMR, the diagnostics overlay and the same request handling as `lumiose dev`, so one `server.ts` serves dev and production.
+Approved shape (decision-52): `createDevHandler(options?)` from `@lumiose/vite/dev`, next to `lumioseDev()`, starts Vite in middleware mode with the project's config and returns the same Node handler as `@lumiose/adapter-node`'s `createHandler()`, plus `close()`, with the overlay, HMR on `options.server`, server-only reloads and typegen of `lumiose dev`. One `server.ts` uses it in dev and `createHandler()` in production; production never loads Vite.
 
 Code: packages/vite/src/app/dev, packages/adapter-node.
 <!-- SECTION:DESCRIPTION:END -->
