@@ -164,6 +164,11 @@ interface ImportMetaEnv {
 declare module "lumiose" {
   interface Locals {}
 }
+declare module "*module.css" {
+  // import styles from "./card.module.css": the hashed class of each name, class={styles.card}
+  const classNames: { readonly [className: string]: string };
+  export default classNames;
+}
 declare module "*.css" {} // import "./app.css": bundled into the page's CSS
 declare module "*.css?url" {} // export default url: string
 declare module "*.css?inline" {} // export default css: string
@@ -195,6 +200,8 @@ declare module "*.html" {
 Declare known public variables by merging `interface ImportMetaEnv { readonly PUBLIC_API: string }`.
 The built-in members match `vite/client`, so both can be loaded. `vite/client` types the other
 asset imports, bare `.svg` URLs included (see [SVG imports](../concepts/svg.md)). TypeScript checks
-side-effect imports (`noUncheckedSideEffectImports`), hence `*.css`. With `lumiose/env` listed first it also matches
-`*.module.css`, so a CSS module import has no class map type; scoped `<style>` blocks replace CSS
-modules in Lumiose components.
+side-effect imports (`noUncheckedSideEffectImports`), hence `*.css`. CSS modules (`*.module.css`)
+are read-only class maps, with `lumiose/env` alone or with `vite/client` in either order: the
+pattern is declared before `*.css`, which would otherwise match them first, and leaves out the dot
+so that it does not merge with `vite/client`'s own `*.module.css` declaration (a duplicate default
+export when `skipLibCheck` is off). See [Styles](../concepts/styles.md) for using them.

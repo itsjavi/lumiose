@@ -180,6 +180,33 @@ describe("language server (pull diagnostics)", () => {
     expect(codes).not.toContain("css-rcurlyexpected");
   });
 
+  it("types CSS module imports as read-only class maps in .stsx files (TASK-334)", async () => {
+    const path = "src/components/Tile.stsx";
+    const text = [
+      'import styles from "./tile.module.css";',
+      "export function Tile(props: { open: boolean; class?: string }) {",
+      "  return <div class={[styles.tile, props.open && styles.open, props.class]} />;",
+      "}",
+      "<style>",
+      "  div { display: grid; }",
+      "</style>",
+      "",
+    ].join("\n");
+    await server.open(path, text);
+    const report = await server.request<FullDocumentDiagnosticReport>(
+      "textDocument/diagnostic",
+      doc(path),
+    );
+    expect(report.items).toEqual([]);
+    const hover = await server.request<Hover>("textDocument/hover", {
+      ...doc(path),
+      position: positionOf(text, "styles.tile", 1),
+    });
+    expect((hover.contents as MarkupContent).value).toContain(
+      "readonly [className: string]: string",
+    );
+  });
+
   it("sends unsaved buffers to TypeScript as masked text", async () => {
     const edited = card.replace("const gap = 8;", 'const gap: number = "8";');
     server.change(CARD, edited);
