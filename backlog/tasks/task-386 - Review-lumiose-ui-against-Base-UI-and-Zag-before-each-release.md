@@ -5,6 +5,7 @@ status: To Do
 assignee:
   - '@Prism'
 created_date: '2026-10-15 16:55'
+updated_date: '2026-10-15 18:00'
 labels:
   - ui
   - review
@@ -24,4 +25,11 @@ User decision 2026-10-15: @lumiose/ui reaches parity with Base UI's components b
 <!-- AC:BEGIN -->
 - [ ] #1 Each release has a recorded review with its findings as tasks
 - [ ] #2 The pitfall checklist is updated after each review
+- [ ] #3 Each review includes a WCAG 2.2 AA audit with its findings as tasks
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+2026-10-15 (user): @lumiose/ui meets WCAG 2.2 AA (decision-62, doc-9 section 17). The release review includes a WCAG 2.2 AA audit of the shipped primitives and the default theme.
+<!-- SECTION:NOTES:END -->

@@ -5,6 +5,7 @@ status: To Do
 assignee:
   - '@Halo'
 created_date: '2026-10-15 16:46'
+updated_date: '2026-10-15 18:00'
 labels:
   - ui
 milestone: m-12
@@ -24,4 +25,11 @@ Contract: decision-62 (approved by the user on 2026-10-15 from the TASK-332 spik
 <!-- AC:BEGIN -->
 - [ ] #1 Every component has keyboard-contract and axe suites in CI
 - [ ] #2 The screen reader, Firefox and WebKit passes are recorded before 0.1.0
+- [ ] #3 Meets WCAG 2.2 AA (doc-9 section 17): axe with the WCAG A and AA tags passes closed and open, with the default theme, in light and dark, and the manual criteria that apply are checked and recorded
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+2026-10-15 (user): @lumiose/ui meets WCAG 2.2 AA (decision-62, doc-9 section 17).
+<!-- SECTION:NOTES:END -->

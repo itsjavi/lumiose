@@ -5,7 +5,7 @@ status: To Do
 assignee:
   - '@Halo'
 created_date: '2026-10-15 16:46'
-updated_date: '2026-10-15 17:12'
+updated_date: '2026-10-15 18:00'
 labels:
   - ui
 milestone: m-12
@@ -29,6 +29,7 @@ Contract: decision-62 (approved by the user on 2026-10-15 from the TASK-332 spik
 - [ ] #3 Keyboard-contract and axe tests pass
 - [ ] #4 Unstyled: ships only the CSS the primitive needs to work, in one low-priority layer
 - [ ] #5 Passes every item of the "UI primitives pitfall checklist" backlog doc (from Base UI and Zag/Ark) that applies
+- [ ] #6 Meets WCAG 2.2 AA (doc-9 section 17): axe with the WCAG A and AA tags passes closed and open, with the default theme, in light and dark, and the manual criteria that apply are checked and recorded
 <!-- AC:END -->
 
 ## Implementation Notes
@@ -37,4 +38,6 @@ Contract: decision-62 (approved by the user on 2026-10-15 from the TASK-332 spik
 User decision 2026-10-15: @lumiose/ui reaches parity with Base UI's components before 1.0 (Base UI 1.9.0), unstyled, and verified against Base UI and Zag/Ark. Contract: decision-62. The package ships unstyled: only the CSS a primitive needs to work (display, positioning and anchoring, the top layer, CSS variables), in one low-priority layer; no theme, no design tokens. Example styling lives in docs and test pages only. Check the work against the "UI primitives pitfall checklist" backlog doc (from Base UI and Zag/Ark) before Done.
 
 2026-10-15: the pitfall checklist is doc-9. The component gets its rules in the optional default theme (@lumiose/ui/themes/default.css, decision-62); the component itself stays unstyled.
+
+2026-10-15 (user): @lumiose/ui meets WCAG 2.2 AA (decision-62, doc-9 section 17).
 <!-- SECTION:NOTES:END -->

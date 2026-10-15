@@ -5,6 +5,7 @@ status: To Do
 assignee:
   - '@Beacon'
 created_date: '2026-10-15 17:13'
+updated_date: '2026-10-15 18:00'
 labels:
   - ui
   - docs
@@ -33,4 +34,11 @@ It is the default UI docs and getting-started reference, and grows with each com
 - [ ] #2 Every shipped component has a page with a live demo on the default theme, parts, props, events, CSS variables and its keyboard contract
 - [ ] #3 The packaged docs and the site pages come from one source
 - [ ] #4 The section passes the site's axe checks in light and dark
+- [ ] #5 Meets WCAG 2.2 AA (doc-9 section 17): axe with the WCAG A and AA tags passes closed and open, with the default theme, in light and dark, and the manual criteria that apply are checked and recorded
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+2026-10-15 (user): @lumiose/ui meets WCAG 2.2 AA (decision-62, doc-9 section 17).
+<!-- SECTION:NOTES:END -->

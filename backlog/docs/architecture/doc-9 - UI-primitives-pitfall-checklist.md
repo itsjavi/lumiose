@@ -3,7 +3,7 @@ id: doc-9
 title: UI primitives pitfall checklist
 type: specification
 created_date: '2026-10-15 17:11'
-updated_date: '2026-10-15 17:11'
+updated_date: '2026-10-15 18:00'
 ---
 # UI primitives pitfall checklist
 
@@ -342,3 +342,29 @@ Refs: BU `react/src/field/root/FieldRoot.test.tsx`, `react/src/form/Form.test.ts
 - [ ] See the modal-inertness and light-dismiss pitfalls in section 1.
 
 Refs: BU `react/src/toast/useToastManager.test.tsx`, `react/src/toast/viewport/ToastViewport.tsx`; Z `packages/machines/toast/src/toast-group.machine.ts`, `e2e/toast.e2e.ts`.
+
+## 17. WCAG 2.2 AA
+
+Every primitive meets WCAG 2.2 AA (decision-62), as the website does (decision-39).
+- **Automated:** each component's e2e runs axe with the WCAG 2.0, 2.1 and 2.2 A and AA tags (`wcag2a`, `wcag2aa`, `wcag21a`, `wcag21aa`, `wcag22aa`). It runs closed and open, with the default theme, in light and dark, and fails on any violation. Axe's "needs review" results are checked by hand and recorded.
+- **Split of responsibilities:** the components own semantics, keyboard and behaviour. The default theme owns the visual criteria, because the components ship unstyled.
+
+**Components (manual checks axe cannot make):**
+- [ ] 2.1.1 Keyboard and 2.1.2 No Keyboard Trap: every action works from the keyboard. Focus leaves every non-modal widget with Tab. A modal dialog keeps focus inside by design and closes with Escape.
+- [ ] 2.4.3 Focus Order: focus moves in a meaningful order, and returns to the trigger on close.
+- [ ] 2.4.11 Focus Not Obscured (Minimum): a focused element is not hidden by the component's own popups, sticky toasts or scroll-locked layers.
+- [ ] 1.4.13 Content on Hover or Focus (tooltip, preview card, hover-opened popover and menu): the content is dismissible with Escape without moving the pointer, hoverable, and stays until dismissed or no longer relevant.
+- [ ] 2.5.1 Pointer Gestures and 2.5.7 Dragging Movements: swipe (toast, drawer), drag (slider, scroll area) and long press (context menu) each have a single-pointer or keyboard alternative.
+- [ ] 2.5.3 Label in Name: visible labels are part of the accessible name.
+- [ ] 4.1.2 Name, Role, Value: roles, states and properties follow the APG pattern of each widget, and update when the state changes.
+- [ ] 4.1.3 Status Messages: toasts, combobox status and empty states are announced without moving focus (mind the VoiceOver delay, section 1).
+- [ ] 3.3.1 Error Identification, 3.3.2 Labels or Instructions and 3.3.7 Redundant Entry (Field, Form): errors are text, linked with `aria-describedby`, and forms do not ask again for data already given in the same process.
+- [ ] 3.2.1 On Focus and 3.2.2 On Input: focusing or changing a control never navigates or submits on its own (tabs with automatic activation only switch panels).
+
+**Default theme:**
+- [ ] 1.4.3 Contrast (Minimum): text 4.5:1 (3:1 for large text), in light and dark, including disabled-looking states that still carry information, placeholders and muted text.
+- [ ] 1.4.11 Non-text Contrast: borders of controls, focus indicators, checkbox, switch and radio states, and slider tracks reach 3:1 against their surroundings.
+- [ ] 2.4.7 Focus Visible: every focusable part has a visible indicator.
+- [ ] 2.5.8 Target Size (Minimum): pointer targets are at least 24 by 24 CSS pixels, or spaced so that 24px circles do not overlap.
+- [ ] 1.4.4 Resize Text, 1.4.10 Reflow and 1.4.12 Text Spacing: components work at 200% zoom, at 320 CSS pixels wide and with the WCAG text-spacing overrides, without lost content.
+- [ ] 1.4.1 Use of Color: selection, error and checked states are not conveyed by color alone.
