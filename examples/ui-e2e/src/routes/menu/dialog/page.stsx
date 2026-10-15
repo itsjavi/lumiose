@@ -1,0 +1,56 @@
+import { Dialog, Menu } from "@lumiose/ui";
+import { Title } from "lumiose";
+
+// Menus and dialogs together (doc-9 section 1): a menu inside a modal dialog, which must render
+// inside the dialog since the page around it is inert, and a menu item that opens a dialog through
+// an invoker command, after which focus returns to the menu's trigger.
+export default function MenuDialogPage() {
+  return (
+    <>
+      <Title>Menu and Dialog</Title>
+      <h1>Menu and Dialog</h1>
+      <div class="grid">
+        <section aria-labelledby="inside-heading">
+          <h2 id="inside-heading">A menu inside a dialog</h2>
+          <Dialog.Root>
+            <Dialog.Trigger class="lu-button">Edit document</Dialog.Trigger>
+            <Dialog.Popup class="lu-dialog">
+              <Dialog.Title>Edit document</Dialog.Title>
+              <footer>
+                <Menu.Root>
+                  <Menu.Trigger class="lu-button">Insert</Menu.Trigger>
+                  <Menu.Popup class="lu-menu">
+                    <Menu.Item>Image</Menu.Item>
+                    <Menu.Item>Table</Menu.Item>
+                  </Menu.Popup>
+                </Menu.Root>
+                <Dialog.Close class="lu-button">Done</Dialog.Close>
+              </footer>
+            </Dialog.Popup>
+          </Dialog.Root>
+        </section>
+
+        <section aria-labelledby="opens-heading">
+          <h2 id="opens-heading">An item that opens a dialog</h2>
+          <Menu.Root>
+            <Menu.Trigger class="lu-button">File</Menu.Trigger>
+            <Menu.Popup class="lu-menu">
+              <Menu.Item>Save</Menu.Item>
+              <Menu.Item command="show-modal" commandfor="rename-dialog">
+                Rename…
+              </Menu.Item>
+            </Menu.Popup>
+          </Menu.Root>
+          <dialog id="rename-dialog" class="lu-dialog" aria-labelledby="rename-title" closedby="any">
+            <h2 id="rename-title">Rename file</h2>
+            <footer>
+              <button type="button" class="lu-button" command="close" commandfor="rename-dialog">
+                Cancel
+              </button>
+            </footer>
+          </dialog>
+        </section>
+      </div>
+    </>
+  );
+}

@@ -177,6 +177,12 @@ test.describe("keyboard contract (APG Menu Button)", () => {
     await expect(item("Delete")).toBeFocused();
     await page.keyboard.press("Enter");
     await expect(menu).toBeVisible();
+
+    // Enter on a link item follows it and closes the menu.
+    await item("Help").focus();
+    await page.keyboard.press("Enter");
+    await expect(page).toHaveURL(/#help$/);
+    await expect(menu).toBeHidden();
   });
 
   test("Tab closes the menu and moves on; Shift+Tab closes it onto the trigger", async ({
@@ -326,6 +332,14 @@ test.describe("pointer", () => {
     await expect(share).toBeHidden();
     await expect(item("Rename")).toBeFocused();
     await expect(menu).toBeVisible();
+
+    // A click outside closes the whole tree.
+    await item("Share").hover();
+    await expect(share).toBeVisible();
+    await page.getByRole("heading", { name: "Menu", exact: true }).click();
+    await expect(share).toBeHidden();
+    await expect(menu).toBeHidden();
+    await expect(trigger).toBeFocused();
   });
 
   test("a submenu sits at the inline end of its trigger, the menu below its trigger", async ({
@@ -371,6 +385,50 @@ test.describe("pointer", () => {
     await expect(actions(page).item("Rename")).toBeFocused();
     expect(scripts).toEqual([expect.stringMatching(/\/menu\.script-[\w-]+\.js$/)]);
     await expect(page.locator("script[data-l-islands]")).toHaveCount(0);
+  });
+});
+
+test.describe("with dialogs (doc-9 section 1)", () => {
+  test("inside a modal dialog, Escape closes the menu first, then the dialog", async ({ page }) => {
+    await page.goto("/menu/dialog");
+    await page.getByRole("button", { name: "Edit document" }).click();
+    const dialog = page.getByRole("dialog", { name: "Edit document" });
+    const trigger = dialog.getByRole("button", { name: "Insert" });
+    const menu = page.getByRole("menu", { name: "Insert" });
+    await trigger.focus();
+    await page.keyboard.press("Enter");
+    await expect(menuItem(menu, "Image")).toBeFocused();
+    expect(await axe(page)).toEqual([]);
+    await page.keyboard.press("Escape");
+    await expect(menu).toBeHidden();
+    await expect(dialog).toBeVisible();
+    await expect(trigger).toBeFocused();
+    // A click inside the dialog but outside the menu closes the menu only.
+    await trigger.click();
+    await expect(menu).toBeVisible();
+    await dialog.getByRole("heading", { name: "Edit document" }).click();
+    await expect(menu).toBeHidden();
+    await expect(dialog).toBeVisible();
+    await page.keyboard.press("Escape");
+    await expect(dialog).toBeHidden();
+  });
+
+  test("an item that opens a dialog closes the menu, and focus returns to its trigger", async ({
+    page,
+  }) => {
+    await page.goto("/menu/dialog");
+    const trigger = page.getByRole("button", { name: "File" });
+    const menu = page.getByRole("menu", { name: "File" });
+    await trigger.focus();
+    await page.keyboard.press("ArrowUp");
+    await expect(menuItem(menu, "Rename…")).toBeFocused();
+    await page.keyboard.press("Enter");
+    const dialog = page.getByRole("dialog", { name: "Rename file" });
+    await expect(dialog).toBeVisible();
+    await expect(menu).toBeHidden();
+    await page.keyboard.press("Escape");
+    await expect(dialog).toBeHidden();
+    await expect(trigger).toBeFocused();
   });
 });
 
@@ -429,10 +487,24 @@ test.describe("in an island", () => {
     const trigger = page.getByRole("button", { name: "View" });
     const menu = page.getByRole("menu", { name: "View" });
     const from = await center(trigger);
+    // Hydrated: the island's state line answers.
+    await page.getByTestId("toggle-wrap").click();
+    await expect(state(page)).toContainText("wrap: false");
+
+    // A release right after the press opened the menu does not run the item under it.
     await page.mouse.move(from.x, from.y);
     await page.mouse.down();
     await expect(menu).toBeVisible();
     const to = await center(menuItem(menu, "Refresh"));
+    await page.mouse.move(to.x, to.y);
+    await page.mouse.up();
+    await expect(menu).toBeVisible();
+    await expect(state(page)).toContainText("ran: none");
+    await page.keyboard.press("Escape");
+
+    await page.mouse.move(from.x, from.y);
+    await page.mouse.down();
+    await expect(menu).toBeVisible();
     await page.mouse.move(to.x, to.y, { steps: 5 });
     await page.waitForTimeout(250);
     await page.mouse.up();
