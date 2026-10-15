@@ -24,6 +24,7 @@ export default function Layout(props: LayoutProps<"/">) {
         <Link href="/missing">Missing</Link>
         <Link href="/csr">Client-rendered</Link>
         <Link href="/editor">Editor</Link>
+        <Link href="/boom">Boom</Link>
         <a href="/static">Static page</a>
       </nav>
       <button id="root-count" onClick={() => count.update((n) => n + 1)}>

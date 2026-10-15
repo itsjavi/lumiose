@@ -42,6 +42,7 @@ import { signal, type Signal } from "../core/signal.ts";
 import { childFrame, frame, setFrame, type Frame } from "./frame.ts";
 import { hydrator } from "./hydration.ts";
 import { createRange, renderInto, type RangeStart, type Region } from "./insert.ts";
+import { INSTRUMENTED, markRender } from "./instrument.ts";
 
 type AsyncComponent = (props: any) => Promise<Renderable>;
 
@@ -230,6 +231,7 @@ function show(run: AsyncRun, value: Renderable): void {
       setFrame?.(prevFrame);
     }
   } catch (error) {
+    if (INSTRUMENTED) markRender(error);
     handleError(instance.owner, error);
   } finally {
     instance.p.set(false);
@@ -246,6 +248,7 @@ function fail(run: AsyncRun, error: unknown): void {
   const instance = run.i;
   instance.p.set(false);
   instance.r();
+  if (INSTRUMENTED) markRender(error);
   handleError(instance.owner, error);
 }
 

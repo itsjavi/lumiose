@@ -88,6 +88,7 @@ folder under `src/routes` is a URL segment, and `page`, `layout`, `route`, `erro
 | `entry.server.tsx`: `handleRequest`, streaming                                | No file: the handler streams the shell, then `<Suspense>` boundaries; headers go in middleware.                                                                                                                                                                          |
 | `handleError` in `entry.server.tsx`, server `instrumentations`                | `src/instrumentation.server.ts`: `onRequestError(error, info)` with the route and phase, and `instrumentations` that wrap `request`, `middleware`, `action`, `endpoint`, `render` and `stream`; `call()` never throws ([Server](../concepts/server.md#instrumentation)). |
 | `entry.client.tsx`: `hydrateRoot`                                             | No file: the island loader and the SPA entry hydrate. Code that must run before hydration (an SDK, a polyfill) goes in `src/instrumentation.client.ts`, which every page runs first ([Islands](../concepts/islands.md#concept)).                                         |
+| Client `instrumentations` (`router.navigate`, `router.fetch`), client errors  | The `instrumentations` export of `src/instrumentation.client.ts`: `navigate`, `submit`, `fetch` and island `hydrate` wrappers with the same rules, and `onError(error, info)` for island, router and `submit()` errors ([Islands](../concepts/islands.md#concept)).      |
 | `ssr: false` (SPA mode)                                                       | `lumiose({ mode: "spa", ssr: false })`, or `export const ssr = false` on an `spa` route.                                                                                                                                                                                 |
 | `prerender: [...]`                                                            | `static` routes (the default) with `staticPaths()` for params, and `export const prerender = true` on `spa` pages.                                                                                                                                                       |
 | `react-router-serve`                                                          | `@lumiose/adapter-node`'s `createServer()`, or `lumiose preview`; other hosts in [Deploy](../deploy/README.md).                                                                                                                                                          |
@@ -109,14 +110,13 @@ folder under `src/routes` is a URL segment, and `page`, `layout`, `route`, `erro
 
 ## What has no equivalent
 
-| React Router                                                  | Instead                                                                                                                   |
-| ------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| Routes defined in code (`routes.ts`, `route()`)               | File routes only. Colocate components and helpers next to the route; `_private` folders never route.                      |
-| `clientMiddleware`                                            | None. Run the code in the `spa` layout (`effect`, `onMount`) or in the handler that navigates.                            |
-| Client `instrumentations` (`router.navigate`, `router.fetch`) | This version has no client instrumentation hooks: `window` `error` and `unhandledrejection` listeners catch what escapes. |
-| `useFetchers()`                                               | None: `isSubmitting(name)` counts every submission to an action, `isBusy()` anything in flight.                           |
-| `handle` and `useMatches()`                                   | Pass data down as props or context from the layout; compare `route()` with a pattern.                                     |
-| `useNavigation().location` and `.formData`                    | `isNavigating()` for pending UI, and `optimistic()` for the value being submitted.                                        |
+| React Router                                    | Instead                                                                                              |
+| ----------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| Routes defined in code (`routes.ts`, `route()`) | File routes only. Colocate components and helpers next to the route; `_private` folders never route. |
+| `clientMiddleware`                              | None. Run the code in the `spa` layout (`effect`, `onMount`) or in the handler that navigates.       |
+| `useFetchers()`                                 | None: `isSubmitting(name)` counts every submission to an action, `isBusy()` anything in flight.      |
+| `handle` and `useMatches()`                     | Pass data down as props or context from the layout; compare `route()` with a pattern.                |
+| `useNavigation().location` and `.formData`      | `isNavigating()` for pending UI, and `optimistic()` for the value being submitted.                   |
 
 ## Example
 

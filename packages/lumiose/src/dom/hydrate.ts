@@ -33,6 +33,7 @@ import { setFrameHook, withIsland, type AwaitReplay } from "./frame.ts";
 import { ID_PREFIX } from "./id.ts";
 import { hydrator, MISMATCH, setHydrator, type Hydrator } from "./hydration.ts";
 import { insert, type RangeStart } from "./insert.ts";
+import { INSTRUMENTED, ISLAND, islandRefs, notify, phaseOf } from "./instrument.ts";
 
 export type { Hydrator } from "./hydration.ts";
 
@@ -470,13 +471,19 @@ export function hydrate<P extends object>(
   };
 
   let owner: Owner;
+  // Instrumented builds (./instrument.ts): the island's ref, and whether it hydrated, so later
+  // errors reach `onError` (the loader reports those of hydration itself).
+  const ref = INSTRUMENTED ? islandRefs.get(start) : undefined;
+  let hydrated = false;
   const render = (h: Hydrator | undefined): void => {
     owner = createOwner(undefined);
     if (idPrefix) owner.context = { [ID_PREFIX]: idPrefix };
+    if (INSTRUMENTED && ref !== undefined) (owner.context ??= {})[ISLAND] = ref;
     runWithOwner(owner, () => {
       // Mismatches after an await reject their run; the fallback below replaces the island.
       onError((error) => {
         if (error !== MISMATCH) {
+          if (INSTRUMENTED && hydrated) notify(error, phaseOf(error), ref);
           throw error;
         }
       });
@@ -531,5 +538,6 @@ export function hydrate<P extends object>(
       island.r();
     }
   }
+  if (INSTRUMENTED) hydrated = true;
   return () => disposeOwner(owner);
 }

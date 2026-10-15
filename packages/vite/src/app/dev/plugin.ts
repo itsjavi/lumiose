@@ -32,6 +32,7 @@ import type { AppDiagnostic } from "lumiose/internal/app/diagnostics.ts";
 import {
   configProjectOptions,
   DOCUMENT_FILES,
+  CLIENT_HOOKS_DEFINE,
   findAppFile,
   hrefDefine,
   INSTRUMENTATION_CLIENT_FILES,
@@ -407,7 +408,10 @@ export function lumioseDev(options: LumioseDevOptions = {}): Plugin {
       return {
         // No index.html fallback: every non-asset request is a route.
         ...(config.appType === undefined ? { appType: "custom" as const } : {}),
-        define: hrefDefine(trailingSlash),
+        // decision-49: in dev the runtime always calls the hooks of src/instrumentation.client.ts,
+        // so creating or deleting the file needs no restart; without it they are no-ops. Dev's
+        // `import.meta.env` only takes top-level defines.
+        define: { ...hrefDefine(trailingSlash), ...CLIENT_HOOKS_DEFINE },
       };
     },
 

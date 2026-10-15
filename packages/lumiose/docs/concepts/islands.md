@@ -106,7 +106,50 @@ with `<link rel="modulepreload">` for the chunks it imports):
   server-only code is `LUM4003`. An edit reloads the page in `lumiose dev`. With
   `lumiose({ csp: "strict" })` its tags carry the nonce like the loader's.
 
+**Errors and tracing: `onError` and `instrumentations`.** Two optional exports of the file
+receive what happens in the browser, as `src/instrumentation.server.ts` does on the server:
+
+```ts check file=instrumentation.client.ts
+// src/instrumentation.client.ts
+import type { ClientErrorInfo, ClientInstrumentation } from "lumiose";
+
+export function onError(error: unknown, info: ClientErrorInfo) {
+  console.info("report", error, info.phase, info.route, info.island);
+}
+
+export const instrumentations: ClientInstrumentation[] = [
+  {
+    navigate: async (call, info) => {
+      const start = performance.now();
+      const result = await call();
+      console.info(`${info.to?.route}: ${result.status} in ${performance.now() - start} ms`);
+    },
+    hydrate: async (call, info) => {
+      performance.mark(`hydrate ${info.island}`);
+      await call();
+    },
+  },
+];
+```
+
+- **`onError(error, info)`** receives errors of islands, `"hydrate"` (the island's module did not
+  load or its hydration threw), `"render"` (an async component, or what an `<ErrorBoundary>`
+  caught) and `"effect"` (an effect or binding after hydration), of the SPA router, `"navigate"`
+  (a page that throws or whose module does not load), and of `submit()`, `"submit"` (a rejection;
+  not an abort). `info` is `{ phase, route, island }`: the SPA route (undefined on MPA pages) and
+  the island's `module#export`. Errors keep reaching the console as before.
+- **`instrumentations`** wrap `navigate` (`{ type, from, to }`, until the page is on screen),
+  `submit` (`{ action, url }`), `fetch` (each `fetchJSON()` request, `{ url }`, or `query()`
+  function, `{ key }`) and `hydrate` (each island, `{ island }`), each with the current `route`.
+  The rules are the server's: call `call()` where the phase runs and await it to time it; it never
+  throws and resolves to `{ status: "success" }` or `{ status: "error", error }`. A wrapper only
+  observes, what it or `onError` throws is logged, and the first observer is the outermost.
+- **Cost.** They are read before the first island hydrates, so its hydration is observed too.
+  Apps without the file ship none of this code: `lumiose build` turns the runtime's calls on only
+  for apps that have it (about 0.7 kB brotli with islands, the router, actions and `fetchJSON`).
+
 `src/instrumentation.server.ts` is its server counterpart ([Server](server.md#instrumentation)).
+Types: [`lumiose`](../reference/app.md#instrumentation-types).
 
 **Build output.** `lumiose build` puts the Lumiose runtime in one chunk: the island loader's, the SPA
 entry's when the app has no islands, or a shared `lumiose-[hash].js` when it has both. The router's
@@ -145,13 +188,14 @@ showcase app) are left out.
 
 ## API
 
-| API                                                                           | Use                                                                   |
-| ----------------------------------------------------------------------------- | --------------------------------------------------------------------- |
-| `client:load`, `client:idle`, `client:visible`, `client:media`, `client:only` | Make a component instance an island.                                  |
-| `export function X`                                                           | Islands must be exported, so the browser can import them (`LUM4001`). |
-| `*.server.ts`, `src/server/**`                                                | Server-only modules.                                                  |
-| `import.meta.env.PUBLIC_*`                                                    | Env values that may reach islands.                                    |
-| `src/instrumentation.client.ts`                                               | Runs once per page load, before islands hydrate and the SPA starts.   |
+| API                                                                                     | Use                                                                              |
+| --------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
+| `client:load`, `client:idle`, `client:visible`, `client:media`, `client:only`           | Make a component instance an island.                                             |
+| `export function X`                                                                     | Islands must be exported, so the browser can import them (`LUM4001`).            |
+| `*.server.ts`, `src/server/**`                                                          | Server-only modules.                                                             |
+| `import.meta.env.PUBLIC_*`                                                              | Env values that may reach islands.                                               |
+| `src/instrumentation.client.ts`                                                         | Runs once per page load, before islands hydrate and the SPA starts.              |
+| `onError`, `instrumentations` exports of it; `ClientErrorInfo`, `ClientInstrumentation` | Report browser errors; observe hydration, navigations, submissions and requests. |
 
 ## Example
 

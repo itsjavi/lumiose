@@ -16,6 +16,7 @@ import { untrack } from "../core/reactive.ts";
 import { signal } from "../core/signal.ts";
 import { hydrator } from "./hydration.ts";
 import { branch, createRange, renderRange } from "./insert.ts";
+import { INSTRUMENTED, notify } from "./instrument.ts";
 
 export interface SuspenseProps {
   /** Shown while new content below is pending. */
@@ -88,10 +89,19 @@ export function ErrorBoundary(props: ErrorBoundaryProps): Renderable {
     const owner = createOwner(getOwner());
     try {
       return runWithOwner(owner, () => {
-        onError(capture);
+        // Instrumented builds tell `onError` of src/instrumentation.client.ts (./instrument.ts).
+        onError(
+          INSTRUMENTED
+            ? (error) => {
+                notify(error, "render", owner);
+                capture(error);
+              }
+            : capture,
+        );
         return renderRange(() => props.children, 3);
       });
     } catch (error) {
+      if (INSTRUMENTED) notify(error, "render", owner);
       disposeOwner(owner);
       return fallback(error);
     }

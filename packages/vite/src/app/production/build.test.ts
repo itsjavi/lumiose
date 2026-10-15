@@ -271,6 +271,8 @@ export default function Home() {
       read(root, `assets/${file}`),
     );
     expect(chunks.some((code) => code.includes("/src/lib/visits.ts#visits"))).toBe(true);
+    // Without src/instrumentation.client.ts, none of the client instrumentation ships (TASK-299).
+    expect(chunks.join("")).not.toContain("instrumentations wrapper");
     const server = readdirSync(join(root, "dist/server"), { recursive: true, encoding: "utf8" })
       .filter((file) => file.endsWith(".js"))
       .map((file) => readFileSync(join(root, "dist/server", file), "utf8"));
@@ -784,6 +786,8 @@ export default function Live() { return <h1>Live SPA</h1>; }
     const loaderCode = read(root, loader!.slice(1));
     const runtimeCode = runtime.map((file) => read(root, `assets/${file}`)).join("");
     expect(loaderCode + runtimeCode).toContain("script[data-l-client]");
+    // Its `onError` and `instrumentations` are dispatched by the runtime (TASK-299).
+    expect(loaderCode + runtimeCode).toContain("instrumentations wrapper");
 
     // SPA pages, prerendered or rendered per request: the SPA entry passes the gate.
     // `startSpa(islands, config, afterClientEntry(clientEntry()))`, minified.

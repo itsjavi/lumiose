@@ -95,7 +95,9 @@ error) or a component that throws while it hydrates is logged with the island's 
 rejection. The events the island caught are dispatched again without being held back, so their
 default actions run: a link navigates, a form submits to its `action`. A module that did not load
 is imported again on the next interaction with the island; an island whose hydration threw stays
-server HTML.
+server HTML. With `src/instrumentation.client.ts`, its `onError` receives
+the error too (`phase: "hydrate"`), and its `hydrate` wrappers observe each island
+([Islands](../concepts/islands.md#concept)).
 
 ## Example
 

@@ -18,6 +18,7 @@ import {
   type ActionResult,
 } from "./protocol.ts";
 import type { ActionData, ActionFailureData, ActionsExport, ActionSuccessData } from "./types.ts";
+import { INSTRUMENTED, instrument, notify } from "../../dom/instrument.ts";
 
 /** What `submit()` posts: a form, its submit event (`onSubmit={submit}`), or the fields. */
 export type SubmitTarget =
@@ -104,6 +105,9 @@ export function submit(target: SubmitTarget, options: SubmitOptions = {}): Promi
 }
 
 /** `submit()`; `pageData`: whether its result becomes `actionData()` (not for `submission()`). */
+/** Instrumented builds: the `post()` being started is already inside its `submit` wrappers. */
+let observed = false;
+
 async function post(
   target: SubmitTarget,
   options: SubmitOptions,
@@ -126,6 +130,22 @@ async function post(
     document.baseURI,
   );
   const name = actionName(url) ?? "";
+  if (INSTRUMENTED && !observed) {
+    // src/instrumentation.client.ts (decision-49): this post again, inside the `submit` wrappers
+    // (`observed` until its first await), and `onError` for a rejection other than an abort.
+    const sent = instrument("submit", { action: name, url: url.href }, () => {
+      observed = true;
+      try {
+        return post(target, options, pageData);
+      } finally {
+        observed = false;
+      }
+    });
+    sent.catch((error: unknown) => {
+      if ((error as { name?: unknown } | null)?.name !== "AbortError") notify(error, "submit");
+    });
+    return sent;
+  }
   inFlight.update((names) => [...names, name]);
   // Counts toward the app-wide isBusy() summary while in flight (decision-20).
   const endBusy = beginBusy();
