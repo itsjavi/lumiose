@@ -1,11 +1,11 @@
 ---
 id: TASK-365
 title: 'Field, Fieldset, Form and Input'
-status: In Progress
+status: Done
 assignee:
   - '@Halo'
 created_date: '2026-10-15 16:54'
-updated_date: '2026-10-15 21:36'
+updated_date: '2026-10-15 21:46'
 labels:
   - ui
 milestone: m-12
@@ -23,12 +23,12 @@ User decision 2026-10-15: @lumiose/ui reaches parity with Base UI's components b
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Parts, props and events follow Base UI's anatomy within decision-62 (lu- tags, lowercase events, bind: by convention)
-- [ ] #2 Unstyled: the package ships only the CSS the primitive needs to work (display, positioning, CSS variables), in one low-priority layer
-- [ ] #3 Passes every item of the "UI primitives pitfall checklist" backlog doc (from Base UI and Zag/Ark) that applies, plus keyboard-contract and axe tests
-- [ ] #4 A docs page with a type-checked example
-- [ ] #5 Meets WCAG 2.2 AA (doc-9 section 17): axe with the WCAG A and AA tags passes closed and open, with the default theme, in light and dark, and the manual criteria that apply are checked and recorded
-- [ ] #6 Its docs page in packages/ui/docs follows the component template (decision-64) and is listed in @lumiose/ui's llms.txt
+- [x] #1 Parts, props and events follow Base UI's anatomy within decision-62 (lu- tags, lowercase events, bind: by convention)
+- [x] #2 Unstyled: the package ships only the CSS the primitive needs to work (display, positioning, CSS variables), in one low-priority layer
+- [x] #3 Passes every item of the "UI primitives pitfall checklist" backlog doc (from Base UI and Zag/Ark) that applies, plus keyboard-contract and axe tests
+- [x] #4 A docs page with a type-checked example
+- [x] #5 Meets WCAG 2.2 AA (doc-9 section 17): axe with the WCAG A and AA tags passes closed and open, with the default theme, in light and dark, and the manual criteria that apply are checked and recorded
+- [x] #6 Its docs page in packages/ui/docs follows the component template (decision-64) and is listed in @lumiose/ui's llms.txt
 <!-- AC:END -->
 
 ## Implementation Notes
@@ -83,4 +83,12 @@ Field script 1.03 kB (2.60 min / 1.19 gzip); Field component JS 2.05 kB; field.c
 - Field: async `validate` with stale-result handling; `Field.Validity`; state attributes if the user wants Base UI's `data-*` names.
 - apps/web: add the new pages (and Combobox, Select) to `PAGES` and `OPEN_DEMOS` in e2e/a11y.e2e.ts (Beacon's file).
 - Playwright's `toHaveAccessibleDescription` drops an `<output>`'s text (Chromium includes it); the ui-e2e helper `axDescription` reads Chromium's computation.
+
+2026-10-15 (Halo): validation: pnpm check green (typecheck, oxlint, fmt:examples, Vitest 2196 passed / 2 skipped, script tests, lumiose size, cargo test); pnpm pack:check --smoke --skip-npm green; ui-e2e dev and build 301 passed, 7 skipped by design (form suite 17 per project, axe light and dark); apps/web Playwright 99 passed, 4 skipped; docs:check and the cli docs tests (ui contract, examples type-check) green; apps/web ui:demos regenerated (22 demos) and lumiose check clean. No Rust changes.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Field (lu-field with a script that shows the browser's constraint validation in the field and a Form's server errors in the HTML), Fieldset, Form and Input ship as native elements, with docs pages, live demos, theme blocks and e2e. A runtime hydration bug found on the way is described in the notes for Photon or Spark.
+<!-- SECTION:FINAL_SUMMARY:END -->

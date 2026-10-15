@@ -70,12 +70,7 @@ export function FormSignals() {
           The groups come last: a standalone component followed by an element in a component's
           children does not hydrate yet (LUM4006, reported from TASK-365).
         */}
-        <CheckboxGroup
-          name="colours"
-          allValues={COLOURS}
-          bind:value={colours}
-          class="lu-fieldset"
-        >
+        <CheckboxGroup name="colours" allValues={COLOURS} bind:value={colours} class="lu-fieldset">
           <Fieldset.Legend>Colours</Fieldset.Legend>
           <label>
             <Checkbox.Root parent class="lu-checkbox" /> All colours

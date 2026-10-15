@@ -1,11 +1,11 @@
 ---
 id: TASK-367
 title: Radio Group
-status: In Progress
+status: Done
 assignee:
   - '@Halo'
 created_date: '2026-10-15 16:54'
-updated_date: '2026-10-15 21:36'
+updated_date: '2026-10-15 21:46'
 labels:
   - ui
 milestone: m-12
@@ -24,12 +24,12 @@ User decision 2026-10-15: @lumiose/ui reaches parity with Base UI's components b
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Parts, props and events follow Base UI's anatomy within decision-62 (lu- tags, lowercase events, bind: by convention)
-- [ ] #2 Unstyled: the package ships only the CSS the primitive needs to work (display, positioning, CSS variables), in one low-priority layer
-- [ ] #3 Passes every item of the "UI primitives pitfall checklist" backlog doc (from Base UI and Zag/Ark) that applies, plus keyboard-contract and axe tests
-- [ ] #4 A docs page with a type-checked example
-- [ ] #5 Meets WCAG 2.2 AA (doc-9 section 17): axe with the WCAG A and AA tags passes closed and open, with the default theme, in light and dark, and the manual criteria that apply are checked and recorded
-- [ ] #6 Its docs page in packages/ui/docs follows the component template (decision-64) and is listed in @lumiose/ui's llms.txt
+- [x] #1 Parts, props and events follow Base UI's anatomy within decision-62 (lu- tags, lowercase events, bind: by convention)
+- [x] #2 Unstyled: the package ships only the CSS the primitive needs to work (display, positioning, CSS variables), in one low-priority layer
+- [x] #3 Passes every item of the "UI primitives pitfall checklist" backlog doc (from Base UI and Zag/Ark) that applies, plus keyboard-contract and axe tests
+- [x] #4 A docs page with a type-checked example
+- [x] #5 Meets WCAG 2.2 AA (doc-9 section 17): axe with the WCAG A and AA tags passes closed and open, with the default theme, in light and dark, and the manual criteria that apply are checked and recorded
+- [x] #6 Its docs page in packages/ui/docs follows the component template (decision-64) and is listed in @lumiose/ui's llms.txt
 <!-- AC:END -->
 
 ## Implementation Notes
@@ -59,4 +59,12 @@ Base UI RadioGroup/Radio: `value`, `defaultValue`, `onValueChange`, `name`, `dis
 ## New public names (user review)
 
 RadioGroup `value`, `defaultValue`, `onValueChange`, `name`, `required`, `readOnly`; Radio.Root `value`; theme class `lu-radio`; export `/radio-group` (exports `RadioGroup` and `Radio`; the docs page is radio-group.md, titled "Radio").
+
+2026-10-15 (Halo): validation: pnpm check green (typecheck, oxlint, fmt:examples, Vitest 2196 passed / 2 skipped, script tests, lumiose size, cargo test); pnpm pack:check --smoke --skip-npm green; ui-e2e dev and build 301 passed, 7 skipped by design (form suite 17 per project, axe light and dark); apps/web Playwright 99 passed, 4 skipped; docs:check and the cli docs tests (ui contract, examples type-check) green; apps/web ui:demos regenerated (22 demos) and lumiose check clean. No Rust changes.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+RadioGroup and Radio ship as native radios in a fieldset with role radiogroup: roving focus, arrows, forms and reset are the platform's; read-only from the shared script; docs, demo, theme and e2e.
+<!-- SECTION:FINAL_SUMMARY:END -->
