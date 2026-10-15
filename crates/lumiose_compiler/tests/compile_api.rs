@@ -767,6 +767,35 @@ export default function Page() {
 }
 
 #[test]
+fn member_calls_on_imported_modules_are_factory_calls() {
+    let source = r#"import { Toast } from "@lumiose/ui";
+import * as format from "./format.ts";
+export function Toasts(props: { date: Date; name: string }) {
+  const toasts = Toast.createToastManager();
+  const nested = format.intl.create();
+  const day = format.date(props.date);
+  const upper = props.name.toUpperCase();
+  return <p>{toasts.id}{nested.id}{day}{upper}</p>;
+}
+"#;
+    let result = compile(source, "/src/Toasts.tsx", &CompileOptions::default());
+    let stale: Vec<&str> = result
+        .diagnostics
+        .iter()
+        .filter(|d| d.code == Code::StaleDerivedValue)
+        .map(|d| &source[d.span.start as usize..d.span.end as usize])
+        .collect();
+    // TASK-401: a call on an imported module object reads nothing reactive unless its arguments do.
+    assert_eq!(
+        stale,
+        [
+            "day = format.date(props.date)",
+            "upper = props.name.toUpperCase()"
+        ]
+    );
+}
+
+#[test]
 fn stable_list_sources_keep_the_index_without_lum2006() {
     let source = r#"import { signal } from "lumiose";
 const CHANNELS = [{ name: "pulse" }, { name: "wave" }] as const;

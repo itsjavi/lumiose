@@ -165,10 +165,10 @@ const asOptions = (value: ToastOptions | string): ToastOptions =>
 let managers = 0;
 
 /**
- * Makes a toast manager. Create one in a module and import it where toasts are added and shown.
- * Also `Toast.createToastManager()`, as in Base UI.
+ * Makes a toast manager (`Toast.createToastManager()`, as in Base UI). Create one in a module and
+ * import it where toasts are added and shown.
  */
-export function createToastManager(): ToastManager {
+function createToastManager(): ToastManager {
   const prefix = `toast-${(managers += 1)}-`;
   let count = 0;
   const list = signal<ManagedToast[]>([]);

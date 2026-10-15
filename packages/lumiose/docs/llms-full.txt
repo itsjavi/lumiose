@@ -14508,6 +14508,11 @@ const next = url().searchParams.get("next");
 const featured = queries().featuredBooks(6);
 ```
 
+A constant stored straight from a call of a function (`const count = signal(props.start)`) or of a
+member of an imported module (`const toasts = Toast.createToastManager()`) holds what a factory
+made, not a derived value: factories read their arguments on purpose. A call on an imported module
+still warns when its arguments read a signal or a prop (`const day = format.date(props.date)`).
+
 Pages and layouts whose route mode is `static` or `server` render once per request (or build), so
 their own props are plain values too: deriving from them is fine. Routes in `spa` mode, islands
 and other components re-render with new props and still get the warning. `@lumiose/vite`,

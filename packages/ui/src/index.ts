@@ -109,7 +109,7 @@ export type {
   AccordionRootProps,
   AccordionTriggerProps,
 } from "./accordion/accordion.tsx";
-export { createToastManager, Toast } from "./toast/toast.tsx";
+export { Toast } from "./toast/toast.tsx";
 export type {
   ToastActionProps,
   ToastCloseProps,

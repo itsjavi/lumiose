@@ -17,7 +17,9 @@ use oxc_syntax::scope::{ScopeFlags, ScopeId};
 use oxc_syntax::symbol::SymbolId;
 
 pub use components::{is_component_name, is_jsx_like, property_key_name};
-use reactivity::{PropsSymbols, first_reactive_read, server_only_imports, symbol_of};
+use reactivity::{
+    PropsSymbols, first_reactive_read, is_import_member, server_only_imports, symbol_of,
+};
 
 use crate::diagnostics::{Code, Diagnostic};
 use crate::scanner::{Placement, StyleBlock};
@@ -459,18 +461,36 @@ impl<'s> Analyzer<'s> {
         // method calls (`props.name.toUpperCase()`) derive a value.
         let factory_call = matches!(inner, Expression::CallExpression(call)
             if matches!(call.callee.without_parentheses(), Expression::Identifier(_)));
-        let derived = !factory_call
-            && !matches!(
-                inner,
-                Expression::NewExpression(_)
-                    | Expression::AwaitExpression(_)
-                    | Expression::ArrowFunctionExpression(_)
-                    | Expression::FunctionExpression(_)
-                    | Expression::ClassExpression(_)
-                    | Expression::JSXElement(_)
-                    | Expression::JSXFragment(_)
-            )
-            && first_reactive_read(self.scoping, &props, &plain, init).is_some();
+        // So are calls on an imported module object (`Toast.createToastManager()`), unless their
+        // arguments read a reactive value (`format.date(props.date)`) (TASK-401).
+        let module_call = match inner {
+            Expression::CallExpression(call) if is_import_member(self.scoping, &call.callee) => {
+                Some(call)
+            }
+            _ => None,
+        };
+        let derived = if let Some(call) = module_call {
+            call.arguments.iter().any(|argument| {
+                let expr = match argument {
+                    Argument::SpreadElement(spread) => &spread.argument,
+                    argument => argument.to_expression(),
+                };
+                first_reactive_read(self.scoping, &props, &plain, expr).is_some()
+            })
+        } else {
+            !factory_call
+                && !matches!(
+                    inner,
+                    Expression::NewExpression(_)
+                        | Expression::AwaitExpression(_)
+                        | Expression::ArrowFunctionExpression(_)
+                        | Expression::FunctionExpression(_)
+                        | Expression::ClassExpression(_)
+                        | Expression::JSXElement(_)
+                        | Expression::JSXFragment(_)
+                )
+                && first_reactive_read(self.scoping, &props, &plain, init).is_some()
+        };
         if (destructures_props || derived)
             && let Some(frame) = self.frames.last_mut()
         {

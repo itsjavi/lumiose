@@ -1,9 +1,9 @@
 // Generated from packages/ui/docs/toast.md by apps/web/scripts/ui-demos.ts: do not edit.
 // Change the example there and run `pnpm --filter @lumiose/web ui:demos`.
-import { createToastManager, Toast } from "@lumiose/ui";
+import { Toast } from "@lumiose/ui";
 
 export function SaveButton() {
-  const toasts = createToastManager();
+  const toasts = Toast.createToastManager();
   return (
     <Toast.Provider toastManager={toasts}>
       <button

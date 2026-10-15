@@ -13,7 +13,7 @@ use oxc_ast_visit::{Visit, walk};
 use oxc_semantic::Scoping;
 use oxc_span::GetSpan;
 use oxc_syntax::scope::ScopeFlags;
-use oxc_syntax::symbol::SymbolId;
+use oxc_syntax::symbol::{SymbolFlags, SymbolId};
 use std::collections::HashSet;
 
 use crate::span::Span;
@@ -59,6 +59,19 @@ pub fn root_identifier<'b, 'a>(expr: &'b Expression<'a>) -> Option<&'b Identifie
         },
         Expression::CallExpression(call) => root_identifier(&call.callee),
         _ => None,
+    }
+}
+
+/// Whether `callee` is a member of an imported module object (`Toast.createToastManager`,
+/// `ns.a.b`): a static member chain whose root is an import binding.
+pub fn is_import_member(scoping: &Scoping, callee: &Expression<'_>) -> bool {
+    let Expression::StaticMemberExpression(member) = callee.without_parentheses() else {
+        return false;
+    };
+    match member.object.without_parentheses() {
+        Expression::Identifier(ident) => symbol_of(scoping, ident)
+            .is_some_and(|s| scoping.symbol_flags(s).contains(SymbolFlags::Import)),
+        object => is_import_member(scoping, object),
     }
 }
 
