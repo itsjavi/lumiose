@@ -3549,6 +3549,56 @@ export const instrumentations: ClientInstrumentation[] = [
 `src/instrumentation.server.ts` is its server counterpart ([Server](server.md#instrumentation)).
 Types: [`lumiose`](../reference/app.md#instrumentation-types).
 
+**Scripts of server-rendered components: `?client`.** A component that renders on the server and
+needs a small script in the browser, without becoming an island (the definition of a custom
+element it renders, an enhancement of native HTML, a theme toggle), imports the script with the
+`?client` query and calls the import while it renders:
+
+```ts check file=components/copy-button.ts
+// src/components/copy-button.ts: runs in the browser only
+customElements.define(
+  "copy-button",
+  class extends HTMLElement {
+    connectedCallback(): void {
+      this.addEventListener("click", () => {
+        void navigator.clipboard.writeText(this.getAttribute("text") ?? "");
+      });
+    }
+  },
+);
+```
+
+```stsx check file=components/CopyButton.stsx
+// src/components/CopyButton.stsx
+import defineCopyButton from "./copy-button.ts?client";
+
+export function CopyButton(props: { text: string }) {
+  defineCopyButton();
+  return (
+    <copy-button text={props.text}>
+      <button type="button">Copy</button>
+    </copy-button>
+  );
+}
+```
+
+- **Only on the pages that render it.** A page whose render calls the import gets one
+  `<script type="module" async>` for the script, with `<link rel="modulepreload">` for its imports,
+  in the `<head>`, or with the streamed chunk of the `<Suspense>` boundary that rendered it.
+  Without the island runtime: a page with no islands loads the script and nothing else. Pages that
+  import the component without rendering it load nothing.
+- **Never on the server.** The script is not imported on the server, so it may use
+  `customElements`, `document` and `window` at its top level.
+- **Islands and SPA pages** import the script with their own code, before the component runs, and
+  the call does nothing there: a page that gets it both ways runs it once.
+- **Keep it free of the runtime.** A script that imports `lumiose` makes its pages load the
+  runtime. It is client code: only `PUBLIC_*` env reaches it, and importing server-only code is
+  `LUM4003`.
+- **Builds** find `?client` imports in the project and its linked workspace packages, and build
+  each script as a chunk of its own. An import they do not find, such as one in a package installed
+  from npm, is a build warning, and its pages do not load it. In `lumiose dev` the script loads from
+  its own URL. Its type comes from `lumiose/env`: a default export `() => void`.
+
 **Build output.** `lumiose build` puts the Lumiose runtime in one chunk: the island loader's, the SPA
 entry's when the app has no islands, or a shared `lumiose-[hash].js` when it has both. The router's
 History API fallback is a separate chunk, loaded only by browsers without the Navigation API.
@@ -3594,6 +3644,7 @@ showcase app) are left out.
 | `import.meta.env.PUBLIC_*`                                                              | Env values that may reach islands.                                               |
 | `src/instrumentation.client.ts`                                                         | Runs once per page load, before islands hydrate and the SPA starts.              |
 | `onError`, `instrumentations` exports of it; `ClientErrorInfo`, `ClientInstrumentation` | Report browser errors; observe hydration, navigations, submissions and requests. |
+| `import x from "./script.ts?client"`, `x()` while rendering                             | Load a browser script on the pages that render a component, without islands.     |
 
 ## Example
 
@@ -9276,10 +9327,11 @@ yet.
 ## Define the elements in the browser
 
 A custom element must be defined before the component that renders it runs, so that it is already
-upgraded when Lumiose passes it properties. `customElements` exists only in the browser, and
-components are also imported on the server, so load the definitions with a guarded import at the
-top of the island's module. The island then hydrates once the elements exist, and the server
-renders the tags with their attributes:
+upgraded when Lumiose passes it properties. Import the definition with `?client` in the component
+that renders the element, and call the import while it renders ([Islands](../concepts/islands.md),
+"Scripts of server-rendered components"). The definition never runs on the server, where
+`customElements` does not exist. An island imports it before it hydrates, and a page that renders
+the component on the server loads it as a module script of its own, without the island runtime:
 
 ```ts check file=elements/star-rating.ts
 // src/elements/star-rating.ts: a custom element of your own, or a library's entry point
@@ -9346,10 +9398,11 @@ declare module "lumiose/jsx-runtime" {
   }
 }
 
-// Defines <star-rating> in the browser before the island hydrates; the server skips it.
-if (typeof customElements !== "undefined") await import("../elements/star-rating.ts");
+// Defines <star-rating> in the browser: before an island hydrates, or on the pages that render it.
+import defineStarRating from "../elements/star-rating.ts?client";
 
 export function Review(props: { rating: number }) {
+  defineStarRating();
   const rating = signal(props.rating);
   return (
     <figure>
@@ -9429,8 +9482,8 @@ shadow root and properties exist only once the browser defines the element; when
 hydrates, Lumiose sets the properties on the upgraded element. Arrays and objects are not
 attributes: the server leaves them out of the HTML, as React 19 does (`labels` above), and the
 island sets them as properties when it hydrates; functions are left out too. Elements outside
-islands stay server HTML: they upgrade when their definition loads, and read what they need from
-attributes.
+islands stay server HTML: they upgrade when their definition loads (the `?client` script of the
+component that renders them), and read what they need from attributes.
 
 To show the element before its definition loads, style it with `:not(:defined)`:
 
@@ -13002,6 +13055,11 @@ What it does:
   `frontmatter` from `<file>.md?lumiose-frontmatter`, `headings`, relative asset URLs as `?url`
   imports, and client scripts loaded by an island from `<file>.html?lumiose-script`. HTML entries (`index.html`, HTML build inputs) and `public/` files
   stay Vite's. See [Markdown and HTML imports](../concepts/content.md).
+- Loads `?client` imports (`./menu.element.ts?client`): client environments get the module itself
+  and a default export that does nothing; server environments get a default export that adds the
+  module's script to the page being rendered, without running the module. Builds build each script
+  that the project scan finds as a chunk of its own. See
+  [Islands](../concepts/islands.md) ("Scripts of server-rendered components").
 - Hot updates: an edited component re-renders in place, in every instance, and the rest of the page
   keeps its DOM and state (`lumiose dev` registers each named component of client code with
   `lumiose/dom/hot`). Only the components whose code changed re-render; an edit outside every
@@ -13126,14 +13184,14 @@ The generated file, with paths relative to `.lumiose/`:
 }
 ```
 
-| Option                                          | Why                                                                                       |
-| ----------------------------------------------- | ----------------------------------------------------------------------------------------- |
-| `jsx: "preserve"`, `jsxImportSource: "lumiose"` | The Lumiose compiler transforms JSX; TypeScript only checks it against Lumiose's types.   |
-| `rootDirs` with `.lumiose/shadow`               | `import "./X.stsx"` resolves to the shadow file `X.stsx.tsx`.                             |
-| `include` `.lumiose/shadow`, `.lumiose/types`   | Shadow files and generated route types are part of the program.                           |
-| `types: ["lumiose/env"]`                        | The global `JSX` namespace, `import.meta.env`, `Locals` and `.svg`/`.md`/`.html` modules. |
-| `allowImportingTsExtensions`                    | Imports name their extension: `./Card.stsx`, `./tokens.ts`.                               |
-| `skipLibCheck`                                  | Dependencies' `.d.ts` files are not checked: faster, and their type errors are not yours. |
+| Option                                          | Why                                                                                                 |
+| ----------------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| `jsx: "preserve"`, `jsxImportSource: "lumiose"` | The Lumiose compiler transforms JSX; TypeScript only checks it against Lumiose's types.             |
+| `rootDirs` with `.lumiose/shadow`               | `import "./X.stsx"` resolves to the shadow file `X.stsx.tsx`.                                       |
+| `include` `.lumiose/shadow`, `.lumiose/types`   | Shadow files and generated route types are part of the program.                                     |
+| `types: ["lumiose/env"]`                        | The global `JSX` namespace, `import.meta.env`, `Locals` and `.svg`/`.md`/`.html`/`?client` modules. |
+| `allowImportingTsExtensions`                    | Imports name their extension: `./Card.stsx`, `./tokens.ts`.                                         |
+| `skipLibCheck`                                  | Dependencies' `.d.ts` files are not checked: faster, and their type errors are not yours.           |
 
 If you set `include` or `types` yourself, they replace the generated lists: keep `src`,
 `.lumiose/shadow` and `.lumiose/types` in `include`, and `lumiose/env` in `types`. An array `extends`
@@ -13287,6 +13345,11 @@ declare module "*.md" {
 declare module "*.html" {
   const Content: () => JSX.Element;
   export default Content;
+}
+declare module "*?client" {
+  // import defineMenu from "./menu.element.ts?client": call it while rendering
+  const clientScript: () => void;
+  export default clientScript;
 }
 ```
 

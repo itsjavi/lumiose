@@ -42,14 +42,14 @@ The generated file, with paths relative to `.lumiose/`:
 }
 ```
 
-| Option                                          | Why                                                                                       |
-| ----------------------------------------------- | ----------------------------------------------------------------------------------------- |
-| `jsx: "preserve"`, `jsxImportSource: "lumiose"` | The Lumiose compiler transforms JSX; TypeScript only checks it against Lumiose's types.   |
-| `rootDirs` with `.lumiose/shadow`               | `import "./X.stsx"` resolves to the shadow file `X.stsx.tsx`.                             |
-| `include` `.lumiose/shadow`, `.lumiose/types`   | Shadow files and generated route types are part of the program.                           |
-| `types: ["lumiose/env"]`                        | The global `JSX` namespace, `import.meta.env`, `Locals` and `.svg`/`.md`/`.html` modules. |
-| `allowImportingTsExtensions`                    | Imports name their extension: `./Card.stsx`, `./tokens.ts`.                               |
-| `skipLibCheck`                                  | Dependencies' `.d.ts` files are not checked: faster, and their type errors are not yours. |
+| Option                                          | Why                                                                                                 |
+| ----------------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| `jsx: "preserve"`, `jsxImportSource: "lumiose"` | The Lumiose compiler transforms JSX; TypeScript only checks it against Lumiose's types.             |
+| `rootDirs` with `.lumiose/shadow`               | `import "./X.stsx"` resolves to the shadow file `X.stsx.tsx`.                                       |
+| `include` `.lumiose/shadow`, `.lumiose/types`   | Shadow files and generated route types are part of the program.                                     |
+| `types: ["lumiose/env"]`                        | The global `JSX` namespace, `import.meta.env`, `Locals` and `.svg`/`.md`/`.html`/`?client` modules. |
+| `allowImportingTsExtensions`                    | Imports name their extension: `./Card.stsx`, `./tokens.ts`.                                         |
+| `skipLibCheck`                                  | Dependencies' `.d.ts` files are not checked: faster, and their type errors are not yours.           |
 
 If you set `include` or `types` yourself, they replace the generated lists: keep `src`,
 `.lumiose/shadow` and `.lumiose/types` in `include`, and `lumiose/env` in `types`. An array `extends`
@@ -203,6 +203,11 @@ declare module "*.md" {
 declare module "*.html" {
   const Content: () => JSX.Element;
   export default Content;
+}
+declare module "*?client" {
+  // import defineMenu from "./menu.element.ts?client": call it while rendering
+  const clientScript: () => void;
+  export default clientScript;
 }
 ```
 

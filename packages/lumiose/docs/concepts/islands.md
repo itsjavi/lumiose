@@ -165,6 +165,56 @@ export const instrumentations: ClientInstrumentation[] = [
 `src/instrumentation.server.ts` is its server counterpart ([Server](server.md#instrumentation)).
 Types: [`lumiose`](../reference/app.md#instrumentation-types).
 
+**Scripts of server-rendered components: `?client`.** A component that renders on the server and
+needs a small script in the browser, without becoming an island (the definition of a custom
+element it renders, an enhancement of native HTML, a theme toggle), imports the script with the
+`?client` query and calls the import while it renders:
+
+```ts check file=components/copy-button.ts
+// src/components/copy-button.ts: runs in the browser only
+customElements.define(
+  "copy-button",
+  class extends HTMLElement {
+    connectedCallback(): void {
+      this.addEventListener("click", () => {
+        void navigator.clipboard.writeText(this.getAttribute("text") ?? "");
+      });
+    }
+  },
+);
+```
+
+```stsx check file=components/CopyButton.stsx
+// src/components/CopyButton.stsx
+import defineCopyButton from "./copy-button.ts?client";
+
+export function CopyButton(props: { text: string }) {
+  defineCopyButton();
+  return (
+    <copy-button text={props.text}>
+      <button type="button">Copy</button>
+    </copy-button>
+  );
+}
+```
+
+- **Only on the pages that render it.** A page whose render calls the import gets one
+  `<script type="module" async>` for the script, with `<link rel="modulepreload">` for its imports,
+  in the `<head>`, or with the streamed chunk of the `<Suspense>` boundary that rendered it.
+  Without the island runtime: a page with no islands loads the script and nothing else. Pages that
+  import the component without rendering it load nothing.
+- **Never on the server.** The script is not imported on the server, so it may use
+  `customElements`, `document` and `window` at its top level.
+- **Islands and SPA pages** import the script with their own code, before the component runs, and
+  the call does nothing there: a page that gets it both ways runs it once.
+- **Keep it free of the runtime.** A script that imports `lumiose` makes its pages load the
+  runtime. It is client code: only `PUBLIC_*` env reaches it, and importing server-only code is
+  `LUM4003`.
+- **Builds** find `?client` imports in the project and its linked workspace packages, and build
+  each script as a chunk of its own. An import they do not find, such as one in a package installed
+  from npm, is a build warning, and its pages do not load it. In `lumiose dev` the script loads from
+  its own URL. Its type comes from `lumiose/env`: a default export `() => void`.
+
 **Build output.** `lumiose build` puts the Lumiose runtime in one chunk: the island loader's, the SPA
 entry's when the app has no islands, or a shared `lumiose-[hash].js` when it has both. The router's
 History API fallback is a separate chunk, loaded only by browsers without the Navigation API.
@@ -210,6 +260,7 @@ showcase app) are left out.
 | `import.meta.env.PUBLIC_*`                                                              | Env values that may reach islands.                                               |
 | `src/instrumentation.client.ts`                                                         | Runs once per page load, before islands hydrate and the SPA starts.              |
 | `onError`, `instrumentations` exports of it; `ClientErrorInfo`, `ClientInstrumentation` | Report browser errors; observe hydration, navigations, submissions and requests. |
+| `import x from "./script.ts?client"`, `x()` while rendering                             | Load a browser script on the pages that render a component, without islands.     |
 
 ## Example
 

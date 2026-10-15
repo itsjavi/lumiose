@@ -176,10 +176,7 @@ if (typeof document === "undefined") throw new Error("${tag} ran on the server")
 customElements.define("${tag}", class extends HTMLElement { key = key; });
 `;
 /** A component rendering `<tag>`, with its definition as a client script. */
-const component = (
-  name: string,
-  tag: string,
-) => `import define from "./${tag}.element.ts?lumiose-client";
+const component = (name: string, tag: string) => `import define from "./${tag}.element.ts?client";
 export function ${name}(props: { children?: JSX.Element }) {
   define();
   return <${tag}>{props.children}</${tag}>;

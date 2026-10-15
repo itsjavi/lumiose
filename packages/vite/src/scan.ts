@@ -6,7 +6,7 @@
 // - stylesheets the server graph may import (./css-manifest.ts): every Lumiose module with style
 //   blocks, and the CSS files imported by any source module (`import "./app.css"` in a layout);
 // - client scripts of server-rendered components (./client-scripts.ts): imports with the
-//   `?lumiose-client` marker, which the client build builds as entries.
+//   `?client` query, which the client build builds as entries.
 //
 // Lumiose modules are compiled once without CSS; other JS/TS modules are only searched for import
 // specifiers. A specifier found in a comment only builds an unused stylesheet.
@@ -39,7 +39,7 @@ export interface ScannedModule {
   hasStyles: boolean;
   /** Specifiers of the stylesheets it imports (`./app.css`, `pkg/theme.css`). */
   stylesheets: string[];
-  /** Specifiers of the client scripts it imports (`./menu.element.ts?lumiose-client`). */
+  /** Specifiers of the client scripts it imports (`./menu.element.ts?client`). */
   clientScripts?: string[];
 }
 
@@ -113,8 +113,8 @@ export function stylesheetImports(code: string): string[] {
   return [...found];
 }
 
-/** The import marker of client scripts (./client-scripts.ts). */
-const CLIENT_SCRIPT = /\?lumiose-client$/;
+/** The import query of client scripts (./client-scripts.ts, decision-63). */
+const CLIENT_SCRIPT = /\?client$/;
 
 export function clientScriptImports(code: string): string[] {
   const found = new Set<string>();

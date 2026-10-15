@@ -29,6 +29,23 @@
       "runtimeArgs": ["--dir", "examples/ssr-bookshelf", "run", "dev", "--port", "5198"],
       "port": 5198,
       "url": "http://localhost:5198"
+    },
+    {
+      "name": "ui-showcase",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": [
+        "--dir",
+        "examples/ui-spike",
+        "exec",
+        "lumiose",
+        "dev",
+        "--root",
+        "../../.local/ui-showcase",
+        "--port",
+        "5420"
+      ],
+      "port": 5420,
+      "url": "http://localhost:5420"
     }
   ]
 }
