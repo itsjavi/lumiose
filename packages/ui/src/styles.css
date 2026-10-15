@@ -1,7 +1,8 @@
 /*
  * The CSS every @lumiose/ui component needs to work, and nothing else: the package is unstyled
- * (decision-62). It all sits in the `lu` cascade layer, so any app CSS outside layers wins.
+ * (decision-62). It sits in the `lu.core` layer, below the optional theme's `lu.theme`
+ * (`@lumiose/ui/themes/default.css`), so any app CSS outside layers wins over both.
  */
-@layer lu;
+@layer lu.core, lu.theme;
 
 @import "./dialog/dialog.css";

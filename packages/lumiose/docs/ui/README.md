@@ -1,6 +1,6 @@
 # UI components
 
-> `@lumiose/ui`: accessible, unstyled UI primitives built on native elements (`<dialog>`, popover, invoker commands, CSS anchor positioning), server-rendered without hydration. You style them with your own CSS.
+> `@lumiose/ui`: accessible, unstyled UI primitives built on native elements (`<dialog>`, popover, invoker commands, CSS anchor positioning), server-rendered without hydration. Style them with your own CSS or the optional default theme.
 
 **Status:** in development. `@lumiose/ui` keeps its own 0.x versions, apart from the version all
 other Lumiose packages share, and is not on npm yet: today it is used from this repository's
@@ -32,20 +32,58 @@ This is the approach of [Timeless](https://timeless.build), ported to Lumiose.
 
 ## Styling
 
-`@lumiose/ui` is **unstyled**: no theme and no design tokens. Its stylesheets hold only what a
-component needs to work (display, positioning and anchoring, the top layer, the CSS variables a
-component sets), all in one cascade layer, `lu`:
+`@lumiose/ui` is **unstyled**: its stylesheets hold only what a component needs to work
+(display, positioning and anchoring, the top layer, the CSS variables a component sets), in the
+`lu.core` cascade layer. A look is opt-in: the default theme, or your own CSS.
 
 ```ts
-import "@lumiose/ui/styles.css"; // what every component needs
-
-// or only what a page uses:
-import "@lumiose/ui/dialog.css";
+import "@lumiose/ui/styles.css"; // what every component needs (or "@lumiose/ui/dialog.css", …)
+import "@lumiose/ui/themes/default.css"; // optional: the default theme
 ```
 
-CSS outside layers always wins over layered CSS, so your own stylesheets override the package's
-without specificity games. If your app orders its own layers, put `lu` first:
-`@layer lu, reset, components;`.
+Both stylesheets declare the layers `lu.core, lu.theme`, in that order. CSS outside layers always
+wins over layered CSS, so your own stylesheets override the package's without specificity games.
+If your app orders its own layers, put `lu` first: `@layer lu, reset, components;`.
+
+### The default theme
+
+`@lumiose/ui/themes/default.css` is a ready look for demos, prototypes and getting started: neutral
+surfaces, a blue primary, light and dark. It styles a few classes, which you put on the parts
+through their `class` prop:
+
+| Class       | On                  | Variants                                                                |
+| ----------- | ------------------- | ----------------------------------------------------------------------- |
+| `lu-button` | any `<button>` part | `data-variant="primary"`, `data-variant="destructive"`                  |
+| `lu-dialog` | `Dialog.Popup`      | Styles the backdrop, the title, the description and a `<footer>` inside |
+
+Its colours and radius are custom properties with shadcn/ui's names and a `--lu-` prefix, so a
+shadcn palette carries over:
+
+| Property                                          | Used for                            |
+| ------------------------------------------------- | ----------------------------------- |
+| `--lu-background`, `--lu-foreground`              | Page-level surfaces and text        |
+| `--lu-card`, `--lu-card-foreground`               | Cards                               |
+| `--lu-popover`, `--lu-popover-foreground`         | Dialogs, popovers, menus            |
+| `--lu-primary`, `--lu-primary-foreground`         | Primary actions                     |
+| `--lu-secondary`, `--lu-secondary-foreground`     | Secondary actions                   |
+| `--lu-muted`, `--lu-muted-foreground`             | Subdued surfaces and text           |
+| `--lu-accent`, `--lu-accent-foreground`           | Hover and highlighted items         |
+| `--lu-destructive`, `--lu-destructive-foreground` | Destructive actions                 |
+| `--lu-border`, `--lu-input`, `--lu-ring`          | Borders, field borders, focus rings |
+| `--lu-radius`                                     | Corner radius                       |
+
+The theme sets `color-scheme: light dark` on `:root` and every colour with `light-dark()`, so it
+follows the system. Set `color-scheme: light` (or `dark`) on `:root` or on any element to force
+one, and redefine a property outside layers to change it:
+
+```css
+:root {
+  --lu-primary: #7c3aed;
+  --lu-radius: 0.375rem;
+}
+```
+
+### Your own CSS
 
 Style the parts through:
 

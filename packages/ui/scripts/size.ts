@@ -4,7 +4,8 @@
 //
 // - Elements JS: the `lu-*` custom element definitions a server-rendered page loads for it.
 // - Component JS: the component compiled for the browser, as an island that uses it loads it.
-// - CSS: its stylesheet, the CSS it needs to work (the package is unstyled).
+// - CSS: its stylesheet, the CSS it needs to work (the package is unstyled). Themes are opt-in
+//   and reported on their own rows.
 //
 // Each cell is its own Vite build (Rolldown, minified, tree-shaken), so shared code counts in every
 // row that needs it, as a page with only that component would load it.
@@ -24,6 +25,9 @@ interface Component {
   elements: string[];
   css: string;
 }
+
+/** The optional themes (`@lumiose/ui/themes/<name>.css`), all components included. */
+const THEMES = ["default"];
 
 const COMPONENTS: Component[] = [
   { name: "dialog", module: "dialog/dialog.tsx", elements: [], css: "dialog/dialog.css" },
@@ -103,6 +107,8 @@ for (const component of COMPONENTS) {
     `| ${component.name} | ${await js(component.elements)} | ${componentJs} | ${await css([component.css])} |`,
   );
 }
+for (const theme of THEMES)
+  console.log(`| theme: ${theme} | | | ${await css([`themes/${theme}.css`])} |`);
 const everything = `export * from "${src}index.ts";`;
 console.log(
   `| everything | ${await js(COMPONENTS.flatMap((c) => c.elements))} | ${cell(await bundle(everything, "js"))} | ${await css(["styles.css"])} |`,

@@ -1,4 +1,5 @@
 import "@lumiose/ui/styles.css";
+import "@lumiose/ui/themes/default.css";
 import "../example.css";
 import type { LayoutProps } from "lumiose";
 

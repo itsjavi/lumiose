@@ -8,18 +8,18 @@ export function DialogSignals(props: { initiallyOpen?: boolean }) {
   return (
     <section>
       <Dialog.Root open={open()} onOpenChange={(next) => open.set(next)}>
-        <Dialog.Trigger class="button">Edit profile</Dialog.Trigger>
+        <Dialog.Trigger class="lu-button">Edit profile</Dialog.Trigger>
         <Dialog.Popup
-          class="dialog"
+          class="lu-dialog"
           on:close={(event) => returned.set(event.currentTarget.returnValue)}
         >
           <Dialog.Title>Edit profile</Dialog.Title>
           <Dialog.Description>Opened from the trigger or from a signal.</Dialog.Description>
           <footer>
-            <Dialog.Close class="button" value="cancel">
+            <Dialog.Close class="lu-button" value="cancel">
               Cancel
             </Dialog.Close>
-            <Dialog.Close class="button" value="save">
+            <Dialog.Close class="lu-button" value="save">
               Save
             </Dialog.Close>
           </footer>
@@ -27,7 +27,7 @@ export function DialogSignals(props: { initiallyOpen?: boolean }) {
       </Dialog.Root>
       <button
         type="button"
-        class="button"
+        class="lu-button"
         data-testid="open-by-signal"
         onClick={() => open.set(true)}
       >

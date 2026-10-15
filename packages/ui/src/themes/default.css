@@ -1,0 +1,153 @@
+/*
+ * @lumiose/ui's default theme (decision-62): opt-in, for demos, getting started and the docs. It
+ * styles the classes below, which you put on the parts through their `class` prop, and nothing
+ * else. Every colour, radius and ring comes from a `--lu-` custom property named as in shadcn/ui,
+ * with light and dark values that follow the page's `color-scheme`. All of it sits in the
+ * `lu.theme` layer, above `lu.core`: any app CSS outside layers wins, so set a property on `:root`
+ * (or any subtree) to restyle everything.
+ *
+ *   .lu-button                          a button; data-variant="primary" | "destructive"
+ *   .lu-dialog                          a Dialog.Popup: surface, backdrop, title (h2),
+ *                                       description (p), footer
+ */
+@layer lu.core, lu.theme;
+
+@layer lu.theme {
+  :root {
+    color-scheme: light dark;
+    --lu-background: light-dark(#fff, #09090b);
+    --lu-foreground: light-dark(#09090b, #fafafa);
+    --lu-card: light-dark(#fff, #18181b);
+    --lu-card-foreground: light-dark(#09090b, #fafafa);
+    --lu-popover: light-dark(#fff, #18181b);
+    --lu-popover-foreground: light-dark(#09090b, #fafafa);
+    --lu-primary: #2563eb;
+    --lu-primary-foreground: #fff;
+    --lu-secondary: light-dark(#f4f4f5, #27272a);
+    --lu-secondary-foreground: light-dark(#18181b, #fafafa);
+    --lu-muted: light-dark(#f4f4f5, #27272a);
+    --lu-muted-foreground: light-dark(#71717a, #a1a1aa);
+    --lu-accent: light-dark(#f4f4f5, #27272a);
+    --lu-accent-foreground: light-dark(#18181b, #fafafa);
+    --lu-destructive: #dc2626;
+    --lu-destructive-foreground: #fff;
+    --lu-border: light-dark(#e4e4e7, #3f3f46);
+    --lu-input: light-dark(#d4d4d8, #52525b);
+    --lu-ring: light-dark(#2563eb, #60a5fa);
+    --lu-radius: 0.625rem;
+  }
+
+  /* Button ------------------------------------------------------------------------------------ */
+
+  .lu-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    min-block-size: 2.25rem;
+    padding: 0.5rem 1rem;
+    border: 1px solid var(--lu-input);
+    border-radius: calc(var(--lu-radius) - 2px);
+    background: var(--lu-background);
+    color: var(--lu-foreground);
+    font: inherit;
+    font-size: 0.875rem;
+    font-weight: 500;
+    line-height: 1.25;
+    cursor: pointer;
+  }
+  .lu-button:hover {
+    background: var(--lu-accent);
+    color: var(--lu-accent-foreground);
+  }
+  .lu-button:focus-visible {
+    outline: 2px solid var(--lu-ring);
+    outline-offset: 2px;
+  }
+  .lu-button:disabled,
+  .lu-button[aria-disabled="true"] {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+  .lu-button[data-variant="primary"] {
+    border-color: transparent;
+    background: var(--lu-primary);
+    color: var(--lu-primary-foreground);
+  }
+  .lu-button[data-variant="destructive"] {
+    border-color: transparent;
+    background: var(--lu-destructive);
+    color: var(--lu-destructive-foreground);
+  }
+  .lu-button[data-variant]:hover {
+    background-image: linear-gradient(rgb(0 0 0 / 0.1), rgb(0 0 0 / 0.1));
+  }
+
+  /* Dialog ------------------------------------------------------------------------------------ */
+
+  .lu-dialog {
+    box-sizing: border-box;
+    inline-size: min(32rem, 100vw - 2rem);
+    max-block-size: calc(100dvh - 2rem);
+    padding: 1.5rem;
+    border: 1px solid var(--lu-border);
+    border-radius: var(--lu-radius);
+    background: var(--lu-popover);
+    color: var(--lu-popover-foreground);
+    box-shadow:
+      0 10px 15px -3px rgb(0 0 0 / 0.1),
+      0 4px 6px -4px rgb(0 0 0 / 0.1);
+  }
+  .lu-dialog::backdrop {
+    background: rgb(0 0 0 / 0.5);
+  }
+  .lu-dialog :where(h2) {
+    margin: 0 0 0.5rem;
+    font-size: 1.125rem;
+    font-weight: 600;
+    line-height: 1.3;
+  }
+  .lu-dialog :where(p) {
+    margin: 0 0 1.5rem;
+    color: var(--lu-muted-foreground);
+    font-size: 0.875rem;
+    line-height: 1.5;
+  }
+  .lu-dialog :where(footer) {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: end;
+    gap: 0.5rem;
+  }
+
+  /*
+   * Fade and zoom in and out. `overlay` keeps the dialog in the top layer while it fades out, in
+   * Chromium only: elsewhere it leaves at once.
+   */
+  @media (prefers-reduced-motion: no-preference) {
+    .lu-dialog,
+    .lu-dialog::backdrop {
+      transition:
+        opacity 150ms ease-out,
+        scale 150ms ease-out,
+        overlay 150ms allow-discrete,
+        display 150ms allow-discrete;
+    }
+    .lu-dialog:not([open]),
+    .lu-dialog:not([open])::backdrop {
+      opacity: 0;
+    }
+    .lu-dialog:not([open]) {
+      scale: 0.96;
+    }
+    @starting-style {
+      .lu-dialog[open],
+      .lu-dialog[open]::backdrop {
+        opacity: 0;
+      }
+      .lu-dialog[open] {
+        scale: 0.96;
+      }
+    }
+  }
+}

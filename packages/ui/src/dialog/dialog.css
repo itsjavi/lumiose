@@ -1,11 +1,14 @@
 /*
  * Dialog needs no CSS to open, close, trap focus or make the page inert: the native <dialog>
  * does it. This keeps the page behind a modal dialog from scrolling, as Base UI's and Zag's modal
- * dialogs do. It matches every modal <dialog> on the page, since parts carry no class or
- * attribute of their own (decision-62).
+ * dialogs do, without shifting the layout where the page had a classic scrollbar. It matches every
+ * modal <dialog> on the page, since parts carry no class or attribute of their own (decision-62).
  */
-@layer lu {
+@layer lu.core, lu.theme;
+
+@layer lu.core {
   :root:has(dialog:modal) {
     overflow: hidden;
+    scrollbar-gutter: stable;
   }
 }

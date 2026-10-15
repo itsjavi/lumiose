@@ -10,15 +10,22 @@ Lumiose packages share.
 
 ```tsx
 import { Dialog } from "@lumiose/ui";
-import "@lumiose/ui/styles.css"; // only the CSS the components need to work, in the `lu` layer
+import "@lumiose/ui/styles.css"; // only the CSS the components need to work (`lu.core` layer)
+import "@lumiose/ui/themes/default.css"; // optional look: `--lu-` custom properties, light and dark
 
 <Dialog.Root role="alertdialog">
-  <Dialog.Trigger class="button">Delete project…</Dialog.Trigger>
-  <Dialog.Popup class="dialog">
+  <Dialog.Trigger class="lu-button">Delete project…</Dialog.Trigger>
+  <Dialog.Popup class="lu-dialog">
     <Dialog.Title>Delete project?</Dialog.Title>
     <Dialog.Description>This removes the project and its deployments.</Dialog.Description>
-    <Dialog.Close value="cancel">Cancel</Dialog.Close>
-    <Dialog.Close value="delete">Delete</Dialog.Close>
+    <footer>
+      <Dialog.Close class="lu-button" value="cancel">
+        Cancel
+      </Dialog.Close>
+      <Dialog.Close class="lu-button" data-variant="destructive" value="delete">
+        Delete
+      </Dialog.Close>
+    </footer>
   </Dialog.Popup>
 </Dialog.Root>;
 ```

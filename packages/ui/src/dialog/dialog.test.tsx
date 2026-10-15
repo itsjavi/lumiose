@@ -44,6 +44,7 @@ describe("Dialog on the server", () => {
       command: "show-modal",
       commandfor: dialog.id,
       "aria-haspopup": "dialog",
+      "aria-expanded": "false",
     });
     expect(dialog).toMatchObject({
       role: "alertdialog",
@@ -74,13 +75,27 @@ describe("Dialog on the server", () => {
     expect(dialog.closedby).toBe("any");
   });
 
+  it("references only the Title and Description it renders", async () => {
+    const html = await renderToString(() => (
+      <Dialog.Root>
+        <Dialog.Popup aria-label="Settings">
+          <p>No Title, no Description part.</p>
+        </Dialog.Popup>
+      </Dialog.Root>
+    ));
+    const dialog = attrs(html, "dialog");
+    expect(dialog["aria-label"]).toBe("Settings");
+    expect(dialog).not.toHaveProperty("aria-labelledby");
+    expect(dialog).not.toHaveProperty("aria-describedby");
+  });
+
   it("passes props through, and keeps the wiring when they collide", async () => {
     const html = await renderToString(() => (
       <Dialog.Root>
         <Dialog.Trigger class="trigger" id="open-settings" commandfor="elsewhere" data-x="1">
           Settings
         </Dialog.Trigger>
-        <Dialog.Popup class="popup" closedby="none" id="mine" aria-describedby={undefined}>
+        <Dialog.Popup class="popup" closedby="none" id="mine" aria-describedby="elsewhere">
           <Dialog.Title class="title">Settings</Dialog.Title>
         </Dialog.Popup>
       </Dialog.Root>
@@ -90,8 +105,11 @@ describe("Dialog on the server", () => {
     expect(trigger).toMatchObject({ class: "trigger", id: "open-settings", "data-x": "1" });
     expect(trigger.commandfor).toBe(dialog.id);
     expect(dialog.id).not.toBe("mine");
-    expect(dialog).toMatchObject({ class: "popup", closedby: "none" });
-    expect(dialog).not.toHaveProperty("aria-describedby");
+    expect(dialog).toMatchObject({
+      class: "popup",
+      closedby: "none",
+      "aria-describedby": "elsewhere",
+    });
     expect(attrs(html, "h2").class).toBe("title");
   });
 

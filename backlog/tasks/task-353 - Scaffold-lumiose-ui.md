@@ -1,11 +1,11 @@
 ---
 id: TASK-353
 title: Scaffold @lumiose/ui
-status: In Progress
+status: Done
 assignee:
   - '@Halo'
 created_date: '2026-10-15 16:46'
-updated_date: '2026-10-15 17:12'
+updated_date: '2026-10-15 17:24'
 labels:
   - ui
 milestone: m-12
@@ -23,12 +23,12 @@ Contract: decision-62 (approved by the user on 2026-10-15 from the TASK-332 spik
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 The package builds, type-checks and packs with its own version
-- [ ] #2 pnpm size reports its JS and CSS per component
-- [ ] #3 The docs have a UI section, even if it only lists what is coming
-- [ ] #4 Unstyled: ships only the CSS the primitive needs to work, in one low-priority layer
-- [ ] #5 Passes every item of the "UI primitives pitfall checklist" backlog doc (from Base UI and Zag/Ark) that applies
-- [ ] #6 The package exports @lumiose/ui/themes/default.css, driven by --lu- custom properties, with light and dark
+- [x] #1 The package builds, type-checks and packs with its own version
+- [x] #2 pnpm size reports its JS and CSS per component
+- [x] #3 The docs have a UI section, even if it only lists what is coming
+- [x] #4 Unstyled: ships only the CSS the primitive needs to work, in one low-priority layer
+- [x] #5 Passes every item of the "UI primitives pitfall checklist" backlog doc (from Base UI and Zag/Ark) that applies
+- [x] #6 The package exports @lumiose/ui/themes/default.css, driven by --lu- custom properties, with light and dark
 <!-- AC:END -->
 
 ## Implementation Notes
@@ -47,4 +47,21 @@ User decision 2026-10-15: @lumiose/ui reaches parity with Base UI's components b
 - Size: 'pnpm --filter @lumiose/ui size' prints per component the elements JS (server pages), the component JS compiled for islands and the CSS (min/gzip/brotli), with the lumiose runtime excluded. Report-only: decision-55 measures opt-in packages apart from the runtime caps and sets no cap for them; not wired into pnpm check (root config, Lux's call).
 - Docs: packages/lumiose/docs/ui/README.md and a UI section in the docs index; 'ui/' added to the CLI's section order and to the docs contract test (packages/cli/src/docs, Beacon's area, two lines).
 - Public names beyond decision-62, for the user's review: the 'lu' layer name; the export paths '@lumiose/ui/dialog', '@lumiose/ui/styles.css', '@lumiose/ui/dialog.css'.
+
+2026-10-15 (Halo): after main's second amendment (opt-in default theme, doc-9):
+
+- Layers: the required CSS moved from 'lu' to 'lu.core'; the theme sits in 'lu.theme' above it. Every stylesheet declares '@layer lu.core, lu.theme;' first, so the order holds whichever loads first, and apps that order layers put 'lu' first.
+- @lumiose/ui/themes/default.css (src/themes/default.css): the spike port's look with a blue primary (#2563eb), zinc neutrals, light and dark through light-dark() and 'color-scheme: light dark' on :root, all colours, the radius and the ring from shadcn-named --lu- properties (background, foreground, card, popover, primary, secondary, muted, accent, destructive and their -foreground pairs, border, input, ring, radius). It styles classes the app puts on parts through class props, since parts carry no class of their own: 'lu-button' (data-variant 'primary' | 'destructive') and 'lu-dialog' (surface, backdrop, h2, p and footer inside, fade and zoom). Contrast of every text pair checked against AA (axe passes with dialogs open).
+- pnpm size reports the theme on its own row: 2.71/0.94/0.82 kB (min/gzip/brotli).
+- AC #5 (doc-9): its items are per primitive; for the package itself (layers, no script by default, no theme unless imported) none fails. Dialog's pass is in TASK-355.
+- Touched outside my area for the docs section: apps/web/src/content/content.test.ts (the site's docs nav now lists 'UI'; one line, Beacon's area) besides packages/cli/src/docs (index.ts section order, docs.test.ts, examples.test.ts links @lumiose/ui for type-checked examples).
+- Public names for the user's review (beyond decision-62): layers 'lu.core' and 'lu.theme'; export paths '@lumiose/ui/dialog', '@lumiose/ui/styles.css', '@lumiose/ui/dialog.css', '@lumiose/ui/themes/default.css'; theme classes 'lu-button', 'lu-dialog' and data-variant 'primary' | 'destructive'; the --lu- properties above (names from decision-62's amendment, plus card, popover, secondary and destructive-foreground from shadcn's set).
+- Proposed follow-up (Photon, not created to avoid id clashes between branches): @lumiose/vite compiles Lumiose component packages installed from npm (node_modules .tsx with lumiose as a peer: ssr.noExternal, optimizeDeps.exclude), needed before @lumiose/ui is published.
+- Integration: commits on claude/halo-m12-945f07; Lux merges. TASK-333 (Photon) drops 'private' and wires release:version.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Scaffolded packages/ui (@lumiose/ui 0.0.0, private until TASK-333): per-component exports, .tsx/.css sources shipped for the app's compiler, required CSS in the lu.core layer, the opt-in default theme (@lumiose/ui/themes/default.css, --lu- shadcn-named properties, light and dark) in lu.theme, a per-component JS/CSS size report (pnpm --filter @lumiose/ui size, apart from the runtime caps), and a UI section in the docs.
+<!-- SECTION:FINAL_SUMMARY:END -->

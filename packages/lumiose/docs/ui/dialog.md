@@ -4,7 +4,8 @@
 
 ```ts
 import { Dialog } from "@lumiose/ui"; // or "@lumiose/ui/dialog"
-import "@lumiose/ui/dialog.css"; // optional: locks the page's scroll behind a modal dialog
+import "@lumiose/ui/dialog.css"; // locks the page's scroll behind a modal dialog
+import "@lumiose/ui/themes/default.css"; // optional: the default theme
 ```
 
 ## Anatomy
@@ -20,17 +21,18 @@ import "@lumiose/ui/dialog.css"; // optional: locks the page's scroll behind a m
 </Dialog.Root>
 ```
 
-| Part          | Renders                                                                                                         |
-| ------------- | --------------------------------------------------------------------------------------------------------------- |
-| `Root`        | No element. Holds the state and the ids the other parts share.                                                  |
-| `Trigger`     | `<button type="button" command="show-modal" commandfor="…" aria-haspopup="dialog">`                             |
-| `Popup`       | `<dialog closedby="…" aria-labelledby="…" aria-describedby="…">`, with `role="alertdialog"` for an alert dialog |
-| `Title`       | `<h2>`, which names the dialog.                                                                                 |
-| `Description` | `<p>`, which describes it.                                                                                      |
-| `Close`       | `<button type="button" command="close" commandfor="…">`: its `value` becomes the dialog's `returnValue`.        |
+| Part          | Renders                                                                                                                       |
+| ------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| `Root`        | No element. Holds the state and the ids the other parts share.                                                                |
+| `Trigger`     | `<button type="button" command="show-modal" commandfor="…" aria-haspopup="dialog" aria-expanded="…">`                         |
+| `Popup`       | `<dialog closedby="…">`, labelled by its `Title` and described by its `Description`; `role="alertdialog"` for an alert dialog |
+| `Title`       | `<h2>`, which names the dialog.                                                                                               |
+| `Description` | `<p>`, which describes it.                                                                                                    |
+| `Close`       | `<button type="button" command="close" commandfor="…">`: its `value` becomes the dialog's `returnValue`.                      |
 
-The parts work anywhere inside `Root`: the trigger can sit apart from the popup, and a popup may
-have several close buttons. Place `Root` around a dialog per dialog.
+The trigger can sit anywhere inside `Root`, and a popup may have several close buttons. `Title` and
+`Description` go inside `Popup`. A dialog may contain another `Dialog.Root`: the inner dialog
+opens on top of the outer one.
 
 ## API
 
@@ -48,21 +50,24 @@ Without `open` and `onOpenChange` the dialog keeps its own state.
 
 Each part takes the props of the element it renders (`class`, `style`, `aria-*`, `data-*`, event
 handlers, `ref`) and passes them through. Your props override the defaults (`type`,
-`aria-haspopup`, `closedby`, `aria-labelledby`, `aria-describedby`); `id`, `command` and
-`commandfor` stay the parts' own, since they connect the parts.
+`aria-haspopup`, `aria-expanded`, `closedby`, `aria-labelledby`, `aria-describedby`); `id`,
+`command` and `commandfor` stay the parts' own, since they connect the parts.
 
+- **`Trigger`**: `aria-expanded` follows the dialog in the browser. In server HTML it stays
+  `"false"`, which is never wrong where assistive technology can reach it: while the modal dialog
+  is open, the trigger is inert.
 - **`Popup`**: `closedby` is `"any"` for a dialog (Escape or a click outside closes it) and
   `"closerequest"` for an alert dialog (Escape only); pass `closedby="none"` to allow neither. Native
   events work as on a `<dialog>`: `on:close` runs after any close, and
   `event.currentTarget.returnValue` holds the value of the `Close` that closed it (it is unchanged
   after Escape).
-- **`Title`** and **`Description`**: the popup points `aria-labelledby` and `aria-describedby` at
-  them. A dialog without a `Description` leaves that reference empty, which assistive technology
-  ignores; pass `aria-describedby={undefined}` to `Popup` to drop it.
+- **`Title`** and **`Description`**: the popup's `aria-labelledby` and `aria-describedby` point at
+  the ones it renders, and only those; in an island they follow parts that appear or go away. A
+  dialog without a `Title` needs an `aria-label` on `Popup`.
 
 ## Example
 
-A confirmation in a server-rendered page, with no island:
+A confirmation in a server-rendered page, with no island, styled by the default theme:
 
 ```tsx check
 import { Dialog } from "@lumiose/ui";
@@ -70,15 +75,15 @@ import { Dialog } from "@lumiose/ui";
 export function DeleteProject() {
   return (
     <Dialog.Root role="alertdialog">
-      <Dialog.Trigger class="button">Delete project…</Dialog.Trigger>
-      <Dialog.Popup class="dialog">
+      <Dialog.Trigger class="lu-button">Delete project…</Dialog.Trigger>
+      <Dialog.Popup class="lu-dialog">
         <Dialog.Title>Delete project?</Dialog.Title>
         <Dialog.Description>This removes the project and its deployments.</Dialog.Description>
         <footer>
-          <Dialog.Close class="button" value="cancel">
+          <Dialog.Close class="lu-button" value="cancel">
             Cancel
           </Dialog.Close>
-          <Dialog.Close class="button danger" value="delete">
+          <Dialog.Close class="lu-button" data-variant="destructive" value="delete">
             Delete
           </Dialog.Close>
         </footer>
@@ -100,16 +105,21 @@ export function EditProfile() {
   const saved = signal("");
   return (
     <>
-      <button type="button" onClick={() => open.set(true)}>
+      <button type="button" class="lu-button" onClick={() => open.set(true)}>
         Edit profile
       </button>
       <Dialog.Root open={open()} onOpenChange={(next) => open.set(next)}>
         <Dialog.Popup
-          class="dialog"
+          class="lu-dialog"
           on:close={(event) => saved.set(event.currentTarget.returnValue)}
         >
           <Dialog.Title>Edit profile</Dialog.Title>
-          <Dialog.Close value="save">Save</Dialog.Close>
+          <Dialog.Description>Your name as others see it.</Dialog.Description>
+          <footer>
+            <Dialog.Close class="lu-button" data-variant="primary" value="save">
+              Save
+            </Dialog.Close>
+          </footer>
         </Dialog.Popup>
       </Dialog.Root>
       <p>{open() ? "Editing…" : `Last answer: ${saved() || "none"}`}</p>
@@ -120,9 +130,15 @@ export function EditProfile() {
 
 ## Styling
 
-The package ships no look. Style the parts through `class` and the dialog's native state:
-`dialog[open]`, `:modal`, `::backdrop`, `[role="alertdialog"]`. A starting point, with a fade that
-keeps the dialog in the top layer while it closes:
+**With the default theme**, put `lu-dialog` on `Popup` and `lu-button` on the buttons
+(`data-variant="primary"` or `"destructive"` for filled ones). `lu-dialog` also styles the backdrop,
+the title, the description and a `<footer>` for the buttons, and fades and zooms the dialog in and
+out. Its colours come from the theme's `--lu-` properties ([UI components](README.md#the-default-theme)).
+
+**With your own CSS**, style the parts through `class` and the dialog's native state: `dialog[open]`,
+`:modal`, `::backdrop`, `[role="alertdialog"]`, and `dialog:has(dialog:modal)` for a dialog with a
+nested one open on top. A starting point, with a fade that keeps the dialog in the top layer while it
+closes:
 
 ```css
 .dialog {
@@ -157,9 +173,10 @@ keeps the dialog in the top layer while it closes:
 }
 ```
 
-`@lumiose/ui/dialog.css` holds one rule, in the `lu` layer: the page behind any modal `<dialog>`
-does not scroll (`:root:has(dialog:modal) { overflow: hidden }`). Leave the stylesheet out, or
-override the rule, to let it scroll.
+`@lumiose/ui/dialog.css` holds one rule, in the `lu.core` layer: the page behind any modal
+`<dialog>` does not scroll, and keeps its scrollbar's space so the layout does not shift
+(`:root:has(dialog:modal) { overflow: hidden; scrollbar-gutter: stable }`). Leave the stylesheet out,
+or override the rule, to let the page scroll.
 
 ## Keyboard and focus
 
@@ -170,28 +187,37 @@ The browser's modal dialog provides the
 | -------------- | ---------------------------------------------------------------------------------------------------- |
 | Enter, Space   | On the trigger: opens the dialog.                                                                    |
 | Tab, Shift+Tab | Move between the focusable elements of the dialog. The page behind is inert: focus never reaches it. |
-| Escape         | Closes the dialog, alert dialogs included.                                                           |
+| Escape         | Closes the dialog on top, alert dialogs included. With nested dialogs, one Escape closes one dialog. |
 
-- **On open**, focus moves to the first focusable element inside, or to the one with `autofocus`.
+- **On open**, focus moves to the element with `autofocus`, or else the first focusable element
+  inside, or else the dialog.
 - **On close**, focus returns to the element that had it before: the trigger, or the button that
   set the signal.
-- A click outside closes a dialog, not an alert dialog.
+- **A click outside** closes a dialog, not an alert dialog, and only the dialog on top. A press
+  that starts inside and ends outside, such as selecting text, does not count.
+- **Known gap:** Chromium's native light dismiss also closes a dialog on a right-click outside,
+  where Base UI and Zag ignore secondary buttons. Server pages have no script to filter it.
+- Popups opened from a dialog (a menu, a select) belong inside its `Popup`: everything outside a
+  modal dialog is inert.
 
 ## Without JavaScript
 
 The trigger, the close buttons, Escape and the click outside are HTML features: a dialog in a
-server-rendered page works before any script loads, and with none. `open` and `onOpenChange` need
-the component to run in the browser, in an island.
+server-rendered page works before any script loads, and with none. `open`, `onOpenChange` and a
+live `aria-expanded` need the component to run in the browser, in an island.
 
 ## Browser support
 
-The trigger and the close buttons use invoker commands (`command` and `commandfor`): Chrome and
-Edge 135, Firefox 144 and Safari 26.2. In older browsers they do nothing. Where `closedby` is not
-supported, a click outside does not close the dialog; Escape still does.
+- **Invoker commands** (`command`, `commandfor`) open and close the dialog: Chrome and Edge 135,
+  Firefox 144, Safari 26.2. In older browsers the trigger and the close buttons do nothing.
+- **`closedby`**: Chrome 134 and Firefox 141; Safari only in Technology Preview. Without it a
+  click outside does not close the dialog; Escape still does.
+- **Exit animations** that keep the dialog in the top layer (`overlay`) are Chromium-only.
+  Elsewhere the dialog leaves the top layer as soon as it starts closing.
 
 ## Related
 
-- [UI components](README.md): the approach, styling and the other components.
+- [UI components](README.md): the approach, styling, the default theme and the other components.
 - [Islands](../concepts/islands.md): running a component in the browser, for `open` and
   `onOpenChange`.
 - [JSX](../concepts/jsx.md): native events with `on:` and `ref`.

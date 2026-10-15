@@ -84,6 +84,47 @@ it("reports every open and close through onOpenChange", () => {
   expect(open()).toBe(false);
 });
 
+it("follows the dialog with the trigger's aria-expanded", () => {
+  const container = mount(() => <Controlled open={() => false} onOpenChange={() => {}} />);
+  flush();
+  const trigger = container.querySelector("button")!;
+  const dialog = container.querySelector("dialog")!;
+  expect(trigger.getAttribute("aria-expanded")).toBe("false");
+  dialog.showModal();
+  toggled(dialog, "open");
+  flush();
+  expect(trigger.getAttribute("aria-expanded")).toBe("true");
+  dialog.close();
+  toggled(dialog, "closed");
+  flush();
+  expect(trigger.getAttribute("aria-expanded")).toBe("false");
+});
+
+it("references the Description only while it is rendered", () => {
+  const described = signal(false);
+  const container = mount(() => (
+    <Dialog.Root>
+      <Dialog.Popup>
+        <Dialog.Title>Settings</Dialog.Title>
+        {described() ? <Dialog.Description>Changes apply at once.</Dialog.Description> : null}
+      </Dialog.Popup>
+    </Dialog.Root>
+  ));
+  flush();
+  const dialog = container.querySelector("dialog")!;
+  const title = container.querySelector("h2")!;
+  expect(dialog.getAttribute("aria-labelledby")).toBe(title.id);
+  expect(dialog.hasAttribute("aria-describedby")).toBe(false);
+
+  described.set(true);
+  flush();
+  expect(dialog.getAttribute("aria-describedby")).toBe(container.querySelector("p")!.id);
+
+  described.set(false);
+  flush();
+  expect(dialog.hasAttribute("aria-describedby")).toBe(false);
+});
+
 it("opens on mount when open starts true", () => {
   const container = mount(() => <Controlled open={() => true} onOpenChange={() => {}} />);
   flush();

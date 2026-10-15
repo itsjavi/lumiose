@@ -3,7 +3,17 @@
 // state: the trigger, a close button, Escape, a click on the backdrop and the `open` prop all end
 // in its `toggle` event, the single source of `onOpenChange`. Ported from Timeless's approach
 // (https://timeless.build); the keyboard contract is the platform's (APG Dialog pattern).
-import { createContext, effect, ref, useContext, useId } from "lumiose";
+import {
+  createContext,
+  effect,
+  isServer,
+  onCleanup,
+  ref,
+  signal,
+  useContext,
+  useId,
+  type Signal,
+} from "lumiose";
 
 export interface DialogRootProps {
   /**
@@ -36,10 +46,15 @@ export type DialogCloseProps = JSX.IntrinsicElements["button"];
 interface DialogContextValue {
   popup: JSX.Ref<HTMLDialogElement>;
   role: () => "dialog" | "alertdialog";
-  onOpenChange: (open: boolean) => void;
+  /** Whether the dialog is open, as its last `toggle` event said. */
+  open: Signal<boolean>;
+  onToggle: (open: boolean) => void;
   popupId: string;
   titleId: string;
   descriptionId: string;
+  /** How many Title and Description parts are rendered: the popup references only those. */
+  titles: Signal<number>;
+  descriptions: Signal<number>;
 }
 
 const DialogContext = createContext<DialogContextValue>();
@@ -53,23 +68,30 @@ function useDialog(): DialogContextValue {
 function Root(props: DialogRootProps) {
   const popup = ref<HTMLDialogElement>();
   const id = useId();
+  const open = signal(false);
   const context: DialogContextValue = {
     popup,
     role: () => props.role ?? "dialog",
-    onOpenChange: (open) => props.onOpenChange?.(open),
+    open,
+    onToggle: (next) => {
+      open.set(next);
+      props.onOpenChange?.(next);
+    },
     popupId: `${id}-popup`,
     titleId: `${id}-title`,
     descriptionId: `${id}-description`,
+    titles: signal(0),
+    descriptions: signal(0),
   };
 
   // The `open` prop drives the native state; the dialog's `toggle` event reports back, so a
   // signal written by `onOpenChange` sees the same value again and nothing loops.
   effect(() => {
     const dialog = popup();
-    const open = props.open;
-    if (!dialog?.isConnected || open === undefined) return;
-    if (open && !dialog.open) dialog.showModal();
-    else if (!open && dialog.open) dialog.close();
+    const wanted = props.open;
+    if (!dialog?.isConnected || wanted === undefined) return;
+    if (wanted && !dialog.open) dialog.showModal();
+    else if (!wanted && dialog.open) dialog.close();
   });
 
   return <DialogContext value={context}>{props.children}</DialogContext>;
@@ -81,10 +103,13 @@ function Root(props: DialogRootProps) {
 
 function Trigger({ children, ...rest }: DialogTriggerProps) {
   const dialog = useDialog();
+  // While the modal dialog is open the trigger is inert, so the server's "false" is never wrong
+  // where assistive technology can reach it; in the browser it follows the dialog.
   return (
     <button
       type="button"
       aria-haspopup="dialog"
+      aria-expanded={dialog.open()}
       {...rest}
       command="show-modal"
       commandfor={dialog.popupId}
@@ -97,27 +122,38 @@ function Trigger({ children, ...rest }: DialogTriggerProps) {
 function Popup({ children, ref: forwarded, ...rest }: DialogPopupProps) {
   const dialog = useDialog();
   const alert = () => dialog.role() === "alertdialog";
+  // The server writes the attributes before it renders the children, so it renders them first to
+  // know which Title and Description exist. The browser claims the dialog before its children
+  // (hydration needs that order) and updates the references when the parts register.
+  const content = isServer ? children : undefined;
   return (
     <dialog
       role={alert() ? "alertdialog" : undefined}
       closedby={alert() ? "closerequest" : "any"}
-      aria-labelledby={dialog.titleId}
-      aria-describedby={dialog.descriptionId}
+      aria-labelledby={dialog.titles() > 0 ? dialog.titleId : undefined}
+      aria-describedby={dialog.descriptions() > 0 ? dialog.descriptionId : undefined}
       {...rest}
       ref={(element: HTMLDialogElement) => {
         dialog.popup(element);
         forwarded?.(element);
       }}
       id={dialog.popupId}
-      on:toggle={(event: ToggleEvent) => dialog.onOpenChange(event.newState === "open")}
+      on:toggle={(event: ToggleEvent) => dialog.onToggle(event.newState === "open")}
     >
-      {children}
+      {isServer ? content : children}
     </dialog>
   );
 }
 
+/** Counts a rendered part in `count` while it is mounted. */
+function register(count: Signal<number>) {
+  count.update((n) => n + 1);
+  onCleanup(() => count.update((n) => n - 1));
+}
+
 function Title({ children, ...rest }: DialogTitleProps) {
   const dialog = useDialog();
+  register(dialog.titles);
   return (
     <h2 {...rest} id={dialog.titleId}>
       {children}
@@ -127,6 +163,7 @@ function Title({ children, ...rest }: DialogTitleProps) {
 
 function Description({ children, ...rest }: DialogDescriptionProps) {
   const dialog = useDialog();
+  register(dialog.descriptions);
   return (
     <p {...rest} id={dialog.descriptionId}>
       {children}

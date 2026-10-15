@@ -137,6 +137,53 @@ test.describe("keyboard contract (APG Dialog)", () => {
     await expect(dialog).toBeHidden();
   });
 
+  test("a right-click outside does not close it", async ({ page }) => {
+    // Base UI and Zag ignore secondary buttons (doc-9, section 1). Chromium's native light dismiss
+    // (closedby="any") closes on a right-click too, and a server page has no script to filter it:
+    // an expected failure, so a browser change shows up here.
+    test.fail();
+    await page.goto("/dialog");
+    await page.getByRole("button", { name: "Edit profile" }).click();
+    const dialog = page.getByRole("dialog", { name: "Edit profile" });
+    await page.mouse.click(5, 5, { button: "right" });
+    await expect(dialog).toBeVisible();
+    await page.keyboard.press("Escape");
+    await expect(dialog).toBeHidden();
+  });
+
+  test("nested dialogs: Escape and a click outside close only the top one", async ({ page }) => {
+    await page.goto("/dialog");
+    const settingsTrigger = page.getByRole("button", { name: "Settings" });
+    await settingsTrigger.click();
+    const settings = page.getByRole("dialog", { name: "Settings" });
+    await expect(settings).toBeVisible();
+    const advancedTrigger = settings.getByRole("button", { name: "Advanced…" });
+    await advancedTrigger.click();
+    const advanced = page.getByRole("dialog", { name: "Advanced settings" });
+    await expect(advanced).toBeVisible();
+    await expect(advanced).toHaveAccessibleDescription("Opened on top of Settings.");
+    await expect(advanced.getByRole("button", { name: "Done" })).toBeFocused();
+    expect(await axe(page)).toEqual([]);
+
+    // A press inside the child does not close the parent.
+    await advanced.getByText("Opened on top of Settings.").click();
+    await expect(advanced).toBeVisible();
+    await page.keyboard.press("Escape");
+    await expect(advanced).toBeHidden();
+    await expect(settings).toBeVisible();
+    await expect(advancedTrigger).toBeFocused();
+
+    await advancedTrigger.click();
+    await expect(advanced).toBeVisible();
+    await page.mouse.click(5, 5);
+    await expect(advanced).toBeHidden();
+    await expect(settings).toBeVisible();
+
+    await page.keyboard.press("Escape");
+    await expect(settings).toBeHidden();
+    await expect(settingsTrigger).toBeFocused();
+  });
+
   test("the page behind a modal dialog does not scroll", async ({ page }) => {
     await page.goto("/dialog");
     const overflow = () =>
@@ -175,9 +222,12 @@ test.describe("in an island", () => {
 
     // A signal opens it; Escape closes it and reports back; focus returns to the opener.
     const opener = page.getByTestId("open-by-signal");
+    const trigger = page.getByRole("button", { name: "Edit profile" });
+    await expect(trigger).toHaveAttribute("aria-expanded", "false");
     await opener.click();
     await expect(dialog).toBeVisible();
     await expect(state).toHaveText("open: true, returned: none");
+    await expect(trigger).toHaveAttribute("aria-expanded", "true");
     await expect(dialog.getByRole("button", { name: "Cancel" })).toBeFocused();
     await page.keyboard.press("Escape");
     await expect(dialog).toBeHidden();
@@ -186,7 +236,7 @@ test.describe("in an island", () => {
 
     // The trigger opens it (invoker command, no prop change) and the signal follows; a close
     // button closes it with its value as the dialog's returnValue.
-    const trigger = page.getByRole("button", { name: "Edit profile" });
+    await expect(trigger).toHaveAttribute("aria-expanded", "false");
     await trigger.click();
     await expect(state).toHaveText("open: true, returned: none");
     await dialog.getByRole("button", { name: "Save" }).click();

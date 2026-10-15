@@ -1,7 +1,7 @@
 import { Dialog } from "@lumiose/ui";
 import { Title } from "lumiose";
 
-// Server-rendered, no island: the dialogs work from the HTML alone.
+// Server-rendered, no island: the dialogs work from the HTML alone. Styled with the default theme.
 export default function DialogPage() {
   return (
     <>
@@ -11,17 +11,17 @@ export default function DialogPage() {
         <section aria-labelledby="alert-heading">
           <h2 id="alert-heading">Alert dialog</h2>
           <Dialog.Root role="alertdialog">
-            <Dialog.Trigger class="button">Delete project…</Dialog.Trigger>
-            <Dialog.Popup class="dialog">
+            <Dialog.Trigger class="lu-button">Delete project…</Dialog.Trigger>
+            <Dialog.Popup class="lu-dialog">
               <Dialog.Title>Delete project?</Dialog.Title>
               <Dialog.Description>
                 This removes the project and its 12 deployments.
               </Dialog.Description>
               <footer>
-                <Dialog.Close class="button" value="cancel">
+                <Dialog.Close class="lu-button" value="cancel">
                   Cancel
                 </Dialog.Close>
-                <Dialog.Close class="button danger" value="delete">
+                <Dialog.Close class="lu-button" data-variant="destructive" value="delete">
                   Delete
                 </Dialog.Close>
               </footer>
@@ -32,19 +32,45 @@ export default function DialogPage() {
         <section aria-labelledby="dialog-heading">
           <h2 id="dialog-heading">Dialog with a field, no description</h2>
           <Dialog.Root>
-            <Dialog.Trigger class="button">Edit profile</Dialog.Trigger>
-            <Dialog.Popup class="dialog">
+            <Dialog.Trigger class="lu-button">Edit profile</Dialog.Trigger>
+            <Dialog.Popup class="lu-dialog">
               <Dialog.Title>Edit profile</Dialog.Title>
-              <label>
+              <label class="field">
                 Name
                 <input name="name" value="Ada" />
               </label>
               <footer>
-                <Dialog.Close class="button" value="cancel">
+                <Dialog.Close class="lu-button" value="cancel">
                   Cancel
                 </Dialog.Close>
-                <Dialog.Close class="button" value="save">
+                <Dialog.Close class="lu-button" data-variant="primary" value="save">
                   Save
+                </Dialog.Close>
+              </footer>
+            </Dialog.Popup>
+          </Dialog.Root>
+        </section>
+
+        <section aria-labelledby="nested-heading">
+          <h2 id="nested-heading">Nested dialogs</h2>
+          <Dialog.Root>
+            <Dialog.Trigger class="lu-button">Settings</Dialog.Trigger>
+            <Dialog.Popup class="lu-dialog">
+              <Dialog.Title>Settings</Dialog.Title>
+              <Dialog.Description>General settings of the workspace.</Dialog.Description>
+              <footer>
+                <Dialog.Root>
+                  <Dialog.Trigger class="lu-button">Advanced…</Dialog.Trigger>
+                  <Dialog.Popup class="lu-dialog">
+                    <Dialog.Title>Advanced settings</Dialog.Title>
+                    <Dialog.Description>Opened on top of Settings.</Dialog.Description>
+                    <footer>
+                      <Dialog.Close class="lu-button">Done</Dialog.Close>
+                    </footer>
+                  </Dialog.Popup>
+                </Dialog.Root>
+                <Dialog.Close class="lu-button" data-variant="primary">
+                  Close
                 </Dialog.Close>
               </footer>
             </Dialog.Popup>
