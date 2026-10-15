@@ -119,14 +119,15 @@ pages, render on the `server` and send `cache-control` headers to a CDN.
 
 ### Rendering and deployment
 
-| Next.js                                        | Lumiose                                                                                                                                                               |
-| ---------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Static rendering, `dynamic = "force-static"`   | `mode = "static"`, the default.                                                                                                                                       |
-| Dynamic rendering, `dynamic = "force-dynamic"` | `export const mode = "server"`.                                                                                                                                       |
-| Partial prerendering, Cache Components         | `server` + `<Suspense>`, or `static` + islands that call an endpoint ([Close to partial prerendering](../concepts/rendering-modes.md#close-to-partial-prerendering)). |
-| `output: "export"`                             | Every route prerendered: the build writes no `dist/server`, and any static host serves `dist/client` ([Static hosts](../deploy/static.md)).                           |
-| `output: "standalone"`, `next start`           | `dist/server/entry.js`, served by `@lumiose/adapter-node` (`createServer()`) or `lumiose preview`.                                                                    |
-| Vercel, Netlify, Cloudflare (OpenNext)         | `lumiose({ adapter: vercel() })`, `netlify()` or `cloudflare()` ([Deploy](../deploy/README.md)).                                                                      |
+| Next.js                                                   | Lumiose                                                                                                                                                                                                         |
+| --------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Static rendering, `dynamic = "force-static"`              | `mode = "static"`, the default.                                                                                                                                                                                 |
+| Dynamic rendering, `dynamic = "force-dynamic"`            | `export const mode = "server"`.                                                                                                                                                                                 |
+| Partial prerendering, Cache Components                    | `server` + `<Suspense>`, or `static` + islands that call an endpoint ([Close to partial prerendering](../concepts/rendering-modes.md#close-to-partial-prerendering)).                                           |
+| `output: "export"`                                        | Every route prerendered: the build writes no `dist/server`, and any static host serves `dist/client` ([Static hosts](../deploy/static.md)).                                                                     |
+| Custom server: `next({ dev })` with `getRequestHandler()` | `createDevHandler({ server })` from `@lumiose/vite/dev` in dev and `createHandler()` from `@lumiose/adapter-node` in production, in one `server.ts` ([`@lumiose/vite`](../reference/vite.md#createdevhandler)). |
+| `output: "standalone"`, `next start`                      | `dist/server/entry.js`, served by `@lumiose/adapter-node` (`createServer()`) or `lumiose preview`.                                                                                                              |
+| Vercel, Netlify, Cloudflare (OpenNext)                    | `lumiose({ adapter: vercel() })`, `netlify()` or `cloudflare()` ([Deploy](../deploy/README.md)).                                                                                                                |
 
 ## What has no equivalent
 
@@ -143,7 +144,6 @@ pages, render on the `server` and send `cache-control` headers to a CDN.
 | Generated images (`opengraph-image.tsx`, `icon.tsx`)     | Static files in `public/`, or an endpoint that returns the image.                                                                                                                                       |
 | `forbidden.tsx`, `unauthorized.tsx`                      | `error(403)` and `error(401)` render `error.stsx`, which reads `status`.                                                                                                                                |
 | Draft mode                                               | A `server` route that reads a preview cookie.                                                                                                                                                           |
-| A custom server running `next dev`                       | This version has no dev handler for custom servers: develop with `lumiose dev`, and run your server against the build.                                                                                  |
 | React component libraries                                | No React interop: native elements, web components or framework-agnostic libraries (see [Coming from React](react.md)).                                                                                  |
 
 ## Example

@@ -1,20 +1,39 @@
-// Production server: @lumiose/adapter-node serves the `lumiose build` output, and the chat's
-// WebSockets attach to the same `node:http` server through its `upgrade` event.
+// One server for dev and production (decision-52): `node server.ts --dev` mounts the app through
+// `createDevHandler()` from @lumiose/vite/dev (HMR, the error overlay, server-only reloads), and
+// `node server.ts` serves the `lumiose build` output with @lumiose/adapter-node. The chat's
+// WebSockets attach to the same `node:http` server through its `upgrade` event in both.
 //
-//   pnpm build && pnpm start
-import { createServer } from "@lumiose/adapter-node";
+//   pnpm dev                  # node server.ts --dev
+//   pnpm build && pnpm start  # node server.ts
+import { createServer } from "node:http";
+import { createHandler } from "@lumiose/adapter-node";
 import { closeChat, handleUpgrade } from "./src/server/chat-socket.server.ts";
 
-const app = await createServer({ dir: new URL("dist", import.meta.url) });
+const dev = process.argv.includes("--dev");
+const server = createServer();
+// @lumiose/vite is a dev dependency: production never loads it.
+const devHandler = dev
+  ? await (await import("@lumiose/vite/dev")).createDevHandler({ server })
+  : undefined;
+server.on(
+  "request",
+  devHandler ?? (await createHandler({ dir: new URL("dist", import.meta.url) })),
+);
 
-app.server.on("upgrade", (request, socket, head) => {
-  // Not the chat's path: no other handler, so refuse it.
-  if (!handleUpgrade(request, socket, head)) socket.destroy();
+server.on("upgrade", (request, socket, head) => {
+  if (handleUpgrade(request, socket, head)) return;
+  // Not the chat's path. In dev, Vite's HMR upgrades on this server too: leave it alone.
+  if (!dev) socket.destroy();
 });
 
 process.once("SIGTERM", () => {
   closeChat();
-  void app.close();
+  server.close();
+  void devHandler?.close();
 });
 
-console.log(`Listening on ${app.url}`);
+const port = Number(process.env.PORT ?? 3000);
+const host = process.env.HOST;
+server.listen(port, host, () => {
+  console.log(`Listening on http://${host ?? "localhost"}:${port}/${dev ? " (dev)" : ""}`);
+});

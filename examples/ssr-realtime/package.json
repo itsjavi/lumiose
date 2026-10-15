@@ -6,7 +6,7 @@
   "license": "MIT",
   "type": "module",
   "scripts": {
-    "dev": "lumiose dev",
+    "dev": "node server.ts --dev",
     "build": "lumiose build",
     "start": "node server.ts",
     "typecheck": "lumiose check",

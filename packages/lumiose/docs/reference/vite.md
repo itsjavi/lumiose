@@ -195,6 +195,56 @@ What it does:
 > **Status:** compilation, environments, diagnostics, HMR, style-block CSS, `.svg`, `.md` and `.html` imports and the
 > project options above are available. The designed option `css` is not.
 
+## createDevHandler()
+
+```ts
+import { createDevHandler } from "@lumiose/vite/dev";
+
+function createDevHandler(options?: DevHandlerOptions): Promise<DevHandler>;
+
+interface DevHandlerOptions {
+  /** Your HTTP server: Vite's HMR WebSocket upgrades there. Default: HMR on a port of its own. */
+  server?: import("node:http").Server;
+  root?: string; // default: the current directory
+  configFile?: string | false; // default: vite.config.* in the root
+  mode?: string; // Vite mode (.env files), default "development"
+  routesDir?: string; // default "src/routes"
+  logLevel?: LogLevel;
+  customLogger?: Logger;
+}
+
+interface DevHandler {
+  (req: IncomingMessage, res: ServerResponse, next?: (error?: unknown) => void): void;
+  readonly vite: ViteDevServer; // Vite in middleware mode
+  close(): Promise<void>; // stops Vite (watcher, HMR); your server stays open
+}
+```
+
+`lumiose dev` inside your own Node server (decision-52). It starts Vite in middleware mode with the
+project's `vite.config.ts` and returns a handler of the same kind as `@lumiose/adapter-node`'s
+[`createHandler()`](adapter-node.md#createhandler): a request listener, or connect/Express
+middleware (errors go to `next`). Everything `lumiose dev` does works through it: modules and
+assets, the routes, the error overlay, HMR, in-place updates after server-only edits and typegen.
+Pass your server as `server` so HMR shares its port: Vite takes only its own upgrades
+(`Sec-WebSocket-Protocol: vite-hmr`) and leaves the others to your `upgrade` listeners, so
+leave an upgrade alone, rather than destroying it, when your code does not handle it in dev.
+`lumiose dev` stays the default; this is for projects that own their server. `@lumiose/vite` is a
+dev dependency: import it only in dev, and production never loads Vite.
+
+```ts
+// server.ts: `node server.ts --dev` in dev, `node server.ts` after `lumiose build`
+import { createServer } from "node:http";
+import { createHandler } from "@lumiose/adapter-node";
+
+const dev = process.argv.includes("--dev");
+const server = createServer();
+const handler = dev
+  ? await (await import("@lumiose/vite/dev")).createDevHandler({ server })
+  : await createHandler();
+server.on("request", handler);
+server.listen(3000);
+```
+
 ## Example
 
 ```ts

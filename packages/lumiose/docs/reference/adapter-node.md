@@ -164,6 +164,25 @@ const app = await createServer({
 console.log(`Listening on ${app.url}`);
 ```
 
+One `server.ts` for dev and production, with
+[`createDevHandler()`](vite.md#createdevhandler) from `@lumiose/vite/dev` in dev (HMR, the error
+overlay) and the build here otherwise:
+
+```ts
+// server.ts: `node server.ts --dev`, or `node server.ts` after `lumiose build`
+import { createServer } from "node:http";
+import { createHandler } from "@lumiose/adapter-node";
+
+const dev = process.argv.includes("--dev");
+const server = createServer();
+// @lumiose/vite is a dev dependency: production never loads it.
+const handler = dev
+  ? await (await import("@lumiose/vite/dev")).createDevHandler({ server })
+  : await createHandler();
+server.on("request", handler);
+server.listen(Number(process.env.PORT ?? 3000));
+```
+
 As middleware in an existing server:
 
 ```ts

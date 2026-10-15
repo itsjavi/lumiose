@@ -203,46 +203,38 @@ function sameSite(request: IncomingMessage, origin: string | undefined): boolean
 }
 ```
 
+One `server.ts` serves the app in dev and in production: [`createDevHandler()`](../reference/vite.md#createdevhandler)
+mounts `lumiose dev` in it (HMR and the error overlay included), and `@lumiose/adapter-node`'s
+`createHandler()` serves the build. The chat's upgrades attach to the same server in both:
+
 ```ts
-// server.ts
-import { createServer } from "@lumiose/adapter-node";
+// server.ts: `node server.ts --dev` in dev, `node server.ts` after `lumiose build`
+import { createServer } from "node:http";
+import { createHandler } from "@lumiose/adapter-node";
 import { handleUpgrade } from "./src/server/chat-socket.server.ts";
 
-const app = await createServer({ dir: new URL("dist", import.meta.url) });
+const dev = process.argv.includes("--dev");
+const server = createServer();
+// @lumiose/vite is a dev dependency: production never loads it.
+const handler = dev
+  ? await (await import("@lumiose/vite/dev")).createDevHandler({ server })
+  : await createHandler({ dir: new URL("dist", import.meta.url) });
+server.on("request", handler);
 
-app.server.on("upgrade", (request, socket, head) => {
-  // Not the chat's path, and no other handler: refuse it.
-  if (!handleUpgrade(request, socket, head)) socket.destroy();
+server.on("upgrade", (request, socket, head) => {
+  if (handleUpgrade(request, socket, head)) return;
+  // Not the chat's path. In dev, Vite's hot reload upgrades on this server too: leave it alone.
+  if (!dev) socket.destroy();
 });
-console.log(`Listening on ${app.url}`);
+server.listen(Number(process.env.PORT ?? 3000));
 ```
 
 In the browser, an island opens `new WebSocket(url)` in `onMount` (with `wss:` on an `https:` page)
 and closes it in `onCleanup`, like the `EventSource` above.
 
-**In dev**, `lumiose dev` is Vite's server: attach the same handler there with a plugin, and leave
-other upgrades (Vite's hot reload) alone. `lumiose preview` does not run `server.ts`, so it has no
-WebSockets: try them with `lumiose build` and `node server.ts`.
-
-```ts
-// vite.config.ts
-import type { Server } from "node:http";
-import lumiose from "@lumiose/vite";
-import { handleUpgrade } from "./src/server/chat-socket.server.ts";
-
-function chatSockets() {
-  return {
-    name: "chat-sockets",
-    configureServer(server: { httpServer: Server | null }) {
-      server.httpServer?.on("upgrade", (request, socket, head) => {
-        handleUpgrade(request, socket, head);
-      });
-    },
-  };
-}
-
-export default { plugins: [lumiose(), chatSockets()] };
-```
+**In dev**, run `node server.ts --dev` instead of `lumiose dev`: the WebSockets work as in
+production, with no Vite plugin. `lumiose dev` and `lumiose preview` do not run `server.ts`, so
+they have no WebSockets.
 
 **Signing in.** The browser sends its cookies with the handshake: read the session from
 `request.headers.cookie` before calling `handleUpgrade`, and refuse with `401` when it is missing.
@@ -250,7 +242,7 @@ Upgrades bypass Lumiose's middleware, which runs for HTTP requests only.
 
 **Several processes** do not share `sockets.clients`: broadcast through a shared channel (Redis
 pub/sub, for example), as with SSE. On `SIGTERM`, close the sockets (`client.close(1001)`) before
-`app.close()`, as the sample's `server.ts` does.
+the server, as the sample's `server.ts` does.
 
 ## Behind a proxy
 
@@ -296,7 +288,10 @@ comments (checked for 75 s through nginx and Caddy). A WebSocket that may stay q
   them in `onMount`.
 - **Accepting any `Origin` on the WebSocket handshake.** Another site's page could open a socket
   with your visitor's cookies. Compare the origin, as `handleUpgrade` does.
-- **Expecting `lumiose preview` to serve WebSockets.** It does not run `server.ts`.
+- **Expecting `lumiose dev` or `lumiose preview` to serve WebSockets.** They do not run
+  `server.ts`: run `node server.ts --dev`, or `node server.ts` after a build.
+- **Destroying unknown upgrades in dev.** Vite's hot reload upgrades on the same server; destroy
+  only in production, or leave upgrades you do not handle alone.
 - **An in-memory bus with several processes.** Each process only reaches its own clients.
 
 See also: [Data and actions](../concepts/data-and-actions.md) (endpoints, `submit()`),

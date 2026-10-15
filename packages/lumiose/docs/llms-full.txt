@@ -783,14 +783,15 @@ pages, render on the `server` and send `cache-control` headers to a CDN.
 
 ### Rendering and deployment
 
-| Next.js                                        | Lumiose                                                                                                                                                               |
-| ---------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Static rendering, `dynamic = "force-static"`   | `mode = "static"`, the default.                                                                                                                                       |
-| Dynamic rendering, `dynamic = "force-dynamic"` | `export const mode = "server"`.                                                                                                                                       |
-| Partial prerendering, Cache Components         | `server` + `<Suspense>`, or `static` + islands that call an endpoint ([Close to partial prerendering](../concepts/rendering-modes.md#close-to-partial-prerendering)). |
-| `output: "export"`                             | Every route prerendered: the build writes no `dist/server`, and any static host serves `dist/client` ([Static hosts](../deploy/static.md)).                           |
-| `output: "standalone"`, `next start`           | `dist/server/entry.js`, served by `@lumiose/adapter-node` (`createServer()`) or `lumiose preview`.                                                                    |
-| Vercel, Netlify, Cloudflare (OpenNext)         | `lumiose({ adapter: vercel() })`, `netlify()` or `cloudflare()` ([Deploy](../deploy/README.md)).                                                                      |
+| Next.js                                                   | Lumiose                                                                                                                                                                                                         |
+| --------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Static rendering, `dynamic = "force-static"`              | `mode = "static"`, the default.                                                                                                                                                                                 |
+| Dynamic rendering, `dynamic = "force-dynamic"`            | `export const mode = "server"`.                                                                                                                                                                                 |
+| Partial prerendering, Cache Components                    | `server` + `<Suspense>`, or `static` + islands that call an endpoint ([Close to partial prerendering](../concepts/rendering-modes.md#close-to-partial-prerendering)).                                           |
+| `output: "export"`                                        | Every route prerendered: the build writes no `dist/server`, and any static host serves `dist/client` ([Static hosts](../deploy/static.md)).                                                                     |
+| Custom server: `next({ dev })` with `getRequestHandler()` | `createDevHandler({ server })` from `@lumiose/vite/dev` in dev and `createHandler()` from `@lumiose/adapter-node` in production, in one `server.ts` ([`@lumiose/vite`](../reference/vite.md#createdevhandler)). |
+| `output: "standalone"`, `next start`                      | `dist/server/entry.js`, served by `@lumiose/adapter-node` (`createServer()`) or `lumiose preview`.                                                                                                              |
+| Vercel, Netlify, Cloudflare (OpenNext)                    | `lumiose({ adapter: vercel() })`, `netlify()` or `cloudflare()` ([Deploy](../deploy/README.md)).                                                                                                                |
 
 ## What has no equivalent
 
@@ -807,7 +808,6 @@ pages, render on the `server` and send `cache-control` headers to a CDN.
 | Generated images (`opengraph-image.tsx`, `icon.tsx`)     | Static files in `public/`, or an endpoint that returns the image.                                                                                                                                       |
 | `forbidden.tsx`, `unauthorized.tsx`                      | `error(403)` and `error(401)` render `error.stsx`, which reads `status`.                                                                                                                                |
 | Draft mode                                               | A `server` route that reads a preview cookie.                                                                                                                                                           |
-| A custom server running `next dev`                       | This version has no dev handler for custom servers: develop with `lumiose dev`, and run your server against the build.                                                                                  |
 | React component libraries                                | No React interop: native elements, web components or framework-agnostic libraries (see [Coming from React](react.md)).                                                                                  |
 
 ## Example
@@ -1150,22 +1150,23 @@ folder under `src/routes` is a URL segment, and `page`, `layout`, `route`, `erro
 
 ### Server, document and rendering
 
-| React Router                                                                | Lumiose                                                                                                                                                                                                                                                                  |
-| --------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `middleware` export and `context.set()` / `context.get()`                   | `src/middleware.ts` for every request, and a `middleware.ts` in a route folder for the routes below it: `(ctx, next) => Response`, run parent to child, with request data on `ctx.locals` (typed by augmenting `Locals`), read in pages with `locals()`.                 |
-| `getLoadContext()`, `AppLoadContext`                                        | `ctx.platform` (the host's bindings, `waitUntil()`, the client address) and `env(name)`.                                                                                                                                                                                 |
-| `root.tsx`: `<Meta />`, `<Links />`, `<Scripts />`, `<ScrollRestoration />` | `src/document.stsx` renders `{props.head}` and `{props.body}`; stylesheets, scripts and scroll restoration are built in.                                                                                                                                                 |
-| `meta` and `links` exports                                                  | `<Title>`, `<Meta>` and `<Head>` in any component ([Head and document](../concepts/head.md)).                                                                                                                                                                            |
-| `headers` export                                                            | `headers(ctx)` export, `response().setHeader()`, middleware, or `lumiose({ headers })` for every page.                                                                                                                                                                   |
-| `ErrorBoundary` export, `isRouteErrorResponse()`                            | `error.stsx` and `not-found.stsx` (the nearest wins, with `{ status, error }`), and `<ErrorBoundary>` for an error in place.                                                                                                                                             |
-| `HydrateFallback`                                                           | `<Suspense fallback>`, or the shell of an `ssr = false` route.                                                                                                                                                                                                           |
-| `entry.server.tsx`: `handleRequest`, streaming                              | No file: the handler streams the shell, then `<Suspense>` boundaries; headers go in middleware.                                                                                                                                                                          |
-| `handleError` in `entry.server.tsx`, server `instrumentations`              | `src/instrumentation.server.ts`: `onRequestError(error, info)` with the route and phase, and `instrumentations` that wrap `request`, `middleware`, `action`, `endpoint`, `render` and `stream`; `call()` never throws ([Server](../concepts/server.md#instrumentation)). |
-| `entry.client.tsx`: `hydrateRoot`                                           | No file: the island loader and the SPA entry hydrate. Code that must run before hydration (an SDK, a polyfill) goes in `src/instrumentation.client.ts`, which every page runs first ([Islands](../concepts/islands.md#concept)).                                         |
-| `ssr: false` (SPA mode)                                                     | `lumiose({ mode: "spa", ssr: false })`, or `export const ssr = false` on an `spa` route.                                                                                                                                                                                 |
-| `prerender: [...]`                                                          | `static` routes (the default) with `staticPaths()` for params, and `export const prerender = true` on `spa` pages.                                                                                                                                                       |
-| `react-router-serve`                                                        | `@lumiose/adapter-node`'s `createServer()`, or `lumiose preview`; other hosts in [Deploy](../deploy/README.md).                                                                                                                                                          |
-| Custom server: `createRequestHandler()` from `@react-router/express`        | `createHandler()` from `@lumiose/adapter-node`, a request listener or Express middleware; or `dist/server/entry.js`'s `fetch(request)`.                                                                                                                                  |
+| React Router                                                                  | Lumiose                                                                                                                                                                                                                                                                  |
+| ----------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `middleware` export and `context.set()` / `context.get()`                     | `src/middleware.ts` for every request, and a `middleware.ts` in a route folder for the routes below it: `(ctx, next) => Response`, run parent to child, with request data on `ctx.locals` (typed by augmenting `Locals`), read in pages with `locals()`.                 |
+| `getLoadContext()`, `AppLoadContext`                                          | `ctx.platform` (the host's bindings, `waitUntil()`, the client address) and `env(name)`.                                                                                                                                                                                 |
+| `root.tsx`: `<Meta />`, `<Links />`, `<Scripts />`, `<ScrollRestoration />`   | `src/document.stsx` renders `{props.head}` and `{props.body}`; stylesheets, scripts and scroll restoration are built in.                                                                                                                                                 |
+| `meta` and `links` exports                                                    | `<Title>`, `<Meta>` and `<Head>` in any component ([Head and document](../concepts/head.md)).                                                                                                                                                                            |
+| `headers` export                                                              | `headers(ctx)` export, `response().setHeader()`, middleware, or `lumiose({ headers })` for every page.                                                                                                                                                                   |
+| `ErrorBoundary` export, `isRouteErrorResponse()`                              | `error.stsx` and `not-found.stsx` (the nearest wins, with `{ status, error }`), and `<ErrorBoundary>` for an error in place.                                                                                                                                             |
+| `HydrateFallback`                                                             | `<Suspense fallback>`, or the shell of an `ssr = false` route.                                                                                                                                                                                                           |
+| `entry.server.tsx`: `handleRequest`, streaming                                | No file: the handler streams the shell, then `<Suspense>` boundaries; headers go in middleware.                                                                                                                                                                          |
+| `handleError` in `entry.server.tsx`, server `instrumentations`                | `src/instrumentation.server.ts`: `onRequestError(error, info)` with the route and phase, and `instrumentations` that wrap `request`, `middleware`, `action`, `endpoint`, `render` and `stream`; `call()` never throws ([Server](../concepts/server.md#instrumentation)). |
+| `entry.client.tsx`: `hydrateRoot`                                             | No file: the island loader and the SPA entry hydrate. Code that must run before hydration (an SDK, a polyfill) goes in `src/instrumentation.client.ts`, which every page runs first ([Islands](../concepts/islands.md#concept)).                                         |
+| `ssr: false` (SPA mode)                                                       | `lumiose({ mode: "spa", ssr: false })`, or `export const ssr = false` on an `spa` route.                                                                                                                                                                                 |
+| `prerender: [...]`                                                            | `static` routes (the default) with `staticPaths()` for params, and `export const prerender = true` on `spa` pages.                                                                                                                                                       |
+| `react-router-serve`                                                          | `@lumiose/adapter-node`'s `createServer()`, or `lumiose preview`; other hosts in [Deploy](../deploy/README.md).                                                                                                                                                          |
+| Custom server: `createRequestHandler()` from `@react-router/express`          | `createHandler()` from `@lumiose/adapter-node`, a request listener or Express middleware; or `dist/server/entry.js`'s `fetch(request)`.                                                                                                                                  |
+| Custom server in dev: Vite in middleware mode, `ssrLoadModule()` of the build | `createDevHandler({ server })` from `@lumiose/vite/dev`: the same kind of handler, with HMR and the overlay, so one `server.ts` serves dev and production ([`@lumiose/vite`](../reference/vite.md#createdevhandler)).                                                    |
 
 ### Navigation
 
@@ -1190,7 +1191,6 @@ folder under `src/routes` is a URL segment, and `page`, `layout`, `route`, `erro
 | `useFetchers()`                                               | None: `isSubmitting(name)` counts every submission to an action, `isBusy()` anything in flight.                           |
 | `handle` and `useMatches()`                                   | Pass data down as props or context from the layout; compare `route()` with a pattern.                                     |
 | `useNavigation().location` and `.formData`                    | `isNavigating()` for pending UI, and `optimistic()` for the value being submitted.                                        |
-| A Vite dev server in middleware mode inside a custom server   | This version has no dev handler for custom servers: develop with `lumiose dev`, and run your server against the build.    |
 
 ## Example
 
@@ -7249,46 +7249,38 @@ function sameSite(request: IncomingMessage, origin: string | undefined): boolean
 }
 ```
 
+One `server.ts` serves the app in dev and in production: [`createDevHandler()`](../reference/vite.md#createdevhandler)
+mounts `lumiose dev` in it (HMR and the error overlay included), and `@lumiose/adapter-node`'s
+`createHandler()` serves the build. The chat's upgrades attach to the same server in both:
+
 ```ts
-// server.ts
-import { createServer } from "@lumiose/adapter-node";
+// server.ts: `node server.ts --dev` in dev, `node server.ts` after `lumiose build`
+import { createServer } from "node:http";
+import { createHandler } from "@lumiose/adapter-node";
 import { handleUpgrade } from "./src/server/chat-socket.server.ts";
 
-const app = await createServer({ dir: new URL("dist", import.meta.url) });
+const dev = process.argv.includes("--dev");
+const server = createServer();
+// @lumiose/vite is a dev dependency: production never loads it.
+const handler = dev
+  ? await (await import("@lumiose/vite/dev")).createDevHandler({ server })
+  : await createHandler({ dir: new URL("dist", import.meta.url) });
+server.on("request", handler);
 
-app.server.on("upgrade", (request, socket, head) => {
-  // Not the chat's path, and no other handler: refuse it.
-  if (!handleUpgrade(request, socket, head)) socket.destroy();
+server.on("upgrade", (request, socket, head) => {
+  if (handleUpgrade(request, socket, head)) return;
+  // Not the chat's path. In dev, Vite's hot reload upgrades on this server too: leave it alone.
+  if (!dev) socket.destroy();
 });
-console.log(`Listening on ${app.url}`);
+server.listen(Number(process.env.PORT ?? 3000));
 ```
 
 In the browser, an island opens `new WebSocket(url)` in `onMount` (with `wss:` on an `https:` page)
 and closes it in `onCleanup`, like the `EventSource` above.
 
-**In dev**, `lumiose dev` is Vite's server: attach the same handler there with a plugin, and leave
-other upgrades (Vite's hot reload) alone. `lumiose preview` does not run `server.ts`, so it has no
-WebSockets: try them with `lumiose build` and `node server.ts`.
-
-```ts
-// vite.config.ts
-import type { Server } from "node:http";
-import lumiose from "@lumiose/vite";
-import { handleUpgrade } from "./src/server/chat-socket.server.ts";
-
-function chatSockets() {
-  return {
-    name: "chat-sockets",
-    configureServer(server: { httpServer: Server | null }) {
-      server.httpServer?.on("upgrade", (request, socket, head) => {
-        handleUpgrade(request, socket, head);
-      });
-    },
-  };
-}
-
-export default { plugins: [lumiose(), chatSockets()] };
-```
+**In dev**, run `node server.ts --dev` instead of `lumiose dev`: the WebSockets work as in
+production, with no Vite plugin. `lumiose dev` and `lumiose preview` do not run `server.ts`, so
+they have no WebSockets.
 
 **Signing in.** The browser sends its cookies with the handshake: read the session from
 `request.headers.cookie` before calling `handleUpgrade`, and refuse with `401` when it is missing.
@@ -7296,7 +7288,7 @@ Upgrades bypass Lumiose's middleware, which runs for HTTP requests only.
 
 **Several processes** do not share `sockets.clients`: broadcast through a shared channel (Redis
 pub/sub, for example), as with SSE. On `SIGTERM`, close the sockets (`client.close(1001)`) before
-`app.close()`, as the sample's `server.ts` does.
+the server, as the sample's `server.ts` does.
 
 ## Behind a proxy
 
@@ -7342,7 +7334,10 @@ comments (checked for 75 s through nginx and Caddy). A WebSocket that may stay q
   them in `onMount`.
 - **Accepting any `Origin` on the WebSocket handshake.** Another site's page could open a socket
   with your visitor's cookies. Compare the origin, as `handleUpgrade` does.
-- **Expecting `lumiose preview` to serve WebSockets.** It does not run `server.ts`.
+- **Expecting `lumiose dev` or `lumiose preview` to serve WebSockets.** They do not run
+  `server.ts`: run `node server.ts --dev`, or `node server.ts` after a build.
+- **Destroying unknown upgrades in dev.** Vite's hot reload upgrades on the same server; destroy
+  only in production, or leave upgrades you do not handle alone.
 - **An in-memory bus with several processes.** Each process only reaches its own clients.
 
 See also: [Data and actions](../concepts/data-and-actions.md) (endpoints, `submit()`),
@@ -10625,6 +10620,56 @@ What it does:
 > **Status:** compilation, environments, diagnostics, HMR, style-block CSS, `.svg`, `.md` and `.html` imports and the
 > project options above are available. The designed option `css` is not.
 
+## createDevHandler()
+
+```ts
+import { createDevHandler } from "@lumiose/vite/dev";
+
+function createDevHandler(options?: DevHandlerOptions): Promise<DevHandler>;
+
+interface DevHandlerOptions {
+  /** Your HTTP server: Vite's HMR WebSocket upgrades there. Default: HMR on a port of its own. */
+  server?: import("node:http").Server;
+  root?: string; // default: the current directory
+  configFile?: string | false; // default: vite.config.* in the root
+  mode?: string; // Vite mode (.env files), default "development"
+  routesDir?: string; // default "src/routes"
+  logLevel?: LogLevel;
+  customLogger?: Logger;
+}
+
+interface DevHandler {
+  (req: IncomingMessage, res: ServerResponse, next?: (error?: unknown) => void): void;
+  readonly vite: ViteDevServer; // Vite in middleware mode
+  close(): Promise<void>; // stops Vite (watcher, HMR); your server stays open
+}
+```
+
+`lumiose dev` inside your own Node server (decision-52). It starts Vite in middleware mode with the
+project's `vite.config.ts` and returns a handler of the same kind as `@lumiose/adapter-node`'s
+[`createHandler()`](adapter-node.md#createhandler): a request listener, or connect/Express
+middleware (errors go to `next`). Everything `lumiose dev` does works through it: modules and
+assets, the routes, the error overlay, HMR, in-place updates after server-only edits and typegen.
+Pass your server as `server` so HMR shares its port: Vite takes only its own upgrades
+(`Sec-WebSocket-Protocol: vite-hmr`) and leaves the others to your `upgrade` listeners, so
+leave an upgrade alone, rather than destroying it, when your code does not handle it in dev.
+`lumiose dev` stays the default; this is for projects that own their server. `@lumiose/vite` is a
+dev dependency: import it only in dev, and production never loads Vite.
+
+```ts
+// server.ts: `node server.ts --dev` in dev, `node server.ts` after `lumiose build`
+import { createServer } from "node:http";
+import { createHandler } from "@lumiose/adapter-node";
+
+const dev = process.argv.includes("--dev");
+const server = createServer();
+const handler = dev
+  ? await (await import("@lumiose/vite/dev")).createDevHandler({ server })
+  : await createHandler();
+server.on("request", handler);
+server.listen(3000);
+```
+
 ## Example
 
 ```ts
@@ -10917,7 +10962,8 @@ lumiose dev --format json   # one line once listening: { "command": "dev", "ok":
 ```
 
 Like Vite, the server stops when its stdin ends; start it with an open stdin when it runs in the
-background.
+background. A project with its own Node server runs the same dev setup inside it with
+[`createDevHandler()`](vite.md#createdevhandler).
 
 ## lumiose build
 
@@ -11438,6 +11484,25 @@ const app = await createServer({
   },
 });
 console.log(`Listening on ${app.url}`);
+```
+
+One `server.ts` for dev and production, with
+[`createDevHandler()`](vite.md#createdevhandler) from `@lumiose/vite/dev` in dev (HMR, the error
+overlay) and the build here otherwise:
+
+```ts
+// server.ts: `node server.ts --dev`, or `node server.ts` after `lumiose build`
+import { createServer } from "node:http";
+import { createHandler } from "@lumiose/adapter-node";
+
+const dev = process.argv.includes("--dev");
+const server = createServer();
+// @lumiose/vite is a dev dependency: production never loads it.
+const handler = dev
+  ? await (await import("@lumiose/vite/dev")).createDevHandler({ server })
+  : await createHandler();
+server.on("request", handler);
+server.listen(Number(process.env.PORT ?? 3000));
 ```
 
 As middleware in an existing server:

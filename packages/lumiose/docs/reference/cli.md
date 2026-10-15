@@ -62,7 +62,8 @@ lumiose dev --format json   # one line once listening: { "command": "dev", "ok":
 ```
 
 Like Vite, the server stops when its stdin ends; start it with an open stdin when it runs in the
-background.
+background. A project with its own Node server runs the same dev setup inside it with
+[`createDevHandler()`](vite.md#createdevhandler).
 
 ## lumiose build
 

@@ -1,6 +1,6 @@
-// Realtime end to end, on the production build: server-sent events from an endpoint to an island's
-// EventSource (broadcast, and cleanup when a page goes away), and the WebSocket chat that server.ts
-// attaches to the adapter's server (broadcast, refused handshakes).
+// Realtime end to end, on the production build and in dev (`server.ts --dev`): server-sent events
+// from an endpoint to an island's EventSource (broadcast, and cleanup when a page goes away), and
+// the WebSocket chat that server.ts attaches to its server (broadcast, refused handshakes).
 import { expect, test, type APIRequestContext } from "@playwright/test";
 import { WebSocket } from "ws";
 
@@ -79,5 +79,16 @@ test("WebSocket handshakes from other sites and to other paths are refused", asy
     });
   expect(await outcome("/ws", baseURL)).toBe("open");
   expect(await outcome("/ws", "https://evil.test")).toBe("403");
-  expect(await outcome("/other")).toBe("refused");
+  // In dev, server.ts leaves other upgrades to Vite's HMR, which ignores this one.
+  if (test.info().project.name === "build") expect(await outcome("/other")).toBe("refused");
+});
+
+test("dev: Vite's HMR client connects through server.ts (createDevHandler)", async ({ page }) => {
+  test.skip(test.info().project.name !== "dev", "dev only");
+  const connected = page.waitForEvent("console", (message) =>
+    message.text().includes("[vite] connected."),
+  );
+  await page.goto("/chat");
+  await connected;
+  await expect(page.locator(".chat")).toHaveAttribute("data-state", "open");
 });
